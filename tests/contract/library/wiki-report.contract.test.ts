@@ -17,10 +17,8 @@ import {
   validateWikiPage as validatePageTs,
 } from '@/shared/lib/library/wiki-page-schema';
 import { aggregateWikiFindings as aggregateBridged } from '@/shared/lib/library/wiki-report.mjs';
-import {
-  validateWikiFolder as validateFolderMcp,
-  validateWikiPage as validatePageMcp,
-} from '../../../mcp/src/library/wiki-schema.mjs';
+import { validateWikiFolder as validateFolderMcp } from '../../../mcp/src/library/wiki-folder.mjs';
+import { validateWikiPage as validatePageMcp } from '../../../mcp/src/library/wiki-schema.mjs';
 import { aggregateWikiFindings as aggregateMcp } from '../../../mcp/src/library/wiki-report.mjs';
 
 /**

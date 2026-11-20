@@ -976,5 +976,28 @@
     "batchReturned": "{count, plural, one {# source from the last request still has no wiki page and moved to the end of the list.} other {# sources from the last request still have no wiki page and moved to the end of the list.}}",
     "webLine": "Only the app writes wiki pages. Reading works here.",
     "allDone": "Every source has a wiki page"
+  },
+  "check": {
+    "title": "Checking the wiki",
+    "reading": "{agent} · reading <name>{page}</name>",
+    "working": "{agent} · {tool}",
+    "writing": "{agent} · writing the report",
+    "cardWriting": "Writing the report",
+    "figures": "{read, plural, =0 {No page read yet} other {<count>#</count> {read, plural, one {page} other {pages}} read}} · {elapsed}",
+    "asking": "{agent} is asking before it goes on. The check waits for your answer.",
+    "review": "Review",
+    "doneTitle": "Wiki check finished",
+    "foundTitle": "{findings, plural, one {# finding} other {# findings}} on {pages, plural, one {# page} other {# pages}}",
+    "foundBody": "Wiki check finished. Check results lists them.",
+    "doneClean": "The agent found nothing to fix in the pages it read.",
+    "openResults": "Open check results",
+    "unreadTitle": "The check finished, but its report is not a list",
+    "unreadBody": "Atlas could not read findings from the agent's answer, so Check results is unchanged. The conversation has the answer as written.",
+    "unreadCardTitle": "The report could not be read",
+    "unreadCardBody": "Check results is unchanged. The conversation has the agent's answer.",
+    "openConversation": "Open the conversation",
+    "failedTitle": "The wiki check ended early",
+    "failedBody": "{agent} ended before it reported. No file was changed. Press Check wiki to run it again.",
+    "stopped": "You stopped this check. Nothing was reported, and no file was changed."
   }
 }

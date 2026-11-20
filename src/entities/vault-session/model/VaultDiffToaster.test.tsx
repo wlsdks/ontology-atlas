@@ -109,6 +109,22 @@ describe('VaultDiffToaster', () => {
     expect(toastMocks.show).not.toHaveBeenCalled();
   });
 
+  it('raises no toast for the line a finished wiki check appends to the wiki log', () => {
+    localVaultMocks.useLocalVault.mockReturnValue({
+      status: 'loaded',
+      manifest: manifestWith([{ slug: 'wiki/_log', mtime: 1000 }, { slug: 'wiki/a', mtime: 1000 }]),
+      consumeSelfWrittenSlugs: () => new Set(),
+    });
+    const { rerender } = render(<VaultDiffToaster />);
+    localVaultMocks.useLocalVault.mockReturnValue({
+      status: 'loaded',
+      manifest: manifestWith([{ slug: 'wiki/_log', mtime: 2000 }, { slug: 'wiki/a', mtime: 1000 }]),
+      consumeSelfWrittenSlugs: () => new Set(),
+    });
+    rerender(<VaultDiffToaster />);
+    expect(toastMocks.show).not.toHaveBeenCalled();
+  });
+
   it('raises an added toast when a new slug appears on the second load', () => {
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',

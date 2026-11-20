@@ -39,6 +39,7 @@ import { useTranscriptModel } from './chat-panel/use-transcript-model';
 import { useTranscriptSignals } from './chat-panel/use-transcript-signals';
 import { useTurnCapture } from './chat-panel/use-turn-capture';
 import { useTurnReports } from './chat-panel/use-turn-reports';
+import { useTurnHandover } from './chat-panel/use-turn-handover';
 import { useTurnClock, useTurnSilence } from './chat-panel/use-turn-timing';
 
 export type { AcpMapIntent } from '@/features/acp-session';
@@ -85,6 +86,9 @@ export function AcpChatPanelBody({
   onOntologyRelationPreviewChange,
   onWorkReceipt,
   onTurnStarted,
+  onTurnStopChange,
+  turnReadOnly,
+  onTurnWorkChange,
   captureTaskBaseline,
   meaningTransitionContext,
   onBusyChange,
@@ -116,6 +120,7 @@ export function AcpChatPanelBody({
     status,
     lastTurnUpdateAt,
     events,
+    activeTurnReadOnly,
     slashCommands,
     error,
     diagnostics,
@@ -146,14 +151,10 @@ export function AcpChatPanelBody({
     onTurnStarted: captureTurnStart,
     captureTaskBaseline,
     autoDecide,
+    turnReadOnly,
     systemPromptAppendix,
     rememberChoices: true,
   });
-
-  const turnHeld = status === 'thinking' || pending !== null;
-  useEffect(() => {
-    onBusyChange?.(turnHeld);
-  }, [turnHeld, onBusyChange]);
 
   const [connectStopped, setConnectStopped] = useState(false);
   // Mirrored so the start effects see it without re-running, which would race New chat's own start.
@@ -244,6 +245,7 @@ export function AcpChatPanelBody({
     requestComposerFocus,
     answerHold,
     requestCorrection,
+    dropPending,
   } = usePermissionReview({ pending, inputRef, setDraft, t });
 
   const chooseSlashCommand = (name: string) => {
@@ -425,19 +427,29 @@ export function AcpChatPanelBody({
     : busy
       ? pending === null && !turnSilent ? 'working' : null
       : status === 'ready' && watchedTurnId === lastUserEventId && hasCompletedAgentAnswer ? 'done' : null;
+  const textArriving = lastTurnUpdateAt !== null && (turnNowMs === null || turnNowMs - lastTurnUpdateAt < TEXT_ARRIVING_MS);
   const turnWork: TurnWork | null = turnWorkPhase && lastUserEventId !== null
     ? {
         turnId: lastUserEventId,
         phase: turnWorkPhase,
-        activity: turnActivity(
-          events,
-          lastUserEventIndex,
-          VAULT_MCP_SERVER_NAME,
-          lastTurnUpdateAt !== null && (turnNowMs === null || turnNowMs - lastTurnUpdateAt < TEXT_ARRIVING_MS),
-        ),
+        activity: turnActivity(events, lastUserEventIndex, VAULT_MCP_SERVER_NAME, textArriving),
         plan: reportedPlan,
       }
     : null;
+  const stopTurn = useTurnHandover({
+    busy,
+    held: status === 'thinking' || pending !== null,
+    readOnly: activeTurnReadOnly,
+    activity: () => lastUserEventIndex < 0 ? null
+      : turnWork?.activity ?? turnActivity(events, lastUserEventIndex, VAULT_MCP_SERVER_NAME, textArriving),
+    asking: awaitingAnswer,
+    stop: () => {
+      setCancelledWaitTurnId(events[lastUserEventIndex]?.id ?? null);
+      dropPending();
+      cancel();
+    },
+    onTurnWorkChange, onTurnStopChange, onBusyChange,
+  });
 
   const displayStatus = connectStopped ? 'stopped' : status === 'idle' ? 'starting' : status;
   const footerStatus = awaitingAnswer ? 'awaiting' : displayStatus;
@@ -725,12 +737,7 @@ export function AcpChatPanelBody({
             requestComposerFocus();
           }}
           onStop={() => {
-            setCancelledWaitTurnId(events[lastUserEventIndex]?.id ?? null);
-            const request = livePendingRef.current;
-            livePendingRef.current = null;
-            request?.resolve(null);
-            setDeferredPermission(null);
-            cancel();
+            stopTurn();
             requestComposerFocus();
           }}
           onStopConnecting={() => {
