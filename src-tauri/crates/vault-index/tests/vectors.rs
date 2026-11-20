@@ -629,6 +629,10 @@ fn a_stopped_build_resumes_wiki_first_without_asking_twice() {
     assert_eq!(progress.passages_done(), asked.len() as u64);
     assert_eq!(asked.len(), vectors::MAX_BATCH_PASSAGES);
     let first_batch = asked.clone();
+    assert!(
+        !vectors::completed(&vault.root, &model()).unwrap(),
+        "a stopped first build has not finished the store"
+    );
 
     let resumed = prepare_all(&vault, &mut asked);
     assert_eq!(resumed.passages as usize, total - first_batch.len());
@@ -636,6 +640,22 @@ fn a_stopped_build_resumes_wiki_first_without_asking_twice() {
     assert_eq!((asked.len(), distinct.len()), (total, total));
     let status = vectors::status(&vault.root, &model()).unwrap().unwrap();
     assert_eq!((status.files, status.files_ready), (30, 30));
+    assert!(vectors::completed(&vault.root, &model()).unwrap());
+
+    // A later edit stopped half way leaves the store finished once: the next pass is an update.
+    write(&vault, "wiki/added.md", &long("A page written after the store was finished."));
+    let progress = PrepareProgress::default();
+    progress.request_stop();
+    let stopped = vectors::prepare(plan(&vault), &progress, |texts: &[&str]| {
+        Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
+    });
+    assert!(matches!(stopped, Err(PrepareError::Stopped)), "{stopped:?}");
+    assert!(vectors::completed(&vault.root, &model()).unwrap());
+    let other = Model {
+        name: "another-model".into(),
+        dimensions: DIMS,
+    };
+    assert!(!vectors::completed(&vault.root, &other).unwrap());
 }
 
 #[test]
