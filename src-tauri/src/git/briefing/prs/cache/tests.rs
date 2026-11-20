@@ -57,10 +57,7 @@ fn original(number: u64, body: &str) -> PullDescription {
     let updated_at = "2026-10-25T00:00:00Z".to_string();
     PullDescription {
         number,
-        digest: format!(
-            "{:x}",
-            Sha256::digest(format!("{title}\0{body}\0{updated_at}"))
-        ),
+        digest: lower_hex(&Sha256::digest(format!("{title}\0{body}\0{updated_at}"))),
         title,
         body: body.into(),
         url: format!("https://github.com/owner/repo/pull/{number}"),

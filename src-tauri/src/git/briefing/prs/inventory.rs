@@ -250,7 +250,7 @@ fn pull(
     };
     let original = serde_json::to_vec(record).map_err(|_| ())?;
     let size = original.len();
-    let digest = format!("{:x}", Sha256::digest(&original));
+    let digest = lower_hex(&Sha256::digest(&original));
     Ok((
         PublicPullVersion {
             number,
