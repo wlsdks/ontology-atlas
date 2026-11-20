@@ -1,0 +1,8 @@
+{
+  "stop": "중지",
+  "hide": "숨기기",
+  "close": "닫기",
+  "progressLabel": "{title} 진행",
+  "railRunning": "{destination}: 실행 중",
+  "railFinished": "{destination}: 끝난 실행 {count, number}개 확인 전"
+}

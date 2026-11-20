@@ -17,6 +17,9 @@ import {
   showLibraryWorkStrip,
   useLibraryModel,
 } from "@/features/library";
+import { isRunActive, useWorkRunSnapshot, workCardHoldsSeat, workRuns, type WorkRunActivity } from "@/features/work-run";
+import type { AcpEvent } from "@/features/acp-session";
+import { completedAcpReadEvent } from "@/features/library";
 import { LibraryGraph } from "@/widgets/library-graph";
 import { LibraryWorkActivityStrip } from "@/widgets/library-work-activity";
 import { LibraryImportDialog } from "@/widgets/library-import";
@@ -70,6 +73,10 @@ import { LibraryHomePopovers } from "./library-page/LibraryHomePopovers";
 import { AgentDoor } from "./parts/agent/AgentDoor";
 import { SourceProgressBand } from "./parts/progress/SourceProgressBand";
 import { useContinuePress } from "./parts/progress/use-continue-press";
+import { folderRelativePage } from "./library-page/wiki-check-outcome";
+
+/** The work card's box (`h-36` in `WorkRunCard`); a toast above it clears this much. */
+const WORK_CARD_HEIGHT = "9rem";
 
 export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   segment?: LibraryIndexSegment;
@@ -122,36 +129,45 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
 
   useToastAnchor("bottom-right");
   const viewportDialogOpen = answerComparisonOpen;
+  const workRunSnapshot = useWorkRunSnapshot();
+  const workCardShown = workCardHoldsSeat(workRunSnapshot);
   useEffect(() => {
     const root = document.documentElement;
     const right = viewportDialogOpen ? LIBRARY_TOAST_DIALOG_OFFSET : LIBRARY_TOAST_RIGHT_OFFSET;
     const bottom = viewportDialogOpen ? LIBRARY_TOAST_DIALOG_OFFSET : LIBRARY_TOAST_BOTTOM_OFFSET;
+    // The work card keeps this corner; a toast stands on top of it rather than over it.
+    const toastBottom = workCardShown ? `calc(${bottom} + ${WORK_CARD_HEIGHT} + 12px)` : bottom;
     root.style.setProperty("--app-toast-right-offset", right);
-    root.style.setProperty("--app-toast-bottom-offset", bottom);
+    root.style.setProperty("--app-work-card-bottom-offset", bottom);
+    root.style.setProperty("--app-toast-bottom-offset", toastBottom);
     root.style.setProperty("--app-toast-mobile-right-offset", right);
-    root.style.setProperty("--app-toast-mobile-bottom-offset", bottom);
+    root.style.setProperty("--app-toast-mobile-bottom-offset", toastBottom);
     return () => {
       root.style.removeProperty("--app-toast-right-offset");
+      root.style.removeProperty("--app-work-card-bottom-offset");
       root.style.removeProperty("--app-toast-bottom-offset");
       root.style.removeProperty("--app-toast-mobile-right-offset");
       root.style.removeProperty("--app-toast-mobile-bottom-offset");
     };
-  }, [viewportDialogOpen]);
+  }, [viewportDialogOpen, workCardShown]);
   const skipReaderFocusRef = useRef(false);
-  const [turnRunning, setTurnRunning] = useState(false);
+  const [pageTurnRunning, setTurnRunning] = useState(false);
   const [compileRunning, setCompileRunning] = useState(false);
-  const [lintRunning, setLintRunning] = useState(false);
-  const [reportUnseen, setReportUnseen] = useState(false);
+  const checkRun = workRunSnapshot.run?.folder === workVaultScope ? workRunSnapshot.run : null;
+  // A check started by an earlier visit is still this folder's running turn.
+  const lintRunning = isRunActive(checkRun);
+  const turnRunning = pageTurnRunning || lintRunning;
+  const reportUnseen = checkRun?.unseen ?? false;
   const choose = useCallback((next: typeof selected) => {
     setSourceCitation(null);
     setSelected(next);
-    if (next?.kind === "report") setReportUnseen(false);
+    if (next?.kind === "report") workRuns.markSeen(workVaultScope);
     if (next && next.kind !== "report") {
       const nextSegment = next.kind === "wiki" ? "wiki" : "sources";
       writeLibraryIndexSegment(nextSegment);
       onSegmentChange?.(nextSegment);
     }
-  }, [onSegmentChange]);
+  }, [onSegmentChange, workVaultScope]);
   const [busy, setBusy] = useState(false);
 
   const docs = manifest?.docs ?? EMPTY_DOCS;
@@ -299,7 +315,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const turns = useLibraryTurns({
     t, locale, toast, failureSentence, localVault, markSelfWrite, unmarkSelfWrite, workVaultScope,
     latestWorkVaultScopeRef, handle, nativeVaultRootPath, setSelected, latestSelectedRef,
-    skipReaderFocusRef, setTurnRunning, setCompileRunning, setLintRunning, setReportUnseen, choose,
+    skipReaderFocusRef, setTurnRunning, setCompileRunning, choose,
     docs, model, currentDeskListingVersion, latestDeskListingVersionRef, agent,
     captureAnswerRefresh, receiveAnswerRefresh, knownSlugs, workActivity,
     onImportCompleted: offerPlanningAfterImport,
@@ -320,6 +336,30 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const templateProblems = useWikiTemplateProblems({
     t, locale, toast, nativeVaultRootPath, turnRunning, choose, busy, model, agent, reader, turns,
   });
+  const observeCheckWork = useCallback((work: WorkRunActivity | null) => {
+    if (!work) return;
+    const page = work.target ? folderRelativePage(work.target, nativeVaultRootPath) : null;
+    workRuns.observeActivity({ ...work, target: page });
+  }, [nativeVaultRootPath]);
+  const observeTerminalTool = useCallback((event: Extract<AcpEvent, { kind: "tool" }>) => {
+    handleTerminalToolObservation(event);
+    const read = completedAcpReadEvent(event, nativeVaultRootPath, Date.now());
+    if (read?.target) workRuns.observeRead(read.target.ref);
+  }, [handleTerminalToolObservation, nativeVaultRootPath]);
+  const setAgentOpen = agent.setOpen;
+  // The card elsewhere asked for a door; it opens once this folder's Library is on screen.
+  useEffect(() => {
+    if (!hasFolder) return;
+    const takeDoor = () => {
+      const { door, run } = workRuns.read();
+      if (!door || !run || run.folder !== workVaultScope || door.runId !== run.id) return;
+      workRuns.takeDoor(door.runId);
+      if (door.kind === "results") choose({ kind: "report" });
+      else setAgentOpen(true);
+    };
+    queueMicrotask(takeDoor);
+    return workRuns.subscribe(takeDoor);
+  }, [choose, hasFolder, setAgentOpen, workVaultScope]);
   if (!hasFolder) return <LibraryNoFolderStage t={t} />;
 
   const importDialog = (
@@ -365,7 +405,10 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           onTurnStarted={handleTurnStarted}
           onTurnActivityChange={setAgentActivity}
           onTurnToolActivityChange={handleAcpToolActivityChange}
-          onTerminalToolObservation={handleTerminalToolObservation}
+          onTerminalToolObservation={observeTerminalTool}
+          onTurnStopChange={workRuns.setStop}
+          onTurnWorkChange={observeCheckWork}
+          turnIsReadOnly={turns.turnIsReadOnly}
           onFileAnswer={lastAnswer ? lastAnswer.origin === 'question-report'
             ? deskReport?.answer === lastAnswer && deskReport.vaultScope === workVaultScope ? handleFileReport : null
             : () => void handleFileAnswer() : null}

@@ -21,13 +21,11 @@ import {
   describeLintTurn,
   judgePageWrite,
   wikiNodeIndexOfDocs,
-  parseLintCandidates,
   dropCandidatesWithNodes,
   wikiPagePathOf,
   planQuestionDeskReportFile,
   questionDeskReportFileCurrent,
   buildFixBrief,
-  parseLintFindings,
   buildAnswerPage,
   automaticWikiWriteAllowed,
   buildHumanPage,
@@ -42,6 +40,7 @@ import {
   type LibraryUiModel,
 } from "@/features/library";
 import type { AcpTurnCompletion } from "@/features/acp-session";
+import { useFolderWorkRun, workRuns } from "@/features/work-run";
 import { useWikiWriteMode } from "@/shared/lib/preferences/appearance-preferences";
 import { nativeVaultFileHashes } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
@@ -57,6 +56,7 @@ import type { LibraryAgentOpeningRequest } from "../parts/agent/LibraryAgentDock
 import type { QuestionDeskReportRequest } from "../parts/questions/LibraryQuestionDesk";
 import type { LibrarySelection } from "./library-page-state";
 import type { useLibraryWorkActivity } from "./use-library-work-activity";
+import { wikiCheckOutcome, wikiCheckPayload } from "./wiki-check-outcome";
 
 export function matchLibraryOpeningRequest(
   text: string,
@@ -93,7 +93,7 @@ export function restoreFiledAnswer(current: RetainedLibraryAnswer | null, filed:
 export function useLibraryTurns({
   t, locale, toast, failureSentence, localVault, markSelfWrite, unmarkSelfWrite, workVaultScope,
   latestWorkVaultScopeRef, handle, nativeVaultRootPath, setSelected, latestSelectedRef,
-  skipReaderFocusRef, setTurnRunning, setCompileRunning, setLintRunning, setReportUnseen, choose,
+  skipReaderFocusRef, setTurnRunning, setCompileRunning, choose,
   docs, model, currentDeskListingVersion, latestDeskListingVersionRef, agent, captureAnswerRefresh,
   receiveAnswerRefresh, knownSlugs, workActivity, onImportCompleted,
 }: {
@@ -113,8 +113,6 @@ export function useLibraryTurns({
   skipReaderFocusRef: RefObject<boolean>;
   setTurnRunning: Dispatch<SetStateAction<boolean>>;
   setCompileRunning: Dispatch<SetStateAction<boolean>>;
-  setLintRunning: Dispatch<SetStateAction<boolean>>;
-  setReportUnseen: Dispatch<SetStateAction<boolean>>;
   choose: (next: LibrarySelection) => void;
   docs: VaultDoc[];
   model: LibraryUiModel;
@@ -133,6 +131,13 @@ export function useLibraryTurns({
   const pendingAskRef = useRef<LibraryAskContext | null>(null);
   const retryAskRef = useRef<{ nonce: number; text: string; scope: string; context: LibraryAskContext } | null>(null);
   const activeReadOnlyTurnRef = useRef(false);
+  const turnIsReadOnly = useCallback(() => activeReadOnlyTurnRef.current, []);
+  // A check can finish after the Library is gone; opening its report then would mark it read unseen.
+  const pageShownRef = useRef(true);
+  useEffect(() => {
+    pageShownRef.current = true;
+    return () => { pageShownRef.current = false; };
+  }, []);
   const [lastAnswer, setLastAnswer] = useState<RetainedLibraryAnswer | null>(null);
   const [deskReport, setDeskReport] = useState<{ answer: RetainedLibraryAnswer; searchId: number; listingVersion: string; vaultScope: string; coverage: string; limits: string; generatedAt: string } | null>(null);
   const [deskWorkRequest, setDeskWorkRequest] = useState<{ scope: string; startedAt: number } | null>(null);
@@ -369,8 +374,8 @@ export function useLibraryTurns({
   );
 
   const pageBodyRef = useRef<HTMLDivElement | null>(null);
-  const [candidates, setCandidates] = useState<LintNodeCandidate[]>([]);
-  const [findings, setFindings] = useState<LintFinding[]>([]);
+  const checkRun = useFolderWorkRun(workVaultScope);
+  const { candidates, findings } = wikiCheckPayload(checkRun);
   const openCandidates = useMemo(() => dropCandidatesWithNodes(candidates, docs), [candidates, docs]);
   const reportHeadings = useMemo(
     () => reportOutline(model.structural, findings, openCandidates.length, t),
@@ -396,7 +401,7 @@ export function useLibraryTurns({
       if (opening) consumedOpeningNonceRef.current = opening.nonce;
       const exactAsk = matchLibraryOpeningRequest(start.text, agent.openingRequest, null);
       const kind = opening?.kind ?? "ask";
-      activeReadOnlyTurnRef.current = exactAsk?.kind === 'ask';
+      activeReadOnlyTurnRef.current = exactAsk?.kind === 'ask' || kind === 'lint';
       const refreshTurn = kind === 'refresh' ? captureAnswerRefresh() : null;
       const selectionAtStart = latestSelectedRef.current;
       let asked: LibraryAskContext | null = null;
@@ -432,13 +437,16 @@ export function useLibraryTurns({
       const writer = agent.runtime ? `agent:${agent.runtime.id}` : "agent:unknown";
       setTurnRunning(true);
       if (kind === "compile") setCompileRunning(true);
-      if (kind === "lint") setLintRunning(true);
+      // The check's run is the app session's, so its result lands after this page is gone.
+      const checkRunId = kind === "lint"
+        ? workRuns.begin({ folder: workVaultScope, agent: agent.runtime?.label ?? "", startedAt: Date.now() })
+        : null;
       return async (completion: AcpTurnCompletion) => {
+        if (checkRunId !== null) workRuns.finish(checkRunId, wikiCheckOutcome(completion), Date.now());
         if (generation !== answerGenerationRef.current) return;
         activeReadOnlyTurnRef.current = false;
         setTurnRunning(false);
         setCompileRunning(false);
-        setLintRunning(false);
         if (kind === 'refresh') {
           setLibraryWorkActivity(clearLibraryWork);
           if (refreshTurn) receiveAnswerRefresh(refreshTurn,
@@ -466,16 +474,13 @@ export function useLibraryTurns({
           receipts.reduce(completeLibraryWork, clearLibraryWork(current)),
         );
         const lastAgentText = [...completion.events].reverse().find((event) => event.kind === "agent")?.text ?? null;
-        if (kind === "lint") setCandidates(parseLintCandidates(lastAgentText));
-        if (kind === "lint") setFindings(parseLintFindings(lastAgentText));
-        if (kind === "lint") setReportUnseen(true);
         if (kind === "lint") setFixedKeys(new Set());
         if (kind === "fix" && pendingFixRef.current) {
           const key = findingKey(pendingFixRef.current);
           pendingFixRef.current = null;
           setFixedKeys((current) => new Set([...current, key]));
         }
-        if (kind === "lint") {
+        if (kind === "lint" && pageShownRef.current) {
           const current = latestSelectedRef.current;
           if (current === null || current.kind === "report") {
             skipReaderFocusRef.current = true;
@@ -507,7 +512,7 @@ export function useLibraryTurns({
         }
       };
     },
-    [agent.openingRequest, agent.runtime, captureAnswerRefresh, choose, currentDeskListingVersion, handle, latestSelectedRef, onImportCompleted, receiveAnswerRefresh, setCompileRunning, setLibraryWorkActivity, setLintRunning, setReportUnseen, setTurnRunning, skipReaderFocusRef, workVaultScope],
+    [agent.openingRequest, agent.runtime, captureAnswerRefresh, choose, currentDeskListingVersion, handle, latestSelectedRef, onImportCompleted, receiveAnswerRefresh, setCompileRunning, setLibraryWorkActivity, setTurnRunning, skipReaderFocusRef, workVaultScope],
   );
 
   const hasOntology = useMemo(
@@ -583,13 +588,14 @@ export function useLibraryTurns({
             : t("stage.blockedLocalOnly");
 
   return {
-    writeMode, pendingAskRef, retryAskRef, activeReadOnlyTurnRef, lastAnswer, setLastAnswer,
+    writeMode, pendingAskRef, retryAskRef, activeReadOnlyTurnRef, turnIsReadOnly, checkRun,
+    checkFolder: workVaultScope, lastAnswer, setLastAnswer,
     deskReport, setDeskReport, deskWorkRequest, setDeskWorkRequest, deskWorkActivity,
     latestDeskReportRef, reportEpochRef, invalidateDeskReport, previousReportScopeRef,
     answerGenerationRef, filedAnswersRef, filingAnswer, setFilingAnswer, fileAnswerNote,
     setFileAnswerNote, consumedOpeningNonceRef, judgeWrite, pendingFixRef, fixedKeys, setFixedKeys,
     handleFix, handleNewPage, handleFileAnswer, handleFileReport, autoDecide, pageBodyRef,
-    candidates, setCandidates, findings, setFindings, openCandidates, reportHeadings,
+    candidates, findings, openCandidates, reportHeadings,
     reportDoorCount, latestDocsRef, handleTurnStarted, hasOntology, handlePropose, handleLint,
     compileBlocked, compileTransfer, agentOnlyReason,
   };

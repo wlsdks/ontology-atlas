@@ -149,6 +149,11 @@ The Korean catalogue names the same page two ways (`messages/ko/library.json:648
 - **Two presses at once.** **Check wiki** stays disabled while any Library turn runs (`LibraryCheckReport.tsx:680`, `LibraryDocumentColumn.tsx:100`). A scheduled check running at the same time keeps its own row in Automations; it does not take the card in this slice.
 - **Pages edited after the check finished.** The findings keep the existing "Fixed · check again to re-judge" rule; nothing new.
 - **Offline.** The agent's own failure arrives as `check.failedTitle`; Atlas adds no network call.
+- **A dock opened for the same folder while the check runs away.** A parked conversation whose running turn only reads (the wiki check and a question) stays and finishes beside it; a parked turn that may write still ends, as before, so two writers never share a folder.
+- **Folder switched mid-run.** Switching folders ends the check; the card shows `check.failedTitle` for the folder it ran on, and no ring, badge or finding carries into the new folder.
+- **A write requested during a check.** The check's turn counts as read-only, so a write it asks for is never approved automatically; the conversation asks.
+- **A dock or panel on the right.** The card glides left of any open dock (the Library's conversation, the map's conversation) and returns to the corner when it closes; notifications stand above the card. Where no room is left beside a dock (the Library below `xl`, where its dock overlays the page), the card stays in its corner above the dock, as notices already do there.
+- **Moving between tabs.** No tab change, dock or conversation ends or restarts the check; the card is one element across routes, and its count and time continue from the last value drawn.
 - **Reduced motion.** The ring is a still arc, the bar a still track, Moru holds each clip's first frame; every word and button is unchanged. The app draws no pause button.
 
 ## Out of scope
@@ -199,3 +204,5 @@ None. Decided: "background" means another tab and a hidden window, not a quit ap
 - 2026-11-20: first draft, written read-only in the session scratchpad.
 - 2026-11-20: accepted and committed; slice 1 is being built.
 - 2026-11-20: corrected Today and Problem: the Library dock does not keep its conversation, so leaving Library stops the check rather than only losing its result.
+- 2026-11-20: slice 1 built; added the edge cases for a parked read-only check, a folder switch mid-run and a write asked for during a check.
+- 2026-11-20: added the right-hand dock and tab-change edge cases after the owner asked that the work keep running and stay in view on every screen.

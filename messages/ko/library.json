@@ -978,5 +978,24 @@
     "batchReturned": "지난 요청의 원문 {count, number}개는 아직 위키 문서가 없어 목록 맨 뒤로 옮겼어요.",
     "webLine": "위키 문서는 앱에서만 써요. 읽기는 여기서도 돼요.",
     "allDone": "모든 원문에 위키 문서가 있어요"
+  },
+  "check": {
+    "title": "위키 검사 중",
+    "reading": "{agent} · <name>{page}</name> 읽는 중",
+    "working": "{agent} · {tool}",
+    "writing": "{agent} · 보고서 쓰는 중",
+    "figures": "{read, plural, =0 {아직 읽은 문서 없음} other {문서 <count>#</count>개 읽음}} · {elapsed}",
+    "asking": "{agent}가 계속하기 전에 묻고 있어요. 답할 때까지 검사가 멈춰 있어요.",
+    "review": "검토",
+    "doneTitle": "위키 검사가 끝났어요",
+    "doneFindings": "문서 {pages, number}개에서 항목 {findings, number}개를 찾았어요. 검사 결과에 모두 있어요.",
+    "doneClean": "에이전트가 읽은 문서에서 고칠 것을 찾지 못했어요.",
+    "openResults": "검사 결과 열기",
+    "unreadTitle": "검사는 끝났지만 보고서가 목록이 아니에요",
+    "unreadBody": "에이전트의 답에서 항목을 읽지 못해서 검사 결과는 그대로예요. 답은 대화에 쓴 그대로 있어요.",
+    "openConversation": "대화 열기",
+    "failedTitle": "위키 검사가 멈췄어요",
+    "failedBody": "{agent}가 보고하기 전에 끝났어요. 바뀐 파일은 없어요. 「위키 검사」를 누르면 다시 실행해요.",
+    "stopped": "이 검사를 중지했어요. 보고된 것도, 바뀐 파일도 없어요."
   }
 }

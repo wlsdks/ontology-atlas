@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -39,6 +39,7 @@ vi.mock("@/shared/lib/agent-chat/tauri-acp", () => ({
   },
 }));
 
+import { AcpChatPanelKeeper } from "@/widgets/acp-chat-panel";
 import { LibraryAgentDock } from "./LibraryAgentDock";
 
 function emit(payload: unknown) {
@@ -55,6 +56,7 @@ const RUNTIME = { id: "claude-acp", label: "Claude Agent" };
 function dock(open: boolean) {
   return (
     <NextIntlClientProvider locale="en" messages={enMessages}>
+      <AcpChatPanelKeeper />
       <LibraryAgentDock
         chatWidth={{ width: 420, setWidth: () => {}, commitWidth: () => {} }}
         open={open}
@@ -67,6 +69,15 @@ function dock(open: boolean) {
         knownSlugs={new Set()}
         onClose={() => {}}
       />
+    </NextIntlClientProvider>
+  );
+}
+
+/** Every other screen: the keeper above the routes stays, the Library is gone. */
+function elsewhere() {
+  return (
+    <NextIntlClientProvider locale="en" messages={enMessages}>
+      <AcpChatPanelKeeper />
     </NextIntlClientProvider>
   );
 }
@@ -221,11 +232,28 @@ describe("pressing X on the Library dock", () => {
     expect(bridge.sent.filter((m) => m.method === "session/new")).toHaveLength(1);
   });
 
-  it("ends the conversation when the Library itself goes away", async () => {
+  it("ends an idle conversation when the Library itself goes away", async () => {
     const view = await openWithSession();
-    view.unmount();
-    await act(async () => {});
-    // Background work belongs to this screen. Leaving it is not putting the dock away.
+    view.rerender(elsewhere());
     await waitFor(() => expect(bridge.stopped).toEqual(["acp-1"]));
+  });
+
+  it("keeps a turn in flight running when the Library itself goes away, and its answer lands", async () => {
+    const view = await openWithSession();
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Check the wiki" } });
+    fireEvent.click(screen.getByTestId("acp-chat-send"));
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === "session/prompt")).toBe(true));
+    await waitFor(() => expect(screen.getByTestId("acp-chat-panel")).toHaveAttribute("data-acp-status", "thinking"));
+    view.rerender(elsewhere());
+    await act(async () => {});
+    expect(bridge.stopped).toEqual([]);
+    emit({
+      jsonrpc: "2.0",
+      method: "session/update",
+      params: { sessionId: "s-1", update: { sessionUpdate: "agent_message_chunk", content: { text: "Three findings." } } },
+    });
+    replyTo("session/prompt", { stopReason: "end_turn" });
+    await waitFor(() => expect(document.querySelector("[data-kept-agent-parking]")).toHaveTextContent("Three findings."));
+    expect(bridge.stopped).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-export { AppNavRail } from "./ui/AppNavRail";
+export { AppNavRail, type RailWorkRun } from "./ui/AppNavRail";
 export {
   NavRailShellProvider,
   useNavRailShellValue,

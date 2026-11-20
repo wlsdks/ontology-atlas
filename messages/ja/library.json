@@ -978,5 +978,24 @@
     "batchReturned": "前回のリクエストのソース{count, number}件はまだWikiページがないため、一覧の最後に移しました。",
     "webLine": "Wikiページを書けるのはアプリだけです。閲覧はここでもできます。",
     "allDone": "すべてのソースにWikiページがあります"
+  },
+  "check": {
+    "title": "Wikiを検査中",
+    "reading": "{agent} · <name>{page}</name> を読んでいます",
+    "working": "{agent} · {tool}",
+    "writing": "{agent} · 報告を書いています",
+    "figures": "{read, plural, =0 {まだ読んだページはありません} other {<count>#</count>ページ読みました}} · {elapsed}",
+    "asking": "{agent}が続ける前に確認を求めています。答えるまで検査は止まっています。",
+    "review": "確認する",
+    "doneTitle": "Wikiの検査が終わりました",
+    "doneFindings": "{pages, number}ページで指摘が{findings, number}件見つかりました。検査結果にすべて載っています。",
+    "doneClean": "エージェントが読んだページに、直すべき点は見つかりませんでした。",
+    "openResults": "検査結果を開く",
+    "unreadTitle": "検査は終わりましたが、報告がリストになっていません",
+    "unreadBody": "エージェントの回答から指摘を読み取れなかったため、検査結果は変わっていません。回答は書かれたとおり会話に残っています。",
+    "openConversation": "会話を開く",
+    "failedTitle": "Wikiの検査が止まりました",
+    "failedBody": "{agent}は報告する前に終了しました。変更されたファイルはありません。「Wikiを検査」を押すと、もう一度実行します。",
+    "stopped": "この検査を中止しました。報告されたものも、変更されたファイルもありません。"
   }
 }
