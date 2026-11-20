@@ -10,9 +10,6 @@ function doc(overrides: Partial<VaultDoc> = {}): VaultDoc {
     description: overrides.description,
     tags: overrides.tags ?? [],
     frontmatter: overrides.frontmatter ?? {},
-    headings: [],
-    excerpt: overrides.excerpt ?? '',
-    wordCount: 0,
     updatedAt: '2026-04-23T00:00:00.000Z',
     linksOut: overrides.linksOut ?? [],
     ...overrides,
@@ -32,7 +29,7 @@ describe('findRelatedDocs', () => {
   it('scores a frontmatter projects match highest', () => {
     const docs = [
       doc({ slug: 'a', frontmatter: { projects: ['reactor'] } }),
-      doc({ slug: 'b', excerpt: 'reactor 를 한 번 언급' }),
+      doc({ slug: 'b', description: 'reactor 를 한 번 언급' }),
     ];
     const result = findRelatedDocs(docs, {
       projectSlug: 'reactor',
@@ -83,8 +80,8 @@ describe('findRelatedDocs', () => {
     expect(result[1].reasons).toContain('summary');
   });
 
-  it('does not read the first paragraph, only the summary', () => {
-    const docs = [doc({ slug: 'a', excerpt: 'Demo Reactor and /project/reactor' })];
+  it('does not read the first paragraph a bundled document still carries, only the summary', () => {
+    const docs = [doc({ slug: 'a', ...({ excerpt: 'Demo Reactor and /project/reactor' } as object) })];
     expect(findRelatedDocs(docs, { projectSlug: 'reactor', projectName: 'Demo Reactor' })).toEqual([]);
   });
 

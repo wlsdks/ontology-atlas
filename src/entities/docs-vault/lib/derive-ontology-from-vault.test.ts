@@ -11,9 +11,6 @@ function makeDoc(partial: Partial<VaultDoc> & { slug: string }): VaultDoc {
     description: partial.description,
     tags: partial.tags ?? [],
     frontmatter: partial.frontmatter ?? {},
-    headings: partial.headings ?? [],
-    excerpt: partial.excerpt ?? '',
-    wordCount: partial.wordCount ?? 0,
     updatedAt: partial.updatedAt ?? '2026-04-01T00:00:00.000Z',
     linksOut: partial.linksOut ?? [],
   };
@@ -24,7 +21,7 @@ function makeManifest(docs: VaultDoc[]): VaultManifest {
     version: '2026-04-23',
     generatedAt: new Date().toISOString(),
     docs,
-    backlinksDetail: {},
+    backlinkSources: {},
     tags: {},
     tree: { name: 'root', path: '', type: 'dir' },
   };
@@ -605,7 +602,6 @@ describe('authored definition projection through the local manifest', () => {
     expect(result.nodes).toHaveLength(1);
     expect(result.nodes[0].summary).toBe(expected);
     if (name === 'intro') {
-      expect(manifest.docs[0].excerpt).toContain('Persisting a report.');
       expect(await (await file.getFile()).text()).toContain('## Excludes\nPersisting a report.');
     }
   });

@@ -8,9 +8,6 @@ function doc(partial: Partial<VaultDoc> & { slug: string }): VaultDoc {
     title: partial.slug,
     tags: [],
     frontmatter: {},
-    headings: [],
-    excerpt: '',
-    wordCount: 0,
     updatedAt: '2026-07-26T00:00:00.000Z',
     linksOut: [],
     ...partial,
@@ -22,7 +19,7 @@ function manifest(docs: VaultDoc[]): VaultManifest {
     version: '1',
     generatedAt: '2026-07-26T00:00:00.000Z',
     docs,
-    backlinksDetail: {},
+    backlinkSources: {},
     tags: {},
     tree: { name: 'root', path: '', type: 'dir', children: [] },
   };
@@ -47,13 +44,12 @@ describe('manifestToConceptFacts', () => {
   });
 
   it('keeps the missing-meaning finding even when the body has a summary', () => {
-    // An excerpt must not hide the `definition-missing` finding `validate_vault` reports.
+    // A summary must not hide the `definition-missing` finding `validate_vault` reports.
     const facts = manifestToConceptFacts(
       manifest([
         doc({
           slug: 'capabilities/a',
           description: '한 줄 설명',
-          excerpt: '주문을 받아 결제까지 잇는 기능.',
           meaningFindings: ['definition-missing'],
         }),
       ]),

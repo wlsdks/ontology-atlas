@@ -13,7 +13,7 @@ function asLibraryDoc(page: ReturnType<typeof buildAnswerPage>): VaultDoc {
   const { frontmatter } = parseFrontmatter(page.text);
   return {
     slug: page.slug, path: page.path, title: String(frontmatter.title), frontmatter,
-    tags: [], headings: [], excerpt: "", wordCount: 12, updatedAt: NOW.toISOString(), linksOut: [],
+    tags: [], updatedAt: NOW.toISOString(), linksOut: [],
   };
 }
 

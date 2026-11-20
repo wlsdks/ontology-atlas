@@ -74,7 +74,7 @@ function emptyManifest() {
     version: '1',
     generatedAt: '',
     docs: [] as unknown[],
-    backlinksDetail: {},
+    backlinkSources: {},
     tags: {},
     tree: { name: 'root', path: '', type: 'dir' as const },
   };
@@ -91,9 +91,6 @@ function manifestWithDoc(slug: string, frontmatter: Record<string, unknown>): Lo
         description: '',
         tags: [],
         frontmatter,
-        headings: [],
-        excerpt: '',
-        wordCount: 0,
         updatedAt: '',
         linksOut: [],
         mtime: 1000,

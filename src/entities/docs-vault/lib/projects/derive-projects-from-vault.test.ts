@@ -10,10 +10,7 @@ function makeDoc(partial: Partial<VaultDoc>): VaultDoc {
     description: partial.description,
     tags: partial.tags ?? [],
     frontmatter: partial.frontmatter ?? {},
-    headings: partial.headings ?? [],
-    excerpt: partial.excerpt ?? "",
     definitionPreview: partial.definitionPreview,
-    wordCount: partial.wordCount ?? 0,
     updatedAt: partial.updatedAt ?? new Date(0).toISOString(),
     linksOut: partial.linksOut ?? [],
   };
@@ -24,7 +21,7 @@ function makeManifest(docs: VaultDoc[]): VaultManifest {
     version: "1",
     generatedAt: new Date().toISOString(),
     docs,
-    backlinksDetail: {},
+    backlinkSources: {},
     tags: {},
     tree: { name: "vault", path: "", type: "dir" },
   };

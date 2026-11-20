@@ -20,9 +20,6 @@ function makeDoc(
     title,
     tags: [],
     frontmatter,
-    headings: [],
-    excerpt: "",
-    wordCount: 0,
     updatedAt,
     linksOut: [],
   };
@@ -33,7 +30,7 @@ function makeManifest(docs: VaultDoc[]): VaultManifest {
     version: "1",
     generatedAt: new Date().toISOString(),
     docs,
-    backlinksDetail: {},
+    backlinkSources: {},
     tags: {},
     tree: { name: "root", path: "", type: "dir" },
   };

@@ -34,9 +34,6 @@ function makeDoc(slug: string, frontmatter: Record<string, unknown>, title: stri
     title,
     tags: [],
     frontmatter,
-    headings: [],
-    excerpt: '',
-    wordCount: 0,
     updatedAt: '2026-07-23',
     linksOut: [],
   };

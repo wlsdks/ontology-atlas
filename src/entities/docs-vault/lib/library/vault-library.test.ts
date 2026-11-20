@@ -39,9 +39,6 @@ function wiki(
     title,
     tags: [],
     frontmatter,
-    headings: [],
-    excerpt: '',
-    wordCount: 10,
     updatedAt: '2026-09-06T00:00:00Z',
     linksOut: [],
   };

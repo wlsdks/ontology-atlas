@@ -224,12 +224,13 @@ has no index.
 
 Beside it, `rows.sqlite` holds per file and per producer what a program
 computed from that file, so a reopen reads and derives only the files that
-changed. The app's producer keeps what `buildMdEntry` derives: parsed
-frontmatter, diagnostics, title, headings, excerpt, link text and, for each
-page a document links to, the short passage (up to 120 characters each side)
-around its first link there, which the backlinks show; the rest of the body is
-not kept. Values are DEFLATE-compressed JSON. The producer's name,
-`app-entry/<hash>`, is a hash of `build-local-manifest.ts`, every module it
+changed. The app's producer keeps what `buildMdEntry` derives, the document's
+spine (`md-entry.ts`): parsed frontmatter, diagnostics, title, the slugs of the
+pages it links to, its first paragraph when short (the definition preview) and,
+for a concept, its finding codes; headings, excerpt and word count are read from the
+file when a surface shows them, and the rest of the body is not kept. Values are
+DEFLATE-compressed JSON. The producer's name, `app-entry/<hash>`, is a hash of
+`md-entry.ts`, every module it
 loads and the versions of the packages they import, made at build time
 (`scripts/lib/row-producer.mjs`), so a build whose parser or derive code
 changed never reads an older build's rows; the dev server has no name and keeps

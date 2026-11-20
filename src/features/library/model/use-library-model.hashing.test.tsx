@@ -21,8 +21,8 @@ function sources(count: number): VaultSourceFile[] {
 /** One page citing every source with a recorded hash, so each one needs measuring. */
 function citing(files: readonly VaultSourceFile[]): VaultDoc[] {
   return [{
-    slug: 'wiki/all', path: 'wiki/all.md', title: 'All', tags: [], headings: [], excerpt: '', linksOut: [],
-    updatedAt: '', wordCount: 0, mtime: 1,
+    slug: 'wiki/all', path: 'wiki/all.md', title: 'All', tags: [], linksOut: [],
+    updatedAt: '', mtime: 1,
     frontmatter: {
       sources: files.map(({ path }) => path),
       source_hash: Object.fromEntries(files.map(({ path }) => [path, HASH])),

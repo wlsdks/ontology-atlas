@@ -242,7 +242,7 @@ describe('rebuildLocalManifestIncremental equivalence', () => {
     expect(stripGenerated(incremental.build.manifest)).toEqual(stripGenerated(full.manifest));
     expect(incremental.build.fingerprint).toBe(full.fingerprint);
     // Deleting caps/x removes domains/a's backlink.
-    expect(incremental.build.manifest.backlinksDetail).toEqual(full.manifest.backlinksDetail);
+    expect(incremental.build.manifest.backlinkSources).toEqual(full.manifest.backlinkSources);
   });
 
   it('matches a full rebuild when nothing changed', async () => {

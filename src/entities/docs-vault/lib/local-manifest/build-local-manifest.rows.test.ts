@@ -102,8 +102,7 @@ describe('a full build with the derived index rows', () => {
     expect(kept.get('a.md')?.token).toBe('token-a.md');
 
     const stored = JSON.parse(kept.get('a.md')!.value);
-    // Only each target's first passage reaches the manifest, so only that one is kept.
-    expect(stored.linkContexts.map((link: { target: string }) => link.target)).toEqual(['c', 'b']);
+    expect(Object.keys(stored)).toEqual(['doc']);
     const misfiled = JSON.parse(kept.get('c.md')!.value);
     misfiled.doc.path = 'elsewhere.md';
     tauri.reads = [];
@@ -122,6 +121,30 @@ describe('a full build with the derived index rows', () => {
     };
     expect(await manifestJson()).toBe(fromFiles);
     expect(tauri.reads.sort()).toEqual(['b.md', 'c.md']);
+  });
+
+  it('reads the file again for a row an older producer wrote with detail and link passages', async () => {
+    vaultIndexPreference.write('off');
+    const fromFiles = await manifestJson();
+    vaultIndexPreference.write('on');
+    tauri.rows = (command, body) =>
+      command === 'vault_index_rows_get'
+        ? answer([], asked(body).map((path, at) => [at, `token-${path}`]))
+        : { written: 2, skipped: 0, removed: 0 };
+    await manifestJson();
+    const spine = JSON.parse(putRows(tauri.puts.join('\n')).get('a.md')!.value);
+    const older = {
+      doc: { ...spine.doc, headings: [], excerpt: 'See c first.', wordCount: 9 },
+      linkContexts: [{ target: 'c', context: 'See **[c]** first.', linkText: 'c' }],
+    };
+    tauri.reads = [];
+    tauri.rows = (command, body) => {
+      if (command !== 'vault_index_rows_get') return { written: 0, skipped: 0, removed: 0 };
+      const paths = asked(body);
+      return answer([[paths.indexOf('a.md'), older]], [], 1, 1);
+    };
+    expect(await manifestJson()).toBe(fromFiles);
+    expect(tauri.reads).toContain('a.md');
   });
 
   it('drops rows of files no longer listed once the walk is complete', async () => {

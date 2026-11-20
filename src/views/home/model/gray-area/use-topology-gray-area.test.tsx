@@ -10,7 +10,7 @@ const { translate } = vi.hoisted(() => ({ translate: (key: string) => key }));
 vi.mock('next-intl', () => ({ useTranslations: () => translate }));
 
 function document(slug: string, frontmatter: VaultDoc['frontmatter']): VaultDoc {
-  return { slug, path: `${slug}.md`, title: slug, frontmatter, tags: [], headings: [], excerpt: '', wordCount: 1, updatedAt: '2026-09-28', linksOut: [] };
+  return { slug, path: `${slug}.md`, title: slug, frontmatter, tags: [], updatedAt: '2026-09-28', linksOut: [] };
 }
 const docs = [
   document('project', { kind: 'project', uid: 'project', domains: ['domain'] }),

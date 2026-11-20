@@ -10,9 +10,6 @@ function doc(slug: string, title: string, extra: Partial<VaultDoc> = {}): VaultD
     title,
     tags: [],
     frontmatter: {},
-    headings: [],
-    excerpt: '',
-    wordCount: 0,
     updatedAt: '2026-01-01T00:00:00.000Z',
     linksOut: [],
     ...extra,
@@ -61,7 +58,7 @@ describe('searchDocs metadata tiers', () => {
 
 describe('searchDocs finds a page by its first paragraph only through the body index', () => {
   const raw = '---\ntitle: Plain page\n---\n\nQuillwort grows in cold ponds.\n\n## Later\n\nOther text.';
-  const plain = doc('plain', 'Plain page', { excerpt: 'Quillwort grows in cold ponds.' });
+  const plain = doc('plain', 'Plain page');
 
   it('finds the page by a first-paragraph word when the index holds its body', () => {
     const out = searchDocs('quillwort', [plain], 30, bodyIndexOf({ plain: raw }));
@@ -71,7 +68,7 @@ describe('searchDocs finds a page by its first paragraph only through the body i
 
   it('ranks an indexed page by its first paragraph above fifteen tag matches', () => {
     const tagged = Array.from({ length: 15 }, (_, i) => doc(`tagged-${i}`, `Other ${i}`, { tags: ['ledger'] }));
-    const page = doc('close', 'Month end', { excerpt: 'Ledger close runs at midnight.' });
+    const page = doc('close', 'Month end');
     const out = searchDocs('ledger', [...tagged, page], 15, bodyIndexOf({ close: 'Ledger close runs at midnight.' }));
     expect(out).toHaveLength(15);
     expect(out[0].doc.slug).toBe('close');

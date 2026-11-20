@@ -26,9 +26,6 @@ const doc: VaultDoc = {
   title: "Readme",
   tags: [],
   frontmatter: {},
-  headings: [{ depth: 2, text: "Section One", slug: "section-one" }],
-  excerpt: "",
-  wordCount: 3,
   updatedAt: "2026-06-01",
   linksOut: [],
 };

@@ -13,8 +13,8 @@ function source(path: string): VaultSourceFile {
 
 function page(slug: string, frontmatter: Record<string, unknown>): VaultDoc {
   return {
-    slug, path: `${slug}.md`, title: slug, tags: [], frontmatter, headings: [], excerpt: '',
-    wordCount: 1, updatedAt: '2026-11-19T00:00:00Z', linksOut: [],
+    slug, path: `${slug}.md`, title: slug, tags: [], frontmatter, 
+    updatedAt: '2026-11-19T00:00:00Z', linksOut: [],
   };
 }
 

@@ -25,9 +25,6 @@ function withGhostDoc(manifest: VaultManifest): VaultManifest {
       title: "Ghost parent",
       elements: ["elements/ghost-node"],
     },
-    headings: [],
-    excerpt: "",
-    wordCount: 2,
     updatedAt: "2026-08-01T00:00:00.000Z",
     linksOut: [],
   };

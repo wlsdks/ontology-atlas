@@ -50,16 +50,13 @@ function doc(slug: string, updatedAt = LANDED): VaultDoc {
     title: slug,
     tags: [],
     frontmatter: { slug, kind: slug.split('/')[0]!.replace(/s$/, '') },
-    headings: [],
-    excerpt: '',
-    wordCount: 0,
     updatedAt,
     linksOut: [],
   };
 }
 
 function manifest(docs: VaultDoc[]): VaultManifest {
-  return { version: '1', generatedAt: LANDED, docs, backlinksDetail: {}, tags: {}, tree: { name: 'root', path: '', type: 'dir', children: [] } };
+  return { version: '1', generatedAt: LANDED, docs, backlinkSources: {}, tags: {}, tree: { name: 'root', path: '', type: 'dir', children: [] } };
 }
 
 const committed = (path: string, lastChangedAt: string | null): GitPathLastChange => ({ path, exists: true, isDir: false, lastChangedAt });

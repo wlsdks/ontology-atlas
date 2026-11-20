@@ -29,8 +29,8 @@ function fixture(hash = currentHash, listedMtime = 10) {
   const raw = `---\ntitle: Refund overview\nsource_hash:\n  ${path}: ${hash}\n---\n## Facts\n- Refund approval immediately restores stock. [[src:${path}#l2]]`;
   const doc: VaultDoc = {
     slug: 'wiki/refund', path: 'wiki/refund.md', title: 'Refund overview',
-    frontmatter: parseFrontmatter(raw).frontmatter, headings: [], tags: [], excerpt: '',
-    wordCount: 0, updatedAt: '', linksOut: [],
+    frontmatter: parseFrontmatter(raw).frontmatter, tags: [], 
+    updatedAt: '', linksOut: [],
   };
   const source: LibrarySourceRow = {
     path, name: 'refund.md', format: 'md', bytes: new TextEncoder().encode(sourceText).length, mtime: listedMtime,
@@ -85,7 +85,7 @@ beforeEach(() => {
 function page(slug: string, raw: string, updatedAt = '2026-11-01T00:00:00Z'): { doc: VaultDoc; raw: string } {
   return { raw, doc: {
     slug, path: `${slug}.md`, title: parseFrontmatter(raw).frontmatter.title as string, frontmatter: parseFrontmatter(raw).frontmatter,
-    headings: [], tags: [], excerpt: '', wordCount: 0, updatedAt, linksOut: [],
+    tags: [], updatedAt, linksOut: [],
   } };
 }
 

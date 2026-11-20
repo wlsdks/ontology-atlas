@@ -15,9 +15,6 @@ function wiki(slug: string, frontmatter: Record<string, unknown>): VaultDoc {
     title: slug.replace('wiki/', ''),
     tags: [],
     frontmatter,
-    headings: [],
-    excerpt: '',
-    wordCount: 10,
     updatedAt: '2026-09-17T00:00:00Z',
     linksOut: [],
   };

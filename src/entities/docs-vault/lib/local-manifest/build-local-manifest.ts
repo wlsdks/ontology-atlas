@@ -1,5 +1,5 @@
 import {
-  backlinkContribution,
+  backlinkTargets,
   buildMdEntry,
   createMetadataStringPool,
   mdEntryRowValue,
@@ -24,7 +24,6 @@ import {
 } from '@/shared/lib/vault-folder/tauri-vault-index-rows';
 import { walkVault, type WalkEntry } from './walk-vault';
 import type {
-  VaultBacklinkEntry,
   VaultDoc,
   VaultManifest,
   VaultSourceFile,
@@ -250,7 +249,7 @@ function aggregateBuild(
   const fileHandles = new Map<string, FileSystemFileHandle>();
   const imageHandles = new Map<string, FileSystemFileHandle>();
   const sourceHandles = new Map<string, FileSystemFileHandle>();
-  const backlinksDetailMap = new Map<string, VaultBacklinkEntry[]>();
+  const backlinkSourcesMap = new Map<string, string[]>();
   const tagsMap = new Map<string, Set<string>>();
   const stamps: FingerprintSum = { count: 0, a: 0, b: 0 };
 
@@ -293,10 +292,10 @@ function aggregateBuild(
   const resolve = refResolver((slug) => slugSet.has(slug), (tail) => tailToSlug.get(tail) ?? null);
   for (const entry of entries) {
     if (!entry.doc) continue;
-    for (const [target, backlink] of backlinkContribution(entry.doc, entry.linkContexts, resolve)) {
-      const list = backlinksDetailMap.get(target);
-      if (list) list.push(backlink);
-      else backlinksDetailMap.set(target, [backlink]);
+    for (const target of backlinkTargets(entry.doc, resolve)) {
+      const list = backlinkSourcesMap.get(target);
+      if (list) list.push(entry.doc.slug);
+      else backlinkSourcesMap.set(target, [entry.doc.slug]);
     }
   }
 
@@ -308,10 +307,8 @@ function aggregateBuild(
   for (const doc of docs) insertIntoTree(tree, doc.slug, doc.title, childIndex);
   sortTree(tree);
 
-  const backlinksDetail: Record<string, VaultBacklinkEntry[]> = {};
-  for (const [slug, list] of backlinksDetailMap) {
-    backlinksDetail[slug] = list.sort((a, b) => compareCollated(a.fromSlug, b.fromSlug));
-  }
+  const backlinkSources: Record<string, string[]> = {};
+  for (const [slug, list] of backlinkSourcesMap) backlinkSources[slug] = list.sort(compareCollated);
   const tags: Record<string, string[]> = {};
   for (const [tag, set] of tagsMap) {
     tags[tag] = [...set].sort();
@@ -327,7 +324,7 @@ function aggregateBuild(
     ...(walkInfo?.sourceFileCount ? { sourceFileCount: walkInfo.sourceFileCount } : {}),
     docs,
     ...(sources.length ? { sources } : {}),
-    backlinksDetail,
+    backlinkSources,
     tags,
     tree,
   };

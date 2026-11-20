@@ -29,7 +29,7 @@ import {
   type LocalVaultBuild,
 } from './build-local-manifest';
 import {
-  backlinkContribution,
+  backlinkTargets,
   buildMdEntry,
   createMetadataStringPool,
   refersToTail,
@@ -39,7 +39,6 @@ import {
   type RefResolver,
 } from './md-entry';
 import type {
-  VaultBacklinkEntry,
   VaultDoc,
   VaultManifest,
   VaultSourceFile,
@@ -207,7 +206,6 @@ function patchSorted<T>(
 
 const compareDocs = (a: VaultDoc, b: VaultDoc) => compareCollated(a.slug, b.slug);
 const compareSources = (a: VaultSourceFile, b: VaultSourceFile) => compareCollated(a.path, b.path);
-const compareBacklinks = (a: VaultBacklinkEntry, b: VaultBacklinkEntry) => compareCollated(a.fromSlug, b.fromSlug);
 const compareCodeUnits = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 function sourceRow(entry: BuiltVaultEntry): VaultSourceFile {
@@ -615,10 +613,6 @@ async function readUpserts(
   return out;
 }
 
-function sameBacklink(a: VaultBacklinkEntry | undefined, b: VaultBacklinkEntry | undefined): boolean {
-  return a === b || (!!a && !!b && a.context === b.context && a.linkText === b.linkText);
-}
-
 function sameTags(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((tag, at) => tag === b[at]);
 }
@@ -683,8 +677,8 @@ export async function applyVaultChanges(
     }
   }
   const contributions = (entries: Iterable<BuiltVaultEntry>, resolve: RefResolver) => {
-    const out = new Map<string, Map<string, VaultBacklinkEntry>>();
-    for (const entry of entries) out.set(entry.doc!.slug, backlinkContribution(entry.doc!, entry.linkContexts, resolve));
+    const out = new Map<string, Set<string>>();
+    for (const entry of entries) out.set(entry.doc!.slug, backlinkTargets(entry.doc!, resolve));
     return out;
   };
   const oldLinks = contributions([...oldDocs.values(), ...rereferenced.values()], resolverOf(state));
@@ -696,31 +690,22 @@ export async function applyVaultChanges(
   for (const entry of before.values()) addStamp(fingerprint, entry.relativePath, entry.lastModified, -1);
   for (const entry of read) addStamp(fingerprint, entry.relativePath, entry.lastModified, 1);
 
-  // Backlinks: per target, the documents whose entry appeared, changed or went away.
-  const linkEdits = new Map<string, Map<string, VaultBacklinkEntry | null>>();
+  // Backlinks: per target, the referring documents that appeared or went away.
+  const linkEdits = new Map<string, { remove: Set<string>; add: string[] }>();
+  const linkEdit = (target: string) => linkEdits.get(target) ?? linkEdits.set(target, { remove: new Set(), add: [] }).get(target)!;
   for (const slug of new Set([...oldLinks.keys(), ...newLinks.keys()])) {
-    const was = oldLinks.get(slug) ?? new Map<string, VaultBacklinkEntry>();
-    const now = newLinks.get(slug) ?? new Map<string, VaultBacklinkEntry>();
-    for (const target of new Set([...was.keys(), ...now.keys()])) {
-      if (sameBacklink(was.get(target), now.get(target))) continue;
-      if (!linkEdits.has(target)) linkEdits.set(target, new Map());
-      linkEdits.get(target)!.set(slug, now.get(target) ?? null);
-    }
+    const was = oldLinks.get(slug) ?? new Set<string>();
+    const now = newLinks.get(slug) ?? new Set<string>();
+    for (const target of was) if (!now.has(target)) linkEdit(target).remove.add(slug);
+    for (const target of now) if (!was.has(target)) linkEdit(target).add.push(slug);
   }
-  let backlinksDetail = prior.backlinksDetail;
+  let backlinkSources = prior.backlinkSources;
   if (linkEdits.size > 0) {
-    backlinksDetail = { ...prior.backlinksDetail };
-    for (const [target, edits] of linkEdits) {
-      const list = patchSorted(
-        backlinksDetail[target] ?? [],
-        new Set(edits.keys()),
-        [...edits.values()].filter((entry): entry is VaultBacklinkEntry => entry !== null),
-        (entry) => entry.fromSlug,
-        (fromSlug) => ({ fromSlug, context: '', linkText: '' }),
-        compareBacklinks,
-      );
-      if (list.length > 0) backlinksDetail[target] = list;
-      else delete backlinksDetail[target];
+    backlinkSources = { ...prior.backlinkSources };
+    for (const [target, { remove, add }] of linkEdits) {
+      const list = patchSorted(backlinkSources[target] ?? [], remove, add, (slug) => slug, (slug) => slug, compareCollated);
+      if (list.length > 0) backlinkSources[target] = list;
+      else delete backlinkSources[target];
     }
   }
 
@@ -799,7 +784,7 @@ export async function applyVaultChanges(
     ...(prior.sourceFileCount ? { sourceFileCount: prior.sourceFileCount } : {}),
     docs,
     ...(sources.length ? { sources } : {}),
-    backlinksDetail,
+    backlinkSources,
     tags,
     tree,
   };

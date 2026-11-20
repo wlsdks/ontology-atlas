@@ -15,9 +15,6 @@ function doc(partial: Partial<VaultDoc> & { slug: string }): VaultDoc {
     title: partial.title ?? partial.slug,
     tags: [],
     frontmatter: partial.frontmatter ?? {},
-    headings: [],
-    excerpt: "",
-    wordCount: 0,
     updatedAt: "2026-09-06T00:00:00.000Z",
     linksOut: partial.linksOut ?? [],
   };

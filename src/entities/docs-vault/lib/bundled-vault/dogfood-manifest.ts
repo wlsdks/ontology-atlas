@@ -1,4 +1,4 @@
-import type { VaultManifest } from '../../model/types';
+import { bundledVaultManifest } from './bundled-manifest';
 import dogfoodManifestJson from '../../data/manifest.json';
 
 /**
@@ -7,4 +7,4 @@ import dogfoodManifestJson from '../../data/manifest.json';
  * client route that carries a vault JSON in its first load. Any other screen reads a sample
  * through `useStaticVaultSource`.
  */
-export const dogfoodManifest = dogfoodManifestJson as VaultManifest;
+export const dogfoodManifest = bundledVaultManifest(dogfoodManifestJson);

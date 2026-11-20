@@ -19,9 +19,6 @@ function makeDoc(slug: string, frontmatter: Record<string, unknown>): VaultDoc {
     description: undefined,
     tags: [],
     frontmatter,
-    headings: [],
-    excerpt: "",
-    wordCount: 0,
     updatedAt: "2026-04-01T00:00:00.000Z",
     linksOut: [],
   };
@@ -32,7 +29,7 @@ function makeManifest(docs: VaultDoc[]): VaultManifest {
     version: "2026-04-23",
     generatedAt: new Date().toISOString(),
     docs,
-    backlinksDetail: {},
+    backlinkSources: {},
     tags: {},
     tree: { name: "root", path: "", type: "dir" },
   };

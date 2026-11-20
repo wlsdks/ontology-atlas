@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { VaultDoc } from '@/entities/docs-vault';
 import dogfoodContent from '@/entities/docs-vault/data/content.json';
 import dogfoodManifest from '@/entities/docs-vault/data/manifest.json';
-import { buildMdEntry } from '@/entities/docs-vault/lib/local-manifest/md-entry';
+import { deriveDocumentDetail } from '@/entities/docs-vault/store/document-detail';
 
 import { wrapUntrusted } from './concept-evidence-pack';
 import { createToolExecutor } from './tool-executor';
@@ -14,12 +14,9 @@ const conceptDocs = (dogfoodManifest as { docs: VaultDoc[] }).docs.filter(
   (doc) => typeof doc.frontmatter?.kind === 'string',
 );
 
-/** What the agent was handed before: the excerpt a local folder's build wrote on each document. */
+/** What the agent was handed before: the excerpt a local folder's build wrote, which the detail now derives. */
 function oldExcerpt(doc: VaultDoc): string {
-  const entry = { relativePath: doc.path, kind: 'md', handle: {} as FileSystemFileHandle } as const;
-  const built = buildMdEntry(entry, content[doc.slug], 1, (value: string) => value).doc;
-  if (!built) throw new Error(`no document built for ${doc.path}`);
-  return built.excerpt;
+  return deriveDocumentDetail(content[doc.slug]).excerpt;
 }
 
 function samplePort(): VaultReadPort {

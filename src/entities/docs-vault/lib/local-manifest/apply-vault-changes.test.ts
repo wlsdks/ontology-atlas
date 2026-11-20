@@ -311,12 +311,11 @@ describe('applyVaultChanges', () => {
     vault.remove('notes/open.md');
     const next = await applied(await applyVaultChanges(vault.root(), snapshot, [vault.change('notes/open.md')]));
     expect(next.build.fileHandles.has('notes/open')).toBe(false);
-    expect(next.build.manifest.backlinksDetail['notes/other']).toBeUndefined();
+    expect(next.build.manifest.backlinkSources['notes/other']).toBeUndefined();
     await expectSameAsFullBuild(vault, next);
   });
 
   it('keeps every unchanged collection and reads only the edited file', async () => {
-    // The edit sits past the 120 characters a backlink quotes around its link.
     const text = `---\ntags: [x]\n---\n# A\n\n[[b]]\n\n${'Filler words. '.repeat(20)}`;
     const vault = new MemoryVault({ 'a.md': text, 'b.md': '# B', 'img/i.png': 'png' });
     const snapshot = await buildLocalManifestWithEntries(vault.root());
@@ -327,13 +326,13 @@ describe('applyVaultChanges', () => {
     const before = snapshot.build;
     expect(next.build.manifest.tree).toBe(before.manifest.tree);
     expect(next.build.manifest.tags).toBe(before.manifest.tags);
-    expect(next.build.manifest.backlinksDetail).toBe(before.manifest.backlinksDetail);
+    expect(next.build.manifest.backlinkSources).toBe(before.manifest.backlinkSources);
     expect(next.build.fileHandles).toBe(before.fileHandles);
     expect(next.build.imageHandles).toBe(before.imageHandles);
     expect(next.build.fingerprint).not.toBe(before.fingerprint);
     // The earlier snapshot is left as it was.
-    expect(before.manifest.docs.find((doc) => doc.slug === 'a')!.wordCount).toBeLessThan(
-      next.build.manifest.docs.find((doc) => doc.slug === 'a')!.wordCount,
+    expect(before.manifest.docs.find((doc) => doc.slug === 'a')!.mtime).toBeLessThan(
+      next.build.manifest.docs.find((doc) => doc.slug === 'a')!.mtime!,
     );
   });
 

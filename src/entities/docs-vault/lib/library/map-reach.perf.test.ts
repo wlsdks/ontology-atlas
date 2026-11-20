@@ -17,7 +17,7 @@ const DAY = 86_400_000;
 
 function doc(slug: string, frontmatter: Record<string, unknown>): VaultDoc {
   return {
-    slug, path: `${slug}.md`, title: slug, tags: [], headings: [], excerpt: '', wordCount: 1, updatedAt: '',
+    slug, path: `${slug}.md`, title: slug, tags: [], updatedAt: '',
     linksOut: [], frontmatter,
   };
 }

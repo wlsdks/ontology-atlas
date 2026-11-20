@@ -47,8 +47,8 @@ vi.mock("./use-library-graph-engine", async () => {
 });
 
 const DOCS: VaultDoc[] = [{
-  slug: "wiki/plan", path: "wiki/plan.md", title: "plan", tags: [], frontmatter: {}, headings: [],
-  excerpt: "", wordCount: 0, updatedAt: "2026-09-06T00:00:00.000Z", linksOut: [],
+  slug: "wiki/plan", path: "wiki/plan.md", title: "plan", tags: [], frontmatter: {}, 
+  updatedAt: "2026-09-06T00:00:00.000Z", linksOut: [],
 }];
 const PAGES = [{ slug: "wiki/plan", title: "Quarter plan", sourcePaths: ["sources/plan.pdf"] }];
 

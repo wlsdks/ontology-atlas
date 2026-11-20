@@ -10,9 +10,6 @@ function doc(overrides: Partial<VaultDoc> & Pick<VaultDoc, "slug" | "updatedAt">
     title: overrides.slug,
     tags: [],
     frontmatter: {},
-    headings: [],
-    excerpt: "",
-    wordCount: 0,
     linksOut: [],
     ...overrides,
   };
@@ -141,7 +138,8 @@ describe("buildRecentActivityRows", () => {
       doc({
         slug: "ontology/elements/a",
         updatedAt: "2026-07-18T09:00:00.000Z",
-        excerpt: "VaultAgentSetupPanel (merged into AppSettingsMenu's vault / mcpAgents t",
+        // A bundled sample still carries its excerpt; nothing may show it.
+        ...({ excerpt: "VaultAgentSetupPanel (merged into AppSettingsMenu's vault / mcpAgents t" } as object),
         frontmatter: { kind: "element" },
       }),
     ];
@@ -160,7 +158,6 @@ describe("buildRecentActivityRows", () => {
       slug: "ontology/elements/a",
       updatedAt: "2026-07-18T09:00:00.000Z",
       description: "지도 뷰 단일 컨테이너 변환 엔진",
-      excerpt: "본문 첫 줄이라 발췌로 잡힌 내부 메모",
       frontmatter: { kind: "element" },
     });
 

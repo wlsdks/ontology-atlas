@@ -224,9 +224,7 @@
     "footerLegend": ">コマンド · #タグ"
   },
   "backlinks": {
-    "heading": "この文書にリンクしている文書 · {count}",
-    "expand": "前後の文を表示",
-    "collapse": "前後の文を隠す"
+    "heading": "この文書にリンクしている文書 · {count}"
   },
   "parts": {
     "meta": {

@@ -1,18 +1,14 @@
 import {
-  buildExcerpt,
   buildDefinitionPreview,
-  extractHeadings,
-  extractOutLinksWithContext,
+  extractOutLinkTargets,
   firstHeading,
   parseFrontmatter,
-  type LinkContext,
 } from '@/shared/lib/vault-document/parse-frontmatter';
-import { countWhitespaceWords } from '@/shared/lib/vault-document/count-whitespace-words';
 import { citesReadLines } from '@/shared/lib/vault-document/line-cite';
 import { meaningFindings } from '@/shared/lib/vault-document/meaning-findings';
 import { extractProjectMeaningEvidencePaths } from '@/shared/lib/project-source/project-meaning-evidence';
 import type { WalkEntry } from './walk-vault';
-import type { VaultBacklinkEntry, VaultDoc } from '../../model/types';
+import type { VaultDoc } from '../../model/types';
 
 /**
  * Frontmatter keys whose refs count as backlinks: the same set as `mcp/src/vault/`
@@ -81,29 +77,6 @@ export function refResolver(
 }
 
 /**
- * One document's backlinks by target, O(links + refs): its first body link to a target wins, and a
- * frontmatter relation ref counts only where no body link does. Full builds and path deltas both
- * aggregate through this, so they cannot disagree.
- */
-export function backlinkContribution(
-  doc: VaultDoc,
-  linkContexts: readonly LinkContext[] | undefined,
-  resolve: RefResolver,
-): Map<string, VaultBacklinkEntry> {
-  const out = new Map<string, VaultBacklinkEntry>();
-  for (const ctx of linkContexts ?? []) {
-    if (!out.has(ctx.target)) out.set(ctx.target, { fromSlug: doc.slug, context: ctx.context, linkText: ctx.linkText });
-  }
-  for (const ref of frontmatterRefStrings(doc.frontmatter as Record<string, unknown>)) {
-    const target = resolve(ref);
-    // No self-backlinks; the first ref to a target speaks for the document.
-    if (!target || target === doc.slug || out.has(target)) continue;
-    out.set(target, { fromSlug: doc.slug, context: `frontmatter · **[${ref}]**`, linkText: ref });
-  }
-  return out;
-}
-
-/**
  * The slugs a document backlinks, O(links + refs): its body link targets, then its resolved
  * frontmatter relation refs, never itself. Full builds and path deltas both aggregate through
  * this, so they cannot disagree.
@@ -125,10 +98,8 @@ export interface BuiltVaultEntry {
   kind: 'md' | 'image' | 'source';
   /** Raw sources only — byte length, so the list can state a size without a read. */
   bytes?: number;
-  /** Markdown only — the aggregated VaultDoc. */
+  /** Markdown only — the document's spine. */
   doc?: VaultDoc;
-  /** Markdown only — out-link context, for rebuilding backlinksDetail. */
-  linkContexts?: LinkContext[];
 }
 
 const METADATA_STRING_POOL_LIMIT = 1024;
@@ -148,14 +119,10 @@ function internDoc(doc: VaultDoc, internMetadata: (value: string) => string): Va
   if (typeof doc.frontmatter.kind === 'string') doc.frontmatter.kind = internMetadata(doc.frontmatter.kind);
   if (typeof doc.frontmatter.domain === 'string') doc.frontmatter.domain = internMetadata(doc.frontmatter.domain);
   if (doc.frontmatter.slug === doc.slug) doc.frontmatter.slug = doc.slug;
-  for (const heading of doc.headings) {
-    heading.text = internMetadata(heading.text);
-    heading.slug = internMetadata(heading.slug);
-  }
   return doc;
 }
 
-/** Pure: one `.md` body to a BuiltVaultEntry. */
+/** Pure: one `.md` body to a BuiltVaultEntry holding its spine. */
 export function buildMdEntry(
   entry: WalkEntry,
   raw: string,
@@ -164,7 +131,6 @@ export function buildMdEntry(
 ): BuiltVaultEntry {
   const slug = entry.relativePath.replace(/\.md$/, '');
   const { frontmatter, body, diagnostics } = parseFrontmatter(raw);
-  const headings = extractHeadings(body);
   const title =
     (typeof frontmatter.title === 'string' && frontmatter.title) ||
     firstHeading(body) ||
@@ -181,8 +147,7 @@ export function buildMdEntry(
     : typeof frontmatter.tags === 'string'
       ? frontmatter.tags.split(/\s+/).filter(Boolean)
       : [];
-  const { slugs: linksOut, contexts: linkContexts } =
-    extractOutLinksWithContext(body, slug);
+  const linksOut = extractOutLinkTargets(body, slug);
   const kind =
     typeof frontmatter.kind === 'string' ? frontmatter.kind.trim() : '';
 
@@ -194,8 +159,6 @@ export function buildMdEntry(
     tags,
     frontmatter,
     ...(diagnostics && diagnostics.length > 0 ? { diagnostics } : {}),
-    headings,
-    excerpt: buildExcerpt(body),
     definitionPreview: buildDefinitionPreview(body, frontmatter),
     ...(frontmatter.kind === 'project'
       ? { meaningEvidencePaths: extractProjectMeaningEvidencePaths(body) }
@@ -208,7 +171,6 @@ export function buildMdEntry(
         }
       : {}),
     ...(kind === 'capability' ? { citesReadLines: citesReadLines(body) } : {}),
-    wordCount: countWhitespaceWords(body),
     updatedAt: new Date(lastModified).toISOString(),
     linksOut,
     mtime: lastModified,
@@ -219,10 +181,9 @@ export function buildMdEntry(
     lastModified,
     handle: entry.handle,
     kind: 'md',
-    /* Fresh copies: a V8 substring of 13+ characters keeps its whole parent alive, so the title,
-     * excerpt, display names and link text would pin every file's full text (58 MB at 12k). */
+    /* A fresh copy: a V8 substring of 13+ characters keeps its whole parent alive, so the title,
+     * display names and link targets would pin every file's full text (58 MB at 12k). */
     doc: detachedDoc,
-    linkContexts: structuredClone(linkContexts),
   };
 }
 
@@ -234,15 +195,24 @@ function survivesJson(value: unknown): boolean {
   return true;
 }
 
+/** A detail field or row key only an older producer wrote; such a row is never read. */
+const NOT_SPINE_DOC_KEYS = ['headings', 'excerpt', 'wordCount'];
+
 /** A stored value back to the entry `buildMdEntry` made from the same file version. */
 export function storedMdEntry(
   entry: WalkEntry,
   value: unknown,
   internMetadata: (value: string) => string,
 ): BuiltVaultEntry | undefined {
-  const stored = value as { doc?: VaultDoc; linkContexts?: LinkContext[] } | null;
-  const doc = stored?.doc;
-  if (!doc || doc.path !== entry.relativePath || typeof doc.mtime !== 'number' || !Array.isArray(doc.headings)) {
+  if (value === null || typeof value !== 'object' || Object.keys(value).length !== 1) return undefined;
+  const doc = (value as { doc?: VaultDoc }).doc;
+  if (
+    !doc ||
+    doc.path !== entry.relativePath ||
+    typeof doc.mtime !== 'number' ||
+    !Array.isArray(doc.linksOut) ||
+    NOT_SPINE_DOC_KEYS.some((key) => key in doc)
+  ) {
     return undefined;
   }
   return {
@@ -251,22 +221,11 @@ export function storedMdEntry(
     handle: entry.handle,
     kind: 'md',
     doc: internDoc(doc, internMetadata),
-    linkContexts: stored?.linkContexts,
   };
 }
 
-/**
- * Only a document's first link to each target reaches the manifest (`backlinkContribution`), so a
- * stored row keeps that one passage and no other.
- */
-function firstLinkPerTarget(contexts: readonly LinkContext[] | undefined): LinkContext[] | undefined {
-  if (!contexts) return undefined;
-  const seen = new Set<string>();
-  return contexts.filter((context) => !seen.has(context.target) && Boolean(seen.add(context.target)));
-}
-
-/** The stored row of a built Markdown entry, or null when a JSON round trip would change it. */
+/** The stored row of a built Markdown entry, `{ doc }`, or null when a JSON round trip would change it. */
 export function mdEntryRowValue(entry: BuiltVaultEntry): string | null {
   if (!entry.doc || !survivesJson(entry.doc.frontmatter)) return null;
-  return JSON.stringify({ doc: entry.doc, linkContexts: firstLinkPerTarget(entry.linkContexts) });
+  return JSON.stringify({ doc: entry.doc });
 }

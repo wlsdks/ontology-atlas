@@ -5,8 +5,8 @@ import { changedSinceWritten, citedSources, pageNeighbours, readerLinkTargets, r
 
 function doc(slug: string, title: string, extra: Partial<VaultDoc> = {}): VaultDoc {
   return {
-    slug, path: `${slug}.md`, title, tags: [], frontmatter: {}, headings: [], excerpt: "",
-    wordCount: 0, updatedAt: "2026-11-20", linksOut: [], ...extra,
+    slug, path: `${slug}.md`, title, tags: [], frontmatter: {}, 
+    updatedAt: "2026-11-20", linksOut: [], ...extra,
   };
 }
 

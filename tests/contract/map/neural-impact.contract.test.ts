@@ -27,13 +27,10 @@ function manifestOf(docs: readonly { slug: string; frontmatter: Record<string, u
     title: slug,
     tags: [],
     frontmatter,
-    headings: [],
-    excerpt: "",
-    wordCount: 0,
     updatedAt: "2026-04-01T00:00:00.000Z",
     linksOut: [],
   }));
-  return { version: "2026-04-23", generatedAt: "2026-04-23T00:00:00.000Z", docs: vaultDocs, backlinksDetail: {}, tags: {}, tree: { name: "root", path: "", type: "dir" } };
+  return { version: "2026-04-23", generatedAt: "2026-04-23T00:00:00.000Z", docs: vaultDocs, backlinkSources: {}, tags: {}, tree: { name: "root", path: "", type: "dir" } };
 }
 
 type CaseDocs = readonly { slug: string; frontmatter: Record<string, unknown> }[];

@@ -224,9 +224,7 @@
     "footerLegend": "> 命令 · # 标签"
   },
   "backlinks": {
-    "heading": "链接到此处的文档 · {count}",
-    "expand": "显示上下文",
-    "collapse": "隐藏上下文"
+    "heading": "链接到此处的文档 · {count}"
   },
   "parts": {
     "meta": {

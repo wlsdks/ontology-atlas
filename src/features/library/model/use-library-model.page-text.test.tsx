@@ -21,8 +21,8 @@ const SOURCES: VaultSourceFile[] = Array.from({ length: 3 * SOURCE_HASH_CHUNK },
 function pageDoc(slug: string, at: number): VaultDoc {
   const cited = SOURCES.slice(at * SOURCE_HASH_CHUNK, (at + 1) * SOURCE_HASH_CHUNK).map(({ path }) => path);
   return {
-    slug, path: `${slug}.md`, title: slug, tags: [], headings: [], excerpt: '', linksOut: [],
-    updatedAt: '', wordCount: 0, mtime: 1,
+    slug, path: `${slug}.md`, title: slug, tags: [], linksOut: [],
+    updatedAt: '', mtime: 1,
     frontmatter: { sources: cited, source_hash: Object.fromEntries(cited.map((path) => [path, HASH])) },
   };
 }

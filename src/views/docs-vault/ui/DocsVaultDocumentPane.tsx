@@ -126,7 +126,7 @@ export function DocsVaultDocumentPane({
   const t = useTranslations('docsVault');
   const toast = useToast();
   const localVault = useLocalVault();
-  const backlinksDetail = manifest.backlinksDetail?.[selectedDoc.slug] ?? [];
+  const backlinkSources = manifest.backlinkSources?.[selectedDoc.slug] ?? [];
   // Null means no place in the graph, so "open on the map" is not rendered.
   const mapDeeplinkForSelectedDoc =
     buildTopologyDeeplinkForDoc(selectedDoc) ?? buildOntologyDeeplinkForDoc(selectedDoc);
@@ -336,12 +336,11 @@ export function DocsVaultDocumentPane({
         // The bottom-tab reserve must apply to this `flex-none` sibling too, or the tab bar covers
         // its controls below lg.
         <div className="flex flex-none items-center gap-2 border-t border-[color:var(--color-border-soft)] px-4 pt-2.5 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)] lg:pb-2.5">
-          {backlinksDetail.length > 0 ? (
+          {backlinkSources.length > 0 ? (
             <DocsVaultBacklinks
-              entries={backlinksDetail}
+              sources={backlinkSources}
               docsBySlug={docsBySlug}
               onNavigate={handleSelect}
-              layout="strip"
             />
           ) : (
             <p className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-quaternary)]">

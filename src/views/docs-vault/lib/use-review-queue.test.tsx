@@ -14,9 +14,6 @@ function raisedDoc(slug: string, note: string): VaultDoc {
     title: slug,
     tags: [],
     frontmatter: { kind: 'capability', title: slug, review_state: 'human_decides', review_note: note },
-    headings: [],
-    excerpt: '',
-    wordCount: 1,
     updatedAt: '2026-09-29T00:00:00.000Z',
     linksOut: [],
   };

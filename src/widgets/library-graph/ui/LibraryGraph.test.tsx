@@ -23,9 +23,6 @@ function doc(slug: string, frontmatter: Record<string, unknown> = {}, linksOut: 
     title: slug.split("/").pop() ?? slug,
     tags: [],
     frontmatter,
-    headings: [],
-    excerpt: "",
-    wordCount: 0,
     updatedAt: "2026-09-06T00:00:00.000Z",
     linksOut,
   };

@@ -35,9 +35,6 @@ function doc(slug: string, frontmatter: Record<string, unknown>): VaultDoc {
     title: slug,
     tags: [],
     frontmatter: { slug, title: slug, ...frontmatter },
-    headings: [],
-    excerpt: '',
-    wordCount: 0,
     updatedAt: '2026-08-30T00:00:00.000Z',
     linksOut: [],
   };
@@ -66,7 +63,7 @@ function matureManifest(): VaultManifest {
         }),
       ),
     ],
-    backlinksDetail: {},
+    backlinkSources: {},
     tags: {},
     tree: { name: 'root', path: '', type: 'dir', children: [] },
   };
