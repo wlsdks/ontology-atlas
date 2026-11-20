@@ -76,7 +76,13 @@ Ollama answers on this computer with an embedding model, the dialog also offers
 that model without a download. The work runs in the background; the line shows
 the download, then files prepared of the total with the file being read and
 Stop, and keeps one height in every state. An update of ten or more changed files
-is followed the same way; a smaller one is one quiet sentence. Once a folder
+is followed the same way; a smaller one is one quiet sentence. Away from the desk,
+the long-work card on every tab carries the same work after a press in this launch:
+the download in GB, files prepared of the total with the file being read and the
+minutes left, Stop and Hide, then the result with **Ask a question** or a failure
+with **Open Library**. A preparation that continues by itself after a restart, or an
+update of ten or more files, draws only the ring on the Library rail tile; the card
+stands down while the desk's line is on screen. Once a folder
 holds prepared files (ready, still preparing, or stopped after at least one),
 Find evidence asks the app for the 24 nearest passages beside the word search,
 and the list waits for both. A passage in a file the desk does not search is
