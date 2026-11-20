@@ -76,7 +76,7 @@ export function LibraryHomeStrip({
               title={door.label}
               active={door.open === true}
               icon={Icon ? <Icon aria-hidden /> : undefined}
-              className="min-w-0 max-w-[14rem] flex-none"
+              className="min-w-0 max-w-[14rem] flex-none shadow-none"
             >
               {door.label}
             </ChromeChip>
@@ -95,7 +95,7 @@ export function LibraryHomeStrip({
         active={overflowOpen}
         compact
         icon={<MoreHorizontal aria-hidden />}
-        className="flex-none lg:hidden"
+        className="flex-none shadow-none lg:hidden"
       />
     </span>
   );

@@ -49,7 +49,7 @@ export function LibraryConversationDoor({
         One line, bounded. The phase can run long; a chip that grows with it would push the header's
         other doors off their row.
       */
-      className="min-w-0 max-w-[16rem] flex-none"
+      className="min-w-0 max-w-[16rem] flex-none shadow-none"
     >
       {phase ? `${t("conversation.open")} · ${phase}` : t("conversation.open")}
     </ChromeChip>

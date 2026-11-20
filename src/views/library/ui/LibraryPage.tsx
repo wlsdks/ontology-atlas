@@ -438,7 +438,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       doors={homeDoors}
       conversation={conversationDoor}
       review={reviewAnswer ? (
-        <ChromeChip data-testid="answer-review-open" data-library-door="review" onClick={reviewAnswer} className="min-w-0 max-w-[14rem] flex-none">
+        <ChromeChip data-testid="answer-review-open" data-library-door="review" onClick={reviewAnswer} className="min-w-0 max-w-[14rem] flex-none shadow-none">
           {t('answers.reviewDraft')}
         </ChromeChip>
       ) : null}
