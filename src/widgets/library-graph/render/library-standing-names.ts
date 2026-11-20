@@ -6,6 +6,7 @@ import type { LibraryGraphInk } from "./library-graph-ink";
 import { LibraryLabelCoverage } from "./library-label-coverage";
 import { LibraryLabelMarkIndex } from "./library-label-mark-index";
 import { LibraryLabelOccupancy } from "./library-label-occupancy";
+import { LibraryNameGrid } from "./library-name-grid";
 
 /**
  * Two ramp steps: `--text-label` for a page's name, `--text-caption` for a file's or a
@@ -124,7 +125,7 @@ const standingNamesMemo = new WeakMap<CanvasRenderingContext2D, {
  * The frame's standing names, placed again only when something the placement reads changed, so
  * a frame that only fades, dims or moves dashes draws the last placement. O(marks) to check.
  */
-export function standingNames(
+function standingNames(
   ctx: CanvasRenderingContext2D,
   frame: LibraryGraphFrame,
   active: string | null,
@@ -160,6 +161,15 @@ export function standingNames(
   return names;
 }
 
+/** Whether a mark's name exists on this frame: its kind's names stand, or it is open, pointed at or near the focus. */
+function carriesName(frame: LibraryGraphFrame, node: LibraryGraphNode, active: string | null, focus: ReadonlySet<string> | null): boolean {
+  const kindNamed =
+    node.kind === "page" ? (frame.pageLabels ?? true) : node.kind === "concept" ? (frame.conceptLabels ?? frame.sourceLabels) : frame.sourceLabels;
+  if (kindNamed) return true;
+  if (node.id === frame.selectedId || node.id === active) return true;
+  return focus !== null && focus.has(node.id);
+}
+
 /**
  * Greedy in a fixed order against the boxes taken, marks included; a loser is hidden, never overlapped.
  * Each test asks a {@link LibraryLabelOccupancy} raster, then a {@link BoxGrid}: O(marks + names) expected.
@@ -183,18 +193,10 @@ function placeStandingNames(
     const near = !focus || focus.has(node.id) || node.id === frame.selectedId ? 0 : 1;
     return near * order.length + order.indexOf(node.kind);
   };
-  /** Whether a mark's name exists on this frame: its kind's names stand, or it is open, pointed at or near the focus. */
-  const carriesName = (node: LibraryGraphNode): boolean => {
-    const kindNamed =
-      node.kind === "page" ? (frame.pageLabels ?? true) : node.kind === "concept" ? (frame.conceptLabels ?? frame.sourceLabels) : frame.sourceLabels;
-    if (kindNamed) return true;
-    if (node.id === frame.selectedId || node.id === active) return true;
-    return focus !== null && focus.has(node.id);
-  };
   const named: Array<{ node: LibraryGraphNode; index: number; priority: number; radius: number; x: number; y: number }> = [];
   for (let index = 0; index < frame.nodes.length; index += 1) {
     const node = frame.nodes[index];
-    if (node.id === active || !carriesName(node)) continue;
+    if (node.id === active || !carriesName(frame, node, active, focus)) continue;
     if (marks[index * MARK_SLOTS] === 0) continue;
     const x = marks[index * MARK_SLOTS + 1], y = marks[index * MARK_SLOTS + 2], radius = marks[index * MARK_SLOTS + 3];
     const lineHeight = Math.round(labelFontPx(ink, node.kind) * 1.35);
@@ -293,7 +295,7 @@ function placeStandingNames(
       if (!possible) continue;
     }
     // Font per kind before measuring, so the tested box matches the drawn step.
-    ctx.font = `${fontPx}px ${ink.fontFamily}`;
+    ctx.font = fontOf(fontPx, ink.fontFamily);
     /*
      * A flow column's room is the layout's to give, so it replaces both flat caps there; a
      * file keeps its distinguishing tail and a title loses its end. The canvas still bounds both.
@@ -398,60 +400,194 @@ function placeStandingNames(
   return placedNames;
 }
 
-/** Draws placed names in placement order, each at its mark's alpha over a ground outline. */
+/** Per canvas, the names of its last still frame and what motion has done to them since. */
+interface HeldNames {
+  names: readonly StandingName[];
+  /** Per name, its box's x and y less its mark's centre when placed, so the name rides its mark. */
+  offsets: Float64Array;
+  /** Per name, 1 while it stands, falling to 0 once motion crowds it out; it never rises until a still frame. */
+  presence: Float64Array;
+  grid: LibraryNameGrid;
+}
+
+/** How much of its ink a crowded-out name loses per moving frame: gone in eight, so none pops. */
+const LEAVE_STEP = 1 / 8;
+
+const heldNamesByCanvas = new WeakMap<CanvasRenderingContext2D, HeldNames>();
+
+/**
+ * Draws the frame's standing names. A still frame places them exactly; a moving frame
+ * (`frame.moving`) carries the last still frame's names on their marks in O(names) and
+ * allocates nothing once its arrays have grown.
+ */
 export function drawStandingNames(
+  ctx: CanvasRenderingContext2D,
+  frame: LibraryGraphFrame,
+  active: string | null,
+  focus: ReadonlySet<string> | null,
+  alphaOf: (id: string) => number,
+): void {
+  const held = heldNamesByCanvas.get(ctx);
+  if (frame.moving && held) {
+    drawFollowingNames(ctx, frame, held, active, focus, alphaOf);
+    return;
+  }
+  const names = standingNames(ctx, frame, active, focus);
+  holdNames(ctx, frame, names, held);
+  drawPlacedNames(ctx, frame, names, alphaOf);
+}
+
+function holdNames(
+  ctx: CanvasRenderingContext2D,
+  frame: LibraryGraphFrame,
+  names: readonly StandingName[],
+  held: HeldNames | undefined,
+): void {
+  if (!held) {
+    held = { names, offsets: new Float64Array(0), presence: new Float64Array(0), grid: new LibraryNameGrid() };
+    heldNamesByCanvas.set(ctx, held);
+  } else if (held.names === names) {
+    held.presence.fill(1, 0, names.length);
+    return;
+  }
+  held.names = names;
+  if (held.presence.length < names.length) {
+    held.offsets = new Float64Array(names.length * 2);
+    held.presence = new Float64Array(names.length);
+  }
+  held.presence.fill(1, 0, names.length);
+  for (let index = 0; index < names.length; index += 1) {
+    const { node, box } = names[index];
+    const centre = nodeCentre(frame, node.id);
+    held.offsets[index * 2] = centre ? box.x - centre.x : Number.NaN;
+    held.offsets[index * 2 + 1] = centre ? box.y - centre.y : Number.NaN;
+  }
+}
+
+/**
+ * The held names in placement order, each moved with its mark. One that now overlaps a name
+ * standing before it, or whose mark lost its name, fades out over the rest of the motion and
+ * yields its room; marks are not tested, so a name may pass over a dot until the next still frame.
+ */
+function drawFollowingNames(
+  ctx: CanvasRenderingContext2D,
+  frame: LibraryGraphFrame,
+  held: HeldNames,
+  active: string | null,
+  focus: ReadonlySet<string> | null,
+  alphaOf: (id: string) => number,
+): void {
+  const { names, offsets, presence, grid } = held;
+  grid.reset(frame.width, frame.height);
+  ctx.textBaseline = "top";
+  ctx.textAlign = "center";
+  for (let index = 0; index < names.length; index += 1) {
+    if (presence[index] <= 0) continue;
+    const name = names[index];
+    const node = name.node;
+    if (node.id === active) continue;
+    const centre = nodeCentre(frame, node.id);
+    const x = centre ? centre.x + offsets[index * 2] : Number.NaN;
+    const y = centre ? centre.y + offsets[index * 2 + 1] : Number.NaN;
+    // A mark gone from the frame leaves nothing to carry its name.
+    if (!centre || !Number.isFinite(x) || !Number.isFinite(y)) {
+      presence[index] = 0;
+      continue;
+    }
+    const { width, height } = name.box;
+    if (x + width <= 0 || x >= frame.width || y + height <= 0 || y >= frame.height) continue;
+    if (presence[index] === 1 && (!carriesName(frame, node, active, focus) ||
+      grid.blocks(x, y, width, height, NAME_GAP_X, NAME_GAP_Y))) presence[index] = 1 - LEAVE_STEP;
+    else if (presence[index] < 1) presence[index] = Math.max(0, presence[index] - LEAVE_STEP);
+    if (presence[index] === 1) grid.add(x, y, width, height);
+    else if (presence[index] === 0) continue;
+    const leader = name.leaderFrom;
+    drawName(ctx, frame, node, name.text, x, y, width, height, name.fontPx,
+      leader ? centre.x : Number.NaN, leader ? centre.y : Number.NaN, leader ? leader.half : 0, alphaOf(node.id) * presence[index]);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+}
+
+/** Draws placed names in placement order, each at its mark's alpha over a ground outline. */
+function drawPlacedNames(
   ctx: CanvasRenderingContext2D,
   frame: LibraryGraphFrame,
   names: readonly StandingName[],
   alphaOf: (id: string) => number,
 ): void {
-  const { ink } = frame;
   ctx.textBaseline = "top";
   ctx.textAlign = "center";
   for (const { node, text, box, fontPx, leaderFrom } of names) {
-    ctx.font = `${fontPx}px ${ink.fontFamily}`;
-    if (leaderFrom) {
-      const anchor = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-      const away = Math.hypot(anchor.x - leaderFrom.x, anchor.y - leaderFrom.y) || 1;
-      const unit = { x: (anchor.x - leaderFrom.x) / away, y: (anchor.y - leaderFrom.y) / away };
-      const stop = Math.max(0, away - Math.max(box.width, box.height) / 2 - 2);
-      ctx.globalAlpha = alphaOf(node.id);
-      ctx.strokeStyle = node.kind === "page" ? ink.page : ink.sourceLabel;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(leaderFrom.x + unit.x * (leaderFrom.half + 1), leaderFrom.y + unit.y * (leaderFrom.half + 1));
-      ctx.lineTo(leaderFrom.x + unit.x * stop, leaderFrom.y + unit.y * stop);
-      ctx.stroke();
-    }
-    frame.labelReport?.push({
-      nodeId: node.id,
-      kind: node.kind,
-      text,
-      x: box.x,
-      y: box.y,
-      width: box.width,
-      height: box.height,
-      fontPx,
-    });
-    // A name dims with its mark.
-    ctx.globalAlpha = alphaOf(node.id);
-    // A ground outline stroked before the fill, so crossing lines never cut the glyphs.
-    ctx.strokeStyle = ink.ground;
-    ctx.lineWidth = labelOutlinePx() * 2;
-    ctx.lineJoin = "round";
-    ctx.strokeText(text, box.x + box.width / 2, box.y);
-    /*
-     * A name is one step brighter than its mark: a source's mark ink is also the edge ink,
-     * so file and concept names take `--color-text-tertiary`; a page keeps the page ink.
-     */
-    ctx.fillStyle = node.kind === "page" ? ink.page : ink.sourceLabel;
-    // From the box, not the centre: a slid label is no longer centred on its dot.
-    ctx.fillText(text, box.x + box.width / 2, box.y);
+    drawName(ctx, frame, node, text, box.x, box.y, box.width, box.height, fontPx,
+      leaderFrom ? leaderFrom.x : Number.NaN, leaderFrom ? leaderFrom.y : Number.NaN, leaderFrom ? leaderFrom.half : 0, alphaOf(node.id));
   }
   ctx.globalAlpha = 1;
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
+}
+
+const NO_DASH: number[] = [];
+
+/** One name in its box, with a hairline back to its mark when `leaderX` is a number. */
+function drawName(
+  ctx: CanvasRenderingContext2D,
+  frame: LibraryGraphFrame,
+  node: LibraryGraphNode,
+  text: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  fontPx: number,
+  leaderX: number,
+  leaderY: number,
+  leaderHalf: number,
+  alpha: number,
+): void {
+  const { ink } = frame;
+  ctx.font = fontOf(fontPx, ink.fontFamily);
+  if (!Number.isNaN(leaderX)) {
+    const anchorX = x + width / 2, anchorY = y + height / 2;
+    const away = Math.hypot(anchorX - leaderX, anchorY - leaderY) || 1;
+    const unitX = (anchorX - leaderX) / away, unitY = (anchorY - leaderY) / away;
+    const stop = Math.max(0, away - Math.max(width, height) / 2 - 2);
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = node.kind === "page" ? ink.page : ink.sourceLabel;
+    ctx.lineWidth = 1;
+    ctx.setLineDash(NO_DASH);
+    ctx.beginPath();
+    ctx.moveTo(leaderX + unitX * (leaderHalf + 1), leaderY + unitY * (leaderHalf + 1));
+    ctx.lineTo(leaderX + unitX * stop, leaderY + unitY * stop);
+    ctx.stroke();
+  }
+  frame.labelReport?.push({ nodeId: node.id, kind: node.kind, text, x, y, width, height, fontPx });
+  // A name dims with its mark.
+  ctx.globalAlpha = alpha;
+  // A ground outline stroked before the fill, so crossing lines never cut the glyphs.
+  ctx.strokeStyle = ink.ground;
+  ctx.lineWidth = labelOutlinePx() * 2;
+  ctx.lineJoin = "round";
+  ctx.strokeText(text, x + width / 2, y);
+  /*
+   * A name is one step brighter than its mark: a source's mark ink is also the edge ink,
+   * so file and concept names take `--color-text-tertiary`; a page keeps the page ink.
+   */
+  ctx.fillStyle = node.kind === "page" ? ink.page : ink.sourceLabel;
+  // From the box, not the centre: a slid label is no longer centred on its dot.
+  ctx.fillText(text, x + width / 2, y);
+}
+
+/** Font strings per family and size, so drawing a name builds no string. */
+const fontsByFamily = new Map<string, Map<number, string>>();
+
+function fontOf(fontPx: number, family: string): string {
+  let sizes = fontsByFamily.get(family);
+  if (!sizes) fontsByFamily.set(family, (sizes = new Map()));
+  let font = sizes.get(fontPx);
+  if (font === undefined) sizes.set(fontPx, (font = `${fontPx}px ${family}`));
+  return font;
 }
 
 /** Cut names per canvas, keyed by font, kind, whole-pixel room and label: a resting frame measures nothing twice. */

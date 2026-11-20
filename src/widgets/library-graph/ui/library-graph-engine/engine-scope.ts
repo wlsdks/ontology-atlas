@@ -97,7 +97,8 @@ export interface LibraryGraphEngineScope {
     geometry: LibraryGraphGeometry;
   } | null>;
   overviewRef: RefObject<boolean>;
-  paint: (now: number) => void;
+  /** `settling`: the loop paints another frame after this one. */
+  paint: (now: number, settling: boolean) => void;
   paintCostRef: RefObject<{
     last: number;
     total: number;

@@ -56,6 +56,7 @@ export function paintLibraryGraphFrame(
     "zoomMaxRef"
   >,
   now: number,
+  settling: boolean,
 ) {
   const canvas = canvasRef.current;
   const sim = simRef.current;
@@ -88,6 +89,9 @@ export function paintLibraryGraphFrame(
 
   const moving = travelRef.current !== null || ghostsRef.current.size > 0 ||
     (islandFieldRef.current !== null && isIslandFieldMoving(islandFieldRef.current));
+  // Read before this frame advances them, so the frame that lands the motion still counts as moving.
+  const namesMoving = settling && (travelRef.current !== null || (autoFitRef.current.on && !autoFitRef.current.converged) ||
+    (islandFieldRef.current !== null && isIslandFieldMoving(islandFieldRef.current)));
   let overviewGeometry = overviewGeometryRef.current;
   const geometryChanged = !overviewGeometry || overviewGeometry.nodes !== sim.nodes ||
     overviewGeometry.ticks !== sim.ticks || overviewGeometry.radii !== radiiRef.current ||
@@ -371,6 +375,7 @@ export function paintLibraryGraphFrame(
     focusedId: stateRef.current.focusedId,
     activeLabel: stateRef.current.activeLabel,
     standingLabels: stateRef.current.standingLabels,
+    moving: namesMoving,
     radii: screenRadiiRef.current,
     sourceLabels:
       pictureRef.current === "flow"

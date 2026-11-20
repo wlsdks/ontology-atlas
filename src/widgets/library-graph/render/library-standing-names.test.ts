@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { createHash } from "node:crypto";
+import { getHeapStatistics, setFlagsFromString } from "node:v8";
+import { runInNewContext } from "node:vm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { LibraryGraphEdge, LibraryGraphNode, LibraryGraphNodeKind } from "../model/build-library-graph";
@@ -10,6 +12,7 @@ import { drawLibraryGraph, type LibraryGraphFrame, type LibraryGraphLabelBox } f
 import { BoxGrid } from "./library-box-grid";
 import type { LibraryGraphInk } from "./library-graph-ink";
 import { LibraryLabelOccupancy } from "./library-label-occupancy";
+import { drawStandingNames } from "./library-standing-names";
 
 type ScreenBox = { x: number; y: number; width: number; height: number };
 
@@ -299,3 +302,140 @@ function placementWork(run: () => void): number {
   for (const spy of spies) spy.mockRestore();
   return work;
 }
+
+/** A context that only measures text, so a heap reading around a name pass sees the pass alone. */
+function quietContext(): CanvasRenderingContext2D {
+  const noop = () => {};
+  const ctx = {
+    font: "10px Test", globalAlpha: 1, textAlign: "left", textBaseline: "alphabetic", lineWidth: 1,
+    lineJoin: "miter", strokeStyle: "", fillStyle: "",
+    measureText: (text: string) => ({ width: text.length * Number.parseFloat(ctx.font) * 0.55 }),
+    setLineDash: noop, beginPath: noop, moveTo: noop, lineTo: noop, stroke: noop, strokeText: noop, fillText: noop,
+  };
+  return ctx as unknown as CanvasRenderingContext2D;
+}
+
+/** Writes `base` scaled about the canvas centre and shifted right into `live`'s points, in place. */
+function zoomInto(frame: LibraryGraphFrame, base: Map<string, LayoutPoint>, live: Map<string, LayoutPoint>, scale: number, shiftX: number): void {
+  const cx = frame.width / 2, cy = frame.height / 2;
+  for (const [id, point] of base) {
+    const at = live.get(id)!;
+    at.x = cx + (point.x - cx) * scale + shiftX;
+    at.y = cy + (point.y - cy) * scale;
+  }
+}
+
+function livePositions(frame: LibraryGraphFrame): { base: Map<string, LayoutPoint>; live: Map<string, LayoutPoint> } {
+  const base = frame.positions as Map<string, LayoutPoint>;
+  return { base, live: new Map([...base].map(([id, point]) => [id, { ...point }])) };
+}
+
+describe("standing names while marks move", () => {
+  const one = () => 1;
+
+  it.each([
+    ["opened island columns zoomed in", () => columns(1950, 7.5, -4000)],
+    ["a force cloud past every edge", () => cloud(3000, 7)],
+    ["a laid island zoomed in near its right end", () => laidIsland(2400, 7 * 31337)],
+  ])("names the still frame after a motion exactly as a fresh canvas does: %s", (_name, make) => {
+    vi.stubGlobal("Path2D", StubPath);
+    const target = make();
+    const { base, live } = livePositions(target);
+    const { ctx } = tracingContext();
+    zoomInto(target, base, live, 1.6, -80);
+    drawLibraryGraph(ctx, { ...target, positions: live, labelReport: [] });
+    for (let step = 1; step <= 12; step += 1) {
+      zoomInto(target, base, live, 1.6 - 0.05 * step, -80 + step * 6.6);
+      drawLibraryGraph(ctx, { ...target, positions: live, moving: true, labelReport: [] });
+    }
+    zoomInto(target, base, live, 1, 0);
+    const settled: LibraryGraphLabelBox[] = [];
+    drawLibraryGraph(ctx, { ...target, positions: live, labelReport: settled });
+    expect(settled).toEqual(drawn({ ...target, positions: live }).labels);
+  });
+
+  it("carries names through a moving frame at 40,000 marks without placing or allocating per mark", () => {
+    setFlagsFromString("--expose-gc");
+    const gc = runInNewContext("gc") as () => void;
+    const frame = columns(20_000, 7.5, -4000);
+    const { base, live } = livePositions(frame);
+    let lookups = 0;
+    const counted = { get: (id: string) => ((lookups += 1), live.get(id)) };
+    const ctx = quietContext();
+    const report: LibraryGraphLabelBox[] = [];
+    const stillWork = placementWork(() => drawStandingNames(ctx, { ...frame, positions: counted, labelReport: report }, null, null, one));
+    const stillLookups = lookups;
+    expect(report.length).toBeGreaterThan(40);
+
+    const still = { ...frame, positions: counted, labelReport: undefined };
+    const moving = { ...still, moving: true };
+    const frames = 120;
+    for (let step = 0; step < frames; step += 1) {
+      zoomInto(frame, base, live, 1 - step * 0.001, step * 0.25);
+      drawStandingNames(ctx, moving, null, null, one);
+    }
+    lookups = 0;
+    const movingWork = placementWork(() => drawStandingNames(ctx, moving, null, null, one));
+    const movingLookups = lookups;
+
+    let movingBytes = 0;
+    gc();
+    for (let step = 0; step < frames; step += 1) {
+      zoomInto(frame, base, live, 0.88 - step * 0.001, 30 + step * 0.25);
+      const before = getHeapStatistics().used_heap_size;
+      drawStandingNames(ctx, moving, null, null, one);
+      movingBytes += getHeapStatistics().used_heap_size - before;
+    }
+    gc();
+    const before = getHeapStatistics().used_heap_size;
+    drawStandingNames(ctx, still, null, null, one);
+    const stillBytes = getHeapStatistics().used_heap_size - before;
+    console.log(`[standing-names] 40,000 marks, ${report.length} names: still frame work ${stillWork}, ${stillLookups} lookups, ${stillBytes} bytes; moving frame work ${movingWork}, ${movingLookups} lookups, ${Math.round(movingBytes / frames)} bytes a frame`);
+    expect(movingWork).toBe(0);
+    expect(movingLookups).toBeLessThanOrEqual(report.length);
+    expect(stillLookups).toBeGreaterThanOrEqual(40_000);
+    // About 150 bytes a drawn name measured (argument boxing at the canvas calls), none per mark.
+    expect(movingBytes / frames).toBeLessThan(report.length * 512);
+    expect(stillBytes, "the heap reading sees a placement").toBeGreaterThan(movingBytes / frames);
+  });
+
+  it("fades names out while marks crowd them, never brings one in or back, and keeps each frame's change small", () => {
+    vi.stubGlobal("Path2D", StubPath);
+    const frame = columns(1950, 7.5, -4000);
+    const { base, live } = livePositions(frame);
+    const { ctx, trace } = tracingContext();
+    /** Each drawn name's ink, read from the alpha in force at its `fillText`. */
+    const inks = (report: LibraryGraphLabelBox[]): Map<string, number> => {
+      const fills = trace.splice(0).filter((call) => (call as unknown[])[0] === "fillText") as unknown[][];
+      expect(fills).toHaveLength(report.length);
+      return new Map(report.map((label, index) => [label.nodeId, JSON.parse(fills[index].at(-1) as string).globalAlpha as number]));
+    };
+    const first: LibraryGraphLabelBox[] = [];
+    drawLibraryGraph(ctx, { ...frame, positions: live, labelReport: first });
+    let ink = inks(first);
+    const start = new Set(ink.keys());
+    let mostOneName = 0;
+    let mostFrame = 0;
+    for (let step = 1; step <= 40; step += 1) {
+      zoomInto(frame, base, live, 1 - step * 0.012, 0);
+      const report: LibraryGraphLabelBox[] = [];
+      drawLibraryGraph(ctx, { ...frame, positions: live, moving: true, labelReport: report });
+      const now = inks(report);
+      let change = 0;
+      for (const id of start) {
+        const delta = (now.get(id) ?? 0) - (ink.get(id) ?? 0);
+        expect(delta, `${id} gained ink mid-motion`).toBeLessThanOrEqual(1e-9);
+        mostOneName = Math.max(mostOneName, -delta);
+        change -= delta;
+      }
+      for (const id of now.keys()) expect(start.has(id), `${id} appeared mid-motion`).toBe(true);
+      mostFrame = Math.max(mostFrame, change);
+      ink = now;
+    }
+    console.log(`[standing-names] zoom out over 40 frames: ${start.size} names, ${ink.size} left; a name loses at most ${mostOneName} of its ink a frame, all names together ${mostFrame.toFixed(2)}`);
+    expect(ink.size).toBeLessThan(start.size);
+    expect(mostOneName).toBeLessThanOrEqual(1 / 8 + 1e-9);
+    // A column packed one gap apart crowds a third of its names at once: 4.13 names of ink a frame measured.
+    expect(mostFrame).toBeLessThanOrEqual(5);
+  });
+});

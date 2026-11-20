@@ -1,6 +1,6 @@
 import { BoxGrid } from "./library-box-grid";
 import { CITES_WIDTH, NODE_RADIUS, nodeCentre, radiusOf } from "./library-graph-marks";
-import { drawStandingNames, NAME_GAP_X, NAME_GAP_Y, overlaps, standingNames, truncateToWidth } from "./library-standing-names";
+import { drawStandingNames, NAME_GAP_X, NAME_GAP_Y, overlaps, truncateToWidth } from "./library-standing-names";
 import type {
   LibraryGraphEdge,
   LibraryGraphNode,
@@ -90,6 +90,11 @@ export interface LibraryGraphFrame {
   activeLabel: string | null;
   /** Whether every node wears its name, or only the pointed-at one; the caller decides. */
   standingLabels: boolean;
+  /**
+   * Marks or the camera move on this frame and the engine paints another after it. Standing
+   * names then ride their marks from the last still frame, and the next still frame places them.
+   */
+  moving?: boolean;
   /** `flow`: columns, edges drawn as horizontal S-curves; `force`: the bowed quadratic; `islands`: the overview. */
   layout?: "flow" | "force" | "islands";
   /**
@@ -1151,7 +1156,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   drawActivityMarks(ctx, frame);
 
   if (frame.standingLabels || frame.layout === "flow") {
-    drawStandingNames(ctx, frame, standingNames(ctx, frame, active, focus), alphaOf);
+    drawStandingNames(ctx, frame, active, focus, alphaOf);
   }
 
   // The one label beside the pointed-at node.
