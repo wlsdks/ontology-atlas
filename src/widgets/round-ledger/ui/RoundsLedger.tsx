@@ -2,7 +2,7 @@
 
 import { FileText, Moon, Play } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import type { RoundPassEntry, RoundPassOutcome } from "@/entities/library-round";
 import { undoneReasonKey } from "@/features/library-rounds";
@@ -54,6 +54,23 @@ const OUTCOME_BADGE: Record<Exclude<RoundPassOutcome, "asleep" | "held">, string
 const ENTER = "motion-safe:animate-[atlasStatusIn_var(--motion-settle)_var(--motion-ease)_both]";
 
 const LEDGER_ROW = "grid grid-cols-[3.5rem_1rem_minmax(0,1fr)] items-start gap-x-3";
+
+/** The run a door landed on keeps a quiet tint, so the eye finds it after the scroll. */
+export const LANDED = "rounded-card bg-[color:var(--color-overlay-2)] outline-hidden";
+
+/**
+ * A ref that scrolls its element to the middle and focuses it, once per mount: a later render
+ * of the same run never pulls the page back while the person reads on.
+ */
+export function useLandOnce(): (element: HTMLElement | null) => void {
+  const landed = useRef(false);
+  return useCallback((element: HTMLElement | null) => {
+    if (!element || landed.current) return;
+    landed.current = true;
+    element.scrollIntoView({ block: "center" });
+    element.focus({ preventScroll: true });
+  }, []);
+}
 
 function LedgerColumns() {
   const t = useTranslations("library.rounds");
@@ -144,6 +161,7 @@ export function RoundsLedger({
   titleFor,
   running = null,
   heading,
+  landedRunId = null,
 }: {
   entries: readonly RoundPassEntry[];
   locale: string;
@@ -158,8 +176,12 @@ export function RoundsLedger({
   running?: RunningPass | null;
   /** The caller's title, on the row the sleep toggle shares. */
   heading?: ReactNode;
+  /** The run a door led here for: it is scrolled to, focused and marked. */
+  landedRunId?: string | null;
 }) {
   const t = useTranslations("library.rounds");
+  const tAutomations = useTranslations("automations");
+  const landOn = useLandOnce();
   const durationWords = useDurationWords();
   const [showSleep, setShowSleep] = useState(false);
   const sleepCount = entries.filter((entry) => entry.outcome === "asleep").length;
@@ -218,9 +240,12 @@ export function RoundsLedger({
               {day.entries.map((entry) => (
                 <li
                   key={entry.id}
+                  ref={entry.id === landedRunId ? landOn : undefined}
+                  tabIndex={entry.id === landedRunId ? -1 : undefined}
                   data-testid={`round-ledger-pass-${entry.id}`}
                   data-outcome={entry.outcome}
-                  className={cn(LEDGER_ROW, arrived.has(entry.id) && ENTER)}
+                  data-landed={entry.id === landedRunId ? "" : undefined}
+                  className={cn(LEDGER_ROW, arrived.has(entry.id) && ENTER, entry.id === landedRunId && LANDED)}
                 >
                   {entry.outcome === "asleep" ? (
                     <>
@@ -308,7 +333,7 @@ export function RoundsLedger({
                           </p>
                         ) : null}
                         {entry.note === "stopped" ? (
-                          <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t("ledger.stopped")}</p>
+                          <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{tAutomations("runStopped")}</p>
                         ) : null}
                         {entry.refused.length > 0 ? (
                           <p className="mt-2 truncate text-label leading-label text-[color:var(--color-danger-text)]">

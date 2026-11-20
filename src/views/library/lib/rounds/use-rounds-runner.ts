@@ -35,7 +35,7 @@ import {
   vaultMcpServers,
   vaultSelfReadSlot,
 } from "@/features/acp-session";
-import { appendWikiLog, buildCompileBrief, deleteWikiFile, judgePageWrite, wikiNodeIndexOfDocs, writeWikiFile } from "@/features/library";
+import { appendWikiLog, buildCompileBrief, completedAcpReadEvent, deleteWikiFile, judgePageWrite, wikiNodeIndexOfDocs, writeWikiFile } from "@/features/library";
 import {
   TICK_MS,
   afterPass,
@@ -59,6 +59,8 @@ import {
 } from "@/features/library-rounds";
 import type { RoundUnrecorded, RoundsRunnerValue, RoundsStoreStatus } from "@/features/library-rounds";
 import { useVaultConnectors } from "@/features/mcp-connectors";
+import { workRuns } from "@/features/work-run";
+import { isWikiFurnitureSlug } from "@/shared/lib/library/wiki-page-schema";
 import { forgetApproval, readMachineApprovals, recordApproval, useMachineApprovals } from "@/shared/lib/connectors/machine-approvals";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/agent-chat/tauri-acp";
 import { getTauriVaultRootPath, listTauriVaultLinks, nativeVaultFileHashes, readTauriVaultText } from "@/shared/lib/vault-folder/tauri-vault-fs";
@@ -260,7 +262,12 @@ export function useRoundsRunner(): RoundsRunnerValue {
     };
   }, []);
 
-  const onToolSettled = useCallback((toolCallId: string, status: string) => landingsRef.current?.settled(toolCallId, status), []);
+  /** The pass the session's tool calls report to: its seat key, and the calls it has yet to read. */
+  const seatRef = useRef<{ key: string; counts: boolean; settled: string[] } | null>(null);
+  const onToolSettled = useCallback((toolCallId: string, status: string) => {
+    landingsRef.current?.settled(toolCallId, status);
+    if (status === "completed") seatRef.current?.settled.push(toolCallId);
+  }, []);
 
   const session = useAcpSession({
     runtimeId: runtimeId ?? "",
@@ -277,6 +284,24 @@ export function useRoundsRunner(): RoundsRunnerValue {
     statusRef.current = session.status;
     sessionRef.current = session;
   }, [session]);
+
+  // A settled call is found from the newest event back, where it sits: O(calls settled since).
+  // A call can settle before the render that carries its completed event; it waits for that one.
+  const sessionEvents = session.events;
+  useEffect(() => {
+    const seat = seatRef.current;
+    if (!seat || seat.settled.length === 0) return;
+    const waiting = new Set(seat.settled.splice(0));
+    const found: string[] = [];
+    for (let index = sessionEvents.length - 1; index >= 0 && waiting.size > 0; index -= 1) {
+      const event = sessionEvents[index]!;
+      if (event.kind !== "tool" || event.status !== "completed" || !waiting.delete(event.id)) continue;
+      const read = completedAcpReadEvent(event, rootPath, Date.now());
+      if (read?.target) found.push(read.target.ref);
+    }
+    seat.settled.push(...waiting);
+    for (const ref of found.reverse()) workRuns.observeScheduledDocument(seat.key, ref, seat.counts);
+  }, [rootPath, sessionEvents]);
 
   const abortRef = useRef<{ roundId: string; stop: () => void } | null>(null);
 
@@ -331,7 +356,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
 
   /* ---- One pass ----------------------------------------------------------------------- */
 
-  const readPassData = useCallback(async (): Promise<PassData | null> => {
+  const readPassData = useCallback(async (observePage: (path: string) => void): Promise<PassData | null> => {
     const manifest = manifestRef.current;
     if (!manifest || !rootPath || !handle) return null;
     const docs = manifest.docs;
@@ -339,7 +364,13 @@ export function useRoundsRunner(): RoundsRunnerValue {
     const hashes = (await nativeVaultFileHashes(rootPath, citedSourcePaths(docs))) ?? new Map<string, string>();
     const scan = await scanPassFolders(handle, (directory) => listTauriVaultLinks(rootPath, directory));
     const nodes = docs.filter((doc) => typeof doc.frontmatter.kind === "string").map((doc) => doc.path);
-    const pageTexts = new Map(scan.pages.flatMap((page) => (page.text === null ? [] : [[page.path.slice(0, -3), page.text] as const])));
+    const pageTexts = new Map<string, string>();
+    for (const page of scan.pages) {
+      if (page.text === null) continue;
+      const slug = page.path.slice(0, -3);
+      pageTexts.set(slug, page.text);
+      if (!isWikiFurnitureSlug(slug)) observePage(page.path);
+    }
     return { sources, docs, concepts: wikiNodeIndexOfDocs(docs), hashes, pageTexts, pages: createPassPages({ ...scan, complete: true, nodes }), knownSources: new Set(sources.map((source) => source.path)) };
   }, [handle, manifestRef, rootPath]);
 
@@ -348,36 +379,49 @@ export function useRoundsRunner(): RoundsRunnerValue {
     if (!allowedNow(round)) return;
     const vault = handle;
     const startedAt = new Date();
+    const passId = newId();
+    const seatKey = workRuns.beginScheduled({
+      id: passId,
+      roundId: round.id,
+      name: round.name,
+      lane: round.kind === "ontology" ? "ontology" : "documents",
+      folder: workRuns.read().folder,
+      startedAt: startedAt.getTime(),
+    });
+    // Each kind counts what its ledger line calls checked; an ontology review, the files its agent read.
+    const seat = { key: seatKey, counts: round.kind === "ontology", settled: [] as string[] };
+    seatRef.current = seat;
     const mark = (phase: NonNullable<RoundsRunnerValue['running']>['phase']) => {
       const next: NonNullable<RoundsRunnerValue['running']> = { roundId: round.id, roundName: round.name, startedAt: startedAt.toISOString(), phase };
       runningRef.current = next;
       setRunning(next);
+      workRuns.observeScheduledStep(seatKey, phase);
     };
     mark("checking");
     let stoppedByPerson = false;
     const aborted = new Promise<void>((resolve) => {
-      abortRef.current = {
-        roundId: round.id,
-        stop: () => {
-          stoppedByPerson = true;
-          resolve();
-        },
+      const stop = () => {
+        stoppedByPerson = true;
+        resolve();
       };
+      abortRef.current = { roundId: round.id, stop };
+      workRuns.setScheduledStop(seatKey, stop);
     });
     const places = roundPlaces(round);
     const watched = vaultPlace(places);
     const services = servicePlaces(places);
-    const base = { v: 1 as const, id: newId(), roundId: round.id, roundName: round.name, kind: round.kind, startedAt: startedAt.toISOString(), places: roundPlaceLabels(places), trigger };
+    const base = { v: 1 as const, id: passId, roundId: round.id, roundName: round.name, kind: round.kind, startedAt: startedAt.toISOString(), places: roundPlaceLabels(places), trigger };
     let entry: RoundPassEntry;
     try {
       const data: PassData | null = round.kind === "ontology"
         ? { sources: [], docs: [], concepts: wikiNodeIndexOfDocs([]), hashes: new Map<string, string>(), pageTexts: new Map<string, string>(), pages: createPassPages([]), knownSources: new Set<string>() }
-        : await readPassData();
+        : await readPassData((path) => workRuns.observeScheduledDocument(seatKey, path, round.kind === "consistency"));
       if (!data) throw new Error("no-manifest");
       const fromService = new Set<string>();
       if (watched.ownDocumentsOnly) {
         for (const source of data.sources) {
           if (!source.path.endsWith(".md")) continue;
+          workRuns.observeScheduledDocument(seatKey, source.path, false);
           try {
             const text = await readTauriVaultText(rootPath, source.path);
             if (text && typeof parseFrontmatter(text).frontmatter.source_url === "string") fromService.add(source.path);
@@ -452,9 +496,13 @@ export function useRoundsRunner(): RoundsRunnerValue {
           const knownSources: string[] = [];
           for (const source of data.sources) {
             if (!source.path.endsWith(".md")) continue;
+            workRuns.observeScheduledDocument(seatKey, source.path, false);
             try {
               const text = await readTauriVaultText(rootPath, source.path);
-              if (text && typeof parseFrontmatter(text).frontmatter.source_url === "string") knownSources.push(source.path);
+              if (text && typeof parseFrontmatter(text).frontmatter.source_url === "string") {
+                knownSources.push(source.path);
+                workRuns.observeScheduledDocument(seatKey, source.path, true);
+              }
             } catch {
               /* Not readable: not a document this round refreshes. */
             }
@@ -538,6 +586,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
       activeRef.current = null;
       landingsRef.current = null;
       abortRef.current = null;
+      if (seatRef.current === seat) seatRef.current = null;
     }
     const record = async () => {
       const endedAt = new Date(entry.endedAt);
@@ -580,6 +629,14 @@ export function useRoundsRunner(): RoundsRunnerValue {
     } finally {
       runningRef.current = null;
       setRunning(null);
+      const ended = Date.parse(entry.endedAt);
+      if (entry.note === "stopped") workRuns.finishScheduled(seatKey, { stopped: true }, ended);
+      else if (entry.outcome !== "asleep") {
+        workRuns.finishScheduled(seatKey, {
+          stopped: false,
+          result: { outcome: entry.outcome, checked: entry.checked, stale: entry.stale.length, written: entry.written.length, summary: entry.summary },
+        }, ended);
+      }
     }
   }, [agentReady, agentTurn, allowedNow, handle, ledger, locale, readPassData, refresh, rootPath, runtimeId, store]);
 

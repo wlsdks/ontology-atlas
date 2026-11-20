@@ -16,6 +16,7 @@ import {
   parseRoundLedger,
   roundFingerprint,
 } from '@/entities/library-round';
+import { workRuns } from '@/features/work-run';
 import { readMachineApprovals, recordApproval } from '@/shared/lib/connectors/machine-approvals';
 
 import { useRoundsRunner } from './use-rounds-runner';
@@ -81,6 +82,7 @@ vi.mock('@/features/acp-session', async () => ({
 }));
 vi.mock('@/features/library', async () => ({
   appendWikiLog: vi.fn(async () => undefined),
+  completedAcpReadEvent: (await import('@/features/library/model/library-work-activity')).completedAcpReadEvent,
   buildCompileBrief: () => 'compile brief',
   judgePageWrite: (await import('@/features/library/lib/wiki/judge-page-write')).judgePageWrite,
   wikiNodeIndexOfDocs: (await import('@/features/library/lib/wiki/judge-page-write')).wikiNodeIndexOfDocs,
@@ -637,6 +639,75 @@ describe('the clock, the lock and the folder', () => {
     expect((h.session as Session).start).not.toHaveBeenCalled();
     expect(lines()[0]).toMatchObject({ roundId: 's', outcome: 'failed', note: 'stopped', agentTurns: 0 });
     h.files = {};
+  });
+
+  it('counts each document a service pass checks as it reads it, and its Stop leaves the schedule on', async () => {
+    const svc = at('s', { kind: 'service', connectorId: 'c1', connectorName: 'confluence', nextDueAt: '2099-01-01T00:00:00.000Z',
+      places: [{ kind: 'vault', paths: [] }, { kind: 'service', connectorId: 'c1', connectorName: 'confluence' }] });
+    h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [svc] }));
+    workRuns.reset();
+    const sources = ['sources/a.md', 'sources/b.md', 'sources/own.md'];
+    h.vault = { status: 'loaded', handle: noWiki, manifest: { docs: [], sources: sources.map((path) => ({ path })) }, agentConfigStatus: null };
+    h.files = {
+      'sources/a.md': '---\nsource_url: https://example.test/a\n---\n',
+      'sources/b.md': '---\nsource_url: https://example.test/b\n---\n',
+      'sources/own.md': '# Written here\n',
+    };
+    const counted: number[] = [];
+    h.onRead = () => {
+      const entry = [...workRuns.read().runs.values()].findLast((candidate) => candidate.kind === 'scheduled');
+      if (entry?.kind === 'scheduled') counted.push(entry.run.checkedCount);
+    };
+    h.runtimes = [READY_CLAUDE];
+    allowHere(svc);
+    const { result } = renderHook(() => useRoundsRunner(), { wrapper });
+    await flush();
+    await flush();
+    act(() => result.current.runNow('s'));
+    await flush();
+    await flush();
+    const entry = [...workRuns.read().runs.values()].findLast((candidate) => candidate.kind === 'scheduled');
+    if (entry?.kind !== 'scheduled') throw new Error('the pass took no seat');
+    // Read before each document: none counted yet, then the first, then both from a service.
+    expect(counted).toEqual([0, 1, 2]);
+    expect(entry.run).toMatchObject({ roundId: 's', checkedCount: 2, step: 'agent', phase: 'running' });
+
+    act(() => workRuns.stopRun(entry.key));
+    await advance(6_000);
+    expect(lines()[0]).toMatchObject({ id: entry.run.id, roundId: 's', note: 'stopped', checked: 2 });
+    expect((await store().read()).state.rounds[0]).toMatchObject({ id: 's', enabled: true });
+    expect(workRuns.read().runs.get(entry.key)?.run.phase).toBe('stopped');
+    h.files = {};
+    workRuns.reset();
+  });
+
+  it('counts a read that settles before the render that carries its event, once that render arrives', async () => {
+    const gaps = at('o', { kind: 'ontology', nextDueAt: '2099-01-01T00:00:00.000Z' });
+    h.store = createMemoryRoundStore(JSON.stringify({ v: 1, rounds: [gaps] }));
+    workRuns.reset();
+    const read = (id: string, path: string) => ({ kind: 'tool', id, toolKind: 'read', status: 'completed', rawInput: { file_path: `/vault/${path}` } });
+    const session = { status: 'ready', events: [] as unknown[], start: vi.fn(async () => {}), send: vi.fn(() => new Promise<void>(() => {})), cancel: vi.fn(), stop: vi.fn(async () => {}) };
+    h.session = session;
+    h.runtimes = [READY_CLAUDE];
+    allowHere(gaps);
+    const { result, rerender } = renderHook(() => useRoundsRunner(), { wrapper });
+    await flush();
+    await flush();
+    act(() => result.current.runNow('o'));
+    await flush();
+    await flush();
+    expect(session.send).toHaveBeenCalledTimes(1);
+
+    const settled = h.options!.onToolSettled as (toolCallId: string, status: string) => void;
+    settled('t1', 'completed');
+    settled('t2', 'completed');
+    h.session = { ...session, events: [read('t1', 'wiki/alpha.md')] };
+    rerender();
+    h.session = { ...session, events: [read('t1', 'wiki/alpha.md'), read('t2', 'wiki/beta.md')] };
+    rerender();
+    const entry = [...workRuns.read().runs.values()].findLast((candidate) => candidate.kind === 'scheduled');
+    expect(entry?.run).toMatchObject({ roundId: 'o', checkedCount: 2, document: expect.stringContaining('beta') });
+    workRuns.reset();
   });
 
   it('saves a next run moved to this clock only while the stored time is still the one it read', async () => {

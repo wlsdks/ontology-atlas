@@ -5,6 +5,34 @@
   "progressLabel": "{title} progress",
   "railRunning": "{destination}: running",
   "railFinished": "{destination}: {count, plural, one {# finished run to read} other {# finished runs to read}}",
+  "moreRunning": "{count, plural, other {# more running}}",
+  "moreRuns": "{count, plural, one {# more run} other {# more runs}}",
+  "runsTitle": "Runs",
+  "runsDescription": "Each one keeps going wherever you are in the app.",
+  "scheduled": {
+    "title": "{name} · scheduled check",
+    "figures": "{checked, plural, =0 {No document checked yet} other {<count>#</count> {checked, plural, one {document} other {documents}} checked}} · {elapsed}",
+    "checking": "Reading the folder",
+    "agent": "The agent is working",
+    "stopped": "This run was stopped before it finished.",
+    "openRun": "Open run",
+    "heldTitle": "No changes",
+    "heldBody": "{name} checked {count, plural, one {# document} other {# documents}} and changed nothing.",
+    "nothingTitle": "Nothing to check",
+    "nothingBody": "{name} found no document in its scope, so it checked none.",
+    "staleTitle": "{count, plural, one {# page needs review} other {# pages need review}}",
+    "staleBody": "{name} found pages that no longer match their sources.",
+    "redraftedTitle": "{count, plural, one {# file updated} other {# files updated}}",
+    "redraftedBody": "{name} redrafted them. The run lists each one.",
+    "reviewedTitle": "{name} · review complete",
+    "reviewedBody": "The run has what it proposes.",
+    "refusedTitle": "{name} was blocked",
+    "refusedBody": "It asked for something its schedule does not allow. The run names it.",
+    "failedTitle": "{name} ended early",
+    "failedBody": "The run says why. The schedule runs again at its next time."
+  },
+  "runsPagesRead": "Pages read",
+  "runsDocumentsChecked": "Documents checked",
   "meaning": {
     "title": "Search by meaning",
     "files": "{done} of {total, number} files",
@@ -15,9 +43,8 @@
     "readyLead": "{total, plural, one {# file} other {# files}}",
     "ready": "Ready to search by meaning",
     "ask": "Ask a question",
-    "openLibrary": "Open Library"
+    "openLibrary": "Open Library",
+    "filesPrepared": "Files prepared"
   },
-  "moreRunning": "{count, plural, one {# more running} other {# more running}}",
-  "runsTitle": "Running now",
   "railRunningPercent": "{destination}: {percent, number}% done"
 }

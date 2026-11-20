@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { useVectorRun, useVectorRunStageShown, type VectorRun } from "@/features/vault-vectors";
-import { workRuns, type CountedRunObservation } from "@/features/work-run";
+import { workRuns, type MeaningRunObservation } from "@/features/work-run";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { navigateWithViewTransition } from "@/shared/lib/navigation/route-view-transition";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
@@ -14,7 +14,7 @@ const WIKI_DESK_HREF = `${DESTINATION_HREF.library}?tab=wiki`;
 /** Long enough for the Library to open a large folder's desk; the field is focused once drawn. */
 const DESK_FIELD_WAIT_MS = 4_000;
 
-function observationOf(run: VectorRun | null): CountedRunObservation | null {
+function observationOf(run: VectorRun | null): MeaningRunObservation | null {
   if (run === null) return null;
   const phase = run.phase === "stopped" && run.failure !== null ? "failed" : run.phase;
   if (phase === "off" || phase === "notSetUp") return null;
@@ -68,21 +68,21 @@ export function MeaningRunSeat() {
   const router = useRouter();
 
   useEffect(() => {
-    workRuns.observeCounted(folder, observationOf(run), stageShown, Date.now());
+    workRuns.observeMeaning(folder, observationOf(run), stageShown, Date.now());
   }, [folder, run, stageShown]);
 
   const stop = run?.stop ?? null;
   useEffect(() => {
-    workRuns.setCountedStop(stop);
+    workRuns.setMeaningStop(stop);
   }, [stop]);
-  useEffect(() => () => workRuns.setCountedStop(null), []);
+  useEffect(() => () => workRuns.setMeaningStop(null), []);
 
   useEffect(() => {
-    workRuns.setCountedDoor((kind) => {
+    workRuns.setMeaningDoor((kind) => {
       navigateWithViewTransition(() => router.push(WIKI_DESK_HREF));
       if (kind === "ask") focusDeskFieldWhenDrawn();
     });
-    return () => workRuns.setCountedDoor(null);
+    return () => workRuns.setMeaningDoor(null);
   }, [router]);
 
   return null;

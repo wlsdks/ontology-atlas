@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { BookOpen } from "lucide-react";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { isWikiPage, type LibrarySourceRow } from "@/entities/docs-vault";
 import { opensLocally } from "@/features/vault-agent";
@@ -34,7 +33,6 @@ import { cn } from "@/shared/lib/cn";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { PAGE_COLUMN_STAGE } from "@/shared/ui/tokens/page-frame";
 import {
   LIBRARY_TOAST_BOTTOM_OFFSET,
@@ -42,7 +40,7 @@ import {
   LIBRARY_TOAST_RIGHT_OFFSET,
 } from "@/shared/ui/toast/toast-position";
 import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
-import { Button, Chip, useToast, useToastAnchor } from "@/shared/ui";
+import { ChromeChip, useToast, useToastAnchor } from "@/shared/ui";
 import { isWikiFurnitureSlug } from "@/shared/lib/library/wiki-page-schema";
 import { useLibraryAgent } from "../lib/agent/use-library-agent";
 import { useAnswerRefresh } from "../lib/questions/use-answer-refresh";
@@ -73,6 +71,8 @@ import { LibraryHomePopovers } from "./library-page/LibraryHomePopovers";
 import { AgentDoor } from "./parts/agent/AgentDoor";
 import { SourceProgressBand } from "./parts/progress/SourceProgressBand";
 import { useContinuePress } from "./parts/progress/use-continue-press";
+import { LibraryWorkLine } from "./parts/progress/LibraryWorkLine";
+import { useSourceFilter } from "./library-page/use-source-filter";
 import { checkOwner, folderRelativePage } from "./library-page/wiki-check-outcome";
 
 /** The work card's box (`h-36` in `WorkRunCard`); a toast above it clears this much. */
@@ -119,7 +119,6 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   }, [selected]);
   const [homeSurface, setHomeSurface] = useState<"guide" | "questions" | "compile" | "overflow" | null>(null);
   const [searchHost, setSearchHost] = useState<HTMLDivElement | null>(null);
-  const [staleLit, setStaleLit] = useState(false);
   const [sourceCitation, setSourceCitation] = useState<{ path: string; anchor?: string } | null>(null);
   const [answerComparisonOpen, setAnswerComparisonOpen] = useState(false);
   const guideDoorRef = useRef<HTMLButtonElement | null>(null);
@@ -246,10 +245,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const [importOpen, setImportOpen] = useState(() => pendingLibraryImport() !== null);
   const [importDestination, setImportDestination] = useState<ImportDestination>(() => pendingLibraryImport() ?? "sources");
   const home = useLibraryHome({
-    selected, setHomeSurface, setStaleLit, staleLit, choose, model, chatWidth, dockOpen,
-    workActivity, importOpen,
+    selected, setHomeSurface, chatWidth, dockOpen, workActivity, importOpen,
   });
-  const { homeVisible, staleHighlight } = home;
+  const { homeVisible } = home;
   const connectors = useVaultConnectors(handle);
   const importRouter = useRouter();
   const openImport = useCallback(() => { setImportDestination("sources"); setImportOpen(true); }, []);
@@ -296,6 +294,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const indexColumn = useLibraryIndexColumn({ segment, model });
   const { indexSegment, setReaderEl, indexCollapsed, libraryIsEmpty } = indexColumn;
   const bandShown = homeVisible && indexSegment !== 'wiki' && model.sources.length > 0;
+  const sourceFilter = useSourceFilter({
+    sources: model.sources, vaultScope: workVaultScope, indexColumn, listening: bandShown,
+  });
   /*
    * Every Compile door sends what it names: the band and the popover the next batch, a source's own
    * door that source. The batch is picked only while one of them draws it, and on press.
@@ -476,10 +477,32 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
 
   const narrowShowsReader = selected !== null || localReviewVisible;
 
+  const openConversation = conversationDoor ? () => agent.setOpen(true) : null;
+  const reviewAnswer = answerRefresh.proposal ? () => setAnswerComparisonOpen(true) : null;
   const homeStrip = libraryHomeStrip({
-    t, homeSurface, setHomeSurface, setStaleLit, staleLit, choose, model, retainedAnswers, home,
+    t, homeSurface, setHomeSurface, choose, model, retainedAnswers,
+    onOpenConversation: openConversation, onReview: reviewAnswer,
   });
-  const { homeClauses, homeDoors } = homeStrip;
+  const { homeDoors } = homeStrip;
+  const headerDoors = (
+    <LibraryHomeStrip
+      doors={homeDoors}
+      conversation={conversationDoor}
+      review={reviewAnswer ? (
+        <ChromeChip data-testid="answer-review-open" data-library-door="review" onClick={reviewAnswer} className="min-w-0 max-w-[14rem] flex-none shadow-none">
+          {t('answers.reviewDraft')}
+        </ChromeChip>
+      ) : null}
+      overflowOpen={homeSurface === "overflow"}
+      onToggleOverflow={() => setHomeSurface((current) => (current === "overflow" ? null : "overflow"))}
+      guideAnchorRef={guideDoorRef}
+      questionsAnchorRef={questionsDoorRef}
+      overflowAnchorRef={overflowDoorRef}
+      t={t}
+    />
+  );
+  const openWorkTarget = (target: { kind: "source" | "wiki"; ref: string }) =>
+    choose(target.kind === "wiki" ? { kind: "wiki", slug: target.ref } : { kind: "source", path: target.ref });
 
   const indexTitle = segment
     ? t(`index.${segment}`, {
@@ -508,7 +531,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         reportUnseen={reportUnseen} choose={choose} busy={busy} docs={docs} model={model} agent={agent}
         openImport={openImport} handleCompile={handleCompile} narrowShowsReader={narrowShowsReader}
         indexTitle={indexTitle} reader={reader} sources={sources} home={home} turns={turns}
-        indexColumn={indexColumn}
+        indexColumn={indexColumn} stateFilter={sourceFilter.state} headerDoors={headerDoors}
       />
 
       <div
@@ -520,17 +543,6 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         data-testid="library-reader"
         className={cn("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-lg:order-first focus-visible:outline-none", indexSegment === 'wiki' && homeVisible && mobileBrowseOpen && 'max-lg:hidden')}
       >
-        {!questionDeskVisible ? <LibraryWorkActivityStrip
-          activity={libraryWorkActivity}
-          reserved={dockOpen}
-          onSelect={(target) =>
-            choose(
-              target.kind === "wiki"
-                ? { kind: "wiki", slug: target.ref }
-                : { kind: "source", path: target.ref },
-            )
-          }
-        /> : null}
         <div ref={paneBodyRef} data-testid="library-pane-body" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {narrowShowsReader ? (
             <div className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] px-3 py-2">
@@ -545,19 +557,16 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               </button>
               <div className="min-w-0 flex-1"><LibraryStatusStrip
                 model={model}
-                indexShowsSourceStates={indexSegment === "sources" && !indexCollapsed}
                 onCompileNext={localReviewVisible ? undefined : () => {
-                  setStaleLit(false);
                   setHomeSurface((current) => (current === "compile" ? null : "compile"));
                 }}
                 compileAnchorRef={compileClauseRef}
                 compileOpen={homeSurface === "compile"}
                 t={t}
               /></div>
-              <span className="flex shrink-0 items-center gap-2">
-                {answerRefresh.proposal ? <Button className="atlas-touch-floor" size="sm" variant="outline" data-testid="answer-review-open" onClick={() => setAnswerComparisonOpen(true)}>{t('answers.reviewDraft')}</Button> : null}
-                {conversationDoor}
-              </span>
+              {nativeVaultRootPath !== null ? (
+                <LibraryWorkLine activity={libraryWorkActivity} onSelect={openWorkTarget} className="max-w-[45%] flex-none" />
+              ) : null}
             </div>
           ) : null}
           {localReviewVisible ? (
@@ -581,20 +590,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               dockOpen={dockOpen}
               visible={homeVisible && indexSegment === 'wiki'}
               turnRunning={turnRunning}
-              navigationActions={questionDeskVisible ? <>
-                {retainedAnswers.length > 0 ? <Chip ref={questionsDoorRef} tone="muted" className="min-w-0 max-w-full"
-                  active={homeDoors[1]!.open === true} aria-expanded={homeDoors[1]!.open}
-                  title={homeDoors[1]!.label} data-testid="library-questions-open"
-                  onClick={homeDoors[1]!.onPress}>
-                  <BookOpen size={ICON_SIZE.sm} aria-hidden />
-                  <span className="min-w-0 max-w-[12rem] truncate">{homeDoors[1]!.label}</span>
-                </Chip> : null}
-                {conversationDoor}
-              </> : null}
               workActivity={questionDeskVisible && showLibraryWorkStrip(deskWorkActivity, true) ? <LibraryWorkActivityStrip
                 compact activity={deskWorkActivity}
-                onOpenConversation={agent.runtime && nativeVaultRootPath ? () => agent.setOpen(true) : undefined}
-                onSelect={(target) => choose(target.kind === 'wiki' ? { kind: 'wiki', slug: target.ref } : { kind: 'source', path: target.ref })}
+                onSelect={openWorkTarget}
               /> : null}
               report={deskReport && deskReport.answer === lastAnswer ? {
                 question: deskReport.answer.question,
@@ -638,6 +636,16 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                     ? { reason: turns.compileBlocked, door: graphCards.agentDoor ? <AgentDoor testId="library-progress-blocked-door" /> : null }
                     : null}
                   inApp={nativeVaultRootPath !== null}
+                  filter={sourceFilter}
+                  workLine={nativeVaultRootPath !== null ? (
+                    <LibraryWorkLine
+                      activity={libraryWorkActivity}
+                      onSelect={openWorkTarget}
+                      // Reserved from the first paint while an agent can work here, so its first event moves nothing.
+                      reserved={!turns.compileBlocked}
+                      className="w-full"
+                    />
+                  ) : null}
                   locale={locale}
                   t={t}
                 />
@@ -648,39 +656,12 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                 sources={model.sources}
                 activity={libraryWorkActivity}
                 selection={null}
-                highlight={staleLit ? staleHighlight.ids : null}
-                highlightNote={
-                  staleLit
-                    ? t("home.staleLit", { count: model.staleCount, pages: staleHighlight.pages })
-                    : null
-                }
+                highlight={sourceFilter.highlight}
                 onSelect={(next) => {
-                  setStaleLit(false);
                   setHomeSurface(null);
                   choose(next.kind === "wiki" ? { kind: "wiki", slug: next.ref } : { kind: "source", path: next.ref });
                 }}
                 cardFacts={cardFacts}
-                headerEnd={
-                  <LibraryHomeStrip
-                    clauses={homeClauses}
-                    doors={homeDoors}
-                    overflowOpen={homeSurface === "overflow"}
-                    onToggleOverflow={() =>
-                      setHomeSurface((current) => (current === "overflow" ? null : "overflow"))
-                    }
-                    compileAnchorRef={compileClauseRef}
-                    guideAnchorRef={guideDoorRef}
-                    questionsAnchorRef={questionsDoorRef}
-                    overflowAnchorRef={overflowDoorRef}
-                    trailing={
-                      <>
-                        {answerRefresh.proposal ? <Button className="atlas-touch-floor flex-none" size="sm" variant="outline" data-testid="answer-review-open" onClick={() => setAnswerComparisonOpen(true)}>{t('answers.reviewDraft')}</Button> : null}
-                        {conversationDoor}
-                      </>
-                    }
-                    t={t}
-                  />
-                }
               />
             </div>
           ) : null}

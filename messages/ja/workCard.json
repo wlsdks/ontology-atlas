@@ -5,6 +5,34 @@
   "progressLabel": "{title}の進行状況",
   "railRunning": "{destination}: 実行中",
   "railFinished": "{destination}: 未確認の完了した実行{count, number}件",
+  "moreRunning": "ほかに{count, number}件実行中",
+  "moreRuns": "ほかに{count, number}件",
+  "runsTitle": "実行一覧",
+  "runsDescription": "アプリのどの画面に移っても、それぞれ実行が続きます。",
+  "scheduled": {
+    "title": "{name}・定期チェック",
+    "figures": "{checked, plural, =0 {まだ確認した文書はありません} other {<count>#</count>件の文書を確認}}・{elapsed}",
+    "checking": "フォルダーを読み込み中",
+    "agent": "エージェントが作業中",
+    "stopped": "この実行は終わる前に停止しました。",
+    "openRun": "実行を開く",
+    "heldTitle": "変更なし",
+    "heldBody": "{name}・{count, number}件の文書を確認し、何も変更しませんでした。",
+    "nothingTitle": "確認する文書なし",
+    "nothingBody": "{name}・範囲内に文書がなかったため、何も確認していません。",
+    "staleTitle": "要レビューのページ{count, number}件",
+    "staleBody": "{name}・ソースと合わなくなったページが見つかりました。",
+    "redraftedTitle": "{count, number}件のファイルを更新",
+    "redraftedBody": "{name}・下書きを書き直しました。実行履歴に一件ずつあります。",
+    "reviewedTitle": "{name}・レビュー完了",
+    "reviewedBody": "提案は実行履歴にあります。",
+    "refusedTitle": "{name}がブロックされました",
+    "refusedBody": "予約で許可されていない操作を求めました。実行履歴に内容があります。",
+    "failedTitle": "{name}が途中で終了",
+    "failedBody": "理由は実行履歴にあります。次の予定時刻にまた実行します。"
+  },
+  "runsPagesRead": "読んだページ",
+  "runsDocumentsChecked": "確認したドキュメント",
   "meaning": {
     "title": "意味検索",
     "files": "ファイル{total, number}件中{done}件",
@@ -15,9 +43,8 @@
     "readyLead": "ファイル{total, number}件",
     "ready": "意味で検索できます",
     "ask": "質問する",
-    "openLibrary": "資料室を開く"
+    "openLibrary": "資料室を開く",
+    "filesPrepared": "準備済みのファイル"
   },
-  "moreRunning": "ほかに{count, number}件実行中",
-  "runsTitle": "実行中の作業",
   "railRunningPercent": "{destination}: {percent, number}%完了"
 }

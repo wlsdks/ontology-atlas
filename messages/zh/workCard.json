@@ -5,6 +5,34 @@
   "progressLabel": "{title} 进度",
   "railRunning": "{destination}：运行中",
   "railFinished": "{destination}：{count, number} 个已完成的运行待查看",
+  "moreRunning": "另有 {count, number} 个正在运行",
+  "moreRuns": "另有 {count, number} 个",
+  "runsTitle": "运行列表",
+  "runsDescription": "无论你在应用的哪个界面，每个运行都会继续。",
+  "scheduled": {
+    "title": "{name} · 定时检查",
+    "figures": "{checked, plural, =0 {尚未检查文档} other {已检查 <count>#</count> 份文档}} · {elapsed}",
+    "checking": "正在读取文件夹",
+    "agent": "代理正在工作",
+    "stopped": "此次运行在完成前已停止。",
+    "openRun": "打开运行",
+    "heldTitle": "无更改",
+    "heldBody": "{name} · 检查了 {count, number} 份文档，没有做任何更改。",
+    "nothingTitle": "没有可检查的文档",
+    "nothingBody": "{name} · 范围内没有文档，因此没有检查任何内容。",
+    "staleTitle": "{count, number} 个页面待审阅",
+    "staleBody": "{name} · 发现了与来源不再一致的页面。",
+    "redraftedTitle": "已更新 {count, number} 个文件",
+    "redraftedBody": "{name} · 已重写草稿。运行历史逐一列出。",
+    "reviewedTitle": "{name} · 审阅完成",
+    "reviewedBody": "提议在运行历史中。",
+    "refusedTitle": "{name} 已被拦截",
+    "refusedBody": "它请求了计划不允许的操作。运行历史中写明了是什么。",
+    "failedTitle": "{name} 提前结束",
+    "failedBody": "原因见运行历史。计划会在下次预定时间再次运行。"
+  },
+  "runsPagesRead": "已读页面",
+  "runsDocumentsChecked": "已检查文档",
   "meaning": {
     "title": "语义搜索",
     "files": "{done} / {total, number} 个文件",
@@ -15,9 +43,8 @@
     "readyLead": "{total, number} 个文件",
     "ready": "已可按语义搜索",
     "ask": "提问",
-    "openLibrary": "打开资料库"
+    "openLibrary": "打开资料库",
+    "filesPrepared": "已准备的文件"
   },
-  "moreRunning": "另有 {count, number} 项正在运行",
-  "runsTitle": "正在运行",
   "railRunningPercent": "{destination}：已完成 {percent, number}%"
 }

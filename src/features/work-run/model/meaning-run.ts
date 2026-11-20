@@ -1,12 +1,12 @@
 /**
- * A long run whose work is counted against a known total: preparing a folder for search by
- * meaning. It lives beside the wiki check's run and shares none of its fields; the app layer
- * reports it from the job's status events, which keep arriving for hours.
+ * Preparing a folder for search by meaning: a long run counted against a known total, held by the
+ * app session beside the wiki check and the scheduled checks. The app layer reports it from the
+ * job's status events, which keep arriving for hours.
  */
 
 import type { WorkRunCardState } from './work-run';
 
-export type CountedRunPhase =
+export type MeaningRunPhase =
   | 'modelDownloading'
   | 'modelConverting'
   | 'waitingTurn'
@@ -16,15 +16,15 @@ export type CountedRunPhase =
   | 'stopped';
 
 /** A sentence the owning screen already says, named by its message key and values. */
-export interface CountedRunSentence {
+export interface MeaningRunSentence {
   message: string;
   values: Readonly<Record<string, string | number | undefined>>;
 }
 
 /** One status of the job as the app layer read it; `null` when the folder has nothing to tell. */
-export interface CountedRunObservation {
+export interface MeaningRunObservation {
   /** A stop that followed a failure is reported `failed`. */
-  phase: CountedRunPhase;
+  phase: MeaningRunPhase;
   /** Preparing only files that changed after the folder was ready once. */
   updating: boolean;
   /** An update too small to draw anywhere outside the folder's own stage. */
@@ -36,19 +36,18 @@ export interface CountedRunObservation {
   /** The file being read, vault-relative. */
   reading: string | null;
   minutesLeft: number | null;
-  failure: CountedRunSentence | null;
+  failure: MeaningRunSentence | null;
   /** The press that started or resumed the job in this launch; `null` when it continues by itself. */
   pressed: number | null;
 }
 
 /** What the card and the ring choose and word by; it changes only when the job changes phase. */
-export interface CountedRun {
-  kind: 'meaning';
+export interface MeaningRun {
   id: number;
   folder: string;
-  phase: CountedRunPhase;
+  phase: MeaningRunPhase;
   updating: boolean;
-  failure: CountedRunSentence | null;
+  failure: MeaningRunSentence | null;
   pressed: number | null;
   /** When the person started it, or when it was first seen running by itself. */
   startedAt: number;
@@ -56,7 +55,7 @@ export interface CountedRun {
 }
 
 /** The figures that change while it runs, published apart so they never redraw the shell. */
-export interface CountedProgress {
+export interface MeaningProgress {
   runId: number;
   filesDone: number;
   filesTotal: number;
@@ -67,20 +66,18 @@ export interface CountedProgress {
   fraction: number | null;
 }
 
-const ACTIVE: ReadonlySet<CountedRunPhase> = new Set(['modelDownloading', 'modelConverting', 'waitingTurn', 'preparing']);
+const ACTIVE: ReadonlySet<MeaningRunPhase> = new Set(['modelDownloading', 'modelConverting', 'waitingTurn', 'preparing']);
 
-export function isCountedActive(run: CountedRun | null): boolean {
-  return run !== null && ACTIVE.has(run.phase);
-}
+export const isMeaningActive = (run: MeaningRun): boolean => ACTIVE.has(run.phase);
 
-function sameSentence(a: CountedRunSentence | null, b: CountedRunSentence | null): boolean {
+function sameSentence(a: MeaningRunSentence | null, b: MeaningRunSentence | null): boolean {
   if (a === null || b === null) return a === b;
   if (a.message !== b.message) return false;
   const keys = new Set([...Object.keys(a.values), ...Object.keys(b.values)]);
   return [...keys].every((key) => a.values[key] === b.values[key]);
 }
 
-export interface CountedRunContext {
+export interface MeaningRunContext {
   folder: string;
   at: number;
   /** The folder's own stage (the Wiki desk's meaning line) is on screen. */
@@ -89,9 +86,8 @@ export interface CountedRunContext {
 }
 
 /** A run begun now: open when the person pressed for it, else the ring alone. */
-function begin(observation: CountedRunObservation, context: CountedRunContext, card: WorkRunCardState): CountedRun {
+function begin(observation: MeaningRunObservation, context: MeaningRunContext, card: WorkRunCardState): MeaningRun {
   return {
-    kind: 'meaning',
     id: context.nextId(),
     folder: context.folder,
     phase: observation.phase,
@@ -109,11 +105,11 @@ function begin(observation: CountedRunObservation, context: CountedRunContext, c
  * even when it was hidden, Stop closes it, and a finish shows its result only where the card was
  * open, and never over the folder's own stage, where the result is already drawn.
  */
-export function observeCounted(
-  previous: CountedRun | null,
-  observation: CountedRunObservation | null,
-  context: CountedRunContext,
-): CountedRun | null {
+export function observeMeaning(
+  previous: MeaningRun | null,
+  observation: MeaningRunObservation | null,
+  context: MeaningRunContext,
+): MeaningRun | null {
   if (observation === null) return null;
   const run = previous?.folder === context.folder ? previous : null;
   // A small update leaves whatever stands, a result the person has not closed included.
@@ -126,12 +122,12 @@ export function observeCounted(
     return begin(observation, context, ended && context.stageShown ? 'closed' : 'open');
   }
   const startingFromPress = run?.phase === 'stopped' && run.card === 'open';
-  if (run === null || (!isCountedActive(run) && active && !startingFromPress)) {
+  if (run === null || (!isMeaningActive(run) && active && !startingFromPress)) {
     if (!active) return run;
     return begin(observation, context, observation.updating ? 'closed' : 'hidden');
   }
 
-  const ending = isCountedActive(run) && !active;
+  const ending = isMeaningActive(run) && !active;
   let card = run.card;
   if (ending) {
     if (observation.phase === 'failed') card = context.stageShown ? 'closed' : 'open';
@@ -149,7 +145,7 @@ export function observeCounted(
   return { ...run, phase: observation.phase, updating: observation.updating, failure: observation.failure, card };
 }
 
-export function progressOf(runId: number, observation: CountedRunObservation): CountedProgress {
+export function meaningProgressOf(runId: number, observation: MeaningRunObservation): MeaningProgress {
   const { phase, filesDone, filesTotal, bytes } = observation;
   const files = filesTotal > 0 ? Math.min(1, filesDone / filesTotal) : null;
   const fraction = phase === 'modelDownloading'
@@ -168,7 +164,7 @@ export function progressOf(runId: number, observation: CountedRunObservation): C
   };
 }
 
-export function sameProgress(a: CountedProgress | null, b: CountedProgress | null): boolean {
+export function sameMeaningProgress(a: MeaningProgress | null, b: MeaningProgress | null): boolean {
   if (a === null || b === null) return a === b;
   return a.runId === b.runId
     && a.filesDone === b.filesDone
@@ -180,10 +176,10 @@ export function sameProgress(a: CountedProgress | null, b: CountedProgress | nul
     && a.fraction === b.fraction;
 }
 
-export function hideCounted(run: CountedRun): CountedRun {
-  return run.card === 'open' && isCountedActive(run) ? { ...run, card: 'hidden' } : run;
+export function hideMeaningCard(run: MeaningRun): MeaningRun {
+  return run.card === 'open' && isMeaningActive(run) ? { ...run, card: 'hidden' } : run;
 }
 
-export function closeCounted(run: CountedRun): CountedRun {
+export function closeMeaningCard(run: MeaningRun): MeaningRun {
   return run.card === 'closed' ? run : { ...run, card: 'closed' };
 }

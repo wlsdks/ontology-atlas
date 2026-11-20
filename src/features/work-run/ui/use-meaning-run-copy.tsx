@@ -3,7 +3,7 @@
 import { useId, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 
-import type { CountedProgress, CountedRun } from '../model/counted-run';
+import type { MeaningProgress, MeaningRun } from '../model/meaning-run';
 
 const PLACEHOLDER = '\u0000';
 const BYTES_PER_GIGABYTE = 1_000_000_000;
@@ -11,11 +11,11 @@ const BYTES_PER_GIGABYTE = 1_000_000_000;
 const KEPT_NAME_END = 8;
 
 /** How a surface sets the figure that leads: the card rolls it, the dialog writes it. */
-export type CountedFigure = (value: number, format: (value: number) => string) => ReactNode;
+export type MeaningFigure = (value: number, format: (value: number) => string) => ReactNode;
 
-const PLAIN_FIGURE: CountedFigure = (value, format) => format(value);
+const PLAIN_FIGURE: MeaningFigure = (value, format) => format(value);
 
-export interface CountedCopy {
+export interface MeaningCopy {
   title: string;
   /** Minutes left, once the job measured its pace; it stands beside the title. */
   remaining: string | null;
@@ -56,7 +56,7 @@ export function MiddleCutName({ path }: { path: string }) {
 }
 
 /** The desk line's sentence for a failure, with the coded detail in words as the desk says it. */
-function useFailureSentence(run: CountedRun): string {
+function useFailureSentence(run: MeaningRun): string {
   const tDesk = useTranslations('library.questionDesk.meaning');
   const failure = run.failure;
   if (!failure) return '';
@@ -68,8 +68,8 @@ function useFailureSentence(run: CountedRun): string {
   return tDesk(message, failure.values as Record<string, string | number>);
 }
 
-/** The words of a counted run in the seat: the counts it has, and the desk's own sentences. */
-export function useCountedCopy(run: CountedRun, progress: CountedProgress | null, figure: CountedFigure = PLAIN_FIGURE): CountedCopy {
+/** The words of a meaning run in the seat: the counts it has, and the desk's own sentences. */
+export function useMeaningRunCopy(run: MeaningRun, progress: MeaningProgress | null, figure: MeaningFigure = PLAIN_FIGURE): MeaningCopy {
   const t = useTranslations('workCard.meaning');
   const tDesk = useTranslations('library.questionDesk.meaning');
   const locale = useLocale();

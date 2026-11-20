@@ -102,7 +102,6 @@ export function LibraryQuestionDesk({
   onOpenWiki,
   onOpenSource,
   workActivity = null,
-  navigationActions = null,
 }: {
   docs: readonly VaultDoc[];
   pageTexts: ReadonlyMap<string, string>;
@@ -125,7 +124,6 @@ export function LibraryQuestionDesk({
   onOpenWiki: (slug: string) => void;
   onOpenSource: (path: string, anchor?: string) => void;
   workActivity?: ReactNode;
-  navigationActions?: ReactNode;
 }) {
   const t = useTranslations('library.questionDesk');
   const locale = useLocale();
@@ -358,7 +356,6 @@ export function LibraryQuestionDesk({
         <header className="mb-5 flex min-h-[var(--control-h-md)] flex-wrap items-center justify-between gap-x-4 gap-y-2 lg:flex-nowrap">
           <h2 className="min-w-0 text-display lg:truncate font-[var(--font-weight-signature)] leading-display tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">{t('title')}</h2>
           <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 lg:flex-none lg:flex-nowrap">
-            {navigationActions}
             <Chip className="lg:hidden" tone="muted" onClick={onBrowse} data-testid="question-desk-browse">{t('browse')}</Chip>
           </div>
         </header>

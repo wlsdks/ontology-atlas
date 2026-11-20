@@ -186,7 +186,8 @@
       "waiting": "許可を要求",
       "write": "ファイルを変更",
       "error": "失敗"
-    }
+    },
+    "recentCount": "最近{count, number}"
   },
   "eyebrow": "このフォルダ",
   "lede": "形式を問わず集めた文書と、それを読んで書いたWikiページです。ソースは受け取ったままの状態で保持され、Wikiページの主張はどれもソースを引用します。",
@@ -466,17 +467,10 @@
   },
   "graph": {
     "title": "グラフ",
-    "counts": "ソース{sources, number}件 · ページ{pages, number}件 · 概念{concepts, number}件 · 引用{cites, number}件 · 言及{mentions, number}件",
-    "countsIsland": "ソース{sources, number}件 · ページ{pages, number}件 · 引用{cites, number}件",
     "empty": "表示するものはまだありません。「Wikiページを作成」で最初のページを書くと、そのページがどのソースから書かれ、どの概念に触れているかがここに表示されます。",
     "canvasAria": "資料室のグラフ。元ソース、Wikiページ、そのページが挙げる概念。",
-    "legend": "左にソース、その隣にそこから書かれたページ、右にページが挙げる概念が並びます。線は、ソースからそれを読んだページへ伸びます。塗りつぶしの円はページ、四角はソース、輪はマップ上の概念です。太い線は引用、破線は言及です。スクロールで拡大縮小、背景をドラッグで移動、点を押すとその横にカードが開きます。",
-    "legendShort": "円はWikiページ、四角はソース、輪はマップ上の概念です。",
-    "legendCardOpen": "塗りつぶしの円はページ、四角はソース、輪はマップ上の概念です。太い線は引用、破線は言及で、どちらの場合も同じです。Escapeキーか、同じ点をもう一度押すとカードが閉じます。",
-    "legendShortCardOpen": "円はWikiページ、四角はソース、輪はマップ上の概念です。Escapeキーでカードを閉じます。",
     "islandUnsorted": "未分類",
     "islandUnread": "未読",
-    "legendIslands": "ファイルが数百を超えると、図は島の地図になります。1つの島が1つの概念で、その概念を挙げるページと、そのページの元になったファイルが周りに集まります。「未分類」は概念を挙げていないページ、「未読」は島の下の帯で、まだどのページも読んでいないファイルです。琥珀色の点は、書かれた後にファイルが変更されたページです。スクロールで拡大すると名前が表示され、点を押すとその横にカードが開きます。",
     "describeIsland": "{name}: ページ{pages, number}件と、それが読んだファイル{sources, number}件の島です。押すと列として開きます。拡大すると名前が表示されます。",
     "announceIsland": "島{name}、{position, number}/{total, number}: ページ{pages, number}件、ファイル{sources, number}件。Enterキーで列として開きます。",
     "describeUnread": "未読：どのページもまだ読んでいないファイルが{sources, number}件あります。押すと、どこから始めればよいかが表示されます。",
@@ -521,6 +515,16 @@
       "factPassages": "引用箇所{count, number}件",
       "flowInline": "引用は、各ソースからこのページへ流れます。",
       "flowInlineStale": "引用は、各ソースからこのページへ流れます。琥珀色の点は、ソースが変わったため確認し直す必要がある引用です。"
+    },
+    "key": {
+      "source": "ソース{count, number}",
+      "page": "Wikiページ{count, number}",
+      "concept": "概念{count, number}",
+      "cite": "引用{count, number}",
+      "mention": "言及{count, number}",
+      "island": "島ひとつが概念ひとつ",
+      "stale": "書いた後に変更",
+      "gestures": "押すとカード · 2回押すと開く · スクロールで拡大"
     }
   },
   "home": {
@@ -529,8 +533,7 @@
     "more": "その他",
     "compileNext": "Wikiページを作成：{source}",
     "staleClause": "変更されたソース{count, number}件",
-    "compileTitle": "{source}のWikiページを作成",
-    "staleLit": "変更されたソース{count, number}件と、それを引用したページ{pages, number}件だけが強調されています。Escapeキーか、図を押すと元に戻ります。"
+    "compileTitle": "{source}のWikiページを作成"
   },
   "find": {
     "searchLabel": "ファイル名・パスで絞り込む",
@@ -1041,7 +1044,8 @@
     "batchRest": "この後に{count, number}件が待っています。",
     "batchReturned": "前回のリクエストのソース{count, number}件はまだWikiページがないため、一覧の最後に移しました。",
     "webLine": "Wikiページを書けるのはアプリだけです。閲覧はここでもできます。",
-    "allDone": "すべてのソースにWikiページがあります"
+    "allDone": "すべてのソースにWikiページがあります",
+    "fraction": "{compiled, number} / {total, number}"
   },
   "check": {
     "title": "Wikiを検査中",

@@ -109,8 +109,9 @@ test.describe("the structural check is the app's own", () => {
     await expect(guide).toHaveCount(0);
 
     /*
-     * The index row and the strip's `N off-template` both go through `LibraryPage`'s `choose`, so either
-     * must leave the row in the same state; `unseen: true` is unreachable in a browser.
+     * The Check results row is the one door to the report (the Sources home no longer carries an
+     * off-template clause), and entering it twice must leave the row in the same state; `unseen: true`
+     * is unreachable in a browser.
      */
     const rowState = () =>
       page.getByTestId("library-open-report").evaluate((node) => ({
@@ -120,12 +121,13 @@ test.describe("the structural check is the app's own", () => {
         unseen: node.querySelector('[data-testid="library-report-unseen"]') !== null,
       }));
 
-    await page.getByTestId("library-strip-offtemplate").click();
+    await expect(page.getByTestId("library-strip-offtemplate")).toHaveCount(0);
     await page.getByTestId("library-workspace-wiki").click();
+    await page.getByTestId("library-open-report").click();
     await expect(page.getByTestId("library-check-structural")).toBeVisible({ timeout: 25_000 });
     const afterClause = await rowState();
     expect(afterClause).toEqual({ state: null, current: "page", running: false, unseen: false });
-    // And the strip never grew a second door to the same screen.
+    // And nothing grew a second door to the same screen.
     await expect(page.getByTestId("library-report-open")).toHaveCount(0);
 
     // Back to the home, then in again through the row itself: the same state, both ways.

@@ -186,7 +186,8 @@
       "waiting": "已请求许可",
       "write": "文件已更改",
       "error": "失败"
-    }
+    },
+    "recentCount": "最近 {count, number}"
   },
   "eyebrow": "此文件夹中",
   "lede": "你收集的各种格式的文档，以及据此撰写的 Wiki 页面。来源按原样保留，Wiki 页面上的每条论断都引用来源。",
@@ -466,17 +467,10 @@
   },
   "graph": {
     "title": "图谱",
-    "counts": "{sources} 份来源 · {pages} 个页面 · {concepts} 个概念 · {cites, number} 处引用 · {mentions, number} 处提及",
-    "countsIsland": "{sources} 份来源 · {pages} 个页面 · {cites, number} 处引用",
     "empty": "暂无可显示的内容。用“生成 Wiki 页面”写出第一个页面后，这里会显示它来自哪份来源、提到了哪些概念。",
     "canvasAria": "资料库图谱：原始来源、Wiki 页面，以及这些页面提到的概念。",
-    "legend": "来源在左，据此撰写的页面在旁，页面提到的概念在右；连线从来源指向读取它的页面。实心圆是页面，方块是来源，圆环是地图上的概念。较粗的线是引用，虚线是提及。滚动缩放，拖动背景平移，点按圆点会在旁边显示卡片。",
-    "legendShort": "圆是 Wiki 页面，方块是来源，圆环是地图上的概念。",
-    "legendCardOpen": "实心圆是页面，方块是来源，圆环是地图上的概念。较粗的线是引用，虚线是提及，两种都是如此。按 Escape 或再次点按同一个圆点即可关闭卡片。",
-    "legendShortCardOpen": "圆是 Wiki 页面，方块是来源，圆环是地图上的概念。按 Escape 关闭卡片。",
     "islandUnsorted": "未归类",
     "islandUnread": "未读取",
-    "legendIslands": "文件超过几百个后，画面会变成岛屿地图：每座岛是一个概念及提到它的页面，这些页面所依据的文件环绕在周围。“未归类”收纳没有提到任何概念的页面；“未读取”是岛屿下方的一条带，放着还没有页面读过的文件。琥珀色圆点表示页面撰写后其文件已变更。放大到出现名称为止；点按圆点会在旁边显示卡片。",
     "describeIsland": "{name}：一座岛，含 {pages, number} 个页面及它们读取的 {sources, number} 个文件。点按即可展开为列；放大可看到名称。",
     "announceIsland": "岛 {name}，第 {position, number} 个，共 {total, number} 个：{pages, number} 个页面和 {sources, number} 个文件。按 Enter 展开为列。",
     "describeUnread": "未读取：{sources, number} 个还没有页面读过的文件。点按查看从哪里开始。",
@@ -521,6 +515,16 @@
       "factPassages": "{count} 段引文",
       "flowInline": "引用从每份来源流向此页面。",
       "flowInlineStale": "引用从每份来源流向此页面；琥珀色圆点表示来源已变更、需要重新核对的引用。"
+    },
+    "key": {
+      "source": "来源 {count, number}",
+      "page": "Wiki 页面 {count, number}",
+      "concept": "概念 {count, number}",
+      "cite": "引用 {count, number}",
+      "mention": "提及 {count, number}",
+      "island": "一座岛是一个概念",
+      "stale": "撰写后已变更",
+      "gestures": "点按显示卡片 · 点按两次打开 · 滚动缩放"
     }
   },
   "home": {
@@ -529,8 +533,7 @@
     "more": "更多",
     "compileNext": "生成 Wiki 页面：{source}",
     "staleClause": "{count} 份来源已变更",
-    "compileTitle": "为 {source} 生成 Wiki 页面",
-    "staleLit": "只有 {count} 份已变更的来源和引用它们的 {pages} 个页面保持高亮。按 Escape 或点按画面即可恢复。"
+    "compileTitle": "为 {source} 生成 Wiki 页面"
   },
   "find": {
     "searchLabel": "按文件名或路径筛选",
@@ -1041,7 +1044,8 @@
     "batchRest": "之后还有 {count, number} 份等待。",
     "batchReturned": "上次请求中有 {count, number} 份来源仍没有 Wiki 页面，已移到列表末尾。",
     "webLine": "只有应用能撰写 Wiki 页面，在这里可以阅读。",
-    "allDone": "每份来源都有 Wiki 页面"
+    "allDone": "每份来源都有 Wiki 页面",
+    "fraction": "{compiled, number} / {total, number}"
   },
   "check": {
     "title": "正在检查 Wiki",

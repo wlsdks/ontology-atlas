@@ -1,0 +1,157 @@
+{
+  "$comment": "Every budget of docs/specs/2026-11-20-performance-strategy.md, one row each. limits[shape][files]; shape '*' applies to every shape without its own entry. A size between two budgeted sizes is held to the next larger one. The web is budgeted at 2,000 and 20,000 only; above webGatedUpTo its figures are reported, not checked (spec decision 12).",
+  "sizes": [2000, 20000, 50000],
+  "webGatedUpTo": 20000,
+  "rows": [
+    {
+      "id": "app-webview-steady",
+      "label": "App WebView steady (physical footprint)",
+      "unit": "MB",
+      "command": "perf:app-open",
+      "limits": { "*": { "2000": 450, "20000": 520, "50000": 600 } }
+    },
+    {
+      "id": "app-webview-peak",
+      "label": "App WebView peak",
+      "unit": "MB",
+      "command": "perf:app-open",
+      "limits": { "*": { "2000": 600, "20000": 750, "50000": 900 } }
+    },
+    {
+      "id": "app-webview-library-added",
+      "label": "App WebView with the Library open, above steady",
+      "unit": "MB",
+      "command": "perf:app-open",
+      "walk": "library",
+      "limits": { "*": { "2000": 50, "20000": 100, "50000": 150 } }
+    },
+    {
+      "id": "app-main-steady",
+      "label": "App main process steady, meaning search aside",
+      "unit": "MB",
+      "command": "perf:app-open",
+      "limits": { "*": { "2000": 150, "20000": 150, "50000": 200 } }
+    },
+    {
+      "id": "app-main-peak",
+      "label": "App main process peak, meaning search aside",
+      "unit": "MB",
+      "command": "perf:app-open",
+      "limits": { "*": { "2000": 250, "20000": 250, "50000": 300 } }
+    },
+    {
+      "id": "mcp-footprint-after-20",
+      "label": "MCP binary footprint after 20 calls",
+      "unit": "MB",
+      "command": "perf:mcp:scale",
+      "limits": { "*": { "2000": 80, "20000": 120, "50000": 185 } }
+    },
+    {
+      "id": "mcp-footprint-peak",
+      "label": "MCP binary footprint peak",
+      "unit": "MB",
+      "command": "perf:mcp:scale",
+      "limits": { "*": { "2000": 150, "20000": 300, "50000": 470 } }
+    },
+    {
+      "id": "web-heap-steady",
+      "label": "Web heap steady",
+      "unit": "MB",
+      "command": "perf:web-open",
+      "limits": { "*": { "2000": 60, "20000": 90, "50000": 120 } }
+    },
+    {
+      "id": "web-heap-peak",
+      "label": "Web heap peak",
+      "unit": "MB",
+      "command": "perf:web-open",
+      "limits": { "*": { "2000": 100, "20000": 150, "50000": 200 } }
+    },
+    {
+      "id": "first-concepts-app-reopen",
+      "label": "First concepts, app reopen",
+      "unit": "s",
+      "command": "perf:app-open",
+      "limits": { "*": { "2000": 0.5, "20000": 1, "50000": 1.5 } }
+    },
+    {
+      "id": "loaded-app-reopen",
+      "label": "Loaded, app reopen from rows",
+      "unit": "s",
+      "command": "perf:app-open",
+      "limits": { "*": { "2000": 1, "20000": 2, "50000": 3 } }
+    },
+    {
+      "id": "loaded-first-open",
+      "label": "Loaded, first open",
+      "unit": "s",
+      "command": "perf:app-open perf:web-open",
+      "limits": { "*": { "2000": 2, "20000": 6, "50000": 15 }, "all": { "50000": 40 } }
+    },
+    {
+      "id": "longest-task",
+      "label": "Longest main-thread task after first paint (web: longtask; app: frame gap)",
+      "unit": "ms",
+      "command": "perf:app-open perf:web-open",
+      "limits": { "*": { "2000": 50, "20000": 50, "50000": 50 } }
+    },
+    {
+      "id": "frame-p95",
+      "label": "Frame p95 for pan, zoom, hover, drag",
+      "unit": "ms",
+      "command": "perf:app-open perf:web-open",
+      "walk": "map",
+      "limits": { "*": { "2000": 16.7, "20000": 16.7, "50000": 16.7 } }
+    },
+    {
+      "id": "island-open-first-frame",
+      "label": "Island open, first frame",
+      "unit": "ms",
+      "command": "perf:app-open perf:web-open",
+      "walk": "library",
+      "limits": { "*": { "2000": 300, "20000": 300, "50000": 300 } }
+    },
+    {
+      "id": "mcp-read-p95",
+      "label": "MCP read call p95",
+      "unit": "ms",
+      "command": "perf:mcp:scale",
+      "limits": { "*": { "2000": 30, "20000": 100, "50000": 250 } }
+    },
+    {
+      "id": "validate-wiki-first",
+      "label": "validate_wiki, first call",
+      "unit": "s",
+      "command": "perf:mcp:scale",
+      "limits": { "*": { "2000": 0.2, "20000": 0.6, "50000": 1.5 } }
+    },
+    {
+      "id": "validate-wiki-repeat",
+      "label": "validate_wiki, repeat call",
+      "unit": "s",
+      "command": "perf:mcp:scale",
+      "limits": { "*": { "2000": 0.05, "20000": 0.15, "50000": 0.3 } }
+    },
+    {
+      "id": "validate-wiki-transient-heap",
+      "label": "validate_wiki transient heap",
+      "unit": "MB",
+      "command": "perf:mcp:scale",
+      "limits": { "*": { "50000": 150 } }
+    },
+    {
+      "id": "index-search-p95",
+      "label": "Index search p95",
+      "unit": "ms",
+      "command": "perf:vault-index",
+      "limits": { "*": { "2000": 50, "20000": 50, "50000": 50 } }
+    },
+    {
+      "id": "focus-walks",
+      "label": "Focus: no folder walk while the watcher is healthy; web at most one check per max(2 s, 20 x last cost)",
+      "unit": "walks",
+      "command": "call-count test",
+      "limits": {}
+    }
+  ]
+}

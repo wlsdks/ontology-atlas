@@ -5,55 +5,13 @@ import { useTranslations } from 'next-intl';
 
 import { elapsedParts } from '@/shared/lib/agent-activity/elapsed';
 
+import { isMeaningActive, type MeaningProgress } from './meaning-run';
+import { isScheduledActive, type ScheduledRun } from './scheduled-run';
 import { elapsedMs, isRunActive, type WorkRun } from './work-run';
-import { isCountedActive, type CountedProgress, type CountedRun } from './counted-run';
-import { workRuns, type WorkRunSnapshot } from './work-run-store';
+import { workRuns, type SeatRun, type WorkRunSnapshot } from './work-run-store';
 
 export function useWorkRunSnapshot(): WorkRunSnapshot {
   return useSyncExternalStore(workRuns.subscribe, workRuns.read, workRuns.readServer);
-}
-
-const noProgress = () => null;
-
-/** The counted run's figures, at most a few times a second; read only where they are drawn. */
-export function useCountedProgress(): CountedProgress | null {
-  return useSyncExternalStore(workRuns.subscribeProgress, workRuns.readProgress, noProgress);
-}
-
-/** One of the two runs the seat can carry. */
-export type SeatRun = { kind: 'check'; run: WorkRun } | { kind: 'meaning'; run: CountedRun };
-
-function checkHoldsSeat({ run, stageFolder }: WorkRunSnapshot): boolean {
-  return run !== null && run.card === 'open' && run.phase !== 'stopped' && stageFolder !== run.folder;
-}
-
-function countedHoldsSeat({ counted, countedStage }: WorkRunSnapshot): boolean {
-  return counted !== null && counted.card === 'open' && counted.phase !== 'stopped' && !countedStage;
-}
-
-const startedAt = (seat: SeatRun) => seat.run.startedAt;
-
-/** The run whose card holds the seat: of two that could, the one the person started last. */
-export function seatRun(snapshot: WorkRunSnapshot): SeatRun | null {
-  const check: SeatRun | null = checkHoldsSeat(snapshot) && snapshot.run ? { kind: 'check', run: snapshot.run } : null;
-  const meaning: SeatRun | null = countedHoldsSeat(snapshot) && snapshot.counted ? { kind: 'meaning', run: snapshot.counted } : null;
-  if (check && meaning) return startedAt(meaning) > startedAt(check) ? meaning : check;
-  return check ?? meaning;
-}
-
-/** Every run still working, the later started first. */
-export function activeRuns(snapshot: WorkRunSnapshot): SeatRun[] {
-  const runs: SeatRun[] = [];
-  if (isRunActive(snapshot.run) && snapshot.run) runs.push({ kind: 'check', run: snapshot.run });
-  if (isCountedActive(snapshot.counted) && snapshot.counted) runs.push({ kind: 'meaning', run: snapshot.counted });
-  return runs.sort((a, b) => startedAt(b) - startedAt(a));
-}
-
-/** The ring follows the run the card would show, else the latest still working. */
-export function ringRun(snapshot: WorkRunSnapshot): SeatRun | null {
-  const seat = seatRun(snapshot);
-  const active = activeRuns(snapshot);
-  return active.find((entry) => entry.kind === seat?.kind) ?? active[0] ?? null;
 }
 
 /** The run that belongs to this folder, or null: another folder's run is never shown here. */
@@ -62,15 +20,73 @@ export function useFolderWorkRun(folder: string): WorkRun | null {
   return run && run.folder === folder ? run : null;
 }
 
-/** A card holds the seat while it is open and its run's own stage is not on screen. */
+/** A run takes the card while its card is open and its own stage is not on screen. */
+function holdsSeat(entry: SeatRun, snapshot: WorkRunSnapshot): boolean {
+  const { run } = entry;
+  if (run.card !== 'open' || run.phase === 'stopped') return false;
+  if (entry.kind === 'meaning') return entry.run.folder === snapshot.folder && !snapshot.meaningStage;
+  return entry.kind === 'check'
+    ? snapshot.stageFolder !== entry.run.folder
+    : !snapshot.automationsShown && entry.run.folder === snapshot.folder;
+}
+
+/** The runs the card speaks for, oldest first: the card names the last, the person's latest. */
+export function seatRuns(snapshot: WorkRunSnapshot): SeatRun[] {
+  return [...snapshot.runs.values()]
+    .filter((entry) => holdsSeat(entry, snapshot))
+    .sort((a, b) => a.run.startedAt - b.run.startedAt);
+}
+
+/**
+ * The run the Library tile's ring follows: the wiki check or the meaning preparation of the open
+ * folder, whichever the card names while it works, else the one started last.
+ */
+export function libraryRingRun(snapshot: WorkRunSnapshot, folder: string): SeatRun | null {
+  const working = [...snapshot.runs.values()]
+    .filter((entry) => entry.kind !== 'scheduled' && entry.run.folder === folder && isSeatRunActive(entry))
+    .sort((a, b) => a.run.startedAt - b.run.startedAt);
+  const named = seatRuns(snapshot).at(-1);
+  return working.find((entry) => entry.key === named?.key) ?? working.at(-1) ?? null;
+}
+
 export function workCardHoldsSeat(snapshot: WorkRunSnapshot): boolean {
-  return seatRun(snapshot) !== null;
+  for (const entry of snapshot.runs.values()) if (holdsSeat(entry, snapshot)) return true;
+  return false;
+}
+
+export function isSeatRunActive(entry: SeatRun): boolean {
+  if (entry.kind === 'meaning') return isMeaningActive(entry.run);
+  return entry.kind === 'check' ? isRunActive(entry.run) : isScheduledActive(entry.run);
+}
+
+/** The meaning run's figures, at most four times a second; read only by the leaves that draw them. */
+export function useMeaningProgress(): MeaningProgress | null {
+  return useSyncExternalStore(workRuns.subscribeMeaningProgress, workRuns.readMeaningProgress, () => null);
+}
+
+/** The open folder's scheduled runs, oldest first; another folder's never show here. */
+export function useScheduledRuns(): ScheduledRun[] {
+  const snapshot = useWorkRunSnapshot();
+  const runs: ScheduledRun[] = [];
+  for (const entry of snapshot.runs.values()) {
+    if (entry.kind === 'scheduled' && entry.run.folder === snapshot.folder) runs.push(entry.run);
+  }
+  return runs;
+}
+
+/** Registers Automations as the stage of every scheduled run while it is mounted. */
+export function useAutomationsStage(shown: boolean) {
+  useEffect(() => {
+    if (!shown) return;
+    workRuns.enterAutomations();
+    return () => workRuns.leaveAutomations();
+  }, [shown]);
 }
 
 /** Ticks once a second while the run is active and stops in the render that ends it. */
-export function useWorkRunElapsed(run: WorkRun | null): string | null {
+export function useWorkRunElapsed(run: Pick<WorkRun, 'phase' | 'startedAt' | 'endedAt'> | ScheduledRun | null): string | null {
   const t = useTranslations('acpChat');
-  const active = isRunActive(run);
+  const active = run !== null && (run.phase === 'running' || run.phase === 'asking');
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!active) return;

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -63,6 +63,56 @@ describe('the work card in the notice seat', () => {
     expect(push).toHaveBeenCalledWith('/library/');
     expect(workRuns.read().door).toMatchObject({ runId: id, kind: 'results' });
     expect(workRuns.read().run).toMatchObject({ unseen: false, card: 'closed' });
+  });
+
+  it('carries a scheduled check with its counted documents, then changes in place to its result with one door', () => {
+    act(() => workRuns.leaveFolder(FOLDER, 10_000));
+    const key = workRuns.beginScheduled({ id: 'pass-7', roundId: 'r-pages', name: 'Pages still match', lane: 'documents', folder: FOLDER, startedAt: 10_000 });
+    renderCard();
+    act(() => {
+      for (const path of ['wiki/alpha.md', 'wiki/beta.md', 'wiki/gamma.md']) workRuns.observeScheduledDocument(key, path, true);
+      vi.advanceTimersByTime(5_000);
+    });
+    expect(screen.getByTestId('work-run-title')).toHaveTextContent('Pages still match · scheduled check');
+    expect(screen.getByTestId('work-run-line')).toHaveTextContent(/^wiki\/gamma$/);
+    expect(screen.getByTestId('work-run-figures')).toHaveTextContent('3 documents checked · 5s');
+    const box = screen.getByTestId('work-run-card').className;
+
+    act(() => workRuns.finishScheduled(key, { stopped: false, result: { outcome: 'held', checked: 3, stale: 0, written: 0, summary: '' } }, 16_000));
+    expect(screen.getByTestId('work-run-card').className).toBe(box);
+    expect(screen.getByTestId('work-run-title')).toHaveTextContent('No changes');
+    expect(screen.getByTestId('work-run-detail')).toHaveTextContent('Pages still match checked 3 documents and changed nothing.');
+    expect(screen.getByTestId('work-run-light')).toHaveAttribute('data-tint', 'success');
+    fireEvent.click(screen.getByTestId('work-run-open-run'));
+    expect(push).toHaveBeenCalledWith('/automations/?kind=documents&round=r-pages&run=pass-7');
+  });
+
+  it('names the latest of two runs, counts the other, and lists both in a centred dialog with one selected', () => {
+    act(() => workRuns.leaveFolder(FOLDER, 10_000));
+    const checkStop = vi.fn();
+    const scheduledStop = vi.fn();
+    const checkId = workRuns.begin({ folder: FOLDER, owner: 'launch:claude-acp', agent: 'Claude Agent', startedAt: 10_000 });
+    workRuns.setStop(checkId, checkStop);
+    const key = workRuns.beginScheduled({ id: 'pass-8', roundId: 'r-pages', name: 'Pages still match', lane: 'documents', folder: FOLDER, startedAt: 11_000 });
+    workRuns.setScheduledStop(key, scheduledStop);
+    renderCard();
+    expect(screen.getByTestId('work-run-card')).toHaveAttribute('data-run-kind', 'scheduled');
+    fireEvent.click(screen.getByTestId('work-run-more'));
+    expect(screen.getByTestId('work-run-more')).toHaveTextContent('1 more running');
+
+    const dialog = screen.getByRole('dialog');
+    const tabs = within(dialog).getAllByRole('tab');
+    expect(tabs.map((tab) => tab.getAttribute('aria-selected'))).toEqual(['true', 'false']);
+    expect(within(dialog).getByTestId('work-runs-pane')).toHaveAttribute('data-run-key', key);
+    fireEvent.click(tabs[1]!);
+    expect(within(dialog).getByTestId('work-runs-pane')).toHaveAttribute('data-run-key', `check:${checkId}`);
+    expect(within(dialog).getByTestId('work-runs-pane-title')).toHaveTextContent('Checking the wiki');
+
+    fireEvent.click(tabs[0]!);
+    fireEvent.click(within(dialog).getByTestId('work-runs-stop'));
+    expect(scheduledStop).toHaveBeenCalledTimes(1);
+    expect(checkStop).not.toHaveBeenCalled();
+    expect(screen.getByTestId('work-run-card')).toHaveAttribute('data-run-kind', 'check');
   });
 
   it('hides for the rest of the run while the check keeps going', () => {

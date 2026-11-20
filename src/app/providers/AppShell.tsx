@@ -23,7 +23,15 @@ import {
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode, useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
-import { ringRun, useCountedProgress, useWorkRunSnapshot, workCardHoldsSeat, WorkRunSeat } from "@/features/work-run";
+import {
+  isRunActive,
+  isScheduledActive,
+  libraryRingRun,
+  useMeaningProgress,
+  useWorkRunSnapshot,
+  workCardHoldsSeat,
+  WorkRunSeat,
+} from "@/features/work-run";
 import { describeVaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { destinationsForVaultShape, FOLDER_OPTIONAL_DESTINATIONS } from "@/shared/config/destinations";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
@@ -38,8 +46,8 @@ import { VaultSwitchRailTile } from "@/features/vault-switch";
 import { useProjectsDoorHref } from "@/features/project-data-source";
 import { ShellFrame, useShellSetup } from "./ShellFrame";
 import { MapNavigationOverlay } from "./MapNavigationOverlay";
-import { ShellKeyboardSurfaces } from "./ShellKeyboardSurfaces";
 import { MeaningRunSeat } from "./MeaningRunSeat";
+import { ShellKeyboardSurfaces } from "./ShellKeyboardSurfaces";
 import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/navigation/map-navigation-pending";
 import { useMapReadingContext } from "@/shared/lib/navigation/map-reading-context";
 import { buildTopologyReturnHref } from "@/entities/knowledge-graph";
@@ -260,6 +268,7 @@ function AppNavRailSlot() {
 
   const atAgents = resolveActiveNavDestination(pathname) === "agents";
   const installNotice = useInstallNotice(atAgents);
+  const { rail: workRuns, meaningRunId } = useRailWorkRuns();
 
   const visibleDestinations = useMemo(
     () => destinationsForVaultShape(vault.manifest ? describeVaultShape(vault.manifest.docs) : null),
@@ -309,6 +318,7 @@ function AppNavRailSlot() {
   return (
     <>
       <WorkRunRail
+        meaningRunId={meaningRunId}
         /*
          * Registered by the shell so the folder name shows on every destination, including the
          * ones a wiki-only vault has.
@@ -321,6 +331,7 @@ function AppNavRailSlot() {
         }
         gitDirtyCount={gitDirtyCount}
         agentsNoticeCount={installNotice.count}
+        workRuns={workRuns}
         visibleDestinations={shownDestinations}
       />
       {/*
@@ -333,39 +344,56 @@ function AppNavRailSlot() {
   );
 }
 
-const RailView = memo(AppNavRail);
-
 /**
- * The rail with the open folder's long work on its Library tile. The runs are read here, in a
- * leaf, so a count arriving four times a second redraws the rail and never the shell around it.
+ * The open folder's runs on their tiles, a ring while one runs and a badge until read: the wiki
+ * check or the meaning preparation on Library, scheduled checks on Automations. It changes only
+ * when a run's phase or card does; the meaning run's fraction joins in `WorkRunRail`.
  */
-function WorkRunRail(props: Omit<ComponentProps<typeof AppNavRail>, "workRun">) {
-  return <RailView {...props} workRun={useRailWorkRun()} />;
+function useRailWorkRuns(): { rail: RailWorkRun[]; meaningRunId: number | null } {
+  const snapshot = useWorkRunSnapshot();
+  const folder = useVaultSessionIdentityScope();
+  return useMemo(() => {
+    const rail: RailWorkRun[] = [];
+    const ring = libraryRingRun(snapshot, folder);
+    let checkUnseen = false;
+    let scheduledRunning = false;
+    let scheduledUnseen = 0;
+    for (const entry of snapshot.runs.values()) {
+      if (entry.run.folder !== folder) continue;
+      if (entry.kind === "check") checkUnseen ||= !isRunActive(entry.run) && entry.run.unseen;
+      else if (entry.kind === "scheduled") {
+        if (isScheduledActive(entry.run)) scheduledRunning = true;
+        else if (entry.run.unseen) scheduledUnseen += 1;
+      }
+    }
+    if (ring) rail.push({ destination: "library", state: "running" });
+    else if (checkUnseen) rail.push({ destination: "library", state: "finished", count: 1 });
+    if (scheduledRunning) rail.push({ destination: "automations", state: "running" });
+    else if (scheduledUnseen > 0) rail.push({ destination: "automations", state: "finished", count: scheduledUnseen });
+    return { rail, meaningRunId: ring?.kind === "meaning" ? ring.run.id : null };
+  }, [folder, snapshot]);
 }
 
-/** Fractions finer than the ring can draw would redraw it for nothing. */
+const RailView = memo(AppNavRail);
+
+/** The ring's fraction in thousandths: finer than a pixel of its arc, coarse enough to skip a redraw. */
 const RING_STEPS = 1_000;
 
 /**
- * A ring while a run works (the run the card would show, else the latest), with its fraction
- * where it counts against a total; the check's badge once it finished unread.
+ * The rail with the meaning run's fraction on its ring. The figures reach this leaf alone, at most
+ * four times a second, so the shell and the slot above never redraw on a count.
  */
-function useRailWorkRun(): RailWorkRun | null {
-  const snapshot = useWorkRunSnapshot();
-  const progress = useCountedProgress();
-  const folder = useVaultSessionIdentityScope();
-  const ring = ringRun(snapshot);
-  const counted = ring?.kind === "meaning" && progress?.runId === ring.run.id ? progress.fraction : null;
-  const fraction = counted === null ? null : Math.round(counted * RING_STEPS) / RING_STEPS;
-  const check = snapshot.run;
-  const ringShown = ring !== null && (ring.kind === "meaning" || ring.run.folder === folder);
-  const unseen = check !== null && check.folder === folder && check.unseen;
-  return useMemo<RailWorkRun | null>(() => {
-    if (!ringShown) return unseen ? { destination: "library", state: "finished", count: 1 } : null;
-    return fraction === null
-      ? { destination: "library", state: "running" }
-      : { destination: "library", state: "running", fraction };
-  }, [ringShown, fraction, unseen]);
+function WorkRunRail({ workRuns, meaningRunId, ...props }: ComponentProps<typeof AppNavRail> & { meaningRunId: number | null }) {
+  const progress = useMeaningProgress();
+  const measured = meaningRunId !== null && progress?.runId === meaningRunId ? progress.fraction : null;
+  const fraction = measured === null ? null : Math.round(measured * RING_STEPS) / RING_STEPS;
+  const rail = useMemo(
+    () => (fraction === null
+      ? workRuns
+      : workRuns?.map((run) => (run.destination === "library" && run.state === "running" ? { ...run, fraction } : run))),
+    [workRuns, fraction],
+  );
+  return <RailView {...props} workRuns={rail} />;
 }
 
 /**

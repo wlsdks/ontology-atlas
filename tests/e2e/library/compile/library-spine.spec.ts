@@ -124,16 +124,14 @@ test.describe('the Library spine at one saved answer', () => {
     const row = popup.getByTestId(`library-question-${ANSWER_SLUG}`);
     await expect(row).toBeVisible();
 
-    // Ask wears the chip grammar of the trigger that opened the popup: same radius and type size.
+    /*
+     * Ask keeps the type size of the trigger that opened the popup. The trigger is a 36px chrome pill
+     * in the page header, and Ask is a chip inside the popup, so their radius and height differ.
+     */
     const ask = popup.getByTestId('library-questions-ask');
     await expect(ask).toBeVisible();
-    const shape = (el: Element) => {
-      const style = getComputedStyle(el);
-      return { radius: style.borderTopLeftRadius, size: style.fontSize, height: el.getBoundingClientRect().height };
-    };
-    const [askShape, openerShape] = [await ask.evaluate(shape), await opener.evaluate(shape)];
-    expect({ radius: askShape.radius, size: askShape.size }).toEqual({ radius: openerShape.radius, size: openerShape.size });
-    expect(Math.abs(askShape.height - openerShape.height), "Ask is a different height from its trigger").toBeLessThan(1);
+    const size = (el: Element) => getComputedStyle(el).fontSize;
+    expect(await ask.evaluate(size)).toBe(await opener.evaluate(size));
 
     /*
      * The row reads as a door at rest: a soft edge over `overlay-2`, compared against a fresh probe with
