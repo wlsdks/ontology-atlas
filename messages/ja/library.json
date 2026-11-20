@@ -53,7 +53,7 @@
       "reasonWords": "同じ単語",
       "reasonMeaning": "似た意味",
       "reasonBoth": "同じ単語 · 似た意味",
-      "coverage": "意味検索: ファイル{total, number}件中{ready, number}件",
+      "coverage": "意味検索：ファイル{total, number}件中{ready, number}件",
       "staleDropped": "変更されたファイルの箇所{count, number}件を除きました",
       "modelGoneNotice": "モデルがこのコンピュータにないため、この結果は単語だけで照合しています。",
       "runnerDownNotice": "Ollamaが応答しなかったため、この結果は単語だけで照合しています。",
