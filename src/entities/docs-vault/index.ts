@@ -37,10 +37,10 @@ export { applyVaultChanges } from './lib/local-manifest/apply-vault-changes';
 export type { LocalVaultSnapshot } from './lib/local-manifest/apply-vault-changes';
 export type {
   LocalVaultBuild,
-  BuiltVaultEntry,
   VaultBuildObserver,
   VaultStampIndex,
 } from './lib/local-manifest/build-local-manifest';
+export type { BuiltVaultEntry } from './lib/local-manifest/md-entry';
 export { VAULT_SOURCES_DIR } from './lib/local-manifest/walk-vault';
 export { createSourceCopyBatch } from './lib/library/source-copy-publication';
 export {

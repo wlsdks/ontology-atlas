@@ -16,26 +16,28 @@ import {
 } from './walk-vault';
 import {
   addStamp,
-  backlinkContribution,
-  buildMdEntry,
   compareCollated,
   compareTreeNodes,
   createMarkdownReader,
-  createMetadataStringPool,
   fingerprintText,
   mapPooled,
   NATIVE_BATCH_CONCURRENCY,
   NATIVE_READ_BATCH,
   nativeRootPath,
   parseFingerprint,
+  vaultSourceFormat,
+  type LocalVaultBuild,
+} from './build-local-manifest';
+import {
+  backlinkContribution,
+  buildMdEntry,
+  createMetadataStringPool,
   refersToTail,
   refResolver,
   slugTail,
-  vaultSourceFormat,
   type BuiltVaultEntry,
-  type LocalVaultBuild,
   type RefResolver,
-} from './build-local-manifest';
+} from './md-entry';
 import type {
   VaultBacklinkEntry,
   VaultDoc,

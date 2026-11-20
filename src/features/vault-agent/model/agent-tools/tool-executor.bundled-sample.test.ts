@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { VaultDoc } from '@/entities/docs-vault';
 import dogfoodContent from '@/entities/docs-vault/data/content.json';
 import dogfoodManifest from '@/entities/docs-vault/data/manifest.json';
-import { buildMdEntry } from '@/entities/docs-vault/lib/local-manifest/build-local-manifest';
+import { buildMdEntry } from '@/entities/docs-vault/lib/local-manifest/md-entry';
 
 import { wrapUntrusted } from './concept-evidence-pack';
 import { createToolExecutor } from './tool-executor';

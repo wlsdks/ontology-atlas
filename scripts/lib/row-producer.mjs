@@ -8,8 +8,8 @@ import { createHash } from 'node:crypto';
 import { readFileSync, statSync } from 'node:fs';
 import { join, posix } from 'node:path';
 
-/** The module whose `buildMdEntry` computes every stored row. */
-export const ROW_PRODUCER_ENTRY = 'src/entities/docs-vault/lib/local-manifest/build-local-manifest.ts';
+/** The module whose `buildMdEntry` computes every stored row and whose `storedMdEntry` reads it. */
+export const ROW_PRODUCER_ENTRY = 'src/entities/docs-vault/lib/local-manifest/md-entry.ts';
 
 const SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(?\s*)(['"])([^'"\n]+)\1/g;
 const EXTENSIONS = ['.ts', '.tsx', '.mts', '.mjs', '.js', '.json'];

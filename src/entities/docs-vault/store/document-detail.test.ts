@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { generateScaleVault } from '../../../../scripts/perf/gen-scale-vault.mjs';
-import { buildMdEntry } from '../lib/local-manifest/build-local-manifest';
+import { buildMdEntry } from '../lib/local-manifest/md-entry';
 import type { WalkEntry } from '../lib/local-manifest/walk-vault';
 import type { VaultDoc, VaultHeading } from '../model/types';
 import dogfoodContent from '../data/content.json';
