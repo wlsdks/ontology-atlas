@@ -129,12 +129,22 @@ section wins: those were written for a runner-only design and are kept for the O
    opens the Wiki desk.
 6. **Search improves while it runs.** Find evidence uses the files already prepared; wiki pages
    are prepared first. The results head's coverage popover adds "By meaning: N of M files".
-7. **Stop, quit, crash.** Every finished passage and every downloaded byte is kept. **Resume**,
-   or the next opening of the folder, continues; no passage is prepared twice. A download that
-   failed its check is deleted and says so.
+7. **Stop, quit, crash.** Every finished passage and every downloaded byte is kept. A folder the
+   person stopped, or whose last pass failed, is **held**: nothing starts for it on its own (not
+   after an index pass, not after a search that dropped a stale passage, not a pass already
+   queued) until **Resume** or Set up asks again. The WebView remembers the pause and sends it
+   with the first status call after a restart (`paused`), so the hold outlives the app; the cache
+   does not carry it. A folder that was quit or crashed mid-job, and not paused, continues at the
+   next opening; no passage is prepared twice. A download that failed its check is deleted and
+   says so.
 8. **Ready.** The desk line reads "Searching by words and by meaning · N files". When files
    change, only changed passages are prepared again, and the line says "Updating N changed
-   files" only while N > 0; the rail draws no ring for an update under ten files.
+   files" only while N > 0; the rail draws no ring for an update under ten files. An **update**
+   is a pass over a folder whose store a preparation once finished for this model, a fact the
+   store records itself; its counts are the changed files alone. A folder never finished
+   continues as preparing, with folder-wide counts. An update starts after 30 s with no index pass
+   for that folder, and no later than 10 min after the first change it waits on, so an agent
+   writing every few seconds starts the worker once, not once per write.
 9. **A question.** Find evidence runs word search and meaning search together and fuses them
    (reciprocal rank, k = 60) into the desk's one list. Each row carries the reason it is there:
    **Same words**, **Similar meaning**, or both. The model loads when the question field takes
@@ -157,10 +167,13 @@ processor alone; the app stays within 10 MB of where it was, before, during and 
 | Path | What is sent | Where | Consent | Audit lines |
 |---|---|---|---|---|
 | Built-in model download | The model files' addresses only; no folder content | `huggingface.co` and the `hf.co` hosts it redirects to, https only, every hop checked | The dialog's primary press | `model-download` start line and closing line naming every host contacted |
-| Built-in preparing and searching | nothing | A worker process of the app on this computer, over a pipe | The same press | none: nothing is transferred |
-| Runner on this computer | Passage text and the question | Loopback only | The dialog's second action | `embed-build`, `embed-query` as below |
+| Built-in preparing and searching | nothing | A worker process of the app on this computer, over a pipe | The same press | none, by rule: nothing is transferred, so it writes no `embed-build` or `embed-query` line and works in a folder whose `.ontology-atlas` cannot be written |
+| Runner on this computer | Passage text and the question | Loopback only | The dialog's second action | `embed-build` start and closing lines per pass, one `embed-query` line per question; an unwritable log blocks the runner (`auditBlocked`) before anything is sent |
 
 Settings › Privacy · data lists the download as an outbound row, with the host and what is sent.
+Quitting tells every job to stop and waits up to 2 s: a runner batch in flight is killed within
+about 50 ms, so its run normally closes as stopped; one held past the wait keeps a start line
+with no close.
 
 ### States
 
@@ -184,7 +197,7 @@ Settings › Privacy · data lists the download as an outbound row, with the hos
 | Needs a direct connection (proxy only) | Out of scope: as above | `meaning.modelNeedsDirect` |
 | Model deleted while vectors exist | Out of scope: as above | Word results plus `meaning.modelGone`; **Download again** |
 | Cache write failed | Out of scope: as above | `meaning.writeFailed`; **Resume** |
-| Audit log unwritable | Out of scope: as above | `meaning.auditBlocked`; nothing sent |
+| Audit log unwritable (runner only) | Out of scope: as above | `meaning.auditBlocked`; nothing sent |
 | Another folder is preparing | Out of scope: as above | `meaning.waitingTurn`; starts when that one ends |
 | Reduced motion | as above | The ring and the line show their end values; no travelling motion |
 | Windows | Out of scope: web | Same cells; the model runs on the processor there, so preparation is slower and uses more memory (stated in the dialog); proof is Windows CI only |
@@ -286,18 +299,34 @@ interface VectorFound { state: 'ok' | 'notReady' | 'failed'; failure: VectorFail
 
 | Command | Does | Never |
 |---|---|---|
-| `vault_vectors_probe(rootPath, runnerBaseUrl?)` | Reads what the dialog states | downloads, creates files, or contacts a non-loopback address |
-| `vault_vectors_status(rootPath, enabled, source?)` | Returns `VectorStatus` | creates anything; blocks on a model load |
-| `vault_vectors_prepare(rootPath, source)` | Starts or continues the folder's one background job (model first when it is missing) and returns at once | runs two jobs for one folder, or two model jobs at once |
-| `vault_vectors_stop(rootPath)` | Stops at the next batch or download chunk; kept work stays | discards finished work |
+| `vault_vectors_probe(rootPath, runnerBaseUrl?)` | Reads what the dialog states; a runner address off this computer answers `notLocal` | downloads, creates files, or contacts a non-loopback address |
+| `vault_vectors_status(rootPath, enabled, source?, paused?)` | Returns `VectorStatus`. A source arms a folder this launch has not armed; with `paused: true` it also holds it | creates anything; blocks on a model load; replaces a source a prepare chose |
+| `vault_vectors_prepare(rootPath, enabled, source)` | Chooses the folder's source, lets a held folder go, starts or continues its one background job (model first when it is missing) and returns at once. With `enabled` false it answers `off` | creates anything with the index off; runs two jobs for one folder, or two model jobs at once |
+| `vault_vectors_stop(rootPath)` | Stops at once and holds the folder; kept work stays. Its answer and every later event say `stopped` | discards finished work; starts again on its own |
 | `vault_vectors_warm(source)` | Loads the model for a question about to be asked | downloads |
-| `vault_vectors_search(rootPath, source, question, limit)` | Embeds the question and returns the nearest passages, at most 64 | waits longer than 10 s; returns a passage its file no longer holds |
-| `vault_vectors_delete(rootPath)` | Deletes this folder's vectors and ends its job | touches the vault |
-| `vault_vectors_delete_model()` | Ends every job using the built-in model, then deletes its files | touches vectors |
+| `vault_vectors_search(rootPath, source, question, limit)` | Embeds the question, cut to 2,000 characters on a character boundary, and returns the nearest passages, at most 64 | waits longer than 10 s (a built-in worker that does not answer by then is killed, and the next question starts a fresh one); returns a passage its file no longer holds |
+| `vault_vectors_delete(rootPath)` | Deletes this folder's vectors and ends its job. Its answer and every later event say `notSetUp` with zero counts | touches the vault |
+| `vault_vectors_delete_model()` | Ends every job using the built-in model, a download, conversion or check included, then deletes its files in the same turn | touches vectors |
 
-`modelFailed`: the model could not start, stopped answering mid-batch, or answered with vectors
-Atlas refused (a worker that exited or timed out, a runner's malformed answer); finished work is
-kept and Resume tries again. No other failure names that case.
+`prepare`, `status`, `search` and `probe` refuse with a command error, never a state, a folder
+the person did not choose. `prepare`, `status` and `search` also refuse a runner address that is
+not on this computer (`embed-not-local`, or `embed-endpoint-invalid` for plain http off it), a
+model name that is malformed (`embed-model-invalid`) or names a cloud model
+(`embed-model-remote`), and a model name over 200 characters once prefixed
+(`vectors-model-name-too-long`). In the bridge only `searchVectors` never rejects: a refused
+search answers `failed` with no hits.
+
+Failures, each with a coded `failureDetail`:
+
+| Failure | When |
+|---|---|
+| `modelCheck` | the download does not match the published file's hash or size; the download is deleted |
+| `modelFailed` | the converted model does not load (`embed-model-load-failed-in-convert` or `-in-check`), fails its reference check (`embed-model-reference-failed-in-check`), or its worker exits or times out during conversion or the check (`embed-worker-exited-in-convert`, `embed-timed-out-in-check`, …); the download is kept. Also a worker that exits, times out or answers wrongly while preparing, a runner's malformed answer, and a pass that failed inside Atlas (`internal`) |
+| `modelGone` | the built-in model is missing when a pass needs it, after a first pass and after an update alike; the vectors are kept |
+| `download`, `needsDirect`, `diskShort`, `write`, `runnerDown`, `modelMissing`, `auditBlocked`, `unreadable` | as their names say; `auditBlocked` only for a runner |
+
+Finished work is kept after every failure, and Resume tries again. A folder waiting for another
+folder's turn says `waitingTurn` until it holds the turn, never `modelDownloading` first.
 
 Event `vault-vectors-status` carries `{ rootPath, status }` on every phase change and, while a
 job runs, at most four times a second and at least every two seconds.
@@ -538,3 +567,4 @@ Order: S1 and S2 first and in parallel, then S3. S4 follows once #3607 merges, a
 - 2026-11-20: second store review. Delete, another model and damage retire the file one way: removed or renamed aside, else reset in place (schema rows dropped, vacuumed, log checkpointed), so Windows keeps the same contract while a search holds the file. Damage found by a plan's pending list, by prepare's first write or by a search is set aside, and the next plan rebuilds; a search lets its connection go first and never waits for the writer lock. The size row counts every byte on disk, a damaged copy included. A search holds only vectors a file holds, so the 7-day grace period costs disk only. A new passage rule rewrites no vector: file rows are forgotten 1,024 per transaction and the vectors left unheld are marked in batches once every file was read again. Measured at 50k files after it: 134,603 passages, a file of 1.059 × text, +17.6 MB steady, +19.0 to +19.1 MB peak during a query, +34.1 MB peak while preparing, +1.6 MB after the drop, and search p95 of 2.9 to 3.0 ms in the store; at 10k, 1.058 × text, +3.6 MB steady and p95 of 2.0 to 2.2 ms.
 - 2026-11-20: the built-in flow, its states and copy, and the app's command contract; code names the feature vectors.
 - 2026-11-20: the command contract gains the failure `modelFailed`, because a worker that exits, times out or answers wrongly fits no other failure and its copy must not blame the download, the runner or the cache.
+- 2026-11-20: review of the app wiring and the worker. Stop and a failure hold the folder until the person prepares it again, and `paused` carries the hold across a restart. An update is a pass over a store a preparation once finished, and waits for 30 quiet seconds, at most 10 minutes. The built-in model writes no audit line. A question has 10 s. Failures name the step that failed. The commands refuse a source no screen offers, and prepare takes the index switch.
