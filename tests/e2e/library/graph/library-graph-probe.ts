@@ -54,8 +54,16 @@ export interface LibraryGraphProbe {
   islandNames: () => string[];
   interaction: () => { kind: "idle" | "node" | "pan"; nodeId: string | null };
   view: () => { scale: number; x: number; y: number; width: number; height: number };
-  /** The flow picture's columns as last laid, or null under the force layout. */
-  layout: () => { rowGap: number; columns: Array<{ kind: "source" | "page" | "concept"; x: number; grid: number; count: number }> } | null;
+  /**
+   * The flow picture's columns as last laid, in world units (times `view().scale` for screen
+   * px), or null under the force layout. `stacks` is how many stacks the pages stand in, `lanes`
+   * the most sub-columns one stack folds the kind into, `named` whether its names stand at rest,
+   * and `labelRoom` the room a name beside the column is cut to.
+   */
+  layout: () => {
+    rowGap: number;
+    columns: Array<{ kind: "source" | "page" | "concept"; x: number; lanes: number; stacks: number; named: boolean; count: number; labelRoom: number }>;
+  } | null;
   /** The islands of the overview in world units, or null under the flow or force picture. */
   /** The scale the fit tile would take the camera to. */
   fitScale?: () => number;

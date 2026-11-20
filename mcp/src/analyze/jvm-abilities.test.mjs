@@ -174,6 +174,53 @@ test('main methods are executables and scheduled work is a worker, each cited at
   ]);
 });
 
+test('each message listener is a worker of its own beside the class scheduled work, and a commented one is none', () => {
+  const refunds = [
+    'package org.shop.billing',
+    'import org.springframework.kafka.annotation.KafkaListener',
+    'import org.springframework.scheduling.annotation.Scheduled',
+    'class RefundListener {',
+    '    @KafkaListener(topics = ["refunds"])',
+    '    fun onRefund(event: String) {}',
+    '',
+    '    @KafkaListener(topics = ["chargebacks"])',
+    '    fun onChargeback(event: String) {}',
+    '',
+    '    @Scheduled(cron = "0 0 * * * *")',
+    '    fun reconcile() {}',
+    '}',
+  ].join('\n');
+  const mail = [
+    'package org.shop.mail;',
+    'import org.springframework.amqp.rabbit.annotation.RabbitListener;',
+    'import org.springframework.scheduling.annotation.Scheduled;',
+    '@RabbitListener(queues = "mail")',
+    'public class MailConsumer {',
+    '    @Scheduled(fixedDelay = 1000)',
+    '    public void flush() {}',
+    '}',
+  ].join('\n');
+  const quiet = [
+    'package org.shop.mail;',
+    'public class QuietConsumer {',
+    '    // @JmsListener(destination = "ghost")',
+    '    public void handle(String body) {}',
+    '}',
+  ].join('\n');
+  const rows = abilities({
+    'src/main/kotlin/org/shop/billing/RefundListener.kt': refunds,
+    'src/main/java/org/shop/mail/MailConsumer.java': mail,
+    'src/main/java/org/shop/mail/QuietConsumer.java': quiet,
+  });
+  assert.deepEqual(rows.map((row) => `${row.kind} ${row.name} ${row.symbol} ${row.evidence}`), [
+    'worker RefundListener.onRefund RefundListener.onRefund src/main/kotlin/org/shop/billing/RefundListener.kt:L5',
+    'worker RefundListener.onChargeback RefundListener.onChargeback src/main/kotlin/org/shop/billing/RefundListener.kt:L8',
+    'worker RefundListener RefundListener.reconcile src/main/kotlin/org/shop/billing/RefundListener.kt:L11',
+    'worker MailConsumer MailConsumer src/main/java/org/shop/mail/MailConsumer.java:L4',
+    'worker MailConsumer.flush MailConsumer.flush src/main/java/org/shop/mail/MailConsumer.java:L6',
+  ]);
+});
+
 test('doubling a hostile file at most about doubles the time to read it', () => {
   const shapes = {
     'heads without bodies': 'public class A extends B ',

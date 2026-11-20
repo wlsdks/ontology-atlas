@@ -7,13 +7,15 @@
 // stripping, as `LibraryQuestionDesk.tsx` calls it. The meaning side embeds passages and questions
 // through Ollama's `/api/embed` on this computer and fuses both rankings by reciprocal rank (k = 60)
 // into the desk's 8 claims and 8 source passages. Without Ollama only the word side runs.
-// The passage splitter lives here until the app's index owns it.
+// Passages come from the app's index itself (`vault-index-bench passages`), the only splitter.
 
+import { execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { register } from 'node:module';
 import { loadavg, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { createInterface } from 'node:readline';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
@@ -22,7 +24,6 @@ const CACHE = join(tmpdir(), 'atlas-meaning-quality');
 
 export const DEFAULT_OLLAMA = 'http://localhost:11434';
 export const DEFAULT_MODELS = ['bge-m3', 'qwen3-embedding:0.6b'];
-export const MAX_PASSAGE_CHARS = 2000;
 export const BATCH_PASSAGES = 32;
 export const BATCH_BYTES = 64 * 1024;
 const RRF_K = 60;
@@ -39,80 +40,23 @@ const family = (model) => model.split(':')[0];
 
 // ── passages ─────────────────────────────────────────────────────────────────────
 
-const HEADING = /^ {0,3}#{1,6}(?:[ \t]|$)/;
-const FENCE = /^ {0,3}(`{3,}|~{3,})/;
+const MANIFEST = join(ROOT, 'src-tauri', 'Cargo.toml');
+const BENCH = join(ROOT, 'src-tauri', 'target', 'release', process.platform === 'win32' ? 'vault-index-bench.exe' : 'vault-index-bench');
+let benchBuilt = false;
 
-/**
- * Splits one Markdown file into passages: frontmatter dropped, a new passage at every heading outside
- * a code fence, a heading with no body skipped, at most 2,000 characters each (split at line ends, a
- * longer line cut), NFC. Lines are 1-based in the file as written.
- */
-export function splitPassages(path, raw) {
-  const lines = raw.split(/\r?\n/);
-  let index = 0;
-  if (lines[0]?.trim() === '---') {
-    const close = lines.findIndex((line, at) => at > 0 && /^(?:---|\.\.\.)\s*$/.test(line));
-    index = close < 0 ? 0 : close + 1;
+/** Every passage the app's index embeds for the Markdown files under `dir`: `{ path, start, end, heading, text }`. */
+export async function* cratePassages(dir) {
+  if (!benchBuilt) {
+    execFileSync('cargo', ['build', '--release', '--quiet', '-p', 'vault-index', '--bin', 'vault-index-bench', '--features', 'index-dir-override', '--manifest-path', MANIFEST], { stdio: 'inherit' });
+    benchBuilt = true;
   }
-  const sections = [];
-  let current = null;
-  let fence = null;
-  for (; index < lines.length; index += 1) {
-    const line = lines[index];
-    const fenced = FENCE.exec(line);
-    if (fence) {
-      if (fenced && fenced[1][0] === fence[0] && fenced[1].length >= fence.length) fence = null;
-    } else if (fenced) {
-      fence = fenced[1];
-    } else if (HEADING.test(line)) {
-      current = { start: index + 1, lines: [], heading: true };
-      sections.push(current);
-    }
-    if (!current) {
-      current = { start: index + 1, lines: [], heading: false };
-      sections.push(current);
-    }
-    current.lines.push(line);
+  const child = spawn(BENCH, ['passages', dir], { stdio: ['ignore', 'pipe', 'inherit'] });
+  const closed = new Promise((done) => child.on('close', done));
+  for await (const line of createInterface({ input: child.stdout, crlfDelay: Infinity })) {
+    if (line) yield JSON.parse(line);
   }
-  const passages = [];
-  for (const section of sections) {
-    const body = section.heading ? section.lines.slice(1) : section.lines;
-    if (!body.some((line) => line.trim())) continue;
-    let chunk = [];
-    let chunkStart = section.start;
-    let chunkChars = 0;
-    const flush = (end) => {
-      const text = chunk.join('\n').trim().normalize('NFC');
-      if (text) passages.push({ path, start: chunkStart, end, text });
-      chunk = [];
-      chunkChars = 0;
-    };
-    section.lines.forEach((line, at) => {
-      const lineNo = section.start + at;
-      let rest = [...line];
-      while (rest.length > MAX_PASSAGE_CHARS) {
-        if (chunk.length) flush(lineNo - 1);
-        chunkStart = lineNo;
-        chunk = [rest.slice(0, MAX_PASSAGE_CHARS).join('')];
-        flush(lineNo);
-        rest = rest.slice(MAX_PASSAGE_CHARS);
-        chunkStart = lineNo;
-      }
-      if (chunk.length && chunkChars + rest.length + 1 > MAX_PASSAGE_CHARS) {
-        flush(lineNo - 1);
-        chunkStart = lineNo;
-      }
-      if (!chunk.length) chunkStart = lineNo;
-      chunk.push(rest.join(''));
-      chunkChars += rest.length + 1;
-    });
-    if (chunk.length) {
-      let end = section.start + section.lines.length - 1;
-      while (end > chunkStart && !section.lines[end - section.start].trim()) end -= 1;
-      flush(end);
-    }
-  }
-  return passages;
+  const code = await closed;
+  if (code !== 0) throw new Error(`vault-index-bench passages exited with ${code}`);
 }
 
 // ── Ollama ───────────────────────────────────────────────────────────────────────
@@ -246,7 +190,7 @@ function wordSearch(app, vault, question) {
   return { claims, sources: hits.slice(0, TOP).map((hit) => ({ id: hit.path, line: Number(hit.anchor.slice(1)) })) };
 }
 
-function loadVault(app) {
+async function loadVault(app) {
   const { files } = JSON.parse(readFileSync(join(FIXTURE, 'vault.json'), 'utf8'));
   const docs = [];
   const rawBySlug = new Map();
@@ -264,7 +208,17 @@ function loadVault(app) {
       unitsByPath.set(path, app.sourceUnits(bytes, path).units);
     }
   }
-  const passages = Object.entries(files).flatMap(([path, raw]) => splitPassages(path, raw));
+  const dir = mkdtempSync(join(tmpdir(), 'atlas-meaning-quality-vault-'));
+  const passages = [];
+  try {
+    for (const [path, text] of Object.entries(files)) {
+      mkdirSync(dirname(join(dir, path)), { recursive: true });
+      writeFileSync(join(dir, path), text);
+    }
+    for await (const passage of cratePassages(dir)) passages.push(passage);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
   return { files, docs, rawBySlug, sources, unitsByPath, passages };
 }
 
@@ -343,7 +297,7 @@ function parseArgs(argv) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const app = await importDesk();
-  const vault = loadVault(app);
+  const vault = await loadVault(app);
   const { questions } = JSON.parse(readFileSync(join(FIXTURE, 'questions.json'), 'utf8'));
   if (options.writeVault) {
     for (const [path, text] of Object.entries(vault.files)) {

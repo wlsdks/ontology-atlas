@@ -61,7 +61,7 @@ export function BrandCompanion({ labels, context = 'folder', stilled = false }: 
     const options = { duration: motion.duration, iterations: Infinity };
     const animations = reducedMotion || typeof image.animate !== 'function' || typeof IntersectionObserver === 'undefined' ? []
       : [image.animate(motion.sprite, options), body.animate(motion.movement, options), face.animate(motion.facing, options), bubble.animate(motion.emote, options)];
-    const player = companionPlayer({ image, reactionImage, body, bubble, bounds, animations, context, variation: variation.current, reducedMotion, intent: () => intent.current });
+    const player = companionPlayer({ image, reactionImage, reactionSrc: withBasePath(`/brand/moru-reactions.png?v=${reactions.digest}`), body, bubble, bounds, animations, context, variation: variation.current, reducedMotion, intent: () => intent.current });
     playback.current = player;
     return () => {
       playback.current = null;
@@ -79,8 +79,8 @@ export function BrandCompanion({ labels, context = 'folder', stilled = false }: 
       style={{ height: timeline.cell }}
       onClick={() => playback.current?.react()}
       onContextMenu={event => { event.preventDefault(); setMenuOpen(true); }}
-      onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)}
-      onFocus={event => setFocused(event.currentTarget.matches(':focus-visible'))} onBlur={() => setFocused(false)}
+      onPointerEnter={() => { playback.current?.warm(); setHovered(true); }} onPointerLeave={() => setHovered(false)}
+      onFocus={event => { playback.current?.warm(); setFocused(event.currentTarget.matches(':focus-visible')); }} onBlur={() => setFocused(false)}
       onKeyDown={event => {
         setFocused(true);
         if (event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)) {
@@ -99,8 +99,8 @@ export function BrandCompanion({ labels, context = 'folder', stilled = false }: 
         className="pointer-events-none absolute top-0 left-0 max-w-none"
         style={{ width: timeline.cell * timeline.columns, height: timeline.cell * timeline.rows, imageRendering: 'pixelated' }} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img ref={reactionRef} src={withBasePath(`/brand/moru-reactions.png?v=${reactions.digest}`)} alt="" aria-hidden="true" draggable={false} hidden
-        // Shown only after a press: fetched once the companion mounts, behind the page, never preloaded.
+      <img ref={reactionRef} alt="" aria-hidden="true" draggable={false} hidden
+        // Shown only after a press: the player gives it a source on attention (`companionPlayer`).
         fetchPriority="low"
         width={reactions.cell * reactions.columns} height={reactions.cell * reactions.rows}
         className="pointer-events-none absolute top-0 left-0 max-w-none"

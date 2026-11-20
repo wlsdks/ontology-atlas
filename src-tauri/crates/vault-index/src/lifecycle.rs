@@ -10,6 +10,7 @@ use std::time::{Duration, SystemTime};
 
 pub(crate) const SEARCH_FILE: &str = "search.sqlite";
 pub(crate) const ROWS_FILE: &str = "rows.sqlite";
+pub(crate) const VECTORS_FILE: &str = "vectors.sqlite";
 const LOCK_FILE: &str = "index.lock";
 /// Written into every folder this crate creates. Deletion touches only folders that carry it and
 /// hold nothing but the files below, so a mistaken index root never costs a person's own folder.
@@ -21,7 +22,7 @@ const SQLITE_SIDE_SUFFIXES: [&str; 2] = ["-wal", "-shm"];
 /// and are removed with the index.
 const OS_LITTER: [&str; 3] = [".DS_Store", "Thumbs.db", "desktop.ini"];
 /// Every name an index folder can hold.
-const INDEX_FILE_NAMES: [&str; 10] = [
+const INDEX_FILE_NAMES: [&str; 14] = [
     SEARCH_FILE,
     "search.sqlite-wal",
     "search.sqlite-shm",
@@ -30,6 +31,10 @@ const INDEX_FILE_NAMES: [&str; 10] = [
     "rows.sqlite-wal",
     "rows.sqlite-shm",
     "rows.sqlite.damaged",
+    VECTORS_FILE,
+    "vectors.sqlite-wal",
+    "vectors.sqlite-shm",
+    "vectors.sqlite.damaged",
     LOCK_FILE,
     MARKER_FILE,
 ];
@@ -44,12 +49,18 @@ pub(crate) struct Store {
     pub(crate) file: &'static str,
     pub(crate) schema: &'static str,
     pub(crate) version: i32,
+    /// SQLite's page size for a new file; `None` keeps its default.
+    pub(crate) page_bytes: Option<i64>,
+    /// Whether retiring a file another handle keeps (Windows) resets it in place (`retire_file`).
+    pub(crate) reset_in_place: bool,
 }
 
 pub(crate) const SEARCH: Store = Store {
     file: SEARCH_FILE,
     schema: SEARCH_SCHEMA,
     version: SCHEMA_VERSION,
+    page_bytes: None,
+    reset_in_place: false,
 };
 const BUSY_TIMEOUT: Duration = Duration::from_secs(5);
 const WAL_SIZE_LIMIT_BYTES: i64 = 32 * 1024 * 1024;
@@ -145,7 +156,9 @@ pub(crate) fn is_index_folder(dir: &Path) -> bool {
 pub(crate) fn holds_index(dir: &Path) -> bool {
     named_by_key(dir)
         && fs::symlink_metadata(dir.join(MARKER_FILE)).is_ok_and(|meta| meta.is_file())
-        && (search_path(dir).is_file() || dir.join(ROWS_FILE).is_file())
+        && [SEARCH_FILE, ROWS_FILE, VECTORS_FILE]
+            .iter()
+            .any(|file| dir.join(file).is_file())
 }
 
 /// Every folder under `root` for which `holds_index` is true.
@@ -302,29 +315,57 @@ pub(crate) fn open_store_writer(
 ) -> rusqlite::Result<(Connection, Repair)> {
     let mut repair = Repair::default();
     if fs::metadata(store_path(dir, store)).is_ok_and(|meta| meta.len() == 0) {
-        set_aside_file(dir, store.file).map_err(io_failure)?;
         repair.set_aside_damaged = true;
+        if let Some(conn) = retire_for_open(dir, store, true)? {
+            return Ok((conn, repair));
+        }
     }
-    match open_existing(dir, store) {
+    let keep_copy = match open_existing(dir, store) {
         Ok(Existing::Usable(conn)) => return Ok((conn, repair)),
-        Ok(Existing::Missing) => {}
+        Ok(Existing::Missing) => None,
         Ok(Existing::OtherVersion) => {
-            discard_file(dir, store.file).map_err(io_failure)?;
             repair.discarded_version = true;
+            Some(false)
         }
-        Ok(Existing::Damaged) => {
-            set_aside_file(dir, store.file).map_err(io_failure)?;
-            repair.set_aside_damaged = true;
-        }
-        Err(error) if is_damage(&error) => {
-            set_aside_file(dir, store.file).map_err(io_failure)?;
-            repair.set_aside_damaged = true;
-        }
+        Ok(Existing::Damaged) => Some(true),
+        Err(error) if is_damage(&error) => Some(true),
         Err(error) => return Err(error),
+    };
+    if let Some(keep_copy) = keep_copy {
+        repair.set_aside_damaged |= keep_copy;
+        if let Some(conn) = retire_for_open(dir, store, keep_copy)? {
+            return Ok((conn, repair));
+        }
     }
     let conn = create(dir, store, vault_path)?;
     repair.created = true;
     Ok((conn, repair))
+}
+
+/// Retires a file `open_store_writer` cannot use; the connection when it was reset in place.
+fn retire_for_open(
+    dir: &Path,
+    store: &Store,
+    keep_copy: bool,
+) -> rusqlite::Result<Option<Connection>> {
+    if !store.reset_in_place {
+        let retired = if keep_copy {
+            set_aside_file(dir, store.file)
+        } else {
+            discard_file(dir, store.file)
+        };
+        retired.map_err(io_failure)?;
+        return Ok(None);
+    }
+    match retire_file(dir, store, keep_copy).map_err(io_failure)? {
+        Retired::Removed => Ok(None),
+        Retired::ResetInPlace => match open_existing(dir, store)? {
+            Existing::Usable(conn) => Ok(Some(conn)),
+            _ => Err(io_failure(io::Error::other(
+                "a file reset in place did not reopen",
+            ))),
+        },
+    }
 }
 
 enum Existing {
@@ -358,6 +399,9 @@ fn create(dir: &Path, store: &Store, vault_path: &str) -> rusqlite::Result<Conne
     discard_file(dir, store.file).map_err(io_failure)?;
     create_private_file(&path).map_err(io_failure)?;
     let mut conn = Connection::open_with_flags(&path, open_flags())?;
+    if let Some(bytes) = store.page_bytes {
+        conn.pragma_update(None, "page_size", bytes)?;
+    }
     configure(&conn)?;
     let tx = conn.transaction()?;
     tx.execute_batch(store.schema)?;
@@ -455,7 +499,9 @@ pub(crate) fn folder_bytes(dir: &Path) -> u64 {
 
 /// How often this process deleted each index folder, and every folder at once (the empty path).
 /// A row batch carries the count its lookup saw and writes nothing once it moved, so a Delete or
-/// switch-off is not undone by a batch in flight, even one for a vault that had no index yet.
+/// switch-off is not undone by a batch in flight, even one for a vault that had no index yet. The
+/// count is per process, and the app is one process; another process's writes are told apart by
+/// what the files hold (`vectors`: the file's `store_id`).
 static DELETIONS: std::sync::Mutex<Vec<(PathBuf, i64)>> = std::sync::Mutex::new(Vec::new());
 
 pub(crate) fn deletions(dir: &Path) -> i64 {
@@ -489,15 +535,22 @@ pub(crate) fn delete_locked(dir: &Path, lock: WriterLock) -> io::Result<()> {
     count_deletion(Some(dir));
     let search = search_path(dir);
     let rows = dir.join(ROWS_FILE);
+    let vectors = dir.join(VECTORS_FILE);
     let search_removed = remove_if_present(&search);
     let rows_removed = remove_if_present(&rows);
-    if search_removed.is_err() || rows_removed.is_err() {
+    let vectors_removed = remove_if_present(&vectors);
+    if search_removed.is_err() || rows_removed.is_err() || vectors_removed.is_err() {
         if let Err(error) = search_removed {
             empty_in_place(dir).map_err(|_| error)?;
         }
         if let Err(error) = rows_removed {
             empty_rows_in_place(&rows).map_err(|_| error)?;
         }
+        if let Err(error) = vectors_removed {
+            count_deletion(Some(&vectors));
+            reset_in_place(&vectors, &crate::vectors::VECTORS).map_err(|_| error)?;
+        }
+        remove_if_present(&with_suffix(&vectors, DAMAGED_SUFFIX))?;
         return Ok(());
     }
     for name in INDEX_FILE_NAMES.iter().chain(OS_LITTER.iter()) {
@@ -530,6 +583,79 @@ fn empty_rows_in_place(path: &Path) -> rusqlite::Result<()> {
     conn.execute_batch("BEGIN IMMEDIATE; DELETE FROM rows; COMMIT; VACUUM;")
 }
 
+/// What became of a retired file.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Retired {
+    Removed,
+    ResetInPlace,
+}
+
+/// Retires a store's file under the folder's writer lock and counts it as a deletion: removed, or
+/// renamed aside when `keep_copy` (one damaged copy, never more), with its WAL files; an older
+/// damaged copy goes either way. Where another handle keeps the platform from removing it
+/// (Windows), it is reset in place: it then holds nothing and names no model, as a new file.
+pub(crate) fn retire_file(dir: &Path, store: &Store, keep_copy: bool) -> io::Result<Retired> {
+    let path = store_path(dir, store);
+    let copy = with_suffix(&path, DAMAGED_SUFFIX);
+    if path.exists() {
+        count_deletion(Some(&path));
+    }
+    remove_if_present(&copy)?;
+    let moved = if keep_copy && path.exists() {
+        fs::rename(&path, &copy)
+    } else {
+        remove_if_present(&path)
+    };
+    match moved {
+        Ok(()) => {
+            remove_side_files(&path)?;
+            Ok(Retired::Removed)
+        }
+        Err(error) => {
+            reset_in_place(&path, store).map_err(|_| error)?;
+            Ok(Retired::ResetInPlace)
+        }
+    }
+}
+
+/// Makes a file another handle keeps into a new, empty store. The schema's rows are deleted
+/// without reading any table, so a damaged page cannot stop it, and `user_version` goes in the
+/// same transaction, so a reader in between finds no store. VACUUM then copies nothing, and a
+/// checkpoint truncates the WAL, so no vector stays in freed pages or the log.
+fn reset_in_place(path: &Path, store: &Store) -> rusqlite::Result<()> {
+    let conn = Connection::open_with_flags(path, open_flags())?;
+    conn.busy_timeout(BUSY_TIMEOUT)?;
+    let vault_path = read_meta(&conn, META_VAULT_PATH).ok().flatten();
+    conn.execute_batch(
+        "PRAGMA writable_schema=ON; BEGIN IMMEDIATE; DELETE FROM sqlite_schema;
+         PRAGMA user_version=0; COMMIT; PRAGMA writable_schema=OFF;",
+    )?;
+    drop(conn);
+    let mut conn = Connection::open_with_flags(path, open_flags())?;
+    configure(&conn)?;
+    conn.execute_batch("VACUUM;")?;
+    let tx = conn.transaction()?;
+    tx.execute_batch(store.schema)?;
+    tx.pragma_update(None, "user_version", store.version)?;
+    if let Some(vault_path) = vault_path {
+        write_meta(&tx, META_VAULT_PATH, &vault_path)?;
+    }
+    tx.commit()?;
+    conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()))
+}
+
+/// Retires `vectors.sqlite` (`retire_file`) while the folder's writer lock is held, and the folder
+/// too once no store is left in it.
+pub(crate) fn delete_vectors_locked(dir: &Path, lock: WriterLock) -> io::Result<()> {
+    if retire_file(dir, &crate::vectors::VECTORS, false)? == Retired::Removed
+        && !holds_index(dir)
+        && is_index_folder(dir)
+    {
+        return delete_locked(dir, lock);
+    }
+    Ok(())
+}
+
 /// The index holds each document's words, so it should not outlive its use: a folder opened at
 /// least every two weeks keeps its index, and one left longer pays one rebuild (seconds, even at
 /// 50,000 files) when it is opened again.
@@ -552,13 +678,13 @@ pub(crate) fn sweep_orphans(root: &Path, now: SystemTime) -> usize {
 }
 
 /// Stale when the vault folder is gone or every index file says it was last used more than
-/// `UNUSED_AFTER` ago; a folder holding only `rows.sqlite` is judged by that file.
+/// `UNUSED_AFTER` ago; a folder holding only `rows.sqlite` or `vectors.sqlite` is judged by it.
 fn is_stale(dir: &Path, now: SystemTime) -> bool {
-    let recorded: Vec<(String, Option<String>)> = [search_path(dir), dir.join(ROWS_FILE)]
+    let recorded: Vec<(String, Option<String>)> = [SEARCH_FILE, ROWS_FILE, VECTORS_FILE]
         .iter()
-        .filter_map(|path| {
+        .filter_map(|file| {
             let conn = Connection::open_with_flags(
-                path,
+                dir.join(file),
                 OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
             )
             .ok()?;
