@@ -16,7 +16,7 @@ export interface VaultDocDetail {
 /** The document a detail is asked for: its file and the stamp of the version the page holds. */
 export type DocumentRef = Pick<VaultDoc, 'slug' | 'path' | 'mtime'>;
 
-/** Runs the extractors `buildMdEntry` runs, so a detail equals the manifest's inline fields. */
+/** Derives what a surface shows beyond the spine from the file's text. */
 export function deriveDocumentDetail(raw: string): VaultDocDetail {
   const { body } = parseFrontmatter(raw);
   /* A fresh copy: a V8 substring keeps its whole parent alive, so a cached excerpt would pin its file. */
