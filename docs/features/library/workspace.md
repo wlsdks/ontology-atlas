@@ -203,8 +203,8 @@ pane; saved lists retain a top origin for scanning.
 **Two panes.** The index on the left carries the active Sources or Wiki tab with that
 list's own doors. The right
 pane branches on the kind of file selected — a wiki page opens in the reading pane every
-Markdown surface here shares (`src/widgets/doc-reading-pane/`), headed by its title, its
-author and status, and a chip per source it was built from; a source opens as the six
+Markdown surface here shares (`src/widgets/doc-reading-pane/`), headed by its title and one
+line naming the sources it was built from (the Wiki reader, below); a source opens as the six
 facts the folder holds about a file Atlas has never opened (path, format, size, state and
 sha256 or "not measured") plus one door that reveals it in Finder or hands over the bytes.
 With no folder open the whole screen is one centred stage naming the two kinds of file and
@@ -256,6 +256,27 @@ an explicit Browse action and return focus. A folder that holds wiki
 pages and no `kind:` node opens here rather than on the map: it is a wiki on its own, and
 an empty canvas had nothing to say to the person who chose it (ledger, 2026-09-06). A
 folder with even one node still opens on the map.
+
+**The Wiki reader speaks about the page in front of you** (2026-11-20, W2 in
+`docs/specs/2026-11-20-library-rooms.md`). The row above an open page holds Close, a Back
+press while links have been followed, the page's state, a changed-source badge when a cited
+file's sha256 differs from the one the page recorded, and who wrote it when; the folder's counts stay on
+the Wiki home and in Check results, one Close away. A link reads as its target's title from
+the listing already in memory (no other page is read): a concept carries its kind glyph and
+opens in the Ontology tab, a page opens in place and Back returns to the scroll it was left
+at, a page's link to itself is plain text, and a link to nothing keeps its written path in
+danger ink and says, on hover, focus and to a screen reader, that nothing in the folder has
+that name. A citation is a quiet chip after its sentence; pressing it reads that one file
+exactly as opening the source would and opens a popover beside the chip (above it when there
+is no room below, never over it) with the cited unit and one unit either side, the file and
+line, the changed or missing state, and Open the source; a file listed above 5 MB is not read
+and the popover says it is too large to show; Escape or a second press closes it and focus
+returns to the chip. The page ends with three short lists by title — the sources it
+cites with their citation counts, the pages that link here, and the concepts it names — each
+row the same height and wrapped rather than cut. A desk row opens its page at the block that shows its claim
+(at the top, unmarked, when none does): one scroll when the claim is off screen, none when it is already visible, and a mark behind it
+that holds for 1.2s and fades over the slow duration (at once and without a fade under reduced
+motion); Close returns to the desk with its results and scroll as they were.
 
 **What to do next, one press from the graph's header** (2026-09-06, third and fourth
 pass). The owner opened the new destination and said they did not know what to do on it;

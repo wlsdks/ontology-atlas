@@ -51,7 +51,7 @@ export function DeskLeadRow({ lead, terms, reason, citationState, jev, jevResult
   rise: boolean;
   riseDelay: number;
   openRef?: Ref<HTMLButtonElement>;
-  onOpenWiki: (slug: string) => void;
+  onOpenWiki: (slug: string, claim?: { line: number; sentence: string }) => void;
   onOpenSource: (path: string, anchor?: string) => void;
 }) {
   const t = useTranslations('library');
@@ -93,7 +93,7 @@ export function DeskLeadRow({ lead, terms, reason, citationState, jev, jevResult
     className="group relative -mx-3 flex items-start gap-3 rounded-card px-3 py-3 transition-colors hover:bg-[color:var(--color-overlay-2)] focus-within:bg-[color:var(--color-overlay-2)]">
     <div className="min-w-0 flex-1">
       <button ref={openRef} type="button" aria-describedby={whereId} data-lead-open="true"
-        onClick={() => lead.kind === 'claim' ? onOpenWiki(lead.claim.pageSlug) : onOpenSource(lead.hit.path, lead.hit.anchor)}
+        onClick={() => lead.kind === 'claim' ? onOpenWiki(lead.claim.pageSlug, { line: lead.claim.line, sentence: claimSentence(lead.claim.text) }) : onOpenSource(lead.hit.path, lead.hit.anchor)}
         aria-label={sentence}
         className="block w-full text-left text-[color:var(--color-text-primary)] after:absolute after:inset-0 after:rounded-card after:content-[''] focus-visible:text-[color:var(--color-indigo-text-soft)] focus-visible:outline-hidden focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-[color:var(--color-indigo-focus-ring)]">
         <span data-lead-sentence="true" className="line-clamp-2 break-words text-body-lg leading-body-lg">
