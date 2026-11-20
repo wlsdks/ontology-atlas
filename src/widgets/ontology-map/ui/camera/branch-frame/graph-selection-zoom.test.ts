@@ -228,6 +228,50 @@ describe("a selection framed between both panels", () => {
   });
 
   it.each([
+    ["docs", 1920, 1080, docsManifest], ["storefront", 1280, 800, storefrontManifest], ["storefront", 1410, 840, storefrontManifest],
+  ])("pans a domain's star off the free map's edge until each member's one-line name fits on the side facing away from the domain, where the star leaves the width, in the %s vault at %ix%i", (_, width, height, manifest) => {
+    const map = vaultMap(manifest, { width, height });
+    const titleBlocks = domainTitleBlocks({ model: map.model, tokens: paint, labels: LABELS, measureText, fontFamily: "sans-serif" });
+    const domainR = graphDiscRadiusPx("domain", 0, paint, paint.growthMax);
+    const ownOf = (id: string) => {
+      const capability = map.model.capabilityById.get(id);
+      return graphDiscRadiusPx(capability ? "capability" : "element", capability?.elementIds.length ?? 0, paint, paint.growthMax);
+    };
+    const outside: string[] = [];
+    let weighed = 0;
+    for (const domain of map.model.domains) {
+      const landed = map.frame(domain.id, map.rest) ?? map.rest;
+      const s = landed.tscale;
+      const sx = (x: number) => (x - landed.tx) * s + width / 2;
+      const home = map.at(domain.id);
+      const title = titleBlocks.get(domain.id)!;
+      const half = Math.max(domainR, title.halfWidthPx);
+      const rooms = domainStarRooms(map.model, map.layout, domain.id, paint);
+      const { capabilities, elements } = domainStarIds(map.model, domain.id);
+      let lo = sx(home.x) - half;
+      let hi = sx(home.x) + half;
+      const names: { id: string; minX: number; maxX: number }[] = [];
+      for (const id of [...capabilities, ...elements]) {
+        const room = rooms.get(id)!;
+        const r = openRadiusPx(ownOf(id), room, s, domainR, paint, room.nearestId === null ? 0 : ownOf(room.nearestId));
+        const x = sx(map.at(id).x);
+        lo = Math.min(lo, x - r);
+        hi = Math.max(hi, x + r);
+        const label = map.model.capabilityById.get(id)?.label;
+        if (!label) continue;
+        const reach = r + paint.nameGapPx + measureText(label, `${paint.capNamePx}px sans-serif`) + paint.namePadPx;
+        names.push(map.at(id).x < home.x ? { id, minX: x - reach, maxX: x } : { id, minX: x, maxX: x + reach });
+      }
+      const span = Math.max(hi, ...names.map((n) => n.maxX)) - Math.min(lo, ...names.map((n) => n.minX));
+      if (span > map.free.maxX - map.free.minX - paint.frameMarginPx * 2 - 1) continue;
+      weighed += 1;
+      for (const n of names) if (n.minX < map.free.minX - 0.5 || n.maxX > map.free.maxX + 0.5) outside.push(`${domain.id}: ${n.id} spans ${n.minX.toFixed(0)}..${n.maxX.toFixed(0)}`);
+    }
+    expect(weighed, "some domain's star leaves the width for its members' names").toBeGreaterThan(0);
+    expect(outside, "a member whose name runs off the free map though the star left the width for it").toEqual([]);
+  });
+
+  it.each([
     ["docs", 1280, 800, docsManifest], ["docs", 1410, 840, docsManifest], ["storefront", 1280, 800, storefrontManifest],
   ])("never zooms out for a member pressed in the star a domain opened, in the %s vault at %ix%i", (_, width, height, manifest) => {
     const map = vaultMap(manifest, { width, height });

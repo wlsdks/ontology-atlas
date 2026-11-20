@@ -426,6 +426,15 @@ function elementDotRadius(input: Pick<NameInput, "tokens" | "growth" | "discRadi
   return (input.openStarId ?? null) === null ? dotPx : Math.max(dotPx, input.discRadius(id));
 }
 
+/**
+ * How far an open star member's one-line name reaches past its disc's rim on its own row, in px:
+ * the gap, the text and its pad, as `sideNames` sets the name beside the disc. O(1) past the measure.
+ */
+export function memberNameReachPx(input: { tokens: Pick<FlatGraphPaintTokens, "nameGapPx" | "namePadPx" | "capNamePx">; measureText: MeasureText; fontFamily: string }, label: string): number {
+  const t = input.tokens;
+  return t.nameGapPx + input.measureText(label, font(FONT_WEIGHT.emphasis, t.capNamePx, input.fontFamily)) + t.namePadPx;
+}
+
 function sideNames(input: NameShape, id: string, role: "capability" | "element", text: string): PlacedName[][] {
   const { tokens: t, measureText, fontFamily } = input;
   if (input.selected && id === input.focusId) return selectedNames(input, id, role, text);
