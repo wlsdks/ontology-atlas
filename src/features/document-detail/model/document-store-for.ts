@@ -4,6 +4,7 @@ import {
   type DocumentStore,
   type StaticVaultSource,
 } from '@/entities/docs-vault';
+import type { GrantedVaultFiles } from '@/entities/vault-session';
 import { bundledDocsBySlug, createBundledDetailReader } from './bundled-detail-reader';
 import { createLocalTextReader } from './local-text-reader';
 
@@ -13,11 +14,6 @@ export interface ResolvedDocumentStore {
   origin: object;
 }
 
-export interface LocalFolderFiles {
-  root: FileSystemDirectoryHandle;
-  fileHandles: ReadonlyMap<string, FileSystemFileHandle>;
-}
-
 /*
  * Keyed weakly by the build's handle map: a folder switch or a rebuild leaves the old store, its
  * cache and its handles unreachable, so nothing of an earlier folder outlives it.
@@ -25,7 +21,7 @@ export interface LocalFolderFiles {
 const localStores = new WeakMap<ReadonlyMap<string, FileSystemFileHandle>, DocumentStore>();
 const bundledStores = { withHeadings: new WeakMap<StaticVaultSource, DocumentStore>(), withoutHeadings: new WeakMap<StaticVaultSource, DocumentStore>() };
 
-function localStoreFor({ root, fileHandles }: LocalFolderFiles): DocumentStore {
+function localStoreFor({ root, fileHandles }: GrantedVaultFiles): DocumentStore {
   let store = localStores.get(fileHandles);
   if (!store) {
     store = createDocumentStore({ readTexts: createLocalTextReader(root, fileHandles) });
@@ -59,7 +55,7 @@ function sampleHolding(doc: DocumentRef, samples: readonly (StaticVaultSource | 
  */
 export function documentStoreFor(
   doc: DocumentRef,
-  local: LocalFolderFiles | null,
+  local: GrantedVaultFiles | null,
   samples: readonly (StaticVaultSource | null)[],
   { headings }: { headings: boolean },
 ): ResolvedDocumentStore | null {

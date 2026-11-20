@@ -25,7 +25,8 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { cn } from "@/shared/lib/cn";
 import { Chip, CloseButton, controlClass } from "@/shared/ui";
 import { buildDocsVaultHref, findRelatedDocs } from "@/entities/docs-vault";
-import { useDocumentDetails, useStaticVaultSource } from "@/entities/vault-session";
+import { useStaticVaultSource } from "@/entities/vault-session";
+import { useDocumentDetails } from "@/features/document-detail";
 import { formatDate } from "@/shared/lib/locale-text/format-date";
 import {
   formatProjectIntegrityIssue,

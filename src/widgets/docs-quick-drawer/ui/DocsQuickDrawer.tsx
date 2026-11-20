@@ -30,7 +30,8 @@ import {
   type VaultManifest,
   type VaultTreeNode,
 } from "@/entities/docs-vault";
-import { useDocumentDetail, useStaticVaultSource } from "@/entities/vault-session";
+import { useStaticVaultSource } from "@/entities/vault-session";
+import { useDocumentDetail } from "@/features/document-detail";
 import { useDataSourceMode } from "@/entities/vault-session";
 import { useLocalVault } from "@/entities/vault-session";
 import {

@@ -18,11 +18,7 @@ export { useDataSourceMode } from './model/use-data-source-mode';
 export { useVaultLoadProgress } from './model/vault-load-progress';
 export { useArrivingManifest } from './model/vault-arrival';
 export { useSampleSource } from './model/use-sample-source';
-export {
-  useAdoptDocumentText,
-  useDocumentDetail,
-  useDocumentDetails,
-} from './model/document-store/use-document-detail';
+export { useGrantedVaultFiles, type GrantedVaultFiles } from './model/use-granted-vault-files';
 export {
   startPreferredSampleDownload,
   useStaticVaultSource,

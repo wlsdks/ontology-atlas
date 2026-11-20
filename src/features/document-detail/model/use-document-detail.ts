@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { bundledSamples, type DocumentRef, type VaultDocDetail } from '@/entities/docs-vault';
+import { useGrantedVaultFiles } from '@/entities/vault-session';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
-import { LocalVaultContext } from '../local-vault-context';
-import { documentStoreFor, type LocalFolderFiles, type ResolvedDocumentStore } from './document-store-for';
+import { documentStoreFor, type ResolvedDocumentStore } from './document-store-for';
 
 /** `null`: the document cannot be read. */
 export type DocumentDetailAnswer = VaultDocDetail | null;
@@ -24,16 +24,8 @@ interface Answered {
 
 const getServerSample = () => null;
 
-function useLocalFolderFiles(): LocalFolderFiles | null {
-  // The context itself, so a surface mounted outside the provider reads bundled detail only.
-  const vault = useContext(LocalVaultContext);
-  const root = vault && (vault.status === 'loaded' || vault.isReloadingSameVault) ? vault.handle : null;
-  const fileHandles = vault?.fileHandles;
-  return useMemo(() => (root && fileHandles ? { root, fileHandles } : null), [root, fileHandles]);
-}
-
 function useResolvedStore(doc: DocumentRef | undefined, headings: boolean): ResolvedDocumentStore | null {
-  const local = useLocalFolderFiles();
+  const local = useGrantedVaultFiles();
   const dogfood = useSyncExternalStore(bundledSamples.subscribe, () => bundledSamples.peek('dogfood'), getServerSample);
   const storefront = useSyncExternalStore(bundledSamples.subscribe, () => bundledSamples.peek('storefront'), getServerSample);
   return useMemo(
@@ -115,7 +107,7 @@ export function useDocumentDetail(
  * its detail derives from the same text, arriving with the body instead of after it.
  */
 export function useAdoptDocumentText(): (doc: DocumentRef, text: Promise<string>) => void {
-  const local = useLocalFolderFiles();
+  const local = useGrantedVaultFiles();
   return useCallback(
     (doc: DocumentRef, text: Promise<string>) => {
       documentStoreFor(doc, local, [], { headings: true })?.store.adoptText(doc, text);

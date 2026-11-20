@@ -6,7 +6,7 @@ import {
   type VaultDoc,
   isWikiPage,
 } from "@/entities/docs-vault";
-import { useDocumentDetail } from "@/entities/vault-session";
+import { useDocumentDetail } from "@/features/document-detail";
 import { LOCALE_META, type LocaleMeta } from "@/i18n/locales";
 import { Link } from "@/i18n/navigation";
 import { estimateReadingMinutes } from "./reading-minutes";

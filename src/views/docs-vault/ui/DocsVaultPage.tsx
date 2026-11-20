@@ -5,11 +5,10 @@ import { AnimatePresence } from 'framer-motion';
 import { Link } from '@/i18n/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
-  useAdoptDocumentText,
-  useDocumentDetail,
   useLocalVault,
   VaultSourceHydrationBoundary,
 } from '@/entities/vault-session';
+import { useAdoptDocumentText, useDocumentDetail } from '@/features/document-detail';
 import { OntologyStarterCta } from '@/features/docs-vault-local';
 import { recentVaultRowKey } from '@/features/vault-switch';
 import { buildOntologyDeeplinkForDoc } from '@/entities/docs-vault';

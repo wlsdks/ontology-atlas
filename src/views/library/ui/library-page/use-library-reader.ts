@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useDocumentDetail, useLocalVault } from "@/entities/vault-session";
+import { useLocalVault } from "@/entities/vault-session";
+import { useDocumentDetail } from "@/features/document-detail";
 import type { LibraryOriginalLink, VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { isRetainedAnswerPath, type LibraryUiModel } from "@/features/library";
 import { useBackToTop, useDocReadingScrollSpy } from "@/widgets/doc-reading-pane";
