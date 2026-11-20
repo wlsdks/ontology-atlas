@@ -151,7 +151,7 @@ describe('searchDocs body tier ranks lowest', () => {
       doc('body-only', 'zzz totally different'),
       doc('title-hit', 'needle at end of a very long title indeed truly'),
     ];
-    // The body-only case matches at the very start of the body (the most favourable position).
+    // The body-only case matches just past the first paragraph, so only the body tier scores it.
     const bodyIndex = bodyIndexOf({
       'body-only': deep('needle first thing in the body'),
     });
@@ -174,11 +174,23 @@ describe('searchDocs body tier ranks lowest', () => {
     expect(out.map((m) => m.doc.slug)).toEqual(['summary-late', 'body-first']);
   });
 
+  it('never scores frontmatter as the first paragraph of an index hit', () => {
+    const docs = [doc('front-only', 'aaa'), doc('opening', 'bbb')];
+    const bodyIndex: DocsBodyIndex = new Map([
+      ['front-only', { raw: '---\ncreated_by: "agent:claude-code"\n---\nThe close runs at midnight.', lower: '---\ncreated_by: "agent:claude-code"\n---\nthe close runs at midnight.', key: 'front-only' }],
+      ['opening', buildBodyEntry('Claude closes the ledger.', 'opening')],
+    ]);
+    const out = searchDocs('claude', docs, 30, bodyIndex);
+    const scoreOf = (slug: string) => out.find((m) => m.doc.slug === slug)?.score ?? 0;
+    expect(scoreOf('front-only')).toBeLessThan(2);
+    expect(scoreOf('opening')).toBeGreaterThanOrEqual(20);
+  });
+
   it('ranks an earlier body match slightly higher', () => {
     const docs = [doc('late', 'aaa'), doc('early', 'bbb')];
     const bodyIndex = bodyIndexOf({
       late: `${'filler '.repeat(400)}needle`,
-      early: 'needle up front',
+      early: deep('needle up front'),
     });
     const out = searchDocs('needle', docs, 30, bodyIndex);
     expect(out.map((m) => m.doc.slug)).toEqual(['early', 'late']);
@@ -235,7 +247,7 @@ describe('searchDocs body tier ranks lowest', () => {
       doc('title-hit', `${'x'.repeat(90)}needle phrase`),
       doc('body-exact', 'zzz'),
     ];
-    // Body idx 0 — the best case, where the exact-phrase boost takes its maximum.
+    // The match sits just past the first paragraph, so only the body tier and its phrase boost score it.
     const bodyIndex = bodyIndexOf({
       'body-exact': deep('needle phrase right at the very start of the body'),
     });

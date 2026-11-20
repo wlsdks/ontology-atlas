@@ -1,7 +1,7 @@
 import type { VaultDoc } from '@/entities/docs-vault';
 import { buildExcerpt } from '@/shared/lib/vault-document/parse-frontmatter';
 import { buildPhraseMatcher } from '@/shared/lib/search-match/highlight-match';
-import type { DocsBodyEntry, DocsBodyIndex } from './body-index';
+import { stripFrontmatterBlock, type DocsBodyEntry, type DocsBodyIndex } from './body-index';
 import { readDisplayLocales } from '@/shared/lib/locale-text/locale-display-name';
 
 /** A body hit snippet — {@link BODY_SNIPPET_CONTEXT} characters of context on each
@@ -72,7 +72,7 @@ const excerptLowerByEntry = new WeakMap<DocsBodyEntry, string>();
 function indexedExcerptLower(entry: DocsBodyEntry): string {
   let lower = excerptLowerByEntry.get(entry);
   if (lower === undefined) {
-    lower = buildExcerpt(entry.raw).toLowerCase();
+    lower = buildExcerpt(stripFrontmatterBlock(entry.raw)).toLowerCase();
     excerptLowerByEntry.set(entry, lower);
   }
   return lower;
