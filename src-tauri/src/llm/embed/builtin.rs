@@ -13,7 +13,8 @@ mod protocol;
 pub(crate) mod worker;
 
 use super::audit;
-use super::{hex, EmbedError};
+use super::EmbedError;
+use crate::lower_hex::lower_hex;
 use candle_core::{DType, Device};
 use download::{remove_if_present, remove_link, write_synced, Downloader};
 use fetch::Fetch;
@@ -306,7 +307,7 @@ fn sha256_file(path: &Path, cancel: &AtomicBool) -> Result<String, EmbedError> {
         let read = file.read(&mut buffer).map_err(store_error)?;
         match buffer.get(..read) {
             Some(chunk) if !chunk.is_empty() => hasher.update(chunk),
-            _ => return Ok(hex(&hasher.finalize())),
+            _ => return Ok(lower_hex(&hasher.finalize())),
         }
     }
 }

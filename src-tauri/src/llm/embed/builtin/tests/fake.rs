@@ -11,7 +11,7 @@ pub(super) fn pinned(name: &'static str, data: &[u8]) -> PinnedFile {
     PinnedFile {
         name,
         bytes: data.len() as u64,
-        sha256: Box::leak(super::super::super::hex(&Sha256::digest(data)).into_boxed_str()),
+        sha256: Box::leak(crate::lower_hex::lower_hex(&Sha256::digest(data)).into_boxed_str()),
     }
 }
 

@@ -12,13 +12,11 @@ pub(super) fn claude_credentials_service(config_dir: &Path) -> String {
     let digest = Sha256::digest(config_dir.to_string_lossy().as_bytes());
     format!(
         "Claude Code-credentials-{}",
-        hex_lower(&digest).chars().take(8).collect::<String>()
+        crate::lower_hex::lower_hex(&digest)
+            .chars()
+            .take(8)
+            .collect::<String>()
     )
-}
-
-#[cfg(any(target_os = "macos", test))]
-fn hex_lower(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
 /// The terminal's login item when no `CLAUDE_CONFIG_DIR` is set.
@@ -81,7 +79,7 @@ fn choose_terminal_credential(carriers: &[CredentialCarrier]) -> Option<usize> {
 #[cfg(any(target_os = "macos", test))]
 fn credential_digest(secret: &str) -> String {
     use sha2::{Digest, Sha256};
-    hex_lower(&Sha256::digest(secret.as_bytes()))
+    crate::lower_hex::lower_hex(&Sha256::digest(secret.as_bytes()))
 }
 
 /// The sortable part is the leading digit run in the last quoted field.

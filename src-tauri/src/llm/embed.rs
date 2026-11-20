@@ -549,7 +549,7 @@ impl BuildRun<'_> {
                 plan: self.plan,
                 passages_sent: self.passages_sent,
                 chars_sent: self.chars_sent,
-                sent_sha256: &hex(&hash),
+                sent_sha256: &crate::lower_hex::lower_hex(&hash),
                 ended,
                 duration_ms: self.started.elapsed().as_millis() as u64,
             },
@@ -711,10 +711,6 @@ fn validate_model(model: &str) -> Result<&str, EmbedError> {
         return Err(EmbedError::ModelRemote);
     }
     Ok(model)
-}
-
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 #[cfg(test)]

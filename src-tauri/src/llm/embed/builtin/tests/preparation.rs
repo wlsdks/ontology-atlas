@@ -158,7 +158,7 @@ fn prepare_downloads_converts_checks_and_keeps_only_the_model() {
     );
     assert_eq!(
         manifest["weights"]["sha256"],
-        hex(&Sha256::digest(fs::read(&weights).unwrap()))
+        crate::lower_hex::lower_hex(&Sha256::digest(fs::read(&weights).unwrap()))
     );
     assert_eq!(manifest["tokenizer"]["sha256"], served.files[0].sha256);
     assert_eq!(audit_lines(&served.vault).len(), 2);

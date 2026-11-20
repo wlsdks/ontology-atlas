@@ -153,12 +153,7 @@ pub fn audit_log_path(vault_dir: &Path) -> PathBuf {
 
 /// A connection check hashes the empty string: proof that 0 bytes were sent.
 pub fn sha256_hex(payload: &str) -> String {
-    let digest = Sha256::digest(payload.as_bytes());
-    let mut out = String::with_capacity(64);
-    for byte in digest {
-        out.push_str(&format!("{byte:02x}"));
-    }
-    out
+    crate::lower_hex::lower_hex(&Sha256::digest(payload.as_bytes()))
 }
 
 /// Same ISO-8601 shape as `activity.jsonl`.

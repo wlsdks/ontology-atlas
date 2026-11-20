@@ -25,6 +25,7 @@ mod library;
 mod llm;
 mod llm_audit;
 mod local_construction;
+mod lower_hex;
 mod managed_node;
 mod map_entry_diagnostic;
 mod meaning_transition_archive;

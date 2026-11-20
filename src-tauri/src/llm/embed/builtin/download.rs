@@ -123,7 +123,7 @@ pub(crate) fn file_matches(
         _ => return Ok(false),
     }
     let digest = hash_prefix(path, file.bytes, cancel, on_bytes)?.finalize();
-    Ok(super::super::hex(&digest) == file.sha256)
+    Ok(crate::lower_hex::lower_hex(&digest) == file.sha256)
 }
 
 /// One file's transfer state, fed by the transport.
@@ -413,7 +413,7 @@ impl Downloader<'_> {
         // The hash covers every byte in `.part`: the resumed prefix re-read from disk,
         // the rest hashed as written, then synced. Conversion reads the file again and
         // its result must match the reference vectors, so no third read is made.
-        if have != file.bytes || super::super::hex(&hasher.finalize()) != file.sha256 {
+        if have != file.bytes || crate::lower_hex::lower_hex(&hasher.finalize()) != file.sha256 {
             remove_if_present(&part)?;
             return Err(EmbedError::HashMismatch(file.name.into()));
         }

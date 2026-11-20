@@ -38,12 +38,15 @@ tauri = { version = "2.11.6", features = ["tray-icon"] }
 rfd = "0.15"
 serde = { version = "1", features = ["derive"] }
 uuid = { version = "1", features = ["v4"] }
-# serde_json and sha2 are transitive deps already pulled by tauri — declaring them adds zero
-# new supply-chain surface (same rationale as objc2). chrono is ours alone and RustSec marks it
+# serde_json is a transitive dep already pulled by tauri — declaring it adds zero new
+# supply-chain surface (same rationale as objc2). chrono is ours alone and RustSec marks it
 # unmaintained (RUSTSEC-2026-0543); `time` is already in the graph through tauri if it moves.
 # Used for serialization, payload hash anchors, and RFC 3339 timestamps.
 serde_json = "1"
-sha2 = "0.10"
+# sha2 0.11 picks the ARMv8 SHA-256 instructions at run time (0.10 did only with `asm`): 6.5x
+# measured on Apple Silicon. Its five new crates are RustCrypto's, MIT OR Apache-2.0; the unused
+# `oid` and `alloc` defaults stay off. Tauri's build-time codegen still uses 0.10.
+sha2 = { version = "0.11.1", default-features = false }
 chrono = { version = "0.4", default-features = false, features = ["std", "now"] }
 notify-debouncer-full = "0.3"
 futures-util = "0.3"
