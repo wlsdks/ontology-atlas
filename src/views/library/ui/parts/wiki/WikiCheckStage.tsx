@@ -10,6 +10,7 @@ import {
   type WorkRun,
   type WorkRunMarks,
 } from "@/features/work-run";
+import { cn } from "@/shared/lib/cn";
 import { WorkProgress } from "@/shared/motion/work-progress";
 import { Button } from "@/shared/ui/controls/button";
 
@@ -66,7 +67,7 @@ export function WikiCheckStage({
           </p>
           <p
             data-testid="library-check-stage-line"
-            className={`text-body leading-body text-[color:var(--color-text-secondary)] ${asking ? "break-keep" : "truncate"}`}
+            className={cn("text-body leading-body text-[color:var(--color-text-secondary)]", !asking && "truncate")}
           >
             {copy.detail}
           </p>
@@ -84,7 +85,7 @@ export function WikiCheckStage({
             {tCard("stop")}
           </Button>
         </div>
-        <p className="mt-2 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+        <p className="mt-2 text-caption leading-body text-[color:var(--color-text-tertiary)]">
           {t("report.emptyLede")}
         </p>
       </div>

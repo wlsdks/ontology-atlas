@@ -673,10 +673,10 @@ export function LibraryCheckReport({
           <WikiCheckStage run={checkRun} onStop={() => onStopCheck?.()} onReview={() => onOpenConversation?.()} />
         ) : checkRun?.phase === "unreadable" || checkRun?.phase === "failed" ? (
           <div data-testid="library-check-ended" data-phase={checkRun.phase} className="mt-4 flex flex-col items-start gap-1.5">
-            <p className="text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)] [word-break:keep-all]">
+            <p className="text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]">
               {checkRun.phase === "unreadable" ? t("check.unreadTitle") : t("check.failedTitle")}
             </p>
-            <p className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+            <p className="text-body leading-body text-[color:var(--color-text-secondary)]">
               {checkRun.phase === "unreadable" ? t("check.unreadBody") : t("check.failedBody", { agent: checkRun.agent })}
             </p>
             {onOpenConversation ? (

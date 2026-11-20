@@ -4,5 +4,5 @@
   "close": "閉じる",
   "progressLabel": "{title}の進行状況",
   "railRunning": "{destination}: 実行中",
-  "railFinished": "{destination}: 未確認の完了した実行 {count, number}件"
+  "railFinished": "{destination}: 未確認の完了した実行{count, number}件"
 }

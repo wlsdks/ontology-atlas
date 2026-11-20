@@ -166,7 +166,7 @@ function PhaseLayer({ run, motion }: { run: WorkRun; motion: 'in' | 'out' | 'non
             </p>
             <p
               data-testid={testId('work-run-line')}
-              className={cn('text-[color:var(--color-text-secondary)]', run.phase === 'asking' ? 'line-clamp-2 break-keep' : 'truncate')}
+              className={cn('text-[color:var(--color-text-secondary)]', run.phase === 'asking' ? 'line-clamp-2' : 'truncate')}
             >
               {copy.detail}
             </p>
@@ -181,7 +181,7 @@ function PhaseLayer({ run, motion }: { run: WorkRun; motion: 'in' | 'out' | 'non
             </p>
             <p
               data-testid={testId('work-run-detail')}
-              className="line-clamp-2 min-h-[calc(var(--leading-label)*2)] break-keep text-label leading-label text-[color:var(--color-text-secondary)]"
+              className="line-clamp-2 min-h-[calc(var(--leading-label)*2)] text-label leading-label text-[color:var(--color-text-secondary)]"
             >
               {copy.detail}
             </p>

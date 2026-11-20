@@ -981,7 +981,7 @@
   },
   "check": {
     "title": "Wikiを検査中",
-    "reading": "{agent} · <name>{page}</name> を読んでいます",
+    "reading": "{agent} · <name>{page}</name>を読んでいます",
     "working": "{agent} · {tool}",
     "writing": "{agent} · 報告を書いています",
     "figures": "{read, plural, =0 {まだ読んだページはありません} other {<count>#</count>ページ読みました}} · {elapsed}",

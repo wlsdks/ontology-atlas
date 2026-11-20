@@ -984,7 +984,7 @@
     "reading": "{agent} · reading <name>{page}</name>",
     "working": "{agent} · {tool}",
     "writing": "{agent} · writing the report",
-    "figures": "{read, plural, =0 {No page read yet} one {<count>#</count> page read} other {<count>#</count> pages read}} · {elapsed}",
+    "figures": "{read, plural, =0 {No page read yet} other {<count>#</count> {read, plural, one {page} other {pages}} read}} · {elapsed}",
     "asking": "{agent} is asking before it goes on. The check waits for your answer.",
     "review": "Review",
     "doneTitle": "Wiki check finished",
