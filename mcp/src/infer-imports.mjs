@@ -353,7 +353,7 @@ function importScanCoverage(rootPath, jvmFilesScanned) {
       ? ['C include and build dependency graphs are not scanned; zero edges is not evidence that a C repository has no dependencies.']
       : []),
     ...(jvmFilesScanned
-      ? ['Java and Kotlin imports are file edges only (a wildcard import names its package folder): they form no module edges, and same-package references, which need no import, are not inferred.']
+      ? ['Java and Kotlin imports are file edges only (a wildcard import names its package folder): they form no module edges. A type named in its own package and module needs no import and is matched by name without scope resolution, skipping names the file declares, imports, or uses as type parameters or enum entries; a typealias, a file in no package and a Kotlin top-level function called from its own package give no edge.']
       : []),
     'Rust evidence covers deterministic use paths, file-backed mod declarations, and exact literal path/include forms; macro expansion, cfg evaluation, and symbol resolution are not inferred.',
     'Observed edges are bounded static source evidence, not runtime execution or semantic depends_on approval.',
