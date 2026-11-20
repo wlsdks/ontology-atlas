@@ -120,7 +120,8 @@
       "waiting": "권한 요청됨",
       "write": "파일 변경 확인",
       "error": "실패"
-    }
+    },
+    "recentCount": "최근 {count, number}"
   },
   "eyebrow": "이 폴더 안",
   "lede": "형식을 가리지 않고 모아 둔 문서와, 그 문서를 읽고 쓴 위키 문서가 여기 있어요. 원문은 받은 그대로 보관하고, 위키 문서의 문장은 저마다 원문을 인용해요.",
@@ -400,17 +401,10 @@
   },
   "graph": {
     "title": "그래프",
-    "counts": "원문 {sources, number}개 · 위키 문서 {pages, number}개 · 개념 {concepts, number}개 · 인용 {cites, number} · 언급 {mentions, number}",
-    "countsIsland": "원문 {sources, number}개 · 위키 문서 {pages, number}개 · 인용 {cites, number}",
     "empty": "아직 표시할 것이 없어요. 「위키 문서 만들기」로 첫 문서를 쓰면, 그 문서가 어떤 원문에서 나왔고 어떤 개념을 언급하는지 여기 표시돼요.",
     "canvasAria": "자료실 그래프: 원문과 위키 문서, 그리고 그 문서가 부르는 개념.",
-    "legend": "왼쪽은 원문, 그 옆은 원문으로 쓴 위키 문서, 오른쪽은 그 문서가 부르는 개념이에요. 선은 원문에서 그것을 읽은 문서로 이어져요. 채운 원은 위키 문서, 네모는 원문, 고리는 지도 위의 개념이에요. 굵은 선은 인용, 점선은 언급이에요. 스크롤로 확대하고, 빈 곳을 끌어 옮기고, 점을 누르면 그 옆에 카드가 열려요.",
-    "legendShort": "동그라미는 위키 문서, 네모는 원문, 고리는 지도 위 개념이에요.",
-    "legendCardOpen": "채운 원은 위키 문서, 네모는 원문, 고리는 지도 위의 개념이에요. 굵은 선은 인용, 점선은 언급(양쪽 방향)이에요. 카드는 Escape를 누르거나 같은 점을 다시 누르면 닫혀요.",
-    "legendShortCardOpen": "동그라미는 위키 문서, 네모는 원문, 고리는 지도 위 개념이에요. Escape를 누르면 카드가 닫혀요.",
     "islandUnsorted": "분류 전",
     "islandUnread": "읽지 않음",
-    "legendIslands": "파일이 수백 개를 넘으면 그림은 섬의 지도가 돼요. 섬 하나는 개념 하나와 그 개념을 부르는 위키 문서들이고, 문서를 쓴 원문이 그 둘레에 모여요. 「분류 전」은 개념을 부르지 않는 문서, 「읽지 않음」은 아직 어떤 문서도 읽지 않은 원문으로, 섬들 아래 띠에 모여요. 주황 점은 쓴 뒤에 원문이 달라진 문서예요. 스크롤로 확대하면 이름이 나타나고, 점을 누르면 그 옆에 카드가 열려요.",
     "describeIsland": "{name}: 문서 {pages, number}개와 그 문서가 읽은 원문 {sources, number}개가 모인 섬이에요. 누르면 열 그림으로 열리고, 확대하면 이름이 보여요.",
     "announceIsland": "{name} 섬, {total, number}개 중 {position, number}번째: 문서 {pages, number}개와 원문 {sources, number}개. Enter를 누르면 열 그림으로 열려요.",
     "describeUnread": "읽지 않음: 아직 어떤 문서도 읽지 않은 원문 {sources, number}개. 누르면 어디서 시작할지 알려줘요.",
@@ -455,6 +449,16 @@
       "factPassages": "인용 문장 {count, number}",
       "flowInline": "인용은 원문에서 이 문서로 흘러요.",
       "flowInlineStale": "인용은 원문에서 이 문서로 흘러요. 황색 점은 원문이 바뀌어 다시 확인해야 하는 인용이에요."
+    },
+    "key": {
+      "source": "원문 {count, number}",
+      "page": "위키 문서 {count, number}",
+      "concept": "개념 {count, number}",
+      "cite": "인용 {count, number}",
+      "mention": "언급 {count, number}",
+      "island": "섬 하나가 개념 하나",
+      "stale": "쓴 뒤 달라짐",
+      "gestures": "누르면 카드 · 두 번 누르면 열기 · 스크롤로 확대"
     }
   },
   "home": {
@@ -463,8 +467,7 @@
     "more": "더 보기",
     "compileNext": "위키 문서 만들기: {source}",
     "staleClause": "원문 {count, number}개 달라짐",
-    "compileTitle": "{source} 위키 문서 만들기",
-    "staleLit": "달라진 원문 {count, number}개와 그것을 인용한 문서 {pages, number}개만 밝게 남았어요. Escape를 누르거나 그림을 누르면 원래대로 돌아가요."
+    "compileTitle": "{source} 위키 문서 만들기"
   },
   "find": {
     "searchLabel": "파일명·경로로 찾기",
@@ -975,7 +978,8 @@
     "batchRest": "그 뒤로 {count, number}개가 더 기다려요.",
     "batchReturned": "지난 요청의 원문 {count, number}개는 아직 위키 문서가 없어 목록 맨 뒤로 옮겼어요.",
     "webLine": "위키 문서는 앱에서만 써요. 읽기는 여기서도 돼요.",
-    "allDone": "모든 원문에 위키 문서가 있어요"
+    "allDone": "모든 원문에 위키 문서가 있어요",
+    "fraction": "{compiled, number} / {total, number}"
   },
   "check": {
     "title": "위키 검사 중",

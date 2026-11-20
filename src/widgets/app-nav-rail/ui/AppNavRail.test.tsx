@@ -166,6 +166,18 @@ describe("AppNavRail", () => {
     expect(screen.getByTestId("app-nav-rail-item-automations")).toHaveAttribute("data-active", "true");
   });
 
+  it("rings one destination's running work and badges another's finished runs at once", () => {
+    renderRail(<AppNavRail workRuns={[
+      { destination: "library", state: "running" },
+      { destination: "automations", state: "finished", count: 2 },
+    ]} />);
+    expect(screen.getByTestId("app-nav-rail-ring-library")).toBeInTheDocument();
+    expect(screen.getByTestId("app-nav-rail-item-library")).toHaveAttribute("data-work-run", "running");
+    expect(screen.queryByTestId("app-nav-rail-ring-automations")).toBeNull();
+    expect(screen.getByTestId("app-nav-rail-item-automations")).toHaveAttribute("data-work-run", "finished");
+    expect(screen.getByTestId("app-nav-rail-badge-automations")).toHaveTextContent("2");
+  });
+
   it("renders the settingsSlot passed in at the bottom of the rail", () => {
     renderRail(<AppNavRail settingsSlot={<button type="button">설정 슬롯</button>} />);
     expect(screen.getByRole("button", { name: "설정 슬롯" })).toBeInTheDocument();

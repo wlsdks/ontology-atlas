@@ -29,7 +29,7 @@ export function processName(pid) {
 export function footprints(pids) {
   const found = new Map();
   if (!pids.length) return found;
-  const result = spawnSync('/usr/bin/footprint', ['--noCategories', '-f', 'bytes', ...pids.flatMap((pid) => ['-p', String(pid)])], { encoding: 'utf8' });
+  const result = spawnSync(MACOS_TOOL.footprint, ['--noCategories', '-f', 'bytes', ...pids.flatMap((pid) => ['-p', String(pid)])], { encoding: 'utf8' });
   let current = null;
   for (const line of `${result.stdout}`.split('\n')) {
     const head = line.match(/\[(\d+)\]:.*Footprint:\s*(\d+) B/);
@@ -46,7 +46,7 @@ export function footprints(pids) {
 
 /** `footprint`'s categories for one pid, largest dirty first: what the footprint is made of. */
 export function footprintCategories(pid, top = 12) {
-  const result = spawnSync('/usr/bin/footprint', ['-f', 'bytes', '-p', String(pid)], { encoding: 'utf8' });
+  const result = spawnSync(MACOS_TOOL.footprint, ['-f', 'bytes', '-p', String(pid)], { encoding: 'utf8' });
   const rows = [];
   for (const line of `${result.stdout}`.split('\n')) {
     const match = line.match(/^\s*(\d+) B\s+(\d+) B\s+(\d+) B\s+(\d+)\s+(.+)$/);
@@ -63,7 +63,7 @@ const toMb = (text) => {
 
 /** `vmmap --summary` region types, by dirty plus swapped size; the raw text is kept for the report. */
 export function vmmapRegions(pid, top = 15) {
-  const result = spawnSync('/usr/bin/vmmap', ['--summary', String(pid)], { encoding: 'utf8', maxBuffer: 1 << 26 });
+  const result = spawnSync(MACOS_TOOL.vmmap, ['--summary', String(pid)], { encoding: 'utf8', maxBuffer: 1 << 26 });
   const rows = [];
   let inTable = false;
   for (const line of `${result.stdout}`.split('\n')) {
@@ -79,3 +79,12 @@ export function vmmapRegions(pid, top = 15) {
   rows.sort((a, b) => b.dirtyMb + b.swappedMb - (a.dirtyMb + a.swappedMb));
   return { raw: result.stdout, rows: rows.slice(0, top), error: result.status === 0 ? null : result.stderr.trim().slice(0, 300) };
 }
+
+// Absolute paths, held in data so the dead-code check does not resolve them as
+// files on its Linux runner.
+export const MACOS_TOOL = Object.freeze({
+  footprint: '/usr/bin/footprint',
+  vmmap: '/usr/bin/vmmap',
+  ioreg: '/usr/sbin/ioreg',
+  plistBuddy: '/usr/libexec/PlistBuddy',
+});

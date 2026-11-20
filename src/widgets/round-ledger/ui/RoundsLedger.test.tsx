@@ -90,7 +90,7 @@ describe('the ledger', () => {
 
   it('says a pass was cut short by a press rather than by a fault', () => {
     draw({ entries: [entry({ outcome: 'failed', note: 'stopped' })] });
-    expect(screen.getByTestId('round-ledger')).toHaveTextContent(en.library.rounds.ledger.stopped);
+    expect(screen.getByTestId('round-ledger')).toHaveTextContent(en.automations.runStopped);
   });
 
   it('names each page a pass left outside its scope, why, and what Atlas did about it', () => {

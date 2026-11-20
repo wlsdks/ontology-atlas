@@ -93,23 +93,21 @@ describe("the library graph section", () => {
     }
   });
 
-  it("says what the picture contains, counting the two relations apart", () => {
+  it("keys the picture under it: each mark and line with its count, then the gestures", () => {
     renderGraph();
-    expect(screen.getByTestId("library-graph-counts").textContent).toBe(
-      "원문 1개 · 위키 문서 1개 · 개념 1개 · 인용 1 · 언급 1",
-    );
-  });
-
-  it("draws each count as a whole clause, so a narrow row drops clauses rather than cutting one", () => {
-    renderGraph();
-    const clauses = [...screen.getByTestId("library-graph-counts").querySelectorAll("[data-counts-clause]")];
-    expect(clauses.map((clause) => clause.textContent)).toEqual([
-      "원문 1개",
-      " · 위키 문서 1개",
-      " · 개념 1개",
-      " · 인용 1",
-      " · 언급 1",
+    const key = screen.getByTestId("library-graph-key");
+    const items = [...key.querySelectorAll("[data-key-item]")];
+    expect(items.map((item) => item.getAttribute("data-key-item"))).toEqual([
+      "square", "circle", "ring", "cite", "mention", "gestures",
     ]);
+    expect(items.map((item) => item.textContent)).toEqual([
+      "원문 1", "위키 문서 1", "개념 1", "인용 1", "언급 1", "누르면 카드 · 두 번 누르면 열기 · 스크롤로 확대",
+    ]);
+    // The line is drawn for the eye; the canvas's description carries the whole key in words.
+    expect(key.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByTestId("library-graph-hint").textContent).toBe(
+      "원문 1 · 위키 문서 1 · 개념 1 · 인용 1 · 언급 1 · 누르면 카드 · 두 번 누르면 열기 · 스크롤로 확대",
+    );
   });
 
   // Enter opens the card without leaving the screen; `Open` inside it is the commit.
@@ -129,14 +127,11 @@ describe("the library graph section", () => {
     expect(screen.queryByTestId("library-graph-card")).toBeNull();
   });
 
-  /**
-   * The legend matches the canvas state: with a card open the vocabulary stays and only the
-   * gesture clause swaps for the ways back out.
-   */
+  /** A pointed-at mark is described in the key's line; its open card's mark says how to leave it. */
   it("stops telling a person how to open the card they already have open", () => {
     renderGraph();
     const hint = () => screen.getByTestId("library-graph-hint").textContent ?? "";
-    expect(hint()).toContain("점을 누르면 그 옆에 카드가 열려요");
+    expect(hint()).toContain("누르면 카드");
     expect(hint()).not.toContain("Escape");
 
     fireEvent.keyDown(canvas(), { key: "ArrowRight" });
@@ -209,13 +204,12 @@ describe("the library graph section", () => {
     // A door that cannot open is the reason instead, never a chip that does nothing.
     expect(screen.queryByTestId("library-graph-card-refresh")).toBeNull();
     expect(screen.getByTestId("library-graph-card-reason").textContent).toContain("코딩 에이전트");
-    // The drift has words **in the card**, beside the lines it is about — and the legend
-    // below the canvas keeps teaching the marks while the card stands open.
+    // The drift has words **in the card**, beside the lines it is about.
     expect(screen.getByTestId("library-graph-card-flow").textContent).toContain(
       "인용은 원문에서 이 문서로 흘러요",
     );
-    // The slot below the canvas still belongs to the picture: here the keyboard is on a
-    // mark, so it describes that mark, and with nothing pointed at it is the legend.
+    // The line below the canvas still belongs to the picture: here the keyboard is on a
+    // mark, so it describes that mark, and with nothing pointed at it is the key.
     expect(screen.getByTestId("library-graph-hint").textContent).toContain("위키 문서");
   });
 
@@ -262,12 +256,13 @@ describe("the library graph section", () => {
     expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/topology"));
   });
 
-  // The pane is the picture: nothing has to be pressed, and the screen's own row reaches the header.
-  it("draws itself with nothing pressed, and hangs the screen's own row beside the caption", () => {
-    renderGraph({ headerEnd: <span data-testid="probe-header-end">next</span> });
+  // The pane is the picture and its key: nothing has to be pressed, and no caption row stands above it.
+  it("draws itself with nothing pressed, with no caption row above the picture", () => {
+    renderGraph();
     expect(screen.getByTestId("library-graph-canvas")).toBeTruthy();
     expect(screen.queryByTestId("library-graph-toggle")).toBeNull();
-    expect(screen.getByTestId("probe-header-end")).toBeTruthy();
+    expect(screen.queryByTestId("library-graph-counts")).toBeNull();
+    expect(screen.getByTestId("library-graph-key")).toBeTruthy();
   });
 
   /*

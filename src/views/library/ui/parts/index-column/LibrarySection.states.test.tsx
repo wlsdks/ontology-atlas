@@ -6,7 +6,10 @@ import enMessages from "../../../../../../messages/en.json";
 import type { LibraryUiModel } from "@/features/library";
 import { LibrarySection } from "./LibrarySection";
 
-/** A state repeated on every row is said once, above the list; below one screen of rows nothing folds. */
+/**
+ * A state repeated on every row is said once, by its press in the band above the picture; below one
+ * screen of rows nothing folds. The column draws no state line of its own.
+ */
 
 const BASE = {
   sources: [],
@@ -28,7 +31,7 @@ function source(index: number, state: string) {
   return { path: `sources/doc-${index}.md`, name: `doc-${index}.md`, format: "md", bytes: 20, mtime: 1, state, citedBy: state === "not-compiled" ? [] : ["wiki/page"] };
 }
 
-function Harness({ model, segment, compile = true }: { model: LibraryUiModel; segment: "sources" | "wiki"; compile?: boolean }) {
+function Harness({ model, segment, compile = true, stateFilter = null }: { model: LibraryUiModel; segment: "sources" | "wiki"; compile?: boolean; stateFilter?: string | null }) {
   const t = useTranslations("library");
   return (
     <LibrarySection
@@ -50,30 +53,32 @@ function Harness({ model, segment, compile = true }: { model: LibraryUiModel; se
       actionsNote={null}
       inApp={false}
       busy={false}
+      stateFilter={stateFilter as never}
       t={t}
     />
   );
 }
 
-function mount(model: LibraryUiModel, segment: "sources" | "wiki", compile = true) {
+function mount(model: LibraryUiModel, segment: "sources" | "wiki", compile = true, stateFilter: string | null = null) {
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <Harness model={model} segment={segment} compile={compile} />
+      <Harness model={model} segment={segment} compile={compile} stateFilter={stateFilter} />
     </NextIntlClientProvider>,
   );
 }
 
+const list = () => screen.getByTestId("library-source-list");
+
 afterEach(cleanup);
 
 describe("the source list says its common state once", () => {
-  it("past one screen of rows the majority state is a head count and the rows keep only exceptions", () => {
+  it("past one screen of rows the majority state folds and the rows keep only exceptions", () => {
     const sources = [...Array.from({ length: 13 }, (_, i) => source(i, "stale")), source(13, "not-compiled")];
     mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources");
 
-    const head = screen.getByTestId("library-source-states");
-    expect(head).toHaveAttribute("data-folded-state", "stale");
-    expect(screen.getByTestId("library-source-states-stale")).toHaveTextContent("needs review · 13");
-    expect(screen.getByTestId("library-source-states-not-compiled")).toHaveTextContent("no wiki page 1");
+    // The column has no state line: the band's presses say each state once.
+    expect(screen.queryByTestId("library-source-states")).toBeNull();
+    expect(list()).toHaveAttribute("data-folded-state", "stale");
     // Thirteen folded rows keep their word for a screen reader; no row wears the amber pill.
     expect(screen.getAllByTestId("library-source-state-folded")).toHaveLength(13);
     expect(screen.queryByTestId("library-source-state-stale")).toBeNull();
@@ -81,10 +86,10 @@ describe("the source list says its common state once", () => {
     expect(screen.getByTestId("library-source-state-not-compiled")).toBeInTheDocument();
   });
 
-  it("below one screen of rows every row keeps its badge and the head only counts", () => {
+  it("below one screen of rows every row keeps its badge", () => {
     const sources = Array.from({ length: 5 }, (_, i) => source(i, "stale"));
     mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources");
-    expect(screen.getByTestId("library-source-states")).not.toHaveAttribute("data-folded-state");
+    expect(list()).not.toHaveAttribute("data-folded-state");
     expect(screen.getAllByTestId("library-source-state-stale")).toHaveLength(5);
     expect(screen.queryByTestId("library-source-state-folded")).toBeNull();
   });
@@ -92,23 +97,24 @@ describe("the source list says its common state once", () => {
   it("a tie between two states folds nothing", () => {
     const sources = [...Array.from({ length: 7 }, (_, i) => source(i, "stale")), ...Array.from({ length: 7 }, (_, i) => source(7 + i, "not-compiled"))];
     mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources");
-    expect(screen.getByTestId("library-source-states")).not.toHaveAttribute("data-folded-state");
+    expect(list()).not.toHaveAttribute("data-folded-state");
     expect(screen.queryByTestId("library-source-state-folded")).toBeNull();
   });
 
-  it("counts unreadable files in the head, so its counts sum to every source", () => {
-    const sources = [source(0, "compiled"), source(1, "unreadable"), source(2, "checking")];
+  it("lists only the rows of the state the band's press names", () => {
+    const sources = [source(0, "compiled"), source(1, "unreadable"), source(2, "checking"), source(3, "unreadable")];
+    mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources", true, "unreadable");
+    expect(list()).toHaveAttribute("data-state-filter", "unreadable");
+    expect(list().querySelectorAll("li > button[data-row-index]")).toHaveLength(2);
+    cleanup();
     mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources");
-    expect(screen.getByTestId("library-source-states-unreadable")).toHaveTextContent("can't read 1");
-    const counted = ["compiled", "unreadable", "checking"]
-      .map((state) => Number(screen.getByTestId(`library-source-states-${state}`).textContent?.match(/\d+$/)?.[0]));
-    expect(counted.reduce((sum, count) => sum + count, 0)).toBe(sources.length);
+    expect(list().querySelectorAll("li > button[data-row-index]")).toHaveLength(4);
   });
 
   it("compiled never folds: its check is already the quiet mark", () => {
     const sources = Array.from({ length: 14 }, (_, i) => source(i, "compiled"));
     mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources");
-    expect(screen.getByTestId("library-source-states")).not.toHaveAttribute("data-folded-state");
+    expect(list()).not.toHaveAttribute("data-folded-state");
     expect(screen.getAllByTestId("library-source-state-compiled")).toHaveLength(14);
   });
 });
@@ -223,17 +229,16 @@ describe("the wiki head with no coding agent", () => {
   });
 });
 
-it("updates the folded source summary when current source states change", () => {
+it("updates the folded state when current source states change", () => {
   const original = { ...BASE, sources: [...Array.from({ length: 13 }, (_, i) => source(i, "stale")), source(13, "not-compiled")] } as unknown as LibraryUiModel;
   const result = mount(original, "sources");
-  expect(screen.getByTestId("library-source-states")).toHaveAttribute("data-folded-state", "stale");
+  expect(list()).toHaveAttribute("data-folded-state", "stale");
   const current = { ...original, sources: Array.from({ length: 14 }, (_, i) => source(i, "not-compiled")) } as unknown as LibraryUiModel;
   result.rerender(
     <NextIntlClientProvider locale="en" messages={enMessages}>
       <Harness model={current} segment="sources" />
     </NextIntlClientProvider>,
   );
-  expect(screen.getByTestId("library-source-states")).toHaveAttribute("data-folded-state", "not-compiled");
-  expect(screen.getByTestId("library-source-states-not-compiled")).toHaveTextContent(/\b14\b/);
-  expect(screen.queryByTestId("library-source-states-stale")).toBeNull();
+  expect(list()).toHaveAttribute("data-folded-state", "not-compiled");
+  expect(screen.getAllByTestId("library-source-state-folded")).toHaveLength(14);
 });

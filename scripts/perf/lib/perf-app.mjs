@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ensurePerfExport } from './perf-export.mjs';
+import { MACOS_TOOL } from './macos-memory.mjs';
 
 const ROOT = fileURLToPath(new URL('../../..', import.meta.url));
 export const PERF_APP_IDENTIFIER = 'dev.jinan.ontology-atlas.perf';
@@ -79,8 +80,8 @@ export function ensurePerfApp({ reportDir, rebuild = false }) {
     if (build.status !== 0) throw new Error('tauri build of the perf app failed');
     writeFileSync(STAMP, JSON.stringify({ ...want, builtAt: new Date().toISOString() }));
   }
-  const executable = execFileSync('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleExecutable', join(BUNDLE, 'Contents', 'Info.plist')], { encoding: 'utf8' }).trim();
-  const identifier = execFileSync('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleIdentifier', join(BUNDLE, 'Contents', 'Info.plist')], { encoding: 'utf8' }).trim();
+  const executable = execFileSync(MACOS_TOOL.plistBuddy, ['-c', 'Print :CFBundleExecutable', join(BUNDLE, 'Contents', 'Info.plist')], { encoding: 'utf8' }).trim();
+  const identifier = execFileSync(MACOS_TOOL.plistBuddy, ['-c', 'Print :CFBundleIdentifier', join(BUNDLE, 'Contents', 'Info.plist')], { encoding: 'utf8' }).trim();
   if (identifier !== PERF_APP_IDENTIFIER) throw new Error(`the perf bundle says ${identifier}; refusing to launch something that could be the installed app`);
   return { bundle: BUNDLE, executable: join(BUNDLE, 'Contents', 'MacOS', executable), identifier };
 }
