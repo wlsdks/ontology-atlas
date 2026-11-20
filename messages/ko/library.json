@@ -238,8 +238,6 @@
       "draft": "초안",
       "reviewed": "검토됨"
     },
-    "viewOriginalCount": "원문 {count, number}개",
-    "viewOriginalOne": "원문 보기: {name}",
     "originalMissing": "근거로 인용한 {name}, 이 폴더에는 없어요.",
     "compileCreateFile": "{path} 만들기",
     "compileModifyFile": "{path} 바꾸기",
@@ -1003,5 +1001,18 @@
     "failedTitle": "위키 검사가 일찍 끝났어요",
     "failedBody": "{agent}가 보고하기 전에 끝났어요. 바뀐 파일은 없어요. 「위키 검사」를 누르면 다시 실행해요.",
     "stopped": "이 검사를 중지했어요. 보고된 것도, 바뀐 파일도 없어요."
+  },
+  "wikiReader": {
+    "citedSources": "인용한 원문",
+    "linkedFrom": "이 문서를 가리키는 문서",
+    "concepts": "이 문서가 다루는 개념",
+    "citationCount": "인용 {count, number}곳",
+    "citationAt": "{file} · {line, number}행",
+    "openSource": "원문 열기",
+    "sourceChanged": "문서를 쓴 뒤에 이 파일이 바뀌었어요. 지금 내용이에요.",
+    "sourceMissing": "이 폴더에 이 파일이 없어요.",
+    "sourceTooLarge": "여기서 보여 주기엔 파일이 너무 커요.",
+    "linkMissing": "이 폴더에 이 이름을 가진 것이 없어요.",
+    "back": "뒤로"
   }
 }

@@ -238,8 +238,6 @@
       "draft": "draft",
       "reviewed": "reviewed"
     },
-    "viewOriginalCount": "{count, plural, one {# source} other {# sources}}",
-    "viewOriginalOne": "View source: {name}",
     "originalMissing": "Cites {name}, which is not in this folder.",
     "compileCreateFile": "Create {path}",
     "compileModifyFile": "Replace {path}",
@@ -1003,5 +1001,18 @@
     "failedTitle": "The wiki check ended early",
     "failedBody": "{agent} ended before it reported. No file was changed. Press Check wiki to run it again.",
     "stopped": "You stopped this check. Nothing was reported, and no file was changed."
+  },
+  "wikiReader": {
+    "citedSources": "Sources cited",
+    "linkedFrom": "Pages that link here",
+    "concepts": "Concepts this page touches",
+    "citationCount": "{count, plural, one {# citation} other {# citations}}",
+    "citationAt": "{file} · line {line, number}",
+    "openSource": "Open the source",
+    "sourceChanged": "This file changed after the page was written. This is its text now.",
+    "sourceMissing": "This file is not in the folder.",
+    "sourceTooLarge": "This file is too large to show here.",
+    "linkMissing": "Nothing in this folder has this name.",
+    "back": "Back"
   }
 }
