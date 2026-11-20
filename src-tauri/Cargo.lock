@@ -4914,10 +4914,12 @@ dependencies = [
 name = "vault-index"
 version = "0.1.0"
 dependencies = [
+ "icu_normalizer",
  "libc",
  "miniz_oxide",
  "rusqlite",
  "sha2",
+ "vault-index",
  "windows-sys 0.61.2",
 ]
 
