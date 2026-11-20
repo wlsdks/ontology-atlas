@@ -492,7 +492,7 @@ describe("drawing the library graph", () => {
       flowLabelRoom: { page: 400, source: 120 }, width: 900,
     }));
     const text = (id: string) => report.find((box) => box.nodeId === id)?.text;
-    // A title without spaces loses its end, not its middle; one wider than the old 132px cap stands whole in its room.
+    // A title without spaces loses its end, not its middle; one wider than the standing 132px cap stands whole in its column's room.
     expect(text("page:wiki/long")).toBe("Settlementreconciliationrunbook");
     expect(text("page:wiki/wide")).toBe("Refund approval matrix and its exceptions");
     // A file name with spaces still keeps its extension.
@@ -508,6 +508,80 @@ describe("drawing the library graph", () => {
     }));
     expect(tightReport[0]!.text).toMatch(/^Settlement\w*…$/);
     expect(tightReport[0]!.width).toBeLessThanOrEqual(96);
+  });
+
+  it("cuts a flow name between whole glyphs: an emoji and a decomposed Hangul syllable stay whole", () => {
+    const decomposed = "회의록-정산-대사-2026.md".normalize("NFD");
+    const named: LibraryGraphNode[] = [
+      { id: "page:wiki/emoji", kind: "page", label: "🧾🧾🧾 Settlement review 👩‍👩‍👧 family notes", ref: "wiki/emoji", href: null },
+      { id: "source:sources/hangul.md", kind: "source", label: decomposed, ref: "sources/hangul.md", href: null },
+    ];
+    const where = new Map([
+      ["page:wiki/emoji", { x: 100, y: 60 }],
+      ["source:sources/hangul.md", { x: 500, y: 200 }],
+    ]);
+    const graphemes = (text: string) => Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text), (part) => part.segment);
+    const whole = new Set([...graphemes(named[0].label), ...graphemes(decomposed), "…"]);
+    // Each UTF-16 unit is 7px wide, so a budget lands inside surrogate pairs and jamo runs.
+    for (let room = 20; room <= 160; room += 3) {
+      const rec = recorder();
+      rec.ctx.measureText = vi.fn((text: string) => ({ width: text.length * 7 })) as never;
+      const report: LibraryGraphLabelBox[] = [];
+      drawLibraryGraph(rec.ctx, frame({
+        nodes: named, edges: [], positions: where, standingLabels: true, sourceLabels: true, layout: "flow", labelReport: report,
+        flowLabelRoom: { page: room, source: room }, width: 900,
+      }));
+      for (const box of report) {
+        for (const glyph of graphemes(box.text)) expect(whole.has(glyph), `${box.text} at ${room}px splits "${glyph}"`).toBe(true);
+        expect(box.text.normalize("NFC"), `${box.text} at ${room}px`).not.toMatch(/[ᄀ-ᇿ]/);
+      }
+    }
+  });
+
+  it("leaves a mark unnamed when its room keeps no glyph of the name, rather than draw a bare ellipsis", () => {
+    const page: LibraryGraphNode = { id: "page:wiki/tight", kind: "page", label: "Settlement", ref: "wiki/tight", href: null };
+    const rec = recorder();
+    rec.ctx.measureText = vi.fn((text: string) => ({ width: text.length * 8 })) as never;
+    const report: LibraryGraphLabelBox[] = [];
+    // 12px holds the 8px ellipsis and no 8px glyph beside it.
+    drawLibraryGraph(rec.ctx, frame({
+      nodes: [page], edges: [], positions: new Map([[page.id, { x: 100, y: 60 }]]), standingLabels: true, layout: "flow", labelReport: report,
+      flowLabelRoom: { page: 12 }, width: 900,
+    }));
+    expect(report).toEqual([]);
+    expect(rec.texts.map((entry) => entry.text)).not.toContain("…");
+  });
+
+  it("measures nothing for a name a second frame cuts to the same room", () => {
+    const named: LibraryGraphNode[] = Array.from({ length: 6 }, (_, i) => ({
+      id: `page:wiki/p${i}`, kind: "page" as const, label: `Settlement review number ${i} and what follows it`, ref: `wiki/p${i}`, href: null,
+    }));
+    const where = new Map(named.map((node, i) => [node.id, { x: 80, y: 30 + i * 40 }]));
+    const rec = recorder();
+    const measure = vi.fn((text: string) => ({ width: text.length * 8 }));
+    rec.ctx.measureText = measure as never;
+    const draw = () =>
+      drawLibraryGraph(rec.ctx, frame({ nodes: named, edges: [], positions: where, standingLabels: true, layout: "flow", flowLabelRoom: { page: 120.4 }, width: 900 }));
+    draw();
+    expect(measure.mock.calls.length).toBeGreaterThan(named.length);
+    measure.mockClear();
+    draw();
+    expect(measure).not.toHaveBeenCalled();
+  });
+
+  it("names a hovered concept's pages when the picture names no page at rest", () => {
+    const concept: LibraryGraphNode = { id: "concept:refunds", kind: "concept", label: "Refunds", ref: "refunds", href: null };
+    const pages: LibraryGraphNode[] = ["one", "two", "three"].map((name) => ({ id: `page:wiki/${name}`, kind: "page" as const, label: `Page ${name}`, ref: `wiki/${name}`, href: null }));
+    const where = new Map([[concept.id, { x: 400, y: 160 }], ...pages.map((node, i) => [node.id, { x: 100, y: 60 + i * 100 }] as const)]);
+    const rec = recorder();
+    rec.ctx.measureText = vi.fn((text: string) => ({ width: text.length * 7 })) as never;
+    const report: LibraryGraphLabelBox[] = [];
+    drawLibraryGraph(rec.ctx, frame({
+      nodes: [concept, ...pages], edges: [], positions: where, standingLabels: true, layout: "flow", labelReport: report,
+      pageLabels: false, conceptLabels: false, hoveredId: concept.id, focus: new Set([concept.id, "page:wiki/one", "page:wiki/two"]), width: 900,
+    }));
+    const namedIds = report.map((box) => box.nodeId).sort();
+    expect(namedIds).toEqual(["page:wiki/one", "page:wiki/two"]);
   });
 
   // A name with nowhere to stand is pushed out on a leader, never deleted.
