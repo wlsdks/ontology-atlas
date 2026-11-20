@@ -52,7 +52,7 @@ export function LibraryHomePopovers({
   const { closeGuide } = home;
   const { handleLint, compileBlocked, compileTransfer, agentOnlyReason } = turns;
   const { agentDoor } = graphCards;
-  const { compileTarget, homeClauses, homeDoors } = homeStrip;
+  const { compileTarget, overflowDoors } = homeStrip;
   const batch = compileBatchView(compileBatch, model);
   return (
     <>
@@ -231,8 +231,8 @@ export function LibraryHomePopovers({
         t={t}
       >
         <ul className="flex flex-col p-1">
-          {[...homeClauses.filter((clause) => clause.kind !== "compile"), ...homeDoors].map((entry) => (
-            <li key={"kind" in entry ? entry.kind : entry.id}>
+          {overflowDoors.map((entry) => (
+            <li key={entry.id}>
               <button
                 type="button"
                 data-testid={`${entry.testId}-overflow`}
@@ -245,7 +245,7 @@ export function LibraryHomePopovers({
                   className: "w-full",
                 })}
               >
-                <span className="min-w-0 truncate">{"text" in entry ? entry.text : entry.label}</span>
+                <span className="min-w-0 truncate">{entry.label}</span>
               </button>
             </li>
           ))}

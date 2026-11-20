@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Maximize2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -65,25 +65,45 @@ export interface LibraryGraphProps {
    */
   highlight?: ReadonlySet<string> | null;
   /**
-   * The {@link highlight} in one sentence, in the legend's slot: a dim alone is a state with
-   * no words, no way back and an unexplained count (a citation lights two ends). A hover wins.
-   */
-  highlightNote?: string | null;
-  /** The view's own caption-row content (status strip, shelf chip), as a slot since a widget cannot import views. */
-  headerEnd?: ReactNode;
-  /**
-   * The caption yields below `lg` while the guide stands over it, since overlap is not
-   * tolerated (`docs/DESIGN-SYSTEM.md`, Don'ts). It stays as `sr-only`, never unmounted: it is
-   * the canvas's `aria-describedby` target.
-   */
-  captionQuiet?: boolean;
-  /** A column beside the reader, not the pane: the slot stays for hover, the long legend becomes one line. */
-  compact?: boolean;
-  /**
    * The folder's facts for a pressed mark's card, from the Library model a widget cannot
-   * import (same seam as {@link headerEnd}). Absent, the card still shows name, kind and doors.
+   * import. Absent, the card still shows name, kind and doors.
    */
   cardFacts?: (node: LibraryGraphNode) => LibraryGraphCardFacts | null;
+}
+
+type KeyGlyphKind = "square" | "circle" | "ring" | "cite" | "mention" | "stale";
+
+interface KeyItem {
+  glyph: KeyGlyphKind;
+  text: string;
+}
+
+/**
+ * A mark or line of the key, drawn as the canvas draws it (`library-graph-ink.ts`): a source is a
+ * dim square, a page the bright filled circle, a concept a dim ring, a citation the solid line and a
+ * mention the dashed one, a changed source the amber dot.
+ */
+function KeyGlyph({ glyph }: { glyph: KeyGlyphKind }) {
+  const dim = "text-[color:var(--color-text-quaternary)]";
+  return (
+    <svg
+      aria-hidden
+      width="14"
+      height="10"
+      viewBox="0 0 14 10"
+      className={cn(
+        "flex-none",
+        glyph === "circle" ? "text-[color:var(--color-text-primary)]" : glyph === "stale" ? "text-[color:var(--color-status-warning)]" : dim,
+      )}
+    >
+      {glyph === "square" ? <rect x="3.5" y="1.5" width="7" height="7" fill="currentColor" /> : null}
+      {glyph === "circle" ? <circle cx="7" cy="5" r="4" fill="currentColor" /> : null}
+      {glyph === "ring" ? <circle cx="7" cy="5" r="3.75" fill="none" stroke="currentColor" strokeWidth="1.5" /> : null}
+      {glyph === "cite" ? <line x1="0" y1="5" x2="14" y2="5" stroke="currentColor" strokeWidth="1.75" /> : null}
+      {glyph === "mention" ? <line x1="0" y1="5" x2="14" y2="5" stroke="currentColor" strokeWidth="1" strokeDasharray="2.5 2" /> : null}
+      {glyph === "stale" ? <circle cx="7" cy="5" r="3" fill="currentColor" /> : null}
+    </svg>
+  );
 }
 
 /** No fixed height or width cap: a canvas that pans and zooms is the whole pane. */
@@ -94,8 +114,6 @@ function selectionNodeId(selection: LibraryGraphSelection | null): string | null
   return selection.kind === "wiki" ? `page:${selection.ref}` : `source:${selection.ref}`;
 }
 
-/** The clause separator both locales' caption messages use. */
-const CAPTION_SEPARATOR = " · ";
 
 export function LibraryGraph({
   docs,
@@ -106,10 +124,6 @@ export function LibraryGraph({
   activity = EMPTY_LIBRARY_WORK_ACTIVITY,
   visible = true,
   highlight = null,
-  highlightNote = null,
-  headerEnd,
-  captionQuiet = false,
-  compact = false,
   cardFacts,
 }: LibraryGraphProps) {
   const t = useTranslations("library");
@@ -340,18 +354,38 @@ export function LibraryGraph({
 
   const counts = graph.counts;
   /*
-   * The relations are counted apart, or the caption cannot say whether dashes matter. An
-   * opened island's caption counts only what it draws: files, pages, cites.
+   * The key under the picture: what each mark and line is, with its count. The islands picture keys
+   * its own marks; an opened island draws flow columns again, so it keys those.
    */
-  const caption = island
-    ? t("graph.countsIsland", { sources: counts.sources, pages: counts.pages, cites: counts.cites })
-    : t("graph.counts", {
-        sources: counts.sources,
-        pages: counts.pages,
-        concepts: counts.concepts,
-        cites: counts.cites,
-        mentions: counts.mentions,
-      });
+  const keyItems: KeyItem[] = engine.picture === "islands" && !island
+    ? [
+        { glyph: "ring", text: t("graph.key.island") },
+        { glyph: "circle", text: t("graph.key.page", { count: counts.pages }) },
+        { glyph: "square", text: t("graph.key.source", { count: counts.sources }) },
+        { glyph: "stale", text: t("graph.key.stale") },
+      ]
+    : [
+        { glyph: "square", text: t("graph.key.source", { count: counts.sources }) },
+        { glyph: "circle", text: t("graph.key.page", { count: counts.pages }) },
+        ...(island ? [] : [{ glyph: "ring" as const, text: t("graph.key.concept", { count: counts.concepts }) }]),
+        { glyph: "cite", text: t("graph.key.cite", { count: counts.cites }) },
+        ...(island ? [] : [{ glyph: "mention" as const, text: t("graph.key.mention", { count: counts.mentions }) }]),
+      ];
+  const gestures = t("graph.key.gestures");
+  const keyText = [...keyItems.map((item) => item.text), gestures].join(" · ");
+  /* A pointed-at mark or island, or the pressed Unread band, is described in the key's line. */
+  const pointedIsland = !activeNode && engine.picture === "islands" ? (hoveredIsland ?? focusedIsland) : null;
+  const description =
+    !activeNode && unreadPressed && engine.picture === "islands"
+      ? t("graph.unreadPressed", { sources: unreadPressed.sources.length })
+      : pointedIsland
+        ? pointedIsland.kind === "unread"
+          ? t("graph.describeUnread", { sources: pointedIsland.sources.length })
+          : t("graph.describeIsland", { name: pointedIsland.label, pages: pointedIsland.pages.length, sources: pointedIsland.sources.length })
+        : activeNode
+          ? /* The open card's mark says how to leave it; any other mark, what a press does. */
+            t(`graph.${activeNode.id === cardId ? "describeOpen" : "describe"}.${activeNode.kind}`, { name: activeNode.label })
+          : null;
 
   return (
     /*
@@ -363,32 +397,6 @@ export function LibraryGraph({
       aria-label={t("graph.title")}
       className="flex min-h-0 flex-1 flex-col px-5 py-2 sm:px-6 md:px-10"
     >
-      <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1 lg:flex-nowrap">
-        {/* The counts are the picture's caption and only title. From `lg` the row never
-            wraps and they shrink first, or the doors drop to a second row off the canvas. */}
-        {/* Whole clauses give way from the end, never half of one: each is an unbreakable
-            item on a clipped one-line row; `title` and `textContent` keep every count. */}
-        <p
-          data-testid="library-graph-counts"
-          title={caption}
-          className="flex max-h-[1lh] min-w-0 flex-wrap overflow-hidden text-label leading-body text-[color:var(--color-text-tertiary)] lg:shrink-[20]"
-        >
-          {caption.split(CAPTION_SEPARATOR).map((clause, index) => (
-            <span
-              key={index}
-              data-counts-clause=""
-              className={index === 0 ? "min-w-0 truncate" : "whitespace-pre"}
-            >
-              {index === 0 ? clause : `${CAPTION_SEPARATOR}${clause}`}
-            </span>
-          ))}
-        </p>
-        {/* The slot's children are this row's own flex children, not a right-anchored box, so
-            a wrapped clause line starts on the caption's text edge; the doors anchor right
-            through `ml-auto` on their group (`LibraryHomeStrip`). */}
-        {headerEnd}
-      </div>
-
       {graph.nodes.length === 0 ? (
         /*
          * An empty folder is answered by `LibraryPage` itself, but this widget still says so
@@ -525,60 +533,41 @@ export function LibraryGraph({
           </div>
         </div>
         </div>
-        {/* The legend, `text-label` and tertiary because a newcomer must read it, capped at
-            a reading measure. Every state's sentence sits in one grid cell so the row's height
-            never changes, or the `flex-1` canvas above refits and moves every mark. */}
-        <div className={cn("mt-1.5 grid max-w-[var(--measure-doc-column)]", captionQuiet && "max-lg:mt-0")}>
-          {/* Invisible sizers for every state's sentence, so the tallest sets the height. */}
-          {(compact ? ["graph.legendShort", "graph.legendShortCardOpen"] : ["graph.legend", "graph.legendCardOpen", "graph.legendIslands"]).map((key) => (
+        {/* The key: one line of fixed height, so the `flex-1` canvas above never refits. Items that do
+            not fit wrap onto a clipped second line, so they drop from the end; the whole key stays in
+            the canvas's description. A pointed-at mark's sentence takes the same line. */}
+        <div
+          aria-hidden
+          data-testid="library-graph-key"
+          data-picture={engine.picture}
+          className="mt-1.5 grid h-6 min-w-0 items-center overflow-hidden text-label"
+        >
+          {description ? (
             <p
-              key={key}
-              aria-hidden
-              className={cn(
-                "invisible col-start-1 row-start-1 text-label leading-body [word-break:keep-all]",
-                captionQuiet && "max-lg:sr-only",
-                // Compact reserves one line: its legend and describe line are one sentence each.
-                compact && "line-clamp-1",
-              )}
+              key="description"
+              data-testid="library-graph-description"
+              title={description}
+              className="col-start-1 row-start-1 min-w-0 truncate text-[color:var(--color-text-secondary)]"
             >
-              {t(key as "graph.legend")}
+              {description}
             </p>
-          ))}
-          <p
-            id="library-graph-hint"
-            data-testid="library-graph-hint"
-            /* Quiet goes on each line, not the cell: `sr-only` on the wrapper leaves the lines
-               laid out at full size, still under the guide. */
-            className={cn(
-              "col-start-1 row-start-1 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]",
-              captionQuiet && "max-lg:sr-only",
-            )}
-          >
-            {/* A pointed-at mark or island is described in the same slot. An open card keeps
-                the legend's vocabulary, or the reader loses the key; only the gesture clause
-                swaps to the ways back out. */}
-            {!activeNode && unreadPressed && engine.picture === "islands"
-              ? t("graph.unreadPressed", { sources: unreadPressed.sources.length })
-              : !activeNode && (hoveredIsland ?? focusedIsland) && engine.picture === "islands"
-              ? (hoveredIsland ?? focusedIsland)!.kind === "unread"
-                ? t("graph.describeUnread", { sources: (hoveredIsland ?? focusedIsland)!.sources.length })
-                : t("graph.describeIsland", { name: (hoveredIsland ?? focusedIsland)!.label, pages: (hoveredIsland ?? focusedIsland)!.pages.length, sources: (hoveredIsland ?? focusedIsland)!.sources.length })
-              : activeNode
-              ? /* The open card's mark says how to leave it; any other mark, what a press does. */
-                t(
-                  `graph.${activeNode.id === cardId ? "describeOpen" : "describe"}.${activeNode.kind}`,
-                  { name: activeNode.label },
-                )
-              : highlightNote
-                ? highlightNote
-                : compact
-                ? /* Never empty: this is the canvas's `aria-describedby` target. */
-                  t(cardNode ? "graph.legendShortCardOpen" : "graph.legendShort")
-                : engine.picture === "islands" && !cardNode
-                  ? t("graph.legendIslands")
-                  : t(cardNode ? "graph.legendCardOpen" : "graph.legend")}
-          </p>
+          ) : (
+            <p key="key" className="col-start-1 row-start-1 flex h-6 min-w-0 flex-wrap items-center gap-x-4 overflow-hidden text-[color:var(--color-text-secondary)]">
+              {keyItems.map((item) => (
+                <span key={item.glyph + item.text} data-key-item={item.glyph} className="flex h-6 flex-none items-center gap-1.5 whitespace-nowrap tabular-nums">
+                  <KeyGlyph glyph={item.glyph} />
+                  {item.text}
+                </span>
+              ))}
+              <span data-key-item="gestures" className="ml-auto flex h-6 flex-none items-center whitespace-nowrap text-[color:var(--color-text-tertiary)] max-lg:hidden">
+                {gestures}
+              </span>
+            </p>
+          )}
         </div>
+        <p id="library-graph-hint" data-testid="library-graph-hint" className="sr-only">
+          {description ?? keyText}
+        </p>
         {/* The keyboard path lives in the description only, never a rendered line on a phone. */}
         <span id="library-graph-keys" className="sr-only">
           {t("graph.keys")}

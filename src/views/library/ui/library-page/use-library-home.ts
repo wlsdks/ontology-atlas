@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from "react";
 import {
   readLibraryGuideSeen,
   useLibraryGuideSeen,
@@ -6,20 +6,14 @@ import {
 } from "@/shared/lib/preferences/appearance-preferences";
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/overlays/right-dock-reserve";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
-import type { LibraryUiModel } from "@/features/library";
 import type { LibrarySelection, LibraryHomeSurface } from "./library-page-state";
 import type { useLibraryWorkActivity } from "./use-library-work-activity";
 
 export function useLibraryHome({
-  selected, setHomeSurface, setStaleLit, staleLit, choose, model, chatWidth, dockOpen,
-  workActivity, importOpen,
+  selected, setHomeSurface, chatWidth, dockOpen, workActivity, importOpen,
 }: {
   selected: LibrarySelection;
   setHomeSurface: Dispatch<SetStateAction<LibraryHomeSurface>>;
-  setStaleLit: Dispatch<SetStateAction<boolean>>;
-  staleLit: boolean;
-  choose: (next: LibrarySelection) => void;
-  model: LibraryUiModel;
   chatWidth: ReturnType<typeof useChatWidth>;
   dockOpen: boolean;
   workActivity: ReturnType<typeof useLibraryWorkActivity>;
@@ -28,24 +22,6 @@ export function useLibraryHome({
 }) {
   const { localReviewVisible } = workActivity;
   const homeVisible = selected === null && !localReviewVisible;
-  const staleHighlight = useMemo(() => {
-    const ids = new Set<string>();
-    const pages = new Set<string>();
-    for (const row of model.sources) {
-      if (row.state !== "stale") continue;
-      ids.add(`source:${row.path}`);
-      for (const slug of row.citedBy) {
-        ids.add(`page:${slug}`);
-        pages.add(slug);
-      }
-    }
-    return { ids, pages: pages.size };
-  }, [model.sources]);
-  const openReport = useCallback(() => {
-    setHomeSurface(null);
-    setStaleLit(false);
-    choose({ kind: "report" });
-  }, [choose, setHomeSurface, setStaleLit]);
   const guideSeen = useLibraryGuideSeen();
   const guideRaisedRef = useRef(false);
   useEffect(() => {
@@ -61,25 +37,6 @@ export function useLibraryHome({
   }, [setHomeSurface]);
 
   useEffect(() => {
-    if (!staleLit) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
-      event.preventDefault();
-      event.stopPropagation();
-      setStaleLit(false);
-    };
-    const onDown = (event: MouseEvent) => {
-      if (!(event.target instanceof Element)) return;
-      if (event.target.closest('[data-testid="library-graph-canvas"]')) setStaleLit(false);
-    };
-    window.addEventListener("keydown", onKey, true);
-    window.addEventListener("mousedown", onDown);
-    return () => {
-      window.removeEventListener("keydown", onKey, true);
-      window.removeEventListener("mousedown", onDown);
-    };
-  }, [setStaleLit, staleLit]);
-  useEffect(() => {
     const root = document.documentElement;
     if (!dockOpen) {
       root.style.removeProperty(RIGHT_DOCK_WIDTH_VAR);
@@ -91,5 +48,5 @@ export function useLibraryHome({
     };
   }, [chatWidth.width, dockOpen]);
 
-  return { homeVisible, staleHighlight, openReport, guideSeen, guideRaisedRef, closeGuide };
+  return { homeVisible, guideSeen, guideRaisedRef, closeGuide };
 }

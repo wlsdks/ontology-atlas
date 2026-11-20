@@ -41,7 +41,18 @@ async function openWiki(page: Page) {
 
 const fieldTop = (page: Page) => page.getByTestId('question-desk-input').evaluate((field) => field.getBoundingClientRect().top);
 
-test('a long retained question stays inside the inquiry at 200 percent text on a narrow screen', async ({ page }) => {
+/**
+ * The page header owns the doors: one Questions and one Conversation control, none in the desk.
+ * The Conversation door gives way to the open dock, which is then the one conversation control.
+ */
+async function expectOneDoorEach(page: Page) {
+  await expect(page.getByTestId('library-questions-open')).toHaveCount(1);
+  await expect.poll(async () => await page.getByTestId('library-open-conversation').count()
+    + (await page.getByTestId('library-agent-dock').isVisible() ? 1 : 0)).toBe(1);
+  await expect(page.getByTestId('library-question-desk').locator('[data-testid="library-questions-open"], [data-testid="library-open-conversation"]')).toHaveCount(0);
+}
+
+test('a long retained question is the header door, and stays inside the More list at 200 percent text on a narrow screen', async ({ page }) => {
   const title = 'Which original explains refund approval, inventory restoration timing, exceptions, and the next batch conditions?';
   await installLibraryWorkHarness(page, { files: {
     'project.md': project,
@@ -50,16 +61,22 @@ test('a long retained question stays inside the inquiry at 200 percent text on a
       .replace('status: draft', 'status: draft\nanswer_thread: wiki/answers/retained'),
   } });
   await openWiki(page);
-  const question = page.getByTestId('library-questions-open');
-  await expect(question).toContainText(title);
+  // The sole kept answer names itself in the page header, and the desk carries no second door to it.
+  const door = page.getByTestId('library-questions-open');
+  await expect(door).toContainText(title);
+  await expect(door).toHaveCount(1);
+  await expect(page.getByTestId('library-question-desk').getByTestId('library-questions-open')).toHaveCount(0);
   await expect(page.getByTestId('question-desk-saved')).toContainText(title);
   await expect(page.getByTestId('question-desk-originals')).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
+  // Below `lg` the doors fold into More, and the long title stays inside the screen there.
+  await page.getByTestId('library-home-overflow').click();
+  const question = page.getByTestId('library-questions-open-overflow');
+  await expect(question).toContainText(title);
   await expect.poll(() => question.evaluate((element) => {
     const button = element.getBoundingClientRect();
-    const pane = element.closest('[data-question-desk-container]')!.getBoundingClientRect();
-    return Math.max(pane.left - button.left, button.right - pane.right);
+    return Math.max(-button.left, button.right - window.innerWidth);
   })).toBeLessThanOrEqual(1);
   await question.click();
   await expect(page.getByTestId('retained-answer-context')).toBeVisible();
@@ -84,6 +101,7 @@ for (const [width, height] of [[1512, 901], [1920, 1080]] as const) {
     await openWiki(page);
     await expect(page.getByTestId('question-desk-recent')).toBeVisible();
     const entry = await fieldTop(page);
+    await expectOneDoorEach(page);
     await page.getByTestId('question-desk-input').fill('When is a refund approved?');
     await page.getByTestId('question-desk-input').press('Enter');
     const leads = page.getByTestId('question-desk-lead');
@@ -91,12 +109,14 @@ for (const [width, height] of [[1512, 901], [1920, 1080]] as const) {
     await expect(page.getByTestId('question-desk-results-head')).toContainText('13 passages found');
     await expect(page.getByTestId('question-desk-recent')).toHaveCount(0);
     expect(await fieldTop(page)).toBe(entry);
+    await expectOneDoorEach(page);
     await expect(page.getByTestId('question-desk-input')).toBeFocused();
 
     await page.getByTestId('question-desk-show-more').click();
     await expect(leads).toHaveCount(13);
     await expect(leads.nth(3).locator('[data-lead-open]')).toBeFocused();
     expect(await fieldTop(page)).toBe(entry);
+    await expectOneDoorEach(page);
     for (const text of await leads.allTextContents()) expect(text).not.toMatch(/\.md#/u);
     await expect(page.getByText(/Source freshness does not establish/)).toHaveCount(0);
 
@@ -107,6 +127,7 @@ for (const [width, height] of [[1512, 901], [1920, 1080]] as const) {
     await expect(page.getByTestId('question-desk-results-head')).toHaveText('Passages the search found');
     await page.getByTestId('library-question-desk').evaluate((desk) => { desk.scrollTop = 0; });
     expect(await fieldTop(page)).toBe(entry);
+    await expectOneDoorEach(page);
 
     // The report cost an agent turn: editing the question keeps it, and new rows replace it.
     await page.getByTestId('question-desk-input').fill('When does the refund queue run?');

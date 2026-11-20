@@ -515,7 +515,7 @@ test.describe("the Library pane", () => {
       "library-graph-empty",
       "library-status-strip",
       "library-reader-landing",
-      "library-home-strip",
+      "library-doors",
     ]) {
       await expect(page.getByTestId(gone), `${gone} still draws over an empty folder`).toHaveCount(
         0,
@@ -563,8 +563,8 @@ test.describe("the Library pane", () => {
   });
 
   /**
-   * The home is the folder's graph: the canvas fills the pane, the three steps are one press away, and
-   * the strip's clauses are the only place step facts are stated.
+   * The home is the folder's graph: the canvas fills the pane, its key sits under it, and the three
+   * steps are one press away from the page header.
    */
   test("opens on the folder's graph with the guide one press away", async ({ page }) => {
     await openLibrary(page);
@@ -586,7 +586,7 @@ test.describe("the Library pane", () => {
       return document.elementFromPoint(rect.left + 20, rect.top + rect.height / 2) === element;
     });
     expect(reachable, "the home's graph is covered by another surface").toBe(true);
-    for (const id of ["library-graph-counts", "library-graph-hint"]) {
+    for (const id of ["library-graph-key"]) {
       const label = page.getByTestId(id);
       await expect(label).toBeVisible();
       const hit = await label.evaluate((element) => {
@@ -596,9 +596,9 @@ test.describe("the Library pane", () => {
       expect(hit, `${id} is occluded`).toBe(true);
     }
 
-    // The next step is the progress band's door (on the web, Get the app), not a strip clause or a second header row.
+    // The next step is the progress band's door (on the web, Get the app), not a header door or a second header row.
     await expect(page.getByTestId("library-progress-get-app")).toBeVisible();
-    await expect(page.getByTestId("library-home-strip")).not.toContainText("Write wiki page:");
+    await expect(page.getByTestId("library-doors")).not.toContainText("Write wiki page:");
     await expect(page.getByTestId("library-status-strip")).toHaveCount(0);
     await expect(page.getByTestId("library-needs-compile")).toHaveCount(0);
 
