@@ -72,13 +72,14 @@ function graphSelectionFrame(
     });
     // The zoom weighs the star alone; its names take only the width the star leaves, so they move the pan, never the scale.
     const spanPx = free.maxX - free.minX - paint.frameMarginPx * 2;
-    const starAt = (scale: number): FramedMark[] => domainStarMarks(block, opened, scale, domainPx, paint, spanPx);
+    const byName = opened.flatMap((m, i) => (m.namePx > 0 ? [i] : [])).sort((a, b) => opened[a]!.namePx - opened[b]!.namePx || a - b);
+    const starAt = (scale: number): FramedMark[] => domainStarMarks(block, opened, byName, scale, domainPx, paint, spanPx);
     const zoom = domainSelectionZoom({
       members: capabilities.flatMap((of) => world.nodeById.get(of) ?? []), apartPx: paint.domainApartMaxPx, starAt, maxScale: band.maxScale,
     });
     // Panned as it draws at the deepest zoom, the star's largest: fixed sets whatever scale the frame starts from, so a landing
     // frames to itself. With every name's whole width first, then the star alone, the set a zoom-out falls back on.
-    const largest = [domainStarMarks(block, opened, band.maxScale, domainPx, paint, Infinity), domainStarMarks(block, opened, band.maxScale, domainPx, paint, 0)];
+    const largest = [domainStarMarks(block, opened, byName, band.maxScale, domainPx, paint, Infinity), domainStarMarks(block, opened, byName, band.maxScale, domainPx, paint, 0)];
     return selectionFrameTarget(camera, largest, viewport, free, paint.frameMarginPx, band.entryScale, zoom);
   }
   const attention = cachedGraphAttention(model, id, true);
@@ -140,11 +141,14 @@ const NAME_ROOM_SLACK_PX = 0.5;
  * A domain's star as the frame keeps it inside the free map at `scale`: the domain's block, then each
  * member's opened disc with room for its one-line name on the side facing away from the domain, so a
  * star framed against the free map's edge keeps a side there for the names of the members on its rim.
- * The names share, by one ratio, only the width the star leaves of `spanPx`: where the star alone
- * fits it still fits, and where it does not they take none. O(members).
+ * The names take only the width the star leaves of `spanPx`, each whole or not at all, the shortest
+ * first (`byName`, the members with a name from shortest to longest): a name that no longer fits is
+ * passed over for a shorter or nearer one, so a short width still seats whole names. Where the star
+ * alone fits it still fits, and where it does not they take none. O(members).
  */
 function domainStarMarks(
-  block: readonly FramedMark[], members: readonly FramedStarMember[], scale: number, domainPx: number, paint: FlatGraphPaintTokens, spanPx: number,
+  block: readonly FramedMark[], members: readonly FramedStarMember[], byName: readonly number[], scale: number, domainPx: number, paint: FlatGraphPaintTokens,
+  spanPx: number,
 ): FramedMark[] {
   const radii = members.map((m) => openRadiusPx(m.own, m.room, scale, domainPx, paint, m.nearestOwn));
   let lo = Infinity;
@@ -157,20 +161,25 @@ function domainStarMarks(
     lo = Math.min(lo, m.node.x * scale - radii[i]!);
     hi = Math.max(hi, m.node.x * scale + radii[i]!);
   }
+  const budget = spanPx - NAME_ROOM_SLACK_PX;
+  const seated = new Uint8Array(members.length);
   let left = lo;
   let right = hi;
-  for (const [i, m] of members.entries()) {
-    if (m.outLeft) left = Math.min(left, m.node.x * scale - radii[i]! - m.namePx);
-    else right = Math.max(right, m.node.x * scale + radii[i]! + m.namePx);
+  if (hi - lo <= budget) {
+    for (const i of byName) {
+      const m = members[i]!;
+      const nextLeft = m.outLeft ? Math.min(left, m.node.x * scale - radii[i]! - m.namePx) : left;
+      const nextRight = m.outLeft ? right : Math.max(right, m.node.x * scale + radii[i]! + m.namePx);
+      if (nextRight - nextLeft > budget) continue;
+      seated[i] = 1;
+      left = nextLeft;
+      right = nextRight;
+    }
   }
-  // Each name grows its side of the span by at most this ratio of what all of them would.
-  const want = lo - left + (right - hi);
-  const spare = spanPx - (hi - lo) - NAME_ROOM_SLACK_PX;
-  const share = want <= 0 || spare <= 0 ? 0 : Math.min(1, spare / want);
   const marks = [...block];
   for (const [i, { node, namePx, outLeft }] of members.entries()) {
     const r = radii[i]!;
-    const name = namePx * share;
+    const name = seated[i] === 1 ? namePx : 0;
     marks.push({ x: node.x, y: node.y, box: { minX: outLeft ? -r - name : -r, maxX: outLeft ? r : r + name, minY: -r, maxY: r } });
   }
   return marks;

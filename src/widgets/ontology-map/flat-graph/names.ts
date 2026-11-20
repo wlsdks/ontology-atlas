@@ -428,11 +428,12 @@ function elementDotRadius(input: Pick<NameInput, "tokens" | "growth" | "discRadi
 
 /**
  * How far an open star member's one-line name reaches past its disc's rim on its own row, in px:
- * the gap, the text and its pad, as `sideNames` sets the name beside the disc. O(1) past the measure.
+ * the gap and the text, as `sideNames` sets the name beside the disc; the frame holds a member's
+ * glyphs inside the free map and lets its pad cross the margin. O(1) past the measure.
  */
-export function memberNameReachPx(input: { tokens: Pick<FlatGraphPaintTokens, "nameGapPx" | "namePadPx" | "capNamePx">; measureText: MeasureText; fontFamily: string }, label: string): number {
+export function memberNameReachPx(input: { tokens: Pick<FlatGraphPaintTokens, "nameGapPx" | "capNamePx">; measureText: MeasureText; fontFamily: string }, label: string): number {
   const t = input.tokens;
-  return t.nameGapPx + input.measureText(label, font(FONT_WEIGHT.emphasis, t.capNamePx, input.fontFamily)) + t.namePadPx;
+  return t.nameGapPx + input.measureText(label, font(FONT_WEIGHT.emphasis, t.capNamePx, input.fontFamily));
 }
 
 function sideNames(input: NameShape, id: string, role: "capability" | "element", text: string): PlacedName[][] {

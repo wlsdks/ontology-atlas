@@ -228,8 +228,9 @@ describe("a selection framed between both panels", () => {
   });
 
   it.each([
-    ["docs", 1920, 1080, docsManifest], ["storefront", 1280, 800, storefrontManifest], ["storefront", 1410, 840, storefrontManifest],
-  ])("pans a domain's star off the free map's edge until each member's one-line name fits on the side facing away from the domain, where the star leaves the width, in the %s vault at %ix%i", (_, width, height, manifest) => {
+    ["docs", 1100, 700, docsManifest], ["docs", 1280, 800, docsManifest], ["docs", 1512, 949, docsManifest], ["docs", 1920, 1080, docsManifest],
+    ["storefront", 1100, 700, storefrontManifest], ["storefront", 1280, 800, storefrontManifest], ["storefront", 1410, 840, storefrontManifest],
+  ])("pans a domain's star off the free map's edge so each member's one-line name it leaves off, on the side facing away from the domain, is one the star had no width left for, in the %s vault at %ix%i", (_, width, height, manifest) => {
     const map = vaultMap(manifest, { width, height });
     const titleBlocks = domainTitleBlocks({ model: map.model, tokens: paint, labels: LABELS, measureText, fontFamily: "sans-serif" });
     const domainR = graphDiscRadiusPx("domain", 0, paint, paint.growthMax);
@@ -237,8 +238,11 @@ describe("a selection framed between both panels", () => {
       const capability = map.model.capabilityById.get(id);
       return graphDiscRadiusPx(capability ? "capability" : "element", capability?.elementIds.length ?? 0, paint, paint.growthMax);
     };
-    const outside: string[] = [];
-    let weighed = 0;
+    const room = map.free.maxX - map.free.minX - paint.frameMarginPx * 2;
+    const left = map.free.minX + paint.frameMarginPx;
+    const right = map.free.maxX - paint.frameMarginPx;
+    const passedOver: string[] = [];
+    let short = 0;
     for (const domain of map.model.domains) {
       const landed = map.frame(domain.id, map.rest) ?? map.rest;
       const s = landed.tscale;
@@ -252,23 +256,27 @@ describe("a selection framed between both panels", () => {
       let hi = sx(home.x) + half;
       const names: { id: string; minX: number; maxX: number }[] = [];
       for (const id of [...capabilities, ...elements]) {
-        const room = rooms.get(id)!;
-        const r = openRadiusPx(ownOf(id), room, s, domainR, paint, room.nearestId === null ? 0 : ownOf(room.nearestId));
+        const open = rooms.get(id)!;
+        const r = openRadiusPx(ownOf(id), open, s, domainR, paint, open.nearestId === null ? 0 : ownOf(open.nearestId));
         const x = sx(map.at(id).x);
         lo = Math.min(lo, x - r);
         hi = Math.max(hi, x + r);
         const label = map.model.capabilityById.get(id)?.label;
         if (!label) continue;
-        const reach = r + paint.nameGapPx + measureText(label, `${paint.capNamePx}px sans-serif`) + paint.namePadPx;
+        const reach = r + paint.nameGapPx + measureText(label, `${paint.capNamePx}px sans-serif`);
         names.push(map.at(id).x < home.x ? { id, minX: x - reach, maxX: x } : { id, minX: x, maxX: x + reach });
       }
-      const span = Math.max(hi, ...names.map((n) => n.maxX)) - Math.min(lo, ...names.map((n) => n.minX));
-      if (span > map.free.maxX - map.free.minX - paint.frameMarginPx * 2 - 1) continue;
-      weighed += 1;
-      for (const n of names) if (n.minX < map.free.minX - 0.5 || n.maxX > map.free.maxX + 0.5) outside.push(`${domain.id}: ${n.id} spans ${n.minX.toFixed(0)}..${n.maxX.toFixed(0)}`);
+      const spanOf = (list: readonly { minX: number; maxX: number }[]) => Math.max(hi, ...list.map((n) => n.maxX)) - Math.min(lo, ...list.map((n) => n.minX));
+      if (hi - lo > room - 1) continue;
+      if (spanOf(names) > room) short += 1;
+      const fitting = names.filter((n) => n.minX >= left - 0.5 && n.maxX <= right + 0.5);
+      for (const n of names) {
+        if (fitting.includes(n) || spanOf([...fitting, n]) > room - 1) continue;
+        passedOver.push(`${domain.id}: ${n.id} spans ${n.minX.toFixed(0)}..${n.maxX.toFixed(0)} beside ${fitting.length} fitting, ${(room - spanOf([...fitting, n])).toFixed(0)} px to spare`);
+      }
     }
-    expect(weighed, "some domain's star leaves the width for its members' names").toBeGreaterThan(0);
-    expect(outside, "a member whose name runs off the free map though the star left the width for it").toEqual([]);
+    if (width < 1500) expect(short, "some domain's star leaves less width than every name wants").toBeGreaterThan(0);
+    expect(passedOver, "a name off the free map that the width the star left could have seated whole").toEqual([]);
   });
 
   it.each([
