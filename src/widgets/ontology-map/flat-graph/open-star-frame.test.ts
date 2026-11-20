@@ -964,3 +964,32 @@ describe("an opened star's member names while the camera pans the narrow free ma
     },
   );
 });
+
+describe("an open star in a rebuilt world", () => {
+  it("names each star's members clear of the discs of the world it draws, whatever the last world painted", () => {
+    // Each world counts its frames from 1, so a world that paints once leaves state stamped with the
+    // same frame number the next world's first frame carries.
+    const over: string[] = [];
+    const pad = TOKENS.paint.namePadPx;
+    for (const domainId of ["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"]) {
+      const { capabilities } = domainStarIds(model, domainId);
+      for (const lastFrames of [1, 2]) {
+        const last = cameraOn(domainId, {});
+        for (let i = 0; i < lastFrames; i += 1) paintFlatGraphFrame(last(2.5, { focusedNodeId: domainId, now: i * FRAME_MS }), TOKENS);
+        const rebuilt = cameraOn(capabilities[0]!, {});
+        paintFlatGraphFrame(rebuilt(2.2, { focusedNodeId: domainId, now: 10 * FRAME_MS }), TOKENS);
+        const { texts, discs } = describeLastDialFrame(W, H)!;
+        for (const t of texts) {
+          if (t.role !== "capability" || !capabilities.includes(t.id ?? "")) continue;
+          for (const m of discs) {
+            if (m.id === t.id || m.id === null) continue;
+            const dx = Math.max(t.box.minX + pad - m.x, 0, m.x - (t.box.maxX - pad));
+            const dy = Math.max(t.box.minY + pad - m.y, 0, m.y - (t.box.maxY - pad));
+            if (Math.hypot(dx, dy) - m.r <= -0.5) over.push(`${domainId} after ${lastFrames}: ${t.id} over ${m.id}`);
+          }
+        }
+      }
+    }
+    expect(over).toEqual([]);
+  });
+});

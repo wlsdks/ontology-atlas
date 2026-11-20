@@ -1467,7 +1467,7 @@ const MARK_CELLS_MAX = 64;
  * large to file.
  */
 const markGrid = {
-  frame: -1,
+  filledStamp: -1,
   marks: [] as (Disc | Dot)[],
   size: 0,
   dot: new Uint8Array(0),
@@ -1505,7 +1505,7 @@ function fileGridMark(m: Disc | Dot, dot: boolean): void {
 
 function fillMarkGrid(): void {
   const g = markGrid;
-  g.frame = F.frame;
+  g.filledStamp = F.stamp;
   g.size = 0;
   g.entries = 0;
   g.wide.length = 0;
@@ -1563,7 +1563,7 @@ function gridMarkCrosses(k: number, id: string, minX: number, maxX: number, minY
  */
 function gridCrosses(id: string, minX: number, maxX: number, minY: number, maxY: number, discs: boolean, dots: boolean): boolean {
   const g = markGrid;
-  if (g.frame !== F.frame) fillMarkGrid();
+  if (g.filledStamp !== F.stamp) fillMarkGrid();
   if (g.stamp >= 0x3fffffff) {
     g.seen.fill(0);
     g.stamp = 0;
