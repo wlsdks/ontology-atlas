@@ -72,13 +72,13 @@ function MiddleCutName({ path }: { path: string }) {
   const pathId = useId();
   const name = path.split('/').pop() || path;
   const cut = Math.max(0, name.length - KEPT_NAME_END);
-  return (
+  return <>
     <span className="flex min-w-0" title={path} aria-describedby={pathId} data-testid="meaning-desk-file">
       <span className="min-w-0 truncate">{name.slice(0, cut)}</span>
       <span className="flex-none whitespace-pre">{name.slice(cut)}</span>
-      <span id={pathId} hidden>{path}</span>
     </span>
-  );
+    <span id={pathId} hidden>{path}</span>
+  </>;
 }
 
 function Separator() {

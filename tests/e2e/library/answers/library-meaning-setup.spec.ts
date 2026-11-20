@@ -160,13 +160,24 @@ test('closes on the primary press in that frame, stores the choice and follows t
   await emit(harness, page, LIBRARY_VECTOR_SCRIPT.preparing, 'preparing');
   await expect(line(page)).toContainText('Preparing search by meaning · 312 of 2,000 files');
   await expect(page.getByTestId('meaning-desk-minutes')).toHaveCount(0);
-  await expect(page.getByTestId('meaning-desk-file')).toHaveAttribute('title', 'wiki/architecture.md');
+  await expect(page.getByTestId('meaning-desk-file')).toHaveText('architecture.md');
+  await expect(page.getByTestId('meaning-desk-file')).toHaveAccessibleDescription('wiki/architecture.md');
   heights.push(await rowHeight(page));
   await emit(harness, page, LIBRARY_VECTOR_SCRIPT.preparingMeasured, 'preparing');
   await expect(page.getByTestId('meaning-desk-minutes')).toHaveText('about 6 min left');
   heights.push(await rowHeight(page));
   await emit(harness, page, LIBRARY_VECTOR_SCRIPT.updating, 'updating');
   await expect(line(page)).toContainText('Updating 3 changed files for search by meaning');
+  // Under ten changed files the update is one quiet sentence.
+  await expect(page.getByTestId('meaning-desk-ring')).toHaveCount(0);
+  await expect(page.getByTestId('meaning-desk-stop')).toHaveCount(0);
+  heights.push(await rowHeight(page));
+  await emit(harness, page, LIBRARY_VECTOR_SCRIPT.updatingMany, 'updating');
+  await expect(line(page)).toContainText('Updating 8 changed files for search by meaning');
+  await expect(page.getByTestId('meaning-desk-ring')).toHaveAttribute('data-ring-measure', 'files');
+  await expect(page.getByTestId('meaning-desk-stop')).toBeVisible();
+  await expect(page.getByTestId('meaning-desk-file')).toContainText('returns-review.md');
+  await expect(page.getByTestId('meaning-desk-file')).toHaveAccessibleDescription('sources/field-notes/2026-04-warehouse-returns-review.md');
   heights.push(await rowHeight(page));
   await emit(harness, page, LIBRARY_VECTOR_SCRIPT.ready, 'ready');
   await expect(line(page)).toContainText('Searching by words and by meaning · 2,000 files');

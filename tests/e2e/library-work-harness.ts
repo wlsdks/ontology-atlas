@@ -71,7 +71,9 @@ export const LIBRARY_VECTOR_SCRIPT = {
   preparingMeasured: vectorStatus({ phase: "preparing", filesDone: 1240, filesTotal: 2000, passagesDone: 6020, passagesTotal: 9800, currentPath: "sources/field-notes/2026-04.md", passagesPerSecond: 11.9, vectorsBytes: 8_428_000 }),
   stopped: vectorStatus({ phase: "stopped", filesDone: 1240, filesTotal: 2000, passagesDone: 6020, passagesTotal: 9800, vectorsBytes: 8_428_000 }),
   ready: vectorStatus({ phase: "ready", filesDone: 2000, filesTotal: 2000, passagesDone: 9800, passagesTotal: 9800, vectorsBytes: 13_720_000 }),
-  updating: vectorStatus({ phase: "preparing", updating: true, filesDone: 1997, filesTotal: 2000, passagesDone: 9795, passagesTotal: 9800, currentPath: "wiki/architecture.md", vectorsBytes: 13_720_000 }),
+  // An update counts the changed files alone.
+  updating: vectorStatus({ phase: "preparing", updating: true, filesDone: 6, filesTotal: 9, passagesDone: 30, passagesTotal: 45, currentPath: "wiki/architecture.md", vectorsBytes: 13_720_000 }),
+  updatingMany: vectorStatus({ phase: "preparing", updating: true, filesDone: 4, filesTotal: 12, passagesDone: 20, passagesTotal: 60, currentPath: "sources/field-notes/2026-04-warehouse-returns-review.md", vectorsBytes: 13_720_000 }),
   off: vectorStatus({ phase: "off" }),
 } as const satisfies Record<string, VectorStatus>;
 
@@ -137,7 +139,12 @@ export interface LibraryVectorsScript {
    * `stopped` and delete as `notSetUp`, as the app does from the moment either is pressed.
    */
   status?: VectorStatus;
+  /** What `vault_vectors_search` answers for a question `foundByQuestion` does not name. */
   found?: VectorFound;
+  /** Scripted answers by the exact question asked. */
+  foundByQuestion?: Record<string, VectorFound>;
+  /** How long a search by meaning takes to answer, so a recording sees the list wait for it. */
+  searchDelayMs?: number;
   /** Commands that refuse, as the app does for a folder not granted or while it closes. */
   refuse?: readonly string[];
   /** How long the probe takes to answer, so a spec can see the dialog before it does. */
@@ -169,6 +176,7 @@ interface HarnessWindow extends Window {
     think(text: string): void;
     mutateSource(path: string, text: string): void;
     emitVectorStatus(status: VectorStatus): void;
+    setVectorFound(found: VectorFound): void;
     snapshot(): LibraryWorkHarnessSnapshot;
   };
 }
@@ -207,6 +215,8 @@ export interface LibraryWorkHarness {
   mutateSource(page: Page, path: string, text: string): Promise<void>;
   /** Sends one `vault-vectors-status` event for the vault; later status commands answer it too. */
   emitVectorStatus(page: Page, status: VectorStatus): Promise<void>;
+  /** What every later `vault_vectors_search` answers, whatever the question. */
+  setVectorFound(page: Page, found: VectorFound): Promise<void>;
 }
 
 /**
@@ -284,6 +294,7 @@ export async function installLibraryWorkHarness(
       let permissionId: number | string | null = null;
       let phase: "idle" | "read" | "waiting" | "approved" | "rejected" | "written" | "finished" = "idle";
       let currentVectorStatus = vectors.status;
+      let currentFound: VectorFound | null = null;
       for (const path of Object.keys(files)) mtimes[path] = nextMtime;
 
       const emit = (event: string, payload: unknown) => {
@@ -522,7 +533,10 @@ export async function installLibraryWorkHarness(
           currentVectorStatus = { ...currentVectorStatus, phase: "notSetUp", failure: null, failureDetail: null, filesDone: 0, passagesDone: 0, updating: false, currentPath: null, passagesPerSecond: null, model: null, vectorsBytes: 0 };
           return Promise.resolve(currentVectorStatus);
         }
-        if (command === "vault_vectors_search") return Promise.resolve(vectors.found);
+        if (command === "vault_vectors_search") {
+          const answer = currentFound ?? vectors.foundByQuestion[String(args.question)] ?? vectors.found;
+          return new Promise((resolve) => window.setTimeout(() => resolve(answer), vectors.searchDelayMs));
+        }
         if (command === "vault_vectors_warm" || command === "vault_vectors_delete_model") return Promise.resolve(null);
         if (command === "mcp_bundled_server") return Promise.resolve({ path: mcpBinary, available: true, reason: null });
         if (command === "discover_mcp_connectors") return Promise.resolve({ servers: [], problems: [] });
@@ -557,9 +571,9 @@ export async function installLibraryWorkHarness(
       fixtureWindow.isTauri = true;
       fixtureWindow.__TAURI_INTERNALS__ = { transformCallback: (callback: EventCallback) => { const id = callbackId++; callbacks.set(id, callback); return id; }, invoke };
       fixtureWindow.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: (event: string, id: number) => { listeners.get(event)?.delete(id); callbacks.delete(id); } };
-      fixtureWindow.__atlasLibraryWorkHarness = { moveMode: (modeId: string) => update({ sessionUpdate: "current_mode_update", currentModeId: modeId }), emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, emitVectorStatus: (status: VectorStatus) => { currentVectorStatus = status; emit("vault-vectors-status", { rootPath: vaultRoot, status }); }, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
+      fixtureWindow.__atlasLibraryWorkHarness = { moveMode: (modeId: string) => update({ sessionUpdate: "current_mode_update", currentModeId: modeId }), emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, emitVectorStatus: (status: VectorStatus) => { currentVectorStatus = status; emit("vault-vectors-status", { rootPath: vaultRoot, status }); }, setVectorFound: (found: VectorFound) => { currentFound = found; }, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
     },
-    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionInput: options.permissionInput, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError, vectors: { probe: options.vectors?.probe ?? { ...LIBRARY_VECTOR_PROBE, runner: null }, status: options.vectors?.status ?? LIBRARY_VECTOR_SCRIPT.notSetUp, found: options.vectors?.found ?? { ...LIBRARY_VECTOR_FOUND, state: "notReady", hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0 }, refuse: [...(options.vectors?.refuse ?? [])], probeDelayMs: options.vectors?.probeDelayMs ?? 0 } },
+    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionInput: options.permissionInput, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError, vectors: { probe: options.vectors?.probe ?? { ...LIBRARY_VECTOR_PROBE, runner: null }, status: options.vectors?.status ?? LIBRARY_VECTOR_SCRIPT.notSetUp, found: options.vectors?.found ?? { ...LIBRARY_VECTOR_FOUND, state: "notReady", hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0 }, refuse: [...(options.vectors?.refuse ?? [])], probeDelayMs: options.vectors?.probeDelayMs ?? 0, foundByQuestion: options.vectors?.foundByQuestion ?? {}, searchDelayMs: options.vectors?.searchDelayMs ?? 0 } },
   );
   const call = (currentPage: Page, method: "emitRead" | "emitWait" | "emitWrite" | "finish") => currentPage.evaluate((name) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.[name](), method);
   return { snapshot: (currentPage) => currentPage.evaluate(() => {
@@ -592,6 +606,7 @@ export async function installLibraryWorkHarness(
   think: (currentPage, text) => currentPage.evaluate((text) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.think(text), text),
   mutateSource: (currentPage, path, text) => currentPage.evaluate(({ path, text }) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.mutateSource(path, text), { path, text }),
   emitVectorStatus: (currentPage, status) => currentPage.evaluate((status) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.emitVectorStatus(status), status),
+  setVectorFound: (currentPage, found) => currentPage.evaluate((found) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.setVectorFound(found), found),
   };
 }
 
