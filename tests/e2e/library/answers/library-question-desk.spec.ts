@@ -118,7 +118,7 @@ for (const [width, height] of [[1512, 901], [1920, 1080]] as const) {
   });
 }
 
-test('coverage opens from the info glyph, closes on Escape, and Tab walks field, search, glyph, report, then rows', async ({ page }) => {
+test('coverage opens from the info glyph, closes on Escape, and Tab walks field, search, the meaning line, glyph, report, then rows', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 901 });
   await installLibraryWorkHarness(page, { files: thirteenLeads() });
   await openWiki(page);
@@ -140,7 +140,7 @@ test('coverage opens from the info glyph, closes on Escape, and Tab walks field,
   await page.getByTestId('question-desk-input').focus();
   const firstRow = page.getByTestId('question-desk-lead').first();
   const stops = [
-    page.getByTestId('question-desk-search'), glyph, page.getByTestId('question-desk-summarize'),
+    page.getByTestId('question-desk-search'), page.getByTestId('meaning-desk-setup'), glyph, page.getByTestId('question-desk-summarize'),
     firstRow.locator('[data-lead-open]'),
   ];
   for (const stop of stops) {

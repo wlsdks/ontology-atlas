@@ -145,7 +145,7 @@ test('closes on the primary press in that frame, stores the choice and follows t
   expect(closedInFrame).toBe(true);
   await expect(page.getByTestId('meaning-setup-dialog')).toHaveCount(0);
   const prepares = await vectorCalls(harness, page, 'vault_vectors_prepare');
-  expect(prepares.map((call) => call.params)).toEqual([{ rootPath: VAULT_ROOT, source: { kind: 'builtin' } }]);
+  expect(prepares.map((call) => call.params)).toEqual([{ rootPath: VAULT_ROOT, enabled: true, source: { kind: 'builtin' } }]);
   expect(JSON.parse(await page.evaluate((key) => window.localStorage.getItem(key) ?? 'null', CHOICE_KEY))).toEqual({ [VAULT_ROOT]: { source: { kind: 'builtin' }, paused: false } });
 
   const heights = [await rowHeight(page)];
@@ -193,7 +193,7 @@ test('stops into Resume, keeps the pause across a reload and resumes with the st
 
   await page.getByTestId('meaning-desk-resume').click();
   await expect.poll(async () => (await vectorCalls(harness, page, 'vault_vectors_prepare')).map((call) => call.params))
-    .toEqual([{ rootPath: VAULT_ROOT, source: { kind: 'builtin' } }]);
+    .toEqual([{ rootPath: VAULT_ROOT, enabled: true, source: { kind: 'builtin' } }]);
   expect(JSON.parse(await page.evaluate((key) => window.localStorage.getItem(key) ?? 'null', CHOICE_KEY))[VAULT_ROOT].paused).toBe(false);
 });
 
