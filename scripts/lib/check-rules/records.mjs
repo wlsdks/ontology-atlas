@@ -28,8 +28,8 @@ export const rules = [
   {
     order: 560,
     command: 'pnpm dev-checks:check',
-    reason: 'the development-checks reference or the README command table changed; the table stays in command order and every pnpm name is a real script',
-    matches: [/^docs\/DEVELOPMENT-CHECKS\.md$/, /^README\.md$/],
+    reason: 'the development-checks reference or its command table changed; the table stays in command order and every pnpm name is a real script',
+    matches: [/^docs\/DEVELOPMENT-CHECKS\.md$/],
   },
   {
     order: 570,

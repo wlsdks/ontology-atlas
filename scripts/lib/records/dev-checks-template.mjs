@@ -1,6 +1,6 @@
 /**
- * The contributor command registry: the README command table stays sorted by command, and every
- * `pnpm` name it or `docs/DEVELOPMENT-CHECKS.md` names is a real root script.
+ * The contributor command registry: the command table in `docs/DEVELOPMENT-CHECKS.md` stays
+ * sorted by command, and every `pnpm` name that document names is a real root script.
  */
 
 /** pnpm's own commands, which name no package.json script. */
@@ -69,7 +69,7 @@ export function orderProblems(items) {
 
 export const COMMAND_TABLE_HEADER = '| Command | What it answers |';
 
-/** Where the README contributor command table's rows are: `{ start, end }` line indexes, end exclusive. */
+/** Where the contributor command table's rows are: `{ start, end }` line indexes, end exclusive. */
 function commandTableRange(lines) {
   const header = lines.findIndex((line) => line.trim() === COMMAND_TABLE_HEADER);
   if (header < 0) return null;
@@ -80,7 +80,7 @@ function commandTableRange(lines) {
 
 const rowCommand = (row) => /`([^`]+)`/.exec(row.split('|')[1] ?? '')?.[1] ?? row;
 
-/** README command-table rows as order items, keyed by the first command they name; null without the table. */
+/** Command-table rows as order items, keyed by the first command they name; null without the table. */
 export function commandTableOrderItems(text) {
   const lines = text.split('\n');
   const range = commandTableRange(lines);
@@ -92,13 +92,7 @@ export function commandTableOrderItems(text) {
   }));
 }
 
-/** The README command table's rows as numbered lines; empty without the table. */
-export function commandTableLines(text) {
-  const range = commandTableRange(text.split('\n'));
-  return range ? numberedLines(text).slice(range.start, range.end) : [];
-}
-
-/** The README with its contributor command table rows sorted by command. */
+/** The document with its contributor command table rows sorted by command. */
 export function sortCommandTable(text) {
   const lines = text.split('\n');
   const range = commandTableRange(lines);

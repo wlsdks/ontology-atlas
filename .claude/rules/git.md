@@ -27,7 +27,7 @@
 | Code change | Documentation that must change with it |
 |---|---|
 | Add or remove a route | `docs/ARCHITECTURE.md` (canonical route list), its `docs/features/` file, and a `docs/records/decisions/` fragment (`decisions:check` enforces this) |
-| Add a command or script | `README.md` |
+| Add a command or script | The command table in `docs/DEVELOPMENT-CHECKS.md` |
 | Restructure architecture | `docs/ARCHITECTURE.md` and `AGENTS.md` |
 | Add a design token | `docs/DESIGN-SYSTEM.md`, its `app/styles/` part (`@theme`: `tokens.css`), `cn.ts` |
 | Add or rename an MCP tool | `mcp/README.md`, `docs/ontology/capabilities/mcp-tool-server.md`, and the vault README |
