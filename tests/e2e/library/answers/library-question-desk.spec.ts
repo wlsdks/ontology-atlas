@@ -41,10 +41,14 @@ async function openWiki(page: Page) {
 
 const fieldTop = (page: Page) => page.getByTestId('question-desk-input').evaluate((field) => field.getBoundingClientRect().top);
 
-/** The page header owns the doors: one Questions and one Conversation control, none in the desk. */
+/**
+ * The page header owns the doors: one Questions and one Conversation control, none in the desk.
+ * The Conversation door gives way to the open dock, which is then the one conversation control.
+ */
 async function expectOneDoorEach(page: Page) {
   await expect(page.getByTestId('library-questions-open')).toHaveCount(1);
-  await expect(page.getByTestId('library-open-conversation')).toHaveCount(1);
+  await expect.poll(async () => await page.getByTestId('library-open-conversation').count()
+    + (await page.getByTestId('library-agent-dock').isVisible() ? 1 : 0)).toBe(1);
   await expect(page.getByTestId('library-question-desk').locator('[data-testid="library-questions-open"], [data-testid="library-open-conversation"]')).toHaveCount(0);
 }
 
@@ -124,7 +128,6 @@ for (const [width, height] of [[1512, 901], [1920, 1080]] as const) {
     await page.getByTestId('library-question-desk').evaluate((desk) => { desk.scrollTop = 0; });
     expect(await fieldTop(page)).toBe(entry);
     await expectOneDoorEach(page);
-    test.info().annotations.push({ type: 'field top (px)', description: String(entry) });
 
     // The report cost an agent turn: editing the question keeps it, and new rows replace it.
     await page.getByTestId('question-desk-input').fill('When does the refund queue run?');
