@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { sourceUnits } from '@/shared/lib/library/source-passage';
-import { countDeskReadablePages, deskBriefEvidence, deskLeadTermRuns, deskMeaningLeads, deskSentenceWindow, DESK_SENTENCE_LIMIT, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskReportFileCurrent, questionTermRuns, questionTerms, recentDeskPages, type DeskClaim } from './question-desk';
+import { MAX_VECTOR_PREFIX_BYTES, MAX_VECTOR_PREFIXES } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import { countDeskReadablePages, deskBriefEvidence, deskLeadTermRuns, deskMeaningLeads, deskSearchPrefixes, deskSentenceWindow, DESK_SENTENCE_LIMIT, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskReportFileCurrent, questionTermRuns, questionTerms, recentDeskPages, type DeskClaim } from './question-desk';
 import { buildQuestionDeskBrief, buildQuestionDeskReportBrief, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections, QUESTION_DESK_BRIEF_MAX_CHARS } from './question-desk-brief';
 import { planQuestionDeskReportFile } from './question-desk-brief';
 import { buildAnswerPage } from './answer-page';
@@ -603,5 +604,64 @@ describe('question desk rows found by meaning', () => {
     const brief = buildQuestionDeskReportBrief({ question: 'Can I return an opened box?', vaultRoot: '/folder', locale: 'en', ...evidence, coverage: 'Searched 1 of 1 source files.' });
     expect(brief).toContain('[[src:sources/returns.md#l5]]: Opened items cannot go back.');
     expect(brief.indexOf('#l2]]')).toBeLessThan(brief.indexOf('#l5]]'));
+  });
+});
+
+describe('question desk search by meaning in names Finder wrote', () => {
+  // Finder writes names decomposed; slugs and some listings are composed.
+  const hangul = '반품 정책';
+  const accent = 'café notes';
+  const nfd = (text: string) => text.normalize('NFD');
+  const pageRaw = '---\ntitle: Returns\n---\n## Facts\n- Opened items are excluded. [[src:sources/returns.md#l5]]\n';
+  const sourceText = '# Notes\nOpened boxes go back to the shelf.\n';
+
+  it('joins a decomposed hit to its page and to its listed source, and each row opens the listed file', () => {
+    const page = doc(`wiki/${hangul}`, pageRaw);
+    const listed = `sources/${accent}.md`;
+    const units = sourceUnits(new TextEncoder().encode(sourceText), listed).units;
+    const meaning = deskMeaningLeads({
+      hits: [
+        { path: nfd(`wiki/${hangul}.md`), lineStart: 1, lineEnd: 5 },
+        { path: nfd(listed), lineStart: 1, lineEnd: 2 },
+      ],
+      docs: [page], rawBySlug: new Map([[page.slug, pageRaw]]),
+      searchedSources: new Set([listed]), sourceUnitsByPath: new Map([[listed, units]]),
+      claims: [], sourceHits: [],
+    });
+    expect(meaning.dropped).toBe(0);
+    const leads = fuseDeskLeads([], [], meaning.leads);
+    expect(leads.map((lead) => lead.reason)).toEqual(['meaning', 'meaning']);
+    expect(leads.map((lead) => lead.kind === 'claim' ? lead.claim.pageSlug : lead.hit.path)).toEqual([`wiki/${hangul}`, listed]);
+    expect(leads[1]!.kind === 'source' && leads[1]!.hit.text).toBe('Opened boxes go back to the shelf.');
+  });
+
+  it('keeps a listing written decomposed as it is listed', () => {
+    const listed = nfd(`sources/${accent}.md`);
+    const units = sourceUnits(new TextEncoder().encode(sourceText), listed).units;
+    const meaning = deskMeaningLeads({
+      hits: [{ path: listed.normalize('NFC'), lineStart: 2, lineEnd: 2 }],
+      docs: [], rawBySlug: new Map(), searchedSources: new Set([listed]), sourceUnitsByPath: new Map([[listed, units]]),
+      claims: [], sourceHits: [],
+    });
+    expect(meaning.leads).toEqual([{ kind: 'source', hit: expect.objectContaining({ path: listed, anchor: 'l2' }) }]);
+  });
+});
+
+describe('question desk search by meaning prefixes', () => {
+  it('names the top folder of each searched file once, in composed and decomposed form, and a top-level file by itself', () => {
+    expect(deskSearchPrefixes(['wiki/returns.md', 'wiki/team/a.md', 'sources/a.md', 'sources/b/c.md', 'project.md']))
+      .toEqual(['wiki/', 'sources/', 'project.md']);
+    const prefixes = deskSearchPrefixes(['원문/회의록.md', 'wiki/a.md']);
+    expect(prefixes).toEqual(['원문/', '원문/'.normalize('NFD'), 'wiki/']);
+    expect(new Set(prefixes).size).toBe(3);
+  });
+
+  it("asks over every file when the folders would pass the app's limits", () => {
+    const many = Array.from({ length: MAX_VECTOR_PREFIXES + 1 }, (_, index) => `folder-${index}/a.md`);
+    expect(deskSearchPrefixes(many.slice(0, MAX_VECTOR_PREFIXES))).toHaveLength(MAX_VECTOR_PREFIXES);
+    expect(deskSearchPrefixes(many)).toEqual([]);
+    const longest = `${'a'.repeat(MAX_VECTOR_PREFIX_BYTES - 1)}/`;
+    expect(deskSearchPrefixes([`${longest}a.md`])).toEqual([longest]);
+    expect(deskSearchPrefixes([`b${longest}a.md`, 'wiki/a.md'])).toEqual([]);
   });
 });

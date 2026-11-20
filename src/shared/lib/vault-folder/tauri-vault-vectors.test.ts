@@ -19,6 +19,8 @@ import { vaultIndexPreference } from './tauri-vault-index';
 import {
   deleteVectorModel,
   deleteVectors,
+  MODEL_FAILED_DETAILS,
+  modelFailedDetail,
   OFF_VECTOR_STATUS,
   prepareVectors,
   probeVectors,
@@ -82,9 +84,11 @@ describe('tauri-vault-vectors in the app', () => {
     await vectorStatus('/vault', runner);
     await vectorStatus('/vault', builtin, true);
     await prepareVectors('/vault', builtin);
+    await prepareVectors('/vault', builtin, true);
     await stopVectors('/vault');
     await warmVectors(builtin);
     await searchVectors('/vault', runner, '물가의 식물', 8);
+    await searchVectors('/vault', runner, '물가의 식물', 8, ['wiki/', 'sources/']);
     await deleteVectors('/vault');
     await deleteVectorModel();
 
@@ -92,10 +96,13 @@ describe('tauri-vault-vectors in the app', () => {
       ['vault_vectors_probe', { rootPath: '/vault', runnerBaseUrl: 'http://localhost:11434' }],
       ['vault_vectors_status', { rootPath: '/vault', enabled: true, source: runner, paused: false }],
       ['vault_vectors_status', { rootPath: '/vault', enabled: true, source: builtin, paused: true }],
-      ['vault_vectors_prepare', { rootPath: '/vault', enabled: true, source: builtin }],
+      // Only the dialog's press downloads: a prepare without it never fetches the model.
+      ['vault_vectors_prepare', { rootPath: '/vault', enabled: true, source: builtin, download: false }],
+      ['vault_vectors_prepare', { rootPath: '/vault', enabled: true, source: builtin, download: true }],
       ['vault_vectors_stop', { rootPath: '/vault' }],
       ['vault_vectors_warm', { source: builtin }],
-      ['vault_vectors_search', { rootPath: '/vault', source: runner, question: '물가의 식물', limit: 8 }],
+      ['vault_vectors_search', { rootPath: '/vault', source: runner, question: '물가의 식물', limit: 8, prefixes: [] }],
+      ['vault_vectors_search', { rootPath: '/vault', source: runner, question: '물가의 식물', limit: 8, prefixes: ['wiki/', 'sources/'] }],
       ['vault_vectors_delete', { rootPath: '/vault' }],
       ['vault_vectors_delete_model', undefined],
     ]);
@@ -109,7 +116,7 @@ describe('tauri-vault-vectors in the app', () => {
     await prepareVectors('/vault', builtin);
     expect(tauriApiMock.invoke.mock.calls).toEqual([
       ['vault_vectors_status', { rootPath: '/vault', enabled: false, source: null, paused: false }],
-      ['vault_vectors_prepare', { rootPath: '/vault', enabled: false, source: builtin }],
+      ['vault_vectors_prepare', { rootPath: '/vault', enabled: false, source: builtin, download: false }],
     ]);
   });
 
@@ -188,5 +195,13 @@ describe('tauri-vault-vectors in the app', () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(unlisten).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('modelFailed details', () => {
+  it('are the six the app sends, and anything else is no detail', () => {
+    expect(MODEL_FAILED_DETAILS).toEqual(['load', 'convert', 'check', 'worker-exited', 'timed-out', 'internal']);
+    for (const detail of MODEL_FAILED_DETAILS) expect(modelFailedDetail(detail)).toBe(detail);
+    for (const other of ['worker-exited-in-convert', '', null, 'LOAD']) expect(modelFailedDetail(other)).toBeNull();
   });
 });

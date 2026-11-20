@@ -11,9 +11,10 @@ import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source
 import { MOTION } from '@/shared/motion';
 import { controlClass } from '@/shared/ui/control-class';
 import { formatSize } from '../lib/format-size';
-import { useGlide } from '../lib/use-glide';
 import { usePacedValue } from '../lib/use-paced-value';
+import { modelFailedSentence } from '../model/model-failed-sentence';
 import { deskLine, type DeskLine, type DeskLineAction, type DeskProgress } from '../model/desk-line';
+import { useSearchFailure, withSearchFailure } from '../model/search-failure';
 import { resume, stop, useVectorStatus } from '../model/vector-store';
 import { useVectorRunStage } from '../model/use-vector-run';
 import { MeaningSetupDialog } from './MeaningSetupDialog';
@@ -33,7 +34,11 @@ const TONE_INK: Record<DeskLine['tone'], string> = {
   danger: 'text-[color:var(--color-danger-text)]',
 };
 
-function ProgressRing({ fraction, label, measure }: { fraction: number; label: string; measure: DeskProgress['measure'] }) {
+/**
+ * The ring moves to each new value by a CSS transition: no React state changes per frame, and a
+ * hidden ring has nothing running. A new quantity or total starts a new arc at its own value.
+ */
+function ProgressRing({ fraction, label, measure, track }: { fraction: number; label: string; measure: DeskProgress['measure']; track: string }) {
   return (
     <span
       role="progressbar"
@@ -49,6 +54,7 @@ function ProgressRing({ fraction, label, measure }: { fraction: number; label: s
       <svg width={RING_PX} height={RING_PX} viewBox={`0 0 ${RING_PX} ${RING_PX}`} fill="none" aria-hidden="true">
         <circle cx={RING_PX / 2} cy={RING_PX / 2} r={RING_RADIUS} strokeWidth={1.5} stroke="var(--color-overlay-3)" />
         <circle
+          key={track}
           cx={RING_PX / 2}
           cy={RING_PX / 2}
           r={RING_RADIUS}
@@ -57,7 +63,9 @@ function ProgressRing({ fraction, label, measure }: { fraction: number; label: s
           strokeLinecap="round"
           pathLength={1}
           strokeDasharray="1 1"
-          strokeDashoffset={1 - fraction}
+          style={{ strokeDashoffset: 1 - fraction }}
+          data-testid="meaning-desk-ring-arc"
+          className="transition-[stroke-dashoffset] duration-[var(--motion-slow)] ease-[var(--motion-ease)] motion-reduce:transition-none"
           transform={`rotate(-90 ${RING_PX / 2} ${RING_PX / 2})`}
         />
       </svg>
@@ -105,7 +113,8 @@ export function MeaningDeskLine({
   const reduced = usePrefersReducedMotion();
   const isApp = useSyncExternalStore(noSubscribe, isTauriVaultRuntime, () => false);
   const indexOn = vaultIndexPreference.use() === 'on';
-  const status = useVectorStatus(isApp ? rootPath : null);
+  const searchFailure = useSearchFailure(isApp ? rootPath : null);
+  const status = withSearchFailure(useVectorStatus(isApp ? rootPath : null), searchFailure);
   const stage = useVectorRunStage(isApp ? rootPath : null);
   const source = vaultVectorSource.use(rootPath)?.source ?? null;
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -121,13 +130,12 @@ export function MeaningDeskLine({
   }
   const ring = line?.progress === 'hold' ? heldRing : liveRing;
   const ringTrack = ring ? `${ring.measure}:${ring.total}` : 'none';
-  const glidedDone = useGlide(ring?.done ?? 0, ringTrack, reduced);
   const shownPath = usePacedValue(line?.readingPath ?? null, FILE_NAME_PACE_MS);
 
   if (!line) return <div ref={stage} aria-hidden="true" className="h-6" data-testid="meaning-desk-line" data-state="pending" />;
 
-  const fraction = ring && ring.total > 0 ? Math.min(1, glidedDone / ring.total) : 0;
-  const sentence = sentenceOf(line, ring, glidedDone);
+  const fraction = ring && ring.total > 0 ? Math.min(1, ring.done / ring.total) : 0;
+  const sentence = sentenceOf(line, ring, ring?.done ?? 0);
   const transition = reduced ? { duration: 0 } : MOTION.settle;
 
   const act = (action: DeskLineAction, event: MouseEvent<HTMLButtonElement>) => {
@@ -155,12 +163,11 @@ export function MeaningDeskLine({
       }
       case 'preparing':
         return t('preparing', { done: Math.floor(done), total: progress?.total ?? 0 });
-      case 'modelDownloadFailed':
       case 'modelFailed':
-      case 'writeFailed': {
-        const raw = current.values.detail ?? '';
-        return t(current.message, { detail: t('failureDetail', { code: raw.replaceAll('-', '_'), raw }) });
-      }
+        return modelFailedSentence(t, current.values.detail ?? null);
+      case 'modelDownloadFailed':
+      case 'writeFailed':
+        return t(current.message, { detail: t('failureDetail', { code: (current.values.detail ?? '').replaceAll('-', '_') }) });
       default:
         return t(current.message, current.values);
     }
@@ -184,7 +191,7 @@ export function MeaningDeskLine({
       <AnimatePresence initial={false}>
         {ring && line.progress !== null ? (
           <motion.span key="ring" className="flex flex-none" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={transition}>
-            <ProgressRing fraction={fraction} measure={ring.measure} label={t('ringLabel')} />
+            <ProgressRing fraction={fraction} measure={ring.measure} track={ringTrack} label={t('ringLabel')} />
           </motion.span>
         ) : null}
       </AnimatePresence>

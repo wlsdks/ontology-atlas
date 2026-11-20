@@ -64,8 +64,15 @@ function updaterHosts(): string[] {
   return [...new Set([...endpoints, ...archives])];
 }
 
+/** The built-in model's download hosts, declared as one list in download.rs and checked on every redirect. */
+function modelDownloadHosts(): string[] {
+  const source = readFileSync(join(RUST_ROOT, 'llm/embed/builtin/download.rs'), 'utf8');
+  const declaration = /\bMODEL_DOWNLOAD_HOSTS\s*:\s*(?:&\s*)?\[[^\]]*\]\s*=\s*&?\s*\[([^\]]*)\]/u.exec(source);
+  return declaration ? [...declaration[1]!.matchAll(/"([^"]+)"/gu)].map((match) => match[1]!) : [];
+}
+
 function scannedHosts(): Set<string> {
-  return new Set([...productionRustHosts().keys(), ...updaterHosts()]);
+  return new Set([...productionRustHosts().keys(), ...updaterHosts(), ...modelDownloadHosts()]);
 }
 
 const placeholders = new Set<string>(OUTBOUND_DESTINATION_PLACEHOLDERS);

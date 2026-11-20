@@ -191,6 +191,17 @@ describe('Library question desk transfer boundary', () => {
     expect(request.brief).not.toContain('Search matches words and uses');
   });
 
+  it('adds how much meaning covered to the saved limits and the brief only when it covered part of the folder', async () => {
+    const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
+    mocks.meaning = { state: 'ok', failure: null, hits: [{ path, lineStart: 2, lineEnd: 2, heading: 'Refund handling', score: 0.8 }], staleDropped: 0, filesReady: 1240, filesTotal: 2000 };
+    render(<Desk onSummarize={onSummarize} />);
+    await search();
+    fireEvent.click(screen.getByTestId('question-desk-summarize'));
+    const request = onSummarize.mock.calls[0]![0];
+    expect(request.limits).toMatch(/ Search matches words and meaning and uses .* folder refresh\. By meaning: 1,240 of 2,000 files\.$/u);
+    expect(request.brief).toContain('By meaning: 1,240 of 2,000 files.');
+  });
+
   it('starts a report only on explicit press and renders the returned freeform draft with safe citations', async () => {
     const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
     const onFileReport = vi.fn();

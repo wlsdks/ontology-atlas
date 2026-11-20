@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
@@ -13,6 +13,7 @@ import {
   countDeskWikiPages,
   deskBriefEvidence,
   deskMeaningLeads,
+  deskSearchPrefixes,
   findDeskClaims,
   findDeskSourceHits,
   fuseDeskLeads,
@@ -141,9 +142,11 @@ export function LibraryQuestionDesk({
 
   useEffect(() => () => { searchId.current += 1; }, []);
 
-  const listingVersion = questionDeskListingVersion(docs, sources);
+  // Both read every page and source: worked out when the listing changes, not on each render.
+  const listingVersion = useMemo(() => questionDeskListingVersion(docs, sources), [docs, sources]);
+  const readablePages = useMemo(() => countDeskReadablePages(docs, pageTexts), [docs, pageTexts]);
   const fresh = result !== null && result.listingVersion === listingVersion
-    && result.readPages === countDeskReadablePages(docs, pageTexts);
+    && result.readPages === readablePages;
   const outdated = result !== null && !fresh;
   const slot = useDeskSwap(result ? RESULTS : ENTRY, reducedMotion);
 
@@ -168,7 +171,10 @@ export function LibraryQuestionDesk({
     let changedSources = 0;
     let omittedPerFile = 0;
     /* Asked beside the word search; the list waits for both, and the app ends a question at 10 s. */
-    const askedByMeaning = meaningSearch.ask(asked);
+    const askedByMeaning = meaningSearch.ask(asked, deskSearchPrefixes([
+      ...docs.filter((doc) => doc.slug.startsWith('wiki/')).map((doc) => `${doc.slug}.md`),
+      ...sources.map((source) => source.path),
+    ]));
     try {
       for (const source of plan) {
         if (id !== searchId.current) return;
@@ -253,11 +259,14 @@ export function LibraryQuestionDesk({
   ].join(' · ') : '';
   /* The method sentence the search that produced this list made true; a report saves it with the record. */
   const searchedByMeaning = result?.meaning?.state === 'ok';
-  const limits = result ? t(searchedByMeaning ? 'limitsBoth' : 'limits', {
+  /* When meaning covered only part of the folder, the saved limits say how much. */
+  const partialMeaning = searchedByMeaning && result.meaning!.filesReady < result.meaning!.filesTotal
+    ? t('limitsMeaningCoverage', { ready: result.meaning!.filesReady, total: result.meaning!.filesTotal }) : null;
+  const limits = result ? [t(searchedByMeaning ? 'limitsBoth' : 'limits', {
     unreadable: result.unreadableSources, changed: result.changedSources,
     skipped: result.totalSources - result.plannedSources,
     omitted: result.omittedClaims + result.omittedSources,
-  }) : '';
+  }), partialMeaning].filter(Boolean).join(' ') : '';
   /* The popovers list only the limits that hold something; the report keeps the full record. */
   const limitsMethod = t(searchedByMeaning ? 'limitsMethodBoth' : 'limitsMethod');
   const limitFacts = (withOmitted: boolean) => {
@@ -309,7 +318,7 @@ export function LibraryQuestionDesk({
     {outdated || (report && !activeReport) ? <p role="status" className="mb-3 text-label leading-label text-[color:var(--color-text-tertiary)]">{report ? t('report.outdated') : t('outdated')}</p> : null}
     {activeReport ? <div className="mb-10">
       <DeskReport report={activeReport} coverageCompact={coverageCompact}
-        coverageInfo={<DeskCoverageInfo lines={[coverage, limitFacts(true), limitsMethod].filter(Boolean)} testId="question-desk-report-coverage-info" />}
+        coverageInfo={<DeskCoverageInfo lines={[coverage, partialMeaning ?? '', limitFacts(true), limitsMethod].filter(Boolean)} testId="question-desk-report-coverage-info" />}
         sources={sources} dockOpen={dockOpen} reducedMotion={reducedMotion} onOpenSource={onOpenSource}
         onFileReport={onFileReport} filingReport={filingReport} fileReportNote={fileReportNote} />
     </div> : null}

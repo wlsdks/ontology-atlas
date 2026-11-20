@@ -94,6 +94,7 @@
     "meaningFailed": "Could not delete search by meaning. Try again.",
     "modelLabel": "Search-by-meaning model",
     "modelSize": "{size}, bge-m3 by BAAI (MIT). Delete removes it; using search by meaning again downloads it.",
+    "modelPartial": "Download not finished · {size}",
     "modelDeleted": "Deleted the model.",
     "modelFailed": "Could not delete the model. Try again."
   }

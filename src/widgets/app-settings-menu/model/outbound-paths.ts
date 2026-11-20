@@ -1,3 +1,5 @@
+import { MODEL_DOWNLOAD_HOSTS } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+
 type OutboundTrigger = 'automatic' | 'press' | 'agent-use';
 
 type OutboundCarries = 'no-folder-content' | 'what-you-send' | 'agent-sends' | 'provider-owned';
@@ -53,10 +55,10 @@ export const OUTBOUND_PATHS: readonly OutboundPath[] = [
     recordedIn: OUTBOUND_AUDIT_LOG,
   },
   {
-    // Redirect hops may reach hf.co hosts, each checked against `ALLOWED_DOMAINS` in download.rs.
+    // The hosts the download and its redirects may reach, the list download.rs checks against.
     id: 'vector-model',
     trigger: 'press',
-    hosts: ['huggingface.co'],
+    hosts: [...MODEL_DOWNLOAD_HOSTS],
     carries: 'no-folder-content',
     recordedIn: OUTBOUND_AUDIT_LOG,
   },

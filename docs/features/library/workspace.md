@@ -69,11 +69,11 @@ passages that say the same thing in other words or in another language. It is
 off until the person sets it up for a folder: a line under the field's scope
 sentence says "Searching by words" with **Set up search by meaning**, which opens
 a dialog stating the model (bge-m3 by BAAI, MIT licence), the one-time download
-from huggingface.co and what stays on this computer, that nothing from the folder
+from the hosts the app downloads it from (huggingface.co, hf.co) and what stays on this computer, that nothing from the folder
 is sent (the download asks only for the model's files), the memory used, and that
 Settings › Privacy · data deletes the model and the prepared passages. Where
 Ollama answers on this computer with an embedding model, the dialog also offers
-that model without a download. The work runs in the background; the line shows
+that model without a download, saying under that press that each question is recorded in the folder's audit log; models the spec rules out are never offered. Only the dialog's Download and prepare downloads the model: Resume on a folder whose model is gone says so and offers Download again. The work runs in the background; the line shows
 the download, then files prepared of the total with the file being read and
 Stop, and keeps one height in every state. An update of ten or more changed files
 is followed the same way; a smaller one is one quiet sentence. Away from the desk,
@@ -84,7 +84,7 @@ with **Open Library**. A preparation that continues by itself after a restart, o
 update of ten or more files, draws only the ring on the Library rail tile; the card
 stands down while the desk's line is on screen. Once a folder
 holds prepared files (ready, still preparing, or stopped after at least one),
-Find evidence asks the app for the 24 nearest passages beside the word search,
+Find evidence asks the app for the 24 nearest passages in the top folders the desk searches, beside the word search,
 and the list waits for both. A passage in a file the desk does not search is
 left out; one that holds a word lead is that lead; otherwise its row is the
 passage's first sentence, the first non-heading line of a source or the first
@@ -95,11 +95,10 @@ the rows of that list in its order, whatever their reason. Once prepared, the li
 says only "Searching by words and by meaning"; the coverage popover adds how many
 files are prepared only while that is partial and, when some were, how many
 passages were left out because their file changed. When meaning cannot answer,
-the word rows stand with one sentence saying so, and the line reads the folder's
-status again so it says the same and carries the one press; its Download again
+the word rows stand with one sentence saying so, and the line says the same and carries the one press: a missing model is read back from the folder's status, and a runner that did not answer is held until a search answers or the app's next status event; its Download again
 opens the setup dialog, which states the size and the free room before anything
 downloads. The limits sentence, saved with a report and sent in its brief, says
-the search matched words and meaning when meaning took part. With nothing set up, a search that finds nothing offers setup before the
+the search matched words and meaning when meaning took part, and how many files meaning covered when that was partial. With nothing set up, a search that finds nothing offers setup before the
 investigation action. The field's first focus in a visit loads the model so the
 first answer does not wait. The web playground has no search by meaning and says
 so in the line.

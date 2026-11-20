@@ -16,6 +16,7 @@ const bridge = vi.hoisted(() => ({
 const vectors = vi.hoisted(() => ({
   vectorsBytes: 0,
   modelOnDisk: false,
+  modelBytes: 0,
   probe: vi.fn(),
   remove: vi.fn(async () => true),
   removeModel: vi.fn(async () => true),
@@ -76,8 +77,9 @@ beforeEach(() => {
   bridge.sync.mockReset();
   vectors.vectorsBytes = 0;
   vectors.modelOnDisk = false;
+  vectors.modelBytes = 0;
   vectors.probe.mockReset();
-  vectors.probe.mockImplementation(async () => ({ builtin: { onDisk: vectors.modelOnDisk, keptBytes: 1_210_000_000 } }));
+  vectors.probe.mockImplementation(async () => ({ builtin: { onDisk: vectors.modelOnDisk, modelBytes: vectors.modelBytes, keptBytes: 1_210_000_000 } }));
   vectors.remove.mockClear();
   vectors.removeModel.mockClear();
   vectors.forget.mockClear();
@@ -127,6 +129,7 @@ describe('StoredHereSettings', () => {
     bridge.status.mockResolvedValue(status(76 * 1024 * 1024, 76 * 1024 * 1024, 1));
     vectors.vectorsBytes = 13_700_000;
     vectors.modelOnDisk = true;
+    vectors.modelBytes = 1_210_000_000;
     renderSettings();
 
     const meaning = screen.getByTestId('app-settings-vector-size');
@@ -139,6 +142,7 @@ describe('StoredHereSettings', () => {
     expect(vectors.remove).toHaveBeenCalledWith('/vaults/atlas');
 
     vectors.modelOnDisk = false;
+    vectors.modelBytes = 0;
     confirm('app-settings-vector-model-delete');
     await waitFor(() => expect(model).toHaveTextContent('Deleted the model.'));
     expect(vectors.removeModel).toHaveBeenCalledTimes(1);
@@ -157,7 +161,7 @@ describe('StoredHereSettings', () => {
     );
   });
 
-  it('leaves the model row out until the model is on this computer, and both rows out with the index off', async () => {
+  it('leaves the model row out while the model holds nothing, and the folder row out with the index off', async () => {
     bridge.status.mockResolvedValue(status(76 * 1024 * 1024, 76 * 1024 * 1024, 1));
     const { unmount } = renderSettings();
     expect(screen.getByTestId('app-settings-vector-size')).toHaveTextContent('Nothing stored');
@@ -167,7 +171,27 @@ describe('StoredHereSettings', () => {
 
     bridge.indexSwitch = 'off';
     renderSettings();
+    await waitFor(() => expect(vectors.probe).toHaveBeenCalledTimes(2));
     expect(screen.queryByTestId('app-settings-vector-size')).toBeNull();
     expect(screen.queryByTestId('app-settings-vector-model')).toBeNull();
+  });
+
+  it.each([
+    ['with the index off', () => { bridge.indexSwitch = 'off'; }],
+    ['with no folder open', () => { bridge.rootPath = null; }],
+    ['with a folder open', () => undefined],
+  ])('shows a download that did not finish, with its size and Delete, %s', async (_when, arrange) => {
+    arrange();
+    bridge.status.mockResolvedValue(status(0, 0, 0));
+    vectors.modelBytes = 915_000_000;
+    renderSettings();
+    const model = await screen.findByTestId('app-settings-vector-model');
+    expect(model).toHaveTextContent('Download not finished · 915 MB');
+    expect(vectors.probe).toHaveBeenCalledWith(bridge.rootPath, null);
+
+    vectors.modelBytes = 0;
+    confirm('app-settings-vector-model-delete');
+    await waitFor(() => expect(model).toHaveTextContent('Deleted the model.'));
+    expect(vectors.removeModel).toHaveBeenCalledTimes(1);
   });
 });

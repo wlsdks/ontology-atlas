@@ -65,7 +65,10 @@ export interface VectorStatus {
 export interface VectorProbe {
   files: number;
   builtin: {
+    /** The model is ready to run. */
     onDisk: boolean;
+    /** What the model holds in the app's data folder, a partial download included; 0 when nothing is there. */
+    modelBytes: number;
     downloadBytes: number;
     keptBytes: number;
     neededFreeBytes: number;
@@ -104,6 +107,25 @@ export interface VectorStatusEvent {
 /** A search returns at most this many passages. */
 export const MAX_VECTOR_HITS = 64;
 
+/** A search names at most this many path prefixes, each at most `MAX_VECTOR_PREFIX_BYTES` long. */
+export const MAX_VECTOR_PREFIXES = 16;
+export const MAX_VECTOR_PREFIX_BYTES = 512;
+
+/**
+ * The hosts the built-in model downloads from, the same list as `MODEL_DOWNLOAD_HOSTS` in
+ * `src-tauri/src/llm/embed/builtin/download.rs` (a subdomain of one is that host); the Settings
+ * outbound row and the setup dialog name exactly these.
+ */
+export const MODEL_DOWNLOAD_HOSTS = ['huggingface.co', 'hf.co'] as const;
+
+/** The only details `modelFailed` carries; anything else is said with the generic sentence. */
+export const MODEL_FAILED_DETAILS = ['load', 'convert', 'check', 'worker-exited', 'timed-out', 'internal'] as const;
+export type ModelFailedDetail = (typeof MODEL_FAILED_DETAILS)[number];
+
+export function modelFailedDetail(detail: string | null): ModelFailedDetail | null {
+  return (MODEL_FAILED_DETAILS as readonly string[]).includes(detail ?? '') ? detail as ModelFailedDetail : null;
+}
+
 const STATUS_EVENT = 'vault-vectors-status';
 
 export const OFF_VECTOR_STATUS: Readonly<VectorStatus> = Object.freeze({
@@ -139,6 +161,7 @@ function emptyProbe(): VectorProbe {
     files: 0,
     builtin: {
       onDisk: false,
+      modelBytes: 0,
       downloadBytes: 0,
       keptBytes: 0,
       neededFreeBytes: 0,
@@ -156,10 +179,10 @@ function notFound(): VectorFound {
 
 /**
  * What the setup dialog states; a runner address is asked only when it is on this computer, and
- * one that is not answers `notLocal`. Rejects with the command's coded error for a folder not
- * chosen.
+ * one that is not answers `notLocal`. `rootPath` is `null` when no folder is open: Settings then
+ * reads only what the model holds. Rejects with the command's coded error for a folder not chosen.
  */
-export async function probeVectors(rootPath: string, runnerBaseUrl: string | null): Promise<VectorProbe> {
+export async function probeVectors(rootPath: string | null, runnerBaseUrl: string | null): Promise<VectorProbe> {
   const invoke = getInvoke();
   if (!invoke) return emptyProbe();
   return invoke('vault_vectors_probe', { rootPath, runnerBaseUrl });
@@ -177,15 +200,20 @@ export async function vectorStatus(
 }
 
 /**
- * Starts or continues the folder's background job (the built-in model first when it is missing),
- * and lets a stopped or failed folder go. With the search index off it answers `off` and creates
- * nothing. Rejects with the command's coded error for a folder not chosen or a source no screen
- * offers.
+ * Starts or continues the folder's background job, and lets a stopped or failed folder go. Only a
+ * call with `download` fetches the built-in model; without it a missing model answers `failed`
+ * with `modelGone` and nothing is fetched or created. With the search index off it answers `off`
+ * and creates nothing. Rejects with the command's coded error for a folder not chosen or a source
+ * no screen offers.
  */
-export async function prepareVectors(rootPath: string, source: VectorSource): Promise<VectorStatus> {
+export async function prepareVectors(
+  rootPath: string,
+  source: VectorSource,
+  download = false,
+): Promise<VectorStatus> {
   const invoke = getInvoke();
   if (!invoke) return offStatus();
-  return invoke('vault_vectors_prepare', { rootPath, enabled: indexEnabled(), source });
+  return invoke('vault_vectors_prepare', { rootPath, enabled: indexEnabled(), source, download });
 }
 
 /**
@@ -206,7 +234,8 @@ export async function warmVectors(source: VectorSource): Promise<void> {
 }
 
 /**
- * The nearest passages, each still held by its file. A failure is a state, never a throw: a
+ * The nearest passages, each still held by its file, among the files whose path starts with one of
+ * `prefixes` (byte for byte; empty means every file). A failure is a state, never a throw: a
  * rejected command answers `failed` with no hits. A limit that is not a finite number is 0.
  */
 export async function searchVectors(
@@ -214,12 +243,13 @@ export async function searchVectors(
   source: VectorSource,
   question: string,
   limit: number,
+  prefixes: readonly string[] = [],
 ): Promise<VectorFound> {
   const invoke = getInvoke();
   if (!invoke) return notFound();
   const kept = Number.isFinite(limit) ? Math.max(0, Math.min(MAX_VECTOR_HITS, Math.floor(limit))) : 0;
   try {
-    return await invoke<VectorFound>('vault_vectors_search', { rootPath, source, question, limit: kept });
+    return await invoke<VectorFound>('vault_vectors_search', { rootPath, source, question, limit: kept, prefixes: [...prefixes] });
   } catch {
     return { ...notFound(), state: 'failed' };
   }

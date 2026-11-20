@@ -4,6 +4,7 @@ import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import {
   deleteVectorModel,
   deleteVectors,
+  OFF_VECTOR_STATUS,
   prepareVectors,
   stopVectors,
   subscribeVectorStatus,
@@ -56,13 +57,19 @@ async function answer(command: string, rootPath: string | null, call: () => Prom
   }
 }
 
+/** A choice Rust refused is no choice: it is forgotten and the folder reads as not set up. */
+function refused(rootPath: string): void {
+  vaultVectorSource.clear(rootPath);
+  publish(rootPath, { ...OFF_VECTOR_STATUS, phase: 'notSetUp' });
+}
+
 /** Asks Rust for the folder's status once at a time, with the stored choice and its pause. */
 function refresh(rootPath: string): Promise<void> {
   const inFlight = reading.get(rootPath);
   if (inFlight) return inFlight;
   const choice = vaultVectorSource.read(rootPath);
   const read = answer('vault_vectors_status', rootPath, () => vectorStatus(rootPath, choice?.source ?? null, choice?.paused ?? false))
-    .then(() => undefined)
+    .then((accepted) => { if (!accepted && choice !== null) refused(rootPath); })
     .finally(() => reading.delete(rootPath));
   reading.set(rootPath, read);
   return read;
@@ -76,6 +83,19 @@ export function useVectorStatus(rootPath: string | null): VectorStatus | null {
     if (rootPath !== null && !statuses.has(rootPath)) void refresh(rootPath);
   }, [rootPath]);
   return status;
+}
+
+/**
+ * One value read from the folder's status: a caller renders only when that value changes, so a
+ * screen that needs a yes or no is not drawn again on every progress event.
+ */
+export function useVectorStatusOf<T>(rootPath: string | null, select: (status: VectorStatus | null) => T): T {
+  const getSnapshot = () => select(rootPath === null ? null : statuses.get(rootPath) ?? null);
+  const value = useSyncExternalStore(subscribe, getSnapshot, () => select(null));
+  useEffect(() => {
+    if (rootPath !== null && !statuses.has(rootPath)) void refresh(rootPath);
+  }, [rootPath]);
+  return value;
 }
 
 /** Reads the folder's status again, so the line says what a search that failed just learned. */
@@ -96,11 +116,16 @@ export function pressOf(rootPath: string): number | null {
   return presses.get(rootPath) ?? null;
 }
 
-/** Stores the choice first, unpaused, so the folder's next open continues even if this launch ends now. */
-export function prepare(rootPath: string, source: VectorSource): Promise<boolean> {
-  vaultVectorSource.write(rootPath, source);
+/**
+ * Stores the choice, unpaused, once Rust accepts it. Only the dialog's Download and prepare passes
+ * `download`: no other press fetches the model.
+ */
+export async function prepare(rootPath: string, source: VectorSource, download = false): Promise<boolean> {
   recordPress(rootPath);
-  return answer('vault_vectors_prepare', rootPath, () => prepareVectors(rootPath, source));
+  const accepted = await answer('vault_vectors_prepare', rootPath, () => prepareVectors(rootPath, source, download));
+  if (accepted) vaultVectorSource.write(rootPath, source);
+  else refused(rootPath);
+  return accepted;
 }
 
 /** The pause is the person's: it is stored, so the next opening keeps the job stopped. */
@@ -109,13 +134,18 @@ export function stop(rootPath: string): Promise<boolean> {
   return answer('vault_vectors_stop', rootPath, () => stopVectors(rootPath));
 }
 
-/** Prepares again with the stored source; without one there is nothing to resume. */
-export function resume(rootPath: string): Promise<boolean> {
+/**
+ * Prepares again with the stored source and never downloads: a missing model answers `modelGone`,
+ * whose press opens the dialog. Without a choice there is nothing to resume.
+ */
+export async function resume(rootPath: string): Promise<boolean> {
   const choice = vaultVectorSource.read(rootPath);
-  if (choice === null) return Promise.resolve(false);
+  if (choice === null) return false;
   vaultVectorSource.setPaused(rootPath, false);
   recordPress(rootPath);
-  return answer('vault_vectors_prepare', rootPath, () => prepareVectors(rootPath, choice.source));
+  const accepted = await answer('vault_vectors_prepare', rootPath, () => prepareVectors(rootPath, choice.source));
+  if (!accepted) refused(rootPath);
+  return accepted;
 }
 
 /** Deletes this folder's vectors and forgets its choice once Rust says they are gone. */

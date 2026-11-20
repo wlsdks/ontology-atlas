@@ -11,6 +11,7 @@ export type DeskLineMessage =
   | 'modelConverting'
   | 'preparing'
   | 'stopped'
+  | 'stoppedEmpty'
   | 'ready'
   | 'updating'
   | 'modelDownloadFailed'
@@ -142,6 +143,7 @@ export function deskLine(input: DeskLineInput): DeskLine | null {
       });
     }
     case 'stopped':
+      if (status.filesDone === 0) return line('stoppedEmpty', { action: 'resume' });
       return line('stopped', { values: { done: status.filesDone, total: status.filesTotal }, action: 'resume' });
     case 'ready':
       return line('ready');
