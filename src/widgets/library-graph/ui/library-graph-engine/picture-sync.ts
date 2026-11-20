@@ -163,7 +163,7 @@ export function syncLibraryGraphPicture(
     autoFitRef.current = { on: true, converged: false };
   } else {
     const known = new Set(existing.nodes.map((node) => node.id));
-    const changed = syncLibrarySimulation(existing, graph);
+    const changed = syncLibrarySimulation(existing, graph, { forces: pictureRef.current === "force" });
     // The columns are recomputed whole: a new page changes every row under it.
     if (pictureRef.current !== "force") layPicture(existing, true, known);
     const now = typeof performance === "undefined" ? 0 : performance.now();
