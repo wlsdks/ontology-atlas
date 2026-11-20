@@ -473,6 +473,43 @@ describe("drawing the library graph", () => {
     expect(wholeReport[0]!.text).toBe("Chargeback path");
   });
 
+  it("cuts a flow name to the room its column publishes: a title at its end, a file name in its middle", () => {
+    const named: LibraryGraphNode[] = [
+      { id: "page:wiki/long", kind: "page", label: "Settlementreconciliationrunbook", ref: "wiki/long", href: null },
+      { id: "page:wiki/wide", kind: "page", label: "Refund approval matrix and its exceptions", ref: "wiki/wide", href: null },
+      { id: "source:sources/notes.csv", kind: "source", label: "chargeback cases 2026 q3.csv", ref: "sources/notes.csv", href: null },
+    ];
+    const where = new Map([
+      ["page:wiki/long", { x: 100, y: 60 }],
+      ["page:wiki/wide", { x: 100, y: 160 }],
+      ["source:sources/notes.csv", { x: 500, y: 260 }],
+    ]);
+    const rec = recorder();
+    rec.ctx.measureText = vi.fn((text: string) => ({ width: text.length * 8 })) as never;
+    const report: LibraryGraphLabelBox[] = [];
+    drawLibraryGraph(rec.ctx, frame({
+      nodes: named, edges: [], positions: where, standingLabels: true, sourceLabels: true, layout: "flow", labelReport: report,
+      flowLabelRoom: { page: 400, source: 120 }, width: 900,
+    }));
+    const text = (id: string) => report.find((box) => box.nodeId === id)?.text;
+    // A title without spaces loses its end, not its middle; one wider than the old 132px cap stands whole in its room.
+    expect(text("page:wiki/long")).toBe("Settlementreconciliationrunbook");
+    expect(text("page:wiki/wide")).toBe("Refund approval matrix and its exceptions");
+    // A file name with spaces still keeps its extension.
+    expect(text("source:sources/notes.csv")).toMatch(/^chargeb.*….*\.csv$/);
+    expect(report.find((box) => box.nodeId === "source:sources/notes.csv")!.width).toBeLessThanOrEqual(120);
+
+    const tight = recorder();
+    tight.ctx.measureText = vi.fn((value: string) => ({ width: value.length * 8 })) as never;
+    const tightReport: LibraryGraphLabelBox[] = [];
+    drawLibraryGraph(tight.ctx, frame({
+      nodes: named.slice(0, 1), edges: [], positions: where, standingLabels: true, layout: "flow", labelReport: tightReport,
+      flowLabelRoom: { page: 96 }, width: 900,
+    }));
+    expect(tightReport[0]!.text).toMatch(/^Settlement\w*…$/);
+    expect(tightReport[0]!.width).toBeLessThanOrEqual(96);
+  });
+
   // A name with nowhere to stand is pushed out on a leader, never deleted.
   it("pushes a crowded name onto a leader rather than dropping it", () => {
     const crowd: LibraryGraphNode[] = ["one", "two", "three", "four", "five"].map((name) => ({

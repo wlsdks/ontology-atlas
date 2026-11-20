@@ -90,8 +90,8 @@ export interface LibraryGraphFrame {
   /** `flow`: columns, edges drawn as horizontal S-curves; `force`: the bowed quadratic; `islands`: the overview. */
   layout?: "flow" | "force" | "islands";
   /**
-   * Per kind, in screen px, the `labelRoom` a flow column settled on; absent means the flat
-   * {@link STANDING_LABEL_MAX_WIDTH} budget.
+   * Per kind, in screen px, the `labelRoom` a flow column settled on, which a name is cut to;
+   * absent means the flat {@link STANDING_LABEL_MAX_WIDTH} and character caps.
    */
   flowLabelRoom?: Partial<Record<LibraryGraphNodeKind, number>>;
   /**
@@ -251,7 +251,7 @@ const STANDING_LABEL_MIN_PX = 48;
 /** Gap between a mark and the name standing under it. */
 const STANDING_LABEL_GAP = 5;
 
-/** No standing name is allowed to be wider than this; past it a name is truncated. */
+/** Without a flow column's room no standing name is wider than this; past it a name is truncated. */
 const STANDING_LABEL_MAX_WIDTH = 132;
 /**
  * The longest name in characters, applied before the pixel cap, which alone cuts Latin and
@@ -1430,13 +1430,15 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       }
       // Font per kind before measuring, so the tested box matches the drawn step.
       ctx.font = `${fontPx}px ${ink.fontFamily}`;
-      // The column's room, else the flat budget; the canvas is still the outer bound.
-      const roomCap = frame.flowLabelRoom?.[node.kind] ?? STANDING_LABEL_MAX_WIDTH;
-      let text = truncateToWidth(
-        ctx,
-        middleEllipsis(node.label, STANDING_LABEL_MAX_CHARS),
-        Math.min(Math.max(roomCap, STANDING_LABEL_MAX_WIDTH), frame.width - 8),
-      );
+      /*
+       * A flow column's room is the layout's to give, so it replaces both flat caps there; a
+       * file keeps its distinguishing tail and a title loses its end. The canvas still bounds both.
+       */
+      const columnRoom = frame.flowLabelRoom?.[node.kind];
+      const cutFlowName = node.kind === "source" ? cutMiddleToWidth : cutEndToWidth;
+      let text = columnRoom === undefined
+        ? truncateToWidth(ctx, middleEllipsis(node.label, STANDING_LABEL_MAX_CHARS), Math.min(STANDING_LABEL_MAX_WIDTH, frame.width - 8))
+        : cutFlowName(ctx, node.label, Math.min(columnRoom, frame.width - 8));
       if (!text) continue;
       let width = ctx.measureText(text).width;
       /*
@@ -1460,7 +1462,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
           room = Math.min(room, other.x - NAME_GAP_X - startX);
         }
         if (width > room && room >= STANDING_LABEL_MIN_PX) {
-          text = truncateToWidth(ctx, text, room);
+          text = cutFlowName(ctx, text, room);
           if (!text) continue;
           width = ctx.measureText(text).width;
         }
@@ -1474,7 +1476,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       const right = { x: centre.x + half + STANDING_LABEL_GAP, y: centre.y - lineHeight / 2 };
       const left = { x: centre.x - half - STANDING_LABEL_GAP - width, y: centre.y - lineHeight / 2 };
       /*
-       * In columns a name stands on the side its column keeps clear (`FLOW_LABEL_ROOM_PX`):
+       * In columns a name stands on the side its column keeps clear (`flowLabelRoom`):
        * a file's left, a page's or concept's right. Under would sit on the next row's edges.
        */
       const candidates =
@@ -1677,27 +1679,34 @@ function drawActivityMarks(ctx: CanvasRenderingContext2D, frame: LibraryGraphFra
   ctx.globalAlpha = 1;
 }
 
+/** Fits `text` to `maxWidth`: a phrase loses its end, a single token (a file name) its middle. */
+function truncateToWidth(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
+  return text.includes(" ") ? cutEndToWidth(ctx, text, maxWidth) : cutMiddleToWidth(ctx, text, maxWidth);
+}
+
 /**
- * Fits `text` to `maxWidth`. A file name is shortened in the middle, because its tail (a
- * date, a number, an extension) tells two marks apart and cutting it gives two marks one
- * name. The tail grows glyph by glyph to a third of the budget; the head is a binary search.
- * Returns `""` only when even the ellipsis does not fit.
+ * Cuts a title off the end, at a word boundary when a word survives, since a middle
+ * ellipsis through a sentence halves words at both ends. `""` when even the ellipsis does not fit.
  */
-function truncateToWidth(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-): string {
+function cutEndToWidth(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
   if (ctx.measureText(text).width <= maxWidth) return text;
   const ellipsis = "…";
   if (ctx.measureText(ellipsis).width > maxWidth) return "";
-  // A phrase is cut off the end at a word boundary, as in `middleEllipsis`.
-  if (text.includes(" ")) {
-    const head = headThatFits(ctx, text, maxWidth - ctx.measureText(ellipsis).width);
-    const lastSpace = head.lastIndexOf(" ");
-    const cut = lastSpace > head.length / 2 ? head.slice(0, lastSpace) : head;
-    return `${cut.trimEnd()}${ellipsis}`;
-  }
+  const head = headThatFits(ctx, text, maxWidth - ctx.measureText(ellipsis).width);
+  const lastSpace = head.lastIndexOf(" ");
+  const cut = lastSpace > head.length / 2 ? head.slice(0, lastSpace) : head;
+  return `${cut.trimEnd()}${ellipsis}`;
+}
+
+/**
+ * Shortens a file name in the middle, because its tail (a date, a number, an extension) tells
+ * two marks apart and cutting it gives two marks one name. The tail grows glyph by glyph to a
+ * third of the budget; the head is a binary search. `""` when even the ellipsis does not fit.
+ */
+function cutMiddleToWidth(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  const ellipsis = "…";
+  if (ctx.measureText(ellipsis).width > maxWidth) return "";
   // The tail is the shorter part, or the name reads as two fragments.
   const tailBudget = maxWidth / 3;
   let tail = 0;
@@ -1731,7 +1740,7 @@ function middleEllipsis(text: string, maxChars: number): string {
     const cut = lastSpace > keep / 2 ? head.slice(0, lastSpace) : head;
     return `${cut.trimEnd()}…`;
   }
-  // The tail keeps a third after the ellipsis, the same split as `truncateToWidth`.
+  // The tail keeps a third after the ellipsis, the same split as `cutMiddleToWidth`.
   const tail = Math.max(1, Math.floor(keep / 3));
   const head = keep - tail;
   return `${glyphs.slice(0, head).join("")}…${glyphs.slice(glyphs.length - tail).join("")}`;
