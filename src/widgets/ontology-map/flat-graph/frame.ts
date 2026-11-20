@@ -996,6 +996,45 @@ function memberBlockShows(list: readonly PlacedName[], from: number, to: number,
   return blockShows(list, from, to, chrome, null) && blockInsideFree(list, from, to);
 }
 
+/** Each fallback side drawn on its plate, made once per side: its plate covers the grown dots it stands on. */
+const backedSides = new WeakMap<PlacedName, PlacedName>();
+
+/** Whether this frame already draws a name for `id` that is clear where it stands. O(names drawn). */
+function namedNow(id: string): boolean {
+  for (let i = 0; i < L.names.size; i += 1) {
+    const m = L.names.items[i]!;
+    if (m.name.id === id && m.name.role === "capability" && !m.fading && m.room === 1) return true;
+  }
+  return false;
+}
+
+/**
+ * Names each opened star member this frame left unnamed on the first of its fallback sides that
+ * stands inside the free map, clear of the chrome and, where the frame draws it, of every disc, grown
+ * dot (or on its plate) and name drawn before it. Admission holds names apart across a whole zoom
+ * step; at rest the frame knows the one scale, so a rim member keeps a name its step ruled out. It
+ * runs after every admitted name, so it never takes a place one of them holds, and a member that
+ * changes side cross-fades between the two rows. O(unnamed members × fallbacks × (discs + grown dots + names drawn)).
+ */
+function planMemberFallbacks(fallbacks: ReadonlyMap<string, readonly PlacedName[]>, alphas: ReadonlyMap<string, number>, chrome: readonly Box[]): void {
+  for (const [id, sides] of fallbacks) {
+    const at = screenAt(id);
+    if (!at || alphas.get(id) === 0 || namedNow(id)) continue;
+    for (let k = 0; k < sides.length; k += 1) {
+      if (!memberBlockShows(sides, k, k + 1, chrome)) continue;
+      let side = sides[k]!;
+      if (onGrownDot(side, at.x, at.y)) {
+        let plated = backedSides.get(side);
+        if (!plated) backedSides.set(side, (plated = { ...side, backed: true }));
+        side = plated;
+      }
+      if (nameRoom(side, at, at.x, at.y, false) <= ROOM_GONE_PX) continue;
+      planName(side, alphas, 1, false);
+      break;
+    }
+  }
+}
+
 /** The share of its full radius a capability disc is drawn at, 1 for a disc no crowd shrank. */
 function crowdKept(d: Disc): number {
   const full = graphDiscRadiusPx("capability", F.model.capabilityById.get(d.id)?.elementIds.length ?? 0, F.P, F.growth);
@@ -1409,6 +1448,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
       }
     }
   }
+  if (starId !== null) planMemberFallbacks(admission.fallbacks, alphas, chrome);
   // A deselected name keeps its selected size and fades on the exit mix while its rest name fades in.
   if (leaving !== null) {
     const before = admitUnder(motion.previous);

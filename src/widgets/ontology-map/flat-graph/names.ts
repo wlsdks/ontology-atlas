@@ -41,6 +41,12 @@ export interface NameAdmission {
   anchors: ReadonlyMap<string, Point>;
   /** An open star's member's other acceptable sides, best first: where its name goes when its side runs under chrome. */
   alternates: ReadonlyMap<string, readonly PlacedName[]>;
+  /**
+   * An open star's member's remaining one-line sides without a leader, in its order of tries: those
+   * admission ruled out somewhere in its zoom step. The frame takes one only where, as it draws, the
+   * side stands inside the free map and clear of every drawn mark and name.
+   */
+  fallbacks: ReadonlyMap<string, readonly PlacedName[]>;
 }
 
 export interface NameInput {
@@ -936,6 +942,7 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     }
   };
   const alternates = new Map<string, PlacedName[]>();
+  const fallbacks = new Map<string, PlacedName[]>();
   const sideCosts: number[] = [];
   /**
    * Each side of an open star's member: -1 over a name, a disc or a leader's path, else lower for a
@@ -1017,7 +1024,8 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
    * other members a side toward the hub on each axis, the last a free map cutting the star still
    * holds. The first side ignores spokes: off one it can take a neighbour's last side inside the free
    * map. A placed member's alternates the new name covers are dropped, so the frame never swaps one in
-   * under it. O(sides log sides + ties × members × sides × (cells touched + sides)).
+   * under it. O(sides × (log sides + cells touched) + members × sides × (cells touched + ties)), the
+   * members' term only when two or more cheapest sides tie.
    */
   const placeMember = (member: Member, unplaced: readonly Member[]) => {
     const { id, at, all } = member;
@@ -1063,7 +1071,8 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
   /**
    * Names the open star's members, the one with the fewest acceptable sides first, so a member with
    * room on several sides leaves a crowded neighbour its one side. Clear sides go first; a member with
-   * none takes, in a second round, a backed side. O(members² × sides × cells touched).
+   * none takes, in a second round, a backed side. Every member's sides left over become its fallbacks.
+   * O(members² × sides × cells touched).
    */
   const placeStarMembers = () => {
     const members: Member[] = pending.filter((c) => !ids.has(c.id) && isStarMember(input, c.id)).map((c) => ({ id: c.id, at: anchor(c.id), all: c.tries() }));
@@ -1082,6 +1091,12 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
         if (pick === null) break;
         placeMember(pick, members);
       }
+    }
+    for (const m of members) {
+      const chosen = ids.has(m.id) ? m.all[sides.get(m.id)!] : undefined;
+      const kept = new Set(alternates.get(m.id) ?? []);
+      const rest = m.all.flatMap((group) => (group !== chosen && group.length === 1 && group[0]!.leader !== true && !kept.has(group[0]!) ? [group[0]!] : []));
+      if (rest.length > 0) fallbacks.set(m.id, rest);
     }
   };
   // The focus wins over every name, then capabilities over elements.
@@ -1127,7 +1142,7 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
   }
   const anchors = new Map<string, Point>();
   if (fan) for (const id of fan.offsets.keys()) anchors.set(id, anchor(id));
-  return { step, names, ids, sides, anchors, alternates };
+  return { step, names, ids, sides, anchors, alternates, fallbacks };
 }
 
 const degreeCache = new WeakMap<DialModel, Map<string, number>>();
