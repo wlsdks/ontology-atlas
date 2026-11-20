@@ -251,12 +251,15 @@ export function LibraryQuestionDesk({
     t('coverageCompact', { readPages: result.readPages, totalPages: result.totalPages, readSources, totalSources: result.totalSources }),
     ...(omittedLeads > 0 ? [t('coverageOmitted', { count: omittedLeads })] : []),
   ].join(' · ') : '';
-  const limits = result ? t('limits', {
+  /* The method sentence the search that produced this list made true; a report saves it with the record. */
+  const searchedByMeaning = result?.meaning?.state === 'ok';
+  const limits = result ? t(searchedByMeaning ? 'limitsBoth' : 'limits', {
     unreadable: result.unreadableSources, changed: result.changedSources,
     skipped: result.totalSources - result.plannedSources,
     omitted: result.omittedClaims + result.omittedSources,
   }) : '';
   /* The popovers list only the limits that hold something; the report keeps the full record. */
+  const limitsMethod = t(searchedByMeaning ? 'limitsMethodBoth' : 'limitsMethod');
   const limitFacts = (withOmitted: boolean) => {
     if (!result) return '';
     const counts: Array<[Parameters<typeof t>[0], number]> = [
@@ -290,22 +293,23 @@ export function LibraryQuestionDesk({
     ...(meaning.filesReady < meaning.filesTotal ? [t('meaning.coverage', { ready: meaning.filesReady, total: meaning.filesTotal })] : []),
     ...(meaning.staleDropped > 0 ? [t('meaning.staleDropped', { count: meaning.staleDropped })] : []),
   ] : [];
-  const coverageInfo = <DeskCoverageInfo lines={[coverageCompact, ...meaningCoverage, limitFacts(false), t('limitsMethod'), t('wikiCaveat')].filter(Boolean)} />;
-  /* When meaning could not answer, the word rows stand as they are and one sentence says why. */
+  const coverageInfo = <DeskCoverageInfo lines={[coverageCompact, ...meaningCoverage, limitFacts(false), limitsMethod, t('wikiCaveat')].filter(Boolean)} />;
+  /*
+   * When meaning could not answer, the word rows stand as they are and one sentence says why; the
+   * line above carries the state and its press.
+   */
   const meaningNotice = meaning?.state === 'failed' ? <p role="status" data-testid="question-desk-meaning-notice"
-    className="mt-3 flex flex-wrap items-baseline gap-x-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
-    <span>{meaning.failure === 'modelGone' ? t('meaning.modelGoneNotice')
+    className="mt-3 text-label leading-label text-[color:var(--color-text-tertiary)]">
+    {meaning.failure === 'modelGone' ? t('meaning.modelGoneNotice')
       : meaning.failure === 'runnerDown' || meaning.failure === 'modelMissing' ? t('meaning.runnerDownNotice')
-        : t('meaning.failedNotice')}</span>
-    {meaning.failure === 'modelGone' && vaultRoot !== null ? <MeaningSetupPress rootPath={vaultRoot} look="link"
-      testId="question-desk-meaning-download-again">{t('meaning.downloadAgain')}</MeaningSetupPress> : null}
+        : t('meaning.failedNotice')}
   </p> : null;
 
   const results = result && visible ? <>
     {outdated || (report && !activeReport) ? <p role="status" className="mb-3 text-label leading-label text-[color:var(--color-text-tertiary)]">{report ? t('report.outdated') : t('outdated')}</p> : null}
     {activeReport ? <div className="mb-10">
       <DeskReport report={activeReport} coverageCompact={coverageCompact}
-        coverageInfo={<DeskCoverageInfo lines={[coverage, limitFacts(true), t('limitsMethod')].filter(Boolean)} testId="question-desk-report-coverage-info" />}
+        coverageInfo={<DeskCoverageInfo lines={[coverage, limitFacts(true), limitsMethod].filter(Boolean)} testId="question-desk-report-coverage-info" />}
         sources={sources} dockOpen={dockOpen} reducedMotion={reducedMotion} onOpenSource={onOpenSource}
         onFileReport={onFileReport} filingReport={filingReport} fileReportNote={fileReportNote} />
     </div> : null}

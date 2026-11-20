@@ -9,7 +9,16 @@ import type { VaultDoc, LibrarySourceRow } from '@/entities/docs-vault';
 
 const mocks = vi.hoisted(() => ({
   status: vi.fn(), judge: vi.fn(),
+  /** What search by meaning answers; `null` asks by words alone, as a folder with nothing set up. */
+  meaning: null as import('@/shared/lib/vault-folder/tauri-vault-vectors').VectorFound | null,
 }));
+vi.mock('@/features/vault-vectors', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/vault-vectors')>();
+  return {
+    ...actual,
+    useVectorSearch: () => ({ ask: () => (mocks.meaning ? Promise.resolve(mocks.meaning) : null), warm: () => {}, offerSetup: false }),
+  };
+});
 vi.mock('@/shared/lib/llm-connection/tauri-jev', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/shared/lib/llm-connection/tauri-jev')>();
   return { ...actual, jevSecretStatus: mocks.status, jevJudge: mocks.judge };
@@ -75,6 +84,7 @@ beforeEach(() => {
   sourceMtime = 10;
   fileReads = 0;
   fileGate = null;
+  mocks.meaning = null;
   mocks.status.mockReset();
   mocks.judge.mockReset();
   mocks.status.mockResolvedValue({ stored: false, last4: null });
@@ -153,6 +163,32 @@ describe('Library question desk transfer boundary', () => {
     fireEvent.click(screen.getByText('Check claim with Jev'));
     expect(await screen.findByTestId('question-desk-jev-note')).toHaveTextContent('No Jev key');
     expect(mocks.judge).not.toHaveBeenCalled();
+  });
+
+  it('says the method sentence true for the search in the popover, the brief and the saved limits', async () => {
+    const wordsOnly = 'Unreadable sources: 0 · changed during search: 0 · skipped by read limit: 0 · matching leads omitted: 0. Search matches words and uses the last listed file versions; external edits may appear after a folder refresh.';
+    const byMeaning = 'Search matches words and meaning and uses the last listed file versions; external edits may appear after a folder refresh.';
+    const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
+    const rendered = render(<Desk onSummarize={onSummarize} />);
+    await search();
+    openCoverage();
+    expect(screen.getByTestId('question-desk-coverage-info-popover')).toHaveTextContent('Search matches words and uses the last listed file versions');
+    fireEvent.click(screen.getByTestId('question-desk-summarize'));
+    expect(onSummarize.mock.calls[0]![0].limits).toBe(wordsOnly);
+    expect(onSummarize.mock.calls[0]![0].brief).toContain(wordsOnly);
+    rendered.unmount();
+
+    mocks.meaning = { state: 'ok', failure: null, hits: [{ path, lineStart: 2, lineEnd: 2, heading: 'Refund handling', score: 0.8 }], staleDropped: 0, filesReady: 2, filesTotal: 2 };
+    render(<Desk onSummarize={onSummarize} />);
+    await search();
+    openCoverage();
+    expect(screen.getByTestId('question-desk-coverage-info-popover')).toHaveTextContent(byMeaning);
+    expect(screen.getByTestId('question-desk-coverage-info-popover')).not.toHaveTextContent('Search matches words and uses');
+    fireEvent.click(screen.getByTestId('question-desk-summarize'));
+    const request = onSummarize.mock.calls[1]![0];
+    expect(request.limits).toBe(wordsOnly.replace('Search matches words and uses', 'Search matches words and meaning and uses'));
+    expect(request.brief).toContain(byMeaning);
+    expect(request.brief).not.toContain('Search matches words and uses');
   });
 
   it('starts a report only on explicit press and renders the returned freeform draft with safe citations', async () => {
