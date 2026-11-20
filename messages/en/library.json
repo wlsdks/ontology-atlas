@@ -568,11 +568,11 @@
       "title": "Read",
       "startWith": "Start with {title}",
       "nothingYet": "No wiki page yet. Write wiki page makes the first one.",
-      "coveredLine": "{compiled, number} of {total, number} sources have a wiki page",
-      "coveredChecking": "{compiled, number} of {total, number} have a wiki page, {checking, number} still being checked",
-      "coveredPartial": "{compiled, number} of {total, number} have a wiki page, {partial, number} read in part",
-      "coveredStale": "{compiled, number} of {total, number} have a wiki page, {stale, number} changed since",
-      "coveredUnreadable": "{compiled, number} of {total, number} have a wiki page, {unreadable, number} can't be read"
+      "coveredLine": "{compiled, number} of {total, plural, one {# source} other {# sources}} {compiled, plural, one {has} other {have}} a wiki page",
+      "coveredChecking": "{compiled, number} of {total, number} {compiled, plural, one {has} other {have}} a wiki page, {checking, number} still being checked",
+      "coveredPartial": "{compiled, number} of {total, number} {compiled, plural, one {has} other {have}} a wiki page, {partial, number} read in part",
+      "coveredStale": "{compiled, number} of {total, number} {compiled, plural, one {has} other {have}} a wiki page, {stale, number} changed since",
+      "coveredUnreadable": "{compiled, number} of {total, number} {compiled, plural, one {has} other {have}} a wiki page, {unreadable, number} can't be read"
     },
     "brainAgent": "{name}",
     "brainLocal": "{model} on {host}",

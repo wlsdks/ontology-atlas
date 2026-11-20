@@ -232,6 +232,8 @@ test.describe("source progress on the Sources home", () => {
       await openSources(page, { vault: oneSourceVault(), locale });
       const band = page.getByTestId("library-progress");
       await expect(band.getByTestId("library-progress-percent")).toHaveText("1 / 1");
+      // The noun follows the total and the verb the count.
+      if (locale === "en") await expect(band.getByTestId("library-progress-sentence")).toHaveText("1 of 1 source has a wiki page");
       await expect(band.getByTestId("library-progress-chart")).toHaveCount(0);
       for (const width of [1040, 1280, 1512, 1920]) {
         await page.setViewportSize({ width, height: 901 });
