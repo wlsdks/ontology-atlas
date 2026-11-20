@@ -486,3 +486,22 @@ New keys under `wikiReader` in `messages/<locale>/library.json` (English source)
 - 2026-11-20: W2 detailed: the Wiki reader's top row belongs to the page, links say names,
   a citation opens its passage in a popover, the page ends with where it sits, and a desk row
   opens the page at its claim.
+- 2026-11-20: W2 as built departs in seven places.
+  - The page has no actions of its own, and the Conversation door stays in the page header
+    where H1 put every Library door; the top row holds Close, Back, the state, a source-changed
+    badge, the author and date, and the work line at its right.
+  - Following a link adds a Back press to the top row (`wikiReader.back`) that returns along
+    the links followed at the scroll each page was left at. Back to the desk is Close: the desk
+    is the reader with nothing open, and Close gives it back with its results and scroll.
+  - The popover rises once the one-file read has settled, so it never draws empty and then
+    grows; the read is the Sources reader's own hook for that file.
+  - The claim's mark holds for the choreography duration (1.2s) after the scroll settles and
+    then fades over the slow duration, so a person who watched the scroll still sees it.
+  - A link to nothing describes itself through `aria-describedby` and a hint shown on hover
+    and focus that is hidden from assistive technology, instead of the shared tooltip, which
+    gave a screen reader the same sentence twice.
+  - A citation into a missing file is still a press; its popover says the file is missing.
+    In the foot a missing source is named but is not a press. Show in Finder appears only in
+    the app, where there is a Finder.
+  - A concept link opens the Ontology tab with that concept selected
+    (`/library/?tab=ontology&slug=`).

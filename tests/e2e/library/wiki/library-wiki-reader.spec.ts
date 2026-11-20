@@ -126,6 +126,9 @@ test('a link says the name of what it opens, and a link to nothing says it is mi
   // A page's link to itself is plain text.
   await expect(body.getByText('wiki/returns', { exact: true })).toHaveCount(0);
   await expect(body.locator('[data-link-target="wiki/returns"]')).toHaveCount(0);
+  // A concept opens in the Ontology tab, selected.
+  await concept.click();
+  await expect(page).toHaveURL(/[?&]tab=ontology&slug=capabilities%2Frefund-processing/u);
 });
 
 test('a citation opens its passage beside it, reading nothing before the press', async ({ page }) => {
