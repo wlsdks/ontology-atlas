@@ -2,9 +2,12 @@ import { render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 import en from '../../../../../../../messages/en.json';
-import { DESK_SENTENCE_LIMIT, type DeskLead } from '@/features/library';
+import type { DeskLead } from '@/features/library';
 
 import { DeskLeadRow } from './DeskLeadRow';
+
+/** A row shows at most 320 characters and an ellipsis at each cut end. */
+const SHOWN_MAX = 322;
 
 describe('Question desk lead row', () => {
   it('shows a one-line megabyte unit as a bounded window around its first matched word', () => {
@@ -21,12 +24,12 @@ describe('Question desk lead row', () => {
     const elapsed = performance.now() - started;
     const open = screen.getByRole('button', { name: /the refund is queued/u });
     const shown = open.querySelector('[data-lead-sentence]')!;
-    expect(shown.textContent!.length).toBeLessThanOrEqual(DESK_SENTENCE_LIMIT + 2);
+    expect(shown.textContent!.length).toBeLessThanOrEqual(SHOWN_MAX);
     expect(open.getAttribute('aria-label')).toBe(shown.textContent);
     expect(shown.textContent).toMatch(/^….*…$/u);
     // After the first match the unit holds 120,000 more; the runs come from the window alone.
     expect(shown.querySelectorAll('.font-\\[var\\(--font-weight-emphasis\\)\\]').length).toBeGreaterThan(0);
-    expect(shown.childNodes.length).toBeLessThanOrEqual(2 * Math.ceil(DESK_SENTENCE_LIMIT / 'stock'.length) + 1);
+    expect(shown.childNodes.length).toBeLessThanOrEqual(2 * Math.ceil(SHOWN_MAX / 'stock'.length) + 1);
     expect(elapsed).toBeLessThan(2_000);
   });
 });
