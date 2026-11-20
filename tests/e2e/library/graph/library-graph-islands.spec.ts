@@ -157,11 +157,18 @@ test("zooming the wheel out of an opened island returns the map", async ({ page 
 test("the keyboard walks the islands: arrows step, Enter opens, Escape returns", async ({ page }) => {
   await openMap(page);
   const canvas = page.getByTestId("library-graph-canvas");
+  // The islands picture keys its own marks: an island, a page, a source, a changed source.
+  const key = page.getByTestId("library-graph-key");
+  await expect(key).toHaveAttribute("data-picture", "islands");
+  await expect
+    .poll(async () => key.locator("[data-key-item]").evaluateAll((items) => items.map((item) => item.getAttribute("data-key-item"))))
+    .toEqual(["ring", "circle", "square", "stale", "gestures"]);
   await canvas.focus();
   await page.keyboard.press("ArrowRight");
   await page.keyboard.press("ArrowRight");
-  // The legend line names the island the keyboard stands on.
+  // The key's line names the island the keyboard stands on.
   await expect(page.getByTestId("library-graph-hint")).toContainText(/pages and .* files/);
+  await expect(page.getByTestId("library-graph-description")).toContainText(/pages and .* files/);
   await page.keyboard.press("Enter");
   const bar = page.getByTestId("library-graph-island-bar");
   await expect(bar, "Enter on a focused island did not open it").toBeVisible();

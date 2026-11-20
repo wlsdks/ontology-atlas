@@ -59,14 +59,16 @@ export interface AppNavRailProps {
   /** Tools that finished installing while the user was elsewhere; terminal states only. */
   agentsNoticeCount?: number;
   /**
-   * A person-started run that belongs to one destination: a ring while it runs, a count once it
-   * finished and nobody has read it.
+   * Runs that belong to a destination, at most one entry per destination: a ring while one runs,
+   * a count once they finished and nobody has read them.
    */
-  workRun?: RailWorkRun | null;
+  workRuns?: readonly RailWorkRun[];
   /** Destinations this folder earns (`destinationsForVaultShape`); `null` draws all. */
   visibleDestinations?: ReadonlySet<AppNavRailItemId> | null;
   className?: string;
 }
+
+const NO_WORK_RUNS: readonly RailWorkRun[] = [];
 
 export type RailWorkRun =
   | { destination: AppNavRailItemId; state: "running" }
@@ -113,7 +115,7 @@ export function AppNavRail({
   hidden,
   gitDirtyCount = 0,
   agentsNoticeCount = 0,
-  workRun = null,
+  workRuns = NO_WORK_RUNS,
   visibleDestinations = null,
   className,
 }: AppNavRailProps) {
@@ -210,7 +212,7 @@ export function AppNavRail({
           />
           {destinations.map(({ id, href, label, Icon, badgeCount: ownBadge }) => {
             const isActive = activeId === id;
-            const run = workRun?.destination === id ? workRun : null;
+            const run = workRuns.find((candidate) => candidate.destination === id) ?? null;
             const badgeCount = run?.state === "finished" ? run.count : ownBadge;
             const runName = run?.state === "running"
               ? tWork("railRunning", { destination: label })

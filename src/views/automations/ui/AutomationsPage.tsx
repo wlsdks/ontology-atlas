@@ -9,6 +9,7 @@ import { OpenVaultCta } from "@/features/docs-vault-local";
 import type { RoundPassEntry, RoundRecord } from "@/entities/library-round";
 import { useLocalVault } from "@/entities/vault-session";
 import type { RoundsRunnerValue } from "@/features/library-rounds";
+import { isScheduledActive, useAutomationsStage, useScheduledRuns } from "@/features/work-run";
 import { useRouter } from "@/i18n/navigation";
 import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { cn } from "@/shared/lib/cn";
@@ -27,6 +28,7 @@ import { AutomationLaneFacts, AutomationListPanel } from "./AutomationListFrame"
 import { AutomationHistoryHeading, AutomationRunHistory, AutomationUnrecorded } from "./AutomationRunHistory";
 import { AUTOMATIONS_RUNNING_ID } from "./AutomationScheduleActions";
 import { AutomationScheduleArtwork } from "./AutomationScheduleArtwork";
+import { ScheduledRunStage } from "./ScheduledRunStage";
 import listStyles from "./automation-list-frame.module.css";
 
 import { NewOntologyRoundSheet } from "./NewOntologyRoundSheet";
@@ -77,6 +79,11 @@ export function AutomationsPage({
   // A link's schedule stays selected until the person picks a row or shows every run.
   const selected = rounds.find((round) => round.id === (selectedId === undefined ? requestedRound : selectedId)) ?? null;
   const history = useLaneHistory(runner, lane, rounds, selected);
+  // This screen is the stage of every scheduled run: the card stands down and results read here.
+  useAutomationsStage(desktop === true);
+  const scheduledRuns = useScheduledRuns();
+  const stagedRun = scheduledRuns.findLast(isScheduledActive) ?? null;
+  const landedRunId = params.get("run");
 
   const selectLane = (nextLane: AutomationLane) => {
     const query = new URLSearchParams(params.toString());
@@ -204,6 +211,7 @@ export function AutomationsPage({
             {!staged && runner ? (
               <div className={cn("flex min-w-0 flex-1 flex-col gap-6", seen.arrived && "motion-swap-in")}>
                 <p className={`max-w-prose ${PAGE_LEDE}`}>{t("lede")}</p>
+                {stagedRun ? <ScheduledRunStage key={stagedRun.id} run={stagedRun} /> : null}
                 <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="grid min-w-0 gap-8">
                   <AutomationListPanel title={t(`${lane}.preview.title`)} count={rounds.length}
                     columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.last`), t("actionsColumn")]}
@@ -222,6 +230,7 @@ export function AutomationsPage({
                         <RoundsLedger entries={history.entries} locale={locale} titleFor={history.titleFor}
                           onOpenPage={(slug) => router.push(`/docs/?slug=${encodeURIComponent(slug.replace(/\.md$/, ""))}`)}
                           running={runner.running && (selected ? runner.running.roundId === selected.id : rounds.some((round) => round.id === runner.running?.roundId)) ? runner.running : null}
+                          landedRunId={landedRunId}
                           heading={<AutomationHistoryHeading name={selected?.name ?? null} onShowAll={() => setSelectedId(null)} />} />
                       </>
                     ) : (
@@ -230,7 +239,7 @@ export function AutomationsPage({
                         {selected && "query" in selected && selected.query ? <p className="break-words text-body text-[color:var(--color-text-secondary)]">
                           <span className="text-[color:var(--color-text-tertiary)]">{t("scopeLabel")} · </span>{selected.query}</p> : null}
                         <AutomationUnrecorded unrecorded={history.unrecorded} />
-                        {history.ran || history.unrecorded.length === 0 ? <AutomationRunHistory key={selected?.id ?? ""} entries={history.entries} named={!selected} /> : null}
+                        {history.ran || history.unrecorded.length === 0 ? <AutomationRunHistory key={selected?.id ?? ""} entries={history.entries} named={!selected} landedRunId={landedRunId} /> : null}
                       </>
                     )}
                   </section> : null}
