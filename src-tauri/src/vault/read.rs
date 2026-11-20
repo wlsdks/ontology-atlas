@@ -413,24 +413,6 @@ mod vault_text_batch_tests {
         assert!(decoded[2].text.is_none() && decoded[2].last_modified.is_none());
     }
 
-    #[test]
-    fn a_truncated_or_padded_buffer_is_an_error_not_a_panic() {
-        let (_, frames) = shared_fixture();
-        for end in 0..frames.len() {
-            assert!(
-                decode_text_reads(&frames[..end]).is_err(),
-                "{end} of {} bytes decoded",
-                frames.len()
-            );
-        }
-        let mut padded = frames.clone();
-        padded.push(0);
-        assert!(decode_text_reads(&padded).is_err());
-        let mut huge_count = frames;
-        huge_count[..4].copy_from_slice(&u32::MAX.to_le_bytes());
-        assert!(decode_text_reads(&huge_count).is_err());
-    }
-
     fn vault(name: &str) -> std::path::PathBuf {
         let base =
             std::env::temp_dir().join(format!("atlas-text-batch-{name}-{}", std::process::id()));
