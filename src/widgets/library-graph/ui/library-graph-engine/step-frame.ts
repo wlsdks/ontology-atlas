@@ -90,10 +90,15 @@ export function stepLibraryGraphFrame(
    */
   if (settling) {
     wasSettlingRef.current = true;
-    paint(now);
+    paint(now, true);
   } else {
     // The aspect is published once the picture stops, or it reports the seed spiral's shape.
-    paint(now);
+    // Names that came or went with the settled frame fade over a few more frames.
+    if (paint(now, false)) {
+      wasSettlingRef.current = true;
+      frameRef.current = requestAnimationFrame((next) => stepRef.current(next));
+      return;
+    }
     if (wasSettlingRef.current) {
       wasSettlingRef.current = false;
       publishAspect();

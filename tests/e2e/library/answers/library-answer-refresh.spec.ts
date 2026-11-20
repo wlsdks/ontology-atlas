@@ -217,7 +217,9 @@ test('a Library without code nodes opens retained questions and routes an inline
   await expect(page.getByTestId('library-questions-open')).toBeVisible();
   await expect(page.getByTestId('app-nav-rail-item-architecture')).toHaveCount(0);
   await page.getByTestId('library-questions-open').click();
+  // A citation shows its passage in place first; Open the source routes to the original location.
   await page.getByTestId('library-reading-pane').locator(`[data-source-path="${SOURCE}"][data-source-anchor="l1"]`).click();
+  await page.getByTestId('wiki-citation-popover').getByTestId('wiki-citation-open-source').click();
   await expect(page.getByTestId('library-source-citation')).toContainText('l1');
   await expect(page.locator('body')).toContainText(SOURCE);
 });
