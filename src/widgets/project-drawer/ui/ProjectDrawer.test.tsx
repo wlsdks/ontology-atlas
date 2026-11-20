@@ -87,6 +87,19 @@ function renderDrawer(
   return result;
 }
 
+describe("ProjectDrawer related documents", () => {
+  it("shows the section only once every row has its excerpt, never empty first", async () => {
+    const dependency = makeProject({ slug: "payments", name: "Payments" });
+    const project = makeProject({ slug: "storefront", name: "Online Store", dependencies: ["payments"] });
+    renderDrawer({ project, allProjects: [project, dependency] });
+    expect(screen.queryByTestId("project-drawer-related-docs")).toBeNull();
+    const section = await screen.findByTestId("project-drawer-related-docs");
+    const rows = within(section).getAllByRole("listitem");
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.some((row) => (row.querySelector("p")?.textContent ?? "").length > 0)).toBe(true);
+  });
+});
+
 describe('ProjectDrawer impact mode help', () => {
   it('gives the four mode pills distinct help titles', () => {
     renderDrawer();
