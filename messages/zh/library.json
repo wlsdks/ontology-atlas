@@ -238,8 +238,6 @@
       "draft": "草稿",
       "reviewed": "已复核"
     },
-    "viewOriginalCount": "{count} 份来源",
-    "viewOriginalOne": "查看来源：{name}",
     "originalMissing": "引用了 {name}，但它不在此文件夹中。",
     "compileCreateFile": "创建 {path}",
     "compileModifyFile": "替换 {path}",
@@ -1003,5 +1001,18 @@
     "failedTitle": "Wiki 检查提前结束了",
     "failedBody": "{agent} 在报告之前就结束了。没有文件被更改。按“检查 Wiki”可再次运行。",
     "stopped": "你已停止此检查。没有报告任何内容，也没有文件被更改。"
+  },
+  "wikiReader": {
+    "citedSources": "引用的原文",
+    "linkedFrom": "指向此页的页面",
+    "concepts": "此页涉及的概念",
+    "citationCount": "引用 {count, number} 处",
+    "citationAt": "{file} · 第 {line, number} 行",
+    "openSource": "打开原文",
+    "sourceChanged": "撰写此页后，这个文件已变更。这是它现在的内容。",
+    "sourceMissing": "这个文件夹中没有这个文件。",
+    "sourceTooLarge": "这个文件太大，无法在这里显示。",
+    "linkMissing": "此文件夹中没有这个名称的内容。",
+    "back": "返回"
   }
 }

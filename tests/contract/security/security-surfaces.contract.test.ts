@@ -34,6 +34,14 @@ describe('security surfaces', () => {
     expect(sinks.filter((path) => !covered(path))).toEqual([]);
   });
 
+  it('registers the library reader parts and the source read a citation press makes', () => {
+    const readPath = tracked.filter((path) =>
+      /^src\/views\/library\/ui\/parts\/(?:wiki|questions\/desk)\/[^/]+\.tsx?$/.test(path),
+    ).concat(['src/views/library/lib/sources/use-cited-passage.ts', 'src/shared/lib/library/source-passage.ts']);
+    expect(readPath.length).toBeGreaterThan(10);
+    expect(readPath.filter((path) => !covered(path))).toEqual([]);
+  });
+
   it('registers every Tauri command file as a surface', () => {
     const commands = tracked.filter(
       (path) => /^src-tauri\/src\/.+\.rs$/.test(path) && read(ROOT, path).includes('#[tauri::command]'),

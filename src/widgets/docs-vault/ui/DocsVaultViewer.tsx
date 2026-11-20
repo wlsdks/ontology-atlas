@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import Image from 'next/image';
 import ReactMarkdown, { type Components } from 'react-markdown';
@@ -14,7 +14,7 @@ import {
   type VaultDoc,
 } from '@/entities/docs-vault';
 import { useStaticVaultSource } from '@/entities/vault-session';
-import { IconButton, controlClass } from '@/shared/ui';
+import { IconButton, OntologyMapKindGlyph, controlClass } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { splitHighlightSegments } from '@/shared/lib/search-match/highlight-match';
 import { githubAnchorSlug } from '@/shared/lib/library/github-anchor-slug';
@@ -30,7 +30,7 @@ import {
   rewriteWikilinks,
 } from '@/shared/lib/library/source-citation';
 import { sourceCitationWords } from '@/features/library';
-import { resolveWikilinkTargetSlug } from '@/shared/lib/vault-document/parse-frontmatter';
+import { parseFrontmatter, resolveWikilinkTargetSlug } from '@/shared/lib/vault-document/parse-frontmatter';
 import { fetchServerDocContent } from '../lib/server-doc-content';
 import { resolveDocLink } from '../lib/resolve-doc-link';
 import { getTopologyProjectHref } from '@/entities/project';
@@ -76,7 +76,35 @@ interface Props {
   namedSourcePath?: string;
   /** Uses the smaller top inset when parent context already separates the body. */
   compactTop?: boolean;
-  onBodyPainted?: (body: string | null) => void;
+  /**
+   * Called once a body is painted, or with null when it failed. `citations` counts the citations
+   * the Library reader drew, per NFC path: one inside a comment or a code block is not drawn.
+   */
+  onBodyPainted?: (body: string | null, citations: ReadonlyMap<string, number>) => void;
+  /**
+   * Titles by NFC slug, from the listing the parent already holds. When given, an unlabelled
+   * wikilink says its target's title (a concept's with its kind glyph), a link to this page is
+   * plain text, and a link to nothing keeps its written path and says it is missing.
+   */
+  linkTargets?: ReadonlyMap<string, { title: string; kind: string | null }>;
+  /** Opens a concept somewhere else than `onNavigate`; only read with `linkTargets`. */
+  onConceptNavigate?: (slug: string) => void;
+  /**
+   * When given, a source citation's press hands its resolution and its button here instead of
+   * navigating, and a citation to a file the folder lacks is a press too. The path is still
+   * only the allow-listed one; a missing citation carries `path: null`.
+   */
+  onCitationPress?: (citation: ViewerCitation, button: HTMLButtonElement) => void;
+  /** Each paragraph, list item and heading carries the body line it starts on (`data-line`). */
+  markSourceLines?: boolean;
+}
+
+/** A pressed citation as `resolveSourceCitation` resolved it. */
+export interface ViewerCitation {
+  /** The allow-listed path, or null when the folder does not hold the file. */
+  path: string | null;
+  rawPath: string;
+  anchor?: string;
 }
 
 /**
@@ -88,7 +116,7 @@ export function DocsVaultViewer({
   vaultSlugs,
   onNavigate,
   basePath = '/docs',
-  getDocHref = (slug, hash) => buildDocsVaultHref({ slug, hash }),
+  getDocHref = defaultDocHref,
   // Map links point to /topology; a locale-less root redirect would drop the query.
   getProjectHref = getTopologyProjectHref,
   getDocContent,
@@ -102,6 +130,10 @@ export function DocsVaultViewer({
   namedSourcePath,
   compactTop = false,
   onBodyPainted,
+  linkTargets,
+  onConceptNavigate,
+  onCitationPress,
+  markSourceLines = false,
 }: Props) {
   const t = useTranslations('vaultWidgets.viewer');
   const libraryT = useTranslations('library');
@@ -152,7 +184,8 @@ export function DocsVaultViewer({
     fetcher
       .then((text) => {
         if (cancelled) return;
-        let cleaned = text.replace(FRONTMATTER_BLOCK, '');
+        /* The body as the question desk reads it (BOM and CRLF normalised), so a claim's line agrees. */
+        let cleaned = parseFrontmatter(text).body;
         /*
          * Wikilinks become standard links with a sentinel the `a` component catches. The sentinel
          * must not look like a URL scheme, or react-markdown's `defaultUrlTransform` empties the
@@ -170,9 +203,11 @@ export function DocsVaultViewer({
     };
   }, [bundledContent, doc.slug, getDocContent, setRaw]);
 
+  /* The citations the reader's tree step drew, per NFC path, filled while the body renders. */
+  const drawnCitations = useRef<ReadonlyMap<string, number>>(NO_CITATIONS);
   useLayoutEffect(() => {
-    if (raw !== null) onBodyPainted?.(raw);
-    else if (error !== null) onBodyPainted?.(null);
+    if (raw !== null) onBodyPainted?.(raw, drawnCitations.current);
+    else if (error !== null) onBodyPainted?.(null, NO_CITATIONS);
   }, [raw, error, onBodyPainted]);
 
   // Pure function taking the query as an argument so useMemo dependencies stay accurate.
@@ -209,36 +244,6 @@ export function DocsVaultViewer({
   }, [highlightQuery]);
 
 
-  /**
-   * The GitHub-rule heading id when it differs from this viewer's, rendered as a second empty
-   * anchor so links written for either surface work; scroll-spy keeps the id above.
-   */
-  const headingAliasOf = (children: React.ReactNode) => {
-    const canonical = slugFromChildren(children);
-    const alias = githubAnchorSlug(flattenText(children));
-    return alias && alias !== canonical ? alias : null;
-  };
-
-  const renderHeading = (
-    Tag: 'h2' | 'h3',
-    className: string,
-    highlightKey: string,
-    children: React.ReactNode,
-    rest: React.HTMLAttributes<HTMLHeadingElement>,
-  ) => {
-    // Heading ids must be idempotent across StrictMode double renders; duplicate headings share an id
-    // (the browser anchors to the first).
-    const slug = slugFromChildren(children);
-    const alias = headingAliasOf(children);
-    return (
-      <Tag id={slug} className={className} {...rest}>
-        {alias ? <span id={alias} aria-hidden /> : null}
-        {highlightChildren(children, highlightKey)}
-        <HeadingAnchor anchor={slug} docSlug={doc.slug} basePath={basePath} />
-      </Tag>
-    );
-  };
-
   /** NFC copy of the vault slugs, built once; raw `vaultSlugs` misses NFD Hangul slugs. */
   const normalizedVaultSlugs = useMemo(
     () => new Set([...vaultSlugs].map((slug) => slug.normalize('NFC'))),
@@ -255,7 +260,47 @@ export function DocsVaultViewer({
   /** Compared with a citation's decoded path, which `resolveSourceCitation` returns in NFC. */
   const namedSource = namedSourcePath?.normalize('NFC');
 
-  const components: Components = {
+  /*
+   * One renderer per set of inputs. `react-markdown` takes each entry as a component type, so a
+   * fresh object on every parent render remounted every link and citation in the body; the
+   * parent that keeps its inputs stable now keeps the body's nodes, and a press can anchor to one.
+   */
+  const components = useMemo<Components>(() => {
+    /**
+     * The GitHub-rule heading id when it differs from this viewer's, rendered as a second empty
+     * anchor so links written for either surface work; scroll-spy keeps the id above.
+     */
+    const headingAliasOf = (children: React.ReactNode) => {
+      const canonical = slugFromChildren(children);
+      const alias = githubAnchorSlug(flattenText(children));
+      return alias && alias !== canonical ? alias : null;
+    };
+
+    const renderHeading = (
+      Tag: 'h2' | 'h3',
+      className: string,
+      highlightKey: string,
+      children: React.ReactNode,
+      rest: React.HTMLAttributes<HTMLHeadingElement>,
+    ) => {
+      // Heading ids must be idempotent across StrictMode double renders; duplicate headings share an id
+      // (the browser anchors to the first).
+      const slug = slugFromChildren(children);
+      const alias = headingAliasOf(children);
+      return (
+        <Tag id={slug} className={className} data-line={lineOf(rest)} {...rest}>
+          {alias ? <span id={alias} aria-hidden /> : null}
+          {highlightChildren(children, highlightKey)}
+          <HeadingAnchor anchor={slug} docSlug={doc.slug} basePath={basePath} />
+        </Tag>
+      );
+    };
+
+    /** The body line a block starts on, only when the parent asked for it. */
+    const lineOf = (props: object): number | undefined =>
+      markSourceLines ? (props as { node?: { position?: { start?: { line?: number } } } }).node?.position?.start?.line : undefined;
+
+    return {
       a({ href, children, ...rest }) {
         if (!href) return <span {...rest}>{children}</span>;
         // The preprocessing sentinel, matched directly against vault slugs.
@@ -290,6 +335,34 @@ export function DocsVaultViewer({
               libraryT,
             );
             const shown = labelled ? children : words.text;
+            /*
+             * The press opens the passage beside the citation rather than leaving the page. The
+             * resolution above is unchanged: `path` is the allow-listed one or null, and nothing
+             * here reads the file.
+             */
+            if (onCitationPress && citation.status !== 'unavailable') {
+              const known = citation.status === 'known' && citation.path !== null;
+              const label = words.place
+                ? t('sourceCitationTitleAt', { path: citation.path ?? citation.rawPath, place: words.place })
+                : t('sourceCitationTitle', { path: citation.path ?? citation.rawPath });
+              return (
+                <button
+                  type="button"
+                  aria-label={label}
+                  aria-expanded={false}
+                  data-source-path={citation.path ?? undefined}
+                  data-source-anchor={citation.anchor}
+                  data-citation-state={known ? 'known' : 'missing'}
+                  onClick={(event) => onCitationPress(
+                    { path: known ? citation.path : null, rawPath: citation.rawPath, anchor: citation.anchor },
+                    event.currentTarget,
+                  )}
+                  className={known ? CITATION_CHIP_CLASS : `${CITATION_CHIP_CLASS} ${CITATION_CHIP_MISSING_CLASS}`}
+                >
+                  {shown}
+                </button>
+              );
+            }
             if (citation.status === 'known' && citation.path && onSourceNavigate) {
               return (
                 <button
@@ -347,6 +420,43 @@ export function DocsVaultViewer({
                 {children}
               </Link>
             );
+          }
+          if (linkTargets && wikiSlug) {
+            const target = linkTargets.get(wikiSlug);
+            if (target && normalizedVaultSlugs.has(wikiSlug)) {
+              if (wikiSlug === doc.slug.normalize('NFC')) return <span>{labelled ? children : target.title}</span>;
+              const concept = target.kind !== null && onConceptNavigate !== undefined;
+              return (
+                <Link
+                  href={getDocHref(wikiSlug, anchor)}
+                  data-link-target={wikiSlug}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (concept) {
+                      onConceptNavigate(wikiSlug);
+                      return;
+                    }
+                    onNavigate(wikiSlug);
+                    if (anchor && typeof window !== 'undefined') {
+                      requestAnimationFrame(() => {
+                        document
+                          .getElementById(anchor)
+                          ?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
+                      });
+                    }
+                  }}
+                  className="prose-link text-[color:var(--color-indigo-line-a90)] hover:decoration-[color:var(--color-indigo-accent)]"
+                >
+                  {target.kind ? (
+                    <OntologyMapKindGlyph kind={target.kind} size={ICON_SIZE.sm} className="mr-1 inline-block shrink-0 align-[-0.125em]" />
+                  ) : null}
+                  {labelled ? children : target.title}
+                </Link>
+              );
+            }
+            if (!target) {
+              return <MissingWikilink text={labelled ? children : typedSlug} description={libraryT('wikiReader.linkMissing')} />;
+            }
           }
           if (wikiSlug && normalizedVaultSlugs.has(wikiSlug)) {
             return (
@@ -472,6 +582,7 @@ export function DocsVaultViewer({
         return (
           <p
             className={`${PROSE_MEASURE} my-3 break-keep text-reading leading-prose text-[color:var(--color-text-secondary)]`}
+            data-line={lineOf(rest)}
             {...rest}
           >
             {highlightChildren(children, 'p')}
@@ -496,7 +607,7 @@ export function DocsVaultViewer({
       },
       li({ children, ...rest }) {
         return (
-          <li className="my-1" {...rest}>
+          <li className="my-1" data-line={lineOf(rest)} {...rest}>
             {highlightChildren(children, 'li')}
           </li>
         );
@@ -593,6 +704,27 @@ export function DocsVaultViewer({
         );
       },
     };
+  }, [
+    basePath, doc.slug, getDocHref, getProjectHref, highlightChildren, libraryT, linkTargets,
+    markSourceLines, namedSource, normalizedOriginalPaths, normalizedVaultSlugs, onCitationPress,
+    onConceptNavigate, onNavigate, onSourceNavigate, reducedMotion, repoBlobBase, resolveImage, t,
+    vaultRepoRoot, vaultSlugs,
+  ]);
+  /* Only the Library reader reshapes the tree; every other surface parses exactly as before. */
+  const remarkPlugins = useMemo(
+    () => (linkTargets
+      ? [remarkGfm, () => readerTree(namedSource, (counts) => { drawnCitations.current = counts; })]
+      : REMARK_PLUGINS),
+    [linkTargets, namedSource],
+  );
+  const rendered = useMemo(
+    () => (raw === null ? null : (
+      <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
+        {raw}
+      </ReactMarkdown>
+    )),
+    [components, raw, remarkPlugins],
+  );
 
   if (error) {
     return (
@@ -626,15 +758,151 @@ export function DocsVaultViewer({
           : "mx-auto max-w-[var(--measure-doc-column)] px-6 py-8 md:px-10 md:py-10"
       }
     >
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-        {raw}
-      </ReactMarkdown>
+      {rendered}
     </article>
   );
 }
 
-/** A leading frontmatter block, stripped so it is not rendered twice. */
-const FRONTMATTER_BLOCK = /^---[\s\S]*?\n---\n?/;
+/**
+ * A citation the Library opens in place: a chip after the sentence, quiet until pointed at. It
+ * stays inline so a long run of citations wraps with the text.
+ */
+const CITATION_CHIP_CLASS =
+  'mx-0.5 inline rounded-micro bg-[color:var(--color-indigo-line-a06)] px-1 py-px align-baseline text-label leading-label text-[color:var(--color-indigo-line-a90)] [box-decoration-break:clone] whitespace-normal transition-colors hover:bg-[color:var(--color-indigo-line-a22)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[color:var(--color-indigo-focus-ring)] aria-expanded:bg-[color:var(--color-indigo-line-a22)] aria-expanded:text-[color:var(--color-text-primary)]';
+const CITATION_CHIP_MISSING_CLASS =
+  'bg-transparent border-b border-dashed border-[color:var(--color-amber-source-a50)] rounded-none text-[color:var(--color-amber-source-text-a85)]';
+
+/**
+ * A wikilink whose target is not in the folder: the written path in danger ink, focusable, and
+ * described as missing to a pointer, the keyboard and a screen reader alike.
+ */
+function MissingWikilink({ text, description }: { text: React.ReactNode; description: string }) {
+  const descriptionId = useId();
+  /*
+   * The description is said once: by `aria-describedby` to a screen reader, and by the hint a
+   * pointer or the keyboard raises, which is hidden from assistive technology so it is not
+   * read twice.
+   */
+  return (
+    <span className="group/missing relative">
+      <span
+        tabIndex={0}
+        data-link-missing="true"
+        aria-describedby={descriptionId}
+        className="border-b border-dashed border-[color:var(--color-danger-a50)] text-[color:var(--color-danger-text)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[color:var(--color-indigo-focus-ring)]"
+      >
+        {text}
+      </span>
+      <span id={descriptionId} className="sr-only">
+        {description}
+      </span>
+      <span
+        aria-hidden
+        data-link-missing-hint="true"
+        className="pointer-events-none absolute bottom-full left-0 z-[var(--z-tooltip)] mb-1.5 w-max max-w-64 rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] px-2 py-1 text-label leading-label not-italic text-[color:var(--color-text-primary)] opacity-0 shadow-[var(--shadow-elevation-1)] transition-opacity group-hover/missing:opacity-100 group-focus-within/missing:opacity-100"
+      >
+        {description}
+      </span>
+    </span>
+  );
+}
+
+/** Module-level, so the default never changes identity between renders. */
+function defaultDocHref(slug: string, hash?: string): string {
+  return buildDocsVaultHref({ slug, hash });
+}
+
+const REMARK_PLUGINS = [remarkGfm];
+
+/** The slice of an mdast node the reader's tree step reads and writes. */
+interface ReaderNode {
+  type: string;
+  value?: string;
+  url?: string;
+  children?: ReaderNode[];
+  data?: { hName?: string; hProperties?: Record<string, unknown> };
+}
+
+const isBlank = (node: ReaderNode) => node.type === 'text' && (node.value ?? '').trim() === '';
+
+/**
+ * What a link node is to the reader: a citation (with its decoded path), a page or concept link,
+ * or neither. It only reads the destination the wikilink rewrite wrote; the `a` component still
+ * resolves and guards every link when it renders.
+ */
+function wikilinkKind(node: ReaderNode): { kind: 'citation'; path: string } | { kind: 'page' } | null {
+  if (node.type !== 'link' || !node.url) return null;
+  const rawSlug = parseWikilinkHref(node.url)?.rawSlug;
+  if (!rawSlug) return null;
+  const slug = decodeWikilinkSlug(rawSlug);
+  return slug.startsWith('src:') ? { kind: 'citation', path: slug.slice('src:'.length) } : { kind: 'page' };
+}
+
+const LINK_SEPARATOR_CLASS = 'text-[color:var(--color-text-tertiary)]';
+const CITATION_RUN_CLASS = 'block [&>:first-child]:ml-0';
+
+/**
+ * The Library reader's tree step, after the wikilink rewrite and before rendering; the file is
+ * never changed. Whitespace alone between two page or concept links becomes a " · " that belongs
+ * to neither, since links that say titles run together otherwise. Citations that end a paragraph
+ * or list item and name their file stand together on their own line under the sentence; a
+ * citation with words after it, and a page whose citations name no file, keep their places.
+ */
+function readerTree(namedSource: string | undefined, onCounted: (counts: ReadonlyMap<string, number>) => void) {
+  const counts = new Map<string, number>();
+  const namesFile = (node: ReaderNode) => {
+    const link = wikilinkKind(node);
+    return link?.kind === 'citation' && link.path.normalize('NFC') !== namedSource;
+  };
+  const separate = (children: ReaderNode[]) => {
+    for (let index = 1; index < children.length - 1; index += 1) {
+      if (!isBlank(children[index]!)) continue;
+      if (wikilinkKind(children[index - 1]!)?.kind !== 'page' || wikilinkKind(children[index + 1]!)?.kind !== 'page') continue;
+      children[index] = {
+        type: 'text',
+        value: ' · ',
+        data: { hName: 'span', hProperties: { className: [LINK_SEPARATOR_CLASS], dataLinkSeparator: '' } },
+      };
+    }
+  };
+  const lowerTrailingCitations = (paragraph: ReaderNode) => {
+    const children = paragraph.children ?? [];
+    let start = children.length;
+    let named = false;
+    for (let index = children.length - 1; index >= 0; index -= 1) {
+      const child = children[index]!;
+      if (isBlank(child)) continue;
+      if (wikilinkKind(child)?.kind !== 'citation') break;
+      named ||= namesFile(child);
+      start = index;
+    }
+    if (!named || !children.slice(0, start).some((child) => !isBlank(child))) return;
+    const run = children.splice(start);
+    children.push({
+      type: 'readerCitationRun',
+      children: run,
+      data: { hName: 'span', hProperties: { className: [CITATION_RUN_CLASS], dataCitationRun: '' } },
+    });
+  };
+  const visit = (node: ReaderNode) => {
+    const link = wikilinkKind(node);
+    if (link?.kind === 'citation') {
+      const path = link.path.normalize('NFC');
+      counts.set(path, (counts.get(path) ?? 0) + 1);
+    }
+    if (!node.children) return;
+    separate(node.children);
+    if (node.type === 'paragraph') lowerTrailingCitations(node);
+    for (const child of node.children) visit(child);
+  };
+  return (tree: ReaderNode) => {
+    counts.clear();
+    visit(tree);
+    onCounted(new Map(counts));
+  };
+}
+
+const NO_CITATIONS: ReadonlyMap<string, number> = new Map();
 
 const HEADING_CLASS = {
   h1: 'group relative mt-0 mb-6 text-display font-[var(--font-weight-strong)] leading-display text-[color:var(--color-text-primary)]',
