@@ -11,7 +11,7 @@ import {
 
 /**
  * Rewrites a referrer's frontmatter graph refs and body links after a rename, like MCP
- * `redirectBacklinks`; links resolve like `extractOutLinksWithContext`, not by substring.
+ * `redirectBacklinks`; links resolve like `extractOutLinkTargets`, not by substring.
  */
 
 const REF_ARRAY_KEYS = [
@@ -165,7 +165,7 @@ function relativeMdTarget(referrerSlug: string, toSlug: string): string {
   return [...Array<string>(ups).fill('..'), ...toParts.slice(common)].join('/') + '.md';
 }
 
-/** Resolve one markdown-link target the way `extractOutLinksWithContext` does. */
+/** Resolve one markdown-link target the way `extractOutLinkTargets` does. */
 function resolveMdTarget(target: string, referrerSlug: string): string {
   const rel = target.replace(/^\.\//, '');
   const fromDir = dirOf(referrerSlug);
@@ -297,7 +297,7 @@ export function planReferrerRewrite(raw: string, args: ReferrerRewriteArgs): Ref
   // A kind change in place moves no address; re-resolving would only respell links.
   if (oldSlug === newSlug) return plan(next);
 
-  /* Wikilinks resolve from the referrer, as in `extractOutLinksWithContext`, and are written back
+  /* Wikilinks resolve from the referrer, as in `extractOutLinkTargets`, and are written back
    * in its vault-relative form; the bare tail keeps its uniqueness guard. */
   next = next.replace(
     /(\[\[)([^\]|#]+)((?:[|#][^\]]*)?\]\])/g,

@@ -363,7 +363,7 @@ describe("DocsVaultViewer", () => {
 
 /**
  * A wikilink resolves here as everywhere else in the vault
- * (`extractOutLinksWithContext`, `validateWikiFolder`).
+ * (`extractOutLinkTargets`, `validateWikiFolder`).
  */
 describe("DocsVaultViewer — a wikilink resolves against the document that wrote it", () => {
   const wikiDoc: VaultDoc = { ...doc, slug: "wiki/handover", path: "wiki/handover.md" };

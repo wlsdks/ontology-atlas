@@ -404,7 +404,7 @@ export function DocsVaultViewer({
             );
           }
           /*
-           * Resolve against the linking document, as `extractOutLinksWithContext`
+           * Resolve against the linking document, as `extractOutLinkTargets`
            * and `validateWikiFolder` do, so `[[budget]]` in `wiki/handover.md` means `wiki/budget`.
            */
           // A `project:` prefix routes to the public topology route, e.g. [[project:reactor]].
