@@ -10,7 +10,7 @@ publish = false
 # SQLite is compiled from the bundled amalgamation (public domain) so FTS5 and WAL do not depend on
 # the operating system's SQLite build.
 rusqlite = { version = "=0.43.0", default-features = false, features = ["bundled", "cache"] }
-sha2 = "=0.10.9"
+sha2 = { version = "0.11.1", default-features = false }
 # Row values are DEFLATE-compressed: the JSON a build derives is as large as the vault's text. The
 # app already links this exact version (png, through tray-icon and the updater), so it adds no crate.
 miniz_oxide = "=0.8.9"

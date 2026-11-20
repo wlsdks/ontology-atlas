@@ -1,8 +1,9 @@
 use super::RECORD_LIMIT;
+use crate::lower_hex::lower_hex;
 use sha2::{Digest, Sha256};
 
 pub(super) fn digest_hex(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    lower_hex(&Sha256::digest(bytes))
 }
 
 pub(super) fn validate_digest(value: &str) -> Result<&str, String> {

@@ -1,4 +1,5 @@
 use crate::git;
+use crate::lower_hex::lower_hex;
 use crate::vault::scope::{canonical_root, canonical_source_root, normalize_relative_path};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -42,6 +43,20 @@ struct SourceInventory {
     truncated: bool,
 }
 
+/// `std::io::copy` needs a writer; digest 0.11 hashers no longer implement `io::Write`.
+struct HashingWriter<'a>(&'a mut Sha256);
+
+impl std::io::Write for HashingWriter<'_> {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.0.update(bytes);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
 // Byte-for-byte aligned with mcp/src/project-source/project-source-inspection.mjs so a fresh MCP
 // process reproduces the receipt; tests/contract/vault-format/source-inventory-bound.contract.test.ts
 // fails on drift.
@@ -67,7 +82,7 @@ pub(crate) fn source_digest(parts: &[&[u8]]) -> String {
         hasher.update(part);
         hasher.update([0]);
     }
-    format!("sha256:{:x}", hasher.finalize())
+    format!("sha256:{}", lower_hex(&hasher.finalize()))
 }
 
 fn hash_source_file(
@@ -119,8 +134,8 @@ fn hash_source_file(
     }
     let file = fs::File::open(path).map_err(|err| err.to_string())?;
     let mut limited = Read::take(file, remaining);
-    let copied =
-        std::io::copy(&mut limited, &mut inventory.hasher).map_err(|err| err.to_string())?;
+    let copied = std::io::copy(&mut limited, &mut HashingWriter(&mut inventory.hasher))
+        .map_err(|err| err.to_string())?;
     inventory.hashed_bytes += copied;
     if copied < metadata.len() {
         inventory.truncated = true;
@@ -197,7 +212,7 @@ fn inspect_source_inventory(
     inventory.hasher.update(SOURCE_INVENTORY_VERSION.as_bytes());
     inventory.hasher.update([0]);
     walk_source_inventory(root, "", 0, &mut inventory, excluded)?;
-    let fingerprint = format!("sha256:{:x}", inventory.hasher.finalize());
+    let fingerprint = format!("sha256:{}", lower_hex(&inventory.hasher.finalize()));
     Ok((fingerprint, inventory.truncated, inventory.files))
 }
 
@@ -288,7 +303,7 @@ fn inspect_git_source_inventory(
         inventory.hasher.update(relative.as_bytes());
         inventory.hasher.update([0]);
     }
-    let fingerprint = format!("sha256:{:x}", inventory.hasher.finalize());
+    let fingerprint = format!("sha256:{}", lower_hex(&inventory.hasher.finalize()));
     Ok((fingerprint, inventory.truncated, inventory.files))
 }
 
@@ -475,7 +490,7 @@ fn git_continuity_observation(
         inventory.hasher.update([0]);
     }
     Ok((
-        format!("sha256:{:x}", inventory.hasher.finalize()),
+        format!("sha256:{}", lower_hex(&inventory.hasher.finalize())),
         inventory.truncated,
         inventory.files,
     ))
