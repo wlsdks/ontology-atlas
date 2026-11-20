@@ -1,4 +1,6 @@
-use super::super::download::{part_path, OPEN_RUN};
+use super::super::download::part_path;
+#[cfg(unix)]
+use super::super::download::OPEN_RUN;
 use super::super::pins::{self, PinnedFile};
 use super::fake::*;
 use super::tiny::{self, Tiny};

@@ -252,14 +252,16 @@ fn a_child_that_sits_idle_exits_and_is_collected() {
         assert!(started.elapsed() < Duration::from_secs(10), "never exited");
         std::thread::sleep(Duration::from_millis(10));
     }
-    let collected = Instant::now();
     #[cfg(unix)]
-    while exists(pid) {
-        assert!(
-            collected.elapsed() < Duration::from_secs(5),
-            "not collected"
-        );
-        std::thread::sleep(Duration::from_millis(10));
+    {
+        let collected = Instant::now();
+        while exists(pid) {
+            assert!(
+                collected.elapsed() < Duration::from_secs(5),
+                "not collected"
+            );
+            std::thread::sleep(Duration::from_millis(10));
+        }
     }
     Embedder::embed_query(&model, &vault, "검색").unwrap();
     assert_ne!(model.worker_id(), Some(pid));
