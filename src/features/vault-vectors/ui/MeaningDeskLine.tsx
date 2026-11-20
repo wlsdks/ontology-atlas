@@ -64,7 +64,7 @@ function ProgressRing({ fraction, label, measure, track }: { fraction: number; l
           strokeDasharray="1 1"
           style={{ strokeDashoffset: 1 - fraction }}
           data-testid="meaning-desk-ring-arc"
-          className="transition-[stroke-dashoffset] duration-[var(--motion-slow)] ease-linear motion-reduce:transition-none"
+          className="transition-[stroke-dashoffset] duration-[var(--motion-slow)] ease-[var(--motion-ease)] motion-reduce:transition-none"
           transform={`rotate(-90 ${RING_PX / 2} ${RING_PX / 2})`}
         />
       </svg>
