@@ -38,10 +38,8 @@ test('Jev preview keeps the exact claim and long original passage reachable befo
   await page.getByTestId('question-desk-input').fill('When does refund approval restore stock?');
   await page.getByTestId('question-desk-search').click();
   await expect(page.getByTestId('question-desk-results')).toBeVisible();
-  await expect(page.getByTestId('question-desk-evidence-toggle')).toHaveAttribute('aria-expanded', 'false');
-  await page.getByTestId('question-desk-evidence-toggle').click();
-  await expect(page.getByTestId('question-desk-evidence-toggle')).toHaveAttribute('aria-expanded', 'true');
-  await page.getByText('Check claim with Jev').click();
+  await page.getByTestId('question-desk-lead').first().hover();
+  await page.getByRole('button', { name: 'Check claim with Jev' }).click();
   const panel = page.getByTestId('question-desk-jev-consent');
   await expect(panel).toBeVisible();
   const payload = await page.getByTestId('question-desk-jev-payload').textContent();

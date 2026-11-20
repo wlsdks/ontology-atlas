@@ -38,25 +38,33 @@ retain the added, duplicate and failed counts. Reduced motion keeps the same
 states readable without spinning, and results from an earlier folder or attempt
 cannot animate the current control.
 
-**Question desk (2026-09-27).** With nothing selected in Wiki, the reader pane
-asks a question and searches locally only after a press. The complete inquiry group
-centers horizontally and vertically inside the reader pane, including its original-file
-rows; safe auto margins collapse when content exceeds the viewport. Short positive and no-match
-results retain that balance. Expanding long evidence collapses vertical auto margins;
-reports read from the top.
-Position-only motion connects those states without scaling text. It separates matching
-Wiki fact and decision sentences from original source units, with exact anchors;
-a compact summary opens read coverage, skipped files and hidden match counts.
+**Question desk (2026-09-27, recomposed 2026-11-20).** With nothing selected in Wiki, the reader pane
+asks a question and searches locally only after a press. One document-width column
+is top aligned: the title line, the field, the folder's search scope, then the
+person's own trail or the results. The field keeps the same place before a question,
+with results, after Show more and under a report. Before a question the desk lists up
+to three saved questions (newest first, a state badge only when cited sources changed
+or are missing) and up to five wiki pages by the day the folder lists for them, with
+how many sources each cites; a folder with neither shows its first three originals.
+Results are one list, best first: wiki claims and source passages fused by reciprocal
+rank (`lead-fusion.ts`). The best three show; Show N more appends the rest and moves
+focus to the first new row. A row is the sentence, question terms in a stronger weight,
+then where it lives: the page title or file name and its line, a badge only when a
+cited source changed, is missing or nothing is cited, and up to two cited files that
+open the source at the line. The head counts the passages found; an info glyph opens
+read coverage, limits and the freshness caveat once in a popover. Asking again keeps
+the old rows until the new ones arrive and swaps them in place.
 A matching hash
 means the cited source bytes agree with the page's receipt; it does not verify
-the sentence. Results from an older folder listing disappear until searched
-again. The source units are cached only in memory for the current folder and
+the sentence. Results from an older folder listing stay under a line saying the
+folder changed, and the report action waits for a new search. The source units are cached only in memory for the current folder and
 inventoried file version. An ACP Ask passes these as untrusted leads and asks
 the agent to re-read originals and cite its answer; that turn disables automatic
 Wiki approval, while the existing permission path still governs unexpected
 writes. Jev remains optional in the installed app: a current cited claim opens
 an exact-transfer consent dialog, and its result is advice on that pair only.
-Neither a key nor an agent is needed to search or open the originals. The existing
+Neither a key nor an agent is needed to search or open the originals; on the web
+there is no Jev press and no report action. The existing
 Conversation control remains available on the inquiry and report surfaces, so a
 person can choose a runtime or return to the transcript before starting another
 report request. Saved questions retain their direct entry there too. Opening a
@@ -68,8 +76,9 @@ report reply into an ordinary fileable answer.
 
 **Report and document (2026-09-27).** One explicit ACP action turns the current
 question into a report request: answer, cited originals, disagreements or
-changed claims, and unknowns. The screen leads with the answer and separates
-those sections before expandable evidence leads, with an unreviewed draft label.
+changed claims, and unknowns. The report stands under the field and above the
+leads, which keep their place under the head "Passages the search found", with an
+unreviewed draft label.
 Zero local word matches do not assert that a differently worded original lacks
 the answer; ACP can re-read the folder on request. Only citations to inventoried originals open
 inside Library. The draft follows the current query and file listing; a new
@@ -79,11 +88,10 @@ response, cited addresses, search coverage and omissions in a local Markdown
 download or the app's Print/Save as PDF flow. Jev judgment is not exported as
 accepted meaning. External links and images stay inert in Markdown exports;
 unusual syntax that cannot be safely rewritten is preserved as a literal text
-document. Before searching, the desk shows inventoried originals that can be
-opened directly without an agent or an invented citation. A failed agent action
-stays visible beside the question with a path back to the conversation. Search
-completion, report arrival and evidence expansion use
-brief, interruptible motion; reduced-motion settings preserve every fact.
+document. A failed agent action stays visible beside the question with a path
+back to the conversation. The entry material leaving and the results rising are
+one motion, appended rows rise in order, and an interrupted motion continues from
+the value last drawn; reduced-motion settings show the end state.
 
 **Retained questions and explicit revisions.** The Library landing lists saved
 questions and the tips of their answer histories. It distinguishes source-byte
