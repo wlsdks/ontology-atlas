@@ -86,7 +86,64 @@ test.describe("Library live work activity", () => {
     await expect(page.getByRole("button", { name: "File changed · wiki/architecture", exact: true })).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("library-reader-back")).toBeVisible();
+    // A wiki page open: still one Conversation control and one Questions control, both in the header.
+    await expect(page.getByTestId("library-open-conversation")).toHaveCount(1);
+    await expect(page.getByTestId("library-questions-open")).toHaveCount(1);
     expect(consoleErrors, consoleErrors.join("\n")).toEqual([]);
+  });
+
+  /*
+   * The band's work line holds its slot from the first paint, so the first event moves neither the
+   * band nor the picture; and every Library state carries exactly one Conversation control and one
+   * Questions control, in the page header.
+   */
+  test("the first event moves nothing, and each state has one Conversation and one Questions control", async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 901 });
+    const harness = await openLibraryWorkScenario(page);
+    await page.getByRole("button", { name: "Close conversation" }).click();
+    await page.getByTestId("library-workspace-sources").click();
+    const band = page.getByTestId("library-progress");
+    await expect(band.getByTestId("library-work-line")).toBeVisible();
+    await expect(band.getByTestId("library-work-current")).toHaveCount(0);
+    const geometry = () =>
+      page.evaluate(() => ({
+        band: document.querySelector('[data-testid="library-progress"]')!.getBoundingClientRect().height,
+        picture: document.querySelector('[data-testid="library-graph-canvas"]')!.getBoundingClientRect().top,
+      }));
+    // The closing dock widens the pane over its exit; measure once two frames apart agree.
+    let before = await geometry();
+    await expect
+      .poll(async () => {
+        await waitFrames(page, 2);
+        const now = await geometry();
+        const same = now.band === before.band && now.picture === before.picture;
+        before = now;
+        return same;
+      })
+      .toBe(true);
+    await harness.read(page);
+    await expect(band.getByTestId("library-work-current")).toHaveAttribute("data-work-kind", "read");
+    expect(await geometry()).toEqual(before);
+    // The line is the kind of work and the file as a press; "Recent N" waits until there is a recent one.
+    await expect(band.getByTestId("library-work-target")).toContainText("architecture.docx");
+    await expect(band.getByText(/^Recent 0$/)).toHaveCount(0);
+    await expect(page.getByText(/^(happening now|latest observation)$/i)).toHaveCount(0);
+    await expect(page.getByTestId("library-reader-landing").locator("svg.lucide-chevron-down")).toHaveCount(0);
+
+    const oneEach = async (where: string) => {
+      await expect(page.getByTestId("library-open-conversation"), where).toHaveCount(1);
+      await expect(page.getByTestId("library-questions-open"), where).toHaveCount(1);
+    };
+    await oneEach("Sources home");
+    await band.getByTestId("library-work-target").click();
+    await expect(page.getByTestId("library-reader-back")).toBeVisible();
+    await oneEach("a source open");
+    // The reader's top row carries the work line at its right.
+    await expect(page.getByTestId("library-work-current")).toHaveCount(1);
+    await page.getByTestId("library-reader-back").click();
+    await page.getByTestId("library-workspace-wiki").click();
+    await expect(page.getByTestId("library-question-desk")).toBeVisible();
+    await oneEach("the question desk");
   });
 
   test("rejected unknown target never becomes a saved-file receipt", async ({ page }) => {

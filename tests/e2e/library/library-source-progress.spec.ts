@@ -6,9 +6,9 @@ import { seedFirstRunSeen } from "../first-run-seed";
 import { stubDirectoryPicker } from "../vault-picker-stub";
 
 /**
- * The Sources home's progress band and the state line's filters, drawn from a real folder: 37
- * sources, 10 with a wiki page dated on three days, 27 waiting; four of the waiting ones and two of
- * the written ones carry Hangul names, so a Hangul search narrows a filtered list.
+ * The Sources home's progress band and its state presses, drawn from a real folder: 37 sources, 10
+ * with a wiki page dated on three days, 27 waiting; four of the waiting ones and two of the written
+ * ones carry Hangul names, so a Hangul search narrows a filtered list.
  */
 
 const TOTAL = 37;
@@ -20,6 +20,43 @@ function localDate(daysAgo: number): string {
   const day = new Date(Date.now() - daysAgo * 86_400_000);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`;
+}
+
+function oneSourceVault(): Record<string, string> {
+  const path = "sources/refund-policy-2026.md";
+  const body = "# Refund policy\n\nRefunds close after 30 days.\n";
+  return {
+    "project.md": "---\nkind: project\nslug: one-demo\ntitle: One demo\n---\n\n# One demo\n",
+    [path]: body,
+    "wiki/refund-policy.md": [
+      "---",
+      "title: Refund policy, 2026",
+      "created_by: agent:claude",
+      `compiled_at: ${localDate(0)}`,
+      "sources:",
+      `  - ${path}`,
+      "source_hash:",
+      `  ${path}: ${createHash("sha256").update(body).digest("hex")}`,
+      "status: draft",
+      "summary: Refunds close after 30 days.",
+      "---",
+      "",
+      "## Summary",
+      "",
+      "Refunds close after 30 days.",
+      "",
+      "## Facts",
+      "",
+      `- Thirty days. [[src:${path}#p1]]`,
+      "",
+      "## Decisions",
+      "",
+      "## Open questions",
+      "",
+      "## Not in sources",
+      "",
+    ].join("\n"),
+  };
 }
 
 function buildVault(): Record<string, string> {
@@ -67,12 +104,12 @@ function buildVault(): Record<string, string> {
   return files;
 }
 
-async function openSources(page: Page) {
+async function openSources(page: Page, { vault = buildVault(), locale = "en" }: { vault?: Record<string, string>; locale?: string } = {}) {
   // Tall enough that the windowed list draws every row, so a count of rows is a count of the list.
   await page.setViewportSize({ width: 1440, height: 2000 });
   await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, buildVault());
-  await page.goto("/en/library/?tab=sources");
+  await stubDirectoryPicker(page, vault);
+  await page.goto(`/${locale}/library/?tab=sources`);
   await page.waitForLoadState("networkidle");
   const picker = page.getByTestId("library-open-vault");
   await picker.waitFor({ timeout: 25_000 });
@@ -85,34 +122,75 @@ async function openSources(page: Page) {
 const rows = (page: Page) => page.getByTestId("library-source-list").locator("li > button[data-row-index]");
 
 test.describe("source progress on the Sources home", () => {
-  test("the state line filters the list, and Show all restores it, with Hangul search text too", async ({ page }) => {
+  test("a state press filters the list and lights the picture; Show all and Escape clear both", async ({ page }) => {
     await openSources(page);
     await expect(rows(page)).toHaveCount(TOTAL);
+    const band = page.getByTestId("library-progress");
+    const canvas = page.getByTestId("library-graph-canvas");
+    const lit = async () => {
+      const ids = (await canvas.getAttribute("data-highlight")) ?? "";
+      return ids === "" ? [] : ids.split(" ");
+    };
+
+    // The presses live in the band, in bar order; the column draws no state line of its own.
+    await expect(band.getByTestId("library-source-states")).toBeVisible();
+    await expect(page.getByTestId("library-index").getByTestId("library-source-states")).toHaveCount(0);
+    const order = await band.locator("[data-testid^='library-source-states-'][aria-pressed]").evaluateAll((presses) =>
+      presses.map((press) => press.getAttribute("data-testid")),
+    );
+    expect(order).toEqual(["library-source-states-compiled", "library-source-states-not-compiled"]);
 
     const waiting = page.getByTestId("library-source-states-not-compiled");
-    // The majority state folds into a badge, so its count reads "no wiki page · 27".
-    await expect(waiting).toHaveText(new RegExp(`^no wiki page\\D+${TOTAL - COMPILED}$`));
+    await expect(waiting).toHaveText(new RegExp(`^no wiki page\\D*${TOTAL - COMPILED}$`));
     await waiting.click();
     await expect(waiting).toHaveAttribute("aria-pressed", "true");
     await expect(rows(page)).toHaveCount(TOTAL - COMPILED);
     await expect(page.getByTestId("library-source-state-compiled")).toHaveCount(0);
+    // The same press lights that state's marks in the picture: every waiting source, nothing else.
+    await expect.poll(async () => (await lit()).length).toBe(TOTAL - COMPILED);
+    expect((await lit()).every((id) => id.startsWith("source:"))).toBe(true);
 
     const all = page.getByTestId("library-source-states-all");
     await expect(all).toHaveText(`Show all ${TOTAL}`);
     await all.click();
     await expect(rows(page)).toHaveCount(TOTAL);
     await expect(waiting).toHaveAttribute("aria-pressed", "false");
+    await expect(all).toHaveCount(0);
+    expect(await lit()).toEqual([]);
 
-    // The filter narrows what the search left; the counts are the search's.
+    // Escape clears both too.
+    await waiting.click();
+    await expect(rows(page)).toHaveCount(TOTAL - COMPILED);
+    await page.keyboard.press("Escape");
+    await expect(rows(page)).toHaveCount(TOTAL);
+    await expect(waiting).toHaveAttribute("aria-pressed", "false");
+    expect(await lit()).toEqual([]);
+
+    // A compiled press lights the pages that cite those sources as well.
+    await page.getByTestId("library-source-states-compiled").click();
+    await expect(rows(page)).toHaveCount(COMPILED);
+    await expect.poll(async () => (await lit()).filter((id) => id.startsWith("page:")).length).toBe(COMPILED);
+    await page.keyboard.press("Escape");
+
+    // The filter narrows what the search left; the counts are the folder's, and so is Show all.
     await page.getByTestId("library-search").fill("회의록");
     await expect(page.getByTestId("library-source-list")).not.toHaveAttribute("data-phase", "reading");
     await expect(rows(page)).toHaveCount(HANGUL_WAITING + HANGUL_COMPILED);
-    await expect(waiting).toHaveText(`no wiki page ${HANGUL_WAITING}`);
     await waiting.click();
     await expect(rows(page)).toHaveCount(HANGUL_WAITING);
-    await expect(all).toHaveText(`Show all ${HANGUL_WAITING + HANGUL_COMPILED}`);
+    await expect(all).toHaveText(`Show all ${TOTAL}`);
     await all.click();
     await expect(rows(page)).toHaveCount(HANGUL_WAITING + HANGUL_COMPILED);
+  });
+
+  test("a press while the column is folded unfolds it to show the filtered list", async ({ page }) => {
+    await openSources(page);
+    await page.getByTestId("library-index-collapse").click();
+    await expect(page.getByTestId("library-index")).toBeHidden();
+    await expect(page.getByTestId("library-index-tab")).toBeVisible();
+    await page.getByTestId("library-source-states-not-compiled").click();
+    await expect(page.getByTestId("library-index")).toBeVisible();
+    await expect(rows(page)).toHaveCount(TOTAL - COMPILED);
   });
 
   test("the band counts what has a page and, on the web, offers the app instead of Continue", async ({ page }) => {
@@ -131,7 +209,7 @@ test.describe("source progress on the Sources home", () => {
     // The chart names its two ends.
     await expect(band.getByTestId("library-progress-first-date")).not.toBeEmpty();
     await expect(band.getByTestId("library-progress-caption")).toContainText("Today");
-    // Each state in the line wears its colour in the bar.
+    // Each state's press wears its colour in the bar.
     const swatch = (state: string) => page.getByTestId(`library-source-states-swatch-${state}`).evaluate((node) => getComputedStyle(node).backgroundColor);
     const segment = (index: number) => band.getByTestId("library-progress-bar").locator("span.motion-progress-segment").nth(index).evaluate((node) => getComputedStyle(node).backgroundColor);
     expect(await swatch("compiled")).toBe(await segment(0));
@@ -143,4 +221,48 @@ test.describe("source progress on the Sources home", () => {
     // The press replaced the home strip's clause.
     await expect(page.getByTestId("library-strip-compile")).toHaveCount(0);
   });
+
+  for (const locale of ["en", "ko"]) {
+    /*
+     * The home is exactly the band, the picture and its key, at every desktop width: the band stays
+     * within 112px, the picture takes most of the pane, the key is one line, and nothing overflows.
+     */
+    test(`one source reads 1 / 1 with no chart, and the home is band, picture and key (${locale})`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await openSources(page, { vault: oneSourceVault(), locale });
+      const band = page.getByTestId("library-progress");
+      await expect(band.getByTestId("library-progress-percent")).toHaveText("1 / 1");
+      await expect(band.getByTestId("library-progress-chart")).toHaveCount(0);
+      for (const width of [1040, 1280, 1512, 1920]) {
+        await page.setViewportSize({ width, height: 901 });
+        await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+        const geometry = await page.evaluate(() => {
+          const box = (id: string) => document.querySelector(`[data-testid="${id}"]`)?.getBoundingClientRect() ?? null;
+          const overflow = [...document.querySelectorAll('[data-testid="library-progress"] *, [data-testid="library-graph-key"] *, [data-testid="library-doors"] *')]
+            .filter((node) => (node as HTMLElement).offsetWidth > 0)
+            .filter((node) => !node.closest('.sr-only, [data-testid="library-progress-bar"]'))
+            .filter((node) => node.scrollWidth > node.clientWidth + 0.5)
+            .map((node) => node.getAttribute("data-testid") ?? node.tagName);
+          return {
+            band: box("library-progress")!.height,
+            canvas: box("library-graph-canvas")!.height,
+            pane: box("library-reader-landing")!.height,
+            key: box("library-graph-key")!.height,
+            overflow,
+          };
+        });
+        expect(geometry.band, `band at ${width}`).toBeLessThanOrEqual(112);
+        expect(geometry.canvas / geometry.pane, `picture share at ${width}`).toBeGreaterThanOrEqual(0.75);
+        expect(geometry.key, `key lines at ${width}`).toBeLessThanOrEqual(24.5);
+        expect(geometry.overflow, `overflow at ${width}`).toEqual([]);
+        // No work lane above the pane and no doors row inside it: the doors are in the page header.
+        await expect(page.getByTestId("library-work-lane")).toHaveCount(0);
+        await expect(page.getByTestId("library-home-strip")).toHaveCount(0);
+        await expect(page.getByTestId("library-doors")).toBeVisible();
+        await expect(page.getByTestId("library-questions-open")).toHaveCount(1);
+        // No chevron disclosure anywhere on the Sources home.
+        await expect(page.getByTestId("library-reader-landing").locator("svg.lucide-chevron-down, svg.lucide-chevron-right")).toHaveCount(0);
+      }
+    });
+  }
 });

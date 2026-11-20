@@ -6,7 +6,7 @@ import { digest, wiki } from './library-question-desk-harness';
 
 const refund = '# Refund handling\nRefund approval queues a stock restoration job.\nThe job may complete in the next inventory batch.\n';
 const inventory = '# Inventory state\nRefund approval does not immediately restore inventory.\nA separate stock restoration job updates quantity after it runs.\n';
-test('a long retained question stays inside the inquiry at 200 percent text on a narrow screen', async ({ page }) => {
+test('a long retained question is the header door, and stays inside the More list at 200 percent text on a narrow screen', async ({ page }) => {
   const title = 'Which original explains refund approval, inventory restoration timing, exceptions, and the next batch conditions?';
   await installLibraryWorkHarness(page, { files: {
     'project.md': '---\nuid: 00000000-0000-4000-8000-000000000001\nkind: project\ntitle: Refunds\nslug: refunds\n---\n',
@@ -18,14 +18,20 @@ test('a long retained question stays inside the inquiry at 200 percent text on a
   await page.getByRole('button', { name: /^Open (?:a|my) folder/ }).first().click();
   await expect(page.getByRole('heading', { name: 'Map', exact: true })).toBeVisible();
   await page.goto('/en/library/?tab=wiki&guides=off');
-  const question = page.getByTestId('library-questions-open');
-  await expect(question).toContainText(title);
+  // The sole kept answer names itself in the page header, and the desk carries no second door to it.
+  const door = page.getByTestId('library-questions-open');
+  await expect(door).toContainText(title);
+  await expect(door).toHaveCount(1);
+  await expect(page.getByTestId('library-question-desk').getByTestId('library-questions-open')).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
+  // Below `lg` the doors fold into More, and the long title stays inside the screen there.
+  await page.getByTestId('library-home-overflow').click();
+  const question = page.getByTestId('library-questions-open-overflow');
+  await expect(question).toContainText(title);
   await expect.poll(() => question.evaluate((element) => {
     const button = element.getBoundingClientRect();
-    const pane = element.closest('[data-question-desk-container]')!.getBoundingClientRect();
-    return Math.max(pane.left - button.left, button.right - pane.right);
+    return Math.max(-button.left, button.right - window.innerWidth);
   })).toBeLessThanOrEqual(1);
   await question.click();
   await expect(page.getByTestId('retained-answer-context')).toBeVisible();
