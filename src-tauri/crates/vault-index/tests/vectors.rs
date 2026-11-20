@@ -643,7 +643,11 @@ fn a_stopped_build_resumes_wiki_first_without_asking_twice() {
     assert!(vectors::completed(&vault.root, &model()).unwrap());
 
     // A later edit stopped half way leaves the store finished once: the next pass is an update.
-    write(&vault, "wiki/added.md", &long("A page written after the store was finished."));
+    write(
+        &vault,
+        "wiki/added.md",
+        &long("A page written after the store was finished."),
+    );
     let progress = PrepareProgress::default();
     progress.request_stop();
     let stopped = vectors::prepare(plan(&vault), &progress, |texts: &[&str]| {
