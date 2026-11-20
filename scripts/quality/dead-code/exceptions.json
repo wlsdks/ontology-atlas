@@ -98,24 +98,6 @@
       "witness": "retainedAnswerHeads"
     },
     {
-      "key": "frontend:runtime:exports:src/features/vault-vectors/index.ts:useVectorRun",
-      "reason": "Search by meaning's running job for the long-work seat (a card on other screens, a ring on the rail), which the spec assigns to a later slice; it has no screen consumer until that slice lands.",
-      "consumer": "docs/specs/2026-11-19-search-by-meaning.md",
-      "witness": "useVectorRun"
-    },
-    {
-      "key": "frontend:runtime:exports:src/features/vault-vectors/model/use-vector-run.ts:useVectorRun",
-      "reason": "The module the feature's public index re-exports for the long-work seat; it has no screen consumer until that slice lands.",
-      "consumer": "docs/specs/2026-11-19-search-by-meaning.md",
-      "witness": "useVectorRun"
-    },
-    {
-      "key": "frontend:runtime:types:src/features/vault-vectors/index.ts:VectorRun",
-      "reason": "The shape `useVectorRun` returns, exported with it for the long-work seat; it has no consumer until that slice lands.",
-      "consumer": "docs/specs/2026-11-19-search-by-meaning.md",
-      "witness": "VectorRun"
-    },
-    {
       "key": "frontend:runtime:exports:src/shared/lib/vault-folder/sample-source.ts:resetSampleSourceCacheForTests",
       "reason": "Tests clear the module-level sample cache between cases; test files are not runtime entries, so the lane cannot see this consumer.",
       "consumer": "src/features/first-run-starter/ui/FirstRunStarterModule.test.tsx",
