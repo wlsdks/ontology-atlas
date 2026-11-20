@@ -123,7 +123,7 @@
       "write": "ファイルを変更",
       "error": "失敗"
     },
-    "recentCount": "最近 {count, number}"
+    "recentCount": "最近{count, number}"
   },
   "eyebrow": "このフォルダ",
   "lede": "形式を問わず集めた文書と、それを読んで書いたWikiページです。ソースは受け取ったままの状態で保持され、Wikiページの主張はどれもソースを引用します。",
@@ -453,11 +453,11 @@
       "flowInlineStale": "引用は、各ソースからこのページへ流れます。琥珀色の点は、ソースが変わったため確認し直す必要がある引用です。"
     },
     "key": {
-      "source": "ソース {count, number}",
-      "page": "Wikiページ {count, number}",
-      "concept": "概念 {count, number}",
-      "cite": "引用 {count, number}",
-      "mention": "言及 {count, number}",
+      "source": "ソース{count, number}",
+      "page": "Wikiページ{count, number}",
+      "concept": "概念{count, number}",
+      "cite": "引用{count, number}",
+      "mention": "言及{count, number}",
       "island": "島ひとつが概念ひとつ",
       "stale": "書いた後に変更",
       "gestures": "押すとカード · 2回押すと開く · スクロールで拡大"
