@@ -19,7 +19,7 @@ import {
   type TreeInputEdge,
   type TreeInputNode,
 } from "../model/containment-tree";
-import { layoutFlatGraph } from "./layout";
+import { layoutFlatGraph, runForceAtlas2, steppedForceAtlas2 } from "./layout";
 import { separate, type Body } from "./separate";
 import { resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame } from "./types";
@@ -126,6 +126,23 @@ describe("layoutFlatGraph", () => {
     assign.mockRestore();
     expect(runs).toBeGreaterThan(0);
     expect(grown.positions.has(`capabilities/cap-${Math.round(1500 * 0.25)}`)).toBe(true);
+  });
+});
+
+describe("steppedForceAtlas2", () => {
+  it("lands every body where one synchronous ForceAtlas2 run puts it, one step per iteration", () => {
+    const bodies = crowd(120, 3);
+    const springs = bodies.slice(1).map((b, k) => ({ a: bodies[k % 9]!.id, b: b.id, weight: 1 + (k % 3) }));
+    const once = runForceAtlas2(bodies, springs, 40);
+    const steps = steppedForceAtlas2(bodies, springs, 40);
+    let taken = 0;
+    for (let step = steps.next(); ; step = steps.next(), taken += 1) {
+      if (step.done) {
+        expect(step.value).toEqual(once);
+        break;
+      }
+    }
+    expect(taken).toBe(40);
   });
 });
 

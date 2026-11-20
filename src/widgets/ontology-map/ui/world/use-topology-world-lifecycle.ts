@@ -28,7 +28,8 @@ import {
 } from "../camera/topology-overview-fit";
 import type { NodeDragState } from "../input/topology-pointer-types";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
-import { buildTopologyWorld, dialOverviewFit, recomputeWorldGeometry, type TopologyWorld } from "./topology-world";
+import { buildTopologyWorldSteps, dialOverviewFit, recomputeWorldGeometry, type TopologyWorld } from "./topology-world";
+import { runStepsSliced } from "./run-steps-sliced";
 import type { FlatRingMemoryStore } from "../loop/topology-loop-contract";
 import { createMeasureText } from "../../dial/fit";
 import { readDialTokens } from "../../dial/tokens";
@@ -269,12 +270,32 @@ export function useTopologyWorldLifecycle({
     homingActiveRef.current = true;
   };
 
-  const latest = useLatestRef({ nodes, edges, onGraphStatsChange, onVisibleCountChange });
+  // A reopened folder's concepts can reach the map before its key; the key then claims the fit the
+  // rebuild would have made, and the camera glides there from the frames already drawn.
+  const claimUnnamedFit = useCallback((key: string | null) => {
+    if (key === null || !unnamedConceptsRef.current) return;
+    unnamedConceptsRef.current = false;
+    if (key === fittedDataSourceKeyRef.current) return;
+    fittedDataSourceKeyRef.current = key;
+    pendingFlatCameraRef.current = null;
+    const world = worldRef.current;
+    const tokens = readOntologyMapTokensOrNull();
+    if (!world || !tokens) return;
+    aimOverview(world, tokens, false);
+    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+    lastActiveMsRef.current = performance.now();
+  }, [aimOverview, cameraAngularFreqRef, fittedDataSourceKeyRef, lastActiveMsRef, pendingFlatCameraRef, worldRef]);
+  const claimSource = useCallback((key: string | null) => {
+    if (key !== null && worldRef.current) claimTierAssembly(worldRef.current, key);
+    const dial = key === null ? null : worldRef.current?.dial;
+    if (dial && placementStateRef.current === "settled") flatRingMemory?.write(dial.scene.memory);
+  }, [flatRingMemory, worldRef]);
+
+  const latest = useLatestRef({ nodes, edges, onGraphStatsChange, onVisibleCountChange, dataSourceKey, loadProgress });
   useEffect(() => {
     const live = latest.current;
     const tokens = readOntologyMapTokensOrNull();
     if (!tokens) return;
-    const glidingFromArrival = arrivalGlideRef.current && homingActiveRef.current;
     containerRef.current?.setAttribute(
       "data-stage-pan-click-cancel-px",
       String(tokens.hysteresisPx));
@@ -297,108 +318,106 @@ export function useTopologyWorldLifecycle({
       const pad = graph.paint.domainNamePx;
       return overviewEntryArea(size.width, size.height, overviewFitTokens(cameraTokens(tokens)), { padPx: { left: pad, right: pad, top: pad, bottom: pad } });
     };
-    const world = buildTopologyWorld(live.nodes, live.edges, tokens, expand.structure, dialWorldInput(dialLabels, provisionalMemoryRef.current ?? stored, graphArea), placeDial);
-    const firstPlacement = world.dial != null && placementStateRef.current === "reading" && placed.state !== "reading";
-    placementStateRef.current = placed.state;
-    if (world.dial) {
-      setDialPlacement(world.dial, { ...placed, progress: loadProgress });
-      if (placed.state === "settled") ringMemory?.write(world.dial.scene.memory);
-      if (world.dial.scene.graph) settleFlatGraph(world.dial.model, world.dial.scene.graph, placed.state, labelFontFamily());
-      provisionalMemoryRef.current = placed.state === "provisional" ? world.dial.scene.memory : null;
-    }
-    const previousWorld = worldRef.current;
-    worldRef.current = world;
-    let armAssembly = prevNodeIdsRef.current.size === 0 && dataSourceKey === null;
-    let conceptsReplaced = false;
-    {
-      const prevIds = prevNodeIdsRef.current;
-      const appear = appearRef.current;
-      const isFirstBuild = prevIds.size === 0;
-      const nextIds = new Set<string>();
-      for (const n of world.nodes) {
-        nextIds.add(n.id);
-        if (isFirstBuild || prevIds.has(n.id)) {
-          if (!appear.has(n.id)) appear.set(n.id, 1);
-        } else {
-          appear.set(n.id, 0);
-          bornNodeIdsRef.current.add(n.id);
-          conceptsReplaced = true;
-        }
+    let simTask: ReturnType<typeof setTimeout> | undefined;
+    const swapIn = (world: TopologyWorld) => {
+      const glidingFromArrival = arrivalGlideRef.current && homingActiveRef.current;
+      const firstPlacement = world.dial != null && placementStateRef.current === "reading" && placed.state !== "reading";
+      placementStateRef.current = placed.state;
+      if (world.dial) {
+        setDialPlacement(world.dial, { ...placed, progress: latest.current.loadProgress });
+        if (placed.state === "settled") ringMemory?.write(world.dial.scene.memory);
+        if (world.dial.scene.graph) settleFlatGraph(world.dial.model, world.dial.scene.graph, placed.state, labelFontFamily());
+        provisionalMemoryRef.current = placed.state === "provisional" ? world.dial.scene.memory : null;
       }
-      if (!isFirstBuild && nextIds.size !== prevIds.size) conceptsReplaced = true;
-      for (const id of [...appear.keys()]) if (!nextIds.has(id)) appear.delete(id);
-      for (const id of [...bornNodeIdsRef.current]) if (!nextIds.has(id)) bornNodeIdsRef.current.delete(id);
-      prevNodeIdsRef.current = nextIds;
-    }
-    hasDependsEdgesRef.current = world.edges.some((e) => e.kind === "depends");
-    hasContainsEdgesRef.current = world.edges.some((e) => e.kind === "contains");
-    pulsesRef.current = [];
-    simRef.current = null;
-    pendingSimRef.current = {
-      world,
-      nodes: world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y })),
-      edges: world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
-    };
-    const simTask = setTimeout(buildPendingSim, TIER_ASSEMBLE_TOTAL_MS + SIM_AFTER_ASSEMBLY_MS);
-    nodeDragRef.current = null;
-    heatRef.current = 0;
-    dragAffectedSetRef.current = null;
-    dragStartPosRef.current = null;
-    dragTugOffsetsRef.current.clear();
-    homeSpringsRef.current.clear();
-    homingActiveRef.current = false;
-    homeTargetOverrideRef.current = null;
-    prevPinnedNodeIdRef.current = null;
-    live.onVisibleCountChange?.(live.nodes.length);
-    live.onGraphStatsChange?.({ nodes: live.nodes.length, relations: live.edges.length });
-    if (dataSourceKey !== null && dataSourceKey !== fittedDataSourceKeyRef.current) {
-      fittedDataSourceKeyRef.current = dataSourceKey;
-            pendingFlatCameraRef.current = null;
-      hasInitializedRef.current = false;
-      armAssembly = true;
-    }
-    if (firstPlacement) {
-      armAssembly = true;
-      if (!userDrivenCameraRef.current) hasInitializedRef.current = false;
-    }
-    if (dataSourceKey !== null || !hasInitializedRef.current) unnamedConceptsRef.current = false;
-    else if (conceptsReplaced) unnamedConceptsRef.current = true;
-    const grew = arriving || arrivingRef.current || glidingFromArrival;
-    arrivingRef.current = arriving;
-    arrivalGlideRef.current = grew;
-    if (arriving) arrivalStillRef.current = arrivingDocuments > ARRIVAL_GLIDE_CONCEPT_CEILING;
-    const arrivalStill = grew && arrivalStillRef.current;
-        {
+      const previousWorld = worldRef.current;
+      worldRef.current = world;
+      let armAssembly = prevNodeIdsRef.current.size === 0 && dataSourceKey === null;
+      let conceptsReplaced = false;
+      {
+        const prevIds = prevNodeIdsRef.current;
+        const appear = appearRef.current;
+        const isFirstBuild = prevIds.size === 0;
+        const nextIds = new Set<string>();
+        for (const n of world.nodes) {
+          nextIds.add(n.id);
+          if (isFirstBuild || prevIds.has(n.id)) {
+            if (!appear.has(n.id)) appear.set(n.id, 1);
+          } else {
+            appear.set(n.id, 0);
+            bornNodeIdsRef.current.add(n.id);
+            conceptsReplaced = true;
+          }
+        }
+        if (!isFirstBuild && nextIds.size !== prevIds.size) conceptsReplaced = true;
+        for (const id of [...appear.keys()]) if (!nextIds.has(id)) appear.delete(id);
+        for (const id of [...bornNodeIdsRef.current]) if (!nextIds.has(id)) bornNodeIdsRef.current.delete(id);
+        prevNodeIdsRef.current = nextIds;
+      }
+      hasDependsEdgesRef.current = world.edges.some((e) => e.kind === "depends");
+      hasContainsEdgesRef.current = world.edges.some((e) => e.kind === "contains");
+      pulsesRef.current = [];
+      simRef.current = null;
+      pendingSimRef.current = {
+        world,
+        nodes: world.nodes.map((n) => ({ id: n.id, x: n.x, y: n.y })),
+        edges: world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
+      };
+      simTask = setTimeout(buildPendingSim, TIER_ASSEMBLE_TOTAL_MS + SIM_AFTER_ASSEMBLY_MS);
+      nodeDragRef.current = null;
+      heatRef.current = 0;
+      dragAffectedSetRef.current = null;
+      dragStartPosRef.current = null;
+      dragTugOffsetsRef.current.clear();
+      homeSpringsRef.current.clear();
+      homingActiveRef.current = false;
+      homeTargetOverrideRef.current = null;
+      prevPinnedNodeIdRef.current = null;
+      live.onVisibleCountChange?.(live.nodes.length);
+      live.onGraphStatsChange?.({ nodes: live.nodes.length, relations: live.edges.length });
+      if (dataSourceKey !== null && dataSourceKey !== fittedDataSourceKeyRef.current) {
+        fittedDataSourceKeyRef.current = dataSourceKey;
+        pendingFlatCameraRef.current = null;
+        hasInitializedRef.current = false;
+        armAssembly = true;
+      }
+      if (firstPlacement) {
+        armAssembly = true;
+        if (!userDrivenCameraRef.current) hasInitializedRef.current = false;
+      }
+      if (dataSourceKey !== null || !hasInitializedRef.current) unnamedConceptsRef.current = false;
+      else if (conceptsReplaced) unnamedConceptsRef.current = true;
+      const grew = arriving || arrivingRef.current || glidingFromArrival;
+      arrivingRef.current = arriving;
+      arrivalGlideRef.current = grew;
+      if (arriving) arrivalStillRef.current = arrivingDocuments > ARRIVAL_GLIDE_CONCEPT_CEILING;
+      const arrivalStill = grew && arrivalStillRef.current;
       if (armAssembly) {
         armTierAssembly(world, firstPlacement ? null : dataSourceKey, arrivalStill || (world.dial != null && stored !== null) || window.matchMedia("(prefers-reduced-motion: reduce)").matches, world.dial?.scene.graph ? FLAT_TIER_TIMING : undefined);
         if (!assembleOnOpen) settleTierAssembly(world);
       } else if (!grew) {
         carryTierAssembly(previousWorld, world);
       }
-    }
-    if (grew && !armAssembly && previousWorld && hasInitializedRef.current) {
-            glideArrivedWorld(previousWorld, world, tokens, arrivalStill);
-        }
-        trySnapInitialCamera(tokens);
-        lastActiveMsRef.current = performance.now();
-        return () => clearTimeout(simTask);
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- Only graph and placement inputs rebuild the world; commands and progress have separate effects.
+      if (grew && !armAssembly && previousWorld && hasInitializedRef.current) glideArrivedWorld(previousWorld, world, tokens, arrivalStill);
+      trySnapInitialCamera(tokens);
+      lastActiveMsRef.current = performance.now();
+      // A source named while this world was built reached only the previous one.
+      const namedSince = latest.current.dataSourceKey;
+      if (namedSince !== dataSourceKey) {
+        claimUnnamedFit(namedSince);
+        claimSource(namedSince);
+      }
+    };
+    // The previous world stays drawn until this build swaps in; a newer input cancels it first.
+    const cancel = runStepsSliced(buildTopologyWorldSteps(live.nodes, live.edges, tokens, expand.structure, dialWorldInput(dialLabels, provisionalMemoryRef.current ?? stored, graphArea), placeDial), swapIn);
+    return () => {
+      cancel();
+      clearTimeout(simTask);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only graph and placement inputs rebuild the world; commands and progress have separate effects.
     }, [nodes, edges, expand.structure, dialLabels, arriving, placingTierRead]);
-    // A reopened folder's concepts can reach the map before its key; the key then claims the fit the
-    // rebuild would have made, and the camera glides there from the frames already drawn.
     useEffect(() => {
-        if (dataSourceKey === null || !unnamedConceptsRef.current) return;
-        unnamedConceptsRef.current = false;
-        if (dataSourceKey === fittedDataSourceKeyRef.current) return;
-        fittedDataSourceKeyRef.current = dataSourceKey;
-        pendingFlatCameraRef.current = null;
-        const world = worldRef.current;
-        const tokens = readOntologyMapTokensOrNull();
-        if (!world || !tokens) return;
-        aimOverview(world, tokens, false);
-        cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-        lastActiveMsRef.current = performance.now();
-    }, [aimOverview, cameraAngularFreqRef, dataSourceKey, fittedDataSourceKeyRef, lastActiveMsRef, pendingFlatCameraRef, worldRef]);
+        claimUnnamedFit(dataSourceKey);
+    }, [claimUnnamedFit, dataSourceKey]);
     useEffect(() => {
         const dial = worldRef.current?.dial;
         if (!dial || placementStateRef.current === "settled")
@@ -407,12 +426,8 @@ export function useTopologyWorldLifecycle({
         lastActiveMsRef.current = performance.now();
     }, [loadProgress, worldRef, lastActiveMsRef]);
     useEffect(() => {
-        if (dataSourceKey !== null && worldRef.current)
-            claimTierAssembly(worldRef.current, dataSourceKey);
-        const dial = dataSourceKey === null ? null : worldRef.current?.dial;
-        if (dial && placementStateRef.current === "settled")
-            flatRingMemory?.write(dial.scene.memory);
-    }, [dataSourceKey, flatRingMemory, worldRef]);
+        claimSource(dataSourceKey);
+    }, [claimSource, dataSourceKey]);
     useEffect(() => {
         const container = containerRef.current;
         if (!container)

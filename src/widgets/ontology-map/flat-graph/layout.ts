@@ -1,5 +1,9 @@
 import Graph from "graphology";
 import forceAtlas2 from "graphology-layout-forceatlas2";
+// @ts-expect-error -- the package types only its one-shot API; these are the internals `assign` runs.
+import forceAtlas2Helpers from "graphology-layout-forceatlas2/helpers.js";
+// @ts-expect-error -- see above.
+import forceAtlas2Iterate from "graphology-layout-forceatlas2/iterate.js";
 
 import type { Box, DialCapabilityDependency, DialModel, Point } from "../dial/types";
 import { GOLDEN_ANGLE, byId, seedAngle, seedUnit } from "./seed";
@@ -57,13 +61,63 @@ const FORCE_SETTINGS = {
 
 interface Spring { a: string; b: string; weight: number }
 
+/** A computation cut into steps: each `yield` is a point where a driver may give the browser a turn. */
+export type LayoutSteps<T> = Generator<void, T, void>;
+
+/** Runs every step at once and returns the result: the synchronous form of any `LayoutSteps`. */
+export function drainSteps<T>(steps: LayoutSteps<T>): T {
+  for (;;) {
+    const step = steps.next();
+    if (step.done) return step.value;
+  }
+}
+
+type ForceMatrices = { nodes: Float32Array; edges: Float32Array };
+type EdgeWeightOf = (edge: string, attr: { weight?: unknown }) => number;
+const STEPPED_SETTINGS = { ...FORCE_SETTINGS, barnesHutTheta: 0.5 };
+const fa2 = {
+  toMatrices: (forceAtlas2Helpers as { graphToByteArrays: (graph: Graph, weightOf: EdgeWeightOf) => ForceMatrices }).graphToByteArrays,
+  writeBack: (forceAtlas2Helpers as { assignLayoutChanges: (graph: Graph, nodes: Float32Array, reducer: null) => void }).assignLayoutChanges,
+  iterate: forceAtlas2Iterate as (settings: typeof STEPPED_SETTINGS, nodes: Float32Array, edges: Float32Array) => void,
+};
+const weightOf: EdgeWeightOf = (_edge, attr) => (typeof attr.weight === "number" && !Number.isNaN(attr.weight) ? attr.weight : 1);
+
 export function directItemId(domainId: string): string {
   return `${domainId}::direct`;
 }
 
 /** Synchronous ForceAtlas2 over sorted bodies and springs: identical input gives identical output. */
-function runForceAtlas2(bodies: readonly Body[], springs: readonly Spring[], iterations: number): Map<string, Point> {
-  if (bodies.every((b) => b.fixed)) return new Map(bodies.map((b) => [b.id, { x: b.x, y: b.y }]));
+export function runForceAtlas2(bodies: readonly Body[], springs: readonly Spring[], iterations: number): Map<string, Point> {
+  const graph = forceGraph(bodies, springs);
+  if (graph === null) return new Map(bodies.map((b) => [b.id, { x: b.x, y: b.y }]));
+  if (graph.size > 0 && iterations > 0) forceAtlas2.assign(graph, { iterations, settings: FORCE_SETTINGS, getEdgeWeight: "weight" });
+  return positionsOf(graph);
+}
+
+/** `runForceAtlas2` with a step after every iteration, over the matrices `assign` builds, so the result is equal. */
+export function* steppedForceAtlas2(bodies: readonly Body[], springs: readonly Spring[], iterations: number): LayoutSteps<Map<string, Point>> {
+  const graph = forceGraph(bodies, springs);
+  if (graph === null) return new Map(bodies.map((b) => [b.id, { x: b.x, y: b.y }]));
+  if (graph.size > 0 && iterations > 0) {
+    const matrices = fa2.toMatrices(graph, weightOf);
+    for (let i = 0; i < iterations; i += 1) {
+      fa2.iterate(STEPPED_SETTINGS, matrices.nodes, matrices.edges);
+      yield;
+    }
+    fa2.writeBack(graph, matrices.nodes, null);
+  }
+  return positionsOf(graph);
+}
+
+function positionsOf(graph: Graph): Map<string, Point> {
+  const out = new Map<string, Point>();
+  graph.forEachNode((id, attr) => out.set(id, { x: attr.x as number, y: attr.y as number }));
+  return out;
+}
+
+/** The graph of sorted bodies and merged springs ForceAtlas2 runs on; null when no body can move. */
+function forceGraph(bodies: readonly Body[], springs: readonly Spring[]): Graph | null {
+  if (bodies.every((b) => b.fixed)) return null;
   const graph = new Graph({ type: "undirected", multi: false, allowSelfLoops: false });
   for (const b of [...bodies].sort((p, q) => byId(p.id, q.id))) graph.addNode(b.id, { x: b.x, y: b.y, size: b.r, fixed: b.fixed });
   const merged = new Map<string, Spring>();
@@ -79,10 +133,7 @@ function runForceAtlas2(bodies: readonly Body[], springs: readonly Spring[], ite
     const s = merged.get(key)!;
     graph.addEdge(s.a, s.b, { weight: s.weight });
   }
-  if (graph.size > 0 && iterations > 0) forceAtlas2.assign(graph, { iterations, settings: FORCE_SETTINGS, getEdgeWeight: "weight" });
-  const out = new Map<string, Point>();
-  graph.forEachNode((id, attr) => out.set(id, { x: attr.x as number, y: attr.y as number }));
-  return out;
+  return graph;
 }
 
 /**
@@ -329,14 +380,14 @@ function circularSeed(order: readonly string[], radii: ReadonlyMap<string, numbe
   }));
 }
 
-function placeDomains(
+function* placeDomains(
   model: DialModel,
   order: readonly string[],
   radii: ReadonlyMap<string, number>,
   pins: FlatGraphPins | null,
   tokens: FlatGraphLayoutTokens,
   aspect: number,
-): Map<string, Point> {
+): LayoutSteps<Map<string, Point>> {
   const pinned = pins?.positions ?? new Map<string, Point>();
   const seeds = circularSeed(order, radii, tokens);
   for (const [id, at] of pins?.seeds ?? []) if (seeds.has(id)) seeds.set(id, { x: at.x / aspect, y: at.y });
@@ -349,7 +400,7 @@ function placeDomains(
   if (hasHub) bodies.push({ id: HUB_ID, x: 0, y: 0, r: tokens.hubClearance, fixed: true });
   const springs: Spring[] = hasHub ? order.map((id) => ({ a: HUB_ID, b: id, weight: 1 })) : [];
   for (const f of model.flows) springs.push({ a: f.a, b: f.b, weight: tokens.flowWeight * Math.log1p(f.total) });
-  const placed = order.length > 1 || hasHub ? runForceAtlas2(bodies, springs, tokens.domainIterations) : new Map<string, Point>();
+  const placed = order.length > 1 || hasHub ? yield* steppedForceAtlas2(bodies, springs, tokens.domainIterations) : new Map<string, Point>();
   return new Map(order.map((id) => {
     const pin = pinned.get(id);
     if (pin) return [id, { ...pin }] as const;
@@ -485,18 +536,38 @@ function fallbackTitle(tokens: FlatGraphLayoutTokens): FlatGraphTitle {
  * last call's returns a copy of that layout after an O(input) comparison.
  */
 export function layoutFlatGraph(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): FlatGraphLayout {
+  return drainSteps(layoutFlatGraphSteps(model, order, tokens, pins, frame));
+}
+
+/**
+ * `layoutFlatGraph` cut at every cluster and domain ForceAtlas2 iteration. A run left unfinished is
+ * resumed by the next call with equal inputs, so a superseded build's work is never repeated.
+ */
+export function* layoutFlatGraphSteps(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): LayoutSteps<FlatGraphLayout> {
   const inputs = layoutInputs(model, order, tokens, pins, frame);
   // A fresh identity: name and line caches key on the layout and must see a retitle the fit ignores.
   if (lastLayout !== null && sameInputs(lastLayout.inputs, inputs)) return { ...lastLayout.layout };
-  const layout = fitLayout(model, order, tokens, pins, frame);
-  lastLayout = { inputs, layout };
-  return layout;
+  if (openRun === null || !sameInputs(openRun.inputs, inputs)) openRun = { inputs, steps: fitLayout(model, order, tokens, pins, frame), layout: null };
+  const run = openRun;
+  while (run.layout === null) {
+    const step = run.steps.next();
+    if (step.done) {
+      run.layout = step.value;
+      lastLayout = { inputs, layout: step.value };
+      if (openRun === run) openRun = null;
+      return step.value;
+    }
+    yield;
+  }
+  return { ...run.layout };
 }
 
 type LayoutInput = string | number | boolean | null;
 
 /** The last layout and every value it read: a folder that grows only in kinds the graph does not draw lays out once. */
 let lastLayout: { inputs: LayoutInput[]; layout: FlatGraphLayout } | null = null;
+/** The layout being stepped, kept for the next call with equal inputs; a call with other inputs drops it. */
+let openRun: { inputs: LayoutInput[]; steps: LayoutSteps<FlatGraphLayout>; layout: FlatGraphLayout | null } | null = null;
 
 /** Every value `fitLayout` reads, in a fixed order with list lengths. O(D + C + E + flows + dependencies). */
 function layoutInputs(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): LayoutInput[] {
@@ -540,28 +611,28 @@ function sameInputs(a: readonly LayoutInput[], b: readonly LayoutInput[]): boole
   return true;
 }
 
-function fitLayout(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): FlatGraphLayout {
+function* fitLayout(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): LayoutSteps<FlatGraphLayout> {
   const area = frame?.areaPx ?? null;
   const aspect = area ? Math.min(MAX_ASPECT, Math.max(MIN_ASPECT, area.width / area.height)) : tokens.aspect;
-  const basis = graphBasis(model, order, tokens, pins, aspect);
+  const basis = yield* graphBasis(model, order, tokens, pins, aspect);
   const nameRows = frame?.compactTitles ? { ...frame, titles: frame.compactTitles } : null;
-  if (nameRows === null) return fitGraph(basis, tokens, pins, frame).layout;
+  if (nameRows === null) return (yield* fitGraph(basis, tokens, pins, frame)).layout;
   // Pinned positions cannot answer a title reservation, so a pinned rebuild keeps the remembered choice.
   if (pins !== null && pins.positions.size > 0) {
-    return { ...fitGraph(basis, tokens, pins, pins.compactTitles ? nameRows : frame).layout, compactTitles: pins.compactTitles };
+    return { ...(yield* fitGraph(basis, tokens, pins, pins.compactTitles ? nameRows : frame)).layout, compactTitles: pins.compactTitles };
   }
-  const full = fitGraph(basis, tokens, pins, frame);
-  const compact = fitGraph(basis, tokens, pins, nameRows);
+  const full = yield* fitGraph(basis, tokens, pins, frame);
+  const compact = yield* fitGraph(basis, tokens, pins, nameRows);
   if (full.titlesHold && full.shown <= compact.shown * COMPACT_TITLE_GAIN) return full.layout;
   return { ...(compact.shown <= full.shown ? compact : full).layout, compactTitles: true };
 }
 
 /** One fit of the graph to the frame's titles: whether the fitted scale keeps every title block clear, and the world units it shows per px. */
-function fitGraph(basis: GraphBasis, tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): { layout: FlatGraphLayout; titlesHold: boolean; shown: number } {
+function* fitGraph(basis: GraphBasis, tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): LayoutSteps<{ layout: FlatGraphLayout; titlesHold: boolean; shown: number }> {
   const area = frame?.areaPx ?? null;
   const shownOf = (l: FlatGraphLayout) => area === null ? 1 : Math.max(1, (l.extent.maxX - l.extent.minX) / area.width, (l.extent.maxY - l.extent.minY) / area.height);
   let worldPerPx = 1;
-  let layout = placeGraph(basis, tokens, pins, frame, worldPerPx, worldPerPx);
+  let layout = yield* placeGraph(basis, tokens, pins, frame, worldPerPx, worldPerPx);
   let shown = shownOf(layout);
   let before = { at: worldPerPx, shown };
   for (let pass = 1; pass < TITLE_PASSES && shown > worldPerPx; pass += 1) {
@@ -571,13 +642,13 @@ function fitGraph(basis: GraphBasis, tokens: FlatGraphLayoutTokens, pins: FlatGr
     const fixedPoint = outgrown ? shown : (shown - slope * worldPerPx) / (1 - slope);
     before = { at: worldPerPx, shown };
     worldPerPx = Math.max(shown, fixedPoint) * TITLE_PASS_MARGIN;
-    layout = placeGraph(basis, tokens, pins, frame, worldPerPx, worldPerPx);
+    layout = yield* placeGraph(basis, tokens, pins, frame, worldPerPx, worldPerPx);
     shown = shownOf(layout);
   }
   const titlesHold = shown <= worldPerPx;
   for (let pass = 0, memberScale = worldPerPx; pass < MEMBER_PASSES && shown > memberScale; pass += 1) {
     memberScale = shown * TITLE_PASS_MARGIN;
-    layout = placeGraph(basis, tokens, pins, frame, worldPerPx, memberScale);
+    layout = yield* placeGraph(basis, tokens, pins, frame, worldPerPx, memberScale);
     shown = shownOf(layout);
   }
   return { layout, titlesHold, shown };
@@ -596,11 +667,12 @@ interface GraphBasis {
   degree: Map<string, number>;
 }
 
-function graphBasis(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, aspect: number): GraphBasis {
+function* graphBasis(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, aspect: number): LayoutSteps<GraphBasis> {
   const domainIds = order.filter((id) => model.domainById.has(id));
   const itemsByDomain = new Map(domainIds.map((id) => [id, itemsOf(model, id)] as const));
   const estimates = new Map(domainIds.map((id) => [id, estimateFootprint(itemsByDomain.get(id)!, tokens)] as const));
-  const centres = placeDomains(model, domainIds, estimates, pins, tokens, aspect);
+  yield;
+  const centres = yield* placeDomains(model, domainIds, estimates, pins, tokens, aspect);
   const weights = new Map<string, Map<string, number>>(domainIds.map((id) => [id, new Map()]));
   for (const f of model.flows) {
     weights.get(f.a)?.set(f.b, (weights.get(f.a)?.get(f.b) ?? 0) + f.total);
@@ -628,14 +700,14 @@ function graphBasis(model: DialModel, order: readonly string[], tokens: FlatGrap
   return { model, aspect, domainIds, itemsByDomain, centres, outwardByDomain, partnersByDomain, dependenciesByDomain, degree: crossDegree(model) };
 }
 
-function placeGraph(
+function* placeGraph(
   basis: GraphBasis,
   tokens: FlatGraphLayoutTokens,
   pins: FlatGraphPins | null,
   frame: FlatGraphFrame | null,
   worldPerPx: number,
   memberWorldPerPx: number,
-): FlatGraphLayout {
+): LayoutSteps<FlatGraphLayout> {
   const { model, aspect, domainIds, itemsByDomain } = basis;
   const pinned = pins?.positions ?? new Map<string, Point>();
   const titleAt = (id: string, scale: number): Box => {
@@ -653,8 +725,10 @@ function placeGraph(
   for (const id of domainIds) {
     const c = centres.get(id)!;
     locals.set(id, layoutCluster(basis.dependenciesByDomain.get(id)!, id, itemsByDomain.get(id)!, basis.outwardByDomain.get(id)!, basis.partnersByDomain.get(id)!, basis.degree, pinned, pinned.has(id) ? c : null, titleAt(id, memberWorldPerPx), roomOf(id), memberClearance, tokens));
+    yield;
   }
   spreadDomains(centres, new Map(domainIds.map((id) => [id, locals.get(id)!.footprint])), pinned, model.projectId !== null, Math.max(tokens.hubClearance, (frame?.hubPx ?? 0) * worldPerPx), tokens, aspect);
+  yield;
 
   const positions = new Map<string, Point>();
   const itemAt = new Map<string, Point>();

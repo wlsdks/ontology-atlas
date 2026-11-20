@@ -679,6 +679,73 @@ describe("buildTopologyWorld with the Flat graph", () => {
         return world!.dial!.scene;
     }
 
+    /** A fresh page's world builder, and a hand-turned browser: `turn()` resumes every slice waiting for one. */
+    async function freshBuilder() {
+        vi.resetModules();
+        const world = await import("./topology-world");
+        const { runStepsSliced } = await import("./run-steps-sliced");
+        const forceAtlas2 = (await import("graphology-layout-forceatlas2")).default;
+        let clock = 0;
+        let waiting: (() => void)[] = [];
+        const options = {
+            budgetMs: 8,
+            now: () => (clock += 1),
+            yieldNow: () => new Promise<void>((resolve) => waiting.push(resolve)),
+        };
+        const turn = async () => {
+            const ready = waiting;
+            waiting = [];
+            for (const resolve of ready) resolve();
+            await Promise.resolve();
+            await Promise.resolve();
+            return ready.length;
+        };
+        const sliced = (onDone: (built: TopologyWorld) => void) =>
+            runStepsSliced(world.buildTopologyWorldSteps(folder.nodes, folder.edges, mapTokens, "disc", input(null)), onDone, options);
+        return { ...world, forceAtlas2, sliced, turn };
+    }
+    const placesOf = (world: TopologyWorld) => world.nodes.map((n) => [n.id, n.x, n.y]);
+
+    it("builds the world in more than one slice and lands it where the synchronous build does", async () => {
+        const once = (await freshBuilder()).buildTopologyWorld(folder.nodes, folder.edges, mapTokens, "disc", input(null));
+        const { sliced, turn } = await freshBuilder();
+        let built: TopologyWorld | null = null;
+        sliced((world) => (built = world));
+        let slices = 1;
+        while (built === null && (await turn()) > 0) slices += 1;
+        expect(slices).toBeGreaterThan(1);
+        expect(placesOf(built!)).toEqual(placesOf(once));
+    });
+
+    it("never swaps in a superseded build, and the build after it resumes its layout instead of repeating it", async () => {
+        const fresh = await freshBuilder();
+        const assign = vi.spyOn(fresh.forceAtlas2, "assign");
+        const once = fresh.buildTopologyWorld(folder.nodes, folder.edges, mapTokens, "disc", input(null));
+        const fullLayoutRuns = assign.mock.calls.length;
+        assign.mockRestore();
+
+        const { sliced, turn, forceAtlas2 } = await freshBuilder();
+        const counted = vi.spyOn(forceAtlas2, "assign");
+        const swapped: string[] = [];
+        let superseded = 0;
+        const cancel = sliced(() => (superseded += 1));
+        for (let k = 0; k < 1000 && counted.mock.calls.length === 0; k += 1) await turn();
+        expect(counted.mock.calls.length).toBeGreaterThan(0);
+        cancel();
+        let latest: TopologyWorld | null = null;
+        sliced((world) => {
+            swapped.push("latest");
+            latest = world;
+        });
+        while ((await turn()) > 0);
+        const runs = counted.mock.calls.length;
+        counted.mockRestore();
+        expect(superseded).toBe(0);
+        expect(swapped).toEqual(["latest"]);
+        expect(runs).toBe(fullLayoutRuns);
+        expect(placesOf(latest!)).toEqual(placesOf(once));
+    });
+
     it("draws one folder as one picture however it was opened: after the bundled sample, streamed, or reopened", async () => {
         const oneShot = await open(null, [folder], null);
         const afterSample = await open(readOf(storefrontManifest), [folder], null);

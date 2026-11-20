@@ -1,7 +1,7 @@
 import { circularDomainOrder } from "../dial/order";
 import type { DialPlacementState } from "../dial/placement";
 import type { DialCluster, DialItem, DialModel, DialScene, Point } from "../dial/types";
-import { directItemId, layoutFlatGraph } from "./layout";
+import { directItemId, drainSteps, layoutFlatGraphSteps, type LayoutSteps } from "./layout";
 import { byId } from "./seed";
 import type { FlatGraphFrame, FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphMemory, FlatGraphPins } from "./types";
 
@@ -75,8 +75,14 @@ function rememberFlatGraph(model: DialModel, layout: FlatGraphLayout, face: stri
  * a partial read, the bundled sample or an earlier session would seed the layout.
  */
 export function buildFlatGraphScene(model: DialModel, tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): DialScene {
+  return drainSteps(buildFlatGraphSceneSteps(model, tokens, pins, frame));
+}
+
+/** `buildFlatGraphScene` in the layout's steps. */
+export function* buildFlatGraphSceneSteps(model: DialModel, tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): LayoutSteps<DialScene> {
   const { order } = circularDomainOrder(model, null);
-  const graph = layoutFlatGraph(model, order, tokens, pins, frame);
+  yield;
+  const graph = yield* layoutFlatGraphSteps(model, order, tokens, pins, frame);
   const itemById = new Map<string, DialItem>();
   const clusters: DialCluster[] = graph.clusters.map((c) => {
     const items = c.items.map((it) => {
