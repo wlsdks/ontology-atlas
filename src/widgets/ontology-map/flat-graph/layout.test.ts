@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import forceAtlas2 from "graphology-layout-forceatlas2";
+import { describe, expect, it, vi } from "vitest";
 
 import { isContainmentRelation } from "@/entities/knowledge-graph";
 
@@ -18,7 +19,8 @@ import {
   type TreeInputEdge,
   type TreeInputNode,
 } from "../model/containment-tree";
-import { layoutFlatGraph, separate, type Body } from "./layout";
+import { layoutFlatGraph } from "./layout";
+import { separate, type Body } from "./separate";
 import { resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame } from "./types";
 
@@ -108,13 +110,21 @@ function overlaps(bodies: readonly Body[], gap: number): string[] {
 describe("layoutFlatGraph", () => {
   it("lays a folder out once while only concepts the graph does not draw arrive", () => {
     const first = layoutOf(folderModel(1500));
-    expect(layoutOf(folderModel(1500))).toBe(first);
+    const assign = vi.spyOn(forceAtlas2, "assign");
+    const again = layoutOf(folderModel(1500));
+    const runs = assign.mock.calls.length;
+    assign.mockRestore();
+    expect(runs).toBe(0);
+    expect(again.positions).toEqual(first.positions);
   });
 
   it("lays the folder out again when a capability arrives", () => {
-    const first = layoutOf(folderModel(1500));
+    layoutOf(folderModel(1500));
+    const assign = vi.spyOn(forceAtlas2, "assign");
     const grown = layoutOf(folderModel(1500, 1));
-    expect(grown).not.toBe(first);
+    const runs = assign.mock.calls.length;
+    assign.mockRestore();
+    expect(runs).toBeGreaterThan(0);
     expect(grown.positions.has(`capabilities/cap-${Math.round(1500 * 0.25)}`)).toBe(true);
   });
 });

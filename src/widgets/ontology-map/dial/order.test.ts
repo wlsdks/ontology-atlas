@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { DirectedDomainFlow } from "../model/containment-tree";
-import { circularDomainOrder, claimDialOrderFolder, rememberDialOrder, rememberedDialOrder } from "./order";
+import { Ring, adjacencyOf, circularDomainOrder, claimDialOrderFolder, rememberDialOrder, rememberedDialOrder } from "./order";
 import type { DialDomain, DialModel } from "./types";
 
 const pad = (i: number) => `d${String(i).padStart(2, "0")}`;
@@ -198,8 +198,35 @@ describe("circularDomainOrder", () => {
     expect(work(1200) / work(300)).toBeLessThanOrEqual(5);
   });
 
-  it("is deterministic", () => {
-    const model = modelOf(20, randomLinks(20, 60, 11));
+  it("prices every adjacent swap and arc reversal as a full recount does", () => {
+    const misses: string[] = [];
+    for (const n of [10, 13]) {
+      for (const seed of [1, 2, 3]) {
+        const rand = seeded(seed * 97 + n);
+        const raw = randomLinks(n, n * 4, seed).map(([i, j, w]) => ({ i, j, w }));
+        const ring = new Ring(adjacencyOf(n, raw), Array.from({ length: n }, (_, k) => k));
+        let cost = ring.cost();
+        for (let move = 0; move < 200; move += 1) {
+          const from = Math.floor(rand() * n);
+          const length = 2 + Math.floor(rand() * ((n >> 1) - 1));
+          const swap = rand() < 0.5;
+          let delta: number;
+          if (swap) delta = ring.stepForward(from);
+          else {
+            delta = ring.reversalDelta(from, length);
+            ring.reverse(from, length);
+          }
+          const recount = ring.cost();
+          if (delta !== recount - cost) misses.push(`n ${n} seed ${seed} move ${move} ${swap ? "swap" : `reverse ${length}`}: ${delta} vs ${recount - cost}`);
+          cost = recount;
+        }
+      }
+    }
+    expect(misses).toEqual([]);
+  });
+
+  it("orders 80 densely linked domains the same way every time, where the search stops on its budget", () => {
+    const model = modelOf(80, randomLinks(80, 2600, 81));
     expect(circularDomainOrder(model, null)).toEqual(circularDomainOrder(model, null));
   });
 

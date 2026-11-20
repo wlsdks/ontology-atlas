@@ -4,14 +4,14 @@ const EXHAUSTIVE_MAX = 9;
 const HYSTERESIS = 1.1;
 const RELATES_WEIGHT = 0.5;
 const EPS = 1e-9;
-/** Pair terms the local search may evaluate per domain and pair of its input, so its work is linear in n + P. */
+/** Slot and pair terms the local search may evaluate per domain and pair of its input, so its work is linear in n + P. */
 const SEARCH_WORK_PER_INPUT = 256;
-/** Pair terms every search may spend, so a ring of a few dozen domains still searches to convergence. */
-const SEARCH_WORK_FLOOR = 1 << 20;
+/** Terms every search may spend, so a sparse ring of 80 domains still converges; 120 domains cost about 40 ms. */
+const SEARCH_WORK_FLOOR = 1 << 22;
 /** Subspace iterations of the spectral seed; 80 dense domains settle their ring cost by 100. */
 const SPECTRAL_ITERATIONS = 100;
 
-/** `work` counts pair terms evaluated, the unit every bound below is stated in. */
+/** `work` counts slot and pair terms evaluated, the unit every bound below is stated in. */
 export interface DialOrder { order: string[]; work: number }
 
 let remembered: readonly string[] | null = null;
@@ -31,9 +31,9 @@ export function rememberedDialOrder(): readonly string[] | null {
 }
 
 /** Domain pairs as a symmetric weighted adjacency list (CSR); duplicate pairs merge. O(n + P). */
-interface Adjacency { n: number; pairs: number; start: Int32Array; to: Int32Array; weight: Float64Array }
+export interface Adjacency { n: number; pairs: number; start: Int32Array; to: Int32Array; weight: Float64Array }
 
-function adjacencyOf(n: number, raw: readonly { i: number; j: number; w: number }[]): Adjacency {
+export function adjacencyOf(n: number, raw: readonly { i: number; j: number; w: number }[]): Adjacency {
   const merged = new Map<number, number>();
   for (const { i, j, w } of raw) {
     if (i === j) continue;
@@ -73,7 +73,7 @@ function ringDistance(a: number, b: number, m: number): number {
  * A circular arrangement of every domain with its total weighted ring distance kept current. Each
  * move prices only the pairs that touch what moved and charges them to `work`.
  */
-class Ring {
+export class Ring {
   private readonly adj: Adjacency;
   readonly at: Int32Array;
   readonly pos: Int32Array;
@@ -88,7 +88,7 @@ class Ring {
     });
   }
 
-  /** O(P). */
+  /** O(n + P). */
   cost(): number {
     const { n, start, to, weight } = this.adj;
     let total = 0;
@@ -97,7 +97,7 @@ class Ring {
         if (to[e]! > u) total += weight[e]! * ringDistance(this.pos[u]!, this.pos[to[e]!]!, n);
       }
     }
-    this.work += this.adj.pairs;
+    this.work += this.adj.n + this.adj.pairs;
     return total;
   }
 
@@ -112,7 +112,7 @@ class Ring {
       const at = this.pos[other]!;
       delta += weight[e]! * (ringDistance(slot, at, n) - ringDistance(from, at, n));
     }
-    this.work += start[node + 1]! - start[node]!;
+    this.work += 1 + start[node + 1]! - start[node]!;
     return delta;
   }
 
@@ -157,7 +157,7 @@ class Ring {
         if ((at - from + n) % n < length) continue;
         delta += weight[e]! * (ringDistance(now, at, n) - ringDistance(was, at, n));
       }
-      this.work += start[node + 1]! - start[node]!;
+      this.work += 1 + start[node + 1]! - start[node]!;
     }
     return delta;
   }
@@ -214,7 +214,7 @@ function reverseArcs(ring: Ring, budget: number): boolean {
   return improved;
 }
 
-/** Relocation and arc-reversal sweeps on `ring` until neither improves or `budget` pair terms are spent. */
+/** Relocation and arc-reversal sweeps on `ring` until neither improves or `budget` terms are spent. */
 function localSearch(ring: Ring, budget: number): void {
   const n = ring.at.length;
   const limit = ring.work + budget;
@@ -225,9 +225,15 @@ function localSearch(ring: Ring, budget: number): void {
   }
 }
 
+/** A cosine-like triangle wave of period `4n` at `quarterSlot`: integer steps and one division, so every engine agrees. */
+function triangleWave(quarterSlot: number, n: number): number {
+  return (Math.abs((quarterSlot % (4 * n)) - 2 * n) - n) / n;
+}
+
 /**
  * Orders domains by angle in the plane of the lazy random walk's two leading non-constant eigenvectors,
- * found by subspace iteration from `chain` laid round a circle. O(SPECTRAL_ITERATIONS · (n + P) + n log n).
+ * found by subspace iteration from `chain` laid round a circle; angle compares by half-plane, then
+ * cross-product sign, never a transcendental. O(SPECTRAL_ITERATIONS · (n + P) + n log n).
  */
 function spectralSeed(adj: Adjacency, chain: readonly number[]): { order: number[]; work: number } {
   const { n, start, to, weight } = adj;
@@ -241,8 +247,8 @@ function spectralSeed(adj: Adjacency, chain: readonly number[]): { order: number
   let basis = [new Float64Array(n), new Float64Array(n)] as const;
   let walked = [new Float64Array(n), new Float64Array(n)] as const;
   chain.forEach((node, slot) => {
-    basis[0][node] = Math.cos((2 * Math.PI * slot) / n);
-    basis[1][node] = Math.sin((2 * Math.PI * slot) / n);
+    basis[0][node] = triangleWave(4 * slot, n);
+    basis[1][node] = triangleWave(4 * slot + 3 * n, n);
   });
   for (let round = 0; round < SPECTRAL_ITERATIONS; round += 1) {
     for (let c = 0; c < 2; c += 1) {
@@ -257,8 +263,9 @@ function spectralSeed(adj: Adjacency, chain: readonly number[]): { order: number
     }
     [basis, walked] = [walked, basis];
   }
-  const angle = Float64Array.from({ length: n }, (_, u) => Math.atan2(basis[1][u]!, basis[0][u]!));
-  const order = Array.from({ length: n }, (_, u) => u).sort((a, b) => angle[a]! - angle[b]! || a - b);
+  const [x, y] = basis;
+  const half = Int8Array.from({ length: n }, (_, u) => (x[u] === 0 && y[u] === 0 ? 2 : y[u]! > 0 || (y[u] === 0 && x[u]! > 0) ? 0 : 1));
+  const order = Array.from({ length: n }, (_, u) => u).sort((a, b) => half[a]! - half[b]! || Math.sign(x[b]! * y[a]! - y[b]! * x[a]!) || a - b);
   return { order, work: SPECTRAL_ITERATIONS * 2 * (n + start[n]!) };
 }
 
@@ -344,11 +351,9 @@ function partialCost(adj: Adjacency, order: readonly number[], pos: Int32Array, 
 }
 
 /**
- * Orders domains round a circle to minimise Σ weight × ring distance. Up to `EXHAUSTIVE_MAX` domains
- * every order is tried; above it a spectral, a heaviest-partner and a label-order seed each go
- * through a local search whose work is bounded by
- * `SEARCH_WORK_FLOOR` + `SEARCH_WORK_PER_INPUT` × (n + P), so the cost is O(n + P) for n domains
- * and P weighted pairs.
+ * Orders n domains round a circle to minimise Σ weight × ring distance over P weighted pairs: every
+ * order up to `EXHAUSTIVE_MAX`, else three seeds whose local search shares a budget of slot and pair
+ * terms, `SEARCH_WORK_FLOOR` + `SEARCH_WORK_PER_INPUT` × (n + P). O(n log n + P) beside that budget.
  */
 export function circularDomainOrder(model: DialModel, previous: readonly string[] | null): DialOrder {
   const ids = model.domains.map((d) => d.id).sort();
@@ -402,7 +407,7 @@ export function circularDomainOrder(model: DialModel, previous: readonly string[
     let spent = 0;
     for (const ring of rings) {
       const before = ring.work;
-      localSearch(ring, budget - spent);
+      if (adj.pairs > 0) localSearch(ring, budget - spent);
       spent += ring.work - before;
       const value = ring.cost();
       if (value < bestCost - EPS) {
@@ -432,7 +437,7 @@ export function circularDomainOrder(model: DialModel, previous: readonly string[
 
 /**
  * Inserts each domain missing from `kept` where the placed pairs cost least, in index order. Each
- * trial is O(n + P); past `budget` pair terms it gives up and returns null.
+ * trial is O(n + P); past `budget` terms it gives up and returns null.
  */
 function insertMissing(adj: Adjacency, kept: readonly number[], budget: number): { order: number[] | null; work: number } {
   const keptSet = new Set(kept);
