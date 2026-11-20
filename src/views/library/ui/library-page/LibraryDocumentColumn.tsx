@@ -19,6 +19,7 @@ import { SelectionAsk } from "../parts/questions/SelectionAsk";
 import { SourceSummary } from "../parts/sources/SourceSummary";
 import { WikiPageHeader } from "../parts/wiki/WikiPageHeader";
 import { WikiTemplateProblems } from "../parts/wiki/WikiTemplateProblems";
+import { useSteadyFix } from "../parts/wiki/use-steady-fix";
 import { WikiCitationPopover, type WikiCitationPopoverHandle, type ReaderCitation } from "../parts/wiki/WikiCitationPopover";
 import { WikiPageFoot, createPaintedBody } from "../parts/wiki/WikiPageFoot";
 import { landAtLine, type ReaderLanding } from "../parts/wiki/reader-landing";
@@ -87,6 +88,7 @@ export function LibraryDocumentColumn({
   const pageSlug = selectedWikiDoc?.slug ?? null;
   /* One object per title lookup, so the memoised problem list is not drawn again on a scroll. */
   const problemContext = useMemo(() => ({ pageTitle: wikiPageTitle }), [wikiPageTitle]);
+  const steadyFix = useSteadyFix(wikiProblemFix);
   const citationPopoverRef = useRef<WikiCitationPopoverHandle>(null);
   /* Stable, so opening a popover hands the press over without rendering the page body again. */
   const onCitationPress = useCallback((citation: ReaderCitation, button: HTMLButtonElement) => {
@@ -209,7 +211,7 @@ export function LibraryDocumentColumn({
             problems={wikiProblems}
             file={`${selectedWikiDoc.slug}.md`}
             doors={wikiProblemDoors}
-            fix={wikiProblemFix}
+            fix={steadyFix}
             context={problemContext}
             t={t}
           />
