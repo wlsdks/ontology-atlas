@@ -8,6 +8,8 @@ const EPS = 1e-9;
 const SEARCH_WORK_PER_INPUT = 256;
 /** Pair terms every search may spend, so a ring of a few dozen domains still searches to convergence. */
 const SEARCH_WORK_FLOOR = 1 << 20;
+/** Subspace iterations of the spectral seed; 80 dense domains settle their ring cost by 100. */
+const SPECTRAL_ITERATIONS = 100;
 
 /** `work` counts pair terms evaluated, the unit every bound below is stated in. */
 export interface DialOrder { order: string[]; work: number }
@@ -212,16 +214,70 @@ function reverseArcs(ring: Ring, budget: number): boolean {
   return improved;
 }
 
-/** Relocation and arc-reversal sweeps until neither improves or `budget` pair terms are spent. */
-function localSearch(adj: Adjacency, seed: readonly number[], budget: number): Ring {
-  const ring = new Ring(adj, seed);
+/** Relocation and arc-reversal sweeps on `ring` until neither improves or `budget` pair terms are spent. */
+function localSearch(ring: Ring, budget: number): void {
+  const n = ring.at.length;
   const limit = ring.work + budget;
   for (let improved = true; improved && ring.work < limit;) {
     improved = false;
-    for (let node = 0; node < adj.n && ring.work < limit; node += 1) improved = relocate(ring, node, limit) || improved;
+    for (let node = 0; node < n && ring.work < limit; node += 1) improved = relocate(ring, node, limit) || improved;
     improved = reverseArcs(ring, limit) || improved;
   }
-  return ring;
+}
+
+/**
+ * Orders domains by angle in the plane of the lazy random walk's two leading non-constant eigenvectors,
+ * found by subspace iteration from `chain` laid round a circle. O(SPECTRAL_ITERATIONS · (n + P) + n log n).
+ */
+function spectralSeed(adj: Adjacency, chain: readonly number[]): { order: number[]; work: number } {
+  const { n, start, to, weight } = adj;
+  const degree = new Float64Array(n);
+  let total = 0;
+  for (let u = 0; u < n; u += 1) {
+    for (let e = start[u]!; e < start[u + 1]!; e += 1) degree[u]! += weight[e]!;
+    total += degree[u]!;
+  }
+  if (total === 0) return { order: chain.slice(), work: 0 };
+  let basis = [new Float64Array(n), new Float64Array(n)] as const;
+  let walked = [new Float64Array(n), new Float64Array(n)] as const;
+  chain.forEach((node, slot) => {
+    basis[0][node] = Math.cos((2 * Math.PI * slot) / n);
+    basis[1][node] = Math.sin((2 * Math.PI * slot) / n);
+  });
+  for (let round = 0; round < SPECTRAL_ITERATIONS; round += 1) {
+    for (let c = 0; c < 2; c += 1) {
+      const x = basis[c]!;
+      const y = walked[c]!;
+      for (let u = 0; u < n; u += 1) {
+        let reach = 0;
+        for (let e = start[u]!; e < start[u + 1]!; e += 1) reach += weight[e]! * x[to[e]!]!;
+        y[u] = degree[u]! > 0 ? 0.5 * (x[u]! + reach / degree[u]!) : x[u]!;
+      }
+      degreeOrthonormalise(y, c === 0 ? [] : [walked[0]], degree, total);
+    }
+    [basis, walked] = [walked, basis];
+  }
+  const angle = Float64Array.from({ length: n }, (_, u) => Math.atan2(basis[1][u]!, basis[0][u]!));
+  const order = Array.from({ length: n }, (_, u) => u).sort((a, b) => angle[a]! - angle[b]! || a - b);
+  return { order, work: SPECTRAL_ITERATIONS * 2 * (n + start[n]!) };
+}
+
+/** Removes the constant vector and every vector in `against` from `y` under the degree inner product, then scales it to unit length. O(n). */
+function degreeOrthonormalise(y: Float64Array, against: readonly Float64Array[], degree: Float64Array, total: number): void {
+  const n = y.length;
+  let mean = 0;
+  for (let u = 0; u < n; u += 1) mean += degree[u]! * y[u]!;
+  mean /= total;
+  for (let u = 0; u < n; u += 1) y[u]! -= mean;
+  for (const z of against) {
+    let dot = 0;
+    for (let u = 0; u < n; u += 1) dot += degree[u]! * y[u]! * z[u]!;
+    for (let u = 0; u < n; u += 1) y[u]! -= dot * z[u]!;
+  }
+  let norm = 0;
+  for (let u = 0; u < n; u += 1) norm += degree[u]! * y[u]! * y[u]!;
+  norm = Math.sqrt(norm) || 1;
+  for (let u = 0; u < n; u += 1) y[u]! /= norm;
 }
 
 /** Chains each domain to its heaviest unplaced partner, else the lowest unplaced index. O(n + P). */
@@ -289,7 +345,8 @@ function partialCost(adj: Adjacency, order: readonly number[], pos: Int32Array, 
 
 /**
  * Orders domains round a circle to minimise Σ weight × ring distance. Up to `EXHAUSTIVE_MAX` domains
- * every order is tried; above it two seeds go through a local search whose work is bounded by
+ * every order is tried; above it a spectral, a heaviest-partner and a label-order seed each go
+ * through a local search whose work is bounded by
  * `SEARCH_WORK_FLOOR` + `SEARCH_WORK_PER_INPUT` × (n + P), so the cost is O(n + P) for n domains
  * and P weighted pairs.
  */
@@ -334,17 +391,26 @@ export function circularDomainOrder(model: DialModel, previous: readonly string[
     const natural = Array.from({ length: n }, (_, i) => i).sort((x, y) =>
       model.domainById.get(ids[x]!)!.label.localeCompare(model.domainById.get(ids[y]!)!.label, undefined, { numeric: true }) || x - y,
     );
+    const chain = greedyChain(adj, hub);
+    const spectral = spectralSeed(adj, chain);
+    work += spectral.work;
+    const rings = [spectral.order, chain, natural].map((seed) => new Ring(adj, seed));
+    const seedCost = new Map(rings.map((ring) => [ring, ring.cost()] as const));
+    rings.sort((a, b) => seedCost.get(a)! - seedCost.get(b)!);
     let best: number[] = natural;
     let bestCost = Infinity;
-    for (const seed of [greedyChain(adj, hub), natural]) {
-      const ring = localSearch(adj, seed, budget / 2);
+    let spent = 0;
+    for (const ring of rings) {
+      const before = ring.work;
+      localSearch(ring, budget - spent);
+      spent += ring.work - before;
       const value = ring.cost();
-      work += ring.work;
       if (value < bestCost - EPS) {
         bestCost = value;
         best = ring.order();
       }
     }
+    for (const ring of rings) work += ring.work;
     const at = best.indexOf(hub);
     order = best.slice(at).concat(best.slice(0, at));
   }

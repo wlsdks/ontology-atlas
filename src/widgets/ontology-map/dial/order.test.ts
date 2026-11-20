@@ -102,7 +102,19 @@ function referenceOrder(model: DialModel): string[] {
     strength[i]! += f.total;
     strength[j]! += f.total;
   }
-  const cost = (order: readonly number[]) => ringCost(model, order.map((k) => ids[k]!));
+  const pairs = model.flows.map((f) => [index.get(f.a)!, index.get(f.b)!, f.relatesOnly ? 0.5 : f.total] as const);
+  const pos = new Int32Array(n);
+  const cost = (order: readonly number[]) => {
+    order.forEach((node, slot) => {
+      pos[node] = slot;
+    });
+    let total = 0;
+    for (const [i, j, w] of pairs) {
+      const d = Math.abs(pos[i]! - pos[j]!);
+      total += w * Math.min(d, n - d);
+    }
+    return total;
+  };
   const search = (start: number[]) => {
     let order = start;
     let current = cost(order);
@@ -174,6 +186,11 @@ describe("circularDomainOrder", () => {
     const mean = ratios.reduce((sum, r) => sum + r, 0) / ratios.length;
     expect(mean, "mean ring cost against the old search").toBeLessThanOrEqual(1.02);
     expect(Math.max(...ratios), "worst ring cost against the old search").toBeLessThanOrEqual(1.1);
+  });
+
+  it("keeps the ring cost of the full-recount search on 80 domains linked densely and weakly", () => {
+    const model = modelOf(80, randomLinks(80, 2600, 80));
+    expect(ringCost(model, circularDomainOrder(model, null).order) / ringCost(model, referenceOrder(model))).toBeLessThanOrEqual(1);
   });
 
   it("grows its work linearly with domains and pairs", () => {
