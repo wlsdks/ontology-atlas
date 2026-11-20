@@ -1,0 +1,8 @@
+{
+  "stop": "Stop",
+  "hide": "Hide",
+  "close": "Close",
+  "progressLabel": "{title} progress",
+  "railRunning": "{destination}: running",
+  "railFinished": "{destination}: {count, plural, one {# finished run to read} other {# finished runs to read}}"
+}

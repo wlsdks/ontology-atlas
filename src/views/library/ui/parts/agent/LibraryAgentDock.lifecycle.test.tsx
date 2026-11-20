@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -39,6 +39,7 @@ vi.mock("@/shared/lib/agent-chat/tauri-acp", () => ({
   },
 }));
 
+import { AcpChatPanelKeeper } from "@/widgets/acp-chat-panel";
 import { LibraryAgentDock } from "./LibraryAgentDock";
 
 function emit(payload: unknown) {
@@ -51,22 +52,42 @@ function replyTo(method: string, result: unknown) {
 }
 
 const RUNTIME = { id: "claude-acp", label: "Claude Agent" };
+const OTHER_RUNTIME = { id: "codex-acp", label: "Codex" };
+const reportedStops = new Map<string, (() => void) | null>();
+const stopReporters = new Map(
+  [RUNTIME, OTHER_RUNTIME].map((runtime) => [runtime.id, (stop: (() => void) | null) => reportedStops.set(runtime.id, stop)]),
+);
 
-function dock(open: boolean) {
+const CHECK = "Check the wiki";
+const checkOnly = (turn: { text: string }) => turn.text === CHECK;
+
+function dock(open: boolean, runtime = RUNTIME) {
   return (
     <NextIntlClientProvider locale="en" messages={enMessages}>
+      <AcpChatPanelKeeper />
       <LibraryAgentDock
         chatWidth={{ width: 420, setWidth: () => {}, commitWidth: () => {} }}
         open={open}
-        runtime={RUNTIME}
-        runtimes={[RUNTIME]}
+        runtime={runtime}
+        runtimes={[RUNTIME, OTHER_RUNTIME]}
         onRuntimeChange={() => {}}
         vaultRoot="/Users/probe/atlas"
         mcpServers={[{ name: "atlas-vault" }]}
         openingRequest={null}
         knownSlugs={new Set()}
         onClose={() => {}}
+        turnReadOnly={checkOnly}
+        onTurnStopChange={stopReporters.get(runtime.id)}
       />
+    </NextIntlClientProvider>
+  );
+}
+
+/** Every other screen: the keeper above the routes stays, the Library is gone. */
+function elsewhere() {
+  return (
+    <NextIntlClientProvider locale="en" messages={enMessages}>
+      <AcpChatPanelKeeper />
     </NextIntlClientProvider>
   );
 }
@@ -139,6 +160,7 @@ afterEach(() => {
   bridge.listener = null;
   bridge.stopped = [];
   bridge.started = 0;
+  reportedStops.clear();
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
@@ -221,11 +243,50 @@ describe("pressing X on the Library dock", () => {
     expect(bridge.sent.filter((m) => m.method === "session/new")).toHaveLength(1);
   });
 
-  it("ends the conversation when the Library itself goes away", async () => {
+  it("ends an idle conversation when the Library itself goes away", async () => {
     const view = await openWithSession();
-    view.unmount();
-    await act(async () => {});
-    // Background work belongs to this screen. Leaving it is not putting the dock away.
+    view.rerender(elsewhere());
     await waitFor(() => expect(bridge.stopped).toEqual(["acp-1"]));
+  });
+
+  async function startTurn(text: string) {
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: text } });
+    fireEvent.click(screen.getByTestId("acp-chat-send"));
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === "session/prompt")).toBe(true));
+    await waitFor(() => expect(screen.getByTestId("acp-chat-panel")).toHaveAttribute("data-acp-status", "thinking"));
+  }
+
+  it("ends a turn that may write when the Library itself goes away", async () => {
+    const view = await openWithSession();
+    await startTurn("Rewrite the refund page");
+    view.rerender(elsewhere());
+    await waitFor(() => expect(bridge.stopped).toEqual(["acp-1"]));
+  });
+
+  it("keeps a running check's Stop working after the person switches agent", async () => {
+    const view = await openWithSession();
+    await startTurn(CHECK);
+    view.rerender(dock(true, OTHER_RUNTIME));
+    await act(async () => {});
+    expect(bridge.stopped).toEqual([]);
+    expect(reportedStops.get(OTHER_RUNTIME.id)).toBeNull();
+    act(() => reportedStops.get(RUNTIME.id)?.());
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === "session/cancel")).toBe(true));
+  });
+
+  it("keeps a check in flight running when the Library itself goes away, and its answer lands", async () => {
+    const view = await openWithSession();
+    await startTurn(CHECK);
+    view.rerender(elsewhere());
+    await act(async () => {});
+    expect(bridge.stopped).toEqual([]);
+    emit({
+      jsonrpc: "2.0",
+      method: "session/update",
+      params: { sessionId: "s-1", update: { sessionUpdate: "agent_message_chunk", content: { text: "Three findings." } } },
+    });
+    replyTo("session/prompt", { stopReason: "end_turn" });
+    await waitFor(() => expect(document.querySelector("[data-kept-agent-parking]")).toHaveTextContent("Three findings."));
+    expect(bridge.stopped).toEqual([]);
   });
 });

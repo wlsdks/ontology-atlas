@@ -11,6 +11,7 @@ import {
 import { DocReadingPane, shouldShowOutlineRail } from "@/widgets/doc-reading-pane";
 import { DocsVaultViewer } from "@/widgets/docs-vault";
 import { cn } from "@/shared/lib/cn";
+import { workRuns } from "@/features/work-run";
 import { useLibraryAgent } from "../../lib/agent/use-library-agent";
 import { useAnswerRefresh } from "../../lib/questions/use-answer-refresh";
 import { LibraryCheckReport } from "../parts/wiki/LibraryCheckReport";
@@ -68,6 +69,7 @@ export function LibraryDocumentColumn({
   const {
     pendingAskRef, fixedKeys, handleFix, pageBodyRef, findings, openCandidates, reportHeadings,
     hasOntology, handlePropose, handleLint, compileBlocked, compileTransfer, agentOnlyReason,
+    checkRun, checkFolder,
   } = turns;
   const { agentDoor } = graphCards;
   const { indexSegment, indexCollapsed } = indexColumn;
@@ -111,6 +113,11 @@ export function LibraryDocumentColumn({
           onOpenSource={(path) => choose({ kind: "source", path })}
           pageTitle={wikiPageTitle}
           fixedKeys={fixedKeys}
+          checkRun={checkRun}
+          folder={checkFolder}
+          onStopCheck={workRuns.stop}
+          onOpenConversation={agent.runtime && nativeVaultRootPath ? () => agent.setOpen(true) : undefined}
+          conversationOpen={agent.open}
           t={t}
         />
       </DocReadingPane>

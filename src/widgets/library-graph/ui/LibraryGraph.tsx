@@ -9,6 +9,7 @@ import { EMPTY_LIBRARY_WORK_ACTIVITY, type LibraryWorkActivity } from "@/feature
 import { useRouter } from "@/i18n/navigation";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { cn } from "@/shared/lib/cn";
+import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import { ChromeTile, Surface } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
@@ -236,6 +237,7 @@ export function LibraryGraph({
     if (inside) canvasRef.current?.focus({ preventScroll: true });
   }, []);
 
+  const latestOnSelectRef = useLatestRef(onSelect);
   const activate = useCallback(
     (node: LibraryGraphNode) => {
       setCardId(null);
@@ -245,9 +247,9 @@ export function LibraryGraph({
         if (node.href) router.push(node.href);
         return;
       }
-      onSelect({ kind: node.kind === "page" ? "wiki" : "source", ref: node.ref });
+      latestOnSelectRef.current({ kind: node.kind === "page" ? "wiki" : "source", ref: node.ref });
     },
-    [onSelect, router],
+    [latestOnSelectRef, router],
   );
 
   // Every page asks for its name (a collision drops the quieter); the camera decides which files do.
@@ -309,15 +311,16 @@ export function LibraryGraph({
     return laid.length === nodes.length ? laid : nodes;
   }, [nodes, walkOrder]);
   const focusedIsland = engine.islands.find((candidate) => candidate.id === focusedIslandId) ?? null;
+  const latestIslandStepRef = useLatestRef({ list: engine.islands, focusedIslandId });
   const stepIsland = useCallback(
     (delta: number) => {
-      const list = engine.islands;
+      const { list, focusedIslandId: focused } = latestIslandStepRef.current;
       if (list.length === 0) return;
-      const current = list.findIndex((candidate) => candidate.id === focusedIslandId);
+      const current = list.findIndex((candidate) => candidate.id === focused);
       const next = current === -1 ? (delta > 0 ? 0 : list.length - 1) : (current + delta + list.length) % list.length;
       setFocusedIslandId(list[next]?.id ?? null);
     },
-    [engine.islands, focusedIslandId],
+    [latestIslandStepRef],
   );
   const stepFocus = useCallback(
     (delta: number) => {
