@@ -38,25 +38,42 @@ retain the added, duplicate and failed counts. Reduced motion keeps the same
 states readable without spinning, and results from an earlier folder or attempt
 cannot animate the current control.
 
-**Question desk (2026-09-27).** With nothing selected in Wiki, the reader pane
-asks a question and searches locally only after a press. The complete inquiry group
-centers horizontally and vertically inside the reader pane, including its original-file
-rows; safe auto margins collapse when content exceeds the viewport. Short positive and no-match
-results retain that balance. Expanding long evidence collapses vertical auto margins;
-reports read from the top.
-Position-only motion connects those states without scaling text. It separates matching
-Wiki fact and decision sentences from original source units, with exact anchors;
-a compact summary opens read coverage, skipped files and hidden match counts.
+**Question desk (2026-09-27, recomposed 2026-11-20).** With nothing selected in Wiki, the reader pane
+asks a question and searches locally only after a press. One document-width column
+is top aligned: the title line, the field, the folder's search scope, then the
+person's own trail or the results. The field keeps the same place before a question,
+with results, after Show more and under a report. Before a question the desk lists up
+to three saved questions (newest first, a state badge only when cited sources changed
+or are missing) and up to five wiki pages by the day the folder lists for them, with
+how many sources each cites; a folder with neither shows its first three originals.
+Results are one list, best first: wiki claims and source passages fused by reciprocal
+rank (`lead-fusion.ts`). A source passage at the exact place a listed claim cites
+that says the same sentence (compared after NFC, case, spacing and trailing
+punctuation) is folded into that claim, which keeps both ranks, so one sentence
+stands once; a cited passage that says something else keeps its own row beside the
+claim. The
+best three show; Show N more appends the rest and moves focus to the first new row.
+A row is the sentence (a sentence over 320 characters shows a window around its
+first matched term, cut between graphemes with an ellipsis at each cut), question
+terms in a stronger weight, then where it lives in
+one label size: the page title or file name and its line, a badge only when a cited
+source changed, is missing or nothing is cited, and up to two cited files that open
+the source at the line, then "+N" for the rest. The head counts the rows; with no
+match the no-match title is the head. An info glyph opens read coverage (omitted
+leads named only when there are some), only the limits that are not zero, the
+search method and the freshness caveat once in a popover. Asking again keeps the old rows until the new ones arrive and swaps them in
+place.
 A matching hash
 means the cited source bytes agree with the page's receipt; it does not verify
-the sentence. Results from an older folder listing disappear until searched
-again. The source units are cached only in memory for the current folder and
+the sentence. Results from an older folder listing stay under a line saying the
+folder changed, and the report action waits for a new search. The source units are cached only in memory for the current folder and
 inventoried file version. An ACP Ask passes these as untrusted leads and asks
 the agent to re-read originals and cite its answer; that turn disables automatic
 Wiki approval, while the existing permission path still governs unexpected
 writes. Jev remains optional in the installed app: a current cited claim opens
 an exact-transfer consent dialog, and its result is advice on that pair only.
-Neither a key nor an agent is needed to search or open the originals. The existing
+Neither a key nor an agent is needed to search or open the originals; on the web
+there is no Jev press and no report action. The existing
 Conversation control remains available on the inquiry and report surfaces, so a
 person can choose a runtime or return to the transcript before starting another
 report request. Saved questions retain their direct entry there too. Opening a
@@ -68,22 +85,27 @@ report reply into an ordinary fileable answer.
 
 **Report and document (2026-09-27).** One explicit ACP action turns the current
 question into a report request: answer, cited originals, disagreements or
-changed claims, and unknowns. The screen leads with the answer and separates
-those sections before expandable evidence leads, with an unreviewed draft label.
+changed claims, and unknowns. The report stands under the field and above the
+leads, which keep their place under the head "Passages the search found", with an
+unreviewed draft label.
 Zero local word matches do not assert that a differently worded original lacks
 the answer; ACP can re-read the folder on request. Only citations to inventoried originals open
-inside Library. The draft follows the current query and file listing; a new
-search or external folder change clears it. Filing remains an explicit Wiki
+inside Library; on screen each shows the file name and its line (the shortest
+trailing path that no other listed original shares when names repeat), with the
+full address as its description and tooltip. Any anchor other than a plain line
+number of at most seven digits shows the address as written, and a citation with
+a second `#` stays inert, as the export treats it. The draft follows the current query and file listing:
+editing the question keeps it, and it leaves when a new search's rows arrive or the
+folder changes. Filing remains an explicit Wiki
 review/write action. One editorial document template preserves the question,
 response, cited addresses, search coverage and omissions in a local Markdown
-download or the app's Print/Save as PDF flow. Jev judgment is not exported as
+download or the app's Print/Save as PDF flow; both keep the full addresses. Jev judgment is not exported as
 accepted meaning. External links and images stay inert in Markdown exports;
 unusual syntax that cannot be safely rewritten is preserved as a literal text
-document. Before searching, the desk shows inventoried originals that can be
-opened directly without an agent or an invented citation. A failed agent action
-stays visible beside the question with a path back to the conversation. Search
-completion, report arrival and evidence expansion use
-brief, interruptible motion; reduced-motion settings preserve every fact.
+document. A failed agent action stays visible beside the question with a path
+back to the conversation. The entry material leaving and the results rising are
+one motion, appended rows rise in order, and an interrupted motion continues from
+the value last drawn; reduced-motion settings show the end state.
 
 **Retained questions and explicit revisions.** The Library landing lists saved
 questions and the tips of their answer histories. It distinguishes source-byte
@@ -150,28 +172,45 @@ With no folder open the whole screen is one centred stage naming the two kinds o
 offering the picker, and a folder that is open but holds nothing gets the same grammar with
 the two doors instead. **With a folder open and nothing selected in Sources,
 the right pane is the folder's graph** (2026-09-12, restoring 2026-09-06);
-in Wiki it is the question desk. When the folder has a source, the **progress band** (2026-11-19,
-`docs/specs/2026-11-19-source-progress.md`) stands on top of the Sources graph, at most 112px
-tall: the percent of sources that have a wiki page, rounded down, with today's additions; the
-sentence it rests on; a 6px state bar (has a page in the accent, needs review and read in part
-in amber, checking and can't read neutral, no page the track); a cumulative step chart by the
-`compiled_at` each page records, at most 26rem wide and captioned with its first date and
-today, whose Left and Right keys read each point; and the press that writes the next 10 waiting
-sources (3 on the local model), with how many wait after them or how many came back without a
-page. On the web, where nothing can write, one line says only the app writes pages and a Get the
-app button stands in for the press. The percent and the sentence's count rise together on a
+in Wiki it is the question desk. **The Sources home is exactly three parts: the band, the picture
+and its key** (2026-11-20, `docs/specs/2026-11-20-library-rooms.md`). When the folder has a
+source, the **progress band** (`docs/specs/2026-11-19-source-progress.md`) stands on top of the
+graph, at most 112px tall from `md` up, in four cells. The number: the percent of sources that
+have a wiki page, rounded down (below 10 sources the fraction `1 / 1`), with today's additions on
+its baseline, and under it the sentence in primary ink on one line. The bar: a 6px state bar (has
+a page in the accent, needs review and read in part in amber, checking and can't read neutral, no
+page the track), 280–560px wide, and under it one row of state presses in bar order, each a
+swatch, its word and a count, ending in a clear press (an × named `Show all N`) whose slot is held
+from the first paint, so a press resizes nothing in the band. With one state the row stays empty.
+A press shows only that state's rows in the index, combined with
+the search, and lights that state's marks in the picture (a compiled press lights the pages that
+cite them too); pressing it again, the clear press, or Escape clears both, and a press while the
+column is folded unfolds it. The chart: a cumulative step chart by the `compiled_at` each page
+records, at most 26rem wide and captioned with its first date and today, whose Left and Right keys
+read each point, drawn only from three recorded days; without it the bar takes the room. The
+action: the press that writes the next 10 waiting sources (3 on the local model), with how many
+wait after them or how many came back without a page, and in the app one work line under it
+whose slot is held from the first paint: a running mark only while work happens, the kind of
+work, the file's name (its path is the title) as a press that opens it, and `Recent N`, which opens the last three in an
+anchored list. On the web, where nothing can write, one line says only the app writes pages and
+a Get the app button stands in for the press. Below a 60rem pane the number and bar stack, so
+the band stays inside 112px at 1040. The percent and the sentence's count rise together on a
 folder's first visit in a session, drawn only once the count starts, and later move on from what
 is drawn; at 100% the bar turns green and one light passes along it. Below `md` the chart steps
-aside. The index's state counts carry their bar colour and are presses that show only their
-rows, combined with the search; `Show all` undoes one. A door that names its own sources (a
-source's Write wiki page, a stale page's refresh) sends exactly those. Under the band sits one `text-label` row — the canvas's own
-counts caption, then the step facts as pressable clauses (`N sources changed` lights that citation and its two ends
-without moving a mark; `N off-template` presses into the check report, whose one door with
-live state — a count, *running*, *unseen* — is the index's own row) — and then the doors
-`How to use`, the saved questions, and the existing `Conversation`. `How to
-use` holds the three source-to-wiki steps in an anchored popup and raises itself once per
-machine; at exactly one saved answer the questions door is that question, so reopening it
-is one press. Selecting a document replaces the graph or question desk and
+aside. A door that names its own sources (a source's Write wiki page, a stale page's refresh)
+sends exactly those. **Under the picture is its key**: one fixed-height `text-label` line of
+glyph, word and count — square source, filled circle wiki page, ring concept, solid line
+citation, dashed line mention — and the gestures in tertiary ink at its right from `lg`; the
+islands picture keys an island, a wiki page, a source and the amber changed source. Items drop
+from the end when the line is narrow, the full key stays in the canvas's description, and a
+pointed-at mark or island is described on the same line. **The Library's doors are in the page
+header**, left of the info glyph, as 36px chrome pills: `How to use`, the saved questions,
+`Conversation`, and `Review updated answer` while a proposal waits; below `lg` they fold into
+More. Every Sources and Wiki state carries exactly one Conversation control and one Questions
+control; the reader's top row carries the work line at its right, and the question desk keeps its
+compact one. `How to use` holds the three source-to-wiki steps in an anchored popup and raises
+itself once per machine; at exactly one saved answer the questions door is that question, so
+reopening it is one press. Selecting a document replaces the graph or question desk and
 gives it back on close. Below `lg`, Sources keeps the graph above the index;
 Wiki gives the question desk the available height and opens its page index with
 an explicit Browse action and return focus. A folder that holds wiki
@@ -592,10 +631,10 @@ screenshot cannot check — the card never covers its mark, and never leaves the
 
 **A stale citation is visible on a small folder and calm on a large one** (2026-09-13). Every
 unverified citation carries its amber dot at rest, at every window, up to **64 standing dots**;
-past that the picture stops repeating the fact and the strip's `N sources changed` clause says
-the number instead. The dots are still drawn for the citations a reader has in hand — the open
-card's own, the pointed-at mark's neighbourhood, and every one of them while that clause is
-held, which lights both ends and prints both counts — and it is all or nothing above the cap,
+past that the picture stops repeating the fact and the band's `needs review` press says the
+number instead. The dots are still drawn for the citations a reader has in hand — the open
+card's own, the pointed-at mark's neighbourhood, and every one of them while that press is on,
+which lights both ends — and it is all or nothing above the cap,
 never a sample, so an undotted citation cannot be read as a fresh one. The budget is the
 canvas's own ink: the standing amber holds no more than **4%** of it at rest. Measured on the
 four picture fixtures at 1512x901, 1040x720 and 1920x1080: the three folders under the cap are
@@ -901,9 +940,9 @@ node whose body cites `[[wiki/…]]` pages is drawn as a ring with a dashed line
 so the node the wiki proposed shows its evidence on the Library's own picture. A link
 that resolves to nothing is not drawn, and a
 source nobody has written up simply has no line, which is the same fact the `not compiled`
-word carries in the list. The caption counts what is on the canvas: sources, pages,
-concepts, links; beside it stand the status strip and the door to the shelf. A citation is
-drawn 1.5px against a mention's 1px, so the two relations read apart without the legend.
+word carries in the list. The key under the picture counts what is on the canvas: sources,
+pages, concepts, citations and mentions. A citation is drawn 1.5px against a mention's 1px, so
+the two relations read apart, and the key draws each beside its count.
 **Up to 60 nodes every mark carries its own name** — the page's title, the file's name, the
 concept's title — standing under it in `text-label`, secondary ink for a page and
 quaternary for the two things it stands on; a screen-space pass claims the marks first and

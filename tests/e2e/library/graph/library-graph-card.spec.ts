@@ -167,13 +167,13 @@ test.describe("a press on a mark opens a card beside it", () => {
       cardBox.y + cardBox.height > markTop;
     expect(overlap, "the card covered the mark it belongs to").toBe(false);
 
-    // Inside the canvas, which begins below the caption row — so the strip is safe by
+    // Inside the canvas, which ends above the key line — so the key is safe by
     // construction, and this asserts both halves.
     expect(cardBox.x).toBeGreaterThanOrEqual(canvasBox.x - 0.5);
     expect(cardBox.x + cardBox.width).toBeLessThanOrEqual(canvasBox.x + canvasBox.width + 0.5);
     expect(cardBox.y).toBeGreaterThanOrEqual(canvasBox.y - 0.5);
     expect(cardBox.y + cardBox.height).toBeLessThanOrEqual(canvasBox.y + canvasBox.height + 0.5);
-    for (const testId of ["library-graph-counts", "library-strip-stale"]) {
+    for (const testId of ["library-graph-key", "library-progress"]) {
       const strip = await page.getByTestId(testId).boundingBox();
       if (!strip) continue;
       const covered =
@@ -307,10 +307,11 @@ test.describe("a press on a mark opens a card beside it", () => {
 
     /* The card carries words for the drift, beside the lines. */
     await expect(page.getByTestId("library-graph-card-flow")).toContainText("flow from each source");
-    /* With the pointer off the marks the slot below the canvas is the legend again. */
+    /* With the pointer off the marks the line below the canvas is the key again. */
     const box = (await page.getByTestId("library-graph-canvas").boundingBox())!;
     await page.mouse.move(box.x + 3, box.y + 3);
-    await expect(page.getByTestId("library-graph-hint")).toContainText("A filled circle is a page");
+    await expect(page.getByTestId("library-graph-key").locator('[data-key-item="circle"]')).toContainText("Wiki page");
+    await expect(page.getByTestId("library-graph-hint")).toContainText("Wiki page");
   });
 
   /** The arrival breath is one pulse and ends: frames during it, none after it. */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import type { VaultDoc } from '@/entities/docs-vault';
-import { countDeskReadablePages, findDeskClaims, findDeskSourceHits, jevClaimEligibility, jevPayloadEligibility, planDeskSourceReads, questionDeskReportFileCurrent, questionTerms } from './question-desk';
+import { countDeskReadablePages, deskSentenceWindow, DESK_SENTENCE_LIMIT, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskReportFileCurrent, questionTermRuns, questionTerms, recentDeskPages, type DeskClaim } from './question-desk';
 import { buildQuestionDeskBrief, buildQuestionDeskReportBrief, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections, QUESTION_DESK_BRIEF_MAX_CHARS } from './question-desk-brief';
 import { planQuestionDeskReportFile } from './question-desk-brief';
 import { buildAnswerPage } from './answer-page';
@@ -137,7 +137,7 @@ describe('question desk evidence', () => {
     const longPath = `sources/${'a'.repeat(160)}.md`;
     const claims = Array.from({ length: 8 }, (_, index) => ({
       pageSlug: `wiki/long-${index}`, pageTitle: `Long ${index}`,
-      text: `${'x'.repeat(70_028)} [[src:${longPath}#l2]]`, score: 1,
+      text: `${'x'.repeat(70_028)} [[src:${longPath}#l2]]`, line: 1, score: 1,
       citations: Array.from({ length: 4 }, (_, offset) => ({ path: longPath, anchor: `l${offset + 2}` })),
       recordedHashes: {},
     }));
@@ -197,7 +197,7 @@ describe('question desk evidence', () => {
       coverage: 'c'.repeat(5_000),
       claims: Array.from({ length: 8 }, (_, index) => ({
         pageSlug: `wiki/long-${index}`, pageTitle: `Long ${index}`,
-        text: 'w'.repeat(10_000), score: 1, recordedHashes: {},
+        text: 'w'.repeat(10_000), line: 1, score: 1, recordedHashes: {},
         citations: [2, 3, 4].map((line) => ({ path: sourcePath, anchor: `l${line}` })),
       })),
       sourceHits: Array.from({ length: 8 }, (_, index) => ({ path: sourcePath, anchor: `l${index + 2}`, text: 's'.repeat(10_000), score: 1 })),
@@ -387,5 +387,117 @@ describe('question desk evidence', () => {
     expect(jevPayloadEligibility('claim', 'e'.repeat(8_001), '{}')).toBe('too-long');
     expect(jevPayloadEligibility('claim', '한'.repeat(6_000), JSON.stringify({ claim: 'claim', evidence: '한'.repeat(6_000) }))).toBe('too-long');
     expect(jevPayloadEligibility('claim', 'evidence', '{}')).toBe('ready');
+  });
+});
+
+describe('question desk home and lead order', () => {
+  const page = (slug: string, updatedAt: string, extra = ''): VaultDoc => ({
+    ...doc(slug, `---\ntitle: ${slug}\nsources: [sources/a.md, sources/b.md]\n${extra}---\n`), updatedAt,
+  });
+  const claimAt = (pageSlug: string, line: number): DeskClaim => ({
+    pageSlug, pageTitle: pageSlug, text: `claim ${line}`, citations: [], line, score: 1, recordedHashes: {},
+  });
+
+  it('lists the five newest wiki pages, newest first, without saved questions or concept documents', () => {
+    const docs = [
+      page('wiki/a', '2026-11-01T00:00:00Z'), page('wiki/b', '2026-11-05T00:00:00Z'), page('wiki/c', '2026-11-03T00:00:00Z'),
+      page('wiki/d', '2026-11-07T00:00:00Z'), page('wiki/e', '2026-11-02T00:00:00Z'), page('wiki/f', '2026-11-06T00:00:00Z'),
+      page('wiki/answers/kept', '2026-11-20T00:00:00Z'), page('wiki/concept', '2026-11-19T00:00:00Z', 'kind: capability\n'),
+    ];
+    const recent = recentDeskPages(docs, 5);
+    expect(recent.map((row) => row.slug)).toEqual(['wiki/d', 'wiki/f', 'wiki/b', 'wiki/c', 'wiki/e']);
+    expect(recent[0]!.sources).toBe(2);
+  });
+
+  it('orders pages written on the same day by slug, so the list does not shuffle', () => {
+    const day = '2026-11-01T00:00:00Z';
+    expect(recentDeskPages([page('wiki/b', day), page('wiki/c', day), page('wiki/a', day)], 2).map((row) => row.slug)).toEqual(['wiki/a', 'wiki/b']);
+  });
+
+  it('lists saved questions newest first by the day their page records', () => {
+    const docs = [
+      page('wiki/answers/old', '2026-11-20T00:00:00Z', 'compiled_at: 2026-10-01T00:00:00Z\n'),
+      page('wiki/answers/new', '2026-11-01T00:00:00Z', 'compiled_at: 2026-11-05T00:00:00Z\n'),
+      page('wiki/answers/listed', '2026-10-15T00:00:00Z'),
+      page('wiki/plain', '2026-11-30T00:00:00Z'),
+    ];
+    const saved = newestDeskQuestions(docs, 3);
+    expect(saved.map((row) => row.head.slug)).toEqual(['wiki/answers/new', 'wiki/answers/listed', 'wiki/answers/old']);
+    expect(saved[1]!.savedAt).toBe('2026-10-15T00:00:00Z');
+    expect(newestDeskQuestions(docs, 1)).toHaveLength(1);
+  });
+
+  it('interleaves wiki claims and source passages by rank, claim first on a tie', () => {
+    const leads = fuseDeskLeads([claimAt('wiki/z', 4), claimAt('wiki/z', 9)], [
+      { path: 'sources/a.md', anchor: 'l3', text: 'passage', score: 2 },
+      { path: 'sources/b.md', anchor: 'l1', text: 'passage', score: 1 },
+    ]);
+    expect(leads.map((lead) => lead.key)).toEqual(['claim:wiki/z:4', 'source:sources/a.md#l3', 'claim:wiki/z:9', 'source:sources/b.md#l1']);
+  });
+
+  it('shows the sentence a listed claim cites once, as that claim, and lifts the claim by its rank', () => {
+    const citing = {
+      ...claimAt('wiki/z', 9),
+      text: 'Returns  are accepted for 15 days. [[src:sources/a.md#l17]]',
+      citations: [{ path: 'sources/a.md', anchor: 'l17' }],
+    };
+    const leads = fuseDeskLeads([claimAt('wiki/z', 4), citing], [
+      // NFC, case, runs of whitespace, a list marker and trailing punctuation do not make it another sentence.
+      { path: 'sources/a.md', anchor: 'l17', text: '- RETURNS are accepted\tfor 15 days', score: 2 },
+      { path: 'sources/a.md', anchor: 'l18', text: 'next line', score: 1 },
+    ]);
+    expect(leads.map((lead) => lead.key)).toEqual(['claim:wiki/z:9', 'claim:wiki/z:4', 'source:sources/a.md#l18']);
+  });
+
+  it('folds composed and decomposed Hangul as one sentence', () => {
+    const sentence = '배송 완료 후 15일 안에는 반품할 수 있다.';
+    const citing = { ...claimAt('wiki/z', 9), text: sentence, citations: [{ path: 'sources/a.md', anchor: 'l17' }] };
+    const leads = fuseDeskLeads([citing], [{ path: 'sources/a.md', anchor: 'l17', text: sentence.normalize('NFD'), score: 1 }]);
+    expect(leads.map((lead) => lead.key)).toEqual(['claim:wiki/z:9']);
+  });
+
+  it('keeps a cited passage that says something else as its own row beside the claim', () => {
+    const citing = {
+      ...claimAt('wiki/z', 9),
+      text: 'Refund approval immediately restores stock. [[src:sources/refund.md#l2]]',
+      citations: [{ path: 'sources/refund.md', anchor: 'l2' }],
+    };
+    const leads = fuseDeskLeads([citing], [
+      { path: 'sources/refund.md', anchor: 'l2', text: 'Refund approval queues a stock restoration job.', score: 1 },
+    ]);
+    expect(leads.map((lead) => lead.key)).toEqual(['claim:wiki/z:9', 'source:sources/refund.md#l2']);
+  });
+
+  it('marks whole question terms and the stems of longer Hangul terms, nothing else', () => {
+    const terms = questionTerms('반품은 며칠 안에 Refund');
+    const runs = questionTermRuns('배송 후 15일 안에는 반품할 수 있다. refund ok', terms);
+    expect(runs.filter((run) => run.strong).map((run) => run.text)).toEqual(['안에', '반품', 'refund']);
+    expect(runs.map((run) => run.text).join('')).toBe('배송 후 15일 안에는 반품할 수 있다. refund ok');
+  });
+
+  it('shows a sentence that fits whole and a longer one as a window around its first matched term', () => {
+    const short = 'Refund approval queues a stock restoration job.';
+    expect(deskSentenceWindow(short, ['refund'])).toBe(short);
+    const long = `${'Before the refund clause. '.repeat(40)}${'Stock waits. '.repeat(40)}`;
+    expect(deskSentenceWindow(long, ['refund'])).toMatch(/^Before the refund clause\..*…$/u);
+    const late = `${'padding words here. '.repeat(60)}The refund is queued.${' trailing words.'.repeat(60)}`;
+    const window = deskSentenceWindow(late, ['refund']);
+    expect(window.length).toBeLessThanOrEqual(DESK_SENTENCE_LIMIT + 2);
+    expect(window.startsWith('…') && window.endsWith('…')).toBe(true);
+    expect(window).toContain('The refund is queued.');
+    // A Hangul term matches by its stem, as the highlight does.
+    expect(deskSentenceWindow(`${'가나다라 '.repeat(100)}반품할 수 있다${' 마바사'.repeat(100)}`, ['반품은']))
+      .toContain('반품할 수 있다');
+  });
+
+  it('cuts a window between graphemes, never inside one', () => {
+    const family = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}';
+    const accent = 'e\u0301';
+    const text = `${family.repeat(40)}${accent.repeat(31)} refund ${accent.repeat(31)}${family.repeat(40)}`;
+    const window = deskSentenceWindow(text, ['refund']);
+    expect(window.length).toBeLessThanOrEqual(DESK_SENTENCE_LIMIT + 2);
+    const graphemes = [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(window.slice(1, -1).trim())]
+      .map((part) => part.segment);
+    for (const grapheme of graphemes) expect([family, accent, ' ', ...'refund']).toContain(grapheme);
   });
 });

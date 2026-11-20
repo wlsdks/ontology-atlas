@@ -55,6 +55,7 @@ export const rules = [
     reason: 'the library question desk changed',
     matches: [
       /^src\/views\/library\/ui\/parts\/questions\/LibraryQuestionDesk\.tsx$/,
+      /^src\/views\/library\/ui\/parts\/questions\/desk\/[^/]+\.tsx?$/,
     ],
   },
   {

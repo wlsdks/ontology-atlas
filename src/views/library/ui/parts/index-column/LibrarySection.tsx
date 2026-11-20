@@ -13,7 +13,6 @@ import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault"
 import { humanPageSlug } from "@/features/library";
 import { writerLabel } from "../../../lib/wiki/writer-label";
 import { cn } from "@/shared/lib/cn";
-import { progressInk } from "../progress/progress-inks";
 import { BrandMark } from "@/shared/ui/marks/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";
 import { Button, Chip, Dialog, RowButton, Tooltip } from "@/shared/ui";
@@ -180,6 +179,8 @@ export interface LibrarySectionProps {
   compiling?: boolean;
   /** Sources the Continue request in flight named; their rows show it running, then their check draws. */
   runningSources?: ReadonlySet<string>;
+  /** The state the band's press narrows the list to, or null for every source. */
+  stateFilter?: LibrarySourceRow["state"] | null;
   t: ReturnType<typeof useTranslations<"library">>;
 }
 
@@ -331,6 +332,7 @@ export function LibrarySection({
   busy,
   compiling = false,
   runningSources = NO_SOURCES,
+  stateFilter = null,
   t,
 }: LibrarySectionProps) {
   /*
@@ -413,20 +415,15 @@ export function LibrarySection({
     [indexedPaths, model.sources, needle, search.hits, search.phase, search.read],
   );
   /**
-   * The majority state is said once at the head and rows keep the exceptions, as `majorityWriter` does
-   * for the wiki list. `compiled` never folds and `checking` is a moment; below
-   * `SOURCE_STATE_FOLDS_FROM` rows nothing folds.
+   * The majority state is said once, by its press in the band above the picture, and rows keep the
+   * exceptions, as `majorityWriter` does for the wiki list. `compiled` never folds and `checking` is a
+   * moment; below `SOURCE_STATE_FOLDS_FROM` rows nothing folds.
    */
   const stateCounts = useMemo(() => {
     const counts = new Map<LibrarySourceRow["state"], number>();
     for (const row of visibleSources) counts.set(row.state, (counts.get(row.state) ?? 0) + 1);
     return SOURCE_STATE_ORDER.filter((state) => counts.has(state)).map((state) => ({ state, count: counts.get(state)! }));
   }, [visibleSources]);
-  // At 100% the bar's first segment turns green; the "has a page" swatch follows it.
-  const allCompiled = useMemo(
-    () => model.sources.length > 0 && model.sources.every((row) => row.state === "compiled"),
-    [model.sources],
-  );
   const foldedState = (() => {
     if (visibleSources.length < SOURCE_STATE_FOLDS_FROM) return null;
     const candidates = stateCounts.filter(({ state }) => state !== "compiled" && state !== "checking");
@@ -435,8 +432,7 @@ export function LibrarySection({
     if (candidates.some((c) => c !== best && c.count === best.count)) return null;
     return best.count * 2 > visibleSources.length ? best.state : null;
   })();
-  /* One state at a time, pressed in the head; it narrows what the search left, and the counts stay the search's. */
-  const [stateFilter, setStateFilter] = useState<LibrarySourceRow["state"] | null>(null);
+  /* One state at a time, pressed in the band above the picture; it narrows what the search left. */
   const listedSources = useMemo(
     () => (stateFilter ? visibleSources.filter((row) => row.state === stateFilter) : visibleSources),
     [stateFilter, visibleSources],
@@ -655,79 +651,12 @@ export function LibrarySection({
 
         {hasSources ? (
           <>
-            {stateCounts.length > 0 ? (
-              /* Each count is a press that shows only its rows; the pressed one says so, and "Show all" undoes it. */
-              <div
-                role="group"
-                data-testid="library-source-states"
-                data-folded-state={foldedState ?? undefined}
-                aria-label={t("sources.statesAria")}
-                className={`pb-2 pt-1 ${INDEX_LIST_INSET}`}
-              >
-                <span className={`items-center ${INDEX_TEXT_LINE}`}>
-                <IndexGlyph />
-                <span className="-ml-1 flex min-w-0 flex-wrap items-center gap-x-0.5 gap-y-0.5">
-                {stateCounts.map(({ state, count }) => {
-                  const label = t(`sources.state.${state}.label`);
-                  const pressed = stateFilter === state;
-                  // The swatch is the state's colour in the progress bar above, so the two read as one key.
-                  const swatch = (
-                    <span
-                      aria-hidden
-                      data-testid={`library-source-states-swatch-${state}`}
-                      className={cn(
-                        "inline-block size-1.5 flex-none rounded-full",
-                        state === "not-compiled" && "border border-[color:var(--color-border-strong)]",
-                      )}
-                      style={{ backgroundColor: progressInk(state, allCompiled) }}
-                    />
-                  );
-                  return (
-                    <button
-                      key={state}
-                      type="button"
-                      data-testid={`library-source-states-${state}`}
-                      aria-pressed={pressed}
-                      title={t("sources.filterShow", { label })}
-                      onClick={() => setStateFilter(pressed ? null : state)}
-                      className={controlClass({
-                        shape: "segment",
-                        size: "xs",
-                        tone: "muted",
-                        hoverInk: "strong",
-                        hoverSurface: "lift",
-                        active: pressed,
-                        className: "tabular-nums",
-                      })}
-                    >
-                      {state === foldedState ? (
-                        <StateBadge tone={state === "stale" || state === "partial" ? "warning" : "neutral"}>
-                          <span className="inline-flex items-center gap-1">{swatch}{label} · {count.toLocaleString()}</span>
-                        </StateBadge>
-                      ) : (
-                        <span className="inline-flex items-center gap-1">{swatch}{label} {count.toLocaleString()}</span>
-                      )}
-                    </button>
-                  );
-                })}
-                {stateFilter ? (
-                  <button
-                    type="button"
-                    data-testid="library-source-states-all"
-                    onClick={() => setStateFilter(null)}
-                    className={controlClass({ shape: "segment", size: "xs", tone: "accent", hoverInk: "strong", hoverSurface: "lift", className: "tabular-nums" })}
-                  >
-                    {t("sources.filterAll", { count: visibleSources.length })}
-                  </button>
-                ) : null}
-                </span>
-                </span>
-              </div>
-            ) : null}
             <ul
               ref={sourceListRef}
               onKeyDown={sourceRoving.onKeyDown}
               data-testid="library-source-list"
+              data-folded-state={foldedState ?? undefined}
+              data-state-filter={stateFilter ?? undefined}
               /* The list says which phase drew it, so a proof can assert that a finished
                  answer and an unfinished read never share a frame. */
               data-phase={search.phase}

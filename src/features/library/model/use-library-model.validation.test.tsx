@@ -2,9 +2,9 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
+import { validateWikiFolder as validateFolderMcp } from "../../../../mcp/src/library/wiki-folder.mjs";
 import {
   buildWikiNodeIndex as buildNodesMcp,
-  validateWikiFolder as validateFolderMcp,
   validateWikiPage as validatePageMcp,
 } from "../../../../mcp/src/library/wiki-schema.mjs";
 import { useLibraryModel } from "./use-library-model";

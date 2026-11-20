@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { WIKI_PAGE_CASES } from '../../../../tests/fixtures/wiki-page-cases.mjs';
+import { validateWikiFolder as validateFolderMcp } from '../../../../mcp/src/library/wiki-folder.mjs';
 import {
   buildWikiNodeIndex as buildNodesMcp,
-  validateWikiFolder as validateFolderMcp,
   validateWikiPage as validatePageMcp,
 } from '../../../../mcp/src/library/wiki-schema.mjs';
 import {

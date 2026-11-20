@@ -1,4 +1,4 @@
-import type { RefObject, Dispatch, SetStateAction } from "react";
+import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
 import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import { PanelLeftOpen } from "lucide-react";
@@ -14,7 +14,7 @@ import { useLibraryAgent } from "../../lib/agent/use-library-agent";
 import { LibrarySection } from "../parts/index-column/LibrarySection";
 import { CompileBrainSelect } from "../parts/compile/CompileBrainSelect";
 import type { LibraryUiModel } from "@/features/library";
-import type { VaultDoc } from "@/entities/docs-vault";
+import type { LibrarySourceRow, VaultDoc } from "@/entities/docs-vault";
 import type { LibrarySelection } from "./library-page-state";
 import type { useLibraryReader } from "./use-library-reader";
 import type { useLibrarySources } from "./use-library-sources";
@@ -28,7 +28,7 @@ export function LibraryIndexColumn({
   mobileBrowseOpen, setMobileBrowseOpen, mobileBrowseBackRef, browseFocusPendingRef, searchHost,
   setSearchHost, setSourceCitation, sourceCitation, compileRunning, runningSources, lintRunning, reportUnseen,
   choose, busy, docs, model, agent, openImport, handleCompile, narrowShowsReader, indexTitle,
-  reader, sources, home, turns, indexColumn,
+  reader, sources, home, turns, indexColumn, stateFilter, headerDoors,
 }: {
   segment: LibraryIndexSegment | undefined;
   toolsHost: HTMLElement | null;
@@ -65,6 +65,10 @@ export function LibraryIndexColumn({
   home: ReturnType<typeof useLibraryHome>;
   turns: ReturnType<typeof useLibraryTurns>;
   indexColumn: ReturnType<typeof useLibraryIndexColumn>;
+  /** The state the band's press narrows the Sources list to. */
+  stateFilter: LibrarySourceRow["state"] | null;
+  /** The Library-wide doors, drawn once in the page header before the info glyph. */
+  headerDoors: ReactNode;
 }) {
   const { opened } = reader;
   const { sourceImportFeedback, handleAddFiles, handleFindDocuments } = sources;
@@ -125,6 +129,7 @@ export function LibraryIndexColumn({
                 t={t}
                 title={indexTitle}
                 titleHidden
+                doors={headerDoors}
                 disclosure={libraryProviderDisclosure({ route: agent.route }, t)}
                 onCollapse={() => setIndexCollapsed(true)}
                 collapseRef={indexCollapseRef}
@@ -136,6 +141,7 @@ export function LibraryIndexColumn({
             t={t}
             title={indexTitle}
             titleHidden={Boolean(segment)}
+            doors={headerDoors}
             disclosure={libraryProviderDisclosure({ route: agent.route }, t)}
             onCollapse={() => setIndexCollapsed(true)}
             collapseRef={indexCollapseRef}
@@ -228,6 +234,7 @@ export function LibraryIndexColumn({
             busy={busy}
             compiling={compileRunning || agent.localCompile.status === "running"}
             runningSources={runningSources}
+            stateFilter={stateFilter}
             t={t}
           />
         </div>
