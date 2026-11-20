@@ -84,6 +84,29 @@ fn resumes_a_partial_file_from_where_it_stopped() {
     fs::remove_dir_all(&dir).ok();
 }
 
+/// Windows truncates and flushes a file only through a handle that may write, and an appending
+/// handle may not truncate, so both would answer "Access is denied" there. A Mac allows all
+/// three, so the handles' modes are read here instead.
+#[cfg(unix)]
+#[test]
+fn the_part_and_sync_handles_may_write_and_do_not_append() {
+    use std::io::Seek;
+    use std::os::fd::AsRawFd;
+    let dir = temp_dir("handles");
+    let part = dir.join("pytorch_model.bin.part");
+    fs::write(&part, b"abc").unwrap();
+    // SAFETY: F_GETFL only reads the flags of a descriptor the file keeps open.
+    let flags = |file: &fs::File| unsafe { libc::fcntl(file.as_raw_fd(), libc::F_GETFL) };
+
+    let mut opened = super::super::download::open_part(&part).unwrap();
+    assert_eq!(flags(&opened) & libc::O_APPEND, 0);
+    assert_ne!(flags(&opened) & libc::O_ACCMODE, libc::O_RDONLY);
+    assert_eq!(opened.stream_position().unwrap(), 3, "opened at its end");
+    let synced = super::super::open_for_sync(&part).unwrap();
+    assert_ne!(flags(&synced) & libc::O_ACCMODE, libc::O_RDONLY);
+    fs::remove_dir_all(&dir).ok();
+}
+
 #[test]
 fn starts_over_when_the_server_ignores_the_range() {
     let (vault, dir) = (temp_dir("norange-vault"), temp_dir("norange-model"));

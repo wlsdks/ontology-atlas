@@ -284,9 +284,15 @@ fn sync_dir(dir: &Path) -> Result<(), EmbedError> {
 }
 
 fn sync_file(path: &Path) -> Result<(), EmbedError> {
-    fs::File::open(path)
+    open_for_sync(path)
         .and_then(|file| file.sync_all())
         .map_err(store_error)
+}
+
+/// Windows flushes only through a handle that may write (`FlushFileBuffers`), and answers
+/// "Access is denied" for a read-only one.
+fn open_for_sync(path: &Path) -> std::io::Result<fs::File> {
+    fs::OpenOptions::new().write(true).open(path)
 }
 
 fn sha256_file(path: &Path, cancel: &AtomicBool) -> Result<String, EmbedError> {

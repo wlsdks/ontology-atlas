@@ -449,16 +449,20 @@ fn mark_open(dir: &Path, run: &str, hosts: &[String]) -> Result<(), EmbedError> 
     write_synced(&dir.join(OPEN_RUN), text.as_bytes())
 }
 
-/// Opens `.part` for appending without following a link put in its place.
-fn open_part(path: &Path) -> Result<File, EmbedError> {
+/// Opens `.part` at its end without following a link put in its place. It is opened for writing,
+/// not appending: Windows gives an appending handle no right to truncate (`restart`), so a
+/// server that ignores the range would answer "Access is denied".
+pub(super) fn open_part(path: &Path) -> Result<File, EmbedError> {
     let mut options = OpenOptions::new();
-    options.create(true).append(true);
+    options.create(true).write(true);
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
         options.custom_flags(libc::O_NOFOLLOW);
     }
-    options.open(path).map_err(io_error)
+    let mut file = options.open(path).map_err(io_error)?;
+    file.seek(SeekFrom::End(0)).map_err(io_error)?;
+    Ok(file)
 }
 
 /// Removes `path` when it is a link, so the next open makes a plain file there.
