@@ -420,3 +420,28 @@ test('a page too large for a reply keeps as many whole problems as fit before an
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('a source added or removed between two calls changes the citation verdict, though no page changed', () => {
+  const root = wikiVault({ fit: 3 });
+  const cited = fitPage('citer', ['wiki/m-0000'])
+    .replace('sources: []', 'sources: [sources/later.pdf]')
+    .replace('## Facts\n', '## Facts\n\n- A claim. [[src:sources/later.pdf#p1]]\n');
+  addPage(root, 'b-citer', cited);
+  mkdirSync(join(root, 'sources'));
+  try {
+    const { verdicts } = inServer(root, `
+      const { unlinkSync, writeFileSync } = await import('node:fs');
+      const source = ${JSON.stringify(join(root, 'sources/later.pdf'))};
+      const codes = () => validateWikiTool({ paths: ['wiki/b-citer.md'] }).pages[0].problems.map((entry) => entry.code);
+      const verdicts = [codes()];
+      writeFileSync(source, 'the source');
+      verdicts.push(codes());
+      unlinkSync(source);
+      verdicts.push(codes());
+      console.log(JSON.stringify({ verdicts }));
+    `);
+    assert.deepEqual(verdicts.map((codes) => codes.includes('citation-target-missing')), [true, false, true]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

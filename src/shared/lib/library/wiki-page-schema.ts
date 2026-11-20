@@ -1,4 +1,4 @@
-import { parseFrontmatter, WIKI_DIR, type ParsedFrontmatter } from '../vault-document/parse-frontmatter';
+import { parseFrontmatter, WIKI_DIR } from '../vault-document/parse-frontmatter';
 
 /**
  * The Wiki page contract, for the surfaces that render it.
@@ -355,11 +355,6 @@ function citationCandidateRegex(): RegExp {
   return /\[\[src:([^\][]*)\]\]/g;
 }
 
-/** Lines before the body, so a reported line is a line in the real file. */
-function frontmatterLineCount(text: string, body: string): number {
-  return text.startsWith('---') ? text.slice(0, text.length - body.length).split('\n').length - 1 : 0;
-}
-
 function readSections(body: string, offset: number): Array<{ title: string; line: number }> {
   const out: Array<{ title: string; line: number }> = [];
   const lines = body.split('\n');
@@ -414,17 +409,14 @@ function sectionBullets(
  */
 export function validateWikiPage(
   raw: string,
-  options: {
-    knownSources?: Iterable<string>;
-    nodes?: WikiNodeIndex | Iterable<WikiNodeEntry> | null;
-    /** `parseFrontmatter(raw)`, when the caller already holds it. */
-    parsed?: ParsedFrontmatter;
-  } = {},
+  options: { knownSources?: Iterable<string>; nodes?: WikiNodeIndex | Iterable<WikiNodeEntry> | null } = {},
 ): WikiValidation {
   const text = raw ?? '';
   const problems: WikiProblem[] = [];
-  const { frontmatter, body } = options.parsed ?? parseFrontmatter(text);
-  const frontmatterLines = frontmatterLineCount(text, body);
+  const { frontmatter, body } = parseFrontmatter(text);
+  const frontmatterLines = text.startsWith('---')
+    ? text.slice(0, text.length - body.length).split('\n').length - 1
+    : 0;
 
   if (Object.prototype.hasOwnProperty.call(frontmatter, 'kind')) {
     problems.push(
@@ -716,10 +708,13 @@ export function validateWikiFolder(pages: readonly WikiFolderPageInput[]): WikiF
     const slug = path.replace(/\.md$/, '');
     const text = String(page.raw ?? '');
     const { frontmatter, body } = parseFrontmatter(text);
+    const frontmatterLines = text.startsWith('---')
+      ? text.slice(0, text.length - body.length).split('\n').length - 1
+      : 0;
     return {
       path,
       slug,
-      links: extractWikiPageLinks(body, frontmatterLineCount(text, body)),
+      links: extractWikiPageLinks(body, frontmatterLines),
       sources: new Set(readDeclaredSources(frontmatter)),
       primary: readDeclaredSources(frontmatter)[0] ?? null,
       problems: [] as WikiProblem[],
@@ -853,283 +848,4 @@ export function validateWikiFolder(pages: readonly WikiFolderPageInput[]): WikiF
   });
 
   return entries.map((entry) => ({ path: entry.path, problems: entry.problems }));
-}
-
-/** What one version of a page gives every later judgement. Twin of the MCP typedef. */
-export interface WikiPageFacts {
-  /** Distinct codes `validateWikiPage` reports with neither `knownSources` nor `nodes`. */
-  codes: readonly WikiProblemCode[];
-  /** `describes:` entries, resolved per call against `nodes`. */
-  describes: readonly string[];
-  /** Distinct cited paths, checked per call against `knownSources`. */
-  citations: readonly string[];
-  /** Distinct declared sources, the first being the primary. */
-  sources: readonly string[];
-  /** Distinct link targets in order of first appearance. */
-  links: readonly string[];
-  /** The file line each target first appears on. */
-  linkLines: readonly number[];
-}
-
-export interface WikiFolderFactsInput {
-  path: string;
-  facts: WikiPageFacts;
-}
-
-const NONE: readonly never[] = Object.freeze([]);
-const NO_SOURCES: ReadonlySet<string> = new Set<string>();
-
-/** One frozen list per distinct code sequence: tens of thousands of pages share a handful. */
-const sharedCodeLists = new Map<string, readonly WikiProblemCode[]>();
-
-function sharedCodeList(codes: WikiProblemCode[]): readonly WikiProblemCode[] {
-  if (codes.length === 0) return NONE;
-  const key = codes.join('\n');
-  let list = sharedCodeLists.get(key);
-  if (!list) {
-    list = Object.freeze(codes);
-    sharedCodeLists.set(key, list);
-  }
-  return list;
-}
-
-/** `values` copied out of the page text in one pass, so kept facts keep none of it alive. */
-function detachedList<T extends string | number>(values: T[]): readonly T[] {
-  return values.length === 0 ? NONE : (JSON.parse(JSON.stringify(values)) as T[]);
-}
-
-/**
- * A page's facts, from one read of its text: `validateWikiPage` once, links once. Kept per file
- * version, they let the folder be judged again without reading any page. Twin of the MCP function.
- */
-export function wikiPageFacts(raw: string, parsed?: ParsedFrontmatter): WikiPageFacts {
-  const text = raw ?? '';
-  const page = parsed ?? parseFrontmatter(text);
-  const { frontmatter, body } = page;
-  const codes: WikiProblemCode[] = [];
-  for (const { code } of validateWikiPage(text, { parsed: page }).problems) {
-    if (!codes.includes(code)) codes.push(code);
-  }
-  const links: string[] = [];
-  const linkLines: number[] = [];
-  // The folder half reads only a target's first appearance: a dangling link is named by its
-  // first line, and a link to a page counts once.
-  const seen = new Set<string>();
-  for (const link of extractWikiPageLinks(body, frontmatterLineCount(text, body))) {
-    if (seen.has(link.target)) continue;
-    seen.add(link.target);
-    links.push(link.target);
-    linkLines.push(link.line);
-  }
-  return {
-    codes: sharedCodeList(codes),
-    describes: detachedList(readDescribes(frontmatter.describes)),
-    citations: detachedList([...new Set(extractWikiCitations(body).map((citation) => citation.path))]),
-    sources: detachedList([...new Set(readDeclaredSources(frontmatter))]),
-    links: detachedList(links),
-    linkLines: linkLines.length === 0 ? NONE : linkLines,
-  };
-}
-
-/**
- * The distinct codes `validateWikiPage(raw, options)` reports, in no promised order, from the page's
- * facts. O(`describes:` entries + citations). The list may be shared: never edit it.
- */
-export function wikiPageCodes(
-  facts: WikiPageFacts,
-  options: { knownSources?: Iterable<string>; nodes?: WikiNodeIndex | Iterable<WikiNodeEntry> | null } = {},
-): readonly WikiProblemCode[] {
-  let codes = facts.codes;
-  const add = (code: WikiProblemCode) => {
-    if (!codes.includes(code)) codes = [...codes, code];
-  };
-  if (options.nodes !== undefined && options.nodes !== null && facts.describes.length > 0) {
-    const index = wikiNodeIndexOf(options.nodes);
-    const namesNoConcept = (entry: string) => {
-      const resolved = index.resolve(entry);
-      return !(typeof resolved === 'object' && resolved.node);
-    };
-    if (facts.describes.some(namesNoConcept)) add('describes-target-missing');
-  }
-  if (options.knownSources && facts.citations.length > 0) {
-    const known =
-      options.knownSources instanceof Set ? (options.knownSources as Set<string>) : new Set(options.knownSources);
-    if (facts.citations.some((path) => !known.has(path))) add('citation-target-missing');
-  }
-  return codes;
-}
-
-export interface WikiFolderJudgement {
-  codesOf(index: number): WikiProblemCode[];
-  problemsOf(index: number): WikiProblem[];
-}
-
-/**
- * `validateWikiFolder`'s judgement over page facts, asked one page at a time, so a caller that shows
- * a few pages builds the problem objects of those pages only. Twin of the MCP function.
- * Cost: O(P + Σ links + Σ sources) to index the folder; then per page O(its links) for dangling
- * links, O(1) for an orphan, and O((limit + linked partners) · its sources) for shared sources.
- */
-export function wikiFolderJudgement(pages: readonly WikiFolderFactsInput[]): WikiFolderJudgement {
-  const entries = (pages ?? []).map((page) => {
-    const path = String(page.path ?? '');
-    const { links, linkLines, sources } = page.facts;
-    return {
-      path,
-      slug: path.endsWith('.md') ? path.slice(0, -3) : path,
-      links,
-      linkLines,
-      sources: sources.length > 0 ? new Set(sources) : NO_SOURCES,
-      primary: sources[0] ?? null,
-    };
-  });
-  type Entry = (typeof entries)[number];
-  // The last page of a slug wins and inbound links are keyed by slug, as in `validateWikiFolder`.
-  const bySlug = new Map(entries.map((entry, index) => [entry.slug, index]));
-  const inbound = new Map<string, string[]>();
-  for (const entry of entries) {
-    for (const target of entry.links) {
-      if (target === entry.slug || !bySlug.has(target)) continue;
-      const from = inbound.get(target);
-      if (from) from.push(entry.slug);
-      else inbound.set(target, [entry.slug]);
-    }
-  }
-
-  const listedBy = new Map<string, number[]>();
-  const primaryOf = new Map<string, number[]>();
-  const primaryListing = new Map<string, number>();
-  const pushTo = (map: Map<string, number[]>, key: string, index: number) => {
-    const list = map.get(key);
-    if (list) list.push(index);
-    else map.set(key, [index]);
-  };
-  const pairKey = (primary: string, listed: string) => `${primary}\u0000${listed}`;
-  entries.forEach((entry, index) => {
-    for (const source of entry.sources) pushTo(listedBy, source, index);
-    if (entry.primary === null) return;
-    pushTo(primaryOf, entry.primary, index);
-    for (const source of entry.sources) {
-      const key = pairKey(entry.primary, source);
-      primaryListing.set(key, (primaryListing.get(key) ?? 0) + 1);
-    }
-  });
-  const isPartner = (page: Entry, other: Entry) =>
-    page !== other &&
-    ((page.primary !== null && other.sources.has(page.primary)) ||
-      (other.primary !== null && page.sources.has(other.primary)));
-
-  const dangles = (entry: Entry, target: string) =>
-    target !== entry.slug && !bySlug.has(target) && namesWikiFolder(target);
-  const isOrphan = (entry: Entry) => entries.length >= 2 && !inbound.has(entry.slug);
-
-  /** The unlinked partners a page names, in input order, and how many more it counts; null for none. */
-  const unlinkedPartners = (index: number): { named: number[]; more: number } | null => {
-    const entry = entries[index]!;
-    if (entry.primary === null) return null;
-    const linked = new Set(inbound.get(entry.slug));
-    for (const target of entry.links) if (bySlug.has(target)) linked.add(target);
-    let linkedPartners = 0;
-    for (const slug of linked) if (isPartner(entry, entries[bySlug.get(slug)!]!)) linkedPartners += 1;
-    let partners = listedBy.get(entry.primary)!.length - 1;
-    const lists = [listedBy.get(entry.primary)!];
-    for (const source of entry.sources) {
-      if (source === entry.primary) continue;
-      const written = primaryOf.get(source) ?? [];
-      partners += written.length - (primaryListing.get(pairKey(source, entry.primary)) ?? 0);
-      if (written.length > 0) lists.push(written);
-    }
-    const unlinked = partners - linkedPartners;
-    if (unlinked === 0) return null;
-    // Merge the ascending index lists to meet partners in input order.
-    const heads = lists.map(() => 0);
-    const named: number[] = [];
-    let previous = -1;
-    while (named.length < WIKI_SHARED_PARTNER_LIMIT) {
-      let pick = -1;
-      for (let list = 0; list < lists.length; list += 1) {
-        const at = lists[list]![heads[list]!];
-        if (at !== undefined && (pick < 0 || at < lists[pick]![heads[pick]!]!)) pick = list;
-      }
-      if (pick < 0) break;
-      const other = lists[pick]![heads[pick]!]!;
-      heads[pick]! += 1;
-      if (other === previous || other === index) continue;
-      previous = other;
-      if (!linked.has(entries[other]!.slug)) named.push(other);
-    }
-    return { named, more: unlinked > named.length ? unlinked - named.length : 0 };
-  };
-
-  return {
-    codesOf(index) {
-      const entry = entries[index]!;
-      const codes: WikiProblemCode[] = [];
-      if (entry.links.some((target) => dangles(entry, target))) codes.push('dangling-wikilink');
-      if (isOrphan(entry)) codes.push('orphan-page');
-      const shared = unlinkedPartners(index);
-      if (shared && (shared.named.length > 0 || shared.more > 0)) codes.push('shared-source-unlinked');
-      return codes;
-    },
-    problemsOf(index) {
-      const entry = entries[index]!;
-      const out: WikiProblem[] = [];
-      entry.links.forEach((target, at) => {
-        if (!dangles(entry, target)) return;
-        out.push(
-          problem(
-            'dangling-wikilink',
-            `\`[[${target}]]\` names a page that is not in this folder. Link only to a page that exists, or write the page.`,
-            entry.linkLines[at],
-            { key: 'dangling-wikilink', values: { target } },
-          ),
-        );
-      });
-      if (isOrphan(entry)) {
-        out.push(
-          problem(
-            'orphan-page',
-            'No other page links here. A page nobody points at is reached only by its file name; link it from the page that talks about its topic.',
-            undefined,
-            { key: 'orphan-page' },
-          ),
-        );
-      }
-      const shared = unlinkedPartners(index);
-      for (const other of shared?.named ?? []) {
-        const partner = entries[other]!;
-        // Only a page's primary source counts; sorted so every caller words it alike.
-        const sourceList = [...entry.sources]
-          .filter((source) => partner.sources.has(source) && (entry.primary === source || partner.primary === source))
-          .sort()
-          .map((source) => `\`${source}\``)
-          .join(', ');
-        out.push(
-          problem(
-            'shared-source-unlinked',
-            `\`${partner.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
-            undefined,
-            { key: 'shared-source-unlinked', values: { other: partner.path, sources: sourceList } },
-          ),
-        );
-      }
-      if (shared && shared.more > 0) {
-        out.push(
-          problem(
-            'shared-source-unlinked',
-            `${shared.more} more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.`,
-            undefined,
-            { key: 'shared-source-unlinked-more', values: { count: String(shared.more) } },
-          ),
-        );
-      }
-      return out;
-    },
-  };
-}
-
-/** `validateWikiFolder(pages)` from each page's facts instead of its text, equal byte for byte. */
-export function validateWikiFolderFromFacts(pages: readonly WikiFolderFactsInput[]): WikiFolderVerdict[] {
-  const judgement = wikiFolderJudgement(pages);
-  return (pages ?? []).map((page, index) => ({ path: String(page.path ?? ''), problems: judgement.problemsOf(index) }));
 }

@@ -1,29 +1,19 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import test from 'node:test';
 
-import { WIKI_PAGE_NODES, generatedWikiFolder } from '../../../tests/fixtures/wiki-page-cases.mjs';
+import { generatedWikiFolder, writeWikiFolderVault } from '../../../tests/fixtures/wiki-page-cases.mjs';
 import { createVaultDocCache } from '../vault/documents.mjs';
-import { judgeLoadedWikiPages } from './wiki-judgement.mjs';
-import { buildWikiNodeIndex, isWikiFurnitureSlug, validateWikiFolder, validateWikiPage } from './wiki-schema.mjs';
+import { judgeLoadedWikiPages, wikiFolderBuildCount } from './wiki-judgement.mjs';
 
-/** The generated folder on disk, with the concepts its `describes:` entries name and the template. */
-function generatedVault(count) {
+/** The generated folder on disk; `tests/contract/library/wiki-page-schema.contract.test.ts` holds its verdicts to the text validators. */
+function generatedVault(t, count) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-wiki-judgement-')));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
   const folder = generatedWikiFolder(count);
-  const write = (relative, text) => {
-    mkdirSync(dirname(join(root, relative)), { recursive: true });
-    writeFileSync(join(root, relative), text);
-  };
-  for (const page of folder.pages) write(page.path, page.raw);
-  for (const node of WIKI_PAGE_NODES) {
-    if (node.slug.startsWith('wiki/')) continue;
-    const alias = node.alias ? `slug: ${node.alias}\n` : '';
-    write(`${node.slug}.md`, `---\nkind: ${node.kind}\n${alias}title: ${node.slug}\n---\n\nA concept.\n`);
-  }
-  write('wiki/_template.md', '---\ntitle: template\n---\n');
+  writeWikiFolderVault(root, folder);
   return { root, knownSources: new Set(folder.knownSources) };
 }
 
@@ -43,41 +33,15 @@ function countingCache(root) {
   return { cache, reads };
 }
 
-/** What `validate_wiki` judged before page facts: every page's text through both validators. */
-function judgedFromText(docs, knownSources) {
-  const nodes = buildWikiNodeIndex(docs.map((doc) => ({ slug: doc.slug, kind: doc.frontmatter?.kind, alias: doc.frontmatter?.slug })));
-  const folderDocs = docs.filter((doc) => doc.slug.startsWith('wiki/') && !isWikiFurnitureSlug(doc.slug));
-  const folder = new Map(validateWikiFolder(folderDocs.map((doc) => ({ path: `${doc.slug}.md`, raw: doc.raw, parsed: doc })))
-    .map((entry) => [entry.path, entry.problems]));
-  const bySlug = new Map(docs.map((doc) => [doc.slug, doc]));
-  return [...folder.keys()].sort().map((path) => {
-    const doc = bySlug.get(path.slice(0, -3));
-    const problems = [...validateWikiPage(doc.raw, { knownSources, nodes, parsed: doc }).problems, ...folder.get(path)];
-    return { path, ok: problems.length === 0, problems };
-  });
-}
+const shown = (judged) => JSON.stringify(judged.map((page) => ({ path: page.path, ok: page.ok, codes: [...page.codes].sort(), problems: page.problems })));
 
-const shown = (judged) => judged.map((page) => ({ path: page.path, ok: page.ok, problems: page.problems }));
-const distinctCodes = (problems) => [...new Set(problems.map((entry) => entry.code))].sort();
+/** The folder judged by a cache that has never seen it, so nothing kept from an earlier call can answer. */
+const coldJudgement = (root, knownSources) => judgeLoadedWikiPages(createVaultDocCache(root).load(), knownSources);
 
-test('judging from page facts returns what judging every page text returned, page for page', (t) => {
-  const { root, knownSources } = generatedVault(300);
-  t.after(() => rmSync(root, { recursive: true, force: true }));
-  const { cache } = countingCache(root);
-  const docs = cache.load();
-  const judged = judgeLoadedWikiPages(docs, knownSources);
-  const expected = judgedFromText(docs, knownSources);
-  assert.ok(expected.length === 300 && expected.some((page) => !page.ok), 'the folder judged nothing worth comparing');
-  assert.equal(JSON.stringify(shown(judged)), JSON.stringify(expected));
-  for (const page of judged) {
-    assert.deepEqual([...page.codes].sort(), distinctCodes(page.problems), page.path);
-    assert.equal(page.blocking, page.problems.some((entry) => !['orphan-page', 'shared-source-unlinked'].includes(entry.code)), page.path);
-  }
-});
+const pageOf = (judged, path) => judged.find((page) => page.path === path);
 
 test('a warm repeat reads no page, a shown page is read once, and an edit reads only the edited page', (t) => {
-  const { root, knownSources } = generatedVault(120);
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const { root, knownSources } = generatedVault(t, 120);
   const { cache, reads } = countingCache(root);
   judgeLoadedWikiPages(cache.load(), knownSources);
   assert.ok(reads.length > 120, 'the first pass read the folder');
@@ -92,10 +56,51 @@ test('a warm repeat reads no page, a shown page is read once, and an edit reads 
   const edited = join(root, 'wiki/page-7.md');
   writeFileSync(edited, `${readFileSync(edited, 'utf8')}\nSee [[wiki/nowhere]].\n`);
   reads.length = 0;
-  const docs = cache.load();
-  const afterEdit = judgeLoadedWikiPages(docs, knownSources);
+  const afterEdit = judgeLoadedWikiPages(cache.load(), knownSources);
   assert.deepEqual(reads, [edited, edited], 'the load pass and the facts each read the edited page once');
-  const page = afterEdit.find((entry) => entry.path === 'wiki/page-7.md');
-  assert.ok(page.codes.includes('dangling-wikilink'));
-  assert.equal(JSON.stringify(shown(afterEdit)), JSON.stringify(judgedFromText(docs, knownSources)));
+  assert.ok(pageOf(afterEdit, 'wiki/page-7.md').codes.includes('dangling-wikilink'));
+  assert.equal(shown(afterEdit), shown(coldJudgement(root, knownSources)));
+});
+
+test('calls on one loaded version judge the folder once, and a changed file judges it again', (t) => {
+  const { root, knownSources } = generatedVault(t, 60);
+  const { cache } = countingCache(root);
+  const before = wikiFolderBuildCount();
+  judgeLoadedWikiPages(cache.load(), knownSources);
+  judgeLoadedWikiPages(cache.load(), knownSources);
+  judgeLoadedWikiPages(cache.load(), knownSources, ['wiki/page-3.md']);
+  assert.equal(wikiFolderBuildCount() - before, 1);
+
+  const edited = join(root, 'wiki/page-3.md');
+  writeFileSync(edited, `${readFileSync(edited, 'utf8')}\nSee [[wiki/page-4]].\n`);
+  judgeLoadedWikiPages(cache.load(), knownSources);
+  assert.equal(wikiFolderBuildCount() - before, 2);
+});
+
+test('the source list each call is handed decides a missing citation, though no page changed', (t) => {
+  const { root, knownSources } = generatedVault(t, 20);
+  writeFileSync(join(root, 'wiki/citer.md'), '---\ntitle: Citer\nsources:\n  - sources/later.pdf\n---\n\n## Facts\n\n- A claim. [[src:sources/later.pdf#p1]]\n');
+  const { cache } = countingCache(root);
+  const citer = (sources) => pageOf(judgeLoadedWikiPages(cache.load(), sources), 'wiki/citer.md');
+  const missing = (page) => [page.codes.includes('citation-target-missing'), page.problems.some((entry) => entry.code === 'citation-target-missing')];
+  assert.deepEqual(missing(citer(knownSources)), [true, true]);
+  const builds = wikiFolderBuildCount();
+
+  assert.deepEqual(missing(citer(new Set([...knownSources, 'sources/later.pdf']))), [false, false]);
+  assert.deepEqual(missing(citer(knownSources)), [true, true]);
+  assert.equal(wikiFolderBuildCount(), builds, 'the loaded version moved, so this did not test a kept folder');
+});
+
+test('a concept deleted between calls makes the page that describes it name a missing target', (t) => {
+  const { root, knownSources } = generatedVault(t, 20);
+  writeFileSync(join(root, 'capabilities/judged-later.md'), '---\nkind: capability\ntitle: Judged later\n---\n\nA concept.\n');
+  writeFileSync(join(root, 'wiki/describer.md'), '---\ntitle: Describer\ndescribes:\n  - capabilities/judged-later\n---\n\n## Summary\n\nAbout it.\n');
+  const { cache } = countingCache(root);
+  const describer = (judged) => pageOf(judged, 'wiki/describer.md');
+  assert.equal(describer(judgeLoadedWikiPages(cache.load(), knownSources)).codes.includes('describes-target-missing'), false);
+
+  unlinkSync(join(root, 'capabilities/judged-later.md'));
+  const afterDelete = describer(judgeLoadedWikiPages(cache.load(), knownSources));
+  assert.ok(afterDelete.codes.includes('describes-target-missing'));
+  assert.ok(afterDelete.problems.some((entry) => entry.code === 'describes-target-missing'));
 });

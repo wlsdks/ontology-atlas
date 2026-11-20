@@ -11,6 +11,9 @@
  * exit code, and an agent's retry all branch on the code.
  */
 
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+
 const FRONTMATTER = [
   '---',
   'title: Quarter plan',
@@ -634,12 +637,8 @@ export const WIKI_FOLDER_CASES = [
 ];
 
 /**
- * A seeded folder of `count` pages mixing every shape the page and folder halves judge: missing
- * fields, `kind:`, `describes:` as a list and as a lone value, truncation records, sections out of
- * order, wrapped and uncited facts, malformed citations, fenced text, links bare, aliased, anchored,
- * with `.md`, to themselves, twice, outside `wiki/` and to missing pages, and sources shared as
- * primaries (each primary is shared by about twenty pages, past the ten partners a page names).
- * Equal inputs give equal folders, so a failure reproduces.
+ * A seeded folder of `count` pages in every shape both halves judge, links of every spelling and
+ * primaries shared by about twenty pages each; equal seeds give equal folders.
  */
 export function generatedWikiFolder(count = 600, seed = 20261120) {
   let state = seed >>> 0;
@@ -699,4 +698,22 @@ export function generatedWikiFolder(count = 600, seed = 20261120) {
     pages.push({ path: `wiki/${self}.md`, raw: `${fm.join('\n')}\n\n${body.join('\n')}` });
   }
   return { pages, knownSources, nodes: WIKI_PAGE_NODES };
+}
+
+/**
+ * Writes `folder` (`generatedWikiFolder`) under `root` with the concepts its `describes:`
+ * entries name and the template, so a server judges it from disk.
+ */
+export function writeWikiFolderVault(root, folder) {
+  const write = (relative, content) => {
+    mkdirSync(dirname(join(root, relative)), { recursive: true });
+    writeFileSync(join(root, relative), content);
+  };
+  for (const page of folder.pages) write(page.path, page.raw);
+  for (const node of folder.nodes) {
+    if (node.slug.startsWith('wiki/')) continue;
+    const alias = node.alias ? `slug: ${node.alias}\n` : '';
+    write(`${node.slug}.md`, `---\nkind: ${node.kind}\n${alias}title: ${node.slug}\n---\n\nA concept.\n`);
+  }
+  write('wiki/_template.md', '---\ntitle: template\n---\n');
 }

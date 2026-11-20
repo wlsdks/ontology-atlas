@@ -1,21 +1,11 @@
 /**
- * The folder's wiki pages judged for `validate_wiki`. A page's facts are computed from one
- * read of its text and kept with its file version, so a later call reads only pages whose
- * file changed; the folder half runs over facts; a page's problem objects are built only
- * when a reply shows that page, from its text read again.
+ * The folder's wiki pages judged for `validate_wiki` from page facts kept per file version;
+ * a page's problem objects are built, from its text read again, only when a reply shows it.
  */
 
 import { cachedDocVersionKey, readVaultDocText, vaultDocsVersion } from '../vault/documents.mjs';
-import {
-  WIKI_ADVISORY_CODES,
-  WIKI_DIR,
-  buildWikiNodeIndex,
-  isWikiFurnitureSlug,
-  validateWikiPage,
-  wikiFolderJudgement,
-  wikiPageCodes,
-  wikiPageFacts,
-} from './wiki-schema.mjs';
+import { wikiFolderJudgement, wikiPageCodes, wikiPageFacts } from './wiki-folder.mjs';
+import { WIKI_ADVISORY_CODES, WIKI_DIR, buildWikiNodeIndex, isWikiFurnitureSlug, validateWikiPage } from './wiki-schema.mjs';
 
 /** Keyed by a file version (`cachedDocVersionKey`): a changed file is a new key, and the old one is collected with its entry. */
 const factsByVersion = new WeakMap();
@@ -77,19 +67,23 @@ const FOLDER_CODE_LISTS = Array.from({ length: 1 << FOLDER_CODES.length }, (_, m
 const FOLDER_CODES_UNKNOWN = 0xff;
 
 /**
- * The folder half of the last call, kept while the loaded documents' version holds:
- * equal versions mean every file's stamp is equal (`vaultDocsVersion`), so every page's
- * facts, the judgement over them and the pages' path order are equal too. One folder is
- * kept; a call on another version replaces it. Memory: the facts it shares with the
- * per-version cache, the judgement's index and one byte per page.
+ * The last call's folder half, kept while `vaultDocsVersion` holds: equal versions mean equal
+ * stamps for every file. It holds the shared facts, the judgement's index and a byte per page.
  */
 let lastFolder = null;
+let folderBuilds = 0;
+
+/** For tests: how many times a folder was judged afresh rather than kept. */
+export function wikiFolderBuildCount() {
+  return folderBuilds;
+}
 
 function folderJudgementOf(docs, folderDocs) {
   const version = vaultDocsVersion(docs);
   if (version !== undefined && lastFolder?.version === version) return lastFolder;
   const pages = folderDocs.map((doc) => ({ path: `${doc.slug}.md`, facts: loadedPageFacts(doc) }));
   const judgement = wikiFolderJudgement(pages);
+  folderBuilds += 1;
   const masks = new Uint8Array(pages.length).fill(FOLDER_CODES_UNKNOWN);
   // Slugs are unique, so ordering indices by path orders the paths. The walk's order
   // usually is path order already, which one O(P) look confirms.
@@ -114,13 +108,9 @@ function folderJudgementOf(docs, folderDocs) {
 }
 
 /**
- * Judges the folder's pages, or only the named `paths`, in path order for the folder.
- * The folder half is judged over every page in the folder, whatever `paths` narrowed the
- * report to: whether somebody links to a page is a fact about the other pages, and a page
- * asked about alone would otherwise always read as an orphan.
- * Cost: O(bytes of pages whose file changed since they were last judged) to read, then
- * O(D) for the node index over D documents, O(P log P) to order P pages, and per page
- * O(its facts) plus `wikiFolderJudgement`'s per-page cost; problems for shown pages only.
+ * Judges the folder's pages, or the named `paths`, always against the whole folder, since
+ * a page asked about alone would read as an orphan. O(bytes of changed pages + D + P log P)
+ * plus each page's facts and `wikiFolderJudgement` cost, over D documents and P pages.
  *
  * @param {Array<object>} docs every loaded document, as `loadVaultDocs` returns them
  * @param {Set<string>} knownSources every raw source path in the folder

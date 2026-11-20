@@ -189,10 +189,8 @@ async function openFlow(serverPath, flow) {
 }
 
 /**
- * Loaded into a source server with `--import`: on SIGUSR2 it writes to stderr the peak heap
- * since the last signal, the larger of the heap now and the heap before each collection
- * (`v8.GCProfiler`), then collects fully and writes what is left. A call runs synchronously
- * between two signals, so the peak is the call's.
+ * Preloaded into a source server: on SIGUSR2 it prints the heap peak since the last signal
+ * (`v8.GCProfiler`) and the heap after a full collection; a call runs between two signals.
  */
 const HEAP_PROBE = `
 import v8 from 'node:v8';
