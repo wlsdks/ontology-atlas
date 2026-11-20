@@ -84,11 +84,14 @@ left out; one that holds a word lead is that lead; otherwise its row is the
 passage's first sentence, the first non-heading line of a source or the first
 claim of a wiki page in its range, read from what the desk already read. These
 are a third list in the same rank fusion, and each row's second line ends with
-why it is there: Same words, Similar meaning, or both. The coverage popover adds
-how many files are prepared and, when some were, how many passages were left out
-because their file changed. When meaning cannot answer, the word rows stand with
-one sentence saying so (with Download again when the model is gone); with
-nothing set up, a search that finds nothing offers setup before the
+why it is there: Same words, Similar meaning, or both. A report's brief carries
+the rows of that list in its order, whatever their reason. Once prepared, the line
+says only "Searching by words and by meaning"; the coverage popover adds how many
+files are prepared only while that is partial and, when some were, how many
+passages were left out because their file changed. When meaning cannot answer,
+the word rows stand with one sentence saying so (with Download again when the
+model is gone), and the line reads the folder's status again so it says the
+same; with nothing set up, a search that finds nothing offers setup before the
 investigation action. The field's first focus in a visit loads the model so the
 first answer does not wait. The web playground has no search by meaning and says
 so in the line.
