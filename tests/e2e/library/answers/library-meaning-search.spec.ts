@@ -87,7 +87,7 @@ test('a passage only meaning found is a row of its first sentence, its file and 
   await expect(row.locator('[data-lead-reason]')).toHaveText(/^·\s*Similar meaning$/);
   await expect(row.locator('[data-lead-sentence] .font-\\[var\\(--font-weight-emphasis\\)\\]')).toHaveCount(0);
   const searches = await callsOf(harness, page, 'vault_vectors_search');
-  expect(searches.map((call) => call.params)).toEqual([{ rootPath: VAULT_ROOT, source: { kind: 'builtin' }, question, limit: 24 }]);
+  expect(searches.map((call) => call.params)).toEqual([{ rootPath: VAULT_ROOT, source: { kind: 'builtin' }, question, limit: 24, prefixes: ['wiki/', 'sources/'] }]);
 });
 
 test('a word lead inside a passage found by meaning is one row, counted once, for both reasons', async ({ page }) => {
@@ -148,14 +148,27 @@ test('when the model is gone the word rows stand, the line and one sentence say 
   await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Download and prepare');
   await page.getByTestId('meaning-setup-primary').click();
   await expect.poll(async () => (await callsOf(harness, page, 'vault_vectors_prepare')).map((call) => call.params))
-    .toEqual([{ rootPath: VAULT_ROOT, enabled: true, source: { kind: 'builtin' } }]);
+    .toEqual([{ rootPath: VAULT_ROOT, enabled: true, source: { kind: 'builtin' }, download: true }]);
 });
 
 test('says Ollama did not answer when the runner is down, and nothing when meaning is not ready', async ({ page }) => {
   const harness = await openDesk(page, { status: LIBRARY_VECTOR_SCRIPT.ready, found: found({ state: 'failed', failure: 'runnerDown' }) }, BUILTIN);
+  const statusReads = (await callsOf(harness, page, 'vault_vectors_status')).length;
+  const line = page.getByTestId('meaning-desk-line');
   await ask(page, 'When is a refund approved?');
   await expect(page.getByTestId('question-desk-meaning-notice')).toHaveText('Ollama did not answer, so these results match words only.');
-  await expect(page.getByTestId('meaning-desk-line')).toHaveAttribute('data-state', 'runnerDown');
+  // The app leaves the folder's status at ready; the line holds what the search learned.
+  await expect(line).toHaveAttribute('data-state', 'runnerDown');
+  expect(await callsOf(harness, page, 'vault_vectors_status')).toHaveLength(statusReads);
+  // Until a search answers, or the app's next status event.
+  await harness.setVectorFound(page, found({ hits: [] }));
+  await ask(page, 'When was a refund approved?');
+  await expect(line).toHaveAttribute('data-state', 'ready');
+  await harness.setVectorFound(page, found({ state: 'failed', failure: 'runnerDown' }));
+  await ask(page, 'Who approves a refund?');
+  await expect(line).toHaveAttribute('data-state', 'runnerDown');
+  await harness.emitVectorStatus(page, LIBRARY_VECTOR_SCRIPT.ready);
+  await expect(line).toHaveAttribute('data-state', 'ready');
   await harness.setVectorFound(page, found({ state: 'notReady' }));
   await ask(page, 'When is the refund approved?');
   await expect(page.getByTestId('question-desk-meaning-notice')).toHaveCount(0);

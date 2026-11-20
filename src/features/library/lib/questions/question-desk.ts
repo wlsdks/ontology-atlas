@@ -1,5 +1,6 @@
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import type { SourceUnit } from '@/shared/lib/library/source-passage';
+import { MAX_VECTOR_PREFIX_BYTES, MAX_VECTOR_PREFIXES } from '@/shared/lib/vault-folder/tauri-vault-vectors';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { isRetainedAnswerPath, retainedAnswerHeads, type RetainedAnswerHead } from './answer-revision';
 import { fuseRankedLists } from './lead-fusion';
@@ -250,13 +251,17 @@ export function deskMeaningLeads({ hits, docs, rawBySlug, searchedSources, sourc
   claims: readonly DeskClaim[];
   sourceHits: readonly DeskSourceHit[];
 }): { leads: DeskMeaningLead[]; dropped: number } {
-  const pageByPath = new Map(deskPages(docs).map((doc) => [`${doc.slug}.md`, doc]));
+  // Finder writes decomposed names and slugs are composed: both sides are joined in NFC, and a row
+  // keeps the path as the desk lists it, so it opens the file it names.
+  const nfc = (path: string) => path.normalize('NFC');
+  const pageByPath = new Map(deskPages(docs).map((doc) => [nfc(`${doc.slug}.md`), doc]));
+  const listedSource = new Map([...searchedSources].map((path) => [nfc(path), path]));
   const parsedPages = new Map<string, ReturnType<typeof pageClaims>>();
   const leads: DeskMeaningLead[] = [];
   let dropped = 0;
   const within = (line: number, hit: DeskPassageHit) => line >= hit.lineStart && line <= hit.lineEnd;
   for (const hit of hits) {
-    const doc = pageByPath.get(hit.path);
+    const doc = pageByPath.get(nfc(hit.path));
     if (doc) {
       const raw = rawBySlug.get(doc.slug);
       if (raw === undefined) { dropped += 1; continue; }
@@ -269,17 +274,37 @@ export function deskMeaningLeads({ hits, docs, rawBySlug, searchedSources, sourc
       else dropped += 1;
       continue;
     }
-    if (!searchedSources.has(hit.path)) continue;
-    const units = sourceUnitsByPath.get(hit.path);
+    const path = listedSource.get(nfc(hit.path));
+    if (path === undefined) continue;
+    const units = sourceUnitsByPath.get(path);
     if (!units) { dropped += 1; continue; }
-    const worded = sourceHits.find((source) => source.path === hit.path && within(anchorLine(source.anchor), hit));
+    const worded = sourceHits.find((source) => source.path === path && within(anchorLine(source.anchor), hit));
     if (worded) { leads.push({ kind: 'source', hit: worded }); continue; }
     const unit = units.find((candidate) => LINE_ANCHOR.test(candidate.anchor) && within(anchorLine(candidate.anchor), hit)
       && candidate.kind !== 'heading' && !MARKDOWN_HEADING.test(candidate.text));
-    if (unit) leads.push({ kind: 'source', hit: { path: hit.path, anchor: unit.anchor, text: unit.text, score: 0 } });
+    if (unit) leads.push({ kind: 'source', hit: { path, anchor: unit.anchor, text: unit.text, score: 0 } });
     else dropped += 1;
   }
   return { leads, dropped };
+}
+
+/**
+ * The path prefixes a search by meaning keeps to: the top folder of every wiki page and listed
+ * source the desk searches, with its trailing `/`, in NFC and, where it differs, in NFD, since Rust
+ * compares bytes and Finder writes decomposed names. A file at the top of the folder is its own
+ * prefix. Past the app's limits (`MAX_VECTOR_PREFIXES` entries, `MAX_VECTOR_PREFIX_BYTES` each) the
+ * answer is none, which asks over every file.
+ */
+export function deskSearchPrefixes(paths: Iterable<string>): string[] {
+  const prefixes = new Set<string>();
+  for (const path of paths) {
+    const slash = path.indexOf('/');
+    const top = slash < 0 ? path : path.slice(0, slash + 1);
+    prefixes.add(top.normalize('NFC'));
+    prefixes.add(top.normalize('NFD'));
+  }
+  const tooLong = [...prefixes].some((prefix) => new TextEncoder().encode(prefix).length > MAX_VECTOR_PREFIX_BYTES);
+  return prefixes.size > MAX_VECTOR_PREFIXES || tooLong ? [] : [...prefixes];
 }
 
 /** The sentence's runs for its row: a lead only meaning found matched no word, so none is strong. */
