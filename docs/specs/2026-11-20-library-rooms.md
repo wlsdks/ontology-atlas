@@ -439,7 +439,8 @@ New keys under `wikiReader` in `messages/<locale>/library.json` (English source)
 7. Recorded in the app's state: open a page, press a citation, close it, press a link, go
    Back. No frame interval above 50 ms; the scroll position after Back equals the position
    before the press.
-8. Pressing the first row for "반품은 며칠 안에 할 수 있나요" on the capture folder opens the page
+8. Pressing the first row for the capture folder's Korean returns question ("how many days do I
+   have to return an item?") opens the page
    with that sentence inside the viewport and marked; a claim on the page's first screen does
    not scroll. Back shows the desk with its results and scroll position as they were.
 
@@ -505,3 +506,5 @@ New keys under `wikiReader` in `messages/<locale>/library.json` (English source)
     the app, where there is a Finder.
   - A concept link opens the Ontology tab with that concept selected
     (`/library/?tab=ontology&slug=`).
+- 2026-11-20: W2 criterion 8 names the capture folder's Korean question in English, since
+  authored spec prose is English (`pnpm docs:language`).
