@@ -60,7 +60,6 @@ const EMPTY_DOCS: Array<{
   slug: string;
   title: string;
   description?: string;
-  excerpt: string;
   frontmatter: Record<string, unknown>;
 }> = [];
 

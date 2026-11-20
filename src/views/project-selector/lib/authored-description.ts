@@ -3,9 +3,9 @@ import type { Project } from "@/entities/project";
 import { compactOntologyDescription } from "@/shared/lib/concept-display/ontology-description";
 
 /**
- * Only what a person wrote as a description reaches the screen, never the entity layer's excerpt
- * fallback (`doc.excerpt`), which seats memos on cards. The one rule for the card body and the
- * recent-activity row, cut at the first sentence like the hero (`compactOntologyDescription`).
+ * Only what a person wrote as a description reaches the screen, never the entity layer's
+ * fallback (`doc.definitionPreview`), which seats memos on cards. The one rule for the card body
+ * and the recent-activity row, cut at the first sentence like the hero (`compactOntologyDescription`).
  */
 export function resolveAuthoredDescription(
   doc: VaultDoc | null | undefined,
@@ -27,9 +27,9 @@ function resolveBodyDefinition(
   project?: Pick<Project, "name" | "displayNames"> | null,
 ): string | null {
   if (!doc || !project) return null;
-  // 320 is the excerpt's own length, so the whole first sentence fits.
-  const sentence = compactOntologyDescription(doc.excerpt, 320);
-  // A sentence that does not end inside the excerpt is a cut, not a definition.
+  // 320 is the definition preview's own length, so the whole first sentence fits.
+  const sentence = compactOntologyDescription(doc.definitionPreview ?? '', 320);
+  // A sentence that does not end inside the preview is a cut, not a definition.
   if (!sentence || !/[.!?。！？]$/u.test(sentence)) return null;
   const names = [project.name, doc.title, ...Object.values(project.displayNames ?? {})]
     .map((name) => (typeof name === "string" ? name.trim().toLowerCase() : ""))

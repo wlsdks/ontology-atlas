@@ -44,7 +44,7 @@ function matchVaultDocs(query: string, docs: VaultDoc[]): VaultDoc[] {
     if (
       d.title.toLowerCase().includes(q) ||
       d.slug.toLowerCase().includes(q) ||
-      d.excerpt.toLowerCase().includes(q) ||
+      (d.description || d.definitionPreview || '').toLowerCase().includes(q) ||
       d.tags.some((t) => t.toLowerCase().includes(q))
     ) {
       out.push(d);

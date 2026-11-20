@@ -10,7 +10,7 @@ function doc(frontmatter: Record<string, unknown>): VaultDoc {
     tags: [],
     frontmatter,
     headings: [],
-    excerpt: "정체성 (2026-07): agent-native, human-sovereign — internal positioning copy leaking in.",
+    definitionPreview: "정체성 (2026-07): agent-native, human-sovereign — internal positioning copy leaking in.",
     description: "",
     wordCount: 0,
     updatedAt: "2026-07-17T00:00:00.000Z",
@@ -38,14 +38,14 @@ describe("resolveAuthoredDescription", () => {
     );
   });
 
-  it("returns null when frontmatter has no description — never falls back to the body excerpt", () => {
+  it("returns null when frontmatter has no description — never falls back to the definition preview", () => {
     expect(resolveAuthoredDescription(doc({}))).toBeNull();
   });
 
   it("takes the body's first sentence when it names the project", () => {
     const withDefinition = {
       ...doc({}),
-      excerpt:
+      definitionPreview:
         "Ontology Atlas is a local-first workbench that keeps one reviewable Markdown record of what this codebase builds, why it has its current boundaries, and what a change would affect. The meaning record lives as Mark",
     } as VaultDoc;
     expect(resolveAuthoredDescription(withDefinition, { name: "Ontology Atlas", displayNames: { ko: "온톨로지 아틀라스" } })).toBe(
@@ -55,8 +55,13 @@ describe("resolveAuthoredDescription", () => {
 
   it("still refuses a body that opens with something other than the project's definition", () => {
     expect(resolveAuthoredDescription(doc({}), { name: "Ontology Atlas" })).toBeNull();
-    const cut = { ...doc({}), excerpt: "Ontology Atlas is a workbench that keeps one record of what this codebase bui" } as VaultDoc;
+    const cut = { ...doc({}), definitionPreview: "Ontology Atlas is a workbench that keeps one record of what this codebase bui" } as VaultDoc;
     expect(resolveAuthoredDescription(cut, { name: "Ontology Atlas" })).toBeNull();
+  });
+
+  it("does not read the first paragraph of a page that has no definition preview", () => {
+    const plain = { ...doc({}), definitionPreview: undefined, excerpt: "Ontology Atlas is a workbench that keeps one record." } as VaultDoc;
+    expect(resolveAuthoredDescription(plain, { name: "Ontology Atlas" })).toBeNull();
   });
 
   it("returns null for a blank description string", () => {

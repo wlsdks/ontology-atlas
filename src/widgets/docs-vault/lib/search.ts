@@ -15,8 +15,8 @@ export interface DocsSearchMatch {
   score: number;
   /** The range matched in title (first match only). */
   titleHit: { start: number; end: number } | null;
-  /** The range matched in excerpt. */
-  excerptHit: { start: number; end: number } | null;
+  /** The range matched in the summary (description, else definition preview). */
+  summaryHit: { start: number; end: number } | null;
   /** A ±60-character snippet around the body's first match. null without a bodyIndex or a match. */
   bodyHit: DocsBodySnippet | null;
 }
@@ -70,7 +70,7 @@ interface RankedDoc {
   score: number;
   order: number;
   titleIdx: number;
-  excerptIdx: number;
+  summaryIdx: number;
   body: DocsBodyEntry | undefined;
   bodyIdx: number;
   bodyMatchLength: number;
@@ -104,19 +104,19 @@ function retain(heap: RankedDoc[], entry: RankedDoc, limit: number): void {
 }
 
 function matchFor(
-  doc: VaultDoc, score: number, titleIdx: number, excerptIdx: number,
+  doc: VaultDoc, score: number, titleIdx: number, summaryIdx: number,
   body: DocsBodyEntry | undefined, bodyIdx: number, bodyMatchLength: number, needleLength: number,
 ): DocsSearchMatch {
   return {
     doc, score,
     titleHit: titleIdx !== -1 ? { start: titleIdx, end: titleIdx + needleLength } : null,
-    excerptHit: excerptIdx !== -1 ? { start: excerptIdx, end: excerptIdx + needleLength } : null,
+    summaryHit: summaryIdx !== -1 ? { start: summaryIdx, end: summaryIdx + needleLength } : null,
     bodyHit: bodyIdx !== -1 && body !== undefined ? extractBodySnippet(body.raw, bodyIdx, bodyMatchLength) : null,
   };
 }
 
 /**
- * AND-token search. Tiers: title 20-100, slug 25, excerpt 2-20, tag 15, body phrase 10-16,
+ * AND-token search. Tiers: title 20-100, slug 25, summary 2-20, tag 15, body phrase 10-16,
  * scattered body about 1. Body text is pre-lowercased; phrase matching shares the viewer's matcher.
  */
 export function searchDocs(
@@ -137,7 +137,7 @@ export function searchDocs(
   for (const doc of docs) {
     const docOrder = order++;
     const titleLc = doc.title.toLowerCase();
-    const excerptLc = doc.excerpt.toLowerCase();
+    const summaryLc = (doc.description || doc.definitionPreview || '').toLowerCase();
     const slugLc = doc.slug.toLowerCase();
     const tagLc = doc.tags.map((t) => t.toLowerCase());
     // Also match the display name the list draws; this only widens the scope.
@@ -150,7 +150,7 @@ export function searchDocs(
       (tok) =>
         titleLc.includes(tok) ||
         displayLc.some((d) => d.includes(tok)) ||
-        excerptLc.includes(tok) ||
+        summaryLc.includes(tok) ||
         slugLc.includes(tok) ||
         tagLc.some((t) => t.includes(tok)) ||
         (body !== undefined && body.lower.includes(tok)),
@@ -159,7 +159,7 @@ export function searchDocs(
     // The score is computed against the full query (the joined form for multiple tokens).
     const needle = tokens[0];
     const titleIdx = titleLc.indexOf(needle);
-    const excerptIdx = excerptLc.indexOf(needle);
+    const summaryIdx = summaryLc.indexOf(needle);
 
     // Body match position: an exact phrase (newlines as spaces) sets the boost tier; otherwise the
     // first token's position in the lowest tier.
@@ -184,7 +184,7 @@ export function searchDocs(
 
     let score = 0;
     if (titleIdx !== -1) score += 100 - Math.min(titleIdx, 80);
-    if (excerptIdx !== -1) score += 20 - Math.min(excerptIdx, 18);
+    if (summaryIdx !== -1) score += 20 - Math.min(summaryIdx, 18);
     if (slugLc.includes(needle)) score += 25;
     for (const t of tagLc) if (t.includes(needle)) score += 15;
     if (bodyIdx !== -1) {
@@ -195,14 +195,14 @@ export function searchDocs(
     if (bounded) {
       // Later ties cannot displace an earlier result. Build snippets only after the top prefix is known.
       if (heap.length === maxResults && score <= heap[0].score) continue;
-      retain(heap, { doc, score, order: docOrder, titleIdx, excerptIdx, body, bodyIdx, bodyMatchLength }, maxResults);
+      retain(heap, { doc, score, order: docOrder, titleIdx, summaryIdx, body, bodyIdx, bodyMatchLength }, maxResults);
     } else {
-      out.push(matchFor(doc, score, titleIdx, excerptIdx, body, bodyIdx, bodyMatchLength, needle.length));
+      out.push(matchFor(doc, score, titleIdx, summaryIdx, body, bodyIdx, bodyMatchLength, needle.length));
     }
   }
   if (bounded) {
     return heap.sort((a, b) => b.score - a.score || a.order - b.order)
-      .map(entry => matchFor(entry.doc, entry.score, entry.titleIdx, entry.excerptIdx,
+      .map(entry => matchFor(entry.doc, entry.score, entry.titleIdx, entry.summaryIdx,
         entry.body, entry.bodyIdx, entry.bodyMatchLength, tokens[0].length));
   }
   out.sort((a, b) => b.score - a.score);

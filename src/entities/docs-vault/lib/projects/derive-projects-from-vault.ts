@@ -38,7 +38,7 @@ function mapVaultDocToProject(doc: VaultDoc): Project | null {
   const description =
     typeof fm.description === 'string' && fm.description.trim()
       ? fm.description.trim()
-      : doc.excerpt;
+      : (doc.definitionPreview ?? '');
   // Only an explicit position; layout is otherwise the placement hook's.
   const position = parseSplitPosition(fm) ?? parseInlinePositionOpt(fm.position);
   // Only explicit startedAt / launchedAt.

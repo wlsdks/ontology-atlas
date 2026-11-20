@@ -37,8 +37,11 @@ the folder's files. It shows the open folder's index
 size, deletes that index, and turns indexing off (off leaves no index file). A folder's
 index is also deleted when the folder is taken off the folder list, or at launch when the
 folder is gone or was left unopened for fourteen days; an index being built or that cannot
-be read is kept. The web has no index: there the palette searches titles, summaries and
-tags, and its zero-result note says exactly that.
+be read is kept. The web has no index: there the palette searches titles, display names,
+slugs, tags and summaries (a description, else a concept's definition preview), and its
+zero-result note says exactly that. A page is no longer found by a word that only its
+first paragraph holds, except in the app with the index on. The Library's wiki list and
+the project palette match the same way.
 
 **The palette reads a Korean keyboard** (2026-09-19). Matching used to be normalised
 substrings only, so the two things a Korean typist does first found nothing on the

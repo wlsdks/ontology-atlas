@@ -49,8 +49,8 @@ export interface LibraryWikiPage {
   sourcePaths: string[];
   createdBy: string | null;
   compiledAt: string | null;
-  /** The page's excerpt and tags, which the web's search matches beside the title. */
-  excerpt?: string;
+  /** The page's summary and tags, which the web's search matches beside the title. */
+  summary?: string;
   tags?: string[];
   /**
    * The concept slugs the page says it is about, trimmed and in NFC, as written: `null` when the
@@ -149,7 +149,7 @@ export function selectWikiPages(docs: readonly VaultDoc[]): LibraryWikiPage[] {
         ? doc.frontmatter.created_by.trim()
         : null,
     compiledAt: readCompiledAt(doc),
-    excerpt: doc.excerpt,
+    summary: doc.description || doc.definitionPreview || '',
     tags: doc.tags,
     describes: readDescribes(doc.frontmatter.describes),
   }));

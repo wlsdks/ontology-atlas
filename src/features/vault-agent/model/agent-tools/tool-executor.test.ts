@@ -60,7 +60,6 @@ function makePort(overrides: Partial<VaultReadPort> = {}): VaultReadPort {
         kind: 'capability',
         domain: 'billing',
         frontmatter: { kind: 'capability', domain: 'billing' },
-        excerpt: '결제 처리',
         mtime: 1_700_000_000_000,
       },
       {
@@ -69,7 +68,6 @@ function makePort(overrides: Partial<VaultReadPort> = {}): VaultReadPort {
         title: 'refund',
         kind: 'capability',
         frontmatter: { kind: 'capability' },
-        excerpt: '환불',
         mtime: 1_700_000_001_000,
       },
     ],
@@ -225,9 +223,9 @@ describe('tool-executor reads', () => {
     const execute = createToolExecutor(
       makePort({
         docs: [
-          { slug: 'capabilities/z', path: 'capabilities/z.md', title: 'Z', kind: 'capability', frontmatter: {}, excerpt: '', mtime: 1 },
-          { slug: 'capabilities/a', path: 'capabilities/a.md', title: 'A', kind: 'capability', frontmatter: {}, excerpt: '', mtime: 1 },
-          { slug: 'capabilities/m', path: 'capabilities/m.md', title: 'M', kind: 'capability', frontmatter: {}, excerpt: '', mtime: 1 },
+          { slug: 'capabilities/z', path: 'capabilities/z.md', title: 'Z', kind: 'capability', frontmatter: {}, mtime: 1 },
+          { slug: 'capabilities/a', path: 'capabilities/a.md', title: 'A', kind: 'capability', frontmatter: {}, mtime: 1 },
+          { slug: 'capabilities/m', path: 'capabilities/m.md', title: 'M', kind: 'capability', frontmatter: {}, mtime: 1 },
         ],
       }),
     );
@@ -256,7 +254,6 @@ describe('tool-executor reads', () => {
             title: 'notes',
             kind: 'document',
             frontmatter: { kind: 'document', describes: ['capabilities/payment'] },
-            excerpt: '',
           },
           {
             slug: 'capabilities/payment',
@@ -264,7 +261,6 @@ describe('tool-executor reads', () => {
             title: 'payment',
             kind: 'capability',
             frontmatter: { kind: 'capability' },
-            excerpt: '',
           },
         ],
       }),
@@ -285,10 +281,9 @@ describe('tool-executor reads', () => {
       title: `c${index}`,
       kind: 'capability',
       frontmatter: {},
-      excerpt: 'x'.repeat(300),
       mtime: 1,
     }));
-    const execute = createToolExecutor(makePort({ docs: many }));
+    const execute = createToolExecutor(makePort({ docs: many, readDocText: async () => 'x'.repeat(300) }));
     const result = await execute(call('list_concepts', { summary: true, limit: 400 }));
     expect(result.content).toContain('truncated');
     expect(result.content.length).toBeLessThan(7_000);
@@ -301,7 +296,6 @@ describe('tool-executor reads', () => {
       title: `c${index}`,
       kind: 'capability',
       frontmatter: {},
-      excerpt: '',
       mtime: 1,
     }));
     const execute = createToolExecutor(makePort({ docs: many }));
@@ -363,7 +357,6 @@ describe('tool-executor reads', () => {
           (__, childIndex) => `capabilities/d${index}-c${childIndex}`,
         ),
       },
-      excerpt: `Domain ${index} owns a distinct customer behavior. `.repeat(8),
       mtime: index + 1,
     }));
     const edges = parents.flatMap((parent, parentIndex) =>

@@ -1,5 +1,6 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import { resolveNodeAgentTarget } from '@/entities/knowledge-graph';
+import { buildExcerpt, parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
 import {
   GRAPH_FRONTMATTER_KEYS,
@@ -17,6 +18,11 @@ import {
 } from '../proposals/competency-qualification-boundary';
 
 export { GRAPH_FRONTMATTER_KEYS } from './concept-evidence-pack';
+
+/** The excerpt of the text the port just read; empty when the file could not be read. */
+function excerptOfText(raw: string | null): string {
+  return raw === null ? '' : buildExcerpt(parseFrontmatter(raw).body);
+}
 
 /** Reads the vault through a read-only port; write tools return proposal intents. */
 
@@ -173,6 +179,7 @@ export function createToolExecutor(port: VaultReadPort) {
     if (!node) {
       return {
         found: false as const,
+        bodyExcerpt: '',
         payload: {
           slug: slugInput,
           found: false,
@@ -195,6 +202,7 @@ export function createToolExecutor(port: VaultReadPort) {
       return {
         found: true as const,
         slug: target.ref ?? node.id,
+        bodyExcerpt: '',
         payload: {
           slug: target.ref ?? node.id,
           title: node.title,
@@ -208,11 +216,14 @@ export function createToolExecutor(port: VaultReadPort) {
     }
     const slug = target.ref as string;
     const doc = docBySlug.get(slug);
-    const fullBody = (await port.readDocText(slug)) ?? doc?.excerpt ?? '';
-    const body = bodyMode === 'excerpt' ? (doc?.excerpt ?? fullBody) : fullBody;
+    const raw = await port.readDocText(slug);
+    const fullBody = raw ?? '';
+    const excerpt = excerptOfText(raw);
+    const body = bodyMode === 'excerpt' && doc ? excerpt : fullBody;
     return {
       found: true as const,
       slug,
+      bodyExcerpt: excerpt,
       payload: {
         slug,
         title: node.title,
@@ -318,7 +329,7 @@ export function createToolExecutor(port: VaultReadPort) {
           const result = await readConcept(slug as string, batchBodyMode);
           rows.push({
             payload: result.payload,
-            excerpt: result.slug ? (docBySlug.get(result.slug)?.excerpt ?? '') : '',
+            excerpt: result.bodyExcerpt,
           });
         }
         const packed = packConceptEvidence(rows);
@@ -391,16 +402,18 @@ export function createToolExecutor(port: VaultReadPort) {
             vaultChars: 0,
           };
         }
-        const rows = filtered
-          .slice(offset, offset + limit)
-          .map((doc) => ({
-            slug: doc.slug,
-            kind: doc.kind,
-            title: doc.title,
-            ...(doc.domain ? { domain: doc.domain } : {}),
-            ...(doc.mtime ? { mtime: doc.mtime } : {}),
-            ...(wantSummary ? { summary: wrapUntrusted(doc.excerpt) } : {}),
-          }));
+        const page = filtered.slice(offset, offset + limit);
+        const summaries = wantSummary
+          ? await Promise.all(page.map(async (doc) => excerptOfText(await port.readDocText(doc.slug))))
+          : [];
+        const rows = page.map((doc, index) => ({
+          slug: doc.slug,
+          kind: doc.kind,
+          title: doc.title,
+          ...(doc.domain ? { domain: doc.domain } : {}),
+          ...(doc.mtime ? { mtime: doc.mtime } : {}),
+          ...(wantSummary ? { summary: wrapUntrusted(summaries[index]) } : {}),
+        }));
         const hasMore = offset + rows.length < filtered.length;
         const packed = pack({
           rows,

@@ -16,7 +16,7 @@ interface MatchInput {
 
 /**
  * Top N related docs by score: frontmatter `projects` 100, `[[project:slug]]` 60, `/project/{slug}`
- * 40, title name 25, tag 15, excerpt name 10. Ties by slug; zero drops.
+ * 40, title name 25, tag 15, summary name 10. Ties by slug; zero drops.
  */
 export function findRelatedDocs(
   docs: VaultDoc[],
@@ -30,6 +30,7 @@ export function findRelatedDocs(
   const nameLc = name?.toLowerCase();
   const out: RelatedDocMatch[] = [];
   for (const d of docs) {
+    const summary = d.description || d.definitionPreview || '';
     const reasons: string[] = [];
     let score = 0;
     // 1. frontmatter `projects` — a string or a string array.
@@ -49,7 +50,7 @@ export function findRelatedDocs(
       }
     }
     for (const alias of aliases) {
-      if (d.excerpt.includes(`/project/${alias}`)) {
+      if (summary.includes(`/project/${alias}`)) {
         score += 40;
         reasons.push('project-url');
         break;
@@ -59,9 +60,9 @@ export function findRelatedDocs(
       score += 25;
       reasons.push('title');
     }
-    if (nameLc && d.excerpt.toLowerCase().includes(nameLc)) {
+    if (nameLc && summary.toLowerCase().includes(nameLc)) {
       score += 10;
-      reasons.push('excerpt');
+      reasons.push('summary');
     }
     for (const tag of d.tags) {
       if (aliasesLc.includes(tag.toLowerCase())) {

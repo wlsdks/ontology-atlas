@@ -28,9 +28,9 @@ function bodyIndexOf(entries: Record<string, string>): DocsBodyIndex {
 }
 
 describe('searchDocs metadata tiers', () => {
-  it('scores a title match above an excerpt match', () => {
+  it('scores a title match above a summary match', () => {
     const docs = [
-      doc('a', 'other', { excerpt: 'graph engine here' }),
+      doc('a', 'other', { description: 'graph engine here' }),
       doc('b', 'graph engine'),
     ];
     const out = searchDocs('graph', docs);
@@ -56,6 +56,27 @@ describe('searchDocs metadata tiers', () => {
   });
 });
 
+describe('searchDocs finds a page by its first paragraph only through the body index', () => {
+  const raw = '---\ntitle: Plain page\n---\n\nQuillwort grows in cold ponds.\n\n## Later\n\nOther text.';
+  const plain = doc('plain', 'Plain page', { excerpt: 'Quillwort grows in cold ponds.' });
+
+  it('finds the page by a first-paragraph word when the index holds its body', () => {
+    const out = searchDocs('quillwort', [plain], 30, bodyIndexOf({ plain: raw }));
+    expect(out.map((match) => match.doc.slug)).toEqual(['plain']);
+    expect(out[0].bodyHit?.text).toContain('Quillwort');
+  });
+
+  it('does not find the page by that word without the index', () => {
+    expect(searchDocs('quillwort', [plain], 30)).toEqual([]);
+  });
+
+  it('finds a page by its description, and a concept by its definition preview', () => {
+    const described = doc('d', 'Described', { description: 'Tracks quillwort stock' });
+    const defined = doc('e', 'Defined', { definitionPreview: 'Tracks quillwort stock' });
+    expect(searchDocs('quillwort', [described, defined]).map((match) => match.doc.slug)).toEqual(['d', 'e']);
+  });
+});
+
 describe('searchDocs body tier ranks lowest', () => {
   it('keeps complete phrase highlights in successive documents', () => {
     const docs = [doc('a', 'Other'), doc('b', 'Other')];
@@ -70,7 +91,7 @@ describe('searchDocs body tier ranks lowest', () => {
 
   it('keeps the exhaustive prefix, stable ties and highlights across result limits', () => {
     const docs = Array.from({ length: 80 }, (_, i) => doc(`documents/${79 - i}`, i % 5 === 0 ? 'needle phrase' : 'Other', {
-      excerpt: i % 3 === 0 ? 'needle phrase' : '', tags: i % 7 === 0 ? ['needle', 'phrase'] : [],
+      description: i % 3 === 0 ? 'needle phrase' : '', tags: i % 7 === 0 ? ['needle', 'phrase'] : [],
       frontmatter: { display_ko: '그래프 문서', display_en: 'Graph document' },
     }));
     const bodies = bodyIndexOf(Object.fromEntries(docs.map((d, i) => [d.slug,
@@ -84,10 +105,10 @@ describe('searchDocs body tier ranks lowest', () => {
       }
     }
     expect({ docs, bodies }).toEqual(snapshot);
-    const ties = docs.map(d => ({ ...d, title: 'needle', excerpt: '', tags: [], frontmatter: {} }));
+    const ties = docs.map(d => ({ ...d, title: 'needle', description: '', tags: [], frontmatter: {} }));
     const tiedBodies = bodyIndexOf(Object.fromEntries(ties.map(d => [d.slug, 'needle'])));
     expect(searchDocs('needle', ties, 15, tiedBodies).map(match => match.doc)).toEqual(ties.slice(0, 15));
-    const lateWinner = { ...ties[79], title: 'needle', excerpt: 'needle', tags: ['needle'] };
+    const lateWinner = { ...ties[79], title: 'needle', description: 'needle', tags: ['needle'] };
     expect(searchDocs('needle', [...ties.slice(0, 79), lateWinner], 1, tiedBodies)[0].doc).toBe(lateWinner);
   });
 
@@ -129,16 +150,16 @@ describe('searchDocs body tier ranks lowest', () => {
     expect(out.map((m) => m.doc.slug)).toEqual(['title-hit', 'body-only']);
   });
 
-  it('scores a body hit below the lowest excerpt score', () => {
+  it('scores a body hit below the lowest summary score', () => {
     const docs = [
-      doc('excerpt-late', 'zzz', {
-        excerpt: `${'y'.repeat(30)}needle far into the excerpt`,
+      doc('summary-late', 'zzz', {
+        description: `${'y'.repeat(30)}needle far into the summary`,
       }),
       doc('body-first', 'zzz'),
     ];
     const bodyIndex = bodyIndexOf({ 'body-first': 'needle right away' });
     const out = searchDocs('needle', docs, 30, bodyIndex);
-    expect(out.map((m) => m.doc.slug)).toEqual(['excerpt-late', 'body-first']);
+    expect(out.map((m) => m.doc.slug)).toEqual(['summary-late', 'body-first']);
   });
 
   it('ranks an earlier body match slightly higher', () => {

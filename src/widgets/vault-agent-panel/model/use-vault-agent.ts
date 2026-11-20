@@ -160,7 +160,6 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
         domain:
           typeof doc.frontmatter.domain === 'string' ? doc.frontmatter.domain : undefined,
         frontmatter: doc.frontmatter,
-        excerpt: doc.excerpt,
         mtime: doc.mtime,
       }));
   }, [args.manifest]);
