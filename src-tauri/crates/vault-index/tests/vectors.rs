@@ -117,7 +117,17 @@ fn row_counts(vault: &TempVault) -> (i64, i64) {
     (count("vectors"), count("signs"))
 }
 
-/// Pages of four sections each, a third Korean, so a vault of `count` pages holds about
+/// `sentence` repeated to at least 400 characters, so its section is a passage of its own.
+fn long(sentence: &str) -> String {
+    let mut text = sentence.to_string();
+    while text.chars().count() < 400 {
+        text.push(' ');
+        text.push_str(sentence);
+    }
+    text
+}
+
+/// Pages of four sections each, a third Korean, so a vault of `count` pages holds
 /// `4 * count` passages; half sit under `wiki/`.
 fn write_sections(vault: &TempVault, count: usize, seed: u64) {
     let words = [
@@ -128,12 +138,15 @@ fn write_sections(vault: &TempVault, count: usize, seed: u64) {
         let folder = if page % 2 == 0 { "wiki" } else { "notes" };
         let mut text = format!("---\ntitle: Page {page}\n---\n");
         for section in 0..4 {
-            let body: Vec<&str> = (0..30 + rng.next() % 40)
-                .map(|_| rng.pick(&words))
-                .collect();
+            let target = 400 + (rng.next() % 300) as usize;
+            let mut body = String::new();
+            while body.chars().count() < target {
+                body.push_str(rng.pick(&words));
+                body.push(' ');
+            }
             text.push_str(&format!(
                 "\n## Section {section} of {page}\n\n{}\n",
-                body.join(" ")
+                body.trim_end()
             ));
         }
         write(vault, &format!("{folder}/page-{page}.md"), &text);
@@ -243,39 +256,29 @@ fn a_build_killed_mid_batch_twenty_times_equals_a_build_from_scratch() {
 #[test]
 fn an_edit_a_rename_and_a_delete_send_only_changed_passages() {
     let vault = TempVault::new("vectors-incremental");
-    let a_old = "## Two\nThe old second section of a.";
-    write(
-        &vault,
-        "a.md",
-        &format!("# One\nFirst section of a.\n\n{a_old}\n\n## Three\nThird section of a.\n"),
-    );
-    write(
-        &vault,
-        "b.md",
-        "# B\nOnly section of b.\n\n## More\nMore of b.\n",
-    );
-    write(
-        &vault,
-        "c.md",
-        "# C\nOnly section of c.\n\n## More\nMore of c.\n",
-    );
+    let one = format!("# One\n{}", long("First section of a."));
+    let three = format!("## Three\n{}", long("Third section of a."));
+    let a_old = format!("## Two\n{}", long("The old second section of a."));
+    write(&vault, "a.md", &format!("{one}\n\n{a_old}\n\n{three}\n"));
+    let b_only = format!("# B\n{}", long("Only section of b."));
+    let b_more = format!("## More\n{}", long("More of b."));
+    write(&vault, "b.md", &format!("{b_only}\n\n{b_more}\n"));
+    let c_only = format!("# C\n{}", long("Only section of c."));
+    let c_more = format!("## More\n{}", long("More of c."));
+    write(&vault, "c.md", &format!("{c_only}\n\n{c_more}\n"));
     let mut asked = Vec::new();
     prepare_all(&vault, &mut asked);
     assert_eq!(asked.len(), 7);
 
-    let a_new = "## Two\nA rewritten second section of a.";
-    write(
-        &vault,
-        "a.md",
-        &format!("# One\nFirst section of a.\n\n{a_new}\n\n## Three\nThird section of a.\n"),
-    );
-    let before_update = nearest(&vault, a_old);
+    let a_new = format!("## Two\n{}", long("A rewritten second section of a."));
+    write(&vault, "a.md", &format!("{one}\n\n{a_new}\n\n{three}\n"));
+    let before_update = nearest(&vault, &a_old);
     assert_eq!(before_update.stale, 1, "the edited passage is dropped");
     assert!(before_update
         .hits
         .iter()
-        .all(|hit| hit.sha256 != sha(a_old)));
-    let kept = nearest(&vault, "# One\nFirst section of a.");
+        .all(|hit| hit.sha256 != sha(&a_old)));
+    let kept = nearest(&vault, &one);
     assert_eq!(kept.hits[0].path, "a.md");
     assert_eq!((kept.hits[0].line_start, kept.hits[0].line_end), (1, 2));
     assert_eq!(kept.hits[0].heading.as_deref(), Some("One"));
@@ -285,7 +288,7 @@ fn an_edit_a_rename_and_a_delete_send_only_changed_passages() {
     assert_eq!(plan.remaining().passages, 1);
     drop(plan);
     prepare_all(&vault, &mut asked);
-    assert_eq!(asked, vec![a_new.to_string()], "only the changed passage");
+    assert_eq!(asked, vec![a_new], "only the changed passage");
 
     std::fs::create_dir_all(vault.root.join("moved")).unwrap();
     std::fs::rename(vault.root.join("b.md"), vault.root.join("moved/b2.md")).unwrap();
@@ -293,7 +296,7 @@ fn an_edit_a_rename_and_a_delete_send_only_changed_passages() {
     let prepared = prepare_all(&vault, &mut asked);
     assert!(asked.is_empty(), "a rename sends nothing");
     assert_eq!(prepared.passages, 0);
-    let moved = nearest(&vault, "# B\nOnly section of b.");
+    let moved = nearest(&vault, &b_only);
     assert_eq!(moved.hits[0].path, "moved/b2.md");
     assert!(moved.hits.iter().all(|hit| hit.path != "b.md"));
 
@@ -312,7 +315,7 @@ fn an_edit_a_rename_and_a_delete_send_only_changed_passages() {
         (2, 2, 5, 5)
     );
     assert_eq!(row_counts(&vault), (5, 5), "vectors no file holds are gone");
-    assert!(nearest(&vault, "# C\nOnly section of c.")
+    assert!(nearest(&vault, &c_only)
         .hits
         .iter()
         .all(|hit| hit.path != "c.md"));
@@ -324,7 +327,10 @@ type Answer = Box<dyn Fn(&[&str]) -> Vec<Vec<f32>>>;
 #[test]
 fn hostile_vectors_are_refused_and_nothing_from_the_batch_is_stored() {
     let vault = TempVault::new("vectors-hostile");
-    write(&vault, "a.md", "# A\nalpha\n\n# B\nbeta\n\n# C\ngamma\n");
+    let sections = ["alpha", "beta", "gamma"]
+        .map(|word| format!("# {word}\n{}", long(word)))
+        .join("\n\n");
+    write(&vault, "a.md", &sections);
     let answers: Vec<(Answer, Refusal)> = vec![
         (
             Box::new(|texts: &[&str]| {
@@ -394,8 +400,10 @@ fn hostile_vectors_are_refused_and_nothing_from_the_batch_is_stored() {
 #[test]
 fn a_file_contributes_at_most_five_hundred_passages() {
     let vault = TempVault::new("vectors-cap");
-    let long: String = (0..620).map(|i| format!("# H{i}\nbody {i}\n")).collect();
-    write(&vault, "long.md", &long);
+    let many: String = (0..620)
+        .map(|i| format!("# H{i}\n{}\n", long(&format!("body {i}."))))
+        .collect();
+    write(&vault, "long.md", &many);
     write(&vault, "short.md", "# S\nshort\n");
     let plan = vectors::plan(&vault.root, &model(), &vault.files()).unwrap();
     assert_eq!(plan.remaining().passages, 501);
@@ -403,7 +411,7 @@ fn a_file_contributes_at_most_five_hundred_passages() {
     let mut asked = Vec::new();
     prepare_all(&vault, &mut asked);
     assert_eq!(asked.len(), 501);
-    assert!(!asked.iter().any(|text| text.contains("body 500")));
+    assert!(!asked.iter().any(|text| text.contains("body 500.")));
     let status = vectors::status(&vault.root, &model()).unwrap().unwrap();
     assert_eq!(
         (
@@ -500,7 +508,8 @@ fn a_search_reads_beside_a_running_build() {
 #[test]
 fn another_model_or_dimension_starts_a_new_file() {
     let vault = TempVault::new("vectors-model");
-    write(&vault, "a.md", "# A\nalpha\n\n# B\nbeta\n");
+    let two = format!("# A\n{}\n\n# B\n{}\n", long("alpha"), long("beta"));
+    write(&vault, "a.md", &two);
     let mut asked = Vec::new();
     prepare_all(&vault, &mut asked);
     let wider = Model {

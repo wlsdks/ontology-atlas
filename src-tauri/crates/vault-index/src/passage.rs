@@ -1,8 +1,9 @@
 //! Passages: the pieces of one Markdown file that search by meaning embeds. Frontmatter is
 //! dropped, a passage starts at every heading outside a code fence, a heading with no body is
 //! skipped, and a passage holds at most `MAX_PASSAGE_CHARS` characters (split at line ends, a
-//! longer line cut). Text is NFC, so a passage typed on macOS (NFD) hashes as one typed elsewhere.
-//! The rule matches `splitPassages` in `scripts/perf/meaning-quality.mjs`, which measured quality.
+//! longer line cut). A section shorter than `MIN_SECTION_CHARS` joins its neighbour. Text is NFC,
+//! so NFD text typed on macOS hashes alike. `splitPassages` in `scripts/perf/meaning-quality.mjs`
+//! is the same rule, which measured quality.
 
 use crate::stamps::Sha;
 use icu_normalizer::ComposingNormalizerBorrowed;
@@ -10,18 +11,21 @@ use sha2::{Digest, Sha256};
 
 /// The embedding client refuses longer passages.
 pub(crate) const MAX_PASSAGE_CHARS: usize = 2_000;
+/// A whole section shorter than this joins the section after it (the file's last joins the one
+/// before), up to `MAX_PASSAGE_CHARS`: alone, a heading-sized section embeds too little to match.
+pub(crate) const MIN_SECTION_CHARS: usize = 400;
 /// Passages beyond this many in one file are counted as not prepared.
 pub(crate) const MAX_PASSAGES_PER_FILE: usize = 500;
 /// Changing the split rule changes this; stored passage lists are then read again, while vectors
 /// of passages whose text did not change are kept.
-pub(crate) const PASSAGE_VERSION: u32 = 1;
+pub(crate) const PASSAGE_VERSION: u32 = 2;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Passage {
     /// 1-based, inclusive, in the file as written (frontmatter lines counted).
     pub(crate) line_start: u32,
     pub(crate) line_end: u32,
-    /// The heading that opens the passage's section, without its `#` marks.
+    /// The heading that opens the passage's (first) section, without its `#` marks.
     pub(crate) heading: Option<String>,
     /// NFC, trimmed, at most `MAX_PASSAGE_CHARS` characters.
     pub(crate) text: String,
@@ -37,7 +41,7 @@ impl Passage {
 /// The file's first `MAX_PASSAGES_PER_FILE` passages, and how many more it holds. O(n) in the
 /// text's length.
 pub(crate) fn split(raw: &str) -> (Vec<Passage>, usize) {
-    let mut passages = split_all(raw);
+    let mut passages = join_short(split_all(raw));
     let over = passages.len().saturating_sub(MAX_PASSAGES_PER_FILE);
     passages.truncate(MAX_PASSAGES_PER_FILE);
     (passages, over)
@@ -179,12 +183,14 @@ fn line_number(line: usize) -> u32 {
     u32::try_from(line).unwrap_or(u32::MAX)
 }
 
-fn split_all(raw: &str) -> Vec<Passage> {
+/// Each section's passages, with whether the passage is its section's only one.
+fn split_all(raw: &str) -> Vec<(Passage, bool)> {
     let lines: Vec<&str> = raw
         .split('\n')
         .map(|line| line.strip_suffix('\r').unwrap_or(line))
         .collect();
     let mut passages = Vec::new();
+    let mut whole = Vec::new();
     for section in sections(&lines) {
         let body = if section.heading {
             section.lines.get(1..).unwrap_or_default()
@@ -238,8 +244,59 @@ fn split_all(raw: &str) -> Vec<Passage> {
             }
             chunk.flush(end);
         }
+        let made = passages.len() - whole.len();
+        whole.extend(std::iter::repeat_n(made == 1, made));
     }
-    passages
+    passages.into_iter().zip(whole).collect()
+}
+
+fn joined(first: &Passage, second: &Passage) -> Option<Passage> {
+    let chars = first.chars() + 2 + second.chars();
+    (chars <= MAX_PASSAGE_CHARS).then(|| {
+        let text = format!("{}\n\n{}", first.text, second.text);
+        Passage {
+            line_start: first.line_start,
+            line_end: second.line_end,
+            heading: first.heading.clone(),
+            sha: sha_of(&text),
+            text,
+        }
+    })
+}
+
+/// Joins each whole section under `MIN_SECTION_CHARS` to the passage after it while the result
+/// stays short, and a short one left at the end to the passage before. O(n) in the text's length.
+fn join_short(passages: Vec<(Passage, bool)>) -> Vec<Passage> {
+    let mut out: Vec<Passage> = Vec::with_capacity(passages.len());
+    let mut carry: Option<Passage> = None;
+    for (passage, whole) in passages {
+        let mut short = whole && passage.chars() < MIN_SECTION_CHARS;
+        let mut current = passage;
+        if let Some(held) = carry.take() {
+            match joined(&held, &current) {
+                Some(both) => {
+                    short = short && both.chars() < MIN_SECTION_CHARS;
+                    current = both;
+                }
+                None => out.push(held),
+            }
+        }
+        if short {
+            carry = Some(current);
+        } else {
+            out.push(current);
+        }
+    }
+    if let Some(held) = carry {
+        match out.last().and_then(|last| joined(last, &held)) {
+            Some(both) => {
+                out.pop();
+                out.push(both);
+            }
+            None => out.push(held),
+        }
+    }
+    out
 }
 
 #[cfg(test)]
@@ -261,21 +318,88 @@ mod tests {
             .collect()
     }
 
+    /// A body long enough that its section stands alone.
+    fn long(mark: char) -> String {
+        mark.to_string().repeat(MIN_SECTION_CHARS)
+    }
+
     #[test]
     fn frontmatter_is_dropped_and_every_heading_with_a_body_starts_a_passage() {
-        let raw = "---\ntitle: A\n---\n\nIntro line.\n\n# One\n\nFirst body.\n\n## Empty\n\n## Two ##\nSecond body.\n\n";
+        let (a, b, c) = (long('a'), long('b'), long('c'));
+        let raw =
+            format!("---\ntitle: A\n---\n\n{a}\n\n# One\n\n{b}\n\n## Empty\n\n## Two ##\n{c}\n\n");
         assert_eq!(
-            spans(raw),
+            spans(&raw),
             vec![
-                (4, 5, None, "Intro line.".to_string()),
-                (7, 9, Some("One".into()), "# One\n\nFirst body.".to_string()),
-                (
-                    13,
-                    14,
-                    Some("Two".into()),
-                    "## Two ##\nSecond body.".to_string()
-                ),
+                (4, 5, None, a),
+                (7, 9, Some("One".into()), format!("# One\n\n{b}")),
+                (13, 14, Some("Two".into()), format!("## Two ##\n{c}")),
             ]
+        );
+    }
+
+    #[test]
+    fn a_short_section_joins_the_next_and_the_passage_spans_both() {
+        let body = long('b');
+        let raw = format!("# A\nshort\n\n# B\n{body}\n\n# C\n{body}");
+        let passages = spans(&raw);
+        assert_eq!(passages.len(), 2);
+        assert_eq!(
+            passages[0],
+            (1, 5, Some("A".into()), format!("# A\nshort\n\n# B\n{body}"))
+        );
+        assert_eq!((passages[1].0, passages[1].1), (7, 8));
+    }
+
+    #[test]
+    fn short_sections_in_a_row_keep_joining_until_the_floor() {
+        let raw = format!("# A\none\n# B\ntwo\n# C\n{}", long('c'));
+        let passages = spans(&raw);
+        assert_eq!(passages.len(), 1);
+        assert_eq!((passages[0].0, passages[0].1), (1, 6));
+        assert!(passages[0].3.starts_with("# A\none\n\n# B\ntwo\n\n# C\n"));
+    }
+
+    #[test]
+    fn the_last_short_section_joins_the_one_before() {
+        let body = long('a');
+        let raw = format!("# A\n{body}\n\n# B\nshort\n");
+        assert_eq!(
+            spans(&raw),
+            vec![(1, 5, Some("A".into()), format!("# A\n{body}\n\n# B\nshort"))]
+        );
+    }
+
+    #[test]
+    fn a_join_never_passes_two_thousand_characters() {
+        let near_cap = "n".repeat(MAX_PASSAGE_CHARS - 6);
+        let raw = format!("# A\nshort\n# B\n{near_cap}\n# C\ntail");
+        let passages = split(&raw).0;
+        assert!(passages.iter().all(|p| p.chars() <= MAX_PASSAGE_CHARS));
+        let lines: Vec<(u32, u32)> = passages
+            .iter()
+            .map(|p| (p.line_start, p.line_end))
+            .collect();
+        assert_eq!(lines, vec![(1, 2), (3, 4), (5, 6)]);
+    }
+
+    #[test]
+    fn a_short_tail_of_a_long_section_does_not_join() {
+        let (line, full) = ("l".repeat(1_500), "f".repeat(1_996));
+        let raw = format!("# Long\n{line}\n{full}\ntail\n# Next\n{}", long('n'));
+        let lines: Vec<(u32, u32)> = split(&raw)
+            .0
+            .iter()
+            .map(|p| (p.line_start, p.line_end))
+            .collect();
+        assert_eq!(lines, vec![(1, 2), (3, 3), (4, 4), (5, 6)]);
+    }
+
+    #[test]
+    fn a_file_of_one_short_section_is_one_passage() {
+        assert_eq!(
+            spans("# Only\nA little.\n"),
+            vec![(1, 2, Some("Only".into()), "# Only\nA little.".to_string())]
         );
     }
 
@@ -323,7 +447,8 @@ mod tests {
 
     #[test]
     fn a_file_contributes_at_most_five_hundred_passages() {
-        let raw: String = (0..620).map(|i| format!("# H{i}\nbody {i}\n")).collect();
+        let body = long('b');
+        let raw: String = (0..620).map(|i| format!("# H{i}\n{body}\n")).collect();
         let (passages, over) = split(&raw);
         assert_eq!((passages.len(), over), (MAX_PASSAGES_PER_FILE, 120));
     }
