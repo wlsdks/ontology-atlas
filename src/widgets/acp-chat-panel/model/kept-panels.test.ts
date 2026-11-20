@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { awayProps, keptAwayRuntimeId, keptPanels } from './kept-panels';
+import { awayProps, folderHolder, keptAwayRuntimeId, keptPanels } from './kept-panels';
 import type { AcpChatPanelProps } from '../ui/chat-panel/types';
 
 const props = (vaultRoot: string, extra: Partial<AcpChatPanelProps> = {}): AcpChatPanelProps => ({
@@ -98,6 +98,30 @@ describe('kept agent panels', () => {
     vi.runAllTimers();
     keptPanels.seat('map:a', props('/a'));
     expect(keys()).toEqual(['map:a']);
+  });
+
+  it('keeps a writing turn chosen to outlive its screen, and makes a dock for the same folder wait on it', () => {
+    vi.useFakeTimers();
+    const stop = vi.fn();
+    keptPanels.seat('library:a:claude', props('/a', { parksTurns: 'chosen' }));
+    keptPanels.busyReporter('library:a:claude')(true, false, true, stop);
+    keptPanels.leave('library:a:claude');
+    vi.runAllTimers();
+    expect(folderHolder('map:a', '/a')?.stop).toBe(stop);
+    expect(folderHolder('map:b', '/b')).toBeNull();
+    keptPanels.seat('map:a', props('/a'));
+    expect(keys()).toEqual(['library:a:claude', 'map:a']);
+    keptPanels.busyReporter('library:a:claude')(false);
+    expect(folderHolder('map:a', '/a')).toBeNull();
+  });
+
+  it('ends a writing Library turn with its screen unless it was chosen to outlive it', () => {
+    vi.useFakeTimers();
+    keptPanels.seat('library:a:claude', props('/a', { parksTurns: 'chosen' }));
+    keptPanels.busyReporter('library:a:claude')(true, false, false);
+    keptPanels.leave('library:a:claude');
+    vi.runAllTimers();
+    expect(keys()).toEqual([]);
   });
 
   it('leaves a kept answer alone while the other dock has not started its session', () => {

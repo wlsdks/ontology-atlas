@@ -487,5 +487,6 @@
   "elapsedHours": "{hours}時間{minutes}分",
   "checkAnswerLine": "検査結果は「検査結果」ページに、アプリ自身の検査と並べて表示されます。",
   "checkAnswerDoor": "検査結果を開く",
-  "checkAnswerFull": "エージェントの報告（原文）"
+  "checkAnswerFull": "エージェントの報告（原文）",
+  "folderBusy": "ライブラリの会話がこのフォルダーで作業中です。終わったらここで質問できます。今すぐ終わらせるには「停止」を押してください。"
 }

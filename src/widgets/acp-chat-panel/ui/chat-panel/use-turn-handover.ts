@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useRef } from 'react';
 
 import type { TurnActivity } from '../turn-activity';
-import type { AcpChatPanelProps } from './types';
+import type { AcpChatPanelProps, AcpTurnRequest } from './types';
 
 interface TurnHandoverOptions {
   busy: boolean;
   /** Thinking or waiting on a person: the turn a parked panel must keep alive. */
   held: boolean;
   readOnly: boolean;
+  outlives: boolean;
+  stopping: boolean;
+  /** The waiting request, in the card's words. */
+  request: AcpTurnRequest | null;
   /** What the turn is doing now, read only while it runs and someone listens. */
   activity: () => TurnActivity | null;
   asking: boolean;
@@ -23,17 +27,24 @@ interface TurnHandoverOptions {
  * read-only (the keeper), its facts and its Stop (the run's card). The composer presses that Stop too.
  */
 export function useTurnHandover({
-  busy, held, readOnly, activity, asking, stop, onTurnWorkChange, onTurnStopChange, onBusyChange,
+  busy, held, readOnly, outlives, stopping, request, activity, asking, stop, onTurnWorkChange, onTurnStopChange, onBusyChange,
 }: TurnHandoverOptions) {
+  const stopRef = useRef(stop);
   useEffect(() => {
-    onBusyChange?.(held, held && readOnly);
-  }, [held, readOnly, onBusyChange]);
+    stopRef.current = stop;
+  });
+  const stopTurn = useCallback(() => stopRef.current(), []);
+  useEffect(() => {
+    onBusyChange?.(held, held && readOnly, held && outlives, held ? stopTurn : null);
+  }, [held, readOnly, outlives, onBusyChange, stopTurn]);
 
   const now = onTurnWorkChange && busy ? activity() : null;
   const kind = now?.kind ?? null;
   const labelKind = now?.label?.kind ?? null;
   const labelText = now?.label?.text ?? null;
   const target = now?.target ?? null;
+  const requestAction = asking ? request?.action ?? null : null;
+  const requestTarget = asking ? request?.target ?? null : null;
   useEffect(() => {
     if (!onTurnWorkChange) return;
     onTurnWorkChange(kind === null ? null : {
@@ -41,15 +52,12 @@ export function useTurnHandover({
       label: labelKind === null ? null : { kind: labelKind, text: labelText ?? '' },
       target,
       asking,
+      request: requestAction === null ? null : { action: requestAction, target: requestTarget },
+      stopping,
     });
-  }, [onTurnWorkChange, asking, kind, labelKind, labelText, target]);
+  }, [onTurnWorkChange, asking, kind, labelKind, labelText, target, requestAction, requestTarget, stopping]);
   useEffect(() => () => onTurnWorkChange?.(null), [onTurnWorkChange]);
 
-  const stopRef = useRef(stop);
-  useEffect(() => {
-    stopRef.current = stop;
-  });
-  const stopTurn = useCallback(() => stopRef.current(), []);
   useEffect(() => {
     if (!onTurnStopChange) return;
     onTurnStopChange(busy ? stopTurn : null);

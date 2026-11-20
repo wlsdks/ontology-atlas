@@ -487,5 +487,6 @@
   "elapsedHours": "{hours}h {minutes}m",
   "checkAnswerLine": "The check is reported on the Check results page, beside what the app checked itself.",
   "checkAnswerDoor": "Open check results",
-  "checkAnswerFull": "The agent's report, verbatim"
+  "checkAnswerFull": "The agent's report, verbatim",
+  "folderBusy": "The Library conversation is working in this folder. You can ask here when it finishes. Press Stop to end it now."
 }

@@ -177,6 +177,8 @@ export interface LibrarySectionProps {
    * writing.
    */
   compiling?: boolean;
+  /** A turn runs in this folder's conversation: the doors that start another stay disabled until it ends. */
+  turnRunning?: boolean;
   /** Sources the Continue request in flight named; their rows show it running, then their check draws. */
   runningSources?: ReadonlySet<string>;
   /** The state the band's press narrows the list to, or null for every source. */
@@ -331,6 +333,7 @@ export function LibrarySection({
   segment,
   busy,
   compiling = false,
+  turnRunning = false,
   runningSources = NO_SOURCES,
   stateFilter = null,
   t,
@@ -991,7 +994,7 @@ export function LibrarySection({
           <Chip
             data-testid="library-lint"
             onClick={onLint ?? undefined}
-            disabled={busy || onLint === null || model.wikiPages.length < 2}
+            disabled={busy || turnRunning || onLint === null || model.wikiPages.length < 2}
             aria-describedby={onLint === null && actionsNote ? SECTION_ACTIONS_NOTE_ID : undefined}
             tone="muted"
             className={`w-full justify-start ${AGENT_DOOR_SPAN} hover:text-[color:var(--color-text-primary)]`}
@@ -1004,7 +1007,7 @@ export function LibrarySection({
           <Chip
             data-testid="library-compile"
             onClick={onCompile ?? undefined}
-            disabled={busy || onCompile === null || model.needsCompileCount === 0}
+            disabled={busy || turnRunning || onCompile === null || model.needsCompileCount === 0}
             aria-describedby={
               onCompile === null && actionsNote ? SECTION_ACTIONS_NOTE_ID : undefined
             }

@@ -100,6 +100,7 @@ import {
 import { readMachineApprovals, recordApproval } from '@/shared/lib/connectors/machine-approvals';
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import { TURN_DONE_HOLD_MS } from './chat-panel/TurnWorkStage';
+import { keptPanels } from '../model/kept-panels';
 import { CELEBRATION_MOTIONS } from '@/shared/ui/marks/moru-rows';
 
 /** The agent sends one line. */
@@ -124,6 +125,13 @@ function replyTo(method: string, result: unknown) {
     bridge.activeSessionId = (result as Record<string, unknown>).sessionId as string;
   }
   emit({ jsonrpc: '2.0', id: call?.id, result });
+}
+
+/** A request is answered by the screen only inside a turn the person sent. */
+async function sendTurn(text = 'Write the wiki pages.') {
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: text } });
+  fireEvent.click(screen.getByTestId('acp-chat-send'));
+  await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true));
 }
 
 /** `mcpServers` must be passed: vault tool auto-allow switches on only when it is wired in. */
@@ -1831,6 +1839,7 @@ describe('chat panel: the permission card really blocks', () => {
       autoDecide: () => 'wiki/handover.md',
       noticeActions: { openPage, askNext },
     });
+    await sendTurn();
     emit(permissionRequest('/vault/wiki/handover.md', 91, 'edit'));
 
     await waitFor(() => expect(answerFor(91)).toEqual({ outcome: 'selected', optionId: 'allow' }));
@@ -1846,6 +1855,7 @@ describe('chat panel: the permission card really blocks', () => {
 
   it('without the doors the receipt is a sentence alone — a surface that cannot open a page does not promise to', async () => {
     await bootSession({ autoDecide: () => 'wiki/handover.md' });
+    await sendTurn();
     emit(permissionRequest('/vault/wiki/handover.md', 92, 'edit'));
     await waitFor(() => expect(answerFor(92)).toEqual({ outcome: 'selected', optionId: 'allow' }));
     expect(screen.queryByTestId('acp-notice-open-page')).toBeNull();
@@ -1858,6 +1868,7 @@ describe('chat panel: the permission card really blocks', () => {
    */
   it('an automatic rejection says it rejected and names what it blocked', async () => {
     await bootSession({ autoDecide: () => ({ reject: 'wiki/out-of-scope.md' }) });
+    await sendTurn();
     emit(permissionRequest('/vault/wiki/out-of-scope.md', 93, 'edit'));
 
     await waitFor(() => expect(document.querySelector('[data-acp-entry="notice"]')).not.toBeNull());
@@ -4738,4 +4749,25 @@ it('shows only live agent-reported plan counts and labels denominator changes',a
  emit({jsonrpc:'2.0',method:'session/update',params:{update:{sessionUpdate:'plan',entries:[entry('completed'),entry('completed')]}}});
  await waitFor(()=>expect(screen.getByTestId('acp-reported-plan')).toHaveTextContent('continuation.replanned'));
  expect(screen.getByTestId('acp-reported-plan')).toHaveTextContent('"done":2,"total":2');
+});
+
+describe('a conversation that is not kept, while a kept turn writes in its folder', () => {
+  afterEach(() => keptPanels.reset());
+
+  it('starts no agent until that turn ends', async () => {
+    const stop = vi.fn();
+    keptPanels.seat('library:/vault:claude-acp', { runtimeId: 'claude-acp', runtimeLabel: 'Claude Code', vaultRoot: '/vault', parksTurns: 'chosen' });
+    const report = keptPanels.busyReporter('library:/vault:claude-acp');
+    act(() => report(true, false, true, stop));
+    const startsBefore = bridge.starts;
+
+    render(<AcpChatPanel runtimeId="claude-acp" runtimeLabel="Claude Code" vaultRoot="/vault" mcpServers={[{ name: 'atlas-vault' }]} />);
+    expect(screen.getByTestId('acp-folder-busy')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('acp-folder-busy-stop'));
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(bridge.starts).toBe(startsBefore);
+
+    act(() => report(false));
+    await waitFor(() => expect(bridge.starts).toBe(startsBefore + 1));
+  });
 });

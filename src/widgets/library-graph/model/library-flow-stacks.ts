@@ -19,7 +19,7 @@ import {
 } from "./library-flow-measure";
 import { maxOf, minOf } from "./library-graph-extremes";
 import type { LayoutPoint } from "./library-graph-layout";
-import { SOURCE_MARK_WORLD_RADIUS } from "./library-graph-view";
+import { LIBRARY_ZOOM_MIN, SOURCE_MARK_WORLD_RADIUS } from "./library-graph-view";
 
 /**
  * Folded pages stand in stacks of consecutive pages, and each stack is a whole flow: its files
@@ -59,8 +59,13 @@ export function stackedFlowLayout(ordered: Ordered, fewestStacks: number, neighb
    * narrower, so the most stacks that still fit are laid, rows under the floor. At most the
    * fewest count more lays, and only in this case.
    */
+  const floorScale = Math.min(fit.ceiling, LIBRARY_ZOOM_MIN);
   for (let stacks = fewestStacks - 1; stacks >= 1; stacks -= 1) {
     if (!distinct(stacks)) continue;
+    // Taller or wider than the camera at the least scale it can show: laying this count cannot fit, so O(1) instead of O(n).
+    // No strip is narrower than each stack's page column, stacks a gap apart.
+    if (rowPitch(Math.ceil(pageCount / stacks), fit).height * floorScale > fit.height + 1e-6) continue;
+    if ((stacks * 2 * WIDEST_MARK + (stacks - 1) * STACK_GAP) * floorScale > fit.width * (1 + 1e-9) + 1e-6) continue;
     const layout = layStacks(ordered, stacks, neighbours, fit);
     if (fitsCamera(layout, fit)) return layout;
   }
