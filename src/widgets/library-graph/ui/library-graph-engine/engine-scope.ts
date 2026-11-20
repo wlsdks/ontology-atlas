@@ -97,8 +97,8 @@ export interface LibraryGraphEngineScope {
     geometry: LibraryGraphGeometry;
   } | null>;
   overviewRef: RefObject<boolean>;
-  /** `settling`: the loop paints another frame after this one. */
-  paint: (now: number, settling: boolean) => void;
+  /** `settling`: the loop paints another frame after this one. Returns whether a name is still fading. */
+  paint: (now: number, settling: boolean) => boolean;
   paintCostRef: RefObject<{
     last: number;
     total: number;

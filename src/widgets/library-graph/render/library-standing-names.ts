@@ -400,25 +400,36 @@ function placeStandingNames(
   return placedNames;
 }
 
-/** Per canvas, the names of its last still frame and what motion has done to them since. */
+/** How much ink a name gains or loses a frame on its way in or out: eight frames, so none pops. */
+const INK_STEP = 1 / 8;
+
+/** A name a new placement dropped, fading out where its mark is. */
+interface LeavingName {
+  name: StandingName;
+  offsetX: number;
+  offsetY: number;
+  ink: number;
+}
+
+/** Per canvas, the names on screen: the last placement with each name's state, and the names it dropped. */
 interface HeldNames {
   names: readonly StandingName[];
   /** Per name, its box's x and y less its mark's centre when placed, so the name rides its mark. */
   offsets: Float64Array;
-  /** Per name, 1 while it stands, falling to 0 once motion crowds it out; it never rises until a still frame. */
-  presence: Float64Array;
+  /** Per name, 0 to 1, moving {@link INK_STEP} a frame toward full while standing and toward none once not. */
+  ink: Float64Array;
+  /** Per name, 1 while it belongs on screen; motion clears it for a crowded-out name until a still frame. */
+  standing: Uint8Array;
+  leaving: LeavingName[];
   grid: LibraryNameGrid;
 }
-
-/** How much of its ink a crowded-out name loses per moving frame: gone in eight, so none pops. */
-const LEAVE_STEP = 1 / 8;
 
 const heldNamesByCanvas = new WeakMap<CanvasRenderingContext2D, HeldNames>();
 
 /**
- * Draws the frame's standing names. A still frame places them exactly; a moving frame
- * (`frame.moving`) carries the last still frame's names on their marks in O(names) and
- * allocates nothing once its arrays have grown.
+ * Draws the frame's standing names and returns whether one is still fading, so the caller paints
+ * again. A still frame places them exactly; a moving frame (`frame.moving`) carries the names on
+ * screen with their marks in O(names) and allocates nothing once its arrays have grown.
  */
 export function drawStandingNames(
   ctx: CanvasRenderingContext2D,
@@ -426,48 +437,114 @@ export function drawStandingNames(
   active: string | null,
   focus: ReadonlySet<string> | null,
   alphaOf: (id: string) => number,
-): void {
+): boolean {
   const held = heldNamesByCanvas.get(ctx);
-  if (frame.moving && held) {
-    drawFollowingNames(ctx, frame, held, active, focus, alphaOf);
-    return;
-  }
+  if (frame.moving && held) return drawFollowingNames(ctx, frame, held, active, focus, alphaOf);
   const names = standingNames(ctx, frame, active, focus);
-  holdNames(ctx, frame, names, held);
-  drawPlacedNames(ctx, frame, names, alphaOf);
+  if (!held) {
+    // A canvas's first names arrive with the canvas itself, at full ink.
+    const fresh: HeldNames = { names: [], offsets: new Float64Array(0), ink: new Float64Array(0), standing: new Uint8Array(0), leaving: [], grid: new LibraryNameGrid() };
+    holdPlacement(frame, fresh, names, active, 1);
+    heldNamesByCanvas.set(ctx, fresh);
+    return drawSettlingNames(ctx, frame, fresh, alphaOf);
+  }
+  if (held.names !== names) holdPlacement(frame, held, names, active, 0);
+  else held.standing.fill(1, 0, names.length);
+  return drawSettlingNames(ctx, frame, held, alphaOf);
 }
 
-function holdNames(
-  ctx: CanvasRenderingContext2D,
+/**
+ * Takes a new placement: a name already on screen keeps its ink, a new one starts at `newInk`,
+ * and one the placement dropped fades out, except the pointed-at mark's, which its hover box replaces.
+ */
+function holdPlacement(
   frame: LibraryGraphFrame,
+  held: HeldNames,
   names: readonly StandingName[],
-  held: HeldNames | undefined,
+  active: string | null,
+  newInk: number,
 ): void {
-  if (!held) {
-    held = { names, offsets: new Float64Array(0), presence: new Float64Array(0), grid: new LibraryNameGrid() };
-    heldNamesByCanvas.set(ctx, held);
-  } else if (held.names === names) {
-    held.presence.fill(1, 0, names.length);
-    return;
+  const inkOf = new Map<string, number>();
+  for (const leaving of held.leaving) inkOf.set(leaving.name.node.id, leaving.ink);
+  for (let index = 0; index < held.names.length; index += 1) {
+    if (held.ink[index] > 0) inkOf.set(held.names[index].node.id, held.ink[index]);
   }
+  const placed = new Set(names.map((name) => name.node.id));
+  const leaving = held.leaving.filter((entry) => !placed.has(entry.name.node.id));
+  for (let index = 0; index < held.names.length; index += 1) {
+    const name = held.names[index];
+    if (held.ink[index] <= 0 || placed.has(name.node.id) || name.node.id === active) continue;
+    leaving.push({ name, offsetX: held.offsets[index * 2], offsetY: held.offsets[index * 2 + 1], ink: held.ink[index] });
+  }
+  held.leaving = leaving;
   held.names = names;
-  if (held.presence.length < names.length) {
-    held.offsets = new Float64Array(names.length * 2);
-    held.presence = new Float64Array(names.length);
-  }
-  held.presence.fill(1, 0, names.length);
+  held.offsets = new Float64Array(names.length * 2);
+  held.ink = new Float64Array(names.length);
+  held.standing = new Uint8Array(names.length).fill(1);
   for (let index = 0; index < names.length; index += 1) {
     const { node, box } = names[index];
     const centre = nodeCentre(frame, node.id);
     held.offsets[index * 2] = centre ? box.x - centre.x : Number.NaN;
     held.offsets[index * 2 + 1] = centre ? box.y - centre.y : Number.NaN;
+    held.ink[index] = inkOf.get(node.id) ?? newInk;
   }
 }
 
+/** A still frame: the placed names where they were placed, each a step nearer full ink, over the names leaving. */
+function drawSettlingNames(
+  ctx: CanvasRenderingContext2D,
+  frame: LibraryGraphFrame,
+  held: HeldNames,
+  alphaOf: (id: string) => number,
+): boolean {
+  const step = frame.reducedMotion ? 1 : INK_STEP;
+  ctx.textBaseline = "top";
+  ctx.textAlign = "center";
+  let fading = drawLeavingNames(ctx, frame, held, step, alphaOf);
+  const { names, ink } = held;
+  for (let index = 0; index < names.length; index += 1) {
+    ink[index] = Math.min(1, ink[index] + step);
+    if (ink[index] < 1) fading = true;
+    const { node, text, box, fontPx, leaderFrom } = names[index];
+    drawName(ctx, frame, node, text, box.x, box.y, box.width, box.height, fontPx,
+      leaderFrom ? leaderFrom.x : Number.NaN, leaderFrom ? leaderFrom.y : Number.NaN, leaderFrom ? leaderFrom.half : 0,
+      alphaOf(node.id) * ink[index], true);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  return fading;
+}
+
+/** The dropped names a step fainter, riding their marks; one at no ink or without a mark is let go. */
+function drawLeavingNames(
+  ctx: CanvasRenderingContext2D,
+  frame: LibraryGraphFrame,
+  held: HeldNames,
+  step: number,
+  alphaOf: (id: string) => number,
+): boolean {
+  const leaving = held.leaving;
+  let kept = 0;
+  for (let index = 0; index < leaving.length; index += 1) {
+    const entry = leaving[index];
+    entry.ink = Math.max(0, entry.ink - step);
+    const { node, text, box, fontPx } = entry.name;
+    const centre = nodeCentre(frame, node.id);
+    if (entry.ink === 0 || !centre || !Number.isFinite(centre.x + entry.offsetX) || !Number.isFinite(centre.y + entry.offsetY)) continue;
+    leaving[kept] = entry;
+    kept += 1;
+    drawName(ctx, frame, node, text, centre.x + entry.offsetX, centre.y + entry.offsetY, box.width, box.height, fontPx,
+      Number.NaN, Number.NaN, 0, alphaOf(node.id) * entry.ink, false);
+  }
+  leaving.length = kept;
+  return kept > 0;
+}
+
 /**
- * The held names in placement order, each moved with its mark. One that now overlaps a name
- * standing before it, or whose mark lost its name, fades out over the rest of the motion and
- * yields its room; marks are not tested, so a name may pass over a dot until the next still frame.
+ * The names on screen in placement order, each moved with its mark. One that now overlaps a
+ * standing name before it, or whose mark lost its name, fades out and yields its room; none
+ * is added. Marks are not tested, so a name may pass over a dot until the next still frame.
  */
 function drawFollowingNames(
   ctx: CanvasRenderingContext2D,
@@ -476,13 +553,15 @@ function drawFollowingNames(
   active: string | null,
   focus: ReadonlySet<string> | null,
   alphaOf: (id: string) => number,
-): void {
-  const { names, offsets, presence, grid } = held;
+): boolean {
+  const { names, offsets, ink, standing, grid } = held;
+  const step = frame.reducedMotion ? 1 : INK_STEP;
   grid.reset(frame.width, frame.height);
   ctx.textBaseline = "top";
   ctx.textAlign = "center";
+  drawLeavingNames(ctx, frame, held, step, alphaOf);
   for (let index = 0; index < names.length; index += 1) {
-    if (presence[index] <= 0) continue;
+    if (standing[index] === 0 && ink[index] <= 0) continue;
     const name = names[index];
     const node = name.node;
     if (node.id === active) continue;
@@ -491,46 +570,31 @@ function drawFollowingNames(
     const y = centre ? centre.y + offsets[index * 2 + 1] : Number.NaN;
     // A mark gone from the frame leaves nothing to carry its name.
     if (!centre || !Number.isFinite(x) || !Number.isFinite(y)) {
-      presence[index] = 0;
+      standing[index] = 0;
+      ink[index] = 0;
       continue;
     }
     const { width, height } = name.box;
     if (x + width <= 0 || x >= frame.width || y + height <= 0 || y >= frame.height) continue;
-    if (presence[index] === 1 && (!carriesName(frame, node, active, focus) ||
-      grid.blocks(x, y, width, height, NAME_GAP_X, NAME_GAP_Y))) presence[index] = 1 - LEAVE_STEP;
-    else if (presence[index] < 1) presence[index] = Math.max(0, presence[index] - LEAVE_STEP);
-    if (presence[index] === 1) grid.add(x, y, width, height);
-    else if (presence[index] === 0) continue;
+    if (standing[index] === 1 && (!carriesName(frame, node, active, focus) ||
+      grid.blocks(x, y, width, height, NAME_GAP_X, NAME_GAP_Y))) standing[index] = 0;
+    ink[index] = standing[index] === 1 ? Math.min(1, ink[index] + step) : Math.max(0, ink[index] - step);
+    if (standing[index] === 1) grid.add(x, y, width, height);
+    if (ink[index] === 0) continue;
     const leader = name.leaderFrom;
     drawName(ctx, frame, node, name.text, x, y, width, height, name.fontPx,
-      leader ? centre.x : Number.NaN, leader ? centre.y : Number.NaN, leader ? leader.half : 0, alphaOf(node.id) * presence[index]);
+      leader ? centre.x : Number.NaN, leader ? centre.y : Number.NaN, leader ? leader.half : 0,
+      alphaOf(node.id) * ink[index], standing[index] === 1);
   }
   ctx.globalAlpha = 1;
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
-}
-
-/** Draws placed names in placement order, each at its mark's alpha over a ground outline. */
-function drawPlacedNames(
-  ctx: CanvasRenderingContext2D,
-  frame: LibraryGraphFrame,
-  names: readonly StandingName[],
-  alphaOf: (id: string) => number,
-): void {
-  ctx.textBaseline = "top";
-  ctx.textAlign = "center";
-  for (const { node, text, box, fontPx, leaderFrom } of names) {
-    drawName(ctx, frame, node, text, box.x, box.y, box.width, box.height, fontPx,
-      leaderFrom ? leaderFrom.x : Number.NaN, leaderFrom ? leaderFrom.y : Number.NaN, leaderFrom ? leaderFrom.half : 0, alphaOf(node.id));
-  }
-  ctx.globalAlpha = 1;
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
+  return false;
 }
 
 const NO_DASH: number[] = [];
 
-/** One name in its box, with a hairline back to its mark when `leaderX` is a number. */
+/** One name in its box, with a hairline back to its mark when `leaderX` is a number; `reported` names reach the probe. */
 function drawName(
   ctx: CanvasRenderingContext2D,
   frame: LibraryGraphFrame,
@@ -545,6 +609,7 @@ function drawName(
   leaderY: number,
   leaderHalf: number,
   alpha: number,
+  reported: boolean,
 ): void {
   const { ink } = frame;
   ctx.font = fontOf(fontPx, ink.fontFamily);
@@ -562,7 +627,7 @@ function drawName(
     ctx.lineTo(leaderX + unitX * stop, leaderY + unitY * stop);
     ctx.stroke();
   }
-  frame.labelReport?.push({ nodeId: node.id, kind: node.kind, text, x, y, width, height, fontPx });
+  if (reported) frame.labelReport?.push({ nodeId: node.id, kind: node.kind, text, x, y, width, height, fontPx });
   // A name dims with its mark.
   ctx.globalAlpha = alpha;
   // A ground outline stroked before the fill, so crossing lines never cut the glyphs.

@@ -420,7 +420,7 @@ export function useLibraryGraphEngine({
   }, [cardRef]);
 
   const paint = useCallback(
-    (now: number, settling: boolean) => {
+    (now: number, settling: boolean) =>
       paintLibraryGraphFrame({
         autoFitRef, boxRef, canvasRef, columnsRef, dimRef, fitScaleRef, flowRef, focusedIslandRef,
         ghostsRef, graphRef, hoveredIslandRef, inkRef, islandFieldRef, islandOffsetsRef,
@@ -429,8 +429,7 @@ export function useLibraryGraphEngine({
         pendingBoxRef, pick, pictureRef, placeCard, pointerRef, publishFramed, pulseRef, radiiRef,
         screenPointsRef, screenRadiiRef, screenRadiusSourceRef, screenRef, simRef, stalePagesRef,
         stateRef, travelRef, viewRef, worldPositionsRef, zoomAimRef, zoomMaxRef,
-      }, now, settling);
-    },
+      }, now, settling),
     [canvasRef, placeCard, publishFramed],
   );
 

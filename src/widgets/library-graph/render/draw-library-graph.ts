@@ -95,6 +95,8 @@ export interface LibraryGraphFrame {
    * names then ride their marks from the last still frame, and the next still frame places them.
    */
   moving?: boolean;
+  /** Names appear and leave at once instead of fading. */
+  reducedMotion?: boolean;
   /** `flow`: columns, edges drawn as horizontal S-curves; `force`: the bowed quadratic; `islands`: the overview. */
   layout?: "flow" | "force" | "islands";
   /**
@@ -745,7 +747,8 @@ function cachedOverviewPaths(frame: LibraryGraphFrame, stalePages: ReadonlySet<s
   return paths;
 }
 
-export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame): void {
+/** Paints one frame; returns whether a standing name is still fading in or out, so the caller paints again. */
+export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame): boolean {
   const { ink } = frame;
   const dim = frame.dim ?? 0;
   const focus = frame.focus ?? null;
@@ -1155,8 +1158,9 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
 
   drawActivityMarks(ctx, frame);
 
+  let namesFading = false;
   if (frame.standingLabels || frame.layout === "flow") {
-    drawStandingNames(ctx, frame, active, focus, alphaOf);
+    namesFading = drawStandingNames(ctx, frame, active, focus, alphaOf);
   }
 
   // The one label beside the pointed-at node.
@@ -1195,6 +1199,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   }
 
   ctx.restore();
+  return namesFading;
 }
 
 /**

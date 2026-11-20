@@ -57,17 +57,17 @@ export function paintLibraryGraphFrame(
   >,
   now: number,
   settling: boolean,
-) {
+): boolean {
   const canvas = canvasRef.current;
   const sim = simRef.current;
-  if (!canvas || !sim) return;
+  if (!canvas || !sim) return false;
   /*
    * Resolved from the canvas and cached. A throw means `app/globals.css` lacks the palette;
    * it propagates rather than falling back to a colourless default.
    */
   inkRef.current ??= readLibraryGraphInk(canvas);
   const context = canvas.getContext("2d", { alpha: false });
-  if (!context) return;
+  if (!context) return false;
   const startedAt = performance.now();
 
   /*
@@ -80,7 +80,7 @@ export function paintLibraryGraphFrame(
     pendingBoxRef.current = null;
   }
   const { width, height, dpr } = boxRef.current;
-  if (width === 0 || height === 0) return;
+  if (width === 0 || height === 0) return false;
   const backingWidth = Math.max(1, Math.round(width * dpr));
   const backingHeight = Math.max(1, Math.round(height * dpr));
   if (canvas.width !== backingWidth) canvas.width = backingWidth;
@@ -361,7 +361,7 @@ export function paintLibraryGraphFrame(
     const column = columnsRef.current?.columns.find((candidate) => candidate.kind === kind);
     return !column || column.named || zoomedToRead;
   };
-  drawLibraryGraph(context, {
+  const namesFading = drawLibraryGraph(context, {
     nodes,
     edges: graphRef.current.edges,
     positions: screen,
@@ -376,6 +376,7 @@ export function paintLibraryGraphFrame(
     activeLabel: stateRef.current.activeLabel,
     standingLabels: stateRef.current.standingLabels,
     moving: namesMoving,
+    reducedMotion: stateRef.current.reducedMotion,
     radii: screenRadiiRef.current,
     sourceLabels:
       pictureRef.current === "flow"
@@ -435,4 +436,5 @@ export function paintLibraryGraphFrame(
   record.total += cost;
   record.frames += 1;
   if (cost > record.worst) record.worst = cost;
+  return namesFading;
 }

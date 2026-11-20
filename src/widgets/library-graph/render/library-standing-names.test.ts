@@ -399,43 +399,98 @@ describe("standing names while marks move", () => {
     expect(stillBytes, "the heap reading sees a placement").toBeGreaterThan(movingBytes / frames);
   });
 
-  it("fades names out while marks crowd them, never brings one in or back, and keeps each frame's change small", () => {
+  /** Each drawn name's ink by its text, read from the alpha in force at its `fillText`. */
+  const inksByText = (trace: unknown[]): Map<string, number> => {
+    const fills = trace.splice(0).filter((call) => (call as unknown[])[0] === "fillText") as unknown[][];
+    const inks = new Map(fills.map((call) => [call[1] as string, JSON.parse(call.at(-1) as string).globalAlpha as number]));
+    expect(inks.size, "two drawn names share a text").toBe(fills.length);
+    return inks;
+  };
+
+  /** Still frames until the renderer stops asking for one, each name's ink checked against the last frame's. */
+  const settle = (ctx: CanvasRenderingContext2D, trace: unknown[], frame: LibraryGraphFrame, from: Map<string, number>) => {
+    let ink = from;
+    let report: LibraryGraphLabelBox[] = [];
+    let mostGain = 0;
+    for (let still = 1; still <= 12; still += 1) {
+      report = [];
+      const fading = drawLibraryGraph(ctx, { ...frame, labelReport: report });
+      const now = inksByText(trace);
+      for (const [text, value] of now) mostGain = Math.max(mostGain, value - (ink.get(text) ?? 0));
+      ink = now;
+      if (!fading) return { report, ink, stills: still, mostGain };
+    }
+    throw new Error("the names never came to rest");
+  };
+
+  it("fades names out while marks crowd them, then brings every one back at full ink riding its mark", () => {
     vi.stubGlobal("Path2D", StubPath);
     const frame = columns(1950, 7.5, -4000);
     const { base, live } = livePositions(frame);
     const { ctx, trace } = tracingContext();
-    /** Each drawn name's ink, read from the alpha in force at its `fillText`. */
-    const inks = (report: LibraryGraphLabelBox[]): Map<string, number> => {
-      const fills = trace.splice(0).filter((call) => (call as unknown[])[0] === "fillText") as unknown[][];
-      expect(fills).toHaveLength(report.length);
-      return new Map(report.map((label, index) => [label.nodeId, JSON.parse(fills[index].at(-1) as string).globalAlpha as number]));
-    };
     const first: LibraryGraphLabelBox[] = [];
     drawLibraryGraph(ctx, { ...frame, positions: live, labelReport: first });
-    let ink = inks(first);
-    const start = new Set(ink.keys());
+    const textOf = new Map(first.map((label) => [label.nodeId, label.text]));
+    let ink = inksByText(trace);
     let mostOneName = 0;
     let mostFrame = 0;
     for (let step = 1; step <= 40; step += 1) {
       zoomInto(frame, base, live, 1 - step * 0.012, 0);
       const report: LibraryGraphLabelBox[] = [];
       drawLibraryGraph(ctx, { ...frame, positions: live, moving: true, labelReport: report });
-      const now = inks(report);
+      const now = inksByText(trace);
+      for (const text of now.keys()) expect(ink.has(text), `${text} appeared mid-motion`).toBe(true);
       let change = 0;
-      for (const id of start) {
-        const delta = (now.get(id) ?? 0) - (ink.get(id) ?? 0);
-        expect(delta, `${id} gained ink mid-motion`).toBeLessThanOrEqual(1e-9);
+      for (const [text, before] of ink) {
+        const delta = (now.get(text) ?? 0) - before;
+        expect(delta, `${text} gained ink mid-motion`).toBeLessThanOrEqual(1e-9);
         mostOneName = Math.max(mostOneName, -delta);
         change -= delta;
       }
-      for (const id of now.keys()) expect(start.has(id), `${id} appeared mid-motion`).toBe(true);
       mostFrame = Math.max(mostFrame, change);
       ink = now;
     }
-    console.log(`[standing-names] zoom out over 40 frames: ${start.size} names, ${ink.size} left; a name loses at most ${mostOneName} of its ink a frame, all names together ${mostFrame.toFixed(2)}`);
-    expect(ink.size).toBeLessThan(start.size);
+    console.log(`[standing-names] zoom out over 40 frames: ${first.length} names, ${ink.size} left; a name loses at most ${mostOneName} of its ink a frame, all names together ${mostFrame.toFixed(2)}`);
+    expect(ink.size).toBeLessThan(first.length);
     expect(mostOneName).toBeLessThanOrEqual(1 / 8 + 1e-9);
     // A column packed one gap apart crowds a third of its names at once: 4.13 names of ink a frame measured.
     expect(mostFrame).toBeLessThanOrEqual(5);
+
+    zoomInto(frame, base, live, 1, 0);
+    const rest = settle(ctx, trace, { ...frame, positions: live }, ink);
+    expect(rest.report).toEqual(first);
+    expect([...rest.ink.values()].every((value) => value === 1), "a name came back short of full ink").toBe(true);
+    expect(rest.mostGain).toBeLessThanOrEqual(1 / 8 + 1e-9);
+
+    for (const point of live.values()) {
+      point.x += 13;
+      point.y -= 7;
+    }
+    const carried: LibraryGraphLabelBox[] = [];
+    drawLibraryGraph(ctx, { ...frame, positions: live, moving: true, labelReport: carried });
+    const carriedInk = inksByText(trace);
+    expect(carried.map((label) => label.nodeId)).toEqual(first.map((label) => label.nodeId));
+    expect(first.every((label) => carriedInk.get(textOf.get(label.nodeId)!) === 1), "a name rode the motion at less than full ink").toBe(true);
+    expect(carried.map((label) => [label.x, label.y])).toEqual(first.map((label) => [label.x + 13, label.y - 7]));
+  });
+
+  it("raises names that motion did not carry over eight frames once the motion settles", () => {
+    vi.stubGlobal("Path2D", StubPath);
+    const target = columns(1950, 7.5, -4000);
+    const { base, live } = livePositions(target);
+    const { ctx, trace } = tracingContext();
+    zoomInto(target, base, live, 0.3, 0);
+    drawLibraryGraph(ctx, { ...target, positions: live, pageLabels: false, sourceLabels: false, conceptLabels: false });
+    inksByText(trace);
+    for (let step = 1; step <= 30; step += 1) {
+      zoomInto(target, base, live, 0.3 + (0.7 * step) / 30, 0);
+      drawLibraryGraph(ctx, { ...target, positions: live, moving: true });
+      expect(inksByText(trace).size, "a name appeared mid-motion").toBe(0);
+    }
+    const rest = settle(ctx, trace, { ...target, positions: live }, new Map());
+    console.log(`[standing-names] after a motion that carried no name: ${rest.report.length} names reach full ink over ${rest.stills} still frames, at most ${rest.mostGain} a frame`);
+    expect(rest.report).toEqual(drawn({ ...target, positions: live }).labels);
+    expect(rest.mostGain).toBeLessThanOrEqual(1 / 8 + 1e-9);
+    expect(rest.stills).toBeLessThanOrEqual(9);
   });
 });
