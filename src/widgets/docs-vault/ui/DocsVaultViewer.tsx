@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import Image from 'next/image';
 import ReactMarkdown, { type Components } from 'react-markdown';
@@ -76,7 +76,11 @@ interface Props {
   namedSourcePath?: string;
   /** Uses the smaller top inset when parent context already separates the body. */
   compactTop?: boolean;
-  onBodyPainted?: (body: string | null) => void;
+  /**
+   * Called once a body is painted, or with null when it failed. `citations` counts the citations
+   * the Library reader drew, per NFC path: one inside a comment or a code block is not drawn.
+   */
+  onBodyPainted?: (body: string | null, citations: ReadonlyMap<string, number>) => void;
   /**
    * Titles by NFC slug, from the listing the parent already holds. When given, an unlabelled
    * wikilink says its target's title (a concept's with its kind glyph), a link to this page is
@@ -199,9 +203,11 @@ export function DocsVaultViewer({
     };
   }, [bundledContent, doc.slug, getDocContent, setRaw]);
 
+  /* The citations the reader's tree step drew, per NFC path, filled while the body renders. */
+  const drawnCitations = useRef<ReadonlyMap<string, number>>(NO_CITATIONS);
   useLayoutEffect(() => {
-    if (raw !== null) onBodyPainted?.(raw);
-    else if (error !== null) onBodyPainted?.(null);
+    if (raw !== null) onBodyPainted?.(raw, drawnCitations.current);
+    else if (error !== null) onBodyPainted?.(null, NO_CITATIONS);
   }, [raw, error, onBodyPainted]);
 
   // Pure function taking the query as an argument so useMemo dependencies stay accurate.
@@ -706,7 +712,9 @@ export function DocsVaultViewer({
   ]);
   /* Only the Library reader reshapes the tree; every other surface parses exactly as before. */
   const remarkPlugins = useMemo(
-    () => (linkTargets ? [remarkGfm, () => readerTree(namedSource)] : REMARK_PLUGINS),
+    () => (linkTargets
+      ? [remarkGfm, () => readerTree(namedSource, (counts) => { drawnCitations.current = counts; })]
+      : REMARK_PLUGINS),
     [linkTargets, namedSource],
   );
   const rendered = useMemo(
@@ -840,7 +848,8 @@ const CITATION_RUN_CLASS = 'block [&>:first-child]:ml-0';
  * or list item and name their file stand together on their own line under the sentence; a
  * citation with words after it, and a page whose citations name no file, keep their places.
  */
-function readerTree(namedSource: string | undefined) {
+function readerTree(namedSource: string | undefined, onCounted: (counts: ReadonlyMap<string, number>) => void) {
+  const counts = new Map<string, number>();
   const namesFile = (node: ReaderNode) => {
     const link = wikilinkKind(node);
     return link?.kind === 'citation' && link.path.normalize('NFC') !== namedSource;
@@ -876,13 +885,24 @@ function readerTree(namedSource: string | undefined) {
     });
   };
   const visit = (node: ReaderNode) => {
+    const link = wikilinkKind(node);
+    if (link?.kind === 'citation') {
+      const path = link.path.normalize('NFC');
+      counts.set(path, (counts.get(path) ?? 0) + 1);
+    }
     if (!node.children) return;
     separate(node.children);
     if (node.type === 'paragraph') lowerTrailingCitations(node);
     for (const child of node.children) visit(child);
   };
-  return (tree: ReaderNode) => visit(tree);
+  return (tree: ReaderNode) => {
+    counts.clear();
+    visit(tree);
+    onCounted(new Map(counts));
+  };
 }
+
+const NO_CITATIONS: ReadonlyMap<string, number> = new Map();
 
 const HEADING_CLASS = {
   h1: 'group relative mt-0 mb-6 text-display font-[var(--font-weight-strong)] leading-display text-[color:var(--color-text-primary)]',

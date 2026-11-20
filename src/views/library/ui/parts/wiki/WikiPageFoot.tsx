@@ -7,17 +7,20 @@ import { BookText, FileText } from "lucide-react";
 import { OntologyMapKindGlyph } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { citationCounts, citedSources, type FootLink, type FootSource } from "./wiki-reader-facts";
+import { citedSources, type FootLink, type FootSource } from "./wiki-reader-facts";
 
-/** The body the viewer painted, held outside React so its arrival renders the foot alone. */
+/**
+ * The citations the viewer drew in the painted body, per NFC path, or null before a body is
+ * painted; held outside React so its arrival renders the foot alone.
+ */
 export interface PaintedBody {
-  get: () => string | null;
-  set: (body: string | null) => void;
+  get: () => ReadonlyMap<string, number> | null;
+  set: (drawn: ReadonlyMap<string, number> | null) => void;
   subscribe: (listener: () => void) => () => void;
 }
 
 export function createPaintedBody(): PaintedBody {
-  let body: string | null = null;
+  let body: ReadonlyMap<string, number> | null = null;
   const listeners = new Set<() => void>();
   return {
     get: () => body,
@@ -40,7 +43,7 @@ export function createPaintedBody(): PaintedBody {
  * here, the concepts it touches. A group with nothing is absent; nothing is read to draw it.
  */
 export function WikiPageFoot({ painted, originals, isPresent, linkedFrom, concepts, onOpenSource, onOpenPage, onOpenConcept, t }: {
-  /** The viewer's painted body; the foot counts its citations from it. */
+  /** The citations the viewer drew; the foot counts only those. */
   painted: PaintedBody;
   originals: readonly { path: string; name: string; state: unknown }[];
   isPresent: (path: string) => boolean;
@@ -53,7 +56,7 @@ export function WikiPageFoot({ painted, originals, isPresent, linkedFrom, concep
 }) {
   const body = useSyncExternalStore(painted.subscribe, painted.get, () => null);
   const cited: FootSource[] = useMemo(
-    () => (body === null ? [] : citedSources(originals, citationCounts(body), isPresent)),
+    () => (body === null ? [] : citedSources(originals, body, isPresent)),
     [body, isPresent, originals],
   );
   if (body === null) return null;

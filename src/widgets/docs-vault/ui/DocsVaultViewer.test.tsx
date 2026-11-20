@@ -450,8 +450,10 @@ describe("DocsVaultViewer in the Library reader", () => {
   it("hands a citation press to the reader instead of leaving the page, and keeps the allow-list", async () => {
     const onSourceNavigate = vi.fn();
     const onCitationPress = vi.fn();
+    /* The listing names the traversed path itself, so only the segment rule can refuse it. */
     renderViewer("Fact. [[src:sources/a.md#l2]] [[src:sources/gone.md#l1]] [[src:sources/../secret.md#l1]]", {
-      doc: page, vaultSlugs: slugs, knownOriginalPaths: new Set(["sources/a.md"]), onSourceNavigate, onCitationPress,
+      doc: page, vaultSlugs: slugs, knownOriginalPaths: new Set(["sources/a.md", "secret.md", "sources/../secret.md"]),
+      onSourceNavigate, onCitationPress,
     });
     const known = await screen.findByRole("button", { name: /sources\/a\.md/u });
     fireEvent.click(known);
@@ -463,6 +465,24 @@ describe("DocsVaultViewer in the Library reader", () => {
     fireEvent.click(screen.getByRole("button", { name: /secret\.md/u }));
     expect(onCitationPress.mock.lastCall?.[0]).toMatchObject({ path: null });
     expect(onSourceNavigate).not.toHaveBeenCalled();
+  });
+
+  it("counts only the citations it drew: none from a comment or a code block", async () => {
+    const onBodyPainted = vi.fn();
+    renderViewer([
+      "A fact. [[src:sources/a.md#l2]] [[src:sources/%ED%95%9C.md#l1]]",
+      "",
+      "<!-- [[src:sources/a.md#l9]] [[src:sources/hidden.md#l1]] -->",
+      "",
+      "```",
+      "[[src:sources/a.md#l3]] [[src:sources/fenced.md#l1]]",
+      "```",
+    ].join("\n"), {
+      doc: page, vaultSlugs: slugs, linkTargets: targets, knownOriginalPaths: new Set(["sources/a.md"]),
+      onCitationPress: () => {}, onBodyPainted,
+    });
+    await screen.findByText("A fact.", { exact: false });
+    expect(onBodyPainted.mock.lastCall?.[1]).toEqual(new Map([["sources/a.md", 1], ["sources/한.md", 1]]));
   });
 
   it("marks each block with the body line it starts on only when asked", async () => {
