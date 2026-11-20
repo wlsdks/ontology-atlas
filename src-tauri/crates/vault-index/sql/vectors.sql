@@ -1,5 +1,6 @@
 -- vectors.sqlite: search by meaning, for one embedding model and dimension (meta 'model' and
--- 'dimensions'); another model or dimension discards the file. Opened only by the app. A
+-- 'dimensions', with 'store_id' naming this file's generation); another model or dimension
+-- discards the file, and a file naming no model holds nothing. Opened only by the app. A
 -- different PRAGMA user_version discards the file; it is never altered.
 -- It holds no passage text, but vectors can reveal parts of the text they came from.
 
@@ -35,12 +36,16 @@ CREATE INDEX passages_by_sha ON passages(sha256);
 
 -- Content-addressed: one vector per distinct passage text, L2-normalised, as int8 times scale.
 -- Ids are never reused, so a search's in-memory copy never pairs an old id with a new vector.
+-- unheld_since_ms is set while no listed file holds the passage; it is swept a grace period later.
 CREATE TABLE vectors (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   sha256 BLOB NOT NULL UNIQUE,
   scale REAL NOT NULL,
-  int8 BLOB NOT NULL
+  int8 BLOB NOT NULL,
+  unheld_since_ms INTEGER
 );
+
+CREATE INDEX vectors_unheld ON vectors(unheld_since_ms) WHERE unheld_since_ms IS NOT NULL;
 
 -- The sign of every component of vectors(id), packed in little-endian 64-bit words: the copy a
 -- search holds in memory. Kept apart so loading it reads an eighth of the vectors' bytes.

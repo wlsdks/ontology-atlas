@@ -1,5 +1,5 @@
-//! Search by meaning's store: recovery, incremental updates, hostile answers and the caps, with a
-//! deterministic stand-in for the embedding model.
+//! Search by meaning's store: recovery, incremental updates, the grace period, deletes, damage,
+//! hostile answers and the caps, with a deterministic stand-in for the embedding model.
 
 #![allow(clippy::unwrap_used, clippy::indexing_slicing, clippy::panic)]
 
@@ -10,13 +10,14 @@ use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::convert::Infallible;
 use std::process::{Command, Stdio};
-use std::time::Instant;
 use vault_index::vectors::{
-    self, Model, PrepareError, PrepareProgress, Prepared, Refusal, Searcher,
+    self, Model, Plan, PrepareError, PrepareProgress, Prepared, Refusal, Searcher,
 };
+use vault_index::{sync, Check, Progress};
 
 const BENCH: &str = env!("CARGO_BIN_EXE_vault-index-bench");
 const DIMS: usize = 64;
+const DAY_MS: i64 = 24 * 60 * 60 * 1000;
 
 fn model() -> Model {
     Model {
@@ -39,13 +40,30 @@ fn fake(text: &str) -> Vec<f32> {
         .collect()
 }
 
+fn plan_with(vault: &TempVault, model: &Model) -> Plan {
+    vectors::plan(
+        &vault.root,
+        model,
+        &vault.files(),
+        &PrepareProgress::default(),
+    )
+    .unwrap()
+}
+
+fn plan(vault: &TempVault) -> Plan {
+    plan_with(vault, &model())
+}
+
 /// Plans and prepares every listed file, recording each passage text the model is asked for.
 fn prepare_all(vault: &TempVault, asked: &mut Vec<String>) -> Prepared {
-    let plan = vectors::plan(&vault.root, &model(), &vault.files()).unwrap();
-    vectors::prepare(plan, &PrepareProgress::default(), |texts: &[&str]| {
-        asked.extend(texts.iter().map(|text| text.to_string()));
-        Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
-    })
+    vectors::prepare(
+        plan(vault),
+        &PrepareProgress::default(),
+        |texts: &[&str]| {
+            asked.extend(texts.iter().map(|text| text.to_string()));
+            Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
+        },
+    )
     .unwrap()
 }
 
@@ -71,6 +89,11 @@ fn vectors_file(vault: &TempVault) -> std::path::PathBuf {
     vault_index::index_dir(&vault.root)
         .unwrap()
         .join("vectors.sqlite")
+}
+
+fn sql(vault: &TempVault, statement: &str) {
+    let conn = rusqlite::Connection::open(vectors_file(vault)).unwrap();
+    conn.execute_batch(statement).unwrap();
 }
 
 /// Every stored vector with its sign bits, and every file's passage hashes.
@@ -127,8 +150,8 @@ fn long(sentence: &str) -> String {
     text
 }
 
-/// Pages of four sections each, a third Korean, so a vault of `count` pages holds
-/// `4 * count` passages; half sit under `wiki/`.
+/// Pages of four sections of 400 to 700 characters each, half their words Korean, so a vault of
+/// `count` pages holds `4 * count` passages; half sit under `wiki/`.
 fn write_sections(vault: &TempVault, count: usize, seed: u64) {
     let words = [
         "vault", "graph", "지도", "근거", "evidence", "검색", "meaning", "관계",
@@ -153,16 +176,16 @@ fn write_sections(vault: &TempVault, count: usize, seed: u64) {
     }
 }
 
-fn bench(vault: &TempVault, log: &std::path::Path) -> Command {
+fn bench(vault: &TempVault, log: &std::path::Path, abort_after: Option<usize>) -> Command {
     let mut command = Command::new(BENCH);
     command
         .args([
             "vectors-prepare",
             &vault.root.to_string_lossy(),
             &format!("--dims={DIMS}"),
-            "--delay-ms=10",
             &format!("--log={}", log.display()),
         ])
+        .args(abort_after.map(|batches| format!("--abort-after={batches}")))
         .env(
             vault_index::INDEX_DIR_OVERRIDE_ENV,
             std::env::var_os(vault_index::INDEX_DIR_OVERRIDE_ENV).unwrap(),
@@ -181,73 +204,63 @@ fn asked_lines(log: &std::path::Path) -> Vec<String> {
 }
 
 #[test]
-fn a_build_killed_mid_batch_twenty_times_equals_a_build_from_scratch() {
+fn a_build_aborted_twenty_times_after_stored_batches_equals_a_build_from_scratch() {
     let vault = TempVault::new("vectors-kill");
-    write_sections(&vault, 300, 11);
+    write_sections(&vault, 600, 11);
     let scratch_log = vault.root.with_extension("scratch.log");
     let kill_log = vault.root.with_extension("kill.log");
     let _ = std::fs::remove_file(&scratch_log);
     let _ = std::fs::remove_file(&kill_log);
 
-    let started = Instant::now();
-    assert!(bench(&vault, &scratch_log).status().unwrap().success());
-    let full_build = started.elapsed();
+    assert!(bench(&vault, &scratch_log, None)
+        .status()
+        .unwrap()
+        .success());
     let from_scratch = snapshot(&vault);
     let passages = from_scratch.0.len();
     assert_eq!(asked_lines(&scratch_log).len(), passages);
-    let started = Instant::now();
-    assert!(bench(&vault, &scratch_log).status().unwrap().success());
-    let startup = started.elapsed();
     vault_index::delete(Some(&vault.root)).unwrap();
 
-    // Each kill lands after start-up and within a fortieth of the embedding time, so twenty of
-    // them stop the build part-way rather than let it finish.
-    let embedding = full_build.saturating_sub(startup);
+    // Each round stores a seeded 1 to 3 batches, then aborts inside the next embedding call.
     let mut rng = Lcg::new(20_261_120);
-    let mut killed_running = 0;
     for round in 0..20 {
-        let mut child = bench(&vault, &kill_log).spawn().unwrap();
-        let kill_after = startup + embedding.mul_f64((rng.next() % 1000) as f64 / 40_000.0);
-        std::thread::sleep(kill_after);
-        if child.try_wait().unwrap().is_none() {
-            killed_running += 1;
-        }
-        let _ = child.kill();
-        let _ = child.wait();
-        if vectors_file(&vault).is_file() {
-            let conn = rusqlite::Connection::open(vectors_file(&vault)).unwrap();
-            let verdict: String = conn
-                .query_row("PRAGMA quick_check", [], |row| row.get(0))
-                .unwrap();
-            assert_eq!(verdict, "ok", "round {round}, killed after {kill_after:?}");
-            let (stored, signs) = row_counts(&vault);
-            assert_eq!(stored, signs, "a vector and its signs land together");
-        }
+        let before = if vectors_file(&vault).is_file() {
+            row_counts(&vault).0
+        } else {
+            0
+        };
+        let batches = 1 + (rng.next() % 3) as usize;
+        let status = bench(&vault, &kill_log, Some(batches)).status().unwrap();
+        assert!(!status.success(), "round {round} aborted mid-build");
+        let conn = rusqlite::Connection::open(vectors_file(&vault)).unwrap();
+        let verdict: String = conn
+            .query_row("PRAGMA quick_check", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(verdict, "ok", "round {round}");
+        drop(conn);
+        let (stored, signs) = row_counts(&vault);
+        assert_eq!(stored, signs, "a vector and its signs land together");
+        assert!(
+            stored > before,
+            "round {round} stored {batches} batches before the abort"
+        );
     }
-    assert!(bench(&vault, &kill_log).status().unwrap().success());
+    assert!(bench(&vault, &kill_log, None).status().unwrap().success());
     assert_eq!(snapshot(&vault), from_scratch);
 
     let asked = asked_lines(&kill_log);
     let distinct: BTreeSet<&String> = asked.iter().collect();
     assert_eq!(distinct.len(), passages);
+    let twice = asked.len() - distinct.len();
     assert!(
-        asked.len() - distinct.len() <= 20 * vectors::MAX_BATCH_PASSAGES,
-        "{} passages asked twice: no more than the batch in flight at each kill",
-        asked.len() - distinct.len()
+        (20..=20 * vectors::MAX_BATCH_PASSAGES).contains(&twice),
+        "{twice} passages asked twice: the batch in flight at each abort, no more"
     );
-    assert!(bench(&vault, &kill_log).status().unwrap().success());
+    assert!(bench(&vault, &kill_log, None).status().unwrap().success());
     assert_eq!(
         asked_lines(&kill_log).len(),
         asked.len(),
         "a finished build asks nothing"
-    );
-    eprintln!(
-        "{killed_running} of 20 kills landed while the build ran ({full_build:?}); {} passages asked twice",
-        asked.len() - distinct.len()
-    );
-    assert_eq!(
-        killed_running, 20,
-        "every kill landed before the build finished"
     );
     let _ = std::fs::remove_file(&scratch_log);
     let _ = std::fs::remove_file(&kill_log);
@@ -284,9 +297,7 @@ fn an_edit_a_rename_and_a_delete_send_only_changed_passages() {
     assert_eq!(kept.hits[0].heading.as_deref(), Some("One"));
 
     asked.clear();
-    let plan = vectors::plan(&vault.root, &model(), &vault.files()).unwrap();
-    assert_eq!(plan.remaining().passages, 1);
-    drop(plan);
+    assert_eq!(plan(&vault).remaining().passages, 1);
     prepare_all(&vault, &mut asked);
     assert_eq!(asked, vec![a_new], "only the changed passage");
 
@@ -312,13 +323,76 @@ fn an_edit_a_rename_and_a_delete_send_only_changed_passages() {
             status.passages,
             status.passages_stored
         ),
-        (2, 2, 5, 5)
+        (2, 2, 5, 5),
+        "status counts held passages"
     );
-    assert_eq!(row_counts(&vault), (5, 5), "vectors no file holds are gone");
+    assert_eq!(
+        row_counts(&vault),
+        (8, 8),
+        "unheld vectors wait out their grace period"
+    );
     assert!(nearest(&vault, &c_only)
         .hits
         .iter()
         .all(|hit| hit.path != "c.md"));
+}
+
+/// Sets every unheld vector's grace period to have started `days` ago.
+fn age_unheld(vault: &TempVault, days: i64) {
+    sql(
+        vault,
+        &format!(
+            "UPDATE vectors SET unheld_since_ms = unheld_since_ms - {} WHERE unheld_since_ms IS NOT NULL",
+            days * DAY_MS
+        ),
+    );
+}
+
+fn unheld(vault: &TempVault) -> i64 {
+    let conn = rusqlite::Connection::open(vectors_file(vault)).unwrap();
+    conn.query_row(
+        "SELECT count(*) FROM vectors WHERE unheld_since_ms IS NOT NULL",
+        [],
+        |row| row.get(0),
+    )
+    .unwrap()
+}
+
+#[test]
+fn a_file_restored_within_the_grace_period_sends_nothing_and_one_past_it_is_swept() {
+    let vault = TempVault::new("vectors-grace");
+    write_sections(&vault, 4, 21);
+    let mut asked = Vec::new();
+    prepare_all(&vault, &mut asked);
+    assert_eq!(asked.len(), 16);
+    let page = vault.root.join("wiki/page-0.md");
+    let text = std::fs::read_to_string(&page).unwrap();
+
+    std::fs::remove_file(&page).unwrap();
+    assert_eq!(plan(&vault).remaining().passages, 0);
+    assert_eq!(
+        unheld(&vault),
+        4,
+        "its four vectors start their grace period"
+    );
+    age_unheld(&vault, 6);
+    std::fs::write(&page, &text).unwrap();
+    asked.clear();
+    prepare_all(&vault, &mut asked);
+    assert!(asked.is_empty(), "restored within the period: nothing sent");
+    assert_eq!(unheld(&vault), 0, "held again");
+
+    let empty = vectors::plan(&vault.root, &model(), &[], &PrepareProgress::default()).unwrap();
+    assert_eq!(empty.remaining().passages, 0);
+    assert_eq!(unheld(&vault), 0, "an empty listing removes nothing");
+    let status = vectors::status(&vault.root, &model()).unwrap().unwrap();
+    assert_eq!((status.files, status.passages_stored), (4, 16));
+
+    std::fs::remove_file(&page).unwrap();
+    assert_eq!(plan(&vault).remaining().passages, 0);
+    age_unheld(&vault, 8);
+    assert_eq!(plan(&vault).remaining().passages, 0, "nothing pending");
+    assert_eq!(row_counts(&vault), (12, 12), "past the period: swept");
 }
 
 /// What a hostile or broken model answers for a batch.
@@ -377,10 +451,11 @@ fn hostile_vectors_are_refused_and_nothing_from_the_batch_is_stored() {
         ),
     ];
     for (answer, refusal) in answers {
-        let plan = vectors::plan(&vault.root, &model(), &vault.files()).unwrap();
-        let outcome = vectors::prepare(plan, &PrepareProgress::default(), |texts: &[&str]| {
-            Ok::<_, Infallible>(answer(texts))
-        });
+        let outcome = vectors::prepare(
+            plan(&vault),
+            &PrepareProgress::default(),
+            |texts: &[&str]| Ok::<_, Infallible>(answer(texts)),
+        );
         assert!(
             matches!(&outcome, Err(PrepareError::Refused(found)) if *found == refusal),
             "{outcome:?}"
@@ -395,6 +470,11 @@ fn hostile_vectors_are_refused_and_nothing_from_the_batch_is_stored() {
     let mut searcher = Searcher::open(&vault.root, &model()).unwrap().unwrap();
     assert!(searcher.nearest(&[1.0; DIMS - 1], 8).is_err());
     assert!(searcher.nearest(&[f32::NAN; DIMS], 8).is_err());
+    assert_eq!(
+        searcher.nearest(&fake("alpha"), 10_000).unwrap().hits.len(),
+        3,
+        "a huge limit is clamped, not reserved"
+    );
 }
 
 #[test]
@@ -405,9 +485,7 @@ fn a_file_contributes_at_most_five_hundred_passages() {
         .collect();
     write(&vault, "long.md", &many);
     write(&vault, "short.md", "# S\nshort\n");
-    let plan = vectors::plan(&vault.root, &model(), &vault.files()).unwrap();
-    assert_eq!(plan.remaining().passages, 501);
-    drop(plan);
+    assert_eq!(plan(&vault).remaining().passages, 501);
     let mut asked = Vec::new();
     prepare_all(&vault, &mut asked);
     assert_eq!(asked.len(), 501);
@@ -446,9 +524,9 @@ fn hangul_text_and_names_in_nfc_or_nfd_are_one_passage() {
 fn a_stopped_build_resumes_wiki_first_without_asking_twice() {
     let vault = TempVault::new("vectors-stop");
     write_sections(&vault, 30, 5);
-    let plan = vectors::plan(&vault.root, &model(), &vault.files()).unwrap();
-    let total = plan.remaining().passages as usize;
-    let wiki = plan
+    let plan_taken = plan(&vault);
+    let total = plan_taken.remaining().passages as usize;
+    let wiki = plan_taken
         .files()
         .iter()
         .take_while(|path| path.starts_with("wiki/"))
@@ -456,7 +534,7 @@ fn a_stopped_build_resumes_wiki_first_without_asking_twice() {
     assert_eq!(wiki, 15, "every wiki page before any other file");
     let progress = PrepareProgress::default();
     let mut asked: Vec<String> = Vec::new();
-    let outcome = vectors::prepare(plan, &progress, |texts: &[&str]| {
+    let outcome = vectors::prepare(plan_taken, &progress, |texts: &[&str]| {
         asked.extend(texts.iter().map(|text| text.to_string()));
         progress.request_stop();
         assert!(progress.reading().starts_with("wiki/"));
@@ -476,28 +554,52 @@ fn a_stopped_build_resumes_wiki_first_without_asking_twice() {
 }
 
 #[test]
+fn a_stop_requested_before_plan_or_prepare_ends_the_run_at_once() {
+    let vault = TempVault::new("vectors-stop-early");
+    write_sections(&vault, 6, 13);
+    let stopped = PrepareProgress::default();
+    stopped.request_stop();
+    let planned = vectors::plan(&vault.root, &model(), &vault.files(), &stopped);
+    assert!(matches!(planned, Err(vault_index::Error::Cancelled)));
+
+    let progress = PrepareProgress::default();
+    let taken = vectors::plan(&vault.root, &model(), &vault.files(), &progress).unwrap();
+    progress.request_stop();
+    let mut asked = 0;
+    let outcome = vectors::prepare(taken, &progress, |texts: &[&str]| {
+        asked += texts.len();
+        Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
+    });
+    assert!(matches!(outcome, Err(PrepareError::Stopped)), "{outcome:?}");
+    assert_eq!(asked, 0, "the stop is kept, not reset");
+}
+
+#[test]
 fn a_search_reads_beside_a_running_build() {
     let vault = TempVault::new("vectors-beside");
     write_sections(&vault, 20, 9);
-    let plan = vectors::plan(&vault.root, &model(), &vault.files()).unwrap();
     let mut first: Option<String> = None;
     let mut seen_beside = false;
-    vectors::prepare(plan, &PrepareProgress::default(), |texts: &[&str]| {
-        match &first {
-            None => first = Some(texts[0].to_string()),
-            Some(text) if !seen_beside => {
-                let found = nearest(&vault, text);
-                seen_beside = found
-                    .hits
-                    .first()
-                    .is_some_and(|hit| hit.sha256 == sha(text));
-                let status = vectors::status(&vault.root, &model()).unwrap().unwrap();
-                assert_eq!(status.passages_stored, vectors::MAX_BATCH_PASSAGES as u64);
+    vectors::prepare(
+        plan(&vault),
+        &PrepareProgress::default(),
+        |texts: &[&str]| {
+            match &first {
+                None => first = Some(texts[0].to_string()),
+                Some(text) if !seen_beside => {
+                    let found = nearest(&vault, text);
+                    seen_beside = found
+                        .hits
+                        .first()
+                        .is_some_and(|hit| hit.sha256 == sha(text));
+                    let status = vectors::status(&vault.root, &model()).unwrap().unwrap();
+                    assert_eq!(status.passages_stored, vectors::MAX_BATCH_PASSAGES as u64);
+                }
+                Some(_) => {}
             }
-            Some(_) => {}
-        }
-        Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
-    })
+            Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
+        },
+    )
     .unwrap();
     assert!(
         seen_beside,
@@ -506,66 +608,367 @@ fn a_search_reads_beside_a_running_build() {
 }
 
 #[test]
-fn another_model_or_dimension_starts_a_new_file() {
+fn one_searcher_follows_new_vectors_and_reloads_after_many_are_swept() {
+    let vault = TempVault::new("vectors-follow");
+    write_sections(&vault, 10, 17);
+    let mut asked = Vec::new();
+    prepare_all(&vault, &mut asked);
+    let mut searcher = Searcher::open(&vault.root, &model()).unwrap().unwrap();
+    assert_eq!(searcher.vectors(), 40);
+
+    let added = format!("# Added\n{}", long("A page added after the search opened."));
+    write(&vault, "added.md", &added);
+    prepare_all(&vault, &mut asked);
+    let found = searcher.nearest(&fake(&added), 8).unwrap();
+    assert_eq!(
+        found.hits[0].path, "added.md",
+        "caught up without reopening"
+    );
+    assert_eq!(searcher.vectors(), 41);
+
+    for page in 0..6 {
+        let folder = if page % 2 == 0 { "wiki" } else { "notes" };
+        std::fs::remove_file(vault.root.join(format!("{folder}/page-{page}.md"))).unwrap();
+    }
+    plan(&vault);
+    age_unheld(&vault, 8);
+    plan(&vault);
+    assert_eq!(row_counts(&vault).0, 17);
+    let found = searcher.nearest(&fake(&added), 8).unwrap();
+    assert_eq!(
+        searcher.vectors(),
+        17,
+        "reloaded once a large share was swept"
+    );
+    assert_eq!(found.hits[0].path, "added.md");
+}
+
+#[test]
+fn a_second_run_for_the_same_folder_is_refused_while_one_prepares() {
+    let vault = TempVault::new("vectors-second");
+    write_sections(&vault, 20, 23);
+    let first = plan(&vault);
+    let second = plan(&vault);
+    let mut refused = None;
+    vectors::prepare(first, &PrepareProgress::default(), |texts: &[&str]| {
+        if refused.is_none() {
+            let planned = vectors::plan(
+                &vault.root,
+                &model(),
+                &vault.files(),
+                &PrepareProgress::default(),
+            );
+            refused = Some(matches!(planned, Err(vault_index::Error::Io(ref e)) if e.kind() == std::io::ErrorKind::ResourceBusy));
+        }
+        Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
+    })
+    .unwrap();
+    assert_eq!(
+        refused,
+        Some(true),
+        "a plan beside a running prepare is refused"
+    );
+    let stale = vectors::prepare(second, &PrepareProgress::default(), |texts: &[&str]| {
+        Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
+    })
+    .unwrap();
+    assert_eq!(
+        stale.passages, 0,
+        "an older plan sends nothing already stored"
+    );
+}
+
+#[test]
+fn a_second_prepare_beside_a_running_one_is_refused() {
+    let vault = TempVault::new("vectors-second-prepare");
+    write_sections(&vault, 20, 29);
+    let first = plan(&vault);
+    let mut second = Some(plan(&vault));
+    let mut refused = false;
+    vectors::prepare(first, &PrepareProgress::default(), |texts: &[&str]| {
+        if let Some(plan) = second.take() {
+            let outcome = vectors::prepare(plan, &PrepareProgress::default(), |_: &[&str]| {
+                Ok::<_, Infallible>(Vec::new())
+            });
+            refused = matches!(outcome, Err(PrepareError::Index(vault_index::Error::Io(ref e))) if e.kind() == std::io::ErrorKind::ResourceBusy);
+        }
+        Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
+    })
+    .unwrap();
+    assert!(refused);
+}
+
+#[test]
+fn a_file_changed_between_plan_and_prepare_sends_only_what_it_holds() {
+    let vault = TempVault::new("vectors-between");
+    let one = format!("# One\n{}", long("Kept section."));
+    let old = format!("# Two\n{}", long("Planned section."));
+    let new = format!("# Two\n{}", long("Written after the plan."));
+    write(&vault, "a.md", &format!("{one}\n\n{old}\n"));
+    let taken = plan(&vault);
+    assert_eq!(taken.remaining().passages, 2);
+    write(&vault, "a.md", &format!("{one}\n\n{new}\n"));
+    let mut asked = Vec::new();
+    let prepared = vectors::prepare(taken, &PrepareProgress::default(), |texts: &[&str]| {
+        asked.extend(texts.iter().map(|text| text.to_string()));
+        Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
+    })
+    .unwrap();
+    assert_eq!(
+        asked,
+        vec![one],
+        "the planned passage the file no longer holds is skipped"
+    );
+    assert_eq!(prepared.changed, 1);
+    assert_eq!(
+        plan(&vault).remaining().passages,
+        1,
+        "the next plan sees the new one"
+    );
+}
+
+#[test]
+fn another_model_name_or_dimension_starts_a_new_file() {
     let vault = TempVault::new("vectors-model");
     let two = format!("# A\n{}\n\n# B\n{}\n", long("alpha"), long("beta"));
     write(&vault, "a.md", &two);
     let mut asked = Vec::new();
     prepare_all(&vault, &mut asked);
+    let mut searcher = Searcher::open(&vault.root, &model()).unwrap().unwrap();
+    let renamed = Model {
+        name: "another-embedding".into(),
+        dimensions: DIMS,
+    };
     let wider = Model {
         name: "fake-embedding".into(),
         dimensions: DIMS * 2,
     };
-    assert!(Searcher::open(&vault.root, &wider).unwrap().is_none());
-    assert!(vectors::status(&vault.root, &wider).unwrap().is_none());
-    let plan = vectors::plan(&vault.root, &wider, &vault.files()).unwrap();
-    assert_eq!(plan.remaining().passages, 2, "every passage again");
+    for other in [&renamed, &wider] {
+        assert!(Searcher::open(&vault.root, other).unwrap().is_none());
+        assert!(vectors::status(&vault.root, other).unwrap().is_none());
+    }
+    assert_eq!(
+        plan_with(&vault, &renamed).remaining().passages,
+        2,
+        "every passage again"
+    );
     assert!(vectors::status(&vault.root, &model()).unwrap().is_none());
+    assert!(
+        searcher.nearest(&fake("alpha"), 8).unwrap().deleted,
+        "a searcher of the replaced store says so"
+    );
+    assert_eq!(plan_with(&vault, &wider).remaining().passages, 2);
     assert!(Searcher::open(&vault.root, &model()).unwrap().is_none());
 }
 
+/// Prepares with search.sqlite beside the vectors, deleting search by meaning during batch 2.
 #[test]
-fn a_delete_stops_a_running_build_and_its_size_is_counted() {
+fn a_delete_stops_a_running_build_and_leaves_nothing_stored() {
     let vault = TempVault::new("vectors-delete");
     write_sections(&vault, 20, 3);
+    sync(
+        &vault.root,
+        &vault.files(),
+        &Progress::default(),
+        Check::IfInterrupted,
+    )
+    .unwrap();
     let mut asked = Vec::new();
-    let plan = vectors::plan(&vault.root, &model(), &vault.files()).unwrap();
+    prepare_all(&vault, &mut asked);
+    let mut searcher = Searcher::open(&vault.root, &model()).unwrap().unwrap();
+    std::fs::write(vault.root.join("wiki/page-0.md"), "# New\nchanged text").unwrap();
+    std::fs::write(vault.root.join("wiki/page-2.md"), "# New\nother text").unwrap();
+    write_sections(&vault, 40, 31);
     let mut batches = 0;
-    let outcome = vectors::prepare(plan, &PrepareProgress::default(), |texts: &[&str]| {
-        batches += 1;
-        if batches == 2 {
-            vectors::delete_vectors(&vault.root).unwrap();
-        }
-        asked.extend(texts.iter().map(|text| text.to_string()));
-        Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
-    });
+    let outcome = vectors::prepare(
+        plan(&vault),
+        &PrepareProgress::default(),
+        |texts: &[&str]| {
+            batches += 1;
+            if batches == 2 {
+                vectors::delete_vectors(&vault.root).unwrap();
+            }
+            Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
+        },
+    );
+    assert!(matches!(outcome, Err(PrepareError::Deleted)), "{outcome:?}");
+    assert!(vault.index_file().is_file(), "the search index stays");
+    assert!(vectors::status(&vault.root, &model()).unwrap().is_none());
+    assert_eq!(vectors::vectors_bytes(&vault.root).unwrap(), 0);
+    let found = searcher.nearest(&fake("vault"), 8).unwrap();
+    assert!(found.deleted && found.hits.is_empty());
+    assert!(!vectors_file(&vault).exists(), "nothing written after it");
+}
+
+#[test]
+fn a_plan_that_waited_behind_a_delete_leaves_it_done() {
+    let vault = TempVault::new("vectors-plan-waits");
+    write_sections(&vault, 20, 59);
+    let dir = vault_index::index_dir(&vault.root).unwrap();
+    // Which waiter takes the lock first is the system's choice: every round asserts both orders.
+    for round in 0..4 {
+        let mut asked = Vec::new();
+        prepare_all(&vault, &mut asked);
+        let held = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(dir.join("index.lock"))
+            .unwrap();
+        held.lock().unwrap();
+        let planned = {
+            let (root, files) = (vault.root.clone(), vault.files());
+            std::thread::spawn(move || {
+                vectors::plan(&root, &model(), &files, &PrepareProgress::default()).map(|_| ())
+            })
+        };
+        // The plan counts deletions, then waits for the lock; the Delete counts, then waits too.
+        std::thread::sleep(std::time::Duration::from_millis(60));
+        let deleted = {
+            let root = vault.root.clone();
+            std::thread::spawn(move || vectors::delete_vectors(&root))
+        };
+        std::thread::sleep(std::time::Duration::from_millis(60));
+        held.unlock().unwrap();
+        deleted.join().unwrap().unwrap();
+        let planned = planned.join().unwrap();
+        assert!(
+            matches!(&planned, Err(vault_index::Error::Io(e)) if e.kind() == std::io::ErrorKind::NotFound),
+            "round {round}: {planned:?}"
+        );
+        assert!(vectors::status(&vault.root, &model()).unwrap().is_none());
+        assert!(
+            !vectors_file(&vault).exists(),
+            "round {round}: the delete stays done"
+        );
+    }
+}
+
+/// Windows refuses to remove a file another handle holds; a read-only folder does the same here.
+#[cfg(unix)]
+#[test]
+fn a_delete_that_can_only_empty_the_file_still_leaves_nothing_stored() {
+    use std::os::unix::fs::PermissionsExt;
+    let vault = TempVault::new("vectors-delete-in-place");
+    write_sections(&vault, 20, 37);
+    let mut asked = Vec::new();
+    prepare_all(&vault, &mut asked);
+    let mut searcher = Searcher::open(&vault.root, &model()).unwrap().unwrap();
+    write_sections(&vault, 40, 41);
+    let dir = vault_index::index_dir(&vault.root).unwrap();
+    let mut batches = 0;
+    let outcome = vectors::prepare(
+        plan(&vault),
+        &PrepareProgress::default(),
+        |texts: &[&str]| {
+            batches += 1;
+            if batches == 2 {
+                std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+                let deleted = vectors::delete_vectors(&vault.root);
+                std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).unwrap();
+                deleted.unwrap();
+            }
+            Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
+        },
+    );
     assert!(matches!(outcome, Err(PrepareError::Deleted)), "{outcome:?}");
     assert!(
-        !vectors_file(&vault).exists(),
-        "nothing written after the delete"
+        vectors_file(&vault).is_file(),
+        "emptied in place, not removed"
     );
+    assert!(vectors::status(&vault.root, &model()).unwrap().is_none());
     assert_eq!(vectors::vectors_bytes(&vault.root).unwrap(), 0);
+    let found = searcher.nearest(&fake("vault"), 8).unwrap();
+    assert!(found.deleted && found.hits.is_empty());
+    assert_eq!(
+        plan(&vault).remaining().passages,
+        160,
+        "the next plan starts over in the emptied file"
+    );
+}
 
+#[test]
+fn a_damaged_file_is_set_aside_by_a_search_or_a_plan_and_rebuilt() {
+    let vault = TempVault::new("vectors-damage");
+    write_sections(&vault, 40, 43);
+    let mut asked = Vec::new();
     prepare_all(&vault, &mut asked);
-    let size = vectors::vectors_bytes(&vault.root).unwrap();
-    assert!(size > 0);
-    assert!(vault_index::stored_bytes(Some(&vault.root)).unwrap() >= size);
+    sql(&vault, "PRAGMA wal_checkpoint(TRUNCATE);");
+    let path = vectors_file(&vault);
+    let mut bytes = std::fs::read(&path).unwrap();
+    let half = bytes.len() / 2;
+    for byte in &mut bytes[half..] {
+        *byte = 0xAB;
+    }
+    std::fs::write(&path, &bytes).unwrap();
+
+    let searched = Searcher::open(&vault.root, &model())
+        .and_then(|searcher| searcher.unwrap().nearest(&fake("vault"), 8));
     assert!(
-        vectors::status(&vault.root, &model())
-            .unwrap()
-            .unwrap()
-            .bytes
-            >= size,
-        "the size row counts the file and its WAL files"
+        searched.as_ref().is_err_and(vault_index::Error::is_damage),
+        "{searched:?}"
     );
-    let mut searcher = Searcher::open(&vault.root, &model()).unwrap().unwrap();
-    vault_index::delete(Some(&vault.root)).unwrap();
-    assert!(
-        !vectors_file(&vault).exists(),
-        "Delete removes it with the index"
+    assert!(!path.exists(), "set aside");
+    assert!(path.with_extension("sqlite.damaged").exists());
+    assert_eq!(plan(&vault).remaining().passages, 160, "rebuilt");
+
+    std::fs::write(&path, vec![0x5A; 64 * 1024]).unwrap();
+    assert_eq!(
+        plan(&vault).remaining().passages,
+        160,
+        "a plan sets a file that is not a store aside and starts again"
     );
-    assert!(
-        searcher.nearest(&fake("anything"), 8).is_err(),
-        "an open search says so"
+}
+
+#[test]
+fn a_new_passage_rule_reads_every_file_again_but_sends_nothing_unchanged() {
+    let vault = TempVault::new("vectors-passage-version");
+    write_sections(&vault, 10, 47);
+    let mut asked = Vec::new();
+    prepare_all(&vault, &mut asked);
+    sql(
+        &vault,
+        "UPDATE meta SET value = '1' WHERE key = 'passage_version'; DELETE FROM files WHERE id = 1;",
+    );
+    let taken = plan(&vault);
+    assert_eq!(taken.remaining().passages, 0);
+    assert_eq!(
+        unheld(&vault),
+        0,
+        "every vector held again by the same plan"
+    );
+    let status = vectors::status(&vault.root, &model()).unwrap().unwrap();
+    assert_eq!((status.files, status.passages_stored), (10, 40));
+}
+
+#[test]
+fn changed_files_counts_edits_additions_and_removals_without_writing() {
+    let vault = TempVault::new("vectors-changed");
+    write_sections(&vault, 6, 53);
+    let mut asked = Vec::new();
+    prepare_all(&vault, &mut asked);
+    let changed = |files: &[String]| vectors::changed_files(&vault.root, &model(), files).unwrap();
+    assert_eq!(changed(&vault.files()), Some(0));
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    write(
+        &vault,
+        "wiki/page-0.md",
+        &format!("# Edited\n{}", long("edited")),
+    );
+    write(&vault, "new.md", &format!("# New\n{}", long("new")));
+    std::fs::remove_file(vault.root.join("notes/page-1.md")).unwrap();
+    assert_eq!(changed(&vault.files()), Some(3));
+    assert_eq!(changed(&[]), Some(0), "an empty listing removes nothing");
+    let other = Model {
+        name: "other".into(),
+        dimensions: DIMS,
+    };
+    assert_eq!(
+        vectors::changed_files(&vault.root, &other, &vault.files()).unwrap(),
+        None
+    );
+    assert_eq!(
+        plan(&vault).remaining().passages,
+        2,
+        "nothing was written before"
     );
 }

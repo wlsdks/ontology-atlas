@@ -1,7 +1,7 @@
 //! Drives the crate outside the app for `pnpm perf:vault-index` and the crate's process tests.
 //! Usage: vault-index-bench <build|reopen|update|search|size|read-loop> <vault> [args...]
 //!        vault-index-bench <vectors-prepare|vectors-search> <vault> [--dims=N] [--delay-ms=N]
-//!                          [--log=FILE] [--queries=N]
+//!                          [--log=FILE] [--queries=N] [--abort-after=BATCHES]
 //!        vault-index-bench passages <vault>
 //! Prints one JSON object; `passages` prints one per passage, for `pnpm perf:meaning-quality`.
 //! The folder walk here is a test stand-in; the app passes its own. The vector commands embed
@@ -147,6 +147,8 @@ struct Options {
     delay: Duration,
     log: Option<String>,
     queries: usize,
+    /// Aborts the process inside the embedding call that follows this many stored batches.
+    abort_after: Option<usize>,
 }
 
 impl Options {
@@ -159,6 +161,7 @@ impl Options {
             delay: Duration::ZERO,
             log: None,
             queries: 1000,
+            abort_after: None,
         };
         for arg in args.get(3..).unwrap_or_default() {
             let (key, value) = arg.split_once('=').expect("--key=value");
@@ -169,6 +172,7 @@ impl Options {
                 }
                 "--log" => options.log = Some(value.to_string()),
                 "--queries" => options.queries = value.parse().expect("query count"),
+                "--abort-after" => options.abort_after = Some(value.parse().expect("batch count")),
                 other => {
                     eprintln!("unknown option {other}");
                     std::process::exit(2);
@@ -292,7 +296,8 @@ fn over(base: Option<(u64, u64)>, now: Option<u64>) -> String {
 fn vectors_prepare(root: &Path, files: &[String], options: &Options) {
     let base = footprint();
     let started = Instant::now();
-    let plan = vectors::plan(root, &options.model, files).expect("plan");
+    let progress = PrepareProgress::default();
+    let plan = vectors::plan(root, &options.model, files, &progress).expect("plan");
     let planned_ms = started.elapsed().as_secs_f64() * 1000.0;
     let remaining = plan.remaining();
     let mut log = options.log.as_ref().map(|path| {
@@ -302,7 +307,7 @@ fn vectors_prepare(root: &Path, files: &[String], options: &Options) {
             .open(path)
             .expect("log file")
     });
-    let progress = PrepareProgress::default();
+    let mut calls = 0usize;
     let prepared = vectors::prepare(plan, &progress, |texts: &[&str]| {
         if let Some(log) = log.as_mut() {
             let line: String = texts
@@ -312,6 +317,11 @@ fn vectors_prepare(root: &Path, files: &[String], options: &Options) {
             log.write_all(line.as_bytes()).expect("log");
             log.flush().expect("log");
         }
+        // After the log line, so the batch lost in flight shows as asked twice.
+        if options.abort_after == Some(calls) {
+            std::process::abort();
+        }
+        calls += 1;
         std::thread::sleep(options.delay);
         Ok::<_, std::convert::Infallible>(
             texts

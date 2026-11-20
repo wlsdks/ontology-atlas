@@ -3,19 +3,24 @@
 use super::plan::read_passages;
 use super::quantize::check_vector;
 use super::words::Words;
-use super::{deletion_count, invalid_input, meta_number, reader, Model, META_DELETED_VECTORS};
+use super::{
+    deletion_count, invalid_input, meta_number, reader, set_aside_if_damaged, stored_model, Model,
+    META_DELETED_VECTORS, META_STORE_ID,
+};
+use crate::lifecycle::{read_meta, VECTORS_FILE};
 use crate::passage::Passage;
 use crate::stamps::Sha;
-use crate::{Error, Result};
+use crate::Result;
 use rusqlite::{Connection, OptionalExtension};
 use std::collections::{BinaryHeap, HashMap};
-use std::io;
 use std::path::{Path, PathBuf};
 
 /// The first pass keeps this many candidates (or sixteen per hit asked for) for int8 rescoring.
 const RESCORE_CANDIDATES: usize = 256;
 /// A search's copy is reloaded once this share of its vectors was deleted (1 / n).
 const RELOAD_AFTER_DELETED_SHARE: usize = 8;
+/// Hits one search returns at most, which bounds its candidate heap.
+pub const MAX_HITS: usize = 64;
 
 /// One passage a search found, still held by its file.
 #[derive(Clone, Debug, PartialEq)]
@@ -36,6 +41,9 @@ pub struct Found {
     pub hits: Vec<PassageHit>,
     /// Near passages dropped because their file no longer holds them; a `plan` is due.
     pub stale: usize,
+    /// The store was deleted, emptied, set aside or replaced since the searcher opened: it found
+    /// nothing and let its copy go. Open a new one.
+    pub deleted: bool,
 }
 
 /// A read connection plus the sign bits of every stored vector in memory, d / 8 + 8 bytes each,
@@ -45,6 +53,9 @@ pub struct Searcher {
     root: PathBuf,
     dir: PathBuf,
     model: Model,
+    /// The generation of the file it opened, and that file's identity on disk.
+    store_id: Option<String>,
+    file: Option<FileIdentity>,
     /// Row ids, as stored.
     ids: Words,
     /// `model.words()` words per vector, in `ids` order.
@@ -56,14 +67,31 @@ pub struct Searcher {
 
 impl Searcher {
     /// `None` while no store for `model` exists; never creates one. Loads every vector's sign
-    /// bits: O(n · d / 64).
+    /// bits: O(n · d / 64). A damaged file is set aside so the next `plan` rebuilds it.
     pub fn open(root: &Path, model: &Model) -> Result<Option<Searcher>> {
         let Some((root, dir, conn)) = reader(root, model)? else {
             return Ok(None);
         };
+        let deletions = deletion_count(&dir);
+        let opened = Searcher::load(conn, root, dir.clone(), model, deletions);
+        if let Err(error) = &opened {
+            set_aside_if_damaged(&dir, error);
+        }
+        opened.map(Some)
+    }
+
+    fn load(
+        conn: Connection,
+        root: PathBuf,
+        dir: PathBuf,
+        model: &Model,
+        deletions: i64,
+    ) -> Result<Searcher> {
         let mut searcher = Searcher {
+            store_id: read_meta(&conn, META_STORE_ID)?,
+            file: FileIdentity::of(&dir.join(VECTORS_FILE)),
             conn,
-            deletions: deletion_count(&dir),
+            deletions,
             root,
             dir,
             model: model.clone(),
@@ -73,7 +101,19 @@ impl Searcher {
             deleted_at_load: 0,
         };
         searcher.reload()?;
-        Ok(Some(searcher))
+        Ok(searcher)
+    }
+
+    /// Whether the store it opened went: a Delete here, another file at its path, or the same
+    /// file emptied in place or given another generation.
+    fn store_gone(&self) -> Result<bool> {
+        if deletion_count(&self.dir) != self.deletions
+            || FileIdentity::of(&self.dir.join(VECTORS_FILE)) != self.file
+        {
+            return Ok(true);
+        }
+        Ok(read_meta(&self.conn, META_STORE_ID)? != self.store_id
+            || stored_model(&self.conn)?.as_ref() != Some(&self.model))
     }
 
     /// Vectors held in memory.
@@ -128,18 +168,28 @@ impl Searcher {
         self.load_new()
     }
 
-    /// The `limit` passages nearest `query`, best first, each checked against its file as it is
-    /// now. Hamming distance over sign bits picks c candidates in O(n · d / 64 + n · log c); their
-    /// int8 vectors are rescored in O(c · d); files are read only for the best of those.
+    /// The `limit` (at most `MAX_HITS`) passages nearest `query`, best first, each checked against
+    /// its file as it is now. Hamming distance over sign bits picks c candidates in
+    /// O(n · d / 64 + n · log c); their int8 vectors are rescored in O(c · d).
     pub fn nearest(&mut self, query: &[f32], limit: usize) -> Result<Found> {
-        if deletion_count(&self.dir) != self.deletions {
-            return Err(Error::Io(io::Error::new(
-                io::ErrorKind::NotFound,
-                "search by meaning was deleted",
-            )));
+        let found = self.search(query, limit.min(MAX_HITS));
+        if let Err(error) = &found {
+            set_aside_if_damaged(&self.dir, error);
         }
+        found
+    }
+
+    fn search(&mut self, query: &[f32], limit: usize) -> Result<Found> {
         let quantized = check_vector(0, query, self.model.dimensions)
             .map_err(|refusal| invalid_input(&format!("query refused: {refusal}")))?;
+        if self.store_gone()? {
+            self.ids = Words::with_capacity(0)?;
+            self.bits = Words::with_capacity(0)?;
+            return Ok(Found {
+                deleted: true,
+                ..Found::default()
+            });
+        }
         self.catch_up()?;
         let norm = query
             .iter()
@@ -253,6 +303,33 @@ impl Searcher {
             }
         }
         Ok(found)
+    }
+}
+
+/// The file a path names now: device and inode on Unix. Windows refuses to delete or replace a
+/// file a searcher holds open, so there a Delete empties it in place and `store_id` tells.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct FileIdentity {
+    device: u64,
+    inode: u64,
+}
+
+impl FileIdentity {
+    #[cfg(unix)]
+    fn of(path: &Path) -> Option<FileIdentity> {
+        use std::os::unix::fs::MetadataExt;
+        std::fs::metadata(path).ok().map(|meta| FileIdentity {
+            device: meta.dev(),
+            inode: meta.ino(),
+        })
+    }
+
+    #[cfg(not(unix))]
+    fn of(path: &Path) -> Option<FileIdentity> {
+        path.is_file().then_some(FileIdentity {
+            device: 0,
+            inode: 0,
+        })
     }
 }
 

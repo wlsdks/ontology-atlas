@@ -1,21 +1,35 @@
 //! Bringing the store's passage lists in line with the disk, and listing what is left to embed.
 
-use super::{deletion_count, meta_number, open_model_writer, Model, META_DELETED_VECTORS};
-use crate::lifecycle::{is_damage, set_aside_file, write_meta, META_LAST_USED_MS, VECTORS_FILE};
+use super::prepare::{PrepareProgress, PreparingGuard};
+use super::writer::{deleted, StoreWriter, WriteError};
+use super::{
+    deletion_count, meta_number, now_ms, open_model_writer, set_aside_if_damaged, Model,
+    META_DELETED_VECTORS, VECTORS,
+};
+use crate::lifecycle::{
+    count_deletion, delete_locked, holds_index, is_damage, is_index_folder, open_store_reader,
+    set_aside_file, write_meta, WriterLock, META_LAST_USED_MS, VECTORS_FILE,
+};
 use crate::passage::{self, Passage};
 use crate::stamps::{now_ns, sha256, Sha, Volume};
 use crate::{
-    canonical_vault_root, confine, index_dir, lock_index_dir, read_hashing, stamp_pass, unix_ms,
+    canonical_vault_root, confine, index_dir, lock_index_dir, read_hashing, stamp_pass,
     worker_count, Error, Result, Stamp, Work, TEXT_CAP_BYTES,
 };
 use rusqlite::{params, Connection, OptionalExtension};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeSet, HashSet};
 use std::path::{Path, PathBuf};
-use std::time::SystemTime;
+use std::time::Duration;
 
-/// Files read and written per refresh transaction.
+/// Files read and then written per transaction.
 const REFRESH_BATCH_FILES: usize = 256;
+/// Removed files forgotten per transaction.
+const FORGET_BATCH_FILES: usize = 1_024;
+/// A vector no listed file holds is kept this long, so a branch switch and back sends nothing.
+pub(super) const UNHELD_GRACE: Duration = Duration::from_secs(7 * 24 * 60 * 60);
+/// Vectors past their grace period deleted per transaction.
+const SWEEP_BATCH: i64 = 4_096;
 
 /// Passages still to prepare.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -30,14 +44,11 @@ pub struct Remaining {
 #[derive(Debug)]
 pub struct Plan {
     pub(super) root: PathBuf,
-    pub(super) dir: PathBuf,
-    pub(super) model: Model,
+    pub(super) writer: StoreWriter,
     /// Files holding a passage still to prepare: `wiki/` first, then by path.
     pub(super) files: Vec<String>,
     pub(super) pending: HashSet<Sha>,
     pub(super) remaining: Remaining,
-    /// Deletions seen when the plan was taken; a later one stops `prepare`.
-    pub(super) deletions: i64,
 }
 
 impl Plan {
@@ -59,53 +70,112 @@ struct Pending {
 
 /// Brings the store's passage lists in line with `files` (relative, `/`-separated, the caller's
 /// folder walk) and says what is left to prepare. Only changed, new and removed files are read:
-/// O(n) stats plus O(changed text). Creates the store for `model`, replacing one of another model
-/// or dimension; a damaged file is set aside and rebuilt. Holds the writer lock throughout.
-pub fn plan(root: &Path, model: &Model, files: &[String]) -> Result<Plan> {
+/// O(n) stats plus O(changed text). An empty listing removes nothing.
+///
+/// Creates the store for `model`, replacing one of another model or dimension; a damaged file is
+/// set aside and rebuilt. Files are read without the writer lock, which is taken for each write.
+/// `progress.request_stop()` ends it with `Error::Cancelled`; a Delete with a `NotFound` error.
+pub fn plan(
+    root: &Path,
+    model: &Model,
+    files: &[String],
+    progress: &PrepareProgress,
+) -> Result<Plan> {
     model.check()?;
     let root = canonical_vault_root(root)?;
     let dir = index_dir(&root)?;
-    let deletions = deletion_count(&dir);
-    let _lock = lock_index_dir(&dir)?;
-    let vault_path = root.to_string_lossy();
-    let pending = match plan_locked(&dir, &vault_path, &root, model, files) {
-        Err(Error::Sql(error)) if is_damage(&error) => {
-            set_aside_file(&dir, VECTORS_FILE)?;
-            plan_locked(&dir, &vault_path, &root, model, files)?
+    let _one_run = PreparingGuard::take(&dir)?;
+    if progress.stopped() {
+        return Err(Error::Cancelled);
+    }
+    let waited_for = deletion_count(&dir);
+    let vault_path = root.to_string_lossy().into_owned();
+    let (writer, stamped) = {
+        let lock = lock_index_dir(&dir)?;
+        if deletion_count(&dir) != waited_for {
+            // A Delete ran while this waited for the lock: it stays done.
+            leave_no_empty_folder(&dir, lock);
+            return Err(deleted());
         }
-        planned => planned?,
+        let opened = match open_locked(&dir, &vault_path, &root, model, files) {
+            Err(Error::Sql(error)) if is_damage(&error) => {
+                count_deletion(Some(&dir.join(VECTORS_FILE)));
+                set_aside_file(&dir, VECTORS_FILE)?;
+                open_locked(&dir, &vault_path, &root, model, files)?
+            }
+            opened => opened?,
+        };
+        let (store_id, stamped) = opened;
+        let writer = StoreWriter {
+            dir: dir.clone(),
+            model: model.clone(),
+            store_id,
+            deletions: deletion_count(&dir),
+        };
+        (writer, stamped)
     };
+    let refreshed = refresh(&writer, &root, stamped, progress)
+        .and_then(|()| Ok(sweep_expired(&writer, now_ms())?));
+    if let Err(error) = &refreshed {
+        set_aside_if_damaged(&dir, error);
+    }
+    refreshed?;
+    let pending = pending(&dir)?;
     Ok(Plan {
         root,
-        dir,
-        model: model.clone(),
+        writer,
         files: pending.files,
         pending: pending.passages,
         remaining: pending.remaining,
-        deletions,
     })
 }
 
-fn plan_locked(
+/// The stamp pass's result, kept after the lock is released.
+struct Stamped<'a> {
+    work: Vec<Work<'a>>,
+    removed: Vec<i64>,
+}
+
+/// Opens (or makes) the store under the writer lock and compares every listed file's stamp.
+fn open_locked<'a>(
     dir: &Path,
     vault_path: &str,
     root: &Path,
     model: &Model,
-    files: &[String],
-) -> Result<Pending> {
-    let mut conn = open_model_writer(dir, vault_path, model)?;
-    write_meta(
-        &conn,
-        META_LAST_USED_MS,
-        &unix_ms(SystemTime::now()).to_string(),
-    )?;
-    refresh(&mut conn, root, files)?;
-    pending(&conn)
+    files: &'a [String],
+) -> Result<(String, Stamped<'a>)> {
+    let (conn, store_id) = open_model_writer(dir, vault_path, model)?;
+    write_meta(&conn, META_LAST_USED_MS, &now_ms().to_string())?;
+    if files.is_empty() {
+        let none = Stamped {
+            work: Vec::new(),
+            removed: Vec::new(),
+        };
+        return Ok((store_id, none));
+    }
+    let plan = stamp_pass(&conn, root, files)?;
+    Ok((
+        store_id,
+        Stamped {
+            work: plan.work,
+            removed: plan.removed,
+        },
+    ))
+}
+
+/// A folder this plan made while it waited, holding no store, goes again.
+fn leave_no_empty_folder(dir: &Path, lock: WriterLock) {
+    if !holds_index(dir) && is_index_folder(dir) {
+        let _ = delete_locked(dir, lock);
+    }
 }
 
 /// The distinct passages without a vector, and the files that hold them in reading order: wiki
 /// pages first, so search improves within minutes. O(p · log n).
-fn pending(conn: &Connection) -> Result<Pending> {
+fn pending(dir: &Path) -> Result<Pending> {
+    let Some(conn) = open_store_reader(dir, &VECTORS)? else {
+        return Err(deleted());
+    };
     let mut statement = conn.prepare(
         "SELECT f.path, p.sha256, p.chars FROM passages AS p JOIN files AS f ON f.id = p.file_id
           WHERE NOT EXISTS (SELECT 1 FROM vectors AS v WHERE v.sha256 = p.sha256)",
@@ -224,37 +294,46 @@ fn read_all(root: &Path, volume: &Volume, work: &[Work]) -> Vec<FileRead> {
     })
 }
 
-/// The stamp pass, then the passage lists of every changed, new and removed file, committed per
-/// `REFRESH_BATCH_FILES`. Vectors no file holds any more are deleted at the end, so a rename that
-/// removes one path and adds another keeps them.
-fn refresh(conn: &mut Connection, root: &Path, files: &[String]) -> Result<()> {
-    let plan = stamp_pass(conn, root, files)?;
+/// Forgets removed files, then reads changed and new ones `REFRESH_BATCH_FILES` at a time and
+/// writes each batch in one transaction. A vector its last file let go starts its grace period
+/// in that transaction; one a file holds again leaves it.
+fn refresh(
+    writer: &StoreWriter,
+    root: &Path,
+    stamped: Stamped,
+    progress: &PrepareProgress,
+) -> Result<()> {
+    let now = now_ms();
+    for ids in stamped.removed.chunks(FORGET_BATCH_FILES) {
+        if progress.stopped() {
+            return Err(Error::Cancelled);
+        }
+        writer.locked(|tx| {
+            let mut dropped = HashSet::new();
+            for id in ids {
+                forget_file(tx, *id, &mut dropped)?;
+            }
+            mark_unheld(tx, &dropped, now)
+        })?;
+    }
     let volume = Volume::of(root);
-    let mut dropped: HashSet<Sha> = HashSet::new();
-    {
-        let tx = conn.transaction()?;
-        for id in &plan.removed {
-            forget_file(&tx, *id, &mut dropped)?;
+    for work in stamped.work.chunks(REFRESH_BATCH_FILES) {
+        if progress.stopped() {
+            return Err(Error::Cancelled);
         }
-        tx.commit()?;
-    }
-    for work in plan.work.chunks(REFRESH_BATCH_FILES) {
         let reads = read_all(root, &volume, work);
-        let tx = conn.transaction()?;
-        for (item, read) in work.iter().zip(reads) {
-            write_read(&tx, item, read, &mut dropped)?;
-        }
-        tx.commit()?;
-    }
-    if !dropped.is_empty() {
-        let tx = conn.transaction()?;
-        delete_unheld(&tx, Some(&dropped))?;
-        tx.commit()?;
+        writer.locked(|tx| {
+            let mut dropped = HashSet::new();
+            for (item, read) in work.iter().zip(reads) {
+                write_read(tx, item, read, &mut dropped)?;
+            }
+            mark_unheld(tx, &dropped, now)
+        })?;
     }
     Ok(())
 }
 
-/// Deletes one file's rows, remembering its passages for the vector sweep.
+/// Deletes one file's rows, remembering its passages for `mark_unheld`.
 fn forget_file(tx: &Connection, id: i64, dropped: &mut HashSet<Sha>) -> rusqlite::Result<()> {
     remember_passages(tx, id, dropped)?;
     tx.prepare_cached("DELETE FROM passages WHERE file_id = ?1")?
@@ -275,21 +354,40 @@ fn remember_passages(tx: &Connection, id: i64, dropped: &mut HashSet<Sha>) -> ru
     Ok(())
 }
 
+/// Starts the grace period of each dropped passage's vector that no file holds now. O(d · log n).
+fn mark_unheld(tx: &Connection, dropped: &HashSet<Sha>, now: i64) -> rusqlite::Result<()> {
+    let mut held = tx.prepare_cached("SELECT 1 FROM passages WHERE sha256 = ?1 LIMIT 1")?;
+    let mut mark = tx.prepare_cached(
+        "UPDATE vectors SET unheld_since_ms = ?2 WHERE sha256 = ?1 AND unheld_since_ms IS NULL",
+    )?;
+    for sha in dropped {
+        if !held.exists([sha.as_slice()])? {
+            mark.execute(params![sha.as_slice(), now])?;
+        }
+    }
+    Ok(())
+}
+
 fn write_read(
     tx: &Connection,
     item: &Work,
     read: FileRead,
     dropped: &mut HashSet<Sha>,
 ) -> rusqlite::Result<()> {
+    // Looked up now, not taken from the stamp pass: another writer may have run since.
+    let row_id: Option<i64> = tx
+        .prepare_cached("SELECT id FROM files WHERE path = ?1")?
+        .query_row([item.path], |row| row.get(0))
+        .optional()?;
     let (stamp, sha, read_at_ns, passages, over_cap) = match read {
         FileRead::Gone => {
-            if let Some(id) = item.row_id {
+            if let Some(id) = row_id {
                 forget_file(tx, id, dropped)?;
             }
             return Ok(());
         }
         FileRead::Unchanged { read_at_ns } => {
-            if let Some(id) = item.row_id {
+            if let Some(id) = row_id {
                 tx.prepare_cached("UPDATE files SET read_at_ns = ?2 WHERE id = ?1")?
                     .execute(params![id, read_at_ns])?;
             }
@@ -304,7 +402,7 @@ fn write_read(
         } => (stamp, sha, read_at_ns, passages, over_cap),
     };
     let over_cap = i64::try_from(over_cap).unwrap_or(i64::MAX);
-    let id = match item.row_id {
+    let id = match row_id {
         Some(id) => {
             remember_passages(tx, id, dropped)?;
             tx.prepare_cached("DELETE FROM passages WHERE file_id = ?1")?
@@ -344,63 +442,50 @@ fn write_read(
     let mut insert = tx.prepare_cached(
         "INSERT OR IGNORE INTO passages(file_id, sha256, chars) VALUES (?1, ?2, ?3)",
     )?;
+    let mut held_again = tx.prepare_cached(
+        "UPDATE vectors SET unheld_since_ms = NULL WHERE sha256 = ?1 AND unheld_since_ms IS NOT NULL",
+    )?;
     for (sha, chars) in passages {
         insert.execute(params![
             id,
             sha.as_slice(),
             i64::try_from(chars).unwrap_or(i64::MAX)
         ])?;
+        held_again.execute([sha.as_slice()])?;
     }
     Ok(())
 }
 
-/// Deletes vectors no file holds: those among `candidates`, O(c · log n), or every one when
-/// `None`, O(n · log n). Returns how many went.
-pub(super) fn delete_unheld(
-    tx: &Connection,
-    candidates: Option<&HashSet<Sha>>,
-) -> rusqlite::Result<u64> {
-    let unheld: Vec<i64> = match candidates {
-        Some(candidates) => {
-            let mut held = tx.prepare_cached("SELECT 1 FROM passages WHERE sha256 = ?1 LIMIT 1")?;
-            let mut find = tx.prepare_cached("SELECT id FROM vectors WHERE sha256 = ?1")?;
-            let mut unheld = Vec::new();
-            for sha in candidates {
-                if held.exists([sha.as_slice()])? {
-                    continue;
-                }
-                if let Some(id) = find
-                    .query_row([sha.as_slice()], |row| row.get(0))
-                    .optional()?
-                {
-                    unheld.push(id);
-                }
-            }
-            unheld
-        }
-        None => {
-            let mut statement = tx.prepare(
-                "SELECT v.id FROM vectors AS v
-                  WHERE NOT EXISTS (SELECT 1 FROM passages AS p WHERE p.sha256 = v.sha256)",
-            )?;
-            let ids = statement
-                .query_map([], |row| row.get(0))?
-                .collect::<rusqlite::Result<_>>()?;
-            ids
-        }
-    };
-    {
-        let mut signs = tx.prepare_cached("DELETE FROM signs WHERE id = ?1")?;
-        let mut vectors = tx.prepare_cached("DELETE FROM vectors WHERE id = ?1")?;
-        for id in &unheld {
-            signs.execute([id])?;
-            vectors.execute([id])?;
-        }
+/// Deletes vectors no file has held for `UNHELD_GRACE`, one transaction per `SWEEP_BATCH`,
+/// through the index on `unheld_since_ms`: O(e · log n) for e expired, even when nothing is
+/// pending.
+fn sweep_expired(writer: &StoreWriter, now: i64) -> std::result::Result<(), WriteError> {
+    while writer.locked(|tx| sweep_batch(tx, now))? == SWEEP_BATCH {}
+    Ok(())
+}
+
+/// One batch of `sweep_expired`; returns how many went.
+fn sweep_batch(tx: &Connection, now: i64) -> rusqlite::Result<i64> {
+    let grace = i64::try_from(UNHELD_GRACE.as_millis()).unwrap_or(i64::MAX);
+    let ids: Vec<i64> = tx
+        .prepare_cached(
+            "SELECT id FROM vectors WHERE unheld_since_ms IS NOT NULL AND unheld_since_ms <= ?1
+              LIMIT ?2",
+        )?
+        .query_map(params![now.saturating_sub(grace), SWEEP_BATCH], |row| {
+            row.get(0)
+        })?
+        .collect::<rusqlite::Result<_>>()?;
+    let mut signs = tx.prepare_cached("DELETE FROM signs WHERE id = ?1")?;
+    let mut vectors = tx.prepare_cached("DELETE FROM vectors WHERE id = ?1")?;
+    for id in &ids {
+        signs.execute([id])?;
+        vectors.execute([id])?;
     }
-    let deleted = unheld.len() as u64;
+    let deleted = ids.len() as u64;
     if deleted > 0 {
         let total = meta_number(tx, META_DELETED_VECTORS)? + deleted;
         write_meta(tx, META_DELETED_VECTORS, &total.to_string())?;
     }
-    Ok(deleted)
+    Ok(ids.len() as i64)
 }

@@ -12,8 +12,9 @@ mod plan;
 mod prepare;
 mod quantize;
 mod words;
+mod writer;
 
-pub use nearest::{Found, PassageHit, Searcher};
+pub use nearest::{Found, PassageHit, Searcher, MAX_HITS};
 pub use plan::{plan, Plan, Remaining};
 pub use prepare::{
     prepare, PrepareError, PrepareProgress, Prepared, MAX_BATCH_BYTES, MAX_BATCH_PASSAGES,
@@ -22,28 +23,35 @@ pub use quantize::Refusal;
 
 use crate::lifecycle::{
     count_deletion, delete_vectors_locked, deletions, discard_file, lock_writer, open_store_reader,
-    open_store_writer, read_meta, write_meta, Store, VECTORS_FILE,
+    open_store_writer, read_meta, set_aside_file, write_meta, Store, VECTORS_FILE,
 };
 use crate::passage::PASSAGE_VERSION;
-use crate::{canonical_vault_root, index_dir, stamp_pass, Error, Result};
+use crate::stamps::now_ns;
+use crate::{canonical_vault_root, index_dir, stamp_pass, unix_ms, Error, Result};
 use rusqlite::Connection;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::SystemTime;
 
 const MAX_DIMENSIONS: usize = 8_192;
 const MODEL_NAME_MAX_CHARS: usize = 200;
 
-const VECTORS_TABLES_VERSION: i32 = 1;
+const VECTORS_TABLES_VERSION: i32 = 2;
 
 pub(crate) const VECTORS: Store = Store {
     file: VECTORS_FILE,
     schema: include_str!("../sql/vectors.sql"),
     version: VECTORS_TABLES_VERSION,
+    // A vector row is about 1.1 KB: 4 KiB pages hold three and waste a fifth of the file.
+    page_bytes: Some(16 * 1024),
 };
 
 const META_MODEL: &str = "model";
 const META_DIMENSIONS: &str = "dimensions";
 const META_PASSAGE_VERSION: &str = "passage_version";
+/// Names this file's generation: a writer that finds another value finds a replaced store.
+const META_STORE_ID: &str = "store_id";
 /// Vectors deleted since the file was made; a search reloads its copy once many are gone.
 const META_DELETED_VECTORS: &str = "deleted_vectors";
 
@@ -98,30 +106,66 @@ fn deletion_count(dir: &Path) -> i64 {
     deletions(dir) + deletions(&dir.join(VECTORS_FILE))
 }
 
-/// The writer for `model`, creating, replacing or repairing the file as needed. The caller holds
-/// the writer lock.
-fn open_model_writer(dir: &Path, vault_path: &str, model: &Model) -> Result<Connection> {
-    let (mut conn, repair) = open_store_writer(dir, &VECTORS, vault_path)?;
-    if !repair.created && stored_model(&conn)?.as_ref() != Some(model) {
+fn now_ms() -> i64 {
+    i64::try_from(unix_ms(SystemTime::now())).unwrap_or(i64::MAX)
+}
+
+/// Unique per file made: the time, this process and a counter.
+fn new_store_id() -> String {
+    static MADE: AtomicU64 = AtomicU64::new(0);
+    let made = MADE.fetch_add(1, Ordering::Relaxed);
+    format!("{}-{}-{made}", now_ns(), std::process::id())
+}
+
+/// The writer for `model` and the store's id, creating, replacing or repairing the file as
+/// needed; a file of another model is discarded and counted as a deletion. The caller holds the
+/// writer lock.
+fn open_model_writer(dir: &Path, vault_path: &str, model: &Model) -> Result<(Connection, String)> {
+    let (mut conn, _) = open_store_writer(dir, &VECTORS, vault_path)?;
+    if stored_model(&conn)?.is_some_and(|stored| &stored != model) {
         drop(conn);
+        count_deletion(Some(&dir.join(VECTORS_FILE)));
         discard_file(dir, VECTORS_FILE)?;
         conn = open_store_writer(dir, &VECTORS, vault_path)?.0;
     }
     if stored_model(&conn)?.is_none() {
+        // New, or emptied in place by a Delete that could not remove it.
         let tx = conn.transaction()?;
+        tx.execute_batch(
+            "DELETE FROM passages; DELETE FROM files; DELETE FROM signs; DELETE FROM vectors;",
+        )?;
         write_meta(&tx, META_MODEL, &model.name)?;
         write_meta(&tx, META_DIMENSIONS, &model.dimensions.to_string())?;
         write_meta(&tx, META_PASSAGE_VERSION, &PASSAGE_VERSION.to_string())?;
+        write_meta(&tx, META_STORE_ID, &new_store_id())?;
         tx.commit()?;
     }
     if meta_number(&conn, META_PASSAGE_VERSION)? != u64::from(PASSAGE_VERSION) {
-        // Passage lists are read again under the new rule; vectors of unchanged text stay.
+        // Passage lists are read again under the new rule; vectors start their grace period and
+        // those whose text is unchanged are held again by the same plan.
         let tx = conn.transaction()?;
         tx.execute_batch("DELETE FROM passages; DELETE FROM files;")?;
+        tx.execute(
+            "UPDATE vectors SET unheld_since_ms = ?1 WHERE unheld_since_ms IS NULL",
+            [now_ms()],
+        )?;
         write_meta(&tx, META_PASSAGE_VERSION, &PASSAGE_VERSION.to_string())?;
         tx.commit()?;
     }
-    Ok(conn)
+    let store_id = read_meta(&conn, META_STORE_ID)?.unwrap_or_default();
+    Ok((conn, store_id))
+}
+
+/// Sets a damaged `vectors.sqlite` aside under the writer lock and counts it as a deletion, so
+/// every searcher and build lets it go and the next `plan` rebuilds it. Does nothing otherwise.
+fn set_aside_if_damaged(dir: &Path, error: &Error) {
+    if !error.is_damage() {
+        return;
+    }
+    if let Ok(_lock) = lock_writer(dir) {
+        count_deletion(Some(&dir.join(VECTORS_FILE)));
+        let _ = set_aside_file(dir, VECTORS_FILE);
+    }
 }
 
 /// A read connection to the store for `model`, with the canonical root and the index folder.
@@ -225,6 +269,10 @@ pub fn changed_files(root: &Path, model: &Model, files: &[String]) -> Result<Opt
     let Some((root, _, conn)) = reader(root, model)? else {
         return Ok(None);
     };
+    if files.is_empty() {
+        // An empty listing deletes nothing (`plan`), so nothing would be read again.
+        return Ok(Some(0));
+    }
     let plan = stamp_pass(&conn, &root, files)?;
     Ok(Some(
         plan.work
@@ -241,10 +289,17 @@ fn dir_for(root: &Path) -> Result<PathBuf> {
     )?)
 }
 
-/// `vectors.sqlite` and its WAL files, in bytes; 0 when the vault has none. Settings shows it on
-/// its own row; `stored_bytes` counts it with the rest of the index.
+/// `vectors.sqlite` and its WAL files, in bytes; 0 when the vault has none or a Delete emptied it
+/// in place. Settings shows it on its own row; `stored_bytes` counts it with the rest of the index.
 pub fn vectors_bytes(root: &Path) -> Result<u64> {
     let dir = dir_for(root)?;
+    let holds_a_store = open_store_reader(&dir, &VECTORS)
+        .ok()
+        .flatten()
+        .is_some_and(|conn| stored_model(&conn).ok().flatten().is_some());
+    if !holds_a_store {
+        return Ok(0);
+    }
     Ok(["", "-wal", "-shm"]
         .iter()
         .filter_map(|suffix| std::fs::metadata(dir.join(format!("{VECTORS_FILE}{suffix}"))).ok())
@@ -252,9 +307,9 @@ pub fn vectors_bytes(root: &Path) -> Result<u64> {
         .sum())
 }
 
-/// Deletes the vault's `vectors.sqlite` alone, under the writer lock; a `prepare` running for it
-/// stops before its next write, and an open `Searcher` answers an error. The search index and
-/// rows stay; `crate::delete` removes everything together.
+/// Deletes the vault's `vectors.sqlite` alone, under the writer lock. On every platform, after it
+/// `status` is `None`, `vectors_bytes` is 0, an open `Searcher` finds nothing and says so, and a
+/// running `prepare` ends with `Deleted`; `crate::delete` removes the whole index together.
 pub fn delete_vectors(root: &Path) -> Result<()> {
     let dir = dir_for(root)?;
     count_deletion(Some(&dir.join(VECTORS_FILE)));

@@ -127,19 +127,17 @@ fn a_folder_holding_only_vectors_is_swept_like_one_holding_the_search_file() {
     let vectors_only = |name: &str, seed: u64| {
         let vault = TempVault::new(name);
         write_corpus(&vault.root, 10, seed);
-        let plan = vault_index::vectors::plan(&vault.root, &model, &vault.files()).unwrap();
-        vault_index::vectors::prepare(
-            plan,
-            &vault_index::vectors::PrepareProgress::default(),
-            |texts: &[&str]| {
-                Ok::<_, std::convert::Infallible>(
-                    texts
-                        .iter()
-                        .map(|text| (0..8).map(|i| (text.len() + i) as f32).collect())
-                        .collect(),
-                )
-            },
-        )
+        let progress = vault_index::vectors::PrepareProgress::default();
+        let plan =
+            vault_index::vectors::plan(&vault.root, &model, &vault.files(), &progress).unwrap();
+        vault_index::vectors::prepare(plan, &progress, |texts: &[&str]| {
+            Ok::<_, std::convert::Infallible>(
+                texts
+                    .iter()
+                    .map(|text| (0..8).map(|i| (text.len() + i) as f32).collect())
+                    .collect(),
+            )
+        })
         .unwrap();
         assert!(!vault.index_file().exists(), "no search file, only vectors");
         assert!(vault_index::vectors::vectors_bytes(&vault.root).unwrap() > 0);

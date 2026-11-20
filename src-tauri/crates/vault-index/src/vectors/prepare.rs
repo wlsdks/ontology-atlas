@@ -1,15 +1,14 @@
 //! Sending planned passages to the embedding function and storing what comes back, one batch at
 //! a time.
 
-use super::plan::{delete_unheld, read_passages, Plan};
+use super::plan::{read_passages, Plan};
 use super::quantize::{check_vectors, Quantized, Refusal};
-use super::{deletion_count, stored_model};
-use crate::lifecycle::{
-    clear_meta, configure, lock_writer, open_flags, write_meta, META_WRITING, VECTORS_FILE,
-};
+use super::set_aside_if_damaged;
+use super::writer::WriteError;
+use crate::lifecycle::{clear_meta, write_meta, META_WRITING};
 use crate::stamps::Sha;
 use crate::Error;
-use rusqlite::{params, Connection, Transaction};
+use rusqlite::params;
 use std::collections::VecDeque;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -20,7 +19,8 @@ use std::sync::Mutex;
 pub const MAX_BATCH_PASSAGES: usize = 32;
 pub const MAX_BATCH_BYTES: usize = 64 * 1024;
 
-/// Shared between a running `prepare` and whoever reports on it.
+/// Shared between one run (`plan`, then `prepare`) and whoever reports on it or stops it; a new
+/// run takes a new one, since a stop is never taken back.
 #[derive(Debug, Default)]
 pub struct PrepareProgress {
     files_done: AtomicU64,
@@ -53,11 +53,12 @@ impl PrepareProgress {
             .map(|path| path.clone())
             .unwrap_or_default()
     }
-    /// Stops `prepare` before its next batch is sent; every batch already sent is stored.
+    /// Stops the run: `plan` before its next file batch, `prepare` before its next batch is sent;
+    /// everything already written stays.
     pub fn request_stop(&self) {
         self.stop.store(true, Ordering::Relaxed);
     }
-    fn stopped(&self) -> bool {
+    pub(super) fn stopped(&self) -> bool {
         self.stop.load(Ordering::Relaxed)
     }
     fn set_reading(&self, path: &str) {
@@ -77,8 +78,8 @@ pub enum PrepareError<E> {
     Refused(Refusal),
     /// `PrepareProgress::request_stop`; every batch already sent is stored.
     Stopped,
-    /// The store was deleted, switched off or replaced by another model's while preparing; nothing
-    /// more was written.
+    /// The store was deleted, switched off, emptied in place, set aside as damaged or replaced (by
+    /// another model's plan, here or in another process) since the plan; nothing more was written.
     Deleted,
 }
 
@@ -88,9 +89,12 @@ impl<E> From<Error> for PrepareError<E> {
     }
 }
 
-impl<E> From<rusqlite::Error> for PrepareError<E> {
-    fn from(error: rusqlite::Error) -> Self {
-        PrepareError::Index(Error::Sql(error))
+impl<E> From<WriteError> for PrepareError<E> {
+    fn from(error: WriteError) -> Self {
+        match error {
+            WriteError::Deleted => PrepareError::Deleted,
+            WriteError::Index(error) => PrepareError::Index(error),
+        }
     }
 }
 
@@ -118,13 +122,13 @@ pub struct Prepared {
 
 type Outcome<T, E> = std::result::Result<T, PrepareError<E>>;
 
-/// Folders a `prepare` in this process is running for: one build per folder.
+/// Folders a `plan` or `prepare` in this process is running for: one at a time per folder.
 static PREPARING: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
 
-struct PreparingGuard(PathBuf);
+pub(super) struct PreparingGuard(PathBuf);
 
 impl PreparingGuard {
-    fn take(dir: &Path) -> crate::Result<PreparingGuard> {
+    pub(super) fn take(dir: &Path) -> crate::Result<PreparingGuard> {
         let mut running = PREPARING
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -166,13 +170,16 @@ impl Batch {
 /// sent. A stop or a kill loses at most the batch in flight; nothing stored is asked for again.
 /// Wiki pages go first. Searches read beside it; the writer lock is held only while a batch is
 /// written, so the search index's own build and a Delete never wait for the embedding function.
+/// A stop requested before it starts ends it at once; a damaged file is set aside.
 pub fn prepare<E>(
     mut plan: Plan,
     progress: &PrepareProgress,
     mut embed: impl FnMut(&[&str]) -> std::result::Result<Vec<Vec<f32>>, E>,
 ) -> Outcome<Prepared, E> {
-    let _one_build = PreparingGuard::take(&plan.dir)?;
-    progress.stop.store(false, Ordering::Relaxed);
+    let _one_build = PreparingGuard::take(&plan.writer.dir)?;
+    if progress.stopped() {
+        return Err(PrepareError::Stopped);
+    }
     progress.files_done.store(0, Ordering::Relaxed);
     progress.passages_done.store(0, Ordering::Relaxed);
     progress
@@ -184,28 +191,47 @@ pub fn prepare<E>(
     if plan.pending.is_empty() {
         return Ok(Prepared::default());
     }
-    let mut writer = Writer::open(&plan)?;
-    writer.locked(&plan, |tx| {
-        write_meta(tx, META_WRITING, &std::process::id().to_string())
+    let (writer, pending) = (&plan.writer, &mut plan.pending);
+    let started = writer.locked(|tx| {
+        // An older plan's passages another run stored since are not sent again: O(p · log n).
+        let mut stored = tx.prepare_cached("SELECT 1 FROM vectors WHERE sha256 = ?1")?;
+        let mut done = Vec::new();
+        for sha in pending.iter() {
+            if stored.exists([sha.as_slice()])? {
+                done.push(*sha);
+            }
+        }
+        for sha in &done {
+            pending.remove(sha);
+        }
+        if pending.is_empty() {
+            return Ok(false);
+        }
+        write_meta(tx, META_WRITING, &std::process::id().to_string())?;
+        Ok(true)
     })?;
-    let outcome = prepare_files(&mut plan, &mut writer, progress, &mut embed);
+    if !started {
+        return Ok(Prepared::default());
+    }
+    let outcome = prepare_files(&mut plan, progress, &mut embed);
+    if let Err(PrepareError::Index(error)) = &outcome {
+        set_aside_if_damaged(&plan.writer.dir, error);
+    }
     let finished = match outcome {
-        Ok(_) => writer.locked(&plan, |tx| {
-            delete_unheld(tx, None)?;
-            clear_meta(tx, META_WRITING)
-        }),
         Err(PrepareError::Deleted) => Ok(()),
-        Err(_) => writer.locked(&plan, |tx| clear_meta(tx, META_WRITING)),
+        _ => plan
+            .writer
+            .locked(|tx| clear_meta(tx, META_WRITING))
+            .map_err(PrepareError::from),
     };
     match (outcome, finished) {
         (Ok(prepared), Ok(())) => Ok(prepared),
-        (Ok(_), Err(error)) | (Err(error), _) => Err(error),
+        (Err(error), _) | (Ok(_), Err(error)) => Err(error),
     }
 }
 
 fn prepare_files<E>(
     plan: &mut Plan,
-    writer: &mut Writer,
     progress: &PrepareProgress,
     embed: &mut impl FnMut(&[&str]) -> std::result::Result<Vec<Vec<f32>>, E>,
 ) -> Outcome<Prepared, E> {
@@ -225,7 +251,7 @@ fn prepare_files<E>(
                 continue;
             }
             if !batch.has_room_for(&passage.text) {
-                stored += send(&mut batch, writer, plan, progress, embed)?;
+                stored += send(&mut batch, plan, progress, embed)?;
                 count_done_files(&mut file_ends, stored, progress, &mut report);
             }
             batch.bytes += passage.text.len();
@@ -236,7 +262,7 @@ fn prepare_files<E>(
         count_done_files(&mut file_ends, stored, progress, &mut report);
     }
     if !batch.passages.is_empty() {
-        stored += send(&mut batch, writer, plan, progress, embed)?;
+        stored += send(&mut batch, plan, progress, embed)?;
         count_done_files(&mut file_ends, stored, progress, &mut report);
     }
     report.passages = stored;
@@ -260,7 +286,6 @@ fn count_done_files(
 /// Sends one batch and stores its vectors; returns how many were stored.
 fn send<E>(
     batch: &mut Batch,
-    writer: &mut Writer,
     plan: &Plan,
     progress: &PrepareProgress,
     embed: &mut impl FnMut(&[&str]) -> std::result::Result<Vec<Vec<f32>>, E>,
@@ -272,78 +297,31 @@ fn send<E>(
     batch.bytes = 0;
     let texts: Vec<&str> = passages.iter().map(|(_, text)| text.as_str()).collect();
     let vectors = embed(&texts).map_err(PrepareError::Embed)?;
-    let quantized = check_vectors(&vectors, passages.len(), plan.model.dimensions)
+    let quantized = check_vectors(&vectors, passages.len(), plan.writer.model.dimensions)
         .map_err(PrepareError::Refused)?;
-    writer.store(plan, passages.iter().map(|(sha, _)| sha).zip(&quantized))?;
+    store(plan, passages.iter().map(|(sha, _)| sha).zip(&quantized))?;
     let count = passages.len() as u64;
     progress.passages_done.fetch_add(count, Ordering::Relaxed);
     Ok(count)
 }
 
-/// `prepare`'s connection. It stays open between batches, but every write happens under the
-/// folder's writer lock and only while no Delete has run since the plan was taken.
-struct Writer {
-    conn: Connection,
-    dir: PathBuf,
-}
-
-impl Writer {
-    fn open<E>(plan: &Plan) -> Outcome<Writer, E> {
-        let path = plan.dir.join(VECTORS_FILE);
-        if deletion_count(&plan.dir) != plan.deletions || !path.is_file() {
-            return Err(PrepareError::Deleted);
-        }
-        let conn = Connection::open_with_flags(&path, open_flags())?;
-        configure(&conn)?;
-        Ok(Writer {
-            conn,
-            dir: plan.dir.clone(),
-        })
-    }
-
-    /// Runs `write` in one transaction under the writer lock, or answers `Deleted`.
-    fn locked<E, T>(
-        &mut self,
-        plan: &Plan,
-        write: impl FnOnce(&Transaction) -> rusqlite::Result<T>,
-    ) -> Outcome<T, E> {
-        let _lock = match lock_writer(&self.dir) {
-            Ok(lock) => lock,
-            Err(error) if error.kind() == io::ErrorKind::NotFound => {
-                return Err(PrepareError::Deleted)
+/// One batch's vectors, with their sign bits, in one transaction.
+fn store<'q>(
+    plan: &Plan,
+    vectors: impl Iterator<Item = (&'q Sha, &'q Quantized)>,
+) -> Result<(), WriteError> {
+    plan.writer.locked(|tx| {
+        let mut insert = tx.prepare_cached(
+            "INSERT OR IGNORE INTO vectors(sha256, scale, int8) VALUES (?1, ?2, ?3)",
+        )?;
+        let mut signs = tx.prepare_cached("INSERT INTO signs(id, bits) VALUES (?1, ?2)")?;
+        for (sha, vector) in vectors {
+            if insert.execute(params![sha.as_slice(), vector.scale, vector.int8])? == 1 {
+                signs.execute(params![tx.last_insert_rowid(), vector.bits])?;
             }
-            Err(error) => return Err(Error::Io(error).into()),
-        };
-        if deletion_count(&self.dir) != plan.deletions {
-            return Err(PrepareError::Deleted);
         }
-        let tx = self.conn.transaction()?;
-        if stored_model(&tx)?.as_ref() != Some(&plan.model) {
-            return Err(PrepareError::Deleted);
-        }
-        let written = write(&tx)?;
-        tx.commit()?;
-        Ok(written)
-    }
-
-    fn store<'q, E>(
-        &mut self,
-        plan: &Plan,
-        vectors: impl Iterator<Item = (&'q Sha, &'q Quantized)>,
-    ) -> Outcome<(), E> {
-        self.locked(plan, |tx| {
-            let mut insert = tx.prepare_cached(
-                "INSERT OR IGNORE INTO vectors(sha256, scale, int8) VALUES (?1, ?2, ?3)",
-            )?;
-            let mut signs = tx.prepare_cached("INSERT INTO signs(id, bits) VALUES (?1, ?2)")?;
-            for (sha, vector) in vectors {
-                if insert.execute(params![sha.as_slice(), vector.scale, vector.int8])? == 1 {
-                    signs.execute(params![tx.last_insert_rowid(), vector.bits])?;
-                }
-            }
-            Ok(())
-        })
-    }
+        Ok(())
+    })
 }
 
 #[cfg(test)]

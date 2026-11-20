@@ -49,14 +49,16 @@ pub(crate) struct Store {
     pub(crate) file: &'static str,
     pub(crate) schema: &'static str,
     pub(crate) version: i32,
+    /// SQLite's page size for a new file; `None` keeps its default.
+    pub(crate) page_bytes: Option<i64>,
 }
 
 pub(crate) const SEARCH: Store = Store {
     file: SEARCH_FILE,
     schema: SEARCH_SCHEMA,
     version: SCHEMA_VERSION,
+    page_bytes: None,
 };
-const VECTORS_PAGE_BYTES: i64 = 16 * 1024;
 const BUSY_TIMEOUT: Duration = Duration::from_secs(5);
 const WAL_SIZE_LIMIT_BYTES: i64 = 32 * 1024 * 1024;
 const WRITER_CACHE_KIB: i64 = 16 * 1024;
@@ -366,9 +368,8 @@ fn create(dir: &Path, store: &Store, vault_path: &str) -> rusqlite::Result<Conne
     discard_file(dir, store.file).map_err(io_failure)?;
     create_private_file(&path).map_err(io_failure)?;
     let mut conn = Connection::open_with_flags(&path, open_flags())?;
-    if store.file == VECTORS_FILE {
-        // A vector row is about 1.1 KB: 4 KiB pages hold three and waste a fifth of the file.
-        conn.pragma_update(None, "page_size", VECTORS_PAGE_BYTES)?;
+    if let Some(bytes) = store.page_bytes {
+        conn.pragma_update(None, "page_size", bytes)?;
     }
     configure(&conn)?;
     let tx = conn.transaction()?;
@@ -547,16 +548,20 @@ fn empty_rows_in_place(path: &Path) -> rusqlite::Result<()> {
     conn.execute_batch("BEGIN IMMEDIATE; DELETE FROM rows; COMMIT; VACUUM;")
 }
 
+/// Empties every table and forgets the model, so the file holds nothing and names no model: a
+/// status, a search or a running build reads it as deleted.
 pub(crate) fn empty_vectors_in_place(path: &Path) -> rusqlite::Result<()> {
     let conn = Connection::open_with_flags(path, open_flags())?;
     conn.busy_timeout(BUSY_TIMEOUT)?;
-    conn.execute_batch(
-        "BEGIN IMMEDIATE; DELETE FROM passages; DELETE FROM files; DELETE FROM signs; DELETE FROM vectors; COMMIT; VACUUM;",
-    )
+    conn.execute_batch(&format!(
+        "BEGIN IMMEDIATE; DELETE FROM passages; DELETE FROM files; DELETE FROM signs; DELETE FROM vectors;
+         DELETE FROM meta WHERE key <> '{META_VAULT_PATH}'; COMMIT; VACUUM;"
+    ))
 }
 
 /// Removes `vectors.sqlite` while the folder's writer lock is held, and the folder too once no
-/// store is left in it. Where another process holds the file open, its tables are emptied.
+/// store is left in it. Where the file cannot be removed (Windows, while a handle is open), it is
+/// emptied in place and names no model, which every reader treats as nothing stored.
 pub(crate) fn delete_vectors_locked(dir: &Path, lock: WriterLock) -> io::Result<()> {
     let path = dir.join(VECTORS_FILE);
     count_deletion(Some(&path));
