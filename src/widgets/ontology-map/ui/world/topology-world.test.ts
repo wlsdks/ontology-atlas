@@ -700,8 +700,11 @@ describe("buildTopologyWorld with the Flat graph", () => {
             await Promise.resolve();
             return ready.length;
         };
-        const sliced = (onDone: (built: TopologyWorld) => void) =>
-            runStepsSliced(world.buildTopologyWorldSteps(folder.nodes, folder.edges, mapTokens, "disc", input(null)), onDone, options);
+        const fail = (error: unknown) => {
+            throw error;
+        };
+        const sliced = (onDone: (built: TopologyWorld) => void, graph = folder) =>
+            runStepsSliced(world.buildTopologyWorldSteps(graph.nodes, graph.edges, mapTokens, "disc", input(null)), onDone, fail, options);
         return { ...world, forceAtlas2, sliced, turn };
     }
     const placesOf = (world: TopologyWorld) => world.nodes.map((n) => [n.id, n.x, n.y]);
@@ -743,6 +746,21 @@ describe("buildTopologyWorld with the Flat graph", () => {
         expect(superseded).toBe(0);
         expect(swapped).toEqual(["latest"]);
         expect(runs).toBe(fullLayoutRuns);
+        expect(placesOf(latest!)).toEqual(placesOf(once));
+    });
+
+    it("lays out a different folder from its own start when a build of another folder was cancelled mid-layout", async () => {
+        const once = (await freshBuilder()).buildTopologyWorld(folder.nodes, folder.edges, mapTokens, "disc", input(null));
+        const { sliced, turn, forceAtlas2 } = await freshBuilder();
+        const counted = vi.spyOn(forceAtlas2, "assign");
+        const cancel = sliced(() => undefined, partOf(2));
+        for (let k = 0; k < 1000 && counted.mock.calls.length === 0; k += 1) await turn();
+        expect(counted.mock.calls.length).toBeGreaterThan(0);
+        counted.mockRestore();
+        cancel();
+        let latest: TopologyWorld | null = null;
+        sliced((world) => (latest = world));
+        while ((await turn()) > 0);
         expect(placesOf(latest!)).toEqual(placesOf(once));
     });
 

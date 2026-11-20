@@ -1,11 +1,11 @@
 import { circularDomainOrder } from "../dial/order";
 import type { DialPlacementState } from "../dial/placement";
 import type { DialCluster, DialItem, DialModel, DialScene, Point } from "../dial/types";
-import { directItemId, drainSteps, layoutFlatGraphSteps, type LayoutSteps } from "./layout";
+import { directItemId, drainSteps, fittedScalesOf, layoutFlatGraphSteps, type FittedScales, type LayoutSteps, type RememberedPins } from "./layout";
 import { byId } from "./seed";
-import type { FlatGraphFrame, FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphMemory, FlatGraphPins } from "./types";
+import type { FlatGraphFrame, FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphMemory } from "./types";
 
-let remembered: FlatGraphMemory | null = null;
+let remembered: (FlatGraphMemory & { fittedAt: FittedScales | null; orphans: string }) | null = null;
 let rememberedFolder: string | null = null;
 
 /**
@@ -28,7 +28,7 @@ function domainSignature(model: DialModel, domainId: string): string {
  * places, a changed one starts its single re-run from where it stood. Names measured in another
  * face (the product font arriving after the folder settled) pin nothing. Pins are not stored yet.
  */
-export function flatGraphPins(model: DialModel, face: string): FlatGraphPins | null {
+export function flatGraphPins(model: DialModel, face: string): RememberedPins | null {
   const memory = remembered;
   if (memory === null || memory.face !== face) return null;
   const positions = new Map<string, Point>();
@@ -49,7 +49,8 @@ export function flatGraphPins(model: DialModel, face: string): FlatGraphPins | n
     const direct = memory.positions.get(directItemId(d.id));
     if (direct) positions.set(directItemId(d.id), direct);
   }
-  return { positions, seeds, compactTitles: memory.compactTitles };
+  const unchanged = seeds.size === 0 && model.domains.every((d) => positions.has(d.id)) && memory.orphans === model.orphanIds.join("\n");
+  return { positions, seeds, compactTitles: memory.compactTitles, fittedAt: unchanged ? memory.fittedAt : null };
 }
 
 /**
@@ -66,6 +67,8 @@ function rememberFlatGraph(model: DialModel, layout: FlatGraphLayout, face: stri
     face,
     positions,
     compactTitles: layout.compactTitles,
+    fittedAt: fittedScalesOf(layout),
+    orphans: model.orphanIds.join("\n"),
     signatureByDomain: new Map(model.domains.map((d) => [d.id, domainSignature(model, d.id)])),
   };
 }
@@ -74,12 +77,12 @@ function rememberFlatGraph(model: DialModel, layout: FlatGraphLayout, face: stri
  * Domains go round in the content's own circular order, never a remembered one: an order kept from
  * a partial read, the bundled sample or an earlier session would seed the layout.
  */
-export function buildFlatGraphScene(model: DialModel, tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): DialScene {
+export function buildFlatGraphScene(model: DialModel, tokens: FlatGraphLayoutTokens, pins: RememberedPins | null, frame: FlatGraphFrame | null = null): DialScene {
   return drainSteps(buildFlatGraphSceneSteps(model, tokens, pins, frame));
 }
 
 /** `buildFlatGraphScene` in the layout's steps. */
-export function* buildFlatGraphSceneSteps(model: DialModel, tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): LayoutSteps<DialScene> {
+export function* buildFlatGraphSceneSteps(model: DialModel, tokens: FlatGraphLayoutTokens, pins: RememberedPins | null, frame: FlatGraphFrame | null = null): LayoutSteps<DialScene> {
   const { order } = circularDomainOrder(model, null);
   yield;
   const graph = yield* layoutFlatGraphSteps(model, order, tokens, pins, frame);

@@ -30,6 +30,7 @@ import type { NodeDragState } from "../input/topology-pointer-types";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { buildTopologyWorldSteps, dialOverviewFit, recomputeWorldGeometry, type TopologyWorld } from "./topology-world";
 import { runStepsSliced } from "./run-steps-sliced";
+import { announceWorldSwap, isWorldBuilding, markWorldBuilding } from "./world-swap";
 import type { FlatRingMemoryStore } from "../loop/topology-loop-contract";
 import { createMeasureText } from "../../dial/fit";
 import { readDialTokens } from "../../dial/tokens";
@@ -291,7 +292,15 @@ export function useTopologyWorldLifecycle({
     if (dial && placementStateRef.current === "settled") flatRingMemory?.write(dial.scene.memory);
   }, [flatRingMemory, worldRef]);
 
-  const latest = useLatestRef({ nodes, edges, onGraphStatsChange, onVisibleCountChange, dataSourceKey, loadProgress });
+  // The source key last applied to a world; one named while a build is in flight waits for its swap.
+  const appliedKeyRef = useRef<string | null>(null);
+  const applySource = useCallback((key: string | null) => {
+    appliedKeyRef.current = key;
+    claimUnnamedFit(key);
+    claimSource(key);
+  }, [claimSource, claimUnnamedFit]);
+  const [, setBuildFailure] = useState<null>(null);
+  const latest = useLatestRef({ nodes, edges, onGraphStatsChange, onVisibleCountChange, dataSourceKey, loadProgress, applySource });
   useEffect(() => {
     const live = latest.current;
     const tokens = readOntologyMapTokensOrNull();
@@ -320,6 +329,7 @@ export function useTopologyWorldLifecycle({
     };
     let simTask: ReturnType<typeof setTimeout> | undefined;
     const swapIn = (world: TopologyWorld) => {
+      markWorldBuilding(worldRef, false);
       const glidingFromArrival = arrivalGlideRef.current && homingActiveRef.current;
       const firstPlacement = world.dial != null && placementStateRef.current === "reading" && placed.state !== "reading";
       placementStateRef.current = placed.state;
@@ -400,24 +410,23 @@ export function useTopologyWorldLifecycle({
       if (grew && !armAssembly && previousWorld && hasInitializedRef.current) glideArrivedWorld(previousWorld, world, tokens, arrivalStill);
       trySnapInitialCamera(tokens);
       lastActiveMsRef.current = performance.now();
-      // A source named while this world was built reached only the previous one.
       const namedSince = latest.current.dataSourceKey;
-      if (namedSince !== dataSourceKey) {
-        claimUnnamedFit(namedSince);
-        claimSource(namedSince);
-      }
+      if (namedSince !== appliedKeyRef.current) latest.current.applySource(namedSince);
+      announceWorldSwap(worldRef);
     };
     // The previous world stays drawn until this build swaps in; a newer input cancels it first.
-    const cancel = runStepsSliced(buildTopologyWorldSteps(live.nodes, live.edges, tokens, expand.structure, dialWorldInput(dialLabels, provisionalMemoryRef.current ?? stored, graphArea), placeDial), swapIn);
+    markWorldBuilding(worldRef, true);
+    const fail = (error: unknown) => setBuildFailure(() => {
+      throw error;
+    });
+    const cancel = runStepsSliced(buildTopologyWorldSteps(live.nodes, live.edges, tokens, expand.structure, dialWorldInput(dialLabels, provisionalMemoryRef.current ?? stored, graphArea), placeDial), swapIn, fail);
     return () => {
+      markWorldBuilding(worldRef, false);
       cancel();
       clearTimeout(simTask);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Only graph and placement inputs rebuild the world; commands and progress have separate effects.
     }, [nodes, edges, expand.structure, dialLabels, arriving, placingTierRead]);
-    useEffect(() => {
-        claimUnnamedFit(dataSourceKey);
-    }, [claimUnnamedFit, dataSourceKey]);
     useEffect(() => {
         const dial = worldRef.current?.dial;
         if (!dial || placementStateRef.current === "settled")
@@ -426,8 +435,8 @@ export function useTopologyWorldLifecycle({
         lastActiveMsRef.current = performance.now();
     }, [loadProgress, worldRef, lastActiveMsRef]);
     useEffect(() => {
-        claimSource(dataSourceKey);
-    }, [claimSource, dataSourceKey]);
+        if (!isWorldBuilding(worldRef)) applySource(dataSourceKey);
+    }, [applySource, dataSourceKey, worldRef]);
     useEffect(() => {
         const container = containerRef.current;
         if (!container)

@@ -64,6 +64,16 @@ interface Spring { a: string; b: string; weight: number }
 /** A computation cut into steps: each `yield` is a point where a driver may give the browser a turn. */
 export type LayoutSteps<T> = Generator<void, T, void>;
 
+/** The title scales a picture was fitted at, in the area it was fitted to. */
+export interface FittedScales { worldPerPx: number; memberWorldPerPx: number; areaWidthPx: number | undefined; areaHeightPx: number | undefined }
+export interface FittedLayout extends FlatGraphLayout { fittedAt?: FittedScales }
+/** Pins whose `fittedAt` is set cover every domain, so the rebuild places once at those scales. */
+export interface RememberedPins extends FlatGraphPins { fittedAt?: FittedScales | null }
+
+export function fittedScalesOf(layout: FlatGraphLayout): FittedScales | null {
+  return (layout as FittedLayout).fittedAt ?? null;
+}
+
 /** Runs every step at once and returns the result: the synchronous form of any `LayoutSteps`. */
 export function drainSteps<T>(steps: LayoutSteps<T>): T {
   for (;;) {
@@ -535,7 +545,7 @@ function fallbackTitle(tokens: FlatGraphLayoutTokens): FlatGraphTitle {
  * of b bodies and n members with R separation rounds; elements are O(E). An input equal to the
  * last call's returns a copy of that layout after an O(input) comparison.
  */
-export function layoutFlatGraph(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): FlatGraphLayout {
+export function layoutFlatGraph(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: RememberedPins | null, frame: FlatGraphFrame | null = null): FittedLayout {
   return drainSteps(layoutFlatGraphSteps(model, order, tokens, pins, frame));
 }
 
@@ -543,7 +553,7 @@ export function layoutFlatGraph(model: DialModel, order: readonly string[], toke
  * `layoutFlatGraph` cut at every cluster and domain ForceAtlas2 iteration. A run left unfinished is
  * resumed by the next call with equal inputs, so a superseded build's work is never repeated.
  */
-export function* layoutFlatGraphSteps(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): LayoutSteps<FlatGraphLayout> {
+export function* layoutFlatGraphSteps(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: RememberedPins | null, frame: FlatGraphFrame | null = null): LayoutSteps<FittedLayout> {
   const inputs = layoutInputs(model, order, tokens, pins, frame);
   // A fresh identity: name and line caches key on the layout and must see a retitle the fit ignores.
   if (lastLayout !== null && sameInputs(lastLayout.inputs, inputs)) return { ...lastLayout.layout };
@@ -565,12 +575,12 @@ export function* layoutFlatGraphSteps(model: DialModel, order: readonly string[]
 type LayoutInput = string | number | boolean | null;
 
 /** The last layout and every value it read: a folder that grows only in kinds the graph does not draw lays out once. */
-let lastLayout: { inputs: LayoutInput[]; layout: FlatGraphLayout } | null = null;
+let lastLayout: { inputs: LayoutInput[]; layout: FittedLayout } | null = null;
 /** The layout being stepped, kept for the next call with equal inputs; a call with other inputs drops it. */
-let openRun: { inputs: LayoutInput[]; steps: LayoutSteps<FlatGraphLayout>; layout: FlatGraphLayout | null } | null = null;
+let openRun: { inputs: LayoutInput[]; steps: LayoutSteps<FittedLayout>; layout: FittedLayout | null } | null = null;
 
 /** Every value `fitLayout` reads, in a fixed order with list lengths. O(D + C + E + flows + dependencies). */
-function layoutInputs(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): LayoutInput[] {
+function layoutInputs(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: RememberedPins | null, frame: FlatGraphFrame | null): LayoutInput[] {
   const out: LayoutInput[] = [model.projectId];
   const list = (values: readonly LayoutInput[]) => {
     out.push(values.length);
@@ -597,6 +607,8 @@ function layoutInputs(model: DialModel, order: readonly string[], tokens: FlatGr
     out.push(points?.size ?? null);
     for (const [id, at] of points ?? []) out.push(id, at.x, at.y);
   }
+  const fitted = pins?.fittedAt;
+  out.push(fitted?.worldPerPx ?? null, fitted?.memberWorldPerPx ?? null, fitted?.areaWidthPx ?? null, fitted?.areaHeightPx ?? null);
   out.push(pins?.compactTitles ?? null, frame?.areaPx?.width ?? null, frame?.areaPx?.height ?? null, frame?.capDiscPx ?? null, frame?.hubPx ?? null);
   for (const titles of [frame?.titles, frame?.compactTitles]) {
     out.push(titles?.size ?? null);
@@ -611,15 +623,21 @@ function sameInputs(a: readonly LayoutInput[], b: readonly LayoutInput[]): boole
   return true;
 }
 
-function* fitLayout(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): LayoutSteps<FlatGraphLayout> {
+function* fitLayout(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: RememberedPins | null, frame: FlatGraphFrame | null): LayoutSteps<FittedLayout> {
   const area = frame?.areaPx ?? null;
   const aspect = area ? Math.min(MAX_ASPECT, Math.max(MIN_ASPECT, area.width / area.height)) : tokens.aspect;
   const basis = yield* graphBasis(model, order, tokens, pins, aspect);
   const nameRows = frame?.compactTitles ? { ...frame, titles: frame.compactTitles } : null;
+  const titled = pins?.compactTitles && nameRows ? nameRows : frame;
+  const fittedAt = pins?.fittedAt;
+  // A refit from pinned positions starts at the fitted extent and overshoots the scale the picture was fitted at.
+  if (fittedAt && fittedAt.areaWidthPx === area?.width && fittedAt.areaHeightPx === area?.height) {
+    return { ...(yield* placeGraph(basis, tokens, pins, titled, fittedAt.worldPerPx, fittedAt.memberWorldPerPx)), compactTitles: pins.compactTitles, fittedAt };
+  }
   if (nameRows === null) return (yield* fitGraph(basis, tokens, pins, frame)).layout;
   // Pinned positions cannot answer a title reservation, so a pinned rebuild keeps the remembered choice.
   if (pins !== null && pins.positions.size > 0) {
-    return { ...(yield* fitGraph(basis, tokens, pins, pins.compactTitles ? nameRows : frame)).layout, compactTitles: pins.compactTitles };
+    return { ...(yield* fitGraph(basis, tokens, pins, titled)).layout, compactTitles: pins.compactTitles };
   }
   const full = yield* fitGraph(basis, tokens, pins, frame);
   const compact = yield* fitGraph(basis, tokens, pins, nameRows);
@@ -628,7 +646,7 @@ function* fitLayout(model: DialModel, order: readonly string[], tokens: FlatGrap
 }
 
 /** One fit of the graph to the frame's titles: whether the fitted scale keeps every title block clear, and the world units it shows per px. */
-function* fitGraph(basis: GraphBasis, tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): LayoutSteps<{ layout: FlatGraphLayout; titlesHold: boolean; shown: number }> {
+function* fitGraph(basis: GraphBasis, tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): LayoutSteps<{ layout: FittedLayout; titlesHold: boolean; shown: number }> {
   const area = frame?.areaPx ?? null;
   const shownOf = (l: FlatGraphLayout) => area === null ? 1 : Math.max(1, (l.extent.maxX - l.extent.minX) / area.width, (l.extent.maxY - l.extent.minY) / area.height);
   let worldPerPx = 1;
@@ -646,12 +664,14 @@ function* fitGraph(basis: GraphBasis, tokens: FlatGraphLayoutTokens, pins: FlatG
     shown = shownOf(layout);
   }
   const titlesHold = shown <= worldPerPx;
-  for (let pass = 0, memberScale = worldPerPx; pass < MEMBER_PASSES && shown > memberScale; pass += 1) {
-    memberScale = shown * TITLE_PASS_MARGIN;
-    layout = yield* placeGraph(basis, tokens, pins, frame, worldPerPx, memberScale);
+  let memberWorldPerPx = worldPerPx;
+  for (let pass = 0; pass < MEMBER_PASSES && shown > memberWorldPerPx; pass += 1) {
+    memberWorldPerPx = shown * TITLE_PASS_MARGIN;
+    layout = yield* placeGraph(basis, tokens, pins, frame, worldPerPx, memberWorldPerPx);
     shown = shownOf(layout);
   }
-  return { layout, titlesHold, shown };
+  const fittedAt = { worldPerPx, memberWorldPerPx, areaWidthPx: area?.width, areaHeightPx: area?.height };
+  return { layout: { ...layout, fittedAt }, titlesHold, shown };
 }
 
 /** What every pass of one layout shares: the domains' own placement and each cluster's inputs. O(D² · I + C + deps). */

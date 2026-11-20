@@ -13,11 +13,13 @@ export interface RunStepsOptions {
 
 /**
  * Steps `steps` on the calling thread, the first slice at once, giving the browser a turn whenever a
- * slice has run `budgetMs`. Contract: `onDone` runs at most once, and never after the returned cancel.
+ * slice has run `budgetMs`. A throw in the first slice reaches the caller, a later one `onError`.
+ * Contract: `onDone` runs at most once, and never after the returned cancel.
  */
 export function runStepsSliced<T>(
   steps: LayoutSteps<T>,
   onDone: (value: T) => void,
+  onError: (error: unknown) => void,
   { budgetMs = WORLD_SLICE_MS, now = () => performance.now(), yieldNow = yieldToFrame }: RunStepsOptions = {},
 ): () => void {
   let cancelled = false;
@@ -31,7 +33,7 @@ export function runStepsSliced<T>(
         return;
       }
       if (now() - start >= budgetMs) {
-        void yieldNow().then(slice);
+        void yieldNow().then(slice).catch(onError);
         return;
       }
     }

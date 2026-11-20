@@ -500,7 +500,14 @@ export function buildTopologyWorld(...args: Parameters<typeof buildTopologyWorld
   return drainSteps(buildTopologyWorldSteps(...args));
 }
 
-/** `buildTopologyWorld` cut into steps of at most one flat-graph cluster or ForceAtlas2 iteration each. */
+/** Edges the world's tail turns into geometry between two steps. */
+const TAIL_EDGES_PER_STEP = 4000;
+
+/**
+ * `buildTopologyWorld` in steps: one per flat-graph cluster in each pass and per domain ForceAtlas2 iteration,
+ * one per tail pass and `TAIL_EDGES_PER_STEP` edges. Domain ordering, spreading the domains and
+ * reading the containment tree each remain one step.
+ */
 export function* buildTopologyWorldSteps(
   nodes: readonly OntologyMapNode[],
   edges: readonly OntologyMapEdge[],
@@ -593,6 +600,7 @@ export function* buildTopologyWorldSteps(
     for (const p of seeded) pointById.set(p.id, dial?.scene.positions.get(p.id) ?? p);
   }
 
+  yield;
   const worldNodes: WorldNode[] = nodes.map((n) => {
     const point = pointById.get(n.id);
     const x = point?.x ?? 0;
@@ -618,6 +626,7 @@ export function* buildTopologyWorldSteps(
     };
   });
   const nodeById = new Map(worldNodes.map((n) => [n.id, n]));
+  yield;
 
   const neighborMap = new Map<string, Set<string>>();
   for (const n of worldNodes) neighborMap.set(n.id, new Set());
@@ -637,6 +646,7 @@ export function* buildTopologyWorldSteps(
     if (list) list.push(node.id);
     else childrenByParent.set(parentId, [node.id]);
   }
+  yield;
   const clusterMetaByParent = new Map<string, ClusterParentMeta>();
   for (const [parentId, childIds] of childrenByParent) {
     const parent = nodeById.get(parentId);
@@ -672,8 +682,14 @@ export function* buildTopologyWorldSteps(
     }
   }
 
+  yield;
   const worldEdges: WorldEdge[] = [];
+  let edgesSinceYield = 0;
   for (const edge of edges) {
+    if ((edgesSinceYield += 1) === TAIL_EDGES_PER_STEP) {
+      edgesSinceYield = 0;
+      yield;
+    }
     const a = nodeById.get(edge.source);
     const b = nodeById.get(edge.target);
     if (!a || !b) continue;
@@ -711,6 +727,7 @@ export function* buildTopologyWorldSteps(
   // magnitude = size + fullDegree*18, ported from the prototype's `count +
   // degree*18` — the adapter has no separate "count" field, `size` is its
   // closest analog (follow-up: confirm with the HomePage adapter contract).
+  yield;
   const rawMagnitude = (n: { size: number; fullDegree: number;
     }) => n.size + n.fullDegree * 18;
   const ranked = [...nodes].sort((x, y) => rawMagnitude(y) - rawMagnitude(x));
@@ -729,6 +746,7 @@ export function* buildTopologyWorldSteps(
     indexEdge(worldEdges[i].sourceId, i);
     indexEdge(worldEdges[i].targetId, i);
   }
+  yield;
 
   return {
     nodes: worldNodes,

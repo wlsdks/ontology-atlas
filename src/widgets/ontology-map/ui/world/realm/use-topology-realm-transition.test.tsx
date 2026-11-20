@@ -7,6 +7,7 @@ import { createRealmFrameStage, type RealmFrameStageSources } from "../../frame-
 import type { RealmRuntimeData } from "../topology-realm-runtime";
 import type { TopologyWorld, WorldNode } from "../topology-world";
 import { useTopologyRealmTransition } from "../use-topology-realm-transition";
+import { announceWorldSwap } from "../world-swap";
 
 const mocks = vi.hoisted(() => ({ build: vi.fn(), now: 0 }));
 vi.mock("../topology-realm-runtime", async original => ({
@@ -141,6 +142,17 @@ describe("interruptible realm entry", () => {
     f.hook.rerender({ root: null, mode: false });
     f.step(2);
     expect(nodes.map(node => ({ x: node.x, y: node.y }))).toEqual([{ x: 120, y: 40 }, { x: 600, y: 180 }]);
+  });
+
+  it("realigns an open realm when a sliced build swaps its world in without a render", () => {
+    const f = fixture(true);
+    f.step(0);
+    const previous = f.sources.worldRef.current;
+    const nodes = previous.nodes.map(node => ({ ...node, x: node.homeX, y: node.homeY }));
+    f.sources.worldRef.current = { ...previous, nodes, nodeById: new Map(nodes.map(node => [node.id, node])) };
+    announceWorldSwap(f.sources.worldRef);
+    f.step(1);
+    expect(nodes.find(node => node.id === "root")).toMatchObject({ x: 0, y: 0 });
   });
 
   it("preserves a dragged realm member through a render without a world rebuild", () => {
