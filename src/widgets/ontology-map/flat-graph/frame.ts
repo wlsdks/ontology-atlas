@@ -1490,51 +1490,105 @@ function namedNow(id: string): boolean {
  * stands inside the free map, clear of the chrome and, where the frame draws it, of every disc, grown
  * dot (or on its plate) and name drawn before it. Admission holds names apart across a whole zoom
  * step; at rest the frame knows the one scale, so a rim member keeps a name its step ruled out. It
- * runs after every admitted name, so it never takes a place one of them holds, and a member that
- * changes side cross-fades between the two rows. A member the frame before drew goes first, on the
- * side it drew where that side still fits, and a row it leaves fades where the names after it see it,
- * so two members that want one place hand it over, one fading out before the other fades in, rather
- * than cross-fading over each other while the camera moves.
+ * runs after every admitted name, so it never takes a place one of them holds. Each member the frame
+ * before drew first keeps the side it was going to, where that side still fits; then every row a
+ * member drew and no longer draws fades where the names after it see it; then the members whose side
+ * no longer fits, and after them the members the frame before left unnamed, take the first side that
+ * fits. So no member takes a place another still holds, a member that changes side cross-fades
+ * between its own two rows, and two members that want one place hand it over, one fading out before
+ * the other fades in, rather than cross-fading over each other while the camera moves.
  * O(unnamed members × fallbacks × (discs + grown dots + names drawn)).
  */
 function planMemberFallbacks(fallbacks: ReadonlyMap<string, readonly PlacedName[]>, alphas: ReadonlyMap<string, number>, chrome: readonly Box[]): void {
   let ids = fallbackIds.get(fallbacks);
   if (!ids) fallbackIds.set(fallbacks, (ids = [...fallbacks.keys()]));
-  for (let pass = 0; pass < 2; pass += 1) {
+  if (fallbackStates.length < ids.length) fallbackStates = new Uint8Array(ids.length * 2);
+  for (let i = 0; i < ids.length; i += 1) {
+    const id = ids[i]!;
+    const at = screenAt(id);
+    if (!at || alphas.get(id) === 0 || namedNow(id)) {
+      fallbackStates[i] = FALLBACK_DONE;
+      continue;
+    }
+    const row = rowDrawnLastFrame(id);
+    if (row === null) {
+      fallbackStates[i] = FALLBACK_NEW;
+      continue;
+    }
+    const sides = fallbacks.get(id)!;
+    const drew = sideOf(row.name);
+    let kept = false;
+    for (let k = 0; k < sides.length && !kept; k += 1) if (sideOf(sides[k]!) === drew) kept = planFallback(sides, k, at, alphas, chrome);
+    fallbackStates[i] = kept ? FALLBACK_DONE : FALLBACK_MOVING;
+  }
+  for (let i = 0; i < ids.length; i += 1) fadeLeftRows(ids[i]!, alphas);
+  for (let state = FALLBACK_MOVING; state <= FALLBACK_NEW; state += 1) {
     for (let i = 0; i < ids.length; i += 1) {
+      if (fallbackStates[i] !== state) continue;
       const id = ids[i]!;
-      const drewRow = rowDrawnLastFrame(id);
-      if ((drewRow !== null) !== (pass === 0)) continue;
-      const at = screenAt(id);
-      if (!at || alphas.get(id) === 0 || namedNow(id)) continue;
+      const at = screenAt(id)!;
       const sides = fallbacks.get(id)!;
-      const drew = drewRow === null ? -1 : sideOf(drewRow.name);
-      let first = -1;
-      for (let k = 0; k < sides.length && first < 0 && drew >= 0; k += 1) if (sideOf(sides[k]!) === drew) first = k;
-      if (first >= 0 && planFallback(sides, first, at, alphas, chrome)) continue;
-      for (let k = 0; k < sides.length; k += 1) if (k !== first && planFallback(sides, k, at, alphas, chrome)) break;
-      if (drewRow !== null && drewRow.frame !== F.frame && drewRow.admitted !== F.frame) placeName(drewRow, alphas, 1, true);
+      for (let k = 0; k < sides.length; k += 1) if (planFallback(sides, k, at, alphas, chrome)) break;
     }
   }
 }
 
+/** Where a member stands in the fallback pass: named, or about to take a side because its own no longer fits, or because it had none. */
+const FALLBACK_DONE = 0;
+const FALLBACK_MOVING = 1;
+const FALLBACK_NEW = 2;
+let fallbackStates = new Uint8Array(0);
+
 /** Each admission's fallback members in order, listed once so a frame walks them without allocating. */
 const fallbackIds = new WeakMap<ReadonlyMap<string, readonly PlacedName[]>, readonly string[]>();
 
-/** The row a member's capability name was drawn in on the frame before, null when none was. O(rows of the member). */
+/** Whether `row` is a member's capability name the frame before drew with ink. */
+function drewLastFrame(row: DrawnName): boolean {
+  return row.name.role === "capability" && !row.wasFocus && row.frame === F.frame - 1 && row.alpha > DRAWN_INK;
+}
+
+/**
+ * The row a member's capability name was drawn in on the frame before, null when none was: the one
+ * that frame admitted, the side the member was going to, before one it was leaving. O(rows of the member).
+ */
 function rowDrawnLastFrame(id: string): DrawnName | null {
   const rows = F.names.names.get(id);
   if (!rows) return null;
+  let drawn: DrawnName | null = null;
   for (let i = 0; i < rows.length; i += 1) {
     const row = rows[i]!;
-    if (row.name.role === "capability" && !row.wasFocus && row.frame === F.frame - 1 && row.alpha > DRAWN_INK) return row;
+    if (!drewLastFrame(row)) continue;
+    if (row.admitted === F.frame - 1) return row;
+    drawn ??= row;
   }
-  return null;
+  return drawn;
+}
+
+/** Places each row of a member's capability name the frame before drew and this frame does not, fading. O(rows of the member). */
+function fadeLeftRows(id: string, alphas: ReadonlyMap<string, number>): void {
+  const rows = F.names.names.get(id);
+  if (!rows) return;
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i]!;
+    if (drewLastFrame(row) && row.admitted !== F.frame) placeName(row, alphas, 1, true);
+  }
+}
+
+/** Whether this frame already drew the row of `n`'s side, fading out: a member takes back no side in the frame it leaves it. O(rows of its concept). */
+function steppedNow(n: PlacedName): boolean {
+  const rows = F.names.names.get(n.id);
+  if (!rows) return false;
+  const side = sideOf(n);
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i]!;
+    if (row.name.role === n.role && !row.wasFocus && sideOf(row.name) === side) return row.stepped === F.frame;
+  }
+  return false;
 }
 
 /** Plans a member's fallback side `k` where it stands inside the free map and clear of what the frame drew before it. */
 function planFallback(sides: readonly PlacedName[], k: number, at: Point, alphas: ReadonlyMap<string, number>, chrome: readonly Box[]): boolean {
-  if (!memberBlockShows(sides, k, k + 1, chrome)) return false;
+  if (steppedNow(sides[k]!) || !memberBlockShows(sides, k, k + 1, chrome)) return false;
   let side = sides[k]!;
   if (onGrownDot(side, at.x, at.y)) {
     let plated = backedSides.get(side);

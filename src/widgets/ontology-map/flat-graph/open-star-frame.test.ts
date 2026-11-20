@@ -906,3 +906,61 @@ describe.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning
     expect(radii(opened.frames[0]!), "the first frame draws the opened star").toEqual(radii(opened.frames.at(-1)!));
   });
 });
+
+/**
+ * Every frame on a path to `domainId`'s star in `free`, the camera easing to `zoomTo` and then
+ * panning up to `panPx` around it, in which a member's capability name begins rising after another
+ * member's name under it began fading: the place is handed over, so the second waits for the first
+ * to go. A swap that begins in one frame is admission trading a zoom step's names, not a hand-over.
+ */
+function handOverBreaches(domainId: string, free: { minX: number; minY: number; maxX: number; maxY: number }, zoomTo: number, panPx: number): string[] {
+  const members = new Set(domainStarIds(model, domainId).capabilities);
+  const e = layout.extent;
+  const fit = Math.min((free.maxX - free.minX) / (e.maxX - e.minX), (free.maxY - free.minY) / (e.maxY - e.minY));
+  const centre = layout.positions.get(domainId)!;
+  const middle = { x: (free.minX + free.maxX) / 2, y: (free.minY + free.maxY) / 2 };
+  const camera = cameraOn(domainId, {}, { model, scene }, free);
+  const breaches: string[] = [];
+  let before = new Map<string, number>();
+  let trend = new Map<string, number>();
+  const since = new Map<string, number>();
+  for (let i = 0, now = 0; i < 260; i += 1, now += FRAME_MS) {
+    const zoom = Math.pow(zoomTo, (1 - Math.cos(Math.PI * Math.min(1, i / 36))) / 2);
+    const turn = Math.max(0, i - 36) / 50;
+    const pan = { x: Math.sin(turn) * panPx, y: Math.sin(turn * 0.7) * panPx * 0.6 };
+    const scale = fit * zoom;
+    const toScreen = (x: number, y: number): Point => ({ x: middle.x + pan.x + (x - centre.x) * scale, y: middle.y + pan.y + (y - centre.y) * scale });
+    const nodeScreen = (id: string) => { const p = layout.positions.get(id); return p ? toScreen(p.x, p.y) : null; };
+    paintFlatGraphFrame(camera(zoom, { toScreen, nodeScreen, scale, now, focusedNodeId: domainId }), TOKENS);
+    const probe = describeLastDialFrame(W, H)!;
+    const names = [...probe.texts, ...probe.fadingTexts].filter((t) => t.role === "capability" && t.id !== null && members.has(t.id));
+    const key = (t: (typeof names)[number]) => `${t.id} ${t.side}`;
+    const signs = new Map<string, number>();
+    for (const t of names) {
+      const sign = Math.sign(t.alpha - (before.get(key(t)) ?? 0));
+      if (!before.has(key(t)) || sign !== trend.get(key(t))) since.set(key(t), i);
+      signs.set(key(t), sign);
+    }
+    for (const t of names) {
+      if (signs.get(key(t))! <= 0) continue;
+      for (const o of names) {
+        if (o.id === t.id || signs.get(key(o))! >= 0 || since.get(key(t))! <= since.get(key(o))!) continue;
+        if (Math.min(t.box.maxX, o.box.maxX) - Math.max(t.box.minX, o.box.minX) > 1 && Math.min(t.box.maxY, o.box.maxY) - Math.max(t.box.minY, o.box.minY) > 1) {
+          breaches.push(`frame ${i}: ${t.id} rises to ${t.alpha.toFixed(2)} over ${o.id} fading at ${o.alpha.toFixed(2)}`);
+        }
+      }
+    }
+    before = new Map(names.map((t) => [key(t), t.alpha]));
+    trend = signs;
+  }
+  return breaches;
+}
+
+describe("an opened star's member names while the camera pans the narrow free map", () => {
+  it.each([[2.2, 40], [2.2, 120], [3, 40]])(
+    "hand a place over at zoom %s and a %s px pan: a member's name begins rising only once no other member's name under it is fading",
+    (zoom, pan) => {
+      expect(handOverBreaches("domain:human-workbench", NARROW_FREE, zoom, pan).slice(0, 6)).toEqual([]);
+    },
+  );
+});
