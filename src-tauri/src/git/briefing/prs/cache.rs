@@ -106,7 +106,7 @@ fn scope(identity: &Identity, repository: &str) -> String {
         identity.object.1,
         repository.to_ascii_lowercase()
     ));
-    format!("{:x}", digest.finalize())
+    lower_hex(&digest.finalize())
 }
 #[cfg(unix)]
 fn valid(entry: &Entry) -> bool {
@@ -125,10 +125,10 @@ fn valid(entry: &Entry) -> bool {
         && chrono::DateTime::parse_from_rfc3339(&pr.updated_at).is_ok()
         && chrono::DateTime::parse_from_rfc3339(&pr.fetched_at).is_ok()
         && pr.digest
-            == format!(
-                "{:x}",
-                Sha256::digest(format!("{}\0{}\0{}", pr.title, pr.body, pr.updated_at))
-            )
+            == lower_hex(&Sha256::digest(format!(
+                "{}\0{}\0{}",
+                pr.title, pr.body, pr.updated_at
+            )))
         && serde_json::to_vec(entry).is_ok_and(|bytes| bytes.len() <= ENTRY_BYTES)
 }
 
