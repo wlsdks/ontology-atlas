@@ -40,6 +40,37 @@ impl RunEnd {
     }
 }
 
+/// Who writes a line: the provider and the host the passages went to.
+pub(super) trait Source {
+    fn provider(&self) -> &str;
+    fn host(&self) -> &str;
+    fn model(&self) -> &str;
+    fn line_wait(&self) -> Duration;
+    fn query_line_wait(&self) -> Duration;
+}
+
+impl Source for LocalRunner {
+    fn provider(&self) -> &str {
+        LOCAL_PROVIDER
+    }
+
+    fn host(&self) -> &str {
+        LocalRunner::host(self)
+    }
+
+    fn model(&self) -> &str {
+        LocalRunner::model(self)
+    }
+
+    fn line_wait(&self) -> Duration {
+        self.timeouts.line_wait
+    }
+
+    fn query_line_wait(&self) -> Duration {
+        self.timeouts.query_line_wait
+    }
+}
+
 pub(super) struct Close<'a> {
     pub run: &'a str,
     pub plan: BuildPlan,
@@ -72,12 +103,12 @@ struct Line<'a> {
     download: Option<AuditDownload>,
 }
 
-fn draft(runner: &LocalRunner, line: &Line<'_>) -> AuditDraft {
+fn draft(source: &dyn Source, line: &Line<'_>) -> AuditDraft {
     AuditDraft {
         v: 1,
         at: llm_audit::now_iso(),
-        provider: LOCAL_PROVIDER.into(),
-        host: runner.host().to_string(),
+        provider: source.provider().into(),
+        host: source.host().to_string(),
         model: Some(line.model.to_string()),
         purpose: line.purpose.into(),
         question: line.question.map(str::to_string),
@@ -133,13 +164,13 @@ fn write_closed(
 /// Returns the run id the closing line repeats.
 pub(super) fn write_start(
     vault_dir: &Path,
-    runner: &LocalRunner,
+    source: &dyn Source,
     plan: BuildPlan,
 ) -> Result<String, EmbedError> {
     let run = uuid::Uuid::new_v4().to_string();
     let line = Line {
         purpose: BUILD_PURPOSE,
-        model: runner.model(),
+        model: source.model(),
         question: None,
         vault_chars: plan.chars,
         // Nothing has been sent when this line is written.
@@ -157,20 +188,18 @@ pub(super) fn write_start(
         download: None,
     };
     // Left without outcome fields: the outcome belongs to the closing line.
-    reserve_waiting(vault_dir, runner.timeouts.line_wait, || {
-        draft(runner, &line)
-    })?;
+    reserve_waiting(vault_dir, source.line_wait(), || draft(source, &line))?;
     Ok(run)
 }
 
 pub(super) fn write_close(
     vault_dir: &Path,
-    runner: &LocalRunner,
+    source: &dyn Source,
     close: &Close<'_>,
 ) -> Result<(), EmbedError> {
     let line = Line {
         purpose: BUILD_PURPOSE,
-        model: runner.model(),
+        model: source.model(),
         question: None,
         vault_chars: close.chars_sent,
         payload_sha256: close.sent_sha256.to_string(),
@@ -188,8 +217,8 @@ pub(super) fn write_close(
     };
     write_closed(
         vault_dir,
-        runner.timeouts.line_wait,
-        || draft(runner, &line),
+        source.line_wait(),
+        || draft(source, &line),
         &AuditOutcome {
             outcome: close.ended.outcome().into(),
             http_status: None,
@@ -202,22 +231,20 @@ pub(super) fn write_close(
 /// The line holds the question, as the agent's lines do.
 pub(super) fn reserve_query(
     vault_dir: &Path,
-    runner: &LocalRunner,
+    source: &dyn Source,
     question: &str,
-    body: &str,
+    payload: &str,
 ) -> Result<AuditReservation, EmbedError> {
     let line = Line {
         purpose: QUERY_PURPOSE,
-        model: runner.model(),
+        model: source.model(),
         question: Some(question),
         vault_chars: 0,
-        payload_sha256: llm_audit::sha256_hex(body),
+        payload_sha256: llm_audit::sha256_hex(payload),
         embed: None,
         download: None,
     };
-    reserve_waiting(vault_dir, runner.timeouts.query_line_wait, || {
-        draft(runner, &line)
-    })
+    reserve_waiting(vault_dir, source.query_line_wait(), || draft(source, &line))
 }
 
 pub(super) fn finish_query(
@@ -232,6 +259,17 @@ pub(super) fn finish_query(
         }
         Err(_) => ("error", None, 0),
     };
+    finalize_query(reservation, outcome, http_status, response_chars, started)
+}
+
+/// Closes a reserved query line; a source with no HTTP exchange passes no status.
+pub(super) fn finalize_query(
+    reservation: AuditReservation,
+    outcome: &str,
+    http_status: Option<u16>,
+    response_chars: usize,
+    started: Instant,
+) -> Result<(), EmbedError> {
     llm_audit::finalize(
         reservation,
         &AuditOutcome {
@@ -271,19 +309,17 @@ fn download_line<'a>(download: &'a Download<'a>) -> Line<'a> {
 /// Before the download request; on failure nothing is requested.
 pub(super) fn write_download_start(
     vault_dir: &Path,
-    runner: &LocalRunner,
+    source: &dyn Source,
     download: &Download<'_>,
 ) -> Result<(), EmbedError> {
     let line = download_line(download);
-    reserve_waiting(vault_dir, runner.timeouts.line_wait, || {
-        draft(runner, &line)
-    })?;
+    reserve_waiting(vault_dir, source.line_wait(), || draft(source, &line))?;
     Ok(())
 }
 
 pub(super) fn write_download_close(
     vault_dir: &Path,
-    runner: &LocalRunner,
+    source: &dyn Source,
     download: &Download<'_>,
     duration_ms: u64,
 ) -> Result<(), EmbedError> {
@@ -291,8 +327,8 @@ pub(super) fn write_download_close(
     let outcome = download.ended.unwrap_or(RunEnd::Failed).outcome();
     write_closed(
         vault_dir,
-        runner.timeouts.line_wait,
-        || draft(runner, &line),
+        source.line_wait(),
+        || draft(source, &line),
         &AuditOutcome {
             outcome: outcome.into(),
             http_status: None,

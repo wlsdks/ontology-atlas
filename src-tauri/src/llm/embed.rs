@@ -12,6 +12,7 @@
 )]
 
 mod audit;
+pub(crate) mod builtin;
 mod loopback;
 mod ollama;
 mod response;
@@ -94,6 +95,19 @@ pub(crate) enum EmbedError {
     ResponseInvalid(&'static str),
     Cancelled,
     PullFailed(String),
+    /// A download hop named a scheme, host or port outside the allowed set.
+    HostRefused(String),
+    SizeMismatch(String),
+    HashMismatch(String),
+    /// The built-in model is not prepared on this computer.
+    ModelNotReady,
+    /// Another preparation of the built-in model is running.
+    ModelBusy,
+    ModelLoad(String),
+    Convert(String),
+    Inference(String),
+    /// Reading or writing the model directory failed.
+    Store(String),
 }
 
 impl EmbedError {
@@ -119,6 +133,15 @@ impl EmbedError {
             Self::ResponseInvalid(_) => "embed-response-invalid",
             Self::Cancelled => "embed-cancelled",
             Self::PullFailed(_) => "embed-pull-failed",
+            Self::HostRefused(_) => "embed-download-host-refused",
+            Self::SizeMismatch(_) => "embed-download-size-mismatch",
+            Self::HashMismatch(_) => "embed-download-hash-mismatch",
+            Self::ModelNotReady => "embed-model-not-ready",
+            Self::ModelBusy => "embed-model-busy",
+            Self::ModelLoad(_) => "embed-model-load-failed",
+            Self::Convert(_) => "embed-model-convert-failed",
+            Self::Inference(_) => "embed-inference-failed",
+            Self::Store(_) => "embed-model-store-failed",
         }
     }
 }
@@ -130,7 +153,14 @@ impl fmt::Display for EmbedError {
             | Self::AuditBlocked(detail)
             | Self::Request(detail)
             | Self::ModelNotAllowed(detail)
-            | Self::PullFailed(detail) => detail.clone(),
+            | Self::PullFailed(detail)
+            | Self::HostRefused(detail)
+            | Self::SizeMismatch(detail)
+            | Self::HashMismatch(detail)
+            | Self::ModelLoad(detail)
+            | Self::Convert(detail)
+            | Self::Inference(detail)
+            | Self::Store(detail) => detail.clone(),
             Self::PassageTooLong(index) => index.to_string(),
             Self::Redirected(status) | Self::Http(status) => status.to_string(),
             Self::ResponseInvalid(reason) => (*reason).to_string(),
@@ -415,8 +445,9 @@ impl Drop for BuildRun<'_> {
     }
 }
 
-/// What the store asks of any source of vectors: today the loopback runner, later
-/// an in-process model. Each source keeps its own audit duty.
+/// What the store asks of any source of vectors: the loopback runner or the
+/// built-in model. Each source keeps its own audit duty. Every call blocks, so
+/// none belongs on the UI thread.
 pub(crate) trait Embedder {
     fn model(&self) -> &str;
     fn start_build<'a>(
