@@ -36,7 +36,12 @@ export function resolveLocaleDisplayName(
   locale: string | undefined,
   fallback: string,
 ): string {
-  if (!locale) return fallback;
-  const localized = readDisplayLocales(frontmatter)?.[locale];
-  return localized ?? fallback;
+  if (!locale || !frontmatter || !DISPLAY_LOCALE.test(locale)) return fallback;
+  // One key lookup, not `readDisplayLocales`: this runs per document on every manifest.
+  const value = frontmatter[`display_${locale}`];
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  return trimmed && !hasBrokenTextEncoding(trimmed) ? trimmed : fallback;
 }
+
+const DISPLAY_LOCALE = /^[a-z]{2}$/;

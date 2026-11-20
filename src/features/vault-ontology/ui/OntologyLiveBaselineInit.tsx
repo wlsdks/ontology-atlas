@@ -5,6 +5,7 @@ import { useDataSourceMode, useVaultIdentityScope } from "@/entities/vault-sessi
 import {
   getChangeBaseline,
   markChangeBaseline,
+  prepareGraphSignatures,
   restorePersistedBaseline,
   setChangeBaselineScope,
   shouldAutoMarkBaseline,
@@ -25,22 +26,30 @@ export function OntologyLiveBaselineInit() {
   useEffect(() => {
     if (!insight) return;
     if (handledScopeRef.current === vaultScope) return;
-    handledScopeRef.current = vaultScope;
     // A scope change discards the previous vault's baseline and switches the save key.
     setChangeBaselineScope(vaultScope);
-    // Try restoring a persisted baseline (overlap-guarded); on success, skip auto-mark.
-    const restored = restorePersistedBaseline(insight.nodes);
-    // Read `getChangeBaseline()` directly: the scope switch above may just have discarded it.
-    if (
-      !restored &&
-      shouldAutoMarkBaseline({
-        mode,
-        hasBaseline: getChangeBaseline() !== null,
-        nodeCount: insight.nodes.length,
-      })
-    ) {
-      markChangeBaseline(insight.nodes, insight.edges, Date.now());
-    }
+    handledScopeRef.current = null;
+    const preparing = new AbortController();
+    // The per-node hashing runs in slices first; marking or diffing below reuses it.
+    prepareGraphSignatures(insight.nodes, insight.edges, { signal: preparing.signal }).then(() => {
+      // A pass can finish after its abort; its graph is no longer the one on screen.
+      if (preparing.signal.aborted) return;
+      handledScopeRef.current = vaultScope;
+      // Try restoring a persisted baseline (overlap-guarded); on success, skip auto-mark.
+      const restored = restorePersistedBaseline(insight.nodes);
+      // Read `getChangeBaseline()` directly: the scope switch above may just have discarded it.
+      if (
+        !restored &&
+        shouldAutoMarkBaseline({
+          mode,
+          hasBaseline: getChangeBaseline() !== null,
+          nodeCount: insight.nodes.length,
+        })
+      ) {
+        markChangeBaseline(insight.nodes, insight.edges, Date.now());
+      }
+    }, () => undefined);
+    return () => preparing.abort();
   }, [mode, insight, vaultScope]);
 
   return null;

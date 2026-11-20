@@ -84,6 +84,7 @@ export {
   isWithinRecentWindow,
   buildOntologyTree,
   computeOntologyChangeset,
+  prepareGraphSignatures,
   filterTreeExcludeKind,
   useChangeBaseline,
   computeDegreeCentrality,

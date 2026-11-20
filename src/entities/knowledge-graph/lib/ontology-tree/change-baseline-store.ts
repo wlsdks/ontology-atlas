@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
 import {
+  forgetGraphSignatures,
   snapshotOntology,
   type OntologySnapshot,
 } from "./ontology-changeset";
@@ -94,11 +95,12 @@ function emit(): void {
   for (const listener of listeners) listener();
 }
 
-/** Declares the active vault and drops the previous vault's baseline. */
+/** Declares the active vault and drops the previous vault's baseline and graph signatures. */
 export function setChangeBaselineScope(scope: string): void {
   if (baselineScope === scope) return;
   const first = baselineScope === null;
   baselineScope = scope;
+  forgetGraphSignatures();
   if (first) {
     const store = storage();
     if (store) convertFirstForm(store);
