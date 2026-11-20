@@ -20,6 +20,7 @@ import { useWorkRunCopy, type WorkRunMarks } from './use-work-run-copy';
 import { RollingCount } from './RollingCount';
 import { WorkRunMoru } from './WorkRunMoru';
 import { useSeatStepAside } from './use-seat-step-aside';
+import { WORK_CARD_ATTRIBUTE } from './use-clear-of-work-card';
 
 /** `.app-update-card[data-state='closed']` and `.app-update-layer-out` fade over `--motion-base`. */
 const FADE_OUT_MS = Math.round(MOTION.base.duration * 1_000);
@@ -72,6 +73,7 @@ function CardBox({ run, open }: { run: WorkRun; open: boolean }) {
     <div
       ref={cardRef}
       data-testid="work-run-card"
+      {...{ [WORK_CARD_ATTRIBUTE]: '' }}
       data-phase={run.phase}
       data-state={open ? 'open' : 'closed'}
       // A floor wall: notifications stand above the card instead of over it.
@@ -85,7 +87,7 @@ function CardBox({ run, open }: { run: WorkRun; open: boolean }) {
       style={shiftPx > 0 ? { translate: `${-shiftPx}px 0` } : undefined}
     >
       <span ref={probe} aria-hidden className="pointer-events-none invisible absolute h-0 w-[var(--app-toast-right-offset,16px)]" />
-      <MoruLight />
+      <MoruLight phase={run.phase} />
       {layers.leaving && !reducedMotion ? (
         <PhaseLayer key={`leaving-${layerOf(layers.leaving.phase)}`} run={layers.leaving} motion="out" />
       ) : null}
@@ -94,18 +96,43 @@ function CardBox({ run, open }: { run: WorkRun; open: boolean }) {
   );
 }
 
-function MoruLight() {
+/** The light under Moru says how it ended before a word is read; the ladders' nearest steps. */
+const LIGHT_BY_OUTCOME: Partial<Record<WorkRunPhase, string>> = {
+  found: 'bg-[radial-gradient(closest-side,var(--color-success-a35),var(--color-success-a12)_45%,transparent)]',
+  clean: 'bg-[radial-gradient(closest-side,var(--color-success-a35),var(--color-success-a12)_45%,transparent)]',
+  failed: 'bg-[radial-gradient(closest-side,var(--color-amber-source-a34),var(--color-amber-source-a12)_45%,transparent)]',
+  unreadable: 'bg-[radial-gradient(closest-side,var(--color-amber-source-a34),var(--color-amber-source-a12)_45%,transparent)]',
+};
+const LIGHT_WHILE_RUNNING = 'bg-[radial-gradient(closest-side,var(--color-indigo-accent-a32),var(--color-indigo-accent-a12)_45%,transparent)]';
+
+function MoruLight({ phase }: { phase: WorkRunPhase }) {
+  const tinted = LIGHT_BY_OUTCOME[phase];
   return (
     <span aria-hidden className="pointer-events-none absolute bottom-3 left-3 size-32 max-sm:size-16">
-      <span className="absolute top-[72%] left-1/2 h-[130%] w-[150%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(closest-side,var(--color-indigo-accent-a32),var(--color-indigo-accent-a12)_45%,transparent)]" />
+      <span
+        className={cn(
+          'absolute top-[72%] left-1/2 h-[130%] w-[150%] -translate-x-1/2 -translate-y-1/2 transition-opacity duration-[var(--motion-slow)] ease-[var(--motion-ease)]',
+          LIGHT_WHILE_RUNNING,
+          tinted && 'opacity-0',
+        )}
+      />
+      <span
+        data-testid="work-run-light"
+        data-tint={tinted ? phase : undefined}
+        className={cn(
+          'absolute top-[72%] left-1/2 h-[130%] w-[150%] -translate-x-1/2 -translate-y-1/2 transition-opacity duration-[var(--motion-slow)] ease-[var(--motion-ease)]',
+          tinted ?? LIGHT_WHILE_RUNNING,
+          tinted ? 'opacity-100' : 'opacity-0',
+        )}
+      />
       <span className="absolute top-[81%] left-1/2 h-[9%] w-[58%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(closest-side,var(--color-shadow-a42),transparent)]" />
     </span>
   );
 }
 
-/** The page and the count lead the line; the words around them stay quiet. */
+/** The count leads; the page being read is the line's one bright word. */
 const CARD_MARKS: WorkRunMarks = {
-  page: (name) => <span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{name}</span>,
+  page: (name) => <span className="font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{name}</span>,
   count: (value) => (
     <RollingCount
       value={value}
@@ -128,7 +155,7 @@ function PhaseLayer({ run, motion }: { run: WorkRun; motion: 'in' | 'out' | 'non
   const leaving = motion === 'out';
   const active = isRunActive(run);
   const elapsed = useWorkRunElapsed(leaving ? null : run);
-  const copy = useWorkRunCopy(run, elapsed, CARD_MARKS);
+  const copy = useWorkRunCopy(run, elapsed, CARD_MARKS, 'card');
   const openDoor = useDoor();
   const testId = (id: string) => (leaving ? undefined : id);
 
@@ -145,58 +172,57 @@ function PhaseLayer({ run, motion }: { run: WorkRun; motion: 'in' | 'out' | 'non
       data-work-run-layer={leaving ? 'leaving' : 'current'}
       inert={leaving}
       className={cn(
-        'absolute inset-0 flex items-center p-3',
+        'absolute inset-0 flex p-3',
         motion === 'in' && 'app-update-layer-in',
         motion === 'out' && 'app-update-layer-out [&_*]:[animation-play-state:paused]',
       )}
     >
       <WorkRunMoru run={run} />
-      <div className="ml-[8.25rem] grid min-w-0 flex-1 gap-1 max-sm:ml-[4.5rem]">
+      {/* Title pinned to the top and buttons to the bottom, so no state moves either row. */}
+      <div className="ml-[8.25rem] grid h-full min-w-0 flex-1 content-between max-sm:ml-[4.5rem]">
         {copy.figures ? (
-          // While it runs the count leads; each line is single, so a long page name never moves it.
-          <div aria-live="off" className="grid min-w-0 text-label leading-label">
-            <p
-              data-testid={testId('work-run-title')}
-              className="truncate font-[var(--font-weight-strong)] text-[color:var(--color-text-secondary)]"
-            >
-              {copy.title}
-            </p>
-            <p data-testid={testId('work-run-figures')} className="mt-1 truncate leading-display tabular-nums text-[color:var(--color-text-tertiary)]">
+          <p
+            data-testid={testId('work-run-title')}
+            className="truncate text-label leading-label text-[color:var(--color-text-tertiary)]"
+          >
+            {copy.title}
+          </p>
+        ) : (
+          <p
+            data-testid={testId('work-run-title')}
+            className="truncate text-body-lg leading-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+          >
+            {copy.title}
+          </p>
+        )}
+        {copy.figures ? (
+          <div aria-live="off" className="grid min-w-0">
+            <p data-testid={testId('work-run-figures')} className="truncate text-label leading-display tabular-nums text-[color:var(--color-text-tertiary)]">
               {copy.figures}
             </p>
             <p
               data-testid={testId('work-run-line')}
-              className={cn('text-[color:var(--color-text-secondary)]', run.phase === 'asking' ? 'line-clamp-2' : 'truncate')}
+              className={cn(
+                'text-[color:var(--color-text-secondary)]',
+                run.phase === 'asking' ? 'line-clamp-2 text-label leading-label' : 'truncate text-body leading-body',
+              )}
             >
               {copy.detail}
             </p>
           </div>
         ) : (
-          <>
-            <p
-              data-testid={testId('work-run-title')}
-              className="truncate text-body-lg leading-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
-            >
-              {copy.title}
-            </p>
-            <p
-              data-testid={testId('work-run-detail')}
-              className="line-clamp-2 min-h-[calc(var(--leading-label)*2)] text-label leading-label text-[color:var(--color-text-secondary)]"
-            >
-              {copy.detail}
-            </p>
-          </>
+          <p
+            data-testid={testId('work-run-detail')}
+            className="line-clamp-2 text-label leading-label text-[color:var(--color-text-secondary)]"
+          >
+            {copy.detail}
+          </p>
         )}
-        <div className="mt-1 flex h-8 min-w-0 items-center gap-2">
+        <div className="flex h-8 min-w-0 items-center gap-2">
           {run.phase === 'running' ? (
-            <>
-              <div className="min-w-0 flex-1">
-                <WorkProgress phase="running" done={run.readCount} total={null} label={tCard('progressLabel', { title: copy.title })} />
-              </div>
-              <Button size="sm" variant="outline" onClick={() => workRuns.stop()} data-testid={testId('work-run-stop')}>
-                {tCard('stop')}
-              </Button>
-            </>
+            <Button size="sm" variant="outline" onClick={() => workRuns.stop()} data-testid={testId('work-run-stop')}>
+              {tCard('stop')}
+            </Button>
           ) : null}
           {primary ? (
             <Button size="sm" onClick={primary.onClick} data-testid={testId(primary.id)}>
@@ -214,6 +240,11 @@ function PhaseLayer({ run, motion }: { run: WorkRun; motion: 'in' | 'out' | 'non
           </Button>
         </div>
       </div>
+      {run.phase === 'running' ? (
+        <div className="absolute inset-x-0 bottom-0 h-0.5 [&>[role=progressbar]]:h-full [&>[role=progressbar]]:rounded-none">
+          <WorkProgress phase="running" done={run.readCount} total={null} label={tCard('progressLabel', { title: copy.title })} />
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -43,7 +43,7 @@ export function RollingCount({ value, className }: { value: number; className?: 
   }, [current, previous]);
 
   return (
-    <span className={cn('relative inline-grid overflow-clip align-bottom tabular-nums', className)}>
+    <span className={cn('relative inline-grid overflow-clip align-baseline tabular-nums', className)}>
       {previous !== null ? (
         // Drawn, not written: the text of the count is only ever the current value.
         <span ref={outgoing} aria-hidden data-figure={previous} className="col-start-1 row-start-1 before:content-[attr(data-figure)]" />

@@ -117,6 +117,7 @@ export function LibraryDocumentColumn({
           folder={checkFolder}
           onStopCheck={workRuns.stop}
           onOpenConversation={agent.runtime && nativeVaultRootPath ? () => agent.setOpen(true) : undefined}
+          conversationOpen={agent.open}
           t={t}
         />
       </DocReadingPane>

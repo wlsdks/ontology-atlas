@@ -96,10 +96,10 @@ Where a run could already show on every screen:
 | Running, card hidden | Out of scope — as above | Ring only; the tile's door leads to Library |
 | Running, app window hidden | Out of scope — as above | Nothing drawn; the run keeps its pace |
 | Agent asks before acting | Out of scope — as above | Card `check.asking`; `check.review` opens the conversation. Moru holds his neutral pose |
-| Finished with findings, elsewhere | Out of scope — as above | Card `check.doneTitle`, `check.doneFindings`; `check.openResults`, `workCard.close`; badge (`workCard.railFinished`) |
+| Finished with findings, elsewhere | Out of scope — as above | Card `check.foundTitle`, `check.foundBody`; `check.openResults`, `workCard.close`; badge (`workCard.railFinished`) |
 | Finished, nothing to fix | Out of scope — as above | Card `check.doneTitle`, `check.doneClean`; `workCard.close` |
 | Finished on Check results | Out of scope — as above | No card. The findings draw in place with `report.unseen` |
-| Report not readable as a list | Out of scope — as above | Card and page `check.unreadTitle`, `check.unreadBody`; `check.openConversation` |
+| Report not readable as a list | Out of scope — as above | Card `check.unreadCardTitle`, `check.unreadCardBody`; page `check.unreadTitle`, `check.unreadBody`; `check.openConversation` |
 | Stopped on an error | Out of scope — as above | Card and page `check.failedTitle`, `check.failedBody`; `check.openConversation`, `workCard.close` |
 | Stopped by the person | Out of scope — as above | No card. Page `check.stopped`; **Check wiki** is pressable again |
 | An update notice is due during a run | Out of scope — the web has no updater | The run keeps the seat; the update stays on the Settings trigger (`appUpdate.settingsTriggerPending`) and takes the seat when the run's card closes |
@@ -113,20 +113,24 @@ New keys. `check.*` goes in `messages/<locale>/library.json`; `workCard.*` is a 
 | Key | Where | en |
 |---|---|---|
 | `check.title` | stage, card | Checking the wiki |
-| `check.reading` | stage, card | {agent} · reading {page} |
-| `check.working` | stage, card | {agent} · {tool} |
-| `check.writing` | stage, card | {agent} · writing the report |
+| `check.reading` | stage | {agent} · reading {page} |
+| `check.working` | stage | {agent} · {tool} |
+| `check.writing` | stage | {agent} · writing the report |
+| `check.cardWriting` | card | Writing the report |
 | `check.figures` | stage, card | {read, plural, =0 {No page read yet} one {# page read} other {# pages read}} · {elapsed} |
 | `check.asking` | card | {agent} is asking before it goes on. The check waits for your answer. |
 | `check.review` | card button | Review |
 | `check.doneTitle` | card | Wiki check finished |
-| `check.doneFindings` | card | {findings, plural, one {# finding} other {# findings}} on {pages, plural, one {# page} other {# pages}}. Check results lists them. |
+| `check.foundTitle` | card | {findings, plural, one {# finding} other {# findings}} on {pages, plural, one {# page} other {# pages}} |
+| `check.foundBody` | card | Wiki check finished. Check results lists them. |
 | `check.doneClean` | card | The agent found nothing to fix in the pages it read. |
 | `check.openResults` | card button | Open check results |
-| `check.unreadTitle` | card, page | The check finished, but its report is not a list |
-| `check.unreadBody` | card, page | Atlas could not read findings from the agent's answer, so Check results is unchanged. The conversation has the answer as written. |
+| `check.unreadTitle` | page | The check finished, but its report is not a list |
+| `check.unreadBody` | page | Atlas could not read findings from the agent's answer, so Check results is unchanged. The conversation has the answer as written. |
+| `check.unreadCardTitle` | card | The report could not be read |
+| `check.unreadCardBody` | card | Check results is unchanged. The conversation has the agent's answer. |
 | `check.openConversation` | card, page button | Open the conversation |
-| `check.failedTitle` | card, page | The wiki check stopped |
+| `check.failedTitle` | card, page | The wiki check ended early |
 | `check.failedBody` | card, page | {agent} ended before it reported. No file was changed. Press Check wiki to run it again. |
 | `check.stopped` | page | You stopped this check. Nothing was reported, and no file was changed. |
 | `workCard.stop` | card, stage button | Stop |
@@ -209,4 +213,4 @@ None. Decided: "background" means another tab and a hidden window, not a quit ap
 - 2026-11-20: corrected Today and Problem: the Library dock does not keep its conversation, so leaving Library stops the check rather than only losing its result.
 - 2026-11-20: slice 1 built; added the edge cases for a parked read-only check, a folder switch mid-run and a write asked for during a check.
 - 2026-11-20: added the right-hand dock and tab-change edge cases after the owner asked that the work keep running and stay in view on every screen.
-- 2026-11-20: review round: the read-only flag belongs to the running turn, a write it asks for never takes an automatic approval, only the check is parked when Library goes, a re-check keeps the last findings until a new report arrives, and "Writing Library turns keep running" joined Later.
+- 2026-11-20: review round: the read-only flag belongs to the running turn, a write it asks for never takes an automatic approval, only the check is parked when Library goes, a re-check keeps the last findings until a new report arrives, and "Writing Library turns keep running" joined Later. The card's line names only what the agent does, and its found and unreadable states got sentences that fit its two lines.

@@ -32,10 +32,13 @@ const STAGE_MARKS: WorkRunMarks = {
  */
 export function WikiCheckStage({
   run,
+  besideConversation,
   onStop,
   onReview,
 }: {
   run: WorkRun;
+  /** The open conversation already draws the agent at work, so the stage keeps only its facts. */
+  besideConversation: boolean;
   onStop: () => void;
   onReview: () => void;
 }) {
@@ -48,10 +51,11 @@ export function WikiCheckStage({
     <div
       data-testid="library-check-stage"
       data-phase={run.phase}
+      data-beside-conversation={besideConversation ? "" : undefined}
       className="relative mt-4 flex min-h-44 items-center overflow-clip rounded-card bg-[color:var(--color-overlay-1)] py-4 pr-4"
     >
-      <WorkRunMoru run={run} />
-      <div className="ml-[9rem] grid min-w-0 flex-1 max-sm:ml-[5rem]">
+      {besideConversation ? null : <WorkRunMoru run={run} />}
+      <div className={cn("grid min-w-0 flex-1", besideConversation ? "pl-4" : "ml-[9rem] max-sm:ml-[5rem]")}>
         <p
           data-testid="library-check-stage-title"
           className="truncate text-label leading-label font-[var(--font-weight-strong)] text-[color:var(--color-text-secondary)]"
@@ -85,7 +89,7 @@ export function WikiCheckStage({
             {tCard("stop")}
           </Button>
         </div>
-        <p className="mt-2 text-caption leading-body text-[color:var(--color-text-tertiary)]">
+        <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">
           {t("report.emptyLede")}
         </p>
       </div>

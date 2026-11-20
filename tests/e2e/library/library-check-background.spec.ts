@@ -85,7 +85,7 @@ test.describe("a wiki check keeps running away from the Library", () => {
     expect(await harnessCalls(page), "leaving the Library ended the agent's turn").not.toContain("acp_stop");
     await expect.poll(async () => (await harness.snapshot(page)).writes.map((write) => write.relativePath), { message: "a finished check logs itself" }).toContain("wiki/_log.md");
     await expect(card).toHaveAttribute("data-phase", "found");
-    await expect(page.getByTestId("work-run-detail")).toHaveText("3 findings on 3 pages. Check results lists them.");
+    await expect(page.getByTestId("work-run-title")).toHaveText("3 findings on 3 pages");
     await waitForAnimationsDone(card);
     expect(await card.boundingBox(), "the card changed its box when the result replaced the run").toEqual(runningBox);
     await expect(rail(page).getByTestId("app-nav-rail-ring-library")).toHaveCount(0);
@@ -163,5 +163,7 @@ test.describe("a wiki check keeps running away from the Library", () => {
     expect(counts.at(-1)).toBe(read);
     const longest = Math.max(...frames.slice(1).map((frame, index) => frame.t - frames[index]!.t));
     test.info().annotations.push({ type: "longest frame interval (ms)", description: String(Math.round(longest)) });
+    // Dev compiles each route on its first visit, a stall the exported app never has.
+    if (process.env.PLAYWRIGHT_STATIC) expect(longest, "a frame took longer than the motion rule allows").toBeLessThanOrEqual(50);
   });
 });

@@ -17,3 +17,4 @@ export { useWorkRunCopy, type WorkRunMarks } from './ui/use-work-run-copy';
 export { RollingCount } from './ui/RollingCount';
 export { WorkRunMoru } from './ui/WorkRunMoru';
 export { WorkRunSeat } from './ui/WorkRunSeat';
+export { useLiftClearOfWorkCard } from './ui/use-clear-of-work-card';

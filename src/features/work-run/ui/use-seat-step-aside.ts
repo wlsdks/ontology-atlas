@@ -13,11 +13,8 @@ function standing(element: HTMLElement): boolean {
 }
 
 /**
- * How far left the card stands, in px: past the screen's own toast offset (`probe` resolves
- * `--app-toast-right-offset`) and past every standing right `data-toast-wall`. It is drawn as
- * `translate`, so a dock opening or a route changing glides the card instead of moving its box.
- * With no room left of a wall the card stays in its corner, above the wall, as the Library's
- * overlay dock already decides for notices. O(walls) per frame, measured only while shown.
+ * px the card glides left, past `--app-toast-right-offset` and each standing right wall in the
+ * seat's own frame; no room beside a wall keeps the corner. O(nodes in that frame) per changed frame.
  */
 export function useSeatStepAside(active: boolean, card: RefObject<HTMLElement | null>): {
   probe: RefObject<HTMLSpanElement | null>;
@@ -30,12 +27,14 @@ export function useSeatStepAside(active: boolean, card: RefObject<HTMLElement | 
     let frame = 0;
     const observed = new Set<Element>();
     const resize = new ResizeObserver(() => schedule());
+    // The seat's siblings in the shell frame hold every route's docks; portals never declare walls.
+    const frameRoot = card.current?.parentElement?.parentElement ?? document.body;
     const measure = () => {
       frame = 0;
       const viewport = document.documentElement.clientWidth || window.innerWidth;
       const cardWidth = card.current?.offsetWidth ?? 0;
       let inset = Math.max(0, (probe.current?.offsetWidth ?? SEAT_GUTTER_PX) - SEAT_GUTTER_PX);
-      for (const wall of document.querySelectorAll<HTMLElement>('[data-toast-wall="right"]')) {
+      for (const wall of frameRoot.querySelectorAll<HTMLElement>('[data-toast-wall="right"]')) {
         if (!observed.has(wall)) {
           observed.add(wall);
           resize.observe(wall);
@@ -53,7 +52,7 @@ export function useSeatStepAside(active: boolean, card: RefObject<HTMLElement | 
     if (probe.current) resize.observe(probe.current);
     schedule();
     const mutations = new MutationObserver(schedule);
-    mutations.observe(document.body, {
+    mutations.observe(frameRoot, {
       childList: true,
       subtree: true,
       attributes: true,

@@ -40,7 +40,7 @@ describe('the work card in the notice seat', () => {
       vi.advanceTimersByTime(12_000);
     });
     expect(screen.getByTestId('work-run-title')).toHaveTextContent('Checking the wiki');
-    expect(screen.getByTestId('work-run-line')).toHaveTextContent('Claude Agent · reading wiki/beta');
+    expect(screen.getByTestId('work-run-line')).toHaveTextContent(/^wiki\/beta$/);
     expect(screen.getByTestId('work-run-figures')).toHaveTextContent('2 pages read · 12s');
     expect(screen.getByRole('progressbar')).not.toHaveAttribute('aria-valuenow');
     expect(screen.getByTestId('work-run-card').textContent).not.toMatch(/%| of \d/);
@@ -57,8 +57,8 @@ describe('the work card in the notice seat', () => {
     const id = workRuns.begin({ folder: FOLDER, owner: 'launch:claude-acp', agent: 'Claude Agent', startedAt: 10_000 });
     renderCard();
     act(() => workRuns.finish(id, { kind: 'report', report: { itemCount: 3, pageCount: 2, payload: null } }, 40_000));
-    expect(screen.getByTestId('work-run-title')).toHaveTextContent('Wiki check finished');
-    expect(screen.getByTestId('work-run-detail')).toHaveTextContent('3 findings on 2 pages. Check results lists them.');
+    expect(screen.getByTestId('work-run-title')).toHaveTextContent('3 findings on 2 pages');
+    expect(screen.getByTestId('work-run-light')).toHaveAttribute('data-tint', 'found');
     fireEvent.click(screen.getByTestId('work-run-open-results'));
     expect(push).toHaveBeenCalledWith('/library/');
     expect(workRuns.read().door).toMatchObject({ runId: id, kind: 'results' });

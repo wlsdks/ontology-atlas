@@ -8,12 +8,15 @@ import type { WorkRun, WorkRunLine } from '../model/work-run';
 /** Long names keep their start and their ending, where a file's name is told apart. */
 const PAGE_NAME_MAX = 40;
 
-export function displayPageName(page: string): string {
+/** The card's line holds the name alone, in a narrower column than the stage's. */
+const CARD_PAGE_NAME_MAX = 34;
+
+export function displayPageName(page: string, max = PAGE_NAME_MAX): string {
   const name = page.normalize('NFC');
   const chars = [...name];
-  if (chars.length <= PAGE_NAME_MAX) return name;
-  const tail = Math.ceil((PAGE_NAME_MAX - 1) * 0.6);
-  return `${chars.slice(0, PAGE_NAME_MAX - 1 - tail).join('')}…${chars.slice(chars.length - tail).join('')}`;
+  if (chars.length <= max) return name;
+  const tail = Math.ceil((max - 1) * 0.6);
+  return `${chars.slice(0, max - 1 - tail).join('')}…${chars.slice(chars.length - tail).join('')}`;
 }
 
 /** How a surface sets the two facts that lead its line: the page being read and the count. */
@@ -32,19 +35,34 @@ export interface WorkRunCopy {
   figures: ReactNode | null;
 }
 
-export function useWorkRunCopy(run: WorkRun, elapsed: string | null, marks: WorkRunMarks = PLAIN): WorkRunCopy {
+/**
+ * The stage names the agent beside what it does; the card, a corner on another screen, says only
+ * what it does, and its ended states use sentences short enough for its two lines.
+ */
+export type WorkRunPlace = 'stage' | 'card';
+
+export function useWorkRunCopy(
+  run: WorkRun,
+  elapsed: string | null,
+  marks: WorkRunMarks = PLAIN,
+  place: WorkRunPlace = 'stage',
+): WorkRunCopy {
   const t = useTranslations('library.check');
   const tChat = useTranslations('acpChat');
   const agent = run.agent;
   const read = run.readCount;
+  const onCard = place === 'card';
+  const working = (tool: string) => (onCard ? tool : t('working', { agent, tool }));
   const lineText = (line: WorkRunLine): ReactNode => {
     switch (line.kind) {
       case 'connecting':
-        return t('working', { agent, tool: tChat('status.starting') });
+        return working(tChat('status.starting'));
       case 'reading':
-        return t.rich('reading', { agent, page: displayPageName(line.page), name: (chunks) => marks.page(chunks) });
+        return onCard
+          ? marks.page(displayPageName(line.page, CARD_PAGE_NAME_MAX))
+          : t.rich('reading', { agent, page: displayPageName(line.page), name: (chunks) => marks.page(chunks) });
       case 'writing':
-        return t('writing', { agent });
+        return onCard ? t('cardWriting') : t('writing', { agent });
       case 'tool': {
         const { kind, text } = line.label;
         const tool = kind === 'known'
@@ -52,7 +70,7 @@ export function useWorkRunCopy(run: WorkRun, elapsed: string | null, marks: Work
           : kind === 'kind'
             ? tChat(`toolKind.${text}` as Parameters<typeof tChat>[0])
             : text;
-        return t('working', { agent, tool });
+        return working(tool);
       }
     }
   };
@@ -64,14 +82,16 @@ export function useWorkRunCopy(run: WorkRun, elapsed: string | null, marks: Work
       return { title: t('title'), detail: t('asking', { agent }), figures };
     case 'found':
       return {
-        title: t('doneTitle'),
-        detail: t('doneFindings', { findings: run.report?.itemCount ?? 0, pages: run.report?.pageCount ?? 0 }),
+        title: t('foundTitle', { findings: run.report?.itemCount ?? 0, pages: run.report?.pageCount ?? 0 }),
+        detail: t('foundBody'),
         figures: null,
       };
     case 'clean':
       return { title: t('doneTitle'), detail: t('doneClean'), figures: null };
     case 'unreadable':
-      return { title: t('unreadTitle'), detail: t('unreadBody'), figures: null };
+      return onCard
+        ? { title: t('unreadCardTitle'), detail: t('unreadCardBody'), figures: null }
+        : { title: t('unreadTitle'), detail: t('unreadBody'), figures: null };
     case 'failed':
       return { title: t('failedTitle'), detail: t('failedBody', { agent }), figures: null };
     case 'stopped':

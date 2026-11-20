@@ -388,6 +388,7 @@ export function LibraryCheckReport({
   folder,
   onStopCheck,
   onOpenConversation,
+  conversationOpen = false,
   t,
 }: {
   /**
@@ -445,6 +446,8 @@ export function LibraryCheckReport({
   folder?: string;
   onStopCheck?: () => void;
   onOpenConversation?: () => void;
+  /** The conversation stands beside the report, already showing the agent at work. */
+  conversationOpen?: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   useWorkRunStage(folder ?? "", folder !== undefined);
@@ -670,7 +673,7 @@ export function LibraryCheckReport({
         )}
 
         {checkRun && checkRunning ? (
-          <WikiCheckStage run={checkRun} onStop={() => onStopCheck?.()} onReview={() => onOpenConversation?.()} />
+          <WikiCheckStage run={checkRun} besideConversation={conversationOpen} onStop={() => onStopCheck?.()} onReview={() => onOpenConversation?.()} />
         ) : checkRun?.phase === "unreadable" || checkRun?.phase === "failed" ? (
           <div data-testid="library-check-ended" data-phase={checkRun.phase} className="mt-4 flex flex-col items-start gap-1.5">
             <p className="text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]">

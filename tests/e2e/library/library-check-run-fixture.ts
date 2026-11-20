@@ -156,12 +156,15 @@ export const harnessCalls = (page: Page) =>
 export const rail = (page: Page) => page.getByTestId("app-nav-rail");
 
 /** Opens the folder, presses Check wiki in the Library and waits for the agent to receive the brief. */
-export async function startCheck(page: Page, options: { offerUpdate?: boolean } = {}): Promise<LibraryWorkHarness> {
+export async function startCheck(
+  page: Page,
+  options: { offerUpdate?: boolean; locale?: string } = {},
+): Promise<LibraryWorkHarness> {
   await seedFirstRunSeen(page);
   await tapBridge(page, { offerUpdate: options.offerUpdate ?? false });
   const harness = await installLibraryWorkHarness(page, { files: CHECK_FILES });
-  await openFolderFromFirstRun(page, "en");
-  await rail(page).getByRole("link", { name: "Library", exact: true }).click();
+  await openFolderFromFirstRun(page, options.locale ?? "en");
+  await rail(page).getByTestId("app-nav-rail-item-library").click();
   await page.getByTestId("library-workspace-wiki").click();
   await page.getByTestId("library-lint").click();
   await expect.poll(() => harnessCalls(page), { message: "the check's brief reaches the agent" }).toContain("session/prompt");
@@ -169,6 +172,6 @@ export async function startCheck(page: Page, options: { offerUpdate?: boolean } 
 }
 
 export async function goToMap(page: Page) {
-  await rail(page).getByRole("link", { name: /^Map/ }).click();
+  await rail(page).getByTestId("app-nav-rail-item-map").click();
   await expect(page).toHaveURL(/\/topology\//);
 }
