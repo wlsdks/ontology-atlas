@@ -508,3 +508,11 @@ New keys under `wikiReader` in `messages/<locale>/library.json` (English source)
     (`/library/?tab=ontology&slug=`).
 - 2026-11-20: W2 criterion 8 names the capture folder's Korean question in English, since
   authored spec prose is English (`pnpm docs:language`).
+- 2026-11-20: W2 after the security review.
+  - A desk row lands on the block that shows its sentence, and uses the line only to choose
+    between identical sentences. If no block shows it, there is no mark and the page opens at
+    its top.
+  - "Changed since written" needs a recorded sha256 that differs from the current one.
+  - The foot counts only the citations the reader drew.
+  - The popover does not read a source listed above 5 MB, and offers the source instead.
+  - Each shown line stops at 400 characters.

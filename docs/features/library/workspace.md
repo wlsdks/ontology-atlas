@@ -221,7 +221,7 @@ folder with even one node still opens on the map.
 **The Wiki reader speaks about the page in front of you** (2026-11-20, W2 in
 `docs/specs/2026-11-20-library-rooms.md`). The row above an open page holds Close, a Back
 press while links have been followed, the page's state, a changed-source badge when a cited
-file changed after the page was written, and who wrote it when; the folder's counts stay on
+file's sha256 differs from the one the page recorded, and who wrote it when; the folder's counts stay on
 the Wiki home and in Check results, one Close away. A link reads as its target's title from
 the listing already in memory (no other page is read): a concept carries its kind glyph and
 opens in the Ontology tab, a page opens in place and Back returns to the scroll it was left
@@ -230,11 +230,12 @@ danger ink and says, on hover, focus and to a screen reader, that nothing in the
 that name. A citation is a quiet chip after its sentence; pressing it reads that one file
 exactly as opening the source would and opens a popover beside the chip (above it when there
 is no room below, never over it) with the cited unit and one unit either side, the file and
-line, the changed or missing state, and Open the source; Escape or a second press closes it
-and focus returns to the chip. The page ends with three short lists by title — the sources it
+line, the changed or missing state, and Open the source; a file listed above 5 MB is not read
+and the popover says it is too large to show; Escape or a second press closes it and focus
+returns to the chip. The page ends with three short lists by title — the sources it
 cites with their citation counts, the pages that link here, and the concepts it names — each
-row the same height and wrapped rather than cut. A desk row opens its page at the claim:
-one scroll when the claim is off screen, none when it is already visible, and a mark behind it
+row the same height and wrapped rather than cut. A desk row opens its page at the block that shows its claim
+(at the top, unmarked, when none does): one scroll when the claim is off screen, none when it is already visible, and a mark behind it
 that holds for 1.2s and fades over the slow duration (at once and without a fade under reduced
 motion); Close returns to the desk with its results and scroll as they were.
 
