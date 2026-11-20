@@ -228,14 +228,17 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
   const results = page.getByTestId('question-desk-results');
   await expect(results).toBeVisible();
   await page.getByTestId('question-desk-coverage-info').click();
-  await expect(page.getByTestId('question-desk-coverage-info-popover')).toContainText('Wiki 2/2 · Sources 2/2 · 0 leads omitted');
+  const coverage = page.getByTestId('question-desk-coverage-info-popover');
+  await expect(coverage).toContainText('Wiki 2/2 · Sources 2/2');
+  await expect(coverage).not.toContainText('leads omitted');
   await page.keyboard.press('Escape');
   await page.getByTestId('question-desk-show-more').click();
   await expect(results.getByRole('button', { name: 'Refund approval immediately restores stock.' })).toBeVisible();
-  // Each source line both claims cite is that claim's row, opened from its cited file: one sentence, one row.
+  // The line the stale claim cites says something else, so it stands beside the claim; the
+  // inventory line says the same sentence as the claim citing it, so that pair is one row.
+  await expect(results.getByRole('button', { name: 'Refund approval queues a stock restoration job.' })).toHaveCount(1);
   await expect(results.getByRole('button', { name: 'Refund approval does not immediately restore inventory.' })).toHaveCount(1);
-  await expect(results.getByRole('button', { name: 'Refund approval queues a stock restoration job.' })).toHaveCount(0);
-  await expect(page.getByTestId('question-desk-results-head')).toHaveText('4 passages found');
+  await expect(page.getByTestId('question-desk-results-head')).toHaveText('5 passages found');
   const stale = page.getByTestId('question-desk-lead').filter({ has: page.getByRole('button', { name: 'Refund approval immediately restores stock.' }) });
   await expect(stale).toContainText('Source needs review');
   await expect(page.getByTestId('question-desk-summarize')).toHaveCount(0);

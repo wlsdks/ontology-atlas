@@ -167,17 +167,32 @@ function leadPlace(lead: DeskLead): [string, number] {
 }
 
 /**
+ * A sentence as compared, not as shown: citations and leading list, quote or heading markers
+ * dropped, then NFC, lower case, single spaces and no trailing punctuation.
+ */
+function comparableSentence(text: string): string {
+  return text.replace(/\[\[src:[^\]]+\]\]/gu, ' ')
+    .replace(/^\s*(?:[-*+]\s+|\d+[.)]\s+|#{1,6}\s+|>\s*)+/u, '')
+    .normalize('NFC').toLocaleLowerCase('und')
+    .replace(/\s+/gu, ' ').trim()
+    .replace(/[\s.,!?;:。．、！？…]+$/u, '');
+}
+
+/**
  * Wiki claims and source passages in one list, best first: rank fusion, then claim, path and line.
- * A passage at the place a listed claim cites is that claim's evidence, which the claim's cited-file
- * press already opens: it folds into the claim and adds its rank to the claim's.
+ * A passage at the place a listed claim cites that says the same sentence is that claim's
+ * evidence, which the claim's cited-file press already opens: it folds into the claim and adds its
+ * rank to the claim's. A cited passage that says something else keeps its own row, so a claim and
+ * the line that contradicts it stand in the list together.
  */
 export function fuseDeskLeads(claims: readonly DeskClaim[], hits: readonly DeskSourceHit[]): DeskLead[] {
   const claimLeads = claims.map((claim): DeskLead => ({ kind: 'claim', key: `claim:${claim.pageSlug}:${claim.line}`, claim }));
   const sourceLeads = hits.map((hit): DeskLead => ({ kind: 'source', key: `source:${hit.path}#${hit.anchor}`, hit }));
   const citedBy = new Map<string, string[]>();
   for (const claim of claims) {
+    const sentence = comparableSentence(claim.text);
     for (const citation of claim.citations) {
-      const place = `source:${citation.path}#${citation.anchor}`;
+      const place = `source:${citation.path}#${citation.anchor}\n${sentence}`;
       citedBy.set(place, [...(citedBy.get(place) ?? []), `claim:${claim.pageSlug}:${claim.line}`]);
     }
   }
@@ -186,7 +201,8 @@ export function fuseDeskLeads(claims: readonly DeskClaim[], hits: readonly DeskS
     const [pathA, lineA] = leadPlace(a);
     const [pathB, lineB] = leadPlace(b);
     return pathA.localeCompare(pathB) || lineA - lineB;
-  }, (lead) => lead.kind === 'source' ? citedBy.get(lead.key) ?? [] : []).map((fused) => fused.item);
+  }, (lead) => lead.kind === 'source' ? citedBy.get(`${lead.key}\n${comparableSentence(lead.hit.text)}`) ?? [] : [])
+    .map((fused) => fused.item);
 }
 
 function dayValue(value: unknown): number {

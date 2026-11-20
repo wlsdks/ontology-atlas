@@ -135,11 +135,12 @@ describe('Library question desk transfer boundary', () => {
     await search();
     expect(screen.getByTestId('question-desk-summarize')).toBeEnabled();
     const leads = screen.getAllByTestId('question-desk-lead');
-    // Line 2 is the place the claim cites, so it is that claim's row, not a second one.
-    expect(leads.map((lead) => lead.dataset.leadKind)).toEqual(['claim', 'source']);
-    expect(screen.getByTestId('question-desk-results-head')).toHaveTextContent('2 passages found');
+    // Line 2 is the place the claim cites, but it says something else: the claim and the line that
+    // contradicts it stand in the list together.
+    expect(leads.map((lead) => lead.dataset.leadKind)).toEqual(['claim', 'source', 'source']);
+    expect(screen.getByTestId('question-desk-results-head')).toHaveTextContent('3 passages found');
     expect(screen.getByRole('button', { name: 'Refund approval immediately restores stock.' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Refund approval queues a stock restoration job.' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Refund approval queues a stock restoration job.' })).toBeInTheDocument();
     for (const lead of leads) expect(lead.textContent).not.toMatch(/\.md#/u);
     const cited = within(leads[0]!).getByRole('button', { name: 'refund.md · line 2' });
     // The second line has one label size; the cited file differs from a file name only by ink.
@@ -191,7 +192,7 @@ describe('Library question desk transfer boundary', () => {
     const labelled = draft.querySelectorAll<HTMLElement>('[data-source-path="sources/refund.md"]')[1]!;
     expect(labelled.firstChild).toHaveTextContent('refund policy');
     expectCitation(labelled, 'refund.md · line 2', 'sources/refund.md#l2');
-    expect(screen.getAllByTestId('question-desk-lead')).toHaveLength(2);
+    expect(screen.getAllByTestId('question-desk-lead')).toHaveLength(3);
     expect(screen.getAllByTestId('question-desk-report-citation-unavailable')).toHaveLength(2);
     expect(screen.queryByRole('button', { name: 'sources/refund.md#bogus' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'external' })).not.toBeInTheDocument();
@@ -484,7 +485,7 @@ describe('Library question desk transfer boundary', () => {
     expect(mocks.status).not.toHaveBeenCalled();
     await search();
     openCoverage();
-    expect(await screen.findByTestId('question-desk-coverage-info-popover')).toHaveTextContent('Wiki 0/0 · Sources 1/1 · 0 leads omitted');
+    expect(await screen.findByTestId('question-desk-coverage-info-popover')).toHaveTextContent('Wiki 0/0 · Sources 1/1');
     expect(screen.getByRole('button', { name: 'Refund approval queues a stock restoration job.' })).toBeInTheDocument();
     expect(mocks.status).not.toHaveBeenCalled();
   });
@@ -514,7 +515,10 @@ describe('Library question desk transfer boundary', () => {
     const title = within(unknown).getByRole('heading', { name: 'No matching passage yet' });
     expect(title.nextElementSibling).toBe(screen.getByTestId('question-desk-coverage-info'));
     openCoverage();
-    expect(await screen.findByTestId('question-desk-coverage-info-popover')).toHaveTextContent('Wiki 1/1 · Sources 1/1 · 0 leads omitted');
+    const popover = await screen.findByTestId('question-desk-coverage-info-popover');
+    // Nothing was omitted, so the compact line names no omitted leads.
+    expect(popover).toHaveTextContent('Wiki 1/1 · Sources 1/1');
+    expect(popover).not.toHaveTextContent('leads omitted');
     expect(screen.getByTestId('question-desk-summarize')).toBeEnabled();
     expect(screen.queryByText('No matching wiki fact or decision in the pages read.')).not.toBeInTheDocument();
     expect(screen.queryByText(/No matching text in the sources Atlas could read/)).not.toBeInTheDocument();
@@ -717,11 +721,16 @@ describe('Library question desk transfer boundary', () => {
     render(<Desk includeWiki={false} extraPages={[rules]} />);
     await search();
     expect(screen.getAllByTestId('question-desk-lead')).toHaveLength(3);
-    // Eight rules and three notes, less note 1: it stands at line 2, the place the rules cite.
-    expect(screen.getByTestId('question-desk-results-head')).toHaveTextContent('10 passages found');
+    // Eight rules and three notes. Note 1 stands at line 2, where the rules cite, but says another
+    // sentence, so it keeps its own row. The file holds six matches with its heading and gives three,
+    // so the compact line names the three omitted.
+    expect(screen.getByTestId('question-desk-results-head')).toHaveTextContent('11 passages found');
+    openCoverage();
+    expect(await screen.findByTestId('question-desk-coverage-info-popover')).toHaveTextContent('Wiki 1/1 · Sources 1/1 · 3 leads omitted');
+    fireEvent.keyDown(window, { key: 'Escape' });
     fireEvent.click(screen.getByTestId('question-desk-show-more'));
     const leads = screen.getAllByTestId('question-desk-lead');
-    expect(leads).toHaveLength(10);
+    expect(leads).toHaveLength(11);
     expect(screen.queryByTestId('question-desk-show-more')).not.toBeInTheDocument();
     await waitFor(() => expect(document.activeElement).toBe(leads[3]!.querySelector('[data-lead-open]')));
   });
@@ -734,9 +743,9 @@ describe('Library question desk transfer boundary', () => {
     expect(screen.getByTestId('question-desk-coverage-info')).toHaveAccessibleName('Search coverage and limits');
     const glyph = openCoverage();
     const popover = await screen.findByTestId('question-desk-coverage-info-popover');
-    expect(popover).toHaveTextContent('Wiki 1/1 · Sources 1/1 · 0 leads omitted');
+    expect(popover).toHaveTextContent('Wiki 1/1 · Sources 1/1');
     // Every limit is zero, so the popover names none of them; the search method still stands.
-    expect(popover).not.toHaveTextContent(/Unreadable|Changed during|Skipped by/u);
+    expect(popover).not.toHaveTextContent(/leads omitted|Unreadable|Changed during|Skipped by/u);
     expect(popover).toHaveTextContent('Search matches words and uses the last listed file versions');
     expect(screen.getAllByText(/Source freshness does not establish/)).toHaveLength(1);
     fireEvent.keyDown(window, { key: 'Escape' });

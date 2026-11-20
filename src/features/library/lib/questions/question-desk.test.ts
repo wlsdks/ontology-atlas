@@ -435,13 +435,37 @@ describe('question desk home and lead order', () => {
     expect(leads.map((lead) => lead.key)).toEqual(['claim:wiki/z:4', 'source:sources/a.md#l3', 'claim:wiki/z:9', 'source:sources/b.md#l1']);
   });
 
-  it('shows a passage a listed claim cites once, as that claim, and lifts the claim by its rank', () => {
-    const citing = { ...claimAt('wiki/z', 9), citations: [{ path: 'sources/a.md', anchor: 'l17' }] };
+  it('shows the sentence a listed claim cites once, as that claim, and lifts the claim by its rank', () => {
+    const citing = {
+      ...claimAt('wiki/z', 9),
+      text: 'Returns  are accepted for 15 days. [[src:sources/a.md#l17]]',
+      citations: [{ path: 'sources/a.md', anchor: 'l17' }],
+    };
     const leads = fuseDeskLeads([claimAt('wiki/z', 4), citing], [
-      { path: 'sources/a.md', anchor: 'l17', text: 'claim 9', score: 2 },
+      // NFC, case, runs of whitespace, a list marker and trailing punctuation do not make it another sentence.
+      { path: 'sources/a.md', anchor: 'l17', text: '- RETURNS are accepted\tfor 15 days', score: 2 },
       { path: 'sources/a.md', anchor: 'l18', text: 'next line', score: 1 },
     ]);
     expect(leads.map((lead) => lead.key)).toEqual(['claim:wiki/z:9', 'claim:wiki/z:4', 'source:sources/a.md#l18']);
+  });
+
+  it('folds composed and decomposed Hangul as one sentence', () => {
+    const sentence = '배송 완료 후 15일 안에는 반품할 수 있다.';
+    const citing = { ...claimAt('wiki/z', 9), text: sentence, citations: [{ path: 'sources/a.md', anchor: 'l17' }] };
+    const leads = fuseDeskLeads([citing], [{ path: 'sources/a.md', anchor: 'l17', text: sentence.normalize('NFD'), score: 1 }]);
+    expect(leads.map((lead) => lead.key)).toEqual(['claim:wiki/z:9']);
+  });
+
+  it('keeps a cited passage that says something else as its own row beside the claim', () => {
+    const citing = {
+      ...claimAt('wiki/z', 9),
+      text: 'Refund approval immediately restores stock. [[src:sources/refund.md#l2]]',
+      citations: [{ path: 'sources/refund.md', anchor: 'l2' }],
+    };
+    const leads = fuseDeskLeads([citing], [
+      { path: 'sources/refund.md', anchor: 'l2', text: 'Refund approval queues a stock restoration job.', score: 1 },
+    ]);
+    expect(leads.map((lead) => lead.key)).toEqual(['claim:wiki/z:9', 'source:sources/refund.md#l2']);
   });
 
   it('marks whole question terms and the stems of longer Hangul terms, nothing else', () => {

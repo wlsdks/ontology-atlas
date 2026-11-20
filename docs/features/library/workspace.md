@@ -48,15 +48,18 @@ or are missing) and up to five wiki pages by the day the folder lists for them, 
 how many sources each cites; a folder with neither shows its first three originals.
 Results are one list, best first: wiki claims and source passages fused by reciprocal
 rank (`lead-fusion.ts`). A source passage at the exact place a listed claim cites
-is folded into that claim, which keeps both ranks, so one sentence stands once. The
+that says the same sentence (compared after NFC, case, spacing and trailing
+punctuation) is folded into that claim, which keeps both ranks, so one sentence
+stands once; a cited passage that says something else keeps its own row beside the
+claim. The
 best three show; Show N more appends the rest and moves focus to the first new row.
 A row is the sentence, question terms in a stronger weight, then where it lives in
 one label size: the page title or file name and its line, a badge only when a cited
 source changed, is missing or nothing is cited, and up to two cited files that open
 the source at the line, then "+N" for the rest. The head counts the rows; with no
-match the no-match title is the head. An info glyph opens read coverage, only the
-limits that are not zero, the search method and the freshness caveat once in a
-popover. Asking again keeps the old rows until the new ones arrive and swaps them in
+match the no-match title is the head. An info glyph opens read coverage (omitted
+leads named only when there are some), only the limits that are not zero, the
+search method and the freshness caveat once in a popover. Asking again keeps the old rows until the new ones arrive and swaps them in
 place.
 A matching hash
 means the cited source bytes agree with the page's receipt; it does not verify

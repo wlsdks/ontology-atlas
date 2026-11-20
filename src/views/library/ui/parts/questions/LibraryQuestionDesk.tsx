@@ -215,10 +215,12 @@ export function LibraryQuestionDesk({
   const coverage = result ? t('coverage', {
     readPages: result.readPages, totalPages: result.totalPages, readSources, totalSources: result.totalSources,
   }) : '';
-  const coverageCompact = result ? t('coverageCompact', {
-    readPages: result.readPages, totalPages: result.totalPages, readSources, totalSources: result.totalSources,
-    omitted: result.omittedClaims + result.omittedSources,
-  }) : '';
+  const omittedLeads = result ? result.omittedClaims + result.omittedSources : 0;
+  /* Like the popover, the compact line names omitted leads only when there are some. */
+  const coverageCompact = result ? [
+    t('coverageCompact', { readPages: result.readPages, totalPages: result.totalPages, readSources, totalSources: result.totalSources }),
+    ...(omittedLeads > 0 ? [t('coverageOmitted', { count: omittedLeads })] : []),
+  ].join(' · ') : '';
   const limits = result ? t('limits', {
     unreadable: result.unreadableSources, changed: result.changedSources,
     skipped: result.totalSources - result.plannedSources,
