@@ -386,10 +386,7 @@ pub(super) fn collect(
                 url: format!("https://github.com/{repository}/pull/{number}"),
                 updated_at: updated_at.into(),
                 fetched_at: chrono::Utc::now().to_rfc3339(),
-                digest: format!(
-                    "{:x}",
-                    Sha256::digest(format!("{title}\0{body}\0{updated_at}"))
-                ),
+                digest: lower_hex(&Sha256::digest(format!("{title}\0{body}\0{updated_at}"))),
                 integration: commit.hash.clone(),
                 #[cfg(unix)]
                 merge_commit: merge.into(),

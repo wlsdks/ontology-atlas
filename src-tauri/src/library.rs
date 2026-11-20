@@ -8,6 +8,7 @@ use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 
+use crate::lower_hex::lower_hex;
 use sha2::{Digest, Sha256};
 
 use crate::{canonical_root, canonical_source_root, resolve_existing_inside};
@@ -150,7 +151,7 @@ fn copy_hashing(
         output.write_all(chunk)?;
         length += read as u64;
     }
-    Ok((format!("{:x}", hasher.finalize()), length))
+    Ok((lower_hex(&hasher.finalize()), length))
 }
 
 fn hash_and_length(path: &Path) -> Result<(String, u64), String> {
