@@ -3,7 +3,7 @@ title: Long work keeps running when you leave, and says so everywhere
 doc_type: spec
 status: current
 date: 2026-11-20
-decisions: []
+decisions: [475f5a7e]
 area: desktop
 ---
 
@@ -200,14 +200,205 @@ Ranked. Each adopts the six rules and the seat; none invents another.
 3. **Folder open on every tab.** The non-map opening pane shows the count that already exists, and a way back to the folder list. Next on the first owner report of a blind open at scale.
 4. **Keep pace while hidden**, if criterion 7 passes only narrowly; and **a system notification on finish**. One-way neighbour: needs a decision record overturning the 2026-08-24 hold, and a new dependency.
 5. **Findings that survive reopening.** One-way: a new file under `.ontology-atlas/` is a vault contract. Next when a person reports re-running a check only to see old findings.
-6. **Writing Library turns keep running.** Slice 1 parks only the read-only check when a person leaves Library; a turn that may write still ends with the screen, since its permission cards would have nowhere to stand. Next when a person reports losing an answer or an edit by switching tab.
+6. **Writing Library turns keep running.** Slice 1 parks only the read-only check when a person leaves Library; a turn that may write still ends with the screen, since its permission cards would have nowhere to stand. Specified below under "Slice: a Library turn that may write keeps running when you leave Library", after the owner asked on 2026-11-20 that background work never stop.
 7. **Findings arriving one by one**; **question-desk reports and Harness reads keep their result when you leave**; **bounding the check's brief** past the largest page count the agent accepts.
 
-One-way items: none in slice 1. Items 4 (notification) and 5 above each need a decision record before work starts.
+One-way items: none in slice 1. Items 4 (notification), 5 and 6 above each need a decision record before work starts.
 
 ## Owner question
 
 None. Decided: "background" means another tab and a hidden window, not a quit app, because the person's next act after pressing Check wiki is returning to their editor, and quitting stops agents by an existing rule. To reverse: add "runs with the app quit" as a new spec; nothing here blocks it.
+
+## Slice: a Library turn that may write keeps running when you leave Library
+
+The product planner wrote this on 2026-11-20 as Later item 6, specified, and revised it the same day after an independent review. **One-way**: it changes what an agent may write (a Library turn keeps writing after its screen is gone) and where a person may approve (a second surface). Decision 475f5a7e (`docs/records/decisions/2026-11-20-library-writing-turn-outlives-screen-475f5a7e-4c15-4a4a-be7b-60738d60c86b.md`) covers it. The Korean strings are in the planner's hand-back and move into `messages/ko/` with the building step.
+
+**Built in two steps, by the lead's decision.**
+
+- **A. The turn survives, and Review opens the Library conversation.** Everything below except the Runs list: the turn and its record outlive the screen, the card waits in view, **Review** uses the door slice 1 built, Stop is enforced. Criteria 1, 4, 5, 6 and 8, and the clauses of 2 and 7 marked A.
+- **B. The request is answered in the Runs list.** Starts only after A has merged and criterion 1's capture exists. Criterion 3 and the clauses of 2 and 7 marked B. B edits slice 1's Flow step 6 and its "Agent asks before acting" row, which stay true until then.
+
+### Person and moment
+
+- **Who.** The same developer, in the installed macOS app, with an agent already signed in.
+- **Moment.** They press **Write wiki pages** (or **Fix with agent**, **Bring from a service**, **Propose as concept**, or send a typed request in the Library conversation), then go to the map or Automations while the agent works.
+- **Observed.** The owner, 2026-11-20 (translated): "Without stopping, shown at the top of the screen or as a popup, background work must be possible while I keep moving around seamlessly." The owner, 2026-11-12: keep the agent working when the person moves to another screen mid-answer (decision 387a3c17, `Why`). The owner, 2026-11-16: approving every write makes the in-app agent tiresome enough not to use (decision 15443720, `Why`).
+- **Not observed.** No capture exists of a person leaving Library during a writing turn, or of a permission request arriving while they are on another screen. Criterion 1 takes it first.
+
+### Today
+
+- The Library dock keeps its conversation only for a read-only turn (`src/views/library/ui/parts/agent/LibraryAgentDock.tsx:353-354`; `src/widgets/acp-chat-panel/model/kept-panels.ts:46-48`), and the session's read-only flag covers the wiki check alone (`src/views/library/ui/library-page/use-library-turns.ts:136-138`). Any other Library turn is dropped with the screen (`kept-panels.ts:50-55`) and the session's cleanup stops the agent (`src/features/acp-session/model/use-acp-session.ts:1418-1425`).
+- A question-desk answer and an answer refresh are read-only only by a ref of the Library page (`use-library-turns.ts:135`, `:408-410`), which nothing outside the page can read.
+- The map, project and Harness docks keep any turn, with no such limit (`src/views/home/ui/TopologyAgentDock.tsx:289`, `src/views/project-detail/ui/parts/ProjectAgentDock.tsx:182`, `src/views/architecture/ui/ArchitectureAgentDock.tsx:161`). A kept conversation is parked hidden and inert (`src/widgets/acp-chat-panel/ui/AcpChatPanelKeeper.tsx:33`); decision 387a3c17 records as dissent that nothing shows it working or waiting, and that a waiting permission has no time ceiling.
+- Seating a conversation for the same folder elsewhere removes a parked one that may write (`kept-panels.ts:62-70`); decision 387a3c17 states the effect: opening the agent elsewhere ends the kept one first.
+- A permission request is a promise with no timer: it resolves only by an answer, by Stop, or by the agent process ending (`use-acp-session.ts:804-851`, `:1361`, `:992-998`). A waiting request is not counted as a silent turn (`src/features/acp-session/model/turn-liveness.ts:45`).
+- Two standing choices answer without a card. The wiki write mode, `auto` by default (`src/shared/lib/preferences/appearance-preferences.ts:892`; decision 2026-09-07, `docs/DECISIONS.md:554`), allows a wiki page write that fits the template. The mode, the page text, the source list and the concept index it judges with are values of the Library page's last render (`use-library-turns.ts:132`, `:174-187`, `:367-377`), and a parked conversation keeps the props of the last render it was given (`src/widgets/acp-chat-panel/ui/KeptPanelSeat.tsx:18-20`, `kept-panels.ts:72-76`). Auto-approve, kept per folder (decisions 15443720, 04edab8a), is read at each request (`use-acp-session.ts:834-850`). Neither answers in a read-only turn (`:826`, `:834`).
+- **Stop** asks and does not enforce: it leaves the open request unanswered and asks the agent to cancel (`src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx:446-450`, `use-acp-session.ts:1339-1344`); only closing the session ends the process (`:1346-1385`). The request path does not read that Stop was pressed (`:770-851`; the flag is read at `:606` and `:1302` only).
+- For a file write, the permission card shows the action, the full path and, for a wiki page, whether the page keeps its shape; it draws no line count and no text of the change (`src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx:704-772`). The page is judged from the request itself and the page on disk (decision 2026-09-06, `docs/DECISIONS.md:725`; `src/features/library/lib/wiki/judge-page-write.ts:102-106`). Outside-folder status is computed from the folder path the card is given (`AcpPermissionCard.tsx:209`). **Allow once** is disabled while an ontology change's basis is loading or its folder does not match (`:308`). For a file request focus lands on **Deny** (`:293-296`); once an answer is sent a second press on that card does nothing (`:298-299`).
+- What a turn leaves when it ends is done by the Library page: the pages it changed, the fixed mark, the log line (`use-library-turns.ts:454-523`). A turn that did not complete adds no log line and no written-page receipt (`:470-480`). Whether a Library turn is running is page state that starts false on each visit (`src/views/library/ui/LibraryPage.tsx:153-158`), the check excepted.
+- Each tool call reaches the app with its kind, its status and its input (`use-acp-session.ts:67-79`); an allowed ontology write is followed to the result the agent reports (`:741-755`).
+- The seat holds two kinds of run, the wiki check and a scheduled check (`src/features/work-run/model/work-run-store.ts:35-37`). A check that asks shows **Review**, which opens Library (`src/features/work-run/ui/WorkRunCard.tsx:231-232`, `src/features/work-run/ui/use-run-doors.ts:10-15`), and no **Stop** (`WorkRunCard.tsx:283-287`); a card hidden before the ask stays hidden (`src/features/work-run/model/work-run.ts:108-114`). The rail tile knows running and finished only (`src/app/providers/AppShell.tsx:340-360`). The centred Runs list shows the selected run's facts on the right (`src/features/work-run/ui/WorkRunsDialog.tsx:57-69`).
+- A compile request names at most 10 sources (`src/features/library/lib/wiki/compile-brief.ts:44`).
+- Unknown: whether an agent program gives up on a request left waiting for a long time, and how long a cooperating agent takes to end after Stop (neither measured). Unknown: pace with the window hidden; no result of slice 1's criterion 7 is recorded under `docs/records/`. Not read: how the transcript draws each finished write.
+
+### Problem and alternatives
+
+A Library turn's survival, its automatic answers and its end-of-turn record all belong to the Library page, so the turn cannot outlive it; and a request that waits away from Library has nowhere to be seen. Parking the conversation alone would be unsafe: the judge would answer from a write mode, page texts and a source list frozen at the moment the person left. Inference from the `auto` default, not a measurement: the requests that still reach a person are the unusual ones (a page that fails its shape, a file outside `wiki/`, a delete, a run, an ontology change), which need the most facts.
+
+**Ranked by value returned against cost.** 1. The turn and its record survive leaving: nothing else exists without it (step A). 2. A request waits in view (A) and is answered where the person is (B). 3. A finished, stopped or ended turn says what it wrote (A). Next after this slice: the same seat for parked map, project and Harness conversations.
+
+| Where the answer is given | Value | Usability | Feasibility | Local-first | Verdict |
+|---|---|---|---|---|---|
+| Status quo: the turn ends with the screen | None | Person must stay in Library | Free | Fits | Lost: it is the complaint |
+| On the card's face (**Allow once**, **Deny**) | Fastest | The card is 144 px tall (`WorkRunCard.tsx:105`): room for a path and a count, not a page verdict or an ontology change review | Small | Fits | Lost: the requests that reach it are the ones a summary serves worst |
+| **Review** opens the Library conversation (as the check does today) | Full facts and every control | Leaves the screen for every request, then a second trip back | Built | Fits | **Step A**: it proves the turn survives before a second approval surface exists. It stays in B as **Open the conversation** |
+| **Review** opens the request in the centred Runs list, drawn by the conversation's own permission card | Full facts, where the person is | One press in, one answer, back where they were | One card component in a second seat; no second set of facts | Fits | **Step B**: the owner's ask, gated on A's capture |
+
+**What the Runs list must show for a safe answer (B)**, all from the one permission card and the same inputs as the conversation: the action; the full path, never truncated; whether it lies outside the turn's folder; for a wiki page the shape verdict and its problems, judged against that folder; for an ontology change the full change review, with **Allow once** disabled whenever the conversation's is; the size line for a request to change a file. The list adds who asks and the agent's last words. It offers **Allow once** and **Deny** only; a wider grant, a correction and "decide later" stay in the conversation, beside the composer they need.
+
+### Flow
+
+1. When the person presses a Library door that writes, or sends a typed request in the Library conversation, Atlas starts the turn as today. The turn's own conversation is its stage; where that conversation is on screen no card is drawn.
+2. When the person goes to any other screen, Atlas keeps the turn running and draws the card: the door's name (a typed request shows its first line), what the agent is doing now, the files written so far, elapsed time, **Stop** and **Hide**; the Library tile rings.
+3. When the agent asks for a write that a standing choice covers, Atlas reads the write mode, the page on disk, the source list and the concept index at that moment and answers as it would in Library, leaving the same transcript line. A mode switched to ask since the turn began makes the next page wait. When Atlas cannot read or judge what it needs, it asks.
+4. When the agent asks for anything else, Atlas changes the card in place to **Waiting for permission** with the time waited, who wants what, **Review** and **Hide**. The Library tile's ring stands still and gains a badge. A card hidden earlier returns. The turn waits; no clock answers.
+5. When the person presses **Review**: in A, Atlas opens Library on the asking agent's conversation at the request, with every control. In B, Atlas opens the Runs list on that run: the agent's last words (up to four lines, cut at the end), the request, and the sentence that this answers one request. Focus starts on **Deny** for a file request and on the request's title for an ontology change.
+6. When the person presses **Allow once** or **Deny** in the list, Atlas sends that answer and shows the conversation's own answered sentence. A request already waiting takes its place; otherwise the list closes, focus returns, and the card shows the turn running again. A request that follows an answer, or arrives while the list is open, is drawn with both buttons disabled for 600 ms, so a press already in motion lands on nothing.
+7. When the person closes the list, presses **Hide**, changes screen or hides the window, Atlas answers nothing and the request keeps waiting.
+8. **The agent is wrong or the evidence is missing.** When Atlas cannot compute the size of a change it says so instead of leaving the line empty; a page that fails its shape lists its problems; a path outside the folder keeps the card's outside-folder title; a request that does not say what it wants shows its own title. When the agent's process ends, a waiting request closes unanswered and the card says the agent ended early and what it had written.
+9. When the turn finishes elsewhere, the card changes in place to the files written with one door: **Open the page** when it wrote exactly one wiki page, **Open the conversation** otherwise. The Library tile carries a count until Library is opened.
+10. When the person presses **Stop**, Atlas closes a waiting request unanswered, refuses every later request of that turn, lets no standing choice answer, and asks the agent to end. The card reads **Stopping** until the turn has ended; if it has not ended in 5 s Atlas ends the agent's process. Only then does the card say it stopped and what was written. A folder switch does the same.
+11. When the person returns to Library mid-turn, the card leaves, the conversation shows the same turn, and the doors that start a turn stay disabled until it ends; its record is written once, whichever screen is open.
+
+### States
+
+Short names: `turn.*` is `workCard.turn.*`, `check.*` is `library.check.*`, `permission.*` is `acpChat.permission.*`.
+
+| State | Web | macOS app |
+|---|---|---|
+| Running, its conversation on screen | Out of scope — the web cannot start an agent turn (`library.stage.blockedWeb`) | No card. The conversation and its door show the turn (`library.conversation.runningLabel`) |
+| Running, another screen | Out of scope — as above | Card: door name, `turn.figures`, the line (`turn.writingFile`, `turn.answering`, or slice 1's reading and tool lines); `workCard.stop`, `workCard.hide`; ring (`workCard.railRunning`) |
+| Running, card hidden | Out of scope — as above | Ring only |
+| Returned to Library mid-turn | Out of scope — as above | No card. The same turn in the conversation; **Write wiki pages** and the other doors disabled as before leaving |
+| Waiting for permission, another screen | Out of scope — as above | Card: `turn.waitingTitle`, `turn.ask.*`; `check.review`, `workCard.hide`; still ring and a badge without a number (`workCard.railWaiting`). Moru holds his neutral pose |
+| Waiting, card hidden after the request | Out of scope — as above | Still ring and badge only, until answered or the next request |
+| Waiting, and the tile also has finished runs to read | Out of scope — as above | The waiting badge wins; the tile's name says both (`workCard.railWaitingAndFinished`); the count returns when none waits |
+| Library on screen with another agent chosen, and the parked turn asks | Out of scope — as above | The card stands in Library too, since the turn's conversation is not on screen; **Review** chooses the asking agent again and shows its request |
+| The wiki check asks | Out of scope — as above | A: as slice 1, `check.asking` and **Review** to Library. B: `check.review` opens the Runs list like any run; no standing choice ever answers a check |
+| Request open in the Runs list (B) | Out of scope — as above | `turn.said`, the permission card with `permission.change*`, `turn.onceOnly`; `permission.reject`, `permission.allowOnce`, `workCard.stop`, `check.openConversation`. Moru is the permission card's own |
+| Answered (B) | Out of scope — as above | `acpChat.permission.answered.*`, then the next request with its buttons disabled for 600 ms, or the list closes |
+| Two runs waiting | Out of scope — as above | Card names the one that asked first and `workCard.moreWaiting`; the list marks each (`workCard.runsWaiting`) |
+| Window hidden while waiting | Out of scope — as above | Nothing drawn. On return the card shows the real time waited |
+| Finished with files written, elsewhere | Out of scope — as above | `turn.writtenTitle`, `turn.wroteOne` or `turn.wroteMany`; `turn.openPage` or `check.openConversation`, `workCard.close`; badge (`workCard.railFinished`) |
+| Finished, no file written | Out of scope — as above | `turn.answeredTitle`; `turn.answeredBody`, or `turn.beyond` when it ran a tool or wrote outside the folder; `check.openConversation`, `workCard.close` |
+| Stop pressed, turn not yet ended | Out of scope — as above | `turn.stoppingTitle`, `turn.stoppingBody`; no button answers anything |
+| Stopped after writing | Out of scope — as above | `turn.stoppedTitle`; `turn.stoppedBody`, or `turn.beyond`; `turn.partial` per cut-off write; `check.openConversation`, `workCard.close`. Stopped with nothing written and nothing run: no card |
+| Agent ended early | Out of scope — as above | `turn.endedTitle`, `turn.endedBody`; `check.openConversation`, `workCard.close`. A list open on its request shows `turn.requestClosed` and no answer buttons |
+| Folder switched or closed | Out of scope — as above | The turn is stopped as in Flow 10. Once, in the new folder: `turn.switchedTitle`, `turn.switchedBody`; `workCard.close`. No ring or badge carries over |
+| A conversation opened elsewhere for the same folder | Out of scope — as above | It shows `acpChat.folderBusy` with `workCard.stop`. It starts no agent, resumes no conversation and sends nothing until the turn ends |
+| A question-desk answer, a report or an answer refresh when Library is left | Out of scope — as above | Ends with the screen, as today; no card. Out of scope below says why |
+
+### Copy
+
+New keys. `turn.*` goes under `workCard` in `messages/<locale>/workCard.json`; `permission.change*` and `folderBusy` in `acpChat.json`. Reused as they are: `library.stage.compile.title`, `library.wiki.fixWithAgent`, `library.sources.import`, `library.wiki.propose` (the card's name for a door-started turn), `library.check.review`, `library.check.openConversation`, `acpChat.permission.*`, `acpChat.status.starting`, `acpChat.elapsed*`. In `turn.ask.unknown`, `{target}` is the request's own title, or `acpChat.permission.unknownTarget` when it has none. The builder checks each card sentence against the card's two lines in both locales.
+
+| Key | Where | en |
+|---|---|---|
+| `workCard.turn.figures` | card | {written, plural, =0 {No file written yet} one {<count>#</count> file written} other {<count>#</count> files written}} · {elapsed} |
+| `workCard.turn.writingFile` | card line | Writing <name>{file}</name> |
+| `workCard.turn.answering` | card line | Writing the answer |
+| `workCard.turn.waitingTitle` | card | Waiting for permission · {elapsed} |
+| `workCard.turn.ask.edit` | card | {agent} wants to change <name>{target}</name> |
+| `workCard.turn.ask.delete` | card | {agent} wants to delete <name>{target}</name> |
+| `workCard.turn.ask.execute` | card | {agent} wants to run <name>{target}</name> |
+| `workCard.turn.ask.read` | card | {agent} wants to read <name>{target}</name> |
+| `workCard.turn.ask.ontology` | card | {agent} proposes: <name>{target}</name> |
+| `workCard.turn.ask.unknown` | card | {agent} asks: <name>{target}</name> |
+| `workCard.turn.said` | Runs list | {agent} said |
+| `workCard.turn.onceOnly` | Runs list | Here you answer this one request. To allow more than once, or to ask for a correction, open the conversation. |
+| `workCard.turn.requestClosed` | Runs list | The request was closed without an answer. Nothing was written for it. |
+| `workCard.turn.writtenTitle` | card | {count, plural, one {# file written} other {# files written}} |
+| `workCard.turn.wroteOne` | card | {agent} wrote {file}. |
+| `workCard.turn.wroteMany` | card | {agent} wrote {file} and {more, plural, one {# more file} other {# more files}}. |
+| `workCard.turn.openPage` | card button | Open the page |
+| `workCard.turn.answeredTitle` | card | The answer is ready |
+| `workCard.turn.answeredBody` | card | {agent} wrote no file. The conversation has its answer. |
+| `workCard.turn.beyond` | card, Runs list | {agent} also ran a tool or wrote outside this folder. Atlas cannot see what that changed. |
+| `workCard.turn.stoppingTitle` | card | Stopping {agent} |
+| `workCard.turn.stoppingBody` | card | No further write is allowed. If {agent} has not ended in 5 seconds, Atlas ends it. |
+| `workCard.turn.stoppedTitle` | card | {count, plural, =0 {Stopped} one {Stopped after # file} other {Stopped after # files}} |
+| `workCard.turn.stoppedBody` | card | The files already written stay as they are. Nothing else was changed. |
+| `workCard.turn.partial` | card, Runs list | {file} may be incomplete: the write was cut off. Open it before you rely on it. |
+| `workCard.turn.endedTitle` | card | {agent} ended early |
+| `workCard.turn.endedBody` | card | {written, plural, =0 {No file was written} one {# file was written} other {# files were written}} before it ended. The conversation shows how far it got. |
+| `workCard.turn.switchedTitle` | card | Ended when you switched folders |
+| `workCard.turn.switchedBody` | card | {agent} was working in {folder}. {written, plural, =0 {No file was written} one {# file was written} other {# files were written}} there before it ended. |
+| `workCard.railWaiting` | rail tile name | {destination}: waiting for your permission |
+| `workCard.railWaitingAndFinished` | rail tile name | {destination}: waiting for your permission · {count, plural, one {# finished run to read} other {# finished runs to read}} |
+| `workCard.moreWaiting` | card button | {count, plural, other {# more waiting}} |
+| `workCard.runsWaiting` | Runs list mark | Waiting for permission |
+| `acpChat.permission.changeNew` | permission card | New file · {lines, plural, one {# line} other {# lines}} |
+| `acpChat.permission.changeLines` | permission card | {added, plural, one {# line} other {# lines}} added · {removed, plural, one {# line} other {# lines}} removed |
+| `acpChat.permission.changeUnknown` | permission card | Atlas cannot tell how much of this file changes. |
+| `acpChat.folderBusy` | another screen's conversation | The Library conversation is working in this folder. You can ask here when it finishes. Press Stop to end it now. |
+
+### Edge cases
+
+- **What "files written" counts.** Distinct paths inside the folder named by the turn's Edit, Delete and Move tool calls that the agent reported completed, plus one per ontology change a person allowed and the agent reported completed. It is the agent's report, not a reading of the disk. A Run tool call, or a write to a path outside the folder, is never counted and never passed over: `turn.beyond` replaces "wrote no file" and "Nothing else was changed".
+- **Which requests draw the size line.** Only a request to change a file. It is computed from the request's own arguments and, for an edit, from that file inside the folder. Atlas reads no file outside the folder and none under a dot path for it: `changeUnknown` there. Delete, Move, Run, Read and an ontology change draw none.
+- **Zero, one, most.** No file written: the answered state, never "0 files written". One: the singular and **Open the page**. Most: a compile names at most 10 sources and no count of files per turn is measured; the card shows a count and one name, so any count fits. Criterion 7 runs 10 sources.
+- **First run.** A pressed door is a run from the press: the card reads "Connecting" (`acpChat.status.starting`) and the request is sent when the agent is ready, whichever screen is open.
+- **Hangul.** File names and a typed request's first line are shown NFC; names keep their ending (middle truncation), a typed line is cut at its end.
+- **Moved, renamed or unreadable folder.** The agent's write fails as it reports; the turn ends early. A file Atlas cannot read is never allowed without asking.
+- **A source deleted, or the file changed, while the turn runs.** The judge reads the folder at the request, so a page citing a source that is gone asks. The size line and the verdict of a waiting request are computed again when its file changes on disk.
+- **Two presses; two places.** The first answer settles its card, and the next request's buttons take no press for 600 ms. A request is shown in one place: the Runs list while open, otherwise the turn's conversation; a route change closes the list without answering.
+- **Two runs waiting.** A waiting run takes the card over a running one; among waiting runs, the one that asked first. Answering one moves the list to the next. The badge stays until none waits.
+- **Window hidden; app quit.** Hidden: the request waits with no limit, and Atlas shows no system notification (held, 2026-08-24). Quit: agents stop by the existing rule, a waiting request closes unanswered, and nothing is written for it.
+- **Stop and a write in flight.** Atlas does not undo a write. One the agent reports finished is counted; one it reports failed or cancelled, or that was open when Atlas ended the process, is named by `turn.partial`. An allowed request the agent had not started is not run.
+- **The agent switched in Library mid-turn.** The turn keeps running under the agent that started it; the newly chosen agent's conversation shows `acpChat.folderBusy` and starts nothing. A parked wiki check still finishes beside a writing turn, as slice 1 decided, and is the only second agent a folder may have.
+- **Offline.** The agent's own failure arrives as ended early; Atlas adds no network call.
+- **Moru and motion.** Moru uses rows the check's card already uses: his work rows while the turn runs, the held neutral pose while it waits or is stopping, the success row for files written or an answer, the pondering row when it stopped or ended. The card's box never moves; the ring and the bar stop where they are when the turn starts waiting and go on from there when it is answered.
+- **Reduced motion.** The card swaps words without a crossfade, the ring is a still arc with its badge, the bar a still track, Moru holds each clip's first frame; the time waited still updates. No pause button.
+
+### Out of scope
+
+- **A question-desk answer, a report, and an answer refresh that outlive Library.** They are read-only only by the Library page's own state, so a parked one could be answered by a standing choice; and their results are the desk's page state. They end with the screen as today (Later item 7).
+- **Parked map, project and Harness conversations in the seat.** They already keep running; giving them the card is the next slice, after this one has answered real requests.
+- **A system notification or Dock badge for a request waiting unseen.** Held by the 2026-08-24 decision; lifting it needs its own record.
+- **A `wiki/_log.md` line for a turn that did not complete.** Today's line names the sources a turn was sent and would overstate a stopped one; it needs wording of its own.
+- **Undoing what a stopped turn wrote.** Atlas does not hold each file's earlier bytes; Git is the undo (2026-09-07, `docs/DECISIONS.md:473`).
+- **A wider grant, a correction or "decide later" from the Runs list.** They need the composer and stay in the conversation.
+- **The 600 ms hold in the conversation.** Its card keeps today's behaviour; the hold belongs to the list, where one request replaces another under the same pointer.
+- **A second conversation that only reads beside a writing turn.** It needs a read-only guarantee per conversation that only the wiki check has.
+- **The Library's observed-work strip replaying a turn that ran elsewhere.** It is page state; the card and the conversation carry the turn.
+
+### Acceptance criteria
+
+1. **Capture first, then recovery proof (A; gates B).** Given the installed app on current main and a real wiki with at least 3 sources not yet written. When the person presses Write wiki pages and goes to the map. Then the "before" recording shows in the installed app what Today reads from the code: the turn ends. After A, with the wiki write mode set to ask: the card counts files on the map, turns to Waiting for permission on Automations, **Review** opens the request in the Library conversation, **Allow once** changes that file only after the press, and the finished card's door lands on what was written. Installed-app walk with recordings; B does not start without it.
+2. **Only a press answers.** A: given a turn waiting on a request for one file whose hash is recorded. When the route changes three times, **Hide** is pressed, the window is hidden and shown, and the clock advances 30 minutes. Then the hash is unchanged and the request still waits with its time shown; **Deny** leaves it unchanged; on the next request **Allow once** changes exactly that file. B: the same holds when the Runs list is opened and closed by Escape, by Close and by a press outside it; and given two queued requests, two presses on **Allow once** 150 ms apart change only the first file's hash (`tests/e2e/library/library-turn-background.spec.ts`).
+3. **The same facts from the same inputs, once only (B).** Given one request shown in the conversation and in the Runs list. Then both draw the same path, action, outside-folder title, page verdict and size line from one component, with the verdict and the outside-folder status judged against the turn's folder; whenever the conversation's **Allow once** is disabled (basis loading, folder mismatch) the list's is too; the list has **Deny** and **Allow once** and no wider grant, correction or defer. A new 48-line file reads `changeNew` with 48; an edit reads its counts; a path outside the folder or under a dot path reads `changeUnknown`, and no file there is read. At 1040×720 with text at 200%, the longest request (a 200-character path, a failing verdict with four problems) shows its full path, the verdict and both buttons together in the list's pane (`AcpPermissionCard.test.tsx`, `WorkRunsDialog.test.tsx`, `tests/e2e/design-audits/work-card-seat.spec.ts`).
+4. **Library on return is as if the person had stayed (A).** Given the same scripted 3-source compile run once watched in Library and once with the person on the map from the first second. Then the folder holds the same pages with the same bytes and the same log line apart from its time, and Library shows the same Sources states and fixed marks. When the write mode is switched to ask mid-turn, the next page waits. When a source is deleted, or a page changed so it no longer fits, after the person left, the page that cites it asks instead of passing. When the person returns mid-turn, no door starts a second turn and the record is written once. A question-desk answer, a report and an answer refresh still end when Library is left (`use-library-turns` unit test; the e2e spec above).
+5. **Stop is enforced (A).** Given a turn that has written 2 files and waits on a third, run by a planted agent that ignores cancel and keeps asking. When **Stop** is pressed. Then the third file's hash is unchanged; every later request is refused and none is answered by a standing choice, with the write mode on `auto`; the card reads `stoppingTitle` until the turn has ended; the agent's process is gone within 5 s; only then does the card read `stoppedTitle` with 2, and a write open at that moment is named by `turn.partial`. A folder switch gives the same result. With nothing written and nothing run the card closes. The time a cooperating agent takes to end is reported (e2e spec above).
+6. **Ends without the person; one agent (A).** Given a waiting request and no wiki check running. When the agent process is killed: the card reads `endedTitle` and the file is unchanged. When the map's conversation is opened for the same folder, or another agent is chosen in Library: the turn is not cancelled, exactly one agent process exists for the folder throughout, and that conversation shows `folderBusy`, resumes nothing and sends nothing until the turn ends. When the parked turn then asks with another agent chosen in Library: the card stands in Library and **Review** shows the asking agent's request (e2e spec above).
+7. **Two waiting, one seat, bounded cost.** A: given a wiki check with unread findings and a writing turn waiting, the Library tile shows the waiting badge and names both, and the count returns once the request is answered. B: given a wiki check asking under one agent and a typed request asking under another, the card names the first to ask with "1 more waiting", the list marks both, and answering one moves to the other. At 1040×720, 1512×900 and 1920×1080 the card overlaps no control (nine-point hit test). Over a 10-source compile the card redraws at most 4 times a second and retained heap grows by at most 2 MB; peak footprint is reported (`tests/e2e/design-audits/work-card-seat.spec.ts`).
+8. **Smooth (A, again for B's list).** Given running, waiting, running, stopping and finished recorded per frame in the static build. Then no frame interval exceeds 50 ms, the card's box never moves, the ring and the bar stop and resume from the value last drawn, and the Runs list changes height once per request. Under reduced motion nothing moves and every fact still reads (`/ui-proof`).
+
+### Risks
+
+1. **An answer given away from Library is given with less care (B).** Design: the same card, inputs and first focus, one request once, a 600 ms hold under a moving press. Falsifier, in the decision record: a file whose bytes changed before **Allow once**, or the owner allowing from the list what they then undo; then **Review** stays on the Library conversation, which A ships.
+2. **The wait is never seen, so "background" stalls for an hour.** Design: a hidden card returns for a request, the tile badge stays, the card shows the real time waited. Probe: criterion 1 records every wait; one over five minutes with the window hidden is the falsifier the 2026-08-24 hold names and moves the notification slice up. Also measure whether Claude and Codex end a turn left waiting 30 minutes.
+3. **A standing choice writes what the person no longer wants** because the mode, the folder or the turn changed after they left. Design: everything is read at the request; Stop and a folder switch refuse instead of asking. Falsifier, in the decision record: a page that lands under a standing choice after the mode was switched to ask, or after Stop; then writing turns end with the screen again.
+
+### Later
+
+1. **Parked map, project and Harness conversations take the same card and Runs list.** Next when B's criteria pass in the installed app; closes 387a3c17's dissent everywhere.
+2. **A system notification or Dock badge for a request waiting unseen.** One-way: a record overturning the 2026-08-24 hold. Next on the first recorded wait over five minutes.
+3. **The folder list says a turn is writing before a switch ends it.** Next on the first report of a turn lost to a switch.
+4. **A log line for a turn that ended early**; **a second conversation that only reads beside a writing turn**. Next when a person asks what a stopped turn left, or asks the map's agent a question during a compile.
+
+### Owner question
+
+None. Decided: a request ends up answered in the Runs list, once, with the conversation's own card, because it is the only choice that keeps both the facts and the person's place; A ships the Library door first so the second surface is built on evidence. To reverse: stop after A; nothing in A depends on B.
 
 ## Revisions
 
@@ -218,3 +409,5 @@ None. Decided: "background" means another tab and a hidden window, not a quit ap
 - 2026-11-20: added the right-hand dock and tab-change edge cases after the owner asked that the work keep running and stay in view on every screen.
 - 2026-11-20: review round: the read-only flag belongs to the running turn, a write it asks for never takes an automatic approval, only the check is parked when Library goes, a re-check keeps the last findings until a new report arrives, and "Writing Library turns keep running" joined Later. The card's line names only what the agent does, and its found and unreadable states got sentences that fit its two lines.
 - 2026-11-20: Later item 2 built: a scheduled check takes the same card and seat everywhere but Automations, where a stage in the page shows it; the Automations tile rings while it runs and counts finished runs; **Stop** leaves the schedule on; two runs at once open the centred list. Edge cases updated to match.
+- 2026-11-20: Later item 6 specified as its own section after the owner asked that background work never stop while the person moves around: any Library turn that may write keeps running away from Library, a permission request waits in the notice seat and is answered once in the Runs list with the conversation's own card, and a conversation opened elsewhere for the same folder waits instead of ending the turn. One-way; the section names the decision record it needs.
+- 2026-11-20: review round on the item 6 section. Built in two steps: A keeps the turn and its record alive with **Review** opening the Library conversation, B moves the answer into the Runs list only after A's capture. The write mode and the judge are read at each request; Stop and a folder switch refuse later requests and end the process after 5 s; a conversation opened elsewhere starts no agent; question-desk answers, reports and refreshes still end with Library; "files written" names its evidence; the list holds a new request's buttons for 600 ms. States added for a return mid-turn, a switched agent, the check's own request and a tile with both marks. Decision 475f5a7e covers it.
