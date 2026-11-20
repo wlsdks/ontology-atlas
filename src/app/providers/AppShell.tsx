@@ -26,6 +26,7 @@ import { useDataSourceMode, useLocalVault, useVaultSessionIdentityScope } from "
 import {
   isRunActive,
   isScheduledActive,
+  isTurnActive,
   libraryRingRun,
   useMeaningProgress,
   useWorkRunSnapshot,
@@ -52,7 +53,7 @@ import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from
 import { useMapReadingContext } from "@/shared/lib/navigation/map-reading-context";
 import { buildTopologyReturnHref } from "@/entities/knowledge-graph";
 import { useHydrated } from "@/shared/lib/render-timing/use-hydrated";
-import { LibraryRoundsProvider } from "@/views/library";
+import { LibraryFolderMirror, LibraryRoundsProvider } from "@/views/library";
 import { clearPlanningReturn, getPlanningReturn, getPlanningReturnServer, subscribePlanningReturn } from "@/shared/lib/planning/navigation";
 
 /**
@@ -75,6 +76,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           tick twice and could open two adapters for one pass.
         */}
         <LibraryRoundsProvider>
+          <LibraryFolderMirror />
           <ShellColumn>{children}</ShellColumn>
         </LibraryRoundsProvider>
       </AppUpdateProvider>
@@ -346,8 +348,10 @@ function AppNavRailSlot() {
 
 /**
  * The open folder's runs on their tiles, a ring while one runs and a badge until read: the wiki
- * check or the meaning preparation on Library, scheduled checks on Automations. It changes only
- * when a run's phase or card does; the meaning run's fraction joins in `WorkRunRail`.
+ * check, writing turns and the meaning preparation on Library, scheduled checks on Automations. A
+ * turn waiting for permission stills the ring, and its mark wins over the count, which the tile's
+ * name keeps. It changes only when a run's phase or card does; the meaning run's fraction joins in
+ * `WorkRunRail`.
  */
 function useRailWorkRuns(): { rail: RailWorkRun[]; meaningRunId: number | null } {
   const snapshot = useWorkRunSnapshot();
@@ -355,22 +359,28 @@ function useRailWorkRuns(): { rail: RailWorkRun[]; meaningRunId: number | null }
   return useMemo(() => {
     const rail: RailWorkRun[] = [];
     const ring = libraryRingRun(snapshot, folder);
-    let checkUnseen = false;
     let scheduledRunning = false;
     let scheduledUnseen = 0;
+    let libraryWaiting = false;
+    let libraryUnseen = 0;
     for (const entry of snapshot.runs.values()) {
       if (entry.run.folder !== folder) continue;
-      if (entry.kind === "check") checkUnseen ||= !isRunActive(entry.run) && entry.run.unseen;
-      else if (entry.kind === "scheduled") {
+      if (entry.kind === "check") {
+        if (!isRunActive(entry.run) && entry.run.unseen) libraryUnseen += 1;
+      } else if (entry.kind === "turn") {
+        if (entry.run.phase === "asking") libraryWaiting = true;
+        else if (!isTurnActive(entry.run) && entry.run.unseen) libraryUnseen += 1;
+      } else if (entry.kind === "scheduled") {
         if (isScheduledActive(entry.run)) scheduledRunning = true;
         else if (entry.run.unseen) scheduledUnseen += 1;
       }
     }
-    if (ring) rail.push({ destination: "library", state: "running" });
-    else if (checkUnseen) rail.push({ destination: "library", state: "finished", count: 1 });
+    if (libraryWaiting) rail.push({ destination: "library", state: "waiting", finished: libraryUnseen });
+    else if (ring) rail.push({ destination: "library", state: "running" });
+    else if (libraryUnseen > 0) rail.push({ destination: "library", state: "finished", count: libraryUnseen });
     if (scheduledRunning) rail.push({ destination: "automations", state: "running" });
     else if (scheduledUnseen > 0) rail.push({ destination: "automations", state: "finished", count: scheduledUnseen });
-    return { rail, meaningRunId: ring?.kind === "meaning" ? ring.run.id : null };
+    return { rail, meaningRunId: ring?.kind === "meaning" && !libraryWaiting ? ring.run.id : null };
   }, [folder, snapshot]);
 }
 

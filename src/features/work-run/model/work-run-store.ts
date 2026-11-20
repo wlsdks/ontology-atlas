@@ -38,6 +38,23 @@ import {
   type MeaningRun,
   type MeaningRunObservation,
 } from './meaning-run';
+import {
+  beginTurnRun,
+  closeTurnCard,
+  finishTurnRun,
+  hideTurnCard,
+  isTurnActive,
+  observeTurnTool,
+  observeTurnWork,
+  seeTurn,
+  stopTurnRun,
+  turnToolFact,
+  type TurnEndOutcome,
+  type TurnRun,
+  type TurnRunDoor,
+  type TurnToolEvent,
+  type TurnWorkReport,
+} from './turn-run';
 
 /** A door the seat asks the owning screen to open once it is mounted for the run's folder. */
 export type WorkRunDoor = 'results' | 'conversation';
@@ -48,11 +65,18 @@ export type MeaningDoor = 'ask' | 'library';
 /** The meaning run's figures reach the card and the rail at most this often (four a second). */
 export const MEANING_PROGRESS_INTERVAL_MS = 250;
 
-/** One run the session holds: the person's wiki check, a scheduled check, or a folder's meaning preparation. */
+/**
+ * One run the session holds: the person's wiki check, a scheduled check, a Library turn that may
+ * write, or a folder's meaning preparation.
+ */
 export type SeatRun =
   | { kind: 'check'; key: string; run: WorkRun }
   | { kind: 'scheduled'; key: string; run: ScheduledRun }
+  | { kind: 'turn'; key: string; run: TurnRun }
   | { kind: 'meaning'; key: string; run: MeaningRun };
+
+/** Where a turn's card door leads: its conversation, or the one page it wrote. */
+export type TurnDoor = { turnId: number; kind: 'conversation' } | { turnId: number; kind: 'page'; page: string };
 
 export interface WorkRunSnapshot {
   /** Every run the session holds, keyed by `check:<id>` or `scheduled:<ledger id>`, in start order. */
@@ -67,17 +91,22 @@ export interface WorkRunSnapshot {
   automationsShown: boolean;
   /** The open folder's meaning stage (the Wiki desk's meaning line) is on screen. */
   meaningStage: boolean;
+  /** The conversation on screen, the stage of the turn it runs. */
+  turnStage: string | null;
   door: { runId: number; kind: WorkRunDoor } | null;
+  turnDoor: TurnDoor | null;
 }
 
 const NO_RUNS: ReadonlyMap<string, SeatRun> = new Map();
 const EMPTY: WorkRunSnapshot = {
-  runs: NO_RUNS, run: null, folder: null, stageFolder: null, automationsShown: false, meaningStage: false, door: null,
+  runs: NO_RUNS, run: null, folder: null, stageFolder: null, automationsShown: false, meaningStage: false,
+  turnStage: null, door: null, turnDoor: null,
 };
 
 let snapshot: WorkRunSnapshot = EMPTY;
 let stopTurn: { runId: number; stop: () => void } | null = null;
 const scheduledStops = new Map<string, () => void>();
+const turnStops = new Map<number, () => void>();
 let nextId = 0;
 const listeners = new Set<() => void>();
 
@@ -95,6 +124,7 @@ const checkKey = (id: number) => `check:${id}`;
 const scheduledKey = (id: string) => `scheduled:${id}`;
 /** One meaning run per folder: another folder's stays as it was left until that folder opens again. */
 const meaningKey = (folder: string) => `meaning:${folder}`;
+const turnKey = (id: number) => `turn:${id}`;
 
 function checkOf(runs: ReadonlyMap<string, SeatRun>): WorkRun | null {
   for (const entry of runs.values()) if (entry.kind === 'check') return entry.run;
@@ -106,7 +136,7 @@ function publish(next: Partial<WorkRunSnapshot>) {
   if (next.runs) merged.run = checkOf(next.runs);
   const same = merged.runs === snapshot.runs && merged.folder === snapshot.folder && merged.stageFolder === snapshot.stageFolder
     && merged.automationsShown === snapshot.automationsShown && merged.meaningStage === snapshot.meaningStage
-    && merged.door === snapshot.door;
+    && merged.door === snapshot.door && merged.turnStage === snapshot.turnStage && merged.turnDoor === snapshot.turnDoor;
   if (same) return;
   snapshot = merged;
   listeners.forEach((listener) => listener());
@@ -179,8 +209,29 @@ function paceProgress(next: MeaningProgress, at: number) {
   }, wait);
 }
 
-/** A scheduled run that ended and has nothing left to say leaves the session. */
+function changeTurn(id: number, update: (run: TurnRun) => TurnRun) {
+  const entry = snapshot.runs.get(turnKey(id));
+  if (entry?.kind !== 'turn') return;
+  const next = update(entry.run);
+  if (next !== entry.run) publish({ runs: withEntry({ kind: 'turn', key: entry.key, run: next }) });
+}
+
+/** Every turn, through one update; a single new map however many changed. */
+function changeEveryTurn(update: (run: TurnRun) => TurnRun) {
+  let runs: Map<string, SeatRun> | null = null;
+  for (const entry of snapshot.runs.values()) {
+    if (entry.kind !== 'turn') continue;
+    const next = update(entry.run);
+    if (next === entry.run) continue;
+    runs ??= new Map(snapshot.runs);
+    runs.set(entry.key, { ...entry, run: next });
+  }
+  if (runs) publish({ runs });
+}
+
+/** A scheduled run or a turn that ended and has nothing left to say leaves the session. */
 function settledScheduled(entry: SeatRun): boolean {
+  if (entry.kind === 'turn') return !isTurnActive(entry.run) && entry.run.card === 'closed' && !entry.run.unseen;
   return entry.kind === 'scheduled' && !isScheduledActive(entry.run) && entry.run.card === 'closed' && !entry.run.unseen;
 }
 
@@ -250,6 +301,12 @@ export const workRuns = {
   /** A folder switch ends the check with the folder it was reading. */
   leaveFolder(folder: string, at: number) {
     publish({ folder });
+    for (const entry of [...snapshot.runs.values()]) {
+      if (entry.kind !== 'turn' || entry.run.folder === folder || !isTurnActive(entry.run) || entry.run.switched) continue;
+      changeTurn(entry.run.id, (turn) => stopTurnRun(turn, true));
+      publish({ turnDoor: null });
+      turnStops.get(entry.run.id)?.();
+    }
     const run = snapshot.run;
     if (!run || run.folder === folder || !isRunActive(run)) return;
     publish({ runs: withEntry({ kind: 'check', key: checkKey(run.id), run: abandonRun(run, at) }), door: null });
@@ -309,6 +366,12 @@ export const workRuns = {
       if (entry.run.folder === snapshot.folder) meaningStop?.();
       return;
     }
+    if (entry?.kind === 'turn') {
+      if (!isTurnActive(entry.run) || entry.run.phase === 'stopping') return;
+      changeTurn(entry.run.id, (run) => stopTurnRun(run, false));
+      turnStops.get(entry.run.id)?.();
+      return;
+    }
     if (!entry || !isScheduledActive(entry.run)) return;
     changeScheduled(key, closeScheduledCard);
     scheduledStops.get(key)?.();
@@ -318,11 +381,13 @@ export const workRuns = {
     changeCheck(null, hideCard);
     changeEveryScheduled(hideScheduledCard);
     if (snapshot.folder !== null) changeMeaning(meaningKey(snapshot.folder), hideMeaningCard);
+    changeEveryTurn(hideTurnCard);
   },
   closeRun(key: string) {
     const entry = snapshot.runs.get(key);
     if (entry?.kind === 'check') changeCheck(entry.run.id, closeCard);
     else if (entry?.kind === 'meaning') changeMeaning(key, closeMeaningCard);
+    else if (entry?.kind === 'turn') changeTurn(entry.run.id, closeTurnCard);
     else if (entry) changeScheduled(key, closeScheduledCard);
   },
   /** Opening Automations reads every finished scheduled run: its card closes and its badge goes. */
@@ -376,6 +441,61 @@ export const workRuns = {
     changeMeaning(key, closeMeaningCard);
     meaningDoor?.(kind);
   },
+  /** A Library turn that may write, started from a door or a typed request. */
+  beginTurn(input: { folder: string; folderName: string; owner: string; runtimeId: string; agent: string; door: TurnRunDoor; request: string; startedAt: number }): number {
+    nextId += 1;
+    const runs = new Map([...snapshot.runs].filter(([, entry]) => !settledScheduled(entry)));
+    const run = beginTurnRun({ id: nextId, ...input });
+    runs.set(turnKey(run.id), { kind: 'turn', key: turnKey(run.id), run });
+    publish({ runs });
+    return run.id;
+  },
+  /** The active turn this conversation runs, so its reports reach that turn and no other. */
+  turnOwnedBy(owner: string): number | null {
+    for (const entry of snapshot.runs.values()) {
+      if (entry.kind === 'turn' && entry.run.owner === owner && isTurnActive(entry.run)) return entry.run.id;
+    }
+    return null;
+  },
+  /** This folder's turn still running, wherever its conversation is. */
+  activeTurn(folder: string): TurnRun | null {
+    for (const entry of snapshot.runs.values()) {
+      if (entry.kind === 'turn' && entry.run.folder === folder && isTurnActive(entry.run)) return entry.run;
+    }
+    return null;
+  },
+  observeTurnWork(id: number, work: TurnWorkReport | null, at: number) {
+    changeTurn(id, (run) => observeTurnWork(run, work, at));
+  },
+  observeTurnTool(id: number, event: TurnToolEvent, vaultRoot: string) {
+    changeTurn(id, (run) => observeTurnTool(run, turnToolFact(event, vaultRoot)));
+  },
+  setTurnStop(id: number, stop: (() => void) | null) {
+    if (stop) turnStops.set(id, stop);
+    else turnStops.delete(id);
+  },
+  finishTurn(id: number, end: { outcome: TurnEndOutcome; events: readonly TurnToolEvent[]; vaultRoot: string }, at: number) {
+    turnStops.delete(id);
+    changeTurn(id, (run) => finishTurnRun(run, end, at, snapshot.turnStage === run.owner));
+  },
+  enterTurnStage(owner: string) {
+    publish({ turnStage: owner });
+    changeEveryTurn((run) => (run.owner === owner ? seeTurn(run) : run));
+  },
+  leaveTurnStage(owner: string) {
+    if (snapshot.turnStage === owner) publish({ turnStage: null });
+  },
+  /** Opening the Library reads every finished turn of its folder: the badge goes. */
+  seeTurns(folder: string) {
+    changeEveryTurn((run) => (run.folder === folder && !isTurnActive(run) && run.unseen ? { ...run, unseen: false } : run));
+  },
+  openTurnDoor(door: TurnDoor) {
+    changeTurn(door.turnId, (run) => (isTurnActive(run) ? run : closeTurnCard(run)));
+    publish({ turnDoor: door });
+  },
+  takeTurnDoor(turnId: number) {
+    if (snapshot.turnDoor?.turnId === turnId) publish({ turnDoor: null });
+  },
 
   reset() {
     stopTurn = null;
@@ -387,6 +507,7 @@ export const workRuns = {
     pendingProgress = null;
     progress = null;
     progressAt = Number.NEGATIVE_INFINITY;
+    turnStops.clear();
     snapshot = EMPTY;
     listeners.forEach((listener) => listener());
     progressListeners.forEach((listener) => listener());

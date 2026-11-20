@@ -12,12 +12,20 @@ export {
 export type { MeaningRunObservation } from './model/meaning-run';
 export { workRuns } from './model/work-run-store';
 export {
+  isTurnActive,
+  type TurnRunDoor,
+  type TurnToolEvent,
+  type TurnWorkReport,
+} from './model/turn-run';
+export {
   libraryRingRun,
   useAutomationsStage,
   useMeaningProgress,
   useFolderWorkRun,
   useScheduledRuns,
   useWorkRunElapsed,
+  useActiveTurn,
+  useTurnStage,
   useWorkRunSnapshot,
   useWorkRunStage,
   workCardHoldsSeat,

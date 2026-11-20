@@ -13,13 +13,15 @@ import type { WorkRun } from '../model/work-run';
 import type { ScheduledRun } from '../model/scheduled-run';
 import type { MeaningRun } from '../model/meaning-run';
 import { workRuns, type SeatRun } from '../model/work-run-store';
-import { isSeatRunActive, useMeaningProgress, useWorkRunElapsed } from '../model/use-work-run';
+import { isSeatRunActive, useMeaningProgress, useWaitedLabel, useWorkRunElapsed } from '../model/use-work-run';
+import { turnPageDoor, type TurnRun } from '../model/turn-run';
+import { useTurnRunCopy } from './use-turn-run-copy';
 import { useWorkRunCopy, type WorkRunMarks } from './use-work-run-copy';
 import { useScheduledRunCopy } from './use-scheduled-run-copy';
 import { RollingCount } from './RollingCount';
 import { MeaningRunMoru, WorkRunMoru } from './WorkRunMoru';
 import { useMeaningRunCopy, type MeaningFigure } from './use-meaning-run-copy';
-import { useCheckDoor, useOpenScheduledRun } from './use-run-doors';
+import { useCheckDoor, useOpenScheduledRun, useTurnDoor } from './use-run-doors';
 
 const PANE_MARKS: WorkRunMarks = {
   page: (name) => <span className="font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{name}</span>,
@@ -43,17 +45,19 @@ export function WorkRunsDialog({ open, runs, onClose }: { open: boolean; runs: r
   const [picked, setPicked] = useState<string | null>(null);
   const selected = runs.find((entry) => entry.key === picked) ?? runs.at(-1) ?? null;
   const meaningFiles = useMeaningFilesDone(runs);
-  const items: TabBarItem[] = [...runs].reverse().map((entry) => ({
-    key: entry.key,
-    testId: 'work-runs-tab',
-    ...(entry.kind === 'meaning'
-      ? { label: t('meaning.title'), count: meaningFiles, countTitle: t('meaning.filesPrepared') }
-      : {
-        label: entry.kind === 'check' ? tCheck('title') : entry.run.name,
-        count: entry.kind === 'check' ? entry.run.readCount : entry.run.checkedCount,
-        countTitle: t(entry.kind === 'check' ? 'runsPagesRead' : 'runsDocumentsChecked'),
-      }),
-  }));
+  const items: TabBarItem[] = [...runs].reverse().map((entry) => {
+    if (entry.kind === 'turn') return { key: entry.key, label: entry.run.agent, testId: 'work-runs-tab' };
+    if (entry.kind === 'meaning') {
+      return { key: entry.key, label: t('meaning.title'), testId: 'work-runs-tab', count: meaningFiles, countTitle: t('meaning.filesPrepared') };
+    }
+    return {
+      key: entry.key,
+      label: entry.kind === 'check' ? tCheck('title') : entry.run.name,
+      testId: 'work-runs-tab',
+      count: entry.kind === 'check' ? entry.run.readCount : entry.run.checkedCount,
+      countTitle: t(entry.kind === 'check' ? 'runsPagesRead' : 'runsDocumentsChecked'),
+    };
+  });
   return (
     <Dialog open={open} onClose={onClose} labelledBy={titleId} size="md" testId="work-runs-dialog" className="w-[min(40rem,calc(100vw-2rem))]">
       <div className="flex items-start gap-3">
@@ -106,9 +110,38 @@ function RunPane({ entry, onLeave }: { entry: SeatRun; onLeave: () => void }) {
     go();
   };
   if (entry.kind === 'meaning') return <MeaningPane entry={entry} run={entry.run} leaveThen={leaveThen} />;
+  if (entry.kind === 'turn') return <TurnPane entry={entry} run={entry.run} leaveThen={leaveThen} />;
   return entry.kind === 'check'
     ? <CheckPane entry={entry} run={entry.run} leaveThen={leaveThen} />
     : <ScheduledPane entry={entry} run={entry.run} leaveThen={leaveThen} />;
+}
+
+function TurnPane({ entry, run, leaveThen }: { entry: SeatRun; run: TurnRun; leaveThen: LeaveThen }) {
+  const tCheck = useTranslations('library.check');
+  const tTurn = useTranslations('workCard.turn');
+  const copy = useTurnRunCopy(run, useWorkRunElapsed(run), useWaitedLabel(run.ask?.since ?? null), PANE_MARKS);
+  const openDoor = useTurnDoor();
+  const page = turnPageDoor(run);
+  const door = run.phase === 'asking'
+    ? { label: tCheck('review'), go: () => openDoor({ turnId: run.id, kind: 'conversation' }) }
+    : page
+      ? { label: tTurn('openPage'), go: () => openDoor({ turnId: run.id, kind: 'page', page }) }
+      : run.phase === 'running' || run.phase === 'stopping' || run.phase === 'switched'
+        ? null
+        : { label: tCheck('openConversation'), go: () => openDoor({ turnId: run.id, kind: 'conversation' }) };
+  return (
+    <PaneFrame
+      entry={entry}
+      facts={{
+        title: copy.title,
+        line: copy.detail,
+        figures: copy.figures,
+        moru: <WorkRunMoru run={copy.moru} />,
+        count: run.written.length,
+        door: door ? <Button size="sm" onClick={leaveThen(door.go)} data-testid="work-runs-open">{door.label}</Button> : null,
+      }}
+    />
+  );
 }
 
 type LeaveThen = (go: () => void) => () => void;

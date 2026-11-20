@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { DirectedDomainFlow } from "../model/containment-tree";
-import { circularDomainOrder, claimDialOrderFolder, rememberDialOrder, rememberedDialOrder } from "./order";
+import { Ring, adjacencyOf, circularDomainOrder, claimDialOrderFolder, rememberDialOrder, rememberedDialOrder } from "./order";
 import type { DialDomain, DialModel } from "./types";
 
 const pad = (i: number) => `d${String(i).padStart(2, "0")}`;
@@ -76,6 +76,80 @@ function randomLinks(n: number, count: number, seed: number): [number, number, n
   return out;
 }
 
+function chainedLinks(n: number, count: number, seed: number): [number, number, number][] {
+  const rand = seeded(seed);
+  const out: [number, number, number][] = [];
+  for (let k = 0; k < count; k += 1) {
+    const x = Math.floor(rand() * n);
+    const y = rand() < 0.7 ? (x + 1 + Math.floor(rand() * 3)) % n : Math.floor(rand() * n);
+    if (x !== y) out.push([x, y, 1 + Math.floor(rand() * 5)]);
+  }
+  return out;
+}
+
+/** The search this order replaced: 2-opt and single moves, each priced by a full recount, from a greedy chain and the natural order. */
+function referenceOrder(model: DialModel): string[] {
+  const ids = model.domains.map((d) => d.id).sort();
+  const n = ids.length;
+  const index = new Map(ids.map((id, i) => [id, i] as const));
+  const weight = Array.from({ length: n }, () => new Float64Array(n));
+  const strength = new Float64Array(n);
+  for (const f of model.flows) {
+    const i = index.get(f.a)!;
+    const j = index.get(f.b)!;
+    weight[i]![j]! += f.total;
+    weight[j]![i]! += f.total;
+    strength[i]! += f.total;
+    strength[j]! += f.total;
+  }
+  const pairs = model.flows.map((f) => [index.get(f.a)!, index.get(f.b)!, f.relatesOnly ? 0.5 : f.total] as const);
+  const pos = new Int32Array(n);
+  const cost = (order: readonly number[]) => {
+    order.forEach((node, slot) => {
+      pos[node] = slot;
+    });
+    let total = 0;
+    for (const [i, j, w] of pairs) {
+      const d = Math.abs(pos[i]! - pos[j]!);
+      total += w * Math.min(d, n - d);
+    }
+    return total;
+  };
+  const search = (start: number[]) => {
+    let order = start;
+    let current = cost(order);
+    for (let round = 0, improved = true; round < 20 && improved; round += 1) {
+      improved = false;
+      const consider = (next: number[]) => {
+        const value = cost(next);
+        if (value < current - 1e-9) [order, current, improved] = [next, value, true];
+      };
+      for (let a = 0; a < n - 1; a += 1) for (let b = a + 1; b < n; b += 1) consider(order.slice(0, a).concat(order.slice(a, b + 1).reverse(), order.slice(b + 1)));
+      for (let from = 0; from < n; from += 1) {
+        for (let to = 0; to < n; to += 1) {
+          if (Math.abs(from - to) <= 1) continue;
+          const next = order.slice();
+          next.splice(to, 0, next.splice(from, 1)[0]!);
+          consider(next);
+        }
+      }
+    }
+    return order;
+  };
+  let hub = 0;
+  for (let k = 1; k < n; k += 1) if (strength[k]! > strength[hub]!) hub = k;
+  const chain = [hub];
+  while (chain.length < n) {
+    const tail = chain[chain.length - 1]!;
+    let best = -1;
+    for (let k = 0; k < n; k += 1) if (!chain.includes(k) && (best < 0 || weight[tail]![k]! > weight[tail]![best]!)) best = k;
+    chain.push(best);
+  }
+  const natural = Array.from({ length: n }, (_, i) => i);
+  const [a, b] = [search(chain), search(natural)];
+  return (cost(b) < cost(a) - 1e-9 ? b : a).map((k) => ids[k]!);
+}
+
 afterEach(() => rememberDialOrder([]));
 
 describe("circularDomainOrder", () => {
@@ -99,13 +173,60 @@ describe("circularDomainOrder", () => {
     }
   });
 
-  it("stays within its evaluation budget", () => {
-    expect(circularDomainOrder(modelOf(9, randomLinks(9, 30, 5)), null).evaluations).toBeLessThanOrEqual(40_320);
-    expect(circularDomainOrder(modelOf(33, randomLinks(33, 120, 7)), null).evaluations).toBeLessThanOrEqual(50_000);
+  it("keeps the ring cost of the full-recount search it replaced on fixtures of 12 to 33 domains", () => {
+    const ratios: number[] = [];
+    for (const n of [12, 20, 33]) {
+      for (const seed of [1, 2, 3, 4]) {
+        for (const links of [randomLinks(n, n * 3, seed * 31 + n), chainedLinks(n, n * 3, seed * 31 + n)]) {
+          const model = modelOf(n, links);
+          ratios.push(ringCost(model, circularDomainOrder(model, null).order) / ringCost(model, referenceOrder(model)));
+        }
+      }
+    }
+    const mean = ratios.reduce((sum, r) => sum + r, 0) / ratios.length;
+    expect(mean, "mean ring cost against the old search").toBeLessThanOrEqual(1.02);
+    expect(Math.max(...ratios), "worst ring cost against the old search").toBeLessThanOrEqual(1.1);
   });
 
-  it("is deterministic", () => {
-    const model = modelOf(20, randomLinks(20, 60, 11));
+  it("keeps the ring cost of the full-recount search on 80 domains linked densely and weakly", () => {
+    const model = modelOf(80, randomLinks(80, 2600, 80));
+    expect(ringCost(model, circularDomainOrder(model, null).order) / ringCost(model, referenceOrder(model))).toBeLessThanOrEqual(1);
+  });
+
+  it("grows its work linearly with domains and pairs", () => {
+    const work = (n: number) => circularDomainOrder(modelOf(n, randomLinks(n, n * 10, n)), null).work;
+    expect(work(1200) / work(300)).toBeLessThanOrEqual(5);
+  });
+
+  it("prices every adjacent swap and arc reversal as a full recount does", () => {
+    const misses: string[] = [];
+    for (const n of [10, 13]) {
+      for (const seed of [1, 2, 3]) {
+        const rand = seeded(seed * 97 + n);
+        const raw = randomLinks(n, n * 4, seed).map(([i, j, w]) => ({ i, j, w }));
+        const ring = new Ring(adjacencyOf(n, raw), Array.from({ length: n }, (_, k) => k));
+        let cost = ring.cost();
+        for (let move = 0; move < 200; move += 1) {
+          const from = Math.floor(rand() * n);
+          const length = 2 + Math.floor(rand() * ((n >> 1) - 1));
+          const swap = rand() < 0.5;
+          let delta: number;
+          if (swap) delta = ring.stepForward(from);
+          else {
+            delta = ring.reversalDelta(from, length);
+            ring.reverse(from, length);
+          }
+          const recount = ring.cost();
+          if (delta !== recount - cost) misses.push(`n ${n} seed ${seed} move ${move} ${swap ? "swap" : `reverse ${length}`}: ${delta} vs ${recount - cost}`);
+          cost = recount;
+        }
+      }
+    }
+    expect(misses).toEqual([]);
+  });
+
+  it("orders 80 densely linked domains the same way every time, where the search stops on its budget", () => {
+    const model = modelOf(80, randomLinks(80, 2600, 81));
     expect(circularDomainOrder(model, null)).toEqual(circularDomainOrder(model, null));
   });
 

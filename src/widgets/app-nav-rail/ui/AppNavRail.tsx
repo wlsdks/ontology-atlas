@@ -73,6 +73,7 @@ const NO_WORK_RUNS: readonly RailWorkRun[] = [];
 export type RailWorkRun =
   /** `fraction` (0–1) where the run counts against a known total; without it the arc turns. */
   | { destination: AppNavRailItemId; state: "running"; fraction?: number }
+  | { destination: AppNavRailItemId; state: "waiting"; finished: number }
   | { destination: AppNavRailItemId; state: "finished"; count: number };
 
 interface RailDestination {
@@ -219,9 +220,13 @@ export function AppNavRail({
               ? run.fraction === undefined
                 ? tWork("railRunning", { destination: label })
                 : tWork("railRunningPercent", { destination: label, percent: Math.floor(run.fraction * 100) })
-              : run?.state === "finished"
-                ? tWork("railFinished", { destination: label, count: run.count })
-                : undefined;
+              : run?.state === "waiting"
+                ? run.finished > 0
+                  ? tWork("railWaitingAndFinished", { destination: label, count: run.finished })
+                  : tWork("railWaiting", { destination: label })
+                : run?.state === "finished"
+                  ? tWork("railFinished", { destination: label, count: run.count })
+                  : undefined;
             const isShownActive = shownActiveId === id;
             const surfacePath = href.split(/[?#]/, 1)[0] || "/";
             return (
@@ -277,8 +282,19 @@ export function AppNavRail({
                       aria-hidden
                       className="h-[var(--app-nav-rail-icon-size)] w-[var(--app-nav-rail-icon-size)]"
                     />
-                    {run?.state === "running" ? <RunRing id={id} fraction={run.fraction} /> : null}
-                    {badgeCount ? (
+                    {run?.state === "running" || run?.state === "waiting" ? (
+                      <RunRing
+                        id={id}
+                        fraction={run.state === "running" ? run.fraction : undefined}
+                        still={run.state === "waiting"}
+                      />
+                    ) : null}
+                    {run?.state === "waiting" ? (
+                      <span
+                        data-testid={`app-nav-rail-waiting-${id}`}
+                        className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-status-warning)]"
+                      />
+                    ) : badgeCount ? (
                       // Warning tone for unrecorded changes; caps at `9+` to keep the tile
                       // geometry.
                       <span
@@ -342,15 +358,17 @@ export function AppNavRail({
 /**
  * A ring around the icon while the destination's run works; it unmounts the moment it ends. With
  * a counted fraction it is an arc from twelve o'clock that eases to each new value; without one, a
- * quarter arc turns.
+ * quarter arc turns. A run waiting on a person holds the arc where it is and goes on from there
+ * once answered.
  */
-function RunRing({ id, fraction }: { id: AppNavRailItemId; fraction?: number }) {
+function RunRing({ id, fraction, still = false }: { id: AppNavRailItemId; fraction?: number; still?: boolean }) {
   const counted = fraction !== undefined;
   return (
     <svg
       aria-hidden
       data-testid={`app-nav-rail-ring-${id}`}
       data-ring-fraction={counted ? fraction.toFixed(4) : undefined}
+      data-still={still || undefined}
       viewBox="0 0 32 32"
       fill="none"
       className="pointer-events-none absolute left-1/2 top-1/2 size-8 -translate-x-1/2 -translate-y-1/2"
@@ -370,7 +388,7 @@ function RunRing({ id, fraction }: { id: AppNavRailItemId; fraction?: number }) 
         // Values arrive four times a second; each eases into the next from where it is drawn.
         className={counted
           ? "transition-[stroke-dashoffset] duration-[var(--motion-slow)] ease-[var(--motion-ease)]"
-          : "motion-work-spin"}
+          : cn("motion-work-spin", still && "[animation-play-state:paused]")}
       />
     </svg>
   );

@@ -487,5 +487,6 @@
   "elapsedHours": "{hours}시간 {minutes}분",
   "checkAnswerLine": "점검 결과는 앱이 직접 확인한 것과 나란히 「점검 결과」 페이지에 있어요.",
   "checkAnswerDoor": "점검 결과 열기",
-  "checkAnswerFull": "에이전트의 보고 원문"
+  "checkAnswerFull": "에이전트의 보고 원문",
+  "folderBusy": "자료실 대화가 이 폴더에서 작업 중이에요. 끝나면 여기서 물어볼 수 있어요. 지금 끝내려면 「중지」를 누르세요."
 }
