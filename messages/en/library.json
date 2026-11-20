@@ -238,8 +238,6 @@
       "draft": "draft",
       "reviewed": "reviewed"
     },
-    "viewOriginalCount": "{count, plural, one {# source} other {# sources}}",
-    "viewOriginalOne": "View source: {name}",
     "originalMissing": "Cites {name}, which is not in this folder.",
     "compileCreateFile": "Create {path}",
     "compileModifyFile": "Replace {path}",
@@ -405,11 +403,11 @@
     "canvasAria": "The library graph: raw sources, wiki pages, and the concepts those pages name.",
     "islandUnsorted": "Unsorted",
     "islandUnread": "Unread",
-    "describeIsland": "{name}: an island of {pages, number} pages and the {sources, number} files they read. Press it to open them as columns; zoom in for their names.",
-    "announceIsland": "Island {name}, {position, number} of {total, number}: {pages, number} pages and {sources, number} files. Enter opens it as columns.",
+    "describeIsland": "{name}: a group of {pages, number} pages and the {sources, number} files they read. Press it to open them as columns; zoom in for their names.",
+    "announceIsland": "Group {name}, {position, number} of {total, number}: {pages, number} pages and {sources, number} files. Enter opens it as columns.",
     "describeUnread": "Unread: {sources, number} files no page has read yet. Press it for where to start.",
     "unreadPressed": "{sources, number} files no page has read yet, so there is nothing between them to draw. Each is marked no wiki page in the Sources list; Write wiki page, above the picture, starts on the first.",
-    "islandBack": "Islands",
+    "islandBack": "All groups",
     "islandName": "{name} · {pages, number} pages · {sources, number} files",
     "readerClose": "Close the page",
     "keys": "Arrow keys move between dots, Enter opens a card beside the one you are on, Escape closes it.",
@@ -456,7 +454,7 @@
       "concept": "Concept {count, number}",
       "cite": "Citation {count, number}",
       "mention": "Mention {count, number}",
-      "island": "One island is one concept",
+      "island": "One group is one concept",
       "stale": "Changed since written",
       "gestures": "Press for a card · press twice to open · scroll to zoom"
     }
@@ -1003,5 +1001,18 @@
     "failedTitle": "The wiki check ended early",
     "failedBody": "{agent} ended before it reported. No file was changed. Press Check wiki to run it again.",
     "stopped": "You stopped this check. Nothing was reported, and no file was changed."
+  },
+  "wikiReader": {
+    "citedSources": "Sources cited",
+    "linkedFrom": "Pages that link here",
+    "concepts": "Concepts this page touches",
+    "citationCount": "{count, plural, one {# citation} other {# citations}}",
+    "citationAt": "{file} · line {line, number}",
+    "openSource": "Open the source",
+    "sourceChanged": "This file changed after the page was written. This is its text now.",
+    "sourceMissing": "This file is not in the folder.",
+    "sourceTooLarge": "This file is too large to show here.",
+    "linkMissing": "Nothing in this folder has this name.",
+    "back": "Back"
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import type { useTranslations } from "next-intl";
+import { memo } from "react";
 
 import { Button, Disclosure, Tooltip } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
@@ -348,7 +349,11 @@ function ProblemGroup({
   );
 }
 
-export function WikiTemplateProblems({
+/*
+ * Memoised: the reader's scroll position and outline highlight re-render the Library on every
+ * change, and a long page's list of places must not be drawn again for them.
+ */
+export const WikiTemplateProblems = memo(function WikiTemplateProblems({
   problems,
   file,
   collapsed,
@@ -400,4 +405,4 @@ export function WikiTemplateProblems({
       />
     </>
   );
-}
+});
