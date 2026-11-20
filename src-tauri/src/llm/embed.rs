@@ -115,6 +115,12 @@ pub(crate) enum EmbedError {
     },
     /// The download host could not be reached directly; no proxy is used.
     NoDirectConnection,
+    /// The model worker could not be started or did not introduce itself.
+    WorkerStart(String),
+    /// The model worker ended or closed its output before answering.
+    WorkerExited,
+    /// The model worker refused a request with a code this side does not know.
+    WorkerFailed(String),
 }
 
 impl EmbedError {
@@ -151,14 +157,17 @@ impl EmbedError {
             Self::Store(_) => "embed-model-store-failed",
             Self::DiskSpace { .. } => "embed-model-disk-space",
             Self::NoDirectConnection => "embed-download-no-direct-connection",
+            Self::WorkerStart(_) => "embed-worker-start-failed",
+            Self::WorkerExited => "embed-worker-exited",
+            Self::WorkerFailed(_) => "embed-worker-failed",
         }
     }
-}
 
-impl fmt::Display for EmbedError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let detail = match self {
+    pub(crate) fn detail(&self) -> String {
+        match self {
             Self::Endpoint(detail)
+            | Self::WorkerStart(detail)
+            | Self::WorkerFailed(detail)
             | Self::AuditBlocked(detail)
             | Self::Request(detail)
             | Self::ModelNotAllowed(detail)
@@ -175,8 +184,13 @@ impl fmt::Display for EmbedError {
             Self::ResponseInvalid(reason) => (*reason).to_string(),
             Self::DiskSpace { needed, free } => format!("needed={needed} free={free}"),
             _ => String::new(),
-        };
-        f.write_str(&coded(self.code(), detail))
+        }
+    }
+}
+
+impl fmt::Display for EmbedError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&coded(self.code(), self.detail()))
     }
 }
 

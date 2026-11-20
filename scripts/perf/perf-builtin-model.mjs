@@ -4,15 +4,17 @@
 //   pnpm perf:builtin-model -- --model-dir=<folder holding pytorch_model.bin and tokenizer.json>
 //        [--only=pins,prepare,fidelity,build,cpu,ollama] [--ollama=http://localhost:11434]
 //        [--write-references]   (`--only= --write-references` writes only the references)
-// The folder's files must match the pins (`pins` checks them). `prepare` converts and checks them
-// into a store under the OS temp folder; `fidelity` compares f16 with fp32 on the labelled fixture;
-// `build` embeds the repository's docs plus the fixture, then times questions and the memory left
-// after unloading; `cpu` times one 32-passage batch on the CPU in f32. `ollama` compares the
-// model's vectors with Ollama's bge-m3 for every fixture passage and question; `--write-references`
-// rewrites the vectors of the reference texts the app checks a fresh conversion against from
-// Ollama's answers.
+// The folder's files must match the pins (`pins` checks them). `prepare` converts them into a store
+// under the OS temp folder and has a worker check them; `fidelity` compares f16 with fp32 on the
+// labelled fixture in one process. `build` drives a model worker as the app does: time to the first
+// vector, the repository's docs plus the fixture, questions, both processes' memory, and the worker's
+// exit on release and at its idle limit. `cpu` sends one 32-passage batch to a worker on the CPU in
+// f32. `ollama` compares the worker's vectors with Ollama's bge-m3 for every fixture passage and
+// question; `--write-references` rewrites the vectors of the reference texts the app checks a fresh
+// conversion against from Ollama's answers.
 // Passages come from the desk harness's splitter. Each Rust measurement runs in its own release
-// process (LTO off, its own target folder) and prints one JSON line; the first build takes minutes.
+// process (LTO off, its own target folder), which starts itself again as the worker, and prints one
+// JSON line; the first build takes minutes.
 
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';

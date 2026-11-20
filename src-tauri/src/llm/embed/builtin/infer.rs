@@ -7,8 +7,7 @@ use candle_core::{DType, Device, Tensor};
 use candle_nn::VarBuilder;
 use candle_transformers::models::xlm_roberta::{Config, XLMRobertaModel};
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Mutex, MutexGuard};
+use std::sync::atomic::{AtomicBool, Ordering};
 use tokenizers::{NormalizedString, Tokenizer, TruncationParams};
 
 /// Tokens kept per passage, `<s>` and `</s>` included: a guard, not a cut, since a
@@ -71,13 +70,6 @@ pub(crate) struct Encoder {
     pad_id: u32,
     max_tokens: usize,
     budget: Budget,
-    /// One forward pass at a time on the device.
-    compute: Mutex<()>,
-    /// Questions waiting for `compute`; a build yields to them between groups.
-    queries_waiting: AtomicUsize,
-    /// Who took each turn, `true` for a question.
-    #[cfg(test)]
-    pub turns: Mutex<Vec<bool>>,
 }
 
 fn model_error(error: impl std::fmt::Display) -> EmbedError {
@@ -103,6 +95,26 @@ pub(crate) fn runtime_of(device: &Device) -> Runtime {
     } else {
         CPU_RUNTIME
     }
+}
+
+/// What `device` will pick on this platform, without creating a device.
+pub(crate) fn expected_runtime() -> Runtime {
+    if cfg!(target_os = "macos") {
+        METAL_RUNTIME
+    } else {
+        CPU_RUNTIME
+    }
+}
+
+/// A worker's report, accepted only for a device and type this build runs.
+pub(crate) fn reported_runtime(device: &str, dtype: &str, memory_bytes: u64) -> Option<Runtime> {
+    let known = [METAL_RUNTIME, CPU_RUNTIME]
+        .into_iter()
+        .find(|runtime| runtime.device == device && runtime.dtype == dtype)?;
+    Some(Runtime {
+        memory_bytes,
+        ..known
+    })
 }
 
 pub(crate) fn config(json: &str) -> Result<Config, EmbedError> {
@@ -144,23 +156,6 @@ fn in_pool<T>(work: impl FnOnce() -> T) -> T {
     }
     #[cfg(not(target_os = "macos"))]
     work()
-}
-
-/// Asks the allocator to hand freed pages back after the model is dropped.
-pub(crate) fn release_memory() {
-    #[cfg(target_os = "macos")]
-    {
-        extern "C" {
-            fn malloc_zone_pressure_relief(zone: *mut std::ffi::c_void, goal: usize) -> usize;
-        }
-        // SAFETY: a null zone means every zone; the call only returns free pages.
-        unsafe { malloc_zone_pressure_relief(std::ptr::null_mut(), 0) };
-    }
-    #[cfg(all(target_os = "linux", target_env = "gnu"))]
-    // SAFETY: trims only free memory at the top of glibc's heaps.
-    unsafe {
-        libc::malloc_trim(0);
-    }
 }
 
 impl Encoder {
@@ -208,10 +203,6 @@ impl Encoder {
             pad_id,
             max_tokens,
             budget,
-            compute: Mutex::new(()),
-            queries_waiting: AtomicUsize::new(0),
-            #[cfg(test)]
-            turns: Mutex::new(Vec::new()),
         }
     }
 
@@ -240,21 +231,15 @@ impl Encoder {
             .collect())
     }
 
-    /// One unit vector per text, in order. A question passes `priority`, so it runs
-    /// before a build's next group.
-    pub(crate) fn embed(
-        &self,
-        texts: &[&str],
-        priority: bool,
-    ) -> Result<Vec<Vec<f32>>, EmbedError> {
-        self.embed_until(texts, priority, &AtomicBool::new(false))
+    /// One unit vector per text, in order.
+    pub(crate) fn embed(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>, EmbedError> {
+        self.embed_until(texts, &AtomicBool::new(false))
     }
 
     /// `embed` that returns `Cancelled` before the next group once `stop` is set.
     pub(crate) fn embed_until(
         &self,
         texts: &[&str],
-        priority: bool,
         stop: &AtomicBool,
     ) -> Result<Vec<Vec<f32>>, EmbedError> {
         let ids = self.encode(texts)?;
@@ -269,7 +254,7 @@ impl Encoder {
                 .iter()
                 .filter_map(|&index| ids.get(index).map(Vec::as_slice))
                 .collect();
-            let embedded = self.forward(&rows, priority)?;
+            let embedded = self.forward(&rows)?;
             for (&index, vector) in group.iter().zip(embedded) {
                 if let Some(slot) = vectors.get_mut(index) {
                     *slot = Some(vector);
@@ -282,7 +267,7 @@ impl Encoder {
             .collect()
     }
 
-    fn forward(&self, rows: &[&[u32]], priority: bool) -> Result<Vec<Vec<f32>>, EmbedError> {
+    fn forward(&self, rows: &[&[u32]]) -> Result<Vec<Vec<f32>>, EmbedError> {
         let width = rows.iter().map(|row| row.len()).max().unwrap_or(0);
         if width == 0 {
             return Err(EmbedError::BatchEmpty);
@@ -298,7 +283,6 @@ impl Encoder {
                 slot.fill(1);
             }
         }
-        let _turn = self.turn(priority);
         let shape = (rows.len(), width);
         let run = || -> candle_core::Result<Vec<Vec<f32>>> {
             let ids = Tensor::from_vec(ids, shape, &self.device)?;
@@ -316,45 +300,6 @@ impl Encoder {
             normalize(vector)?;
         }
         Ok(vectors)
-    }
-
-    /// A question announces itself and takes the next turn. A build waits while any
-    /// question is waiting, and gives a turn it won back to one that arrived.
-    fn turn(&self, priority: bool) -> MutexGuard<'_, ()> {
-        let lock = || {
-            self.compute
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner())
-        };
-        if priority {
-            self.queries_waiting.fetch_add(1, Ordering::SeqCst);
-            let guard = lock();
-            self.queries_waiting.fetch_sub(1, Ordering::SeqCst);
-            #[cfg(test)]
-            self.turns.lock().unwrap().push(true);
-            return guard;
-        }
-        loop {
-            while self.queries_waiting.load(Ordering::SeqCst) > 0 {
-                std::thread::yield_now();
-            }
-            let guard = lock();
-            if self.queries_waiting.load(Ordering::SeqCst) == 0 {
-                #[cfg(test)]
-                self.turns.lock().unwrap().push(false);
-                return guard;
-            }
-        }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn hold_compute(&self) -> MutexGuard<'_, ()> {
-        self.compute.lock().unwrap()
-    }
-
-    #[cfg(test)]
-    pub(crate) fn queries_waiting(&self) -> usize {
-        self.queries_waiting.load(Ordering::SeqCst)
     }
 }
 

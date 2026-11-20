@@ -1,13 +1,18 @@
 use super::*;
-use std::sync::atomic::AtomicBool;
+use crate::llm::embed::{BuildPlan, Embedder, RunEnd};
+use std::sync::Arc;
+use std::time::Instant;
 
 mod conversion;
 mod downloads;
 mod encoding;
 mod fake;
+mod fake_worker;
 mod lifecycle;
 mod measure;
 mod preparation;
+mod process;
+mod serving;
 mod tiny;
 mod transport;
 
@@ -18,6 +23,11 @@ fn temp_dir(tag: &str) -> PathBuf {
     ));
     fs::create_dir_all(&dir).unwrap();
     dir
+}
+
+/// A store nothing prepared; a fake worker never reads it, so it is never created.
+fn no_store() -> ModelStore {
+    ModelStore::at(std::env::temp_dir().join("atlas-builtin-no-store"))
 }
 
 fn audit_lines(vault: &Path) -> Vec<serde_json::Value> {

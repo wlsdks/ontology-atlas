@@ -74,6 +74,9 @@ candle-transformers = "=0.11.1"
 tokenizers = { version = "=0.23.2", default-features = false, features = ["fancy-regex"] }
 safetensors = "=0.8.0"
 url = "2"
+# The model worker finds the model where the app keeps it, by the rule Tauri's
+# `app_data_dir` uses; the same dirs 6 tauri already resolves.
+dirs = "6"
 
 # Unix process-group termination also clears descendants of failed ACP probes.
 # libc is already in the resolved dependency graph.

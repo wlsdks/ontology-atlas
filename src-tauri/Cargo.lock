@@ -3304,6 +3304,7 @@ dependencies = [
  "candle-nn",
  "candle-transformers",
  "chrono",
+ "dirs",
  "futures-util",
  "keyring",
  "libc",

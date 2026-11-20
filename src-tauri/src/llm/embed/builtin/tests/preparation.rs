@@ -4,8 +4,30 @@ use super::fake::*;
 use super::tiny::{self, Tiny};
 use super::*;
 
-fn cpu() -> (Device, DType) {
-    (Device::Cpu, DType::F32)
+/// The worker's two jobs on the tiny model, in this process.
+struct InProcess {
+    references: String,
+}
+
+impl ModelWork for InProcess {
+    fn convert(
+        &self,
+        store: &ModelStore,
+        cancel: &AtomicBool,
+        on_progress: &mut dyn FnMut(u64, u64),
+    ) -> Result<(), EmbedError> {
+        store.convert_download(tiny::TINY_CONFIG, cancel, on_progress)
+    }
+
+    fn check(&self, store: &ModelStore) -> Result<(), EmbedError> {
+        check_conversion(
+            &self.references,
+            tiny::TINY_CONFIG,
+            (Device::Cpu, DType::F32),
+            &store.weights(),
+            &store.tokenizer(),
+        )
+    }
 }
 
 fn plenty(_: &Path) -> std::io::Result<u64> {
@@ -24,6 +46,7 @@ struct Served {
     checkpoint: Vec<u8>,
     files: [PinnedFile; 2],
     references: String,
+    work: InProcess,
 }
 
 fn served(tag: &str) -> Served {
@@ -36,6 +59,9 @@ fn served(tag: &str) -> Served {
         pinned("pytorch_model.bin", &checkpoint),
     ];
     let references = tiny::references(&tiny, 0.999);
+    let work = InProcess {
+        references: references.clone(),
+    };
     Served {
         tiny,
         vault,
@@ -43,6 +69,7 @@ fn served(tag: &str) -> Served {
         checkpoint,
         files,
         references,
+        work,
     }
 }
 
@@ -56,11 +83,9 @@ impl Served {
     fn recipe(&self) -> Recipe<'_> {
         Recipe {
             files: &self.files,
-            config: tiny::TINY_CONFIG,
-            references: &self.references,
             converted_bytes: 4_096,
-            device: cpu,
             free_space: plenty,
+            work: &self.work,
         }
     }
 
@@ -268,9 +293,11 @@ fn a_failed_check_keeps_the_download_for_the_next_try() {
     let first = wrong["probes"][0]["vector"].clone();
     wrong["probes"][0]["vector"] = wrong["probes"][1]["vector"].clone();
     wrong["probes"][1]["vector"] = first;
-    let wrong = wrong.to_string();
+    let wrong = InProcess {
+        references: wrong.to_string(),
+    };
     let recipe = Recipe {
-        references: &wrong,
+        work: &wrong,
         ..served.recipe()
     };
     let failed = served.prepare(&served.fake(), &recipe);
@@ -376,7 +403,12 @@ fn the_store_reports_its_bytes_and_deletes_everything() {
         .map(|name| fs::metadata(store.dir().join(name)).unwrap().len())
         .sum();
     assert_eq!(store.bytes(), on_disk);
-    assert_eq!(BuiltinModel::new(store.clone()).store().bytes(), on_disk);
+    assert_eq!(
+        super::super::client::BuiltinModel::new(store.clone())
+            .store()
+            .bytes(),
+        on_disk
+    );
     store.delete().unwrap();
     assert!(!store.dir().exists());
     assert_eq!(store.bytes(), 0);

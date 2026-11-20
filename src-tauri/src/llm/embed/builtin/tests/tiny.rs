@@ -266,7 +266,7 @@ pub(super) fn sentences() -> Vec<String> {
 pub(super) fn references(tiny: &Tiny, floor: f32) -> String {
     let encoder = encoder(tiny);
     let texts = ["search meaning", "검색 의미 문서", "dawn wave depot"];
-    let vectors = encoder.embed(&texts, false).unwrap();
+    let vectors = encoder.embed(&texts).unwrap();
     let probes: Vec<serde_json::Value> = texts
         .iter()
         .zip(vectors)

@@ -67,8 +67,8 @@ fn conversion_writes_f16_encoder_tensors_whose_vectors_match_the_f32_ones() {
     let reference = tiny::encoder(&tiny);
     let texts = tiny::sentences();
     let texts: Vec<&str> = texts.iter().map(String::as_str).collect();
-    let a = converted.embed(&texts, false).unwrap();
-    let b = reference.embed(&texts, false).unwrap();
+    let a = converted.embed(&texts).unwrap();
+    let b = reference.embed(&texts).unwrap();
     for (x, y) in a.iter().zip(&b) {
         assert_eq!(x.len(), 8);
         assert!(cosine(x, y) >= 0.999, "{}", cosine(x, y));

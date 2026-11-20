@@ -1,17 +1,18 @@
-// bge-m3 run by candle in this process. Preparing downloads the pinned files once,
-// converts the weights to f16 here, checks them against reference vectors and
-// deletes the download. Passages never leave the process; each build and question
-// still writes its audit line first.
+// bge-m3 run by candle in a worker process the app starts. Preparing downloads the
+// pinned files, has a worker convert and check them, and deletes the download.
+// Passages go only to the worker, each build and question after its audit line.
 
+pub(crate) mod client;
 mod convert;
 mod download;
 mod fetch;
-mod infer;
+pub(crate) mod infer;
 pub(crate) mod pins;
+mod protocol;
+pub(crate) mod worker;
 
-use super::audit::{self, RunEnd};
-use super::{check_passages, hex, BuildPlan, EmbedError, EmbedSession, Embedder};
-use super::{MAX_BATCH_BYTES, MAX_BATCH_PASSAGES};
+use super::audit;
+use super::{hex, EmbedError};
 use candle_core::{DType, Device};
 use download::{remove_if_present, remove_link, write_synced, Downloader};
 use fetch::Fetch;
@@ -23,16 +24,15 @@ use std::collections::HashSet;
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
-use std::sync::{Arc, Condvar, LazyLock, Mutex, MutexGuard};
-use std::time::{Duration, Instant};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{LazyLock, Mutex};
+use std::time::Duration;
 
 pub(crate) use download::DownloadReport;
-pub(crate) use infer::Runtime;
 
 /// Where the passages went, in every line the built-in model writes.
 pub(crate) const BUILTIN_PROVIDER: &str = "built-in";
-pub(crate) const BUILTIN_HOST: &str = "in-process";
+pub(crate) const BUILTIN_HOST: &str = "local-worker";
 /// The download's first host; the close line names the hosts its redirects added.
 pub(crate) const DOWNLOAD_HOST: &str = "huggingface.co";
 
@@ -83,7 +83,7 @@ pub(crate) enum Stage {
     Verify,
     Download,
     Convert,
-    /// Loading the converted file and comparing it with the reference vectors.
+    /// A worker loading the converted file and comparing it with the reference vectors.
     Check,
 }
 
@@ -113,26 +113,64 @@ pub(crate) enum Readiness {
     Mismatch(&'static str),
 }
 
-/// What `prepare` fetches and how it checks the result; tests pass a tiny model.
+/// The model work preparation hands off, so its memory never stays in the app.
+trait ModelWork: Sync {
+    /// Writes the store's converting file from the downloaded weights.
+    fn convert(
+        &self,
+        store: &ModelStore,
+        cancel: &AtomicBool,
+        on_progress: &mut dyn FnMut(u64, u64),
+    ) -> Result<(), EmbedError>;
+    /// Compares the store's two files with the reference vectors.
+    fn check(&self, store: &ModelStore) -> Result<(), EmbedError>;
+}
+
+/// What `prepare` fetches and who converts and checks it; tests pass a tiny model.
 struct Recipe<'a> {
     files: &'a [PinnedFile],
-    config: &'a str,
-    /// `pins::REFERENCES_JSON` outside tests.
-    references: &'a str,
     /// The converted file's size, for the space check.
     converted_bytes: u64,
-    device: fn() -> (Device, DType),
     free_space: fn(&Path) -> std::io::Result<u64>,
+    work: &'a dyn ModelWork,
 }
 
 const PINNED: Recipe<'static> = Recipe {
     files: &pins::DOWNLOADS,
-    config: pins::CONFIG_JSON,
-    references: pins::REFERENCES_JSON,
     converted_bytes: pins::CONVERTED_BYTES,
-    device: infer::device,
     free_space,
+    work: &InWorker,
 };
+
+/// A worker of this executable; it finds the store by the app's own rule, so only
+/// that store can be prepared.
+struct InWorker;
+
+impl InWorker {
+    fn guard(store: &ModelStore) -> Result<(), EmbedError> {
+        if worker::app_store().as_ref() != Some(store) {
+            return Err(EmbedError::Store("outside-app-data".into()));
+        }
+        Ok(())
+    }
+}
+
+impl ModelWork for InWorker {
+    fn convert(
+        &self,
+        store: &ModelStore,
+        cancel: &AtomicBool,
+        on_progress: &mut dyn FnMut(u64, u64),
+    ) -> Result<(), EmbedError> {
+        Self::guard(store)?;
+        client::convert_in_worker(&client::SelfLaunch, client::LIMITS, cancel, on_progress)
+    }
+
+    fn check(&self, store: &ModelStore) -> Result<(), EmbedError> {
+        Self::guard(store)?;
+        client::check_in_worker(&client::SelfLaunch, client::LIMITS)
+    }
+}
 
 impl Recipe<'_> {
     fn file(&self, name: &str) -> Option<&PinnedFile> {
@@ -304,6 +342,26 @@ impl ModelStore {
         self.dir.join(DOWNLOAD_DIR)
     }
 
+    fn converting(&self) -> PathBuf {
+        self.dir.join(CONVERTING_FILE)
+    }
+
+    /// The worker's half of preparing: the downloaded weights to the converting file.
+    fn convert_download(
+        &self,
+        config: &str,
+        cancel: &AtomicBool,
+        on_progress: &mut dyn FnMut(u64, u64),
+    ) -> Result<(), EmbedError> {
+        convert::convert(
+            &self.download_dir().join(pins::WEIGHTS.name),
+            &infer::config(config)?,
+            &self.converting(),
+            cancel,
+            on_progress,
+        )
+    }
+
     pub(crate) fn readiness(&self) -> Readiness {
         self.readiness_for(&PINNED)
     }
@@ -359,8 +417,8 @@ impl ModelStore {
         walk(&self.dir)
     }
 
-    /// Removes the model and any partial download. A loaded model keeps working
-    /// until it is unloaded; the next load finds nothing.
+    /// Removes the model and any partial download. Release the model first: a
+    /// running worker maps the weights, and Windows refuses to delete a mapped file.
     pub(crate) fn delete(&self) -> Result<(), EmbedError> {
         let _busy = Busy::claim(&self.dir)?;
         match fs::remove_dir_all(&self.dir) {
@@ -489,38 +547,44 @@ impl ModelStore {
         cancel: &AtomicBool,
         on_progress: &mut dyn FnMut(&Progress),
     ) -> Result<(), EmbedError> {
-        let converting = self.dir.join(CONVERTING_FILE);
-        let config = infer::config(recipe.config)?;
-        convert::convert(
-            &downloads.join(pins::WEIGHTS.name),
-            &config,
-            &converting,
-            cancel,
-            &mut |done, total| {
-                on_progress(&Progress {
-                    stage: Stage::Convert,
-                    done,
-                    total,
-                })
-            },
-        )?;
+        let converting = self.converting();
+        let converted = recipe.work.convert(self, cancel, &mut |done, total| {
+            on_progress(&Progress {
+                stage: Stage::Convert,
+                done,
+                total,
+            })
+        });
+        if let Err(error) = converted {
+            // A worker that was killed mid-write leaves its file behind.
+            remove_if_present(&converting)?;
+            return Err(error);
+        }
         let checked = (|| {
             if cancel.load(Ordering::Relaxed) {
                 return Err(EmbedError::Cancelled);
             }
             sync_file(&converting)?;
+            let digest = sha256_file(&converting, cancel)?;
             on_progress(&Progress {
                 stage: Stage::Check,
                 done: 0,
                 total: 1,
             });
-            check(recipe, &converting, &downloads.join(TOKENIZER_FILE))?;
-            sha256_file(&converting, cancel)
+            // Copied, so a failed check leaves the download whole for the next try.
+            fs::copy(downloads.join(TOKENIZER_FILE), self.tokenizer()).map_err(store_error)?;
+            sync_file(&self.tokenizer())?;
+            fs::rename(&converting, self.weights()).map_err(store_error)?;
+            sync_dir(&self.dir)?;
+            recipe.work.check(self)?;
+            Ok(digest)
         })();
         let weights_sha256 = match checked {
             Ok(digest) => digest,
             Err(error) => {
-                remove_if_present(&converting)?;
+                for path in [converting, self.weights(), self.tokenizer()] {
+                    remove_if_present(&path)?;
+                }
                 return Err(error);
             }
         };
@@ -532,7 +596,7 @@ impl ModelStore {
             repository: pins::REPOSITORY.into(),
             revision: pins::REVISION.into(),
             weights: ManifestFile {
-                bytes: file_len(&converting),
+                bytes: file_len(&self.weights()),
                 sha256: weights_sha256,
             },
             tokenizer: ManifestFile {
@@ -540,9 +604,6 @@ impl ModelStore {
                 sha256: tokenizer.sha256.into(),
             },
         };
-        fs::rename(downloads.join(TOKENIZER_FILE), self.tokenizer()).map_err(store_error)?;
-        fs::rename(&converting, self.weights()).map_err(store_error)?;
-        sync_dir(&self.dir)?;
         let text =
             serde_json::to_vec(&manifest).map_err(|error| EmbedError::Store(error.to_string()))?;
         write_synced(&self.dir.join(MANIFEST_FILE), &text)?;
@@ -587,21 +648,26 @@ fn sweep_dir(dir: &Path, keep: &dyn Fn(&str, &fs::Metadata) -> bool) -> Result<(
 
 /// The converted file must turn each reference text into a vector within the floor
 /// of the one recorded from an independent implementation of the same model.
-fn check(recipe: &Recipe<'_>, weights: &Path, tokenizer: &Path) -> Result<(), EmbedError> {
-    let references: References = serde_json::from_str(recipe.references)
-        .map_err(|_| EmbedError::ModelLoad("references".into()))?;
+pub(crate) fn check_conversion(
+    references: &str,
+    config: &str,
+    (device, dtype): (Device, DType),
+    weights: &Path,
+    tokenizer: &Path,
+) -> Result<(), EmbedError> {
+    let references: References =
+        serde_json::from_str(references).map_err(|_| EmbedError::ModelLoad("references".into()))?;
     if references.probes.is_empty() {
         return Err(EmbedError::ModelLoad("references".into()));
     }
-    let (device, dtype) = (recipe.device)();
-    let config = infer::config(recipe.config)?;
+    let config = infer::config(config)?;
     let encoder = Encoder::load(weights, tokenizer, &config, device, dtype)?;
     let texts: Vec<&str> = references
         .probes
         .iter()
         .map(|probe| probe.text.as_str())
         .collect();
-    let vectors = encoder.embed(&texts, true)?;
+    let vectors = encoder.embed(&texts)?;
     for (index, (vector, probe)) in vectors.iter().zip(&references.probes).enumerate() {
         let mut expected = probe.vector.clone();
         if vector.len() != config.hidden_size || expected.len() != vector.len() {
@@ -622,32 +688,6 @@ fn store_error(error: std::io::Error) -> EmbedError {
     EmbedError::Store(crate::errors::squeeze(&error.to_string()))
 }
 
-/// A status read never waits for a load.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ModelState {
-    Unloaded,
-    Loading,
-    Loaded,
-}
-
-const UNLOADED: u8 = 0;
-const LOADING: u8 = 1;
-const LOADED: u8 = 2;
-
-/// The one copy in memory and who is using it; held only for bookkeeping, never
-/// across a load or a pass.
-#[derive(Default)]
-struct Slot {
-    encoder: Option<Arc<Encoder>>,
-    loading: bool,
-    /// Open builds and running questions.
-    holders: usize,
-    /// An unload asked for while holders remained; the last one to finish frees it.
-    unload_pending: bool,
-}
-
-type Loader = dyn Fn(&ModelStore) -> Result<Encoder, EmbedError> + Send + Sync;
-
 fn load_from_store(store: &ModelStore) -> Result<Encoder, EmbedError> {
     if !store.is_ready() {
         return Err(EmbedError::ModelNotReady);
@@ -660,328 +700,6 @@ fn load_from_store(store: &ModelStore) -> Result<Encoder, EmbedError> {
         device,
         dtype,
     )
-}
-
-/// The built-in model, loaded on first use and dropped on request. At most one
-/// copy exists: builds and questions share it, and a load waits for one running.
-pub(crate) struct BuiltinModel {
-    store: ModelStore,
-    slot: Mutex<Slot>,
-    changed: Condvar,
-    state: AtomicU8,
-    last_used: Mutex<Option<Instant>>,
-    loader: Box<Loader>,
-}
-
-/// One user of the loaded copy; the last one out applies a pending unload.
-struct Lease<'m> {
-    model: &'m BuiltinModel,
-    encoder: Option<Arc<Encoder>>,
-}
-
-impl Lease<'_> {
-    fn encoder(&self) -> Result<&Encoder, EmbedError> {
-        self.encoder.as_deref().ok_or(EmbedError::ModelNotReady)
-    }
-}
-
-impl Drop for Lease<'_> {
-    fn drop(&mut self) {
-        drop(self.encoder.take());
-        let freed = {
-            let mut slot = self.model.slot();
-            slot.holders = slot.holders.saturating_sub(1);
-            if slot.holders == 0 && slot.unload_pending {
-                self.model.take_encoder(&mut slot)
-            } else {
-                None
-            }
-        };
-        if let Some(encoder) = freed {
-            drop(encoder);
-            infer::release_memory();
-        }
-    }
-}
-
-impl BuiltinModel {
-    pub(crate) fn new(store: ModelStore) -> Self {
-        Self::with_loader(store, Box::new(load_from_store))
-    }
-
-    fn with_loader(store: ModelStore, loader: Box<Loader>) -> Self {
-        Self {
-            store,
-            slot: Mutex::new(Slot::default()),
-            changed: Condvar::new(),
-            state: AtomicU8::new(UNLOADED),
-            last_used: Mutex::new(None),
-            loader,
-        }
-    }
-
-    pub(crate) fn store(&self) -> &ModelStore {
-        &self.store
-    }
-
-    fn slot(&self) -> MutexGuard<'_, Slot> {
-        self.slot
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-    }
-
-    fn take_encoder(&self, slot: &mut Slot) -> Option<Arc<Encoder>> {
-        slot.unload_pending = false;
-        self.state.store(UNLOADED, Ordering::SeqCst);
-        slot.encoder.take()
-    }
-
-    /// Loads the model unless it is loaded and keeps it, cancelling an unload that
-    /// waits for a build; an unload asked for after this call still wins.
-    pub(crate) fn load(&self) -> Result<(), EmbedError> {
-        self.slot().unload_pending = false;
-        let lease = self.lease()?;
-        self.touch();
-        drop(lease);
-        Ok(())
-    }
-
-    /// Frees the model now and returns `true`, or, while a build or a question
-    /// uses it, when the last of them ends and returns `false`.
-    pub(crate) fn unload(&self) -> bool {
-        let freed = {
-            let mut slot = self.slot();
-            if slot.holders > 0 || slot.loading {
-                slot.unload_pending = true;
-                return false;
-            }
-            self.take_encoder(&mut slot)
-        };
-        if let Some(encoder) = freed {
-            drop(encoder);
-            infer::release_memory();
-        }
-        true
-    }
-
-    pub(crate) fn state(&self) -> ModelState {
-        match self.state.load(Ordering::SeqCst) {
-            LOADING => ModelState::Loading,
-            LOADED => ModelState::Loaded,
-            _ => ModelState::Unloaded,
-        }
-    }
-
-    pub(crate) fn is_loaded(&self) -> bool {
-        self.state() == ModelState::Loaded
-    }
-
-    /// Where the model runs or would run, and the memory it needs there.
-    pub(crate) fn runtime(&self) -> Runtime {
-        let loaded = self.slot().encoder.clone();
-        match loaded {
-            Some(encoder) => encoder.runtime(),
-            None => infer::runtime_of(&infer::device().0),
-        }
-    }
-
-    /// Time since the model was loaded or last embedded; `None` before either.
-    pub(crate) fn idle_for(&self) -> Option<Duration> {
-        self.last_used
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .map(|at| at.elapsed())
-    }
-
-    /// The loaded copy, loading it first when needed; a caller that finds a load
-    /// running waits for it rather than starting another.
-    fn lease(&self) -> Result<Lease<'_>, EmbedError> {
-        let mut slot = self.slot();
-        loop {
-            if let Some(encoder) = slot.encoder.clone() {
-                slot.holders += 1;
-                return Ok(Lease {
-                    model: self,
-                    encoder: Some(encoder),
-                });
-            }
-            if !slot.loading {
-                break;
-            }
-            slot = self
-                .changed
-                .wait(slot)
-                .unwrap_or_else(|poisoned| poisoned.into_inner());
-        }
-        slot.loading = true;
-        self.state.store(LOADING, Ordering::SeqCst);
-        drop(slot);
-
-        let loaded = (self.loader)(&self.store);
-        let mut slot = self.slot();
-        slot.loading = false;
-        let lease = match loaded {
-            Ok(encoder) => {
-                let encoder = Arc::new(encoder);
-                slot.encoder = Some(encoder.clone());
-                slot.holders += 1;
-                self.state.store(LOADED, Ordering::SeqCst);
-                Ok(Lease {
-                    model: self,
-                    encoder: Some(encoder),
-                })
-            }
-            Err(error) => {
-                slot.unload_pending = false;
-                self.state.store(UNLOADED, Ordering::SeqCst);
-                Err(error)
-            }
-        };
-        drop(slot);
-        self.changed.notify_all();
-        lease
-    }
-
-    #[cfg(test)]
-    fn with_encoder(store: ModelStore, encoder: Encoder) -> Self {
-        let model = Self::new(store);
-        model.slot().encoder = Some(Arc::new(encoder));
-        model.state.store(LOADED, Ordering::SeqCst);
-        model
-    }
-
-    fn touch(&self) {
-        *self
-            .last_used
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(Instant::now());
-    }
-}
-
-impl Embedder for BuiltinModel {
-    fn model(&self) -> &str {
-        MODEL_NAME
-    }
-
-    /// Loads the model, then writes the run's start line; no passage is read before
-    /// the line is on disk.
-    fn start_build<'a>(
-        &'a self,
-        vault_dir: &Path,
-        plan: BuildPlan,
-    ) -> Result<Box<dyn EmbedSession + 'a>, EmbedError> {
-        let lease = self.lease()?;
-        let run = audit::write_start(vault_dir, &BUILTIN_SOURCE, plan)?;
-        Ok(Box::new(BuiltinRun {
-            model: self,
-            lease: Some(lease),
-            vault_dir: vault_dir.to_path_buf(),
-            run,
-            plan,
-            passages_read: 0,
-            chars_read: 0,
-            read_hash: Sha256::new(),
-            started: Instant::now(),
-            closed: false,
-        }))
-    }
-
-    fn embed_query(&self, vault_dir: &Path, question: &str) -> Result<Vec<f32>, EmbedError> {
-        check_passages(&[question])?;
-        let lease = self.lease()?;
-        let payload = serde_json::json!([question]).to_string();
-        let reservation = audit::reserve_query(vault_dir, &BUILTIN_SOURCE, question, &payload)?;
-        let started = Instant::now();
-        let embedded = lease.encoder()?.embed(&[question], true);
-        drop(lease);
-        self.touch();
-        let outcome = if embedded.is_ok() { "ok" } else { "error" };
-        audit::finalize_query(reservation, outcome, None, 0, started)?;
-        embedded?.pop().ok_or(EmbedError::ResponseInvalid("count"))
-    }
-}
-
-/// One open build: the same caps and plan as the loopback run, and the same
-/// closing line, with `passagesSent` counting passages the model read.
-struct BuiltinRun<'m> {
-    model: &'m BuiltinModel,
-    lease: Option<Lease<'m>>,
-    vault_dir: PathBuf,
-    run: String,
-    plan: BuildPlan,
-    passages_read: usize,
-    chars_read: usize,
-    read_hash: Sha256,
-    started: Instant,
-    closed: bool,
-}
-
-impl BuiltinRun<'_> {
-    fn close(&mut self, ended: RunEnd) -> Result<(), EmbedError> {
-        self.closed = true;
-        self.lease = None;
-        let hash = std::mem::take(&mut self.read_hash).finalize();
-        audit::write_close(
-            &self.vault_dir,
-            &BUILTIN_SOURCE,
-            &audit::Close {
-                run: &self.run,
-                plan: self.plan,
-                passages_sent: self.passages_read,
-                chars_sent: self.chars_read,
-                sent_sha256: &hex(&hash),
-                ended,
-                duration_ms: self.started.elapsed().as_millis() as u64,
-            },
-        )
-    }
-}
-
-impl EmbedSession for BuiltinRun<'_> {
-    fn embed_batch(&mut self, passages: &[&str]) -> Result<Vec<Vec<f32>>, EmbedError> {
-        self.embed_batch_until(passages, &AtomicBool::new(false))
-    }
-
-    /// Stops between padded groups, within about a second on the CPU.
-    fn embed_batch_until(
-        &mut self,
-        passages: &[&str],
-        stop: &AtomicBool,
-    ) -> Result<Vec<Vec<f32>>, EmbedError> {
-        let chars = check_passages(passages)?;
-        if passages.len() > MAX_BATCH_PASSAGES
-            || passages.iter().map(|p| p.len()).sum::<usize>() > MAX_BATCH_BYTES
-        {
-            return Err(EmbedError::BatchTooLarge);
-        }
-        if self.passages_read + passages.len() > self.plan.passages
-            || self.chars_read + chars > self.plan.chars
-        {
-            return Err(EmbedError::OverPlan);
-        }
-        let lease = self.lease.as_ref().ok_or(EmbedError::ModelNotReady)?;
-        self.passages_read += passages.len();
-        self.chars_read += chars;
-        self.read_hash
-            .update(serde_json::json!(passages).to_string().as_bytes());
-        let vectors = lease.encoder()?.embed_until(passages, false, stop);
-        self.model.touch();
-        vectors
-    }
-
-    fn finish(mut self: Box<Self>, ended: RunEnd) -> Result<(), EmbedError> {
-        self.close(ended)
-    }
-}
-
-impl Drop for BuiltinRun<'_> {
-    fn drop(&mut self) {
-        if !self.closed {
-            if let Err(error) = self.close(RunEnd::Stopped) {
-                log::error!("embed-build run {} has no closing line: {error}", self.run);
-            }
-        }
-    }
 }
 
 #[cfg(test)]

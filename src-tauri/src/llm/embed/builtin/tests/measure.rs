@@ -1,12 +1,14 @@
-//! The built-in model measured on the real bge-m3 files, run by
-//! `pnpm perf:builtin-model`: `ATLAS_BGE_M3_DIR` names a folder holding the
-//! publisher's `pytorch_model.bin` and `tokenizer.json` at the pinned commit.
-//! Each test prints one JSON line; nothing here reaches the network.
+//! `pnpm perf:builtin-model` on the publisher's files in `ATLAS_BGE_M3_DIR`; each test
+//! prints one JSON line. The worker is this binary again as `real_worker_child`,
+//! serving `ATLAS_MEASURE_STORE` as the app's worker serves its own.
 
+use super::super::client::{self, BuiltinModel, Launch, Spawned, WorkerState};
 use super::super::download::file_matches;
 use super::super::fetch::{Fetch, Head, Sink};
-use super::super::infer::{self, groups, Encoder};
+use super::super::infer::{self, groups, Encoder, Runtime};
 use super::super::pins;
+use super::super::worker::{serve, Model, Models, StoreModels, WORKER_IDLE};
+use super::process::harness_child;
 use super::*;
 use candle_nn::VarBuilder;
 use candle_transformers::models::xlm_roberta::XLMRobertaModel;
@@ -47,23 +49,150 @@ fn texts() -> Texts {
     serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap()
 }
 
-/// Current and lifetime-peak physical footprint in MiB, as Activity Monitor counts it.
+/// A process's current and lifetime-peak physical footprint in MiB, as Activity
+/// Monitor counts it.
 #[cfg(target_os = "macos")]
-fn footprint() -> (f64, f64) {
+fn footprint_of(pid: u32) -> (f64, f64) {
     extern "C" {
         fn proc_pid_rusage(pid: i32, flavor: i32, buffer: *mut u64) -> i32;
     }
     let mut info = [0u64; 64];
     // SAFETY: flavor 4 is RUSAGE_INFO_V4, which fits in 64 u64 words.
-    let status = unsafe { proc_pid_rusage(std::process::id() as i32, 4, info.as_mut_ptr()) };
-    assert_eq!(status, 0);
+    let status = unsafe { proc_pid_rusage(pid as i32, 4, info.as_mut_ptr()) };
+    if status != 0 {
+        return (f64::NAN, f64::NAN);
+    }
     let mib = |bytes: u64| bytes as f64 / 1_048_576.0;
     (mib(info[9]), mib(info[30]))
 }
 
 #[cfg(not(target_os = "macos"))]
-fn footprint() -> (f64, f64) {
+fn footprint_of(_: u32) -> (f64, f64) {
     (f64::NAN, f64::NAN)
+}
+
+/// This process: the app's side of the worker.
+fn footprint() -> (f64, f64) {
+    footprint_of(std::process::id())
+}
+
+#[cfg(unix)]
+fn exists(pid: u32) -> bool {
+    // SAFETY: signal 0 only checks that the process exists.
+    unsafe { libc::kill(pid as i32, 0) == 0 }
+}
+
+#[cfg(not(unix))]
+fn exists(_: u32) -> bool {
+    false
+}
+
+const STORE_ENV: &str = "ATLAS_WORKER_STORE";
+const IDLE_ENV: &str = "ATLAS_WORKER_IDLE_MS";
+const CPU_ENV: &str = "ATLAS_WORKER_CPU";
+
+/// The store on the CPU in f32, as Windows and Linux run it.
+struct CpuModels(ModelStore);
+
+impl Models for CpuModels {
+    fn load(&self) -> Result<Box<dyn Model>, EmbedError> {
+        let encoder = Encoder::load(
+            &self.0.weights(),
+            &self.0.tokenizer(),
+            &infer::config(pins::CONFIG_JSON)?,
+            Device::Cpu,
+            DType::F32,
+        )?;
+        Ok(Box::new(encoder))
+    }
+
+    fn convert(&self, _: &AtomicBool, _: &mut dyn FnMut(u64, u64)) -> Result<(), EmbedError> {
+        Err(EmbedError::ModelNotReady)
+    }
+
+    fn check(&self) -> Result<(), EmbedError> {
+        Err(EmbedError::ModelNotReady)
+    }
+}
+
+#[test]
+#[ignore = "the real worker the measurements start"]
+fn real_worker_child() {
+    let (Ok(store), Some(idle)) = (
+        std::env::var(STORE_ENV),
+        std::env::var(IDLE_ENV).ok().and_then(|ms| ms.parse().ok()),
+    ) else {
+        return;
+    };
+    let store = ModelStore::at(PathBuf::from(store));
+    let idle = Duration::from_millis(idle);
+    let code = if std::env::var_os(CPU_ENV).is_some() {
+        serve(std::io::stdin(), std::io::stdout(), &CpuModels(store), idle)
+    } else {
+        serve(
+            std::io::stdin(),
+            std::io::stdout(),
+            &StoreModels(store),
+            idle,
+        )
+    };
+    std::process::exit(code);
+}
+
+struct RealWorker {
+    store: PathBuf,
+    idle: Duration,
+    cpu: bool,
+}
+
+impl Launch for RealWorker {
+    fn launch(&self) -> Result<Spawned, EmbedError> {
+        let mut env = vec![
+            (STORE_ENV, self.store.to_string_lossy().into_owned()),
+            (IDLE_ENV, self.idle.as_millis().to_string()),
+        ];
+        if self.cpu {
+            env.push((CPU_ENV, "1".into()));
+        }
+        harness_child(
+            "llm::embed::builtin::tests::measure::real_worker_child",
+            &env,
+        )
+    }
+}
+
+/// Preparation's model work in a real worker on the measured store.
+impl ModelWork for RealWorker {
+    fn convert(
+        &self,
+        _: &ModelStore,
+        cancel: &AtomicBool,
+        on_progress: &mut dyn FnMut(u64, u64),
+    ) -> Result<(), EmbedError> {
+        client::convert_in_worker(self, client::LIMITS, cancel, on_progress)
+    }
+
+    fn check(&self, _: &ModelStore) -> Result<(), EmbedError> {
+        client::check_in_worker(self, client::LIMITS)
+    }
+}
+
+fn worker_model(store: ModelStore, idle: Duration, cpu: bool) -> BuiltinModel {
+    let launch = RealWorker {
+        store: store.dir().to_path_buf(),
+        idle,
+        cpu,
+    };
+    BuiltinModel::with_launch(store, Box::new(launch), client::LIMITS, pins::DIMENSIONS)
+}
+
+fn wait_for_exit(model: &BuiltinModel, pid: u32, within: Duration) -> f64 {
+    let started = Instant::now();
+    while model.state() != WorkerState::NotRunning || exists(pid) {
+        assert!(started.elapsed() < within, "worker {pid} is still running");
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    started.elapsed().as_secs_f64()
 }
 
 fn percentile(sorted: &[f64], p: f64) -> f64 {
@@ -129,10 +258,20 @@ fn prepare_from_the_publisher_files() {
     store.delete().unwrap();
     let vault = measure_vault(&store);
     let mut marks: Vec<(Stage, Instant)> = Vec::new();
+    let launch = RealWorker {
+        store: store.dir().to_path_buf(),
+        idle: WORKER_IDLE,
+        cpu: false,
+    };
+    let recipe = Recipe {
+        work: &launch,
+        ..PINNED
+    };
+    let before = footprint().0;
     let started = Instant::now();
     let prepared = store.prepare_with(
         &LocalFiles(publisher_dir()),
-        &PINNED,
+        &recipe,
         &vault,
         &never(),
         &mut |progress| {
@@ -142,15 +281,21 @@ fn prepare_from_the_publisher_files() {
         },
     );
     prepared.result.unwrap();
+    let ended = Instant::now();
+    let (after, peak) = footprint();
+    std::thread::sleep(Duration::from_secs(5));
+    let after_5s = footprint().0;
+    std::thread::sleep(Duration::from_secs(55));
+    let after_60s = footprint().0;
     let seconds = |stage: Stage| {
         let at = marks.iter().position(|mark| mark.0 == stage).unwrap();
-        let end = marks.get(at + 1).map_or_else(Instant::now, |mark| mark.1);
+        let end = marks.get(at + 1).map_or(ended, |mark| mark.1);
         end.duration_since(marks[at].1).as_secs_f64()
     };
-    let (_, peak) = footprint();
+    let total_s = ended.duration_since(started).as_secs_f64();
     println!(
-        "{{\"total_s\":{:.1},\"copy_and_hash_s\":{:.1},\"convert_s\":{:.1},\"check_s\":{:.1},\"kept_bytes\":{},\"peak_mib\":{peak:.0}}}",
-        started.elapsed().as_secs_f64(),
+        "{{\"total_s\":{:.1},\"copy_and_hash_s\":{:.1},\"convert_in_worker_s\":{:.1},\"check_in_worker_s\":{:.1},\"kept_bytes\":{},\"app_before_mib\":{before:.0},\"app_peak_mib\":{peak:.0},\"app_after_mib\":{after:.0},\"app_after_5s_mib\":{after_5s:.0},\"app_after_60s_mib\":{after_60s:.0}}}",
+        total_s,
         seconds(Stage::Download),
         seconds(Stage::Convert),
         seconds(Stage::Check),
@@ -177,7 +322,7 @@ fn f16_matches_fp32_on_the_fixture() {
     .unwrap();
     let ours: Vec<Vec<f32>> = texts
         .chunks(32)
-        .flat_map(|batch| ours.embed(batch, false).unwrap())
+        .flat_map(|batch| ours.embed(batch).unwrap())
         .collect();
     let vb = VarBuilder::from_pth(
         publisher_dir().join(pins::WEIGHTS.name),
@@ -194,7 +339,7 @@ fn f16_matches_fp32_on_the_fixture() {
     );
     let mut cosines: Vec<f64> = texts
         .chunks(32)
-        .flat_map(|batch| reference.embed(batch, false).unwrap())
+        .flat_map(|batch| reference.embed(batch).unwrap())
         .zip(&ours)
         .map(|(a, b)| f64::from(cosine(&a, b)))
         .collect();
@@ -211,16 +356,19 @@ fn f16_matches_fp32_on_the_fixture() {
 }
 
 #[test]
-#[ignore = "embeds 2,000+ passages and 180 questions; pnpm perf:builtin-model"]
+#[ignore = "embeds 2,000+ passages and 180 questions in a worker; pnpm perf:builtin-model"]
 fn a_build_and_questions_on_this_computer() {
-    let model = BuiltinModel::new(ready_store());
-    let vault = measure_vault(model.store());
+    let store = ready_store();
+    let vault = measure_vault(&store);
+    let model = worker_model(store.clone(), WORKER_IDLE, false);
     let texts = texts();
-    let base = footprint();
+    let base = footprint().0;
+
     let started = Instant::now();
-    model.load().unwrap();
-    let load_s = started.elapsed().as_secs_f64();
-    let loaded = footprint();
+    Embedder::embed_query(&model, &vault, &texts.questions[0]).unwrap();
+    let first_vector_s = started.elapsed().as_secs_f64();
+    let pid = model.worker_id().unwrap();
+    let worker_loaded = footprint_of(pid).0;
 
     let passages: Vec<&str> = texts
         .docs
@@ -240,14 +388,15 @@ fn a_build_and_questions_on_this_computer() {
         },
     )
     .unwrap();
+    let mut app_during = 0f64;
     let started = Instant::now();
     for range in crate::llm::embed::plan_batches(&passages) {
         let vectors = session.embed_batch(&passages[range]).unwrap();
         assert!(vectors.iter().all(|v| v.len() == pins::DIMENSIONS));
+        app_during = app_during.max(footprint().0);
     }
     let build_s = started.elapsed().as_secs_f64();
     session.finish(RunEnd::Complete).unwrap();
-    let built = footprint();
 
     let mut latencies = Vec::new();
     for round in 0..4 {
@@ -260,47 +409,37 @@ fn a_build_and_questions_on_this_computer() {
         }
     }
     latencies.sort_by(f64::total_cmp);
+    let (worker_now, worker_peak) = footprint_of(pid);
+    let device = model.runtime().device;
 
-    assert!(model.unload());
-    let unloaded = footprint();
-    std::thread::sleep(Duration::from_secs(5));
-    let after_5s = footprint();
-    std::thread::sleep(Duration::from_secs(55));
-    let after_60s = footprint();
+    assert!(model.release());
+    let gone_after_release = !exists(pid);
+    let app_after_release = footprint().0;
+    std::thread::sleep(Duration::from_secs(60));
+    let app_after_60s = footprint().0;
+
+    let short = worker_model(store, Duration::from_secs(3), false);
+    Embedder::embed_query(&short, &vault, &texts.questions[0]).unwrap();
+    let idle_pid = short.worker_id().unwrap();
+    let idle_exit_s = wait_for_exit(&short, idle_pid, Duration::from_secs(30));
+
     let per_second = passages.len() as f64 / build_s;
     println!(
-        "{{\"device\":\"{}\",\"base_mib\":{:.0},\"load_s\":{load_s:.2},\"loaded_mib\":{:.0},\"passages\":{},\"passages_per_s\":{per_second:.2},\"peak_mib\":{:.0},\"after_build_mib\":{:.0},\"questions\":{},\"query_ms_p50\":{:.1},\"query_ms_p95\":{:.1},\"query_ms_max\":{:.1},\"after_unload_mib\":{:.0},\"after_unload_5s_mib\":{:.0},\"after_unload_60s_mib\":{:.0}}}",
-        infer::runtime_of(&infer::device().0).device,
-        base.0,
-        loaded.0,
+        "{{\"device\":\"{device}\",\"app_before_mib\":{base:.0},\"first_vector_s\":{first_vector_s:.2},\"worker_loaded_mib\":{worker_loaded:.0},\"passages\":{},\"passages_per_s\":{per_second:.2},\"app_during_build_max_mib\":{app_during:.0},\"questions\":{},\"query_ms_p50\":{:.1},\"query_ms_p95\":{:.1},\"query_ms_max\":{:.1},\"worker_now_mib\":{worker_now:.0},\"worker_peak_mib\":{worker_peak:.0},\"gone_after_release\":{gone_after_release},\"app_after_release_mib\":{app_after_release:.0},\"app_after_60s_mib\":{app_after_60s:.0},\"idle_limit_s\":3,\"gone_after_idle_s\":{idle_exit_s:.1}}}",
         passages.len(),
-        after_5s.1,
-        built.0,
         latencies.len(),
         percentile(&latencies, 0.5),
         percentile(&latencies, 0.95),
         latencies.last().unwrap(),
-        unloaded.0,
-        after_5s.0,
-        after_60s.0
     );
+    assert!(gone_after_release);
 }
 
 #[test]
-#[ignore = "runs bge-m3 on the CPU in f32 with Metal left out; pnpm perf:builtin-model"]
+#[ignore = "runs bge-m3 on the CPU in f32 in a worker; pnpm perf:builtin-model"]
 fn one_batch_on_the_cpu() {
     let store = ready_store();
-    let started = Instant::now();
-    let encoder = Encoder::load(
-        &store.weights(),
-        &store.tokenizer(),
-        &infer::config(pins::CONFIG_JSON).unwrap(),
-        Device::Cpu,
-        DType::F32,
-    )
-    .unwrap();
-    let load_s = started.elapsed().as_secs_f64();
-    let loaded = footprint();
+    let vault = measure_vault(&store);
     let texts = texts();
     let mut passages: Vec<&str> = texts
         .docs
@@ -310,29 +449,66 @@ fn one_batch_on_the_cpu() {
         .collect();
     // The longest passage alone is the longest pass a stop can wait for.
     passages.sort_by_key(|text| std::cmp::Reverse(text.chars().count()));
-    let started = Instant::now();
-    encoder.embed(&[passages[0]], false).unwrap();
-    let longest_s = started.elapsed().as_secs_f64();
     let batch: Vec<&str> = passages
         .iter()
         .step_by(passages.len() / 32)
         .take(32)
         .copied()
         .collect();
-    let ids = encoder.encode(&batch).unwrap();
+    let tokenizer = infer::tokenizer(&store.tokenizer(), infer::MAX_TOKENS).unwrap();
+    let encode = |texts: &[&str]| -> Vec<Vec<u32>> {
+        texts
+            .iter()
+            .map(|text| {
+                let encoding = tokenizer.encode(infer::nfc(text), true).unwrap();
+                let ids = encoding.get_ids();
+                ids.get(..infer::MAX_TOKENS).unwrap_or(ids).to_vec()
+            })
+            .collect()
+    };
+    let ids = encode(&batch);
     let mut order: Vec<usize> = (0..ids.len()).collect();
     order.sort_by_key(|&index| ids[index].len());
     let passes = groups(&order, &ids, infer::CPU_BUDGET).len();
+    let longest_tokens = encode(&[passages[0]])[0].len();
+
+    let model = worker_model(store, WORKER_IDLE, true);
+    let base = footprint().0;
+    let chars = batch
+        .iter()
+        .chain([&passages[0]])
+        .map(|t| t.chars().count())
+        .sum();
+    let mut session = Embedder::start_build(
+        &model,
+        &vault,
+        BuildPlan {
+            files: 1,
+            passages: batch.len() + 1,
+            chars,
+        },
+    )
+    .unwrap();
+    let pid = model.worker_id().unwrap();
+    let loaded = footprint_of(pid).0;
+    let runtime: Runtime = model.runtime();
     let started = Instant::now();
-    encoder.embed(&batch, false).unwrap();
+    session.embed_batch(&[passages[0]]).unwrap();
+    let longest_s = started.elapsed().as_secs_f64();
+    let started = Instant::now();
+    session.embed_batch(&batch).unwrap();
     let batch_s = started.elapsed().as_secs_f64();
-    let (now, peak) = footprint();
+    session.finish(RunEnd::Complete).unwrap();
+    let (worker_now, worker_peak) = footprint_of(pid);
+    let app_now = footprint().0;
+    assert!(model.release());
     println!(
-        "{{\"device\":\"cpu\",\"dtype\":\"f32\",\"load_s\":{load_s:.1},\"loaded_mib\":{:.0},\"longest_passage_tokens\":{},\"longest_passage_s\":{longest_s:.2},\"batch\":{},\"passes\":{passes},\"batch_s\":{batch_s:.1},\"passages_per_s\":{:.2},\"footprint_mib\":{now:.0},\"peak_mib\":{peak:.0}}}",
-        loaded.0,
-        encoder.encode(&[passages[0]]).unwrap()[0].len(),
+        "{{\"device\":\"{}\",\"dtype\":\"{}\",\"worker_loaded_mib\":{loaded:.0},\"longest_passage_tokens\":{longest_tokens},\"longest_passage_s\":{longest_s:.2},\"batch\":{},\"passes\":{passes},\"batch_s\":{batch_s:.1},\"passages_per_s\":{:.2},\"worker_now_mib\":{worker_now:.0},\"worker_peak_mib\":{worker_peak:.0},\"app_before_mib\":{base:.0},\"app_after_mib\":{app_now:.0},\"gone_after_release\":{}}}",
+        runtime.device,
+        runtime.dtype,
         batch.len(),
-        batch.len() as f64 / batch_s
+        batch.len() as f64 / batch_s,
+        !exists(pid),
     );
 }
 
@@ -341,8 +517,9 @@ fn one_batch_on_the_cpu() {
 #[test]
 #[ignore = "writes the model's vectors for the fixture; pnpm perf:builtin-model"]
 fn vectors_for_the_fixture() {
-    let model = BuiltinModel::new(ready_store());
-    let vault = measure_vault(model.store());
+    let store = ready_store();
+    let vault = measure_vault(&store);
+    let model = worker_model(store, WORKER_IDLE, false);
     let texts = texts();
     let embed = |list: &[String]| -> Vec<Vec<f32>> {
         let list: Vec<&str> = list.iter().map(String::as_str).collect();

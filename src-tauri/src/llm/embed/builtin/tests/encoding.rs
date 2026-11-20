@@ -13,10 +13,10 @@ fn a_batch_equals_its_passages_embedded_one_by_one() {
     });
     let texts = tiny::sentences();
     let texts: Vec<&str> = texts.iter().map(String::as_str).collect();
-    let batch = encoder.embed(&texts, false).unwrap();
+    let batch = encoder.embed(&texts).unwrap();
     assert_eq!(batch.len(), texts.len());
     for (text, vector) in texts.iter().zip(&batch) {
-        let alone = encoder.embed(&[text], true).unwrap();
+        let alone = encoder.embed(&[text]).unwrap();
         assert!(cosine(vector, &alone[0]) >= 0.9999, "{text}");
         let norm: f32 = vector.iter().map(|v| v * v).sum::<f32>().sqrt();
         assert!((norm - 1.0).abs() < 1e-5);
@@ -65,7 +65,7 @@ fn decomposed_hangul_embeds_exactly_like_composed_hangul() {
     let ids = encoder.encode(&[composed, &decomposed]).unwrap();
     assert_eq!(ids[0], ids[1]);
     assert!(!ids[0].contains(&3), "a composed word fell to <unk>");
-    let vectors = encoder.embed(&[composed, &decomposed], false).unwrap();
+    let vectors = encoder.embed(&[composed, &decomposed]).unwrap();
     assert_eq!(vectors[0], vectors[1]);
     tiny.clean();
 }
@@ -78,7 +78,7 @@ fn a_long_passage_is_cut_at_the_token_limit() {
     let ids = encoder.encode(&[&long]).unwrap();
     assert_eq!(ids[0].len(), 32);
     assert_eq!(ids[0].last(), Some(&2), "the end token survives truncation");
-    assert_eq!(encoder.embed(&[&long], false).unwrap()[0].len(), 8);
+    assert_eq!(encoder.embed(&[&long]).unwrap()[0].len(), 8);
     tiny.clean();
 }
 
@@ -102,25 +102,6 @@ fn normalize_scales_to_length_one_and_refuses_zero_or_non_finite() {
 }
 
 #[test]
-fn a_question_takes_the_next_turn_before_a_waiting_build() {
-    let tiny = tiny::tiny("turns");
-    let encoder = tiny::encoder(&tiny);
-    let held = encoder.hold_compute();
-    std::thread::scope(|scope| {
-        let question = scope.spawn(|| encoder.embed(&["의미 검색"], true));
-        while encoder.queries_waiting() == 0 {
-            std::thread::yield_now();
-        }
-        let build = scope.spawn(|| encoder.embed(&["dawn wave", "depot"], false));
-        drop(held);
-        question.join().unwrap().unwrap();
-        build.join().unwrap().unwrap();
-    });
-    assert_eq!(encoder.turns.lock().unwrap().first(), Some(&true));
-    tiny.clean();
-}
-
-#[test]
 fn a_stop_ends_a_batch_between_groups() {
     let tiny = tiny::tiny("stop");
     let encoder = tiny::encoder(&tiny).with_budget(Budget {
@@ -131,10 +112,9 @@ fn a_stop_ends_a_batch_between_groups() {
     let texts: Vec<&str> = texts.iter().map(String::as_str).collect();
     let stop = AtomicBool::new(true);
     assert_eq!(
-        encoder.embed_until(&texts, false, &stop),
+        encoder.embed_until(&texts, &stop),
         Err(EmbedError::Cancelled)
     );
-    assert!(encoder.turns.lock().unwrap().is_empty());
     tiny.clean();
 }
 
@@ -168,8 +148,8 @@ fn the_f16_weights_compute_and_match_the_f32_ones() {
     let reference = tiny::encoder(&tiny);
     let texts = tiny::sentences();
     let texts: Vec<&str> = texts.iter().map(String::as_str).collect();
-    let a = half.embed(&texts, false).unwrap();
-    let b = reference.embed(&texts, false).unwrap();
+    let a = half.embed(&texts).unwrap();
+    let b = reference.embed(&texts).unwrap();
     for (x, y) in a.iter().zip(&b) {
         assert!(cosine(x, y) >= 0.99, "{}", cosine(x, y));
     }

@@ -79,6 +79,16 @@ const WINDOW_STATE_FLAGS: tauri_plugin_window_state::StateFlags =
 pub(crate) const APP_LOCALES: [&str; 4] = ["en", "ko", "ja", "zh"];
 const DEFAULT_APP_LOCALE: &str = "en";
 
+/// Whether this process was started as the built-in model's worker.
+pub fn embed_worker_requested(args: &[std::ffi::OsString]) -> bool {
+    llm::embed::builtin::worker::requested(args)
+}
+
+/// Serves the built-in model on stdin and stdout; returns the exit code.
+pub fn run_embed_worker() -> i32 {
+    llm::embed::builtin::worker::run()
+}
+
 pub fn run() {
     install_panic_logger();
     if let Some(path) = std::env::var_os("PATH") {
