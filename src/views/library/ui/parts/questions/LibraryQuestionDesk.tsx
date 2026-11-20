@@ -581,7 +581,8 @@ export function LibraryQuestionDesk({
             setJevFinding(null);
             setJevNote(null);
           }} className="min-w-40 flex-1" data-testid="question-desk-input" />
-          <Button type="submit" size="sm" variant={displayResult && agentReady ? 'outline' : 'primary'} className="ml-auto" disabled={!question.trim() || reading || jevSending} data-testid="question-desk-search">{reading ? t('reading', { read: readCount }) : t('search')}</Button>
+          {/* WebKit does not focus a pressed button, so the field's blur would hide this form before the click lands. */}
+          <Button type="submit" onMouseDown={(event) => event.preventDefault()} size="sm" variant={displayResult && agentReady ? 'outline' : 'primary'} className="ml-auto" disabled={!question.trim() || reading || jevSending} data-testid="question-desk-search">{reading ? t('reading', { read: readCount }) : t('search')}</Button>
           </div>
           {!displayResult ? <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('folderScope', { pages: countDeskWikiPages(docs), sources: sources.length })}</p> : null}
         </form> : null}

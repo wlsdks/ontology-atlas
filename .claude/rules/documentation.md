@@ -40,7 +40,7 @@ shapes:
 
 No `assert.match` on prose, no hand-written forbidden-word list, and no pinned
 vault-node count. Register a new docs gate with a `scripts/lib/check-rules/`
-row and a row in the `README.md` command table.
+row and a row in the command table of `docs/DEVELOPMENT-CHECKS.md`.
 
 ## Records
 
