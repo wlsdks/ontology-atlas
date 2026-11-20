@@ -74,7 +74,7 @@ export function WikiCheckStage({
         </div>
         <div className="mt-3 flex h-8 min-w-0 items-center gap-2">
           <div className="min-w-0 flex-1">
-            <WorkProgress phase="running" done={run.pagesRead.length} total={null} label={tCard("progressLabel", { title: copy.title })} />
+            <WorkProgress phase="running" done={run.readCount} total={null} label={tCard("progressLabel", { title: copy.title })} />
           </div>
           {asking ? (
             <Button size="sm" onClick={onReview} data-testid="library-check-stage-review">

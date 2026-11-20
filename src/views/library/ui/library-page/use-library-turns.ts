@@ -40,7 +40,7 @@ import {
   type LibraryUiModel,
 } from "@/features/library";
 import type { AcpTurnCompletion } from "@/features/acp-session";
-import { useFolderWorkRun, workRuns } from "@/features/work-run";
+import { latestReport, useFolderWorkRun, workRuns } from "@/features/work-run";
 import { useWikiWriteMode } from "@/shared/lib/preferences/appearance-preferences";
 import { nativeVaultFileHashes } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
@@ -56,7 +56,7 @@ import type { LibraryAgentOpeningRequest } from "../parts/agent/LibraryAgentDock
 import type { QuestionDeskReportRequest } from "../parts/questions/LibraryQuestionDesk";
 import type { LibrarySelection } from "./library-page-state";
 import type { useLibraryWorkActivity } from "./use-library-work-activity";
-import { wikiCheckOutcome, wikiCheckPayload } from "./wiki-check-outcome";
+import { checkOwner, wikiCheckOutcome, wikiCheckPayload } from "./wiki-check-outcome";
 
 export function matchLibraryOpeningRequest(
   text: string,
@@ -89,6 +89,8 @@ export function clearFiledAnswer(current: RetainedLibraryAnswer | null, filed: R
 export function restoreFiledAnswer(current: RetainedLibraryAnswer | null, filed: RetainedLibraryAnswer, generation: number): RetainedLibraryAnswer | null {
   return generation === filed.generation && current === null ? filed : current;
 }
+
+const NO_FIXED_KEYS: ReadonlySet<string> = new Set();
 
 export function useLibraryTurns({
   t, locale, toast, failureSentence, localVault, markSelfWrite, unmarkSelfWrite, workVaultScope,
@@ -131,7 +133,9 @@ export function useLibraryTurns({
   const pendingAskRef = useRef<LibraryAskContext | null>(null);
   const retryAskRef = useRef<{ nonce: number; text: string; scope: string; context: LibraryAskContext } | null>(null);
   const activeReadOnlyTurnRef = useRef(false);
-  const turnIsReadOnly = useCallback(() => activeReadOnlyTurnRef.current, []);
+  // Only the check is read-only to the session: it alone keeps running after the Library goes.
+  const activeCheckTurnRef = useRef(false);
+  const turnReadOnly = useCallback(() => activeCheckTurnRef.current, []);
   // A check can finish after the Library is gone; opening its report then would mark it read unseen.
   const pageShownRef = useRef(true);
   useEffect(() => {
@@ -182,7 +186,6 @@ export function useLibraryTurns({
     [conceptIndex, model.pageTexts, model.sources, nativeVaultRootPath],
   );
   const pendingFixRef = useRef<LintFinding | null>(null);
-  const [fixedKeys, setFixedKeys] = useState<ReadonlySet<string>>(() => new Set());
   const handleFix = useCallback(
     (finding: LintFinding) => {
       if (!nativeVaultRootPath) return;
@@ -376,6 +379,7 @@ export function useLibraryTurns({
   const pageBodyRef = useRef<HTMLDivElement | null>(null);
   const checkRun = useFolderWorkRun(workVaultScope);
   const { candidates, findings } = wikiCheckPayload(checkRun);
+  const fixedKeys = latestReport(checkRun)?.handled ?? NO_FIXED_KEYS;
   const openCandidates = useMemo(() => dropCandidatesWithNodes(candidates, docs), [candidates, docs]);
   const reportHeadings = useMemo(
     () => reportOutline(model.structural, findings, openCandidates.length, t),
@@ -394,7 +398,7 @@ export function useLibraryTurns({
     latestDocsRef.current = docs;
   }, [docs]);
   const handleTurnStarted = useCallback(
-    (start: { text: string; startedAt: string }) => {
+    (start: { text: string; startedAt: string; runtimeId: string; vaultRoot: string | null }) => {
       if (!handle) return null;
       const generation = ++answerGenerationRef.current;
       const opening = matchLibraryOpeningRequest(start.text, agent.openingRequest, consumedOpeningNonceRef.current);
@@ -402,6 +406,7 @@ export function useLibraryTurns({
       const exactAsk = matchLibraryOpeningRequest(start.text, agent.openingRequest, null);
       const kind = opening?.kind ?? "ask";
       activeReadOnlyTurnRef.current = exactAsk?.kind === 'ask' || kind === 'lint';
+      activeCheckTurnRef.current = kind === 'lint';
       const refreshTurn = kind === 'refresh' ? captureAnswerRefresh() : null;
       const selectionAtStart = latestSelectedRef.current;
       let asked: LibraryAskContext | null = null;
@@ -439,12 +444,18 @@ export function useLibraryTurns({
       if (kind === "compile") setCompileRunning(true);
       // The check's run is the app session's, so its result lands after this page is gone.
       const checkRunId = kind === "lint"
-        ? workRuns.begin({ folder: workVaultScope, agent: agent.runtime?.label ?? "", startedAt: Date.now() })
+        ? workRuns.begin({
+            folder: workVaultScope,
+            owner: checkOwner(start.vaultRoot, start.runtimeId),
+            agent: agent.runtime?.label ?? "",
+            startedAt: Date.now(),
+          })
         : null;
       return async (completion: AcpTurnCompletion) => {
         if (checkRunId !== null) workRuns.finish(checkRunId, wikiCheckOutcome(completion), Date.now());
         if (generation !== answerGenerationRef.current) return;
         activeReadOnlyTurnRef.current = false;
+        activeCheckTurnRef.current = false;
         setTurnRunning(false);
         setCompileRunning(false);
         if (kind === 'refresh') {
@@ -474,11 +485,10 @@ export function useLibraryTurns({
           receipts.reduce(completeLibraryWork, clearLibraryWork(current)),
         );
         const lastAgentText = [...completion.events].reverse().find((event) => event.kind === "agent")?.text ?? null;
-        if (kind === "lint") setFixedKeys(new Set());
         if (kind === "fix" && pendingFixRef.current) {
           const key = findingKey(pendingFixRef.current);
           pendingFixRef.current = null;
-          setFixedKeys((current) => new Set([...current, key]));
+          workRuns.markHandled(workVaultScope, key);
         }
         if (kind === "lint" && pageShownRef.current) {
           const current = latestSelectedRef.current;
@@ -588,12 +598,12 @@ export function useLibraryTurns({
             : t("stage.blockedLocalOnly");
 
   return {
-    writeMode, pendingAskRef, retryAskRef, activeReadOnlyTurnRef, turnIsReadOnly, checkRun,
+    writeMode, pendingAskRef, retryAskRef, activeReadOnlyTurnRef, turnReadOnly, checkRun,
     checkFolder: workVaultScope, lastAnswer, setLastAnswer,
     deskReport, setDeskReport, deskWorkRequest, setDeskWorkRequest, deskWorkActivity,
     latestDeskReportRef, reportEpochRef, invalidateDeskReport, previousReportScopeRef,
     answerGenerationRef, filedAnswersRef, filingAnswer, setFilingAnswer, fileAnswerNote,
-    setFileAnswerNote, consumedOpeningNonceRef, judgeWrite, pendingFixRef, fixedKeys, setFixedKeys,
+    setFileAnswerNote, consumedOpeningNonceRef, judgeWrite, pendingFixRef, fixedKeys,
     handleFix, handleNewPage, handleFileAnswer, handleFileReport, autoDecide, pageBodyRef,
     candidates, findings, openCandidates, reportHeadings,
     reportDoorCount, latestDocsRef, handleTurnStarted, hasOntology, handlePropose, handleLint,

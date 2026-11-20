@@ -19,7 +19,8 @@ type AcpChatPanelProps = ComponentProps<typeof AcpChatPanel>;
 /**
  * Closing puts the conversation away, it does not end it: the frame closes (width to zero, `inert`,
  * `aria-hidden`) while the surface stays mounted, so `useAcpSession` cleanup does not `stop()`.
- * Leaving the Library parks a running turn (`AcpChatPanelKeeper`), so a wiki check finishes away.
+ * Leaving the Library parks only a running check (`AcpChatPanelKeeper`), which finishes away; any
+ * other turn ends with the Library.
  */
 export interface LibraryAgentOpeningRequest {
   /**
@@ -63,7 +64,7 @@ export function LibraryAgentDock({
   onTerminalToolObservation,
   onTurnStopChange,
   onTurnWorkChange,
-  turnIsReadOnly,
+  turnReadOnly,
   onFileAnswer = null,
   filingAnswer = false,
   fileAnswerNote = null,
@@ -107,7 +108,7 @@ export function LibraryAgentDock({
   onTerminalToolObservation?: AcpChatPanelProps["onTerminalToolObservation"];
   onTurnStopChange?: AcpChatPanelProps["onTurnStopChange"];
   onTurnWorkChange?: AcpChatPanelProps["onTurnWorkChange"];
-  turnIsReadOnly?: AcpChatPanelProps["turnIsReadOnly"];
+  turnReadOnly?: AcpChatPanelProps["turnReadOnly"];
   /**
    * The page owns the width: `useChatWidth` keeps the in-flight drag locally, so a second copy lags.
    * The page publishes it as `--app-right-dock-width`.
@@ -350,6 +351,7 @@ export function LibraryAgentDock({
           <AcpChatPanel
             key={runtime.id}
             keepKey={`library:${vaultRoot}:${runtime.id}`}
+            parksTurns="read-only"
             runtimeId={runtime.id}
             runtimeLabel={runtime.label}
             runtimes={runtimes}
@@ -369,7 +371,7 @@ export function LibraryAgentDock({
             onTerminalToolObservation={onTerminalToolObservation}
             onTurnStopChange={onTurnStopChange}
             onTurnWorkChange={onTurnWorkChange}
-            turnIsReadOnly={turnIsReadOnly}
+            turnReadOnly={turnReadOnly}
             knownSlugs={knownSlugs}
             noticeActions={noticeActions}
             systemPromptAppendix={LIBRARY_HANDOFF_APPENDIX}

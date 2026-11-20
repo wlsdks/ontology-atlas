@@ -1,5 +1,6 @@
 export {
   isRunActive,
+  latestReport,
   type WorkRun,
   type WorkRunActivity,
   type WorkRunOutcome,

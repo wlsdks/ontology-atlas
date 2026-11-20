@@ -36,7 +36,7 @@ export function useWorkRunCopy(run: WorkRun, elapsed: string | null, marks: Work
   const t = useTranslations('library.check');
   const tChat = useTranslations('acpChat');
   const agent = run.agent;
-  const read = run.pagesRead.length;
+  const read = run.readCount;
   const lineText = (line: WorkRunLine): ReactNode => {
     switch (line.kind) {
       case 'connecting':

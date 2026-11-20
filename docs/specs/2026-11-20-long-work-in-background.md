@@ -149,9 +149,11 @@ The Korean catalogue names the same page two ways (`messages/ko/library.json:648
 - **Two presses at once.** **Check wiki** stays disabled while any Library turn runs (`LibraryCheckReport.tsx:680`, `LibraryDocumentColumn.tsx:100`). A scheduled check running at the same time keeps its own row in Automations; it does not take the card in this slice.
 - **Pages edited after the check finished.** The findings keep the existing "Fixed · check again to re-judge" rule; nothing new.
 - **Offline.** The agent's own failure arrives as `check.failedTitle`; Atlas adds no network call.
-- **A dock opened for the same folder while the check runs away.** A parked conversation whose running turn only reads (the wiki check and a question) stays and finishes beside it; a parked turn that may write still ends, as before, so two writers never share a folder.
+- **A dock opened for the same folder while the check runs away.** A parked conversation running the wiki check, which only reads, stays and finishes beside it; a parked turn that may write still ends, as before, so two writers never share a folder.
 - **Folder switched mid-run.** Switching folders ends the check; the card shows `check.failedTitle` for the folder it ran on, and no ring, badge or finding carries into the new folder.
-- **A write requested during a check.** The check's turn counts as read-only, so a write it asks for is never approved automatically; the conversation asks.
+- **A write requested during a check.** The check's turn is read-only from its start, whichever screen holds it later, so a write it asks for is never approved automatically, even with auto-approve on; the conversation asks.
+- **A re-check that reports nothing.** The last findings and their fixed marks stay in Check results until a new readable report replaces them; a stopped, failed or unreadable re-check leaves them.
+- **Agent switched mid-check.** The check keeps running in its own conversation and the card's **Stop** still ends it; the newly chosen agent's conversation cannot report into or clear the check.
 - **A dock or panel on the right.** The card glides left of any open dock (the Library's conversation, the map's conversation) and returns to the corner when it closes; notifications stand above the card. Where no room is left beside a dock (the Library below `xl`, where its dock overlays the page), the card stays in its corner above the dock, as notices already do there.
 - **Moving between tabs.** No tab change, dock or conversation ends or restarts the check; the card is one element across routes, and its count and time continue from the last value drawn.
 - **Reduced motion.** The ring is a still arc, the bar a still track, Moru holds each clip's first frame; every word and button is unchanged. The app draws no pause button.
@@ -191,7 +193,8 @@ Ranked. Each adopts the six rules and the seat; none invents another.
 3. **Folder open on every tab.** The non-map opening pane shows the count that already exists, and a way back to the folder list. Next on the first owner report of a blind open at scale.
 4. **Keep pace while hidden**, if criterion 7 passes only narrowly; and **a system notification on finish**. One-way neighbour: needs a decision record overturning the 2026-08-24 hold, and a new dependency.
 5. **Findings that survive reopening.** One-way: a new file under `.ontology-atlas/` is a vault contract. Next when a person reports re-running a check only to see old findings.
-6. **Findings arriving one by one**; **question-desk reports and Harness reads keep their result when you leave**; **bounding the check's brief** past the largest page count the agent accepts.
+6. **Writing Library turns keep running.** Slice 1 parks only the read-only check when a person leaves Library; a turn that may write still ends with the screen, since its permission cards would have nowhere to stand. Next when a person reports losing an answer or an edit by switching tab.
+7. **Findings arriving one by one**; **question-desk reports and Harness reads keep their result when you leave**; **bounding the check's brief** past the largest page count the agent accepts.
 
 One-way items: none in slice 1. Items 4 (notification) and 5 above each need a decision record before work starts.
 
@@ -206,3 +209,4 @@ None. Decided: "background" means another tab and a hidden window, not a quit ap
 - 2026-11-20: corrected Today and Problem: the Library dock does not keep its conversation, so leaving Library stops the check rather than only losing its result.
 - 2026-11-20: slice 1 built; added the edge cases for a parked read-only check, a folder switch mid-run and a write asked for during a check.
 - 2026-11-20: added the right-hand dock and tab-change edge cases after the owner asked that the work keep running and stay in view on every screen.
+- 2026-11-20: review round: the read-only flag belongs to the running turn, a write it asks for never takes an automatic approval, only the check is parked when Library goes, a re-check keeps the last findings until a new report arrives, and "Writing Library turns keep running" joined Later.

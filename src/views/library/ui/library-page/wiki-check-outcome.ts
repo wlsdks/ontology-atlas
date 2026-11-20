@@ -4,7 +4,7 @@ import {
   type LintFinding,
   type LintNodeCandidate,
 } from "@/features/library";
-import type { WorkRun, WorkRunOutcome } from "@/features/work-run";
+import { latestReport, type WorkRun, type WorkRunOutcome } from "@/features/work-run";
 import type { AcpTurnCompletion } from "@/features/acp-session";
 
 export interface WikiCheckPayload {
@@ -53,8 +53,14 @@ export function wikiCheckOutcome(completion: Pick<AcpTurnCompletion, "outcome" |
   return wikiCheckReport(lastAgentText?.kind === "agent" ? lastAgentText.text : null);
 }
 
+/** The findings Check results lists: the last readable report, until a new one replaces it. */
 export function wikiCheckPayload(run: WorkRun | null): WikiCheckPayload {
-  return (run?.report?.payload as WikiCheckPayload | undefined) ?? EMPTY_PAYLOAD;
+  return (latestReport(run)?.payload as WikiCheckPayload | undefined) ?? EMPTY_PAYLOAD;
+}
+
+/** The conversation that runs a check: one per folder and agent in the Library dock. */
+export function checkOwner(vaultRoot: string | null, runtimeId: string): string {
+  return `${vaultRoot ?? ""}:${runtimeId}`;
 }
 
 /** A tool's path as the folder stores it, or null when it lies outside the folder. */

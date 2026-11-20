@@ -168,9 +168,12 @@ export interface AcpChatPanelProps {
   onTurnStopChange?: (stop: (() => void) | null) => void;
   /** Kept while the panel is away, so a screen elsewhere can show the turn's progress. */
   onTurnWorkChange?: (work: AcpTurnWork | null) => void;
-  /** Whether the running turn only reads; a kept read-only turn may finish beside another dock on its folder. */
-  turnIsReadOnly?: () => boolean;
+  /** Which running turns keep going once the screen leaves; any other turn ends with it. */
+  parksTurns?: 'any' | 'read-only';
+  /** Asked as a turn starts; the session keeps the answer for that turn (`useAcpSession`). */
+  turnReadOnly?: (turn: AcpTurnStart) => boolean;
   captureTaskBaseline?: (turn: AcpTurnStart) => Promise<TaskBaselineCaptureResult>;
   meaningTransitionContext?: MeaningTransitionContext;
-  onBusyChange?: (busy: boolean) => void;
+  /** `readOnly` is the running turn's own flag, so it holds whichever screen seats the panel. */
+  onBusyChange?: (busy: boolean, readOnly: boolean) => void;
 }

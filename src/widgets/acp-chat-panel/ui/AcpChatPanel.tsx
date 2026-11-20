@@ -86,6 +86,7 @@ export function AcpChatPanelBody({
   onWorkReceipt,
   onTurnStarted,
   onTurnStopChange,
+  turnReadOnly,
   onTurnWorkChange,
   captureTaskBaseline,
   meaningTransitionContext,
@@ -118,6 +119,7 @@ export function AcpChatPanelBody({
     status,
     lastTurnUpdateAt,
     events,
+    activeTurnReadOnly,
     slashCommands,
     error,
     diagnostics,
@@ -148,14 +150,15 @@ export function AcpChatPanelBody({
     onTurnStarted: captureTurnStart,
     captureTaskBaseline,
     autoDecide,
+    turnReadOnly,
     systemPromptAppendix,
     rememberChoices: true,
   });
 
   const turnHeld = status === 'thinking' || pending !== null;
   useEffect(() => {
-    onBusyChange?.(turnHeld);
-  }, [turnHeld, onBusyChange]);
+    onBusyChange?.(turnHeld, turnHeld && activeTurnReadOnly);
+  }, [turnHeld, activeTurnReadOnly, onBusyChange]);
 
   const [connectStopped, setConnectStopped] = useState(false);
   // Mirrored so the start effects see it without re-running, which would race New chat's own start.

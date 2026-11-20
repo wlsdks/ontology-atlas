@@ -191,7 +191,7 @@ function PhaseLayer({ run, motion }: { run: WorkRun; motion: 'in' | 'out' | 'non
           {run.phase === 'running' ? (
             <>
               <div className="min-w-0 flex-1">
-                <WorkProgress phase="running" done={run.pagesRead.length} total={null} label={tCard('progressLabel', { title: copy.title })} />
+                <WorkProgress phase="running" done={run.readCount} total={null} label={tCard('progressLabel', { title: copy.title })} />
               </div>
               <Button size="sm" variant="outline" onClick={() => workRuns.stop()} data-testid={testId('work-run-stop')}>
                 {tCard('stop')}

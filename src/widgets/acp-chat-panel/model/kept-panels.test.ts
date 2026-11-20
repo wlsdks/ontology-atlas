@@ -69,8 +69,21 @@ describe('kept agent panels', () => {
 
   it('lets a read-only turn finish beside a dock opened for the same folder', () => {
     vi.useFakeTimers();
-    keptPanels.seat('library:a', props('/a', { turnIsReadOnly: () => true }));
-    keptPanels.busyReporter('library:a')(true);
+    keptPanels.seat('library:a', props('/a'));
+    keptPanels.busyReporter('library:a')(true, true);
+    keptPanels.leave('library:a');
+    vi.runAllTimers();
+    keptPanels.seat('map:a', props('/a'));
+    expect(keys()).toEqual(['library:a', 'map:a']);
+  });
+
+  it('keeps a turn read-only after a second screen seats it, and it still survives a rival dock', () => {
+    vi.useFakeTimers();
+    keptPanels.seat('library:a', props('/a', { turnReadOnly: () => true }));
+    keptPanels.busyReporter('library:a')(true, true);
+    keptPanels.leave('library:a');
+    vi.runAllTimers();
+    keptPanels.seat('library:a', props('/a', { turnReadOnly: () => false }));
     keptPanels.leave('library:a');
     vi.runAllTimers();
     keptPanels.seat('map:a', props('/a'));
@@ -79,8 +92,8 @@ describe('kept agent panels', () => {
 
   it('still ends a turn that may write when a dock opens for the same folder', () => {
     vi.useFakeTimers();
-    keptPanels.seat('library:a', props('/a', { turnIsReadOnly: () => false }));
-    keptPanels.busyReporter('library:a')(true);
+    keptPanels.seat('library:a', props('/a'));
+    keptPanels.busyReporter('library:a')(true, false);
     keptPanels.leave('library:a');
     vi.runAllTimers();
     keptPanels.seat('map:a', props('/a'));

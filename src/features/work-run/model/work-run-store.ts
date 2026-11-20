@@ -5,6 +5,7 @@ import {
   finishRun,
   hideCard,
   isRunActive,
+  markHandled,
   markSeen,
   observeActivity,
   observeRead,
@@ -26,7 +27,7 @@ export interface WorkRunSnapshot {
 const EMPTY: WorkRunSnapshot = { run: null, stageFolder: null, door: null };
 
 let snapshot: WorkRunSnapshot = EMPTY;
-let stopTurn: (() => void) | null = null;
+let stopTurn: { runId: number; stop: () => void } | null = null;
 let nextId = 0;
 const listeners = new Set<() => void>();
 
@@ -59,28 +60,38 @@ export const workRuns = {
   },
   read: () => snapshot,
   readServer: () => EMPTY,
-  begin(input: { folder: string; agent: string; startedAt: number }): number {
+  begin(input: { folder: string; owner: string; agent: string; startedAt: number }): number {
     nextId += 1;
-    publish({ run: beginRun({ id: nextId, ...input }), door: null });
+    stopTurn = null;
+    publish({ run: beginRun({ id: nextId, ...input }, snapshot.run), door: null });
     return nextId;
   },
-  observeActivity(activity: WorkRunActivity | null) {
-    change(null, (run) => observeActivity(run, activity));
+  /** The run this conversation is running, so its reports reach that run and no other. */
+  runOwnedBy(owner: string): number | null {
+    return snapshot.run?.owner === owner ? snapshot.run.id : null;
   },
-  observeRead(page: string) {
-    change(null, (run) => observeRead(run, page));
+  observeActivity(runId: number, activity: WorkRunActivity | null) {
+    change(runId, (run) => observeActivity(run, activity));
+  },
+  observeRead(runId: number, page: string) {
+    change(runId, (run) => observeRead(run, page));
+  },
+  markHandled(folder: string, key: string) {
+    change(null, (run) => (run.folder === folder ? markHandled(run, key) : run));
   },
   finish(id: number, outcome: WorkRunOutcome, at: number) {
     change(id, (run) => finishRun(run, outcome, at, stageShows(run)));
   },
-  /** The running turn's Stop, reported by its conversation; null while none runs. */
-  setStop(stop: (() => void) | null) {
-    stopTurn = stop;
+  /** The run's Stop, reported by its own conversation; a conversation clears only its own. */
+  setStop(runId: number, stop: (() => void) | null) {
+    if (stop) stopTurn = { runId, stop };
+    else if (stopTurn?.runId === runId) stopTurn = null;
   },
   stop() {
-    if (!isRunActive(snapshot.run)) return;
-    change(null, closeCard);
-    stopTurn?.();
+    const run = snapshot.run;
+    if (!run || !isRunActive(run)) return;
+    change(run.id, closeCard);
+    if (stopTurn?.runId === run.id) stopTurn.stop();
   },
   hide() {
     change(null, hideCard);
@@ -96,7 +107,7 @@ export const workRuns = {
     const run = snapshot.run;
     if (!run || run.folder === folder || !isRunActive(run)) return;
     publish({ run: abandonRun(run, at), door: null });
-    stopTurn?.();
+    if (stopTurn?.runId === run.id) stopTurn.stop();
   },
   enterStage(folder: string) {
     publish({ stageFolder: folder });

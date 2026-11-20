@@ -33,10 +33,10 @@ afterEach(() => {
 
 describe('the work card in the notice seat', () => {
   it('shows only observed facts while a check runs: the page, the count and the time, never a total', () => {
-    workRuns.begin({ folder: FOLDER, agent: 'Claude Agent', startedAt: 10_000 });
+    const id = workRuns.begin({ folder: FOLDER, owner: 'launch:claude-acp', agent: 'Claude Agent', startedAt: 10_000 });
     renderCard();
     act(() => {
-      for (const page of ['wiki/alpha', 'wiki/beta']) workRuns.observeRead(page);
+      for (const page of ['wiki/alpha', 'wiki/beta']) workRuns.observeRead(id, page);
       vi.advanceTimersByTime(12_000);
     });
     expect(screen.getByTestId('work-run-title')).toHaveTextContent('Checking the wiki');
@@ -47,14 +47,14 @@ describe('the work card in the notice seat', () => {
   });
 
   it('stands down while the check is on its own stage', () => {
-    workRuns.begin({ folder: FOLDER, agent: 'Claude Agent', startedAt: 10_000 });
+    workRuns.begin({ folder: FOLDER, owner: 'launch:claude-acp', agent: 'Claude Agent', startedAt: 10_000 });
     act(() => workRuns.enterStage(FOLDER));
     renderCard();
     expect(screen.queryByTestId('work-run-card')).not.toBeInTheDocument();
   });
 
   it('changes in place to the result and opens Check results from it', () => {
-    const id = workRuns.begin({ folder: FOLDER, agent: 'Claude Agent', startedAt: 10_000 });
+    const id = workRuns.begin({ folder: FOLDER, owner: 'launch:claude-acp', agent: 'Claude Agent', startedAt: 10_000 });
     renderCard();
     act(() => workRuns.finish(id, { kind: 'report', report: { itemCount: 3, pageCount: 2, payload: null } }, 40_000));
     expect(screen.getByTestId('work-run-title')).toHaveTextContent('Wiki check finished');
@@ -66,7 +66,7 @@ describe('the work card in the notice seat', () => {
   });
 
   it('hides for the rest of the run while the check keeps going', () => {
-    workRuns.begin({ folder: FOLDER, agent: 'Claude Agent', startedAt: 10_000 });
+    workRuns.begin({ folder: FOLDER, owner: 'launch:claude-acp', agent: 'Claude Agent', startedAt: 10_000 });
     renderCard();
     fireEvent.click(screen.getByTestId('work-run-hide'));
     expect(workRuns.read().run).toMatchObject({ phase: 'running', card: 'hidden' });

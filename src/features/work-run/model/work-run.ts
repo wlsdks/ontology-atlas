@@ -31,19 +31,27 @@ export interface WorkRunReport {
   pageCount: number;
   /** The parsed report, owned by the screen that reads it; the seat needs only the counts. */
   payload: unknown;
+  /** Keys of items the person has had fixed since this report arrived. */
+  handled: ReadonlySet<string>;
 }
 
 export interface WorkRun {
   id: number;
   /** The open folder's identity scope; a run never shows under another folder. */
   folder: string;
+  /** The conversation running the turn; only it may report the turn's Stop and facts. */
+  owner: string;
   agent: string;
   startedAt: number;
   endedAt: number | null;
   phase: WorkRunPhase;
   line: WorkRunLine;
-  pagesRead: readonly string[];
+  /** Append-only and shared by every snapshot of this run; `readCount` is what changes. */
+  pagesRead: ReadonlySet<string>;
+  readCount: number;
   report: WorkRunReport | null;
+  /** The last readable report before this run, which a run that reports nothing leaves standing. */
+  previousReport: WorkRunReport | null;
   /** A finished report the person has not opened yet. */
   unseen: boolean;
   card: WorkRunCardState;
@@ -53,20 +61,30 @@ export type WorkRunOutcome =
   | { kind: 'stopped' }
   | { kind: 'failed' }
   | { kind: 'unreadable' }
-  | { kind: 'report'; report: WorkRunReport };
+  | { kind: 'report'; report: Omit<WorkRunReport, 'handled'> };
 
 export function isRunActive(run: WorkRun | null): boolean {
   return run !== null && (run.phase === 'running' || run.phase === 'asking');
 }
 
-export function beginRun(input: { id: number; folder: string; agent: string; startedAt: number }): WorkRun {
+/** The report the folder's results show: this run's, or the one before it while it has none. */
+export function latestReport(run: WorkRun | null): WorkRunReport | null {
+  return run ? run.report ?? run.previousReport : null;
+}
+
+export function beginRun(
+  input: { id: number; folder: string; owner: string; agent: string; startedAt: number },
+  previous: WorkRun | null,
+): WorkRun {
   return {
     ...input,
     endedAt: null,
     phase: 'running',
     line: { kind: 'connecting' },
-    pagesRead: [],
+    pagesRead: new Set(),
+    readCount: 0,
     report: null,
+    previousReport: previous?.folder === input.folder ? latestReport(previous) : null,
     unseen: false,
     card: 'open',
   };
@@ -95,13 +113,17 @@ export function observeActivity(run: WorkRun, activity: WorkRunActivity | null):
   return { ...run, phase, line: sameLine(line, run.line) ? run.line : line };
 }
 
-/** A completed read names its file and counts it once, however often the agent opens it. */
+/**
+ * A completed read names its file and counts it once, however often the agent opens it. O(1):
+ * the run's set grows in place, since copying it per read would make a long check quadratic.
+ */
 export function observeRead(run: WorkRun, page: string): WorkRun {
   if (!isRunActive(run)) return run;
-  const counted = run.pagesRead.includes(page);
+  const counted = run.pagesRead.has(page);
   const line: WorkRunLine = { kind: 'reading', page };
   if (counted && sameLine(line, run.line)) return run;
-  return { ...run, line, pagesRead: counted ? run.pagesRead : [...run.pagesRead, page] };
+  if (!counted) (run.pagesRead as Set<string>).add(page);
+  return { ...run, line, readCount: run.pagesRead.size };
 }
 
 /**
@@ -113,7 +135,7 @@ export function finishRun(run: WorkRun, outcome: WorkRunOutcome, at: number, sta
   const phase: WorkRunPhase = outcome.kind === 'report'
     ? (outcome.report.itemCount > 0 ? 'found' : 'clean')
     : outcome.kind;
-  const report = outcome.kind === 'report' ? outcome.report : null;
+  const report = outcome.kind === 'report' ? { ...outcome.report, handled: new Set<string>() } : null;
   const card: WorkRunCardState = phase === 'stopped' || stageVisible ? 'closed' : 'open';
   return { ...run, phase, report, endedAt: at, unseen: phase === 'found' && !stageVisible, card };
 }
@@ -137,6 +159,14 @@ export function markSeen(run: WorkRun): WorkRun {
 export function abandonRun(run: WorkRun, at: number): WorkRun {
   if (!isRunActive(run)) return run;
   return { ...run, phase: 'failed', endedAt: at, report: null, unseen: false, card: 'open' };
+}
+
+/** A finding the person had fixed stays fixed on this report, wherever they went meanwhile. */
+export function markHandled(run: WorkRun, key: string): WorkRun {
+  const report = latestReport(run);
+  if (!report || report.handled.has(key)) return run;
+  const next = { ...report, handled: new Set([...report.handled, key]) };
+  return run.report ? { ...run, report: next } : { ...run, previousReport: next };
 }
 
 export function elapsedMs(run: WorkRun, now: number): number {

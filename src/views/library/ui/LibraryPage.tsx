@@ -73,7 +73,7 @@ import { LibraryHomePopovers } from "./library-page/LibraryHomePopovers";
 import { AgentDoor } from "./parts/agent/AgentDoor";
 import { SourceProgressBand } from "./parts/progress/SourceProgressBand";
 import { useContinuePress } from "./parts/progress/use-continue-press";
-import { folderRelativePage } from "./library-page/wiki-check-outcome";
+import { checkOwner, folderRelativePage } from "./library-page/wiki-check-outcome";
 
 /** The work card's box (`h-36` in `WorkRunCard`); a toast above it clears this much. */
 const WORK_CARD_HEIGHT = "9rem";
@@ -336,16 +336,24 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const templateProblems = useWikiTemplateProblems({
     t, locale, toast, nativeVaultRootPath, turnRunning, choose, busy, model, agent, reader, turns,
   });
+  // Each conversation reports only to the run it owns, so a newly seated agent cannot touch the check.
+  const conversationOwner = checkOwner(nativeVaultRootPath, agent.runtime?.id ?? "");
   const observeCheckWork = useCallback((work: WorkRunActivity | null) => {
-    if (!work) return;
+    const runId = workRuns.runOwnedBy(conversationOwner);
+    if (!work || runId === null) return;
     const page = work.target ? folderRelativePage(work.target, nativeVaultRootPath) : null;
-    workRuns.observeActivity({ ...work, target: page });
-  }, [nativeVaultRootPath]);
+    workRuns.observeActivity(runId, { ...work, target: page });
+  }, [conversationOwner, nativeVaultRootPath]);
   const observeTerminalTool = useCallback((event: Extract<AcpEvent, { kind: "tool" }>) => {
     handleTerminalToolObservation(event);
-    const read = completedAcpReadEvent(event, nativeVaultRootPath, Date.now());
-    if (read?.target) workRuns.observeRead(read.target.ref);
-  }, [handleTerminalToolObservation, nativeVaultRootPath]);
+    const runId = workRuns.runOwnedBy(conversationOwner);
+    const read = runId === null ? null : completedAcpReadEvent(event, nativeVaultRootPath, Date.now());
+    if (runId !== null && read?.target) workRuns.observeRead(runId, read.target.ref);
+  }, [conversationOwner, handleTerminalToolObservation, nativeVaultRootPath]);
+  const reportCheckStop = useCallback((stop: (() => void) | null) => {
+    const runId = workRuns.runOwnedBy(conversationOwner);
+    if (runId !== null) workRuns.setStop(runId, stop);
+  }, [conversationOwner]);
   const setAgentOpen = agent.setOpen;
   // The card elsewhere asked for a door; it opens once this folder's Library is on screen.
   useEffect(() => {
@@ -406,9 +414,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           onTurnActivityChange={setAgentActivity}
           onTurnToolActivityChange={handleAcpToolActivityChange}
           onTerminalToolObservation={observeTerminalTool}
-          onTurnStopChange={workRuns.setStop}
+          onTurnStopChange={reportCheckStop}
           onTurnWorkChange={observeCheckWork}
-          turnIsReadOnly={turns.turnIsReadOnly}
+          turnReadOnly={turns.turnReadOnly}
           onFileAnswer={lastAnswer ? lastAnswer.origin === 'question-report'
             ? deskReport?.answer === lastAnswer && deskReport.vaultScope === workVaultScope ? handleFileReport : null
             : () => void handleFileAnswer() : null}

@@ -149,6 +149,11 @@ export interface UseAcpSessionOptions {
    * ask, so what its scope disallows is refused. Ontology writes never come here.
    */
   autoDecide?: (request: AcpPermissionRequest) => string | { reject: string } | null;
+  /**
+   * Asked once as a turn starts. A read-only turn keeps that for its whole life, whichever screen
+   * holds the conversation later, and none of its writes is ever answered without a person.
+   */
+  turnReadOnly?: (turn: AcpTurnStart) => boolean;
   onToolSettled?: (toolCallId: string, status: string) => void;
   /**
    * A paragraph the consumer appends after the vault handoff, for rules that hold only on its
@@ -370,6 +375,7 @@ export function useAcpSession({
   onTurnStarted,
   captureTaskBaseline,
   autoDecide,
+  turnReadOnly,
   onToolSettled,
   systemPromptAppendix = null,
   resumeLatest = false,
@@ -425,7 +431,10 @@ export function useAcpSession({
     taskBaseline: TaskBaselineCaptureResult | null;
     /** A source-bound investigation the app composed; it asks for no edits, so every write shows its card. */
     investigation: boolean;
+    readOnly: boolean;
   } | null>(null);
+  const [activeTurnReadOnly, setActiveTurnReadOnly] = useState(false);
+  const turnReadOnlyRef = useRef<UseAcpSessionOptions['turnReadOnly']>(undefined);
   const [error, setError] = useState<string | null>(null);
   /** Commands the agent found in this folder — putting skills in the vault makes them appear here. */
   const [slashCommands, setSlashCommands] = useState<AcpSlashCommand[]>([]);
@@ -582,6 +591,7 @@ export function useAcpSession({
     const active = activeTurnRef.current;
     if (!active) return;
     activeTurnRef.current = null;
+    setActiveTurnReadOnly(false);
     if (!active.observer) return;
     const currentEvents = eventsRef.current;
     const index = currentEvents.findIndex((event) => event.kind === 'user' && event.id === active.start.userEventId);
@@ -762,6 +772,7 @@ export function useAcpSession({
     const generation = generationRef.current;
     // A request that arrived before the person turned auto-approve on still shows its card.
     const autoApproveAtArrival = autoApproveNow() && activeTurnRef.current?.investigation !== true;
+    const readOnlyTurn = activeTurnRef.current?.readOnly === true;
     const activeStart = activeTurnRef.current?.start ?? null;
     const origin = {
       sessionGeneration: generation,
@@ -812,7 +823,7 @@ export function useAcpSession({
         resolve(null);
         return;
       }
-      const note = request.reviewKind === 'permission' ? decided : null;
+      const note = request.reviewKind === 'permission' && !readOnlyTurn ? decided : null;
       const allow = note !== null ? request.options.find((option) => option.kind === 'allow_once') : undefined;
       if (note !== null && allow) {
         push({ kind: 'notice', id: nextEventId(), text: 'auto-allowed', detail: note });
@@ -820,7 +831,7 @@ export function useAcpSession({
         return;
       }
       // Only a person's live turn can carry their standing choice; a request outside one asks.
-      const standing = decided === null && origin.turn
+      const standing = decided === null && origin.turn && !readOnlyTurn
         ? standingApproval(request, {
             // The picker reads the plan mode there, so the app does not answer behind it.
             enabled: autoApproveAtArrival && autoApproveNow() && modeCopyKey(choicesRef.current.currentModeId) !== 'plan',
@@ -1256,7 +1267,9 @@ export function useAcpSession({
       try { observer = onTurnStarted?.(start) ?? null; } catch (error) {
         keepDiagnostic(`analysis-capture: ${error instanceof Error ? error.message : String(error)}`);
       }
-      activeTurnRef.current = { start, observer, cancelRequested: false, taskBaseline: null, investigation: Boolean(guard) };
+      const readOnly = turnReadOnlyRef.current?.(start) === true;
+      activeTurnRef.current = { start, observer, cancelRequested: false, taskBaseline: null, investigation: Boolean(guard), readOnly };
+      setActiveTurnReadOnly(readOnly);
       setReportedPlan(null);
       latestUserRequestRef.current = text.trim();
       push({ kind: 'user', id: userEventId, text });
@@ -1396,10 +1409,11 @@ export function useAcpSession({
   useEffect(() => {
     startRef.current = start;
     autoDecideRef.current = autoDecide;
+    turnReadOnlyRef.current = turnReadOnly;
     onToolSettledRef.current = onToolSettled;
     systemPromptAppendixRef.current = systemPromptAppendix;
     stopRef.current = stop;
-  }, [start, stop, setStatusTracked, autoDecide, onToolSettled, systemPromptAppendix]);
+  }, [start, stop, setStatusTracked, autoDecide, turnReadOnly, onToolSettled, systemPromptAppendix]);
 
   useEffect(() => {
     disposedRef.current = false;
@@ -1414,6 +1428,8 @@ export function useAcpSession({
     status,
     lastTurnUpdateAt,
     events,
+    /** The running turn was read-only when it started; false between turns. */
+    activeTurnReadOnly,
     error,
     slashCommands,
     diagnostics,
