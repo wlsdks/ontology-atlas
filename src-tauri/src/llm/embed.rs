@@ -108,6 +108,13 @@ pub(crate) enum EmbedError {
     Inference(String),
     /// Reading or writing the model directory failed.
     Store(String),
+    /// The volume lacks the space the whole preparation needs; nothing was kept.
+    DiskSpace {
+        needed: u64,
+        free: u64,
+    },
+    /// The download host could not be reached directly; no proxy is used.
+    NoDirectConnection,
 }
 
 impl EmbedError {
@@ -142,6 +149,8 @@ impl EmbedError {
             Self::Convert(_) => "embed-model-convert-failed",
             Self::Inference(_) => "embed-inference-failed",
             Self::Store(_) => "embed-model-store-failed",
+            Self::DiskSpace { .. } => "embed-model-disk-space",
+            Self::NoDirectConnection => "embed-download-no-direct-connection",
         }
     }
 }
@@ -164,6 +173,7 @@ impl fmt::Display for EmbedError {
             Self::PassageTooLong(index) => index.to_string(),
             Self::Redirected(status) | Self::Http(status) => status.to_string(),
             Self::ResponseInvalid(reason) => (*reason).to_string(),
+            Self::DiskSpace { needed, free } => format!("needed={needed} free={free}"),
             _ => String::new(),
         };
         f.write_str(&coded(self.code(), detail))
@@ -460,6 +470,18 @@ pub(crate) trait Embedder {
 
 pub(crate) trait EmbedSession {
     fn embed_batch(&mut self, passages: &[&str]) -> Result<Vec<Vec<f32>>, EmbedError>;
+    /// `embed_batch` that returns `Cancelled` once `stop` is set; a source that cannot
+    /// stop inside a batch checks it only before starting.
+    fn embed_batch_until(
+        &mut self,
+        passages: &[&str],
+        stop: &AtomicBool,
+    ) -> Result<Vec<Vec<f32>>, EmbedError> {
+        if stop.load(std::sync::atomic::Ordering::Relaxed) {
+            return Err(EmbedError::Cancelled);
+        }
+        self.embed_batch(passages)
+    }
     fn finish(self: Box<Self>, ended: RunEnd) -> Result<(), EmbedError>;
 }
 

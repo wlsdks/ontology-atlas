@@ -91,6 +91,10 @@ pub struct AuditDownload {
     /// `complete`, `stopped` or `failed`; absent on the start line.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ended: Option<String>,
+    /// On the close line: every host the download asked, in order, the redirect hosts
+    /// that served the bytes included. `host` stays the first one asked.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub hosts: Vec<String>,
 }
 
 /// An embedding run sends thousands of requests, so one line opens it before the

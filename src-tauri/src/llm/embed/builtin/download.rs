@@ -1,12 +1,14 @@
 // HTTPS from Hugging Face hosts only, each hop's host checked before it is asked
 // anything; a `.part` file resumes, and only a file matching its pinned size and
-// SHA-256 is renamed into place. Audit lines open before the first request.
+// SHA-256 is renamed into place. A run's start line precedes its first request, and
+// a run left without its close line is closed before anything else happens.
 
 use super::super::audit::{self, Download, RunEnd};
 use super::super::EmbedError;
 use super::fetch::{Fetch, Head, Sink};
 use super::pins::{self, PinnedFile};
 use super::{Progress, Stage, DOWNLOAD_SOURCE};
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -19,8 +21,16 @@ use std::time::Instant;
 pub(crate) const ALLOWED_DOMAINS: [&str; 2] = ["huggingface.co", "hf.co"];
 const MAX_HOPS: usize = 8;
 const HASH_CHUNK: usize = 1024 * 1024;
+/// Names the run whose start line is written and whose close line is not yet.
+pub(crate) const OPEN_RUN: &str = "open-run.json";
 
-/// What one download run did, for the closing line and the consent dialog.
+#[derive(Debug, Serialize, Deserialize)]
+struct OpenRun {
+    run: String,
+    hosts: Vec<String>,
+}
+
+/// What one download run did, for the consent dialog; the close line says the same.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct DownloadReport {
     /// Every host asked, in order, each once.
@@ -101,14 +111,15 @@ fn hash_prefix(
     }
 }
 
+/// The file at `path`, not a link, has the pinned size and SHA-256.
 pub(crate) fn file_matches(
     path: &Path,
     file: &PinnedFile,
     cancel: &AtomicBool,
     on_bytes: &mut dyn FnMut(u64),
 ) -> Result<bool, EmbedError> {
-    match fs::metadata(path) {
-        Ok(meta) if meta.len() == file.bytes => {}
+    match fs::symlink_metadata(path) {
+        Ok(meta) if meta.is_file() && meta.len() == file.bytes => {}
         _ => return Ok(false),
     }
     let digest = hash_prefix(path, file.bytes, cancel, on_bytes)?.finalize();
@@ -211,16 +222,17 @@ struct Opened {
 }
 
 impl Downloader<'_> {
-    /// Leaves every pinned file verified under `dir`, fetching what is missing.
-    pub(crate) fn run(&mut self) -> Result<DownloadReport, EmbedError> {
+    /// Leaves every pinned file verified under `dir`, fetching what is missing. The
+    /// report is filled in even when the run fails.
+    pub(crate) fn run(&mut self, report: &mut DownloadReport) -> Result<(), EmbedError> {
         fs::create_dir_all(self.dir).map_err(io_error)?;
+        self.close_unclosed_run()?;
         let total: u64 = self.files.iter().map(|file| file.bytes).sum();
-        let mut report = DownloadReport::default();
         let mut opened: Option<Opened> = None;
         let mut done_before = 0u64;
         let mut outcome = Ok(());
         for file in self.files {
-            if let Err(error) = self.one(file, done_before, total, &mut report, &mut opened) {
+            if let Err(error) = self.one(file, done_before, total, report, &mut opened) {
                 outcome = Err(error);
                 break;
             }
@@ -233,7 +245,7 @@ impl Downloader<'_> {
                     Err(EmbedError::Cancelled) => RunEnd::Stopped,
                     Err(_) => RunEnd::Failed,
                 };
-                audit::write_download_close(
+                audit::write_download_close_naming(
                     self.vault_dir,
                     &DOWNLOAD_SOURCE,
                     &download_line(
@@ -243,13 +255,35 @@ impl Downloader<'_> {
                         Some(ended),
                     ),
                     opened.started.elapsed().as_millis() as u64,
+                    &report.hosts,
                 )
+                .and_then(|()| remove_if_present(&self.dir.join(OPEN_RUN)))
             }
             None => Ok(()),
         };
         outcome?;
-        closed?;
-        Ok(report)
+        closed
+    }
+
+    /// A run that ended without its close line (a quit, a log that refused the line)
+    /// is closed as failed first; until that line is written nothing is asked.
+    fn close_unclosed_run(&self) -> Result<(), EmbedError> {
+        let marker = self.dir.join(OPEN_RUN);
+        remove_link(&marker)?;
+        let Ok(text) = fs::read_to_string(&marker) else {
+            return Ok(());
+        };
+        // An unreadable marker cannot name its run; nothing more can close it.
+        if let Ok(open) = serde_json::from_str::<OpenRun>(&text) {
+            audit::write_download_close_naming(
+                self.vault_dir,
+                &DOWNLOAD_SOURCE,
+                &download_line(&open.run, self.files, None, Some(RunEnd::Failed)),
+                0,
+                &open.hosts,
+            )?;
+        }
+        remove_if_present(&marker)
     }
 
     fn one(
@@ -261,6 +295,9 @@ impl Downloader<'_> {
         opened: &mut Option<Opened>,
     ) -> Result<(), EmbedError> {
         let target = self.dir.join(file.name);
+        let part = part_path(self.dir, file);
+        remove_link(&target)?;
+        remove_link(&part)?;
         let verify = |on_progress: &mut dyn FnMut(&Progress), checked: u64| {
             on_progress(&Progress {
                 stage: Stage::Verify,
@@ -278,8 +315,7 @@ impl Downloader<'_> {
         }
         remove_if_present(&target)?;
 
-        let part = part_path(self.dir, file);
-        let mut have = fs::metadata(&part).map(|meta| meta.len()).unwrap_or(0);
+        let mut have = fs::symlink_metadata(&part).map_or(0, |meta| meta.len());
         if have > file.bytes {
             remove_if_present(&part)?;
             have = 0;
@@ -289,11 +325,8 @@ impl Downloader<'_> {
             checked += bytes;
             verify(&mut *self.on_progress, checked);
         })?;
-        let out = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&part)
-            .map_err(io_error)?;
+        let out = open_part(&part)?;
+        let dir = self.dir;
         let on_progress = &mut *self.on_progress;
         let mut on_bytes = |have: u64| {
             on_progress(&Progress {
@@ -318,21 +351,27 @@ impl Downloader<'_> {
             if transfer.have == file.bytes {
                 break Ok(());
             }
-            if opened.is_none() {
-                let run = uuid::Uuid::new_v4().to_string();
-                audit::write_download_start(
-                    self.vault_dir,
-                    &DOWNLOAD_SOURCE,
-                    &download_line(&run, self.files, None, None),
-                )?;
-                *opened = Some(Opened {
-                    run,
-                    started: Instant::now(),
-                });
-            }
             let host = url.host_str().unwrap_or_default().to_ascii_lowercase();
-            if !report.hosts.contains(&host) {
+            let new_host = !report.hosts.contains(&host);
+            if new_host {
                 report.hosts.push(host);
+            }
+            match opened.as_ref() {
+                None => {
+                    let run = uuid::Uuid::new_v4().to_string();
+                    audit::write_download_start(
+                        self.vault_dir,
+                        &DOWNLOAD_SOURCE,
+                        &download_line(&run, self.files, None, None),
+                    )?;
+                    mark_open(dir, &run, &report.hosts)?;
+                    *opened = Some(Opened {
+                        run,
+                        started: Instant::now(),
+                    });
+                }
+                Some(open) if new_host => mark_open(dir, &open.run, &report.hosts)?,
+                Some(_) => {}
             }
             let got = self
                 .fetch
@@ -362,14 +401,18 @@ impl Downloader<'_> {
         let Transfer {
             out, hasher, have, ..
         } = transfer;
-        out.sync_all().map_err(io_error)?;
-        drop(out);
         if let Err(error) = fetched {
+            drop(out);
             if matches!(error, EmbedError::SizeMismatch(_)) {
                 remove_if_present(&part)?;
             }
             return Err(error);
         }
+        out.sync_all().map_err(io_error)?;
+        drop(out);
+        // The hash covers every byte in `.part`: the resumed prefix re-read from disk,
+        // the rest hashed as written, then synced. Conversion reads the file again and
+        // its result must match the reference vectors, so no third read is made.
         if have != file.bytes || super::super::hex(&hasher.finalize()) != file.sha256 {
             remove_if_present(&part)?;
             return Err(EmbedError::HashMismatch(file.name.into()));
@@ -395,6 +438,48 @@ fn download_line<'r>(
         // The request carries only these URLs.
         payload_sha256: crate::llm_audit::sha256_hex(&urls.join("\n")),
     }
+}
+
+fn mark_open(dir: &Path, run: &str, hosts: &[String]) -> Result<(), EmbedError> {
+    let text = serde_json::to_string(&OpenRun {
+        run: run.to_string(),
+        hosts: hosts.to_vec(),
+    })
+    .map_err(|error| EmbedError::Store(error.to_string()))?;
+    write_synced(&dir.join(OPEN_RUN), text.as_bytes())
+}
+
+/// Opens `.part` for appending without following a link put in its place.
+fn open_part(path: &Path) -> Result<File, EmbedError> {
+    let mut options = OpenOptions::new();
+    options.create(true).append(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.custom_flags(libc::O_NOFOLLOW);
+    }
+    options.open(path).map_err(io_error)
+}
+
+/// Removes `path` when it is a link, so the next open makes a plain file there.
+pub(crate) fn remove_link(path: &Path) -> Result<(), EmbedError> {
+    match fs::symlink_metadata(path) {
+        Ok(meta) if meta.file_type().is_symlink() => remove_if_present(path),
+        _ => Ok(()),
+    }
+}
+
+/// Writes a synced temporary sibling, then renames it over `path`.
+pub(crate) fn write_synced(path: &Path, bytes: &[u8]) -> Result<(), EmbedError> {
+    let mut name = path.file_name().unwrap_or_default().to_os_string();
+    name.push(".tmp");
+    let temporary = path.with_file_name(name);
+    remove_link(&temporary)?;
+    let mut file = File::create(&temporary).map_err(io_error)?;
+    file.write_all(bytes).map_err(io_error)?;
+    file.sync_all().map_err(io_error)?;
+    drop(file);
+    fs::rename(&temporary, path).map_err(io_error)
 }
 
 pub(crate) fn remove_if_present(path: &Path) -> Result<(), EmbedError> {

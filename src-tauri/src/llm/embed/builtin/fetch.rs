@@ -1,6 +1,6 @@
 // One GET per call through curl, which follows no redirect without `--location`,
 // so the caller checks each Location's host first. `--disable` skips ~/.curlrc, no
-// proxy is used, and only the URL and a Range header are sent.
+// proxy is used, and the request carries only Host and, when resuming, Range.
 
 use super::super::EmbedError;
 use std::io::{BufRead, BufReader, Read, Write};
@@ -83,8 +83,13 @@ impl CurlFetch {
         if from > 0 {
             config.push_str(&format!("header = \"Range: bytes={from}-\"\n"));
         }
+        // An empty value removes the header curl would otherwise add.
+        config.push_str("header = \"User-Agent:\"\n");
+        config.push_str("header = \"Accept:\"\n");
         config.push_str("noproxy = \"*\"\n");
         config.push_str(&format!("proto = \"{}\"\n", self.protocols));
+        // A Location may hold `[1-9999]`, which curl would otherwise expand into requests.
+        config.push_str("globoff\n");
         config.push_str(&format!(
             "connect-timeout = {}\n",
             self.connect_timeout.as_secs().max(1)
@@ -192,6 +197,8 @@ impl Fetch for CurlFetch {
         } else {
             Err(match status.code() {
                 Some(28) => EmbedError::TimedOut,
+                // Could not resolve the host, or could not connect to it.
+                Some(6 | 7) => EmbedError::NoDirectConnection,
                 _ => EmbedError::Request(crate::errors::squeeze(&stderr)),
             })
         }

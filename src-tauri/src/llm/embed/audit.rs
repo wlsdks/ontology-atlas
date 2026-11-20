@@ -282,7 +282,7 @@ pub(super) fn finalize_query(
     .map_err(blocked)
 }
 
-fn download_line<'a>(download: &'a Download<'a>) -> Line<'a> {
+fn download_line<'a>(download: &'a Download<'a>, hosts: &[String]) -> Line<'a> {
     Line {
         purpose: DOWNLOAD_PURPOSE,
         model: download.model,
@@ -302,6 +302,7 @@ fn download_line<'a>(download: &'a Download<'a>) -> Line<'a> {
             revision: download.revision.clone(),
             bytes: download.bytes,
             ended: download.ended.map(|ended| ended.label().to_string()),
+            hosts: hosts.to_vec(),
         }),
     }
 }
@@ -312,7 +313,7 @@ pub(super) fn write_download_start(
     source: &dyn Source,
     download: &Download<'_>,
 ) -> Result<(), EmbedError> {
-    let line = download_line(download);
+    let line = download_line(download, &[]);
     reserve_waiting(vault_dir, source.line_wait(), || draft(source, &line))?;
     Ok(())
 }
@@ -323,7 +324,18 @@ pub(super) fn write_download_close(
     download: &Download<'_>,
     duration_ms: u64,
 ) -> Result<(), EmbedError> {
-    let line = download_line(download);
+    write_download_close_naming(vault_dir, source, download, duration_ms, &[])
+}
+
+/// The close line, naming every host the download asked.
+pub(super) fn write_download_close_naming(
+    vault_dir: &Path,
+    source: &dyn Source,
+    download: &Download<'_>,
+    duration_ms: u64,
+    hosts: &[String],
+) -> Result<(), EmbedError> {
+    let line = download_line(download, hosts);
     let outcome = download.ended.unwrap_or(RunEnd::Failed).outcome();
     write_closed(
         vault_dir,

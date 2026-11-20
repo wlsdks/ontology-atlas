@@ -32,6 +32,13 @@ pub(crate) const DOWNLOADS: [PinnedFile; 2] = [TOKENIZER, WEIGHTS];
 /// The dense embedding's width.
 pub(crate) const DIMENSIONS: usize = 1_024;
 
+/// The f16 conversion's size, the same on every run, for the free-space check.
+pub(crate) const CONVERTED_BYTES: u64 = 1_133_454_928;
+
+/// Reference texts with the vectors Ollama's own build of bge-m3 gave them, and the
+/// least cosine the converted model must reach on each.
+pub(crate) const REFERENCES_JSON: &str = include_str!("reference-vectors.json");
+
 /// `config.json` at the pinned commit, minus fields the encoder does not read.
 pub(crate) const CONFIG_JSON: &str = r#"{
   "hidden_size": 1024,

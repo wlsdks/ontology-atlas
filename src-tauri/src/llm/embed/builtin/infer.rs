@@ -7,16 +7,17 @@ use candle_core::{DType, Device, Tensor};
 use candle_nn::VarBuilder;
 use candle_transformers::models::xlm_roberta::{Config, XLMRobertaModel};
 use std::path::Path;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Mutex;
-use std::time::Duration;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Mutex, MutexGuard};
 use tokenizers::{NormalizedString, Tokenizer, TruncationParams};
 
 /// Tokens kept per passage, `<s>` and `</s>` included: a guard, not a cut, since a
 /// 2,000-character passage measured at most 1,211. Position ids are counted in the
 /// weights' f16, exact only to 2,048, and the last one is this plus 1.
 pub(crate) const MAX_TOKENS: usize = 2_046;
-/// What one forward pass may hold, padding included.
+
+/// What one forward pass may hold, padding included. A stop is honoured between
+/// passes, so the budget also bounds how long a stop waits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Budget {
     pub tokens: usize,
@@ -25,9 +26,42 @@ pub(crate) struct Budget {
     pub cells: usize,
 }
 
-pub(crate) const BUDGET: Budget = Budget {
+pub(crate) const METAL_BUDGET: Budget = Budget {
     tokens: 512,
     cells: 1 << 18,
+};
+
+/// On an M-series CPU in f32 a 652-token passage alone took 0.6 s and a 32-passage
+/// batch ran in 20 passes of 0.33 s, so a stop waits well under a few seconds.
+pub(crate) const CPU_BUDGET: Budget = Budget {
+    tokens: 256,
+    cells: 1 << 17,
+};
+
+/// Where the model runs and what it needs, for the screen that offers it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct Runtime {
+    /// `metal` or `cpu`.
+    pub device: &'static str,
+    /// The weights' type in memory.
+    pub dtype: &'static str,
+    /// Peak physical memory while embedding, measured on bge-m3.
+    pub memory_bytes: u64,
+}
+
+/// A 2,505-passage build peaked at 1.66 GiB (`pnpm perf:builtin-model`).
+const METAL_RUNTIME: Runtime = Runtime {
+    device: "metal",
+    dtype: "f16",
+    memory_bytes: 1_800_000_000,
+};
+
+/// The f16 file becomes f32 on load: 2.27 GB of weights stay resident, and a
+/// batch peaked at 3.15 GiB.
+const CPU_RUNTIME: Runtime = Runtime {
+    device: "cpu",
+    dtype: "f32",
+    memory_bytes: 3_300_000_000,
 };
 
 pub(crate) struct Encoder {
@@ -41,6 +75,9 @@ pub(crate) struct Encoder {
     compute: Mutex<()>,
     /// Questions waiting for `compute`; a build yields to them between groups.
     queries_waiting: AtomicUsize,
+    /// Who took each turn, `true` for a question.
+    #[cfg(test)]
+    pub turns: Mutex<Vec<bool>>,
 }
 
 fn model_error(error: impl std::fmt::Display) -> EmbedError {
@@ -60,6 +97,14 @@ pub(crate) fn device() -> (Device, DType) {
     (Device::Cpu, DType::F32)
 }
 
+pub(crate) fn runtime_of(device: &Device) -> Runtime {
+    if device.is_metal() {
+        METAL_RUNTIME
+    } else {
+        CPU_RUNTIME
+    }
+}
+
 pub(crate) fn config(json: &str) -> Result<Config, EmbedError> {
     serde_json::from_str(json).map_err(model_error)
 }
@@ -76,6 +121,48 @@ pub(crate) fn tokenizer(path: &Path, max_tokens: usize) -> Result<Tokenizer, Emb
     Ok(tokenizer)
 }
 
+/// Metal hands back autoreleased objects for every command buffer. A thread
+/// without a pool keeps them for its whole life, so each pass drains its own.
+fn in_pool<T>(work: impl FnOnce() -> T) -> T {
+    #[cfg(target_os = "macos")]
+    {
+        #[link(name = "objc", kind = "dylib")]
+        extern "C" {
+            fn objc_autoreleasePoolPush() -> *mut std::ffi::c_void;
+            fn objc_autoreleasePoolPop(pool: *mut std::ffi::c_void);
+        }
+        struct Pool(*mut std::ffi::c_void);
+        impl Drop for Pool {
+            fn drop(&mut self) {
+                // SAFETY: popped once, on the thread that pushed it, in reverse order.
+                unsafe { objc_autoreleasePoolPop(self.0) }
+            }
+        }
+        // SAFETY: the pool is popped by `Pool`'s drop before this frame returns.
+        let _pool = Pool(unsafe { objc_autoreleasePoolPush() });
+        work()
+    }
+    #[cfg(not(target_os = "macos"))]
+    work()
+}
+
+/// Asks the allocator to hand freed pages back after the model is dropped.
+pub(crate) fn release_memory() {
+    #[cfg(target_os = "macos")]
+    {
+        extern "C" {
+            fn malloc_zone_pressure_relief(zone: *mut std::ffi::c_void, goal: usize) -> usize;
+        }
+        // SAFETY: a null zone means every zone; the call only returns free pages.
+        unsafe { malloc_zone_pressure_relief(std::ptr::null_mut(), 0) };
+    }
+    #[cfg(all(target_os = "linux", target_env = "gnu"))]
+    // SAFETY: trims only free memory at the top of glibc's heaps.
+    unsafe {
+        libc::malloc_trim(0);
+    }
+}
+
 impl Encoder {
     /// Reads f16 safetensors; the file is the app's own conversion of a verified download.
     pub(crate) fn load(
@@ -86,11 +173,13 @@ impl Encoder {
         dtype: DType,
     ) -> Result<Self, EmbedError> {
         let tokenizer = tokenizer(tokenizer_path, MAX_TOKENS)?;
-        // SAFETY: the file sits in the app's own data directory and is not written
-        // while mapped; the mapping is dropped when loading returns.
-        let vb = unsafe { VarBuilder::from_mmaped_safetensors(&[weights], dtype, &device) }
-            .map_err(model_error)?;
-        let model = XLMRobertaModel::new(config, vb).map_err(model_error)?;
+        let model = in_pool(|| {
+            // SAFETY: the file sits in the app's own data directory and is not
+            // written while mapped; the mapping is dropped when loading returns.
+            let vb = unsafe { VarBuilder::from_mmaped_safetensors(&[weights], dtype, &device) }
+                .map_err(model_error)?;
+            XLMRobertaModel::new(config, vb).map_err(model_error)
+        })?;
         Ok(Self::from_parts(
             tokenizer,
             model,
@@ -107,21 +196,32 @@ impl Encoder {
         pad_id: u32,
         max_tokens: usize,
     ) -> Self {
+        let budget = if device.is_metal() {
+            METAL_BUDGET
+        } else {
+            CPU_BUDGET
+        };
         Self {
             tokenizer,
             model,
             device,
             pad_id,
             max_tokens,
-            budget: BUDGET,
+            budget,
             compute: Mutex::new(()),
             queries_waiting: AtomicUsize::new(0),
+            #[cfg(test)]
+            turns: Mutex::new(Vec::new()),
         }
     }
 
     pub(crate) fn with_budget(mut self, budget: Budget) -> Self {
         self.budget = budget;
         self
+    }
+
+    pub(crate) fn runtime(&self) -> Runtime {
+        runtime_of(&self.device)
     }
 
     /// Token ids per text, after NFC, within the token limit.
@@ -147,11 +247,24 @@ impl Encoder {
         texts: &[&str],
         priority: bool,
     ) -> Result<Vec<Vec<f32>>, EmbedError> {
+        self.embed_until(texts, priority, &AtomicBool::new(false))
+    }
+
+    /// `embed` that returns `Cancelled` before the next group once `stop` is set.
+    pub(crate) fn embed_until(
+        &self,
+        texts: &[&str],
+        priority: bool,
+        stop: &AtomicBool,
+    ) -> Result<Vec<Vec<f32>>, EmbedError> {
         let ids = self.encode(texts)?;
         let mut order: Vec<usize> = (0..ids.len()).collect();
         order.sort_by_key(|&index| ids.get(index).map_or(0, Vec::len));
         let mut vectors: Vec<Option<Vec<f32>>> = vec![None; ids.len()];
         for group in groups(&order, &ids, self.budget) {
+            if stop.load(Ordering::Relaxed) {
+                return Err(EmbedError::Cancelled);
+            }
             let rows: Vec<&[u32]> = group
                 .iter()
                 .filter_map(|&index| ids.get(index).map(Vec::as_slice))
@@ -198,31 +311,50 @@ impl Encoder {
                 .to_dtype(DType::F32)?
                 .to_vec2()
         };
-        let mut vectors = run().map_err(inference_error)?;
+        let mut vectors = in_pool(run).map_err(inference_error)?;
         for vector in &mut vectors {
             normalize(vector)?;
         }
         Ok(vectors)
     }
 
-    /// A question announces itself and takes the next turn; a build waits while any
-    /// question is waiting.
-    fn turn(&self, priority: bool) -> std::sync::MutexGuard<'_, ()> {
+    /// A question announces itself and takes the next turn. A build waits while any
+    /// question is waiting, and gives a turn it won back to one that arrived.
+    fn turn(&self, priority: bool) -> MutexGuard<'_, ()> {
+        let lock = || {
+            self.compute
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+        };
         if priority {
             self.queries_waiting.fetch_add(1, Ordering::SeqCst);
-            let guard = self
-                .compute
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            let guard = lock();
             self.queries_waiting.fetch_sub(1, Ordering::SeqCst);
+            #[cfg(test)]
+            self.turns.lock().unwrap().push(true);
             return guard;
         }
-        while self.queries_waiting.load(Ordering::SeqCst) > 0 {
-            std::thread::sleep(Duration::from_millis(2));
+        loop {
+            while self.queries_waiting.load(Ordering::SeqCst) > 0 {
+                std::thread::yield_now();
+            }
+            let guard = lock();
+            if self.queries_waiting.load(Ordering::SeqCst) == 0 {
+                #[cfg(test)]
+                self.turns.lock().unwrap().push(false);
+                return guard;
+            }
         }
-        self.compute
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn hold_compute(&self) -> MutexGuard<'_, ()> {
+        self.compute.lock().unwrap()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn queries_waiting(&self) -> usize {
+        self.queries_waiting.load(Ordering::SeqCst)
     }
 }
 
@@ -254,7 +386,8 @@ pub(crate) fn nfc(text: &str) -> String {
     normalized.get().to_string()
 }
 
-fn normalize(vector: &mut [f32]) -> Result<(), EmbedError> {
+/// Scales to length 1; a zero or non-finite vector is refused, not stored.
+pub(crate) fn normalize(vector: &mut [f32]) -> Result<(), EmbedError> {
     let norm = vector.iter().map(|value| value * value).sum::<f32>().sqrt();
     if !norm.is_finite() || norm <= f32::EPSILON || vector.iter().any(|v| !v.is_finite()) {
         return Err(EmbedError::ResponseInvalid("not-finite"));
