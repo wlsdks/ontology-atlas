@@ -314,6 +314,18 @@ describe("a selection framed between both panels", () => {
       expect(again, `${id} landed at ${JSON.stringify(landed)} from ${start.tscale.toFixed(3)}, then ${JSON.stringify(again)}`).toBeNull();
     }
   });
+
+  it.each([[1410, 840], [1920, 1080]])("lands a domain pressed from deep inside its star where framing again moves nothing, at %ix%i", (width, height) => {
+    const map = vaultMap(docsManifest, { width, height });
+    const moved: string[] = [];
+    for (const domain of map.model.domains) {
+      const deep = { tx: map.at(domain.id).x, ty: map.at(domain.id).y, tscale: map.rest.tscale * 4 };
+      const landed = map.frame(domain.id, deep) ?? deep;
+      const again = map.frame(domain.id, landed);
+      if (again) moved.push(`${domain.id}: ${Math.hypot((again.tx - landed.tx) * again.tscale, (again.ty - landed.ty) * again.tscale).toFixed(1)} px`);
+    }
+    expect(moved).toEqual([]);
+  });
 });
 
 /** The far ends of a selection's lines, in canvas pixels at `camera`. */
