@@ -92,7 +92,7 @@ test('states the probe figures in every dialog variant and keeps the box size wh
   expect(after).toEqual(before);
 
   await expect(page.getByTestId('meaning-setup-fact-model')).toContainText('bge-m3 by BAAI, MIT licence');
-  await expect(page.getByTestId('meaning-setup-fact-download')).toContainText('2.3 GB from huggingface.co, once. 1.2 GB stays on this computer.');
+  await expect(page.getByTestId('meaning-setup-fact-download')).toContainText('2.3 GB from huggingface.co, hf.co, once. 1.2 GB stays on this computer.');
   await expect(page.getByTestId('meaning-setup-fact-memory')).toContainText('About 1.8 GB while preparing, in the background.');
   await expect(page.getByTestId('meaning-setup-fact-sent')).toBeVisible();
   await expect(page.getByTestId('meaning-setup-fact-delete')).toBeVisible();
@@ -112,7 +112,15 @@ const VARIANTS: Array<[string, LibraryVectorsScript['probe'], (page: Page) => Pr
     await expect(page.getByTestId('meaning-setup-primary')).toBeDisabled();
   }],
   ['a runner on this computer', LIBRARY_VECTOR_PROBE, async (page) => {
-    await expect(page.getByTestId('meaning-setup-runner')).toHaveText('Use bge-m3:latest in Ollama (no download)');
+    const runner = page.getByTestId('meaning-setup-runner');
+    await expect(runner).toHaveText('Use bge-m3:latest in Ollama (no download)');
+    const facts = page.getByTestId('meaning-setup-runner-facts');
+    await expect(facts).toHaveText("Uses bge-m3:latest in Ollama on this computer. Each question is recorded in this folder's audit log.");
+    await expect(runner).toHaveAttribute('aria-describedby', (await facts.getAttribute('id'))!);
+  }],
+  ['a runner offering only models the spec rules out', { ...LIBRARY_VECTOR_PROBE, runner: { state: 'reachable', address: 'http://127.0.0.1:11434', models: ['embeddinggemma:300m', 'jina-embeddings-v3:latest'] } }, async (page) => {
+    await expect(page.getByTestId('meaning-setup-runner')).toHaveCount(0);
+    await expect(page.getByTestId('meaning-setup-runner-facts')).toHaveCount(0);
   }],
   ['a processor without acceleration', { ...LIBRARY_VECTOR_PROBE, runner: null, builtin: { ...LIBRARY_VECTOR_PROBE.builtin, accelerated: false } }, async (page) => {
     await expect(page.getByTestId('meaning-setup-fact-memory')).toContainText('this computer prepares on the processor');
@@ -149,7 +157,7 @@ test('closes on the primary press in that frame, stores the choice and follows t
   expect(closedInFrame).toBe(true);
   await expect(page.getByTestId('meaning-setup-dialog')).toHaveCount(0);
   const prepares = await vectorCalls(harness, page, 'vault_vectors_prepare');
-  expect(prepares.map((call) => call.params)).toEqual([{ rootPath: VAULT_ROOT, enabled: true, source: { kind: 'builtin' } }]);
+  expect(prepares.map((call) => call.params)).toEqual([{ rootPath: VAULT_ROOT, enabled: true, source: { kind: 'builtin' }, download: true }]);
   expect(JSON.parse(await page.evaluate((key) => window.localStorage.getItem(key) ?? 'null', CHOICE_KEY))).toEqual({ [VAULT_ROOT]: { source: { kind: 'builtin' }, paused: false } });
 
   const heights = [await rowHeight(page)];
@@ -213,8 +221,34 @@ test('stops into Resume, keeps the pause across a reload and resumes with the st
 
   await page.getByTestId('meaning-desk-resume').click();
   await expect.poll(async () => (await vectorCalls(harness, page, 'vault_vectors_prepare')).map((call) => call.params))
-    .toEqual([{ rootPath: VAULT_ROOT, enabled: true, source: { kind: 'builtin' } }]);
+    .toEqual([{ rootPath: VAULT_ROOT, enabled: true, source: { kind: 'builtin' }, download: false }]);
   expect(JSON.parse(await page.evaluate((key) => window.localStorage.getItem(key) ?? 'null', CHOICE_KEY))[VAULT_ROOT].paused).toBe(false);
+});
+
+test('Resume on a folder whose model is gone downloads nothing and offers Download again, which asks in the dialog', async ({ page }) => {
+  const harness = await openDesk(page, { status: LIBRARY_VECTOR_SCRIPT.stopped, modelReady: false }, { source: { kind: 'builtin' }, paused: false });
+  await expect(line(page)).toHaveAttribute('data-state', 'stopped');
+  await page.getByTestId('meaning-desk-resume').click();
+  await expect(line(page)).toHaveAttribute('data-state', 'modelGone');
+  await expect(line(page).getByTestId('meaning-desk-downloadAgain')).toBeVisible();
+  const downloads = async () => (await vectorCalls(harness, page, 'vault_vectors_prepare'))
+    .filter((call) => (call.params as { download?: boolean }).download === true);
+  expect((await vectorCalls(harness, page, 'vault_vectors_prepare')).map((call) => call.params))
+    .toEqual([{ rootPath: VAULT_ROOT, enabled: true, source: { kind: 'builtin' }, download: false }]);
+
+  await page.getByTestId('meaning-desk-downloadAgain').click();
+  await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Download and prepare');
+  expect(await downloads()).toEqual([]);
+  await page.getByTestId('meaning-setup-primary').click();
+  await expect.poll(async () => (await downloads()).length).toBe(1);
+  await expect(line(page)).toHaveAttribute('data-state', 'modelDownloading');
+});
+
+test('says a stop before any file was prepared, with Resume', async ({ page }) => {
+  await openDesk(page, { status: { ...LIBRARY_VECTOR_SCRIPT.stopped, filesDone: 0, passagesDone: 0 } }, { source: { kind: 'builtin' }, paused: false });
+  await expect(line(page)).toHaveAttribute('data-state', 'stoppedEmpty');
+  await expect(page.getByTestId('meaning-desk-sentence')).toContainText('Stopped before any file was prepared.');
+  await expect(line(page).getByTestId('meaning-desk-resume')).toBeVisible();
 });
 
 const FAILURE_LINES: Array<[keyof typeof LIBRARY_VECTOR_FAILURES, string, string | null]> = [
@@ -290,7 +324,7 @@ async function openPrivacy(page: Page) {
 test('lists search by meaning and its model in Settings and deletes each', async ({ page }) => {
   const harness = await openFolder(page, {
     status: LIBRARY_VECTOR_SCRIPT.ready,
-    probe: { ...LIBRARY_VECTOR_PROBE, builtin: { ...LIBRARY_VECTOR_PROBE.builtin, onDisk: true } },
+    probe: { ...LIBRARY_VECTOR_PROBE, builtin: { ...LIBRARY_VECTOR_PROBE.builtin, onDisk: true, modelBytes: 1_210_000_000 } },
   }, { source: { kind: 'builtin' }, paused: false });
   await openPrivacy(page);
   const meaning = page.getByTestId('app-settings-vector-size');
@@ -309,13 +343,24 @@ test('lists search by meaning and its model in Settings and deletes each', async
   expect(await page.evaluate((key) => window.localStorage.getItem(key), CHOICE_KEY)).toBeNull();
 });
 
-test('leaves search by meaning out of Settings while the index is off', async ({ page }) => {
+test("leaves this folder's search by meaning out of Settings while the index is off, and keeps a download that did not finish", async ({ page }) => {
   await page.addInitScript(() => window.localStorage.setItem('ontology-atlas:vault-index:v1', 'off'));
-  await openFolder(page, { status: LIBRARY_VECTOR_SCRIPT.ready });
+  const harness = await openFolder(page, {
+    status: LIBRARY_VECTOR_SCRIPT.ready,
+    probe: { ...LIBRARY_VECTOR_PROBE, builtin: { ...LIBRARY_VECTOR_PROBE.builtin, onDisk: false, modelBytes: 915_000_000 } },
+  });
   await openPrivacy(page);
   await expect(page.getByTestId('app-settings-vault-index-switch-row')).toBeVisible();
   await expect(page.getByTestId('app-settings-vector-size')).toHaveCount(0);
-  await expect(page.getByTestId('app-settings-vector-model')).toHaveCount(0);
+  const model = page.getByTestId('app-settings-vector-model');
+  await expect(model).toContainText('Download not finished · 915 MB');
+  const chip = page.getByTestId('app-settings-vector-model-delete');
+  await chip.click();
+  await expect(chip).toHaveText('Press again to delete');
+  await page.waitForTimeout(600); // measurement window: the armed chip ignores a second press inside its double-click guard.
+  await chip.click();
+  await expect.poll(async () => (await vectorCalls(harness, page, 'vault_vectors_delete_model')).length).toBe(1);
+  await expect(model).toContainText('Deleted the model.');
 });
 
 test('says search by meaning lives in the app on the web, with no press and no command', async ({ page }) => {
@@ -371,9 +416,10 @@ async function recordRing(page: Page): Promise<{ values: number[]; events: numbe
     const values: number[] = [];
     const events: number[] = [];
     let running = true;
+    // The arc as drawn: a CSS transition moves it between values, so the computed offset is read.
     const sample = () => {
-      const ring = document.querySelector('[data-testid="meaning-desk-ring"]');
-      if (ring) values.push(Number(ring.getAttribute('data-ring-value')));
+      const arc = document.querySelector('[data-testid="meaning-desk-ring-arc"]');
+      if (arc) values.push(Math.round((1 - parseFloat(getComputedStyle(arc).strokeDashoffset)) * 1e4) / 1e4);
       if (running) requestAnimationFrame(sample);
     };
     requestAnimationFrame(sample);

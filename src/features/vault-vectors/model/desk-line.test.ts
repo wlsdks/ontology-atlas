@@ -77,6 +77,8 @@ describe('deskLine', () => {
 
   it('says where a stop left the files, with Resume', () => {
     expect(deskLine(app(STOPPED))).toMatchObject({ message: 'stopped', values: { done: 1240, total: 2000 }, action: 'resume' });
+    // Stopped before the first file: no "0 of N" count, the sentence says nothing was prepared.
+    expect(deskLine(app({ ...STOPPED, filesDone: 0, passagesDone: 0 }))).toMatchObject({ message: 'stoppedEmpty', values: {}, action: 'resume' });
   });
 
   it('says ready with the file count and no press', () => {

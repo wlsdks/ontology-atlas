@@ -109,6 +109,7 @@ export const LIBRARY_VECTOR_PROBE: VectorProbe = {
   files: 2000,
   builtin: {
     onDisk: false,
+    modelBytes: 0,
     downloadBytes: MODEL_DOWNLOAD_BYTES,
     keptBytes: 1_150_553_036,
     neededFreeBytes: 2_312_000_000,
@@ -149,6 +150,11 @@ export interface LibraryVectorsScript {
   refuse?: readonly string[];
   /** How long the probe takes to answer, so a spec can see the dialog before it does. */
   probeDelayMs?: number;
+  /**
+   * Whether the built-in model is ready. By default it is when the probe says so or the status has
+   * prepared files. As in the app, a prepare without `download` on a missing model answers `modelGone`.
+   */
+  modelReady?: boolean;
 }
 
 type JsonRecord = Record<string, unknown>;
@@ -295,6 +301,8 @@ export async function installLibraryWorkHarness(
       let phase: "idle" | "read" | "waiting" | "approved" | "rejected" | "written" | "finished" = "idle";
       let currentVectorStatus = vectors.status;
       let currentFound: VectorFound | null = null;
+      let currentProbe = vectors.probe;
+      let modelReady = vectors.modelReady;
       for (const path of Object.keys(files)) mtimes[path] = nextMtime;
 
       const emit = (event: string, payload: unknown) => {
@@ -519,7 +527,7 @@ export async function installLibraryWorkHarness(
         if (command === "acp_send") { try { const message: unknown = JSON.parse(String(args.line ?? "")); const parsed = record(message); if (parsed) handleClientMessage(parsed); } catch {} return Promise.resolve(null); }
         if (command === "acp_permission_verdict") return Promise.resolve("ask");
         if (command.startsWith("vault_vectors_") && vectors.refuse.includes(command)) return Promise.reject(new Error(`${command} refused`));
-        if (command === "vault_vectors_probe") return new Promise((resolve) => window.setTimeout(() => resolve(vectors.probe), vectors.probeDelayMs));
+        if (command === "vault_vectors_probe") return new Promise((resolve) => window.setTimeout(() => resolve(currentProbe), vectors.probeDelayMs));
         const stopRunning = () => {
           const running = ["waitingTurn", "modelDownloading", "modelConverting", "preparing"].includes(currentVectorStatus.phase);
           if (running) currentVectorStatus = { ...currentVectorStatus, phase: "stopped", updating: false, currentPath: null, passagesPerSecond: null, model: null };
@@ -527,22 +535,42 @@ export async function installLibraryWorkHarness(
         };
         // `calls` records `paused` as sent; a paused folder is reported stopped, as the app does.
         if (command === "vault_vectors_status") return args.paused === true ? stopRunning() : Promise.resolve(currentVectorStatus);
-        if (command === "vault_vectors_prepare") return Promise.resolve(currentVectorStatus);
+        if (command === "vault_vectors_prepare") {
+          // Only a prepare with `download` fetches the built-in model; without it a missing model is `modelGone`.
+          const source = args.source as { kind?: string } | undefined;
+          if (source?.kind === "builtin" && !modelReady) {
+            if (args.download === true) {
+              modelReady = true;
+              currentVectorStatus = { ...currentVectorStatus, phase: "modelDownloading", failure: null, failureDetail: null, updating: false, currentPath: null, passagesPerSecond: null, model: { doneBytes: 0, totalBytes: currentProbe.builtin.downloadBytes } };
+            } else {
+              currentVectorStatus = { ...currentVectorStatus, phase: "failed", failure: "modelGone", failureDetail: "embed-model-not-ready", updating: false, currentPath: null, passagesPerSecond: null, model: null };
+            }
+          }
+          return Promise.resolve(currentVectorStatus);
+        }
         if (command === "vault_vectors_stop") return stopRunning();
         if (command === "vault_vectors_delete") {
           currentVectorStatus = { ...currentVectorStatus, phase: "notSetUp", failure: null, failureDetail: null, filesDone: 0, passagesDone: 0, updating: false, currentPath: null, passagesPerSecond: null, model: null, vectorsBytes: 0 };
           return Promise.resolve(currentVectorStatus);
         }
         if (command === "vault_vectors_search") {
-          const answer = currentFound ?? vectors.foundByQuestion[String(args.question)] ?? vectors.found;
-          // As in the app, what a failed search learned is the folder's status from then on.
-          if (answer.state === "failed" && answer.failure !== null) {
-            const kept = currentVectorStatus.filesDone > 0 && answer.failure !== "modelGone";
-            currentVectorStatus = { ...currentVectorStatus, phase: kept ? "stopped" : "failed", failure: answer.failure, failureDetail: answer.failure === "modelGone" ? "embed-model-not-ready" : "embed-request-failed", updating: false, currentPath: null, passagesPerSecond: null };
+          const scripted = currentFound ?? vectors.foundByQuestion[String(args.question)] ?? vectors.found;
+          // As in the app, only the passages under one of the prefixes count; none means every file.
+          const prefixes = Array.isArray(args.prefixes) ? args.prefixes.map(String) : [];
+          const answer = prefixes.length === 0 ? scripted : { ...scripted, hits: scripted.hits.filter((hit) => prefixes.some((prefix) => hit.path.startsWith(prefix))) };
+          // A missing model is the folder's status from then on; a runner that did not answer is not.
+          if (answer.state === "failed" && answer.failure === "modelGone") {
+            modelReady = false;
+            currentVectorStatus = { ...currentVectorStatus, phase: "failed", failure: "modelGone", failureDetail: "embed-model-not-ready", updating: false, currentPath: null, passagesPerSecond: null };
           }
           return new Promise((resolve) => window.setTimeout(() => resolve(answer), vectors.searchDelayMs));
         }
-        if (command === "vault_vectors_warm" || command === "vault_vectors_delete_model") return Promise.resolve(null);
+        if (command === "vault_vectors_delete_model") {
+          modelReady = false;
+          currentProbe = { ...currentProbe, builtin: { ...currentProbe.builtin, onDisk: false, modelBytes: 0 } };
+          return Promise.resolve(null);
+        }
+        if (command === "vault_vectors_warm") return Promise.resolve(null);
         if (command === "mcp_bundled_server") return Promise.resolve({ path: mcpBinary, available: true, reason: null });
         if (command === "discover_mcp_connectors") return Promise.resolve({ servers: [], problems: [] });
         if (command === "discover_source_candidates") return Promise.resolve({ candidates: [], truncated: false, unreadableRoots: [] });
@@ -576,9 +604,9 @@ export async function installLibraryWorkHarness(
       fixtureWindow.isTauri = true;
       fixtureWindow.__TAURI_INTERNALS__ = { transformCallback: (callback: EventCallback) => { const id = callbackId++; callbacks.set(id, callback); return id; }, invoke };
       fixtureWindow.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: (event: string, id: number) => { listeners.get(event)?.delete(id); callbacks.delete(id); } };
-      fixtureWindow.__atlasLibraryWorkHarness = { moveMode: (modeId: string) => update({ sessionUpdate: "current_mode_update", currentModeId: modeId }), emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, emitVectorStatus: (status: VectorStatus) => { currentVectorStatus = status; emit("vault-vectors-status", { rootPath: vaultRoot, status }); }, setVectorFound: (found: VectorFound) => { currentFound = found; }, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
+      fixtureWindow.__atlasLibraryWorkHarness = { moveMode: (modeId: string) => update({ sessionUpdate: "current_mode_update", currentModeId: modeId }), emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, emitVectorStatus: (status: VectorStatus) => { currentVectorStatus = status; if (status.failure === "modelGone") modelReady = false; else if (status.phase === "ready" || status.phase === "preparing") modelReady = true; emit("vault-vectors-status", { rootPath: vaultRoot, status }); }, setVectorFound: (found: VectorFound) => { currentFound = found; }, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
     },
-    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionInput: options.permissionInput, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError, vectors: { probe: options.vectors?.probe ?? { ...LIBRARY_VECTOR_PROBE, runner: null }, status: options.vectors?.status ?? LIBRARY_VECTOR_SCRIPT.notSetUp, found: options.vectors?.found ?? { ...LIBRARY_VECTOR_FOUND, state: "notReady", hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0 }, refuse: [...(options.vectors?.refuse ?? [])], probeDelayMs: options.vectors?.probeDelayMs ?? 0, foundByQuestion: options.vectors?.foundByQuestion ?? {}, searchDelayMs: options.vectors?.searchDelayMs ?? 0 } },
+    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionInput: options.permissionInput, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError, vectors: { probe: options.vectors?.probe ?? { ...LIBRARY_VECTOR_PROBE, runner: null }, status: options.vectors?.status ?? LIBRARY_VECTOR_SCRIPT.notSetUp, found: options.vectors?.found ?? { ...LIBRARY_VECTOR_FOUND, state: "notReady", hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0 }, refuse: [...(options.vectors?.refuse ?? [])], probeDelayMs: options.vectors?.probeDelayMs ?? 0, foundByQuestion: options.vectors?.foundByQuestion ?? {}, searchDelayMs: options.vectors?.searchDelayMs ?? 0, modelReady: options.vectors?.modelReady ?? ((options.vectors?.probe?.builtin.onDisk ?? false) || ((options.vectors?.status?.filesDone ?? 0) > 0 && options.vectors?.status?.failure !== "modelGone")) } },
   );
   const call = (currentPage: Page, method: "emitRead" | "emitWait" | "emitWrite" | "finish") => currentPage.evaluate((name) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.[name](), method);
   return { snapshot: (currentPage) => currentPage.evaluate(() => {
