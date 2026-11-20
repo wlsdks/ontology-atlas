@@ -133,23 +133,33 @@ export function screenToWorld(point: LayoutPoint, view: LibraryGraphView, box: V
 export function fitView(
   bounds: { minX: number; minY: number; maxX: number; maxY: number } | null,
   box: ViewBox,
-  padding: number,
+  padding: number | { x: number; y: number },
   maxScale: number = LIBRARY_ZOOM_MAX,
 ): LibraryGraphView {
   if (!bounds) return { scale: 1, x: 0, y: 0 };
-  const spanX = bounds.maxX - bounds.minX;
-  const spanY = bounds.maxY - bounds.minY;
-  const innerWidth = Math.max(1, box.width - padding * 2);
-  const innerHeight = Math.max(1, box.height - padding * 2);
-  // A zero span on an axis would divide by zero; that axis takes scale 1 instead.
-  const wanted = Math.min(spanX > 0 ? innerWidth / spanX : 1, spanY > 0 ? innerHeight / spanY : 1);
-  // Clamped, so the fit frames rather than magnifies a small folder.
-  const scale = Math.min(maxScale, Math.max(LIBRARY_ZOOM_MIN, wanted));
+  const inner = fitBox(box, padding);
   return {
-    scale,
+    scale: fitScale({ width: bounds.maxX - bounds.minX, height: bounds.maxY - bounds.minY }, inner, maxScale),
     x: (bounds.minX + bounds.maxX) / 2,
     y: (bounds.minY + bounds.maxY) / 2,
   };
+}
+
+/** The box a fit fills: the canvas less its padding on each side, one value or one per axis. */
+export function fitBox(box: ViewBox, padding: number | { x: number; y: number }): ViewBox {
+  const { x, y } = typeof padding === "number" ? { x: padding, y: padding } : padding;
+  return { width: Math.max(1, box.width - x * 2), height: Math.max(1, box.height - y * 2) };
+}
+
+/**
+ * The zoom that fits a `span` into the `inner` box: the one expression the camera and the flow
+ * layout both use, so the zoom a layout was laid for is the zoom the camera shows.
+ */
+export function fitScale(span: ViewBox, inner: ViewBox, maxScale: number = LIBRARY_ZOOM_MAX): number {
+  // A zero span on an axis would divide by zero; that axis takes scale 1 instead.
+  const wanted = Math.min(span.width > 0 ? inner.width / span.width : 1, span.height > 0 ? inner.height / span.height : 1);
+  // Clamped, so the fit frames rather than magnifies a small folder.
+  return Math.min(maxScale, Math.max(LIBRARY_ZOOM_MIN, wanted));
 }
 
 /**
