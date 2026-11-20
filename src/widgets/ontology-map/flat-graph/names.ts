@@ -654,6 +654,9 @@ function hubCaptionBox(input: NameInput): Box | null {
   return { minX: -w / 2 - t.namePadPx, maxX: w / 2 + t.namePadPx, minY: y - t.captionPx / 2 - t.namePadPx, maxY: y + t.captionPx / 2 + t.namePadPx };
 }
 
+/** The axes a free map may cut an open star's rim along. */
+const AXES = ["x", "y"] as const;
+
 /** The highest side cost with no dot of the open star under the name. */
 const CLEAR_SIDE = 3;
 
@@ -958,24 +961,98 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
   };
   type Member = { id: string; at: Point; all: PlacedName[][] };
   /**
-   * Names a member on its cheapest side, backed over dots or a line it crosses; its other sides go off
-   * every line first. The first side ignores spokes: off one it can take a neighbour's last side inside
-   * the free map, which admission cannot see. O(sides log sides + sides × (cells touched + members)).
+   * Whether a member's side keeps its name on the hub's side of its disc along `axis`, as the free map
+   * needs where it cuts the star's rim on that axis: admission cannot see the free map, and while the
+   * cut still holds the disc it holds such a name. True on an axis the disc does not stand off. O(side).
    */
-  const placeMember = ({ id, at, all }: Member) => {
+  const towardHub = (id: string, at: Point, group: readonly PlacedName[], axis: "x" | "y") => {
+    if (!hubAt) return true;
+    const edge = input.discRadius(id) + tokens.namePadPx;
+    const off = Math.sign(axis === "x" ? at.x - hubAt.x : at.y - hubAt.y);
+    return group.every((n) => {
+      const [min, max] = axis === "x" ? [n.box.minX, n.box.maxX] : [n.box.minY, n.box.maxY];
+      return off > 0 ? max <= edge : off < 0 ? min >= -edge : true;
+    });
+  };
+  /** Whether `group` at `at` rules out `side` at `sideAt`, as `memberCosts` would: over it anywhere in the step, or across its leader. */
+  const takesSide = (at: Point, group: readonly PlacedName[], sideAt: Point, side: readonly PlacedName[]) => side.some((o) => group.some((n) => {
+    for (const s of stepScales) {
+      const a = worldBox(at, n.box, s);
+      const b = worldBox(sideAt, o.box, s);
+      if (a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY) return true;
+    }
+    if (!o.leader) return false;
+    const seg = leaderSegment(o, Math.abs(o.dx) - tokens.nameGapPx, tokens.namePadPx);
+    return segmentCrossesBox(sideAt.x + seg.x0 / scale, sideAt.y + seg.y0 / scale, sideAt.x + seg.x1 / scale, sideAt.y + seg.y1 / scale, worldBox(at, grown(n.box, -tokens.namePadPx), scale));
+  }));
+  const placedMembers: Member[] = [];
+  /**
+   * Each other member's open sides toward the hub, per axis: an unplaced member's acceptable sides, a
+   * placed one's alternates while its own side runs away from the hub on that axis. Overwrites
+   * `sideCosts`. O(members × sides × cells touched).
+   */
+  const towardSidesOfOthers = (self: Member, unplaced: readonly Member[]) => {
+    const out: { at: Point; sides: PlacedName[][] }[] = [];
+    for (const o of unplaced) {
+      if (o === self || ids.has(o.id)) continue;
+      memberCosts(o.at, o.all, false);
+      const acceptable = o.all.filter((_, i) => sideCosts[i]! >= 0);
+      for (const axis of AXES) {
+        const open = acceptable.filter((group) => towardHub(o.id, o.at, group, axis));
+        if (open.length > 0) out.push({ at: o.at, sides: open });
+      }
+    }
+    for (const o of placedMembers) {
+      for (const axis of AXES) {
+        if (towardHub(o.id, o.at, o.all[sides.get(o.id)!]!, axis)) continue;
+        const open = (alternates.get(o.id) ?? []).filter((n) => towardHub(o.id, o.at, [n], axis)).map((n) => [n]);
+        if (open.length > 0) out.push({ at: o.at, sides: open });
+      }
+    }
+    return out;
+  };
+  /**
+   * Names a member on its cheapest side, backed over dots or a line it crosses; its other sides go off
+   * every line first. Among cheapest sides that gain no leader it takes the one that leaves the most
+   * other members a side toward the hub on each axis, the last a free map cutting the star still
+   * holds. The first side ignores spokes: off one it can take a neighbour's last side inside the free
+   * map. A placed member's alternates the new name covers are dropped, so the frame never swaps one in
+   * under it. O(sides log sides + ties × members × sides × (cells touched + sides)).
+   */
+  const placeMember = (member: Member, unplaced: readonly Member[]) => {
+    const { id, at, all } = member;
     memberCosts(at, all, false);
-    let best = -1;
-    for (let i = 0; i < all.length; i += 1) if (sideCosts[i]! >= 0 && (best < 0 || sideCosts[i]! < sideCosts[best]!)) best = i;
+    const costs = sideCosts.slice();
+    const open = all.flatMap((_, i) => (costs[i]! >= 0 ? [i] : [])).sort((a, b) => costs[a]! - costs[b]! || a - b);
+    const leads = (i: number) => all[i]!.some((n) => n.leader === true);
+    const cheapest = open[0]!;
+    const ties = open.filter((i) => costs[i] === costs[cheapest] && (!leads(i) || leads(cheapest)));
+    let best = cheapest;
+    if (ties.length > 1) {
+      const needs = towardSidesOfOthers(member, unplaced);
+      let fewest = Infinity;
+      for (const i of ties) {
+        const taken = needs.reduce((sum, o) => sum + (o.sides.every((side) => takesSide(at, all[i]!, o.at, side)) ? 1 : 0), 0);
+        if (taken < fewest) [best, fewest] = [i, taken];
+        if (taken === 0) break;
+      }
+    }
     const lined = (i: number) => crossed(at, all[i]!) || onSpoke(at, all[i]!);
-    const backs = (i: number) => sideCosts[i]! > CLEAR_SIDE || lined(i);
-    const order = (i: number) => sideCosts[i]! + (lined(i) && !crossed(at, all[i]!) ? 2 : 0);
+    const backs = (i: number) => costs[i]! > CLEAR_SIDE || lined(i);
+    const order = (i: number) => costs[i]! + (lined(i) && !crossed(at, all[i]!) ? 2 : 0);
     sides.set(id, best);
     for (const n of all[best]!) {
       if (backs(best)) n.backed = true;
       place(n);
       conceptNames.add(at, n.box);
     }
-    const others = all.flatMap((group, i) => (i !== best && sideCosts[i]! >= 0 && group.length === 1 ? [i] : []))
+    for (const o of placedMembers) {
+      const kept = alternates.get(o.id)?.filter((n) => !takesSide(at, all[best]!, o.at, [n]));
+      if (kept && kept.length > 0) alternates.set(o.id, kept);
+      else alternates.delete(o.id);
+    }
+    placedMembers.push(member);
+    const others = all.flatMap((group, i) => (i !== best && costs[i]! >= 0 && group.length === 1 ? [i] : []))
       .sort((a, b) => order(a) - order(b) || a - b)
       .map((i) => {
         if (backs(i)) all[i]![0]!.backed = true;
@@ -1003,7 +1080,7 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
           }
         }
         if (pick === null) break;
-        placeMember(pick);
+        placeMember(pick, members);
       }
     }
   };
