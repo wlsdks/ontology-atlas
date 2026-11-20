@@ -15,6 +15,7 @@ const FAST: Timeouts = Timeouts {
     probe: "1",
     line_wait: Duration::from_millis(1_500),
     query_line_wait: Duration::from_millis(200),
+    question: Duration::from_secs(2),
     pull: StreamLimits {
         max_bytes: 64 * 1024,
         idle: Duration::from_secs(1),
@@ -417,6 +418,63 @@ fn a_runner_that_never_answers_times_out() {
         Err(EmbedError::TimedOut)
     );
     assert!(started.elapsed() < Duration::from_secs(5));
+}
+
+/// Each request's own limit outlasts the stub's six-second stall, so only the question's one
+/// deadline can answer `TimedOut`; without it the stub's closed socket would be a request error.
+const SLOW_REQUESTS: Timeouts = Timeouts {
+    query: "30",
+    probe: "30",
+    question: Duration::from_millis(400),
+    ..FAST
+};
+
+#[test]
+fn a_question_ends_at_its_one_deadline_wherever_the_runner_stalls() {
+    // The model check stalls: the question is never sent and never recorded.
+    let stub = Stub::start(|| Reply::Hang);
+    let vault = temp_vault("question-deadline-check");
+    let runner = LocalRunner::connect_with(
+        &stub.base(),
+        "bge-m3",
+        &loopback_resolver,
+        Arc::new(CurlTransport),
+        SLOW_REQUESTS,
+    )
+    .unwrap();
+    assert_eq!(
+        runner.embed_query(&vault, "where is the quillwort"),
+        Err(EmbedError::TimedOut)
+    );
+    assert_eq!(stub.hits(), 1, "only the model check");
+    assert!(audit_lines(&vault).is_empty());
+
+    // The model check answers and the question stalls: it ends at the same deadline.
+    let answered = AtomicUsize::new(0);
+    let stub = Stub::start(move || {
+        if answered.fetch_add(1, Ordering::SeqCst) == 0 {
+            http("200 OK", "", LOCAL_SHOW.as_bytes())
+        } else {
+            Reply::Hang
+        }
+    });
+    let vault = temp_vault("question-deadline-send");
+    let runner = LocalRunner::connect_with(
+        &stub.base(),
+        "bge-m3",
+        &loopback_resolver,
+        Arc::new(CurlTransport),
+        SLOW_REQUESTS,
+    )
+    .unwrap();
+    assert_eq!(
+        runner.embed_query(&vault, "where is the quillwort"),
+        Err(EmbedError::TimedOut)
+    );
+    assert_eq!(stub.hits(), 2);
+    let lines = audit_lines(&vault);
+    assert_eq!(lines.len(), 1, "{lines:?}");
+    assert_eq!(lines[0]["outcome"], "error");
 }
 
 #[test]

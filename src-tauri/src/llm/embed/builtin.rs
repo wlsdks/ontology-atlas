@@ -70,10 +70,6 @@ impl audit::Source for BuiltinSource {
     fn line_wait(&self) -> Duration {
         super::TIMEOUTS.line_wait
     }
-
-    fn query_line_wait(&self) -> Duration {
-        super::TIMEOUTS.query_line_wait
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

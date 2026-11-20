@@ -46,7 +46,6 @@ pub(super) trait Source {
     fn host(&self) -> &str;
     fn model(&self) -> &str;
     fn line_wait(&self) -> Duration;
-    fn query_line_wait(&self) -> Duration;
 }
 
 impl Source for LocalRunner {
@@ -64,10 +63,6 @@ impl Source for LocalRunner {
 
     fn line_wait(&self) -> Duration {
         self.timeouts.line_wait
-    }
-
-    fn query_line_wait(&self) -> Duration {
-        self.timeouts.query_line_wait
     }
 }
 
@@ -228,12 +223,14 @@ pub(super) fn write_close(
     )
 }
 
-/// The line holds the question, as the agent's lines do.
+/// The line holds the question, as the agent's lines do. Waits at most `wait` for a log another
+/// send holds.
 pub(super) fn reserve_query(
     vault_dir: &Path,
     source: &dyn Source,
     question: &str,
     payload: &str,
+    wait: Duration,
 ) -> Result<AuditReservation, EmbedError> {
     let line = Line {
         purpose: QUERY_PURPOSE,
@@ -244,7 +241,7 @@ pub(super) fn reserve_query(
         embed: None,
         download: None,
     };
-    reserve_waiting(vault_dir, source.query_line_wait(), || draft(source, &line))
+    reserve_waiting(vault_dir, wait, || draft(source, &line))
 }
 
 pub(super) fn finish_query(
