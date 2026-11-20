@@ -8,10 +8,15 @@
 mod confine;
 mod lifecycle;
 mod location;
+mod passage;
+#[cfg(feature = "test-hooks")]
+#[doc(hidden)]
+pub mod pause;
 pub mod rows;
 mod search;
 mod segment;
 mod stamps;
+pub mod vectors;
 
 use lifecycle::{
     clear_meta, create_index_dir, is_damage, lock_writer, open_reader, open_writer,
@@ -41,6 +46,9 @@ pub enum Error {
     Sql(rusqlite::Error),
     /// `Progress::request_cancel` stopped the build; what was committed stays consistent.
     Cancelled,
+    /// Search by meaning's store was deleted, retired or replaced while a `vectors::plan` ran;
+    /// nothing more was written.
+    Deleted,
 }
 
 impl Error {
@@ -56,6 +64,9 @@ impl std::fmt::Display for Error {
             Error::Io(error) => write!(f, "vault index: {error}"),
             Error::Sql(error) => write!(f, "vault index: {error}"),
             Error::Cancelled => f.write_str("vault index: build cancelled"),
+            Error::Deleted => {
+                f.write_str("vault index: search by meaning was deleted while it was prepared")
+            }
         }
     }
 }

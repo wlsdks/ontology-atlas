@@ -4,7 +4,7 @@
 // Usage: pnpm perf:meaning [-- --files=10000 --files=50000 --shape=key --shape=all
 //        --models=bge-m3,qwen3-embedding:0.6b --sample=1024 --queries=50 --num-ctx=2048 --keep]
 // Vaults come from `gen-scale-vault.mjs`, the shapes `perf:vault-index` uses. Every file is split
-// into passages with the desk harness's splitter; a fixed sample of passages is embedded in
+// into passages by the app's index (`vault-index-bench passages`); a fixed sample of passages is embedded in
 // batches of at most 32 passages and 64 KiB, one request in flight, and the full preparation time
 // is extrapolated from characters per second. Ollama's runner for the model is found by its model
 // file and sampled every second for physical footprint (`vmmap --summary`) and resident size.
@@ -13,13 +13,13 @@
 // deleted unless --keep.
 
 import { execFile } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { cpus, loadavg, tmpdir, totalmem } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import { generateScaleVault } from './gen-scale-vault.mjs';
-import { batches, DEFAULT_MODELS, DEFAULT_OLLAMA, ollamaModels, ollamaVersion, splitPassages } from './meaning-quality.mjs';
+import { batches, cratePassages, DEFAULT_MODELS, DEFAULT_OLLAMA, ollamaModels, ollamaVersion } from './meaning-quality.mjs';
 
 const run = promisify(execFile);
 const WORK = join(tmpdir(), 'atlas-perf-meaning');
@@ -65,7 +65,7 @@ function markdownFiles(dir) {
 }
 
 /** Passage and character counts for one vault, plus a seeded reservoir sample of passage texts. */
-function survey(files, shape, sampleSize) {
+async function survey(files, shape, sampleSize) {
   const dir = join(WORK, `${shape}-${files}`);
   if (!existsSync(join(dir, 'atlas.md'))) {
     rmSync(dir, { recursive: true, force: true });
@@ -78,17 +78,14 @@ function survey(files, shape, sampleSize) {
   let passages = 0;
   let chars = 0;
   let bytes = 0;
-  for (const path of markdownFiles(dir)) {
-    const raw = readFileSync(path, 'utf8');
-    bytes += Buffer.byteLength(raw);
-    for (const passage of splitPassages(path.slice(dir.length + 1), raw)) {
-      passages += 1;
-      chars += passage.text.length;
-      if (sample.length < sampleSize) sample.push(passage.text);
-      else {
-        const at = Math.floor(rnd() * passages);
-        if (at < sampleSize) sample[at] = passage.text;
-      }
+  for (const path of markdownFiles(dir)) bytes += statSync(path).size;
+  for await (const passage of cratePassages(dir)) {
+    passages += 1;
+    chars += passage.text.length;
+    if (sample.length < sampleSize) sample.push(passage.text);
+    else {
+      const at = Math.floor(rnd() * passages);
+      if (at < sampleSize) sample[at] = passage.text;
     }
   }
   return { files, shape, dir, passages, chars, bytes, sample };
@@ -220,7 +217,7 @@ async function main() {
   for (const shape of options.shapes) {
     for (const files of options.files) {
       const started = performance.now();
-      const result = survey(files, shape, options.sample);
+      const result = await survey(files, shape, options.sample);
       surveys.push(result);
       console.log(`${shape}-${files}: ${result.passages} passages, ${(result.chars / 1e6).toFixed(1)} M characters from ${(result.bytes / MB).toFixed(0)} MB (${((performance.now() - started) / 1000).toFixed(1)} s to generate and split; load ${load()})`);
     }

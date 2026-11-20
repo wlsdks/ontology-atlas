@@ -410,12 +410,18 @@ each column ordered by the barycentre of its neighbours so a page sits level wit
 files it cites, and every edge an S-curve from column to column. The layout is laid in a
 world box seen through the zoom ceiling, so a folder of thirty marks or fewer fits with
 its widest mark at 36px on every window; a longer folder lays out taller than the box and
-the camera fits it, down to an 18px row, past which a column of pages folds into
-sub-columns with room for every name and a band of hundreds of files folds into a grid of
-squares that names a file on hover or once zoomed open. A file's name stands left of its
-square and a page's or concept's right of its disc, where no edge runs. Measured on the
-four fixtures at 1040, 1512 and 1920: every page of a 60-page folder is named at 1512 and
-1920, no name crosses another, and the same folder draws the same picture on every visit.
+the camera fits it, down to an 18px row, past which the pages fold into stacks (below).
+A file's name stands left of its square and a page's or concept's right of its disc, where
+no edge runs. **Names share the free width** (2026-11-20): every named column gets an equal
+room, at most 240px, and a name is cut to that room, a title at its end and a file name in
+its middle so the extension stays. A kind is named only when its room is at least 96px on
+screen, in the order pages, then concepts, then files, because a name cut to five characters
+identifies nothing; a column without names at rest names a mark under the pointer, its
+neighbours, and every mark once the view is zoomed one and a half times past its fit. The
+picture keeps 24px clear above and below and 64px at the sides. Measured in the app's state
+on a folder of 54 sources, 60 pages and 45 concepts: at 1512x901 and 1920x1080 every file,
+page and concept is named (124px and 182px rooms), at 1280x800 the pages are named at 122px;
+no name crosses another, and the same folder draws the same picture on every visit.
 The simulation below remains as the engine's position store; its forces are not stepped
 under this layout. Decision: `docs/records/decisions/2026-09-17-library-graph-flow-columns-*.md`.
 
@@ -454,9 +460,12 @@ where it stands. At rest nothing moves, which keeps the 2026-09-08 rule; the phy
 spring home, a separation that leaves no two bodies overlapping, and heavy damping at a
 fixed step, deterministic and bounded;
 a dot on the overview takes a press only from an 8px radius, a real target. Inside an
-opened island, and on any folder whose page column folds, **folded pages stand in stacks**:
-each sub-column of pages keeps the files its pages read as a small grid directly to its
-left, rows aligned, so no citation crosses another stack's names. Measured in Chrome:
+opened island, and on any folder whose page column folds, **folded pages stand in stacks**,
+and since 2026-11-20 a stack is a whole flow: the files its pages read at its left (named
+when their room allows, a small grid otherwise), its pages, and at its right the concepts
+most of whose naming pages stand in it, each level with those pages. The stack count is the
+one that names the most kinds while rows keep 18px, then the fewest. On the 60-page folder
+the lines that leave their stack fell from 38 of 74 to 6. Measured in Chrome:
 3,424 marks in 26 islands at a 2.5 ms frame; 11,240 marks in 42 islands at 4.8 ms, every
 island named — the quiet overview paints in four fills, one per ink. The layout itself
 takes 36 ms at 10,000 files and 107 ms at 30,000 (`library-islands-layout.perf.test.ts`).
