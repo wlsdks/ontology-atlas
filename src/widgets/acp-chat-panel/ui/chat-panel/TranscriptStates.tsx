@@ -169,7 +169,7 @@ export function FolderBusyState({ t, onStop }: { t: ChatT; onStop: () => void })
       aria-live="polite"
       className="agent-panel-stage-swap m-auto grid w-full max-w-[40ch] justify-items-center gap-2 text-center"
     >
-      <p className="break-keep text-body leading-prose text-[color:var(--color-text-secondary)]">{t('folderBusy')}</p>
+      <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">{t('folderBusy')}</p>
       <Chip size="lg" tone="secondary" data-testid="acp-folder-busy-stop" onClick={onStop} className={cn(RETRY_CHIP_CLASS, 'mt-3')}>
         <Square size={ICON_SIZE.md} aria-hidden />
         {tCard('stop')}

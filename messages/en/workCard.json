@@ -34,7 +34,7 @@
   "runsPagesRead": "Pages read",
   "runsDocumentsChecked": "Documents checked",
   "turn": {
-    "figures": "{written, plural, =0 {No file written yet} one {<count>#</count> file written} other {<count>#</count> files written}} · {elapsed}",
+    "figures": "{written, plural, =0 {No file written yet} other {<count>#</count> {written, plural, one {file} other {files}} written}} · {elapsed}",
     "writingFile": "Writing <name>{file}</name>",
     "answering": "Writing the answer",
     "waitingTitle": "Waiting for permission · {elapsed}",
