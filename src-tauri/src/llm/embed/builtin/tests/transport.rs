@@ -305,14 +305,20 @@ fn a_refused_connection_is_a_failed_download_unless_a_proxy_is_named() {
         .local_addr()
         .unwrap();
     let url = format!("http://{addr}/file");
-    let offline = LOCAL_HTTP.get(&url, 0, &never(), &mut following());
+    // Windows retries a refused connect for about two seconds before curl hears of it, which
+    // `LOCAL_HTTP`'s two-second connect limit would report as a timeout instead.
+    let patient = CurlFetch {
+        connect_timeout: Duration::from_secs(20),
+        ..LOCAL_HTTP
+    };
+    let offline = patient.get(&url, 0, &never(), &mut following());
     assert!(
         matches!(&offline, Err(EmbedError::Request(detail)) if detail == "connect-failed"),
         "{offline:?}"
     );
     let behind_a_proxy = CurlFetch {
         proxy_named: || true,
-        ..LOCAL_HTTP
+        ..patient
     };
     let refused = behind_a_proxy.get(&url, 0, &never(), &mut following());
     assert!(
