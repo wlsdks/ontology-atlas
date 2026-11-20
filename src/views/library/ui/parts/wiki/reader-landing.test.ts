@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { insideView, landAtLine, landingTop } from "./reader-landing";
 
+const CLAIM = { line: 12, sentence: "The return label is free for members." };
+
 function rect(top: number, height: number, left = 0, width = 600): DOMRect {
   return { top, bottom: top + height, left, right: left + width, width, height, x: left, y: top, toJSON: () => ({}) } as DOMRect;
 }
@@ -14,11 +16,14 @@ function stage(claimTop: number) {
   article.setAttribute("data-docs-viewer", "");
   const claim = document.createElement("li");
   claim.dataset.line = "12";
+  claim.textContent = CLAIM.sentence;
   article.append(claim);
   layer.append(article);
   scroller.append(layer);
   document.body.append(scroller);
+  let top = 0;
   Object.defineProperties(scroller, {
+    scrollTop: { get: () => top, set: (value: number) => { top = value; } },
     scrollHeight: { value: 4000 },
     clientHeight: { value: 500 },
   });
@@ -50,7 +55,7 @@ describe("landing a page at a claim", () => {
 
   it("scrolls once to a claim below the fold and lays a mark behind it", () => {
     const { scroller, layer } = stage(1100);
-    landAtLine(scroller, layer, 12, false);
+    landAtLine(scroller, layer, CLAIM, false);
     expect(scroller.scrollTo).toHaveBeenCalledTimes(1);
     expect(scroller.scrollTo).toHaveBeenCalledWith({ top: 850, behavior: "smooth" });
     const mark = layer.querySelector<HTMLElement>("[data-reader-claim-mark]");
@@ -64,7 +69,7 @@ describe("landing a page at a claim", () => {
 
   it("does not scroll for a claim on the first screen", () => {
     const { scroller, layer } = stage(200);
-    landAtLine(scroller, layer, 12, false);
+    landAtLine(scroller, layer, CLAIM, false);
     expect(scroller.scrollTo).not.toHaveBeenCalled();
     expect(layer.querySelector("[data-reader-claim-mark]")).not.toBeNull();
     expect(HTMLElement.prototype.animate).toHaveBeenCalledTimes(1);
@@ -75,7 +80,7 @@ describe("landing a page at a claim", () => {
     const { scroller, layer } = stage(1100);
     const animate = vi.fn();
     HTMLElement.prototype.animate = animate as unknown as HTMLElement["animate"];
-    landAtLine(scroller, layer, 12, true);
+    landAtLine(scroller, layer, CLAIM, true);
     expect(scroller.scrollTo).toHaveBeenCalledWith({ top: 850, behavior: "auto" });
     expect(layer.querySelector("[data-reader-claim-mark]")).not.toBeNull();
     vi.runAllTimers();
@@ -83,9 +88,12 @@ describe("landing a page at a claim", () => {
     expect(layer.querySelector("[data-reader-claim-mark]")).toBeNull();
   });
 
-  it("does nothing when the line names no block", () => {
+  it("marks nothing and opens the page at its top when no block shows the sentence", () => {
     const { scroller, layer } = stage(200);
-    expect(landAtLine(scroller, layer, 99, false)).toBeNull();
+    scroller.scrollTop = 640;
+    expect(landAtLine(scroller, layer, { line: 12, sentence: "Nothing on this page says this." }, false)).toBeNull();
     expect(layer.querySelector("[data-reader-claim-mark]")).toBeNull();
+    expect(scroller.scrollTop).toBe(0);
+    expect(scroller.scrollTo).not.toHaveBeenCalled();
   });
 });

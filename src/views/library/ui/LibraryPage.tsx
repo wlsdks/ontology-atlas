@@ -659,8 +659,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               filingReport={lastAnswer !== null && filingAnswer === lastAnswer}
               fileReportNote={fileAnswerNote}
               onBrowse={() => setMobileBrowseOpen(true)}
-              onOpenWiki={(slug, line) => {
-                landingRef.current = line ? { slug, line } : null;
+              onOpenWiki={(slug, claim) => {
+                landingRef.current = claim ? { slug, ...claim } : null;
                 choose({ kind: 'wiki', slug });
               }}
               onOpenSource={(path, anchor) => {

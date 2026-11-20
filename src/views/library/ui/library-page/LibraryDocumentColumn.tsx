@@ -120,7 +120,7 @@ export function LibraryDocumentColumn({
     const frame = requestAnimationFrame(() => {
       if (!landing) scroller.scrollTop = 0;
       else if ("top" in landing) scroller.scrollTop = landing.top;
-      else if (layer) undo = landAtLine(scroller, layer, landing.line, reducedMotion);
+      else if (layer) undo = landAtLine(scroller, layer, landing, reducedMotion);
     });
     landingCleanupRef.current = () => {
       cancelAnimationFrame(frame);

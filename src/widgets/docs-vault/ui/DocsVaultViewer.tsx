@@ -30,7 +30,7 @@ import {
   rewriteWikilinks,
 } from '@/shared/lib/library/source-citation';
 import { sourceCitationWords } from '@/features/library';
-import { resolveWikilinkTargetSlug } from '@/shared/lib/vault-document/parse-frontmatter';
+import { parseFrontmatter, resolveWikilinkTargetSlug } from '@/shared/lib/vault-document/parse-frontmatter';
 import { fetchServerDocContent } from '../lib/server-doc-content';
 import { resolveDocLink } from '../lib/resolve-doc-link';
 import { getTopologyProjectHref } from '@/entities/project';
@@ -180,7 +180,8 @@ export function DocsVaultViewer({
     fetcher
       .then((text) => {
         if (cancelled) return;
-        let cleaned = text.replace(FRONTMATTER_BLOCK, '');
+        /* The body as the question desk reads it (BOM and CRLF normalised), so a claim's line agrees. */
+        let cleaned = parseFrontmatter(text).body;
         /*
          * Wikilinks become standard links with a sentinel the `a` component catches. The sentinel
          * must not look like a URL scheme, or react-markdown's `defaultUrlTransform` empties the
@@ -882,9 +883,6 @@ function readerTree(namedSource: string | undefined) {
   };
   return (tree: ReaderNode) => visit(tree);
 }
-
-/** A leading frontmatter block, stripped so it is not rendered twice. */
-const FRONTMATTER_BLOCK = /^---[\s\S]*?\n---\n?/;
 
 const HEADING_CLASS = {
   h1: 'group relative mt-0 mb-6 text-display font-[var(--font-weight-strong)] leading-display text-[color:var(--color-text-primary)]',

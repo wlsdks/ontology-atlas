@@ -1,10 +1,10 @@
 import { MOTION } from "@/shared/motion";
 
 /**
- * Where an opened page should stand once its body is painted: at a claim's line (a desk row), or
- * at the scroll position it was left at (Back).
+ * Where an opened page should stand once its body is painted: at a claim (a desk row: its sentence
+ * as the row shows it, and its line as a hint), or at the scroll position it was left at (Back).
  */
-export type ReaderLanding = { slug: string; line: number } | { slug: string; top: number };
+export type ReaderLanding = { slug: string; line: number; sentence: string } | { slug: string; top: number };
 
 /** How long the claim's mark holds before it fades, so a person who watched the scroll sees it. */
 const MARK_HOLD_MS = MOTION.choreography.duration * 1000;
@@ -28,20 +28,70 @@ export function landingTop(
   return Math.round(Math.min(Math.max(0, wanted), Math.max(0, maxScroll)));
 }
 
+function words(text: string): string[] {
+  return text.normalize("NFC").toLocaleLowerCase("und").match(/[\p{L}\p{N}]+/gu) ?? [];
+}
+
+/** The words a block shows a reader: citation chips and hidden hints are not the sentence. */
+function shownWords(block: HTMLElement): string[] {
+  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+  let text = "";
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (node.parentElement?.closest('button[data-source-path], [aria-hidden="true"], .sr-only')) continue;
+    text += ` ${node.nodeValue ?? ""}`;
+  }
+  return words(text);
+}
+
+function startsAt(haystack: readonly string[], needle: readonly string[], at: number): boolean {
+  return needle.every((word, index) => haystack[at + index] === word);
+}
+
 /**
- * Brings the claim on `line` into view once, with one scroll and no correction after it, and lays a
- * mark behind it in `layer` that holds, then fades and leaves the DOM. Under reduced motion the
- * scroll is instant and the mark is there at once and leaves without fading. Returns a cleanup
- * that removes the mark early.
+ * The block that shows `sentence`, nearest `line` when several do. A wikilink shows its page's
+ * title, which the sentence does not carry, so the words before the first one must open the block;
+ * a sentence that opens with a wikilink matches on the first words after it instead.
+ */
+export function findClaimBlock(layer: HTMLElement, line: number, sentence: string): HTMLElement | null {
+  const parts = sentence.replace(/\]\([^)]*\)/gu, "]").split(/\[\[[^\]]*\]\]/u).map(words);
+  const index = parts.findIndex((part) => part.length > 0);
+  if (index < 0) return null;
+  const needle = parts[index]!;
+  let best: HTMLElement | null = null;
+  let bestDistance = Infinity;
+  for (const block of layer.querySelectorAll<HTMLElement>("[data-docs-viewer] [data-line]")) {
+    const shown = shownWords(block);
+    const matches = index === 0
+      ? startsAt(shown, needle, 0)
+      : shown.some((_, at) => startsAt(shown, needle, at));
+    if (!matches) continue;
+    const distance = Math.abs(Number(block.dataset.line) - line);
+    if (distance < bestDistance) {
+      best = block;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
+/**
+ * Brings the block that shows the claim into view once, with one scroll and no correction after
+ * it, and lays a mark behind it in `layer` that holds, then fades and leaves the DOM. Under reduced
+ * motion the scroll is instant and the mark is there at once and leaves without fading. Returns a
+ * cleanup that removes the mark early. A claim no block shows leaves no mark, and the page opens at
+ * its top.
  */
 export function landAtLine(
   scroller: HTMLElement,
   layer: HTMLElement,
-  line: number,
+  claim: { line: number; sentence: string },
   reduced: boolean,
 ): (() => void) | null {
-  const block = layer.querySelector<HTMLElement>(`[data-docs-viewer] [data-line="${line}"]`);
-  if (!block) return null;
+  const block = findClaimBlock(layer, claim.line, claim.sentence);
+  if (!block) {
+    scroller.scrollTop = 0;
+    return null;
+  }
   const view = scroller.getBoundingClientRect();
   const rect = block.getBoundingClientRect();
   const scrolls = !insideView(rect, view);
