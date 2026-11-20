@@ -218,6 +218,17 @@ fn reader(root: &Path, model: &Model) -> Result<Option<(PathBuf, PathBuf, Connec
     Ok(Some((root, dir, conn)))
 }
 
+/// The model the vault's store holds, or `None` while there is none; never creates one. The app
+/// asks it before a quiet update, so a folder nobody set up never gets a store.
+pub fn store_model(root: &Path) -> Result<Option<Model>> {
+    let root = canonical_vault_root(root)?;
+    let dir = index_dir(&root)?;
+    let Some(conn) = open_store_reader(&dir, &VECTORS)? else {
+        return Ok(None);
+    };
+    Ok(stored_model(&conn)?)
+}
+
 /// One passage as search by meaning embeds it, for tools that measure search quality.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PassageText {

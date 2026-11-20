@@ -284,6 +284,14 @@ pub fn run() {
             vault::index::vault_index_forget,
             vault::index_rows::vault_index_rows_get,
             vault::index_rows::vault_index_rows_put,
+            vault::vectors::commands::vault_vectors_probe,
+            vault::vectors::commands::vault_vectors_status,
+            vault::vectors::commands::vault_vectors_prepare,
+            vault::vectors::commands::vault_vectors_stop,
+            vault::vectors::commands::vault_vectors_warm,
+            vault::vectors::commands::vault_vectors_search,
+            vault::vectors::commands::vault_vectors_delete,
+            vault::vectors::commands::vault_vectors_delete_model,
             vault::read::read_vault_text_file,
             vault::read::read_vault_text_files,
             vault::read::read_vault_text_tail,
@@ -375,6 +383,7 @@ pub fn run() {
             let unfinished = shut_down(shutdown_for(&event), || {
                 llm::requests::cancel_owner(None);
                 audit_read::cancel_owner(None);
+                vault::vectors::stop_all_on_exit();
                 terminate_all_acp_sessions(app_handle);
             });
             if unfinished > 0 {

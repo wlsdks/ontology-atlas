@@ -254,7 +254,7 @@ type VectorPhase =
 
 type VectorFailure =
   | 'download' | 'modelCheck' | 'needsDirect' | 'diskShort' | 'modelGone'
-  | 'runnerDown' | 'modelMissing' | 'write' | 'auditBlocked' | 'unreadable';
+  | 'runnerDown' | 'modelMissing' | 'modelFailed' | 'write' | 'auditBlocked' | 'unreadable';
 
 interface VectorStatus {
   phase: VectorPhase;
@@ -294,6 +294,10 @@ interface VectorFound { state: 'ok' | 'notReady' | 'failed'; failure: VectorFail
 | `vault_vectors_search(rootPath, source, question, limit)` | Embeds the question and returns the nearest passages, at most 64 | waits longer than 10 s; returns a passage its file no longer holds |
 | `vault_vectors_delete(rootPath)` | Deletes this folder's vectors and ends its job | touches the vault |
 | `vault_vectors_delete_model()` | Ends every job using the built-in model, then deletes its files | touches vectors |
+
+`modelFailed`: the model could not start, stopped answering mid-batch, or answered with vectors
+Atlas refused (a worker that exited or timed out, a runner's malformed answer); finished work is
+kept and Resume tries again. No other failure names that case.
 
 Event `vault-vectors-status` carries `{ rootPath, status }` on every phase change and, while a
 job runs, at most four times a second and at least every two seconds.
@@ -533,3 +537,4 @@ Order: S1 and S2 first and in parallel, then S3. S4 follows once #3607 merges, a
 - 2026-11-20: store review. A vector no file holds is kept for 7 days from the moment its last file let it go, so a branch switch and back, or a file removed and restored, sends nothing; after that the next plan deletes it, even when nothing is left to prepare. An empty file listing removes nothing. Delete has one contract on every platform: nothing is stored afterwards, an open search finds nothing and says so, and a running preparation ends, also on Windows, where a file another handle holds is emptied in place rather than removed. A damaged file is set aside and rebuilt by the next plan. Stop is never taken back once pressed, and also stops the plan, which no longer holds the writer lock while it reads files.
 - 2026-11-20: second store review. Delete, another model and damage retire the file one way: removed or renamed aside, else reset in place (schema rows dropped, vacuumed, log checkpointed), so Windows keeps the same contract while a search holds the file. Damage found by a plan's pending list, by prepare's first write or by a search is set aside, and the next plan rebuilds; a search lets its connection go first and never waits for the writer lock. The size row counts every byte on disk, a damaged copy included. A search holds only vectors a file holds, so the 7-day grace period costs disk only. A new passage rule rewrites no vector: file rows are forgotten 1,024 per transaction and the vectors left unheld are marked in batches once every file was read again. Measured at 50k files after it: 134,603 passages, a file of 1.059 × text, +17.6 MB steady, +19.0 to +19.1 MB peak during a query, +34.1 MB peak while preparing, +1.6 MB after the drop, and search p95 of 2.9 to 3.0 ms in the store; at 10k, 1.058 × text, +3.6 MB steady and p95 of 2.0 to 2.2 ms.
 - 2026-11-20: the built-in flow, its states and copy, and the app's command contract; code names the feature vectors.
+- 2026-11-20: the command contract gains the failure `modelFailed`, because a worker that exits, times out or answers wrongly fits no other failure and its copy must not blame the download, the runner or the cache.

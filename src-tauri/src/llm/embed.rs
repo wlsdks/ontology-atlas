@@ -3,15 +3,14 @@
 // address check resolved and pinned; what comes back is numbers, checked before
 // anyone stores them. Every send is preceded by a synced audit line.
 
-#![cfg_attr(
+mod audit;
+#[cfg_attr(
     not(test),
     expect(
         dead_code,
-        reason = "the app commands that call this are wired separately"
+        reason = "the store's size, the worker's id and idle time serve Settings and tests"
     )
 )]
-
-mod audit;
 pub(crate) mod builtin;
 mod loopback;
 mod ollama;
@@ -248,6 +247,10 @@ impl LocalRunner {
     }
 
     /// For Matryoshka models; every vector must then have exactly this many values.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "no store asks a runner for fewer dimensions yet")
+    )]
     pub(crate) fn with_dimensions(mut self, dimensions: usize) -> Self {
         self.dimensions = Some(dimensions);
         self
@@ -299,6 +302,10 @@ impl LocalRunner {
         vectors.pop().ok_or(EmbedError::ResponseInvalid("count"))
     }
 
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "the setup dialog's runner check is not wired yet")
+    )]
     pub(crate) fn version(&self) -> Result<String, EmbedError> {
         ollama::version(self)
     }
@@ -310,6 +317,10 @@ impl LocalRunner {
 
     /// Asks the runner to download an allow-listed model. It sends no folder
     /// content, and a `model-download` line opens and closes it.
+    #[cfg_attr(
+        not(test),
+        expect(dead_code, reason = "a runner model pull is not wired yet")
+    )]
     pub(crate) fn pull(
         &self,
         vault_dir: &Path,
@@ -318,6 +329,40 @@ impl LocalRunner {
         on_progress: &mut dyn FnMut(&PullProgress),
     ) -> Result<(), EmbedError> {
         ollama::pull(self, vault_dir, model, cancel, on_progress)
+    }
+
+    /// The width of the model's vectors as `/api/show` states it (a
+    /// `<family>.embedding_length` field), so a store can be made before any passage
+    /// is sent; `None` when the runner does not say.
+    pub(crate) fn reported_dimensions(&self) -> Result<Option<usize>, EmbedError> {
+        let body = serde_json::json!({ "model": self.model }).to_string();
+        let url = self.endpoint.api_url("show");
+        let (status, text) = self.transport.send(&Request {
+            url: &url,
+            body: Some(&body),
+            timeout: self.timeouts.probe,
+            pin: self.endpoint.pin(),
+        })?;
+        match status {
+            200..=299 => {}
+            300..=399 => return Err(EmbedError::Redirected(status)),
+            404 => return Err(EmbedError::ModelMissing),
+            405 => return Ok(None),
+            _ => return Err(EmbedError::Http(status)),
+        }
+        let shown: serde_json::Value =
+            serde_json::from_str(&text).map_err(|_| EmbedError::ResponseInvalid("not-json"))?;
+        let width = shown
+            .get("model_info")
+            .and_then(serde_json::Value::as_object)
+            .and_then(|info| {
+                info.iter()
+                    .find(|(key, _)| key.ends_with(".embedding_length"))
+                    .and_then(|(_, value)| value.as_u64())
+            })
+            .and_then(|width| usize::try_from(width).ok())
+            .filter(|width| (1..=MAX_DIMENSIONS).contains(width));
+        Ok(width)
     }
 
     /// Ollama forwards a cloud model's input to its own servers, so a model the
@@ -430,6 +475,7 @@ impl BuildRun<'_> {
         Ok(sent.vectors)
     }
 
+    #[cfg_attr(not(test), expect(dead_code, reason = "tests read what a run sent"))]
     pub(crate) fn passages_sent(&self) -> usize {
         self.passages_sent
     }
@@ -527,7 +573,22 @@ impl EmbedSession for BuildRun<'_> {
     }
 }
 
+/// The embedding models a runner at `base_url` lists, bge-m3 first. The address
+/// passes the loopback rule before anything is asked, so nothing reaches another
+/// computer.
+pub(crate) fn runner_embedding_models(base_url: &str) -> Result<Vec<String>, EmbedError> {
+    let listing_model = PULLABLE_MODELS[0];
+    LocalRunner::connect(base_url, listing_model)?.embedding_models()
+}
+
 /// Splits passages into batches within both caps, in order.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "the store splits its own batches; tests check the caps"
+    )
+)]
 pub(crate) fn plan_batches(passages: &[&str]) -> Vec<std::ops::Range<usize>> {
     let mut batches = Vec::new();
     let mut start = 0;

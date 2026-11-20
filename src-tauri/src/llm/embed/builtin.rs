@@ -430,10 +430,6 @@ impl ModelStore {
 
     /// Downloads, verifies, converts and checks the model, then deletes the
     /// download. Resumes whatever an earlier run left; returns at once when ready.
-    #[cfg_attr(
-        test,
-        expect(dead_code, reason = "tests drive prepare_with with a fake transport")
-    )]
     pub(crate) fn prepare(
         &self,
         vault_dir: &Path,
@@ -513,6 +509,46 @@ impl ModelStore {
     /// Refuses before the first byte when the volume cannot hold the rest of the
     /// download, the converted file beside it, and the margin.
     fn check_space(&self, recipe: &Recipe<'_>) -> Result<(), EmbedError> {
+        let needed = self.space_needed_for(recipe);
+        let free = (recipe.free_space)(self.space_probe()).map_err(store_error)?;
+        if free < needed {
+            return Err(EmbedError::DiskSpace { needed, free });
+        }
+        Ok(())
+    }
+
+    /// What `prepare` would refuse to start without: the rest of the download, the
+    /// converted file and the margin; 0 once the model is ready.
+    pub(crate) fn space_needed(&self) -> u64 {
+        if self.is_ready() {
+            return 0;
+        }
+        self.space_needed_for(&PINNED)
+    }
+
+    /// Bytes still free on the volume that will hold the model.
+    pub(crate) fn free_bytes(&self) -> Option<u64> {
+        (PINNED.free_space)(self.space_probe()).ok()
+    }
+
+    /// Every pinned file's size: what a download from nothing fetches.
+    pub(crate) fn download_bytes() -> u64 {
+        PINNED.files.iter().map(|file| file.bytes).sum()
+    }
+
+    /// What a ready store keeps: the converted weights and the tokenizer.
+    pub(crate) fn kept_bytes() -> u64 {
+        PINNED.converted_bytes + pins::TOKENIZER.bytes
+    }
+
+    fn space_probe(&self) -> &Path {
+        self.dir
+            .ancestors()
+            .find(|dir| dir.is_dir())
+            .unwrap_or(&self.dir)
+    }
+
+    fn space_needed_for(&self, recipe: &Recipe<'_>) -> u64 {
         let downloads = self.download_dir();
         let still: u64 = recipe
             .files
@@ -527,17 +563,7 @@ impl ModelStore {
                 file.bytes - have
             })
             .sum();
-        let needed = still + recipe.converted_bytes + SPACE_MARGIN;
-        let probe = self
-            .dir
-            .ancestors()
-            .find(|dir| dir.is_dir())
-            .unwrap_or(&self.dir);
-        let free = (recipe.free_space)(probe).map_err(store_error)?;
-        if free < needed {
-            return Err(EmbedError::DiskSpace { needed, free });
-        }
-        Ok(())
+        still + recipe.converted_bytes + SPACE_MARGIN
     }
 
     fn convert_and_check(
