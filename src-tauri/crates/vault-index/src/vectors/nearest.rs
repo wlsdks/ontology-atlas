@@ -267,9 +267,10 @@ impl Searcher {
         let mut indices = Vec::new();
         for prefix in prefixes {
             let bytes = prefix.as_bytes();
-            let rows = statement.query_map(rusqlite::params![bytes, bytes.len() as i64], |row| {
-                row.get::<_, i64>(0)
-            })?;
+            let rows = statement
+                .query_map(rusqlite::params![bytes, bytes.len() as i64], |row| {
+                    row.get::<_, i64>(0)
+                })?;
             for id in rows {
                 let id = u64::try_from(id?).unwrap_or(u64::MAX);
                 if let Ok(index) = ids.binary_search(&id) {
@@ -284,7 +285,12 @@ impl Searcher {
 
     /// Indexes into `ids` of the `count` vectors with the fewest differing sign bits, kept in a
     /// bounded max-heap; only those in `within` when it is given.
-    fn nearest_by_signs(&self, query: &[u64], count: usize, within: Option<&[usize]>) -> Vec<usize> {
+    fn nearest_by_signs(
+        &self,
+        query: &[u64],
+        count: usize,
+        within: Option<&[usize]>,
+    ) -> Vec<usize> {
         let words = self.model.words();
         let vectors = self.bits.as_slice();
         let mut heap: BinaryHeap<(u32, usize)> = BinaryHeap::with_capacity(count + 1);
