@@ -3,8 +3,8 @@
 
 use super::plan::{read_passages, Plan};
 use super::quantize::{check_vectors, Quantized, Refusal};
-use super::set_aside_if_damaged;
 use super::writer::WriteError;
+use super::{now_ms, set_aside_if_damaged};
 use crate::lifecycle::{clear_meta, write_meta, META_WRITING};
 use crate::stamps::Sha;
 use crate::Error;
@@ -170,7 +170,8 @@ impl Batch {
 /// sent. A stop or a kill loses at most the batch in flight; nothing stored is asked for again.
 /// Wiki pages go first. Searches read beside it; the writer lock is held only while a batch is
 /// written, so the search index's own build and a Delete never wait for the embedding function.
-/// A stop requested before it starts ends it at once; a damaged file is set aside.
+/// A stop requested before it starts ends it at once; a damaged file is set aside and rebuilt by
+/// the next `plan`.
 pub fn prepare<E>(
     mut plan: Plan,
     progress: &PrepareProgress,
@@ -188,9 +189,18 @@ pub fn prepare<E>(
     progress
         .passages_total
         .store(plan.remaining.passages, Ordering::Relaxed);
-    if plan.pending.is_empty() {
-        return Ok(Prepared::default());
+    let outcome = run(&mut plan, progress, &mut embed);
+    if let Err(PrepareError::Index(error)) = &outcome {
+        set_aside_if_damaged(&plan.writer.dir, error, true);
     }
+    outcome
+}
+
+fn run<E>(
+    plan: &mut Plan,
+    progress: &PrepareProgress,
+    embed: &mut impl FnMut(&[&str]) -> std::result::Result<Vec<Vec<f32>>, E>,
+) -> Outcome<Prepared, E> {
     let (writer, pending) = (&plan.writer, &mut plan.pending);
     let started = writer.locked(|tx| {
         // An older plan's passages another run stored since are not sent again: O(p · log n).
@@ -205,6 +215,8 @@ pub fn prepare<E>(
             pending.remove(sha);
         }
         if pending.is_empty() {
+            // Also ends the mark a killed run left, so the next open skips its quick_check.
+            clear_meta(tx, META_WRITING)?;
             return Ok(false);
         }
         write_meta(tx, META_WRITING, &std::process::id().to_string())?;
@@ -213,12 +225,10 @@ pub fn prepare<E>(
     if !started {
         return Ok(Prepared::default());
     }
-    let outcome = prepare_files(&mut plan, progress, &mut embed);
-    if let Err(PrepareError::Index(error)) = &outcome {
-        set_aside_if_damaged(&plan.writer.dir, error);
-    }
-    let finished = match outcome {
+    let outcome = prepare_files(plan, progress, embed);
+    let finished = match &outcome {
         Err(PrepareError::Deleted) => Ok(()),
+        Err(PrepareError::Index(error)) if error.is_damage() => Ok(()),
         _ => plan
             .writer
             .locked(|tx| clear_meta(tx, META_WRITING))
@@ -310,13 +320,17 @@ fn store<'q>(
     plan: &Plan,
     vectors: impl Iterator<Item = (&'q Sha, &'q Quantized)>,
 ) -> Result<(), WriteError> {
+    let now = now_ms();
     plan.writer.locked(|tx| {
+        // A passage no file holds by now (another process's plan ran) starts its grace period.
         let mut insert = tx.prepare_cached(
-            "INSERT OR IGNORE INTO vectors(sha256, scale, int8) VALUES (?1, ?2, ?3)",
+            "INSERT OR IGNORE INTO vectors(sha256, scale, int8, unheld_since_ms)
+             VALUES (?1, ?2, ?3,
+                     CASE WHEN EXISTS (SELECT 1 FROM passages WHERE sha256 = ?1) THEN NULL ELSE ?4 END)",
         )?;
         let mut signs = tx.prepare_cached("INSERT INTO signs(id, bits) VALUES (?1, ?2)")?;
         for (sha, vector) in vectors {
-            if insert.execute(params![sha.as_slice(), vector.scale, vector.int8])? == 1 {
+            if insert.execute(params![sha.as_slice(), vector.scale, vector.int8, now])? == 1 {
                 signs.execute(params![tx.last_insert_rowid(), vector.bits])?;
             }
         }

@@ -10,14 +10,17 @@ use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::convert::Infallible;
 use std::process::{Command, Stdio};
+use vault_index::pause::{self, Point};
 use vault_index::vectors::{
-    self, Model, Plan, PrepareError, PrepareProgress, Prepared, Refusal, Searcher,
+    self, Model, Plan, PrepareError, PrepareProgress, Prepared, Refusal, Searcher, MAX_HITS,
 };
 use vault_index::{sync, Check, Progress};
 
 const BENCH: &str = env!("CARGO_BIN_EXE_vault-index-bench");
 const DIMS: usize = 64;
 const DAY_MS: i64 = 24 * 60 * 60 * 1000;
+/// `vectors::UNHELD_GRACE` as the spec states it.
+const GRACE_MS: i64 = 7 * DAY_MS;
 
 fn model() -> Model {
     Model {
@@ -90,6 +93,70 @@ fn vectors_file(vault: &TempVault) -> std::path::PathBuf {
         .unwrap()
         .join("vectors.sqlite")
 }
+
+/// The Delete contract, on whatever the platform left: nothing is stored, the size row reports
+/// exactly the bytes on disk, and a file kept in place holds no vector, in its pages or its log.
+fn assert_nothing_stored(vault: &TempVault) {
+    assert!(vectors::status(&vault.root, &model()).unwrap().is_none());
+    let path = vectors_file(vault);
+    let named = |suffix: &str| std::path::PathBuf::from(format!("{}{suffix}", path.display()));
+    let on_disk: u64 = ["", "-wal", "-shm", ".damaged"]
+        .iter()
+        .filter_map(|suffix| std::fs::metadata(named(suffix)).ok())
+        .map(|meta| meta.len())
+        .sum();
+    assert_eq!(vectors::vectors_bytes(&vault.root).unwrap(), on_disk);
+    assert!(
+        !named(".damaged").exists(),
+        "no damaged copy outlives a Delete"
+    );
+    if path.exists() {
+        let wal = std::fs::metadata(named("-wal")).map_or(0, |meta| meta.len());
+        assert_eq!(wal, 0, "the log was checkpointed away");
+        let conn = rusqlite::Connection::open(&path).unwrap();
+        let number = |sql: &str| -> i64 { conn.query_row(sql, [], |row| row.get(0)).unwrap() };
+        assert_eq!(
+            number("PRAGMA freelist_count"),
+            0,
+            "no vector left in freed pages"
+        );
+        for table in ["vectors", "signs", "passages", "files"] {
+            assert_eq!(
+                number(&format!("SELECT count(*) FROM {table}")),
+                0,
+                "{table}"
+            );
+        }
+    }
+}
+
+/// Overwrites the first page of a table or index of `vectors.sqlite`, as a bad sector would.
+fn corrupt_page_of(vault: &TempVault, name: &str) {
+    use std::io::{Seek, SeekFrom, Write};
+    let path = vectors_file(vault);
+    let conn = rusqlite::Connection::open(&path).unwrap();
+    conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()))
+        .unwrap();
+    let root: i64 = conn
+        .query_row(
+            "SELECT rootpage FROM sqlite_schema WHERE name = ?1",
+            [name],
+            |row| row.get(0),
+        )
+        .unwrap();
+    let page: i64 = conn
+        .query_row("PRAGMA page_size", [], |row| row.get(0))
+        .unwrap();
+    drop(conn);
+    let mut file = std::fs::OpenOptions::new().write(true).open(&path).unwrap();
+    file.seek(SeekFrom::Start(((root - 1) * page) as u64))
+        .unwrap();
+    file.write_all(&vec![0xAB; page as usize]).unwrap();
+}
+
+/// The unique index on `vectors.sha256`: what `pending` and `prepare`'s first write read, and no
+/// earlier step of a plan with nothing changed.
+const SHA_INDEX: &str = "sqlite_autoindex_vectors_1";
 
 fn sql(vault: &TempVault, statement: &str) {
     let conn = rusqlite::Connection::open(vectors_file(vault)).unwrap();
@@ -337,13 +404,12 @@ fn an_edit_a_rename_and_a_delete_send_only_changed_passages() {
         .all(|hit| hit.path != "c.md"));
 }
 
-/// Sets every unheld vector's grace period to have started `days` ago.
-fn age_unheld(vault: &TempVault, days: i64) {
+/// Moves every unheld vector's grace period `ms` further into the past.
+fn age_unheld(vault: &TempVault, ms: i64) {
     sql(
         vault,
         &format!(
-            "UPDATE vectors SET unheld_since_ms = unheld_since_ms - {} WHERE unheld_since_ms IS NOT NULL",
-            days * DAY_MS
+            "UPDATE vectors SET unheld_since_ms = unheld_since_ms - {ms} WHERE unheld_since_ms IS NOT NULL"
         ),
     );
 }
@@ -375,7 +441,7 @@ fn a_file_restored_within_the_grace_period_sends_nothing_and_one_past_it_is_swep
         4,
         "its four vectors start their grace period"
     );
-    age_unheld(&vault, 6);
+    age_unheld(&vault, 6 * DAY_MS);
     std::fs::write(&page, &text).unwrap();
     asked.clear();
     prepare_all(&vault, &mut asked);
@@ -390,9 +456,20 @@ fn a_file_restored_within_the_grace_period_sends_nothing_and_one_past_it_is_swep
 
     std::fs::remove_file(&page).unwrap();
     assert_eq!(plan(&vault).remaining().passages, 0);
-    age_unheld(&vault, 8);
-    assert_eq!(plan(&vault).remaining().passages, 0, "nothing pending");
-    assert_eq!(row_counts(&vault), (12, 12), "past the period: swept");
+    age_unheld(&vault, GRACE_MS - 60_000);
+    assert_eq!(
+        plan(&vault).remaining().passages,
+        0,
+        "nothing pending: the sweep still runs"
+    );
+    assert_eq!(
+        row_counts(&vault),
+        (16, 16),
+        "a minute short of 7 days: kept"
+    );
+    age_unheld(&vault, 120_000);
+    plan(&vault);
+    assert_eq!(row_counts(&vault), (12, 12), "a minute past 7 days: swept");
 }
 
 /// What a hostile or broken model answers for a batch.
@@ -470,11 +547,19 @@ fn hostile_vectors_are_refused_and_nothing_from_the_batch_is_stored() {
     let mut searcher = Searcher::open(&vault.root, &model()).unwrap().unwrap();
     assert!(searcher.nearest(&[1.0; DIMS - 1], 8).is_err());
     assert!(searcher.nearest(&[f32::NAN; DIMS], 8).is_err());
-    assert_eq!(
-        searcher.nearest(&fake("alpha"), 10_000).unwrap().hits.len(),
-        3,
-        "a huge limit is clamped, not reserved"
-    );
+}
+
+#[test]
+fn a_huge_limit_returns_at_most_sixty_four_hits() {
+    let vault = TempVault::new("vectors-limit");
+    write_sections(&vault, 20, 67);
+    let mut asked = Vec::new();
+    prepare_all(&vault, &mut asked);
+    assert_eq!(asked.len(), 80);
+    let mut searcher = Searcher::open(&vault.root, &model()).unwrap().unwrap();
+    let found = searcher.nearest(&fake("vault"), 10_000).unwrap();
+    assert_eq!(found.hits.len(), MAX_HITS);
+    assert_eq!(searcher.nearest(&fake("vault"), 70).unwrap().hits.len(), 64);
 }
 
 #[test]
@@ -608,7 +693,7 @@ fn a_search_reads_beside_a_running_build() {
 }
 
 #[test]
-fn one_searcher_follows_new_vectors_and_reloads_after_many_are_swept() {
+fn one_searcher_follows_new_vectors_and_holds_only_those_files_hold() {
     let vault = TempVault::new("vectors-follow");
     write_sections(&vault, 10, 17);
     let mut asked = Vec::new();
@@ -626,20 +711,28 @@ fn one_searcher_follows_new_vectors_and_reloads_after_many_are_swept() {
     );
     assert_eq!(searcher.vectors(), 41);
 
+    let kept = std::fs::read_to_string(vault.root.join("wiki/page-0.md")).unwrap();
     for page in 0..6 {
         let folder = if page % 2 == 0 { "wiki" } else { "notes" };
         std::fs::remove_file(vault.root.join(format!("{folder}/page-{page}.md"))).unwrap();
     }
     plan(&vault);
-    age_unheld(&vault, 8);
-    plan(&vault);
-    assert_eq!(row_counts(&vault).0, 17);
     let found = searcher.nearest(&fake(&added), 8).unwrap();
     assert_eq!(
-        searcher.vectors(),
-        17,
-        "reloaded once a large share was swept"
+        (searcher.vectors(), found.stale),
+        (17, 0),
+        "vectors in their grace period are not searched"
     );
+    assert_eq!(row_counts(&vault).0, 41, "they stay on disk");
+    std::fs::write(vault.root.join("wiki/page-0.md"), kept).unwrap();
+    plan(&vault);
+    searcher.nearest(&fake(&added), 8).unwrap();
+    assert_eq!(searcher.vectors(), 21, "held again: searched again");
+    age_unheld(&vault, GRACE_MS + 60_000);
+    plan(&vault);
+    assert_eq!(row_counts(&vault).0, 21);
+    let found = searcher.nearest(&fake(&added), 8).unwrap();
+    assert_eq!(searcher.vectors(), 21);
     assert_eq!(found.hits[0].path, "added.md");
 }
 
@@ -757,6 +850,7 @@ fn another_model_name_or_dimension_starts_a_new_file() {
         searcher.nearest(&fake("alpha"), 8).unwrap().deleted,
         "a searcher of the replaced store says so"
     );
+    assert_eq!(searcher.vectors(), 0, "and lets its copy go");
     assert_eq!(plan_with(&vault, &wider).remaining().passages, 2);
     assert!(Searcher::open(&vault.root, &model()).unwrap().is_none());
 }
@@ -793,11 +887,16 @@ fn a_delete_stops_a_running_build_and_leaves_nothing_stored() {
     );
     assert!(matches!(outcome, Err(PrepareError::Deleted)), "{outcome:?}");
     assert!(vault.index_file().is_file(), "the search index stays");
-    assert!(vectors::status(&vault.root, &model()).unwrap().is_none());
-    assert_eq!(vectors::vectors_bytes(&vault.root).unwrap(), 0);
+    assert_nothing_stored(&vault);
     let found = searcher.nearest(&fake("vault"), 8).unwrap();
     assert!(found.deleted && found.hits.is_empty());
-    assert!(!vectors_file(&vault).exists(), "nothing written after it");
+    assert_eq!(searcher.vectors(), 0, "the searcher let its copy go");
+    assert_nothing_stored(&vault);
+    assert_eq!(
+        plan(&vault).remaining().passages,
+        160,
+        "the next plan starts over"
+    );
 }
 
 #[test]
@@ -808,7 +907,8 @@ fn a_plan_that_waited_behind_a_delete_leaves_it_done() {
     prepare_all(&vault, &mut asked);
     // The Delete runs after the plan read the deletion count and before it takes the lock.
     let root = vault.root.clone();
-    vault_index::pause::before_plan_lock(
+    pause::at(
+        Point::BeforePlanLock,
         &vault_index::index_dir(&vault.root).unwrap(),
         move || {
             vectors::delete_vectors(&root).unwrap();
@@ -821,7 +921,7 @@ fn a_plan_that_waited_behind_a_delete_leaves_it_done() {
         &PrepareProgress::default(),
     );
     assert!(
-        matches!(&planned, Err(vault_index::Error::Io(e)) if e.kind() == std::io::ErrorKind::NotFound),
+        matches!(&planned, Err(vault_index::Error::Deleted)),
         "{planned:?}"
     );
     assert!(vectors::status(&vault.root, &model()).unwrap().is_none());
@@ -858,12 +958,12 @@ fn a_delete_that_can_only_empty_the_file_still_leaves_nothing_stored() {
     assert!(matches!(outcome, Err(PrepareError::Deleted)), "{outcome:?}");
     assert!(
         vectors_file(&vault).is_file(),
-        "emptied in place, not removed"
+        "reset in place, not removed"
     );
-    assert!(vectors::status(&vault.root, &model()).unwrap().is_none());
-    assert_eq!(vectors::vectors_bytes(&vault.root).unwrap(), 0);
+    assert_nothing_stored(&vault);
     let found = searcher.nearest(&fake("vault"), 8).unwrap();
     assert!(found.deleted && found.hits.is_empty());
+    assert_eq!(searcher.vectors(), 0);
     assert_eq!(
         plan(&vault).remaining().passages,
         160,
@@ -902,6 +1002,222 @@ fn a_damaged_file_is_set_aside_by_a_search_or_a_plan_and_rebuilt() {
         160,
         "a plan sets a file that is not a store aside and starts again"
     );
+    assert!(
+        vectors::vectors_bytes(&vault.root).unwrap() > 64 * 1024,
+        "the copy is counted"
+    );
+    vectors::delete_vectors(&vault.root).unwrap();
+    assert_nothing_stored(&vault);
+}
+
+#[test]
+fn damage_that_only_the_pending_list_reaches_is_set_aside_and_rebuilt() {
+    let vault = TempVault::new("vectors-damage-pending");
+    write_sections(&vault, 20, 71);
+    let mut asked = Vec::new();
+    prepare_all(&vault, &mut asked);
+    corrupt_page_of(&vault, SHA_INDEX);
+    let planned = vectors::plan(
+        &vault.root,
+        &model(),
+        &vault.files(),
+        &PrepareProgress::default(),
+    );
+    assert!(
+        planned.as_ref().is_err_and(vault_index::Error::is_damage),
+        "{planned:?}"
+    );
+    assert!(vectors_file(&vault)
+        .with_extension("sqlite.damaged")
+        .exists());
+    assert_eq!(
+        plan(&vault).remaining().passages,
+        80,
+        "rebuilt by the next plan"
+    );
+}
+
+#[test]
+fn damage_that_only_prepares_first_write_reaches_is_set_aside_and_rebuilt() {
+    let vault = TempVault::new("vectors-damage-prepare");
+    write_sections(&vault, 20, 73);
+    let taken = plan(&vault);
+    corrupt_page_of(&vault, SHA_INDEX);
+    let mut asked = 0;
+    let outcome = vectors::prepare(taken, &PrepareProgress::default(), |texts: &[&str]| {
+        asked += texts.len();
+        Ok::<_, Infallible>(texts.iter().map(|text| fake(text)).collect())
+    });
+    assert!(
+        matches!(&outcome, Err(PrepareError::Index(error)) if error.is_damage()),
+        "{outcome:?}"
+    );
+    assert_eq!(asked, 0);
+    assert!(vectors_file(&vault)
+        .with_extension("sqlite.damaged")
+        .exists());
+    assert_eq!(
+        plan(&vault).remaining().passages,
+        80,
+        "rebuilt by the next plan"
+    );
+}
+
+/// A search that hits a damaged page lets its own connection go and sets the file aside without
+/// waiting for the lock. Windows refuses to rename a file another handle holds; a read-only folder
+/// does the same here (the plan makes its folder private again, so only this path can be shown).
+#[cfg(unix)]
+#[test]
+fn a_damaged_file_a_search_cannot_rename_is_reset_in_place_and_rebuilt() {
+    use std::os::unix::fs::PermissionsExt;
+    let vault = TempVault::new("vectors-damage-in-place");
+    write_sections(&vault, 20, 79);
+    let mut asked = Vec::new();
+    prepare_all(&vault, &mut asked);
+    let mut other = Searcher::open(&vault.root, &model()).unwrap().unwrap();
+    corrupt_page_of(&vault, "signs");
+    let dir = vault_index::index_dir(&vault.root).unwrap();
+    std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+    let opened = Searcher::open(&vault.root, &model());
+    std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).unwrap();
+    assert!(
+        opened.as_ref().is_err_and(vault_index::Error::is_damage),
+        "{:?}",
+        opened.as_ref().err()
+    );
+    assert!(
+        vectors_file(&vault).is_file(),
+        "reset in place, not renamed"
+    );
+    assert_nothing_stored(&vault);
+    assert!(other.nearest(&fake("vault"), 8).unwrap().deleted);
+    assert_eq!(other.vectors(), 0);
+    assert_eq!(
+        plan(&vault).remaining().passages,
+        80,
+        "rebuilt in the same file"
+    );
+}
+
+#[test]
+fn a_stop_between_plan_batches_keeps_what_was_written_and_the_next_plan_reads_the_rest() {
+    let vault = TempVault::new("vectors-plan-stop");
+    write_sections(&vault, 600, 83);
+    let dir = vault_index::index_dir(&vault.root).unwrap();
+    let files_held = || -> i64 {
+        let conn = rusqlite::Connection::open(vectors_file(&vault)).unwrap();
+        conn.query_row("SELECT count(*) FROM files", [], |row| row.get(0))
+            .unwrap()
+    };
+    let progress = std::sync::Arc::new(PrepareProgress::default());
+    let stopper = std::sync::Arc::clone(&progress);
+    pause::at(Point::AfterPlanBatch, &dir, move || stopper.request_stop());
+    let planned = vectors::plan(&vault.root, &model(), &vault.files(), &progress);
+    assert!(
+        matches!(planned, Err(vault_index::Error::Cancelled)),
+        "{planned:?}"
+    );
+    assert_eq!(files_held(), 256, "the first batch of read files stays");
+    assert_eq!(plan(&vault).remaining().files, 600);
+    assert_eq!(files_held(), 600);
+
+    // Removed files are forgotten 1,024 per transaction; one is kept, since an empty listing
+    // removes nothing.
+    let vault = TempVault::new("vectors-plan-stop-forget");
+    write_sections(&vault, 1_100, 89);
+    let dir = vault_index::index_dir(&vault.root).unwrap();
+    plan(&vault);
+    for page in 1..1_100 {
+        let folder = if page % 2 == 0 { "wiki" } else { "notes" };
+        std::fs::remove_file(vault.root.join(format!("{folder}/page-{page}.md"))).unwrap();
+    }
+    let progress = std::sync::Arc::new(PrepareProgress::default());
+    let stopper = std::sync::Arc::clone(&progress);
+    pause::at(Point::AfterPlanBatch, &dir, move || stopper.request_stop());
+    let planned = vectors::plan(&vault.root, &model(), &vault.files(), &progress);
+    assert!(
+        matches!(planned, Err(vault_index::Error::Cancelled)),
+        "{planned:?}"
+    );
+    let held = {
+        let conn = rusqlite::Connection::open(vectors_file(&vault)).unwrap();
+        conn.query_row("SELECT count(*) FROM files", [], |row| row.get::<_, i64>(0))
+            .unwrap()
+    };
+    assert_eq!(held, 1_100 - 1_024);
+    plan(&vault);
+    let status = vectors::status(&vault.root, &model()).unwrap().unwrap();
+    assert_eq!(status.files, 1);
+}
+
+/// A real second handle on `vectors.sqlite`, as the desk's searcher keeps: Windows then refuses
+/// to remove or rename the file, and every retire resets it in place.
+#[cfg(windows)]
+fn hold_open(vault: &TempVault) -> rusqlite::Connection {
+    let held = rusqlite::Connection::open(vectors_file(vault)).unwrap();
+    let _: i64 = held
+        .query_row("SELECT count(*) FROM vectors", [], |row| row.get(0))
+        .unwrap();
+    held
+}
+
+#[cfg(windows)]
+#[test]
+fn on_windows_a_delete_beside_an_open_handle_leaves_nothing_stored() {
+    let vault = TempVault::new("vectors-windows-delete");
+    write_sections(&vault, 20, 97);
+    let mut asked = Vec::new();
+    prepare_all(&vault, &mut asked);
+    let _held = hold_open(&vault);
+    let mut searcher = Searcher::open(&vault.root, &model()).unwrap().unwrap();
+    vectors::delete_vectors(&vault.root).unwrap();
+    assert!(vectors_file(&vault).is_file(), "reset in place");
+    assert_nothing_stored(&vault);
+    assert!(searcher.nearest(&fake("vault"), 8).unwrap().deleted);
+    assert_eq!(searcher.vectors(), 0);
+    assert_eq!(plan(&vault).remaining().passages, 80);
+}
+
+#[cfg(windows)]
+#[test]
+fn on_windows_another_model_beside_an_open_handle_starts_a_new_store() {
+    let vault = TempVault::new("vectors-windows-model");
+    write_sections(&vault, 20, 101);
+    let mut asked = Vec::new();
+    prepare_all(&vault, &mut asked);
+    let _held = hold_open(&vault);
+    let mut searcher = Searcher::open(&vault.root, &model()).unwrap().unwrap();
+    let other = Model {
+        name: "another-embedding".into(),
+        dimensions: DIMS,
+    };
+    assert_eq!(plan_with(&vault, &other).remaining().passages, 80);
+    assert!(vectors::status(&vault.root, &model()).unwrap().is_none());
+    assert!(searcher.nearest(&fake("vault"), 8).unwrap().deleted);
+}
+
+#[cfg(windows)]
+#[test]
+fn on_windows_a_damaged_file_beside_an_open_handle_is_reset_and_rebuilt() {
+    let vault = TempVault::new("vectors-windows-damage");
+    write_sections(&vault, 20, 103);
+    let mut asked = Vec::new();
+    prepare_all(&vault, &mut asked);
+    let held = hold_open(&vault);
+    corrupt_page_of(&vault, SHA_INDEX);
+    let planned = vectors::plan(
+        &vault.root,
+        &model(),
+        &vault.files(),
+        &PrepareProgress::default(),
+    );
+    assert!(
+        planned.as_ref().is_err_and(vault_index::Error::is_damage),
+        "{planned:?}"
+    );
+    assert_nothing_stored(&vault);
+    drop(held);
+    assert_eq!(plan(&vault).remaining().passages, 80);
 }
 
 #[test]
@@ -912,17 +1228,18 @@ fn a_new_passage_rule_reads_every_file_again_but_sends_nothing_unchanged() {
     prepare_all(&vault, &mut asked);
     sql(
         &vault,
-        "UPDATE meta SET value = '1' WHERE key = 'passage_version'; DELETE FROM files WHERE id = 1;",
+        "UPDATE meta SET value = '1' WHERE key = 'passage_version';",
     );
+    std::fs::remove_file(vault.root.join("notes/page-1.md")).unwrap();
     let taken = plan(&vault);
     assert_eq!(taken.remaining().passages, 0);
     assert_eq!(
         unheld(&vault),
-        0,
-        "every vector held again by the same plan"
+        4,
+        "only the vectors of the file gone start their grace period, marked once all were read"
     );
     let status = vectors::status(&vault.root, &model()).unwrap().unwrap();
-    assert_eq!((status.files, status.passages_stored), (10, 40));
+    assert_eq!((status.files, status.passages_stored), (9, 36));
 }
 
 #[test]
@@ -933,7 +1250,6 @@ fn changed_files_counts_edits_additions_and_removals_without_writing() {
     prepare_all(&vault, &mut asked);
     let changed = |files: &[String]| vectors::changed_files(&vault.root, &model(), files).unwrap();
     assert_eq!(changed(&vault.files()), Some(0));
-    std::thread::sleep(std::time::Duration::from_millis(20));
     write(
         &vault,
         "wiki/page-0.md",

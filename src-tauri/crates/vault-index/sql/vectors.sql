@@ -1,7 +1,8 @@
 -- vectors.sqlite: search by meaning, for one embedding model and dimension (meta 'model' and
 -- 'dimensions', with 'store_id' naming this file's generation); another model or dimension
--- discards the file, and a file naming no model holds nothing. Opened only by the app. A
--- different PRAGMA user_version discards the file; it is never altered.
+-- retires the file (removed, or reset in place where another handle keeps it), and a file naming
+-- no model holds nothing. Opened only by the app. A different PRAGMA user_version retires the
+-- file; it is never altered.
 -- It holds no passage text, but vectors can reveal parts of the text they came from.
 
 CREATE TABLE meta (

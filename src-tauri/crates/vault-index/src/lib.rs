@@ -46,6 +46,9 @@ pub enum Error {
     Sql(rusqlite::Error),
     /// `Progress::request_cancel` stopped the build; what was committed stays consistent.
     Cancelled,
+    /// Search by meaning's store was deleted, retired or replaced while a `vectors::plan` ran;
+    /// nothing more was written.
+    Deleted,
 }
 
 impl Error {
@@ -61,6 +64,9 @@ impl std::fmt::Display for Error {
             Error::Io(error) => write!(f, "vault index: {error}"),
             Error::Sql(error) => write!(f, "vault index: {error}"),
             Error::Cancelled => f.write_str("vault index: build cancelled"),
+            Error::Deleted => {
+                f.write_str("vault index: search by meaning was deleted while it was prepared")
+            }
         }
     }
 }

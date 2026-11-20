@@ -4,8 +4,8 @@ use super::plan::read_passages;
 use super::quantize::check_vector;
 use super::words::Words;
 use super::{
-    deletion_count, invalid_input, meta_number, reader, set_aside_if_damaged, stored_model, Model,
-    META_DELETED_VECTORS, META_STORE_ID,
+    deletion_count, dir_for, invalid_input, meta_number, reader, set_aside_if_damaged,
+    stored_model, Model, META_HELD_CHANGES, META_STORE_ID,
 };
 use crate::lifecycle::{read_meta, VECTORS_FILE};
 use crate::passage::Passage;
@@ -17,8 +17,6 @@ use std::path::{Path, PathBuf};
 
 /// The first pass keeps this many candidates (or sixteen per hit asked for) for int8 rescoring.
 const RESCORE_CANDIDATES: usize = 256;
-/// A search's copy is reloaded once this share of its vectors was deleted (1 / n).
-const RELOAD_AFTER_DELETED_SHARE: usize = 8;
 /// Hits one search returns at most, which bounds its candidate heap.
 pub const MAX_HITS: usize = 64;
 
@@ -46,10 +44,13 @@ pub struct Found {
     pub deleted: bool,
 }
 
-/// A read connection plus the sign bits of every stored vector in memory, d / 8 + 8 bytes each,
-/// returned to the system when it is dropped. A search sees what a running `prepare` stored.
+/// A read connection plus the sign bits of every vector a file holds, in memory, d / 8 + 8 bytes
+/// each, returned to the system when it is dropped. A search sees what a running `prepare`
+/// stored; vectors in their grace period cost disk only.
 pub struct Searcher {
+    /// In memory once the store went, so no handle keeps its file.
     conn: Connection,
+    released: bool,
     root: PathBuf,
     dir: PathBuf,
     model: Model,
@@ -61,7 +62,7 @@ pub struct Searcher {
     /// `model.words()` words per vector, in `ids` order.
     bits: Words,
     loaded_through: i64,
-    deleted_at_load: u64,
+    held_changes_at_load: u64,
     deletions: i64,
 }
 
@@ -69,15 +70,17 @@ impl Searcher {
     /// `None` while no store for `model` exists; never creates one. Loads every vector's sign
     /// bits: O(n · d / 64). A damaged file is set aside so the next `plan` rebuilds it.
     pub fn open(root: &Path, model: &Model) -> Result<Option<Searcher>> {
-        let Some((root, dir, conn)) = reader(root, model)? else {
-            return Ok(None);
-        };
-        let deletions = deletion_count(&dir);
-        let opened = Searcher::load(conn, root, dir.clone(), model, deletions);
+        // Read before the file is opened, so a Delete in between is seen at the first search.
+        let deletions = deletion_count(&dir_for(root)?);
+        let opened = reader(root, model).and_then(|found| {
+            found
+                .map(|(root, dir, conn)| Searcher::load(conn, root, dir, model, deletions))
+                .transpose()
+        });
         if let Err(error) = &opened {
-            set_aside_if_damaged(&dir, error);
+            set_aside_if_damaged(&dir_for(root)?, error, false);
         }
-        opened.map(Some)
+        opened
     }
 
     fn load(
@@ -88,6 +91,7 @@ impl Searcher {
         deletions: i64,
     ) -> Result<Searcher> {
         let mut searcher = Searcher {
+            released: false,
             store_id: read_meta(&conn, META_STORE_ID)?,
             file: FileIdentity::of(&dir.join(VECTORS_FILE)),
             conn,
@@ -98,22 +102,33 @@ impl Searcher {
             ids: Words::with_capacity(0)?,
             bits: Words::with_capacity(0)?,
             loaded_through: 0,
-            deleted_at_load: 0,
+            held_changes_at_load: 0,
         };
         searcher.reload()?;
         Ok(searcher)
     }
 
     /// Whether the store it opened went: a Delete here, another file at its path, or the same
-    /// file emptied in place or given another generation.
-    fn store_gone(&self) -> Result<bool> {
-        if deletion_count(&self.dir) != self.deletions
+    /// file reset in place or given another generation. A file it cannot read counts as gone.
+    fn store_gone(&self) -> bool {
+        if self.released
+            || deletion_count(&self.dir) != self.deletions
             || FileIdentity::of(&self.dir.join(VECTORS_FILE)) != self.file
         {
-            return Ok(true);
+            return true;
         }
-        Ok(read_meta(&self.conn, META_STORE_ID)? != self.store_id
-            || stored_model(&self.conn)?.as_ref() != Some(&self.model))
+        let same = read_meta(&self.conn, META_STORE_ID).is_ok_and(|id| id == self.store_id)
+            && stored_model(&self.conn).is_ok_and(|model| model.as_ref() == Some(&self.model));
+        !same
+    }
+
+    /// Lets the store go: its copy and its connection, so no handle keeps the file.
+    fn release(&mut self) -> Result<()> {
+        self.ids = Words::with_capacity(0)?;
+        self.bits = Words::with_capacity(0)?;
+        self.conn = Connection::open_in_memory()?;
+        self.released = true;
+        Ok(())
     }
 
     /// Vectors held in memory.
@@ -122,10 +137,12 @@ impl Searcher {
     }
 
     fn reload(&mut self) -> Result<()> {
-        self.deleted_at_load = meta_number(&self.conn, META_DELETED_VECTORS)?;
-        let count: i64 = self
-            .conn
-            .query_row("SELECT count(*) FROM signs", [], |row| row.get(0))?;
+        self.held_changes_at_load = meta_number(&self.conn, META_HELD_CHANGES)?;
+        let count: i64 = self.conn.query_row(
+            "SELECT count(*) FROM vectors WHERE unheld_since_ms IS NULL",
+            [],
+            |row| row.get(0),
+        )?;
         let count = usize::try_from(count).unwrap_or(0);
         // The old copy goes first, so a reload never holds two.
         self.ids = Words::with_capacity(0)?;
@@ -138,15 +155,17 @@ impl Searcher {
 
     fn load_new(&mut self) -> Result<()> {
         let words = self.model.words();
-        let mut statement = self
-            .conn
-            .prepare_cached("SELECT id, bits FROM signs WHERE id > ?1 ORDER BY id")?;
+        let mut statement = self.conn.prepare_cached(
+            "SELECT s.id, s.bits, v.unheld_since_ms IS NULL FROM signs AS s
+               JOIN vectors AS v ON v.id = s.id WHERE s.id > ?1 ORDER BY s.id",
+        )?;
         let mut rows = statement.query([self.loaded_through])?;
         while let Some(row) = rows.next()? {
             let id: i64 = row.get(0)?;
             let bytes = row.get_ref(1)?.as_bytes().map_err(rusqlite::Error::from)?;
+            let held: bool = row.get(2)?;
             self.loaded_through = id;
-            if bytes.len() != words * 8 {
+            if !held || bytes.len() != words * 8 {
                 continue;
             }
             self.ids.push(id as u64)?;
@@ -157,12 +176,10 @@ impl Searcher {
         Ok(())
     }
 
-    /// Picks up vectors stored since the last search; reloads once many were deleted.
+    /// Picks up vectors stored since the last search; reloads, O(n · d / 64), once which vectors
+    /// files hold changed (a plan let some go, held some again or swept them).
     fn catch_up(&mut self) -> Result<()> {
-        let deleted = meta_number(&self.conn, META_DELETED_VECTORS)?;
-        let gone =
-            usize::try_from(deleted.saturating_sub(self.deleted_at_load)).unwrap_or(usize::MAX);
-        if gone > 0 && gone >= self.ids.len() / RELOAD_AFTER_DELETED_SHARE {
+        if meta_number(&self.conn, META_HELD_CHANGES)? != self.held_changes_at_load {
             return self.reload();
         }
         self.load_new()
@@ -171,10 +188,15 @@ impl Searcher {
     /// The `limit` (at most `MAX_HITS`) passages nearest `query`, best first, each checked against
     /// its file as it is now. Hamming distance over sign bits picks c candidates in
     /// O(n · d / 64 + n · log c); their int8 vectors are rescored in O(c · d).
+    /// A damaged file is let go and set aside unless a build holds the writer lock, which a search
+    /// never waits for; the next `plan` sets it aside then.
     pub fn nearest(&mut self, query: &[f32], limit: usize) -> Result<Found> {
         let found = self.search(query, limit.min(MAX_HITS));
         if let Err(error) = &found {
-            set_aside_if_damaged(&self.dir, error);
+            if error.is_damage() {
+                self.release()?;
+                set_aside_if_damaged(&self.dir, error, false);
+            }
         }
         found
     }
@@ -182,9 +204,8 @@ impl Searcher {
     fn search(&mut self, query: &[f32], limit: usize) -> Result<Found> {
         let quantized = check_vector(0, query, self.model.dimensions)
             .map_err(|refusal| invalid_input(&format!("query refused: {refusal}")))?;
-        if self.store_gone()? {
-            self.ids = Words::with_capacity(0)?;
-            self.bits = Words::with_capacity(0)?;
+        if self.store_gone() {
+            self.release()?;
             return Ok(Found {
                 deleted: true,
                 ..Found::default()

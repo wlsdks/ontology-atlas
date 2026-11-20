@@ -23,18 +23,10 @@ impl From<rusqlite::Error> for WriteError {
 impl From<WriteError> for Error {
     fn from(error: WriteError) -> Self {
         match error {
-            WriteError::Deleted => deleted(),
+            WriteError::Deleted => Error::Deleted,
             WriteError::Index(error) => error,
         }
     }
-}
-
-/// The error `plan` answers when the store went while it ran.
-pub(super) fn deleted() -> Error {
-    Error::Io(io::Error::new(
-        io::ErrorKind::NotFound,
-        "search by meaning was deleted or replaced while it was being prepared",
-    ))
 }
 
 /// The store a plan opened: its folder, model, generation and the deletions seen then.

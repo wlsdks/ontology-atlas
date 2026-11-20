@@ -30,6 +30,7 @@ pub(crate) const ROWS: Store = Store {
     schema: include_str!("../sql/rows.sql"),
     version: ROWS_SCHEMA_VERSION,
     page_bytes: None,
+    reset_in_place: false,
 };
 
 /// A producer's values are JSON, which compresses about four to one; stored uncompressed they took
