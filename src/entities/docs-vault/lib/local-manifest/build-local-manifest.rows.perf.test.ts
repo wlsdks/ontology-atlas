@@ -15,6 +15,8 @@ import { runInNewContext } from 'node:vm';
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import { encodeVaultTextFrames } from '../../../../../tests/helpers/vault-text-frames';
+
 const transport = vi.hoisted(() => ({
   invoke: (_command: string, _args?: unknown): Promise<unknown> => Promise.reject(new Error('no bridge')),
 }));
@@ -130,7 +132,7 @@ class RowsBridge {
     }
     if (command === 'read_vault_text_files') {
       const { rootPath, relativePaths } = args as { rootPath: string; relativePaths: string[] };
-      return relativePaths.map((relativePath) => readText(rootPath, relativePath));
+      return encodeVaultTextFrames(relativePaths.map((relativePath) => readText(rootPath, relativePath)));
     }
     if (command === 'read_vault_text_file') {
       const { rootPath, relativePath } = args as { rootPath: string; relativePath: string };

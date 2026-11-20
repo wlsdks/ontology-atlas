@@ -1,4 +1,5 @@
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
+import { decodeVaultTextFrames, type NativeVaultTextRead } from './vault-text-frames';
 
 type TauriInvoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
 
@@ -630,12 +631,7 @@ export async function readTauriVaultTextFile(
   return { text: file.text, lastModified: file.lastModified };
 }
 
-export interface NativeVaultTextRead {
-  relativePath: string;
-  text: string | null;
-  lastModified: number | null;
-  error: string | null;
-}
+export type { NativeVaultTextRead };
 
 export async function readTauriVaultTextFiles(
   rootPath: string,
@@ -643,10 +639,11 @@ export async function readTauriVaultTextFiles(
 ): Promise<NativeVaultTextRead[] | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  return invoke<NativeVaultTextRead[]>('read_vault_text_files', {
+  const frames = await invoke<ArrayBuffer>('read_vault_text_files', {
     rootPath,
     relativePaths: [...relativePaths],
   });
+  return decodeVaultTextFrames(frames);
 }
 
 export interface TauriLibraryCollectionsWriteResult {

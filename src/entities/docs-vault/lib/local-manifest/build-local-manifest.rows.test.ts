@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryVault } from '../../../../../tests/helpers/memory-vault';
+import { encodeVaultTextFrames } from '../../../../../tests/helpers/vault-text-frames';
 
 const tauri = vi.hoisted(() => ({
   rows: (_command: string, _body: string): unknown => {
@@ -14,11 +15,13 @@ vi.mock('@tauri-apps/api/core', () => ({
   invoke: async (command: string, args: unknown) => {
     if (command === 'read_vault_text_files') {
       const { relativePaths } = args as { relativePaths: string[] };
-      return relativePaths.map((relativePath) => {
-        tauri.reads.push(relativePath);
-        const file = vault.read(relativePath);
-        return { relativePath, text: file?.text ?? null, lastModified: file?.lastModified ?? null, error: file ? null : 'gone' };
-      });
+      return encodeVaultTextFrames(
+        relativePaths.map((relativePath) => {
+          tauri.reads.push(relativePath);
+          const file = vault.read(relativePath);
+          return { relativePath, text: file?.text ?? null, lastModified: file?.lastModified ?? null, error: file ? null : 'gone' };
+        }),
+      );
     }
     const body = new TextDecoder().decode(args as Uint8Array);
     if (command === 'vault_index_rows_put') tauri.puts.push(body);
