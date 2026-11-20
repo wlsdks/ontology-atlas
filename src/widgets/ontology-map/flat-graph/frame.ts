@@ -1491,25 +1491,59 @@ function namedNow(id: string): boolean {
  * dot (or on its plate) and name drawn before it. Admission holds names apart across a whole zoom
  * step; at rest the frame knows the one scale, so a rim member keeps a name its step ruled out. It
  * runs after every admitted name, so it never takes a place one of them holds, and a member that
- * changes side cross-fades between the two rows. O(unnamed members × fallbacks × (discs + grown dots + names drawn)).
+ * changes side cross-fades between the two rows. A member the frame before drew goes first, on the
+ * side it drew where that side still fits, and a row it leaves fades where the names after it see it,
+ * so two members that want one place hand it over, one fading out before the other fades in, rather
+ * than cross-fading over each other while the camera moves.
+ * O(unnamed members × fallbacks × (discs + grown dots + names drawn)).
  */
 function planMemberFallbacks(fallbacks: ReadonlyMap<string, readonly PlacedName[]>, alphas: ReadonlyMap<string, number>, chrome: readonly Box[]): void {
-  for (const [id, sides] of fallbacks) {
-    const at = screenAt(id);
-    if (!at || alphas.get(id) === 0 || namedNow(id)) continue;
-    for (let k = 0; k < sides.length; k += 1) {
-      if (!memberBlockShows(sides, k, k + 1, chrome)) continue;
-      let side = sides[k]!;
-      if (onGrownDot(side, at.x, at.y)) {
-        let plated = backedSides.get(side);
-        if (!plated) backedSides.set(side, (plated = { ...side, backed: true }));
-        side = plated;
-      }
-      if (nameRoom(side, at, at.x, at.y, false) <= ROOM_GONE_PX) continue;
-      planName(side, alphas, 1, false);
-      break;
+  let ids = fallbackIds.get(fallbacks);
+  if (!ids) fallbackIds.set(fallbacks, (ids = [...fallbacks.keys()]));
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (let i = 0; i < ids.length; i += 1) {
+      const id = ids[i]!;
+      const drewRow = rowDrawnLastFrame(id);
+      if ((drewRow !== null) !== (pass === 0)) continue;
+      const at = screenAt(id);
+      if (!at || alphas.get(id) === 0 || namedNow(id)) continue;
+      const sides = fallbacks.get(id)!;
+      const drew = drewRow === null ? -1 : sideOf(drewRow.name);
+      let first = -1;
+      for (let k = 0; k < sides.length && first < 0 && drew >= 0; k += 1) if (sideOf(sides[k]!) === drew) first = k;
+      if (first >= 0 && planFallback(sides, first, at, alphas, chrome)) continue;
+      for (let k = 0; k < sides.length; k += 1) if (k !== first && planFallback(sides, k, at, alphas, chrome)) break;
+      if (drewRow !== null && drewRow.frame !== F.frame && drewRow.admitted !== F.frame) placeName(drewRow, alphas, 1, true);
     }
   }
+}
+
+/** Each admission's fallback members in order, listed once so a frame walks them without allocating. */
+const fallbackIds = new WeakMap<ReadonlyMap<string, readonly PlacedName[]>, readonly string[]>();
+
+/** The row a member's capability name was drawn in on the frame before, null when none was. O(rows of the member). */
+function rowDrawnLastFrame(id: string): DrawnName | null {
+  const rows = F.names.names.get(id);
+  if (!rows) return null;
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i]!;
+    if (row.name.role === "capability" && !row.wasFocus && row.frame === F.frame - 1 && row.alpha > DRAWN_INK) return row;
+  }
+  return null;
+}
+
+/** Plans a member's fallback side `k` where it stands inside the free map and clear of what the frame drew before it. */
+function planFallback(sides: readonly PlacedName[], k: number, at: Point, alphas: ReadonlyMap<string, number>, chrome: readonly Box[]): boolean {
+  if (!memberBlockShows(sides, k, k + 1, chrome)) return false;
+  let side = sides[k]!;
+  if (onGrownDot(side, at.x, at.y)) {
+    let plated = backedSides.get(side);
+    if (!plated) backedSides.set(side, (plated = { ...side, backed: true }));
+    side = plated;
+  }
+  if (nameRoom(side, at, at.x, at.y, false) <= ROOM_GONE_PX) return false;
+  planName(side, alphas, 1, false);
+  return true;
 }
 
 /** The share of its full radius a capability disc is drawn at, 1 for a disc no crowd shrank. */
