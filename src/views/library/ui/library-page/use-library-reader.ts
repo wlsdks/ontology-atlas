@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocalVault } from "@/entities/vault-session";
+import { useDocumentDetail, useLocalVault } from "@/entities/vault-session";
 import type { LibraryOriginalLink, VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { isRetainedAnswerPath, type LibraryUiModel } from "@/features/library";
 import { useBackToTop, useDocReadingScrollSpy } from "@/widgets/doc-reading-pane";
@@ -103,8 +103,9 @@ export function useLibraryReader({
     pendingReportJumpRef.current = null;
     jumpToReportSection(slug);
   }, [jumpToReportSection, reportAdvisoryOpen]);
+  const selectedHeadings = useDocumentDetail(selectedWikiDoc)?.headings;
   const outlineHeadings = useMemo(() => {
-    const headings = (selectedWikiDoc?.headings ?? []).filter(
+    const headings = (selectedHeadings ?? []).filter(
       (heading) => heading.depth >= 2 && heading.depth <= 3,
     );
     const totals = new Map<string, number>();
@@ -115,7 +116,7 @@ export function useLibraryReader({
       seen.set(heading.text, occurrence);
       return { ...heading, duplicate: (totals.get(heading.text) ?? 0) > 1, occurrence };
     });
-  }, [selectedWikiDoc]);
+  }, [selectedHeadings]);
   const handleHeadingNavigate = useCallback(
     (slug: string) => {
       document.getElementById(slug)?.scrollIntoView({

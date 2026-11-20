@@ -19,6 +19,12 @@ export { useVaultLoadProgress } from './model/vault-load-progress';
 export { useArrivingManifest } from './model/vault-arrival';
 export { useSampleSource } from './model/use-sample-source';
 export {
+  useAdoptDocumentText,
+  useDocumentDetail,
+  useDocumentDetails,
+  type DocumentDetailAnswer,
+} from './model/document-store/use-document-detail';
+export {
   startPreferredSampleDownload,
   useStaticVaultSource,
   useStaticVaultStatus,

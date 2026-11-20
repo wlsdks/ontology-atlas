@@ -20,6 +20,16 @@ export {
   type StaticVaultHeadings,
 } from './lib/bundled-vault/static-headings';
 export {
+  deriveDocumentDetail,
+  type DocumentRef,
+  type VaultDocDetail,
+} from './store/document-detail';
+export {
+  createDocumentStore,
+  DETAIL_READ_BATCH,
+  type DocumentStore,
+} from './store/document-store';
+export {
   pinnedDocsStorageKey,
   recentDocsStorageKey,
   vaultScopeKey,
