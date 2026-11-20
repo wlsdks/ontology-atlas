@@ -197,8 +197,10 @@ pub(crate) fn decode_answer(payload: &[u8]) -> Result<Answer, EmbedError> {
                 return Err(invalid);
             }
             let values: Vec<f32> = body
-                .chunks_exact(4)
-                .map(|bytes| f32::from_le_bytes(bytes.try_into().unwrap_or([0; 4])))
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .map(|bytes| f32::from_le_bytes(*bytes))
                 .collect();
             let vectors = if dimensions == 0 {
                 vec![Vec::new(); count]
