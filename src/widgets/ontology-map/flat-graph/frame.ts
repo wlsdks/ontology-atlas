@@ -394,6 +394,8 @@ const drawnRadii = new WeakMap<object, DrawnMarks>();
 const MARK_STEP_MAX_MS = 34;
 /** Nearer its target than this a radius takes it: a fiftieth of a pixel is not seen. */
 const MARK_REST_PX = 0.02;
+/** The most of a push a closing fan may let show in one frame when the push takes its need at once. */
+const LEAVING_PUSH_STEP_PX = 0.5;
 /** Nearer its place than this a gliding name takes it. */
 const NAME_REST_PX = 0.05;
 const NO_ROOMS: ReadonlyMap<string, StarRoom> = new Map();
@@ -480,11 +482,18 @@ function screenOf(id: string): StampedPoint {
   return at;
 }
 
-/** How far `id` has moved into an opened fan, 0 when it is in none. */
-function fanShare(id: string): number {
+/** How far the fan round the member the reader let go, `capabilityId`, still stands open; 0 once it has closed. */
+function leavingFanShare(capabilityId: string): number {
+  for (let i = 0; i < F.opened.length; i += 1) if (F.opened[i]!.elements.capabilityId === capabilityId) return F.opened[i]!.share;
+  return 0;
+}
+
+/** How far `id` has moved into an opened fan other than `besides`'s, 0 when it is in none. */
+function fanShare(id: string, besides: string | null = null): number {
   let share = 0;
   for (let i = 0; i < F.opened.length; i += 1) {
-    if (F.opened[i]!.elements.offsets.has(id)) share = Math.max(share, F.opened[i]!.share * F.opened[i]!.elements.open);
+    const { elements } = F.opened[i]!;
+    if (elements.capabilityId !== besides && elements.offsets.has(id)) share = Math.max(share, F.opened[i]!.share * elements.open);
   }
   return share;
 }
@@ -680,8 +689,11 @@ function setCapabilityStar(capabilityId: string): void {
 interface FanPush { domainId: string; layout: FlatGraphLayout; d: number; perMs: number; target: number; need: number; at: number; frame: number; held: number }
 const fanPushes = new Map<string, FanPush>();
 
-/** An element of a pushed fan this frame: its capability, its bearing from it, and the room and radius it opens to where it draws. */
-interface PushedDot { capabilityId: string; ux: number; uy: number; frame: number; room: StarRoom; radius: number }
+/**
+ * An element of a pushed fan this frame: its capability, its bearing from it, the room and radius it
+ * opens to where it draws, and where its crowd list stands in `near.outside`.
+ */
+interface PushedDot { capabilityId: string; ux: number; uy: number; frame: number; room: StarRoom; radius: number; from: number; to: number }
 const pushedDots = new Map<string, PushedDot>();
 
 const fanCache = new WeakMap<FlatGraphLayout, Map<string, ReadonlyMap<string, readonly string[]>>>();
@@ -749,52 +761,232 @@ const fanDot = { x: 0, y: 0 };
 /**
  * How far `capabilityId`'s fan must move out for each of its elements, at the radius it heads for,
  * to clear the disc the capability heads for by `ROOM_WHOLE_PX`; none when it already does, or when
- * the fan is opened round a selection. O(the fan × stars).
+ * the fan is opened round a selection. The fan of a member the reader just let go keeps its need as
+ * it closes, so its dots come home already clear of the disc. `worldRooms` reads every dot at the
+ * radius its world room opens it to, as it draws once its push is let go. O(the fan × stars).
  */
-function fanNeed(capabilityId: string, elementIds: readonly string[]): number {
+function fanNeed(capabilityId: string, elementIds: readonly string[], worldRooms = false): number {
   if (!homePx(capabilityId, fanCentre)) return 0;
   const own = radiusNow(capabilityId);
   const special = capabilityId === F.selectedId ? F.selectedR : capabilityId === F.leavingId ? F.leavingR : null;
   const disc = radiusAim(capabilityId, special ?? Math.min(openedRadius(capabilityId, own), roomLimit(capabilityId, own)));
+  const closing = capabilityId === F.leavingId ? capabilityId : null;
   let need = 0;
   for (const id of elementIds) {
-    if (fanShare(id) > 0 || id === F.selectedId || id === F.leavingId) return 0;
-    if (!homePx(id, fanDot)) continue;
+    if (fanShare(id, closing) > 0) return 0;
+    // The selection draws at its own radius and no disc covers it.
+    if (id === F.selectedId || id === F.leavingId || !homePx(id, fanDot)) continue;
     const apart = Math.hypot(fanDot.x - fanCentre.x, fanDot.y - fanCentre.y);
     if (apart < 1e-6) continue;
-    need = Math.max(need, disc + radiusAim(id, pushedDots.get(id)?.radius ?? openedDotRadius(id)) + ROOM_WHOLE_PX - apart);
+    const pushed = worldRooms ? undefined : pushedDots.get(id)?.radius;
+    need = Math.max(need, disc + radiusAim(id, pushed ?? openedDotRadius(id)) + ROOM_WHOLE_PX - apart);
   }
   return need;
 }
 
 /**
- * A pushed element's room in px in `domainId`'s star at (`x`, `y`), the others where they draw: its
- * share of each pair and its distance from the domain's centre. It leaves out the world rooms' term
- * for the nearest mark's own radius, which switches between two marks at nearly one distance as a
- * dot moves; the push itself clears the capability's disc. Its own fan and capability only part
- * from it as the star opens. O(the star's marks).
+ * Whether a held fan's push, at none and needed by none, may let its dots go back to their world
+ * rooms: each opens there no smaller than its pushed room draws it, and still clears the disc. The
+ * world room adds a term for the nearest mark's own radius; letting go while it binds would shrink a
+ * dot mid-zoom, and letting go while it still needs a push would bring the push straight back.
+ * Read before this frame moves the fan's dots, so a dot's room is still its world room.
+ * O(the fan × stars).
  */
-function roomAtPx(domainId: string, id: string, x: number, y: number, out: StarRoom): StarRoom {
-  const { model, P } = F;
-  const domain = model.domainById.get(domainId)!;
-  const own = openMaxPx("element", P);
-  const fixed = screenOf(domain.id);
-  out.kind = "element";
-  out.paired = Infinity;
-  out.nearest = Infinity;
-  out.nearestId = null;
-  out.pastFixed = Math.hypot(x - fixed.x, y - fixed.y);
-  const meet = (other: string, max: number) => {
-    if (other === id) return;
-    const at = screenOf(other);
-    out.paired = Math.min(out.paired, (Math.hypot(x - at.x, y - at.y) * own) / (own + max));
-  };
-  for (const capabilityId of domain.capabilityIds) {
-    meet(capabilityId, openMaxPx("capability", P));
-    for (const el of model.capabilityById.get(capabilityId)?.elementIds ?? []) meet(el, own);
+function pushReleases(capabilityId: string, elementIds: readonly string[]): boolean {
+  if (!(fanNeed(capabilityId, elementIds, true) <= 0)) return false;
+  for (const id of elementIds) {
+    const dot = pushedDots.get(id);
+    if (dot !== undefined && !(openedDotRadius(id) >= dot.radius - MARK_REST_PX)) return false;
   }
-  for (const el of domain.directElementIds) meet(el, own);
-  return out;
+  return true;
+}
+
+/**
+ * The marks of each star a push holds, where they draw this frame, hashed into square cells as wide
+ * as a pushed dot's room can reach (`reach`), so each dot meets only the marks near it. Filled once a
+ * frame in O(n) for n marks; the arrays grow with the largest star and are reused. `fans` holds the
+ * capability whose push moves each mark. The room walk lists, for each pushed dot, the marks outside
+ * its fan within `reach` (`outside`) and how far each stands (`apart`), so its crowd test reads them
+ * instead of walking again. `radii` holds each mark's drawn radius, 0 off screen, and `starRadii`
+ * each star's domain disc, read on the first crowd test of the frame.
+ */
+const near = {
+  reach: 1,
+  count: 0,
+  stars: [] as string[],
+  starRadii: [] as number[],
+  ids: [] as string[],
+  fans: [] as (string | null)[],
+  star: new Int32Array(0),
+  capability: new Uint8Array(0),
+  x: new Float64Array(0),
+  y: new Float64Array(0),
+  radii: new Float64Array(0),
+  radiiRead: false,
+  widest: 0,
+  next: new Int32Array(0),
+  heads: new Int32Array(0),
+  seen: new Int32Array(0),
+  stamp: 0,
+  hits: new Int32Array(0),
+  listed: 0,
+  outside: new Int32Array(0),
+  apart: new Float64Array(0),
+};
+
+function growNear(size: number): void {
+  const grow = <T extends Int32Array | Uint8Array | Float64Array>(a: T, make: (n: number) => T): T => {
+    const b = make(size);
+    b.set(a);
+    return b;
+  };
+  near.star = grow(near.star, (n) => new Int32Array(n));
+  near.capability = grow(near.capability, (n) => new Uint8Array(n));
+  near.x = grow(near.x, (n) => new Float64Array(n));
+  near.y = grow(near.y, (n) => new Float64Array(n));
+  near.radii = new Float64Array(size);
+  near.next = new Int32Array(size);
+  near.seen = new Int32Array(size);
+  near.stamp = 0;
+  near.hits = new Int32Array(size);
+}
+
+function addNear(id: string, star: number, capability: boolean): void {
+  const i = near.count;
+  if (i === near.x.length) growNear(Math.max(64, i * 2));
+  const at = screenOf(id);
+  near.ids[i] = id;
+  near.fans[i] = pushedDots.get(id)?.capabilityId ?? null;
+  near.star[i] = star;
+  near.capability[i] = capability ? 1 : 0;
+  near.x[i] = at.x;
+  near.y[i] = at.y;
+  near.count = i + 1;
+}
+
+function nearCell(v: number): number {
+  return Math.floor(v / near.reach);
+}
+
+function nearBucket(cx: number, cy: number): number {
+  return (Math.imul(cx, 73856093) ^ Math.imul(cy, 19349663)) & (near.heads.length - 1);
+}
+
+/** Hashes every mark of each star a push of this layout holds, once the pushed dots are known. O(n). */
+function fillNear(): void {
+  const { model, P } = F;
+  near.count = 0;
+  near.stars.length = 0;
+  near.radiiRead = false;
+  near.listed = 0;
+  // A pair farther apart than this leaves a pushed dot a share no smaller than its open maximum over `openFill`, which changes no radius.
+  near.reach = (P.elementOpenMaxPx + Math.max(P.capOpenMaxPx, P.elementOpenMaxPx)) / P.openFill;
+  for (const push of fanPushes.values()) {
+    if (push.layout !== F.layout || near.stars.includes(push.domainId)) continue;
+    const domain = model.domainById.get(push.domainId);
+    if (!domain) continue;
+    const star = near.stars.push(push.domainId) - 1;
+    for (const capabilityId of domain.capabilityIds) {
+      addNear(capabilityId, star, true);
+      for (const el of model.capabilityById.get(capabilityId)?.elementIds ?? []) addNear(el, star, false);
+    }
+    for (const el of domain.directElementIds) addNear(el, star, false);
+  }
+  let size = Math.max(16, near.heads.length);
+  while (size < near.count * 2) size *= 2;
+  if (size !== near.heads.length) near.heads = new Int32Array(size);
+  near.heads.fill(-1);
+  for (let i = 0; i < near.count; i += 1) {
+    const bucket = nearBucket(nearCell(near.x[i]!), nearCell(near.y[i]!));
+    near.next[i] = near.heads[bucket]!;
+    near.heads[bucket] = i;
+  }
+}
+
+/**
+ * Collects in `near.hits` each hashed mark within `reach` of (`x`, `y`) and some beyond it, each
+ * once, and returns how many. A reach wider than the star, or a place no cell holds, collects every
+ * mark. O(the marks in the cells it covers).
+ */
+function gatherNear(x: number, y: number, reach: number): number {
+  const cx0 = nearCell(x - reach);
+  const cx1 = nearCell(x + reach);
+  const cy0 = nearCell(y - reach);
+  const cy1 = nearCell(y + reach);
+  let hits = 0;
+  if (!((cx1 - cx0 + 1) * (cy1 - cy0 + 1) <= near.count)) {
+    for (let j = 0; j < near.count; j += 1) near.hits[hits++] = j;
+    return hits;
+  }
+  if (near.stamp >= 0x3fffffff) {
+    near.seen.fill(0);
+    near.stamp = 0;
+  }
+  near.stamp += 1;
+  for (let cy = cy0; cy <= cy1; cy += 1) {
+    for (let cx = cx0; cx <= cx1; cx += 1) {
+      for (let j = near.heads[nearBucket(cx, cy)]!; j >= 0; j = near.next[j]!) {
+        if (near.seen[j] === near.stamp) continue;
+        near.seen[j] = near.stamp;
+        near.hits[hits++] = j;
+      }
+    }
+  }
+  return hits;
+}
+
+function listOutside(j: number, apart: number): void {
+  const k = near.listed;
+  if (k === near.outside.length) {
+    const size = Math.max(256, k * 2);
+    const outside = new Int32Array(size);
+    outside.set(near.outside);
+    near.outside = outside;
+    const aparts = new Float64Array(size);
+    aparts.set(near.apart);
+    near.apart = aparts;
+  }
+  near.outside[k] = j;
+  near.apart[k] = apart;
+  near.listed = k + 1;
+}
+
+/**
+ * A pushed element's room in px in star `star` at (`x`, `y`), the others where they draw: its share
+ * of each pair and its distance from the domain's centre. It leaves out the world rooms' term for
+ * the nearest mark's own radius, which switches between two marks at nearly one distance as a dot
+ * moves; the push itself clears the capability's disc. Its own fan and capability only part from it
+ * as the star opens. Only the marks within `near.reach` can change its radius; it lists those
+ * outside its fan for its crowd test. O(the marks near it).
+ */
+function roomNear(star: number, id: string, dot: PushedDot, x: number, y: number): void {
+  const own = openMaxPx("element", F.P);
+  const capability = openMaxPx("capability", F.P);
+  const fixed = screenOf(near.stars[star]!);
+  const room = dot.room;
+  room.kind = "element";
+  room.paired = Infinity;
+  room.nearest = Infinity;
+  room.nearestId = null;
+  room.pastFixed = Math.hypot(x - fixed.x, y - fixed.y);
+  dot.from = near.listed;
+  const reach2 = near.reach * near.reach;
+  const hits = gatherNear(x, y, near.reach);
+  for (let h = 0; h < hits; h += 1) {
+    const j = near.hits[h]!;
+    const dx = x - near.x[j]!;
+    const dy = y - near.y[j]!;
+    const apart2 = dx * dx + dy * dy;
+    if (!(apart2 < reach2) || near.star[j] !== star) continue;
+    const other = near.ids[j]!;
+    if (other === id) continue;
+    const apart = Math.sqrt(apart2);
+    const isCapability = near.capability[j] === 1;
+    const paired = (apart * own) / (own + (isCapability ? capability : own));
+    if (paired < room.paired) room.paired = paired;
+    if (isCapability ? other !== dot.capabilityId : near.fans[j] !== dot.capabilityId) listOutside(j, apart);
+  }
+  dot.to = near.listed;
 }
 
 /** The room a dot of a pushed fan opens into this frame, undefined for a dot no push has moved. */
@@ -803,27 +995,60 @@ function movedRoom(id: string): StarRoom | undefined {
   return dot !== undefined && dot.frame === F.frame ? dot.room : undefined;
 }
 
+/** Each hashed mark's and each star's domain disc's drawn radius this frame, 0 for a mark off screen, and the widest mark's. O(n × stars), once a frame. */
+function readNearRadii(): void {
+  near.radiiRead = true;
+  near.widest = 0;
+  for (let j = 0; j < near.count; j += 1) {
+    const x = near.x[j]!;
+    const y = near.y[j]!;
+    const id = near.ids[j]!;
+    const shown = x > -CULL_PX && y > -CULL_PX && x < F.W + CULL_PX && y < F.H + CULL_PX;
+    const r = !shown ? 0 : near.capability[j] === 1 ? discRadius(id) : dotRadius(id);
+    near.radii[j] = r;
+    if (r > near.widest) near.widest = r;
+  }
+  near.starRadii.length = near.stars.length;
+  for (let star = 0; star < near.stars.length; star += 1) near.starRadii[star] = discRadius(near.stars[star]!);
+}
+
 /**
  * How clear a pushed dot of radius `r` at `at` stands of the drawn marks outside its fan: the
  * domain's disc, the other capabilities' discs and the other fans' dots. Its own capability's disc
- * is the cover rule's. O(the star's marks).
+ * is the cover rule's. A mark farther than `ROOM_WHOLE_PX` past both radii changes nothing the
+ * cover rule draws, so it reads the marks its room walk listed while they reach that far, and walks
+ * the cells again only for a mark wider than that. O(the marks near it).
  */
 function crowdClear(id: string, r: number, at: Point): number {
   const dot = pushedDots.get(id)!;
-  const domain = F.model.domainById.get(fanPushes.get(dot.capabilityId)!.domainId)!;
-  let clear = Infinity;
-  const meet = (other: string, otherR: number) => {
-    const o = screenOf(other);
-    clear = Math.min(clear, Math.hypot(at.x - o.x, at.y - o.y) - otherR - r);
-  };
-  meet(domain.id, discRadius(domain.id));
-  for (const capabilityId of domain.capabilityIds) {
-    if (capabilityId !== dot.capabilityId) meet(capabilityId, discRadius(capabilityId));
-    for (const el of F.model.capabilityById.get(capabilityId)?.elementIds ?? []) {
-      if (el !== id && pushedDots.get(el)?.capabilityId !== dot.capabilityId) meet(el, dotRadius(el));
+  const star = near.stars.indexOf(fanPushes.get(dot.capabilityId)!.domainId);
+  if (star < 0) return ROOM_WHOLE_PX;
+  if (!near.radiiRead) readNearRadii();
+  const centre = screenOf(near.stars[star]!);
+  let clear = Math.hypot(at.x - centre.x, at.y - centre.y) - near.starRadii[star]! - r;
+  const reach = r + near.widest + ROOM_WHOLE_PX;
+  if (reach <= near.reach) {
+    for (let k = dot.from; k < dot.to; k += 1) {
+      const otherR = near.radii[near.outside[k]!]!;
+      if (!(otherR > 0)) continue;
+      const gap = near.apart[k]! - otherR - r;
+      if (gap < clear) clear = gap;
     }
+    return clear;
   }
-  for (const el of domain.directElementIds) if (el !== id) meet(el, dotRadius(el));
+  const hits = gatherNear(at.x, at.y, reach);
+  for (let h = 0; h < hits; h += 1) {
+    const j = near.hits[h]!;
+    const dx = at.x - near.x[j]!;
+    const dy = at.y - near.y[j]!;
+    const apart2 = dx * dx + dy * dy;
+    const otherR = near.radii[j]!;
+    if (!(apart2 < reach * reach) || !(otherR > 0) || near.star[j] !== star) continue;
+    const other = near.ids[j]!;
+    if (other === id || (near.capability[j] === 1 ? other === dot.capabilityId : near.fans[j] === dot.capabilityId)) continue;
+    const gap = Math.sqrt(apart2) - otherR - r;
+    if (gap < clear) clear = gap;
+  }
   return clear;
 }
 
@@ -831,21 +1056,25 @@ function crowdClear(id: string, r: number, at: Point): number {
  * Moves each fan of the focused domain's star out of the disc its capability opens to, as far as its
  * innermost element needs to clear it: the free map can frame a wide star at a scale where a large
  * capability's disc covers its nearest elements, and a covered dot is not drawn. Once the star is let
- * go, the push eases back to none. A fan the star has pushed keeps its dots' rooms (`roomAtPx`) until
- * the star has closed, so no dot changes rule on the way; one that passes a mark outside its fan
- * fades on its room like a covered dot. Decided here in O(n + k × n) for a star of n marks, k of
- * them in pushed fans.
+ * go, the push eases back to none. A pushed fan's dots keep their pushed rooms (`roomNear`) until
+ * the push is back at none and lets go (`pushReleases`), or until the star has closed, so no dot
+ * changes rule on the way; one that passes a mark outside its fan fades on its room like a covered
+ * dot (`crowdClear`). Decided here in O(n × stars + k × m) for a star of n marks, k of them in
+ * pushed fans, m the marks within a dot's reach; the crowd test adds O(n × stars) once a frame for
+ * the drawn radii and O(m) per pushed dot it draws.
  */
 function planFanPushes(focusedDomain: string | null): void {
   if (focusedDomain !== null) {
     for (const [capabilityId, elementIds] of fansOf(focusedDomain)) {
-      const need = fanNeed(capabilityId, elementIds);
+      // A need that is not a finite number, as a frame whose zoom is none asks, counts as none.
+      const asked = fanNeed(capabilityId, elementIds);
+      const need = asked > 0 && asked < Infinity ? asked : 0;
       let push = fanPushes.get(capabilityId);
       if (!push) {
-        if (need <= 0) continue;
+        if (!(need > 0)) continue;
         fanPushes.set(capabilityId, (push = { domainId: focusedDomain, layout: F.layout, d: 0, perMs: 0, target: 0, need: 0, at: F.now, frame: F.frame - 1, held: 0 }));
       }
-      push.need = Math.max(0, need);
+      push.need = need;
       push.held = F.frame;
     }
   }
@@ -854,7 +1083,11 @@ function planFanPushes(focusedDomain: string | null): void {
     push.target = held ? push.need : 0;
     if (push.frame !== F.frame) {
       const stepMs = Math.min(Math.max(0, F.now - push.at), MARK_STEP_MAX_MS);
-      if (F.reducedMotion || Math.abs(push.target - push.d) <= MARK_REST_PX) {
+      // A fan closing round a member the reader let go carries its dots to their pushed places itself
+      // and shows only (1 - its share) of the push: the push takes its need at once while what shows
+      // of the step stays under `LEAVING_PUSH_STEP_PX`.
+      const shown = capabilityId === F.leavingId ? 1 - leavingFanShare(capabilityId) : 1;
+      if (F.reducedMotion || Math.abs(push.target - push.d) <= MARK_REST_PX || shown * Math.abs(push.target - push.d) < LEAVING_PUSH_STEP_PX) {
         push.d = push.target;
         push.perMs = 0;
       } else {
@@ -862,10 +1095,15 @@ function planFanPushes(focusedDomain: string | null): void {
         push.perMs = DAMPED.perMs;
         F.lagging = true;
       }
+      if (!Number.isFinite(push.d) || !Number.isFinite(push.perMs)) {
+        push.d = 0;
+        push.perMs = 0;
+      }
       push.at = F.now;
       push.frame = F.frame;
     }
-    if (push.d === 0 && !held && push.domainId !== closingDomainId) fanPushes.delete(capabilityId);
+    if (push.d !== 0 || push.domainId === closingDomainId) continue;
+    if (!held || (push.need === 0 && pushReleases(capabilityId, fansOf(push.domainId).get(capabilityId) ?? []))) fanPushes.delete(capabilityId);
   }
   for (const [capabilityId, push] of fanPushes) {
     if (push.layout !== F.layout || !homePx(capabilityId, fanCentre)) continue;
@@ -874,7 +1112,7 @@ function planFanPushes(focusedDomain: string | null): void {
       const apart = Math.hypot(fanDot.x - fanCentre.x, fanDot.y - fanCentre.y);
       if (apart < 1e-6) continue;
       let dot = pushedDots.get(id);
-      if (!dot) pushedDots.set(id, (dot = { capabilityId, ux: 0, uy: 0, frame: 0, room: { kind: "element", paired: Infinity, nearest: Infinity, nearestId: null, pastFixed: Infinity }, radius: 0 }));
+      if (!dot) pushedDots.set(id, (dot = { capabilityId, ux: 0, uy: 0, frame: 0, room: { kind: "element", paired: Infinity, nearest: Infinity, nearestId: null, pastFixed: Infinity }, radius: 0, from: 0, to: 0 }));
       dot.capabilityId = capabilityId;
       dot.ux = (fanDot.x - fanCentre.x) / apart;
       dot.uy = (fanDot.y - fanCentre.y) / apart;
@@ -882,10 +1120,14 @@ function planFanPushes(focusedDomain: string | null): void {
     }
   }
   for (const [id, dot] of pushedDots) if (dot.frame !== F.frame) pushedDots.delete(id);
+  if (pushedDots.size === 0) return;
+  fillNear();
   const fixedPx = graphDiscRadiusPx("domain", 0, F.P, F.growth);
   for (const [id, dot] of pushedDots) {
+    const star = near.stars.indexOf(fanPushes.get(dot.capabilityId)!.domainId);
+    if (star < 0) continue;
     const at = screenOf(id);
-    roomAtPx(fanPushes.get(dot.capabilityId)!.domainId, id, at.x, at.y, dot.room);
+    roomNear(star, id, dot, at.x, at.y);
     const rest = dotRest(id);
     dot.radius = Math.min(openRadiusPx(rest, dot.room, 1, fixedPx, F.P, 0), roomLimitPx(rest, dot.room, 1, fixedPx, 0));
   }
@@ -1004,7 +1246,8 @@ function glideName(row: DrawnName): void {
   row.glided = F.frame;
   row.glidedAt = F.now;
   const n = row.name;
-  if (!continuing || F.reducedMotion) {
+  // An offset a frame with no finite scale left behind never nears its place: the name takes it at once.
+  if (!continuing || F.reducedMotion || !Number.isFinite(row.dx) || !Number.isFinite(row.dy)) {
     row.dx = n.dx;
     row.dy = n.dy;
     return;

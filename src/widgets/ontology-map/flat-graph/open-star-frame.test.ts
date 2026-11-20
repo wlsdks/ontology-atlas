@@ -282,16 +282,54 @@ it.each([
   ...["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"].map((id) => [id, { model, scene }] as const),
   ...denseWorld.model.domains.map((d) => [d.id, denseWorld] as const),
 ])(
-  "opens the %s star from the overview where a narrow free map frames it with no frame drawing two marks over each other, as dots move out of their members' discs",
+  "opens the %s star from the overview where a narrow free map frames it with no frame drawing two marks over each other, and settles with every dot in view drawn, as dots move out of their members' discs",
   (domainId, world) => {
     const { capabilities, elements } = domainStarIds(world.model, domainId);
     const star = new Set([domainId, ...capabilities, ...elements]);
     const camera = cameraOn(domainId, {}, world, NARROW_FREE);
     const rest = framesUntilSettled(camera, {}, star, 0, 1, 1, FRAME_MS);
     const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, rest.end + FRAME_MS, 1, 2.6, 600);
-    expect(smoothness(opened.frames).overlaps.slice(0, 4)).toEqual([]);
+    // A dot under a disc fades out before it lies half a pixel inside it, so no frame overlaps deeper whether the
+    // dot moves out or is lost under the disc; the settled frame tells the two apart.
+    const input = camera(2.6, {});
+    const inView = (id: string) => {
+      const at = input.nodeScreen(id);
+      return at !== null && at.x > 0 && at.x < W && at.y > 0 && at.y < H;
+    };
+    const settled = opened.frames.at(-1)!;
+    const lost = [...new Set(elements)].filter((id) => inView(id) && !settled.has(id));
+    expect({ overlaps: smoothness(opened.frames).overlaps.slice(0, 4), lost: lost.slice(0, 4) }).toEqual({ overlaps: [], lost: [] });
   },
 );
+
+it("draws an opened star's dots again after one frame whose scale is not a number", () => {
+  const domainId = "domain:code-evidence";
+  const { capabilities, elements } = domainStarIds(model, domainId);
+  const star = new Set([domainId, ...capabilities, ...elements]);
+  const camera = cameraOn(domainId, {}, { model, scene }, NARROW_FREE);
+  const dotsOf = (frame: Map<string, Mark>) => [...new Set(elements)].filter((id) => frame.has(id)).sort();
+  const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, 0, 2.2, 2.2, FRAME_MS);
+  const nan = Number.NaN;
+  paintFlatGraphFrame({ ...camera(2.2, { focusedNodeId: domainId, now: opened.end + FRAME_MS }), scale: nan, toScreen: () => ({ x: nan, y: nan }), nodeScreen: () => null }, TOKENS);
+  const after = framesUntilSettled(camera, { focusedNodeId: domainId }, star, opened.end + 2 * FRAME_MS, 2.2, 2.2, FRAME_MS);
+  expect(dotsOf(opened.frames.at(-1)!).length).toBeGreaterThan(10);
+  expect(dotsOf(after.frames.at(-1)!)).toEqual(dotsOf(opened.frames.at(-1)!));
+});
+
+it("keeps every dot of a pressed member's fan drawn on each frame as the reader goes back to its star, where a narrow free map pushes the fan out of the member's disc", () => {
+  const domainId = "domain:code-evidence";
+  const member = "capability:repo-structure-analysis";
+  const { capabilities, elements } = domainStarIds(model, domainId);
+  const star = new Set([domainId, ...capabilities, ...elements]);
+  const fan = model.capabilityById.get(member)!.elementIds;
+  const camera = cameraOn(domainId, {}, { model, scene }, NARROW_FREE);
+  const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, 0, 2.2, 2.2, FRAME_MS);
+  const pressed = framesUntilSettled(camera, { focusedNodeId: member }, star, opened.end + FRAME_MS, 2.2, 2.2, FRAME_MS);
+  const back = framesUntilSettled(camera, { focusedNodeId: domainId }, star, pressed.end + FRAME_MS, 2.2, 2.2, FRAME_MS);
+  expect(fan.filter((id) => opened.frames.at(-1)!.has(id))).toEqual(fan);
+  const gaps = back.frames.flatMap((frame, i) => fan.filter((id) => !frame.has(id)).map((id) => `frame ${i}: ${id}`));
+  expect(gaps.slice(0, 6)).toEqual([]);
+});
 
 it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"])(
   "names the opened %s star, and each member pressed in it, at rest without a name on another name or on a mark not its own",
