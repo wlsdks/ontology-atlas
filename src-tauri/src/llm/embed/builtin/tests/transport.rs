@@ -57,6 +57,7 @@ const LOCAL_HTTP: CurlFetch = CurlFetch {
     protocols: "=http",
     connect_timeout: Duration::from_secs(2),
     idle: Duration::from_secs(2),
+    proxy_named: || false,
 };
 
 #[derive(Default)]
@@ -298,19 +299,33 @@ fn a_transfer_that_stalls_times_out() {
 }
 
 #[test]
-fn a_host_that_refuses_the_connection_needs_a_direct_connection() {
+fn a_refused_connection_is_a_failed_download_unless_a_proxy_is_named() {
     let addr = TcpListener::bind("127.0.0.1:0")
         .unwrap()
         .local_addr()
         .unwrap();
-    let result = LOCAL_HTTP.get(
-        &format!("http://{addr}/file"),
-        0,
-        &never(),
-        &mut following(),
-    );
+    let url = format!("http://{addr}/file");
+    let offline = LOCAL_HTTP.get(&url, 0, &never(), &mut following());
     assert!(
-        matches!(result, Err(EmbedError::NoDirectConnection)),
-        "{result:?}"
+        matches!(&offline, Err(EmbedError::Request(detail)) if detail == "connect-failed"),
+        "{offline:?}"
     );
+    let behind_a_proxy = CurlFetch {
+        proxy_named: || true,
+        ..LOCAL_HTTP
+    };
+    let refused = behind_a_proxy.get(&url, 0, &never(), &mut following());
+    assert!(
+        matches!(refused, Err(EmbedError::NoDirectConnection)),
+        "{refused:?}"
+    );
+}
+
+#[test]
+fn a_failed_connect_asks_for_a_direct_connection_only_behind_a_proxy() {
+    assert!(matches!(
+        fetch::connect_failed(false),
+        EmbedError::Request(_)
+    ));
+    assert_eq!(fetch::connect_failed(true), EmbedError::NoDirectConnection);
 }

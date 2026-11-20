@@ -53,13 +53,35 @@ pub(crate) struct CurlFetch {
     pub connect_timeout: Duration,
     /// The longest a transfer may stay below one byte a second.
     pub idle: Duration,
+    /// Whether the environment the app sees names a proxy; read only when a connect failed.
+    pub proxy_named: fn() -> bool,
 }
 
 pub(crate) const HTTPS_ONLY: CurlFetch = CurlFetch {
     protocols: "=https",
     connect_timeout: Duration::from_secs(20),
     idle: Duration::from_secs(60),
+    proxy_named: proxy_in_env,
 };
+
+/// The variables a proxy for an https download is named in.
+const PROXY_VARIABLES: [&str; 4] = ["HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"];
+
+pub(crate) fn proxy_in_env() -> bool {
+    PROXY_VARIABLES
+        .iter()
+        .any(|name| std::env::var_os(name).is_some_and(|value| !value.is_empty()))
+}
+
+/// A host that could not be looked up or reached. Offline is a failed download; only when a proxy
+/// is named, so the network may allow no direct connection, is it `NoDirectConnection`.
+pub(crate) fn connect_failed(proxy_named: bool) -> EmbedError {
+    if proxy_named {
+        EmbedError::NoDirectConnection
+    } else {
+        EmbedError::Request("connect-failed".into())
+    }
+}
 
 fn quote(value: &str) -> String {
     let mut out = String::with_capacity(value.len() + 2);
@@ -198,7 +220,7 @@ impl Fetch for CurlFetch {
             Err(match status.code() {
                 Some(28) => EmbedError::TimedOut,
                 // Could not resolve the host, or could not connect to it.
-                Some(6 | 7) => EmbedError::NoDirectConnection,
+                Some(6 | 7) => connect_failed((self.proxy_named)()),
                 _ => EmbedError::Request(crate::errors::squeeze(&stderr)),
             })
         }
