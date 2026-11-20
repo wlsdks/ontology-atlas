@@ -11,20 +11,26 @@ import type { TabBarItem } from '@/shared/ui/controls/tab-bar';
 
 import type { WorkRun } from '../model/work-run';
 import type { ScheduledRun } from '../model/scheduled-run';
+import type { MeaningRun } from '../model/meaning-run';
 import { workRuns, type SeatRun } from '../model/work-run-store';
-import { isSeatRunActive, useWaitedLabel, useWorkRunElapsed } from '../model/use-work-run';
+import { isSeatRunActive, useMeaningProgress, useWaitedLabel, useWorkRunElapsed } from '../model/use-work-run';
 import { turnPageDoor, type TurnRun } from '../model/turn-run';
 import { useTurnRunCopy } from './use-turn-run-copy';
 import { useWorkRunCopy, type WorkRunMarks } from './use-work-run-copy';
 import { useScheduledRunCopy } from './use-scheduled-run-copy';
 import { RollingCount } from './RollingCount';
-import { WorkRunMoru, type MoruState } from './WorkRunMoru';
+import { MeaningRunMoru, WorkRunMoru } from './WorkRunMoru';
+import { useMeaningRunCopy, type MeaningFigure } from './use-meaning-run-copy';
 import { useCheckDoor, useOpenScheduledRun, useTurnDoor } from './use-run-doors';
 
 const PANE_MARKS: WorkRunMarks = {
   page: (name) => <span className="font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{name}</span>,
   count: (value) => <RollingCount value={value} className="font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]" />,
 };
+
+const PANE_FIGURE: MeaningFigure = (value, format) => (
+  <RollingCount value={value} format={format} className="font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]" />
+);
 
 const RUNS_ID_PREFIX = 'work-runs';
 
@@ -38,15 +44,20 @@ export function WorkRunsDialog({ open, runs, onClose }: { open: boolean; runs: r
   const tCheck = useTranslations('library.check');
   const [picked, setPicked] = useState<string | null>(null);
   const selected = runs.find((entry) => entry.key === picked) ?? runs.at(-1) ?? null;
-  const items: TabBarItem[] = [...runs].reverse().map((entry) => (entry.kind === 'turn'
-    ? { key: entry.key, label: entry.run.agent, testId: 'work-runs-tab' }
-    : {
-        key: entry.key,
-        label: entry.kind === 'check' ? tCheck('title') : entry.run.name,
-        testId: 'work-runs-tab',
-        count: entry.kind === 'check' ? entry.run.readCount : entry.run.checkedCount,
-        countTitle: t(entry.kind === 'check' ? 'runsPagesRead' : 'runsDocumentsChecked'),
-      }));
+  const meaningFiles = useMeaningFilesDone(runs);
+  const items: TabBarItem[] = [...runs].reverse().map((entry) => {
+    if (entry.kind === 'turn') return { key: entry.key, label: entry.run.agent, testId: 'work-runs-tab' };
+    if (entry.kind === 'meaning') {
+      return { key: entry.key, label: t('meaning.title'), testId: 'work-runs-tab', count: meaningFiles, countTitle: t('meaning.filesPrepared') };
+    }
+    return {
+      key: entry.key,
+      label: entry.kind === 'check' ? tCheck('title') : entry.run.name,
+      testId: 'work-runs-tab',
+      count: entry.kind === 'check' ? entry.run.readCount : entry.run.checkedCount,
+      countTitle: t(entry.kind === 'check' ? 'runsPagesRead' : 'runsDocumentsChecked'),
+    };
+  });
   return (
     <Dialog open={open} onClose={onClose} labelledBy={titleId} size="md" testId="work-runs-dialog" className="w-[min(40rem,calc(100vw-2rem))]">
       <div className="flex items-start gap-3">
@@ -79,9 +90,18 @@ interface PaneFacts {
   title: string;
   line: ReactNode;
   figures: ReactNode | null;
-  moru: MoruState;
+  moru: ReactNode;
   count: number;
+  /** The bar fills only where a total is known; otherwise it says only that work goes on. */
+  total?: number;
   door: ReactNode;
+}
+
+/** The meaning run's files prepared for its row, from the paced figures; read only while it is listed. */
+function useMeaningFilesDone(runs: readonly SeatRun[]): number {
+  const progress = useMeaningProgress();
+  const run = runs.find((entry) => entry.kind === 'meaning')?.run;
+  return run && progress?.runId === run.id ? progress.filesDone : 0;
 }
 
 function RunPane({ entry, onLeave }: { entry: SeatRun; onLeave: () => void }) {
@@ -89,6 +109,7 @@ function RunPane({ entry, onLeave }: { entry: SeatRun; onLeave: () => void }) {
     onLeave();
     go();
   };
+  if (entry.kind === 'meaning') return <MeaningPane entry={entry} run={entry.run} leaveThen={leaveThen} />;
   if (entry.kind === 'turn') return <TurnPane entry={entry} run={entry.run} leaveThen={leaveThen} />;
   return entry.kind === 'check'
     ? <CheckPane entry={entry} run={entry.run} leaveThen={leaveThen} />
@@ -115,7 +136,7 @@ function TurnPane({ entry, run, leaveThen }: { entry: SeatRun; run: TurnRun; lea
         title: copy.title,
         line: copy.detail,
         figures: copy.figures,
-        moru: copy.moru,
+        moru: <WorkRunMoru run={copy.moru} />,
         count: run.written.length,
         door: door ? <Button size="sm" onClick={leaveThen(door.go)} data-testid="work-runs-open">{door.label}</Button> : null,
       }}
@@ -143,7 +164,7 @@ function CheckPane({ entry, run, leaveThen }: { entry: SeatRun; run: WorkRun; le
         title: copy.title,
         line: copy.detail,
         figures: copy.figures,
-        moru: run,
+        moru: <WorkRunMoru run={run} />,
         count: run.readCount,
         door: door ? <Button size="sm" onClick={leaveThen(() => openDoor(door.kind))} data-testid="work-runs-open">{door.label}</Button> : null,
       }}
@@ -162,11 +183,38 @@ function ScheduledPane({ entry, run, leaveThen }: { entry: SeatRun; run: Schedul
         title: copy.title,
         line: copy.line,
         figures: copy.figures,
-        moru: copy.moru,
+        moru: <WorkRunMoru run={copy.moru} />,
         count: run.checkedCount,
         door: run.phase === 'running' ? null : (
           <Button size="sm" onClick={leaveThen(() => openRun(run))} data-testid="work-runs-open">{tCard('scheduled.openRun')}</Button>
         ),
+      }}
+    />
+  );
+}
+
+function MeaningPane({ entry, run, leaveThen }: { entry: SeatRun; run: MeaningRun; leaveThen: LeaveThen }) {
+  const t = useTranslations('workCard.meaning');
+  const progress = useMeaningProgress();
+  const copy = useMeaningRunCopy(run, progress?.runId === run.id ? progress : null, PANE_FIGURE);
+  const door = run.phase === 'ready' ? { label: t('ask'), kind: 'ask' as const }
+    : run.phase === 'failed' ? { label: t('openLibrary'), kind: 'library' as const }
+      : null;
+  return (
+    <PaneFrame
+      entry={entry}
+      facts={{
+        title: copy.remaining ? `${copy.title} · ${copy.remaining}` : copy.title,
+        line: copy.line,
+        figures: copy.lead,
+        moru: <MeaningRunMoru phase={run.phase} />,
+        count: copy.bar?.done ?? 0,
+        total: copy.bar?.total,
+        door: door ? (
+          <Button size="sm" onClick={leaveThen(() => workRuns.openMeaningDoor(entry.key, door.kind))} data-testid="work-runs-open">
+            {door.label}
+          </Button>
+        ) : null,
       }}
     />
   );
@@ -184,7 +232,7 @@ function PaneFrame({ entry, facts }: { entry: SeatRun; facts: PaneFacts }) {
       data-run-key={entry.key}
       className="motion-swap-in relative flex min-h-48 items-center overflow-clip rounded-card bg-[color:var(--color-overlay-1)] py-4 pr-4"
     >
-      <WorkRunMoru run={facts.moru} />
+      {facts.moru}
       {/* Facts and actions are one block centred beside Moru, so no state leaves the pane half empty. */}
       <div className="ml-[9rem] grid min-w-0 flex-1 gap-3 max-sm:ml-[5rem]">
         <div aria-live="off" className="grid min-w-0 gap-1">
@@ -217,7 +265,7 @@ function PaneFrame({ entry, facts }: { entry: SeatRun; facts: PaneFacts }) {
       </div>
       {active ? (
         <div className="absolute inset-x-0 bottom-0 h-0.5 [&>[role=progressbar]]:h-full [&>[role=progressbar]]:rounded-none">
-          <WorkProgress phase="running" done={facts.count} total={null} label={tCard('progressLabel', { title: facts.title })} />
+          <WorkProgress phase="running" done={facts.count} total={facts.total ?? null} label={tCard('progressLabel', { title: facts.title })} />
         </div>
       ) : null}
     </div>

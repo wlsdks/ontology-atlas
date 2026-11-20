@@ -9,6 +9,7 @@ export {
   isScheduledActive,
   type ScheduledRun,
 } from './model/scheduled-run';
+export type { MeaningRunObservation } from './model/meaning-run';
 export { workRuns } from './model/work-run-store';
 export {
   isTurnActive,
@@ -17,7 +18,9 @@ export {
   type TurnWorkReport,
 } from './model/turn-run';
 export {
+  libraryRingRun,
   useAutomationsStage,
+  useMeaningProgress,
   useFolderWorkRun,
   useScheduledRuns,
   useWorkRunElapsed,

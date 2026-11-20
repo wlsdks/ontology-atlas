@@ -13,7 +13,16 @@ const ROLL = { duration: MOTION.settle.duration * 1_000, easing: `cubic-bezier($
  * the value last drawn. A mount draws the value still, so a route change never replays it; under
  * reduced motion the figure changes in place.
  */
-export function RollingCount({ value, className }: { value: number; className?: string }) {
+export function RollingCount({
+  value,
+  className,
+  format = String,
+}: {
+  value: number;
+  className?: string;
+  /** How the figure is written, such as grouped thousands or one decimal. */
+  format?: (value: number) => string;
+}) {
   const reducedMotion = usePrefersReducedMotion();
   const [figures, setFigures] = useState<{ current: number; previous: number | null }>({ current: value, previous: null });
   if (figures.current !== value) setFigures({ current: value, previous: reducedMotion ? null : figures.current });
@@ -46,9 +55,9 @@ export function RollingCount({ value, className }: { value: number; className?: 
     <span className={cn('relative inline-grid overflow-clip align-baseline tabular-nums', className)}>
       {previous !== null ? (
         // Drawn, not written: the text of the count is only ever the current value.
-        <span ref={outgoing} aria-hidden data-figure={previous} className="col-start-1 row-start-1 before:content-[attr(data-figure)]" />
+        <span ref={outgoing} aria-hidden data-figure={format(previous)} className="col-start-1 row-start-1 before:content-[attr(data-figure)]" />
       ) : null}
-      <span ref={incoming} className="col-start-1 row-start-1">{current}</span>
+      <span ref={incoming} className="col-start-1 row-start-1">{format(current)}</span>
     </span>
   );
 }

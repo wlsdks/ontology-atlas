@@ -59,6 +59,9 @@ const META_HELD_CHANGES: &str = "held_changes";
 /// Set once the passage rule changed, until a plan of every listed file marks the vectors no
 /// passage holds now.
 const META_RULE_CHANGED: &str = "rule_changed";
+/// Set by the first `prepare` that left nothing pending: from then on, a pass over changed files
+/// is an update of a finished store rather than the rest of a first preparation.
+const META_COMPLETED: &str = "completed";
 
 /// The embedding model vectors come from. A store holds one model and dimension; preparing with
 /// another discards it and starts a new file.
@@ -216,6 +219,26 @@ fn reader(root: &Path, model: &Model) -> Result<Option<(PathBuf, PathBuf, Connec
         return Ok(None);
     }
     Ok(Some((root, dir, conn)))
+}
+
+/// The model the vault's store holds, or `None` while there is none; never creates one. The app
+/// asks it before a quiet update, so a folder nobody set up never gets a store.
+pub fn store_model(root: &Path) -> Result<Option<Model>> {
+    let root = canonical_vault_root(root)?;
+    let dir = index_dir(&root)?;
+    let Some(conn) = open_store_reader(&dir, &VECTORS)? else {
+        return Ok(None);
+    };
+    Ok(stored_model(&conn)?)
+}
+
+/// Whether a `prepare` ever finished this store for `model`; `false` while no store for it exists.
+/// The store's own fact, so it goes with the store and survives a restart.
+pub fn completed(root: &Path, model: &Model) -> Result<bool> {
+    let Some((_, _, conn)) = reader(root, model)? else {
+        return Ok(false);
+    };
+    Ok(read_meta(&conn, META_COMPLETED)?.is_some())
 }
 
 /// One passage as search by meaning embeds it, for tools that measure search quality.

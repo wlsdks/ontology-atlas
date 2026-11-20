@@ -18,7 +18,7 @@ import { DAMPED, dampedStep, FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelay
 import { admittedNames, boxUnderAny, nameBlockDraws, leaderSegment, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { FLAT_TIER_TIMING, tierNameAlpha } from "../morph/tier-assembly";
 import { openedElements, type OpenedElements } from "./open";
-import { domainStarRooms, openRadiusPx, roomLimitPx, starRooms, type StarPoint, type StarRoom } from "./open-star";
+import { domainStarRooms, openMaxPx, openRadiusPx, roomLimitPx, starRooms, type StarPoint, type StarRoom } from "./open-star";
 import type { FlatGraphCluster, FlatGraphItem, FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "./types";
 
 const CULL_PX = 80;
@@ -394,6 +394,8 @@ const drawnRadii = new WeakMap<object, DrawnMarks>();
 const MARK_STEP_MAX_MS = 34;
 /** Nearer its target than this a radius takes it: a fiftieth of a pixel is not seen. */
 const MARK_REST_PX = 0.02;
+/** The most of a push a closing fan may let show in one frame when the push takes its need at once. */
+const LEAVING_PUSH_STEP_PX = 0.5;
 /** Nearer its place than this a gliding name takes it. */
 const NAME_REST_PX = 0.05;
 const NO_ROOMS: ReadonlyMap<string, StarRoom> = new Map();
@@ -456,6 +458,12 @@ function screenOf(id: string): StampedPoint {
   }
   let x = home.x * F.scale + F.originX;
   let y = home.y * F.scale + F.originY;
+  const pushed = pushedDots.get(id);
+  if (pushed !== undefined && pushed.frame === F.frame) {
+    const d = fanPushes.get(pushed.capabilityId)?.d ?? 0;
+    x += pushed.ux * d;
+    y += pushed.uy * d;
+  }
   for (let i = 0; i < F.opened.length; i += 1) {
     const fan = F.opened[i]!;
     const offset = fan.elements.offsets.get(id);
@@ -474,11 +482,18 @@ function screenOf(id: string): StampedPoint {
   return at;
 }
 
-/** How far `id` has moved into an opened fan, 0 when it is in none. */
-function fanShare(id: string): number {
+/** How far the fan round the member the reader let go, `capabilityId`, still stands open; 0 once it has closed. */
+function leavingFanShare(capabilityId: string): number {
+  for (let i = 0; i < F.opened.length; i += 1) if (F.opened[i]!.elements.capabilityId === capabilityId) return F.opened[i]!.share;
+  return 0;
+}
+
+/** How far `id` has moved into an opened fan other than `besides`'s, 0 when it is in none. */
+function fanShare(id: string, besides: string | null = null): number {
   let share = 0;
   for (let i = 0; i < F.opened.length; i += 1) {
-    if (F.opened[i]!.elements.offsets.has(id)) share = Math.max(share, F.opened[i]!.share * F.opened[i]!.elements.open);
+    const { elements } = F.opened[i]!;
+    if (elements.capabilityId !== besides && elements.offsets.has(id)) share = Math.max(share, F.opened[i]!.share * elements.open);
   }
   return share;
 }
@@ -558,11 +573,16 @@ function roomLimit(id: string, own: number): number {
   let limit = Infinity;
   for (let i = 0; i < F.starCount; i += 1) {
     const star = F.stars[i]!;
-    const room = star.rooms.get(id);
-    if (room !== undefined) limit = Math.min(limit, roomLimitPx(own, room, star.world ? F.scale : 1, star.fixedPx, room.nearestId === null ? 0 : radiusNow(room.nearestId)));
+    const moved = star.domain && star.rooms.has(id) ? movedRoom(id) : undefined;
+    const room = moved ?? star.rooms.get(id);
+    if (room !== undefined) limit = Math.min(limit, roomLimitPx(own, room, star.world && !moved ? F.scale : 1, star.fixedPx, room.nearestId === null ? 0 : radiusNow(room.nearestId)));
   }
   const closing = F.closingRooms?.get(id);
-  if (closing !== undefined) limit = Math.min(limit, roomLimitPx(own, closing, F.scale, graphDiscRadiusPx("domain", 0, F.P, F.growth), closing.nearestId === null ? 0 : radiusNow(closing.nearestId)));
+  if (closing !== undefined) {
+    const moved = movedRoom(id);
+    const room = moved ?? closing;
+    limit = Math.min(limit, roomLimitPx(own, room, moved ? 1 : F.scale, graphDiscRadiusPx("domain", 0, F.P, F.growth), room.nearestId === null ? 0 : radiusNow(room.nearestId)));
+  }
   return limit;
 }
 
@@ -579,9 +599,10 @@ function openedRadius(id: string, own: number): number {
   let r = own;
   for (let i = 0; i < F.starCount; i += 1) {
     const star = F.stars[i]!;
-    const room = star.rooms.get(id);
+    const moved = star.domain && star.rooms.has(id) ? movedRoom(id) : undefined;
+    const room = moved ?? star.rooms.get(id);
     if (room === undefined) continue;
-    r = Math.max(r, openRadiusPx(own, room, star.world ? F.scale : 1, star.fixedPx, F.P, room.nearestId === null ? 0 : radiusNow(room.nearestId)));
+    r = Math.max(r, openRadiusPx(own, room, star.world && !moved ? F.scale : 1, star.fixedPx, F.P, room.nearestId === null ? 0 : radiusNow(room.nearestId)));
   }
   return r;
 }
@@ -655,6 +676,524 @@ function fanOf(capabilityId: string): OpenedElements | null {
 function setCapabilityStar(capabilityId: string): void {
   const ringPx = discRadius(capabilityId) + F.P.selectedRingGapPx + F.P.selectedRingPx;
   setFanStar(capabilityId, fanOf(capabilityId), ringPx);
+}
+
+/**
+ * A capability's fan pushed out of the disc it opens to: every element round it moves out along its
+ * own bearing by `d` px, eased like a radius toward `target`, the most its innermost element needs.
+ * Element i at reach `h_i·s + d` from the capability's centre, j at `h_j·s + d`, a turn `θ` apart:
+ * `|p_i - p_j|²` grows at `2d'(1 - cos θ)(a + b) + 2s'(s|H_i - H_j|² + d(h_i + h_j)(1 - cos θ))`,
+ * never below zero while the zoom grows and `d` falls no faster than `h_min·s'`, as the need does.
+ * So no two of a fan cross or close in on each other while a star opens.
+ */
+interface FanPush { domainId: string; layout: FlatGraphLayout; d: number; perMs: number; target: number; need: number; at: number; frame: number; held: number }
+const fanPushes = new Map<string, FanPush>();
+
+/**
+ * An element of a pushed fan this frame: its capability, its bearing from it, the room and radius it
+ * opens to where it draws, and where its crowd list stands in `near.outside`.
+ */
+interface PushedDot { capabilityId: string; ux: number; uy: number; frame: number; room: StarRoom; radius: number; from: number; to: number }
+const pushedDots = new Map<string, PushedDot>();
+
+const fanCache = new WeakMap<FlatGraphLayout, Map<string, ReadonlyMap<string, readonly string[]>>>();
+
+/**
+ * `domainId`'s capabilities and the elements the layout fans round each: an element several list
+ * goes to the one laid out nearest it, and a direct element fans round no disc. Once per layout and
+ * domain, O(the domain's listings).
+ */
+function fansOf(domainId: string): ReadonlyMap<string, readonly string[]> {
+  const byDomain = cacheFor(fanCache, F.layout);
+  const known = byDomain.get(domainId);
+  if (known) return known;
+  const { model, layout } = F;
+  const domain = model.domainById.get(domainId);
+  const direct = new Set(domain?.directElementIds ?? []);
+  const nearest = new Map<string, { capabilityId: string; apart: number }>();
+  for (const capabilityId of domain?.capabilityIds ?? []) {
+    const centre = layout.positions.get(capabilityId);
+    if (!centre) continue;
+    for (const id of model.capabilityById.get(capabilityId)?.elementIds ?? []) {
+      const at = layout.positions.get(id);
+      if (!at || direct.has(id)) continue;
+      const apart = Math.hypot(at.x - centre.x, at.y - centre.y);
+      const known = nearest.get(id);
+      if (!known || apart < known.apart) nearest.set(id, { capabilityId, apart });
+    }
+  }
+  const fans = new Map<string, string[]>();
+  for (const [id, { capabilityId }] of nearest) {
+    let fan = fans.get(capabilityId);
+    if (!fan) fans.set(capabilityId, (fan = []));
+    fan.push(id);
+  }
+  byDomain.set(domainId, fans);
+  return fans;
+}
+
+function homePx(id: string, out: Point): boolean {
+  const home = F.input.nodeAt?.(id) ?? F.layout.positions.get(id);
+  if (!home) return false;
+  out.x = home.x * F.scale + F.originX;
+  out.y = home.y * F.scale + F.originY;
+  return true;
+}
+
+/** The radius `id` heads for this frame, or already draws at when that is larger. */
+function radiusAim(id: string, target: number): number {
+  return Math.max(F.drawn.get(id)?.r ?? 0, target);
+}
+
+/** The radius an element dot opens to in its own place this frame, before any push. O(stars). */
+function openedDotRadius(id: string): number {
+  const rest = dotRest(id);
+  return Math.min(openedRadius(id, rest), roomLimit(id, rest));
+}
+
+function dotRest(id: string): number {
+  return radiusNow(id) * (F.attention.lit?.has(id) === true ? LIT_DOT_SHARE : 1);
+}
+
+const fanCentre = { x: 0, y: 0 };
+const fanDot = { x: 0, y: 0 };
+
+/**
+ * How far `capabilityId`'s fan must move out for each of its elements, at the radius it heads for,
+ * to clear the disc the capability heads for by `ROOM_WHOLE_PX`; none when it already does, or when
+ * the fan is opened round a selection. The fan of a member the reader just let go keeps its need as
+ * it closes, so its dots come home already clear of the disc. `worldRooms` reads every dot at the
+ * radius its world room opens it to, as it draws once its push is let go. O(the fan × stars).
+ */
+function fanNeed(capabilityId: string, elementIds: readonly string[], worldRooms = false): number {
+  if (!homePx(capabilityId, fanCentre)) return 0;
+  const own = radiusNow(capabilityId);
+  const special = capabilityId === F.selectedId ? F.selectedR : capabilityId === F.leavingId ? F.leavingR : null;
+  const disc = radiusAim(capabilityId, special ?? Math.min(openedRadius(capabilityId, own), roomLimit(capabilityId, own)));
+  const closing = capabilityId === F.leavingId ? capabilityId : null;
+  let need = 0;
+  for (const id of elementIds) {
+    if (fanShare(id, closing) > 0) return 0;
+    // The selection draws at its own radius and no disc covers it.
+    if (id === F.selectedId || id === F.leavingId || !homePx(id, fanDot)) continue;
+    const apart = Math.hypot(fanDot.x - fanCentre.x, fanDot.y - fanCentre.y);
+    if (apart < 1e-6) continue;
+    const pushed = worldRooms ? undefined : pushedDots.get(id)?.radius;
+    need = Math.max(need, disc + radiusAim(id, pushed ?? openedDotRadius(id)) + ROOM_WHOLE_PX - apart);
+  }
+  return need;
+}
+
+/**
+ * Whether a held fan's push, at none and needed by none, may let its dots go back to their world
+ * rooms: each opens there no smaller than its pushed room draws it, and still clears the disc. The
+ * world room adds a term for the nearest mark's own radius; letting go while it binds would shrink a
+ * dot mid-zoom, and letting go while it still needs a push would bring the push straight back.
+ * Read before this frame moves the fan's dots, so a dot's room is still its world room.
+ * O(the fan × stars).
+ */
+function pushReleases(capabilityId: string, elementIds: readonly string[]): boolean {
+  if (!(fanNeed(capabilityId, elementIds, true) <= 0)) return false;
+  for (const id of elementIds) {
+    const dot = pushedDots.get(id);
+    if (dot !== undefined && !(openedDotRadius(id) >= dot.radius - MARK_REST_PX)) return false;
+  }
+  return true;
+}
+
+/**
+ * The marks of each star a push holds, where they draw this frame, hashed into square cells as wide
+ * as a pushed dot's room can reach (`reach`), so each dot meets only the marks near it. Filled once a
+ * frame in O(n) for n marks; the arrays grow with the largest star and are reused. `fans` holds the
+ * capability whose push moves each mark. The room walk lists, for each pushed dot, the marks outside
+ * its fan within `reach` (`outside`) and how far each stands (`apart`), so its crowd test reads them
+ * instead of walking again. `radii` holds each mark's drawn radius, 0 off screen, and `starRadii`
+ * each star's domain disc, read on the first crowd test of the frame.
+ */
+const near = {
+  reach: 1,
+  count: 0,
+  stars: [] as string[],
+  starRadii: [] as number[],
+  ids: [] as string[],
+  fans: [] as (string | null)[],
+  star: new Int32Array(0),
+  capability: new Uint8Array(0),
+  x: new Float64Array(0),
+  y: new Float64Array(0),
+  radii: new Float64Array(0),
+  radiiRead: false,
+  widest: 0,
+  next: new Int32Array(0),
+  heads: new Int32Array(0),
+  seen: new Int32Array(0),
+  stamp: 0,
+  hits: new Int32Array(0),
+  listed: 0,
+  outside: new Int32Array(0),
+  apart: new Float64Array(0),
+  /** The frame whose rooms the pushed dots hold, and whether this frame's marks stand as that frame's did, moved together. */
+  roomsFrame: -1,
+  same: false,
+  was: { tokens: null as FlatGraphPaintTokens | null, count: 0, x: new Float64Array(0), y: new Float64Array(0), ids: [] as string[], fans: [] as (string | null)[], stars: [] as string[], centres: new Float64Array(0) },
+};
+
+/** How far apart, px, two frames' marks may move unlike one another and still count as moved together. */
+const SAME_PLACE_PX = 1e-6;
+
+/**
+ * Whether every hashed mark and each star's domain stands where the frame before put it, all shifted
+ * by one offset, every mark keeps its fan and the tokens are the same: a pan at one zoom moves no mark
+ * relative to another, so no pushed dot's room changes. O(n).
+ */
+function sameNearGeometry(): boolean {
+  const was = near.was;
+  if (was.tokens !== F.P || near.count !== was.count || near.stars.length !== was.stars.length || near.count === 0) return false;
+  const ox = near.x[0]! - was.x[0]!;
+  const oy = near.y[0]! - was.y[0]!;
+  for (let j = 0; j < near.count; j += 1) {
+    if (near.ids[j] !== was.ids[j] || near.fans[j] !== was.fans[j]) return false;
+    if (!(Math.abs(near.x[j]! - was.x[j]! - ox) <= SAME_PLACE_PX && Math.abs(near.y[j]! - was.y[j]! - oy) <= SAME_PLACE_PX)) return false;
+  }
+  for (let star = 0; star < near.stars.length; star += 1) {
+    if (near.stars[star] !== was.stars[star]) return false;
+    const centre = screenOf(near.stars[star]!);
+    if (!(Math.abs(centre.x - was.centres[star * 2]! - ox) <= SAME_PLACE_PX && Math.abs(centre.y - was.centres[star * 2 + 1]! - oy) <= SAME_PLACE_PX)) return false;
+  }
+  return true;
+}
+
+/** Keeps this frame's marks for the next frame's `sameNearGeometry`. O(n). */
+function keepNearGeometry(): void {
+  const was = near.was;
+  was.tokens = F.P;
+  if (was.x.length < near.count) {
+    was.x = new Float64Array(near.x.length);
+    was.y = new Float64Array(near.x.length);
+  }
+  was.x.set(near.x.subarray(0, near.count));
+  was.y.set(near.y.subarray(0, near.count));
+  was.count = near.count;
+  was.ids.length = near.count;
+  was.fans.length = near.count;
+  for (let j = 0; j < near.count; j += 1) {
+    was.ids[j] = near.ids[j]!;
+    was.fans[j] = near.fans[j]!;
+  }
+  was.stars.length = near.stars.length;
+  if (was.centres.length < near.stars.length * 2) was.centres = new Float64Array(near.stars.length * 4);
+  for (let star = 0; star < near.stars.length; star += 1) {
+    was.stars[star] = near.stars[star]!;
+    const centre = screenOf(near.stars[star]!);
+    was.centres[star * 2] = centre.x;
+    was.centres[star * 2 + 1] = centre.y;
+  }
+}
+
+function growNear(size: number): void {
+  const grow = <T extends Int32Array | Uint8Array | Float64Array>(a: T, make: (n: number) => T): T => {
+    const b = make(size);
+    b.set(a);
+    return b;
+  };
+  near.star = grow(near.star, (n) => new Int32Array(n));
+  near.capability = grow(near.capability, (n) => new Uint8Array(n));
+  near.x = grow(near.x, (n) => new Float64Array(n));
+  near.y = grow(near.y, (n) => new Float64Array(n));
+  near.radii = new Float64Array(size);
+  near.next = new Int32Array(size);
+  near.seen = new Int32Array(size);
+  near.stamp = 0;
+  near.hits = new Int32Array(size);
+}
+
+function addNear(id: string, star: number, capability: boolean): void {
+  const i = near.count;
+  if (i === near.x.length) growNear(Math.max(64, i * 2));
+  const at = screenOf(id);
+  near.ids[i] = id;
+  near.fans[i] = pushedDots.get(id)?.capabilityId ?? null;
+  near.star[i] = star;
+  near.capability[i] = capability ? 1 : 0;
+  near.x[i] = at.x;
+  near.y[i] = at.y;
+  near.count = i + 1;
+}
+
+function nearCell(v: number): number {
+  return Math.floor(v / near.reach);
+}
+
+function nearBucket(cx: number, cy: number): number {
+  return (Math.imul(cx, 73856093) ^ Math.imul(cy, 19349663)) & (near.heads.length - 1);
+}
+
+/** Hashes every mark of each star a push of this layout holds, once the pushed dots are known. O(n). */
+function fillNear(): void {
+  const { model, P } = F;
+  near.count = 0;
+  near.stars.length = 0;
+  near.radiiRead = false;
+  // A pair farther apart than this leaves a pushed dot a share no smaller than its open maximum over `openFill`, which changes no radius.
+  near.reach = (P.elementOpenMaxPx + Math.max(P.capOpenMaxPx, P.elementOpenMaxPx)) / P.openFill;
+  for (const push of fanPushes.values()) {
+    if (push.layout !== F.layout || near.stars.includes(push.domainId)) continue;
+    const domain = model.domainById.get(push.domainId);
+    if (!domain) continue;
+    const star = near.stars.push(push.domainId) - 1;
+    for (const capabilityId of domain.capabilityIds) {
+      addNear(capabilityId, star, true);
+      for (const el of model.capabilityById.get(capabilityId)?.elementIds ?? []) addNear(el, star, false);
+    }
+    for (const el of domain.directElementIds) addNear(el, star, false);
+  }
+  let size = Math.max(16, near.heads.length);
+  while (size < near.count * 2) size *= 2;
+  if (size !== near.heads.length) near.heads = new Int32Array(size);
+  near.heads.fill(-1);
+  for (let i = 0; i < near.count; i += 1) {
+    const bucket = nearBucket(nearCell(near.x[i]!), nearCell(near.y[i]!));
+    near.next[i] = near.heads[bucket]!;
+    near.heads[bucket] = i;
+  }
+  // The frame before's rooms and the marks each listed outside its fan hold while the marks only moved together.
+  near.same = near.roomsFrame === F.frame - 1 && sameNearGeometry();
+  if (!near.same) near.listed = 0;
+  keepNearGeometry();
+}
+
+/**
+ * Collects in `near.hits` each hashed mark within `reach` of (`x`, `y`) and some beyond it, each
+ * once, and returns how many. A reach wider than the star, or a place no cell holds, collects every
+ * mark. O(the marks in the cells it covers).
+ */
+function gatherNear(x: number, y: number, reach: number): number {
+  const cx0 = nearCell(x - reach);
+  const cx1 = nearCell(x + reach);
+  const cy0 = nearCell(y - reach);
+  const cy1 = nearCell(y + reach);
+  let hits = 0;
+  if (!((cx1 - cx0 + 1) * (cy1 - cy0 + 1) <= near.count)) {
+    for (let j = 0; j < near.count; j += 1) near.hits[hits++] = j;
+    return hits;
+  }
+  if (near.stamp >= 0x3fffffff) {
+    near.seen.fill(0);
+    near.stamp = 0;
+  }
+  near.stamp += 1;
+  for (let cy = cy0; cy <= cy1; cy += 1) {
+    for (let cx = cx0; cx <= cx1; cx += 1) {
+      for (let j = near.heads[nearBucket(cx, cy)]!; j >= 0; j = near.next[j]!) {
+        if (near.seen[j] === near.stamp) continue;
+        near.seen[j] = near.stamp;
+        near.hits[hits++] = j;
+      }
+    }
+  }
+  return hits;
+}
+
+function listOutside(j: number, apart: number): void {
+  const k = near.listed;
+  if (k === near.outside.length) {
+    const size = Math.max(256, k * 2);
+    const outside = new Int32Array(size);
+    outside.set(near.outside);
+    near.outside = outside;
+    const aparts = new Float64Array(size);
+    aparts.set(near.apart);
+    near.apart = aparts;
+  }
+  near.outside[k] = j;
+  near.apart[k] = apart;
+  near.listed = k + 1;
+}
+
+/**
+ * A pushed element's room in px in star `star` at (`x`, `y`), the others where they draw: its share
+ * of each pair and its distance from the domain's centre. It leaves out the world rooms' term for
+ * the nearest mark's own radius, which switches between two marks at nearly one distance as a dot
+ * moves; the push itself clears the capability's disc. Its own fan and capability only part from it
+ * as the star opens. Only the marks within `near.reach` can change its radius; it lists those
+ * outside its fan for its crowd test. O(the marks near it).
+ */
+function roomNear(star: number, id: string, dot: PushedDot, x: number, y: number): void {
+  const own = openMaxPx("element", F.P);
+  const capability = openMaxPx("capability", F.P);
+  const fixed = screenOf(near.stars[star]!);
+  const room = dot.room;
+  room.kind = "element";
+  room.paired = Infinity;
+  room.nearest = Infinity;
+  room.nearestId = null;
+  room.pastFixed = Math.hypot(x - fixed.x, y - fixed.y);
+  dot.from = near.listed;
+  const reach2 = near.reach * near.reach;
+  const hits = gatherNear(x, y, near.reach);
+  for (let h = 0; h < hits; h += 1) {
+    const j = near.hits[h]!;
+    const dx = x - near.x[j]!;
+    const dy = y - near.y[j]!;
+    const apart2 = dx * dx + dy * dy;
+    if (!(apart2 < reach2) || near.star[j] !== star) continue;
+    const other = near.ids[j]!;
+    if (other === id) continue;
+    const apart = Math.sqrt(apart2);
+    const isCapability = near.capability[j] === 1;
+    const paired = (apart * own) / (own + (isCapability ? capability : own));
+    if (paired < room.paired) room.paired = paired;
+    if (isCapability ? other !== dot.capabilityId : near.fans[j] !== dot.capabilityId) listOutside(j, apart);
+  }
+  dot.to = near.listed;
+}
+
+/** The room a dot of a pushed fan opens into this frame, undefined for a dot no push has moved. */
+function movedRoom(id: string): StarRoom | undefined {
+  const dot = pushedDots.get(id);
+  return dot !== undefined && dot.frame === F.frame ? dot.room : undefined;
+}
+
+/** Each hashed mark's and each star's domain disc's drawn radius this frame, 0 for a mark off screen, and the widest mark's. O(n × stars), once a frame. */
+function readNearRadii(): void {
+  near.radiiRead = true;
+  near.widest = 0;
+  for (let j = 0; j < near.count; j += 1) {
+    const x = near.x[j]!;
+    const y = near.y[j]!;
+    const id = near.ids[j]!;
+    const shown = x > -CULL_PX && y > -CULL_PX && x < F.W + CULL_PX && y < F.H + CULL_PX;
+    const r = !shown ? 0 : near.capability[j] === 1 ? discRadius(id) : dotRadius(id);
+    near.radii[j] = r;
+    if (r > near.widest) near.widest = r;
+  }
+  near.starRadii.length = near.stars.length;
+  for (let star = 0; star < near.stars.length; star += 1) near.starRadii[star] = discRadius(near.stars[star]!);
+}
+
+/**
+ * How clear a pushed dot of radius `r` at `at` stands of the drawn marks outside its fan: the
+ * domain's disc, the other capabilities' discs and the other fans' dots. Its own capability's disc
+ * is the cover rule's. A mark farther than `ROOM_WHOLE_PX` past both radii changes nothing the
+ * cover rule draws, so it reads the marks its room walk listed while they reach that far, and walks
+ * the cells again only for a mark wider than that. O(the marks near it).
+ */
+function crowdClear(id: string, r: number, at: Point): number {
+  const dot = pushedDots.get(id)!;
+  const star = near.stars.indexOf(fanPushes.get(dot.capabilityId)!.domainId);
+  if (star < 0) return ROOM_WHOLE_PX;
+  if (!near.radiiRead) readNearRadii();
+  const centre = screenOf(near.stars[star]!);
+  let clear = Math.hypot(at.x - centre.x, at.y - centre.y) - near.starRadii[star]! - r;
+  const reach = r + near.widest + ROOM_WHOLE_PX;
+  if (reach <= near.reach) {
+    for (let k = dot.from; k < dot.to; k += 1) {
+      const otherR = near.radii[near.outside[k]!]!;
+      if (!(otherR > 0)) continue;
+      const gap = near.apart[k]! - otherR - r;
+      if (gap < clear) clear = gap;
+    }
+    return clear;
+  }
+  const hits = gatherNear(at.x, at.y, reach);
+  for (let h = 0; h < hits; h += 1) {
+    const j = near.hits[h]!;
+    const dx = at.x - near.x[j]!;
+    const dy = at.y - near.y[j]!;
+    const apart2 = dx * dx + dy * dy;
+    const otherR = near.radii[j]!;
+    if (!(apart2 < reach * reach) || !(otherR > 0) || near.star[j] !== star) continue;
+    const other = near.ids[j]!;
+    if (other === id || (near.capability[j] === 1 ? other === dot.capabilityId : near.fans[j] === dot.capabilityId)) continue;
+    const gap = Math.sqrt(apart2) - otherR - r;
+    if (gap < clear) clear = gap;
+  }
+  return clear;
+}
+
+/**
+ * Moves each fan of the focused domain's star out of the disc its capability opens to, as far as its
+ * innermost element needs to clear it: the free map can frame a wide star at a scale where a large
+ * capability's disc covers its nearest elements, and a covered dot is not drawn. Once the star is let
+ * go, the push eases back to none. A pushed fan's dots keep their pushed rooms (`roomNear`) until
+ * the push is back at none and lets go (`pushReleases`), or until the star has closed, so no dot
+ * changes rule on the way; one that passes a mark outside its fan fades on its room like a covered
+ * dot (`crowdClear`). Decided here in O(n × stars + k × m) for a star of n marks, k of them in
+ * pushed fans, m the marks within a dot's reach; the crowd test adds O(n × stars) once a frame for
+ * the drawn radii and O(m) per pushed dot it draws.
+ */
+function planFanPushes(focusedDomain: string | null): void {
+  if (focusedDomain !== null) {
+    for (const [capabilityId, elementIds] of fansOf(focusedDomain)) {
+      // A need that is not a finite number, as a frame whose zoom is none asks, counts as none.
+      const asked = fanNeed(capabilityId, elementIds);
+      const need = asked > 0 && asked < Infinity ? asked : 0;
+      let push = fanPushes.get(capabilityId);
+      if (!push) {
+        if (!(need > 0)) continue;
+        fanPushes.set(capabilityId, (push = { domainId: focusedDomain, layout: F.layout, d: 0, perMs: 0, target: 0, need: 0, at: F.now, frame: F.frame - 1, held: 0 }));
+      }
+      push.need = need;
+      push.held = F.frame;
+    }
+  }
+  for (const [capabilityId, push] of fanPushes) {
+    const held = push.held === F.frame && push.layout === F.layout && push.domainId === focusedDomain;
+    push.target = held ? push.need : 0;
+    if (push.frame !== F.frame) {
+      const stepMs = Math.min(Math.max(0, F.now - push.at), MARK_STEP_MAX_MS);
+      // A fan closing round a member the reader let go carries its dots to their pushed places itself
+      // and shows only (1 - its share) of the push: the push takes its need at once while what shows
+      // of the step stays under `LEAVING_PUSH_STEP_PX`.
+      const shown = capabilityId === F.leavingId ? 1 - leavingFanShare(capabilityId) : 1;
+      if (F.reducedMotion || Math.abs(push.target - push.d) <= MARK_REST_PX || shown * Math.abs(push.target - push.d) < LEAVING_PUSH_STEP_PX) {
+        push.d = push.target;
+        push.perMs = 0;
+      } else {
+        push.d = dampedStep(push.d, push.frame === F.frame - 1 ? push.perMs : 0, push.target, stepMs, FLAT_MOTION.riseMs, F.P.markPxPerMs);
+        push.perMs = DAMPED.perMs;
+        F.lagging = true;
+      }
+      if (!Number.isFinite(push.d) || !Number.isFinite(push.perMs)) {
+        push.d = 0;
+        push.perMs = 0;
+      }
+      push.at = F.now;
+      push.frame = F.frame;
+    }
+    if (push.d !== 0 || push.domainId === closingDomainId) continue;
+    if (!held || (push.need === 0 && pushReleases(capabilityId, fansOf(push.domainId).get(capabilityId) ?? []))) fanPushes.delete(capabilityId);
+  }
+  for (const [capabilityId, push] of fanPushes) {
+    if (push.layout !== F.layout || !homePx(capabilityId, fanCentre)) continue;
+    for (const id of fansOf(push.domainId).get(capabilityId) ?? []) {
+      if (!homePx(id, fanDot)) continue;
+      const apart = Math.hypot(fanDot.x - fanCentre.x, fanDot.y - fanCentre.y);
+      if (apart < 1e-6) continue;
+      let dot = pushedDots.get(id);
+      if (!dot) pushedDots.set(id, (dot = { capabilityId, ux: 0, uy: 0, frame: 0, room: { kind: "element", paired: Infinity, nearest: Infinity, nearestId: null, pastFixed: Infinity }, radius: 0, from: 0, to: 0 }));
+      dot.capabilityId = capabilityId;
+      dot.ux = (fanDot.x - fanCentre.x) / apart;
+      dot.uy = (fanDot.y - fanCentre.y) / apart;
+      dot.frame = F.frame;
+    }
+  }
+  for (const [id, dot] of pushedDots) if (dot.frame !== F.frame) pushedDots.delete(id);
+  if (pushedDots.size === 0) return;
+  fillNear();
+  const fixedPx = graphDiscRadiusPx("domain", 0, F.P, F.growth);
+  const reuse = near.same;
+  near.roomsFrame = F.frame;
+  for (const [id, dot] of pushedDots) {
+    const star = near.stars.indexOf(fanPushes.get(dot.capabilityId)!.domainId);
+    if (star < 0) continue;
+    if (!reuse) {
+      const at = screenOf(id);
+      roomNear(star, id, dot, at.x, at.y);
+    }
+    const rest = dotRest(id);
+    dot.radius = Math.min(openRadiusPx(rest, dot.room, 1, fixedPx, F.P, 0), roomLimitPx(rest, dot.room, 1, fixedPx, 0));
+  }
 }
 
 let openDomainId: string | null = null;
@@ -770,7 +1309,8 @@ function glideName(row: DrawnName): void {
   row.glided = F.frame;
   row.glidedAt = F.now;
   const n = row.name;
-  if (!continuing || F.reducedMotion) {
+  // An offset a frame with no finite scale left behind never nears its place: the name takes it at once.
+  if (!continuing || F.reducedMotion || !Number.isFinite(row.dx) || !Number.isFinite(row.dy)) {
     row.dx = n.dx;
     row.dy = n.dy;
     return;
@@ -839,7 +1379,7 @@ function placeName(row: DrawnName, alphas: ReadonlyMap<string, number>, share: n
   // gives way only to a disc drawn past its resting radius: names below it give way to it, and its plate covers dots.
   if (target > DRAWN_INK && grownMarks.size > 0) {
     const held = n.id === F.attention.focusId && !CAPTION_ROWS.has(n.role);
-    room = nameRoom(n, at, at.x + row.dx - n.dx, at.y + row.dy - n.dy, held) > ROOM_GONE_PX ? 1 : 0;
+    room = nameClear(n, at, at.x + row.dx - n.dx, at.y + row.dy - n.dy, held) ? 1 : 0;
     // The selection's name stays put while its star's dots move out past it, so it draws on its plate while one crosses it.
     if (held && !backed) backed = onGrownDot(n, at.x + row.dx - n.dx, at.y + row.dy - n.dy);
     target *= room;
@@ -908,35 +1448,166 @@ function collectGrownMarks(): void {
 
 /** The air, in px, between a box and a circle's edge; below zero over it. */
 function boxAir(minX: number, maxX: number, minY: number, maxY: number, m: Disc | Dot): number {
-  return Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r;
+  const dx = Math.max(minX - m.x, 0, m.x - maxX);
+  const dy = Math.max(minY - m.y, 0, m.y - maxY);
+  return Math.sqrt(dx * dx + dy * dy) - m.r;
+}
+
+/** Side of a cell of the frame's mark grid, px: a little over a name's height, so a name's box meets a row or two of cells. */
+const MARK_CELL_PX = 32;
+/** A mark whose circle covers more cells than this is walked by every test instead of filed in each cell. */
+const MARK_CELLS_MAX = 64;
+
+/**
+ * This frame's drawn discs, from every disc list, and its grown dots, hashed into square cells of
+ * `MARK_CELL_PX`, each mark filed in every cell its circle's bounding square covers, so a name's
+ * clearance test meets only the marks near its box. Filled on the frame's first test, after every
+ * disc and dot is drawn, in O(marks × cells each covers); its arrays grow with the largest frame and
+ * are reused. `dot` flags a grown dot, which a backed name's plate covers; `wide` lists the marks too
+ * large to file.
+ */
+const markGrid = {
+  filledStamp: -1,
+  marks: [] as (Disc | Dot)[],
+  size: 0,
+  dot: new Uint8Array(0),
+  seen: new Int32Array(0),
+  stamp: 0,
+  wide: [] as number[],
+  entries: 0,
+  mark: new Int32Array(0),
+  next: new Int32Array(0),
+  heads: new Int32Array(0),
+};
+
+function gridCell(v: number): number {
+  return Math.floor(v / MARK_CELL_PX);
+}
+
+function gridBucket(cx: number, cy: number): number {
+  return (Math.imul(cx, 73856093) ^ Math.imul(cy, 19349663)) & (markGrid.heads.length - 1);
+}
+
+function fileGridMark(m: Disc | Dot, dot: boolean): void {
+  const g = markGrid;
+  if (g.size === g.dot.length) {
+    const size = Math.max(256, g.size * 2);
+    const flags = new Uint8Array(size);
+    flags.set(g.dot);
+    g.dot = flags;
+    g.seen = new Int32Array(size);
+    g.stamp = 0;
+  }
+  g.marks[g.size] = m;
+  g.dot[g.size] = dot ? 1 : 0;
+  g.size += 1;
+}
+
+function fillMarkGrid(): void {
+  const g = markGrid;
+  g.filledStamp = F.stamp;
+  g.size = 0;
+  g.entries = 0;
+  g.wide.length = 0;
+  for (const list of discLists) for (let i = 0; i < list.size; i += 1) fileGridMark(list.items[i]!, false);
+  for (let i = grownDiscCount; i < grownMarks.size; i += 1) fileGridMark(grownMarks.items[i]!, true);
+  let entries = 0;
+  for (let k = 0; k < g.size; k += 1) {
+    const m = g.marks[k]!;
+    const cells = (gridCell(m.x + m.r) - gridCell(m.x - m.r) + 1) * (gridCell(m.y + m.r) - gridCell(m.y - m.r) + 1);
+    if (cells > MARK_CELLS_MAX || !Number.isFinite(cells)) g.wide.push(k);
+    else entries += cells;
+  }
+  if (entries > g.mark.length) {
+    const size = Math.max(512, entries * 2);
+    g.mark = new Int32Array(size);
+    g.next = new Int32Array(size);
+  }
+  let buckets = Math.max(64, g.heads.length);
+  while (buckets < entries * 2) buckets *= 2;
+  if (buckets !== g.heads.length) g.heads = new Int32Array(buckets);
+  g.heads.fill(-1);
+  let w = 0;
+  for (let k = 0; k < g.size; k += 1) {
+    if (w < g.wide.length && g.wide[w] === k) {
+      w += 1;
+      continue;
+    }
+    const m = g.marks[k]!;
+    for (let cy = gridCell(m.y - m.r); cy <= gridCell(m.y + m.r); cy += 1) {
+      for (let cx = gridCell(m.x - m.r); cx <= gridCell(m.x + m.r); cx += 1) {
+        const e = g.entries;
+        g.entries = e + 1;
+        const bucket = gridBucket(cx, cy);
+        g.mark[e] = k;
+        g.next[e] = g.heads[bucket]!;
+        g.heads[bucket] = e;
+      }
+    }
+  }
+}
+
+/** Whether mark `k` of the grid crosses the box (`dots` false skips grown dots, `discs` false skips discs), not counting `id`'s own. */
+function gridMarkCrosses(k: number, id: string, minX: number, maxX: number, minY: number, maxY: number, discs: boolean, dots: boolean): boolean {
+  const g = markGrid;
+  if (g.seen[k] === g.stamp) return false;
+  g.seen[k] = g.stamp;
+  const m = g.marks[k]!;
+  if (m.id === id || (g.dot[k] === 1 ? !dots : !discs)) return false;
+  return boxAir(minX, maxX, minY, maxY, m) <= ROOM_GONE_PX;
 }
 
 /**
- * The air, in px, between a name's glyphs where this frame draws them, from `x`, `y`, and the names
- * drawn before it, less the pad two names keep, and the nearest disc not its own and grown dot (none
- * for a backed name, whose plate covers them). A `held` name (the selection's) measures only its own
- * rows and the discs drawn past their resting radius. Rows of one concept count only while one of
- * them glides off its place, as a domain's census and reach rows share one slot. Only while marks
- * grow: O(discs + domains + grown dots + names) per name.
+ * Whether a disc (with `discs`) or a grown dot (with `dots`) not `id`'s own crosses the box past
+ * `ROOM_GONE_PX`. O(the marks filed in the cells the box covers).
  */
-function nameRoom(n: PlacedName, at: Point, x: number, y: number, held: boolean): number {
+function gridCrosses(id: string, minX: number, maxX: number, minY: number, maxY: number, discs: boolean, dots: boolean): boolean {
+  const g = markGrid;
+  if (g.filledStamp !== F.stamp) fillMarkGrid();
+  if (g.stamp >= 0x3fffffff) {
+    g.seen.fill(0);
+    g.stamp = 0;
+  }
+  g.stamp += 1;
+  for (let w = 0; w < g.wide.length; w += 1) if (gridMarkCrosses(g.wide[w]!, id, minX, maxX, minY, maxY, discs, dots)) return true;
+  const cx0 = gridCell(minX);
+  const cx1 = gridCell(maxX);
+  const cy0 = gridCell(minY);
+  const cy1 = gridCell(maxY);
+  // A box wider than the grid's marks would be walked cell by cell for nothing: it meets every mark once instead.
+  if (!((cx1 - cx0 + 1) * (cy1 - cy0 + 1) <= g.size)) {
+    for (let k = 0; k < g.size; k += 1) if (gridMarkCrosses(k, id, minX, maxX, minY, maxY, discs, dots)) return true;
+    return false;
+  }
+  for (let cy = cy0; cy <= cy1; cy += 1) {
+    for (let cx = cx0; cx <= cx1; cx += 1) {
+      for (let e = g.heads[gridBucket(cx, cy)]!; e >= 0; e = g.next[e]!) if (gridMarkCrosses(g.mark[e]!, id, minX, maxX, minY, maxY, discs, dots)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Whether a name's glyphs where this frame draws them, from `x`, `y`, keep more than `ROOM_GONE_PX`
+ * of air from the names drawn before it, less the pad two names keep, and from every disc not its
+ * own and grown dot (none for a backed name, whose plate covers them). A `held` name (the
+ * selection's) measures only its own rows and the discs drawn past their resting radius. Rows of one
+ * concept count only while one of them glides off its place, as a domain's census and reach rows
+ * share one slot. Only while marks grow: O(the marks near it + names drawn) per name, the marks read
+ * from the frame's grid (`markGrid`), stopping at the first that crosses it.
+ */
+function nameClear(n: PlacedName, at: Point, x: number, y: number, held: boolean): boolean {
   const pad = F.P.namePadPx;
   const minX = x + n.box.minX + pad;
   const maxX = x + n.box.maxX - pad;
   const minY = y + n.box.minY + pad;
   const maxY = y + n.box.maxY - pad;
-  let room = Infinity;
   if (held) {
     // Admission may rest the selection's name over a disc on its plate; one still shrinking from a closed star was not there.
-    for (let i = 0; i < grownDiscCount; i += 1) if (grownMarks.items[i]!.id !== n.id) room = Math.min(room, boxAir(minX, maxX, minY, maxY, grownMarks.items[i]!));
-  } else {
+    for (let i = 0; i < grownDiscCount; i += 1) if (grownMarks.items[i]!.id !== n.id && boxAir(minX, maxX, minY, maxY, grownMarks.items[i]!) <= ROOM_GONE_PX) return false;
+  } else if (gridCrosses(n.id, minX, maxX, minY, maxY, true, n.backed !== true)) {
     // Domains and the project draw from their own lists; a name gives way to them like any disc.
-    for (const list of discLists) {
-      for (let i = 0; i < list.size; i += 1) if (list.items[i]!.id !== n.id) room = Math.min(room, boxAir(minX, maxX, minY, maxY, list.items[i]!));
-    }
-    if (n.backed !== true) {
-      for (let i = grownDiscCount; i < grownMarks.size; i += 1) if (grownMarks.items[i]!.id !== n.id) room = Math.min(room, boxAir(minX, maxX, minY, maxY, grownMarks.items[i]!));
-    }
+    return false;
   }
   const gliding = Math.abs(x - at.x) > NAME_REST_PX || Math.abs(y - at.y) > NAME_REST_PX;
   for (let i = 0; i < L.names.size; i += 1) {
@@ -946,23 +1617,15 @@ function nameRoom(n: PlacedName, at: Point, x: number, y: number, held: boolean)
     if (o.name.id === n.id && (CAPTION_ROWS.has(n.role) && CAPTION_ROWS.has(o.name.role) || (!gliding && Math.abs(ox - at.x) <= NAME_REST_PX && Math.abs(oy - at.y) <= NAME_REST_PX))) continue;
     if (held && o.name.id !== n.id) continue;
     const apart = Math.max(ox + o.name.box.minX + pad - maxX, minX - (ox + o.name.box.maxX - pad), oy + o.name.box.minY + pad - maxY, minY - (oy + o.name.box.maxY - pad));
-    room = Math.min(room, apart - pad);
+    if (apart - pad <= ROOM_GONE_PX) return false;
   }
-  return room;
+  return true;
 }
 
-/** Whether a name's glyphs drawn from `x`, `y` cross a grown dot not its own this frame. O(grown dots). */
+/** Whether a name's glyphs drawn from `x`, `y` cross a grown dot not its own this frame. O(the marks near it). */
 function onGrownDot(n: PlacedName, x: number, y: number): boolean {
   const pad = F.P.namePadPx;
-  const minX = x + n.box.minX + pad;
-  const maxX = x + n.box.maxX - pad;
-  const minY = y + n.box.minY + pad;
-  const maxY = y + n.box.maxY - pad;
-  for (let i = grownDiscCount; i < grownMarks.size; i += 1) {
-    const m = grownMarks.items[i]!;
-    if (m.id !== n.id && Math.hypot(Math.max(minX - m.x, 0, m.x - maxX), Math.max(minY - m.y, 0, m.y - maxY)) - m.r <= ROOM_GONE_PX) return true;
-  }
-  return false;
+  return gridCrosses(n.id, x + n.box.minX + pad, x + n.box.maxX - pad, y + n.box.minY + pad, y + n.box.maxY - pad, false, true);
 }
 
 /** Every list a disc is drawn from. */
@@ -994,6 +1657,133 @@ function blockInsideFree(list: readonly PlacedName[], from: number, to: number):
 /** Whether an opened domain star's member block may draw: clear of the chrome and inside the free map. */
 function memberBlockShows(list: readonly PlacedName[], from: number, to: number, chrome: readonly Box[]): boolean {
   return blockShows(list, from, to, chrome, null) && blockInsideFree(list, from, to);
+}
+
+/** Each fallback side drawn on its plate, made once per side: its plate covers the grown dots it stands on. */
+const backedSides = new WeakMap<PlacedName, PlacedName>();
+
+/** Whether this frame already draws a name for `id` that is clear where it stands. O(names drawn). */
+function namedNow(id: string): boolean {
+  for (let i = 0; i < L.names.size; i += 1) {
+    const m = L.names.items[i]!;
+    if (m.name.id === id && m.name.role === "capability" && !m.fading && m.room === 1) return true;
+  }
+  return false;
+}
+
+/**
+ * Names each opened star member this frame left unnamed on the first of its fallback sides that
+ * stands inside the free map, clear of the chrome and, where the frame draws it, of every disc, grown
+ * dot (or on its plate) and name drawn before it. Admission holds names apart across a whole zoom
+ * step; at rest the frame knows the one scale, so a rim member keeps a name its step ruled out. It
+ * runs after every admitted name, so it never takes a place one of them holds. Each member the frame
+ * before drew first keeps the side it was going to, where that side still fits; then every row a
+ * member drew and no longer draws fades where the names after it see it; then the members whose side
+ * no longer fits, and after them the members the frame before left unnamed, take the first side that
+ * fits. So no member takes a place another still holds, a member that changes side cross-fades
+ * between its own two rows, and two members that want one place hand it over, one fading out before
+ * the other fades in, rather than cross-fading over each other while the camera moves.
+ * O(unnamed members × fallbacks × (discs + grown dots + names drawn)).
+ */
+function planMemberFallbacks(fallbacks: ReadonlyMap<string, readonly PlacedName[]>, alphas: ReadonlyMap<string, number>, chrome: readonly Box[]): void {
+  let ids = fallbackIds.get(fallbacks);
+  if (!ids) fallbackIds.set(fallbacks, (ids = [...fallbacks.keys()]));
+  if (fallbackStates.length < ids.length) fallbackStates = new Uint8Array(ids.length * 2);
+  for (let i = 0; i < ids.length; i += 1) {
+    const id = ids[i]!;
+    const at = screenAt(id);
+    if (!at || alphas.get(id) === 0 || namedNow(id)) {
+      fallbackStates[i] = FALLBACK_DONE;
+      continue;
+    }
+    const row = rowDrawnLastFrame(id);
+    if (row === null) {
+      fallbackStates[i] = FALLBACK_NEW;
+      continue;
+    }
+    const sides = fallbacks.get(id)!;
+    const drew = sideOf(row.name);
+    let kept = false;
+    for (let k = 0; k < sides.length && !kept; k += 1) if (sideOf(sides[k]!) === drew) kept = planFallback(sides, k, at, alphas, chrome);
+    fallbackStates[i] = kept ? FALLBACK_DONE : FALLBACK_MOVING;
+  }
+  for (let i = 0; i < ids.length; i += 1) fadeLeftRows(ids[i]!, alphas);
+  for (let state = FALLBACK_MOVING; state <= FALLBACK_NEW; state += 1) {
+    for (let i = 0; i < ids.length; i += 1) {
+      if (fallbackStates[i] !== state) continue;
+      const id = ids[i]!;
+      const at = screenAt(id)!;
+      const sides = fallbacks.get(id)!;
+      for (let k = 0; k < sides.length; k += 1) if (planFallback(sides, k, at, alphas, chrome)) break;
+    }
+  }
+}
+
+/** Where a member stands in the fallback pass: named, or about to take a side because its own no longer fits, or because it had none. */
+const FALLBACK_DONE = 0;
+const FALLBACK_MOVING = 1;
+const FALLBACK_NEW = 2;
+let fallbackStates = new Uint8Array(0);
+
+/** Each admission's fallback members in order, listed once so a frame walks them without allocating. */
+const fallbackIds = new WeakMap<ReadonlyMap<string, readonly PlacedName[]>, readonly string[]>();
+
+/** Whether `row` is a member's capability name the frame before drew with ink. */
+function drewLastFrame(row: DrawnName): boolean {
+  return row.name.role === "capability" && !row.wasFocus && row.frame === F.frame - 1 && row.alpha > DRAWN_INK;
+}
+
+/**
+ * The row a member's capability name was drawn in on the frame before, null when none was: the one
+ * that frame admitted, the side the member was going to, before one it was leaving. O(rows of the member).
+ */
+function rowDrawnLastFrame(id: string): DrawnName | null {
+  const rows = F.names.names.get(id);
+  if (!rows) return null;
+  let drawn: DrawnName | null = null;
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i]!;
+    if (!drewLastFrame(row)) continue;
+    if (row.admitted === F.frame - 1) return row;
+    drawn ??= row;
+  }
+  return drawn;
+}
+
+/** Places each row of a member's capability name the frame before drew and this frame does not, fading. O(rows of the member). */
+function fadeLeftRows(id: string, alphas: ReadonlyMap<string, number>): void {
+  const rows = F.names.names.get(id);
+  if (!rows) return;
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i]!;
+    if (drewLastFrame(row) && row.admitted !== F.frame) placeName(row, alphas, 1, true);
+  }
+}
+
+/** Whether this frame already drew the row of `n`'s side, fading out: a member takes back no side in the frame it leaves it. O(rows of its concept). */
+function steppedNow(n: PlacedName): boolean {
+  const rows = F.names.names.get(n.id);
+  if (!rows) return false;
+  const side = sideOf(n);
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i]!;
+    if (row.name.role === n.role && !row.wasFocus && sideOf(row.name) === side) return row.stepped === F.frame;
+  }
+  return false;
+}
+
+/** Plans a member's fallback side `k` where it stands inside the free map and clear of what the frame drew before it. */
+function planFallback(sides: readonly PlacedName[], k: number, at: Point, alphas: ReadonlyMap<string, number>, chrome: readonly Box[]): boolean {
+  if (steppedNow(sides[k]!) || !memberBlockShows(sides, k, k + 1, chrome)) return false;
+  let side = sides[k]!;
+  if (onGrownDot(side, at.x, at.y)) {
+    let plated = backedSides.get(side);
+    if (!plated) backedSides.set(side, (plated = { ...side, backed: true }));
+    side = plated;
+  }
+  if (!nameClear(side, at, at.x, at.y, false)) return false;
+  planName(side, alphas, 1, false);
+  return true;
 }
 
 /** The share of its full radius a capability disc is drawn at, 1 for a disc no crowd shrank. */
@@ -1141,7 +1931,8 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
     const r = visible ? dotRadius(el) : 0;
     // Only a disc larger than the dot covers it, and never the selection's own, which its ring marks.
     const coverR = !visible || el === F.selectedId || el === F.leavingId ? 0 : itemR;
-    const clear = coverR > r ? Math.hypot(elAt.x - itemAt.x, elAt.y - itemAt.y) - coverR - r : ROOM_WHOLE_PX;
+    let clear = coverR > r ? Math.hypot(elAt.x - itemAt.x, elAt.y - itemAt.y) - coverR - r : ROOM_WHOLE_PX;
+    if (visible && el !== F.selectedId && el !== F.leavingId && movedRoom(el) !== undefined) clear = Math.min(clear, crowdClear(el, r, elAt));
     const shown = uncovered * smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, clear);
     if (shown <= DRAWN_INK) continue;
     alphas.set(el, 1);
@@ -1239,6 +2030,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
     const elements = openedElements(model, layout, F.leavingId, P, discRadius(F.leavingId), input.scale, growth);
     if (elements !== null && mix < 1) F.opened.push({ elements, share: 1 - mix });
   }
+  planFanPushes(input.focusedNodeId !== null && model.domainById.has(input.focusedNodeId) ? input.focusedNodeId : null);
   const projectShare = motion.share(MOTION_SHARE.project, attention.focusId !== null && attention.focusId === model.projectId ? 1 : 0);
   if (F.projectShare !== projectShare) F.projectShare = projectShare;
   F.lineKinds = 0;
@@ -1409,6 +2201,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
       }
     }
   }
+  if (starId !== null) planMemberFallbacks(admission.fallbacks, alphas, chrome);
   // A deselected name keeps its selected size and fades on the exit mix while its rest name fades in.
   if (leaving !== null) {
     const before = admitUnder(motion.previous);

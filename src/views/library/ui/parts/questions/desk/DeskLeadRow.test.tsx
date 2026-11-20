@@ -15,10 +15,10 @@ describe('Question desk lead row', () => {
     const after = 'stock moves, '.repeat(120_000);
     const text = `${before}the refund is queued for approval, ${after}`;
     expect(text.length).toBeGreaterThan(3_000_000);
-    const lead: DeskLead = { kind: 'source', key: 'source:sources/ledger.md#l1', hit: { path: 'sources/ledger.md', anchor: 'l1', text, score: 1 } };
+    const lead: DeskLead = { kind: 'source', key: 'source:sources/ledger.md#l1', hit: { path: 'sources/ledger.md', anchor: 'l1', text, score: 1 }, reason: 'words' };
     const started = performance.now();
     render(<NextIntlClientProvider locale="en" messages={en}>
-      <ul><DeskLeadRow lead={lead} terms={['refund', 'approval', 'stock']} citationState={() => 'observed'} jev={null} jevResult={null}
+      <ul><DeskLeadRow lead={lead} terms={['refund', 'approval', 'stock']} reason={null} citationState={() => 'observed'} jev={null} jevResult={null}
         rise={false} riseDelay={0} onOpenWiki={vi.fn()} onOpenSource={vi.fn()} /></ul>
     </NextIntlClientProvider>);
     const elapsed = performance.now() - started;

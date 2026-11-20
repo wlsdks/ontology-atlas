@@ -2,6 +2,13 @@ import type { Page } from "@playwright/test";
 
 import { buildCodexConfigToml } from "../../src/entities/vault-session/lib/ontology-starter";
 import { bundledServerLaunch } from "../../src/shared/config/mcp-server-launch";
+import {
+  OFF_VECTOR_STATUS,
+  type VectorFailure,
+  type VectorFound,
+  type VectorProbe,
+  type VectorStatus,
+} from "../../src/shared/lib/vault-folder/tauri-vault-vectors";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 const VAULT_ROOT = "/Users/probe/Ontology Atlas/launch";
@@ -47,6 +54,109 @@ const VAULT_FILES: Record<string, string> = {
 
 const ARCHITECTURE_PAGE = "---\ntitle: Architecture evidence\ncreated_by: agent:claude-code\ncompiled_at: 2026-09-08T00:00:00.000Z\nsources:\n  - sources/architecture.docx\nsource_hash:\n  sources/architecture.docx: 0000000000000000000000000000000000000000000000000000000000000000\nstatus: draft\nsummary: Architecture evidence.\n---\n\n## Summary\n\nArchitecture evidence captured by the ACP harness.\n\n## Facts\n\n- The architecture source is available. [[src:sources/architecture.docx#p1]]\n\n## Decisions\n\n## Open questions\n\n## Not in sources\n";
 
+const vectorStatus = (fields: Partial<VectorStatus>): VectorStatus => ({ ...OFF_VECTOR_STATUS, ...fields });
+const MODEL_DOWNLOAD_BYTES = 2_288_243_938;
+
+/**
+ * Search by meaning's statuses in the order a first setup shows them, as the app sends them in
+ * `vault-vectors-status` events. Data only: a spec emits them with `emitVectorStatus`.
+ */
+export const LIBRARY_VECTOR_SCRIPT = {
+  notSetUp: vectorStatus({ phase: "notSetUp" }),
+  waitingTurn: vectorStatus({ phase: "waitingTurn", filesTotal: 2000 }),
+  downloading: vectorStatus({ phase: "modelDownloading", model: { doneBytes: 734_003_200, totalBytes: MODEL_DOWNLOAD_BYTES } }),
+  downloaded: vectorStatus({ phase: "modelDownloading", model: { doneBytes: MODEL_DOWNLOAD_BYTES, totalBytes: MODEL_DOWNLOAD_BYTES } }),
+  converting: vectorStatus({ phase: "modelConverting" }),
+  preparing: vectorStatus({ phase: "preparing", filesDone: 312, filesTotal: 2000, passagesDone: 1480, passagesTotal: 9800, currentPath: "wiki/architecture.md", vectorsBytes: 2_072_000 }),
+  preparingMeasured: vectorStatus({ phase: "preparing", filesDone: 1240, filesTotal: 2000, passagesDone: 6020, passagesTotal: 9800, currentPath: "sources/field-notes/2026-04.md", passagesPerSecond: 11.9, vectorsBytes: 8_428_000 }),
+  stopped: vectorStatus({ phase: "stopped", filesDone: 1240, filesTotal: 2000, passagesDone: 6020, passagesTotal: 9800, vectorsBytes: 8_428_000 }),
+  ready: vectorStatus({ phase: "ready", filesDone: 2000, filesTotal: 2000, passagesDone: 9800, passagesTotal: 9800, vectorsBytes: 13_720_000 }),
+  // An update counts the changed files alone.
+  updating: vectorStatus({ phase: "preparing", updating: true, filesDone: 6, filesTotal: 9, passagesDone: 30, passagesTotal: 45, currentPath: "wiki/architecture.md", vectorsBytes: 13_720_000 }),
+  updatingMany: vectorStatus({ phase: "preparing", updating: true, filesDone: 4, filesTotal: 12, passagesDone: 20, passagesTotal: 60, currentPath: "sources/field-notes/2026-04-warehouse-returns-review.md", vectorsBytes: 13_720_000 }),
+  off: vectorStatus({ phase: "off" }),
+} as const satisfies Record<string, VectorStatus>;
+
+/** Failures before any passage was kept are `failed`; after some were, the app says `stopped`. */
+const failedBeforeWork = (failure: VectorFailure, failureDetail: string): VectorStatus =>
+  vectorStatus({ phase: "failed", failure, failureDetail });
+const failedAfterWork = (failure: VectorFailure, failureDetail: string): VectorStatus =>
+  ({ ...LIBRARY_VECTOR_SCRIPT.stopped, failure, failureDetail });
+
+/** One status per failure, each with the coded detail the app sends with it. */
+export const LIBRARY_VECTOR_FAILURES: Record<VectorFailure, VectorStatus> = {
+  download: { ...failedBeforeWork("download", "embed-request-failed"), model: { doneBytes: 734_003_200, totalBytes: MODEL_DOWNLOAD_BYTES } },
+  modelCheck: failedBeforeWork("modelCheck", "embed-download-hash-mismatch"),
+  needsDirect: failedBeforeWork("needsDirect", "embed-download-no-direct-connection"),
+  diskShort: failedBeforeWork("diskShort", "embed-model-disk-space"),
+  modelGone: { ...LIBRARY_VECTOR_SCRIPT.ready, phase: "failed", failure: "modelGone", failureDetail: "embed-model-not-ready" },
+  runnerDown: failedAfterWork("runnerDown", "embed-request-failed"),
+  modelMissing: failedBeforeWork("modelMissing", "embed-model-missing"),
+  modelFailed: failedAfterWork("modelFailed", "worker-exited"),
+  write: failedAfterWork("write", "vectors-store-failed"),
+  auditBlocked: failedBeforeWork("auditBlocked", "embed-audit-blocked"),
+  unreadable: failedBeforeWork("unreadable", "vectors-walk-failed"),
+};
+
+/** `modelFailed` before any passage was kept (the model could not load) and after (its worker ended). */
+export const LIBRARY_VECTOR_MODEL_FAILED = {
+  load: failedBeforeWork("modelFailed", "load"),
+  workerExited: failedAfterWork("modelFailed", "worker-exited"),
+} as const satisfies Record<string, VectorStatus>;
+
+/** What the setup dialog reads: the model not yet on this computer, Ollama offering bge-m3. */
+export const LIBRARY_VECTOR_PROBE: VectorProbe = {
+  files: 2000,
+  builtin: {
+    onDisk: false,
+    modelBytes: 0,
+    downloadBytes: MODEL_DOWNLOAD_BYTES,
+    keptBytes: 1_150_553_036,
+    neededFreeBytes: 2_312_000_000,
+    freeBytes: 182_000_000_000,
+    memoryBytes: 1_800_000_000,
+    accelerated: true,
+  },
+  runner: { state: "reachable", address: "http://localhost:11434", models: ["bge-m3:latest"] },
+};
+
+/** A search by meaning over a folder still preparing: one hit dropped because its file changed. */
+export const LIBRARY_VECTOR_FOUND: VectorFound = {
+  state: "ok",
+  failure: null,
+  hits: [
+    { path: "wiki/architecture.md", lineStart: 12, lineEnd: 16, heading: "Facts", score: 0.82 },
+    { path: "project.md", lineStart: 7, lineEnd: 8, heading: "Launch", score: 0.61 },
+  ],
+  staleDropped: 1,
+  filesReady: 1240,
+  filesTotal: 2000,
+};
+
+export interface LibraryVectorsScript {
+  probe?: VectorProbe;
+  /**
+   * What status and prepare answer until a spec emits another status. Stop answers it as
+   * `stopped` and delete as `notSetUp`, as the app does from the moment either is pressed.
+   */
+  status?: VectorStatus;
+  /** What `vault_vectors_search` answers for a question `foundByQuestion` does not name. */
+  found?: VectorFound;
+  /** Scripted answers by the exact question asked. */
+  foundByQuestion?: Record<string, VectorFound>;
+  /** How long a search by meaning takes to answer, so a recording sees the list wait for it. */
+  searchDelayMs?: number;
+  /** Commands that refuse, as the app does for a folder not granted or while it closes. */
+  refuse?: readonly string[];
+  /** How long the probe takes to answer, so a spec can see the dialog before it does. */
+  probeDelayMs?: number;
+  /**
+   * Whether the built-in model is ready. By default it is when the probe says so or the status has
+   * prepared files. As in the app, a prepare without `download` on a missing model answers `modelGone`.
+   */
+  modelReady?: boolean;
+}
+
 type JsonRecord = Record<string, unknown>;
 type JsonRpcId = number | string;
 type EventCallback = (event: { event: string; payload: unknown }) => void;
@@ -71,6 +181,10 @@ interface HarnessWindow extends Window {
     streamed(): LibraryWorkStreamProgress;
     think(text: string): void;
     mutateSource(path: string, text: string): void;
+    emitVectorStatus(status: VectorStatus): void;
+    streamVectorStatus(base: VectorStatus, count: number, perSecond: number): void;
+    vectorStream(): LibraryVectorStreamProgress;
+    setVectorFound(found: VectorFound): void;
     snapshot(): LibraryWorkHarnessSnapshot;
   };
 }
@@ -81,6 +195,11 @@ export interface LibraryWorkStreamProgress {
 }
 
 export type LibraryWorkScenario = "successful-write" | "failed-unknown-target";
+
+export interface LibraryVectorStreamProgress {
+  emitted: number;
+  total: number;
+}
 
 export interface LibraryWorkHarnessSnapshot {
   files: Record<string, string>;
@@ -107,6 +226,17 @@ export interface LibraryWorkHarness {
   /** Emit one chunk of the agent's thinking, which the transcript folds into its work trace. */
   think(page: Page, text: string): Promise<void>;
   mutateSource(page: Page, path: string, text: string): Promise<void>;
+  /** Sends one `vault-vectors-status` event for the vault; later status commands answer it too. */
+  emitVectorStatus(page: Page, status: VectorStatus): Promise<void>;
+  /** What every later `vault_vectors_search` answers, whatever the question. */
+  setVectorFound(page: Page, found: VectorFound): Promise<void>;
+  /**
+   * `count` preparing statuses on a wall-clock schedule, each one file further than the last from
+   * `base`, as the app sends them for hours. Unlike `emitVectorStatus` none is kept in the
+   * snapshot's events, so a long stream measures the page and not the stub.
+   */
+  streamVectorStatus(page: Page, base: VectorStatus, options: { count: number; perSecond: number }): Promise<void>;
+  vectorStream(page: Page): Promise<LibraryVectorStreamProgress>;
 }
 
 /**
@@ -148,6 +278,8 @@ export async function installLibraryWorkHarness(
     pastSessions?: ReadonlyArray<{ sessionId: string; title?: string; updatedAt?: string }>;
     /** Commands the adapter announces mid-session, which is what the `/` menu reads. */
     slashCommands?: ReadonlyArray<{ name: string; description?: string }>;
+    /** Search by meaning's answers; without it the folder is not set up and the model is not here. */
+    vectors?: LibraryVectorsScript;
   } = {},
 ): Promise<LibraryWorkHarness> {
   const scenario = options.scenario ?? "successful-write";
@@ -156,7 +288,7 @@ export async function installLibraryWorkHarness(
   const modes = options.modes ?? [{ id: "default", name: "Default" }];
   const currentModeId = options.currentModeId ?? modes[0]?.id ?? "default";
   await page.addInitScript(
-    ({ initialFiles, initialScenario, vaultRoot, runtimes, modes, currentModeId, architecturePage, permissionFile, permissionText, permissionInput, permissionKind, writeMode, filePermission, mcpBinary, localResponses, pastSessions, slashCommands, startError }) => {
+    ({ initialFiles, initialScenario, vaultRoot, runtimes, modes, currentModeId, architecturePage, permissionFile, permissionText, permissionInput, permissionKind, writeMode, filePermission, mcpBinary, localResponses, pastSessions, slashCommands, startError, vectors }) => {
       const fixtureWindow = window as unknown as HarnessWindow;
       const record = (value: unknown): JsonRecord | null => typeof value === "object" && value !== null && !Array.isArray(value)
         ? value as JsonRecord
@@ -181,6 +313,11 @@ export async function installLibraryWorkHarness(
       let promptId: number | string | null = null;
       let permissionId: number | string | null = null;
       let phase: "idle" | "read" | "waiting" | "approved" | "rejected" | "written" | "finished" = "idle";
+      let currentVectorStatus = vectors.status;
+      let vectorStreamProgress = { emitted: 0, total: 0 };
+      let currentFound: VectorFound | null = null;
+      let currentProbe = vectors.probe;
+      let modelReady = vectors.modelReady;
       for (const path of Object.keys(files)) mtimes[path] = nextMtime;
 
       const emit = (event: string, payload: unknown) => {
@@ -404,6 +541,51 @@ export async function installLibraryWorkHarness(
         if (command === "acp_stop" || command === "start_vault_watch" || command === "ensure_vault_directory") return Promise.resolve(null);
         if (command === "acp_send") { try { const message: unknown = JSON.parse(String(args.line ?? "")); const parsed = record(message); if (parsed) handleClientMessage(parsed); } catch {} return Promise.resolve(null); }
         if (command === "acp_permission_verdict") return Promise.resolve("ask");
+        if (command.startsWith("vault_vectors_") && vectors.refuse.includes(command)) return Promise.reject(new Error(`${command} refused`));
+        if (command === "vault_vectors_probe") return new Promise((resolve) => window.setTimeout(() => resolve(currentProbe), vectors.probeDelayMs));
+        const stopRunning = () => {
+          const running = ["waitingTurn", "modelDownloading", "modelConverting", "preparing"].includes(currentVectorStatus.phase);
+          if (running) currentVectorStatus = { ...currentVectorStatus, phase: "stopped", updating: false, currentPath: null, passagesPerSecond: null, model: null };
+          return Promise.resolve(currentVectorStatus);
+        };
+        // `calls` records `paused` as sent; a paused folder is reported stopped, as the app does.
+        if (command === "vault_vectors_status") return args.paused === true ? stopRunning() : Promise.resolve(currentVectorStatus);
+        if (command === "vault_vectors_prepare") {
+          // Only a prepare with `download` fetches the built-in model; without it a missing model is `modelGone`.
+          const source = args.source as { kind?: string } | undefined;
+          if (source?.kind === "builtin" && !modelReady) {
+            if (args.download === true) {
+              modelReady = true;
+              currentVectorStatus = { ...currentVectorStatus, phase: "modelDownloading", failure: null, failureDetail: null, updating: false, currentPath: null, passagesPerSecond: null, model: { doneBytes: 0, totalBytes: currentProbe.builtin.downloadBytes } };
+            } else {
+              currentVectorStatus = { ...currentVectorStatus, phase: "failed", failure: "modelGone", failureDetail: "embed-model-not-ready", updating: false, currentPath: null, passagesPerSecond: null, model: null };
+            }
+          }
+          return Promise.resolve(currentVectorStatus);
+        }
+        if (command === "vault_vectors_stop") return stopRunning();
+        if (command === "vault_vectors_delete") {
+          currentVectorStatus = { ...currentVectorStatus, phase: "notSetUp", failure: null, failureDetail: null, filesDone: 0, passagesDone: 0, updating: false, currentPath: null, passagesPerSecond: null, model: null, vectorsBytes: 0 };
+          return Promise.resolve(currentVectorStatus);
+        }
+        if (command === "vault_vectors_search") {
+          const scripted = currentFound ?? vectors.foundByQuestion[String(args.question)] ?? vectors.found;
+          // As in the app, only the passages under one of the prefixes count; none means every file.
+          const prefixes = Array.isArray(args.prefixes) ? args.prefixes.map(String) : [];
+          const answer = prefixes.length === 0 ? scripted : { ...scripted, hits: scripted.hits.filter((hit) => prefixes.some((prefix) => hit.path.startsWith(prefix))) };
+          // A missing model is the folder's status from then on; a runner that did not answer is not.
+          if (answer.state === "failed" && answer.failure === "modelGone") {
+            modelReady = false;
+            currentVectorStatus = { ...currentVectorStatus, phase: "failed", failure: "modelGone", failureDetail: "embed-model-not-ready", updating: false, currentPath: null, passagesPerSecond: null };
+          }
+          return new Promise((resolve) => window.setTimeout(() => resolve(answer), vectors.searchDelayMs));
+        }
+        if (command === "vault_vectors_delete_model") {
+          modelReady = false;
+          currentProbe = { ...currentProbe, builtin: { ...currentProbe.builtin, onDisk: false, modelBytes: 0 } };
+          return Promise.resolve(null);
+        }
+        if (command === "vault_vectors_warm") return Promise.resolve(null);
         if (command === "mcp_bundled_server") return Promise.resolve({ path: mcpBinary, available: true, reason: null });
         if (command === "discover_mcp_connectors") return Promise.resolve({ servers: [], problems: [] });
         if (command === "discover_source_candidates") return Promise.resolve({ candidates: [], truncated: false, unreadableRoots: [] });
@@ -437,9 +619,24 @@ export async function installLibraryWorkHarness(
       fixtureWindow.isTauri = true;
       fixtureWindow.__TAURI_INTERNALS__ = { transformCallback: (callback: EventCallback) => { const id = callbackId++; callbacks.set(id, callback); return id; }, invoke };
       fixtureWindow.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: (event: string, id: number) => { listeners.get(event)?.delete(id); callbacks.delete(id); } };
-      fixtureWindow.__atlasLibraryWorkHarness = { moveMode: (modeId: string) => update({ sessionUpdate: "current_mode_update", currentModeId: modeId }), emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
+      fixtureWindow.__atlasLibraryWorkHarness = { moveMode: (modeId: string) => update({ sessionUpdate: "current_mode_update", currentModeId: modeId }), emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, emitVectorStatus: (status: VectorStatus) => { currentVectorStatus = status; if (status.failure === "modelGone") modelReady = false; else if (status.phase === "ready" || status.phase === "preparing") modelReady = true; emit("vault-vectors-status", { rootPath: vaultRoot, status }); }, streamVectorStatus: (base: VectorStatus, count: number, perSecond: number) => {
+        const progress = { emitted: 0, total: count };
+        vectorStreamProgress = progress;
+        const startedAt = performance.now();
+        const tick = () => {
+          if (vectorStreamProgress !== progress) return;
+          const done = Math.min(base.filesTotal, base.filesDone + progress.emitted + 1);
+          // A fresh object per event, as each one arrives over IPC.
+          const status: VectorStatus = { ...base, filesDone: done, passagesDone: Math.round(base.passagesDone + progress.emitted * 4.9), currentPath: `wiki/notes/page-${done}.md` };
+          currentVectorStatus = status;
+          for (const id of listeners.get("vault-vectors-status") ?? []) callbacks.get(id)?.({ event: "vault-vectors-status", payload: { rootPath: vaultRoot, status } });
+          progress.emitted += 1;
+          if (progress.emitted < progress.total) window.setTimeout(tick, Math.max(0, startedAt + (progress.emitted * 1000) / perSecond - performance.now()));
+        };
+        window.setTimeout(tick, 0);
+      }, vectorStream: () => ({ ...vectorStreamProgress }), setVectorFound: (found: VectorFound) => { currentFound = found; }, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
     },
-    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionInput: options.permissionInput, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError },
+    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionInput: options.permissionInput, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError, vectors: { probe: options.vectors?.probe ?? { ...LIBRARY_VECTOR_PROBE, runner: null }, status: options.vectors?.status ?? LIBRARY_VECTOR_SCRIPT.notSetUp, found: options.vectors?.found ?? { ...LIBRARY_VECTOR_FOUND, state: "notReady", hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0 }, refuse: [...(options.vectors?.refuse ?? [])], probeDelayMs: options.vectors?.probeDelayMs ?? 0, foundByQuestion: options.vectors?.foundByQuestion ?? {}, searchDelayMs: options.vectors?.searchDelayMs ?? 0, modelReady: options.vectors?.modelReady ?? ((options.vectors?.probe?.builtin.onDisk ?? false) || ((options.vectors?.status?.filesDone ?? 0) > 0 && options.vectors?.status?.failure !== "modelGone")) } },
   );
   const call = (currentPage: Page, method: "emitRead" | "emitWait" | "emitWrite" | "finish") => currentPage.evaluate((name) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.[name](), method);
   return { snapshot: (currentPage) => currentPage.evaluate(() => {
@@ -471,6 +668,17 @@ export async function installLibraryWorkHarness(
   }),
   think: (currentPage, text) => currentPage.evaluate((text) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.think(text), text),
   mutateSource: (currentPage, path, text) => currentPage.evaluate(({ path, text }) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.mutateSource(path, text), { path, text }),
+  emitVectorStatus: (currentPage, status) => currentPage.evaluate((status) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.emitVectorStatus(status), status),
+  streamVectorStatus: (currentPage, base, { count, perSecond }) => currentPage.evaluate(
+    ({ base, count, perSecond }) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.streamVectorStatus(base, count, perSecond),
+    { base, count, perSecond },
+  ),
+  vectorStream: (currentPage) => currentPage.evaluate(() => {
+    const harness = (window as unknown as HarnessWindow).__atlasLibraryWorkHarness;
+    if (!harness) throw new Error("Library work harness is not installed");
+    return harness.vectorStream();
+  }),
+  setVectorFound: (currentPage, found) => currentPage.evaluate((found) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.setVectorFound(found), found),
   };
 }
 

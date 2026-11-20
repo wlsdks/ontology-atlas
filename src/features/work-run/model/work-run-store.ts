@@ -28,6 +28,17 @@ import {
   type ScheduledRunStep,
 } from './scheduled-run';
 import {
+  closeMeaningCard,
+  hideMeaningCard,
+  isMeaningActive,
+  meaningProgressOf,
+  observeMeaning,
+  sameMeaningProgress,
+  type MeaningProgress,
+  type MeaningRun,
+  type MeaningRunObservation,
+} from './meaning-run';
+import {
   beginTurnRun,
   closeTurnCard,
   finishTurnRun,
@@ -48,11 +59,21 @@ import {
 /** A door the seat asks the owning screen to open once it is mounted for the run's folder. */
 export type WorkRunDoor = 'results' | 'conversation';
 
-/** One run the session holds: the person's wiki check, a scheduled check, or a Library turn that may write. */
+/** The meaning card's doors: the Wiki desk with its question field, or the desk to fix a failure. */
+export type MeaningDoor = 'ask' | 'library';
+
+/** The meaning run's figures reach the card and the rail at most this often (four a second). */
+export const MEANING_PROGRESS_INTERVAL_MS = 250;
+
+/**
+ * One run the session holds: the person's wiki check, a scheduled check, a Library turn that may
+ * write, or a folder's meaning preparation.
+ */
 export type SeatRun =
   | { kind: 'check'; key: string; run: WorkRun }
   | { kind: 'scheduled'; key: string; run: ScheduledRun }
-  | { kind: 'turn'; key: string; run: TurnRun };
+  | { kind: 'turn'; key: string; run: TurnRun }
+  | { kind: 'meaning'; key: string; run: MeaningRun };
 
 /** Where a turn's card door leads: its conversation, or the one page it wrote. */
 export type TurnDoor = { turnId: number; kind: 'conversation' } | { turnId: number; kind: 'page'; page: string };
@@ -68,6 +89,8 @@ export interface WorkRunSnapshot {
   stageFolder: string | null;
   /** Automations is on screen, the stage of every scheduled run. */
   automationsShown: boolean;
+  /** The open folder's meaning stage (the Wiki desk's meaning line) is on screen. */
+  meaningStage: boolean;
   /** The conversation on screen, the stage of the turn it runs. */
   turnStage: string | null;
   door: { runId: number; kind: WorkRunDoor } | null;
@@ -76,7 +99,8 @@ export interface WorkRunSnapshot {
 
 const NO_RUNS: ReadonlyMap<string, SeatRun> = new Map();
 const EMPTY: WorkRunSnapshot = {
-  runs: NO_RUNS, run: null, folder: null, stageFolder: null, automationsShown: false, turnStage: null, door: null, turnDoor: null,
+  runs: NO_RUNS, run: null, folder: null, stageFolder: null, automationsShown: false, meaningStage: false,
+  turnStage: null, door: null, turnDoor: null,
 };
 
 let snapshot: WorkRunSnapshot = EMPTY;
@@ -86,8 +110,20 @@ const turnStops = new Map<number, () => void>();
 let nextId = 0;
 const listeners = new Set<() => void>();
 
+/** The open folder's meaning Stop and the doors, registered by the app layer that knows the job and the screens. */
+let meaningStop: (() => void) | null = null;
+let meaningDoor: ((kind: MeaningDoor) => void) | null = null;
+/** The meaning run's figures: apart from the snapshot, paced, and only the latest kept. */
+let progress: MeaningProgress | null = null;
+let pendingProgress: MeaningProgress | null = null;
+let progressAt = Number.NEGATIVE_INFINITY;
+let progressTimer: ReturnType<typeof setTimeout> | null = null;
+const progressListeners = new Set<() => void>();
+
 const checkKey = (id: number) => `check:${id}`;
 const scheduledKey = (id: string) => `scheduled:${id}`;
+/** One meaning run per folder: another folder's stays as it was left until that folder opens again. */
+const meaningKey = (folder: string) => `meaning:${folder}`;
 const turnKey = (id: number) => `turn:${id}`;
 
 function checkOf(runs: ReadonlyMap<string, SeatRun>): WorkRun | null {
@@ -99,8 +135,8 @@ function publish(next: Partial<WorkRunSnapshot>) {
   const merged = { ...snapshot, ...next };
   if (next.runs) merged.run = checkOf(next.runs);
   const same = merged.runs === snapshot.runs && merged.folder === snapshot.folder && merged.stageFolder === snapshot.stageFolder
-    && merged.automationsShown === snapshot.automationsShown && merged.door === snapshot.door
-    && merged.turnStage === snapshot.turnStage && merged.turnDoor === snapshot.turnDoor;
+    && merged.automationsShown === snapshot.automationsShown && merged.meaningStage === snapshot.meaningStage
+    && merged.door === snapshot.door && merged.turnStage === snapshot.turnStage && merged.turnDoor === snapshot.turnDoor;
   if (same) return;
   snapshot = merged;
   listeners.forEach((listener) => listener());
@@ -137,6 +173,40 @@ function changeEveryScheduled(update: (run: ScheduledRun) => ScheduledRun) {
     runs.set(entry.key, { ...entry, run: next });
   }
   if (runs) publish({ runs });
+}
+
+function changeMeaning(key: string, update: (run: MeaningRun) => MeaningRun) {
+  const entry = snapshot.runs.get(key);
+  if (entry?.kind !== 'meaning') return;
+  const next = update(entry.run);
+  if (next !== entry.run) publish({ runs: withEntry({ kind: 'meaning', key, run: next }) });
+}
+
+function setProgress(next: MeaningProgress | null, at: number) {
+  if (progressTimer !== null) clearTimeout(progressTimer);
+  progressTimer = null;
+  pendingProgress = null;
+  progressAt = at;
+  if (sameMeaningProgress(progress, next)) return;
+  progress = next;
+  progressListeners.forEach((listener) => listener());
+}
+
+/**
+ * Publishes at once when the last publish is an interval old, else holds the figure for the end of
+ * the interval; a figure held is replaced, never queued, so nothing is kept per event.
+ */
+function paceProgress(next: MeaningProgress, at: number) {
+  const wait = progressAt + MEANING_PROGRESS_INTERVAL_MS - at;
+  if (wait <= 0) {
+    setProgress(next, at);
+    return;
+  }
+  pendingProgress = next;
+  progressTimer ??= setTimeout(() => {
+    progressTimer = null;
+    if (pendingProgress) setProgress(pendingProgress, progressAt + MEANING_PROGRESS_INTERVAL_MS);
+  }, wait);
 }
 
 function changeTurn(id: number, update: (run: TurnRun) => TurnRun) {
@@ -290,6 +360,12 @@ export const workRuns = {
       if (entry.run.id === snapshot.run?.id) workRuns.stop();
       return;
     }
+    if (entry?.kind === 'meaning') {
+      if (!isMeaningActive(entry.run)) return;
+      changeMeaning(key, closeMeaningCard);
+      if (entry.run.folder === snapshot.folder) meaningStop?.();
+      return;
+    }
     if (entry?.kind === 'turn') {
       if (!isTurnActive(entry.run) || entry.run.phase === 'stopping') return;
       changeTurn(entry.run.id, (run) => stopTurnRun(run, false));
@@ -304,11 +380,13 @@ export const workRuns = {
   hideActive() {
     changeCheck(null, hideCard);
     changeEveryScheduled(hideScheduledCard);
+    if (snapshot.folder !== null) changeMeaning(meaningKey(snapshot.folder), hideMeaningCard);
     changeEveryTurn(hideTurnCard);
   },
   closeRun(key: string) {
     const entry = snapshot.runs.get(key);
     if (entry?.kind === 'check') changeCheck(entry.run.id, closeCard);
+    else if (entry?.kind === 'meaning') changeMeaning(key, closeMeaningCard);
     else if (entry?.kind === 'turn') changeTurn(entry.run.id, closeTurnCard);
     else if (entry) changeScheduled(key, closeScheduledCard);
   },
@@ -321,6 +399,48 @@ export const workRuns = {
     publish({ automationsShown: false });
   },
 
+  /**
+   * The open folder's meaning job as the app layer read it. The run changes only when its phase
+   * or its card does; its figures go to `readMeaningProgress` at most once per interval.
+   */
+  observeMeaning(folder: string, observation: MeaningRunObservation | null, stageShown: boolean, at: number) {
+    const key = meaningKey(folder);
+    const entry = snapshot.runs.get(key);
+    const previous = entry?.kind === 'meaning' ? entry.run : null;
+    const next = observeMeaning(previous, observation, { folder, at, stageShown, nextId: () => (nextId += 1) });
+    if (next !== previous) {
+      const runs = new Map(snapshot.runs);
+      if (next) runs.set(key, { kind: 'meaning', key, run: next });
+      else runs.delete(key);
+      publish({ runs, meaningStage: next !== null && stageShown });
+    } else {
+      publish({ meaningStage: next !== null && stageShown });
+    }
+    if (observation?.quiet && next !== null && next === previous && progress?.runId === next.id) return;
+    const nextProgress = next && observation ? meaningProgressOf(next.id, observation) : null;
+    const turned = next === null || next !== previous || progress?.runId !== next.id;
+    if (turned || nextProgress === null) setProgress(nextProgress, at);
+    else paceProgress(nextProgress, at);
+  },
+  readMeaningProgress: () => progress,
+  subscribeMeaningProgress(listener: () => void) {
+    progressListeners.add(listener);
+    return () => {
+      progressListeners.delete(listener);
+    };
+  },
+  /** The open folder's meaning Stop, registered by the app layer. */
+  setMeaningStop(stop: (() => void) | null) {
+    meaningStop = stop;
+  },
+  /** Where the meaning card's doors lead, registered by the app layer that knows the screens. */
+  setMeaningDoor(open: ((kind: MeaningDoor) => void) | null) {
+    meaningDoor = open;
+  },
+  openMeaningDoor(key: string, kind: MeaningDoor) {
+    changeMeaning(key, closeMeaningCard);
+    meaningDoor?.(kind);
+  },
   /** A Library turn that may write, started from a door or a typed request. */
   beginTurn(input: { folder: string; folderName: string; owner: string; runtimeId: string; agent: string; door: TurnRunDoor; request: string; startedAt: number }): number {
     nextId += 1;
@@ -380,8 +500,16 @@ export const workRuns = {
   reset() {
     stopTurn = null;
     scheduledStops.clear();
+    meaningStop = null;
+    meaningDoor = null;
+    if (progressTimer !== null) clearTimeout(progressTimer);
+    progressTimer = null;
+    pendingProgress = null;
+    progress = null;
+    progressAt = Number.NEGATIVE_INFINITY;
     turnStops.clear();
     snapshot = EMPTY;
     listeners.forEach((listener) => listener());
+    progressListeners.forEach((listener) => listener());
   },
 };

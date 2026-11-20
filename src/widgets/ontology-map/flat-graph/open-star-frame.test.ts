@@ -115,21 +115,25 @@ type Mark = { x: number; y: number; r: number };
 /** A domain's census and reach rows: one slot under its name. */
 const CAPTION_ROLES = new Set(["units", "status"]);
 
-/** A camera centred on `centreId` (the map's middle when null) of `world`'s map, at a zoom given per frame as a ratio of the fitting scale. */
-function cameraOn(centreId: string | null, worldKey: object, world = { model, scene }) {
+/**
+ * A camera centred on `centreId` (the map's middle when null) of `world`'s map in the free map `free`,
+ * at a zoom given per frame as a ratio of the scale that fits the map into `free`.
+ */
+function cameraOn(centreId: string | null, worldKey: object, world = { model, scene }, free = { minX: 0, minY: 0, maxX: W, maxY: H }) {
   const { model: m, scene: sc } = world;
   const graph = sc.graph!;
   const e = graph.extent;
-  const fit = Math.min(W / (e.maxX - e.minX), H / (e.maxY - e.minY));
+  const fit = Math.min((free.maxX - free.minX) / (e.maxX - e.minX), (free.maxY - free.minY) / (e.maxY - e.minY));
   const centre = centreId === null ? { x: (e.minX + e.maxX) / 2, y: (e.minY + e.maxY) / 2 } : graph.positions.get(centreId)!;
+  const middle = { x: (free.minX + free.maxX) / 2, y: (free.minY + free.maxY) / 2 };
   const ctx = silentContext();
   return (zoomRatio: number, over: Partial<DialFrameInput>): DialFrameInput => {
     const scale = fit * zoomRatio;
-    const toScreen = (x: number, y: number): Point => ({ x: W / 2 + (x - centre.x) * scale, y: H / 2 + (y - centre.y) * scale });
+    const toScreen = (x: number, y: number): Point => ({ x: middle.x + (x - centre.x) * scale, y: middle.y + (y - centre.y) * scale });
     return {
       ctx, dial: { model: m, scene: sc, overviewPadPx: { left: 0, right: 0, top: 0, bottom: 0 }, labels: LABELS }, worldKey,
       nodeScreen: (id) => { const p = graph.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen, scale, zoomRatio,
-      viewportWidth: W, viewportHeight: H, freeRect: { minX: 0, minY: 0, maxX: W, maxY: H },
+      viewportWidth: W, viewportHeight: H, freeRect: free,
       mapTokens: { canvasBgNear: "#101014" } as unknown as OntologyMapTokens, dialTokens: {} as DialFrameInput["dialTokens"], labels: LABELS, evidence: null,
       hoveredNodeId: null, focusedNodeId: null, agentFocusNodeId: null, selectionPulse: null, appearOf: () => 1, hubCount: null,
       now: 0, reducedMotion: false, domainAppear: 1, elementLabel: (id) => id,
@@ -238,6 +242,94 @@ it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer
     expect(smoothness(pinched.frames).overlaps.slice(0, 4)).toEqual([]);
   },
 );
+
+/** The free map beside the closed dock at 1280x800: narrow enough that a wide star opens at a low scale. */
+const NARROW_FREE = { minX: 324, minY: 112, maxX: 837, maxY: 728 };
+const denseWorld = (() => {
+  const m = syntheticModel(4, 5, 9);
+  return { model: m, scene: buildFlatGraphScene(m, TOKENS.layout, null) };
+})();
+
+it.each([
+  ...["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"].map((id) => [id, { model, scene }] as const),
+  ...denseWorld.model.domains.map((d) => [d.id, denseWorld] as const),
+])(
+  "draws every element of the opened %s star clear of every mark where a narrow free map frames it, though its largest members' discs reach past their innermost elements",
+  (domainId, world) => {
+    const { capabilities, elements } = domainStarIds(world.model, domainId);
+    const star = new Set([domainId, ...capabilities, ...elements]);
+    const camera = cameraOn(domainId, {}, world, NARROW_FREE);
+    const unread: string[] = [];
+    const overlaps: string[] = [];
+    let now = 0;
+    for (const zoom of [2.2, 2.6, 3, 3.4]) {
+      const { frames, end } = framesUntilSettled(camera, { focusedNodeId: domainId }, star, now, zoom, zoom, FRAME_MS);
+      now = end + 10_000;
+      const input = camera(zoom, {});
+      const inView = (id: string) => {
+        const at = input.nodeScreen(id);
+        return at !== null && at.x > 0 && at.x < W && at.y > 0 && at.y < H;
+      };
+      const drawn = new Set(describeLastDialFrame(W, H)!.glyphs.map((g) => g.id));
+      unread.push(...[...new Set(elements)].filter((id) => inView(id) && !drawn.has(id)).map((id) => `${zoom}: ${id}`));
+      overlaps.push(...smoothness(frames.slice(-1)).overlaps.map((o) => `${zoom}: ${o}`));
+    }
+    expect({ unread: unread.slice(0, 6), overlaps: overlaps.slice(0, 6) }).toEqual({ unread: [], overlaps: [] });
+  },
+);
+
+it.each([
+  ...["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"].map((id) => [id, { model, scene }] as const),
+  ...denseWorld.model.domains.map((d) => [d.id, denseWorld] as const),
+])(
+  "opens the %s star from the overview where a narrow free map frames it with no frame drawing two marks over each other, and settles with every dot in view drawn, as dots move out of their members' discs",
+  (domainId, world) => {
+    const { capabilities, elements } = domainStarIds(world.model, domainId);
+    const star = new Set([domainId, ...capabilities, ...elements]);
+    const camera = cameraOn(domainId, {}, world, NARROW_FREE);
+    const rest = framesUntilSettled(camera, {}, star, 0, 1, 1, FRAME_MS);
+    const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, rest.end + FRAME_MS, 1, 2.6, 600);
+    // A dot under a disc fades out before it lies half a pixel inside it, so no frame overlaps deeper whether the
+    // dot moves out or is lost under the disc; the settled frame tells the two apart.
+    const input = camera(2.6, {});
+    const inView = (id: string) => {
+      const at = input.nodeScreen(id);
+      return at !== null && at.x > 0 && at.x < W && at.y > 0 && at.y < H;
+    };
+    const settled = opened.frames.at(-1)!;
+    const lost = [...new Set(elements)].filter((id) => inView(id) && !settled.has(id));
+    expect({ overlaps: smoothness(opened.frames).overlaps.slice(0, 4), lost: lost.slice(0, 4) }).toEqual({ overlaps: [], lost: [] });
+  },
+);
+
+it("draws an opened star's dots again after one frame whose scale is not a number", () => {
+  const domainId = "domain:code-evidence";
+  const { capabilities, elements } = domainStarIds(model, domainId);
+  const star = new Set([domainId, ...capabilities, ...elements]);
+  const camera = cameraOn(domainId, {}, { model, scene }, NARROW_FREE);
+  const dotsOf = (frame: Map<string, Mark>) => [...new Set(elements)].filter((id) => frame.has(id)).sort();
+  const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, 0, 2.2, 2.2, FRAME_MS);
+  const nan = Number.NaN;
+  paintFlatGraphFrame({ ...camera(2.2, { focusedNodeId: domainId, now: opened.end + FRAME_MS }), scale: nan, toScreen: () => ({ x: nan, y: nan }), nodeScreen: () => null }, TOKENS);
+  const after = framesUntilSettled(camera, { focusedNodeId: domainId }, star, opened.end + 2 * FRAME_MS, 2.2, 2.2, FRAME_MS);
+  expect(dotsOf(opened.frames.at(-1)!).length).toBeGreaterThan(10);
+  expect(dotsOf(after.frames.at(-1)!)).toEqual(dotsOf(opened.frames.at(-1)!));
+});
+
+it("keeps every dot of a pressed member's fan drawn on each frame as the reader goes back to its star, where a narrow free map pushes the fan out of the member's disc", () => {
+  const domainId = "domain:code-evidence";
+  const member = "capability:repo-structure-analysis";
+  const { capabilities, elements } = domainStarIds(model, domainId);
+  const star = new Set([domainId, ...capabilities, ...elements]);
+  const fan = model.capabilityById.get(member)!.elementIds;
+  const camera = cameraOn(domainId, {}, { model, scene }, NARROW_FREE);
+  const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, 0, 2.2, 2.2, FRAME_MS);
+  const pressed = framesUntilSettled(camera, { focusedNodeId: member }, star, opened.end + FRAME_MS, 2.2, 2.2, FRAME_MS);
+  const back = framesUntilSettled(camera, { focusedNodeId: domainId }, star, pressed.end + FRAME_MS, 2.2, 2.2, FRAME_MS);
+  expect(fan.filter((id) => opened.frames.at(-1)!.has(id))).toEqual(fan);
+  const gaps = back.frames.flatMap((frame, i) => fan.filter((id) => !frame.has(id)).map((id) => `frame ${i}: ${id}`));
+  expect(gaps.slice(0, 6)).toEqual([]);
+});
 
 it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"])(
   "names the opened %s star, and each member pressed in it, at rest without a name on another name or on a mark not its own",
@@ -812,5 +904,92 @@ describe.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning
     const opened = framesUntilSettled(camera, { reducedMotion: true, focusedNodeId: domainId }, star, 100, 3.6, 3.6, FRAME_MS);
     const radii = (frame: Map<string, Mark>) => [...frame].map(([id, m]) => [id, m.r.toFixed(3)]);
     expect(radii(opened.frames[0]!), "the first frame draws the opened star").toEqual(radii(opened.frames.at(-1)!));
+  });
+});
+
+/**
+ * Every frame on a path to `domainId`'s star in `free`, the camera easing to `zoomTo` and then
+ * panning up to `panPx` around it, in which a member's capability name begins rising after another
+ * member's name under it began fading: the place is handed over, so the second waits for the first
+ * to go. A swap that begins in one frame is admission trading a zoom step's names, not a hand-over.
+ */
+function handOverBreaches(domainId: string, free: { minX: number; minY: number; maxX: number; maxY: number }, zoomTo: number, panPx: number): string[] {
+  const members = new Set(domainStarIds(model, domainId).capabilities);
+  const e = layout.extent;
+  const fit = Math.min((free.maxX - free.minX) / (e.maxX - e.minX), (free.maxY - free.minY) / (e.maxY - e.minY));
+  const centre = layout.positions.get(domainId)!;
+  const middle = { x: (free.minX + free.maxX) / 2, y: (free.minY + free.maxY) / 2 };
+  const camera = cameraOn(domainId, {}, { model, scene }, free);
+  const breaches: string[] = [];
+  let before = new Map<string, number>();
+  let trend = new Map<string, number>();
+  const since = new Map<string, number>();
+  for (let i = 0, now = 0; i < 260; i += 1, now += FRAME_MS) {
+    const zoom = Math.pow(zoomTo, (1 - Math.cos(Math.PI * Math.min(1, i / 36))) / 2);
+    const turn = Math.max(0, i - 36) / 50;
+    const pan = { x: Math.sin(turn) * panPx, y: Math.sin(turn * 0.7) * panPx * 0.6 };
+    const scale = fit * zoom;
+    const toScreen = (x: number, y: number): Point => ({ x: middle.x + pan.x + (x - centre.x) * scale, y: middle.y + pan.y + (y - centre.y) * scale });
+    const nodeScreen = (id: string) => { const p = layout.positions.get(id); return p ? toScreen(p.x, p.y) : null; };
+    paintFlatGraphFrame(camera(zoom, { toScreen, nodeScreen, scale, now, focusedNodeId: domainId }), TOKENS);
+    const probe = describeLastDialFrame(W, H)!;
+    const names = [...probe.texts, ...probe.fadingTexts].filter((t) => t.role === "capability" && t.id !== null && members.has(t.id));
+    const key = (t: (typeof names)[number]) => `${t.id} ${t.side}`;
+    const signs = new Map<string, number>();
+    for (const t of names) {
+      const sign = Math.sign(t.alpha - (before.get(key(t)) ?? 0));
+      if (!before.has(key(t)) || sign !== trend.get(key(t))) since.set(key(t), i);
+      signs.set(key(t), sign);
+    }
+    for (const t of names) {
+      if (signs.get(key(t))! <= 0) continue;
+      for (const o of names) {
+        if (o.id === t.id || signs.get(key(o))! >= 0 || since.get(key(t))! <= since.get(key(o))!) continue;
+        if (Math.min(t.box.maxX, o.box.maxX) - Math.max(t.box.minX, o.box.minX) > 1 && Math.min(t.box.maxY, o.box.maxY) - Math.max(t.box.minY, o.box.minY) > 1) {
+          breaches.push(`frame ${i}: ${t.id} rises to ${t.alpha.toFixed(2)} over ${o.id} fading at ${o.alpha.toFixed(2)}`);
+        }
+      }
+    }
+    before = new Map(names.map((t) => [key(t), t.alpha]));
+    trend = signs;
+  }
+  return breaches;
+}
+
+describe("an opened star's member names while the camera pans the narrow free map", () => {
+  it.each([[2.2, 40], [2.2, 120], [3, 40]])(
+    "hand a place over at zoom %s and a %s px pan: a member's name begins rising only once no other member's name under it is fading",
+    (zoom, pan) => {
+      expect(handOverBreaches("domain:human-workbench", NARROW_FREE, zoom, pan).slice(0, 6)).toEqual([]);
+    },
+  );
+});
+
+describe("an open star in a rebuilt world", () => {
+  it("names each star's members clear of the discs of the world it draws, whatever the last world painted", () => {
+    // Each world counts its frames from 1, so a world that paints once leaves state stamped with the
+    // same frame number the next world's first frame carries.
+    const over: string[] = [];
+    const pad = TOKENS.paint.namePadPx;
+    for (const domainId of ["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"]) {
+      const { capabilities } = domainStarIds(model, domainId);
+      for (const lastFrames of [1, 2]) {
+        const last = cameraOn(domainId, {});
+        for (let i = 0; i < lastFrames; i += 1) paintFlatGraphFrame(last(2.5, { focusedNodeId: domainId, now: i * FRAME_MS }), TOKENS);
+        const rebuilt = cameraOn(capabilities[0]!, {});
+        paintFlatGraphFrame(rebuilt(2.2, { focusedNodeId: domainId, now: 10 * FRAME_MS }), TOKENS);
+        const { texts, discs } = describeLastDialFrame(W, H)!;
+        for (const t of texts) {
+          if (t.role !== "capability" || !capabilities.includes(t.id ?? "")) continue;
+          for (const m of discs) {
+            if (m.id === t.id || m.id === null) continue;
+            const dx = Math.max(t.box.minX + pad - m.x, 0, m.x - (t.box.maxX - pad));
+            const dy = Math.max(t.box.minY + pad - m.y, 0, m.y - (t.box.maxY - pad));
+            if (Math.hypot(dx, dy) - m.r <= -0.5) over.push(`${domainId} after ${lastFrames}: ${t.id} over ${m.id}`);
+          }
+        }
+      }
+    }
+    expect(over).toEqual([]);
   });
 });

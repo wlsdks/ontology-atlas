@@ -28,6 +28,8 @@ tauri-build = { version = "2", features = [] }
 
 [dev-dependencies]
 tauri = { version = "2.11.6", features = ["test"] }
+# Writes the tiny synthetic `pytorch_model.bin` the conversion tests read; candle already uses it.
+zip = { version = "9", default-features = false }
 
 [dependencies]
 # 2.11.6 is the floor: earlier 2.x let another webview read queued channel payloads
@@ -66,6 +68,18 @@ tauri-plugin-window-state = "2.4.1"
 # directly adds zero new supply-chain surface (same rationale as objc2).
 log = "0.4"
 vault-index = { path = "crates/vault-index" }
+# The built-in bge-m3 model: candle reads `pytorch_model.bin` without executing it; tokenizers and
+# safetensors are the copies candle already resolves (`fancy-regex` keeps them pure Rust); url is
+# already in the graph through tauri and parses the download's redirect targets.
+candle-core = "=0.11.1"
+candle-nn = "=0.11.1"
+candle-transformers = "=0.11.1"
+tokenizers = { version = "=0.23.2", default-features = false, features = ["fancy-regex"] }
+safetensors = "=0.8.0"
+url = "2"
+# The model worker finds the model where the app keeps it, by the rule Tauri's
+# `app_data_dir` uses; the same dirs 6 tauri already resolves.
+dirs = "6"
 
 # Unix process-group termination also clears descendants of failed ACP probes.
 # libc is already in the resolved dependency graph.
@@ -93,6 +107,10 @@ objc2 = "0.6"
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSOpenPanel", "NSSavePanel", "NSPanel", "NSResponder", "NSWindow"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSURL", "NSError", "NSDictionary", "NSArray"] }
 keyring = { version = "3", features = ["apple-native"] }
+# The built-in model's GPU (Metal) and CPU (Accelerate) paths; Windows and Linux run candle on the CPU.
+candle-core = { version = "=0.11.1", features = ["metal", "accelerate"] }
+candle-nn = { version = "=0.11.1", features = ["metal", "accelerate"] }
+candle-transformers = { version = "=0.11.1", features = ["metal", "accelerate"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 keyring = { version = "3", features = ["windows-native"] }

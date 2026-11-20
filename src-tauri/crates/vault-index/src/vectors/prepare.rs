@@ -4,7 +4,7 @@
 use super::plan::{read_passages, Plan};
 use super::quantize::{check_vectors, Quantized, Refusal};
 use super::writer::WriteError;
-use super::{now_ms, set_aside_if_damaged};
+use super::{now_ms, set_aside_if_damaged, META_COMPLETED};
 use crate::lifecycle::{clear_meta, write_meta, META_WRITING};
 use crate::stamps::Sha;
 use crate::Error;
@@ -217,6 +217,7 @@ fn run<E>(
         if pending.is_empty() {
             // Also ends the mark a killed run left, so the next open skips its quick_check.
             clear_meta(tx, META_WRITING)?;
+            write_meta(tx, META_COMPLETED, "1")?;
             return Ok(false);
         }
         write_meta(tx, META_WRITING, &std::process::id().to_string())?;
@@ -229,7 +230,14 @@ fn run<E>(
     let finished = match &outcome {
         Err(PrepareError::Deleted) => Ok(()),
         Err(PrepareError::Index(error)) if error.is_damage() => Ok(()),
-        _ => plan
+        Ok(_) => plan
+            .writer
+            .locked(|tx| {
+                clear_meta(tx, META_WRITING)?;
+                write_meta(tx, META_COMPLETED, "1")
+            })
+            .map_err(PrepareError::from),
+        Err(_) => plan
             .writer
             .locked(|tx| clear_meta(tx, META_WRITING))
             .map_err(PrepareError::from),

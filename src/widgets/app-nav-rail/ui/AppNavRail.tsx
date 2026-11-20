@@ -71,7 +71,8 @@ export interface AppNavRailProps {
 const NO_WORK_RUNS: readonly RailWorkRun[] = [];
 
 export type RailWorkRun =
-  | { destination: AppNavRailItemId; state: "running" }
+  /** `fraction` (0–1) where the run counts against a known total; without it the arc turns. */
+  | { destination: AppNavRailItemId; state: "running"; fraction?: number }
   | { destination: AppNavRailItemId; state: "waiting"; finished: number }
   | { destination: AppNavRailItemId; state: "finished"; count: number };
 
@@ -216,7 +217,9 @@ export function AppNavRail({
             const run = workRuns.find((candidate) => candidate.destination === id) ?? null;
             const badgeCount = run?.state === "finished" ? run.count : ownBadge;
             const runName = run?.state === "running"
-              ? tWork("railRunning", { destination: label })
+              ? run.fraction === undefined
+                ? tWork("railRunning", { destination: label })
+                : tWork("railRunningPercent", { destination: label, percent: Math.floor(run.fraction * 100) })
               : run?.state === "waiting"
                 ? run.finished > 0
                   ? tWork("railWaitingAndFinished", { destination: label, count: run.finished })
@@ -279,7 +282,13 @@ export function AppNavRail({
                       aria-hidden
                       className="h-[var(--app-nav-rail-icon-size)] w-[var(--app-nav-rail-icon-size)]"
                     />
-                    {run?.state === "running" || run?.state === "waiting" ? <RunRing id={id} still={run.state === "waiting"} /> : null}
+                    {run?.state === "running" || run?.state === "waiting" ? (
+                      <RunRing
+                        id={id}
+                        fraction={run.state === "running" ? run.fraction : undefined}
+                        still={run.state === "waiting"}
+                      />
+                    ) : null}
                     {run?.state === "waiting" ? (
                       <span
                         data-testid={`app-nav-rail-waiting-${id}`}
@@ -347,14 +356,18 @@ export function AppNavRail({
 }
 
 /**
- * A quarter arc around the icon while the destination's run works; it unmounts the moment it ends.
- * A run waiting on a person holds the arc where it is and goes on from there once answered.
+ * A ring around the icon while the destination's run works; it unmounts the moment it ends. With
+ * a counted fraction it is an arc from twelve o'clock that eases to each new value; without one, a
+ * quarter arc turns. A run waiting on a person holds the arc where it is and goes on from there
+ * once answered.
  */
-function RunRing({ id, still }: { id: AppNavRailItemId; still: boolean }) {
+function RunRing({ id, fraction, still = false }: { id: AppNavRailItemId; fraction?: number; still?: boolean }) {
+  const counted = fraction !== undefined;
   return (
     <svg
       aria-hidden
       data-testid={`app-nav-rail-ring-${id}`}
+      data-ring-fraction={counted ? fraction.toFixed(4) : undefined}
       data-still={still || undefined}
       viewBox="0 0 32 32"
       fill="none"
@@ -369,9 +382,13 @@ function RunRing({ id, still }: { id: AppNavRailItemId; still: boolean }) {
         stroke="var(--color-indigo-accent)"
         strokeLinecap="round"
         pathLength={1}
-        strokeDasharray="0.25 0.75"
+        strokeDasharray={counted ? "1 1" : "0.25 0.75"}
+        strokeDashoffset={counted ? 1 - Math.min(1, Math.max(0, fraction)) : undefined}
         transform="rotate(-90 16 16)"
-        className={cn("motion-work-spin", still && "[animation-play-state:paused]")}
+        // Values arrive four times a second; each eases into the next from where it is drawn.
+        className={counted
+          ? "transition-[stroke-dashoffset] duration-[var(--motion-slow)] ease-[var(--motion-ease)]"
+          : cn("motion-work-spin", still && "[animation-play-state:paused]")}
       />
     </svg>
   );
