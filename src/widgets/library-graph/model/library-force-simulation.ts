@@ -988,11 +988,13 @@ export function resizeLibrarySimulation(
 /**
  * A changed folder rearranges without jumping: kept nodes keep position and velocity, a new
  * node enters on an attached neighbour (a fresh page on its sources), and removed nodes are
- * returned so the caller fades them over `--motion-base`.
+ * returned so the caller fades them over `--motion-base`. `forces: false` is for a picture that
+ * lays every mark itself: no force reads the groups there, and the next sync with forces composes.
  */
 export function syncLibrarySimulation(
   sim: LibrarySimulation,
   graph: LibraryGraph,
+  { forces = true }: { forces?: boolean } = {},
 ): { entered: string[]; removed: Array<{ id: string; x: number; y: number }> } {
   const wanted = new Set(graph.nodes.map((node) => node.id));
   const removed: Array<{ id: string; x: number; y: number }> = [];
@@ -1057,9 +1059,11 @@ export function syncLibrarySimulation(
   sim.nodes = nodes;
   sim.index = new Map(nodes.map((node, position) => [node.id, position]));
   sim.links = buildLinks(graph, sim.index, degree);
-  // A new page can join or split groups, so the composition is re-derived; marks already
-  // on the canvas keep their positions.
-  composeLibraryGroups(sim, graph);
+  // A new page can join or split groups, so forces re-derive the composition. A laid picture
+  // needs it only where composing moves a mark, a prepass offset or the loose ring, since a
+  // travel to the layout starts there.
+  const movesMarks = nodes.length <= PACK_PREPASS_MAX_ORDER || nodes.some((node) => node.orbit !== null);
+  if (forces || movesMarks) composeLibraryGroups(sim, graph);
   if (entered.length > 0 || removed.length > 0) reheatLibrarySimulation(sim);
   return { entered, removed };
 }

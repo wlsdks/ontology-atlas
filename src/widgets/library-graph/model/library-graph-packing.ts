@@ -216,16 +216,23 @@ function spiralPosition(
   const angle = position * golden;
   let reach = Math.max(radius, halfReach);
   const step = radius * 0.25;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
   for (let attempt = 0; attempt < 400;) {
-    const cx = Math.cos(angle) * reach;
-    const cy = Math.sin(angle) * reach;
+    const cx = cos * reach;
+    const cy = sin * reach;
     const collision = index.collisionAt(cx, cy, radius);
     if (!collision) return { cx, cy };
-    const margin = collision.r + radius - 1e-6 - Math.hypot(cx - collision.cx, cy - collision.cy);
-    const skip = Math.min(400 - attempt, Math.max(1, Math.floor(margin / step)));
-    // Every skipped step remains inside this circle; repeated additions preserve the seed geometry.
-    for (let i = 0; i < skip; i += 1) reach += step;
-    attempt += skip;
+    // Steps still inside this circle collide, so only the first one past it asks the index again.
+    const reachOf = collision.r + radius - 1e-6;
+    // Steps a whole step short of where the ray leaves the circle are inside by at least 3·step²/(2·reachOf): no test.
+    const along = cos * collision.cx + sin * collision.cy;
+    const halfChordSquared = reachOf * reachOf - (collision.cx * collision.cx + collision.cy * collision.cy - along * along);
+    const insideUntil = halfChordSquared > 4 * step * step ? along + Math.sqrt(halfChordSquared) - step : Number.NEGATIVE_INFINITY;
+    do {
+      reach += step;
+      attempt += 1;
+    } while (attempt < 400 && (reach < insideUntil || Math.hypot(cos * reach - collision.cx, sin * reach - collision.cy) < reachOf));
   }
   const fallbackX = Math.cos(angle) * reach;
   const fallbackY = Math.sin(angle) * reach;

@@ -703,3 +703,34 @@ it('refreshes reusable positions without retaining removed nodes or mutating an 
   expect(buffer.get('a')).toEqual({ x: 42, y: -12 });
   expect(snapshot.get('a')).toEqual(original);
 });
+
+describe("a sync for a laid picture", () => {
+  /** `count` pages each citing their own file, plus `loose` files nothing cites. */
+  function pairs(count: number, loose: number): LibraryGraph {
+    const nodes: LibraryGraphNode[] = [];
+    const edges: LibraryGraphEdge[] = [];
+    for (let index = 0; index < count; index += 1) {
+      nodes.push({ id: `page:${index}`, kind: "page", label: `Page ${index}`, ref: `wiki/${index}`, href: null });
+      nodes.push({ id: `source:${index}`, kind: "source", label: `${index}.md`, ref: `${index}.md`, href: null });
+      edges.push({ id: `c${index}`, source: `page:${index}`, target: `source:${index}`, relation: "cites", certainty: "current" });
+    }
+    for (let index = 0; index < loose; index += 1) nodes.push({ id: `source:loose-${index}`, kind: "source", label: `l${index}.md`, ref: `l${index}.md`, href: null });
+    return { nodes, edges, counts: { sources: count + loose, pages: count, concepts: 0, cites: count, mentions: 0 } };
+  }
+
+  it.each([
+    ["past the prepass with no loose mark", 1_500, 0],
+    ["past the prepass with loose marks", 1_500, 6],
+    ["within the prepass", 200, 3],
+  ])("leaves every mark where a composing sync does, %s", (_name, count, loose) => {
+    const box = { width: 1200, height: 800 };
+    const whole = pairs(count, loose);
+    const kept = (id: string) => !id.endsWith("7");
+    const part = { ...whole, nodes: whole.nodes.filter((node) => kept(node.id)), edges: whole.edges.filter((edge) => kept(edge.source) && kept(edge.target)) };
+    const composed = createLibrarySimulation({ graph: whole, box });
+    const laid = createLibrarySimulation({ graph: whole, box });
+    syncLibrarySimulation(composed, part);
+    syncLibrarySimulation(laid, part, { forces: false });
+    expect([...libraryPositions(laid)]).toEqual([...libraryPositions(composed)]);
+  });
+});
