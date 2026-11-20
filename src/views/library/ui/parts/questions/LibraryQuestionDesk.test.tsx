@@ -194,7 +194,15 @@ describe('Library question desk transfer boundary', () => {
     expectCitation(labelled, 'refund.md · line 2', 'sources/refund.md#l2');
     expect(screen.getAllByTestId('question-desk-lead')).toHaveLength(3);
     expect(screen.getAllByTestId('question-desk-report-citation-unavailable')).toHaveLength(2);
-    expect(screen.queryByRole('button', { name: 'sources/refund.md#bogus' })).not.toBeInTheDocument();
+    // Only the two exact citations press; `#bogus` and the missing file stay inert text. jsdom hides
+    // no print-only span, so the name is read from the screen-only place the browser names it by.
+    expect(within(draft).getAllByRole('button', { description: /^sources\// }).map((press) => [
+      press.querySelector('[data-citation-place]')!.textContent, press.title,
+    ])).toEqual([
+      ['refund.md · line 2', 'sources/refund.md#l2'],
+      ['refund.md · line 2', 'sources/refund.md#l2'],
+    ]);
+    expect(within(draft).getByText(/sources\/refund\.md#bogus/u).closest('button')).toBeNull();
     expect(screen.queryByRole('link', { name: 'external' })).not.toBeInTheDocument();
     expect(draft.querySelector('img')).toBeNull();
     expect(draft.querySelector('img[src="https://example.com/raw.png"]')).toBeNull();

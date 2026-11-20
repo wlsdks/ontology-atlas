@@ -38,7 +38,7 @@ export type {
 export { FindDocumentsDialog } from "./ui/FindDocumentsDialog";
 export { buildAskBrief } from "./lib/questions/ask-brief";
 export { buildQuestionDeskReportBrief, planQuestionDeskReportFile, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections } from './lib/questions/question-desk-brief';
-export { countDeskReadablePages, countDeskWikiPages, deskLeadTermRuns, deskMeaningLeads, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskListingVersion, questionDeskReportFileCurrent, questionTerms, recentDeskPages } from './lib/questions/question-desk';
+export { countDeskReadablePages, countDeskWikiPages, deskLeadTermRuns, deskMeaningLeads, deskSentenceWindow, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskListingVersion, questionDeskReportFileCurrent, questionTerms, recentDeskPages } from './lib/questions/question-desk';
 export type { DeskCitation, DeskClaim, DeskLead, DeskSourceHit } from './lib/questions/question-desk';
 export type { AskQuestionId } from "./lib/questions/ask-brief";
 export { buildAnswerPage } from "./lib/questions/answer-page";

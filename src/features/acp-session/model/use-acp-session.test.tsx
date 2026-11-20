@@ -1684,6 +1684,21 @@ describe('auto-approve — the person answers once for the folder', () => {
     expect(result.current.events.some((event) => event.kind === 'notice' && event.text === 'auto-approved')).toBe(false);
     await act(async () => { await result.current.stop(); });
   });
+
+  it('brings every write of a read-only turn to a person, past auto-approve and the screen\'s own allow', async () => {
+    bridge.permissionVerdict = 'allow-inside-vault';
+    const { result } = await startSession({ autoDecide: () => 'refund.md', turnReadOnly: () => true });
+    act(() => result.current.setAutoApprove(true));
+    await startTurn(result);
+    await waitFor(() => expect(result.current.activeTurnReadOnly).toBe(true));
+
+    await act(async () => { bridge.listener?.(fileEdit(702, '/vault/capabilities/refund.md')); });
+    await waitFor(() => expect(result.current.pending?.request.filePath).toBe('/vault/capabilities/refund.md'));
+    expect(answerOf(702)).toBeUndefined();
+    expect(result.current.events.some((event) => event.kind === 'notice' && /^auto-/.test(event.text))).toBe(false);
+    await act(async () => { result.current.pending?.resolve('reject'); });
+    await act(async () => { await result.current.stop(); });
+  });
 });
 
 describe('the model a person chose is kept for the folder and tool', () => {

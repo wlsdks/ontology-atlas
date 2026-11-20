@@ -18,6 +18,45 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { latinEyebrowClass } from '@/shared/lib/locale-text/latin-eyebrow';
 
 const VALID_SOURCE_ANCHOR = new RegExp(`^(?:${WIKI_CITATION_ANCHOR_PATTERN})$`);
+/** A line as the rows print it: a positive number of at most seven digits with no leading zero. */
+const SHORT_LINE_ANCHOR = /^l[1-9]\d{0,6}$/u;
+
+/**
+ * The shared rewriter keeps only what lies between the first and second `#`, so `#l5#l9` would
+ * open line 5 while the export, which splits at the last `#`, names line 9. Escaping every later
+ * `#` keeps the whole tail in the anchor, where the pressable check below refuses it.
+ */
+function keepWholeAnchor(markdown: string): string {
+  return markdown.replace(/\[\[([^\]|]+?)((?:\|[^\]]+?)?)\]\]/gu, (whole, target: string, label: string) => {
+    const first = target.indexOf('#');
+    if (first < 0 || target.indexOf('#', first + 1) < 0) return whole;
+    return `[[${target.slice(0, first + 1)}${target.slice(first + 1).replaceAll('#', '%23')}${label}]]`;
+  });
+}
+
+/** Listed originals grouped by file name, so a citation can tell same-named files apart. */
+function pathsByName(paths: readonly string[]): ReadonlyMap<string, readonly string[]> {
+  const byName = new Map<string, string[]>();
+  for (const path of paths) {
+    const normal = path.normalize('NFC');
+    const name = normal.slice(normal.lastIndexOf('/') + 1);
+    byName.set(name, [...(byName.get(name) ?? []), normal]);
+  }
+  return byName;
+}
+
+/** The file name, or the shortest trailing path no other listed original ends with. */
+function distinguishingPath(path: string, byName: ReadonlyMap<string, readonly string[]>): string {
+  const segments = path.split('/');
+  const normal = path.normalize('NFC');
+  const peers = (byName.get(normal.slice(normal.lastIndexOf('/') + 1)) ?? []).filter((peer) => peer !== normal);
+  for (let count = 1; count < segments.length; count += 1) {
+    const tail = segments.slice(-count).join('/');
+    const tailNormal = tail.normalize('NFC');
+    if (!peers.some((peer) => peer === tailNormal || peer.endsWith(`/${tailNormal}`))) return tail;
+  }
+  return path;
+}
 
 export interface QuestionDeskReportDraft {
   question: string;
@@ -50,7 +89,7 @@ function CitationPress({ address, place, labelled, path, anchor, answer, onOpenS
   onOpenSource: (path: string, anchor: string) => void;
 }) {
   const addressId = useId();
-  return <button type="button" data-source-path={path} data-source-anchor={anchor}
+  return <button type="button" data-source-path={path} data-source-anchor={anchor} title={address}
     aria-describedby={addressId} onClick={() => onOpenSource(path, anchor)}
     className={controlClass({ shape: 'link', size: 'lg', tone: 'accent', hoverInk: 'strong', className: answer ? 'inline break-all underline text-body-lg leading-body' : 'inline break-all underline' })}>
     {labelled ? <>{labelled} · </> : null}
@@ -68,6 +107,7 @@ function SafeReportMarkdown({ text, sources, onOpenSource, answer = false }: {
   const t = useTranslations('library.questionDesk');
   const tLibrary = useTranslations('library');
   const known = useMemo(() => normalizeOriginalPaths(new Set(sources.map((source) => source.path))), [sources]);
+  const byName = useMemo(() => pathsByName(sources.map((source) => source.path)), [sources]);
   const isCitationLink = (child: ReactNode) => isValidElement<{ href?: string }>(child)
     && Boolean(child.props.href && parseWikilinkHref(child.props.href));
   return <div data-report-markdown="true" className={answer
@@ -105,20 +145,26 @@ function SafeReportMarkdown({ text, sources, onOpenSource, answer = false }: {
       a: ({ href, children }) => {
         const wikilink = href ? parseWikilinkHref(href) : null;
         const citation = wikilink ? resolveSourceCitation(wikilink.rawSlug, wikilink.rawAnchor, known, true) : null;
-        if (citation?.status === 'known' && citation.path && citation.anchor && VALID_SOURCE_ANCHOR.test(citation.anchor)) {
+        // A second `#` survives `keepWholeAnchor` inside the anchor and leaves the citation inert.
+        if (citation?.status === 'known' && citation.path && citation.anchor && !citation.anchor.includes('#')
+          && VALID_SOURCE_ANCHOR.test(citation.anchor)) {
           const address = `${citation.path}#${citation.anchor}`;
-          /* On screen the file and its line, as the rows write them; print keeps the address. */
-          const place = `${citation.path.split('/').pop() || citation.path} · ${passageLabelText(passageLabelFor(citation.anchor, []), citation.anchor, tLibrary)}`;
+          /* On screen the file and its line, as the rows write them; any other anchor shows the
+             address as written. Print keeps the address. */
+          const place = SHORT_LINE_ANCHOR.test(citation.anchor)
+            ? `${distinguishingPath(citation.path, byName)} · ${passageLabelText(passageLabelFor(citation.anchor, []), citation.anchor, tLibrary)}`
+            : address;
           return <CitationPress address={address} place={place} labelled={wikilink?.labelled ? children : null}
             path={citation.path} anchor={citation.anchor} answer={answer} onOpenSource={onOpenSource} />;
         }
         return <span title={citation ? t('report.citationUnavailable') : t('report.externalUnavailable')}
           className="break-all border-b border-dashed border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)]"
           data-testid={citation ? 'question-desk-report-citation-unavailable' : undefined}>
-          {children} {citation ? `${citation.rawPath}${citation.anchor ? `#${citation.anchor}` : ''} ${t('report.unavailableShort')}` : null}
+          {wikilink?.labelled === false && citation ? null : <>{children} </>}
+          {citation ? `${citation.rawPath}${citation.anchor ? `#${citation.anchor}` : ''} ${t('report.unavailableShort')}` : null}
         </span>;
       },
-    }}>{rewriteWikilinks(text)}</ReactMarkdown>
+    }}>{rewriteWikilinks(keepWholeAnchor(text))}</ReactMarkdown>
   </div>;
 }
 

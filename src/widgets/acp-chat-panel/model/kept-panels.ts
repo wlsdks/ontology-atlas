@@ -6,6 +6,8 @@ export interface KeptPanel {
   node: HTMLDivElement;
   seated: boolean;
   busy: boolean;
+  /** The busy turn started read-only (`useAcpSession`'s `turnReadOnly`). */
+  readOnly: boolean;
   held: boolean;
 }
 
@@ -27,7 +29,7 @@ const SCREEN_BOUND = [
 let panels: readonly KeptPanel[] = NONE;
 let parking: HTMLElement | null = null;
 const listeners = new Set<() => void>();
-const busyReporters = new Map<string, (busy: boolean) => void>();
+const busyReporters = new Map<string, (busy: boolean, readOnly?: boolean) => void>();
 
 function publish(next: readonly KeptPanel[]) {
   panels = next;
@@ -40,17 +42,28 @@ function patch(key: string, change: Partial<KeptPanel>) {
   publish(panels.map((panel) => (panel.key === key ? { ...panel, ...change } : panel)));
 }
 
+/** Whether a turn may keep running once its screen is gone (`parksTurns`). */
+function mayRunAway(panel: KeptPanel): boolean {
+  return panel.busy && (panel.props.parksTurns !== 'read-only' || panel.readOnly);
+}
+
 function prune() {
-  const kept = panels.filter((panel) => panel.seated || panel.busy || panel.held);
+  const kept = panels.filter((panel) => panel.seated || panel.held || mayRunAway(panel));
   if (kept.length === panels.length) return;
   for (const panel of panels) if (!kept.includes(panel)) panel.node.remove();
   publish(kept);
 }
 
+/** A turn that only reads cannot clash with a writer on its folder, so it may finish beside one. */
+function readsOnly(panel: KeptPanel): boolean {
+  return panel.busy && panel.readOnly;
+}
+
 function withoutRivals(key: string, props: AcpChatPanelProps): readonly KeptPanel[] {
   if (props.sessionEnabled === false) return panels;
   return panels.filter((panel) => {
-    const rival = panel.key !== key && !panel.seated && (!panel.busy || panel.props.vaultRoot === props.vaultRoot);
+    const rival = panel.key !== key && !panel.seated && !readsOnly(panel)
+      && (!panel.busy || panel.props.vaultRoot === props.vaultRoot);
     if (rival) panel.node.remove();
     return !rival;
   });
@@ -89,7 +102,7 @@ export const keptPanels = {
     const node = document.createElement('div');
     node.className = 'contents';
     node.dataset.keptAgentPanel = key;
-    publish([...rest, { key, props, node, seated: true, busy: false, held: false }]);
+    publish([...rest, { key, props, node, seated: true, busy: false, readOnly: false, held: false }]);
     return node;
   },
   update(key: string, props: AcpChatPanelProps) {
@@ -100,14 +113,14 @@ export const keptPanels = {
     const panel = panels.find((candidate) => candidate.key === key);
     if (!panel) return;
     parking?.appendChild(panel.node);
-    patch(key, { seated: false, held: panel.busy });
+    patch(key, { seated: false, held: mayRunAway(panel) });
     window.setTimeout(prune, 0);
   },
   busyReporter(key: string) {
     let reporter = busyReporters.get(key);
     if (!reporter) {
-      reporter = (busy: boolean) => {
-        patch(key, { busy });
+      reporter = (busy: boolean, readOnly = false) => {
+        patch(key, { busy, readOnly: busy && readOnly });
       };
       busyReporters.set(key, reporter);
     }

@@ -19,7 +19,8 @@ type AcpChatPanelProps = ComponentProps<typeof AcpChatPanel>;
 /**
  * Closing puts the conversation away, it does not end it: the frame closes (width to zero, `inert`,
  * `aria-hidden`) while the surface stays mounted, so `useAcpSession` cleanup does not `stop()`.
- * Leaving the Library unmounts the subtree and ends the adapter.
+ * Leaving the Library parks only a running check (`AcpChatPanelKeeper`), which finishes away; any
+ * other turn ends with the Library.
  */
 export interface LibraryAgentOpeningRequest {
   /**
@@ -61,6 +62,9 @@ export function LibraryAgentDock({
   onTurnActivityChange,
   onTurnToolActivityChange,
   onTerminalToolObservation,
+  onTurnStopChange,
+  onTurnWorkChange,
+  turnReadOnly,
   onFileAnswer = null,
   filingAnswer = false,
   fileAnswerNote = null,
@@ -102,6 +106,9 @@ export function LibraryAgentDock({
   onTurnToolActivityChange?: AcpChatPanelProps["onTurnToolActivityChange"];
   /** Terminal ACP tool rows forwarded as they arrive, before a later turn cancellation can hide them. */
   onTerminalToolObservation?: AcpChatPanelProps["onTerminalToolObservation"];
+  onTurnStopChange?: AcpChatPanelProps["onTurnStopChange"];
+  onTurnWorkChange?: AcpChatPanelProps["onTurnWorkChange"];
+  turnReadOnly?: AcpChatPanelProps["turnReadOnly"];
   /**
    * The page owns the width: `useChatWidth` keeps the in-flight drag locally, so a second copy lags.
    * The page publishes it as `--app-right-dock-width`.
@@ -343,6 +350,8 @@ export function LibraryAgentDock({
           <AcpDockHeader title={tChat("dockTitle")} onClose={onClose} />
           <AcpChatPanel
             key={runtime.id}
+            keepKey={`library:${vaultRoot}:${runtime.id}`}
+            parksTurns="read-only"
             runtimeId={runtime.id}
             runtimeLabel={runtime.label}
             runtimes={runtimes}
@@ -360,6 +369,9 @@ export function LibraryAgentDock({
             onTurnActivityChange={onTurnActivityChange}
             onTurnToolActivityChange={onTurnToolActivityChange}
             onTerminalToolObservation={onTerminalToolObservation}
+            onTurnStopChange={onTurnStopChange}
+            onTurnWorkChange={onTurnWorkChange}
+            turnReadOnly={turnReadOnly}
             knownSlugs={knownSlugs}
             noticeActions={noticeActions}
             systemPromptAppendix={LIBRARY_HANDOFF_APPENDIX}

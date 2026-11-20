@@ -11,6 +11,16 @@ function retainCurrent(values: ReadonlyMap<string, string>, stamps: readonly str
   return retained;
 }
 
+/** `items` as first seen while every stamp stays equal, so identity follows content; O(items) per new array. */
+export function useStampStable<T extends { stamp: string }>(items: readonly T[]): readonly T[] {
+  const [held, setHeld] = useState(items);
+  if (held !== items && (held.length !== items.length || held.some((item, at) => item.stamp !== items[at].stamp))) {
+    setHeld(items);
+    return items;
+  }
+  return held;
+}
+
 /** O(current stamps): completed reads survive only while their exact input remains current. */
 export function useStampedCache(stamps: readonly string[]) {
   const [cache, setCache] = useState(() => ({ stamps, values: new Map<string, string>() }));

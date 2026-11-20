@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { BookText, FileText } from 'lucide-react';
 
-import { deskLeadTermRuns, passageLabelText, type DeskCitation, type DeskLead } from '@/features/library';
+import { deskLeadTermRuns, deskSentenceWindow, passageLabelText, type DeskCitation, type DeskLead } from '@/features/library';
 import { truncateMiddlePath } from '@/shared/lib/concept-display/truncate-middle-path';
 import { passageLabelFor } from '@/shared/lib/library/source-passage';
 import { Chip } from '@/shared/ui';
@@ -56,7 +56,8 @@ export function DeskLeadRow({ lead, terms, reason, citationState, jev, jevResult
 }) {
   const t = useTranslations('library');
   const whereId = useId();
-  const sentence = lead.kind === 'claim' ? claimSentence(lead.claim.text) : passageSentence(lead.hit.text);
+  // The window is cut before the highlight runs, so a megabyte line costs the row 320 characters.
+  const sentence = deskSentenceWindow(lead.kind === 'claim' ? claimSentence(lead.claim.text) : passageSentence(lead.hit.text), terms);
   const runs = deskLeadTermRuns(lead, sentence, terms);
   const place = (citation: DeskCitation) => passageLabelText(passageLabelFor(citation.anchor, []), citation.anchor, t);
   const states = lead.kind === 'claim' ? lead.claim.citations.map(citationState) : [];
