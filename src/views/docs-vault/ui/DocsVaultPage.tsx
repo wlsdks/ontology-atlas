@@ -8,6 +8,7 @@ import {
   useLocalVault,
   VaultSourceHydrationBoundary,
 } from '@/entities/vault-session';
+import { useAdoptDocumentText, useDocumentDetail } from '@/features/document-detail';
 import { OntologyStarterCta } from '@/features/docs-vault-local';
 import { recentVaultRowKey } from '@/features/vault-switch';
 import { buildOntologyDeeplinkForDoc } from '@/entities/docs-vault';
@@ -16,6 +17,7 @@ import { firstHeading, parseFrontmatter } from '@/shared/lib/vault-document/pars
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { useClaimShellKey } from '@/shared/lib/keyboard/shell-key-claims';
+import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
 import { useTypingShortcuts } from '@/shared/lib/keyboard/use-typing-shortcut';
 import {
@@ -166,7 +168,6 @@ function DocsVaultContent({
     scopedDocs,
     scopedDocSlugs,
     selectedDoc,
-    staticHeadings,
     ontologyDerivation,
     docsBySlug,
     vaultSlugs,
@@ -174,6 +175,21 @@ function DocsVaultContent({
   } = vault;
   const access = useDocAccess({ source, isLocalSourceLoaded, selectedSlug });
   const { getDocContent, resolveImage, canEditCurrent, editResolver, editing, setEditing } = access;
+  const selectedDetail = useDocumentDetail(selectedDoc);
+  const latestAdopt = useLatestRef(useAdoptDocumentText());
+  const latestDocsBySlug = useLatestRef(docsBySlug);
+  // The open document's outline and word count derive from the body read, so they arrive together.
+  const readOpenDocText = useMemo(
+    () =>
+      getDocContent &&
+      ((slug: string) => {
+        const text = getDocContent(slug);
+        const doc = latestDocsBySlug.current.get(slug);
+        if (doc) latestAdopt.current(doc, text);
+        return text;
+      }),
+    [getDocContent, latestAdopt, latestDocsBySlug],
+  );
   const { treeSort, treeGroup, handleViewChange, handleTreeSortChange, handleTreeGroupChange } =
     useDocsVaultUrlSync({
       address,
@@ -303,8 +319,7 @@ function DocsVaultContent({
     },
   ]);
   const { outlineHeadings, showOutlineRail, handleHeadingNavigate } = useDocOutline({
-    selectedDoc,
-    staticHeadings,
+    docHeadings: selectedDetail?.headings,
     setActiveHeadingSlug,
   });
   const { commands } = useDocsVaultCommands({
@@ -359,7 +374,7 @@ function DocsVaultContent({
     [bundledBodyBeforePaint],
   );
   const titledBeforeBodyPaints =
-    source === 'local' && selectedDoc ? selectedDoc.headings.some((heading) => heading.depth === 1) : bundledBodyTitled;
+    source === 'local' ? selectedDetail?.headings.some((heading) => heading.depth === 1) : bundledBodyTitled;
   const bodyTitled = paintedBody?.doc === paintedDoc ? paintedBody.titled : titledBeforeBodyPaints;
   const columnTitle = selectedDoc && !showDesktopWelcome && bodyTitled === false ? selectedDocDisplayTitle : null;
   const headerTreeTools =
@@ -596,7 +611,7 @@ function DocsVaultContent({
               refSlugResolver={refSlugResolver}
               docsBySlug={docsBySlug}
               selectedReviewRow={selectedReviewRow}
-              getDocContent={getDocContent}
+              getDocContent={readOpenDocText}
               reviewBusy={reviewBusy}
               handleReviewWrite={handleReviewWrite}
               source={source}

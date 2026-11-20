@@ -19,6 +19,8 @@ export {
   loadStaticVaultHeadings,
   type StaticVaultHeadings,
 } from './lib/bundled-vault/static-headings';
+export type { DocumentRef, VaultDocDetail } from './store/document-detail';
+export { createDocumentStore, type DocumentStore } from './store/document-store';
 export {
   pinnedDocsStorageKey,
   recentDocsStorageKey,

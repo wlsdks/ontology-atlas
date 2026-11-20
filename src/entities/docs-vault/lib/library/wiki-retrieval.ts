@@ -48,7 +48,7 @@ export function buildWikiRetrievalIndex(docs: readonly VaultDoc[], rawBySlug: Re
       const sourceValue = frontmatter.sources;
       const sources = new Set((Array.isArray(sourceValue) ? sourceValue : [sourceValue])
         .filter((value): value is string => typeof value === 'string').map((value) => value.trim()));
-      const body = parsed?.body ?? [doc.excerpt, doc.description ?? '', ...doc.tags].join(' ');
+      const body = parsed?.body ?? [doc.title, doc.description ?? '', doc.definitionPreview ?? '', ...doc.tags].join(' ');
       const weights = terms(body);
       for (const [term, weight] of terms(doc.title)) weights.set(term, (weights.get(term) ?? 0) + weight * 2);
       for (const term of weights.keys()) frequencies.set(term, (frequencies.get(term) ?? 0) + 1);

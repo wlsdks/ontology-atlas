@@ -365,7 +365,7 @@ export function LibrarySection({
     enabled: true,
   });
   /*
-   * A page matches on its title, excerpt and tags everywhere, and a page or a Markdown source also
+   * A page matches on its title, summary and tags everywhere, and a page or a Markdown source also
    * on its text in the installed app, through the same index the documents palette asks.
    */
   const { hits: indexHits } = useVaultIndexHits({ rootPath: vaultRootPath, query: needle, limit: LIBRARY_INDEX_HITS });
@@ -457,7 +457,7 @@ export function LibrarySection({
         ? model.wikiPages.filter(
             (page) =>
               page.title.toLowerCase().includes(needle) ||
-              (page.excerpt ?? "").toLowerCase().includes(needle) ||
+              (page.summary ?? "").toLowerCase().includes(needle) ||
               (page.tags ?? []).some((tag) => tag.toLowerCase().includes(needle)) ||
               (indexedPaths?.has(`${page.slug}.md`) ?? false),
           )

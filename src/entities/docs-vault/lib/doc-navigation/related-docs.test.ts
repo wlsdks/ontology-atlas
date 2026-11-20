@@ -54,7 +54,7 @@ describe('findRelatedDocs', () => {
     const docs = [
       doc({
         slug: 'a',
-        excerpt: '자세한 건 /project/reactor 참고',
+        description: '자세한 건 /project/reactor 참고',
       }),
     ];
     const result = findRelatedDocs(docs, { projectSlug: 'reactor' });
@@ -62,7 +62,7 @@ describe('findRelatedDocs', () => {
     expect(result[0].reasons).toContain('project-url');
   });
 
-  it('weights a project name in the title or excerpt', () => {
+  it('weights a project name in the title or summary', () => {
     const docs = [
       doc({
         slug: 'a',
@@ -70,17 +70,22 @@ describe('findRelatedDocs', () => {
       }),
       doc({
         slug: 'b',
-        excerpt: 'Demo Reactor 는 이러이러...',
+        definitionPreview: 'Demo Reactor 는 이러이러...',
       }),
     ];
     const result = findRelatedDocs(docs, {
       projectSlug: 'reactor',
       projectName: 'Demo Reactor',
     });
-    // A title match outranks an excerpt match.
+    // A title match outranks a summary match.
     expect(result[0].doc.slug).toBe('a');
     expect(result[0].reasons).toContain('title');
-    expect(result[1].reasons).toContain('excerpt');
+    expect(result[1].reasons).toContain('summary');
+  });
+
+  it('does not read the first paragraph, only the summary', () => {
+    const docs = [doc({ slug: 'a', excerpt: 'Demo Reactor and /project/reactor' })];
+    expect(findRelatedDocs(docs, { projectSlug: 'reactor', projectName: 'Demo Reactor' })).toEqual([]);
   });
 
   it('matches aliases when hub and container slugs differ', () => {

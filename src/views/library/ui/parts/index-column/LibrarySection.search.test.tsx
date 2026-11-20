@@ -136,8 +136,8 @@ beforeEach(() => {
 
 describe("the wiki list searches inside pages through the app's index", () => {
   const pages = [
-    { slug: "wiki/alpha", title: "Alpha", createdBy: null, compiledAt: null, sourcePaths: [], excerpt: "", tags: ["ledger"] },
-    { slug: "wiki/beta", title: "Beta", createdBy: null, compiledAt: null, sourcePaths: [], excerpt: "", tags: [] },
+    { slug: "wiki/alpha", title: "Alpha", createdBy: null, compiledAt: null, sourcePaths: [], summary: "", tags: ["ledger"] },
+    { slug: "wiki/beta", title: "Beta", createdBy: null, compiledAt: null, sourcePaths: [], summary: "A page about quillwort habitats", tags: [] },
   ];
 
   it("lists a page whose body matched in the index, however its title reads", async () => {
@@ -159,11 +159,18 @@ describe("the wiki list searches inside pages through the app's index", () => {
     expect(read).not.toHaveBeenCalled();
   });
 
-  it("matches titles, excerpts and tags when there is no index, as on the web", async () => {
+  it("matches titles, summaries and tags when there is no index, as on the web", async () => {
     renderWith({ handles: new Map(), wikiPages: pages, segment: "wiki" });
     fireEvent.change(screen.getByTestId("library-search"), { target: { value: "ledger" } });
     await waitFor(() => expect(screen.getByTestId("library-wiki-wiki/alpha")).toBeInTheDocument());
     expect(screen.queryByTestId("library-wiki-wiki/beta")).toBeNull();
+  });
+
+  it("finds a page by its summary when there is no index", async () => {
+    renderWith({ handles: new Map(), wikiPages: pages, segment: "wiki" });
+    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "quillwort" } });
+    await waitFor(() => expect(screen.getByTestId("library-wiki-wiki/beta")).toBeInTheDocument());
+    expect(screen.queryByTestId("library-wiki-wiki/alpha")).toBeNull();
   });
 });
 

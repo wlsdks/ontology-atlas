@@ -48,4 +48,11 @@ describe('wiki retrieval from the Library read cache', () => {
     ]));
     expect(index.search('sources/new.md', 'Zephyr').candidates).toEqual([]);
   });
+
+  it('falls back to the description for a page whose text is not cached', () => {
+    const page = { ...doc('wiki/zephyr-notes', 'Notes'), description: 'Zephyr release schedule' };
+    const result = buildWikiRetrievalIndex([page]).search('sources/new.md', 'Zephyr release');
+    expect(result.candidates.map((c) => c.slug)).toEqual(['wiki/zephyr-notes']);
+    expect(result).toMatchObject({ searchedPages: 1, fullTextPages: 0 });
+  });
 });

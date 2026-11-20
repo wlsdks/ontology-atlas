@@ -1,4 +1,5 @@
 import { readDisplayNames, type Project } from '@/entities/project';
+import { buildExcerpt } from '@/shared/lib/vault-document/parse-frontmatter';
 import type { VaultDoc, VaultManifest } from '../../model/types';
 import { computeProjectSlug, isProjectVaultDoc } from './project-slug';
 
@@ -38,7 +39,7 @@ function mapVaultDocToProject(doc: VaultDoc): Project | null {
   const description =
     typeof fm.description === 'string' && fm.description.trim()
       ? fm.description.trim()
-      : doc.excerpt;
+      : buildExcerpt(doc.definitionPreview ?? '');
   // Only an explicit position; layout is otherwise the placement hook's.
   const position = parseSplitPosition(fm) ?? parseInlinePositionOpt(fm.position);
   // Only explicit startedAt / launchedAt.

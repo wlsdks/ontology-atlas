@@ -24,7 +24,7 @@ describe('reviewable construction proposals',()=>{
   it('preserves ordinary relation-then-patch intent order on an existing document',async()=>{
     const prepared=input([{name:'add_relation',args:{from:'elements/existing',to:'elements/target',type:'depends_on',why:'Observed dependency.'}},{name:'patch_concept',args:{slug:'elements/existing',frontmatter:{dependencies:[]}}}]);
     const before='---\nkind: element\ntitle: Existing\nslug: elements/existing\ndependencies: []\n---\n\nExisting role.';
-    prepared.port={...prepared.port,docs:[{slug:'elements/existing',path:'elements/existing.md',title:'Existing',kind:'element',frontmatter:{},excerpt:''},{slug:'elements/target',path:'elements/target.md',title:'Target',kind:'element',frontmatter:{},excerpt:''}],readDocText:async()=>before};
+    prepared.port={...prepared.port,docs:[{slug:'elements/existing',path:'elements/existing.md',title:'Existing',kind:'element',frontmatter:{}},{slug:'elements/target',path:'elements/target.md',title:'Target',kind:'element',frontmatter:{}}],readDocText:async()=>before};
     const proposal=await buildProposal(prepared);
     expect(parseFrontmatter(proposal!.changes.at(-1)!.files[0].after).frontmatter.dependencies).toEqual([]);
   });

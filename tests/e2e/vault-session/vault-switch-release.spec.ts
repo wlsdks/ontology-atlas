@@ -34,6 +34,25 @@ async function folderOpen(page: Page, previous: string | null): Promise<string> 
   return (await tile.getAttribute("aria-label")) ?? "";
 }
 
+async function routerPush(page: Page, url: string): Promise<void> {
+  await page.evaluate((to) => (window as unknown as { next: { router: { push: (u: string) => void } } }).next.router.push(to), url);
+}
+
+/** Opens one document, so the document store reads through this folder's handles, then returns to the map. */
+async function readOneDocument(page: Page): Promise<void> {
+  await routerPush(page, "/en/docs/?slug=capabilities/synthetic-001");
+  await expect(page.getByTestId("doc-word-count")).toBeVisible({ timeout: 60_000 });
+  await routerPush(page, "/en/topology/?guides=off&e2e=1");
+  await page.waitForFunction(
+    (count) =>
+      Number(document.querySelector('[data-testid="ontology-map"]')?.getAttribute("data-source-node-count")) >= count,
+    Math.floor(Object.keys(DOCS).length * 0.9),
+    { timeout: 60_000 },
+  );
+  await waitForDomQuiet(page);
+  await waitForMapStill(page);
+}
+
 // A text-width memo (keys join font and text with NUL) passes LARGE only as names draw, and its model owns it.
 const LARGE_MAP = `item.size >= ${LARGE} && !String(item.keys().next().value).includes("\\u0000")`;
 const LARGE_ARRAY = `item.length >= ${LARGE}`;
@@ -73,6 +92,7 @@ test("two folder switches leave no earlier folder alive", async ({ page }) => {
   await page.getByTestId("first-run-starter-open").click();
   await page.getByTestId("vault-guide-pick-existing").click();
   let label = await folderOpen(page, null);
+  await readOneDocument(page);
   const partialArrivals = () => page.evaluate(() => (window as unknown as { __vaultPartialArrivalCount: number }).__vaultPartialArrivalCount);
   expect(await partialArrivals(), 'the initial folder must exercise partial arrival').toBeGreaterThan(0);
   const oneFolder = await retained(cdp);
@@ -88,6 +108,7 @@ test("two folder switches leave no earlier folder alive", async ({ page }) => {
     await page.getByTestId("vault-switch-rail-tile").click();
     await page.getByTestId("vault-switch-pick-other").click();
     label = await folderOpen(page, label);
+    await readOneDocument(page);
     expect(await partialArrivals(), 'each switched folder must exercise partial arrival').toBeGreaterThan(beforeArrival);
     if (switchCount === 1) arraysAfterOneSwitch = await liveInstances(cdp, "Array", LARGE_ARRAY);
   }

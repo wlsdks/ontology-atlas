@@ -11,8 +11,6 @@ export interface VaultReadDoc {
   kind: string;
   domain?: string;
   frontmatter: Record<string, unknown>;
-  /** An excerpt of the first body paragraph (within 200 characters). */
-  excerpt: string;
   /** File mtime (ms). Undefined when absent — meaning no concurrent-edit guard can be applied. */
   mtime?: number;
 }

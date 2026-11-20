@@ -60,7 +60,6 @@ function makePort(overrides: Partial<VaultReadPort> = {}): VaultReadPort {
         kind: 'capability',
         domain: 'billing',
         frontmatter: { kind: 'capability', domain: 'billing' },
-        excerpt: '결제 처리',
         mtime: 1_700_000_000_000,
       },
       {
@@ -69,7 +68,6 @@ function makePort(overrides: Partial<VaultReadPort> = {}): VaultReadPort {
         title: 'refund',
         kind: 'capability',
         frontmatter: { kind: 'capability' },
-        excerpt: '환불',
         mtime: 1_700_000_001_000,
       },
     ],
@@ -225,9 +223,9 @@ describe('tool-executor reads', () => {
     const execute = createToolExecutor(
       makePort({
         docs: [
-          { slug: 'capabilities/z', path: 'capabilities/z.md', title: 'Z', kind: 'capability', frontmatter: {}, excerpt: '', mtime: 1 },
-          { slug: 'capabilities/a', path: 'capabilities/a.md', title: 'A', kind: 'capability', frontmatter: {}, excerpt: '', mtime: 1 },
-          { slug: 'capabilities/m', path: 'capabilities/m.md', title: 'M', kind: 'capability', frontmatter: {}, excerpt: '', mtime: 1 },
+          { slug: 'capabilities/z', path: 'capabilities/z.md', title: 'Z', kind: 'capability', frontmatter: {}, mtime: 1 },
+          { slug: 'capabilities/a', path: 'capabilities/a.md', title: 'A', kind: 'capability', frontmatter: {}, mtime: 1 },
+          { slug: 'capabilities/m', path: 'capabilities/m.md', title: 'M', kind: 'capability', frontmatter: {}, mtime: 1 },
         ],
       }),
     );
@@ -256,7 +254,6 @@ describe('tool-executor reads', () => {
             title: 'notes',
             kind: 'document',
             frontmatter: { kind: 'document', describes: ['capabilities/payment'] },
-            excerpt: '',
           },
           {
             slug: 'capabilities/payment',
@@ -264,7 +261,6 @@ describe('tool-executor reads', () => {
             title: 'payment',
             kind: 'capability',
             frontmatter: { kind: 'capability' },
-            excerpt: '',
           },
         ],
       }),
@@ -285,13 +281,62 @@ describe('tool-executor reads', () => {
       title: `c${index}`,
       kind: 'capability',
       frontmatter: {},
-      excerpt: 'x'.repeat(300),
       mtime: 1,
     }));
-    const execute = createToolExecutor(makePort({ docs: many }));
+    const execute = createToolExecutor(makePort({ docs: many, readDocText: async () => 'x'.repeat(300) }));
     const result = await execute(call('list_concepts', { summary: true, limit: 400 }));
     expect(result.content).toContain('truncated');
     expect(result.content.length).toBeLessThan(7_000);
+  });
+
+  describe('list_concepts with summaries reads only as many files as it can deliver', () => {
+    const SUMMARY = 'x'.repeat(300);
+    const many = Array.from({ length: 400 }, (_, index) => ({
+      slug: `capabilities/c${index}`,
+      path: `capabilities/c${index}.md`,
+      title: `c${index}`,
+      kind: 'capability',
+      frontmatter: {},
+      mtime: 1,
+    }));
+    type Delivered = { rows: Array<{ slug: string; summary: string }>; truncated?: boolean; omitted?: number; hint?: string };
+
+    it('delivers the rows a read of every file would, with a bounded number of reads', async () => {
+      const read = vi.fn(async () => SUMMARY);
+      const execute = createToolExecutor(makePort({ docs: many, readDocText: read }));
+      const delivered = JSON.parse(
+        (await execute(call('list_concepts', { summary: true, limit: 400 }))).content,
+      ) as Delivered;
+
+      // The rows pack would keep had every file been read: halve from 400 until the JSON fits.
+      const fullRows = [...many].sort((a, b) => a.slug.localeCompare(b.slug)).map((doc) => ({
+        slug: doc.slug,
+        kind: doc.kind,
+        title: doc.title,
+        mtime: 1,
+        summary: `<untrusted_vault_content>\n${SUMMARY}\n</untrusted_vault_content>`,
+      }));
+      const { rows: _rows, ...envelope } = delivered;
+      let keep = 400;
+      while (keep > 0 && JSON.stringify({ ...envelope, rows: fullRows.slice(0, keep) }).length > AGENT_TOOL_RESULT_CHAR_CAP) {
+        keep = Math.floor(keep / 2);
+      }
+      expect(delivered.rows).toEqual(fullRows.slice(0, keep));
+      expect(delivered.omitted).toBe(400 - keep);
+      expect(read.mock.calls.length).toBeLessThanOrEqual(2 * keep + 2);
+    });
+
+    it('keeps going when one file cannot be read', async () => {
+      const read = vi.fn(async (slug: string) => {
+        if (slug === 'capabilities/c1') throw new Error('file is gone');
+        return SUMMARY;
+      });
+      const execute = createToolExecutor(makePort({ docs: many.slice(0, 3), readDocText: read }));
+      const result = await execute(call('list_concepts', { summary: true }));
+      const rows = (JSON.parse(result.content) as Delivered).rows;
+      expect(result.isError).toBe(false);
+      expect(rows.map((row) => row.summary.includes(SUMMARY))).toEqual([true, false, true]);
+    });
   });
 
   it('restores a large list through deterministic offset pages without gaps', async () => {
@@ -301,7 +346,6 @@ describe('tool-executor reads', () => {
       title: `c${index}`,
       kind: 'capability',
       frontmatter: {},
-      excerpt: '',
       mtime: 1,
     }));
     const execute = createToolExecutor(makePort({ docs: many }));
@@ -363,7 +407,6 @@ describe('tool-executor reads', () => {
           (__, childIndex) => `capabilities/d${index}-c${childIndex}`,
         ),
       },
-      excerpt: `Domain ${index} owns a distinct customer behavior. `.repeat(8),
       mtime: index + 1,
     }));
     const edges = parents.flatMap((parent, parentIndex) =>
