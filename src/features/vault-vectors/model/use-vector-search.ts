@@ -12,7 +12,7 @@ import {
 } from '@/shared/lib/vault-folder/tauri-vault-vectors';
 import { vaultVectorSource, type VectorChoice } from '@/shared/lib/vault-folder/vault-vector-source';
 import { deskLine } from './desk-line';
-import { useVectorStatus } from './vector-store';
+import { readStatusAgain, useVectorStatus } from './vector-store';
 
 /** Passages one question asks for; the desk keeps those in the files it searches. */
 export const VECTOR_SEARCH_LIMIT = 24;
@@ -29,6 +29,16 @@ export function searchableSource(status: VectorStatus | null, choice: VectorChoi
   if (status.phase === 'ready' || status.phase === 'preparing') return choice.source;
   if (status.phase === 'stopped' && status.filesDone > 0) return choice.source;
   return null;
+}
+
+/**
+ * A search that failed learned something the line has not heard yet (the model is gone, the runner
+ * is down): the folder's status is read again before the results show, so line and notice agree.
+ */
+export async function askAndFollowFailure(rootPath: string, source: VectorSource, question: string): Promise<VectorFound> {
+  const found = await searchVectors(rootPath, source, question, VECTOR_SEARCH_LIMIT);
+  if (found.state === 'failed') await readStatusAgain(rootPath);
+  return found;
 }
 
 export interface VectorSearch {
@@ -54,7 +64,7 @@ export function useVectorSearch(rootPath: string | null, markdownFiles: number, 
   }, [visible]);
 
   const ask = useCallback((question: string) => (
-    rootPath !== null && source !== null ? searchVectors(rootPath, source, question, VECTOR_SEARCH_LIMIT) : null
+    rootPath !== null && source !== null ? askAndFollowFailure(rootPath, source, question) : null
   ), [rootPath, source]);
 
   const warm = useCallback(() => {

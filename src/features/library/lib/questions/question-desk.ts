@@ -337,6 +337,20 @@ export function fuseDeskLeads(claims: readonly DeskClaim[], hits: readonly DeskS
     });
 }
 
+/**
+ * What a report's brief hands the agent: the rows of the list the person sees, in its order and
+ * whatever their reason, split into the brief's wiki and original sections.
+ */
+export function deskBriefEvidence(leads: readonly DeskLead[]): { claims: DeskClaim[]; sourceHits: DeskSourceHit[] } {
+  const claims: DeskClaim[] = [];
+  const sourceHits: DeskSourceHit[] = [];
+  for (const lead of leads) {
+    if (lead.kind === 'claim') claims.push(lead.claim);
+    else sourceHits.push(lead.hit);
+  }
+  return { claims, sourceHits };
+}
+
 function dayValue(value: unknown): number {
   const time = typeof value === 'string' ? Date.parse(value) : Number.NaN;
   return Number.isFinite(time) ? time : 0;

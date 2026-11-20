@@ -124,16 +124,20 @@ test('the field warms the model on its first focus in a ready folder, and only t
   expect(await callsOf(harness, page, 'vault_vectors_warm')).toHaveLength(1);
 });
 
-test('when the model is gone the word rows stand, one sentence says so, and Download again opens the dialog', async ({ page }) => {
-  await openDesk(page, {
+test('when the model is gone the word rows stand, the line and one sentence say so, and Download again opens the dialog', async ({ page }) => {
+  const harness = await openDesk(page, {
     status: LIBRARY_VECTOR_SCRIPT.ready,
     found: found({ state: 'failed', failure: 'modelGone', filesReady: 0, filesTotal: 0 }),
   }, BUILTIN);
+  const statusReads = (await callsOf(harness, page, 'vault_vectors_status')).length;
   await ask(page, 'When is a refund approved?');
   await expect(rows(page)).toHaveCount(3);
   await expect(page.locator('[data-lead-reason]')).toHaveCount(0);
   const notice = page.getByTestId('question-desk-meaning-notice');
   await expect(notice).toContainText('The model is no longer on this computer, so these results match words only.');
+  // The search's failure is read back into the folder's status, so the line above says the same.
+  await expect(page.getByTestId('meaning-desk-line')).toHaveAttribute('data-state', 'modelGone');
+  expect(await callsOf(harness, page, 'vault_vectors_status')).toHaveLength(statusReads + 1);
   await notice.getByTestId('question-desk-meaning-download-again').click();
   await expect(page.getByTestId('meaning-setup-dialog')).toBeVisible();
   await expect(page.getByTestId('meaning-setup-cancel')).toBeFocused();
@@ -143,13 +147,14 @@ test('says Ollama did not answer when the runner is down, and nothing when meani
   const harness = await openDesk(page, { status: LIBRARY_VECTOR_SCRIPT.ready, found: found({ state: 'failed', failure: 'runnerDown' }) }, BUILTIN);
   await ask(page, 'When is a refund approved?');
   await expect(page.getByTestId('question-desk-meaning-notice')).toHaveText('Ollama did not answer, so these results match words only.');
+  await expect(page.getByTestId('meaning-desk-line')).toHaveAttribute('data-state', 'runnerDown');
   await harness.setVectorFound(page, found({ state: 'notReady' }));
   await ask(page, 'When is the refund approved?');
   await expect(page.getByTestId('question-desk-meaning-notice')).toHaveCount(0);
   await expect(page.locator('[data-lead-reason]')).toHaveCount(0);
 });
 
-test('the coverage popover names meaning coverage and left-out passages only when meaning took part', async ({ page }) => {
+test('the coverage popover names meaning coverage only when it was partial, and left-out passages when meaning took part', async ({ page }) => {
   const harness = await openDesk(page, {
     status: LIBRARY_VECTOR_SCRIPT.ready,
     // One passage the app left out because its file changed.
@@ -160,6 +165,14 @@ test('the coverage popover names meaning coverage and left-out passages only whe
   const popover = page.getByTestId('question-desk-coverage-info-popover');
   await expect(popover).toContainText('By meaning: 1,240 of 2,000 files');
   await expect(popover).toContainText('1 passage from a changed file was left out');
+  await page.keyboard.press('Escape');
+
+  // Every file prepared: the count would read as a second scope beside the desk's own.
+  await harness.setVectorFound(page, found({ filesReady: 2000, staleDropped: 1, hits: [{ path: 'sources/returns.md', lineStart: 1, lineEnd: 2, heading: 'Returns', score: 0.9 }] }));
+  await ask(page, 'When are refunds approved?');
+  await page.getByTestId('question-desk-coverage-info').click();
+  await expect(popover).toContainText('1 passage from a changed file was left out');
+  await expect(popover).not.toContainText('By meaning');
   await page.keyboard.press('Escape');
 
   await harness.setVectorFound(page, found({ state: 'notReady' }));

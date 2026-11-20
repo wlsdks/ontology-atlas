@@ -535,6 +535,11 @@ export async function installLibraryWorkHarness(
         }
         if (command === "vault_vectors_search") {
           const answer = currentFound ?? vectors.foundByQuestion[String(args.question)] ?? vectors.found;
+          // As in the app, what a failed search learned is the folder's status from then on.
+          if (answer.state === "failed" && answer.failure !== null) {
+            const kept = currentVectorStatus.filesDone > 0 && answer.failure !== "modelGone";
+            currentVectorStatus = { ...currentVectorStatus, phase: kept ? "stopped" : "failed", failure: answer.failure, failureDetail: answer.failure === "modelGone" ? "embed-model-not-ready" : "embed-request-failed", updating: false, currentPath: null, passagesPerSecond: null };
+          }
           return new Promise((resolve) => window.setTimeout(() => resolve(answer), vectors.searchDelayMs));
         }
         if (command === "vault_vectors_warm" || command === "vault_vectors_delete_model") return Promise.resolve(null);

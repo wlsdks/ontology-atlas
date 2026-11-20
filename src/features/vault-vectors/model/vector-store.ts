@@ -69,6 +69,11 @@ export function useVectorStatus(rootPath: string | null): VectorStatus | null {
   return status;
 }
 
+/** Reads the folder's status again, so the line says what a search that failed just learned. */
+export function readStatusAgain(rootPath: string): Promise<void> {
+  return refresh(rootPath);
+}
+
 /** Stores the choice first, unpaused, so the folder's next open continues even if this launch ends now. */
 export function prepare(rootPath: string, source: VectorSource): Promise<boolean> {
   vaultVectorSource.write(rootPath, source);

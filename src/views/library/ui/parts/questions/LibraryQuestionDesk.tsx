@@ -11,6 +11,7 @@ import {
   buildQuestionDeskReportBrief,
   countDeskReadablePages,
   countDeskWikiPages,
+  deskBriefEvidence,
   deskMeaningLeads,
   findDeskClaims,
   findDeskSourceHits,
@@ -43,8 +44,6 @@ export type { QuestionDeskReportDraft } from './desk/DeskReport';
 interface DeskResult extends DeskLeadSet {
   question: string;
   listingVersion: string;
-  claims: DeskClaim[];
-  sourceHits: DeskSourceHit[];
   readPages: number;
   totalPages: number;
   omittedClaims: number;
@@ -219,7 +218,7 @@ export function LibraryQuestionDesk({
       /* A report cost an agent turn: it leaves with the rows it answered, when the new rows arrive. */
       onInvalidateReport();
       setResult({
-        question: asked, searchId: id, listingVersion: searchedVersion, claims: wiki.claims, sourceHits,
+        question: asked, searchId: id, listingVersion: searchedVersion,
         leads: fuseDeskLeads(wiki.claims, sourceHits, byMeaning?.leads ?? []), terms, reasons: byMeaning !== null,
         readPages: wiki.readPages, totalPages: wiki.totalPages, omittedClaims: wiki.omitted,
         plannedSources: plan.length, totalSources: sources.length, unreadableSources,
@@ -276,8 +275,9 @@ export function LibraryQuestionDesk({
   const reportAction = result && vaultRoot !== null ? <Button size="sm" variant="primary"
     disabled={!agentReady || turnRunning || reading || outdated} onClick={() => {
       onSummarize({
+        // The brief carries the rows the person sees, those found by meaning included.
         brief: buildQuestionDeskReportBrief({ question: result.question, vaultRoot, locale,
-          claims: result.claims, sourceHits: result.sourceHits, coverage: `${coverage} ${limits}` }),
+          ...deskBriefEvidence(result.leads), coverage: `${coverage} ${limits}` }),
         question: result.question, searchId: result.searchId, listingVersion: result.listingVersion,
         vaultScope, coverage, limits,
       });
@@ -285,8 +285,9 @@ export function LibraryQuestionDesk({
   const offerSetup = vaultRoot !== null && meaningSearch.offerSetup;
   const meaning = result?.meaning ?? null;
   const meaningTookPart = meaning?.state === 'ok';
+  /* Meaning coverage is said only when it was partial: a full count would read as a second scope. */
   const meaningCoverage = meaning && meaningTookPart ? [
-    t('meaning.coverage', { ready: meaning.filesReady, total: meaning.filesTotal }),
+    ...(meaning.filesReady < meaning.filesTotal ? [t('meaning.coverage', { ready: meaning.filesReady, total: meaning.filesTotal })] : []),
     ...(meaning.staleDropped > 0 ? [t('meaning.staleDropped', { count: meaning.staleDropped })] : []),
   ] : [];
   const coverageInfo = <DeskCoverageInfo lines={[coverageCompact, ...meaningCoverage, limitFacts(false), t('limitsMethod'), t('wikiCaveat')].filter(Boolean)} />;

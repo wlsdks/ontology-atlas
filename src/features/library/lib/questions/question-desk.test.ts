@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { sourceUnits } from '@/shared/lib/library/source-passage';
-import { countDeskReadablePages, deskLeadTermRuns, deskMeaningLeads, deskSentenceWindow, DESK_SENTENCE_LIMIT, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskReportFileCurrent, questionTermRuns, questionTerms, recentDeskPages, type DeskClaim } from './question-desk';
+import { countDeskReadablePages, deskBriefEvidence, deskLeadTermRuns, deskMeaningLeads, deskSentenceWindow, DESK_SENTENCE_LIMIT, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskReportFileCurrent, questionTermRuns, questionTerms, recentDeskPages, type DeskClaim } from './question-desk';
 import { buildQuestionDeskBrief, buildQuestionDeskReportBrief, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections, QUESTION_DESK_BRIEF_MAX_CHARS } from './question-desk-brief';
 import { planQuestionDeskReportFile } from './question-desk-brief';
 import { buildAnswerPage } from './answer-page';
@@ -590,5 +590,18 @@ describe('question desk rows found by meaning', () => {
       claims: [], sourceHits: [],
     });
     expect(meaning).toEqual({ leads: [], dropped: 3 });
+  });
+
+  it('reaches the report brief as a row of the list, in the order the list shows', () => {
+    const terms = questionTerms('refund window');
+    const words = findDeskSourceHits('sources/returns.md', units, terms).hits;
+    const meaning = deskMeaningLeads({ ...base, hits: [{ path: 'sources/returns.md', lineStart: 4, lineEnd: 6 }], claims: [], sourceHits: words });
+    const leads = fuseDeskLeads([], words, meaning.leads);
+    expect(leads.map((lead) => lead.reason)).toEqual(['words', 'meaning']);
+    const evidence = deskBriefEvidence(leads);
+    expect(evidence.sourceHits.map((hit) => hit.anchor)).toEqual(['l2', 'l5']);
+    const brief = buildQuestionDeskReportBrief({ question: 'Can I return an opened box?', vaultRoot: '/folder', locale: 'en', ...evidence, coverage: 'Searched 1 of 1 source files.' });
+    expect(brief).toContain('[[src:sources/returns.md#l5]]: Opened items cannot go back.');
+    expect(brief.indexOf('#l2]]')).toBeLessThan(brief.indexOf('#l5]]'));
   });
 });
