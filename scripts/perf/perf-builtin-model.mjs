@@ -12,16 +12,16 @@
 // f32. `ollama` compares the worker's vectors with Ollama's bge-m3 for every fixture passage and
 // question; `--write-references` rewrites the vectors of the reference texts the app checks a fresh
 // conversion against from Ollama's answers.
-// Passages come from the desk harness's splitter. Each Rust measurement runs in its own release
+// Passages come from the app's index (`vault-index-bench passages`), the only splitter. Each Rust measurement runs in its own release
 // process (LTO off, its own target folder), which starts itself again as the worker, and prints one
 // JSON line; the first build takes minutes.
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { loadavg, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { batches, DEFAULT_OLLAMA, embedBatch, ollamaModels, ollamaVersion, splitPassages } from './meaning-quality.mjs';
+import { batches, cratePassages, DEFAULT_OLLAMA, embedBatch, ollamaModels, ollamaVersion } from './meaning-quality.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const FIXTURE = join(ROOT, 'tests/fixtures/meaning-search');
@@ -57,22 +57,28 @@ function parseArgs(argv) {
   return options;
 }
 
-function markdownFiles(dir) {
-  return readdirSync(dir, { withFileTypes: true })
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .flatMap((entry) => {
-      const path = join(dir, entry.name);
-      if (entry.isDirectory()) return markdownFiles(path);
-      return entry.name.endsWith('.md') ? [path] : [];
-    });
+/** The texts every measurement reads: fixture passages, fixture questions, and documentation passages. */
+async function passageTexts(dir) {
+  const texts = [];
+  for await (const passage of cratePassages(dir)) texts.push(passage.text);
+  return texts;
 }
 
-/** The texts every measurement reads: fixture passages, fixture questions, and documentation passages. */
-function writeTexts() {
+async function writeTexts() {
   const { files } = JSON.parse(readFileSync(join(FIXTURE, 'vault.json'), 'utf8'));
-  const fixture = Object.entries(files).flatMap(([path, raw]) => splitPassages(path, raw)).map((p) => p.text);
+  const vault = mkdtempSync(join(tmpdir(), 'atlas-perf-builtin-model-fixture-'));
+  let fixture;
+  try {
+    for (const [path, text] of Object.entries(files)) {
+      mkdirSync(dirname(join(vault, path)), { recursive: true });
+      writeFileSync(join(vault, path), text);
+    }
+    fixture = await passageTexts(vault);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+  }
   const { questions } = JSON.parse(readFileSync(join(FIXTURE, 'questions.json'), 'utf8'));
-  const docs = markdownFiles(join(ROOT, 'docs')).flatMap((path) => splitPassages(path, readFileSync(path, 'utf8'))).map((p) => p.text);
+  const docs = await passageTexts(join(ROOT, 'docs'));
   const texts = { fixture, questions: questions.map((q) => q.question.normalize('NFC')), docs, probes: PROBES };
   mkdirSync(WORK, { recursive: true });
   const path = join(WORK, 'texts.json');
@@ -123,7 +129,7 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   const needsFiles = options.only.some((step) => ['pins', 'prepare', 'fidelity'].includes(step));
   if (needsFiles && !options.modelDir) throw new Error('--model-dir=<folder holding pytorch_model.bin and tokenizer.json> is required');
-  const textsPath = writeTexts();
+  const textsPath = await writeTexts();
   const env = {
     ATLAS_BGE_M3_DIR: options.modelDir ?? '',
     ATLAS_MEANING_TEXTS: textsPath,
