@@ -97,12 +97,16 @@ interface GraphSignatures {
   edgeKeys: Set<string>;
 }
 
+type SignatureCache = WeakMap<readonly KnowledgeGraphEdge[], WeakMap<readonly KnowledgeGraphNode[], GraphSignatures>>;
+
 // Graph arrays are never mutated once published, so one pass per (edges, nodes) pair serves the
 // baseline and every reader's diff.
-const signatureCache = new WeakMap<
-  readonly KnowledgeGraphEdge[],
-  WeakMap<readonly KnowledgeGraphNode[], GraphSignatures>
->();
+let signatureCache: SignatureCache = new WeakMap();
+
+/** Drops every cached graph, so a folder left behind releases its signatures even if its arrays live on. */
+export function forgetGraphSignatures(): void {
+  signatureCache = new WeakMap();
+}
 
 function cachedSignatures(
   nodes: readonly KnowledgeGraphNode[],

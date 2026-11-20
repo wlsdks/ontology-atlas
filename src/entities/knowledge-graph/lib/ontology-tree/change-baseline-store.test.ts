@@ -228,3 +228,25 @@ describe("shouldAutoMarkBaseline", () => {
     expect(shouldAutoMarkBaseline({ mode: "local", hasBaseline: false, nodeCount: 0 })).toBe(false);
   });
 });
+
+describe("change-baseline-store on a folder switch", () => {
+  it("drops the previous folder's graph signatures, so nothing keeps them alive", () => {
+    let titleReads = 0;
+    const counted = ["a", "b", "c"].map((id) => {
+      const plain = node(id);
+      return Object.defineProperty({ ...plain }, "title", {
+        get: () => {
+          titleReads += 1;
+          return plain.title;
+        },
+      });
+    });
+    markChangeBaseline(counted, edges, 1);
+    markChangeBaseline(counted, edges, 2);
+    expect(titleReads).toBe(counted.length);
+
+    setChangeBaselineScope(VAULT_B);
+    markChangeBaseline(counted, edges, 3);
+    expect(titleReads).toBe(counted.length * 2);
+  });
+});
