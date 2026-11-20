@@ -76,6 +76,63 @@ describe('useDocumentDetail', () => {
     await waitFor(() => expect(result.current?.headings[0]?.text).toBe('After'));
   });
 
+  it('keeps a cache-served detail on screen through a rebuild after going A, B, A', async () => {
+    const docA = docAt(1);
+    const docB: DocumentRef = { slug: 'b', path: 'b.md', mtime: 1 };
+    const fileA = heldFile('# Alpha');
+    const fileB = heldFile('# Beta');
+    const vault = folder({ a: fileA.handle, b: fileB.handle });
+    const { result, rerender } = renderHook(({ doc }) => useDocumentDetail(doc), {
+      initialProps: { doc: docA },
+      wrapper: withFolder(() => vault),
+    });
+    await waitFor(() => expect(fileA.getFile).toHaveBeenCalled());
+    await act(async () => fileA.release());
+    await waitFor(() => expect(result.current?.headings[0]?.text).toBe('Alpha'));
+    rerender({ doc: docB });
+    await waitFor(() => expect(fileB.getFile).toHaveBeenCalled());
+    await act(async () => fileB.release());
+    await waitFor(() => expect(result.current?.headings[0]?.text).toBe('Beta'));
+    rerender({ doc: docA });
+    expect(result.current?.headings[0]?.text).toBe('Alpha');
+
+    const rebuiltA = heldFile('# Alpha');
+    vault.fileHandles = new Map([['a', rebuiltA.handle], ['b', fileB.handle]]);
+    rerender({ doc: docA });
+    expect(result.current?.headings[0]?.text).toBe('Alpha');
+    await act(async () => rebuiltA.release());
+    expect(result.current?.headings[0]?.text).toBe('Alpha');
+  });
+
+  it('keeps the detail while the folder picker is open over the loaded folder', async () => {
+    const file = heldFile('# Kept');
+    const vault = folder({ a: file.handle });
+    const { result, rerender } = renderHook(() => useDocumentDetail(docAt(1)), { wrapper: withFolder(() => vault) });
+    await waitFor(() => expect(file.getFile).toHaveBeenCalled());
+    await act(async () => file.release());
+    await waitFor(() => expect(result.current?.headings[0]?.text).toBe('Kept'));
+    Object.assign(vault, { status: 'opening', manifest: { docs: [] } });
+    rerender();
+    expect(result.current?.headings[0]?.text).toBe('Kept');
+  });
+
+  it('forgets the shown detail once no document is shown, holding nothing of its folder', async () => {
+    const first = heldFile('# First');
+    const vault = folder({ a: first.handle });
+    const { result, rerender } = renderHook(({ doc }) => useDocumentDetail(doc), {
+      initialProps: { doc: docAt(1) as DocumentRef | null },
+      wrapper: withFolder(() => vault),
+    });
+    await waitFor(() => expect(first.getFile).toHaveBeenCalled());
+    await act(async () => first.release());
+    await waitFor(() => expect(result.current?.headings[0]?.text).toBe('First'));
+
+    rerender({ doc: null });
+    vault.fileHandles = new Map([['a', heldFile('# Second').handle]]);
+    rerender({ doc: docAt(2) });
+    expect(result.current).toBeUndefined();
+  });
+
   it('answers nothing from the earlier folder after a folder switch', async () => {
     const earlier = heldFile('# Earlier');
     let vault = folder({ a: earlier.handle });

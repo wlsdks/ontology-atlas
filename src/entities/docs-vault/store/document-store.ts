@@ -20,7 +20,6 @@ export interface DocumentStore {
   details(docs: readonly DocumentRef[]): Promise<(VaultDocDetail | null)[]>;
   /** Derives from text a surface is already reading, so asking for this document starts no read. */
   adoptText(doc: DocumentRef, text: Promise<string>): void;
-  clear(): void;
 }
 
 /** O(documents asked) per call; a document already being read joins that read. */
@@ -30,7 +29,6 @@ export function createDocumentStore(
 ): DocumentStore {
   const cache = createLruCache<VaultDocDetail>(capacity);
   const inflight = new Map<string, Promise<VaultDocDetail | null>>();
-  let generation = 0;
 
   const load = async (docs: readonly DocumentRef[]): Promise<readonly (VaultDocDetail | null)[]> => {
     if ('readDetails' in source) return source.readDetails(docs);
@@ -42,9 +40,8 @@ export function createDocumentStore(
   };
 
   const settle = (key: string, pending: Promise<VaultDocDetail | null>) => {
-    const asked = generation;
     const answer = pending.then((detail) => {
-      if (detail && asked === generation) cache.set(key, detail);
+      if (detail) cache.set(key, detail);
       if (inflight.get(key) === answer) inflight.delete(key);
       return detail;
     });
@@ -83,11 +80,6 @@ export function createDocumentStore(
       const key = detailCacheKey(doc.path, doc.mtime);
       if (cache.peek(key) !== undefined || inflight.has(key)) return;
       settle(key, text.then(deriveDocumentDetail, () => null));
-    },
-    clear() {
-      generation += 1;
-      cache.clear();
-      inflight.clear();
     },
   };
 }

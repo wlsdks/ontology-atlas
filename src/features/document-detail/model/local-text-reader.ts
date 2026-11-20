@@ -2,7 +2,9 @@ import type { DocumentRef } from '@/entities/docs-vault';
 import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
+  readTauriVaultTextFile,
   readTauriVaultTextFiles,
+  type NativeVaultTextRead,
 } from '@/shared/lib/vault-folder/tauri-vault-fs';
 
 /**
@@ -22,7 +24,18 @@ async function readThroughHandle(handle: FileSystemFileHandle | undefined): Prom
   }
 }
 
-/** The app reads a batch in one bridge call (Rust checks scope again); the web reads each handle. */
+async function readOneNative(nativeRoot: string, path: string): Promise<string | null> {
+  try {
+    return (await readTauriVaultTextFile(nativeRoot, path))?.text ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The app reads a batch in one bridge call (Rust checks scope again) and reads a file whose frame
+ * carries an error once more on its own, as the build does; the web reads each handle.
+ */
 export function createLocalTextReader(
   root: FileSystemDirectoryHandle,
   fileHandles: ReadonlyMap<string, FileSystemFileHandle>,
@@ -34,8 +47,21 @@ export function createLocalTextReader(
       return Promise.all(docs.map((doc, index) => (granted[index] ? readThroughHandle(fileHandles.get(doc.slug)) : null)));
     }
     const paths = docs.filter((_, index) => granted[index]).map((doc) => doc.path);
-    const reads = paths.length > 0 ? ((await readTauriVaultTextFiles(nativeRoot, paths)) ?? []) : [];
+    let reads: NativeVaultTextRead[] = [];
+    if (paths.length > 0) {
+      try {
+        reads = (await readTauriVaultTextFiles(nativeRoot, paths)) ?? [];
+      } catch {
+        reads = [];
+      }
+    }
     const textByPath = new Map(reads.map((read) => [read.relativePath, read.text]));
-    return docs.map((doc, index) => (granted[index] ? (textByPath.get(doc.path) ?? null) : null));
+    return Promise.all(
+      docs.map((doc, index) => {
+        if (!granted[index]) return null;
+        const text = textByPath.get(doc.path);
+        return typeof text === 'string' ? text : readOneNative(nativeRoot, doc.path);
+      }),
+    );
   };
 }

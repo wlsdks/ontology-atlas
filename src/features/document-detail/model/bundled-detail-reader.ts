@@ -16,8 +16,17 @@ const NO_HEADINGS: StaticVaultHeadings = {};
 export function createBundledDetailReader(sample: StaticVaultSource, { headings }: { headings: boolean }) {
   let headingsChunk: Promise<StaticVaultHeadings> | null = null;
   return async (docs: readonly DocumentRef[]): Promise<(VaultDocDetail | null)[]> => {
-    if (headings) headingsChunk ??= loadStaticVaultHeadings(sample.source).catch(() => NO_HEADINGS);
-    const headingsBySlug = headingsChunk ? await headingsChunk : NO_HEADINGS;
+    let headingsBySlug = NO_HEADINGS;
+    if (headings) {
+      headingsChunk ??= loadStaticVaultHeadings(sample.source);
+      try {
+        headingsBySlug = await headingsChunk;
+      } catch {
+        // An empty outline is never cached as the answer: the next ask tries the chunk again.
+        headingsChunk = null;
+        return docs.map(() => null);
+      }
+    }
     const held = bundledDocsBySlug(sample);
     return docs.map((doc) => {
       const bundled = held.get(doc.slug);

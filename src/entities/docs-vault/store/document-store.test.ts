@@ -66,20 +66,6 @@ describe('createDocumentStore', () => {
     expect(store.peek(ref('gone'))).toBeUndefined();
   });
 
-  it('forgets every detail when cleared, and a read finishing after the clear is not kept', async () => {
-    let release: () => void = () => {};
-    const store = createDocumentStore({
-      readTexts: (docs) => new Promise((resolve) => {
-        release = () => resolve(docs.map(() => '# late'));
-      }),
-    });
-    const pending = store.detail(ref('a'));
-    store.clear();
-    release();
-    await pending;
-    expect(store.peek(ref('a'))).toBeUndefined();
-  });
-
   it('derives from text a surface is already reading, and reads no file for it', async () => {
     const reader = countingReader();
     const store = createDocumentStore(reader);

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocalVault } from "@/entities/vault-session";
-import { useDocumentDetail } from "@/features/document-detail";
+import { useAdoptDocumentText, useDocumentDetail } from "@/features/document-detail";
+import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import type { LibraryOriginalLink, VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { isRetainedAnswerPath, type LibraryUiModel } from "@/features/library";
 import { useBackToTop, useDocReadingScrollSpy } from "@/widgets/doc-reading-pane";
@@ -137,15 +138,20 @@ export function useLibraryReader({
     docs: manifest?.docs ?? EMPTY_ORIGINALS, locale, page: selectedWikiDoc, originals: selectedOriginals,
     hashes: model.hashes,
   });
+  const latestAdopt = useLatestRef(useAdoptDocumentText());
+  const latestWikiDoc = useLatestRef(selectedWikiDoc);
+  // The open page's outline derives from the body read, so the two arrive in the same frame.
   const getDocContent = useMemo<((slug: string) => Promise<string>) | undefined>(() => {
     if (localVault.fileHandles.size === 0) return undefined;
     const handles = localVault.fileHandles;
-    return async (slug: string) => {
+    return (slug: string) => {
       const file = handles.get(slug);
-      if (!file) throw new Error(`Local vault: no file handle for "${slug}"`);
-      return (await file.getFile()).text();
+      if (!file) return Promise.reject(new Error(`Local vault: no file handle for "${slug}"`));
+      const text = file.getFile().then((read) => read.text());
+      if (latestWikiDoc.current?.slug === slug) latestAdopt.current(latestWikiDoc.current, text);
+      return text;
     };
-  }, [localVault.fileHandles]);
+  }, [latestAdopt, latestWikiDoc, localVault.fileHandles]);
   const resolveImage = useMemo<((path: string) => Promise<string | null>) | undefined>(() => {
     const handles = localVault.imageHandles;
     return async (path: string) => {

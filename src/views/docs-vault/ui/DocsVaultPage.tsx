@@ -176,7 +176,7 @@ function DocsVaultContent({
   const access = useDocAccess({ source, isLocalSourceLoaded, selectedSlug });
   const { getDocContent, resolveImage, canEditCurrent, editResolver, editing, setEditing } = access;
   const selectedDetail = useDocumentDetail(selectedDoc);
-  const adoptDocumentText = useAdoptDocumentText();
+  const latestAdopt = useLatestRef(useAdoptDocumentText());
   const latestDocsBySlug = useLatestRef(docsBySlug);
   // The open document's outline and word count derive from the body read, so they arrive together.
   const readOpenDocText = useMemo(
@@ -185,10 +185,10 @@ function DocsVaultContent({
       ((slug: string) => {
         const text = getDocContent(slug);
         const doc = latestDocsBySlug.current.get(slug);
-        if (doc) adoptDocumentText(doc, text);
+        if (doc) latestAdopt.current(doc, text);
         return text;
       }),
-    [adoptDocumentText, getDocContent, latestDocsBySlug],
+    [getDocContent, latestAdopt, latestDocsBySlug],
   );
   const { treeSort, treeGroup, handleViewChange, handleTreeSortChange, handleTreeGroupChange } =
     useDocsVaultUrlSync({

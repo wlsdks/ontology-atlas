@@ -7,8 +7,6 @@ export interface LruCache<V> {
   peek(key: string): V | undefined;
   get(key: string): V | undefined;
   set(key: string, value: V): void;
-  clear(): void;
-  readonly size: number;
 }
 
 export function createLruCache<V>(capacity: number = DETAIL_CACHE_CAPACITY): LruCache<V> {
@@ -26,10 +24,6 @@ export function createLruCache<V>(capacity: number = DETAIL_CACHE_CAPACITY): Lru
       entries.delete(key);
       entries.set(key, value);
       if (entries.size > capacity) entries.delete(entries.keys().next().value as string);
-    },
-    clear: () => entries.clear(),
-    get size() {
-      return entries.size;
     },
   };
 }
