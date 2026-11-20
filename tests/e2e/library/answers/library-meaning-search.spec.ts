@@ -124,7 +124,7 @@ test('the field warms the model on its first focus in a ready folder, and only t
   expect(await callsOf(harness, page, 'vault_vectors_warm')).toHaveLength(1);
 });
 
-test('when the model is gone the word rows stand, the line and one sentence say so, and Download again opens the dialog', async ({ page }) => {
+test('when the model is gone the word rows stand, the line and one sentence say so, and the one Download again asks in the dialog first', async ({ page }) => {
   const harness = await openDesk(page, {
     status: LIBRARY_VECTOR_SCRIPT.ready,
     found: found({ state: 'failed', failure: 'modelGone', filesReady: 0, filesTotal: 0 }),
@@ -134,13 +134,21 @@ test('when the model is gone the word rows stand, the line and one sentence say 
   await expect(rows(page)).toHaveCount(3);
   await expect(page.locator('[data-lead-reason]')).toHaveCount(0);
   const notice = page.getByTestId('question-desk-meaning-notice');
-  await expect(notice).toContainText('The model is no longer on this computer, so these results match words only.');
+  await expect(notice).toHaveText('The model is no longer on this computer, so these results match words only.');
   // The search's failure is read back into the folder's status, so the line above says the same.
   await expect(page.getByTestId('meaning-desk-line')).toHaveAttribute('data-state', 'modelGone');
   expect(await callsOf(harness, page, 'vault_vectors_status')).toHaveLength(statusReads + 1);
-  await notice.getByTestId('question-desk-meaning-download-again').click();
+  // The notice is the sentence alone; the line above carries the state and its one press.
+  await expect(page.getByRole('button', { name: 'Download again' })).toHaveCount(1);
+  await expect(notice.getByRole('button')).toHaveCount(0);
+  await page.getByTestId('meaning-desk-downloadAgain').click();
   await expect(page.getByTestId('meaning-setup-dialog')).toBeVisible();
   await expect(page.getByTestId('meaning-setup-cancel')).toBeFocused();
+  expect(await callsOf(harness, page, 'vault_vectors_prepare')).toEqual([]);
+  await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Download and prepare');
+  await page.getByTestId('meaning-setup-primary').click();
+  await expect.poll(async () => (await callsOf(harness, page, 'vault_vectors_prepare')).map((call) => call.params))
+    .toEqual([{ rootPath: VAULT_ROOT, enabled: true, source: { kind: 'builtin' } }]);
 });
 
 test('says Ollama did not answer when the runner is down, and nothing when meaning is not ready', async ({ page }) => {

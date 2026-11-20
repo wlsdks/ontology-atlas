@@ -89,9 +89,11 @@ the rows of that list in its order, whatever their reason. Once prepared, the li
 says only "Searching by words and by meaning"; the coverage popover adds how many
 files are prepared only while that is partial and, when some were, how many
 passages were left out because their file changed. When meaning cannot answer,
-the word rows stand with one sentence saying so (with Download again when the
-model is gone), and the line reads the folder's status again so it says the
-same; with nothing set up, a search that finds nothing offers setup before the
+the word rows stand with one sentence saying so, and the line reads the folder's
+status again so it says the same and carries the one press; its Download again
+opens the setup dialog, which states the size and the free room before anything
+downloads. The limits sentence, saved with a report and sent in its brief, says
+the search matched words and meaning when meaning took part. With nothing set up, a search that finds nothing offers setup before the
 investigation action. The field's first focus in a visit loads the model so the
 first answer does not wait. The web playground has no search by meaning and says
 so in the line.

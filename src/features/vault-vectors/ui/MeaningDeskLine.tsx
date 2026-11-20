@@ -14,7 +14,7 @@ import { formatSize } from '../lib/format-size';
 import { useGlide } from '../lib/use-glide';
 import { usePacedValue } from '../lib/use-paced-value';
 import { deskLine, type DeskLine, type DeskLineAction, type DeskProgress } from '../model/desk-line';
-import { prepare, resume, stop, useVectorStatus } from '../model/vector-store';
+import { resume, stop, useVectorStatus } from '../model/vector-store';
 import { MeaningSetupDialog } from './MeaningSetupDialog';
 
 const FILE_NAME_PACE_MS = 1000;
@@ -130,13 +130,13 @@ export function MeaningDeskLine({
 
   const act = (action: DeskLineAction, event: MouseEvent<HTMLButtonElement>) => {
     if (rootPath === null) return;
-    if (action === 'setup') {
+    // A download is consented to in the dialog, which states its size and the free room first.
+    if (action === 'setup' || action === 'downloadAgain') {
       // WebKit does not focus a pressed button, so Escape would have nowhere to return focus.
       event.currentTarget.focus({ preventScroll: true });
       setDialogOpen(true);
     } else if (action === 'stop') void stop(rootPath);
     else if (action === 'resume') void resume(rootPath);
-    else if (action === 'downloadAgain') void prepare(rootPath, { kind: 'builtin' });
     else onOpenSettings?.();
   };
   const action = line.action === 'openSettings' && !onOpenSettings ? null : line.action;

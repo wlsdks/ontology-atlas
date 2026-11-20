@@ -244,7 +244,7 @@ this table does not replace keep their text.
 | `meaning.modelNeedsDirect` | desk line, `needsDirect` (Resume) | The model download needs a direct internet connection; this network allows only a proxy. |
 | `meaning.modelGone` | desk line, `modelGone` (Download again) | The model is no longer on this computer. |
 | `meaning.modelFailed` | desk line, `modelFailed` (Resume) | The model could not run on this computer: {detail}. |
-| `meaning.downloadAgain` | desk line press | Download again |
+| `meaning.downloadAgain` | desk line press; opens the setup dialog, never a download by itself | Download again |
 | `meaning.runnerDown` | desk line, `runnerDown` (Resume) | Ollama did not answer. Start Ollama, then press Resume. |
 | `meaning.modelMissing` | desk line, `modelMissing` (Resume) | {model} is no longer in Ollama. |
 | `meaning.writeFailed` | desk line, `write` (Resume) | Could not save search by meaning in this computer's cache folder: {detail}. |
@@ -255,7 +255,7 @@ this table does not replace keep their text.
 | `meaning.reasonWords` / `reasonMeaning` / `reasonBoth` | end of a row's second line, when meaning took part | Same words / Similar meaning / Same words · similar meaning |
 | `meaning.coverage` | coverage popover, when meaning took part and not every file was prepared | By meaning: {ready, number} of {total, number} files |
 | `meaning.staleDropped` | coverage popover, when passages were left out | {count, plural, one {# passage from a changed file was left out} other {# passages from changed files were left out}} |
-| `meaning.modelGoneNotice` | under the results head, `modelGone` (Download again opens the dialog) | The model is no longer on this computer, so these results match words only. |
+| `meaning.modelGoneNotice` | under the results head, `modelGone`; the sentence alone, the line above holds the press | The model is no longer on this computer, so these results match words only. |
 | `meaning.runnerDownNotice` | under the results head, `runnerDown` or `modelMissing` | Ollama did not answer, so these results match words only. |
 | `meaning.failedNotice` | under the results head, any other failure | Search by meaning did not answer, so these results match words only. |
 | `meaning.noMatchBoth` | no-match body, when meaning took part | No passage in the files searched matches these words or this meaning. |
@@ -593,3 +593,4 @@ Order: S1 and S2 first and in parallel, then S3. S4 follows once #3607 merges, a
 - 2026-11-20: the desk line, the consent dialog and the Settings rows are built. The choice is stored per folder with a pause, so Stop survives a restart and the app is told the choice once at folder open; Resume and the dialog clear the pause. The copy table now lists the keys as built. The long-work card and the rail ring are left to the long-work seat, which reads `useVectorRun`.
 - 2026-11-20: the Wiki desk now lists passages found by words and by meaning in one list. A question asks for 24 passages beside the word search; a passage holding a word lead is that lead, otherwise its row is the range's first non-heading source line or first wiki claim, and passages in files the desk does not search are left out. Each row names its reason, and the coverage popover the prepared files. The line under the field names only the file being read, and follows an update of ten files or more with the ring and Stop. The progress ring on the rail is left to the long-work seat.
 - 2026-11-20: after review the ready line says only how the desk searches, since a file count beside the desk's scope read as a second scope; the count stays in Settings and in the preparing line. The popover names meaning coverage only while it is partial. A search that answers `failed` reads the folder's status again, so the line and the result notice agree. A report's brief carries the rows of the fused list in its order, so passages found only by meaning reach the agent. A press at the row's end has no separator before it.
+- 2026-11-20: the line's Download again opens the setup dialog, which states the size and the free room with Cancel the default, instead of starting the download; the notices under the results head are the sentence alone. When meaning took part, the limits sentence (`limitsBoth`, `limitsMethodBoth`) says the search matched words and meaning, in the popover, the brief and the saved record; a words-only search keeps the present sentence.
