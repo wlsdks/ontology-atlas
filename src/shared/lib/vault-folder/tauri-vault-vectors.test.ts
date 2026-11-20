@@ -80,6 +80,7 @@ describe('tauri-vault-vectors in the app', () => {
 
     await probeVectors('/vault', 'http://localhost:11434');
     await vectorStatus('/vault', runner);
+    await vectorStatus('/vault', builtin, true);
     await prepareVectors('/vault', builtin);
     await stopVectors('/vault');
     await warmVectors(builtin);
@@ -89,8 +90,9 @@ describe('tauri-vault-vectors in the app', () => {
 
     expect(tauriApiMock.invoke.mock.calls).toEqual([
       ['vault_vectors_probe', { rootPath: '/vault', runnerBaseUrl: 'http://localhost:11434' }],
-      ['vault_vectors_status', { rootPath: '/vault', enabled: true, source: runner }],
-      ['vault_vectors_prepare', { rootPath: '/vault', source: builtin }],
+      ['vault_vectors_status', { rootPath: '/vault', enabled: true, source: runner, paused: false }],
+      ['vault_vectors_status', { rootPath: '/vault', enabled: true, source: builtin, paused: true }],
+      ['vault_vectors_prepare', { rootPath: '/vault', enabled: true, source: builtin }],
       ['vault_vectors_stop', { rootPath: '/vault' }],
       ['vault_vectors_warm', { source: builtin }],
       ['vault_vectors_search', { rootPath: '/vault', source: runner, question: '물가의 식물', limit: 8 }],
@@ -99,22 +101,34 @@ describe('tauri-vault-vectors in the app', () => {
     ]);
   });
 
-  it('sends the search index switch with the status, since vectors live beside the index', async () => {
+  it('sends the search index switch with the status and the prepare, since vectors live beside the index', async () => {
     tauriApiMock.runtimeAvailable = true;
     tauriApiMock.invoke.mockResolvedValue(OFF_VECTOR_STATUS);
     vaultIndexPreference.write('off');
     await vectorStatus('/vault', null);
-    expect(tauriApiMock.invoke).toHaveBeenCalledWith('vault_vectors_status', {
-      rootPath: '/vault', enabled: false, source: null,
-    });
+    await prepareVectors('/vault', builtin);
+    expect(tauriApiMock.invoke.mock.calls).toEqual([
+      ['vault_vectors_status', { rootPath: '/vault', enabled: false, source: null, paused: false }],
+      ['vault_vectors_prepare', { rootPath: '/vault', enabled: false, source: builtin }],
+    ]);
   });
 
-  it('keeps a search within the 64 passages a search returns', async () => {
+  it('keeps a search within the 64 passages a search returns, and a limit that is no number at 0', async () => {
     tauriApiMock.runtimeAvailable = true;
     tauriApiMock.invoke.mockResolvedValue({ state: 'ok', failure: null, hits: [], staleDropped: 0, filesReady: 1, filesTotal: 1 });
-    await searchVectors('/vault', builtin, 'q', 500);
-    await searchVectors('/vault', builtin, 'q', -3);
-    expect(tauriApiMock.invoke.mock.calls.map(([, args]) => args.limit)).toEqual([64, 0]);
+    for (const limit of [500, -3, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, 7.9]) {
+      await searchVectors('/vault', builtin, 'q', limit);
+    }
+    expect(tauriApiMock.invoke.mock.calls.map(([, args]) => args.limit)).toEqual([64, 0, 0, 0, 0, 7]);
+  });
+
+  it('answers a refused search as failed instead of throwing', async () => {
+    tauriApiMock.runtimeAvailable = true;
+    tauriApiMock.invoke.mockRejectedValue('embed-not-local');
+    await expect(searchVectors('/vault', runner, 'q', 8)).resolves.toEqual({
+      state: 'failed', failure: null, hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0,
+    });
+    await expect(vectorStatus('/vault', runner)).rejects.toBe('embed-not-local');
   });
 
   it('passes the app answers through unchanged', async () => {

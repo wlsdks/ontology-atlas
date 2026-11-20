@@ -7,7 +7,9 @@ import { vaultIndexPreference } from './tauri-vault-index';
  * passage of the folder's Markdown files, kept beside the search index in the OS cache folder and
  * prepared by a model on this computer. Code names it by what it stores, vectors; "meaning" in code
  * already names accepted product meaning. The web has none: every call here answers the `off`
- * status or an empty result and never throws.
+ * status or an empty result and never throws. In the app every call but `searchVectors` and
+ * `subscribeVectorStatus` may reject with the command's coded error (`vectorStatus` too: a folder
+ * not chosen, or a source no screen offers).
  */
 
 /** The person's choice for a folder; the WebView keeps it and sends it with every command. */
@@ -152,7 +154,11 @@ function notFound(): VectorFound {
   return { state: 'notReady', failure: null, hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0 };
 }
 
-/** What the setup dialog states; a runner address is asked only when it is on this computer. */
+/**
+ * What the setup dialog states; a runner address is asked only when it is on this computer, and
+ * one that is not answers `notLocal`. Rejects with the command's coded error for a folder not
+ * chosen.
+ */
 export async function probeVectors(rootPath: string, runnerBaseUrl: string | null): Promise<VectorProbe> {
   const invoke = getInvoke();
   if (!invoke) return emptyProbe();
@@ -160,20 +166,32 @@ export async function probeVectors(rootPath: string, runnerBaseUrl: string | nul
 }
 
 /** Never creates anything; sends the search index switch, since vectors live beside the index. */
-export async function vectorStatus(rootPath: string, source: VectorSource | null): Promise<VectorStatus> {
+export async function vectorStatus(
+  rootPath: string,
+  source: VectorSource | null,
+  paused = false,
+): Promise<VectorStatus> {
   const invoke = getInvoke();
   if (!invoke) return offStatus();
-  return invoke('vault_vectors_status', { rootPath, enabled: indexEnabled(), source });
+  return invoke('vault_vectors_status', { rootPath, enabled: indexEnabled(), source, paused });
 }
 
-/** Starts or continues the folder's background job (the built-in model first when it is missing). */
+/**
+ * Starts or continues the folder's background job (the built-in model first when it is missing),
+ * and lets a stopped or failed folder go. With the search index off it answers `off` and creates
+ * nothing. Rejects with the command's coded error for a folder not chosen or a source no screen
+ * offers.
+ */
 export async function prepareVectors(rootPath: string, source: VectorSource): Promise<VectorStatus> {
   const invoke = getInvoke();
   if (!invoke) return offStatus();
-  return invoke('vault_vectors_prepare', { rootPath, source });
+  return invoke('vault_vectors_prepare', { rootPath, enabled: indexEnabled(), source });
 }
 
-/** Stops at the next batch or download chunk; everything prepared stays. */
+/**
+ * Stops at once and holds the folder: no update starts until `prepareVectors`. Everything prepared
+ * stays. Rejects with the command's coded error for a folder not chosen.
+ */
 export async function stopVectors(rootPath: string): Promise<VectorStatus> {
   const invoke = getInvoke();
   if (!invoke) return offStatus();
@@ -187,7 +205,10 @@ export async function warmVectors(source: VectorSource): Promise<void> {
   await invoke('vault_vectors_warm', { source });
 }
 
-/** The nearest passages, each still held by its file; a failure is a state, never a throw. */
+/**
+ * The nearest passages, each still held by its file. A failure is a state, never a throw: a
+ * rejected command answers `failed` with no hits. A limit that is not a finite number is 0.
+ */
 export async function searchVectors(
   rootPath: string,
   source: VectorSource,
@@ -196,22 +217,28 @@ export async function searchVectors(
 ): Promise<VectorFound> {
   const invoke = getInvoke();
   if (!invoke) return notFound();
-  return invoke('vault_vectors_search', {
-    rootPath,
-    source,
-    question,
-    limit: Math.max(0, Math.min(MAX_VECTOR_HITS, Math.floor(limit))),
-  });
+  const kept = Number.isFinite(limit) ? Math.max(0, Math.min(MAX_VECTOR_HITS, Math.floor(limit))) : 0;
+  try {
+    return await invoke<VectorFound>('vault_vectors_search', { rootPath, source, question, limit: kept });
+  } catch {
+    return { ...notFound(), state: 'failed' };
+  }
 }
 
-/** Deletes this folder's vectors and ends its job; the folder itself is never touched. */
+/**
+ * Deletes this folder's vectors and ends its job; the folder itself is never touched. Rejects with
+ * the command's coded error for a folder not chosen.
+ */
 export async function deleteVectors(rootPath: string): Promise<VectorStatus> {
   const invoke = getInvoke();
   if (!invoke) return offStatus();
   return invoke('vault_vectors_delete', { rootPath });
 }
 
-/** Ends every job using the built-in model, then deletes the model; prepared vectors stay. */
+/**
+ * Ends every job using the built-in model, then deletes the model; prepared vectors stay. Rejects
+ * with a coded error while a job still holds the model.
+ */
 export async function deleteVectorModel(): Promise<void> {
   const invoke = getInvoke();
   if (!invoke) return;
