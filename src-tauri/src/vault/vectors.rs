@@ -85,14 +85,14 @@ impl Vectors {
         }
     }
 
-    /// The folder's entry; `shown_as` is the path the WebView uses for it.
+    /// The folder's entry. `shown_as` is the path the WebView used for it; `vault-index-updated`
+    /// names no folder, so the first spelling a folder was opened with keys its events for the
+    /// life of the app, whatever spelling a later command uses.
     fn entry(&self, root: &Path, shown_as: &str) -> Arc<Entry> {
-        let entry = lock(&self.entries)
+        lock(&self.entries)
             .entry(root.to_path_buf())
             .or_insert_with(|| Arc::new(Entry::new(root, shown_as)))
-            .clone();
-        entry.shown_as(shown_as);
-        entry
+            .clone()
     }
 
     fn known_entry(&self, root: &Path) -> Option<Arc<Entry>> {
@@ -103,8 +103,15 @@ impl Vectors {
         lock(&self.entries).values().cloned().collect()
     }
 
+    /// Releases the built-in model, drops idle search copies and starts the quiet updates whose
+    /// wait ended.
+    pub(crate) fn tick(self: &Arc<Self>) {
+        self.release_due();
+        self.start_due_updates(self.clock.now());
+    }
+
     /// Releases the built-in model and drops idle search copies when their time came.
-    pub(crate) fn tick(&self) {
+    fn release_due(&self) {
         let now = self.clock.now();
         if lock(&self.keeper).due(now) {
             if let Some(builtin) = self.sources.builtin_if_made() {
@@ -161,12 +168,13 @@ fn bind(app_handle: &AppHandle) {
 }
 
 /// After a search index pass that changed files: a folder whose vectors exist prepares the changed
-/// passages quietly. Nothing happens for a folder nobody set up in this launch, nor for one whose
+/// passages quietly once its index passes go quiet (`job::UPDATE_QUIET`, `job::UPDATE_LATEST`).
+/// Nothing happens for a folder nobody armed in this launch, for a held one, nor for one whose
 /// store is gone, so no folder gets vectors it was not given.
 pub(crate) fn after_index_pass(root: &Path) {
     let vectors = app();
     if let Some(entry) = vectors.known_entry(root) {
-        vectors.request_update(&entry);
+        vectors.note_change(&entry);
     }
 }
 
@@ -176,10 +184,15 @@ pub(crate) fn with_jobs_stopped<T>(root: Option<&Path>, delete: impl FnOnce() ->
     app().forget(root, delete)
 }
 
-/// The app is quitting: every job stops at its next batch and closes its audit line.
+/// How long quitting waits for the jobs to end once they were told to stop.
+const EXIT_WAIT: std::time::Duration = std::time::Duration::from_secs(2);
+
+/// The app is quitting: every job is told to stop, and quitting waits up to `EXIT_WAIT` for them
+/// to end. A runner job that ends in time writes its closing audit line; one still in a step that
+/// outlasts the wait does not, and its log keeps a start line with no close (the built-in model
+/// writes no line at all). The app quits either way.
 pub(crate) fn stop_all_on_exit() {
-    let vectors = app();
-    for entry in vectors.all_entries() {
-        vectors.stop(&entry);
+    if !app().stop_all(EXIT_WAIT) {
+        log::warn!("search by meaning job still running at quit");
     }
 }

@@ -16,7 +16,10 @@ pub(super) const DIMENSIONS: usize = 8;
 pub(super) struct Log {
     pub launches: AtomicUsize,
     pub loads: AtomicUsize,
+    pub checks: AtomicUsize,
     pub texts: Mutex<Vec<String>>,
+    /// Set when the app killed one of the workers.
+    pub killed: AtomicBool,
 }
 
 /// Holds `gate` texts, and a load when `hold_load` is set, until opened.
@@ -53,6 +56,8 @@ pub(super) struct FakeModels {
     pub killed: Arc<AtomicBool>,
     pub fail_load: bool,
     pub hold_load: bool,
+    /// Holds a check until the gate opens; nothing else ends it but a kill.
+    pub hold_check: bool,
     pub death: Death,
 }
 
@@ -91,6 +96,16 @@ impl Models for FakeModels {
     }
 
     fn check(&self) -> Result<(), EmbedError> {
+        self.log.checks.fetch_add(1, Ordering::SeqCst);
+        if self.hold_check {
+            // Ignores a stop, as the reference check does.
+            while !*self.gate.open.lock().unwrap() {
+                if self.killed.load(Ordering::SeqCst) {
+                    return Err(EmbedError::Inference("killed".into()));
+                }
+                std::thread::sleep(Duration::from_millis(2));
+            }
+        }
         Ok(())
     }
 }
@@ -179,11 +194,15 @@ impl Model for FakeModel {
 struct ThreadWorker {
     handle: Option<JoinHandle<i32>>,
     killed: Arc<AtomicBool>,
+    log: Option<Arc<Log>>,
 }
 
 impl Process for ThreadWorker {
     fn kill(&mut self) {
         self.killed.store(true, Ordering::SeqCst);
+        if let Some(log) = &self.log {
+            log.killed.store(true, Ordering::SeqCst);
+        }
     }
 
     fn exited_within(&mut self, within: Duration) -> bool {
@@ -212,6 +231,7 @@ pub(super) struct ThreadLaunch {
     pub idle: Duration,
     pub fail_load: bool,
     pub hold_load: bool,
+    pub hold_check: bool,
 }
 
 impl ThreadLaunch {
@@ -222,6 +242,7 @@ impl ThreadLaunch {
             idle: Duration::from_secs(60),
             fail_load: false,
             hold_load: false,
+            hold_check: false,
         }
     }
 }
@@ -238,6 +259,7 @@ impl Launch for ThreadLaunch {
             killed: killed.clone(),
             fail_load: self.fail_load,
             hold_load: self.hold_load,
+            hold_check: self.hold_check,
             death: Death::Panic,
         };
         let idle = self.idle;
@@ -248,6 +270,7 @@ impl Launch for ThreadLaunch {
             process: Box::new(ThreadWorker {
                 handle: Some(handle),
                 killed,
+                log: Some(self.log.clone()),
             }),
         })
     }
@@ -313,6 +336,7 @@ impl Launch for ScriptedLaunch {
             process: Box::new(ThreadWorker {
                 handle: Some(handle),
                 killed,
+                log: None,
             }),
         })
     }

@@ -19,7 +19,10 @@ impl ModelWork for InProcess {
         store.convert_download(tiny::TINY_CONFIG, cancel, on_progress)
     }
 
-    fn check(&self, store: &ModelStore) -> Result<(), EmbedError> {
+    fn check(&self, store: &ModelStore, cancel: &AtomicBool) -> Result<(), EmbedError> {
+        if cancel.load(Ordering::SeqCst) {
+            return Err(EmbedError::Cancelled);
+        }
         check_conversion(
             &self.references,
             tiny::TINY_CONFIG,
@@ -318,6 +321,72 @@ fn a_failed_check_keeps_the_download_for_the_next_try() {
         .unwrap();
     assert_eq!(store.readiness_for(&served.recipe()), Readiness::Ready);
     served.clean();
+}
+
+/// The preparation's model work, with the person's Stop pressed as it reaches `step`.
+struct StopAt<'w> {
+    work: &'w InProcess,
+    step: Stage,
+}
+
+impl ModelWork for StopAt<'_> {
+    fn convert(
+        &self,
+        store: &ModelStore,
+        cancel: &AtomicBool,
+        on_progress: &mut dyn FnMut(u64, u64),
+    ) -> Result<(), EmbedError> {
+        if self.step == Stage::Convert {
+            cancel.store(true, Ordering::SeqCst);
+        }
+        self.work.convert(store, cancel, on_progress)
+    }
+
+    fn check(&self, store: &ModelStore, cancel: &AtomicBool) -> Result<(), EmbedError> {
+        if self.step == Stage::Check {
+            cancel.store(true, Ordering::SeqCst);
+        }
+        self.work.check(store, cancel)
+    }
+}
+
+#[test]
+fn a_stop_during_conversion_or_the_check_leaves_only_the_download() {
+    for step in [Stage::Convert, Stage::Check] {
+        let served = served(&format!("stop-{step:?}").to_lowercase());
+        let store = served.store();
+        let stopping = StopAt {
+            work: &served.work,
+            step,
+        };
+        let recipe = Recipe {
+            work: &stopping,
+            ..served.recipe()
+        };
+        let cancel = never();
+        let stopped =
+            store.prepare_with(&served.fake(), &recipe, &served.vault, &cancel, &mut |_| {});
+        assert_eq!(stopped.result, Err(EmbedError::Cancelled), "{step:?}");
+        // Nothing half-ready: no weights, no tokenizer, no converting file, no manifest.
+        assert_eq!(names(store.dir()), ["download"], "{step:?}");
+        assert_eq!(
+            names(&store.dir().join("download")),
+            ["pytorch_model.bin", "tokenizer.json"],
+            "{step:?}"
+        );
+        assert_eq!(
+            store.readiness_for(&served.recipe()),
+            Readiness::NotPrepared
+        );
+
+        // The claim was let go and the download kept: the next try asks the network nothing.
+        served
+            .prepare(&PanicFetch, &served.recipe())
+            .result
+            .unwrap();
+        assert_eq!(store.readiness_for(&served.recipe()), Readiness::Ready);
+        served.clean();
+    }
 }
 
 #[test]

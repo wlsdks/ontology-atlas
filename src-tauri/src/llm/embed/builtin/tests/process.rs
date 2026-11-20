@@ -22,6 +22,7 @@ fn fake_worker_child() {
         killed: Arc::default(),
         fail_load: false,
         hold_load: false,
+        hold_check: false,
         death: Death::Exit,
     };
     let code = serve(
@@ -68,17 +69,81 @@ const LIMITS: Limits = Limits {
     hello: Duration::from_secs(20),
     load: Duration::from_secs(10),
     batch: Duration::from_secs(10),
+    question: Duration::from_secs(20),
     stop: Duration::from_millis(500),
     exit: Duration::from_secs(2),
 };
 
 fn model(idle: Duration) -> BuiltinModel {
+    model_within(idle, LIMITS)
+}
+
+fn model_within(idle: Duration, limits: Limits) -> BuiltinModel {
     BuiltinModel::with_launch(
         no_store(),
         Box::new(ChildLaunch { idle }),
-        LIMITS,
+        limits,
         DIMENSIONS,
     )
+}
+
+fn wait_until(what: &str, done: impl Fn() -> bool) {
+    let started = Instant::now();
+    while !done() {
+        assert!(started.elapsed() < Duration::from_secs(20), "{what}");
+        std::thread::sleep(Duration::from_millis(2));
+    }
+}
+
+#[test]
+fn a_question_the_worker_never_answers_ends_at_its_limit_and_the_next_gets_a_fresh_worker() {
+    // Long enough for a loaded runner to start a child; the hang alone waits it out.
+    let limits = Limits {
+        question: Duration::from_secs(8),
+        ..LIMITS
+    };
+    let model = model_within(Duration::from_secs(60), limits);
+    let vault = temp_dir("child-hang-vault");
+    let mut session = Embedder::start_build(
+        &model,
+        &vault,
+        BuildPlan {
+            files: 1,
+            passages: 2,
+            chars: 100,
+        },
+    )
+    .unwrap();
+    let hung = model.worker_id().unwrap();
+    let stop = AtomicBool::new(false);
+    std::thread::scope(|scope| {
+        let question = scope.spawn(|| Embedder::embed_query(&model, &vault, "hang"));
+        wait_until("the question holding the worker", || {
+            model.turns.lock().unwrap().contains(&true)
+        });
+        // A job's batch queued behind the question is stopped at once, not after it.
+        let stopper = scope.spawn(|| {
+            wait_until("the batch waiting", || model.builds_waiting() == 1);
+            stop.store(true, Ordering::SeqCst);
+        });
+        assert_eq!(
+            session.embed_batch_until(&["wave"], &stop),
+            Err(EmbedError::Cancelled)
+        );
+        stopper.join().unwrap();
+        assert!(!question.is_finished(), "the stop waited for the question");
+        assert_eq!(question.join().unwrap(), Err(EmbedError::TimedOut));
+    });
+    assert_eq!(model.state(), WorkerState::NotRunning);
+    assert_gone(hung);
+    let vector = Embedder::embed_query(&model, &vault, "의미").unwrap();
+    assert_eq!(vector, vector_of("의미"));
+    let fresh = model.worker_id().unwrap();
+    assert_ne!(fresh, hung);
+    drop(session);
+    assert!(model.release());
+    assert_gone(fresh);
+    fs::remove_dir_all(&vault).ok();
 }
 
 /// Whether a process with this id still exists, a zombie included.

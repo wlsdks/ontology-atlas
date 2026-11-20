@@ -1,4 +1,4 @@
-use super::job::Entry;
+use super::job::{Entry, UPDATE_LATEST};
 use super::memory::{Keeper, RELEASE_AFTER, SEARCHER_IDLE};
 use super::models::{builtin_model, readable_model};
 use super::report::{Rate, Throttle, MAX_GAP};
@@ -143,11 +143,20 @@ fn an_update_after_an_edit_sends_only_the_changed_passage() {
     let changed = &sent[before..];
     assert_eq!(changed.len(), 1, "{changed:?}");
     assert!(changed[0].contains("Rewritten"));
-    assert!(harness
+    let updating: Vec<VectorStatus> = harness
         .events
         .all()
-        .iter()
-        .any(|(_, status)| status.updating && status.phase == VectorPhase::Preparing));
+        .into_iter()
+        .map(|(_, status)| status)
+        .filter(|status| status.updating)
+        .collect();
+    assert!(!updating.is_empty());
+    for status in &updating {
+        assert_eq!(status.phase, VectorPhase::Preparing);
+        // The changed file alone, not the folder's six.
+        assert_eq!(status.files_total, 1, "{status:?}");
+        assert_eq!(status.passages_total, 1, "{status:?}");
+    }
     assert_eq!(status(&harness, &entry).phase, VectorPhase::Ready);
     cleanup(&root);
 }
@@ -157,11 +166,14 @@ fn an_update_makes_nothing_for_a_folder_never_set_up() {
     let harness = Harness::new();
     let root = vault("never-set-up", 4);
     let entry = entry(&harness, &root);
-    // Even a remembered choice makes no store: only existing vectors are updated.
-    entry.remember(&VectorSource::Builtin);
+    // Even an armed choice makes no store: only existing vectors are updated.
+    entry.arm(&VectorSource::Builtin, false);
     harness.vectors.request_update(&entry);
     assert!(entry.wait_idle(WITHIN));
-    super::after_index_pass(&root);
+    harness.vectors.note_change(&entry);
+    harness.clock.set(UPDATE_LATEST);
+    harness.vectors.tick();
+    assert!(entry.wait_idle(WITHIN));
 
     assert_eq!(vault_index::vectors::store_model(&root).unwrap(), None);
     assert_eq!(vault_index::vectors::vectors_bytes(&root).unwrap(), 0);
@@ -358,6 +370,7 @@ fn switching_the_index_off_while_a_folder_waits_its_turn_leaves_no_vectors() {
 fn every_failure_reaches_the_screen_as_its_code() {
     use EmbedError as E;
     let prepare = During::ModelPrepare;
+    let convert = During::ModelConvert;
     let builtin = During::Embedding { runner: false };
     let runner = During::Embedding { runner: true };
     let cases = [
@@ -377,14 +390,27 @@ fn every_failure_reaches_the_screen_as_its_code() {
             prepare,
             VectorFailure::ModelCheck,
         ),
-        (
-            E::ModelLoad("reference 0".into()),
-            prepare,
-            VectorFailure::ModelCheck,
-        ),
         (E::Store("full".into()), prepare, VectorFailure::Write),
         (E::Request("reset".into()), prepare, VectorFailure::Download),
         (E::HostRefused("x".into()), prepare, VectorFailure::Download),
+        (
+            E::ModelLoad("reference 0".into()),
+            convert,
+            VectorFailure::ModelFailed,
+        ),
+        (
+            E::ModelLoad("weights".into()),
+            convert,
+            VectorFailure::ModelFailed,
+        ),
+        (E::WorkerExited, convert, VectorFailure::ModelFailed),
+        (E::TimedOut, convert, VectorFailure::ModelFailed),
+        (
+            E::WorkerStart("spawn".into()),
+            convert,
+            VectorFailure::ModelFailed,
+        ),
+        (E::Store("full".into()), convert, VectorFailure::Write),
         (
             E::AuditBlocked("x".into()),
             prepare,
@@ -437,14 +463,6 @@ fn a_failed_pass_names_its_failure_and_keeps_what_was_stored() {
     );
     *lock(&harness.model().prepare_error) = None;
 
-    *lock(&harness.model().start_error) = Some(EmbedError::AuditBlocked("locked".into()));
-    prepare_and_wait(&harness, &entry, VectorSource::Builtin);
-    assert_eq!(
-        status(&harness, &entry).failure,
-        Some(VectorFailure::AuditBlocked)
-    );
-    *lock(&harness.model().start_error) = None;
-
     harness.model().gate.allow(1);
     harness.vectors.prepare(&entry, VectorSource::Builtin);
     assert!(harness.model().gate.wait_for_held());
@@ -482,6 +500,16 @@ fn a_failed_pass_names_its_failure_and_keeps_what_was_stored() {
         status(&harness, &entry).failure,
         Some(VectorFailure::ModelMissing)
     );
+    *lock(&harness.sources.runner.reported_dimensions) = Ok(Some(8));
+
+    // Only a runner writes audit lines, so only a runner is blocked by an unwritable log.
+    *lock(&harness.sources.runner.start_error) = Some(EmbedError::AuditBlocked("locked".into()));
+    prepare_and_wait(&harness, &entry, runner());
+    assert_eq!(
+        status(&harness, &entry).failure,
+        Some(VectorFailure::AuditBlocked)
+    );
+    *lock(&harness.sources.runner.start_error) = None;
 
     // The next pass that does not fail clears it.
     prepare_and_wait(&harness, &entry, VectorSource::Builtin);
@@ -745,20 +773,5 @@ fn the_contract_shapes_cross_as_camel_case() {
     }
 }
 
-#[test]
-fn a_folder_the_person_did_not_choose_is_refused_by_every_command() {
-    use super::commands::granted_entry;
-    use crate::vault_grants::EnforcedScope;
-    let harness = Harness::new();
-    let granted = vault("granted", 1);
-    let other = vault("not-granted", 1);
-    let _scope = EnforcedScope::granting(std::slice::from_ref(&granted));
-    let door = |root: &Path| granted_entry(&harness.vectors, &root.to_string_lossy());
-    assert!(door(&other).is_err());
-    assert!(door(&granted.join("..").join(other.file_name().unwrap())).is_err());
-    let opened = door(&granted).unwrap();
-    assert_eq!(opened.root, granted);
-    assert_eq!(harness.vectors.probe(&opened.root, None).files, 1);
-    cleanup(&granted);
-    cleanup(&other);
-}
+mod held;
+mod refused;

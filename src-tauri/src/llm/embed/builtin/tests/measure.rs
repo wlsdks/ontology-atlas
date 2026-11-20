@@ -172,8 +172,8 @@ impl ModelWork for RealWorker {
         client::convert_in_worker(self, client::LIMITS, cancel, on_progress)
     }
 
-    fn check(&self, _: &ModelStore) -> Result<(), EmbedError> {
-        client::check_in_worker(self, client::LIMITS)
+    fn check(&self, _: &ModelStore, cancel: &AtomicBool) -> Result<(), EmbedError> {
+        client::check_in_worker(self, client::LIMITS, cancel)
     }
 }
 

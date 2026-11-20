@@ -38,16 +38,29 @@ impl Clock for TestClock {
     }
 }
 
+/// Runs once, on the first event it accepts, outside the list's lock.
+type Hook = Box<dyn FnMut(&VectorStatus) -> bool + Send>;
+
 /// Every event, in order; a test waits for the one it expects.
 #[derive(Default)]
 pub(super) struct Events {
     list: Mutex<Vec<(String, VectorStatus)>>,
     added: Condvar,
+    hook: Mutex<Option<Hook>>,
 }
 
 impl Events {
     pub(super) fn all(&self) -> Vec<(String, VectorStatus)> {
         lock(&self.list).clone()
+    }
+
+    pub(super) fn count(&self) -> usize {
+        lock(&self.list).len()
+    }
+
+    /// `act` sees each event until it returns `true` once.
+    pub(super) fn on_event(&self, act: impl FnMut(&VectorStatus) -> bool + Send + 'static) {
+        *lock(&self.hook) = Some(Box::new(act));
     }
 
     pub(super) fn wait_for(&self, found: impl Fn(&VectorStatus) -> bool) -> bool {
@@ -64,6 +77,12 @@ impl Emit for Events {
     fn emit(&self, root_path: &str, status: &VectorStatus) {
         lock(&self.list).push((root_path.to_string(), status.clone()));
         self.added.notify_all();
+        let hook = lock(&self.hook).take();
+        if let Some(mut act) = hook {
+            if !act(status) {
+                *lock(&self.hook) = Some(act);
+            }
+        }
     }
 }
 
@@ -90,11 +109,11 @@ impl Gate {
         self.changed.notify_all();
     }
 
-    /// `false` once `stop` is set while waiting.
-    fn pass(&self, stop: &AtomicBool) -> bool {
+    /// `false` once `stop` is set while waiting, unless `deaf`.
+    fn pass(&self, stop: &AtomicBool, deaf: bool) -> bool {
         let mut tokens = lock(&self.tokens);
         loop {
-            if stop.load(Ordering::SeqCst) {
+            if !deaf && stop.load(Ordering::SeqCst) {
                 return false;
             }
             match *tokens {
@@ -137,7 +156,13 @@ pub(super) struct FakeModel {
     pub gate: Gate,
     /// One worker: a batch and a question never compute at once.
     worker: Mutex<()>,
-    loaded: AtomicBool,
+    pub loaded: AtomicBool,
+    /// A batch held at the gate ignores a stop, as a runner request in flight can.
+    pub deaf: AtomicBool,
+    /// The next batch panics.
+    pub panic_batch: AtomicBool,
+    /// Preparing the model fails with this error once it reaches this step.
+    pub prepare_fails_at: Mutex<Option<(Stage, EmbedError)>>,
     /// Worker starts.
     pub loads: AtomicUsize,
     pub releases: AtomicUsize,
@@ -162,6 +187,9 @@ impl FakeModel {
             gate: Gate::default(),
             worker: Mutex::new(()),
             loaded: AtomicBool::new(false),
+            deaf: AtomicBool::new(false),
+            panic_batch: AtomicBool::new(false),
+            prepare_fails_at: Mutex::new(None),
             loads: AtomicUsize::new(0),
             releases: AtomicUsize::new(0),
             downloads: AtomicUsize::new(0),
@@ -234,8 +262,15 @@ impl EmbedSession for FakeSession<'_> {
         passages: &[&str],
         stop: &AtomicBool,
     ) -> Result<Vec<Vec<f32>>, EmbedError> {
-        if !self.model.gate.pass(stop) {
+        if !self
+            .model
+            .gate
+            .pass(stop, self.model.deaf.load(Ordering::SeqCst))
+        {
             return Err(EmbedError::Cancelled);
+        }
+        if self.model.panic_batch.swap(false, Ordering::SeqCst) {
+            panic!("a fault inside the job");
         }
         if let Some(error) = lock(&self.model.batch_error).clone() {
             return Err(error);
@@ -312,12 +347,25 @@ impl Builtin for FakeModel {
                 return Err(EmbedError::Cancelled);
             }
             on_progress(&Progress { stage, done, total });
+            let fails = lock(&self.prepare_fails_at)
+                .as_ref()
+                .filter(|(at, _)| *at == stage)
+                .map(|(_, error)| error.clone());
+            if let Some(error) = fails {
+                return Err(error);
+            }
         }
         self.ready.store(true, Ordering::SeqCst);
         Ok(())
     }
 
     fn delete(&self) -> Result<(), EmbedError> {
+        if self.open_sessions.load(Ordering::SeqCst) > 0 {
+            return Err(EmbedError::ModelBusy);
+        }
+        let _worker = lock(&self.worker);
+        self.releases.fetch_add(1, Ordering::SeqCst);
+        self.loaded.store(false, Ordering::SeqCst);
         self.ready.store(false, Ordering::SeqCst);
         Ok(())
     }
@@ -403,6 +451,11 @@ pub(super) struct Harness {
 
 impl Harness {
     pub(super) fn new() -> Self {
+        Self::with_background(false)
+    }
+
+    /// With the progress ticker and the housekeeping thread started, as in the app.
+    pub(super) fn with_background(background: bool) -> Self {
         use_test_index_folder();
         let clock = Arc::new(TestClock::default());
         let events = Arc::new(Events::default());
@@ -417,7 +470,7 @@ impl Harness {
             sources.clone(),
             clock.clone(),
             events.clone(),
-            false,
+            background,
         ));
         Self {
             vectors,

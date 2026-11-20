@@ -6,7 +6,6 @@ use crate::llm::embed::builtin::client::BuiltinModel;
 use crate::llm::embed::builtin::infer::Runtime;
 use crate::llm::embed::builtin::{pins, worker, Progress};
 use crate::llm::embed::{EmbedError, Embedder, LocalRunner};
-use std::collections::HashMap;
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex, OnceLock};
@@ -27,6 +26,8 @@ pub(crate) trait Builtin: Embedder + Send + Sync {
         cancel: &AtomicBool,
         on_progress: &mut dyn FnMut(&Progress),
     ) -> Result<(), EmbedError>;
+    /// Ends the worker and deletes the model's files in one turn of the worker, so no question
+    /// starts a worker in between; refused while a build is open.
     fn delete(&self) -> Result<(), EmbedError>;
     /// Starts loading the worker and returns at once.
     fn warm(&self);
@@ -129,7 +130,7 @@ impl Builtin for AppBuiltin {
     }
 
     fn delete(&self) -> Result<(), EmbedError> {
-        self.0.store().delete()
+        self.0.delete_model()
     }
 
     fn warm(&self) {
@@ -179,13 +180,20 @@ impl Runner for AppRunner {
     }
 }
 
+/// A runner the app keeps, by its address and model.
+type KeptRunner = ((String, String), Arc<AppRunner>);
+
 /// The app's sources: the model store in the app's data directory, and runners by address.
 #[derive(Default)]
 pub(super) struct AppSources {
     builtin: OnceLock<Arc<AppBuiltin>>,
-    /// One per address and model, so the remote-model check runs once.
-    runners: Mutex<HashMap<(String, String), Arc<AppRunner>>>,
+    /// One per address and model, so the remote-model check runs once; the least recently used
+    /// first, at most `MAX_RUNNERS`.
+    runners: Mutex<Vec<KeptRunner>>,
 }
+
+/// Runners the app keeps connected; an address typed many times over does not grow the list.
+const MAX_RUNNERS: usize = 8;
 
 #[cfg(test)]
 impl AppSources {
@@ -194,6 +202,16 @@ impl AppSources {
         let sources = Self::default();
         let _ = sources.builtin.set(Arc::new(AppBuiltin(model)));
         sources
+    }
+
+    /// The runners kept, the least recently used first.
+    pub(super) fn runner_addresses(&self) -> Vec<String> {
+        self.runners
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .iter()
+            .map(|((address, _), _)| address.clone())
+            .collect()
     }
 }
 
@@ -222,11 +240,17 @@ impl Sources for AppSources {
             .runners
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if let Some(runner) = runners.get(&key) {
-            return Ok(runner.clone());
+        if let Some(at) = runners.iter().position(|(known, _)| known == &key) {
+            let used = runners.remove(at);
+            let runner = used.1.clone();
+            runners.push(used);
+            return Ok(runner);
         }
         let runner = Arc::new(AppRunner(LocalRunner::connect(&key.0, &key.1)?));
-        runners.insert(key, runner.clone());
+        if runners.len() >= MAX_RUNNERS {
+            runners.remove(0);
+        }
+        runners.push((key, runner.clone()));
         Ok(runner)
     }
 

@@ -1,6 +1,7 @@
 // bge-m3 run by candle in a worker process the app starts. Preparing downloads the
 // pinned files, has a worker convert and check them, and deletes the download.
-// Passages go only to the worker, each build and question after its audit line.
+// Passages and questions go only to the worker, so they write no audit line; the
+// download, the one thing that leaves the computer, writes its lines first.
 
 pub(crate) mod client;
 mod convert;
@@ -30,9 +31,8 @@ use std::time::Duration;
 
 pub(crate) use download::DownloadReport;
 
-/// Where the passages went, in every line the built-in model writes.
+/// The provider in the download's lines, the only lines the built-in model writes.
 pub(crate) const BUILTIN_PROVIDER: &str = "built-in";
-pub(crate) const BUILTIN_HOST: &str = "local-worker";
 /// The download's first host; the close line names the hosts its redirects added.
 pub(crate) const DOWNLOAD_HOST: &str = "huggingface.co";
 
@@ -45,12 +45,11 @@ const DOWNLOAD_DIR: &str = "download";
 /// Room left over once preparing has written everything it needs.
 const SPACE_MARGIN: u64 = 256 * 1024 * 1024;
 
-/// The built-in model's lines; a download's lines name the host it asks first.
+/// The download's lines, which name the host it asks first.
 pub(crate) struct BuiltinSource {
     host: &'static str,
 }
 
-pub(crate) const BUILTIN_SOURCE: BuiltinSource = BuiltinSource { host: BUILTIN_HOST };
 pub(crate) const DOWNLOAD_SOURCE: BuiltinSource = BuiltinSource {
     host: DOWNLOAD_HOST,
 };
@@ -122,8 +121,8 @@ trait ModelWork: Sync {
         cancel: &AtomicBool,
         on_progress: &mut dyn FnMut(u64, u64),
     ) -> Result<(), EmbedError>;
-    /// Compares the store's two files with the reference vectors.
-    fn check(&self, store: &ModelStore) -> Result<(), EmbedError>;
+    /// Compares the store's two files with the reference vectors; `Cancelled` at a stop.
+    fn check(&self, store: &ModelStore, cancel: &AtomicBool) -> Result<(), EmbedError>;
 }
 
 /// What `prepare` fetches and who converts and checks it; tests pass a tiny model.
@@ -166,9 +165,9 @@ impl ModelWork for InWorker {
         client::convert_in_worker(&client::SelfLaunch, client::LIMITS, cancel, on_progress)
     }
 
-    fn check(&self, store: &ModelStore) -> Result<(), EmbedError> {
+    fn check(&self, store: &ModelStore, cancel: &AtomicBool) -> Result<(), EmbedError> {
         Self::guard(store)?;
-        client::check_in_worker(&client::SelfLaunch, client::LIMITS)
+        client::check_in_worker(&client::SelfLaunch, client::LIMITS, cancel)
     }
 }
 
@@ -574,6 +573,12 @@ impl ModelStore {
         on_progress: &mut dyn FnMut(&Progress),
     ) -> Result<(), EmbedError> {
         let converting = self.converting();
+        // The download is done: a failure from here is the model's, not the network's.
+        on_progress(&Progress {
+            stage: Stage::Convert,
+            done: 0,
+            total: 0,
+        });
         let converted = recipe.work.convert(self, cancel, &mut |done, total| {
             on_progress(&Progress {
                 stage: Stage::Convert,
@@ -602,7 +607,7 @@ impl ModelStore {
             sync_file(&self.tokenizer())?;
             fs::rename(&converting, self.weights()).map_err(store_error)?;
             sync_dir(&self.dir)?;
-            recipe.work.check(self)?;
+            recipe.work.check(self, cancel)?;
             Ok(digest)
         })();
         let weights_sha256 = match checked {

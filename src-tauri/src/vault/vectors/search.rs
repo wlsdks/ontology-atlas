@@ -1,5 +1,9 @@
 //! A question: embedded within ten seconds by the folder's source, then the nearest passages from
 //! the folder's in-memory copy, each still held by its file. A failure is a state, never an error.
+//!
+//! The ten seconds are the sources' own: the built-in model ends a question its worker does not
+//! answer in time (`client::QUESTION_LIMIT`, the load included) and kills that worker, and a
+//! runner's request carries the same limit (`TIMEOUTS.query`). No thread outlives a search.
 
 use super::job::Entry;
 use super::memory::SEARCHER_IDLE;
@@ -8,14 +12,10 @@ use super::types::{
     failure_of, During, FoundState, PassageHit, VectorFailure, VectorFound, VectorSource,
 };
 use super::{lock, Vectors};
-use crate::llm::embed::{EmbedError, Embedder};
-use std::path::Path;
-use std::sync::{mpsc, Arc};
+use crate::llm::embed::{EmbedError, Embedder, MAX_PASSAGE_CHARS};
+use std::sync::Arc;
 use std::time::Duration;
 use vault_index::vectors::{Model, Searcher, MAX_HITS};
-
-/// Embedding the question, the model's load included, may take this long in all.
-pub(super) const QUESTION_LIMIT: Duration = Duration::from_secs(10);
 
 /// A folder's search copy and when it last answered.
 pub(super) struct OpenSearcher {
@@ -60,8 +60,7 @@ impl Vectors {
         let Some(model) = readable_model(root, source) else {
             return self.with_coverage(entry, VectorFound::empty(FoundState::NotReady, None));
         };
-        entry.remember(source);
-        let question = question.trim();
+        let question = cut_to_cap(question.trim());
         if question.is_empty() || limit == 0 {
             return self.with_coverage(entry, VectorFound::empty(FoundState::Ok, None));
         }
@@ -79,7 +78,7 @@ impl Vectors {
             lock(&self.keeper).question(self.clock.now());
             self.start_housekeeping();
         }
-        let query = match ask_within(asker, root, question, QUESTION_LIMIT) {
+        let query = match asker.embedder().embed_query(root, question) {
             Ok(query) => query,
             Err(error) => return self.with_coverage(entry, failed(failure_of(&error, during))),
         };
@@ -99,7 +98,7 @@ impl Vectors {
             }
         };
         if found.stale > 0 {
-            self.request_update(entry);
+            self.note_change(entry);
         }
         let hits = found
             .hits
@@ -135,9 +134,9 @@ impl Vectors {
     }
 
     /// The folder's copy answers; one opened for another model, or one whose store went, is
-    /// replaced first.
+    /// replaced first. Opening one starts the housekeeping that drops it when idle.
     fn nearest(
-        &self,
+        self: &Arc<Self>,
         entry: &Entry,
         model: &Model,
         query: &[f32],
@@ -151,6 +150,7 @@ impl Vectors {
                 let Some(searcher) = Searcher::open(&entry.root, model)? else {
                     return Ok(vault_index::vectors::Found::default());
                 };
+                self.start_housekeeping();
                 *open = Some(OpenSearcher {
                     model: model.clone(),
                     searcher,
@@ -194,25 +194,11 @@ impl Vectors {
     }
 }
 
-/// The question's vector, or `TimedOut` once `limit` passed; a late answer is dropped.
-fn ask_within(
-    asker: Asker,
-    root: &Path,
-    question: &str,
-    limit: Duration,
-) -> Result<Vec<f32>, EmbedError> {
-    let (answer, answered) = mpsc::channel();
-    let (root, question) = (root.to_path_buf(), question.to_string());
-    let spawned = std::thread::Builder::new()
-        .name("vault-vectors-question".into())
-        .spawn(move || {
-            let _ = answer.send(asker.embedder().embed_query(&root, &question));
-        });
-    if spawned.is_err() {
-        return Err(EmbedError::WorkerStart("thread".into()));
-    }
-    match answered.recv_timeout(limit) {
-        Ok(answer) => answer,
-        Err(_) => Err(EmbedError::TimedOut),
+/// A question longer than a passage may be is searched by its first `MAX_PASSAGE_CHARS`
+/// characters, cut on a character boundary.
+pub(super) fn cut_to_cap(question: &str) -> &str {
+    match question.char_indices().nth(MAX_PASSAGE_CHARS) {
+        Some((end, _)) => question.get(..end).unwrap_or(question),
+        None => question,
     }
 }

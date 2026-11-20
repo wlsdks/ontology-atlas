@@ -40,7 +40,8 @@ pub(crate) enum VectorFailure {
     ModelGone,
     RunnerDown,
     ModelMissing,
-    /// The model could not start, stopped answering, or answered with vectors Atlas refused.
+    /// The model could not be converted, loaded or checked, could not start, stopped answering,
+    /// or answered with vectors Atlas refused; also a job that failed inside (detail `internal`).
     ModelFailed,
     Write,
     AuditBlocked,
@@ -50,8 +51,10 @@ pub(crate) enum VectorFailure {
 /// Where an embedding error happened decides which failure the person sees.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum During {
-    /// Downloading, converting or checking the built-in model.
+    /// Downloading the built-in model, and the space check before it.
     ModelPrepare,
+    /// A worker converting the download or checking the converted model; the download is kept.
+    ModelConvert,
     /// Preparing passages or answering a question, through the built-in model or a runner.
     Embedding { runner: bool },
 }
@@ -65,9 +68,15 @@ pub(super) fn failure_of(error: &EmbedError, during: During) -> VectorFailure {
         During::ModelPrepare => match error {
             E::NoDirectConnection => VectorFailure::NeedsDirect,
             E::DiskSpace { .. } => VectorFailure::DiskShort,
-            E::HashMismatch(_) | E::SizeMismatch(_) | E::ModelLoad(_) => VectorFailure::ModelCheck,
+            // The two ways a download fails to match the published file; each deletes it.
+            E::HashMismatch(_) | E::SizeMismatch(_) => VectorFailure::ModelCheck,
             E::Store(_) => VectorFailure::Write,
             _ => VectorFailure::Download,
+        },
+        During::ModelConvert => match error {
+            E::DiskSpace { .. } => VectorFailure::DiskShort,
+            E::Store(_) => VectorFailure::Write,
+            _ => VectorFailure::ModelFailed,
         },
         During::Embedding { runner } => match error {
             E::ModelNotReady => VectorFailure::ModelGone,

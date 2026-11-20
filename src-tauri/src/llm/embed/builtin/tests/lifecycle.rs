@@ -1,6 +1,8 @@
 //! The app's side of the worker, against a fake worker on a thread.
 
-use super::super::client::{convert_in_worker, BuiltinModel, Launch, Limits, WorkerState, LIMITS};
+use super::super::client::{
+    check_in_worker, convert_in_worker, BuiltinModel, Launch, Limits, WorkerState,
+};
 use super::super::protocol::{encode_reply, encode_vectors, Reply, MAX_ANSWER_BYTES};
 use super::fake_worker::{vector_of, Log, ScriptedLaunch, ThreadLaunch, DIMENSIONS};
 use super::*;
@@ -17,6 +19,7 @@ const QUICK: Limits = Limits {
     hello: Duration::from_secs(5),
     load: Duration::from_secs(5),
     batch: Duration::from_secs(5),
+    question: Duration::from_secs(5),
     stop: Duration::from_millis(500),
     exit: Duration::from_secs(2),
 };
@@ -46,18 +49,12 @@ fn wait_until(what: &str, done: impl Fn() -> bool) {
 }
 
 #[test]
-fn a_build_writes_its_start_line_before_sending_and_closes_after() {
+fn a_build_loads_its_worker_before_it_sends_and_answers_within_the_batch_caps() {
     let (model, log, _) = fake();
     let vault = temp_dir("build-vault");
     let embedder: &dyn Embedder = &model;
     let mut session = embedder.start_build(&vault, plan(3, 200)).unwrap();
-    let lines = audit_lines(&vault);
-    assert_eq!(lines.len(), 1);
-    assert_eq!(lines[0]["purpose"], "embed-build");
-    assert_eq!(lines[0]["provider"], "built-in");
-    assert_eq!(lines[0]["host"], "local-worker");
-    assert_eq!(lines[0]["model"], "bge-m3");
-    assert_eq!(lines[0]["embed"]["passagesPlanned"], 3);
+    assert_eq!(model.state(), WorkerState::Loaded);
     assert!(log.texts.lock().unwrap().is_empty());
 
     let vectors = session
@@ -67,53 +64,60 @@ fn a_build_writes_its_start_line_before_sending_and_closes_after() {
         vectors,
         vec![vector_of("search meaning"), vector_of("검색 의미")]
     );
+    let too_many = vec!["passage"; crate::llm::embed::MAX_BATCH_PASSAGES + 1];
     assert_eq!(
-        session.embed_batch(&["dawn", "wave"]),
-        Err(EmbedError::OverPlan)
+        session.embed_batch(&too_many),
+        Err(EmbedError::BatchTooLarge)
     );
     session.finish(RunEnd::Complete).unwrap();
-    let lines = audit_lines(&vault);
-    assert_eq!(lines[1]["embed"]["ended"], "complete");
-    assert_eq!(lines[1]["embed"]["passagesSent"], 2);
-    assert_eq!(lines[1]["embed"]["charsSent"], 19);
     assert_eq!(model.state(), WorkerState::Loaded);
     assert!(model.idle_for().is_some());
     fs::remove_dir_all(&vault).ok();
 }
 
-#[test]
-fn a_question_writes_one_line_and_a_dropped_build_closes_as_stopped() {
-    let (model, _, _) = fake();
-    let vault = temp_dir("query-vault");
-    let vector = Embedder::embed_query(&model, &vault, "의미 검색").unwrap();
-    assert_eq!(vector, vector_of("의미 검색"));
-    let lines = audit_lines(&vault);
-    assert_eq!(lines.len(), 1);
-    assert_eq!(lines[0]["purpose"], "embed-query");
-    assert_eq!(lines[0]["question"], "의미 검색");
-    assert_eq!(lines[0]["outcome"], "ok");
-
-    drop(Embedder::start_build(&model, &vault, plan(1, 10)).unwrap());
-    assert_eq!(audit_lines(&vault)[2]["embed"]["ended"], "stopped");
-    fs::remove_dir_all(&vault).ok();
+/// A folder whose `.ontology-atlas` cannot hold anything: a plain file stands in its place.
+fn unwritable_atlas_folder(tag: &str) -> PathBuf {
+    let vault = temp_dir(tag);
+    fs::write(vault.join(".ontology-atlas"), b"").unwrap();
+    vault
 }
 
-#[cfg(any(unix, windows))]
 #[test]
-fn nothing_reaches_the_worker_while_the_audit_log_is_unwritable() {
+fn the_built_in_model_prepares_and_answers_in_a_folder_it_cannot_write_and_writes_nothing() {
     let (model, log, _) = fake();
-    let vault = temp_dir("blocked-build-vault");
-    block_audit_log(&vault);
-    assert!(matches!(
-        Embedder::start_build(&model, &vault, plan(1, 10)),
-        Err(EmbedError::AuditBlocked(_))
-    ));
-    assert!(matches!(
-        Embedder::embed_query(&model, &vault, "question"),
-        Err(EmbedError::AuditBlocked(_))
-    ));
-    assert!(log.texts.lock().unwrap().is_empty());
+    let vault = unwritable_atlas_folder("unwritable-vault");
+    let mut session = Embedder::start_build(&model, &vault, plan(2, 100)).unwrap();
+    assert_eq!(
+        session.embed_batch(&["dawn"]).unwrap(),
+        vec![vector_of("dawn")]
+    );
+    session.finish(RunEnd::Complete).unwrap();
+    drop(Embedder::start_build(&model, &vault, plan(1, 10)).unwrap());
+    assert_eq!(
+        Embedder::embed_query(&model, &vault, "의미 검색").unwrap(),
+        vector_of("의미 검색")
+    );
+    assert_eq!(*log.texts.lock().unwrap(), ["dawn", "의미 검색"]);
+    assert_eq!(fs::read(vault.join(".ontology-atlas")).unwrap(), b"");
+    assert_eq!(names(&vault), [".ontology-atlas"]);
+
+    // A writable folder gets no line either: nothing left the app's own processes.
+    let writable = temp_dir("writable-vault");
+    Embedder::embed_query(&model, &writable, "question").unwrap();
+    drop(Embedder::start_build(&model, &writable, plan(1, 10)).unwrap());
+    assert!(audit_lines(&writable).is_empty());
+    assert!(!writable.join(".ontology-atlas").exists());
     fs::remove_dir_all(&vault).ok();
+    fs::remove_dir_all(&writable).ok();
+}
+
+fn names(dir: &Path) -> Vec<String> {
+    let mut names: Vec<String> = fs::read_dir(dir)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    names
 }
 
 #[test]
@@ -433,7 +437,26 @@ fn a_conversion_in_a_worker_passes_its_progress_on_and_honours_a_stop() {
 }
 
 #[test]
-fn the_shipped_limits_return_a_stop_within_about_a_second() {
-    assert!(LIMITS.stop <= Duration::from_secs(1));
-    assert!(LIMITS.exit <= Duration::from_secs(2));
+fn a_check_in_a_worker_answers_and_a_stop_kills_the_worker() {
+    let launch = ThreadLaunch::new();
+    check_in_worker(&launch, QUICK, &never()).unwrap();
+    assert_eq!(launch.log.checks.load(Ordering::SeqCst), 1);
+
+    let held = ThreadLaunch {
+        hold_check: true,
+        ..ThreadLaunch::new()
+    };
+    let stop = AtomicBool::new(false);
+    let result = std::thread::scope(|scope| {
+        let checking = scope.spawn(|| check_in_worker(&held, QUICK, &stop));
+        wait_until("the check reaching the worker", || {
+            held.log.checks.load(Ordering::SeqCst) == 1
+        });
+        stop.store(true, Ordering::SeqCst);
+        checking.join().unwrap()
+    });
+    assert_eq!(result, Err(EmbedError::Cancelled));
+    // Killed while the check was held: only a kill ends a held fake.
+    assert!(held.log.killed.load(Ordering::SeqCst));
+    held.gate.open();
 }

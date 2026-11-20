@@ -624,6 +624,15 @@ fn check_passages(passages: &[&str]) -> Result<usize, EmbedError> {
     Ok(chars)
 }
 
+/// What `LocalRunner::connect` refuses before anything is sent: an address that is not this
+/// computer (a name such as `localhost` is resolved, as connecting does), or a model name a runner
+/// cannot hold or that names a remote model.
+pub(crate) fn check_runner(base_url: &str, model: &str) -> Result<(), EmbedError> {
+    loopback::local_endpoint(base_url, &loopback::system_resolve)?;
+    validate_model(model)?;
+    Ok(())
+}
+
 fn validate_model(model: &str) -> Result<&str, EmbedError> {
     let model = model.trim();
     if model.is_empty()

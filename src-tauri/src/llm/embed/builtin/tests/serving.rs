@@ -27,6 +27,7 @@ fn served(idle: Duration) -> Served {
         killed: Arc::default(),
         fail_load: false,
         hold_load: false,
+        hold_check: false,
         death: Death::Panic,
     };
     let worker = std::thread::spawn(move || serve(requests, answers, &models, idle));

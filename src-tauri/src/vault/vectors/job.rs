@@ -1,6 +1,10 @@
 //! One background job per folder: wait for the app's one model turn, make the model ready, list
 //! the folder, plan, and prepare batch by batch. A second request while it runs asks for one
 //! more pass; a stop, a quit or a crash keeps every stored passage.
+//!
+//! A folder the person stopped, or whose last pass failed, is held: no quiet pass starts for it
+//! until the person prepares it again. Quiet passes wait for the folder's index passes to go
+//! quiet, so a folder written to for minutes keeps no model loaded for all of them.
 
 use super::models::{builtin_model, is_builtin_model, readable_model, Builtin, Runner};
 use super::report::{Rate, Throttle};
@@ -11,17 +15,26 @@ use super::types::{
 use super::{lock, Vectors};
 use crate::llm::embed::builtin::{Progress, Stage as ModelStage};
 use crate::llm::embed::{BuildPlan, EmbedError, Embedder, RunEnd};
+use std::cell::Cell;
 use std::collections::VecDeque;
+use std::panic::AssertUnwindSafe;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
-use std::time::Duration;
-use vault_index::vectors::{Model, PrepareError, PrepareProgress, Status as Summary};
+use std::time::{Duration, Instant};
+use vault_index::vectors::{Model, PrepareError, PrepareProgress, Remaining, Status as Summary};
 
 /// How often a running job's ticker looks at its progress; the throttle decides what is sent.
 const TICK: Duration = Duration::from_millis(250);
-/// Delete of the model waits this long for the jobs using it to reach their next batch.
-const STOP_WAIT: Duration = Duration::from_secs(30);
+/// Delete of the model waits this long for the jobs using it to stop: each step they can be in
+/// (a download chunk, a conversion, the check, a batch) gives up within about a second.
+const STOP_WAIT: Duration = Duration::from_secs(5);
+/// A quiet update starts once the folder's index passes have been quiet this long,
+pub(super) const UPDATE_QUIET: Duration = Duration::from_secs(30);
+/// and no later than this after the first index pass it waited for.
+pub(super) const UPDATE_LATEST: Duration = Duration::from_secs(10 * 60);
+/// What a pass that panicked reports, so the screen can offer Resume.
+const INTERNAL: &str = "internal";
 
 /// The app's one model turn: jobs take it in the order they asked.
 #[derive(Default)]
@@ -85,6 +98,13 @@ impl Turn {
         }
     }
 
+    /// Whether another folder holds the turn or would take it first.
+    fn busy_for(&self, root: &Path) -> bool {
+        let state = lock(&self.state);
+        state.holder.as_ref().is_some_and(|holder| holder != root)
+            || state.waiting.front().is_some_and(|first| first != root)
+    }
+
     pub(super) fn wake(&self) {
         self.changed.notify_all();
     }
@@ -112,10 +132,29 @@ fn failed(error: &EmbedError, during: During) -> Ended {
     Ended::Failed(failure_of(error, during), error.code().to_string())
 }
 
+/// A failure while the worker converts or checks the model; the detail names the step and, for
+/// the check, whether the model did not load or did not match the reference vectors.
+fn model_failed(error: &EmbedError, step: ModelStage) -> Ended {
+    let step = if step == ModelStage::Check {
+        "check"
+    } else {
+        "convert"
+    };
+    let code = match error {
+        EmbedError::ModelLoad(detail) if detail.starts_with("reference") => {
+            "embed-model-reference-failed"
+        }
+        error => error.code(),
+    };
+    Ended::Failed(
+        failure_of(error, During::ModelConvert),
+        format!("{code}-in-{step}"),
+    )
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Stage {
     Starting,
-    Waiting,
     Downloading { done: u64, total: u64 },
     Converting,
     Planning,
@@ -126,29 +165,35 @@ enum Stage {
 pub(super) struct Run {
     pass: Pass,
     pub(super) builtin: bool,
+    /// The store was finished once before this pass, so this pass updates changed files.
+    finished: bool,
     generation: u64,
     progress: PrepareProgress,
     stop: AtomicBool,
+    /// Starts at the stage it enters once it holds the turn; until then it waits.
     stage: Mutex<Stage>,
-    /// The stage it starts in, and returns to after waiting for the turn.
-    initial: Stage,
+    has_turn: AtomicBool,
     /// The store's counts once the plan brought it in line with the folder.
     base: Mutex<Option<Summary>>,
+    /// What the plan left to prepare: an update's whole count.
+    planned: Mutex<Option<Remaining>>,
     listed: AtomicU64,
     rate: Mutex<Rate>,
 }
 
 impl Run {
-    fn new(pass: Pass, builtin: bool, generation: u64, initial: Stage) -> Self {
+    fn new(pass: Pass, builtin: bool, finished: bool, generation: u64, initial: Stage) -> Self {
         Self {
-            initial,
             pass,
             builtin,
+            finished,
             generation,
             progress: PrepareProgress::default(),
             stop: AtomicBool::new(false),
             stage: Mutex::new(initial),
+            has_turn: AtomicBool::new(false),
             base: Mutex::new(None),
+            planned: Mutex::new(None),
             listed: AtomicU64::new(0),
             rate: Mutex::default(),
         }
@@ -177,8 +222,15 @@ struct EntryState {
     run: Option<Arc<Run>>,
     /// The last pass's failure this launch; cleared by the next pass that does not fail.
     failure: Option<(VectorFailure, String)>,
-    /// Raised by a Delete: a pass of an older generation records nothing.
+    /// Raised by a Delete: a pass of an older generation records and reports nothing.
     generation: u64,
+    /// Stopped by the person, paused across a restart, or ended by a failure: no quiet pass
+    /// starts until the next prepare.
+    held: bool,
+    /// Deleted in this launch: the folder reports not set up until the next prepare.
+    deleted: bool,
+    /// Index passes a quiet update waits behind: the first and the last, on the job's clock.
+    deferred: Option<(Duration, Duration)>,
 }
 
 /// What the progress events last said, so the throttle knows whether anything moved.
@@ -194,7 +246,8 @@ struct Said {
 /// One folder: its job, its search copy and its cached counts.
 pub(super) struct Entry {
     pub(super) root: PathBuf,
-    shown_as: Mutex<String>,
+    /// The spelling of the folder's path its events carry: the first one it was opened with.
+    shown_as: String,
     state: Mutex<EntryState>,
     ended: Condvar,
     /// Held from a pass's last stop check through `plan`, and by a Delete, so a Delete never lands
@@ -209,7 +262,7 @@ impl Entry {
     pub(super) fn new(root: &Path, shown_as: &str) -> Self {
         Self {
             root: root.to_path_buf(),
-            shown_as: Mutex::new(shown_as.to_string()),
+            shown_as: shown_as.to_string(),
             state: Mutex::default(),
             ended: Condvar::new(),
             plan_gate: Mutex::new(()),
@@ -219,24 +272,39 @@ impl Entry {
         }
     }
 
-    pub(super) fn shown_as(&self, path: &str) {
-        let mut shown = lock(&self.shown_as);
-        if *shown != path {
-            path.clone_into(&mut shown);
-        }
-    }
-
     pub(super) fn source(&self) -> Option<VectorSource> {
         lock(&self.state).source.clone()
     }
 
-    /// Keeps `source` as the folder's choice; the update after an index pass uses it.
-    pub(super) fn remember(&self, source: &VectorSource) {
-        lock(&self.state).source = Some(source.clone());
+    /// Arms a folder with no remembered source in this launch with the WebView's `source`, held
+    /// when the person had paused it; never replaces a source a prepare chose.
+    pub(super) fn arm(&self, source: &VectorSource, paused: bool) {
+        let mut state = lock(&self.state);
+        if state.source.is_some() {
+            return;
+        }
+        state.source = Some(source.clone());
+        if paused {
+            state.held = true;
+            state.deferred = None;
+        }
     }
 
     pub(super) fn running_run(&self) -> Option<Arc<Run>> {
         lock(&self.state).run.clone()
+    }
+
+    /// Whether a job runs, or is about to, with the built-in model.
+    fn uses_builtin(&self) -> bool {
+        let state = lock(&self.state);
+        state.running
+            && (state.run.as_ref().is_some_and(|run| run.builtin)
+                || matches!(state.source, Some(VectorSource::Builtin)))
+    }
+
+    #[cfg(test)]
+    pub(super) fn held(&self) -> bool {
+        lock(&self.state).held
     }
 
     pub(super) fn forget_summary(&self) {
@@ -259,6 +327,42 @@ impl Entry {
             *searcher = None;
         }
     }
+
+    /// Whether the quiet update the folder waits for is due now; answers `true` once per wait.
+    fn update_due(&self, now: Duration) -> bool {
+        let mut state = lock(&self.state);
+        let due = state.deferred.is_some_and(|(first, last)| {
+            now.saturating_sub(last) >= UPDATE_QUIET || now.saturating_sub(first) >= UPDATE_LATEST
+        });
+        if due {
+            state.deferred = None;
+        }
+        due
+    }
+
+    /// Clears `running` and the run when a pass unwinds, so the folder can be prepared again.
+    fn end_unwound(&self) {
+        {
+            let mut state = lock(&self.state);
+            state.running = false;
+            state.run = None;
+            state.again = None;
+            state.held = true;
+            state.failure = Some((VectorFailure::ModelFailed, INTERNAL.into()));
+        }
+        self.ended.notify_all();
+    }
+}
+
+/// Ends the folder's job as a failure if its thread unwinds outside a pass.
+struct Unwinding<'e>(&'e Entry);
+
+impl Drop for Unwinding<'_> {
+    fn drop(&mut self) {
+        if std::thread::panicking() {
+            self.0.end_unwound();
+        }
+    }
 }
 
 /// The built-in model in use by a job: counted for the release rule until the job ends.
@@ -275,7 +379,7 @@ impl Drop for BuiltinInUse<'_> {
     fn drop(&mut self) {
         let now = self.0.clock.now();
         lock(&self.0.keeper).job_ended(now);
-        self.0.tick();
+        self.0.release_due();
     }
 }
 
@@ -342,19 +446,73 @@ fn lower_priority() {
     }
 }
 
+/// Whether a store for `source` exists and a prepare once finished it.
+fn finished_once(root: &Path, source: &VectorSource) -> bool {
+    readable_model(root, source)
+        .is_some_and(|model| vault_index::vectors::completed(root, &model).unwrap_or(false))
+}
+
 impl Vectors {
-    /// Starts or continues the folder's job with `source`, and returns at once.
+    /// Starts or continues the folder's job with `source`, and returns at once. The one call that
+    /// chooses a folder's source and lets a held folder go.
     pub(super) fn prepare(self: &Arc<Self>, entry: &Arc<Entry>, source: VectorSource) {
-        entry.remember(&source);
+        {
+            let mut state = lock(&entry.state);
+            state.source = Some(source);
+            state.held = false;
+            state.deleted = false;
+            state.deferred = None;
+        }
         self.request(entry, Pass::Prepare);
     }
 
-    /// A quiet pass over changed files, only for a folder whose vectors for its source exist.
+    /// The folder changed: a quiet update follows once its index passes go quiet (`tick`).
+    pub(super) fn note_change(self: &Arc<Self>, entry: &Arc<Entry>) {
+        let now = self.clock.now();
+        {
+            let mut state = lock(&entry.state);
+            if state.held || state.source.is_none() {
+                return;
+            }
+            state.deferred = Some(match state.deferred {
+                Some((first, _)) => (first, now),
+                None => (now, now),
+            });
+        }
+        self.start_housekeeping();
+    }
+
+    /// Starts every quiet update whose wait ended.
+    pub(super) fn start_due_updates(self: &Arc<Self>, now: Duration) {
+        for entry in self.all_entries() {
+            if entry.update_due(now) {
+                self.request_update(&entry);
+            }
+        }
+    }
+
+    /// A quiet pass over changed files, only for a folder not held whose vectors for its source
+    /// exist, and never while the built-in model is gone (the status says so instead).
     pub(super) fn request_update(self: &Arc<Self>, entry: &Arc<Entry>) {
-        let Some(source) = entry.source() else {
+        let source = {
+            let state = lock(&entry.state);
+            if state.held {
+                return;
+            }
+            state.source.clone()
+        };
+        let Some(source) = source else {
             return;
         };
-        if readable_model(&entry.root, &source).is_some() {
+        if readable_model(&entry.root, &source).is_none() {
+            return;
+        }
+        let model_gone = matches!(source, VectorSource::Builtin)
+            && self
+                .sources
+                .builtin()
+                .is_ok_and(|builtin| !builtin.is_ready());
+        if !model_gone {
             self.request(entry, Pass::Update);
         }
     }
@@ -362,6 +520,9 @@ impl Vectors {
     fn request(self: &Arc<Self>, entry: &Arc<Entry>, pass: Pass) {
         {
             let mut state = lock(&entry.state);
+            if pass == Pass::Update && state.held {
+                return;
+            }
             if state.running {
                 // One more pass follows; a pass the person asked for outranks an update.
                 state.again = Some(match (state.again, pass) {
@@ -372,6 +533,12 @@ impl Vectors {
             }
             state.running = true;
         }
+        // Published before the call returns, so the command's answer is the job's.
+        let Some(first) = self.start_run(entry, pass) else {
+            entry.ended.notify_all();
+            self.report_phase(entry);
+            return;
+        };
         self.start_housekeeping();
         let vectors = self.clone();
         let job_entry = entry.clone();
@@ -379,58 +546,79 @@ impl Vectors {
             .name("vault-vectors".into())
             .spawn(move || {
                 lower_priority();
-                vectors.passes(&job_entry, pass);
+                vectors.passes(&job_entry, first);
             });
         if let Err(error) = spawned {
             log::warn!("search by meaning job did not start: {error}");
-            lock(&entry.state).running = false;
+            {
+                let mut state = lock(&entry.state);
+                state.running = false;
+                state.run = None;
+            }
             entry.ended.notify_all();
         }
     }
 
-    fn passes(self: &Arc<Self>, entry: &Arc<Entry>, first: Pass) {
-        let mut pass = first;
+    /// Publishes the next pass's run, or ends the job: a held folder, or one with no source,
+    /// starts nothing.
+    fn start_run(&self, entry: &Entry, pass: Pass) -> Option<(Arc<Run>, VectorSource)> {
+        let mut seen = entry.source();
         loop {
-            // A pass that must fetch the model says so from its first event.
-            let fetches_model = pass == Pass::Prepare
-                && matches!(entry.source(), Some(VectorSource::Builtin))
-                && self
-                    .sources
-                    .builtin()
-                    .is_ok_and(|builtin| !builtin.is_ready());
+            let facts = seen.as_ref().map(|source| {
+                // A pass that must fetch the model says so once it holds the turn.
+                let fetches_model = pass == Pass::Prepare
+                    && matches!(source, VectorSource::Builtin)
+                    && self
+                        .sources
+                        .builtin()
+                        .is_ok_and(|builtin| !builtin.is_ready());
+                (fetches_model, finished_once(&entry.root, source))
+            });
+            let mut state = lock(&entry.state);
+            if state.source != seen {
+                seen = state.source.clone();
+                continue;
+            }
+            state.again = None;
+            let (Some(source), Some((fetches_model, finished))) = (seen, facts) else {
+                state.running = false;
+                return None;
+            };
+            if state.held {
+                state.running = false;
+                return None;
+            }
             let initial = if fetches_model {
                 Stage::Downloading { done: 0, total: 0 }
             } else {
                 Stage::Starting
             };
-            let started = {
-                let mut state = lock(&entry.state);
-                state.again = None;
-                match state.source.clone() {
-                    Some(source) => {
-                        let builtin = matches!(source, VectorSource::Builtin);
-                        let run = Arc::new(Run::new(pass, builtin, state.generation, initial));
-                        state.run = Some(run.clone());
-                        Some((run, source))
-                    }
-                    None => None,
-                }
-            };
-            let Some((run, source)) = started else {
-                lock(&entry.state).running = false;
-                entry.ended.notify_all();
-                self.report_phase(entry);
-                return;
-            };
-            self.report_phase(entry);
-            let ended = self.run_pass(entry, &run, &source);
+            let builtin = matches!(source, VectorSource::Builtin);
+            let run = Arc::new(Run::new(pass, builtin, finished, state.generation, initial));
+            state.run = Some(run.clone());
+            return Some((run, source));
+        }
+    }
+
+    fn passes(self: &Arc<Self>, entry: &Arc<Entry>, first: (Arc<Run>, VectorSource)) {
+        let _unwinding = Unwinding(entry);
+        let mut current = first;
+        loop {
+            let (run, source) = current;
+            let ended =
+                std::panic::catch_unwind(AssertUnwindSafe(|| self.run_pass(entry, &run, &source)))
+                    .unwrap_or_else(|_| Ended::Failed(VectorFailure::ModelFailed, INTERNAL.into()));
             entry.forget_summary();
             let next = {
                 let mut state = lock(&entry.state);
                 state.run = None;
                 if state.generation == run.generation {
                     state.failure = match &ended {
-                        Ended::Failed(failure, detail) => Some((*failure, detail.clone())),
+                        Ended::Failed(failure, detail) => {
+                            state.held = true;
+                            state.deferred = None;
+                            Some((*failure, detail.clone()))
+                        }
                         _ => None,
                     };
                 }
@@ -445,10 +633,16 @@ impl Vectors {
             }
             entry.ended.notify_all();
             self.report_phase(entry);
-            match next {
-                Some(again) => pass = again,
-                None => return,
-            }
+            let Some(again) = next else {
+                return;
+            };
+            // A Stop since the pass ended holds the folder: the queued pass does not start.
+            let Some(next_run) = self.start_run(entry, again) else {
+                entry.ended.notify_all();
+                self.report_phase(entry);
+                return;
+            };
+            current = next_run;
         }
     }
 
@@ -459,17 +653,12 @@ impl Vectors {
         source: &VectorSource,
     ) -> Ended {
         let _ticker = self.start_ticker(entry);
-        let mut on_wait = || {
-            run.set_stage(Stage::Waiting);
-            self.report_phase(entry);
-        };
+        let mut on_wait = || self.report_phase(entry);
         let Some(_turn) = self.turn.take(&entry.root, &|| run.stopped(), &mut on_wait) else {
             return Ended::Stopped;
         };
-        if *lock(&run.stage) == Stage::Waiting {
-            run.set_stage(run.initial);
-            self.report_phase(entry);
-        }
+        run.has_turn.store(true, Ordering::SeqCst);
+        self.report_phase(entry);
         let _in_use = run.builtin.then(|| BuiltinInUse::start(self));
         let (active, model) = match self.activate(entry, run, source) {
             Ok(active) => active,
@@ -541,7 +730,9 @@ impl Vectors {
         builtin.release();
         run.set_stage(Stage::Downloading { done: 0, total: 0 });
         self.report_phase(entry);
+        let step = Cell::new(ModelStage::Verify);
         let mut on_progress = |progress: &Progress| {
+            step.set(progress.stage);
             let stage = match progress.stage {
                 ModelStage::Verify | ModelStage::Download => Stage::Downloading {
                     done: progress.done,
@@ -562,7 +753,10 @@ impl Vectors {
             Ok(()) if run.stopped() => Err(Ended::Stopped),
             Ok(()) => Ok(()),
             Err(EmbedError::Cancelled) => Err(Ended::Stopped),
-            Err(error) => Err(failed(&error, During::ModelPrepare)),
+            Err(error) => Err(match step.get() {
+                ModelStage::Convert | ModelStage::Check => model_failed(&error, step.get()),
+                ModelStage::Verify | ModelStage::Download => failed(&error, During::ModelPrepare),
+            }),
         }
     }
 
@@ -600,8 +794,18 @@ impl Vectors {
         };
         *lock(&run.base) = vault_index::vectors::status(root, model).ok().flatten();
         let remaining = plan.remaining();
+        *lock(&run.planned) = Some(remaining);
         if remaining.passages == 0 {
-            return Ended::Done;
+            // Nothing to embed: `prepare` only records that the store is finished.
+            let finished = vault_index::vectors::prepare(plan, &run.progress, |_: &[&str]| {
+                Err::<Vec<Vec<f32>>, _>(EmbedError::BatchEmpty)
+            });
+            return match finished {
+                Ok(_) => Ended::Done,
+                Err(PrepareError::Stopped) => Ended::Stopped,
+                Err(PrepareError::Deleted) => Ended::Deleted,
+                Err(_) => Ended::Failed(VectorFailure::Write, "vectors-store-failed".into()),
+            };
         }
         run.set_stage(Stage::Preparing);
         self.report_phase(entry);
@@ -678,21 +882,39 @@ impl Vectors {
         })
     }
 
-    /// Asks the folder's job to stop at its next batch; a pass asked for after it still runs.
+    /// Holds the folder and asks its job to stop at its next batch, download chunk or model step.
+    /// From now on the folder reports `stopped` until the person prepares it again.
     pub(super) fn stop(&self, entry: &Entry) {
         let run = {
             let mut state = lock(&entry.state);
             state.again = None;
+            state.held = true;
+            state.deferred = None;
             state.run.clone()
         };
         if let Some(run) = run {
             run.request_stop();
         }
         self.turn.wake();
+        self.report_phase(entry);
+    }
+
+    /// Stops every job, then waits up to `within` for each to end and close its audit line.
+    /// `false` when one was still running at the bound; the caller goes on regardless.
+    pub(super) fn stop_all(&self, within: Duration) -> bool {
+        let entries = self.all_entries();
+        for entry in &entries {
+            self.stop(entry);
+        }
+        let deadline = Instant::now() + within;
+        entries
+            .iter()
+            .all(|entry| entry.wait_idle(deadline.saturating_duration_since(Instant::now())))
     }
 
     /// Stops every matching job for good, holds each out of its plan while `delete` runs, and lets
-    /// each folder's search copy and remembered source go.
+    /// each folder's search copy and remembered source go. Each folder reports not set up from
+    /// now until it is prepared again.
     pub(super) fn forget<T>(&self, root: Option<&Path>, delete: impl FnOnce() -> T) -> T {
         let canonical = root.and_then(|root| std::fs::canonicalize(root).ok());
         let mut entries: Vec<Arc<Entry>> = self
@@ -712,6 +934,9 @@ impl Vectors {
                 state.again = None;
                 state.source = None;
                 state.failure = None;
+                state.held = false;
+                state.deleted = true;
+                state.deferred = None;
                 state.run.clone()
             };
             if let Some(run) = run {
@@ -726,15 +951,19 @@ impl Vectors {
             entry.forget_summary();
         }
         drop(gates);
+        for entry in &entries {
+            self.report_phase(entry);
+        }
         deleted
     }
 
-    /// Ends every job using the built-in model, lets the worker go, then deletes the model.
+    /// Ends every job using the built-in model, then has the model end its worker and delete its
+    /// files in one turn, so no question starts a worker between the two.
     pub(super) fn delete_model(&self) -> Result<(), String> {
         let using: Vec<Arc<Entry>> = self
             .all_entries()
             .into_iter()
-            .filter(|entry| entry.running_run().is_some_and(|run| run.builtin))
+            .filter(|entry| entry.uses_builtin())
             .collect();
         for entry in &using {
             self.stop(entry);
@@ -742,11 +971,11 @@ impl Vectors {
         if !using.iter().all(|entry| entry.wait_idle(STOP_WAIT)) {
             return Err("vectors-model-in-use".into());
         }
-        let builtin = self.sources.builtin().map_err(|error| error.to_string())?;
-        if !builtin.release() {
-            return Err("vectors-model-in-use".into());
-        }
-        builtin.delete().map_err(|error| error.to_string())
+        let builtin = self
+            .sources
+            .builtin()
+            .map_err(|error| error.code().to_string())?;
+        builtin.delete().map_err(|error| error.code().to_string())
     }
 
     /// The folder's status: the running job's, else what the store and the last pass say.
@@ -756,20 +985,29 @@ impl Vectors {
         enabled: bool,
         source: Option<&VectorSource>,
     ) -> VectorStatus {
-        let vectors_bytes = vault_index::vectors::vectors_bytes(&entry.root).unwrap_or(0);
         if !enabled {
             let mut off = VectorStatus::of_phase(VectorPhase::Off);
-            off.vectors_bytes = vectors_bytes;
+            off.vectors_bytes = vault_index::vectors::vectors_bytes(&entry.root).unwrap_or(0);
             return off;
         }
-        let (run, remembered, failure) = {
+        let (run, remembered, failure, held, deleted) = {
             let state = lock(&entry.state);
             (
-                state.run.clone(),
+                // A pass of an older generation was ended by a Delete and speaks no more.
+                state
+                    .run
+                    .clone()
+                    .filter(|run| run.generation == state.generation),
                 state.source.clone(),
                 state.failure.clone(),
+                state.held,
+                state.deleted,
             )
         };
+        if deleted {
+            return VectorStatus::of_phase(VectorPhase::NotSetUp);
+        }
+        let vectors_bytes = vault_index::vectors::vectors_bytes(&entry.root).unwrap_or(0);
         let source = source.cloned().or(remembered);
         let model = match &source {
             Some(source) => readable_model(&entry.root, source),
@@ -779,8 +1017,8 @@ impl Vectors {
         };
         let summary = model.as_ref().and_then(|model| self.summary(entry, model));
         let mut status = match run {
-            Some(run) => self.running_status(&run, summary),
-            None => self.idle_status(summary, model.as_ref(), failure),
+            Some(run) => self.running_status(entry, &run, summary),
+            None => self.idle_status(summary, model.as_ref(), failure, held),
         };
         status.vectors_bytes = vectors_bytes;
         status
@@ -805,6 +1043,7 @@ impl Vectors {
         summary: Option<Summary>,
         model: Option<&Model>,
         failure: Option<(VectorFailure, String)>,
+        held: bool,
     ) -> VectorStatus {
         let mut status = VectorStatus::of_phase(VectorPhase::NotSetUp);
         if let Some(summary) = summary {
@@ -812,7 +1051,7 @@ impl Vectors {
         }
         let kept = summary.is_some_and(|summary| summary.passages_stored > 0);
         if let Some((failure, detail)) = failure {
-            status.phase = if kept {
+            status.phase = if kept && failure != VectorFailure::ModelGone {
                 VectorPhase::Stopped
             } else {
                 VectorPhase::Failed
@@ -821,19 +1060,26 @@ impl Vectors {
             status.failure_detail = Some(detail);
             return status;
         }
-        let Some(summary) = summary else {
-            return status;
-        };
-        let model_gone = model.is_some_and(is_builtin_model)
+        let model_gone = summary.is_some()
+            && model.is_some_and(is_builtin_model)
             && self
                 .sources
                 .builtin()
                 .is_ok_and(|builtin| !builtin.is_ready());
-        status.phase = if model_gone {
+        if model_gone {
+            status.phase = VectorPhase::Failed;
             status.failure = Some(VectorFailure::ModelGone);
             status.failure_detail = Some(EmbedError::ModelNotReady.code().into());
-            VectorPhase::Failed
-        } else if summary.passages_stored >= summary.passages {
+            return status;
+        }
+        if held {
+            status.phase = VectorPhase::Stopped;
+            return status;
+        }
+        let Some(summary) = summary else {
+            return status;
+        };
+        status.phase = if summary.passages_stored >= summary.passages {
             VectorPhase::Ready
         } else {
             VectorPhase::Stopped
@@ -841,36 +1087,53 @@ impl Vectors {
         status
     }
 
-    fn running_status(&self, run: &Run, cached: Option<Summary>) -> VectorStatus {
+    fn running_status(&self, entry: &Entry, run: &Run, cached: Option<Summary>) -> VectorStatus {
         let stage = *lock(&run.stage);
-        let updating = run.pass == Pass::Update;
-        let phase = match stage {
-            Stage::Waiting if !updating => VectorPhase::WaitingTurn,
-            Stage::Downloading { .. } => VectorPhase::ModelDownloading,
-            Stage::Converting => VectorPhase::ModelConverting,
-            Stage::Preparing => VectorPhase::Preparing,
-            // An update stays quiet until it knows something changed.
-            Stage::Starting | Stage::Waiting | Stage::Planning if updating => VectorPhase::Ready,
-            Stage::Starting | Stage::Waiting | Stage::Planning => VectorPhase::Preparing,
-        };
-        let mut status = VectorStatus::of_phase(phase);
         let base = *lock(&run.base);
-        match base.or(cached) {
+        let folder_counts = |status: &mut VectorStatus| match base.or(cached) {
             Some(summary) => {
                 let (files, passages) = match base {
                     Some(_) => (run.progress.files_done(), run.progress.passages_done()),
                     None => (0, 0),
                 };
-                fill_counts(&mut status, &summary, files, passages);
+                fill_counts(status, &summary, files, passages);
             }
             None => status.files_total = run.listed.load(Ordering::Relaxed),
+        };
+        if run.stopped() {
+            // Stop was asked for: what is in flight may still land, but the person stopped it.
+            let mut status = VectorStatus::of_phase(VectorPhase::Stopped);
+            folder_counts(&mut status);
+            return status;
         }
-        status.updating = updating && phase == VectorPhase::Preparing;
+        // An update of a finished store stays quiet until it knows something changed.
+        let quiet = run.pass == Pass::Update && run.finished && stage != Stage::Preparing;
+        let waiting = !run.has_turn.load(Ordering::SeqCst) && self.turn.busy_for(&entry.root);
+        let phase = match stage {
+            _ if quiet => VectorPhase::Ready,
+            _ if waiting => VectorPhase::WaitingTurn,
+            Stage::Downloading { .. } => VectorPhase::ModelDownloading,
+            Stage::Converting => VectorPhase::ModelConverting,
+            Stage::Starting | Stage::Planning | Stage::Preparing => VectorPhase::Preparing,
+        };
+        let mut status = VectorStatus::of_phase(phase);
+        let planned = *lock(&run.planned);
+        if let (true, Stage::Preparing, Some(planned)) = (run.finished, stage, planned) {
+            // The changed files alone: what this pass reads.
+            status.updating = true;
+            status.files_total = planned.files;
+            status.files_done = run.progress.files_done().min(planned.files);
+            status.passages_total = planned.passages;
+            status.passages_done = run.progress.passages_done().min(planned.passages);
+        } else {
+            folder_counts(&mut status);
+        }
         if phase == VectorPhase::Preparing && stage == Stage::Preparing {
             let reading = run.progress.reading();
             status.current_path = (!reading.is_empty()).then_some(reading);
         }
-        if let Stage::Downloading { done, total } = stage {
+        if let (VectorPhase::ModelDownloading, Stage::Downloading { done, total }) = (phase, stage)
+        {
             status.model = Some(ModelBytes {
                 done_bytes: done,
                 total_bytes: total,
@@ -889,7 +1152,7 @@ impl Vectors {
             throttle.0.sent(now);
             throttle.1 = said(&status);
         }
-        self.emit.emit(&lock(&entry.shown_as), &status);
+        self.emit.emit(&entry.shown_as, &status);
     }
 
     /// Sends the status if the throttle allows: progress moved, or two seconds passed.
@@ -910,7 +1173,7 @@ impl Vectors {
             }
             *last = next;
         }
-        self.emit.emit(&lock(&entry.shown_as), &status);
+        self.emit.emit(&entry.shown_as, &status);
     }
 }
 
