@@ -4919,6 +4919,7 @@ dependencies = [
  "miniz_oxide",
  "rusqlite",
  "sha2",
+ "vault-index",
  "windows-sys 0.61.2",
 ]
 

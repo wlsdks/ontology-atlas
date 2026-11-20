@@ -89,6 +89,8 @@ pub fn plan(
         return Err(Error::Cancelled);
     }
     let waited_for = deletion_count(&dir);
+    #[cfg(feature = "test-hooks")]
+    crate::pause::reached_plan_lock(&dir);
     let vault_path = root.to_string_lossy().into_owned();
     let (writer, stamped) = {
         let lock = lock_index_dir(&dir)?;

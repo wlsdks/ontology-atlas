@@ -9,6 +9,9 @@ mod confine;
 mod lifecycle;
 mod location;
 mod passage;
+#[cfg(feature = "test-hooks")]
+#[doc(hidden)]
+pub mod pause;
 pub mod rows;
 mod search;
 mod segment;

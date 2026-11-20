@@ -804,43 +804,28 @@ fn a_delete_stops_a_running_build_and_leaves_nothing_stored() {
 fn a_plan_that_waited_behind_a_delete_leaves_it_done() {
     let vault = TempVault::new("vectors-plan-waits");
     write_sections(&vault, 20, 59);
-    let dir = vault_index::index_dir(&vault.root).unwrap();
-    // Which waiter takes the lock first is the system's choice: every round asserts both orders.
-    for round in 0..4 {
-        let mut asked = Vec::new();
-        prepare_all(&vault, &mut asked);
-        let held = std::fs::OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open(dir.join("index.lock"))
-            .unwrap();
-        held.lock().unwrap();
-        let planned = {
-            let (root, files) = (vault.root.clone(), vault.files());
-            std::thread::spawn(move || {
-                vectors::plan(&root, &model(), &files, &PrepareProgress::default()).map(|_| ())
-            })
-        };
-        // The plan counts deletions, then waits for the lock; the Delete counts, then waits too.
-        std::thread::sleep(std::time::Duration::from_millis(60));
-        let deleted = {
-            let root = vault.root.clone();
-            std::thread::spawn(move || vectors::delete_vectors(&root))
-        };
-        std::thread::sleep(std::time::Duration::from_millis(60));
-        held.unlock().unwrap();
-        deleted.join().unwrap().unwrap();
-        let planned = planned.join().unwrap();
-        assert!(
-            matches!(&planned, Err(vault_index::Error::Io(e)) if e.kind() == std::io::ErrorKind::NotFound),
-            "round {round}: {planned:?}"
-        );
-        assert!(vectors::status(&vault.root, &model()).unwrap().is_none());
-        assert!(
-            !vectors_file(&vault).exists(),
-            "round {round}: the delete stays done"
-        );
-    }
+    let mut asked = Vec::new();
+    prepare_all(&vault, &mut asked);
+    // The Delete runs after the plan read the deletion count and before it takes the lock.
+    let root = vault.root.clone();
+    vault_index::pause::before_plan_lock(
+        &vault_index::index_dir(&vault.root).unwrap(),
+        move || {
+            vectors::delete_vectors(&root).unwrap();
+        },
+    );
+    let planned = vectors::plan(
+        &vault.root,
+        &model(),
+        &vault.files(),
+        &PrepareProgress::default(),
+    );
+    assert!(
+        matches!(&planned, Err(vault_index::Error::Io(e)) if e.kind() == std::io::ErrorKind::NotFound),
+        "{planned:?}"
+    );
+    assert!(vectors::status(&vault.root, &model()).unwrap().is_none());
+    assert!(!vectors_file(&vault).exists(), "the delete stays done");
 }
 
 /// Windows refuses to remove a file another handle holds; a read-only folder does the same here.
