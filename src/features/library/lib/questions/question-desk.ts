@@ -166,16 +166,27 @@ function leadPlace(lead: DeskLead): [string, number] {
   return lead.kind === 'claim' ? [lead.claim.pageSlug, lead.claim.line] : [lead.hit.path, anchorLine(lead.hit.anchor)];
 }
 
-/** Wiki claims and source passages in one list, best first: rank fusion, then claim, path and line. */
+/**
+ * Wiki claims and source passages in one list, best first: rank fusion, then claim, path and line.
+ * A passage at the place a listed claim cites is that claim's evidence, which the claim's cited-file
+ * press already opens: it folds into the claim and adds its rank to the claim's.
+ */
 export function fuseDeskLeads(claims: readonly DeskClaim[], hits: readonly DeskSourceHit[]): DeskLead[] {
   const claimLeads = claims.map((claim): DeskLead => ({ kind: 'claim', key: `claim:${claim.pageSlug}:${claim.line}`, claim }));
   const sourceLeads = hits.map((hit): DeskLead => ({ kind: 'source', key: `source:${hit.path}#${hit.anchor}`, hit }));
+  const citedBy = new Map<string, string[]>();
+  for (const claim of claims) {
+    for (const citation of claim.citations) {
+      const place = `source:${citation.path}#${citation.anchor}`;
+      citedBy.set(place, [...(citedBy.get(place) ?? []), `claim:${claim.pageSlug}:${claim.line}`]);
+    }
+  }
   return fuseRankedLists([claimLeads, sourceLeads], (lead) => lead.key, (a, b) => {
     if (a.kind !== b.kind) return a.kind === 'claim' ? -1 : 1;
     const [pathA, lineA] = leadPlace(a);
     const [pathB, lineB] = leadPlace(b);
     return pathA.localeCompare(pathB) || lineA - lineB;
-  }).map((fused) => fused.item);
+  }, (lead) => lead.kind === 'source' ? citedBy.get(lead.key) ?? [] : []).map((fused) => fused.item);
 }
 
 function dayValue(value: unknown): number {

@@ -137,7 +137,6 @@ export function LibraryQuestionDesk({
     const asked = question.trim();
     if (!asked || reading || jev.sending) return;
     const id = ++searchId.current;
-    onInvalidateReport();
     jev.reset();
     setReading(true);
     setReadCount(0);
@@ -190,6 +189,8 @@ export function LibraryQuestionDesk({
       }
       hits.sort((a, b) => b.score - a.score || a.path.localeCompare(b.path));
       const sourceHits = hits.slice(0, 8);
+      /* A report cost an agent turn: it leaves with the rows it answered, when the new rows arrive. */
+      onInvalidateReport();
       setResult({
         question: asked, searchId: id, listingVersion: searchedVersion, claims: wiki.claims, sourceHits,
         leads: fuseDeskLeads(wiki.claims, sourceHits), terms,
@@ -223,6 +224,17 @@ export function LibraryQuestionDesk({
     skipped: result.totalSources - result.plannedSources,
     omitted: result.omittedClaims + result.omittedSources,
   }) : '';
+  /* The popovers list only the limits that hold something; the report keeps the full record. */
+  const limitFacts = (withOmitted: boolean) => {
+    if (!result) return '';
+    const counts: Array<[Parameters<typeof t>[0], number]> = [
+      ['limitUnreadable', result.unreadableSources],
+      ['limitChanged', result.changedSources],
+      ['limitSkipped', result.totalSources - result.plannedSources],
+      ['limitOmitted', withOmitted ? result.omittedClaims + result.omittedSources : 0],
+    ];
+    return counts.filter(([, count]) => count > 0).map(([key, count]) => t(key, { count })).join(' · ');
+  };
   const activeReport = fresh && result && report?.searchId === result.searchId
     && report.question === result.question && report.listingVersion === result.listingVersion
     && report.vaultScope === vaultScope
@@ -237,29 +249,36 @@ export function LibraryQuestionDesk({
         vaultScope, coverage, limits,
       });
     }} data-testid="question-desk-summarize">{hasLocalMatches ? t('report.summarize') : t('report.investigate')}</Button> : null;
-  const coverageInfo = <DeskCoverageInfo lines={[coverageCompact, limits, t('wikiCaveat')]} />;
+  const coverageInfo = <DeskCoverageInfo lines={[coverageCompact, limitFacts(false), t('limitsMethod'), t('wikiCaveat')].filter(Boolean)} />;
 
   const results = result && visible ? <>
     {outdated || (report && !activeReport) ? <p role="status" className="mb-3 text-label leading-label text-[color:var(--color-text-tertiary)]">{report ? t('report.outdated') : t('outdated')}</p> : null}
     {activeReport ? <div className="mb-10">
       <DeskReport report={activeReport} coverageCompact={coverageCompact}
-        coverageInfo={<DeskCoverageInfo lines={[coverage, limits]} testId="question-desk-report-coverage-info" />}
+        coverageInfo={<DeskCoverageInfo lines={[coverage, limitFacts(true), t('limitsMethod')].filter(Boolean)} testId="question-desk-report-coverage-info" />}
         sources={sources} dockOpen={dockOpen} reducedMotion={reducedMotion} onOpenSource={onOpenSource}
         onFileReport={onFileReport} filingReport={filingReport} fileReportNote={fileReportNote} />
     </div> : null}
     <div data-testid="question-desk-results">
-      <DeskResultsHead count={result.leads.length} underReport={activeReport !== null} coverageInfo={coverageInfo}
-        reportAction={hasLocalMatches ? reportAction : null} />
-      {!agentReady && !activeReport ? <p className="mt-3 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.agentUnavailable')}</p> : null}
-      {jev.note ? <p role="status" className="mt-3 text-label leading-label text-[color:var(--color-text-tertiary)]" data-testid="question-desk-jev-note">{jev.note}</p> : null}
-      {hasLocalMatches ? <div className="mt-1">
-        <DeskLeads set={result} expandedFor={expandedFor} onShowMore={() => setExpandedFor(result.searchId)}
-          reduced={reducedMotion} citationState={citationState} jev={jev} canCheck={vaultRoot !== null}
-          onOpenWiki={onOpenWiki} onOpenSource={onOpenSource} />
-      </div> : activeReport ? null : <section className="mt-5" data-testid="question-desk-unknown">
-        <h3 className="text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]">{t('zeroLocalTitle')}</h3>
+      {hasLocalMatches ? <>
+        <DeskResultsHead count={result.leads.length} underReport={activeReport !== null} coverageInfo={coverageInfo}
+          reportAction={reportAction} />
+        {!agentReady && !activeReport ? <p className="mt-3 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.agentUnavailable')}</p> : null}
+        {jev.note ? <p role="status" className="mt-3 text-label leading-label text-[color:var(--color-text-tertiary)]" data-testid="question-desk-jev-note">{jev.note}</p> : null}
+        <div className="mt-1">
+          <DeskLeads set={result} expandedFor={expandedFor} onShowMore={() => setExpandedFor(result.searchId)}
+            reduced={reducedMotion} citationState={citationState} jev={jev} canCheck={vaultRoot !== null}
+            onOpenWiki={onOpenWiki} onOpenSource={onOpenSource} />
+        </div>
+      </> : activeReport ? null : <section data-testid="question-desk-unknown">
+        {/* With nothing found the title is the head: no count of zero over an empty rule. */}
+        <div className="flex min-h-9 min-w-0 items-center gap-1.5">
+          <h3 aria-live="polite" className="text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]">{t('zeroLocalTitle')}</h3>
+          {coverageInfo}
+        </div>
         <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{t('zeroLocalBody')}</p>
-        {agentReady ? <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('zeroLocalAgentNote')}</p> : null}
+        {agentReady ? <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('zeroLocalAgentNote')}</p>
+          : <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.agentUnavailable')}</p>}
         {reportAction ? <div className="mt-4">{reportAction}</div> : null}
       </section>}
     </div>
@@ -279,7 +298,8 @@ export function LibraryQuestionDesk({
           <div className="flex flex-wrap items-center gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] transition-colors focus-within:border-[color:var(--color-indigo-focus-ring)]">
             <Search size={ICON_SIZE.lg} className="flex-none text-[color:var(--color-text-tertiary)]" aria-hidden="true" />
             <Input frame="bare" size="lg" aria-label={t('questionLabel')} placeholder={t('questionPlaceholder')} value={question} readOnly={jev.sending} onChange={(event) => {
-              onInvalidateReport();
+              /* A report on screen stays until new rows arrive; one still being written stops answering. */
+              if (!activeReport) onInvalidateReport();
               searchId.current += 1;
               jev.reset();
               setQuestion(event.target.value);

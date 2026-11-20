@@ -435,6 +435,15 @@ describe('question desk home and lead order', () => {
     expect(leads.map((lead) => lead.key)).toEqual(['claim:wiki/z:4', 'source:sources/a.md#l3', 'claim:wiki/z:9', 'source:sources/b.md#l1']);
   });
 
+  it('shows a passage a listed claim cites once, as that claim, and lifts the claim by its rank', () => {
+    const citing = { ...claimAt('wiki/z', 9), citations: [{ path: 'sources/a.md', anchor: 'l17' }] };
+    const leads = fuseDeskLeads([claimAt('wiki/z', 4), citing], [
+      { path: 'sources/a.md', anchor: 'l17', text: 'claim 9', score: 2 },
+      { path: 'sources/a.md', anchor: 'l18', text: 'next line', score: 1 },
+    ]);
+    expect(leads.map((lead) => lead.key)).toEqual(['claim:wiki/z:9', 'claim:wiki/z:4', 'source:sources/a.md#l18']);
+  });
+
   it('marks whole question terms and the stems of longer Hangul terms, nothing else', () => {
     const terms = questionTerms('반품은 며칠 안에 Refund');
     const runs = questionTermRuns('배송 후 15일 안에는 반품할 수 있다. refund ok', terms);

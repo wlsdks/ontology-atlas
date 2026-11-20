@@ -47,13 +47,17 @@ to three saved questions (newest first, a state badge only when cited sources ch
 or are missing) and up to five wiki pages by the day the folder lists for them, with
 how many sources each cites; a folder with neither shows its first three originals.
 Results are one list, best first: wiki claims and source passages fused by reciprocal
-rank (`lead-fusion.ts`). The best three show; Show N more appends the rest and moves
-focus to the first new row. A row is the sentence, question terms in a stronger weight,
-then where it lives: the page title or file name and its line, a badge only when a
-cited source changed, is missing or nothing is cited, and up to two cited files that
-open the source at the line. The head counts the passages found; an info glyph opens
-read coverage, limits and the freshness caveat once in a popover. Asking again keeps
-the old rows until the new ones arrive and swaps them in place.
+rank (`lead-fusion.ts`). A source passage at the exact place a listed claim cites
+is folded into that claim, which keeps both ranks, so one sentence stands once. The
+best three show; Show N more appends the rest and moves focus to the first new row.
+A row is the sentence, question terms in a stronger weight, then where it lives in
+one label size: the page title or file name and its line, a badge only when a cited
+source changed, is missing or nothing is cited, and up to two cited files that open
+the source at the line, then "+N" for the rest. The head counts the rows; with no
+match the no-match title is the head. An info glyph opens read coverage, only the
+limits that are not zero, the search method and the freshness caveat once in a
+popover. Asking again keeps the old rows until the new ones arrive and swaps them in
+place.
 A matching hash
 means the cited source bytes agree with the page's receipt; it does not verify
 the sentence. Results from an older folder listing stay under a line saying the
@@ -81,11 +85,13 @@ leads, which keep their place under the head "Passages the search found", with a
 unreviewed draft label.
 Zero local word matches do not assert that a differently worded original lacks
 the answer; ACP can re-read the folder on request. Only citations to inventoried originals open
-inside Library. The draft follows the current query and file listing; a new
-search or external folder change clears it. Filing remains an explicit Wiki
+inside Library; on screen each shows the file name and its line, with the full
+address as its description. The draft follows the current query and file listing:
+editing the question keeps it, and it leaves when a new search's rows arrive or the
+folder changes. Filing remains an explicit Wiki
 review/write action. One editorial document template preserves the question,
 response, cited addresses, search coverage and omissions in a local Markdown
-download or the app's Print/Save as PDF flow. Jev judgment is not exported as
+download or the app's Print/Save as PDF flow; both keep the full addresses. Jev judgment is not exported as
 accepted meaning. External links and images stay inert in Markdown exports;
 unusual syntax that cannot be safely rewritten is preserved as a literal text
 document. A failed agent action stays visible beside the question with a path

@@ -1,13 +1,14 @@
 'use client';
 
-import { Children, isValidElement, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Children, isValidElement, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import type { LibrarySourceRow } from '@/entities/docs-vault';
-import { questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections } from '@/features/library';
+import { passageLabelText, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections } from '@/features/library';
+import { passageLabelFor } from '@/shared/lib/library/source-passage';
 import { controlClass } from '@/shared/ui/control-class';
 import { normalizeOriginalPaths, parseWikilinkHref, resolveSourceCitation, rewriteWikilinks } from '@/shared/lib/library/source-citation';
 import { WIKI_CITATION_ANCHOR_PATTERN } from '@/shared/lib/library/wiki-page-schema';
@@ -34,6 +35,30 @@ function formatReportTimestamp(value: string, locale: string): string {
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
 
+/**
+ * A report's citation of an inventoried original. The screen shows the file and its line; the full
+ * address is the press's description and the only text print shows, so a printed report still
+ * names exactly what it cites.
+ */
+function CitationPress({ address, place, labelled, path, anchor, answer, onOpenSource }: {
+  address: string;
+  place: string;
+  labelled: ReactNode;
+  path: string;
+  anchor: string;
+  answer: boolean;
+  onOpenSource: (path: string, anchor: string) => void;
+}) {
+  const addressId = useId();
+  return <button type="button" data-source-path={path} data-source-anchor={anchor}
+    aria-describedby={addressId} onClick={() => onOpenSource(path, anchor)}
+    className={controlClass({ shape: 'link', size: 'lg', tone: 'accent', hoverInk: 'strong', className: answer ? 'inline break-all underline text-body-lg leading-body' : 'inline break-all underline' })}>
+    {labelled ? <>{labelled} · </> : null}
+    <span data-citation-place="true" className="print:hidden">{place}</span>
+    <span id={addressId} data-citation-address="true" className="hidden print:inline">{address}</span>
+  </button>;
+}
+
 function SafeReportMarkdown({ text, sources, onOpenSource, answer = false }: {
   text: string;
   sources: readonly LibrarySourceRow[];
@@ -41,6 +66,7 @@ function SafeReportMarkdown({ text, sources, onOpenSource, answer = false }: {
   answer?: boolean;
 }) {
   const t = useTranslations('library.questionDesk');
+  const tLibrary = useTranslations('library');
   const known = useMemo(() => normalizeOriginalPaths(new Set(sources.map((source) => source.path))), [sources]);
   const isCitationLink = (child: ReactNode) => isValidElement<{ href?: string }>(child)
     && Boolean(child.props.href && parseWikilinkHref(child.props.href));
@@ -81,11 +107,10 @@ function SafeReportMarkdown({ text, sources, onOpenSource, answer = false }: {
         const citation = wikilink ? resolveSourceCitation(wikilink.rawSlug, wikilink.rawAnchor, known, true) : null;
         if (citation?.status === 'known' && citation.path && citation.anchor && VALID_SOURCE_ANCHOR.test(citation.anchor)) {
           const address = `${citation.path}#${citation.anchor}`;
-          return <button type="button" data-source-path={citation.path} data-source-anchor={citation.anchor}
-            aria-label={address} onClick={() => onOpenSource(citation.path!, citation.anchor!)}
-            className={controlClass({ shape: 'link', size: 'lg', tone: 'accent', hoverInk: 'strong', className: answer ? 'inline break-all underline text-body-lg leading-body' : 'inline break-all underline' })}>
-            {wikilink?.labelled ? <>{children} · {address}</> : address}
-          </button>;
+          /* On screen the file and its line, as the rows write them; print keeps the address. */
+          const place = `${citation.path.split('/').pop() || citation.path} · ${passageLabelText(passageLabelFor(citation.anchor, []), citation.anchor, tLibrary)}`;
+          return <CitationPress address={address} place={place} labelled={wikilink?.labelled ? children : null}
+            path={citation.path} anchor={citation.anchor} answer={answer} onOpenSource={onOpenSource} />;
         }
         return <span title={citation ? t('report.citationUnavailable') : t('report.externalUnavailable')}
           className="break-all border-b border-dashed border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)]"

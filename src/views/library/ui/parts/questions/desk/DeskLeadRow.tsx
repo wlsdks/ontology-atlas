@@ -64,7 +64,8 @@ export function DeskLeadRow({ lead, terms, citationState, jev, jevResult, rise, 
         : states.includes('stale') ? t('questionDesk.sourceState.stale') : null;
   const cited = lead.kind === 'claim' ? lead.claim.citations.slice(0, CITED_PRESSES) : [];
   const uncited = lead.kind === 'claim' ? lead.claim.citations.length - cited.length : 0;
-  const quietPress = controlClass({ shape: 'link', size: 'sm', tone: 'default', hoverInk: 'strong', className: 'relative z-10 max-w-full' });
+  /* `md` is the second line's own label size; the cited file differs from the file name only by ink. */
+  const quietPress = controlClass({ shape: 'link', size: 'md', tone: 'default', hoverInk: 'strong', className: 'relative z-10 max-w-full leading-label' });
 
   return <motion.li layout="position" data-testid="question-desk-lead" data-lead-kind={lead.kind}
     initial={rise ? OVERLAY_RISE : false} animate={OVERLAY_SETTLED}

@@ -48,6 +48,37 @@ describe('fuseRankedLists', () => {
     expect(fused.map((lead) => lead.lists)).toEqual([[0], [1]]);
   });
 
+  it('folds an item into the host it names and keeps both rank contributions', () => {
+    const hosts: Record<string, string[]> = { s1: ['c3'] };
+    const fold = (lead: Lead) => hosts[lead.id] ?? [];
+    const claims = [claim('c1'), claim('c2'), claim('c3')];
+    const passages = [source('s1'), source('s2')];
+    const unfolded = fuseRankedLists([claims, passages], key, claimFirst);
+    const fused = fuseRankedLists([claims, passages], key, claimFirst, fold);
+    expect(ids(fused)).not.toContain('s1');
+    expect(fused).toHaveLength(unfolded.length - 1);
+    // c3 alone ranks last; with s1's first place added it outranks every single-list item.
+    expect(ids(fused)).toEqual(['c3', 'c1', 'c2', 's2']);
+    expect(fused[0]!.lists).toEqual([0, 1]);
+  });
+
+  it('never lowers a host, and leaves an item whose host is absent', () => {
+    const fold = (lead: Lead) => (lead.id === 's1' ? ['c1'] : lead.id === 's2' ? ['missing'] : []);
+    const fused = fuseRankedLists([[claim('c1'), claim('c2')], [source('s2'), source('s1')]], key, claimFirst, fold);
+    expect(ids(fused)).toEqual(['c1', 's2', 'c2']);
+  });
+
+  it('folds into the best-scoring host when several name the item, whichever list comes first', () => {
+    const fold = (lead: Lead) => (lead.id === 's1' ? ['c2', 'c1'] : []);
+    const claims = [claim('c1'), claim('c2')];
+    const passages = [source('s1')];
+    const forward = fuseRankedLists([claims, passages], key, claimFirst, fold);
+    const backward = fuseRankedLists([passages, claims], key, claimFirst, fold);
+    expect(ids(forward)).toEqual(['c1', 'c2']);
+    expect(forward[0]!.lists).toEqual([0, 1]);
+    expect(ids(backward)).toEqual(ids(forward));
+  });
+
   it('returns nothing for no lists and for empty lists', () => {
     expect(fuseRankedLists<Lead>([], key, claimFirst)).toEqual([]);
     expect(fuseRankedLists<Lead>([[], []], key, claimFirst)).toEqual([]);

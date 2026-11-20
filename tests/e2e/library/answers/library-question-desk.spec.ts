@@ -8,23 +8,26 @@ const refund = '# Refund handling\nRefund approval queues a stock restoration jo
 const inventory = '# Inventory state\nRefund approval does not immediately restore inventory.\nA separate stock restoration job updates quantity after it runs.\n';
 const project = '---\nuid: 00000000-0000-4000-8000-000000000001\nkind: project\ntitle: Refunds\nslug: refunds\n---\n';
 
-/** Thirteen leads for "refund": eight wiki claims over two pages and five source passages over two files. */
+/**
+ * Thirteen leads for "refund": eight wiki claims over two pages and five source passages over two
+ * files. The claims cite lines without the word, so no passage is the place a claim cites.
+ */
 function thirteenLeads(): Record<string, string> {
-  const returns = '# Returns\nRefund window is 15 days.\nRefund fee is 3 percent.\nRefund goes to the card.\nRefund rule four.\n';
-  const notes = '# Notes\nRefund queue runs nightly.\nRefund audit is weekly.\n';
-  const page = (title: string, source: string, text: string, from: number) => [
+  const returns = '# Returns\nRefund window is 15 days.\nRefund fee is 3 percent.\nRefund goes to the card.\nRefund rule four.\nOpened items are excluded.\nThe fee is waived for defects.\nCards are credited in five days.\nRule four covers sales.\n';
+  const notes = '# Notes\nRefund queue runs nightly.\nRefund audit is weekly.\nThe queue starts at midnight.\nThe audit reads one week.\nIt skips holidays.\nIt reports to finance.\n';
+  const page = (title: string, source: string, text: string, from: number, firstCited: number) => [
     '---', `title: ${title}`, 'created_by: agent:fixture', 'compiled_at: 2026-09-20T00:00:00Z',
     'sources:', `  - ${source}`, 'source_hash:', `  ${source}: ${digest(text)}`, 'status: draft', `summary: ${title}.`, '---',
     '## Summary', `${title}.`, '## Facts',
-    ...[0, 1, 2, 3].map((offset) => `- Refund claim ${from + offset} about refund approval. [[src:${source}#l${offset + 2}]]`),
+    ...[0, 1, 2, 3].map((offset) => `- Refund claim ${from + offset} about refund approval. [[src:${source}#l${offset + firstCited}]]`),
     '## Decisions', '## Open questions', '## Not in sources',
   ].join('\n');
   return {
     'project.md': project,
     'sources/returns.md': returns,
     'sources/notes.md': notes,
-    'wiki/returns.md': page('Returns', 'sources/returns.md', returns, 1),
-    'wiki/notes.md': page('Notes', 'sources/notes.md', notes, 5),
+    'wiki/returns.md': page('Returns', 'sources/returns.md', returns, 1, 6),
+    'wiki/notes.md': page('Notes', 'sources/notes.md', notes, 5, 4),
   };
 }
 
@@ -104,6 +107,14 @@ for (const [width, height] of [[1512, 901], [1920, 1080]] as const) {
     await expect(page.getByTestId('question-desk-results-head')).toHaveText('Passages the search found');
     await page.getByTestId('library-question-desk').evaluate((desk) => { desk.scrollTop = 0; });
     expect(await fieldTop(page)).toBe(entry);
+
+    // The report cost an agent turn: editing the question keeps it, and new rows replace it.
+    await page.getByTestId('question-desk-input').fill('When does the refund queue run?');
+    await expect(page.getByTestId('question-desk-report')).toBeVisible();
+    await page.getByTestId('question-desk-input').press('Enter');
+    await expect(page.getByTestId('question-desk-report')).toHaveCount(0);
+    await expect(page.getByTestId('question-desk-results-head')).toContainText('passages found');
+    expect(await fieldTop(page)).toBe(entry);
   });
 }
 
@@ -171,7 +182,22 @@ test('keeps the report scroll viewport and focused citations above mobile naviga
     const contentTop = navigation.getBoundingClientRect().top + parseFloat(getComputedStyle(navigation).borderTopWidth);
     return element.getBoundingClientRect().bottom - contentTop;
   })).toBeLessThanOrEqual(0);
-  const citation = page.getByRole('button', { name: 'sources/refund-handling.md#l3', exact: true });
+  // On screen a citation is the file and its line; the address is its description and what print shows.
+  const citation = page.getByRole('button', { name: 'refund-handling.md · line 3', exact: true });
+  await expect(citation).toHaveAccessibleDescription('sources/refund-handling.md#l3');
+  await expect(citation.locator('[data-citation-address]')).toBeHidden();
+  // Print: the dialog is stubbed so the print copy stays in the page while print media is on.
+  await page.evaluate(() => { window.print = () => {}; });
+  await page.getByTestId('question-desk-print-pdf').click();
+  await page.emulateMedia({ media: 'print' });
+  const printed = page.locator('[data-question-desk-print-root] [data-source-anchor="l3"]');
+  await expect(printed.locator('[data-citation-address]')).toBeVisible();
+  await expect(printed.locator('[data-citation-address]')).toHaveText('sources/refund-handling.md#l3');
+  await expect(printed.locator('[data-citation-place]')).toBeHidden();
+  await page.emulateMedia({ media: 'screen' });
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  await expect(page.locator('[data-question-desk-print-root]')).toHaveCount(0);
+  await expect(citation.locator('[data-citation-place]')).toBeVisible();
   await citation.focus();
   await expect.poll(() => citation.evaluate((element) => {
     const rect = element.getBoundingClientRect();
@@ -206,8 +232,10 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
   await page.keyboard.press('Escape');
   await page.getByTestId('question-desk-show-more').click();
   await expect(results.getByRole('button', { name: 'Refund approval immediately restores stock.' })).toBeVisible();
-  await expect(results.getByRole('button', { name: 'Refund approval does not immediately restore inventory.' })).toHaveCount(2);
-  await expect(results.getByRole('button', { name: 'Refund approval queues a stock restoration job.' })).toBeVisible();
+  // Each source line both claims cite is that claim's row, opened from its cited file: one sentence, one row.
+  await expect(results.getByRole('button', { name: 'Refund approval does not immediately restore inventory.' })).toHaveCount(1);
+  await expect(results.getByRole('button', { name: 'Refund approval queues a stock restoration job.' })).toHaveCount(0);
+  await expect(page.getByTestId('question-desk-results-head')).toHaveText('4 passages found');
   const stale = page.getByTestId('question-desk-lead').filter({ has: page.getByRole('button', { name: 'Refund approval immediately restores stock.' }) });
   await expect(stale).toContainText('Source needs review');
   await expect(page.getByTestId('question-desk-summarize')).toHaveCount(0);

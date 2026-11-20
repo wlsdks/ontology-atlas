@@ -13,14 +13,20 @@ export interface FusedLead<T> {
  * the order is total and does not depend on the order of the input lists. An item is matched
  * across lists by its key, and the copy from the first list that holds it is returned.
  *
- * O(N log N) for N items across all lists.
+ * `foldInto` names, for an item, the keys of items it belongs under. When one of them is in the
+ * result, the item is dropped and its ranks are added to that host (the best-scoring one, then the
+ * lowest key), so folding never lowers a host. An item that is folded hosts nothing.
+ *
+ * O(N log N) for N items across all lists, plus the candidates `foldInto` returns.
  */
 export function fuseRankedLists<T>(
   lists: readonly (readonly T[])[],
   key: (item: T) => string,
   tieBreak: (a: T, b: T) => number,
+  foldInto?: (item: T) => readonly string[],
 ): FusedLead<T>[] {
-  const fused = new Map<string, { key: string; item: T; lists: number[]; ranks: number[]; score: number }>();
+  type Entry = { key: string; item: T; lists: number[]; ranks: number[]; score: number };
+  const fused = new Map<string, Entry>();
   lists.forEach((list, listIndex) => {
     const seen = new Set<string>();
     list.forEach((item, rank) => {
@@ -35,8 +41,27 @@ export function fuseRankedLists<T>(
     });
   });
   /* Summed in rank order, so the same ranks give the same float whichever list came first. */
-  for (const entry of fused.values()) {
-    entry.score = [...entry.ranks].sort((a, b) => a - b).reduce((sum, rank) => sum + 1 / (RRF_K + rank), 0);
+  const score = (ranks: readonly number[]) => [...ranks].sort((a, b) => a - b).reduce((sum, rank) => sum + 1 / (RRF_K + rank), 0);
+  for (const entry of fused.values()) entry.score = score(entry.ranks);
+  if (foldInto) {
+    const moves: Array<[Entry, Entry]> = [];
+    for (const entry of fused.values()) {
+      let host: Entry | undefined;
+      for (const id of foldInto(entry.item)) {
+        const candidate = id === entry.key ? undefined : fused.get(id);
+        if (!candidate) continue;
+        if (!host || candidate.score > host.score || (candidate.score === host.score && candidate.key < host.key)) host = candidate;
+      }
+      if (host) moves.push([entry, host]);
+    }
+    const folded = new Set(moves.map(([entry]) => entry));
+    for (const [entry, host] of moves) {
+      if (folded.has(host)) continue;
+      fused.delete(entry.key);
+      host.ranks.push(...entry.ranks);
+      host.lists = [...new Set([...host.lists, ...entry.lists])].sort((a, b) => a - b);
+    }
+    for (const entry of fused.values()) entry.score = score(entry.ranks);
   }
   return [...fused.values()]
     .sort((a, b) => b.score - a.score || tieBreak(a.item, b.item) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))
