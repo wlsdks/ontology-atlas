@@ -23,7 +23,7 @@ import {
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode, useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
-import { isRunActive, useWorkRunSnapshot, workCardHoldsSeat, WorkRunSeat } from "@/features/work-run";
+import { isRunActive, isScheduledActive, useWorkRunSnapshot, workCardHoldsSeat, WorkRunSeat } from "@/features/work-run";
 import { describeVaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { destinationsForVaultShape, FOLDER_OPTIONAL_DESTINATIONS } from "@/shared/config/destinations";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
@@ -258,7 +258,7 @@ function AppNavRailSlot() {
 
   const atAgents = resolveActiveNavDestination(pathname) === "agents";
   const installNotice = useInstallNotice(atAgents);
-  const workRun = useRailWorkRun();
+  const workRuns = useRailWorkRuns();
 
   const visibleDestinations = useMemo(
     () => destinationsForVaultShape(vault.manifest ? describeVaultShape(vault.manifest.docs) : null),
@@ -320,7 +320,7 @@ function AppNavRailSlot() {
         }
         gitDirtyCount={gitDirtyCount}
         agentsNoticeCount={installNotice.count}
-        workRun={workRun}
+        workRuns={workRuns}
         visibleDestinations={shownDestinations}
       />
       {/*
@@ -333,13 +333,29 @@ function AppNavRailSlot() {
   );
 }
 
-/** The open folder's wiki check on the Library tile: a ring while it runs, a badge until read. */
-function useRailWorkRun(): RailWorkRun | null {
-  const { run } = useWorkRunSnapshot();
+/**
+ * The open folder's runs on their tiles, a ring while one runs and a badge until read: the wiki
+ * check on Library, scheduled checks on Automations.
+ */
+function useRailWorkRuns(): RailWorkRun[] {
+  const { runs } = useWorkRunSnapshot();
   const folder = useVaultSessionIdentityScope();
-  if (!run || run.folder !== folder) return null;
-  if (isRunActive(run)) return { destination: "library", state: "running" };
-  return run.unseen ? { destination: "library", state: "finished", count: 1 } : null;
+  return useMemo(() => {
+    const rail: RailWorkRun[] = [];
+    let scheduledRunning = false;
+    let scheduledUnseen = 0;
+    for (const entry of runs.values()) {
+      if (entry.run.folder !== folder) continue;
+      if (entry.kind === "check") {
+        if (isRunActive(entry.run)) rail.push({ destination: "library", state: "running" });
+        else if (entry.run.unseen) rail.push({ destination: "library", state: "finished", count: 1 });
+      } else if (isScheduledActive(entry.run)) scheduledRunning = true;
+      else if (entry.run.unseen) scheduledUnseen += 1;
+    }
+    if (scheduledRunning) rail.push({ destination: "automations", state: "running" });
+    else if (scheduledUnseen > 0) rail.push({ destination: "automations", state: "finished", count: scheduledUnseen });
+    return rail;
+  }, [folder, runs]);
 }
 
 /**
