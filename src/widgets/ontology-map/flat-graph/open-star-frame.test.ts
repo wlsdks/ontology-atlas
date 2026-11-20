@@ -115,21 +115,25 @@ type Mark = { x: number; y: number; r: number };
 /** A domain's census and reach rows: one slot under its name. */
 const CAPTION_ROLES = new Set(["units", "status"]);
 
-/** A camera centred on `centreId` (the map's middle when null) of `world`'s map, at a zoom given per frame as a ratio of the fitting scale. */
-function cameraOn(centreId: string | null, worldKey: object, world = { model, scene }) {
+/**
+ * A camera centred on `centreId` (the map's middle when null) of `world`'s map in the free map `free`,
+ * at a zoom given per frame as a ratio of the scale that fits the map into `free`.
+ */
+function cameraOn(centreId: string | null, worldKey: object, world = { model, scene }, free = { minX: 0, minY: 0, maxX: W, maxY: H }) {
   const { model: m, scene: sc } = world;
   const graph = sc.graph!;
   const e = graph.extent;
-  const fit = Math.min(W / (e.maxX - e.minX), H / (e.maxY - e.minY));
+  const fit = Math.min((free.maxX - free.minX) / (e.maxX - e.minX), (free.maxY - free.minY) / (e.maxY - e.minY));
   const centre = centreId === null ? { x: (e.minX + e.maxX) / 2, y: (e.minY + e.maxY) / 2 } : graph.positions.get(centreId)!;
+  const middle = { x: (free.minX + free.maxX) / 2, y: (free.minY + free.maxY) / 2 };
   const ctx = silentContext();
   return (zoomRatio: number, over: Partial<DialFrameInput>): DialFrameInput => {
     const scale = fit * zoomRatio;
-    const toScreen = (x: number, y: number): Point => ({ x: W / 2 + (x - centre.x) * scale, y: H / 2 + (y - centre.y) * scale });
+    const toScreen = (x: number, y: number): Point => ({ x: middle.x + (x - centre.x) * scale, y: middle.y + (y - centre.y) * scale });
     return {
       ctx, dial: { model: m, scene: sc, overviewPadPx: { left: 0, right: 0, top: 0, bottom: 0 }, labels: LABELS }, worldKey,
       nodeScreen: (id) => { const p = graph.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen, scale, zoomRatio,
-      viewportWidth: W, viewportHeight: H, freeRect: { minX: 0, minY: 0, maxX: W, maxY: H },
+      viewportWidth: W, viewportHeight: H, freeRect: free,
       mapTokens: { canvasBgNear: "#101014" } as unknown as OntologyMapTokens, dialTokens: {} as DialFrameInput["dialTokens"], labels: LABELS, evidence: null,
       hoveredNodeId: null, focusedNodeId: null, agentFocusNodeId: null, selectionPulse: null, appearOf: () => 1, hubCount: null,
       now: 0, reducedMotion: false, domainAppear: 1, elementLabel: (id) => id,
@@ -236,6 +240,56 @@ it.each(["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer
     const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, 0, 3.6, 3.6, FRAME_MS);
     const pinched = framesUntilSettled(camera, { focusedNodeId: domainId }, star, opened.end + FRAME_MS, 3.6, 0.9, 300);
     expect(smoothness(pinched.frames).overlaps.slice(0, 4)).toEqual([]);
+  },
+);
+
+/** The free map beside the closed dock at 1280x800: narrow enough that a wide star opens at a low scale. */
+const NARROW_FREE = { minX: 324, minY: 112, maxX: 837, maxY: 728 };
+const denseWorld = (() => {
+  const m = syntheticModel(4, 5, 9);
+  return { model: m, scene: buildFlatGraphScene(m, TOKENS.layout, null) };
+})();
+
+it.each([
+  ...["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"].map((id) => [id, { model, scene }] as const),
+  ...denseWorld.model.domains.map((d) => [d.id, denseWorld] as const),
+])(
+  "draws every element of the opened %s star clear of every mark where a narrow free map frames it, though its largest members' discs reach past their innermost elements",
+  (domainId, world) => {
+    const { capabilities, elements } = domainStarIds(world.model, domainId);
+    const star = new Set([domainId, ...capabilities, ...elements]);
+    const camera = cameraOn(domainId, {}, world, NARROW_FREE);
+    const unread: string[] = [];
+    const overlaps: string[] = [];
+    let now = 0;
+    for (const zoom of [2.2, 2.6, 3, 3.4]) {
+      const { frames, end } = framesUntilSettled(camera, { focusedNodeId: domainId }, star, now, zoom, zoom, FRAME_MS);
+      now = end + 10_000;
+      const input = camera(zoom, {});
+      const inView = (id: string) => {
+        const at = input.nodeScreen(id);
+        return at !== null && at.x > 0 && at.x < W && at.y > 0 && at.y < H;
+      };
+      const drawn = new Set(describeLastDialFrame(W, H)!.glyphs.map((g) => g.id));
+      unread.push(...[...new Set(elements)].filter((id) => inView(id) && !drawn.has(id)).map((id) => `${zoom}: ${id}`));
+      overlaps.push(...smoothness(frames.slice(-1)).overlaps.map((o) => `${zoom}: ${o}`));
+    }
+    expect({ unread: unread.slice(0, 6), overlaps: overlaps.slice(0, 6) }).toEqual({ unread: [], overlaps: [] });
+  },
+);
+
+it.each([
+  ...["domain:human-workbench", "domain:code-evidence", "domain:meaning-layer", "domain:agent-access"].map((id) => [id, { model, scene }] as const),
+  ...denseWorld.model.domains.map((d) => [d.id, denseWorld] as const),
+])(
+  "opens the %s star from the overview where a narrow free map frames it with no frame drawing two marks over each other, as dots move out of their members' discs",
+  (domainId, world) => {
+    const { capabilities, elements } = domainStarIds(world.model, domainId);
+    const star = new Set([domainId, ...capabilities, ...elements]);
+    const camera = cameraOn(domainId, {}, world, NARROW_FREE);
+    const rest = framesUntilSettled(camera, {}, star, 0, 1, 1, FRAME_MS);
+    const opened = framesUntilSettled(camera, { focusedNodeId: domainId }, star, rest.end + FRAME_MS, 1, 2.6, 600);
+    expect(smoothness(opened.frames).overlaps.slice(0, 4)).toEqual([]);
   },
 );
 

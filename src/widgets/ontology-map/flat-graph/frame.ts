@@ -18,7 +18,7 @@ import { DAMPED, dampedStep, FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelay
 import { admittedNames, boxUnderAny, nameBlockDraws, leaderSegment, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { FLAT_TIER_TIMING, tierNameAlpha } from "../morph/tier-assembly";
 import { openedElements, type OpenedElements } from "./open";
-import { domainStarRooms, openRadiusPx, roomLimitPx, starRooms, type StarPoint, type StarRoom } from "./open-star";
+import { domainStarRooms, openMaxPx, openRadiusPx, roomLimitPx, starRooms, type StarPoint, type StarRoom } from "./open-star";
 import type { FlatGraphCluster, FlatGraphItem, FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "./types";
 
 const CULL_PX = 80;
@@ -456,6 +456,12 @@ function screenOf(id: string): StampedPoint {
   }
   let x = home.x * F.scale + F.originX;
   let y = home.y * F.scale + F.originY;
+  const pushed = pushedDots.get(id);
+  if (pushed !== undefined && pushed.frame === F.frame) {
+    const d = fanPushes.get(pushed.capabilityId)?.d ?? 0;
+    x += pushed.ux * d;
+    y += pushed.uy * d;
+  }
   for (let i = 0; i < F.opened.length; i += 1) {
     const fan = F.opened[i]!;
     const offset = fan.elements.offsets.get(id);
@@ -558,11 +564,16 @@ function roomLimit(id: string, own: number): number {
   let limit = Infinity;
   for (let i = 0; i < F.starCount; i += 1) {
     const star = F.stars[i]!;
-    const room = star.rooms.get(id);
-    if (room !== undefined) limit = Math.min(limit, roomLimitPx(own, room, star.world ? F.scale : 1, star.fixedPx, room.nearestId === null ? 0 : radiusNow(room.nearestId)));
+    const moved = star.domain && star.rooms.has(id) ? movedRoom(id) : undefined;
+    const room = moved ?? star.rooms.get(id);
+    if (room !== undefined) limit = Math.min(limit, roomLimitPx(own, room, star.world && !moved ? F.scale : 1, star.fixedPx, room.nearestId === null ? 0 : radiusNow(room.nearestId)));
   }
   const closing = F.closingRooms?.get(id);
-  if (closing !== undefined) limit = Math.min(limit, roomLimitPx(own, closing, F.scale, graphDiscRadiusPx("domain", 0, F.P, F.growth), closing.nearestId === null ? 0 : radiusNow(closing.nearestId)));
+  if (closing !== undefined) {
+    const moved = movedRoom(id);
+    const room = moved ?? closing;
+    limit = Math.min(limit, roomLimitPx(own, room, moved ? 1 : F.scale, graphDiscRadiusPx("domain", 0, F.P, F.growth), room.nearestId === null ? 0 : radiusNow(room.nearestId)));
+  }
   return limit;
 }
 
@@ -579,9 +590,10 @@ function openedRadius(id: string, own: number): number {
   let r = own;
   for (let i = 0; i < F.starCount; i += 1) {
     const star = F.stars[i]!;
-    const room = star.rooms.get(id);
+    const moved = star.domain && star.rooms.has(id) ? movedRoom(id) : undefined;
+    const room = moved ?? star.rooms.get(id);
     if (room === undefined) continue;
-    r = Math.max(r, openRadiusPx(own, room, star.world ? F.scale : 1, star.fixedPx, F.P, room.nearestId === null ? 0 : radiusNow(room.nearestId)));
+    r = Math.max(r, openRadiusPx(own, room, star.world && !moved ? F.scale : 1, star.fixedPx, F.P, room.nearestId === null ? 0 : radiusNow(room.nearestId)));
   }
   return r;
 }
@@ -655,6 +667,228 @@ function fanOf(capabilityId: string): OpenedElements | null {
 function setCapabilityStar(capabilityId: string): void {
   const ringPx = discRadius(capabilityId) + F.P.selectedRingGapPx + F.P.selectedRingPx;
   setFanStar(capabilityId, fanOf(capabilityId), ringPx);
+}
+
+/**
+ * A capability's fan pushed out of the disc it opens to: every element round it moves out along its
+ * own bearing by `d` px, eased like a radius toward `target`, the most its innermost element needs.
+ * Element i at reach `h_i·s + d` from the capability's centre, j at `h_j·s + d`, a turn `θ` apart:
+ * `|p_i - p_j|²` grows at `2d'(1 - cos θ)(a + b) + 2s'(s|H_i - H_j|² + d(h_i + h_j)(1 - cos θ))`,
+ * never below zero while the zoom grows and `d` falls no faster than `h_min·s'`, as the need does.
+ * So no two of a fan cross or close in on each other while a star opens.
+ */
+interface FanPush { domainId: string; layout: FlatGraphLayout; d: number; perMs: number; target: number; need: number; at: number; frame: number; held: number }
+const fanPushes = new Map<string, FanPush>();
+
+/** An element of a pushed fan this frame: its capability, its bearing from it, and the room and radius it opens to where it draws. */
+interface PushedDot { capabilityId: string; ux: number; uy: number; frame: number; room: StarRoom; radius: number }
+const pushedDots = new Map<string, PushedDot>();
+
+const fanCache = new WeakMap<FlatGraphLayout, Map<string, ReadonlyMap<string, readonly string[]>>>();
+
+/**
+ * `domainId`'s capabilities and the elements the layout fans round each: an element several list
+ * goes to the one laid out nearest it, and a direct element fans round no disc. Once per layout and
+ * domain, O(the domain's listings).
+ */
+function fansOf(domainId: string): ReadonlyMap<string, readonly string[]> {
+  const byDomain = cacheFor(fanCache, F.layout);
+  const known = byDomain.get(domainId);
+  if (known) return known;
+  const { model, layout } = F;
+  const domain = model.domainById.get(domainId);
+  const direct = new Set(domain?.directElementIds ?? []);
+  const nearest = new Map<string, { capabilityId: string; apart: number }>();
+  for (const capabilityId of domain?.capabilityIds ?? []) {
+    const centre = layout.positions.get(capabilityId);
+    if (!centre) continue;
+    for (const id of model.capabilityById.get(capabilityId)?.elementIds ?? []) {
+      const at = layout.positions.get(id);
+      if (!at || direct.has(id)) continue;
+      const apart = Math.hypot(at.x - centre.x, at.y - centre.y);
+      const known = nearest.get(id);
+      if (!known || apart < known.apart) nearest.set(id, { capabilityId, apart });
+    }
+  }
+  const fans = new Map<string, string[]>();
+  for (const [id, { capabilityId }] of nearest) {
+    let fan = fans.get(capabilityId);
+    if (!fan) fans.set(capabilityId, (fan = []));
+    fan.push(id);
+  }
+  byDomain.set(domainId, fans);
+  return fans;
+}
+
+function homePx(id: string, out: Point): boolean {
+  const home = F.input.nodeAt?.(id) ?? F.layout.positions.get(id);
+  if (!home) return false;
+  out.x = home.x * F.scale + F.originX;
+  out.y = home.y * F.scale + F.originY;
+  return true;
+}
+
+/** The radius `id` heads for this frame, or already draws at when that is larger. */
+function radiusAim(id: string, target: number): number {
+  return Math.max(F.drawn.get(id)?.r ?? 0, target);
+}
+
+/** The radius an element dot opens to in its own place this frame, before any push. O(stars). */
+function openedDotRadius(id: string): number {
+  const rest = dotRest(id);
+  return Math.min(openedRadius(id, rest), roomLimit(id, rest));
+}
+
+function dotRest(id: string): number {
+  return radiusNow(id) * (F.attention.lit?.has(id) === true ? LIT_DOT_SHARE : 1);
+}
+
+const fanCentre = { x: 0, y: 0 };
+const fanDot = { x: 0, y: 0 };
+
+/**
+ * How far `capabilityId`'s fan must move out for each of its elements, at the radius it heads for,
+ * to clear the disc the capability heads for by `ROOM_WHOLE_PX`; none when it already does, or when
+ * the fan is opened round a selection. O(the fan × stars).
+ */
+function fanNeed(capabilityId: string, elementIds: readonly string[]): number {
+  if (!homePx(capabilityId, fanCentre)) return 0;
+  const own = radiusNow(capabilityId);
+  const special = capabilityId === F.selectedId ? F.selectedR : capabilityId === F.leavingId ? F.leavingR : null;
+  const disc = radiusAim(capabilityId, special ?? Math.min(openedRadius(capabilityId, own), roomLimit(capabilityId, own)));
+  let need = 0;
+  for (const id of elementIds) {
+    if (fanShare(id) > 0 || id === F.selectedId || id === F.leavingId) return 0;
+    if (!homePx(id, fanDot)) continue;
+    const apart = Math.hypot(fanDot.x - fanCentre.x, fanDot.y - fanCentre.y);
+    if (apart < 1e-6) continue;
+    need = Math.max(need, disc + radiusAim(id, pushedDots.get(id)?.radius ?? openedDotRadius(id)) + ROOM_WHOLE_PX - apart);
+  }
+  return need;
+}
+
+/**
+ * A pushed element's room in px in `domainId`'s star at (`x`, `y`), the others where they draw: its
+ * share of each pair and its distance from the domain's centre. It leaves out the world rooms' term
+ * for the nearest mark's own radius, which switches between two marks at nearly one distance as a
+ * dot moves; the push itself clears the capability's disc. Its own fan and capability only part
+ * from it as the star opens. O(the star's marks).
+ */
+function roomAtPx(domainId: string, id: string, x: number, y: number, out: StarRoom): StarRoom {
+  const { model, P } = F;
+  const domain = model.domainById.get(domainId)!;
+  const own = openMaxPx("element", P);
+  const fixed = screenOf(domain.id);
+  out.kind = "element";
+  out.paired = Infinity;
+  out.nearest = Infinity;
+  out.nearestId = null;
+  out.pastFixed = Math.hypot(x - fixed.x, y - fixed.y);
+  const meet = (other: string, max: number) => {
+    if (other === id) return;
+    const at = screenOf(other);
+    out.paired = Math.min(out.paired, (Math.hypot(x - at.x, y - at.y) * own) / (own + max));
+  };
+  for (const capabilityId of domain.capabilityIds) {
+    meet(capabilityId, openMaxPx("capability", P));
+    for (const el of model.capabilityById.get(capabilityId)?.elementIds ?? []) meet(el, own);
+  }
+  for (const el of domain.directElementIds) meet(el, own);
+  return out;
+}
+
+/** The room a dot of a pushed fan opens into this frame, undefined for a dot no push has moved. */
+function movedRoom(id: string): StarRoom | undefined {
+  const dot = pushedDots.get(id);
+  return dot !== undefined && dot.frame === F.frame ? dot.room : undefined;
+}
+
+/**
+ * How clear a pushed dot of radius `r` at `at` stands of the drawn marks outside its fan: the
+ * domain's disc, the other capabilities' discs and the other fans' dots. Its own capability's disc
+ * is the cover rule's. O(the star's marks).
+ */
+function crowdClear(id: string, r: number, at: Point): number {
+  const dot = pushedDots.get(id)!;
+  const domain = F.model.domainById.get(fanPushes.get(dot.capabilityId)!.domainId)!;
+  let clear = Infinity;
+  const meet = (other: string, otherR: number) => {
+    const o = screenOf(other);
+    clear = Math.min(clear, Math.hypot(at.x - o.x, at.y - o.y) - otherR - r);
+  };
+  meet(domain.id, discRadius(domain.id));
+  for (const capabilityId of domain.capabilityIds) {
+    if (capabilityId !== dot.capabilityId) meet(capabilityId, discRadius(capabilityId));
+    for (const el of F.model.capabilityById.get(capabilityId)?.elementIds ?? []) {
+      if (el !== id && pushedDots.get(el)?.capabilityId !== dot.capabilityId) meet(el, dotRadius(el));
+    }
+  }
+  for (const el of domain.directElementIds) if (el !== id) meet(el, dotRadius(el));
+  return clear;
+}
+
+/**
+ * Moves each fan of the focused domain's star out of the disc its capability opens to, as far as its
+ * innermost element needs to clear it: the free map can frame a wide star at a scale where a large
+ * capability's disc covers its nearest elements, and a covered dot is not drawn. Once the star is let
+ * go, the push eases back to none. A fan the star has pushed keeps its dots' rooms (`roomAtPx`) until
+ * the star has closed, so no dot changes rule on the way; one that passes a mark outside its fan
+ * fades on its room like a covered dot. Decided here in O(n + k × n) for a star of n marks, k of
+ * them in pushed fans.
+ */
+function planFanPushes(focusedDomain: string | null): void {
+  if (focusedDomain !== null) {
+    for (const [capabilityId, elementIds] of fansOf(focusedDomain)) {
+      const need = fanNeed(capabilityId, elementIds);
+      let push = fanPushes.get(capabilityId);
+      if (!push) {
+        if (need <= 0) continue;
+        fanPushes.set(capabilityId, (push = { domainId: focusedDomain, layout: F.layout, d: 0, perMs: 0, target: 0, need: 0, at: F.now, frame: F.frame - 1, held: 0 }));
+      }
+      push.need = Math.max(0, need);
+      push.held = F.frame;
+    }
+  }
+  for (const [capabilityId, push] of fanPushes) {
+    const held = push.held === F.frame && push.layout === F.layout && push.domainId === focusedDomain;
+    push.target = held ? push.need : 0;
+    if (push.frame !== F.frame) {
+      const stepMs = Math.min(Math.max(0, F.now - push.at), MARK_STEP_MAX_MS);
+      if (F.reducedMotion || Math.abs(push.target - push.d) <= MARK_REST_PX) {
+        push.d = push.target;
+        push.perMs = 0;
+      } else {
+        push.d = dampedStep(push.d, push.frame === F.frame - 1 ? push.perMs : 0, push.target, stepMs, FLAT_MOTION.riseMs, F.P.markPxPerMs);
+        push.perMs = DAMPED.perMs;
+        F.lagging = true;
+      }
+      push.at = F.now;
+      push.frame = F.frame;
+    }
+    if (push.d === 0 && !held && push.domainId !== closingDomainId) fanPushes.delete(capabilityId);
+  }
+  for (const [capabilityId, push] of fanPushes) {
+    if (push.layout !== F.layout || !homePx(capabilityId, fanCentre)) continue;
+    for (const id of fansOf(push.domainId).get(capabilityId) ?? []) {
+      if (!homePx(id, fanDot)) continue;
+      const apart = Math.hypot(fanDot.x - fanCentre.x, fanDot.y - fanCentre.y);
+      if (apart < 1e-6) continue;
+      let dot = pushedDots.get(id);
+      if (!dot) pushedDots.set(id, (dot = { capabilityId, ux: 0, uy: 0, frame: 0, room: { kind: "element", paired: Infinity, nearest: Infinity, nearestId: null, pastFixed: Infinity }, radius: 0 }));
+      dot.capabilityId = capabilityId;
+      dot.ux = (fanDot.x - fanCentre.x) / apart;
+      dot.uy = (fanDot.y - fanCentre.y) / apart;
+      dot.frame = F.frame;
+    }
+  }
+  for (const [id, dot] of pushedDots) if (dot.frame !== F.frame) pushedDots.delete(id);
+  const fixedPx = graphDiscRadiusPx("domain", 0, F.P, F.growth);
+  for (const [id, dot] of pushedDots) {
+    const at = screenOf(id);
+    roomAtPx(fanPushes.get(dot.capabilityId)!.domainId, id, at.x, at.y, dot.room);
+    const rest = dotRest(id);
+    dot.radius = Math.min(openRadiusPx(rest, dot.room, 1, fixedPx, F.P, 0), roomLimitPx(rest, dot.room, 1, fixedPx, 0));
+  }
 }
 
 let openDomainId: string | null = null;
@@ -1180,7 +1414,8 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
     const r = visible ? dotRadius(el) : 0;
     // Only a disc larger than the dot covers it, and never the selection's own, which its ring marks.
     const coverR = !visible || el === F.selectedId || el === F.leavingId ? 0 : itemR;
-    const clear = coverR > r ? Math.hypot(elAt.x - itemAt.x, elAt.y - itemAt.y) - coverR - r : ROOM_WHOLE_PX;
+    let clear = coverR > r ? Math.hypot(elAt.x - itemAt.x, elAt.y - itemAt.y) - coverR - r : ROOM_WHOLE_PX;
+    if (visible && el !== F.selectedId && el !== F.leavingId && movedRoom(el) !== undefined) clear = Math.min(clear, crowdClear(el, r, elAt));
     const shown = uncovered * smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, clear);
     if (shown <= DRAWN_INK) continue;
     alphas.set(el, 1);
@@ -1278,6 +1513,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
     const elements = openedElements(model, layout, F.leavingId, P, discRadius(F.leavingId), input.scale, growth);
     if (elements !== null && mix < 1) F.opened.push({ elements, share: 1 - mix });
   }
+  planFanPushes(input.focusedNodeId !== null && model.domainById.has(input.focusedNodeId) ? input.focusedNodeId : null);
   const projectShare = motion.share(MOTION_SHARE.project, attention.focusId !== null && attention.focusId === model.projectId ? 1 : 0);
   if (F.projectShare !== projectShare) F.projectShare = projectShare;
   F.lineKinds = 0;
