@@ -19,13 +19,16 @@ vi.mock('@/entities/vault-session/model/use-sample-source', async (importOrigina
   ...(await importOriginal<typeof import('@/entities/vault-session/model/use-sample-source')>()),
   useSampleSource: () => ['dogfood'],
 }));
+vi.mock('@/entities/knowledge-graph', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/entities/knowledge-graph')>();
+  return { ...actual, computeVaultHealth: vi.fn(actual.computeVaultHealth) };
+});
 vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
   useLocalVault: () => mocks.vault,
 }));
 
-
-
+import { computeVaultHealth } from '@/entities/knowledge-graph';
 import { useVaultHealth } from './use-vault-health';
 
 function doc(slug: string, frontmatter: Record<string, unknown>): VaultDoc {
@@ -76,8 +79,8 @@ describe('useVaultHealth same-vault refresh continuity', () => {
   it('keeps current health while the same vault reloads, but never leaks it into another vault', () => {
     const manifest = matureManifest();
     mocks.vault = { status: 'loaded', manifest, isReloadingSameVault: false };
-    const { result, rerender } = renderHook(() => useVaultHealth());
-    expect(result.current.summary.nodes).toBe(6);
+    const { result, rerender } = renderHook(() => useVaultHealth(true));
+    expect(result.current?.summary.nodes).toBe(6);
     const loadedHealth = result.current;
 
     mocks.vault = { status: 'loading', manifest, isReloadingSameVault: true };
@@ -86,6 +89,24 @@ describe('useVaultHealth same-vault refresh continuity', () => {
 
     mocks.vault = { status: 'loading', manifest, isReloadingSameVault: false };
     rerender();
-    expect(result.current.summary.nodes).toBe(0);
+    expect(result.current?.summary.nodes).toBe(0);
+  });
+});
+
+describe('useVaultHealth while nothing shows it', () => {
+  it('runs no health pass until its surface is shown, then exactly one', () => {
+    mocks.vault = { status: 'loaded', manifest: matureManifest(), isReloadingSameVault: false };
+    vi.mocked(computeVaultHealth).mockClear();
+    const { result, rerender } = renderHook(({ shown }) => useVaultHealth(shown), {
+      initialProps: { shown: false },
+    });
+    rerender({ shown: false });
+    expect(result.current).toBeNull();
+    expect(computeVaultHealth).toHaveBeenCalledTimes(0);
+
+    rerender({ shown: true });
+    rerender({ shown: true });
+    expect(result.current?.summary.nodes).toBe(6);
+    expect(computeVaultHealth).toHaveBeenCalledTimes(1);
   });
 });

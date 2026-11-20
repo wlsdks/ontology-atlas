@@ -1,3 +1,4 @@
+import { runSliced, type RunSlicedOptions } from "@/shared/lib/scheduling/run-sliced";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
 
 /**
@@ -89,31 +90,86 @@ function buildOutgoingMap(edges: readonly KnowledgeGraphEdge[]): Map<string, str
   return map;
 }
 
-/** `takenAt` comes from the caller so this stays pure. */
+/** One graph's signatures, aligned with its `nodes` array. */
+interface GraphSignatures {
+  nodeSigs: number[];
+  sigById: Map<string, number>;
+  nodeKinds: Map<string, string>;
+  edgeKeys: Set<string>;
+}
+
+// Graph arrays are never mutated once published, so one pass per (edges, nodes) pair serves the
+// baseline and every reader's diff.
+const signatureCache = new WeakMap<
+  readonly KnowledgeGraphEdge[],
+  WeakMap<readonly KnowledgeGraphNode[], GraphSignatures>
+>();
+
+function cachedSignatures(
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+): GraphSignatures | undefined {
+  return signatureCache.get(edges)?.get(nodes);
+}
+
+function storeSignatures(
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+  nodeSigs: number[],
+): GraphSignatures {
+  const sigById = new Map<string, number>();
+  const nodeKinds = new Map<string, string>();
+  nodes.forEach((node, index) => {
+    sigById.set(node.id, nodeSigs[index]);
+    nodeKinds.set(node.id, node.kind);
+  });
+  const edgeKeys = new Set<string>();
+  for (const edge of edges) edgeKeys.add(edgeKey(edge));
+  const signatures = { nodeSigs, sigById, nodeKinds, edgeKeys };
+  let byNodes = signatureCache.get(edges);
+  if (!byNodes) {
+    byNodes = new WeakMap();
+    signatureCache.set(edges, byNodes);
+  }
+  byNodes.set(nodes, signatures);
+  return signatures;
+}
+
+/** O(V + E log d) on the first call for a graph, O(1) after. */
+function graphSignatures(
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+): GraphSignatures {
+  const cached = cachedSignatures(nodes, edges);
+  if (cached) return cached;
+  const outgoing = buildOutgoingMap(edges);
+  return storeSignatures(nodes, edges, nodes.map((node) => nodeSignature(node, outgoing)));
+}
+
+/** The same pass as `graphSignatures`, yielding between slices, so a later snapshot or diff is free. */
+export async function prepareGraphSignatures(
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+  options?: RunSlicedOptions,
+): Promise<void> {
+  if (cachedSignatures(nodes, edges)) return;
+  const outgoing = buildOutgoingMap(edges);
+  const nodeSigs = await runSliced(nodes, (node) => nodeSignature(node, outgoing), 8, options);
+  if (!cachedSignatures(nodes, edges)) storeSignatures(nodes, edges, nodeSigs);
+}
+
+/** `takenAt` comes from the caller so this stays pure. The maps are shared with the cache and never mutated. */
 export function snapshotOntology(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
   takenAt: number,
 ): OntologySnapshot {
-  const outgoing = buildOutgoingMap(edges);
-  const nodeSigs = new Map<string, number>();
-  const nodeKinds = new Map<string, string>();
-  for (const node of nodes) {
-    nodeSigs.set(node.id, nodeSignature(node, outgoing));
-    nodeKinds.set(node.id, node.kind);
-  }
-  const edgeKeys = new Set<string>();
-  for (const edge of edges) edgeKeys.add(edgeKey(edge));
-  return { nodeSigs, nodeKinds, edgeKeys, takenAt };
+  const { sigById, nodeKinds, edgeKeys } = graphSignatures(nodes, edges);
+  return { nodeSigs: sigById, nodeKinds, edgeKeys, takenAt };
 }
 
-/** A null baseline reports no changes. Signature maps and edge-key sets diff in O(V + E log d), sorting each outgoing list. */
-export function computeOntologyChangeset(
-  baseline: OntologySnapshot | null,
-  nodes: readonly KnowledgeGraphNode[],
-  edges: readonly KnowledgeGraphEdge[],
-): OntologyChangeset {
-  const empty: OntologyChangeset = {
+function emptyChangeset(): OntologyChangeset {
+  return {
     addedNodes: [],
     removedNodes: [],
     changedNodes: [],
@@ -123,32 +179,46 @@ export function computeOntologyChangeset(
     touchedNodeIds: new Set(),
     removedNodeKinds: new Map(),
   };
-  if (!baseline) return empty;
+}
 
-  const outgoing = buildOutgoingMap(edges);
-  const currentIds = new Set(nodes.map((n) => n.id));
+/** A null baseline reports no changes. Diffs cached signatures in O(V + E); a baseline taken from this very graph is O(1). */
+export function computeOntologyChangeset(
+  baseline: OntologySnapshot | null,
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+): OntologyChangeset {
+  if (!baseline) return emptyChangeset();
+  const signatures = graphSignatures(nodes, edges);
+  // Duplicate ids keep the full pass: each copy is compared with the one signature the map kept.
+  const takenFromThisGraph =
+    baseline.nodeSigs === signatures.sigById &&
+    baseline.edgeKeys === signatures.edgeKeys &&
+    signatures.sigById.size === nodes.length;
+  if (takenFromThisGraph) {
+    return emptyChangeset();
+  }
 
   const addedNodes: string[] = [];
   const changedNodes: string[] = [];
-  for (const node of nodes) {
+  nodes.forEach((node, index) => {
     const prevSig = baseline.nodeSigs.get(node.id);
     if (prevSig === undefined) {
       addedNodes.push(node.id);
-    } else if (prevSig !== nodeSignature(node, outgoing)) {
+    } else if (prevSig !== signatures.nodeSigs[index]) {
       changedNodes.push(node.id);
     }
-  }
+  });
   const removedNodes: string[] = [];
   const removedNodeKinds = new Map<string, string>();
   for (const id of baseline.nodeSigs.keys()) {
-    if (!currentIds.has(id)) {
+    if (!signatures.sigById.has(id)) {
       removedNodes.push(id);
       const kind = baseline.nodeKinds.get(id);
       if (kind) removedNodeKinds.set(id, kind);
     }
   }
 
-  const currentEdgeKeys = new Set(edges.map(edgeKey));
+  const currentEdgeKeys = signatures.edgeKeys;
   const addedEdges: string[] = [];
   for (const key of currentEdgeKeys) {
     if (!baseline.edgeKeys.has(key)) addedEdges.push(key);

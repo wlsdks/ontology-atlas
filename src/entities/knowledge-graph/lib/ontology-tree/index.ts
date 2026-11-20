@@ -26,7 +26,7 @@ export {
   AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
 } from "./agent-readiness";
 export type { OntologyChangeset } from "./ontology-changeset";
-export { computeOntologyChangeset } from "./ontology-changeset";
+export { computeOntologyChangeset, prepareGraphSignatures } from "./ontology-changeset";
 export {
   markChangeBaseline,
   restorePersistedBaseline,

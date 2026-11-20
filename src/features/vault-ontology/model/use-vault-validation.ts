@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDataSourceMode } from '@/entities/vault-session';
 import { useStaticVaultSource } from '@/entities/vault-session';
 import { useLocalVault } from '@/entities/vault-session';
@@ -35,16 +35,28 @@ const EMPTY_SUMMARY: VaultValidationSummary = {
   issuesBySlug: [],
 };
 
+/**
+ * A manifest's first summary is computed in the task after it paints, so the pass never lengthens
+ * the render that opens a vault; until then it reads empty, as it does while a folder loads.
+ */
 export function useVaultValidationSummary(): VaultValidationSummary {
   const mode = useDataSourceMode();
   const { manifest: staticManifest } = useStaticVaultSource();
   const vault = useLocalVault();
+  const manifest =
+    mode === 'static' ? staticManifest : vault.status === 'loaded' && vault.manifest ? vault.manifest : null;
+  const [, setSummarized] = useState(0);
+  const ready = manifest === null || summaryCache.has(manifest);
 
-  return useMemo(() => {
-    if (mode === 'static') return manifestValidation(staticManifest);
-    if (vault.status === 'loaded' && vault.manifest) {
-      return manifestValidation(vault.manifest);
-    }
-    return EMPTY_SUMMARY;
-  }, [mode, staticManifest, vault.status, vault.manifest]);
+  useEffect(() => {
+    if (ready) return;
+    const timer = window.setTimeout(() => {
+      manifestValidation(manifest);
+      setSummarized((count) => count + 1);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [manifest, ready]);
+
+  const shown = ready ? manifest : null;
+  return useMemo(() => (shown ? manifestValidation(shown) : EMPTY_SUMMARY), [shown]);
 }

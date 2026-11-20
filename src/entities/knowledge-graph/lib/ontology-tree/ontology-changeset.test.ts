@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
-import { acknowledgeNodeChange, computeOntologyChangeset, snapshotOntology } from "./ontology-changeset";
+import {
+  acknowledgeNodeChange,
+  computeOntologyChangeset,
+  hashNodeSignature,
+  joinEdgeKey,
+  prepareGraphSignatures,
+  snapshotOntology,
+  type OntologyChangeset,
+  type OntologySnapshot,
+} from "./ontology-changeset";
 
 function node(id: string, kind: string, title = id, summary?: string): KnowledgeGraphNode {
   return {
@@ -186,5 +195,112 @@ describe("acknowledgeNodeChange", () => {
     // Acknowledging `a` must not touch the ab→c edge.
     const cs = computeOntologyChangeset(acked, nodes, [edge("a", "c"), edge("ab", "c")]);
     expect(cs.removedEdges).toEqual([]);
+  });
+});
+
+/** Counts reads of `title`, which every signature pass reads once per node. */
+function countingNodes(nodes: KnowledgeGraphNode[]): { nodes: KnowledgeGraphNode[]; titleReads: () => number } {
+  let reads = 0;
+  const wrapped = nodes.map((plain) => {
+    const copy = { ...plain };
+    Object.defineProperty(copy, "title", {
+      get: () => {
+        reads += 1;
+        return plain.title;
+      },
+    });
+    return copy;
+  });
+  return { nodes: wrapped, titleReads: () => reads };
+}
+
+describe("ontology-changeset signature reuse", () => {
+  it("hashes a graph once across its snapshot and every diff of it", () => {
+    const { nodes, titleReads } = countingNodes([node("a", "domain"), node("b", "capability"), node("c", "element")]);
+    const snap = snapshotOntology(nodes, baseEdges, 1);
+    computeOntologyChangeset(snap, nodes, baseEdges);
+    computeOntologyChangeset(snap, nodes, baseEdges);
+    expect(titleReads()).toBe(nodes.length);
+  });
+
+  it("lets a sliced preparation stand in for the first pass", async () => {
+    const { nodes, titleReads } = countingNodes([node("a", "domain"), node("b", "capability")]);
+    await prepareGraphSignatures(nodes, baseEdges, { yieldNow: async () => undefined });
+    const snap = snapshotOntology(nodes, baseEdges, 1);
+    expect(computeOntologyChangeset(snap, nodes, baseEdges).total).toBe(0);
+    expect(titleReads()).toBe(nodes.length);
+  });
+});
+
+// The diff as written before signatures were cached: every caller rehashed every node.
+function referenceSnapshot(nodes: KnowledgeGraphNode[], edges: KnowledgeGraphEdge[]): OntologySnapshot {
+  const outgoing = referenceOutgoing(edges);
+  return {
+    nodeSigs: new Map(nodes.map((n) => [n.id, referenceSig(n, outgoing)])),
+    nodeKinds: new Map(nodes.map((n) => [n.id, n.kind])),
+    edgeKeys: new Set(edges.map((e) => joinEdgeKey(e.from, e.to, e.type))),
+    takenAt: 1,
+  };
+}
+function referenceOutgoing(edges: KnowledgeGraphEdge[]): Map<string, string[]> {
+  const map = new Map<string, string[]>();
+  for (const e of edges) map.set(e.from, [...(map.get(e.from) ?? []), `${e.to}:${e.type}`]);
+  return map;
+}
+function referenceSig(n: KnowledgeGraphNode, outgoing: Map<string, string[]>): number {
+  const sep = "\u0001";
+  return hashNodeSignature([n.kind, n.title, n.summary ?? "", (outgoing.get(n.id) ?? []).slice().sort().join(",")].join(sep));
+}
+function referenceChangeset(base: OntologySnapshot, nodes: KnowledgeGraphNode[], edges: KnowledgeGraphEdge[]) {
+  const outgoing = referenceOutgoing(edges);
+  const ids = new Set(nodes.map((n) => n.id));
+  const keys = new Set(edges.map((e) => joinEdgeKey(e.from, e.to, e.type)));
+  const removedNodes = [...base.nodeSigs.keys()].filter((id) => !ids.has(id));
+  return {
+    addedNodes: nodes.filter((n) => !base.nodeSigs.has(n.id)).map((n) => n.id),
+    changedNodes: nodes
+      .filter((n) => base.nodeSigs.has(n.id) && base.nodeSigs.get(n.id) !== referenceSig(n, outgoing))
+      .map((n) => n.id),
+    removedNodes,
+    addedEdges: [...keys].filter((k) => !base.edgeKeys.has(k)),
+    removedEdges: [...base.edgeKeys].filter((k) => !keys.has(k)),
+    removedNodeKinds: new Map(removedNodes.flatMap((id) => (base.nodeKinds.has(id) ? [[id, base.nodeKinds.get(id)!]] : []))),
+  };
+}
+function comparable(cs: OntologyChangeset) {
+  const { total, touchedNodeIds, ...rest } = cs;
+  return { ...rest, total, touched: [...touchedNodeIds] };
+}
+
+describe("ontology-changeset equals the uncached diff", () => {
+  // A seeded generator, so a failure names a reproducible graph.
+  function graph(seed: number, size: number) {
+    let state = seed;
+    const next = () => (state = (state * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const kinds = ["domain", "capability", "element"];
+    const nodes = Array.from({ length: size }, (_, i) =>
+      node(`n${Math.floor(next() * size * 1.5)}-${i % 3 === 0 ? i : 0}`, kinds[i % 3], next() < 0.2 ? `t${i}` : undefined),
+    );
+    const edges = Array.from({ length: size * 2 }, () =>
+      edge(nodes[Math.floor(next() * size)].id, nodes[Math.floor(next() * size)].id, next() < 0.5 ? "contains" : "depends_on"),
+    );
+    return { nodes, edges };
+  }
+
+  it("on random edits, duplicate ids included, against both baseline kinds", () => {
+    for (let seed = 1; seed <= 40; seed += 1) {
+      const before = graph(seed, 30);
+      const after = graph(seed + 1000, 30);
+      for (const [nodes, edges] of [[after.nodes, after.edges], [before.nodes, before.edges]] as const) {
+        const expected = referenceChangeset(referenceSnapshot(before.nodes, before.edges), nodes, edges);
+        const fromSnapshot = computeOntologyChangeset(snapshotOntology(before.nodes, before.edges, 1), nodes, edges);
+        const fromRestored = computeOntologyChangeset(referenceSnapshot(before.nodes, before.edges), nodes, edges);
+        const touched = [...new Set([...expected.addedNodes, ...expected.changedNodes])];
+        const total = expected.addedNodes.length + expected.changedNodes.length + expected.removedNodes.length +
+          expected.addedEdges.length + expected.removedEdges.length;
+        expect(comparable(fromSnapshot)).toEqual({ ...expected, total, touched });
+        expect(comparable(fromRestored)).toEqual({ ...expected, total, touched });
+      }
+    }
   });
 });
