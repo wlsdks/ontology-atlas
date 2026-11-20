@@ -44,7 +44,8 @@ export function landAtLine(
   if (!block) return null;
   const view = scroller.getBoundingClientRect();
   const rect = block.getBoundingClientRect();
-  const scrolls = !insideView(rect, view);  const target = scrolls
+  const scrolls = !insideView(rect, view);
+  const target = scrolls
     ? landingTop(rect, view, scroller.scrollTop, scroller.scrollHeight - scroller.clientHeight)
     : scroller.scrollTop;
 
