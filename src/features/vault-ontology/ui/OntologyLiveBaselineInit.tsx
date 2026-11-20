@@ -28,8 +28,9 @@ export function OntologyLiveBaselineInit() {
     if (handledScopeRef.current === vaultScope) return;
     // A scope change discards the previous vault's baseline and switches the save key.
     setChangeBaselineScope(vaultScope);
+    handledScopeRef.current = null;
     const preparing = new AbortController();
-    // The signature pass runs in slices first, so marking or diffing below costs no long task.
+    // The per-node hashing runs in slices first; marking or diffing below reuses it.
     prepareGraphSignatures(insight.nodes, insight.edges, { signal: preparing.signal }).then(() => {
       // A pass can finish after its abort; its graph is no longer the one on screen.
       if (preparing.signal.aborted) return;
