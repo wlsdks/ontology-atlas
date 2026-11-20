@@ -173,7 +173,7 @@ so.
 
 **Security.**
 - Vault text is hostile. It travels only as JSON string values to a model with no tools, and the result is numbers. Each response must hold exactly one finite vector per input, all of one dimension, in at most 4 MiB.
-- A passage is one heading section of at most 2,000 characters. A whole section shorter than 400 characters joins the section after it, and a file's last such section joins the one before, as long as the joined passage stays within 2,000 characters; it keeps the first section's heading and spans both sections' lines. A file contributes at most 500 passages; the rest of the file is counted "not prepared".
+- A passage is one heading section of at most 2,000 characters. A whole section shorter than 400 characters joins the section after it, and a file's last such section joins the one before, as long as the joined passage stays within 2,000 characters; it keeps the first section's heading and spans both sections' lines. A passage under 400 characters that a long line cannot join whole is filled with that line's first characters, so a heading never stands alone before a long paragraph. A file contributes at most 500 passages; the rest of the file is counted "not prepared".
 - A batch holds at most 32 passages and 64 KiB, with one request in flight, a 120 s timeout for a batch (a cold model load) and 10 s for a query.
 - The address check is the existing `normalize_base_url` plus a loopback-only rule. A planted passage can only rank itself; it is shown as a lead with its path, for the person to judge.
 

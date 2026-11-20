@@ -1,6 +1,8 @@
 //! Passages: the pieces of a Markdown file that search by meaning embeds; the quality harness
-//! asks the bench binary for them, so this is the only splitter. One pass over the text's lines:
-//! O(n) time, and memory for the passages kept plus the one being built.
+//! asks the bench binary for them, so this is the only splitter. One pass over the text's lines,
+//! normalised to NFC `NFC_WINDOW_CHARS` at a time, so no line is ever normalised whole: canonical
+//! reordering sorts runs of at most one window, so time is O(n log w) for windows of w characters,
+//! and memory beyond the borrowed text is the passages kept plus one passage and one window.
 
 use crate::stamps::Sha;
 use icu_normalizer::ComposingNormalizerBorrowed;
@@ -17,7 +19,12 @@ pub(crate) const MAX_HEADING_CHARS: usize = 200;
 pub(crate) const MAX_PASSAGES_PER_FILE: usize = 500;
 /// Changing the split rule changes this; stored passage lists are then read again, while vectors
 /// of passages whose text did not change are kept.
-pub(crate) const PASSAGE_VERSION: u32 = 3;
+pub(crate) const PASSAGE_VERSION: u32 = 4;
+/// Text is normalised this many characters at a time.
+const NFC_WINDOW_CHARS: usize = MAX_PASSAGE_CHARS;
+/// How far past a window's end its cut may move to land before a character that composes and
+/// reorders with nothing before it; a run without one is cut at the window's end.
+const NFC_LOOKAHEAD_CHARS: usize = 64;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Passage {
@@ -55,6 +62,36 @@ pub(crate) fn nfc(text: &str) -> std::borrow::Cow<'_, str> {
     ComposingNormalizerBorrowed::new_nfc().normalize(text)
 }
 
+/// ASCII, Hangul syllables and CJK ideographs: starters no composition takes as its second part,
+/// so NFC of text cut before one equals NFC of each side.
+fn starts_window(c: char) -> bool {
+    c.is_ascii() || ('\u{AC00}'..='\u{D7A3}').contains(&c) || ('\u{4E00}'..='\u{9FFF}').contains(&c)
+}
+
+/// Calls `each` with the NFC form of `text`, one window after another, until it returns false.
+fn for_each_nfc(text: &str, mut each: impl FnMut(&str) -> bool) {
+    let mut rest = text;
+    while !rest.is_empty() {
+        let cut = match rest.char_indices().nth(NFC_WINDOW_CHARS) {
+            None => rest.len(),
+            Some((end, _)) => rest
+                .get(end..)
+                .unwrap_or("")
+                .char_indices()
+                .take(NFC_LOOKAHEAD_CHARS)
+                .find(|&(_, c)| starts_window(c))
+                .map_or(end, |(at, _)| end + at),
+        };
+        let Some((window, tail)) = rest.split_at_checked(cut) else {
+            return;
+        };
+        if !each(&nfc(window)) {
+            return;
+        }
+        rest = tail;
+    }
+}
+
 fn without_cr(line: &str) -> &str {
     line.strip_suffix('\r').unwrap_or(line)
 }
@@ -90,6 +127,13 @@ fn fence_run(line: &str) -> Option<(u8, usize, &str)> {
     (run >= 3).then(|| (mark, run, rest.get(run..).unwrap_or("")))
 }
 
+/// An opening fence: a backtick fence's info string holds no backtick (CommonMark).
+fn opens_fence(line: &str) -> Option<(u8, usize)> {
+    fence_run(line)
+        .filter(|&(mark, _, after)| mark != b'`' || !after.contains('`'))
+        .map(|(mark, run, _)| (mark, run))
+}
+
 /// A closing fence: the opener's mark, at least as long, and nothing but spaces after it.
 fn closes_fence(line: &str, mark: u8, length: usize) -> bool {
     fence_run(line)
@@ -101,7 +145,8 @@ fn closes_frontmatter(line: &str) -> bool {
     (line.starts_with("---") || line.starts_with("...")) && line.get(3..).is_some_and(is_blank)
 }
 
-/// The heading's text: marks, a closing run of `#` after a space, and spaces dropped; NFC.
+/// The heading's text: marks, a closing run of `#` after a space, and spaces dropped; NFC, then
+/// cut to `MAX_HEADING_CHARS`.
 fn heading_text(line: &str) -> String {
     let rest = line.trim().trim_start_matches('#').trim();
     let before_closing = rest.trim_end_matches('#');
@@ -110,8 +155,16 @@ fn heading_text(line: &str) -> String {
     } else {
         rest
     };
-    let cut: String = text.chars().take(MAX_HEADING_CHARS).collect();
-    nfc(&cut).chars().take(MAX_HEADING_CHARS).collect()
+    let mut heading = String::new();
+    let mut chars = 0;
+    for_each_nfc(text, |window| {
+        for c in window.chars().take(MAX_HEADING_CHARS - chars) {
+            heading.push(c);
+            chars += 1;
+        }
+        chars < MAX_HEADING_CHARS
+    });
+    heading
 }
 
 /// 0-based index of the first line after the frontmatter, or 0 when there is none.
@@ -152,9 +205,9 @@ fn for_each_section<'a>(raw: &'a str, mut each: impl FnMut(Section<'a>)) {
                 }
                 false
             }
-            None => match fence_run(line) {
-                Some((mark, length, _)) => {
-                    fence = Some((mark, length));
+            None => match opens_fence(line) {
+                Some(opened) => {
+                    fence = Some(opened);
                     false
                 }
                 None => is_heading(line),
@@ -196,7 +249,7 @@ impl Piece {
         self.chars + 2 + chars <= MAX_PASSAGE_CHARS
     }
 
-    /// Callers check `fits` first.
+    /// Callers check `fits` first. A preamble joined to a heading section takes its heading.
     fn join(self, next: Piece) -> Piece {
         let mut text = self.text;
         text.push_str("\n\n");
@@ -204,7 +257,7 @@ impl Piece {
         Piece {
             line_start: self.line_start,
             line_end: next.line_end,
-            heading: self.heading,
+            heading: self.heading.or(next.heading),
             text,
             chars: self.chars + 2 + next.chars,
         }
@@ -293,40 +346,91 @@ struct Chunk<'j> {
     /// Characters held, each line counted with its line end.
     chars: usize,
     lines: usize,
-    /// 1-based line the chunk starts on.
-    start: usize,
+    /// 1-based numbers of the chunk's first and last lines that hold text.
+    first_filled: Option<usize>,
     last_filled: usize,
     /// The section's first piece, held until a second shows whether the section is whole.
     first: Option<Piece>,
     pieces: usize,
+    /// The line being fed, reused from line to line.
+    line: String,
 }
 
 impl Chunk<'_> {
     fn push(&mut self, line: &str, chars: usize, number: usize) {
-        if self.lines == 0 {
-            self.start = number;
-        } else {
+        if self.lines > 0 {
             self.text.push('\n');
         }
         self.text.push_str(line);
         self.chars += chars + 1;
         self.lines += 1;
         if !is_blank(line) {
+            self.first_filled.get_or_insert(number);
             self.last_filled = number;
         }
     }
 
-    fn flush(&mut self, end: usize) {
+    /// Characters a line can add before the chunk passes `MAX_PASSAGE_CHARS`.
+    fn room(&self) -> usize {
+        if self.lines == 0 {
+            MAX_PASSAGE_CHARS
+        } else {
+            MAX_PASSAGE_CHARS.saturating_sub(self.chars)
+        }
+    }
+
+    /// Feeds one line, normalised window by window, cutting it where it cannot fit.
+    fn push_line(&mut self, raw: &str, number: usize) {
+        let mut line = std::mem::take(&mut self.line);
+        line.clear();
+        let mut chars = 0;
+        for_each_nfc(raw, |window| {
+            line.push_str(window);
+            chars += window.chars().count();
+            self.make_room(&mut line, &mut chars, number);
+            true
+        });
+        self.push(&line, chars, number);
+        self.line = line;
+    }
+
+    /// Takes pieces off the front of `line` until the rest fits beside the open chunk. A chunk of at
+    /// least `MIN_SECTION_CHARS` is closed first; a shorter one is filled from the line instead, so
+    /// a bare heading never stands alone before a long line.
+    fn make_room(&mut self, line: &mut String, chars: &mut usize, number: usize) {
+        loop {
+            let room = self.room();
+            if *chars <= room {
+                return;
+            }
+            if self.lines > 0 && (self.chars >= MIN_SECTION_CHARS || room == 0) {
+                self.flush();
+                continue;
+            }
+            let cut = line
+                .char_indices()
+                .nth(room)
+                .map_or(line.len(), |(at, _)| at);
+            let rest = line.split_off(cut);
+            self.push(line, room, number);
+            self.flush();
+            *line = rest;
+            *chars -= room;
+        }
+    }
+
+    fn flush(&mut self) {
         let text = nfc(self.text.trim()).into_owned();
+        let start = self.first_filled.take();
         self.text.clear();
         self.chars = 0;
         self.lines = 0;
-        if text.is_empty() {
+        let Some(line_start) = start.filter(|_| !text.is_empty()) else {
             return;
-        }
+        };
         let piece = Piece {
-            line_start: self.start,
-            line_end: end,
+            line_start,
+            line_end: self.last_filled,
             heading: self.heading.clone(),
             chars: text.chars().count(),
             text,
@@ -342,11 +446,9 @@ impl Chunk<'_> {
         self.joiner.push(piece, false);
     }
 
-    /// The end of the section: the chunk closes at its last line that is not blank.
     fn finish(mut self) {
         if self.lines > 0 {
-            let end = self.last_filled.max(self.start);
-            self.flush(end);
+            self.flush();
         }
         if let Some(first) = self.first.take() {
             self.joiner.push(first, self.pieces == 1);
@@ -370,34 +472,14 @@ fn split_section(section: &Section, joiner: &mut Joiner) {
         text: String::new(),
         chars: 0,
         lines: 0,
-        start: section.first_line + 1,
+        first_filled: None,
         last_filled: 0,
         first: None,
         pieces: 0,
+        line: String::new(),
     };
     for (at, line) in section.text.split('\n').map(without_cr).enumerate() {
-        let number = section.first_line + 1 + at;
-        let normal = nfc(line);
-        let mut rest: &str = &normal;
-        let mut rest_chars = rest.chars().count();
-        while rest_chars > MAX_PASSAGE_CHARS {
-            if chunk.lines > 0 {
-                chunk.flush(number - 1);
-            }
-            let cut = rest
-                .char_indices()
-                .nth(MAX_PASSAGE_CHARS)
-                .map_or(rest.len(), |(at, _)| at);
-            let (head, tail) = rest.split_at(cut);
-            chunk.push(head, MAX_PASSAGE_CHARS, number);
-            chunk.flush(number);
-            rest = tail;
-            rest_chars -= MAX_PASSAGE_CHARS;
-        }
-        if chunk.lines > 0 && chunk.chars + rest_chars + 1 > MAX_PASSAGE_CHARS {
-            chunk.flush(number - 1);
-        }
-        chunk.push(rest, rest_chars, number);
+        chunk.push_line(line, section.first_line + 1 + at);
     }
     chunk.finish();
 }
@@ -442,7 +524,7 @@ mod tests {
         assert_eq!(
             spans(&raw),
             vec![
-                (4, 5, None, a),
+                (5, 5, None, a),
                 (7, 9, Some("One".into()), format!("# One\n\n{b}")),
                 (13, 14, Some("Two".into()), format!("## Two ##\n{c}")),
             ]
@@ -560,10 +642,80 @@ mod tests {
     fn text_that_nfc_lengthens_is_cut_by_its_normal_length_and_kept_whole() {
         // U+0958 is excluded from composition: NFC writes it as two characters.
         let raw = format!("# Q\n{}", "\u{0958}".repeat(1_500));
-        let passages = split(&raw).0;
+        let sizes: Vec<usize> = split(&raw).0.iter().map(Passage::chars).collect();
+        assert_eq!(
+            sizes,
+            vec![MAX_PASSAGE_CHARS, "# Q\n".len() + 3_000 - MAX_PASSAGE_CHARS]
+        );
+    }
+
+    #[test]
+    fn a_bare_heading_is_filled_from_a_long_first_line_not_left_alone() {
+        let raw = format!("# Q\n{}", "w".repeat(1_998));
+        let passages = spans(&raw);
+        assert_eq!(passages[0].0, 1);
+        assert_eq!(passages[0].3.chars().count(), MAX_PASSAGE_CHARS);
+        assert!(passages[0].3.starts_with("# Q\nwww"));
+        assert_eq!(
+            (passages[1].0, passages[1].1, passages[1].3.as_str()),
+            (2, 2, "ww")
+        );
+    }
+
+    #[test]
+    fn a_short_preamble_joined_to_a_heading_section_takes_its_heading() {
+        let raw = format!("A preamble.\n\n# Topic\n{}", long('t'));
+        assert_eq!(spans(&raw)[0].2.as_deref(), Some("Topic"));
+    }
+
+    #[test]
+    fn a_span_starts_and_ends_on_a_line_with_text() {
+        let raw = format!("\n\n{}\n\n\n# B\n\n{}\n\n", long('a'), long('b'));
+        assert_eq!(lines(&raw), vec![(3, 3), (6, 8)]);
+    }
+
+    #[test]
+    fn a_backtick_run_with_a_backtick_after_it_opens_no_fence() {
+        let raw = format!("# A\n```x```\n{}\n# B\n{}", long('a'), long('b'));
+        assert_eq!(lines(&raw), vec![(1, 3), (4, 5)]);
+    }
+
+    #[test]
+    fn a_heading_is_normalised_before_it_is_cut() {
+        let line = format!("# {}e\u{0301}tail", "a".repeat(MAX_HEADING_CHARS - 1));
+        let heading = spans(&format!("{line}\n{}", long('x')))[0]
+            .2
+            .clone()
+            .unwrap();
+        assert_eq!(heading.chars().count(), MAX_HEADING_CHARS);
+        assert_eq!(heading.chars().last(), Some('\u{00E9}'));
+    }
+
+    #[test]
+    fn a_line_of_combining_marks_is_normalised_in_bounded_windows() {
+        let raw = format!("# M\na{}", "\u{0301}\u{0323}".repeat(400_000));
+        let (passages, over) = split(&raw);
         assert!(passages.iter().all(|p| p.chars() <= MAX_PASSAGE_CHARS));
         let total: usize = passages.iter().map(Passage::chars).sum();
-        assert_eq!(total, "# Q".len() + 3_000);
+        assert_eq!(over, 0);
+        assert_eq!(
+            passages.len(),
+            total.div_ceil(MAX_PASSAGE_CHARS),
+            "full passages but the last"
+        );
+        assert_eq!(split(&raw).0[3].sha, passages[3].sha, "deterministic");
+    }
+
+    #[test]
+    fn a_short_last_section_joins_the_last_piece_past_the_cap_or_is_counted() {
+        let body = long('b');
+        let fits: String = (0..MAX_PASSAGES_PER_FILE + 1)
+            .map(|i| format!("# H{i}\n{body}\n"))
+            .collect();
+        assert_eq!(split(&format!("{fits}# Tail\nshort\n")).1, 1);
+        let full = "f".repeat(MAX_PASSAGE_CHARS - 4);
+        let last_full = format!("{fits}# F\n{full}\n# Tail\nshort\n");
+        assert_eq!(split(&last_full).1, 3);
     }
 
     #[test]
