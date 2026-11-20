@@ -225,3 +225,16 @@ deleted when nothing reads them.
 ## Revisions
 
 - 2026-11-20: first draft. Three rooms, eight decisions, the slice list, and H1 in full.
+- 2026-11-20: H1 as built departs in six places.
+  - Below a 60rem pane the number and the bar stack, so the band stays inside 112px at 1040 with
+    the index open; from 60rem the four cells share one row.
+  - The key's line still gives way to a pointed-at mark's or island's sentence, as the legend
+    did, so hovering keeps its description.
+  - The question desk keeps the compact work widget, whose own eyebrow and chevron remain; it
+    lives in `src/widgets/library-work-activity/`, outside this slice.
+  - The off-template clause leaves the home; the Check results row and the reader's status line
+    still say it.
+  - A press on the picture no longer clears a state filter; the press itself, Show all, or
+    Escape does. The filter persists while a document is open, and Escape clears it only on the
+    home.
+  - Under a search the presses and Show all count the folder, not the search's rows.
