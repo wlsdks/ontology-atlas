@@ -53,7 +53,9 @@ punctuation) is folded into that claim, which keeps both ranks, so one sentence
 stands once; a cited passage that says something else keeps its own row beside the
 claim. The
 best three show; Show N more appends the rest and moves focus to the first new row.
-A row is the sentence, question terms in a stronger weight, then where it lives in
+A row is the sentence (a sentence over 320 characters shows a window around its
+first matched term, cut between graphemes with an ellipsis at each cut), question
+terms in a stronger weight, then where it lives in
 one label size: the page title or file name and its line, a badge only when a cited
 source changed, is missing or nothing is cited, and up to two cited files that open
 the source at the line, then "+N" for the rest. The head counts the rows; with no
@@ -88,8 +90,11 @@ leads, which keep their place under the head "Passages the search found", with a
 unreviewed draft label.
 Zero local word matches do not assert that a differently worded original lacks
 the answer; ACP can re-read the folder on request. Only citations to inventoried originals open
-inside Library; on screen each shows the file name and its line, with the full
-address as its description. The draft follows the current query and file listing:
+inside Library; on screen each shows the file name and its line (the shortest
+trailing path that no other listed original shares when names repeat), with the
+full address as its description and tooltip. Any anchor other than a plain line
+number of at most seven digits shows the address as written, and a citation with
+a second `#` stays inert, as the export treats it. The draft follows the current query and file listing:
 editing the question keeps it, and it leaves when a new search's rows arrive or the
 folder changes. Filing remains an explicit Wiki
 review/write action. One editorial document template preserves the question,

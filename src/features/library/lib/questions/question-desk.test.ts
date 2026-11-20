@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import type { VaultDoc } from '@/entities/docs-vault';
-import { countDeskReadablePages, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskReportFileCurrent, questionTermRuns, questionTerms, recentDeskPages, type DeskClaim } from './question-desk';
+import { countDeskReadablePages, deskSentenceWindow, DESK_SENTENCE_LIMIT, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskReportFileCurrent, questionTermRuns, questionTerms, recentDeskPages, type DeskClaim } from './question-desk';
 import { buildQuestionDeskBrief, buildQuestionDeskReportBrief, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections, QUESTION_DESK_BRIEF_MAX_CHARS } from './question-desk-brief';
 import { planQuestionDeskReportFile } from './question-desk-brief';
 import { buildAnswerPage } from './answer-page';
@@ -473,5 +473,31 @@ describe('question desk home and lead order', () => {
     const runs = questionTermRuns('배송 후 15일 안에는 반품할 수 있다. refund ok', terms);
     expect(runs.filter((run) => run.strong).map((run) => run.text)).toEqual(['안에', '반품', 'refund']);
     expect(runs.map((run) => run.text).join('')).toBe('배송 후 15일 안에는 반품할 수 있다. refund ok');
+  });
+
+  it('shows a sentence that fits whole and a longer one as a window around its first matched term', () => {
+    const short = 'Refund approval queues a stock restoration job.';
+    expect(deskSentenceWindow(short, ['refund'])).toBe(short);
+    const long = `${'Before the refund clause. '.repeat(40)}${'Stock waits. '.repeat(40)}`;
+    expect(deskSentenceWindow(long, ['refund'])).toMatch(/^Before the refund clause\..*…$/u);
+    const late = `${'padding words here. '.repeat(60)}The refund is queued.${' trailing words.'.repeat(60)}`;
+    const window = deskSentenceWindow(late, ['refund']);
+    expect(window.length).toBeLessThanOrEqual(DESK_SENTENCE_LIMIT + 2);
+    expect(window.startsWith('…') && window.endsWith('…')).toBe(true);
+    expect(window).toContain('The refund is queued.');
+    // A Hangul term matches by its stem, as the highlight does.
+    expect(deskSentenceWindow(`${'가나다라 '.repeat(100)}반품할 수 있다${' 마바사'.repeat(100)}`, ['반품은']))
+      .toContain('반품할 수 있다');
+  });
+
+  it('cuts a window between graphemes, never inside one', () => {
+    const family = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}';
+    const accent = 'e\u0301';
+    const text = `${family.repeat(40)}${accent.repeat(31)} refund ${accent.repeat(31)}${family.repeat(40)}`;
+    const window = deskSentenceWindow(text, ['refund']);
+    expect(window.length).toBeLessThanOrEqual(DESK_SENTENCE_LIMIT + 2);
+    const graphemes = [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(window.slice(1, -1).trim())]
+      .map((part) => part.segment);
+    for (const grapheme of graphemes) expect([family, accent, ' ', ...'refund']).toContain(grapheme);
   });
 });

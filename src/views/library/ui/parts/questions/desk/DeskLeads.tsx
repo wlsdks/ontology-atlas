@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 
-import { passageLabelText, type DeskCitation, type DeskClaim, type DeskLead } from '@/features/library';
+import { deskSentenceWindow, passageLabelText, type DeskCitation, type DeskClaim, type DeskLead } from '@/features/library';
 import { passageLabelFor } from '@/shared/lib/library/source-passage';
 import { Chip } from '@/shared/ui';
 import { EXIT_TRANSITION, MOTION, OVERLAY_RISE, OVERLAY_SETTLED } from '@/shared/motion';
@@ -70,7 +70,7 @@ export function DeskLeads({ set, expandedFor, onShowMore, reduced, citationState
               riseDelay={staggerDelaySeconds(index - FIRST_LEADS)}
               openRef={!leaving && index === FIRST_LEADS ? firstAppended : undefined}
               jev={canCheck && claim && first ? { busy: jev.preparing || jev.sending, onCheck: () => void jev.prepare(claim, first) } : null}
-              jevResult={judgment && claim && first ? <DeskJevResult judgment={judgment} sentence={claimSentence(claim.text)}
+              jevResult={judgment && claim && first ? <DeskJevResult judgment={judgment} sentence={deskSentenceWindow(claimSentence(claim.text), value.terms)}
                 where={`${claim.pageTitle} · ${first.path.split('/').pop()} · ${passageLabelText(passageLabelFor(first.anchor, []), first.anchor, t)}`} /> : null}
               onOpenWiki={onOpenWiki} onOpenSource={onOpenSource} />;
           })}

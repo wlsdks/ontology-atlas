@@ -123,6 +123,45 @@ export function findDeskSourceHits(path: string, units: readonly SourceUnit[], t
   return { hits, matches };
 }
 
+/** The longest sentence a lead row shows; a longer one shows a window of it. */
+export const DESK_SENTENCE_LIMIT = 320;
+/** Code units read past each cut so the grapheme boundaries near it come out right. */
+const GRAPHEME_MARGIN = 64;
+
+function firstTermAt(lower: string, terms: readonly string[]): number {
+  let first = -1;
+  const consider = (at: number) => { if (at >= 0 && (first < 0 || at < first)) first = at; };
+  for (const term of terms) {
+    if (!term) continue;
+    const at = lower.indexOf(term);
+    consider(at);
+    if (at >= 0 || !/^[가-힣]{3,}$/u.test(term)) continue;
+    for (let index = 0; index < term.length - 1; index += 1) consider(lower.indexOf(term.slice(index, index + 2)));
+  }
+  return first;
+}
+
+/**
+ * A sentence a row can show: whole when it fits, otherwise `DESK_SENTENCE_LIMIT` code units around
+ * the first matched term, cut between graphemes, with an ellipsis at each cut end. A source unit can
+ * be one line of megabytes; the row, its accessible name and its highlight runs only see the window.
+ */
+export function deskSentenceWindow(text: string, terms: readonly string[], limit = DESK_SENTENCE_LIMIT): string {
+  if (text.length <= limit) return text;
+  const at = Math.max(0, firstTermAt(text.toLowerCase(), terms));
+  const start = Math.max(0, Math.min(at - Math.floor(limit / 3), text.length - limit));
+  const end = start + limit;
+  const regionStart = Math.max(0, start - GRAPHEME_MARGIN);
+  const regionEnd = Math.min(text.length, end + GRAPHEME_MARGIN);
+  const boundaries = [...new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+    .segment(text.slice(regionStart, regionEnd))].map((segment) => regionStart + segment.index);
+  boundaries.push(regionEnd);
+  const from = start === 0 ? 0 : boundaries.find((boundary) => boundary >= start) ?? start;
+  const to = end >= text.length ? text.length : boundaries.findLast((boundary) => boundary <= end && boundary > from) ?? end;
+  const body = text.slice(from, to).trim();
+  return `${from > 0 ? '…' : ''}${body}${to < text.length ? '…' : ''}`;
+}
+
 /**
  * The sentence cut into runs, `strong` where a question term matched the way `questionScore`
  * counted it: the whole term, or for a Hangul term of three or more syllables any two-syllable
