@@ -1,0 +1,77 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import type { LibrarySourceRow } from "@/entities/docs-vault";
+import { writeLibraryIndexCollapsed } from "@/shared/lib/preferences/appearance-preferences";
+
+import type { useLibraryIndexColumn } from "./use-library-index-column";
+
+type SourceState = LibrarySourceRow["state"];
+
+/**
+ * The one source state the band's presses narrow the Sources list to, and the marks it lights in
+ * the picture. The press belongs to a folder: switching folders drops it, and a state with no source
+ * left in it drops it too, so the list is never filtered to nothing.
+ */
+export function useSourceFilter({
+  sources,
+  vaultScope,
+  indexColumn,
+  listening,
+}: {
+  sources: readonly LibrarySourceRow[];
+  vaultScope: string;
+  indexColumn: ReturnType<typeof useLibraryIndexColumn>;
+  /** True while the band is on screen, the only place its Escape is meant for. */
+  listening: boolean;
+}) {
+  const [pick, setPick] = useState<{ scope: string; state: SourceState } | null>(null);
+  const { autoFolded, setAutoFolded, autoFoldDeclinedRef, indexCollapsed } = indexColumn;
+
+  const state = useMemo(() => {
+    if (!pick || pick.scope !== vaultScope) return null;
+    return sources.some((row) => row.state === pick.state) ? pick.state : null;
+  }, [pick, sources, vaultScope]);
+
+  const clear = useCallback(() => setPick(null), []);
+  const press = useCallback(
+    (next: SourceState) => {
+      if (state === next) {
+        setPick(null);
+        return;
+      }
+      setPick({ scope: vaultScope, state: next });
+      // A filter on a folded list changes nothing anyone can see, so the press opens the list.
+      if (indexCollapsed) {
+        if (autoFolded) autoFoldDeclinedRef.current = true;
+        setAutoFolded(false);
+        writeLibraryIndexCollapsed(false);
+      }
+    },
+    [autoFoldDeclinedRef, autoFolded, indexCollapsed, setAutoFolded, state, vaultScope],
+  );
+
+  const highlight = useMemo(() => {
+    if (state === null) return null;
+    const ids = new Set<string>();
+    for (const row of sources) {
+      if (row.state !== state) continue;
+      ids.add(`source:${row.path}`);
+      for (const slug of row.citedBy) ids.add(`page:${slug}`);
+    }
+    return ids;
+  }, [sources, state]);
+
+  useEffect(() => {
+    if (state === null || !listening) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setPick(null);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [listening, state]);
+
+  return { state, press, clear, highlight };
+}

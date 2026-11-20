@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import { useTranslations } from "next-intl";
 import { Info, PanelLeftClose } from "lucide-react";
 import { controlClass } from "@/shared/ui/control-class";
@@ -12,6 +12,7 @@ export function LibraryHeader({
   disclosure = null,
   onCollapse,
   collapseRef,
+  doors = null,
 }: {
   t: ReturnType<typeof useTranslations<"library">>;
   title?: string;
@@ -19,9 +20,12 @@ export function LibraryHeader({
   disclosure?: string | null;
   onCollapse?: () => void;
   collapseRef?: RefObject<HTMLButtonElement | null>;
+  /** The Library-wide doors, before the info glyph. */
+  doors?: ReactNode;
 }) {
   return (
     <div data-testid="library-header" className="flex min-w-0 items-center gap-1.5">
+      {doors}
       <p className={titleHidden ? "sr-only" : "min-w-0 truncate text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]"}>
         {title ?? t("title")}
       </p>

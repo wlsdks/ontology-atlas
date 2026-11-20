@@ -120,7 +120,8 @@
       "waiting": "Permission requested",
       "write": "File changed",
       "error": "Failed"
-    }
+    },
+    "recentCount": "Recent {count, number}"
   },
   "eyebrow": "In this folder",
   "lede": "The project documents you gathered, in whatever format they arrived, and the wiki pages written from them. A source is kept byte for byte, and every claim on a page cites one.",
@@ -400,17 +401,10 @@
   },
   "graph": {
     "title": "Graph",
-    "counts": "{sources, plural, one {# source} other {# sources}} · {pages, plural, one {# page} other {# pages}} · {concepts, plural, one {# concept} other {# concepts}} · {cites, number} cites · {mentions, number} mentions",
-    "countsIsland": "{sources, plural, one {# source} other {# sources}} · {pages, plural, one {# page} other {# pages}} · {cites, number} cites",
     "empty": "Nothing to show yet. Once Write wiki page writes a page, this shows which source it came from and which concepts it names.",
     "canvasAria": "The library graph: raw sources, wiki pages, and the concepts those pages name.",
-    "legend": "Sources stand on the left, the pages written from them beside, and the concepts those pages name on the right; the lines run from a source to the page that read it. A filled circle is a page, a square a source, a ring a concept on the map. A thicker line is a citation, a dashed one a mention. Scroll to zoom, drag the background to move, press a dot for a card beside it.",
-    "legendShort": "A circle is a wiki page, a square a source, a ring a concept.",
-    "legendCardOpen": "A filled circle is a page, a square a source, a ring a concept on the map. A thicker line is a citation, a dashed one a mention, either way. Press Escape, or the same dot again, to close the card.",
-    "legendShortCardOpen": "A circle is a page, a square a source, a ring a concept. Escape closes the card.",
     "islandUnsorted": "Unsorted",
     "islandUnread": "Unread",
-    "legendIslands": "Past a few hundred files the picture is a map of islands: each island is one concept and the pages that name it, with the files those pages were written from packed around them. Unsorted holds pages naming no concept; Unread is the band under the islands: files no page has read yet. An amber dot is a page whose files changed since it was written. Scroll to zoom in until names appear; press a dot for a card beside it.",
     "describeIsland": "{name}: an island of {pages, number} pages and the {sources, number} files they read. Press it to open them as columns; zoom in for their names.",
     "announceIsland": "Island {name}, {position, number} of {total, number}: {pages, number} pages and {sources, number} files. Enter opens it as columns.",
     "describeUnread": "Unread: {sources, number} files no page has read yet. Press it for where to start.",
@@ -455,6 +449,16 @@
       "factPassages": "{count, plural, one {# quoted passage} other {# quoted passages}}",
       "flowInline": "Citations flow from each source into this page.",
       "flowInlineStale": "Citations flow from each source into this page; an amber dot marks a citation whose source has changed."
+    },
+    "key": {
+      "source": "Source {count, number}",
+      "page": "Wiki page {count, number}",
+      "concept": "Concept {count, number}",
+      "cite": "Citation {count, number}",
+      "mention": "Mention {count, number}",
+      "island": "One island is one concept",
+      "stale": "Changed since written",
+      "gestures": "Press for a card · press twice to open · scroll to zoom"
     }
   },
   "home": {
@@ -463,8 +467,7 @@
     "more": "More",
     "compileNext": "Write wiki page: {source}",
     "staleClause": "{count, plural, one {# source changed} other {# sources changed}}",
-    "compileTitle": "Write wiki page for {source}",
-    "staleLit": "{count, plural, one {# changed source is lit} other {# changed sources are lit}}, with the {pages, plural, one {# page} other {# pages}} citing them. Escape, or a press on the picture, clears it."
+    "compileTitle": "Write wiki page for {source}"
   },
   "find": {
     "searchLabel": "Find by file name or path",
@@ -563,11 +566,11 @@
       "title": "Read",
       "startWith": "Start with {title}",
       "nothingYet": "No wiki page yet. Write wiki page makes the first one.",
-      "coveredLine": "{compiled, number} of {total, number} sources have a wiki page",
-      "coveredChecking": "{compiled, number} of {total, number} have a wiki page, {checking, number} still being checked",
-      "coveredPartial": "{compiled, number} of {total, number} have a wiki page, {partial, number} read in part",
-      "coveredStale": "{compiled, number} of {total, number} have a wiki page, {stale, number} changed since",
-      "coveredUnreadable": "{compiled, number} of {total, number} have a wiki page, {unreadable, number} can't be read"
+      "coveredLine": "{compiled, number} of {total, plural, one {# source} other {# sources}} {compiled, plural, one {has} other {have}} a wiki page",
+      "coveredChecking": "{compiled, number} of {total, number} {compiled, plural, one {has} other {have}} a wiki page, {checking, number} still being checked",
+      "coveredPartial": "{compiled, number} of {total, number} {compiled, plural, one {has} other {have}} a wiki page, {partial, number} read in part",
+      "coveredStale": "{compiled, number} of {total, number} {compiled, plural, one {has} other {have}} a wiki page, {stale, number} changed since",
+      "coveredUnreadable": "{compiled, number} of {total, number} {compiled, plural, one {has} other {have}} a wiki page, {unreadable, number} can't be read"
     },
     "brainAgent": "{name}",
     "brainLocal": "{model} on {host}",
@@ -975,7 +978,8 @@
     "batchRest": "{count, number} more wait after these.",
     "batchReturned": "{count, plural, one {# source from the last request still has no wiki page and moved to the end of the list.} other {# sources from the last request still have no wiki page and moved to the end of the list.}}",
     "webLine": "Only the app writes wiki pages. Reading works here.",
-    "allDone": "Every source has a wiki page"
+    "allDone": "Every source has a wiki page",
+    "fraction": "{compiled, number} / {total, number}"
   },
   "check": {
     "title": "Checking the wiki",
