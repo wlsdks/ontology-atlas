@@ -169,8 +169,8 @@ impl Searcher {
                 continue;
             }
             self.ids.push(id as u64)?;
-            for word in bytes.chunks_exact(8).map(word_of) {
-                self.bits.push(word)?;
+            for word in bytes.as_chunks::<8>().0 {
+                self.bits.push(u64::from_le_bytes(*word))?;
             }
         }
         Ok(())
@@ -221,7 +221,13 @@ impl Searcher {
             .iter()
             .map(|&x| (f64::from(x) / norm) as f32)
             .collect();
-        let query_bits: Vec<u64> = quantized.bits.chunks_exact(8).map(word_of).collect();
+        let query_bits: Vec<u64> = quantized
+            .bits
+            .as_chunks::<8>()
+            .0
+            .iter()
+            .map(|word| u64::from_le_bytes(*word))
+            .collect();
         let candidates = self.nearest_by_signs(
             &query_bits,
             RESCORE_CANDIDATES.max(limit.saturating_mul(16)),
@@ -352,8 +358,4 @@ impl FileIdentity {
             inode: 0,
         })
     }
-}
-
-fn word_of(bytes: &[u8]) -> u64 {
-    u64::from_le_bytes(bytes.try_into().unwrap_or([0; 8]))
 }
