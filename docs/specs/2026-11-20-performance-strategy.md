@@ -44,10 +44,10 @@ Standing rules this strategy is held to:
 
 1. **The 50 ms rule is one rule for every slice.** After first paint no main-thread task exceeds 50 ms, at any size, on either surface. A pass over every document either runs in a worker or yields at least every 8 ms. Chromium is measured by `longtask`; WebKit has no `longtask`, so the app is measured by the longest gap between animation frames.
 2. **Three tiers of data, named the same everywhere.**
-   - *Spine*: what lists, the graph and the map need for every document: slug, title, kind, relation references, tags, modified time, display labels, finding codes.
-   - *Detail*: headings, excerpt, definition preview, link passages, diagnostics. Read by slug when a surface shows it.
+   - *Spine*: what lists, the graph and the map need for every document: slug, title, kind, relation references, link targets, tags, modified time, display labels, finding codes, parser diagnostics, and a concept's definition preview (it is the concept's summary on every surface).
+   - *Detail*: headings, excerpt, word count. Read for a document when a surface shows it. Link passages are not derived at all (see "S8 plan").
    - *Text*: the file body. Held only for the open document and for files being derived.
-3. **One store interface, `DocumentStore`, in `src/entities/docs-vault/store/`.** Methods: `detail(slug)`, `backlinks(slug, { offset, limit })`, `text(slug)`, and later `window({ scope, order, offset, limit })`. Detail comes from the stored row when one matches the file's stamp, else from deriving that one file. The web and an app with the index switched off never have a row, so they take the second path: same contract, no fork.
+3. **One store interface, `DocumentStore`, in `src/entities/docs-vault/store/`.** S8 builds `detail(doc)` and `details(docs)`; `backlinks(slug, { offset, limit })`, `text(slug)` and `window({ scope, order, offset, limit })` wait for a surface that needs them. Detail is derived from the file, read at its current stamp, on every surface; the index keeps no detail rows (see "S8 plan", decision 5).
 4. **Rust stores and serves; TypeScript derives.** Record `183a2c12` stands: the crate never interprets frontmatter, and parsing, the graph and validation stay in TypeScript and MCP. New derived facts enter `rows.sqlite` as new producer namespaces through the existing `vault_index_rows_get` and `vault_index_rows_put`. No schema change is needed for Markdown files.
 5. **Two workers, placed by layer.** `src/entities/docs-vault/worker/vault-build.worker.ts` parses, aggregates and derives. `src/widgets/ontology-map/worker/map-layout.worker.ts` lays out and precomputes map indexes. Each worker file is a thin message shell over exported pure functions. Where `Worker` is missing the caller runs the same function through `runSliced` on the main thread.
 6. **A worker never calls the bridge.** In the app the main thread invokes, receives an `ArrayBuffer` and transfers it; decoding and `JSON.parse` happen in the worker. On the web the worker reads through transferred file handles. `SharedArrayBuffer` is not used: neither surface sets the isolation headers.
@@ -130,7 +130,7 @@ CI gates run on the free Linux runner inside the existing `Perf · Ratios` job (
 | One `validate_wiki` page on a warm cache judges ≤ `limit` pages; the transcript equals the old validator's on the fixture | Call count, equality | S2 |
 | The Library reads each page once per stamp and keeps no page text after facts exist | Call count | S3 |
 | A manifest built in the worker equals one built on the main thread | Equality | S4 |
-| No bridge reply exceeds 4 MiB; rows reply for 2,048 paths stays under a byte bound | Size (Rust test) | S8 |
+| The stored row values of one 2,048-path lookup total ≤ 4 MiB on the 2,000 fixture | Size (TypeScript test: the crate stores values as opaque bytes, so only what TypeScript writes sets the bound) | S8 |
 
 Each new gate goes through `/gate-probe`. Footprint, heap, time to loaded, frame p95 and the longest task stay manual: `perf:app-open`, `perf:web-open`, `perf:mcp:scale --check`, `perf:vault-index --check` and `perf:vault-open --check` run on the owner's Mac for every performance pull request and before a release, and the pull request states steady memory, peak memory and composition.
 
@@ -147,7 +147,7 @@ Slice 0, the Library restart-loop fix (`fix/library-page-text-restart-loop`), is
 | S5 | **The map appears and answers the first hover without a spike.** 450–590 ms → ≤ 50 ms at 20,000; frame p95 ≤ 16.7 ms at 50,000. 4 d | `src/widgets/ontology-map/flat-graph/**`, `src/widgets/ontology-map/model/layout/**`, `src/widgets/ontology-map/worker/**` | S1's profile; `src/widgets/library-graph/model/library-graph-quadtree.ts` | `--walk=map` of both scripts at 20,000 and 50,000 meets the frame rows; ratio gates; frame-by-frame capture of the position hand-off | No |
 | S6 | **Opening an island.** 2.1 s → first frame ≤ 300 ms, no frame over 50 ms. 2 d | `src/widgets/library-graph/**` | S1's profile | `--walk=library` island row at 20,000; ratio gate | No |
 | S7 | **Focus obeys the cost floor.** O(files) per focus → no walk in the app, floored on the web. 0.5 d | `src/entities/vault-session/model/local-vault/use-local-vault.ts`, `poll-cadence.ts` | `TauriVaultWatchBridge.tsx` | Call-count gate; `pnpm exec vitest run src/entities/vault-session` | No |
-| S8 | **Detail leaves the page.** Web 50,000 steady 250 MB → ≤ 120 MB; app 20,000 steady 981 MB → ≤ 650 MB. 4 d | `src/entities/docs-vault/store/**`, `src/entities/docs-vault/model/types.ts`, `build-local-manifest.ts` (after S4 merges), the files that read `excerpt`, `headings`, `definitionPreview`, `backlinksDetail` or `linksOut` outside S3's and S5's lists | `tauri-vault-index-rows.ts` | `pnpm perf:web-open -- --files=50000` and `pnpm perf:app-open -- --files=20000` meet the figures and print composition; the no-detail gate | No: the producer hash versions the row value |
+| S8 | **Detail leaves the page.** Web 50,000 steady 250 MB → ≤ 120 MB; app 20,000 steady 981 MB → ≤ 650 MB; app first open at 50,000 about 9 s → about 5 s. 4.5 d, in three sequential slices S8.1–S8.3 and a conditional S8.4 | See "S8 plan" | See "S8 plan" | See "S8 plan" | No: the producer hash versions the row value |
 | S9 | **Source hashes are kept.** Re-hashing every launch → zero reads for unchanged sources; reopen with 50,000 sources ≤ 1 s. 3 d | `src-tauri/src/library.rs`, `src-tauri/crates/vault-index/src/{confine,rows}.rs` and a new `sources.rs`, their tests, `src-tauri/crates/vault-index/src/bin/vault-index-bench.rs`, `scripts/perf/perf-vault-index.mjs`, `tauri-vault-fs.ts` hash functions | `stamps.rs`, `lifecycle.rs` | `pnpm perf:vault-index -- --shape=library --check` with a reopen row; `cargo test -p vault-index`; Windows path cases in CI | **Yes**: the index admits `sources/**` stamps and SHA-256 |
 | S10 | **Search covers every source.** 200 files and 20 MB per query → all sources, first hits ≤ 300 ms. 4 d | `src/views/library/lib/sources/**`, `src-tauri/crates/vault-index/sql/search.sql`, `search.rs`, `src-tauri/src/vault/index.rs`, the Settings caption keys in `messages/*/settingsPrivacy.json`; the bench and `perf-vault-index.mjs` pass from S9 | `src/shared/lib/library/source-passage.ts` | `pnpm perf:vault-index -- --shape=library --check` search row; e2e of a hit in a source past the old cap | **Yes**: the index holds words of non-Markdown sources |
 | S11 | **Spine as columns, lists as windows.** Planned again from S8's composition; built only if S8 misses the 50,000 row | — | — | — | — |
@@ -160,9 +160,143 @@ Gaps: the app's 2,000-document floor (586 MB) has a target and no slice until S1
 
 - **Now, in parallel:** S1, S2, S7. They share no file.
 - **After S1:** S4, S5, S6 in parallel. S3 also waits for S2, slice 0, `feat/wiki-check-keeps-running` and `design/library-sources-header`, which edit its files.
-- **After S4:** S8, which takes over `build-local-manifest.ts`.
+- **S8** runs as S8.1, S8.2, S8.3, one at a time ("S8 plan", Order). S8.1 and S8.2 touch no file of S4 or of L5 in the large-folders spec and may start now. S8.3 edits `build-local-manifest.ts` only at the seam that plan names, and starts when no L5 branch is open.
 - **After the search-by-meaning branches merge** (they edit the crate, `src-tauri/src/lib.rs` and `package.json`): S9, then S10 behind one decision record.
 - Each slice is its own draft merged with `pnpm pr:land`; no integration branch. S5 and S6 each need an independent `reviewer` (algorithmic code).
+
+## S8 plan: detail leaves the page
+
+Planned on 2026-11-20 against main `83ad538e6`, after #3723 (vault text read as framed bytes) and #3726 (graph signatures hashed once). S8 changes **what** a built document holds. It does not change **where** parsing runs. That belongs to L5, the worker half of S4 in the spec "Large folders load gradually and nothing waits for everything" (drafted 2026-11-20, not on main yet), whose decision 14 leaves S8 here.
+
+### What a document holds today and who reads it
+
+`buildMdEntry` (`build-local-manifest.ts:372-440`) puts on every document:
+
+- headings, excerpt and word count;
+- definition preview;
+- link targets (`linksOut`);
+- link passages (`linkContexts`), which go on the build entry and the stored row, and which the aggregate turns into `manifest.backlinksDetail`.
+
+The app's stored row (`app-entry/<hash>`) holds `{ doc, linkContexts }`, so every reopen loads all of it back into the page.
+
+The research of 2026-11-20 measured the derive cost per document in V8 on synthetic 3.5 KB documents:
+
+| Step | Share |
+|---|---|
+| `meaningFindings` | 32% |
+| `extractOutLinksWithContext` (extracting link targets alone is 10× cheaper) | 31% |
+| `buildExcerpt` | 19% |
+| Frontmatter | 7% |
+| `countWhitespaceWords` | 5% |
+| `extractHeadings` | 4% |
+
+Readers outside the build, found with `grep -rnw` on 2026-11-20:
+
+| Field | Readers | Reads for |
+|---|---|---|
+| `headings` | `views/docs-vault/ui/DocsVaultPage.tsx:362`; `views/docs-vault/model/use-doc-outline.ts:21`; `views/docs-vault/model/use-vault-manifest.ts:76` (bundled headings); `views/docs-vault/model/use-doc-write-actions.ts:349` (insert table of contents); `views/library/ui/library-page/use-library-reader.ts:107` (S3's file) | The selected document |
+| `wordCount` | `views/docs-vault/ui/parts/DocMetaBar.tsx:46,153` | The selected document |
+| `excerpt`, shown on screen | `widgets/docs-quick-drawer/ui/DocsQuickDrawer.tsx:234,281,386` (the hover preview of one row); `widgets/project-drawer/ui/ProjectDrawer.tsx:920,940` (at most five related documents) | Documents on screen |
+| `excerpt`, matched or scored across every document | `widgets/docs-vault/lib/search.ts:140`; `widgets/search-palette/ui/SearchPalette.tsx:47` (bundled sample only); `views/library/ui/parts/index-column/LibrarySection.tsx:460`, through `entities/docs-vault/lib/library/vault-library.ts:152`; `entities/docs-vault/lib/doc-navigation/related-docs.ts:52,62`; `entities/docs-vault/lib/library/wiki-retrieval.ts:51` | Search and ranking |
+| `excerpt`, used as fallback text | `entities/docs-vault/lib/projects/derive-projects-from-vault.ts:41`; `views/project-selector/lib/authored-description.ts:31`; the in-app agent (`widgets/vault-agent-panel/model/use-vault-agent.ts:163`, `features/vault-agent/model/agent-tools/{vault-read-port,tool-executor}.ts`) | Project descriptions; the agent's `excerpt` body mode and its list summaries |
+| `definitionPreview` | `entities/docs-vault/lib/derive-ontology-from-vault.ts:156` | The `summary` of every concept |
+| `backlinksDetail` | `views/docs-vault/ui/DocsVaultDocumentPane.tsx:129,339` (`layout="strip"`: chips, no passages); `views/docs-vault/model/use-doc-write-actions.ts:133` and `views/home/model/authoring/use-topology-authoring.tsx:542` (referrer names only); `entities/docs-vault/lib/local-manifest/apply-vault-changes.ts:708-721` | Referring slugs only |
+| `linksOut` | `views/library/ui/library-page/use-library-graph-cards.ts:73`; `views/library/ui/parts/wiki/wiki-reader-facts.ts:90,106`; `widgets/library-graph/model/build-library-graph.ts:231,248`; `related-docs.ts:45` | Link targets, which are spine |
+
+Two findings change the strategy's tiers:
+
+- **No surface shows a link passage.** The docs pane draws backlinks as a strip of chips. The list layout of `widgets/docs-vault/ui/DocsVaultBacklinks.tsx`, which does show passages, has no caller. The sentence in `docs/ARCHITECTURE.md` saying the stored passage is "what the backlinks show" is wrong today.
+- **The definition preview is spine.** It is the summary of every concept on the map, in the inspector and in search.
+
+MCP and the CLI do not share this code. `mcp/src/parser.mjs` and `mcp/src/meaning/meaning-findings.mjs` are separate copies, each under its own parity contract, and neither reads excerpts, headings or link passages. The bundled samples are built by `scripts/docs-vault/build-docs-vault.mjs`, which has its own copy of the extractors. S8 touches neither that script nor the data it generates.
+
+### Decisions
+
+1. **The spine.** `VaultDoc` loses `headings`, `excerpt` and `wordCount`. It keeps:
+   - slug, path, title, description, tags and frontmatter;
+   - diagnostics, which health reads for every document and which exist only on malformed files;
+   - `meaningEvidencePaths`, `meaningFindings` and `citesReadLines`;
+   - `updatedAt`, `revision`, `linksOut` and `mtime`;
+   - `definitionPreview`, for documents with `kind:` only.
+2. **Detail.** A document's detail is `VaultDocDetail { headings: VaultHeading[]; excerpt: string; wordCount: number }`. One pure function derives it: `deriveDocumentDetail(raw: string): VaultDocDetail` in `src/entities/docs-vault/store/document-detail.ts`. It calls the same `parseFrontmatter`, `extractHeadings`, `buildExcerpt` and `countWhitespaceWords` that `buildMdEntry` calls today, so its output equals today's inline fields by construction.
+3. **Link passages are not derived anywhere.**
+   - The manifest's `backlinksDetail: Record<string, VaultBacklinkEntry[]>` becomes `backlinkSources: Record<string, string[]>`. For each target it lists the referring slugs, sorted by `compareCollated` as today.
+   - A document's targets are its `linksOut` plus its resolved frontmatter relation refs, minus itself. That is the same set of keys `backlinkContribution` produces today.
+   - The body scan becomes `extractOutLinkTargets(body, fromSlug): string[]`, which equals `extractOutLinksWithContext(...).slugs`.
+   - Removed: `VaultBacklinkEntry`, `LinkContext`, `BuiltVaultEntry.linkContexts`, `extractOutLinksWithContext` in `parse-frontmatter.ts`, and the unused list layout of `DocsVaultBacklinks`.
+   - Falsifier: when a surface needs to show a passage, add `DocumentStore.backlinks(slug, { offset, limit })`, which derives passages from the referring files one page at a time.
+4. **The store and its hooks.**
+   - `createDocumentStore({ readTexts })` in `src/entities/docs-vault/store/document-store.ts` answers `detail(doc)` and `details(docs)`, where a doc is `Pick<VaultDoc, 'slug' | 'path' | 'mtime'>`.
+   - It reads at most 64 paths per call (strategy decision 7).
+   - It keeps the 256 most recent details in an LRU keyed by path and file stamp, so an edited file never answers with its old detail.
+   - Text comes from three readers. In the app, `readTauriVaultTextFiles` (framed bytes since #3723). On the web, the folder's file handles. For the bundled samples, the inline JSON fields plus `loadStaticVaultHeadings`, with no derivation at all.
+   - React uses `useDocumentDetail(doc)` and `useDocumentDetails(docs)`, in `src/entities/vault-session/model/document-store/` and exported from `@/entities/vault-session`. Both return `undefined` until the answer is known.
+   - A surface that already holds the document's text, such as the open document, derives from that text and reads nothing.
+5. **The index keeps no detail rows.** Reading one stored row and reading one file each cost one bridge call per batch, and deriving one file's detail takes about 0.1 ms. A detail namespace would double the row writes and gain nothing measurable. Falsifier: in the app at 50,000 documents, `useDocumentDetails` for five documents takes more than 50 ms at p95.
+6. **Pending is not empty.** While detail is pending, a surface shows what it showed before detail existed; it never shows an empty value.
+   - The outline rail and the word count appear when known, through the existing presence motion.
+   - The project drawer's related-documents section appears once all of its rows have their detail.
+   - The hover preview opens when its text arrives.
+   - "Insert table of contents" waits for the detail before it decides that there are no headings.
+7. **Search drops the excerpt tier.** Wherever the excerpt was matched or scored, the document's summary takes its place: its `description`, else its `definitionPreview`.
+   - **In the app** the index is on by default (`vaultIndexPreference`) and matches the whole body through FTS5, which contains every word of the excerpt. While the index is on, the app finds everything it found before.
+   - **On the web, and in the app with the index off,** a plain page is found by its title, display name, slug, tags and description, and no longer by its first paragraph.
+   - `related-docs.ts` scores its `/project/` and name tiers on the summary.
+   - `derive-projects-from-vault.ts` and `authored-description.ts` fall back to `definitionPreview`.
+   - `wiki-retrieval.ts` falls back to the title, description, `definitionPreview` and tags.
+   - The in-app agent's output does not change. Its `excerpt` body mode and its list `summary` run `buildExcerpt` over the text it already reads, for the rows it returns.
+8. **The stored row.**
+   - The namespace stays `app-entry/<hash>`. The value becomes `{ doc }`, holding the spine document only.
+   - `ROW_PRODUCER_ENTRY` in `scripts/lib/row-producer.mjs` points to the new `md-entry.ts` (decision 9), so the hash covers exactly the code that writes and reads a row.
+   - On the first launch after S8.3, every stored row has the old hash. The app derives every file once and prunes the old rows at the end of a complete walk (`createRowSource().finish`). Nothing is migrated, and the index stays rebuildable.
+9. **The seam with L5.** S8.3 moves the per-document code out of `build-local-manifest.ts` into a new file, `src/entities/docs-vault/lib/local-manifest/md-entry.ts`. Moved: `buildMdEntry`, `storedMdEntry`, `mdEntryRowValue` (today written inline in `createRowSource().keep`), `internDoc`, `createMetadataStringPool`, `survivesJson`, `backlinkTargets` (today `backlinkContribution`), `frontmatterRefStrings`, `refResolver`, `slugTail` and `refersToTail`.
+   - **S8 owns what one file becomes and what its row holds:** `md-entry.ts`.
+   - **L5 owns where and when that runs:** `build-local-manifest.ts` (the walk, the reads, the row lookups, the aggregate and the partial publisher) and `worker/**`.
+   - **The contract between them** is `buildMdEntry(entry, raw, lastModified, intern): BuiltVaultEntry`, whose signature S8 keeps, plus `storedMdEntry`, `mdEntryRowValue` and `backlinkTargets`.
+   - **S8.3's only edits inside `build-local-manifest.ts`:** delete the moved functions, import them, and replace the backlink map in `aggregateBuild` (today lines 453, 494–501, 511–514 and 530) with a map from target to slugs.
+   - L5 never edits `md-entry.ts`. S8 never edits the worker, the publisher or `tauri-vault-index-rows.ts`.
+   - Splitting the 1,061-line file by responsibility is also what `.claude/rules/architecture.md` asks.
+10. **The bundled samples keep their JSON.** One adapter, `bundledVaultManifest(json)` in `src/entities/docs-vault/lib/bundled-vault/bundled-manifest.ts`, converts a sample's `backlinksDetail` into `backlinkSources`. It runs at the four places that cast a sample to `VaultManifest`: `static-vault-source.ts:28,38`, `dogfood-manifest.ts:10` and `load-static-vault-source.ts:28,39`. The generated files under `src/entities/docs-vault/data/` and `public/docs-vault/` are not edited.
+11. **The privacy copy stays true.** In Settings › Privacy · data, the caption `storedHere.switchCaption` in `messages/{en,ko,ja,zh}/settingsPrivacy.json` lists headings, excerpt, link text and link passages among what the index keeps. S8.3 removes them from that list in all four languages, in the same pull request that stops storing them. No other copy changes.
+
+### Slices
+
+A slice merges only once its acceptance is met. Every pull request states steady memory, peak memory and what the memory is made of (the strategy's rule), even when the slice does not change them.
+
+| # | Slice and value | Owns | Reads | Acceptance | Implementer | Budget |
+|---|---|---|---|---|---|---|
+| S8.1 | **Detail on demand.** Every surface that shows a heading, excerpt or word count gets it from the store. The manifest still carries the fields, and they serve as the test oracle. The only visible change is that detail can arrive a moment after its surface. Complexity: reads are O(documents shown), batched at most 64 per call; the LRU is O(1) | New `src/entities/docs-vault/store/**` (`document-detail.ts`, `detail-cache.ts`, `document-store.ts`, tests); new `src/entities/vault-session/model/document-store/**` (hooks, one text reader per source, tests); `src/entities/vault-session/index.ts`; `src/views/docs-vault/ui/DocsVaultPage.tsx`; `src/views/docs-vault/model/{use-doc-outline,use-vault-manifest}.ts`; `src/views/docs-vault/ui/parts/DocMetaBar.tsx`; `src/widgets/docs-quick-drawer/ui/DocsQuickDrawer.tsx`; `src/widgets/project-drawer/ui/ProjectDrawer.tsx`; the headings hunk of `src/views/library/ui/library-page/use-library-reader.ts` (lines 105–115; this is S3's file, and whichever slice merges second rebases those lines); their tests | `parse-frontmatter.ts`; `count-whitespace-words.ts`; `tauri-vault-fs.ts`; `use-local-vault.ts` (not edited: S7 and L5 own it); `static-headings.ts`; `build-local-manifest.ts` | `pnpm exec vitest run src/entities/docs-vault/store src/entities/vault-session/model/document-store src/views/docs-vault src/widgets/docs-quick-drawer src/widgets/project-drawer src/views/library/ui/library-page`, with three new gates: (1) for every document of the bundled dogfood sample and of a generated 2,000-document `key` folder, `deriveDocumentDetail` of its file equals the manifest's inline `{ headings, excerpt, wordCount }`; (2) a second `detail` at the same stamp reads 0 files, and one at a changed stamp reads 1; (3) `details` for 200 documents makes at most 4 read calls. `pnpm typecheck`. `pnpm ui:look` of the docs page (outline rail, word count) and the project drawer in dark mode, attached to the pull request | Opus: async state, caching and the pending rule (decision 6) | 1.5 d |
+| S8.2 | **Search and fallbacks stop reading the excerpt** (decision 7). Complexity unchanged: one pass over the spine per query | `src/widgets/docs-vault/lib/search.ts`; `src/widgets/search-palette/ui/SearchPalette.tsx`; `src/views/library/ui/parts/index-column/LibrarySection.tsx`; `src/entities/docs-vault/lib/library/{vault-library,wiki-retrieval}.ts`; `src/entities/docs-vault/lib/doc-navigation/related-docs.ts`; `src/entities/docs-vault/lib/projects/derive-projects-from-vault.ts`; `src/views/project-selector/lib/authored-description.ts`; `src/widgets/vault-agent-panel/model/use-vault-agent.ts`; `src/features/vault-agent/model/agent-tools/{vault-read-port,tool-executor}.ts`; `src/views/architecture/ui/HarnessPage.tsx` (the type of `EMPTY_DOCS`); their tests; the search lines of `docs/features/cross-cutting/search-palettes.md` and `docs/features/library/ontology-tab-and-docs.md:70` | `derive-ontology-from-vault.ts`; `concept-evidence-pack.ts`; `use-vault-text-search.ts` | `pnpm exec vitest run src/widgets/docs-vault src/widgets/search-palette src/views/library/ui/parts/index-column src/entities/docs-vault/lib src/views/project-selector src/features/vault-agent src/widgets/vault-agent-panel`, with three new gates: (1) on the bundled sample, the agent's output in excerpt body mode and its list summaries equal their old output; (2) with an index hit, `searchDocs` still finds a page by a word that only its first paragraph holds; (3) none of the owned files reads `excerpt` from a `VaultDoc`. S8.3's typecheck then proves (3) for every file | Sonnet is safe here: every substitution is decided above, and existing tests pin each reader | 1 d |
+| S8.3 | **The spine build.** This slice delivers S8's value. Expected figures: web steady at 50,000 goes from 250 MB to ≤ 120 MB; app WebView steady at 20,000 goes from 981 MB to ≤ 650 MB. Derive drops from about 234 µs to about 120 µs per document, because excerpt (19%), link passages (about 28%), word count (5%) and headings (4%) are no longer computed. App first open at 50,000 therefore goes from about 9 s to about 5 s, and web `key` 50,000 loaded from 14 s to about 8 s. The timings are the research's estimates; this slice measures them. Complexity: per file O(bytes), with one link scan where there were two passes; the aggregate stays O(D log D + links) | `src/entities/docs-vault/model/types.ts`; `src/entities/docs-vault/index.ts`; new `src/entities/docs-vault/lib/local-manifest/md-entry.ts` and its tests, including the new perf-lane gate `md-entry.spine.perf.test.ts`; `build-local-manifest.ts` at the seam only (decision 9), and its existing tests; `apply-vault-changes.ts` and its tests; `src/entities/docs-vault/lib/bundled-vault/{bundled-manifest,static-vault-source,dogfood-manifest,load-static-vault-source}.ts`; `src/shared/lib/vault-document/parse-frontmatter.ts` (`extractOutLinkTargets` added; `extractOutLinksWithContext` and `LinkContext` removed); `scripts/lib/row-producer.mjs` and its test; `src/views/docs-vault/model/use-doc-write-actions.ts`; `src/views/home/model/authoring/use-topology-authoring.tsx`; `src/views/docs-vault/ui/DocsVaultDocumentPane.tsx`; `src/widgets/docs-vault/ui/DocsVaultBacklinks.tsx` and its test; `tests/contract/analysis/derive-relation-keys.contract.test.ts`; `tests/contract/map/neural-impact.contract.test.ts`; `storedHere.switchCaption` in `messages/{en,ko,ja,zh}/settingsPrivacy.json`; the rows paragraph of `docs/ARCHITECTURE.md` (about line 225) and the stored-here lines of `docs/features/cross-cutting/search-palettes.md` | `tauri-vault-index-rows.ts`; `derive-ontology-from-vault.ts`; S8.1's store; `scripts/perf/gen-scale-vault.mjs` | Checks: `pnpm typecheck`; `pnpm exec vitest run src/entities/docs-vault src/entities/vault-session src/views/docs-vault src/views/home/model/authoring src/widgets/docs-vault tests/contract/analysis/derive-relation-keys.contract.test.ts tests/contract/map/neural-impact.contract.test.ts`; `node --test scripts/lib/row-producer.test.mjs`; `pnpm perf:vault-open -- --files=50000 --shape=key --shape=all --check`. Gates in `pnpm test:perf`, each through `/gate-probe`: (1) on a generated 2,000-document `key` folder, no built document has `headings`, `excerpt`, `wordCount` or `linkContexts`, and the median serialized row is ≤ 600 B; (2) the rows of one 2,048-path lookup total ≤ 4 MiB. Equality tests, written before the old code is removed: `extractOutLinkTargets` equals the old `extractOutLinksWithContext(...).slugs` on the parser fixtures and on 1,000 generated bodies; `backlinkSources` equals the slugs of the old `backlinksDetail` on the existing backlink fixtures. On the owner's Mac, one installed-app run at a time: `pnpm perf:web-open -- --files=50000` meets `web-heap-steady` ≤ 120 MB and prints the composition; `pnpm perf:app-open -- --files=20000` meets `app-webview-steady` ≤ 650 MB; `pnpm perf:app-open -- --files=50000` reports `loaded-first-open` (target about 5 s) and steady memory at 50,000. The Windows path cases in CI stay green | Opus: the build, the rows, the incremental backlinks and the measurements | 2 d |
+| S8.4 | **Conditional: cheaper spine passes.** Runs only if, after S8.3, `perf:app-open -- --files=50000` first open is still over 5 s, or `web-heap-steady` misses 120 MB because of transient strings. `meaningFindings` (32% of derive today) parses body sections once per document, and collapses whitespace in one loop instead of running `/\s+/g` over joined passages. Estimated gain: 1.5–2× on that share | `src/shared/lib/vault-document/meaning-findings.ts` and its tests | `mcp/src/meaning/meaning-findings.mjs` (not edited; its parity contract must stay green) | Finding codes byte-equal on the parser fixtures, on the bundled sample and on a generated 20,000-document `all` folder; `pnpm test:mcp:unit` and the meaning-findings parity contract green; the same perf commands as S8.3 | Opus, with an independent `reviewer`, because parsing is algorithmic code | 1 d |
+
+Coverage: S8.3's acceptance holds the strategy's S8 memory figures, and its `pnpm test:perf` holds both S8 gates (no detail field with a median row ≤ 600 B, and ≤ 4 MiB per 2,048-path lookup).
+
+Gaps:
+
+- **App memory at 50,000 has no S8 target.** The strategy's ≤ 600 MB row there is not measured; S8.3 reports the figure and S11 is planned from it.
+- **Windows memory** is not measured anywhere.
+- **Real frontmatter can break the row gate.** The gate runs on generated frontmatter, so a real folder with large frontmatter can still exceed 4 MiB per lookup. Chunking by bytes would belong to `ROWS_LOOKUP_CHUNK`, which L5 owns.
+
+### Order
+
+- One slice at a time: S8.1, then S8.2, then S8.3, then S8.4 only if its condition holds. Each slice is its own draft, merged with `pnpm pr:land`. There is no integration branch.
+- S8.1 and S8.2 share no file with each other, with S4 or with L5, so either can run while L5 is in flight. They run one after the other because of the owner's one-track rule, not because one depends on the other.
+- S8.3 waits for S8.1, whose hook the docs pane and the table-of-contents action use, and for S8.2, because S8.3's typecheck removes the excerpt that search still reads until S8.2.
+- S8.3 starts only when no L5 branch is open. It is best run before L5 starts: the worker's messages then carry spine documents from their first version, and L5's equality gate is written once, against the final document shape. If L5 lands first, S8.3 makes the same cut in the module the worker imports, and the seam stays where it is.
+- S3 and S8.1 share only the headings hunk of `use-library-reader.ts`. Whichever merges second rebases those lines.
+
+### Risk
+
+What a reviewer must check that tests will not catch:
+
+- **Pending shown as empty.** In the running app with a cold LRU, check four surfaces: the outline rail, the word count, the hover preview, and the project drawer's related documents. None may show an empty state that later fills in or jumps. "Insert table of contents" must never report "no headings" while detail is pending. Opening a local document must not flash the column title before its first heading arrives.
+- **Search narrowing.** On the web, and in the app with the index off, a plain page is no longer found by a word that only its first paragraph holds. Confirm that the installed build has the index on by default, and that the Library's wiki list still finds a page by its body text through `indexedPaths`.
+- **Retrieval weights.** Where a page's text is absent, `wiki-retrieval.ts` falls back to the title, description, definition preview and tags. Once S3 stops keeping page text, that applies to every page, so S3 should keep retrieval terms as a per-page fact.
+- **First launch after the update.** Old rows carry another hash, so the app reads and derives every file once: about 5 s at 50,000. The release note must say so. Nothing is migrated.
+- **Bundled parity.** The bundled samples still carry `excerpt`, `headings` and `wordCount` in their JSON and are read through the adapter. Check the `/docs` and gateway pages in a static build, where no local folder is open.
+- **MCP and CLI parity** is untouched: both use their own parser copies and read none of the removed fields. The only change to `parse-frontmatter.ts` adds one function and removes one that no other file in `src/` calls. The three-way frontmatter parity contracts must stay green.
+- **Privacy caption truth.** After S8.3, the caption in all four languages lists what the rows hold, and nothing more.
 
 ## What not to do
 
@@ -188,3 +322,4 @@ Gaps: the app's 2,000-document floor (586 MB) has a target and no slice until S1
 ## Revisions
 
 - 2026-11-20: first version.
+- 2026-11-20: S8 planned in detail on main `83ad538e6` (section "S8 plan"). S8 runs as three sequential slices, S8.1, S8.2 and S8.3, plus a conditional S8.4. Decision 2 now puts a concept's definition preview and the parser diagnostics in the spine: every concept's summary and every health pass read them. Decision 3 builds only `detail(doc)` and `details(docs)`. Link passages are no longer derived, because no surface shows them, and the index keeps no detail rows. The rows gate becomes a TypeScript size test, because the crate stores values as opaque bytes. The order now lets S8.1 and S8.2 run before S4. S8.3 meets L5 of the large-folders spec only at the new `md-entry.ts` seam.
