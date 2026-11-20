@@ -3,13 +3,14 @@ import {
   BREATH_PX,
   byLabelThenId,
   evenRows,
-  FLOW_FILE_NAME_MIN_PX,
   FLOW_GRID_STEP,
   type FlowColumn,
   type FlowFit,
   type FlowLayout,
   keepsRowFloor,
   NAME_GAP,
+  namingHolds,
+  namingLadder,
   rowPitch,
   rowsByNeighbours,
   settleNameRoom,
@@ -18,7 +19,7 @@ import {
 } from "./library-flow-measure";
 import { maxOf, minOf } from "./library-graph-extremes";
 import type { LayoutPoint } from "./library-graph-layout";
-import { LIBRARY_ZOOM_MIN, SOURCE_MARK_WORLD_RADIUS } from "./library-graph-view";
+import { SOURCE_MARK_WORLD_RADIUS } from "./library-graph-view";
 
 /**
  * Folded pages stand in stacks of consecutive pages, and each stack is a whole flow: its files
@@ -33,25 +34,13 @@ const STACK_COUNTS_TRIED_PAST_FEWEST = 2;
 export const STACK_GAP = 16;
 
 type Ordered = ReadonlyArray<{ kind: LibraryGraphNodeKind; nodes: readonly LibraryGraphNode[] }>;
-
-/** Which kinds in a stack are given a name place at rest. */
-interface StackNaming {
-  files: boolean;
-  pages: boolean;
-  concepts: boolean;
-}
-/** Every name first, then narrower: files' names go before concepts' (the list beside the picture names files). */
-const STACK_NAMINGS: readonly StackNaming[] = [
-  { files: true, pages: true, concepts: true },
-  { files: false, pages: true, concepts: true },
-  { files: false, pages: true, concepts: false },
-];
-const UNNAMED_STACKS: StackNaming = { files: false, pages: false, concepts: false };
+/** The kinds in a stack given a name place at rest. */
+type StackNaming = ReadonlySet<LibraryGraphNodeKind>;
 
 /**
  * Lays a folded folder for the fewest stacks the row floor allows and a couple more, and keeps
- * the count that names most: pages, then concepts, then files; then rows at the floor; then
- * the most room for a page name; then fewer stacks. Linear in the three counts laid.
+ * the count whose rows keep the floor and that names most (`namingLadder`); then the most room
+ * for a page name; then fewer stacks. Linear in the three counts laid.
  */
 export function stackedFlowLayout(ordered: Ordered, fewestStacks: number, neighbours: ReadonlyMap<string, readonly string[]>, fit: FlowFit): FlowLayout {
   const pageCount = ordered.find((column) => column.kind === "page")!.nodes.length;
@@ -83,10 +72,11 @@ function fitsCamera(layout: FlowLayout, fit: FlowFit): boolean {
   return layout.extent.width * layout.scale <= fit.width + 1e-6 && layout.extent.height * layout.scale <= fit.height + 1e-6;
 }
 
+/** Rows at the floor, then how far up the naming ladder, then the room a page name has. */
 function rankOf(layout: FlowLayout): number[] {
-  const column = (kind: LibraryGraphNodeKind) => layout.columns.find((candidate) => candidate.kind === kind);
-  const named = (kind: LibraryGraphNodeKind) => (column(kind)?.named ? 1 : 0);
-  return [named("page"), named("concept"), named("source"), keepsRowFloor(layout.rowGap, layout.scale) ? 1 : 0, (column("page")?.labelRoom ?? 0) * layout.scale];
+  const page = layout.columns.find((column) => column.kind === "page");
+  const namedKinds = layout.columns.filter((column) => column.named).length;
+  return [keepsRowFloor(layout.rowGap, layout.scale) ? 1 : 0, namedKinds, (page?.labelRoom ?? 0) * layout.scale];
 }
 
 function outranks(rank: number[], other: number[]): boolean {
@@ -138,8 +128,7 @@ function layStacks(ordered: Ordered, stacks: number, neighbours: ReadonlyMap<str
   const fileLanes = fileGroups.map((group) => Math.max(1, Math.ceil(group.length / rows)));
   const conceptLanes = conceptStacks.map((group) => (group.length === 0 ? 0 : Math.ceil(group.length / rows)));
   // Names stand per kind, not per stack, so one folded group leaves its whole kind unnamed at rest: it keeps no room.
-  const filesNameable = maxOf(fileLanes) === 1;
-  const conceptsNameable = maxOf(conceptLanes, 0) <= 1;
+  const nameable = (kind: LibraryGraphNodeKind): boolean => (kind === "source" ? maxOf(fileLanes) === 1 : kind === "concept" ? maxOf(conceptLanes, 0) <= 1 : true);
 
   /**
    * Left to right, stacks a gap apart: [file names] files · gap · pages [and names] · gap ·
@@ -152,53 +141,46 @@ function layStacks(ordered: Ordered, stacks: number, neighbours: ReadonlyMap<str
       if (k > 0) x += STACK_GAP;
       let files = x;
       if (fileGroups[k].length > 0) {
-        if (naming.files) x += room + NAME_GAP;
+        if (naming.has("source")) x += room + NAME_GAP;
         x += SOURCE_MARK_WORLD_RADIUS;
         files = x + ((fileLanes[k] - 1) * FLOW_GRID_STEP) / 2;
         x += (fileLanes[k] - 1) * FLOW_GRID_STEP + SOURCE_MARK_WORLD_RADIUS + breath + STACK_GAP;
       }
       x += WIDEST_MARK;
       const pages = x;
-      x += WIDEST_MARK + breath + (naming.pages ? NAME_GAP + room : 0);
+      x += WIDEST_MARK + breath + (naming.has("page") ? NAME_GAP + room : 0);
       const concepts: number[] = [];
       if (conceptLanes[k] > 0) x += STACK_GAP;
       for (let lane = 0; lane < conceptLanes[k]; lane += 1) {
         x += WIDEST_MARK;
         concepts.push(x);
-        x += WIDEST_MARK + breath + (naming.concepts ? NAME_GAP + room : 0);
+        x += WIDEST_MARK + breath + (naming.has("concept") ? NAME_GAP + room : 0);
       }
       at.push({ files, pages, concepts });
     }
     return { width: x, at };
   };
 
-  /*
-   * The most names whose rows keep the floor, files' only with `FLOW_FILE_NAME_MIN_PX`. Past
-   * that, pages alone keep their names while the camera can still fit them (`LIBRARY_ZOOM_MIN`),
-   * the rows giving way; then nothing is named at rest.
-   */
-  const settle = (naming: StackNaming) => ({ naming, ...settleNameRoom(fit, height, (room, breath) => strip(room, breath, naming).width) });
-  const plans = STACK_NAMINGS.filter((naming) => (filesNameable || !naming.files) && (conceptsNameable || !naming.concepts)).map(settle);
-  const pagesOnly = plans[plans.length - 1];
-  const fileNamesTellApart = (plan: (typeof plans)[number]) => !plan.naming.files || plan.room * plan.scale >= FLOW_FILE_NAME_MIN_PX;
-  const { naming, room, scale, width } =
-    plans.find((plan) => plan.room > 0 && keepsRowFloor(rowGap, plan.scale) && fileNamesTellApart(plan)) ??
-    (pagesOnly.room > 0 && pagesOnly.scale >= LIBRARY_ZOOM_MIN ? pagesOnly : settle(UNNAMED_STACKS));
+  // The most names, down the ladder, that each keep `FLOW_NAME_ROOM_MIN_PX` with rows at the floor.
+  const present = new Set(ordered.map((column) => column.kind));
+  const { naming, room, scale, width } = namingLadder(present, nameable)
+    .map((naming) => ({ naming, ...settleNameRoom(fit, height, (room, breath) => strip(room, breath, naming).width) }))
+    .find((plan) => namingHolds(plan.naming, plan, rowGap))!;
   const laid = strip(room, BREATH_PX / scale, naming);
   const positions = placeStacks({ laid, shift: (width - laid.width) / 2, rows, rowYs, rowGap, pageIds, fileGroups, fileLanes, conceptStacks, neighbours });
 
   const mean = (values: number[]): number => values.reduce((sum, value) => sum + value, 0) / values.length + (width - laid.width) / 2;
   const columnOf: Record<LibraryGraphNodeKind, () => FlowColumn> = {
-    source: () => ({ kind: "source", x: mean(laid.at.map((at) => at.files)), ids: fileGroups.flat(), lanes: maxOf(fileLanes), stacks, named: naming.files, labelRoom: naming.files ? room : 0 }),
-    page: () => ({ kind: "page", x: mean(laid.at.map((at) => at.pages)), ids: pageIds, lanes: 1, stacks, named: naming.pages, labelRoom: naming.pages ? room : 0 }),
+    source: () => ({ kind: "source", x: mean(laid.at.map((at) => at.files)), ids: fileGroups.flat(), lanes: maxOf(fileLanes), stacks, named: naming.has("source"), labelRoom: naming.has("source") ? room : 0 }),
+    page: () => ({ kind: "page", x: mean(laid.at.map((at) => at.pages)), ids: pageIds, lanes: 1, stacks, named: naming.has("page"), labelRoom: naming.has("page") ? room : 0 }),
     concept: () => ({
       kind: "concept",
       x: mean(laid.at.flatMap((at) => at.concepts)),
       ids: conceptStacks.flat(),
       lanes: maxOf(conceptLanes, 1),
       stacks,
-      named: naming.concepts,
-      labelRoom: naming.concepts ? room : 0,
+      named: naming.has("concept"),
+      labelRoom: naming.has("concept") ? room : 0,
     }),
   };
   const extent = { width, height };

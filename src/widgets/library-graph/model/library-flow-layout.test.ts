@@ -4,11 +4,10 @@ import type { LibraryGraph } from "./build-library-graph";
 import { flowLayout, type FlowLayout, type FlowWorld } from "./library-flow-layout";
 import {
   BREATH_PX,
-  FLOW_FILE_NAME_MIN_PX,
   FLOW_FILL,
   FLOW_GRID_STEP,
   FLOW_LABEL_ROOM_MAX_PX,
-  FLOW_LABEL_ROOM_MIN_PX,
+  FLOW_NAME_ROOM_MIN_PX,
   FLOW_ROW_MAX,
   FLOW_ROW_MIN,
   FLOW_ROW_MIN_PX,
@@ -102,8 +101,9 @@ describe("flow layout", () => {
   it("drops an empty column and centres what remains, so two pages never sit in a corner", () => {
     const layout = flowLayout(graph({ sources: ["a.md", "b.md"], pages: ["a", "b"], cites: [["a", "a.md"], ["b", "b.md"]] }), BOX);
     expect(layout.columns.map((column) => column.kind)).toEqual(["source", "page"]);
-    // The gap holds a whole name place: at the 240px ceiling that is wider than the 260px gap cap.
-    expect(layout.columns.map((column) => column.x)).toEqual([500 - (PLACE_BESIDES_ROOM + FLOW_LABEL_ROOM_MAX_PX) / 2, 500 + (PLACE_BESIDES_ROOM + FLOW_LABEL_ROOM_MAX_PX) / 2]);
+    // No name stands in the gap (files' names stand left of them, pages' right), so it is the 260px cap.
+    expect(layout.columns.map((column) => column.x)).toEqual([500 - 260 / 2, 500 + 260 / 2]);
+    expect(layout.columns.every((column) => column.named)).toBe(true);
     expect(layout.columns.every((column) => column.lanes === 1)).toBe(true);
     const ys = ["page:a", "page:b"].map((id) => layout.positions.get(id)!.y);
     expect((ys[0] + ys[1]) / 2).toBe(300);
@@ -217,7 +217,7 @@ describe("flow layout", () => {
     expect(xs.reduce((sum, x) => sum + x, 0) / xs.length).toBeCloseTo(column.x, 6);
   });
 
-  it("grows taller than the box for a long page column, keeping the aspect, and widens the name room by the same amount", () => {
+  it("grows taller than the box for a long page column, keeping the aspect and the gap's on-screen cap", () => {
     const pages = Array.from({ length: 30 }, (_, i) => `p${String(i).padStart(2, "0")}`);
     const long = flowLayout(graph({ sources: ["a.md"], pages, cites: [["p00", "a.md"]] }), FOLDED_BOX);
     const page = columnOf(long, "page");
@@ -226,11 +226,11 @@ describe("flow layout", () => {
     const height = FLOW_ROW_MIN * 29 + FLOW_TOP_PAD * 2;
     expect(long.extent.height).toBe(height);
     expect(long.extent.width).toBeCloseTo(600 * (height / 340), 6);
-    // The camera fits this at its box's height over the picture's; the name room is the 240px
-    // ceiling in world units, and the two columns stand a whole name place apart, centred.
+    // The camera fits this at its box's height over the picture's; the two columns stand the
+    // 260px gap cap apart on screen, centred, as no name stands between them.
     const scale = FOLDED_BOX.height / height;
     expect(long.scale).toBeCloseTo(scale, 6);
-    expect(long.columns[1].x - long.columns[0].x).toBeCloseTo(WIDEST_MARK * 2 + NAME_GAP + (BREATH_PX + FLOW_LABEL_ROOM_MAX_PX) / scale, 6);
+    expect(long.columns[1].x - long.columns[0].x).toBeCloseTo(260 / scale, 6);
     expect((long.columns[0].x + long.columns[1].x) / 2).toBeCloseTo(long.extent.width / 2, 6);
   });
 
@@ -419,7 +419,7 @@ describe("flow layout", () => {
       // Page mark, its name and a breath, the stack gap, then the concept mark.
       expect(firstConceptX - pageXs[0], `width ${width}`).toBeCloseTo(WIDEST_MARK * 2 + breath + NAME_GAP + page.labelRoom + STACK_GAP, 6);
       expect(concept.labelRoom).toBe(page.labelRoom);
-      expect(page.labelRoom * layout.scale, `width ${width}`).toBeGreaterThanOrEqual(FLOW_LABEL_ROOM_MIN_PX - 1e-6);
+      expect(page.labelRoom * layout.scale, `width ${width}`).toBeGreaterThanOrEqual(FLOW_NAME_ROOM_MIN_PX - 1e-6);
       expect(page.labelRoom * layout.scale, `width ${width}`).toBeLessThanOrEqual(FLOW_LABEL_ROOM_MAX_PX + 1e-6);
     }
     // A wide box gives every place the ceiling and centres the rest; a middling one fills the camera's width.
@@ -431,26 +431,33 @@ describe("flow layout", () => {
     expect(middling.extent.width * middling.scale).toBeCloseTo(middlingBox.width, 6);
   });
 
-  it("names files only with the room to tell one from the next, and gives their width to pages and concepts", () => {
-    const folder = foldedFolder();
-    // Three name places a stack would share at under 96px each, so the two of pages and concepts share it.
-    const middling = flowLayout(folder, cameraBox(360, 340, 2));
-    expect(stacksOf(middling, folder).pageXs).toHaveLength(2);
-    expect(columnOf(middling, "source").named).toBe(false);
-    expect(roomPx(middling, "source")).toBe(0);
-    expect(roomPx(middling, "page")).toBeGreaterThan(FLOW_FILE_NAME_MIN_PX);
-    expect(roomPx(middling, "concept")).toBe(roomPx(middling, "page"));
-    const wide = flowLayout(folder, cameraBox(400, 340, 2));
-    expect(roomPx(wide, "source")).toBeGreaterThanOrEqual(FLOW_FILE_NAME_MIN_PX);
-    expect(roomPx(wide, "source")).toBe(roomPx(wide, "page"));
-    // An unfolded flow follows the same bound: a narrow box names its pages, not its files.
-    const short = graph({ sources: ["2026-01-12-report.md", "2026-01-13-report.md"], pages: ["one", "two"], cites: [["one", "2026-01-12-report.md"], ["two", "2026-01-13-report.md"]] });
-    for (const width of [120, 600]) {
-      const layout = flowLayout(short, cameraBox(width, 200, 2));
-      const files = roomPx(layout, "source");
-      if (files > 0) expect(files, `width ${width}`).toBeGreaterThanOrEqual(FLOW_FILE_NAME_MIN_PX);
-      expect(files > 0, `width ${width}`).toBe(width === 600);
-    }
+  it("names pages, then concepts too, then files too, each only while every named kind keeps 96px", () => {
+    const namedIn = (folder: LibraryGraph, box: FlowWorld) => {
+      const layout = flowLayout(folder, box);
+      const named = layout.columns.filter((column) => column.named);
+      for (const column of named) expect(column.labelRoom * layout.scale, `${column.kind} in ${box.width}`).toBeGreaterThanOrEqual(FLOW_NAME_ROOM_MIN_PX - 1e-6);
+      if (named.length > 0) expect(layout.rowGap * layout.scale, `rows in ${box.width}`).toBeGreaterThanOrEqual(FLOW_ROW_MIN_PX - 1e-6);
+      return named.map((column) => column.kind).sort();
+    };
+    // Stacks: each step down the ladder hands its width to the kinds before it.
+    const folded = foldedFolder();
+    expect(namedIn(folded, cameraBox(160, 340, 2))).toEqual([]);
+    expect(namedIn(folded, cameraBox(200, 340, 2))).toEqual(["page"]);
+    expect(namedIn(folded, cameraBox(300, 340, 2))).toEqual(["concept", "page"]);
+    expect(namedIn(folded, cameraBox(400, 340, 2))).toEqual(["concept", "page", "source"]);
+    // One unfolded flow, the same ladder.
+    const sources = ["2026-01-12-report.md", "2026-01-13-report.md", "2026-01-14-report.md"];
+    const band = graph({
+      sources,
+      pages: ["one", "two", "three"],
+      concepts: ["Payments", "Refunds"],
+      cites: [["one", sources[0]], ["two", sources[1]], ["three", sources[2]]],
+      mentions: [["one", "Payments"], ["two", "Refunds"], ["three", "Refunds"]],
+    });
+    expect(namedIn(band, cameraBox(120, 200, 2))).toEqual([]);
+    expect(namedIn(band, cameraBox(160, 200, 2))).toEqual(["page"]);
+    expect(namedIn(band, cameraBox(200, 200, 2))).toEqual(["concept", "page"]);
+    expect(namedIn(band, cameraBox(240, 200, 2))).toEqual(["concept", "page", "source"]);
   });
 
   it("gives a stack's folded concept lanes no name room, and that width to the pages", () => {
@@ -470,21 +477,43 @@ describe("flow layout", () => {
     expect(roomPx(layout, "page")).toBeCloseTo(FLOW_LABEL_ROOM_MAX_PX, 6);
   });
 
-  it("lays the stack count that names most: pages, then concepts, before rows above the floor or more page room", () => {
+  it("keeps no name room in a gap no name stands in", () => {
+    // Files and pages, no concepts: file names stand left, page names right, so the free width
+    // goes to those two rooms; the gap between the columns is narrower than one of them.
+    const sources = ["2026-01-12-report.md", "2026-01-13-report.md"];
+    const folder = graph({ sources, pages: ["one", "two"], cites: [["one", sources[0]], ["two", sources[1]]] });
+    const layout = flowLayout(folder, cameraBox(300, 200, 2));
+    const source = columnOf(layout, "source");
+    expect(source.named).toBe(true);
+    expect(columnOf(layout, "page").named).toBe(true);
+    expect(source.labelRoom * layout.scale).toBeLessThan(FLOW_LABEL_ROOM_MAX_PX);
+    expect(columnOf(layout, "page").x - source.x).toBeLessThan(source.labelRoom);
+  });
+
+  it("lays the stack count that names most before the one that gives a page name more room", () => {
+    // Forty pages in title order; pages 12 to 15 read six files each. Two stacks of twenty put
+    // all twenty-four files in the first, a folded band, and give pages 240px; three stacks
+    // of fourteen split them twelve and twelve, so files are named too, at less page room.
+    const pages = Array.from({ length: 40 }, (_, i) => `p${String(i).padStart(2, "0")}`);
+    const sources = Array.from({ length: 24 }, (_, i) => `s${String(i).padStart(2, "0")}.md`);
+    const folder = graph({ pages, sources, cites: sources.map((s, i) => [pages[12 + Math.floor(i / 6)], s] as [string, string]) });
+    const layout = flowLayout(folder, { width: 1000, height: 400, ceiling: 2 });
+    expect(columnOf(layout, "page").stacks).toBe(3);
+    expect(columnOf(layout, "source").named).toBe(true);
+    expect(roomPx(layout, "page")).toBeLessThan(FLOW_LABEL_ROOM_MAX_PX);
+    expect(layout.rowGap * layout.scale).toBeGreaterThanOrEqual(FLOW_ROW_MIN_PX - 1e-6);
+  });
+
+  it("never takes a stack's rows under the floor to buy a name", () => {
     const folder = foldedFolder();
-    // Four stacks name pages and concepts at 18.1px rows; five keep 22.5px rows and a little
-    // more page room but no concept names. Names come first.
-    const named = flowLayout(folder, { width: 920, height: 280, ceiling: 2 });
-    expect(columnOf(named, "page").stacks).toBe(4);
-    expect(columnOf(named, "concept").named).toBe(true);
-    expect(named.rowGap * named.scale).toBeGreaterThanOrEqual(FLOW_ROW_MIN_PX - 1e-6);
-    // Three stacks name their pages with rows under the floor; four keep the floor and name
-    // nothing. Pages keep their names while the rows give way.
-    const cramped = flowLayout(folder, { width: 400, height: 400, ceiling: 2 });
-    expect(columnOf(cramped, "page").stacks).toBe(3);
-    expect(columnOf(cramped, "page").named).toBe(true);
-    expect(roomPx(cramped, "page")).toBeGreaterThanOrEqual(FLOW_LABEL_ROOM_MIN_PX - 1e-6);
-    expect(cramped.rowGap * cramped.scale).toBeLessThan(FLOW_ROW_MIN_PX);
+    // At 500 wide, three stacks could name their pages only by shrinking rows under 18px, so
+    // none is named, and four stacks name no more; at 400 not even that would give 96px.
+    for (const width of [400, 500]) {
+      const layout = flowLayout(folder, { width, height: 400, ceiling: 2 });
+      expect(columnOf(layout, "page").stacks, `width ${width}`).toBe(3);
+      expect(layout.columns.some((column) => column.named), `width ${width}`).toBe(false);
+      expect(layout.rowGap * layout.scale, `width ${width}`).toBeGreaterThanOrEqual(FLOW_ROW_MIN_PX - 1e-6);
+    }
   });
 
   it("lays the fewest stacks with nothing named when no count can name a page, and fewer when even those overflow", () => {
@@ -501,21 +530,6 @@ describe("flow layout", () => {
     expect(columnOf(fewer, "page").stacks).toBe(2);
     expect(fewer.scale).toBeGreaterThan(LIBRARY_ZOOM_MIN);
     expect(fewer.extent.width * fewer.scale).toBeLessThanOrEqual(narrow.width + 1e-6);
-  });
-
-  it("drops file names, then concept names, before a narrow pane takes a stack's rows under the floor", () => {
-    const folder = foldedFolder();
-    const narrow = flowLayout(folder, cameraBox(220, 340, 2));
-    expect(columnOf(narrow, "source").named).toBe(false);
-    expect(columnOf(narrow, "concept").named).toBe(true);
-    expect(roomPx(narrow, "concept")).toBe(roomPx(narrow, "page"));
-    expect(roomPx(narrow, "page")).toBeGreaterThanOrEqual(FLOW_LABEL_ROOM_MIN_PX - 1e-6);
-    expect(narrow.rowGap * narrow.scale).toBeGreaterThanOrEqual(FLOW_ROW_MIN_PX - 1e-6);
-    const narrower = flowLayout(folder, cameraBox(160, 340, 2));
-    expect(columnOf(narrower, "source").named).toBe(false);
-    expect(columnOf(narrower, "concept").named).toBe(false);
-    expect(columnOf(narrower, "page").named).toBe(true);
-    expect(roomPx(narrower, "page")).toBeGreaterThanOrEqual(FLOW_LABEL_ROOM_MIN_PX - 1e-6);
   });
 
   it("keeps every mark inside the laid box and the laid box inside the camera's, across random folders", () => {
@@ -547,6 +561,14 @@ describe("flow layout", () => {
       }
       expect(layout.extent.width * layout.scale, label).toBeLessThanOrEqual(box.width + 1e-6);
       expect(layout.extent.height * layout.scale, label).toBeLessThanOrEqual(box.height + 1e-6);
+      // Names: no kind without every kind before it (pages, concepts, files), each at 96px, rows at the floor.
+      const named = (kind: string) => layout.columns.find((column) => column.kind === kind)?.named;
+      if (named("concept")) expect(named("page"), `${label}: concepts named without pages`).not.toBe(false);
+      if (named("source")) expect([named("page"), named("concept")], `${label}: files named before pages and concepts`).not.toContain(false);
+      for (const column of layout.columns.filter((candidate) => candidate.named)) {
+        expect(column.labelRoom * layout.scale, `${label}: ${column.kind} room`).toBeGreaterThanOrEqual(FLOW_NAME_ROOM_MIN_PX - 1e-6);
+        expect(layout.rowGap * layout.scale, `${label}: rows under names`).toBeGreaterThanOrEqual(FLOW_ROW_MIN_PX - 1e-6);
+      }
     }
   });
 

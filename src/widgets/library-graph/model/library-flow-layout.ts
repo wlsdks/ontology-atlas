@@ -3,7 +3,6 @@ import {
   byLabelThenId,
   COLUMN_ORDER,
   evenRows,
-  FLOW_FILE_NAME_MIN_PX,
   FLOW_FILL,
   FLOW_GRID_STEP,
   FLOW_ROW_MAX,
@@ -14,6 +13,8 @@ import {
   type FlowLayout,
   type FlowWorld,
   NAME_GAP,
+  namingHolds,
+  namingLadder,
   placeCost,
   resolveFit,
   rowPitch,
@@ -26,7 +27,6 @@ import {
 } from "./library-flow-measure";
 import { stackedFlowLayout } from "./library-flow-stacks";
 import type { LayoutPoint } from "./library-graph-layout";
-import { LIBRARY_ZOOM_MIN } from "./library-graph-view";
 
 export type { FlowLayout, FlowWorld } from "./library-flow-measure";
 
@@ -110,8 +110,8 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
 
 /**
  * Columns side by side, each folded into `lanes` sub-columns. Width keeps the box's aspect, so
- * the fitted camera fills both axes. Name places share what the canvas leaves: left of a named
- * file band, in each gap, beside each named sub-column, and right of a named last column.
+ * the fitted camera fills both axes. Name places share what the canvas leaves, kinds named down
+ * `namingLadder`.
  */
 function bandFlowLayout(
   ordered: ReadonlyArray<{ kind: LibraryGraphNodeKind; nodes: readonly LibraryGraphNode[] }>,
@@ -124,47 +124,52 @@ function bandFlowLayout(
   const { rowGap, height } = rowPitch(Math.max(1, ...ordered.map((column, index) => rowsOf(column.nodes.length, lanes[index]))), fit);
 
   // A folded file band or concept column names nothing at rest, so it keeps no room for names.
-  const nameable = ordered.map((column, index) => column.kind === "page" || lanes[index] === 1);
-  const unnamedLanes = ordered.reduce((sum, column, index) => sum + (column.kind !== "source" && !nameable[index] ? lanes[index] - 1 : 0), 0);
+  const nameable = (kind: LibraryGraphNodeKind): boolean => kind === "page" || lanes[ordered.findIndex((column) => column.kind === kind)] === 1;
   const sourceBands = ordered.reduce((sum, column, index) => sum + (column.kind === "source" ? (lanes[index] - 1) * FLOW_GRID_STEP : 0), 0);
+  const extraLanes = ordered.map((column, index) => (column.kind === "source" ? 0 : lanes[index] - 1));
   const last = ordered.length - 1;
-  const settleWith = (filesNamed: boolean, anyNamed: boolean) => {
-    const leftRoom = filesNamed ? 1 : 0;
-    const rightRoom = ordered[last].kind !== "source" && nameable[last] ? 1 : 0;
-    const namedLanes = ordered.reduce((sum, column, index) => sum + (column.kind !== "source" && nameable[index] ? lanes[index] - 1 : 0), 0);
-    const places = leftRoom + rightRoom + last + namedLanes;
-    const solved = settleNameRoom(
-      fit,
-      height,
-      (room, breath) => FLOW_SIDE_PAD * 2 + sourceBands + (places + unnamedLanes) * placeCost(breath) + (anyNamed ? places * room : 0),
-    );
-    return { leftRoom, rightRoom, ...solved };
+  /*
+   * Name places: left of a named file band; in every gap once a column's names stand in one
+   * (gaps are one width); beside a named column's sub-columns; right of the last column. Each
+   * costs its marks and a breath; a named one adds the room.
+   */
+  const shapeOf = (naming: ReadonlySet<LibraryGraphNodeKind>) => ({
+    leftSlot: ordered[0].kind === "source" && naming.has("source") ? 1 : 0,
+    rightSlot: ordered[last].kind !== "source" && nameable(ordered[last].kind) ? 1 : 0,
+    rightNamed: ordered[last].kind !== "source" && naming.has(ordered[last].kind),
+    gapsNamed: ordered.some((column, index) => index < last && column.kind !== "source" && naming.has(column.kind)),
+  });
+  const settleWith = (naming: ReadonlySet<LibraryGraphNodeKind>) => {
+    const { leftSlot, rightSlot, rightNamed, gapsNamed } = shapeOf(naming);
+    const slots = leftSlot + rightSlot + last + extraLanes.reduce((sum, count) => sum + count, 0);
+    const rooms =
+      leftSlot + (rightNamed ? 1 : 0) + (gapsNamed ? last : 0) + ordered.reduce((sum, column, index) => sum + (naming.has(column.kind) ? extraLanes[index] : 0), 0);
+    return { naming, ...settleNameRoom(fit, height, (room, breath) => FLOW_SIDE_PAD * 2 + sourceBands + slots * placeCost(breath) + rooms * room) };
   };
-  const filesLeft = ordered[0].kind === "source" && nameable[0];
-  const withFileNames = settleWith(filesLeft, true);
-  const filesNamed = filesLeft && withFileNames.room * withFileNames.scale >= FLOW_FILE_NAME_MIN_PX;
-  const withNames = filesLeft && !filesNamed ? settleWith(false, true) : withFileNames;
-  // A solve the camera cannot show whole buys its rooms with marks off the canvas: no room then.
-  const anyNamed = withNames.scale >= LIBRARY_ZOOM_MIN;
-  const { leftRoom, rightRoom, room: labelRoom, scale, width } = anyNamed ? withNames : settleWith(false, false);
-  const named = ordered.map((column, index) => anyNamed && nameable[index] && (column.kind !== "source" || filesNamed));
+  // The most names, down the ladder, that each keep `FLOW_NAME_ROOM_MIN_PX` with rows at the floor.
+  const { naming, room: labelRoom, scale, width } = namingLadder(new Set(ordered.map((column) => column.kind)), nameable)
+    .map(settleWith)
+    .find((plan) => namingHolds(plan.naming, plan, rowGap))!;
+  const { leftSlot, rightSlot, rightNamed, gapsNamed } = shapeOf(naming);
+  const named = ordered.map((column) => naming.has(column.kind));
 
   const breath = BREATH_PX / scale;
   const laneStep = placeCost(breath) + labelRoom;
   const stepOf = (index: number): number => (ordered[index].kind === "source" ? FLOW_GRID_STEP : named[index] ? laneStep : placeCost(breath));
   const bandWidths = ordered.map((_, index) => (lanes[index] - 1) * stepOf(index));
   const bandsTotal = bandWidths.reduce((sum, w) => sum + w, 0);
-  const outerRoom = labelRoom + NAME_GAP + WIDEST_MARK;
+  const leftOuter = leftSlot * (labelRoom + NAME_GAP + WIDEST_MARK);
+  const rightOuter = rightSlot * ((rightNamed ? labelRoom : 0) + NAME_GAP + WIDEST_MARK);
   /*
    * The column gap is capped at `FLOW_COLUMN_GAP_MAX`, unless a name place needs more, and
    * the picture centred in the rest, or a wide canvas draws every citation as a long line.
    */
-  const spread = last > 0 ? (width - FLOW_SIDE_PAD * 2 - outerRoom * (leftRoom + rightRoom) - bandsTotal) / last : 0;
-  const gap = Math.min(spread, Math.max(FLOW_COLUMN_GAP_MAX / scale, laneStep));
+  const spread = last > 0 ? (width - FLOW_SIDE_PAD * 2 - leftOuter - rightOuter - bandsTotal) / last : 0;
+  const gap = Math.min(spread, Math.max(FLOW_COLUMN_GAP_MAX / scale, gapsNamed ? laneStep : placeCost(breath)));
   const slack = last > 0 ? (spread - gap) * last : 0;
   const columnX = (index: number): number => {
     if (last === 0) return width / 2;
-    let x = FLOW_SIDE_PAD + outerRoom * leftRoom + slack / 2;
+    let x = FLOW_SIDE_PAD + leftOuter + slack / 2;
     for (let i = 0; i < index; i += 1) x += bandWidths[i] + gap;
     return x + bandWidths[index] / 2;
   };

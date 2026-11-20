@@ -29,14 +29,12 @@ export const FLOW_GRID_STEP = 12;
  * columns apart. The renderer cuts a name to the room published here (`FlowColumn.labelRoom`).
  */
 export const FLOW_LABEL_ROOM_MAX_PX = 240;
-/** The least room a name place gets at a narrow canvas: a few characters and an ellipsis. */
-export const FLOW_LABEL_ROOM_MIN_PX = 40;
 /**
- * The least screen room a file name is given: about a dozen glyphs, enough to tell one dated or
- * numbered file from the next. With less, files are an unnamed grid and their width goes to
- * the pages and concepts; the index beside the picture and a press's card still name them.
+ * The least screen room a name place is worth having: about a dozen glyphs, enough to tell one
+ * dated or numbered title from the next. With less, the kind stands unnamed at rest and its
+ * width goes to the kinds before it (`namingLadder`); hover, a press and zooming in name it.
  */
-export const FLOW_FILE_NAME_MIN_PX = 96;
+export const FLOW_NAME_ROOM_MIN_PX = 96;
 /**
  * The share of the camera's box a picture at the zoom ceiling fills, so a small folder's fit
  * lands on the ceiling (`LIBRARY_MAX_MARK_PX`) with a margin rather than against the box.
@@ -49,6 +47,31 @@ export const NAME_GAP = 5;
 export const BREATH_PX = 8;
 
 export const COLUMN_ORDER: readonly LibraryGraphNodeKind[] = ["source", "page", "concept"];
+/** The order kinds are given names in: pages, then concepts, then files. */
+const NAMING_ORDER: readonly LibraryGraphNodeKind[] = ["page", "concept", "source"];
+
+/**
+ * The namings a picture may take, most named first, ending with none: pages, then concepts
+ * too, then files too. A present kind that cannot be named (folded) ends the ladder, so no
+ * kind is ever named while one before it is not; an absent kind is passed over.
+ */
+export function namingLadder(
+  present: ReadonlySet<LibraryGraphNodeKind>,
+  nameable: (kind: LibraryGraphNodeKind) => boolean,
+): ReadonlySet<LibraryGraphNodeKind>[] {
+  const ladder: Array<Set<LibraryGraphNodeKind>> = [new Set()];
+  for (const kind of NAMING_ORDER) {
+    if (!present.has(kind)) continue;
+    if (!nameable(kind)) break;
+    ladder.push(new Set([...ladder[ladder.length - 1], kind]));
+  }
+  return ladder.reverse();
+}
+
+/** Whether a settled naming holds: every name its room, rows at the floor. Naming nothing always holds. */
+export function namingHolds(naming: ReadonlySet<LibraryGraphNodeKind>, solved: { room: number; scale: number }, rowGap: number): boolean {
+  return naming.size === 0 || (solved.room > 0 && keepsRowFloor(rowGap, solved.scale));
+}
 
 /** The box the camera fits the flow picture into, in CSS px (the canvas less its margins), and its zoom ceiling. */
 export interface FlowWorld {
@@ -173,8 +196,9 @@ export function placeCost(breath: number): number {
  * The zoom and every name place's room, solved together in closed form, in the camera's px.
  * `stripWidth(room, breath)` is affine in both, so three probes give the fixed width and how
  * many rooms and breaths the strip holds. At the zoom the height allows, each place shares
- * the free width up to the ceiling; when that leaves less than the minimum, the zoom drops
- * until the minimum fits, and with no width for even that, no name has room.
+ * the free width up to the ceiling; when that leaves less than `FLOW_NAME_ROOM_MIN_PX`, the
+ * zoom drops until that fits (the caller checks the rows still keep their floor), and with no
+ * width for even that, no name has room.
  */
 export function settleNameRoom(
   fit: FlowFit,
@@ -188,10 +212,10 @@ export function settleNameRoom(
   // At the ceiling a short picture keeps the box's aspect, narrower by the height it leaves.
   const tallWidthPx = fit.width * Math.min(1, (tall * height) / fit.height);
   const sharePx = places > 0 ? (tallWidthPx - fixed * tall - breathsPx) / places : 0;
-  if (places === 0 ? fixed * tall + breathsPx <= tallWidthPx : sharePx >= FLOW_LABEL_ROOM_MIN_PX) {
+  if (places === 0 ? fixed * tall + breathsPx <= tallWidthPx : sharePx >= FLOW_NAME_ROOM_MIN_PX) {
     return { room: Math.min(FLOW_LABEL_ROOM_MAX_PX, sharePx) / tall, scale: tall, width: tallWidthPx / tall };
   }
-  const roomPx = places > 0 && fit.width - breathsPx > places * FLOW_LABEL_ROOM_MIN_PX ? FLOW_LABEL_ROOM_MIN_PX : 0;
+  const roomPx = places > 0 && fit.width - breathsPx > places * FLOW_NAME_ROOM_MIN_PX ? FLOW_NAME_ROOM_MIN_PX : 0;
   const scale = Math.min(tall, Math.max(1, fit.width - breathsPx - places * roomPx) / fixed);
   return { room: roomPx / scale, scale, width: fit.width / scale };
 }
