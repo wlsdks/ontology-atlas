@@ -40,7 +40,8 @@
     "git-remote": "Git push, pull and fetch",
     "coding-tools": "Coding agents",
     "website-files": "Website files",
-    "git-pr-descriptions": "GitHub PR descriptions"
+    "git-pr-descriptions": "GitHub PR descriptions",
+    "vector-model": "Search-by-meaning model download"
   },
   "updateOn": "Automatic check on",
   "updateOff": "Automatic check off",
@@ -74,18 +75,26 @@
     "title": "Stored on this computer",
     "keywords": "search index cache disk size storage delete full text",
     "switchLabel": "Keep a search index on this computer",
-    "switchCaption": "Lets search find words inside every document, and lets a folder you opened before open without reading every file again. The index holds file paths and modified times, each document's words with their positions, so its text can be pieced back together, and each document's info block at the top of the file, title, headings, excerpt, link text and the short passage around each link. All of it is rebuilt from the folder's files. It stays in this computer's cache folder and never leaves it; anyone who can read your user account's cache folder can read it. Turning this off or pressing Delete removes it, and a folder's index is also deleted when you take the folder off the list or leave it unopened for two weeks.",
+    "switchCaption": "Lets search find words inside every document, and lets a folder you opened before open without reading every file again. The index holds file paths and modified times, each document's words with their positions, so its text can be pieced back together, and each document's info block at the top of the file, title, headings, excerpt, link text and the short passage around each link. All of it is rebuilt from the folder's files. It stays in this computer's cache folder and never leaves it; anyone who can read your user account's cache folder can read it. Turning this off or pressing Delete removes it, and a folder's index is also deleted when you take the folder off the list or leave it unopened for two weeks. With search by meaning, the index also holds a list of numbers for each passage, from which parts of its text can be guessed.",
     "on": "On",
     "off": "Off",
     "sizeLabel": "Search index",
-    "sizeThisFolder": "{size} for this folder. Delete removes this folder's index; it is built again the next time you open the folder.",
-    "sizeAllFolders": "{size} for {count, plural, one {# folder} other {# folders}}. Delete removes every folder's index; each is built again the next time you open it.",
+    "sizeThisFolder": "{size} for this folder. Delete removes this folder's index and its search by meaning; the index is built again the next time you open the folder.",
+    "sizeAllFolders": "{size} for {count, plural, one {# folder} other {# folders}}. Delete removes every folder's index and search by meaning; each index is built again the next time you open it.",
     "empty": "Nothing stored",
     "offCaption": "Off. Search covers titles, summaries and tags, and no index file exists.",
-    "deletedThisFolder": "Deleted this folder's index. It is built again the next time you open the folder.",
-    "deletedAll": "Deleted every folder's index. Each is built again the next time you open it.",
+    "deletedThisFolder": "Deleted this folder's index and its search by meaning. The index is built again the next time you open the folder.",
+    "deletedAll": "Deleted every folder's index and search by meaning. Each index is built again the next time you open it.",
     "failed": "Could not delete the search index. Try again.",
     "delete": "Delete",
-    "deleteArmed": "Press again to delete"
+    "deleteArmed": "Press again to delete",
+    "meaningLabel": "Search by meaning",
+    "meaningSize": "{size} for this folder. Delete removes it; preparing again reads every file.",
+    "meaningDeleted": "Deleted this folder's search by meaning.",
+    "meaningFailed": "Could not delete search by meaning. Try again.",
+    "modelLabel": "Search-by-meaning model",
+    "modelSize": "{size}, bge-m3 by BAAI (MIT). Delete removes it; using search by meaning again downloads it.",
+    "modelDeleted": "Deleted the model.",
+    "modelFailed": "Could not delete the model. Try again."
   }
 }

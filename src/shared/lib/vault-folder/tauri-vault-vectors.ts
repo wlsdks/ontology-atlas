@@ -160,10 +160,14 @@ export async function probeVectors(rootPath: string, runnerBaseUrl: string | nul
 }
 
 /** Never creates anything; sends the search index switch, since vectors live beside the index. */
-export async function vectorStatus(rootPath: string, source: VectorSource | null): Promise<VectorStatus> {
+export async function vectorStatus(
+  rootPath: string,
+  source: VectorSource | null,
+  paused = false,
+): Promise<VectorStatus> {
   const invoke = getInvoke();
   if (!invoke) return offStatus();
-  return invoke('vault_vectors_status', { rootPath, enabled: indexEnabled(), source });
+  return invoke('vault_vectors_status', { rootPath, enabled: indexEnabled(), source, paused });
 }
 
 /** Starts or continues the folder's background job (the built-in model first when it is missing). */

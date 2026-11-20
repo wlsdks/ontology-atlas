@@ -191,49 +191,66 @@ Settings › Privacy · data lists the download as an outbound row, with the hos
 
 ### Copy
 
-Keys under `questionDesk.meaning` in `messages/<locale>/library.json`; English source here.
-Keys in "Copy" below that this table does not replace keep their text.
+Keys under `questionDesk.meaning` in `messages/<locale>/library.json`, as built; English
+source here. `meaning` is the first entry in `questionDesk`. The result-row keys
+(`reasonWords`, `reasonMeaning`, `reasonBoth`, `coverage`) and the result notice for a
+missing model belong to the search slice and are not built yet. Keys in "Copy" below that
+this table does not replace keep their text.
 
 | Key | Where | en |
 |---|---|---|
-| `meaning.words` | desk line | Searching by words |
-| `meaning.setup` | desk line press, no-match action | Set up search by meaning |
+| `meaning.words` | desk line at rest | Searching by words |
+| `meaning.setup` | desk line press | Set up search by meaning |
+| `meaning.web` | desk line on the web, no press | Search by meaning works in the installed app, where a model on your computer prepares the files. Here, search matches words. |
+| `meaning.noFiles` | desk line, no Markdown files | This folder has no Markdown files to prepare. |
+| `meaning.indexOff` | desk line, index off | Search by meaning needs the search index, which is off in Settings › Privacy · data. |
+| `meaning.openSettings` | desk line press, not drawn yet | Open Settings |
 | `meaning.dialogTitle` | dialog title | Search by meaning |
-| `meaning.factWhat` | dialog | Finds passages that say the same thing in other words or in another language. A model on this computer reads the {files, number} Markdown files in this folder and stores a list of numbers for each passage in this computer's cache folder. |
-| `meaning.factModel` | dialog | Model: bge-m3 by BAAI, MIT licence. |
-| `meaning.factDownload` | dialog | Download: {download} from huggingface.co, once. Kept on this computer: {kept}. |
-| `meaning.factSent` | dialog | Nothing from your folder is sent. The download asks only for the model's files. |
-| `meaning.factMemory` | dialog | Preparing uses about {memory} of memory and runs in the background. You can keep working and stop it at any time. |
-| `meaning.factMemoryCpu` | dialog, no graphics acceleration | Preparing runs on the processor on this computer: about {memory} of memory, and slower. You can keep working and stop it at any time. |
-| `meaning.factDelete` | dialog | Settings › Privacy · data deletes the model and the prepared numbers. |
+| `meaning.lead` | dialog lead | Finds passages that say the same thing in other words or in another language. A model on this computer reads the {files, number} Markdown files in this folder and stores a list of numbers for each passage in this computer's cache folder. |
+| `meaning.factModelLabel` / `factModel` | dialog fact | Model / bge-m3 by BAAI, MIT licence |
+| `meaning.factDownloadLabel` / `factDownload` | dialog fact, model not here | Download / {download} from huggingface.co, once. {kept} stays on this computer. |
+| `meaning.factSentLabel` / `factSent` | dialog fact | Sent / Nothing from your folder. The download asks only for the model's files. |
+| `meaning.factMemoryLabel` / `factMemory` | dialog fact | Memory / About {memory} while preparing, in the background. You can keep working and stop it at any time. |
+| `meaning.factMemoryCpu` | dialog fact, no graphics acceleration | About {memory} while preparing, and slower: this computer prepares on the processor. You can keep working and stop it at any time. |
+| `meaning.factDeleteLabel` / `factDelete` | dialog fact | Delete / Settings › Privacy · data removes the model and the prepared numbers. |
+| `meaning.cancel` | dialog, first focus | Cancel |
 | `meaning.downloadAndPrepare` | dialog primary | Download and prepare |
 | `meaning.prepare` | dialog primary, model here | Prepare {files, number} files |
-| `meaning.useRunner` | dialog second action | Use {model} in Ollama (no download) |
-| `meaning.diskShort` | dialog | Preparing needs {needed} free on this disk; {free} is free. |
-| `meaning.modelDownloading` | desk line, ring tooltip | Downloading the model · {percent, number}% · {done} of {total} |
-| `meaning.modelConverting` | desk line, ring tooltip | Preparing the model for this computer |
-| `meaning.preparing` | desk line, ring tooltip | Preparing search by meaning · {done, number} of {total, number} files |
-| `meaning.minutesLeft` | desk line, after the first minute | about {minutes, number} min left |
-| `meaning.readingNow` | desk line | Reading {file} |
-| `meaning.stop` / `meaning.resume` | desk line | Stop / Resume |
+| `meaning.useRunner` | dialog, a reachable local runner with the model | Use {model} in Ollama (no download) |
+| `meaning.diskShort` | dialog, primary disabled | Preparing needs {needed} free on this disk; {free} is free. |
+| `meaning.modelDownloading` | desk line, bytes ring | Downloading the model · {percent, number}% · {done} of {total} |
+| `meaning.modelConverting` | desk line, held ring | Preparing the model for this computer |
+| `meaning.preparing` | desk line, files ring | Preparing search by meaning · {done, number} of {total, number} files |
+| `meaning.minutesLeft` | desk line, once a rate is measured | about {minutes, number} min left |
+| `meaning.readingNow` | desk line, file name cut in the middle | Reading {file} |
+| `meaning.stop` / `resume` | desk line press | Stop / Resume |
 | `meaning.stopped` | desk line | Stopped at {done, number} of {total, number} files. Search by meaning covers those files. |
 | `meaning.ready` | desk line | Searching by words and by meaning · {files, number} files |
 | `meaning.updating` | desk line | Updating {count, number} changed files for search by meaning |
 | `meaning.waitingTurn` | desk line | Another folder is preparing. This one starts when it ends. |
-| `meaning.modelDownloadFailed` | desk line | The model download stopped: {detail}. What is downloaded is kept. |
-| `meaning.modelCheckFailed` | desk line | The downloaded file did not match the published model, so Atlas deleted it. |
-| `meaning.modelNeedsDirect` | desk line | The model download needs a direct internet connection; this network allows only a proxy. |
-| `meaning.modelGone` | result notice | The model is no longer on this computer, so these results match words only. |
-| `meaning.downloadAgain` | action | Download again |
-| `meaning.reasonWords` / `reasonMeaning` / `reasonBoth` | row label | Same words / Similar meaning / Same words and similar meaning |
-| `meaning.coverage` | coverage popover | By meaning: {ready, number} of {total, number} files |
+| `meaning.modelDownloadFailed` | desk line, `download` (Resume), `diskShort` (Set up) | The model download stopped: {detail}. What is downloaded is kept. |
+| `meaning.modelCheckFailed` | desk line, `modelCheck` (Download again) | The downloaded file did not match the published model, so Atlas deleted it. |
+| `meaning.modelNeedsDirect` | desk line, `needsDirect` (Resume) | The model download needs a direct internet connection; this network allows only a proxy. |
+| `meaning.modelGone` | desk line, `modelGone` (Download again) | The model is no longer on this computer. |
+| `meaning.modelFailed` | desk line, `modelFailed` (Resume) | The model could not run on this computer: {detail}. |
+| `meaning.downloadAgain` | desk line press | Download again |
+| `meaning.runnerDown` | desk line, `runnerDown` (Resume) | Ollama did not answer. Start Ollama, then press Resume. |
+| `meaning.modelMissing` | desk line, `modelMissing` (Resume) | {model} is no longer in Ollama. |
+| `meaning.writeFailed` | desk line, `write` (Resume) | Could not save search by meaning in this computer's cache folder: {detail}. |
+| `meaning.auditBlocked` | desk line, `auditBlocked` (Resume) | Atlas could not write the sent log in .ontology-atlas, so nothing was sent. |
+| `meaning.unreadable` | desk line, `unreadable` (Resume); dialog, probe failed | Atlas could not read this folder's files. |
+| `meaning.failureDetail` | `{detail}` above | one `select` over `failureDetail` with `-` read as `_`; an unknown code prints itself |
+| `meaning.ringLabel` | ring accessible name | Search by meaning progress |
 
-`settingsPrivacy.json`: `storedHere.meaningLabel` "Search by meaning"; `storedHere.meaningSize`
-"{size} for this folder. Delete removes it; preparing again reads every file."; 
+`settingsPrivacy.json`, shown in the app while the index is on: `storedHere.meaningLabel`
+"Search by meaning"; `storedHere.meaningSize` "{size} for this folder. Delete removes it;
+preparing again reads every file."; `storedHere.meaningDeleted`; `storedHere.meaningFailed`;
 `storedHere.modelLabel` "Search-by-meaning model"; `storedHere.modelSize` "{size}, bge-m3 by
-BAAI (MIT). Delete removes it; using search by meaning again downloads it."; the outbound row
-`outbound.meaningModel` "Search-by-meaning model download · huggingface.co · the model's file
-addresses; nothing from your folder".
+BAAI (MIT). Delete removes it; using search by meaning again downloads it.";
+`storedHere.modelDeleted`; `storedHere.modelFailed`. `storedHere.switchCaption` ends with the
+numbers sentence, and the index size and deleted captions say search by meaning goes with
+the index. The outbound row `paths.vector-model` "Search-by-meaning model download" lists
+huggingface.co.
 
 ### Command contract (`src/shared/lib/vault-folder/tauri-vault-vectors.ts`)
 
@@ -538,3 +555,4 @@ Order: S1 and S2 first and in parallel, then S3. S4 follows once #3607 merges, a
 - 2026-11-20: second store review. Delete, another model and damage retire the file one way: removed or renamed aside, else reset in place (schema rows dropped, vacuumed, log checkpointed), so Windows keeps the same contract while a search holds the file. Damage found by a plan's pending list, by prepare's first write or by a search is set aside, and the next plan rebuilds; a search lets its connection go first and never waits for the writer lock. The size row counts every byte on disk, a damaged copy included. A search holds only vectors a file holds, so the 7-day grace period costs disk only. A new passage rule rewrites no vector: file rows are forgotten 1,024 per transaction and the vectors left unheld are marked in batches once every file was read again. Measured at 50k files after it: 134,603 passages, a file of 1.059 × text, +17.6 MB steady, +19.0 to +19.1 MB peak during a query, +34.1 MB peak while preparing, +1.6 MB after the drop, and search p95 of 2.9 to 3.0 ms in the store; at 10k, 1.058 × text, +3.6 MB steady and p95 of 2.0 to 2.2 ms.
 - 2026-11-20: the built-in flow, its states and copy, and the app's command contract; code names the feature vectors.
 - 2026-11-20: the command contract gains the failure `modelFailed`, because a worker that exits, times out or answers wrongly fits no other failure and its copy must not blame the download, the runner or the cache.
+- 2026-11-20: the desk line, the consent dialog and the Settings rows are built. The choice is stored per folder with a pause, so Stop survives a restart and the app is told the choice once at folder open; Resume and the dialog clear the pause. The copy table now lists the keys as built. The long-work card and the rail ring are left to the long-work seat, which reads `useVectorRun`.

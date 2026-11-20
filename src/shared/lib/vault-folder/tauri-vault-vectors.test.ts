@@ -79,7 +79,7 @@ describe('tauri-vault-vectors in the app', () => {
     tauriApiMock.invoke.mockResolvedValue(undefined);
 
     await probeVectors('/vault', 'http://localhost:11434');
-    await vectorStatus('/vault', runner);
+    await vectorStatus('/vault', runner, true);
     await prepareVectors('/vault', builtin);
     await stopVectors('/vault');
     await warmVectors(builtin);
@@ -89,7 +89,7 @@ describe('tauri-vault-vectors in the app', () => {
 
     expect(tauriApiMock.invoke.mock.calls).toEqual([
       ['vault_vectors_probe', { rootPath: '/vault', runnerBaseUrl: 'http://localhost:11434' }],
-      ['vault_vectors_status', { rootPath: '/vault', enabled: true, source: runner }],
+      ['vault_vectors_status', { rootPath: '/vault', enabled: true, source: runner, paused: true }],
       ['vault_vectors_prepare', { rootPath: '/vault', source: builtin }],
       ['vault_vectors_stop', { rootPath: '/vault' }],
       ['vault_vectors_warm', { source: builtin }],
@@ -105,7 +105,7 @@ describe('tauri-vault-vectors in the app', () => {
     vaultIndexPreference.write('off');
     await vectorStatus('/vault', null);
     expect(tauriApiMock.invoke).toHaveBeenCalledWith('vault_vectors_status', {
-      rootPath: '/vault', enabled: false, source: null,
+      rootPath: '/vault', enabled: false, source: null, paused: false,
     });
   });
 

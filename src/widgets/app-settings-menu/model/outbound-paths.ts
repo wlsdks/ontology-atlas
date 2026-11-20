@@ -53,6 +53,14 @@ export const OUTBOUND_PATHS: readonly OutboundPath[] = [
     recordedIn: OUTBOUND_AUDIT_LOG,
   },
   {
+    // Redirect hops may reach hf.co hosts, each checked against `ALLOWED_DOMAINS` in download.rs.
+    id: 'vector-model',
+    trigger: 'press',
+    hosts: ['huggingface.co'],
+    carries: 'no-folder-content',
+    recordedIn: OUTBOUND_AUDIT_LOG,
+  },
+  {
     id: 'jev',
     trigger: 'press',
     hosts: ['api.typesafe.ai'],
