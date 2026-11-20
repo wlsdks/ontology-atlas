@@ -40,6 +40,9 @@ type TapWindow = { __checkTap?: { read(path: string): void; fail(): void; sessio
  */
 async function tapBridge(page: Page, options: { offerUpdate: boolean }) {
   await page.addInitScript(({ offerUpdate }) => {
+    // The update feed serves macOS only (`feedServesPlatform`), so the stubbed app reports a Mac
+    // wherever the browser runs; a Linux runner would otherwise never ask for the offered update.
+    if (offerUpdate) Object.defineProperty(Navigator.prototype, "platform", { configurable: true, get: () => "MacIntel" });
     type Raw = { message: unknown; index: number };
     type Internals = {
       invoke: (command: string, args?: Record<string, unknown>) => Promise<unknown>;
