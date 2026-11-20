@@ -1,6 +1,8 @@
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import type { SourceUnit } from '@/shared/lib/library/source-passage';
 import type { VaultDoc } from '@/entities/docs-vault';
+import { isRetainedAnswerPath, retainedAnswerHeads, type RetainedAnswerHead } from './answer-revision';
+import { fuseRankedLists } from './lead-fusion';
 
 export interface DeskCitation { path: string; anchor: string }
 export interface DeskClaim {
@@ -8,6 +10,8 @@ export interface DeskClaim {
   pageTitle: string;
   text: string;
   citations: DeskCitation[];
+  /** 1-based line of the claim in the page body; orders equal leads, never shown. */
+  line: number;
   score: number;
   recordedHashes: Record<string, string>;
 }
@@ -88,7 +92,7 @@ export function findDeskClaims(question: string, docs: readonly VaultDoc[], rawB
     const parsed = parseFrontmatter(raw);
     const hashes = recordedHashes(parsed.frontmatter);
     let section = '';
-    for (const line of parsed.body.split(/\r?\n/)) {
+    for (const [index, line] of parsed.body.split(/\r?\n/).entries()) {
       const trimmed = line.trim();
       if (trimmed.startsWith('## ')) section = trimmed.slice(3).toLowerCase();
       if (section !== 'facts' && section !== 'decisions') continue;
@@ -98,7 +102,7 @@ export function findDeskClaims(question: string, docs: readonly VaultDoc[], rawB
       const score = questionScore(text, terms);
       if (!score) continue;
       const citations = [...text.matchAll(CITATION)].map((match) => ({ path: match[1]!, anchor: match[2]! }));
-      claims.push({ pageSlug: doc.slug, pageTitle: doc.title, text, citations, score, recordedHashes: hashes });
+      claims.push({ pageSlug: doc.slug, pageTitle: doc.title, text, citations, line: index + 1, score, recordedHashes: hashes });
     }
   }
   claims.sort((a, b) => b.score - a.score || a.pageSlug.localeCompare(b.pageSlug));
@@ -117,6 +121,131 @@ export function findDeskSourceHits(path: string, units: readonly SourceUnit[], t
     if (hits.length > 3) hits.pop();
   }
   return { hits, matches };
+}
+
+/**
+ * The sentence cut into runs, `strong` where a question term matched the way `questionScore`
+ * counted it: the whole term, or for a Hangul term of three or more syllables any two-syllable
+ * piece of it (a particle changes the ending, not the stem).
+ */
+export function questionTermRuns(text: string, terms: readonly string[]): Array<{ text: string; strong: boolean }> {
+  const lower = text.toLowerCase();
+  const marked = new Array<boolean>(text.length).fill(false);
+  const mark = (needle: string) => {
+    if (!needle) return false;
+    let found = false;
+    for (let at = lower.indexOf(needle); at !== -1; at = lower.indexOf(needle, at + needle.length)) {
+      marked.fill(true, at, at + needle.length);
+      found = true;
+    }
+    return found;
+  };
+  for (const term of terms) {
+    if (mark(term) || !/^[가-힣]{3,}$/u.test(term)) continue;
+    for (let index = 0; index < term.length - 1; index += 1) mark(term.slice(index, index + 2));
+  }
+  const runs: Array<{ text: string; strong: boolean }> = [];
+  for (let index = 0; index < text.length; index += 1) {
+    const last = runs[runs.length - 1];
+    if (last && last.strong === marked[index]) last.text += text[index];
+    else runs.push({ text: text[index]!, strong: marked[index]! });
+  }
+  return runs;
+}
+
+export type DeskLead =
+  | { kind: 'claim'; key: string; claim: DeskClaim }
+  | { kind: 'source'; key: string; hit: DeskSourceHit };
+
+function anchorLine(anchor: string): number {
+  const digits = /\d+/.exec(anchor);
+  return digits ? Number(digits[0]) : 0;
+}
+
+function leadPlace(lead: DeskLead): [string, number] {
+  return lead.kind === 'claim' ? [lead.claim.pageSlug, lead.claim.line] : [lead.hit.path, anchorLine(lead.hit.anchor)];
+}
+
+/**
+ * A sentence as compared, not as shown: citations and leading list, quote or heading markers
+ * dropped, then NFC, lower case, single spaces and no trailing punctuation.
+ */
+function comparableSentence(text: string): string {
+  return text.replace(/\[\[src:[^\]]+\]\]/gu, ' ')
+    .replace(/^\s*(?:[-*+]\s+|\d+[.)]\s+|#{1,6}\s+|>\s*)+/u, '')
+    .normalize('NFC').toLocaleLowerCase('und')
+    .replace(/\s+/gu, ' ').trim()
+    .replace(/[\s.,!?;:。．、！？…]+$/u, '');
+}
+
+/**
+ * Wiki claims and source passages in one list, best first: rank fusion, then claim, path and line.
+ * A passage at the place a listed claim cites that says the same sentence is that claim's
+ * evidence, which the claim's cited-file press already opens: it folds into the claim and adds its
+ * rank to the claim's. A cited passage that says something else keeps its own row, so a claim and
+ * the line that contradicts it stand in the list together.
+ */
+export function fuseDeskLeads(claims: readonly DeskClaim[], hits: readonly DeskSourceHit[]): DeskLead[] {
+  const claimLeads = claims.map((claim): DeskLead => ({ kind: 'claim', key: `claim:${claim.pageSlug}:${claim.line}`, claim }));
+  const sourceLeads = hits.map((hit): DeskLead => ({ kind: 'source', key: `source:${hit.path}#${hit.anchor}`, hit }));
+  const citedBy = new Map<string, string[]>();
+  for (const claim of claims) {
+    const sentence = comparableSentence(claim.text);
+    for (const citation of claim.citations) {
+      const place = `source:${citation.path}#${citation.anchor}\n${sentence}`;
+      citedBy.set(place, [...(citedBy.get(place) ?? []), `claim:${claim.pageSlug}:${claim.line}`]);
+    }
+  }
+  return fuseRankedLists([claimLeads, sourceLeads], (lead) => lead.key, (a, b) => {
+    if (a.kind !== b.kind) return a.kind === 'claim' ? -1 : 1;
+    const [pathA, lineA] = leadPlace(a);
+    const [pathB, lineB] = leadPlace(b);
+    return pathA.localeCompare(pathB) || lineA - lineB;
+  }, (lead) => lead.kind === 'source' ? citedBy.get(`${lead.key}\n${comparableSentence(lead.hit.text)}`) ?? [] : [])
+    .map((fused) => fused.item);
+}
+
+function dayValue(value: unknown): number {
+  const time = typeof value === 'string' ? Date.parse(value) : Number.NaN;
+  return Number.isFinite(time) ? time : 0;
+}
+
+export interface DeskRecentPage { slug: string; title: string; updatedAt: string; sources: number }
+
+/**
+ * The newest wiki pages by the day the folder lists for them (`updatedAt`), saved questions
+ * excluded. One pass keeping the best `limit`, so a large wiki is never sorted: O(N * limit).
+ */
+export function recentDeskPages(docs: readonly VaultDoc[], limit: number): DeskRecentPage[] {
+  const newest: VaultDoc[] = [];
+  const before = (a: VaultDoc, b: VaultDoc) => dayValue(a.updatedAt) - dayValue(b.updatedAt) || b.slug.localeCompare(a.slug);
+  for (const doc of deskPages(docs)) {
+    if (isRetainedAnswerPath(doc.slug)) continue;
+    if (newest.length === limit && before(doc, newest[limit - 1]!) <= 0) continue;
+    let at = newest.length;
+    while (at > 0 && before(doc, newest[at - 1]!) > 0) at -= 1;
+    newest.splice(at, 0, doc);
+    if (newest.length > limit) newest.pop();
+  }
+  return newest.map((doc) => ({
+    slug: doc.slug, title: doc.title, updatedAt: doc.updatedAt,
+    sources: Array.isArray(doc.frontmatter.sources) ? doc.frontmatter.sources.filter((path) => typeof path === 'string').length : 0,
+  }));
+}
+
+export interface DeskSavedQuestion { head: RetainedAnswerHead; savedAt: string }
+
+/** Saved questions, newest first by the `compiled_at` their page records, else the listed day. */
+export function newestDeskQuestions(docs: readonly VaultDoc[], limit: number): DeskSavedQuestion[] {
+  const listed = new Map(docs.map((doc) => [doc.slug, doc.updatedAt]));
+  return retainedAnswerHeads(docs)
+    .map((head) => {
+      const recorded = head.frontmatter.compiled_at;
+      const savedAt = dayValue(recorded) ? String(recorded) : listed.get(head.slug) ?? '';
+      return { head, savedAt };
+    })
+    .sort((a, b) => dayValue(b.savedAt) - dayValue(a.savedAt) || a.head.slug.localeCompare(b.head.slug))
+    .slice(0, limit);
 }
 
 export function jevClaimEligibility(claim: DeskClaim, citation: DeskCitation, passage: { state: string; cited: readonly SourceUnit[] }, measuredHash: string | null, fileChanged: boolean): 'ready' | 'missing' | 'stale' | 'unmeasured' {
