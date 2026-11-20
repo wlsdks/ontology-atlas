@@ -148,7 +148,7 @@ function citationCandidateRegex() {
 }
 
 /** Every well-formed citation in `text`, in order. */
-function extractWikiCitations(text) {
+export function extractWikiCitations(text) {
   const out = [];
   const regex = wikiCitationRegex();
   let match;
@@ -206,7 +206,7 @@ summary: <one sentence about what this page is about>
  * @param {number} [line]
  * @param {{ key: string, values?: Record<string, string> }} [detail]
  */
-function problem(code, message, line, detail) {
+export function problem(code, message, line, detail) {
   const out = { code, message };
   if (line !== undefined) out.line = line;
   if (detail !== undefined) out.detail = detail;
@@ -275,12 +275,12 @@ export function buildWikiNodeIndex(entries) {
   });
 }
 
-function wikiNodeIndexOf(nodes) {
+export function wikiNodeIndexOf(nodes) {
   return nodes && nodes[WIKI_NODE_INDEX] === true ? nodes : buildWikiNodeIndex(nodes);
 }
 
 /** `describes:` entries. Only a list counts: no graph reader takes a lone value as a link. */
-function readDescribes(value) {
+export function readDescribes(value) {
   return Array.isArray(value) ? value.filter((entry) => typeof entry === 'string') : [];
 }
 
@@ -309,6 +309,11 @@ function describesProblems(value, index) {
     );
   }
   return out;
+}
+
+/** Lines before the body, so a reported line is a line in the real file. */
+export function frontmatterLineCount(text, body) {
+  return text.startsWith('---') ? text.slice(0, text.length - body.length).split('\n').length - 1 : 0;
 }
 
 /** Level-2 headings in document order, with their line numbers. */
@@ -369,10 +374,7 @@ export function validateWikiPage(raw, options = {}) {
   const problems = [];
   const { frontmatter, body } = options.parsed ?? parseFrontmatter(text);
   const bodyLines = body.split('\n');
-  // Body start line, so reported lines are lines in the real file.
-  const frontmatterLines = text.startsWith('---')
-    ? text.slice(0, text.length - body.length).split('\n').length - 1
-    : 0;
+  const frontmatterLines = frontmatterLineCount(text, body);
 
   // `kind:` first: a wiki page with a kind is an ontology node the graph draws.
   if (Object.prototype.hasOwnProperty.call(frontmatter, 'kind')) {
@@ -561,236 +563,4 @@ export function validateWikiPage(raw, options = {}) {
   }
 
   return { ok: problems.length === 0, problems };
-}
-
-
-/**
- * `[[target]]`, `[[target|text]]`, `[[target#anchor]]` — a citation (`src:`) is not a link.
- * No part crosses a `[`, so each attempt ends at the next opening and a line scans once.
- */
-function wikiPageLinkRegex() {
-  return /\[\[([^\][|#]+)(?:#[^\][|]*)?(?:\|[^\][]*)?\]\]/g;
-}
-
-/**
- * A link target as the folder names a page: `wiki/<slug>` without `.md`.
- *
- * A bare `[[slug]]` folds into `wiki/`, which is what spec §11.4 calls a page link. A
- * target that already carries a `/` is left alone: it addresses the vault root, and
- * `namesWikiFolder` below is what decides whether this module may judge it.
- */
-function normalizeWikiLinkTarget(target) {
-  let slug = String(target ?? '').trim().replace(/\.md$/, '');
-  if (!slug || slug.startsWith('src:')) return null;
-  if (!slug.includes('/')) slug = `${WIKI_DIR}/${slug}`;
-  return slug;
-}
-
-/**
- * Whether a normalised target is a link into this folder, the only kind this
- * module may call broken. Targets into the rest of the vault (`capabilities/…`)
- * were never handed to it, so it stays silent on them.
- */
-function namesWikiFolder(target) {
-  return target.startsWith(`${WIKI_DIR}/`);
-}
-
-/** Every page link in `body`, with the line it sits on, fenced code skipped. */
-function extractWikiPageLinks(body, offset) {
-  const out = [];
-  const lines = String(body ?? '').split('\n');
-  let inFence = false;
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index];
-    if (/^\s*(```|~~~)/.test(line)) {
-      inFence = !inFence;
-      continue;
-    }
-    if (inFence || !line.includes('[[')) continue;
-    const regex = wikiPageLinkRegex();
-    let match;
-    while ((match = regex.exec(line)) !== null) {
-      const target = normalizeWikiLinkTarget(match[1]);
-      if (target) out.push({ target, line: offset + index + 1 });
-    }
-  }
-  return out;
-}
-
-function readDeclaredSources(frontmatter) {
-  if (Array.isArray(frontmatter.sources)) {
-    return frontmatter.sources.filter((value) => typeof value === 'string').map((value) => value.trim());
-  }
-  if (typeof frontmatter.sources === 'string' && frontmatter.sources.trim()) return [frontmatter.sources.trim()];
-  return [];
-}
-
-/**
- * The folder half: facts only visible with every page present. Whether pages
- * disagree is an agent's lint judgement; these are deterministic
- * facts: `dangling-wikilink` (a `[[wiki/…]]` target not in the folder), `orphan-page` (no
- * inbound link, two or more pages only), `shared-source-unlinked` (pages written
- * from one primary source that do not link each other).
- * Why these three: they are the folder faults (missing cross-references, unlinked
- * pages from one source) a script can decide while every single page validates.
- *
- * @param {Array<{ path: string, raw: string, parsed?: { frontmatter: object, body: string } }>} pages
- *   every page, template excluded, each with a vault-relative `path` (`wiki/<slug>.md`);
- *   `parsed`, when given, is `parseFrontmatter(raw)`
- * @returns {Array<{ path: string, problems: Array<{ code: string, message: string, line?: number }> }>}
- *   one entry per input page, in input order, `problems` possibly empty
- */
-/** Unlinked shared-source partners a page names before it counts the rest. */
-const WIKI_SHARED_PARTNER_LIMIT = 10;
-
-export function validateWikiFolder(pages) {
-  const entries = (pages ?? []).map((page) => {
-    const path = String(page.path ?? '');
-    const slug = path.replace(/\.md$/, '');
-    const text = String(page.raw ?? '');
-    const { frontmatter, body } = page.parsed ?? parseFrontmatter(text);
-    const frontmatterLines = text.startsWith('---')
-      ? text.slice(0, text.length - body.length).split('\n').length - 1
-      : 0;
-    const declared = readDeclaredSources(frontmatter);
-    return {
-      path,
-      slug,
-      links: extractWikiPageLinks(body, frontmatterLines),
-      sources: new Set(declared),
-      primary: declared[0] ?? null,
-      problems: [],
-    };
-  });
-  const bySlug = new Map(entries.map((entry) => [entry.slug, entry]));
-  const inbound = new Map(entries.map((entry) => [entry.slug, new Set()]));
-
-  for (const entry of entries) {
-    const seen = new Set();
-    for (const link of entry.links) {
-      if (link.target === entry.slug) continue;
-      const target = bySlug.get(link.target);
-      if (target) {
-        inbound.get(target.slug).add(entry.slug);
-        continue;
-      }
-      if (!namesWikiFolder(link.target)) continue;
-      if (seen.has(link.target)) continue;
-      seen.add(link.target);
-      entry.problems.push(
-        problem(
-          'dangling-wikilink',
-          `\`[[${link.target}]]\` names a page that is not in this folder. Link only to a page that exists, or write the page.`,
-          link.line,
-          { key: 'dangling-wikilink', values: { target: link.target } },
-        ),
-      );
-    }
-  }
-
-  if (entries.length >= 2) {
-    for (const entry of entries) {
-      if (inbound.get(entry.slug).size > 0) continue;
-      entry.problems.push(
-        problem(
-          'orphan-page',
-          'No other page links here. A page nobody points at is reached only by its file name; link it from the page that talks about its topic.',
-          undefined,
-          { key: 'orphan-page' },
-        ),
-      );
-    }
-  }
-
-  // Two pages are partners when one's primary source (its first) is listed by the other.
-  // Each page names at most WIKI_SHARED_PARTNER_LIMIT unlinked partners in input order and
-  // counts the rest, so a folder of k pages written from one document costs O(k), not k².
-  // Cost: O(P + Σ sources + links), plus per page O((limit + linked partners) · its sources).
-  const listedBy = new Map();
-  const primaryOf = new Map();
-  const primaryListing = new Map();
-  const pushTo = (map, key, index) => {
-    const list = map.get(key);
-    if (list) list.push(index);
-    else map.set(key, [index]);
-  };
-  const pairKey = (primary, listed) => `${primary}\u0000${listed}`;
-  entries.forEach((entry, index) => {
-    for (const source of entry.sources) pushTo(listedBy, source, index);
-    if (entry.primary === null) return;
-    pushTo(primaryOf, entry.primary, index);
-    for (const source of entry.sources) {
-      const key = pairKey(entry.primary, source);
-      primaryListing.set(key, (primaryListing.get(key) ?? 0) + 1);
-    }
-  });
-  const isPartner = (page, other) =>
-    page !== other &&
-    ((page.primary !== null && other.sources.has(page.primary)) ||
-      (other.primary !== null && page.sources.has(other.primary)));
-
-  entries.forEach((entry, index) => {
-    if (entry.primary === null) return;
-    const linked = new Set(inbound.get(entry.slug));
-    for (const link of entry.links) if (bySlug.has(link.target)) linked.add(link.target);
-    let linkedPartners = 0;
-    for (const slug of linked) if (isPartner(entry, bySlug.get(slug))) linkedPartners += 1;
-    // Pages listing this one's primary, plus pages whose primary this one lists and that
-    // do not also list this one's primary (those are already counted).
-    let partners = listedBy.get(entry.primary).length - 1;
-    const lists = [listedBy.get(entry.primary)];
-    for (const source of entry.sources) {
-      if (source === entry.primary) continue;
-      const written = primaryOf.get(source) ?? [];
-      partners += written.length - (primaryListing.get(pairKey(source, entry.primary)) ?? 0);
-      if (written.length > 0) lists.push(written);
-    }
-    const unlinked = partners - linkedPartners;
-    if (unlinked === 0) return;
-    // Merge the ascending index lists to meet partners in input order.
-    const heads = lists.map(() => 0);
-    let previous = -1;
-    let named = 0;
-    while (named < WIKI_SHARED_PARTNER_LIMIT) {
-      let pick = -1;
-      for (let list = 0; list < lists.length; list += 1) {
-        const at = lists[list][heads[list]];
-        if (at !== undefined && (pick < 0 || at < lists[pick][heads[pick]])) pick = list;
-      }
-      if (pick < 0) break;
-      const other = lists[pick][heads[pick]];
-      heads[pick] += 1;
-      if (other === previous || other === index) continue;
-      previous = other;
-      const partner = entries[other];
-      if (linked.has(partner.slug)) continue;
-      // Only a page's primary source counts; sorted so every caller words it alike.
-      const shared = [...entry.sources]
-        .filter((source) => partner.sources.has(source) && (entry.primary === source || partner.primary === source))
-        .sort();
-      const sourceList = shared.map((source) => `\`${source}\``).join(', ');
-      entry.problems.push(
-        problem(
-          'shared-source-unlinked',
-          `\`${partner.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
-          undefined,
-          { key: 'shared-source-unlinked', values: { other: partner.path, sources: sourceList } },
-        ),
-      );
-      named += 1;
-    }
-    if (unlinked > named) {
-      const more = unlinked - named;
-      entry.problems.push(
-        problem(
-          'shared-source-unlinked',
-          `${more} more pages share a primary source with this one and neither page links the other. Link the write-ups of one document to each other.`,
-          undefined,
-          { key: 'shared-source-unlinked-more', values: { count: String(more) } },
-        ),
-      );
-    }
-  });
-
-  return entries.map((entry) => ({ path: entry.path, problems: entry.problems }));
 }

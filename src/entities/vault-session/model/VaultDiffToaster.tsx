@@ -13,6 +13,9 @@ import {
 } from '../lib/diff-manifest';
 import { useLocalVault } from './local-vault-context';
 
+/** Only the app appends to the wiki log, and the run that wrote a line already said it finished. */
+const APP_WIKI_LOG_SLUG = 'wiki/_log';
+
 /**
  * Toasts surface polling changes; the first mount records a baseline only. Kind is never invented:
  * when unknown, text uses the plain event and the digest counts it as other.
@@ -62,16 +65,16 @@ export function VaultDiffToaster() {
 
     // The app's own writes (bootstrap, inline editing) already gave feedback through the action
     // itself; re-reporting them from a polling diff is a burst of noise.
-    const observedSlugs = new Set([...added, ...modified]);
+    const observedSlugs = new Set([...added, ...modified].filter((slug) => slug !== APP_WIKI_LOG_SLUG));
     const selfWritten = consumeSelfWrittenSlugs(observedSlugs);
     // A save refused as a conflict already reported this change; a second green notice would bury it.
     // Only the same slug at the same mtime is dropped.
     const alreadyReported = consumeReportedConflicts(
       new Map(modified.map((slug) => [slug, currentMap.get(slug) ?? null])),
     );
-    const externalAdded = added.filter((slug) => !selfWritten.has(slug));
+    const externalAdded = added.filter((slug) => observedSlugs.has(slug) && !selfWritten.has(slug));
     const externalModified = modified.filter(
-      (slug) => !selfWritten.has(slug) && !alreadyReported.has(slug),
+      (slug) => observedSlugs.has(slug) && !selfWritten.has(slug) && !alreadyReported.has(slug),
     );
 
     // Deletions cannot be counted from the manifest — a rename or merge looks like "deleted +

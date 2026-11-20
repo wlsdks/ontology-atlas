@@ -18,10 +18,12 @@ import {
   AppNavRail,
   NavRailShellProvider,
   useNavRailShellValue,
+  type RailWorkRun,
 } from "@/widgets/app-nav-rail";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
-import { useDataSourceMode, useLocalVault } from "@/entities/vault-session";
+import { useDataSourceMode, useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
+import { isRunActive, useWorkRunSnapshot, workCardHoldsSeat, WorkRunSeat } from "@/features/work-run";
 import { describeVaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { destinationsForVaultShape, FOLDER_OPTIONAL_DESTINATIONS } from "@/shared/config/destinations";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
@@ -91,9 +93,12 @@ function ShellColumn({ children }: { children: ReactNode }) {
       busy={busy}
       slotClassName={stripLocalePrefix(pathname).replace(/\/+$/, "") === "/planning" ? "max-lg:mb-[var(--topology-mobile-bottom-tab-reserve)]" : ""}
       footer={
-        /* Owned by the shell so every screen surfaces an update. Outside a desktop shell the
-           hook does nothing, so there is no branch here to drift from it. */
-        <AppUpdateSurface />
+        /* Owned by the shell so every screen surfaces an update and a long run. Outside a desktop
+           shell neither exists, so there is no branch here to drift from them. */
+        <>
+          <WorkRunSeat />
+          <AppUpdateSurface />
+        </>
       }
     >
       <PaneNavigationContext.Provider value={paneNavigation}>
@@ -253,6 +258,7 @@ function AppNavRailSlot() {
 
   const atAgents = resolveActiveNavDestination(pathname) === "agents";
   const installNotice = useInstallNotice(atAgents);
+  const workRun = useRailWorkRun();
 
   const visibleDestinations = useMemo(
     () => destinationsForVaultShape(vault.manifest ? describeVaultShape(vault.manifest.docs) : null),
@@ -314,6 +320,7 @@ function AppNavRailSlot() {
         }
         gitDirtyCount={gitDirtyCount}
         agentsNoticeCount={installNotice.count}
+        workRun={workRun}
         visibleDestinations={shownDestinations}
       />
       {/*
@@ -326,14 +333,27 @@ function AppNavRailSlot() {
   );
 }
 
-/** Reads the shared update state machine from `AppUpdateProvider`; see the comment there. */
+/** The open folder's wiki check on the Library tile: a ring while it runs, a badge until read. */
+function useRailWorkRun(): RailWorkRun | null {
+  const { run } = useWorkRunSnapshot();
+  const folder = useVaultSessionIdentityScope();
+  if (!run || run.folder !== folder) return null;
+  if (isRunActive(run)) return { destination: "library", state: "running" };
+  return run.unseen ? { destination: "library", state: "finished", count: 1 } : null;
+}
+
+/**
+ * Reads the shared update state machine from `AppUpdateProvider`; see the comment there. A run's
+ * card holds the seat first, and the update takes it once that card closes.
+ */
 function AppUpdateSurface() {
   const update = useAppUpdateContext();
+  const workCardShown = workCardHoldsSeat(useWorkRunSnapshot());
   if (!update) return null;
   return (
     <UpdateToast
       phase={update.phase}
-      hidden={update.noticeHidden}
+      hidden={update.noticeHidden || workCardShown}
       onInstall={update.install}
       onRestart={update.restart}
       onDismiss={update.dismiss}

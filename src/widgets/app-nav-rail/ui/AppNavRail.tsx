@@ -58,10 +58,19 @@ export interface AppNavRailProps {
   gitDirtyCount?: number;
   /** Tools that finished installing while the user was elsewhere; terminal states only. */
   agentsNoticeCount?: number;
+  /**
+   * A person-started run that belongs to one destination: a ring while it runs, a count once it
+   * finished and nobody has read it.
+   */
+  workRun?: RailWorkRun | null;
   /** Destinations this folder earns (`destinationsForVaultShape`); `null` draws all. */
   visibleDestinations?: ReadonlySet<AppNavRailItemId> | null;
   className?: string;
 }
+
+export type RailWorkRun =
+  | { destination: AppNavRailItemId; state: "running" }
+  | { destination: AppNavRailItemId; state: "finished"; count: number };
 
 interface RailDestination {
   id: AppNavRailItemId;
@@ -104,10 +113,12 @@ export function AppNavRail({
   hidden,
   gitDirtyCount = 0,
   agentsNoticeCount = 0,
+  workRun = null,
   visibleDestinations = null,
   className,
 }: AppNavRailProps) {
   const t = useTranslations("navRail");
+  const tWork = useTranslations("workCard");
   const pathname = usePathname() ?? "/";
   const router = useRouter();
   /** The web-only download tile; the decision lives in `@/shared/lib/navigation/show-get-app-tile`. */
@@ -197,8 +208,15 @@ export function AppNavRail({
             className="motion-indicator z-0 rounded-card bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
             style={indicatorStyle ?? { opacity: 0 }}
           />
-          {destinations.map(({ id, href, label, Icon, badgeCount }) => {
+          {destinations.map(({ id, href, label, Icon, badgeCount: ownBadge }) => {
             const isActive = activeId === id;
+            const run = workRun?.destination === id ? workRun : null;
+            const badgeCount = run?.state === "finished" ? run.count : ownBadge;
+            const runName = run?.state === "running"
+              ? tWork("railRunning", { destination: label })
+              : run?.state === "finished"
+                ? tWork("railFinished", { destination: label, count: run.count })
+                : undefined;
             const isShownActive = shownActiveId === id;
             const surfacePath = href.split(/[?#]/, 1)[0] || "/";
             return (
@@ -222,7 +240,9 @@ export function AppNavRail({
                    * cover it.
                    */
                   aria-current={isActive ? "page" : undefined}
+                  aria-label={runName}
                   data-testid={`app-nav-rail-item-${id}`}
+                  data-work-run={run?.state}
                   data-active={isShownActive ? "true" : "false"}
                   /*
                    * Focus ring so keyboard focus never draws the OS accent colour; ring-inset keeps
@@ -252,6 +272,7 @@ export function AppNavRail({
                       aria-hidden
                       className="h-[var(--app-nav-rail-icon-size)] w-[var(--app-nav-rail-icon-size)]"
                     />
+                    {run?.state === "running" ? <RunRing id={id} /> : null}
                     {badgeCount ? (
                       // Warning tone for unrecorded changes; caps at `9+` to keep the tile
                       // geometry.
@@ -310,5 +331,32 @@ export function AppNavRail({
         {settingsSlot}
       </div>
     </aside>
+  );
+}
+
+/** A quarter arc around the icon while the destination's run works; it unmounts the moment it ends. */
+function RunRing({ id }: { id: AppNavRailItemId }) {
+  return (
+    <svg
+      aria-hidden
+      data-testid={`app-nav-rail-ring-${id}`}
+      viewBox="0 0 32 32"
+      fill="none"
+      className="pointer-events-none absolute left-1/2 top-1/2 size-8 -translate-x-1/2 -translate-y-1/2"
+    >
+      <circle cx={16} cy={16} r={14} strokeWidth={1.5} stroke="var(--color-indigo-accent-a12)" />
+      <circle
+        cx={16}
+        cy={16}
+        r={14}
+        strokeWidth={1.5}
+        stroke="var(--color-indigo-accent)"
+        strokeLinecap="round"
+        pathLength={1}
+        strokeDasharray="0.25 0.75"
+        transform="rotate(-90 16 16)"
+        className="motion-work-spin"
+      />
+    </svg>
   );
 }

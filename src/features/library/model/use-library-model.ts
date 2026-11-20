@@ -14,8 +14,9 @@ import { parseWikiLog, type WikiLogEntry } from "../lib/wiki/wiki-log";
 import { wikiNodeIndexOfDocs } from "../lib/wiki/judge-page-write";
 import { isWikiFurnitureSlug, validateWikiFolder, validateWikiPage } from "@/shared/lib/library/wiki-page-schema";
 import { aggregateWikiFindings, type WikiReport } from "@/shared/lib/library/wiki-report.mjs";
+import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import { mergeWikiVerdict } from "./merge-wiki-verdict";
-import { useStampedCache } from "./use-stamped-cache";
+import { useStampedCache, useStampStable } from "./use-stamped-cache";
 
 /**
  * The library for one open folder. Source hashes and wiki page bytes cost a read, so both are
@@ -59,6 +60,9 @@ export const SOURCE_HASH_CHUNK = 256;
 
 /** The longest a measured hash waits before the model shows it; well inside the 2 s the spec allows. */
 export const SOURCE_HASH_PUBLISH_MS = 1000;
+
+/** Each shown batch of page text is at least 1/4 of the pages already shown, so judging every shown page per batch is O(pages) in total. */
+const PAGE_TEXT_BATCH_SHARE = 4;
 
 /** The cached value of a file that could not be opened; kept until its stamp (path and mtime) changes. */
 const UNREADABLE = "";
@@ -241,7 +245,7 @@ export function useLibraryModel({
       return [doc.slug, version] as const;
     }));
   }, [docs, retainedAnswers]);
-  const pageInputs = useMemo(() => {
+  const pageInputsOfModel = useMemo(() => {
     const bySlug = new Map(docs.map((doc) => [doc.slug, doc] as const));
     return wikiPages
       .filter((page) => !isWikiFurnitureSlug(page.slug))
@@ -250,36 +254,67 @@ export function useLibraryModel({
         stamp: `${vaultScope}\u0000${page.slug}@${bySlug.get(page.slug)?.mtime ?? 0}`,
       }));
   }, [docs, vaultScope, wikiPages]);
+  // Every hash publish rebuilds `wikiPages`; the pages to read change only when a stamp does.
+  const pageInputs = useStampStable(pageInputsOfModel);
 
   const pageStamps = useMemo(() => pageInputs.map(({ stamp }) => stamp), [pageInputs]);
   const { values: rawByStamp, publish: cacheBodies } = useStampedCache(pageStamps);
+  const latestRawByStamp = useLatestRef(rawByStamp);
+  const latestPageInputs = useLatestRef(pageInputs);
+  const latestFileHandles = useLatestRef(fileHandles);
+  const [pageTextRound, setPageTextRound] = useState(0);
+  const readingPages = useRef(false);
+  const pageTextGeneration = useRef(0);
 
+  // A run for a folder that is no longer open, or a hidden library, stops at its next page.
+  useEffect(() => () => {
+    pageTextGeneration.current += 1;
+  }, [enabled, vaultScope]);
+
+  /*
+   * One run at a time, page by page, shown in batches so the read count only grows. A rerender does
+   * not restart it; when it ends with other pages or handles than it began with, `pageTextRound`
+   * starts the next run for what is still unread.
+   */
   useEffect(() => {
-    if (!enabled) return;
-    const unread = pageInputs.filter(({ stamp }) => !rawByStamp.has(stamp));
+    if (!enabled || readingPages.current) return;
+    const shown = latestRawByStamp.current;
+    const unread = pageInputs.filter(({ stamp }) => !shown.has(stamp));
     if (unread.length === 0) return;
-    let cancelled = false;
+    const generation = pageTextGeneration.current;
+    const isCurrent = () => generation === pageTextGeneration.current;
+    readingPages.current = true;
     void (async () => {
-      const read = new Map<string, string>();
-      for (const { slug, stamp } of unread) {
-        const handle = fileHandles.get(slug);
-        if (!handle) continue;
-        try {
-          const raw = await (await handle.getFile()).text();
-          if (cancelled) return;
-          read.set(stamp, raw);
-        } catch {
-          if (cancelled) return;
-          // An unreadable page has no result; a later folder poll may retry it.
+      let unpublished = new Map<string, string>();
+      let shownCount = shown.size;
+      let publishedAt = performance.now();
+      try {
+        for (const { slug, stamp } of unread) {
+          if (!isCurrent()) return;
+          const handle = fileHandles.get(slug);
+          if (!handle) continue;
+          try {
+            unpublished.set(stamp, await (await handle.getFile()).text());
+          } catch {
+            // An unreadable page has no result; a later folder poll may retry it.
+          }
+          const batchDue = performance.now() - publishedAt >= SOURCE_HASH_PUBLISH_MS &&
+            unpublished.size * PAGE_TEXT_BATCH_SHARE >= shownCount;
+          if (batchDue && isCurrent()) {
+            cacheBodies(unpublished);
+            shownCount += unpublished.size;
+            unpublished = new Map();
+            publishedAt = performance.now();
+          }
         }
+      } finally {
+        readingPages.current = false;
+        if (isCurrent() && unpublished.size > 0) cacheBodies(unpublished);
+        const inputsMoved = latestPageInputs.current !== pageInputs || latestFileHandles.current !== fileHandles;
+        if (!isCurrent() || inputsMoved) setPageTextRound((round) => round + 1);
       }
-      if (cancelled || read.size === 0) return;
-      cacheBodies(read);
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [cacheBodies, enabled, fileHandles, pageInputs, rawByStamp]);
+  }, [cacheBodies, enabled, fileHandles, latestFileHandles, latestPageInputs, latestRawByStamp, pageInputs, pageTextRound]);
 
   // The folder's concepts, so a `describes:` entry whose concept is gone is reported here as
   // `wiki-validate` reports it.
