@@ -166,6 +166,8 @@ export function MeaningDeskLine({
 
   const [readingBefore, readingAfter] = t('readingNow', { file: PLACEHOLDER }).split(PLACEHOLDER);
   const web = line.message === 'web';
+  // The file slot fills the row and sets the press at its end, where a separator would stand alone.
+  const pushesPressRight = line.message === 'preparing' || (line.message === 'updating' && line.progress !== null);
 
   return (
     <div
@@ -196,7 +198,7 @@ export function MeaningDeskLine({
           >
             <span className={web ? 'min-w-0' : 'min-w-0 truncate'} title={web ? undefined : sentence}>{sentence}</span>
             {line.minutesLeft !== null ? <><Separator /><span className="flex-none" data-testid="meaning-desk-minutes">{t('minutesLeft', { minutes: line.minutesLeft })}</span></> : null}
-            {line.message === 'preparing' || (line.message === 'updating' && line.progress !== null) ? (
+            {pushesPressRight ? (
               <span className="flex min-w-0 flex-1 items-center gap-x-1.5">
                 {shownPath ? <>
                   <Separator />
@@ -209,7 +211,7 @@ export function MeaningDeskLine({
               </span>
             ) : null}
             {action ? <>
-              <Separator />
+              {pushesPressRight ? null : <Separator />}
               <button
                 type="button"
                 data-testid={`meaning-desk-${action}`}

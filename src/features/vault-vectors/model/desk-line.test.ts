@@ -64,7 +64,7 @@ describe('deskLine', () => {
     // An update counts the changed files alone.
     const updating = status({ phase: 'preparing', updating: true, filesDone: 6, filesTotal: 9, currentPath: 'wiki/a.md' });
     expect(deskLine(app(updating))).toMatchObject({ message: 'updating', values: { count: 3 }, action: null, progress: null, readingPath: null });
-    expect(deskLine(app({ ...updating, filesDone: 9 }))).toMatchObject({ message: 'ready', values: { files: 9 } });
+    expect(deskLine(app({ ...updating, filesDone: 9 }))).toEqual(expect.objectContaining({ message: 'ready', values: {} }));
   });
 
   it('follows an update of ten files or more like a first preparation, with the ring, the file and Stop', () => {
@@ -80,7 +80,7 @@ describe('deskLine', () => {
   });
 
   it('says ready with the file count and no press', () => {
-    expect(deskLine(app(status({ phase: 'ready', filesDone: 2000, filesTotal: 2000 })))).toMatchObject({ message: 'ready', values: { files: 2000 }, action: null });
+    expect(deskLine(app(status({ phase: 'ready', filesDone: 2000, filesTotal: 2000 })))).toEqual(expect.objectContaining({ message: 'ready', values: {}, action: null }));
   });
 
   it.each<[VectorFailure, string, string, string]>([

@@ -34,7 +34,7 @@
       "stop": "중지",
       "resume": "이어서 준비",
       "stopped": "파일 {total, number}개 중 {done, number}개에서 멈췄어요. 의미 검색은 준비된 파일까지만 찾아요.",
-      "ready": "단어와 의미로 검색해요 · 파일 {files, number}개",
+      "ready": "단어와 의미로 검색해요",
       "updating": "바뀐 파일 {count, number}개를 의미 검색에 반영하는 중",
       "waitingTurn": "다른 폴더를 준비하는 중이에요. 끝나면 이 폴더를 시작해요.",
       "modelDownloadFailed": "모델 다운로드가 멈췄어요: {detail}. 받은 부분은 그대로 있어요.",

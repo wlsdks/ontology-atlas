@@ -58,6 +58,10 @@ async function emit(harness: LibraryWorkHarness, page: Page, status: VectorStatu
   await expect(line(page)).toHaveAttribute('data-state', state);
 }
 
+/** The text of the element just before Stop: a press at the row's end has no separator. */
+const textBeforeStop = (page: Page) => page.getByTestId('meaning-desk-stop')
+  .evaluate((stop) => stop.previousElementSibling?.textContent?.trim() ?? null);
+
 test('offers setup at rest and returns focus to the press when the dialog is dismissed', async ({ page }) => {
   const harness = await openDesk(page);
   await expect(line(page)).toHaveAttribute('data-state', 'words');
@@ -165,6 +169,7 @@ test('closes on the primary press in that frame, stores the choice and follows t
   heights.push(await rowHeight(page));
   await emit(harness, page, LIBRARY_VECTOR_SCRIPT.preparingMeasured, 'preparing');
   await expect(page.getByTestId('meaning-desk-minutes')).toHaveText('about 6 min left');
+  expect(await textBeforeStop(page)).not.toBe('·');
   heights.push(await rowHeight(page));
   await emit(harness, page, LIBRARY_VECTOR_SCRIPT.updating, 'updating');
   await expect(line(page)).toContainText('Updating 3 changed files for search by meaning');
@@ -176,11 +181,15 @@ test('closes on the primary press in that frame, stores the choice and follows t
   await expect(line(page)).toContainText('Updating 8 changed files for search by meaning');
   await expect(page.getByTestId('meaning-desk-ring')).toHaveAttribute('data-ring-measure', 'files');
   await expect(page.getByTestId('meaning-desk-stop')).toBeVisible();
+  expect(await textBeforeStop(page)).not.toBe('·');
   await expect(page.getByTestId('meaning-desk-file')).toContainText('returns-review.md');
   await expect(page.getByTestId('meaning-desk-file')).toHaveAccessibleDescription('sources/field-notes/2026-04-warehouse-returns-review.md');
   heights.push(await rowHeight(page));
   await emit(harness, page, LIBRARY_VECTOR_SCRIPT.ready, 'ready');
-  await expect(line(page)).toContainText('Searching by words and by meaning · 2,000 files');
+  // The ready line says how the desk searches; the file count is progress and stays in Settings.
+  // The sentence before it fades out beside it; read the one that stays.
+  await expect(page.getByTestId('meaning-desk-sentence')).toHaveCount(1);
+  await expect(page.getByTestId('meaning-desk-sentence')).toHaveText('Searching by words and by meaning');
   heights.push(await rowHeight(page));
   test.info().annotations.push({ type: 'row heights', description: heights.join(', ') });
   expect(new Set(heights).size).toBe(1);

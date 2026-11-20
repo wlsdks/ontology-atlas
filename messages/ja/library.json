@@ -34,7 +34,7 @@
       "stop": "停止",
       "resume": "再開",
       "stopped": "ファイル{total, number}件中{done, number}件で停止しました。意味検索はそこまでのファイルを対象にします。",
-      "ready": "単語と意味で検索しています · ファイル{files, number}件",
+      "ready": "単語と意味で検索しています",
       "updating": "変更されたファイル{count, number}件を意味検索に反映中",
       "waitingTurn": "別のフォルダを準備しています。終わるとこのフォルダを始めます。",
       "modelDownloadFailed": "モデルのダウンロードが止まりました：{detail}。ダウンロード済みの分は残ります。",

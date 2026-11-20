@@ -34,7 +34,7 @@
       "stop": "Stop",
       "resume": "Resume",
       "stopped": "Stopped at {done, number} of {total, number} files. Search by meaning covers those files.",
-      "ready": "Searching by words and by meaning · {files, number} files",
+      "ready": "Searching by words and by meaning",
       "updating": "Updating {count, number} changed files for search by meaning",
       "waitingTurn": "Another folder is preparing. This one starts when it ends.",
       "modelDownloadFailed": "The model download stopped: {detail}. What is downloaded is kept.",

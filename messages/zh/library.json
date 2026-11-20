@@ -34,7 +34,7 @@
       "stop": "停止",
       "resume": "继续",
       "stopped": "已在 {done, number} / {total, number} 个文件处停止。语义搜索覆盖这些文件。",
-      "ready": "按词语和语义搜索 · {files, number} 个文件",
+      "ready": "按词语和语义搜索",
       "updating": "正在为语义搜索更新 {count, number} 个已更改的文件",
       "waitingTurn": "另一个文件夹正在准备。它结束后开始此文件夹。",
       "modelDownloadFailed": "模型下载已停止：{detail}。已下载的部分会保留。",

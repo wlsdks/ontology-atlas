@@ -37,7 +37,7 @@ export interface DeskProgress {
 export interface DeskLine {
   message: DeskLineMessage;
   /** The message's own values; `done`/`total` of a working line come from `progress`. */
-  values: { files?: number; count?: number; done?: number; total?: number; detail?: string; model?: string };
+  values: { count?: number; done?: number; total?: number; detail?: string; model?: string };
   /** `hold`: the ring keeps the value it last drew while the model is converted. */
   progress: DeskProgress | 'hold' | null;
   minutesLeft: number | null;
@@ -124,7 +124,7 @@ export function deskLine(input: DeskLineInput): DeskLine | null {
     case 'preparing': {
       if (status.updating) {
         const count = Math.max(0, status.filesTotal - status.filesDone);
-        if (count === 0) return line('ready', { values: { files: status.filesTotal } });
+        if (count === 0) return line('ready');
         if (status.filesTotal < UPDATE_RING_FILES) return line('updating', { values: { count } });
         return line('updating', {
           values: { count },
@@ -144,6 +144,6 @@ export function deskLine(input: DeskLineInput): DeskLine | null {
     case 'stopped':
       return line('stopped', { values: { done: status.filesDone, total: status.filesTotal }, action: 'resume' });
     case 'ready':
-      return line('ready', { values: { files: status.filesTotal } });
+      return line('ready');
   }
 }
