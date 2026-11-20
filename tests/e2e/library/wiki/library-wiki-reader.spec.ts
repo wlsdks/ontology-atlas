@@ -193,6 +193,29 @@ test('a page citing two files names the file on every citation, and its popovers
   await expect(popover.getByTestId('wiki-citation-cited')).toHaveCount(0);
 });
 
+test('on a page citing two files, every fact\'s citations stand at one left edge under the sentence', async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 901 });
+  await openWikiTab(page, folder());
+  await openPage(page, 'wiki/settlement-reconciliation-check');
+  const facts = await reader(page).locator('[data-docs-viewer] li').evaluateAll((items) => items.map((item) => {
+    const run = item.querySelector<HTMLElement>('[data-citation-run]');
+    if (!run) return null;
+    const sentence = document.createRange();
+    sentence.setStart(item, 0);
+    sentence.setEndBefore(run);
+    const lines = [...sentence.getClientRects()];
+    const chip = run.querySelector('button')!.getBoundingClientRect();
+    return { chipLeft: chip.left, chipTop: chip.top, sentenceBottom: Math.max(...lines.map((line) => line.bottom)), textLeft: lines[0]!.left };
+  }));
+  expect(facts).toHaveLength(3);
+  for (const fact of facts) {
+    expect(fact, 'every fact ends in a citation run').not.toBeNull();
+    expect(Math.abs(fact!.chipLeft - facts[0]!.chipLeft)).toBeLessThanOrEqual(1);
+    expect(Math.abs(fact!.chipLeft - fact!.textLeft)).toBeLessThanOrEqual(1);
+    expect(fact!.chipTop).toBeGreaterThanOrEqual(fact!.sentenceBottom - 1);
+  }
+});
+
 test('the page ends with what it cites, what links here and the concepts it touches', async ({ page }) => {
   await openWikiTab(page, folder());
   await openPage(page, 'wiki/returns');

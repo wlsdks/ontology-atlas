@@ -473,6 +473,68 @@ describe("DocsVaultViewer in the Library reader", () => {
     expect((await screen.findByText("two")).closest("li")).not.toHaveAttribute("data-line");
   });
 
+  const sources = new Set(["sources/a.md", "sources/b.md"]);
+  const titled = new Map([
+    ...targets,
+    ["wiki/p1", { title: "Payment provider fee schedule: what it says", kind: null }],
+    ["wiki/p2", { title: "Refund approval matrix", kind: null }],
+  ]);
+  const titledSlugs = new Set(titled.keys());
+  const readerProps = (extra: Partial<React.ComponentProps<typeof DocsVaultViewer>> = {}) => ({
+    doc: page, vaultSlugs: titledSlugs, linkTargets: titled, knownOriginalPaths: sources,
+    onSourceNavigate: () => {}, onCitationPress: () => {}, ...extra,
+  });
+
+  it("puts a dot between links that only whitespace separates, and nowhere else", async () => {
+    const { container } = renderViewer(
+      "Related: [[wiki/settlement]] [[wiki/p1]] [[wiki/p2]] [[capabilities/refunds]] [[wiki/settlement|again]].\n\n" +
+        "See [[wiki/p1]] and [[wiki/p2]].\n\nA fact [[wiki/p1]] [[src:sources/a.md#l2]] goes on.",
+      readerProps(),
+    );
+    const [run, words, cited] = await Promise.all([0, 1, 2].map(async (index) => (await screen.findAllByText(/Related|See|A fact/u))[index]!.closest("p")!));
+    const separators = run.querySelectorAll("[data-link-separator]");
+    expect(separators).toHaveLength(4);
+    for (const separator of separators) {
+      expect(separator.textContent).toBe(" · ");
+      expect(separator.closest("a")).toBeNull();
+    }
+    expect(words.querySelector("[data-link-separator]")).toBeNull();
+    expect(cited.querySelector("[data-link-separator]")).toBeNull();
+    expect(container.querySelectorAll("[data-link-separator]")).toHaveLength(4);
+  });
+
+  it("leaves the tree as it was on a surface without the reader's titles", async () => {
+    const { container } = renderViewer(
+      "Related: [[wiki/settlement]] [[wiki/p1]].\n\n- A fact. [[src:sources/a.md#l2]]",
+      { doc: page, vaultSlugs: titledSlugs, knownOriginalPaths: sources, onSourceNavigate: () => {} },
+    );
+    await screen.findByText(/Related/u);
+    expect(container.querySelector("[data-link-separator], [data-citation-run]")).toBeNull();
+    expect(container.querySelector("p")!.textContent).toBe("Related: wiki/settlement wiki/p1.");
+  });
+
+  it("lowers a citation, or a run of them, that ends a fact and names its file", async () => {
+    renderViewer(
+      "- One cited fact. [[src:sources/a.md#l2]]\n- Two cited. [[src:sources/a.md#l3]] [[src:sources/b.md#l1]]\n" +
+        "- Cited [[src:sources/b.md#l2]] in the middle.\n",
+      readerProps(),
+    );
+    const items = (await screen.findAllByRole("listitem"));
+    const runs = items.map((item) => item.querySelector("[data-citation-run]"));
+    expect(runs[0]!.querySelectorAll("button")).toHaveLength(1);
+    expect(runs[1]!.querySelectorAll("button")).toHaveLength(2);
+    expect(runs[2]).toBeNull();
+    expect(runs[0]!.className).toContain("block");
+    expect(items[0]!.textContent).toMatch(/^One cited fact\./u);
+  });
+
+  it("keeps a one-source page's short citations inline", async () => {
+    renderViewer("- One cited fact. [[src:sources/a.md#l2]]\n", readerProps({ namedSourcePath: "sources/a.md" }));
+    const item = await screen.findByRole("listitem");
+    expect(item.querySelector("[data-citation-run]")).toBeNull();
+    expect(item.querySelector("button")).not.toBeNull();
+  });
+
   it("keeps the body's nodes when its parent renders again with the same inputs", async () => {
     const props = {
       doc: page, vaultSlugs: slugs, knownOriginalPaths: new Set(["sources/a.md"]), linkTargets: targets,
