@@ -53,18 +53,12 @@ import { IMPACT_MODE_COPY_KEYS } from "../lib/impact-mode-copy";
 interface Props {
   project: Project | null;
   allProjects: Project[];
-  /** The active container id — appended to the detail page URL as `?pj=` to keep context. */
   activeProjectId?: string | null;
   impactMode: ProjectImpactMode;
   onChangeImpactMode: (mode: ProjectImpactMode) => void;
   onClose: () => void;
   onSelectProject: (slug: string) => void;
-  /** The active container's name. Shown as a "Project · {label}" badge in the header. */
   containerLabel?: string | null;
-  /**
-   * "Open topology" for a Layer 0 container's synthetic project, performing the `?pj=` zoom-in as
-   * an explicit second step.
-   */
   onEnterContainer?: (slug: string) => void;
 }
 
@@ -80,14 +74,11 @@ export function ProjectDrawer({
   onEnterContainer,
 }: Props) {
   const t = useTranslations("vaultWidgets.projectDrawer");
-  // Freshness grade → human language (the model returns only the grade).
   const tFreshness = useTranslations("projectFreshness");
   const isContainerNode = project?.category === "__container__";
-  // The Layer 1 title drops the container prefix; the breadcrumb chip carries it.
   const locale = useLocale();
   const displayName = (() => {
     if (!project) return "";
-    // The word the map label draws for this project on this screen (`display_<locale>`).
     const name = projectDisplayName(project, locale);
     const prefix = containerLabel?.trim();
     if (!prefix || isContainerNode) return name;
@@ -120,7 +111,6 @@ export function ProjectDrawer({
     return () => window.removeEventListener("keydown", handler);
   }, [project, onClose]);
 
-  // Focus the close button on open so keyboard and screen-reader users enter the new context.
   const previousFocusRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (!project) return;
@@ -247,19 +237,16 @@ export function ProjectDrawer({
         : null,
     [allProjects, impactMode, project],
   );
-  // The active mode's help key, looked up once for the helper span and the crossfade key.
   const impactModeHelpKey =
     IMPACT_MODE_COPY_KEYS.find((item) => item.mode === impactMode)?.helpKey ??
     "impactHelpNone";
 
-  /* Impact mode is an exclusive choice with `none` as off, so it is a radiogroup. */
   const impactGroup = useRovingRadioGroup({
     value: impactMode,
     values: IMPACT_MODE_COPY_KEYS.map((item) => item.mode),
     onChange: onChangeImpactMode,
   });
 
-  // The public drawer groups the summary so it reads in the order "description → key facts → connections".
   const signalItems = project
     ? [
         { label: t("signalStatus"), value: statusLabel(project.status) },
@@ -347,11 +334,9 @@ export function ProjectDrawer({
         )
         .slice(0, 3)
     : [];
-  // The detail URL keeps `?pj=` so going back returns to the same container view.
   const detailHref = project
     ? getProjectRuntimeDetailHref(project.slug)
     : "#";
-  // Deep-link to the top related document, or the vault home without one (buildDocsVaultHref).
   const primaryRelatedDocSlug = relatedDocs[0]?.doc.slug ?? null;
   const docsVaultHref = buildDocsVaultHref({ slug: primaryRelatedDocSlug });
   // onClick pushes through the router before the drawer unmounts, since Link's default click raced
@@ -475,10 +460,6 @@ export function ProjectDrawer({
                   )}
 
                   <div className="min-w-0 flex-1">
-                    {/*
-                     * A container has no meaningful status or progress, so the eyebrow line is
-                     * hidden.
-                     */}
                     {!isContainerNode && (
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
@@ -523,8 +504,6 @@ export function ProjectDrawer({
 
                 <div className="mt-5">
                   {isContainerNode ? (
-                    // Layer 0 container: enter the map inside this project; containers have no
-                    // detail route.
                     <button
                       type="button"
                       onClick={() => {
@@ -543,7 +522,6 @@ export function ProjectDrawer({
                       {t("openContainerTopology")}
                     </button>
                   ) : onEnterContainer && project.isHub && !activeProjectId ? (
-                    // Layer 0 hub: the primary action zooms into its container.
                     <button
                       type="button"
                       onClick={() => {
@@ -562,7 +540,6 @@ export function ProjectDrawer({
                       {t("openHubTopology")}
                     </button>
                   ) : project.isHub && activeProjectId ? (
-                    // Layer 1 hub: already open, so no primary CTA.
                     null
                   ) : (
                     <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
@@ -609,7 +586,6 @@ export function ProjectDrawer({
               </motion.section>
 
 
-              {/* Connections are for hubs and nodes; a container is a set of hubs. */}
               {!isContainerNode && (
                 <motion.section
                   initial={OVERLAY_RISE}
@@ -652,7 +628,6 @@ export function ProjectDrawer({
                 </motion.section>
               )}
 
-              {/* Basic info is for hubs and nodes; a container's cells would be blank. */}
               {!isContainerNode && (
               <details className="mt-5 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]">
                 <summary
@@ -698,7 +673,6 @@ export function ProjectDrawer({
                           data-testid="project-drawer-impact-help"
                           className="text-body text-[color:var(--color-text-tertiary)]"
                         >
-                          {/* Only the helper text crossfades, on a confirmed click. */}
                           <AnimatePresence mode="wait" initial={false}>
                             {/*
                              * Kept under reduced motion: an opacity-only swap with no movement.

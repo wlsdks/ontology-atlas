@@ -14,13 +14,10 @@ interface HubRailProps {
   projects: Project[];
   selectedSlug?: string | null;
   onSelect: (slug: string) => void;
-  /** Hides the rail and its tab so it does not overlap the expanded Hero panel. */
   suppressed?: boolean;
-  /** Inside Layer 1, strips each hub name's container prefix; unset keeps the name. */
   stripNamePrefix?: string;
 }
 
-/** Left hub shortcut bar: one click reaches a hub; collapsed, only a thin tab remains. */
 export function HubRail({
   projects,
   selectedSlug,

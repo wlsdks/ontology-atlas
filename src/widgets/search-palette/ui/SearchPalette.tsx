@@ -59,7 +59,6 @@ interface Props {
   onClose: () => void;
   projects: Project[];
   onSelect: (slug: string) => void;
-  /** The active container's name. Truthy shows a "Project · {name}" badge in the header. */
   containerLabel?: string | null;
 }
 
@@ -100,7 +99,6 @@ function pushRecentSlug(slug: string) {
   }
 }
 
-/** Marks what the shared matcher matched, Hangul initials and keystroke states included. */
 function highlightMatch(text: string, query: string): React.ReactNode {
   return splitHighlightSegments(text, query).map((segment, i) =>
     segment.match ? (
@@ -159,7 +157,7 @@ const LAYER_FILTERS: { value: LayerFilter; labelKey: 'layerAll' | 'layerHub' | '
 
 function matchesLayerFilter(project: Project, filter: LayerFilter): boolean {
   if (filter === 'all') return true;
-  // R15 — an undefined isHub counts as not a hub (only explicit vault frontmatter makes one).
+  // An undefined isHub counts as not a hub (only explicit vault frontmatter makes one).
   const isHub = Boolean(project.isHub);
   if (filter === 'hub') return isHub;
   return !isHub;
@@ -184,7 +182,6 @@ function SearchPaletteDialog({
   const { ref: scrimLockoutRef, onAnimationStart: scrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
   const { ref: panelLockoutRef, onAnimationStart: panelLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
   const { categoryLabel, statusLabel } = useTaxonomy();
-  // One critically damped overlay spring; reduced motion gets a 120ms opacity crossfade.
   const reducedMotion = useReducedMotion();
   const panelTransition = reducedMotion ? OVERLAY_SPRING_REDUCED : OVERLAY_SPRING;
   const [recentSlugs] = useState<string[]>(() => readRecentSlugs());
@@ -198,7 +195,6 @@ function SearchPaletteDialog({
 
   useBodyScrollLock(true);
 
-  // Filter by layer first, then match the query.
   const filteredProjects = useMemo(
     () => projects.filter((p) => matchesLayerFilter(p, layerFilter)),
     [projects, layerFilter],
@@ -230,7 +226,6 @@ function SearchPaletteDialog({
   );
   const activeRow = rows[activeIndex] ?? null;
 
-  // Focus on the frame after the input ref connects, with preventScroll.
   useEffect(() => {
     const id = requestAnimationFrame(() =>
       inputRef.current?.focus({ preventScroll: true }),
@@ -307,13 +302,11 @@ function SearchPaletteDialog({
     return () => window.removeEventListener('keydown', handleKey);
   }, [activeRow, rows.length, onClose, onSelect, router]);
 
-  // Reset activeIndex on a query change — handled in the onChange handler (no effect needed).
   const handleQueryChange = (next: string) => {
     setQuery(next);
     setActiveIndex(0);
   };
 
-  // Scroll so the active item is visible.
   useEffect(() => {
     if (!listRef.current) return;
     const el = listRef.current.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`);
@@ -327,8 +320,6 @@ function SearchPaletteDialog({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: EXIT_TRANSITION }}
-  // The scrim crossfades over --topology-motion-panel-duration; reduced motion uses
-  // OVERLAY_SPRING_REDUCED.
       transition={reducedMotion ? SCRIM_FADE_REDUCED : SCRIM_FADE}
       data-interactive-overlay="true"
       data-overlay-spring="true"
@@ -416,7 +407,6 @@ function SearchPaletteDialog({
             {t('rowsCount', { count: rows.length })}
           </span>
         </div>
-        {/* Layer filter chips: all, container, hub or node. */}
         <div
           role="tablist"
           aria-label={t('layerFilterAriaLabel')}
@@ -566,7 +556,6 @@ function SearchPaletteDialog({
                 </button>
               </div>
             ) : filteredProjects.length === 0 && layerFilter !== 'all' ? (
-              // A layer filter can leave no results even without a query, so offer a reset.
               <div className="flex flex-col items-center px-4 py-8 text-center">
                 <p className="text-body-lg text-[color:var(--color-text-secondary)]">
                   {t('emptyLayerTitle')}

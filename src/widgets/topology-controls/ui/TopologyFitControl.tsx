@@ -5,12 +5,9 @@ import { Maximize2 } from 'lucide-react';
 import { ChromeTile, Tooltip } from '@/shared/ui';
 
 interface TopologyFitControlProps {
-  /** The "fit the whole map" callback — fits the camera to the graph's bounds on click. */
   onFitView: () => void;
   density?: 'default' | 'compact-focus';
-  /** A phone INDEX sheet owns the map area while it is expanded. */
   mobileObscured?: boolean;
-  /** Motion and pointer classes from the rail it stands in. */
   className?: string;
   inert?: boolean;
 }

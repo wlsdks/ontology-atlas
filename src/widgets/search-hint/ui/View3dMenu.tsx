@@ -18,7 +18,6 @@ import type { MapLayoutView } from '@/shared/lib/map-canvas/map-layout-morph-sto
  * current view reads from one place. Rows name the visible shape, never the internal key.
  */
 
-/** The flat-plane views first, then the two views drawn in depth. */
 const CHOICES: readonly MapLayoutView[] = ['flat', 'hex', 'structure', '3d', 'neural'];
 
 /** Neural keeps the message key its row had as the `coupling` arrangement. */
@@ -44,9 +43,7 @@ export function View3dMenu({
   open: boolean;
   /** `returnFocus`: a choice or Escape gives focus back to the chip; an outside press does not. */
   onClose: (returnFocus: boolean) => void;
-  /** The radiogroup's id, which the chip names in `aria-controls`. */
   groupId?: string;
-  /** The chip that owns this picker; a press on it is not an outside press. */
   anchorRef?: RefObject<HTMLElement | null>;
 }) {
   const t = useTranslations('searchWidgets.hint');
