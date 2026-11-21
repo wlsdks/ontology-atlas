@@ -42,10 +42,16 @@ test("a current source write-up revises an outdated related page; approval updat
   await expect(browser.getByText("1 existing page needs rechecking", { exact: false }).first()).toBeVisible();
   await browser.keyboard.press("Escape");
   await browser.getByTestId("library-workspace-wiki").click();
-  await expect(browser.getByTestId("library-compile")).toBeEnabled();
   await browser.getByRole("button", { name: /Release research/ }).first().click();
   await captureEvidence(browser, "01-before-compile");
-  await browser.getByTestId("library-compile").click();
+  await browser.getByTestId("library-reader-back").click();
+  await browser.getByTestId("library-workspace-sources").click();
+  /* Every source has a page, so the band says done; the recheck is the guide's Compile step. */
+  await browser.getByTestId("library-guide-open").click();
+  await expect(browser.getByTestId("library-stage-compile-button")).toBeEnabled();
+  await browser.getByTestId("library-stage-compile-button").click();
+  await browser.keyboard.press("Escape");
+  await expect(browser.getByTestId("library-guide-popover")).toHaveCount(0);
   const card = browser.getByTestId("library-local-compile-card");
   await expect(card).toBeVisible();
   await expect(browser.getByTestId("library-work-current")).toContainText("wiki/research/release-date");

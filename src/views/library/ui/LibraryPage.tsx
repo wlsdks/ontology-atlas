@@ -625,14 +625,14 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       <h1 className="sr-only">{indexTitle}</h1>
       <LibraryIndexColumn
         segment={segment} toolsHost={toolsHost} t={t} localVault={localVault} workVaultScope={workVaultScope}
-        handle={handle} nativeVaultRootPath={nativeVaultRootPath} selected={selected}
+        handle={handle} nativeVaultRootPath={nativeVaultRootPath}
         mobileBrowseOpen={mobileBrowseOpen} setMobileBrowseOpen={setMobileBrowseOpen}
         mobileBrowseBackRef={mobileBrowseBackRef} browseFocusPendingRef={browseFocusPendingRef}
         searchHost={searchHost} setSearchHost={setSearchHost} setSourceCitation={setSourceCitation}
-        sourceCitation={sourceCitation} compileRunning={compileRunning} runningSources={continueBatch.running}
-        lintRunning={lintRunning} turnRunning={turnRunning}
+        sourceCitation={sourceCitation} runningSources={continueBatch.running}
+        lintRunning={lintRunning}
         reportUnseen={reportUnseen} choose={choose} busy={busy} docs={docs} model={model} agent={agent}
-        openImport={openImport} handleCompile={handleCompile} narrowShowsReader={narrowShowsReader}
+        openImport={openImport} narrowShowsReader={narrowShowsReader}
         indexTitle={indexTitle} reader={reader} sources={sources} home={home} turns={turns}
         indexColumn={indexColumn} stateFilter={sourceFilter.state} groupFilter={sourceGroupFilter}
         headerDoors={headerDoors}

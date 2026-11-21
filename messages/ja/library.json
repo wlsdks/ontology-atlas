@@ -346,9 +346,7 @@
   "wiki": {
     "listAria": "このフォルダのWikiページ",
     "compile": "Wikiページを作成",
-    "compileTooltip": "エージェントがソースを読み、Wikiページを書いたり更新したりします。保存した回答は別途レビューが必要だと知らせます。",
     "lint": "Wikiを検査",
-    "lintTooltip": "エージェントがWikiページを読み、食い違い、置き換えられた主張、欠けているリンク、ページのない名前を報告します。何も書き込みません。",
     "candidateKind": {
       "domain": "ドメイン",
       "capability": "ケイパビリティ",
@@ -361,21 +359,15 @@
     "propose": "概念として提案",
     "proposeTooltip": "エージェントがこれらのページを読み、オントロジーの概念を1つ提案します。書き込む前に許可を求めます。",
     "logLint": "前回の検査{when}：{summary}",
-    "empty": "Wikiページはまだありません。ページは、kind: のないMarkdownで、「wiki/_template.md」にある形式に従います。",
     "unknownAuthor": "不明",
-    "offTemplate": "テンプレート外",
-    "offTemplateCount": "テンプレートに合わないページ{count, number}件",
     "transfer": "コーディングエージェントはプロバイダに直接リクエストを送り、Atlasはその通信を記録しません。テンプレートに合うWikiページは自動で保存できますが、保存した回答には必ず別途レビューが必要です。",
     "compileFailed": "エージェントを起動できませんでした：{reason}",
-    "compileWebLimit": "Wikiページを書くには、このコンピュータで動くコーディングエージェントが必要で、起動できるのはアプリだけです。ページの閲覧と編集はここでも行えます。",
     "compileWebGetApp": "アプリを入手",
     "agentMissing": "コーディングエージェントを接続すると、Wikiの検査とWikiページの作成を任せられます。",
     "agentMissingDoor": "エージェントを接続",
-    "offTemplateReason": "Wikiのテンプレートに合っていません：{code}。ページを開いて、直す箇所を確認してください。",
     "offTemplateAriaLabel": "このページとWikiテンプレートの違い",
     "offTemplateTitle": "修正が必要な箇所{count, number}件 · ページテンプレート",
     "offTemplateBody": "以下を直すと、ほかのページと同じ形で読めるようになります。",
-    "writtenBy": "作成者：{author}",
     "writer": {
       "human": "人",
       "agent": "{name}（エージェント）",
@@ -390,7 +382,7 @@
     "compileModifyFile": "{path}を置き換え",
     "logCount": {
       "disagreement": "食い違い{count, number}件",
-      "superseded": "置き換え{count, number}件",
+      "superseded": "新しい原文と違う{count, number}件",
       "missingLink": "欠けているリンク{count, number}件",
       "nameWithoutPage": "ページのない名前{count, number}件"
     },
@@ -398,8 +390,6 @@
     "logNew": "新規",
     "logRevised": "改訂",
     "logNothingNew": "新しいものなし",
-    "emptyNoTemplate": "Wikiページはまだなく、テンプレートもありません。設定 › オントロジーフォルダでWikiを始めると「wiki/_template.md」が作成され、ページはその形式に従います。",
-    "folderMark": "リンク",
     "candidatesMore": "ほか{count, number}件の名前",
     "candidatesLess": "名前を減らす",
     "candidatesTooltip": "前回の検査で3ページ以上に出てきたのに、専用のページがない名前です。マップの概念として提案できるのは、コードが作るもの（ドメイン、ケイパビリティ、要素）だけで、人物と組織はWikiに残ります。",
@@ -409,13 +399,12 @@
     "fileAnswerRejected": "保存しませんでした。回答がページの形式に合っていません（{code}）。引用を付けるよう頼んで、もう一度質問してください。",
     "findingKind": {
       "disagreement": "食い違い",
-      "superseded": "置き換えられた主張",
+      "superseded": "新しい原文と違う",
       "missingLink": "欠けているリンク"
     },
     "fix": "修正",
     "fixTooltip": "エージェントが、名前の挙がったページでこの項目を直します。食い違いは両方の値を両方の引用つきで、置き換えられた主張は現在の値を先頭に、欠けているリンクは双方向に書きます。",
     "newPage": "新規ページ",
-    "newPageTooltip": "自分で書くページを始めます。テンプレートのセクションとcreated_by: humanだけの空のページで、どのエディタで書いても一覧は自動で更新されます。",
     "newPageDialogTitle": "新規Wikiページ",
     "newPageDialogBody": "標準の構成を用意したMarkdownの下書きを作成します。",
     "newPageTitle": "ページのタイトル",
@@ -528,21 +517,6 @@
         "do": "同じソースから書かれたページ同士をリンクしてください。"
       }
     }
-  },
-  "shelf": {
-    "commonState": "{count, number}ページ · {state}",
-    "listAria": "Wikiページとソースのバージョン",
-    "freshness": {
-      "fresh": "確認済みのソースバージョンに変更はありません。",
-      "stale": "ソースが変更されたか、このページと照合されていません。",
-      "unverified": "このページをファイルと照合したことはありません"
-    },
-    "state": {
-      "fresh": "確認済みのソースに変更なし",
-      "stale": "ソースの確認が必要",
-      "unverified": "ソース未確認"
-    },
-    "compiling": "ソースを読み直して、Wikiページを書いています。"
   },
   "home": {
     "guide": "使い方",
@@ -731,7 +705,7 @@
   "report": {
     "title": "検査結果",
     "structuralTitle": "アプリの検査",
-    "structuralHead": "ページ{pages, number}件 · テンプレート外{offTemplate, number}件 · 指摘{findings, number}件",
+    "structuralHead": "ページ{pages, number}件 · テンプレートに沿っていない{offTemplate, number}件 · 指摘{findings, number}件",
     "structuralClean": "すべてのページがテンプレートに合い、すべてのリンクが開き、同じソースから書かれたページどうしが互いにリンクしています。",
     "advisoryMark": "参考",
     "advisoryFold": "参考の指摘{count, number}件",
@@ -759,7 +733,6 @@
       "shared-source-unlinked": "同じソースのページがリンクしていません"
     },
     "namesTitle": "ページのない名前",
-    "open": "検査結果{count, number}",
     "running": "Wikiを検査中…",
     "unseen": "新規"
   },

@@ -57,6 +57,7 @@ function modelWith(sources: typeof SOURCES, wikiPages: unknown[] = [], verdicts:
     pageFacts: new Map(),
     log: { lastCompile: null, lastLint: null },
     pairing: { originalsByWiki: new Map(), writeUpsBySource: new Map() },
+    structural: { unmeasured: [], findingCount: 0 },
   } as unknown as LibraryUiModel;
 }
 
@@ -93,11 +94,7 @@ function Harness({
       onAddFiles={() => {}}
       onFindDocuments={() => {}}
       onImportFromService={() => {}}
-      onCompile={() => {}}
-      onLint={() => {}}
       segment={segment}
-      actionsNote={null}
-      inApp={false}
       busy={false}
       t={t}
     />
@@ -434,34 +431,3 @@ describe("a search with no match on either half", () => {
 });
 
 /** The foot under the wiki list counts the rows on screen, not the whole folder. */
-describe("the off-template foot counts what the list shows", () => {
-  const page = (slug: string, title: string) => ({ slug, title, sourcePaths: [], createdBy: "agent:claude", compiledAt: null });
-  const verdict = (codes: string[]) => ({ ok: codes.length === 0, firstProblem: codes[0] ?? null, firstProblemMessage: null, problemCount: codes.length, problems: codes.map((code) => ({ code, message: code })) });
-  const mountTwo = () =>
-    renderWith({
-      handles: bothHandles(),
-      segment: "wiki",
-      wikiPages: [page("wiki/sash", "Sash frames"), page("wiki/lintel", "Lintel spans")],
-      verdicts: new Map([["wiki/sash", verdict(["missing-field:summary"])], ["wiki/lintel", verdict([])]]),
-    });
-
-  it("says nothing at rest, and nothing once the search hides that page", async () => {
-    mountTwo();
-    /* At rest the header strip and the card's own status line already carry the count. */
-    expect(screen.queryByTestId("library-off-template-count")).toBeNull();
-    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "Lintel" } });
-    await waitFor(() => {
-      expect(screen.getByTestId("library-search-matches")).toHaveAttribute("data-phase", "ready");
-    });
-    expect(screen.queryByTestId("library-off-template-count")).toBeNull();
-  });
-
-  it("keeps the count when the search keeps the page", async () => {
-    mountTwo();
-    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "Sash" } });
-    await waitFor(() => {
-      expect(screen.getByTestId("library-search-matches")).toHaveAttribute("data-phase", "ready");
-    });
-    expect(screen.getByTestId("library-off-template-count")).toHaveTextContent("1 page");
-  });
-});

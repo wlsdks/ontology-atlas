@@ -176,7 +176,8 @@ export async function runReviewNow(page: Page) {
 export async function startWikiCheck(page: Page) {
   await rail(page).getByTestId("app-nav-rail-item-library").click();
   await page.getByTestId("library-workspace-wiki").click();
-  await page.getByTestId("library-lint").click();
+  await page.getByTestId("library-open-report").click();
+  await page.getByTestId("library-check-report-lint").click();
   await expect.poll(async () => (await agentSessions(page)).filter((session) => session.prompt && !session.prompt.includes(REVIEW_BRIEF)).length,
     { message: "the check's brief reaches the agent" }).toBe(1);
 }

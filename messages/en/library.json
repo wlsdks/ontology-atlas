@@ -346,9 +346,7 @@
   "wiki": {
     "listAria": "Wiki pages in this folder",
     "compile": "Write wiki page",
-    "compileTooltip": "The agent reads sources and writes or updates their wiki pages. Saved answers are flagged for separate review.",
     "lint": "Check wiki",
-    "lintTooltip": "The agent reads the wiki pages and reports disagreements, superseded claims, missing links and names without a page. It writes nothing.",
     "candidateKind": {
       "domain": "domain",
       "capability": "capability",
@@ -361,21 +359,15 @@
     "propose": "Propose as concept",
     "proposeTooltip": "The agent reads these pages and proposes one ontology concept. The write waits for your permission.",
     "logLint": "Last check {when}: {summary}",
-    "empty": "No wiki pages yet. A page is Markdown with no kind:, in the shape wiki/_template.md holds.",
     "unknownAuthor": "unknown",
-    "offTemplate": "off-template",
-    "offTemplateCount": "{count, plural, one {# page does not fit the template} other {# pages do not fit the template}}",
     "transfer": "The coding agent sends requests directly to its provider; Atlas does not record that traffic. Wiki pages that fit the template can be saved automatically. Saved answers always need separate review.",
     "compileFailed": "Could not start the agent: {reason}",
-    "compileWebLimit": "Writing wiki pages needs a coding agent running on this computer, which only the app can start. Reading and editing pages works here.",
     "compileWebGetApp": "Get the app",
     "agentMissing": "Connect a coding agent to check the wiki and write wiki pages from sources.",
     "agentMissingDoor": "Connect an agent",
-    "offTemplateReason": "Does not fit the wiki template: {code}. Open the page to see what to change.",
     "offTemplateAriaLabel": "How this page differs from the wiki template",
     "offTemplateTitle": "{count, number} to fix · page template",
     "offTemplateBody": "Fix what follows and it reads the same way every other page does.",
-    "writtenBy": "Written by {author}",
     "writer": {
       "human": "a person",
       "agent": "{name} (agent)",
@@ -390,7 +382,7 @@
     "compileModifyFile": "Replace {path}",
     "logCount": {
       "disagreement": "disagreement {count, number}",
-      "superseded": "superseded {count, number}",
+      "superseded": "newer source differs {count, number}",
       "missingLink": "missing link {count, number}",
       "nameWithoutPage": "names without a page {count, number}"
     },
@@ -398,8 +390,6 @@
     "logNew": "new",
     "logRevised": "revised",
     "logNothingNew": "nothing new",
-    "emptyNoTemplate": "No wiki pages yet, and no template in this folder. Start a wiki from Settings › Ontology folder: it writes wiki/_template.md, the shape every page follows.",
-    "folderMark": "link",
     "candidatesMore": "{count, plural, one {# more name} other {# more names}}",
     "candidatesLess": "Fewer names",
     "candidatesTooltip": "Names the last check saw on three or more pages with no page of their own. Only what the code builds, a domain, a capability or an element, can be proposed as a concept on the map; people and organisations stay names in the wiki.",
@@ -409,13 +399,12 @@
     "fileAnswerRejected": "Not saved: the answer does not match the page format ({code}). Ask for citations and try again.",
     "findingKind": {
       "disagreement": "disagreement",
-      "superseded": "superseded claim",
+      "superseded": "newer source differs",
       "missingLink": "missing link"
     },
     "fix": "Fix",
     "fixTooltip": "The agent fixes this on the pages named: both values with both citations for a disagreement, the current value first for a superseded claim, links both ways for a missing link.",
     "newPage": "New page",
-    "newPageTooltip": "Start a page you write yourself: the template's sections and created_by: human, empty until you fill it in any editor. The list updates by itself.",
     "newPageDialogTitle": "New wiki page",
     "newPageDialogBody": "Create a Markdown draft with the standard structure ready to fill in.",
     "newPageTitle": "Page title",
@@ -528,21 +517,6 @@
         "do": "Link the pages written from one source to each other."
       }
     }
-  },
-  "shelf": {
-    "commonState": "{count, number} pages · {state}",
-    "listAria": "Wiki pages and their source versions",
-    "freshness": {
-      "fresh": "The checked source versions have not changed.",
-      "stale": "The source has changed or has not been checked against this page.",
-      "unverified": "This page has never been checked against a file"
-    },
-    "state": {
-      "fresh": "Checked sources unchanged",
-      "stale": "Source review needed",
-      "unverified": "Source not checked"
-    },
-    "compiling": "Re-reading the sources to write wiki pages."
   },
   "home": {
     "guide": "How to use",
@@ -731,7 +705,7 @@
   "report": {
     "title": "Check results",
     "structuralTitle": "App checks",
-    "structuralHead": "{pages, plural, one {# page} other {# pages}} · {offTemplate, number} off-template · {findings, plural, one {# finding} other {# findings}}",
+    "structuralHead": "{pages, plural, one {# page} other {# pages}} · {offTemplate, number} not following the template · {findings, plural, one {# finding} other {# findings}}",
     "structuralClean": "Every page fits the template, every link resolves, and pages written from the same source link to each other.",
     "advisoryMark": "Info",
     "advisoryFold": "{count, plural, one {# advisory finding} other {# advisory findings}}",
@@ -759,7 +733,6 @@
       "shared-source-unlinked": "Pages from one source do not link"
     },
     "namesTitle": "Names without a page",
-    "open": "Check results {count, number}",
     "running": "Checking the wiki…",
     "unseen": "new"
   },
