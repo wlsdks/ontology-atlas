@@ -145,7 +145,86 @@
     animation: motionProgressRipple var(--motion-expressive) var(--motion-ease) both;
   }
 
+  /* Sources overview. A writing dot's halo breathes only while the agent writes a page from
+     that row or file; the dot is unmounted when the work ends. Transform and opacity only. */
+  @keyframes motionWritingHalo {
+    0%,
+    100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.1;
+      transform: scale(1.8);
+    }
+  }
+
+  .motion-writing-dot {
+    position: relative;
+    display: inline-block;
+    flex: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+    background-color: var(--color-source-page);
+  }
+
+  .motion-writing-dot::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    background-color: var(--color-source-page);
+    animation: motionWritingHalo calc(var(--motion-base) * 9) var(--motion-ease) infinite;
+  }
+
+  /* Table rows glide by script (`useRowMotion`); one that leaves fades on the exit ease and a new
+     one fades in. `transform` carries the 4px rise, `translate` the row's place. */
+  @keyframes motionRowIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+
+  @keyframes motionRowOut {
+    to {
+      opacity: 0;
+    }
+  }
+
+  /* The table body's height follows its row count once per change, so what sits below moves with it. */
+  .motion-table-fit {
+    transition: height var(--motion-settle) var(--motion-ease);
+  }
+
+  .motion-row-in {
+    animation: motionRowIn var(--motion-base) var(--motion-ease) both;
+  }
+
+  .motion-row-out {
+    animation: motionRowOut var(--motion-settle) var(--motion-ease-exit) forwards;
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    .motion-writing-dot::after {
+      animation: none !important;
+      display: none !important;
+    }
+
+    .motion-table-fit {
+      transition: none !important;
+    }
+
+    .motion-row-in {
+      animation-name: panelCrossfadeIn !important;
+      animation-duration: var(--motion-fast) !important;
+    }
+
+    .motion-row-out {
+      animation-duration: var(--motion-fast) !important;
+    }
+
     .motion-work-spin,
     .motion-work-sweep {
       animation: none !important;

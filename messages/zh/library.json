@@ -1071,16 +1071,79 @@
     "first": "还没有来源有 Wiki 页面",
     "today": "今天 +{count, number}",
     "chartAria": "有 Wiki 页面的来源数量，按各页面记录的日期",
+    "chartLabel": "有 Wiki 页面的来源数 · 自 {date} 起",
+    "chartNow": "今天 {count, number}",
     "point": "{date}：当前 {total, number} 份来源中的 {count, number} 份（{percent, number}%）",
     "dateBasis": "每个点使用其 Wiki 页面记录的日期。",
     "undated": "{count, number} 份没有日期",
     "axisToday": "今天",
-    "continue": "{count, plural, =1 {为最后一份来源生成 Wiki 页面} other {为接下来的 # 份生成 Wiki 页面}}",
+    "continue": "{count, plural, =1 {用 1 份来源写 Wiki 页面} other {为接下来的 # 份生成 Wiki 页面}}",
     "batchRest": "之后还有 {count, number} 份等待。",
     "batchReturned": "上次请求中有 {count, number} 份来源仍没有 Wiki 页面，已移到列表末尾。",
     "webLine": "只有应用能撰写 Wiki 页面，在这里可以阅读。",
-    "allDone": "每份来源都有 Wiki 页面",
-    "fraction": "{compiled, number} / {total, number}"
+    "allDone": "每份来源都有 Wiki 页面"
+  },
+  "sourcesHome": {
+    "aria": "按文件夹或文件类型分组的来源，以及有 Wiki 页面的来源数",
+    "groupBy": {
+      "label": "来源分组",
+      "folder": "按文件夹",
+      "type": "按文件类型"
+    },
+    "column": {
+      "folder": "文件夹",
+      "type": "文件类型",
+      "sources": "来源",
+      "withPage": "有 Wiki 页面",
+      "waiting": "等待中",
+      "latest": "最新 Wiki 页面"
+    },
+    "topLevel": "sources/ 根目录",
+    "day": {
+      "today": "今天",
+      "ago": "{count, number} 天前",
+      "none": "暂无",
+      "undated": "无日期"
+    },
+    "rowAria": "{name}：{total, number} 份来源，{withPage, number} 份有 Wiki 页面，{waiting, number} 份等待撰写。按下后在表格旁列出。",
+    "writing": "正在为这里的一份来源写 Wiki 页面",
+    "panel": {
+      "nextTitle": "接下来要写的来源",
+      "lead": "按下“{action}”后，代理会从上往下读取下面的来源并写 Wiki 页面。",
+      "leadRunning": "代理正在从上往下写 Wiki 页面。写完的来源会从这个列表中移除。",
+      "webNote": "只有应用会生成 Wiki 页面。在应用中会先处理这些。",
+      "waitingTitle": "这里等待中的来源",
+      "nextEmpty": "这里的每份来源都有与当前内容一致的 Wiki 页面。",
+      "unreadable": "这里有 {count, number} 份来源无法读取",
+      "showInList": "在列表中显示全部 {count, number} 份",
+      "clear": "显示全部来源"
+    },
+    "recent": {
+      "title": "最近写的 Wiki 页面",
+      "order": "按每个 Wiki 页面记录的日期",
+      "from": "{more, plural, =0 {来自 {source}} other {来自 {source} 及另外 # 份}}",
+      "empty": "还没有记录日期的 Wiki 页面。",
+      "none": "写好 Wiki 页面后，它会和来源一起显示在这里。Wiki 页面是总结来源的 Markdown 文件，每条事实都注明了它在来源中的位置。",
+      "steps": {
+        "press": "按下“{action}”。",
+        "read": "代理会从头到尾读取来源。",
+        "write": "它会把来源总结成一个 Markdown 格式的 Wiki 页面，并为每条事实注明出自来源的哪个位置。写好后会显示在这里。"
+      }
+    },
+    "sortBy": "按 {column} 排序",
+    "more": "下方还有 {count, number} 个文件夹 · 滚动即可查看",
+    "moreType": "下方还有 {count, number} 种文件类型 · 滚动即可查看",
+    "meta": "{folders, number} 个文件夹 · {sources, number} 份来源",
+    "metaType": "{groups, number} 种文件类型 · {sources, number} 份来源",
+    "alike": {
+      "row": "{count, number} 个各状态数量相同的文件夹",
+      "range": "{first} – {last}",
+      "meta": "{folders, number} 个文件夹 · 来源数和状态都相同的 {count, number} 个合为一行"
+    },
+    "listKey": "等待中的来源",
+    "listFolder": "文件夹：{folder}",
+    "reading": "正在读取文件夹：目前 {count, number} 份来源",
+    "pickGone": "{folder} 已不在 sources/ 中。正在显示全部来源。"
   },
   "check": {
     "title": "正在检查 Wiki",
@@ -1117,5 +1180,69 @@
     "sourceTooLarge": "这个文件太大，无法在这里显示。",
     "linkMissing": "此文件夹中没有这个名称的内容。",
     "back": "返回"
+  },
+  "wikiIndex": {
+    "views": {
+      "log": "记录",
+      "logNone": "暂无",
+      "checkNever": "尚未运行"
+    },
+    "group": {
+      "attention": "需要查看的页面",
+      "answers": "已保存的回答",
+      "several": "由多个原文写成",
+      "one": "由一个原文写成",
+      "none": "未写明原文的页面"
+    },
+    "row": {
+      "sources": "{count, number} 个原文",
+      "noSource": "没有原文",
+      "moreReasons": "{reason} 等 {count, number} 项"
+    },
+    "reason": {
+      "disagreement": "与另一个页面矛盾",
+      "superseded": "较新的原文说法不同",
+      "stale": "写成后原文已更改",
+      "unhashed": "无法确认原文是否更改",
+      "missingLink": "应链接到相关页面"
+    },
+    "day": {
+      "now": "刚刚",
+      "today": "今天",
+      "yesterday": "昨天",
+      "ago": "{count, number} 天前"
+    },
+    "showAll": "显示全部 {count, number} 个",
+    "attentionAll": "在检查结果中查看全部 {count, number} 个",
+    "groupClear": "显示完整目录",
+    "empty": {
+      "title": "还没有 wiki 页面",
+      "body": "代理根据原文写出 wiki 页面后，会汇集在这里：每个原文一页、综合多个原文的页面，以及你保存的回答。",
+      "toSources": "在原文标签页写 wiki 页面"
+    },
+    "reading": "正在读取 wiki 页面 · 目前 {count, number} 个",
+    "pageGone": "{title} 已不在 wiki/ 中。已回到目录。"
+  },
+  "wikiLog": {
+    "title": "记录",
+    "lede": "按时间倒序显示这个 wiki 发生的事：由原文写成的页面、检查、修复和保存的回答。",
+    "meta": "读取自 wiki/_log.md 和 wiki/answers/ · {count, number} 条",
+    "kind": {
+      "compile": "写了页面",
+      "lint": "检查",
+      "fix": "修复",
+      "answer": "保存回答"
+    },
+    "compiled": "读取 {sources, number} 个原文 · 新增 {created, number} 页 · 修改 {revised, number} 页",
+    "noChange": "读取 {sources, number} 个原文 · 没有页面更改",
+    "answer": "已保存到 wiki：{title}",
+    "byRound": "自动检查“{name}”",
+    "pageGone": "{name}（已不在 wiki/ 中）",
+    "empty": "这个 wiki 还没有发生任何事。由原文写页面、检查 wiki 或保存回答时，这里都会添加一行。",
+    "unreadable": "无法读取 wiki/_log.md，因此只列出已保存的回答。请检查文件权限；可以读取后列表会更新。"
+  },
+  "sourcesIndex": {
+    "add": "添加原文",
+    "addBody": "原文保持原样。Atlas 读取它们，代理据此写 wiki 页面。"
   }
 }

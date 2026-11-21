@@ -173,14 +173,14 @@ describe('a source points forward at the pages written from it', () => {
     ]);
   });
 
-  it('still calls a page that recorded no hash at all behind, measured or not', () => {
+  it('still calls a page that recorded no hash at all behind, and marks it unhashed', () => {
     const noHash = buildLibraryPairing({
       docs: [wiki('wiki/loose', { sources: ['sources/plan.pdf'] }, 'Loose')],
       sources: SOURCES,
       hashes: new Map(),
     });
     expect(noHash.writeUpsBySource.get('sources/plan.pdf')).toEqual([
-      { slug: 'wiki/loose', title: 'Loose', freshness: 'behind' },
+      { slug: 'wiki/loose', title: 'Loose', freshness: 'behind', unhashed: true },
     ]);
   });
 

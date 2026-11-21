@@ -328,6 +328,8 @@ export interface LibraryWriteUpLink {
   slug: string;
   title: string;
   freshness: WriteUpFreshness;
+  /** Set on a `behind` link whose page recorded no hash for this source, so no change is claimed. */
+  unhashed?: true;
 }
 
 interface LibraryPairing {
@@ -355,6 +357,21 @@ function docsFacts(docs: readonly VaultDoc[], offsetMinutes: ((epochMs: number) 
     pathsBySlug.set(doc.slug, readPathArray(doc.frontmatter.sources));
   }
   return { citations: collectWikiCitations(docs, offsetMinutes), wikiPages: selectWikiPages(docs), titles, pathsBySlug };
+}
+
+function sameSource(a: VaultSourceFile, b: VaultSourceFile): boolean {
+  return a === b || (a.path === b.path && a.name === b.name && a.format === b.format && a.bytes === b.bytes && a.mtime === b.mtime);
+}
+
+function sameCitations(a: readonly WikiCitation[] | undefined, b: readonly WikiCitation[] | undefined): boolean {
+  if (a === b) return true;
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const x = a[i]!;
+    const y = b[i]!;
+    if (x.wikiSlug !== y.wikiSlug || x.sourcePath !== y.sourcePath || x.sourceHash !== y.sourceHash || x.truncated !== y.truncated || x.compiledDay !== y.compiledDay || x.page !== y.page) return false;
+  }
+  return true;
 }
 
 /** One source row with what it was judged from, so the next build reuses it while those hold. */
@@ -392,11 +409,13 @@ function sourceRow(source: VaultSourceFile, cited: WikiCitation[] | undefined, h
 function writeUpsOf(cited: readonly WikiCitation[], actual: string | undefined, titles: ReadonlyMap<string, string>): LibraryWriteUpLink[] {
   const bySlug = new Map<string, LibraryWriteUpLink>();
   for (const citation of cited) {
-    bySlug.set(citation.wikiSlug, {
+    const link: LibraryWriteUpLink = {
       slug: citation.wikiSlug,
       title: titles.get(citation.wikiSlug) ?? citation.wikiSlug,
       freshness: writeUpFreshness(citation, actual),
-    });
+    };
+    if (citation.sourceHash === null) link.unhashed = true;
+    bySlug.set(citation.wikiSlug, link);
   }
   return [...bySlug.values()].sort((a, b) => a.slug.localeCompare(b.slug));
 }
@@ -448,7 +467,11 @@ export function createLibraryModelBuilder(): (input: LibraryModelInput) => Libra
     keptOffset = offsetMinutes;
     const { citations, wikiPages, titles, pathsBySlug } = facts;
 
-    const kept = pairing === null ? [] : rows;
+    // Same arrays: rows pair by position. New arrays: by path, kept while their inputs are equal by
+    // value, so an unchanged source keeps its row object and consumers can skip it by identity.
+    const samePositions = pairing !== null;
+    const kept = rows;
+    let keptByPath: Map<string, KeptRow> | null = null;
     const nextRows: KeptRow[] = [];
     const restated = new Set<string>();
     const rehashed = new Set<string>();
@@ -459,12 +482,21 @@ export function createLibraryModelBuilder(): (input: LibraryModelInput) => Libra
       const cited = citations.get(source.path);
       const hash = hashes.get(source.path);
       const isUnreadable = unreadable?.has(source.path) ?? false;
-      const before = kept[index];
+      let before: KeptRow | undefined = kept[index];
+      if (!samePositions && before?.source.path !== source.path) {
+        keptByPath ??= new Map(kept.map((entry) => [entry.source.path, entry] as const));
+        before = keptByPath.get(source.path);
+      }
       let row = before;
-      if (!row || row.source !== source || row.cited !== cited || row.hash !== hash || row.unreadable !== isUnreadable) {
+      const reusable = samePositions
+        ? row !== undefined && row.source === source && row.cited === cited
+        : row !== undefined && sameSource(row.source, source) && sameCitations(row.cited, cited);
+      if (!row || !reusable || row.hash !== hash || row.unreadable !== isUnreadable) {
         row = sourceRow(source, cited, hash, isUnreadable);
         if (before && before.row.state !== row.row.state) restated.add(source.path);
         if (before && before.hash !== hash) rehashed.add(source.path);
+      } else if (row.source !== source || row.cited !== cited) {
+        row = { ...row, source, cited };
       }
       nextRows.push(row);
       for (const page of row.covering) covering.push(page);
