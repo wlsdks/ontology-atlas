@@ -118,5 +118,3 @@ export function createHud(field: HTMLElement, nodes: HudNodes, scoreLabel: (scor
     },
   };
 }
-
-export type Hud = ReturnType<typeof createHud>;
