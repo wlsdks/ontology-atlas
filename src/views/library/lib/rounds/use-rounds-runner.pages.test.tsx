@@ -3,14 +3,14 @@ import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import ko from '../../../messages/ko.json';
+import ko from '../../../../../messages/ko.json';
 import { type RoundLedger, type RoundRecord, createMemoryRoundLedger, createMemoryRoundStore, parseRoundLedger, roundFingerprint } from '@/entities/library-round';
 import { writeWikiFile } from '@/features/library';
 import { proposedPageText } from '@/features/library/lib/wiki/judge-page-write';
 import { recordApproval } from '@/shared/lib/connectors/machine-approvals';
 import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/library/wiki-page-schema';
 
-import { useRoundsRunner } from './lib/rounds/use-rounds-runner';
+import { useRoundsRunner } from './use-rounds-runner';
 
 const h = vi.hoisted(() => ({
   store: null as unknown,
