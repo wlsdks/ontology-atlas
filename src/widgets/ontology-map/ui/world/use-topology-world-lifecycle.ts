@@ -17,7 +17,7 @@ import {
 import { ARRIVAL_GLIDE_CONCEPT_CEILING } from "../../morph/layout-morph";
 import { armTierAssembly, carryTierAssembly, claimTierAssembly, FLAT_TIER_TIMING, isTierAssembling, settleTierAssembly, TIER_ASSEMBLE_TOTAL_MS } from "../../morph/tier-assembly";
 import { createForceSimulation, type ForceSimulation } from "../../model/layout/force-layout";
-import { initHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
+import { createHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
 import type { Pulse } from "../../render/edge-fireflies";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { hasAnyNodeOnScreen } from "../camera/topology-camera-math";
@@ -264,7 +264,7 @@ export function useTopologyWorldLifecycle({
     for (const node of world.nodes) {
       const before = previousWorld.nodeById.get(node.id);
       if (!before || (before.x === node.x && before.y === node.y)) continue;
-      springs.set(node.id, initHomeSpring(before.x, before.y));
+      springs.set(node.id, createHomeSpring(before.x, before.y));
       node.x = before.x;
       node.y = before.y;
     }

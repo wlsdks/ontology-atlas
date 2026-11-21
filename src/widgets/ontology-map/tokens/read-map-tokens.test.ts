@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   clearOntologyMapTokensCache,
-  getOntologyMapTokens,
+  readOntologyMapTokens,
   refreshIndexDependentTokens,
   resolveOntologyMapTokens,
   ONTOLOGY_MAP_TOKEN_COUNT,
@@ -281,7 +281,7 @@ describe("refreshIndexDependentTokens: targeted refresh", () => {
     for (const [name, value] of Object.entries(FIXTURE_VALUES)) {
       root.style.setProperty(name, value);
     }
-    const before = getOntologyMapTokens(root);
+    const before = readOntologyMapTokens(root);
     expect(before.safeInsetLeft).toBe(344);
 
     // Collapsing INDEX changes only this token (the
@@ -291,7 +291,7 @@ describe("refreshIndexDependentTokens: targeted refresh", () => {
     root.style.setProperty("--map-label-max-width", "999");
 
     refreshIndexDependentTokens(root);
-    const after = getOntologyMapTokens(root);
+    const after = readOntologyMapTokens(root);
 
     expect(after.safeInsetLeft).toBe(78);
     expect(after.labelMaxWidth).toBe(168);
@@ -310,11 +310,11 @@ describe("refreshIndexDependentTokens: targeted refresh", () => {
     for (const [name, value] of Object.entries(FIXTURE_VALUES)) {
       root.style.setProperty(name, value);
     }
-    expect(getOntologyMapTokens(root).safeInsetRight).toBe(120);
+    expect(readOntologyMapTokens(root).safeInsetRight).toBe(120);
 
     root.style.setProperty("--map-safe-inset-right", "100");
     refreshIndexDependentTokens(root);
-    expect(getOntologyMapTokens(root).safeInsetRight).toBe(100);
+    expect(readOntologyMapTokens(root).safeInsetRight).toBe(100);
 
     for (const name of Object.keys(FIXTURE_VALUES)) root.style.removeProperty(name);
     clearOntologyMapTokensCache();

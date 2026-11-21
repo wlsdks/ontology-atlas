@@ -12,7 +12,7 @@ import { createForceSimulation, type ForceSimulation } from "../../model/layout/
 import {
   type RealmTransitionState
 } from "../../model/realm/realm-transition";
-import { initHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
+import { createHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
 import type { NodeDragState } from "../input/topology-pointer-types";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { type RealmRuntimeData } from "./topology-realm-runtime";
@@ -94,7 +94,7 @@ export function useTopologyLayoutCommands({
         world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })));
       const springs = new Map<string, HomeSpringState>();
       for (const node of world.nodes) {
-        if (realmData.insideTargets.has(node.id)) springs.set(node.id, initHomeSpring(node.x, node.y));
+        if (realmData.insideTargets.has(node.id)) springs.set(node.id, createHomeSpring(node.x, node.y));
       }
       homeSpringsRef.current = springs;
       homeTargetOverrideRef.current = realmData.insideTargets;
@@ -107,7 +107,7 @@ export function useTopologyLayoutCommands({
 
     const springs = new Map<string, HomeSpringState>();
     for (const node of world.nodes) {
-      springs.set(node.id, initHomeSpring(node.x, node.y));
+      springs.set(node.id, createHomeSpring(node.x, node.y));
     }
     homeSpringsRef.current = springs;
     homeTargetOverrideRef.current = null;

@@ -21,7 +21,7 @@ import {
   type RealmTransitionState
 } from "../../model/realm/realm-transition";
 import type { WardingFitState } from "../../model/realm/realm-warding-fit";
-import { initHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
+import { createHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
 import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/target/fit-targets";
 import {
   overviewBoundsFor
@@ -221,7 +221,7 @@ export function useTopologyRealmTransition({
           // snap path, where the frame loop's reduced homing block jumps straight
           // to homeX/homeY. Nodes are never mutated from inside an effect.
           const springs = new Map<string, HomeSpringState>();
-          for (const node of world.nodes) springs.set(node.id, initHomeSpring(node.x, node.y));
+          for (const node of world.nodes) springs.set(node.id, createHomeSpring(node.x, node.y));
           homeSpringsRef.current = springs;
           homeTargetOverrideRef.current = data?.returnPositions ?? null;
           homingActiveRef.current = true;

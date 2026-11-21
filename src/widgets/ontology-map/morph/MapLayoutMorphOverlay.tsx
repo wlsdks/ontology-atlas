@@ -14,7 +14,7 @@ import {
 import { cubicBezierAt } from "@/shared/motion/ease";
 import { EXIT_TRANSITION, MOTION, OVERLAY_SPRING_REDUCED } from "@/shared/motion/tokens";
 import { massForDegree } from "../expressive/mass-spring";
-import { getOntologyMapTokens } from "../tokens/read-map-tokens";
+import { readOntologyMapTokens } from "../tokens/read-map-tokens";
 import { createGlideFrame, glideVelocity, type GlideFrame } from "./glide";
 import { layoutMorphEffect, layoutMorphSize, planLayoutMorph, sampleLayoutMorph, sampleLayoutMorphFrame, type LayoutMorphPlan } from "./layout-morph";
 
@@ -220,7 +220,7 @@ function beginRun(canvas: HTMLCanvasElement, job: MapLayoutMorphJob, now: number
       run.mode = "ghost";
       run.phase = "travel";
       const degrees = job.degreeOf();
-      const heavyDegree = getOntologyMapTokens(canvas).massHeavyDegree;
+      const heavyDegree = readOntologyMapTokens(canvas).massHeavyDegree;
       run.plan = planLayoutMorph(snapshot.marks, target.marks, job.parentOf(), {
         anchorId: job.anchorId,
         massOf: (id) => massForDegree(degrees.get(id) ?? 0, heavyDegree),

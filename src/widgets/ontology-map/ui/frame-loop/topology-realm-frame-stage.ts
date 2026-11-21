@@ -18,7 +18,7 @@ import {
   type RealmTransitionState,
 } from "../../model/realm/realm-transition";
 import {
-  initWardingFit,
+  createWardingFit,
   stepWardingFit,
   type WardingFitState,
 } from "../../model/realm/realm-warding-fit";
@@ -189,7 +189,7 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
       }
       const targetWardingRadius = computeVisibleWardingRadius(reaches);
       const nextFit = stepWardingFit(
-        wardingFitRef.current ?? initWardingFit(targetWardingRadius),
+        wardingFitRef.current ?? createWardingFit(targetWardingRadius),
         targetWardingRadius,
         now,
         reducedMotionRef.current,

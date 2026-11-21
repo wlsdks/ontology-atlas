@@ -34,7 +34,7 @@ import {
 } from "../../model/realm/realm-transition";
 import type { WardingFitState } from "../../model/realm/realm-warding-fit";
 import {
-  initHomeSpring,
+  createHomeSpring,
   isHomeSpringConverged,
   stepHomeSpring,
   type HomeSpringState,
@@ -228,7 +228,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
             const t = realmData.insideTargets.get(id);
             const n = world.nodeById.get(id);
             if (!t || !n) continue;
-            springs.set(id, initHomeSpring(n.x, n.y));
+            springs.set(id, createHomeSpring(n.x, n.y));
             override.set(id, t);
           }
           homeSpringsRef.current = springs;
