@@ -77,7 +77,7 @@ export const rules = [
       /^src\/shared\/lib\/library\/source-passage\.ts$/,
       /^src\/views\/project-detail\/ui\/ProjectDetailPage\.tsx$/,
       /^src\/views\/project-detail\/model\/project-lead\.ts$/,
-      /^src\/views\/change-briefing\/ui\/OriginalSourceBody\.tsx$/,
+      /^src\/views\/change-briefing\/ui\/sources\/OriginalSourceBody\.tsx$/,
       /^src\/views\/planning\/ui\/PlanningMarkdown\.tsx$/,
       /^src\/widgets\/(?:analysis-workbench\/ui\/(?:AnalysisWorkbench|ReviewFindings|ReviewRecordDialog)|full-detail-a1\/ui\/FullDetailA1)\.tsx$/,
       /^scripts\/lib\/check-rules\/security\.mjs$/,

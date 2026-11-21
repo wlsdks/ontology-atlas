@@ -8,9 +8,9 @@ vi.mock('next-intl', () => ({ useLocale: () => 'en', useTranslations: () => (key
 vi.mock('@/i18n/navigation', () => ({ Link: ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a> }));
 vi.mock('@/shared/lib/git/tauri-change-briefing', () => ({ gitBriefingRepositories: mocks.repositories, gitBriefingSavedPullDescriptions: mocks.saved, gitBriefingPullDescriptions: mocks.pulls }));
 vi.mock('@/shared/lib/llm-connection/local-endpoint', () => ({ readLocalEndpoint: () => ({ baseUrl: '', model: '' }), subscribeLocalEndpointChange: () => () => {}, isLocalEndpointReady: () => false }));
-vi.mock('../model/use-period-narrative', () => ({ usePeriodNarrative: mocks.narrative }));
+vi.mock('../../model/use-period-narrative', () => ({ usePeriodNarrative: mocks.narrative }));
 vi.mock('./PeriodPlanDialog', () => ({ PeriodPlanDialog: () => null }));
-vi.mock('./OriginalSourceBody', () => ({ OriginalSourceBody: () => null }));
+vi.mock('../sources/OriginalSourceBody', () => ({ OriginalSourceBody: () => null }));
 vi.mock('./PeriodRunStatus', () => ({ PeriodRunStatus: () => null, PeriodRunDetails: () => null }));
 import { BriefingNarrative } from './BriefingNarrative';
 

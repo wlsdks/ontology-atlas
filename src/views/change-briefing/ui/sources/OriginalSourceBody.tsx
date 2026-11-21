@@ -5,7 +5,7 @@ import type { PluggableList } from 'unified';
 import { Button } from '@/shared/ui';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
 import { MARKDOWN_PROSE_CLASS } from '@/shared/ui/tokens/markdown-prose';
-import { sourcePassages, type NarrativeSource } from '../model/narrative';
+import { sourcePassages, type NarrativeSource } from '../../model/narrative';
 
 type Element = NonNullable<ExtraProps['node']>;
 const REMARK_PLUGINS = [remarkGfm];

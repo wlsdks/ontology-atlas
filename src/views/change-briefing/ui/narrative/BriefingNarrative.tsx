@@ -11,12 +11,12 @@ import { readArrivalMemory, writeArrivalMemory } from '@/shared/lib/navigation/r
 import { controlClass } from '@/shared/ui/control-class';
 import { gitBriefingPullDescriptions, gitBriefingRepositories, gitBriefingSavedPullDescriptions, type SavedPulls, type ChangeBriefing, type PullDescriptions, type PullLookupFailure } from '@/shared/lib/git/tauri-change-briefing';
 import { isLocalEndpointReady, readLocalEndpoint, subscribeLocalEndpointChange } from '@/shared/lib/llm-connection/local-endpoint';
-import { formatPrTime, prCopyDetails } from '../model/pr-copy';
-import { authorEvidence, type AuthorEvidenceKind } from '../model/author-evidence';
-import { narrativeSources, sourcePassages, type NarrativeClaim, type NarrativeSource } from '../model/narrative';
-import { usePeriodNarrative } from '../model/use-period-narrative';
+import { formatPrTime, prCopyDetails } from '../../model/pr-copy';
+import { authorEvidence, type AuthorEvidenceKind } from '../../model/author-evidence';
+import { narrativeSources, sourcePassages, type NarrativeClaim, type NarrativeSource } from '../../model/narrative';
+import { usePeriodNarrative } from '../../model/use-period-narrative';
 import { PeriodPlanDialog } from './PeriodPlanDialog';
-import { OriginalSourceBody } from './OriginalSourceBody';
+import { OriginalSourceBody } from '../sources/OriginalSourceBody';
 import { PeriodRunStatus, PeriodRunDetails } from './PeriodRunStatus';
 
 export type BriefingReadingMode = 'summary' | 'sources' | 'code';

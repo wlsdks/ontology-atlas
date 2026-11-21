@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, RowButton, Select } from '@/shared/ui';
-import type { usePeriodNarrative } from '../model/use-period-narrative';
-import type { NarrativeSource } from '../model/narrative';
+import type { usePeriodNarrative } from '../../model/use-period-narrative';
+import type { NarrativeSource } from '../../model/narrative';
 
 interface DetailsProps { api: ReturnType<typeof usePeriodNarrative>; readSource: (source: NarrativeSource, id: string, button: HTMLButtonElement) => void; select: (value: 'overview' | number) => void }
 

@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Button, Dialog, DialogBody, DialogFooter, Disclosure, RowDisclosure, Select } from '@/shared/ui';
-import { prCopyDetails } from '../model/pr-copy';
-import type { usePeriodNarrative } from '../model/use-period-narrative';
+import { prCopyDetails } from '../../model/pr-copy';
+import type { usePeriodNarrative } from '../../model/use-period-narrative';
 
 type PeriodApi = ReturnType<typeof usePeriodNarrative>;
 export function PeriodPlanDialog({ preview, connection, close, start, clearedAt }: { clearedAt: number; preview: PeriodApi['preview']; connection: { baseUrl: string; model: string }; close: () => void; start: () => void }) {
