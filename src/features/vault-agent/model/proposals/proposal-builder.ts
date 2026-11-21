@@ -30,7 +30,6 @@ export interface BuildProposalInput {
   readNodesThisTurn: readonly string[];
   /** When the vault is a git repository the save-point checkbox defaults to ON. */
   vaultIsGit: boolean;
-  /** The screen's language — fills the per-locale name field of a new document. */
   locale: string;
   labels: ProposalLabels;
   /** The provider that drafted this turn, as the audit log records it; a person's [apply] is approval, not authorship. */
@@ -53,7 +52,6 @@ function str(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
-/** Appends a value to a frontmatter array key (duplicates are not appended). */
 function appendRef(current: unknown, ref: string): string[] {
   const list = Array.isArray(current)
     ? current.filter((entry): entry is string => typeof entry === 'string')
@@ -63,7 +61,6 @@ function appendRef(current: unknown, ref: string): string[] {
   return list.includes(ref) ? list : [...list, ref];
 }
 
-/** `add_relation` type to frontmatter key, as MCP `add_relation` normalizes it. */
 const RELATION_KEY: Record<string, string> = {
   depends_on: 'dependencies',
   dependencies: 'dependencies',

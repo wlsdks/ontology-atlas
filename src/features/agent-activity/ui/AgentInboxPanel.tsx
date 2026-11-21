@@ -32,7 +32,6 @@ import type { AgentActivityFeed } from '../model/use-agent-activity-feed';
  */
 const TAB_STORAGE_KEY = 'atlas.agentActivity.tab';
 const TAB_ID_PREFIX = 'agent-inbox';
-/** The map INDEX's "To tidy" rows are where the folder's fix counts can be read. */
 const MAP_TIDY_LIST_HREF = `${DESTINATION_HREF.map}?index=expanded`;
 
 function readStoredTab(): BellTab | null {
@@ -86,38 +85,22 @@ function problemSummary(
   return parts.join(t('summaryJoin'));
 }
 
-/**
- * **One fact, as the row's second line says it.** A label, an optional number, and which
- * of the two grades it carries — a plain fact, or one a person may want to look at.
- */
+/** One fact on a result row's second line: a label, an optional number, and which grade it carries (plain, or one a person may want to look at). */
 export interface BellFact {
   label: string;
   count?: number;
   tone?: 'neutral' | 'warning';
 }
 
-/**
- * The second line of a result row, as data.
- *
- * **Why a view model rather than the words inline.** A later slice supplies a per-turn
- * brief from the ontology diff (how much is newly known, how much is uncertain), and it has
- * to print **before** the agent's own facts without this row being rewritten. Today the
- * brief is simply absent, and with it absent the line renders exactly what it rendered
- * before this shape existed.
- */
+/** The second line of a result row as data, so a later per-turn brief from the ontology diff can print before the agent's own facts without rewriting the row. */
 export interface ResultFactLineModel {
   agent: string | null;
   duration: string | null;
-  /**
-   * When it happened. Without it `2m` was the only number on the line and read as "two
-   * minutes ago" rather than "it took two minutes", and the boundary a press moves — a
-   * time — was nowhere on the tab that draws unread dots.
-   */
+  /** When it happened, so `2m` reads as "two minutes ago" and not "it took two minutes", and the boundary a press moves is visible on the unread tab. */
   age: string | null;
   allowed: number | null;
   denied: number | null;
   autoApproved: number;
-  /** Everything else this row has to say — a decision's effect, a result that is not `completed`. */
   summaryFacts: BellFact[];
 }
 
@@ -159,7 +142,6 @@ function ResultFactLine({
   durationTitle,
 }: {
   facts: ResultFactLineModel;
-  /** The later slice's brief, printed before the agent's facts. Absent today. */
   briefCounts: readonly BellFact[] | null;
   durationTitle: string;
 }) {
@@ -229,23 +211,10 @@ function ResultFactLine({
   );
 }
 
-/**
- * **One line-1 box for every row kind.**
- *
- * A row whose object is a link is 8px taller than one without it, because the link control
- * carries the 24px WCAG 2.5.8 floor (measured: history rows 44 · 52 · 52 · 52 px in one
- * list). Lowering the link is an accessibility regression, so the rows without one reserve
- * the same box and the pitch stays the same in all three tabs.
- */
+/** One line-1 box for every row kind: a row with a link is 8px taller (the link control carries the 24px WCAG 2.5.8 floor), so rows without one reserve the same box and the pitch stays equal in all three tabs. */
 const ROW_HEADLINE_CLASS = 'flex min-h-6 min-w-0 items-center gap-1.5';
 
-/**
- * The 12px mark column every row wears, drawn or not.
- *
- * All three tabs share it so the sentence starts at the same x in each — measured before
- * it existed: 1117 / 1101 / 1097, so switching tabs shifted the text edge by 20px and the
- * three views read as three different lists.
- */
+/** The 12px mark column every row wears, drawn or not, so the sentence starts at the same x in all three tabs. */
 function RowMark({ children }: { children?: ReactNode }) {
   return (
     <span className="mt-0.5 flex size-3 shrink-0 items-center justify-center self-start">
@@ -258,21 +227,16 @@ export function AgentInboxPanel({
   inbox,
   feed,
   onOpenNode,
-  /** Opens the conversation, where a waiting request is reviewed beside the change it makes. */
   onOpenConversation,
   onClose,
   briefCountsFor,
 }: {
-  /** Derived by the bell, which needs the same counts for its badge while this is closed. */
   inbox: BellInbox;
   feed: AgentActivityFeed;
   onOpenNode?: (slug: string) => void;
   onOpenConversation?: () => void;
   onClose?: () => void;
-  /**
-   * What a finished turn taught, printed before the agent's facts. A later slice supplies
-   * it from the ontology diff; absent, the row is what it was without this seam.
-   */
+  /** What a finished turn taught, printed before the agent's facts. */
   briefCountsFor?: (row: BellResult) => readonly BellFact[] | null;
 }) {
   const t = useTranslations('agentActivity');
@@ -285,14 +249,9 @@ export function AgentInboxPanel({
   };
 
   /*
-   * **Which tab opens is decided once, at mount, and never taken back.**
-   *
-   * The remembered tab wins while it has something in it; when it is empty the first tab
-   * that does wins, and the todo tab is first in that order, so a panel does not open on an
-   * empty tab while a request waits two tabs away. After that the person's own press is
-   * final — an empty tab a person deliberately opened must show its empty sentence, and
-   * content arriving later changes the **count in the label**, never the tab under the
-   * reader.
+   * Which tab opens is decided once, at mount: the remembered tab wins while it has content, else the first tab that does
+   * (todo first, so a waiting request is not two tabs away). After that the person's press is final; later content changes
+   * the count in the label, never the tab under the reader.
    */
   const [tab, setTab] = useState<BellTab>(() => {
     // The badge and the opening tab must name the same thing: a remembered non-empty tab must not win
@@ -362,16 +321,9 @@ export function AgentInboxPanel({
         aria-labelledby={`${TAB_ID_PREFIX}-tab-${tab}`}
         data-testid={`agent-inbox-panel-${tab}`}
         /*
-         * One scroller for the whole body. Two ceilings, in this order: **264px**, four
-         * whole rows of the 52px pitch plus 44 of the fifth — the partial row is the scroll
-         * affordance — and, when the window is shorter than that, whatever the flex column
-         * leaves after the header and the footer (`--map-panel-max-height` on the Surface).
-         *
-         * The panel's **own** height follows the tab (measured 188 · 344 · 388 px on the
-         * seeded folder): a popover that always reserved the tallest tab would hang 200px of
-         * empty ground over the map on the tab that matters most. What must not move is what
-         * the pointer is on — the header and the strip are above the body, so the edge that
-         * follows the content is the bottom one.
+         * One scroller for the whole body, capped at 264px (four whole 52px rows plus 44 of the fifth, the partial row being the scroll
+         * affordance) or, in a shorter window, what the flex column leaves (`--map-panel-max-height`). The panel's own height follows the
+         * tab so it does not hang empty ground over the map; the header and strip stay above the body so the pointer's target never moves.
          */
         className="min-h-0 flex-1 overflow-y-auto px-2 py-1.5 [max-height:264px]"
       >
@@ -440,20 +392,12 @@ export function AgentInboxPanel({
                         </>
                       ) : null}
                     </RowMark>
-                    {/*
-                      **Two lines, always.** The sentence and its object share the first
-                      line and the facts own the second, so a row with no object is the
-                      same height as a row with one (measured at three lines: 60 · 46 · 60
-                      · 62 px in one list, which is the copy deciding the grid).
-                    */}
+                    {/* Two lines, always: the sentence and its object share line one and the facts own line two, so a row with no object is as tall as one with. */}
                     <span className="grid min-w-0 flex-1 gap-0.5 text-left">
                       <span className={ROW_HEADLINE_CLASS}>
                         <span
                           className={cn(
-                            /*
-                             * Not `shrink-0`: at large text sizes the sentence kept its width and the object it names was
-                             * erased. Both halves truncate.
-                             */
+                            /* Not `shrink-0`: at large text sizes the sentence kept its width and erased the object it names; both halves truncate. */
                             'min-w-0 truncate text-label',
                             row.unread
                               ? 'text-[color:var(--color-text-primary)]'
@@ -501,18 +445,7 @@ export function AgentInboxPanel({
                         briefCounts={briefCountsFor?.(row) ?? null}
                         durationTitle={t('durationTitle')}
                       />
-                      {/*
-                        **Where the press goes is said in the one channel that has room
-                        for it.** The whole row is the button, so its accessible name was
-                        the sentence plus the facts and nothing in it said a press
-                        navigates — while History's node link has carried `openOnMap` from
-                        the start. It is appended here rather than set as `aria-label`,
-                        which would replace the row's summary with the destination, and it
-                        is omitted when neither door is wired: then the press only moves
-                        the read boundary, and naming a destination would be a claim.
-                        `sr-only` is absolutely positioned, so it adds no grid row and the
-                        52px pitch does not move.
-                      */}
+                      {/* Appended to the row's accessible name (not `aria-label`, which would replace its summary) so a press that navigates says so; omitted when neither door is wired, since then it only moves the read boundary. `sr-only` adds no grid row. */}
                       {row.kind === 'task' && row.node && onOpenNode ? (
                         <span className="sr-only">
                           {t('openOnMap', { name: row.node.name })}
@@ -749,7 +682,6 @@ function HistoryRow({
         <span className={ROW_HEADLINE_CLASS}>
           <span
             className={cn(
-              // Shrinkable for the same reason as the result row's sentence.
               'min-w-0 truncate text-label',
               problem
                 ? 'text-[color:var(--color-status-warning)]'
@@ -802,7 +734,6 @@ function HistoryRow({
   );
 }
 
-/** Marks every row read up to now. The only door that moves the boundary in one press. */
 export function MarkAllReadDoor({ onPress, label }: { onPress: () => void; label: string }) {
   return (
     <button
