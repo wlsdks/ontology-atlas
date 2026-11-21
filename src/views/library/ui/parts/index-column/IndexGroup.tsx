@@ -15,7 +15,7 @@ export function IndexGroupHeading({ label, count, locale }: { label: string; cou
       className="flex h-[38px] flex-none items-center justify-between gap-2 px-2 pt-2 text-label font-[var(--font-weight-emphasis)] tracking-label text-[color:var(--color-text-tertiary)]"
     >
       <span className="min-w-0 truncate">{label}</span>
-      <span className="flex-none font-normal tabular-nums text-[color:var(--color-text-quaternary)]">
+      <span className="flex-none font-normal tabular-nums">
         {count.toLocaleString(locale)}
       </span>
     </div>

@@ -9,7 +9,7 @@ export interface IndexRowProps {
   detail: string;
   /** Line 2, right; absent when the page has no date to show. */
   date: string | null;
-  /** Draws the dot and lifts line 2 one step, for a page that needs a person. */
+  /** Draws the dot, for a page that needs a person. */
   attention: boolean;
   selected: boolean;
   /** The row's accessible name and hover text: everything line 1 and 2 cut. */
@@ -48,21 +48,9 @@ export function IndexRow({ title, detail, date, attention, selected, label, onPr
       >
         {title}
       </span>
-      <span
-        className={cn(
-          "col-start-2 row-start-2 truncate text-label",
-          attention || selected ? "text-[color:var(--color-text-tertiary)]" : "text-[color:var(--color-text-quaternary)]",
-        )}
-      >
-        {detail}
-      </span>
+      <span className="col-start-2 row-start-2 truncate text-label text-[color:var(--color-text-tertiary)]">{detail}</span>
       {date ? (
-        <span
-          className={cn(
-            "col-start-3 row-start-2 whitespace-nowrap text-label tabular-nums",
-            selected ? "text-[color:var(--color-text-tertiary)]" : "text-[color:var(--color-text-quaternary)]",
-          )}
-        >
+        <span className="col-start-3 row-start-2 whitespace-nowrap text-label tabular-nums text-[color:var(--color-text-tertiary)]">
           {date}
         </span>
       ) : null}

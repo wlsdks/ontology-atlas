@@ -1098,7 +1098,7 @@
     "row": {
       "sources": "原文{count, number}件",
       "noSource": "原文なし",
-      "moreReasons": "{reason} ほか{count, number}件"
+      "moreReasons": "{reason}ほか{count, number}件"
     },
     "reason": {
       "disagreement": "ほかのページと食い違っています",
@@ -1121,12 +1121,12 @@
       "toSources": "原文タブでwikiページを作成"
     },
     "reading": "wikiページを読み込み中 · これまでに{count, number}件",
-    "pageGone": "{title} はもうwiki/ にありません。一覧に戻りました。"
+    "pageGone": "{title}はもうwiki/にありません。一覧に戻りました。"
   },
   "wikiLog": {
     "title": "記録",
     "lede": "このwikiで起きたことを新しい順に表示します。原文から書いたページ、検査、修正、保存した回答がここに積み重なります。",
-    "meta": "wiki/_log.md と wiki/answers/ から読み込み · {count, number}件",
+    "meta": "wiki/_log.mdとwiki/answers/から読み込み · {count, number}件",
     "kind": {
       "compile": "ページを作成",
       "lint": "検査",
@@ -1135,11 +1135,11 @@
     },
     "compiled": "原文{sources, number}件を読み込み · 新規{created, number}件 · 修正{revised, number}件",
     "noChange": "原文{sources, number}件を読み込み · 変更されたページなし",
-    "answer": "wikiに保存した回答: {title}",
+    "answer": "wikiに保存した回答：{title}",
     "byRound": "自動点検「{name}」",
-    "pageGone": "{name}(wiki/ にありません)",
+    "pageGone": "{name}(wiki/にありません)",
     "empty": "このwikiではまだ何も起きていません。原文からページを書く、wikiを検査する、回答を保存すると、ここに1行ずつ残ります。",
-    "unreadable": "wiki/_log.md を読み込めないため、保存した回答だけを表示しています。ファイルの権限を確認してください。読み込めるようになると一覧が更新されます。"
+    "unreadable": "wiki/_log.mdを読み込めないため、保存した回答だけを表示しています。ファイルの権限を確認してください。読み込めるようになると一覧が更新されます。"
   },
   "sourcesIndex": {
     "add": "原文を追加",

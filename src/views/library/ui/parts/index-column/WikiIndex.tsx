@@ -243,7 +243,7 @@ export function WikiIndex({
           renderItem={renderItem}
         />
         {readingCount !== null ? (
-          <p className="px-4 pt-2 text-label tabular-nums text-[color:var(--color-text-quaternary)]">
+          <p className="px-4 pt-2 text-label tabular-nums text-[color:var(--color-text-tertiary)]">
             {t("wikiIndex.reading", { count: readingCount })}
           </p>
         ) : null}

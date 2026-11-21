@@ -1121,12 +1121,12 @@
       "toSources": "원문 탭에서 위키 문서 만들기"
     },
     "reading": "위키 문서를 읽는 중 · 지금까지 {count, number}개",
-    "pageGone": "{title} 문서가 wiki/ 에 더 없어요. 목록으로 돌아왔어요."
+    "pageGone": "{title} 문서가 wiki/에 더 없어요. 목록으로 돌아왔어요."
   },
   "wikiLog": {
     "title": "기록",
     "lede": "이 위키에 일어난 일을 최근 것부터 보여 줘요. 원문으로 쓴 문서, 검사, 고친 일, 저장한 답이 여기 쌓여요.",
-    "meta": "wiki/_log.md 와 wiki/answers/ 에서 읽어요 · {count, number}건",
+    "meta": "wiki/_log.md와 wiki/answers/에서 읽어요 · {count, number}건",
     "kind": {
       "compile": "문서 씀",
       "lint": "검사함",
@@ -1137,9 +1137,9 @@
     "noChange": "원문 {sources, number}개 읽음 · 바뀐 문서 없음",
     "answer": "위키에 저장한 답: {title}",
     "byRound": "자동 점검 「{name}」",
-    "pageGone": "{name} (wiki/ 에 없음)",
+    "pageGone": "{name} (wiki/에 없음)",
     "empty": "아직 이 위키에 일어난 일이 없어요. 원문으로 문서를 쓰거나, 위키를 검사하거나, 답을 저장하면 여기에 한 줄씩 남아요.",
-    "unreadable": "wiki/_log.md 를 읽지 못해 저장한 답만 보여 줘요. 파일 권한을 확인하세요. 읽을 수 있게 되면 목록이 바로 바뀌어요."
+    "unreadable": "wiki/_log.md를 읽지 못해 저장한 답만 보여 줘요. 파일 권한을 확인하세요. 읽을 수 있게 되면 목록이 바로 바뀌어요."
   },
   "sourcesIndex": {
     "add": "원문 넣기",
