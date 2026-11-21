@@ -8,7 +8,7 @@ import { isMapKind, type LintFinding, type LintNodeCandidate } from "@/features/
 import { isRunActive, useWorkRunStage, type WorkRun } from "@/features/work-run";
 import { Button } from "@/shared/ui/controls/button";
 import type { WikiReport, WikiReportRow } from "@/shared/lib/library/wiki-report.mjs";
-import { Chip, Disclosure, Tooltip } from "@/shared/ui";
+import { Chip, Tooltip } from "@/shared/ui";
 import { BrandMark } from "@/shared/ui/marks/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
@@ -24,6 +24,7 @@ import { localizeWikiLogSummary } from "../../../lib/wiki/wiki-log-summary";
 import { AgentMissingNotice } from "../agent/AgentMissingNotice";
 import { WikiProblemSentence, type WikiProblemDoors } from "./WikiTemplateProblems";
 import { WikiCheckStage } from "./WikiCheckStage";
+import { CheckCodesButton } from "./CheckCodesDialog";
 
 /**
  * Two ledgers, the computed one first: what the app checked (from `model.structural`, needing no
@@ -261,7 +262,7 @@ function placeSuffix(where: WikiProblemWhere): string {
 }
 
 /**
- * The heading is a sentence and the code is one press away under `wiki.technical`. The 1px rule
+ * The heading is a sentence and the codes open in a dialog from its right edge. The 1px rule
  * makes the boundary between kinds structural rather than a matter of ink.
  */
 function StructuralGroup({
@@ -286,15 +287,24 @@ function StructuralGroup({
       data-advisory={group.advisory ? "true" : undefined}
       className="mt-5 border-t border-[color:var(--color-divider)] pt-4"
     >
-      <h4
-        id={`report-code-${group.code}`}
-        className="scroll-mt-4 text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
-      >
-        {reportRuleTitle(group.code, t)}
-        <span className="ml-2 text-label font-normal text-[color:var(--color-text-quaternary)]">
-          {group.count}
-        </span>
-      </h4>
+      <div className="flex items-start justify-between gap-3">
+        <h4
+          id={`report-code-${group.code}`}
+          className="min-w-0 scroll-mt-4 text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+        >
+          {reportRuleTitle(group.code, t)}
+          <span className="ml-2 text-label font-normal text-[color:var(--color-text-quaternary)]">
+            {group.count}
+          </span>
+        </h4>
+        {/* Every finding the validator fired, not the rows this page collapsed them into. */}
+        <CheckCodesButton
+          lines={group.rows.map((row) => `${row.page} — ${wikiProblemMachineLine(row)}`)}
+          testId={`library-structural-technical-${group.code}`}
+          codeTestId="library-structural-code"
+          t={t}
+        />
+      </div>
       {rule.sentence ? (
         <p
           data-testid="library-structural-rule"
@@ -340,27 +350,6 @@ function StructuralGroup({
           </li>
         ))}
       </ul>
-      {/* The machine's own vocabulary, whole, one press away — every finding the validator
-          fired, not the rows this page collapsed them into. Deliberately not localised: a
-          person opening this is holding the screen beside a terminal or an agent
-          transcript, and a translated synonym is a word they would have to map back. */}
-      <Disclosure
-        className="mt-2.5"
-        summary={t("wiki.technical")}
-        summaryTestId={`library-structural-technical-${group.code}`}
-      >
-        <ul className="mt-1.5 flex flex-col gap-1">
-          {group.rows.map((row, index) => (
-            <li
-              key={`${row.page}-${row.code}-${row.line ?? index}`}
-              data-testid="library-structural-code"
-              className="font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"
-            >
-              {`${row.page} — ${wikiProblemMachineLine(row)}`}
-            </li>
-          ))}
-        </ul>
-      </Disclosure>
     </section>
   );
 }
@@ -411,8 +400,8 @@ export function LibraryCheckReport({
   /** Why it cannot run here, for the disabled chip. Null when it can. */
   lintBlockedReason?: string | null;
   /**
-   * The installed app found no coding agent: the chip gives way to the index's `AgentMissingNotice` so
-   * one missing agent reads one way on both sides.
+   * The installed app found no coding agent: the chip gives way to `AgentMissingNotice` and its door to
+   * the agents page.
    */
   agentMissing?: boolean;
   onFix: ((finding: LintFinding) => void) | null;
@@ -505,6 +494,64 @@ export function LibraryCheckReport({
         <h2 className="text-display font-[var(--font-weight-signature)] leading-title tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
           {t("report.title")}
         </h2>
+        {/* Check wiki lives in the report's head. Availability is a state with its reason: with no coding
+           agent at all the notice and its door replace a dead chip; while one is still being looked for, or a
+           local model can only write pages, the chip stays beside its reason. */}
+        {checkRunning ? null : onLint === null && agentMissing ? (
+          <AgentMissingNotice
+            testId="library-check-report-agent-missing"
+            doorTestId="library-check-report-agent-missing-door"
+            className="mt-3 w-fit max-w-full"
+            t={t}
+          />
+        ) : onLint || lintBlockedReason ? (
+          <div className="mt-3 flex flex-col items-start gap-1.5">
+            <Chip
+              data-testid="library-check-report-lint"
+              onClick={onLint ?? undefined}
+              disabled={busy || onLint === null}
+              tone="secondary"
+              hoverInk="strong"
+              data-report-state={running ? "running" : undefined}
+              aria-describedby={onLint === null && lintBlockedReason ? "library-check-report-lint-blocked" : undefined}
+            >
+              {running ? (
+                /*
+                 * The wait replaces the icon in its own slot, so the label does not move —
+                 * the inline form `AgentClientButtons` already proves, a 14px slot holding
+                 * the 16px micro mark. The word is said once, live, for a screen reader;
+                 * the mark says it for everybody else.
+                 */
+                <span
+                  data-testid="library-check-report-running"
+                  className="relative inline-flex size-3.5 shrink-0"
+                >
+                  <BrandMark
+                    detail="micro"
+                    alt=""
+                    aria-hidden
+                    className="atlas-inline-waiting-mark absolute left-1/2 top-1/2 size-4 max-w-none -translate-x-1/2 -translate-y-1/2"
+                  />
+                  <span aria-live="polite" className="sr-only">
+                    {t("report.running")}
+                  </span>
+                </span>
+              ) : (
+                <Stethoscope size={ICON_SIZE.sm} aria-hidden />
+              )}
+              <span>{t("wiki.lint")}</span>
+            </Chip>
+            {onLint === null && lintBlockedReason ? (
+              <p
+                id="library-check-report-lint-blocked"
+                data-testid="library-check-report-lint-blocked"
+                className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+              >
+                {lintBlockedReason}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
       </header>
 
       {structural ? (
@@ -699,65 +746,6 @@ export function LibraryCheckReport({
                   ? t("report.clean")
                   : lastLint ? (lastCheckFoundSomething ? t("report.gone") : t("report.clean")) : t("report.emptyLede")}
             </p>
-          </div>
-        ) : null}
-
-        {/* Availability is a state with its reason. With no coding agent at all, the index's notice with its
-           door replaces a dead chip; while one is still being looked for, or a local model can only compile,
-           the chip stays beside its reason. */}
-        {checkRunning ? null : onLint === null && agentMissing ? (
-          <AgentMissingNotice
-            testId="library-check-report-agent-missing"
-            doorTestId="library-check-report-agent-missing-door"
-            className="mt-4 w-fit max-w-full"
-            t={t}
-          />
-        ) : onLint || lintBlockedReason ? (
-          <div className="mt-4 flex flex-col items-start gap-1.5">
-            <Chip
-              data-testid="library-check-report-lint"
-              onClick={onLint ?? undefined}
-              disabled={busy || onLint === null}
-              tone="secondary"
-              hoverInk="strong"
-              data-report-state={running ? "running" : undefined}
-              aria-describedby={onLint === null && lintBlockedReason ? "library-check-report-lint-blocked" : undefined}
-            >
-              {running ? (
-                /*
-                 * The wait replaces the icon in its own slot, so the label does not move —
-                 * the inline form `AgentClientButtons` already proves, a 14px slot holding
-                 * the 16px micro mark. The word is said once, live, for a screen reader;
-                 * the mark says it for everybody else.
-                 */
-                <span
-                  data-testid="library-check-report-running"
-                  className="relative inline-flex size-3.5 shrink-0"
-                >
-                  <BrandMark
-                    detail="micro"
-                    alt=""
-                    aria-hidden
-                    className="atlas-inline-waiting-mark absolute left-1/2 top-1/2 size-4 max-w-none -translate-x-1/2 -translate-y-1/2"
-                  />
-                  <span aria-live="polite" className="sr-only">
-                    {t("report.running")}
-                  </span>
-                </span>
-              ) : (
-                <Stethoscope size={ICON_SIZE.sm} aria-hidden />
-              )}
-              <span>{t("wiki.lint")}</span>
-            </Chip>
-            {onLint === null && lintBlockedReason ? (
-              <p
-                id="library-check-report-lint-blocked"
-                data-testid="library-check-report-lint-blocked"
-                className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-              >
-                {lintBlockedReason}
-              </p>
-            ) : null}
           </div>
         ) : null}
 

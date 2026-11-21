@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 /**
  * `pnpm bundle:plan` / `pnpm bundle:prune`: plan landing many branches (carry work, file overlap,
- * in-order conflicts via `git merge-tree`), prune only branches `main` provably landed. Selection
- * is explicit (names, `--match=<glob>`, `--worktrees=<dir>`); procedure in the `/land` skill.
+ * in-order conflicts via `git merge-tree`), prune only branches whose head is in `main`'s history. Selection
+ * is explicit (names, `--match=<glob>`, `--worktrees=<dir>`); procedure in the `/merge` skill.
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import { basename, join, resolve, sep } from 'node:path';
+
+/** The only history a branch may be deleted against: anything else would drop work main lacks. */
+export const PRUNE_BASE = 'origin/main';
 
 export function parseArgs(argv) {
   const args = { command: null, base: 'origin/main', fetch: true, apply: false, json: false, match: [], worktrees: [], branches: [] };
@@ -22,7 +25,10 @@ export function parseArgs(argv) {
     else if (arg.startsWith('--')) throw new Error(`unknown option ${arg}`);
     else args.branches.push(arg);
   }
-  if (!args.command) throw new Error('usage: bundle-branches.mjs plan|prune [--base=origin/main] [--match=<glob>] [--worktrees=<dir>] [branch...] [--apply] [--json] [--no-fetch]');
+  if (!args.command) throw new Error('usage: bundle-branches.mjs plan|prune [--base=<ref> (plan only)] [--match=<glob>] [--worktrees=<dir>] [branch...] [--apply] [--json] [--no-fetch]');
+  if (args.command === 'prune' && args.base !== PRUNE_BASE) {
+    throw new Error(`prune deletes only what ${PRUNE_BASE} holds; --base=${args.base} is for plan`);
+  }
   if (args.match.length + args.worktrees.length + args.branches.length === 0) {
     throw new Error('select branches explicitly: name them, or pass --match=<glob> or --worktrees=<dir>');
   }
@@ -35,7 +41,7 @@ export function makeGit(cwd) {
     if (result.status !== 0 && !allowFailure) {
       throw new Error(`git ${argv.join(' ')} failed: ${(result.stderr || result.stdout).trim()}`);
     }
-    return { status: result.status, stdout: result.stdout.trim() };
+    return { status: result.status, stdout: result.stdout.trim(), stderr: result.stderr.trim() };
   };
   return {
     out: (...argv) => run(argv).stdout,
@@ -93,32 +99,19 @@ export function landedPoint(git, base, branch) {
   return commits.find((sha) => isContained(git, base, sha)) ?? null;
 }
 
-/** Containment checks per branch are capped; a landing sits among the first commits that touch its files. */
-const LANDING_CANDIDATE_LIMIT = 50;
-
 /**
- * `{ landedAt }` when `base` landed `branch` as it stands, else `{ keep }`. The
- * landing is the first first-parent commit touching a file any branch commit
- * touched that contains the branch; a head that differs from it where an earlier
- * branch commit matched it moved after the landing (a later revert, say).
+ * `{ landedAt }` when `ref`'s head commit is in `base`'s history, else `{ keep }`. Only ancestry
+ * counts: a squash, rebase or cherry-pick leaves the branch's own commits out of `main`, so its
+ * name must stay until a real merge brings them in. `landedAt` is the first-parent commit of
+ * `base` that merged it, or null when `ref` sits on that line itself.
  */
-export function landingProof(git, base, branch) {
-  const contained = isContained(git, base, branch);
-  const mergeBase = git.try('merge-base', base, branch).stdout;
-  if (!mergeBase) return contained ? { landedAt: null } : { keep: `not provably landed in ${base}` };
-  const files = [...new Set(git.out('-c', 'core.quotePath=false', 'log', '--format=', '--name-only', `${mergeBase}..${branch}`)
-    .split('\n').filter(Boolean))];
-  if (files.length === 0) return contained ? { landedAt: null } : { keep: `not provably landed in ${base}` };
-  const candidates = git.out('-c', 'core.quotePath=false', 'rev-list', '--reverse', '--first-parent', `${mergeBase}..${base}`, '--', ...files)
-    .split('\n').filter(Boolean).slice(0, LANDING_CANDIDATE_LIMIT);
-  const landing = candidates.find((sha) => isContained(git, sha, branch)) ?? null;
-  if (!landing) return contained ? { landedAt: null } : { keep: `not provably landed in ${base}` };
-  const same = (a, b) => git.try('diff', '--quiet', a, b, '--', ...files).status === 0;
-  const commits = git.out('rev-list', `${mergeBase}..${branch}`).split('\n').filter(Boolean);
-  if (commits.some((sha) => same(sha, landing)) && !same(branch, landing)) {
-    return { keep: `the branch moved after what landed in ${landing.slice(0, 9)}` };
+export function headLanded(git, base, ref) {
+  if (git.try('merge-base', '--is-ancestor', ref, base).status !== 0) {
+    const head = git.out('rev-parse', '--short', ref);
+    return { keep: `not provably landed: head ${head} is not in ${base}'s history (unmerged, squashed, rebased or cherry-picked)` };
   }
-  return { landedAt: landing };
+  const merging = git.out('rev-list', '--ancestry-path', '--first-parent', '--reverse', `${ref}..${base}`).split('\n')[0];
+  return { landedAt: merging || null };
 }
 
 /** This process and its ancestors. */
@@ -157,7 +150,7 @@ function agentTwin(git, base, tree, trees) {
   if (!/^worktree-agent-[0-9a-f]+$/.test(twin) || twin === tree.branch) return null;
   if (git.try('rev-parse', '--verify', '--quiet', `refs/heads/${twin}`).status !== 0) return null;
   if (trees.some((other) => other.branch === twin)) return null;
-  return 'keep' in landingProof(git, base, twin) ? null : twin;
+  return 'keep' in headLanded(git, base, twin) ? null : twin;
 }
 
 export function planBundle(git, base, branches) {
@@ -198,7 +191,7 @@ export function formatPlan({ base, rows, overlaps, steps }) {
   const lines = [`Bundle plan against ${base}`, ''];
   for (const row of rows) {
     const landed = row.landed && row.state === 'pending'
-      ? `; carries commits ${base} already has, so first run git rebase --onto ${base} ${row.landed.slice(0, 9)} ${row.branch}`
+      ? `; carries commits ${base} took as a squash up to ${row.landed.slice(0, 9)}, so merge ${base} into it first (never rebase)`
       : '';
     lines.push(`  ${row.state.padEnd(9)} ${row.branch} @ ${row.head}  (${row.ahead} commit(s), ${row.files.length} file(s)${landed})`);
   }
@@ -224,6 +217,22 @@ function ghJson(args) {
   }
 }
 
+/** The open pull request of a pushed branch, and how to close one; tests pass their own. */
+export const githubPulls = {
+  openFor: (branch) => ghJson(['pr', 'list', '--head', branch, '--state', 'open', '--json', 'number'])?.[0]?.number ?? null,
+  close: (number, comment) => spawnSync('gh', ['pr', 'close', String(number), '--comment', comment], { stdio: 'ignore' }),
+};
+
+/** A branch that lives only on origin, such as a pushed integration branch whose local copy is gone. */
+function remoteOnlyPlan(git, base, branch) {
+  const ref = `refs/remotes/origin/${branch}`;
+  if (git.try('rev-parse', '--verify', '--quiet', ref).status !== 0) return { branch, keep: 'no local or origin branch' };
+  const head = git.out('rev-parse', ref);
+  const proof = headLanded(git, base, ref);
+  if (proof.keep) return { branch, head, keep: proof.keep };
+  return { branch, head, landedAt: proof.landedAt, worktree: null, unlock: null, twin: null, remote: true, remoteOnly: true, remoteHead: head };
+}
+
 /** Removes worktrees only under `.claude/worktrees/` or a named `--worktrees` dir. */
 export function prunePlan(git, base, branches, {
   currentPath = process.cwd(), isAlive = processIsAlive, own = null, worktreeDirs = [],
@@ -234,9 +243,9 @@ export function prunePlan(git, base, branches, {
   let ownSet = own;
   return branches.map((branch) => {
     const exists = git.try('rev-parse', '--verify', '--quiet', `refs/heads/${branch}`).status === 0;
-    if (!exists) return { branch, keep: 'no local branch' };
+    if (!exists) return remoteOnlyPlan(git, base, branch);
     const head = git.out('rev-parse', branch);
-    const proof = landingProof(git, base, branch);
+    const proof = headLanded(git, base, branch);
     if (proof.keep) return { branch, head, keep: proof.keep };
     const { landedAt } = proof;
     const tree = trees.find((t) => t.branch === branch) ?? null;
@@ -255,7 +264,8 @@ export function prunePlan(git, base, branches, {
       return { branch, head, keep: 'origin has commits this branch lacks' };
     }
     const twin = tree ? agentTwin(git, base, tree, trees) : null;
-    return { branch, head, landedAt, worktree: tree?.path ?? null, unlock: tree?.locked ?? null, twin, remote };
+    const remoteHead = remote ? git.out('rev-parse', `refs/remotes/origin/${branch}`) : null;
+    return { branch, head, landedAt, worktree: tree?.path ?? null, unlock: tree?.locked ?? null, twin, remote, remoteHead };
   });
 }
 
@@ -281,15 +291,13 @@ export function runBundle(argv, io = console) {
 }
 
 /** Prints each action and, with `apply`, performs it; worktree metadata is pruned once at the end. */
-export function applyPrune(git, actions, { apply, base = 'origin/main', io = console }) {
-  let removedWorktree = false;
+export function applyPrune(git, actions, { apply, base = 'origin/main', io = console, pulls = githubPulls }) {
   for (const action of actions) {
     if (action.keep) {
       io.log(`keep   ${action.branch}: ${action.keep}`);
       continue;
     }
-    const pr = action.remote ? ghJson(['pr', 'list', '--head', action.branch, '--state', 'open', '--json', 'number']) : null;
-    const prNumber = pr?.[0]?.number ?? null;
+    const prNumber = action.remote ? pulls.openFor(action.branch) : null;
     io.log(`${apply ? 'prune ' : 'would prune'} ${action.branch} @ ${action.head.slice(0, 9)}`
       + `${action.landedAt ? `  landed in ${action.landedAt.slice(0, 9)}` : ''}`
       + `${action.worktree ? `  worktree ${action.worktree}${action.unlock ? ' (unlock)' : ''}` : ''}`
@@ -302,17 +310,19 @@ export function applyPrune(git, actions, { apply, base = 'origin/main', io = con
         io.log(`keep   ${action.branch}: worktree ${action.worktree} could not be removed`);
         continue;
       }
-      removedWorktree = true;
     }
     if (prNumber) {
       const where = action.landedAt ? `Landed in ${action.landedAt.slice(0, 9)}` : `Contained in ${base}`;
-      spawnSync('gh', ['pr', 'close', String(prNumber), '--comment', `${where}; closing the component.`], { stdio: 'ignore' });
+      pulls.close(prNumber, `${where}; closing the component.`);
     }
-    git.try('branch', '-D', action.branch);
+    if (!action.remoteOnly) git.try('branch', '-D', action.branch);
     if (action.twin) git.try('branch', '-D', action.twin);
-    if (action.remote) git.try('push', '--quiet', 'origin', '--delete', action.branch);
+    if (action.remote) git.try('push', '--quiet', `--force-with-lease=${action.branch}:${action.remoteHead}`, 'origin', '--delete', action.branch);
   }
-  if (apply && removedWorktree) git.try('worktree', 'prune');
+  if (apply) {
+    git.try('worktree', 'prune');
+    if (git.try('remote', 'get-url', 'origin').status === 0) git.try('fetch', '--quiet', '--prune', 'origin');
+  }
   if (!apply) io.log('\nDry run. Re-run with --apply to prune the branches listed above; each head sha is printed for recovery.');
 }
 

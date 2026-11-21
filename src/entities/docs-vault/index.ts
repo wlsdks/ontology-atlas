@@ -62,8 +62,20 @@ export type {
 } from './lib/library/vault-library';
 export { deriveSourceProgress, recordedInstantMs, recordedLocalDay } from './lib/library/source-progress';
 export type { SourceProgress, SourceProgressPoint } from './lib/library/source-progress';
-export { candidateKey, discoverCandidatesInHandle } from './lib/library/source-discovery';
-export type { SourceCandidate, SourceDiscoveryReport } from './lib/library/source-discovery';
+export {
+  candidateKey,
+  discoverCandidatesInHandle,
+  discoverySkipReason,
+  walkDroppedFolder,
+  withoutVaultOwnedMarkdown,
+} from './lib/library/source-discovery';
+export { sourceFolderOf } from './lib/library/source-folder';
+export type {
+  DiscoverySkipReason,
+  DroppedEntry,
+  SourceCandidate,
+  SourceDiscoveryReport,
+} from './lib/library/source-discovery';
 export {
   buildProjectMarkdown,
   projectToFrontmatter,

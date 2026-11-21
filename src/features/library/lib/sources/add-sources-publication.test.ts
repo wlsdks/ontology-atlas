@@ -16,7 +16,12 @@ function fixture(existing: string[] = [], failure = false) {
   const sources = {
     kind: 'directory', name: 'sources',
     async *entries() { yield* entries; },
-    async getFileHandle(name: string) {
+    async getDirectoryHandle() { throw new DOMException('missing', 'NotFoundError'); },
+    async getFileHandle(name: string, options?: { create?: boolean }) {
+      if (!options?.create) {
+        if (entries.has(name)) return file(name);
+        throw new DOMException('missing', 'NotFoundError');
+      }
       entries.set(name, file(name));
       const swap = `${name}.crswap`;
       const hadSwap = entries.has(swap);
@@ -93,7 +98,7 @@ describe('source copy publication', () => {
     expect(await paths(f.root)).toEqual(['sources/kept.txt']);
     f.release();
     const outcome = await importing;
-    expect(outcome.results).toEqual([expect.objectContaining({ status: 'failed', reason: 'Copy refused' })]);
+    expect(outcome.results).toEqual([expect.objectContaining({ status: 'failed', reason: 'import-destination-unwritable' })]);
     expect(f.abort).toHaveBeenCalledOnce();
     expect(await paths(f.root)).toEqual(['sources/kept.txt', 'sources/new.txt']);
   });

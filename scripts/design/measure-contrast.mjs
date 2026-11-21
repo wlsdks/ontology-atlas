@@ -43,6 +43,7 @@ export const DEFAULT_ROUTES = [
   "/ko/guide/what-is-atlas/",
   "/ko/git/",
   "/ko/changes/",
+  "/ko/work-status/",
   "/ko/agents/",
   "/ko/agents/?tab=mcp",
   "/ko/agents/?tab=models",

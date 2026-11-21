@@ -41,6 +41,8 @@ area: architecture
 │ ├─ /ontology/insights      compatibility → map         │
 │ ├─ /git                    vault Git workbench         │
 │ ├─ /changes                source change briefing      │
+│ ├─ /work-status            worktrees and the agent     │
+│ │                          sessions holding them       │
 │ ├─ /planning               selected project documents  │
 │ ├─ /agents                 agents · MCP, two tabs      │
 │ ├─ /mcp                    compatibility → /agents      │
@@ -922,6 +924,8 @@ until a local manifest, or the first part of one, exists.
 /automations               schedules for agent work and the results of their runs
 /changes                   what was merged in the connected source repository, and which few
                            changes deserve a person's own eyes
+/work-status               which agent session holds which worktree of a repository and
+                           whether its work is merged; the web shows a degradation card
 /projects                  project list (cards)
 /project/[slug]            project detail (inline edit when vault loaded)
 /project/[slug]/edit       full project editor

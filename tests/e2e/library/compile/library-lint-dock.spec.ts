@@ -189,45 +189,30 @@ test.describe("Check the wiki opens the agent dock", () => {
     await installDesktopBridge(page);
   });
 
-  test("the chip stands beside Compile and is enabled once two pages exist", async ({ page }) => {
+  test("Check wiki stands in the report's head, not the column, and is enabled once two pages exist", async ({ page }) => {
     await openFolder(page);
-    const lint = page.getByTestId("library-lint");
-    await expect(lint).toBeVisible({ timeout: 25_000 });
-    await expect(lint).toBeEnabled();
-    await expect(page.getByTestId("library-compile")).toBeVisible();
+    const column = page.getByTestId("library-index");
+    await expect(page.getByTestId("library-open-report")).toBeVisible({ timeout: 25_000 });
+    await expect(column.getByTestId("library-lint")).toHaveCount(0);
+    await expect(column.getByTestId("library-compile")).toHaveCount(0);
     // The shipped template is in the folder and is not a page: two rows, and the reader opens a real page.
     await expect(page.getByTestId("library-wiki")).not.toContainText("<the page name>");
     await expect(page.getByTestId("library-wiki")).not.toContainText("Wiki log");
     await expect(page.getByTestId("library-workspace-wiki")).toHaveAccessibleName("Wiki, 2");
-    /*
-     * Both doors take the full row, since at 11px the compile label truncated in half a column;
-     * the width assertion is that the group fills its column (`docs/DESIGN-SYSTEM.md`).
-     */
-    const [lintBox, compileBox, fieldBox] = await Promise.all([
-      lint.boundingBox(),
-      page.getByTestId("library-compile").boundingBox(),
-      page.getByTestId("library-search-box").boundingBox(),
-    ]);
-    expect(lintBox!.y, "reading stands above writing").toBeLessThan(compileBox!.y);
-    expect(Math.abs(lintBox!.x - compileBox!.x), "the two doors share a left edge").toBeLessThan(1);
-    for (const box of [lintBox!, compileBox!]) {
-      expect(Math.abs(box.x - fieldBox!.x), "a door starts where the search field does").toBeLessThan(1);
-      expect(
-        Math.abs(box.x + box.width - (fieldBox!.x + fieldBox!.width)),
-        "a door ends where the search field does",
-      ).toBeLessThan(1);
-    }
     // The last check's record is read on the Check results page, not in the column.
     await expect(page.getByTestId("library-wiki-log")).toHaveCount(0);
     await page.getByTestId("library-open-report").click();
-    await expect(page.getByTestId("library-check-report-when")).toContainText("superseded 1");
     await expect(page.getByTestId("library-check-report")).toBeVisible();
+    const lint = page.getByTestId("library-check-report").locator("header").getByTestId("library-check-report-lint");
+    await expect(lint).toBeEnabled();
+    await expect(page.getByTestId("library-check-report-when")).toContainText("newer source differs 1");
     await expect(page.getByTestId("library-reading-pane")).toHaveCount(0);
   });
 
   test("pressing it opens the dock carrying a lint request", async ({ page }) => {
     await openFolder(page);
-    await page.getByTestId("library-lint").click();
+    await page.getByTestId("library-open-report").click();
+    await page.getByTestId("library-check-report-lint").click();
     const dock = page.getByTestId("library-agent-dock");
     await expect(dock).toBeVisible({ timeout: 25_000 });
     await expect(dock).toHaveAttribute("data-agent-request-kind", "lint");

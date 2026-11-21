@@ -107,6 +107,7 @@ export const VOCABULARY = {
         'settings.projectForm.fields.stackPlaceholder': "technology names",
         'settings.projectForm.fields.tagsPlaceholder': "example tags",
         'agents.models.providerGemini': "a product name",
+        'workStatus.tool.claudeCode': "a product name",
         'agents.models.localBaseUrlPlaceholder': "a URL",
         'agents.models.runnerLmStudio': "a product name",
         'agents.models.runnerLlamaCpp': "a product name",

@@ -1,0 +1,81 @@
+{
+  "title": "工作状态",
+  "summary": "由运行中会话占用 <runningCount>{running}</runningCount> · 受阻 <stuckCount>{stuck}</stuckCount>",
+  "repoLine": "{repo} · 这台 Mac 上的 {count} 个工作树",
+  "headline": {
+    "running": "{count} 个工作树由运行中的会话占用",
+    "stuck": "{count} 个工作树受阻",
+    "idle": "{repo} 中没有被运行中会话锁定的工作树"
+  },
+  "band": {
+    "mac": "这台 Mac",
+    "server": "服务器",
+    "seam": "push"
+  },
+  "ruler": {
+    "working": "工作中",
+    "checks": "检查",
+    "prePush": "pre-push",
+    "pr": "PR",
+    "ci": "CI",
+    "ready": "可合并",
+    "main": "main"
+  },
+  "group": {
+    "stuck": "受阻",
+    "merged": "已合并 ({count})",
+    "unheld": "没有会话锁"
+  },
+  "session": {
+    "header": "{tool} · 会话 {number}",
+    "started": "{time} 开始",
+    "subagents": "{count} 个子代理"
+  },
+  "tool": {
+    "acp": "Atlas 中的 Claude Agent",
+    "claudeCode": "Claude Code",
+    "unknown": "代理"
+  },
+  "holder": {
+    "locked": "{tool} 子代理 {id} · {time} 锁定",
+    "lockedUnnamed": "{time} 锁定",
+    "noLock": "未锁定 · 最后一次提交 {ago}，{author}",
+    "noLockQuiet": "未锁定",
+    "subagent": "子代理 {id}",
+    "lastCommit": "{ago}，{author}",
+    "staleLock": "由已结束的 {tool} 会话锁定",
+    "ended": "会话已结束"
+  },
+  "row": {
+    "noCommits": "{branch} 之后没有提交",
+    "commits": "{branch} 之后有 {count} 个提交",
+    "missing": "文件夹 {folder} 不存在。运行 git worktree prune 会删除它的记录。",
+    "lockLeft": "锁定此工作树的 {tool} 会话已结束。{count, plural, =0 {{branch} 之后没有提交。} other {{branch} 之后有 # 个提交尚未合并。}}",
+    "unknown": "无法与 {branch} 比较"
+  },
+  "chip": {
+    "missing": "文件夹不存在",
+    "lockLeft": "仅剩锁定"
+  },
+  "station": {
+    "mergedInto": "已合并到 {branch}"
+  },
+  "connect": {
+    "notConnected": "尚未连接 {host}。连接后显示 PR 和 CI。"
+  },
+  "noRemote": "没有远程仓库，因此没有可显示的 PR 和 CI。",
+  "unreadable": "无法读取 {repo}。请重新选择仓库文件夹以授予访问权限。",
+  "choose": {
+    "title": "选择你的代理工作的 Git 仓库",
+    "action": "选择仓库文件夹"
+  },
+  "empty": {
+    "title": "{repo} 只有主检出",
+    "body": "代理每创建一个工作树，工作状态中就多一行，并显示占用它的会话。"
+  },
+  "web": {
+    "title": "工作状态在桌面应用中运行",
+    "body": "浏览器无法运行 git，也无法读取这台计算机的进程。在这个浏览器中，你仍然可以打开文件夹的地图和资料库。"
+  },
+  "notRepository": "文件夹 {folder} 不是 Git 仓库。请选择包含项目 .git 的文件夹。"
+}

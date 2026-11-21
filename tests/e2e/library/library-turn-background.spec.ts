@@ -142,14 +142,15 @@ test.describe("a writing Library turn keeps running away from the Library", () =
     await goToMap(page);
     await rail(page).getByTestId("app-nav-rail-item-library").click();
     await expect(page.getByTestId("library-agent-dock")).toBeVisible();
-    await expect(page.getByTestId("library-compile")).toBeDisabled();
+    await page.getByTestId("library-workspace-sources").click();
+    await expect(page.getByTestId("library-progress-continue")).toBeDisabled();
     await expect(card(page)).toHaveCount(0);
 
     await askWrite(page, "wiki/architecture.md", wikiPage("Architecture"));
     await expect.poll(() => writesTo(page, "wiki/architecture.md")).toBe(1);
     await harnessAnswer(page, "Wrote the architecture page.");
     await expect.poll(() => logEntries(page), { message: "the turn's log entry" }).toBe(1);
-    await expect(page.getByTestId("library-compile")).toBeEnabled();
+    await expect(page.getByTestId("library-progress-continue")).toBeEnabled();
     expect((await harnessCalls(page)).filter((method) => method === "session/prompt"), "the return restarted the turn").toHaveLength(1);
   });
 

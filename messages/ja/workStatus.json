@@ -1,0 +1,81 @@
+{
+  "title": "作業状況",
+  "summary": "稼働中のセッションが保持<runningCount>{running}</runningCount> · 停止<stuckCount>{stuck}</stuckCount>",
+  "repoLine": "{repo} · このMacのワークツリー{count}個",
+  "headline": {
+    "running": "稼働中のセッションが{count}個のワークツリーを保持しています",
+    "stuck": "{count}個のワークツリーが止まっています",
+    "idle": "{repo}に稼働中のセッションがロックしたワークツリーはありません"
+  },
+  "band": {
+    "mac": "このMac",
+    "server": "サーバー",
+    "seam": "push"
+  },
+  "ruler": {
+    "working": "作業中",
+    "checks": "チェック",
+    "prePush": "pre-push",
+    "pr": "PR",
+    "ci": "CI",
+    "ready": "マージ可能",
+    "main": "main"
+  },
+  "group": {
+    "stuck": "停止",
+    "merged": "マージ済み ({count})",
+    "unheld": "セッションのロックなし"
+  },
+  "session": {
+    "header": "{tool} · セッション{number}",
+    "started": "{time}開始",
+    "subagents": "サブエージェント{count}個"
+  },
+  "tool": {
+    "acp": "Atlas内のClaude Agent",
+    "claudeCode": "Claude Code",
+    "unknown": "エージェント"
+  },
+  "holder": {
+    "locked": "{tool}のサブエージェント{id} · {time}にロック",
+    "lockedUnnamed": "{time}にロック",
+    "noLock": "ロックなし · 最後のコミットは{ago}、{author}",
+    "noLockQuiet": "ロックなし",
+    "subagent": "サブエージェント{id}",
+    "lastCommit": "{ago}、{author}",
+    "staleLock": "終了した{tool}セッションがロックしたワークツリー",
+    "ended": "セッション終了"
+  },
+  "row": {
+    "noCommits": "{branch}以降のコミットなし",
+    "commits": "{branch}以降のコミット{count}個",
+    "missing": "{folder}フォルダがありません。git worktree pruneを実行するとこの記録が削除されます。",
+    "lockLeft": "このワークツリーをロックした{tool}セッションは終了しました。{count, plural, =0 {{branch}以降のコミットはありません。} other {{branch}以降のコミット#個は未マージです。}}",
+    "unknown": "{branch}と比較できませんでした"
+  },
+  "chip": {
+    "missing": "フォルダなし",
+    "lockLeft": "ロックのみ残存"
+  },
+  "station": {
+    "mergedInto": "{branch}にマージ済み"
+  },
+  "connect": {
+    "notConnected": "{host}は未接続です。接続でPRとCIを表示します。"
+  },
+  "noRemote": "リモートがないため、表示するPRとCIはありません。",
+  "unreadable": "{repo}を読み込めませんでした。リポジトリフォルダをもう一度選んでアクセスを許可してください。",
+  "choose": {
+    "title": "エージェントが作業するGitリポジトリを選んでください",
+    "action": "リポジトリフォルダを選ぶ"
+  },
+  "empty": {
+    "title": "{repo}にはメインのチェックアウトしかありません",
+    "body": "エージェントがワークツリーを作るたびに作業状況に1行ずつ増え、そのワークツリーを保持するセッションも表示されます。"
+  },
+  "web": {
+    "title": "作業状況はデスクトップアプリで開きます",
+    "body": "ブラウザはgitを実行したり、このコンピュータのプロセスを読んだりできません。このブラウザでも、フォルダのマップとライブラリは開けます。"
+  },
+  "notRepository": "{folder}フォルダはGitリポジトリではありません。リポジトリの最上位フォルダを選んでください。"
+}

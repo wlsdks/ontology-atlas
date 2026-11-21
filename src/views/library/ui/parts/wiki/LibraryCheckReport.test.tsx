@@ -95,7 +95,7 @@ function group(code: string) {
 describe("the check's answer is a page in the pane", () => {
   it("heads with the app's own record of the last check", () => {
     mount(<Harness />);
-    expect(screen.getByTestId("library-check-report-when").textContent).toContain("superseded 2");
+    expect(screen.getByTestId("library-check-report-when").textContent).toContain("newer source differs 2");
   });
 
   it("does not call a reopened app clean: an empty page under a log that counts findings says they are gone", () => {
@@ -113,6 +113,8 @@ describe("the check's answer is a page in the pane", () => {
     const onLint = vi.fn();
     mount(<Harness lastLint={null} onLint={onLint} />);
     expect(screen.getByTestId("library-check-report-when").textContent).toContain("has not read these pages yet");
+    // The press stands in the report's head, above both ledgers, now that the index column has no doors.
+    expect(screen.getByTestId("library-check-report").querySelector("header")!.contains(screen.getByTestId("library-check-report-lint"))).toBe(true);
     fireEvent.click(screen.getByTestId("library-check-report-lint"));
     expect(onLint).toHaveBeenCalledTimes(1);
   });
@@ -205,7 +207,7 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     // off-template because it counts advisory findings too, and a frame that showed two
     // bare numbers for one folder is what the licensing record's falsifier describes.
     expect(head).toContain("6 pages");
-    expect(head).toContain("2 off-template");
+    expect(head).toContain("2 not following the template");
     expect(head).toContain("9 findings");
   });
 
@@ -286,10 +288,11 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     expect(uncited.querySelector("h4")!.textContent).toContain("No source backs this up");
     expect(uncited.querySelector("h4")!.textContent).not.toContain("uncited-fact");
     // Nothing is taken away: the code, its line anchor and the English message the CLI
-    // prints are under the same disclosure the wiki page beside it uses.
-    expect(screen.getByTestId("library-structural-technical-uncited-fact")).not.toBeNull();
+    // prints open in the same check codes dialog the wiki page beside it uses.
+    expect(uncited.querySelector('[data-testid="library-structural-code"]')).toBeNull();
     fireEvent.click(screen.getByTestId("library-structural-technical-uncited-fact"));
-    const codes = [...uncited.querySelectorAll('[data-testid="library-structural-code"]')].map(
+    const dialog = screen.getByTestId("library-structural-technical-uncited-fact-dialog");
+    const codes = [...dialog.querySelectorAll('[data-testid="library-structural-code"]')].map(
       (node) => node.textContent ?? "",
     );
     expect(codes).toHaveLength(2);

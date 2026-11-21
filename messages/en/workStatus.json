@@ -1,0 +1,81 @@
+{
+  "title": "Work status",
+  "summary": "<runningCount>{running}</runningCount> held by a live session · <stuckCount>{stuck}</stuckCount> stuck",
+  "repoLine": "{repo} · {count, plural, one {# worktree} other {# worktrees}} on this Mac",
+  "headline": {
+    "running": "{count, plural, one {# worktree is held by a live session} other {# worktrees are held by live sessions}}",
+    "stuck": "{count, plural, one {# worktree is stuck} other {# worktrees are stuck}}",
+    "idle": "No worktree in {repo} is locked by a live session"
+  },
+  "band": {
+    "mac": "On this Mac",
+    "server": "On the server",
+    "seam": "push"
+  },
+  "ruler": {
+    "working": "Working",
+    "checks": "Checks",
+    "prePush": "pre-push",
+    "pr": "PR",
+    "ci": "CI",
+    "ready": "Ready to merge",
+    "main": "main"
+  },
+  "group": {
+    "stuck": "Stuck",
+    "merged": "Merged ({count})",
+    "unheld": "No session lock"
+  },
+  "session": {
+    "header": "{tool} · session {number}",
+    "started": "started {time}",
+    "subagents": "{count, plural, one {# subagent} other {# subagents}}"
+  },
+  "tool": {
+    "acp": "Claude Agent in Atlas",
+    "claudeCode": "Claude Code",
+    "unknown": "An agent"
+  },
+  "holder": {
+    "locked": "{tool} subagent {id} · locked at {time}",
+    "lockedUnnamed": "Locked at {time}",
+    "noLock": "No lock · last commit {ago} by {author}",
+    "noLockQuiet": "No lock",
+    "subagent": "Subagent {id}",
+    "lastCommit": "{ago} by {author}",
+    "staleLock": "Locked by a {tool} session that has ended",
+    "ended": "Session ended"
+  },
+  "row": {
+    "noCommits": "No commits beyond {branch}",
+    "commits": "{count, plural, one {# commit} other {# commits}} beyond {branch}",
+    "missing": "The folder {folder} is missing. git worktree prune removes its record.",
+    "lockLeft": "The {tool} session that locked this worktree has ended. {count, plural, =0 {It has no commits beyond {branch}.} one {Its # commit beyond {branch} is not merged.} other {Its # commits beyond {branch} are not merged.}}",
+    "unknown": "Not measured against {branch}"
+  },
+  "chip": {
+    "missing": "Folder missing",
+    "lockLeft": "Lock left behind"
+  },
+  "station": {
+    "mergedInto": "Merged into {branch}"
+  },
+  "connect": {
+    "notConnected": "{host} is not connected. Connecting shows PRs and CI."
+  },
+  "noRemote": "No remote, so there are no PRs or CI to show.",
+  "unreadable": "{repo} could not be read. Choose the repository folder again to grant access.",
+  "choose": {
+    "title": "Choose the Git repository your agents work in",
+    "action": "Choose repository folder"
+  },
+  "empty": {
+    "title": "{repo} has only its main checkout",
+    "body": "Each worktree an agent creates gets a row in Work status, with the session that holds it."
+  },
+  "web": {
+    "title": "Work status runs in the desktop app",
+    "body": "A browser cannot run git or read this computer's processes. In this browser you can still open your folder's map and Library."
+  },
+  "notRepository": "{folder} is not a Git repository. Choose the folder that holds your project's .git."
+}

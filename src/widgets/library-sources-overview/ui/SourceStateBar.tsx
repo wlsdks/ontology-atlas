@@ -86,7 +86,7 @@ export function SourceStateBar({
           />
         ))}
       </span>
-      <span ref={shareRef} data-testid="sources-row-share" className="w-9 flex-none text-right tabular-nums text-[color:var(--color-text-primary)]">
+      <span ref={shareRef} data-testid="sources-row-share" className="min-w-9 flex-none whitespace-nowrap text-right tabular-nums text-[color:var(--color-text-primary)]">
         {firstShare}
       </span>
     </span>

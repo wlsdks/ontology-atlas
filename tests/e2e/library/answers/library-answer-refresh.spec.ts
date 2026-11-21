@@ -152,9 +152,8 @@ test('a changed original becomes a compared, retained answer revision without lo
   await page.getByRole('button', { name: 'Read previous version', exact: true }).click();
   await expect(page.getByTestId('retained-answer-context')).toContainText('earlier saved answer');
   await page.getByRole('button', { name: 'Back to questions', exact: true }).click();
-  /* Back on the home, the questions door still names the one saved answer — the title is
-     the label at exactly one answer, which is what makes reopening it one press. */
-  await expect(page.getByTestId('library-questions-open')).toContainText('What is the retention policy?');
+  /* Back on the home, the door still opens the one saved answer in one press; its tooltip names it. */
+  await expect(page.getByTestId('library-questions-open')).toHaveAttribute('title', 'What is the retention policy?');
   expect(errors).toEqual([]);
   if (evidence) {
     writeFileSync(`${evidence}/saved-files.json`, JSON.stringify(saved.files, null, 2));
@@ -259,7 +258,11 @@ for (const { retained, kind, manual, name } of [
     expect(await page.evaluate(() => localStorage.getItem('library.wikiWriteMode'))).toBe('auto');
     if (kind === 'refresh') await page.getByTestId('answer-refresh-start').click();
     /* By testid, not label: this test is about the write permission, not the copy. */
-    else await page.getByTestId('library-compile').click();
+    else {
+      await page.keyboard.press('Escape');
+      await page.getByTestId('library-workspace-sources').click();
+      await page.getByTestId('library-progress-continue').click();
+    }
     await expect.poll(async () => (await harness.snapshot(page)).calls.some((call) => call.method === 'session/prompt')).toBe(true);
     await harness.read(page);
     await harness.wait(page);

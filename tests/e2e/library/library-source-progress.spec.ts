@@ -200,9 +200,8 @@ test.describe("source progress on the Sources home", () => {
     // The chart's draw-in, the landing ring and the 100% light are never applied under reduced motion.
     await expect(page.locator(".motion-progress-reveal, .motion-progress-ripple, .motion-progress-light")).toHaveCount(0);
 
-    // The chart names its two ends.
-    await expect(band.getByTestId("library-progress-first-date")).not.toBeEmpty();
-    await expect(band.getByTestId("library-progress-caption")).toContainText("Today");
+    // The chart's one line says what it counts and since which day, and repeats no count.
+    await expect(band.getByTestId("library-progress-chart-title")).toHaveText(/^Sources with a wiki page since \D+ \d{1,2}$/);
     // Each state's press wears its colour in the bar.
     const swatch = (state: string) => page.getByTestId(`library-source-states-swatch-${state}`).evaluate((node) => getComputedStyle(node).backgroundColor);
     const segment = (index: number) => band.getByTestId("library-progress-bar").locator("span.motion-progress-segment").nth(index).evaluate((node) => getComputedStyle(node).backgroundColor);
@@ -218,8 +217,9 @@ test.describe("source progress on the Sources home", () => {
 
   for (const locale of ["en", "ko"]) {
     /*
-     * The home is exactly the band and the overview, at every desktop width: the band stays within
-     * 112px, the overview takes the rest of the pane with no canvas, and nothing overflows.
+     * The home is exactly the band and the overview, at every desktop width: the band is 124px
+     * beside the panel and 136px when the pane stacks, its last cell stands on the panel's edges,
+     * the overview takes the rest of the pane with no canvas, and nothing overflows.
      */
     test(`one source reads 100% with no chart, and the home is band and overview (${locale})`, async ({ page }) => {
       await page.emulateMedia({ reducedMotion: "reduce" });
@@ -239,18 +239,23 @@ test.describe("source progress on the Sources home", () => {
           const box = (id: string) => document.querySelector(`[data-testid="${id}"]`)?.getBoundingClientRect() ?? null;
           const overflow = [...document.querySelectorAll('[data-testid="library-progress"] *, [data-testid="sources-overview"] *, [data-testid="library-doors"] *')]
             .filter((node) => (node as HTMLElement).offsetWidth > 0)
-            .filter((node) => !node.closest('.sr-only, [data-testid="library-progress-bar"]'))
+            // A page sheet's format tab sits past its paper edge by design; it is a drawing, not cut text.
+            .filter((node) => !node.closest('.sr-only, [data-testid="library-progress-bar"], [data-sheet]'))
             .filter((node) => node.scrollWidth > node.clientWidth + 0.5)
             .map((node) => node.getAttribute("data-testid") ?? node.tagName);
+          const action = box("library-progress-action")!;
+          const panel = box("sources-panel")!;
           return {
             band: box("library-progress")!.height,
+            actionOffPanel: Math.max(Math.abs(action.left - panel.left), Math.abs(action.right - panel.right)),
             overview: box("sources-overview")!.height,
             pane: box("library-reader-landing")!.height,
             canvases: document.querySelectorAll('[data-testid="library-reader-landing"] canvas').length,
             overflow,
           };
         });
-        expect(geometry.band, `band at ${width}`).toBeLessThanOrEqual(112);
+        expect(geometry.band, `band at ${width}`).toBe(width >= 1512 ? 124 : 136);
+        if (width >= 1512) expect(geometry.actionOffPanel, `the action cell on the panel's edges at ${width}`).toBeLessThanOrEqual(0.5);
         expect(geometry.overview / geometry.pane, `overview share at ${width}`).toBeGreaterThanOrEqual(0.75);
         expect(geometry.canvases, `canvases at ${width}`).toBe(0);
         expect(geometry.overflow, `overflow at ${width}`).toEqual([]);
@@ -304,6 +309,30 @@ test.describe("source progress on the Sources home", () => {
       await expectStillBand(page, `${locale}@1512 with the dock`);
     });
   }
+
+  test("aiming at Continue lights the share its sources would add on the bar", async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 901 });
+    await installLibraryWorkHarness(page, { files: buildVault() });
+    await page.goto("/en/");
+    await page.getByTestId("first-run-open").or(page.getByRole("button", { name: /^Open (?:a|my) folder/ })).first().click();
+    await page.getByTestId("app-nav-rail").waitFor();
+    await page.goto("/en/library/?tab=sources&guides=off");
+    await expect(page.getByTestId("library-source-states-checking")).toHaveCount(0, { timeout: 25_000 });
+    const next = page.getByTestId("library-progress-next");
+    const press = page.getByTestId("library-progress-continue");
+    await expect(press).toHaveText("Write wiki pages for the next 10");
+    await expect(next).toHaveCSS("opacity", "0");
+    await press.hover();
+    await expect(next).toHaveCSS("opacity", "0.5");
+    // It starts where the written pages end and is ten sources wide, as shares of the folder.
+    const [cutRight, cutLeft] = await next.evaluate((node) => ((node as HTMLElement).style.clipPath.match(/[\d.]+(?=%)/g) ?? []).map(Number));
+    expect(cutLeft).toBeCloseTo((COMPILED * 100) / TOTAL, 1);
+    expect(100 - cutRight!).toBeCloseTo(((COMPILED + 10) * 100) / TOTAL, 1);
+    await page.mouse.move(0, 0);
+    await expect(next).toHaveCSS("opacity", "0");
+    await press.focus();
+    await expect(next).toHaveCSS("opacity", "0.5");
+  });
 });
 
 const BAND_CELLS = ["library-progress-number-cell", "library-progress-bar-cell", "library-progress-chart", "library-progress-action"];

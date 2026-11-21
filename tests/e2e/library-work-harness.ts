@@ -700,8 +700,8 @@ export async function openLibraryWorkScenario(
   await page.getByRole("button", { name: /Open (?:a|my) folder/i }).click();
   await page.getByRole("heading", { name: "Map" }).waitFor();
   await page.goto("/en/library/?guides=off&e2e=1");
-  await page.getByTestId("library-workspace-wiki").click();
-  await page.getByTestId("library-compile").click();
+  await page.getByTestId("library-workspace-sources").click();
+  await page.getByTestId("library-progress-continue").click();
   await page.getByTestId("library-agent-dock").waitFor();
   await page.getByTestId("acp-chat-panel").waitFor();
   await page.waitForFunction(

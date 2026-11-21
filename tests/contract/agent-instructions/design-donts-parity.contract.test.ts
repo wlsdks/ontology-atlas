@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
  *
  * The "absolute rules" list lived in three places that disagreed, each holding items the others
  * lacked, with no gate reconciling them. With two copies and no gate, drifting is the default
- * (CLAUDE.md).
+ * (the root instruction file).
  *
  * ## Why slugs are compared rather than sentences
  *

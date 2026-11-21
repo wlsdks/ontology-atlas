@@ -241,7 +241,7 @@ const HISTORY_PREFIX = 'docs/history/';
  */
 export function isInstructionPath(repoPath) {
   return (
-    ['AGENTS.md', 'CLAUDE.md', 'docs/README.md'].includes(repoPath) ||
+    ['AGENTS.md', 'docs/README.md'].includes(repoPath) ||
     /^\.claude\/(rules|skills|agents)\/.+\.md$/.test(repoPath) ||
     /^\.(agents|codex)\/.+\.md$/.test(repoPath)
   );
@@ -295,7 +295,7 @@ export function citationProblems(root = ROOT) {
     return statusCache.get(repoPath);
   };
   const sources = [
-    ...['AGENTS.md', 'CLAUDE.md'].filter((file) => existsSync(path.join(root, file))),
+    ...['AGENTS.md'].filter((file) => existsSync(path.join(root, file))),
     ...walkMarkdown(root, 'docs', []),
     ...['.claude/rules', '.claude/skills', '.claude/agents', '.agents', '.codex'].flatMap((directory) => walkMarkdown(root, directory, [])),
   ];

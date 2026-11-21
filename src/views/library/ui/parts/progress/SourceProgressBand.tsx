@@ -113,12 +113,12 @@ function recordedDays(series: readonly { count: number }[]): number {
 }
 
 /**
- * How many sources have a wiki page, what state the rest are in, since when, and the press that
- * writes the next ones: one row above the Sources home, 112px tall from `md` whatever has arrived,
- * so the pane under it never moves. Four cells: the number and its sentence, the bar with one
- * segment and one press per state (which filters the list), the chart when the pages record three
- * days or more, and Continue with the agent's work line. A narrow band stacks the bar under the
- * number.
+ * How far the folder's sources are into wiki pages, and the press that writes the next ones: one row
+ * above the Sources home, of one height from `md` whatever has arrived (124px beside the panel,
+ * 136px when the pane stacks), so the pane under it never moves. The statement (number, sentence, the bar with one press per state, which filters the list)
+ * heads the overview's table; the chart beside it shows only the change over time, once the pages
+ * record three days or more; Continue, who writes and the work line head the Next to write panel.
+ * Aiming at Continue lights, on the bar, the share its sources would add.
  *
  * On a folder's first visit in a session the number, the sentence's count, the bar and the chart
  * count up together, so no frame shows one number beside another; until the count starts they are
@@ -192,17 +192,11 @@ export function SourceProgressBand({
   );
   const finalNumber = formatSourceShare(settledShare, t);
 
-  // The sentence for a count of `shown` sources with a page; its kind follows the settled numbers.
+  // The sentence for a count of `shown` sources with a page. Every other state is a press under the bar.
   const sentenceFor = useCallback(
     (shown: number) =>
-      compiled === 0 && byState.checking === 0
-        ? t("progress.first")
-        : byState.checking > 0
-          ? t("stage.read.coveredChecking", { compiled: shown, total, checking: byState.checking })
-          : byState.unreadable > 0
-            ? t("stage.read.coveredUnreadable", { compiled: shown, total, unreadable: byState.unreadable })
-            : t("stage.read.coveredLine", { compiled: shown, total }),
-    [byState.checking, byState.unreadable, compiled, t, total],
+      compiled === 0 && byState.checking === 0 ? t("progress.first") : t("stage.read.coveredLine", { compiled: shown, total }),
+    [byState.checking, compiled, t, total],
   );
 
   const hold = !waited && byState.checking > 0;
@@ -246,6 +240,11 @@ export function SourceProgressBand({
   const sentenceCut = useTextCut(settledSentence, sentence);
   const showChart = recordedDays(progress.series) >= CHART_MIN_DAYS;
   const running = batch.running.size > 0;
+  // Pointing at Continue, or focusing it, shows on the bar how far its sources would take the first segment.
+  const [aimed, setAimed] = useState(false);
+  const nextShown = aimed && blocked === null && !running && batch.next.length > 0;
+  const pageEnd = boundaries[0] ?? 0;
+  const nextEnd = Math.min(1, pageEnd + batch.next.length / Math.max(1, total));
   const blockedId = "library-progress-blocked";
   const grouped = useMemo(() => new Intl.NumberFormat(locale), [locale]);
   const presses = SOURCE_STATE_ORDER.filter((state) => byState[state] > 0);
@@ -263,24 +262,29 @@ export function SourceProgressBand({
       data-testid="library-progress"
       data-percent={percent}
       data-complete={complete ? "" : undefined}
-      className="@container flex-none border-b border-[color:var(--color-border-soft)] px-5 py-2.5 sm:px-6 md:flex md:h-[112px] md:items-center md:px-10"
+      className="@container flex-none"
     >
-      {/* Cells share a top line: the number, the bar's middle, the chart's title and the button start on it. */}
-      <div className="flex items-start gap-x-6 gap-y-2 max-md:flex-wrap md:w-full">
-        {/* Number over bar while the band is narrow; from 60rem they are two cells of one row. */}
-        <div
-          className={cn(
-            "flex min-w-0 flex-col gap-1.5 max-md:min-w-[16rem] max-md:flex-1 @min-[60rem]:flex-row @min-[60rem]:items-start @min-[60rem]:gap-6",
-            // With no chart beside it the bar may take its full width.
-            showChart ? "md:flex-initial" : "md:flex-1",
-          )}
-        >
+      {/*
+       * The overview's own inset, gap and panel width, so each cell heads the column under it. From
+       * 60rem the cells share two rows: the number, the chart and the press on the first, the
+       * legend, the chart's line and the work line on the second.
+       */}
+      <div className="flex items-start gap-x-7 gap-y-3 border-b border-[color:var(--color-border-soft)] px-10 py-5 max-md:flex-wrap @max-[40rem]:px-5 @max-[60rem]:md:h-[136px] @min-[60rem]:py-5.5 @min-[60rem]:md:h-[124px]">
+        <div className="flex min-w-0 flex-1 items-start gap-x-8 max-md:min-w-[16rem]">
           <div
-            data-testid="library-progress-number-cell"
-            className="flex min-w-0 flex-col gap-0.5 transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)] @min-[60rem]:w-[15rem] @min-[60rem]:flex-none"
-            style={started ? undefined : { opacity: 0 }}
+            data-testid="library-progress-statement"
+            className={cn(
+              "flex min-w-0 max-w-[35rem] flex-1 flex-col",
+              showChart && "@min-[60rem]:w-[26rem] @min-[60rem]:flex-none",
+            )}
           >
-            <p className="flex min-w-0 items-baseline gap-2">
+            {/* One line from 60rem: the number, what it counts, then today's change. Narrower, the sentence takes its own line. */}
+            <div
+              data-testid="library-progress-number-cell"
+              className="flex min-w-0 items-center transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)] @min-[60rem]:min-h-10"
+              style={started ? undefined : { opacity: 0 }}
+            >
+            <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-2.5 gap-y-0.5 @min-[60rem]:flex @min-[60rem]:gap-x-3">
               <span
                 ref={percentRef}
                 aria-hidden
@@ -294,176 +298,174 @@ export function SourceProgressBand({
                 <span
                   ref={todayRef}
                   data-testid="library-progress-today"
-                  className="motion-swap-in whitespace-nowrap text-label leading-body tabular-nums text-[color:var(--color-indigo-accent)]"
+                  className="motion-swap-in whitespace-nowrap text-label leading-body tabular-nums text-[color:var(--color-indigo-accent)] @min-[60rem]:order-last @min-[60rem]:flex-none"
                 >
                   <FirstText text={t("progress.today", { count: intro ? 0 : today })} />
                 </span>
               ) : null}
-            </p>
-            {/* While counting, the sentence is drawn with the number; a new element takes over once it settles. */}
-            <p
-              key={counting ? "counting" : "settled"}
-              ref={counting ? sentenceRef : settledSentenceRef}
-              aria-hidden={counting || undefined}
-              title={!counting && sentenceCut ? sentence : undefined}
-              data-testid="library-progress-sentence"
-              className="min-w-0 truncate text-body leading-body text-[color:var(--color-text-primary)]"
-            >
-              {counting ? <FirstText text={sentenceFor(0)} /> : sentence}
-            </p>
-            {counting ? <span className="sr-only">{sentence}</span> : null}
-          </div>
+              {/* While counting, the sentence is drawn with the number; a new element takes over once it settles. */}
+              <p
+                key={counting ? "counting" : "settled"}
+                ref={counting ? sentenceRef : settledSentenceRef}
+                aria-hidden={counting || undefined}
+                title={!counting && sentenceCut ? sentence : undefined}
+                data-testid="library-progress-sentence"
+                className="col-span-2 min-w-0 truncate text-body-lg leading-body-lg text-[color:var(--color-text-primary)]"
+              >
+                {counting ? <FirstText text={sentenceFor(0)} /> : sentence}
+              </p>
+              {counting ? <span className="sr-only">{sentence}</span> : null}
+            </div>
+            </div>
 
-          <div
-            data-testid="library-progress-bar-cell"
-            className={
-              "flex min-w-[280px] max-w-[560px] flex-col gap-1.5 @min-[60rem]:gap-1 " +
-              (showChart ? "@min-[60rem]:w-fit @min-[60rem]:flex-initial" : "@min-[60rem]:flex-1")
-            }
-          >
-            {/* In one row it is as tall as the number's line, so the bar sits on its middle and the legend on the sentence's line. */}
-            <span className="flex items-center @min-[60rem]:h-6">
-            <span
-              aria-hidden
-              data-testid="library-progress-bar"
-              className="relative block h-1.5 w-full overflow-hidden rounded-full"
-            >
-              {SOURCE_STATE_ORDER.map((state, i) => (
-                <span
-                  key={state}
-                  ref={(node) => {
-                    segmentRefs.current[i] = node;
-                  }}
-                  data-state={state}
-                  className="motion-progress-segment absolute inset-0"
-                  style={{ background: sourceStateFill(state, complete), clipPath: segmentClip(0, 0) }}
-                />
-              ))}
-              {lightOn ? (
-                <span
-                  data-testid="library-progress-light"
-                  onAnimationEnd={() => setLightOn(false)}
-                  className="motion-progress-light absolute inset-y-0 left-0 w-1/3 bg-[image:linear-gradient(90deg,transparent,var(--color-success-text-a90)_50%,transparent)]"
-                />
-              ) : null}
-            </span>
-            </span>
-            {/* One press per state the folder holds, in the bar's order; each narrows the list and lights its marks. */}
-            {legendShown ? (
-            <div
-              role="group"
-              aria-label={t("sources.statesAria")}
-              data-testid="library-source-states"
-              className="-ml-1.5 flex min-h-6 min-w-0 flex-wrap items-center gap-x-0.5"
-            >
-              {presses.map((state) => {
-                const label = t(`sources.state.${state}.label`);
-                const pressed = filter.state === state;
-                return (
-                  <button
+            <div data-testid="library-progress-bar-cell" className="mt-2.5 flex min-w-0 flex-col gap-1 @min-[60rem]:mt-1.5">
+              <span
+                aria-hidden
+                data-testid="library-progress-bar"
+                className="relative block h-1.5 w-full overflow-hidden rounded-full"
+              >
+                {SOURCE_STATE_ORDER.map((state, i) => (
+                  <span
                     key={state}
+                    ref={(node) => {
+                      segmentRefs.current[i] = node;
+                    }}
+                    data-state={state}
+                    className="motion-progress-segment absolute inset-0"
+                    style={{ background: sourceStateFill(state, complete), clipPath: segmentClip(0, 0) }}
+                  />
+                ))}
+                <span
+                  data-testid="library-progress-next"
+                  data-shown={nextShown ? "" : undefined}
+                  className={cn(
+                    "absolute inset-0 bg-[color:var(--color-source-page)] transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)]",
+                    nextShown ? "opacity-50" : "opacity-0",
+                  )}
+                  style={{ clipPath: segmentClip(pageEnd, nextEnd) }}
+                />
+                {lightOn ? (
+                  <span
+                    data-testid="library-progress-light"
+                    onAnimationEnd={() => setLightOn(false)}
+                    className="motion-progress-light absolute inset-y-0 left-0 w-1/3 bg-[image:linear-gradient(90deg,transparent,var(--color-success-text-a90)_50%,transparent)]"
+                  />
+                ) : null}
+              </span>
+              {/* One press per state the folder holds, in the bar's order; each narrows the list and lights its marks. */}
+              {legendShown ? (
+                <div
+                  role="group"
+                  aria-label={t("sources.statesAria")}
+                  data-testid="library-source-states"
+                  className="-ml-1.5 flex min-h-6 min-w-0 flex-wrap items-center gap-x-0.5"
+                >
+                  {presses.map((state) => {
+                    const label = t(`sources.state.${state}.label`);
+                    const pressed = filter.state === state;
+                    return (
+                      <button
+                        key={state}
+                        type="button"
+                        data-testid={`library-source-states-${state}`}
+                        aria-pressed={pressed}
+                        title={t("sources.filterShow", { label })}
+                        onClick={() => filter.press(state)}
+                        className={controlClass({
+                          shape: "segment",
+                          size: "xs",
+                          tone: "muted",
+                          hoverInk: "strong",
+                          hoverSurface: "lift",
+                          active: pressed,
+                          className: "flex-none gap-1.5 whitespace-nowrap",
+                        })}
+                      >
+                        <span
+                          aria-hidden
+                          data-testid={`library-source-states-swatch-${state}`}
+                          className="inline-block size-2 flex-none rounded-full"
+                          style={{ background: sourceStateFill(state, complete) }}
+                        />
+                        {/* Three or more presses in a narrow pane keep swatch and count; the word stays in `title` and for a screen reader. */}
+                        <span className={cn(compactPresses && "@max-[60rem]:sr-only")}>{label}</span>
+                        <span className="tabular-nums">{grouped.format(byState[state])}</span>
+                      </button>
+                    );
+                  })}
+                  {/*
+                   * The clear press holds its slot from the first paint, so pressing a state resizes nothing;
+                   * at rest it is invisible, inert and out of the tab order, and it fades in with a filter.
+                   */}
+                  <button
                     type="button"
-                    data-testid={`library-source-states-${state}`}
-                    aria-pressed={pressed}
-                    title={t("sources.filterShow", { label })}
-                    onClick={() => filter.press(state)}
+                    data-testid="library-source-states-all"
+                    aria-label={t("sources.filterAll", { count: total })}
+                    title={t("sources.filterAll", { count: total })}
+                    aria-hidden={filter.state === null || undefined}
+                    inert={filter.state === null || undefined}
+                    tabIndex={filter.state === null ? -1 : undefined}
+                    data-shown={filter.state === null ? undefined : ""}
+                    onClick={filter.clear}
                     className={controlClass({
                       shape: "segment",
                       size: "xs",
                       tone: "muted",
                       hoverInk: "strong",
                       hoverSurface: "lift",
-                      active: pressed,
-                      className: "flex-none gap-1.5 whitespace-nowrap",
+                      className: cn(
+                        "flex-none px-1.5 transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)]",
+                        filter.state === null ? "opacity-0" : "opacity-100",
+                      ),
                     })}
                   >
-                    <span
-                      aria-hidden
-                      data-testid={`library-source-states-swatch-${state}`}
-                      className="inline-block size-2 flex-none rounded-full"
-                      style={{ background: sourceStateFill(state, complete) }}
-                    />
-                    {/* Three or more presses in a narrow pane keep swatch and count; the word stays in `title` and for a screen reader. */}
-                    <span className={cn(compactPresses && "@max-[50rem]:sr-only")}>{label}</span>
-                    <span className="tabular-nums">{grouped.format(byState[state])}</span>
+                    <X size={ICON_SIZE.sm} aria-hidden />
                   </button>
-                );
-              })}
-              {/*
-               * The clear press holds its slot from the first paint, so pressing a state resizes nothing;
-               * at rest it is invisible, inert and out of the tab order, and it fades in with a filter.
-               */}
-              <button
-                type="button"
-                data-testid="library-source-states-all"
-                aria-label={t("sources.filterAll", { count: total })}
-                title={t("sources.filterAll", { count: total })}
-                aria-hidden={filter.state === null || undefined}
-                inert={filter.state === null || undefined}
-                tabIndex={filter.state === null ? -1 : undefined}
-                data-shown={filter.state === null ? undefined : ""}
-                onClick={filter.clear}
-                className={controlClass({
-                  shape: "segment",
-                  size: "xs",
-                  tone: "muted",
-                  hoverInk: "strong",
-                  hoverSurface: "lift",
-                  className: cn(
-                    "flex-none px-1.5 transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)]",
-                    filter.state === null ? "opacity-0" : "opacity-100",
-                  ),
-                })}
-              >
-                <X size={ICON_SIZE.sm} aria-hidden />
-              </button>
+                </div>
+              ) : (
+                /* The legend's row is kept empty, so the statement stands at one height across folders. */
+                <div aria-hidden data-testid="library-source-states-reserve" className="h-6" />
+              )}
             </div>
-            ) : (
-              /* The legend's row is kept empty, so the band is one height across folders. */
-              <div aria-hidden data-testid="library-source-states-reserve" className="h-6" />
-            )}
           </div>
-        </div>
 
-        {showChart ? (
-          /* The chart takes what the other cells leave, and steps aside when that is too little to read. */
-          <div className="@container min-w-0 flex-1 max-md:hidden md:max-w-[26rem]">
-            <div className="flex flex-col gap-1 @max-[9rem]:hidden">
-              {/* The axis under the chart names its first day and today's count, so the title is the whole line. */}
-              <p data-testid="library-progress-chart-label" className="truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
-                {t("progress.chartTitle")}
-              </p>
-              <SourceProgressChart progress={progress} intro={intro} started={started} reduced={reduced} locale={locale} t={t} />
+          {showChart ? (
+            /* Change over time, the one thing the number cannot say; it steps aside when too narrow to read. */
+            <div className="@container hidden min-w-0 max-w-[26rem] flex-1 @min-[60rem]:block">
+              <div className="@max-[9rem]:hidden">
+                <SourceProgressChart progress={progress} intro={intro} started={started} reduced={reduced} locale={locale} t={t} />
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
 
         <div
           data-testid="library-progress-action"
-          className={cn(
-            // A bounded width, so a long work-line path truncates rather than widening the row; it fits the English button.
-            "flex min-w-0 flex-col items-start gap-1 md:w-[14rem] md:flex-none",
-            "md:ml-auto",
-          )}
+          className="flex min-w-0 flex-col justify-between gap-y-1.5 max-md:w-full md:flex-none @max-[60rem]:md:w-[17rem] @min-[60rem]:min-h-20 @min-[60rem]:w-[clamp(22.5rem,25vw,27.5rem)]"
         >
           {complete ? (
-            <p data-testid="library-progress-done" className="flex items-center gap-1.5 whitespace-nowrap text-body leading-body text-[color:var(--color-success-text-a94)]">
-              <WorkGlyph phase="done" size={ICON_SIZE.sm} />
-              {t("progress.allDone")}
+            <p data-testid="library-progress-done" className="flex min-h-10 items-center gap-2 text-body-lg leading-body-lg text-[color:var(--color-success-text-a94)]">
+              <WorkGlyph phase="done" size={ICON_SIZE.md} />
+              <span className="min-w-0 truncate">{t("progress.allDone")}</span>
             </p>
           ) : blocked && !inApp ? (
             <>
-              <p data-testid="library-progress-blocked" className="text-label leading-body text-[color:var(--color-text-secondary)]">
+              <GetAppLink data-testid="library-progress-get-app" className="self-start">{t("wiki.compileWebGetApp")}</GetAppLink>
+              <p data-testid="library-progress-blocked" className="text-label leading-label text-[color:var(--color-text-tertiary)]">
                 {t("progress.webLine")}
               </p>
-              <GetAppLink data-testid="library-progress-get-app">{t("wiki.compileWebGetApp")}</GetAppLink>
             </>
           ) : batch.next.length > 0 || running ? (
-            <>
+            /* The press, then who writes beside it; a note too long for the row takes the next line. */
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
               <Button
-                size="sm"
+                size="md"
                 data-testid="library-progress-continue"
                 onClick={batch.start}
+                onPointerEnter={() => setAimed(true)}
+                onPointerLeave={() => setAimed(false)}
+                onFocus={() => setAimed(true)}
+                onBlur={() => setAimed(false)}
                 disabled={blocked !== null || running}
                 aria-describedby={blocked ? blockedId : undefined}
                 className="atlas-touch-floor max-w-full"
@@ -471,17 +473,22 @@ export function SourceProgressBand({
                 {/* No ring in the button while work runs: the work line under it carries the ring. */}
                 <span className="min-w-0 truncate">{t("progress.continue", { count: batch.next.length })}</span>
               </Button>
+              {blocked?.door ?? null}
               {blocked ? (
-                <p id={blockedId} data-testid="library-progress-blocked" className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">
+                <p id={blockedId} title={blocked.reason} data-testid="library-progress-blocked" className="basis-full text-label leading-label text-[color:var(--color-text-tertiary)] @max-[60rem]:line-clamp-1 @min-[60rem]:line-clamp-2">
                   {blocked.reason}
                 </p>
               ) : batch.returned > 0 && !running ? (
-                <p data-testid="library-progress-returned" className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">
+                <p
+                  title={t("progress.batchReturned", { count: batch.returned })}
+                  data-testid="library-progress-returned"
+                  className="min-w-0 basis-full truncate text-label leading-label text-[color:var(--color-text-tertiary)]"
+                >
                   {t("progress.batchReturned", { count: batch.returned })}
                 </p>
               ) : (
                 /* How many wait after this press is the Next to write panel's foot, so this line names who writes. */
-                <p data-testid="library-progress-writer" className="truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
+                <p data-testid="library-progress-writer" className="min-w-0 truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
                   {agentName === null
                     ? t("progress.writerAnyAgent")
                     : t.rich("progress.writer", {
@@ -494,10 +501,10 @@ export function SourceProgressBand({
                       })}
                 </p>
               )}
-              {blocked?.door ?? null}
-            </>
+            </div>
           ) : null}
-          {workLine}
+          {/* A refused press needs its two lines of reason, so the work line waits for the press to run. */}
+          {blocked ? null : workLine}
         </div>
       </div>
     </section>

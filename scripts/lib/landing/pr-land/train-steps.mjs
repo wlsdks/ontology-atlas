@@ -79,7 +79,7 @@ export function cutTrain({ batch, parent = null, deps, holder, key }) {
   if (carrying.length === 0) {
     gh.deleteBranch(branch);
     holder.drop(key);
-    if (!parent && included.length > 0) finishComponents({ deps, components: included, trainHead: null, trainNumber: null, trainUrl: null });
+    if (!parent && included.length > 0) finishComponents({ deps, components: included, trainNumber: null, trainUrl: null });
     return { outcome: 'nothing', errored };
   }
 
@@ -238,7 +238,7 @@ export function settleHead({ train, deps, requiredContexts, token }) {
   log(`train #${number} merged: ${train.url}`);
   waitForMainAt(deps, mergedSha);
   git.fetch(['main', branch, ...included.map((c) => c.headRefName)]);
-  finishComponents({ deps, components: included, trainHead: trainPr.headRefOid, trainNumber: number, trainUrl: train.url });
+  finishComponents({ deps, components: included, trainNumber: number, trainUrl: train.url });
   gh.deleteBranch(branch);
   return { outcome: 'merged', train: number, landed: included.map((c) => c.number) };
 }
@@ -265,18 +265,15 @@ function waitForMainAt(deps, sha) {
 }
 
 /**
- * Close every component a merged train carried, and delete a branch only when `origin/main`
- * provably contains it. Directly (`isContained`), or through the train: the component's sha is an
- * ancestor of the train head and `main` contains the train head. The second form is what proves
- * two components that edited the same file, where a three-way merge of one alone against
- * the integrated result can conflict.
+ * Close every component a merged train carried, and delete a branch only when its head is in
+ * `origin/main`'s history (`git merge-base --is-ancestor`).
  */
-function finishComponents({ deps, components, trainHead, trainNumber, trainUrl }) {
+function finishComponents({ deps, components, trainNumber, trainUrl }) {
   const { gh, git, log } = deps;
-  const trainContained = trainHead ? git.isContained('origin/main', trainHead) : false;
   for (const component of components) {
     const sha = component.headRefOid;
-    const contained = git.isContained('origin/main', sha) || (trainContained && git.isAncestor(sha, trainHead));
+    // Only ancestry deletes a branch: tree containment would also pass a squashed copy of its commits.
+    const contained = git.isAncestor(sha, 'origin/main');
     if (!contained) {
       // Never queue it again: a train already carried it, and a second train would land it twice.
       gh.removeLabel(component.number);

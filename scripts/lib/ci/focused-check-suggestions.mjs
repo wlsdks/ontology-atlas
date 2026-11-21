@@ -429,7 +429,28 @@ function rulesToSuggestions(rules, paths, commentOnly = new Set()) {
   return suggestions;
 }
 
-export function formatFocusedCheckSuggestions({ paths = [], commands = [], escalations = [] } = {}) {
+/**
+ * The lanes a parallel slice leaves to the lead's one run on the integration tree, chosen by cost:
+ * the full contract sweep, knip, typecheck, a production build and the MCP suites each take tens of
+ * seconds to minutes over the whole tree. Per-file gates stay with the slice.
+ */
+const REPO_WIDE_COMMAND = /^pnpm (?:test:contracts|knip|typecheck|build|test:mcp:[\w:-]+)(?:\s|$)/;
+
+function isSliceCommand(command) {
+  return !REPO_WIDE_COMMAND.test(command);
+}
+
+/** Keeps the slice's own commands; the rest are returned as `deferred` for the integration tree. */
+export function sliceOnlySuggestions(suggestions) {
+  return {
+    ...suggestions,
+    commands: suggestions.commands.filter((row) => isSliceCommand(row.command)),
+    deferred: suggestions.commands.filter((row) => !isSliceCommand(row.command)),
+    escalations: [],
+  };
+}
+
+export function formatFocusedCheckSuggestions({ paths = [], commands = [], escalations = [], deferred = [] } = {}) {
   if (paths.length === 0) {
     return [
       '[focused-checks] no changed paths against HEAD or untracked files',
@@ -448,6 +469,9 @@ export function formatFocusedCheckSuggestions({ paths = [], commands = [], escal
       lines.push(`  ${suggestion.command}  # ${suggestion.reason}`);
     }
     lines.push('Run these before broad lint/build/test; escalate only when the change risk requires it.');
+  }
+  if (deferred.length > 0) {
+    lines.push(`--slice: ${deferred.length} repo-wide check(s) left for the lead's run on the integration tree.`);
   }
   if (escalations.length > 0) {
     lines.push('Escalate when needed:');

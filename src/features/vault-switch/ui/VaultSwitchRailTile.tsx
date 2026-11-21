@@ -13,8 +13,9 @@ import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { Surface } from '@/shared/ui/surfaces/surface';
 import { transientSurface } from '@/shared/ui/surfaces/transient-surface';
-import { recentVaultRowKey } from '../lib/recent-vault-row';
+import { recentVaultRowKey, type RecentVaultRow } from '../lib/recent-vault-row';
 import { measureSwitcherPlacement, type SwitcherPlacement } from '../lib/switcher-placement';
+import { MissingFolderReviewDialog } from './MissingFolderGroup';
 import { RecentVaultList } from './RecentVaultList';
 
 /** Keeps the tail where sibling folders differ; small enough that CSS `truncate` never cuts again (`vault-launch-chooser.spec.ts` measures it). */
@@ -184,6 +185,20 @@ export function VaultSwitchRailTile() {
     void pickFolder();
   }, [setOpen, pickFolder]);
 
+  /*
+   * The review outlives the popover, which unmounts once the dialog takes focus. Focus moves to the
+   * chip first, so the dialog returns it there on close.
+   */
+  const [missingReview, setMissingReview] = useState<{ rows: readonly RecentVaultRow[]; nowMs: number } | null>(null);
+  const reviewMissing = useCallback(
+    (rows: readonly RecentVaultRow[]) => {
+      triggerRef.current?.focus({ preventScroll: true });
+      setOpen(false);
+      setMissingReview({ rows, nowMs: Date.now() });
+    },
+    [setOpen],
+  );
+
   /* The chip stays, marked busy, while the next folder opens, so the rail items do not jump. */
   const handle = vault.handle;
   if (!handle || (vaultStatus !== 'loaded' && !busy)) return null;
@@ -202,6 +217,9 @@ export function VaultSwitchRailTile() {
   const alternatives = vault.recentVaults.filter(
     (record) => recentVaultRowKey(record) !== currentKey,
   );
+  const knownKeys = new Set(vault.recentVaults.map(recentVaultRowKey));
+  const missingStillKnown = missingReview?.rows.filter((row) => knownKeys.has(row.key)) ?? [];
+  if (missingReview && missingStillKnown.length === 0) setMissingReview(null);
 
   return (
     <div ref={ref} className="relative w-full shrink-0 pb-2">
@@ -287,8 +305,7 @@ export function VaultSwitchRailTile() {
               onForget={handleForget}
               onForgetAll={handleForget}
               onLocate={handlePick}
-              // A dialog would take focus out of this popover, which closes it and the dialog with it.
-              missingReview="inline"
+              onReviewMissing={reviewMissing}
             />
           </>
         ) : null}
@@ -314,6 +331,17 @@ export function VaultSwitchRailTile() {
             document.body,
           )
         : null}
+      <MissingFolderReviewDialog
+        open={missingReview !== null}
+        rows={missingStillKnown}
+        busy={busy}
+        nowMs={missingReview?.nowMs ?? 0}
+        onClose={() => setMissingReview(null)}
+        onForget={handleForget}
+        onForgetAll={handleForget}
+        onLocate={handlePick}
+        t={t}
+      />
     </div>
   );
 }

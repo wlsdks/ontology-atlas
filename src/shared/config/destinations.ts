@@ -21,11 +21,13 @@ export const DESTINATION_IDS = [
   'changes',
   // MCP is the second tab of Agents: `/mcp/` redirects to `DESTINATION_HREF.mcp`.
   'git',
+  // Which agent session holds which worktree; it reads a repository, not the open folder.
+  'workStatus',
 ] as const;
 
 export type DestinationId = (typeof DESTINATION_IDS)[number] | 'docs' | 'mcp';
 
-export const FOLDER_OPTIONAL_DESTINATIONS: ReadonlySet<DestinationId> = new Set(['library', 'planning', 'agents', 'changes']);
+export const FOLDER_OPTIONAL_DESTINATIONS: ReadonlySet<DestinationId> = new Set(['library', 'planning', 'agents', 'changes', 'workStatus']);
 
 /*
  * Persistent bottom tabs below `lg`; web may add Get App as a sixth tab. Architecture stays so a
@@ -59,6 +61,7 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
   automations: '/automations/',
   git: '/git/',
   changes: '/changes/',
+  workStatus: '/work-status/',
 };
 
 export function withQuery(href: string, query: Readonly<Record<string, string>>): string {
@@ -93,6 +96,8 @@ export const DESTINATION_KEY: Record<DestinationId, string> = {
   automations: 'u',
   git: 'g',
   changes: 'b',
+  // `w` for worktrees, the rows it draws.
+  workStatus: 'w',
 };
 
 export const NAV_LEADER_WINDOW_MS = 1500;

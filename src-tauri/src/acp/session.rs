@@ -100,6 +100,18 @@ impl AcpSessions {
         Ok(())
     }
 
+    /// Each running session's pid and the folder it works in, for Work status.
+    pub(crate) fn session_roots(&self) -> Vec<(u32, PathBuf)> {
+        self.0
+            .lock()
+            .map(|map| {
+                map.values()
+                    .map(|handle| (handle.pid, handle.vault_root.clone()))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
     fn drain_pids(&self) -> Result<Vec<u32>, String> {
         Ok(self
             .0

@@ -54,13 +54,9 @@ function Harness({ busy }: { busy: boolean }) {
       onAddFiles={() => {}}
       onFindDocuments={() => {}}
       onImportFromService={() => {}}
-      onCompile={() => {}}
-      onLint={() => {}}
       onNewPage={null}
       report={null}
       segment="sources"
-      actionsNote={null}
-      inApp={false}
       busy={busy}
       t={t}
     />

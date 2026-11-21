@@ -62,7 +62,7 @@
 
 - No temporary work-order markers such as `audit A2`, `iter 18`, or
   `Track D-cont-1` in code comments.
-- `AGENTS.md` and `CLAUDE.md` must not contradict each other.
+- No root `CLAUDE.md`: Claude Code would read it instead of `AGENTS.md`.
 - Contributor-facing operational prose is English; `AGENTS.md` names the
   localized-data exceptions.
 

@@ -148,6 +148,17 @@ describe('the conductor runs trains', () => {
     assert.equal(world.pulls.get(31).state, 'CLOSED');
   });
 
+  it('keeps the branch of a component main holds only as a squashed copy', () => {
+    const world = fakeWorld({ prs: [component(33)], queued: [33] });
+    world.deps.git.isContained = () => true;
+    world.deps.git.isAncestor = (ancestor, descendant) => !(descendant === 'origin/main' && ancestor === world.pulls.get(33).headRefOid);
+    runConductor(world);
+
+    const deleted = called(world, 'deleteBranch').map(([, branch]) => branch);
+    assert.ok(!deleted.includes(world.pulls.get(33).headRefName), 'tree containment alone must not delete a branch');
+    assert.match(world.pulls.get(33).comments.at(-1).body, /does not provably contain/);
+  });
+
   it('never queues a component a merged train carried again, even when containment is unproven', () => {
     const world = fakeWorld({ prs: [component(32)], queued: [32] });
     world.deps.git.isContained = () => false;

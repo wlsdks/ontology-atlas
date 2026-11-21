@@ -22,39 +22,14 @@ const MODEL = {
   hashes: new Map(),
   pageFacts: new Map(),
   log: { lastCompile: null, lastLint: null },
-  /* The shelf reads its freshness from the pairing, so a model without one is not a model. */
+  /* The index reads source doubt from the pairing and waits for the app checks in `structural`. */
   pairing: { originalsByWiki: new Map(), writeUpsBySource: new Map() },
+  structural: { unmeasured: [], findingCount: 0 },
 } as unknown as LibraryUiModel;
 
-function Harness({ onNewPage = null, report = null }: { onNewPage?: ((title: string) => void) | null; report?: { count: number; open: boolean; onOpen: () => void; running?: boolean; unseen?: boolean } | null }) {
-  const t = useTranslations("library");
-  return (
-    <LibrarySection
-      model={MODEL}
-      selectedSlug={null}
-      selectedSourcePath={null}
-      onSelect={() => {}}
-      onOpenSource={() => {}}
-      sourceHandles={new Map()}
-      vaultScope="test"
-      onAddFiles={() => {}}
-      onFindDocuments={() => {}}
-      onImportFromService={() => {}}
-      onCompile={() => {}}
-      onLint={() => {}}
-      onNewPage={onNewPage}
-      report={report}
-      /* The doors and the list are the wiki half of the column; the switch above it decides. */
-      segment="wiki"
-      actionsNote={null}
-      inApp={false}
-      busy={false}
-      t={t}
-    />
-  );
-}
+type ReportProp = { count: number; open: boolean; onOpen: () => void; running?: boolean; unseen?: boolean };
 
-function HarnessWith({ model }: { model: LibraryUiModel }) {
+function Harness({ onNewPage = null, report = null, model = MODEL }: { onNewPage?: ((title: string) => void) | null; report?: ReportProp | null; model?: LibraryUiModel }) {
   const t = useTranslations("library");
   return (
     <LibrarySection
@@ -68,11 +43,10 @@ function HarnessWith({ model }: { model: LibraryUiModel }) {
       onAddFiles={() => {}}
       onFindDocuments={() => {}}
       onImportFromService={() => {}}
-      onCompile={() => {}}
-      onLint={() => {}}
+      onNewPage={onNewPage}
+      report={report}
+      /* The views and the index are the wiki half of the column; the switch above it decides. */
       segment="wiki"
-      actionsNote={null}
-      inApp={false}
       busy={false}
       t={t}
     />
@@ -93,14 +67,20 @@ beforeEach(() => {
   writeLibraryIndexQuery("", "");
 });
 
-describe("the wiki half of the column is an index: search, three doors, the list", () => {
-  it("filters the list from one field and says what matched", () => {
+describe("the wiki half of the column is an index: a tool row, two views, the groups", () => {
+  const rows = () => [...document.querySelectorAll("[data-index-frame][data-current] [data-index-row]")];
+
+  it("replaces the groups with the matching pages while the filter holds a word, and restores them when cleared", async () => {
     mount(<Harness />);
-    const rows = () => screen.getByTestId("library-wiki-list").querySelectorAll('[data-testid^="library-wiki-wiki/"]');
-    expect(rows()).toHaveLength(2);
+    await waitFor(() => expect(rows()).toHaveLength(2));
     fireEvent.change(screen.getByTestId("library-search"), { target: { value: "b" } });
-    expect(rows()).toHaveLength(1);
+    await waitFor(() => expect(screen.getByTestId("wiki-index")).toHaveAttribute("data-state", "matches"));
+    await waitFor(() => expect(rows()).toHaveLength(1));
+    expect(screen.getByTestId("library-wiki-wiki/b")).toBeInTheDocument();
     expect(screen.getByTestId("library-search-matches").textContent).toContain("1 page");
+    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "" } });
+    await waitFor(() => expect(screen.getByTestId("wiki-index")).toHaveAttribute("data-state", "index"));
+    await waitFor(() => expect(rows()).toHaveLength(2));
   });
 
   it("starts a page from a title on Enter and hands the title back", () => {
@@ -142,55 +122,35 @@ describe("the wiki half of the column is an index: search, three doors, the list
     expect(trigger).toHaveFocus();
   });
 
-  it("holds nothing but the index: no findings, no names, no write switch, no log line (owner, 2026-09-07)", () => {
+  it("holds the index and its views only: no agent doors, no findings, no log lines, New page beside the filter", () => {
     mount(<Harness onNewPage={vi.fn()} />);
-    for (const id of ["library-finding", "library-candidate", "library-write-mode", "library-file-answer", "library-wiki-log"]) {
+    for (const id of ["library-lint", "library-compile", "library-finding", "library-candidate", "library-write-mode", "library-file-answer", "library-wiki-log", "library-agent-missing"]) {
       expect(screen.queryByTestId(id)).toBeNull();
     }
-    // Two agent doors on one row; New page is the list's own last row, not a door.
-    expect(screen.getByTestId("library-lint")).toBeInTheDocument();
-    expect(screen.getByTestId("library-compile")).toBeInTheDocument();
-    const list = screen.getByTestId("library-wiki-list");
-    expect(list.contains(screen.getByTestId("library-new-page"))).toBe(true);
+    expect(screen.getByTestId("library-new-page")).toHaveAccessibleName("New page");
+    expect(screen.getByTestId("library-search-box").parentElement!.contains(screen.getByTestId("library-new-page"))).toBe(true);
   });
 
-  it("names the writer only on the pages that are the exception", () => {
-    const withPerson = {
-      ...MODEL,
-      wikiPages: [
-        ...MODEL.wikiPages,
-        { slug: "wiki/c", title: "C", sourcePaths: [], createdBy: "human", compiledAt: null },
-      ],
-    } as unknown as LibraryUiModel;
-    mount(<HarnessWith model={withPerson} />);
-    /*
-     * The exception is named in the accessible name the spine carries, since a 26px spine has no room
-     * for a caption. The majority writer stays silent; only the one that says a person is the fact.
-     */
-    const named = ["wiki/a", "wiki/b", "wiki/c"].filter((slug) =>
-      screen.getByTestId(`library-wiki-${slug}`).getAttribute("aria-label")?.includes("a person"),
-    );
-    expect(named).toEqual(["wiki/c"]);
-    // And on the row shape a search puts back, it is the caption it always was.
-    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "c" } });
-    const labels = screen.getAllByTestId("library-wiki-writer");
-    expect(labels).toHaveLength(1);
-    expect(labels[0]!.textContent).toContain("a person");
-  });
-
-  it("says where the check's answer is with one row above the list, only once the wiki was checked", () => {
+  it("offers Check results always, saying it never ran until it did, and opens it on press", () => {
     const onOpen = vi.fn();
-    const { rerender } = mount(<Harness />);
-    expect(screen.queryByTestId("library-open-report")).toBeNull();
-    rerender(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
-        <Harness report={{ count: 6, open: false, onOpen }} />
-      </NextIntlClientProvider>,
-    );
+    mount(<Harness report={{ count: 0, open: false, onOpen }} />);
     const row = screen.getByTestId("library-open-report");
-    expect(row.textContent).toContain("Check results 6");
-    fireEvent.click(row);
+    expect(row).toHaveTextContent("Check results");
+    expect(row).toHaveTextContent("Not run yet");
+    cleanup();
+    mount(<Harness report={{ count: 6, open: false, onOpen }} />);
+    expect(screen.getByTestId("library-open-report")).toHaveTextContent("6");
+    fireEvent.click(screen.getByTestId("library-open-report"));
     expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("states when the log last changed, and Nothing yet before its first line", () => {
+    mount(<Harness />);
+    expect(screen.getByTestId("library-index-log")).toHaveTextContent("Nothing yet");
+    cleanup();
+    const logged = { ...MODEL, log: { lastCompile: { at: new Date().toISOString(), kind: "compile", summary: "", writer: "human" }, lastLint: null } } as unknown as LibraryUiModel;
+    mount(<Harness model={logged} />);
+    expect(screen.getByTestId("library-index-log")).toHaveTextContent("Just now");
   });
 
   /**
@@ -200,7 +160,7 @@ describe("the wiki half of the column is an index: search, three doors, the list
    */
   it("draws running, then unseen, and neither once the report has been read", () => {
     const onOpen = vi.fn();
-    const draw = (report: { count: number; open: boolean; onOpen: () => void; running?: boolean; unseen?: boolean }) => {
+    const draw = (report: ReportProp) => {
       mount(<Harness report={report} />);
       const row = screen.getByTestId("library-open-report");
       return {
@@ -219,10 +179,8 @@ describe("the wiki half of the column is an index: search, three doors, the list
     // A check in flight outranks a stale unseen mark: one row, one word.
     expect(draw({ count: 6, open: false, onOpen, running: true, unseen: true })).toEqual({ state: "running", running: true, unseen: false });
     cleanup();
-    /* And reading it is what clears the mark. `LibraryPage` passes `unseen` as
-       `reportUnseen && opened?.kind !== "report"`, so the open report is the state this
-       row must draw plainly — whichever door opened it, the index row or the home strip's
-       `N off-template` clause. */
+    /* Reading it is what clears the mark: `LibraryPage` passes `unseen` as
+       `reportUnseen && opened?.kind !== "report"`. */
     expect(draw({ count: 6, open: true, onOpen, unseen: false })).toEqual({ state: null, running: false, unseen: false });
   });
 });
@@ -242,13 +200,9 @@ describe("a search whose matches sit on the other half of the switch", () => {
         onAddFiles={() => {}}
         onFindDocuments={() => {}}
         onImportFromService={() => {}}
-        onCompile={() => {}}
-        onLint={() => {}}
         onNewPage={null}
         report={null}
         segment="sources"
-        actionsNote={null}
-      inApp={false}
         busy={false}
         t={t}
       />
