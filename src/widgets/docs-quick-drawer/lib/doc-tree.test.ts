@@ -5,7 +5,7 @@ import {
   firstDocSlug,
   flattenDocs,
   flattenTreeSlugs,
-} from "./tree-utils";
+} from "./doc-tree";
 
 // Shared fixture — a 2-deep tree:
 //   root/

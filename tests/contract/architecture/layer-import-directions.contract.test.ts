@@ -23,8 +23,8 @@ async function lintText(text: string, filePath: string) {
   return result;
 }
 
-describe("FSD boundaries — v7 policy migration", () => {
-  it("uses v7 policies and object entity selectors", async () => {
+describe("FSD layer import directions", () => {
+  it("declares the rule as plugin policies with object element selectors", async () => {
     const config = await eslint.calculateConfigForFile("src/entities/__boundaries-probe__.ts");
     const options = config.rules["boundaries/dependencies"]?.[1] as
       | {

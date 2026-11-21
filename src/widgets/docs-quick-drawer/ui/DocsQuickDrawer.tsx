@@ -39,7 +39,7 @@ import {
   firstDocSlug,
   flattenDocs,
   flattenTreeSlugs,
-} from "../lib/tree-utils";
+} from "../lib/doc-tree";
 import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { mergeRefs } from "@/shared/lib/merge-refs";
 import { useBodyScrollLock } from "@/shared/lib/overlays/use-body-scroll-lock";
