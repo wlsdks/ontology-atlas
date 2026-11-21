@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 
-import { buildBreadthMap } from './breadth-map.mjs';
+import { buildBreadthMap } from '../survey/breadth-map.mjs';
 
 /**
  * Processor time this process has used, in ms. The budgets below are read on it, not on the wall

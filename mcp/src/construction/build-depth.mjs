@@ -18,12 +18,12 @@
 import { readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 
-import { cachedSurvey } from '../analyze/breadth-map.mjs';
+import { cachedSurvey } from '../analyze/survey/breadth-map.mjs';
 import { repoText } from '../analyze/repo-text.mjs';
-import { areaLocator } from '../analyze/survey-areas.mjs';
-import { surveyEntry } from '../analyze/survey-paths.mjs';
+import { areaLocator } from '../analyze/survey/survey-areas.mjs';
+import { surveyEntry } from '../analyze/survey/survey-paths.mjs';
 import { withoutSpans } from '../analyze/text.mjs';
-import { UNIT_SOURCE_EXTENSIONS, unitForPath } from '../analyze/source-units.mjs';
+import { UNIT_SOURCE_EXTENSIONS, unitForPath } from '../analyze/survey/source-units.mjs';
 import { decidesLine } from '../evidence-search/symbol-context.mjs';
 import { readPath } from './session-reads.mjs';
 

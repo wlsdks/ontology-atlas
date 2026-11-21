@@ -24,12 +24,12 @@
 
 import { basename, dirname, extname, posix } from 'node:path';
 
-import { declarationIndex } from '../evidence-search/declaration-index.mjs';
+import { declarationIndex } from '../../evidence-search/declaration-index.mjs';
 import { documentedAbilities } from './documented-abilities.mjs';
 import { jvmAbilities } from './jvm-abilities.mjs';
 import { boundedLines, nameKey, operatorAbilities } from './operator-abilities.mjs';
 import { siblingFamilies } from './sibling-families.mjs';
-import { readSurveyText, surveyEntry } from './survey-paths.mjs';
+import { readSurveyText, surveyEntry } from '../survey/survey-paths.mjs';
 
 /** A folder of benchmarks, examples, demos, samples, mocks or fixtures (a folder name, never a file name). */
 const TOOLING = /(?:^|\/)(?:[\w-]*bench[\w-]*|examples?|demos?|samples?|fixtures?|testdata|mocks?|[\w-]*_mocks)\//i;

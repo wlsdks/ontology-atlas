@@ -4,7 +4,7 @@
 
 import { readdirSync, statSync, existsSync } from 'node:fs';
 import { join, basename, relative } from 'node:path';
-import { inferImports } from '../infer-imports.mjs';
+import { inferImports } from '../../infer-imports.mjs';
 import {
   GO_PACKAGE_ELEMENT_LIMIT,
   IMPLEMENTATION_SOURCE_ELEMENT_LIMIT,
@@ -14,8 +14,8 @@ import {
   SOURCE_FOLDERS,
   WORKSPACE_ELEMENT_LIMIT,
   WORKSPACE_FOLDERS,
-} from './constants.mjs';
-import { humanize, slugify, uniqueStrings } from './text.mjs';
+} from '../constants.mjs';
+import { humanize, slugify, uniqueStrings } from '../text.mjs';
 import { pathResolvesInsideRoot, pushSkippedOnce } from './scan-guards.mjs';
 
 export function materializeGoPackageElements(packageImportEvidence, { existingElements, skipped }) {

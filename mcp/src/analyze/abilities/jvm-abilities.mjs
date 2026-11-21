@@ -24,7 +24,7 @@
 
 import { posix } from 'node:path';
 
-import { jvmHeader, maskJvmSource } from '../infer-imports/java-imports.mjs';
+import { jvmHeader, maskJvmSource } from '../../infer-imports/java-imports.mjs';
 
 const JVM_FILE = /\.(?:java|kt)$/;
 const FAMILY_SIZE = 3;

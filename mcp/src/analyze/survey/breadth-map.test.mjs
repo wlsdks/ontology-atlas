@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import test from 'node:test';
 
 import { SURVEY_RESPONSE_CHARS, buildBreadthMap, cachedSurvey } from './breadth-map.mjs';
-import { repoText } from './repo-text.mjs';
+import { repoText } from '../repo-text.mjs';
 import { areaLocator } from './survey-areas.mjs';
 import { surveyRelativePath } from './survey-paths.mjs';
 

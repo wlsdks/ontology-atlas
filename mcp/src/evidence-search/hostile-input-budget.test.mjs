@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
 import { zipFile } from '../../../tests/fixtures/source-passage-cases.mjs';
-import { authoredMarkdownLines } from '../analyze/authored-markdown.mjs';
+import { authoredMarkdownLines } from '../analyze/candidates/authored-markdown.mjs';
 import { inferImports } from '../infer-imports.mjs';
 import { dependencyWitnessFinding } from '../meaning/meaning-findings.mjs';
 import { OUTLINE_LINE_CHARS, outlineSource } from './source-outline.mjs';

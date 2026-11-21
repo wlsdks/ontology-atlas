@@ -14,10 +14,10 @@ import {
   PYTHON_SETUP_MAX_BYTES,
   SEMANTIC_EVIDENCE_MAX_BYTES,
   STARTER_ONTOLOGY_SLUGS,
-} from './constants.mjs';
-import { cleanHeadingLabel, humanize, isHeadingAdornment, slugify } from './text.mjs';
+} from '../constants.mjs';
+import { cleanHeadingLabel, humanize, isHeadingAdornment, slugify } from '../text.mjs';
 import { authoredMarkdownLines } from './authored-markdown.mjs';
-import { VAULT_SOURCES_DIR } from '../schema.mjs';
+import { VAULT_SOURCES_DIR } from '../../schema.mjs';
 import {
   packageContractPathIssue,
   pathResolvesInsideRoot,

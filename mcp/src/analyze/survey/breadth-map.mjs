@@ -10,13 +10,13 @@ import { createHash } from 'node:crypto';
 import { readdirSync, realpathSync } from 'node:fs';
 import { basename, dirname, extname, isAbsolute, join, posix, relative, sep } from 'node:path';
 
-import { inferImports } from '../infer-imports.mjs';
-import { ABILITY_LIMIT, abilitiesOf, fairShares } from './abilities.mjs';
+import { inferImports } from '../../infer-imports.mjs';
+import { ABILITY_LIMIT, abilitiesOf, fairShares } from '../abilities/abilities.mjs';
 import { collectSourceUnits } from './source-units.mjs';
 import { abilitiesByArea, areaLocator, surveyAreas } from './survey-areas.mjs';
-import { repoText as t } from './repo-text.mjs';
+import { repoText as t } from '../repo-text.mjs';
 import { readSurveyText, surveyEntry, surveyRelativePath } from './survey-paths.mjs';
-import { withoutSpans } from './text.mjs';
+import { withoutSpans } from '../text.mjs';
 
 const MAIN_FILES_PER_UNIT = 3;
 const EXPORTS_PER_UNIT = 6;
