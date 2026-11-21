@@ -108,7 +108,12 @@ pub(crate) fn parse_porcelain(text: &str) -> Vec<PorcelainEntry> {
         match key {
             "HEAD" => entry.head = Some(value.to_string()),
             "branch" => {
-                entry.branch = Some(value.strip_prefix("refs/heads/").unwrap_or(value).to_string())
+                entry.branch = Some(
+                    value
+                        .strip_prefix("refs/heads/")
+                        .unwrap_or(value)
+                        .to_string(),
+                )
             }
             "bare" => entry.bare = true,
             "locked" => entry.locked = Some(value.to_string()),
@@ -144,10 +149,14 @@ pub(super) fn read_repository(
 ) -> Result<RepositoryRead, &'static str> {
     let toplevel = git_read(chosen, &["rev-parse", "--show-toplevel"]).map_err(failure_status)?;
     let root = crate::canonical_source_root(toplevel.trim()).map_err(|_| "ungranted")?;
-    let common_dir = git_read(&root, &["rev-parse", "--path-format=absolute", "--git-common-dir"])
-        .map_err(failure_status)?;
+    let common_dir = git_read(
+        &root,
+        &["rev-parse", "--path-format=absolute", "--git-common-dir"],
+    )
+    .map_err(failure_status)?;
     let common_dir = PathBuf::from(common_dir.trim());
-    let listing = git_read(&root, &["worktree", "list", "--porcelain", "-z"]).map_err(failure_status)?;
+    let listing =
+        git_read(&root, &["worktree", "list", "--porcelain", "-z"]).map_err(failure_status)?;
     let entries = parse_porcelain(&listing);
 
     let base_branch = base_branch(&root);
@@ -171,7 +180,9 @@ pub(super) fn read_repository(
             };
             let path = PathBuf::from(&entry.path);
             let missing = !path.exists();
-            if !main_checkout && !missing && !path.starts_with(&root)
+            if !main_checkout
+                && !missing
+                && !path.starts_with(&root)
                 && !points_back(&path, &common_dir, &id)
             {
                 return None;
@@ -180,7 +191,12 @@ pub(super) fn read_repository(
         })
         .collect();
 
-    measure_heads(&root, &mut rows, base_branch.as_deref(), base_head.as_deref());
+    measure_heads(
+        &root,
+        &mut rows,
+        base_branch.as_deref(),
+        base_head.as_deref(),
+    );
     attach_acp_sessions(&mut rows, acp_roots);
     Ok(RepositoryRead {
         root,
@@ -212,7 +228,10 @@ fn admin_ids_by_worktree(common_dir: &Path) -> HashMap<PathBuf, String> {
         .filter_map(|entry| {
             let id = entry.file_name().to_string_lossy().into_owned();
             let gitdir = read_admin_file(&entry.path().join("gitdir"))?;
-            let worktree = Path::new(gitdir.trim()).parent()?.to_string_lossy().into_owned();
+            let worktree = Path::new(gitdir.trim())
+                .parent()?
+                .to_string_lossy()
+                .into_owned();
             Some((normalize(&worktree), id))
         })
         .collect()
@@ -248,7 +267,9 @@ fn base_row(
             .map(|elapsed| elapsed.as_millis() as u64);
         WorktreeLock {
             state,
-            tool: parsed.as_ref().map_or(LockTool::Unknown, |reason| reason.tool),
+            tool: parsed
+                .as_ref()
+                .map_or(LockTool::Unknown, |reason| reason.tool),
             agent_id: parsed.as_ref().and_then(|reason| reason.agent_id.clone()),
             pid: parsed.as_ref().map(|reason| reason.pid),
             session_started_at: parsed.as_ref().map(|reason| reason.started_at),
@@ -272,7 +293,11 @@ fn base_row(
 }
 
 fn base_branch(root: &Path) -> Option<String> {
-    let remote_head = git_read(root, &["symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"]).ok();
+    let remote_head = git_read(
+        root,
+        &["symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"],
+    )
+    .ok();
     let from_remote = remote_head
         .as_deref()
         .and_then(|name| name.trim().strip_prefix("refs/remotes/origin/"))
@@ -293,7 +318,12 @@ fn verified_branch_head(root: &Path, branch: &str) -> Option<String> {
 
 /// Two reads per row (commits beyond the base, and the last commit's time and author), run in
 /// parallel; the first-parent line is read once, only when some head has nothing beyond the base.
-fn measure_heads(root: &Path, rows: &mut [WorktreeRow], base: Option<&str>, base_head: Option<&str>) {
+fn measure_heads(
+    root: &Path,
+    rows: &mut [WorktreeRow],
+    base: Option<&str>,
+    base_head: Option<&str>,
+) {
     std::thread::scope(|scope| {
         for row in rows.iter_mut() {
             scope.spawn(move || measure_head(root, row, base, base_head));
@@ -316,7 +346,10 @@ fn measure_heads(root: &Path, rows: &mut [WorktreeRow], base: Option<&str>, base
         HashSet::new()
     };
     for row in rows.iter_mut() {
-        let on_line = row.head.as_ref().is_some_and(|head| first_parent.contains(head));
+        let on_line = row
+            .head
+            .as_ref()
+            .is_some_and(|head| first_parent.contains(head));
         row.standing = standing_of(is_base_row(row, base), row.ahead, on_line);
     }
 }
@@ -337,10 +370,20 @@ fn measure_head(root: &Path, row: &mut WorktreeRow, base: Option<&str>, base_hea
     }
     let last = git_read(
         root,
-        &["log", "-1", "--no-show-signature", "--format=%ct%x00%an", &head, "--"],
+        &[
+            "log",
+            "-1",
+            "--no-show-signature",
+            "--format=%ct%x00%an",
+            &head,
+            "--",
+        ],
     );
     if let Ok(text) = last {
-        let (time, author) = text.trim_end().split_once('\0').unwrap_or((text.trim_end(), ""));
+        let (time, author) = text
+            .trim_end()
+            .split_once('\0')
+            .unwrap_or((text.trim_end(), ""));
         row.last_commit_at = time.parse().ok();
         row.last_commit_author = Some(author.chars().take(AUTHOR_MAX_CHARS).collect())
             .filter(|author: &String| !author.is_empty());

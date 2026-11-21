@@ -4,7 +4,9 @@ use std::process::Command;
 
 use chrono::{TimeZone, Utc};
 
-use super::lock::{judge_lock, parse_lock_reason, process_start, LockState, LockTool, ProcessStart};
+use super::lock::{
+    judge_lock, parse_lock_reason, process_start, LockState, LockTool, ProcessStart,
+};
 use super::remote::host_and_slug;
 use super::{parse_porcelain, read_repository, standing_of, Standing, WorktreeRow};
 
@@ -15,7 +17,8 @@ struct Repo {
 
 impl Repo {
     fn new(name: &str) -> Self {
-        let dir = std::env::temp_dir().join(format!("atlas-work-status-{name}-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("atlas-work-status-{name}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
         let main = dir.join("main");
         fs::create_dir_all(&main).unwrap();
@@ -23,7 +26,10 @@ impl Repo {
         let main = dir.join("main");
         let repo = Repo { dir, main };
         repo.git(&repo.main, &["init", "-q", "-b", "main"]);
-        repo.git(&repo.main, &["config", "user.email", "test@example.invalid"]);
+        repo.git(
+            &repo.main,
+            &["config", "user.email", "test@example.invalid"],
+        );
         repo.git(&repo.main, &["config", "user.name", "atlas test"]);
         repo.git(&repo.main, &["config", "commit.gpgsign", "false"]);
         repo.commit(&repo.main.clone(), "one.md");
@@ -31,8 +37,16 @@ impl Repo {
     }
 
     fn git(&self, cwd: &Path, args: &[&str]) -> String {
-        let out = Command::new("git").args(args).current_dir(cwd).output().unwrap();
-        assert!(out.status.success(), "git {args:?}: {}", String::from_utf8_lossy(&out.stderr));
+        let out = Command::new("git")
+            .args(args)
+            .current_dir(cwd)
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "git {args:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
         String::from_utf8_lossy(&out.stdout).trim().to_string()
     }
 
@@ -46,17 +60,25 @@ impl Repo {
     fn worktree(&self, branch: &str) -> PathBuf {
         let path = self.main.join("worktrees").join(branch.replace('/', "-"));
         let target = path.to_string_lossy().into_owned();
-        self.git(&self.main, &["worktree", "add", "-q", "-b", branch, &target]);
+        self.git(
+            &self.main,
+            &["worktree", "add", "-q", "-b", branch, &target],
+        );
         path
     }
 
     fn lock(&self, path: &Path, reason: &str) {
         let target = path.to_string_lossy().into_owned();
-        self.git(&self.main, &["worktree", "lock", "--reason", reason, &target]);
+        self.git(
+            &self.main,
+            &["worktree", "lock", "--reason", reason, &target],
+        );
     }
 
     fn rows(&self) -> Vec<WorktreeRow> {
-        read_repository(&self.main, &[]).expect("repository reads").rows
+        read_repository(&self.main, &[])
+            .expect("repository reads")
+            .rows
     }
 }
 
@@ -73,7 +95,10 @@ fn row<'a>(rows: &'a [WorktreeRow], branch: &str) -> &'a WorktreeRow {
 }
 
 fn ctime_utc(epoch: i64) -> String {
-    Utc.timestamp_opt(epoch, 0).unwrap().format("%a %b %e %H:%M:%S %Y").to_string()
+    Utc.timestamp_opt(epoch, 0)
+        .unwrap()
+        .format("%a %b %e %H:%M:%S %Y")
+        .to_string()
 }
 
 fn own_start() -> i64 {
@@ -89,10 +114,16 @@ fn only_a_head_merged_off_the_first_parent_line_is_merged() {
     let zero = repo.worktree("feat/zero-commit");
     let merged = repo.worktree("feat/merged");
     repo.commit(&merged, "merged.md");
-    repo.git(&repo.main, &["merge", "-q", "--no-ff", "-m", "merge", "feat/merged"]);
+    repo.git(
+        &repo.main,
+        &["merge", "-q", "--no-ff", "-m", "merge", "feat/merged"],
+    );
     let forwarded = repo.worktree("fix/fast-forwarded");
     repo.commit(&forwarded, "forwarded.md");
-    repo.git(&repo.main, &["merge", "-q", "--ff-only", "fix/fast-forwarded"]);
+    repo.git(
+        &repo.main,
+        &["merge", "-q", "--ff-only", "fix/fast-forwarded"],
+    );
     let ahead = repo.worktree("feat/ahead");
     repo.commit(&ahead, "ahead.md");
     let _ = zero;
@@ -103,11 +134,20 @@ fn only_a_head_merged_off_the_first_parent_line_is_merged() {
     assert_eq!(main.standing, Standing::Base);
     assert_eq!(row(&rows, "feat/merged").standing, Standing::Merged);
     assert_eq!(row(&rows, "feat/zero-commit").standing, Standing::NoCommits);
-    assert_eq!(row(&rows, "fix/fast-forwarded").standing, Standing::NoCommits);
+    assert_eq!(
+        row(&rows, "fix/fast-forwarded").standing,
+        Standing::NoCommits
+    );
     assert_eq!(row(&rows, "feat/ahead").standing, Standing::Ahead);
     assert_eq!(row(&rows, "feat/ahead").ahead, Some(1));
-    assert_eq!(row(&rows, "feat/ahead").last_commit_author.as_deref(), Some("atlas test"));
-    let merged_rows = rows.iter().filter(|row| row.standing == Standing::Merged).count();
+    assert_eq!(
+        row(&rows, "feat/ahead").last_commit_author.as_deref(),
+        Some("atlas test")
+    );
+    let merged_rows = rows
+        .iter()
+        .filter(|row| row.standing == Standing::Merged)
+        .count();
     assert_eq!(merged_rows, 1);
 }
 
@@ -129,8 +169,20 @@ fn lock_times_are_utc_a_reused_pid_is_stale_and_an_unparsed_reason_is_held() {
     let unparsed = repo.worktree("feat/unparsed");
     let pid = std::process::id();
     let started = own_start();
-    repo.lock(&live, &format!("claude agent agent-a1b2c3 (pid {pid} start {})", ctime_utc(started)));
-    repo.lock(&reused, &format!("claude agent agent-d4e5f6 (pid {pid} start {})", ctime_utc(started - 3_600)));
+    repo.lock(
+        &live,
+        &format!(
+            "claude agent agent-a1b2c3 (pid {pid} start {})",
+            ctime_utc(started)
+        ),
+    );
+    repo.lock(
+        &reused,
+        &format!(
+            "claude agent agent-d4e5f6 (pid {pid} start {})",
+            ctime_utc(started - 3_600)
+        ),
+    );
     repo.lock(&unparsed, "held by hand while rebasing");
 
     let rows = repo.rows();
@@ -139,26 +191,50 @@ fn lock_times_are_utc_a_reused_pid_is_stale_and_an_unparsed_reason_is_held() {
     assert_eq!(live.tool, LockTool::ClaudeCode);
     assert_eq!(live.agent_id.as_deref(), Some("a1b2c3"));
     assert_eq!(live.pid, Some(pid));
-    assert!(live.locked_at.is_some(), "the lock time comes from the locked file");
-    assert_eq!(row(&rows, "feat/reused").lock.as_ref().unwrap().state, LockState::Stale);
-    assert_eq!(row(&rows, "feat/unparsed").lock.as_ref().unwrap().state, LockState::Unparsed);
+    assert!(
+        live.locked_at.is_some(),
+        "the lock time comes from the locked file"
+    );
+    assert_eq!(
+        row(&rows, "feat/reused").lock.as_ref().unwrap().state,
+        LockState::Stale
+    );
+    assert_eq!(
+        row(&rows, "feat/unparsed").lock.as_ref().unwrap().state,
+        LockState::Unparsed
+    );
     assert!(row(&rows, "main").lock.is_none());
 }
 
 #[test]
 fn a_lock_whose_pid_has_ended_is_stale() {
     let reason = parse_lock_reason("claude agent agent-x (pid 42 start Sat Nov 21 09:47:42 2026)");
-    assert_eq!(judge_lock(reason.as_ref(), |_| ProcessStart::Gone), LockState::Stale);
-    assert_eq!(judge_lock(None, |_| ProcessStart::Gone), LockState::Unparsed);
+    assert_eq!(
+        judge_lock(reason.as_ref(), |_| ProcessStart::Gone),
+        LockState::Stale
+    );
+    assert_eq!(
+        judge_lock(None, |_| ProcessStart::Gone),
+        LockState::Unparsed
+    );
 }
 
 #[test]
 fn a_lock_reason_reads_its_pid_and_utc_start_with_a_space_padded_day() {
-    let reason = parse_lock_reason("claude agent agent-a163e0c6 (pid 95607 start Sun Nov  1 09:47:42 2026)").unwrap();
+    let reason =
+        parse_lock_reason("claude agent agent-a163e0c6 (pid 95607 start Sun Nov  1 09:47:42 2026)")
+            .unwrap();
     assert_eq!(reason.pid, 95607);
     assert_eq!(reason.agent_id.as_deref(), Some("a163e0c6"));
-    assert_eq!(reason.started_at, Utc.with_ymd_and_hms(2026, 11, 1, 9, 47, 42).unwrap().timestamp());
-    assert!(parse_lock_reason("claude agent agent-x (pid 0 start Sun Nov  1 09:47:42 2026)").is_none());
+    assert_eq!(
+        reason.started_at,
+        Utc.with_ymd_and_hms(2026, 11, 1, 9, 47, 42)
+            .unwrap()
+            .timestamp()
+    );
+    assert!(
+        parse_lock_reason("claude agent agent-x (pid 0 start Sun Nov  1 09:47:42 2026)").is_none()
+    );
     assert!(parse_lock_reason("claude agent agent-x (pid 7 start yesterday)").is_none());
 }
 
@@ -167,11 +243,24 @@ fn a_record_outside_the_chosen_folder_needs_its_worktree_to_point_back() {
     let repo = Repo::new("outside");
     let outside = repo.dir.join("outside");
     let target = outside.to_string_lossy().into_owned();
-    repo.git(&repo.main, &["worktree", "add", "-q", "-b", "feat/outside", &target]);
-    assert!(repo.rows().iter().any(|row| row.branch.as_deref() == Some("feat/outside")));
+    repo.git(
+        &repo.main,
+        &["worktree", "add", "-q", "-b", "feat/outside", &target],
+    );
+    assert!(repo
+        .rows()
+        .iter()
+        .any(|row| row.branch.as_deref() == Some("feat/outside")));
 
-    fs::write(outside.join(".git"), "gitdir: /elsewhere/.git/worktrees/other\n").unwrap();
-    assert!(repo.rows().iter().all(|row| row.branch.as_deref() != Some("feat/outside")));
+    fs::write(
+        outside.join(".git"),
+        "gitdir: /elsewhere/.git/worktrees/other\n",
+    )
+    .unwrap();
+    assert!(repo
+        .rows()
+        .iter()
+        .all(|row| row.branch.as_deref() != Some("feat/outside")));
 }
 
 #[test]
@@ -190,14 +279,20 @@ fn porcelain_records_keep_lock_reasons_with_spaces() {
     assert_eq!(entries.len(), 2);
     assert_eq!(entries[0].branch.as_deref(), Some("main"));
     assert_eq!(entries[1].branch, None);
-    assert_eq!(entries[1].locked.as_deref(), Some("claude agent agent-1 (pid 2 start x)"));
+    assert_eq!(
+        entries[1].locked.as_deref(),
+        Some("claude agent agent-1 (pid 2 start x)")
+    );
 }
 
 #[test]
 fn the_remote_host_never_carries_user_information() {
     assert_eq!(
         host_and_slug("https://user:token@github.com/wlsdks/ontology-atlas.git"),
-        (Some("github.com".into()), Some("wlsdks/ontology-atlas".into()))
+        (
+            Some("github.com".into()),
+            Some("wlsdks/ontology-atlas".into())
+        )
     );
     assert_eq!(
         host_and_slug("git@github.com:owner/name.git"),
@@ -220,7 +315,10 @@ fn every_worktree_the_listing_reports_appears_in_this_repository() {
     let started = std::time::Instant::now();
     let read = read_repository(crate_dir, &[]).expect("this repository reads");
     let elapsed = started.elapsed();
-    println!("work status read {} worktrees in {elapsed:?}", read.rows.len());
+    println!(
+        "work status read {} worktrees in {elapsed:?}",
+        read.rows.len()
+    );
     assert_eq!(read.rows.len(), expected);
     // Measured 2026-11-21: 34 worktrees in 0.7 s at load 50 on 12 cores; the screen's budget is 2 s.
     assert!(elapsed < std::time::Duration::from_secs(10), "{elapsed:?}");

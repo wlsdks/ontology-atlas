@@ -30,7 +30,9 @@ pub(super) fn admin_fingerprint(root: &Path) -> Option<String> {
 }
 
 fn modified(path: &Path) -> Option<SystemTime> {
-    std::fs::symlink_metadata(path).and_then(|meta| meta.modified()).ok()
+    std::fs::symlink_metadata(path)
+        .and_then(|meta| meta.modified())
+        .ok()
 }
 
 /// `.git` is the common directory in the main checkout; in a linked worktree it is a file naming

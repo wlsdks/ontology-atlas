@@ -82,7 +82,10 @@ fn parse_utc_ctime(text: &str) -> Option<i64> {
         .map(|time| time.and_utc().timestamp())
 }
 
-pub(crate) fn judge_lock(reason: Option<&LockReason>, probe: impl Fn(u32) -> ProcessStart) -> LockState {
+pub(crate) fn judge_lock(
+    reason: Option<&LockReason>,
+    probe: impl Fn(u32) -> ProcessStart,
+) -> LockState {
     let Some(reason) = reason else {
         return LockState::Unparsed;
     };

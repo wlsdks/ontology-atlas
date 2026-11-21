@@ -24,10 +24,18 @@ pub(crate) fn host_and_slug(url: &str) -> (Option<String>, Option<String>) {
     } else {
         return (None, None);
     };
-    let host_and_port = authority.rsplit_once('@').map_or(authority, |(_, host)| host);
-    let host = host_and_port.split(':').next().unwrap_or("").to_ascii_lowercase();
+    let host_and_port = authority
+        .rsplit_once('@')
+        .map_or(authority, |(_, host)| host);
+    let host = host_and_port
+        .split(':')
+        .next()
+        .unwrap_or("")
+        .to_ascii_lowercase();
     let host = (!host.is_empty()
-        && host.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-'))
+        && host
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-'))
     .then_some(host);
     let mut parts = path.trim_matches('/').trim_end_matches(".git").split('/');
     let slug = match (parts.next(), parts.next(), parts.next()) {
