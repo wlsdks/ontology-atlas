@@ -5,22 +5,22 @@ import { statSync } from 'node:fs';
  * resolution that makes one edge one edge however it was authored.
  */
 
-import { structuredRowErrorDetails } from '../server/rpc.mjs';
-import { VAULT_ROOT } from '../server/runtime.mjs';
+import { structuredRowErrorDetails } from '../../server/rpc.mjs';
+import { VAULT_ROOT } from '../../server/runtime.mjs';
 import {
   requireAllowedObjectKeys,
   requireNonBlankString,
   requireOptionalBoolean,
   requireOptionalNonNegativeNumber,
   requirePlainObject,
-} from '../server/validate.mjs';
-import { formatAllowedValueError } from '../suggestions.mjs';
-import { normalizeRelationRefs } from '../vault/graph/relation-refs.mjs';
-import { slugToPath } from '../vault/documents/slug-paths.mjs';
-import { readDoc } from '../vault/documents/document-cache.mjs';
-import { VaultConflictError } from '../vault/writes/atomic-writes.mjs';
-import { patchFrontmatter } from '../vault/writes/doc-writes.mjs';
-import { compactPostWriteMaintenance, findingsOnWrittenNodes } from './result-attachments.mjs';
+} from '../../server/validate.mjs';
+import { formatAllowedValueError } from '../../suggestions.mjs';
+import { normalizeRelationRefs } from '../../vault/graph/relation-refs.mjs';
+import { slugToPath } from '../../vault/documents/slug-paths.mjs';
+import { readDoc } from '../../vault/documents/document-cache.mjs';
+import { VaultConflictError } from '../../vault/writes/atomic-writes.mjs';
+import { patchFrontmatter } from '../../vault/writes/doc-writes.mjs';
+import { compactPostWriteMaintenance, findingsOnWrittenNodes } from '../result-attachments.mjs';
 import {
   RELATION_KEY,
   RELATION_TYPES,
@@ -29,12 +29,12 @@ import {
   relationKeyPatch,
   relationRefMatches,
   relationRefsFor,
-} from './relation-keys.mjs';
+} from '../relation-keys.mjs';
 import {
   missingSlugMessage,
   readDocIfPresent,
   resolveExistingVaultSlug,
-} from './vault-nodes.mjs';
+} from '../vault-nodes.mjs';
 import {
   assertGraphNodeEndpoint,
   destructivePreviewState,

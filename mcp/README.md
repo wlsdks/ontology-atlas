@@ -2231,20 +2231,20 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/git.mjs` | `git_status`, `git_history`, `git_snapshot` |
 | `src/tools/graph.mjs` | `compile_ontology` and every `query_ontology` operation |
 | `src/tools/query-ontology-args.mjs` | the argument rules of `query_ontology`, checked before any query runs |
-| `src/tools/agent-brief-scope.mjs` | which project and documents an agent brief covers |
-| `src/tools/meaning-readiness.mjs` | the meaning-readiness and project-meaning facts a brief carries, and the next-action hint table |
+| `src/tools/agent-brief/agent-brief-scope.mjs` | which project and documents an agent brief covers |
+| `src/tools/agent-brief/meaning-readiness.mjs` | the meaning-readiness and project-meaning facts a brief carries, and the next-action hint table |
 | `src/tools/validate-vault.mjs` | `validate_vault`, `validate_wiki` |
 | `src/tools/repo-analysis/analyze-structure.mjs` | `analyze_repo_structure`: the breadth map, source reads and the analysis view |
 | `src/tools/repo-analysis/inspect-architecture.mjs` | `inspect_architecture`, with `architecture-profile-selection.mjs` choosing the profile |
 | `src/tools/repo-analysis/infer-imports.mjs` | `infer_imports`, with `import-review-rules.mjs` (review mode, delivery limit, drift summary) and `vault-reconciliation.mjs` (the vault diff) |
 | `src/tools/repo-analysis/index-project.mjs` | `index_project`, with `plan-rules.mjs` (vault alignment, concept delta) |
 | `src/tools/project-source.mjs` | connect / disconnect / finalize a project binding |
-| `src/tools/write-concepts.mjs` | `add_concept`, `add_concepts`, `patch_concept` |
-| `src/tools/write-relations.mjs` | the four edge writes |
+| `src/tools/writes/write-concepts.mjs` | `add_concept`, `add_concepts`, `patch_concept` |
+| `src/tools/writes/write-relations.mjs` | the four edge writes |
 | `src/tools/lifecycle.mjs` | `rename_concept`, `reclassify_concept`, `merge_concepts`, `delete_concept` |
 | `src/tools/absorb.mjs` | `absorb_document` |
 | `src/tools/vault-nodes.mjs` | node identity, not-found errors, the review summary and authorship stamp, and the whole-vault issue finders |
-| `src/tools/write-gates.mjs` | the refusals every write passes: a forbidden frontmatter patch, a node reserved for a person, a relation endpoint without a kind, and when a preview may be confirmed |
+| `src/tools/writes/write-gates.mjs` | the refusals every write passes: a forbidden frontmatter patch, a node reserved for a person, a relation endpoint without a kind, and when a preview may be confirmed |
 | `src/tools/relation-keys.mjs` | which frontmatter key holds which relation, and how a stored ref matches |
 | `src/tools/result-attachments.mjs` | what a result carries rather than being asked for |
 | `src/vault/documents/slug-paths.mjs` | slug ↔ path mapping, the containment check every disk path passes, raw-source slugs, on-disk spelling, similar-slug suggestions, vault-root check |

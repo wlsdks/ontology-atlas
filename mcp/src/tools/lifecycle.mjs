@@ -39,7 +39,7 @@ import {
   ADD_CONCEPT_KINDS,
   destructivePreviewState,
   requireNodeNotReservedForHuman,
-} from './write-gates.mjs';
+} from './writes/write-gates.mjs';
 
 function warningsOf(list) {
   return list.length > 0 ? { warnings: list } : {};

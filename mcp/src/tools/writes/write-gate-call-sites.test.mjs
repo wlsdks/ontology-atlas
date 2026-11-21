@@ -22,9 +22,9 @@ process.env.OATLAS_VAULT = vaultRoot;
 process.env.OATLAS_REPO_ROOT = vaultRoot;
 const { patchConcept } = await import('./write-concepts.mjs');
 const { addRelation, removeRelation, replaceRelation } = await import('./write-relations.mjs');
-const { deleteConcept, mergeConcepts, reclassifyConcept, renameConcept } = await import('./lifecycle.mjs');
-const { finalizeProjectMeaningTool } = await import('./project-source.mjs');
-const { connectionInfoTool } = await import('./read.mjs');
+const { deleteConcept, mergeConcepts, reclassifyConcept, renameConcept } = await import('../lifecycle.mjs');
+const { finalizeProjectMeaningTool } = await import('../project-source.mjs');
+const { connectionInfoTool } = await import('../read.mjs');
 
 const reservedRefusal = (operation, slug) =>
   new RegExp(`^Error: ${operation} refused: ${slug} carries review_state: human_decides, so it is reserved for a person\\.`);
