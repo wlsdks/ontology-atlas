@@ -46,7 +46,7 @@ test("a folder with no code locations hands the request to the ready in-app agen
 
   await page.getByTestId("map-project-source-action").click();
   await expect(page.getByTestId("acp-chat-panel").getByRole("textbox")).toHaveValue(REQUEST_PATTERN);
-  await expect(page.getByTestId("full-detail-a1")).toHaveCount(0);
+  await expect(page.getByTestId("full-detail")).toHaveCount(0);
   // Seating a request never sends it.
   expect(await sentAnything(page)).toBe(false);
 });
@@ -56,7 +56,7 @@ test("the same step inside the project's full detail closes the dialog over the 
   await openProjectPanel(page);
 
   await page.getByRole("button", { name: "Details", exact: true }).click();
-  const fullDetail = page.getByTestId("full-detail-a1");
+  const fullDetail = page.getByTestId("full-detail");
   await fullDetail.getByRole("button", { name: "Ask the agent", exact: true }).click();
   await expect(fullDetail).toHaveCount(0);
   await expect(page.getByTestId("acp-chat-panel").getByRole("textbox")).toHaveValue(REQUEST_PATTERN);
@@ -72,5 +72,5 @@ test("without an in-app agent the same step copies the request", async ({ page }
   await expect(action).toHaveText("Copy the request");
   await action.click();
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain(REQUEST_OPENING);
-  await expect(page.getByTestId("full-detail-a1")).toHaveCount(0);
+  await expect(page.getByTestId("full-detail")).toHaveCount(0);
 });

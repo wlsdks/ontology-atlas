@@ -68,7 +68,7 @@ a vault is chosen, and a selected vault always wins. Server-runtime bans:
 The condition that renders a surface also guards building its model:
 `{open && <Card model={model} />}` is still expensive when `model` is computed
 unconditionally. Gate this by call count, never milliseconds
-(`src/views/home/model/inspector/use-full-detail-a1-model.test.ts`).
+(`src/views/home/model/inspector/use-full-detail-model.test.ts`).
 
 ## Code explains itself
 

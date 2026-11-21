@@ -92,8 +92,8 @@ interface TopologyInspectorSurfacesProps {
     | "heldContextMenu"
     | "contextMenuModel"
     | "handleSetPathSource"
-    | "heldFullDetailA1Model"
-    | "fullDetailA1Model"
+    | "heldFullDetailModel"
+    | "fullDetailModel"
   >;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect" | "handleDatasheetClose">;
   topologyKeyboard: Pick<ReturnType<typeof useTopologyKeyboard>, "handleSelectImpactMode">;
@@ -156,7 +156,7 @@ export function TopologyInspectorSurfaces({
   const { handleClose, handleSelect, handleDatasheetClose } = topologyNavigationActions;
   const {
     nodePanelMounted, panelDatasheetModel, panelOpen, meaningEditorOpen, setNodePanelMounted, heldContextMenu,
-    contextMenuModel, handleSetPathSource, heldFullDetailA1Model, fullDetailA1Model
+    contextMenuModel, handleSetPathSource, heldFullDetailModel, fullDetailModel
   } = topologyInspectorState;
   const {
     nodePopoverPositionerRef, detailCloseButtonRef, detailKeyboardTargetRef, handleDatasheetHoverConnection,
@@ -570,26 +570,26 @@ export function TopologyInspectorSurfaces({
       />
     ) : null}
     {/* A centred sheet over the dimmed map: `Dialog` owns trap, Escape, scrim close and focus return. */}
-    {heldFullDetailA1Model && FullDetailCard ? (
+    {heldFullDetailModel && FullDetailCard ? (
       <Dialog
-        open={fullDetailOpen && fullDetailA1Model !== null}
+        open={fullDetailOpen && fullDetailModel !== null}
         onClose={() => setFullDetailSlug(null)}
         size="lg"
         labelledBy={FULL_DETAIL_TITLE_ID}
         initialFocus="none"
-        testId="topology-full-detail-a1-positioner"
+        testId="topology-full-detail-positioner"
         className="p-0"
       >
         <FullDetailCard
-          node={heldFullDetailA1Model.node}
-          groups={heldFullDetailA1Model.groups}
-          reach={heldFullDetailA1Model.reach}
+          node={heldFullDetailModel.node}
+          groups={heldFullDetailModel.groups}
+          reach={heldFullDetailModel.reach}
           titleId={FULL_DETAIL_TITLE_ID}
-          bodyMarkdown={heldFullDetailA1Model.bodyMarkdown}
-          explanationEdit={heldFullDetailA1Model.explanationEdit}
-          documentHref={heldFullDetailA1Model.documentHref}
-          mentionDocumentHref={heldFullDetailA1Model.mentionDocumentHref}
-          codeLocations={heldFullDetailA1Model.codeLocations}
+          bodyMarkdown={heldFullDetailModel.bodyMarkdown}
+          explanationEdit={heldFullDetailModel.explanationEdit}
+          documentHref={heldFullDetailModel.documentHref}
+          mentionDocumentHref={heldFullDetailModel.mentionDocumentHref}
+          codeLocations={heldFullDetailModel.codeLocations}
           projectSource={projectSource.view}
           projectSourceLabels={projectSourceLabels}
           projectSourceBusy={projectSource.busy}

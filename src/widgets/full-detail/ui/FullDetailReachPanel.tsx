@@ -12,7 +12,7 @@ import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
  * Outward reach: one sentence, a 1/2/3 step selector and a per-domain bar breakdown. Indigo is
  * reserved for the self domain here (`.claude/rules/design.md`).
  */
-export interface FullDetailA1ReachLabels {
+export interface FullDetailReachLabels {
   summary: (depth: number, count: number, total: number) => string;
   /** The depth control's accessible name; an exclusive choice is a radiogroup and needs one. */
   stepsAria: string;
@@ -26,13 +26,13 @@ const DOMAIN_ROW_LIMIT = 7;
 
 function domainDisplayName(
   row: FullDetailReachDomainRow,
-  labels: FullDetailA1ReachLabels,
+  labels: FullDetailReachLabels,
 ): string {
   if (row.isSelf) return labels.selfDomainLabel;
   return row.domainTitle ?? labels.noDomainLabel;
 }
 
-export function FullDetailA1ReachPanel({
+export function FullDetailReachPanel({
   reach,
   step,
   onChangeStep,
@@ -42,7 +42,7 @@ export function FullDetailA1ReachPanel({
   reach: FullDetailReachModel;
   step: FullDetailReachDepth;
   onChangeStep: (step: FullDetailReachDepth) => void;
-  labels: FullDetailA1ReachLabels;
+  labels: FullDetailReachLabels;
   className?: string;
 }) {
   const atDepth = reach.byDepth[step];

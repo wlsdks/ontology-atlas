@@ -1,7 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import type { UseFullDetailA1ModelArgs } from "./use-full-detail-a1-model";
+import type { UseFullDetailModelArgs } from "./use-full-detail-model";
 
 /**
  * Locks the traversal count, not milliseconds: "closed means zero" holds on every machine, and
@@ -17,7 +17,7 @@ const groupsSpy = vi.fn(() => ({
 const reachSpy = vi.fn(() => ({ byDepth: {}, maxDepth: 3 }));
 const codeLocationsSpy = vi.fn(() => [] as string[]);
 
-vi.mock("@/widgets/full-detail-a1", () => ({
+vi.mock("@/widgets/full-detail", () => ({
   buildFullDetailGroups: (...args: unknown[]) => groupsSpy(...(args as [])),
   buildFullDetailReachModel: (...args: unknown[]) => reachSpy(...(args as [])),
 }));
@@ -30,7 +30,7 @@ vi.mock("@/entities/knowledge-graph", async (importOriginal) => {
   };
 });
 
-const { useFullDetailA1Model } = await import("./use-full-detail-a1-model");
+const { useFullDetailModel } = await import("./use-full-detail-model");
 
 const stamp = new Date(0);
 
@@ -67,7 +67,7 @@ const onSaveExplanation = () => undefined;
 
 function render(open: boolean) {
   return renderHook(() =>
-    useFullDetailA1Model({
+    useFullDetailModel({
       open,
       nodeFocus,
       selectedOntologyNode: selected,
@@ -82,7 +82,7 @@ function render(open: boolean) {
   );
 }
 
-describe("useFullDetailA1Model: a closed surface does not traverse the graph", () => {
+describe("useFullDetailModel: a closed surface does not traverse the graph", () => {
   beforeEach(() => {
     groupsSpy.mockClear();
     reachSpy.mockClear();
@@ -117,12 +117,12 @@ describe("useFullDetailA1Model: a closed surface does not traverse the graph", (
   });
 
   it("updates reader state without rebuilding unchanged graph facts", () => {
-    const initial: UseFullDetailA1ModelArgs = {
+    const initial: UseFullDetailModelArgs = {
       open: true, nodeFocus, selectedOntologyNode: selected, insight, changedSlugs,
       nodeBody: null, nodeEditTarget: null, vaultLoaded: false, onSaveExplanation,
       datasheet: null,
     };
-    const { result, rerender } = renderHook(useFullDetailA1Model, { initialProps: initial });
+    const { result, rerender } = renderHook(useFullDetailModel, { initialProps: initial });
     const save = vi.fn();
     rerender({
       ...initial,
@@ -155,7 +155,7 @@ describe("useFullDetailA1Model: a closed surface does not traverse the graph", (
   });
 });
 
-describe("useFullDetailA1Model: a domain's partners", () => {
+describe("useFullDetailModel: a domain's partners", () => {
   const domain = node("domain:meaning", { kind: "domain" });
   const domainUsage = {
     usedBy: [{ domainId: "domain:agent", label: "Agent", links: 2 }],
@@ -163,10 +163,10 @@ describe("useFullDetailA1Model: a domain's partners", () => {
   };
   const render = (datasheetNodeId: string) =>
     renderHook(() =>
-      useFullDetailA1Model({
+      useFullDetailModel({
         open: true, nodeFocus, selectedOntologyNode: domain, insight: { nodes: [domain], edges: [] },
         changedSlugs, nodeBody: null, nodeEditTarget: null, vaultLoaded: false, onSaveExplanation,
-        datasheet: { nodeId: datasheetNodeId, domainUsage } as unknown as UseFullDetailA1ModelArgs["datasheet"],
+        datasheet: { nodeId: datasheetNodeId, domainUsage } as unknown as UseFullDetailModelArgs["datasheet"],
       }),
     ).result.current;
 
@@ -184,12 +184,12 @@ describe("useFullDetailA1Model: a domain's partners", () => {
   it("do not rebuild the groups when the panel rebuilds with the same partners", () => {
     groupsSpy.mockClear();
     const insight = { nodes: [domain], edges: [] };
-    const args = (datasheet: object): UseFullDetailA1ModelArgs => ({
+    const args = (datasheet: object): UseFullDetailModelArgs => ({
       open: true, nodeFocus, selectedOntologyNode: domain, insight,
       changedSlugs, nodeBody: null, nodeEditTarget: null, vaultLoaded: false, onSaveExplanation,
-      datasheet: datasheet as UseFullDetailA1ModelArgs["datasheet"],
+      datasheet: datasheet as UseFullDetailModelArgs["datasheet"],
     });
-    const { rerender } = renderHook((props: UseFullDetailA1ModelArgs) => useFullDetailA1Model(props), {
+    const { rerender } = renderHook((props: UseFullDetailModelArgs) => useFullDetailModel(props), {
       initialProps: args({ nodeId: domain.id, domainUsage }),
     });
     rerender(args({ nodeId: domain.id, domainUsage, lastEditSubject: null }));

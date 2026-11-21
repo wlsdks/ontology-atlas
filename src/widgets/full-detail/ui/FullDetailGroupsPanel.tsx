@@ -15,7 +15,7 @@ import { controlClass } from '@/shared/ui/control-class';
  * names the relation, so a row is only the concept's kind and name, and navigates on click.
  */
 
-export interface FullDetailA1GroupsLabels {
+export interface FullDetailGroupsLabels {
   containsTitle: string;
   usedByTitle: string;
   dependsOnTitle: string;
@@ -95,7 +95,7 @@ function Group({
   onSelectNode,
 }: {
   spec: GroupSpec;
-  labels: FullDetailA1GroupsLabels;
+  labels: FullDetailGroupsLabels;
   onSelectNode: (id: string) => void;
 }) {
   const { dataGroup, title, view, domains } = spec;
@@ -125,14 +125,14 @@ function Group({
   );
 }
 
-export function FullDetailA1GroupsPanel({
+export function FullDetailGroupsPanel({
   groups,
   labels,
   onSelectNode,
   className,
 }: {
   groups: FullDetailGroups;
-  labels: FullDetailA1GroupsLabels;
+  labels: FullDetailGroupsLabels;
   onSelectNode: (id: string) => void;
   className?: string;
 }) {

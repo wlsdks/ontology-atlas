@@ -11,7 +11,7 @@ async function openFullDetail(page: Page) {
   const entry = page.getByTestId("map-detail-panel-open-full-detail");
   await expect(entry).toBeVisible();
   await entry.click();
-  const dialog = page.getByRole("dialog").filter({ has: page.getByTestId("full-detail-a1") });
+  const dialog = page.getByRole("dialog").filter({ has: page.getByTestId("full-detail") });
   await expect(dialog).toBeVisible();
   return dialog;
 }
@@ -24,7 +24,7 @@ test.describe("full detail on the dogfood vault", () => {
     const dialog = await openFullDetail(page);
     await waitForAnimationsDone(dialog);
     await expect(dialog).toHaveAttribute("aria-modal", "true");
-    await expect(dialog.getByTestId("full-detail-a1-title")).toBeFocused();
+    await expect(dialog.getByTestId("full-detail-title")).toBeFocused();
     await expect(page.locator('[data-surface-role="map-canvas"]')).toBeVisible();
     const box = (await dialog.boundingBox())!;
     expect(box.width).toBeLessThan(VIEWPORT.width);

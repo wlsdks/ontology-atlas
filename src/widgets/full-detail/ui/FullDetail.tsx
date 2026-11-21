@@ -31,8 +31,8 @@ import { morphName, morphTargetProps } from "@/shared/motion/shared-element";
 import { formatFullDetailHandoffChain } from "../lib/full-detail-handoff";
 import type { FullDetailGroups } from "../lib/full-detail-groups";
 import type { FullDetailReachDepth, FullDetailReachModel } from "../lib/full-detail-reach";
-import { FullDetailA1GroupsPanel } from "./full-detail-a1-groups-panel";
-import { FullDetailA1ReachPanel } from "./full-detail-a1-reach-panel";
+import { FullDetailGroupsPanel } from "./FullDetailGroupsPanel";
+import { FullDetailReachPanel } from "./FullDetailReachPanel";
 
 /**
  * The full-detail sheet, core first: a fixed header (kind, title, slug, freshness), then a
@@ -41,7 +41,7 @@ import { FullDetailA1ReachPanel } from "./full-detail-a1-reach-panel";
  * `buildFullDetailReachModel` so numbers cannot drift from the map.
  */
 
-export interface FullDetailA1Node {
+export interface FullDetailNode {
   id: string;
   title: string;
   /** The full original vault title — preserved as secondary text under the heading only
@@ -70,7 +70,7 @@ export interface FullDetailA1Node {
   mtimeConflict?: boolean;
 }
 
-export interface FullDetailA1ProjectSourceLabels {
+export interface FullDetailProjectSourceLabels {
   heading: string;
   sourceKind?: string;
   status: string;
@@ -81,8 +81,8 @@ export interface FullDetailA1ProjectSourceLabels {
   busy: string;
 }
 
-export interface FullDetailA1Props {
-  node: FullDetailA1Node;
+export interface FullDetailProps {
+  node: FullDetailNode;
   groups: FullDetailGroups;
   reach: FullDetailReachModel;
   titleId?: string;
@@ -109,7 +109,7 @@ export interface FullDetailA1Props {
    * brief consume. The private binding envelope is intentionally not part of
    * this prop. */
   projectSource?: ProjectSourceView | null;
-  projectSourceLabels?: FullDetailA1ProjectSourceLabels | null;
+  projectSourceLabels?: FullDetailProjectSourceLabels | null;
   projectSourceBusy?: boolean;
   projectSourceError?: string | null;
   /** Omit when the displayed bounded next action has no destination on this
@@ -129,7 +129,7 @@ const SHEET_LINK_CLASS = controlClass({
   className: "touch-hit-expand shrink-0 hover:text-[color:var(--map-panel-text-secondary)]",
 });
 
-export function FullDetailA1({
+export function FullDetail({
   node,
   groups,
   reach,
@@ -147,8 +147,8 @@ export function FullDetailA1({
   projectSourceError = null,
   onProjectSourceAction = null,
   className,
-}: FullDetailA1Props) {
-  const t = useTranslations("fullDetailA1");
+}: FullDetailProps) {
+  const t = useTranslations("fullDetail");
   // Same editProvenance namespace as DocFrontmatterBlock and OntologyMapDetailPanel, so the
   // three cannot drift.
   const tProvenance = useTranslations("editProvenance");
@@ -210,14 +210,14 @@ export function FullDetailA1({
 
   return (
     <div
-      data-testid="full-detail-a1"
+      data-testid="full-detail"
       data-fulldetail-node={node.id}
-      className={cn("full-detail-a1 flex min-h-0 flex-1 flex-col", className)}
+      className={cn("full-detail flex min-h-0 flex-1 flex-col", className)}
     >
       <header className={cn("shrink-0 border-b border-[color:var(--map-panel-border)] pt-3 pb-4", SHEET_PAD_X)}>
         <div className="flex min-h-8 items-center gap-2">
           <p
-            data-testid="full-detail-a1-kind"
+            data-testid="full-detail-kind"
             className="flex min-w-0 flex-1 items-center gap-1.5 text-label text-[color:var(--map-panel-text-tertiary)]"
           >
             <OntologyMapKindGlyph kind={node.kind} size={12} />
@@ -235,7 +235,7 @@ export function FullDetailA1({
               onClick={handleCopyLink}
               aria-label={t("copyLink")}
               title={t("copyLink")}
-              data-testid="full-detail-a1-copy-link"
+              data-testid="full-detail-copy-link"
               className={controlClass({
                 shape: "icon",
                 size: "lg",
@@ -249,7 +249,7 @@ export function FullDetailA1({
             <CloseButton
               onClick={onClose}
               label={t("close")}
-              data-testid="full-detail-a1-close"
+              data-testid="full-detail-close"
               className="text-[color:var(--map-panel-text-tertiary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)]"
             />
           </div>
@@ -257,7 +257,7 @@ export function FullDetailA1({
         <h2
           id={titleId}
           ref={headingRef}
-          data-testid="full-detail-a1-title"
+          data-testid="full-detail-title"
           tabIndex={-1}
           className="mt-1 [overflow-wrap:anywhere] text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--map-panel-text-primary)] focus:outline-none"
         >
@@ -267,7 +267,7 @@ export function FullDetailA1({
         </h2>
         {node.fullTitle && node.fullTitle !== node.title ? (
           <p
-            data-testid="full-detail-a1-full-title"
+            data-testid="full-detail-full-title"
             className="mt-0.5 [overflow-wrap:anywhere] text-body text-[color:var(--map-panel-text-tertiary)]"
           >
             {node.fullTitle}
@@ -340,7 +340,7 @@ export function FullDetailA1({
           )}
         </section>
 
-        <FullDetailA1GroupsPanel
+        <FullDetailGroupsPanel
           className={SECTION_CLASS}
           groups={groups}
           onSelectNode={onSelectNode}
@@ -359,7 +359,7 @@ export function FullDetailA1({
           }}
         />
 
-        <FullDetailA1ReachPanel
+        <FullDetailReachPanel
           className={SECTION_CLASS}
           reach={reach}
           step={step}
@@ -380,14 +380,14 @@ export function FullDetailA1({
               <button
                 type="button"
                 onClick={handleCopyHandoff}
-                data-testid="full-detail-a1-handoff-copy"
+                data-testid="full-detail-handoff-copy"
                 className={controlClass({ shape: "chip", size: "lg", className: "shrink-0 border-[color:var(--map-indigo-border)] bg-[color:var(--map-panel-action-surface)] font-[var(--font-weight-signature)] text-[color:var(--map-indigo-bright)] hover:bg-[color:var(--map-panel-row-hover)] hover:border-[color:var(--map-indigo)]" })}
               >
                 {t("handoff.copy")}
               </button>
               {/* Each link leaves the map, so it closes the sheet first rather than act unseen beneath it. */}
               {documentHref ? (
-                <Link href={documentHref} onClick={onClose} data-testid="full-detail-a1-open-document" className={SHEET_LINK_CLASS}>
+                <Link href={documentHref} onClick={onClose} data-testid="full-detail-open-document" className={SHEET_LINK_CLASS}>
                   {t("handoff.openDocument")}
                 </Link>
               ) : mentionDocumentHref ? (
@@ -395,7 +395,7 @@ export function FullDetailA1({
                   href={mentionDocumentHref}
                   onClick={onClose}
                   title={t("handoff.openMentionDocumentTip")}
-                  data-testid="full-detail-a1-open-mention-document"
+                  data-testid="full-detail-open-mention-document"
                   className={SHEET_LINK_CLASS}
                 >
                   {t("handoff.openMentionDocument")}
@@ -404,7 +404,7 @@ export function FullDetailA1({
               <Link
                 href={buildTopologyMeaningEditorNodeHref(node.id)}
                 onClick={onClose}
-                data-testid="full-detail-a1-open-studio"
+                data-testid="full-detail-open-studio"
                 className={SHEET_LINK_CLASS}
               >
                 {t("handoff.openStudio")}
@@ -526,7 +526,7 @@ function FullDetailCodeLocationRow({
         onClick={() => void copy(path)}
         aria-label={state === "copied" ? copiedLabel : copyLabel}
         title={state === "copied" ? copiedLabel : copyLabel}
-        data-testid="full-detail-a1-code-location-copy"
+        data-testid="full-detail-code-location-copy"
         /*
          * The box uses the square ramp's `sm` (24px); the row is already `min-h-[32px]`, so height
          * is unchanged.

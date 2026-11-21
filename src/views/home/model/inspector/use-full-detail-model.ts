@@ -8,12 +8,12 @@ import {
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
-import { buildFullDetailGroups, buildFullDetailReachModel, type FullDetailGroups } from "@/widgets/full-detail-a1";
+import { buildFullDetailGroups, buildFullDetailReachModel, type FullDetailGroups } from "@/widgets/full-detail";
 import type { DomainUsage } from "@/widgets/ontology-map";
 import type { TopologyNodeFocusModel } from "../../lib/inspector/topology-node-focus";
 import type { NodeDatasheetDerivation } from "./use-node-datasheet-model";
 
-export interface UseFullDetailA1ModelArgs {
+export interface UseFullDetailModelArgs {
   open: boolean;
   nodeFocus: TopologyNodeFocusModel | null;
   selectedOntologyNode: KnowledgeGraphNode | null;
@@ -26,7 +26,7 @@ export interface UseFullDetailA1ModelArgs {
   datasheet: NodeDatasheetDerivation["v2DatasheetModel"];
 }
 
-export function useFullDetailA1Model({
+export function useFullDetailModel({
   open,
   nodeFocus,
   selectedOntologyNode,
@@ -37,7 +37,7 @@ export function useFullDetailA1Model({
   vaultLoaded,
   onSaveExplanation,
   datasheet,
-}: UseFullDetailA1ModelArgs) {
+}: UseFullDetailModelArgs) {
   const activeNodeId = open && nodeFocus && selectedOntologyNode && insight
     ? selectedOntologyNode.id : null;
   const graphFacts = useMemo(() => {

@@ -4,7 +4,7 @@ import koMessages from "../../../../messages/ko.json";
 import { describe, expect, it, vi } from "vitest";
 import { buildFullDetailGroups } from "../lib/full-detail-groups";
 import { buildFullDetailReachModel } from "../lib/full-detail-reach";
-import { FullDetailA1 } from "./FullDetailA1";
+import { FullDetail } from "./FullDetail";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { ProjectSourceView } from "@/shared/lib/project-source/project-source-receipt";
 
@@ -34,7 +34,7 @@ const messages = {
     "vault-readme": "볼트 README",
     unknown: "알 수 없음",
   },
-  fullDetailA1: {
+  fullDetail: {
     freshOn: "최근 갱신",
     freshOff: "정체",
     copyLink: "노드 링크 복사",
@@ -54,7 +54,7 @@ const messages = {
     },
     reach: {
       summary: "{depth}단계 안에 있는 개념 {count}개 · 전체 {total}개",
-      stepsAria: koMessages.fullDetailA1.reach.stepsAria,
+      stepsAria: koMessages.fullDetail.reach.stepsAria,
       selfDomainLabel: "도메인 내부",
       noDomainLabel: "소속 없음",
     },
@@ -135,14 +135,14 @@ const edges = [
   edge("e2", "capability:user", "domain:a", "depends_on"),
 ];
 
-function renderFullDetail(overrides: Partial<Parameters<typeof FullDetailA1>[0]> = {}) {
+function renderFullDetail(overrides: Partial<Parameters<typeof FullDetail>[0]> = {}) {
   const groups = buildFullDetailGroups("domain:a", nodes, edges);
   const reach = buildFullDetailReachModel("domain:a", nodes, edges);
   const onSelectNode = vi.fn();
   const onClose = vi.fn();
   render(
     <NextIntlClientProvider locale="ko" messages={messages}>
-      <FullDetailA1
+      <FullDetail
         node={{ id: "domain:a", title: "Domain A", kind: "domain", slug: "domains/a", fresh: true }}
         groups={groups}
         reach={reach}
@@ -156,11 +156,11 @@ function renderFullDetail(overrides: Partial<Parameters<typeof FullDetailA1>[0]>
   return { onSelectNode, onClose };
 }
 
-function renderFullDetailWithContainer(overrides: Partial<Parameters<typeof FullDetailA1>[0]> = {}) {
+function renderFullDetailWithContainer(overrides: Partial<Parameters<typeof FullDetail>[0]> = {}) {
   const onSelectNode = vi.fn();
   const { container } = render(
     <NextIntlClientProvider locale="ko" messages={messages}>
-      <FullDetailA1
+      <FullDetail
         node={{ id: "domain:a", title: "Domain A", kind: "domain", slug: "domains/a", fresh: true }}
         groups={buildFullDetailGroups("domain:a", nodes, edges)}
         reach={buildFullDetailReachModel("domain:a", nodes, edges)}
@@ -189,17 +189,17 @@ function projectSourceView(overrides: Partial<ProjectSourceView> = {}): ProjectS
   };
 }
 
-describe("FullDetailA1", () => {
+describe("FullDetail", () => {
   it('renders title, kind and slug in the header', () => {
     renderFullDetail();
     expect(screen.getByRole("heading", { name: "Domain A" })).toBeInTheDocument();
-    expect(screen.getByTestId("full-detail-a1-kind")).toHaveTextContent("도메인");
+    expect(screen.getByTestId("full-detail-kind")).toHaveTextContent("도메인");
     expect(screen.getByText("domains/a")).toBeInTheDocument();
   });
 
   it('names the owner beside the kind, as the compact panel does', () => {
     renderFullDetail({ node: { id: "capability:child", title: "Child", kind: "capability", ownerTitle: "Domain A", slug: "capabilities/child", fresh: false } });
-    expect(screen.getByTestId("full-detail-a1-kind")).toHaveTextContent("캡슐·Domain A");
+    expect(screen.getByTestId("full-detail-kind")).toHaveTextContent("캡슐·Domain A");
   });
 
   it('renders fullTitle as secondary text when it differs from title', () => {
@@ -215,7 +215,7 @@ describe("FullDetailA1", () => {
     });
     expect(screen.getByText("CLI Developer Entry")).toBeInTheDocument();
     expect(
-      screen.getByTestId("full-detail-a1-full-title"),
+      screen.getByTestId("full-detail-full-title"),
     ).toHaveTextContent(
       "CLI Developer Entry (52 commands — vault + MCP verify + ...)",
     );
@@ -224,7 +224,7 @@ describe("FullDetailA1", () => {
   it('omits the secondary text when fullTitle equals title', () => {
     renderFullDetail();
     expect(
-      screen.queryByTestId("full-detail-a1-full-title"),
+      screen.queryByTestId("full-detail-full-title"),
     ).not.toBeInTheDocument();
   });
 
@@ -298,7 +298,7 @@ describe("FullDetailA1", () => {
      * state.
      */
     renderFullDetail();
-    const group = screen.getByRole("radiogroup", { name: koMessages.fullDetailA1.reach.stepsAria });
+    const group = screen.getByRole("radiogroup", { name: koMessages.fullDetail.reach.stepsAria });
     const steps = within(group).getAllByRole("radio");
     expect(steps).toHaveLength(3);
     fireEvent.click(steps[0]);
@@ -308,7 +308,7 @@ describe("FullDetailA1", () => {
 
   it('calls onClose when the close button is clicked', () => {
     const { onClose } = renderFullDetail();
-    fireEvent.click(screen.getByTestId("full-detail-a1-close"));
+    fireEvent.click(screen.getByTestId("full-detail-close"));
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -337,7 +337,7 @@ describe("FullDetailA1", () => {
   });
 });
 
-describe("FullDetailA1 — project source receipt parity", () => {
+describe("FullDetail — project source receipt parity", () => {
   const sourceLabels = {
     heading: "프로젝트 코드 근거",
     sourceKind: "소스 · Git 저장소",
@@ -427,7 +427,7 @@ describe("FullDetailA1 — project source receipt parity", () => {
       projectSourceLabels: { ...sourceLabels, action: "현재 근거로 인계" },
     });
 
-    fireEvent.click(screen.getByTestId("full-detail-a1-handoff-copy"));
+    fireEvent.click(screen.getByTestId("full-detail-handoff-copy"));
     expect(writeText).toHaveBeenCalledTimes(1);
     const copied = String(writeText.mock.calls[0]?.[0]);
     expect(copied).toContain("PROJECT SOURCE");
@@ -440,7 +440,7 @@ describe("FullDetailA1 — project source receipt parity", () => {
 });
 
 // Code location shows real file paths, distinct from `node.slug`.
-describe('FullDetailA1 code location section', () => {
+describe('FullDetail code location section', () => {
   it("renders a heading + row for each code path when codeLocations is non-empty", () => {
     renderFullDetail({ codeLocations: ["mcp/src/index.js", "mcp/src/verify.mjs"] });
     expect(screen.getByText("코드 위치")).toBeInTheDocument();
@@ -451,7 +451,7 @@ describe('FullDetailA1 code location section', () => {
   it("omits the section entirely when codeLocations is empty or omitted", () => {
     renderFullDetail();
     expect(
-      screen.getByTestId("full-detail-a1").querySelector("[data-fulldetail-code-locations]"),
+      screen.getByTestId("full-detail").querySelector("[data-fulldetail-code-locations]"),
     ).toBeNull();
   });
 
@@ -459,13 +459,13 @@ describe('FullDetailA1 code location section', () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
     renderFullDetail({ codeLocations: ["mcp/src/index.js"] });
-    fireEvent.click(screen.getByTestId("full-detail-a1-code-location-copy"));
+    fireEvent.click(screen.getByTestId("full-detail-code-location-copy"));
     expect(writeText).toHaveBeenCalledWith("mcp/src/index.js");
   });
 });
 
 // Last-edit provenance and the expected_mtime conflict badge.
-describe("FullDetailA1 — last-edit provenance", () => {
+describe("FullDetail — last-edit provenance", () => {
   it("renders no subject row when the node carries no lastEditSubject fact", () => {
     renderFullDetail();
     expect(screen.queryByTestId("last-edit-subject-row")).not.toBeInTheDocument();

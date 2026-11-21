@@ -17,7 +17,7 @@ const CONSUMERS = [
   'src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx',
   'src/widgets/analysis-workbench/ui/AnalysisWorkbench.tsx',
   'src/widgets/acp-chat-panel/ui/AcpDockHeader.tsx',
-  'src/widgets/full-detail-a1/ui/FullDetailA1.tsx',
+  'src/widgets/full-detail/ui/FullDetail.tsx',
   'src/widgets/project-drawer/ui/ProjectDrawer.tsx',
   'src/widgets/library-import/ui/LibraryImportDialog.tsx',
   'src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx',

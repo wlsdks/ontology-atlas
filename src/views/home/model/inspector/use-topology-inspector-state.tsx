@@ -13,7 +13,7 @@ import type { OntologyMapGraph } from "../../lib/map-canvas/map-adapter";
 import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import { isSearchLaneCrowded, SEARCH_LANE_CROWDED_BELOW_PX } from "./search-lane-density";
 import { selectTopologyPathRouteState } from "../route-state/url-state";
-import { useFullDetailA1Model } from "./use-full-detail-a1-model";
+import { useFullDetailModel } from "./use-full-detail-model";
 import { useRetainedDatasheetModel } from "./use-retained-datasheet-model";
 import type { NodeDatasheetDerivation } from "./use-node-datasheet-model";
 
@@ -143,7 +143,7 @@ export function useTopologyInspectorState({
     contextMenuKey,
   );
 
-  const fullDetailA1Model = useFullDetailA1Model({
+  const fullDetailModel = useFullDetailModel({
     open: fullDetailOpen,
     nodeFocus,
     selectedOntologyNode,
@@ -157,7 +157,7 @@ export function useTopologyInspectorState({
   });
   // The model turns null on close, so the exit window holds it. Keyed by slug: an unkeyed
   // per-render `useMemo` value crashes the map with React #301.
-  const heldFullDetailA1Model = useHeldValue(fullDetailA1Model, fullDetailSlug);
+  const heldFullDetailModel = useHeldValue(fullDetailModel, fullDetailSlug);
   // Full detail is a dialog over the dimmed map, so the selection and its panel stay beneath it and
   // its opener is still there to take focus back.
   const selectedNodeFocusActive =
@@ -240,6 +240,6 @@ export function useTopologyInspectorState({
     topologyUtilityLaneSuppressionContract, searchLaneCrowded, selectedNodeFocusActive, nodePanelMounted,
     inspectorOwnsRightRail, activityInboxOpen, selectedEdgeOwnsRightRail, setActivityInboxOpen,
     indexDemotedByNodeSheet, panelOpen, meaningEditorOpen, setNodePanelMounted, heldContextMenu,
-    contextMenuModel, handleSetPathSource, heldFullDetailA1Model, fullDetailA1Model
+    contextMenuModel, handleSetPathSource, heldFullDetailModel, fullDetailModel
   } as const;
 }

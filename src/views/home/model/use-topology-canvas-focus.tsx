@@ -4,8 +4,8 @@ import { buildChatNodeIndex, resolveNodeAgentTarget } from "@/entities/knowledge
 import { presentationRelationKeysForGraphEdge, type KnownRelations } from "@/features/acp-session";
 import { requestOntologyMapFrame } from "@/widgets/ontology-map";
 import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["FullDetailA1"];
-const importFullDetailA1 = () => import("@/widgets/full-detail-a1");
+type FullDetailComponent = Awaited<ReturnType<typeof importFullDetail>>["FullDetail"];
+const importFullDetail = () => import("@/widgets/full-detail");
 interface Options {
   topologyVaultReadModel: Pick<ReturnType<typeof useTopologyVaultReadModel>, "ontologyInsight" | "selectedOntologyNode">;
 }
@@ -83,15 +83,15 @@ export function useTopologyCanvasFocus({ topologyVaultReadModel }: Options) {
    * Full detail is a lazy chunk: the map stays until it loads, then background and content land in
    * one crossfade instead of a blank window. Prewarmed when a node is selected.
    */
-  const [FullDetailCard, setFullDetailCard] = useState<FullDetailA1Component | null>(null);
+  const [FullDetailCard, setFullDetailCard] = useState<FullDetailComponent | null>(null);
   useEffect(() => {
     if (FullDetailCard) return;
     if (!selectedOntologyNode && fullDetailSlug == null) return;
     let cancelled = false;
-    void importFullDetailA1()
+    void importFullDetail()
       .then((mod) => {
         // Wrapped so the function is not taken for a state updater.
-        if (!cancelled) setFullDetailCard(() => mod.FullDetailA1);
+        if (!cancelled) setFullDetailCard(() => mod.FullDetail);
       })
       .catch(() => {
         // A failed chunk leaves the render gate closed.
