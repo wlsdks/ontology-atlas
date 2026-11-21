@@ -35,4 +35,4 @@ export {
   buildCodexConfigTomlTemplate,
   buildCodexMcpAddCommandTemplate,
   buildMcpConfigJson,
-} from './lib/ontology-starter';
+} from './lib/agent-mcp-config';
