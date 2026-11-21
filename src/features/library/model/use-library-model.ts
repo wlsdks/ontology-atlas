@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  buildLibraryModel,
+  createLibraryModelBuilder,
   createWikiTermIntern,
   type LibraryModel,
   type VaultDoc,
@@ -47,6 +47,7 @@ export interface LibraryUiModel extends LibraryModel {
 }
 
 const EMPTY_SOURCES: VaultSourceFile[] = [];
+const EMPTY_DOCS: VaultDoc[] = [];
 
 /** Paths per native call, so the checking count can move while a large folder is hashed. */
 export const SOURCE_HASH_CHUNK = 256;
@@ -121,15 +122,17 @@ export function useLibraryModel({
     return { hashes, unreadable };
   }, [sources, stampedHashes, vaultScope]);
 
+  // Keeps rows between builds, so a hash publish rebuilds only the rows its hashes change.
+  const [buildModel] = useState(createLibraryModelBuilder);
   const model = useMemo(
     () =>
-      buildLibraryModel({
+      buildModel({
         sources: enabled ? (sources ?? EMPTY_SOURCES) : EMPTY_SOURCES,
-        docs: enabled ? docs : [],
+        docs: enabled ? docs : EMPTY_DOCS,
         hashes,
         unreadable,
       }),
-    [docs, enabled, hashes, sources, unreadable],
+    [buildModel, docs, enabled, hashes, sources, unreadable],
   );
 
   const wanted = useMemo(() => {
