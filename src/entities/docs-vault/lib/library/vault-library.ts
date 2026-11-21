@@ -54,20 +54,6 @@ export interface LibraryModel {
   compiledBy: LibraryCompiledBy;
 }
 
-/** `1536` → `1.5 KB`; locale-independent. */
-export function formatSourceBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes < 0) return '—';
-  if (bytes < 1000) return `${bytes} B`;
-  const units = ['KB', 'MB', 'GB', 'TB'];
-  let value = bytes / 1000;
-  let unit = 0;
-  while (value >= 1000 && unit < units.length - 1) {
-    value /= 1000;
-    unit += 1;
-  }
-  return `${value >= 100 ? Math.round(value) : value.toFixed(1)} ${units[unit]}`;
-}
-
 export interface LibraryOriginalLink {
   path: string;
   name: string;
