@@ -9,7 +9,7 @@ import type { MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation
 import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import type { RefObject } from "react";
 import type { DialFrameSummary } from "../../dial/frame/frame";
-import type { DialEvidence, DialLabels, DialMemory } from "../../dial/types";
+import type { DialEvidence, DialLabels, DialMemory } from "../../dial/dial-shapes";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
 import type { SelectionSource } from "../../model/camera/flat-selection-camera";
 import { type TierNameAnchor } from "../../model/dome-view/strata/tier-names";
@@ -132,7 +132,7 @@ export interface UseTopologyLoopArgs {
   onToggleCluster?: (parentId: string) => void;
   /** Cluster-chip hover tooltip. Fires only when the identified chip changes; null clears. */
   onHoverCluster?: (
-    info: {
+    cluster: {
       parentId: string;
       /** Direct children collapsed by the density gate at this tier (the chip's `+N`). */
       count: number;

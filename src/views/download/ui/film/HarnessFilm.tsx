@@ -80,10 +80,10 @@ function shotAt(i: number, T: number) {
   };
 }
 
-function setRise(el: HTMLElement | null | undefined, lit: number) {
-  if (!el) return;
-  el.style.opacity = String(lit);
-  el.style.transform = `translateY(${(1 - lit) * CAPTION_RISE}px)`;
+function setRise(htmlElement: HTMLElement | null | undefined, lit: number) {
+  if (!htmlElement) return;
+  htmlElement.style.opacity = String(lit);
+  htmlElement.style.transform = `translateY(${(1 - lit) * CAPTION_RISE}px)`;
 }
 
 type WindowComponent = ComponentType<{ example: ExampleRead; scale: () => number; onReady: (director: Director | null) => void }>;

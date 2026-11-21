@@ -1,7 +1,7 @@
 import type { MeasureText } from "../../dial/label-marks";
-import type { Box, DialLabels, DialModel, Point } from "../../dial/types";
+import type { Box, DialLabels, DialModel, Point } from "../../dial/dial-shapes";
 import type { GraphLine } from "../attention";
-import type { FlatGraphLayout, FlatGraphPaintTokens } from "../types";
+import type { FlatGraphLayout, FlatGraphPaintTokens } from "../flat-graph-shapes";
 
 export type NameRole = "project" | "domain" | "units" | "orphans" | "capability" | "element" | "reach";
 

@@ -50,7 +50,7 @@ import {
   type DomeRuntime,
 } from "../../model/dome-view/runtime";
 import { followTurnWithZoom } from "../../model/dome-view/camera/turn-follow";
-import type { DomeModel } from "../../model/dome-view/types";
+import type { DomeModel } from "../../model/dome-view/dome-shapes";
 import type { RealmTransitionState } from "../../model/realm/realm-transition";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/target/fit-targets";
@@ -660,10 +660,10 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               dome.poseTween = null;
             } else {
               const e = pose.ease === "out" ? easeOutCubic(t) : easeInOutCubic(t);
-              const prevPoseYaw = dome.yaw;
+              const previousPoseYaw = dome.yaw;
               dome.yaw = pose.startYaw + (pose.targetYaw - pose.startYaw) * e;
               dome.pitch = pose.startPitch + (pose.targetPitch - pose.startPitch) * e;
-              chargeTierLag(dome.lag, dome.yaw - prevPoseYaw, DOME_POSE_LAG_SCALE);
+              chargeTierLag(dome.lag, dome.yaw - previousPoseYaw, DOME_POSE_LAG_SCALE);
             }
             dome.yawVel = 0;
             // Drop the landing target too — new input and an explicit reset

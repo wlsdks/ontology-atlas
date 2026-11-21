@@ -10,7 +10,7 @@ import { isContainmentRelation } from "@/entities/knowledge-graph";
 
 import { buildDialModel } from "../dial/dial-model";
 import { clearDialFrame, describeLastDialFrame } from "../dial/frame/frame";
-import type { DialFrameInput, DialLabels, DialModel, Point } from "../dial/types";
+import type { DialFrameInput, DialLabels, DialModel, Point } from "../dial/dial-shapes";
 import {
   directRelations, readContainmentTree, rollDirectedDomainFlows, rollDomainDependencies, rollRelatesCapabilityPairs, rollRelatesDomainPairs,
   type TreeInputEdge, type TreeInputNode,

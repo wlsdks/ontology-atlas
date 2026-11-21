@@ -31,13 +31,15 @@ import { findBacklinks } from '../vault/graph/graph-queries.mjs';
 import { redirectBacklinks } from '../vault/writes/backlink-rewrite.mjs';
 import { compactPostWriteMaintenance } from './result-attachments.mjs';
 import {
-  ADD_CONCEPT_KINDS,
-  destructivePreviewState,
   missingSlugMessage,
   readDocIfPresent,
-  requireNodeNotReservedForHuman,
   resolveExistingVaultSlug,
 } from './vault-nodes.mjs';
+import {
+  ADD_CONCEPT_KINDS,
+  destructivePreviewState,
+  requireNodeNotReservedForHuman,
+} from './write-gates.mjs';
 
 function warningsOf(list) {
   return list.length > 0 ? { warnings: list } : {};

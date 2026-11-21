@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { DialWorld } from "../../../dial/types";
+import type { DialWorld } from "../../../dial/dial-shapes";
 import type { TopologyWorld } from "../../world/topology-world";
 import { branchSelectionMargin } from "./selection-margin";
 vi.mock("../../../dial/tokens", () => ({ readDialTokens: () => ({ nameMaxPx: 180, ledgerGapPx: 20, discGlyphPx: 12, chipMinPx: 6, labelScale: 1 }) }));

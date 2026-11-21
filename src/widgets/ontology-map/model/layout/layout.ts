@@ -165,12 +165,12 @@ export function computeConcentricLayout(
     }
     // A dense fan starts spread; small fans keep the exact base ring (`layout.test.ts`).
     const capR = rings.capability * Math.max(1, fan.length / CAP_DENSITY_THRESHOLD);
-    const elR = rings.element * Math.max(1, fan.length / ELEMENT_DENSITY_THRESHOLD);
+    const elementRadius = rings.element * Math.max(1, fan.length / ELEMENT_DENSITY_THRESHOLD);
     const spread = Math.min(CAP_SPREAD_MAX, 0.32 + fan.length * 0.22);
     fan.forEach((child, i) => {
       const t = fan.length === 1 ? 0 : i / (fan.length - 1) - 0.5;
       const angle = domainPoint.angle + t * spread;
-      const r = child.kind === "capability" ? capR : elR;
+      const r = child.kind === "capability" ? capR : elementRadius;
       placed.set(child.id, {
         x: domainPoint.x + Math.cos(angle) * r,
         y: domainPoint.y + Math.sin(angle) * r,
@@ -190,14 +190,14 @@ export function computeConcentricLayout(
       placeExpandedChildren(capPoint, rankDiscChildren(elements), rings.element, placed, expandStructure);
       return;
     }
-    const elR = rings.element * Math.max(1, elements.length / ELEMENT_DENSITY_THRESHOLD);
+    const elementRadius = rings.element * Math.max(1, elements.length / ELEMENT_DENSITY_THRESHOLD);
     const spread = Math.min(ELEMENT_SPREAD_MAX, 0.26 + elements.length * 0.26);
     elements.forEach((element, i) => {
       const t = elements.length === 1 ? 0 : i / (elements.length - 1) - 0.5;
       const angle = capPoint.angle + t * spread;
       placed.set(element.id, {
-        x: capPoint.x + Math.cos(angle) * elR,
-        y: capPoint.y + Math.sin(angle) * elR,
+        x: capPoint.x + Math.cos(angle) * elementRadius,
+        y: capPoint.y + Math.sin(angle) * elementRadius,
         angle,
       });
     });

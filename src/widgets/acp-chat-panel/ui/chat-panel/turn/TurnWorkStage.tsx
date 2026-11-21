@@ -12,7 +12,7 @@ import { CELEBRATION_MOTIONS, PLAY_ROW_FRAMES, WORK_ROW_FRAMES } from '@/shared/
 import type { TurnActivity, TurnWrites } from '../../turn-activity';
 import { workingShimmer } from '../../working-ink';
 import { celebrationClip, stageClip } from './moru-playlist';
-import type { ChatT, SessionState } from '../types';
+import type { ChatT, SessionState } from '../chat-panel-props';
 
 const STAGE_ROWS = [...Object.keys(WORK_ROW_FRAMES), ...Object.keys(PLAY_ROW_FRAMES), ...CELEBRATION_MOTIONS];
 

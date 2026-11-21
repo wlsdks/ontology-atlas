@@ -244,7 +244,7 @@ function SearchPaletteDialog({
         dialog.querySelectorAll<HTMLElement>(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
         ),
-      ).filter((el) => !el.hasAttribute('disabled'));
+      ).filter((htmlElement) => !htmlElement.hasAttribute('disabled'));
       if (items.length === 0) return;
       const first = items[0];
       const last = items[items.length - 1];
@@ -309,8 +309,8 @@ function SearchPaletteDialog({
 
   useEffect(() => {
     if (!listRef.current) return;
-    const el = listRef.current.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`);
-    el?.scrollIntoView({ block: 'nearest' });
+    const htmlElement = listRef.current.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`);
+    htmlElement?.scrollIntoView({ block: 'nearest' });
   }, [activeIndex]);
 
   return (
@@ -498,18 +498,18 @@ function SearchPaletteDialog({
                 {t('docsSection', { count: docResults.length })}
               </div>
               <ul className="flex flex-col gap-0.5">
-                {docResults.map((d, idx) => {
-                  const isActive = idx === activeIndex;
+                {docResults.map((d, index) => {
+                  const isActive = index === activeIndex;
                   return (
                     <li key={d.slug}>
                       <Link
                         id={`search-result-doc-${d.slug}`}
                         role="option"
                         aria-selected={isActive}
-                        data-index={idx}
+                        data-index={index}
                         href={buildDocsVaultHref({ slug: d.slug })}
                         onClick={onClose}
-                        onMouseEnter={() => setActiveIndex(idx)}
+                        onMouseEnter={() => setActiveIndex(index)}
                         className={controlClass({
                           shape: "row",
                           size: "sm",
@@ -595,8 +595,8 @@ function SearchPaletteDialog({
             )
           ) : (
             <ul>
-              {results.map((r, idx) => {
-                const rowIndex = docResults.length + idx;
+              {results.map((r, index) => {
+                const rowIndex = docResults.length + index;
                 const isActive = rowIndex === activeIndex;
                 return (
                   <li key={r.project.slug}>

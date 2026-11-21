@@ -66,8 +66,8 @@ export function useGitSnapshot({
       setSelectedPath(null);
       setFollowed(null);
       await refresh();
-    } catch (err) {
-      setSnapshotError(gitErrorMessage(err, nativeErrors));
+    } catch (error) {
+      setSnapshotError(gitErrorMessage(error, nativeErrors));
     } finally {
       setSnapshotting(false);
     }

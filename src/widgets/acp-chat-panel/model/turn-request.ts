@@ -1,4 +1,4 @@
-import type { AcpTurnRequest, AcpTurnRequestAction } from '../ui/chat-panel/types';
+import type { AcpTurnRequest, AcpTurnRequestAction } from '../ui/chat-panel/chat-panel-props';
 
 interface RequestFacts {
   title: string | null;

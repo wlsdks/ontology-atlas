@@ -10,8 +10,8 @@ import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { Tooltip, TooltipProvider } from '@/shared/ui/hints/tooltip';
 
 import { composerStatusLive, workingShimmer } from '../../working-ink';
-import { PICKER_MAX_WIDTH_CLASS, PICKER_MIN_WIDTH_CLASS } from '../constants';
-import type { ChatT, FooterStatus, SessionState } from '../types';
+import { PICKER_MAX_WIDTH_CLASS, PICKER_MIN_WIDTH_CLASS } from '../chat-panel-class-names';
+import type { ChatT, FooterStatus, SessionState } from '../chat-panel-props';
 
 /** Values of the one picker: an adapter mode, or the app's own answer to its requests. */
 const AUTO_APPROVE = 'approval:auto';

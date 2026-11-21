@@ -1,5 +1,5 @@
 import { TEXT_ARRIVING_MS } from '../../turn-activity';
-import type { FooterStatus, SessionState } from '../types';
+import type { FooterStatus, SessionState } from '../chat-panel-props';
 
 type Status = SessionState['status'];
 type EventRow = Pick<SessionState['events'][number], 'id' | 'kind'>;

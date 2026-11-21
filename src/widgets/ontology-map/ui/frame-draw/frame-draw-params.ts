@@ -1,6 +1,6 @@
 import type { NeuralLabels } from "./neural/paint-neural";
 import type { NeuralSurface } from "./neural/neural-frame";
-import type { DialWorld } from '../../dial/types';
+import type { DialWorld } from '../../dial/dial-shapes';
 import type { PanelInsets } from "../../interaction/free-area";
 import type { CameraAxes } from "../../engine/camera";
 import type { EdgePairFocus } from "../../model/visibility/focus-state";
@@ -9,7 +9,7 @@ import type { FootprintInk } from "@/shared/lib/map-canvas/footprint-glyph";
 import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
 import type { FootprintPreference } from "@/shared/lib/preferences/footprint-preferences";
 import type { DomeNodeFrame } from "../../model/dome-view/runtime";
-import type { DomeViewKind } from "../../model/dome-view/types";
+import type { DomeViewKind } from "../../model/dome-view/dome-shapes";
 import type { DomeLightFrame } from "../../render/dome-view/dome-light";
 import type { TierRevealConfig } from "../../model/visibility/tier-visibility";
 import type { CanvasBackgroundVariant } from "../../render/grid";

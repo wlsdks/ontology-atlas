@@ -32,7 +32,7 @@ const EXEMPT_FILES = new Set([
  * what stops adoption being quietly rolled back.
  */
 const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [
-  ["src/widgets/app-settings-menu/ui/pane-settings/AppearancePickers.tsx", "grid preview tile — shape:'tile' + active ink split by parent/child"],
+  ["src/widgets/app-settings-menu/ui/pane-settings/appearance-pickers.tsx", "grid preview tile — shape:'tile' + active ink split by parent/child"],
   ["src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx", "panel-scoped ink + chrome radius + a 48px uniform width the owner fixed after two corrections"],
   ["src/widgets/project-drawer/ui/more-info/ProjectBasicInfo.tsx", "shape:'pill' + upper-case mono caption — not a combination of the value-layer chip ramp"],
   ["src/widgets/atlas-git-panel/ui/commit-detail/ConceptChips.tsx", "tone:'secondary' + a conditional border that must not cover the pressed chip's indigo"],
@@ -51,11 +51,11 @@ const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [
  * somebody removed the behaviour layer (raising it is free).
  *
  * ⚠️ **Sites are counted, not files.** Counting files first left a hole a probe
- * caught: `AppearancePickers` has two groups, so **removing the wiring from one
+ * caught: `appearance-pickers.tsx` has two groups, so **removing the wiring from one
  * still leaves the file calling the hook** and it stayed green. Wherever the
  * ratchet's unit is coarser than the defect's unit, that much goes unseen.
  *
- * Today it is **10 sites across 9 registered files** (only `AppearancePickers` has
+ * Today it is **10 sites across 9 registered files** (only `appearance-pickers.tsx` has
  * two groups). The primitive's own file is on the exemption list and does not count
  * here; whether the primitive uses the hook is asserted separately by the idling
  * guard — locked in two places.

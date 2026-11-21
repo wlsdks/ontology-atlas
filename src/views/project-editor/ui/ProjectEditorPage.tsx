@@ -142,15 +142,15 @@ function EditorContent({
         onClick: () => router.push(getProjectRuntimeDetailHref(input.slug)),
       });
       router.push(safeReturnTo);
-    } catch (err) {
-      if (err instanceof VaultConflictError) {
+    } catch (error) {
+      if (error instanceof VaultConflictError) {
         throw new Error(t("vaultConflict"));
       }
       // The writeDisabled gate normally blocks this; never show the raw English message.
-      if (err instanceof ProjectStaticModeError) {
+      if (error instanceof ProjectStaticModeError) {
         throw new Error(t("demoModeSaveFailed"));
       }
-      throw err;
+      throw error;
     }
   };
 

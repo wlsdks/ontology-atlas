@@ -1,5 +1,5 @@
 import { DOME_PLANE } from '../cone-layout';
-import type { DomeCoord, DomeModel } from '../types';
+import type { DomeCoord, DomeModel } from '../dome-shapes';
 
 /**
  * Smaller is a wider lens. 1200 gives a near/far scale ratio of 1.23/0.84 = 1.46 at the fit

@@ -9,7 +9,7 @@ import { deriveOntologyFromVault } from "@/entities/docs-vault/lib/derive-ontolo
 import { isContainmentRelation } from "@/entities/knowledge-graph";
 import type { CameraTarget } from "../../../engine/camera";
 import { buildDialModel } from "../../../dial/dial-model";
-import type { DialLabels, DialModel, DialWorld } from "../../../dial/types";
+import type { DialLabels, DialModel, DialWorld } from "../../../dial/dial-shapes";
 import { cachedGraphAttention } from "../../../flat-graph/attention";
 import { graphDiscRadiusPx, zoomGrowth } from "../../../flat-graph/marks";
 import { admitNamesAt } from "../../../flat-graph/names";

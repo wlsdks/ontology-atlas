@@ -17,7 +17,7 @@ export interface Route {
   from: number;
   to: number;
   xy: Float32Array;
-  len: Float32Array;
+  cumulativeLength: Float32Array;
 }
 
 export const BUNDLE_BETA = 0.82;
@@ -55,11 +55,11 @@ function sampleQuad(out: number[], a: Point, c: Point, b: Point, skipFirst: bool
 
 function toRoute(from: number, to: number, flat: number[]): Route {
   const xy = new Float32Array(flat);
-  const len = new Float32Array(xy.length / 2);
-  for (let k = 1; k < len.length; k += 1) {
-    len[k] = len[k - 1]! + Math.hypot(xy[k * 2]! - xy[k * 2 - 2]!, xy[k * 2 + 1]! - xy[k * 2 - 1]!);
+  const length = new Float32Array(xy.length / 2);
+  for (let k = 1; k < length.length; k += 1) {
+    length[k] = length[k - 1]! + Math.hypot(xy[k * 2]! - xy[k * 2 - 2]!, xy[k * 2 + 1]! - xy[k * 2 - 1]!);
   }
-  return { from, to, xy, len };
+  return { from, to, xy, cumulativeLength: length };
 }
 
 /**
@@ -102,12 +102,12 @@ export function branchRoute(child: number, parent: number, at: readonly Point[],
 }
 
 export function pointAlong(route: Route, t: number, out: Point): Point {
-  const total = route.len[route.len.length - 1]!;
+  const total = route.cumulativeLength[route.cumulativeLength.length - 1]!;
   const want = Math.min(1, Math.max(0, t)) * total;
   let k = 1;
-  while (k < route.len.length - 1 && route.len[k]! < want) k += 1;
-  const l0 = route.len[k - 1]!;
-  const span = route.len[k]! - l0 || 1;
+  while (k < route.cumulativeLength.length - 1 && route.cumulativeLength[k]! < want) k += 1;
+  const l0 = route.cumulativeLength[k - 1]!;
+  const span = route.cumulativeLength[k]! - l0 || 1;
   const f = Math.min(1, Math.max(0, (want - l0) / span));
   out.x = route.xy[k * 2 - 2]! + (route.xy[k * 2]! - route.xy[k * 2 - 2]!) * f;
   out.y = route.xy[k * 2 - 1]! + (route.xy[k * 2 + 1]! - route.xy[k * 2 - 1]!) * f;
@@ -116,13 +116,13 @@ export function pointAlong(route: Route, t: number, out: Point): Point {
 
 export function traceRoute(ctx: CanvasRenderingContext2D, route: Route, t0: number, t1: number, scratch: Point): void {
   if (t1 <= t0) return;
-  const total = route.len[route.len.length - 1]!;
+  const total = route.cumulativeLength[route.cumulativeLength.length - 1]!;
   const lo = t0 * total;
   const hi = t1 * total;
   pointAlong(route, t0, scratch);
   ctx.moveTo(scratch.x, scratch.y);
-  for (let k = 1; k < route.len.length; k += 1) {
-    const l = route.len[k]!;
+  for (let k = 1; k < route.cumulativeLength.length; k += 1) {
+    const l = route.cumulativeLength[k]!;
     if (l <= lo) continue;
     if (l >= hi) break;
     ctx.lineTo(route.xy[k * 2]!, route.xy[k * 2 + 1]!);

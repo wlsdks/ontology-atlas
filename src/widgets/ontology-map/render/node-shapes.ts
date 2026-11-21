@@ -207,13 +207,13 @@ function drawEngraved(ctx: CanvasRenderingContext2D, text: string, x: number, y:
     ctx.font = `${FONT_WEIGHT.strong} ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
     // Multiplies into the frame's alpha: the caller already folded tier, dim and appear ramp into
     // `ctx.globalAlpha`.
-    const prevAlpha = ctx.globalAlpha;
-    ctx.globalAlpha = prevAlpha * alpha;
+    const previousAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = previousAlpha * alpha;
     ctx.fillStyle = tokens.numeralShadow;
     ctx.fillText(text, x, y + 1);
     ctx.fillStyle = tokens.numeralFace;
     ctx.fillText(text, x, y);
-    ctx.globalAlpha = prevAlpha;
+    ctx.globalAlpha = previousAlpha;
 }
 /**
  * The walked path's star: the node, emitting. Composites with `lighter` so light adds on a dark
@@ -260,12 +260,12 @@ function strokeKindOutline(ctx: CanvasRenderingContext2D, kind: NodeShapeDrawSta
         ctx.beginPath();
         roundedPolygonPath(ctx, points, interpolateCornerRadius(minCornerRadius(kind, radius), radius, farT));
     }
-    const prevAlpha = ctx.globalAlpha;
-    ctx.globalAlpha = prevAlpha * alpha;
+    const previousAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = previousAlpha * alpha;
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
     ctx.stroke();
-    ctx.globalAlpha = prevAlpha;
+    ctx.globalAlpha = previousAlpha;
 }
 /** Approximate perimeter (straight-edge sum of `bodyPoints`, or the circle circumference past `FULL_CIRCLE_FAR_T`); it only sizes the hover-shimmer dash pattern. */
 function outlinePerimeter(kind: NodeShapeDrawState["kind"], radius: number, farT: number): number {
@@ -300,14 +300,14 @@ function drawHoverShimmer(ctx: CanvasRenderingContext2D, kind: NodeShapeDrawStat
     }
     ctx.setLineDash([...dash]);
     ctx.lineDashOffset = offset;
-    const prevAlpha = ctx.globalAlpha;
-    ctx.globalAlpha = prevAlpha * 0.9;
+    const previousAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = previousAlpha * 0.9;
     ctx.strokeStyle = color;
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.lineDashOffset = 0;
-    ctx.globalAlpha = prevAlpha;
+    ctx.globalAlpha = previousAlpha;
 }
 /** Draws one node body: fill, stroke, dash, shape morph, rings and the engraved numeral. Not the diffraction spike (`starfield.ts#drawDiffractionSpike`) or the label (`labels.ts`). */
 export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, tokens: NodeShapeTokens): void {
@@ -364,12 +364,12 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
         ctx.stroke();
     }
     else if (rimAlpha > 0.01) {
-        const prevAlpha = ctx.globalAlpha;
+        const previousAlpha = ctx.globalAlpha;
         ctx.globalAlpha = rimAlpha;
         ctx.strokeStyle = stroke;
         ctx.lineWidth = lineWidth * lineWidthScale;
         ctx.stroke();
-        ctx.globalAlpha = prevAlpha;
+        ctx.globalAlpha = previousAlpha;
     }
     if (hasDash)
         ctx.setLineDash([]);

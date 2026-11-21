@@ -1,6 +1,6 @@
 import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
 
-import type { HeldRequest, SeatedDetail, SessionState } from '../types';
+import type { HeldRequest, SeatedDetail, SessionState } from '../chat-panel-props';
 import { heldRequestStillMeant } from './outgoing-request';
 
 /**

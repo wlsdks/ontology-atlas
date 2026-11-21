@@ -126,7 +126,7 @@ const IntlWrapper = ({ children }: { children: ReactNode }) => (
 function filledIds() {
   return Array.from(
     document.querySelectorAll('a[class*="--color-indigo-brand"], button[class*="--color-indigo-brand"]'),
-  ).map((el) => el.getAttribute('data-testid'));
+  ).map((domElement) => domElement.getAttribute('data-testid'));
 }
 
 function renderDownloadPage() {

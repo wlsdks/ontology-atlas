@@ -41,7 +41,7 @@ export interface DirectorHost {
   progress: readonly HarnessScanProgress[];
   setProgress(progress: HarnessScanProgress | null): void;
   remount(): void;
-  commit(fn: () => void): void;
+  commit(update: () => void): void;
   scale(): number;
 }
 
@@ -88,9 +88,9 @@ const pick = <T extends Element>(root: ParentNode, selector: string) => root.que
 /** Clones a node for the film's layer: no ids or test ids, so the page's queries never find it twice. */
 function filmClone(source: HTMLElement): HTMLElement {
   const copy = source.cloneNode(true) as HTMLElement;
-  for (const el of [copy, ...copy.querySelectorAll<HTMLElement>('[id],[data-testid]')]) {
-    el.removeAttribute('id');
-    el.removeAttribute('data-testid');
+  for (const htmlElement of [copy, ...copy.querySelectorAll<HTMLElement>('[id],[data-testid]')]) {
+    htmlElement.removeAttribute('id');
+    htmlElement.removeAttribute('data-testid');
   }
   copy.dataset.filmNode = 'clone';
   return copy;
@@ -109,12 +109,12 @@ export function createHarnessDirector(host: DirectorHost): Director {
     const box = root.getBoundingClientRect();
     return { box, k: box.width / WINDOW.w || 1 };
   };
-  const local = (el: Element): Box => {
+  const local = (domElement: Element): Box => {
     const { box, k } = frameOf();
-    const r = el.getBoundingClientRect();
+    const r = domElement.getBoundingClientRect();
     return { x: (r.left - box.left) / k, y: (r.top - box.top) / k, w: r.width / k, h: r.height / k };
   };
-  const el = {
+  const sceneElements = {
     scan: () => pick<HTMLElement>(root, '[data-film-scan]'),
     setup: () => pick<HTMLElement>(root, '[data-testid="harness-setup"]'),
     problem: () => pick<HTMLElement>(root, '[data-testid="harness-problems"]'),
@@ -122,15 +122,15 @@ export function createHarnessDirector(host: DirectorHost): Director {
     pane2: () => pick<HTMLElement>(root, '[data-testid="harness-items"]'),
     pane3: () => pick<HTMLElement>(root, '[data-testid="harness-detail-pane"]'),
   };
-  const lead = () => el.setup()?.firstElementChild as HTMLElement | null;
-  const grid = () => el.pane1()?.parentElement ?? null;
+  const lead = () => sceneElements.setup()?.firstElementChild as HTMLElement | null;
+  const grid = () => sceneElements.pane1()?.parentElement ?? null;
 
   function target(name: PressTarget): HTMLElement | null {
     const radios = [...root.querySelectorAll<HTMLElement>('[data-testid="harness-tool-filter"] [role="radio"]')];
     switch (name) {
       case 'skills':
       case 'subagents':
-        return el.pane1()?.querySelector<HTMLElement>(`[data-harness-group="${name}"]`) ?? null;
+        return sceneElements.pane1()?.querySelector<HTMLElement>(`[data-harness-group="${name}"]`) ?? null;
       case 'codex':
         return radios.find((radio) => radio.textContent?.trim() === 'Codex') ?? null;
       case 'all':
@@ -138,7 +138,7 @@ export function createHarnessDirector(host: DirectorHost): Director {
       case 'problem':
         return pick<HTMLElement>(root, '[data-harness-problem]');
       case 'reviewer':
-        return pick<HTMLElement>(el.pane2() ?? root, '[data-harness-item="file:.claude/agents/reviewer.md"]');
+        return pick<HTMLElement>(sceneElements.pane2() ?? root, '[data-harness-item="file:.claude/agents/reviewer.md"]');
     }
   }
 
@@ -250,11 +250,11 @@ export function createHarnessDirector(host: DirectorHost): Director {
     settle();
     const node = target(name);
     if (!node) return;
-    const pane1 = el.pane1();
-    const pane2 = el.pane2();
-    const pane3 = el.pane3();
+    const pane1 = sceneElements.pane1();
+    const pane2 = sceneElements.pane2();
+    const pane3 = sceneElements.pane3();
     const gridNode = grid();
-    const problem = el.problem();
+    const problem = sceneElements.problem();
     if (!pane1 || !pane2 || !pane3 || !gridNode) return;
 
     const ringBox = local(node);
@@ -299,7 +299,7 @@ export function createHarnessDirector(host: DirectorHost): Director {
 
     const after = {
       grid: local(gridNode),
-      problem: el.problem(),
+      problem: sceneElements.problem(),
       pane1: pane1.textContent + (pane1.querySelector('[aria-selected="true"]')?.getAttribute('data-option-key') ?? ''),
       pane2: categoryOf(pane1),
       pane3: pane3.querySelector('[data-harness-item]')?.getAttribute('data-harness-item') ?? '',
@@ -462,17 +462,17 @@ export function createHarnessDirector(host: DirectorHost): Director {
           if (node) animate(node, [{ opacity: 0, transform: `translateY(${rise}px)` }, { opacity: 1, transform: 'none' }], start, dur, EASE);
         };
         fadeRise(lead(), ARRIVE.lead, ARRIVE.fade, 0);
-        fadeRise(el.problem(), ARRIVE.lead, ARRIVE.fade, 0);
+        fadeRise(sceneElements.problem(), ARRIVE.lead, ARRIVE.fade, 0);
         const gridNode = grid();
         /* Linear and a little longer than the panes' own rise, so the two fades together stay gentle. */
         if (gridNode) animate(gridNode, [{ opacity: 0 }, { opacity: 1 }], ARRIVE.lead, ARRIVE.rise, 'linear');
-        [el.pane1(), el.pane2(), el.pane3()].forEach((pane, i) => fadeRise(pane, ARRIVE.panes[i]!, ARRIVE.rise, 12));
+        [sceneElements.pane1(), sceneElements.pane2(), sceneElements.pane3()].forEach((pane, i) => fadeRise(pane, ARRIVE.panes[i]!, ARRIVE.rise, 12));
       },
     });
     list.push({
       at: SCAN_OUT[0],
       run: (T) => {
-        const scan = el.scan();
+        const scan = sceneElements.scan();
         if (!scan) return;
         animate(scan, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-8px)' }], T, SCAN_OUT[1] - SCAN_OUT[0], FADE_OUT_EASE, () => {
           scan.style.visibility = 'hidden';
@@ -482,7 +482,7 @@ export function createHarnessDirector(host: DirectorHost): Director {
     list.push({
       at: PANE1_SCROLL[0],
       run: (T) => {
-        const pane = el.pane1();
+        const pane = sceneElements.pane1();
         const row = pane?.querySelector('[data-harness-group="blockingHooks"]');
         if (!pane || !row) return;
         const from = pane.scrollTop;

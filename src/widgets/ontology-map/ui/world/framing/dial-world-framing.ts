@@ -1,4 +1,4 @@
-import type { DialTokens, DialWorld } from "../../../dial/types";
+import type { DialTokens, DialWorld } from "../../../dial/dial-shapes";
 import { resolveDialAttention } from "../../../dial/dial-model";
 
 export type DialBearing = { dial?: DialWorld | null;

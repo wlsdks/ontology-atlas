@@ -222,11 +222,11 @@ export function DocFrontmatterBlock({
         await onPatch(patch);
       }
       setEditing(false);
-    } catch (err) {
+    } catch (caughtError) {
       setError(
-        err instanceof VaultConflictError
-          ? { sentence: t("saveConflict"), detail: err.message }
-          : failureSentence(err, t("saveFailed")),
+        caughtError instanceof VaultConflictError
+          ? { sentence: t("saveConflict"), detail: caughtError.message }
+          : failureSentence(caughtError, t("saveFailed")),
       );
     } finally {
       setSaving(false);

@@ -1,4 +1,4 @@
-import type { Box, Point } from "../../dial/types";
+import type { Box, Point } from "../../dial/dial-shapes";
 import { crowdShare, LIT_DOT_SHARE, ORPHAN_ROOM } from "../marks";
 import { openedElements } from "../open";
 import { candidates, degreeOf, type Candidate } from "./candidates";

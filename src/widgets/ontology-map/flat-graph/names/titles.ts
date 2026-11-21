@@ -1,8 +1,8 @@
 import type { MeasureText } from "../../dial/label-marks";
-import type { Box, DialLabels } from "../../dial/types";
+import type { Box, DialLabels } from "../../dial/dial-shapes";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { domainPartners } from "../../model/containment-tree";
-import type { FlatGraphTitle } from "../types";
+import type { FlatGraphTitle } from "../flat-graph-shapes";
 import type { NameInput, NamePiece, PlacedName } from "./placed-name";
 
 export function font(weight: number, px: number, family: string): string {

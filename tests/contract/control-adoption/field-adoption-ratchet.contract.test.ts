@@ -91,7 +91,7 @@ const TEXT_CAP: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/widgets/app-settings-menu/ui/model-connections/KeyDraftForm.tsx", 1],
   ["src/widgets/app-settings-menu/ui/model-connections/LocalRunnerRow.tsx", 1],
   ["src/widgets/atlas-git-panel/ui/ActionDock.tsx", 1],
-  ["src/widgets/atlas-git-panel/ui/RemoteControls.tsx", 1],
+  ["src/widgets/atlas-git-panel/ui/remote-controls.tsx", 1],
   ["src/widgets/docs-quick-drawer/ui/search/DocsDrawerHeader.tsx", 1],
   ["src/widgets/docs-vault/ui/DocsVaultEditor.tsx", 1],
   ["src/widgets/docs-vault/ui/DocsVaultUnifiedPalette.tsx", 1],

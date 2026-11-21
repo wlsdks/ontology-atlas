@@ -148,32 +148,32 @@ export function useDocsVaultUrlSync({
     if (!vaultScopeSettled || !legacyRedirectToLibrary) return;
     router.replace(legacyLibraryRedirectHref(), { scroll: false });
   }, [legacyLibraryRedirectHref, legacyRedirectToLibrary, router, vaultScopeSettled]);
-  const prevQuerySlug = usePrevious(normalizedQuerySlug);
+  const previousQuerySlug = usePrevious(normalizedQuerySlug);
   useEffect(() => {
     if (outOfScopeQuerySlug) return;
-    if (prevQuerySlug !== normalizedQuerySlug && normalizedQuerySlug !== selectedSlug) {
+    if (previousQuerySlug !== normalizedQuerySlug && normalizedQuerySlug !== selectedSlug) {
       scheduleStateSync(() => setSelectedSlug(normalizedQuerySlug));
     }
-  }, [normalizedQuerySlug, outOfScopeQuerySlug, prevQuerySlug, selectedSlug, setSelectedSlug]);
-  const prevQueryView = usePrevious(queryView);
+  }, [normalizedQuerySlug, outOfScopeQuerySlug, previousQuerySlug, selectedSlug, setSelectedSlug]);
+  const previousQueryView = usePrevious(queryView);
   useEffect(() => {
-    if (prevQueryView !== queryView && queryView !== view) {
+    if (previousQueryView !== queryView && queryView !== view) {
       scheduleStateSync(() => setView(queryView));
     }
-  }, [prevQueryView, queryView, view, setView]);
+  }, [previousQueryView, queryView, view, setView]);
   // Order also changes through back, shared links and agent URLs.
-  const prevQueryTreeSort = usePrevious(queryTreeSort);
+  const previousQueryTreeSort = usePrevious(queryTreeSort);
   useEffect(() => {
-    if (prevQueryTreeSort !== queryTreeSort && queryTreeSort !== treeSort) {
+    if (previousQueryTreeSort !== queryTreeSort && queryTreeSort !== treeSort) {
       scheduleStateSync(() => setTreeSort(queryTreeSort));
     }
-  }, [prevQueryTreeSort, queryTreeSort, treeSort]);
-  const prevQueryTreeGroup = usePrevious(queryTreeGroup);
+  }, [previousQueryTreeSort, queryTreeSort, treeSort]);
+  const previousQueryTreeGroup = usePrevious(queryTreeGroup);
   useEffect(() => {
-    if (prevQueryTreeGroup !== queryTreeGroup && queryTreeGroup !== treeGroup) {
+    if (previousQueryTreeGroup !== queryTreeGroup && queryTreeGroup !== treeGroup) {
       scheduleStateSync(() => setTreeGroup(queryTreeGroup));
     }
-  }, [prevQueryTreeGroup, queryTreeGroup, treeGroup]);
+  }, [previousQueryTreeGroup, queryTreeGroup, treeGroup]);
 
   const handleViewChange = useCallback(
     (next: DocsVaultView) => {

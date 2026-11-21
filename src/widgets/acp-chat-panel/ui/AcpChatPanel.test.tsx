@@ -1052,9 +1052,9 @@ describe('chat panel: draws only what happened', () => {
       },
     });
     const row = await waitFor(() => {
-      const el = document.querySelector('[data-acp-entry="tool"]');
-      expect(el).not.toBeNull();
-      return el!;
+      const domElement = document.querySelector('[data-acp-entry="tool"]');
+      expect(domElement).not.toBeNull();
+      return domElement!;
     });
     expect(row.className).toContain('border-[color:var(--color-danger-a50)]');
     // The ink stays tertiary: danger text against it measures 1.04:1.
@@ -1163,9 +1163,9 @@ describe('chat panel: draws only what happened', () => {
       },
     });
     const row = await waitFor(() => {
-      const el = document.querySelector('[data-acp-entry="tool"]');
-      expect(el).not.toBeNull();
-      return el as HTMLElement;
+      const domElement = document.querySelector('[data-acp-entry="tool"]');
+      expect(domElement).not.toBeNull();
+      return domElement as HTMLElement;
     });
     const label = row.querySelector('[data-tool-label-text]');
     expect(label, 'the label has no element of its own to constrain').not.toBeNull();
@@ -2182,9 +2182,9 @@ describe('chat panel: a screen a person reads', () => {
     });
 
     const body = await waitFor(() => {
-      const el = document.querySelector('[data-acp-entry="agent"]');
-      expect(el).not.toBeNull();
-      return el!;
+      const domElement = document.querySelector('[data-acp-entry="agent"]');
+      expect(domElement).not.toBeNull();
+      return domElement!;
     });
     // The backticks disappear and it becomes a code fragment.
     expect(body.querySelector('code')?.textContent).toBe('payment');
@@ -2209,9 +2209,9 @@ describe('chat panel: a screen a person reads', () => {
       },
     });
     const row = await waitFor(() => {
-      const el = document.querySelector('[data-acp-entry="tool"]');
-      expect(el).not.toBeNull();
-      return el!;
+      const domElement = document.querySelector('[data-acp-entry="tool"]');
+      expect(domElement).not.toBeNull();
+      return domElement!;
     });
     expect(row).toHaveAttribute('data-tool-label', 'known');
     // A function name still on screen means it was not fixed.
@@ -2235,9 +2235,9 @@ describe('chat panel: a screen a person reads', () => {
       },
     });
     const row = await waitFor(() => {
-      const el = document.querySelector('[data-acp-entry="tool"]');
-      expect(el).not.toBeNull();
-      return el!;
+      const domElement = document.querySelector('[data-acp-entry="tool"]');
+      expect(domElement).not.toBeNull();
+      return domElement!;
     });
     expect(row).toHaveAttribute('data-tool-label', 'raw');
     expect(row.textContent).toContain('Terminal');
@@ -2503,7 +2503,7 @@ describe('chat panel: errors are told in human words with a next step', () => {
     expect(alert.textContent).toContain('authentication_failed');
     const transcript = screen.getByTestId('acp-chat-panel');
     const outsideAlert = [...transcript.querySelectorAll('*')].filter(
-      (el) => el.textContent === echo && !alert.contains(el),
+      (element) => element.textContent === echo && !alert.contains(element),
     );
     expect(outsideAlert, 'the English original appears again outside the card').toHaveLength(0);
   });
@@ -4318,7 +4318,7 @@ describe('composer: the `/` menu', () => {
     const box = await openMenu();
     const selected = () =>
       [...screen.getByTestId('acp-chat-slash-menu').querySelectorAll('[role="option"]')].findIndex(
-        (el) => el.getAttribute('aria-selected') === 'true',
+        (element) => element.getAttribute('aria-selected') === 'true',
       );
     expect(selected()).toBe(0);
     fireEvent.keyDown(box, { key: 'ArrowDown' });

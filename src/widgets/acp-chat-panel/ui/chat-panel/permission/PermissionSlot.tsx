@@ -4,7 +4,7 @@ import { Button } from '@/shared/ui/controls/button';
 import { Surface } from '@/shared/ui';
 
 import { AcpPermissionCard } from '../../AcpPermissionCard';
-import type { AcpChatPanelProps, ChatT, SessionState } from '../types';
+import type { AcpChatPanelProps, ChatT, SessionState } from '../chat-panel-props';
 import type { usePermissionReview } from './use-permission-review';
 
 type CardProps = ComponentProps<typeof AcpPermissionCard>;

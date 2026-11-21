@@ -102,9 +102,9 @@ export function HeroTypewriter({
       if (earned <= shown) return;
       const from = shown;
       shown = earned;
-      setProgress((prev) => {
-        if (earned - from < 2) return { typed: earned, settled: prev.settled };
-        const settled = new Set(prev.settled);
+      setProgress((previous) => {
+        if (earned - from < 2) return { typed: earned, settled: previous.settled };
+        const settled = new Set(previous.settled);
         for (let at = from; at < earned - 1; at += 1) settled.add(at);
         return { typed: earned, settled };
       });

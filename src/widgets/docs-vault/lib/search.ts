@@ -48,16 +48,16 @@ export function extractBodySnippet(
  * Body tier score, clamped into (1, 2) so it stays below every metadata hit; an earlier match wins
  * by a hair.
  */
-function bodyTierScore(idx: number): number {
-  return 1 + Math.max(0, 0.9 - idx / 10000);
+function bodyTierScore(matchIndex: number): number {
+  return 1 + Math.max(0, 0.9 - matchIndex / 10000);
 }
 
 /**
  * Exact-phrase body boost, clamped into (10, 16] so it beats scattered tokens but never the title
  * minimum of 20.
  */
-function bodyPhraseScore(idx: number): number {
-  return 10 + Math.max(0, 6 - idx / 10000);
+function bodyPhraseScore(matchIndex: number): number {
+  return 10 + Math.max(0, 6 - matchIndex / 10000);
 }
 
 const excerptLowerByEntry = new WeakMap<DocsBodyEntry, string>();
@@ -75,10 +75,10 @@ interface RankedDoc {
   doc: VaultDoc;
   score: number;
   order: number;
-  titleIdx: number;
-  summaryIdx: number;
+  titleIndex: number;
+  summaryIndex: number;
   body: DocsBodyEntry | undefined;
-  bodyIdx: number;
+  bodyMatchIndex: number;
   bodyMatchLength: number;
 }
 
@@ -110,14 +110,14 @@ function retain(heap: RankedDoc[], entry: RankedDoc, limit: number): void {
 }
 
 function matchFor(
-  doc: VaultDoc, score: number, titleIdx: number, summaryIdx: number,
-  body: DocsBodyEntry | undefined, bodyIdx: number, bodyMatchLength: number, needleLength: number,
+  doc: VaultDoc, score: number, titleIndex: number, summaryIndex: number,
+  body: DocsBodyEntry | undefined, bodyMatchIndex: number, bodyMatchLength: number, needleLength: number,
 ): DocsSearchMatch {
   return {
     doc, score,
-    titleHit: titleIdx !== -1 ? { start: titleIdx, end: titleIdx + needleLength } : null,
-    summaryHit: summaryIdx !== -1 ? { start: summaryIdx, end: summaryIdx + needleLength } : null,
-    bodyHit: bodyIdx !== -1 && body !== undefined ? extractBodySnippet(body.raw, bodyIdx, bodyMatchLength) : null,
+    titleHit: titleIndex !== -1 ? { start: titleIndex, end: titleIndex + needleLength } : null,
+    summaryHit: summaryIndex !== -1 ? { start: summaryIndex, end: summaryIndex + needleLength } : null,
+    bodyHit: bodyMatchIndex !== -1 && body !== undefined ? extractBodySnippet(body.raw, bodyMatchIndex, bodyMatchLength) : null,
   };
 }
 
@@ -165,14 +165,14 @@ export function searchDocs(
     if (!allMatch) continue;
     // The score is computed against the full query (the joined form for multiple tokens).
     const needle = tokens[0];
-    const titleIdx = titleLc.indexOf(needle);
-    const summaryIdx = summaryLc.indexOf(needle);
-    const excerptIdx = excerptLc.indexOf(needle);
-    const leadIdx = summaryIdx === -1 || (excerptIdx !== -1 && excerptIdx < summaryIdx) ? excerptIdx : summaryIdx;
+    const titleIndex = titleLc.indexOf(needle);
+    const summaryIndex = summaryLc.indexOf(needle);
+    const excerptIndex = excerptLc.indexOf(needle);
+    const leadIndex = summaryIndex === -1 || (excerptIndex !== -1 && excerptIndex < summaryIndex) ? excerptIndex : summaryIndex;
 
     // Body match position: an exact phrase (newlines as spaces) sets the boost tier; otherwise the
     // first token's position in the lowest tier.
-    let bodyIdx = -1;
+    let bodyMatchIndex = -1;
     let bodyMatchLength = needle.length;
     let bodyPhraseMatched = false;
     if (body !== undefined) {
@@ -180,39 +180,39 @@ export function searchDocs(
         if (phraseRe === undefined) phraseRe = buildPhraseMatcher(q, 'i');
         const phraseMatch = phraseRe?.exec(body.raw) ?? null;
         if (phraseMatch) {
-          bodyIdx = phraseMatch.index;
+          bodyMatchIndex = phraseMatch.index;
           bodyMatchLength = phraseMatch[0].length;
           bodyPhraseMatched = true;
         }
       }
-      if (bodyIdx === -1) {
-        bodyIdx = body.lower.indexOf(needle);
+      if (bodyMatchIndex === -1) {
+        bodyMatchIndex = body.lower.indexOf(needle);
         bodyMatchLength = needle.length;
       }
     }
 
     let score = 0;
-    if (titleIdx !== -1) score += 100 - Math.min(titleIdx, 80);
-    if (leadIdx !== -1) score += 20 - Math.min(leadIdx, 18);
+    if (titleIndex !== -1) score += 100 - Math.min(titleIndex, 80);
+    if (leadIndex !== -1) score += 20 - Math.min(leadIndex, 18);
     if (slugLc.includes(needle)) score += 25;
     for (const t of tagLc) if (t.includes(needle)) score += 15;
-    if (bodyIdx !== -1) {
+    if (bodyMatchIndex !== -1) {
       score += bodyPhraseMatched
-        ? bodyPhraseScore(bodyIdx)
-        : bodyTierScore(bodyIdx);
+        ? bodyPhraseScore(bodyMatchIndex)
+        : bodyTierScore(bodyMatchIndex);
     }
     if (bounded) {
       // Later ties cannot displace an earlier result. Build snippets only after the top prefix is known.
       if (heap.length === maxResults && score <= heap[0].score) continue;
-      retain(heap, { doc, score, order: docOrder, titleIdx, summaryIdx, body, bodyIdx, bodyMatchLength }, maxResults);
+      retain(heap, { doc, score, order: docOrder, titleIndex, summaryIndex, body, bodyMatchIndex, bodyMatchLength }, maxResults);
     } else {
-      out.push(matchFor(doc, score, titleIdx, summaryIdx, body, bodyIdx, bodyMatchLength, needle.length));
+      out.push(matchFor(doc, score, titleIndex, summaryIndex, body, bodyMatchIndex, bodyMatchLength, needle.length));
     }
   }
   if (bounded) {
     return heap.sort((a, b) => b.score - a.score || a.order - b.order)
-      .map(entry => matchFor(entry.doc, entry.score, entry.titleIdx, entry.summaryIdx,
-        entry.body, entry.bodyIdx, entry.bodyMatchLength, tokens[0].length));
+      .map(entry => matchFor(entry.doc, entry.score, entry.titleIndex, entry.summaryIndex,
+        entry.body, entry.bodyMatchIndex, entry.bodyMatchLength, tokens[0].length));
   }
   out.sort((a, b) => b.score - a.score);
   return out.slice(0, maxResults);

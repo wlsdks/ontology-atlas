@@ -68,10 +68,10 @@ export function createPointerContext(refs: PointerHandlerRefs) {
   };
 
   /** Reuse the cached rect during a gesture; refresh lazily if we somehow don't have one yet. */
-  const currentRect = (el: HTMLCanvasElement): { left: number; top: number } => {
+  const currentRect = (canvasElement: HTMLCanvasElement): { left: number; top: number } => {
     const cached = canvasRectRef.current;
     if (cached) return cached;
-    const rect = el.getBoundingClientRect();
+    const rect = canvasElement.getBoundingClientRect();
     const snapshot = { left: rect.left, top: rect.top };
     canvasRectRef.current = snapshot;
     return snapshot;

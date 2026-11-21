@@ -284,10 +284,10 @@ export function drawClusterChip(
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   const plus = "+";
-  const num = String(input.count);
+  const countText = String(input.count);
   const caret = ` ${input.hovered ? "⌄" : "›"}`;
   const plusW = ctx.measureText(plus).width;
-  const numW = ctx.measureText(num).width;
+  const numW = ctx.measureText(countText).width;
   const caretW = ctx.measureText(caret).width;
   const ty = travel.y + 0.5 * scale;
   let tx = travel.x - (plusW + numW + caretW) / 2;
@@ -295,7 +295,7 @@ export function drawClusterChip(
   ctx.fillText(plus, tx, ty);
   tx += plusW;
   ctx.fillStyle = numColor;
-  ctx.fillText(num, tx, ty);
+  ctx.fillText(countText, tx, ty);
   tx += numW;
   ctx.fillStyle = border;
   ctx.fillText(caret, tx, ty);

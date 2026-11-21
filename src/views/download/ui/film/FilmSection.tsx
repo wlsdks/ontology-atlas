@@ -71,7 +71,7 @@ function readInks(probe: CanvasRenderingContext2D, restHue: number): FilmInks {
 function readMarkTokens(): FilmMarkTokens {
   const P = readFlatGraphTokens().paint;
   const root = getComputedStyle(document.documentElement);
-  const num = (name: string, fallback: number) => {
+  const readNumber = (name: string, fallback: number) => {
     const value = Number(root.getPropertyValue(name).trim());
     return Number.isFinite(value) && value > 0 ? value : fallback;
   };
@@ -99,8 +99,8 @@ function readMarkTokens(): FilmMarkTokens {
     lightAlpha: P.lightAlpha,
     lightReach: P.lightReach,
     restHue: P.restHue,
-    growth: num('--map-graph-film-growth', 1),
-    sink: num('--map-graph-film-sink', P.sinkInk),
+    growth: readNumber('--map-graph-film-growth', 1),
+    sink: readNumber('--map-graph-film-sink', P.sinkInk),
   };
 }
 
@@ -117,9 +117,9 @@ type LaidOut = {
 
 const rectKey = (r: Rect) => `${Math.round(r.l)},${Math.round(r.t)},${Math.round(r.r)},${Math.round(r.b)}`;
 
-function textRect(el: Element, stage: DOMRect): Rect {
+function textRect(domElement: Element, stage: DOMRect): Rect {
   const range = document.createRange();
-  range.selectNodeContents(el);
+  range.selectNodeContents(domElement);
   const r = range.getBoundingClientRect();
   return { l: r.left - stage.left, t: r.top - stage.top, r: r.right - stage.left, b: r.bottom - stage.top };
 }
@@ -177,10 +177,10 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
   }, []);
 
   useEffect(() => {
-    const el = canvas.current;
+    const canvasElement = canvas.current;
     const host = stage.current;
-    const ctx = el?.getContext('2d');
-    if (!el || !host || !ctx || vault.domains.length === 0) return;
+    const ctx = canvasElement?.getContext('2d');
+    if (!canvasElement || !host || !ctx || vault.domains.length === 0) return;
     const marks = readMarkTokens();
     const inks = readInks(ctx, marks.restHue);
     const sans = getComputedStyle(document.body).fontFamily;
@@ -215,7 +215,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       paintFilm(ctx, scene, shown, size.w, size.h);
       scene.record = null;
       const light = film ? (isMotionPaused() || frozen !== null ? 1 : seamLight(time.elapsed(), CYCLE_MS) * veil) : 1;
-      el.style.opacity = String(light);
+      canvasElement.style.opacity = String(light);
       probe?.frame(shown, light);
       if (!film) return;
       const T = Math.min(shown, FILM_MS);
@@ -245,8 +245,8 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
     };
 
     const relayout = () => {
-      const w = el.clientWidth;
-      const h = el.clientHeight;
+      const w = canvasElement.clientWidth;
+      const h = canvasElement.clientHeight;
       if (w === 0 || h === 0) return;
       /* The backing store stays under six million pixels, so a large screen draws as fast as a laptop. */
       const dpr = Math.min(2, window.devicePixelRatio || 1, Math.sqrt(6e6 / Math.max(1, w * h)));
@@ -272,8 +272,8 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       const kept = laid.current;
       const same = kept !== null && kept.key === key && kept.vault === vault && kept.pick === pick && kept.locale === locale && kept.copy === copy;
       if (same && sceneFrom === kept) return;
-      el.width = Math.round(w * dpr);
-      el.height = Math.round(h * dpr);
+      canvasElement.width = Math.round(w * dpr);
+      canvasElement.height = Math.round(h * dpr);
       size = { w, h, dpr };
       const next = same ? kept : layOut(w, h, titleRect, caption, key);
       laid.current = next;
@@ -321,7 +321,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       );
     }
     const observer = new ResizeObserver(relayout);
-    observer.observe(el);
+    observer.observe(canvasElement);
     relayout();
     let alive = true;
     void document.fonts?.ready.then(() => {

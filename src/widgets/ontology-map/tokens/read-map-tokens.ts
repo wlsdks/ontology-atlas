@@ -467,7 +467,7 @@ let cached: OntologyMapTokens | null = null;
  * returned thereafter. Call `clearOntologyMapTokensCache()` first at any point where
  * the token values can change, such as a dark/light theme switch.
  */
-export function getOntologyMapTokens(element?: Element): OntologyMapTokens {
+export function readOntologyMapTokens(element?: Element): OntologyMapTokens {
     if (cached)
         return cached;
     cached = readFromElement(element ?? document.documentElement);

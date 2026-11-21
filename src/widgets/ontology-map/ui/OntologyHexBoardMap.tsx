@@ -263,7 +263,7 @@ export function OntologyHexBoardMap({
     const chrome = mapChromeOf(canvasRef.current);
     if (chrome) chromeRef.current = chrome;
     const next = routeFrameOf(chrome, cam, { pitch: pose.target, pivotY: pivotRef.current });
-    if (next) setRouteFrame((prev) => (prev && prev.key === next.key ? prev : next));
+    if (next) setRouteFrame((previous) => (previous && previous.key === next.key ? previous : next));
   }, [pose]);
   const frameRoutesRef = useRef(frameRoutes);
   const blocked = useMemo(() => {
@@ -327,19 +327,19 @@ export function OntologyHexBoardMap({
         mirrorTimerRef.current = null;
         mirrorKeyRef.current = key;
         const byId = new Map<string, HTMLElement>();
-        for (const el of list.querySelectorAll<HTMLElement>("[data-hex-id]")) byId.set(el.dataset.hexId!, el);
+        for (const htmlElement of list.querySelectorAll<HTMLElement>("[data-hex-id]")) byId.set(htmlElement.dataset.hexId!, htmlElement);
         const boxes = new Map(textBoxes.map((b) => [b.id, b] as const));
         const plates = new Map(plateBoxes.map((b) => [b.id, b] as const));
         const RI = cam.R - hexGutter(cam.R);
         for (const t of layout.tiles) {
-          const el = byId.get(t.id);
-          if (!el) continue;
+          const htmlElement = byId.get(t.id);
+          if (!htmlElement) continue;
           const yt = view.pivotY + (cam.oy + t.y * cam.R - view.pivotY) * Math.cos(view.pitch) - liftPx(t, cam.R) * Math.sin(view.pitch);
-          el.dataset.mark = `${Math.round(cam.ox + t.x * cam.R)},${Math.round(yt)},${Math.round(RI)}`;
+          htmlElement.dataset.mark = `${Math.round(cam.ox + t.x * cam.R)},${Math.round(yt)},${Math.round(RI)}`;
           const b = boxes.get(t.id);
-          el.dataset.labelBox = b ? `${Math.round(b.x)},${Math.round(b.y)},${Math.round(b.w)},${Math.round(b.h)}` : "";
+          htmlElement.dataset.labelBox = b ? `${Math.round(b.x)},${Math.round(b.y)},${Math.round(b.w)},${Math.round(b.h)}` : "";
           const p = plates.get(t.id);
-          el.dataset.plateBox = p ? `${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.w)},${Math.round(p.h)}` : "";
+          htmlElement.dataset.plateBox = p ? `${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.w)},${Math.round(p.h)}` : "";
         }
         wrap.dataset.hexReady = "true";
       }, MIRROR_REST_MS);
@@ -552,13 +552,13 @@ export function OntologyHexBoardMap({
       const chrome = mapChromeOf(canvasRef.current);
       chromeRef.current = chrome;
       const r = wrap.getBoundingClientRect();
-      setSize((prev) => (prev && prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }));
+      setSize((previous) => (previous && previous.w === r.width && previous.h === r.height ? previous : { w: r.width, h: r.height }));
       readFooter();
       if (selectedRef.current && roomTakenRef.current !== "none") return;
       roomTakenRef.current = selectedRef.current ? "selection" : "rest";
       const next = readHexRoom(canvasRef.current, r.width, r.height, wrap);
-      setRoom((prev) => (roomMovesRest(prev, next) ? next : prev));
-      setAspect((prev) => prev ?? next.width / Math.max(1, next.height));
+      setRoom((previous) => (roomMovesRest(previous, next) ? next : previous));
+      setAspect((previous) => previous ?? next.width / Math.max(1, next.height));
     };
     read();
     const ro = new ResizeObserver(read);
@@ -935,8 +935,8 @@ export function OntologyHexBoardMap({
     if (!new URLSearchParams(window.location.search).has("e2e")) return;
     const w = window as unknown as { __atlasHexRelief?: unknown };
     w.__atlasHexRelief = {
-      setPitch: (pitch: number, opts?: { animate?: boolean }) => {
-        pose.begin(pitch, { now: performance.now(), animate: opts?.animate === true && !reducedMotion, rise: false });
+      setPitch: (pitch: number, options?: { animate?: boolean }) => {
+        pose.begin(pitch, { now: performance.now(), animate: options?.animate === true && !reducedMotion, rise: false });
         requestDraw();
       },
       state: () => ({ pitch: pose.pitch, target: pose.target, animating: pose.animating, frames: framesRef.current, pivotY: pivotRef.current }),

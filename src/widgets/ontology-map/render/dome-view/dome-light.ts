@@ -106,13 +106,13 @@ export function drawEmissiveHalo(
   const sprite = haloSprite(rgb);
   if (!sprite) return;
   const half = r * EMISSIVE_HALO_REACH;
-  const prevAlpha = ctx.globalAlpha;
-  const prevOp = ctx.globalCompositeOperation;
+  const previousAlpha = ctx.globalAlpha;
+  const previousOp = ctx.globalCompositeOperation;
   ctx.globalCompositeOperation = "lighter";
-  ctx.globalAlpha = prevAlpha * Math.min(1, strength);
+  ctx.globalAlpha = previousAlpha * Math.min(1, strength);
   ctx.drawImage(sprite, x - half, y - half, half * 2, half * 2);
-  ctx.globalAlpha = prevAlpha;
-  ctx.globalCompositeOperation = prevOp;
+  ctx.globalAlpha = previousAlpha;
+  ctx.globalCompositeOperation = previousOp;
 }
 
 /** How much light each evidence state emits, as a share of a current node's. */
@@ -142,7 +142,7 @@ export function drawEvidenceRing(
   alpha: number,
 ): void {
   if (state === "current" || alpha <= 0.01) return;
-  const prevAlpha = ctx.globalAlpha;
+  const previousAlpha = ctx.globalAlpha;
   ctx.globalAlpha = 1;
   ctx.beginPath();
   ctx.arc(x, y, r + EVIDENCE_RING_GAP_PX, 0, Math.PI * 2);
@@ -157,5 +157,5 @@ export function drawEvidenceRing(
   }
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.globalAlpha = prevAlpha;
+  ctx.globalAlpha = previousAlpha;
 }

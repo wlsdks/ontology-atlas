@@ -9,7 +9,7 @@ import { isContainmentRelation } from "@/entities/knowledge-graph";
 
 import { computeConcentricLayout } from "../../model/layout/layout";
 import { resolveDialTokens } from "../../dial/tokens";
-import type { DialLabels, DialMemory, DialWorldInput } from "../../dial/types";
+import type { DialLabels, DialMemory, DialWorldInput } from "../../dial/dial-shapes";
 import { resolveFlatGraphTokens } from "../../flat-graph/tokens";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { buildTopologyWorld, computeMagnitudeScale, type TopologyWorld, containmentLevelFor } from "./topology-world";
@@ -125,11 +125,11 @@ describe("computeMagnitudeScale (part 2, square root of childCount)", () => {
   });
 
   it("monotonic: more direct children never gives a smaller multiplier", () => {
-    let prev = 0;
+    let previous = 0;
     for (const c of [1, 5, 20, 60, 103]) {
       const v = computeMagnitudeScale("capability", c, 103, 0.45);
-      expect(v).toBeGreaterThanOrEqual(prev);
-      prev = v;
+      expect(v).toBeGreaterThanOrEqual(previous);
+      previous = v;
     }
   });
 

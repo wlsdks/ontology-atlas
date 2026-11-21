@@ -67,7 +67,7 @@ import { resolveProjectLead } from "../model/project-lead";
 import { buildProjectToCheck, isProjectConcept } from "../model/project-to-check";
 import { buildProjectChanged } from "../model/project-changed";
 import { DomainMasterDetail } from "./DomainMasterDetail";
-import { ProjectNowFactsReader, type ProjectNowFacts } from "./now/ProjectNowFacts";
+import { ProjectNowFactsReader, type ProjectNowFacts } from "./now/ProjectNowFactsReader";
 import { ToCheckSection } from "./now/ToCheckSection";
 import { ChangedSection } from "./now/ChangedSection";
 import { SECTION_HEADING_CLASS } from "./now/now-parts";
@@ -385,9 +385,9 @@ export function ProjectDetailPage({
 
     const canManageProject = projectMutations.canEdit;
     /* A sentence in the page's language inside `saveErrorPrefix`; the raw error goes to the console only. */
-    const projectSaveErrorMessage = (err: unknown) => {
-      if (err instanceof VaultConflictError) return t("saveErrorConflict");
-      const failure = failureSentence(err, t("saveErrorGeneric"));
+    const projectSaveErrorMessage = (error: unknown) => {
+      if (error instanceof VaultConflictError) return t("saveErrorConflict");
+      const failure = failureSentence(error, t("saveErrorGeneric"));
       if (failure.detail) console.error("project save failed", failure.detail);
       return failure.sentence;
     };
@@ -406,10 +406,10 @@ export function ProjectDetailPage({
             : { description: next.trim() ? next : null },
         );
         showToast(field === "name" ? t("saveSuccessName") : t("saveSuccessDescription"), "success");
-      } catch (err) {
-        const message = projectSaveErrorMessage(err);
+      } catch (error) {
+        const message = projectSaveErrorMessage(error);
         showToast(t("saveErrorPrefix", { message }), "error");
-        throw err;
+        throw error;
       }
     };
 

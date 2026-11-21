@@ -31,13 +31,15 @@ import {
   relationRefsFor,
 } from './relation-keys.mjs';
 import {
-  assertGraphNodeEndpoint,
-  destructivePreviewState,
   missingSlugMessage,
   readDocIfPresent,
-  requireNodeNotReservedForHuman,
   resolveExistingVaultSlug,
 } from './vault-nodes.mjs';
+import {
+  assertGraphNodeEndpoint,
+  destructivePreviewState,
+  requireNodeNotReservedForHuman,
+} from './write-gates.mjs';
 
 /**
  * The typed containment key `contains` stands for when the endpoint kinds have one

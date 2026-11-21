@@ -40,7 +40,7 @@ export interface ClusterFrameStageSources {
   expandPrefRef: SourceRef<ExpandPreference>;
   egoRevealBatchesRef: SourceRef<number>;
   clusterRevealBatchesRef: SourceRef<Map<string, number>>;
-  prevBatchVisibleRef: SourceRef<Set<string>>;
+  previousBatchVisibleRef: SourceRef<Set<string>>;
   batchAppearRef: SourceRef<Map<string, number>>;
   batchAppearStartRef: SourceRef<Map<string, number>>;
 }
@@ -97,7 +97,7 @@ export function createClusterFrameStage(sources: ClusterFrameStageSources) {
     expandPrefRef,
     egoRevealBatchesRef,
     clusterRevealBatchesRef,
-    prevBatchVisibleRef,
+    previousBatchVisibleRef,
     batchAppearRef,
     batchAppearStartRef,
   } = sources;
@@ -211,8 +211,8 @@ export function createClusterFrameStage(sources: ClusterFrameStageSources) {
         const other =
           edge.sourceId === focusId ? edge.targetId : edge.targetId === focusId ? edge.sourceId : null;
         if (other === null) continue;
-        const prevRel = relByNeighbor.get(other);
-        if (prevRel === undefined || relTier(edge.relationType) > relTier(prevRel)) {
+        const previousRel = relByNeighbor.get(other);
+        if (previousRel === undefined || relTier(edge.relationType) > relTier(previousRel)) {
           relByNeighbor.set(other, edge.relationType);
         }
       }
@@ -247,7 +247,7 @@ export function createClusterFrameStage(sources: ClusterFrameStageSources) {
     const expandedNow = new Set<string>();
     const moreChips: { chipId: string; count: number; gateChipIndex: number }[] = [];
     const hiddenFromBatch = new Set<string>();
-    const prevVisible = prevBatchVisibleRef.current;
+    const previousVisible = previousBatchVisibleRef.current;
     // Batching applies only to parents the user expanded explicitly (URL
     // `?open=`). Expansions injected by realm entry (`realmExpandChain` —
     // that world's spine) are excluded, since re-collapsing them into
@@ -308,7 +308,7 @@ export function createClusterFrameStage(sources: ClusterFrameStageSources) {
       // centre-out stagger schedule and a ramp seeded at 0. `scheduleRipple`
       // reuses the rippleStaggerMaxMs budget cap, so even a full batch
       // compresses into roughly 180 ms total.
-      const newly = visibleOrdered.filter((id) => !prevVisible.has(id));
+      const newly = visibleOrdered.filter((id) => !previousVisible.has(id));
       if (newly.length > 0) {
         const sched = scheduleRipple(parentId, now, newly, 0, tokens.rippleStaggerMs, tokens.rippleStaggerMaxMs);
         for (const s of sched) {
@@ -326,7 +326,7 @@ export function createClusterFrameStage(sources: ClusterFrameStageSources) {
     if (hiddenFromBatch.size > 0) {
       frameClusteredIds = new Set<string>([...frameClusteredIds, ...hiddenFromBatch]);
     }
-    prevBatchVisibleRef.current = batchAppearVisible;
+    previousBatchVisibleRef.current = batchAppearVisible;
     const classicGate = world.dial && liveRealmRootId === null
       ? computeTopologyClusterState(
         { nodeById: world.nodeById, childrenByParent: world.childrenByParent, clusterMetaByParent: world.clusterMetaByParent },

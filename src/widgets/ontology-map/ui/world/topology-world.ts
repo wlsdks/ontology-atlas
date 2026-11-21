@@ -6,7 +6,7 @@
  */
 import { DEFAULT_EXPAND } from "@/shared/lib/preferences/expand-preferences";
 import type { ExpandStructure } from "@/shared/lib/preferences/expand-preferences";
-import type { DialModel, DialWorld, DialWorldInput } from "../../dial/types";
+import type { DialModel, DialWorld, DialWorldInput } from "../../dial/dial-shapes";
 import { drainSteps, type LayoutSteps } from "../../flat-graph/layout";
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../../model/layout/layout";
 import { fireflySeed } from "../../render/edge-fireflies";

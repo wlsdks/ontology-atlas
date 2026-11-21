@@ -80,7 +80,7 @@ export const rules = [
       /^src\/views\/project-detail\/model\/project-lead\.ts$/,
       /^src\/views\/change-briefing\/ui\/sources\/OriginalSourceBody\.tsx$/,
       /^src\/views\/planning\/ui\/PlanningMarkdown\.tsx$/,
-      /^src\/widgets\/(?:analysis-workbench\/ui\/(?:AnalysisWorkbench|ReviewFindings|ReviewRecordDialog)|full-detail\/ui\/FullDetail)\.tsx$/,
+      /^src\/widgets\/(?:analysis-workbench\/ui\/(?:AnalysisWorkbench|review-findings|ReviewRecordDialog)|full-detail\/ui\/FullDetail)\.tsx$/,
       /^scripts\/lib\/check-rules\/security\.mjs$/,
       /^tests\/contract\/security\/security-surfaces\.contract\.test\.ts$/,
     ],

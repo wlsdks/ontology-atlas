@@ -14,7 +14,7 @@ import {
   SettingsSearchResults,
   orderedSettingsResults,
   useSettingsSearchCursor,
-} from './SettingsSearch';
+} from './settings-search-controls';
 
 const items: SettingsSearchItem[] = [
   { id: 'text-size', section: 'screen', label: 'Text size', keywords: 'zoom', sectionLabel: 'Screen · language', scopeLabel: 'This computer' },

@@ -69,13 +69,13 @@ export function useDocReview({
         await localVault.updateFrontmatter(selectedDoc.slug, patch, {
           expectedMtime: selectedDoc.mtime,
         });
-      } catch (err) {
-        if (err instanceof VaultConflictError) {
+      } catch (error) {
+        if (error instanceof VaultConflictError) {
           toast.show(t('dialog.vaultConflict'), 'error');
         } else {
           toast.show(t('review.writeFailed'), 'error');
         }
-        console.error('[docs-vault] review write failed', err);
+        console.error('[docs-vault] review write failed', error);
       } finally {
         setReviewBusy(false);
       }

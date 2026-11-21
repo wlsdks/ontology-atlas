@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import type { DialMemory } from "../../dial/types";
+import type { DialMemory } from "../../dial/dial-shapes";
 import { isTierAssembling } from "../../morph/tier-assembly";
 import type { FlatRingMemoryStore } from "../loop/topology-loop-contract";
 import type { TopologyWorld } from "./topology-world";
@@ -63,10 +63,10 @@ function fixedRefs(worldRef: { current: TopologyWorld | null }) {
     expandedParentsRef: ref(new Set()), clusteredIdsRef: ref(new Set()), cameraTokens: (t: unknown) => t, cameraTargetRef: ref(null),
     userDrivenCameraRef: ref(false), hasInitializedRef: ref(false), domeRuntimeRef: ref(null), overviewScaleRef: ref(1),
     cameraAngularFreqRef: ref(null), pendingSpotlightFitRef: ref(false), runSpotlightFitRef: ref(null), containerRef: ref(null),
-    expand: { structure: "disc" }, prevNodeIdsRef: ref(new Set()), appearRef: ref(new Map()), bornNodeIdsRef: ref(new Set()),
+    expand: { structure: "disc" }, previousNodeIdsRef: ref(new Set()), appearRef: ref(new Map()), bornNodeIdsRef: ref(new Set()),
     hasDependsEdgesRef: ref(false), hasContainsEdgesRef: ref(false), lastActiveMsRef: ref(0), pulsesRef: ref([]), simRef: ref(null),
     nodeDragRef: ref(null), heatRef: ref(0), dragAffectedSetRef: ref(null), dragStartPosRef: ref(null), dragTugOffsetsRef: ref(new Map()),
-    homeSpringsRef: ref(new Map()), homingActiveRef: ref(false), homeTargetOverrideRef: ref(null), prevPinnedNodeIdRef: ref(null),
+    homeSpringsRef: ref(new Map()), homingActiveRef: ref(false), homeTargetOverrideRef: ref(null), previousPinnedNodeIdRef: ref(null),
     assembleOnOpen: true, arrivingDocuments: 0, fittedDataSourceKeyRef: ref(null), pendingFlatCameraRef: ref(null),
     dialLabels: null, loadProgress: null, placingTierRead: false,
   };

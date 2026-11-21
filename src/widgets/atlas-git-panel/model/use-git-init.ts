@@ -35,8 +35,8 @@ export function useGitInit({
     try {
       await gitInit(vaultPath);
       await refresh();
-    } catch (err) {
-      setInitError(gitErrorMessage(err, nativeErrors));
+    } catch (error) {
+      setInitError(gitErrorMessage(error, nativeErrors));
     } finally {
       setInitRunning(false);
     }

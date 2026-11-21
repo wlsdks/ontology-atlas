@@ -28,7 +28,7 @@ export const LABEL_PAD = 4;
 
 export const fontOf = (weight: number, size: number, family: string) => `${weight} ${size}px ${family}`;
 
-export function makeLabel(
+export function buildLabel(
   measure: Measure,
   key: string,
   id: string | null,

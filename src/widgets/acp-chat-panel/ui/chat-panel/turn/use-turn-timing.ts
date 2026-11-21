@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { turnLiveness } from '@/features/acp-session';
 import { elapsedParts } from '@/shared/lib/agent-activity/elapsed';
 
-import type { ChatT, SessionState } from '../types';
+import type { ChatT, SessionState } from '../chat-panel-props';
 
 export function useTurnClock({ clockPhase, t }: { clockPhase: 'awaiting' | 'thinking' | null; t: ChatT }) {
   const [turnClock, setTurnClock] = useState<{ startedAt: number; nowMs: number } | null>(null);

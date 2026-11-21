@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { TurnActivity, TurnActivityKind } from '../../turn-activity';
 import { WORK_PLAYLIST } from './moru-playlist';
 import { TurnWorkStage, type TurnWork } from './TurnWorkStage';
-import type { ChatT } from '../types';
+import type { ChatT } from '../chat-panel-props';
 
 let reduced = false;
 const reveals: Array<(visible: boolean) => void> = [];

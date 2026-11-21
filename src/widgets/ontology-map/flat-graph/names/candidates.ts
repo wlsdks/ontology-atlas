@@ -1,4 +1,4 @@
-import type { DialModel } from "../../dial/types";
+import type { DialModel } from "../../dial/dial-shapes";
 import type { OpenedElements } from "../open";
 import { byId } from "../seed";
 import { fannedNames, sideNames } from "./sides";

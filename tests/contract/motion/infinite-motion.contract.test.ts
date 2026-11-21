@@ -163,7 +163,7 @@ function trackedFiles(pattern: RegExp): string[] {
 const SOURCE_LOOP = /\brepeat\s*:\s*Infinity\b|\biterations\s*:\s*Infinity\b|animate-\[[^\]]*infinite/;
 
 const SCRIPTED_LOOPS: Record<string, string> = {
-  "src/views/download/ui/StepScenes.tsx":
+  "src/views/download/ui/step-scenes.tsx":
     "The download page's three step scenes, one WAAPI track per part on the steps rail's CSS clock: opacity, transform and clip-path only. They are built only while the rail's in-view switch is set (never under reduced motion), pause with it out of view or in a hidden tab, and are cancelled while the page's motion is paused, leaving the markup's final frames. StartSection.test.tsx verifies the guards.",
   "src/shared/ui/marks/moru/brand-companion.tsx":
     "Owner-requested decorative play in bounded entry/download space. All three WAAPI tracks animate transform only; IntersectionObserver, document visibility, reduced motion, pointer/focus hold and the explicit pause toggle control playback. brand-companion.test.tsx verifies the guards; the 2026-11-13 native recording verifies the rendered cycle.",

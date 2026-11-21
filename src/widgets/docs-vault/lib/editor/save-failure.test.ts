@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { saveFailureMessageKey } from './save-failure';
 
 function named(name: string): Error {
-  const err = new Error('boom');
-  err.name = name;
-  return err;
+  const error = new Error('boom');
+  error.name = name;
+  return error;
 }
 
 describe('saveFailureMessageKey', () => {

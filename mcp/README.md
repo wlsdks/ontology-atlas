@@ -2234,7 +2234,6 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/agent-brief-scope.mjs` | which project and documents an agent brief covers |
 | `src/tools/meaning-readiness.mjs` | the meaning-readiness and project-meaning facts a brief carries, and the next-action hint table |
 | `src/tools/validate-vault.mjs` | `validate_vault`, `validate_wiki` |
-| `src/tools/repo-analysis.mjs` | the four folder-scanning tools, re-exported from `src/tools/repo-analysis/` |
 | `src/tools/repo-analysis/analyze-structure.mjs` | `analyze_repo_structure`: the breadth map, source reads and the analysis view |
 | `src/tools/repo-analysis/inspect-architecture.mjs` | `inspect_architecture`, with `architecture-profile-selection.mjs` choosing the profile |
 | `src/tools/repo-analysis/infer-imports.mjs` | `infer_imports`, with `import-review-rules.mjs` (review mode, delivery limit, drift summary) and `vault-reconciliation.mjs` (the vault diff) |
@@ -2244,7 +2243,8 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/write-relations.mjs` | the four edge writes |
 | `src/tools/lifecycle.mjs` | `rename_concept`, `reclassify_concept`, `merge_concepts`, `delete_concept` |
 | `src/tools/absorb.mjs` | `absorb_document` |
-| `src/tools/vault-nodes.mjs` | node identity, the gates every write passes, and the whole-vault issue finders |
+| `src/tools/vault-nodes.mjs` | node identity, not-found errors, the review summary and authorship stamp, and the whole-vault issue finders |
+| `src/tools/write-gates.mjs` | the refusals every write passes: a forbidden frontmatter patch, a node reserved for a person, a relation endpoint without a kind, and when a preview may be confirmed |
 | `src/tools/relation-keys.mjs` | which frontmatter key holds which relation, and how a stored ref matches |
 | `src/tools/result-attachments.mjs` | what a result carries rather than being asked for |
 | `src/vault/documents/slug-paths.mjs` | slug ↔ path mapping, the containment check every disk path passes, raw-source slugs, on-disk spelling, similar-slug suggestions, vault-root check |
@@ -2264,8 +2264,15 @@ transport. Everything a change would actually touch lives beside it.
 | `src/ontology-engine/graph-context/context-operations.mjs` | shared graph lookups and scope helpers |
 | `src/ontology-engine/query-operation/query-planner.mjs` | bounded query planning |
 | `src/ontology-engine/traversal/traversal-analysis.mjs` | centrality, reachability, impact, and builder context |
-| `src/ontology-engine/selection/selection-queries.mjs` | scans, profiles, matrices, components, and similarity |
-| `src/ontology-engine/traversal/scope-queries.mjs` | containment, lineage, cycles, relation recommendations, and growth |
+| `src/ontology-engine/selection/graph-summary-queries.mjs` | `overview`, `schema`, `facets`: what the whole graph holds |
+| `src/ontology-engine/selection/match-queries.mjs` | `match_nodes`, `match_edges`, `relation_check`, `similar_nodes`, with `match-rules.mjs` (node filters, edge target kind, the relation verdict and approval gate) |
+| `src/ontology-engine/selection/profile-queries.mjs` | `node_profile`, `domain_profile`, `project_scope`, `project_map` |
+| `src/ontology-engine/selection/domain-matrix-queries.mjs` | `domain_matrix`, with `domain-matrix-rules.mjs` (domain assignment and edge classification) |
+| `src/ontology-engine/selection/cluster-queries.mjs` | `components`, `communities`, with `cluster-rules.mjs` (connected groups, community grouping) |
+| `src/ontology-engine/traversal/scope-lookups.mjs` | the nodes under a project or domain, a node's nearest domain, and project and domain roots |
+| `src/ontology-engine/traversal/containment-queries.mjs` | `lineage` and `containment_tree` |
+| `src/ontology-engine/traversal/dependency-order-queries.mjs` | `cycles` and `topological_order`, with `dependency-order-rules.mjs` (bounded cycle search, prerequisite layers) |
+| `src/ontology-engine/traversal/growth-queries.mjs` | `recommend_relations`, `growth_plan` and the candidate groups behind it |
 | `src/ontology-engine/maintenance/maintenance-queries.mjs` | repair and review action planning |
 | `src/ontology-engine/briefs/brief-queries.mjs` | evidence-aware agent and workspace briefs |
 | `src/ontology-engine/maintenance/health-query.mjs` | structural health reporting |

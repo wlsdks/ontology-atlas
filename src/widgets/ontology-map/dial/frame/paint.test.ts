@@ -19,7 +19,7 @@ import { circularDomainOrder } from "../order";
 import { knockoutRects, paintDialMarks } from "./paint";
 import { resolveDialDisclosure } from "./disclosure";
 import { resolveDialTokens } from "../tokens";
-import type { DialLabels, DialModel } from "../types";
+import type { DialLabels, DialModel } from "../dial-shapes";
 
 const css = readFileSync("app/styles/map-dial-tokens.css", "utf8");
 const TOKENS = resolveDialTokens((v) => (v === "--map-panel-text-primary" ? "#f4f4f8" : css.match(new RegExp(`${v}:\\s*([^;]+);`))?.[1] ?? ""));

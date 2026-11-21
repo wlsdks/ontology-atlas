@@ -58,8 +58,8 @@ export function useGitRestore({
         }
         await refresh();
         return true;
-      } catch (err) {
-        setRestoreError(`${gitErrorMessage(err, nativeErrors)} ${t("restoreFailedSafe")}`);
+      } catch (error) {
+        setRestoreError(`${gitErrorMessage(error, nativeErrors)} ${t("restoreFailedSafe")}`);
         return false;
       } finally {
         setRestoreBusy(false);

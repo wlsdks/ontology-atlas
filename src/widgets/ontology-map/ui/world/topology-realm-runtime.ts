@@ -19,7 +19,7 @@ import { computeTopologyClusterState } from "./topology-cluster-state";
 import { radiusForKind } from "./node-radius";
 import { type TopologyWorld } from "./topology-world";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import type { DialWorld, DialWorldInput, Pad } from "../../dial/types";
+import type { DialWorld, DialWorldInput, Pad } from "../../dial/dial-shapes";
 import { scopedBranches, scopedTreePositions } from "./realm/scoped-branches";
 
 /** Content bbox slack (world units) — so the camera fit holds the outermost node comfortably. */

@@ -388,19 +388,19 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           >
             Root
           </button>
-          {heldLocalGraphStack.map((slug, idx) => (
+          {heldLocalGraphStack.map((slug, index) => (
             <span key={slug} className="flex items-center gap-2">
               <span className="text-[color:var(--color-text-quaternary)]">▸</span>
               <button
                 type="button"
                 onClick={() =>
-                  setLocalGraphStack((stack) => stack.slice(0, idx + 1))
+                  setLocalGraphStack((stack) => stack.slice(0, index + 1))
                 }
                 className={controlClass({
                   shape: "link",
                   size: "lg",
                   truncate: true,
-                  active: idx === heldLocalGraphStack.length - 1,
+                  active: index === heldLocalGraphStack.length - 1,
                   className: "touch-hit-expand hover:text-[color:var(--color-text-primary)]",
                 })}
                 title={slug}

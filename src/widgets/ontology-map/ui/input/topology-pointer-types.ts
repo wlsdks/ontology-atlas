@@ -206,7 +206,7 @@ export interface PointerHandlerRefs {
    * contract as the edge hover card).
    */
   onHoverCluster?: (
-    info: {
+    cluster: {
       parentId: string;
       /** Direct gated children collapsed (hidden) at this tier — the chip's `+N`. */
       count: number;

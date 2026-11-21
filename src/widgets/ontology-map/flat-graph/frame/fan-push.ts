@@ -1,8 +1,8 @@
-import type { Point } from "../../dial/types";
+import type { Point } from "../../dial/dial-shapes";
 import { graphDiscRadiusPx, LIT_DOT_SHARE } from "../marks";
 import { DAMPED, dampedStep, FLAT_MOTION } from "../motion";
 import { openRadiusPx, roomLimitPx } from "../open-star";
-import type { FlatGraphLayout } from "../types";
+import type { FlatGraphLayout } from "../flat-graph-shapes";
 import { screenOf, leavingFanShare, fanShare, radiusNow, roomLimit, openedRadius, closingDomainStar } from "./place";
 import { near, fillNear, roomNear } from "./push-crowd";
 import { ROOM_WHOLE_PX, cacheFor, MARK_STEP_MAX_MS, MARK_REST_PX, F as frameState, fanPushes, pushedDots } from "./state";

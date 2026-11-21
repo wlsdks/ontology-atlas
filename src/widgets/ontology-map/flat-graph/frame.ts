@@ -1,10 +1,10 @@
 import type { DialMarksResult } from "../dial/frame/marks";
 import { recordDialFrame } from "../dial/frame/frame";
-import type { DialFrameInput, DialFrameResult, DialModel } from "../dial/types";
+import type { DialFrameInput, DialFrameResult, DialModel } from "../dial/dial-shapes";
 import { cachedGraphAttention, type GraphAttention } from "./attention";
 import { restArcs, zoomGrowth } from "./marks";
 import { FLAT_MOTION, graphMotionOf, waveDelays } from "./motion";
-import type { FlatGraphLayout, FlatGraphTokens } from "./types";
+import type { FlatGraphLayout, FlatGraphTokens } from "./flat-graph-shapes";
 import { paintPlan } from "./frame/paint";
 import { forgetSettledStars } from "./frame/place";
 import { drawnFlowKeys, buildPlan } from "./frame/plan";

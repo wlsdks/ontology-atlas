@@ -36,22 +36,22 @@ export function relaxNodeSeparation(nodes: SeparationNode[], options: Separation
    * O(N) while pairs and their order stay identical; order is the result, since coordinates
    * change in place. This matters where nothing folds (the 3D dome lays out every node).
    */
-  let activeIdx: number[] | null = null;
+  let activeIndex: number[] | null = null;
   if (active !== null) {
-    activeIdx = [];
-    for (let i = 0; i < n; i += 1) if (active[i]) activeIdx.push(i);
+    activeIndex = [];
+    for (let i = 0; i < n; i += 1) if (active[i]) activeIndex.push(i);
   }
   const enlist = (k: number): void => {
-    if (active === null || activeIdx === null || active[k]) return;
+    if (active === null || activeIndex === null || active[k]) return;
     active[k] = true;
     let lo = 0;
-    let hi = activeIdx.length;
+    let hi = activeIndex.length;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
-      if (activeIdx[mid] < k) lo = mid + 1;
+      if (activeIndex[mid] < k) lo = mid + 1;
       else hi = mid;
     }
-    activeIdx.splice(lo, 0, k);
+    activeIndex.splice(lo, 0, k);
   };
   const lowerBound = (list: number[], value: number): number => {
     let lo = 0;
@@ -110,12 +110,12 @@ export function relaxNodeSeparation(nodes: SeparationNode[], options: Separation
           enlist(i);
           enlist(j);
         }
-      } else if (activeIdx !== null) {
+      } else if (activeIndex !== null) {
         // Only `i` can become newly active here, and enlisting it now would shift the cursor, so it
         // is enlisted after the j loop.
         let selfMoved = false;
-        for (let p = lowerBound(activeIdx, i + 1); p < activeIdx.length; p += 1) {
-          if (resolvePair(i, activeIdx[p])) selfMoved = true;
+        for (let p = lowerBound(activeIndex, i + 1); p < activeIndex.length; p += 1) {
+          if (resolvePair(i, activeIndex[p])) selfMoved = true;
         }
         if (selfMoved) enlist(i);
       }

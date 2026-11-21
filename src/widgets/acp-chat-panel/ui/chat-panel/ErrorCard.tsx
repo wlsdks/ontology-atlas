@@ -8,8 +8,8 @@ import { Chip } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-import { RETRY_CHIP_CLASS } from './constants';
-import type { ChatT } from './types';
+import { RETRY_CHIP_CLASS } from './chat-panel-class-names';
+import type { ChatT } from './chat-panel-props';
 
 interface ErrorCardProps {
   t: ChatT;

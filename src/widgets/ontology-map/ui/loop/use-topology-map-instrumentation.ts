@@ -32,7 +32,7 @@ import type {
 } from "../input/topology-pointer-types";
 import { lastTierPlanes } from "../frame-loop/topology-presentation-frame-stage";
 import { describeLastDialFrame, lastDialFrame } from "../../dial/frame/frame";
-import type { DialProbe } from "../../dial/types";
+import type { DialProbe } from "../../dial/dial-shapes";
 import { requestOntologyMapFrame } from "../frame-loop/use-topology-frame-loop";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { radiusForKind } from "../world/node-radius";

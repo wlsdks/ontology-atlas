@@ -58,7 +58,8 @@ import { logWrite } from '../server/write-log.mjs';
 import { projectMeaningContext, projectSourceScope } from './meaning-readiness.mjs';
 import { attachVaultValidation } from './result-attachments.mjs';
 import { validateVaultReport } from './validate-vault.mjs';
-import { requireNodeNotReservedForHuman, resolveExistingVaultSlug } from './vault-nodes.mjs';
+import { resolveExistingVaultSlug } from './vault-nodes.mjs';
+import { requireNodeNotReservedForHuman } from './write-gates.mjs';
 import { isAbsolute } from 'node:path';
 
 const PROJECT_SOURCE_CONNECT_CONTRACT = 'projectSourceConnect:v1';

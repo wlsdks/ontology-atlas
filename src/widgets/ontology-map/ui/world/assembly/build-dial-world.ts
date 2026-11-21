@@ -12,7 +12,7 @@ import { buildDialModel } from "../../../dial/dial-model";
 import { dialOverviewPad } from "../../../dial/fit";
 import { layoutDial } from "../../../dial/layout";
 import { circularDomainOrder, rememberDialOrder, rememberedDialOrder } from "../../../dial/order";
-import type { DialModel, DialWorld, DialWorldInput } from "../../../dial/types";
+import type { DialModel, DialWorld, DialWorldInput } from "../../../dial/dial-shapes";
 import { domainTitleBlocks, hubBlockReachPx } from "../../../flat-graph/names/titles";
 import type { LayoutSteps } from "../../../flat-graph/layout";
 import { buildFlatGraphSceneSteps, flatGraphPins } from "../../../flat-graph/scene";

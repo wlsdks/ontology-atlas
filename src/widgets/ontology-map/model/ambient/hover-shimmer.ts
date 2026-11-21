@@ -30,9 +30,9 @@ export function computeHoverShimmer(
     return { dash: [0, 0], offset: 0 };
   }
   const seg = clampSegRatio(segRatio);
-  const segLen = perimeter * seg;
-  const gapLen = perimeter - segLen;
+  const segLength = perimeter * seg;
+  const gapLength = perimeter - segLength;
   const phase = (((now % periodMs) + periodMs) % periodMs) / periodMs;
   const offset = -phase * perimeter;
-  return { dash: [segLen, gapLen], offset };
+  return { dash: [segLength, gapLength], offset };
 }
