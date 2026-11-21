@@ -71,7 +71,6 @@ export {
 export type {
   DiscoverySkipReason,
   DroppedEntry,
-  DroppedFolderWalk,
   SourceCandidate,
   SourceDiscoveryReport,
 } from './lib/library/source-discovery';
