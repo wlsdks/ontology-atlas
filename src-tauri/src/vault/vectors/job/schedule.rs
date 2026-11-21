@@ -4,7 +4,6 @@
 use super::super::models::readable_model;
 use super::super::types::{VectorFailure, VectorSource};
 use super::super::{lock, Vectors};
-use super::pass::lower_priority;
 use super::{internal, Ended, Entry, Pass, Run, Stage, Unwinding};
 use std::panic::AssertUnwindSafe;
 use std::path::Path;
@@ -258,6 +257,33 @@ impl Vectors {
                 return;
             };
             current = next_run;
+        }
+    }
+}
+
+/// The job's thread yields to the person's work: utility quality of service on macOS, the
+/// background mode (CPU and I/O) on Windows.
+fn lower_priority() {
+    #[cfg(target_os = "macos")]
+    {
+        // SAFETY: changes only the calling thread's own scheduling class.
+        let failed =
+            unsafe { libc::pthread_set_qos_class_self_np(libc::qos_class_t::QOS_CLASS_UTILITY, 0) };
+        if failed != 0 {
+            log::warn!("search by meaning job kept its priority ({failed})");
+        }
+    }
+    #[cfg(windows)]
+    {
+        #[link(name = "kernel32")]
+        extern "system" {
+            fn GetCurrentThread() -> *mut std::ffi::c_void;
+            fn SetThreadPriority(thread: *mut std::ffi::c_void, priority: i32) -> i32;
+        }
+        const THREAD_MODE_BACKGROUND_BEGIN: i32 = 0x0001_0000;
+        // SAFETY: the pseudo-handle names the calling thread and needs no closing.
+        if unsafe { SetThreadPriority(GetCurrentThread(), THREAD_MODE_BACKGROUND_BEGIN) } == 0 {
+            log::warn!("search by meaning job kept its priority");
         }
     }
 }

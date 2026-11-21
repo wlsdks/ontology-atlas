@@ -34,7 +34,7 @@ impl Vectors {
 
     /// Whether the built-in model cannot answer now: not ready on this computer, a partial download
     /// included, or no model store to keep it in. A pass and the status treat all three alike.
-    pub(in crate::vault::vectors) fn builtin_unusable(&self) -> bool {
+    pub(super) fn builtin_unusable(&self) -> bool {
         !self
             .sources
             .builtin()
@@ -44,7 +44,7 @@ impl Vectors {
     /// Whether the app's model store is there and the built-in model is not ready in it. Unlike
     /// `builtin_unusable`, `false` when there is no model store: then no quiet update is skipped
     /// for it and a stored folder's idle status does not say `modelGone`.
-    pub(in crate::vault::vectors) fn builtin_missing_from_store(&self) -> bool {
+    pub(super) fn builtin_missing_from_store(&self) -> bool {
         self.sources
             .builtin()
             .is_ok_and(|builtin| !builtin.is_ready())
@@ -250,7 +250,7 @@ impl Vectors {
     }
 
     /// Sends the status now: a phase changed.
-    pub(in crate::vault::vectors) fn report_phase(&self, entry: &Entry) {
+    pub(super) fn report_phase(&self, entry: &Entry) {
         let status = self.status(entry, true, None);
         let now = self.clock.now();
         {
@@ -262,7 +262,7 @@ impl Vectors {
     }
 
     /// Sends the status if the throttle allows: progress moved, or two seconds passed.
-    pub(in crate::vault::vectors) fn report_progress(&self, entry: &Entry) {
+    pub(super) fn report_progress(&self, entry: &Entry) {
         let Some(run) = entry.running_run() else {
             return;
         };
