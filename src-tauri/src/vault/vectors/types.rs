@@ -205,6 +205,9 @@ pub(crate) struct VectorStatus {
     /// While `modelDownloading`.
     pub model: Option<ModelBytes>,
     pub vectors_bytes: u64,
+    /// A pass runs for this folder or follows the one running; an update reads `ready` until it
+    /// knows something changed, so only this says when it has ended.
+    pub busy: bool,
 }
 
 impl VectorStatus {
@@ -222,6 +225,7 @@ impl VectorStatus {
             passages_per_second: None,
             model: None,
             vectors_bytes: 0,
+            busy: false,
         }
     }
 }
@@ -293,6 +297,8 @@ pub(crate) struct VectorFound {
     pub stale_dropped: u64,
     pub files_ready: u64,
     pub files_total: u64,
+    /// The folder's `busy` once the search answered, the update it started included.
+    pub busy: bool,
 }
 
 impl VectorFound {
@@ -304,6 +310,7 @@ impl VectorFound {
             stale_dropped: 0,
             files_ready: 0,
             files_total: 0,
+            busy: false,
         }
     }
 }

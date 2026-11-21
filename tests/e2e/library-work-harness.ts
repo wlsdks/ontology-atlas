@@ -131,6 +131,7 @@ export const LIBRARY_VECTOR_FOUND: VectorFound = {
   staleDropped: 1,
   filesReady: 1240,
   filesTotal: 2000,
+  busy: true,
 };
 
 export interface LibraryVectorsScript {

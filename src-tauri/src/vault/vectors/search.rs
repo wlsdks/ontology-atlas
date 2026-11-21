@@ -99,7 +99,7 @@ impl Vectors {
             }
         };
         if found.stale > 0 {
-            self.note_change(entry);
+            self.update_for_question(entry);
         }
         let hits = found
             .hits
@@ -121,6 +121,7 @@ impl Vectors {
                 stale_dropped: found.stale as u64,
                 files_ready: 0,
                 files_total: 0,
+                busy: false,
             },
         )
     }
@@ -177,6 +178,7 @@ impl Vectors {
         let status = self.status(entry, true, None);
         found.files_ready = status.files_done;
         found.files_total = status.files_total;
+        found.busy = status.busy;
         found
     }
 

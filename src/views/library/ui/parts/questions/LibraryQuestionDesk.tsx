@@ -26,6 +26,7 @@ import {
 } from '@/features/library';
 import { sourceUnits, type SourceUnit } from '@/shared/lib/library/source-passage';
 import type { VectorFound } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { Button, Chip } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
@@ -148,7 +149,7 @@ export function LibraryQuestionDesk({
   const outdated = result !== null && !fresh;
   const slot = useDeskSwap(result ? RESULTS : ENTRY, reducedMotion);
 
-  const search = async () => {
+  const search = async (again = false) => {
     const asked = question.trim();
     if (!asked || reading || jev.sending) return;
     const id = ++searchId.current;
@@ -219,11 +220,12 @@ export function LibraryQuestionDesk({
         hits: found.hits, docs, rawBySlug: pageTexts, searchedSources: new Set(plan.map((source) => source.path)),
         sourceUnitsByPath: unitsByPath, claims: wiki.claims, sourceHits,
       }) : null;
+      const leads = fuseDeskLeads(wiki.claims, sourceHits, byMeaning?.leads ?? []);
       /* A report cost an agent turn: it leaves with the rows it answered, when the new rows arrive. */
       onInvalidateReport();
       setResult({
         question: asked, searchId: id, listingVersion: searchedVersion,
-        leads: fuseDeskLeads(wiki.claims, sourceHits, byMeaning?.leads ?? []), terms, reasons: byMeaning !== null,
+        leads, terms, reasons: byMeaning !== null,
         readPages: wiki.readPages, totalPages: wiki.totalPages, omittedClaims: wiki.omitted,
         plannedSources: plan.length, totalSources: sources.length, unreadableSources,
         changedSources, omittedSources: omittedPerFile + Math.max(0, hits.length - 8),
@@ -232,10 +234,20 @@ export function LibraryQuestionDesk({
           staleDropped: found.staleDropped + (byMeaning?.dropped ?? 0),
         } : null,
       });
+      if (!again && leads.length === 0 && found?.state === 'ok' && found.staleDropped > 0 && found.busy) {
+        void meaningSearch.afterJob().then(() => askAgainAfterUpdate.current(id));
+      }
     } finally {
       if (id === searchId.current) setReading(false);
     }
   };
+
+  /* An empty list that left out passages of changed files is asked once more when their update ends. */
+  const askAgainAfterUpdate = useLatestRef((id: number) => {
+    if (id !== searchId.current || result?.searchId !== id || result.leads.length > 0) return;
+    if (reading || turnRunning || jev.sending || report?.searchId === id) return;
+    void search(true);
+  });
 
   const citationState = (claim: DeskClaim, citation: DeskCitation): CitationState => {
     if (!sourceHandles.has(citation.path)) return 'missing';
@@ -295,6 +307,7 @@ export function LibraryQuestionDesk({
   const offerSetup = vaultRoot !== null && meaningSearch.offerSetup;
   const meaning = result?.meaning ?? null;
   const meaningTookPart = meaning?.state === 'ok';
+  const changedLeftOut = meaning?.state === 'ok' ? meaning.staleDropped : 0;
   /* Meaning coverage is said only when it was partial: a full count would read as a second scope. */
   const meaningCoverage = meaning && meaningTookPart ? [
     ...(meaning.filesReady < meaning.filesTotal ? [t('meaning.coverage', { ready: meaning.filesReady, total: meaning.filesTotal })] : []),
@@ -339,7 +352,8 @@ export function LibraryQuestionDesk({
           {coverageInfo}
         </div>
         {meaningNotice}
-        <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{meaningTookPart ? t('meaning.noMatchBoth') : t('zeroLocalBody')}</p>
+        <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{!meaningTookPart ? t('zeroLocalBody') : changedLeftOut > 0
+          ? t('meaning.noMatchChanged', { count: changedLeftOut }) : t('meaning.noMatchBoth')}</p>
         {agentReady ? <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('zeroLocalAgentNote')}</p>
           : <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.agentUnavailable')}</p>}
         {offerSetup || reportAction ? <div className="mt-4 flex flex-wrap items-center gap-2">

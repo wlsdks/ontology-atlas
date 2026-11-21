@@ -264,6 +264,40 @@ fn a_quiet_update_waits_thirty_quiet_seconds() {
 }
 
 #[test]
+fn a_question_that_drops_a_changed_passage_updates_its_file_without_the_quiet_wait() {
+    let harness = Harness::new();
+    let root = vault("asked-after-change", 4);
+    let entry = entry(&harness, &root);
+    prepare_and_wait(&harness, &entry, VectorSource::Builtin);
+    rewrite(&root, "wiki/note-000.md");
+    harness.vectors.note_change(&entry);
+    let asked = |harness: &Harness| {
+        harness
+            .vectors
+            .search(&entry, &VectorSource::Builtin, "Passage number 0", 8, &[])
+    };
+
+    // The clock never moves, so no quiet wait ends: only the question can start the update.
+    harness.model().gate.hold();
+    let dropped = asked(&harness);
+    assert!(dropped.stale_dropped > 0);
+    assert!(dropped.busy, "the answer says the update runs");
+    assert!(status(&harness, &entry).busy);
+    harness.model().gate.open();
+    assert!(entry.wait_idle(WITHIN));
+    assert!(sent_rewritten(harness.model()));
+    assert!(!status(&harness, &entry).busy);
+    let again = asked(&harness);
+    assert_eq!((again.stale_dropped, again.busy), (0, false));
+
+    // The question's update covered the wait the index pass began.
+    harness.clock.set(UPDATE_QUIET);
+    harness.vectors.tick();
+    assert!(entry.running_run().is_none() && entry.wait_idle(Duration::ZERO));
+    cleanup(&root);
+}
+
+#[test]
 fn a_quiet_update_starts_ten_minutes_after_the_first_change_however_busy_the_folder() {
     let harness = Harness::new();
     let root = vault("latest", 4);

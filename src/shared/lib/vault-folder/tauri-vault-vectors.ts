@@ -60,6 +60,8 @@ export interface VectorStatus {
   /** While `modelDownloading`. */
   model: { doneBytes: number; totalBytes: number } | null;
   vectorsBytes: number;
+  /** A pass runs or follows the running one; an update reads `ready` until it knows what changed. */
+  busy: boolean;
 }
 
 export interface VectorProbe {
@@ -97,6 +99,8 @@ export interface VectorFound {
   staleDropped: number;
   filesReady: number;
   filesTotal: number;
+  /** The folder's `busy` once the search answered, the update a stale passage started included. */
+  busy: boolean;
 }
 
 export interface VectorStatusEvent {
@@ -141,6 +145,7 @@ export const OFF_VECTOR_STATUS: Readonly<VectorStatus> = Object.freeze({
   passagesPerSecond: null,
   model: null,
   vectorsBytes: 0,
+  busy: false,
 });
 
 type Invoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
@@ -174,7 +179,7 @@ function emptyProbe(): VectorProbe {
 }
 
 function notFound(): VectorFound {
-  return { state: 'notReady', failure: null, hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0 };
+  return { state: 'notReady', failure: null, hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0, busy: false };
 }
 
 /**

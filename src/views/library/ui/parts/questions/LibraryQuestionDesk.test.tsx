@@ -11,12 +11,16 @@ const mocks = vi.hoisted(() => ({
   status: vi.fn(), judge: vi.fn(),
   /** What search by meaning answers; `null` asks by words alone, as a folder with nothing set up. */
   meaning: null as import('@/shared/lib/vault-folder/tauri-vault-vectors').VectorFound | null,
+  /** Each question's answer by meaning: `meaning`, unless a test queues its own. */
+  ask: vi.fn<() => Promise<import('@/shared/lib/vault-folder/tauri-vault-vectors').VectorFound> | null>(),
+  /** Resolves when the update a question started has ended. */
+  updated: Promise.resolve(),
 }));
 vi.mock('@/features/vault-vectors', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/features/vault-vectors')>();
   return {
     ...actual,
-    useVectorSearch: () => ({ ask: () => (mocks.meaning ? Promise.resolve(mocks.meaning) : null), warm: () => {}, offerSetup: false }),
+    useVectorSearch: () => ({ ask: mocks.ask, warm: () => {}, offerSetup: false, afterJob: () => mocks.updated }),
   };
 });
 vi.mock('@/shared/lib/llm-connection/tauri-jev', async (importOriginal) => {
@@ -85,6 +89,9 @@ beforeEach(() => {
   fileReads = 0;
   fileGate = null;
   mocks.meaning = null;
+  mocks.ask.mockReset();
+  mocks.ask.mockImplementation(() => (mocks.meaning ? Promise.resolve(mocks.meaning) : null));
+  mocks.updated = Promise.resolve();
   mocks.status.mockReset();
   mocks.judge.mockReset();
   mocks.status.mockResolvedValue({ stored: false, last4: null });
@@ -178,7 +185,7 @@ describe('Library question desk transfer boundary', () => {
     expect(onSummarize.mock.calls[0]![0].brief).toContain(wordsOnly);
     rendered.unmount();
 
-    mocks.meaning = { state: 'ok', failure: null, hits: [{ path, lineStart: 2, lineEnd: 2, heading: 'Refund handling', score: 0.8 }], staleDropped: 0, filesReady: 2, filesTotal: 2 };
+    mocks.meaning = { state: 'ok', failure: null, hits: [{ path, lineStart: 2, lineEnd: 2, heading: 'Refund handling', score: 0.8 }], staleDropped: 0, filesReady: 2, filesTotal: 2, busy: false };
     render(<Desk onSummarize={onSummarize} />);
     await search();
     openCoverage();
@@ -193,7 +200,7 @@ describe('Library question desk transfer boundary', () => {
 
   it('adds how much meaning covered to the saved limits and the brief only when it covered part of the folder', async () => {
     const onSummarize = vi.fn<(request: QuestionDeskReportRequest) => void>();
-    mocks.meaning = { state: 'ok', failure: null, hits: [{ path, lineStart: 2, lineEnd: 2, heading: 'Refund handling', score: 0.8 }], staleDropped: 0, filesReady: 1240, filesTotal: 2000 };
+    mocks.meaning = { state: 'ok', failure: null, hits: [{ path, lineStart: 2, lineEnd: 2, heading: 'Refund handling', score: 0.8 }], staleDropped: 0, filesReady: 1240, filesTotal: 2000, busy: false };
     render(<Desk onSummarize={onSummarize} />);
     await search();
     fireEvent.click(screen.getByTestId('question-desk-summarize'));
@@ -577,6 +584,53 @@ describe('Library question desk transfer boundary', () => {
     expect(screen.getByTestId('question-desk-summarize')).toBeEnabled();
     expect(screen.queryByText('No matching wiki fact or decision in the pages read.')).not.toBeInTheDocument();
     expect(screen.queryByText(/No matching text in the sources Atlas could read/)).not.toBeInTheDocument();
+  });
+
+  describe('a question asked while changed files wait for their update', () => {
+    const leftOut = { state: 'ok' as const, failure: null, hits: [], staleDropped: 3, filesReady: 2, filesTotal: 2, busy: true };
+    const updatedAnswer = { ...leftOut, staleDropped: 0, busy: false, hits: [{ path, lineStart: 2, lineEnd: 2, heading: 'Refund handling', score: 0.8 }] };
+    let endUpdate = () => {};
+    beforeEach(() => {
+      mocks.updated = new Promise((resolve) => { endUpdate = resolve; });
+      mocks.ask.mockReturnValueOnce(Promise.resolve(leftOut)).mockReturnValueOnce(Promise.resolve(updatedAnswer));
+    });
+
+    it('says passages were left out, then asks again once the update has ended', async () => {
+      render(<Desk />);
+      fireEvent.change(screen.getByTestId('question-desk-input'), { target: { value: 'Who owns the lunar migration?' } });
+      fireEvent.click(screen.getByTestId('question-desk-search'));
+      expect(await screen.findByTestId('question-desk-unknown')).toHaveTextContent(/3 passages from changed files/u);
+      expect(mocks.ask).toHaveBeenCalledTimes(1);
+
+      await act(async () => { endUpdate(); });
+      expect(await screen.findByText('Refund approval queues a stock restoration job.')).toBeInTheDocument();
+      expect(screen.queryByTestId('question-desk-unknown')).not.toBeInTheDocument();
+      expect(mocks.ask).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not ask again once the question has changed', async () => {
+      render(<Desk />);
+      const field = screen.getByTestId('question-desk-input');
+      fireEvent.change(field, { target: { value: 'Who owns the lunar migration?' } });
+      fireEvent.click(screen.getByTestId('question-desk-search'));
+      await screen.findByTestId('question-desk-unknown');
+      fireEvent.change(field, { target: { value: 'Who owns the solar migration?' } });
+
+      await act(async () => { endUpdate(); });
+      expect(mocks.ask).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not ask again when the app reports no job, as for a stopped folder', async () => {
+      mocks.ask.mockReset();
+      mocks.ask.mockReturnValue(Promise.resolve({ ...leftOut, busy: false }));
+      render(<Desk />);
+      fireEvent.change(screen.getByTestId('question-desk-input'), { target: { value: 'Who owns the lunar migration?' } });
+      fireEvent.click(screen.getByTestId('question-desk-search'));
+      expect(await screen.findByTestId('question-desk-unknown')).toHaveTextContent(/3 passages from changed files/u);
+
+      await act(async () => { endUpdate(); });
+      expect(mocks.ask).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('reuses the unchanged source units for a second question in the same folder', async () => {

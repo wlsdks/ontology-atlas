@@ -94,7 +94,9 @@ why it is there: Same words, Similar meaning, or both. A report's brief carries
 the rows of that list in its order, whatever their reason. Once prepared, the line
 says only "Searching by words and by meaning"; the coverage popover adds how many
 files are prepared only while that is partial and, when some were, how many
-passages were left out because their file changed. When meaning cannot answer,
+passages were left out because their file changed. Such a search starts those
+files' update at once; a list with nothing found says how many passages it left
+out and, while that update runs, asks the question again when it ends. When meaning cannot answer,
 the word rows stand with one sentence saying so, and the line says the same and carries the one press: a missing model is read back from the folder's status, and a runner that did not answer is held until a search answers or the app's next status event; its Download again
 opens the setup dialog, which states the size and the free room before anything
 downloads. The limits sentence, saved with a report and sent in its brief, says
