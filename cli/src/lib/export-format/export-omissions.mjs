@@ -28,7 +28,7 @@ function hasValue(value) {
 
 /**
  * @param {object} input
- * @param {Array<Record<string, unknown>>} input.nodes compiled nodes.
+ * @param {Array<Record<string, unknown>>} input.nodes
  * @param {Array<Record<string, unknown>>} [input.edges] compiled edges; they carry the relation rationale,
  *   whose absence must be stated.
  * @param {readonly string[]|null} input.carriedKeys node fields the format carries; `null` means lossless.
@@ -36,7 +36,6 @@ function hasValue(value) {
  * @returns {{omitted: string[], counts: Record<string, number>, sentence: string|null}}
  */
 export function describeExportOmissions({ nodes, edges, carriedKeys, carriesEdgeRationale = false }) {
-  // `null` means the format is lossless — nothing to count.
   if (carriedKeys === null || carriedKeys === undefined) return { omitted: [], counts: {}, sentence: null };
   const carried = new Set(carriedKeys);
   const counts = {};

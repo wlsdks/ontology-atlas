@@ -2,7 +2,6 @@
 // ontology, where, and when to read it before code. Atlas does not write it into `CLAUDE.md` or `AGENTS.md`,
 // files someone else authored; the scaffold prints the text and the person decides.
 
-/** Relative path from the repository root to the vault, in POSIX form. */
 function posix(relativePath) {
   return relativePath.split(/[\\/]/).filter(Boolean).join('/');
 }
@@ -31,7 +30,6 @@ export function rootBriefing(vaultRelativePath) {
   ].join('\n');
 }
 
-/** The same text, indented for a terminal block so it reads as one quoted unit. */
 export function indentBriefing(text, indent = '       ') {
   return text.split('\n').map((line) => (line ? `${indent}${line}` : indent.trimEnd())).join('\n');
 }

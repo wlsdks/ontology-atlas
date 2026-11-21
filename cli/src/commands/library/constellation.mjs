@@ -1,5 +1,3 @@
-// Read one saved constellation and its current graph facts through MCP get_constellation.
-
 import { COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import { assertConstellationContextShape } from '../../lib/query-result-contract/constellation-result-contract.mjs';

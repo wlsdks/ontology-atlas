@@ -403,7 +403,6 @@ function validateVaultReport({ repoRoot } = {}, loadedDocs = null) {
         });
       }
       const entry = byCodeMap.get(issue.code);
-      // severity escalates if any issue of this code is error
       if (issue.severity === 'error') entry.severity = 'error';
       // count = file count (per-file), not per-issue
       if (!seenInDoc.has(issue.code)) {

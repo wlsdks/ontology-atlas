@@ -437,10 +437,6 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     return spec ? resolveExport(spec, segments.at(-1), language, 0) : null;
   }
 
-  /**
-   * The names `base` may be written under in `language`: its own and every local
-   * name an import or re-export gives it, followed a few rounds; null past the cap.
-   */
   const aliasMaps = new Map();
   /**
    * What a file's imports and re-exports rename, built once: imported name ->

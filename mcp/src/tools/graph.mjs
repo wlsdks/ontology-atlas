@@ -388,10 +388,6 @@ async function queryOntologyTool(args = {}) {
   };
 }
 
-/**
- * Translates a remedy id into something the reader, a person or an agent, can act
- * on; a bare code such as `assessment_input_invalid` gives neither a next step.
- */
 // One gap id, two situations: when the project document already has a parseable
 // `## Competency answers` section only the finalize receipt is missing, so a person
 // who wrote all five answers is never told to write them.

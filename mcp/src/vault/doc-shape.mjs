@@ -112,7 +112,6 @@ export function linkIndexAnswers(keys, needle) {
   return keys !== LINKS_UNINDEXED && isIndexedLinkNeedle(needle);
 }
 
-/** Whether a needle is one {@link bodyLinkKeys} can index. */
 function isIndexedLinkNeedle(needle) {
   return typeof needle === 'string'
     && needle.length > 0
@@ -120,7 +119,6 @@ function isIndexedLinkNeedle(needle) {
     && !LINK_NEEDLE_STOP.test(needle);
 }
 
-/** Whether the keys {@link bodyLinkKeys} returned hold `needle`. */
 export function linkKeysHold(keys, needle) {
   return typeof keys === 'string' && keys.includes(`${SEPARATOR}${needle}${SEPARATOR}`);
 }

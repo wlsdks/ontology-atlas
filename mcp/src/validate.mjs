@@ -1,9 +1,4 @@
 /**
- * Input validation for the MCP tools. A title must be non-empty after trimming,
- * so an agent cannot create untitled nodes.
- */
-
-/**
  * A usable frontmatter `title`: a string that is non-empty after trimming.
  *
  * @param {unknown} value

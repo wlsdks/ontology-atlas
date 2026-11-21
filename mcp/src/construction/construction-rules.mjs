@@ -110,7 +110,6 @@ export const CONSTRUCTION_RULES_EN = `## Construction rules — read before add_
  */
 export const ELEMENT_NAMING_RULE_EN = `When \`kind\` is \`element\`: an element names a CONCEPT a capability uses (e.g. "jwt-token"), not a file. If your \`title\` is a bare path or ends in a source extension, you are describing evidence, not the concept — rename \`title\` to the role and put the path in \`path:\`, or if 3+ siblings under the same parent already look like this, call \`get_concept\` on the parent and consider \`patch_concept\` on an existing sibling instead of adding another file-mirror node. The same rule binds the \`slug\`: flat under the kind folder (\`elements/<role-name>\`), never a code path (\`elements/src/views/home\` is rejected) — path-style slugs collide the moment two files share a basename and the graph silently merges distinct nodes.`;
 
-/** Batch variant — same rule, stated for the row-wise call shape. */
 /**
  * The scope rule, said where a claim is written: a sentence speaks only for the
  * members it read. A symbol read of a family member carries `family`, the
@@ -314,12 +313,10 @@ export const BODY_DEFINITION_SECTIONS = Object.freeze([
   'overview',
 ]);
 
-/** Warning literal for a node whose body never says what the node is. */
 export function definitionMissingMessage({ slug, kind }) {
   return `"${slug}" is a ${kind} whose body carries no definition — it is still the starter scaffold, it opens straight into headings, or it only restates the title. The write succeeded and nothing here blocks it; what is missing is the one sentence that makes this a concept instead of a label. Write what this ${kind} is and what it is not, in prose before the first \`##\` or under \`## Definition\`: patch_concept({slug:"${slug}", body:"# <title>\\n\\n<one non-circular sentence: what it is, and what it is not>\\n\\n…"}). An agent handed only this vault can read the title and learn nothing it did not already know from the title.`;
 }
 
-/** Warning literal for a boundary side the body never states. */
 export function boundaryMissingMessage({ slug, kind, side }) {
   const heading = side === 'excludes' ? 'Excludes' : 'Includes';
   const other = side === 'excludes' ? 'what this is often confused with and is not' : 'what this covers';
@@ -335,7 +332,6 @@ export function epistemicExclusionMessage({ slug, refs, count, sampleLimit }) {
   return `${count} exclusion bullet(s) on "${slug}" state an evidence limit rather than a product boundary: ${sampleRefs(refs, sampleLimit)}. "Not mentioned in this scan" says what the writer did not see; an \`Excludes\` bullet says what the product deliberately does not do. A reader handed the vault without the source cannot tell those apart, and repeats the first as the second — measured in the 2026-08-28 field trial. The write succeeded; move each one to an \`## Uncertainty\` (or \`## Open questions\`) section with patch_concept({slug:"${slug}", body:"…"}), and leave in \`Excludes\` only what a source actually supports.`;
 }
 
-/** Warning literal for evidence that names a folder instead of a file. */
 export function folderOnlyEvidenceMessage({ slug, path, suggestion }) {
   const opener = suggestion
     ? `Name the one file an unfamiliar agent should open first — \`${suggestion}\` is what this folder offers as an entry point`
@@ -371,7 +367,6 @@ export const BODY_UNCERTAINTY_SECTIONS = Object.freeze([
   'confidence',
 ]);
 
-/** Warning literal for a node that records no unknown at all. */
 export function uncertaintyMissingMessage({ slug, kind }) {
   return `"${slug}" (${kind}) records no uncertainty, so the body reads as complete — and nothing in a vault is. The write succeeded and nothing here blocks it; what is missing is the fact a later reader most needs and can least recover: which files you did not open, which claim you inferred rather than read, what you could not check. Without it an agent handed only this vault treats every silence as a settled negative. Say it plainly: patch_concept({slug:"${slug}", body:"…\\n\\n## Uncertainty\\n\\n- <what you did not read or could not check>\\n"}). \`## Open questions\`, \`## Unknowns\`, \`## Not checked\` and \`## Confidence\` are read as the same section, and this is also where an \`Excludes\` bullet belongs once you notice it was an evidence limit rather than a product boundary.`;
 }

@@ -1,5 +1,4 @@
 // `ontology-atlas workspace-brief [vault]` — first-contact + next actions.
-// MCP `query_ontology({operation: 'workspace_brief'})` thin wrapper.
 
 import { COLORS, KIND_COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';

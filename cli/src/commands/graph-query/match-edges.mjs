@@ -1,6 +1,3 @@
-// `ontology-atlas match-edges [vault]` — graph DB-style edge scan.
-// MCP `query_ontology({operation: 'match_edges'})` thin wrapper.
-
 import { COLORS, KIND_COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import { assertMatchEdgesShape } from '../../lib/query-result-contract/match-queries.mjs';

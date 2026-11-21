@@ -1,5 +1,5 @@
 import { COLORS } from '../../lib/colors.mjs';
-import { resolve, relative, basename, join, sep } from 'node:path';
+import { resolve, relative, basename, join } from 'node:path';
 import { readFileSync, statSync, readdirSync, existsSync } from 'node:fs';
 import { preflightWriteDoc, writeDoc, slugToPath } from '../../lib/vault-files/write-vault.mjs';
 import { parseFrontmatter } from '../../lib/mcp-bridge/parse-frontmatter.mjs';
@@ -351,6 +351,3 @@ function printImportUsage(stream = process.stderr) {
       `  ontology-atlas import ./incoming/ --vault . --rename --dry-run\n`,
   );
 }
-
-// Explicit use so ESLint does not flag it as dead code (sep is future-proofing for log path normalisation).
-void sep;

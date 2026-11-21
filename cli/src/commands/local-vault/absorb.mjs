@@ -178,7 +178,6 @@ function runAbsorbWithRuntime(args, runtime) {
       throw error;
     }
 
-    // Local-only telemetry baseline (lib/telemetry.mjs).
     stampAbsorbWriteCompleted(vaultPath);
 
     process.stdout.write(

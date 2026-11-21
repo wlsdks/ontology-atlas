@@ -15,7 +15,6 @@ const ALLOWED_FLAGS = ['--dir', '--force', '--uninstall', '--json'];
 /** Marks a shim as ours. `--uninstall` refuses to delete a file without it. */
 export const SHIM_SIGNATURE = '# ontology-atlas shim — safe to delete';
 
-/** The entrypoint this shim should run, resolved from where this file actually lives. */
 export function cliEntrypoint() {
   return resolve(fileURLToPath(new URL('../../index.mjs', import.meta.url)));
 }
@@ -59,7 +58,6 @@ export function inspectTarget(path) {
   return text.includes(SHIM_SIGNATURE) ? { state: 'ours', text } : { state: 'foreign', text };
 }
 
-/** True when the directory is already on PATH, so the caller can say whether a restart is needed. */
 export function onPath(dir, pathEnv = process.env.PATH ?? '') {
   return pathEnv.split(':').filter(Boolean).some((entry) => resolve(entry) === resolve(dir));
 }

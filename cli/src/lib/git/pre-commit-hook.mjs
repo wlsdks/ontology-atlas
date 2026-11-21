@@ -27,7 +27,7 @@ export function hasManagedPreCommitBlock(content) {
 }
 
 /**
- * @param {string|null|undefined} existingContent  current hook file content, or nullish if absent
+ * @param {string|null|undefined} existingContent
  * @returns {{ content: string, action: 'created' | 'appended' | 'already-installed' }}
  */
 export function buildPreCommitHookContent(existingContent) {

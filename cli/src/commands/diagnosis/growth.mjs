@@ -1,6 +1,3 @@
-// `ontology-atlas growth [vault]` — graph growth candidate dashboard.
-// MCP `query_ontology({operation: 'growth_plan'})` thin wrapper.
-
 import { COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import { assertGrowthPlanShape } from '../../lib/query-result-contract/maintenance-growth.mjs';

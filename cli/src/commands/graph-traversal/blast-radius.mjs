@@ -1,6 +1,4 @@
-// `ontology-atlas blast-radius <slug> [vault] [--depth N] [--direction]`
 // What breaks if this node changes — declared depends_on only, structure excluded.
-// Thin wrapper over MCP `query_ontology({operation: 'blast_radius'})`.
 
 import { COLORS, KIND_COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';

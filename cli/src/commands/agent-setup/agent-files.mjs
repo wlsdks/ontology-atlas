@@ -16,7 +16,6 @@ import {
 
 const ALLOWED_FLAGS = ['--root', '--json', '--english-only'];
 
-/** Root-level single-file candidates. */
 const ROOT_FILE_CANDIDATES = Object.freeze([
   'CLAUDE.md',
   'AGENTS.md',

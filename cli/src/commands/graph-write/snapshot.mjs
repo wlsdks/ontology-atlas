@@ -113,9 +113,6 @@ export async function runSnapshot(args) {
   }
 
   const untrackedPaths = rows.filter((r) => r.index === '?' && r.worktree === '?').map((r) => r.path);
-  // Turns a commit throw (a pre-commit hook refusing, a gpg signing failure, a
-  // merge or rebase in progress) into one line of cause plus the next action,
-  // rather than a raw stack trace.
   try {
     addPaths({ repoRoot, paths: untrackedPaths });
     commitPathspec({ repoRoot, pathspec, message: fullMessage });
@@ -275,7 +272,6 @@ function emitHistory({ json, vaultRoot, repoRoot, pathspec, limit }) {
   return 0;
 }
 
-// `snapshot --diff` — preview of uncommitted changes in the vault scope (file list + diff).
 function emitDiff({ json, vaultRoot, repoRoot, pathspec }) {
   const rows = getPorcelainStatus({ repoRoot, pathspec });
   if (rows === null) {

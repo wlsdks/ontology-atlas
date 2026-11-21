@@ -90,7 +90,6 @@ function parsePorcelain(out) {
   return rows;
 }
 
-/** Classifies one porcelain row as 'added' | 'modified' | 'deleted' | 'renamed'. */
 export function classifyChange(row) {
   if (row.index === 'D' || row.worktree === 'D') return 'deleted';
   if (row.index === 'R') return 'renamed';
@@ -176,10 +175,6 @@ export function addPaths({ repoRoot, paths, run = defaultRun }) {
   run(['add', '--', ...paths], repoRoot);
 }
 
-/**
- * Pathspec-scoped partial commit — commits the vault's range without touching
- * changes already staged outside it (see the module header).
- */
 export function commitPathspec({ repoRoot, pathspec, message, run = defaultRun }) {
   run(['commit', '-m', message, '--', pathspec], repoRoot);
 }
@@ -215,7 +210,6 @@ export function getRemoteUrl({ repoRoot, remoteName, run = defaultRun }) {
 // commitPathspec / pushCurrentBranch / pullCurrentBranch propagate execFileSync's throw; the command
 // wrapper hands it to `classifyGitError`, which turns it into one line of cause plus the next action.
 
-/** Joins an execFileSync error's stderr/stdout/message into one string. */
 function gitErrorText(err) {
   if (!err) return '';
   const parts = [];
@@ -254,7 +248,6 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
     };
   }
 
-  // gpg signing failed
   if (
     text.includes('gpg failed to sign') ||
     text.includes('signing failed') ||
@@ -282,7 +275,6 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
     };
   }
 
-  // pull: conflict
   if (text.includes('conflict') || text.includes('automatic merge failed')) {
     return {
       reason: 'pull-conflict',
@@ -292,7 +284,6 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
     };
   }
 
-  // uncommitted local changes are at risk of being overwritten by the pull
   if (text.includes('would be overwritten') || text.includes('overwritten by merge')) {
     return {
       reason: 'local-changes',
@@ -302,7 +293,6 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
     };
   }
 
-  // pull: no remote or tracking information
   if (
     text.includes('no tracking information') ||
     text.includes("couldn't find remote ref") ||
@@ -316,7 +306,6 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
     };
   }
 
-  // pre-commit / commit-msg hook refused (the hook left "hook"/"pre-commit" behind)
   if (text.includes('pre-commit') || text.includes('commit-msg') || text.includes('hook')) {
     return {
       reason: 'pre-commit-hook',

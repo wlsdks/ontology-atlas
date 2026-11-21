@@ -24,7 +24,6 @@ export const WIKI_FOLDER_CODES = Object.freeze([
 const FOLDER = new Set(WIKI_FOLDER_CODES);
 const ADVISORY = new Set(WIKI_ADVISORY_CODES);
 
-/** Whether a code describes the folder's shape rather than one page's own text. */
 export function isWikiFolderCode(code) {
   return FOLDER.has(wikiFindingCode(code));
 }

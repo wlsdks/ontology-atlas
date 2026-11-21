@@ -14,10 +14,8 @@ import { formatUnknownFlagError, parsePositiveIntegerFlag, parseVaultFlag, resol
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require_ = createRequire(import.meta.url);
 const ALLOWED_FLAGS = ['--vault', '--timeout-ms'];
-/*
- * About 2.5x the 12.6s a bare `mcp-verify docs/ontology` took on an Apple Silicon laptop: the timeout
- * catches a hung server, not a slow one, and a tighter budget blocked a release on the x64 runner.
- */
+// About 2.5x a bare `mcp-verify docs/ontology` run (12.6s, Apple Silicon): it catches a hung
+// server, not a slow one, and leaves room for the slower x64 runner.
 const DEFAULT_VERIFY_TIMEOUT_MS = 30_000;
 const DEFAULT_VERIFY_KILL_GRACE_MS = 1_000;
 

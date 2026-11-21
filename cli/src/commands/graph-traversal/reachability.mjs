@@ -1,6 +1,3 @@
-// `ontology-atlas reachability <slug> [vault]` — transitive graph traversal.
-// MCP `query_ontology({operation: 'reachability'})` thin wrapper.
-
 import { COLORS, KIND_COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import { assertReachabilityShape } from '../../lib/query-result-contract/graph-traversal.mjs';

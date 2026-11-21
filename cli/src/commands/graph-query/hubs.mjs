@@ -1,6 +1,3 @@
-// `ontology-atlas hubs [vault]` — hub node ranking by centrality.
-// Thin wrapper over MCP `query_ontology({operation: 'centrality'})`.
-
 import { COLORS, KIND_COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import { assertCentralityShape } from '../../lib/query-result-contract/overview-queries.mjs';
