@@ -1,6 +1,6 @@
 "use client";
 
-import type { ExpandPreference } from "@/shared/lib/preferences/appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
 import {
   useCallback,
   useRef

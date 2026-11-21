@@ -9,7 +9,7 @@ import { cn } from '@/shared/lib/cn';
 import { useRovingRadioGroup } from '@/shared/lib/keyboard/use-roving-radio-group';
 import { controlClass } from '@/shared/ui/control-class';
 import { transientSurface } from '@/shared/ui/surfaces/transient-surface';
-import { useMapView, writeMapView } from '@/shared/lib/preferences/appearance-preferences';
+import { useMapView, writeMapView } from '@/shared/lib/preferences/map-view-preferences';
 import type { MapLayoutView } from '@/shared/lib/map-canvas/map-layout-morph-store';
 
 /**

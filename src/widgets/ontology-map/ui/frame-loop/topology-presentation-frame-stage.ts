@@ -1,6 +1,9 @@
 import type { DialWorld } from '../../dial/types';
 import type { PanelInsets } from "../../interaction/free-area";
-import type { CanvasBackground, ExpandPreference, FootprintPreference, MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
+import type { CanvasBackground } from "@/shared/lib/preferences/canvas-appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
+import type { FootprintPreference } from "@/shared/lib/preferences/footprint-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import type { FootprintInk } from "@/shared/lib/map-canvas/footprint-glyph";
 import {
   type RefObject

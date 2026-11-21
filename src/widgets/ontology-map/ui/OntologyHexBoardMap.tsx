@@ -5,7 +5,10 @@ import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canva
 import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import type { Rect } from "../interaction/free-area";
-import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import {
+  DEFAULT_MAP_NAVIGATION_SPEED,
+  type MapNavigationSpeed,
+} from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import { listenForGesturePinch } from "../interaction/gesture-pinch";
 import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
 import { computeWheelZoomFactor, createPinchWheelStream, normalizeWheelDeltaY, readPinchWheel, shouldIgnoreWheelGlide } from "../interaction/wheel";

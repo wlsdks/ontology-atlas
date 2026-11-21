@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { LibrarySourceRow } from "@/entities/docs-vault";
-import { writeLibraryIndexCollapsed } from "@/shared/lib/preferences/appearance-preferences";
+import { writeLibraryIndexCollapsed } from "@/shared/lib/preferences/library-preferences";
 
 import type { useLibraryIndexColumn } from "./use-library-index-column";
 

@@ -13,7 +13,7 @@ import {
   type ExpandAffordance,
   type ExpandPreference,
   type ExpandStructure,
-} from '@/shared/lib/preferences/appearance-preferences';
+} from '@/shared/lib/preferences/expand-preferences';
 import { Chip } from '@/shared/ui/controls/controls';
 import { RowDisclosure } from '@/shared/ui/controls/row-disclosure';
 import { Choice, DETAIL_TOGGLE_CHIP, Slider } from '../settings-primitives';

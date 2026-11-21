@@ -24,7 +24,7 @@ import {
   writeLibraryIndexQuery,
   writeLibraryIndexSegment,
   type LibraryIndexSegment,
-} from "@/shared/lib/preferences/appearance-preferences";
+} from "@/shared/lib/preferences/library-preferences";
 
 import { isAdvisoryWikiCode, isWikiFolderCode, libraryOffTemplateCount, passageLabelText } from "@/features/library";
 import { captionWindow } from "../../../lib/sources/caption-window";
@@ -343,7 +343,7 @@ export function LibrarySection({
    * `use-source-search.ts` owns that read.
    */
   /*
-   * The field comes back holding what was typed; `appearance-preferences.ts` owns the slot and why it
+   * The field comes back holding what was typed; `library-preferences.ts` owns the slot and why it
    * is scoped to the folder and kept in session storage.
    */
   const [query, setQuery] = useState(() => readLibraryIndexQuery(vaultScope));

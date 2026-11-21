@@ -1,4 +1,4 @@
-import type { ExpandStructure } from "@/shared/lib/preferences/appearance-preferences";
+import type { ExpandStructure } from "@/shared/lib/preferences/expand-preferences";
 import type { MapLayoutMark, MapLayoutMarkShape, MapLayoutView } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { lastDialFrame } from "../dial/frame/frame";
 import { smoothstep } from "../dial/frame/disclosure";

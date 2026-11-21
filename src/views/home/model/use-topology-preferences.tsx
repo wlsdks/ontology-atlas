@@ -1,6 +1,22 @@
 
 import { useRelationVocabulary } from "@/entities/knowledge-graph";
-import { useCanvasBackground, useExpand, useFootprint, useDomainStructure, useGlyphSet, useHexBoard, useMapDragSpeed, useMapView, useMapZoomSpeed, useView3d, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import {
+  useCanvasBackground,
+  useGlyphSet,
+} from "@/shared/lib/preferences/canvas-appearance-preferences";
+import { useExpand } from "@/shared/lib/preferences/expand-preferences";
+import { useFootprint } from "@/shared/lib/preferences/footprint-preferences";
+import {
+  useMapDragSpeed,
+  useMapZoomSpeed,
+  type MapNavigationSpeed,
+} from "@/shared/lib/preferences/map-navigation-speed-preferences";
+import {
+  useDomainStructure,
+  useHexBoard,
+  useMapView,
+  useView3d,
+} from "@/shared/lib/preferences/map-view-preferences";
 import { useAudiencePlain } from "@/shared/lib/preferences/audience-preference";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { useLocale, useTranslations } from "next-intl";

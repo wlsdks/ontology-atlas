@@ -33,7 +33,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useVaultLoadProgress } from "@/entities/vault-session";
 import { mapLabelText, useBodyLabelFont } from "../../model/map-canvas/use-body-label-font";
 import { useFlatRingMemory } from "../../model/map-canvas/use-flat-ring-memory";
-import { readHexRelief } from "@/shared/lib/preferences/appearance-preferences";
+import { readHexRelief } from "@/shared/lib/preferences/map-view-preferences";
 import { readHexPlacement } from "../../model/map-canvas/hex-board-placement-store";
 import { useMapEvidenceStates } from "@/features/vault-ontology";
 import { useMapLayoutMorph } from "../../model/map-canvas/use-map-layout-morph";

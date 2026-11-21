@@ -1,7 +1,7 @@
 import { AgentActivityChip } from "@/features/agent-activity";
 import { buildConstellationAgentPrompt } from "@/features/saved-constellations";
 import { Link } from "@/i18n/navigation";
-import { writeMapView } from "@/shared/lib/preferences/appearance-preferences";
+import { writeMapView } from "@/shared/lib/preferences/map-view-preferences";
 import { armMapLayoutMorph } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { VAULT_AGENT_PANEL_ID } from "@/shared/config/agent/agent-panel";
 import { withBasePath } from "@/shared/lib/public-pages/base-path";
