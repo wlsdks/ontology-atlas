@@ -1673,10 +1673,29 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests the landing tests when a module the lander is built from changes', () => {
+    for (const path of ['scripts/lib/landing/pr-land/landing-lock.mjs', 'scripts/lib/landing/pr-land/landing-lock.test.mjs', 'scripts/lib/landing/pr-land/fake-github.mjs']) {
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes('pnpm test:pr:land'), `${path} must recommend the landing tests`);
+    }
+  });
+
+  it('suggests the desktop checker tests when the release-status entry or a module changes', () => {
+    for (const path of [
+      'scripts/desktop-release/check-macos-release-status.mjs',
+      'scripts/desktop-release/check-macos-release-status.test.mjs',
+      'scripts/desktop-release/release-status/status-report.mjs',
+      'scripts/desktop-release/release-status/status-report.test.mjs',
+    ]) {
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes('pnpm test:desktop:check'), `${path} must recommend the desktop checker tests`);
+    }
+  });
+
   it('routes every CI impact surface to its planner and executor contract', () => {
     const paths = [
       'scripts/ci/classify-change.mjs',
       'scripts/ci/classify-change.test.mjs',
+      'scripts/ci/plan-base.mjs',
+      'scripts/ci/plan-base.test.mjs',
       'scripts/ci/run-ci-lane.mjs',
       'scripts/ci/run-ci-lane.test.mjs',
       'scripts/lib/ci/focused-check-suggestions.mjs',

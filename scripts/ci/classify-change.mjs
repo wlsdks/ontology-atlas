@@ -10,6 +10,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
+import { comparableBranch, usablePushBefore } from './plan-base.mjs';
 import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
 import { importClosure, loadTestReach } from '../lib/import-graph/test-reach.mjs';
 import { packageScriptFiles } from '../lib/ci/package-script-files.mjs';
@@ -854,14 +855,14 @@ if (process.argv[1]?.endsWith('classify-change.mjs')) {
   let base;
   if (eventName === 'push') {
     try {
-      const before = process.env.PUSH_BEFORE;
-      if (!/^[a-f0-9]{40}$/.test(before ?? '') || /^0+$/.test(before)) throw new Error('missing push base');
+      const before = usablePushBefore(process.env.PUSH_BEFORE);
+      if (!before) throw new Error('missing push base');
       base = git(['rev-parse', '--verify', `${before}^{commit}`]);
       git(['merge-base', '--is-ancestor', base, 'HEAD']);
     } catch { base = null; }
   } else if (eventName === 'workflow_dispatch') {
     // Only an explicit, plain branch name compares; anything else stays an exhaustive run.
-    base = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$/.test(compareTo) && !compareTo.includes('..')
+    base = comparableBranch(compareTo)
       ? resolveBase(`origin/${compareTo}`, { fallback: false })
       : null;
   } else {

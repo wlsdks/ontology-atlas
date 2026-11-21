@@ -14,7 +14,7 @@ export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
   /^scripts\/(?:lib\/)?ci\/reviewed-main-push(?:\.test)?\.mjs$/,
   /^scripts\/lib\/ci\/package-script-files(?:\.test)?\.mjs$/,
   /^scripts\/fixtures\/reviewed-main-push\.json$/,
-  /^scripts\/ci\/classify-change(?:\.test)?\.mjs$/,
+  /^scripts\/ci\/(?:classify-change|plan-base)(?:\.test)?\.mjs$/,
   /^scripts\/ci\/run-ci-lane(?:\.test)?\.mjs$/,
   /^scripts\/ci\/merge-smoke-specs\.mjs$/,
   /^scripts\/lib\/ci\/focused-check-suggestions(?:\.test)?\.mjs$/,
@@ -55,7 +55,7 @@ export const rules = [
     order: 80,
     command: 'pnpm test:pr:land',
     reason: 'the landing sequence or its state machine changed',
-    matches: [/^scripts\/landing\/pr-land(?:\.test)?\.mjs$/, /^scripts\/lib\/landing\/landing-train(?:\.test)?\.mjs$/],
+    matches: [/^scripts\/landing\/pr-land(?:\.test)?\.mjs$/, /^scripts\/lib\/landing\/landing-train(?:\.test)?\.mjs$/, /^scripts\/lib\/landing\/pr-land\//],
   },
   {
     order: 640,
