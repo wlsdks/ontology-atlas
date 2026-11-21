@@ -115,7 +115,35 @@
       "stageTryAsk": "질문해 보기",
       "stageDismiss": "닫기",
       "passagesRecorded": "구절 {count, number}개 기록",
-      "downloadChecking": "받아 둔 부분을 확인하는 중"
+      "downloadChecking": "받아 둔 부분을 확인하는 중",
+      "guide": {
+        "title": "의미 검색을 켜면 이렇게 돼요",
+        "body": "표현이 다르거나 언어가 달라도 같은 뜻의 구절을 찾아요. 모델은 이 컴퓨터에서 돌고, 폴더 내용은 밖으로 나가지 않아요.",
+        "sample": "예시",
+        "caption": "지어낸 파일로 만든 예시예요. 실제 모델 다운로드는 몇 분 걸려요.",
+        "later": "나중에",
+        "start": "같이 설정하기",
+        "question": "카드 결제가 거절되면 주문은 어떻게 돼?",
+        "line": "{line, number}행"
+      },
+      "wizard": {
+        "stepIntro": "하는 일",
+        "stepChoose": "모델 고르기",
+        "stepRun": "준비",
+        "introTitle": "세 단계로, 모두 이 컴퓨터에서",
+        "download": "모델 받기",
+        "downloadNeeded": "{model} 모델을 {hosts}에서 한 번만 받아요: {size}. 끊겨도 받은 데서 이어서 받아요.",
+        "downloadKept": "{model} 모델이 이미 이 컴퓨터에 있어요. 받을 것이 없어요.",
+        "runnerToo": "Ollama에 있는 모델 {count, number}개도 다음 단계에서 고를 수 있어요. 받을 것 없이 바로 시작해요.",
+        "fit": "이 컴퓨터에 맞추기",
+        "fitBody": "받은 모델을 이 컴퓨터에서 빠르게 돌도록 한 번 바꿔 둬요. Ollama 모델은 건너뛰어요.",
+        "read": "파일 읽기",
+        "readBody": "Markdown 파일 {files, number}개의 구절마다 뜻을 숫자로 기록해 이 컴퓨터의 캐시 폴더에 둬요. 폴더 내용은 어디로도 보내지 않아요.",
+        "room": "여유 공간 {free} · 필요 {needed}",
+        "next": "다음: 모델 고르기",
+        "back": "이전",
+        "afterStart": "진행은 질문 칸 아래에서 볼 수 있고, 그동안 하던 일을 계속해도 돼요."
+      }
     },
     "title": "질문하고, 원문에서 확인하세요.",
     "browse": "페이지 둘러보기",
