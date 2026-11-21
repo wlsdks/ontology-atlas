@@ -252,21 +252,22 @@ the right pane is the progress band over the Sources overview** (2026-11-21,
 `docs/specs/2026-11-21-library-sources-redesign.md`; decision `docs/records/decisions/2026-11-21-library-sources-home-replaces-graph-ae902a78-d4ff-4e23-b6f9-9e34382bff9a.md`);
 in Wiki it is the question desk. A folder with wiki pages and no source shows the empty
 folder's start stage there. When the folder has a source, the **progress band**
-(`docs/specs/2026-11-19-source-progress.md`) stands on top of the overview, at most 112px tall from `md` up, in four cells. The number: the percent of sources that
+(`docs/specs/2026-11-19-source-progress.md`) stands on top of the overview, at most 112px tall from `md` up, in four cells whose tops share one line (the number, the bar's middle, the chart's title and the button). The number: the percent of sources that
 have a wiki page, rounded down (a share above 0 and under 1% reads `under 1%`), with today's additions on
 its baseline, and under it the sentence in primary ink on one line; it carries a `title` only
 when the line is cut. The bar: a 6px state bar, each state in its own `SOURCE_STATE_INK` (has a
-page in the page ink, read in part hatched, needs review in amber, checking and can't read in
+page in the page ink, read in part hatched, changed after its wiki page in amber, checking and can't read in
 their own inks, no page grey), 280–560px wide, and under it one row of state presses in bar order, each a
 swatch, its word and a count, ending in a clear press (an × named `Show all N`) whose slot is held
 from the first paint, so a press resizes nothing in the band. With one state the row stays empty.
 A press shows only that state's rows in the index, combined with
 the search; pressing it again, the clear press, or Escape clears it, and a press while the
 column is folded unfolds it. The chart: a cumulative step chart by the `compiled_at` each page
-records, at most 26rem wide and captioned with its first date and today, whose Left and Right keys
+records, at most 26rem wide, titled with what it counts and captioned with its first date and today's count, whose Left and Right keys
 read each point, drawn only from three recorded days; without it the bar takes the room. The
 action: the press that writes the next 10 waiting sources (3 on the local model), with how many
-wait after them or how many came back without a page, and in the app one work line under it
+came back without a page or, otherwise, one line naming the connected agent that writes them (how
+many wait after the press is the overview panel's foot), and in the app one work line under it
 whose slot is held from the first paint: a running mark only while work happens, the kind of
 work, the file's name (its path is the title) as a press that opens it, and `Recent N`, which opens the last three in an
 anchored list. On the web, where nothing can write, one line says only the app writes pages and
@@ -280,13 +281,17 @@ sends exactly those. **Under the band is the Sources overview**
 no canvas: on the left a table with one row per first-level folder under `sources/` (per file
 type when there are fewer than two folders; a switch picks either), each row its name, its
 source count, a state bar in the band's inks with its share, how many wait, and the day of its
-latest wiki page; under the table the five pages written last, each with the source it came
-from; on the right the files the band's write button sends next, in its order. Rows arrive as
+latest wiki page; under the table the five pages written last, each a light written sheet with the source it came
+from and its date on one line; on the right the files the band's write button sends next, in its
+order, each marked only when its state is not the panel's usual no-page, under the press's
+explanation and, in the app, what leaves the computer: Atlas sends sources nowhere, and an agent
+given a page to write or a question reads the sources it needs, which may reach that agent's
+service. A short window scrolls the list, never that text or the foot. Rows arrive as
 the folder is read, sort by a header press and hold their order while a batch runs. Pressing a
 row tints it, gives the panel that folder's waiting files, and narrows the index list with a
 `Folder: name` chip; the chip's ×, the row again or Escape clears it. The index list marks each
 waiting file with one dot in its state's ink (the word in its title and for a screen reader),
-a file with a page with nothing, and a `Waiting sources` key above the list. **The Library's doors are in the page
+a file with a page with nothing; the band's legend names the dots. **The Library's doors are in the page
 header**, left of the info glyph, as 36px chrome pills: `How to use`, the saved questions,
 `Conversation`, and `Review updated answer` while a proposal waits; below `lg` they fold into
 More. Every Sources and Wiki state carries exactly one Conversation control and one Questions
@@ -416,8 +421,8 @@ One `SegmentedControl` at the top of the column now names both lists with their 
 *Sources 7 | Wiki 7*, 32px, equal 125px halves at 280px in both locales — and the column
 draws **one** of them. The inactive list is not in the document: `hidden` would keep its
 rows in the tab order and its doors reachable from a keyboard while nothing on screen named
-them. The doors travel with the list — Add files, Find documents and Bring from a service
-on Sources; Check the wiki, Compile and the brain picker on Wiki — and the section eyebrow
+them. The doors travel with the list — on Sources, Add files as one full-width chip over Find
+documents and Bring from a service as two quiet rows on the same text line; Check the wiki, Compile and the brain picker on Wiki — and the section eyebrow
 is gone, because a head repeating *SOURCES · 7* under a segment reading *Sources 7* is the
 same fact twice. The choice is remembered per machine
 (`atlas.library.index-segment`), and opening a file from the home, from the guide or from a

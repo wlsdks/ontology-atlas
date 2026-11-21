@@ -495,13 +495,25 @@ describe('checks main does not require', () => {
     assert.deepEqual(otherCheckState({ rollup: failedNotCancelled, requiredContexts: REQUIRED_CONTEXTS }).failed.map((c) => c.name), ['Old red lane']);
   });
 
-  it('treats a skipped or still-running unrequired lane as no failure', () => {
+  it('treats a skipped unrequired lane as no failure', () => {
     const rollup = [
       ...REQUIRED_CONTEXTS.map((name) => ({ name, status: 'COMPLETED', conclusion: 'SUCCESS' })),
       { name: 'inactive lane', status: 'COMPLETED', conclusion: 'SKIPPED' },
-      { name: 'still going', status: 'IN_PROGRESS', conclusion: '' },
     ];
     assert.equal(otherCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS }).state, 'clear');
+    assert.equal(trainStep(rollup).action, 'green');
+  });
+
+  it('waits for an unrequired lane still running after every required context is green', () => {
+    const rollup = [
+      ...REQUIRED_CONTEXTS.map((name) => ({ name, status: 'COMPLETED', conclusion: 'SUCCESS' })),
+      { name: 'Verify unsigned Windows x64 beta', status: 'IN_PROGRESS', conclusion: '' },
+    ];
+    const other = otherCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS });
+    assert.equal(other.state, 'running');
+    assert.deepEqual(other.running, ['Verify unsigned Windows x64 beta']);
+    assert.equal(trainStep(rollup).action, 'wait');
+    assert.equal(trainStep(rollup, { allowFailing: ['Verify unsigned Windows x64 beta'] }).action, 'green');
   });
 });
 

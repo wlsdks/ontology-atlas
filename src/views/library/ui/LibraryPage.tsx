@@ -771,6 +771,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                       className="w-full"
                     />
                   ) : null}
+                  agentName={agent.runtime?.label ?? null}
                   locale={locale}
                   t={t}
                 />

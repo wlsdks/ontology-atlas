@@ -72,7 +72,7 @@ export function SourceStateBar({
   });
 
   return (
-    <span className={cn("flex w-full min-w-0 items-center gap-3.5", className)} title={title}>
+    <span className={cn("flex w-full min-w-0 items-center gap-2.5", className)} title={title}>
       <span aria-hidden data-testid="sources-row-bar" className="relative block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full">
         {SOURCE_STATE_ORDER.map((state, i) => (
           <span
@@ -86,7 +86,7 @@ export function SourceStateBar({
           />
         ))}
       </span>
-      <span ref={shareRef} data-testid="sources-row-share" className="w-11 flex-none text-right tabular-nums text-[color:var(--color-text-primary)]">
+      <span ref={shareRef} data-testid="sources-row-share" className="w-9 flex-none text-right tabular-nums text-[color:var(--color-text-primary)]">
         {firstShare}
       </span>
     </span>

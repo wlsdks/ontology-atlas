@@ -54,7 +54,7 @@ it.
 | 15 | I-5: Ontology column metrics | index-column | Not started | None |
 | 16 | P-2 to P-7 | this file | Not started | 7, 9 |
 | 17 | Re-measure Library memory and frames | performance-strategy | Not started | 6, 10 |
-| 18 | S-4: Sources home clarity (below) | this file | Not started | 9 |
+| 18 | S-4: Sources home clarity (below) | this file | In review (#3770) | 9 |
 
 Row 8 ran on 2026-11-21 (installed app, 40 sources and 24 pages); row 18 is what it found.
 
@@ -136,3 +136,6 @@ separately.
 - 2026-11-21: row 9 (F3) opened as draft #3761: the ko and ja source word sweep and the
   `sourceWord` row.
 - 2026-11-21: row 9 merged; row 11 widened and row 11b added for documents already in the folder.
+- 2026-11-21: S-4 built with the owner's detail polish (sheet scale, icon steps, panel badges,
+  index tools, band grid); the stale state is named for the event, and its press lists those
+  sources. Row 18 is in review.

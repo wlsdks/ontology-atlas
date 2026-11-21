@@ -251,19 +251,6 @@ const INDEX_CHIP_TIP = {
   panelClassName: "max-w-[min(20rem,calc(100vw-2rem))] [word-break:keep-all]",
 } as const;
 
-/**
- * The same, for a chip in the **left** cell of `SectionActions`' two-column grid.
- *
- * Hung from that chip's own right edge the panel landed on its neighbour, measured at
- * x 208 over *Find documents*. The margin carries it across the right cell and the
- * column gap to the column's edge, derived from `SectionActions`' `px-3` and `gap-1`,
- * so it opens where the full-width chips' panels open: beside the column, not on it.
- */
-const INDEX_LEFT_CELL_TIP = {
-  ...INDEX_CHIP_TIP,
-  panelClassName: `${INDEX_CHIP_TIP.panelClassName} ml-[calc((var(--docs-list-width)-1.75rem)/2+0.25rem)]`,
-} as const;
-
 /*
  * One box edge and one text line for every control in the column: boxes stand on the column's `px-3`
  * edge, and content starts after the same 1px edge, 10px pad and 16px glyph slot (`IndexGlyph`). The
@@ -271,6 +258,8 @@ const INDEX_LEFT_CELL_TIP = {
  */
 const INDEX_LIST_INSET = "px-3";
 const INDEX_ROW_INSET = "gap-1.5 border border-transparent px-2.5 py-1.5";
+/** A quiet door on the row text line, on the 28px step under a 32px primary. */
+const INDEX_QUIET_INSET = "gap-1.5 border border-transparent px-2.5 py-0.5";
 /**
  * A caption with no glyph of its own still starts on the text line: it takes a control's transparent
  * edge, pad and gap and leads with an empty `IndexGlyph`.
@@ -431,7 +420,6 @@ export function LibrarySection({
         : visibleSources,
     [groupFilter, stateFilter, visibleSources],
   );
-  const anyWaiting = useMemo(() => model.sources.some((row) => row.state !== "compiled"), [model.sources]);
   const [sourceWindow, sourceListRef, scrollToSource] = useWindowedRows({ count: listedSources.length, estimate: SOURCE_ROW_ESTIMATE_PX });
   const sourceRoving = useRovingRows({ count: listedSources.length, listRef: sourceListRef, scrollToRow: scrollToSource, rendered: sourceWindow });
   const { onRowFocus: sourceRowFocus } = sourceRoving;
@@ -598,14 +586,15 @@ export function LibrarySection({
          section that could shrink is a section that can cut a row in half. */
       <section data-testid="library-sources" className={cn("flex flex-col pb-1", searchHost ? "pt-1.5" : "pt-3")}>
         {searchHost && searchField ? createPortal(searchField, searchHost) : searchField}
-        <SectionActions>
-          <Tooltip content={t("sources.addTooltip")} {...INDEX_LEFT_CELL_TIP}>
+        {/* One clear primary, then two quiet doors on the same text line, each at full width so no label is cut. */}
+        <div data-testid="library-source-actions" className="flex flex-col gap-0.5 px-3 pb-2">
+          <Tooltip content={t("sources.addTooltip")} {...INDEX_CHIP_TIP}>
             <Chip
               data-testid="library-add-files"
               aria-busy={addFilesFeedback === 'working' || undefined}
               onClick={onAddFiles}
               disabled={busy}
-              tone="muted"
+              tone="secondary"
               className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
             >
               <IndexGlyph><ActionFeedbackGlyph state={addFilesFeedback} icon={<FilePlus2 size={ICON_SIZE.sm} aria-hidden />} size={ICON_SIZE.sm} /></IndexGlyph>
@@ -613,60 +602,58 @@ export function LibrarySection({
             </Chip>
           </Tooltip>
           <Tooltip content={t("sources.findTooltip")} {...INDEX_CHIP_TIP}>
-            <Chip
+            <RowButton
               data-testid="library-find-documents"
               onClick={(event) => {
                 event.currentTarget.focus({ preventScroll: true });
                 onFindDocuments();
               }}
               disabled={busy}
-              tone="muted"
-              className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
+              size="sm"
+              tone="default"
+              hoverSurface="lift"
+              hoverInk="strong"
+              className={cn("w-full justify-start", INDEX_QUIET_INSET)}
             >
               <IndexGlyph><Search size={ICON_SIZE.sm} aria-hidden /></IndexGlyph>
               <span className="min-w-0 truncate">{t("sources.find")}</span>
-            </Chip>
+            </RowButton>
           </Tooltip>
           <Tooltip content={t("sources.importTooltip")} {...INDEX_CHIP_TIP}>
-            <Chip
+            <RowButton
               data-testid="library-import-open"
               onClick={(event) => {
                 event.currentTarget.focus({ preventScroll: true });
                 onImportFromService();
               }}
               disabled={busy}
-              tone="muted"
-              className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
+              size="sm"
+              tone="default"
+              hoverSurface="lift"
+              hoverInk="strong"
+              className={cn("w-full justify-start", INDEX_QUIET_INSET)}
             >
               <IndexGlyph><CloudDownload size={ICON_SIZE.sm} aria-hidden /></IndexGlyph>
               <span className="min-w-0 truncate">{t("sources.import")}</span>
-            </Chip>
+            </RowButton>
           </Tooltip>
-        </SectionActions>
+        </div>
 
         {hasSources ? (
           <>
-            {groupFilter || anyWaiting ? (
+            {groupFilter ? (
               <div data-testid="library-source-list-head" className={`flex h-7 items-center gap-2 ${INDEX_LIST_INSET}`}>
-                {groupFilter ? (
-                  <Chip
-                    data-testid="library-source-group-chip"
-                    onClick={groupFilter.onClear}
-                    title={t("sourcesHome.panel.clear")}
-                    aria-label={`${groupFilter.label} · ${t("sourcesHome.panel.clear")}`}
-                    tone="muted"
-                    className="min-w-0 max-w-full gap-1 hover:text-[color:var(--color-text-primary)]"
-                  >
-                    <span className="min-w-0 truncate">{groupFilter.label}</span>
-                    <X size={ICON_SIZE.sm} aria-hidden className="flex-none" />
-                  </Chip>
-                ) : null}
-                {anyWaiting ? (
-                  <span data-testid="library-source-list-key" className="ml-auto flex flex-none items-center gap-1.5 text-label text-[color:var(--color-text-tertiary)]">
-                    <span aria-hidden className="size-1.5 rounded-full" style={{ background: SOURCE_STATE_INK["not-compiled"] }} />
-                    {t("sourcesHome.listKey")}
-                  </span>
-                ) : null}
+                <Chip
+                  data-testid="library-source-group-chip"
+                  onClick={groupFilter.onClear}
+                  title={t("sourcesHome.panel.clear")}
+                  aria-label={`${groupFilter.label} · ${t("sourcesHome.panel.clear")}`}
+                  tone="muted"
+                  className="min-w-0 max-w-full gap-1 hover:text-[color:var(--color-text-primary)]"
+                >
+                  <span className="min-w-0 truncate">{groupFilter.label}</span>
+                  <X size={ICON_SIZE.sm} aria-hidden className="flex-none" />
+                </Chip>
               </div>
             ) : null}
             <ul
@@ -743,7 +730,7 @@ export function LibrarySection({
                           title={stateLabel}
                           className="flex size-4 flex-none items-center justify-center"
                         >
-                          <span aria-hidden className="size-1.5 rounded-full" style={{ background: SOURCE_STATE_INK[row.state] }} />
+                          <span aria-hidden className="size-2 rounded-full" style={{ background: SOURCE_STATE_INK[row.state] }} />
                           <span className="sr-only">{stateLabel}</span>
                         </span>
                       )}

@@ -18,9 +18,14 @@ const UNMEASURED_ROWS = 12;
 /** Rows kept above and below the viewport. */
 const OVERSCAN_ROWS = 6;
 
-/** The columns, and the container width under which the latest-page column steps aside. */
+/**
+ * The columns, and the container width under which the latest-page column steps aside. The waiting
+ * column is only as wide as a four-digit count, so bar, share and waiting read as one group.
+ */
 export const TABLE_GRID =
-  "grid grid-cols-[minmax(9.5rem,1.3fr)_4.5rem_minmax(10.5rem,2fr)_5.25rem] @min-[52rem]:grid-cols-[minmax(10.5rem,1.35fr)_5.25rem_minmax(13.75rem,2.1fr)_6rem_7.5rem]";
+  "grid grid-cols-[minmax(9.5rem,1.3fr)_4.5rem_minmax(10.5rem,2fr)_3.5rem] @min-[52rem]:grid-cols-[minmax(10.5rem,1.35fr)_5.25rem_minmax(13.75rem,2.1fr)_3.5rem_7.5rem]";
+/** Lucide's 2-unit stroke draws 1.2px at 14px, thinner than the name's stems; 2.5 draws about 1.5px. */
+const ROW_ICON_STROKE = 2.5;
 
 export interface SourcesTableColumn {
   column: SourceSortColumn;
@@ -274,7 +279,7 @@ function TableRow({
           title={view.fullName}
           className="flex min-w-0 items-center gap-2.5 font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] outline-none"
         >
-          <Icon size={ICON_SIZE.lg} aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]" />
+          <Icon size={ICON_SIZE.md} strokeWidth={ROW_ICON_STROKE} aria-hidden className="flex-none text-[color:var(--color-text-tertiary)]" />
           {/* The range beside a shared row gives way before the name does, and leaves a narrow table. */}
           <span className="min-w-0 truncate">{view.name}</span>
           {view.sub ? <span className="min-w-0 shrink-[100] truncate text-body @max-[52rem]:hidden font-normal text-[color:var(--color-text-tertiary)]">{view.sub}</span> : null}
@@ -284,10 +289,10 @@ function TableRow({
       <div role="cell" className="relative flex items-center justify-end px-4">
         {view.total}
       </div>
-      <div role="cell" className="relative flex min-w-0 items-center px-4">
+      <div role="cell" className="relative flex min-w-0 items-center pr-1 pl-4">
         {view.bar}
       </div>
-      <div role="cell" className={cn("relative flex items-center justify-end px-4", waiting === 0 && "text-[color:var(--color-text-quaternary)]")}>
+      <div role="cell" className={cn("relative flex items-center justify-end pr-4 pl-1", waiting === 0 && "text-[color:var(--color-text-quaternary)]")}>
         {view.waiting}
       </div>
       <div role="cell" className="relative flex items-center justify-end px-4 text-[color:var(--color-text-tertiary)] @max-[52rem]:hidden">
