@@ -46,7 +46,7 @@ describe("describeWikiProblem — what, where, what to do", () => {
     const words = describeWikiProblem(UNCITED, translator("ko"));
     expect(words.sentence).toBe("Facts의 31번째 줄에 근거가 없어요.");
     expect(words.action).toBe(
-      "원문 한 곳을 달거나, 확인할 수 없으면 문서 끝에 있는 Not in sources 구획으로 옮기세요.",
+      "자료 한 곳을 달거나, 확인할 수 없으면 문서 끝에 있는 Not in sources 구획으로 옮기세요.",
     );
     expect(words.code).toBe("uncited-fact");
   });
@@ -95,7 +95,7 @@ describe("describeWikiProblem — a name is a thing, not an address", () => {
       pageTitle: (slug) => (slug === "wiki/payments-01" ? "Payments, January" : undefined),
     });
     expect(words.sentence).toBe(
-      "Payments, January도 같은 원문(payments-ledger-01.html, ledger-appendix.md)을 쓰는데 두 문서가 서로를 가리키지 않아요.",
+      "Payments, January도 같은 자료(payments-ledger-01.html, ledger-appendix.md)를 쓰는데 두 문서가 서로를 가리키지 않아요.",
     );
     expect(words.targets).toEqual([
       { kind: "page", name: "Payments, January", id: "wiki/payments-01" },

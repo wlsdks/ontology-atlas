@@ -152,7 +152,7 @@ describe("WikiTemplateProblems — the sentence is in the reader's language", ()
      * translating the heading would send them to a section their file does not have.
      */
     expect(row.textContent).toContain(
-      "원문 한 곳을 달거나, 확인할 수 없으면 문서 끝에 있는 Not in sources 구획으로 옮기세요.",
+      "자료 한 곳을 달거나, 확인할 수 없으면 문서 끝에 있는 Not in sources 구획으로 옮기세요.",
     );
   });
 

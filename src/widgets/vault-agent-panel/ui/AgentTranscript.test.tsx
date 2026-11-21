@@ -11,7 +11,7 @@ const labels: AgentTranscriptLabels = {
   lookingAt: (title) => `화면: ${title} 을(를) 보는 중`,
   wholeMap: '화면: 지도 전체를 보는 중',
   unsupported: '이 턴에는 볼트를 읽지 않고 답했어요.',
-  uncited: '이 턴에 읽은 자료:',
+  uncited: '이 턴에 읽은 파일:',
   charsLabel: (chars) => `${chars}자`,
   thinking: '생각 중',
   thinkingSeconds: (seconds) => `생각 중 · ${seconds}초`,
