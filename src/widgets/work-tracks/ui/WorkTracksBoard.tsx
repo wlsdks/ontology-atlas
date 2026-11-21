@@ -2,19 +2,20 @@
 
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Laptop, Server } from 'lucide-react';
 import type { Track, TrackSession, WorkTracks } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { clockTime } from '../model/format';
-import { RULER, SEAM_X, TRUNK_X, trackLeft } from '../model/stations';
+import { MAIN, RULER, SEAM_LEFT, TRUNK, trackLeft } from '../model/stations';
 import { exitRow, useTrackMotion, type RemovedElement } from '../model/use-track-motion';
-import { StationRuler } from './StationRuler';
+import { BoardHead } from './BoardHead';
+import { isStationDrawn } from './StationRuler';
 import { SwapText } from './SwapText';
 import { TrackRow, type TrackTone } from './TrackRow';
 
 const UNHELD_INK = 'var(--work-unheld)';
+/** Slice 1 reads nothing from a host, so the server ground stays its narrow strip. */
+const SERVER_CONNECTED = false;
 const TOOL_SLOT = '\u0000';
 const sessionInk = (session: TrackSession) => `var(--work-session-${session.ink + 1})`;
 
@@ -22,7 +23,6 @@ interface WorkTracksBoardProps {
   tracks: WorkTracks;
   folder: string;
   host: string | null;
-  repository: string;
   baseBranch: string;
   nowMs: number;
   /** The first read is still running: the grounds and ruler draw at once, rows follow. */
@@ -65,12 +65,16 @@ function GroupLabel({ id, children, tone }: { id: string; children: string; tone
   );
 }
 
-function SessionHeader({ session, folder, order }: { session: TrackSession; folder: string; order: number }) {
+function SessionHeader({ session, order }: { session: TrackSession; order: number }) {
   const t = useTranslations('workStatus');
   const locale = useLocale();
   const tool = t(session.tool === 'acp' ? 'tool.acp' : session.tool === 'claudeCode' ? 'tool.claudeCode' : 'tool.unknown');
   // The tool's name wears the session's ink wherever the locale puts it in the sentence.
-  const [headerBefore = '', headerAfter = ''] = t('session.header', { tool: TOOL_SLOT, folder }).split(TOOL_SLOT);
+  const [headerBefore = '', headerAfter = ''] = t('session.header', { tool: TOOL_SLOT, number: session.ordinal }).split(TOOL_SLOT);
+  const facts = [
+    session.startedAt ? t('session.started', { time: clockTime(session.startedAt * 1000, locale) }) : null,
+    t('session.subagents', { count: session.tracks.length }),
+  ].filter(Boolean).join(' · ');
   return (
     <div
       data-flip={`session:${session.key}`}
@@ -82,19 +86,11 @@ function SessionHeader({ session, folder, order }: { session: TrackSession; fold
         data-flip={`session-label:${session.key}`}
         data-flip-kind="move-x"
         data-enter="fade"
-        className="absolute inset-y-0 left-0 right-[var(--work-track-end)] flex min-w-0 items-center pl-6"
+        className="absolute inset-y-0 left-0 flex w-[var(--work-label-w)] min-w-0 items-baseline gap-1.5 overflow-hidden whitespace-nowrap pl-6 pr-4 pt-2.5 text-body leading-body text-[color:var(--color-text-secondary)]"
       >
-        <span className="flex w-[calc(var(--work-label-w)-1.5rem)] min-w-0 shrink-0 items-baseline gap-1.5 overflow-hidden pr-4 text-label leading-label text-[color:var(--color-text-tertiary)]">
-          {headerBefore.trim() ? <span className="shrink-0">{headerBefore.trim()}</span> : null}
-          <span className="shrink-0 whitespace-nowrap text-body-lg leading-body-lg font-[var(--font-weight-strong)] text-[color:var(--work-held-ink)]">{tool}</span>
-          {headerAfter.trim() ? <span className="min-w-0 truncate">{headerAfter.trim()}</span> : null}
-        </span>
-        <span className="ml-[calc((100%-var(--work-label-w)+1.5rem)*0.012+1.25rem)] min-w-0 truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
-          <SwapText value={[
-            session.startedAt ? t('session.started', { time: clockTime(session.startedAt * 1000, locale) }) : null,
-            t('session.subagents', { count: session.tracks.length }),
-          ].filter(Boolean).join(' · ')} />
-        </span>
+        {headerBefore.trim() ? <span className="shrink-0">{headerBefore.trim()}</span> : null}
+        <span className="shrink-0 text-body-lg leading-body-lg font-[var(--font-weight-strong)] text-[color:var(--work-held-ink)]">{tool}</span>
+        {headerAfter.trim() ? <span className="min-w-0 truncate">{headerAfter.trim()}</span> : null}
       </div>
       <span
         aria-hidden
@@ -102,8 +98,17 @@ function SessionHeader({ session, folder, order }: { session: TrackSession; fold
         data-flip-kind="move-x"
         data-enter="place"
         className="absolute top-1/2 size-[0.875rem] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[color:var(--work-held-ink)] bg-[color:var(--work-ground-mac)]"
-        style={{ left: trackLeft(TRUNK_X) }}
+        style={{ left: trackLeft(TRUNK) }}
       />
+      <span
+        data-flip={`session-facts:${session.key}`}
+        data-flip-kind="move-x"
+        data-enter="fade"
+        className="absolute top-1/2 flex min-w-0 -translate-y-1/2 text-label leading-label text-[color:var(--color-text-tertiary)]"
+        style={{ left: `calc(${trackLeft(TRUNK)} + 1.125rem)`, maxWidth: `calc(${SEAM_LEFT} - ${trackLeft(TRUNK)} - 2.125rem)` }}
+      >
+        <SwapText value={facts} />
+      </span>
     </div>
   );
 }
@@ -112,7 +117,7 @@ function SessionHeader({ session, folder, order }: { session: TrackSession; fold
  * The route map: a shared ruler of stations across two grounds, On this Mac and On the server,
  * and one line per worktree from its session's trunk to the station its head has reached.
  */
-export function WorkTracksBoard({ tracks, folder, host, repository, baseBranch, nowMs, reading }: WorkTracksBoardProps) {
+export function WorkTracksBoard({ tracks, folder, host, baseBranch, nowMs, reading }: WorkTracksBoardProps) {
   const t = useTranslations('workStatus');
   const boardRef = useRef<HTMLElement>(null);
   const reduced = usePrefersReducedMotion();
@@ -162,55 +167,53 @@ export function WorkTracksBoard({ tracks, folder, host, repository, baseBranch, 
     <section
       ref={boardRef}
       data-testid="work-tracks"
+      data-work-board
       aria-label={t('title')}
-      className="relative isolate overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--work-ground-mac)] pb-6"
+      className="@container relative isolate overflow-clip rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--work-ground-mac)] pb-6"
     >
-      <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 -z-10 bg-[color:var(--work-ground-server)]" style={{ left: trackLeft(SEAM_X) }} />
-      {RULER.map(station => (
+      <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 -z-10 bg-[color:var(--work-ground-server)]" style={{ left: SEAM_LEFT }} />
+      {RULER.filter(station => station.id !== 'main' && isStationDrawn(station, SERVER_CONNECTED)).map(station => (
         <div
           key={station.id}
           aria-hidden
           className="pointer-events-none absolute bottom-0 top-[calc(var(--work-header-h)+var(--work-ruler-line-y))] -z-10 w-px -translate-x-1/2 bg-[color:var(--work-rail-faint)]"
-          style={{ left: trackLeft(station.x) }}
+          style={{ left: trackLeft(station) }}
         />
       ))}
-      <div aria-hidden className="pointer-events-none absolute bottom-0 top-0 -z-10 w-px -translate-x-1/2 bg-[color:var(--work-seam)]" style={{ left: trackLeft(SEAM_X) }} />
+      <div aria-hidden className="pointer-events-none absolute bottom-0 top-0 -z-10 w-px -translate-x-1/2 bg-[color:var(--work-seam)]" style={{ left: SEAM_LEFT }} />
       <div
         aria-hidden
         data-work-main-rail
-        className="pointer-events-none absolute bottom-6 top-[calc(var(--work-header-h)+var(--work-ruler-line-y))] w-[3px] -translate-x-1/2 rounded-full bg-[color:var(--color-text-secondary)]"
-        style={{ left: trackLeft(RULER[RULER.length - 1].x) }}
+        className="pointer-events-none absolute bottom-6 top-[calc(var(--work-header-h)+var(--work-ruler-line-y))] w-[var(--work-line)] -translate-x-1/2 rounded-full bg-[color:var(--color-text-secondary)]"
+        style={{ left: trackLeft(MAIN) }}
       />
 
-      <header className="relative flex h-[var(--work-header-h)] items-start pt-5">
-        <div className="flex min-w-0 items-baseline gap-2.5 pl-6" style={{ width: trackLeft(SEAM_X) }}>
-          <Laptop aria-hidden size={ICON_SIZE.lg} className="shrink-0 self-center text-[color:var(--color-text-secondary)]" />
-          <h2 className="shrink-0 text-title leading-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{t('band.mac')}</h2>
-          <span className="min-w-0 truncate text-label leading-label text-[color:var(--color-text-tertiary)]">{folder}</span>
-        </div>
-        <div className="flex min-w-0 flex-1 items-baseline gap-2.5 pl-6 pr-6">
-          <Server aria-hidden size={ICON_SIZE.lg} className="shrink-0 self-center text-[color:var(--color-text-secondary)]" />
-          <h2 className="shrink-0 text-title leading-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{t('band.server')}</h2>
-          <span data-testid="work-server-state" className="min-w-0 truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
-            {reading ? null : host ? t('connect.offer', { host }) : t('noRemote', { repo: repository })}
-          </span>
-        </div>
-      </header>
-
-      <StationRuler connected={false} />
+      <BoardHead
+        folder={folder}
+        serverNotice={reading ? null : host ? t('connect.notConnected', { host }) : t('noRemote')}
+        connected={SERVER_CONNECTED}
+      />
 
       <div className="relative">
         {tracks.stuck.length > 0 ? (
           <div className="relative">
-            <div aria-hidden data-flip="stuck-ground" data-flip-kind="scale-y" data-enter="fade" className="absolute inset-0 -z-10 origin-top bg-[color:var(--work-ground-stuck)]" />
+            <div
+              aria-hidden
+              data-flip="stuck-ground"
+              data-flip-kind="scale-y"
+              data-enter="fade"
+              className="absolute inset-y-0 left-0 -z-10 origin-top bg-[color:var(--work-ground-stuck)]"
+              style={{ right: SERVER_CONNECTED ? 0 : 'var(--work-server-w)' }}
+            />
             <GroupLabel id="stuck" tone="stuck">{t('group.stuck')}</GroupLabel>
             {tracks.stuck.map(track => row(track, 'stuck', UNHELD_INK, false))}
+            <div aria-hidden className="h-2" />
           </div>
         ) : null}
 
         {tracks.sessions.map((session, index) => (
           <div key={session.key} className="relative" style={{ ['--work-held-ink' as string]: sessionInk(session) }}>
-            <SessionHeader session={session} folder={folder} order={order.get(session.tracks[0]?.key ?? '') ?? index} />
+            <SessionHeader session={session} order={order.get(session.tracks[0]?.key ?? '') ?? index} />
             <span
               aria-hidden
               data-flip={`trunk:${session.key}`}
@@ -218,7 +221,7 @@ export function WorkTracksBoard({ tracks, folder, host, repository, baseBranch, 
               data-enter="draw-y"
               className="absolute w-[var(--work-line)] origin-top bg-[color:var(--work-held-ink)]"
               style={{
-                left: `calc(${trackLeft(TRUNK_X)} - var(--work-line) / 2)`,
+                left: `calc(${trackLeft(TRUNK)} - var(--work-line) / 2)`,
                 top: 'calc(var(--work-session-h) / 2)',
                 bottom: 'calc(var(--work-row-h) / 2 + var(--work-elbow) - var(--work-line))',
               }}

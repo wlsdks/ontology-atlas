@@ -211,9 +211,9 @@ stops at a directory containing `.git`. Every Git read goes through `runner.rs`.
 | Loading: first read | as above | bands draw at once; rows arrive as each worktree is read, `workStatus.reading`; input never waits |
 | Error: git missing or the folder unreadable | as above | git missing reuses `atlasGit.install.*`; unreadable says `workStatus.unreadable` with Choose repository folder |
 | Empty: only the main checkout | as above | `workStatus.empty.title`, `.empty.body` |
-| Worktree folder missing | as above | `workStatus.row.missing`, with `git worktree prune` as text |
-| No lock; stale lock; zero commits | as above | `workStatus.holder.noLock`, `.staleLock`, `workStatus.row.noCommits` |
-| On this Mac only (no host connected) | as above | right band shows `workStatus.connect.offer` and nothing else |
+| Worktree folder missing | as above | a Stuck row with `workStatus.chip.missing` and `workStatus.row.missing`, with `git worktree prune` as text |
+| No lock; stale lock; zero commits | as above | `workStatus.holder.noLock`; a stale lock is a Stuck row with `workStatus.chip.lockLeft` and `workStatus.row.lockLeft`; `workStatus.row.noCommits` |
+| On this Mac only (no host connected) | as above | the server ground is a narrow strip with the main rail and `workStatus.connect.notConnected`; slice 5 adds `workStatus.connect.offer` as its button |
 | On the server only | as above | left half `workStatus.side.notOnMac` |
 | A worktree with no PR | as above | right half `workStatus.side.notPushed` or `.side.noPr` |
 | Quiet subagents | as above | `workStatus.session.quiet` folds them |
@@ -465,7 +465,7 @@ Windows each string that says "this Mac" uses its `.pc` variant, which says "thi
 | `band.seam` | Seam label | push |
 | `side.notOnMac` / `.notPushed` / `.noPr` | Row halves | Not on this Mac / Not pushed / Pushed, no PR |
 | `group.stuck` / `.notOnMac` / `.merged` | Group labels | Stuck / Not on this Mac / Merged ({count}) |
-| `session.header` | Session header | {tool} · session in {folder} |
+| `session.header` | Session header | {tool} · session {number} |
 | `session.counts` | Session header | {count, plural, one {# subagent} other {# subagents}}: {running} running · {quiet} quiet |
 | `session.quiet` | Fold | {count, plural, one {+ # quiet subagent} other {+ # quiet subagents}} |
 | `session.unlocked` | Session header | a {tool} process |
@@ -474,10 +474,12 @@ Windows each string that says "this Mac" uses its `.pc` variant, which says "thi
 | `tool.unknownProcess` | Row | Process {name} |
 | `holder.locked` | Row | {tool} subagent {id} · locked at {time} |
 | `holder.noLock` | Row | No lock · last commit {ago} by {author} |
-| `holder.staleLock` | Row | Locked by a {tool} session that has ended |
+| `holder.staleLock` / `.ended` | Row tooltip / Row | Locked by a {tool} session that has ended / Session ended |
+| `chip.missing` / `.lockLeft` | Head of a stuck row | Folder missing / Lock left behind |
+| `row.lockLeft` | Under a stuck row's line | The {tool} session that locked this worktree has ended. {count, plural, =0 {It has no commits beyond main.} one {Its # commit beyond main is not merged.} other {Its # commits beyond main are not merged.}} |
 | `holder.twoTools` | Row | {first} and {second} both have processes in this worktree |
 | `row.noCommits` | Row | No commits beyond main |
-| `row.missing` | Row | The folder {path} is missing. git worktree prune removes its record. |
+| `row.missing` | Under a stuck row's line | The folder {folder} is missing. git worktree prune removes its record. |
 | `hook.running` / `.runningUnnamed` | Station | {hook} running {elapsed} · {kinds} / Hook running {elapsed} · {kinds} |
 | `hook.passed` / `.stopped` | Station | {hook} passed / {hook} stopped |
 | `hook.unknown` | Station | Push did not complete. The hook wrote no result, so Atlas cannot say which check stopped it. |
@@ -533,7 +535,8 @@ Windows each string that says "this Mac" uses its `.pc` variant, which says "thi
 | `fix.removeTitle` / `.removeBody` | Dialog | Remove these worktrees? / Each one is merged into main and has no uncommitted changes. git worktree remove deletes each folder with its ignored files: {ignored}. The branches stay. |
 | `fix.removeConfirm` / `.removeDone` | Button / Toast | Remove {count} worktrees / Removed {count} worktrees. git worktree add {path} {branch} brings one back. |
 | `fix.refusedDirty` / `.refusedIgnored` / `.refusedRunning` | Toast | {worktree} was not removed: it has uncommitted changes. / {worktree} was not removed: it holds ignored files that a build cannot recreate, such as {example}. / {worktree} was not removed: {tool} still has processes in it. |
-| `connect.offer` | Server band | Show PRs and CI from {host} |
+| `connect.notConnected` | Server strip, before a host is connected | {host} is not connected. Connecting shows PRs and CI. |
+| `connect.offer` | Server band, from slice 5 | Show PRs and CI from {host} |
 | `connect.body` | Dialog | While Work status is open, Atlas runs gh to read this repository's open PRs, their CI runs and steps, and merges to main from {host}, at most 1,000 requests an hour. gh sends your {host} sign-in and the repository name; nothing from your files is sent. Each request is listed in Settings › Privacy · data. |
 | `connect.confirm` | Dialog button | Read PRs and CI as {account} |
 | `gh.missing` | Server band | Atlas reads PRs and CI through the GitHub CLI (gh), which is not installed on this Mac. Install it, run gh auth login, then press Check again. |
@@ -545,7 +548,7 @@ Windows each string that says "this Mac" uses its `.pc` variant, which says "thi
 | `throttle.paused` | Server band | Paused until {time}: the hourly limit for {account} on {host} is nearly used. PRs and CI show what was read at {readAt}. |
 | `throttle.secondary` | Server band | {host} asked for fewer requests. Next request at {time}. |
 | `offline` | Server band | Offline. PRs and CI show what was read at {readAt}; On this Mac stays live. |
-| `noRemote` | Server band | {repo} has no remote, so there are no PRs or CI to show. |
+| `noRemote` | Server band | No remote, so there are no PRs or CI to show. |
 | `unsupportedHost` | Server band | Atlas does not read PRs and CI from {host}. On this Mac stays live. |
 | `reading` | Band foot | Reading worktrees: {read} of {total} |
 | `unreadable` | Stage | {repo} could not be read. Choose the repository folder again to grant access. |
@@ -817,3 +820,9 @@ text in a PR, branch, commit, log, lane name, lease or subagent file; a paused b
   Codex or Gemini CLI reads. Rule automation (slice 8) and the local model (slice 9) split, with
   loopback, redirect and audit guards and "the address you set" copy. Conflicts by `git
   merge-tree`; fixed finding order; hold refusal text; criteria 15 to 18 tightened or added.
+- 2026-11-21: design pass on slice 1 after the owner saw it with 34 worktrees. Until a host is
+  connected the server ground is a narrow strip (`connect.notConnected`), so this Mac's stations
+  get the width; the ground names and the ruler stay pinned under the page header. A stuck row's
+  chip names its reason (`chip.missing`, `chip.lockLeft`) and its sentence sits under its own
+  line, on this Mac's ground, naming the folder instead of its path. A worktree no session holds
+  is a bare dot, never a Working chip. Sessions of one tool are numbered (`session.header`).

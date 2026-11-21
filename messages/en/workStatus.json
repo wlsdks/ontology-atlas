@@ -27,7 +27,7 @@
     "unheld": "Not held by an agent"
   },
   "session": {
-    "header": "{tool} · session in {folder}",
+    "header": "{tool} · session {number}",
     "started": "started {time}",
     "subagents": "{count, plural, one {# subagent} other {# subagents}}"
   },
@@ -45,20 +45,26 @@
     "noLockQuiet": "No lock",
     "subagent": "Subagent {id}",
     "lastCommit": "{ago} by {author}",
-    "staleLock": "Locked by a {tool} session that has ended"
+    "staleLock": "Locked by a {tool} session that has ended",
+    "ended": "Session ended"
   },
   "row": {
     "noCommits": "No commits beyond main",
     "commits": "{count, plural, one {# commit} other {# commits}} beyond main",
-    "missing": "The folder {path} is missing. git worktree prune removes its record."
+    "missing": "The folder {folder} is missing. git worktree prune removes its record.",
+    "lockLeft": "The {tool} session that locked this worktree has ended. {count, plural, =0 {It has no commits beyond main.} one {Its # commit beyond main is not merged.} other {Its # commits beyond main are not merged.}}"
+  },
+  "chip": {
+    "missing": "Folder missing",
+    "lockLeft": "Lock left behind"
   },
   "station": {
     "mergedInto": "Merged into {branch}"
   },
   "connect": {
-    "offer": "Show PRs and CI from {host}"
+    "notConnected": "{host} is not connected. Connecting shows PRs and CI."
   },
-  "noRemote": "{repo} has no remote, so there are no PRs or CI to show.",
+  "noRemote": "No remote, so there are no PRs or CI to show.",
   "unreadable": "{repo} could not be read. Choose the repository folder again to grant access.",
   "choose": {
     "title": "Choose the Git repository your agents work in",

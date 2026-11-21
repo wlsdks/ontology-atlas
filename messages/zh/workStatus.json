@@ -27,7 +27,7 @@
     "unheld": "未被代理占用的工作树"
   },
   "session": {
-    "header": "{tool} · {folder} 中的会话",
+    "header": "{tool} · 会话 {number}",
     "started": "{time} 开始",
     "subagents": "{count} 个子代理"
   },
@@ -45,20 +45,26 @@
     "noLockQuiet": "未锁定",
     "subagent": "子代理 {id}",
     "lastCommit": "{ago}，{author}",
-    "staleLock": "由已结束的 {tool} 会话锁定"
+    "staleLock": "由已结束的 {tool} 会话锁定",
+    "ended": "会话已结束"
   },
   "row": {
     "noCommits": "main 之后没有提交",
     "commits": "main 之后有 {count} 个提交",
-    "missing": "文件夹 {path} 不存在。运行 git worktree prune 会删除它的记录。"
+    "missing": "文件夹 {folder} 不存在。运行 git worktree prune 会删除它的记录。",
+    "lockLeft": "锁定此工作树的 {tool} 会话已结束。{count, plural, =0 {main 之后没有提交。} other {main 之后有 # 个提交尚未合并。}}"
+  },
+  "chip": {
+    "missing": "文件夹不存在",
+    "lockLeft": "仅剩锁定"
   },
   "station": {
     "mergedInto": "已合并到 {branch}"
   },
   "connect": {
-    "offer": "显示 {host} 上的 PR 和 CI"
+    "notConnected": "尚未连接 {host}。连接后显示 PR 和 CI。"
   },
-  "noRemote": "{repo} 没有远程仓库，因此没有可显示的 PR 和 CI。",
+  "noRemote": "没有远程仓库，因此没有可显示的 PR 和 CI。",
   "unreadable": "无法读取 {repo}。请重新选择仓库文件夹以授予访问权限。",
   "choose": {
     "title": "选择你的代理工作的 Git 仓库",

@@ -54,6 +54,7 @@ describe('buildWorkTracks', () => {
     ]));
     expect(tracks.sessions.map(session => session.tracks.map(track => track.key))).toEqual([['second', 'first'], ['reused-pid'], ['late']]);
     expect(tracks.sessions.map(session => session.ink)).toEqual([0, 1, 2]);
+    expect(tracks.sessions.map(session => session.ordinal)).toEqual([1, 2, 3]);
     expect(tracks.counts).toEqual({ running: 4, stuck: 0, ready: 0 });
     expect(tracks.worktreeCount).toBe(5);
   });
@@ -65,7 +66,7 @@ describe('buildWorkTracks', () => {
       row('merged', { standing: 'merged', ahead: 0, lock: live(1, 1, 2) }),
       row('fresh', { standing: 'noCommits', ahead: 0 }),
     ]));
-    expect(tracks.stuck.map(track => track.key)).toEqual(['gone', 'ended']);
+    expect(tracks.stuck.map(track => [track.key, track.station])).toEqual([['gone', 'start'], ['ended', 'working']]);
     expect(tracks.merged.map(track => [track.key, track.station])).toEqual([['merged', 'main']]);
     expect(tracks.unheld.map(track => [track.key, track.station])).toEqual([['fresh', 'start']]);
     expect(tracks.sessions).toEqual([]);
@@ -83,5 +84,14 @@ describe('buildWorkTracks', () => {
   it('puts a worktree an Atlas agent session works in under that session', () => {
     const tracks = buildWorkTracks(snapshot([row('chat', { acpPid: 77 })]));
     expect(tracks.sessions).toMatchObject([{ key: 'acp:77', tool: 'acp', tracks: [{ key: 'chat', holder: { kind: 'acp' } }] }]);
+  });
+
+  it('numbers the sessions of each tool on their own, so two of one tool never share a name', () => {
+    const tracks = buildWorkTracks(snapshot([
+      row('code-late', { lock: live(200, 2_000, 30) }),
+      row('chat', { acpPid: 77 }),
+      row('code-first', { lock: live(100, 1_000, 20) }),
+    ]));
+    expect(tracks.sessions.map(session => [session.tool, session.ordinal])).toEqual([['claudeCode', 1], ['claudeCode', 2], ['acp', 1]]);
   });
 });

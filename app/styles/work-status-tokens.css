@@ -8,7 +8,7 @@
   :root {
     --work-ground-mac: #161513;
     --work-ground-server: #0f1420;
-    --work-ground-stuck: rgba(229, 72, 77, 0.09);
+    --work-ground-stuck: rgba(229, 72, 77, 0.07);
     --work-seam: rgba(143, 176, 234, 0.34);
     --work-rail: rgba(255, 255, 255, 0.12);
     --work-rail-faint: rgba(255, 255, 255, 0.05);
@@ -22,20 +22,36 @@
     /* The ink of the session holding a row; each session group and row sets its own. */
     --work-held-ink: var(--work-unheld);
 
-    --work-label-w: 22rem;
+    /*
+     * Widths follow the board, the one container these resolve in. Until a host is connected the
+     * server ground is a strip wide enough for its two-line notice and the main rail.
+     */
+    --work-label-w: clamp(19rem, 31cqw, 27rem);
+    --work-server-w: clamp(15rem, 19cqw, 17rem);
     --work-track-end: 1.5rem;
-    --work-row-h: 3.75rem;
+    /* A row holds its title, holder and branch on three lines until the board is wide enough for two. */
+    --work-row-h: 4.25rem;
+    /* The room under a stuck row for the lines that say why it is stuck; the row keeps its height. */
+    --work-stuck-note-h: 1rem;
     --work-session-h: 2.75rem;
-    --work-header-h: 4.25rem;
-    --work-ruler-line-y: 2.4375rem;
+    --work-header-h: 2.5rem;
+    --work-ruler-h: 3.25rem;
+    --work-ruler-line-y: 2.5rem;
+    /* Where the pinned ruler stops under a page header; the page that has one sets it. */
+    --work-sticky-top: 0px;
     --work-dot: 0.75rem;
     --work-line: 3px;
     --work-elbow: 0.875rem;
   }
 
-  @media (max-width: 1279px) {
-    :root {
-      --work-label-w: 16rem;
+  /*
+   * From this board width (Tailwind's `@7xl`) the holder and the branch share a line and a stuck
+   * row's reason fits one, in every locale.
+   */
+  @container (min-width: 80rem) {
+    [data-work-board] > * {
+      --work-row-h: 3.75rem;
+      --work-stuck-note-h: 0.75rem;
     }
   }
 }

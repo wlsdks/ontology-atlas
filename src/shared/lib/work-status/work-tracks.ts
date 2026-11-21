@@ -33,6 +33,8 @@ export interface TrackSession {
   key: string;
   tool: SessionTool;
   startedAt: number | null;
+  /** 1 for the tool's oldest live session, 2 for its next: what tells two sessions of one tool apart. */
+  ordinal: number;
   /** Index into the session ink ramp, stable while the session lives. */
   ink: number;
   tracks: Track[];
@@ -51,9 +53,14 @@ export const SESSION_INK_COUNT = 5;
 
 const CONVENTIONAL_PREFIX_SEPARATOR = '/';
 
+/** The last folder of a path, on either separator: how a worktree or repository is named in a sentence. */
+export function folderName(path: string): string {
+  return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
+}
+
 /** `feat/library-first-run-stage` → `library first run stage`: the branch read aloud. */
 export function branchTitle(branch: string | null, path: string): string {
-  const source = branch ?? path.split(/[\\/]/).filter(Boolean).pop() ?? path;
+  const source = branch ?? folderName(path);
   const segments = source.split(CONVENTIONAL_PREFIX_SEPARATOR);
   const named = segments.length > 1 ? segments.slice(1).join(' ') : source;
   return named.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim() || source;
@@ -82,9 +89,11 @@ function placeOf(row: WorktreeRow, holder: TrackHolder, sessionKey: string | nul
   return sessionKey ? 'session' : 'unheld';
 }
 
-function stationOf(standing: WorktreeStanding): TrackStation {
-  if (standing === 'merged') return 'main';
-  if (standing === 'ahead') return 'working';
+/** A missing folder has no working tree to place on the ruler, so its head stays at the start. */
+function stationOf(row: WorktreeRow): TrackStation {
+  if (row.missing) return 'start';
+  if (row.standing === 'merged') return 'main';
+  if (row.standing === 'ahead') return 'working';
   return 'start';
 }
 
@@ -101,7 +110,7 @@ function toTrack(row: WorktreeRow): Track {
     missing: row.missing,
     holder,
     place: placeOf(row, holder, sessionKey),
-    station: stationOf(row.standing),
+    station: stationOf(row),
     sessionKey,
   };
 }
@@ -129,13 +138,19 @@ export function buildWorkTracks(snapshot: WorkStatusSnapshot): WorkTracks {
       key: track.sessionKey,
       tool: row.lock?.state === 'live' ? row.lock.tool : 'acp',
       startedAt: row.lock?.state === 'live' ? row.lock.sessionStartedAt : null,
+      ordinal: 0,
       ink: 0,
       tracks: [track],
     });
   });
+  const sessionsPerTool = new Map<SessionTool, number>();
   const sessions = [...sessionsByKey.values()]
     .sort((a, b) => (a.startedAt ?? Number.MAX_SAFE_INTEGER) - (b.startedAt ?? Number.MAX_SAFE_INTEGER) || a.key.localeCompare(b.key))
-    .map((session, index) => ({ ...session, ink: index % SESSION_INK_COUNT, tracks: [...session.tracks].sort(byLockTime) }));
+    .map((session, index) => {
+      const ordinal = (sessionsPerTool.get(session.tool) ?? 0) + 1;
+      sessionsPerTool.set(session.tool, ordinal);
+      return { ...session, ordinal, ink: index % SESSION_INK_COUNT, tracks: [...session.tracks].sort(byLockTime) };
+    });
   const stuck = tracks.filter(track => track.place === 'stuck');
   return {
     stuck,

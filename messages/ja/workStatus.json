@@ -27,7 +27,7 @@
     "unheld": "エージェントが保持していないワークツリー"
   },
   "session": {
-    "header": "{tool} · {folder}のセッション",
+    "header": "{tool} · セッション{number}",
     "started": "{time}開始",
     "subagents": "サブエージェント{count}個"
   },
@@ -45,20 +45,26 @@
     "noLockQuiet": "ロックなし",
     "subagent": "サブエージェント{id}",
     "lastCommit": "{ago}、{author}",
-    "staleLock": "終了した{tool}セッションがロックしたワークツリー"
+    "staleLock": "終了した{tool}セッションがロックしたワークツリー",
+    "ended": "セッション終了"
   },
   "row": {
     "noCommits": "main以降のコミットなし",
     "commits": "main以降のコミット{count}個",
-    "missing": "{path}フォルダがありません。git worktree pruneを実行するとこの記録が削除されます。"
+    "missing": "{folder}フォルダがありません。git worktree pruneを実行するとこの記録が削除されます。",
+    "lockLeft": "このワークツリーをロックした{tool}セッションは終了しました。{count, plural, =0 {main以降のコミットはありません。} other {main以降のコミット#個は未マージです。}}"
+  },
+  "chip": {
+    "missing": "フォルダなし",
+    "lockLeft": "ロックのみ残存"
   },
   "station": {
     "mergedInto": "{branch}にマージ済み"
   },
   "connect": {
-    "offer": "{host}のPRとCIを表示"
+    "notConnected": "{host}は未接続です。接続でPRとCIを表示します。"
   },
-  "noRemote": "{repo}にはリモートがないため、表示するPRとCIはありません。",
+  "noRemote": "リモートがないため、表示するPRとCIはありません。",
   "unreadable": "{repo}を読み込めませんでした。リポジトリフォルダをもう一度選んでアクセスを許可してください。",
   "choose": {
     "title": "エージェントが作業するGitリポジトリを選んでください",

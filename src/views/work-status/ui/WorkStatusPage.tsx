@@ -5,11 +5,12 @@ import { useTranslations } from 'next-intl';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FolderGit2 } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
+import { cn } from '@/shared/lib/cn';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { getTauriVaultRootPath, pickTauriSourceDirectory } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { isWorkStatusAvailable } from '@/shared/lib/work-status/tauri-work-status';
-import { buildWorkTracks, headlineOf, type WorkTracks } from '@/shared/lib/work-status/work-tracks';
+import { buildWorkTracks, folderName, headlineOf, type WorkTracks } from '@/shared/lib/work-status/work-tracks';
 import { EXIT_TRANSITION, MOTION, OVERLAY_RISE, OVERLAY_RISE_REDUCED, OVERLAY_SETTLED } from '@/shared/motion';
 import { Button, PageHeaderBar } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
@@ -23,10 +24,6 @@ const webSnapshot = () => false;
 const EMPTY_TRACKS: WorkTracks = { stuck: [], sessions: [], unheld: [], merged: [], counts: { running: 0, stuck: 0, ready: 0 }, worktreeCount: 0 };
 const COUNT_CLASS = 'font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-primary)]';
 const MAIN_CLASS = 'flex min-h-full flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]';
-
-function folderName(path: string): string {
-  return path.split(/[\\/]/).filter(Boolean).pop() ?? path;
-}
 
 export function WorkStatusPage() {
   const t = useTranslations('workStatus');
@@ -88,8 +85,8 @@ export function WorkStatusPage() {
         ) : null}
         actions={chooseButton('sm')}
       />
-      <div className={`${PAGE_FRAME} flex flex-col gap-6`}>
-        <div className="flex min-h-[4.5rem] flex-col justify-end gap-1.5">
+      <div className={cn(PAGE_FRAME, 'flex flex-col gap-5 md:pt-8 [--work-sticky-top:3.75rem]')}>
+        <div className="flex min-h-15 flex-col justify-end gap-1">
           <AnimatePresence mode="popLayout" initial={false}>
             {headlineText ? (
               <motion.h2
@@ -99,9 +96,7 @@ export function WorkStatusPage() {
                 animate={OVERLAY_SETTLED}
                 exit={{ opacity: 0, transition: EXIT_TRANSITION }}
                 transition={reduced ? MOTION.fast : MOTION.slow}
-                className={headline.kind === 'stuck'
-                  ? 'text-hero leading-hero font-[var(--font-weight-strong)] tracking-[var(--tracking-display)] text-[color:var(--color-danger-text-strong)]'
-                  : 'text-hero leading-hero font-[var(--font-weight-strong)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]'}
+                className="text-hero leading-hero font-[var(--font-weight-strong)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]"
               >
                 {headlineText}
               </motion.h2>
@@ -120,7 +115,6 @@ export function WorkStatusPage() {
           tracks={shown}
           folder={folder}
           host={snapshot?.host ?? null}
-          repository={snapshot?.repository ?? folder}
           baseBranch={snapshot?.baseBranch ?? 'main'}
           nowMs={readAtMs}
           reading={!tracks}

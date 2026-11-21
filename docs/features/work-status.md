@@ -65,8 +65,17 @@ row. Rows group by holder:
    the time and author of that commit.
 4. **Merged**: rows whose line runs to the `main` rail.
 
-The server ground shows only that it is not connected (**Show PRs and CI from
-github.com**, as text); no request leaves the machine.
+A session row at **Working** carries a chip; a worktree no session holds is a
+bare dot with its commit count. A stuck row's chip names why (**Folder
+missing**, **Lock left behind**) and one sentence under its line explains it,
+naming the folder, with the full path as its tooltip. Two sessions of one tool
+are told apart by number and start time (**Claude Code · session 2**).
+
+Until a host is connected the server ground is a narrow strip holding the
+`main` rail and one notice (**github.com is not connected. Connecting shows PRs
+and CI.**), so this Mac's stations take the width; no request leaves the
+machine. The ground names and the ruler stay pinned under the page header while
+the rows scroll.
 
 ## Live updates
 

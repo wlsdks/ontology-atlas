@@ -27,7 +27,7 @@
     "unheld": "에이전트가 잡지 않은 워크트리"
   },
   "session": {
-    "header": "{tool} · {folder}의 세션",
+    "header": "{tool} · 세션 {number}",
     "started": "{time} 시작",
     "subagents": "서브에이전트 {count}개"
   },
@@ -45,20 +45,26 @@
     "noLockQuiet": "잠금 없음",
     "subagent": "서브에이전트 {id}",
     "lastCommit": "{ago}, {author}",
-    "staleLock": "끝난 {tool} 세션이 잠근 워크트리"
+    "staleLock": "끝난 {tool} 세션이 잠근 워크트리",
+    "ended": "세션 끝남"
   },
   "row": {
     "noCommits": "main 이후 커밋 없음",
     "commits": "main 이후 커밋 {count}개",
-    "missing": "{path} 폴더가 없어요. git worktree prune을 실행하면 이 기록이 지워져요."
+    "missing": "{folder} 폴더가 없어요. git worktree prune을 실행하면 이 기록이 지워져요.",
+    "lockLeft": "이 워크트리를 잠근 {tool} 세션이 끝났어요. {count, plural, =0 {main 이후 커밋은 없어요.} other {main 이후 커밋 #개가 머지되지 않았어요.}}"
+  },
+  "chip": {
+    "missing": "폴더 없음",
+    "lockLeft": "잠금만 남음"
   },
   "station": {
     "mergedInto": "{branch}에 머지됨"
   },
   "connect": {
-    "offer": "{host}의 PR과 CI 보기"
+    "notConnected": "{host}에 연결되지 않았어요. 연결하면 PR과 CI가 표시돼요."
   },
-  "noRemote": "{repo}에는 원격 저장소가 없어서 보여 줄 PR과 CI가 없어요.",
+  "noRemote": "원격 저장소가 없어서 보여 줄 PR과 CI가 없어요.",
   "unreadable": "{repo}를 읽을 수 없어요. 저장소 폴더를 다시 골라 접근을 허용하세요.",
   "choose": {
     "title": "에이전트가 작업하는 Git 저장소를 고르세요",
