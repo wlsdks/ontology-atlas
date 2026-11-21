@@ -442,7 +442,7 @@ pub(crate) fn create_first_free_entry_with<T>(
 }
 
 /// Not `fs::write`: the open parent FD, `O_NOFOLLOW` and atomic rename are the protections.
-/// Windows uses `resolve_write_target_inside` in `library.rs`.
+/// Windows uses `resolve_write_target_inside` in `library/source_copy.rs`.
 #[cfg(unix)]
 pub(crate) fn write_entry_atomically_with<T>(
     parent: &fs::File,

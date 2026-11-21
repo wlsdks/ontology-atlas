@@ -569,8 +569,10 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   view independently of first-run guidance and preserves the previous reader selection
   while the narrow index stands aside. This is separate from ACP agent permissions
   and from the MCP-mirrored ontology tool catalogue.
-- `src-tauri/src/library.rs` owns the native half: hashing, the native picker, the import
-  copy, metadata-only discovery, and Finder reveal. It writes nothing outside
+- `src-tauri/src/library/` owns the native half, one file per job: hashing
+  (`file_hashing.rs`), the native picker (`source_picker.rs`), the import copy
+  (`source_import.rs`, `source_copy.rs`), metadata-only discovery (`source_discovery.rs`),
+  dropped files (`dropped.rs`), and Finder reveal (`reveal.rs`). It writes nothing outside
   `<vault>/sources/`, and its discovery walk contains no writer.
 - **One Library destination, four tabs (2026-09-28).**
   `src/app/library-workspace/` composes `src/views/library/` for Sources/Wiki, Check history,

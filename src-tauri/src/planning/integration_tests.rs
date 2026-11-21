@@ -1,7 +1,7 @@
 use super::{confined::open_root, session::PlanningSession};
 use crate::{
     git::briefing::git_source_briefing,
-    library::{discover_source_candidates, SourceDiscoveryRoot},
+    library::source_discovery::{discover_source_candidates, SourceDiscoveryRoot},
     project_source::inspect_project_source,
     vault::{
         read::read_vault_text_file, scope::canonical_root, walk::list_vault_directory,

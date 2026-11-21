@@ -78,14 +78,15 @@ mod vault_scope_tests {
         refused(super::location::open_vault_in_finder_blocking(
             home_path.clone(),
         ));
-        let report =
-            crate::library::discover_source_candidates(vec![crate::library::SourceDiscoveryRoot {
+        let report = crate::library::source_discovery::discover_source_candidates(vec![
+            crate::library::source_discovery::SourceDiscoveryRoot {
                 root_path: home_path.clone(),
                 label: "home".into(),
                 skip_relative: Vec::new(),
                 open_folder: false,
-            }])
-            .unwrap();
+            },
+        ])
+        .unwrap();
         assert!(
             report.candidates.is_empty(),
             "an ungranted root yields no candidates"

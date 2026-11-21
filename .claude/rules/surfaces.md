@@ -49,9 +49,9 @@ never a parallel router or surface fork.
 | Connector secrets | `src/shared/lib/connectors/tauri-connector-secrets.ts`, `src-tauri/src/connector_secrets.rs` | degradation card; Rust resolves the token into the outgoing ACP line, so the WebView never holds it |
 | Connector runtimes | `src/shared/lib/connectors/tauri-connector-runtimes.ts`, `resolve_connector_runtimes` in `src-tauri/src/connectors.rs` | typed absolute path; **not** a degradation card, because only a convenience is missing |
 | Folder watch | `start_vault_watch` in `src-tauri/src/vault/watch.rs`, `TauriVaultWatchBridge.tsx` | periodic reread (`poll-cadence.ts`); delayed, not unavailable |
-| Library sources | `src/shared/lib/vault-folder/tauri-vault-fs.ts`, `src-tauri/src/library.rs` | same ability by other means (`showOpenFilePicker`, `crypto.subtle`); Rust hashes whole scans so files do not cross IPC; Planning's Add files uses the same import with its `planning` destination |
-| Discovery outside the folder | `discover_source_candidates` in `src-tauri/src/library.rs` | degradation card `find-documents-web-limit`; a bound project root is an absolute path |
-| Reveal a file in Finder | `reveal_vault_file` in `src-tauri/src/library.rs` | hands over the granted file; reveal, never launch |
+| Library sources | `src/shared/lib/vault-folder/tauri-vault-fs.ts`, `src-tauri/src/library/` | same ability by other means (`showOpenFilePicker`, `crypto.subtle`); Rust hashes whole scans so files do not cross IPC; Planning's Add files uses the same import with its `planning` destination |
+| Discovery outside the folder | `discover_source_candidates` in `src-tauri/src/library/source_discovery.rs` | degradation card `find-documents-web-limit`; a bound project root is an absolute path |
+| Reveal a file in Finder | `reveal_vault_file` in `src-tauri/src/library/reveal.rs` | hands over the granted file; reveal, never launch |
 | Work status | `src/shared/lib/work-status/tauri-work-status.ts`, `src-tauri/src/work_status/` | degradation card `work-status-get-app`; a browser cannot run Git or read a lock holder's start time |
 
 ### Reading the person's agent config files
