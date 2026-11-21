@@ -49,7 +49,6 @@ function writeCleanWorkbenchFixtures(root) {
     "src/views/home/ui/HomePage.tsx",
     [
       "<MeaningEditorPanel",
-      "create-node-change-review",
       "<TopologyCanvasSurface",
     ].join("\n"),
   );
@@ -59,18 +58,13 @@ function writeCleanWorkbenchFixtures(root) {
     "previewEdge={mapRelationPreview}",
   );
   writeFixture(root, "src/views/home/ui/map-surfaces/TopologyMapRenderer.tsx", "");
-  writeFixture(
-    root,
-    "src/views/home/ui/create/CreateNodeForm.tsx",
-    "create-node-change-review",
-  );
+  writeFixture(root, "src/views/home/ui/create/CreateNodeForm.tsx", "");
   writeFixture(
     root,
     "src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx",
     [
       "export function MeaningEditorPanel() {}",
       "buildOntologyRelationEditPlan",
-      "meaning-editor-change-review",
     ].join("\n"),
   );
   writeFixture(

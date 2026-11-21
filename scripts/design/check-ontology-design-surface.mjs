@@ -75,8 +75,6 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     markers: [
       "MeaningEditorPanel",
       "buildOntologyRelationEditPlan",
-      "meaning-editor-change-review",
-      "create-node-change-review",
       "<TopologyCanvasSurface",
       "previewEdge={mapRelationPreview}",
       "acp-ontology-change-review",
@@ -85,7 +83,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "atlasMode === 'write'",
     ],
     reason:
-      "Map and ACP writes must both stop on a typed pre-write change review; the map must preview the proposed relation without mutating layout, and ontology writes must never expose allow-always.",
+      "A person's own map write lands at once with Undo (docs/records/decisions/2026-11-20-hand-writes-at-once-with-undo-875477f1-bacd-4a91-9dbd-93235f2c9e5f.md) and the map previews a proposed relation without mutating layout; an agent's ACP write stops on a typed change review and never exposes allow-always.",
   },
 ];
 
