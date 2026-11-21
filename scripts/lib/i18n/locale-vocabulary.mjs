@@ -159,6 +159,52 @@ export const VOCABULARY = {
     zh: { all: [/安装/, /应用/] },
     en: { all: [/installed|install the/i, /app/i] },
   },
+  // A Library source (a file under sources/). docs/specs/2026-11-21-library-words-and-first-run.md
+  sourceWord: {
+    applies: ['ko', 'ja'],
+    notApplicable: {
+      zh: 'zh keeps 来源 for a source and 源码 for code, so no second word for a source exists to ban',
+    },
+    ko: {
+      word: '자료',
+      banned: /원문/,
+      kept: {
+        'acpChat.checkAnswerFull': "the agent's report quoted verbatim",
+        'acpChat.permission.taskReview.detailsPointer': 'the request exactly as sent',
+        'acpChat.permission.taskReview.reason.source_basis_unavailable': "the task's starting code basis, not a Library file",
+        'analysisWorkbench.definitionMissing': "a concept document's own text",
+        'gatewayNav.bodyLanguageNote': 'the English original of a translated page',
+        'gatewayNav.emptyBody': 'the original document in the repository',
+        'topology.createNode.primaryLocaleRequired': 'the untranslated title',
+      },
+    },
+    ja: {
+      word: '資料',
+      banned: /ソース(?!コード)|原文|原本/,
+      namespaces: ['library', 'libraryImport'],
+      keys: [
+        'acpChat.tool.readSource',
+        'automations.documents.facts.runs.body',
+        'automations.documents.facts.writes.body',
+        'download.screens.caption.automations',
+        'download.screens.caption.library',
+        'failures.answer-previous-changed',
+        'failures.answer-sources-unmeasured',
+        'metadata.descriptions.library',
+        'projectPages.detail.libraryCounts',
+        'projectPages.detail.surfaceFolderScope',
+        'settings.workspaceReset.dialogBody',
+        'topology.bootstrap.libraryFiles',
+        'vaultWidgets.parts.meta.notOnMapWikiBody',
+        'vaultWidgets.viewer.sourceCitationMissing',
+        'vaultWidgets.viewer.sourceCitationTitle',
+        'vaultWidgets.viewer.sourceCitationTitleAt',
+        'vaultWidgets.viewer.sourceCitationUnavailable',
+        'workCard.scheduled.staleBody',
+      ],
+      kept: {},
+    },
+  },
   folderWord: {
     applies: ['ko', 'en', 'ja', 'zh'],
     ko: { pattern: /폴더/ },
@@ -192,6 +238,19 @@ export function matches(id, locale, text, table = VOCABULARY) {
 
 export function matchesAll(id, locale, text, table = VOCABULARY) {
   return column(id, locale, table).all.every((pattern) => pattern.test(text));
+}
+
+/**
+ * Keys whose text still uses an old word for a Library source. ko is checked across the whole
+ * catalog; ja only where a key means a Library source, because ja also writes code as ソース.
+ */
+export function sourceWordOffenders(locale, entries, table = VOCABULARY) {
+  const { banned, kept, namespaces, keys } = column('sourceWord', locale, table);
+  const scoped = (path) =>
+    !namespaces || namespaces.includes(path.split('.')[0]) || keys.includes(path);
+  return entries
+    .filter(({ path, text }) => scoped(path) && !(path in kept) && banned.test(text))
+    .map(({ path }) => path);
 }
 
 export function missingColumns(locales, table = VOCABULARY) {

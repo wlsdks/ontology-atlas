@@ -44,7 +44,7 @@ it.
 | 6 | S-2 and S-3: mount the overview, retire the graph | sources-redesign | Draft #3753, review fix round | None |
 | 7 | P-1: paper tokens and `Sheet` | this file | Draft #3754 | 6 |
 | 8 | Installed-app check after 6 and 7 | this file | Not started | 7 |
-| 9 | F3: word sweep and `sourceWord` row | words-and-first-run | Not started | 6 |
+| 9 | F3: word sweep and `sourceWord` row | words-and-first-run | Draft PR | 6 |
 | 10 | I-2: mount the wiki index | index-column | Not started | 6 |
 | 11 | F2: drop-first stage | words-and-first-run | Not started | 9 |
 | 12 | F4: plain find dialog | words-and-first-run | Not started | 11 |
@@ -104,3 +104,5 @@ request) was chosen.
 
 - 2026-11-21: first draft at the owner's request, so the Library work is not lost between
   sessions: the order across four specs and the paper and motion layer.
+- 2026-11-21: row 9 (F3) opened as a draft pull request: the ko and ja source word sweep and the
+  `sourceWord` row.

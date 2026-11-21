@@ -276,7 +276,7 @@
     "tab": "索引",
     "aria": "索引显示的列表",
     "sources": "来源 {count, number}",
-    "wiki": "Wiki 页面 {count, number}",
+    "wiki": "Wiki {count, number}",
     "about": "此文件夹的内容",
     "collapse": "收起索引",
     "expand": "显示索引"
@@ -624,7 +624,7 @@
     }
   },
   "kindSourcesTitle": "来源",
-  "kindWikiTitle": "Wiki 页面",
+  "kindWikiTitle": "Wiki",
   "stage": {
     "title": "来源 → Wiki 页面 → 阅读",
     "state": {
@@ -849,7 +849,7 @@
     "title": "资料库",
     "sources": "来源",
     "sourcesCount": "来源文件",
-    "wiki": "Wiki 页面",
+    "wiki": "Wiki",
     "wikiCount": "全部 Wiki 页面",
     "ontology": "本体",
     "ontologyViews": "本体视图",

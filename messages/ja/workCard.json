@@ -21,7 +21,7 @@
     "nothingTitle": "確認する文書なし",
     "nothingBody": "{name}・範囲内に文書がなかったため、何も確認していません。",
     "staleTitle": "要レビューのページ{count, number}件",
-    "staleBody": "{name}・ソースと合わなくなったページが見つかりました。",
+    "staleBody": "{name}・資料と合わなくなったページが見つかりました。",
     "redraftedTitle": "{count, number}件のファイルを更新",
     "redraftedBody": "{name}・下書きを書き直しました。実行履歴に一件ずつあります。",
     "reviewedTitle": "{name}・レビュー完了",

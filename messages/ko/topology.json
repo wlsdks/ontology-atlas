@@ -302,7 +302,7 @@
     "alreadyTyped": "이미 지도에 올라온 문서 {count}개는 그대로 둬요.",
     "runtimeSkills": "에이전트가 쓰는 스킬 파일 {count}개는 건드리지 않아요. 에이전트가 관리하는 파일이에요.",
     "agentPointers": "에이전트 지침 파일 {count}개(AGENTS.md, CLAUDE.md)는 건드리지 않아요. 이 폴더를 어떻게 쓰는지 에이전트에게 알려 주는 파일이라 개념이 아니에요.",
-    "libraryFiles": "자료실 파일 {count}개(sources/, wiki/)는 건드리지 않아요. 원문은 받은 그대로 두고, 위키 문서는 Atlas가 이미 그 원문에 대해 쓴 문서예요.",
+    "libraryFiles": "자료실 파일 {count}개(sources/, wiki/)는 건드리지 않아요. 자료는 받은 그대로 두고, 위키 문서는 Atlas가 이미 그 자료에 대해 쓴 문서예요.",
     "confirm": "지도 만들기",
     "cancel": "닫기",
     "errorPrefix": "저장하지 못했어요:",

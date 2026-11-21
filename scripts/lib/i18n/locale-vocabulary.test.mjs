@@ -9,6 +9,7 @@ import {
   matches,
   matchesAll,
   missingColumns,
+  sourceWordOffenders,
 } from './locale-vocabulary.mjs';
 
 test('every locale has a column or a stated reason for every concept', () => {
@@ -58,4 +59,19 @@ test('ratchet values preserve the reviewed vocabulary budgets', () => {
   assert.equal(column('surfaceNaming', 'ko').pattern.source, column('surfaceNaming', 'en').pattern.source);
   assert.equal(column('internalTerms', 'ko').terms.length, 17);
   assert.equal(column('codeStyleWords', 'ko').words.length, 9);
+});
+
+test('the source word is caught outside kept keys in ko and only in the Library sense in ja', () => {
+  const ko = [
+    { path: 'library.kindSourcesTitle', text: '원문' },
+    { path: 'gatewayNav.emptyBody', text: '원문은 저장소에서 읽을 수 있어요.' },
+  ];
+  assert.deepEqual(sourceWordOffenders('ko', ko), ['library.kindSourcesTitle']);
+  const ja = [
+    { path: 'library.kindSourcesTitle', text: 'ソース' },
+    { path: 'library.sourcesHome.code', text: 'ソースコード' },
+    { path: 'workCard.scheduled.staleBody', text: '原本と合わない' },
+    { path: 'architecture.inspectSourceAction', text: 'ソースを検査' },
+  ];
+  assert.deepEqual(sourceWordOffenders('ja', ja), ['library.kindSourcesTitle', 'workCard.scheduled.staleBody']);
 });
