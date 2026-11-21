@@ -16,7 +16,6 @@ function receiptRequestSummary(value: string | null): string {
   return oneLine ? oneLine.slice(0, RECEIPT_REQUEST_LIMIT) : 'Ontology write request';
 }
 
-/** The local record of one ontology write the person, or their standing choice, decided. */
 export function workReceipt({
   request,
   sessionId,
@@ -80,7 +79,6 @@ export function workReceipt({
   };
 }
 
-/** Whether a finished MCP tool call is the writer the receipt was correlated with. */
 export function terminalMatchesWriter(update: Record<string, unknown>, receipt: AcpWorkReceipt): boolean {
   const meta = update._meta && typeof update._meta === 'object' && !Array.isArray(update._meta)
     ? update._meta as Record<string, unknown> : null;

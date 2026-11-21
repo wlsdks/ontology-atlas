@@ -43,7 +43,6 @@ export function snapshotPermissionRequest(request: AcpPermissionRequest): AcpPer
   return deepFreeze(structuredClone(request));
 }
 
-/** What `askPermission` reads and writes of the session that received the request. */
 export interface PermissionAskSession {
   runtimeId: string;
   vaultRoot: string | null;

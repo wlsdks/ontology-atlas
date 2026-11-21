@@ -7,7 +7,6 @@ import type { ReportedPlan } from '../investigation/reported-plan';
 import { unavailableTaskBaseline, type TaskBaselineCaptureResult } from '../task-baseline';
 import type { AcpTurnCompletion, AcpTurnStart, ActiveTurn } from './acp-turn';
 
-/** What sending one turn reads and writes of the session it is sent in. */
 export interface TurnSendSession {
   runtimeId: string;
   vaultRoot: string | null;
