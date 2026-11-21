@@ -593,6 +593,7 @@
   "home": {
     "guide": "使い方",
     "questions": "{count, plural, =0 {質問} other {質問#}}",
+    "openAnswer": "保存した回答を開く",
     "more": "その他",
     "compileNext": "Wikiページを作成：{source}",
     "staleClause": "変更された資料{count, number}件",

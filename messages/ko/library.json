@@ -593,6 +593,7 @@
   "home": {
     "guide": "사용 방법",
     "questions": "{count, plural, =0 {질문} other {질문 #}}",
+    "openAnswer": "저장한 답변 열기",
     "more": "더 보기",
     "compileNext": "위키 문서 만들기: {source}",
     "staleClause": "자료 {count, number}개 달라짐",

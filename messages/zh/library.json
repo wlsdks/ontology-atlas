@@ -593,6 +593,7 @@
   "home": {
     "guide": "使用方法",
     "questions": "{count, plural, =0 {问题} other {问题 #}}",
+    "openAnswer": "打开已保存的回答",
     "more": "更多",
     "compileNext": "生成 Wiki 页面：{source}",
     "staleClause": "{count} 份来源已变更",
