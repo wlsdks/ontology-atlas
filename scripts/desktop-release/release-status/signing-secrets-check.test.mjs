@@ -29,6 +29,21 @@ test("the signing environment must stay automatic, refuse administrator bypass a
   );
 });
 
+test("a custom branch policy needs both settings right: either one wrong is refused", () => {
+  const base = { can_admins_bypass: false, protection_rules: [] };
+  const refused = "release-signing must use an exact custom branch policy for main.";
+  for (const policy of [
+    { protected_branches: false, custom_branch_policies: false },
+    { protected_branches: true, custom_branch_policies: true },
+  ]) {
+    assert.equal(signingEnvironmentFailure({ ...base, deployment_branch_policy: policy }, "main"), refused);
+    assert.equal(
+      publicationEnvironmentFailure({ ...base, protection_rules: [{ type: "required_reviewers", reviewers }], deployment_branch_policy: policy }, "main"),
+      "release must use an exact custom branch policy for main.",
+    );
+  }
+});
+
 test("the publication environment must require a reviewer on top of the same protections", () => {
   const withReviewer = { ...protectedEnvironment, protection_rules: [{ type: "required_reviewers", reviewers }] };
   assert.equal(publicationEnvironmentFailure(withReviewer, "main"), "");

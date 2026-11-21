@@ -6,7 +6,7 @@ import { hasQueueLabel, queueNeedsConductor, queueNeedsConductorOrWarn, readProt
 
 const NOW = Date.parse('2026-09-12T12:00:00Z');
 
-function fakeDeps({ contexts = ['Unit'], failure = null, lock = null, queue = [], queueError = null } = {}) {
+function fakeDeps({ contexts = ['Unit'], failure = null, lock = null, unreadable = null, queue = [], queueError = null } = {}) {
   const errors = [];
   return {
     errors,
@@ -15,7 +15,7 @@ function fakeDeps({ contexts = ['Unit'], failure = null, lock = null, queue = []
     error: (line) => errors.push(line),
     gh: {
       readRequiredContexts: () => ({ contexts, failure }),
-      readLock: () => ({ payload: lock, unreadable: null }),
+      readLock: () => ({ payload: lock, unreadable }),
       listQueue: () => {
         if (queueError) throw new Error(queueError);
         return queue;
@@ -68,6 +68,11 @@ describe('whether the queue needs a conductor', () => {
 
   it('does not when a live conductor holds the lock', () => {
     assert.equal(queueNeedsConductor(fakeDeps({ lock: heldLock, queue: [{ number: 7 }] }), 8), false);
+  });
+
+  it('does not when the lock could not be read, so a lander never takes a lock it cannot see', () => {
+    const unreadable = { reason: 'rate-limited', detail: 'quota gone' };
+    assert.equal(queueNeedsConductor(fakeDeps({ unreadable, queue: [{ number: 7 }] }), 8), false);
   });
 
   it('warns instead of waiting when the queue cannot be read', () => {
