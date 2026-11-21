@@ -20,7 +20,8 @@ import {
 } from "./topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "../world/topology-realm-runtime";
-import { dialOverviewFit, type TopologyWorld } from "../world/topology-world";
+import { dialOverviewFit } from "../world/framing/dial-world-framing";
+import { type TopologyWorld } from "../world/topology-world";
 import { branchFocusTarget } from "./branch-frame/target";
 
 interface Dependencies {

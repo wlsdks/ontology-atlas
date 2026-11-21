@@ -35,10 +35,8 @@ import { describeLastDialFrame, lastDialFrame } from "../../dial/frame/frame";
 import type { DialProbe } from "../../dial/types";
 import { requestOntologyMapFrame } from "../frame-loop/use-topology-frame-loop";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
-import {
-  radiusForKind,
-  type TopologyWorld,
-} from "../world/topology-world";
+import { radiusForKind } from "../world/node-radius";
+import { type TopologyWorld } from "../world/topology-world";
 import { lastFocusFrame } from "../camera/target/focus-fit";
 import { neuralPainterOf } from "../../neural-gl/neural-gl-stage";
 

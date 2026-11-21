@@ -9,7 +9,8 @@ import { computeUnfocusedPanBounds, focusLeashPx, focusLeashWorld, FOCUS_LEASH_E
 import { clampFitInsets, MAX_FIT_CHROME_SHARE } from "./target/safe-insets";
 import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "./target/zoom-range";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { computeEgoBounds, type TopologyWorld } from "../world/topology-world";
+import { computeEgoBounds } from "../world/framing/world-bounds";
+import { type TopologyWorld } from "../world/topology-world";
 
 const OVERVIEW_LABEL_BOTTOM_ALLOWANCE = Math.max(...Object.values(LABEL_OFFSET)) + 4;
 

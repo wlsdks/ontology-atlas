@@ -30,7 +30,9 @@ import {
 } from "../camera/topology-overview-fit";
 import type { NodeDragState } from "../input/topology-pointer-types";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
-import { buildTopologyWorldSteps, dialOverviewFit, recomputeWorldGeometry, type TopologyWorld } from "./topology-world";
+import { buildTopologyWorldSteps, type TopologyWorld } from "./topology-world";
+import { dialOverviewFit } from "./framing/dial-world-framing";
+import { recomputeWorldGeometry } from "./world-geometry";
 import { runStepsSliced } from "./run-steps-sliced";
 import { announceWorldSwap, isWorldBuilding, markWorldBuilding } from "./world-swap";
 import type { FlatRingMemoryStore } from "../loop/topology-loop-contract";

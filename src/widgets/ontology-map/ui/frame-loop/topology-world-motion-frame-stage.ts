@@ -48,13 +48,10 @@ import { overviewBoundsFor } from "../camera/topology-overview-fit";
 import type { NodeDragState } from "../input/topology-pointer-types";
 import type { RealmRuntimeData } from "../world/topology-realm-runtime";
 import { fallbackAngleFor } from "../world/topology-realm-runtime";
-import {
-  applyForcePositions,
-  dialOverviewFit,
-  radiusForKind,
-  recomputeWorldGeometry,
-  type TopologyWorld,
-} from "../world/topology-world";
+import { applyForcePositions, recomputeWorldGeometry } from "../world/world-geometry";
+import { dialOverviewFit } from "../world/framing/dial-world-framing";
+import { radiusForKind } from "../world/node-radius";
+import { type TopologyWorld } from "../world/topology-world";
 
 const DRAG_TUG_EASE_TAU = 0.15;
 const SCOPED_FRAME_SPARSITY = 5;

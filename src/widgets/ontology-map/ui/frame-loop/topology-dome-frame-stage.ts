@@ -28,14 +28,13 @@ import {
 } from "../../model/dome-view/model-build";
 import {
   clampDomePitch,
-  decayOrbitVelocity,
   DOME_POSE_MS,
   domeFocusYaw,
   domeNearestYawTurn,
-  ORBIT_SNAP_ARRIVE_RAD,
-  orbitSnapTauMs,
   stepDomeDragSpring,
 } from "../../model/dome-view/camera/orbit";
+import { domeNudgeSlidePx } from "../../model/dome-view/camera/nudge-slide";
+import { stepOrbitRelease } from "../../model/dome-view/camera/orbit-release";
 import {
   domeEgoWorldBounds,
   domeWorldBounds,
@@ -45,6 +44,7 @@ import {
   beginDomeMorph,
   createDomeRuntime,
   DOME_FLY_MS,
+  restDomeAtFit,
   settleDomeRuntimeOffscreen,
   type DomeFitTarget,
   type DomeRuntime,
@@ -56,7 +56,9 @@ import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/target/fit-targets";
 import { computeDomeFocusCameraTarget } from "../camera/target/focus-fit";
 import { overviewBoundsFor } from "../camera/topology-overview-fit";
-import { dialOverviewFit, radiusForKind, type TopologyWorld } from "../world/topology-world";
+import { dialOverviewFit } from "../world/framing/dial-world-framing";
+import { radiusForKind } from "../world/node-radius";
+import { type TopologyWorld } from "../world/topology-world";
 
 type SourceRef<T> = { current: T; };
 
@@ -311,9 +313,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
             // If the fit scale is below the 2D floor, lower the floor to it.
             // Otherwise target ≠ value persists and the wheel anchor computes
             // against a zoom that does not exist (see the `fitScale` JSDoc).
-            dome.fitScale = target.tscale;
-            dome.restFit = { target: { ...target }, yaw: dome.yaw, pitch: dome.pitch };
-            dome.turnFollow = { target: dome.restFit.target, yaw: dome.yaw, followed: null };
+            restDomeAtFit(dome, target);
             userDrivenCameraRef.current = false;
             dampingRef.current = tokens.cameraDampingDefault;
             cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
@@ -409,9 +409,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               const target = domeFitTarget(dome.model, dome.yaw, dome.pitch, width, height, tokens);
               if (target !== null) {
                 cameraTargetRef.current = target;
-                dome.fitScale = target.tscale;
-                dome.restFit = { target: { ...target }, yaw: dome.yaw, pitch: dome.pitch };
-                dome.turnFollow = { target: dome.restFit.target, yaw: dome.yaw, followed: null };
+                restDomeAtFit(dome, target);
                 userDrivenCameraRef.current = false;
                 dampingRef.current = tokens.cameraDampingDefault;
                 cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
@@ -553,16 +551,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
                 eMin = Math.min(eMin, x);
                 eMax = Math.max(eMax, x);
               }
-              let shift = 0;
-              if (hi > lo) {
-                const needAtLeast = eMax - hi;
-                const allowAtMost = eMin - lo;
-                shift =
-                  needAtLeast <= allowAtMost
-                    ? Math.min(allowAtMost, Math.max(needAtLeast, 0))
-                    : (eMin + eMax) / 2 - (lo + hi) / 2;
-                shift = Math.min(sx - lo, Math.max(sx - hi, shift));
-              }
+              const shift = domeNudgeSlidePx(sx, eMin, eMax, lo, hi);
               if (Math.abs(shift) > 0.5) {
                 const target = { tx: current.tx + shift / current.tscale, ty: current.ty, tscale: current.tscale };
                 // Chained nudges keep the first view as the one a deselect returns to.
@@ -612,9 +601,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               } else {
                 const target = domeFitTarget(dome.model, dome.yaw, dome.pitch, vw, vh, tokens);
                 if (target !== null) {
-                  dome.fitScale = target.tscale;
-                  dome.restFit = { target: { ...target }, yaw: dome.yaw, pitch: dome.pitch };
-                  dome.turnFollow = { target: dome.restFit.target, yaw: dome.yaw, followed: null };
+                  restDomeAtFit(dome, target);
                   flyCamera(target);
                 }
               }
@@ -693,55 +680,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
         } else {
           orbitCadence = null;
         }
-        if (!dome.orbiting && dome.poseTween === null) {
-          /*
-           * Carry the release to a meaningful landing, only when it aimed at a domain meridian (`dome.yawSnap`); τ derives from the
-           * release velocity so speed does not jump when the pointer lifts (`orbitSnapTauMs`). On arrival it clears its own target.
-           */
-          if (dome.yawSnap !== null) {
-            const delta = dome.yawSnap - dome.yaw;
-            if (Math.abs(delta) < ORBIT_SNAP_ARRIVE_RAD) {
-              dome.yaw = dome.yawSnap;
-              dome.yawSnap = null;
-              dome.yawVel = 0;
-            } else {
-              const tau = orbitSnapTauMs(delta, dome.yawVel);
-              dome.yaw += delta * (1 - Math.exp(-dtMs / tau));
-              // The velocity gauge must keep saying how fast it is turning
-              // right now, so decay continues even outside the inertia
-              // branch — the disarm check reads it.
-              dome.yawVel = decayOrbitVelocity(dome.yawVel, dtMs);
-            }
-            dome.pitch += dome.pitchVel * dtMs;
-            dome.pitchVel = decayOrbitVelocity(dome.pitchVel, dtMs);
-            dome.yawTarget = dome.yaw;
-            dome.pitchTarget = dome.pitch;
-            const clamped = clampDomePitch(dome.pitch);
-            if (clamped !== dome.pitch) {
-              dome.pitch += (clamped - dome.pitch) * (1 - Math.exp(-dtMs / 120));
-              if (Math.abs(clamped - dome.pitch) < 0.0005) dome.pitch = clamped;
-              dome.pitchVel = 0;
-            }
-          } else {
-            // Release inertia: the velocity at release carries on and stops
-            // under geometric decay.
-            dome.yaw += dome.yawVel * dtMs;
-            dome.pitch += dome.pitchVel * dtMs;
-            dome.yawVel = decayOrbitVelocity(dome.yawVel, dtMs);
-            dome.pitchVel = decayOrbitVelocity(dome.pitchVel, dtMs);
-            // Pitch rubber-band: past the limit, spring back exponentially.
-            const clampedPitch = clampDomePitch(dome.pitch);
-            if (clampedPitch !== dome.pitch) {
-              dome.pitch += (clampedPitch - dome.pitch) * (1 - Math.exp(-dtMs / 120));
-              if (Math.abs(clampedPitch - dome.pitch) < 0.0005) dome.pitch = clampedPitch;
-              dome.pitchVel = 0;
-            }
-          }
-          // Invariant outside a drag: the target always follows the current
-          // pose, so the next drag does not inherit a stale target gap.
-          dome.yawTarget = dome.yaw;
-          dome.pitchTarget = dome.pitch;
-        }
+        if (!dome.orbiting && dome.poseTween === null) stepOrbitRelease(dome, dtMs);
         followTurn(dome);
         // Tier torsion decay (spring-back) — the hero's elastic torsion.
         const lagDecay = Math.pow(DOME_TIER_LAG_DECAY_PER_MS, dtMs);

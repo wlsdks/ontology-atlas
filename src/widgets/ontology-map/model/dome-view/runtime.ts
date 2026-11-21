@@ -70,6 +70,13 @@ export function beginDomeMorph(runtime: DomeRuntime, next: DomeModel, nowMs: num
       : null;
 }
 
+/** Records `target` as the whole-cloud fit at the current pose, and as the fit a turn's zoom follows. */
+export function restDomeAtFit(runtime: DomeRuntime, target: DomeFitTarget): void {
+  runtime.fitScale = target.tscale;
+  runtime.restFit = { target: { ...target }, yaw: runtime.yaw, pitch: runtime.pitch };
+  runtime.turnFollow = { target: runtime.restFit.target, yaw: runtime.yaw, followed: null };
+}
+
 /**
  * The dome step runs only while 3D is on or tearing down, so anything in flight when 2D took
  * over stays frozen and the idle gate counts it as motion forever. Nothing is visible, so

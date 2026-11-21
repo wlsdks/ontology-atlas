@@ -77,6 +77,7 @@ import {
 import {
   createDomeRuntime,
   beginDomeMorph,
+  restDomeAtFit,
   settleDomeRuntimeOffscreen,
   type DomeRuntime,
 } from "./runtime";
@@ -1069,6 +1070,19 @@ describe("layout morph moves nodes instead of cutting", () => {
     beginDomeMorph(runtime, buildDomeModel(nodes, { arrangement: "coupling", edges }), 1000, 0);
     expect(runtime.morph).toBeNull();
     expect(runtime.model.arrangement).toBe("coupling");
+  });
+});
+
+describe("dome-view rest fit", () => {
+  it("records the whole-cloud fit at the current pose, as a copy that later camera writes cannot change", () => {
+    const runtime = createDomeRuntime(buildDomeModel(NODES));
+    const target = { tx: 10, ty: -20, tscale: 0.8 };
+    restDomeAtFit(runtime, target);
+    expect(runtime.fitScale).toBe(0.8);
+    expect(runtime.restFit).toEqual({ target, yaw: runtime.yaw, pitch: runtime.pitch });
+    expect(runtime.restFit!.target).not.toBe(target);
+    expect(runtime.turnFollow).toEqual({ target, yaw: runtime.yaw, followed: null });
+    expect(runtime.turnFollow!.target).toBe(runtime.restFit!.target);
   });
 });
 
