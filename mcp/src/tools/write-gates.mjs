@@ -20,12 +20,10 @@ import {
   requireNonBlankString,
   requireOptionalStringArray,
 } from '../server/validate.mjs';
-import { GRAPH_ARRAY_KEYS } from '../vault/graph/relation-refs.mjs';
+import { GRAPH_ARRAY_KEY_SET } from '../vault/graph/relation-refs.mjs';
 import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
 
 const ADD_CONCEPT_KINDS = new Set(['project', 'domain', 'capability', 'element', 'document']);
-
-const GRAPH_ARRAY_KEY_SET = new Set(GRAPH_ARRAY_KEYS);
 
 function requireValidFrontmatterPatch(frontmatter) {
   if (frontmatter === undefined) return;
