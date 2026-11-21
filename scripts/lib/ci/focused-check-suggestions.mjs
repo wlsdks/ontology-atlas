@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { posix } from 'node:path';
 
 import { isSupportedSourcePath } from '../../quality/source-language/source-paths.mjs';
-import { loadTestReach } from '../import-graph/test-reach.mjs';
+import { readTestReach } from '../import-graph/test-reach.mjs';
 
 /**
  * The changed-path focused-check advisor: which checks a set of changed paths
@@ -43,7 +43,7 @@ function listCheckRuleFiles(directory = CHECK_RULES_DIRECTORY) {
 }
 
 /** Imports every rule file of `directory` and merges it into one registry. */
-export async function loadCheckRules(directory = CHECK_RULES_DIRECTORY) {
+export async function importCheckRules(directory = CHECK_RULES_DIRECTORY) {
   const modules = [];
   for (const name of listCheckRuleFiles(directory)) {
     modules.push({ name, module: await import(new URL(name, directory).href) });
@@ -109,7 +109,7 @@ export function composeCheckRules(modules) {
   };
 }
 
-const { rules: RULES, escalations: ESCALATIONS, directTests: DIRECT_TESTS } = await loadCheckRules();
+const { rules: RULES, escalations: ESCALATIONS, directTests: DIRECT_TESTS } = await importCheckRules();
 
 export function normalizeChangedPath(path) {
   const normalized = String(path || '').trim().replace(/\\/g, '/').replace(/^\.\//, '');
@@ -196,7 +196,7 @@ function directSourceLanguageSuggestions(paths) {
  * related`; a deleted file's importers run by name.
  */
 function directVitestTestSuggestions(paths, deletedPaths, { allContractsRun }) {
-  const reach = loadTestReach();
+  const reach = readTestReach();
   const rows = [];
   const sources = [];
   for (const path of paths) {

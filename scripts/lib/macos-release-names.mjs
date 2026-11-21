@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export function loadMacosReleaseNames(root = process.cwd()) {
+export function readMacosReleaseNames(root = process.cwd()) {
   const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
   const tauriConfig = JSON.parse(
     fs.readFileSync(path.join(root, "src-tauri", "tauri.conf.json"), "utf8"),

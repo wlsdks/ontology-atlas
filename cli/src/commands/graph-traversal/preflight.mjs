@@ -53,7 +53,7 @@ export async function runPreflight(args) {
     return emitSkip(parsed.json, stagedFiles === null ? 'not-a-git-repo' : 'no-staged-files');
   }
 
-  const docs = loadVaultDocs(vaultRoot);
+  const docs = readVaultDocs(vaultRoot);
   const matches = matchChangedFilesToVaultNodes(docs, stagedFiles);
   if (matches.length === 0) {
     return emitSkip(parsed.json, 'no-node-matches', { stagedFiles: stagedFiles.length });
@@ -137,7 +137,7 @@ function emitSkip(json, reason, extra = {}) {
   return 0;
 }
 
-function loadVaultDocs(vaultRoot) {
+function readVaultDocs(vaultRoot) {
   const docs = [];
   for (const file of walkMd(vaultRoot)) {
     let raw;

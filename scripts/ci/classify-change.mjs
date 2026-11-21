@@ -12,7 +12,7 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { comparableBranch, usablePushBefore } from './plan-base.mjs';
 import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
-import { importClosure, loadTestReach } from '../lib/import-graph/test-reach.mjs';
+import { importClosure, readTestReach } from '../lib/import-graph/test-reach.mjs';
 import { packageScriptFiles } from '../lib/ci/package-script-files.mjs';
 import { RUST_LINT_COMMAND } from '../lib/check-rules/desktop.mjs';
 
@@ -376,7 +376,7 @@ function unitPlan({ paths, existingPaths, deletedPaths, suggestions, full }) {
    * the tree from disk. Before merge the planner narrows it to the contracts the import graph
    * reaches plus the core; the full sweep runs after the merge.
    */
-  const reach = loadTestReach();
+  const reach = readTestReach();
   const sources = (list) => list.filter((path) => !isGenerated(path));
   const reachedContracts = reach
     .testsReaching(withMessageComposites([...sources(existingPaths), ...sources(deletedPaths)]))
@@ -431,7 +431,7 @@ function unitPlan({ paths, existingPaths, deletedPaths, suggestions, full }) {
  */
 function perfPlan({ paths, existingPaths, deletedPaths, full }) {
   if (full || paths.some((path) => matchesAny(path, ROOT_UNIT_FULL_INPUTS))) return { mode: 'full' };
-  const reach = loadTestReach();
+  const reach = readTestReach();
   const sources = (list) => list.filter((path) => !isGenerated(path));
   const stale = reach.testsReaching(sources(deletedPaths)).perf.filter((test) => !deletedPaths.includes(test));
   if (stale.length > 0) return { mode: 'full' };

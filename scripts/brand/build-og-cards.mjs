@@ -65,7 +65,7 @@ function messagesFor(locale) {
  * `pnpm docs-vault:build`), loaded through Vite so the TypeScript the page runs is the code that
  * lays this map out. Names per locale follow the page: `display_<locale>`, else the display title.
  */
-async function loadMapScene() {
+async function readMapScene() {
   const alias = SRC_ALIASES.map((entry) => {
     const [name, directory = name] = entry.split(':');
     return { find: `@/${name}`, replacement: join(ROOT, 'src', directory) };
@@ -240,7 +240,7 @@ async function main() {
   );
   const moru = await moruDataUrl();
   const compass = await compassDataUrl();
-  const scene = await loadMapScene();
+  const scene = await readMapScene();
 
   const browser = await chromium.launch();
   try {

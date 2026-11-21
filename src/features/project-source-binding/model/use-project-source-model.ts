@@ -106,7 +106,7 @@ export interface ProjectSourceSnapshot {
   readStatus: ProjectSourceStoreReadResult["status"];
 }
 
-export async function loadProjectSourceSnapshot(input: {
+export async function readProjectSourceSnapshot(input: {
   store: ProjectSourceStore;
   projectSlug: string;
   graphHash: string;
@@ -250,7 +250,7 @@ export function useProjectSourceModel(input: {
       });
       return () => { cancelled = true; };
     }
-    void loadProjectSourceSnapshot({
+    void readProjectSourceSnapshot({
       store,
       projectSlug: input.projectSlug,
       graphHash,

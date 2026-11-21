@@ -15,7 +15,7 @@ import { createWriteStream, mkdirSync, writeFileSync } from 'node:fs';
 import { cpus, loadavg } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadBudgets, printBudgetTable } from './lib/budgets.mjs';
+import { getBudgets, printBudgetTable } from './lib/budgets.mjs';
 import { describeWindows, profileWindows } from './lib/cpu-profile.mjs';
 import { EXPORT_DIR, ensurePerfExport } from './lib/perf-export.mjs';
 import { capSeconds, cleanVaults, parseOpenArgs, PERF_WORK, prepareVault } from './lib/vaults.mjs';
@@ -167,7 +167,7 @@ async function measure(shape, files) {
     command: 'perf:web-open',
     shape,
     files,
-    gated: files <= loadBudgets().webGatedUpTo,
+    gated: files <= getBudgets().webGatedUpTo,
     measured: {
       'web-heap-steady': steadyMb,
       'web-heap-peak': heap.length ? Math.max(...heap.map((s) => s.mb ?? 0)) : null,

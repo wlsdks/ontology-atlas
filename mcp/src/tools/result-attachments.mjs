@@ -5,7 +5,7 @@
  * summary freshness a maintenance plan is judged against.
  */
 
-import { loadOntologyAtlasIgnore } from '../vault/sidecar/ontology-atlas-ignore.mjs';
+import { readOntologyAtlasIgnore } from '../vault/sidecar/ontology-atlas-ignore.mjs';
 import { queryCompiledOntology } from '../ontology-engine.mjs';
 import {
   COMPILED_ONTOLOGY_CACHE,
@@ -108,7 +108,7 @@ function attachVaultValidation(result, args = {}, loadedDocs = null, report = va
 function maintenancePlanAfterWrite(limit) {
   COMPILED_ONTOLOGY_CACHE.clear();
   const { artifact, docs: maintenanceDocs } = COMPILED_ONTOLOGY_CACHE.getWithDocs();
-  const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
+  const ontologyAtlasIgnorePatterns = readOntologyAtlasIgnore(VAULT_ROOT);
   // The node-eligibility gate runs inside `commitDoc` for every write door. Draining
   // here, where a write response is assembled, lets batch rows accumulate findings
   // and the batch's closing call report them once.

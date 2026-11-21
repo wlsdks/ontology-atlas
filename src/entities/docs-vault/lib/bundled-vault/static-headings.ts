@@ -7,7 +7,7 @@ import type { VaultHeading } from '../../model/vault-manifest';
  */
 export type StaticVaultHeadings = Record<string, VaultHeading[]>;
 
-export async function loadStaticVaultHeadings(
+export async function importStaticVaultHeadings(
   source: SampleSource,
 ): Promise<StaticVaultHeadings> {
   const mod =

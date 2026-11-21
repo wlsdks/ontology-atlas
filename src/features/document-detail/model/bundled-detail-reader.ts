@@ -1,5 +1,5 @@
 import {
-  loadStaticVaultHeadings,
+  importStaticVaultHeadings,
   type DocumentRef,
   type StaticVaultHeadings,
   type StaticVaultSource,
@@ -14,7 +14,7 @@ export function createBundledDetailReader(sample: StaticVaultSource, { headings 
   return async (docs: readonly DocumentRef[]): Promise<(VaultDocDetail | null)[]> => {
     let headingsBySlug = NO_HEADINGS;
     if (headings) {
-      headingsChunk ??= loadStaticVaultHeadings(sample.source);
+      headingsChunk ??= importStaticVaultHeadings(sample.source);
       try {
         headingsBySlug = await headingsChunk;
       } catch {

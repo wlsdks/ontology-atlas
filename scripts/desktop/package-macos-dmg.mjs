@@ -3,12 +3,12 @@ import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { loadMacosReleaseNames } from "../lib/macos-release-names.mjs";
+import { readMacosReleaseNames } from "../lib/macos-release-names.mjs";
 import { isTransientHdiutilFailure, stalePathForVolume } from "../lib/desktop/hdiutil-retry.mjs";
 import { dmgImageSizeMiB, parseDuKiB } from "../lib/macos-artifact/macos-dmg-layout.mjs";
 
 const root = process.cwd();
-const names = loadMacosReleaseNames(root);
+const names = readMacosReleaseNames(root);
 const { appName, appBundleName, releaseAssetName, version, arch } = names;
 const bundleRoot = path.join(root, "src-tauri", "target", "release", "bundle");
 const appPath = path.join(bundleRoot, "macos", appBundleName);

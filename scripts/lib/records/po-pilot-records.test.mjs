@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import { evaluatePoPilot, parsePoPilot, pilotCheckFailures } from './po-pilot.mjs';
-import { loadPoPilotRecords, readPoPilotSource } from './po-pilot-records.mjs';
+import { readPoPilotRecords, readPoPilotSource } from './po-pilot-records.mjs';
 
 const LEGACY = readFileSync(new URL('../../../docs/PO-PILOT.md', import.meta.url), 'utf8');
 const UUIDS = [
@@ -31,11 +31,11 @@ function write(root, directory, name, value) { writeFileSync(join(root, `docs/re
 test('same-day independent UUID runs merge deterministically without losing legacy metrics', () => {
   const root = repo();
   try {
-    const before = loadPoPilotRecords({ root });
+    const before = readPoPilotRecords({ root });
     assert.deepEqual(evaluatePoPilot(before.pilot, '2026-09-13').metrics, evaluatePoPilot(parsePoPilot(readFileSync(join(root, 'docs/PO-PILOT.md'), 'utf8')), '2026-09-13').metrics);
     write(root, 'po-runs', 'b', run(UUIDS[1], '2026-09-13T10:00:00.000Z', 'second'));
     write(root, 'po-runs', 'a', run(UUIDS[0], '2026-09-13T10:00:00.000Z', 'first'));
-    const after = loadPoPilotRecords({ root });
+    const after = readPoPilotRecords({ root });
     assert.equal(after.pilot.runs.length, before.pilot.runs.length + 2);
     assert.deepEqual(after.pilot.runs.slice(-2).map(({ id }) => id), UUIDS.slice(0, 2));
     assert.equal(after.pilot.updates.length, before.pilot.updates.length + 2);
@@ -50,11 +50,11 @@ test('stable UUID updates preserve safety-stop and policy adjust does not retire
   try {
     write(root, 'po-runs', 'run', run(UUIDS[0], '2026-09-13T10:00:00.000Z'));
     write(root, 'po-updates', 'update', { schema: 'po-pilot-update/v1', id: UUIDS[1], runId: UUIDS[0], recordedAt: '2026-09-13T11:00:00.000Z', date: '2026-09-13', proof: 'fail-shipped', ownerClear: 'no', boundaryMiss: 'yes', laterResult: 'reversed' });
-    const stopped = evaluatePoPilot(loadPoPilotRecords({ root }).pilot, '2026-09-13');
+    const stopped = evaluatePoPilot(readPoPilotRecords({ root }).pilot, '2026-09-13');
     assert.equal(stopped.phase, 'safety-stop');
     assert.equal(pilotCheckFailures(stopped).length, 2);
     write(root, 'po-policy', 'adjust', { schema: 'po-pilot-policy/v1', id: UUIDS[2], recordedAt: '2026-09-13T12:00:00.000Z', outcome: 'adjust' });
-    const adjusted = evaluatePoPilot(loadPoPilotRecords({ root }).pilot, '2026-09-13');
+    const adjusted = evaluatePoPilot(readPoPilotRecords({ root }).pilot, '2026-09-13');
     assert.equal(adjusted.phase, 'adjusted');
     assert.equal(adjusted.metrics.eligibleDecisions, stopped.metrics.eligibleDecisions);
   } finally { rmSync(root, { recursive: true, force: true }); }
@@ -69,7 +69,7 @@ test('rejects duplicate, unknown, predating, ambiguous, and malformed fragments'
     ['malformed', (root) => write(root, 'po-runs', 'r', { ...run(UUIDS[0], 'bad'), recordedAt:'bad' }), /ISO instant/],
   ]) {
     const root = repo();
-    try { arrange(root); assert.throws(() => loadPoPilotRecords({ root }), pattern, name); }
+    try { arrange(root); assert.throws(() => readPoPilotRecords({ root }), pattern, name); }
     finally { rmSync(root, { recursive: true, force: true }); }
   }
 });
@@ -79,7 +79,7 @@ test('an additive keep policy still passes through the unsupported-keep gate', (
   try {
     write(root, 'po-runs', 'run', run(UUIDS[0], '2026-09-13T10:00:00.000Z'));
     write(root, 'po-policy', 'keep', { schema: 'po-pilot-policy/v1', id: UUIDS[2], recordedAt: '2026-09-13T12:00:00.000Z', outcome: 'keep' });
-    const result = evaluatePoPilot(loadPoPilotRecords({ root }).pilot, '2026-09-13');
+    const result = evaluatePoPilot(readPoPilotRecords({ root }).pilot, '2026-09-13');
     assert.equal(result.phase, 'invalid-keep');
     assert.ok(pilotCheckFailures(result).length > 0);
   } finally { rmSync(root, { recursive: true, force: true }); }

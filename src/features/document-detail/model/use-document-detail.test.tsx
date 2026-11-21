@@ -10,9 +10,9 @@ vi.mock('@/entities/docs-vault/lib/bundled-vault/static-headings', async (origin
   const actual = await original<typeof import('@/entities/docs-vault/lib/bundled-vault/static-headings')>();
   return {
     ...actual,
-    loadStaticVaultHeadings: (...args: Parameters<typeof actual.loadStaticVaultHeadings>) => {
+    importStaticVaultHeadings: (...args: Parameters<typeof actual.importStaticVaultHeadings>) => {
       headingsChunk.loads += 1;
-      return actual.loadStaticVaultHeadings(...args);
+      return actual.importStaticVaultHeadings(...args);
     },
   };
 });
