@@ -500,9 +500,12 @@ request, guards and options before waiting, with the originating turn, vault and
 generation;
 missing or mismatched ontology-write origins are refused. Unstructured user text
 is retained as the requested outcome; unrecorded non-goals remain unknown.
-A card still waiting is answered with a rejection, never an option, by
-`refuseOpenAsk` (`permissions/refuse-open-ask.ts`) when a turn is stopped, the
-conversation is closed or unmounted, or the agent process exits.
+A card still waiting is taken down by `refuseOpenAsk`
+(`permissions/refuse-open-ask.ts`) and answered with a rejection, never an
+option, when a turn is stopped, the conversation is closed or unmounted, or the
+agent process exits; when the person cancels the turn it is answered
+`cancelled`, as the protocol requires. A queued request whose turn has ended is
+refused and never auto-approved.
 
 The internal `task-meaning-review` model binds the exact proposal and keeps
 historical comparison evidence separate from current decision reuse. Complete
