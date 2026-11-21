@@ -91,7 +91,10 @@ pub(crate) fn vault_root_rejection(root: &Path) -> Option<&'static str> {
     let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
         .map(PathBuf::from)
         .and_then(|p| fs::canonicalize(p).ok());
-    if home.as_deref() == Some(root) {
+    if home
+        .as_deref()
+        .is_some_and(|home| is_same_directory(home, root))
+    {
         return Some("home-directory");
     }
 
@@ -99,6 +102,7 @@ pub(crate) fn vault_root_rejection(root: &Path) -> Option<&'static str> {
     const SYSTEM_DIRS: &[&str] = &[
         "/Applications",
         "/System",
+        "/System/Volumes/Data",
         "/Library",
         "/Users",
         "/Volumes",
@@ -123,14 +127,36 @@ pub(crate) fn vault_root_rejection(root: &Path) -> Option<&'static str> {
     #[cfg(not(any(target_os = "macos", target_os = "linux", windows)))]
     const SYSTEM_DIRS: &[&str] = &[];
 
-    for dir in SYSTEM_DIRS {
-        // Only that exact directory; places inside it can be valid.
-        if root == Path::new(dir) {
-            return Some("system-directory");
-        }
+    // Only that exact directory; places inside it can be valid.
+    if SYSTEM_DIRS
+        .iter()
+        .any(|dir| is_same_directory(Path::new(dir), root))
+    {
+        return Some("system-directory");
     }
 
     None
+}
+
+/// One directory under any name. A macOS firmlink such as `/System/Volumes/Data/Users`
+/// is `/Users` with the same device and inode, and a Windows canonical path carries a
+/// `\\?\` prefix the named positions do not, so a string comparison alone lets both pass.
+fn is_same_directory(named: &Path, root: &Path) -> bool {
+    if named == root {
+        return true;
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        match (fs::metadata(named), fs::metadata(root)) {
+            (Ok(a), Ok(b)) => a.dev() == b.dev() && a.ino() == b.ino(),
+            _ => false,
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        fs::canonicalize(named).is_ok_and(|named| named == root)
+    }
 }
 
 pub(crate) fn ensure_inside_canonical(root_path: &str, path: &Path) -> Result<PathBuf, String> {
@@ -326,6 +352,36 @@ mod tests {
             Some("home-directory"),
             "the home directory itself is not a vault"
         );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn vault_root_rejection_sees_through_the_data_volume_names() {
+        let home = fs::canonicalize(std::env::var_os("HOME").unwrap()).unwrap();
+        let data_home = Path::new("/System/Volumes/Data").join(home.strip_prefix("/").unwrap());
+        if !data_home.exists() {
+            return;
+        }
+        assert_eq!(vault_root_rejection(&data_home), Some("home-directory"));
+        for dir in [
+            "/System/Volumes/Data",
+            "/System/Volumes/Data/Users",
+            "/System/Volumes/Data/Applications",
+        ] {
+            assert_eq!(
+                vault_root_rejection(Path::new(dir)),
+                Some("system-directory"),
+                "{dir}"
+            );
+        }
+        assert_eq!(vault_root_rejection(&data_home.join("notes")), None);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn vault_root_rejection_blocks_canonical_windows_system_directories() {
+        let windows = fs::canonicalize("C:\\Windows").unwrap();
+        assert_eq!(vault_root_rejection(&windows), Some("system-directory"));
     }
 
     #[test]
