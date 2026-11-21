@@ -45,7 +45,7 @@ Nobody has captured this moment on a real folder, so acceptance criterion 1 capt
   - `delete_concept` previews backlinks before it deletes (`lifecycle.mjs:189-199`).
   - None of this has been exercised on a wiki fixture yet.
 - **No MCP tool writes a wiki page.**
-  - `add_relation` refuses an endpoint that is not a node (`mcp/src/tools/write-relations.mjs:117-120`).
+  - `add_relation` refuses an endpoint that is not a node (`mcp/src/tools/writes/write-relations.mjs:117-120`).
   - Pages are written as files, and the app judges each write with `judgePageWrite` → `validateWikiPage` (`src/features/library/lib/wiki/judge-page-write.ts:69-81`).
 - **Standing rules.**
   - Record `0f78a22b` (2026-11-18): agents write meaning in one run, without waiting for a yes.
