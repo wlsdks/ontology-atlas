@@ -68,7 +68,7 @@ export const rules = [
     order: 1220,
     command: 'pnpm integration:cli:diagnosis',
     reason: 'CLI health/agent-brief/workspace-brief diagnosis command changed',
-    matches: [/^cli\/src\/commands\/diagnosis\/(?:health|agent-brief|workspace-brief)\.mjs$/],
+    matches: [/^cli\/src\/commands\/diagnosis\/(?:health|agent-brief|workspace-brief)(?:\.mjs|\/[a-z-]+\.mjs)$/],
   },
   {
     order: 1230,
@@ -100,7 +100,7 @@ export const rules = [
     order: 1260,
     command: 'pnpm integration:cli:local-vault',
     reason: 'CLI local vault/frontmatter command changed',
-    matches: [/^cli\/src\/commands\/local-vault\/(?:add|import|list|find|validate)\.mjs$/],
+    matches: [/^cli\/src\/commands\/local-vault\/(?:add|import|list|find|validate)(?:\.mjs|\/[a-z-]+\.mjs)$/],
   },
   {
     order: 1270,
