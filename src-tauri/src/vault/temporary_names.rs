@@ -1,7 +1,5 @@
-//! The names Atlas gives a file while it is being written, in one place, so the writers and
-//! the vault-open sweep that removes leftovers cannot drift apart. The sweep deletes only a
-//! whole name in one of these exact shapes; a person's file that merely mentions the marker
-//! is never touched.
+//! The names Atlas gives a file while it is being written, so the writers and the vault-open sweep cannot drift
+//! apart. The sweep deletes only a whole name in one of these exact shapes, never a person's file that mentions the marker.
 //!
 //! | Writer | Shape |
 //! |---|---|

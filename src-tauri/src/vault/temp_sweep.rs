@@ -1,10 +1,8 @@
-//! An atomic write leaves its temporary file behind when the process ends between creating
-//! it and renaming it: a crash, a forced quit, or the Windows updater's immediate exit.
-//! Opening a vault removes those leftovers so they do not pile up.
-//!
-//! Only a whole name in a writer's exact shape is removed (`crate::vault::temporary_names`), only in
-//! folders the vault walk itself enters plus the root `.ontology-atlas` sidecar, and only
-//! after an hour untouched, because the MCP server and the CLI may be mid-write.
+//! Removes the temporary files an atomic write leaves when the process ends between creating and renaming
+//! it (crash, forced quit, the Windows updater's immediate exit), when a vault opens.
+//! Only a whole name in a writer's exact shape (`crate::vault::temporary_names`) is removed, only in folders
+//! the vault walk enters plus the root `.ontology-atlas` sidecar, and only after an hour untouched, because the
+//! MCP server and the CLI may be mid-write.
 
 use super::walk::{vault_walk_skips_directory, VAULT_CACHE_DIR_TAG, VAULT_WALK_MAX_DEPTH};
 use crate::vault::temporary_names::is_atlas_temporary;
@@ -276,7 +274,7 @@ mod tests {
         fs::remove_dir_all(root).ok();
     }
 
-    /// Each of these was deleted by the first version, which matched a substring.
+    /// Names that merely contain the marker are kept.
     #[test]
     fn a_person_s_files_that_mention_the_marker_survive() {
         let root = vault("people");

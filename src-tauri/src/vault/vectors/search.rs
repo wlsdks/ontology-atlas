@@ -1,9 +1,6 @@
-//! A question: embedded within ten seconds by the folder's source, then the nearest passages from
-//! the folder's in-memory copy, each still held by its file. A failure is a state, never an error.
-//!
-//! The ten seconds are the sources' own: the built-in model ends a question its worker does not
-//! answer in time (`client::QUESTION_LIMIT`, the load included) and kills that worker, and a
-//! runner's request carries the same limit (`TIMEOUTS.query`). No thread outlives a search.
+//! A question: embedded within ten seconds by the folder's source, then the nearest passages from the folder's
+//! in-memory copy, each still held by its file. A failure is a state, never an error.
+//! The ten seconds are the sources' own (`client::QUESTION_LIMIT`, `TIMEOUTS.query`); no thread outlives a search.
 
 use super::failure::{failure_of, During};
 use super::job::Entry;

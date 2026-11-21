@@ -69,7 +69,6 @@ const WINDOW_STATE_FLAGS: tauri_plugin_window_state::StateFlags =
 pub(crate) const APP_LOCALES: [&str; 4] = ["en", "ko", "ja", "zh"];
 const DEFAULT_APP_LOCALE: &str = "en";
 
-/// Whether this process was started as the built-in model's worker.
 pub fn embed_worker_requested(args: &[std::ffi::OsString]) -> bool {
     llm::embed::builtin::worker::requested(args)
 }
@@ -384,7 +383,6 @@ pub fn run() {
         });
 }
 
-/// What an app event asks of the shutdown path.
 #[derive(Debug, PartialEq, Eq)]
 enum Shutdown {
     None,

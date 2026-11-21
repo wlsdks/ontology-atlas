@@ -606,8 +606,7 @@ mod tests {
         assert!(!script.contains("conceptCount"));
     }
 
-    /// A planted but ungranted fixture restored as "grant needed", so `/ko/topology/`
-    /// fell back to first run whenever the person had never picked that exact folder.
+    /// A planted but ungranted fixture restores as "grant needed", so `/ko/topology/` falls back to first run.
     #[test]
     fn every_fixture_folder_planted_in_the_webview_is_granted_for_the_launch() {
         let base = std::env::temp_dir().join(format!("atlas-verify-grant-{}", std::process::id()));

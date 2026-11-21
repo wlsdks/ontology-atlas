@@ -1,5 +1,3 @@
-//! Response validation.
-
 use super::*;
 
 #[test]

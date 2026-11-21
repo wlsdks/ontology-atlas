@@ -130,8 +130,7 @@ fn a_quiet_update_starts_ten_minutes_after_the_first_change_however_busy_the_fol
 }
 
 /// The worker's life for a folder written to every five seconds for three minutes, on the job's
-/// clock: once each index pass asked for an update at once, which started and released the
-/// worker once a pass; now the writes are one update after they go quiet.
+/// clock: the writes make one update after they go quiet, not one per index pass.
 #[test]
 fn a_folder_written_every_five_seconds_for_three_minutes_starts_the_worker_once() {
     let harness = Harness::new();

@@ -47,7 +47,6 @@ pub(super) struct Ends<'a> {
 }
 
 impl Ends<'_> {
-    /// Why the capture must end now, if it must.
     fn reached(&self) -> Option<CaptureError> {
         let cancelled = self
             .cancel

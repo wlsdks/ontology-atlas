@@ -23,7 +23,6 @@ const CONVERT_LIMIT: Duration = Duration::from_secs(30 * 60);
 /// A vector whose length strays further from 1 was not normalised by the worker.
 const UNIT_TOLERANCE: f32 = 1e-3;
 
-/// A worker and the thread reading its answers.
 pub(super) struct Connection {
     input: Box<dyn Write + Send>,
     answers: mpsc::Receiver<Result<Answer, EmbedError>>,

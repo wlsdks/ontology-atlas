@@ -137,8 +137,6 @@ fn audit_lines(vault: &Path) -> Vec<serde_json::Value> {
         .collect()
 }
 
-// --- A local HTTP stub, so curl's real behaviour is what the tests see. ---
-
 enum Reply {
     Raw(Vec<u8>),
     /// Accepts and never answers.

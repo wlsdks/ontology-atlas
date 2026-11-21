@@ -1,13 +1,7 @@
-//! `rows.sqlite`: per file and per producer, the value a program computed from one Markdown file,
-//! so a reopen reads and derives only the files that changed. The crate never interprets a value;
-//! it stores the producer's JSON beside the stamp of the file version it came from and hands it
-//! back only while that stamp still matches the disk.
-//!
-//! A row is written only for a file version the stamp pass saw (`get` hands out that stamp as a
-//! token), which is still on disk when the row is written, and which was modified more than two
-//! seconds before it was seen. So a row never pairs a value with a later version of its file, and
-//! the racy-stamp rule never has to fall back to a hash: a row whose file is modified within two
-//! seconds of the row's `read_at_ns` is not used at all.
+//! `rows.sqlite`: per file and producer, the JSON value a program computed from one Markdown file, stored
+//! with the stamp of that file version and handed back only while the stamp matches the disk. A row is
+//! written only for a version the stamp pass saw, still on disk, modified more than two seconds before
+//! it was seen, so a row never pairs a value with a later version of its file.
 
 use crate::lifecycle::{
     create_index_dir, delete_locked, deletions, is_damage, lock_writer, open_store_reader,
@@ -46,7 +40,6 @@ fn invalid(message: &str) -> Error {
     Error::Io(io::Error::new(io::ErrorKind::InvalidData, message))
 }
 
-/// The producer part of a namespace, after checking the namespace is one.
 fn producer_of(namespace: &str) -> Result<&str> {
     let allowed = |byte: u8| byte.is_ascii_alphanumeric() || b"-_.+/".contains(&byte);
     match namespace.split_once('/') {
@@ -122,7 +115,6 @@ pub struct Counts {
     pub other_versions: u64,
 }
 
-/// What `lookup` found for one requested path.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Found {
     /// The stored value; its file still has the stamp it was computed from.
@@ -172,7 +164,6 @@ impl Answers for Vec<Found> {
     }
 }
 
-/// `get`'s answer as values, one per requested path, for callers inside Rust.
 pub fn lookup(root: &Path, namespace: &str, paths: &[String]) -> Result<(Vec<Found>, Counts)> {
     let mut found = Vec::with_capacity(paths.len());
     let counts = look_up(root, namespace, paths, &mut found, Vec::clear)?;
@@ -352,7 +343,6 @@ pub struct PutReport {
     pub removed: usize,
 }
 
-/// Whether `row` describes the file version now on disk, seen long enough after its last write.
 fn trusted(row: &NewRow, seen: Seen, now: Option<Stamp>) -> bool {
     now == Some(seen.stamp)
         && seen.stamp.is_vouched()

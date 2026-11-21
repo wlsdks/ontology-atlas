@@ -20,7 +20,6 @@ const RESCORE_CANDIDATES: usize = 256;
 /// Hits one search returns at most, which bounds its candidate heap.
 pub const MAX_HITS: usize = 64;
 
-/// One passage a search found, still held by its file.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PassageHit {
     /// Relative to the vault root, `/`-separated, as the folder walk listed it.
@@ -122,7 +121,6 @@ impl Searcher {
         !same
     }
 
-    /// Lets the store go: its copy and its connection, so no handle keeps the file.
     fn release(&mut self) -> Result<()> {
         self.ids = Words::with_capacity(0)?;
         self.bits = Words::with_capacity(0)?;
@@ -131,7 +129,6 @@ impl Searcher {
         Ok(())
     }
 
-    /// Vectors held in memory.
     pub fn vectors(&self) -> usize {
         self.ids.len()
     }

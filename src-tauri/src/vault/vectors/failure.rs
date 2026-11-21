@@ -66,15 +66,11 @@ pub(super) enum ModelStep {
 /// (`MODEL_FAILED_DETAILS`), so no other string reaches them.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum ModelFailedDetail {
-    /// The model did not load.
     Load,
-    /// The download could not be converted.
     Convert,
-    /// The converted model, or an answer, failed Atlas's check.
     Check,
     WorkerExited,
     TimedOut,
-    /// The job failed inside Atlas.
     Internal,
 }
 

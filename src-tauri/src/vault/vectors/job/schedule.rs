@@ -81,7 +81,6 @@ impl Vectors {
         self.start_housekeeping();
     }
 
-    /// Starts every quiet update whose wait ended.
     pub(in crate::vault::vectors) fn start_due_updates(self: &Arc<Self>, now: Duration) {
         for entry in self.all_entries() {
             if entry.update_due(now) {

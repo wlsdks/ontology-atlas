@@ -31,7 +31,6 @@ pub(super) const UNHELD_GRACE: Duration = Duration::from_secs(7 * 24 * 60 * 60);
 /// Vectors past their grace period deleted per transaction.
 const SWEEP_BATCH: i64 = 4_096;
 
-/// Passages still to prepare.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Remaining {
     pub files: u64,
@@ -165,7 +164,6 @@ fn plan_files(
     pending(&writer.dir)
 }
 
-/// The stamp pass's result.
 struct Stamped<'a> {
     work: Vec<Work<'a>>,
     removed: Vec<i64>,
@@ -254,7 +252,6 @@ fn pending(dir: &Path) -> Result<Pending> {
     })
 }
 
-/// One file as a refresh read it.
 enum FileRead {
     Passages {
         stamp: Stamp,
@@ -314,7 +311,6 @@ fn read_file(root: &Path, volume: &Volume, work: &Work) -> FileRead {
     }
 }
 
-/// Reads `work` on the background workers, in order.
 fn read_all(root: &Path, volume: &Volume, work: &[Work]) -> Vec<FileRead> {
     let chunk = work.len().div_ceil(worker_count()).max(1);
     std::thread::scope(|scope| {
@@ -387,7 +383,6 @@ fn refresh(
     Ok(())
 }
 
-/// Deletes one file's rows, remembering its passages for `mark_unheld`.
 fn forget_file(tx: &Connection, id: i64, dropped: &mut HashSet<Sha>) -> rusqlite::Result<()> {
     remember_passages(tx, id, dropped)?;
     tx.prepare_cached("DELETE FROM passages WHERE file_id = ?1")?
@@ -424,7 +419,6 @@ fn mark_unheld(tx: &Connection, dropped: &HashSet<Sha>, now: i64) -> rusqlite::R
     Ok(marked)
 }
 
-/// Writes one file's read and says how many vectors its passages hold again.
 fn write_read(
     tx: &Connection,
     item: &Work,
@@ -522,7 +516,6 @@ fn sweep_expired(writer: &StoreWriter, now: i64) -> std::result::Result<(), Writ
     Ok(())
 }
 
-/// One batch of `sweep_expired`; returns how many went.
 fn sweep_batch(tx: &Connection, now: i64) -> rusqlite::Result<i64> {
     let grace = i64::try_from(UNHELD_GRACE.as_millis()).unwrap_or(i64::MAX);
     let ids: Vec<i64> = tx

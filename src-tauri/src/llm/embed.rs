@@ -101,14 +101,11 @@ pub(crate) enum EmbedError {
     HostRefused(String),
     SizeMismatch(String),
     HashMismatch(String),
-    /// The built-in model is not prepared on this computer.
     ModelNotReady,
-    /// Another preparation of the built-in model is running.
     ModelBusy,
     ModelLoad(String),
     Convert(String),
     Inference(String),
-    /// Reading or writing the model directory failed.
     Store(String),
     /// The volume lacks the space the whole preparation needs; nothing was kept.
     DiskSpace {
@@ -119,7 +116,6 @@ pub(crate) enum EmbedError {
     NoDirectConnection,
     /// The model worker could not be started or did not introduce itself.
     WorkerStart(String),
-    /// The model worker ended or closed its output before answering.
     WorkerExited,
     /// The model worker refused a request with a code this side does not know.
     WorkerFailed(String),

@@ -1,10 +1,6 @@
-//! One background job per folder: wait for the app's one model turn, make the model ready, list
-//! the folder, plan, and prepare batch by batch. A second request while it runs asks for one
-//! more pass; a stop, a quit or a crash keeps every stored passage.
-//!
-//! A folder the person stopped, or whose last pass failed, is held: no quiet pass starts for it
-//! until the person prepares it again. Quiet passes wait for the folder's index passes to go
-//! quiet, so a folder written to for minutes keeps no model loaded for all of them.
+//! One background job per folder: wait for the app's one model turn, make the model ready, list the folder, plan,
+//! and prepare batch by batch; a second request asks for one more pass, and a stop, quit or crash keeps every stored passage.
+//! A stopped folder, or one whose last pass failed, is held: no quiet pass starts until the person prepares it again.
 
 mod pass;
 mod schedule;
@@ -46,7 +42,6 @@ pub(super) enum Pass {
     Update,
 }
 
-/// How a pass ended.
 #[derive(Clone, Debug, PartialEq)]
 pub(super) enum Ended {
     Done,
@@ -70,7 +65,6 @@ enum Stage {
     Preparing,
 }
 
-/// One pass: its stop handle, its stage and its counts.
 pub(super) struct Run {
     pass: Pass,
     pub(super) builtin: bool,
@@ -157,7 +151,6 @@ struct EntryState {
     download: bool,
 }
 
-/// One folder: its job, its search copy and its cached counts.
 pub(super) struct Entry {
     pub(super) root: PathBuf,
     /// The spelling of the folder's path its events carry: the first one it was opened with.
