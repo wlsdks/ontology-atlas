@@ -8,6 +8,20 @@ import { smoothstep } from "../model/visibility/altitude";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { computeHoverShimmer } from "../model/ambient/hover-shimmer";
 import { drawStarEmission } from "@/shared/lib/map-canvas/star-emission";
+import {
+    bodyPointsScratch,
+    DOMAIN_HALF_EXTENT_RATIO,
+    domainPinTicks,
+    FULL_CIRCLE_FAR_T,
+    interpolateCornerRadius,
+    minCornerRadius,
+    projectPinTicks,
+    roundedPolygonPath,
+    type NodeKind,
+} from "./node-shapes/silhouette";
+
+export { bodyPoints, domainPinTicks, hexPoints, interpolateCornerRadius, projectPinTicks, squarePoints } from "./node-shapes/silhouette";
+
 
 /**
  * How far outside the disc the recent-changes ring is drawn; the label placer reserves it too
@@ -15,12 +29,6 @@ import { drawStarEmission } from "@/shared/lib/map-canvas/star-emission";
  */
 export const SPOTLIGHT_RING_OFFSET = 6;
 
-export interface Point {
-  x: number;
-  y: number;
-}
-
-/** Six points of a regular hexagon, rotated -90°. */
 /** Light-source offset of the depth shading as a multiple of the radius, up and to the left (the "light from above, slightly left" prior). */
 const NODE_DEPTH_SHADE_LIGHT_OFFSET = 0.4;
 /** Max black alpha at the shaded rim. Any stronger and the disc reads as a hole. */
@@ -53,28 +61,8 @@ function buildDepthShade(ctx: CanvasRenderingContext2D, r: number, strength: num
     shade.addColorStop(1, `rgba(0, 0, 0, ${(NODE_DEPTH_SHADE_MAX_ALPHA * strength).toFixed(3)})`);
     return shade;
 }
-export function hexPoints(cx: number, cy: number, r: number): Point[] {
-    const points: Point[] = [];
-    for (let i = 0; i < 6; i += 1) {
-        const a = ((i * 60 - 90) * Math.PI) / 180;
-        points.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
-    }
-    return points;
-}
-export function squarePoints(cx: number, cy: number, s: number): Point[] {
-    return [
-        { x: cx - s, y: cy - s },
-        { x: cx + s, y: cy - s },
-        { x: cx + s, y: cy + s },
-        { x: cx - s, y: cy + s }
-    ];
-}
-/** `lerp(minRadius, fullRadius, farT)`; at farT=1 the polygon degenerates into a circle, which `draw()` special-cases at `farT > 0.985` to avoid polygon/circle seams. */
-export function interpolateCornerRadius(minRadius: number, fullRadius: number, farT: number): number {
-    return minRadius + (fullRadius - minRadius) * farT;
-}
 export interface NodeShapeDrawState {
-    kind: "project" | "domain" | "capability" | "element";
+    kind: NodeKind;
     screenX: number;
     screenY: number;
     /** Screen-space draw radius (world radius × camera.scale × breathe). */
@@ -179,8 +167,6 @@ export interface NodeShapeTokens {
     /** Hover shimmer arc colour — reuses `--map-indigo-bright`; no new hue. */
     hoverShimmerColor: string;
 }
-/** Full convergence to a plain circle above this farT, avoiding polygon/circle seams. */
-const FULL_CIRCLE_FAR_T = 0.985;
 /** Above this farT (or below `SHEEN_MIN_RADIUS`) the body fills flat so far points read luminous, not machined. */
 const SHEEN_MAX_FAR_T = 0.98;
 const SHEEN_MIN_RADIUS = 3;
@@ -192,10 +178,6 @@ const ENGRAVED_COUNT_MIN_RADIUS = 13;
 /** Domain chip-leg pin ticks: offsets `[-0.45, 0.45]`, leg length `s * 0.34`, drawn only for `s > 6 && farT < 0.9`. */
 const DOMAIN_PIN_MIN_HALF_EXTENT = 6;
 const DOMAIN_PIN_MAX_FAR_T = 0.9;
-const DOMAIN_PIN_TICK_RATIO = 0.34;
-const DOMAIN_PIN_OFFSET_FACTORS = [-0.45, 0.45] as const;
-/** Half-extent of the domain square relative to its draw radius. */
-const DOMAIN_HALF_EXTENT_RATIO = 0.86;
 /** The project hexagon's decor (inner hairline, pin ticks) fades toward far field, like the domain pin ticks. */
 const PROJECT_DECOR_MIN_RADIUS = 8;
 const PROJECT_DECOR_MAX_FAR_T = 0.9;
@@ -209,35 +191,6 @@ const SELECTION_PULSE_RING_OFFSET = 3;
 const HOVER_RING_OFFSET = 3;
 /** Agent-focus ring offset, wider than the hub ring's r+4 so the two never merge on a focused hub. */
 export const AGENT_FOCUS_RING_OFFSET = 8;
-export interface PinTick {
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
-}
-/** The four chip-leg pin ticks of a domain square: two above, two below, at `[-0.45, 0.45]` x-offsets. */
-export function domainPinTicks(cx: number, cy: number, s: number): PinTick[] {
-    const tick = s * DOMAIN_PIN_TICK_RATIO;
-    const ticks: PinTick[] = [];
-    for (const f of DOMAIN_PIN_OFFSET_FACTORS) {
-        const x = cx + s * f;
-        ticks.push({ x1: x, y1: cy - s, x2: x, y2: cy - s - tick });
-        ticks.push({ x1: x, y1: cy + s, x2: x, y2: cy + s + tick });
-    }
-    return ticks;
-}
-/** Fixed leg length of the project hexagon's four pin ticks, unlike domain's radius-proportional ticks. */
-const PROJECT_PIN_TICK_LENGTH = 6;
-/** The four chassis-leg pin ticks of the project hexagon: one per cardinal direction, a fixed 6 px line from the node's edge outward. */
-export function projectPinTicks(cx: number, cy: number, r: number): PinTick[] {
-    const t = PROJECT_PIN_TICK_LENGTH;
-    return [
-        { x1: cx, y1: cy - r, x2: cx, y2: cy - r - t },
-        { x1: cx, y1: cy + r, x2: cx, y2: cy + r + t },
-        { x1: cx - r, y1: cy, x2: cx - r - t, y2: cy },
-        { x1: cx + r, y1: cy, x2: cx + r + t, y2: cy }
-    ];
-}
 /** A vertical `sheenTop → fill` gradient when the node is big and near enough (`r > 3 && farT < 0.98`), otherwise the flat `fill`. */
 function resolveBodyFill(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, farT: number, fill: string, sheenTop: string): string | CanvasGradient {
     if (r <= SHEEN_MIN_RADIUS || farT >= SHEEN_MAX_FAR_T)
@@ -249,37 +202,6 @@ function resolveBodyFill(ctx: CanvasRenderingContext2D, x: number, y: number, r:
     grad.addColorStop(0, sheenTop);
     grad.addColorStop(1, fill);
     return grad;
-}
-/** A closed polygon path with each corner rounded to `min(rad, adjacentEdgeLen*0.45)`. */
-/**
- * A path that can be traced into: a live context or a `Path2D`. It does not call `beginPath()`;
- * the caller starts the path, so `drawStarEmission` can clip to the box minus the node body.
- */
-type PathSink = Pick<Path2D, "moveTo" | "lineTo" | "quadraticCurveTo" | "closePath">;
-function roundedPolygonPath(ctx: PathSink, points: readonly Point[], rad: number): void {
-    const n = points.length;
-    for (let i = 0; i < n; i += 1) {
-        const p0 = points[(i - 1 + n) % n];
-        const p1 = points[i];
-        const p2 = points[(i + 1) % n];
-        const v1x = p1.x - p0.x;
-        const v1y = p1.y - p0.y;
-        const len1 = Math.hypot(v1x, v1y) || 1;
-        const v2x = p2.x - p1.x;
-        const v2y = p2.y - p1.y;
-        const len2 = Math.hypot(v2x, v2y) || 1;
-        const r = Math.min(rad, len1 * 0.45, len2 * 0.45);
-        const sx = p1.x - (v1x / len1) * r;
-        const sy = p1.y - (v1y / len1) * r;
-        const ex = p1.x + (v2x / len2) * r;
-        const ey = p1.y + (v2y / len2) * r;
-        if (i === 0)
-            ctx.moveTo(sx, sy);
-        else
-            ctx.lineTo(sx, sy);
-        ctx.quadraticCurveTo(p1.x, p1.y, ex, ey);
-    }
-    ctx.closePath();
 }
 /** A 1px dark shadow beneath a lighter face, reading as an inset numeral. */
 function drawEngraved(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, alpha: number, tokens: NodeShapeTokens): void {
@@ -296,68 +218,6 @@ function drawEngraved(ctx: CanvasRenderingContext2D, text: string, x: number, y:
     ctx.fillText(text, x, y);
     ctx.globalAlpha = prevAlpha;
 }
-/**
- * This kind's polygon points at draw radius `r`, null for capability (a plain circle). Exported so
- * `node-kind-shape-parity.contract.test.ts` can check the kind→silhouette mapping against the DOM gateway's.
- */
-export function bodyPoints(kind: NodeShapeDrawState["kind"], x: number, y: number, r: number): readonly Point[] | null {
-    if (kind === "project")
-        return hexPoints(x, y, r);
-    if (kind === "domain")
-        return squarePoints(x, y, r * DOMAIN_HALF_EXTENT_RATIO);
-    if (kind === "element")
-        return squarePoints(x, y, r * 0.92);
-    return null;
-}
-/*
- * Scratch version of `bodyPoints` that avoids per-node allocation; same formulas, consumed at once
- * by `roundedPolygonPath`, so no state is shared across frames. The exported `bodyPoints` allocates.
- */
-const HEX_SCRATCH: Point[] = Array.from({ length: 6 }, () => ({ x: 0, y: 0 }));
-const SQUARE_SCRATCH: Point[] = Array.from({ length: 4 }, () => ({ x: 0, y: 0 }));
-function hexPointsScratch(cx: number, cy: number, r: number): readonly Point[] {
-    for (let i = 0; i < 6; i += 1) {
-        const a = ((i * 60 - 90) * Math.PI) / 180;
-        HEX_SCRATCH[i].x = cx + r * Math.cos(a);
-        HEX_SCRATCH[i].y = cy + r * Math.sin(a);
-    }
-    return HEX_SCRATCH;
-}
-function squarePointsScratch(cx: number, cy: number, s: number): readonly Point[] {
-    SQUARE_SCRATCH[0].x = cx - s;
-    SQUARE_SCRATCH[0].y = cy - s;
-    SQUARE_SCRATCH[1].x = cx + s;
-    SQUARE_SCRATCH[1].y = cy - s;
-    SQUARE_SCRATCH[2].x = cx + s;
-    SQUARE_SCRATCH[2].y = cy + s;
-    SQUARE_SCRATCH[3].x = cx - s;
-    SQUARE_SCRATCH[3].y = cy + s;
-    return SQUARE_SCRATCH;
-}
-function bodyPointsScratch(kind: NodeShapeDrawState["kind"], x: number, y: number, r: number): readonly Point[] | null {
-    if (kind === "project")
-        return hexPointsScratch(x, y, r);
-    if (kind === "domain")
-        return squarePointsScratch(x, y, r * DOMAIN_HALF_EXTENT_RATIO);
-    if (kind === "element")
-        return squarePointsScratch(x, y, r * 0.92);
-    return null;
-}
-/**
- * This kind's minimum corner radius at farT=0, a ratio of the screen radius with a 0.5 px floor: absolute px caps
- * changed the silhouette with zoom, but farT is the only morph axis.
- */
-function minCornerRadius(kind: NodeShapeDrawState["kind"], r: number): number {
-    if (kind === "project")
-        return Math.max(0.5, r * 0.14);
-    if (kind === "domain")
-        return Math.max(0.5, r * 0.86 * 0.22);
-    return Math.max(0.5, r * 0.92 * 0.3);
-}
-/**
- * Strokes one ring at `radius` along the node's own kind shape (converging to a circle past `FULL_CIRCLE_FAR_T`), a
- * material ring, never a glow. The hub ring, project double hairline, selection rings, commit pulse and hover ring use it.
- */
 /**
  * The walked path's star: the node, emitting. Composites with `lighter` so light adds on a dark
  * canvas; the face is never filled so the numeral stays readable (the bloom is an annulus).
@@ -387,6 +247,10 @@ core = 0): void {
         },
     });
 }
+/**
+ * Strokes one ring at `radius` along the node's own kind shape (converging to a circle past `FULL_CIRCLE_FAR_T`), a
+ * material ring, never a glow. The hub ring, project double hairline, selection rings, commit pulse and hover ring use it.
+ */
 function strokeKindOutline(ctx: CanvasRenderingContext2D, kind: NodeShapeDrawState["kind"], x: number, y: number, radius: number, farT: number, color: string, lineWidth: number, alpha: number): void {
     if (alpha <= 0.01 || radius <= 0)
         return;
