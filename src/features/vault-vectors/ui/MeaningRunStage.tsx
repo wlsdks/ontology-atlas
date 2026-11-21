@@ -13,7 +13,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { formatSize } from '@/shared/lib/format-size';
 import { useByteRate } from '../lib/use-byte-rate';
 import { useReadFeed } from '../lib/use-read-feed';
-import type { RunStage, RunStep } from '../model/run-stage';
+import type { RunStage, RunStep } from '../model/stage/run-stage';
 
 const STEP_KEY: Record<RunStep, 'stepDownload' | 'stepFit' | 'stepRead'> = {
   download: 'stepDownload',

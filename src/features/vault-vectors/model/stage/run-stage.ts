@@ -1,5 +1,5 @@
 import type { VectorSource, VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { UPDATE_RING_FILES } from './desk-line';
+import { UPDATE_RING_FILES } from '../desk-line';
 
 /** The work a preparation does, in order; a runner's model is Ollama's, so only `read` is Atlas's. */
 export type RunStep = 'download' | 'fit' | 'read';
@@ -19,12 +19,16 @@ export interface RunStage {
 
 const ORDER: readonly RunStep[] = ['download', 'fit', 'read'];
 
-function stepsOf(source: VectorSource | null, current: RunStep | null): RunStage['steps'] {
+/**
+ * Each step's state with `current` running: those before it done, those after it next. `null` is
+ * before the first step, `finished` past the last. A runner's model shows the reading alone.
+ */
+export function runSteps(current: RunStep | 'finished' | null, source: VectorSource | null = null): RunStage['steps'] {
   const shown = source?.kind === 'runner' ? (['read'] as const) : ORDER;
-  const at = current === null ? -1 : ORDER.indexOf(current);
+  const at = current === null ? -1 : current === 'finished' ? ORDER.length : ORDER.indexOf(current);
   return shown.map((step) => {
     const index = ORDER.indexOf(step);
-    return { step, state: at < 0 ? 'next' : index < at ? 'done' : index === at ? 'now' : 'next' };
+    return { step, state: index < at ? 'done' : index === at ? 'now' : 'next' };
   });
 }
 
@@ -39,15 +43,15 @@ export function runStage(status: VectorStatus | null, source: VectorSource | nul
   const base = { readingPath: null, passagesDone: status.passagesDone };
   switch (status.phase) {
     case 'waitingTurn':
-      return { ...base, steps: stepsOf(source, null), step: null, fraction: null };
+      return { ...base, steps: runSteps(null, source), step: null, fraction: null };
     case 'modelDownloading':
-      return { ...base, steps: stepsOf(source, 'download'), step: 'download', fraction: ratio(status.model?.doneBytes ?? 0, status.model?.totalBytes ?? 0) };
+      return { ...base, steps: runSteps('download', source), step: 'download', fraction: ratio(status.model?.doneBytes ?? 0, status.model?.totalBytes ?? 0) };
     case 'modelConverting':
-      return { ...base, steps: stepsOf(source, 'fit'), step: 'fit', fraction: null };
+      return { ...base, steps: runSteps('fit', source), step: 'fit', fraction: null };
     case 'preparing':
       if (status.updating && status.filesTotal < UPDATE_RING_FILES) return null;
       return {
-        steps: stepsOf(source, 'read'),
+        steps: runSteps('read', source),
         step: 'read',
         fraction: ratio(status.filesDone, status.filesTotal) ?? 0,
         readingPath: status.currentPath,
@@ -56,4 +60,9 @@ export function runStage(status: VectorStatus | null, source: VectorSource | nul
     default:
       return null;
   }
+}
+
+/** The stage a finished job leaves in view: every step done. */
+export function finishedStage(source: VectorSource | null): RunStage {
+  return { steps: runSteps('finished', source), step: 'read', fraction: 1, readingPath: null, passagesDone: 0 };
 }

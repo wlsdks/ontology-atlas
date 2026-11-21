@@ -71,3 +71,44 @@ export function recommendedChoiceId(choices: ModelChoice[]): string {
   const runner = choices.find((choice) => choice.kind === 'runner' && choice.reachable && baseName(choice.model) === PREFERRED_RUNNER_MODEL);
   return runner?.id ?? 'builtin';
 }
+
+/** The folder searches with this choice now: its model is here and answering. */
+export function isLive(choice: ModelChoice): boolean {
+  return choice.inUse && (choice.kind === 'builtin' ? choice.holding === 'ready' : choice.reachable);
+}
+
+/** The key, under `library.questionDesk.meaning`, of the tag a choice's row wears. */
+export type ChoiceTag = 'tagWorking' | 'tagInUse' | 'tagRunner' | 'tagRunnerOff' | 'tagReady' | 'tagPartial' | 'tagNone';
+
+/** What a choice's row says of it: the running job first, then whether it searches, then its model. */
+export function choiceTag(choice: ModelChoice, working: boolean): ChoiceTag {
+  if (choice.inUse && working) return 'tagWorking';
+  if (isLive(choice)) return 'tagInUse';
+  if (choice.kind === 'runner') return choice.reachable ? 'tagRunner' : 'tagRunnerOff';
+  return choice.holding === 'ready' ? 'tagReady' : choice.holding === 'partial' ? 'tagPartial' : 'tagNone';
+}
+
+/** This computer lacks the free room the built-in model's download needs. */
+export function isDiskShort(probe: VectorProbe): boolean {
+  return probe.builtin.freeBytes < probe.builtin.neededFreeBytes;
+}
+
+/** Choosing this starts over with another model, which reads every file again. */
+export function isSwitching(choice: ModelChoice, current: VectorSource | null, working: boolean): boolean {
+  return current !== null && !choice.inUse && !working;
+}
+
+/** The built-in model's files can be deleted: some are kept, and no job of its own is using them. */
+export function isDeletable(choice: ModelChoice, current: VectorSource | null, working: boolean): boolean {
+  return choice.kind === 'builtin' && choice.holding !== 'none' && !(working && current?.kind === 'builtin');
+}
+
+/** The press that starts preparing, by its message key; none while a job runs or the choice already searches. */
+export type PrimaryPress = { label: 'prepare' | 'resumeDownload' | 'downloadAndPrepare'; disabled: boolean };
+
+export function primaryPress(choice: ModelChoice, working: boolean, diskShort: boolean): PrimaryPress | null {
+  if (working || isLive(choice)) return null;
+  if (choice.kind === 'runner') return { label: 'prepare', disabled: !choice.reachable };
+  const label = choice.holding === 'ready' ? 'prepare' : choice.holding === 'partial' ? 'resumeDownload' : 'downloadAndPrepare';
+  return { label, disabled: diskShort };
+}

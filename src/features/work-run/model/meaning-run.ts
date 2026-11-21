@@ -15,12 +15,6 @@ export type MeaningRunPhase =
   | 'failed'
   | 'stopped';
 
-/** A sentence the owning screen already says, named by its message key and values. */
-export interface MeaningRunSentence {
-  message: string;
-  values: Readonly<Record<string, string | number | undefined>>;
-}
-
 /** One status of the job as the app layer read it; `null` when the folder has nothing to tell. */
 export interface MeaningRunObservation {
   /** A stop that followed a failure is reported `failed`. */
@@ -36,7 +30,8 @@ export interface MeaningRunObservation {
   /** The file being read, vault-relative. */
   reading: string | null;
   minutesLeft: number | null;
-  failure: MeaningRunSentence | null;
+  /** The failure in the words the folder's own desk says it, written by the app layer. */
+  failure: string | null;
   /** The press that started or resumed the job in this launch; `null` when it continues by itself. */
   pressed: number | null;
 }
@@ -47,7 +42,7 @@ export interface MeaningRun {
   folder: string;
   phase: MeaningRunPhase;
   updating: boolean;
-  failure: MeaningRunSentence | null;
+  failure: string | null;
   pressed: number | null;
   /** When the person started it, or when it was first seen running by itself. */
   startedAt: number;
@@ -69,13 +64,6 @@ export interface MeaningProgress {
 const ACTIVE: ReadonlySet<MeaningRunPhase> = new Set(['modelDownloading', 'modelConverting', 'waitingTurn', 'preparing']);
 
 export const isMeaningActive = (run: MeaningRun): boolean => ACTIVE.has(run.phase);
-
-function sameSentence(a: MeaningRunSentence | null, b: MeaningRunSentence | null): boolean {
-  if (a === null || b === null) return a === b;
-  if (a.message !== b.message) return false;
-  const keys = new Set([...Object.keys(a.values), ...Object.keys(b.values)]);
-  return [...keys].every((key) => a.values[key] === b.values[key]);
-}
 
 export interface MeaningRunContext {
   folder: string;
@@ -138,7 +126,7 @@ export function observeMeaning(
     run.phase === observation.phase
     && run.updating === observation.updating
     && run.card === card
-    && sameSentence(run.failure, observation.failure)
+    && run.failure === observation.failure
   ) {
     return run;
   }

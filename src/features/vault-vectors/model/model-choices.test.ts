@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { VectorProbe } from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { choiceIdOf, modelChoices, offeredRunnerModels, recommendedChoiceId } from './model-choices';
+import { choiceIdOf, choiceTag, isDeletable, isDiskShort, isSwitching, modelChoices, offeredRunnerModels, primaryPress, recommendedChoiceId, type ModelChoice } from './model-choices';
 
 const probe = (models: string[], state: 'reachable' | 'unreachable' = 'reachable', builtin: Partial<VectorProbe['builtin']> = {}): VectorProbe => ({
   files: 1,
@@ -56,5 +56,52 @@ describe('the recommended choice', () => {
     expect(recommendedChoiceId(modelChoices(probe(['bge-m3:latest']), null))).toBe('builtin');
     expect(recommendedChoiceId(modelChoices(probe(['bge-m3:latest'], 'reachable', { onDisk: false, modelBytes: 412_000_000 }), null))).toBe('builtin');
     expect(recommendedChoiceId(modelChoices(probe(['nomic-embed-text'], 'reachable', { onDisk: false, modelBytes: 0 }), null))).toBe('builtin');
+  });
+});
+
+describe('what the dialog says and offers for a choice', () => {
+  const builtin = (holding: 'ready' | 'partial' | 'none', inUse = false): ModelChoice => ({ id: 'builtin', kind: 'builtin', holding, inUse });
+  const runner = (reachable: boolean, inUse = false): ModelChoice => ({ id: 'runner:bge-m3', kind: 'runner', model: 'bge-m3', baseUrl: 'http://127.0.0.1:11434', reachable, inUse });
+  const builtinSource = { kind: 'builtin' } as const;
+
+  it('tags the running job first, then the model the folder searches with, then what the model holds', () => {
+    expect(choiceTag(builtin('ready', true), true)).toBe('tagWorking');
+    expect(choiceTag(builtin('ready', true), false)).toBe('tagInUse');
+    expect(choiceTag(builtin('partial', true), false)).toBe('tagPartial');
+    expect(choiceTag(builtin('none'), false)).toBe('tagNone');
+    expect(choiceTag(builtin('ready'), true)).toBe('tagReady');
+    expect(choiceTag(runner(true, true), false)).toBe('tagInUse');
+    expect(choiceTag(runner(false, true), false)).toBe('tagRunnerOff');
+    expect(choiceTag(runner(true), false)).toBe('tagRunner');
+  });
+
+  it('offers no start while a job runs or the choice already searches, and holds a start that cannot run', () => {
+    expect(primaryPress(builtin('none'), true, false)).toBeNull();
+    expect(primaryPress(builtin('ready', true), false, false)).toBeNull();
+    expect(primaryPress(builtin('ready'), false, false)).toEqual({ label: 'prepare', disabled: false });
+    expect(primaryPress(builtin('partial'), false, false)).toEqual({ label: 'resumeDownload', disabled: false });
+    expect(primaryPress(builtin('none'), false, true)).toEqual({ label: 'downloadAndPrepare', disabled: true });
+    expect(primaryPress(runner(false), false, true)).toEqual({ label: 'prepare', disabled: true });
+    expect(primaryPress(runner(true), false, true)).toEqual({ label: 'prepare', disabled: false });
+  });
+
+  it('deletes only kept built-in files that no job of the built-in model is using', () => {
+    expect(isDeletable(builtin('ready'), builtinSource, false)).toBe(true);
+    expect(isDeletable(builtin('partial'), null, true)).toBe(true);
+    expect(isDeletable(builtin('ready'), builtinSource, true)).toBe(false);
+    expect(isDeletable(builtin('none'), null, false)).toBe(false);
+    expect(isDeletable(runner(true), null, false)).toBe(false);
+  });
+
+  it('warns of a switch only when the folder has another model and nothing runs', () => {
+    expect(isSwitching(runner(true), builtinSource, false)).toBe(true);
+    expect(isSwitching(runner(true), null, false)).toBe(false);
+    expect(isSwitching(runner(true), builtinSource, true)).toBe(false);
+    expect(isSwitching(builtin('ready', true), builtinSource, false)).toBe(false);
+  });
+
+  it('is short of room when the free space is under what the download needs', () => {
+    expect(isDiskShort(probe([], 'reachable', { freeBytes: 9, neededFreeBytes: 10 }))).toBe(true);
+    expect(isDiskShort(probe([], 'reachable', { freeBytes: 10, neededFreeBytes: 10 }))).toBe(false);
   });
 });

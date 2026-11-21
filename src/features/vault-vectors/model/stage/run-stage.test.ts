@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { OFF_VECTOR_STATUS, type VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { runStage } from './run-stage';
+import { finishedStage, runStage } from './run-stage';
 
 const status = (fields: Partial<VectorStatus>): VectorStatus => ({ ...OFF_VECTOR_STATUS, ...fields });
 const builtin = { kind: 'builtin' } as const;
@@ -35,5 +35,10 @@ describe('the stage of a folder preparing for search by meaning', () => {
     expect(runStage(status({ phase: 'preparing', updating: true, filesDone: 1, filesTotal: 3 }), builtin)).toBeNull();
     expect(runStage(status({ phase: 'preparing', updating: true, filesDone: 1, filesTotal: 30 }), builtin)?.step).toBe('read');
     expect(runStage(status({ phase: 'ready' }), builtin)).toBeNull();
+  });
+
+  it('leaves every step it showed done once the job finished in view', () => {
+    expect(finishedStage(builtin).steps).toEqual([{ step: 'download', state: 'done' }, { step: 'fit', state: 'done' }, { step: 'read', state: 'done' }]);
+    expect(finishedStage(runner).steps).toEqual([{ step: 'read', state: 'done' }]);
   });
 });

@@ -1,9 +1,9 @@
 import { createTranslator } from 'next-intl';
 import { describe, expect, it } from 'vitest';
-import en from '../../../../messages/en.json';
-import ja from '../../../../messages/ja.json';
-import ko from '../../../../messages/ko.json';
-import zh from '../../../../messages/zh.json';
+import en from '../../../../../messages/en.json';
+import ja from '../../../../../messages/ja.json';
+import ko from '../../../../../messages/ko.json';
+import zh from '../../../../../messages/zh.json';
 import { MODEL_FAILED_DETAILS } from '@/shared/lib/vault-folder/tauri-vault-vectors';
 import { modelFailedSentence } from './model-failed-sentence';
 

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
-import { useVectorRun, useVectorRunStageShown, type VectorRun } from "@/features/vault-vectors";
+import { deskSentence, useVectorRun, useVectorRunStageShown, type VectorRun } from "@/features/vault-vectors";
 import { workRuns, type MeaningRunObservation } from "@/features/work-run";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { navigateWithViewTransition } from "@/shared/lib/navigation/route-view-transition";
@@ -14,7 +15,7 @@ const WIKI_DESK_HREF = `${DESTINATION_HREF.library}?tab=wiki`;
 /** Long enough for the Library to open a large folder's desk; the field is focused once drawn. */
 const DESK_FIELD_WAIT_MS = 4_000;
 
-function observationOf(run: VectorRun | null): MeaningRunObservation | null {
+function observationOf(run: VectorRun | null, failure: string | null): MeaningRunObservation | null {
   if (run === null) return null;
   const phase = run.phase === "stopped" && run.failure !== null ? "failed" : run.phase;
   if (phase === "off" || phase === "notSetUp") return null;
@@ -27,7 +28,7 @@ function observationOf(run: VectorRun | null): MeaningRunObservation | null {
     bytes: run.model ? { done: run.model.doneBytes, total: run.model.totalBytes } : null,
     reading: run.currentPath,
     minutesLeft: run.minutesLeft,
-    failure: run.failure,
+    failure,
     pressed: run.pressed,
   };
 }
@@ -66,10 +67,14 @@ export function MeaningRunSeat() {
   const run = useVectorRun(rootPath);
   const stageShown = useVectorRunStageShown(rootPath);
   const router = useRouter();
+  const t = useTranslations("library.questionDesk.meaning");
+  const locale = useLocale();
+  // The desk's own sentence, so the seat and the desk never word one failure two ways.
+  const failure = run?.failure ? deskSentence(t, locale, run.failure) : null;
 
   useEffect(() => {
-    workRuns.observeMeaning(folder, observationOf(run), stageShown, Date.now());
-  }, [folder, run, stageShown]);
+    workRuns.observeMeaning(folder, observationOf(run, failure), stageShown, Date.now());
+  }, [folder, run, failure, stageShown]);
 
   const stop = run?.stop ?? null;
   useEffect(() => {
