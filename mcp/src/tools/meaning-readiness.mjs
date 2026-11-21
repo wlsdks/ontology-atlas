@@ -197,7 +197,7 @@ export function attachMeaningReadiness(result, artifact, args = {}, loadedDocs =
   return result;
 }
 
-export function meaningSourceFromProjectSource(projectSource) {
+function meaningSourceFromProjectSource(projectSource) {
   const receipt = projectSource?.receipt;
   return {
     status: projectSource?.status,
