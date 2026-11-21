@@ -4,8 +4,9 @@
 // final path, so it is caught here. The log is held without delete sharing, so it
 // cannot be renamed or replaced while a reservation holds it.
 
-use super::{audit_log_path, AUDIT_LOCK_RETRIES, AUDIT_LOCK_RETRY_PAUSE, SIDECAR_DIR};
+use super::{AUDIT_LOCK_RETRIES, AUDIT_LOCK_RETRY_PAUSE};
 use crate::errors::coded;
+use crate::llm_audit::{audit_log_path, SIDECAR_DIR};
 use std::fs::{self, File, OpenOptions};
 use std::io::{Seek, SeekFrom};
 use std::os::windows::fs::{MetadataExt, OpenOptionsExt};
@@ -126,7 +127,9 @@ fn try_lock(file: &File) -> std::io::Result<bool> {
     }
 }
 
-pub(super) fn open_audit_file(canonical_vault: &Path) -> Result<(PathBuf, File), String> {
+pub(in crate::llm_audit) fn open_audit_file(
+    canonical_vault: &Path,
+) -> Result<(PathBuf, File), String> {
     let sidecar = canonical_vault.join(SIDECAR_DIR);
     match fs::create_dir(&sidecar) {
         Ok(()) => {}

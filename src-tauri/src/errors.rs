@@ -71,6 +71,7 @@ mod tests {
             include_str!("llm/local_endpoint.rs"),
             include_str!("llm/verify.rs"),
             include_str!("llm_audit.rs"),
+            include_str!("llm_audit/log_file.rs"),
             include_str!("secrets.rs"),
         ];
         let mut checked = 0usize;
