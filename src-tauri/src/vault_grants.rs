@@ -173,21 +173,10 @@ pub(crate) fn grant_source_root(root: &Path) {
     let Ok(canonical) = std::fs::canonicalize(root) else {
         return;
     };
-    #[cfg(test)]
-    if THREAD_REGISTRY.with(|slot| {
-        if let Some(reg) = slot.borrow_mut().as_mut() {
-            reg.sources.insert(canonical.clone());
-            reg.selected_sources.insert(canonical.clone());
-            true
-        } else {
-            false
-        }
-    }) {
-        return;
-    }
-    let mut registry = lock();
-    registry.sources.insert(canonical.clone());
-    registry.selected_sources.insert(canonical);
+    with_registry(|registry| {
+        registry.sources.insert(canonical.clone());
+        registry.selected_sources.insert(canonical);
+    });
 }
 
 /// Grants, for this launch only, a folder a verification run names in its launch
@@ -203,18 +192,7 @@ pub(crate) fn grant_launch_vault_root(root: &Path) -> Result<PathBuf, String> {
         return Err(format!("vault-root-rejected:{reason}"));
     }
     let repo = repo_root_of(&canonical);
-    #[cfg(test)]
-    if THREAD_REGISTRY.with(|slot| {
-        if let Some(reg) = slot.borrow_mut().as_mut() {
-            reg.grant_for_launch(canonical.clone(), repo.clone());
-            true
-        } else {
-            false
-        }
-    }) {
-        return Ok(canonical);
-    }
-    lock().grant_for_launch(canonical.clone(), repo);
+    with_registry(|registry| registry.grant_for_launch(canonical.clone(), repo));
     Ok(canonical)
 }
 
@@ -262,6 +240,19 @@ thread_local! {
 #[cfg(test)]
 fn thread_override(check: impl Fn(&Registry) -> bool) -> Option<bool> {
     THREAD_REGISTRY.with(|slot| slot.borrow().as_ref().map(check))
+}
+
+/// Changes this thread's test registry when a test set one, else the app's.
+fn with_registry<T>(change: impl FnOnce(&mut Registry) -> T) -> T {
+    #[cfg(test)]
+    let change = match THREAD_REGISTRY.with(|slot| match slot.borrow_mut().as_mut() {
+        Some(registry) => Ok(change(registry)),
+        None => Err(change),
+    }) {
+        Ok(changed) => return changed,
+        Err(change) => change,
+    };
+    change(&mut lock())
 }
 
 #[cfg(test)]
