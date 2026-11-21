@@ -3,8 +3,6 @@ import {
   buildCodexConfigToml,
   buildCodexConfigTomlTemplate,
   buildCodexMcpAddCommandTemplate,
-  buildAgentSetupCliCommandTemplate,
-  buildAgentSetupCheckCliCommandTemplate,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
 } from "./agent-mcp-config";
@@ -137,42 +135,6 @@ describe("buildCodexMcpAddCommandTemplate", () => {
 
     expect(command).toContain(
       "OATLAS_VAULT='<absolute path to your team'\\''s vault folder>'",
-    );
-  });
-});
-
-describe("buildAgentSetupCliCommandTemplate", () => {
-  it("provides a safe CLI repair command that attaches an existing vault to the codebase root", () => {
-    const command = buildAgentSetupCliCommandTemplate("team-vault");
-
-    expect(command).toBe(
-      "node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
-    );
-  });
-
-  it("escapes a single quote in the vault name shell-safely", () => {
-    const command = buildAgentSetupCliCommandTemplate("team's vault");
-
-    expect(command).toContain(
-      "'<absolute path to your team'\\''s vault folder>'",
-    );
-  });
-});
-
-describe("buildAgentSetupCheckCliCommandTemplate", () => {
-  it("provides a command that checks an existing vault's codebase-root setup state as a JSON dry-run", () => {
-    const command = buildAgentSetupCheckCliCommandTemplate("team-vault");
-
-    expect(command).toBe(
-      "node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
-    );
-  });
-
-  it("escapes a single quote in the vault name shell-safely", () => {
-    const command = buildAgentSetupCheckCliCommandTemplate("team's vault");
-
-    expect(command).toContain(
-      "'<absolute path to your team'\\''s vault folder>'",
     );
   });
 });

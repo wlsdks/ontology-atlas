@@ -1,7 +1,6 @@
-/** Renders the MCP registration config and setup commands a coding agent needs to open a vault. */
+/** Renders the MCP registration config and the Codex add command a coding agent needs to open a vault. */
 
 import type { McpServerLaunch } from '@/shared/config';
-import { ATLAS_CLI } from '@/shared/config/cli-invocation';
 
 /** The installed app passes its bundled binary path; the web uses a source-checkout placeholder. */
 const SOURCE_CHECKOUT_PLACEHOLDER: McpServerLaunch = {
@@ -110,35 +109,6 @@ export function buildCodexMcpAddCommandTemplate(
     '--',
     shellQuote(resolved.command),
     ...resolved.args.map(shellQuote),
-  ].join(' ');
-}
-
-/**
- * Safer existing-vault repair command for agents opened at a codebase root.
- * It creates missing config files, atomically rebinds one parseable Atlas
- * entry, and leaves ambiguous config untouched with a merge template.
- */
-export function buildAgentSetupCliCommandTemplate(vaultName: string): string {
-  const vaultPath = `<absolute path to your ${vaultName} folder>`;
-  return [
-    ATLAS_CLI,
-    'agent-setup',
-    shellQuote(vaultPath),
-    '--root',
-    shellQuote('<absolute path to your codebase root>'),
-    '--write',
-  ].join(' ');
-}
-
-export function buildAgentSetupCheckCliCommandTemplate(vaultName: string): string {
-  const vaultPath = `<absolute path to your ${vaultName} folder>`;
-  return [
-    ATLAS_CLI,
-    'agent-setup',
-    shellQuote(vaultPath),
-    '--root',
-    shellQuote('<absolute path to your codebase root>'),
-    '--json',
   ].join(' ');
 }
 
