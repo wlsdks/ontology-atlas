@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type 
 
 import { matchSlashCommands, slashQuery } from '@/features/acp-session';
 
-import type { SessionState } from './types';
+import type { SessionState } from '../types';
 
 /** Measured: 47 slash commands arrive; listing all of them turns a menu into a wall of scroll. */
 const SLASH_MENU_LIMIT = 8;

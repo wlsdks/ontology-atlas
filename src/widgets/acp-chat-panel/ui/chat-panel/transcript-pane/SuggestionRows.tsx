@@ -19,7 +19,7 @@ import { controlClass } from '@/shared/ui';
 import { CONTROL_DISABLED_CLASS, CONTROL_PRESS_TRAVEL } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-import type { ChatT } from './types';
+import type { ChatT } from '../types';
 
 const KIND_GLYPH: Record<ChatSuggestion['kind'], LucideIcon> = {
   connectSource: FolderGit2,

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 
-import type { TurnActivity } from '../turn-activity';
-import type { AcpChatPanelProps, AcpTurnRequest } from './types';
+import type { TurnActivity } from '../../turn-activity';
+import type { AcpChatPanelProps, AcpTurnRequest } from '../types';
 
 interface TurnHandoverOptions {
   busy: boolean;

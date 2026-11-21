@@ -5,7 +5,7 @@ import { COMPOSER_MIN_ROWS } from '@/shared/lib/agent-chat/composer-growth';
 import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { Textarea } from '@/shared/ui';
 
-import type { ChatT, SeatedDetail } from './types';
+import type { ChatT, SeatedDetail } from '../types';
 
 interface ComposerInputProps {
   t: ChatT;

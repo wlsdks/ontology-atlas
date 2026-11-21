@@ -3,7 +3,7 @@ import { useEffect, useMemo } from 'react';
 import type { ChatSuggestion } from '@/features/acp-session';
 import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
 
-import type { SessionState } from './types';
+import type { SessionState } from '../types';
 
 interface TranscriptSignalsOptions {
   events: SessionState['events'];

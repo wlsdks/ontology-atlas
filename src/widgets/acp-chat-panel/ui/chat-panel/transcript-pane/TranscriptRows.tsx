@@ -2,10 +2,10 @@ import type { Components } from 'react-markdown';
 
 import { cn } from '@/shared/lib/cn';
 
-import type { groupEvents } from '../group-events';
-import { TranscriptEntry } from '../transcript/TranscriptEntry';
-import { WorkGroup } from '../transcript/WorkGroup';
-import type { AnswerFold, NoticeActions } from './types';
+import type { groupEvents } from '../../group-events';
+import { TranscriptEntry } from '../../transcript/TranscriptEntry';
+import { WorkGroup } from '../../transcript/WorkGroup';
+import type { AnswerFold, NoticeActions } from '../types';
 
 interface TranscriptRowsProps {
   items: ReturnType<typeof groupEvents>;

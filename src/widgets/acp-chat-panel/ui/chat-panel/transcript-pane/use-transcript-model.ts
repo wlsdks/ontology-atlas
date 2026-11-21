@@ -2,9 +2,9 @@ import { useMemo } from 'react';
 
 import { withoutErrorEcho } from '@/features/acp-session';
 
-import { groupEvents } from '../group-events';
-import { chatMarkdownComponents } from '../chat-markdown/chat-markdown-components';
-import type { SessionState } from './types';
+import { groupEvents } from '../../group-events';
+import { chatMarkdownComponents } from '../../chat-markdown/chat-markdown-components';
+import type { SessionState } from '../types';
 
 interface TranscriptModelOptions {
   events: SessionState['events'];

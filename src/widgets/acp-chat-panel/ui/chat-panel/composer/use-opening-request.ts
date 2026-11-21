@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 
-import type { HeldRequest, OpeningRequest, SessionState } from './types';
+import type { HeldRequest, OpeningRequest, SessionState } from '../types';
 
 interface OpeningRequestOptions {
   openingRequest?: OpeningRequest | null;
