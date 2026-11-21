@@ -211,7 +211,7 @@
     "test:e2e:sleeps": "node --test scripts/quality/check-e2e-sleeps.test.mjs",
     "bundle:prune": "node scripts/landing/bundle-branches.mjs prune",
     "conflicts:scan": "node scripts/landing/conflicts-scan.mjs",
-    "test:pr:land": "node --test scripts/landing/pr-land.test.mjs scripts/lib/landing/landing-train.test.mjs",
+    "test:pr:land": "node --test scripts/landing/pr-land.test.mjs scripts/lib/landing/landing-train.test.mjs scripts/lib/landing/pr-land/land-args.test.mjs scripts/lib/landing/pr-land/landing-lock.test.mjs scripts/lib/landing/pr-land/landing-state.test.mjs scripts/lib/landing/pr-land/github-cli.test.mjs",
     "test:i18n:messages": "node scripts/i18n/build-messages.mjs --check && node --test scripts/i18n/validate-messages.test.mjs scripts/i18n/build-messages.test.mjs scripts/i18n/check-translation-coverage.test.mjs scripts/lib/i18n/message-icu.test.mjs",
     "test:claude:hooks": "node --test scripts/harness/claude-hooks.test.mjs",
     "test:dogfood:compile-fix": "node --test scripts/dogfood/dogfood-compile-fix.test.mjs",

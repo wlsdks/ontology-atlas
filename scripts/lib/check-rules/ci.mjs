@@ -55,7 +55,7 @@ export const rules = [
     order: 80,
     command: 'pnpm test:pr:land',
     reason: 'the landing sequence or its state machine changed',
-    matches: [/^scripts\/landing\/pr-land(?:\.test)?\.mjs$/, /^scripts\/lib\/landing\/landing-train(?:\.test)?\.mjs$/],
+    matches: [/^scripts\/landing\/pr-land(?:\.test)?\.mjs$/, /^scripts\/lib\/landing\/landing-train(?:\.test)?\.mjs$/, /^scripts\/lib\/landing\/pr-land\//],
   },
   {
     order: 640,
