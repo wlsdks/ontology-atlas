@@ -1,8 +1,8 @@
 "use client";
-import type { GlyphSet } from "@/shared/lib/preferences/appearance-preferences";
+import type { CanvasBackground, GlyphSet } from "@/shared/lib/preferences/canvas-appearance-preferences";
 import type { OntologyMapProps } from "../OntologyMap";
 
-import type { CanvasBackground, FootprintPreference } from "@/shared/lib/preferences/appearance-preferences";
+import type { FootprintPreference } from "@/shared/lib/preferences/footprint-preferences";
 import type { FootprintInk } from "@/shared/lib/map-canvas/footprint-glyph";
 import {
   useEffect,

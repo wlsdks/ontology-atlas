@@ -4,8 +4,8 @@
  * `relayoutToken`, or a new `nodes`/`edges` reference), never per animation frame
  * (`model/layout/layout.ts`'s own contract).
  */
-import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
-import type { ExpandStructure } from "@/shared/lib/preferences/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/expand-preferences";
+import type { ExpandStructure } from "@/shared/lib/preferences/expand-preferences";
 import type { DialModel, DialWorld, DialWorldInput } from "../../dial/types";
 import { drainSteps, type LayoutSteps } from "../../flat-graph/layout";
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../../model/layout/layout";

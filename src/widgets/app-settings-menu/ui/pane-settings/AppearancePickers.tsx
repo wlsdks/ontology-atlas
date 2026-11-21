@@ -12,7 +12,7 @@ import {
   writeGlyphSet,
   type CanvasBackground,
   type GlyphSet,
-} from '@/shared/lib/preferences/appearance-preferences';
+} from '@/shared/lib/preferences/canvas-appearance-preferences';
 import { controlClass } from '@/shared/ui/control-class';
 import { OntologyMapKindGlyph } from '@/shared/ui/ontology-node/map-kind-glyph';
 import type { SettingId } from '../../model/catalog/types';

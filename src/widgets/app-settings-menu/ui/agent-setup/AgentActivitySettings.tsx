@@ -10,7 +10,7 @@ import {
   writeAgentActivityStatus,
   writeAgentNotificationsEnabled,
   writeMutedAgentNotificationKinds,
-} from '@/shared/lib/preferences/appearance-preferences';
+} from '@/shared/lib/preferences/agent-activity-preferences';
 import { SegmentSwitch, SettingsGroup, SettingsRow } from '../settings-primitives';
 import { controlClass } from '@/shared/ui/control-class';
 

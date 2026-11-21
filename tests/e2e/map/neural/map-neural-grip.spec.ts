@@ -113,7 +113,7 @@ test("Neural: dragging inside the dome rotates it, and dragging the black area o
   await page.setViewportSize({ width: 1512, height: 900 });
   await seedFirstRunSeen(page);
   await page.addInitScript(() => {
-    // Neural is opt-in and its choice lives in localStorage (`appearance-preferences`).
+    // Neural is opt-in and its choice lives in localStorage (`map-view-preferences`).
     window.localStorage.setItem("atlas.appearance.view3d", "on");
     window.localStorage.setItem("atlas.appearance.map-arrangement", "coupling");
   });

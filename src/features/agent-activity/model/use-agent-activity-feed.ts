@@ -37,7 +37,7 @@ import {
   useAgentActivityStatusEnabled,
   useAgentNotificationsEnabled,
   useMutedAgentNotificationKinds,
-} from '@/shared/lib/preferences/appearance-preferences';
+} from '@/shared/lib/preferences/agent-activity-preferences';
 import {
   deriveAgentWorkProjection,
   type AgentLiveWorkInput,

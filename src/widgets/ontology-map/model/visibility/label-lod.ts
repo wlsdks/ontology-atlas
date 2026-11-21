@@ -6,7 +6,7 @@
  * (`ui/frame-draw/labels/paint-labels.ts`) applies the allow set before greedy placement.
  */
 
-import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/expand-preferences";
 
 export const LABEL_TOP_K = 20;
 

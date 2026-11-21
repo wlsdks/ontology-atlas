@@ -7,7 +7,7 @@
 
 import { FileText } from "lucide-react";
 
-import { useGlyphSet, type GlyphSet } from "@/shared/lib/preferences/appearance-preferences";
+import { useGlyphSet, type GlyphSet } from "@/shared/lib/preferences/canvas-appearance-preferences";
 
 export type OntologyMapRenderableKind = "project" | "domain" | "capability" | "element";
 

@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { ListTree, Map as MapIcon, RefreshCcw, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip } from '@/shared/ui/controls/chrome-chip';
-import { useMapView } from '@/shared/lib/preferences/appearance-preferences';
+import { useMapView } from '@/shared/lib/preferences/map-view-preferences';
 import { View3dMenu, viewMessageKey } from './View3dMenu';
 
 interface Props {

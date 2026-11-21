@@ -7,7 +7,7 @@ import {
 } from "../../model/visibility/focus-state";
 import { resolveBackgroundOrigin } from "../../model/camera/background-parallax";
 import { footprintScaleFor } from "@/shared/lib/map-canvas/footprint-glyph";
-import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/expand-preferences";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../../model/realm/realm-depth-parallax";
 import { DOME_RING_ALPHA } from "../../model/dome-view/ink";
 import type { DomeNodeFrame } from "../../model/dome-view/runtime";

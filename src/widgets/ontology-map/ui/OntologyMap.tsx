@@ -15,8 +15,19 @@ import type { TierRevealConfig } from "../model/visibility/tier-visibility";
 import type { TopologyMapLensKind } from "../model/visibility/path-lens";
 import type { ClusterBarLabels } from "../render/cluster-chips/control-placement";
 import type { SelectionSource } from "../model/camera/flat-selection-camera";
-import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT, DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/preferences/appearance-preferences";
-import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/expand-preferences";
+import {
+  DEFAULT_MAP_NAVIGATION_SPEED,
+} from "@/shared/lib/preferences/map-navigation-speed-preferences";
+import { DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/preferences/map-view-preferences";
+import type {
+  CanvasBackground,
+  GlyphSet,
+} from "@/shared/lib/preferences/canvas-appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
+import type { FootprintPreference } from "@/shared/lib/preferences/footprint-preferences";
+import type { MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation-speed-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import { controlClass } from '@/shared/ui/control-class';
 import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { measureCanvasInsets } from "../interaction/free-area";

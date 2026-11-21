@@ -1,5 +1,12 @@
 import type { NeuralLabels } from "../frame-draw/neural/paint-neural";
-import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import type {
+  CanvasBackground,
+  GlyphSet,
+} from "@/shared/lib/preferences/canvas-appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
+import type { FootprintPreference } from "@/shared/lib/preferences/footprint-preferences";
+import type { MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation-speed-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import type { RefObject } from "react";
 import type { DialFrameSummary } from "../../dial/frame/frame";
 import type { DialEvidence, DialLabels, DialMemory } from "../../dial/types";

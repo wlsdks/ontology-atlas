@@ -40,7 +40,7 @@ import {
 } from "@/features/library";
 import type { AcpTurnCompletion } from "@/features/acp-session";
 import { latestReport, useFolderWorkRun, workRuns, type TurnToolEvent } from "@/features/work-run";
-import { useWikiWriteMode } from "@/shared/lib/preferences/appearance-preferences";
+import { useWikiWriteMode } from "@/shared/lib/preferences/library-preferences";
 import { nativeVaultFileHashes } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
 import { citedPassage as resolveCitedPassage } from "@/shared/lib/library/source-passage";

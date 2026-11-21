@@ -3,7 +3,7 @@ import {
   readLibraryGuideSeen,
   useLibraryGuideSeen,
   writeLibraryGuideSeen,
-} from "@/shared/lib/preferences/appearance-preferences";
+} from "@/shared/lib/preferences/library-preferences";
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/overlays/right-dock-reserve";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
 import type { LibrarySelection, LibraryHomeSurface } from "./library-page-state";

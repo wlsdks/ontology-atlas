@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
-import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import {
+  DEFAULT_MAP_NAVIGATION_SPEED,
+  type MapNavigationSpeed,
+} from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import { layoutTree } from "../model/tree-view/tree-layout";
 import { buildTreeModel, readTreeFocus } from "../model/tree-view/tree-model";
 import type { TreeDrawList, TreeDrawMark, TreeModel, TreeNamePlacement, TreePose, TreeRect } from "../model/tree-view/types";
