@@ -15,6 +15,7 @@ async function main() {
   if (!auth.ok) {
     checks.push(blocked("github_cli_auth", "GitHub CLI auth", auth.message, "Run gh auth login, then rerun desktop:release-status.", ["gh auth login"]));
     renderAndExit(options, checks);
+    return;
   }
   checks.push(ok("github_cli_auth", "GitHub CLI auth", "gh auth status succeeded"));
 
