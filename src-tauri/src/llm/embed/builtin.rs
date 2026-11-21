@@ -16,8 +16,11 @@ pub(crate) mod worker;
 
 use super::audit;
 use super::EmbedError;
-use disk::{sha256_file, store_error};
-use download::{remove_if_present, remove_link, write_synced, Downloader};
+use disk::{
+    file_len, free_space, remove_if_present, sha256_file, store_error, sweep_dir, sync_dir,
+    sync_file, write_synced,
+};
+use download::Downloader;
 use fetch::Fetch;
 use infer::Encoder;
 use pins::{PinnedFile, MODEL_NAME};
@@ -210,76 +213,6 @@ impl Drop for Busy {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .remove(&self.0);
     }
-}
-
-/// Bytes the current user may still write on the volume holding `path`.
-#[cfg(unix)]
-fn free_space(path: &Path) -> std::io::Result<u64> {
-    use std::os::unix::ffi::OsStrExt;
-    let name = std::ffi::CString::new(path.as_os_str().as_bytes())?;
-    // SAFETY: `statvfs` only writes into the zeroed struct it is given.
-    let mut stat: libc::statvfs = unsafe { std::mem::zeroed() };
-    // SAFETY: `name` is a valid C string and `stat` outlives the call.
-    if unsafe { libc::statvfs(name.as_ptr(), &mut stat) } != 0 {
-        return Err(std::io::Error::last_os_error());
-    }
-    #[allow(
-        clippy::useless_conversion,
-        reason = "the field widths differ by platform"
-    )]
-    let free = u64::from(stat.f_bavail).saturating_mul(u64::from(stat.f_frsize));
-    Ok(free)
-}
-
-#[cfg(windows)]
-fn free_space(path: &Path) -> std::io::Result<u64> {
-    use std::os::windows::ffi::OsStrExt;
-    let wide: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
-    let mut available = 0u64;
-    // SAFETY: `wide` is NUL-terminated and `available` outlives the call.
-    let ok = unsafe {
-        windows_sys::Win32::Storage::FileSystem::GetDiskFreeSpaceExW(
-            wide.as_ptr(),
-            &mut available,
-            std::ptr::null_mut(),
-            std::ptr::null_mut(),
-        )
-    };
-    if ok == 0 {
-        return Err(std::io::Error::last_os_error());
-    }
-    Ok(available)
-}
-
-fn file_len(path: &Path) -> u64 {
-    fs::symlink_metadata(path)
-        .ok()
-        .filter(fs::Metadata::is_file)
-        .map_or(0, |meta| meta.len())
-}
-
-/// Makes the renames in `dir` survive a power loss; Windows has no directory handle
-/// to sync and journals the rename itself.
-fn sync_dir(dir: &Path) -> Result<(), EmbedError> {
-    #[cfg(unix)]
-    fs::File::open(dir)
-        .and_then(|file| file.sync_all())
-        .map_err(store_error)?;
-    #[cfg(not(unix))]
-    let _ = dir;
-    Ok(())
-}
-
-fn sync_file(path: &Path) -> Result<(), EmbedError> {
-    open_for_sync(path)
-        .and_then(|file| file.sync_all())
-        .map_err(store_error)
-}
-
-/// Windows flushes only through a handle that may write (`FlushFileBuffers`), and answers
-/// "Access is denied" for a read-only one.
-fn open_for_sync(path: &Path) -> std::io::Result<fs::File> {
-    fs::OpenOptions::new().write(true).open(path)
 }
 
 /// The model's directory in the app's data directory for this user account:
@@ -632,31 +565,6 @@ impl ModelStore {
             Err(error) => Err(store_error(error)),
         }
     }
-}
-
-/// Deletes every entry of `dir` that `keep` rejects; a link is removed, never followed.
-fn sweep_dir(dir: &Path, keep: &dyn Fn(&str, &fs::Metadata) -> bool) -> Result<(), EmbedError> {
-    let entries = match fs::read_dir(dir) {
-        Ok(entries) => entries,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
-        Err(error) => return Err(store_error(error)),
-    };
-    for entry in entries {
-        let entry = entry.map_err(store_error)?;
-        let path = entry.path();
-        let meta = fs::symlink_metadata(&path).map_err(store_error)?;
-        let name = entry.file_name();
-        if keep(&name.to_string_lossy(), &meta) {
-            continue;
-        }
-        if meta.is_dir() {
-            fs::remove_dir_all(&path).map_err(store_error)?;
-        } else {
-            remove_link(&path)?;
-            remove_if_present(&path)?;
-        }
-    }
-    Ok(())
 }
 
 fn load_from_store(store: &ModelStore) -> Result<Encoder, EmbedError> {

@@ -252,11 +252,11 @@ pub(crate) fn convert(
     match (written, failed) {
         (Ok(()), None) => Ok(()),
         (_, Some(error)) => {
-            super::download::remove_if_present(out)?;
+            super::disk::remove_if_present(out)?;
             Err(error)
         }
         (Err(error), None) => {
-            super::download::remove_if_present(out)?;
+            super::disk::remove_if_present(out)?;
             Err(convert_error(error))
         }
     }

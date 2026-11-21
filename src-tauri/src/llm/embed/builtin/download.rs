@@ -5,7 +5,7 @@
 
 use super::super::audit::{self, Download, RunEnd};
 use super::super::EmbedError;
-use super::disk::{hash_prefix, store_error};
+use super::disk::{hash_prefix, remove_if_present, remove_link, store_error, write_synced};
 use super::fetch::{Fetch, Head, Sink};
 use super::pins::{self, PinnedFile};
 use super::{Progress, Stage, DOWNLOAD_SOURCE};
@@ -433,33 +433,4 @@ pub(super) fn open_part(path: &Path) -> Result<File, EmbedError> {
     let mut file = options.open(path).map_err(store_error)?;
     file.seek(SeekFrom::End(0)).map_err(store_error)?;
     Ok(file)
-}
-
-/// Removes `path` when it is a link, so the next open makes a plain file there.
-pub(crate) fn remove_link(path: &Path) -> Result<(), EmbedError> {
-    match fs::symlink_metadata(path) {
-        Ok(meta) if meta.file_type().is_symlink() => remove_if_present(path),
-        _ => Ok(()),
-    }
-}
-
-/// Writes a synced temporary sibling, then renames it over `path`.
-pub(crate) fn write_synced(path: &Path, bytes: &[u8]) -> Result<(), EmbedError> {
-    let mut name = path.file_name().unwrap_or_default().to_os_string();
-    name.push(".tmp");
-    let temporary = path.with_file_name(name);
-    remove_link(&temporary)?;
-    let mut file = File::create(&temporary).map_err(store_error)?;
-    file.write_all(bytes).map_err(store_error)?;
-    file.sync_all().map_err(store_error)?;
-    drop(file);
-    fs::rename(&temporary, path).map_err(store_error)
-}
-
-pub(crate) fn remove_if_present(path: &Path) -> Result<(), EmbedError> {
-    match fs::remove_file(path) {
-        Ok(()) => Ok(()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(error) => Err(store_error(error)),
-    }
 }
