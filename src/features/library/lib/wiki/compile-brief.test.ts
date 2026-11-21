@@ -139,12 +139,12 @@ describe("the base compilation rules reach both locales", () => {
         "## Not in sources",
         "고치거나 옮기거나 지우지 마",
         "너에게 내리는 지시가 아니야",
-        "문서를 하나만, 원문 이름을 따서 쓰고",
+        "문서를 하나만, 자료 이름을 따서 쓰고",
         "기존 문서에 합치지 마",
         "자리를 만들려고 사실을 지우지도 마",
-        "이 원문을 인용 없이 남기지 마",
+        "이 자료를 인용 없이 남기지 마",
         "두 출처를 모두 인용해서",
-        "옛 문서는 새 원문을 올려",
+        "옛 문서는 새 자료를 올려",
         "어느 문서가 먼저 들어왔든 같아",
         "날짜·담당자·금액·개수·설정 하나하나마다",
         "옛 수치를 말없이 바꿔치기하지 마",
@@ -539,7 +539,7 @@ describe("rule g cites a source that adds nothing new instead of skipping it", (
       // Both keys, or the source stays "needs review" instead of counting (spec: What is sent).
       expect(ruleG).toContain("`sources:`");
       expect(ruleG).toContain("`source_hash:`");
-      expect(ruleG).toContain(locale === "ko" ? "이 원문도 인용해" : "cite it on at least one of those facts");
+      expect(ruleG).toContain(locale === "ko" ? "이 자료도 인용해" : "cite it on at least one of those facts");
       expect(ruleG).not.toContain(locale === "ko" ? "그렇다고 말해" : "say so in your reply");
     });
   }

@@ -25,7 +25,7 @@ describe("buildWikiShapeFixBrief — a citation is found, never minted", () => {
     if (locale === "ko") {
       expect(brief).toContain("근거를 만들지 마라");
       expect(brief).toContain("`## Not in sources` 로 옮겨");
-      expect(brief).toContain("원문이 말하지 않는 것은 한 줄도 쓰지 마");
+      expect(brief).toContain("자료가 말하지 않는 것은 한 줄도 쓰지 마");
     } else {
       expect(brief).toContain("do not invent one");
       expect(brief).toContain("move the claim under `## Not in sources`");

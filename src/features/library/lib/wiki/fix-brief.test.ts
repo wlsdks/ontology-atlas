@@ -14,7 +14,7 @@ describe("buildFixBrief", () => {
   });
 
   it("speaks the screen's language and adapts the instruction to the code", () => {
-    const brief = buildFixBrief({ finding: { code: "missing-link", pages: ["wiki/a", "wiki/b"], summary: "같은 원문" }, locale: "ko", vaultRoot: "/v" });
+    const brief = buildFixBrief({ finding: { code: "missing-link", pages: ["wiki/a", "wiki/b"], summary: "같은 자료" }, locale: "ko", vaultRoot: "/v" });
     expect(brief).toContain("서로 링크가 없습니다");
     expect(brief).toContain("[[wiki/<슬러그>]]");
   });
