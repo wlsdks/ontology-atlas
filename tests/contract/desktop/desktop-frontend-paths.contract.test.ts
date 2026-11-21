@@ -147,7 +147,8 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
       "src/widgets/bottom-tab-bar/lib/is-tab-active.ts",
       "src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx",
       "src/widgets/gateway-chrome/ui/GatewayNav.tsx",
-      "src/widgets/library-import/ui/LibraryImportDialog.tsx",
+      "src/widgets/library-import/ui/ImportChooseStep.tsx",
+      "src/widgets/library-import/ui/ImportConnectStep.tsx",
       "src/widgets/topology-controls/ui/TopologyEmptyState.tsx",
     ]);
     const linksDownload = /["']\/download\/?["'?#]|<GetAppLink\b/;

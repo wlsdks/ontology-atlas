@@ -5,7 +5,7 @@ status: current
 area: library
 stores: ".ontology-atlas/library-collections.json"
 contract_version: 1
-enforced_by: [mcp/src/library/constellations.mjs]
+enforced_by: [mcp/src/library/library-collections.mjs]
 ---
 
 # Library collections format
