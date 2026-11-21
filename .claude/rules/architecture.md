@@ -85,7 +85,26 @@ current need requires, so the source alone carries the meaning.
   data structure on purpose, and lands only after an independent `reviewer`.
 - Split a file when it stops being one job, by responsibility into a cohesive
   subfolder within its layer; add an `index` only where the layer's public API
-  already has one. `pnpm review:facts` marks a changed file over 800 lines.
+  already has one. `pnpm review:facts` marks a changed file over 800 lines:
+  a prompt to look, never a reason to split.
+
+## When to split a file
+
+Split when any of these holds, and say which in the commit:
+
+- **Mixed reasons to change.** Parts change for different reasons (what is
+  drawn, what state is kept, what rule decides, what is read or written), so
+  one edit means reading the others.
+- **An untestable rule.** A condition, calculation, parse or security decision
+  sits inside a component, effect or I/O call, so testing it needs a render or
+  a disk. Extract it as a pure function with a test beside it.
+- **A copy.** The same rule lives in two places; keep one and import it.
+- **No one-sentence name.** Saying what the file does needs "and".
+
+Do not split for length alone: a table of data, a fixture, or one algorithm
+whose steps share per-frame state stays whole. A split is done when each new
+file has a one-sentence job, each extracted rule has a test that can fail, and
+behaviour is unchanged, proven by the tests that already covered it.
 - Dependencies, adapted code and borrowed assets follow
   `docs/engineering/third-party-code.md`; its `// Adapted from` license marker
   is a required comment, never cleanup.
