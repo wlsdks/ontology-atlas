@@ -550,22 +550,31 @@ impl ModelStore {
             .unwrap_or(&self.dir)
     }
 
-    fn space_needed_for(&self, recipe: &Recipe<'_>) -> u64 {
+    /// What a download of the pinned files has fetched so far, its parts included; the
+    /// converted file and anything else in the store do not count.
+    pub(crate) fn downloaded_bytes(&self) -> u64 {
+        self.downloaded_for(&PINNED)
+    }
+
+    fn downloaded_for(&self, recipe: &Recipe<'_>) -> u64 {
         let downloads = self.download_dir();
-        let still: u64 = recipe
+        recipe
             .files
             .iter()
             .map(|file| {
                 let done = file_len(&downloads.join(file.name));
-                let have = if done == file.bytes {
+                if done == file.bytes {
                     done
                 } else {
                     file_len(&download::part_path(&downloads, file)).min(file.bytes)
-                };
-                file.bytes - have
+                }
             })
-            .sum();
-        still + recipe.converted_bytes + SPACE_MARGIN
+            .sum()
+    }
+
+    fn space_needed_for(&self, recipe: &Recipe<'_>) -> u64 {
+        let total: u64 = recipe.files.iter().map(|file| file.bytes).sum();
+        total - self.downloaded_for(recipe) + recipe.converted_bytes + SPACE_MARGIN
     }
 
     fn convert_and_check(

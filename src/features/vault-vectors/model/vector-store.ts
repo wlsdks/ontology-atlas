@@ -45,20 +45,32 @@ export function subscribe(listener: () => void): () => void {
   };
 }
 
+/** `true` when Rust accepted; otherwise the refusal's code. */
+type Answer = true | { refused: string };
+
 /** A rejected command keeps the last status; the warning names the command, never the folder. */
-async function answer(command: string, rootPath: string | null, call: () => Promise<VectorStatus | void>): Promise<boolean> {
+async function answer(command: string, rootPath: string | null, call: () => Promise<VectorStatus | void>): Promise<Answer> {
   try {
     const status = await call();
     if (rootPath !== null && status) publish(rootPath, status);
     return true;
-  } catch {
+  } catch (error) {
     console.warn(`search by meaning: ${command} was refused`);
-    return false;
+    return { refused: typeof error === 'string' ? error : '' };
   }
 }
 
+/**
+ * Codes Rust refuses the source itself with (`check_source`): a runner off this computer or a model
+ * name no store can hold. A refused folder (not granted again yet after an update, gone, unreadable)
+ * says nothing about the choice, which waits for the folder.
+ */
+const refusesTheChoice = (answered: Answer) =>
+  answered !== true && (answered.refused.startsWith('embed-') || answered.refused.startsWith('vectors-model-name'));
+
 /** A choice Rust refused is no choice: it is forgotten and the folder reads as not set up. */
-function refused(rootPath: string): void {
+function refused(rootPath: string, answered: Answer): void {
+  if (!refusesTheChoice(answered)) return;
   vaultVectorSource.clear(rootPath);
   publish(rootPath, { ...OFF_VECTOR_STATUS, phase: 'notSetUp' });
 }
@@ -69,7 +81,7 @@ function refresh(rootPath: string): Promise<void> {
   if (inFlight) return inFlight;
   const choice = vaultVectorSource.read(rootPath);
   const read = answer('vault_vectors_status', rootPath, () => vectorStatus(rootPath, choice?.source ?? null, choice?.paused ?? false))
-    .then((accepted) => { if (!accepted && choice !== null) refused(rootPath); })
+    .then((answered) => { if (answered !== true && choice !== null) refused(rootPath, answered); })
     .finally(() => reading.delete(rootPath));
   reading.set(rootPath, read);
   return read;
@@ -142,17 +154,17 @@ const sameSource = (a: VectorSource, b: VectorSource) =>
 export async function prepare(rootPath: string, source: VectorSource, download = false): Promise<boolean> {
   const earlier = vaultVectorSource.read(rootPath);
   recordPress(rootPath);
-  const accepted = await answer('vault_vectors_prepare', rootPath, () => prepareVectors(rootPath, source, download));
-  if (accepted) vaultVectorSource.write(rootPath, source);
+  const answered = await answer('vault_vectors_prepare', rootPath, () => prepareVectors(rootPath, source, download));
+  if (answered === true) vaultVectorSource.write(rootPath, source);
   else if (earlier && !sameSource(earlier.source, source)) await refresh(rootPath);
-  else refused(rootPath);
-  return accepted;
+  else refused(rootPath, answered);
+  return answered === true;
 }
 
 /** The pause is the person's: it is stored, so the next opening keeps the job stopped. */
 export function stop(rootPath: string): Promise<boolean> {
   vaultVectorSource.setPaused(rootPath, true);
-  return answer('vault_vectors_stop', rootPath, () => stopVectors(rootPath));
+  return answer('vault_vectors_stop', rootPath, () => stopVectors(rootPath)).then((answered) => answered === true);
 }
 
 /**
@@ -164,21 +176,21 @@ export async function resume(rootPath: string): Promise<boolean> {
   if (choice === null) return false;
   vaultVectorSource.setPaused(rootPath, false);
   recordPress(rootPath);
-  const accepted = await answer('vault_vectors_prepare', rootPath, () => prepareVectors(rootPath, choice.source));
-  if (!accepted) refused(rootPath);
-  return accepted;
+  const answered = await answer('vault_vectors_prepare', rootPath, () => prepareVectors(rootPath, choice.source));
+  if (answered !== true) refused(rootPath, answered);
+  return answered === true;
 }
 
 /** Deletes this folder's vectors and forgets its choice once Rust says they are gone. */
 export async function remove(rootPath: string): Promise<boolean> {
-  const removed = await answer('vault_vectors_delete', rootPath, () => deleteVectors(rootPath));
+  const removed = (await answer('vault_vectors_delete', rootPath, () => deleteVectors(rootPath))) === true;
   if (removed) vaultVectorSource.clear(rootPath);
   return removed;
 }
 
 /** Deletes the built-in model; prepared vectors stay, and each known folder reads its status again. */
 export async function removeModel(): Promise<boolean> {
-  const removed = await answer('vault_vectors_delete_model', null, () => deleteVectorModel());
+  const removed = (await answer('vault_vectors_delete_model', null, () => deleteVectorModel())) === true;
   await Promise.all([...statuses.keys()].map((rootPath) => refresh(rootPath)));
   return removed;
 }

@@ -264,8 +264,8 @@ F4 removes `find.searchHint` and `find.walkedRoots` (read at `FindDocumentsDialo
 
 | Rule | Misfire |
 |---|---|
-| Prune folders `public`, `static`, `output`, `outputs`, `generated`, `gen`, `tmp`, `temp`, `cache`, `logs`, `third_party`, `third-party`, `licenses`, `fixtures`, `__fixtures__`, `testdata`, `test-results`, `playwright-report`, and the paths `src/test/resources` and `tests/data` (with today's eleven) | A whitepaper published from `public/`, a consultant's `output/` deliverables, a real contract under `fixtures/` |
-| Any format whose stem is, or starts with followed by `-`, `_` or `.`, `license`, `licence`, `copying`, `notice`, `third-party`, `thirdparty`, `third_party`, `authors`, `contributors`, `changelog`, `patents` (catches `LICENSE-3rdparty.csv`) | A contract named `license-agreement.pdf`; the drop area still takes it |
+| Prune folders `public`, `static`, `output`, `outputs`, `generated`, `gen`, `tmp`, `temp`, `cache`, `logs`, `third_party`, `third-party`, `licenses`, `licences`, `fixtures`, `__fixtures__`, `testdata`, `test-results`, `playwright-report`, and the paths `src/test/resources` and `tests/data` (with today's eleven) | A whitepaper published from `public/`, a consultant's `output/` deliverables, a real contract under `fixtures/` |
+| Any format whose stem is, or starts with followed by `-`, `_` or `.`, `license`, `licence`, `copying`, `notice`, `third-party`, `thirdparty`, `third_party`, `authors`, `contributors`, `changelog`, `patents` (catches `LICENSE-3rdparty.csv`); or whose stem ends in `.license`, `_license`, `.licence` or `_licence` (catches `commons-cli-1.5.0.LICENSE.txt`; `driver-license.pdf` survives) | A contract named `license-agreement.pdf`; the drop area still takes it |
 | Build and crawler files: `CMakeLists.txt`, `requirements.txt`, `requirements-*.txt`, `robots.txt` | A text note someone named `requirements.txt` |
 | Hash names: a stem of 16 or more hex characters with at least one of a-f, or exactly 32, 40 or 64 hex characters, or a UUID; a scanner's `2026111509301500.pdf` survives | An export named only by a hex ID |
 | Under 64 bytes (empty or placeholder) | A one-line note; a 700-byte `budget.csv` survives |
@@ -369,3 +369,8 @@ None. Decided: ko jaryo, ja shiryo, zh unchanged, wiki kept. Reversing is a cata
   (hash names, licence names in every format, build files, 64-byte floor); Add files kept; one
   streamed import; the wiki-only state, F2's test IDs and feature doc, and the decision text's
   overturns added.
+- 2026-11-21: F1 probe. The licence rule also matches a stem ending in `.license`, `_license`,
+  `.licence` or `_licence`, and `licences` joins the pruned folders: over the JVM probe
+  repository the start-only rule still suggested 22 licence texts (21 bundled-library files
+  such as `commons-cli-1.5.0.LICENSE.txt` and one under `licences/`), 22 of its 37 kept files.
+  A hyphen ending is left out so `driver-license.pdf` stays a suggestion.

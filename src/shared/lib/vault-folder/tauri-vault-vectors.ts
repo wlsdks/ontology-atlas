@@ -57,8 +57,11 @@ export interface VectorStatus {
   currentPath: string | null;
   /** Over at least the last 30 s; `null` until measured. */
   passagesPerSecond: number | null;
-  /** While `modelDownloading`. */
-  model: { doneBytes: number; totalBytes: number } | null;
+  /**
+   * While `modelDownloading`, and beside `modelGone` with what a cut-off download kept. `checking`
+   * while that kept part is hashed again, before any byte comes from the network.
+   */
+  model: { doneBytes: number; totalBytes: number; checking: boolean } | null;
   vectorsBytes: number;
   /** A pass runs or follows the running one; an update reads `ready` until it knows what changed. */
   busy: boolean;

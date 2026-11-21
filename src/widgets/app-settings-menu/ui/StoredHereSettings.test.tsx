@@ -36,8 +36,7 @@ vi.mock('@/shared/lib/vault-folder/tauri-vault-index', () => ({
   vaultIndexPreference: { use: () => bridge.indexSwitch, write: vi.fn() },
 }));
 vi.mock('@/shared/lib/vault-folder/tauri-vault-vectors', () => ({ probeVectors: vectors.probe }));
-vi.mock('@/features/vault-vectors', async () => ({
-  formatSize: (await import('@/features/vault-vectors/lib/format-size')).formatSize,
+vi.mock('@/features/vault-vectors', () => ({
   useVectorStatus: () => ({ vectorsBytes: vectors.vectorsBytes }),
   remove: vectors.remove,
   removeModel: vectors.removeModel,
