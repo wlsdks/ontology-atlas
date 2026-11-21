@@ -1,4 +1,4 @@
-mod links;
+mod file_guards;
 mod lock_retry;
 
 use super::log_file::{AUDIT_FILE_C, SIDECAR_DIR_C};

@@ -139,7 +139,7 @@ mod tests {
     #[test]
     fn a_child_of_a_tests_directory_is_a_test_file() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
-        assert!(is_test_file(&root.join("llm_audit/tests/links.rs")));
+        assert!(is_test_file(&root.join("llm_audit/tests/file_guards.rs")));
         assert!(is_test_file(&root.join("llm_audit/tests.rs")));
         assert!(!is_test_file(&root.join("llm_audit/log_file.rs")));
     }

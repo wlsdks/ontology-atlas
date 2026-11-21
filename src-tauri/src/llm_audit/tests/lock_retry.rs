@@ -1,3 +1,4 @@
+#[cfg(unix)]
 use super::*;
 #[cfg(unix)]
 use crate::llm_audit::log_file::{canonical_vault_dir, open_audit_file, ABSORBED_INHERITED_BUSY};
