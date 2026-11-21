@@ -239,7 +239,8 @@ test.describe("source progress on the Sources home", () => {
           const box = (id: string) => document.querySelector(`[data-testid="${id}"]`)?.getBoundingClientRect() ?? null;
           const overflow = [...document.querySelectorAll('[data-testid="library-progress"] *, [data-testid="sources-overview"] *, [data-testid="library-doors"] *')]
             .filter((node) => (node as HTMLElement).offsetWidth > 0)
-            .filter((node) => !node.closest('.sr-only, [data-testid="library-progress-bar"]'))
+            // A page sheet's format tab sits past its paper edge by design; it is a drawing, not cut text.
+            .filter((node) => !node.closest('.sr-only, [data-testid="library-progress-bar"], [data-sheet]'))
             .filter((node) => node.scrollWidth > node.clientWidth + 0.5)
             .map((node) => node.getAttribute("data-testid") ?? node.tagName);
           return {
