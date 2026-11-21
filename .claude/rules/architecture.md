@@ -87,6 +87,9 @@ current need requires, so the source alone carries the meaning.
   subfolder within its layer; add an `index` only where the layer's public API
   already has one. `pnpm review:facts` marks a changed file over 800 lines:
   a prompt to look, never a reason to split.
+- Dependencies, adapted code and borrowed assets follow
+  `docs/engineering/third-party-code.md`; its `// Adapted from` license marker
+  is a required comment, never cleanup.
 
 ## When to split a file
 
@@ -105,6 +108,3 @@ Do not split for length alone: a table of data, a fixture, or one algorithm
 whose steps share per-frame state stays whole. A split is done when each new
 file has a one-sentence job, each extracted rule has a test that can fail, and
 behaviour is unchanged, proven by the tests that already covered it.
-- Dependencies, adapted code and borrowed assets follow
-  `docs/engineering/third-party-code.md`; its `// Adapted from` license marker
-  is a required comment, never cleanup.
