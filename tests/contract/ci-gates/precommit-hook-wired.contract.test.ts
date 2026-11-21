@@ -77,6 +77,7 @@ describe("pre-commit hook wiring", () => {
       });
       mkdirSync(join(repo, "scripts"), { recursive: true });
       cpSync(join(ROOT, "scripts", "docs-vault", "build-docs-vault.mjs"), join(repo, "scripts", "docs-vault", "build-docs-vault.mjs"));
+      cpSync(join(ROOT, "scripts", "docs-vault", "generator"), join(repo, "scripts", "docs-vault", "generator"), { recursive: true });
       cpSync(join(ROOT, "scripts", "lib"), join(repo, "scripts", "lib"), { recursive: true });
       execFileSync("git", ["init", "-q"], { cwd: repo, env: FIXTURE_ENV });
       execFileSync("git", ["config", "maintenance.auto", "false"], { cwd: repo, env: FIXTURE_ENV });

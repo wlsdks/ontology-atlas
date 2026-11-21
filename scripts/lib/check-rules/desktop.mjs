@@ -51,7 +51,7 @@ export const rules = [
     reason: 'bundled vault data or the desktop performance budget surface changed — re-measure the static budgets',
     matches: [
       /^src\/entities\/docs-vault\/data\//,
-      /^scripts\/docs-vault\/build-docs-vault\.mjs$/,
+      /^scripts\/docs-vault\/(?:build-docs-vault\.mjs|generator\/[^/]+\.mjs)$/,
       /^scripts\/desktop\/check-desktop-performance\.(?:mjs|test\.mjs)$/,
       /^src\/entities\/docs-vault\/lib\/bundled-vault\/static-(?:vault-source|headings)\.ts$/,
     ],
