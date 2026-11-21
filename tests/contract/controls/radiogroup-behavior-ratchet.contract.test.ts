@@ -35,7 +35,7 @@ const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [
   ["src/widgets/app-settings-menu/ui/pane-settings/AppearancePickers.tsx", "grid preview tile — shape:'tile' + active ink split by parent/child"],
   ["src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx", "panel-scoped ink + chrome radius + a 48px uniform width the owner fixed after two corrections"],
   ["src/widgets/project-drawer/ui/more-info/ProjectBasicInfo.tsx", "shape:'pill' + upper-case mono caption — not a combination of the value-layer chip ramp"],
-  ["src/widgets/atlas-git-panel/ui/CommitDetail.tsx", "tone:'secondary' + a conditional border that must not cover the pressed chip's indigo"],
+  ["src/widgets/atlas-git-panel/ui/commit-detail/ConceptChips.tsx", "tone:'secondary' + a conditional border that must not cover the pressed chip's indigo"],
   ["src/views/docs-vault/ui/parts/DocsSidebarBody.tsx", "bg-canvas well · Chip items · Tooltip wrapper · label only on the lit chip"],
   /*
    * Hover ink is hand-written per place, not an axis in the value layer, so migrating these would
