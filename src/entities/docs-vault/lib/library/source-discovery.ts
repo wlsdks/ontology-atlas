@@ -5,10 +5,7 @@
  * name stays hidden, plus a name deny-list for secrets in document formats.
  */
 
-/**
- * Allow-list; must equal Rust `DISCOVERY_DOCUMENT_EXTENSIONS`. `md` is absent because Markdown is
- * already a vault file kind.
- */
+/** Allow-list; must equal Rust `DISCOVERY_DOCUMENT_EXTENSIONS`. `log` is absent: logs are output. */
 export const DISCOVERY_DOCUMENT_EXTENSIONS = [
   'pdf',
   'docx',
@@ -16,6 +13,7 @@ export const DISCOVERY_DOCUMENT_EXTENSIONS = [
   'xlsx',
   'xls',
   'csv',
+  'tsv',
   'pptx',
   'ppt',
   'txt',
@@ -24,7 +22,31 @@ export const DISCOVERY_DOCUMENT_EXTENSIONS = [
   'ods',
   'odp',
   'epub',
+  'md',
+  'markdown',
+  'html',
+  'htm',
 ] as const;
+
+/**
+ * Must equal Rust `DISCOVERY_MARKDOWN_EXTENSIONS`. Markdown is offered only from the open folder,
+ * and never a file the vault index knows as a node (`withoutVaultOwnedMarkdown`).
+ */
+export const DISCOVERY_MARKDOWN_EXTENSIONS = ['md', 'markdown'] as const;
+
+/** Must equal Rust `DISCOVERY_GUIDE_STEMS`: repository guides, refused as Markdown. */
+export const DISCOVERY_GUIDE_STEMS = [
+  'readme',
+  'agents',
+  'claude',
+  'gemini',
+  'contributing',
+  'code_of_conduct',
+  'security',
+] as const;
+
+/** Must equal Rust `DISCOVERY_VAULT_OWNED_DIRS`: what Atlas keeps in the open folder. */
+export const DISCOVERY_VAULT_OWNED_DIRS = ['sources', 'wiki'] as const;
 
 /**
  * Must equal Rust `DISCOVERY_PRUNE_DIR_NAMES`, compared lowercased; dot directories are refused
@@ -157,17 +179,48 @@ function looksLikeAHash(stem: string): boolean {
   return UUID_STEM.test(stem);
 }
 
+/** Why a folder walk passes a file over; mirrors Rust `SkipReason`. */
+export type DiscoverySkipReason = 'secretName' | 'licence' | 'notDocument';
+
+function stemOf(lowered: string, extension: string): string {
+  return extension ? lowered.slice(0, lowered.length - extension.length - 1) : lowered;
+}
+
+/** The name rules every folder walk applies; repository guides are discovery's alone. */
+export function discoverySkipReason(name: string): DiscoverySkipReason | null {
+  const lowered = name.toLowerCase();
+  if (DISCOVERY_DENIED_NAME_FRAGMENTS.some((fragment) => lowered.includes(fragment))) {
+    return 'secretName';
+  }
+  const extension = discoveryExtension(lowered);
+  const stem = stemOf(lowered, extension);
+  if (namesANotice(stem)) return 'licence';
+  if (
+    !(DISCOVERY_DOCUMENT_EXTENSIONS as readonly string[]).includes(extension) ||
+    namesABuildFile(lowered) ||
+    looksLikeAHash(stem)
+  ) {
+    return 'notDocument';
+  }
+  return null;
+}
+
+export function isMarkdownName(name: string): boolean {
+  return (DISCOVERY_MARKDOWN_EXTENSIONS as readonly string[]).includes(discoveryExtension(name));
+}
+
+function namesARepositoryGuide(lowered: string): boolean {
+  if (!isMarkdownName(lowered)) return false;
+  const stem = stemOf(lowered, discoveryExtension(lowered));
+  return DISCOVERY_GUIDE_STEMS.some(
+    (guide) => stem === guide || stem.startsWith(`${guide}.`),
+  );
+}
+
 /** The one judgement both walks make about a file name. */
 export function discoveryAcceptsFile(name: string): boolean {
   if (name.startsWith('.')) return false;
-  const lowered = name.toLowerCase();
-  if (DISCOVERY_DENIED_NAME_FRAGMENTS.some((fragment) => lowered.includes(fragment))) {
-    return false;
-  }
-  const extension = discoveryExtension(lowered);
-  if (!(DISCOVERY_DOCUMENT_EXTENSIONS as readonly string[]).includes(extension)) return false;
-  const stem = lowered.slice(0, lowered.length - extension.length - 1);
-  return !namesANotice(stem) && !namesABuildFile(lowered) && !looksLikeAHash(stem);
+  return discoverySkipReason(name) === null && !namesARepositoryGuide(name.toLowerCase());
 }
 
 /** Takes the path relative to the walked root, with either separator, so Windows matches too. */
@@ -202,7 +255,7 @@ export interface SourceDiscoveryReport {
   unreadableRoots: string[];
 }
 
-/** The web walk, limited to the opened folder's handle. */
+/** The web walk, limited to the opened folder's handle, so Atlas's own folders are always skipped. */
 export async function discoverCandidatesInHandle(
   root: FileSystemDirectoryHandle,
   options: { rootLabel: string; skipRelative?: readonly string[] } = { rootLabel: '' },
@@ -227,6 +280,7 @@ export async function discoverCandidatesInHandle(
       }
       const relative = prefix ? `${prefix}/${name}` : name;
       if (skip.some((path) => relative === path || relative.startsWith(`${path}/`))) continue;
+      if (!prefix && (DISCOVERY_VAULT_OWNED_DIRS as readonly string[]).includes(name)) continue;
       if (handle.kind === 'directory') {
         if (!discoveryAcceptsDirectory(relative)) continue;
         await walk(handle as FileSystemDirectoryHandle, relative, depth + 1);
@@ -261,4 +315,91 @@ export async function discoverCandidatesInHandle(
 export function candidateKey(candidate: SourceCandidate): string {
   // NUL cannot appear in a path, so keys never collide.
   return `${candidate.rootPath}\u0000${candidate.relativePath}`;
+}
+
+/**
+ * Markdown the vault already owns is never offered: a `.md` file is kept only when the vault index
+ * holds it without `kind:`, so nothing new is read and an unread file is not guessed at. Markdown
+ * from any root but the open folder is dropped too: a bound code root's Markdown is developer
+ * documentation.
+ */
+export function withoutVaultOwnedMarkdown(
+  candidates: readonly SourceCandidate[],
+  {
+    openRootPath,
+    docs,
+  }: {
+    openRootPath: string;
+    docs: readonly { path: string; frontmatter: Record<string, unknown> }[];
+  },
+): SourceCandidate[] {
+  const unowned = new Set<string>();
+  for (const doc of docs) {
+    const kind = doc.frontmatter.kind;
+    if (typeof kind !== 'string' || kind.trim() === '') unowned.add(doc.path);
+  }
+  return candidates.filter((candidate) => {
+    if (!isMarkdownName(candidate.name)) return true;
+    if (candidate.rootPath !== openRootPath) return false;
+    return candidate.extension !== 'md' || unowned.has(candidate.relativePath);
+  });
+}
+
+/** One entry of a folder dropped on the page, from either browser drop API. */
+export type DroppedEntry =
+  | { kind: 'file'; name: string; getFile: () => Promise<File> }
+  | { kind: 'directory'; name: string; children: () => AsyncIterable<DroppedEntry> };
+
+type DroppedDirectory = Extract<DroppedEntry, { kind: 'directory' }>;
+
+export interface DroppedFolderWalk {
+  files: { file: File; relativePath: string }[];
+  skipped: { relativePath: string; reason: DiscoverySkipReason }[];
+  totalBytes: number;
+  truncated: boolean;
+}
+
+/** Must equal Rust `DROP_MAX_FILES`: a folder drop lists at most this many files. */
+export const DROP_MAX_FILES = 20_000;
+
+/**
+ * The browser's half of a folder drop, under the rules Rust applies to one: the folder keeps its
+ * structure below its own name, and each `File` stays unread until it is copied.
+ */
+export async function walkDroppedFolder(folder: DroppedDirectory): Promise<DroppedFolderWalk> {
+  const walk: DroppedFolderWalk = { files: [], skipped: [], totalBytes: 0, truncated: false };
+  const visit = async (directory: DroppedDirectory, within: string, depth: number) => {
+    if (depth > DISCOVERY_MAX_DEPTH || walk.truncated) return;
+    for await (const entry of directory.children()) {
+      const below = within ? `${within}/${entry.name}` : entry.name;
+      const landing = `${folder.name}/${below}`;
+      if (entry.kind === 'directory') {
+        if (discoveryAcceptsDirectory(below)) await visit(entry, below, depth + 1);
+        continue;
+      }
+      const reason = discoverySkipReason(entry.name);
+      // A dot file is system furniture (`.DS_Store`) unless its name reads as a secret.
+      if (entry.name.startsWith('.')) {
+        if (reason === 'secretName') walk.skipped.push({ relativePath: landing, reason });
+        continue;
+      }
+      if (reason) {
+        walk.skipped.push({ relativePath: landing, reason });
+        continue;
+      }
+      const file = await entry.getFile();
+      if (file.size < DISCOVERY_MIN_FILE_BYTES) {
+        walk.skipped.push({ relativePath: landing, reason: 'notDocument' });
+        continue;
+      }
+      if (walk.files.length >= DROP_MAX_FILES) {
+        walk.truncated = true;
+        return;
+      }
+      walk.files.push({ file, relativePath: landing });
+      walk.totalBytes += file.size;
+    }
+  };
+  await visit(folder, '', 0);
+  return walk;
 }

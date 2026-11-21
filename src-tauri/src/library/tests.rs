@@ -76,6 +76,7 @@ fn offered_by_the_walk(label: &str, rows: &[serde_json::Value]) -> Vec<String> {
         root_path: project.to_string_lossy().into_owned(),
         label: "project".into(),
         skip_relative: Vec::new(),
+        open_folder: false,
     }])
     .unwrap();
     fs::remove_dir_all(fixture).unwrap();
@@ -281,6 +282,7 @@ fn a_discovered_candidate_imports_through_the_string_the_page_builds() {
         root_path: root_path.clone(),
         label: "project".into(),
         skip_relative: Vec::new(),
+        open_folder: false,
     }])
     .unwrap();
     assert_eq!(report.candidates.len(), 1);
@@ -310,6 +312,7 @@ fn discovery_refuses_a_source_root_the_vault_gate_forbids() {
         root_path: bundle.to_string_lossy().to_string(),
         label: "bundle".into(),
         skip_relative: Vec::new(),
+        open_folder: false,
     }])
     .unwrap();
     assert!(report.candidates.is_empty());
@@ -690,6 +693,7 @@ fn a_document_discovery_offered_is_still_refused_for_planning_when_its_type_is_u
         root_path: project.to_string_lossy().into_owned(),
         label: "project".into(),
         skip_relative: Vec::new(),
+        open_folder: false,
     }])
     .unwrap();
     let candidate = &report.candidates[0];
@@ -801,4 +805,401 @@ fn copy_hashing_keeps_the_recorded_sha256_across_chunks() {
     );
     assert_eq!(length, 200_000);
     assert_eq!(copied, input);
+}
+
+/// Drops share one "last drop" slot, so tests that drop take turns.
+fn drop_turn() -> std::sync::MutexGuard<'static, ()> {
+    static TURN: Mutex<()> = Mutex::new(());
+    TURN.lock().unwrap_or_else(|err| err.into_inner())
+}
+
+fn plant(path: &Path, bytes: usize) {
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    let body: Vec<u8> = path.to_string_lossy().bytes().cycle().take(bytes).collect();
+    fs::write(path, body).unwrap();
+}
+
+#[test]
+fn a_dropped_folder_copies_only_documents_and_counts_what_it_skipped() {
+    let _turn = drop_turn();
+    let (fixture, vault) = fresh_fixture("drop-folder");
+    let dropped = fixture.join("contracts");
+    for (name, bytes) in [
+        (".env", 200),
+        ("id_rsa", 400),
+        ("LICENSE.txt", 900),
+        ("node_modules/x.md", 300),
+        (".DS_Store", 300),
+        ("lease.pdf", 500),
+        ("notes/renewal.md", 300),
+    ] {
+        plant(&dropped.join(name), bytes);
+    }
+
+    let offer = dropped::offer_dropped_paths(std::slice::from_ref(&dropped));
+    let mut landing: Vec<&str> = offer
+        .files
+        .iter()
+        .map(|f| f.relative_path.as_str())
+        .collect();
+    landing.sort();
+    assert_eq!(
+        landing,
+        vec!["contracts/lease.pdf", "contracts/notes/renewal.md"]
+    );
+    let mut skipped: Vec<(&str, SkipReason)> = offer
+        .skipped
+        .iter()
+        .map(|s| (s.relative_path.as_str(), s.reason))
+        .collect();
+    skipped.sort_by_key(|(path, _)| *path);
+    assert_eq!(
+        skipped,
+        vec![
+            ("contracts/.env", SkipReason::SecretName),
+            ("contracts/LICENSE.txt", SkipReason::Licence),
+            ("contracts/id_rsa", SkipReason::SecretName),
+        ]
+    );
+    assert_eq!(offer.total_bytes, 800);
+
+    let keys = offer.files.iter().map(|f| f.path.clone()).collect();
+    let results = import_sources(
+        &vault,
+        keys,
+        ImportDestination::Sources,
+        &ImportControl::default(),
+    )
+    .unwrap();
+    assert!(
+        results.iter().all(|row| row.status == "added"),
+        "{results:?}"
+    );
+    let vault = PathBuf::from(&vault);
+    assert!(vault.join("sources/contracts/lease.pdf").is_file());
+    assert!(vault.join("sources/contracts/notes/renewal.md").is_file());
+    assert!(!vault.join("sources/contracts/LICENSE.txt").exists());
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+/// Windows paths come back with `\`; what lands under `sources/` is `/`-joined everywhere.
+#[test]
+fn a_dropped_folder_records_landing_paths_with_forward_slashes() {
+    let _turn = drop_turn();
+    let (fixture, _vault) = fresh_fixture("drop-slashes");
+    let dropped = fixture.join("meetings");
+    plant(&dropped.join("2026").join("weekly.txt"), 300);
+    let offer = dropped::offer_dropped_paths(std::slice::from_ref(&dropped));
+    assert_eq!(offer.files.len(), 1);
+    assert_eq!(offer.files[0].relative_path, "meetings/2026/weekly.txt");
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+/// Dropping one file is the person's explicit choice, so its format is not judged.
+#[test]
+fn a_single_dropped_file_is_offered_whatever_its_format() {
+    let _turn = drop_turn();
+    let (fixture, vault) = fresh_fixture("drop-file");
+    let photo = fixture.join("whiteboard.png");
+    plant(&photo, 30);
+    let offer = dropped::offer_dropped_paths(std::slice::from_ref(&photo));
+    assert_eq!(offer.files.len(), 1);
+    assert_eq!(offer.files[0].relative_path, "whiteboard.png");
+    let results = import_sources(
+        &vault,
+        vec![offer.files[0].path.clone()],
+        ImportDestination::Sources,
+        &ImportControl::default(),
+    )
+    .unwrap();
+    assert_eq!(
+        results[0].relative_path.as_deref(),
+        Some("sources/whiteboard.png")
+    );
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+/// A new drop withdraws the last one, so an old drop's paths stop being importable.
+#[test]
+fn a_new_drop_withdraws_the_previous_drops_offers() {
+    let _turn = drop_turn();
+    let (fixture, vault) = fresh_fixture("drop-withdraw");
+    let first = fixture.join("first.pdf");
+    let second = fixture.join("second.pdf");
+    plant(&first, 100);
+    plant(&second, 100);
+    let earlier = dropped::offer_dropped_paths(std::slice::from_ref(&first));
+    dropped::offer_dropped_paths(std::slice::from_ref(&second));
+    let results = import_sources(
+        &vault,
+        vec![earlier.files[0].path.clone()],
+        ImportDestination::Sources,
+        &ImportControl::default(),
+    )
+    .unwrap();
+    assert_eq!(results[0].reason.as_deref(), Some("source-not-offered"));
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+#[cfg(unix)]
+#[test]
+fn a_dropped_folder_never_follows_a_link_out_of_it() {
+    let _turn = drop_turn();
+    let (fixture, _vault) = fresh_fixture("drop-link");
+    let outside = fixture.join("outside");
+    plant(&outside.join("private.pdf"), 300);
+    let dropped = fixture.join("shared");
+    plant(&dropped.join("agenda.pdf"), 300);
+    std::os::unix::fs::symlink(&outside, dropped.join("linked")).unwrap();
+    std::os::unix::fs::symlink(outside.join("private.pdf"), dropped.join("alias.pdf")).unwrap();
+    let offer = dropped::offer_dropped_paths(std::slice::from_ref(&dropped));
+    let landing: Vec<&str> = offer
+        .files
+        .iter()
+        .map(|f| f.relative_path.as_str())
+        .collect();
+    assert_eq!(landing, vec!["shared/agenda.pdf"]);
+
+    let linked_root = fixture.join("linked-root");
+    std::os::unix::fs::symlink(&outside, &linked_root).unwrap();
+    let refused = dropped::offer_dropped_paths(std::slice::from_ref(&linked_root));
+    assert!(refused.files.is_empty());
+    assert_eq!(refused.skipped.len(), 1);
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+/// An offer's recorded path is checked again at import: no segment may climb out.
+#[test]
+fn an_offered_landing_path_cannot_climb_out_of_sources() {
+    let (fixture, vault) = fresh_fixture("traversal");
+    let original = fixture.join("plan.pdf");
+    plant(&original, 200);
+    let canonical = fs::canonicalize(&original).unwrap();
+    let mut keys = Vec::new();
+    for (index, relative) in [
+        "../escape.pdf",
+        "a/../../escape.pdf",
+        "/abs.pdf",
+        "a//b.pdf",
+        "..",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let key = format!("traversal-{index}-{}", fixture.display());
+        remember_source_offer(
+            key.clone(),
+            SourceOffer {
+                canonical: canonical.clone(),
+                relative: relative.into(),
+            },
+        );
+        keys.push(key);
+    }
+    let results = import_sources(
+        &vault,
+        keys,
+        ImportDestination::Sources,
+        &ImportControl::default(),
+    )
+    .unwrap();
+    assert_eq!(results.len(), 5);
+    for row in &results {
+        assert_eq!(row.reason.as_deref(), Some("unusable-file-name"), "{row:?}");
+    }
+    assert!(!fixture.join("escape.pdf").exists());
+    assert!(!PathBuf::from(&vault).join("escape.pdf").exists());
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+#[cfg(unix)]
+#[test]
+fn a_linked_folder_inside_sources_is_refused_not_followed() {
+    let (fixture, vault) = fresh_fixture("linked-sub");
+    let outside = fixture.join("outside");
+    fs::create_dir_all(&outside).unwrap();
+    fs::create_dir_all(PathBuf::from(&vault).join("sources")).unwrap();
+    std::os::unix::fs::symlink(&outside, PathBuf::from(&vault).join("sources/meetings")).unwrap();
+    let original = fixture.join("weekly.pdf");
+    plant(&original, 200);
+    let key = format!("linked-sub-{}", fixture.display());
+    remember_source_offer(
+        key.clone(),
+        SourceOffer {
+            canonical: fs::canonicalize(&original).unwrap(),
+            relative: "meetings/weekly.pdf".into(),
+        },
+    );
+    let results = import_sources(
+        &vault,
+        vec![key],
+        ImportDestination::Sources,
+        &ImportControl::default(),
+    )
+    .unwrap();
+    assert_eq!(
+        results[0].reason.as_deref(),
+        Some("import-destination-not-a-folder")
+    );
+    assert!(!outside.join("weekly.pdf").exists());
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+/// The page can send any string; one Rust never offered is refused and never opened.
+#[test]
+fn a_home_ssh_key_the_page_sends_fails_source_not_offered() {
+    let (fixture, vault) = fresh_fixture("ssh-key");
+    let home = std::env::var_os("HOME")
+        .or_else(|| std::env::var_os("USERPROFILE"))
+        .map(PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir);
+    let key = home
+        .join(".ssh")
+        .join("id_ed25519")
+        .to_string_lossy()
+        .into_owned();
+    let results = import_sources(
+        &vault,
+        vec![key],
+        ImportDestination::Sources,
+        &ImportControl::default(),
+    )
+    .unwrap();
+    assert_eq!(results[0].status, "failed");
+    assert_eq!(results[0].reason.as_deref(), Some("source-not-offered"));
+    assert_eq!(results[0].sha256, None);
+    assert!(fs::read_dir(PathBuf::from(&vault).join("sources"))
+        .unwrap()
+        .next()
+        .is_none());
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+#[test]
+fn found_files_keep_their_folders_and_vault_folders_are_never_walked() {
+    let (fixture, vault) = fresh_fixture("keep-folders");
+    let vault_path = PathBuf::from(&vault);
+    for name in [
+        "meetings/weekly.md",
+        "contracts/weekly.md",
+        "contracts/sub/weekly.md",
+        "sources/old.pdf",
+        "wiki/page.md",
+        "README.md",
+    ] {
+        plant(&vault_path.join(name), 200);
+    }
+    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault_path));
+    let report = discover_source_candidates(vec![SourceDiscoveryRoot {
+        root_path: vault.clone(),
+        label: "vault".into(),
+        skip_relative: Vec::new(),
+        open_folder: true,
+    }])
+    .unwrap();
+    let mut found: Vec<String> = report
+        .candidates
+        .iter()
+        .map(|c| c.relative_path.clone())
+        .collect();
+    found.sort();
+    assert_eq!(
+        found,
+        vec![
+            "contracts/sub/weekly.md",
+            "contracts/weekly.md",
+            "meetings/weekly.md"
+        ]
+    );
+    let keys = report
+        .candidates
+        .iter()
+        .map(|c| format!("{}/{}", c.root_path, c.relative_path))
+        .collect();
+    let results = import_sources(
+        &vault,
+        keys,
+        ImportDestination::Sources,
+        &ImportControl::default(),
+    )
+    .unwrap();
+    assert!(
+        results.iter().all(|row| row.status == "added"),
+        "{results:?}"
+    );
+    for landed in [
+        "sources/meetings/weekly.md",
+        "sources/contracts/weekly.md",
+        "sources/contracts/sub/weekly.md",
+    ] {
+        assert!(vault_path.join(landed).is_file(), "{landed}");
+    }
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+/// A bound code root's Markdown is developer documentation, never a suggestion.
+#[test]
+fn markdown_is_offered_only_from_the_open_folder() {
+    let (fixture, vault) = fresh_fixture("markdown-roots");
+    let project = fixture.join("project");
+    plant(&project.join("docs/design.md"), 300);
+    plant(&project.join("docs/design.pdf"), 300);
+    let project = fs::canonicalize(&project).unwrap();
+    let _scope =
+        crate::vault_grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);
+    let report = discover_source_candidates(vec![SourceDiscoveryRoot {
+        root_path: project.to_string_lossy().into_owned(),
+        label: "project".into(),
+        skip_relative: Vec::new(),
+        open_folder: false,
+    }])
+    .unwrap();
+    let found: Vec<&str> = report
+        .candidates
+        .iter()
+        .map(|c| c.relative_path.as_str())
+        .collect();
+    assert_eq!(found, vec!["docs/design.pdf"]);
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+#[test]
+fn stop_ends_an_import_between_files_and_keeps_what_landed() {
+    let (fixture, vault) = fresh_fixture("stop");
+    let mut keys = Vec::new();
+    for index in 0..5 {
+        let file = fixture.join(format!("note-{index}.txt"));
+        plant(&file, 100 + index);
+        keys.push(vend(&file));
+    }
+    let stop = AtomicBool::new(false);
+    let seen = std::cell::Cell::new(0);
+    let progress = |done: usize, _total: usize| {
+        seen.set(done);
+        if done == 2 {
+            stop.store(true, Ordering::Relaxed);
+        }
+    };
+    let results = import_sources(
+        &vault,
+        keys,
+        ImportDestination::Sources,
+        &ImportControl {
+            stop: Some(&stop),
+            progress: Some(&progress),
+        },
+    )
+    .unwrap();
+    assert_eq!(results.len(), 2);
+    assert_eq!(seen.get(), 2);
+    let landed = fs::read_dir(PathBuf::from(&vault).join("sources"))
+        .unwrap()
+        .count();
+    assert_eq!(landed, 2);
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+#[test]
+fn stop_reaches_only_a_running_import() {
+    assert!(!stop_source_import("never-started".into()));
 }

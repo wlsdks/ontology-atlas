@@ -6,6 +6,9 @@ import {
   discoveryAcceptsDirectory,
   discoveryAcceptsFile,
   discoveryExtension,
+  walkDroppedFolder,
+  withoutVaultOwnedMarkdown,
+  type DroppedEntry,
   type SourceCandidate,
 } from './source-discovery';
 import discoveryCases from '../../../../../tests/fixtures/source-discovery-cases.json';
@@ -99,9 +102,15 @@ describe('discovery proposes ordinary project documents', () => {
     },
   );
 
-  it('refuses code and Markdown, which are not raw sources', () => {
-    for (const name of ['index.ts', 'README.md', 'Cargo.toml', 'data.json']) {
+  it('refuses code and repository guides', () => {
+    for (const name of ['index.ts', 'README.md', 'README.ko.md', 'CLAUDE.md', 'Cargo.toml', 'data.json', 'server.log']) {
       expect(discoveryAcceptsFile(name)).toBe(false);
+    }
+  });
+
+  it('accepts notes and pages a person keeps', () => {
+    for (const name of ['weekly.md', 'ideas.markdown', 'export.html', 'page.htm', 'table.tsv', 'security-review.md']) {
+      expect(discoveryAcceptsFile(name)).toBe(true);
     }
   });
 
@@ -154,6 +163,107 @@ describe('the shared discovery table (tests/fixtures/source-discovery-cases.json
       expect(discoveryAcceptsDirectory(path)).toBe(descends);
     },
   );
+});
+
+describe('Markdown the vault owns is never offered', () => {
+  const candidate = (rootPath: string, relativePath: string): SourceCandidate => {
+    const name = relativePath.slice(relativePath.lastIndexOf('/') + 1);
+    return { rootPath, rootLabel: 'x', relativePath, name, extension: discoveryExtension(name), size: 100, mtime: 1 };
+  };
+
+  it('keeps only open-folder Markdown the index holds without kind', () => {
+    const kept = withoutVaultOwnedMarkdown(
+      [
+        candidate('/vault', 'meetings/weekly.md'),
+        candidate('/vault', 'concepts/map.md'),
+        candidate('/vault', 'unread/new.md'),
+        candidate('/vault', 'notes/ideas.markdown'),
+        candidate('/vault', 'contracts/lease.pdf'),
+        candidate('/repo', 'docs/design.md'),
+        candidate('/repo', 'docs/design.pdf'),
+      ],
+      {
+        openRootPath: '/vault',
+        docs: [
+          { path: 'meetings/weekly.md', frontmatter: { title: 'Weekly' } },
+          { path: 'concepts/map.md', frontmatter: { kind: 'capability' } },
+        ],
+      },
+    );
+    expect(kept.map((row) => `${row.rootPath}:${row.relativePath}`)).toEqual([
+      '/vault:meetings/weekly.md',
+      '/vault:notes/ideas.markdown',
+      '/vault:contracts/lease.pdf',
+      '/repo:docs/design.pdf',
+    ]);
+  });
+
+  it('offers nothing from a folder whose every Markdown file is a node', async () => {
+    const files = { 'project.md': 300, 'domains/library.md': 300, 'capabilities/search.md': 300 };
+    const report = await discoverCandidatesInHandle(fakeDirectory(files), { rootLabel: 'ontology' });
+    const kept = withoutVaultOwnedMarkdown(report.candidates, {
+      openRootPath: 'vault',
+      docs: Object.keys(files).map((path) => ({ path, frontmatter: { kind: 'domain' } })),
+    });
+    expect(kept).toEqual([]);
+  });
+
+  it('never walks the sources or wiki folders of the open folder', async () => {
+    const report = await discoverCandidatesInHandle(
+      fakeDirectory({ 'sources/a.pdf': 300, 'wiki/page.md': 300, 'meetings/b.pdf': 300 }),
+      { rootLabel: 'vault' },
+    );
+    expect(report.candidates.map((row) => row.relativePath)).toEqual(['meetings/b.pdf']);
+  });
+});
+
+describe('a dropped folder keeps documents and counts what it skipped', () => {
+  function droppedFolder(name: string, files: Record<string, number>): DroppedEntry & { kind: 'directory' } {
+    const build = (dirName: string, prefix: string): DroppedEntry & { kind: 'directory' } => ({
+      kind: 'directory',
+      name: dirName,
+      async *children() {
+        const seen = new Set<string>();
+        for (const [path, size] of Object.entries(files)) {
+          if (prefix && !path.startsWith(`${prefix}/`)) continue;
+          const rest = prefix ? path.slice(prefix.length + 1) : path;
+          const slash = rest.indexOf('/');
+          if (slash < 0) {
+            yield { kind: 'file', name: rest, getFile: async () => new File(['x'.repeat(size)], rest) };
+          } else if (!seen.has(rest.slice(0, slash))) {
+            const child = rest.slice(0, slash);
+            seen.add(child);
+            yield build(child, prefix ? `${prefix}/${child}` : child);
+          }
+        }
+      },
+    });
+    return build(name, '');
+  }
+
+  it('copies the two documents and names the secret and licence files it passed over', async () => {
+    const walk = await walkDroppedFolder(
+      droppedFolder('contracts', {
+        '.env': 200,
+        id_rsa: 400,
+        'LICENSE.txt': 900,
+        'node_modules/x.md': 300,
+        '.DS_Store': 300,
+        'lease.pdf': 500,
+        'notes/renewal.md': 300,
+      }),
+    );
+    expect(walk.files.map((row) => row.relativePath).sort()).toEqual([
+      'contracts/lease.pdf',
+      'contracts/notes/renewal.md',
+    ]);
+    expect(walk.skipped.map((row) => [row.relativePath, row.reason]).sort()).toEqual([
+      ['contracts/.env', 'secretName'],
+      ['contracts/LICENSE.txt', 'licence'],
+      ['contracts/id_rsa', 'secretName'],
+    ]);
+    expect(walk.totalBytes).toBe(800);
+  });
 });
 
 describe('a candidate keeps a stable identity so a refusal can be remembered', () => {

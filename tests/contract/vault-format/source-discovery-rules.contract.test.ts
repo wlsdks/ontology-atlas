@@ -6,6 +6,10 @@ import {
   DISCOVERY_BUILD_FILE_NAMES,
   DISCOVERY_DENIED_NAME_FRAGMENTS,
   DISCOVERY_DOCUMENT_EXTENSIONS,
+  DISCOVERY_GUIDE_STEMS,
+  DISCOVERY_MARKDOWN_EXTENSIONS,
+  DISCOVERY_VAULT_OWNED_DIRS,
+  DROP_MAX_FILES,
   DISCOVERY_MAX_CANDIDATES,
   DISCOVERY_MAX_DEPTH,
   DISCOVERY_MIN_FILE_BYTES,
@@ -101,13 +105,26 @@ describe('the discovery rule is the same in both walks', () => {
   });
 
   /**
-   * Markdown is already a vault file kind. Copying a project's Markdown into `sources/`
-   * would put the same text in two places with no way to say which one is the source, so
-   * neither list may grow it.
+   * Markdown is offered only when the vault does not own it: from the open folder, outside
+   * Atlas's own folders, never a repository guide, and never a node (the page's filter reads
+   * `kind:` from the index it already holds). Both walks must hold the same lists.
    */
-  it('never offers Markdown as a raw source', () => {
-    expect(rustList('DISCOVERY_DOCUMENT_EXTENSIONS')).not.toContain('md');
-    expect([...DISCOVERY_DOCUMENT_EXTENSIONS]).not.toContain('md');
+  it('offers Markdown under the same limits', () => {
+    expect(rustList('DISCOVERY_MARKDOWN_EXTENSIONS').sort()).toEqual(
+      [...DISCOVERY_MARKDOWN_EXTENSIONS].sort(),
+    );
+    expect(rustList('DISCOVERY_GUIDE_STEMS').sort()).toEqual([...DISCOVERY_GUIDE_STEMS].sort());
+    expect(rustList('DISCOVERY_VAULT_OWNED_DIRS').sort()).toEqual(
+      [...DISCOVERY_VAULT_OWNED_DIRS].sort(),
+    );
+    expect(rustSource).toMatch(/root\.open_folder \|\| !is_markdown_name\(&name\)/);
+  });
+
+  it('caps a dropped folder at the same file count', () => {
+    const dropSource = readFileSync(resolve(repoRoot, 'src-tauri/src/library/dropped.rs'), 'utf8');
+    expect(dropSource).toMatch(
+      new RegExp(`const DROP_MAX_FILES: usize = ${DROP_MAX_FILES.toLocaleString('en').replaceAll(',', '_')};`),
+    );
   });
 
   /**
