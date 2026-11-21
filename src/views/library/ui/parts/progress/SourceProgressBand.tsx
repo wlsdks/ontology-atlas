@@ -13,7 +13,15 @@ import { controlClass } from "@/shared/ui/control-class";
 import { GetAppLink } from "@/shared/ui/controls/get-app-link";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
-import { PROGRESS_COMPLETE_INK, PROGRESS_SEGMENTS as SEGMENTS, progressInk } from "./progress-inks";
+import {
+  drawnSourceShare,
+  formatSourceShare,
+  segmentClip,
+  SOURCE_STATE_ORDER,
+  sourceShare,
+  sourceStateFill,
+} from "@/widgets/library-sources-overview";
+
 import { SourceProgressChart } from "./SourceProgressChart";
 import { useBandMotion } from "./use-band-motion";
 
@@ -73,15 +81,8 @@ export interface SourceStateFilter {
 
 type SourceState = LibrarySourceRow["state"];
 
-/** Below this many sources the number is a fraction: "3 / 7" says more than "42%". */
-const FRACTION_BELOW = 10;
 /** A chart of fewer recorded days than this is a step, not a history. */
 const CHART_MIN_DAYS = 3;
-/** The presses in the bar's order: its segments left to right, then the empty track. */
-const PRESS_ORDER: readonly SourceState[] = [
-  ...SEGMENTS.flatMap((segment) => segment.states as readonly SourceState[]),
-  "not-compiled",
-];
 
 /** Buckets in which at least one page records its date: the days the chart can say something about. */
 function recordedDays(series: readonly { count: number }[]): number {
@@ -96,10 +97,11 @@ function recordedDays(series: readonly { count: number }[]): number {
 
 /**
  * How many sources have a wiki page, what state the rest are in, since when, and the press that
- * writes the next ones: one row above the Sources home's graph, at most 112px tall from `md` up. Four
- * cells: the number and its sentence, the bar with one press per state (which filters the list and
- * lights the picture), the chart when the pages record three days or more, and Continue with the
- * agent's work line. A narrow band stacks the bar under the number.
+ * writes the next ones: one row above the Sources home, 112px tall from `md` whatever has arrived,
+ * so the pane under it never moves. Four cells: the number and its sentence, the bar with one
+ * segment and one press per state (which filters the list), the chart when the pages record three
+ * days or more, and Continue with the agent's work line. A narrow band stacks the bar under the
+ * number.
  *
  * On a folder's first visit in a session the number, the sentence's count, the bar and the chart
  * count up together, so no frame shows one number beside another; until the count starts they are
@@ -147,39 +149,28 @@ export function SourceProgressBand({
     return () => clearTimeout(id);
   }, [waited]);
 
-  const { total, compiled, byState, percent, underOnePercent, today } = progress;
+  const { total, compiled, byState, percent, today } = progress;
   const complete = total > 0 && compiled === total;
-  const boundaries = SEGMENTS.reduce<number[]>((acc, segment) => {
-    const share = segment.states.reduce((sum, state) => sum + byState[state], 0) / Math.max(1, total);
-    acc.push((acc[acc.length - 1] ?? 0) + share);
+  const settledShare = sourceShare(compiled, total);
+  const boundaries = SOURCE_STATE_ORDER.reduce<number[]>((acc, state) => {
+    acc.push(Math.min(1, (acc[acc.length - 1] ?? 0) + byState[state] / Math.max(1, total)));
     return acc;
   }, []);
 
   const percentRef = useRef<HTMLSpanElement | null>(null);
   const todayRef = useRef<HTMLSpanElement | null>(null);
   const segmentRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const seamRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [lightOn, setLightOn] = useState(false);
   const sentenceRef = useRef<HTMLParagraphElement | null>(null);
   const drawnText = useRef({ percent: "", today: "", sentence: "" });
   const [counting, setCounting] = useState(intro);
 
-  const fraction = total < FRACTION_BELOW;
-  // The number for a drawn share of the bar's first segment: a count while the folder is small.
+  // The number for a drawn share of the bar's first segment, on the one share rule every Sources bar uses.
   const percentText = useCallback(
-    (share: number) => {
-      if (fraction) return t("progress.fraction", { compiled: Math.min(compiled, Math.floor(share * total + 1e-6)), total });
-      if (underOnePercent) return t("progress.underOne");
-      const drawn = Math.floor(share * 100 + 1e-6);
-      return t("progress.percent", { percent: complete ? drawn : Math.min(drawn, 99) });
-    },
-    [compiled, complete, fraction, t, total, underOnePercent],
+    (share: number) => formatSourceShare(drawnSourceShare(share, settledShare), t),
+    [settledShare, t],
   );
-  const finalNumber = fraction
-    ? t("progress.fraction", { compiled, total })
-    : underOnePercent
-      ? t("progress.underOne")
-      : t("progress.percent", { percent });
+  const finalNumber = formatSourceShare(settledShare, t);
 
   // The sentence for a count of `shown` sources with a page; its kind follows the settled numbers.
   const sentenceFor = useCallback(
@@ -198,16 +189,12 @@ export function SourceProgressBand({
   const [started, setStarted] = useState(!intro);
   const start = useCallback(() => setStarted(true), []);
   useBandMotion([...boundaries, today], { intro, reduced, hold, onStart: start }, (drawn, settled) => {
+    // Each segment is a full-width layer clipped to its share, so read in part keeps its hatching.
     let start = 0;
-    SEGMENTS.forEach((_, i) => {
+    SOURCE_STATE_ORDER.forEach((_, i) => {
       const end = drawn[i] ?? 0;
       const segment = segmentRefs.current[i];
-      if (segment) segment.style.transform = `translateX(${(start * 100).toFixed(3)}%) scaleX(${Math.max(0, end - start).toFixed(5)})`;
-      const seam = seamRefs.current[i];
-      if (seam) {
-        seam.style.transform = `translateX(${(end * 100).toFixed(3)}%)`;
-        seam.style.opacity = end > 0.001 && end < 0.999 ? "1" : "0";
-      }
+      if (segment) segment.style.clipPath = segmentClip(start, end);
       start = end;
     });
     const nextPercent = settled ? finalNumber : percentText(drawn[0] ?? 0);
@@ -223,7 +210,7 @@ export function SourceProgressBand({
       }
       if (settled) setCounting(false);
     }
-    const nextToday = t("progress.today", { count: Math.round(drawn[SEGMENTS.length] ?? 0) });
+    const nextToday = t("progress.today", { count: Math.round(drawn[SOURCE_STATE_ORDER.length] ?? 0) });
     if (todayRef.current && drawnText.current.today !== nextToday) {
       todayRef.current.textContent = nextToday;
       drawnText.current.today = nextToday;
@@ -239,7 +226,7 @@ export function SourceProgressBand({
   const running = batch.running.size > 0;
   const blockedId = "library-progress-blocked";
   const grouped = useMemo(() => new Intl.NumberFormat(locale), [locale]);
-  const presses = PRESS_ORDER.filter((state) => byState[state] > 0);
+  const presses = SOURCE_STATE_ORDER.filter((state) => byState[state] > 0);
   const compactPresses = presses.length > 2;
   /* With one state the number, the sentence and the bar already say it, so no legend is drawn. */
   const legendShown = presses.length > 1;
@@ -254,20 +241,20 @@ export function SourceProgressBand({
       data-testid="library-progress"
       data-percent={percent}
       data-complete={complete ? "" : undefined}
-      className="@container flex-none border-b border-[color:var(--color-border-soft)] px-5 py-2.5 sm:px-6 md:max-h-[112px] md:px-10"
+      className="@container flex-none border-b border-[color:var(--color-border-soft)] px-5 py-2.5 sm:px-6 md:h-[112px] md:px-10"
     >
-      <div className="flex items-center gap-x-6 gap-y-2 max-md:flex-wrap">
+      <div className="flex items-center gap-x-6 gap-y-2 max-md:flex-wrap md:h-full">
         {/* Number over bar while the band is narrow; from 60rem they are two cells of one row. */}
         <div
           className={cn(
             "flex min-w-0 flex-col gap-1.5 max-md:min-w-[16rem] max-md:flex-1 @min-[60rem]:flex-row @min-[60rem]:items-center @min-[60rem]:gap-6",
             // With no chart beside it the bar may take its full width.
-            showChart ? "md:flex-none" : "md:flex-1",
+            showChart ? "md:flex-initial" : "md:flex-1",
           )}
         >
           <div
             data-testid="library-progress-number-cell"
-            className="flex min-w-0 flex-col gap-0.5 transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)] @min-[60rem]:w-max @min-[60rem]:min-w-[10rem] @min-[60rem]:max-w-[16rem] @min-[60rem]:flex-none"
+            className="flex min-w-0 flex-col gap-0.5 transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)] @min-[60rem]:w-[16rem] @min-[60rem]:flex-none"
             style={started ? undefined : { opacity: 0 }}
           >
             <p className="flex min-w-0 items-baseline gap-2">
@@ -277,7 +264,7 @@ export function SourceProgressBand({
                 data-testid="library-progress-percent"
                 className="text-display leading-display-tight font-[var(--font-weight-strong)] tabular-nums whitespace-nowrap text-[color:var(--color-text-primary)]"
               >
-                <FirstText text={intro ? (fraction ? percentText(0) : underOnePercent ? finalNumber : t("progress.percent", { percent: 0 })) : finalNumber} />
+                <FirstText text={intro ? percentText(0) : finalNumber} />
               </span>
               <span className="sr-only">{finalNumber}</span>
               {today > 0 ? (
@@ -308,38 +295,24 @@ export function SourceProgressBand({
             data-testid="library-progress-bar-cell"
             className={
               "flex min-w-[280px] max-w-[560px] flex-col gap-1.5 " +
-              (showChart ? "@min-[60rem]:w-fit @min-[60rem]:flex-none" : "@min-[60rem]:flex-1")
+              (showChart ? "@min-[60rem]:w-fit @min-[60rem]:flex-initial" : "@min-[60rem]:flex-1")
             }
           >
             <span
               aria-hidden
               data-testid="library-progress-bar"
-              className="relative block h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]"
+              className="relative block h-1.5 w-full overflow-hidden rounded-full"
             >
-              {SEGMENTS.map((segment, i) => (
+              {SOURCE_STATE_ORDER.map((state, i) => (
                 <span
-                  key={segment.states.join("-")}
+                  key={state}
                   ref={(node) => {
                     segmentRefs.current[i] = node;
                   }}
-                  className="motion-progress-segment absolute inset-0 origin-left"
-                  style={{
-                    backgroundColor: i === 0 && complete ? PROGRESS_COMPLETE_INK : segment.ink,
-                    transform: "scaleX(0)",
-                  }}
+                  data-state={state}
+                  className="motion-progress-segment absolute inset-0"
+                  style={{ background: sourceStateFill(state, complete), clipPath: segmentClip(0, 0) }}
                 />
-              ))}
-              {SEGMENTS.map((segment, i) => (
-                <span
-                  key={`seam-${segment.states.join("-")}`}
-                  ref={(node) => {
-                    seamRefs.current[i] = node;
-                  }}
-                  className="absolute inset-0"
-                  style={{ opacity: 0 }}
-                >
-                  <span className="absolute inset-y-0 left-0 w-px bg-[color:var(--color-canvas)]" />
-                </span>
               ))}
               {lightOn ? (
                 <span
@@ -355,7 +328,7 @@ export function SourceProgressBand({
               role="group"
               aria-label={t("sources.statesAria")}
               data-testid="library-source-states"
-              className="-ml-1.5 flex h-6 min-w-0 flex-nowrap items-center gap-x-0.5"
+              className="-ml-1.5 flex min-h-6 min-w-0 flex-wrap items-center gap-x-0.5"
             >
               {presses.map((state) => {
                 const label = t(`sources.state.${state}.label`);
@@ -381,11 +354,8 @@ export function SourceProgressBand({
                     <span
                       aria-hidden
                       data-testid={`library-source-states-swatch-${state}`}
-                      className={cn(
-                        "inline-block size-1.5 flex-none rounded-full",
-                        state === "not-compiled" && "border border-[color:var(--color-border-strong)]",
-                      )}
-                      style={{ backgroundColor: progressInk(state, complete) }}
+                      className="inline-block size-2 flex-none rounded-micro"
+                      style={{ background: sourceStateFill(state, complete) }}
                     />
                     {/* Three or more presses in a narrow pane keep swatch and count; the word stays in `title` and for a screen reader. */}
                     <span className={cn(compactPresses && "@max-[50rem]:sr-only")}>{label}</span>
@@ -432,7 +402,17 @@ export function SourceProgressBand({
         {showChart ? (
           /* The chart takes what the other cells leave, and steps aside when that is too little to read. */
           <div className="@container min-w-0 flex-1 max-md:hidden md:max-w-[26rem]">
-            <div className="@max-[9rem]:hidden">
+            <div className="flex flex-col gap-1 @max-[9rem]:hidden">
+              <p data-testid="library-progress-chart-label" className="flex min-w-0 items-baseline justify-between gap-3 whitespace-nowrap text-label leading-label text-[color:var(--color-text-tertiary)]">
+                <span className="min-w-0 truncate">
+                  {t("progress.chartLabel", {
+                    date: new Date(`${progress.series[0]?.start ?? ""}T12:00:00`).toLocaleDateString(locale, { month: "short", day: "numeric" }),
+                  })}
+                </span>
+                <span className="flex-none tabular-nums font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+                  {t("progress.chartNow", { count: compiled })}
+                </span>
+              </p>
               <SourceProgressChart progress={progress} intro={intro} started={started} reduced={reduced} locale={locale} t={t} />
             </div>
           </div>
@@ -443,7 +423,7 @@ export function SourceProgressBand({
           className={cn(
             // A bounded width, so a long work-line path truncates rather than widening the row.
             "flex min-w-0 flex-col items-start gap-1 md:w-[clamp(14rem,24cqw,16rem)] md:flex-none",
-            !showChart && "md:ml-auto",
+            "md:ml-auto",
           )}
         >
           {complete ? (

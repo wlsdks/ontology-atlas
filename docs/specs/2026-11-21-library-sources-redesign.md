@@ -294,9 +294,9 @@ final consonant, so `nextNote`'s particle is fixed. `graph.*` keys leave in S-3.
    seconds, what the pane shows and what they would press; the same readers on today's build
    are the control. Transcripts and captures in the pull request.
 2. **Grouping is exact.** Rows in nested folders with NFD and NFC Hangul names group one row
-   per first-level folder; state counts sum to `deriveSourceProgress`'s `byState`; 50,000 rows
-   group in under 30 ms of CPU time (`process.cpuUsage`)
-   (`src/widgets/library-sources-overview/model/group-sources.test.ts`).
+   per first-level folder; state counts sum to `deriveSourceProgress`'s `byState`; a published
+   batch touches exactly the folders it changed, and 50,000 rows are read once across deadline
+   slices (`src/widgets/library-sources-overview/model/source-group-index.test.ts`).
 3. **The queue and the recent list are true.** Next to write equals `ContinueBatch.next` in
    order and advances by one when a file gets its page; rows sort by Waiting, then Sources, then
    name, and five alike folders share one row; Recently written lists the five latest
@@ -314,15 +314,23 @@ final consonant, so `nextNote`'s particle is fixed. `graph.*` keys leave in S-3.
    element with `scrollWidth > clientWidth`, English and Korean, 1440×900 and 1920×1080, web and
    app; each state's segment, dot and word share one token, and every `--color-source-*` ink
    reaches 3:1 on canvas and panel (`sources-home.spec.ts`, `tests/contract/design-tokens/contrast.contract.test.ts`).
-8. **The web says it once.** The web shows the table, `panel.webNote` and the band's web line,
+8. **Drawn as it arrives.** The first rows draw before the folder's read completes; counts and
+   bars grow in place from the drawn width; after one pass at mount, a publish re-counts and
+   re-folds only the sources and folders it changed (O(batch)) behind one identity compare per
+   source (O(n), in slices of at most 6 ms), keeps the row list when no row joined or left, and
+   builds row views only for the rows in view; Recently written and the panel hold their
+   heights, so the table, panel and Recently written never shift while the rest arrives
+   (`SourcesOverview.test.tsx`, `source-group-index.test.ts`, `table-rows.test.ts`; layout
+   shift measured in the pull request).
+9. **The web says it once.** The web shows the table, `panel.webNote` and the band's web line,
    and no write control (`tests/e2e/web-surface-smoke.spec.ts`).
 
 ## Slices
 
 | Slice | What | Files | Order |
 |---|---|---|---|
-| S-1 | The widget: grouping and sorting model, table, Recently written, panel, copy in four locales; the state tokens and the band's inks, share rule and chart label; criteria 2, 3 | New `src/widgets/library-sources-overview/**`; `messages/*/library.json` (`sourcesHome`, `progress`); `app/styles/tokens.css`, `docs/DESIGN-SYSTEM.md`, `cn.ts`; `parts/progress/progress-inks.ts`, `SourceProgressBand.tsx` | Now, parallel with S3: none of its files |
-| S-2 | Mount it in place of `LibraryGraph`, the list chip and the index list's state dots, drop `cardFacts`; criteria 1, 4-8 | `LibraryPage.tsx:722-763`, `use-library-graph-cards.ts`, `use-source-filter.ts`, `parts/index-column/LibrarySection.tsx` | After S3 (it owns `LibraryPage.tsx` and `use-library-graph-cards.ts`) |
+| S-1 | The widget: grouping and sorting model, table, Recently written, panel, copy in four locales; the state tokens and the band's inks, share rule and chart label; criteria 2, 3, 8 | New `src/widgets/library-sources-overview/**`; `messages/*/library.json` (`sourcesHome`, `progress`); `app/styles/tokens.css`, `docs/DESIGN-SYSTEM.md`, `cn.ts`; `parts/progress/progress-inks.ts`, `SourceProgressBand.tsx` | Now, parallel with S3: none of its files |
+| S-2 | Mount it in place of `LibraryGraph`, the list chip and the index list's state dots, drop `cardFacts`; criteria 1, 4-7, 9 | `LibraryPage.tsx:722-763`, `use-library-graph-cards.ts`, `use-source-filter.ts`, `parts/index-column/LibrarySection.tsx` | After S3 (it owns `LibraryPage.tsx` and `use-library-graph-cards.ts`) |
 | S-3 | Retire `src/widgets/library-graph/**`, `tests/e2e/library/graph/**`, `graph.*` keys and the Library graph ink tokens; update `docs/features/library/workspace.md`; decision record | Those paths | After S-2 |
 
 S-1 reads source rows, `LibraryWikiPage` (title, sources, `compiled_at`) and `ContinueBatch`.
@@ -338,7 +346,7 @@ text").
    Recently written and the panel carry names. Probe before S-2: count first-level folders and
    types in three real piles the owner names.
 3. **Live counts at 50,000 cost a frame.** Answer: one O(n) pass behind the band's memo, held to
-   criterion 2's budget; re-orders at most once per 500 ms.
+   criterion 2's work bound (only the folders a batch touches); re-orders at most once per 500 ms.
 
 ## Later
 
@@ -374,3 +382,15 @@ with the pull request, so the owner can reverse this by choosing the treemap.
   state words and the index list a dot; a 1-source first day; motion for the bar fill, the
   writing dot and the re-sort; rows hold their order while a batch runs.
 - 2026-11-21: the owner reviewed the v2 mockups and asked for this direction to be built as shown. Two fixes go into S-1: the first-day row names the real folder instead of a "directly in sources/" label, and the first-day empty space explains what a wiki page is.
+- 2026-11-21: the owner's standing rule that drawing is progressive becomes criterion 8 (rows
+  before the read completes, O(batch) grouping, held heights, no shift), built in S-1; criterion
+  2 gates grouping by the folders a batch touches instead of a CPU-time bound, and names the
+  test file S-1 shipped.
+- 2026-11-21: criterion 8 restated after review measured it. At 50,000 sources a 10-file publish
+  reads every row once by identity (0.24 ms) and applies 10; the fold re-buckets the 10 changed
+  folders (0.03 ms in 500 folders; 1.5 ms in 50,000 one-file folders, where a leaving end of an
+  alike row's name range costs one pass over that row's members). Not O(batch): the Library
+  model's builder, upstream of this widget, re-reads pages and sources on a page change, 25 ms
+  at 50,000 sources and 2,000 pages (51 ms before it kept unchanged rows), and is left for its
+  own slice; and the first fold of a slice's new folders costs about as much as that slice's
+  count.

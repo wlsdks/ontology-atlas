@@ -78,3 +78,20 @@ describe('Library model kept across hash publishes', () => {
     expect(after.wikiPages).toBe(before.wikiPages);
   });
 });
+
+describe('Library model rows keep their identity', () => {
+  it('keeps the row object of every unchanged source when the page or source list is replaced', () => {
+    const { sources, docs } = folder();
+    const hashes = new Map(sources.map((source) => [source.path, HASH(Number(source.path.slice(9, -3)))] as const));
+    const build = createLibraryModelBuilder();
+    const first = build({ sources, docs, hashes, offsetMinutes }).sources;
+
+    const sameAgain = build({ sources: sources.map((source) => ({ ...source })), docs: docs.map((doc) => ({ ...doc })), hashes, offsetMinutes }).sources;
+    expect(sameAgain.filter((row, i) => row !== first[i])).toHaveLength(0);
+
+    const target = sources.find((source) => !docs.some((doc) => (doc.frontmatter.sources as string[]).includes(source.path)))!.path;
+    const citing = docs.map((doc, i) => (i === 1 ? { ...doc, frontmatter: { ...doc.frontmatter, sources: [...(doc.frontmatter.sources as string[]), target] } } : doc));
+    const changed = build({ sources, docs: citing, hashes, offsetMinutes }).sources;
+    expect(changed.filter((row, i) => row !== first[i]).map((row) => row.path)).toEqual([target]);
+  });
+});
