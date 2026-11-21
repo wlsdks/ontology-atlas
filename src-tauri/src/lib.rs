@@ -293,6 +293,7 @@ pub fn run() {
             vault::vectors::commands::vault_vectors_search,
             vault::vectors::commands::vault_vectors_delete,
             vault::vectors::commands::vault_vectors_delete_model,
+            vault::vectors::commands::vault_vectors_reveal_model,
             vault::read::read_vault_text_file,
             vault::read::read_vault_text_files,
             vault::read::read_vault_text_tail,

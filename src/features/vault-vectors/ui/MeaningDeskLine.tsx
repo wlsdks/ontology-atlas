@@ -3,6 +3,7 @@
 import { useId, useState, useSyncExternalStore, type MouseEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Cpu } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
@@ -17,7 +18,8 @@ import { deskLine, type DeskLine, type DeskLineAction, type DeskProgress } from 
 import { useSearchFailure, withSearchFailure } from '../model/search-failure';
 import { resume, stop, useVectorStatus } from '../model/vector-store';
 import { useVectorRunStage } from '../model/use-vector-run';
-import { MeaningSetupDialog } from './MeaningSetupDialog';
+import { BUILTIN_MODEL_NAME } from '../model/model-choices';
+import { MeaningModelDialog } from './MeaningModelDialog';
 
 const FILE_NAME_PACE_MS = 1000;
 /** The end of a file name kept whole when its middle is cut: enough for a word and the extension. */
@@ -150,6 +152,11 @@ export function MeaningDeskLine({
     else onOpenSettings?.();
   };
   const action = line.action === 'openSettings' && !onOpenSettings ? null : line.action;
+  const modelName = source === null ? null : source.kind === 'builtin' ? BUILTIN_MODEL_NAME : source.model;
+  const openModels = (event: MouseEvent<HTMLButtonElement>) => {
+    event.currentTarget.focus({ preventScroll: true });
+    setDialogOpen(true);
+  };
 
   function sentenceOf(current: DeskLine, progress: DeskProgress | null, done: number): string {
     switch (current.message) {
@@ -234,8 +241,21 @@ export function MeaningDeskLine({
           </motion.div>
         </AnimatePresence>
       </div>
+      {modelName !== null && isApp && !web ? (
+        <button
+          type="button"
+          onClick={openModels}
+          aria-label={t('modelButtonLabel', { model: modelName })}
+          title={t('modelButtonLabel', { model: modelName })}
+          data-testid="meaning-desk-model"
+          className={controlClass({ shape: 'chip', size: 'xs', hoverSurface: 'lift', hoverInk: 'strong', className: 'flex-none whitespace-nowrap border-[color:var(--color-border-soft)] text-[color:var(--color-text-secondary)]' })}
+        >
+          <Cpu aria-hidden="true" className="size-3 flex-none" />
+          {t('modelButton', { model: modelName })}
+        </button>
+      ) : null}
       {rootPath !== null && isApp ? (
-        <MeaningSetupDialog
+        <MeaningModelDialog
           open={dialogOpen}
           rootPath={rootPath}
           onClose={() => setDialogOpen(false)}

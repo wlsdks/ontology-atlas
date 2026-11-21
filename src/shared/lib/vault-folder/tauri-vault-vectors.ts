@@ -77,6 +77,8 @@ export interface VectorProbe {
     freeBytes: number;
     memoryBytes: number;
     accelerated: boolean;
+    /** Where the model is kept on this computer; empty when the app has no data folder. */
+    modelDir: string;
   };
   runner: { state: 'reachable' | 'unreachable' | 'notLocal'; address: string; models: string[] } | null;
 }
@@ -173,6 +175,7 @@ function emptyProbe(): VectorProbe {
       freeBytes: 0,
       memoryBytes: 0,
       accelerated: false,
+      modelDir: '',
     },
     runner: null,
   };
@@ -278,6 +281,13 @@ export async function deleteVectorModel(): Promise<void> {
   const invoke = getInvoke();
   if (!invoke) return;
   await invoke('vault_vectors_delete_model');
+}
+
+/** Shows the built-in model's folder in Finder or Explorer; rejects when the model holds no folder. */
+export async function revealVectorModel(): Promise<void> {
+  const invoke = getInvoke();
+  if (!invoke) return;
+  await invoke('vault_vectors_reveal_model');
 }
 
 /**

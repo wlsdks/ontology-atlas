@@ -6,7 +6,7 @@ use crate::llm::embed::builtin::client::BuiltinModel;
 use crate::llm::embed::builtin::infer::Runtime;
 use crate::llm::embed::builtin::{pins, worker, Progress};
 use crate::llm::embed::{EmbedError, Embedder, LocalRunner};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex, OnceLock};
 use vault_index::vectors::Model;
@@ -38,6 +38,8 @@ pub(crate) trait Builtin: Embedder + Send + Sync {
     fn free_bytes(&self) -> Option<u64>;
     /// Every byte the model holds in the app's data folder, ready or not.
     fn model_bytes(&self) -> u64;
+    /// The folder in the app's data folder that holds the model, made or not.
+    fn dir(&self) -> PathBuf;
 }
 
 /// A runner on this computer, past the loopback rule.
@@ -157,6 +159,10 @@ impl Builtin for AppBuiltin {
 
     fn model_bytes(&self) -> u64 {
         self.0.store().bytes()
+    }
+
+    fn dir(&self) -> PathBuf {
+        self.0.store().dir().to_path_buf()
     }
 }
 
