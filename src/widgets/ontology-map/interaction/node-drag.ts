@@ -9,7 +9,6 @@ export interface WorldOffset {
   y: number;
 }
 
-/** Offset from the pointer's world position to the node's world position at grab time. */
 export function computeGrabOffsetWorld(
   nodeWorldX: number,
   nodeWorldY: number,
@@ -19,7 +18,6 @@ export function computeGrabOffsetWorld(
   return { x: nodeWorldX - pointerWorldX, y: nodeWorldY - pointerWorldY };
 }
 
-/** World position the node should be pinned to for the current pointer world position, preserving the grab offset. */
 export function computePinWorld(
   pointerWorldX: number,
   pointerWorldY: number,

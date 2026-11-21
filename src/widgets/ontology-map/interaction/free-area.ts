@@ -16,18 +16,10 @@ export interface Rect {
   readonly cameraObstacle?: "side-panel";
 }
 
-/**
- * Is that rectangle a **side panel** — true when it occupies at least this ratio
- * of the canvas height, unless an edge-attached product inspector declares the
- * same role explicitly because its content is shorter.
- *
- * Why 0.6: the measured popover is 813/982 = **0.83**, while the top toolbar is
- * under 100px tall and never exceeds 0.1. The two populations separate with room
- * to spare in between.
- */
+/** A rectangle taking at least this share of the canvas height is a side panel (an edge-attached product inspector may declare the role): the measured popover is 0.83, the top toolbar never exceeds 0.1. */
 export const SIDE_PANEL_HEIGHT_RATIO = 0.6;
 
-/** Is that rectangle a **top bar** — at least this ratio of the canvas width. */
+/** A rectangle at least this share of the canvas width is a top bar. */
 const TOP_BAR_WIDTH_RATIO = 0.6;
 
 const right = (r: Rect) => r.x + r.width;
@@ -38,12 +30,8 @@ function intersects(a: Rect, b: Rect): boolean {
 }
 
 /**
- * The canvas with the panels subtracted.
- *
- * A panel that **splits the area down the middle** (an island touching neither
- * side) is not subtracted — subtracting one would break the remaining area in two
- * and leave «the centre» undefined. Every panel in this app is edge-attached
- * (measured), so that case does not exist today; it gets handled when it appears.
+ * The canvas with the panels subtracted. A panel that splits the area down the middle (touching neither side) is not
+ * subtracted, as it would leave «the centre» undefined; every panel today is edge-attached.
  */
 export function computeFreeArea(canvas: Rect, obstacles: readonly Rect[]): Rect {
   let left = canvas.x;
@@ -65,7 +53,6 @@ export function computeFreeArea(canvas: Rect, obstacles: readonly Rect[]): Rect 
       panel.height >= canvas.height * SIDE_PANEL_HEIGHT_RATIO;
 
     if (tallEnough && !wideEnough) {
-      // A side panel — subtracted from whichever side is nearer the canvas centre.
       const panelCenter = panel.x + panel.width / 2;
       if (panelCenter >= canvas.x + canvas.width / 2) {
         rightEdge = Math.min(rightEdge, panel.x);
@@ -99,11 +86,7 @@ export function computeFreeArea(canvas: Rect, obstacles: readonly Rect[]): Rect 
 export function collectCanvasObstacles(
   canvas: Element,
   canvasRect: Rect,
-  /**
-   * The smallest side counted. 40 keeps the camera to panels and bars; a router that must keep
-   * a line out from under every control (the hex board) asks for the small ones too — the
-   * folded INDEX tab is 26 px wide.
-   */
+  /** The smallest side counted. 40 keeps the camera to panels and bars; the hex board's router asks for smaller (the folded INDEX tab is 26 px wide). */
   { minSide = 40 }: { minSide?: number } = {},
 ): Rect[] {
   const out: Rect[] = [];
@@ -140,39 +123,10 @@ export function collectCanvasObstacles(
 }
 
 /**
- * **Measure the canvas's left and right insets** — the values to feed the insets
- * the camera maths already uses.
- *
- * ## Why measure — the tokens are static while the panel state is not
- *
- * `topology-camera-math.ts` **already** uses safe insets
- * (`safeInsetLeft/Right/...`, *"the left ReaderLens panel, right popover rail"*).
- * But those values are CSS tokens and therefore fixed, while the real geometry
- * varies with state. Measured (1512×982):
- *
- * | | left | right |
- * |---|---|---|
- * | reserved by the tokens | 78 | 120 |
- * | actual (before selection, INDEX open) | **324** | 0 |
- * | actual (after selection, popover open) | 0 | **384** |
- *
- * Neither state matches. So **the day before, I built a second correction** — a
- * free-area shift on the selection path only, which was a second system for the
- * same concern (what this repository calls «a second system running alongside»).
- * The right prescription is not one more shift but **feeding true values into the
- * insets that already exist**.
- *
- * ## Top and bottom are not measured — those are not panels
- *
- * `safeInsetTop` (148) is the top tool lane plus the docking chips, and
- * `safeInsetBottom` (96) is **reserved label space** (derived from `LABEL_OFFSET`
- * — without that reservation, the bottom-most node's label once disappeared
- * silently). Both are layout promises rather than «covering panels», and replacing
- * them with measurement brings that accident back. So **only left and right** are
- * measured.
- *
- * And **the larger of the two wins** against the token value, so width the token
- * reserved for some reason other than a panel is not lost.
+ * Measures the canvas's left and right insets, to feed the insets the camera maths already uses: the tokens are static
+ * while the real geometry varies with state (1512×982: the tokens reserve 78/120, the panels take 324/0 before selection
+ * and 0/384 after). Top and bottom stay unmeasured: they are layout promises (the tool lane; label space reserved from
+ * `LABEL_OFFSET`), not covering panels. The larger of measurement and token wins, so width reserved for another reason is not lost.
  */
 export interface CanvasInsets {
   left: number;
@@ -291,7 +245,6 @@ export function measureNameObstacles(canvas: Element, sides: { left: boolean; ri
   return out;
 }
 
-/** Air the fit keeps between the drawing and a bottom strip. */
 const BOTTOM_OBSTACLE_GAP_PX = 8;
 
 /**

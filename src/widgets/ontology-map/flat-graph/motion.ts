@@ -125,7 +125,6 @@ export class GraphMotion {
   endAt = Number.NEGATIVE_INFINITY;
   /** Every motion of the current attention has ended: the picture is `current` exactly. */
   settled = true;
-  /** Share of the current change's time that has passed, 0 to 1. */
   progress = 1;
   /** The whole-picture clock: shares, the selected disc's growth and its ring follow it. */
   baseMix = 1;
@@ -186,7 +185,6 @@ export class GraphMotion {
     return rest * (1 - w[0]! - w[1]!) + w[0]! + sink * w[1]!;
   }
 
-  /** How lit a concept is now, 0 to 1. */
   litShare(id: string): number {
     return this.weights(id)[0]!;
   }
