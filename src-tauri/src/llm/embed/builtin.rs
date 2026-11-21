@@ -5,6 +5,7 @@
 
 pub(crate) mod client;
 mod convert;
+mod disk;
 mod download;
 mod fetch;
 pub(crate) mod infer;
@@ -15,16 +16,14 @@ pub(crate) mod worker;
 
 use super::audit;
 use super::EmbedError;
-use crate::lower_hex::lower_hex;
+use disk::{sha256_file, store_error};
 use download::{remove_if_present, remove_link, write_synced, Downloader};
 use fetch::Fetch;
 use infer::Encoder;
 use pins::{PinnedFile, MODEL_NAME};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::fs;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{LazyLock, Mutex};
@@ -281,22 +280,6 @@ fn sync_file(path: &Path) -> Result<(), EmbedError> {
 /// "Access is denied" for a read-only one.
 fn open_for_sync(path: &Path) -> std::io::Result<fs::File> {
     fs::OpenOptions::new().write(true).open(path)
-}
-
-fn sha256_file(path: &Path, cancel: &AtomicBool) -> Result<String, EmbedError> {
-    let mut file = fs::File::open(path).map_err(store_error)?;
-    let mut hasher = Sha256::new();
-    let mut buffer = vec![0u8; 1024 * 1024];
-    loop {
-        if cancel.load(Ordering::Relaxed) {
-            return Err(EmbedError::Cancelled);
-        }
-        let read = file.read(&mut buffer).map_err(store_error)?;
-        match buffer.get(..read) {
-            Some(chunk) if !chunk.is_empty() => hasher.update(chunk),
-            _ => return Ok(lower_hex(&hasher.finalize())),
-        }
-    }
 }
 
 /// The model's directory in the app's data directory for this user account:
@@ -674,10 +657,6 @@ fn sweep_dir(dir: &Path, keep: &dyn Fn(&str, &fs::Metadata) -> bool) -> Result<(
         }
     }
     Ok(())
-}
-
-fn store_error(error: std::io::Error) -> EmbedError {
-    EmbedError::Store(crate::errors::squeeze(&error.to_string()))
 }
 
 fn load_from_store(store: &ModelStore) -> Result<Encoder, EmbedError> {
