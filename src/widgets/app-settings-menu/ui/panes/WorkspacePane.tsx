@@ -33,8 +33,8 @@ import {
   SettingsGroup,
   SettingsRow,
 } from '../settings-primitives';
-import { OntologyResetSettings } from '../OntologyResetSettings';
-import { VaultShapeSettings } from '../VaultShapeSettings';
+import { OntologyResetSettings } from '../pane-settings/OntologyResetSettings';
+import { VaultShapeSettings } from '../pane-settings/VaultShapeSettings';
 
 interface Kept {
   rounds: { count: number; paused: number } | null | 'failed';

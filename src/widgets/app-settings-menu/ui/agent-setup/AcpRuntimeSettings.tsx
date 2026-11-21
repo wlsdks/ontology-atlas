@@ -28,8 +28,8 @@ import {
   SettingsGroup,
   SettingsGroupHeading,
   SettingsRow,
-} from './settings-primitives';
-import { APP_CODING_TOOLS } from '../model/app-coding-tools';
+} from '../settings-primitives';
+import { APP_CODING_TOOLS } from '../../model/app-coding-tools';
 import { AgentConversationArtwork } from './AgentConversationArtwork';
 
 /**

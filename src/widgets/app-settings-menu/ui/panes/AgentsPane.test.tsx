@@ -24,7 +24,7 @@ vi.mock('../../model/use-ai-connection', () => ({
     ),
   }),
 }));
-vi.mock('../WikiWriteModeSettings', () => ({
+vi.mock('../pane-settings/WikiWriteModeSettings', () => ({
   WikiWriteModeSettings: () => <div data-setting-id="wiki-write-mode" data-testid="app-settings-wiki-write-mode" />,
 }));
 

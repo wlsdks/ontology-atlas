@@ -8,7 +8,7 @@ import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import { Button, Dialog } from '@/shared/ui';
 import { Chip } from '@/shared/ui/controls/controls';
 import { useToast } from '@/shared/ui/toast/toast';
-import { DETAIL_TOGGLE_CHIP, SettingsRow } from './settings-primitives';
+import { DETAIL_TOGGLE_CHIP, SettingsRow } from '../settings-primitives';
 
 /**
  * Clears every concept document into `.ontology-atlas/removed/<stamp>/`. The dialog renders

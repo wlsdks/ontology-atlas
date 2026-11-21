@@ -10,7 +10,7 @@ import {
   type MapSpeed,
 } from '@/shared/lib/preferences/appearance-preferences';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
-import { SettingsRow } from './settings-primitives';
+import { SettingsRow } from '../settings-primitives';
 
 function SpeedChoice({
   label,

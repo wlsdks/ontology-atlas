@@ -2,8 +2,8 @@
 
 import { useTranslations } from 'next-intl';
 import { useFrameMeter, writeFrameMeter } from '@/shared/lib/preferences/appearance-preferences';
-import { CanvasBackgroundPicker } from '../AppearancePickers';
-import { MapSpeedSettings } from '../MapSpeedSettings';
+import { CanvasBackgroundPicker } from '../pane-settings/AppearancePickers';
+import { MapSpeedSettings } from '../pane-settings/MapSpeedSettings';
 import { SegmentSwitch, SettingsGroup, SettingsRow } from '../settings-primitives';
 
 export interface MapPaneScreenControls {

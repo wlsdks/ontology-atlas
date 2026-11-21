@@ -9,7 +9,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 import { Chip } from '@/shared/ui/controls/controls';
 import { RowDisclosure } from '@/shared/ui/controls/row-disclosure';
-import { Choice, DETAIL_TOGGLE_CHIP, RESET_LINK_INK, Slider } from './settings-primitives';
+import { Choice, DETAIL_TOGGLE_CHIP, RESET_LINK_INK, Slider } from '../settings-primitives';
 import {
   DEFAULT_FOOTPRINT,
   FOOTPRINT_PRESETS,

@@ -32,7 +32,7 @@ const EXEMPT_FILES = new Set([
  * what stops adoption being quietly rolled back.
  */
 const REGISTERED: ReadonlyArray<readonly [file: string, why: string]> = [
-  ["src/widgets/app-settings-menu/ui/AppearancePickers.tsx", "grid preview tile — shape:'tile' + active ink split by parent/child"],
+  ["src/widgets/app-settings-menu/ui/pane-settings/AppearancePickers.tsx", "grid preview tile — shape:'tile' + active ink split by parent/child"],
   ["src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx", "panel-scoped ink + chrome radius + a 48px uniform width the owner fixed after two corrections"],
   ["src/widgets/project-drawer/ui/ProjectDrawer.tsx", "shape:'pill' + upper-case mono caption — not a combination of the value-layer chip ramp"],
   ["src/widgets/atlas-git-panel/ui/CommitDetail.tsx", "tone:'secondary' + a conditional border that must not cover the pressed chip's indigo"],

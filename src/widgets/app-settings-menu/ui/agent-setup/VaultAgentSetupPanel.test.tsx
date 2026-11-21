@@ -1,7 +1,7 @@
 import { fireEvent, render as rtlRender, screen, waitFor, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import koMessages from '../../../../messages/ko.json';
+import koMessages from '../../../../../messages/ko.json';
 import type { VaultManifest } from '@/entities/docs-vault';
 import { agentServerFromBundle, agentServerUnavailable } from '@/shared/config';
 import { copyText } from '@/shared/lib/clipboard/copy-text';

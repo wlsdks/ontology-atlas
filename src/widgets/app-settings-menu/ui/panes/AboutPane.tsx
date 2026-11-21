@@ -19,7 +19,7 @@ import { Dialog } from '@/shared/ui/surfaces/dialog';
 import { DialogBody, DialogFooter } from '@/shared/ui/surfaces/dialog-sections';
 
 import { useRunningVersion } from '../../model/use-running-version';
-import { AppUpdateSettings } from '../AppUpdateSettings';
+import { AppUpdateSettings } from '../pane-settings/AppUpdateSettings';
 import { SettingsDoorRow, SettingsGroup, SettingsRow } from '../settings-primitives';
 
 const WEBSITE_VERSION = process.env.NEXT_PUBLIC_RELEASE_VERSION ?? '';

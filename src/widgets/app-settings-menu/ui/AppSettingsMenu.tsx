@@ -23,9 +23,9 @@ import {
   searchSettings,
   type SettingsSearchItem,
 } from '../model/settings-search';
-import { AgentActivitySettings } from './AgentActivitySettings';
-import { ExpandSettings } from './ExpandSettings';
-import { FootprintSettings } from './FootprintSettings';
+import { AgentActivitySettings } from './agent-setup/AgentActivitySettings';
+import { ExpandSettings } from './pane-settings/ExpandSettings';
+import { FootprintSettings } from './pane-settings/FootprintSettings';
 import { AboutPane } from './panes/AboutPane';
 import { AgentsPane } from './panes/AgentsPane';
 import { MapPane } from './panes/MapPane';

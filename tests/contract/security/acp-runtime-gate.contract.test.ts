@@ -77,7 +77,7 @@ describe('the gate: what is said and what is applied must match', () => {
 
   it('the screen decides **with that function**, never rebuilding its own criterion', () => {
     const src = readFileSync(
-      join(ROOT, 'src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx'),
+      join(ROOT, 'src/widgets/app-settings-menu/ui/agent-setup/AcpRuntimeSettings.tsx'),
       'utf8',
     );
     expect(src).toContain('isGuardedRuntime');

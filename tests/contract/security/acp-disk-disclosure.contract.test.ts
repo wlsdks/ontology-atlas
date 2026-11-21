@@ -12,7 +12,7 @@ import { readAcpRust } from '../../helpers/read-acp-rust';
  * is gone.
  */
 
-const PANEL = 'src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx';
+const PANEL = 'src/widgets/app-settings-menu/ui/agent-setup/AcpRuntimeSettings.tsx';
 
 function read(path: string): string {
   return readFileSync(path, 'utf8');

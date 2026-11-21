@@ -27,7 +27,7 @@ vi.mock('@/features/locale-switch', () => ({
     </button>
   ),
 }));
-vi.mock('../AppearancePickers', () => ({
+vi.mock('../pane-settings/AppearancePickers', () => ({
   GlyphSetPicker: ({ settingId }: { settingId?: string }) => (
     <div data-testid="app-settings-glyph-set" data-setting-id={settingId} />
   ),
