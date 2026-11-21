@@ -1643,7 +1643,7 @@ describe('focused check suggestions', () => {
   });
 
   it('suggests the landing tests when a module the lander is built from changes', () => {
-    for (const path of ['scripts/lib/landing/pr-land/landing-lock.mjs', 'scripts/lib/landing/pr-land/landing-lock.test.mjs']) {
+    for (const path of ['scripts/lib/landing/pr-land/landing-lock.mjs', 'scripts/lib/landing/pr-land/landing-lock.test.mjs', 'scripts/lib/landing/pr-land/fake-github.mjs']) {
       assert.ok(commandNames(suggestFocusedChecks([path])).includes('pnpm test:pr:land'), `${path} must recommend the landing tests`);
     }
   });
