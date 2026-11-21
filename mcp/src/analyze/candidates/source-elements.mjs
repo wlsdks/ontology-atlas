@@ -14,7 +14,7 @@ import {
   SOURCE_FOLDERS,
   WORKSPACE_ELEMENT_LIMIT,
   WORKSPACE_FOLDERS,
-} from '../constants.mjs';
+} from '../analysis-limits-and-tables.mjs';
 import { humanize, slugify, uniqueStrings } from '../text.mjs';
 import { pathResolvesInsideRoot, pushSkippedOnce } from './scan-guards.mjs';
 

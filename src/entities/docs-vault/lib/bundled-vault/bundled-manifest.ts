@@ -1,4 +1,4 @@
-import type { VaultDoc, VaultHeading, VaultManifest } from '../../model/types';
+import type { VaultDoc, VaultHeading, VaultManifest } from '../../model/vault-manifest';
 
 export interface BundledVaultDoc extends VaultDoc {
   headings?: VaultHeading[];

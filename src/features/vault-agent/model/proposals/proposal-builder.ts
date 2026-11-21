@@ -11,7 +11,7 @@ import type {
   ProposalChange,
   ProposalToolName,
   ProposedFileChange,
-} from '../types';
+} from '../agent-turn';
 import type { VaultReadPort } from '../agent-tools/vault-read-port';
 import { containmentKeyFor } from '@/shared/lib/vault-document/containment-keys';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';

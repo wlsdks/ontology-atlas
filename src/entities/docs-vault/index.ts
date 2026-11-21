@@ -3,7 +3,7 @@ export type {
   VaultManifest,
   VaultSourceFile,
   VaultTreeNode,
-} from './model/types';
+} from './model/vault-manifest';
 // The bundled samples are built by `scripts/docs-vault/build-docs-vault.mjs` from `docs/ontology/`
 // and `samples/storefront/`. The browser reads them through the loader; only build-time callers
 // and `/download` take the synchronous resolver, whose static JSON imports a screen must not reach.

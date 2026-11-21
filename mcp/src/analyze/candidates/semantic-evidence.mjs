@@ -29,7 +29,7 @@ import {
   SEMANTIC_EVIDENCE_SEEDS,
   WORKSPACE_FOLDERS,
   WORKSPACE_SEMANTIC_EVIDENCE_MAX_MEMBERS,
-} from '../constants.mjs';
+} from '../analysis-limits-and-tables.mjs';
 import { humanize } from '../text.mjs';
 import {
   packageContractPathIssue,

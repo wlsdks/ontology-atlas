@@ -2,7 +2,7 @@ import type {
   ConstructionPostWriteMaintenance,
   ConstructionReviewParseResult,
   ConstructionReviewSignals,
-} from "../model/types";
+} from "../model/construction-review";
 
 type UnknownRecord = Record<string, unknown>;
 

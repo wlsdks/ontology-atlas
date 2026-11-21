@@ -1,5 +1,5 @@
 import { authoredMarkdownLines } from './authored-markdown.mjs';
-import { SEMANTIC_EVIDENCE_MAX_HEADINGS } from '../constants.mjs';
+import { SEMANTIC_EVIDENCE_MAX_HEADINGS } from '../analysis-limits-and-tables.mjs';
 import { headingLevelForAdornment, isHeadingAdornment } from '../text.mjs';
 import {
   HOSTILE_SEMANTIC_RISK_FLAGS,

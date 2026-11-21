@@ -5,7 +5,7 @@ import {
   resolveProjectFreshnessInsight,
   resolveProjectImpactInsight,
 } from "./insights";
-import type { Project } from "./types";
+import type { Project } from "./project";
 
 function project(
   slug: string,

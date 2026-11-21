@@ -3,7 +3,7 @@ import { badgeClass } from "@/shared/ui/badge-class";
 import { cn } from '@/shared/lib/cn';
 import { MOTION, OVERLAY_RISE } from '@/shared/motion';
 import { staggerDelaySeconds } from '@/shared/motion/stagger';
-import type { Project } from '../model/types';
+import type { Project } from '../model/project';
 
 export interface CardCategoryMeta {
   borderStyle: 'underline' | 'dashed' | 'sideLabel' | 'solid';

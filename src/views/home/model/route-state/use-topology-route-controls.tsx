@@ -14,7 +14,7 @@ interface Options {
   indexState: import("@/widgets/topology-index-panel/lib/index-panel-state").IndexPanelState | null;
   analysisMode: import("@/views/home/model/route-state/url-state").TopologyAnalysisMode;
   selectedSlug: string | null;
-  renderProjects: import("@/entities/project/model/types").Project[];
+  renderProjects: import("@/entities/project/model/project").Project[];
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "expand">;
 }
 export function useTopologyRouteControls({

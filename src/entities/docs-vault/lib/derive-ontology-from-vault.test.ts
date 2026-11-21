@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildLocalManifest } from './local-manifest/build-local-manifest';
 import { deriveArrivedOntology, deriveOntologyFromVault } from './derive-ontology-from-vault';
-import type { VaultDoc, VaultManifest } from '../model/types';
+import type { VaultDoc, VaultManifest } from '../model/vault-manifest';
 
 function makeDoc(partial: Partial<VaultDoc> & { slug: string }): VaultDoc {
   return {

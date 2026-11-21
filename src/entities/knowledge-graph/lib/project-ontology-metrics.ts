@@ -1,4 +1,4 @@
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../model/types";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../model/knowledge-graph";
 import { countConnectedDocuments } from "./ontology-tree/census/domain-census";
 
 /**

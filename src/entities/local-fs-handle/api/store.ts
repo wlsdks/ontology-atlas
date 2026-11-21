@@ -6,7 +6,7 @@ import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
 } from '@/shared/lib/vault-folder/tauri-vault-fs';
-import type { LocalFsHandleRecord } from '../model/types';
+import type { LocalFsHandleRecord } from '../model/local-fs-handle-record';
 
 export const CURRENT_LOCAL_FS_HANDLE_ID = 'current';
 

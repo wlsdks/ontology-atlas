@@ -1,4 +1,4 @@
-import type { Status } from './types';
+import type { Status } from './status';
 
 /** The eight lifecycle statuses; ids stay compatible so stored records resolve. */
 export const DEFAULT_STATUSES: Status[] = [

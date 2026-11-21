@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { deriveOntologyFromVault } from '../derive-ontology-from-vault';
 import sampleStorefrontManifestRaw from '../../data/sample-storefront.manifest.json';
-import type { VaultDoc } from '../../model/types';
+import type { VaultDoc } from '../../model/vault-manifest';
 import { bundledVaultManifest } from './bundled-manifest';
 
 // The default sample (`samples/storefront/`) is what every visitor without a vault sees.

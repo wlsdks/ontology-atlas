@@ -43,7 +43,7 @@ import type {
   VaultManifest,
   VaultSourceFile,
   VaultTreeNode,
-} from '../../model/types';
+} from '../../model/vault-manifest';
 
 export interface LocalVaultSnapshot {
   build: LocalVaultBuild;

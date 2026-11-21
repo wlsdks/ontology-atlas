@@ -1,4 +1,4 @@
-import type { AgentProposal, ProposalChange, ProposedFileChange } from '../types';
+import type { AgentProposal, ProposalChange, ProposedFileChange } from '../agent-turn';
 import {
   changesCompetencyQualification,
   SOURCE_BACKED_COMPETENCY_MESSAGE,

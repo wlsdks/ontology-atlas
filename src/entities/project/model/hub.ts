@@ -1,4 +1,4 @@
-import type { Project } from './types';
+import type { Project } from './project';
 
 export function computeHubSlugs(projects: Project[]): string[] {
   return projects.filter((p) => p.isHub).map((p) => p.slug);

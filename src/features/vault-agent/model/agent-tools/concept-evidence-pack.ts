@@ -1,4 +1,4 @@
-import { AGENT_TOOL_RESULT_CHAR_CAP } from '../types';
+import { AGENT_TOOL_RESULT_CHAR_CAP } from '../agent-turn';
 
 type ConceptEvidenceRow = Record<string, unknown>;
 

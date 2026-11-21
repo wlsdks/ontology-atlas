@@ -15,7 +15,7 @@ import {
   problemSummary,
   writeSentence,
 } from '../../model/inbox-row-copy';
-import { ROW_HEADLINE_CLASS, RowMark } from './inbox-row-parts';
+import { ROW_HEADLINE_CLASS, RowMark } from './inbox-row-primitives';
 
 /**
  * Control mark, not the panel's indigo: indigo means this needs you, and a settled timeline needs

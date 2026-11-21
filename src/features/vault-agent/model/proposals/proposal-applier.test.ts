@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { applyProposal, proposalToClipboardPacket, proposalLineDiff, summarizeChangeVolume, type VaultWritePort } from './proposal-applier';
-import type { AgentProposal } from '../types';
+import type { AgentProposal } from '../agent-turn';
 
 function proposal(overrides: Partial<AgentProposal> = {}): AgentProposal {
   return {

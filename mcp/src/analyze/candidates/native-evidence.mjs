@@ -22,7 +22,7 @@ import {
   RUST_MODULES_PER_TARGET_LIMIT,
   RUST_SOURCE_MAX_BYTES,
   SOURCE_FOLDERS,
-} from '../constants.mjs';
+} from '../analysis-limits-and-tables.mjs';
 import { forwardFinder, humanize, slugify } from '../text.mjs';
 import {
   packageContractPathIssue,

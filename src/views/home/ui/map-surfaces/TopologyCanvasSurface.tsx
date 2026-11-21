@@ -52,7 +52,7 @@ type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
   analysisMode: import("@/views/home/model/route-state/url-state").TopologyAnalysisMode;
   growthReplaying: boolean;
   setGrowthReplayToken: React.Dispatch<React.SetStateAction<number>>;
-  renderProjects: import("@/entities/project/model/types").Project[];
+  renderProjects: import("@/entities/project/model/project").Project[];
   leftPanelCollapsed: boolean;
   localGraphStack: string[];
   setLocalGraphStack: React.Dispatch<React.SetStateAction<string[]>>;

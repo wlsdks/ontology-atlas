@@ -10,7 +10,7 @@ import {
   GENERIC_NARRATIVE_CAPABILITY_CLUES,
   IMPLEMENTATION_SHAPED_CAPABILITY_TOKENS,
   STARTER_ONTOLOGY_SLUGS,
-} from '../constants.mjs';
+} from '../analysis-limits-and-tables.mjs';
 import {
   matchDomainSlug,
   pathSemanticTokens,

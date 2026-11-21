@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
 
 import { buildLibraryModel } from "@/entities/docs-vault/lib/library/vault-library";
-import type { VaultDoc } from "@/entities/docs-vault/model/types";
+import type { VaultDoc } from "@/entities/docs-vault/model/vault-manifest";
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
 
 import { answerSlug, buildAnswerPage } from "./answer-page";

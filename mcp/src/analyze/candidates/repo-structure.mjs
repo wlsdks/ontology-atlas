@@ -21,7 +21,7 @@ import {
   SOURCE_LAYOUT_CODE_FILE,
   SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT,
   SOURCE_LAYOUT_COORDINATION_ROLE,
-} from '../constants.mjs';
+} from '../analysis-limits-and-tables.mjs';
 import { humanize, matchDomainSlug, slugify } from '../text.mjs';
 import {
   optionalNonNegativeInteger,

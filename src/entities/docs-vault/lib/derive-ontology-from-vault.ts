@@ -1,7 +1,7 @@
 import { deriveDisplayTitle } from '@/shared/lib/concept-display/derive-display-title';
 import { readDisplayLocales } from '@/shared/lib/locale-text/locale-display-name';
 import { humanizeCodePathTitle } from '@/shared/lib/concept-display/humanize-code-path-title';
-import type { VaultDoc, VaultManifest } from '../model/types';
+import type { VaultDoc, VaultManifest } from '../model/vault-manifest';
 
 /**
  * Derives ontology stubs straight from vault frontmatter, which is the source of truth. Relation

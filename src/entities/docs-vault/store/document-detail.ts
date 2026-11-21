@@ -4,7 +4,7 @@ import {
   extractHeadings,
   parseFrontmatter,
 } from '@/shared/lib/vault-document/parse-frontmatter';
-import type { VaultDoc, VaultHeading } from '../model/types';
+import type { VaultDoc, VaultHeading } from '../model/vault-manifest';
 
 export interface VaultDocDetail {
   headings: VaultHeading[];
