@@ -3,7 +3,7 @@
 import { numericSummaryFailure } from "./shape-validators-primitives.mjs";
 import {
   candidateGroupShapeFailure,
-} from "./shape-validators-graph-analytics.mjs";
+} from "./shape-validators-buckets.mjs";
 import { growthCandidateRowFailure } from "./shape-validators-growth.mjs";
 
 export function maintenancePlanShapeFailure(result, options = {}) {

@@ -10,3 +10,4 @@
 import "../lib/dogfood-walk/gate-evaluator.test.mjs";
 import "../lib/dogfood-walk/summaries.test.mjs";
 import "../lib/dogfood-walk/strict-rejection-report.test.mjs";
+import "../lib/dogfood-walk/shape-validators/shape-validators-buckets.test.mjs";

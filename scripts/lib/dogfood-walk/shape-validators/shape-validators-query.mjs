@@ -18,7 +18,7 @@ import {
   scopeEdgeBucketFailure,
   summarizedNodeBucketFailure,
   summarizedRowBucketFailure,
-} from "./shape-validators-graph-analytics.mjs";
+} from "./shape-validators-buckets.mjs";
 
 export function recordStructuredContentFailure(failures, label, parsed, structured) {
   const status = structuredContentParityStatus(parsed, structured);
