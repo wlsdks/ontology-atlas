@@ -16,17 +16,14 @@ import {
 
 import { GATED_SESSION_MODE } from './runtime-wiring/runtime-gate';
 import { isPermissionProfileMode, modeKeepsGate } from './session-choices/mode-safety';
-import { investigationPermissionVerified, type InvestigationSendGuard } from './investigation/guard';
-import { standingApproval } from './permissions/standing-approval';
+import type { InvestigationSendGuard } from './investigation/guard';
 import { keepStandingChoice, standingChoiceKept, useStandingChoice } from './permissions/standing-choice';
 import { rememberModel, rememberedModel } from './session-choices/remembered-choices';
-import { readReportedPlan, type ReportedPlan } from './investigation/reported-plan';
+import type { ReportedPlan } from './investigation/reported-plan';
 import { isDiagnosticStderr } from './trouble/acp-trouble';
-import { readSlashCommands, type AcpSlashCommand } from './session-choices/slash-commands';
-import { modeCopyKey } from './session-choices/mode-copy';
+import type { AcpSlashCommand } from './session-choices/slash-commands';
 import { hasVaultMcpServer, VAULT_MCP_SERVER_NAME, vaultWriteConsentOn } from './runtime-wiring/vault-mcp-server';
 import { latestSession, orderSessionsByRecency } from './session-recency';
-import { keepToolOutput, type ToolOutputEvidence } from './tool-calls/tool-output';
 import {
   applyCurrentMode,
   createAcpClient,
@@ -36,98 +33,22 @@ import {
   type AcpSessionSummary,
   type AcpTransport,
 } from './acp-client';
-import { buildOntologyChangeSet } from '@/entities/knowledge-graph';
+import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
+import type { TaskBaselineCaptureResult } from './task-baseline';
+import { appendEvent, nextEventId, type AcpEvent, type AcpSessionStatus } from './conversation/acp-events';
 import {
-  ACP_STANDING_APPROVER,
-  type AcpWorkDecision,
-  type AcpWorkReceipt,
-  type AcpWorkResult,
-} from '@/shared/lib/meaning-transition/acp-work-receipt';
-import { unavailableTaskBaseline, type TaskBaselineCaptureResult } from './task-baseline';
+  askPermission,
+  isPromise,
+  type AcpAutoDecision,
+  type PendingPermission,
+} from './permissions/ask-permission';
+import { applySessionUpdate } from './session-updates/apply-session-update';
+import { turnEventsSnapshot, type AcpTurnCompletion, type AcpTurnStart, type ActiveTurn } from './turns/acp-turn';
+import { sendTurn } from './turns/send-turn';
 
-/**
- * The lifetime of one ACP session — start it, talk to it, ask for permission, end it.
- *
- * **The screen shows only what has actually happened.** No progress bar is invented. A tool row
- * appears only after the agent really called that tool, and status changes only as the agent
- * reports them. This is the discipline the repository already settled in its existing chat —
- * see `src/features/vault-agent/model/agent-loop.ts`: marking something "read" before it is sent
- * makes the screen state something that has not happened yet.
- *
- * **Permission waits until the screen answers.** A request outside the vault raises a card and
- * defers the response until the user chooses; meanwhile the agent is stopped — that is what the
- * permission gate means. If the panel or the session ends, it **answers with a rejection**:
- * counting an unasked question as allowed is the same as having no gate.
- */
-
-export type AcpEvent =
-  | { kind: 'user'; id: string; text: string }
-  | { kind: 'agent'; id: string; text: string }
-  | { kind: 'thought'; id: string; text: string }
-  | {
-      kind: 'tool';
-      id: string;
-      title: string;
-      toolKind: string;
-      status: string;
-      /** The only record of which node was touched (`tool-targets.ts`). */
-      rawInput?: unknown;
-      /** The only record of how much came back (`tool-outcome.ts`); large ones are previews. */
-      rawOutput?: unknown;
-      /** A trimmed answer's analysis rows, held only until its turn is captured. */
-      outputEvidence?: ToolOutputEvidence;
-    }
-  | {
-      kind: 'notice';
-      id: string;
-      text: string;
-      /**
-       * What `auto-allowed` allowed (the vault-relative path the screen judged), or what
-       * `auto-approved` passed under the person's auto-approve choice (a file or tool name).
-       */
-      detail?: string;
-      /**
-       * The mode the adapter moved this session into, verbatim as the adapter names it. Present
-       * only on mode-change notices. Not translated: it is the id the tool itself shows, and inventing a
-       * friendly name for a mode this app refuses to offer would name something nobody can pick.
-       */
-      mode?: string;
-      /** Whether the server-side Atlas write checkpoint is actually on for this session. */
-      serverGate?: boolean;
-    };
-
-export type AcpSessionStatus =
-  | 'idle'
-  | 'starting'
-  | 'ready'
-  | 'thinking'
-  | 'error'
-  | 'exited';
-
-export interface PendingPermission {
-  request: AcpPermissionRequest;
-  origin?: {
-    sessionGeneration: number;
-    turn: Pick<AcpTurnStart, 'sessionId' | 'vaultRoot' | 'userEventId' | 'text'> | null;
-    task: { outcome: string; nonGoals: null; structure: 'unstructured' } | null;
-    taskBaseline: TaskBaselineCaptureResult | null;
-  };
-  /** Passes the user's choice back to the agent. `null` is a rejection. */
-  resolve: (optionId: string | null) => void;
-}
-
-function deepFreeze<Value>(value: Value): Value {
-  if (value && typeof value === 'object') {
-    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child);
-    Object.freeze(value);
-  }
-  return value;
-}
-
-/** Capture a queued permission before another request can delay its presentation. */
-export function snapshotPermissionRequest(request: AcpPermissionRequest): AcpPermissionRequest {
-  return deepFreeze(structuredClone(request));
-}
+export type { AcpEvent, AcpSessionStatus } from './conversation/acp-events';
+export type { AcpAutoDecision, PendingPermission } from './permissions/ask-permission';
+export type { AcpTurnCompletion, AcpTurnStart } from './turns/acp-turn';
 
 export interface UseAcpSessionOptions {
   runtimeId: string;
@@ -175,109 +96,6 @@ const PUT_AWAY_IDLE_STOP_MS = 10 * 60 * 1000;
 
 /** How long a stopped turn may take to end before Atlas ends the agent's process. */
 export const TURN_STOP_GRACE_MS = 5_000;
-
-/** A note allows without a card, `{ reject }` refuses, null asks the person. */
-export type AcpAutoDecision = string | { reject: string } | null;
-
-function isPromise<Value>(value: Value | Promise<Value>): value is Promise<Value> {
-  return typeof (value as Promise<Value> | null)?.then === 'function';
-}
-
-export interface AcpTurnStart {
-  runtimeId: string;
-  sessionId: string;
-  vaultRoot: string | null;
-  userEventId: string;
-  text: string;
-  startedAt: string;
-}
-
-export interface AcpTurnCompletion extends AcpTurnStart {
-  endedAt: string;
-  outcome: 'completed' | 'cancelled' | 'failed';
-  stopReason: string | null;
-  events: readonly AcpEvent[];
-}
-
-const RECEIPT_REQUEST_LIMIT = 160;
-
-function receiptRequestSummary(value: string | null): string {
-  const oneLine = (value ?? '').replace(/\s+/g, ' ').trim();
-  return oneLine ? oneLine.slice(0, RECEIPT_REQUEST_LIMIT) : 'Ontology write request';
-}
-
-function workReceipt({
-  request,
-  sessionId,
-  runtimeId,
-  userRequest,
-  origin,
-  decision,
-  result,
-  at,
-  approvedByStandingChoice,
-}: {
-  request: AcpPermissionRequest;
-  sessionId: string | null;
-  runtimeId: string;
-  userRequest: string | null;
-  origin: PendingPermission['origin'];
-  decision: AcpWorkDecision;
-  result: AcpWorkResult;
-  at: string;
-  approvedByStandingChoice: boolean;
-}): AcpWorkReceipt {
-  const changeSet = buildOntologyChangeSet(request.toolName ?? 'ontology-write', request.rawInput);
-  const toolCallId = request.toolCallId ?? `${changeSet.toolName}:${at}`;
-  const explicitOrigin = origin?.turn
-    && origin.turn.vaultRoot
-    && request.sessionId === origin.turn.sessionId
-    && request.requestId !== undefined && request.requestId !== null
-    && request.toolCallId
-      ? {
-          vaultId: origin.turn.vaultRoot,
-          sessionGeneration: origin.sessionGeneration,
-          sessionId: origin.turn.sessionId,
-          userEventId: origin.turn.userEventId,
-          requestId: request.requestId,
-          toolCallId: request.toolCallId,
-        }
-      : null;
-  return {
-    v: 1,
-    id: `${sessionId ?? 'session'}:${toolCallId}`,
-    at,
-    updatedAt: at,
-    agent: runtimeId,
-    request: receiptRequestSummary(userRequest),
-    tool: changeSet.toolName,
-    decision,
-    result,
-    items: changeSet.items.map((item) => ({
-      target: item.target,
-      operation: changeSet.operation,
-      relation: item.relation
-        ? { from: item.relation.from, type: item.relation.type, to: item.relation.to }
-        : null,
-      fields: item.fields.map((field) => field.key),
-    })),
-    ...(explicitOrigin ? { origin: explicitOrigin } : {}),
-    ...(explicitOrigin && request.writerCorrelation ? {
-      writerCorrelation: { ...request.writerCorrelation, terminal: decision === 'allowed' ? 'pending' as const : 'not-observed' as const },
-    } : {}),
-    ...(approvedByStandingChoice ? { approvedBy: ACP_STANDING_APPROVER } : {}),
-  };
-}
-
-function terminalMatchesWriter(update: Record<string, unknown>, receipt: AcpWorkReceipt): boolean {
-  const meta = update._meta && typeof update._meta === 'object' && !Array.isArray(update._meta)
-    ? update._meta as Record<string, unknown> : null;
-  if (meta?.is_mcp_tool_call !== true) return true;
-  const raw = update.rawInput && typeof update.rawInput === 'object' && !Array.isArray(update.rawInput)
-    ? update.rawInput as Record<string, unknown> : null;
-  const correlation = receipt.writerCorrelation;
-  return Boolean(correlation && raw?.server === correlation.server && raw.tool === correlation.tool);
-}
 
 /**
  * A paragraph appended to the session's start instructions; it fills the relation `why`,
@@ -368,16 +186,26 @@ const EMPTY_CHOICES: AcpSessionChoices = {
   droppedModeCount: 0,
 };
 
-let eventSeq = 0;
-const nextEventId = () => `acp-evt-${(eventSeq += 1)}`;
-
 /**
  * Cap on collected stderr lines. The adapter emits install progress too, so keeping all of it
  * becomes noise again — the first few lines state the cause.
  */
 const STDERR_KEEP_LIMIT = 8;
-const TERMINAL_TOOL_STATES = new Set(['completed', 'failed', 'cancelled']);
 
+/**
+ * The lifetime of one ACP session — start it, talk to it, ask for permission, end it.
+ *
+ * **The screen shows only what has actually happened.** No progress bar is invented. A tool row
+ * appears only after the agent really called that tool, and status changes only as the agent
+ * reports them. This is the discipline the repository already settled in its existing chat —
+ * see `src/features/vault-agent/model/agent-loop.ts`: marking something "read" before it is sent
+ * makes the screen state something that has not happened yet.
+ *
+ * **Permission waits until the screen answers.** A request outside the vault raises a card and
+ * defers the response until the user chooses; meanwhile the agent is stopped — that is what the
+ * permission gate means. If the panel or the session ends, it **answers with a rejection**:
+ * counting an unasked question as allowed is the same as having no gate.
+ */
 export function useAcpSession({
   runtimeId,
   vaultRoot,
@@ -437,18 +265,7 @@ export function useAcpSession({
     eventsRef.current = next;
     setEvents(next);
   }, []);
-  const activeTurnRef = useRef<{
-    start: AcpTurnStart;
-    observer: ((turn: AcpTurnCompletion) => void | Promise<void>) | null;
-    cancelRequested: boolean;
-    taskBaseline: TaskBaselineCaptureResult | null;
-    /** A source-bound investigation the app composed; it asks for no edits, so every write shows its card. */
-    investigation: boolean;
-    readOnly: boolean;
-    outlivesScreen: boolean;
-    /** Stop was pressed: every later request of the turn is refused and nothing answers for it. */
-    stopping: boolean;
-  } | null>(null);
+  const activeTurnRef = useRef<ActiveTurn | null>(null);
   const [activeTurnReadOnly, setActiveTurnReadOnly] = useState(false);
   const [activeTurnOutlivesScreen, setActiveTurnOutlivesScreen] = useState(false);
   const [turnStopping, setTurnStopping] = useState(false);
@@ -596,15 +413,7 @@ export function useAcpSession({
   );
 
   const push = useCallback((event: AcpEvent) => {
-    updateEvents((prev) => {
-      const last = prev[prev.length - 1];
-      if (last && (event.kind === 'agent' || event.kind === 'thought') && last.kind === event.kind) {
-        const next = prev.slice();
-        next[next.length - 1] = { ...last, text: last.text + event.text };
-        return next;
-      }
-      return [...prev, event];
-    });
+    updateEvents((prev) => appendEvent(prev, event));
   }, [updateEvents]);
 
   const finishTurn = useCallback((outcome: AcpTurnCompletion['outcome'], stopReason: string | null) => {
@@ -619,13 +428,7 @@ export function useAcpSession({
       turnStopTimerRef.current = null;
     }
     if (!active.observer) return;
-    const currentEvents = eventsRef.current;
-    const index = currentEvents.findIndex((event) => event.kind === 'user' && event.id === active.start.userEventId);
-    // O(current-turn events), with one preallocated snapshot array.
-    const turnEvents = new Array<AcpEvent>(index < 0 ? 0 : currentEvents.length - index);
-    for (let offset = 0; offset < turnEvents.length; offset += 1) {
-      turnEvents[offset] = { ...currentEvents[index + offset] };
-    }
+    const turnEvents = turnEventsSnapshot(eventsRef.current, active.start.userEventId);
     const completion: AcpTurnCompletion = {
       ...active.start,
       endedAt: new Date().toISOString(),
@@ -671,260 +474,49 @@ export function useAcpSession({
   );
 
   const applyUpdate = useCallback(
-    (update: Record<string, unknown>, updateContext: { sessionId: string | null }) => {
-      if (!updateContext.sessionId || updateContext.sessionId !== sessionIdRef.current) return;
-      // Any update at all counts as the turn speaking; what it says does not matter here.
-      setLastTurnUpdateAt(Date.now());
-      const kind = typeof update.sessionUpdate === 'string' ? update.sessionUpdate : '';
-      const content = update.content as { text?: unknown } | undefined;
-      const text = typeof content?.text === 'string' ? content.text : '';
-      if(kind==='plan') {
-        if(activeTurnRef.current)setReportedPlan(previous=>readReportedPlan(previous,update.entries));
-        return;
-      }
-
-      if (kind === 'available_commands_update') {
-        // What `/` can invoke. It holds **only what arrived** — with nothing, typing `/` in the
-        // composer does nothing (`slash-commands.ts`).
-        setSlashCommands(readSlashCommands(update));
-        return;
-      }
-      if (kind === 'current_mode_update') {
-        /*
-         * The adapter moves the session on its own and announces it only with this notification.
-         * State follows (`applyCurrentMode`); if the new mode removes the gate, the `gate-off`
-         * notice is raised.
-         */
-        const modeId = typeof update.currentModeId === 'string' ? update.currentModeId.trim() : '';
-        if (!modeId) return;
-        setChoices((prev) => applyCurrentMode(prev, modeId));
-        if (!modeKeepsGate(modeId)) noteModeMoved(modeId, `mode-clamped:${modeId}`);
-        return;
-      }
-      if (kind === 'agent_message_chunk' && text) {
-        push({ kind: 'agent', id: nextEventId(), text });
-        return;
-      }
-      if (kind === 'agent_thought_chunk' && text) {
-        push({ kind: 'thought', id: nextEventId(), text });
-        return;
-      }
-      const keptOutput = (rawOutput: unknown) =>
-        keepToolOutput(rawOutput, { evidence: Boolean(activeTurnRef.current?.observer) });
-      if (kind === 'tool_call') {
-        // A call that arrives finished carries its answer here, not in a later update.
-        const kept = keptOutput(update.rawOutput);
-        push({
-          kind: 'tool',
-          id: typeof update.toolCallId === 'string' ? update.toolCallId : nextEventId(),
-          title: typeof update.title === 'string' ? update.title : '',
-          toolKind: typeof update.kind === 'string' ? update.kind : 'other',
-          status: typeof update.status === 'string' ? update.status : 'pending',
-          rawInput: update.rawInput,
-          rawOutput: kept.rawOutput,
-          ...(kept.evidence ? { outputEvidence: kept.evidence } : {}),
-        });
-        if (typeof update.toolCallId === 'string' && typeof update.status === 'string' && TERMINAL_TOOL_STATES.has(update.status)) {
-          onToolSettledRef.current?.(update.toolCallId, update.status);
-        }
-        return;
-      }
-      if (kind === 'tool_call_update') {
-        const id = typeof update.toolCallId === 'string' ? update.toolCallId : null;
-        const nextStatus = typeof update.status === 'string' ? update.status : null;
-        if (!id) return;
-        const nextTitle = typeof update.title === 'string' ? update.title : null;
-        const nextToolKind = typeof update.kind === 'string' ? update.kind : null;
-        const hasRawInput = update.rawInput !== undefined;
-        const hasRawOutput = update.rawOutput !== undefined;
-        const kept = hasRawOutput ? keptOutput(update.rawOutput) : null;
-        // The adapter sends a pending row, then its input in a status-less update: merge every
-        // field an update carries, not only its status.
-        updateEvents((prev) =>
-          prev.map((event) => {
-            if (event.kind !== 'tool' || event.id !== id) return event;
-            return {
-              ...event,
-              ...(nextStatus ? { status: nextStatus } : {}),
-              ...(nextTitle ? { title: nextTitle } : {}),
-              ...(nextToolKind ? { toolKind: nextToolKind } : {}),
-              ...(hasRawInput ? { rawInput: update.rawInput } : {}),
-              ...(kept ? { rawOutput: kept.rawOutput, outputEvidence: kept.evidence ?? undefined } : {}),
-            };
-          }),
-        );
-        if (!nextStatus || !TERMINAL_TOOL_STATES.has(nextStatus)) return;
-        onToolSettledRef.current?.(id, nextStatus);
-        const approvedReceipt = [...approvedReceiptsRef.current.values()]
-          .find((entry) => entry.toolCallId === id) ?? null;
-        const trackedWrite = approvedOntologyWriteRef.current?.toolCallId === id;
-        if (approvedReceipt || trackedWrite) {
-          const receiptMatches = approvedReceipt?.toolCallId === id;
-          const originMatches = !approvedReceipt?.receipt.origin
-            || approvedReceipt.receipt.origin.sessionId === updateContext.sessionId;
-          const writerMatches = !approvedReceipt?.receipt.writerCorrelation
-            || terminalMatchesWriter(update, approvedReceipt.receipt);
-          if (approvedReceipt && receiptMatches && originMatches && writerMatches) {
-            const result: AcpWorkResult =
-              nextStatus === 'completed'
-                ? 'completed'
-                : nextStatus === 'failed'
-                  ? 'failed'
-                  : 'cancelled';
-            emitWorkReceipt({
-              ...approvedReceipt.receipt,
-              updatedAt: new Date().toISOString(),
-              result,
-              ...(approvedReceipt.receipt.writerCorrelation ? {
-                writerCorrelation: { ...approvedReceipt.receipt.writerCorrelation, terminal: result as 'completed' | 'failed' | 'cancelled' },
-              } : {}),
-            });
-            approvedReceiptsRef.current.delete(approvedReceipt.receipt.id);
-          }
-          // Legacy receipts have no explicit origin or correlation; the same live session and tool id still
-          // close the UI state, but stay unverified.
-          if (trackedWrite && (!approvedReceipt || (receiptMatches && originMatches && writerMatches))) {
-            setApprovedOntologyWriteTracked(null);
-          }
-        }
-      }
-    },
+    (update: Record<string, unknown>, updateContext: { sessionId: string | null }) => applySessionUpdate(update, updateContext, {
+      sessionIdRef,
+      activeTurnRef,
+      onToolSettledRef,
+      approvedOntologyWriteRef,
+      approvedReceiptsRef,
+      setLastTurnUpdateAt,
+      setReportedPlan,
+      setSlashCommands,
+      setChoices,
+      noteModeMoved,
+      push,
+      updateEvents,
+      emitWorkReceipt,
+      setApprovedOntologyWriteTracked,
+    }),
     [emitWorkReceipt, noteModeMoved, push, setApprovedOntologyWriteTracked, setChoices, updateEvents],
   );
 
-  /** Creates the promise that waits until the screen answers. Concurrent asks queue up. */
-  const askUser = useCallback((request: AcpPermissionRequest) => {
-    request = snapshotPermissionRequest(request);
-    const generation = generationRef.current;
-    // A request that arrived before the person turned auto-approve on still shows its card.
-    const autoApproveAtArrival = autoApproveNow() && activeTurnRef.current?.investigation !== true;
-    const readOnlyTurn = activeTurnRef.current?.readOnly === true;
-    const arrivalTurn = activeTurnRef.current;
-    const activeStart = arrivalTurn?.start ?? null;
-    const origin = {
-      sessionGeneration: generation,
-      turn: activeStart
-        ? { sessionId: activeStart.sessionId, vaultRoot: activeStart.vaultRoot, userEventId: activeStart.userEventId, text: activeStart.text }
-        : null,
-      task: activeStart
-        ? { outcome: activeStart.text, nonGoals: null, structure: 'unstructured' as const }
-        : null,
-      taskBaseline: activeTurnRef.current?.taskBaseline ?? null,
-    };
-    const recordOntologyWrite = (decision: AcpWorkDecision, approvedByStandingChoice: boolean) => {
-      const receipt = workReceipt({
-        request,
-        sessionId: sessionIdRef.current,
-        runtimeId,
-        userRequest: latestUserRequestRef.current,
-        origin,
-        decision,
-        result: decision === 'allowed' ? 'pending' : 'not-run',
-        at: new Date().toISOString(),
-        approvedByStandingChoice,
-      });
-      emitWorkReceipt(receipt);
-      if (decision === 'allowed') {
-        approvedReceiptsRef.current.set(receipt.id, { toolCallId: request.toolCallId, receipt });
-      }
-    };
-    // A question that waited in the queue may outlive its session, and one after Stop is refused:
-    // answered-by-nobody beats presenting a card for a conversation that is stopping or dead.
-    const closed = () => generationRef.current !== generation || statusRef.current === 'exited'
-      || activeTurnRef.current?.stopping === true;
-    const present = async (): Promise<string | null> => {
-      if (closed()) return null;
-      if (request.reviewKind === 'ontology-write' && (
-        !origin.turn
-        || request.requestId == null
-        || request.sessionId !== origin.turn.sessionId
-        || origin.turn.vaultRoot !== vaultRoot
-      )) {
-        return null;
-      }
-      // Only the turn the request arrived in may carry a standing choice, and only while it lasts.
-      let decided: AcpAutoDecision = null;
-      if (origin.turn) {
-        try {
-          const decision = autoDecideRef.current?.(request) ?? null;
-          decided = isPromise(decision) ? await decision : decision;
-        } catch {
-          decided = null;
-        }
-      }
-      if (closed()) return null;
-      if (activeTurnRef.current !== arrivalTurn) decided = null;
-      return presentDecided(decided);
-    };
-    const presentDecided = (decided: AcpAutoDecision) => new Promise<string | null>((resolve) => {
-      if (decided !== null && typeof decided === 'object') {
-        push({ kind: 'notice', id: nextEventId(), text: 'auto-refused', detail: decided.reject });
-        resolve(null);
-        return;
-      }
-      const note = request.reviewKind === 'permission' && origin.turn && !readOnlyTurn ? decided : null;
-      const allow = note !== null ? request.options.find((option) => option.kind === 'allow_once') : undefined;
-      if (note !== null && allow) {
-        push({ kind: 'notice', id: nextEventId(), text: 'auto-allowed', detail: note });
-        resolve(allow.optionId);
-        return;
-      }
-      // Only a person's live turn can carry their standing choice; a request outside one asks.
-      const standing = decided === null && origin.turn && !readOnlyTurn
-        ? standingApproval(request, {
-            // The picker reads the plan mode there, so the app does not answer behind it.
-            enabled: autoApproveAtArrival && autoApproveNow() && modeCopyKey(choicesRef.current.currentModeId) !== 'plan',
-            vaultRoot,
-            vaultMcpServerName: hasVaultMcpServer(mcpServers) ? VAULT_MCP_SERVER_NAME : null,
-          })
-        : null;
-      if (standing) {
-        push({ kind: 'notice', id: nextEventId(), text: 'auto-approved', detail: standing.target });
-        if (request.reviewKind === 'ontology-write') {
-          recordOntologyWrite('allowed', true);
-          setApprovedOntologyWriteTracked(request);
-        }
-        resolve(standing.optionId);
-        return;
-      }
-      pendingResolverRef.current = resolve;
-      setPending({
-        request,
-        origin,
-        resolve: (optionId) => {
-          const selectedKind = request.options.find((option) => option.optionId === optionId)?.kind;
-          const ontologyWrite = request.reviewKind === 'ontology-write' && Boolean(request.toolName);
-          if (ontologyWrite) recordOntologyWrite(selectedKind === 'allow_once' ? 'allowed' : 'rejected', false);
-          const settlesBeforeWrite =
-            request.reviewKind === 'ontology-write' &&
-            selectedKind === 'allow_once' &&
-            approvalSettleMs > 0;
-          setApprovedOntologyWriteTracked(
-            request.reviewKind === 'ontology-write' && selectedKind === 'allow_once'
-              ? request
-              : null,
-          );
-          setPending(null);
-          if (settlesBeforeWrite) {
-            permissionDecisionTimerRef.current = window.setTimeout(() => {
-              permissionDecisionTimerRef.current = null;
-              pendingResolverRef.current = null;
-              resolve(optionId);
-            }, approvalSettleMs);
-            return;
-          }
-          pendingResolverRef.current = null;
-          resolve(optionId);
-        },
-      });
-    });
-    openAsksRef.current += 1;
-    const result = askChainRef.current.then(present, present).finally(() => {
-      openAsksRef.current -= 1;
-    });
-    askChainRef.current = result.catch(() => null);
-    return result;
-  }, [approvalSettleMs, autoApproveNow, emitWorkReceipt, mcpServers, push, runtimeId, setApprovedOntologyWriteTracked, vaultRoot]);
+  /** Creates the promise that waits until the screen answers (`permissions/ask-permission.ts`). */
+  const askUser = useCallback((request: AcpPermissionRequest) => askPermission(request, {
+    runtimeId,
+    vaultRoot,
+    mcpServers,
+    approvalSettleMs,
+    generationRef,
+    statusRef,
+    activeTurnRef,
+    sessionIdRef,
+    latestUserRequestRef,
+    choicesRef,
+    autoDecideRef,
+    approvedReceiptsRef,
+    pendingResolverRef,
+    permissionDecisionTimerRef,
+    openAsksRef,
+    askChainRef,
+    setPending,
+    autoApproveNow,
+    emitWorkReceipt,
+    push,
+    setApprovedOntologyWriteTracked,
+  }), [approvalSettleMs, autoApproveNow, emitWorkReceipt, mcpServers, push, runtimeId, setApprovedOntologyWriteTracked, vaultRoot]);
 
   const start = useCallback(async () => {
     if (!isAcpBridgeAvailable() || !vaultRoot) return;
@@ -1293,90 +885,37 @@ export function useAcpSession({
   }, [setChoices]);
 
   const sendInternal = useCallback(
-    async (text: string, guard?: InvestigationSendGuard): Promise<boolean> => {
-      const client = clientRef.current;
-      const sessionId = sessionIdRef.current;
-      if (!client || !sessionId || !text.trim() || activeTurnRef.current) return false;
-      const permissionCurrent = () => !guard || (
-        guard.runtimeId === runtimeId && changingModeRef.current === 0 && openAsksRef.current === 0
-        && investigationPermissionVerified(runtimeId, choicesRef.current, sessionConsentRef.current, gateOffRef.current)
-      );
-      if (guard && (statusRef.current !== 'ready' || !permissionCurrent())) return false;
-      const generation = generationRef.current;
-      const userEventId = nextEventId();
-      const start: AcpTurnStart = { runtimeId, sessionId, vaultRoot, userEventId, text, startedAt: new Date().toISOString() };
-      let observer: ((turn: AcpTurnCompletion) => void | Promise<void>) | null = null;
-      try { observer = onTurnStarted?.(start) ?? null; } catch (error) {
-        keepDiagnostic(`analysis-capture: ${error instanceof Error ? error.message : String(error)}`);
-      }
-      const readOnly = turnReadOnlyRef.current?.(start) === true;
-      const outlivesScreen = turnOutlivesScreenRef.current?.(start) === true;
-      activeTurnRef.current = {
-        start, observer, cancelRequested: false, taskBaseline: null, investigation: Boolean(guard), readOnly, outlivesScreen, stopping: false,
-      };
-      setActiveTurnReadOnly(readOnly);
-      setActiveTurnOutlivesScreen(outlivesScreen);
-      setReportedPlan(null);
-      latestUserRequestRef.current = text.trim();
-      push({ kind: 'user', id: userEventId, text });
-      setLastTurnUpdateAt(Date.now());
-      setStatusTracked('thinking');
-      if (captureTaskBaseline) {
-        try {
-          const baseline = await captureTaskBaseline(start);
-          if (activeTurnRef.current?.start === start) activeTurnRef.current.taskBaseline = baseline;
-        } catch (error) {
-          keepDiagnostic(`task-baseline: ${error instanceof Error ? error.message : String(error)}`);
-          if (activeTurnRef.current?.start === start) {
-            activeTurnRef.current.taskBaseline = unavailableTaskBaseline(
-              start.startedAt, start.vaultRoot ?? '', [], ['capture_failed'],
-            );
-          }
-        }
-      }
-      const active = activeTurnRef.current;
-      const capturedBaseline = active?.start === start ? active.taskBaseline : null;
-      const baselineInvalidated = capturedBaseline?.status === 'unavailable'
-        && capturedBaseline.reasons.some((reason) => reason === 'context_changed' || reason === 'membership_changed');
-      let investigationCurrent = permissionCurrent();
-      if (guard && investigationCurrent) {
-        try { investigationCurrent = await guard.revalidate(); } catch { investigationCurrent = false; }
-        investigationCurrent = investigationCurrent && permissionCurrent();
-      }
-      const currentTurnScope = currentTurnScopeRef.current;
-      if (generationRef.current !== generation || disposedRef.current || sessionIdRef.current !== sessionId
-        || clientRef.current !== client || activeTurnRef.current?.start !== start || active?.start !== start || active.cancelRequested || baselineInvalidated || !investigationCurrent
-        || currentTurnScope.runtimeId !== start.runtimeId || currentTurnScope.vaultRoot !== start.vaultRoot) {
-        if (activeTurnRef.current?.start === start) {
-          finishTurn('cancelled', !investigationCurrent ? 'investigation_context_changed' : baselineInvalidated
-            || currentTurnScope.runtimeId !== start.runtimeId || currentTurnScope.vaultRoot !== start.vaultRoot
-            ? 'capture_context_changed' : 'capture_cancelled');
-          setLastTurnUpdateAt(null);
-          setStatusTracked('ready');
-        }
-        return false;
-      }
-      try {
-        const result = await client.prompt(sessionId, [{ type: 'text', text }]);
-        if (generationRef.current !== generation) return true;
-        const outcome = result.stopReason === 'cancelled' ? 'cancelled'
-          : result.stopReason && result.stopReason !== 'end_turn' ? 'failed' : 'completed';
-        finishTurn(outcome, result.stopReason ?? null);
-        if (!disposedRef.current) {
-          setApprovedOntologyWriteTracked(null);
-          setLastTurnUpdateAt(null);
-          setStatusTracked('ready');
-        }
-      } catch (err) {
-        if (generationRef.current !== generation || statusRef.current === 'exited') return true;
-        finishTurn('failed', null);
-        setApprovedOntologyWriteTracked(null);
-        setLastTurnUpdateAt(null);
-        setError(err instanceof Error ? err.message : String(err));
-        setStatusTracked('error');
-      }
-      return true;
-    },
+    (text: string, guard?: InvestigationSendGuard): Promise<boolean> => sendTurn(text, guard, {
+      runtimeId,
+      vaultRoot,
+      onTurnStarted,
+      captureTaskBaseline,
+      clientRef,
+      sessionIdRef,
+      activeTurnRef,
+      statusRef,
+      generationRef,
+      disposedRef,
+      changingModeRef,
+      openAsksRef,
+      choicesRef,
+      sessionConsentRef,
+      gateOffRef,
+      turnReadOnlyRef,
+      turnOutlivesScreenRef,
+      currentTurnScopeRef,
+      latestUserRequestRef,
+      setActiveTurnReadOnly,
+      setActiveTurnOutlivesScreen,
+      setReportedPlan,
+      setLastTurnUpdateAt,
+      setError,
+      keepDiagnostic,
+      push,
+      finishTurn,
+      setStatusTracked,
+      setApprovedOntologyWriteTracked,
+    }),
     [captureTaskBaseline, finishTurn, keepDiagnostic, onTurnStarted, push, runtimeId, setApprovedOntologyWriteTracked, setStatusTracked, vaultRoot],
   );
   const send = useCallback(async (text: string) => { await sendInternal(text); }, [sendInternal]);
