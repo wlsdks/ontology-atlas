@@ -63,7 +63,10 @@ export function createVaultTextReader(
       docs.map((doc, index) => {
         if (!granted[index]) return null;
         const text = textByPath.get(doc.path);
-        return typeof text === 'string' ? text : readOneNative(nativeRoot, doc.path);
+        if (typeof text === 'string') return text;
+        return readOneNative(nativeRoot, doc.path).then(
+          (alone) => alone ?? readThroughHandle(fileHandles.get(doc.slug)),
+        );
       }),
     );
   };
