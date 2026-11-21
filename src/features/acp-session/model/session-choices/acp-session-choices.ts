@@ -1,4 +1,4 @@
-import { asPlainRecord, asRecord } from '../json-fields';
+import { asPlainRecord, asRecord } from '../adapter-json';
 import { modeKeepsGate, partitionModes } from './mode-safety';
 
 export interface AcpChoice {

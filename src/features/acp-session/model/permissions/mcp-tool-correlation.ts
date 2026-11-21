@@ -1,4 +1,4 @@
-import { asPlainRecord, asRecord, textValue } from '../json-fields';
+import { asPlainRecord, asRecord, textValue } from '../adapter-json';
 
 /**
  * The only MCP identity trusted for a correlated permission request: Codex ACP keeps the request sparse and emits

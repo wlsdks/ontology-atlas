@@ -1,4 +1,4 @@
-import { asRecord } from './json-fields';
+import { asRecord } from './adapter-json';
 
 export interface AcpSessionSummary {
   sessionId: string;

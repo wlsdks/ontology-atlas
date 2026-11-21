@@ -12,7 +12,7 @@ import {
 import { cancelledOutcome, autoAllowOption, permissionOutcome, selectedOutcome } from './permissions/permission-answer';
 import { toPermissionRequest, type AcpPermissionRequest } from './permissions/permission-request';
 import { readSessionChoices, type AcpSessionChoices } from './session-choices/acp-session-choices';
-import { asRecord, textValue } from './json-fields';
+import { asRecord, textValue } from './adapter-json';
 import { readSessionSummaries, type AcpSessionSummary } from './session-summaries';
 import type { AcpPermissionVerdict } from '@/shared/lib/agent-chat/tauri-acp';
 

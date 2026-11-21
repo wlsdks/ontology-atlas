@@ -1,6 +1,6 @@
 import type { AcpPermissionVerdict } from '@/shared/lib/agent-chat/tauri-acp';
 
-import { asRecord } from '../json-fields';
+import { asRecord } from '../adapter-json';
 import type { CorrelatedMcpToolContext } from './mcp-tool-correlation';
 
 export interface AcpPermissionRequest {
