@@ -1,5 +1,5 @@
 import { formatSize } from '@/shared/lib/format-size';
-import type { DeskLine, DeskLineMessage, DeskProgress } from './desk-line';
+import type { DeskLine, DeskLineMessage, DeskProgress } from '../desk-line';
 import { modelFailedSentence } from './model-failed-sentence';
 
 /** `useTranslations('library.questionDesk.meaning')`, or any translator with its keys. */

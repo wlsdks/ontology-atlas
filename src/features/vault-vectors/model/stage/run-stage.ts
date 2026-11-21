@@ -1,5 +1,5 @@
 import type { VectorSource, VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { UPDATE_RING_FILES } from './desk-line';
+import { UPDATE_RING_FILES } from '../desk-line';
 
 /** The work a preparation does, in order; a runner's model is Ollama's, so only `read` is Atlas's. */
 export type RunStep = 'download' | 'fit' | 'read';

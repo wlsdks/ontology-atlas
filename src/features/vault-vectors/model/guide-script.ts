@@ -1,4 +1,4 @@
-import { runSteps, type RunStage, type RunStep } from './run-stage';
+import { runSteps, type RunStage, type RunStep } from './stage/run-stage';
 
 /**
  * The first-use guide's sample run: a made-up folder getting ready in twenty seconds, then a

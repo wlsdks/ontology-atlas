@@ -1,11 +1,11 @@
 import { createTranslator } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
-import en from '../../../../messages/en.json';
-import ja from '../../../../messages/ja.json';
-import ko from '../../../../messages/ko.json';
-import zh from '../../../../messages/zh.json';
+import en from '../../../../../messages/en.json';
+import ja from '../../../../../messages/ja.json';
+import ko from '../../../../../messages/ko.json';
+import zh from '../../../../../messages/zh.json';
 import { OFF_VECTOR_STATUS, type VectorFailure } from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { deskLine } from './desk-line';
+import { deskLine } from '../desk-line';
 import { deskSentence } from './desk-sentence';
 
 const catalogues = { en, ko, ja, zh } as const;

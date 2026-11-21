@@ -12,18 +12,18 @@ import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source
 import { MOTION } from '@/shared/motion';
 import { controlClass } from '@/shared/ui/control-class';
 import { usePacedValue } from '../lib/use-paced-value';
-import { deskSentence } from '../model/desk-sentence';
+import { deskSentence } from '../model/sentence/desk-sentence';
 import { deskLine, type DeskLine, type DeskLineAction, type DeskProgress } from '../model/desk-line';
 import { useSearchFailure, withSearchFailure } from '../model/search-failure';
 import { resume, stop, useVectorStatus } from '../model/vector-store';
-import { useVectorRunStage } from '../model/desk-stage-presence';
-import { useFinishedInView } from '../model/use-finished-in-view';
+import { useVectorRunStage } from '../model/stage/desk-stage-presence';
+import { useFinishedInView } from '../model/stage/use-finished-in-view';
 import { BUILTIN_MODEL_NAME } from '../model/model-choices';
 import { MeaningModelDialog } from './MeaningModelDialog';
 import { MeaningGuideCard } from './MeaningGuideCard';
 import { meaningGuideSeen } from '../model/guide-seen';
 import { MeaningRunStage } from './MeaningRunStage';
-import { finishedStage, runStage } from '../model/run-stage';
+import { finishedStage, runStage } from '../model/stage/run-stage';
 import { ProgressRing } from './ProgressRing';
 import { MiddleCutName } from '@/shared/ui/middle-cut-name/middle-cut-name';
 
