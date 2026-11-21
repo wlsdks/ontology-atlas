@@ -64,7 +64,9 @@ const DISCOVERY_DOCUMENT_EXTENSIONS: &[&str] = &[
     "epub",
 ];
 
-/// Must equal TS `DISCOVERY_PRUNE_DIR_NAMES`; dot directories are skipped separately.
+/// Must equal TS `DISCOVERY_PRUNE_DIR_NAMES`, compared lowercased; dot directories are
+/// skipped separately. Generated, published and test-data folders hold files no one wrote
+/// as a document.
 const DISCOVERY_PRUNE_DIR_NAMES: &[&str] = &[
     "node_modules",
     "target",
@@ -73,11 +75,59 @@ const DISCOVERY_PRUNE_DIR_NAMES: &[&str] = &[
     "out",
     "coverage",
     "vendor",
-    "Pods",
-    "DerivedData",
+    "pods",
+    "deriveddata",
     "__pycache__",
     "venv",
+    "public",
+    "static",
+    "output",
+    "outputs",
+    "generated",
+    "gen",
+    "tmp",
+    "temp",
+    "cache",
+    "logs",
+    "third_party",
+    "third-party",
+    "licenses",
+    "licences",
+    "fixtures",
+    "__fixtures__",
+    "testdata",
+    "test-results",
+    "playwright-report",
 ];
+
+/// Must equal TS `DISCOVERY_PRUNE_DIR_PATHS`; matched as whole trailing segments.
+const DISCOVERY_PRUNE_DIR_PATHS: &[&str] = &["src/test/resources", "tests/data"];
+
+/// Must equal TS `DISCOVERY_NOTICE_STEMS`: legal and project notices in any format.
+const DISCOVERY_NOTICE_STEMS: &[&str] = &[
+    "license",
+    "licence",
+    "copying",
+    "notice",
+    "third-party",
+    "thirdparty",
+    "third_party",
+    "authors",
+    "contributors",
+    "changelog",
+    "patents",
+];
+
+/// Must equal TS `DISCOVERY_NOTICE_SUFFIXES`: a bundled library's licence, `x-1.0.LICENSE.txt`.
+/// A hyphen is absent so `driver-license.pdf` stays a document.
+const DISCOVERY_NOTICE_SUFFIXES: &[&str] = &[".license", "_license", ".licence", "_licence"];
+
+/// Must equal TS `DISCOVERY_BUILD_FILE_NAMES`; `requirements-*.txt` is matched by prefix.
+const DISCOVERY_BUILD_FILE_NAMES: &[&str] = &["cmakelists.txt", "requirements.txt", "robots.txt"];
+const REQUIREMENTS_VARIANT_PREFIX: &str = "requirements-";
+
+/// Must equal TS `DISCOVERY_MIN_FILE_BYTES`; smaller files are empty or placeholders.
+const DISCOVERY_MIN_FILE_BYTES: u64 = 64;
 
 /// Must equal TS `DISCOVERY_DENIED_NAME_FRAGMENTS`; catches secrets the extension
 /// allow-list cannot, such as `credentials.csv`.
@@ -114,6 +164,35 @@ fn lower_extension(name: &str) -> String {
     }
 }
 
+fn names_a_notice(stem: &str) -> bool {
+    DISCOVERY_NOTICE_STEMS.iter().any(|notice| {
+        stem.strip_prefix(notice)
+            .is_some_and(|rest| rest.is_empty() || rest.starts_with(['-', '_', '.']))
+    }) || DISCOVERY_NOTICE_SUFFIXES
+        .iter()
+        .any(|suffix| stem.ends_with(suffix))
+}
+
+fn names_a_build_file(lowered: &str) -> bool {
+    DISCOVERY_BUILD_FILE_NAMES.contains(&lowered)
+        || (lowered.starts_with(REQUIREMENTS_VARIANT_PREFIX) && lowered.ends_with(".txt"))
+}
+
+/// A digits-only stem shorter than 32 is a date or scanner counter, so it stays a document.
+fn looks_like_a_hash(stem: &str) -> bool {
+    let is_hex = |part: &str| !part.is_empty() && part.bytes().all(|b| b.is_ascii_hexdigit());
+    if is_hex(stem) {
+        let has_letter = stem.bytes().any(|b| matches!(b, b'a'..=b'f'));
+        return (stem.len() >= 16 && has_letter) || matches!(stem.len(), 32 | 40 | 64);
+    }
+    let groups: Vec<&str> = stem.split('-').collect();
+    groups.len() == 5
+        && groups
+            .iter()
+            .zip([8, 4, 4, 4, 12])
+            .all(|(group, len)| group.len() == len && is_hex(group))
+}
+
 /// A free function so this test and the TS mirror test measure the same rule.
 pub(crate) fn discovery_accepts_file(name: &str) -> bool {
     if name.starts_with('.') {
@@ -126,7 +205,30 @@ pub(crate) fn discovery_accepts_file(name: &str) -> bool {
     {
         return false;
     }
-    DISCOVERY_DOCUMENT_EXTENSIONS.contains(&lower_extension(&lowered).as_str())
+    let extension = lower_extension(&lowered);
+    if !DISCOVERY_DOCUMENT_EXTENSIONS.contains(&extension.as_str()) {
+        return false;
+    }
+    let stem = lowered
+        .strip_suffix(extension.as_str())
+        .and_then(|rest| rest.strip_suffix('.'))
+        .unwrap_or(&lowered);
+    !names_a_notice(stem) && !names_a_build_file(&lowered) && !looks_like_a_hash(stem)
+}
+
+/// Takes the path relative to the walked root, with either separator, so Windows matches too.
+pub(crate) fn discovery_accepts_directory(relative: &str) -> bool {
+    let normalized = relative.replace('\\', "/").to_ascii_lowercase();
+    let normalized = normalized.trim_end_matches('/');
+    let name = normalized.rsplit('/').next().unwrap_or(normalized);
+    if name.starts_with('.') || DISCOVERY_PRUNE_DIR_NAMES.contains(&name) {
+        return false;
+    }
+    !DISCOVERY_PRUNE_DIR_PATHS.iter().any(|path| {
+        normalized
+            .strip_suffix(path)
+            .is_some_and(|before| before.is_empty() || before.ends_with('/'))
+    })
 }
 
 /// 64 KiB chunks keep a 200 MB scan out of resident memory.
@@ -597,7 +699,7 @@ fn walk_candidates(
             continue;
         }
         if file_type.is_dir() {
-            if DISCOVERY_PRUNE_DIR_NAMES.contains(&name.as_str()) {
+            if !discovery_accepts_directory(&relative) {
                 continue;
             }
             walk_candidates(&entry.path(), root, &relative, depth + 1, report);
@@ -605,6 +707,9 @@ fn walk_candidates(
             let Ok(metadata) = entry.metadata() else {
                 continue;
             };
+            if metadata.len() < DISCOVERY_MIN_FILE_BYTES {
+                continue;
+            }
             let mtime = metadata
                 .modified()
                 .ok()

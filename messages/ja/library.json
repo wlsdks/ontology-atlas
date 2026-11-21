@@ -1087,16 +1087,79 @@
     "first": "Wikiページがあるソースはまだありません",
     "today": "今日 +{count, number}",
     "chartAria": "Wikiページがあるソースの数（各ページに記された日付順）",
+    "chartLabel": "Wikiページがあるソース数 · {date}から",
+    "chartNow": "今日{count, number}",
     "point": "{date}：現在のソース{total, number}件中{count, number}件（{percent, number}%）",
     "dateBasis": "各点はWikiページに記された日付です。",
     "undated": "日付なし{count, number}件",
     "axisToday": "今日",
-    "continue": "{count, plural, =1 {最後のソースのWikiページを作成} other {次の#件のWikiページを作成}}",
+    "continue": "{count, plural, =1 {ソース1件からWikiページを作成} other {次の#件のWikiページを作成}}",
     "batchRest": "この後に{count, number}件が待っています。",
     "batchReturned": "前回のリクエストのソース{count, number}件はまだWikiページがないため、一覧の最後に移しました。",
     "webLine": "Wikiページを書けるのはアプリだけです。閲覧はここでもできます。",
-    "allDone": "すべてのソースにWikiページがあります",
-    "fraction": "{compiled, number} / {total, number}"
+    "allDone": "すべてのソースにWikiページがあります"
+  },
+  "sourcesHome": {
+    "aria": "フォルダまたはファイル形式でまとめたソースと、Wikiページがあるソースの数",
+    "groupBy": {
+      "label": "ソースのまとめ方",
+      "folder": "フォルダ別",
+      "type": "ファイル形式別"
+    },
+    "column": {
+      "folder": "フォルダ",
+      "type": "ファイル形式",
+      "sources": "ソース",
+      "withPage": "Wikiページあり",
+      "waiting": "待機中",
+      "latest": "最新のWikiページ"
+    },
+    "topLevel": "sources/ 直下",
+    "day": {
+      "today": "今日",
+      "ago": "{count, number}日前",
+      "none": "まだなし",
+      "undated": "日付なし"
+    },
+    "rowAria": "{name}：ソース{total, number}件のうちWikiページあり{withPage, number}件、作成待ち{waiting, number}件。押すと表の横に一覧が出ます。",
+    "writing": "ここにあるソースからWikiページを作成中です",
+    "panel": {
+      "nextTitle": "次に書くソース",
+      "lead": "「{action}」を押すと、エージェントが下のソースを上から読み、Wikiページを書きます。",
+      "leadRunning": "エージェントが上からWikiページを書いています。書き終えたソースはこのリストから消えます。",
+      "webNote": "Wikiページはアプリだけが作成します。アプリではここから始めます。",
+      "waitingTitle": "ここで待機中",
+      "nextEmpty": "ここにあるソースにはすべて、今の内容と合うWikiページがあります。",
+      "unreadable": "ここで読み込めないソース{count, number}件",
+      "showInList": "リストで{count, number}件すべて表示",
+      "clear": "すべてのソースを表示"
+    },
+    "recent": {
+      "title": "最近書いたWikiページ",
+      "order": "各Wikiページに記録された日付順",
+      "from": "{more, plural, =0 {{source}から} other {{source}ほか#件から}}",
+      "empty": "日付が記録されたWikiページはまだありません。",
+      "none": "Wikiページが書かれると、元のソースと一緒にここに表示されます。WikiページはソースをまとめたMarkdownファイルで、事実ごとにソース内の位置を記しています。",
+      "steps": {
+        "press": "「{action}」を押します。",
+        "read": "エージェントがソースを最初から最後まで読みます。",
+        "write": "ソースをまとめたWikiページをMarkdownファイルとして書きます。事実ごとにソースのどこから来たかを記し、書き終えるとここに表示されます。"
+      }
+    },
+    "sortBy": "{column}で並べ替え",
+    "more": "下にフォルダがあと{count, number}件 · スクロールすると表示されます",
+    "moreType": "下にファイル形式があと{count, number}種類 · スクロールすると表示されます",
+    "meta": "フォルダ{folders, number}件 · ソース{sources, number}件",
+    "metaType": "ファイル形式{groups, number}種類 · ソース{sources, number}件",
+    "alike": {
+      "row": "状態ごとの件数が同じフォルダ{count, number}件",
+      "range": "{first} – {last}",
+      "meta": "フォルダ{folders, number}件 · ソース数と状態がすべて同じ{count, number}件は1行にまとめています"
+    },
+    "listKey": "待機中のソース",
+    "listFolder": "フォルダ：{folder}",
+    "reading": "フォルダを読み込み中です。これまでにソース{count, number}件",
+    "pickGone": "{folder}はもうsources/にありません。すべてのソースを表示しています。"
   },
   "check": {
     "title": "Wikiを検査中",
@@ -1133,5 +1196,69 @@
     "sourceTooLarge": "このファイルは大きすぎてここには表示できません。",
     "linkMissing": "このフォルダにはこの名前のものがありません。",
     "back": "戻る"
+  },
+  "wikiIndex": {
+    "views": {
+      "log": "記録",
+      "logNone": "まだありません",
+      "checkNever": "未実行"
+    },
+    "group": {
+      "attention": "確認が必要なページ",
+      "answers": "保存した回答",
+      "several": "複数の原文から書いたページ",
+      "one": "1つの原文から書いたページ",
+      "none": "原文の記載がないページ"
+    },
+    "row": {
+      "sources": "原文{count, number}件",
+      "noSource": "原文なし",
+      "moreReasons": "{reason}ほか{count, number}件"
+    },
+    "reason": {
+      "disagreement": "ほかのページと食い違っています",
+      "superseded": "新しい原文の内容と違います",
+      "stale": "書いた後に原文が変わりました",
+      "unhashed": "原文が変わったか確認できません",
+      "missingLink": "関連ページへのリンクがありません"
+    },
+    "day": {
+      "now": "たった今",
+      "today": "今日",
+      "yesterday": "昨日",
+      "ago": "{count, number}日前"
+    },
+    "showAll": "{count, number}件をすべて表示",
+    "attentionAll": "検査結果で{count, number}件をすべて表示",
+    "groupClear": "一覧全体を表示",
+    "empty": {
+      "title": "まだwikiページがありません",
+      "body": "エージェントが原文からwikiページを書くと、ここに集まります。原文ごとのページ、複数の原文をまとめたページ、保存した回答に分けて表示します。",
+      "toSources": "原文タブでwikiページを作成"
+    },
+    "reading": "wikiページを読み込み中 · これまでに{count, number}件",
+    "pageGone": "{title}はもうwiki/にありません。一覧に戻りました。"
+  },
+  "wikiLog": {
+    "title": "記録",
+    "lede": "このwikiで起きたことを新しい順に表示します。原文から書いたページ、検査、修正、保存した回答がここに積み重なります。",
+    "meta": "wiki/_log.mdとwiki/answers/から読み込み · {count, number}件",
+    "kind": {
+      "compile": "ページを作成",
+      "lint": "検査",
+      "fix": "修正",
+      "answer": "回答を保存"
+    },
+    "compiled": "原文{sources, number}件を読み込み · 新規{created, number}件 · 修正{revised, number}件",
+    "noChange": "原文{sources, number}件を読み込み · 変更されたページなし",
+    "answer": "wikiに保存した回答：{title}",
+    "byRound": "自動点検「{name}」",
+    "pageGone": "{name}(wiki/にありません)",
+    "empty": "このwikiではまだ何も起きていません。原文からページを書く、wikiを検査する、回答を保存すると、ここに1行ずつ残ります。",
+    "unreadable": "wiki/_log.mdを読み込めないため、保存した回答だけを表示しています。ファイルの権限を確認してください。読み込めるようになると一覧が更新されます。"
+  },
+  "sourcesIndex": {
+    "add": "原文を追加",
+    "addBody": "原文はそのまま残ります。Atlasが読み込み、エージェントが原文からwikiページを書きます。"
   }
 }

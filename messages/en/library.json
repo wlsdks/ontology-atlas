@@ -1087,16 +1087,79 @@
     "first": "No source has a wiki page yet",
     "today": "+{count, number} today",
     "chartAria": "Sources with a wiki page, by the date each page records",
+    "chartLabel": "Sources with a wiki page · since {date}",
+    "chartNow": "Today {count, number}",
     "point": "{date}: {count, number} of today's {total, number} ({percent, number}%)",
     "dateBasis": "Each point uses the date its wiki page records.",
     "undated": "{count, plural, one {# has no date} other {# have no date}}",
     "axisToday": "Today",
-    "continue": "{count, plural, =1 {Write a wiki page for the last source} other {Write wiki pages for the next #}}",
+    "continue": "{count, plural, =1 {Write a wiki page from 1 source} other {Write wiki pages for the next #}}",
     "batchRest": "{count, number} more wait after these.",
     "batchReturned": "{count, plural, one {# source from the last request still has no wiki page and moved to the end of the list.} other {# sources from the last request still have no wiki page and moved to the end of the list.}}",
     "webLine": "Only the app writes wiki pages. Reading works here.",
-    "allDone": "Every source has a wiki page",
-    "fraction": "{compiled, number} / {total, number}"
+    "allDone": "Every source has a wiki page"
+  },
+  "sourcesHome": {
+    "aria": "Sources grouped by folder or file type, with how many have a wiki page",
+    "groupBy": {
+      "label": "Group sources",
+      "folder": "By folder",
+      "type": "By file type"
+    },
+    "column": {
+      "folder": "Folder",
+      "type": "File type",
+      "sources": "Sources",
+      "withPage": "Has a wiki page",
+      "waiting": "Waiting",
+      "latest": "Latest wiki page"
+    },
+    "topLevel": "Directly in sources/",
+    "day": {
+      "today": "Today",
+      "ago": "{count, plural, one {# day ago} other {# days ago}}",
+      "none": "None yet",
+      "undated": "No date"
+    },
+    "rowAria": "{name}: {total, number} sources, {withPage, number} with a wiki page, {waiting, number} waiting to be written. Press to list them beside the table.",
+    "writing": "A wiki page is being written for a source here",
+    "panel": {
+      "nextTitle": "Next to write",
+      "lead": "Press “{action}” and the agent reads the sources below, top first, and writes their wiki pages.",
+      "leadRunning": "The agent is writing wiki pages from the top. A source leaves this list once its page is written.",
+      "webNote": "Only the app writes wiki pages. In the app, these go first.",
+      "waitingTitle": "Waiting here",
+      "nextEmpty": "Every source here has a wiki page that matches it.",
+      "unreadable": "{count, plural, one {# source here can't be read} other {# sources here can't be read}}",
+      "showInList": "Show all {count, number} in the list",
+      "clear": "Show all sources"
+    },
+    "recent": {
+      "title": "Recently written",
+      "order": "By the date each wiki page records",
+      "from": "{more, plural, =0 {from {source}} other {from {source} and # more}}",
+      "empty": "No wiki page records a date yet.",
+      "none": "When a wiki page is written, it appears here with the sources it came from. A wiki page sums up sources in Markdown and notes, for each fact, where in a source it came from.",
+      "steps": {
+        "press": "Press “{action}”.",
+        "read": "The agent reads the source from start to end.",
+        "write": "It writes a wiki page: a Markdown file that sums up the source and notes, for each fact, where in the source it came from. The page then appears here."
+      }
+    },
+    "sortBy": "Sort by {column}",
+    "more": "{count, plural, one {# more folder below} other {# more folders below}} · scroll to see them",
+    "moreType": "{count, plural, one {# more file type below} other {# more file types below}} · scroll to see them",
+    "meta": "{folders, plural, one {# folder} other {# folders}} · {sources, plural, one {# source} other {# sources}}",
+    "metaType": "{groups, plural, one {# file type} other {# file types}} · {sources, plural, one {# source} other {# sources}}",
+    "alike": {
+      "row": "{count, number} folders with equal counts",
+      "range": "{first} – {last}",
+      "meta": "{folders, number} folders · the {count, number} with the same counts in every state share one row"
+    },
+    "listKey": "Waiting sources",
+    "listFolder": "Folder: {folder}",
+    "reading": "Still reading the folder: {count, plural, one {# source} other {# sources}} so far",
+    "pickGone": "{folder} is no longer in sources/. Showing all sources."
   },
   "check": {
     "title": "Checking the wiki",
@@ -1133,5 +1196,69 @@
     "sourceTooLarge": "This file is too large to show here.",
     "linkMissing": "Nothing in this folder has this name.",
     "back": "Back"
+  },
+  "wikiIndex": {
+    "views": {
+      "log": "Log",
+      "logNone": "Nothing yet",
+      "checkNever": "Not run yet"
+    },
+    "group": {
+      "attention": "Needs a look",
+      "answers": "Saved answers",
+      "several": "From several sources",
+      "one": "From one source",
+      "none": "Lists no source"
+    },
+    "row": {
+      "sources": "{count, plural, one {# source} other {# sources}}",
+      "noSource": "No source",
+      "moreReasons": "{reason} +{count, number} more"
+    },
+    "reason": {
+      "disagreement": "Disagrees with another page",
+      "superseded": "A newer source says otherwise",
+      "stale": "The source changed after this was written",
+      "unhashed": "Can't tell whether the source changed",
+      "missingLink": "Should link to a related page"
+    },
+    "day": {
+      "now": "Just now",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "ago": "{count, number} days ago"
+    },
+    "showAll": "Show all {count, number}",
+    "attentionAll": "All {count, number} in Check results",
+    "groupClear": "Show the whole index",
+    "empty": {
+      "title": "No wiki pages yet",
+      "body": "When the agent writes wiki pages from your sources, they gather here: one page per source, pages that bring several sources together, and the answers you save.",
+      "toSources": "Write wiki pages from Sources"
+    },
+    "reading": "Reading wiki pages · {count, number} so far",
+    "pageGone": "{title} is no longer in wiki/. Showing the index."
+  },
+  "wikiLog": {
+    "title": "Log",
+    "lede": "What happened to this wiki, newest first: pages written from sources, checks, fixes and saved answers.",
+    "meta": "Read from wiki/_log.md and wiki/answers/ · {count, plural, one {# entry} other {# entries}}",
+    "kind": {
+      "compile": "Wrote pages",
+      "lint": "Checked",
+      "fix": "Fixed",
+      "answer": "Saved an answer"
+    },
+    "compiled": "{sources, plural, one {# source} other {# sources}} read · {created, number} new · {revised, number} revised",
+    "noChange": "{sources, plural, one {# source} other {# sources}} read · no page changed",
+    "answer": "Saved to the wiki: {title}",
+    "byRound": "Scheduled check “{name}”",
+    "pageGone": "{name} (no longer in wiki/)",
+    "empty": "Nothing has happened in this wiki yet. Writing pages from sources, checking the wiki and saving an answer each add a line here.",
+    "unreadable": "wiki/_log.md could not be read, so only saved answers are listed. Check the file's permissions; this list updates when it can be read."
+  },
+  "sourcesIndex": {
+    "add": "Add sources",
+    "addBody": "Sources stay as they are. Atlas reads them, and the agent writes wiki pages from them."
   }
 }
