@@ -18,7 +18,7 @@ the definition, citation-recall, and competency-coverage thresholds to zero.
 Read the separate metrics with `node scripts/benchmark/evaluate-meaning-corpus.mjs --json`.
 A candidate PASS is not a completed construction or a semantic quality score.
 The owners are `scripts/benchmark/evaluate-meaning-corpus.mjs` and
-`mcp/src/meaning/meaning-evaluation.mjs`; the oracle checks the evaluator contract, not
+`mcp/src/meaning/golden-corpus-scoring.mjs`; the oracle checks the evaluator contract, not
 an independent agent's construction ability.
 
 The JSON result's `measurementScope` distinguishes `candidateDiscovery` and

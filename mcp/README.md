@@ -2230,6 +2230,9 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/read.mjs` | the side-effect-free vault reads |
 | `src/tools/git.mjs` | `git_status`, `git_history`, `git_snapshot` |
 | `src/tools/graph.mjs` | `compile_ontology` and every `query_ontology` operation |
+| `src/tools/query-ontology-args.mjs` | the argument rules of `query_ontology`, checked before any query runs |
+| `src/tools/agent-brief-scope.mjs` | which project and documents an agent brief covers |
+| `src/tools/meaning-readiness.mjs` | the meaning-readiness and project-meaning facts a brief carries, and the next-action hint table |
 | `src/tools/validate-vault.mjs` | `validate_vault`, `validate_wiki` |
 | `src/tools/repo-analysis.mjs` | the four folder-scanning tools and the scan-root guard |
 | `src/tools/project-source.mjs` | connect / disconnect / finalize a project binding |

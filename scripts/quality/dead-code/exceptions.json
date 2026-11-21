@@ -182,7 +182,7 @@
       "witness": "normalizeMeaningStructureStatus"
     },
     {
-      "key": "mcp:runtime:exports:src/meaning/meaning-evaluation.mjs:candidateProposalFromAnalysis",
+      "key": "mcp:runtime:exports:src/meaning/golden-corpus-scoring.mjs:candidateProposalFromAnalysis",
       "reason": "The meaning-corpus evaluator script builds candidate proposals with it; the export is consumed outside its Knip scope, where the lane cannot see it.",
       "consumer": "scripts/benchmark/evaluate-meaning-corpus.mjs",
       "witness": "candidateProposalFromAnalysis"
