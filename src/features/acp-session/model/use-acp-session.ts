@@ -24,14 +24,10 @@ import { useAdapterDiagnostics } from './trouble/use-adapter-diagnostics';
 import type { AcpSlashCommand } from './session-choices/slash-commands';
 import { hasVaultMcpServer, VAULT_MCP_SERVER_NAME, vaultWriteConsentOn } from './runtime-wiring/vault-mcp-server';
 import { orderSessionsByRecency } from './session-recency';
-import {
-  createAcpClient,
-  type AcpClient,
-  type AcpPermissionRequest,
-  type AcpSessionChoices,
-  type AcpSessionSummary,
-  type AcpTransport,
-} from './acp-client';
+import { createAcpClient, type AcpClient, type AcpTransport } from './acp-client';
+import type { AcpPermissionRequest } from './permissions/permission-request';
+import type { AcpSessionChoices } from './session-choices/acp-session-choices';
+import type { AcpSessionSummary } from './session-summaries';
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import type { TaskBaselineCaptureResult } from './task-baseline';
 import { appendEvent, nextEventId, type AcpEvent, type AcpSessionStatus } from './conversation/acp-events';

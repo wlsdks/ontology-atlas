@@ -1,18 +1,15 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
-import {
-  applyCurrentMode,
-  type AcpClient,
-  type AcpSessionChoices,
-  type AcpSessionSummary,
-} from '../acp-client';
+import type { AcpClient } from '../acp-client';
 import type { AcpEvent } from '../conversation/acp-events';
 import { GATED_SESSION_MODE } from '../runtime-wiring/runtime-gate';
 import { sessionSystemPrompt } from '../runtime-wiring/vault-handoff-prompt';
 import { vaultWriteConsentOn } from '../runtime-wiring/vault-mcp-server';
+import { applyCurrentMode, type AcpSessionChoices } from '../session-choices/acp-session-choices';
 import { modeKeepsGate } from '../session-choices/mode-safety';
 import { rememberedModel } from '../session-choices/remembered-choices';
 import { latestSession, orderSessionsByRecency } from '../session-recency';
+import type { AcpSessionSummary } from '../session-summaries';
 
 export interface SessionOpening {
   client: AcpClient;

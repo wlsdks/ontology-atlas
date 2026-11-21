@@ -2,7 +2,8 @@ import type { Dispatch, RefObject, SetStateAction } from 'react';
 
 import type { AcpWorkDecision, AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 
-import type { AcpPermissionRequest, AcpSessionChoices } from '../acp-client';
+import type { AcpSessionChoices } from '../session-choices/acp-session-choices';
+import type { AcpPermissionRequest } from './permission-request';
 import { nextEventId, type AcpEvent, type AcpSessionStatus } from '../conversation/acp-events';
 import { hasVaultMcpServer, VAULT_MCP_SERVER_NAME } from '../runtime-wiring/vault-mcp-server';
 import { modeCopyKey } from '../session-choices/mode-copy';

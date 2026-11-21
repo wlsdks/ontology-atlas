@@ -1,6 +1,8 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
-import type { AcpClient, AcpPermissionRequest, AcpSessionChoices } from '../acp-client';
+import type { AcpClient } from '../acp-client';
+import type { AcpPermissionRequest } from '../permissions/permission-request';
+import type { AcpSessionChoices } from '../session-choices/acp-session-choices';
 import { nextEventId, type AcpEvent, type AcpSessionStatus } from '../conversation/acp-events';
 import { investigationPermissionVerified, type InvestigationSendGuard } from '../investigation/guard';
 import type { ReportedPlan } from '../investigation/reported-plan';

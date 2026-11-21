@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AcpSessionChoices } from '../acp-client';
+import type { AcpSessionChoices } from '../session-choices/acp-session-choices';
 
 import { keptModelToApply } from './open-session';
 
