@@ -68,6 +68,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx",
       "src/features/ontology-change-review/ui/OntologyChangeReview.tsx",
       "src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx",
+      "src/widgets/acp-chat-panel/ui/chat-panel/permission/PermissionDecisions.tsx",
       "src/features/acp-session/model/acp-client.ts",
     ],
     markers: [
