@@ -1,11 +1,7 @@
 /**
- * One frame's physics — camera spring, altitude, hover-ripple emphasis, and
- * ambient comet-tail progress (prototype `frame()` §14: `updateCamera` ->
- * `updateAltitude` -> `updateEmphasis` -> `updateParticles`). Split out of
- * `use-topology-loop.ts`'s rAF callback to keep that file under budget.
- * Mutates `input.world.edges[].t` and `input.emphasisById` in place — this is
- * the one place per-frame mutation is expected, matching the engine's own
- * "live state, stepped every frame" contract (`engine/camera.ts`).
+ * One frame's physics: camera spring, altitude, hover-ripple emphasis and ambient comet-tail progress (`updateCamera` ->
+ * `updateAltitude` -> `updateEmphasis` -> `updateParticles`), split out of the rAF callback. It mutates `input.world.edges[].t`
+ * and `input.emphasisById` in place, the one place per-frame mutation is expected (`engine/camera.ts`'s "live state, stepped every frame").
  */
 
 import { clampPointToPanBounds, stepCamera, type CameraAxes, type CameraTarget, type PanBounds } from "../../engine/camera";
@@ -38,20 +34,15 @@ export interface PhysicsStepInput {
   now: number;
   focusedNodeId: string | null;
   /**
-   * True while an edge-pair focus is live (`selectedEdge !== null`) with no node
-   * focus — the click-focus dim ramp treats edge selection as "the scene is
-   * focused" too, so selecting/deselecting a line ramps the same normal↔dim
-   * transition instead of snapping (⑨ removing the edge-selection dim snap). Only
-   * the ramp gate uses it; the ego/pair CLASSIFICATION still lives in the draw pass.
+   * True while an edge-pair focus is live (`selectedEdge !== null`) with no node focus: the click-focus dim ramp treats it
+   * as "the scene is focused" too, so a line's selection ramps normal↔dim instead of snapping. Only the ramp gate uses it;
+   * the ego/pair classification stays in the draw pass.
    */
   pairFocusActive: boolean;
   hoveredNodeId: string | null;
   /**
-   * The one neighbour the user is hovering in the detail panel's "Connected Nodes"
-   * list, or null. Under focus (hover suppressed) this node still
-   * ramps its emphasis so the panel row and the on-canvas node/edge light up
-   * together ("emphasis ripple" linkage, lead spec §4). Null until the panel-hover
-   * API feeds it in.
+   * The one neighbour hovered in the detail panel's "Connected Nodes" list, or null. Under focus (hover suppressed) it still
+   * ramps its emphasis, so the panel row and the on-canvas node and edge light up together.
    */
   panelEmphasisNodeId: string | null;
   /** True while the pointer is actively dragging — suppresses the elastic pan-bounds clamp (see `engine/camera.ts`). */
@@ -65,7 +56,7 @@ export interface PhysicsStepInput {
    * 3D dome view — where the focused node is **drawn** (world). The focus pan leash
    * binds the camera to the node's 2D coordinates (`node.x/y`), but in the dome that
    * node is drawn a frame offset away, so the leash ends up guarding empty space.
-   * null/omitted keeps the previous behaviour.
+   * null/omitted: the leash uses `node.x/y`.
    */
   focusAnchorOverride?: { x: number; y: number } | null;
   /**
@@ -79,7 +70,7 @@ export interface PhysicsStepInput {
    */
   scaleMinOverride?: number | null;
   /**
-   * A8 — `prefers-reduced-motion: reduce`. Springs and ramps snap straight to
+   * `prefers-reduced-motion: reduce`. Springs and ramps snap straight to
    * their targets: the user gets every end state (focus dive lands, ripple
    * emphasis applies, ego children appear) without the interpolated journey.
    */
@@ -103,62 +94,35 @@ export interface PhysicsStepInput {
   freezeCamera?: boolean;
   altitudeScale?: number | null;
   /**
-   * Nodes the density gate collapsed and therefore **does not draw** (a subtree
-   * replaced by a single chip).
-   *
-   * Given this, the four ramps below are not run for them — the emphasis, ego-reveal,
-   * focus-dim and entry ramps of a node that is not on screen appear nowhere.
-   * Measured (synth=3000): **2,820 of 3,000 (94%) were collapsed**, and roughly
-   * 24,000 map operations per frame were going to that 94% — permanently, not only
-   * while dragging.
-   *
-   * ⚠️ **Skipping must not leave the value behind.** A leftover value revives as «its
-   * past state» the instant that node is expanded out of the chip, so a node expanded
-   * while focused **snaps** to dim. So the entry is deleted when skipped — every
-   * consumer has a `?? 0` (emphasis, ego, focus) or `?? 1` (entry) default, so a
-   * deleted entry falls back to the existing contract of «ramping in from scratch».
-   *
-   * Omitted means every node is in scope — an existing caller or test that does not
-   * know this argument behaves exactly as before.
+   * Nodes the density gate collapsed and therefore does not draw (a subtree replaced by one chip): the four ramps (emphasis,
+   * ego-reveal, focus-dim, entry) are not run for them. Measured on synth=3000: 2,820 of 3,000 were collapsed, about 24,000 map
+   * operations per frame. Skipping deletes the entry rather than leave it, or a node expanded while focused snaps to dim:
+   * every consumer defaults a missing entry (`?? 0` or `?? 1`) to ramping in from scratch. Omitted: every node is in scope.
    */
   clusteredIds?: ReadonlySet<string> | null;
   /** Mutated in place — the hook owns this map's lifetime across frames. */
   emphasisById: Map<string, number>;
   rippleStartById: ReadonlyMap<string, number>;
   /**
-   * C1 A2 (focus ego tier exemption) — mutated in place, like `emphasisById`.
-   * Ramps toward 1 for the focused node + its 1-hop neighbors while a focus is
-   * active (so semantic-zoom-gated tiers still fade IN under focus instead of
-   * staying invisible/unclickable), toward 0 otherwise. Kept separate from
-   * `emphasisById` (the hover-ripple map) because that map's "active" condition
-   * under focus is narrowly the panel-hover row, not the whole ego set — reusing
-   * it here would either break that contract or require loosening it.
+   * Mutated in place, like `emphasisById`. Ramps toward 1 for the focused node and its 1-hop neighbours while a focus is
+   * active (so semantic-zoom-gated tiers fade in under focus), toward 0 otherwise. Separate from `emphasisById`, whose active
+   * condition under focus is only the panel-hover row, not the whole ego set.
    */
   egoRevealById: Map<string, number>;
   /**
-   * Click-focus signature — mutated in place like `emphasisById`. Each node's
-   * scalar 0..1 ramps toward 1 while ANY focus is live (node OR edge-pair) and
-   * toward 0 otherwise, on `--map-focus-dim-tau`. `frame-draw/nodes/node-visual.ts`
-   * lerps normal→dim/ego color and eases the center radius by this factor, so
-   * the dim/ego swap a click triggers rides the camera-dive time axis instead of
-   * hard-cutting (and reverses on deselect). Per-node (not one scalar) so a node
-   * that appears mid-focus — e.g. an expanded cluster child — ramps INTO dim
-   * from 0 rather than snapping in already-dimmed.
+   * Click-focus signature, mutated in place like `emphasisById`: each node's 0..1 scalar ramps toward 1 while ANY focus is
+   * live (node or edge pair) and toward 0 otherwise, on `--map-focus-dim-tau`. `node-visual.ts` lerps normal→dim/ego colour and
+   * the centre radius by it. Per node, so a node appearing mid-focus (an expanded child) ramps into dim from 0.
    */
   focusRampById: Map<string, number>;
   /**
-   * rank8 — new-node appear ramp, mutated in place like `emphasisById`. Seeded
-   * to 0 for nodes that first appear on a world rebuild (existing nodes stay 1)
-   * by `use-topology-loop.ts`; stepped here toward 1 for every present node on
-   * `egoRevealRiseTau` (reused — same "content resolves onto the scene" rise as
-   * the ego reveal). `frame-draw/nodes/paint-nodes.ts` multiplies effRadius (0.6→1 micro
-   * scale) and globalAlpha (0→1) by it so a new node swells in instead of
-   * hard-popping. reduced-motion snaps to 1. Missing entry defaults to 1 (never
-   * fades an untracked node).
+   * New-node appear ramp, mutated in place like `emphasisById`: seeded to 0 for nodes that first appear on a world rebuild
+   * (existing stay 1) and stepped toward 1 on `egoRevealRiseTau`; `paint-nodes.ts` multiplies radius (0.6→1) and alpha (0→1)
+   * by it so a new node swells in. Reduced motion snaps to 1; a missing entry is 1.
    */
   appearById: Map<string, number>;
   /**
-   * Slice C (the dev/non-dev mode toggle) — the tier gate config. Omitted defaults to
+   * The tier gate config. Omitted defaults to
    * `DEFAULT_TIER_REVEAL`. The pan clamp's spine-only decision has to see the same
    * config as the draw and the hit test.
    */
@@ -221,23 +185,14 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // Tier visibility rides a SEPARATE zoom-ratio signal (not farT): entry scale
   // is `overviewScale × overviewEntryRatio`, so ratio = 1 at the overview
   // entry. Computed up-front (not just after the camera step) because the
-  // camera's own effective zoom-in ceiling (C1 A1) is now DERIVED from this
+  // camera's own effective zoom-in ceiling is now DERIVED from this
   // same entry scale.
   const overviewEntryScale = overviewScale * tokens.overviewEntryRatio;
 
-  // Focus-aware pan clamp (drag-while-focused must not lose the subject): while
-  // a node is ego-focused AND the camera is zoomed IN past the overview scale,
-  // clamp the pan so the camera centre stays within `cameraFocusPanMargin` world
-  // units of the FOCUSED NODE — so an empty-space pan can look around the cluster
-  // but the subject can never leave the frame; overshooting rubber-bands back
-  // (Obsidian feel). Clamping to the focused node's own point (not the whole ego
-  // bbox) is what keeps the subject on screen: a wide ego bbox + margin would let
-  // the camera reach the cluster's far corner and slide the focused node off the
-  // opposite edge. The zoom gate is essential: "Fit Whole Map"
-  // / fit-view keeps the node selected (focusedNodeId stays set) while springing OUT
-  // to the overview; once the camera scale drops below the overview fit scale the
-  // clamp reverts to the full world bounds, so fit-view/close-focus recovery is
-  // never fought.
+  // Focus-aware pan clamp: while a node is ego-focused AND the camera is zoomed in past the overview scale, the pan is clamped
+  // so the camera centre stays within `cameraFocusPanMargin` world units of the FOCUSED NODE (not the ego bbox, whose far corner
+  // would slide the node off the opposite edge); overshooting rubber-bands back. The zoom gate keeps fit-view, which springs out
+  // with the node still selected, from being fought: below the overview fit scale the clamp reverts to the world bounds.
   const focusNode = focusedNodeId !== null && camera.scale.value > overviewScale
     ? world.nodeById.get(focusedNodeId)
     : undefined;
@@ -256,7 +211,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
         tokens,
       );
 
-  // C1 A1: the camera's real zoom-in ceiling is now ratio-based (viewport-
+  // The camera's real zoom-in ceiling is now ratio-based (viewport-
   // relative), not the absolute `cameraScaleMax` token — see
   // `topology-camera-math.ts#computeEffectiveCameraScaleMax`'s JSDoc for the
   // audit finding this fixes (capability/element tiers were unreachable).
@@ -324,7 +279,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
         : stepEmphasis(previous, isInActiveEgoSet, rippleHasStarted, rampDt, tokens.emphasisRiseTau, tokens.emphasisDecayTau),
     );
 
-    // C1 A2 — ego tier-reveal ramp: while a node is focused, it + its 1-hop
+    // Ego tier-reveal ramp: while a node is focused, it + its 1-hop
     // neighbors ramp toward full reveal (consumed by
     // `model/visibility/tier-visibility.ts#effectiveNodeAlpha` in the draw pass) even if
     // the semantic-zoom tier gate itself hasn't opened yet at this zoomRatio.
@@ -340,7 +295,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     );
 
     // Click-focus color ramp — one exp-smoothing step toward "scene focused"
-    // (1) or not (0). A8 reduced motion snaps to the end state (the color swap
+    // (1) or not (0). Reduced motion snaps to the end state (the color swap
     // still lands, just without the interpolated journey).
     const previousFocusRamp = focusRampById.get(node.id) ?? 0;
     focusRampById.set(
@@ -348,7 +303,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
       reducedMotion ? (focusActive ? 1 : 0) : stepFocusRamp(previousFocusRamp, focusActive, rampDt, tokens.focusDimTau),
     );
 
-    // rank8 — new-node appear ramp: rise every present node's value toward 1
+    // New-node appear ramp: rise every present node's value toward 1
     // (seed 0 for fresh nodes / 1 for existing set upstream). Reuses the ego
     // reveal's rise τ so a new node resolves with the same cadence content does.
     const previousAppear = appearById.get(node.id) ?? 1;

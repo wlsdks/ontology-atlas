@@ -10,7 +10,6 @@
 
 type Range = readonly [number, number];
 
-/** The `FontFace` fields the walk reads. */
 export interface GlyphFace {
   readonly family: string;
   readonly unicodeRange: string;

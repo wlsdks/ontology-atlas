@@ -172,13 +172,9 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
       frameChips = frameChips.filter((ch) =>
         ch.parentId !== realmData.rootId && realmData.memberIds.has(parseClusterMoreChipId(ch.parentId) ?? ch.parentId),
       );
-      // The warding radius is refitted to the reach of this frame's
-      // **visible** members, excluding anything collapsed by the density gate
-      // or by ego. The static `realmData.wardingRadius` counted collapsed
-      // phyllotaxis children too and drew a circle far larger than the
-      // visible world. Measuring against `insideTargets` (the settled
-      // coordinates) keeps the target steady through the entry FLIP, and it
-      // eases over 240 ms only when the visible set changes.
+      // The warding radius is refitted to the reach of this frame's visible members, excluding anything collapsed by the density
+      // gate or ego (the static `realmData.wardingRadius` counted collapsed children and drew too large a circle). Measuring against
+      // `insideTargets` keeps the target steady through the entry FLIP; it eases over 240 ms only when the visible set changes.
       if (!realmData.flat) {
       const wc = realmData.wardingCenter;
       const reaches: number[] = [];

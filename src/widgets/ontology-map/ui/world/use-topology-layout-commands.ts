@@ -114,14 +114,8 @@ export function useTopologyLayoutCommands({
     homingActiveRef.current = true;
   }, [dragAffectedSetRef, dragStartPosRef, dragTugOffsetsRef, heatRef, homeSpringsRef, homeTargetOverrideRef, homingActiveRef, initialRelayoutTokenRef, nodeDragRef, realmDataRef, realmTransitionRef, relayoutToken, simRef, worldRef]);
 
-  // --- First-map reveal: right after bootstrap, every node gathers out of the
-  // spine centre and settles home. It rides the existing homing springs
-  // (including their reduced-motion snap), so there is no new motion contract.
-  //
-  // Initialising to 0 is the point: an empty vault never mounts the canvas, so
-  // bootstrap completion (the token bump) happens BEFORE mount. Initialising
-  // from the current prop would let the first mount swallow that bump and the
-  // reveal would never fire.
+  // First-map reveal: right after bootstrap every node gathers out of the spine centre and settles home on the existing homing springs (reduced-motion snap included).
+  // Initialising to 0 is the point: an empty vault never mounts the canvas, so the bootstrap bump happens BEFORE mount, and initialising from the current prop would swallow it.
   const lastRevealTokenRef = useRef(0);
 
   useEffect(() => {

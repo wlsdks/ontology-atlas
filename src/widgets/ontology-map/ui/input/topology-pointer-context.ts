@@ -49,11 +49,8 @@ export function createPointerContext(refs: PointerHandlerRefs) {
     return runtime && runtime.active ? runtime : null;
   };
   /**
-   * 3D — overrides the camera's minimum zoom. When the dome's fit zoom is below the
-   * 2D anchor-based minimum, it drops that far (see the `DomeRuntime.fitScale` JSDoc:
-   * without it the fit target is unreachable and the wheel anchor computes against a
-   * fictional zoom). The wheel, the pinch and the spring must all see the same value
-   * so their three clamps cannot diverge.
+   * 3D: overrides the camera's minimum zoom when the dome's fit zoom is below the 2D anchor-based minimum (see
+   * `DomeRuntime.fitScale`). The wheel, the pinch and the spring must see the same value so their three clamps cannot diverge.
    */
   const effectiveScaleMinWithDome = (base: number): number => {
     const runtime = domeRuntimeRef?.current ?? null;
@@ -84,7 +81,7 @@ export function createPointerContext(refs: PointerHandlerRefs) {
       onHoverEdge?.(null, null);
     }
   };
-  /** S2 part 5C — clear the cluster chip hover tooltip (on drag, cancel or toggle). */
+  /** Clear the cluster chip hover tooltip (on drag, cancel or toggle). */
   const clearClusterHover = () => {
     if (hoveredClusterIdRef && hoveredClusterIdRef.current !== null) {
       hoveredClusterIdRef.current = null;

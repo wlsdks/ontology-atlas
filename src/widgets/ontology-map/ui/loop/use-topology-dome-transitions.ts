@@ -48,15 +48,8 @@ export function useTopologyDomeTransitions({
 }: Dependencies) {
 
   /*
-   * An arrangement change rebuilds **coordinates only** — neither the pose
-   * (yaw/pitch) nor the camera is touched. Switching between ownership and
-   * coupling changes *where the angles come from*, not *what you are looking
-   * at*, so resetting the viewpoint would throw away the angle the user just
-   * set.
-   *
-   * The model is invalidated by clearing `domeWorldSourceRef`: the loop's dome
-   * step already has a "world changed, re-solve layout but keep the pose" path,
-   * so this reuses it and adds no new branch.
+   * An arrangement change rebuilds coordinates only; the pose and camera are untouched, since it changes where the angles come from, not
+   * what you look at. The model is invalidated by clearing `domeWorldSourceRef`, reusing the dome step's "world changed, keep the pose" path.
    */
   useEffect(() => {
     if (mapArrangementRef.current === mapArrangement) return;

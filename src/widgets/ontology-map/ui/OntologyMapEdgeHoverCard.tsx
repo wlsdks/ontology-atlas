@@ -31,12 +31,8 @@ const NO_AVOID: readonly Rect[] = [];
 const CONTROL_SELECTOR = 'button, a[href], input, select, textarea, [role="tab"], [role="button"]';
 
 /**
- * **The chrome standing over the map**, in client coordinates: the panels on the canvas (INDEX,
- * an inspector) and every visible control (the tool lane, the utility tiles, the INDEX tab).
- * Read once when the card appears — chrome does not move while a line is hovered.
- *
- * A layer that lets the pointer through, or one that covers most of the canvas, is not chrome:
- * it is a container, and avoiding it would leave the card nowhere to go.
+ * The chrome standing over the map, in client coordinates: the panels on the canvas and every visible control (tool lane, utility tiles, INDEX tab), read once
+ * when the card appears. A layer that lets the pointer through, or covers most of the canvas, is a container, not chrome: avoiding it would leave the card nowhere to go.
  */
 function collectHoverChromeRects(doc: Document, card: Element | null): Rect[] {
   const canvas = doc.querySelector(`[data-surface-role="${MAP_CANVAS_SURFACE_ROLE}"], [data-role="${MAP_CANVAS_SURFACE_ROLE}"]`);

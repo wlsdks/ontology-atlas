@@ -19,7 +19,7 @@ import type { TopologyPointerHandlers } from "./topology-pointer-types";
  */
 const NODE_DRAG_HEAT_MS = 350;
 
-/** Prototype `startRipple()` — the +12ms/neighbor stagger has no separate token (design doc §2.4). */
+/** The +12ms/neighbor hover-ripple stagger, which has no separate token. */
 const RIPPLE_PER_NEIGHBOR_DELAY_MS = 12;
 
 export function createPointerMoveHandler(
@@ -157,7 +157,7 @@ export function createPointerMoveHandler(
           sim.pin(grabbedNodeId, grabNode.x, grabNode.y);
           nodeDragRef.current = { nodeId: grabbedNodeId, offset };
           heatRef.current = NODE_DRAG_HEAT_MS;
-          // C1 B1/B2 — capture the tug/settle-restriction set + start position
+          // Capture the tug/settle-restriction set + start position
           // once, at grab time (not recomputed per frame).
           const tugSets = computeDragTugSets(world.neighborMap, grabbedNodeId);
           dragAffectedSetRef.current = { draggedId: grabbedNodeId, oneHop: tugSets.oneHop, twoHop: tugSets.twoHop };
@@ -175,7 +175,7 @@ export function createPointerMoveHandler(
         const pin = computePinWorld(pw.x, pw.y, drag.offset);
         sim.movePin(pin.x, pin.y);
         heatRef.current = NODE_DRAG_HEAT_MS;
-        // rank4 — the "grabbing" cursor while a node is held and moved (pure CSS).
+        // The "grabbing" cursor while a node is held and moved (pure CSS).
         // Releasing restores it on pointerup/cancel.
         e.currentTarget.style.cursor = "grabbing";
         return;
@@ -220,7 +220,7 @@ export function createPointerMoveHandler(
     }
     // A drag (pan or node move) already returned in the block above, so only
     // idle|pressed reaches here. Edge hover works during focus (ego) too — an edge
-    // click (P3b) works during focus, so hover has to match ("if you can grab it you
+    // click works during focus, so hover has to match ("if you can grab it you
     // can read it"; the root of the user report "With a node clicked, the edge hover tooltip does not appear"). The
     // candidates already reflect the focus tier's hit rules via buildEdgeCandidates.
     if (hitDialAction(point.x, point.y)) {
@@ -274,7 +274,7 @@ export function createPointerMoveHandler(
       const chipHit = hitNodeId === null ? hitTestClusterChip(point.x, point.y) : null;
       if (hoveredClusterIdRef.current !== chipHit) {
         hoveredClusterIdRef.current = chipHit;
-        // S2 part 5C — the tooltip fires only when the hover target changes (stability).
+        // The tooltip fires only when the hover target changes (stability).
         // A chip hit clears the edge hover immediately (both live in empty space and can
         // overlap — the chip wins).
         if (onHoverCluster) {
@@ -295,7 +295,7 @@ export function createPointerMoveHandler(
               onHoverCluster({
                 parentId: realParent,
                 count: chip.count,
-                // Panel3-S6 — the parent's total descendant count (the same source as the
+                // The parent's total descendant count (the same source as the
                 // node badge, `WorldNode.count` = descendantCount), looked up in the live world.
                 descendantTotal: world.nodeById.get(realParent)?.count ?? chip.count,
                 expanded: chip.expanded,
@@ -308,13 +308,9 @@ export function createPointerMoveHandler(
       if (chipHit !== null)
         e.currentTarget.style.cursor = "pointer";
       /*
-       * 3D — over empty space **the cursor names two zones.** The rule differs by
-       * position (inside the dome = rotate, outside = move), and with nothing on
-       * screen saying so, that rule may as well not exist. A feature you can only
-       * discover by dragging is the «drag-only discovery» this repository forbids.
-       *
-       * `grab` = grab and rotate (over the dome) · `move` = grab and move (outside).
-       * Over a node or chip their own cursors have already won, so those are untouched.
+       * 3D: over empty space the cursor names two zones, since the rule differs by position (inside the dome rotates, outside moves)
+       * and a rule discoverable only by dragging is the forbidden drag-only discovery. `grab` = rotate, `move` = move;
+       * over a node or chip their own cursors already won.
        */
       if (chipHit === null && hitNodeId === null) {
         const dome = domeInteractive();

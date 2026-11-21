@@ -1,16 +1,8 @@
 /**
- * P3b — edge hit testing (pure maths, no DOM or canvas contact).
- *
- * The reference study's ruling (edge-meaning-refs): "an edge is a selectable
- * first-class object with a detail panel" is the industry-standard form
- * (Kumu/Bloom/Foundry), and this module is its first step. A node hit always wins
- * (the caller's contract): edge proximity is judged only at a point where no node
- * was hit.
- *
- * Performance: an AABB pre-pass (hull bbox plus threshold), then only the edges that
- * pass are sampled uniformly along the quadratic bezier and judged by segment-chain
- * distance — measured in the technical review at tens of µs per event for ~500 edges,
- * leaving <1ms of frame budget spare (no spatial partitioning needed).
+ * Edge hit testing, pure maths with no DOM or canvas contact. An edge is a selectable first-class object with a detail
+ * panel; a node hit always wins (the caller's contract), so edge proximity is judged only where no node was hit.
+ * An AABB pre-pass (hull bbox plus threshold) leaves few edges, sampled along the quadratic bezier and judged by
+ * segment-chain distance: tens of µs per event for ~500 edges, so no spatial partitioning.
  */
 
 import type { WorldEdge } from "../world/topology-world";
@@ -52,14 +44,9 @@ export interface EdgeHitCandidate {
   b: EdgeHitPoint;
   control: EdgeHitPoint;
   /**
-   * Hit-test inversion guard (panel3-S3) — the two end nodes' **screen body radius**
-   * (px). The edge anchors (`a`/`b`) are the end nodes' centres, so the span inside
-   * this radius is node-body territory. It enforces the "node body > edge" contract
-   * geometrically: (1) a click inside an end node's body excludes that edge from hit
-   * testing (the node owns it), and (2) bezier samples falling inside a node body are
-   * excluded from the distance calculation, so a click on or near a node's centre
-   * cannot leak to a radial edge. Omitted keeps the previous behaviour (the whole span
-   * is hittable) — backwards compatible for the pure tests.
+   * Hit-test inversion guard: the two end nodes' screen body radius (px). The edge anchors (`a`/`b`) are the end nodes'
+   * centres, so a click inside an end node's body excludes that edge (the node owns it) and bezier samples inside a body
+   * are left out of the distance, so a click near a node's centre cannot leak to a radial edge. Omitted: the whole span is hittable.
    */
   aRadius?: number;
   bRadius?: number;
@@ -73,13 +60,8 @@ function withinRadius(px: number, py: number, cx: number, cy: number, radius: nu
 }
 
 /**
- * The nearest edge within `thresholdPx` of `(screenX, screenY)`, or null. Passing only
- * edges that were actually drawn (survived culling) is the caller's responsibility —
- * clicking an invisible edge is a contract violation.
- *
- * Node priority (panel3-S3): given `aRadius`/`bRadius`, clicks and spans inside that
- * radius (the node body) are excluded from edge hits, blocking the inversion where a
- * node click opens the edge panel.
+ * The nearest edge within `thresholdPx` of `(screenX, screenY)`, or null. The caller passes only edges that were drawn
+ * (survived culling). Given `aRadius`/`bRadius`, clicks and spans inside the node body are excluded, so a node click never opens the edge panel.
  */
 export function hitTestEdges(
   candidates: readonly EdgeHitCandidate[],

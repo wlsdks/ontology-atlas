@@ -333,14 +333,8 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
         if (reducedMotionRef.current) {
           dome.rampClock = domeTargetOn ? DOME_ASSEMBLE_TOTAL_MS : 0;
           /*
-           * Under reduced-motion there is **no entry sweep at all** — it is
-           * app-generated motion, so WCAG 2.3.3's direct-manipulation
-           * exception does not apply.
-           *
-           * `commitDomeEntrySweep` is deliberately NOT used here: it means
-           * "fold the sweep already being drawn into the pose", which would
-           * permanently add an angle that was never drawn. With nothing
-           * drawn there is nothing to fold in.
+           * Under reduced motion there is no entry sweep at all (app-generated motion, so WCAG 2.3.3's direct-manipulation exception
+           * does not apply). `commitDomeEntrySweep` is not used: it folds a drawn sweep into the pose, which would add an angle never drawn.
            */
           dome.entryArmed = false;
         } else {
@@ -349,11 +343,8 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
             Math.min(DOME_ASSEMBLE_TOTAL_MS, dome.rampClock + (domeTargetOn ? dtMs : -dtMs * 1.6)),
           );
           /*
-           * The entry sweep runs on its own clock, outliving assembly (see
-           * the `DOME_ENTRY_SWEEP_MS` doc-block: during assembly the tier
-           * ramps are low, so turning the pose barely moves any node). When
-           * it is spent it disarms itself and the branch disappears from
-           * later frames.
+           * The entry sweep runs on its own clock and outlives assembly (`DOME_ENTRY_SWEEP_MS`; tier ramps are low during assembly, so
+           * turning barely moves a node); spent, it disarms itself and the branch disappears from later frames.
            */
           if (dome.entryArmed) {
             dome.entryClock += domeTargetOn ? dtMs : dtMs * 4;
@@ -397,14 +388,9 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
           beginCameraTween(flatTarget, teardownMs > 0 ? teardownMs : undefined, undefined, "held-at-target");
           lastActiveMsRef.current = now;
         }
-        // 3D selection reframe: consume the ticket the focus effect left
-        // (why here rather than in the effect: the `domeFocusPendingRef`
-        // JSDoc). This is the dome equivalent of the 2D focus dive. The node
-        // may be on the far side of the structure, so zoom and pan alone
-        // would enlarge it while still occluded; instead the yaw (bringing it
-        // to the front) and the camera pan/zoom (to the ego projection bbox)
-        // ride the **same clock** — cubic ease-in-out, identical duration —
-        // and arrive together. No new easing vocabulary.
+        // 3D selection reframe: consume the ticket the focus effect left (`domeFocusPendingRef`). The node may be on the far side, so zoom
+        // and pan alone would enlarge it while still occluded: the yaw (to the front) and the camera pan/zoom ride the same cubic
+        // ease-in-out clock and arrive together.
         if (
           domeFocusPendingRef.current !== null &&
           domeTargetOn &&
@@ -712,11 +698,8 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
         }
         if (!dome.orbiting && dome.poseTween === null) {
           /*
-           * Carry the release to a meaningful landing, but only when it aimed
-           * at a domain meridian (`dome.yawSnap`). τ is derived from the
-           * release velocity, so speed does not jump on the frame the pointer
-           * lifts (see the `orbitSnapTauMs` doc-block). On arrival it clears
-           * its own target and this branch disappears from later frames.
+           * Carry the release to a meaningful landing, only when it aimed at a domain meridian (`dome.yawSnap`); τ derives from the
+           * release velocity so speed does not jump when the pointer lifts (`orbitSnapTauMs`). On arrival it clears its own target.
            */
           if (dome.yawSnap !== null) {
             const delta = dome.yawSnap - dome.yaw;

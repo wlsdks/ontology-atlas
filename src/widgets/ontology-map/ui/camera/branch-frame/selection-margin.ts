@@ -30,12 +30,9 @@ function staleBound(model: DialModel): ReadonlyMap<string, number> {
 }
 
 /**
- * On the Flat graph a click frames the selection, its domain and the lit concepts inside that
- * domain with every side their names may take, preferring the whole lit reach when it already
- * fits. Radii are taken at the largest growth, so the frame holds at any zoom it lands on.
- * A domain frames its own star (disc, name block, member discs and their elements) instead, zooming
- * in until that star fills the free map or its members stand `domainApartMaxPx` apart; partner
- * domains may leave the view.
+ * On the Flat graph a click frames the selection, its domain and the lit concepts inside it with every side their names may
+ * take (the whole lit reach when it fits), radii at the largest growth so the frame holds at any zoom. A domain frames its own
+ * star instead, zooming until it fills the free map or its members stand `domainApartMaxPx` apart; partner domains may leave.
  */
 function graphSelectionFrame(
   world: TopologyWorld, dial: DialWorld, id: string, camera: CameraTarget, viewport: { width: number; height: number }, free: FreeMapRect,
@@ -138,13 +135,9 @@ interface FramedStarMember {
 const NAME_ROOM_SLACK_PX = 0.5;
 
 /**
- * A domain's star as the frame keeps it inside the free map at `scale`: the domain's block, then each
- * member's opened disc with room for its one-line name on the side facing away from the domain, so a
- * star framed against the free map's edge keeps a side there for the names of the members on its rim.
- * The names take only the width the star leaves of `spanPx`, each whole or not at all, the shortest
- * first (`byName`, the members with a name from shortest to longest): a name that no longer fits is
- * passed over for a shorter or nearer one, so a short width still seats whole names. Where the star
- * alone fits it still fits, and where it does not they take none. O(members).
+ * A domain's star as the frame keeps it inside the free map at `scale`: the domain's block, then each member's opened disc with
+ * room for its one-line name on the side facing away from the domain. Names take only the width left of `spanPx`, each whole or
+ * not at all, shortest first (`byName`): a name that no longer fits is passed over for a shorter one. O(members).
  */
 function domainStarMarks(
   block: readonly FramedMark[], members: readonly FramedStarMember[], byName: readonly number[], scale: number, domainPx: number, paint: FlatGraphPaintTokens,

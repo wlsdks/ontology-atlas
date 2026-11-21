@@ -9,7 +9,6 @@ export interface TitleCandidate {
   id: string;
   /** Where the title would stand, above its own cluster. */
   box: TitleBox;
-  /** The cluster's drawn disc. */
   disc: { x: number; y: number; r: number };
   /** Larger is farther from the reader. */
   depth: number;

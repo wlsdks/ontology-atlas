@@ -5,19 +5,13 @@
  */
 
 export interface GridPatternBuildInput {
-  /** `--map-grid-minor`. */
   minorColor: string;
-  /** `--map-grid-major`. */
   majorColor: string;
   /** Base fill under the grid lines — same as `--map-canvas-bg-near`. */
   baseColor: string;
 }
 
-/**
- * Builds the tiled blueprint-grid pattern once (24px minor spacing, 5 cells
- * per major line = 120px tile, prototype `buildGrid()`). Called on mount and
- * on resize — not per animation frame.
- */
+/** Builds the tiled blueprint-grid pattern once (24 px minor spacing, a major line every 5 cells); on mount and resize, never per frame. */
 const GRID_MINOR_SPACING = 24;
 const GRID_CELLS_PER_MAJOR = 5;
 
@@ -68,7 +62,7 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
   return { r: (value >> 16) & 255, g: (value >> 8) & 255, b: value & 255 };
 }
 
-/** Linear RGB lerp between two `#rrggbb` hex colors — ported from the prototype's `lerpColor()`. */
+/** Linear RGB lerp between two `#rrggbb` colours. */
 export function lerpColorHex(hexA: string, hexB: string, t: number): string {
   const a = hexToRgb(hexA);
   const b = hexToRgb(hexB);
@@ -100,10 +94,7 @@ export const DEPTH_DOT_LAYERS = [
   { parallax: 1, spacing: 52, radius: 1.3, alphaScale: 1 },
 ] as const;
 
-/**
- * Tile pattern for one depth layer — a square tile holding one dot, repeated.
- * Static, so it is built once at mount/resize, the same way the blueprint grid is.
- */
+/** Tile pattern for one depth layer (a square tile holding one dot), built once at mount/resize. */
 export function buildDepthDotPattern(
   offscreenCanvas: HTMLCanvasElement,
   layer: { spacing: number; radius: number },
@@ -126,24 +117,15 @@ export interface BackgroundDrawState {
   viewportWidth: number;
   viewportHeight: number;
   farT: number;
-  /** Which background to draw; defaults to the dot (blueprint grid). */
   variant?: CanvasBackgroundVariant;
   gridPattern: CanvasPattern | null;
-  /**
-   * The three depth-dot layer patterns, each with its parallax already applied to
-   * its origin. Consumed only when `variant === "depth"`.
-   */
+  /** The three depth-dot patterns with parallax applied to their origins; read only when `variant === "depth"`. */
   depthLayers?: readonly { pattern: CanvasPattern | null; originX: number; originY: number; spacing: number }[];
   /** Opacity for the whole depth-layer set, 0..1 (default 1) — the 3D assembly ramp folds it away continuously. */
   depthLayersAlpha?: number;
   /**
-   * Callback compositing the animated background's buffer for this frame; called
-   * only for non-dot variants.
-   *
-   * A callback rather than a pattern because the particle background is an
-   * afterimage accumulated in **its own offscreen buffer**, which `createPattern`
-   * cannot express — and its parallax comes from shifting that buffer by the
-   * camera delta, not from repeating a tile.
+   * Composites the animated background's buffer, for non-dot variants only. A callback, not a pattern: the
+   * particle background accumulates in its own offscreen buffer, which `createPattern` cannot express.
    */
   paintAnimated?: ((ctx: CanvasRenderingContext2D, width: number, height: number) => void) | null;
   /**
@@ -170,7 +152,6 @@ export interface BackgroundTokens {
   vignetteFarAlpha: number;
 }
 
-/** Draws the background fill, the selected background layer, and the vignette, in that order (bottom-most layer). */
 /*
  * Caches the base colour string and the vignette gradient: both depend only on the colour
  * tokens, farT and viewport, so they are rebuilt only when an input changes.
@@ -199,9 +180,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: BackgroundDrawState, 
   ctx.fillRect(0, 0, w, h);
 
   if (variant === "depth" && state.depthLayers) {
-    // Each layer fills from its own parallax origin, so all three stop together
-    // when the camera does. `depthLayersAlpha` lets the caller fold the whole
-    // set away continuously (the 3D assembly ramp) instead of cutting it.
+    // Each layer fills from its own parallax origin, so all three stop together with the camera; `depthLayersAlpha` folds the set away continuously (3D assembly ramp).
     const layersAlpha = state.depthLayersAlpha ?? 1;
     if (layersAlpha > 0.004) {
       ctx.globalAlpha = layersAlpha;
@@ -218,13 +197,9 @@ export function draw(ctx: CanvasRenderingContext2D, state: BackgroundDrawState, 
       ctx.globalAlpha = 1;
     }
   } else if (variant !== "dot" && state.paintAnimated) {
-    // Animated background — the ink ceiling was already enforced while drawing the
-    // buffer. No farT fade, for the same reason as the static constellation: its
-    // ink is constant with altitude.
+    // The ink ceiling was enforced while drawing the buffer; no farT fade, as its ink is constant with altitude.
     state.paintAnimated(ctx, w, h);
   } else if (farT < 0.98) {
-    // Dot (default) — the blueprint grid: visible only at circuit altitude, fading
-    // out with farT.
     ctx.globalAlpha = 1 - farT;
     ctx.fillStyle = gridPattern ?? bgBase;
     const ox = wrapToTile(state.originX, GRID_TILE_PX);
@@ -236,8 +211,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: BackgroundDrawState, 
     ctx.globalAlpha = 1;
   }
 
-  // transparent-center gradient — an opaque full-canvas vignette would erase
-  // the grid/star-dust layers just painted above (the prototype's own noted bug).
+  // A transparent-centre gradient: an opaque full-canvas vignette would erase the grid and dust layers painted above.
   const vignetteAlpha = computeVignetteAlpha(tokens.vignetteBaseAlpha, tokens.vignetteFarAlpha, farT);
   if (vignetteCache === null || vignetteCacheW !== w || vignetteCacheH !== h || vignetteCacheAlpha !== vignetteAlpha) {
     const vignette = ctx.createRadialGradient(

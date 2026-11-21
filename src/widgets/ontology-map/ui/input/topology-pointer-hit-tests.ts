@@ -25,11 +25,8 @@ const HOVER_AVOID_REACH_PX = 420;
 const HOVER_AVOID_MARGIN_PX = 6;
 
 /**
- * **What the edge hover card must not cover**: the discs and names the last
- * frame drew near the pointer, in client coordinates. Read at hover time,
- * from the same frame state the draw used, so the card judges the screen a
- * person sees rather than a model of it. Nodes the frame did not draw
- * (collapsed, or faded to nothing by the density gate) are not obstacles.
+ * What the edge hover card must not cover: the discs and names the last frame drew near the pointer, in client coordinates,
+ * read at hover time from the frame state the draw used. Nodes the frame did not draw (collapsed or faded by the density gate) are not obstacles.
  */
 export function collectHoverAvoidRects(
   world: TopologyWorld,
@@ -133,7 +130,7 @@ export function createPointerHitTests(ctx: PointerContext) {
       if (form === "none") continue;
       let rect: ReturnType<typeof clusterChipRect>;
       if (form === "badge" || form === "bar") {
-        // S10 defect 2 — the node-docked shape. Derived with **the same** rectangle function as the draw.
+        // The node-docked shape. Derived with **the same** rectangle function as the draw.
         if (!parentNode || !tokens) continue;
         const chipOff = chipDomeFrame?.get(parentNode.id);
         const parentScreen = worldToScreen(camera, width, height, parentNode.x + (chipOff?.dx ?? 0), parentNode.y + (chipOff?.dy ?? 0));
@@ -188,20 +185,20 @@ export function createPointerHitTests(ctx: PointerContext) {
     // semantic-zoom-hidden capability/element even at the circuit default entry.
     const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
     const zoomRatio = computeZoomRatio(camera.scale.value, overviewEntryScale);
-    // C1 A2 — focus ego tier exemption: the focused node + its 1-hop neighbors
+    // Focus ego tier exemption: the focused node + its 1-hop neighbors
     // are hittable even below the tier's own alpha threshold, matching the
     // draw pass's `effectiveNodeAlpha` exemption (`frame-draw/nodes/node-alpha.ts`) —
     // otherwise a capability that's now VISIBLE (ego-revealed) would still be
     // unclickable, defeating the entire "click a domain to expand it" flow.
     const focusedNodeId = focusedSlugRef.current;
     const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
-    // S3 — nodes not drawn this frame (density-gate collapsed plus optionally hidden
-    // ego neighbours) are excluded from hit testing, closing the S2 gap where a hidden
+    // Nodes not drawn this frame (density-gate collapsed plus optionally hidden
+    // ego neighbours) are excluded from hit testing, closing the gap where a hidden
     // ego neighbour could be clicked.
     const clusteredIds = clusteredIdsRef?.current;
-    // S10 defect 3 — the depth-based tier override during realm expansion (the same map as the draw).
+    // The depth-based tier override during realm expansion (the same map as the draw).
     const realmTierKinds = realmTierKindsRef?.current ?? null;
-    // S5 — with realm parallax active, apply the same band offsets to hit testing as
+    // With realm parallax active, apply the same band offsets to hit testing as
     // the draw. 3D view — compose the offsets and perspective factor from the **same
     // frame map** the draw rendered (so a click mid-rotation is judged in this
     // frame's coordinates).
@@ -256,7 +253,7 @@ export function createPointerHitTests(ctx: PointerContext) {
     value: EdgeHitCandidate[];
   } | null = null;
 
-  /** Shared by P3b/P3c — screen projections of edges whose ends are both hittable at the current tier. */
+  /** Screen projections of edges whose ends are both hittable at the current tier. */
   const buildEdgeCandidates = (): EdgeHitCandidate[] => {
     const world = worldRef.current;
     const dial = lastDialFrame();
@@ -312,7 +309,7 @@ export function createPointerHitTests(ctx: PointerContext) {
     const hittable = new Set(world.nodes
       .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, tierReveal, clusteredIds, realmTierKinds, lastDrawnNodeAlphas()))
       .map((n) => n.id));
-    // Hit-test inversion guard (panel3-S3) — the end nodes' body radius in screen px
+    // Hit-test inversion guard — the end nodes' body radius in screen px
     // is computed with **the same formula** as `hitTestWorld`
     // (radiusForKind × magnitudeScale × scale + 5) and passed through. It meshes
     // exactly with the node hit area so a click on or near a node body cannot leak to

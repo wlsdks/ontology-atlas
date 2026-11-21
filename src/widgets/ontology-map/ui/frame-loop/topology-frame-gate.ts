@@ -386,13 +386,8 @@ export function createFrameGate({
                 // ambient-sleep guard for the idle gate to close.
                 breathing: !reducedMotionRef.current && !ambientAsleep && world.nodes.some((n) => n.fresh),
                 cameraMoving,
-                // Deselect fade: with no live focus but a retained colorFocus still
-                // present (the colour target for the selection ring and background
-                // dim), the loop must stay awake until the focus ramp decays to 0.
-                // That decay and the colorFocus clear happen only in the frame body
-                // below, so this is counted as activity explicitly rather than
-                // relying on incidental activity like comets or the camera —
-                // otherwise the deselected ring lingers.
+                // Deselect fade: with no live focus but a retained colorFocus, the loop must stay awake until the focus ramp decays to 0; the decay and
+                // the colorFocus clear happen only in the frame body, so count it as activity explicitly rather than rely on comets or the camera.
                 focusFadeSettling: colorFocusRef.current !== null && focusedSlugRef.current === null && selectedEdgeRef.current === null,
                 // A spotlight on/off transition whose ramp has not arrived is
                 // activity, on the same contract as focusFadeSettling: the ramp steps

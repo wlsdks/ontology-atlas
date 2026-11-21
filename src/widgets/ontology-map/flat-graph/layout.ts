@@ -327,7 +327,6 @@ function scaleStarTo(members: readonly Body[], reach: ReadonlyMap<string, number
   }
 }
 
-/** How far a point is from a box; zero inside it. */
 function distanceToBox(x: number, y: number, box: Box): number {
   return Math.hypot(x - Math.min(box.maxX, Math.max(box.minX, x)), y - Math.min(box.maxY, Math.max(box.minY, y)));
 }

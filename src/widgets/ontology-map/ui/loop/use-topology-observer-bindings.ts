@@ -150,7 +150,7 @@ export function useTopologyObserverBindings({ onGrowthReplayingChangeRef,
     pathEdgeIdsRef.current = pathEdgeIds;
   }, [mapLensKind, mapLensKindRef, pathEdgeIds, pathEdgeIdsRef]);
 
-  // Phase 5 #21 — Apply new render style from the next frame when icon set changes.
+  // Apply new render style from the next frame when icon set changes.
   useEffect(() => {
     glyphStyleRef.current = glyphSet === "line" ? "line" : "fill";
   }, [glyphSet, glyphStyleRef]);

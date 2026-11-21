@@ -515,11 +515,8 @@ export function createPresentationFrameStage({ domeRuntimeRef,
             onHiddenDependenciesChangeRef.current?.(hiddenDependencies);
         }
         /*
-         * **Where each Strata tier name stands this frame** (`model/dome-view/strata/tier-names.ts`). The
-         * planes are the rings the frame just drew, not the model: during an orbit or a
-         * morph the two are different numbers. The room is the fit's own free box — the
-         * canvas minus the chrome it measured on each side — so a name never lands where
-         * the drawing was kept from.
+         * Where each Strata tier name stands this frame (`tier-names.ts`). The planes are the rings the frame just drew, not the
+         * model (they differ during an orbit or morph); the room is the fit's free box, the canvas minus the measured chrome.
          */
         {
             const runtime = domeRuntimeRef.current;

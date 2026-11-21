@@ -239,18 +239,9 @@ export function createClusterFrameStage(sources: ClusterFrameStageSources) {
         egoHiddenCount = sel.hiddenCount;
       }
     }
-    // --- High-fan-out batch reveal: expose an expanded cluster parent's
-    //     children in DOI-ordered batches. The density gate exposes ALL of an
-    //     expanded parent's gated children, so hundreds pour out at once and
-    //     the labels and nodes mash together. This post-pass instead
-    //     ① ranks the gated children (with the same domain exemption the
-    //     density gate uses) via `rankEgoNeighborsByDOI`, ② shows the top
-    //     (batches × batch size), ③ folds the rest and their subtrees back
-    //     into `frameClusteredIds`, and ④ places a "+N more" chip (a
-    //     synthetic id) at the parent's expand-badge anchor. Clicking it
-    //     increments that parent's batch count (`clusterRevealBatchesRef`,
-    //     not persisted to the URL) — the same UX as the "neighbours +N"
-    //     reveal, so it costs nothing to learn. ---
+    // High-fan-out batch reveal: the density gate exposes ALL of an expanded parent's gated children, so hundreds pour out at once. This post-pass
+    // ranks them (`rankEgoNeighborsByDOI`, same domain exemption), shows the top batches × batch size, folds the rest into `frameClusteredIds`
+    // and places a "+N more" chip (synthetic id) at the parent's badge anchor; a click raises that parent's batch count (`clusterRevealBatchesRef`, not in the URL).
     const batchAppearVisible = new Set<string>();
     const expandedNow = new Set<string>();
     const moreChips: { chipId: string; count: number; gateChipIndex: number }[] = [];

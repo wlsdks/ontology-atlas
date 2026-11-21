@@ -29,17 +29,17 @@ export interface OntologyMapEdgePanelProps {
   typeLabel: string;
   fromTitle: string;
   toTitle: string;
-  /** P6 — one line of rationale for the relation (relation_notes). null omits it. */
+  /** One line of rationale for the relation (relation_notes). null omits it. */
   why?: string | null;
   /** Shown under the sentence when no reason is recorded, so the absence is said, not implied. */
   noReasonHint?: string | null;
   /** The declaring vault document — null omits the provenance row. */
   declaredBy: { slug: string; href: string } | null;
-  /** The declaring document's change-time label (reusing the S-C1 ramp) — null omits it. */
+  /** The declaring document's change-time label — null omits it. */
   updatedAtLabel: string | null;
   /**
    * The studio (Compass Stage) edit deep link — opens the node that authored this
-   * relation as the focal one and expands that relation's edit card (Slice 6).
+   * relation as the focal one and expands that relation's edit card.
    * null means an edge the studio cannot edit (describes, domain membership and
    * the like), so the "fix this" action is not rendered at all (no dead affordance).
    */

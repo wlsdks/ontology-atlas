@@ -11,7 +11,6 @@ export interface TierPlane {
   right: number;
   top: number;
   bottom: number;
-  /** The plane's centre line. */
   y: number;
   /** A name rises and fades with its plane. */
   a: number;

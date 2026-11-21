@@ -270,15 +270,9 @@ export function useTopologyInput({
     navigationSpeedRef.current = navigationSpeed;
   });
 
-  // A JSX `onWheel` prop
-  // binds to React's delegated listener, which is registered `passive` by
-  // default — calling `preventDefault()` inside it throws "Unable to
-  // preventDefault inside passive event listener invocation" on every wheel
-  // tick and doesn't actually stop the page from scrolling under the canvas.
-  // Attaching the SAME handler natively with `{ passive: false }` fixes both.
-  // `handleWheelRef` always points at the latest closure (refreshed every
-  // render) so the effect below can stay mount-only (`[]`) without going
-  // stale — `handlers` itself isn't memoized, so it isn't a safe effect dep.
+  // A JSX `onWheel` prop binds to React's passive delegated listener, where `preventDefault()` throws on every tick and does not
+  // stop the page scrolling; the SAME handler is attached natively with `{ passive: false }`. `handleWheelRef` always points at the
+  // latest closure so the effect stays mount-only (`handlers` is not memoized, so it is no safe dep).
   const handleWheelRef = useRef(handlers.handleWheel);
 
   // `noteInput` is declared further down; the mount-only listener reaches it
@@ -325,12 +319,8 @@ export function useTopologyInput({
   }, [onEnterRealmRef, realmEnterButtonRef, realmEnterTargetRef]);
 
   /**
-   * The ambient-sleep wake signal: records when pointer or wheel input arrived.
-   *
-   * It wraps the returned handlers thinly because the input sites are scattered
-   * through `createTopologyPointerHandlers`, and planting the call at each one
-   * means a new handler silently omits it. **There is one boundary** — the
-   * surface this hook hands outward.
+   * The ambient-sleep wake signal: records when pointer or wheel input arrived. It wraps the returned handlers at one boundary,
+   * the surface this hook hands outward, because planting the call at each site in `createTopologyPointerHandlers` lets a new handler omit it.
    */
   const noteInput = useCallback(() => {
     lastInputMsRef.current = performance.now();
@@ -545,24 +535,14 @@ export function useTopologyInput({
         sy > free.y + free.height - margin;
       if (outside) {
         /*
-         * The target comes from the camera-math formula (`centerForInsets`).
-         * Writing it out here would make two copies, and with several copies
-         * the default outcome is that one is missed — the focus dive was
-         * exactly that missed copy.
-         *
-         * The free area stays only in the **"has it gone outside" test**:
-         * insets give a push distance but not a containing rectangle, so that
-         * test asks a question the insets cannot express.
+         * The target comes from the camera-math formula (`centerForInsets`); a local copy would be the one that goes missing (the focus dive
+         * was). The free area stays only in the "has it gone outside" test, which needs a containing rectangle that insets cannot express.
          */
         const centered = centerForInsets(target.x, target.y, { ...measureCanvasInsets(canvasEl, canvasRect), top: 0, bottom: 0 }, scale);
         const cameraTarget = { tx: centered.tx, ty: centered.ty, tscale: scale };
         /*
-         * ★ **Starting the tween alone is not enough** (the gate caught this).
-         * When the tween ends the spring takes over from `cameraTargetRef`, so
-         * leaving that stale **pulls the camera back to the old target** —
-         * measured: the node ended up 188 px off the free area's centre, sitting
-         * at the screen centre instead. This is why every other programmatic
-         * path (focus dive, chip expand, fit-view) sets both.
+         * Starting the tween alone is not enough: when it ends the spring takes over from `cameraTargetRef`, and a stale one pulls the
+         * camera back to the old target (measured: the node 188 px off the free area's centre). Every programmatic path sets both.
          */
         cameraTargetRef.current = cameraTarget;
         userDrivenCameraRef.current = false;

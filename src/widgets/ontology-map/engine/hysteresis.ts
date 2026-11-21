@@ -1,44 +1,11 @@
-/**
- * Click-vs-drag hysteresis threshold, applied in the `pointermove` handler:
- * ```
- * if (!pointer.dragging && Math.sqrt(ddx*ddx + ddy*ddy) > HYSTERESIS) {
- *   pointer.dragging = true;
- * }
- * ```
- * where `HYSTERESIS = 7` (px). This is the click-safe contract's mechanical
- * core (`.claude/rules/design.md` 「Click=safe contract」 — a click is a safe contract;
- * `docs/design/interaction.md`
- * §1): a pointerdown does not commit to a drag until the pointer has moved
- * more than `thresholdPx` from its down-position — below that, a
- * pointerup is a click (`setFocus`/`clearFocus`), not a pan.
- *
- * Value note: `docs/design/ontology-map.md` §2.4 resolves a design-doc-level
- * tension explicitly — `docs/design/interaction.md` §1 recommends "~10px" in
- * general, but this prototype measured and shipped `7px`
- * (`--map-hysteresis-px`), and the design doc says the prototype's
- * concrete value wins. Use `7`, not `10`, unless a later design pass changes
- * the token.
- *
- * Pure geometry — no pointer-event/DOM knowledge. `interaction/pointer-state-machine.ts`
- * calls this once per pointermove while `dragging` is still false.
- *
- * Exact expected values are pinned in `hysteresis.test.ts`.
- */
+/** A pointerdown commits to a drag only after moving more than `--map-hysteresis-px` (7 px); below that a pointerup is a click. */
 
 export interface Point {
   x: number;
   y: number;
 }
 
-/**
- * True once the pointer has moved further than `thresholdPx` (Euclidean
- * distance) from `downPoint` — the point at which a pointerdown should be
- * reclassified from "pending click" to "dragging".
- *
- * @param downPoint screen coordinates at pointerdown
- * @param currentPoint current screen coordinates (pointermove)
- * @param thresholdPx `--map-hysteresis-px` = 7
- */
+/** True once the pointer has moved further than `thresholdPx` (Euclidean) from `downPoint`. */
 export function exceedsHysteresisThreshold(
   downPoint: Point,
   currentPoint: Point,

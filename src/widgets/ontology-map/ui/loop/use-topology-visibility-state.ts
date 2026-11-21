@@ -58,32 +58,21 @@ export function useTopologyVisibilityState({
   const egoRevealBatchesRef = useRef(1);
 
   /**
-   * High-fan-out batch reveal — lit batches per expanded cluster parent
-   * (parentId → count, default 1 = the top 24 children). Each "+N more" chip
-   * click increments that parent only; not persisted to the URL. Collapsed
-   * parents are pruned in the frame's batch section. This generalises
-   * `egoRevealBatchesRef` per parent, because several parents can be expanded
-   * at once.
+   * High-fan-out batch reveal: lit batches per expanded cluster parent (parentId → count, default 1 = the top 24 children). Each "+N more"
+   * chip click increments that parent only, not persisted to the URL; collapsed parents are pruned in the frame's batch section.
    */
   const clusterRevealBatchesRef = useRef<Map<string, number>>(new Map());
 
   /**
-   * High-fan-out batch reveal — appearance ramp for children a batch just
-   * revealed (childId → 0..1), converging 0→1 with a DOI-ordered centre-out
-   * stagger (start times in `batchAppearStartRef`). `drawTopologyFrame`
-   * multiplies it into the child's draw alpha and a slight appearScale (0.6→1).
-   * It **replaces** the expand group fade (chipReveal) rather than stacking on
-   * it, so alphas never double-fade. Snaps to 1 under reduced-motion.
+   * Appearance ramp for children a batch just revealed (childId → 0..1), 0→1 with a DOI-ordered centre-out stagger (`batchAppearStartRef`);
+   * `drawTopologyFrame` multiplies it into draw alpha and a 0.6→1 appearScale. It replaces the expand group fade (chipReveal), so alphas
+   * never double-fade. Snaps to 1 under reduced motion.
    */
   const batchAppearRef = useRef<Map<string, number>>(new Map());
 
   /**
-   * High-fan-out batch reveal — absolute start time per batched child (childId →
-   * ms on the same `performance.now()` clock). Filled in DOI rank order by
-   * `scheduleRipple` (base 0 + i·rippleStaggerMs, reusing the
-   * rippleStaggerMaxMs budget cap). Before its start the ramp stays at 0, so
-   * the stagger compresses inside the total budget instead of reading as a slow
-   * enumeration.
+   * Absolute start time per batched child (ms, the `performance.now()` clock), filled in DOI rank order by `scheduleRipple`
+   * (`i·rippleStaggerMs`, capped by `rippleStaggerMaxMs`): the ramp stays 0 until its start, so the stagger compresses into the budget.
    */
   const batchAppearStartRef = useRef<Map<string, number>>(new Map());
 
@@ -103,43 +92,21 @@ export function useTopologyVisibilityState({
   const focusRampRef = useRef<Map<string, number>>(new Map());
 
   /**
-   * Cluster chip expand/collapse reveal ramp (parentId → 0..1), converging
-   * exponentially at `--map-cluster-reveal-tau` toward 1 when expanded
-   * and 0 when collapsed. Stepped every frame by the loop (reusing
-   * focus-state's `stepEmphasis`); `drawTopologyFrame` multiplies it into the
-   * expanded disc children's draw alpha and into `drawClusterChip`'s pill/badge
-   * fade-in. Snaps under reduced-motion.
+   * Cluster chip expand/collapse reveal ramp (parentId → 0..1), converging at `--map-cluster-reveal-tau` toward 1 expanded and 0 collapsed,
+   * stepped every frame (`stepEmphasis`); `drawTopologyFrame` multiplies it into the expanded children's alpha and the chip's fade. Snaps under reduced motion.
    */
   const chipRevealRef = useRef<Map<string, number>>(new Map());
 
   /**
-   * The fifth tier-piercing channel — a 0..1 ramp for **children a chip expand
-   * revealed**, in the same grammar as edge selection, footprints, ego and
-   * spotlight.
-   *
-   * Uses `clusterRevealTau` (0.17), the value the chip's own pill/badge fade
-   * uses, because the input producing this channel is a chip click. The first
-   * attempt borrowed `egoRevealRiseTau` (0.22), the rhythm of a *different*
-   * event (an ego click) — see `.claude/rules/design.md` "One input = one event"
-   * (one input, one event).
-   *
-   * ⚠️ In the draw this channel **replaces** the group fade
-   * (`frame-draw/nodes/paint-nodes.ts`'s `revealMul`); applying both makes alpha the
-   * product of two exponentials. Measured: the chip reached 90% at 391 ms while
-   * its children took 621 ms — a 230 ms gap, past the 120 ms threshold. That
-   * file guards `batchAppear` against double fades; this channel was added
-   * later and missed the guard.
+   * The fifth tier-piercing channel: a 0..1 ramp for children a chip expand revealed. It uses `clusterRevealTau` (0.17), the chip's own fade,
+   * because the input is a chip click (`design.md` "One input = one event"). In the draw it replaces the group fade (`paint-nodes.ts` `revealMul`),
+   * since both would multiply two exponentials: measured, the chip hit 90% at 391 ms and its children at 621 ms, past the 120 ms threshold.
    */
   const expandRevealRef = useRef<Map<string, number>>(new Map());
 
   /**
-   * New-node appearance ramp (nodeId → 0..1). On a world rebuild the id set is
-   * diffed and only **new** nodes are seeded at 0 (existing ones stay at 1, so
-   * nothing regresses); the frame loop converges them to 1.
-   * `drawTopologyFrame` multiplies it into effRadius (a slight 0.6→1 scale) and
-   * globalAlpha so a node swells into view instead of popping. Snaps to 1 under
-   * reduced-motion. The first build has no previous set, so everything is
-   * seeded at 1 and this cannot collide with the initial-load choreography.
+   * New-node appearance ramp (nodeId → 0..1): on a world rebuild only new nodes are seeded at 0 (existing stay 1) and the frame loop converges them to 1;
+   * `drawTopologyFrame` multiplies it into effRadius (0.6→1) and globalAlpha. Snaps to 1 under reduced motion; the first build seeds everything at 1.
    */
   const appearRef = useRef<Map<string, number>>(new Map());
 
@@ -192,11 +159,8 @@ export function useTopologyVisibilityState({
   const labelPresentRef = useRef<Map<string, number>>(new Map());
 
   /**
-   * Click-focus signature — the focus classification the COLOR ramp reads from,
-   * held for the ~160ms fade after a deselect so the dim/ego target the colors
-   * ease FROM persists instead of snapping to normal. Mirrors the live
-   * focus while a selection is active, then lingers until the retained subject's
-   * ramp decays to ~0 (see the per-frame update after `stepTopologyPhysics`).
+   * Click-focus signature: the classification the COLOR ramp reads, held for the ~160 ms fade after a deselect so the dim/ego target the colours ease
+   * from persists instead of snapping to normal; it lingers until the retained subject's ramp decays to ~0.
    */
   const colorFocusRef = useRef<{ focusedNodeId: string | null; selectedEdge: { sourceId: string; targetId: string; relationType?: string; } | null; } | null>(null);
 

@@ -9,7 +9,7 @@ export interface OntologyMapDetailPanelLabels {
   /** A partner domain row's count, spoken. */
   domainLinks: (count: number) => string;
   close: string;
-  /** Opens the A1 full-detail datasheet, the details-on-demand step beyond this compact panel. */
+  /** Opens the full-detail datasheet, the details-on-demand step beyond this compact panel. */
   openFullDetail: string;
   /** The footer's controls as one group. */
   actionsGroupLabel: string;
@@ -74,11 +74,8 @@ export interface OntologyMapDetailPanelProps {
   /** Absent reads as no review mark: no judgment line and no review date. */
   review?: ConceptReview;
   /**
-   * Set when this node is a `domain` or `project` whose containment list changed after
-   * its description was last written — the caller derives it from the summary clock scan
-   * over `vault_node_revisions`. Null for every other node, and null everywhere in the
-   * browser, where there is no Git history to read. Advisory: it mounts one plain row
-   * and offers no fix, because the body is a human judgement.
+   * Set when a `domain` or `project` containment list changed after its description was last written (derived from the summary
+   * clock scan over `vault_node_revisions`); null for other nodes and in the browser, which has no Git history. Advisory: one plain row, no fix, as the body is a human judgement.
    */
   summaryStaleness?: { behindByDays: number } | null;
   summaryHistoryUnavailable?: boolean;
@@ -91,7 +88,7 @@ export interface OntologyMapDetailPanelProps {
   /** Preformatted "when did it change" label; null when the node has no backing doc date. */
   updatedAtLabel?: string | null;
   /**
-   * rank7 — expected_mtime conflict badge. `true` only on a REAL mismatch
+   * expected_mtime conflict badge. `true` only on a REAL mismatch
    * between the freshness this panel opened with and the freshness now
    * known (`hasNodeMtimeConflict`) — never shown speculatively.
    */
@@ -99,12 +96,12 @@ export interface OntologyMapDetailPanelProps {
   /** Pre-built agent handoff payload; the view owns clipboard + toast. */
   handoffText: string;
   /**
-   * The W2-A "Document" action tile's target — the `buildDocsVaultHref`
+   * The "Document" action tile's target — the `buildDocsVaultHref`
    * result for this node's backing vault doc, or `null` when the node has no
    * `sourceSlug` (the tile renders disabled rather than linking to a guessed URL).
    */
   documentHref: string | null;
-  /** The W2-A "Edit Relations" action tile's target — the contextual
+  /** The "Edit Relations" action tile's target — the contextual
    * editor deep link (`/topology/?p=<id>&workbench=edit`). */
   meaningEditHref: string;
   labels: OntologyMapDetailPanelLabels;
@@ -131,11 +128,8 @@ export interface OntologyMapDetailPanelProps {
   deleteConcept?: { referrers: readonly { slug: string; title: string }[]; onDelete: () => Promise<void> };
   onCreateLinked?: () => void;
   /**
-   * S7 Seam — "Verbally Instruct Agent". The sentence is not constructed here:
-   * the first-word generator (a function like `buildFirstWords`) constructs it
-   * by looking at this concept's blanks, and this panel only reports **who clicked**. If two entry points produce different sentences,
-   * they diverge immediately. In environments without a bridge (web), it is not injected and handoff copy
-   * becomes the primary action. Do not draw a door that won't open.
+   * "Verbally Instruct Agent": the first-word generator builds the sentence from this concept's blanks and this panel only reports who
+   * clicked, so two entry points cannot diverge. Without a bridge (web) it is not injected and handoff copy becomes the primary action.
    */
   onAskAgent?: () => void;
   /**
@@ -150,12 +144,12 @@ export interface OntologyMapDetailPanelProps {
   /** Stable keyboard destination when related-node navigation replaces this panel. */
   closeButtonRef?: RefObject<HTMLButtonElement | null>;
   /**
-   * S4 "Expand Domain" secondary discovery path — allows expanding the domain from the datasheet
+   * "Expand Domain" secondary discovery path — allows expanding the domain from the datasheet
    * in addition to the orbit button. Injected only for container nodes (with children) when outside a domain
    * (otherwise omit → button hidden). One action shared with the orbit button.
    */
   onEnterRealm?: () => void;
-  /** Opens the A1 full-detail datasheet for this node — the details-on-demand
+  /** Opens the full-detail datasheet for this node — the details-on-demand
    * opt-in (`.claude/rules/design.md`, "full-screen drawer is opt-in" — a full-screen
    * drawer is opt-in). Omitted hides the link (read-only embeds, for instance). */
   onOpenFullDetail?: () => void;
@@ -199,16 +193,9 @@ export interface OntologyMapDetailPanelProps {
     stillWorks: string;
   } | null;
   /**
-   * "Is This the Folder?" — this is where connecting drops
-   * from two steps (press, then choose a folder) to one. Measuring the vault root
-   * once tells the app which git repository encloses it, so there is no reason to
-   * make a person dig through a folder tree.
-   *
-   * `reason` is one line in human words about **why this folder**, and its basis is
-   * measured rather than invented (whether it is a git repository, plus how many
-   * of the declared paths actually exist there). With no guess, or low confidence,
-   * the caller simply does not pass this prop — and the screen then draws the
-   * folder picker alone, as before. **No grey button.**
+   * "Is This the Folder?": measuring the vault root tells the app which git repository encloses it, so connecting drops from two steps to one.
+   * `reason` is one human line on why this folder, from measured facts (a git repository, how many declared paths exist there). Without a
+   * confident guess the prop is not passed and only the picker draws.
    */
   projectSourceProposal?: {
     question: string;

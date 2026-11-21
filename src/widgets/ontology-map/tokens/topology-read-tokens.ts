@@ -6,10 +6,7 @@
 
 import { getOntologyMapTokens, OntologyMapTokenError, type OntologyMapTokens } from "./read-map-tokens";
 
-// Re-review friction E — the same drift message is not printed every frame. An early
-// read right after a remount, before CSS applies, was demonstrated to produce 1,200+
-// messages of spam per session. One log per distinct message — a new kind of drift is
-// still visible.
+// One log per distinct drift message: an early read right after a remount, before CSS applies, produced 1,200+ messages per session.
 const loggedDriftMessages = new Set<string>();
 
 export function readOntologyMapTokensOrNull(): OntologyMapTokens | null {

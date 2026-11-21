@@ -1,12 +1,4 @@
-/**
- * Camera-space conversions — `worldToScreen`/`screenToWorld`/`fitWorldTarget`/
- * `hitTestWorld`.
- *
- * Camera convention (`engine/spring.ts`/`engine/momentum.ts` JSDoc):
- * `camera.x`/`camera.y` are the WORLD point the camera is centered on and
- * `camera.scale` the world-to-screen zoom factor — the prototype's own
- * convention, which the engine layer expects.
- */
+/** Camera-space conversions (`worldToScreen`, `screenToWorld`, `fitWorldTarget`, `hitTestWorld`). `camera.x`/`camera.y` are the WORLD point the camera is centered on, `camera.scale` the world-to-screen zoom factor. */
 
 import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget, type PanBounds } from "../../engine/camera";
 import { LABEL_OFFSET } from "../../render/labels";
@@ -51,7 +43,7 @@ export function screenToWorld(camera: CameraAxes, viewportWidth: number, viewpor
   };
 }
 
-/** Ported from the prototype's `fitTarget()` — centers `bounds` in the viewport, clamped to `[scaleMin, maxScale]`. */
+/** Centers `bounds` in the viewport, clamped to `[scaleMin, maxScale]`. */
 export function fitWorldTarget(
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
   viewportWidth: number,
@@ -71,15 +63,10 @@ export function fitWorldTarget(
   };
 }
 
-/**
- * The courtesy ring outside a node's painted disc, in screen px. An element draws
- * at 7 px world radius and can be under 4 px on screen in 3D, which is not a
- * pressable target on its own; this is what makes it one. It is a **slack ring,
- * not a second disc** — `hitTestWorld` ranks painted ink above it (see there).
- */
+/** The courtesy ring outside a node's painted disc (screen px): an element draws at 7 px world radius and can be under 4 px in 3D, not pressable alone. A slack ring, not a second disc: `hitTestWorld` ranks painted ink above it. */
 export const HIT_TOUCH_SLACK_PX = 5;
 
-/** Ported from the prototype's `hitTest()` — the node under `(screenX, screenY)`, `null` if none is within its padded radius. */
+/** The node under `(screenX, screenY)`, `null` if none is within its padded radius. */
 export function hitTestWorld(
   world: TopologyWorld,
   camera: CameraAxes,
@@ -90,18 +77,9 @@ export function hitTestWorld(
   screenY: number,
   /** Optional filter — skips nodes that aren't currently hittable (e.g. semantic-zoom-hidden tiers). Defaults to "all hittable". */
   isHittable?: (node: WorldNode) => boolean,
-  /**
-   * S5 — optional per-node render offset (world units). The draw pass shifts
-   * deep realm nodes by the depth-parallax offset; passing the SAME offset here
-   * keeps the clickable disc under where the node is actually drawn. Defaults to
-   * no offset (the common case).
-   */
+  /** Optional per-node render offset (world units): the draw shifts deep realm nodes by the depth-parallax offset, so the clickable disc must follow. Defaults to none. */
   renderOffsetForNode?: (node: WorldNode) => Point,
-  /**
-   * 3D view — multiply the hit disc by the same perspective factor
-   * (`DomeNodeFrame.s`) the draw multiplied the node radius by. Omitted means 1
-   * (the previous 2D behaviour unchanged).
-   */
+  /** 3D: multiplies the hit disc by the perspective factor (`DomeNodeFrame.s`) the draw applied to the node radius. Omitted means 1. */
   radiusScaleForNode?: (node: WorldNode) => number,
   /**
    * 3D view: the node's normalised depth (0 near, 1 far, `DomeNodeFrame.u`). When given, the
@@ -158,21 +136,14 @@ export function hitTestWorld(
  * above the far-high ratio (0.92) so `farT` lands at 0 on load. It anchors `overviewScaleRef`;
  * zooming out still crosses `farHigh` to `farLow`.
  */
-/**
- * Fixed-chrome safe insets (px) — the left ReaderLens panel, right popover rail,
- * top utility lane, bottom hint. Optional on the token param so the pure
- * camera-math tests (which pass a token literal without insets) still type-check
- * and behave as a zero-inset full-viewport fit.
- */
+/** Fixed-chrome safe insets (px): left ReaderLens panel, right popover rail, top utility lane, bottom hint. Optional so pure camera-math tests behave as a zero-inset fit. */
 export type SafeInsetTokens = Partial<
   Pick<OntologyMapTokens, "safeInsetLeft" | "safeInsetRight" | "safeInsetTop" | "safeInsetBottom">
 > & {
   /**
-   * What a panel measured on screen actually covers, in canvas pixels — the
-   * part of the side inset that is real occlusion rather than a preference.
-   * `MAX_FIT_CHROME_SHARE` never shrinks the fit below it, so narrowing the
-   * reservation can never slide the graph under an open panel. Absent means
-   * "not measured": then the whole inset is treated as preference.
+   * What a panel measured on screen actually covers, in canvas pixels: the real occlusion within the side inset.
+   * `MAX_FIT_CHROME_SHARE` never shrinks the fit below it, so narrowing the reservation cannot slide the graph under
+   * an open panel. Absent means "not measured": the whole inset is then a preference.
    */
   obstacleInsetLeft?: number;
   obstacleInsetRight?: number;
@@ -233,20 +204,9 @@ interface SafeInsets {
 }
 
 /**
- * **Which camera puts something at the centre of the space left by the panels** —
- * the single place this formula lives.
- *
- * `worldToScreen` draws against the screen's **raw centre**, so landing something
- * at the centre of the visible area means pushing the camera back by half the
- * difference between the left and right insets. **Dividing by the zoom factor** is
- * the point — the same screen offset is a shorter world distance the further in
- * you are zoomed.
- *
- * ⚠️ This formula was once written out in **four** places (the overview, the pan
- * leash, and for one day the caller's "free-area" shift as well). Of
- * those, the focus dive **did not have it at all**, so choosing a node could put it
- * behind the panel that explains it. With several copies, the one that goes missing
- * is the default — so they were gathered into one.
+ * The camera that puts something at the centre of the space left by the panels, the single home of this formula:
+ * `worldToScreen` draws against the raw screen centre, so the camera moves back by half the difference of the left and
+ * right insets, divided by the zoom factor (a screen offset is a shorter world distance the further in).
  */
 export function centerForInsets(
   cx: number,
@@ -303,11 +263,8 @@ function readSafeInsets(
  * derived here so the anchor and the panel-aware overview target stay in sync.
  */
 /**
- * #11 — a graph with this many nodes or fewer counts as "small" for the
- * overview-fit ceiling. A just-onboarded vault (project + a domain + one
- * created node) has a minuscule spine bbox that the plain fit blows up to
- * `cameraScaleMax`, so a single hexagon fills half the screen. Below this
- * threshold the fit is capped at `cameraSmallGraphScaleMax` instead.
+ * A graph with this many nodes or fewer counts as "small" for the overview-fit ceiling: a just-onboarded vault has a
+ * minuscule spine bbox that the plain fit blows up to `cameraScaleMax`, so it is capped at `cameraSmallGraphScaleMax`.
  */
 const SMALL_GRAPH_NODE_MAX = 5;
 
@@ -346,9 +303,8 @@ export function computeOverviewFitScale(
   viewportHeight: number,
   tokens: Pick<OntologyMapTokens, "cameraScaleMax" | "cameraScaleMin" | "cameraSmallGraphScaleMax"> & SafeInsetTokens,
   /**
-   * #11 — total node count. When ≤ `SMALL_GRAPH_NODE_MAX`, the fit is capped at
-   * `cameraSmallGraphScaleMax` so a tiny vault doesn't over-zoom. Omitted (the
-   * pure camera-math tests) → no small-graph clamp, previous behavior exactly.
+   * Total node count. When ≤ `SMALL_GRAPH_NODE_MAX`, the fit is capped at
+   * `cameraSmallGraphScaleMax` so a tiny vault doesn't over-zoom. Omitted: no small-graph clamp.
    */
   nodeCount?: number,
   fit?: OverviewFitOptions,
@@ -362,20 +318,16 @@ export function computeOverviewFitScale(
 }
 
 /**
- * PANEL-AWARE overview fit (the Design Guardian's camera rejection): the fit used
- * to center on the full viewport, so the left third of the graph hid behind the
- * ReaderLens panel. Now the zoom is computed against the VISIBLE area (viewport
- * minus the safe insets), and the camera center is shifted so the graph's own
- * center lands at the visible-area center rather than the raw screen center. With
- * zero insets this reduces exactly to the previous behavior
- * (`topology-camera-math.test.ts`).
+ * Panel-aware overview fit: the zoom is computed against the VISIBLE area (viewport minus the safe
+ * insets) and the camera is shifted so the graph's own center lands at that area's center, not the
+ * raw screen center, so no part of the graph hides behind a panel. Zero insets is the plain fit.
  */
 export function computeOverviewCameraTarget(
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
   viewportWidth: number,
   viewportHeight: number,
   tokens: Pick<OntologyMapTokens, "cameraScaleMax" | "cameraScaleMin" | "cameraSmallGraphScaleMax" | "overviewEntryRatio"> & SafeInsetTokens,
-  /** #11 — total node count, forwarded to the small-graph fit clamp. */
+  /** Total node count, forwarded to the small-graph fit clamp. */
   nodeCount?: number,
   fit?: OverviewFitOptions,
 ): CameraTarget {
@@ -585,7 +537,7 @@ export function computeFocusCameraTarget(
   /** `overviewScale × overviewEntryRatio` at the current viewport — the zoom-ratio's "1.0" anchor (`model/visibility/tier-visibility.ts#computeZoomRatio`). */
   overviewEntryScale: number,
   /**
-   * S8 defect 4 — while a realm is expanded, that realm's member set. Restricting
+   * While a realm is expanded, that realm's member set. Restricting
    * the ego bbox to it stops a fling neighbour outside the warding circle from
    * inflating the bbox and throwing the camera off screen. Omitted or null means
    * the global ego (the existing contract unchanged).
@@ -680,16 +632,9 @@ export function computeFocusCameraTarget(
 }
 
 /**
- * The camera target for a 3D dome selection reframe — **the same contract** as the
- * ego-fit branch of `computeFocusCameraTarget` (`focusBboxMargin` multiplicative
- * padding, the same safe-inset grammar, the same zoom-in ceiling), with different
- * inputs: the bbox is not the 2D ego but the **dome ego bbox projected at the
- * target pose** (`model/dome-view/camera/projection.ts#domeEgoWorldBounds`), and the zoom-out floor
- * is not 2D's `overviewEntryScale` but the **dome fit zoom** (`scaleFloor`) —
- * because the dome's projected bbox is wider than the 2D spine, so its fit zoom
- * lives below the 2D floor (see the `DomeRuntime.fitScale` JSDoc). The insets are
- * re-read here so `readSafeInsets`'s label-allowance rule is not reimplemented at
- * every call site.
+ * The camera target for a 3D dome selection reframe, the same contract as the ego-fit branch of `computeFocusCameraTarget`
+ * (`focusBboxMargin` padding, safe insets, zoom-in ceiling) with other inputs: the dome ego bbox projected at the target pose
+ * (`domeEgoWorldBounds`) and the dome fit zoom as the zoom-out floor (`scaleFloor`; see `DomeRuntime.fitScale`).
  */
 export function computeDomeFocusCameraTarget(
   egoBounds: { minX: number; minY: number; maxX: number; maxY: number },
@@ -714,12 +659,8 @@ export function computeDomeFocusCameraTarget(
   const focusZoomInCeiling = overviewEntryScale * (tokens.focusMaxZoomRatio ?? Number.POSITIVE_INFINITY);
   const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(scaleFloor ?? 0, fitScale));
   const target = { ...centerForInsets(centerX, centerY, insets, scale), tscale: scale };
-  // Keep the target **inside** the focus pan leash's envelope
-  // (`cameraFocusPanMargin`) — the dome's ego neighbours project asymmetrically onto
-  // the tiers above rather than around the subject, so the bbox centre can fall
-  // outside the leash; the elastic clamp then pulls the camera back after the tween
-  // arrives and «sliding after landing» becomes visible (measured 38 units). A target
-  // inside the envelope makes arrival mean a stop.
+  // Keep the target inside the focus pan leash's envelope (`cameraFocusPanMargin`): the dome's ego neighbours project asymmetrically, so the bbox centre can
+  // fall outside the leash and the elastic clamp would pull the camera back after the tween arrives (measured 38 units, a visible slide after landing).
   if (focusAnchor && tokens.cameraFocusPanMargin > 0) {
     const m = tokens.cameraFocusPanMargin;
     target.tx = Math.min(focusAnchor.x + m, Math.max(focusAnchor.x - m, target.tx));
@@ -729,13 +670,9 @@ export function computeDomeFocusCameraTarget(
 }
 
 /**
- * S2 part 5B — the camera dive target for an expanded cluster disc (the parent plus
- * its direct children's fan). The same contract as the ego-fit branch of
- * `computeFocusCameraTarget` (margin-ratio padding plus an
- * `[overviewEntryScale, effectiveMax]` clamp), with contains children as the subject
- * instead of ego neighbours. Expanding a chip spring-dives to this target so the
- * children reveal naturally through tier alpha. `null` when `parentId` does not
- * resolve or has no children (the camera does not move).
+ * The camera dive target for an expanded cluster disc (the parent plus its direct children's fan): the ego-fit contract of
+ * `computeFocusCameraTarget` with contains children as the subject, so the children reveal through tier alpha. `null` when
+ * `parentId` does not resolve or has no children (the camera does not move).
  */
 export function computeClusterFitTarget(
   world: TopologyWorld,
@@ -745,10 +682,9 @@ export function computeClusterFitTarget(
   parentId: string,
   overviewEntryScale: number,
   /**
-   * High-fanout batch reveal (2026-07) — the whitelist of nodes to include in the
-   * framing (the parent plus this batch's children). Given, the disc bbox narrows to
-   * just this set so it holds "a few, large" rather than pulling far out to take
-   * every child. null or omitted means the whole disc (zero regression).
+   * High-fanout batch reveal: the nodes to include in the framing (the parent plus this batch's
+   * children). Given, the disc bbox narrows to this set so it holds "a few, large" rather than
+   * pulling far out to take every child. null or omitted means the whole disc.
    */
   restrictIds?: ReadonlySet<string> | null,
 ): CameraTarget | null {

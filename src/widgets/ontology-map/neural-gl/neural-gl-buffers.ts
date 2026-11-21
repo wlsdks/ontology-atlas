@@ -33,7 +33,6 @@ export const DEPTH_FLOOR = 0.8;
  */
 const OCCLUDING_SHARE = 0.5;
 
-/** A cell's brightness at depth `u` (0 near, 1 far). */
 export const depthShade = (u: number) => 1 - (1 - DEPTH_FLOOR) * Math.min(1, Math.max(0, u));
 
 /** One instanced draw: `count` records of its stride in `data`; `data` is replaced only to grow. */
@@ -56,7 +55,6 @@ export interface NeuralGlBuffers {
   restDots: NeuralGlBatch;
   litAxons: NeuralGlBatch;
   litSpots: NeuralGlBatch;
-  /** What the last fill drew. */
   cellCount: number;
   axonCount: number;
 }

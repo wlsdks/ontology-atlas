@@ -62,29 +62,17 @@ export function useTopologyWorldState() {
   const hoverReleasedRef = useRef<string | null>(null);
 
   /**
-   * Coordinate snapshot from the **start** of a sim frame (in node-array
-   * order). Comparing against it at the end of the frame yields the nodes that
-   * really moved, and narrows the derived geometry update to those
-   * (`recomputeWorldGeometry(world, tokens, movedIds)`).
-   *
-   * Measured rather than inferred from "which set is about to move" because
-   * three separate things write coordinates in one frame — force application,
-   * neighbour tug, and separation relaxation — and their reaches differ.
-   * Inference eventually misses one, and the symptom is a visible defect:
-   * edges detached from their nodes.
+   * Coordinate snapshot from the start of a sim frame (node-array order): comparing at the end of the frame yields the nodes that really moved and narrows the derived geometry
+   * update to them (`recomputeWorldGeometry(world, tokens, movedIds)`). Measured, not inferred: force application, neighbour tug and separation relaxation write coordinates in one
+   * frame and inference eventually misses one, detaching edges from nodes.
    */
   const geomPrevXRef = useRef<Float64Array | null>(null);
 
   const geomPrevYRef = useRef<Float64Array | null>(null);
 
   /**
-   * Nodes that **separation relaxation displaced** last frame and that sit
-   * outside the force-applied set.
-   *
-   * This frame's `applyForcePositions` reverting their coordinates to the sim
-   * values is the pre-existing behaviour, so the narrowed write-back has to
-   * include them to preserve it. (Whether that revert is correct at all is a
-   * separate question — nothing here changes the behaviour.)
+   * Nodes that separation relaxation displaced last frame and that sit outside the force-applied set: this frame's `applyForcePositions` reverts their coordinates to the sim values,
+   * so the narrowed write-back must include them to keep that behaviour.
    */
   const sepDisplacedIdsRef = useRef<Set<string>>(new Set());
 

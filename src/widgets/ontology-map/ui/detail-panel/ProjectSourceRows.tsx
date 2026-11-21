@@ -5,13 +5,8 @@ import type { ProjectSourceStatus } from "@/shared/lib/project-source/project-so
 import { useDelayedVisible } from "@/shared/lib/render-timing/use-presence";
 
 /**
- * The pending status and Check record placeholder have the answer's heights, so the
- * answer changes words, not layout.
- *
- * The line says so only once the read outlives `SKELETON_DELAY_MS`: an unbound project's
- * record answers in a few milliseconds, and a "reading" line flashed for one frame would
- * announce a wait that never happened. Until then the rows keep their height and show
- * nothing. Check record has no content yet, so its placeholder only holds its height.
+ * The pending status and Check record placeholder have the answer's heights, so the answer changes words, not layout. The line
+ * says "reading" only once the read outlives `SKELETON_DELAY_MS`: an unbound project answers in milliseconds, and a one-frame flash would announce a wait that never happened.
  */
 export function ProjectSourcePendingRows({ label }: { label?: string }) {
   const announced = useDelayedVisible(true);

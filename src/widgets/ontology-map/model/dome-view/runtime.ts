@@ -108,7 +108,6 @@ interface DomePoseTween {
   startPitch: number;
   targetYaw: number;
   targetPitch: number;
-  /** The camera tween's clock. */
   startMs: number;
   durationMs: number;
   /** So pose and camera decelerate on one curve. */
