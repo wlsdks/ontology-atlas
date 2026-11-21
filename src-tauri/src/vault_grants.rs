@@ -72,7 +72,8 @@ impl Registry {
 
     /// Like `grant`, but a root the person had not already chosen is not persisted.
     fn grant_for_launch(&mut self, root: PathBuf, repo_root: Option<PathBuf>) {
-        let already_chosen = self.vaults.contains(&root);
+        // An earlier launch grant of the same root is in `vaults` too; it is not a choice.
+        let already_chosen = self.vaults.contains(&root) && !self.launch_only.contains(&root);
         self.grant(root.clone(), repo_root);
         if !already_chosen {
             self.launch_only.insert(root);
@@ -181,9 +182,9 @@ pub(crate) fn grant_source_root(root: &Path) {
 }
 
 /// Grants, for this launch only, a folder a verification run names in its launch
-/// environment. The same roots the picker refuses are refused here, so the
-/// environment cannot grant the home folder or a filesystem root. Returns the
-/// canonical root, or why it was refused.
+/// environment. The picker's refusals of named positions (home, a filesystem root,
+/// system folders, app bundles) apply to the canonical path, so a symlink or `..` to
+/// one is refused too. Returns the canonical root, or why it was refused.
 pub(crate) fn grant_launch_vault_root(root: &Path) -> Result<PathBuf, String> {
     let canonical = std::fs::canonicalize(root).map_err(|error| error.to_string())?;
     if !canonical.is_dir() {
@@ -368,6 +369,8 @@ mod tests {
         };
         reg.grant(chosen.clone(), None);
         reg.grant_for_launch(fixture.clone(), None);
+        // A verify list may name one folder twice, or by two spellings of one path.
+        reg.grant_for_launch(fixture.clone(), None);
         assert!(
             reg.is_vault_granted(&fixture),
             "the fixture opens this launch"
@@ -405,6 +408,19 @@ mod tests {
             .map(PathBuf::from)
             .unwrap();
         let refusal = grant_launch_vault_root(&home).unwrap_err();
+        assert!(refusal.contains("home-directory"), "{refusal}");
+        assert!(!is_vault_granted(&std::fs::canonicalize(&home).unwrap()));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_launch_grant_judges_a_link_to_the_home_folder_where_it_leads() {
+        let _scope = EnforcedScope::granting(&[]);
+        let home = PathBuf::from(std::env::var_os("HOME").unwrap());
+        let base = tmp("launch-link");
+        let link = base.join("looks-like-a-fixture");
+        std::os::unix::fs::symlink(&home, &link).unwrap();
+        let refusal = grant_launch_vault_root(&link).unwrap_err();
         assert!(refusal.contains("home-directory"), "{refusal}");
         assert!(!is_vault_granted(&std::fs::canonicalize(&home).unwrap()));
     }
