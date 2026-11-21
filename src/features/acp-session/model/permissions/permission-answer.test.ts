@@ -48,6 +48,31 @@ describe('a request the app may answer without showing a card', () => {
     expect(autoAllowOption(request({ filePath: '/elsewhere/a.md' }), 'read', 'ask')).toBeNull();
   });
 
+  it.each([
+    ['a Windows drive path', 'C:\\Users\\x\\a.md'],
+    ['a drive-relative path', 'C:a.md'],
+    ['a UNC share', '\\\\server\\share\\a.md'],
+    ['a leading backslash', '\\a.md'],
+    ['a home path', '~/a.md'],
+    ['another user\'s home path', '~root/a.md'],
+    ['a path with a leading space', ' /etc/passwd'],
+    ['a path with a trailing space', 'a.md '],
+    ['a path with a newline', 'a.md\n/etc/passwd'],
+    ['a dot-dot segment between forward slashes', 'a/../b.md'],
+    ['a dot-dot segment between backslashes', 'a\\..\\b.md'],
+    ['a lone dot-dot', '..'],
+    ['an empty path', ''],
+  ])('asks about an Atlas read of %s when Rust has not judged it inside', (_name, filePath) => {
+    expect(autoAllowOption(request({ filePath }), 'read', 'ask')).toBeNull();
+  });
+
+  it.each(['sources/a.md', 'notes/v1.2.md', 'a b/c.md', 'a..b/c.md', 'capabilities\\refund.md'])(
+    'allows an Atlas read of the plain relative path %s',
+    (filePath) => {
+      expect(autoAllowOption(request({ filePath }), 'read', 'ask')).toEqual(OPTIONS[1]);
+    },
+  );
+
   it('never auto-allows an Atlas write', () => {
     expect(autoAllowOption(request({ filePath: null }), 'write', 'allow-inside-vault')).toBeNull();
     expect(autoAllowOption(request({ toolKind: 'read' }), 'write', 'allow-inside-vault')).toBeNull();

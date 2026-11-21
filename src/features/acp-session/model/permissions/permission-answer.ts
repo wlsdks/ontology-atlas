@@ -15,6 +15,20 @@ export function cancelledOutcome(): PermissionOutcome {
   return { outcome: { outcome: 'cancelled' } };
 }
 
+const CONTROL_CHARACTER = /[\u0000-\u001f\u007f]/;
+
+/**
+ * Our server names files vault-relative and Rust judges absolute paths only, so a relative path is
+ * inside by construction. Anything that could point elsewhere on any platform is not relative: a
+ * leading separator or UNC share, a drive letter, `~`, padding whitespace or control characters, and
+ * a `..` segment in either separator.
+ */
+function isVaultRelativePath(filePath: string): boolean {
+  if (filePath === '' || filePath !== filePath.trim() || CONTROL_CHARACTER.test(filePath)) return false;
+  if (/^[\\/]/.test(filePath) || filePath.startsWith('~') || /^[A-Za-z]:/.test(filePath)) return false;
+  return !filePath.split(/[\\/]/).includes('..');
+}
+
 /**
  * The option to select without asking the person, or null when the card must be shown. Never
  * `allow_always`: that grants the directory. Atlas reads do not block the conversation; a write
@@ -30,16 +44,7 @@ export function autoAllowOption(
   if (!allowOnce) return null;
   // Reads keep their auto-allow inside dot folders; only auto-approved writes need the stricter verdict.
   const insideVault = verdict === 'allow-inside-vault' || verdict === 'allow-inside-vault-hidden';
-  /*
-   * Our server names files vault-relative and Rust judges absolute paths only: a relative path without
-   * `..` on an Atlas read is inside by construction.
-   */
-  const vaultRelativeAtlasPath =
-    atlasMode !== null &&
-    request.filePath !== null &&
-    !request.filePath.startsWith('/') &&
-    !request.filePath.split(/[\\/]/).includes('..');
-  if (atlasMode === 'read' && (request.filePath === null || vaultRelativeAtlasPath || insideVault)) {
+  if (atlasMode === 'read' && (request.filePath === null || isVaultRelativePath(request.filePath) || insideVault)) {
     return allowOnce;
   }
   /*
