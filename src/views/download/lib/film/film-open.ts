@@ -1,7 +1,8 @@
 import type { FilmVault } from './film-vault';
 import { reachOf } from './film-vault';
-import type { FilmMapLayout, Measure } from './film-map-layout';
-import { dotOffsets } from './film-map-layout';
+import type { FilmMapLayout } from './film-map-shapes';
+import type { Measure } from './film-map-labels';
+import { dotOffsets } from './film-local-cluster';
 import { circleIntoRect, inside, overlaps, quadAt, resample, type Pt, type Rect } from './film-geometry';
 
 export type OpenRole = 'rule' | 'kind' | 'title' | 'domain' | 'elements' | 'dependencies';
@@ -164,9 +165,9 @@ export function layoutOpen(input: OpenInput): OpenLayout {
   let namedEnd: OpenLayout['namedEnd'] = null;
   const leaving: LeavingLine[] = fanned.map((f, i) => {
     const named = i === namedIndex;
-    const len = named ? (S.wide ? 300 * S.s : 120) : reachToBox(f.dir);
+    const length = named ? (S.wide ? 300 * S.s : 120) : reachToBox(f.dir);
     const from = { x: pickAt.x + Math.cos(f.dir) * (pickR1 + 6), y: pickAt.y + Math.sin(f.dir) * (pickR1 + 6) };
-    const to = { x: pickAt.x + Math.cos(f.dir) * len, y: pickAt.y + Math.sin(f.dir) * len };
+    const to = { x: pickAt.x + Math.cos(f.dir) * length, y: pickAt.y + Math.sin(f.dir) * length };
     if (named) {
       const target = vault.byId.get(f.id)!;
       const r = target.kind === 'capability' ? map.capRadius(target.elements.length) * zoom * 0.8 : S.elemR * zoom;
