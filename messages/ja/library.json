@@ -115,7 +115,35 @@
       "stageTryAsk": "質問してみる",
       "stageDismiss": "閉じる",
       "passagesRecorded": "段落{count, number}件を記録",
-      "downloadChecking": "保存済みの部分を確認中"
+      "downloadChecking": "保存済みの部分を確認中",
+      "guide": {
+        "title": "意味検索を使うと、こうなります",
+        "body": "言い回しや言語が違っても、同じ意味の箇所を見つけます。モデルはこのコンピューターで動き、フォルダーの内容は外に出ません。",
+        "sample": "サンプル",
+        "caption": "架空のファイルで作ったサンプルです。実際のモデルのダウンロードには数分かかります。",
+        "later": "あとで",
+        "start": "一緒に設定する",
+        "question": "カード決済が拒否されたら注文はどうなる？",
+        "line": "{line, number}行"
+      },
+      "wizard": {
+        "stepIntro": "すること",
+        "stepChoose": "モデルを選ぶ",
+        "stepRun": "準備",
+        "introTitle": "3つの手順、すべてこのコンピューターで",
+        "download": "モデルを取得",
+        "downloadNeeded": "{model}を{hosts}から一度だけ取得します：{size}。途切れても続きから取得します。",
+        "downloadKept": "{model}はすでにこのコンピューターにあります。取得するものはありません。",
+        "runnerToo": "Ollamaにあるモデル{count, number}個も次の手順で選べます。取得なしですぐ始められます。",
+        "fit": "このコンピューターに合わせる",
+        "fitBody": "取得したモデルを、ここで速く動くよう一度だけ変換します。Ollamaのモデルは省略します。",
+        "read": "ファイルを読む",
+        "readBody": "Markdownファイル{files, number}個の各箇所の意味を数値として記録し、このコンピューターのキャッシュフォルダーに置きます。フォルダーの内容はどこにも送りません。",
+        "room": "空き容量{free} · 必要{needed}",
+        "next": "次へ：モデルを選ぶ",
+        "back": "戻る",
+        "afterStart": "進み具合は質問欄の下で見られます。その間も作業を続けられます。"
+      }
     },
     "title": "質問して、出典をたどる。",
     "browse": "ページを見る",

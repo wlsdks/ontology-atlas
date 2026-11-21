@@ -95,6 +95,18 @@ that step, the line's sentence and Stop, then the download speed and minutes lef
 (or that the kept part is being checked) or the last three files read beside the
 passages recorded so far. The stage keeps one height
 through every step; with results on screen the job stays one line with its ring.
+On a person's first visit in the app, while the folder searches by words and
+nothing runs, a guide stands where the stage will: what search by meaning does,
+a sample that plays by itself (made-up files: the model downloading, fitted,
+files read into passages, then a question in other words finding an English
+passage marked Similar meaning), **Not now** and **Set it up together**. The
+sample takes no input, pauses off screen and while the dialog covers it, and
+holds still on the answered question under reduced motion. **Set it up
+together** opens the dialog as a walk of three steps: what happens, with this
+computer's download size, free space and this folder's file count; then the
+model; then the run, which is the stage on the desk. Only that step's primary
+press prepares, as from Set up. Not now, or a preparation started from the walk,
+retires the guide on this machine; closing the walk keeps it.
 A first preparation that finishes in view says how many passages in how many
 files carry their meaning, with **Ask a question**, which puts focus in the
 field; a folder found ready and a finished update say nothing more. A download a

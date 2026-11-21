@@ -115,7 +115,35 @@
       "stageTryAsk": "试着提问",
       "stageDismiss": "关闭",
       "passagesRecorded": "已记录 {count, number} 个段落",
-      "downloadChecking": "正在检查已下载的部分"
+      "downloadChecking": "正在检查已下载的部分",
+      "guide": {
+        "title": "开启语义搜索后会这样",
+        "body": "即使说法或语言不同，也能找到意思相同的段落。模型在这台电脑上运行，文件夹内容不会离开。",
+        "sample": "示例",
+        "caption": "用虚构文件做的示例。实际下载模型需要几分钟。",
+        "later": "以后再说",
+        "start": "一起设置",
+        "question": "银行卡付款被拒后，订单会怎样？",
+        "line": "第 {line, number} 行"
+      },
+      "wizard": {
+        "stepIntro": "做什么",
+        "stepChoose": "选择模型",
+        "stepRun": "准备",
+        "introTitle": "三个步骤，全部在这台电脑上",
+        "download": "获取模型",
+        "downloadNeeded": "{model} 只从 {hosts} 下载一次：{size}。中断后会从断点继续。",
+        "downloadKept": "{model} 已在这台电脑上，无需下载。",
+        "runnerToo": "下一步也可以选择 Ollama 中的 {count, number} 个模型，无需下载即可开始。",
+        "fit": "适配这台电脑",
+        "fitBody": "把下载的模型转换一次，让它在这里运行得更快。Ollama 模型跳过此步。",
+        "read": "读取文件",
+        "readBody": "把 {files, number} 个 Markdown 文件中每个段落的意思记录为数字，存放在这台电脑的缓存文件夹中。文件夹内容不会发送到任何地方。",
+        "room": "可用空间 {free} · 需要 {needed}",
+        "next": "下一步：选择模型",
+        "back": "上一步",
+        "afterStart": "可以在提问框下方查看进度，期间可以继续工作。"
+      }
     },
     "title": "提出问题，顺着来源查证。",
     "browse": "浏览页面",

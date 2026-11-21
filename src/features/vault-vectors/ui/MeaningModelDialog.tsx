@@ -10,6 +10,7 @@ import { MODEL_DOWNLOAD_HOSTS, probeVectors, revealVectorModel, type VectorPhase
 import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
 import { MOTION } from '@/shared/motion';
 import { Button, Dialog } from '@/shared/ui';
+import { Check } from 'lucide-react';
 import { DialogBody } from '@/shared/ui/surfaces/dialog-sections';
 import { controlClass } from '@/shared/ui/control-class';
 import { formatSize } from '@/shared/lib/format-size';
@@ -90,12 +91,100 @@ function ChoiceRow({ choice, selected, working, recommended, onSelect }: { choic
   );
 }
 
+type WizardStep = 'intro' | 'choose' | 'run';
+const WIZARD_STEPS: readonly WizardStep[] = ['intro', 'choose', 'run'];
+const WIZARD_KEY = { intro: 'wizard.stepIntro', choose: 'wizard.stepChoose', run: 'wizard.stepRun' } as const;
+
+/** Where the setup-together walk stands: what happens, then the model, then the run on the desk. */
+function WizardSteps({ at }: { at: WizardStep }) {
+  const t = useTranslations('library.questionDesk.meaning');
+  const index = WIZARD_STEPS.indexOf(at);
+  return (
+    <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-label leading-label" data-testid="meaning-wizard-steps" data-wizard-step={at}>
+      {WIZARD_STEPS.map((step, position) => {
+        const state = position < index ? 'done' : position === index ? 'now' : 'next';
+        return (
+          <li key={step} data-step-state={state} aria-current={state === 'now' ? 'step' : undefined} className="flex items-center gap-2">
+            {position > 0 ? <span aria-hidden className={cn('h-px w-5', state === 'next' ? 'bg-[color:var(--color-overlay-3)]' : 'bg-[color:var(--color-indigo-line-a40)]')} /> : null}
+            <span aria-hidden className={cn(
+              'grid size-4 place-items-center rounded-full tabular-nums',
+              state === 'done' ? 'bg-[color:var(--color-indigo-a24)] text-[color:var(--color-indigo-pale-a92)]'
+                : state === 'now' ? 'bg-[color:var(--color-indigo-accent)] text-[color:var(--color-text-on-accent)]'
+                  : 'border border-[color:var(--color-overlay-3)] text-[color:var(--color-text-tertiary)]',
+            )}>
+              {state === 'done' ? <Check className="size-2.5" strokeWidth={3} /> : position + 1}
+            </span>
+            <span className={state === 'now' ? 'text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-tertiary)]'}>{t(WIZARD_KEY[step])}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/**
+ * The walk's first step: the three things preparation does, with this computer's and this folder's
+ * own figures, before any model is chosen or anything is fetched.
+ */
+function WizardIntro({ probe, runners, onNext }: { probe: VectorProbe; runners: number; onNext: () => void }) {
+  const t = useTranslations('library.questionDesk.meaning');
+  const locale = useLocale();
+  const size = (bytes: number) => formatSize(bytes, locale);
+  const builtin = probe.builtin;
+  const short = !builtin.onDisk && builtin.freeBytes < builtin.neededFreeBytes;
+  const rows = [
+    {
+      id: 'download',
+      title: t('wizard.download'),
+      body: builtin.onDisk
+        ? t('wizard.downloadKept', { model: BUILTIN_MODEL_NAME })
+        : t('wizard.downloadNeeded', { model: BUILTIN_MODEL_NAME, hosts: MODEL_DOWNLOAD_HOSTS.join(', '), size: size(builtin.downloadBytes) }),
+      more: runners > 0 ? t('wizard.runnerToo', { count: runners }) : null,
+    },
+    { id: 'fit', title: t('wizard.fit'), body: t('wizard.fitBody'), more: null },
+    { id: 'read', title: t('wizard.read'), body: t('wizard.readBody', { files: probe.files }), more: null },
+  ];
+  return (
+    <div className="flex flex-col gap-5" data-testid="meaning-wizard-intro">
+      <h3 className="text-body-lg font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]">{t('wizard.introTitle')}</h3>
+      <ol className="flex flex-col gap-4">
+        {rows.map((row, index) => (
+          <li key={row.id} className="flex gap-3" data-testid={`meaning-wizard-row-${row.id}`}>
+            <span aria-hidden className="grid size-6 flex-none place-items-center rounded-full bg-[color:var(--color-indigo-a14)] text-label leading-label tabular-nums text-[color:var(--color-indigo-pale-a92)]">{index + 1}</span>
+            <div className="min-w-0 pt-0.5">
+              <p className="text-body leading-body text-[color:var(--color-text-primary)]">{row.title}</p>
+              <p className="mt-0.5 max-w-[64ch] text-body leading-body text-[color:var(--color-text-secondary)]">{row.body}</p>
+              {row.more ? <p className="mt-1 text-body leading-body text-[color:var(--color-indigo-accent)]">{row.more}</p> : null}
+            </div>
+          </li>
+        ))}
+      </ol>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--color-divider)] pt-3">
+        {builtin.onDisk ? <span /> : (
+          <p className={cn('text-label leading-label tabular-nums', short ? 'text-[color:var(--color-danger-text)]' : 'text-[color:var(--color-text-tertiary)]')} data-testid="meaning-wizard-room">
+            {t('wizard.room', { free: size(builtin.freeBytes), needed: size(builtin.neededFreeBytes) })}
+          </p>
+        )}
+        <Button variant="primary" size="sm" onClick={onNext} data-testid="meaning-wizard-next">{t('wizard.next')}</Button>
+      </div>
+    </div>
+  );
+}
+
 /**
  * The folder's model for search by meaning: every model it can use on the left, the chosen one's
  * facts and presses on the right. Downloading, switching, deleting the built-in model and showing
  * its folder all happen here; the download states its size and hosts before its press.
  */
-export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean; rootPath: string; onClose: () => void }) {
+export function MeaningModelDialog({ open, rootPath, guided = false, onStarted, onClose }: {
+  open: boolean;
+  rootPath: string;
+  /** Opened to set up together: what happens first, then the model. */
+  guided?: boolean;
+  /** A press here started preparing. */
+  onStarted?: () => void;
+  onClose: () => void;
+}) {
   const t = useTranslations('library.questionDesk.meaning');
   const locale = useLocale();
   const titleId = useId();
@@ -108,6 +197,8 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [deleting, setDeleting] = useState(false);
+  const [introRead, setIntroRead] = useState(false);
+  const wizardStep: WizardStep | null = guided ? (introRead ? 'choose' : 'intro') : null;
 
   const readProbe = useCallback(() => {
     let live = true;
@@ -134,11 +225,13 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
   const startBuiltin = () => {
     if (!probe) return;
     onClose();
+    onStarted?.();
     // The one press that may fetch the model: the facts above it state the size and the hosts.
     void prepare(rootPath, { kind: 'builtin' }, !probe.builtin.onDisk);
   };
   const startRunner = (choice: Extract<ModelChoice, { kind: 'runner' }>) => {
     onClose();
+    onStarted?.();
     void prepare(rootPath, { kind: 'runner', baseUrl: choice.baseUrl, model: choice.model });
   };
   const deleteBuiltin = async () => {
@@ -262,6 +355,7 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
               </div>
             </div>
           ) : null}
+          {primary && guided ? <p className="text-label leading-body text-[color:var(--color-text-tertiary)]" data-testid="meaning-wizard-after-start">{t('wizard.afterStart')}</p> : null}
           {primary ? (
             <div className="flex justify-end">
               <Button variant="primary" size="sm" disabled={primary.disabled} onClick={primary.onPress} data-testid="meaning-setup-primary">
@@ -278,7 +372,7 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
     <Dialog
       open={open}
       onClose={onClose}
-      onExited={() => { setAnswer(null); setSelectedId(null); setNotice(null); }}
+      onExited={() => { setAnswer(null); setSelectedId(null); setNotice(null); setIntroRead(false); }}
       size="lg"
       labelledBy={titleId}
       testId="meaning-setup-dialog"
@@ -286,14 +380,27 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
       <div className="flex min-h-0 flex-1 flex-col gap-4 p-2">
         <div className="flex shrink-0 items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 id={titleId} className="text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]">{t('dialogTitle')}</h2>
-            <p className="mt-1 max-w-[70ch] text-body leading-body text-[color:var(--color-text-secondary)]" data-testid="meaning-setup-lead">
-              {t('lead', { files: probe?.files ?? 0 })}
-            </p>
+            <h2 id={titleId} className="text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]">{t(guided ? 'setup' : 'dialogTitle')}</h2>
+            {wizardStep ? <div className="mt-2"><WizardSteps at={wizardStep} /></div> : (
+              <p className="mt-1 max-w-[70ch] text-body leading-body text-[color:var(--color-text-secondary)]" data-testid="meaning-setup-lead">
+                {t('lead', { files: probe?.files ?? 0 })}
+              </p>
+            )}
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose} data-testid="meaning-setup-cancel">{t('close')}</Button>
+          <div className="flex flex-none items-center gap-1">
+            {wizardStep === 'choose' ? <Button variant="ghost" size="sm" onClick={() => setIntroRead(false)} data-testid="meaning-wizard-back">{t('wizard.back')}</Button> : null}
+            <Button variant="ghost" size="sm" onClick={onClose} data-testid="meaning-setup-cancel">{t('close')}</Button>
+          </div>
         </div>
         <DialogBody>
+        <AnimatePresence initial={false} mode="wait">
+        {wizardStep === 'intro' ? (
+          <motion.div key="intro" className="min-h-[22rem] rounded-card border border-[color:var(--color-divider)] p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={fade}>
+            {probe ? <WizardIntro probe={probe} runners={choices.filter((choice) => choice.kind === 'runner' && choice.reachable).length} onNext={() => setIntroRead(true)} />
+              : answer === null ? <Placeholder /> : <p className="text-body leading-body text-[color:var(--color-danger-text)]">{t('unreadable')}</p>}
+          </motion.div>
+        ) : (
+        <motion.div key="choose" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={fade}>
         <div className="grid gap-4 sm:grid-cols-[14rem_minmax(0,1fr)] sm:items-start">
           <div role="group" aria-label={t('choicesLabel')} className="atlas-scroll-quiet flex flex-col gap-1 sm:max-h-[26rem] sm:overflow-y-auto" data-testid="meaning-model-choices">
             {choices.map((choice) => (
@@ -318,6 +425,9 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
             </AnimatePresence>
           </div>
         </div>
+        </motion.div>
+        )}
+        </AnimatePresence>
         </DialogBody>
       </div>
     </Dialog>

@@ -139,6 +139,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.library.index-segment", kind: "storage", scope: "global", note: "Library index: Sources or Wiki" },
   { key: "atlas.library.index-collapsed", kind: "storage", scope: "global", note: "Library index folded to its rail tab" },
   { key: "atlas.library.guide-seen", kind: "storage", scope: "global", note: "The Library home raised its three-step guide once on this machine" },
+  { key: "atlas.meaning.guide-seen", kind: "storage", scope: "global", note: "The question desk's search-by-meaning guide was set aside or used once on this machine" },
   {
     key: "ontology-atlas:machine-approvals",
     kind: "storage",

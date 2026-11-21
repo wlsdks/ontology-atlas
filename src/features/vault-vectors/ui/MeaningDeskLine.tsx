@@ -21,6 +21,8 @@ import { resume, stop, useVectorStatus } from '../model/vector-store';
 import { useVectorRunStage } from '../model/use-vector-run';
 import { BUILTIN_MODEL_NAME } from '../model/model-choices';
 import { MeaningModelDialog } from './MeaningModelDialog';
+import { MeaningGuideCard } from './MeaningGuideCard';
+import { meaningGuideSeen } from '../model/guide-seen';
 import { MeaningRunStage } from './MeaningRunStage';
 import { runStage, type RunStage } from '../model/run-stage';
 
@@ -156,6 +158,8 @@ export function MeaningDeskLine({
   const stage = useVectorRunStage(isApp ? rootPath : null);
   const source = vaultVectorSource.use(rootPath)?.source ?? null;
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [guided, setGuided] = useState(false);
+  const guideSeen = meaningGuideSeen.use() === 'on';
   const line = deskLine({
     status, isApp, indexOn, markdownFiles,
     runnerModel: source?.kind === 'runner' ? source.model : null,
@@ -187,6 +191,7 @@ export function MeaningDeskLine({
     if (action === 'setup' || action === 'downloadAgain' || action === 'continueDownload') {
       // WebKit does not focus a pressed button, so Escape would have nowhere to return focus.
       event.currentTarget.focus({ preventScroll: true });
+      setGuided(false);
       setDialogOpen(true);
     } else if (action === 'stop') void stop(rootPath);
     else if (action === 'resume') void resume(rootPath);
@@ -196,6 +201,12 @@ export function MeaningDeskLine({
   const modelName = source === null ? null : source.kind === 'builtin' ? BUILTIN_MODEL_NAME : source.model;
   const openModels = (event: MouseEvent<HTMLButtonElement>) => {
     event.currentTarget.focus({ preventScroll: true });
+    setGuided(false);
+    setDialogOpen(true);
+  };
+  const setUpTogether = (event: MouseEvent<HTMLButtonElement>) => {
+    event.currentTarget.focus({ preventScroll: true });
+    setGuided(true);
     setDialogOpen(true);
   };
 
@@ -284,6 +295,8 @@ export function MeaningDeskLine({
         </button>
       ) : null;
   const shownStage = running ?? (finished && roomForStage ? finishedStage(source) : null);
+  // First use: the sample of search by meaning stands where its real stage will run.
+  const showGuide = !shownStage && isApp && roomForStage && !guideSeen && line.message === 'words' && rootPath !== null;
   const dismiss = () => finished?.dismiss();
   const ask = () => {
     finished?.dismiss();
@@ -299,9 +312,17 @@ export function MeaningDeskLine({
       data-testid="meaning-desk-line"
       data-state={line.message}
       data-stage={running?.step ?? (finished ? 'done' : undefined)}
-      className={shownStage ? 'min-w-0' : rowClass}
+      className={shownStage || showGuide ? 'min-w-0' : rowClass}
     >
-      {shownStage ? (
+      {showGuide ? (
+        <motion.div
+          initial={reduced ? false : { opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          transition={stageEntrance}
+        >
+          <MeaningGuideCard playing={!dialogOpen} onStart={setUpTogether} onLater={() => meaningGuideSeen.write('on')} />
+        </motion.div>
+      ) : shownStage ? (
         <motion.div
           initial={reduced ? false : { opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
@@ -334,6 +355,8 @@ export function MeaningDeskLine({
         <MeaningModelDialog
           open={dialogOpen}
           rootPath={rootPath}
+          guided={guided}
+          onStarted={() => meaningGuideSeen.write('on')}
           onClose={() => setDialogOpen(false)}
         />
       ) : null}
