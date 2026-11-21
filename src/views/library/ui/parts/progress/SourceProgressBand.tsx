@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { useTranslations } from "next-intl";
 
 import { deriveSourceProgress, type LibrarySourceRow } from "@/entities/docs-vault";
@@ -24,6 +24,23 @@ import {
 
 import { SourceProgressChart } from "./SourceProgressChart";
 import { useBandMotion } from "./use-band-motion";
+
+/**
+ * Whether one line of text is cut by its box. The sentence carries a `title` only then: a whole
+ * sentence's title repeats it, and WebKit can raise a native title away from the element it names.
+ */
+function useTextCut(element: HTMLElement | null, text: string): boolean {
+  const [cut, setCut] = useState(false);
+  useLayoutEffect(() => {
+    if (!element || typeof ResizeObserver === "undefined") return undefined;
+    const measure = () => setCut(element.scrollWidth > element.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [element, text]);
+  return cut;
+}
 
 /** Folders whose band already counted up this session; a later visit draws the values at once. */
 const counted = new Set<string>();
@@ -222,6 +239,8 @@ export function SourceProgressBand({
   });
 
   const sentence = sentenceFor(compiled);
+  const [settledSentence, settledSentenceRef] = useState<HTMLParagraphElement | null>(null);
+  const sentenceCut = useTextCut(settledSentence, sentence);
   const showChart = recordedDays(progress.series) >= CHART_MIN_DAYS;
   const running = batch.running.size > 0;
   const blockedId = "library-progress-blocked";
@@ -280,9 +299,9 @@ export function SourceProgressBand({
             {/* While counting, the sentence is drawn with the number; a new element takes over once it settles. */}
             <p
               key={counting ? "counting" : "settled"}
-              ref={counting ? sentenceRef : undefined}
+              ref={counting ? sentenceRef : settledSentenceRef}
               aria-hidden={counting || undefined}
-              title={sentence}
+              title={!counting && sentenceCut ? sentence : undefined}
               data-testid="library-progress-sentence"
               className="min-w-0 truncate text-body leading-body text-[color:var(--color-text-primary)]"
             >

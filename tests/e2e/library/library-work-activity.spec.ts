@@ -3,10 +3,6 @@ import { expect, test } from "@playwright/test";
 import { openLibraryWorkScenario } from "../library-work-harness";
 import { waitFrames } from "../settle";
 
-interface PaintWindow extends Window {
-  __libraryPaintCount?: number;
-}
-
 test.describe("Library live work activity", () => {
   test("visualizes a real ACP read, permission wait, and observed file revision", async ({ page }) => {
     const consoleErrors: string[] = [];
@@ -16,50 +12,21 @@ test.describe("Library live work activity", () => {
     const harness = await openLibraryWorkScenario(page);
     await page.getByTestId("library-workspace-sources").click();
 
-    /* The canvas is the home: it is on screen with nothing chosen, and choosing a document removes it. */
-    const canvas = page.getByTestId("library-graph-canvas");
-    await expect(canvas).toBeVisible();
+    /* The overview is the home: it is on screen with nothing chosen, and choosing a document replaces it. */
+    const overview = page.getByTestId("sources-overview");
+    await expect(overview).toBeVisible();
 
     await harness.read(page);
     await expect(page.getByTestId("acp-chat-tool-target")).toContainText("sources/architecture.docx");
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-kind", "read");
 
-    // Selecting a document replaces the canvas; active work cannot paint a removed canvas.
-    await page.evaluate(() => {
-      (window as unknown as PaintWindow).__libraryPaintCount = 0;
-      const fill = CanvasRenderingContext2D.prototype.fillRect;
-      CanvasRenderingContext2D.prototype.fillRect = function (x, y, width, height) {
-        if (this.canvas.dataset.testid === "library-graph-canvas") {
-          const fixtureWindow = window as unknown as PaintWindow;
-          fixtureWindow.__libraryPaintCount = (fixtureWindow.__libraryPaintCount ?? 0) + 1;
-        }
-        return fill.call(this, x, y, width, height);
-      };
-    });
-    await expect.poll(() => page.evaluate(() => (window as unknown as PaintWindow).__libraryPaintCount ?? 0)).toBeGreaterThan(5);
-    await canvas.press("ArrowRight");
-    /*
-     * `Enter` opens the card and `Open` inside it selects the document; active work must not paint a
-     * canvas the reader has replaced.
-     */
-    await canvas.press("Enter");
-    await page.getByTestId("library-graph-card-open").click();
-    await expect(canvas).toHaveCount(0);
-    const hiddenPaints = await page.evaluate(() => (window as unknown as PaintWindow).__libraryPaintCount ?? 0);
-    /*
-     * The claim is an **absence** — a hidden canvas paints nothing — so something has to
-     * pass before the count means anything. Thirty drawn frames is that something, and it
-     * is the unit the claim is about: a painting canvas would have painted on each of
-     * them, and a slow machine spends longer over the same thirty rather than being asked
-     * a weaker question.
-     */
-    await waitFrames(page, 30);
-    expect(await page.evaluate(() => (window as unknown as PaintWindow).__libraryPaintCount ?? 0)).toBe(hiddenPaints);
-    // The way back to the picture is the reader's own close control.
+    // A file the panel names opens in the reader in the overview's place, and the reader's close brings it back.
+    await overview.getByTestId("sources-panel-file").first().click();
+    await expect(overview).toHaveCount(0);
+    await expect(page.getByTestId("library-reader-back")).toBeVisible();
     await page.getByTestId("library-reader-back").click();
     await page.getByTestId("library-workspace-sources").click();
-    await expect(canvas).toBeVisible();
-    await expect.poll(() => page.evaluate(() => (window as unknown as PaintWindow).__libraryPaintCount ?? 0)).toBeGreaterThan(hiddenPaints);
+    await expect(overview).toBeVisible();
 
     await harness.wait(page);
     await expect(page.getByTestId("acp-permission-card")).toBeVisible();
@@ -67,8 +34,8 @@ test.describe("Library live work activity", () => {
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-phase", "active");
 
     /*
-     * Permission belongs to the conversation, and nothing blocks it any more: the picture
-     * is the pane rather than a modal over it, so the card is reachable where it stands.
+     * Permission belongs to the conversation, and nothing blocks it: the overview is the pane
+     * rather than a modal over it, so the card is reachable where it stands.
      */
     await page.getByTestId("acp-permission-allow").click();
     await harness.write(page);
@@ -94,7 +61,7 @@ test.describe("Library live work activity", () => {
 
   /*
    * The band's work line holds its slot from the first paint, so the first event moves neither the
-   * band nor the picture; and every Library state carries exactly one Conversation control and one
+   * band nor the overview; and every Library state carries exactly one Conversation control and one
    * Questions control, in the page header.
    */
   test("the first event moves nothing, and each state has one Conversation and one Questions control", async ({ page }) => {
@@ -108,7 +75,7 @@ test.describe("Library live work activity", () => {
     const geometry = () =>
       page.evaluate(() => ({
         band: document.querySelector('[data-testid="library-progress"]')!.getBoundingClientRect().height,
-        picture: document.querySelector('[data-testid="library-graph-canvas"]')!.getBoundingClientRect().top,
+        overview: document.querySelector('[data-testid="sources-overview"]')!.getBoundingClientRect().top,
       }));
     // The closing dock widens the pane over its exit; measure once two frames apart agree.
     let before = await geometry();
@@ -116,7 +83,7 @@ test.describe("Library live work activity", () => {
       .poll(async () => {
         await waitFrames(page, 2);
         const now = await geometry();
-        const same = now.band === before.band && now.picture === before.picture;
+        const same = now.band === before.band && now.overview === before.overview;
         before = now;
         return same;
       })

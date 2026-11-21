@@ -11,7 +11,7 @@ import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
 import { Chip } from "@/shared/ui";
 import { libraryProviderDisclosure } from "../../lib/compile/compile-availability";
 import { useLibraryAgent } from "../../lib/agent/use-library-agent";
-import { LibrarySection } from "../parts/index-column/LibrarySection";
+import { LibrarySection, type SourceGroupFilter } from "../parts/index-column/LibrarySection";
 import { CompileBrainSelect } from "../parts/compile/CompileBrainSelect";
 import type { LibraryUiModel } from "@/features/library";
 import type { LibrarySourceRow, VaultDoc } from "@/entities/docs-vault";
@@ -28,7 +28,7 @@ export function LibraryIndexColumn({
   mobileBrowseOpen, setMobileBrowseOpen, mobileBrowseBackRef, browseFocusPendingRef, searchHost,
   setSearchHost, setSourceCitation, sourceCitation, compileRunning, runningSources, lintRunning, turnRunning, reportUnseen,
   choose, busy, docs, model, agent, openImport, handleCompile, narrowShowsReader, indexTitle,
-  reader, sources, home, turns, indexColumn, stateFilter, headerDoors,
+  reader, sources, home, turns, indexColumn, stateFilter, groupFilter, headerDoors,
 }: {
   segment: LibraryIndexSegment | undefined;
   toolsHost: HTMLElement | null;
@@ -68,6 +68,7 @@ export function LibraryIndexColumn({
   indexColumn: ReturnType<typeof useLibraryIndexColumn>;
   /** The state the band's press narrows the Sources list to. */
   stateFilter: LibrarySourceRow["state"] | null;
+  groupFilter: SourceGroupFilter | null;
   /** The Library-wide doors, drawn once in the page header before the info glyph. */
   headerDoors: ReactNode;
 }) {
@@ -237,6 +238,7 @@ export function LibraryIndexColumn({
             turnRunning={turnRunning}
             runningSources={runningSources}
             stateFilter={stateFilter}
+            groupFilter={groupFilter}
             t={t}
           />
         </div>

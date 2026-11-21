@@ -82,7 +82,7 @@ async function openLibraryHome(page: Page, files: Record<string, string> = FILES
   await page.goto('/en/');
   await page.getByRole('button', { name: /Open (?:a|my) folder|폴더 열기/i }).click();
   await page.getByTestId('app-nav-rail-item-library').click();
-  await page.getByTestId('library-graph-canvas').waitFor();
+  await page.getByTestId('sources-overview').waitFor();
 }
 
 test.describe('the Library spine at one saved answer', () => {
@@ -217,7 +217,7 @@ test.describe('the Library spine names one lead step', () => {
     await page.goto('/en/');
     await page.getByRole('button', { name: /Open (?:a|my) folder|폴더 열기/i }).click();
     await page.getByTestId('app-nav-rail-item-library').click();
-    await page.getByTestId('library-graph-canvas').waitFor();
+    await page.getByTestId('sources-overview').waitFor();
     await page.getByTestId('library-guide-open').click();
 
     const stage = page.getByTestId('library-guide-popover').getByTestId('library-stage');
@@ -312,7 +312,7 @@ async function openLocalRouteLibrary(page: Page, keepLocalAddress: boolean) {
   await expect(page.getByRole('heading', { name: 'Map', level: 1 })).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Library' }).click();
   await page.getByTestId('library-workspace-sources').click();
-  await page.getByTestId('library-graph-canvas').waitFor({ timeout: 30_000 });
+  await page.getByTestId('sources-overview').waitFor({ timeout: 30_000 });
 }
 
 /**

@@ -196,10 +196,11 @@ Text never wears `--color-source-none`; its word uses `--color-text-tertiary` on
 | Folder still being read | Rows arrive; `reading` under the table | Same |
 | Files being checked | Grey checking segment in bars; counts settle in place | Same |
 | Agent writing | Out of scope: the web writes no pages (`progress.webLine`) | Writing dot on the row (`writing`) and on the file in Next; `panel.leadRunning`; the band button disabled as today; rows hold their order; new page on top of Recently written |
-| A row picked | Tinted row; panel for it; chip `listFolder` in the index list | Same |
+| A row picked | Tinted row; panel for it; chip `listFolder` (a folder; an alike row names its range) or `listType` (a file type) in the index list, which unfolds if folded; a band state that leaves no row there shows `listNone` and `panel.clear` | Same |
 | Picked folder gone | `pickGone` once, then All sources | Same |
 | Every source has a page | Bars in the success ink once; `panel.nextEmpty` | Same |
-| Reduced motion | End values at once; swaps and re-sorts instant; the writing dot has no halo | Same |
+| Narrow pane (below 60rem: a 1440 window with the conversation open, or 1040) | The panel stands first, full width, its list three rows tall and scrolling; the table and Recently written follow in the pane's scroll | Same |
+| Reduced motion | End values at once; swaps and re-sorts instant; the writing dot has no halo; the motion-work cross-fade keeps its 120 ms opacity fade (`app/styles/motion-work.css`), opacity only | Same |
 
 ## Copy
 
@@ -268,13 +269,13 @@ final consonant, so `nextNote`'s particle is fixed. `graph.*` keys leave in S-3.
 
 | Transition | Motion | Reduced motion |
 |---|---|---|
-| First arrival in a session | Visible rows rise 4 px and fade over `--motion-base`, 35 ms stagger; bars and counts count up on the band's clock | End state |
+| First arrival in a session | Visible rows rise 4 px and fade over `--motion-base`, 35 ms stagger; bars and counts count up on the band's clock, once per folder per session; a return from Wiki or the reader draws the values at once | End state |
 | Progressive arrival | New rows rise in; rows below glide by transform over `--motion-settle`; re-orders at most once per 500 ms, never while a batch runs | Instant |
 | A page is written: the row's bar | The page segment grows over the waiting one and the share counts up over `--motion-slow`, retargeting from the drawn width when the next page lands mid-way; at 100% the bar turns the success ink once | End state at once |
 | Writing dot | The halo breathes 1.0 → 1.8 → 1.0 over 1,600 ms only while the agent writes; listed in `tests/contract/motion/infinite-motion.contract.test.ts` | Dot, no halo |
 | Re-sort (a header press, or a batch ends) | Rows glide to their new places by transform over `--motion-settle` (FLIP); a moving row is opaque and the one moving up draws on top | New order at once |
 | A page is written | Its Next row fades and collapses on the exit ease over `--motion-settle`; the new last row fades in; the page enters Recently written from 4 px above with a one-time accent wash that fades over `--motion-choreography` | Instant, no wash |
-| Pick or clear | Tint over `--motion-fast`; panel content swaps with `useSurfaceSwap` and its height follows with `useSwapHeight` over `--motion-settle` | Instant |
+| Pick or clear | Tint over `--motion-fast`; panel content swaps with `useSurfaceSwap` and its height follows with `useSwapHeight` over `--motion-settle` | Instant, except the 120 ms opacity fade `motion-work.css` keeps |
 | Group switch | Table body cross-fades over `--motion-base`; scroll returns to the top | Instant |
 
 ## Out of scope
@@ -283,7 +284,8 @@ final consonant, so `nextNote`'s particle is fixed. `graph.*` keys leave in S-3.
   (Later 2).
 - **Writing one folder next.** It changes what the write button sends (Later 1).
 - **Search by meaning here.** Vectors may only order the queue, after W1 proves the gain.
-- **The index list's design and the band.** Rooms slices I1 and H1.
+- **The index list's design and the band.** Rooms slices I1 and H1, except what this pane
+  needs there: the list's state dot and its key, the pick's chip, and the empty-pick note.
 - **What an agent may write.** Unchanged.
 
 ## Acceptance criteria
@@ -394,3 +396,12 @@ with the pull request, so the owner can reverse this by choosing the treemap.
   at 50,000 sources and 2,000 pages (51 ms before it kept unchanged rows), and is left for its
   own slice; and the first fold of a slice's new folders costs about as much as that slice's
   count.
+- 2026-11-21: S-2 mounted the overview. Its decisions: a picked row narrows the index list
+  under a `listFolder` or `listType` chip and unfolds a folded list; the list marks a waiting
+  row with a state dot and a compiled row with none; the panel names the files still being
+  written first while a batch runs; below a 60rem pane the panel stands first with a
+  three-row scrolling list; the overview mounts one frame after the landing, as a transition
+  once the folder is read; bars fill from empty once per folder per session; the band's
+  sentence carries a title only when cut. Criteria 1 (cold readers) and 5 (`perf:app-open`
+  at 50,000), and the app halves of 6 and 7, move to a follow-up run on the installed app
+  after merge.

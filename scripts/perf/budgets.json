@@ -104,8 +104,8 @@
       "limits": { "*": { "2000": 16.7, "20000": 16.7, "50000": 16.7 } }
     },
     {
-      "id": "island-open-first-frame",
-      "label": "Island open, first frame",
+      "id": "row-pick-first-frame",
+      "label": "Sources home row pick, first frame",
       "unit": "ms",
       "command": "perf:app-open perf:web-open",
       "walk": "library",

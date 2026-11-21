@@ -92,7 +92,7 @@ const VAULT = {
   ].join("\n"),
 
   // Candidates for discovery, and three files it must never propose.
-  "inbox/Requirements v3.pdf": "%PDF-1.7 requirements\n",
+  "inbox/Requirements v3.pdf": "%PDF-1.7 requirements\n%% discovery proposes only files of at least sixty-four bytes\n",
   "inbox/.env": "SECRET=never-propose-me\n",
   "inbox/id_rsa": "PRIVATE KEY never-propose-me\n",
   "inbox/credentials.json": '{"token":"never-propose-me"}\n',
@@ -386,8 +386,8 @@ test.describe("the Library destination", () => {
 
   test("ticking a candidate and confirming copies it into sources/", async ({ page }) => {
     await openLibrary(page, { ...VAULT,
-      'inbox/Schedule.pdf': '%PDF-1.7 schedule\n',
-      'other/Notes.pdf': '%PDF-1.7 notes\n',
+      'inbox/Schedule.pdf': '%PDF-1.7 schedule\n%% discovery proposes only files of at least sixty-four bytes\n',
+      'other/Notes.pdf': '%PDF-1.7 notes\n%% discovery proposes only files of at least sixty-four bytes\n',
     });
     await page.getByTestId("library-find-documents").click();
     const dialog = page.getByRole('dialog');
@@ -423,7 +423,7 @@ test.describe("the Library destination", () => {
     test(`document discovery returns focus to its ${empty ? 'empty-stage' : 'index'} opener after an unfocused pointer click`, async ({ page }) => {
       await openLibrary(page, empty ? {
         'project.md': VAULT['project.md'],
-        'inbox/Requirements.pdf': '%PDF-1.7 requirements\n',
+        'inbox/Requirements.pdf': '%PDF-1.7 requirements\n%% discovery proposes only files of at least sixty-four bytes\n',
       } : VAULT);
       const opener = page.getByTestId(empty ? 'library-start-find-documents' : 'library-find-documents');
       await opener.evaluate((button) => {
@@ -511,8 +511,7 @@ test.describe("the Library pane", () => {
     /* None of the other surfaces that state emptiness is drawn, and the guide is not raised. */
     for (const gone of [
       "library-index",
-      "library-graph",
-      "library-graph-empty",
+      "sources-overview",
       "library-status-strip",
       "library-reader-landing",
       "library-doors",
@@ -545,8 +544,8 @@ test.describe("the Library pane", () => {
   test("an empty Library leads with the documents the folder already holds", async ({ page }) => {
     await openLibrary(page, {
       ...NO_SOURCE_VAULT,
-      "inbox/Requirements.pdf": "%PDF-1.7 requirements\n",
-      "inbox/Schedule.pdf": "%PDF-1.7 schedule\n",
+      "inbox/Requirements.pdf": "%PDF-1.7 requirements\n%% discovery proposes only files of at least sixty-four bytes\n",
+      "inbox/Schedule.pdf": "%PDF-1.7 schedule\n%% discovery proposes only files of at least sixty-four bytes\n",
     });
     const stage = page.getByTestId("library-start-stage");
     const found = stage.getByTestId("library-start-find-documents");
@@ -563,38 +562,27 @@ test.describe("the Library pane", () => {
   });
 
   /**
-   * The home is the folder's graph: the canvas fills the pane, its key sits under it, and the three
+   * The home is the Sources overview: it fills the pane under the band with no canvas, and the three
    * steps are one press away from the page header.
    */
-  test("opens on the folder's graph with the guide one press away", async ({ page }) => {
+  test("opens on the Sources overview with the guide one press away", async ({ page }) => {
     await openLibrary(page);
-    const canvas = page.getByTestId("library-graph-canvas");
-    await expect(canvas).toBeVisible();
-    await expect(canvas).toHaveAttribute("data-labels", "standing");
-    // Not raised over the picture: the guide's self-raise is once per machine and seeded.
+    const overview = page.getByTestId("sources-overview");
+    await expect(overview).toBeVisible();
+    await expect(page.getByTestId("library-reader-landing").locator("canvas")).toHaveCount(0);
+    // Not raised over the overview: the guide's self-raise is once per machine and seeded.
     await expect(page.getByTestId("library-guide-popover")).toHaveCount(0);
     await expect(page.getByTestId("library-stage")).toHaveCount(0);
 
-    /*
-     * The picture is the pane. `> 0.6` of the reader's height is the same floor the old
-     * dialog was held to, read against the box the canvas now lives in.
-     */
+    // The overview is the pane: most of the reader's height, and nothing covers its first row.
     const reader = (await page.getByTestId("library-reader").boundingBox())!;
-    expect((await canvas.boundingBox())!.height).toBeGreaterThan(reader.height * 0.6);
-    const reachable = await canvas.evaluate((element) => {
+    expect((await overview.boundingBox())!.height).toBeGreaterThan(reader.height * 0.6);
+    const row = overview.getByTestId("sources-row").first();
+    const reachable = await row.evaluate((element) => {
       const rect = element.getBoundingClientRect();
-      return document.elementFromPoint(rect.left + 20, rect.top + rect.height / 2) === element;
+      return element.contains(document.elementFromPoint(rect.left + 20, rect.top + rect.height / 2));
     });
-    expect(reachable, "the home's graph is covered by another surface").toBe(true);
-    for (const id of ["library-graph-key"]) {
-      const label = page.getByTestId(id);
-      await expect(label).toBeVisible();
-      const hit = await label.evaluate((element) => {
-        const rect = element.getBoundingClientRect();
-        return element.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2));
-      });
-      expect(hit, `${id} is occluded`).toBe(true);
-    }
+    expect(reachable, "the home's first row is covered by another surface").toBe(true);
 
     // The next step is the progress band's door (on the web, Get the app), not a header door or a second header row.
     await expect(page.getByTestId("library-progress-get-app")).toBeVisible();
@@ -632,16 +620,16 @@ test.describe("the Library pane", () => {
     await page.keyboard.press("Escape");
     await expect(guide).toHaveCount(0);
     await expect(page.getByTestId("library-guide-open")).toBeFocused();
-    await expect(canvas).toBeVisible();
+    await expect(overview).toBeVisible();
     // And the machine remembers, so it never raises itself again.
     expect(
       await page.evaluate(() => window.localStorage.getItem("atlas.library.guide-seen")),
     ).toBe("on");
   });
 
-  test("a Wiki page returns to its question desk while Sources retains the canvas", async ({ page }) => {
+  test("a Wiki page returns to its question desk while Sources retains the overview", async ({ page }) => {
     await openLibrary(page);
-    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+    await expect(page.getByTestId("sources-overview")).toBeVisible();
     await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-wiki-wiki/quarter-plan").click();
     await expect(page.getByTestId("library-wiki-header")).toBeVisible();
@@ -649,13 +637,13 @@ test.describe("the Library pane", () => {
     // The reading state's row belongs to the page: a way back and the page's own state, not the folder's counts.
     await expect(page.getByTestId("wiki-reader-status")).toBeVisible();
     await expect(page.getByTestId("library-status-strip")).toHaveCount(0);
-    await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
+    await expect(page.getByTestId("sources-overview")).toHaveCount(0);
     await page.getByTestId("library-reader-back").click();
     await expect(page.getByTestId("library-question-desk")).toBeVisible();
-    await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
+    await expect(page.getByTestId("sources-overview")).toHaveCount(0);
     await page.getByTestId("library-workspace-sources").click();
     await expect(page.getByTestId("library-reader-landing")).toBeVisible();
-    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+    await expect(page.getByTestId("sources-overview")).toBeVisible();
   });
 
   /**
@@ -871,7 +859,7 @@ test.describe("the Library pane", () => {
     await expect(page.getByTestId("library-index-collapse")).toBeFocused();
 
     /*
-     * 3 — the tab is remembered per machine, and opening a file from the picture moves
+     * 3 — the tab is remembered per machine, and opening a file from the home moves
      * it to that file's own list. Both are what stop the index naming one thing while the
      * reader shows another.
      */

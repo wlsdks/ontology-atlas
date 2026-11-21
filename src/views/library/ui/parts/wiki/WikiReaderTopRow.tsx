@@ -35,7 +35,7 @@ export function WikiReaderTopRow({ doc, sourceChanged, t }: {
   return (
     <div data-testid="wiki-reader-top-row" className="flex min-w-0 items-center gap-2 text-label leading-label">
       {statusWord ? <StateBadge tone="neutral" testId="wiki-reader-status">{statusWord}</StateBadge> : null}
-      {sourceChanged ? <StateBadge tone="warning" testId="wiki-reader-source-changed">{t("graph.key.stale")}</StateBadge> : null}
+      {sourceChanged ? <StateBadge tone="warning" testId="wiki-reader-source-changed">{t("wikiReader.changedBadge")}</StateBadge> : null}
       <span data-testid="wiki-reader-byline" className="min-w-0 truncate text-[color:var(--color-text-tertiary)]">
         {byline}
       </span>

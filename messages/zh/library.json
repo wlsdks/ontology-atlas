@@ -544,68 +544,6 @@
     },
     "compiling": "正在重新读取来源并撰写 Wiki 页面。"
   },
-  "graph": {
-    "title": "图谱",
-    "empty": "暂无可显示的内容。用“生成 Wiki 页面”写出第一个页面后，这里会显示它来自哪份来源、提到了哪些概念。",
-    "canvasAria": "资料库图谱：原始来源、Wiki 页面，以及这些页面提到的概念。",
-    "islandUnsorted": "未归类",
-    "islandUnread": "未读取",
-    "describeIsland": "{name}：一个分组，含 {pages, number} 个页面及它们读取的 {sources, number} 个文件。点按即可展开为列；放大可看到名称。",
-    "announceIsland": "分组 {name}，第 {position, number} 个，共 {total, number} 个：{pages, number} 个页面和 {sources, number} 个文件。按 Enter 展开为列。",
-    "describeUnread": "未读取：{sources, number} 个还没有页面读过的文件。点按查看从哪里开始。",
-    "unreadPressed": "有 {sources, number} 份来源还没有任何页面读过，所以它们之间没有可绘制的关系。它们在来源列表中标为“无 Wiki 页面”；图上方的“生成 Wiki 页面”会从第一份开始。",
-    "islandBack": "全部分组",
-    "islandName": "{name} · {pages, number} 个页面 · {sources, number} 个文件",
-    "readerClose": "关闭页面",
-    "keys": "用方向键在圆点间移动，Enter 在当前圆点旁打开卡片，Escape 关闭卡片。",
-    "announce": "{kind} {name}，第 {position, number} 个，共 {total, number} 个。按 Enter {action}。",
-    "kind": {
-      "page": "Wiki 页面",
-      "source": "来源",
-      "concept": "概念"
-    },
-    "actionSelect": "查看它是什么",
-    "actionMap": "查看它是什么",
-    "openOnMap": "在地图上打开",
-    "fit": "适应全图",
-    "fitDone": "已显示全图",
-    "describe": {
-      "source": "{name}：来源文件。粗线通向据此撰写的 Wiki 页面；没有线说明还没有 Wiki 页面。点按可在旁边打开卡片。",
-      "page": "{name}：Wiki 页面。粗线通向它引用的来源，虚线通向它提到的概念。点按可在旁边打开卡片。",
-      "concept": "{name}：地图上的一个概念。虚线通向提到它或由其绘制而来的 Wiki 页面。点按可在旁边显示卡片。"
-    },
-    "describeOpen": {
-      "source": "{name}：来源文件。粗线通向据此撰写的 Wiki 页面；没有线说明还没有 Wiki 页面。卡片已在旁边打开：按 Escape 或再次点按即可关闭。",
-      "page": "{name}：Wiki 页面。粗线通向它引用的来源，虚线通向它提到的概念。卡片已在旁边打开：按 Escape 或再次点按即可关闭。",
-      "concept": "{name}：地图上的一个概念。虚线通向提到它或由其绘制而来的 Wiki 页面。它的卡片已在旁边打开：按 Escape 或再次点按即可关闭。"
-    },
-    "card": {
-      "close": "关闭此卡片",
-      "conceptSentence": "地图上的一个概念。",
-      "fileFacts": "{format} · {size} · {state}",
-      "sourcesLabel": "参考的来源",
-      "pagesLabel": "由此文件撰写的 Wiki 页面",
-      "rowMissing": "不在此文件夹中",
-      "open": "打开",
-      "refresh": "请求重写",
-      "seeAll": "查看全部 {count, number} 份来源",
-      "factOriginals": "{count} 份来源",
-      "factMentions": "{count} 处提及",
-      "factPassages": "{count} 段引文",
-      "flowInline": "引用从每份来源流向此页面。",
-      "flowInlineStale": "引用从每份来源流向此页面；琥珀色圆点表示来源已变更、需要重新核对的引用。"
-    },
-    "key": {
-      "source": "来源 {count, number}",
-      "page": "Wiki 页面 {count, number}",
-      "concept": "概念 {count, number}",
-      "cite": "引用 {count, number}",
-      "mention": "提及 {count, number}",
-      "island": "一个分组是一个概念",
-      "stale": "撰写后已变更",
-      "gestures": "点按显示卡片 · 点按两次打开 · 滚动缩放"
-    }
-  },
   "home": {
     "guide": "使用方法",
     "questions": "{count, plural, =0 {问题} other {问题 #}}",
@@ -1186,6 +1124,8 @@
     },
     "listKey": "等待中的来源",
     "listFolder": "文件夹：{folder}",
+    "listType": "文件类型：{type}",
+    "listNone": "这里没有处于该状态的来源。",
     "reading": "正在读取文件夹：目前 {count, number} 份来源",
     "pickGone": "{folder} 已不在 sources/ 中。正在显示全部来源。"
   },
@@ -1223,7 +1163,9 @@
     "sourceMissing": "这个文件夹中没有这个文件。",
     "sourceTooLarge": "这个文件太大，无法在这里显示。",
     "linkMissing": "此文件夹中没有这个名称的内容。",
-    "back": "返回"
+    "back": "返回",
+    "close": "关闭页面",
+    "changedBadge": "撰写后已变更"
   },
   "wikiIndex": {
     "views": {

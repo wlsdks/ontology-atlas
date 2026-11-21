@@ -20,7 +20,6 @@ const CONSUMERS = [
   'src/widgets/full-detail-a1/ui/FullDetailA1.tsx',
   'src/widgets/project-drawer/ui/ProjectDrawer.tsx',
   'src/widgets/library-import/ui/LibraryImportDialog.tsx',
-  'src/widgets/library-graph/ui/LibraryMarkPopover.tsx',
   'src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx',
   'src/views/library/ui/parts/LibraryHomePopover.tsx',
   'src/views/home/ui/TopologyBlockingOverlays.tsx',

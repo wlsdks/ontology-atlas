@@ -14,13 +14,12 @@ import type { LibrarySelection, LibraryHomeSurface } from "./library-page-state"
 import type { useLibrarySources } from "./use-library-sources";
 import type { useLibraryHome } from "./use-library-home";
 import type { useLibraryTurns } from "./use-library-turns";
-import type { useLibraryGraphCards } from "./use-library-graph-cards";
 import type { libraryHomeStrip } from "./library-home-strip";
 
 export function LibraryHomePopovers({
   t, nativeVaultRootPath, homeSurface, setHomeSurface, guideDoorRef, questionsDoorRef,
   compileClauseRef, overflowDoorRef, choose, busy, model, retainedAnswers, knownOriginalPaths,
-  retainedAnswerSlugs, agent, closeHomeSurface, handleCompile, sources, home, turns, graphCards,
+  retainedAnswerSlugs, agent, closeHomeSurface, handleCompile, sources, home, turns, agentDoor,
   homeStrip, compileBatch,
 }: {
   t: ReturnType<typeof useTranslations<"library">>;
@@ -43,7 +42,8 @@ export function LibraryHomePopovers({
   sources: ReturnType<typeof useLibrarySources>;
   home: ReturnType<typeof useLibraryHome>;
   turns: ReturnType<typeof useLibraryTurns>;
-  graphCards: ReturnType<typeof useLibraryGraphCards>;
+  /** The app has no agent to write with, so a blocked write names the agents page. */
+  agentDoor: boolean;
   homeStrip: ReturnType<typeof libraryHomeStrip>;
   /** What the next Continue press names (`useCompileBatch`); derived from the list when absent. */
   compileBatch?: Pick<CompileBatchState, "targets" | "rest" | "returned">;
@@ -51,7 +51,6 @@ export function LibraryHomePopovers({
   const { sourceImportFeedback, handleAddFiles, handleFindDocuments } = sources;
   const { closeGuide } = home;
   const { handleLint, compileBlocked, compileTransfer, agentOnlyReason } = turns;
-  const { agentDoor } = graphCards;
   const { compileTarget, overflowDoors } = homeStrip;
   const batch = compileBatchView(compileBatch, model);
   return (

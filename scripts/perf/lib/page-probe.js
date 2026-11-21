@@ -174,11 +174,11 @@
       mark('censusShown');
       if (!progress) mark('censusComplete');
     }
-    // A vault without concepts opens on the Library, so its islands are the first content shown.
-    const library = expectConcepts === 0 ? window.__atlasLibraryGraph : null;
-    if (opened && !starter && library && library.nodes().length > 0) {
+    // A vault without concepts opens on the Library, so the Sources home's first rows are the first content shown.
+    const library = expectConcepts === 0 ? sourcesHome() : null;
+    if (opened && !starter && library && library.rows > 0) {
       mark('firstConcepts');
-      if (!progress && !library.arriving()) mark('loaded');
+      if (!progress && !library.reading) mark('loaded');
     }
     if (opened && ours && !starter && canvas && next.census > 0) {
       mark('firstConcepts');
@@ -192,8 +192,6 @@
       pointerId: 1, pointerType: 'mouse', isPrimary: true,
       button: type === 'pointermove' ? -1 : 0, buttons,
     }));
-  const mouse = (target, type, x, y) =>
-    target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0 }));
 
   async function inSegment(name, run) {
     segment = { name, start: now(), intervals: [] };
@@ -298,50 +296,54 @@
     return false;
   }
 
+  /** The Sources home as drawn: its rows in the DOM and whether the folder is still being read. */
+  function sourcesHome() {
+    const overview = document.querySelector('[data-testid="sources-overview"]');
+    if (!overview) return null;
+    return {
+      rows: overview.querySelectorAll('[data-testid="sources-row"]').length,
+      reading: overview.querySelector('[data-testid="sources-reading"]') !== null,
+    };
+  }
+
   async function walkLibrary({ capMs = 180000, settleMs = 10000 } = {}) {
     const link = [...document.querySelectorAll('[data-testid="app-nav-rail"] a[href]')].find((a) => /\/library\/?(\?|$)/.test(a.getAttribute('href') || ''));
     if (!link) throw new Error('no Library link in the rail');
     mark('libraryNav');
     link.click();
-    const graph = () => window.__atlasLibraryGraph;
-    const ready = await until(() => graph() && graph().nodes().length > 0 && !graph().arriving(), capMs, 'the Library graph');
+    const ready = await until(() => {
+      const home = sourcesHome();
+      return home !== null && home.rows > 0 && !home.reading;
+    }, capMs, 'the Sources home');
     if (!ready) return { ready: false };
     mark('libraryReady');
     await wait(settleMs);
     mark('libraryQuiet');
-    const islands = graph().islands();
-    if (!islands || islands.length === 0) {
-      note('no islands on the Library map');
-      return { ready: true, islands: 0 };
+    const row = document.querySelector('[data-testid="sources-overview"] [data-testid="sources-row"]');
+    if (!row) {
+      note('no rows on the Sources home');
+      return { ready: true, rows: 0 };
     }
-    const island = [...islands].sort((a, b) => b.pages + b.sources - (a.pages + a.sources))[0];
-    const canvas = document.querySelector('[data-testid="library-graph-canvas"]');
-    const box = canvas.getBoundingClientRect();
-    const view = graph().view();
-    const x = box.left + (island.x + island.r * 0.3 - view.x) * view.scale + view.width / 2;
-    const y = box.top + (island.y - view.y) * view.scale + view.height / 2;
+    const label = row.querySelector('button')?.title ?? '';
     let firstFrameMs = null;
     let pressMs = null;
-    await inSegment('island-open', async () => {
+    await inSegment('row-pick', async () => {
       const pressed = now();
-      pointer(canvas, 'pointerdown', x, y, 1);
-      pointer(canvas, 'pointerup', x, y, 0);
-      mouse(canvas, 'click', x, y);
+      row.click();
       pressMs = now() - pressed;
-      // A frame's timestamp is its start, so the frame that drew the opened island has ended
+      // A frame's timestamp is its start, so the frame that drew the picked row's panel has ended
       // when the next one starts.
       while (now() - pressed < 15000) {
         await nextFrame();
-        if (graph() && graph().layout()) {
+        if (document.querySelector('[data-testid="sources-panel-clear"]')) {
           await nextFrame();
           firstFrameMs = now() - pressed;
           break;
         }
       }
-      await until(() => !graph().arriving(), 15000, 'the opened island to settle');
     });
-    state.island = { label: island.label, kind: island.kind, pages: island.pages, sources: island.sources, firstFrameMs, pressMs };
-    return state.island;
+    state.rowPick = { label, firstFrameMs, pressMs };
+    return state.rowPick;
   }
 
   function read() {
@@ -370,7 +372,7 @@
       gaps: gaps.slice(0, 40),
       loafs: state.loafs,
       segments: state.segments,
-      island: state.island ?? null,
+      rowPick: state.rowPick ?? null,
       jsHeapMb: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null,
       visibility: document.visibilityState,
       hiddenMs: Math.round(state.hiddenMs + (hiddenSince === null ? 0 : now() - hiddenSince)),
