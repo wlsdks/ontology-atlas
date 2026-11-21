@@ -79,7 +79,7 @@ fn create_text_exclusively_with(
     let mut created = None;
     for _ in 0..64 {
         let sequence = SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let temporary = parent.join(crate::vault::temporary_names::create_temporary_name(
+        let temporary = parent.join(crate::vault::temporary_files::names::create_temporary_name(
             std::process::id(),
             nonce,
             sequence,

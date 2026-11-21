@@ -1,13 +1,11 @@
 pub(crate) mod create;
 pub(crate) mod grants;
 pub(crate) mod index;
-pub(crate) mod index_rows;
 pub(crate) mod library_collections;
 pub(crate) mod location;
 pub(crate) mod read;
 pub(crate) mod scope;
-pub(crate) mod temp_sweep;
-pub(crate) mod temporary_names;
+pub(crate) mod temporary_files;
 pub(crate) mod vectors;
 pub(crate) mod walk;
 pub(crate) mod watch;

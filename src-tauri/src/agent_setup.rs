@@ -355,12 +355,13 @@ pub(crate) fn create_entry_atomically(
     let mut created = None;
     for _ in 0..64 {
         let sequence = SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let name = std::ffi::CString::new(crate::vault::temporary_names::create_temporary_name(
-            std::process::id(),
-            nonce,
-            sequence,
-        ))
-        .map_err(|error| err_str(error.to_string()))?;
+        let name =
+            std::ffi::CString::new(crate::vault::temporary_files::names::create_temporary_name(
+                std::process::id(),
+                nonce,
+                sequence,
+            ))
+            .map_err(|error| err_str(error.to_string()))?;
         let fd = unsafe {
             libc::openat(
                 parent.as_raw_fd(),
@@ -456,20 +457,21 @@ pub(crate) fn write_entry_atomically_with_guard<T>(
         let sequence = TEMP_SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         // Cannot fail for a `&CStr` name, but stays an error: a panic on the macOS main
         // thread aborts the app.
-        let temporary_name =
-            match std::ffi::CString::new(crate::vault::temporary_names::atomic_temporary_name(
+        let temporary_name = match std::ffi::CString::new(
+            crate::vault::temporary_files::names::atomic_temporary_name(
                 &printable_name,
                 std::process::id(),
                 nonce,
                 sequence,
-            )) {
-                Ok(name) => name,
-                Err(_) => {
-                    return Err(err_str(
-                        "temporary file name contained an unsupported NUL byte",
-                    ))
-                }
-            };
+            ),
+        ) {
+            Ok(name) => name,
+            Err(_) => {
+                return Err(err_str(
+                    "temporary file name contained an unsupported NUL byte",
+                ))
+            }
+        };
         let temporary_fd = unsafe {
             libc::openat(
                 parent.as_raw_fd(),

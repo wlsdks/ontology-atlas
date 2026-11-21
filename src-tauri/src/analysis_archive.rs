@@ -345,7 +345,7 @@ fn publish_exclusively(
 
 /// The vault-open sweep removes a leftover only under a name it recognises.
 fn temporary_name() -> String {
-    crate::vault::temporary_names::next_create_temporary_name()
+    crate::vault::temporary_files::names::next_create_temporary_name()
 }
 
 #[cfg(not(unix))]
@@ -402,12 +402,12 @@ mod tests {
         fs::write(&leftover, "partial").unwrap();
         let root = fs::canonicalize(root).unwrap();
         let later = std::time::SystemTime::now()
-            + crate::vault::temp_sweep::STALE_AFTER
+            + crate::vault::temporary_files::sweep::STALE_AFTER
             + std::time::Duration::from_secs(1);
-        let removed = crate::vault::temp_sweep::sweep_stale_temporaries(
+        let removed = crate::vault::temporary_files::sweep::sweep_stale_temporaries(
             &root,
             later,
-            crate::vault::temp_sweep::STALE_AFTER,
+            crate::vault::temporary_files::sweep::STALE_AFTER,
         );
         assert_eq!(removed, 1);
         fs::remove_dir_all(root).ok();

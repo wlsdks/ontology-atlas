@@ -1,11 +1,11 @@
 //! Removes the temporary files an atomic write leaves when the process ends between creating and renaming
 //! it (crash, forced quit, the Windows updater's immediate exit), when a vault opens.
-//! Only a whole name in a writer's exact shape (`crate::vault::temporary_names`) is removed, only in folders
+//! Only a whole name in a writer's exact shape (`crate::vault::temporary_files::names`) is removed, only in folders
 //! the vault walk enters plus the root `.ontology-atlas` sidecar, and only after an hour untouched, because the
 //! MCP server and the CLI may be mid-write.
 
-use super::walk::{vault_walk_skips_directory, VAULT_CACHE_DIR_TAG, VAULT_WALK_MAX_DEPTH};
-use crate::vault::temporary_names::is_atlas_temporary;
+use crate::vault::temporary_files::names::is_atlas_temporary;
+use crate::vault::walk::{vault_walk_skips_directory, VAULT_CACHE_DIR_TAG, VAULT_WALK_MAX_DEPTH};
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 
@@ -207,7 +207,7 @@ mod portable {
 #[cfg(test)]
 mod tests {
     use super::{sweep_stale_temporaries, STALE_AFTER};
-    use crate::vault::temporary_names::{atomic_temporary_name, create_temporary_name};
+    use crate::vault::temporary_files::names::{atomic_temporary_name, create_temporary_name};
     use std::fs;
     use std::path::PathBuf;
     use std::time::{Duration, SystemTime};
