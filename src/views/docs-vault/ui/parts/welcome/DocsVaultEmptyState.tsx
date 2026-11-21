@@ -4,7 +4,7 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTranslations } from "next-intl";
 import { controlClass } from "@/shared/ui";
 
-export function EmptyState({
+export function DocsVaultEmptyState({
   docCount,
   onOpenAgentWorkflow,
   onOpenTree,

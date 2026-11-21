@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
-import enMessages from "../../../../../messages/en.json";
-import koMessages from "../../../../../messages/ko.json";
+import enMessages from "../../../../../../messages/en.json";
+import koMessages from "../../../../../../messages/ko.json";
 import { SampleWelcomeNote } from "./SampleWelcomeNote";
 
 function renderNote(

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import koMessages from "../../../../../messages/ko.json";
+import koMessages from "../../../../../../messages/ko.json";
 import { SampleNotice } from "./SampleNotice";
 
 const vault = vi.hoisted(() => ({ status: "idle", open: vi.fn() }));

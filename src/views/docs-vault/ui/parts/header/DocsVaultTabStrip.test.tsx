@@ -2,10 +2,10 @@ import { fireEvent, render } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { useState } from "react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import koMessages from "../../../../../messages/ko.json";
+import koMessages from "../../../../../../messages/ko.json";
 import type { useTranslations } from "next-intl";
 import { DocsVaultTabStrip } from "./DocsVaultTabStrip";
-import type { DocTab } from "../../lib/doc-tabs/doc-tabs";
+import type { DocTab } from "../../../lib/doc-tabs/doc-tabs";
 
 // jsdom has no ResizeObserver.
 beforeAll(() => {

@@ -5,7 +5,7 @@ import { useState, type FormEvent } from "react";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { Button, Dialog, OntologyMapKindGlyph, controlClass } from "@/shared/ui";
 import { Input } from "@/shared/ui/fields/input";
-import { NEW_DOC_KINDS, type NewDocKind } from "../../model/use-doc-write-actions";
+import { NEW_DOC_KINDS, type NewDocKind } from "../../../model/use-doc-write-actions";
 
 export function NewDocKindDialog({
   open,

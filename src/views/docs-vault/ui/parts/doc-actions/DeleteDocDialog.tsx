@@ -8,7 +8,7 @@ import { useFailureSentence, type FailureCopy } from "@/shared/lib/failures/use-
 import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { Button, Dialog } from "@/shared/ui";
 
-import type { DeleteDocTarget } from "../../model/use-doc-write-actions";
+import type { DeleteDocTarget } from "../../../model/use-doc-write-actions";
 
 const REFERRERS_NAMED_MAX = 3;
 

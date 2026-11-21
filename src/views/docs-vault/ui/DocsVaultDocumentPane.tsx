@@ -30,8 +30,8 @@ import {
 } from '@/entities/docs-vault';
 import { DocMetaBar } from './parts/DocMetaBar';
 import { DocFrontmatterBlock } from './parts/DocFrontmatterBlock';
-import { SampleNotice } from './parts/SampleNotice';
-import { SampleWelcomeNote } from './parts/SampleWelcomeNote';
+import { SampleNotice } from './parts/welcome/SampleNotice';
+import { SampleWelcomeNote } from './parts/welcome/SampleWelcomeNote';
 import { persistEditorSave, type DocsVaultSource as Source } from '../lib/persistence';
 
 function splitVaultSlugPath(slug: string): { dir: string; name: string } {

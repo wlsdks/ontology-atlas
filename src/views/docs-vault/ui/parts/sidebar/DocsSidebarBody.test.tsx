@@ -1,10 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
-import koMessages from "../../../../../messages/ko.json";
+import koMessages from "../../../../../../messages/ko.json";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import type { DocsTreeGroup, DocsTreeSort } from "@/widgets/docs-vault/lib/tree-order";
-import type { DocsVaultCollection } from "../../lib/docs-vault-collection";
+import type { DocsVaultCollection } from "../../../lib/docs-vault-collection";
 import type { AgentFilesUiModel } from "@/entities/agent-files";
 import { DocsSidebarBody } from "./DocsSidebarBody";
 

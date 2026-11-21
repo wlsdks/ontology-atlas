@@ -137,7 +137,7 @@ const docsVaultPageFiles = [
 ];
 const docsVaultPage = docsVaultPageFiles.map(readText).join("\n");
 // The docs surface's local-source control lives in the vault chip menu.
-const vaultChipSurface = readText("src/views/docs-vault/ui/parts/DocsVaultVaultChip.tsx");
+const vaultChipSurface = readText("src/views/docs-vault/ui/parts/header/DocsVaultVaultChip.tsx");
 const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEmptyState.tsx");
 const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/agent-setup/VaultAgentSetupPanel.tsx");
 const vaultAgentSetupCopySources = [

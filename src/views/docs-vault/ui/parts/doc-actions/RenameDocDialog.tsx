@@ -10,7 +10,7 @@ import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { Button, Dialog } from "@/shared/ui";
 import { Input } from "@/shared/ui/fields/input";
 
-import type { RenameDocTarget } from "../../model/use-doc-write-actions";
+import type { RenameDocTarget } from "../../../model/use-doc-write-actions";
 
 export function RenameDocDialog({
   target,

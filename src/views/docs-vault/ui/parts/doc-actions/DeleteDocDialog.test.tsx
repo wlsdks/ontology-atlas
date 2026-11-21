@@ -2,9 +2,9 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 
-import koMessages from "../../../../../messages/ko.json";
+import koMessages from "../../../../../../messages/ko.json";
 import { DeleteDocDialog } from "./DeleteDocDialog";
-import type { DeleteDocTarget } from "../../model/use-doc-write-actions";
+import type { DeleteDocTarget } from "../../../model/use-doc-write-actions";
 
 function renderDialog(target: DeleteDocTarget, onConfirm = vi.fn().mockResolvedValue(undefined)) {
   render(
