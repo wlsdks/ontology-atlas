@@ -789,7 +789,7 @@ partial artifact.
    `useDataSourceMode` and every other destination, check and count wait for the whole manifest,
    which equals a build that publishes nothing. LNB route changes mount against the
    current provider before paint; a true folder switch holds a neutral body until the new manifest
-   (on the map, its first part) arrives, while a same-vault reread keeps the existing facts and
+   (on the map, its first part holding a concept) arrives, while a same-vault reread keeps the existing facts and
    publishes no part. Picker, recent reopen, and cold restore all resolve a project root containing
    Markdown under `atlas/` to that child before building.
 
