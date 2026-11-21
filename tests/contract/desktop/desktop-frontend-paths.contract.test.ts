@@ -134,7 +134,7 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
       "src/views/change-briefing/ui/BriefingRepositoryStage.tsx",
       "src/views/home/model/project-source/use-topology-source-actions.tsx",
       "src/views/library/ui/compile/LibraryStage.tsx",
-      "src/views/library/ui/progress/SourceProgressBand.tsx",
+      "src/views/library/ui/progress/ProgressAction.tsx",
       "src/views/planning/ui/PlanningFolderStage.tsx",
       "src/views/terminal-state/ui/NotFoundScreen.tsx",
       "src/views/work-status/ui/WorkStatusStage.tsx",
