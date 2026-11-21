@@ -5,7 +5,7 @@ import {
   useFrameMeter,
   writeFrameMeter,
 } from '@/shared/lib/preferences/canvas-appearance-preferences';
-import { CanvasBackgroundPicker } from '../pane-settings/AppearancePickers';
+import { CanvasBackgroundPicker } from '../pane-settings/appearance-pickers';
 import { MapSpeedSettings } from '../pane-settings/MapSpeedSettings';
 import { SegmentSwitch, SettingsGroup, SettingsRow } from '../settings-primitives';
 

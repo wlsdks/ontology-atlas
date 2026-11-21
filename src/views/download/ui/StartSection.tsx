@@ -9,7 +9,7 @@ import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-fram
 import type { StageGraph } from '../lib/stage-graph';
 import { useInViewMotion } from '../lib/page-motion/use-in-view-motion';
 import { SectionIntro } from './SectionIntro';
-import { ConnectScene, DraftScene, OpenFolderScene, useStepScenes } from './StepScenes';
+import { ConnectScene, DraftScene, OpenFolderScene, useStepScenes } from './step-scenes';
 
 /**
  * `waiting` hides a drawing's lines and exists only once a script has seen the block below the

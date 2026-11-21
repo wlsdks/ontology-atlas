@@ -151,7 +151,7 @@ Atlas has several instruction channels, each with a different runtime boundary:
 
 | Channel | Instruction owner | Delivery and scope |
 |---|---|---|
-| Vault conversation | `src/features/vault-agent/model/system-prompt.ts` (`buildSystemPrompt`) | `use-vault-agent.ts` passes the assembled text to the provider as `system`; `AgentPromptDisclosure` displays that same value. This agent reads the vault and proposes changes for review. |
+| Vault conversation | `src/features/vault-agent/model/system-prompt.ts` (`buildSystemPrompt`) | `use-vault-agent.ts` passes the assembled text to the provider as `system`; `AgentPromptText` displays that same value. This agent reads the vault and proposes changes for review. |
 | Local wiki Compile | `src/features/vault-agent/model/compile/compile-system-prompt.ts` (`buildCompileSystemPrompt`) | `use-local-compile.ts` supplies the turn-specific system text for source reading and wiki proposals. This is a separate task from ontology construction. |
 | ACP coding agent | `src/features/acp-session/model/runtime-wiring/vault-handoff-prompt.ts` (`vaultHandoffPrompt`) | `acp-client.ts` supplies `_meta.systemPrompt.append` on the Claude adapter path. This augments that agent's own instructions; it does not replace them or establish universal ACP support. |
 | External MCP client | `mcp/src/server/instructions.mjs` | `server/instance.mjs` attaches the registry's instructions to the MCP initialization response. The receiving host controls their inclusion and placement in model context. |

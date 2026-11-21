@@ -67,7 +67,7 @@ import { resolveProjectLead } from "../model/project-lead";
 import { buildProjectToCheck, isProjectConcept } from "../model/project-to-check";
 import { buildProjectChanged } from "../model/project-changed";
 import { DomainMasterDetail } from "./DomainMasterDetail";
-import { ProjectNowFactsReader, type ProjectNowFacts } from "./now/ProjectNowFacts";
+import { ProjectNowFactsReader, type ProjectNowFacts } from "./now/ProjectNowFactsReader";
 import { ToCheckSection } from "./now/ToCheckSection";
 import { ChangedSection } from "./now/ChangedSection";
 import { SECTION_HEADING_CLASS } from "./now/now-parts";

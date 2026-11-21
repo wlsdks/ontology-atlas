@@ -24,7 +24,7 @@ import { BrandPortrait } from "@/shared/ui/marks/moru/brand-portrait";
 
 import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
-import { AutomationLaneFacts, AutomationListPanel } from "./AutomationListFrame";
+import { AutomationLaneFacts, AutomationListPanel } from "./automation-list-layout";
 import { AutomationHistoryHeading, AutomationRunHistory, AutomationUnrecorded } from "./AutomationRunHistory";
 import { AUTOMATIONS_RUNNING_ID } from "./AutomationScheduleActions";
 import { AutomationScheduleArtwork } from "./AutomationScheduleArtwork";

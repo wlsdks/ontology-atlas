@@ -35,7 +35,7 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/git/git-workbench-stacked-floor.spec.ts',
     reason: 'the stacked Git reader at the window floor changed',
     matches: [
-      /^src\/widgets\/atlas-git-panel\/ui\/(AtlasGitPanel|DesktopBody|StepList|ActionDock|RemoteControls|SetupMode)\.tsx$/,
+      /^src\/widgets\/atlas-git-panel\/ui\/(AtlasGitPanel|DesktopBody|StepList|ActionDock|remote-controls|setup-panels)\.tsx$/,
       /^src\/widgets\/atlas-git-panel\/ui\/CommitDetail\.tsx$/,
       /^src\/widgets\/atlas-git-panel\/ui\/commit-detail\/[^/]+\.tsx$/,
     ],

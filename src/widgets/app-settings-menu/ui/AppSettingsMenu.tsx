@@ -38,7 +38,7 @@ import {
   SettingsSearchField,
   SettingsSearchResults,
   useSettingsSearchCursor,
-} from './SettingsSearch';
+} from './settings-search-controls';
 import { SettingsPaneHead } from './settings-primitives';
 import { useSettingsTriggerLabel } from './use-settings-trigger-label';
 

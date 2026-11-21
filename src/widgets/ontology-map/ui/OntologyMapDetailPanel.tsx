@@ -40,7 +40,7 @@ import {
 import { MeaningZone } from "./detail-panel/MeaningZone";
 import { PanelFooter, panelActionClass } from "./detail-panel/PanelFooter";
 import { ProjectSourceRemedy } from "./detail-panel/ProjectSourceRemedy";
-import { ProjectSourcePendingRows, ProjectSourceStatusIcon } from "./detail-panel/ProjectSourceRows";
+import { ProjectSourcePendingRows, ProjectSourceStatusIcon } from "./detail-panel/project-source-status";
 import { RelationsZone } from "./detail-panel/RelationsZone";
 import type { OntologyMapDetailPanelProps } from "./detail-panel/types";
 

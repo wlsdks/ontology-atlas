@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
 
-import { StartingState } from './TranscriptStates';
+import { StartingState } from './transcript-states';
 import type { ChatT } from '../types';
 
 beforeEach(() => {

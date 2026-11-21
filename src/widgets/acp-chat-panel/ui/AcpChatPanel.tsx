@@ -18,7 +18,7 @@ import { splitAppRequest } from './request-parts';
 import { turnActivity } from './turn-activity';
 import { ComposerInput } from './chat-panel/composer/ComposerInput';
 import { ChoicesRow, ComposerFooter } from './chat-panel/composer/ComposerFooter';
-import { ReportedPlanNote, SeatedDetailDisclosure, TurnSilentNotice } from './chat-panel/composer/ComposerNotices';
+import { ReportedPlanNote, SeatedDetailDisclosure, TurnSilentNotice } from './chat-panel/composer/composer-notices';
 import { SlashMenu } from './chat-panel/composer/SlashMenu';
 import { ErrorCard } from './chat-panel/ErrorCard';
 import { HistoryPopover } from './chat-panel/HistoryPopover';
@@ -28,7 +28,7 @@ import { TranscriptOffers } from './chat-panel/transcript-pane/TranscriptOffers'
 import { TranscriptPane } from './chat-panel/transcript-pane/TranscriptPane';
 import { TranscriptRows } from './chat-panel/transcript-pane/TranscriptRows';
 import { TurnWorkStage, type TurnWork } from './chat-panel/turn/TurnWorkStage';
-import { ConnectStoppedState, EmptyState, FolderBusyState, StartingState } from './chat-panel/transcript-pane/TranscriptStates';
+import { ConnectStoppedState, EmptyState, FolderBusyState, StartingState } from './chat-panel/transcript-pane/transcript-states';
 import type { AcpChatPanelProps } from './chat-panel/types';
 import { useHistoryEscape, useHistoryMenu, useSlashMenu } from './chat-panel/composer/use-composer-menus';
 import { useComposerSizing } from './chat-panel/composer/use-composer-sizing';

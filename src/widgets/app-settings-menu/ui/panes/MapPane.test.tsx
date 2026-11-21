@@ -6,7 +6,7 @@ import { MapPane } from './MapPane';
 vi.mock('next-intl', () => ({
   useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
 }));
-vi.mock('../pane-settings/AppearancePickers', () => ({
+vi.mock('../pane-settings/appearance-pickers', () => ({
   CanvasBackgroundPicker: ({ settingId }: { settingId?: string }) => (
     <div data-testid="app-settings-canvas-background" data-setting-id={settingId} />
   ),
