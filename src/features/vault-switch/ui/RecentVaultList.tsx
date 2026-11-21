@@ -18,7 +18,7 @@ import {
   type RecentVaultRow,
 } from '../lib/recent-vault-row';
 import { useRecentVaultReachability } from '../model/use-recent-vault-reachability';
-import { MissingFolderGroup, type MissingFolderReviewMode } from './MissingFolderGroup';
+import { MissingFolderGroup } from './MissingFolderGroup';
 
 /**
  * The known folders, each stating what it holds and whether it opens. One component for the
@@ -34,7 +34,7 @@ export function RecentVaultList({
   onLocate,
   emphasis = false,
   scroll = 'contained',
-  missingReview = 'dialog',
+  onReviewMissing,
   footnote,
   className,
 }: {
@@ -52,11 +52,8 @@ export function RecentVaultList({
   emphasis?: boolean;
   /** The viewport chooser fills its allocated space; popovers retain their compact cap. */
   scroll?: 'page' | 'contained' | 'viewport';
-  /**
-   * How the folders that are gone are reviewed: in a dialog on a page (the default), in place in
-   * a popover that grows downward. `MissingFolderReviewMode` says why the two differ.
-   */
-  missingReview?: MissingFolderReviewMode;
+  /** Opens the review of the folders that are gone in a dialog the caller owns; without it the list owns one. */
+  onReviewMissing?: (rows: readonly RecentVaultRow[]) => void;
   /** A line under the list, drawn with it so it never jumps down when the list appears. */
   footnote?: ReactNode;
   className?: string;
@@ -139,7 +136,7 @@ export function RecentVaultList({
           divided={listed.length > 0}
           busy={busy}
           nowMs={nowMs}
-          review={missingReview}
+          onReview={onReviewMissing}
           onForget={forgetMissing}
           onForgetAll={forgetAllMissing}
           onLocate={onLocate}
