@@ -16,7 +16,7 @@ import {
 } from '@/shared/lib/preferences/appearance-preferences';
 import { Chip } from '@/shared/ui/controls/controls';
 import { RowDisclosure } from '@/shared/ui/controls/row-disclosure';
-import { Choice, DETAIL_TOGGLE_CHIP, Slider } from './settings-primitives';
+import { Choice, DETAIL_TOGGLE_CHIP, Slider } from '../settings-primitives';
 
 export function ExpandSettings() {
   const t = useTranslations('nav.settingsMenu.expand');

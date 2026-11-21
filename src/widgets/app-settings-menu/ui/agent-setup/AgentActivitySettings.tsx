@@ -11,7 +11,7 @@ import {
   writeAgentNotificationsEnabled,
   writeMutedAgentNotificationKinds,
 } from '@/shared/lib/preferences/appearance-preferences';
-import { SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives';
+import { SegmentSwitch, SettingsGroup, SettingsRow } from '../settings-primitives';
 import { controlClass } from '@/shared/ui/control-class';
 
 export function AgentActivitySettings() {

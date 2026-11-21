@@ -79,7 +79,7 @@ export const rules = [
       /^src\/views\/(?:agents|mcp|mcp-redirect)\/.+\.tsx?$/,
       /^src\/app\/agents-workspace\/.+\.tsx?$/,
       /^src\/features\/mcp-connectors\/.+\.tsx?$/,
-      /^src\/widgets\/app-settings-menu\/ui\/(?:AgentSetupSection|VaultAgentSetupPanel)\.tsx$/,
+      /^src\/widgets\/app-settings-menu\/ui\/agent-setup\/(?:AgentSetupSection|VaultAgentSetupPanel)\.tsx$/,
     ],
   },
   {
@@ -92,7 +92,7 @@ export const rules = [
      */
     command: 'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
     reason: 'the runtime list changed — the web surface draws its degradation card instead',
-    matches: [/^src\/widgets\/app-settings-menu\/ui\/AcpRuntimeSettings\.tsx$/],
+    matches: [/^src\/widgets\/app-settings-menu\/ui\/agent-setup\/AcpRuntimeSettings\.tsx$/],
   },
   {
     order: 850,

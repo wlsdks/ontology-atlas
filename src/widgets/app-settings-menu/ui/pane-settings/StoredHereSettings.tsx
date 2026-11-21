@@ -14,7 +14,7 @@ import {
   type VaultIndexStatus,
 } from '@/shared/lib/vault-folder/tauri-vault-index';
 import { probeVectors } from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { ArmedChip, SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives';
+import { ArmedChip, SegmentSwitch, SettingsGroup, SettingsRow } from '../settings-primitives';
 
 const BUILDING_POLL_MS = 1000;
 const BYTES_PER_KILOBYTE = 1024;

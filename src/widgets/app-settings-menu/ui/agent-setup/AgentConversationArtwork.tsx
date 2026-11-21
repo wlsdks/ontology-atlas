@@ -5,8 +5,8 @@ import { motion } from 'framer-motion';
 import { MOTION, STAGGER } from '@/shared/motion';
 import { FeatureStagePulse, type FeatureStageMotion } from '@/shared/ui';
 
-import type { AppCodingTool } from '../model/app-coding-tools';
-import { ProductMark } from './settings-primitives';
+import type { AppCodingTool } from '../../model/app-coding-tools';
+import { ProductMark } from '../settings-primitives';
 
 const VIEW = { width: 320, height: 240 };
 const TOOL_X = 44;

@@ -1027,7 +1027,7 @@ describe('focused check suggestions', () => {
       'src/views/mcp-redirect/ui/McpRedirectPage.tsx',
       'src/app/agents-workspace/index.tsx',
       'src/features/mcp-connectors/ui/ConnectorsPanel.tsx',
-      'src/widgets/app-settings-menu/ui/AgentSetupSection.tsx',
+      'src/widgets/app-settings-menu/ui/agent-setup/AgentSetupSection.tsx',
     ]) {
       assert.ok(
         domainCommands(suggestFocusedChecks([path])).includes(command),
@@ -1040,7 +1040,7 @@ describe('focused check suggestions', () => {
     // Naming the connectors specs here would be a mapping that does not measure this file:
     // only the web smoke registers the card a browser draws instead of the runtime list.
     const commands = domainCommands(
-      suggestFocusedChecks(['src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx']),
+      suggestFocusedChecks(['src/widgets/app-settings-menu/ui/agent-setup/AcpRuntimeSettings.tsx']),
     );
     assert.ok(commands.includes('pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts'));
     assert.ok(!commands.some((command) => command.includes('mcp-connector-add')));

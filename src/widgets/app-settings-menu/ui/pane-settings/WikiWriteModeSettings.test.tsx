@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import enMessages from '../../../../messages/en.json';
+import enMessages from '../../../../../messages/en.json';
 import { WikiWriteModeSettings } from './WikiWriteModeSettings';
 
 function mount() {

@@ -24,7 +24,7 @@ import {
   type OutboundPath,
 } from '../../model/outbound-paths';
 import { ArmedChip, DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from '../settings-primitives';
-import { StoredHereSettings } from '../StoredHereSettings';
+import { StoredHereSettings } from '../pane-settings/StoredHereSettings';
 
 const isPlaceholder = (host: string): host is OutboundDestinationPlaceholder =>
   (OUTBOUND_DESTINATION_PLACEHOLDERS as readonly string[]).includes(host);

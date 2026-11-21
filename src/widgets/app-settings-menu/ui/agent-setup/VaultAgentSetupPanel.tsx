@@ -29,7 +29,7 @@ import {
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
 } from '@/features/docs-vault-local';
-import { DETAIL_TOGGLE_CHIP, SETTINGS_SECTION_LABEL, SettingsGroup, SettingsRow } from './settings-primitives';
+import { DETAIL_TOGGLE_CHIP, SETTINGS_SECTION_LABEL, SettingsGroup, SettingsRow } from '../settings-primitives';
 import { formatAgentPostChangeSyncPacket } from '@/entities/knowledge-graph';
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { AgentClientId } from '@/entities/vault-session';

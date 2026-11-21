@@ -151,7 +151,7 @@ const docsVaultPage = docsVaultPageFiles.map(readText).join("\n");
 // (merged 2026-08-08).
 const vaultChipSurface = readText("src/views/docs-vault/ui/parts/DocsVaultVaultChip.tsx");
 const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEmptyState.tsx");
-const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx");
+const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/agent-setup/VaultAgentSetupPanel.tsx");
 const appSettingsMenu = readText("src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx");
 const workspacePane = readText("src/widgets/app-settings-menu/ui/panes/WorkspacePane.tsx");
 // After that merge the old `LocalVaultPicker` was an orphan no surface rendered
@@ -1816,7 +1816,7 @@ if (
 // Content alone stays green for a component mounted nowhere, so this checks the
 // chain: the panel derives an absolute path, AgentSetupSection renders the panel,
 // and the Agents MCP tab (McpPage) renders AgentSetupSection.
-const agentSetupSection = readText("src/widgets/app-settings-menu/ui/AgentSetupSection.tsx");
+const agentSetupSection = readText("src/widgets/app-settings-menu/ui/agent-setup/AgentSetupSection.tsx");
 const mcpPage = readText("src/views/mcp/ui/McpPage.tsx");
 
 if (

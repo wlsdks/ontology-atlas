@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import ko from '../../../../messages/ko.json';
+import ko from '../../../../../messages/ko.json';
 import type { useAppUpdateContext } from '@/features/app-update';
 import { AppUpdateSettings } from './AppUpdateSettings';
 
