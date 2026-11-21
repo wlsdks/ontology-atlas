@@ -9,11 +9,14 @@ const shellMocks = vi.hoisted(() => ({
   replace: vi.fn(),
   vault: {
     status: "idle",
-    handle: null,
+    handle: null as { name: string; rootPath: string } | null,
+    recentVaults: [] as { desktopRootPath: string; docCount?: number; conceptCount?: number }[],
     manifest: null as object | null,
+    partialTotal: 0,
     restoreAttempted: true,
     isReloadingSameVault: false,
   },
+  arriving: null as { docs: { slug: string; frontmatter?: Record<string, unknown> }[] } | null,
 }));
 
 /** The shell owns the rail's utility tier, so it stands even when no page injects a slot. */
@@ -36,9 +39,18 @@ vi.mock("@/entities/vault-session/model/LocalVaultProvider", async (importOrigin
   ...(await importOriginal<typeof import("@/entities/vault-session/model/LocalVaultProvider")>()),
   useLocalVault: () => shellMocks.vault,
 }));
+vi.mock("@/entities/vault-session/model/vault-arrival", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-arrival")>()),
+  useArrivingManifest: () => shellMocks.arriving,
+}));
 vi.mock("@/entities/vault-session/model/use-data-source-mode", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/entities/vault-session/model/use-data-source-mode")>()),
   useDataSourceMode: () => "static",
+}));
+
+vi.mock("@/shared/lib/vault-folder/tauri-vault-fs", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/lib/vault-folder/tauri-vault-fs")>()),
+  getTauriVaultRootPath: (handle: { rootPath?: string }) => handle.rootPath,
 }));
 
 vi.mock("@/shared/lib/desktop-shell/desktop-shell", () => ({
@@ -62,9 +74,12 @@ beforeEach(() => {
   shellMocks.replace.mockClear();
   shellMocks.vault.status = "idle";
   shellMocks.vault.handle = null;
+  shellMocks.vault.recentVaults = [];
   shellMocks.vault.manifest = null;
+  shellMocks.vault.partialTotal = 0;
   shellMocks.vault.restoreAttempted = true;
   shellMocks.vault.isReloadingSameVault = false;
+  shellMocks.arriving = null;
 });
 
 describe("AppShell rail utility tier", () => {
@@ -118,6 +133,57 @@ describe("a folder that is opening", () => {
     opening();
     expect(screen.getByTestId("map-wait-cluster")).toBeInTheDocument();
     expect(screen.queryByTestId("brand-waiting-mark")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["names the folder when its last read found pages and no concept", 0, true],
+    ["keeps the map's orbit when its last read found concepts", 12, false],
+  ])("on the map, %s", (_condition, conceptCount, named) => {
+    shellMocks.pathname = "/ko/topology";
+    shellMocks.desktop = true;
+    shellMocks.vault.status = "loading";
+    shellMocks.vault.handle = { name: "notes", rootPath: "/Users/probe/notes" };
+    shellMocks.vault.recentVaults = [{ desktopRootPath: "/Users/probe/notes", docCount: 450, conceptCount }];
+    render(
+      <AppShell>
+        <div>page</div>
+      </AppShell>,
+    );
+    expect(screen.queryByTestId("brand-waiting-mark") !== null).toBe(named);
+    expect(screen.queryByTestId("map-wait-cluster") !== null).toBe(!named);
+  });
+
+  it.each([
+    ["no part has brought anything yet", []],
+    ["only wiki pages have arrived", [{ slug: "wiki/plan" }]],
+  ])("keeps the map waiting while the folder arrives and %s", (_condition, docs) => {
+    shellMocks.pathname = "/ko/topology";
+    shellMocks.desktop = true;
+    shellMocks.vault.status = "loading";
+    shellMocks.vault.partialTotal = 450;
+    shellMocks.arriving = { docs };
+    render(
+      <AppShell>
+        <div>page</div>
+      </AppShell>,
+    );
+    expect(screen.getByTestId("vault-route-identity-pending")).toBeInTheDocument();
+    expect(screen.queryByText("page")).not.toBeInTheDocument();
+  });
+
+  it("draws the map once an arriving part brings a concept", () => {
+    shellMocks.pathname = "/ko/topology";
+    shellMocks.desktop = true;
+    shellMocks.vault.status = "loading";
+    shellMocks.vault.partialTotal = 450;
+    shellMocks.arriving = { docs: [{ slug: "domains/reading", frontmatter: { kind: "domain" } }] };
+    render(
+      <AppShell>
+        <div>page</div>
+      </AppShell>,
+    );
+    expect(screen.queryByTestId("vault-route-identity-pending")).not.toBeInTheDocument();
+    expect(screen.getByText("page")).toBeInTheDocument();
   });
 
   it("draws no second column when the rail is already on screen", () => {

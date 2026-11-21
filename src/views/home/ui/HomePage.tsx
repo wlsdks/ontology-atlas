@@ -20,7 +20,7 @@ import { useTopologySceneControls } from "../model/map-canvas/use-topology-scene
 import { useTopologySourceActions } from "../model/project-source/use-topology-source-actions";
 import { useTopologySourceReadiness } from "../model/project-source/use-topology-source-readiness";
 import { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
-import { useWikiFolderLanding } from "../model/use-wiki-folder-landing";
+import { useMapWaitsForFolder } from "../model/use-map-waits-for-folder";
 import { TopologyAgentDock } from "./TopologyAgentDock";
 import { TopologyCanvasSurface } from "./TopologyCanvasSurface";
 import { TopologyCommandChrome } from "./TopologyCommandChrome";
@@ -84,13 +84,13 @@ export function HomePage() {
   const [bootedOnce, rememberBooted] = useArrivalMemory("home-map-booted", false);
   const [bootRenderReady, setBootRenderReady] = useState(bootedOnce);
   const [loaderOnScreen] = useState(() => typeof document === 'undefined' || document.querySelector('[data-testid="map-entry-fallback"]') !== null);
-  const leavingForLibrary = useWikiFolderLanding(mapEntryTicket);
+  const mapWaits = useMapWaitsForFolder(mapEntryTicket);
   useEffect(() => {
     rememberBooted(true);
     if (bootRenderReady) return;
     startTransition(() => setBootRenderReady(true));
   }, [bootRenderReady, rememberBooted]);
-  if (leavingForLibrary) return <RouteLoadingFallback />;
+  if (mapWaits) return <RouteLoadingFallback />;
   if (!bootRenderReady) {
     const visual = (
       <MapEntryLoadingVisual

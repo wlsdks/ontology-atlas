@@ -38,6 +38,21 @@ function generatedVault(): Record<string, string> {
   return files;
 }
 
+const WIKI_PAGES = 450;
+const WIKI_UNREAD_UNTIL_CHECKED = Array.from(
+  { length: WIKI_PAGES / 2 },
+  (_, at) => `wiki/p-${String(WIKI_PAGES - 1 - at).padStart(5, "0")}.md`,
+);
+
+function generatedWiki(): Record<string, string> {
+  const files: Record<string, string> = {};
+  for (let p = 0; p < WIKI_PAGES; p += 1) {
+    const title = `Page ${p}`;
+    files[`wiki/p-${String(p).padStart(5, "0")}.md`] = `---\ntitle: ${title}\nstatus: draft\nsummary: ${title}.\n---\n\n## Summary\n\n${title}.\n`;
+  }
+  return files;
+}
+
 interface ArrivalWindow {
   __atlasMap?: AtlasMapProbe;
   __arrival: {
@@ -181,4 +196,36 @@ test("on the web, a folder that is still arriving reaches the map and no other r
 
   await expect(page.locator("[data-vault-load-progress]")).toHaveCount(0, { timeout: 60_000 });
   await expect.poll(() => page.evaluate(() => (window as unknown as { __ohMyOntologyMode?: string }).__ohMyOntologyMode)).toBe("local");
+});
+
+test("a large folder of wiki pages that arrives in parts reaches the Library without drawing the map", async ({ page }) => {
+  test.setTimeout(120_000);
+  await installDesktopRailRuntime(page, generatedWiki(), undefined, {
+    replaceFixture: true,
+    holdReadsUntilReleased: WIKI_UNREAD_UNTIL_CHECKED,
+  });
+  await page.addInitScript(() => {
+    const mapParts = '[data-testid="map-entry-fallback"], [data-testid="topology-command-chrome"], [data-testid="topology-map-surface"]';
+    const seen = window as unknown as { mapMounted?: boolean };
+    new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (node instanceof Element && (node.matches(mapParts) || node.querySelector(mapParts))) seen.mapMounted = true;
+        }
+      }
+    }).observe(document, { childList: true, subtree: true });
+  });
+  const mapMounted = () => page.evaluate(() => (window as unknown as { mapMounted?: boolean }).mapMounted ?? false);
+  await page.goto("/ko/?guides=off", { waitUntil: "domcontentloaded" });
+  await page.getByTestId("first-run-open").click();
+
+  // The opening frame stops reserving the rail's column once a part has arrived; half the pages are still unread.
+  await expect(page.getByTestId("vault-route-identity-pending")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("vault-opening-rail-reserve")).toHaveCount(0, { timeout: 30_000 });
+  expect(await mapMounted(), "the map was drawn for a part that held no concept").toBe(false);
+
+  await page.evaluate(() => (window as unknown as { __releaseHeldReads: () => void }).__releaseHeldReads());
+  await expect(page.getByTestId("library-workspace-tabs")).toBeVisible({ timeout: 60_000 });
+  await expect(page).toHaveURL(/\/ko\/library\/?/);
+  expect(await mapMounted(), "the map was drawn on the way to the Library").toBe(false);
 });

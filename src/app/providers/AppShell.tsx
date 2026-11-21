@@ -22,7 +22,7 @@ import {
 } from "@/widgets/app-nav-rail";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
-import { useDataSourceMode, useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
+import { useArrivingManifest, useDataSourceMode, useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import {
   isRunActive,
   isScheduledActive,
@@ -33,6 +33,7 @@ import {
   workCardHoldsSeat,
   WorkRunSeat,
 } from "@/features/work-run";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { describeVaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { destinationsForVaultShape, FOLDER_OPTIONAL_DESTINATIONS } from "@/shared/config/destinations";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
@@ -142,9 +143,9 @@ function isLocaleRoot(pathname: string): boolean {
  * Keeps one vault identity on screen while a folder loads.
  *
  * In the installed app a selected local vault always wins over the bundled sample: a folder
- * load or switch shows the opening pane until `load()` publishes the new manifest, a same-vault
- * refresh keeps its pixels through `isReloadingSameVault`, and a workbench destination with no
- * vault goes home.
+ * load or switch shows the opening pane until `load()` publishes the new manifest, or on the map
+ * until an arriving part brings a concept, a same-vault refresh keeps its pixels through
+ * `isReloadingSameVault`, and a workbench destination with no vault goes home.
  *
  * A route change is deliberately not a case: a neutral pane there replaces the departing screen
  * React would keep, and leaves blank frames. `local-vault-route-identity.spec.ts` proves the
@@ -161,17 +162,15 @@ function VaultRouteIdentityBoundary({
   const vault = useLocalVault();
   const hydrated = useHydrated();
   const desktop = hydrated && isDesktopShell();
-  const workbenchDestination =
-    !isLocaleRoot(pathname) && resolveActiveNavDestination(pathname) !== null;
-  const localReady =
-    vault.status === "loaded" ||
-    vault.isReloadingSameVault === true ||
-    (resolveActiveNavDestination(pathname) === "map" && vault.partialTotal > 0);
+  const destination = resolveActiveNavDestination(pathname);
+  const workbenchDestination = !isLocaleRoot(pathname) && destination !== null;
+  const arriving = useArrivingManifest();
+  const mapHasArrived = destination === "map" && arriving !== null && describeVaultShape(arriving.docs).map;
+  const localReady = vault.status === "loaded" || vault.isReloadingSameVault === true || mapHasArrived;
   const localLoadPending =
     desktop &&
     (vault.status === "opening" || vault.status === "loading") &&
     !localReady;
-  const destination = resolveActiveNavDestination(pathname);
   const sourceOnlyDestination = destination !== null && FOLDER_OPTIONAL_DESTINATIONS.has(destination);
   // Resolve the remembered folder before exposing controls that a restore would replace.
   const sourceRestorePending = desktop && sourceOnlyDestination && !localReady && !vault.restoreAttempted;
@@ -187,7 +186,7 @@ function VaultRouteIdentityBoundary({
       <VaultOpeningPane
         name={vault.status === "loading" ? (vault.handle?.name ?? null) : null}
         reserveRail={!vault.manifest && !vault.partialTotal}
-        map={resolveActiveNavDestination(pathname) === "map"}
+        map={destination === "map" && !lastReadFoundNoConcept(vault)}
       />
     );
   }
@@ -202,6 +201,14 @@ function VaultRouteIdentityBoundary({
   }
 
   return children;
+}
+
+/** Whether the folder being read held documents and no concept when it was last read, so no map is coming. */
+function lastReadFoundNoConcept(vault: ReturnType<typeof useLocalVault>): boolean {
+  if (vault.status !== "loading" || !vault.handle) return false;
+  const rootPath = getTauriVaultRootPath(vault.handle);
+  const record = rootPath ? vault.recentVaults.find((entry) => entry.desktopRootPath === rootPath) : undefined;
+  return record?.conceptCount === 0 && (record.docCount ?? 0) > 0;
 }
 
 /**
