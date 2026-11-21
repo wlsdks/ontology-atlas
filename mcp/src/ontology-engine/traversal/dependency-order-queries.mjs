@@ -30,7 +30,7 @@ export function createDependencyOrderQueries({
     const complete = !truncatedByBudget && totalCycles <= limit;
     return {
       operation: 'cycles',
-      relationTypes: [...typeSet].sort(),
+      relationTypes: typeSet ? [...typeSet].sort() : null,
       maxDepth,
       searchBudget,
       expandedStates,
@@ -62,7 +62,7 @@ export function createDependencyOrderQueries({
               maxHops: maxDepth > 2 ? maxDepth - 2 : maxDepth,
               limit: Math.min(limit, 10),
               searchBudget: Math.min(searchBudget, 1000),
-              types: [...typeSet].sort(),
+              types: typeSet ? [...typeSet].sort() : undefined,
             },
       },
     };
@@ -87,7 +87,7 @@ export function createDependencyOrderQueries({
 
     return {
       operation: 'topological_order',
-      relationTypes: [...typeSet].sort(),
+      relationTypes: typeSet ? [...typeSet].sort() : null,
       prerequisiteFirst: true,
       includeIsolated,
       acyclic: blocked.length === 0,
