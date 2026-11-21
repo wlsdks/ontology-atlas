@@ -92,7 +92,7 @@ const VAULT = {
   ].join("\n"),
 
   // Candidates for discovery, and three files it must never propose.
-  "inbox/Requirements v3.pdf": "%PDF-1.7 requirements\n",
+  "inbox/Requirements v3.pdf": "%PDF-1.7 requirements\n%% discovery proposes only files of at least sixty-four bytes\n",
   "inbox/.env": "SECRET=never-propose-me\n",
   "inbox/id_rsa": "PRIVATE KEY never-propose-me\n",
   "inbox/credentials.json": '{"token":"never-propose-me"}\n',
@@ -386,8 +386,8 @@ test.describe("the Library destination", () => {
 
   test("ticking a candidate and confirming copies it into sources/", async ({ page }) => {
     await openLibrary(page, { ...VAULT,
-      'inbox/Schedule.pdf': '%PDF-1.7 schedule\n',
-      'other/Notes.pdf': '%PDF-1.7 notes\n',
+      'inbox/Schedule.pdf': '%PDF-1.7 schedule\n%% discovery proposes only files of at least sixty-four bytes\n',
+      'other/Notes.pdf': '%PDF-1.7 notes\n%% discovery proposes only files of at least sixty-four bytes\n',
     });
     await page.getByTestId("library-find-documents").click();
     const dialog = page.getByRole('dialog');
@@ -423,7 +423,7 @@ test.describe("the Library destination", () => {
     test(`document discovery returns focus to its ${empty ? 'empty-stage' : 'index'} opener after an unfocused pointer click`, async ({ page }) => {
       await openLibrary(page, empty ? {
         'project.md': VAULT['project.md'],
-        'inbox/Requirements.pdf': '%PDF-1.7 requirements\n',
+        'inbox/Requirements.pdf': '%PDF-1.7 requirements\n%% discovery proposes only files of at least sixty-four bytes\n',
       } : VAULT);
       const opener = page.getByTestId(empty ? 'library-start-find-documents' : 'library-find-documents');
       await opener.evaluate((button) => {
@@ -544,8 +544,8 @@ test.describe("the Library pane", () => {
   test("an empty Library leads with the documents the folder already holds", async ({ page }) => {
     await openLibrary(page, {
       ...NO_SOURCE_VAULT,
-      "inbox/Requirements.pdf": "%PDF-1.7 requirements\n",
-      "inbox/Schedule.pdf": "%PDF-1.7 schedule\n",
+      "inbox/Requirements.pdf": "%PDF-1.7 requirements\n%% discovery proposes only files of at least sixty-four bytes\n",
+      "inbox/Schedule.pdf": "%PDF-1.7 schedule\n%% discovery proposes only files of at least sixty-four bytes\n",
     });
     const stage = page.getByTestId("library-start-stage");
     const found = stage.getByTestId("library-start-find-documents");

@@ -449,7 +449,9 @@ export function SourcesOverview({
       data-testid="sources-overview"
       className="flex min-h-0 min-w-0 flex-1 gap-7 px-10 py-6 @max-[60rem]/overview:flex-col @max-[60rem]/overview:overflow-y-auto @max-[40rem]/overview:px-5"
     >
-      <div ref={columnRef} className="@container flex min-h-0 min-w-0 flex-1 flex-col @max-[60rem]/overview:h-full @max-[60rem]/overview:flex-none">
+      {/* The column is a size container, so its own flex must not ride the query: a stale `flex-none`
+          after a resize collapsed it to 0px. Stacked, it only gains a floor of the pane's height. */}
+      <div ref={columnRef} className="@container flex min-h-0 min-w-0 flex-1 flex-col @max-[60rem]/overview:min-h-full">
         <div ref={toolbarRef} className="flex flex-none items-center gap-3.5 pb-3">
           <SegmentedControl
             ariaLabel={t("sourcesHome.groupBy.label")}
