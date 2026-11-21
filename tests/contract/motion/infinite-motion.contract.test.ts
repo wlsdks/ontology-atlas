@@ -21,6 +21,7 @@ const RUNS_ONLY_DURING_WORK: Record<string, string> = {
   "motion-work-spin": "work glyph arc, mounted only while indeterminate work runs",
   "motion-work-sweep": "work progress sweep, shown only while indeterminate work runs",
   "motion-work-hop": "work trail signal, applied only while work of unknown length runs or to the plan step in progress",
+  "motion-writing-dot": "Sources overview writing dot, mounted only on the row and the file a page is being written from",
 };
 
 const KEYWORDS = new Set([
