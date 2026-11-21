@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { compileOntology } from '../ontology-compiler.mjs';
-import { createVaultDocCache, loadVaultDocs } from '../vault/documents.mjs';
+import { createVaultDocCache, loadVaultDocs } from '../vault/documents/document-cache.mjs';
 import { createCompiledOntologyCache } from './compiled-cache.mjs';
 
 const rawFor = (title) => `---\nuid: 11111111-1111-4111-8111-111111111111\nkind: capability\ntitle: ${title}\n---\n\nFixture.\n`;

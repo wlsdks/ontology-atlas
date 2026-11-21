@@ -5,7 +5,7 @@ export { compileOntologyTool, queryOntologyTool };
 
 import { buildCompactAgentBrief } from '../agent-brief/agent-brief-compact.mjs';
 import { buildMeaningRepairReviewPage } from '../meaning/meaning-repair.mjs';
-import { loadOntologyAtlasIgnore } from '../vault/ontology-atlas-ignore.mjs';
+import { loadOntologyAtlasIgnore } from '../vault/sidecar/ontology-atlas-ignore.mjs';
 import { queryCompiledOntology, refreshAgentBriefHandoffPrompt } from '../ontology-engine.mjs';
 import { deriveProjectSourceWitnessesFromDocs } from '../project-source/project-source-witnesses.mjs';
 import { COMPILED_ONTOLOGY_CACHE, VAULT_ROOT } from '../server/runtime.mjs';

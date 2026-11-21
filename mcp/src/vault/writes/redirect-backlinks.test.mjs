@@ -4,9 +4,9 @@ import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync } from "nod
 import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
-import { runJsonRpcProcess } from "../../../scripts/lib/mcp-test-rpc.mjs";
-import { parseFrontmatter } from "../parser.mjs";
-import { findBacklinks } from "./graph-queries.mjs";
+import { runJsonRpcProcess } from "../../../../scripts/lib/mcp-test-rpc.mjs";
+import { parseFrontmatter } from "../../parser.mjs";
+import { findBacklinks } from "../graph/graph-queries.mjs";
 import { redirectBacklinks } from "./backlink-rewrite.mjs";
 
 let passed = 0;
@@ -526,7 +526,7 @@ test("without targetKind a same-slug call stays a no-op, and a rename keeps the 
  * docs/records/decisions/2026-11-19-wiki-page-describes-at-any-status-afd11e09-c68a-465a-83fa-d8abd8cabdfc.md.
  * These drive the real tools, so the server's own loader and write path are what is measured.
  */
-const SERVER_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), "..", "index.js");
+const SERVER_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), "../..", "index.js");
 
 async function testAsync(name, fn) {
   try {

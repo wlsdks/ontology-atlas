@@ -6,10 +6,10 @@ import { join } from 'node:path';
 import { setFlagsFromString } from 'node:v8';
 import { runInNewContext } from 'node:vm';
 
-import { bodyMeaningFindings } from '../meaning/meaning-findings.mjs';
-import { extractUncertaintyReads } from '../meaning/uncertainty-reads.mjs';
-import { parseFrontmatter } from '../parser.mjs';
-import { validateVaultDocument } from '../validate.mjs';
+import { bodyMeaningFindings } from '../../meaning/meaning-findings.mjs';
+import { extractUncertaintyReads } from '../../meaning/uncertainty-reads.mjs';
+import { parseFrontmatter } from '../../parser.mjs';
+import { validateVaultDocument } from '../../validate.mjs';
 import {
   docBodyAnswer,
   docBodyIncluder,
@@ -29,8 +29,8 @@ import {
   RACY_WINDOW_MS,
   readVaultDocText,
   VaultDocChangedError,
-} from './documents.mjs';
-import { findBacklinks } from './graph-queries.mjs';
+} from './document-cache.mjs';
+import { findBacklinks } from '../graph/graph-queries.mjs';
 
 setFlagsFromString('--expose-gc');
 const collect = runInNewContext('gc');

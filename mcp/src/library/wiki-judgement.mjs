@@ -3,7 +3,7 @@
  * a page's problem objects are built, from its text read again, only when a reply shows it.
  */
 
-import { cachedDocVersionKey, readVaultDocText, vaultDocsVersion } from '../vault/documents.mjs';
+import { cachedDocVersionKey, readVaultDocText, vaultDocsVersion } from '../vault/documents/document-cache.mjs';
 import { wikiFolderJudgement, wikiPageCodes, wikiPageFacts } from './wiki-folder.mjs';
 import { WIKI_ADVISORY_CODES, WIKI_DIR, buildWikiNodeIndex, isWikiFurnitureSlug, validateWikiPage } from './wiki-schema.mjs';
 

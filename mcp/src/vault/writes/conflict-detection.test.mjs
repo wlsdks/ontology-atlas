@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { readDoc } from "./documents.mjs";
+import { readDoc } from "../documents/document-cache.mjs";
 import { getFileMtime, VaultConflictError } from "./atomic-writes.mjs";
 import { writeDoc, patchFrontmatter, updateDoc, deleteDoc } from "./doc-writes.mjs";
 

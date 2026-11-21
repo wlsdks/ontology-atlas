@@ -51,9 +51,9 @@ import {
   requireOptionalNonBlankString,
   requireOptionalNonNegativeNumber,
 } from '../server/validate.mjs';
-import { loadVaultDocs, readDoc } from '../vault/documents.mjs';
-import { VaultConflictError } from '../vault/atomic-writes.mjs';
-import { updateDoc } from '../vault/doc-writes.mjs';
+import { loadVaultDocs, readDoc } from '../vault/documents/document-cache.mjs';
+import { VaultConflictError } from '../vault/writes/atomic-writes.mjs';
+import { updateDoc } from '../vault/writes/doc-writes.mjs';
 import { logWrite } from '../server/write-log.mjs';
 import {
   projectMeaningContext,

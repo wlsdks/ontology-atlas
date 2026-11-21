@@ -12,8 +12,8 @@ import { createCompiledOntologyCache } from './compiled-cache.mjs';
 import { discoverGitRepositoryRoot } from '../git/git-tools.mjs';
 import { compileOntology } from '../ontology-compiler.mjs';
 import { shareArtifact } from '../ontology-engine.mjs';
-import { ensureVaultRoot } from '../vault/slug-paths.mjs';
-import { loadVaultDocs } from '../vault/documents.mjs';
+import { ensureVaultRoot } from '../vault/documents/slug-paths.mjs';
+import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
 import {
   existsSync,
   realpathSync,

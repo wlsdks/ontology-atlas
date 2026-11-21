@@ -5,7 +5,7 @@
 //! |---|---|
 //! | app atomic write | `.<name>.oatlas-tmp-<pid>-<hex>-<hex>` |
 //! | app create-only write | `.oatlas-create-<pid>-<hex>-<hex>.tmp` |
-//! | MCP sidecar write (`mcp/src/vault/vault-sidecar.mjs`) | `.<name>.oatlas-tmp-<pid>-<uuid>` |
+//! | MCP sidecar write (`mcp/src/vault/sidecar/vault-sidecar.mjs`) | `.<name>.oatlas-tmp-<pid>-<uuid>` |
 //! | MCP and CLI atomic write (`atomic-writes.mjs`, `atomic-write.mjs`) | `<name>.oatlas-tmp-<pid>` |
 
 const TEMPORARY_MARKER: &str = ".oatlas-tmp-";

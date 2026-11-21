@@ -2,7 +2,7 @@
 
 import { markdownSection } from './recorded-evidence.mjs';
 import { readCapabilityClaim } from './reviewed-evidence.mjs';
-import { extractSummaryExcerpt } from '../vault/body-delivery.mjs';
+import { extractSummaryExcerpt } from '../vault/documents/body-delivery.mjs';
 import { lexicalTokens } from './task-intent.mjs';
 
 function scoreLexicalDocument(doc, terms) {

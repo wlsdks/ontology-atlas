@@ -12,7 +12,7 @@ import { pinnedCitationVerifier, readProjectSourceView } from '../project-source
 import { projectSourceRemedy } from '../project-source/project-source-remedy.mjs';
 import { deriveProjectSourceWitnessesFromDocs } from '../project-source/project-source-witnesses.mjs';
 import { VAULT_ROOT } from '../server/runtime.mjs';
-import { loadVaultDocs } from '../vault/documents.mjs';
+import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
 
 // One gap id, two situations: when the project document already has a parseable
 // `## Competency answers` section only the finalize receipt is missing, so a person

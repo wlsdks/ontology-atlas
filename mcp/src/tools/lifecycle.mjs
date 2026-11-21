@@ -22,13 +22,13 @@ import {
   requireOptionalNonNegativeNumber,
 } from '../server/validate.mjs';
 import { formatAllowedValueError } from '../suggestions.mjs';
-import { canonicalDiskSlug, slugToWritePath, vaultSlugExists } from '../vault/slug-paths.mjs';
-import { extractSummaryExcerpt } from '../vault/body-delivery.mjs';
-import { readDoc } from '../vault/documents.mjs';
-import { VaultConflictError, applyAllOrNothing } from '../vault/atomic-writes.mjs';
-import { deleteDoc } from '../vault/doc-writes.mjs';
-import { findBacklinks } from '../vault/graph-queries.mjs';
-import { redirectBacklinks } from '../vault/backlink-rewrite.mjs';
+import { canonicalDiskSlug, slugToWritePath, vaultSlugExists } from '../vault/documents/slug-paths.mjs';
+import { extractSummaryExcerpt } from '../vault/documents/body-delivery.mjs';
+import { readDoc } from '../vault/documents/document-cache.mjs';
+import { VaultConflictError, applyAllOrNothing } from '../vault/writes/atomic-writes.mjs';
+import { deleteDoc } from '../vault/writes/doc-writes.mjs';
+import { findBacklinks } from '../vault/graph/graph-queries.mjs';
+import { redirectBacklinks } from '../vault/writes/backlink-rewrite.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
 import {
   ADD_CONCEPT_KINDS,

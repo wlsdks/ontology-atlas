@@ -1,10 +1,10 @@
-import { buildMarkdown } from '../parser.mjs';
-import { CONTAINMENT_KEY_FOR_KIND, containmentKeyFor, unwritableSlugIssue } from '../schema.mjs';
+import { buildMarkdown } from '../../parser.mjs';
+import { CONTAINMENT_KEY_FOR_KIND, containmentKeyFor, unwritableSlugIssue } from '../../schema.mjs';
 
 import { applyAllOrNothing } from './atomic-writes.mjs';
-import { docTitle, loadVaultDocs } from './documents.mjs';
-import { GRAPH_ARRAY_KEY_SET, normalizeRelationRefs } from './relation-refs.mjs';
-import { slugToPath } from './slug-paths.mjs';
+import { docTitle, loadVaultDocs } from '../documents/document-cache.mjs';
+import { GRAPH_ARRAY_KEY_SET, normalizeRelationRefs } from '../graph/relation-refs.mjs';
+import { slugToPath } from '../documents/slug-paths.mjs';
 
 /**
  * Rewrites every graph key and body link naming `targetSlug` to `nextSlug`, matched

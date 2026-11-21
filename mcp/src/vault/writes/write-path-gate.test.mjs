@@ -13,7 +13,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { defaultBody } from '../schema.mjs';
+import { defaultBody } from '../../schema.mjs';
 import {
   configureNodeEligibilityRepoRoot,
   drainNodeEligibilityFindings,

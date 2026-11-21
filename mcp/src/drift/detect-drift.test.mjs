@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import { detectVaultPathDrift, suggestPathReconciliations } from './detect-drift.mjs';
-import { loadVaultDocs } from '../vault/documents.mjs';
+import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(here, '..', '..', '..');

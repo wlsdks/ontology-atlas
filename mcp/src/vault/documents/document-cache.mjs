@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { detachText, parseFrontmatter } from '../parser.mjs';
+import { detachText, parseFrontmatter } from '../../parser.mjs';
 
 import { textHash } from './content-hash.mjs';
 import { bodyLinkKeys, bodyStartOf, evidenceSignature, rawShapeOf } from './doc-shape.mjs';

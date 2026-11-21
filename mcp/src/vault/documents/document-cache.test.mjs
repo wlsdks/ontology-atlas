@@ -19,10 +19,10 @@ import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { applyAllOrNothing, VaultConflictError, writeFileAtomically } from './atomic-writes.mjs';
-import { patchFrontmatter } from './doc-writes.mjs';
-import { createCompiledOntologyCache } from '../server/compiled-cache.mjs';
-import { compileOntology } from '../ontology-compiler.mjs';
+import { applyAllOrNothing, VaultConflictError, writeFileAtomically } from '../writes/atomic-writes.mjs';
+import { patchFrontmatter } from '../writes/doc-writes.mjs';
+import { createCompiledOntologyCache } from '../../server/compiled-cache.mjs';
+import { compileOntology } from '../../ontology-compiler.mjs';
 import {
   createVaultDocCache,
   loadVaultDocs,
@@ -32,7 +32,7 @@ import {
   vaultDocsVersion,
   withVaultReadSnapshot,
   withVaultWriteSnapshot,
-} from './documents.mjs';
+} from './document-cache.mjs';
 
 let uidSequence = 0;
 function nodeText(title, extra = '') {
@@ -420,7 +420,7 @@ describe('a write decides from other files as they are on disk', () => {
     writeFileSync(join(root, 'capabilities/target.md'), nodeText('Target'));
     writeFileSync(join(root, 'capabilities/into.md'), nodeText('Into'));
     writeFileSync(join(root, 'capabilities/referrer.md'), withExtra('Referrer', pad));
-    const modules = Object.fromEntries(['./documents.mjs', './graph-queries.mjs', '../tools/lifecycle.mjs']
+    const modules = Object.fromEntries(['./document-cache.mjs', '../graph/graph-queries.mjs', '../../tools/lifecycle.mjs']
       .map((path) => [path, new URL(path, import.meta.url).href]));
     const script = `
       import fs from 'node:fs';
@@ -435,9 +435,9 @@ describe('a write decides from other files as they are on disk', () => {
         fs[name] = (...args) => { const stats = original(...args); return same(stats) ? frozen : stats; };
       }
       syncBuiltinESMExports();
-      const { withVaultReadSnapshot, withVaultWriteSnapshot } = await import(${JSON.stringify(modules['./documents.mjs'])});
-      const { findBacklinks } = await import(${JSON.stringify(modules['./graph-queries.mjs'])});
-      const lifecycle = await import(${JSON.stringify(modules['../tools/lifecycle.mjs'])});
+      const { withVaultReadSnapshot, withVaultWriteSnapshot } = await import(${JSON.stringify(modules['./document-cache.mjs'])});
+      const { findBacklinks } = await import(${JSON.stringify(modules['../graph/graph-queries.mjs'])});
+      const lifecycle = await import(${JSON.stringify(modules['../../tools/lifecycle.mjs'])});
       const primed = await withVaultReadSnapshot(async () => findBacklinks(root, 'capabilities/target').length);
       fs.writeFileSync(referrer, fs.readFileSync(referrer, 'utf8').replace(${JSON.stringify(pad)}, ${JSON.stringify(relation)}));
       let outcome;
@@ -474,7 +474,7 @@ describe('a write decides from other files as they are on disk', () => {
 describe('listing order', () => {
   /** find_path's reply with every directory listing in the order given; a fresh process each time. */
   function findPathReply(root, reverse) {
-    const readModule = new URL('../tools/read.mjs', import.meta.url).href;
+    const readModule = new URL('../../tools/read.mjs', import.meta.url).href;
     const script = `
       import fs from 'node:fs';
       import { syncBuiltinESMExports } from 'node:module';

@@ -1,23 +1,23 @@
 import { mkdirSync, existsSync, unlinkSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { buildMarkdown } from '../parser.mjs';
+import { buildMarkdown } from '../../parser.mjs';
 import { previewDocumentPatch } from './document-patch.mjs';
-import { flatSlugIssue, generateNodeUid, inspectMergedUids, nodeUidIssue } from '../schema.mjs';
+import { flatSlugIssue, generateNodeUid, inspectMergedUids, nodeUidIssue } from '../../schema.mjs';
 
 import {
   assertCurrentDocSnapshot,
   assertSnapshotMtime,
   writeFileAtomically,
 } from './atomic-writes.mjs';
-import { loadVaultDocs, readDoc } from './documents.mjs';
+import { loadVaultDocs, readDoc } from '../documents/document-cache.mjs';
 import {
   noteGateRemoval,
   noteGateWrite,
   noteParentGrowth,
   runNodeEligibilityGate,
 } from './eligibility-gate.mjs';
-import { GRAPH_ARRAY_KEY_SET, normalizeRelationRefs } from './relation-refs.mjs';
-import { slugToWritePath, suggestSimilarSlugs } from './slug-paths.mjs';
+import { GRAPH_ARRAY_KEY_SET, normalizeRelationRefs } from '../graph/relation-refs.mjs';
+import { slugToWritePath, suggestSimilarSlugs } from '../documents/slug-paths.mjs';
 
 function assertPlainObject(value, name) {
   if (value === null || Array.isArray(value) || typeof value !== 'object') {

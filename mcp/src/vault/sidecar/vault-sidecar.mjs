@@ -72,8 +72,8 @@ function assertOneBasename(value, message) {
   if (
     typeof value !== 'string'
     || value.length === 0
-    || value === '.'
     || value === '..'
+    || value === '.'
     || basename(value) !== value
   ) {
     throw unsafe(message);

@@ -1,4 +1,4 @@
-import { buildMarkdown, parseFrontmatter } from '../parser.mjs';
+import { buildMarkdown, parseFrontmatter } from '../../parser.mjs';
 
 const GRAPH_ARRAY_KEYS = new Set([
   'domains', 'capabilities', 'elements', 'dependencies', 'depends_on',

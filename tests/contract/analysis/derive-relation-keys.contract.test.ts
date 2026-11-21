@@ -3,7 +3,7 @@ import { DEPENDS_UNION_CASE, RELATION_KEY_CASES } from "../../fixtures/relation-
 import { deriveOntologyFromVault } from "@/entities/docs-vault/lib/derive-ontology-from-vault";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault/model/types";
 // MCP is canonical (read-only) — the web follows it.
-import { GRAPH_ARRAY_KEYS, collectNeighborRefs } from "../../../mcp/src/vault/relation-refs.mjs";
+import { GRAPH_ARRAY_KEYS, collectNeighborRefs } from "../../../mcp/src/vault/graph/relation-refs.mjs";
 
 /**
  * Relation keys are read in `mcp/src/vault/` (canonical) and in

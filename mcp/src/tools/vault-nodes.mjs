@@ -5,7 +5,7 @@
  * slugs and uids. Nothing here imports a handler.
  */
 
-import { resolveAgentName } from '../vault/activity-log.mjs';
+import { resolveAgentName } from '../vault/sidecar/activity-log.mjs';
 import { collectNodeRevisions } from '../git/git-tools.mjs';
 import { buildSlugNotFoundGrowthHint } from '../ontology-engine/growth-hint.mjs';
 import {
@@ -44,14 +44,14 @@ import {
   GRAPH_ARRAY_KEYS,
   collectNeighborRefs,
   findGraphReferences,
-} from '../vault/relation-refs.mjs';
+} from '../vault/graph/relation-refs.mjs';
 import {
   canonicalDiskSlug,
   rawSourceSlugAt,
   slugToPath,
   suggestSimilarSlugs,
-} from '../vault/slug-paths.mjs';
-import { loadVaultDocs, readDoc } from '../vault/documents.mjs';
+} from '../vault/documents/slug-paths.mjs';
+import { loadVaultDocs, readDoc } from '../vault/documents/document-cache.mjs';
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 

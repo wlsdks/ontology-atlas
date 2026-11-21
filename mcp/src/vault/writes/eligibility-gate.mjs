@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
-import { detachText } from '../parser.mjs';
-import { NODE_ELIGIBILITY_GATE, folderForKind } from '../schema.mjs';
+import { detachText } from '../../parser.mjs';
+import { NODE_ELIGIBILITY_GATE, folderForKind } from '../../schema.mjs';
 import {
   STARTER_EXAMPLE_SLUGS,
   bulkProvenanceMessage,
@@ -12,18 +12,18 @@ import {
   pathShapedReferenceMessage,
   pathShapedTitleMessage,
   slugOutsideKindFolderMessage,
-} from '../construction/construction-rules.mjs';
-import { hasCapabilityImplementationEvidence } from '../ontology-engine/graph-context/capability-evidence.mjs';
+} from '../../construction/construction-rules.mjs';
+import { hasCapabilityImplementationEvidence } from '../../ontology-engine/graph-context/capability-evidence.mjs';
 import {
   dependencyWitnessFinding,
   isStarterExampleNode,
   meaningFindings,
   starterExampleFinding,
-} from '../meaning/meaning-findings.mjs';
+} from '../../meaning/meaning-findings.mjs';
 
-import { loadVaultDocs, readDoc } from './documents.mjs';
-import { GRAPH_ARRAY_KEYS, collectNeighborRefs } from './relation-refs.mjs';
-import { slugToPath } from './slug-paths.mjs';
+import { loadVaultDocs, readDoc } from '../documents/document-cache.mjs';
+import { GRAPH_ARRAY_KEYS, collectNeighborRefs } from '../graph/relation-refs.mjs';
+import { slugToPath } from '../documents/slug-paths.mjs';
 
 /*
  * Node-eligibility gate (`docs/DECISIONS.md`); every write door reaches it through

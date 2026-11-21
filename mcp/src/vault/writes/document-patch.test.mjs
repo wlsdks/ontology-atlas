@@ -5,11 +5,11 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 import { previewDocumentPatch } from './document-patch.mjs';
-import { loadVaultDocs } from './documents.mjs';
+import { loadVaultDocs } from '../documents/document-cache.mjs';
 import { patchFrontmatter, updateDoc } from './doc-writes.mjs';
-import { compileOntology } from '../ontology-compiler.mjs';
-import { queryCompiledOntology } from '../ontology-engine.mjs';
-import { validateVaultDocument } from '../validate.mjs';
+import { compileOntology } from '../../ontology-compiler.mjs';
+import { queryCompiledOntology } from '../../ontology-engine.mjs';
+import { validateVaultDocument } from '../../validate.mjs';
 
 const UID = '00000000-0000-4000-8000-000000000001';
 

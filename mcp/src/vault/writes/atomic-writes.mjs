@@ -16,9 +16,9 @@ import {
   unlinkSync,
 } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { parseFrontmatter } from '../parser.mjs';
-import { forgetCachedFile } from './documents.mjs';
-import { REVIEW_NOTE_KEY, REVIEW_STATE_HUMAN_DECIDES, REVIEW_STATE_KEY } from '../schema.mjs';
+import { parseFrontmatter } from '../../parser.mjs';
+import { forgetCachedFile } from '../documents/document-cache.mjs';
+import { REVIEW_NOTE_KEY, REVIEW_STATE_HUMAN_DECIDES, REVIEW_STATE_KEY } from '../../schema.mjs';
 
 import { noteGateRemoval } from './eligibility-gate.mjs';
 

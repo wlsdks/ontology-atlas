@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
-import { RACY_WINDOW_MS } from '../vault/documents.mjs';
+import { RACY_WINDOW_MS } from '../vault/documents/document-cache.mjs';
 
 /** The server entry, by path: a module URL here would make the dead-code check follow it. */
 const SERVER = join(dirname(fileURLToPath(import.meta.url)), '..', 'index.js');

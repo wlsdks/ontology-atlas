@@ -1,21 +1,21 @@
 // Answers computed from a document's body, kept per cached document once computed.
-// A cached document holds no text (`documents.mjs`), so its body is read again the
+// A cached document holds no text (`document-cache.mjs`), so its body is read again the
 // first time one of these is asked; the answer is kept for as long as that
 // document is current, and a changed file is a new document. A document the cache
 // did not produce (a fresh read, a test fixture) is answered from its own body
 // every time.
 
-import { bodyMeaningFindings, bodyMeaningFindingsFromVerdict, bodyMeaningVerdict } from '../meaning/meaning-findings.mjs';
-import { extractUncertaintyReads } from '../meaning/uncertainty-reads.mjs';
+import { bodyMeaningFindings, bodyMeaningFindingsFromVerdict, bodyMeaningVerdict } from '../../meaning/meaning-findings.mjs';
+import { extractUncertaintyReads } from '../../meaning/uncertainty-reads.mjs';
 import {
   unclosedFrontmatterReport,
   unframedDocumentReport,
   validateFramedVaultDocument,
   validateVaultDocument,
-} from '../validate.mjs';
+} from '../../validate.mjs';
 
 import { signatureMayContain } from './doc-shape.mjs';
-import { cachedDocShape, cachedDocVersionKey, readVaultDocText } from './documents.mjs';
+import { cachedDocShape, cachedDocVersionKey, readVaultDocText } from './document-cache.mjs';
 
 /** Keyed by a file version (`cachedDocVersionKey`), so a load pass's text-carrying twin shares it. */
 const memos = new WeakMap();

@@ -31,7 +31,7 @@ import {
 } from './server/rpc.mjs';
 import { VAULT_ROOT } from './server/runtime.mjs';
 import { normalizeToolArguments } from './server/validate.mjs';
-import { withVaultReadSnapshot, withVaultWriteSnapshot } from './vault/documents.mjs';
+import { withVaultReadSnapshot, withVaultWriteSnapshot } from './vault/documents/document-cache.mjs';
 import { logWrite } from './server/write-log.mjs';
 import { absorbDocumentTool } from './tools/absorb.mjs';
 import {

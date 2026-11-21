@@ -32,8 +32,8 @@ import {
 } from '../meaning/meaning-findings.mjs';
 import { buildDepthFindings, measureBuildDepth, repositorySurvey } from '../construction/build-depth.mjs';
 import { sessionReads } from '../construction/session-reads.mjs';
-import { validateLoadedVaultDocument } from '../vault/doc-facts.mjs';
-import { loadVaultDocs } from '../vault/documents.mjs';
+import { validateLoadedVaultDocument } from '../vault/documents/doc-facts.mjs';
+import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
 import { collectPathLastChanges } from '../git/git-tools.mjs';
 import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../drift/evidence-drift.mjs';
 import { okResponseBytes } from '../server/rpc.mjs';

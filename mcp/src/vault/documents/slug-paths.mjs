@@ -1,6 +1,6 @@
 import { readdirSync, existsSync, realpathSync, statSync } from 'node:fs';
 import { basename, join, relative, dirname, resolve, sep } from 'node:path';
-import { VAULT_SOURCES_DIR, rawSourceSlugIssue, unwritableSlugIssue } from '../schema.mjs';
+import { VAULT_SOURCES_DIR, rawSourceSlugIssue, unwritableSlugIssue } from '../../schema.mjs';
 
 /**
  * Absolute paths of every `.md` in the vault except dotfiles, build folders and
