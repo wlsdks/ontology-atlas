@@ -16,15 +16,11 @@ export type CreateNodeKind = "project" | "domain" | "capability" | "element";
 export interface CreateNodeInput {
   title: string;
   kind: CreateNodeKind;
-  /** The domain document's address (`domains/billing`), for a capability or element. */
   domain?: string;
-  /** `{ ko, en }` becomes `display_ko` / `display_en`. */
   localeLabels?: Record<string, string>;
-  /** The body's first sentence. */
   description?: string;
 }
 
-// Ordered by containment; `vaultFolderForKind` supports every kind here.
 const KINDS: readonly CreateNodeKind[] = ["project", "domain", "capability", "element"];
 const KIND_LABEL_KEY: Record<CreateNodeKind, string> = {
   project: "kindProject",
@@ -41,10 +37,6 @@ const KIND_MEANING_KEY: Record<CreateNodeKind, string> = {
 /** Enough matches to pick from without the card growing past the map's panel height. */
 const PARENT_MATCHES_SHOWN = 5;
 
-/**
- * The create card: it stands at the map's right inset like the concept panel, blocks nothing, and
- * writes on Enter. Cmd/Ctrl+Enter writes and keeps the kind and place for the next concept.
- */
 export function CreateNodeForm({
   defaultKind,
   defaultParent,
@@ -59,11 +51,8 @@ export function CreateNodeForm({
 }: {
   defaultKind: CreateNodeKind;
   defaultParent: string;
-  /** value = the domain's document address, label = its display name. */
   parentOptions: readonly { value: string; label: string }[];
-  /** `slug` is the map id the warning opens. */
   existingConcepts: readonly SimilarNodeCandidate[];
-  /** The screen language; its name is required so the person's own screen never shows a raw title. */
   primaryLocale: string;
   secondaryLocale: string;
   onCreate: (input: CreateNodeInput, options: { keepOpen: boolean }) => Promise<boolean>;

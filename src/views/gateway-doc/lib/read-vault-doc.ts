@@ -35,16 +35,12 @@ export function readVaultDocOmittedSections(slug: string): number {
   return contentPreviews?.[slug]?.omittedSections ?? 0;
 }
 
-/** What `GatewayDocPage` draws: the document and the sections already folded when it was bundled. */
 export interface GatewayDocument {
-  /** Markdown without frontmatter, or `null` when the slug names no bundled document. */
   raw: string | null;
   bundledOmittedSections: number;
-  /** The locale the body is written in; the page marks a body in another language than its own. */
   language: string;
 }
 
-/** Vault documents are the English source. */
 export function readGatewayDocument(slug: string): GatewayDocument {
   return { raw: readVaultDoc(slug), bundledOmittedSections: readVaultDocOmittedSections(slug), language: 'en' };
 }

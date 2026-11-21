@@ -13,14 +13,12 @@ import type { FeatureStageMotion } from '@/shared/ui';
 
 export type PlanningClip = 'folder-open' | 'waiting' | 'compare' | 'hop';
 
-/** Moru's place in the scene: the clip on screen, waiting loops since the last look across, and a perk-up owed to the button. */
 export interface PlanningMoru {
   clip: PlanningClip;
   waits: number;
   hopOwed: boolean;
 }
 
-/** Waiting loops between two looks from the document to the mock. */
 export const PLANNING_WAITS_PER_COMPARE = 2;
 export const PLANNING_ARRIVAL: PlanningMoru = { clip: 'folder-open', waits: 0, hopOwed: false };
 const SCENE_CLIPS: readonly PlanningClip[] = ['folder-open', 'waiting', 'compare', 'hop'];
@@ -33,7 +31,6 @@ export function planningAfterLoop(moru: PlanningMoru): PlanningMoru {
   return waits >= PLANNING_WAITS_PER_COMPARE ? { clip: 'compare', waits: 0, hopOwed: false } : { ...moru, waits };
 }
 
-/** The button was reached: hop now while Moru rests on the neutral pose, otherwise as soon as the clip comes back to it. */
 export function planningOnEngage(moru: PlanningMoru, resting: boolean): PlanningMoru {
   if (moru.clip === 'hop') return moru;
   return resting ? { clip: 'hop', waits: 0, hopOwed: false } : { ...moru, hopOwed: true };
@@ -49,7 +46,6 @@ function restsOnNeutralPose(cell: HTMLElement | null): boolean {
   return typeof progress === 'number' && progress < NEUTRAL_HOLD_END;
 }
 
-/** `running` while the scene is on screen in a visible document, the condition every ambient loop waits for. */
 function useOnscreen(ref: RefObject<HTMLElement | null>, enabled: boolean): boolean {
   const [onscreen, setOnscreen] = useState(false);
   useEffect(() => {
@@ -72,23 +68,17 @@ function useOnscreen(ref: RefObject<HTMLElement | null>, enabled: boolean): bool
 }
 
 const SHEET_SPRING = framerSpring(SPRING.surface);
-/** The folder opens before the sheets leave it. */
 const SHEET_RISE_DELAY = MOTION.slow.duration;
 const LINE_START = SHEET_RISE_DELAY + MOTION.settle.duration;
 const LINE_GAP = MOTION.choreography.duration / 18;
 
 type Side = 'document' | 'mock';
 const RESTING = { opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 } as const;
-/** Each sheet starts folded behind Moru and leans toward him while the button is engaged. */
 const SHEET_POSE: Record<Side, { from: TargetAndTransition; lean: TargetAndTransition }> = {
   document: { from: { opacity: 0, x: '55%', y: 56, scale: 0.6, rotate: 0 }, lean: { opacity: 1, x: 6, y: -6, scale: 1, rotate: 2 } },
   mock: { from: { opacity: 0, x: '-55%', y: 56, scale: 0.6, rotate: 0 }, lean: { opacity: 1, x: -6, y: -6, scale: 1, rotate: -2 } },
 };
 
-/**
- * A planning folder opening: Moru opens it, a Markdown page and a screen mock rise out beside him
- * and fill in, and he keeps looking from one to the other. Reduced motion draws the settled scene.
- */
 export function PlanningSourceArtwork({ arriving, engaged, reduced }: FeatureStageMotion) {
   const t = useTranslations('planning');
   const scene = useRef<HTMLDivElement>(null);
@@ -143,7 +133,6 @@ export function PlanningSourceArtwork({ arriving, engaged, reduced }: FeatureSta
   </div>;
 }
 
-/** One line of the page, written in from the left after the sheet has risen. */
 function Written({ order, reduced, className, children }: { order: number; reduced: boolean; className?: string; children?: ReactNode }) {
   return <motion.div className={className}
     initial={reduced ? false : { clipPath: 'inset(0% 100% 0% 0%)' }}
@@ -189,7 +178,6 @@ function MarkdownPage({ heading, reduced }: { heading: string; reduced: boolean 
   </div>;
 }
 
-/** One block of the mock, faded in in reading order. */
 function Block({ order, reduced, className, children }: { order: number; reduced: boolean; className: string; children?: ReactNode }) {
   return <motion.div className={className}
     initial={reduced ? false : { opacity: 0, y: 4 }}
@@ -199,7 +187,6 @@ function Block({ order, reduced, className, children }: { order: number; reduced
   </motion.div>;
 }
 
-/** A screen as a designer would hand it over: a bar, a headline, a hero picture, three cards. */
 function ScreenMock({ reduced }: { reduced: boolean }) {
   return <div className="flex h-full flex-col overflow-hidden rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)]">
     <div className="flex items-center gap-1.5 border-b border-[color:var(--color-border-soft)] px-2 py-1.5">

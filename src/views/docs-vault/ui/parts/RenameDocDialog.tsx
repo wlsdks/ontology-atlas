@@ -12,26 +12,17 @@ import { Input } from "@/shared/ui/fields/input";
 
 import type { RenameDocTarget } from "../../model/use-doc-write-actions";
 
-/**
- * Asks for a new name in the product's `Dialog` and shows the address before anything moves.
- * The folder stays (a kind change moves folders, `kind-folder-move.ts`). `slugify` names it as
- * "create" would; the caller moves it (`renameDoc` with `rewriteBacklinks`), and a refusal
- * shows in the reader's language.
- */
 export function RenameDocDialog({
   target,
   isTaken,
   onCancel,
   onConfirm,
 }: {
-  /** Null closes the dialog. */
   target: RenameDocTarget | null;
   isTaken: (slug: string) => boolean;
   onCancel: () => void;
-  /** Rejects with the reason when the vault refuses. */
   onConfirm: (nextSlug: string) => Promise<void>;
 }) {
-  // Held through the exit so the panel does not fade around an empty box.
   const held = useHeldValue(target, target?.slug ?? null);
   return (
     <Dialog
@@ -79,7 +70,6 @@ function RenameForm({
   const nextName = slugify(name).replace(/^-+|-+$/g, "");
   const nextSlug = `${dir}${nextName}`;
   const unchanged = nextSlug === target.slug;
-  // The untouched name is not an error.
   const problem = !nextName
     ? name.trim()
       ? t("errorNoLetters")

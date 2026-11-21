@@ -139,7 +139,6 @@ export function TopologyAgentDock({
     [draftContextKey, draftStore],
   );
   const preparedContext=vaultAgentPrefill?.context?.vaultPath===gitVaultPath && (draftContext?.key!==draftContextKey||!draftContext.retired) ? vaultAgentPrefill?.context?.label : null;
-  // One subject for header, composer and asks: a picked concept, or the folder.
   const investigationLabel=investigationBasis?.vaultPath===gitVaultPath && (draftContext?.key!==draftContextKey||!draftContext.retired)?investigationBasis.label:null;
   const composerSubject = investigationLabel??preparedContext ?? (edgePanelModel ? null : selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? null);
   const subjectRef = selectedOntologyNode ? resolveNodeAgentTarget(selectedOntologyNode).ref ?? selectedOntologyNode.id : null;
@@ -177,9 +176,7 @@ export function TopologyAgentDock({
           screenContext={vaultAgentScreenContext}
           vaultIsGit={false}
           canWrite={vault.status === "loaded" && Boolean(vault.handle)}
-          // The same function as a map click, so one action has one motion.
           onFocusNode={(slug) => handleSelect(slug)}
-          // The same function as the utility lane's "switch to my data".
           onOpenFolder={() => void vault.open()}
           downloadHref={`/${activeLocale}/download/`}
           prefillRequest={vaultAgentPrefill ?? askPrefill}
@@ -212,9 +209,7 @@ export function TopologyAgentDock({
             // Mount and open are separate so the exit animation runs. A running turn stays mounted
             // behind the closed dock; an idle panel unmounts on exit.
             onExited={() => { if (acpTurnStartedAtRef.current === null) setChatMounted(false); }}
-            // The user drags the width; `panel-width.ts` enforces only the map's share.
             data-agent-dock-surface="inset"
-            // The toaster centres left of this panel.
             data-toast-wall="right"
             style={{
               width: reviewUsesSheet ? 'calc(100% - var(--chrome-inset) * 2)' : `calc(${chatWidth.width}px - var(--chrome-inset))`,
@@ -295,7 +290,6 @@ export function TopologyAgentDock({
                   mcpServers={acpMcpServers}
                   sessionEnabled={acpChatOpen}
                   resumeLatest
-                  // Seated in the composer, not sent.
                   prefillRequest={vaultAgentPrefill ?? askPrefill}
                   openingRequest={agentOpeningRequest}
                   requestScopeKey={JSON.stringify([gitVaultPath, 'meaning'])}
@@ -303,7 +297,6 @@ export function TopologyAgentDock({
                   onOpeningRequestSent={(nonce) => {setAgentOpeningRequest((current) => current?.nonce === nonce ? null : current);setInvestigationRefused(false);}}
                   onOpeningRequestRejected={(nonce) => {setAgentOpeningRequest((current) => current?.nonce === nonce ? null : current);setInvestigationRefused(true);}}
                   suggestions={dockSuggestions}
-                  // The composer names what the header names.
                   composerSubject={composerSubject}
                   onDraftPresenceChange={handleDraftPresence}
                   onSuggestionAction={handleChatSuggestionAction}

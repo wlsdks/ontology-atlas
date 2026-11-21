@@ -30,7 +30,6 @@ export function useTopologyRouteControls({
     () => new Set(expandedParentsKey ? expandedParentsKey.split(",") : []),
     [expandedParentsKey],
   );
-  // Only toggles expansion; selection and focus are untouched.
   const handleToggleCluster = useCallback(
     (parentId: string) => {
       if (expandAllActive) {
@@ -88,7 +87,6 @@ export function useTopologyRouteControls({
           next === "collapsed" ? "1" : "0",
         );
       } catch {
-        // Private mode: the URL param still carries the preference.
       }
       setRouteState((current) => ({ ...current, indexState: next }));
     },

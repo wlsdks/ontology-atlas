@@ -76,7 +76,6 @@ export function AutomationsPage({
   const allRounds = runner?.rounds ?? EMPTY_RUNNER_ROUNDS;
   const rounds = useMemo(() => allRounds.filter((round) => isLaneRound(round, lane)), [allRounds, lane]);
   const requestedRound = params.get("round");
-  // A link's schedule stays selected until the person picks a row or shows every run.
   const selected = rounds.find((round) => round.id === (selectedId === undefined ? requestedRound : selectedId)) ?? null;
   const history = useLaneHistory(runner, lane, rounds, selected);
   // This screen is the stage of every scheduled run: the card stands down and results read here.
@@ -260,10 +259,6 @@ export function AutomationsPage({
   );
 }
 
-/**
- * The lane's runs, narrowed to the selected schedule; null until the lane has run at all,
- * because the schedule list already says nothing has. The Documents lane keeps its asleep spans.
- */
 function useLaneHistory(runner: RoundsRunnerValue | null, lane: AutomationLane, rounds: readonly RoundRecord[], selected: RoundRecord | null) {
   const vault = useLocalVault();
   const ledger = runner?.ledger ?? EMPTY_LEDGER;

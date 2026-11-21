@@ -76,7 +76,6 @@ import { ConstructionReviewPanel } from "./construction-review/ConstructionRevie
 
 const NO_IDS: ReadonlySet<string> = new Set();
 const NO_STALE_PATHS: ReadonlyMap<string, StaleEvidencePath> = new Map();
-/** A2's three rows come before A3's in reading order, so A3's arrival continues the stagger. */
 const TO_CHECK_ROWS_BEFORE_CHANGED = 3;
 
 /* A lead paragraph needs no picture, and a remote one would be a request the reader did not ask for. */
@@ -102,13 +101,10 @@ function ProjectDetailShell({
   children: ReactNode;
   dock?: ReactNode;
   dockOpen?: boolean;
-  /** A page that is one centred stage stretches its column to the window's height. */
   fillsHeight?: boolean;
 }) {
-  // Below `xl` the open dock covers the page, so the page leaves the Tab order too.
   const dockCoversPage = useViewportBelow(1280) && dockOpen;
   return (
-    // The dock is a sticky sibling of `main`: a column from `xl`, an overlay below it.
     <div className="relative flex min-h-full w-full">
       {/* Below `lg` the main reserves the tab bar; from `lg` the frame carries the breath, as `PAGE_FRAME` does. */}
       <main id="main" tabIndex={-1} inert={dockCoversPage} className={cn("topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-0 md:pt-12 lg:pb-0", fillsHeight && "flex flex-col")}>
@@ -128,10 +124,6 @@ function ProjectDetailShell({
   );
 }
 
-/**
- * The way to another project. Its label says what the list offers from here: other projects when
- * the folder has several, adding one when it has one, and the list itself when no project is shown.
- */
 function ProjectDetailTopBar({ projectCount }: { projectCount?: number }) {
   const t = useTranslations("projectPages.detail");
   const label = projectCount === undefined ? t("topBarList") : projectCount > 1 ? t("topBarSwitch") : t("topBarAdd");
@@ -258,7 +250,6 @@ export function ProjectDetailPage({
     [router, slug],
   );
 
-  // The display name the map, INDEX and Library draw; the document title is set client-side.
   const locale = useLocale();
   const displayName = project ? projectDisplayName(project, locale) : undefined;
   useDocumentTitle(
@@ -306,10 +297,7 @@ export function ProjectDetailPage({
   ]);
 
   const { insight } = useOntologyInsight();
-  /* A bundled sample still downloading is not an empty folder: the sections drawn from it wait. */
   const insightPending = insight === null;
-  // The stand-ins are sized to the loaded sample; the boot script marks the stored choice on <html>, so
-  // the size is right before hydration (this repository's own vault has no lead and a shorter composition).
   // Until the body read settles, "no overview yet" would be a claim about a file not yet read.
   const bodyPending = insightPending || (project?.detail == null && bodySettled === false);
   const insightNodes = insight?.nodes ?? [];
@@ -325,7 +313,6 @@ export function ProjectDetailPage({
   );
 
   const vaultDocs = useVaultDocs();
-  // One manifest, so sources and wiki pages are counted from the same folder.
   const vaultManifest = useVaultManifest();
   const reducedMotion = useReducedMotion() ?? false;
 
@@ -410,7 +397,6 @@ export function ProjectDetailPage({
     ) => {
       if (!project || !canManageProject) return;
       try {
-        // Edits the display key when the document has one, the word the person sees.
         await projectMutations.patchProject(
           project.slug,
           field === "name"
@@ -467,10 +453,6 @@ export function ProjectDetailPage({
       >
         <ProjectDetailTopBar projectCount={projectsQuery.projects.length} />
 
-        {/*
-          Band A. From a 64rem page column the brief sits beside what to check, with what changed as one
-          strip under both; from 90rem the three sit side by side. Narrower, one column.
-        */}
         <div
           data-testid="project-detail-identity"
           className="mt-8 grid min-w-0 grid-cols-1 gap-x-12 gap-y-6 [grid-template-areas:'name'_'text'_'actions'_'check'_'changed'] @5xl/project-page:grid-cols-[minmax(0,var(--measure-prose))_minmax(22rem,1fr)] @5xl/project-page:[grid-template-areas:'name_actions'_'text_check'_'changed_changed'] @[90rem]/project-page:grid-cols-[calc((100%-3rem)*5/12)_minmax(0,1fr)_minmax(0,1fr)] @[90rem]/project-page:[grid-template-areas:'name_actions_actions'_'text_check_changed']"
@@ -530,7 +512,6 @@ export function ProjectDetailPage({
               className="max-w-[var(--measure-prose)] break-keep text-pretty text-title leading-title text-[color:var(--color-text-primary)]"
             />
             {bodyPending ? (
-              /* The lead and its link arrive with the sample and the body read; their height is held so nothing below moves. */
               <div data-testid="project-detail-lead-pending" aria-hidden className="mt-3 min-h-[7.4rem] max-md:min-h-[12.4rem] [html[data-sample=dogfood]_&]:md:min-h-[1.75rem] [html[data-sample=dogfood]_&]:max-md:min-h-[1.5rem]" />
             ) : (
               <>
@@ -557,7 +538,6 @@ export function ProjectDetailPage({
               )}
               </>
             )}
-            {/* View-only: the reason and the control that makes it editable, under the words it concerns. */}
             {canManageProject ? null : (
               <div className="mt-5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
                 <span
@@ -571,7 +551,6 @@ export function ProjectDetailPage({
             )}
           </div>
 
-          {/* Hairlines sit in the gaps: beside the brief, above the strip, and between the wide band's columns. */}
           <div
             data-testid="project-detail-now"
             className="relative min-w-0 border-t border-[color:var(--color-divider)] pt-5 [grid-area:check] @5xl/project-page:border-t-0 @5xl/project-page:pt-0 @5xl/project-page:before:absolute @5xl/project-page:before:inset-y-0 @5xl/project-page:before:-left-6 @5xl/project-page:before:w-px @5xl/project-page:before:bg-[color:var(--color-divider)]"
@@ -700,7 +679,6 @@ export function ProjectDetailPage({
           )}
         </section>
 
-        {/* One quiet line: what else the folder holds, where this project connects, and the file it is drawn from. */}
         <footer
           data-testid="project-detail-closing"
           className={cn(insightPending && "invisible", "mt-[var(--section-gap)] flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-[color:var(--color-divider)] pt-5 pb-[var(--page-bottom-breath)] text-body text-[color:var(--color-text-tertiary)]")}
@@ -733,7 +711,6 @@ export function ProjectDetailPage({
               {connectedProjects.length > 1 ? <span>{t("connectedMoreNote", { count: connectedProjects.length - 1 })}</span> : null}
             </span>
           ) : null}
-          {/* The slug and Markdown path a person types next; slug and date when the document is unknown. */}
           <p data-testid="project-detail-footer" className="ml-auto min-w-0 break-all font-mono text-label text-[color:var(--color-text-quaternary)]">
             {projectDoc
               ? t.rich("footerSummaryDoc", { slug: project.slug, path: projectDoc.path, value: (chunks) => <span>{chunks}</span> })

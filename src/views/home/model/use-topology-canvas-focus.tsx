@@ -37,9 +37,7 @@ export function useTopologyCanvasFocus({ topologyVaultReadModel }: Options) {
     (slug: string | null) => pointMapAt(slug ? (chatNodeIndex.get(slug) ?? null) : null),
     [chatNodeIndex, pointMapAt],
   );
-  // Relation rows hand over canvas ids, so they skip the index.
   const handleDatasheetHoverConnection = pointMapAt;
-  // Evidence rows hand over vault slugs; one the map lacks resolves to null.
   const handleDatasheetHoverEvidence = handleChatHoverSlug;
 
   // A click opens the compact popover; full detail is opt-in

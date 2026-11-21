@@ -10,9 +10,7 @@ import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { navigateWithViewTransition } from "@/shared/lib/navigation/route-view-transition";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
 
-/** The Wiki desk, where a question is asked and a failed preparation is fixed. */
 const WIKI_DESK_HREF = `${DESTINATION_HREF.library}?tab=wiki`;
-/** Long enough for the Library to open a large folder's desk; the field is focused once drawn. */
 const DESK_FIELD_WAIT_MS = 4_000;
 
 function observationOf(run: VectorRun | null, failure: string | null): MeaningRunObservation | null {
@@ -33,7 +31,6 @@ function observationOf(run: VectorRun | null, failure: string | null): MeaningRu
   };
 }
 
-/** Puts focus in the desk's question field as soon as the Library draws it, so the person types. */
 function focusDeskFieldWhenDrawn() {
   const field = () => document.querySelector<HTMLInputElement>('#main [data-testid="question-desk-input"]');
   const focus = () => {
@@ -54,12 +51,6 @@ function focusDeskFieldWhenDrawn() {
   observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "hidden"] });
 }
 
-/**
- * Carries the open folder's search-by-meaning job into the long-work seat. It reads the job where
- * the vector store keeps it, tells the seat when the desk's own line stands on screen, and gives
- * the card its Stop and its doors. A job for another folder keeps running in the app's process;
- * its card returns as it was left when that folder opens again. Draws nothing itself.
- */
 export function MeaningRunSeat() {
   const vault = useLocalVault();
   const folder = useVaultSessionIdentityScope();

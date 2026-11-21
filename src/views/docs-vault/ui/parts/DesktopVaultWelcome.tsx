@@ -35,9 +35,7 @@ export function DesktopVaultWelcome({
   onOpen: () => void;
   onOpenDogfoodPath?: () => void;
   onOpenRecent: (record: LocalFsHandleRecord) => void;
-  /** Drops a folder from the list; also the release valve for the launch rule. */
   onForgetRecent?: (record: LocalFsHandleRecord) => void;
-  /** Key of the folder the last session had open, so the list can mark it. */
   currentVaultKey?: string | null;
   /**
    * The launch chooser, not a first run: the app knows two or more folders and stopped rather
@@ -53,7 +51,6 @@ export function DesktopVaultWelcome({
   t: ReturnType<typeof useTranslations>;
 }) {
   const busy = status === "opening" || status === "loading";
-  // Shared with the installed app's `FirstRunPage` chooser so the sentence cannot drift.
   const tSwitch = useTranslations("vaultSwitch");
   const { state: dogfoodPathCopyState, copy: copyDogfoodPath } = useCopyFeedback(1500);
   const { state: dogfoodLoopCopyState, copy: copyDogfoodLoop } = useCopyFeedback(1500);
@@ -120,7 +117,6 @@ export function DesktopVaultWelcome({
           onOpen={onOpenRecent}
           onForget={onForgetRecent ?? (() => {})}
           onLocate={onOpen}
-          // The release valve sits under the list it acts on.
           footnote={choosing ? (
             <p className="text-caption leading-body text-[color:var(--color-text-quaternary)]">
               {tSwitch("choose.releaseValve")}
@@ -140,7 +136,6 @@ export function DesktopVaultWelcome({
             <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
               {choosing ? tSwitch("choose.eyebrow") : t("desktopWelcome.eyebrow")}
             </p>
-            {/* `leading-hero-lg` covers both hero sizes. */}
             <h2 className="max-w-2xl text-hero font-[var(--font-weight-strong)] leading-hero-lg text-[color:var(--color-text-primary)] md:text-hero-lg">
               {choosing
                 ? tSwitch("choose.title")
@@ -237,8 +232,6 @@ export function DesktopVaultWelcome({
               type="button"
               onClick={showDogfoodHint && onOpenDogfoodPath ? onOpenDogfoodPath : onOpen}
               disabled={busy}
-              // On the chooser the list is the answer, so this door drops the accent in every channel,
-              // using the neutral classes of its sibling card.
               className={controlClass({
                 shape: "row",
                 stacked: true,
@@ -282,7 +275,6 @@ export function DesktopVaultWelcome({
                 type="button"
                 onClick={onOpenDogfoodPath}
                 disabled={busy}
-                // On the chooser, every door is neutral.
                 className={controlClass({
                   shape: "row",
                   stacked: true,

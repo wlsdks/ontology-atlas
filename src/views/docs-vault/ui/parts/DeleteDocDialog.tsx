@@ -10,7 +10,6 @@ import { Button, Dialog } from "@/shared/ui";
 
 import type { DeleteDocTarget } from "../../model/use-doc-write-actions";
 
-/** Named before the rest are counted. */
 const REFERRERS_NAMED_MAX = 3;
 
 /**
@@ -23,10 +22,8 @@ export function DeleteDocDialog({
   onCancel,
   onConfirm,
 }: {
-  /** Null closes the dialog. */
   target: DeleteDocTarget | null;
   onCancel: () => void;
-  /** Rejects with the reason when the vault refuses. */
   onConfirm: () => Promise<void>;
 }) {
   const held = useHeldValue(target, target?.slug ?? null);

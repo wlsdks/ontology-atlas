@@ -77,7 +77,6 @@ export interface GameOptions {
   scale: number;
   sheets: Record<Sheet, SheetSource>;
   emote: (glyph: 'note' | 'heart' | 'spark') => string;
-  /** The magic-fish clip's own fish, cropped from its cell: the magnet's icon. */
   fish: { frame: number; x: number; y: number; width: number; height: number };
   scoreLabel: (score: number) => string;
   onPhase: (phase: Phase) => void;
@@ -91,14 +90,12 @@ const TOAST_MS = 1400;
 const HIT_MS = 300;
 const SQUASH_MS = 180;
 
-/** Tiny static stars in the sky, placed by hand so the scene never shifts between visits. */
 const SKY = [
   [6, 14, 2], [14, 30, 3], [22, 9, 2], [31, 22, 2], [39, 12, 3], [47, 34, 2], [55, 7, 2],
   [63, 26, 3], [71, 15, 2], [79, 31, 2], [87, 10, 3], [93, 24, 2], [10, 44, 2], [84, 46, 2],
 ] as const;
 const TWINKLE = [1, 4, 7, 10, 12];
 
-/** Which clip Moru plays as the multiplier climbs. */
 const TIER_CLIP: Record<number, PlayClip> = { 2: 'clap', 3: 'laugh', 4: 'hearts' };
 
 interface Particle {
@@ -188,8 +185,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
   let powerWash = 0;
   const hud = { score: -1, mult: -1, pips: -1, lives: -1, time: -1, hurry: false, power: '' };
 
-  /* Sprites, painted once ------------------------------------------------------------------- */
-
   const sheets: Record<Sheet, HTMLImageElement> = {
     companion: loadImage(options.sheets.companion.src, () => buildFish()),
     reactions: loadImage(options.sheets.reactions.src, () => buildFish()),
@@ -246,7 +241,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
     }
     return sprite;
   };
-  // Every score a catch can show, every multiplier and the countdown, painted before play.
   for (const base of [10, 50]) for (let m = 1; m <= 4; m += 1) for (const fill of [color.text, color.accent, color.gold]) textSprite(`+${base * m}`, fill, 3);
   for (let m = 2; m <= 4; m += 1) textSprite(`×${m}`, m === 4 ? color.gold : color.accent, 5, BIG_GLYPHS);
   const countdown = Object.fromEntries(Object.entries(BIG_GLYPHS).map(([digit, rows]) => [digit, pixelSprite(rows, { f: color.text }, 12, dpr, color.accentHalf)]));
@@ -272,8 +266,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
     });
     sky.dataset.sprite = 'sky';
   }
-
-  /* Effects, pooled so a busy moment allocates nothing ---------------------------------------- */
 
   const particles = pool<Particle>(220, () => ({ on: false, x: 0, y: 0, vx: 0, vy: 0, age: 0, life: 0, size: 0, color: '', sprite: null, spin: 0 }));
   const pops = pool<Effect>(24, () => ({ on: false, kind: 'note', x: 0, y: 0, age: 0, sprite: null }));
@@ -316,8 +308,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       });
     }
   }
-
-  /* Moru ------------------------------------------------------------------------------------ */
 
   const half = () => (CELL * scale) / 2;
   const headY = () => headLine(floor, scale);
@@ -367,7 +357,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
         if (Math.floor(into / BOUNCE.total) > Math.floor((into - dt) / BOUNCE.total)) squashAt = clock;
       }
     } else if (motion === 'bounce') {
-      // Finish the bounce in the air, then land on the hop's own settle.
       const into = clock - motionStart;
       if (Math.floor(into / BOUNCE.total) > Math.floor((into - dt) / BOUNCE.total)) {
         motion = 'settle';
@@ -379,8 +368,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       motionStart = clock;
     }
   }
-
-  /* Rules ----------------------------------------------------------------------------------- */
 
   function apply(event: RoundEvent) {
     switch (event.type) {
@@ -503,7 +490,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       if (power) field.dataset.power = power;
       else delete field.dataset.power;
     }
-    // The heart that just broke and the multiplier that just rose give one small beat.
     nodes.lives.forEach((heart, i) => {
       if (!heart) return;
       const age = clock - heartAt;
@@ -520,8 +506,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       nodes.toast.style.opacity = String(age < 0 || age > TOAST_MS ? 0 : age < 160 ? smooth(age / 160) : 1 - smooth((age - TOAST_MS + 300) / 300));
     }
   }
-
-  /* Drawing ---------------------------------------------------------------------------------- */
 
   function drawSprite(c: CanvasRenderingContext2D, sprite: HTMLCanvasElement | undefined | null, cx: number, bottom: number, alpha = 1, size = 1) {
     if (!sprite || alpha <= 0) return;
@@ -546,7 +530,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       return;
     }
     if (kind === 'gold' && !calm) {
-      // A glint that turns on the star's corner: the rare one worth chasing.
       const glint = (age % 900) / 900;
       c.globalAlpha = alpha * Math.sin(Math.PI * glint);
       c.fillStyle = color.text;
@@ -580,7 +563,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       }
       ctx.globalAlpha = 1;
     }
-    // Slow time washes the sky; it eases in and out over a third of a second.
     if (powerWash > 0.001) {
       ctx.globalAlpha = powerWash;
       ctx.fillStyle = color.accentWash;
@@ -604,7 +586,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       }
     }
 
-    // Moru, his shadow, and the magnet's halo at his feet.
     const shown = pose();
     const image = sheets[shown.sheet];
     const s = scale;
@@ -681,7 +662,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       drawSprite(ctx, shown.sprite, shown.x, shown.y - rise, opacity, size);
     }
 
-    // The multiplier that was just reached, large over Moru's head.
     const tierAge = clock - tierAt;
     if (tierAge < 900 && tier > 1) {
       const opacity = tierAge < 120 ? tierAge / 120 : 1 - smooth((tierAge - 600) / 300);
@@ -689,18 +669,15 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       drawSprite(ctx, textSprite(`×${tier}`, tier === 4 ? color.gold : color.accent, 5, BIG_GLYPHS), x, headY() - 40 * s - (calm ? 0 : 16 * easeOut(tierAge / 900)), opacity, size);
     }
 
-    // A golden catch puts the spark emote over Moru's head, as his own clips do.
     const bubbleAge = clock - bubbleAt;
     if (bubbleAge < 900) {
       const opacity = bubbleAge < 90 ? bubbleAge / 90 : 1 - smooth((bubbleAge - 650) / 250);
       drawSprite(ctx, sprites['spark-small'], x + (mover.facing === 1 ? 44 : -44) * s, headY() - 6 * s - (calm ? 0 : 6 * easeOut(bubbleAge / 200)), opacity);
     }
 
-    // The running power: its icon over Moru with a ring that empties as it runs out.
     if (round?.power) {
       const total = round.power.kind === 'magnet' ? 5000 : 4000;
       const share = Math.max(0, round.power.left / total);
-      // Beside Moru's tail, clear of the drops and the score that springs up over his head.
       const side = x - mover.facing * (48 * s + 30);
       const cx = snap(Math.min(width - 24, Math.max(24, side))), cy = snap(headY() + 12 * s);
       ctx.fillStyle = color.canvas;
@@ -733,7 +710,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       }
     }
 
-    // A faint red wash on a hit; never under reduced motion.
     if (!calm && hitAge < 240) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.globalAlpha = 1 - hitAge / 240;
@@ -742,8 +718,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       ctx.globalAlpha = 1;
     }
   }
-
-  /* The clock -------------------------------------------------------------------------------- */
 
   function fixedStep() {
     const min = half(), max = Math.max(half(), width - half());
@@ -867,7 +841,6 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
       playClip('wave', fitTimeline(clipTimeline('wave'), COUNTDOWN_MS), true);
       run();
     },
-    /** Ends a running round early with what was scored; during the countdown, goes back to the start. */
     stop() {
       if (phase === 'countdown') {
         round = null;

@@ -36,18 +36,14 @@ import {
 import { TypedLetters } from './TypedLetters';
 
 const CENTER = { x: 50, y: 50 };
-/** A press that travels this far is a drag, not a tap. */
 const DRAG_START_PX = 6;
-/** The wire's free end catches the concept it is drawn to within this distance. */
 const SNAP_PX = 44;
 const SPARKS = 8;
-/** At or below this width-to-height ratio the stage uses the tall layout, as the CSS container query does. */
 const TALL_RATIO = 6 / 5;
 
 /** A double click on a control that stays in place would answer twice; only its first press counts. */
 export const isFirstPress = (event: MouseEvent<HTMLElement>) => event.detail <= 1;
 
-/** Pixel sparks thrown once from a concept's dot: when it is written, fixed, changed, and when the map is done. */
 export function Burst({ delay }: { delay: string }) {
   return (
     <span aria-hidden className="build-burst absolute inset-0" style={{ '--burst-delay': delay } as CSSProperties}>
@@ -69,14 +65,8 @@ const labelIn = (rel: BuildRelation, tall: boolean) => {
   return { x: a.x + (b.x - a.x) * rel.labelAt, y: a.y + (b.y - a.y) * rel.labelAt };
 };
 
-/** Where the agent's pointer is on each beat of its first map. */
 const AGENT_AT: Record<number, BuildConceptId | 'center' | 'relations'> = { 1: 'center', 2: 'shop', 3: 'shopping', 4: 'orders', 5: 'members', 6: 'refund', 7: 'relations' };
 
-/**
- * The sample map: the mission card, the clusters the agent writes, the relations it and the person
- * draw and the commit that lands on one concept. Everything is placed in percent of the stage, and
- * every move is one transition per input.
- */
 export function BuildStage({
   state,
   nameOf,
@@ -228,17 +218,14 @@ export function BuildStage({
           if (event.pointerType === 'mouse' && !drag.current) hideWire();
         }}
       >
-        {/* Each cluster's light pool, lit as the agent writes it. */}
         {BUILD_CONCEPTS.filter((concept) => concept.kind === 'domain').map((concept) => (
           <div key={concept.id} aria-hidden className="build-at build-pool-at" data-shown={isWritten(state, concept) || undefined} style={placed((layout) => pointIn(concept.id, layout))}>
             <span className="build-pool absolute rounded-full" />
           </div>
         ))}
 
-        {/* The agent reading the repository: one band of light sweeps the stage. */}
         <span aria-hidden className="build-scan absolute inset-y-0 left-0" data-shown={(phase === 'building' && built === 1) || undefined} />
 
-        {/* Lines, measured in pixels so each draws from one end to the other. */}
         <svg aria-hidden className="pointer-events-none absolute inset-0 size-full" viewBox={`0 0 ${size.width || 1} ${size.height || 1}`}>
           {BUILD_CONCEPTS.map((concept) => {
             if (!concept.parent) return null;
@@ -266,7 +253,6 @@ export function BuildStage({
               />
             );
           })}
-          {/* The commit's reach: a light runs out from the changed concept along each of its relations. */}
           {phase === 'impact'
             ? BUILD_RELATIONS.filter(dependsOnChange).map((rel) => {
                 const [a, b] = rel.from === BUILD_CHANGE.concept ? [px(point(rel.from)), px(point(rel.to))] : [px(point(rel.to)), px(point(rel.from))];
@@ -279,7 +265,6 @@ export function BuildStage({
           </g>
         </svg>
 
-        {/* The mission card: the repository, what winning means, and the button that asks for the first map. */}
         <div className="build-at build-mission-at" data-shown={!opened || undefined} inert={opened} style={at(CENTER)}>
           <div className="build-center build-zoom build-folder flex flex-col items-center gap-2 text-center">
             <span className="build-folder-icon relative grid size-16 place-items-center rounded-card">
@@ -303,7 +288,6 @@ export function BuildStage({
           </div>
         </div>
 
-        {/* The changed file, carried from the commit card into the concept that holds it. */}
         <div
           aria-hidden
           className="build-at build-carry-at"
@@ -424,7 +408,6 @@ export function BuildStage({
           );
         })}
 
-        {/* After a still moment, a hand shows where to press next. */}
         {targets.length > 0 ? (
           <div key={`${phase}:${state.pick}:${state.misses}:${targets[0]}`} aria-hidden className="build-hint-at" style={placed((layout) => pointIn(targets[0], layout))}>
             <span className="build-zoom absolute left-0 top-0">
@@ -434,7 +417,6 @@ export function BuildStage({
           </div>
         ) : null}
 
-        {/* The agent at work on its first map: a named pointer that flies to each cluster it writes. */}
         <div aria-hidden className="build-at build-agent-at" data-shown={agentSpot !== undefined || undefined} style={placed(agentPoint)}>
           <span className="build-agent build-zoom absolute left-0 top-0 inline-flex items-start">
             <MousePointer2 size={ICON_SIZE.md} fill="currentColor" className="build-agent-pointer shrink-0" />
@@ -442,7 +424,6 @@ export function BuildStage({
           </span>
         </div>
 
-        {/* Atlas's count, the moment the first map is done: what it found to fix. */}
         <div
           aria-hidden
           data-shown={(phase === 'building' && measured) || undefined}
@@ -452,7 +433,6 @@ export function BuildStage({
           {t('found', { names: CODE_NAMED.length, lone: LONE_CONCEPTS.length })}
         </div>
 
-        {/* The agent's commit, pinned to the stage's top edge from the moment it arrives. */}
         <div
           data-testid="build-commit"
           data-shown={commitShown || undefined}

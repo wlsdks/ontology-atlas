@@ -4,7 +4,6 @@ const GRAPH_KEYS = [
   "kind",
   "slug",
   "title",
-  // `display_<locale>` keys are listed right after `title` — see `graphFieldKeys`.
   "domain",
   "domains",
   "capabilities",

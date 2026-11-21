@@ -27,7 +27,6 @@ export function TopologyScopeReadout({ total, members, synthetic }: {
 
 type KeyShape = "capability" | "rest" | "needs" | "neededBy" | "relates" | "broader";
 
-/** A drawn sample of one map mark, in the ink the canvas paints it with. */
 function KeySample({ shape }: { shape: KeyShape }) {
   const ink = shape === "neededBy" ? "var(--map-graph-reach)" : shape === "capability" ? "currentColor" : "var(--map-graph-arc)";
   return (
@@ -48,7 +47,6 @@ const SELECTION_SHAPES = [
   ["broader", "keyBroader"],
 ] as const;
 
-/** A domain's lines join domains, so their key names domains. */
 const DOMAIN_SELECTION_SHAPES = [
   ["needs", "keyDomainNeeds"],
   ["neededBy", "keyDomainNeededBy"],

@@ -23,7 +23,6 @@ import {
  * domains (d! orders, greedy beyond); label admission is O(n^2) over at most about sixty boxes.
  */
 
-/** The product's mark sizes and inks' numbers (`--map-graph-*`), read by the caller. */
 export interface FilmMarkTokens {
   domainDiscPx: number;
   domainCorePx: number;
@@ -75,7 +74,6 @@ export interface FilmLabel {
   x: number;
   y: number;
   align: 'left' | 'center' | 'right';
-  /** The text's own box, without its halo. */
   box: Rect;
 }
 
@@ -92,9 +90,7 @@ export interface FilmCluster {
   id: string;
   x: number;
   y: number;
-  /** Outer ring, largest capability and its dots: how far the cluster reaches. */
   footprint: number;
-  /** Name and count row, reserved before any capability is placed. */
   nameBlock: Rect;
 }
 
@@ -122,11 +118,9 @@ export interface FilmLitLine {
 export interface FilmLit {
   pick: string;
   reach: FilmReach;
-  /** The selected disc, its two rings and the agent's ring. */
   selectedR: number;
   rings: [number, number];
   agentR: number;
-  /** The pick's own dots while selected: outside its rings. */
   ownDots: Map<string, Pt>;
   lines: FilmLitLine[];
   ends: string[];
@@ -134,10 +128,8 @@ export interface FilmLit {
   owners: string[];
   labels: FilmLabel[];
   leader: { from: Pt; to: Pt } | null;
-  /** The pointer's tip, on the pick's disc at four o'clock. */
   pointer: Pt;
   pointerBox: Rect;
-  /** Phone: the two key rings of the docked readout. */
   keys: { x: number; y: number; ink: 'project' | 'agent' }[];
 }
 
@@ -173,7 +165,6 @@ export interface FilmMapLayout {
   h: number;
   titleBox: Rect;
   captionBox: Rect;
-  /** Domains in slot order, the pick's first. */
   order: string[];
   marks: Map<string, FilmMark>;
   clusters: FilmCluster[];
@@ -187,7 +178,6 @@ export interface FilmMapLayout {
 
 export interface FilmCopy {
   units: (capabilities: number, elements: number) => string;
-  /** The reach row as text, number and text, twice. */
   reach: (needs: number, neededBy: number) => LabelSegment[];
   agent: string;
   tool: string;
@@ -199,7 +189,6 @@ export interface FilmLayoutInput {
   w: number;
   h: number;
   locale: string;
-  /** The section title's DOM rect, in stage pixels. */
   title: Rect;
   /** The union of every act's headline, act 4's second line and the act bar. */
   caption: Rect;
@@ -210,7 +199,6 @@ export interface FilmLayoutInput {
   copy: FilmCopy;
 }
 
-/** Stage width at which the film draws its wide picture. */
 export const WIDE_PX = 720;
 const DEG = Math.PI / 180;
 const FAN_STEP = 0.42;
@@ -220,7 +208,6 @@ const PHONE_UNITS_MAX = 160;
 const LABEL_PAD = 4;
 const NAME_GAP = 7;
 const CROSSING_COST = 4000;
-/** Stage width from which capabilities are named at rest. */
 const REST_NAMES_PX = 1400;
 const NUMERAL_SPOTS = [0.5, 0.44, 0.56, 0.38, 0.62, 0.32, 0.68, 0.26, 0.74];
 
@@ -257,7 +244,6 @@ export function filmSizes(w: number, h: number, tokens: FilmMarkTokens, fit = 1)
   };
 }
 
-/** A string's stable 0..1 value, for the small deterministic spread of a cluster's marks. */
 function hash(text: string): number {
   let h = 2166136261;
   for (let i = 0; i < text.length; i += 1) {
@@ -272,10 +258,6 @@ const angleGap = (a: number, b: number) => {
   const d = norm(a - b);
   return Math.min(d, Math.PI * 2 - d);
 };
-
-/* ------------------------------------------------------------------------------------------ */
-/* Labels                                                                                       */
-/* ------------------------------------------------------------------------------------------ */
 
 const fontOf = (weight: number, size: number, family: string) => `${weight} ${size}px ${family}`;
 
@@ -296,7 +278,6 @@ function makeLabel(
   return { key, id, role, segments, font, size, x, y, align, box: { l, t: y - size * 0.62, r: l + w, b: y + size * 0.62 } };
 }
 
-/** The boxes and marks a new label must stay clear of. */
 class Field {
   readonly boxes: Rect[] = [];
   readonly marks: { x: number; y: number; r: number }[] = [];
@@ -322,13 +303,8 @@ class Field {
   }
 }
 
-/* ------------------------------------------------------------------------------------------ */
-/* Clusters                                                                                     */
-/* ------------------------------------------------------------------------------------------ */
-
 interface Item {
   id: string;
-  /** Angle and distance from the domain disc. */
   a: number;
   d: number;
   r: number;
@@ -347,7 +323,6 @@ interface LocalCluster {
   /** Elements the domain holds without a capability, just above its disc. */
   direct: string[];
   footprint: number;
-  /** Relative to the domain disc. */
   nameBlock: Rect;
   rows: { text: string; font: string; size: number; dy: number; role: 'domain' | 'units'; key: string }[];
 }
@@ -356,7 +331,6 @@ function itemReach(item: Item, S: FilmSizes): number {
   return item.r + (item.elements.length ? S.elemGap + S.elemAlt + S.elemR * 2 : 0);
 }
 
-/** How far a cluster's marks rise above its domain disc's centre. */
 function upReach(local: LocalCluster, S: FilmSizes): number {
   let up = S.domainR;
   for (const it of local.items) {
@@ -368,7 +342,6 @@ function upReach(local: LocalCluster, S: FilmSizes): number {
   return up;
 }
 
-/** Where a capability's dots sit, relative to the capability: fanned away from its domain. */
 export function dotOffsets(count: number, away: number, r: number, S: FilmSizes, from = r + S.elemGap): Pt[] {
   return Array.from({ length: count }, (_, k) => {
     const a = away + (k - (count - 1) / 2) * FAN_STEP;
@@ -418,7 +391,6 @@ function localCluster(
     return free[free.length - 1]?.[1] ?? 0;
   };
 
-  /* The name block: the domain's name, then its count row, centred under the disc. */
   const nameFont = fontOf(650, S.fDomain, sans);
   const unitsFont = fontOf(400, S.fUnits, sans);
   const capCount = vault.capabilities.filter((c) => c.domain === domain.id).length;
@@ -477,7 +449,6 @@ function localCluster(
   if (gate !== null && pick) {
     const c = vault.byId.get(pick)!;
     const item: Item = { id: c.id, a: gate, d: S.rings[2] * (S.wide ? 1.42 : 1.3), r: capRadius(c.elements.length), elements: c.elements, gate: true };
-    /* The gate turns away from the name block until the pick and its dots clear it. */
     const away = Math.sin(gate - Math.PI / 2) >= 0 ? 1 : -1;
     for (let step = 0; step < 90 && touches(item, item.a); step += 1) item.a += away * DEG;
     items.push(item);
@@ -487,7 +458,6 @@ function localCluster(
   return { id: domain.id, items, direct, footprint, nameBlock, rows };
 }
 
-/** Domains in circular order: heavily connected domains become neighbours, the pick's on top. */
 export function slotOrder(vault: FilmVault, first: string | null): string[] {
   const ids = vault.domains.map((d) => d.id);
   if (ids.length <= 1) return ids;
@@ -517,7 +487,6 @@ export function slotOrder(vault: FilmVault, first: string | null): string[] {
     }
     return best;
   }
-  /* Beyond six domains: each next slot takes the domain most connected to the last placed. */
   const ring = [head];
   const left = new Set(rest);
   while (left.size) {
@@ -528,10 +497,6 @@ export function slotOrder(vault: FilmVault, first: string | null): string[] {
   }
   return ring;
 }
-
-/* ------------------------------------------------------------------------------------------ */
-/* The whole map                                                                                */
-/* ------------------------------------------------------------------------------------------ */
 
 export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
   const { vault, w, h, measure, sans, mono, tokens, copy } = input;
@@ -565,7 +530,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       ];
   type Attempt = (typeof attempts)[number];
   type Placement = { locals: Map<string, LocalCluster>; placed: FilmPlacement; value: number; S: FilmSizes };
-  /** One attempt's best ellipse, searched on a grid of `grain` steps. */
   const tryAttempt = ({ fit, tiltDeg, adapt }: Attempt, grain: number): Placement => {
     S = filmSizes(w, h, tokens, fit);
     const tilt = tiltDeg * DEG;
@@ -600,7 +564,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       return { cx: (mapL + mapR) / 2 + (S.wide ? 10 * S.s : 0), yTop, yBottom, rx: Math.max(0, rx) };
     };
 
-    /* The pick stands at its cluster's gate, facing the domain that holds most of its lit ends. */
     if (pick && pickDomain) {
       const base = frame(reachOfAll());
       const { cy, ry, rx: rxe } = ellipse(base.yTop, base.yBottom, base.rx);
@@ -651,7 +614,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
     const base = frame(maxReach);
 
     /** Every mark and name block for an ellipse; null when something falls outside the map. */
-    /* Placed, the lit pick and its pushed-out dots stay on the stage and off its name block: the gate turns until they do. */
     const settleGate = (p: Pt, it: Item, local: LocalCluster, others: { p: Pt; block: Rect }[]) => {
       const ringK = S.wide ? S.K : 0.84;
       const litR = Math.max(it.r, 11 * ringK) + 11 * ringK + 5 + S.elemAlt + S.elemR * 2;
@@ -673,7 +635,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       }
       return it.a;
     };
-    /** The clusters alone, without their marks: enough for the rules about name blocks and footprints. */
     const centres = (cx: number, yTop: number, yBottom: number, rx0: number): FilmCluster[] => {
       const { cy, ry, rx } = ellipse(yTop, yBottom, rx0);
       return order.map((id) => {
@@ -726,7 +687,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       return { marks, clusters };
     };
 
-    /** Whether a rest arc between two clusters has a bow that passes every other cluster and the project. */
     const corridor = (placed: ReturnType<typeof place>, from: string, to: string) => {
       const A = placed.clusters.find((c) => c.id === from);
       const B = placed.clusters.find((c) => c.id === to);
@@ -753,7 +713,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       );
     };
 
-    /** Marks of two clusters closer than a mark's gap: only marks inside the other's footprint can be. */
     const crowded = (placed: ReturnType<typeof place>, a: FilmCluster, b: FilmCluster) => {
       const A: FilmMark[] = [];
       const B: FilmMark[] = [];
@@ -766,7 +725,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
     };
     const hubW = vault.project ? measure(vault.project.label, fontOf(510, S.fProject, sans)) : 0;
 
-    /** The rules a placement's name blocks and light centres break, counted up to `limit`. */
     const blockFaults = (clusters: FilmCluster[], limit = Infinity) => {
       let n = 0;
       const fault = () => {
@@ -794,7 +752,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       };
       const { clusters } = placed;
       const hub = vault.project ? placed.marks.get(vault.project.id) : undefined;
-      /* The project's name stands above its mark, or below it: one of the two places must be free. */
       if (hub) {
         const lift = hub.r * 1.35;
         const above: Rect = { l: hub.x - hubW / 2 - 6, t: hub.y - lift - 12 - S.fProject * 1.24, r: hub.x + hubW / 2 + 6, b: hub.y - lift - 4 };
@@ -806,7 +763,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
         };
         if (blocked(above) && blocked(below) && fault()) return n;
       }
-      /* Lit, the pick grows to its agent ring with its own dots pushed outside it. */
       const lifted = pick ? placed.marks.get(pick) : undefined;
       if (lifted) {
         const ringK = S.wide ? S.K : 0.84;
@@ -833,7 +789,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       return n;
     };
 
-    /* Every ellipse the spec allows (lower edge raised, narrowed, shifted right); the one that uses the stage best wins. */
     const stageUse = (candidate: ReturnType<typeof place>) => {
       let l = Infinity;
       let r = -Infinity;
@@ -897,7 +852,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
   };
   /* On a full stage the spec's ellipse stands once it breaks nothing and fills the stage; elsewhere it also needs a clear way for every rest arc. */
   const enough = (a: Attempt) => (!a.adapt && w >= REST_NAMES_PX ? 3999 : 5999);
-  /* The spec's ellipses are searched in full; the adapted ones on a coarse grid, and the one kept is then searched in full. */
   let chosen: Placement | null = null;
   let chosenAttempt: Attempt | null = null;
   for (const attempt of attempts) {
@@ -917,14 +871,12 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
   const { marks, clusters } = placed;
   const clusterOf = new Map(clusters.map((c) => [c.id, c]));
 
-  /* Membership: one stem from each capability to its domain, and from each domain to the project. */
   const stems: FilmMapLayout['stems'] = [];
   for (const id of order) {
     if (vault.project) stems.push({ from: vault.project.id, to: id, alpha: 0.16 });
     for (const it of locals.get(id)!.items) stems.push({ from: id, to: it.id, alpha: 0.24 });
   }
 
-  /* ---------------- names that every frame shares ---------------- */
   const blockLabels: FilmLabel[] = [];
   for (const c of clusters) {
     for (const row of locals.get(c.id)!.rows) {
@@ -944,7 +896,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
     const lift = project.r * 1.35 + 8 + S.fProject * 0.6;
     projectAt = at;
     projectLift = lift;
-    /* Centred above its mark; below it when a domain's name block or a mark already holds that place. */
     const taken = (label: FilmLabel) => {
       const box = grow(label.box, LABEL_PAD);
       return clusters.some((c) => overlaps(box, c.nameBlock)) || [...marks.values()].some((m) => m.id !== project.id && circleIntoRect(m, m.r, box) > 0);
@@ -965,7 +916,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
     return field;
   };
 
-  /** Spots beside a mark, tried in order; the first free one wins. */
   const spotsAround = (m: Pt & { r: number }, width: number, size: number, outward: number, extra: number[]) => {
     const out: { x: number; y: number; align: FilmLabel['align'] }[] = [];
     const right = Math.cos(outward) >= 0;
@@ -982,7 +932,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
     return out;
   };
 
-  /** Spots on rings around a mark in sixteen directions, nearest `toward` first, then nearest the mark. */
   const ringSpots = (m: Pt & { r: number }, size: number, toward: number, extra: number[]) => {
     const out: { x: number; y: number; align: FilmLabel['align']; rank: number }[] = [];
     extra.forEach((e, ring) => {
@@ -1025,7 +974,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
     return Math.atan2(m.y - home.y, m.x - home.x);
   };
 
-  /* ---------------- the lit frame's geometry, needed before rest arcs route around it ---------------- */
   const ringK = S.wide ? S.K : 0.84;
   let lit: FilmLit | null = null;
   let pickBlock: Rect | null = null;
@@ -1103,7 +1051,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
     }
   }
 
-  /* ---------------- rest arcs: one per ordered domain pair ---------------- */
   const restField = baseField(false);
   const restArcs: FilmArc[] = [];
   const sideOf = new Map<string, number>();
@@ -1148,7 +1095,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
         /* One crossing in the whole map is allowed; any more is as bad as a mark hit twice. */
         const crossed = restArcs.reduce((sum, other) => sum + crossings(pts, other.pts), 0);
         if (crossed > 0) cost += crossedSoFar + crossed <= 1 ? 300 : crossed * CROSSING_COST;
-        /* The count sits at the arc's middle, or slides along it to the nearest clear spot; with none, the arc carries no count. */
         const numeralFree = (q: Pt) =>
           restField.free({ l: q.x - S.numeralR, t: q.y - S.numeralR, r: q.x + S.numeralR, b: q.y + S.numeralR }) &&
           !restArcs.some((o) => (o.numeral && dist(o.numeral, q) < S.numeralR * 2 + 2 * LABEL_PAD + 4) || o.pts.some((p) => dist(p, q) < S.numeralR + 4));
@@ -1170,7 +1116,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
     if (best.numeral)
       restField.take({ l: best.numeral.x - S.numeralR, t: best.numeral.y - S.numeralR, r: best.numeral.x + S.numeralR, b: best.numeral.y + S.numeralR });
   }
-  /* A later arc that still passes over an earlier count takes that count away. */
   for (const arc of restArcs) {
     const q = arc.numeral;
     if (q && restArcs.some((o) => o !== arc && o.pts.some((p) => dist(p, q) < S.numeralR + 2))) arc.numeral = null;
@@ -1187,7 +1132,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
         if (arc.numeral)
           check.take({ l: arc.numeral.x - S.numeralR, t: arc.numeral.y - S.numeralR, r: arc.numeral.x + S.numeralR, b: arc.numeral.y + S.numeralR });
       if (!crossed(other) && check.free(other.box)) {
-        /* The rest field holds the name blocks, then the project's name. */
         restField.boxes[clusters.length] = grow(other.box, LABEL_PAD);
         projectLabel = other;
       }
@@ -1195,7 +1139,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
   }
   restField.samples = restArcs.flatMap((arc) => resample(arc.pts, 8));
 
-  /* ---------------- rest names ---------------- */
   const restLabels: FilmLabel[] = [...blockLabels];
   if (projectLabel) restLabels.push(projectLabel);
   /* Capability names at rest only where the stage has room for them; a smaller one keeps the domains and the project. */
@@ -1231,7 +1174,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
     }
   }
 
-  /* ---------------- the lit frame ---------------- */
   if (pick && pickMark && reach) {
     const own = new Set(vault.byId.get(pick)!.elements);
     const blocks = clusters.map((c) => c.nameBlock);
@@ -1325,7 +1267,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
         .map((c) => c.capability!)
         .filter((c, i, all) => all.indexOf(c) === i && c !== pick);
 
-      /* The pointer: the system arrow, its tip on the pick's disc at four o'clock. */
       const tipA = 30 * DEG;
       const pointer = { x: pickMark.x + Math.cos(tipA) * selectedR * 0.55, y: pickMark.y + Math.sin(tipA) * selectedR * 0.55 };
       const pointerBox: Rect = { l: pointer.x - 1, t: pointer.y - 1, r: pointer.x + 15, b: pointer.y + 22 };
@@ -1362,7 +1303,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
           litLabels.push(...pickLabels);
           field.boxes.push(grow(pickBlock, 12 - LABEL_PAD));
         }
-        /* The agent's tag on a short amber leader from its ring. */
         const tagSans = fontOf(510, S.fTag, sans);
         const tagMono = fontOf(400, S.fTag, mono);
         const tagW = Math.max(measure(copy.agent, tagSans), measure(copy.tool, tagMono));
@@ -1392,9 +1332,7 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
             break done;
           }
         }
-        /* Every lit end is named. */
         const endFont = fontOf(510, S.fCap, sans);
-        /* Elements first, each name right beside its dot; a capability's name may then stand farther out. */
         const byWeight = [...endsFar].sort((p, q) => Number(marks.get(q.end)!.kind === 'element') - Number(marks.get(p.end)!.kind === 'element'));
         for (const row of byWeight) {
           const m = marks.get(row.end)!;
@@ -1418,7 +1356,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
           if (label) litLabels.push(label);
         }
       } else {
-        /* Phone: a docked readout of two rows above the caption, a legend of the pick's two rings. */
         const x0 = input.caption.l;
         const y2 = captionBox.t - 14;
         const y1 = y2 - 28;
@@ -1436,7 +1373,6 @@ export function layoutFilmMap(input: FilmLayoutInput): FilmMapLayout {
       const blockOf = new Map(clusters.map((c) => [c.id, c.nameBlock]));
       for (const label of litLabels) {
         if (!dimmed(label)) continue;
-        /* A domain's name and count leave together when a line crosses their block. */
         const area = label.role === 'project' ? grow(label.box, 3) : blockOf.get(label.id ?? '')!;
         if (paths.some((p) => inside(p, area))) hidden.add(label.key);
       }

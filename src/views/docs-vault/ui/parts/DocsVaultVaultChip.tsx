@@ -9,28 +9,23 @@ export interface DocsVaultVaultChipProps {
   /** `null` states no count: the sample's number would read as "my folder has N documents". */
   docCount: number | null;
   folderCount: number;
-  /** Shown in full inside the popover. */
   path: string;
   isLocalSourceLoaded: boolean;
   open: boolean;
   onToggle: () => void;
   onSwap: () => void;
-  /** The chip alone states the source; this menu switches it. */
   isSample: boolean;
   onUseSample: () => void;
   /** False in the installed app: bundled samples are web-only. */
   allowSample?: boolean;
-  /** A browser without FSA locks "my folder" with the reason. */
   localDisabled?: boolean;
   localDisabledReason?: string;
   onOpenAudit: () => void;
   menuRef: RefObject<HTMLDivElement | null>;
-  /** A one-line note that vault tools moved into settings. */
   toolsMovedHint?: string;
   t: ReturnType<typeof useTranslations<"docsVault">>;
 }
 
-/** The header's vault chip: source and name, with a menu that holds the census and the switch. */
 export function DocsVaultVaultChip({
   label,
   docCount,
@@ -57,11 +52,9 @@ export function DocsVaultVaultChip({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t("vaultChip.menuAriaLabel")}
-        // A locale-independent handle for e2e specs.
         data-testid="vault-chip-menu-trigger"
         className="min-h-[var(--chrome-tile-size)] min-w-0 max-w-[min(200px,100%)] flex-none gap-1 px-2 hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
       >
-        {/* The icon states the source. */}
         {isSample ? (
           <Package size={ICON_SIZE.sm} aria-hidden className="flex-none" />
         ) : (
@@ -77,7 +70,6 @@ export function DocsVaultVaultChip({
           className={`flex-none transition-transform ${open ? "rotate-180" : ""}`}
         />
       </Chip>
-      {/* Anchored to the chip's left edge and grows from it. */}
       <Surface
         open={open}
         origin="top left"
@@ -141,14 +133,12 @@ export function DocsVaultVaultChip({
                 className={`flex-none ${!isSample ? "opacity-100" : "opacity-40"}`}
               />
               <span className="min-w-0 flex-1 truncate">
-                {/* Both rows name what you are looking at; only your own open folder reads "switch folder". */}
                 {allowSample && isSample
                   ? t("header.sourcePickLocal")
                   : t("header.vaultPillSwap")}
               </span>
             </RowButton>
             {localDisabled && localDisabledReason ? (
-              // A dimmed row alone cannot tell broken from not possible in this browser.
               <p
                 id="vault-chip-local-blocked"
                 className="px-1.5 pb-1 pt-0.5 text-caption leading-label text-[color:var(--color-text-quaternary)]"

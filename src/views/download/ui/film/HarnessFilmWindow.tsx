@@ -18,7 +18,6 @@ import { WINDOW } from '../../lib/harness-film/harness-scene';
 
 export { readExample } from '../../lib/harness-film/harness-example';
 
-/** The category the screen opens on: the instruction files, where an agent's reading starts. */
 const OPENS_ON = 'context:instructions';
 
 const VIEWS = ['overview', 'architecture'] as const;
@@ -38,7 +37,6 @@ export function HarnessFilmWindow({
   onReady,
 }: {
   example: ExampleRead;
-  /** The window's scale on screen, for the lift's legibility. */
   scale: () => number;
   onReady: (director: Director | null) => void;
 }) {
@@ -131,7 +129,6 @@ export function HarnessFilmWindow({
           </div>
         </div>
       </div>
-      {/* The lit top edge, inside the corners' curve. */}
       <div aria-hidden className="pointer-events-none absolute inset-x-[14px] top-0 z-40 h-px bg-[color:var(--color-overlay-2)]" />
       <div ref={layer} data-film-layer className="pointer-events-none absolute inset-0 z-30">
         <div

@@ -43,10 +43,6 @@ import { fieldClass } from '@/shared/ui/control-class';
 import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 import { normalizeForMatch } from "@/shared/lib/search-match/node-name-match";
 
-/**
- * The docs file tree: Pinned, the Vault tree and Recent stay open; recently changed and tags collapse.
- * The caller wraps `onSelect` to close the mobile drawer.
- */
 export interface DocsSidebarBodyProps {
   reviewQueue: ReviewQueueRow[];
   pinnedSlugs: string[];
@@ -57,29 +53,19 @@ export interface DocsSidebarBodyProps {
   manifest: VaultManifest;
   collection: DocsVaultCollection;
   collectionCounts: Record<DocsVaultCollection, number>;
-  /** Hide the generic all/guides/ontology chooser when the parent owns a fixed scope. */
   showCollectionChooser?: boolean;
-  /** Hide creation in a single-document compatibility reader. */
   showCreateDocument?: boolean;
   visibleDocSlugs: Set<string>;
   onSelect: (slug: string) => void;
   onCollectionChange: (collection: DocsVaultCollection) => void;
   onTogglePin: (slug: string) => void;
   onTagSelect: (tag: string | null) => void;
-  /**
-   * `?sort=` / `?group=` is the source of truth; the two axes and default omission are
-   * explained in `widgets/docs-vault/lib/tree-order.ts`.
-   */
   sort: DocsTreeSort;
   group: DocsTreeGroup;
   onSortChange: (sort: DocsTreeSort) => void;
   onGroupChange: (group: DocsTreeGroup) => void;
   onCreateNewDoc: () => void;
   canCreateNewDoc: boolean;
-  /**
-   * Non-null only when the vault includes the repo root. Read-only: a click opens the file,
-   * nothing is converted or repaired.
-   */
   agentFiles?: AgentFilesUiModel | null;
   toolsHost?: HTMLElement | null;
 }
@@ -116,7 +102,6 @@ function railStateAria(state: RailButtonState) {
   }
 }
 
-/** Plain-text tooltip, active indigo, and the aria state `state` decides. */
 function RailIconButton({
   icon,
   label,
@@ -128,7 +113,6 @@ function RailIconButton({
 }: {
   icon: ReactNode;
   label: string;
-  /** The visible state; the spoken state comes from `state`. */
   active: boolean;
   state: RailButtonState;
   disabled?: boolean;
@@ -153,7 +137,6 @@ function RailIconButton({
   );
 }
 
-/** `menuitemradio` row; the check column stays reserved so text does not shift. */
 function OrderOption({
   label,
   checked,
@@ -216,7 +199,6 @@ export function DocsSidebarBody({
   const tAgentFiles = useTranslations("agentFiles");
   const recentOthers = recentSlugs.filter((slug) => slug !== selectedSlug && docsBySlug.has(slug));
   const [treeQuery, setTreeQuery] = useState("");
-  // A surviving query forces search open, so an applied filter is never invisible.
   const [searchOpen, setSearchOpen] = useState(false);
   // Destructure at once: reading `.open` from the held object makes lint report a ref access
   // during render.
@@ -280,8 +262,6 @@ export function DocsSidebarBody({
     values: collectionOptions,
     onChange: onCollectionChange,
   });
-  // Collection glyphs: `Files` all, `BookOpen` guides, `Waypoints` ontology. `flex-none` keeps
-  // the glyph at ramp size while the label truncates.
   const collectionIcons: Record<DocsVaultCollection, ReactNode> = {
     all: <Files size={ICON_SIZE.md} className="flex-none" aria-hidden />,
     guides: <BookOpen size={ICON_SIZE.md} className="flex-none" aria-hidden />,
@@ -311,7 +291,6 @@ export function DocsSidebarBody({
           testId="docs-sidebar-order-toggle"
           icon={<ArrowDownUp size={ICON_SIZE.lg} aria-hidden />}
           label={orderSummary}
-          // Indigo says "not the default order"; the aria state says "menu open".
           active={orderMenuOpen || !orderIsDefault}
           state={{ kind: "disclosure", expanded: orderMenuOpen }}
           onClick={() => setOrderMenuOpen((open) => !open)}
@@ -357,7 +336,6 @@ export function DocsSidebarBody({
             ))}
         </Surface>
       </div>
-      {/* Pressable in the read-only sample: it leads to opening a folder, and its label says so. */}
       {showCreateDocument ? (
         <RailIconButton
           testId="docs-sidebar-new-doc"
@@ -373,8 +351,6 @@ export function DocsSidebarBody({
   const toolsInHeader = Boolean(toolsHost) && !showCollectionChooser;
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Filters plus three actions; a border binds the filters and the active one is labelled,
-         so state and action separate. */}
       {/* Not `role="tablist"`: the row also holds non-tab buttons, which axe
          reports as an `aria-required-children` violation (WCAG 4.1.2). Same reasoning as `DocsVaultTabStrip`. */}
       {/* A container: labels appear from a 320px row (`@min-[320px]`); at the
@@ -384,7 +360,6 @@ export function DocsSidebarBody({
         data-testid="docs-sidebar-head-row"
         className="@container/docs-head flex flex-none items-center gap-2 border-b border-[color:var(--color-overlay-2)] px-2 py-2"
       >
-        {/* The active chip states its own name and count; the three chips are mutually exclusive filters. */}
         {showCollectionChooser ? (
           <div
             {...collectionGroup.groupProps}
@@ -428,7 +403,6 @@ export function DocsSidebarBody({
         {treeTools}
       </div>
       )}
-      {/* The filter chip already shows the count or tag; show the count separately only when both are active. */}
       {normalizedTreeQuery && activeTag ? (
         <p className="flex-none px-3 pt-1.5 text-caption text-[color:var(--color-text-quaternary)]">
           {t("treeSearchCount", { count: queryMatchCount })}
@@ -478,16 +452,13 @@ export function DocsSidebarBody({
         </div>
       ) : null}
 
-      {/* Only the tree fills the remaining space and scrolls. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {/* What waits on a person comes first; draws nothing when the queue is empty. */}
         <ReviewQueueSection
           rows={reviewQueue}
           selectedSlug={selectedSlug}
           onSelect={onSelect}
           t={t}
         />
-        {/* A real 7-day mtime window, unlike `recentSlugs` (visited this session). */}
         {recentlyChangedDocs.length > 0 ? (
           <section className="flex-none border-b border-[color:var(--color-overlay-2)] pb-1">
             <button
@@ -665,7 +636,6 @@ export function DocsSidebarBody({
           />
         </section>
 
-        {/* Recent lists the other documents; the open one is already the tab, row and H1. */}
         {recentOthers.length > 0 ? (
           <section className="flex-none border-t border-[color:var(--color-overlay-2)] pb-2">
             <SectionLabel>{t("recentHeader", { count: recentOthers.length })}</SectionLabel>

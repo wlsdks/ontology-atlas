@@ -102,7 +102,6 @@ export function TopologyIndexSlot({
             frame.exiting || indexDemotedByNodeSheet ? "" : "[&>button]:pointer-events-auto [&_aside]:pointer-events-auto"
             }`}
           data-index-demoted-by-node-sheet={indexDemotedByNodeSheet || undefined}
-          // The toaster centres right of INDEX.
           data-toast-wall={frame.exiting ? undefined : "left"}
           aria-hidden={frame.exiting || undefined}
           inert={frame.exiting || indexDemotedByNodeSheet || undefined}
@@ -134,7 +133,6 @@ export function TopologyIndexSlot({
                   changedSlugs={changedSlugs}
                   onSelect={(id) => handleSelect(id)}
                   onExit={handleExitRealm}
-                  // Swaps to the outside node's domain-level ancestor through the enter handler.
                   onJumpRealm={handleEnterRealm}
                   maxDomainDescendantCount={indexMaxDomainDescendantCount}
                   domainCensus={indexDomainCensus}
@@ -176,24 +174,20 @@ export function TopologyIndexSlot({
                   selectedId={canvasSelectedSlug}
                   onSelect={(id) => handleSelect(id, { keepIndexOpen: true })}
                   onCollapse={() => {
-                    // Folding hands focus to the tab that unfolds it.
                     const leaving = document.activeElement;
                     handleIndexCollapse();
                     focusWhenReady(["topology-index-tab"], { leaving });
                   }}
                   onEnablePlainMode={() => setAudiencePlain(true)}
-                  // Gates the hint explaining the missing element rows.
                   plainMode={audiencePlain}
                   vaultLoaded={canCreateNode}
                   onCreateConcept={canCreateNode ? () => setRouteState((current) => ({ ...current, createNodeIntent: true })) : undefined}
                   onAddInGroup={canCreateNode ? addConceptInGroup : undefined}
                   domainCensus={indexDomainCensus}
-                  // The ids the lens filters on, plus the badge target.
                   recentChanges={{
                     ids: recentChanges.recentNodeIds,
                     agentAttributedNodeId: agentAttributedRecentNodeId,
                   }}
-                  // `?recent=` drives both the map's sinking and this lens.
                   lens={spotlightOn ? "recent" : "all"}
                   onLensChange={(next) =>
                     setRouteState((current) => ({
@@ -208,14 +202,12 @@ export function TopologyIndexSlot({
                   // `bootstrapPlan` exists once a vault loads, so this row opens the bootstrap
                   // dialog on a populated map too.
                   uncatalogedDocCount={bootstrapPlan?.elements.length ?? 0}
-                  // The row hides at 0.
                   brokenDocCount={brokenDocCount}
                   unboundProjectNodeId={unboundProjectSource?.nodeId ?? null}
                   noProjectsYet={projectSourceReadiness.state === "no-projects"}
                   // `handle.name`: the browser has no absolute path, so neither surface claims one.
                   sourceName={vault.handle?.name ?? null}
                   sourceLoadProgress={vault.partialTotal > 0 ? loadProgress : null}
-                  // Without an agent the door would create a folder and then do nothing.
                   agentAvailable={acpRuntimes.length > 0}
                   openedInsidePickedFolder={vault.openedInsidePickedFolder ?? null}
                   onDismissOpenedInside={vault.dismissOpenedInsideNotice}
@@ -272,7 +264,6 @@ export function TopologyIndexSlot({
                     tidyHeading: t("index.tidyHeading"),
                     openedInsideLabel: t("index.openedInsideLabel"),
                     openedInsideDismiss: t("index.openedInsideDismiss"),
-                    // The panel gates it to plain mode.
                     plainHint: t("index.plainHint"),
                     createConcept: t("index.createConcept"),
                     add: {
@@ -287,7 +278,6 @@ export function TopologyIndexSlot({
           ) : (
             <TopologyIndexTab
               onExpand={() => {
-                // Unfolding hands focus to the fold control.
                 const leaving = document.activeElement;
                 handleIndexTabExpandFromAgent();
                 focusWhenReady(["topology-index-fold"], { leaving });

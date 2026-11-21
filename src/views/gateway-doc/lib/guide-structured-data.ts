@@ -8,15 +8,10 @@ import { guideCanonicalPath, type GuidePage } from '../model/guide-pages';
 export interface GuideStructuredDataInput {
   locale: string;
   page: GuidePage;
-  /** The chapter title in this locale. */
   headline: string;
-  /** The chapter's meta description in this locale. */
   description: string;
-  /** The guide's own name in this locale, the breadcrumb's first step. */
   guideName: string;
-  /** Last commit to the body this locale reads (`lastCommitDate`). */
   dateModified?: string;
-  /** First commit of the English chapter (`firstCommitDate`). */
   datePublished?: string;
 }
 

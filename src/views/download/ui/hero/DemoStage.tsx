@@ -20,7 +20,6 @@ export function DemoStage({ available }: { available?: readonly DemoClip['id'][]
   if (!clip) return null;
 
   return (
-    /* The window carries no visible title; the name stays as aria. */
     <section
       data-testid="demo-stage"
       aria-label={t('demoHeading')}
@@ -40,7 +39,6 @@ export function DemoStage({ available }: { available?: readonly DemoClip['id'][]
 
 function DemoPlayer({ clip }: { clip: DemoClip }) {
   const t = useTranslations('download');
-  /** The route's locale, which the static export prerenders per page, so each HTML file names its own poster. */
   const locale = useLocale();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [started, setStarted] = useState(false);
@@ -94,7 +92,6 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
   return (
     <div
       data-testid={`demo-panel-${clip.id}`}
-      /* The section owns width, or the video and caption edges split. */
       className="min-w-0"
     >
       <div className="gateway-window-frame min-w-0">
@@ -133,7 +130,6 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
           </span>
         </button>
 
-        {/* On a touch screen the recording of a desktop window is too small to read, so a tap anywhere on it opens the player full screen. */}
         {started ? (
           <button
             type="button"

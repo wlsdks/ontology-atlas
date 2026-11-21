@@ -60,7 +60,6 @@ export function useTopologyIndexPresentation({
     setIndexPreference("expanded");
     // A manual expand wins for the rest of the selection; the selection-session hook resets it.
     markIndexManualExpandDuringSelection();
-    // Same for the empty-map demotion, or it re-collapses every render.
     setIndexManualExpandWhileEmpty(true);
     if (analysisMode !== "overview") {
       setRouteState((current) => ({ ...current, analysisMode: "overview" }));
@@ -129,11 +128,6 @@ export function useTopologyIndexPresentation({
     emptyManualExpand: indexManualExpandWhileEmpty,
     agentDockOpen: agentDockRequestedOpen,
   });
-  /**
-   * Collapse and expand are one event: leaving, arriving and the map start on the same frame,
-   *
-   * within `--motion-fast`. The exit window is the shared `EXIT_WINDOW_MS`.
-   */
   const indexSlotSwap = useSurfaceSwap(renderedIndexState);
   return {
     indexSlotSwap, renderedIndexState, agentDockRequestedOpen, handleIndexTabExpand,

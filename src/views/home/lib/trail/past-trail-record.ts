@@ -7,10 +7,8 @@
 /** Ring buffer; the UI caption states the cap so nobody expects accumulation. */
 export const PAST_WALKS_MAX = 10;
 
-/** Same cap as the live session trail (`FOOTPRINT_TRAIL_MAX`). */
 const PAST_WALK_ENTRIES_MAX = 30;
 
-/** Matches the chip's own 2+ visit threshold. */
 export const PAST_WALK_MIN_ENTRIES = 2;
 
 /** Title and kind are frozen in so the list still draws after a node is deleted. */
@@ -22,9 +20,7 @@ export interface PastWalkEntry {
 
 export interface PastWalk {
   id: string;
-  /** Epoch ms, for day grouping and sort only. */
   endedAt: number;
-  /** Oldest to newest, like the live trail, so a handoff packet replays as-is. */
   entries: PastWalkEntry[];
 }
 

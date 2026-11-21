@@ -20,12 +20,6 @@ const ROW =
 const QUESTION =
   'min-w-0 [text-wrap:balance] text-display leading-display tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]';
 
-/**
- * The two questions the sections above leave open, in the row grammar the page's lists use: the
- * question on the left and its answer on the right. Whether code leaves the computer is answered
- * in words on the left and drawn on the right, so the boundary is seen, not only read. Every answer
- * is in the page whole, in the words of the route's FAQPage markup.
- */
 export function FaqSection() {
   const t = useTranslations('download.faq');
   const list = usePlayOnce<HTMLUListElement>(rowsEntrance);
@@ -56,7 +50,6 @@ export function FaqSection() {
   );
 }
 
-/** The answer's first sentence in full ink and the rest a step quieter, as one paragraph. */
 function Answer({ answer, className }: { answer: string; className?: string }) {
   const { lead, gap, rest } = splitAnswer(answer);
   return (
@@ -120,7 +113,6 @@ const NARROW_SHAPE = shape(
   { folder: [112, 140], app: [296, 140], agent: [520, 140], provider: [520, 372], ring: [200, 372] },
 );
 
-/** When each part arrives, in ms from the start of the drawing's one 2.4s entrance. */
 const BEAT = {
   boundary: { at: 0, ms: 500 },
   folderApp: { at: 300, ms: 500 },
@@ -129,10 +121,6 @@ const BEAT = {
   ring: { at: 1700, ms: 400 },
 } as const;
 
-/**
- * Which way a label hangs from its point: under it, under and ending left of it, over it, over and
- * from it, from it, or left of it.
- */
 type Hang = 'below' | 'belowLeft' | 'above' | 'aboveFrom' | 'from' | 'leftOf';
 type Place = { x: number; y: number; hang: Hang; width: number };
 type Label = { key: string; at: number; quiet?: boolean; wide: Place; narrow: Place };
@@ -142,11 +130,6 @@ const W = WIDE_SHAPE.marks;
 const N = NARROW_SHAPE.marks;
 const corner = (s: Shape, width: number): Place => ({ x: s.boundary.x + 14, y: s.boundary.y + 12, hang: 'from', width });
 
-/**
- * Every label is page text placed on the field: under a mark, over the middle of a line, in the
- * boundary's corner, or beside a line. `width` is the most it may take, so a label wraps before it
- * reaches its neighbour. Field units become `cqw` of the figure, whose width is the field's.
- */
 const LABELS: readonly Label[] = [
   { key: 'computer', at: 200, wide: corner(WIDE_SHAPE, 220), narrow: corner(NARROW_SHAPE, 420) },
   {
@@ -204,7 +187,6 @@ const LABELS: readonly Label[] = [
 ];
 
 const CQW = (value: number) => `${(value / FIELD_WIDTH) * 100}cqw`;
-/** The gap between a label and its point, in rem so it holds at every size. */
 const GAP: Record<Hang, string> = {
   below: '0.75rem',
   belowLeft: '0.75rem',
@@ -230,10 +212,6 @@ const ALIGN: Record<Hang, string> = {
   leftOf: 'right',
 };
 
-/**
- * A label's two places as custom properties its class list reads, wide and under 30rem;
- * `translate` hangs it from its point and stays clear of the `transform` its entrance animates.
- */
 function labelStyle({ wide, narrow }: Label): CSSProperties {
   const top = (place: Place) => `calc(${CQW(place.y)} + ${GAP[place.hang]})`;
   return {
@@ -257,11 +235,6 @@ const LABEL_PLACE = cn(
   '@[30rem]:[translate:var(--faq-label-shift)] @[30rem]:[text-align:var(--faq-label-align)]',
 );
 
-/**
- * The drawing's one entrance: the boundary, then each link drawn from the mark it leaves to the
- * mark it reaches, the agent's dashed line out past the boundary, and last the empty ring. Each
- * label rises as the thing it names arrives. Both shapes play; only one is shown.
- */
 function drawingEntrance(figure: HTMLElement): Animation[] {
   const draw = [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }];
   const pop = [
@@ -294,7 +267,6 @@ function drawingEntrance(figure: HTMLElement): Animation[] {
   return animations;
 }
 
-/** One arrangement of the drawing's parts; `className` shows it wide or only under 30rem. */
 function Shapes({ shape: s, id, className }: { shape: Shape; id: string; className: string }) {
   const mark = { transformBox: 'fill-box', transformOrigin: 'center' } as const;
   const drawn = { pathLength: 1, strokeDasharray: '1 1' } as const;
@@ -370,11 +342,6 @@ function Shapes({ shape: s, id, className }: { shape: Shape; id: string; classNa
   );
 }
 
-/**
- * What leaves the computer, drawn: everything Atlas reads and writes stays inside the boundary;
- * the only line out is the coding agent's own, to its provider; where an Atlas backend would be
- * is an empty ring. Fully drawn without a script; plays once when it comes into view.
- */
 function PrivacyDrawing() {
   const t = useTranslations('download.faq.diagram');
   const figure = usePlayOnce<HTMLElement>(drawingEntrance);

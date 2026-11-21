@@ -8,13 +8,8 @@ import { OntologyHexBoardMap, type HexBoardLabels, type HexPlacementRecord, type
 import { readHexPlacement, writeHexPlacement } from "../../model/map-canvas/hex-board-placement-store";
 import { useMapEvidenceStates, type MapEvidence, type MapEvidenceAvailability } from "@/features/vault-ontology";
 
-/** Flat-top hexagon, 16 × 14. */
 const HEX_SWATCH = "15,7 11.5,13 4.5,13 1,7 4.5,1 11.5,1";
 
-/**
- * Keeps placement per vault so placed tiles never move, composes the canvas words, and names what
- * the evidence ring stands on; unknown is never shown as current.
- */
 export function TopologyHexBoardSurface({
   nodes,
   edges,

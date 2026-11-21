@@ -13,11 +13,8 @@ import { cn } from "@/shared/lib/cn";
 import type { DomainCompositionRow } from "../model/domain-composition";
 import { RECENT_DOT_CLASS, STALE_DOT_CLASS } from "./now/now-parts";
 
-/** Twelve rows read as a list at a glance; the rest waits behind one press. */
 const CAPABILITIES_SHOWN = 12;
-/** Past this many domains the list scrolls inside itself instead of pushing the page. */
 const DOMAIN_ROWS_SHOWN = 12;
-/** Incoming capability rows stagger up to this index, then arrive together. */
 const STAGGERED_ROWS = 6;
 const CAPABILITY_ROW_REM = 1.75;
 /** The `md` row's floor (`min-h-9`). */
@@ -29,7 +26,6 @@ export interface DomainMasterDetailLabels {
   capabilityUnit: string;
   elementUnit: string;
   legendCaption: string;
-  /** Why the rows' sum can exceed the heading's counts; empty when it does not. */
   overlapNote: string;
   optionAria: (row: DomainCompositionRow) => string;
   counts: (row: DomainCompositionRow) => string;
@@ -38,26 +34,18 @@ export interface DomainMasterDetailLabels {
   showMore: (count: number) => string;
   elementCount: (count: number) => string;
   mapLinkLabel: string;
-  /** The domain's stale capabilities in words: its option's name and its count's tooltip. */
   domainStale: (count: number) => string;
-  /** Names the amber mark in words: the legend item, the dot's tooltip and its accessible name. */
   staleMark: string;
   recentMark: string;
 }
 
-/** The map's two states on a capability: stale by the measured Git walk, changed in the recent window. */
 export interface CompositionMarks {
   /** Empty unless the walk was measured, so unknown never draws as stale. */
   staleIds: ReadonlySet<string>;
   changedIds: ReadonlySet<string>;
-  /** Reserved while the walk reads, so the legend item arrives without moving the list. */
   staleLegend: "shown" | "reserved" | "absent";
 }
 
-/**
- * Domains as master and detail: one row is always selected, so the selected domain's capabilities
- * are readable without a press. Bar length is the domain's concept count against the largest.
- */
 export function DomainMasterDetail({
   domains,
   maxTotal,
@@ -217,7 +205,6 @@ function DomainList({
       style={{ maxHeight: `calc(${DOMAIN_ROWS_SHOWN} * ${DOMAIN_ROW_REM}rem + ${DOMAIN_ROWS_SHOWN - 1}px)` }}
     >
       {tint ? (
-        // One tint for the selection, gliding between rows instead of jumping.
         reducedMotion ? (
           <span aria-hidden data-testid="project-detail-domain-tint" className={TINT_CLASS} style={{ height: tint.height, transform: `translateY(${tint.y}px)` }} />
         ) : (
@@ -291,7 +278,6 @@ function DomainList({
   );
 }
 
-/** Two neutral segments a 1px seam apart; the track's width is the domain's share of the largest. */
 function DomainLengthBar({ domain, maxTotal, reducedMotion }: { domain: DomainCompositionRow; maxTotal: number; reducedMotion: boolean }) {
   const lengthPercent = maxTotal > 0 ? (domain.total / maxTotal) * 100 : 0;
   return (
@@ -315,7 +301,6 @@ function DomainLengthBar({ domain, maxTotal, reducedMotion }: { domain: DomainCo
   );
 }
 
-/** A fixed slot for the two dots, so a mark arriving after the Git walk moves no text. */
 function CapabilityMarks({ stale, changed, labels }: { stale: boolean; changed: boolean; labels: DomainMasterDetailLabels }) {
   return (
     <span className="flex w-4 shrink-0 items-center justify-end gap-1">
@@ -364,7 +349,6 @@ function SelectedDomain({
   labels: DomainMasterDetailLabels;
   reducedMotion: boolean;
   marks: CompositionMarks;
-  /** Some domain has more rows than are shown, so every detail keeps the line its door sits on. */
   reserveShowMore: boolean;
 }) {
   const present = useIsPresent();

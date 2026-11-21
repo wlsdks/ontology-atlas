@@ -17,7 +17,6 @@ import { DigestTimeline } from './DigestTimeline';
 export type { DigestSelection } from './DigestGroups';
 
 const NO_CHANGES: never[] = [];
-/** Two or three cards share the row; a lone card takes half of it rather than the whole width. */
 const CARD_COLUMNS = ['md:grid-cols-2', 'md:grid-cols-2', 'md:grid-cols-3'] as const;
 const NO_NOTABLE = new Set<string>();
 /** Even space above and below the stage; on wide screens the frame's bottom breath and main's padding (72px) are the lower half. */
@@ -29,7 +28,6 @@ interface ChangeDigestProps {
   unit: TimelineUnit;
   selection: DigestSelection;
   onSelection: (next: DigestSelection) => void;
-  /** How many changes a cut-short read holds, 'limited' when the read is partial for another reason. */
   partialCount: number | 'limited' | null;
   conceptTitle: (id: string) => string;
   formatTime: (committedAt: string) => string;
@@ -37,7 +35,6 @@ interface ChangeDigestProps {
   onOpen: (commit: BriefingCommit) => void;
 }
 
-/** The count and when it happened share one band: the figure on the right is the count spread over time. */
 function HeadlineBand({ count, children, figure }: { count: number; children?: ReactNode; figure: ReactNode }) {
   return <section data-testid="change-digest-headline" className="grid items-start gap-x-6 gap-y-8 lg:grid-cols-3">
     <div className="min-w-0 space-y-3">
@@ -53,7 +50,6 @@ export function ChangeDigest({ digest, range, unit, selection, onSelection, part
   const rootRef = useRef<HTMLDivElement>(null);
   const changes = useMemo(() => digest.groups.flatMap(group => group.changes), [digest]);
   const notable = useMemo(() => new Set(digest.notable.map(entry => entry.change.commit.hash)), [digest]);
-  /** Selects the group listing a change and that change, then brings its row into view with focus. */
   function reveal(hash: string) {
     const group = digest.groups.find(entry => entry.changes.some(change => change.commit.hash === hash));
     if (!group) return;
@@ -82,8 +78,6 @@ export function ChangeDigest({ digest, range, unit, selection, onSelection, part
   </div>;
 }
 
-/** An empty period keeps the band: zero, what to do next, and the empty axis of the period. */
-/** The band keeps its place with a quiet zero and an empty axis; what to do about it stands centred in the height below. */
 export function EmptyDigest({ range, unit, title, action }: { range: BriefingRange; unit: TimelineUnit; title: ReactNode; action?: ReactNode }) {
   return <div data-testid="change-digest-empty" className="flex flex-1 flex-col">
     <HeadlineBand count={0} figure={<DigestTimeline unit={unit} range={range} changes={NO_CHANGES} notable={NO_NOTABLE} />} />

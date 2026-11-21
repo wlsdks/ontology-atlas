@@ -44,7 +44,6 @@ import { graphFieldKeys, DANGLING_CHECK_KEYS, REFERENCE_KEYS, toRefTokens, forma
 import { fieldClass, fieldLabel } from '@/shared/ui/control-class';
 import { useReferrerListName, type DocFrontmatterPatch } from "../../model/use-doc-write-actions";
 
-// Stable empty Map keeps `useMemo` deps stable.
 const EMPTY_SELF_EDIT_TIMESTAMPS: ReadonlyMap<string, number> = new Map();
 
 export function nameLocalesFor(
@@ -77,7 +76,6 @@ function collectDanglingRefs(
   return [...dangling];
 }
 
-/** How many missing names the warning spells out before it counts the rest. */
 const DANGLING_NAMED_MAX = 3;
 
 /**
@@ -124,15 +122,12 @@ function collectMisfiledRefs(
   return misfiled;
 }
 
-/** One document a kind change touches, as the page names it (`planKindChangeReferrers`). */
 export interface KindChangeReferrerRow extends KindChangeReferrer {
   name: string;
 }
 
-/** How many referrers the quick patch names before Save, before it counts the rest. */
 const KIND_CHANGE_ROWS_MAX = 4;
 
-// Sentinel kinds such as vault-readme are not editable here.
 const EDITABLE_KINDS = ["project", "domain", "capability", "element", "document"] as const;
 type EditableKind = (typeof EDITABLE_KINDS)[number];
 
@@ -142,38 +137,19 @@ function isEditableKind(kind: string): kind is EditableKind {
 
 export interface DocFrontmatterBlockProps {
   doc: VaultDoc;
-  /** Read-only on server and sample vaults. */
   canEdit?: boolean;
-  /** Domain candidates for a capability or element — the vault's `kind: domain` documents. */
   domainOptions?: Array<{ slug: string; title: string }>;
-  /**
-   * Confirmed fields only. The caller saves through the conflict-guarded `updateFrontmatter`,
-   * or the guarded rename when the kind change moves the file; rejections show in the form.
-   */
   onPatch?: (patch: DocFrontmatterPatch) => Promise<void>;
-  /** The remedy beside the `slug-outside-kind-folder` warning. */
   onMoveToKindFolder?: (target: string) => void;
-  /** Previews, before Save, what changing to `newKind` at `newSlug` does to each referrer's list. */
   kindChangeReferrers?: (newKind: string, newSlug: string) => KindChangeReferrerRow[];
   onNavigate?: (slug: string) => void;
   /** Null means the reference is not in the vault and is not a link. */
   resolveRef?: (token: string) => string | null;
-  /** Without it (sample or server vault) nothing is judged misfiled. */
   kindOf?: (slug: string) => string | null;
-  /** Without it (sample or server vault) the AI subject row is not rendered. */
   agentActivityStatus?: AgentActivityStatus | null;
-  /**
-   * Slugs this session wrote (`useLocalVault().selfEditTimestamps`); without it neither the
-   * "me" row nor the conflict badge renders.
-   */
   selfEditTimestamps?: ReadonlyMap<string, number>;
 }
 
-/**
- * The ontology subset of `doc.frontmatter` that `deriveOntologyFromVault` reads, as a mono block.
- * Collapsed by default but never removed from the DOM; the caller remounts it per document
- * with `key={doc.slug}`.
- */
 export function DocFrontmatterBlock({
   doc,
   canEdit = false,
@@ -208,7 +184,6 @@ export function DocFrontmatterBlock({
   const [openedMtime] = useState(() => doc.mtime);
   const [viewOpenedAtMs] = useState(() => Date.now());
   const resolvedSelfEditTimestamps = selfEditTimestamps ?? EMPTY_SELF_EDIT_TIMESTAMPS;
-  // Only real data: a heartbeat match or a self-write this session; otherwise no row.
   const lastEditSubjectFact = useMemo(
     () =>
       resolveDocLastEditSubject({
@@ -247,7 +222,6 @@ export function DocFrontmatterBlock({
   const [draftDomain, setDraftDomain] = useState(currentDomain);
   const [draftTitle, setDraftTitle] = useState(currentTitle);
   const [draftNames, setDraftNames] = useState<Record<string, string>>(currentNames);
-  // Where a kind change's Save moves the file, stated before Save.
   const moveTarget = editing ? reclassifyMoveTarget(doc.slug, currentKind, draftKind) : null;
   const kindChangeRows = useMemo(
     () =>
@@ -257,8 +231,6 @@ export function DocFrontmatterBlock({
     [editing, currentKind, draftKind, kindChangeReferrers, moveTarget, doc.slug],
   );
 
-  // The draft is validated while editing, otherwise the saved frontmatter after 400ms.
-  // Errors are shown as well as warnings.
   const activeKind = editing ? draftKind : currentKind ?? "";
   const activeDomain = editing ? draftDomain : currentDomain;
   const [debouncedValidation, setDebouncedValidation] = useState({
@@ -284,12 +256,10 @@ export function DocFrontmatterBlock({
     const frontmatterForValidation: Record<string, unknown> = debouncedValidation.kind
       ? { ...stored, kind: debouncedValidation.kind, domain: debouncedValidation.domain, ...movedSlug }
       : stored;
-    // Parser diagnostics travel with the doc so an unreadable line is shown, not dropped.
     const issues = validateVaultDocFrontmatter(
       frontmatterForValidation,
       doc.diagnostics,
     ).issues;
-    // Errors first: reading order is repair order.
     return [
       ...issues.filter((issue) => issue.severity === "error"),
       ...issues.filter((issue) => issue.severity !== "error"),
@@ -312,7 +282,6 @@ export function DocFrontmatterBlock({
       "non-canonical-merged-uids": t("validatorIssues.nonCanonicalMergedUids"),
       "malformed-frontmatter-line": t("validatorIssues.malformedFrontmatterLine"),
       "malformed-quoted-scalar": t("validatorIssues.malformedQuotedScalar"),
-      // Without an entry here the strip shows the raw code.
       "definition-missing": t("validatorIssues.definitionMissing"),
       "boundary-missing": t("validatorIssues.boundaryMissing"),
       "uncertainty-missing": t("validatorIssues.uncertaintyMissing"),
@@ -324,7 +293,6 @@ export function DocFrontmatterBlock({
     [t],
   );
 
-  // A complete example for the current kind from the new-document starter (`buildNewNodeDoc`).
   const [exampleOpen, setExampleOpen] = useState(false);
   const { state: exampleCopyState, copy: copyExample } = useCopyFeedback();
   const exampleDoc = useMemo(() => {
@@ -370,8 +338,6 @@ export function DocFrontmatterBlock({
   const kindFolderTarget =
     kindValue && canEdit && onMoveToKindFolder ? kindFolderAddress(doc.slug, kindValue) : null;
 
-  // A document with no kind states its own problem, but only when it shows ontology intent,
-  // matching the validator's heuristic.
   const diagnosticOnly = !kindValue;
   // A wiki page has no `kind:` by contract (`validateWikiPage` flags one), so no diagnosis.
   if (isWikiPage(doc)) return null;
@@ -380,7 +346,6 @@ export function DocFrontmatterBlock({
     return null;
   }
 
-  // Fixable even when kind is empty.
   const canQuickPatch =
     canEdit && Boolean(onPatch) && (kindValue == null || isEditableKind(kindValue));
 
@@ -408,7 +373,6 @@ export function DocFrontmatterBlock({
       if (nextDomain !== currentDomain) {
         patch.domain = nextDomain || null;
       }
-      // An emptied name is removed; screens then fall back to `title`.
       for (const code of nameLocales) {
         const nextName = (draftNames[code] ?? "").trim();
         if (nextName !== currentNames[code]) patch[`display_${code}`] = nextName || null;
@@ -428,7 +392,6 @@ export function DocFrontmatterBlock({
     }
   }
 
-  /** Severity comes through colour, a data attribute, and an error `!`, never colour alone. */
   const issueRowClass = (severity: VaultDocumentIssue["severity"]) =>
     // Only the tone varies by severity; duplicating the class raises the utility ratchet.
     `flex items-start gap-2 rounded-micro border px-2 py-1.5 text-label leading-label ${
@@ -460,7 +423,6 @@ export function DocFrontmatterBlock({
               {severityTag(issue.severity)}
               {mapVaultIssueCodeToPlainMessage(issue.code, issueMessageDict)}
             </p>
-            {/* The file keeps its name and every referrer is rewritten. */}
             {issue.code === "slug-outside-kind-folder" && kindFolderTarget && !editing ? (
               <button
                 type="button"
@@ -701,7 +663,6 @@ export function DocFrontmatterBlock({
     )
   ) : null;
 
-  // Not a node yet: one line of why it is not on the map and one place to fix it.
   if (diagnosticOnly) {
     return (
       <section
@@ -714,7 +675,6 @@ export function DocFrontmatterBlock({
           <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {t("notOnMapTitle")}
           </p>
-          {/* `text-label` carries its own line height. */}
           <p className="mt-1 text-label text-[color:var(--color-text-tertiary)]">
             {t("notOnMapBody")}
           </p>
@@ -760,7 +720,6 @@ export function DocFrontmatterBlock({
             aria-hidden
             className="flex-none text-[color:var(--color-text-quaternary)] transition-transform group-open:rotate-90"
           />
-          {/* The collapsed line names the kind with the map's glyph and a field count; the YAML is one press away. */}
           {kindValue ? (
             <span data-testid="doc-frontmatter-summary-kind" data-kind={kindValue} className="inline-flex min-w-0 items-center gap-1.5 text-[color:var(--color-text-secondary)]">
               <OntologyMapKindGlyph kind={kindValue} size={12} className="flex-none" />
@@ -776,7 +735,6 @@ export function DocFrontmatterBlock({
             ---
           </div>
           {fields.map(({ key, value, refTokens }) => {
-            // Tokenize when a token resolves or is missing, so the missing name is marked too.
             const linkable =
               refTokens != null &&
               refTokens.length > 0 &&
@@ -868,8 +826,6 @@ export function DocFrontmatterBlock({
                 />
               ))}
             </ul>
-            {/* `deriveProjectSourceWitnessesFromDocs` turns each path into a witness; a missing one
-               turns the receipt to `review_required`. */}
             <p
               data-testid="doc-frontmatter-code-locations-help"
               className="text-label leading-label text-[color:var(--color-text-quaternary)]"
@@ -894,7 +850,6 @@ export function DocFrontmatterBlock({
           </svg>
           {t("note")}
         </p>
-        {/* The spec example appears only when the properties are expanded. */}
         {exampleDoc ? (
           <div className="mt-2 font-sans">
             <button
@@ -959,7 +914,6 @@ export function DocFrontmatterBlock({
   );
 }
 
-/** Plain text, not a link: a code path is not a vault node. */
 function CodeLocationRow({
   path,
   copyLabel,

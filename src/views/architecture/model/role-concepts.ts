@@ -13,7 +13,6 @@ export interface RoleConcept {
   path: string;
   /** Declared `dependencies` targets (slugs) — real vault relations, never inferred. */
   dependsOn: string[];
-  /** Declared `relates` targets (slugs). */
   relatesTo: string[];
 }
 

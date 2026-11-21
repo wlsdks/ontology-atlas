@@ -21,35 +21,24 @@ import { derivedHook } from "@/shared/lib/derived-hook";
 const PAST_TRAIL_SAVE_DEBOUNCE_MS = 600;
 
 export interface UsePastTrailsArgs {
-  /** Null while sample browsing. */
   vaultHandle: FileSystemDirectoryHandle | null;
-  /** Decides whether the read-only notice applies. */
   vaultLoaded: boolean;
-  /** The collapsed session trail (last visit per node). */
   footprintTrailEntries: readonly FootprintTrailEntry[];
-  /** Stored walks are refined against it. */
   footprintNodeLookup: ReadonlyMap<string, { label: string; kind: string }>;
-  /** Day-resolution labels are pinned to it for the session. */
   mountNowMs: number;
   setFootprintTrail: (trail: string[]) => void;
-  /** Shared with the map selection effect. */
   lastVisitedNodeRef: RefObject<string | null>;
 }
 
 export interface UsePastTrailsResult {
-  /** Excludes the walk in progress. */
   pastWalkRows: TopologyPastWalkRow[];
-  /** Null when writes are possible. */
   pastTrailNotice: string | null;
-  /** Also removes this session's written row, so "clear" is honest. */
   clearFootprintTrail: () => void;
   handleDeletePastWalk: (walkId: string) => void;
   handleClearPastWalks: () => void;
-  /** Returns the last step to ego-focus, or null when the walk cannot replay on the current map. */
   replayPastWalk: (walkId: string) => string | null;
 }
 
-// Refined so the row's title and count match what a replay loads.
 function refinePastWalks(
   pastWalks: readonly PastWalk[],
   footprintNodeLookup: UsePastTrailsArgs["footprintNodeLookup"],
@@ -101,7 +90,6 @@ export function usePastTrails({
       cancelled = true;
     };
   }, [vaultHandle]);
-  // State, not a ref, because the list render reads it to exclude the row being walked.
   const [sessionWalkId, setSessionWalkId] = useState<string>(newPastWalkId);
   // Tab-hide handlers read the latest values here.
   const pastTrailSaveRef = useRef<{
@@ -119,7 +107,6 @@ export function usePastTrails({
     if (!store || entries.length < PAST_WALK_MIN_ENTRIES) return;
     void store.save(sessionWalkId, entries).then(setPastWalks);
   }, [sessionWalkId]);
-  // A different vault is a different node-id space.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -139,7 +126,6 @@ export function usePastTrails({
     const timer = window.setTimeout(flushPastTrail, PAST_TRAIL_SAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [footprintTrailEntries, flushPastTrail]);
-  // The document is still alive at tab-hide, so the pending step is flushed here.
   useEffect(() => {
     const onHidden = () => {
       if (document.visibilityState === "hidden") flushPastTrail();
@@ -150,7 +136,6 @@ export function usePastTrails({
   const clearFootprintTrail = useCallback(() => {
     lastVisitedNodeRef.current = null;
     setFootprintTrail([]);
-    // Privacy: this session's written row goes too.
     setSessionWalkId(newPastWalkId());
     const store = pastTrailSaveRef.current.store;
     if (store) void store.remove(sessionWalkId).then(setPastWalks);

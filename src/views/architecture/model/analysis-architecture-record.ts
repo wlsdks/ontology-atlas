@@ -3,7 +3,6 @@ import { parseArchitectureProfile } from '@/entities/architecture-profile';
 import { parseArchitectureRecord, type ArchitectureRecord } from '@/entities/architecture-record';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
-/** Reconstruct a dated measurement only against the exact profile captured with that run. */
 export function architectureRecordFromAnalysis(run: AnalysisRun): ArchitectureRecord | null {
   if (run.mode !== 'architecture' || !run.profileSnapshot) return null;
   try {

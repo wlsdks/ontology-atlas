@@ -13,7 +13,6 @@ export interface Point {
   y: number;
 }
 
-/** One sampled route: `xy` holds x,y pairs, `len` the running length at each sample. */
 export interface Route {
   from: number;
   to: number;
@@ -21,11 +20,9 @@ export interface Route {
   len: Float32Array;
 }
 
-/** How far a bundled route is pulled onto its tree path: 1 follows the tree, 0 is straight. */
 export const BUNDLE_BETA = 0.82;
 const SAMPLES_PER_SEGMENT = 10;
 
-/** The chain from `i` up to the root, `i` first. */
 function ancestry(scene: FilmScene, i: number): number[] {
   const out = [i];
   let at = i;
@@ -38,7 +35,6 @@ function ancestry(scene: FilmScene, i: number): number[] {
   return out;
 }
 
-/** The tree path between two concepts through their nearest shared container. */
 export function treePath(scene: FilmScene, a: number, b: number): number[] {
   const up = ancestry(scene, a);
   const down = ancestry(scene, b);
@@ -92,10 +88,6 @@ export function bundleRoute(from: number, to: number, points: readonly Point[], 
   return toRoute(from, to, flat);
 }
 
-/**
- * A containment branch: leaves its container along the line from the root, then turns to the
- * child, so the branches of one container open like a fan instead of a star of spokes.
- */
 export function branchRoute(child: number, parent: number, at: readonly Point[], hub: Point, bend = 0.42): Route {
   const a = at[parent]!;
   const b = at[child]!;
@@ -109,7 +101,6 @@ export function branchRoute(child: number, parent: number, at: readonly Point[],
   return toRoute(parent, child, flat);
 }
 
-/** The point at `t` (0..1 of its length) along a route, written into `out`. */
 export function pointAlong(route: Route, t: number, out: Point): Point {
   const total = route.len[route.len.length - 1]!;
   const want = Math.min(1, Math.max(0, t)) * total;
@@ -123,7 +114,6 @@ export function pointAlong(route: Route, t: number, out: Point): Point {
   return out;
 }
 
-/** Adds the stretch of a route between `t0` and `t1` (0..1 of its length) to the current path. */
 export function traceRoute(ctx: CanvasRenderingContext2D, route: Route, t0: number, t1: number, scratch: Point): void {
   if (t1 <= t0) return;
   const total = route.len[route.len.length - 1]!;
@@ -141,10 +131,6 @@ export function traceRoute(ctx: CanvasRenderingContext2D, route: Route, t0: numb
   ctx.lineTo(scratch.x, scratch.y);
 }
 
-/**
- * The relations the map bundles: every one that is not a drawn tree branch, deduplicated by
- * pair, each routed through its nearest shared container.
- */
 export function bundledRelations(scene: FilmScene): { from: number; to: number; path: number[]; crosses: boolean }[] {
   const seen = new Set<string>();
   const out: { from: number; to: number; path: number[]; crosses: boolean }[] = [];

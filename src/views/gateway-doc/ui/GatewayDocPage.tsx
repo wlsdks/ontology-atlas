@@ -23,37 +23,24 @@ import { GUIDE_ENTRY_PAGE, GUIDE_PAGES, type GuidePage } from '../model/guide-pa
 import { Link } from '@/i18n/navigation';
 import { controlClass } from '@/shared/ui/control-class';
 
-/**
- * One reading page for `/guide` and `/changelog`: the prose measure (`--measure-prose`, derived in
- * `app/globals.css`), `leading-prose`
- * (`.claude/rules/design.md`), wide section gaps, and the neutrals-plus-indigo palette.
- */
 export interface GatewayDocPageProps {
   /**
    * The vault document, read by the route's server component (`readGatewayDocument`): drawing it
    * from the bundled JSON here would put that JSON in every guide page's script.
    */
   document: GatewayDocument;
-  /** The screen title, used instead of the vault document's `# H1` because it must be translated. */
   title: string;
-  /** One line under the title, only on the first chapter, where it introduces the guide as a whole. */
   lead?: string;
-  /** How many `## ` sections to draw, only for growing documents such as CHANGELOG; the guide is read whole. */
   recentSectionLimit?: number;
-  /** The source file's repo-relative path — used for "the rest is here" when truncated. */
   sourcePath: string;
   /**
    * One notice line above the body, for the guide's unknown-segment fallback: static export cannot
    * route real 404s, and an unstated substitution is a misdelivery. The page passes translated text.
    */
   notice?: string;
-  /** The left table of contents, only for a set of chapters such as the guide. */
   sidebar?: boolean;
-  /** Which chapter is current in the table of contents — used only when `sidebar` is true. */
   activeSegment?: string;
-  /** This document's own `## ` entries on the left (the changelog): anchors inside one document, unlike `sidebar`'s routes. */
   entryNav?: boolean;
-  /** "Updated <date>" under the title, formatted by the route from the body's last commit. */
   updated?: { dateTime: string; label: string };
 }
 
@@ -70,7 +57,6 @@ export function GatewayDocPage({
   updated,
 }: GatewayDocPageProps) {
   const t = useTranslations('gatewayNav');
-  /* A body not yet in the reader's language says so, and the article carries its language for screen readers. */
   const locale = useLocale();
   const bodyIsForeign = document.language !== locale;
 
@@ -193,7 +179,6 @@ export function GatewayDocPage({
 
           {sidebar ? <GuideChapterPicker activeSegment={activeSegment} /> : null}
 
-          {/* The body is bundled synchronously, so the only failure is a build without the document; it says so and names where the text is. */}
           {body.trim() === '' ? (
             <aside
               data-testid="gateway-doc-empty"
@@ -218,12 +203,10 @@ export function GatewayDocPage({
           )}
 
           {/* These routes have no footer, so the reading destinations the chrome folds at narrow widths live here. */}
-          {/* Prev/next at a chapter's end, ordered by `GUIDE_PAGES`; the changelog is not a chapter. */}
           {sidebar ? <GuidePager activeSegment={activeSegment} /> : null}
 
           <GatewayReadingLinks className="mt-12 w-full max-w-[var(--measure-prose)]" />
 
-          {/* When truncated, say how many were hidden and where to read the rest. */}
           {omittedSections > 0 ? (
             <aside
               data-testid="gateway-doc-truncated"
@@ -243,7 +226,6 @@ export function GatewayDocPage({
   );
 }
 
-/** "Read the full file on GitHub" — one link shared by the truncation and empty notices. */
 function ReadFullSourceLink({ sourcePath, label }: { sourcePath: string; label: string }) {
   return (
     <a
@@ -258,7 +240,6 @@ function ReadFullSourceLink({ sourcePath, label }: { sourcePath: string; label: 
   );
 }
 
-/** Segments that exist as guide chapters — the test separating a slug from a route. */
 const GUIDE_SEGMENTS = new Set(GUIDE_PAGES.map((page) => page.segment));
 
 /**
@@ -275,11 +256,6 @@ function resolveProseHref(href: string, locale: string): string {
   return `/${locale}${path}`;
 }
 
-/**
- * Body links: a root-absolute vault slug becomes a locale-prefixed route, kept as an `<a>` with
- * `.prose-link` (`.claude/rules/design.md`). `tests/contract/routes/guide-inbody-links.contract.test.ts`
- * checks where it points and `tests/e2e/gateway/guide-inbody-links.spec.ts` that it returns 200.
- */
 function ProseLink({ href, children, node: _node, ...rest }: React.ComponentPropsWithoutRef<'a'> & { node?: unknown }) {
   const locale = useLocale();
   const target = href ?? '';
@@ -410,11 +386,9 @@ export const PROSE_COMPONENTS: Components = {
       {children}
     </td>
   ),
-  /** Body links — definition and rationale in `ProseLink`. */
   a: ProseLink,
 };
 
-/** The chapter list, shared by `GuideSidebar` at `xl` and `GuideChapterPicker` below it. */
 function GuideChapterList({ activeSegment }: { activeSegment?: string }) {
   const t = useTranslations('gatewayNav');
   return (
@@ -509,10 +483,6 @@ function GuidePagerLink({
   );
 }
 
-/**
- * The guide's left table of contents, sticky so the next chapter stays in reach while scrolling.
- * The current chapter is marked by surface, not colour.
- */
 function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
   const t = useTranslations('gatewayNav');
   return (
@@ -571,10 +541,6 @@ function GuideChapterPicker({ activeSegment }: { activeSegment?: string }) {
   );
 }
 
-/**
- * The changelog's entry list, version then title; the date stays in the entry. Anchors, not routes: the changelog is one flow, and
- * `<a href="#…">` gives back, shareable addresses and no-JS behaviour for free.
- */
 function EntrySidebar({ entries }: { entries: DocEntry[] }) {
   const t = useTranslations('gatewayNav');
   if (entries.length === 0) return null;
@@ -629,7 +595,6 @@ export function proseComponentsWithAnchors(headingIds: Map<string, string>): Com
   };
 }
 
-/** The plain text of ReactMarkdown children, for id matching. */
 function flattenText(node: React.ReactNode): string {
   if (typeof node === 'string') return node;
   if (typeof node === 'number') return String(node);

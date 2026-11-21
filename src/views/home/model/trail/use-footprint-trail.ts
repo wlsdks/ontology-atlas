@@ -27,16 +27,11 @@ interface FootprintGraphNode {
 }
 
 export interface UseFootprintTrailArgs {
-  /** Null without ego focus. */
   canvasSelectedSlug: string | null;
-  /** The trail is refined against it. */
   graphNodes: readonly FootprintGraphNode[];
-  /** Names the handoff packet's targets. */
   insightNodes: readonly InsightNode[] | undefined;
   dustySlugs: ReadonlySet<string>;
-  /** Read for the reason each consecutive pair is connected. */
   insightEdges: readonly TrailEdge[] | undefined;
-  /** In the reader's current register (`relationVocabulary`). */
   relationLabelOf: (type: string) => string;
 }
 
@@ -44,11 +39,8 @@ export interface UseFootprintTrailResult {
   setFootprintTrail: (trail: string[]) => void;
   lastVisitedNodeRef: RefObject<string | null>;
   footprintNodeLookup: ReadonlyMap<string, FootprintGraphNode>;
-  /** Last visit per node, for the chip and the handoff packet. */
   footprintTrailEntries: FootprintTrailEntry[];
-  /** Aligned with `footprintTrailEntries`; index 0 is null. */
   footprintTrailStepCaptions: (TrailStepCaption | null)[];
-  /** Raw visit order minus deleted nodes, for the map's step numbers. */
   footprintVisitedIds: string[];
   footprintPacketCopied: boolean;
   copyFootprintPacket: () => Promise<void>;
@@ -58,10 +50,6 @@ export interface UseFootprintTrailResult {
   handleFootprintBrush: (id: string | null) => void;
 }
 
-/**
- * Appended whenever a node takes ego focus; not in the URL or storage, cleared on reload.
- * One ordered array feeds the map's footprint rings and the trail chip.
- */
 export function useFootprintTrail({
   canvasSelectedSlug,
   graphNodes,
@@ -95,7 +83,6 @@ export function useFootprintTrail({
     for (const id of collapseFootprintTrail(footprintTrail)) {
       const node = footprintNodeLookup.get(id);
       if (!node) continue;
-      // The name the vault knows, not the canvas id.
       const target = resolveNodeAgentTarget(insightNodes?.find((n) => n.id === id));
       entries.push({
         id,
@@ -107,7 +94,6 @@ export function useFootprintTrail({
     }
     return entries;
   }, [footprintTrail, footprintNodeLookup, insightNodes]);
-  /** Never collapsed: the map's step numbers need the repeats. */
   const footprintVisitedIds = useMemo(
     () => footprintTrail.filter((id) => footprintNodeLookup.has(id)),
     [footprintTrail, footprintNodeLookup],
@@ -129,7 +115,6 @@ export function useFootprintTrail({
     [footprintTrailStepLinks, relationLabelOf],
   );
   const [footprintPacketCopied, setFootprintPacketCopied] = useState(false);
-  // See `COPY_FEEDBACK_RESET_MS`.
   useEffect(() => {
     if (!footprintPacketCopied) return;
     const timer = window.setTimeout(() => setFootprintPacketCopied(false), COPY_FEEDBACK_RESET_MS);

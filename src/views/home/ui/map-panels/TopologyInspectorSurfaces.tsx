@@ -151,7 +151,6 @@ export function TopologyInspectorSurfaces({
     edgePanelOpen, setSelectedEdge, createNode, closeCreateNode, createNodeDomainOptions, createNodeExistingConcepts,
     renameConcept, saveConceptDescription, deleteReferrers, deleteConcept
   } = topologyAuthoring;
-  // Changing the concept in place needs its own file in an open folder.
   const conceptWritable = canCreateNode && nodeEditTarget !== null;
   const { handleSelectImpactMode } = topologyKeyboard;
   const { handleClose, handleSelect, handleDatasheetClose } = topologyNavigationActions;
@@ -235,7 +234,6 @@ export function TopologyInspectorSurfaces({
         containerLabel={null}
       />
     ) : null}
-    {/* The create card takes the concept panel's place at the right inset; the map stays live. */}
     <Surface
       open={canCreateNode && createNodeOpen}
       motion="overlay"
@@ -344,9 +342,7 @@ export function TopologyInspectorSurfaces({
                   : undefined,
                 actionAskAgentShort: t("nodeDatasheet.actionAskAgentShort"),
                 actionRealm: t("realm.enterAction"),
-                // Tooltips say what pressing does rather than repeating the label.
                 actionAskAgentTip: t("nodeDatasheet.actionAskAgentTip"),
-                // Named before the receipt is read.
                 sourceHeading: t("nodeDatasheet.sourceHeading"),
                 sourceRecord: t("nodeDatasheet.sourceRecord"),
                 sourcePending: t("nodeDatasheet.sourcePending"),
@@ -427,7 +423,6 @@ export function TopologyInspectorSurfaces({
                   }
                   : undefined
               }
-              // Plain mode hides handoff copy as developer chrome.
               showHandoff={!audiencePlain}
               className="col-start-1 row-start-1 max-lg:w-[min(520px,calc(100vw-1.5rem))]"
             />
@@ -471,7 +466,6 @@ export function TopologyInspectorSurfaces({
         avoid={hoverEdgeCardModel.avoid}
       />
     ) : null}
-    {/* Exclusive with the edge card and the create composer. */}
     {clusterHoverCardModel && !hoverEdgeCardModel && !createNodeOpen ? (
       <OntologyMapClusterHoverCard
         sentence={clusterHoverCardModel.sentence}
@@ -511,7 +505,6 @@ export function TopologyInspectorSurfaces({
                     targetId: heldEdgePanelModel.toId,
                   });
                 } else if (heldEdgePanelModel.contextualEditable && heldEdgePanelModel.declaringId) {
-                  // Declared by the other end's document: open that document's relations.
                   openMeaningEditor({ sourceId: heldEdgePanelModel.declaringId });
                 } else if (canCreateNode) {
                   openMeaningEditor({ sourceId: heldEdgePanelModel.fromId });
@@ -573,7 +566,6 @@ export function TopologyInspectorSurfaces({
         }}
         onClose={closeContextMenu}
         ariaLabel={t("nodeDatasheet.contextMenuAriaLabel", { name: heldContextMenu.model.title })}
-        // The canvas takes focus back so arrow keys walk the map again.
         onExited={() => returnFocusIfDropped("ontology-map-canvas")}
       />
     ) : null}
@@ -584,7 +576,6 @@ export function TopologyInspectorSurfaces({
         onClose={() => setFullDetailSlug(null)}
         size="lg"
         labelledBy={FULL_DETAIL_TITLE_ID}
-        // The card focuses its own heading, the morph's landing point.
         initialFocus="none"
         testId="topology-full-detail-a1-positioner"
         className="p-0"

@@ -62,7 +62,6 @@ import {
   type ArchitectureAgentRuntime,
 } from '../model/architecture-agent';
 
-/* The runtime never changes within a session, so the store is a constant read, as in `use-docs-vault-source`. */
 const subscribeDesktopRuntime = () => () => undefined;
 const readDesktopRuntime = () => isTauriVaultRuntime();
 const readServerDesktopRuntime = () => false;
@@ -266,7 +265,6 @@ export function ArchitecturePage({
   const handoffContexts = loaded ? loadedHandoffContexts.contexts : EMPTY_HANDOFF_CONTEXTS;
   const draftHandoffContext = loaded ? loadedHandoffContexts.draftContext : null;
   const sourceModulesByProfile = loaded ? loadedHandoffContexts.modules : undefined;
-  /* A browser cannot list a source folder; only the installed app's bridge can. */
   const sourceListingCapable =
     mode === 'local' && !!localVault.handle && getTauriVaultRootPath(localVault.handle) != null;
   /* Two absences need two messages: a browser can never list a folder; an app without a bound one can. */
@@ -280,7 +278,6 @@ export function ArchitecturePage({
     : desktopRuntime
       ? ('unbound' as const)
       : ('browser' as const);
-  /* Receipts live in the vault sidecar; static and demo mode have none. */
   const { records: recordsByProfile, loaded: recordsLoaded } = useArchitectureRecords(
     mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
     profiles.map((profile) => profile.slug),

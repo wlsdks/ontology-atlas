@@ -260,7 +260,6 @@ export function TopologyCommandChrome({
             )}
             ref={setToolbarElement}
             data-testid="topology-top-toolbar"
-            // Map names yield to each control this lane shows, not to its empty width.
             data-map-name-obstacle="controls"
             // Lane popovers clamp to this box, which already reserves INDEX, the inspector and the
             // dock seam.
@@ -476,7 +475,6 @@ export function TopologyCommandChrome({
                         }}
                         aria-label={tAgent('title')}
                         aria-expanded={agentDockOpen}
-                        // A close hands focus back here through it.
                         aria-controls={VAULT_AGENT_PANEL_ID}
                         data-testid="topology-vault-agent-toggle"
                         active={agentDockOpen}
@@ -487,7 +485,6 @@ export function TopologyCommandChrome({
                       </ChromeChip>
                     </Tooltip>
                   ) : null}
-                  {/* Survives dismissing the first-run card; visible only in sample mode. */}
                   {sampleModeSettled ? (
                     <Tooltip content={t('controls.switchToMyDataTooltip')} side="bottom" withProvider={false}>
                       <ChromeChip
@@ -512,7 +509,6 @@ export function TopologyCommandChrome({
                       </ChromeChip>
                     </Tooltip>
                   ) : null}
-                  {/* State lives in `?recent=`, so a shared link reproduces it. */}
                   <Tooltip
                     // The sample is decided first: before a folder opens the press opens folder
                     // guidance, and the tooltip says so.
@@ -567,7 +563,6 @@ export function TopologyCommandChrome({
                             data-surface-token="--topology-utility-lane-count-surface"
                             data-text-token="--topology-utility-lane-count-text"
                             className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--topology-utility-lane-count-surface)] px-1.5 font-mono text-label tabular-nums text-[color:var(--topology-utility-lane-count-text)]"
-                            // No count while Git is still dating documents.
                             aria-label={
                               recentChanges.reading
                                 ? undefined
@@ -613,7 +608,6 @@ export function TopologyCommandChrome({
                       ) : null}
                     </Link>
                   )}
-                  {/* Below `lg` the rail is gone, so the same settings sheet opens from here. */}
                   <div className="lg:hidden">
                     <AppSettingsMenu
                       mode={vault.status === 'loaded' ? 'local' : 'static'}

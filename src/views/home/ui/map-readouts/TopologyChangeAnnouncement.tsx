@@ -3,11 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { decideChangeAnnouncement } from "../../lib/map-canvas/change-announcement";
 
-/**
- * A transient chip confirming a manifest refresh landed ("N concepts updated"), once per real
- * increase (`lib/map-canvas/change-announcement.ts`). It auto-dismisses and has no click target. One opacity
- * fade; reduced motion skips only the fade, not the timer.
- */
 const AUTO_DISMISS_MS = 4000;
 
 export function TopologyChangeAnnouncement({

@@ -19,7 +19,6 @@ export function isMacosReleasePublished(): boolean {
   return MACOS_RELEASE.published && MACOS_RELEASE.assets.length > 0;
 }
 
-/** Shown beside the version, which alone cannot say how old the build is. */
 export function macosPublishedDate(): Date | null {
   if (!MACOS_RELEASE.publishedAt) return null;
   const date = new Date(MACOS_RELEASE.publishedAt);
@@ -39,12 +38,10 @@ export function windowsAsset(): WindowsReleaseAsset | null {
   return WINDOWS_RELEASE.assets[0] ?? null;
 }
 
-/** The release page that lists each file with its `.sha256` sibling. */
 export function releasePageUrl(platform: 'macos' | 'windows'): string {
   return platform === 'windows' ? WINDOWS_RELEASE.releaseUrl : MACOS_RELEASE.releaseUrl;
 }
 
-/** Decimal MB with one decimal, matching what Finder and Safari show for the same file. */
 export function formatAssetSize(sizeBytes: number): string {
   if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) return '';
   return `${(sizeBytes / 1_000_000).toFixed(1)} MB`;

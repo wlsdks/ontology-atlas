@@ -5,11 +5,9 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { CHROME_STATUS_CHIP_CLASS, Tooltip, controlClass } from "@/shared/ui";
 
 export interface TopologyPathChipProps {
-  /** Composed by the path lens, so this chip stays pure chrome. */
   label: string;
   /** "N hops" or "no path"; never truncates, since the endpoint names give way first. */
   outcome?: string | null;
-  /** Only then does the single agent copy action render. */
   resolved: boolean;
   copyPacketLabel: string;
   copyPacketCopied: boolean;
@@ -20,7 +18,6 @@ export interface TopologyPathChipProps {
   onClear: () => void;
 }
 
-/** One 24px icon-button grammar for both actions, each named by a tooltip. */
 const CHIP_ACTION_CLASS = controlClass({
   hoverInk: "strong",
   shape: "icon",
@@ -28,10 +25,6 @@ const CHIP_ACTION_CLASS = controlClass({
   tone: "muted",
 });
 
-/**
- * Top-centre path status chip beside `SearchHint` (`slot-ownership.ts`). Chrome only: canvas
- * highlighting is untouched.
- */
 export function TopologyPathChip({
   label,
   outcome = null,

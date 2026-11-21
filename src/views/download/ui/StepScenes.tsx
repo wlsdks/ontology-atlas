@@ -12,22 +12,16 @@ import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import type { InViewMotion } from '../lib/page-motion/use-in-view-motion';
 import { kindOf, START_DRAFT, START_FOLDER, START_PATH } from '../model/start-cast';
 
-/** The rail's cycle in `gateway.css` (`--gateway-steps-cycle`); the scenes play on its clock. */
 export const STEP_CYCLE_MS = 7800;
-/** Each step's turn on the rail: 2.2s, the last 600ms of which the fill travels to the next node. */
 const STEP_TURN_MS = 2200;
-/** The last scene stays lit while the fill holds at the rail's end, then dims with it. */
 const LAST_LIT_UNTIL_MS = 7200;
 const ENTER_MS = MOTION.settle.duration * 1000;
 const EXIT_MS = EXIT_TRANSITION.duration * 1000;
 const DIM_MS = MOTION.base.duration * 1000;
 const ENTER_EASE = `cubic-bezier(${MOTION_EASE.join(', ')})`;
 const EXIT_EASE = `cubic-bezier(${EXIT_TRANSITION.ease.join(', ')})`;
-/** A scene that is not playing rests in its final frame at this opacity. */
 const RESTING = 0.6;
-/** Rows of one beat follow each other this closely, top to bottom. */
 const STAGGER_MS = 40;
-/** The agent's concepts arrive one by one, far enough apart to read as written in turn. */
 const DRAFT_STAGGER_MS = 160;
 
 type Frame = Record<string, string | number>;
@@ -47,7 +41,6 @@ const BEATS = {
 
 type Beat = keyof typeof BEATS | 'flash';
 
-/** The attributes that give a part its beat: what it does, when in its scene, and for how long. */
 function beat(kind: Beat, at: number, ms = ENTER_MS, steps?: number) {
   return {
     'data-beat': kind,
@@ -59,7 +52,6 @@ function beat(kind: Beat, at: number, ms = ENTER_MS, steps?: number) {
 
 const offset = (ms: number) => Math.min(1, ms / STEP_CYCLE_MS);
 
-/** The scene's own light: 60% while it waits or after it has played, full during its turn. */
 function turnFrames(start: number, end: number): Keyframe[] {
   const lit: Keyframe[] = [
     { offset: offset(start), opacity: RESTING, easing: ENTER_EASE },
@@ -71,16 +63,11 @@ function turnFrames(start: number, end: number): Keyframe[] {
   return start === 0 ? lit : [{ offset: 0, opacity: RESTING }, ...lit];
 }
 
-/**
- * One part over the whole cycle: it holds its final frame until its scene's turn, leaves it in a
- * short accelerating exit, waits for its beat, and enters decelerating; then holds to the end.
- */
 function partFrames(part: HTMLElement, start: number): Keyframe[] {
   const kind = part.dataset.beat as Beat;
   const at = start + Number(part.dataset.beatAt);
   const ms = Number(part.dataset.beatMs);
   if (kind === 'flash') {
-    // On as its beat starts, held for `ms`, then a slower fade: a focus that settles.
     return [
       { offset: 0, opacity: 0 },
       { offset: offset(at), opacity: 0, easing: ENTER_EASE },
@@ -185,7 +172,6 @@ export function useStepScenes(root: HTMLElement | null, motion: InViewMotion) {
 const ROW = 'flex min-w-0 items-center gap-2 text-body-lg leading-body-lg';
 const QUIET = 'text-[color:var(--color-text-tertiary)]';
 
-/** The frame every scene sits in; side by side, one height for all three so the titles align. */
 export function SceneFrame({ step, children }: { step: number; children: ReactNode }) {
   return (
     <div
@@ -199,10 +185,6 @@ export function SceneFrame({ step, children }: { step: number; children: ReactNo
   );
 }
 
-/**
- * The control a scene presses: the app's own button, pressed on the rail's beat, a `--motion-base`
- * after the fill reaches the step's node (`gateway.css`).
- */
 function Press({ accent = false, children }: { accent?: boolean; children: ReactNode }) {
   return (
     <span
@@ -219,7 +201,6 @@ function Press({ accent = false, children }: { accent?: boolean; children: React
   );
 }
 
-/** Step one: the folder button, then the project's tree unrolling with the map's folder picked. */
 export function OpenFolderScene({ open }: { open: string }) {
   return (
     <SceneFrame step={0}>
@@ -252,10 +233,8 @@ export function OpenFolderScene({ open }: { open: string }) {
   );
 }
 
-/** The line from the domain down to each capability: the first from the domain's foot, the second from the first's middle. */
 const DRAFT_BRANCH = ['', '-top-1.5 h-[1.375rem]', '-top-[1.375rem] h-[2.375rem]'] as const;
 
-/** Step two: the first card's agent button, then the agent's first proposal: a domain and two capabilities in it. */
 export function DraftScene({ ask, labelOf }: { ask: string; labelOf: (id: string) => string }) {
   return (
     <SceneFrame step={1}>
@@ -280,7 +259,6 @@ export function DraftScene({ ask, labelOf }: { ask: string; labelOf: (id: string
   );
 }
 
-/** A two-state switch drawn off or on; on, the indigo track and the knob at the right. */
 function Switch({ on, flips = false }: { on: boolean; flips?: boolean }) {
   return (
     <span
@@ -309,7 +287,6 @@ function Switch({ on, flips = false }: { on: boolean; flips?: boolean }) {
   );
 }
 
-/** One agent as the connect screen lists it: its name, its state under it, and its switch. */
 function AgentRow({ name, children }: { name: string; children: ReactNode }) {
   return (
     <span className="min-w-0">
@@ -322,7 +299,6 @@ function AgentRow({ name, children }: { name: string; children: ReactNode }) {
 const AGENT_CARD =
   'flex min-w-0 items-center gap-3 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-3 py-2';
 
-/** Step three: two agents with a connect switch; Claude Code's turns on and reaches the map. */
 export function ConnectScene({ place, connected, connect }: { place: string; connected: string; connect: string }) {
   return (
     <SceneFrame step={2}>
@@ -338,7 +314,6 @@ export function ConnectScene({ place, connected, connect }: { place: string; con
             </span>
           </AgentRow>
           <Switch on flips />
-          {/* The connection reaching the map: one line, then the map takes the light. */}
           <span className="flex min-w-10 flex-1 items-center">
             <span
               {...beat('draw', 560, MOTION.slow.duration * 1000)}
@@ -359,7 +334,6 @@ export function ConnectScene({ place, connected, connect }: { place: string; con
   );
 }
 
-/** Three concepts and two relations: the map, small. Lit, it takes the connection's colour. */
 function MapGlyph() {
   const shape = (
     <>

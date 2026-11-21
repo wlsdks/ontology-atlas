@@ -48,7 +48,6 @@ function RouteErrorBody({ digest, onRetry }: { digest?: string; onRetry: () => v
             <RefreshCw size={ICON_SIZE.md} aria-hidden />
             {t('retry')}
           </Button>
-          {/* A full navigation, the honest reset after a render failure. */}
           <a href={withBasePath(`/${locale}/`)} className={cn(buttonVariants({ variant: 'outline' }))}>
             {t('home')}
           </a>

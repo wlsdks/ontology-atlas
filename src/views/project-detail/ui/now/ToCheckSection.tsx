@@ -14,7 +14,6 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { groupRowsByReason, type ProjectToCheck, type ToCheckReason, type ToCheckRow } from "../../model/project-to-check";
 import { CrossFadeText, SECTION_HEADING_CLASS, STALE_DOT_CLASS, SectionHeadingLine, rowMotion, useArrival } from "./now-parts";
 
-/** A group in the dialog lists this many rows; the rest are named by count and live on the map. */
 const DIALOG_ROWS_PER_REASON = 100;
 const REVIEW_REASONS: ReadonlySet<ToCheckReason> = new Set(["raised", "changed-since-review", "unverifiable"]);
 
@@ -42,9 +41,7 @@ export function ToCheckSection({
   toCheck: ProjectToCheck;
   availability: MapEvidenceAvailability;
   staleCount: number;
-  /** The project's capabilities the walk compared: the sentence's denominator. */
   comparedCount: number;
-  /** The review queue has not been read yet, so its absence says nothing. */
   reviewReading: boolean;
   reducedMotion: boolean;
   arrivalOffset?: number;
@@ -233,7 +230,6 @@ function ToCheckDialog({
   );
 }
 
-/** Rendered only inside the open dialog, so a closed dialog groups nothing. */
 function ToCheckDialogGroups({ rows }: { rows: readonly ToCheckRow[] }) {
   const t = useTranslations("projectPages.detail");
   const tReview = useTranslations("vaultWidgets.parts.sidebar.review");

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import { useMotionPaused } from '@/shared/motion/motion-pause';
 
-/** The share of a block that must be on screen before its entrance plays. */
 const VISIBLE_SHARE = 0.2;
 
 type Run = { animations: Animation[] } | 'still';

@@ -16,10 +16,6 @@ import {
 
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 
-/**
- * Projects are already in `insight.nodes`; adding the rendered list again makes map and INDEX
- * totals diverge.
- */
 export function useTopologyIndexReadModel({
   insight,
   resolvedRealmSlug,
@@ -82,7 +78,6 @@ export function useTopologyIndexReadModel({
     });
     return {
       rootKind: subtree.node.kind,
-      // The same localized name as the canvas and realm chip.
       rootTitle: subtree.node.display ?? subtree.node.title,
       census,
       subtree,

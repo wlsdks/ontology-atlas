@@ -37,7 +37,6 @@ interface Props {
 
 const DEFAULT_RETURN_TO = "/projects/";
 
-/** The map's own address, with or without its query; the drawer's Edit link comes from there. */
 const MAP_RETURN = /^\/(?:topology\/?)?(?:[?#]|$)/;
 
 function normalizeReturnTo(returnTo?: string): string {
@@ -260,7 +259,6 @@ function EditorContent({
           {safeReturnLabel}
         </Link>
 
-        {/* The guidance is said once, in the subtitle; the form says the rest beside its fields. */}
         <header className={mode === "create" ? "mt-6" : "mt-8"}>
           {mode === "edit" && (
             <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
@@ -364,11 +362,9 @@ function EditorContent({
             onCancel={handleCancel}
             onDelete={mode === "edit" ? handleDelete : undefined}
             onDirtyChange={setIsDirty}
-            /* Both modes say before the press that nothing can be saved without a vault. */
             writeDisabled={
               mode === "create" ? !projectMutations.canCreate : !projectMutations.canEdit
             }
-            // Opens a folder in place; `/` is the gateway on the web.
             openVaultAction={<OpenVaultCta testId="project-write-disabled-open-folder" />}
           />
         </section>

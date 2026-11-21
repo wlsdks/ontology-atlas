@@ -23,16 +23,11 @@ const SHEETS = {
   reactions: { ...reactionSheet, src: withBasePath(`/brand/moru-reactions.png?v=${reactionSheet.digest}`) },
 } as const;
 const emoteSrc = (glyph: 'note' | 'heart' | 'spark') => withBasePath(`/brand/moru-emote-${glyph}.svg`);
-/** The fish from the magic-fish clip's own cell, cropped from the sheet rather than redrawn. */
 const FISH = { frame: 408, x: 73, y: 8, width: 31, height: 19 };
-/** A field this roomy draws Moru at twice his native cell; anything smaller keeps 128px. */
 const ROOMY = { width: 560, height: 380 };
 const fits = (node: HTMLElement) => (node.clientWidth >= ROOMY.width && node.clientHeight >= ROOMY.height ? 2 : 1);
 const storage = () => (typeof localStorage === 'undefined' ? undefined : localStorage);
 
-/* Marks ---------------------------------------------------------------------------------------- */
-
-/** One of the round's own pixel shapes as crisp SVG, outlined in the canvas colour. */
 function PixelMark({ rows, fills, unit }: { rows: readonly string[]; fills: Record<string, string>; unit: number }) {
   const { width, height } = pixelCells(rows);
   return (
@@ -50,7 +45,6 @@ const GOLD_FILL = { f: 'fill-[color:var(--color-amber-docs-a100)]', h: 'fill-[co
 const BUG_FILL = { r: 'fill-[color:var(--color-danger-text-strong)]', k: 'fill-[color:var(--color-canvas)]', g: 'fill-[color:var(--color-text-tertiary)]', l: 'fill-[color:var(--color-text-tertiary)]' };
 
 function EmoteIcon({ glyph, size = 24 }: { glyph: 'note' | 'heart' | 'spark'; size?: number }) {
-  // Moru's own wordless emotes, decoration only.
   // eslint-disable-next-line @next/next/no-img-element
   return <img aria-hidden src={emoteSrc(glyph)} width={size} height={size} alt="" draggable={false} className="block shrink-0" style={{ imageRendering: 'pixelated' }} />;
 }
@@ -73,9 +67,6 @@ function FishIcon() {
   );
 }
 
-/* The popup ---------------------------------------------------------------------------------- */
-
-/** The popup a visitor opens from the hero to play a one-minute round with Moru. */
 export function MoruPlayground({ open, onClose }: { open: boolean; onClose: () => void }) {
   const titleId = useId();
   return (
@@ -182,11 +173,9 @@ function PlaygroundBody({ titleId, onClose }: { titleId: string; onClose: () => 
       created.destroy();
       setPhase('start');
     };
-    // The calm flag and scale reach a running game through their own effects.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paused]);
 
-  // Focus follows the round: Start on open, Stop while playing, Play again at the end.
   useEffect(() => {
     const next = phase === 'start' ? startButton : phase === 'over' ? againButton : stopButton;
     const id = requestAnimationFrame(() => (next.current ?? closeButton.current)?.focus({ preventScroll: true }));
@@ -244,7 +233,6 @@ function PlaygroundBody({ titleId, onClose }: { titleId: string; onClose: () => 
           <canvas ref={canvas} aria-hidden data-moru-play-canvas="" className="pointer-events-none absolute inset-0 block" />
         )}
 
-        {/* The round's numbers, written by the game loop, not by React, so a catch never re-renders. */}
         <div aria-hidden={!inRound} className={cn('pointer-events-none absolute inset-x-0 top-0 transition-opacity', inRound ? 'opacity-100' : 'opacity-0')}>
           <div className="h-1 w-full bg-[color:var(--color-overlay-2)]">
             <span ref={timeBar} className="block h-full origin-left bg-[color:var(--color-indigo-accent)] group-data-[hurry]/field:bg-[color:var(--color-danger-text-strong)]" />
@@ -344,7 +332,6 @@ function PlaygroundBody({ titleId, onClose }: { titleId: string; onClose: () => 
   );
 }
 
-/** What falls and what it does, so the first round is not spent guessing. */
 function Legend() {
   const t = useTranslations('download.playground');
   const row = 'flex items-center gap-2 text-body leading-body text-[color:var(--color-text-secondary)]';
@@ -377,7 +364,6 @@ function Legend() {
   );
 }
 
-/** With the page's motion paused the round rests; Moru stands on the neutral pose. */
 function PausedScene() {
   const sheet = SHEETS.companion;
   return (

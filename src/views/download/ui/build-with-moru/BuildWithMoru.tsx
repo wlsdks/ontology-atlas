@@ -51,10 +51,6 @@ import { SectionIntro } from '../SectionIntro';
 import { TypedLetters } from './TypedLetters';
 
 const SECTION = cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full scroll-mt-24');
-/**
- * One wait per agent beat (`AGENT_BEATS` + 1): the card leaves, the agent reads, writes the project
- * and each cluster, its relations, then Atlas's count is held long enough to read before handing over.
- */
 const BEAT_MS = [500, 1400, 900, 1100, 1100, 1100, 1000, 1100, 1900] as const;
 /** The third star: a first visit that reads every line lands near a minute and a half; a brisk one inside this. */
 const STAR_SECONDS = 60;
@@ -71,7 +67,6 @@ const LOOP: Record<BuildPhase, BuildLoop> = {
   done: 'flipper-groove',
 };
 
-/** What an action earns from Moru, read from the state before and after it. */
 function gestureFor(before: BuildState, after: BuildState): BuildGesture | null {
   if (after.phase === 'done' && before.phase !== 'done') return 'success';
   if (after.misses > before.misses) return 'uncertain';
@@ -80,10 +75,6 @@ function gestureFor(before: BuildState, after: BuildState): BuildGesture | null 
   return null;
 }
 
-/**
- * "Build a map with Moru": a guided sample of what Atlas does, played in the page alone: nothing
- * is read from the visitor's disk and nothing leaves the page.
- */
 export function BuildWithMoru({ handheld }: { handheld: boolean }) {
   const t = useTranslations('download.build');
   const [state, dispatch] = useReducer(buildReducer, INITIAL_BUILD);
@@ -189,7 +180,6 @@ export function BuildWithMoru({ handheld }: { handheld: boolean }) {
           </div>
 
           <div className="build-panel @container flex min-w-0 flex-col gap-5 p-5 @min-[60rem]:p-6">
-            {/* Once the concept is open, its card needs the room and the missions are all but done. */}
             {listed ? <Quests state={state} step={step} /> : null}
             <ol aria-label={t('stepCount', { step: step + 1 })} className={cn('grid grid-cols-6 gap-1.5', state.phase !== 'inspect' && '@min-[60rem]/build:hidden')}>
               {BUILD_STEPS.map((name, index) => (
@@ -219,7 +209,6 @@ export function BuildWithMoru({ handheld }: { handheld: boolean }) {
               {state.phase === 'done' && result ? <Stars result={result} onRetry={() => act({ type: 'restart' })} /> : null}
             </div>
 
-            {/* A narrow panel gives the choices their own full-width row under Moru. */}
             <div className="flex min-w-0 flex-col gap-3 @min-[20rem]:flex-row @min-[20rem]:items-end">
               <span className="-mb-2 -ml-3 self-start">
                 <BuildMoru loop={LOOP[state.phase]} gesture={gesture} play={play} />
@@ -230,7 +219,6 @@ export function BuildWithMoru({ handheld }: { handheld: boolean }) {
             </div>
 
             {state.phase === 'inspect' || state.phase === 'done' ? (
-              // Both cards share one cell, so confirming cross-fades the concept into its file.
               <div className="build-details grid [&>*]:[grid-area:1/1]">
                 <div data-open={state.phase === 'inspect' || undefined} inert={state.phase !== 'inspect'} className="build-detail">
                   <InspectCard nameOf={nameOf} />
@@ -249,7 +237,6 @@ export function BuildWithMoru({ handheld }: { handheld: boolean }) {
   );
 }
 
-/** The run's clock, ticking in the bar from the folder's opening until the map is done. */
 function Clock({ startedAt, stoppedAt }: { startedAt: number; stoppedAt: number | null }) {
   const [now, setNow] = useState(() => performance.now());
   useEffect(() => {
@@ -266,7 +253,6 @@ function Clock({ startedAt, stoppedAt }: { startedAt: number; stoppedAt: number 
   );
 }
 
-/** The wide panel's mission list: each step as an objective with its count, ticked when done. */
 function Quests({ state, step }: { state: BuildState; step: number }) {
   const t = useTranslations('download.build');
   const counts: Partial<Record<(typeof BUILD_STEPS)[number], string>> = {
@@ -299,7 +285,6 @@ const starsOf = (result: { seconds: number; misses: number }) =>
     { key: 'brisk', earned: result.seconds <= STAR_SECONDS },
   ] as const;
 
-/** The finish as a game's clear: a star for the map, one for no wrong taps, one for a brisk run. */
 function Stars({ result, onRetry }: { result: { seconds: number; misses: number }; onRetry: () => void }) {
   const t = useTranslations('download.build');
   const stars = starsOf(result);
@@ -330,10 +315,6 @@ function Stars({ result, onRetry }: { result: { seconds: number; misses: number 
   );
 }
 
-/**
- * The agent's side of the first map, as the app's conversation shows it: one row per tool call,
- * the newest at the bottom, and last the count Atlas makes from the finished map.
- */
 function AgentLog({ built }: { built: number }) {
   const t = useTranslations('download.build');
   const nameOf = (id: BuildConceptId) => t(`names.${id}`);
@@ -359,7 +340,6 @@ function AgentLog({ built }: { built: number }) {
   );
 }
 
-/** Moru's line, typed out one letter after another; a screen reader gets the whole line at once. */
 function TypedLine({ text }: { text: string }) {
   return (
     <>
@@ -451,7 +431,6 @@ function InspectCard({ nameOf }: { nameOf: (concept: BuildConceptId) => string }
   );
 }
 
-/** The finished concept as the Markdown file it is: its first lines are the map's dot and lines. */
 function FileCard({ nameOf }: { nameOf: (concept: BuildConceptId) => string }) {
   const depends = BUILD_RELATIONS.filter((rel) => rel.from === BUILD_CHANGE.concept).map((rel) => rel.to);
   const rows: [string | null, string][] = [

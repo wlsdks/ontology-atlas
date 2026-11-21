@@ -38,7 +38,6 @@ const ACT_SPANS = [
   [0.75, 1],
 ] as const;
 const CLOCK = { holdMs: 1800, fadeMs: 260 } as const;
-/** Where a paused film rests in each act: the scan read, the Codex filter on, the problem opened, the whole screen. */
 const SETTLE = [0.85, 0.8, 0.7, 0.9] as const;
 const FILM_MIN_WIDTH = 768;
 /** The Setup view's own `lg:` rules are viewport queries, so the film plays only where they hold. */
@@ -51,14 +50,11 @@ const CAPTION_IN = 160;
 const CAPTION_LAG = 40;
 const CAPTION_RISE = 12;
 
-/** The whole window's still picture (CSS pixels). */
 const STILL = { w: WINDOW.w, h: WINDOW.h } as const;
 
-/** On a phone each act's close-up cross-fades over the next and pushes in 3.5% while its act plays. */
 const SHOT_FADE = 320;
 const SHOT_PUSH = 0.035;
 
-/** Film time (ms) at choreography progress `p`. */
 function filmTime(p: number): number {
   if (p >= 1) return TOTAL;
   const act = Math.min(3, Math.max(0, Math.floor(p * 4)));
@@ -75,7 +71,6 @@ function captionAt(i: number, T: number) {
   };
 }
 
-/** Act `i`'s close-up at film time T: in over its first beat, out while the next one comes in. */
 function shotAt(i: number, T: number) {
   const start = STARTS[i]!;
   const end = i + 1 < STARTS.length ? STARTS[i + 1]! : Infinity;
@@ -93,20 +88,8 @@ function setRise(el: HTMLElement | null | undefined, lit: number) {
 
 type WindowComponent = ComponentType<{ example: ExampleRead; scale: () => number; onReady: (director: Director | null) => void }>;
 
-/**
- * Narrower than the film, `phone` plays each act's close-up of the window with its caption, and
- * `detail` (reduced motion) shows the third act's close-up above the list.
- */
 type Mode = 'list' | 'still' | 'detail' | 'phone' | 'playing';
 
-/**
- * The page's second film: the app's own Harness › Setup screen, playing on an example repository.
- * One scan sorts its agent files into Context, Guardrails and Verification; a pointer presses the
- * tool filter, the problem line and a subagent whose Claude Code and Codex copies differ, and each
- * act's subject is lifted and enlarged. The screen's code loads only when the film is about to be
- * seen at a size that keeps its type legible; otherwise a picture of the same screen stands above
- * the acts, and without a script the acts are the list alone.
- */
 export function HarnessFilm() {
   const t = useTranslations('download.harnessFilm');
   const locale = useLocale();
@@ -166,7 +149,6 @@ export function HarnessFilm() {
     };
   }, []);
 
-  /* Frames the window on the stage and loads the screen when the stage is within one viewport. */
   useEffect(() => {
     const host = stage.current;
     if (mode !== 'playing' || !host) return;
@@ -223,7 +205,6 @@ export function HarnessFilm() {
     };
   }, [mode]);
 
-  /* The clock starts once the screen has committed one hidden render and its director is ready. */
   useEffect(() => {
     const host = stage.current;
     const phone = mode === 'phone';
@@ -271,13 +252,11 @@ export function HarnessFilm() {
       undefined,
       { keepAwake: true },
     );
-    /* Paused, a still frame lands inside its act, where its picture and caption are whole. */
     const settle = (act: number) => time.advance(ACT_MS[act]! * SETTLE[act]!);
     seek.current = (act) => {
       time.seek(act);
       const paused = isMotionPaused();
       p = paused ? settle(act) : time.progress();
-      /* A jump fades in from dark instead of cutting; paused, it shows the act at once. */
       veil = paused ? 1 : 0;
       paint(true);
     };
@@ -464,7 +443,6 @@ export function HarnessFilm() {
           {mode === 'still' || mode === 'detail' ? (
             <div className={PAGE_GUTTER}>
               <div className={cn(PAGE_COLUMN, 'mt-6')}>
-                {/* The act list below carries the meaning; the picture repeats it. */}
                 <Image
                   data-harness-film-still={mode}
                   src={withBasePath(stillSrc(mode === 'detail' ? phoneStillName(3) : 'harness-film', locale))}

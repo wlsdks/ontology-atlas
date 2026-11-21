@@ -23,7 +23,6 @@ import { buildScene, mix, paintFilm, TextStamps, type FilmInks, type FilmScene }
 import { mountFilmProbe, type FilmProbe } from './film-probe';
 
 const ACTS = [1, 2, 3, 4] as const;
-/** Where a paused film rests inside each act, as a share of the act: its picture is whole there. */
 const SETTLE = 0.97;
 const CYCLE_MS = FILM_MS + HOLD_MS + FADE_MS;
 
@@ -111,7 +110,6 @@ type LaidOut = {
 
 const rectKey = (r: Rect) => `${Math.round(r.l)},${Math.round(r.t)},${Math.round(r.r)},${Math.round(r.b)}`;
 
-/** A text's box in stage pixels: its line box, not its element's full width. */
 function textRect(el: Element, stage: DOMRect): Rect {
   const range = document.createRange();
   range.selectNodeContents(el);
@@ -119,7 +117,6 @@ function textRect(el: Element, stage: DOMRect): Rect {
   return { l: r.left - stage.left, t: r.top - stage.top, r: r.right - stage.left, b: r.bottom - stage.top };
 }
 
-/** Splits a formatted count row around its number, so the number takes the line's ink. */
 function aroundNumber(text: string, count: number, locale: string, ink: LabelSegment['ink']): LabelSegment[] {
   const number = new Intl.NumberFormat(locale).format(count);
   const at = text.indexOf(number);
@@ -131,12 +128,6 @@ function aroundNumber(text: string, count: number, locale: string, ink: LabelSeg
   ].filter((seg) => seg.text.length > 0);
 }
 
-/**
- * The page's film: once its stage is in view it plays by itself, as the repository's real
- * concepts go from Markdown files to the map a person and an agent read together, then rests and
- * plays again. Without a script or under reduced motion the last frame is one still and the four
- * acts are a list.
- */
 export function FilmSection({ graph }: { graph: StageGraph }) {
   const t = useTranslations('download.film');
   const dial = useTranslations('mapDial');
@@ -208,7 +199,6 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
     let pendingSeek: number | null = null;
     const time = createFilmClock(ACT_SPANS, [...ACT_MS], { holdMs: HOLD_MS, fadeMs: FADE_MS });
     let probe: FilmProbe | null = null;
-    /* A spec may hold the film on one moment. */
     let frozen: number | null = null;
 
     const paint = () => {
@@ -326,7 +316,6 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
     const observer = new ResizeObserver(relayout);
     observer.observe(el);
     relayout();
-    /* Names are measured in the page's fonts, so the map is laid out again once they arrive. */
     let alive = true;
     void document.fonts?.ready.then(() => {
       if (alive) relayout();
@@ -363,7 +352,6 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       undefined,
       { keepAwake: true },
     );
-    /* Paused, a still frame lands near its act's end, where its picture and caption are whole. */
     const settle = (act: number) => {
       time.seek(act);
       time.advance(ACT_MS[act]! * SETTLE - (act === 0 ? FADE_MS : 0));
@@ -421,7 +409,6 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
             {t('label')}
           </h2>
         </div>
-        {/* While it plays each act shows its headline; the last also shows the map's two counts. A still shows the last. */}
         <div aria-hidden={film ? undefined : true} className={cn(PAGE_GUTTER, 'pointer-events-none absolute inset-x-0 bottom-[5svh]')}>
           <div className={cn(PAGE_COLUMN, 'flex flex-col items-start')}>
             <ol className="grid w-full">
@@ -487,10 +474,6 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
   );
 }
 
-/**
- * Draws the whole film off screen in idle time before it plays, a few moments per slice, so every
- * name's bitmap is made before its first frame instead of in the middle of a move.
- */
 function warmFilm(draw: (ctx: CanvasRenderingContext2D, T: number) => void): () => void {
   const scratch = document.createElement('canvas');
   scratch.width = 300;

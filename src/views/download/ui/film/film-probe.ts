@@ -2,11 +2,6 @@ import type { Pt, Rect } from '../../lib/film/film-geometry';
 import type { FilmLabel } from '../../lib/film/film-map-layout';
 import type { FilmScene, FrameRecord } from './film-paint';
 
-/**
- * The film's geometry and frames for end-to-end specs, mounted only under `?e2e`: the final
- * layout of the rest and lit frames as JSON, and a recorder of what each frame drew, so a spec
- * can measure overlaps, margins and continuity without reading pixels.
- */
 export interface FilmProbe {
   layout(scene: FilmScene): void;
   frame(T: number, light: number): void;
@@ -27,7 +22,6 @@ function layoutJson(scene: FilmScene) {
   const rest = {
     boxes: [
       ...map.restLabels.map(box),
-      /* An arc whose count found no clear spot carries none. */
       ...map.restArcs.flatMap((arc) => {
         const q = arc.numeral;
         if (!q) return [];
@@ -99,7 +93,6 @@ export function mountFilmProbe(
   };
   const api = {
     layout: () => json,
-    /** Holds the film on film time `T` (ms); null lets it play again. */
     freeze,
     start() {
       recording = true;

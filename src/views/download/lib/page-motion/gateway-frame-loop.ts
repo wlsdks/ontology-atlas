@@ -16,7 +16,6 @@ interface GatewayFrameTick {
   t: number;
   /** Capped at 64 so a tab returning from the background does not phase-jump the clock. */
   dtMs: number;
-  /** Ambient sleep factor in (0,1] multiplying motion speed; asleep frames never reach a client. */
   factor: number;
 }
 
@@ -32,7 +31,6 @@ const INPUT_EVENTS = [
 ] as const;
 
 const clients = new Set<GatewayFrameClient>();
-/** Clients that keep their own time through ambient sleep and rest themselves (the page's films). */
 const wakeful = new Set<GatewayFrameClient>();
 let running = false;
 let rafId = 0;
@@ -86,7 +84,6 @@ function stop(): void {
   removeEventListener('scroll', onInput, { capture: true });
 }
 
-/** The first registration starts the loop and listeners; the last cancellation removes them all. */
 function registerGatewayFrameClient(client: GatewayFrameClient, keepAwake: boolean): () => void {
   clients.add(client);
   if (keepAwake) wakeful.add(client);
@@ -99,7 +96,6 @@ function registerGatewayFrameClient(client: GatewayFrameClient, keepAwake: boole
 }
 
 
-/** A drawing runs only while at least this share of its section is visible. */
 const GATEWAY_VISIBLE_RATIO = 0.2;
 
 /**

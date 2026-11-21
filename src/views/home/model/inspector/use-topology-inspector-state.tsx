@@ -91,7 +91,6 @@ export function useTopologyInspectorState({
     const sourceSlug = node.evidenceIds[0] ?? null;
     // Without an evidence list the label changes instead of dropping the link.
     const { ownSlug, mentionedInSlug } = resolveNodeDocument(node);
-    // The document slug, or the reference as written.
     const agentTarget = resolveNodeAgentTarget(node);
     const slug = agentTarget.ref ?? sourceSlug ?? node.id;
     const connections = buildV2Connections(node.id, ontologyInsight.nodes, ontologyInsight.edges);
@@ -120,7 +119,6 @@ export function useTopologyInspectorState({
       nodeId: node.id,
       title: node.display ?? node.title,
       slug,
-      // A document opened from the map keeps a crumb back to its node.
       documentHref: ownSlug
         ? buildDocsVaultHref({ slug: ownSlug, via: buildTopologyReturnMarker(node.id) })
         : null,
@@ -145,7 +143,6 @@ export function useTopologyInspectorState({
     contextMenuKey,
   );
 
-  // Same source as the compact datasheet, so the two surfaces' numbers cannot drift.
   const fullDetailA1Model = useFullDetailA1Model({
     open: fullDetailOpen,
     nodeFocus,
@@ -179,7 +176,6 @@ export function useTopologyInspectorState({
     !createNodeOpen &&
     !nodePopoverDismissed,
   );
-  // Drives both the Esc ladder's `nodePopoverOpen` and the popover's render guard, so they agree.
   const nodePopoverVisible =
     selectedNodeFocusActive &&
     !meaningWorkbenchOpen &&
@@ -222,7 +218,6 @@ export function useTopologyInspectorState({
         ? "compact-focus"
         : "visible";
   const topologyUtilityChromeCompact = reviewUsesSheet || agentDockRequestedOpen;
-  // See `search-lane-density.ts` for the measured band.
   const searchLaneCrowded = isSearchLaneCrowded({
     viewportBelowCrowdedWidth: useViewportBelow(SEARCH_LANE_CROWDED_BELOW_PX),
     indexExpanded: renderedIndexState === "expanded",

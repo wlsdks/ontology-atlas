@@ -55,10 +55,6 @@ export interface TopologyAnalysisSummary {
   relationQuality?: TopologyRelationQualityBreakdown;
 }
 
-/**
- * Re-exported from `entities/knowledge-graph/lib/ontology-health-signals.ts`, so every "next
- * repair target" choice calls one function without a cross-view import.
- */
 export type TopologyHealthActionTarget = OntologyHealthActionTarget;
 
 export interface TopologyHealthBriefLabels {
@@ -326,10 +322,6 @@ function formatTopologyRelationProvenanceSummary(
   ].join(" · ");
 }
 
-/**
- * Re-exported from `entities/knowledge-graph/lib/relation-quality.ts`, shared with the insights
- * gauge.
- */
 export function classifyTopologyRelationQuality(
   edge: Pick<KnowledgeGraphEdge, "type" | "evidenceIds" | "lastApprovedBy">,
 ): keyof TopologyRelationQualityBreakdown {
@@ -445,10 +437,8 @@ export function formatTopologyPathMcpCheck(from: string, to: string): string {
 interface TopologyPathStep {
   edgeId: string;
   relationType: string;
-  /** The direction declared by frontmatter. */
   authoredFrom: string;
   authoredTo: string;
-  /** The walking order along this path. */
   from: string;
   to: string;
   reversed: boolean;
@@ -597,7 +587,6 @@ export function formatTopologyPathAgentPacket({
   sourceTitle: string;
   targetTitle: string;
   hopCount: number | null;
-  /** Every link carries it, so a pasted link lands on a live page. */
   locale?: string;
   labels: TopologyPathAgentPacketLabels;
 }): string {

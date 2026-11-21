@@ -16,53 +16,37 @@ import type { FootprintTrailEntry, TrailStepCaption } from "../../lib/trail/foot
 export interface TopologyTrailChipLabels {
   heading: string;
   triggerAriaLabel: string;
-  /** "you are here"; the only tinted text in the popover. */
   currentLabel: string;
-  /** Top row with nothing focused: "just now". */
   justNowLabel: string;
-  /** "{count} steps back". */
   stepsAgoLabel: (count: number) => string;
-  /** "go to {title}". */
   rowAriaLabel: (title: string) => string;
-  /** When this node shares no edge with the previous step. */
   stepUnrelatedLabel: string;
-  /** "hand this over to the AI". */
   copyLabel: string;
   copyAriaLabel: string;
   copyCopiedAriaLabel: string;
   clearLabel: string;
-  /** Once armed; the second press discards. */
   clearConfirmLabel: string;
   clearAriaLabel: string;
-  /** Shown only when something is archived. */
   pastLinkLabel: string;
   pastHeading: string;
   pastBackAriaLabel: string;
   pastDeleteAriaLabel: string;
   pastClearAllLabel: string;
-  /** "press once more to delete". */
   pastClearAllConfirmLabel: string;
-  /** "the last 10 only". */
   pastCapCaption: string;
   pastEmptyBody: string;
 }
 
-/** HomePage owns i18n and sends the strings formatted. */
 export interface TopologyPastWalkRow {
   id: string;
-  /** "first → last"; the arrow carries direction, so it is data. */
   routeLabel: string;
-  /** "today · 12 places", or "not on the map right now" when it cannot replay. */
   metaLabel: string;
-  /** When false the row is text, not a button that does nothing; delete (✕) stays. */
   replayable: boolean;
-  /** Null without a button, so no unused "replay 0 places" string leaks elsewhere. */
   ariaLabel: string | null;
 }
 
 const CLEAR_ALL_CONFIRM_RESET_MS = 4000;
 
-/** `w-[248px]` below; the side choice measures against it. */
 const TRAIL_POPOVER_WIDTH = 248;
 
 type TrailPopoverAlign = "start" | "end";
@@ -84,7 +68,6 @@ function resolveTrailPopoverAlign(root: HTMLElement | null): TrailPopoverAlign {
 }
 
 export interface TopologyTrailChipProps {
-  /** HomePage owns i18n; the chip is pure chrome. */
   label: string;
   /** Below a 35rem toolbar only the count shows; `label` stays the tooltip and accessible name. */
   compactLabel?: string;
@@ -93,27 +76,19 @@ export interface TopologyTrailChipProps {
    * every time-ordered list in the app.
    */
   entries: readonly FootprintTrailEntry[];
-  /**
-   * Aligned with `entries`; index 0 is null, and null elsewhere means no shared edge, which the row
-   * states.
-   */
   stepCaptions: readonly (TrailStepCaption | null)[];
-  /** The indigo dot on the timeline. */
   currentId: string | null;
   labels: TopologyTrailChipLabels;
   onFocusEntry: (id: string) => void;
   onCopyPacket: () => void;
   copied: boolean;
-  /** Shared by the chip ✕ and the footer; discards without archiving. */
   onClear: () => void;
   /**
    * The trail lens: the map dims relations and everything unvisited while the popover is open.
    * Its lifetime is exactly the popover's, with no mode or URL state.
    */
   onLensChange?: (active: boolean) => void;
-  /** Brushes the map node, answering "which node is two steps back" by pointing, not numbering. */
   onHoverEntry?: (id: string | null) => void;
-  /** Newest first. */
   pastWalks: readonly TopologyPastWalkRow[];
   /** Null while archiving normally; with no archive and no notice the level-1 link does not appear. */
   pastNotice: string | null;
@@ -123,7 +98,6 @@ export interface TopologyTrailChipProps {
    */
   onReplayPastWalk: (id: string) => void;
   onDeletePastWalk: (id: string) => void;
-  /** After the two-step confirm. */
   onClearPastWalks: () => void;
 }
 
@@ -154,7 +128,6 @@ export function TopologyTrailChip({
 }: TopologyTrailChipProps) {
   const [open, setOpen] = useState(false);
   const [showPast, setShowPast] = useState(false);
-  // Destructive and unrecoverable, so an inline two-step confirm.
   const [clearAllArmed, setClearAllArmed] = useState(false);
   // A session trail is not in the URL and cannot be rebuilt, so both clear controls arm first and
   // the second press discards, matching clear-all.
@@ -176,7 +149,6 @@ export function TopologyTrailChip({
 
   const close = useCallback((returnFocus: boolean) => {
     setOpen(false);
-    // Always level 1, so one trigger opens one screen.
     setShowPast(false);
     setClearAllArmed(false);
     setClearArmed(false);
@@ -215,7 +187,6 @@ export function TopologyTrailChip({
     return () => window.clearTimeout(timer);
   }, [clearArmed]);
 
-  /** Shared by the header ✕ and the footer. */
   const handleClearPress = useCallback(() => {
     if (!clearArmed) {
       setClearArmed(true);
@@ -304,7 +275,6 @@ export function TopologyTrailChip({
             shape: "icon",
             size: "sm",
             tone: clearArmed ? "strong" : "muted",
-            // Hover wakes the ink only before arming.
             className: clearArmed ? "-mr-1" : "-mr-1 hover:text-[color:var(--color-text-primary)]",
           })}
         >
@@ -315,7 +285,6 @@ export function TopologyTrailChip({
           )}
         </button>
       </div>
-      {/* Grows out of the chip corner it hangs from. */}
       <Surface
         open={open}
         origin={align === "end" ? "top right" : "top left"}
@@ -363,7 +332,6 @@ export function TopologyTrailChip({
           </div>
           {showPast ? (
             <>
-              {/* Why nothing is kept; absent while archiving normally. */}
               {pastNotice !== null ? (
                 <p
                   data-testid="topology-trail-past-notice"
@@ -372,7 +340,6 @@ export function TopologyTrailChip({
                   {pastNotice}
                 </p>
               ) : null}
-              {/* Two-line anatomy decides row height, not content length. */}
               {pastWalks.length > 0 ? (
                 <ul
                   data-testid="topology-trail-past-list"
@@ -385,7 +352,6 @@ export function TopologyTrailChip({
                       data-replayable={walk.replayable ? "true" : "false"}
                       className="flex h-[47px] shrink-0 items-center gap-1"
                     >
-                      {/* Only a replayable trail is a button; otherwise its second line says why. */}
                       {walk.replayable ? (
                         <button
                           type="button"
@@ -401,7 +367,6 @@ export function TopologyTrailChip({
                           // through `group` since the text is a child.
                           className={controlClass({ shape: "row", size: "sm", className: "group min-w-0 flex-1 flex-col justify-center gap-0.5 self-stretch px-1.5 hover:bg-[color:var(--color-overlay-1)]" })}
                         >
-                          {/* Lifting only line 1 keeps level 2 without an attention winner. */}
                           <span className="w-full truncate text-body text-[color:var(--color-text-secondary)] transition-colors group-hover:text-[color:var(--color-text-primary)]">
                             {walk.routeLabel}
                           </span>
@@ -462,7 +427,6 @@ export function TopologyTrailChip({
                     className={controlClass({
                       shape: "segment",
                       tone: clearAllArmed ? "strong" : "muted",
-                      // Hover wakes the ink only before arming.
                       className: clearAllArmed
                         ? undefined
                         : "hover:text-[color:var(--color-text-primary)]",
@@ -473,7 +437,6 @@ export function TopologyTrailChip({
                 ) : (
                   <span />
                 )}
-                {/* Say up front that this is a rotating buffer. */}
                 <span className="shrink-0 font-mono text-caption text-[color:var(--color-text-quaternary)]">
                   {labels.pastCapCaption}
                 </span>
@@ -494,7 +457,6 @@ export function TopologyTrailChip({
               return (
                 <li
                   key={entry.id}
-                  // The row is the unit the user reads.
                   onMouseEnter={() => onHoverEntry?.(entry.id)}
                   onMouseLeave={() => onHoverEntry?.(null)}
                   onFocus={() => onHoverEntry?.(entry.id)}
@@ -503,7 +465,6 @@ export function TopologyTrailChip({
                   // different kind.
                   className="flex h-[42px] shrink-0 items-stretch gap-2"
                 >
-                  {/* The dot with half segments on the first and last row. */}
                   <span className="relative flex w-4 shrink-0 flex-col items-center">
                     <span
                       aria-hidden
@@ -524,7 +485,6 @@ export function TopologyTrailChip({
                     />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col justify-center">
-                    {/* Title and distance share a line so the caption explains both. */}
                     <span className="flex min-w-0 items-center gap-2">
                     <button
                       type="button"
@@ -566,7 +526,6 @@ export function TopologyTrailChip({
                       return (
                         <span
                           data-testid="topology-trail-step-link"
-                          // The native tooltip keeps a truncated reason reachable.
                           title={text || undefined}
                           // The empty slot keeps its line box, or the oldest title drops 7px.
                           className="min-h-[var(--leading-caption)] truncate px-2 text-caption leading-caption text-[color:var(--color-text-quaternary)]"
@@ -596,7 +555,6 @@ export function TopologyTrailChip({
               className={controlClass({
                 shape: "segment",
                 tone: clearArmed ? "strong" : "muted",
-                // Hover wakes the ink only before arming.
                 className: clearArmed ? undefined : "hover:text-[color:var(--color-text-primary)]",
               })}
             >

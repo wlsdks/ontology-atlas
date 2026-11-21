@@ -127,7 +127,6 @@ export function DocsVaultDocumentPane({
   const toast = useToast();
   const localVault = useLocalVault();
   const backlinkSources = manifest.backlinkSources?.[selectedDoc.slug] ?? [];
-  // Null means no place in the graph, so "open on the map" is not rendered.
   const mapDeeplinkForSelectedDoc =
     buildTopologyDeeplinkForDoc(selectedDoc) ?? buildOntologyDeeplinkForDoc(selectedDoc);
   const filePath = (
@@ -138,7 +137,6 @@ export function DocsVaultDocumentPane({
   );
   const headControls = (
     <div className="ml-auto flex min-h-[var(--chrome-tile-size)] flex-none items-center gap-2">
-      {/* Hidden while editing: a move under an open editor would strand unsaved text. */}
       {canEditCurrent && !editing ? (
         <span data-testid="docs-file-actions" className="flex flex-none items-center">
           <IconButton
@@ -272,7 +270,6 @@ export function DocsVaultDocumentPane({
               />
             ) : (
               <>
-                {/* The block renders for a missing or empty kind too, the commonest ways a node leaves the map. */}
                 <DocFrontmatterBlock
                     key={selectedDoc.slug}
                     doc={selectedDoc}
@@ -287,7 +284,6 @@ export function DocsVaultDocumentPane({
                       const kind = docsBySlug.get(slug)?.frontmatter?.kind;
                       return typeof kind === "string" ? kind.trim() : null;
                     }}
-                    // Only what the local vault observed; server and sample vaults render nothing.
                     agentActivityStatus={localVault.agentActivityStatus}
                     selfEditTimestamps={localVault.selfEditTimestamps}
                   />
@@ -331,7 +327,6 @@ export function DocsVaultDocumentPane({
         </DocReadingPane>
       </div>
 
-      {/* Always visible; zero backlinks shows an empty-state line. */}
       {!editing ? (
         // The bottom-tab reserve must apply to this `flex-none` sibling too, or the tab bar covers
         // its controls below lg.
@@ -347,7 +342,6 @@ export function DocsVaultDocumentPane({
               {t('backlinksStrip.empty')}
             </p>
           )}
-          {/* No `/topology/` fallback: a document without a graph node gets no map link. */}
           {mapDeeplinkForSelectedDoc ? (
             <Link
               href={mapDeeplinkForSelectedDoc}

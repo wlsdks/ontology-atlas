@@ -19,7 +19,6 @@ export type ReleaseArch = (typeof RELEASE_ARCHES)[number];
  */
 export const RELEASE_SIGNING = {
   developerId: true,
-  /** notarytool, with the ticket stapled to the DMG. */
   notarized: true,
 } as const;
 

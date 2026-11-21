@@ -12,14 +12,12 @@ import { OntologyMapKindGlyph } from '@/shared/ui/ontology-node/map-kind-glyph';
 
 export type ProjectCardClip = 'write' | 'waiting';
 
-/** Moru's place in the scene: the clip on screen, waiting loops since he last wrote, and a write owed to the button. */
 export interface ProjectCardMoru {
   clip: ProjectCardClip;
   waits: number;
   writeOwed: boolean;
 }
 
-/** Waiting loops between two turns of writing on the card. */
 export const PROJECT_CARD_WAITS_PER_WRITE = 3;
 export const PROJECT_CARD_ARRIVAL: ProjectCardMoru = { clip: 'write', waits: 0, writeOwed: false };
 const SCENE_CLIPS: readonly ProjectCardClip[] = ['write', 'waiting'];
@@ -32,7 +30,6 @@ export function projectCardAfterLoop(moru: ProjectCardMoru): ProjectCardMoru {
   return waits >= PROJECT_CARD_WAITS_PER_WRITE ? { clip: 'write', waits: 0, writeOwed: false } : { ...moru, waits };
 }
 
-/** The button was reached: write now while Moru rests on the neutral pose, otherwise once the clip comes back to it. */
 export function projectCardOnEngage(moru: ProjectCardMoru, resting: boolean): ProjectCardMoru {
   if (moru.clip === 'write') return moru;
   return resting ? { clip: 'write', waits: 0, writeOwed: false } : { ...moru, writeOwed: true };
@@ -49,24 +46,15 @@ function restsOnNeutralPose(cell: HTMLElement | null): boolean {
 }
 
 const CARD_SPRING = framerSpring(SPRING.surface);
-/** The card stands before its lines are written. */
 const WRITE_START = MOTION.slow.duration;
 const LINE_GAP = MOTION.choreography.duration / 10;
 
-/**
- * Domain rows as a project card counts them: a share of the project's concepts and the number.
- * One row carries the indigo, the rest stay neutral; `engaged` is the share once Moru adds to it.
- */
 const DOMAIN_ROWS = [
   { label: 'w-[46%]', share: 0.82, engaged: 0.94, count: 14, tone: 'bg-[color:var(--color-indigo-accent)]' },
   { label: 'w-[62%]', share: 0.56, engaged: 0.62, count: 9, tone: 'bg-[color:var(--color-text-tertiary)]' },
   { label: 'w-[38%]', share: 0.34, engaged: 0.4, count: 5, tone: 'bg-[color:var(--color-text-quaternary)]' },
 ] as const;
 
-/**
- * A project card being composed: its name and definition are written in, its domain rows fill
- * with their counts, and Moru stands beside it writing. Reduced motion draws the finished card.
- */
 export function ProjectCardArtwork({ arriving, engaged, reduced }: FeatureStageMotion) {
   const cell = useRef<HTMLSpanElement>(null);
   const [moru, setMoru] = useState(PROJECT_CARD_ARRIVAL);
@@ -112,7 +100,6 @@ export function ProjectCardArtwork({ arriving, engaged, reduced }: FeatureStageM
   </div>;
 }
 
-/** One line of the card, written in from the left after the card has stood up. */
 function Written({ order, reduced, className, children }: { order: number; reduced: boolean; className?: string; children?: ReactNode }) {
   return <motion.div className={className}
     initial={reduced ? false : { clipPath: 'inset(0% 100% 0% 0%)' }}
@@ -122,7 +109,6 @@ function Written({ order, reduced, className, children }: { order: number; reduc
   </motion.div>;
 }
 
-/** A domain's name, its share of the project as a bar that fills from the left, and the count that follows it. */
 function DomainRow({ row, order, engaged, reduced }: { row: (typeof DOMAIN_ROWS)[number]; order: number; engaged: boolean; reduced: boolean }) {
   const delay = WRITE_START + order * LINE_GAP;
   return <li className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)_1.25rem] items-center gap-2" data-project-card-domain>

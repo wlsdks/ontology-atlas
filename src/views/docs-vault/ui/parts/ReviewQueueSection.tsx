@@ -7,11 +7,6 @@ import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui/control-class";
 import type { ReviewQueueRow } from "@/entities/docs-vault";
 
-/**
- * What waits on a person, at the top of the document list; drawn only when non-empty. The `raised`
- * row and `changed-since-review` (recomputed from the file) stay separate rows. No row for
- * unreviewed nodes: absence stays unknown.
- */
 export interface ReviewQueueSectionProps {
   rows: ReviewQueueRow[];
   selectedSlug: string | null;
@@ -23,7 +18,6 @@ export function ReviewQueueSection({ rows, selectedSlug, onSelect, t }: ReviewQu
   if (rows.length === 0) return null;
   const raised = rows.filter((row) => row.reason === "raised");
   const changed = rows.filter((row) => row.reason === "changed-since-review");
-  // An approval nobody can check is neither fine nor drifted, so it is its own group.
   const unverifiable = rows.filter((row) => row.reason === "unverifiable");
 
   return (

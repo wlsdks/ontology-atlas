@@ -2,13 +2,10 @@ import type { FilmVault } from './film-vault';
 import type { Measure } from './film-map-layout';
 import type { Pt, Rect } from './film-geometry';
 
-/** One row of the vault's file tree as act 1 lists it. */
 export interface WallRow {
   key: string;
   text: string;
-  /** The concept the row is the file of; null for a folder row. */
   id: string | null;
-  /** A folder's file count, drawn after its name. */
   count: number | null;
   indent: number;
 }
@@ -31,10 +28,8 @@ export function wallRows(vault: FilmVault): WallRow[] {
 
 export interface PlacedRow {
   row: WallRow;
-  /** The text's left edge and middle, before any scroll. */
   x: number;
   y: number;
-  /** The text as drawn: cut with an ellipsis when its column is too narrow. */
   text: string;
   width: number;
   col: number;
@@ -50,9 +45,7 @@ export interface WallLayout {
   /** Phone: the list's window and how far it scrolls to bring the pick's row to 42% of it. */
   window: Rect | null;
   scrollTo: number;
-  /** The pick's row index, or -1. */
   pickRow: number;
-  /** The chip around the pick's row, before any scroll. */
   chip: (Rect & { radius: number }) | null;
 }
 
@@ -86,7 +79,6 @@ export function layoutWall(input: WallInput): WallLayout {
   let pitch = wide ? 26 : 22;
   if (wide) {
     cols = w >= 1600 ? 5 : w >= 1000 ? 4 : 3;
-    /* A short stage first tightens the rows, then adds columns. */
     while (Math.ceil(rows.length / cols) * pitch > avail && pitch > 22) pitch -= 1;
     while (Math.ceil(rows.length / cols) * pitch > avail && cols < 8) cols += 1;
   }
@@ -129,7 +121,6 @@ export function layoutWall(input: WallInput): WallLayout {
   return { rows: placed, size, pitch, font, countGap, cols, window, scrollTo, pickRow, chip };
 }
 
-/** Where a row's text sits on the phone after `scroll` pixels, and its edge fade inside the window. */
 export function rowOnPhone(wall: WallLayout, row: PlacedRow, scroll: number): Pt & { alpha: number } {
   const y = row.y - scroll;
   if (!wall.window) return { x: row.x, y, alpha: 1 };

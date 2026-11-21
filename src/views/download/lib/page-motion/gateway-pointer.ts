@@ -6,7 +6,6 @@
  */
 
 export interface Star {
-  /** Position as a fraction of the window, as the field draws it. */
   x: number;
   y: number;
 }
@@ -20,7 +19,6 @@ export interface PointerInk {
 /** How far a star may be and still link to the pointer, and how many link at once. */
 export const LINK_RADIUS_PX = 150;
 const LINK_MAX = 7;
-/** A clicked node links to stars this close and to earlier nodes this close. */
 const NODE_STAR_RADIUS_PX = 220;
 const NODE_NODE_RADIUS_PX = 320;
 const NODE_STARS = 3;
@@ -86,12 +84,10 @@ export interface GatewayPointerParts {
 }
 
 export interface GatewayPointer {
-  /** A modal dialog opened or closed over the page; the page's pointer steps aside for it. */
   setModal: (open: boolean) => void;
   stop: () => void;
 }
 
-/** Starts the pointer; returns the stop function. Call only for a fine pointer with motion allowed. */
 export function startGatewayPointer({ host, ring, dot, canvas, stars, ink }: GatewayPointerParts): GatewayPointer {
   const ctx = canvas.getContext('2d');
   const root = document.documentElement;
@@ -129,7 +125,6 @@ export function startGatewayPointer({ host, ring, dot, canvas, stars, ink }: Gat
     if (on === visible) return;
     visible = on;
     host.classList.toggle('is-on', on);
-    // The system pointer hides only while ours is there to replace it.
     if (on) root.setAttribute('data-gateway-cursor', '');
     else root.removeAttribute('data-gateway-cursor');
   };
