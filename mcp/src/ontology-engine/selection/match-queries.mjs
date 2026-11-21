@@ -4,6 +4,7 @@ import {
   normalizeLimit,
   normalizeOptionalBoolean,
   normalizeRelationType,
+  normalizeTypes,
   requireRelationType,
   summarizeNode,
 } from '../query-operation/query-primitives.mjs';
@@ -15,13 +16,14 @@ import {
   nodeMatchesFilters,
 } from './match-rules.mjs';
 
-/** Which nodes and edges meet a condition, and whether a proposed relation is new, present or off-pattern. */
+/** Which nodes and edges meet a condition or resemble a given node, and whether a proposed relation is new, present or off-pattern. */
 export function createMatchQueries({
   cliPrefix,
   edges,
   nodes,
   nodeBySlug,
   resolve,
+  traversalEdges,
   compareEdges,
   compareNodeRows,
   formatCompiledEdge,
@@ -33,7 +35,9 @@ export function createMatchQueries({
   normalizeNonNegativeInteger,
   normalizeOptionalString,
   publicRelationTypes,
+  roundScore,
   schemaPatterns,
+  similarityScore,
   writeRelationType,
 }) {
   function matchNodes(options = {}) {
@@ -182,5 +186,79 @@ export function createMatchQueries({
     };
   }
 
-  return { matchNodes, matchEdges, relationCheck };
+  function similarNodes(options = {}) {
+    const limit = normalizeLimit(options.limit, 10);
+    const typeSet = normalizeTypes(options.types);
+    const sourceSlug = normalizeOptionalString(options.slug, 'slug');
+    const resolvedSource = sourceSlug ? resolve(sourceSlug, 'slug') : null;
+    const sourceNode = resolvedSource ? nodeBySlug.get(resolvedSource) : null;
+    const candidate = sourceNode || {
+      slug:
+        normalizeOptionalString(options.candidateSlug, 'candidateSlug') ||
+        normalizeOptionalString(options.title, 'title') ||
+        '',
+      kind: normalizeOptionalString(options.kind, 'kind'),
+      title:
+        normalizeOptionalString(options.title, 'title') ||
+        normalizeOptionalString(options.candidateSlug, 'candidateSlug') ||
+        '',
+      domain: normalizeOptionalString(options.domain, 'domain'),
+    };
+    const sourceNeighbors = resolvedSource
+      ? new Set(traversalEdges(resolvedSource, 'undirected', typeSet).map((row) => row.next))
+      : new Set();
+    const rows = [];
+
+    for (const node of nodes) {
+      if (resolvedSource && node.slug === resolvedSource) continue;
+      const targetNeighbors = sourceNeighbors.size > 0 ? new Set(
+        traversalEdges(node.slug, 'undirected', typeSet).map((row) => row.next),
+      ) : sourceNeighbors;
+      const score = similarityScore(candidate, node, sourceNeighbors, targetNeighbors);
+      if (score.total <= 0) continue;
+      rows.push({
+        node: summarizeNode(node),
+        score: roundScore(score.total),
+        signals: {
+          slug: roundScore(score.slug),
+          title: roundScore(score.title),
+          kind: roundScore(score.kind),
+          domain: roundScore(score.domain),
+          neighbors: roundScore(score.neighbors),
+        },
+        sharedNeighbors: [...(sourceNeighbors.size <= targetNeighbors.size ? sourceNeighbors : targetNeighbors)]
+          .filter((slug) => sourceNeighbors.has(slug) && targetNeighbors.has(slug))
+          .sort()
+          .map((slug) => summarizeNode(nodeBySlug.get(slug))),
+      });
+    }
+
+    rows.sort((a, b) => b.score - a.score || a.node.slug.localeCompare(b.node.slug));
+
+    return {
+      operation: 'similar_nodes',
+      source: resolvedSource
+        ? {
+            mode: 'existing',
+            slug: resolvedSource,
+            node: summarizeNode(sourceNode),
+          }
+        : {
+            mode: 'candidate',
+            slug: candidate.slug || null,
+            kind: candidate.kind || null,
+            title: candidate.title || null,
+            domain: candidate.domain || null,
+          },
+      parameters: {
+        types: typeSet ? [...typeSet].sort() : null,
+        limit,
+      },
+      totalMatches: rows.length,
+      limited: rows.length > limit,
+      matches: rows.slice(0, limit),
+    };
+  }
+
+  return { matchNodes, matchEdges, relationCheck, similarNodes };
 }

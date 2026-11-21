@@ -1,7 +1,7 @@
 import { summarizeNode } from '../query-operation/query-primitives.mjs';
 
 /** Which nodes sit under a project or domain, and which domain a node belongs to. */
-export function createContainmentScope({
+export function createScopeLookups({
   nodes,
   nodeBySlug,
   resolve,

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createContainmentScope } from './containment-scope.mjs';
+import { createScopeLookups } from './scope-lookups.mjs';
 
 function scopeOf(rows, children = {}) {
   const nodes = rows.map((row) => ({ title: row.slug, ...row }));
@@ -11,7 +11,7 @@ function scopeOf(rows, children = {}) {
     for (const child of list) parents[child] = [...(parents[child] ?? []), parent];
   }
   const link = (table) => (slug) => (table[slug] ?? []).map((next) => ({ next, edge: { via: 'contains' } }));
-  return createContainmentScope({
+  return createScopeLookups({
     nodes,
     nodeBySlug,
     resolve: (slug) => {

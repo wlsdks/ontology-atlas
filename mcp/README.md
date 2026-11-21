@@ -2264,14 +2264,12 @@ transport. Everything a change would actually touch lives beside it.
 | `src/ontology-engine/graph-context/context-operations.mjs` | shared graph lookups and scope helpers |
 | `src/ontology-engine/query-operation/query-planner.mjs` | bounded query planning |
 | `src/ontology-engine/traversal/traversal-analysis.mjs` | centrality, reachability, impact, and builder context |
-| `src/ontology-engine/selection/selection-queries.mjs` | wires the five selection query families below from the engine's shared state |
 | `src/ontology-engine/selection/graph-summary-queries.mjs` | `overview`, `schema`, `facets`: what the whole graph holds |
-| `src/ontology-engine/selection/match-queries.mjs` | `match_nodes`, `match_edges`, `relation_check`, with `match-rules.mjs` (node filters, edge target kind, the relation verdict and approval gate) |
+| `src/ontology-engine/selection/match-queries.mjs` | `match_nodes`, `match_edges`, `relation_check`, `similar_nodes`, with `match-rules.mjs` (node filters, edge target kind, the relation verdict and approval gate) |
 | `src/ontology-engine/selection/profile-queries.mjs` | `node_profile`, `domain_profile`, `project_scope`, `project_map` |
 | `src/ontology-engine/selection/domain-matrix-queries.mjs` | `domain_matrix`, with `domain-matrix-rules.mjs` (domain assignment and edge classification) |
-| `src/ontology-engine/selection/cluster-queries.mjs` | `components`, `communities`, `similar_nodes`, with `cluster-rules.mjs` (connected groups, community grouping) |
-| `src/ontology-engine/traversal/scope-queries.mjs` | wires the four scope query families below from the engine's shared state |
-| `src/ontology-engine/traversal/containment-scope.mjs` | the nodes under a project or domain, a node's nearest domain, and project and domain roots |
+| `src/ontology-engine/selection/cluster-queries.mjs` | `components`, `communities`, with `cluster-rules.mjs` (connected groups, community grouping) |
+| `src/ontology-engine/traversal/scope-lookups.mjs` | the nodes under a project or domain, a node's nearest domain, and project and domain roots |
 | `src/ontology-engine/traversal/containment-queries.mjs` | `lineage` and `containment_tree` |
 | `src/ontology-engine/traversal/dependency-order-queries.mjs` | `cycles` and `topological_order`, with `dependency-order-rules.mjs` (bounded cycle search, prerequisite layers) |
 | `src/ontology-engine/traversal/growth-queries.mjs` | `recommend_relations`, `growth_plan` and the candidate groups behind it |
