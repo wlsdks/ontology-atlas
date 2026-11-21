@@ -72,7 +72,7 @@ export const rules = [
     order: 490,
     command: 'pnpm integration:mcp:repo-analysis',
     reason: 'MCP code-to-vault analysis handler surface changed',
-    matches: [/^mcp\/src\/(?:analyze|infer-imports|architecture\/architecture-profile|meaning\/(?:meaning-(?:evaluation|authority|write-plan)|golden-corpus-scoring|proposal-review\/(?:competency-review|evidence-review|findings|shape))|construction\/(?:construction-(?:qualification|lifecycle)|qualification\/(?:acceptance-review|evidence-review|field-rules|input-schema|result-review|scenario-review|vocabulary)))\.mjs$/, /^mcp\/src\/infer-imports\/(?!.*\.test\.mjs$)[^/]+\.mjs$/, /^mcp\/src\/tools\/repo-analysis\.mjs$/, /^tsconfig\.json$/],
+    matches: [/^mcp\/src\/(?:analyze|infer-imports|architecture\/architecture-profile|meaning\/(?:meaning-(?:evaluation|authority|write-plan)|golden-corpus-scoring|proposal-review\/(?:competency-review|evidence-review|findings|shape))|construction\/(?:construction-(?:qualification|lifecycle)|qualification\/(?:acceptance-review|evidence-review|field-rules|input-schema|result-review|scenario-review|vocabulary)))\.mjs$/, /^mcp\/src\/infer-imports\/(?!.*\.test\.mjs$)[^/]+\.mjs$/, /^mcp\/src\/tools\/repo-analysis(?:\/[^/]+(?<!\.test)\.mjs|\.mjs)$/, /^tsconfig\.json$/],
   },
   {
     order: 500,
