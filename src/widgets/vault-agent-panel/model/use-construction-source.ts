@@ -7,7 +7,7 @@ import type { LocalEndpointSettings } from '@/shared/lib/llm-connection/local-en
 import { previewConstructionSource } from '@/shared/lib/llm-connection/tauri-local-construction';
 import type { ConnectionProvider } from '@/shared/lib/llm-connection/tauri-secrets';
 import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
-import { pickTauriSourceDirectory } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { pickTauriSourceDirectory } from '@/shared/lib/vault-folder/native-vault/tauri-project-source';
 
 import {
   canChooseConstructionSource,

@@ -1,4 +1,5 @@
-import { createTauriVaultTextFile, getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { createTauriVaultTextFile } from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { WIKI_DIR } from '@/shared/lib/library/wiki-page-schema';
 
 /** Removes a file the app just wrote (a toast's undo); folders created on the way stay. */

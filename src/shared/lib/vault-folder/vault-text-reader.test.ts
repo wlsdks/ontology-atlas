@@ -8,7 +8,7 @@ const bridge = vi.hoisted(() => ({
   failAlone: new Set<string>(),
 }));
 
-vi.mock('./tauri-vault-fs', () => ({
+vi.mock('./native-vault/tauri-vault-files', () => ({
   readTauriVaultTextFiles: async (_root: string, paths: readonly string[]) => {
     bridge.reads.push([...paths]);
     return paths.map((relativePath) =>

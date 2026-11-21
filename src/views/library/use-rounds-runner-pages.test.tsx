@@ -60,15 +60,19 @@ vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   detectAcpRuntimes: vi.fn(async () => [{ id: 'claude-acp', label: 'Claude', state: 'ready', verified: true, isolated: true }]),
   isAcpBridgeAvailable: () => true,
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
-  getTauriVaultRootPath: () => '/vault',
-  nativeVaultFileHashes: async () => new Map(),
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   readTauriVaultText: async (_root: string, path: string) => {
     const text = h.files[path] ?? null;
     if (h.delays[path]) await new Promise((resolve) => setTimeout(resolve, h.delays[path]));
     return text;
   },
   listTauriVaultLinks: async (_root: string, directory: string) => h.links[directory] ?? [],
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-fingerprint', () => ({
+  nativeVaultFileHashes: async () => new Map(),
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
+  getTauriVaultRootPath: () => '/vault',
 }));
 
 const notFound = () => Object.assign(new Error('not found'), { name: 'NotFoundError' });

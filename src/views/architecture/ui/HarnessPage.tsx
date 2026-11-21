@@ -10,7 +10,7 @@ import {
   useStaticVaultSource,
   VaultSourceHydrationBoundary,
 } from '@/entities/vault-session';
-import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { RefreshCw } from 'lucide-react';
 
 import { Button, FeatureStage, GetAppLink, PageHeaderBar, Surface, TabBar } from '@/shared/ui';

@@ -24,23 +24,29 @@ const mocks = vi.hoisted(() => ({
   putRecords: [] as Array<{ name: string; desktopRootPath?: string }>,
 }));
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
-  isTauriVaultRuntime: () => true,
-  pickTauriVaultDirectory: async () =>
-    mocks.pickedPath === null ? null : { name: 'picked', __picked: true },
-  getTauriVaultRootPath: (handle: { __picked?: boolean; name?: string } | null) =>
-    handle?.__picked ? mocks.pickedPath : (handle?.name ?? null),
-  createTauriVaultHandle: (rootPath: string) => {
-    mocks.createdHandles.push(rootPath);
-    return { name: rootPath };
-  },
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   listTauriDirectoryNames: async (rootPath: string) => {
     const names = mocks.listings[rootPath];
     if (!names) throw new Error(`not a directory: ${rootPath}`);
     return names;
   },
-  vaultRootRejectionReason: () => null,
   tauriVaultPathExists: async () => true,
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-handle', () => ({
+  createTauriVaultHandle: (rootPath: string) => {
+    mocks.createdHandles.push(rootPath);
+    return { name: rootPath };
+  },
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => ({
+  pickTauriVaultDirectory: async () =>
+    mocks.pickedPath === null ? null : { name: 'picked', __picked: true },
+  vaultRootRejectionReason: () => null,
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
+  isTauriVaultRuntime: () => true,
+  getTauriVaultRootPath: (handle: { __picked?: boolean; name?: string } | null) =>
+    handle?.__picked ? mocks.pickedPath : (handle?.name ?? null),
 }));
 
 vi.mock('@/entities/local-fs-handle', async () => {

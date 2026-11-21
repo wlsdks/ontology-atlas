@@ -12,11 +12,13 @@ import {
   type LocalFsHandleRecord,
 } from '@/entities/local-fs-handle';
 import {
-  getTauriVaultRootPath,
-  isTauriVaultRuntime,
   pickTauriVaultDirectory,
   vaultRootRejectionReason,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-location';
+import {
+  getTauriVaultRootPath,
+  isTauriVaultRuntime,
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { classifyVaultAccessError, isMissingFolderError } from '../vault-opening/classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/failures/error-message';
 import { isPickerAbort } from '@/shared/lib/failures/picker-abort';

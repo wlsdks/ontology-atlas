@@ -10,7 +10,8 @@ const tauri = vi.hoisted(() => ({
     async () => true,
   ),
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => tauri);
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => tauri);
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => tauri);
 
 vi.mock('@/entities/local-fs-handle', () => ({
   verifyHandlePermission: vi.fn(async () => 'granted' as const),

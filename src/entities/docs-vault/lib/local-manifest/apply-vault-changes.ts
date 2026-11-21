@@ -1,9 +1,9 @@
 import { isAtlasTemporaryName } from '@/shared/lib/vault-folder/atlas-temporary-names';
 import {
   listTauriVaultStamped,
-  tauriVaultFileHandleAt,
   type StampedVaultEntry,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import { tauriVaultFileHandleAt } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
 import type { VaultPathChange } from '@/shared/lib/vault-folder/vault-change-batch';
 import { pendingSourceCopyPaths } from '../library/source-copy-publication';
 import {

@@ -18,7 +18,7 @@ import { beginPlanningReturn, clearPlanningReturn } from '@/shared/lib/planning/
 import { readPlanningMemory, writePlanningMemory } from '@/shared/lib/planning/memory';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { MOTION } from '@/shared/motion';
 import { PlanningMarkdown, PlanningStandaloneImage } from './PlanningMarkdown';
 import { Button, CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip, ChromeTile, PageHeaderBar, useToast, WaitStage } from '@/shared/ui';

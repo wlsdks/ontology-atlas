@@ -20,7 +20,7 @@ import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
 import { buildOntologyStarterAgentVerifyPrompt } from '@/features/docs-vault-local';
 import { copyText } from '@/shared/lib/clipboard/copy-text';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { useToast } from '@/shared/ui';
 import type { VaultCommand } from '@/widgets/docs-vault';
 import type { DocsVaultView } from '../lib/persistence';

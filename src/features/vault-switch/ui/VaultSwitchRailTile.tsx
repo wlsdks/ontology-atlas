@@ -8,7 +8,7 @@ import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import { useLocalVault } from '@/entities/vault-session';
 import { useDismissibleMenu } from '@/shared/lib/overlays/use-dismissible-menu';
 import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { Surface } from '@/shared/ui/surfaces/surface';

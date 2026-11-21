@@ -9,11 +9,11 @@ import { useNavRailSettingsSlot } from '@/widgets/app-nav-rail';
 import { migrateLegacyRecentDocs, pushRecentDoc } from '@/widgets/docs-vault';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { useHydrated } from '@/shared/lib/render-timing/use-hydrated';
+import { createTauriVaultHandle } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
 import {
-  createTauriVaultHandle,
   getTauriVaultRootPath,
   isTauriVaultRuntime,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import {
   DOGFOOD_VAULT_PATH,
   DOGFOOD_VAULT_PATH_CANDIDATES,

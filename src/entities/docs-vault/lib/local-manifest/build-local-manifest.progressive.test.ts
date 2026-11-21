@@ -5,11 +5,13 @@ import type { VaultManifest } from '../../model/vault-manifest';
 const nativeVaultFingerprint = vi.fn();
 const readTauriVaultTextFile = vi.fn();
 const readTauriVaultTextFiles = vi.fn();
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
-  nativeVaultFingerprint: (rootPath: string) => nativeVaultFingerprint(rootPath),
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   readTauriVaultTextFile: (rootPath: string, relativePath: string) => readTauriVaultTextFile(rootPath, relativePath),
   readTauriVaultTextFiles: (rootPath: string, relativePaths: string[]) =>
     readTauriVaultTextFiles(rootPath, relativePaths),
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-fingerprint', () => ({
+  nativeVaultFingerprint: (rootPath: string) => nativeVaultFingerprint(rootPath),
 }));
 
 const { buildLocalManifest, buildLocalManifestWithEntries } = await import('./build-local-manifest');

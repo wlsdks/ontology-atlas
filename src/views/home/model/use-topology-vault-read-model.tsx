@@ -6,7 +6,7 @@ import { useArrivingVaultIdentityScope, useLocalVault, useSummaryFreshness, useV
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useArrivingOntologyInsight, useOntologyInsight, useVaultConceptFacts, useVaultDocDates, useVaultDocFileDates, useVaultValidationSummary } from "@/features/vault-ontology";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/llm-connection/tauri-llm";
-import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { useToast } from "@/shared/ui";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

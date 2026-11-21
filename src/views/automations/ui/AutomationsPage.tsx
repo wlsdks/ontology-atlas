@@ -11,7 +11,7 @@ import { useLocalVault } from "@/entities/vault-session";
 import type { RoundsRunnerValue } from "@/features/library-rounds";
 import { isScheduledActive, useAutomationsStage, useScheduledRuns } from "@/features/work-run";
 import { useRouter } from "@/i18n/navigation";
-import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { cn } from "@/shared/lib/cn";
 import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";

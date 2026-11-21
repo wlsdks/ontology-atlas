@@ -14,7 +14,7 @@ import {
   type VaultManifest,
 } from '@/entities/docs-vault';
 import { recordLocalFsHandleContents, verifyHandlePermission } from '@/entities/local-fs-handle';
-import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import type { VaultChangeBatch, VaultPathChange } from '@/shared/lib/vault-folder/vault-change-batch';
 import { classifyVaultAccessError } from '../vault-opening/classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/failures/error-message';

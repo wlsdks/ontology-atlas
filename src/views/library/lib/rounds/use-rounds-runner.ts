@@ -63,7 +63,12 @@ import { workRuns } from "@/features/work-run";
 import { isWikiFurnitureSlug } from "@/shared/lib/library/wiki-page-schema";
 import { forgetApproval, readMachineApprovals, recordApproval, useMachineApprovals } from "@/shared/lib/connectors/machine-approvals";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/agent-chat/tauri-acp";
-import { getTauriVaultRootPath, listTauriVaultLinks, nativeVaultFileHashes, readTauriVaultText } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import {
+  listTauriVaultLinks,
+  readTauriVaultText,
+} from "@/shared/lib/vault-folder/native-vault/tauri-vault-files";
+import { nativeVaultFileHashes } from "@/shared/lib/vault-folder/native-vault/tauri-vault-fingerprint";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
 import { selectOpenVaultHandle } from "@/shared/lib/vault-folder/select-open-vault-handle";
 import { useLatestRef } from "@/shared/lib/use-latest-ref";

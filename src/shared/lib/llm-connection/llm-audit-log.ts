@@ -1,4 +1,4 @@
-import { openTauriAuditSource } from '../vault-folder/tauri-vault-fs';
+import { openTauriAuditSource } from '../vault-folder/native-vault/tauri-audit-source';
 
 /**
  * Read-only: Rust writes the log (`src-tauri/src/llm_audit.rs`) because whoever owns a

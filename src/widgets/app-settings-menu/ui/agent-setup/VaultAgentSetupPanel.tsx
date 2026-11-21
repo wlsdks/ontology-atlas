@@ -18,7 +18,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls/controls';
 import { Dialog, InfoHint } from '@/shared/ui';
 import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import type { AgentServerAvailability } from '@/shared/config';
 import {

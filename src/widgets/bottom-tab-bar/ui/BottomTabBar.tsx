@@ -20,7 +20,7 @@ import {
 } from '@/shared/config/destinations';
 import { shouldHideBottomTabBar } from '../lib/is-tab-active';
 import { shouldShowGetAppTile } from '@/shared/lib/navigation/show-get-app-tile';
-import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 /** The runtime never changes after load, so subscribing is a formality. */
 const subscribeToRuntime = () => () => {};
