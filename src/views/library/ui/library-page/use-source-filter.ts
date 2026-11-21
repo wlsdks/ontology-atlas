@@ -8,9 +8,9 @@ import type { useLibraryIndexColumn } from "./use-library-index-column";
 type SourceState = LibrarySourceRow["state"];
 
 /**
- * The one source state the band's presses narrow the Sources list to, and the marks it lights in
- * the picture. The press belongs to a folder: switching folders drops it, and a state with no source
- * left in it drops it too, so the list is never filtered to nothing.
+ * The one source state the band's presses narrow the Sources list to. The press belongs to a folder:
+ * switching folders drops it, and a state with no source left in it drops it too, so the list is
+ * never filtered to nothing.
  */
 export function useSourceFilter({
   sources,
@@ -33,6 +33,13 @@ export function useSourceFilter({
   }, [pick, sources, vaultScope]);
 
   const clear = useCallback(() => setPick(null), []);
+  /** A filter on a folded list changes nothing anyone can see, so every narrowing opens the list. */
+  const unfold = useCallback(() => {
+    if (!indexCollapsed) return;
+    if (autoFolded) autoFoldDeclinedRef.current = true;
+    setAutoFolded(false);
+    writeLibraryIndexCollapsed(false);
+  }, [autoFoldDeclinedRef, autoFolded, indexCollapsed, setAutoFolded]);
   const press = useCallback(
     (next: SourceState) => {
       if (state === next) {
@@ -40,26 +47,10 @@ export function useSourceFilter({
         return;
       }
       setPick({ scope: vaultScope, state: next });
-      // A filter on a folded list changes nothing anyone can see, so the press opens the list.
-      if (indexCollapsed) {
-        if (autoFolded) autoFoldDeclinedRef.current = true;
-        setAutoFolded(false);
-        writeLibraryIndexCollapsed(false);
-      }
+      unfold();
     },
-    [autoFoldDeclinedRef, autoFolded, indexCollapsed, setAutoFolded, state, vaultScope],
+    [state, unfold, vaultScope],
   );
-
-  const highlight = useMemo(() => {
-    if (state === null) return null;
-    const ids = new Set<string>();
-    for (const row of sources) {
-      if (row.state !== state) continue;
-      ids.add(`source:${row.path}`);
-      for (const slug of row.citedBy) ids.add(`page:${slug}`);
-    }
-    return ids;
-  }, [sources, state]);
 
   useEffect(() => {
     if (state === null || !listening) return;
@@ -73,5 +64,5 @@ export function useSourceFilter({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [listening, state]);
 
-  return { state, press, clear, highlight };
+  return { state, press, clear, unfold };
 }

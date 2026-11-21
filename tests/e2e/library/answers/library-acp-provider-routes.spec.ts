@@ -106,7 +106,7 @@ async function openLibrary(page: Page, runtimeId: LibraryWorkRuntimeId): Promise
   await page.getByRole('button', { name: /Open (?:a|my) folder/i }).click();
   await page.getByRole('heading', { name: 'Map' }).waitFor();
   await page.getByTestId('app-nav-rail-item-library').click();
-  await page.getByTestId('library-graph-canvas').waitFor();
+  await page.getByTestId('sources-overview').waitFor();
   return harness;
 }
 

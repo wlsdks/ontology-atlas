@@ -63,7 +63,7 @@ export function RecentlyWritten({
                   className="flex h-11 w-full min-w-0 items-center gap-3.5 px-4 text-left text-body-lg transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)]"
                 >
                   <BookOpen size={ICON_SIZE.md} aria-hidden className="flex-none text-[color:var(--color-source-page)]" />
-                  <span title={page.title} className="min-w-0 max-w-[48%] flex-none truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                  <span title={page.title} className="min-w-0 max-w-[48%] shrink truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                     {page.title}
                   </span>
                   {source !== undefined ? (

@@ -21,6 +21,8 @@ function nextBatch(sources: readonly LibrarySourceRow[], running: ReadonlySet<st
   return { next: sources.filter((source) => source.state !== "compiled").slice(0, 10), running, rest: 0 };
 }
 
+let renders = 0;
+
 function Harness({
   sources,
   pages = [],
@@ -33,9 +35,12 @@ function Harness({
   batch?: SourcesNextBatch;
 }) {
   const [pick, setPick] = useState<SourcePick | null>(null);
+  // Each render is a first arrival: a folder seen once draws its bars at once afterwards.
+  const [scope] = useState(() => `folder-${(renders += 1)}`);
   return (
     <NextIntlClientProvider locale="en" messages={en}>
       <SourcesOverview
+        scope={scope}
         sources={sources}
         pages={pages}
         batch={batch ?? nextBatch(sources)}

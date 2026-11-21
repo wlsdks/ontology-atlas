@@ -115,8 +115,8 @@ async function measure(shape, files) {
     }
   }
   probe = (crashedAt ? null : await read()) ?? probe;
-  // A page still busy after the walk may not answer `read`; the walk's own result holds the island.
-  const island = probe?.island ?? (walkResults.library?.firstFrameMs !== undefined ? walkResults.library : null);
+  // A page still busy after the walk may not answer `read`; the walk's own result holds the row pick.
+  const rowPick = probe?.rowPick ?? (walkResults.library?.firstFrameMs !== undefined ? walkResults.library : null);
 
   const report = { label, shape, files, concepts: vault.nodes, vaultDir: vault.dir, crashedAfterS: crashedAt ? (crashedAt - started) / 1000 : null, heap, probe, walkResults, load: loadavg() };
   const pickedAt = probe?.marks.picked ?? null;
@@ -137,7 +137,7 @@ async function measure(shape, files) {
         .filter((task) => task.ms >= 200)
         .slice(0, 8)
         .map((task) => ({ label: `long task at ${(task.at / 1000).toFixed(1)} s (${task.segment ?? phaseOf(task.at, probe)})`, startUs: toUs(task.at), endUs: toUs(task.at + task.ms) }));
-      for (const name of ['first-hover', 'island-open']) {
+      for (const name of ['first-hover', 'row-pick']) {
         const segment = segments[name];
         if (segment) windows.push({ label: `walk segment ${name}`, startUs: toUs(segment.at), endUs: toUs(segment.at + segment.ms) });
       }
@@ -174,12 +174,12 @@ async function measure(shape, files) {
       'loaded-first-open': { value: since('loaded'), note: crashedAt ? `tab crashed at ${report.crashedAfterS.toFixed(0)} s` : null },
       'longest-task': probe?.longestTask?.ms ?? null,
       'frame-p95': frameP95,
-      'island-open-first-frame': island?.firstFrameMs ?? null,
+      'row-pick-first-frame': rowPick?.firstFrameMs ?? null,
     },
     notes: {
       'web-heap-steady': crashedAt ? 'the tab crashed' : probe?.marks.loaded === undefined ? `not loaded within the ${capMs / 1000} s cap` : null,
       'frame-p95': opts.walks.includes('map') ? 'the map walk did not finish' : 'add --walk=map',
-      'island-open-first-frame': opts.walks.includes('library') ? (probe?.log ?? []).slice(-1)[0] ?? 'the Library walk did not open an island' : 'add --walk=library',
+      'row-pick-first-frame': opts.walks.includes('library') ? (probe?.log ?? []).slice(-1)[0] ?? 'the Library walk did not pick a row' : 'add --walk=library',
     },
   });
   console.log('\nMeasured beside the budgets:');
@@ -189,7 +189,7 @@ async function measure(shape, files) {
   for (const [name, s] of Object.entries(segments)) {
     console.log(`- walk ${name}: ${s.frames} frames, interval p95 ${fmtMs(s.intervalP95)} max ${fmtMs(s.intervalMax)}, rAF work p95 ${fmtMs(s.workP95)} max ${fmtMs(s.workMax)}${s.error ? `, error ${s.error}` : ''}`);
   }
-  if (island) console.log(`- island ${island.label} (${island.kind}, ${island.pages} pages, ${island.sources} sources): first frame ${fmtMs(island.firstFrameMs)}`);
+  if (rowPick) console.log(`- row pick ${rowPick.label}: first frame ${fmtMs(rowPick.firstFrameMs)}`);
   if (walkResults.libraryHeapMb) console.log(`- heap with the Library open, after a collection: ${walkResults.libraryHeapMb.toFixed(0)} MB (${(walkResults.libraryHeapMb - steadyMb).toFixed(0)} MB above steady)`);
   if (report.composition?.top) {
     console.log(`- heap composition at the end (${report.composition.totalMb} MB shallow): strings ${report.composition.strings.map((s) => `${s.kind} ${s.mb} MB × ${s.count}`).join(', ')}`);

@@ -44,8 +44,7 @@ export const POST_MERGE_SPECS = [
   "gateway/gateway-reading-reach.spec.ts",
   // Performance, memory release and 2,000–10,000-concept folders
   "vault-session/vault-switch-release.spec.ts",
-  "library/graph/library-renderer-disposal.spec.ts",
-  "library/graph/library-graph-islands.spec.ts",
+  "library/library-renderer-disposal.spec.ts",
   "map/map-open-folder-stays-named.spec.ts",
   // Hex board placement and glide
   "map/hex-board/map-hex-relief.spec.ts",

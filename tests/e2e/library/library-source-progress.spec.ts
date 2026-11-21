@@ -124,15 +124,10 @@ async function openSources(page: Page, { vault = buildVault(), locale = "en" }: 
 const rows = (page: Page) => page.getByTestId("library-source-list").locator("li > button[data-row-index]");
 
 test.describe("source progress on the Sources home", () => {
-  test("a state press filters the list and lights the picture; Show all and Escape clear both", async ({ page }) => {
+  test("a state press filters the list; Show all and Escape clear it", async ({ page }) => {
     await openSources(page);
     await expect(rows(page)).toHaveCount(TOTAL);
     const band = page.getByTestId("library-progress");
-    const canvas = page.getByTestId("library-graph-canvas");
-    const lit = async () => {
-      const ids = (await canvas.getAttribute("data-highlight")) ?? "";
-      return ids === "" ? [] : ids.split(" ");
-    };
 
     // The presses live in the band, in bar order; the column draws no state line of its own.
     await expect(band.getByTestId("library-source-states")).toBeVisible();
@@ -148,9 +143,6 @@ test.describe("source progress on the Sources home", () => {
     await expect(waiting).toHaveAttribute("aria-pressed", "true");
     await expect(rows(page)).toHaveCount(TOTAL - COMPILED);
     await expect(page.getByTestId("library-source-state-compiled")).toHaveCount(0);
-    // The same press lights that state's marks in the picture: every waiting source, nothing else.
-    await expect.poll(async () => (await lit()).length).toBe(TOTAL - COMPILED);
-    expect((await lit()).every((id) => id.startsWith("source:"))).toBe(true);
 
     // The clear press is a glyph whose name is the Show all sentence.
     const all = page.getByTestId("library-source-states-all");
@@ -162,20 +154,16 @@ test.describe("source progress on the Sources home", () => {
     // At rest its slot stays, invisible and out of reach.
     await expect(all).toHaveAttribute("aria-hidden", "true");
     await expect(all).toHaveAttribute("tabindex", "-1");
-    expect(await lit()).toEqual([]);
 
-    // Escape clears both too.
+    // Escape clears it too.
     await waiting.click();
     await expect(rows(page)).toHaveCount(TOTAL - COMPILED);
     await page.keyboard.press("Escape");
     await expect(rows(page)).toHaveCount(TOTAL);
     await expect(waiting).toHaveAttribute("aria-pressed", "false");
-    expect(await lit()).toEqual([]);
 
-    // A compiled press lights the pages that cite those sources as well.
     await page.getByTestId("library-source-states-compiled").click();
     await expect(rows(page)).toHaveCount(COMPILED);
-    await expect.poll(async () => (await lit()).filter((id) => id.startsWith("page:")).length).toBe(COMPILED);
     await page.keyboard.press("Escape");
 
     // The filter narrows what the search left; the counts are the folder's, and so is Show all.
@@ -230,14 +218,14 @@ test.describe("source progress on the Sources home", () => {
 
   for (const locale of ["en", "ko"]) {
     /*
-     * The home is exactly the band, the picture and its key, at every desktop width: the band stays
-     * within 112px, the picture takes most of the pane, the key is one line, and nothing overflows.
+     * The home is exactly the band and the overview, at every desktop width: the band stays within
+     * 112px, the overview takes the rest of the pane with no canvas, and nothing overflows.
      */
-    test(`one source reads 1 / 1 with no chart, and the home is band, picture and key (${locale})`, async ({ page }) => {
+    test(`one source reads 100% with no chart, and the home is band and overview (${locale})`, async ({ page }) => {
       await page.emulateMedia({ reducedMotion: "reduce" });
       await openSources(page, { vault: oneSourceVault(), locale });
       const band = page.getByTestId("library-progress");
-      await expect(band.getByTestId("library-progress-percent")).toHaveText("1 / 1");
+      await expect(band.getByTestId("library-progress-percent")).toHaveText("100%");
       // The noun follows the total and the verb the count.
       if (locale === "en") await expect(band.getByTestId("library-progress-sentence")).toHaveText("1 of 1 source has a wiki page");
       await expect(band.getByTestId("library-progress-chart")).toHaveCount(0);
@@ -246,25 +234,25 @@ test.describe("source progress on the Sources home", () => {
       expect((await band.getByTestId("library-source-states-reserve").boundingBox())!.height).toBe(24);
       for (const width of [1040, 1280, 1512, 1920]) {
         await page.setViewportSize({ width, height: 901 });
-        await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+        await expect(page.getByTestId("sources-overview")).toBeVisible();
         const geometry = await page.evaluate(() => {
           const box = (id: string) => document.querySelector(`[data-testid="${id}"]`)?.getBoundingClientRect() ?? null;
-          const overflow = [...document.querySelectorAll('[data-testid="library-progress"] *, [data-testid="library-graph-key"] *, [data-testid="library-doors"] *')]
+          const overflow = [...document.querySelectorAll('[data-testid="library-progress"] *, [data-testid="sources-overview"] *, [data-testid="library-doors"] *')]
             .filter((node) => (node as HTMLElement).offsetWidth > 0)
             .filter((node) => !node.closest('.sr-only, [data-testid="library-progress-bar"]'))
             .filter((node) => node.scrollWidth > node.clientWidth + 0.5)
             .map((node) => node.getAttribute("data-testid") ?? node.tagName);
           return {
             band: box("library-progress")!.height,
-            canvas: box("library-graph-canvas")!.height,
+            overview: box("sources-overview")!.height,
             pane: box("library-reader-landing")!.height,
-            key: box("library-graph-key")!.height,
+            canvases: document.querySelectorAll('[data-testid="library-reader-landing"] canvas').length,
             overflow,
           };
         });
         expect(geometry.band, `band at ${width}`).toBeLessThanOrEqual(112);
-        expect(geometry.canvas / geometry.pane, `picture share at ${width}`).toBeGreaterThanOrEqual(0.75);
-        expect(geometry.key, `key lines at ${width}`).toBeLessThanOrEqual(24.5);
+        expect(geometry.overview / geometry.pane, `overview share at ${width}`).toBeGreaterThanOrEqual(0.75);
+        expect(geometry.canvases, `canvases at ${width}`).toBe(0);
         expect(geometry.overflow, `overflow at ${width}`).toEqual([]);
         // No work lane above the pane and no doors row inside it: the doors are in the page header.
         await expect(page.getByTestId("library-work-lane")).toHaveCount(0);
@@ -297,7 +285,7 @@ test.describe("source progress on the Sources home", () => {
       await openSources(page, { locale });
       for (const width of [1512, 1920]) {
         await page.setViewportSize({ width, height: width === 1920 ? 1080 : 901 });
-        await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+        await expect(page.getByTestId("sources-overview")).toBeVisible();
         await expectStillBand(page, `${locale}@${width}`);
       }
     });
