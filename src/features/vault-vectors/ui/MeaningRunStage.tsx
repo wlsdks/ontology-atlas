@@ -134,7 +134,11 @@ function ReadFeed({ stage }: { stage: RunStage }) {
   const t = useTranslations('library.questionDesk.meaning');
   const reduced = usePrefersReducedMotion();
   const feed = useReadFeed(stage.readingPath);
-  const entrance = reduced ? { duration: 0 } : MOTION.expressive;
+  // The chips already there make room first; the new one appears in the room, never over them.
+  const still = { duration: 0 };
+  const motionOf = reduced
+    ? { layout: still, opacity: still, x: still }
+    : { layout: MOTION.slow, opacity: { ...MOTION.slow, delay: MOTION.base.duration }, x: { ...MOTION.slow, delay: MOTION.base.duration } };
   return (
     <div className="flex h-6 min-w-0 items-center gap-3">
       <ul aria-label={t('feedLabel')} data-testid="meaning-stage-feed" className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
@@ -143,10 +147,10 @@ function ReadFeed({ stage }: { stage: RunStage }) {
             <motion.li
               key={item.id}
               layout={!reduced}
-              initial={reduced ? false : { opacity: 0, x: -12, scale: 0.92 }}
-              animate={{ opacity: index === 0 ? 1 : index === 1 ? 0.62 : 0.34, x: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.92 }}
-              transition={entrance}
+              initial={reduced ? false : { opacity: 0, x: -8 }}
+              animate={{ opacity: index === 0 ? 1 : index === 1 ? 0.62 : 0.34, x: 0 }}
+              exit={{ opacity: 0, transition: reduced ? still : MOTION.fast }}
+              transition={motionOf}
               title={item.path}
               className="flex min-w-0 max-w-[12rem] flex-none items-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] px-2 py-0.5 text-label leading-label"
             >
