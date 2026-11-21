@@ -103,9 +103,9 @@ export function SegmentedControl<T extends string | number | boolean>({
           <button
             key={key}
             {...item}
-            ref={(el) => {
-              item.ref(el);
-              itemRef(key)(el);
+            ref={(element) => {
+              item.ref(element);
+              itemRef(key)(element);
             }}
             type="button"
             aria-label={option.ariaLabel}

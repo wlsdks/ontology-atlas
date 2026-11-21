@@ -129,11 +129,11 @@ function requestRaw(url, { headers = {}, method = "GET", maxBytes = 1024 * 1024,
   }
 
   return new Promise((resolve, reject) => {
-    const req = client.request(url, { headers, method }, (res) => {
-      const statusCode = res.statusCode ?? 0;
-      const location = res.headers.location;
+    const outgoingRequest = client.request(url, { headers, method }, (response) => {
+      const statusCode = response.statusCode ?? 0;
+      const location = response.headers.location;
       if (statusCode >= 300 && statusCode < 400 && location) {
-        res.resume();
+        response.resume();
         if (redirects <= 0) {
           reject(new Error(`too many redirects while requesting ${url}`));
           return;
@@ -151,15 +151,15 @@ function requestRaw(url, { headers = {}, method = "GET", maxBytes = 1024 * 1024,
 
       const chunks = [];
       let size = 0;
-      res.on("data", (chunk) => {
+      response.on("data", (chunk) => {
         size += chunk.length;
         if (size > maxBytes) {
-          req.destroy(new Error(`response exceeded ${maxBytes} bytes from ${url}`));
+          outgoingRequest.destroy(new Error(`response exceeded ${maxBytes} bytes from ${url}`));
           return;
         }
         chunks.push(chunk);
       });
-      res.on("end", () => {
+      response.on("end", () => {
         if (statusCode < 200 || statusCode >= 300) {
           reject(
             new Error(
@@ -172,13 +172,13 @@ function requestRaw(url, { headers = {}, method = "GET", maxBytes = 1024 * 1024,
         }
         resolve({
           statusCode,
-          headers: res.headers,
+          headers: response.headers,
           body: Buffer.concat(chunks),
         });
       });
     });
-    req.on("error", reject);
-    req.end();
+    outgoingRequest.on("error", reject);
+    outgoingRequest.end();
   });
 }
 
@@ -202,11 +202,11 @@ function requestSha256(url, { headers = {}, maxBytes = MAX_DOWNLOAD_HASH_BYTES, 
   return new Promise((resolve, reject) => {
     const hash = crypto.createHash("sha256");
     let size = 0;
-    const req = client.request(url, { headers, method: "GET" }, (res) => {
-      const statusCode = res.statusCode ?? 0;
-      const location = res.headers.location;
+    const outgoingRequest = client.request(url, { headers, method: "GET" }, (response) => {
+      const statusCode = response.statusCode ?? 0;
+      const location = response.headers.location;
       if (statusCode >= 300 && statusCode < 400 && location) {
-        res.resume();
+        response.resume();
         if (redirects <= 0) {
           reject(new Error(`too many redirects while requesting ${url}`));
           return;
@@ -222,28 +222,28 @@ function requestSha256(url, { headers = {}, maxBytes = MAX_DOWNLOAD_HASH_BYTES, 
       }
 
       if (statusCode < 200 || statusCode >= 300) {
-        res.resume();
+        response.resume();
         reject(new Error(`GET ${url} failed with ${statusCode}`));
         return;
       }
 
-      res.on("data", (chunk) => {
+      response.on("data", (chunk) => {
         size += chunk.length;
         if (size > maxBytes) {
-          req.destroy(new Error(`response exceeded ${maxBytes} bytes from ${url}`));
+          outgoingRequest.destroy(new Error(`response exceeded ${maxBytes} bytes from ${url}`));
           return;
         }
         hash.update(chunk);
       });
-      res.on("end", () => {
+      response.on("end", () => {
         resolve({
           digest: hash.digest("hex"),
           size,
         });
       });
     });
-    req.on("error", reject);
-    req.end();
+    outgoingRequest.on("error", reject);
+    outgoingRequest.end();
   });
 }
 

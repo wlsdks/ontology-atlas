@@ -41,8 +41,8 @@ function Harness() {
 describe('useExitLockout', () => {
   it('sets pointerEvents: none on the ref node when the exit transition fires', async () => {
     const { getByText, getByTestId } = render(<Harness />);
-    const el = getByTestId('surface') as HTMLDivElement;
-    expect(el.style.pointerEvents).not.toBe('none');
+    const element = getByTestId('surface') as HTMLDivElement;
+    expect(element.style.pointerEvents).not.toBe('none');
 
     await act(async () => {
       getByText('close').click();
@@ -50,7 +50,7 @@ describe('useExitLockout', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
-    expect(el.style.pointerEvents).toBe('none');
+    expect(element.style.pointerEvents).toBe('none');
   });
 
   it('restores the prior pointer policy when a retained exit reverses into entry', () => {
@@ -82,8 +82,8 @@ describe('useExitLockout', () => {
       return <div ref={ref} data-testid="entry" />;
     }
     const { getByTestId } = render(<EntryOnly />);
-    const el = getByTestId('entry') as HTMLDivElement;
-    expect(el.style.pointerEvents).not.toBe('none');
+    const element = getByTestId('entry') as HTMLDivElement;
+    expect(element.style.pointerEvents).not.toBe('none');
   });
 
   it('ignores a non-object or transition-less definition without throwing', () => {

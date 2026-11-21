@@ -38,8 +38,8 @@ export function computeDomainCensusRows(
 
   const childrenOf = new Map<string, string[]>();
   for (const [child, parent] of ownerOf) {
-    const arr = childrenOf.get(parent);
-    if (arr) arr.push(child);
+    const siblings = childrenOf.get(parent);
+    if (siblings) siblings.push(child);
     else childrenOf.set(parent, [child]);
   }
 

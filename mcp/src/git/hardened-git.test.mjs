@@ -97,8 +97,8 @@ test('a hostile clean filter is neutralised on a hardened add', () => {
   try {
     const marker = join(base, 'CLEAN_FILTER_EXECUTED');
     const repo = buildCleanFilterRepo(base, marker);
-    const res = spawnSync('git', hardenedGitArgv(repo, ['add', '-A', '--', '.']), { encoding: 'utf8' });
-    assert.equal(res.status, 0, `add still succeeds: ${res.stderr}`);
+    const result = spawnSync('git', hardenedGitArgv(repo, ['add', '-A', '--', '.']), { encoding: 'utf8' });
+    assert.equal(result.status, 0, `add still succeeds: ${result.stderr}`);
     assert.ok(!existsSync(marker), 'a repo-local clean filter must not run under the hardened argv');
     const staged = spawnSync('git', hardenedGitArgv(repo, ['diff', '--cached', '--name-only']), { encoding: 'utf8' });
     assert.match(staged.stdout, /note\.md/, 'the file is still staged');
@@ -168,8 +168,8 @@ for (const scope of ['include', 'worktree']) {
       }
       writeFileSync(join(repo, 'note.md'), '# two changed\n');
 
-      const res = spawnSync('git', hardenedGitArgv(repo, ['add', '-A', '--', '.']), { encoding: 'utf8' });
-      assert.equal(res.status, 0, `add still succeeds: ${res.stderr}`);
+      const result = spawnSync('git', hardenedGitArgv(repo, ['add', '-A', '--', '.']), { encoding: 'utf8' });
+      assert.equal(result.status, 0, `add still succeeds: ${result.stderr}`);
       assert.ok(!existsSync(marker), `a ${scope}-scoped filter must be neutralised`);
     } finally {
       rmSync(base, { recursive: true, force: true });
@@ -191,8 +191,8 @@ test('a required filter still lets a hardened add succeed', () => {
     plainGit(repo, ['config', 'filter.keep.required', 'true']);
     writeFileSync(join(repo, 'note.md'), '# two changed\n');
 
-    const res = spawnSync('git', hardenedGitArgv(repo, ['add', '-A', '--', '.']), { encoding: 'utf8' });
-    assert.equal(res.status, 0, `a required filter must still let add succeed: ${res.stderr}`);
+    const result = spawnSync('git', hardenedGitArgv(repo, ['add', '-A', '--', '.']), { encoding: 'utf8' });
+    assert.equal(result.status, 0, `a required filter must still let add succeed: ${result.stderr}`);
   } finally {
     rmSync(base, { recursive: true, force: true });
   }

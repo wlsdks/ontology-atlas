@@ -111,7 +111,7 @@ export function gracefulQuitCommandOptions() {
 
 export function installedAppBundleCandidates(appBundleName) {
   return INSTALLED_APP_CANDIDATE_DIRS
-    .map((dir) => path.join(dir, appBundleName))
+    .map((directory) => path.join(directory, appBundleName))
     .filter((appPath) => fs.existsSync(appPath));
 }
 

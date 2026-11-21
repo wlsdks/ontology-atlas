@@ -95,7 +95,7 @@ export function useAgentClientControls({
     codexConfigState === "ready" || feedback.codex === "done";
 
   const setState = (id: ClientId, state: Feedback) =>
-    setFeedback((prev) => ({ ...prev, [id]: state }));
+    setFeedback((previous) => ({ ...previous, [id]: state }));
 
   async function writeAndConfirm(id: ClientId) {
     if (!onWriteConfigs) return;

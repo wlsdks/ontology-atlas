@@ -306,8 +306,8 @@ export function dependencyWitnessFinding({
    * try stays clamped inside the repository and must be an existing file.
    */
   const sourceAncestors = [];
-  for (let dir = dirname(source.path); dir && dir !== '.'; dir = dirname(dir)) {
-    sourceAncestors.push(dir);
+  for (let directory = dirname(source.path); directory && directory !== '.'; directory = dirname(directory)) {
+    sourceAncestors.push(directory);
   }
   const readCandidate = (path) => {
     if (readCache.has(path)) return readCache.get(path);

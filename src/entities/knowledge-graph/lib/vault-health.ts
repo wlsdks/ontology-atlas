@@ -366,10 +366,10 @@ function dependencyCycleCount(graph: CompiledGraph): { count: number; partial: b
     for (let step = 1; step <= MAX_DEPTH && frontier.length > 0; step += 1) {
       const next: string[] = [];
       for (const node of frontier) {
-        for (const prev of predecessors.get(node) ?? []) {
-          if (prev <= start || dist.has(prev)) continue;
-          dist.set(prev, step);
-          next.push(prev);
+        for (const previous of predecessors.get(node) ?? []) {
+          if (previous <= start || dist.has(previous)) continue;
+          dist.set(previous, step);
+          next.push(previous);
         }
       }
       frontier = next;

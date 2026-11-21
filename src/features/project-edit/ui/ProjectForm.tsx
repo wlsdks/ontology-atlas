@@ -247,7 +247,7 @@ export function ProjectForm({
     v: ProjectFormValues[K],
   ) => {
     setSaveNotice(null);
-    setValues((prev) => ({ ...prev, [key]: v }));
+    setValues((previous) => ({ ...previous, [key]: v }));
     // `Path<T>` is not compatible with `keyof T` in RHF 7.x, hence `as never`.
     rhfSetValue(
       key as Parameters<typeof rhfSetValue>[0],
@@ -278,7 +278,7 @@ export function ProjectForm({
     if (mode !== "create") return;
     if (slugManuallyEdited) return;
     const nextSlug = slugify(name);
-    setValues((prev) => ({ ...prev, slug: nextSlug }));
+    setValues((previous) => ({ ...previous, slug: nextSlug }));
     rhfSetValue("slug", nextSlug, { shouldDirty: true, shouldValidate: false });
   };
 
@@ -320,8 +320,8 @@ export function ProjectForm({
             : t("actions.editNoticeStay"),
         );
       }
-    } catch (err) {
-      setGlobalError(failureSentence(err, t("validation.saveFailed")));
+    } catch (error) {
+      setGlobalError(failureSentence(error, t("validation.saveFailed")));
     } finally {
       setSubmitting(false);
     }
@@ -333,8 +333,8 @@ export function ProjectForm({
     setDeleting(true);
     try {
       await onDelete();
-    } catch (err) {
-      setGlobalError(failureSentence(err, t("validation.deleteFailed")));
+    } catch (error) {
+      setGlobalError(failureSentence(error, t("validation.deleteFailed")));
     } finally {
       setDeleting(false);
     }

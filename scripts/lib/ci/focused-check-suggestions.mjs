@@ -331,19 +331,19 @@ function directMcpUnitTestSuggestions(paths) {
 /** A source maps to its declared test; a declared test maps to itself. */
 let scriptTestImports = null;
 
-function scriptTestFiles(dir = 'scripts') {
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = `${dir}/${entry.name}`;
+function scriptTestFiles(directory = 'scripts') {
+  if (!existsSync(directory)) return [];
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = `${directory}/${entry.name}`;
     if (entry.isDirectory()) return entry.name === 'node_modules' ? [] : scriptTestFiles(path);
     return entry.name.endsWith('.test.mjs') ? [path] : [];
   });
 }
 
 function importedModules(testFile) {
-  const dir = posix.dirname(testFile);
+  const directory = posix.dirname(testFile);
   const text = readFileSync(testFile, 'utf8');
-  return [...text.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*)['"](\.{1,2}\/[^'"]+)['"]/g)].map((match) => posix.normalize(posix.join(dir, match[1])));
+  return [...text.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*)['"](\.{1,2}\/[^'"]+)['"]/g)].map((match) => posix.normalize(posix.join(directory, match[1])));
 }
 
 function scriptTestsFor(path) {

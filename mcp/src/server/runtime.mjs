@@ -67,9 +67,9 @@ const COMPILED_ONTOLOGY_CACHE = createCompiledOntologyCache({
 // crash. A one-line message plus a non-zero exit surfaces it in the server log.
 try {
   ensureVaultRoot(VAULT_ROOT);
-} catch (err) {
-  const msg = err instanceof Error ? err.message : String(err);
-  process.stderr.write(`[ontology-atlas-mcp] vault root validation failed: ${msg}\n`);
+} catch (error) {
+  const reason = error instanceof Error ? error.message : String(error);
+  process.stderr.write(`[ontology-atlas-mcp] vault root validation failed: ${reason}\n`);
   process.stderr.write(
     `[ontology-atlas-mcp] Point the OATLAS_VAULT environment variable at a markdown vault directory. (currently: ${VAULT_ROOT})\n`,
   );

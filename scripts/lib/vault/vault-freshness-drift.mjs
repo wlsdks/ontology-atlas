@@ -77,9 +77,9 @@ export function matchChangedFilesToVaultNodes(docs, changedFiles) {
     }
 
     if (Array.isArray(fm.elements)) {
-      for (const el of fm.elements) {
-        if (typeof el !== "string") continue;
-        const entry = el.trim();
+      for (const element of fm.elements) {
+        if (typeof element !== "string") continue;
+        const entry = element.trim();
         if (!entry || !looksLikePath(entry) || isOntologySlug(entry)) continue;
         for (const cf of changed) {
           if (pathMatches(cf, entry)) matchedFiles.add(cf);

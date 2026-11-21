@@ -172,7 +172,7 @@ const cargoPackageName = cargoToml.match(/\[package\][\s\S]*?\nname\s*=\s*"([^"]
 // mcp/ and cli/ are separate install roots; without the same pin they run whatever pnpm is
 // installed globally, and an older one ignores their supply-chain settings.
 const unpinnedInstallRoots = ["mcp", "cli"].filter(
-  (dir) => JSON.parse(readText(`${dir}/package.json`)).packageManager !== pinnedPnpm,
+  (directory) => JSON.parse(readText(`${directory}/package.json`)).packageManager !== pinnedPnpm,
 );
 if (unpinnedInstallRoots.length === 0) {
   pass(`mcp/ and cli/ pin the same pnpm as the root (${pinnedPnpm})`);

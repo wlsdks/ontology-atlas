@@ -87,7 +87,7 @@ export function useVaultChoice({
         ? await pickTauriVaultDirectory()
         : await (
             window as unknown as {
-              showDirectoryPicker: (opts?: {
+              showDirectoryPicker: (options?: {
                 mode?: 'read' | 'readwrite';
               }) => Promise<FileSystemDirectoryHandle>;
             }
@@ -125,15 +125,15 @@ export function useVaultChoice({
       await refreshRecentVaults();
       if (!isCurrent()) return NOT_OPENED;
       return loaded ? { opened: true, ...loaded } : NOT_OPENED;
-    } catch (err) {
+    } catch (error) {
       if (!isCurrent()) return NOT_OPENED;
-      if (isPickerAbort(err)) {
+      if (isPickerAbort(error)) {
         setState(previousState);
         return NOT_OPENED;
       }
       // A "cannot be a vault root" rejection is not a failure: the cause string `vault-root-rejected:filesystem-root` would
       // read badly, and "please try again" is false guidance when every retry gives the same result.
-      const rejection = vaultRootRejectionReason(err);
+      const rejection = vaultRootRejectionReason(error);
       if (rejection) {
         setState((s) => ({
           ...s,
@@ -147,9 +147,9 @@ export function useVaultChoice({
       setState((s) => ({
         ...s,
         status: 'error',
-        errorMessage: toErrorMessage(err),
+        errorMessage: toErrorMessage(error),
         errorCode:
-          classifyVaultAccessError(err) === 'permission-denied'
+          classifyVaultAccessError(error) === 'permission-denied'
             ? 'permission-denied'
             : 'access-failed',
       }));
@@ -207,15 +207,15 @@ export function useVaultChoice({
         const loaded = await load(resolvedHandle.handle, options);
         if (!isCurrent()) return NOT_OPENED;
         return loaded ? { opened: true, ...loaded } : NOT_OPENED;
-      } catch (err) {
+      } catch (error) {
         if (!isCurrent()) return NOT_OPENED;
         // `toErrorMessage` — a Tauri `invoke` rejects with `Err(String)` as a plain string.
         setState((s) => ({
           ...s,
           status: 'error',
-          errorMessage: toErrorMessage(err),
+          errorMessage: toErrorMessage(error),
           errorCode:
-            classifyVaultAccessError(err) === 'permission-denied'
+            classifyVaultAccessError(error) === 'permission-denied'
               ? 'permission-denied'
               : 'access-failed',
         }));

@@ -76,7 +76,7 @@ const AGENT_POINTER_ROOT_SLUGS = new Set(['agents', 'claude', 'gemini']);
 const AGENT_RUNTIME_DIRS = ['.claude/', '.agents/', '.codex/'];
 
 function isAgentPointerDoc(slug: string): boolean {
-  if (AGENT_RUNTIME_DIRS.some((dir) => slug.startsWith(dir))) return true;
+  if (AGENT_RUNTIME_DIRS.some((directory) => slug.startsWith(directory))) return true;
   return !slug.includes('/') && AGENT_POINTER_ROOT_SLUGS.has(slug.toLowerCase());
 }
 
@@ -89,7 +89,7 @@ function isAgentPointerDoc(slug: string): boolean {
 const LIBRARY_OWNED_DIRS = [WIKI_SOURCES_DIR, WIKI_DIR, VAULT_SIDECAR_DIR];
 
 function isLibraryOwnedDoc(slug: string): boolean {
-  return LIBRARY_OWNED_DIRS.some((dir) => slug.startsWith(`${dir}/`));
+  return LIBRARY_OWNED_DIRS.some((directory) => slug.startsWith(`${directory}/`));
 }
 
 export function deriveBootstrapPlan(
@@ -162,7 +162,7 @@ export function selectedElements(
   plan: BootstrapPlan,
   acceptedDomains: ReadonlySet<string>,
 ): BootstrapElementCandidate[] {
-  return plan.elements.filter((el) => el.domain === null || acceptedDomains.has(el.domain));
+  return plan.elements.filter((element) => element.domain === null || acceptedDomains.has(element.domain));
 }
 
 /**
@@ -205,11 +205,11 @@ export function buildProjectMarkdown(
     lines.push('domains:');
     for (const d of domains) lines.push(`  - ${d.name}`);
   }
-  const rootElements = plan.elements.filter((el) => el.domain === null);
+  const rootElements = plan.elements.filter((element) => element.domain === null);
   if (rootElements.length > 0) {
     lines.push('elements:');
-    for (const el of rootElements) {
-      lines.push(`  - ${el.slug.split('/').pop()}`);
+    for (const element of rootElements) {
+      lines.push(`  - ${element.slug.split('/').pop()}`);
     }
   }
   lines.push('---', '', `# ${plan.projectTitle}`, '');

@@ -738,7 +738,7 @@ describe('connectors panel explains what runs before enabling', () => {
       'claude-user codex-user',
     );
     // Both tools are named, once each.
-    expect(screen.getAllByTestId('connectors-found-source').map((el) => el.textContent)).toEqual([
+    expect(screen.getAllByTestId('connectors-found-source').map((element) => element.textContent)).toEqual([
       'claude',
       'codex',
     ]);

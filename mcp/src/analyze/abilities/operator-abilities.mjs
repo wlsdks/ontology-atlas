@@ -117,8 +117,8 @@ function declarationsOf(lines, language) {
       const head = RS_IMPL.exec(line);
       if (head) impl = head[1];
       else if (RS_TOP_ITEM.test(line)) impl = null;
-      const fn = RS_FN.exec(line);
-      if (fn) current = { owner: impl, name: fn[1], line: index + 1, test: testAttribute };
+      const functionMatch = RS_FN.exec(line);
+      if (functionMatch) current = { owner: impl, name: functionMatch[1], line: index + 1, test: testAttribute };
       around[index] = current;
       testAttribute = RS_ATTRIBUTE_OR_COMMENT.test(line) ? testAttribute || RUST_TEST_ATTRIBUTE.test(line) : false;
     }

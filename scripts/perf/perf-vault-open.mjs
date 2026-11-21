@@ -48,7 +48,7 @@ function parseArgs(argv) {
 }
 
 /** Rows are refused for files modified within two seconds of being seen; a vault written just now is dated back. */
-function dateBack(dir) {
+function dateBack(directory) {
   const then = new Date(Date.now() - 60_000);
   const visit = (folder) => {
     for (const entry of readdirSync(folder, { withFileTypes: true })) {
@@ -57,22 +57,22 @@ function dateBack(dir) {
       else if (entry.name.endsWith('.md')) utimesSync(path, then, then);
     }
   };
-  visit(dir);
+  visit(directory);
 }
 
 function prepare(files, shape) {
-  const dir = join(WORK, `${shape}-${files}`);
+  const directory = join(WORK, `${shape}-${files}`);
   const indexDir = join(WORK, `index-${shape}-${files}`);
-  if (!existsSync(join(dir, 'atlas.md'))) {
-    rmSync(dir, { recursive: true, force: true });
-    mkdirSync(dir, { recursive: true });
-    generateScaleVault(dir, files, shape);
+  if (!existsSync(join(directory, 'atlas.md'))) {
+    rmSync(directory, { recursive: true, force: true });
+    mkdirSync(directory, { recursive: true });
+    generateScaleVault(directory, files, shape);
   }
-  dateBack(dir);
+  dateBack(directory);
   rmSync(indexDir, { recursive: true, force: true });
   // The search index beside the rows, so both files' size is measured together.
-  execFileSync(BENCH, ['build', dir], { env: { ...process.env, OATLAS_INDEX_DIR: indexDir }, stdio: 'ignore' });
-  return { dir, files, shape, indexDir };
+  execFileSync(BENCH, ['build', directory], { env: { ...process.env, OATLAS_INDEX_DIR: indexDir }, stdio: 'ignore' });
+  return { dir: directory, files, shape, indexDir };
 }
 
 const { files, shapes, check, keep } = parseArgs(process.argv.slice(2));

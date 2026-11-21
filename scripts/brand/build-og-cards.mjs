@@ -67,8 +67,8 @@ function messagesFor(locale) {
  */
 async function loadMapScene() {
   const alias = SRC_ALIASES.map((entry) => {
-    const [name, dir = name] = entry.split(':');
-    return { find: `@/${name}`, replacement: join(ROOT, 'src', dir) };
+    const [name, directory = name] = entry.split(':');
+    return { find: `@/${name}`, replacement: join(ROOT, 'src', directory) };
   });
   alias.push({ find: /^@\//, replacement: `${ROOT}/` });
   const server = await createServer({
@@ -131,12 +131,12 @@ function edgePath(a, b, bowed) {
   if (!bowed) return `M${round(a.x)} ${round(a.y)}L${round(b.x)} ${round(b.y)}`;
   const mx = (a.x + b.x) / 2;
   const my = (a.y + b.y) / 2;
-  const len = Math.hypot(b.x - a.x, b.y - a.y);
+  const length = Math.hypot(b.x - a.x, b.y - a.y);
   let ox = mx - MAP.cx;
   let oy = my - MAP.cy;
   if (Math.hypot(ox, oy) < 1) [ox, oy] = [-(b.y - a.y), b.x - a.x];
   const n = Math.hypot(ox, oy) || 1;
-  return `M${round(a.x)} ${round(a.y)}Q${round(mx + (ox / n) * len * 0.18)} ${round(my + (oy / n) * len * 0.18)} ${round(b.x)} ${round(b.y)}`;
+  return `M${round(a.x)} ${round(a.y)}Q${round(mx + (ox / n) * length * 0.18)} ${round(my + (oy / n) * length * 0.18)} ${round(b.x)} ${round(b.y)}`;
 }
 
 /** Region names: the domains of the first ring, centred above their marks. */

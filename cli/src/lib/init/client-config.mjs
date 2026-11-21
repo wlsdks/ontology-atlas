@@ -26,9 +26,9 @@ export function mcpConfigForVault(serverCommand, omotVault, repoRoot) {
  * `.mcp.json` is wired to this vault in cwd and in the vault itself; a parseable config keeps every
  * unrelated server, and a malformed or ambiguous one stays untouched and gets a merge example.
  */
-export function writeMcpJson({ serverCommand, clientBindingIssues }, dir, omotVault, repoRoot, label) {
-  const mcpJson = join(dir, '.mcp.json');
-  const mcpExample = join(dir, '.mcp.json.example');
+export function writeMcpJson({ serverCommand, clientBindingIssues }, directory, omotVault, repoRoot, label) {
+  const mcpJson = join(directory, '.mcp.json');
+  const mcpExample = join(directory, '.mcp.json.example');
   const mcpJsonText =
     JSON.stringify(mcpConfigForVault(serverCommand, omotVault, repoRoot), null, 2) + '\n';
   if (!existsSync(mcpJson)) {
@@ -72,8 +72,8 @@ export function codexConfigForVault(serverCommand, omotVault, repoRoot) {
   ].join('\n');
 }
 
-export function writeCodexConfig({ serverCommand, clientBindingIssues }, dir, omotVault, repoRoot, label) {
-  const codexDir = join(dir, '.codex');
+export function writeCodexConfig({ serverCommand, clientBindingIssues }, directory, omotVault, repoRoot, label) {
+  const codexDir = join(directory, '.codex');
   const codexConfig = join(codexDir, 'config.toml');
   const codexExample = join(codexDir, 'config.toml.example');
   if (!existsSync(codexDir)) mkdirSync(codexDir, { recursive: true });

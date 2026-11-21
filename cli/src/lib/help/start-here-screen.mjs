@@ -10,10 +10,10 @@ import { startHereContext, startHereRows } from '../start-here.mjs';
  */
 function readSituation() {
   const here = process.cwd();
-  const isVault = (dir) =>
-    existsSync(join(dir, 'project.md')) ||
-    existsSync(join(dir, 'domains')) ||
-    existsSync(join(dir, 'capabilities'));
+  const isVault = (directory) =>
+    existsSync(join(directory, 'project.md')) ||
+    existsSync(join(directory, 'domains')) ||
+    existsSync(join(directory, 'capabilities'));
   const inVault = isVault(here);
   let nearbyVault = null;
   if (!inVault) {
@@ -41,7 +41,7 @@ function readSituation() {
   const shimInstalled = (process.env.PATH ?? '')
     .split(':')
     .filter(Boolean)
-    .some((dir) => existsSync(join(dir, 'atlas')));
+    .some((directory) => existsSync(join(directory, 'atlas')));
   return { inVault, nearbyVault, looksLikeCode, conceptCount, shimInstalled };
 }
 

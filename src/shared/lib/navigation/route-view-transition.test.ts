@@ -50,10 +50,10 @@ describe("route view transition — the old screen is held until the new route c
     let scheduled: (() => void) | null = null;
     // Only the first schedule is the safety net; settling then arms the crossfade budget
     // (see "the hold is bounded from the commit" below), which schedules its own callback.
-    const setTimeoutFn = vi.fn((fn: () => void, ms: number) => {
+    const setTimeoutFn = vi.fn((callback: () => void, ms: number) => {
       if (scheduled === null) {
         expect(ms).toBe(ROUTE_VIEW_TRANSITION_SETTLE_TIMEOUT_MS);
-        scheduled = fn;
+        scheduled = callback;
       }
       return 0;
     }) as unknown as typeof setTimeout;
@@ -168,9 +168,9 @@ describe("route view transition — the hold is bounded from the commit, not fro
 
   /** Collects the callbacks scheduled at each delay, so a test can fire exactly one. */
   const recorder = () => {
-    const calls: { fn: () => void; ms: number }[] = [];
-    const setTimeoutFn = ((fn: () => void, ms: number) => {
-      calls.push({ fn, ms });
+    const calls: { callback: () => void; ms: number }[] = [];
+    const setTimeoutFn = ((callback: () => void, ms: number) => {
+      calls.push({ callback, ms });
       return 0;
     }) as unknown as typeof setTimeout;
     return { calls, setTimeoutFn };
@@ -207,7 +207,7 @@ describe("route view transition — the hold is bounded from the commit, not fro
       animations: () => [{ pseudo: "::view-transition-new(root)", startTime: null }],
     });
     settleRouteViewTransition();
-    calls.find((call) => call.ms === 180)!.fn();
+    calls.find((call) => call.ms === 180)!.callback();
     expect(skipTransition).toHaveBeenCalledTimes(1);
     expect(hasPendingRouteViewTransitionBound()).toBe(false);
   });
@@ -222,7 +222,7 @@ describe("route view transition — the hold is bounded from the commit, not fro
       animations: () => [{ pseudo: "::view-transition-old(root)", startTime: 12 }],
     });
     settleRouteViewTransition();
-    calls.find((call) => call.ms === 180)!.fn();
+    calls.find((call) => call.ms === 180)!.callback();
     expect(skipTransition, "돌고 있는 페이드를 잘랐다").not.toHaveBeenCalled();
   });
 
@@ -238,7 +238,7 @@ describe("route view transition — the hold is bounded from the commit, not fro
       animations: () => [{ pseudo: null, startTime: 4 }],
     });
     settleRouteViewTransition();
-    calls.find((call) => call.ms === 180)!.fn();
+    calls.find((call) => call.ms === 180)!.callback();
     expect(skipTransition).toHaveBeenCalledTimes(1);
   });
 
@@ -249,7 +249,7 @@ describe("route view transition — the hold is bounded from the commit, not fro
     const options = { setTimeoutFn, crossfadeMs: 180, animations: () => [] };
     navigateWithViewTransition(() => undefined, { ...options, startViewTransition: first.start });
     settleRouteViewTransition();
-    const staleBound = calls.find((call) => call.ms === 180)!.fn;
+    const staleBound = calls.find((call) => call.ms === 180)!.callback;
     navigateWithViewTransition(() => undefined, { ...options, startViewTransition: second.start });
     staleBound();
     expect(first.skipTransition, "지난 전환의 예산이 새 전환을 끊었다").not.toHaveBeenCalled();

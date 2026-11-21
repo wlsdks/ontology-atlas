@@ -43,12 +43,12 @@ let eventSeq = 0;
 export const nextEventId = () => `acp-evt-${(eventSeq += 1)}`;
 
 /** Streamed agent and thought chunks join the row they continue; every other event is a new row. */
-export function appendEvent(prev: AcpEvent[], event: AcpEvent): AcpEvent[] {
-  const last = prev[prev.length - 1];
+export function appendEvent(previous: AcpEvent[], event: AcpEvent): AcpEvent[] {
+  const last = previous[previous.length - 1];
   if (last && (event.kind === 'agent' || event.kind === 'thought') && last.kind === event.kind) {
-    const next = prev.slice();
+    const next = previous.slice();
     next[next.length - 1] = { ...last, text: last.text + event.text };
     return next;
   }
-  return [...prev, event];
+  return [...previous, event];
 }

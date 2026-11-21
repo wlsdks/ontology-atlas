@@ -316,9 +316,9 @@ test('dated evidence, drafts, plans and launch copy stay in the repository but l
   const root = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-unshipped-'));
   try {
     const docs = path.join(root, 'docs');
-    for (const dir of ['archive', 'audits', 'benchmark', 'plans', 'prototypes', 'launch', 'guide/plans']) {
-      await mkdir(path.join(docs, dir), { recursive: true });
-      await writeFile(path.join(docs, dir, 'NOTE.md'), `# ${dir}\n`, 'utf8');
+    for (const directory of ['archive', 'audits', 'benchmark', 'plans', 'prototypes', 'launch', 'guide/plans']) {
+      await mkdir(path.join(docs, directory), { recursive: true });
+      await writeFile(path.join(docs, directory, 'NOTE.md'), `# ${directory}\n`, 'utf8');
     }
     await writeFile(path.join(docs, 'GUIDE.md'), '# Guide\n', 'utf8');
 
@@ -515,30 +515,30 @@ describe('frontmatter relation backlinks', () => {
 
 describe('generated output freshness', () => {
   it('reports a missing file, a stale one and a current one', async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-fresh-'));
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-fresh-'));
     try {
-      const file = path.join(dir, 'out.json');
+      const file = path.join(directory, 'out.json');
       const shown = path.relative(ROOT, file);
       assert.equal(await jsonOutputIssue(file, { a: 1 }), `missing ${shown}`);
       await writeFile(file, JSON.stringify({ a: 1 }, null, 2), 'utf8');
       assert.equal(await jsonOutputIssue(file, { a: 1 }), null);
       assert.equal(await jsonOutputIssue(file, { a: 2 }), `stale ${shown}`);
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(directory, { recursive: true, force: true });
     }
   });
 
   it('ignores day stamps and revisions only through the normalizer it is given', async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-fresh-'));
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-fresh-'));
     try {
-      const file = path.join(dir, 'manifest.json');
+      const file = path.join(directory, 'manifest.json');
       const onDisk = { generatedAt: '2026-01-01', docs: [{ slug: 'a', updatedAt: '2026-01-01', revision: 1 }] };
       const rebuilt = { generatedAt: '2026-02-02', docs: [{ slug: 'a', updatedAt: '2026-02-02', revision: 2 }] };
       await writeFile(file, JSON.stringify(onDisk, null, 2), 'utf8');
       assert.equal(await jsonOutputIssue(file, rebuilt, comparableManifest), null);
       assert.match(await jsonOutputIssue(file, rebuilt), /^stale /);
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(directory, { recursive: true, force: true });
     }
   });
 });

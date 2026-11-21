@@ -26,7 +26,7 @@ function repo() {
 function run(id, recordedAt, decision = id) {
   return { schema: 'po-pilot-run/v1', id, recordedAt, date: '2026-09-13', decision, door: 'two-way', route: 'solo', outcome: 'explain', changes: ['rollback-cheap'], boundaries, risk: 'none', firstTurns: 0, rebuttalTurns: 0, delta: 'unchanged', uniqueContributors: [], initialUpdate: { date: '2026-09-13', proof: 'pending', ownerClear: 'pending', boundaryMiss: 'pending', laterResult: 'pending' } };
 }
-function write(root, dir, name, value) { writeFileSync(join(root, `docs/records/${dir}/${name}.json`), `${JSON.stringify(value)}\n`); }
+function write(root, directory, name, value) { writeFileSync(join(root, `docs/records/${directory}/${name}.json`), `${JSON.stringify(value)}\n`); }
 
 test('same-day independent UUID runs merge deterministically without losing legacy metrics', () => {
   const root = repo();

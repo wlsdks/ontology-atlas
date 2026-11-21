@@ -113,6 +113,6 @@ export async function llmChat(args: {
  * Rust answers `<code>: <English detail>` (`src-tauri/src/coded_error.rs`). Without a lookup the payload
  * is untouched: the agent loop recognises a failed turn by its `audit-blocked:` or `timed-out:` prefix.
  */
-export function llmChatErrorMessage(err: unknown, lookup?: NativeErrorLookup): string {
-  return nativeErrorMessage(err, lookup);
+export function llmChatErrorMessage(error: unknown, lookup?: NativeErrorLookup): string {
+  return nativeErrorMessage(error, lookup);
 }

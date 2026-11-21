@@ -9,11 +9,11 @@ import { contentHash } from './content-hash.mjs';
 import { readStableFileSnapshot, sameFileSnapshot, snapshotChars } from './file-snapshot.mjs';
 
 function inTempDir(run) {
-  const dir = mkdtempSync(join(tmpdir(), 'oatlas-file-snapshot-'));
+  const directory = mkdtempSync(join(tmpdir(), 'oatlas-file-snapshot-'));
   try {
-    return run(dir);
+    return run(directory);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 }
 
@@ -31,8 +31,8 @@ function withPatchedFs(name, replacement, run) {
 }
 
 test('a regular file is read as its bytes, the stamp they were read under and their hash', () => {
-  inTempDir((dir) => {
-    const file = join(dir, 'a.md');
+  inTempDir((directory) => {
+    const file = join(directory, 'a.md');
     writeFileSync(file, 'héllo', 'utf8');
     const snapshot = readStableFileSnapshot(file);
     assert.equal(snapshot.raw, 'héllo');
@@ -43,32 +43,32 @@ test('a regular file is read as its bytes, the stamp they were read under and th
 });
 
 test('a directory where a file is expected is skipped like a deleted file, not read', () => {
-  inTempDir((dir) => {
-    mkdirSync(join(dir, 'folder.md'));
+  inTempDir((directory) => {
+    mkdirSync(join(directory, 'folder.md'));
     assert.throws(
-      () => readStableFileSnapshot(join(dir, 'folder.md')),
+      () => readStableFileSnapshot(join(directory, 'folder.md')),
       (error) => error.code === 'ENOENT' && /Not a regular file/.test(error.message),
     );
   });
 });
 
 test('a symlink to a directory is refused the same way, a symlink to a file is read through', () => {
-  inTempDir((dir) => {
-    mkdirSync(join(dir, 'real-folder'));
-    writeFileSync(join(dir, 'real.md'), 'x', 'utf8');
-    symlinkSync(join(dir, 'real-folder'), join(dir, 'link-to-folder.md'));
-    symlinkSync(join(dir, 'real.md'), join(dir, 'link-to-file.md'));
+  inTempDir((directory) => {
+    mkdirSync(join(directory, 'real-folder'));
+    writeFileSync(join(directory, 'real.md'), 'x', 'utf8');
+    symlinkSync(join(directory, 'real-folder'), join(directory, 'link-to-folder.md'));
+    symlinkSync(join(directory, 'real.md'), join(directory, 'link-to-file.md'));
     assert.throws(
-      () => readStableFileSnapshot(join(dir, 'link-to-folder.md')),
+      () => readStableFileSnapshot(join(directory, 'link-to-folder.md')),
       (error) => error.code === 'ENOENT' && /Not a regular file/.test(error.message),
     );
-    assert.equal(readStableFileSnapshot(join(dir, 'link-to-file.md')).raw, 'x');
+    assert.equal(readStableFileSnapshot(join(directory, 'link-to-file.md')).raw, 'x');
   });
 });
 
 test('a file whose stamp changes during every attempt is never returned', () => {
-  inTempDir((dir) => {
-    const file = join(dir, 'a.md');
+  inTempDir((directory) => {
+    const file = join(directory, 'a.md');
     writeFileSync(file, 'body', 'utf8');
     let calls = 0;
     const driftingStat = (original) => (descriptor) => {
@@ -85,8 +85,8 @@ test('a file whose stamp changes during every attempt is never returned', () => 
 });
 
 test('a stamp that changed once is read again and the second, stable read is returned', () => {
-  inTempDir((dir) => {
-    const file = join(dir, 'a.md');
+  inTempDir((directory) => {
+    const file = join(directory, 'a.md');
     writeFileSync(file, 'body', 'utf8');
     let calls = 0;
     const driftOnce = (original) => (descriptor) => {
@@ -102,8 +102,8 @@ test('a stamp that changed once is read again and the second, stable read is ret
 });
 
 test('a file that gave fewer bytes than its stamped size is read again, not returned short', () => {
-  inTempDir((dir) => {
-    const file = join(dir, 'a.md');
+  inTempDir((directory) => {
+    const file = join(directory, 'a.md');
     writeFileSync(file, 'body', 'utf8');
     withPatchedFs('readSync', () => () => 0, () => {
       assert.throws(() => readStableFileSnapshot(file), /Could not capture a stable file snapshot/);

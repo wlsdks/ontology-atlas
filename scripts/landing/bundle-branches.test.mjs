@@ -7,7 +7,7 @@ import { test } from 'node:test';
 
 import { applyPrune, lockHold, makeGit, ownPids, parseArgs, planBundle, prunePlan, selectBranches } from './bundle-branches.mjs';
 
-function fixture(fn) {
+function fixture(callback) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-bundle-')));
   const sh = (...argv) => execFileSync('git', argv, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   const commit = (file, body, message) => {
@@ -20,7 +20,7 @@ function fixture(fn) {
     sh('config', 'user.name', 'Fixture');
     sh('config', 'user.email', 'fixture@example.invalid');
     commit('shared.txt', 'one\ntwo\nthree\n', 'base');
-    fn({ root, sh, commit, git: makeGit(root) });
+    callback({ root, sh, commit, git: makeGit(root) });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

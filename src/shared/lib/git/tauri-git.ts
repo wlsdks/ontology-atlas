@@ -353,8 +353,8 @@ export async function gitFetch(vaultPath: string): Promise<GitFetchResult | null
  * Rust answers `<code>: <git's own words>` (`src-tauri/src/coded_error.rs`): the sentence is chosen
  * here in the reader's locale, with git's stderr in parentheses. No lookup returns it untouched.
  */
-export function gitErrorMessage(err: unknown, lookup?: NativeErrorLookup): string {
-  return nativeErrorMessage(err, lookup);
+export function gitErrorMessage(error: unknown, lookup?: NativeErrorLookup): string {
+  return nativeErrorMessage(error, lookup);
 }
 
 /** When one repository path last changed, as `git_paths_last_change` reports it. */

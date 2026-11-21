@@ -21,18 +21,18 @@ const ALLOWED_FLAGS = ['--vault', '--title', '--domain', '--path', '--body', '--
 
 /** Writes a new node `.md`; an existing slug throws rather than overwrite. Same contract as MCP add_concept. */
 export async function runAdd(args) {
-  const opts = parseArgs(args);
-  if (opts.help) {
+  const options = parseArgs(args);
+  if (options.help) {
     printAddUsage(process.stdout);
     return 0;
   }
-  if (opts.error) {
-    process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${opts.error}\n`);
+  if (options.error) {
+    process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${options.error}\n`);
     printAddUsage();
     return 1;
   }
 
-  const { kind, slug: rawSlug, title, domain, path, body, vault, autoPrefix } = opts;
+  const { kind, slug: rawSlug, title, domain, path, body, vault, autoPrefix } = options;
   const vaultPath = resolve(vault);
 
   // Prefix the kind folder unless the user already wrote it, using the schema.mjs mapping MCP uses.
@@ -45,7 +45,7 @@ export async function runAdd(args) {
   // Stamps `agent:*` from the heartbeat exactly as MCP add_concept does, so the CLI door leaves
   // provenance too; a person typing it passes `--created-by human`.
   const createdBy =
-    opts.createdBy ?? agentCreatedBy(await readHeartbeatAgentName(vaultPath));
+    options.createdBy ?? agentCreatedBy(await readHeartbeatAgentName(vaultPath));
 
   // The schema fills per-kind array defaults, so CLI add and add_concept write the same frontmatter shape.
   const fm = buildFrontmatter({ slug, kind, title, domain, path, [CREATED_BY_KEY]: createdBy });
@@ -73,9 +73,9 @@ export async function runAdd(args) {
       );
     }
     return 0;
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 1;
   }

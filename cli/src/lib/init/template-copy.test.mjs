@@ -7,9 +7,9 @@ import { join } from 'node:path';
 import { TEMPLATE_ROOTS, copyTree, resolveTemplateRoot } from './template-copy.mjs';
 
 function withTemplate(files, run) {
-  const dir = mkdtempSync(join(tmpdir(), 'oatlas-init-copy-'));
-  const from = join(dir, 'from');
-  const to = join(dir, 'to');
+  const directory = mkdtempSync(join(tmpdir(), 'oatlas-init-copy-'));
+  const from = join(directory, 'from');
+  const to = join(directory, 'to');
   for (const [name, text] of Object.entries(files)) {
     mkdirSync(join(from, name, '..'), { recursive: true });
     writeFileSync(join(from, name), text, 'utf-8');
@@ -20,7 +20,7 @@ function withTemplate(files, run) {
     return run(from, to);
   } finally {
     process.stdout.write = write;
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 }
 

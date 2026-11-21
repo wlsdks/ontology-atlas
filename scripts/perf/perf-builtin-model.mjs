@@ -58,9 +58,9 @@ function parseArgs(argv) {
 }
 
 /** The texts every measurement reads: fixture passages, fixture questions, and documentation passages. */
-async function passageTexts(dir) {
+async function passageTexts(directory) {
   const texts = [];
-  for await (const passage of cratePassages(dir)) texts.push(passage.text);
+  for await (const passage of cratePassages(directory)) texts.push(passage.text);
   return texts;
 }
 

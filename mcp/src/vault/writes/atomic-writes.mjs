@@ -198,10 +198,10 @@ function createMissingParents(path, createdDirectories) {
     if (parent === probe) break;
     probe = parent;
   }
-  for (const dir of missing.reverse()) {
+  for (const directory of missing.reverse()) {
     try {
-      mkdirSync(dir);
-      createdDirectories.push(dir);
+      mkdirSync(directory);
+      createdDirectories.push(directory);
     } catch (error) {
       if (error?.code !== 'EEXIST') throw error;
     }
@@ -300,7 +300,7 @@ export function applyAllOrNothing(plan, options = {}) {
   //    locked file, read-only vault) need no rollback.
   const blocked = [];
   for (const entry of plan) {
-    const dir = dirname(entry.path);
+    const directory = dirname(entry.path);
     try {
       if (existsSync(entry.path)) {
         accessSync(entry.path, fsConstants.W_OK);
@@ -309,7 +309,7 @@ export function applyAllOrNothing(plan, options = {}) {
       }
       if (entry.op === 'delete' && existsSync(entry.path)) {
         // Deleting needs write permission on the directory, not the file.
-        accessSync(dir, fsConstants.W_OK);
+        accessSync(directory, fsConstants.W_OK);
       }
     } catch (error) {
       blocked.push(`${entry.path} (${error?.code ?? 'EACCES'})`);
@@ -382,11 +382,11 @@ export function applyAllOrNothing(plan, options = {}) {
         unrecovered.push(step.path);
       }
     }
-    for (const dir of createdDirectories.reverse()) {
+    for (const directory of createdDirectories.reverse()) {
       try {
-        rmdirSync(dir);
+        rmdirSync(directory);
       } catch (rollbackError) {
-        if (rollbackError?.code !== 'ENOENT') unrecovered.push(dir);
+        if (rollbackError?.code !== 'ENOENT') unrecovered.push(directory);
       }
     }
     const reason = error?.message ?? String(error);

@@ -63,8 +63,8 @@ export function createTypeScriptResolver({ rootPath, pathAliases = [], workspace
     return value;
   };
   return {
-    relative: (spec, dir) =>
-      remembered(relativeImports, `${dir}\0${spec}`, () => resolveRelativeImport(spec, dir, facts)),
+    relative: (spec, directory) =>
+      remembered(relativeImports, `${directory}\0${spec}`, () => resolveRelativeImport(spec, directory, facts)),
     workspace: (spec) =>
       remembered(workspaceImports, spec, () => resolveWorkspacePackageImport(spec, rootPath, workspacePackages, facts)),
     alias: (spec) =>
@@ -72,14 +72,14 @@ export function createTypeScriptResolver({ rootPath, pathAliases = [], workspace
   };
 }
 
-export function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOverride, resolver, ignore = DEFAULT_IGNORE, importUsage = 'value') {
+export function classify(spec, file, directory, rootPath, edges, external, unresolved, kindOverride, resolver, ignore = DEFAULT_IGNORE, importUsage = 'value') {
   const kind = kindOverride ?? 'static';
   if (!spec) {
     unresolved.push({ from: relative(rootPath, file), spec, reason: 'empty' });
     return;
   }
   if (spec.startsWith('.') || isAbsolute(spec)) {
-    const resolved = resolver.relative(spec, dir);
+    const resolved = resolver.relative(spec, directory);
     if (resolved) {
       const resolvedRelative = relative(rootPath, resolved);
       if (isIgnoredPath(resolvedRelative, ignore)) return;

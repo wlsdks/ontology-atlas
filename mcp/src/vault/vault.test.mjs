@@ -377,8 +377,8 @@ describe('actionable error messages', () => {
       writeDoc(errRoot, 'capabilities/mcp-server', {
         frontmatter: { slug: 'capabilities/mcp-server', kind: 'capability', title: 'X' },
       });
-    } catch (e) {
-      caught = e;
+    } catch (error) {
+      caught = error;
     }
     assert.ok(caught, 'should throw');
     assert.match(caught.message, /already exists/);
@@ -390,8 +390,8 @@ describe('actionable error messages', () => {
     let caught;
     try {
       deleteDoc(errRoot, 'capabilities/mcp-server-x');
-    } catch (e) {
-      caught = e;
+    } catch (error) {
+      caught = error;
     }
     assert.ok(caught);
     assert.match(caught.message, /not found/i);
@@ -403,8 +403,8 @@ describe('actionable error messages', () => {
     let caught;
     try {
       deleteDoc(errRoot, 'totally/unrelated-xyz');
-    } catch (e) {
-      caught = e;
+    } catch (error) {
+      caught = error;
     }
     assert.ok(caught);
     assert.match(caught.message, /not found/i);

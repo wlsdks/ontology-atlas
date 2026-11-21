@@ -14,14 +14,14 @@ describe("Textarea autoGrow", () => {
     let scroll = 60;
     Object.defineProperty(HTMLTextAreaElement.prototype, "scrollHeight", { configurable: true, get: () => scroll });
     const { getByLabelText, rerender } = render(<Textarea label="Why" autoGrow maxRows={4} rows={3} value="one line" onChange={() => {}} />);
-    const el = getByLabelText("Why") as HTMLTextAreaElement;
-    expect(el.style.height).toBe("60px");
-    expect(el.style.overflowY).toBe("hidden");
+    const element = getByLabelText("Why") as HTMLTextAreaElement;
+    expect(element.style.height).toBe("60px");
+    expect(element.style.overflowY).toBe("hidden");
     scroll = 400;
     rerender(<Textarea label="Why" autoGrow maxRows={4} rows={3} value="one line\ntwo\nthree\nfour\nfive\nsix" onChange={() => {}} />);
     // Ceiling: 4 rows of 20 plus 18 of padding and border.
-    expect(el.style.height).toBe("98px");
-    expect(el.style.overflowY).toBe("auto");
+    expect(element.style.height).toBe("98px");
+    expect(element.style.overflowY).toBe("auto");
   });
 
   it("leaves the height alone without autoGrow", () => {

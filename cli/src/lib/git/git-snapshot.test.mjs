@@ -64,8 +64,8 @@ function writeMd(repoRoot, relPath, { kind, slug, title = 'Test' } = {}) {
   writeFileSync(abs, fm);
 }
 
-function cleanup(dir) {
-  rmSync(dir, { recursive: true, force: true });
+function cleanup(directory) {
+  rmSync(directory, { recursive: true, force: true });
 }
 
 test('findGitRepoRoot — resolves the toplevel for a path inside a git repo', () => {
@@ -83,11 +83,11 @@ test('findGitRepoRoot — resolves the toplevel for a path inside a git repo', (
 });
 
 test('findGitRepoRoot — returns null outside any git repo', () => {
-  const dir = makeTmpDir('oatlas-snapshot-no-git-');
+  const directory = makeTmpDir('oatlas-snapshot-no-git-');
   try {
-    assert.equal(findGitRepoRoot(dir), null);
+    assert.equal(findGitRepoRoot(directory), null);
   } finally {
-    cleanup(dir);
+    cleanup(directory);
   }
 });
 
@@ -312,13 +312,13 @@ test('push flow — local bare repo fixture (no real remote network access)', ()
 });
 
 test('getPorcelainStatus / findGitRepoRoot — a vault directory with no .git anywhere above it', () => {
-  const dir = makeTmpDir('oatlas-snapshot-orphan-');
+  const directory = makeTmpDir('oatlas-snapshot-orphan-');
   try {
-    const vaultRoot = join(dir, 'docs', 'ontology');
+    const vaultRoot = join(directory, 'docs', 'ontology');
     mkdirSync(vaultRoot, { recursive: true });
     assert.equal(findGitRepoRoot(vaultRoot), null);
   } finally {
-    cleanup(dir);
+    cleanup(directory);
   }
 });
 
@@ -438,13 +438,13 @@ test('commitPathspec — a rejecting pre-commit hook throws and classifies as pr
     let thrown = null;
     try {
       commitPathspec({ repoRoot, pathspec: 'docs/ontology', message: 'ontology snapshot: ~1 updated' });
-    } catch (err) {
-      thrown = err;
+    } catch (error) {
+      thrown = error;
     }
     assert.ok(thrown, 'a rejecting hook must throw so the wrapper can classify it');
-    const info = classifyGitError(thrown, { operation: 'commit' });
-    assert.equal(info.reason, 'pre-commit-hook');
-    assert.equal(typeof info.message, 'string');
+    const gitFailure = classifyGitError(thrown, { operation: 'commit' });
+    assert.equal(gitFailure.reason, 'pre-commit-hook');
+    assert.equal(typeof gitFailure.message, 'string');
   } finally {
     cleanup(repoRoot);
   }
@@ -483,8 +483,8 @@ test('pushCurrentBranch — a remote that moved ahead rejects the push and class
     let thrown = null;
     try {
       pushCurrentBranch({ repoRoot: repoB });
-    } catch (err) {
-      thrown = err;
+    } catch (error) {
+      thrown = error;
     }
     assert.ok(thrown, 'pushing to a remote that moved ahead must throw');
     assert.equal(classifyGitError(thrown, { operation: 'push' }).reason, 'push-non-fast-forward');
@@ -598,7 +598,7 @@ test('pullCurrentBranch — fast-forwards from a remote that moved ahead', () =>
 });
 
 test('sanity — the fixtures directory is actually removed from disk after each test (no leakage)', () => {
-  const dir = makeTmpDir('oatlas-snapshot-leak-check-');
-  cleanup(dir);
-  assert.equal(existsSync(dir), false);
+  const directory = makeTmpDir('oatlas-snapshot-leak-check-');
+  cleanup(directory);
+  assert.equal(existsSync(directory), false);
 });

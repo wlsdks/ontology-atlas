@@ -9,14 +9,14 @@ const flush = async () => {
 };
 
 function pollerHarness() {
-  const timers: Array<{ cb: () => void; ms: number; cleared: boolean }> = [];
+  const timers: Array<{ callback: () => void; ms: number; cleared: boolean }> = [];
   const resolvers: Array<(v: boolean) => void> = [];
-  const poll = () => new Promise<boolean>((res) => resolvers.push(res));
+  const poll = () => new Promise<boolean>((resolvePoll) => resolvers.push(resolvePoll));
   const poller = createAdaptivePoller({
     poll,
     now: () => 0,
-    setTimer: (cb, ms) => {
-      timers.push({ cb, ms, cleared: false });
+    setTimer: (callback, ms) => {
+      timers.push({ callback, ms, cleared: false });
       return timers.length - 1;
     },
     clearTimer: (h) => {
@@ -32,7 +32,7 @@ describe('createAdaptivePoller', () => {
     const { timers, resolvers, poller } = pollerHarness();
     poller.start();
     expect(timers.length).toBe(1);
-    timers[0].cb(); // fire → poll() in-flight
+    timers[0].callback(); // fire → poll() in-flight
     resolvers[0](false); // no change
     await flush();
     expect(timers.length).toBe(2); // rescheduled exactly once
@@ -41,7 +41,7 @@ describe('createAdaptivePoller', () => {
   it('stop during an in-flight poll then restart leaves NO orphan loop (the gate bug)', async () => {
     const { timers, resolvers, poller } = pollerHarness();
     poller.start(); // timer 0, generation 1
-    timers[0].cb(); // fire 0 → poll() in-flight (suspended)
+    timers[0].callback(); // fire 0 → poll() in-flight (suspended)
     poller.stop(); // generation 2
     poller.start(); // generation 3 → timer 1
     expect(timers.length).toBe(2);
@@ -54,7 +54,7 @@ describe('createAdaptivePoller', () => {
   it('stop prevents any further reschedule', async () => {
     const { timers, resolvers, poller } = pollerHarness();
     poller.start();
-    timers[0].cb();
+    timers[0].callback();
     poller.stop();
     resolvers[0](false);
     await flush();
@@ -70,28 +70,28 @@ describe('createAdaptivePoller', () => {
 });
 
 describe('nextPollDelay', () => {
-  const cfg = { burstMs: 1500, idleMs: 5000, burstWindowMs: 15000 };
+  const config = { burstMs: 1500, idleMs: 5000, burstWindowMs: 15000 };
 
   it('idles when no change has been detected yet', () => {
-    expect(nextPollDelay(null, 100_000, cfg)).toBe(5000);
+    expect(nextPollDelay(null, 100_000, config)).toBe(5000);
   });
 
   it('bursts right after a change', () => {
     const now = 100_000;
-    expect(nextPollDelay(now - 1000, now, cfg)).toBe(1500); // 1s since change → within window
-    expect(nextPollDelay(now, now, cfg)).toBe(1500); // just changed
+    expect(nextPollDelay(now - 1000, now, config)).toBe(1500); // 1s since change → within window
+    expect(nextPollDelay(now, now, config)).toBe(1500); // just changed
   });
 
   it('decays to idle once the burst window passes', () => {
     const now = 100_000;
-    expect(nextPollDelay(now - 14_999, now, cfg)).toBe(1500); // just inside window
-    expect(nextPollDelay(now - 15_000, now, cfg)).toBe(5000); // at boundary → idle
-    expect(nextPollDelay(now - 30_000, now, cfg)).toBe(5000); // long quiet → idle
+    expect(nextPollDelay(now - 14_999, now, config)).toBe(1500); // just inside window
+    expect(nextPollDelay(now - 15_000, now, config)).toBe(5000); // at boundary → idle
+    expect(nextPollDelay(now - 30_000, now, config)).toBe(5000); // long quiet → idle
   });
 
   it('guards against clock skew (future lastChangeAt → idle, not negative)', () => {
     const now = 100_000;
-    expect(nextPollDelay(now + 5000, now, cfg)).toBe(5000);
+    expect(nextPollDelay(now + 5000, now, config)).toBe(5000);
   });
 
   it('default config: burst 1.5s, idle 5s, window 15s', () => {
@@ -113,22 +113,22 @@ describe('nextPollDelay', () => {
 
   it('the poller measures its own poll and feeds the next delay', async () => {
     let clock = 0;
-    const timers: Array<{ cb: () => void; ms: number }> = [];
+    const timers: Array<{ callback: () => void; ms: number }> = [];
     const poller = createAdaptivePoller({
       poll: async () => {
         clock += 3000;
         return false;
       },
       now: () => clock,
-      setTimer: (cb, ms) => {
-        timers.push({ cb, ms });
+      setTimer: (callback, ms) => {
+        timers.push({ callback, ms });
         return timers.length;
       },
       clearTimer: () => {},
     });
     poller.start();
     expect(timers[0]!.ms).toBe(5000);
-    timers[0]!.cb();
+    timers[0]!.callback();
     await Promise.resolve();
     await Promise.resolve();
     // The poll took 3 s, so the next delay is 60 s (3 s x 20).

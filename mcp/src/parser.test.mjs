@@ -10,15 +10,15 @@ import {
 let passed = 0;
 let failed = 0;
 
-function test(name, fn) {
+function test(name, body) {
   try {
-    fn();
+    body();
     passed += 1;
     console.log(`  ✓ ${name}`);
-  } catch (err) {
+  } catch (error) {
     failed += 1;
     console.error(`  ✗ ${name}`);
-    console.error(`    ${err.message}`);
+    console.error(`    ${error.message}`);
   }
 }
 

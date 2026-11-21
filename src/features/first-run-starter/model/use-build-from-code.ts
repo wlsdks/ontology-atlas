@@ -83,8 +83,8 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
         // surfaces a permission problem.
       }
       setState({ stage: 'confirm', location, reusesExisting, pickedMapFolder, errorText: null });
-    } catch (err) {
-      setState({ ...IDLE, errorText: failureCodeOrEmpty(err) });
+    } catch (error) {
+      setState({ ...IDLE, errorText: failureCodeOrEmpty(error) });
     }
   }, []);
 
@@ -106,9 +106,9 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
       });
       handoff(location);
       setState(IDLE);
-    } catch (err) {
+    } catch (error) {
       // Staying on `confirm` keeps the path and button, so a fixable failure is one press from retry.
-      setState((s) => ({ ...s, stage: 'confirm', errorText: failureCodeOrEmpty(err) }));
+      setState((s) => ({ ...s, stage: 'confirm', errorText: failureCodeOrEmpty(error) }));
     }
   }, [state.location, state.stage, openRecord, handoff]);
 
@@ -116,6 +116,6 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
 }
 
 /** Never the thrown English, which cannot know the reader's language. */
-function failureCodeOrEmpty(err: unknown): string {
-  return failureCodeOf(err) ?? '';
+function failureCodeOrEmpty(error: unknown): string {
+  return failureCodeOf(error) ?? '';
 }

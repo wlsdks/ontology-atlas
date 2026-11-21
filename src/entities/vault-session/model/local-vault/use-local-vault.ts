@@ -217,7 +217,7 @@ export function useLocalVaultInternal() {
         /* The counts stay absent; the row says so. */
       }
       return { starterWritten, starterError };
-    } catch (err) {
+    } catch (error) {
       if (!isCurrent()) return null;
       lastBuildRef.current = null;
       lastFingerprintRef.current = null;
@@ -236,11 +236,11 @@ export function useLocalVaultInternal() {
         fileHandles: new Map(),
         imageHandles: new Map(),
     sourceHandles: new Map(),
-        errorMessage: toErrorMessage(err),
+        errorMessage: toErrorMessage(error),
         // A refusal by the operating system is not the same event as a broken folder, and sending
         // somebody to System Settings to fix a folder that is simply gone would be worse than vague.
         errorCode:
-          classifyVaultAccessError(err) === 'permission-denied' ? 'permission-denied' : 'access-failed',
+          classifyVaultAccessError(error) === 'permission-denied' ? 'permission-denied' : 'access-failed',
         lastLoadedAt: null,
         manifestHandle: null,
         partialTotal: 0,

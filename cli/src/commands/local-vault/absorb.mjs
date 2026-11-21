@@ -31,17 +31,17 @@ export function runAbsorb(args, runtimeOverrides = {}) {
 }
 
 function runAbsorbWithRuntime(args, runtime) {
-  const opts = parseArgs(args);
-  if (opts.help) {
+  const options = parseArgs(args);
+  if (options.help) {
     printUsage(process.stdout);
     return 0;
   }
-  if (opts.error) {
-    process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${opts.error}\n`);
+  if (options.error) {
+    process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${options.error}\n`);
     printUsage();
     return 1;
   }
-  const vaultPath = resolve(opts.vault);
+  const vaultPath = resolve(options.vault);
   if (!existsSync(vaultPath)) {
     process.stderr.write(
       `${COLORS.red}error${COLORS.reset}  vault path does not exist: ${vaultPath}\n`,
@@ -52,7 +52,7 @@ function runAbsorbWithRuntime(args, runtime) {
   let exitCode = 0;
   const totals = { files: 0, absorbed: 0, suggested: 0, injectionSuspect: 0, unclassified: 0 };
 
-  for (const rawPath of opts.paths) {
+  for (const rawPath of options.paths) {
     const filePath = resolve(rawPath);
     if (!existsSync(filePath)) {
       process.stderr.write(
@@ -62,7 +62,7 @@ function runAbsorbWithRuntime(args, runtime) {
       continue;
     }
     let sourceMode;
-    if (opts.write) {
+    if (options.write) {
       const sourceStat = lstatSync(filePath);
       if (sourceStat.isSymbolicLink()) {
         process.stderr.write(
@@ -97,7 +97,7 @@ function runAbsorbWithRuntime(args, runtime) {
     totals.injectionSuspect += plan.summary.injectionSuspect;
     totals.unclassified += plan.summary.unclassified;
 
-    if (!opts.write) continue;
+    if (!options.write) continue;
 
     const backupPath = `${filePath}${BACKUP_SUFFIX}`;
     if (existsSync(backupPath)) {
@@ -192,7 +192,7 @@ function runAbsorbWithRuntime(args, runtime) {
       `${totals.absorbed} absorbed · ${totals.suggested} suggested · ` +
       `${totals.injectionSuspect} injection-suspect · ${totals.unclassified} unclassified\n`,
   );
-  if (!opts.write && totals.files > 0) {
+  if (!options.write && totals.files > 0) {
     process.stdout.write(`${COLORS.dim}(dry-run: pass --write to actually land the plan)${COLORS.reset}\n`);
   }
 

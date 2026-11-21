@@ -67,12 +67,12 @@ export function useJustStartVault(
         return;
       }
       created?.(buildDefaultVaultDisplayPath(dirName));
-    } catch (err) {
+    } catch (error) {
       /**
        * A failure code, not a sentence: `''` means nothing more specific; otherwise the screen looks
        * it up in `failures`, because a throwing module cannot know the reader's language.
        */
-      setActionError(failureCodeOf(err) ?? '');
+      setActionError(failureCodeOf(error) ?? '');
     } finally {
       setBusy(false);
     }

@@ -287,8 +287,8 @@ export function Select({
 
   useEffect(() => {
     if (!open) return;
-    const el = listRef.current?.querySelector<HTMLElement>(`#${CSS.escape(optionDomId(activeIndex))}`);
-    el?.scrollIntoView?.({ block: "nearest" });
+    const element = listRef.current?.querySelector<HTMLElement>(`#${CSS.escape(optionDomId(activeIndex))}`);
+    element?.scrollIntoView?.({ block: "nearest" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, activeIndex]);
 
@@ -301,10 +301,10 @@ export function Select({
       const startFrom = query.length === 1 ? activeIndex + 1 : activeIndex;
       const n = options.length;
       for (let i = 0; i < n; i++) {
-        const idx = (startFrom + i) % n;
-        if (options[idx].label.toLowerCase().startsWith(query)) {
-          setActiveIndex(idx);
-          if (!open) commit(idx);
+        const index = (startFrom + i) % n;
+        if (options[index].label.toLowerCase().startsWith(query)) {
+          setActiveIndex(index);
+          if (!open) commit(index);
           break;
         }
       }

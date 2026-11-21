@@ -224,7 +224,7 @@ export function useAcpSession({
   );
 
   const push = useCallback((event: AcpEvent) => {
-    updateEvents((prev) => appendEvent(prev, event));
+    updateEvents((previous) => appendEvent(previous, event));
   }, [updateEvents]);
 
   const finishTurn = useCallback((outcome: AcpTurnCompletion['outcome'], stopReason: string | null) => {
@@ -348,8 +348,8 @@ export function useAcpSession({
       let onLine: ((line: string) => void) | null = null;
       const transport: AcpTransport = {
         send: (line) => sendAcpLine(acpSessionId, line),
-        subscribe: (cb) => {
-          onLine = cb;
+        subscribe: (callback) => {
+          onLine = callback;
           return () => {
             onLine = null;
           };
@@ -481,11 +481,11 @@ export function useAcpSession({
         .catch(() => {
           /* Being unable to read past conversations is not this conversation's problem. */
         });
-    } catch (err) {
+    } catch (error) {
       // Generation-guarded like every success-path await: a superseded start can reject after `stop()`
       // and must not clean up the replacement's listener, client or process.
       if (!stale()) {
-        setError(err instanceof Error ? err.message : String(err));
+        setError(error instanceof Error ? error.message : String(error));
         setStatusTracked('error');
         // The child may already be up; the next `start()` would spawn another and orphan it.
         const orphan = acpSessionRef.current;
@@ -548,7 +548,7 @@ export function useAcpSession({
     const sessionId = sessionIdRef.current;
     if (!client || !sessionId) return;
     if (await client.setModel(sessionId, modelId)) {
-      setChoices((prev) => ({ ...prev, currentModelId: modelId }));
+      setChoices((previous) => ({ ...previous, currentModelId: modelId }));
       if (rememberChoices) rememberModel(vaultRoot, runtimeId, modelId);
     }
   }, [rememberChoices, runtimeId, setChoices, vaultRoot]);
@@ -561,7 +561,7 @@ export function useAcpSession({
     changingModeRef.current += 1;
     try {
       if (await client.setMode(sessionId, modeId) && clientRef.current === client && sessionIdRef.current === sessionId) {
-        setChoices((prev) => ({ ...prev, currentModeId: modeId }));
+        setChoices((previous) => ({ ...previous, currentModeId: modeId }));
       }
     } finally { changingModeRef.current -= 1; }
   }, [setChoices]);

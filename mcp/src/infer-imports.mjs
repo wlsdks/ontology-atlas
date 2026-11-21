@@ -206,7 +206,7 @@ function inferImportsWithinRoot(rootPath, options = {}) {
     } catch {
       continue;
     }
-    const dir = dirname(file);
+    const directory = dirname(file);
 
     if (extname(file) === RUST_SOURCE_EXTENSION) {
       classifyRustDependencies(
@@ -249,7 +249,7 @@ function inferImportsWithinRoot(rootPath, options = {}) {
       classify(
         spec,
         file,
-        dir,
+        directory,
         rootPath,
         edges,
         externalImports,
@@ -268,7 +268,7 @@ function inferImportsWithinRoot(rootPath, options = {}) {
       classify(
         spec,
         file,
-        dir,
+        directory,
         rootPath,
         edges,
         externalImports,

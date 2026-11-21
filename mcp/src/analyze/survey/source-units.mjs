@@ -65,12 +65,12 @@ function classOf(path, head) {
   const parts = path.split('/');
   const dirs = parts.slice(0, -1).map((part) => part.toLowerCase());
   const name = parts.at(-1);
-  if (dirs.some((dir) => VENDORED.has(dir))) return 'vendored';
+  if (dirs.some((directory) => VENDORED.has(directory))) return 'vendored';
   if (GENERATED_FILE.test(name) || GENERATED_HEADER.test(head)) return 'generated';
-  if (dirs.some((dir) => TESTS.has(dir)) || TEST_FILE.test(name)) return 'test';
+  if (dirs.some((directory) => TESTS.has(directory)) || TEST_FILE.test(name)) return 'test';
   if (MIGRATION_FOLDERS.has(dirs.at(-1)) && MIGRATION_FILE.test(name)) return 'migration';
-  if (dirs.some((dir) => BENCHMARKS.has(dir)) || BENCH_FILE.test(name)) return 'benchmark';
-  if (dirs.some((dir) => EXAMPLES.has(dir))) return 'example';
+  if (dirs.some((directory) => BENCHMARKS.has(directory)) || BENCH_FILE.test(name)) return 'benchmark';
+  if (dirs.some((directory) => EXAMPLES.has(directory))) return 'example';
   if (dirs.length > 0 && DOCS.has(dirs[0])) return 'docs';
   if (dirs.length > 0 && TOOLING.has(dirs[0])) return 'tooling';
   if (dirs.length === 0 && ROOT_TOOLING_FILE.test(name)) return 'tooling';
@@ -79,14 +79,14 @@ function classOf(path, head) {
 
 function walkSourceFiles(rootPath, ignore, excludedPrefixes) {
   const out = [];
-  const visit = (dir) => {
+  const visit = (directory) => {
     if (out.length >= MAX_FILES) return;
     let names;
-    try { names = readdirSync(dir).sort(); } catch { return; }
+    try { names = readdirSync(directory).sort(); } catch { return; }
     for (const name of names) {
       if (out.length >= MAX_FILES) return;
       if (name.startsWith('.') || ignore.has(name) || SENSITIVE.test(name)) continue;
-      const abs = join(dir, name);
+      const abs = join(directory, name);
       const rel = relative(rootPath, abs).split(sep).join('/');
       if (excludedPrefixes.some((prefix) => rel === prefix || rel.startsWith(`${prefix}/`))) continue;
       let stat;

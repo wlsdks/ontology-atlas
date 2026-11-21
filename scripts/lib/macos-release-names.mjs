@@ -28,8 +28,8 @@ export function loadMacosReleaseNames(root = process.cwd()) {
 function executableFromInfoPlist(appPath) {
   const infoPlistPath = path.join(appPath, "Contents", "Info.plist");
   if (!fs.existsSync(infoPlistPath)) return null;
-  const info = fs.readFileSync(infoPlistPath, "utf8");
-  const match = info.match(/<key>CFBundleExecutable<\/key>\s*<string>([^<]+)<\/string>/);
+  const infoPlistText = fs.readFileSync(infoPlistPath, "utf8");
+  const match = infoPlistText.match(/<key>CFBundleExecutable<\/key>\s*<string>([^<]+)<\/string>/);
   return match?.[1] ?? null;
 }
 

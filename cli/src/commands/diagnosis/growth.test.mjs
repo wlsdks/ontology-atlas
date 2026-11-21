@@ -13,17 +13,17 @@ import { promisify } from 'node:util';
 const execFileAsync = promisify(execFile);
 const CLI_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), '../../index.mjs');
 
-let tmp;
+let temporaryDirectory;
 let vault;
 
 beforeEach(() => {
-  tmp = realpathSync(mkdtempSync(join(tmpdir(), 'ontology-atlas-growth-test-')));
-  vault = join(tmp, 'vault');
+  temporaryDirectory = realpathSync(mkdtempSync(join(tmpdir(), 'ontology-atlas-growth-test-')));
+  vault = join(temporaryDirectory, 'vault');
   mkdirSync(vault, { recursive: true });
 });
 
 afterEach(() => {
-  rmSync(tmp, { recursive: true, force: true });
+  rmSync(temporaryDirectory, { recursive: true, force: true });
 });
 
 function writeNode(slug, frontmatter, lines) {

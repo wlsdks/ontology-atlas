@@ -21,10 +21,10 @@ import {
  * the shell's `?`, so the sheet and destination keys agree.
  */
 export function blockingSurfaceOpen(): boolean {
-  for (const el of document.querySelectorAll('[aria-modal="true"]')) {
-    if (isLeavingSurface(el)) continue;
-    if (el.getClientRects().length === 0) continue;
-    const style = getComputedStyle(el);
+  for (const element of document.querySelectorAll('[aria-modal="true"]')) {
+    if (isLeavingSurface(element)) continue;
+    if (element.getClientRects().length === 0) continue;
+    const style = getComputedStyle(element);
     if (style.visibility === 'hidden' || style.display === 'none') continue;
     if (Number(style.opacity) < 0.05) continue;
     return true;
@@ -37,10 +37,10 @@ export function blockingSurfaceOpen(): boolean {
  * `aria-hidden`, `data-state="closed"`, `pointer-events: none`), not opacity. An open modal never
  * computes `pointer-events: none`, so these marks cannot let a key through.
  */
-function isLeavingSurface(el: Element): boolean {
-  if (el.closest('[aria-hidden="true"], [inert]')) return true;
-  if (el.getAttribute('data-state') === 'closed') return true;
-  return getComputedStyle(el).pointerEvents === 'none';
+function isLeavingSurface(element: Element): boolean {
+  if (element.closest('[aria-hidden="true"], [inert]')) return true;
+  if (element.getAttribute('data-state') === 'closed') return true;
+  return getComputedStyle(element).pointerEvents === 'none';
 }
 
 /**

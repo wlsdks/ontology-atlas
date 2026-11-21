@@ -77,8 +77,8 @@ export function derivationToInsight(
       const isContains = isContainmentRelation(e.type);
       if (!isContains) continue;
       const [from, to] = e.type === 'contains' ? [e.from, e.to] : [e.to, e.from];
-      const arr = containsAdj.get(from);
-      if (arr) arr.push(to);
+      const children = containsAdj.get(from);
+      if (children) children.push(to);
       else containsAdj.set(from, [to]);
     }
     const nodeById = new Map(nodes.map((n) => [n.id, n]));
@@ -90,8 +90,8 @@ export function derivationToInsight(
       // on a large vault (same pattern as ontology-tree/reachability.ts).
       let head = 0;
       while (head < queue.length) {
-        const cur = queue[head++];
-        const children = containsAdj.get(cur);
+        const current = queue[head++];
+        const children = containsAdj.get(current);
         if (!children) continue;
         for (const c of children) {
           if (visited.has(c)) continue;

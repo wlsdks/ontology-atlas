@@ -155,12 +155,12 @@ export async function sendTurn(
       setLastTurnUpdateAt(null);
       setStatusTracked('ready');
     }
-  } catch (err) {
+  } catch (error) {
     if (generationRef.current !== generation || statusRef.current === 'exited') return true;
     finishTurn('failed', null);
     setApprovedOntologyWriteTracked(null);
     setLastTurnUpdateAt(null);
-    setError(err instanceof Error ? err.message : String(err));
+    setError(error instanceof Error ? error.message : String(error));
     setStatusTracked('error');
   }
   return true;

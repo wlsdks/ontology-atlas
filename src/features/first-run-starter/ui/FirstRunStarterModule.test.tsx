@@ -130,7 +130,7 @@ describe('FirstRunStarterModule', () => {
     expect(screen.getByTestId('first-run-starter-context')).toHaveTextContent('body');
     const card = screen.getByTestId('first-run-starter');
     const order = ['first-run-starter-sample-line', 'first-run-starter-headline', 'first-run-starter-context', 'first-run-starter-open'];
-    const positions = order.map((id) => [...card.querySelectorAll('[data-testid]')].findIndex((el) => el.getAttribute('data-testid') === id));
+    const positions = order.map((id) => [...card.querySelectorAll('[data-testid]')].findIndex((element) => element.getAttribute('data-testid') === id));
     expect(positions.every((position) => position >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
   });

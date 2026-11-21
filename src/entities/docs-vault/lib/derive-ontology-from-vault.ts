@@ -224,9 +224,9 @@ function relationIntents(fm: Record<string, unknown>, nodeKind: string): Relatio
     const capSlug = kindSlug(cap, 'capability');
     if (capSlug) intents.push({ key: 'capabilities', ref: cap, fallback: `capability:${capSlug}` });
   }
-  for (const el of asStringArray(fm.elements)) {
-    const elSlug = kindSlug(el, 'element');
-    if (elSlug) intents.push({ key: 'elements', ref: el, fallback: `element:${elSlug}` });
+  for (const element of asStringArray(fm.elements)) {
+    const elSlug = kindSlug(element, 'element');
+    if (elSlug) intents.push({ key: 'elements', ref: element, fallback: `element:${elSlug}` });
   }
   // `contains[]` as written by `add_relation`; folder-prefixed refs keep their real kind.
   for (const contained of asStringArray(fm.contains)) {

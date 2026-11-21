@@ -39,18 +39,18 @@ export function dependencyClosure({ rootDependencies, rootDir, resolvePackageDir
   while (pending.length > 0) {
     const { name, fromDir } = pending.shift();
     if (found.has(name)) continue;
-    const dir = resolvePackageDir(name, fromDir);
-    if (!dir) {
+    const directory = resolvePackageDir(name, fromDir);
+    if (!directory) {
       missing.push(name);
       continue;
     }
-    found.set(name, dir);
-    for (const next of Object.keys(readManifest(dir)?.dependencies ?? {})) {
-      if (!found.has(next)) pending.push({ name: next, fromDir: dir });
+    found.set(name, directory);
+    for (const next of Object.keys(readManifest(directory)?.dependencies ?? {})) {
+      if (!found.has(next)) pending.push({ name: next, fromDir: directory });
     }
   }
   return {
-    packages: [...found.entries()].map(([name, dir]) => ({ name, dir })).sort((a, b) => a.name.localeCompare(b.name)),
+    packages: [...found.entries()].map(([name, directory]) => ({ name, dir: directory })).sort((a, b) => a.name.localeCompare(b.name)),
     missing: missing.sort(),
   };
 }

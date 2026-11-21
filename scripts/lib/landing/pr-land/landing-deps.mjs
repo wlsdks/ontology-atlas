@@ -102,9 +102,9 @@ export function defaultDeps(io = console) {
   const slug = JSON.parse(ghRun(['repo', 'view', '--json', 'nameWithOwner'])).nameWithOwner;
   const exits = new Set();
   const runExits = () => {
-    for (const fn of [...exits]) {
-      exits.delete(fn);
-      try { fn(); } catch { /* best effort on the way out */ }
+    for (const exitHandler of [...exits]) {
+      exits.delete(exitHandler);
+      try { exitHandler(); } catch { /* best effort on the way out */ }
     }
   };
   process.on('exit', runExits);
@@ -131,9 +131,9 @@ export function defaultDeps(io = console) {
     pid: process.pid,
     user,
     liveness: classifyHolderLiveness,
-    onExit: (fn) => {
-      exits.add(fn);
-      return () => exits.delete(fn);
+    onExit: (handler) => {
+      exits.add(handler);
+      return () => exits.delete(handler);
     },
     cleanupWorktree: (path) => cleanupWorktree(path, (line) => io.log(`[pr-land] ${line}`)),
   };

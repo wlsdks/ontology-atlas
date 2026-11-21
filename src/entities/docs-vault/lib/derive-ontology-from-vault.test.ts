@@ -467,10 +467,10 @@ describe("element display names from code paths", () => {
       }),
     ]);
     const result = deriveOntologyFromVault(manifest);
-    const el = result.nodes.find((n) => n.kind === "element" && n.title === "src/foo/bar-baz.ts");
-    expect(el).toBeDefined();
-    expect(el?.title).toBe("src/foo/bar-baz.ts");
-    expect(el?.display).toBe("Bar Baz");
+    const element = result.nodes.find((n) => n.kind === "element" && n.title === "src/foo/bar-baz.ts");
+    expect(element).toBeDefined();
+    expect(element?.title).toBe("src/foo/bar-baz.ts");
+    expect(element?.display).toBe("Bar Baz");
   });
 
   it("prefers an explicit display over the derived one", () => {
@@ -486,9 +486,9 @@ describe("element display names from code paths", () => {
       }),
     ]);
     const result = deriveOntologyFromVault(manifest);
-    const el = result.nodes.find((n) => n.id === "element:bar-baz");
-    expect(el?.title).toBe("src/foo/bar-baz.ts");
-    expect(el?.display).toBe("커스텀 이름");
+    const element = result.nodes.find((n) => n.id === "element:bar-baz");
+    expect(element?.title).toBe("src/foo/bar-baz.ts");
+    expect(element?.display).toBe("커스텀 이름");
   });
 
   it("does not derive display names for non-element kinds", () => {

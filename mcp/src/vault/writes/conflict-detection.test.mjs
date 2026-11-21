@@ -22,15 +22,15 @@ function nextTestUid() {
   return `00000000-0000-4000-8000-${String(uidSequence).padStart(12, "0")}`;
 }
 
-function test(name, fn) {
+function test(name, body) {
   try {
-    fn();
+    body();
     passed += 1;
     console.log(`  ✓ ${name}`);
-  } catch (err) {
+  } catch (error) {
     failed += 1;
     console.error(`  ✗ ${name}`);
-    console.error(`    ${err.message}`);
+    console.error(`    ${error.message}`);
   }
 }
 
@@ -91,7 +91,7 @@ test("throws VaultConflictError when expectedMtime differs", () => {
         { title: "Foo" },
         { expectedMtime: stale },
       ),
-    (err) => err instanceof VaultConflictError && err.code === "VAULT_CONFLICT",
+    (error) => error instanceof VaultConflictError && error.code === "VAULT_CONFLICT",
   );
   rmSync(root, { recursive: true, force: true });
 });
@@ -106,12 +106,12 @@ test("VaultConflictError exposes the slug and both mtimes", () => {
   try {
     patchFrontmatter(root, "foo", { title: "Foo" }, { expectedMtime: stale });
     assert.fail("expected throw");
-  } catch (err) {
-    assert.equal(err.code, "VAULT_CONFLICT");
-    assert.equal(err.slug, "foo");
-    assert.equal(err.expectedMtime, stale);
-    assert.ok(typeof err.currentMtime === "number");
-    assert.match(err.message, /modified externally/);
+  } catch (error) {
+    assert.equal(error.code, "VAULT_CONFLICT");
+    assert.equal(error.slug, "foo");
+    assert.equal(error.expectedMtime, stale);
+    assert.ok(typeof error.currentMtime === "number");
+    assert.match(error.message, /modified externally/);
   }
   rmSync(root, { recursive: true, force: true });
 });
@@ -128,7 +128,7 @@ test("updateDoc honours the expectedMtime option", () => {
         frontmatter: { title: "X" },
         expectedMtime: stale,
       }),
-    (err) => err instanceof VaultConflictError,
+    (error) => error instanceof VaultConflictError,
   );
   rmSync(root, { recursive: true, force: true });
 });
@@ -221,7 +221,7 @@ test("deleteDoc honours the expectedMtime option", () => {
 
   assert.throws(
     () => deleteDoc(root, "foo", { expectedMtime: stale }),
-    (err) => err instanceof VaultConflictError,
+    (error) => error instanceof VaultConflictError,
   );
   rmSync(root, { recursive: true, force: true });
 });

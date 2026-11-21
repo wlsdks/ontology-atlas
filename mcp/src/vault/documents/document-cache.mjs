@@ -590,10 +590,10 @@ const readSnapshotScope = new AsyncLocalStorage();
  * async context, so a concurrent call (a write) is unaffected, and it closes when
  * `fn` settles, so work `fn` leaves scheduled reads the disk again.
  */
-export async function withVaultReadSnapshot(fn) {
+export async function withVaultReadSnapshot(callback) {
   const scope = { open: true, docsByRoot: new Map() };
   try {
-    return await readSnapshotScope.run(scope, fn);
+    return await readSnapshotScope.run(scope, callback);
   } finally {
     // Work the call left scheduled may still hold the scope; the text it kept must
     // not outlive the call through it.
@@ -610,10 +610,10 @@ export async function withVaultReadSnapshot(fn) {
  * then comes from bytes read during this call, while the stamp passes still see the
  * call's own writes: an atomic write replaces the file, so its inode moves.
  */
-export async function withVaultWriteSnapshot(fn) {
+export async function withVaultWriteSnapshot(callback) {
   const scope = { open: true, write: true, freshRoots: new Set(), docsByRoot: new Map() };
   try {
-    return await readSnapshotScope.run(scope, fn);
+    return await readSnapshotScope.run(scope, callback);
   } finally {
     scope.open = false;
     scope.freshRoots.clear();

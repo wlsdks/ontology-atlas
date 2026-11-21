@@ -44,8 +44,8 @@ export function foreignServer(host, port, checkout, exec = run) {
   const owner = listenerDirectory(host, port, exec);
   if (!owner) return null;
   const root = real(checkout);
-  const dir = real(owner);
-  if (dir === root || dir.startsWith(root + sep)) return null;
+  const directory = real(owner);
+  if (directory === root || directory.startsWith(root + sep)) return null;
   return `${host}:${port} is served from ${owner}, not this checkout (${checkout}); Playwright would test that server. `
     + `Stop it or run with PLAYWRIGHT_BASE_URL=http://127.0.0.1:<free port>.`;
 }

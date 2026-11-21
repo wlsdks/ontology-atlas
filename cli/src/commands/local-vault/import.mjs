@@ -21,17 +21,17 @@ const ALLOWED_FLAGS = ['--vault', '--kind', '--auto-prefix', '--raw-slug', '--no
  * slug from input or basename, title from input, first H1 or slug; a taken slug skips or gets -2 with --rename.
  */
 export async function runImport(args) {
-  const opts = parseArgs(args);
-  if (opts.help) {
+  const options = parseArgs(args);
+  if (options.help) {
     printImportUsage(process.stdout);
     return 0;
   }
-  if (opts.error) {
-    process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${opts.error}\n`);
+  if (options.error) {
+    process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${options.error}\n`);
     printImportUsage();
     return 1;
   }
-  const vaultPath = resolve(opts.vault);
+  const vaultPath = resolve(options.vault);
   if (!existsSync(vaultPath)) {
     process.stderr.write(
       `${COLORS.red}error${COLORS.reset}  vault path does not exist: ${vaultPath}\n`,
@@ -39,7 +39,7 @@ export async function runImport(args) {
     return 1;
   }
 
-  const sources = collectMarkdownFiles(opts.paths);
+  const sources = collectMarkdownFiles(options.paths);
   if (sources.length === 0) {
     process.stderr.write(
       `${COLORS.yellow}warn${COLORS.reset}  no markdown files found from given paths\n`,
@@ -55,7 +55,7 @@ export async function runImport(args) {
   let firstError = null;
 
   for (const src of sources) {
-    const result = importOne(src, vaultPath, opts, claimedSlugs, claimedUids);
+    const result = importOne(src, vaultPath, options, claimedSlugs, claimedUids);
     switch (result.status) {
       case 'imported':
       case 'would-import':
@@ -97,7 +97,7 @@ export async function runImport(args) {
     }
   }
 
-  const verb = opts.dryRun ? 'would import' : 'imported';
+  const verb = options.dryRun ? 'would import' : 'imported';
   process.stdout.write(
     `\n${COLORS.bold}${verb} ${summary.imported}${COLORS.reset}` +
       ` · skipped ${summary.skipped + summary.conflicts + summary.kindless}` +
@@ -111,12 +111,12 @@ export async function runImport(args) {
   return 0;
 }
 
-function importOne(srcPath, vaultPath, opts, claimedSlugs, claimedUids) {
+function importOne(srcPath, vaultPath, options, claimedSlugs, claimedUids) {
   let raw;
   try {
     raw = readFileSync(srcPath, 'utf-8');
-  } catch (err) {
-    return { status: 'error', error: err instanceof Error ? err.message : String(err) };
+  } catch (error) {
+    return { status: 'error', error: error instanceof Error ? error.message : String(error) };
   }
   const parsed = parseFrontmatter(raw);
   const inputFm = parsed.frontmatter || {};
@@ -125,7 +125,7 @@ function importOne(srcPath, vaultPath, opts, claimedSlugs, claimedUids) {
   const kind =
     typeof inputFm.kind === 'string' && inputFm.kind.trim()
       ? inputFm.kind.trim()
-      : opts.kind || null;
+      : options.kind || null;
   if (!kind) {
     return { status: 'kindless' };
   }
@@ -143,19 +143,19 @@ function importOne(srcPath, vaultPath, opts, claimedSlugs, claimedUids) {
 
   const folder = folderForKind(kind);
   let candidateSlug =
-    opts.autoPrefix && folder && !baseSlug.startsWith(folder)
+    options.autoPrefix && folder && !baseSlug.startsWith(folder)
       ? `${folder}${baseSlug}`
       : baseSlug;
 
   try {
     slugToPath(vaultPath, candidateSlug);
-  } catch (err) {
-    return { status: 'error', error: err instanceof Error ? err.message : String(err) };
+  } catch (error) {
+    return { status: 'error', error: error instanceof Error ? error.message : String(error) };
   }
 
   // Conflict, on disk or within this batch — --rename sidesteps it as -2, -3, ….
   if (slugTaken(vaultPath, candidateSlug, claimedSlugs)) {
-    if (opts.rename) {
+    if (options.rename) {
       candidateSlug = nextFreeSlug(vaultPath, candidateSlug, claimedSlugs);
     } else {
       return { status: 'conflict', slug: candidateSlug };
@@ -176,8 +176,8 @@ function importOne(srcPath, vaultPath, opts, claimedSlugs, claimedUids) {
       kind,
       title,
     });
-  } catch (err) {
-    return { status: 'error', error: err instanceof Error ? err.message : String(err) };
+  } catch (error) {
+    return { status: 'error', error: error instanceof Error ? error.message : String(error) };
   }
 
   const body = inputBody.trim() === '' ? defaultBody(kind, title) : inputBody;
@@ -195,19 +195,19 @@ function importOne(srcPath, vaultPath, opts, claimedSlugs, claimedUids) {
 
   try {
     preflightWriteDoc(vaultPath, candidateSlug, fm);
-  } catch (err) {
-    return { status: 'error', error: err instanceof Error ? err.message : String(err) };
+  } catch (error) {
+    return { status: 'error', error: error instanceof Error ? error.message : String(error) };
   }
 
-  if (opts.dryRun) {
+  if (options.dryRun) {
     return { status: 'would-import', slug: candidateSlug, kind, uidClaims };
   }
 
   try {
     writeDoc(vaultPath, candidateSlug, { frontmatter: fm, body });
     return { status: 'imported', slug: candidateSlug, kind, uidClaims };
-  } catch (err) {
-    return { status: 'error', error: err instanceof Error ? err.message : String(err) };
+  } catch (error) {
+    return { status: 'error', error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -265,10 +265,10 @@ function collectMarkdownFiles(paths) {
   return [...out].sort();
 }
 
-function walkMarkdown(dir, out) {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+function walkMarkdown(directory, out) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
     if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
-    const full = join(dir, entry.name);
+    const full = join(directory, entry.name);
     // Directory ingestion is a bounded walk of the tree the user selected.
     // Dirent reports symlinks as neither files nor directories, so nested links
     // cannot escape that tree or create recursive traversal loops.

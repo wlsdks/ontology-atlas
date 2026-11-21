@@ -236,8 +236,8 @@ async function readAgentActivityLog(handle: FileSystemDirectoryHandle): Promise<
 
 async function readAcpWorkReceipts(handle: FileSystemDirectoryHandle): Promise<AcpWorkReceipt[]> {
   try {
-    const dir = await handle.getDirectoryHandle('.ontology-atlas');
-    const raw = await readTextFileIfPresent(dir, ACP_WORK_RECEIPT_FILE);
+    const directory = await handle.getDirectoryHandle('.ontology-atlas');
+    const raw = await readTextFileIfPresent(directory, ACP_WORK_RECEIPT_FILE);
     return raw ? parseAcpWorkReceipts(raw) : [];
   } catch {
     return [];

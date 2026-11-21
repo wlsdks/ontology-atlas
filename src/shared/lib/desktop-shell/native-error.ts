@@ -20,14 +20,14 @@ export interface NativeErrorParts {
 export type NativeErrorLookup = (code: string) => string | undefined;
 
 /** invoke's rejection payload → a string. Rust returns `Err(String)`, but Error/unknown happen. */
-function payloadText(err: unknown): string {
-  if (typeof err === 'string') return err;
-  if (err instanceof Error) return err.message;
-  return String(err);
+function payloadText(error: unknown): string {
+  if (typeof error === 'string') return error;
+  if (error instanceof Error) return error.message;
+  return String(error);
 }
 
-export function parseNativeError(err: unknown): NativeErrorParts {
-  const raw = payloadText(err).trim();
+export function parseNativeError(error: unknown): NativeErrorParts {
+  const raw = payloadText(error).trim();
   const match = CODED.exec(raw);
   if (!match) return { code: null, detail: raw, raw };
   return { code: match[1], detail: (match[2] ?? '').trim(), raw };
@@ -38,8 +38,8 @@ export function parseNativeError(err: unknown): NativeErrorParts {
  * `audit-blocked:` and `timed-out:` prefixes (`agent-notice-codes.contract.test.ts`). With one, an
  * unknown code still degrades to the English detail.
  */
-export function nativeErrorMessage(err: unknown, lookup?: NativeErrorLookup): string {
-  const { code, detail, raw } = parseNativeError(err);
+export function nativeErrorMessage(error: unknown, lookup?: NativeErrorLookup): string {
+  const { code, detail, raw } = parseNativeError(error);
   if (!lookup) return raw;
   const sentence = code ? lookup(code) : undefined;
   if (!sentence) return detail || raw;

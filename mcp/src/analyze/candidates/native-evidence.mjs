@@ -319,11 +319,11 @@ export function discoverAutotoolsImplementationEvidence(rootPath, { ignore, skip
     }
   };
 
-  const visitSourceRoot = (dir, depth, descend = true) => {
+  const visitSourceRoot = (directory, depth, descend = true) => {
     if (depth > 3 || entriesSeen >= 2000) return;
     let realDirectory;
     try {
-      realDirectory = realpathSync(dir);
+      realDirectory = realpathSync(directory);
       if (visitedDirectories.has(realDirectory)) return;
       visitedDirectories.add(realDirectory);
     } catch {
@@ -331,7 +331,7 @@ export function discoverAutotoolsImplementationEvidence(rootPath, { ignore, skip
     }
     let entries;
     try {
-      entries = readdirSync(dir).sort();
+      entries = readdirSync(directory).sort();
     } catch {
       return;
     }
@@ -339,7 +339,7 @@ export function discoverAutotoolsImplementationEvidence(rootPath, { ignore, skip
       if (entriesSeen >= 2000) break;
       entriesSeen += 1;
       if (ignore.has(entry) || entry.startsWith('.')) continue;
-      const path = join(dir, entry);
+      const path = join(directory, entry);
       let pathStat;
       try {
         if (!pathResolvesInsideRoot(rootPath, path)) continue;

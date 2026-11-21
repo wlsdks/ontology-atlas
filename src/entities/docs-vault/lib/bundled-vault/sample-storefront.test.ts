@@ -70,8 +70,8 @@ describe('sample storefront vault — connected business graph', () => {
     const queue = [projectNode!.id];
     let head = 0;
     while (head < queue.length) {
-      const cur = queue[head++];
-      for (const next of adjacency.get(cur) ?? []) {
+      const current = queue[head++];
+      for (const next of adjacency.get(current) ?? []) {
         if (visited.has(next)) continue;
         visited.add(next);
         queue.push(next);
