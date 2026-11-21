@@ -1081,5 +1081,68 @@
     "sourceTooLarge": "这个文件太大，无法在这里显示。",
     "linkMissing": "此文件夹中没有这个名称的内容。",
     "back": "返回"
+  },
+  "wikiIndex": {
+    "views": {
+      "log": "记录",
+      "logNone": "暂无",
+      "checkNever": "尚未运行"
+    },
+    "group": {
+      "attention": "需要查看的页面",
+      "answers": "已保存的回答",
+      "several": "由多个原文写成",
+      "one": "由一个原文写成",
+      "none": "没有原文"
+    },
+    "row": {
+      "sources": "{count, number} 个原文",
+      "noSource": "没有原文",
+      "moreReasons": "{reason} 等 {count, number} 项"
+    },
+    "reason": {
+      "disagreement": "与另一个页面矛盾",
+      "superseded": "较新的原文说法不同",
+      "stale": "写成后原文已更改",
+      "missingLink": "应链接到相关页面"
+    },
+    "day": {
+      "now": "刚刚",
+      "today": "今天",
+      "yesterday": "昨天",
+      "ago": "{count, number} 天前"
+    },
+    "showAll": "显示全部 {count, number} 个",
+    "attentionAll": "在检查结果中查看全部 {count, number} 个",
+    "groupClear": "显示完整目录",
+    "empty": {
+      "title": "还没有 wiki 页面",
+      "body": "代理根据原文写出 wiki 页面后，会汇集在这里：每个原文一页、综合多个原文的页面，以及你保存的回答。",
+      "toSources": "在原文标签页写 wiki 页面"
+    },
+    "reading": "正在读取 wiki 页面 · 目前 {count, number} 个",
+    "pageGone": "{title} 已不在 wiki/ 中。已回到目录。"
+  },
+  "wikiLog": {
+    "title": "记录",
+    "lede": "按时间倒序显示这个 wiki 发生的事：由原文写成的页面、检查、修复和保存的回答。",
+    "meta": "读取自 wiki/_log.md 和 wiki/answers/ · {count, number} 条",
+    "kind": {
+      "compile": "写了页面",
+      "lint": "检查",
+      "fix": "修复",
+      "answer": "保存回答"
+    },
+    "compiled": "读取 {sources, number} 个原文 · 新增 {created, number} 页 · 修改 {revised, number} 页",
+    "noChange": "读取 {sources, number} 个原文 · 没有页面更改",
+    "answer": "已保存到 wiki：{title}",
+    "byRound": "自动检查“{name}”",
+    "pageGone": "{name}（已不在 wiki/ 中）",
+    "empty": "这个 wiki 还没有发生任何事。由原文写页面、检查 wiki 或保存回答时，这里都会添加一行。",
+    "unreadable": "无法读取 wiki/_log.md，因此只列出已保存的回答。请检查文件权限；可以读取后列表会更新。"
+  },
+  "sourcesIndex": {
+    "add": "添加原文",
+    "addBody": "原文保持原样。Atlas 读取它们，代理据此写 wiki 页面。"
   }
 }
