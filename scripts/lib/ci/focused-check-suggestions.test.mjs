@@ -1066,6 +1066,19 @@ describe('focused check suggestions', () => {
     }
   });
 
+  it('points every Flat name admission file at the star-motion spec that measures names in motion', () => {
+    const command = 'pnpm exec playwright test tests/e2e/map/flat-graph/map-flat-graph-star-motion.spec.ts';
+    for (const path of [
+      'src/widgets/ontology-map/flat-graph/names.ts',
+      'src/widgets/ontology-map/flat-graph/names/admit.ts',
+      'src/widgets/ontology-map/flat-graph/names/sides.ts',
+    ]) {
+      assert.ok(existsSync(path), `${path} moved; move its mapping with it`);
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes(command), path);
+    }
+    assert.ok(!commandNames(suggestFocusedChecks(['src/widgets/ontology-map/flat-graph/names/step-space.test.ts'])).includes(command));
+  });
+
   it('routes the vault session files the desktop readiness gate reads to that gate', () => {
     for (const path of ['src/entities/vault-session/model/local-vault/use-vault-choice.ts', 'src/entities/vault-session/model/local-vault/vault-sidecars.ts']) {
       assert.ok(existsSync(path), `${path} moved; move its mapping with it`);
