@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 
 import { buildCodexConfigToml } from "../../src/entities/vault-session/lib/ontology-starter";
-import { bundledServerLaunch } from "../../src/shared/config/mcp-server-launch";
+import { bundledServerLaunch } from "../../src/shared/config/mcp/mcp-server-launch";
 import {
   OFF_VECTOR_STATUS,
   type VectorFailure,

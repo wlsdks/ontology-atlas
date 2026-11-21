@@ -1345,12 +1345,12 @@ describe('focused check suggestions', () => {
 
   it('suggests lint, related suites and typecheck for app/source TypeScript files without sibling tests', () => {
     const result = suggestFocusedChecks([
-      'src/shared/config/site.ts',
+      'src/shared/config/site/site.ts',
       'src/shared/lib/theme.ts',
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec eslint --max-warnings 0 src/shared/config/site.ts src/shared/lib/theme.ts',
+      'pnpm exec eslint --max-warnings 0 src/shared/config/site/site.ts src/shared/lib/theme.ts',
       'pnpm typecheck',
     ]);
   });
@@ -2112,6 +2112,19 @@ describe('rendered UI audit coverage', () => {
       const commands = commandNames(suggestFocusedChecks([path]));
       assert.ok(commands.includes('pnpm test:ui:audit'), path);
       assert.ok(commands.includes('pnpm exec playwright test tests/e2e/design-audits/ui-audit-probe.spec.ts'), path);
+    }
+  });
+});
+
+describe('files moved into a subfolder keep their rules', () => {
+  it('checks the committed MCP catalogue and runs the security contracts for the site content security policy', () => {
+    const subjects = [
+      ['src/shared/config/mcp/mcp-catalogue.generated.ts', 'pnpm mcp:catalogue:check'],
+      ['src/shared/config/site/web-content-security-policy.ts', SECURITY_COMMAND],
+    ];
+    for (const [path, command] of subjects) {
+      assert.ok(existsSync(path), path);
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes(command), `${path} -> ${command}`);
     }
   });
 });

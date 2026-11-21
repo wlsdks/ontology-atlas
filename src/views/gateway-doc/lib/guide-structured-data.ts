@@ -1,5 +1,5 @@
 import { absoluteUrl } from '@/shared/config';
-import { SITE_ORGANIZATION_REF, SITE_WEBSITE_REF } from '@/shared/config/site-entity';
+import { SITE_ORGANIZATION_REF, SITE_WEBSITE_REF } from '@/shared/config/site/site-entity';
 import { LOCALE_META } from '@/i18n/locales';
 import { siteOgImagePath } from '@/shared/lib/public-pages/page-metadata';
 

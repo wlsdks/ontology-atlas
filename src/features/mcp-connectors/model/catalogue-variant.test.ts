@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { CatalogueEntry, CatalogueVariant } from '@/shared/config/mcp-catalogue';
+import type { CatalogueEntry, CatalogueVariant } from '@/shared/config/mcp/mcp-catalogue';
 import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
 
 import { pressOutcome, primaryVariant, secretsFromAnswers } from './catalogue-variant';

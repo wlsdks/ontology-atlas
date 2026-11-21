@@ -372,7 +372,7 @@ addresses and any URL that writes or executes remain out, and
 
 **One page policy for both.** A static host sends no headers, so the production export
 carries its Content-Security-Policy as a meta tag in the root layout
-(`src/shared/config/web-content-security-policy.ts`): no remote image, connection,
+(`src/shared/config/site/web-content-security-policy.ts`): no remote image, connection,
 plugin, `<base>` or form target, and scripts from the page's own origin (inline ones
 included until the export's inline scripts are hashed). The app loads the same HTML
 under its own policy (`tauri.conf.json`), and both apply there, so the web policy allows

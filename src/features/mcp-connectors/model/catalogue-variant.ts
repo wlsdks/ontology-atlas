@@ -4,7 +4,7 @@ import {
   type CatalogueEntry,
   type CatalogueVariable,
   type CatalogueVariant,
-} from '@/shared/config/mcp-catalogue';
+} from '@/shared/config/mcp/mcp-catalogue';
 import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
 
 import type { SecretToStore } from './connector-draft';

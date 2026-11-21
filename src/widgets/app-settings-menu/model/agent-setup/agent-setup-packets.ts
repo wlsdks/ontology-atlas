@@ -15,7 +15,7 @@ import {
   ATLAS_CLI,
   shellQuoteForPacket,
   vaultPathForPacket,
-} from '@/shared/config/cli-invocation';
+} from '@/shared/config/agent/cli-invocation';
 
 export function buildAgentVerifyCliCommand(vaultPath?: string | null): string {
   const target = vaultPath ? shellQuoteForPacket(vaultPath) : '.';

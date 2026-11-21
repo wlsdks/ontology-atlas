@@ -1,7 +1,7 @@
 /** The ontology starter: 5 .md files plus agent MCP configs scaffolded into an empty folder. Mirrors `cli/templates/vault/`; keep both in sync. */
 
 import type { McpServerLaunch } from '@/shared/config';
-import { ATLAS_CLI } from '@/shared/config/cli-invocation';
+import { ATLAS_CLI } from '@/shared/config/agent/cli-invocation';
 
 interface StarterFile {
   relPath: string;

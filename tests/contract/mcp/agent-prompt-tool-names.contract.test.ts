@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildAgentAnalyzePrompt,
   buildAgentSetupPrompt,
-} from "@/shared/config/agent-prompts";
+} from "@/shared/config/agent/agent-prompts";
 
 /**
  * **Instructions that fail the moment they are pasted are a trap, not help.**

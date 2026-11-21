@@ -14,7 +14,7 @@ import {
   type ConnectorRecord,
   type ConnectorTransport,
 } from '@/shared/lib/connectors/connector-record';
-import { MCP_CATALOGUE_CAPTURED_AT } from '@/shared/config/mcp-catalogue';
+import { MCP_CATALOGUE_CAPTURED_AT } from '@/shared/config/mcp/mcp-catalogue';
 import type { ResolvedRuntime } from '@/shared/lib/connectors/tauri-connector-runtimes';
 
 import {

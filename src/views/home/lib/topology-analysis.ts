@@ -11,7 +11,7 @@ import {
   type KnowledgeGraphNode,
   type OntologyHealthActionTarget,
 } from "@/entities/knowledge-graph";
-import { ATLAS_CLI } from "@/shared/config/cli-invocation";
+import { ATLAS_CLI } from "@/shared/config/agent/cli-invocation";
 
 export interface TopologyAnalysisSummaryInput {
   mode: TopologyAnalysisMode;

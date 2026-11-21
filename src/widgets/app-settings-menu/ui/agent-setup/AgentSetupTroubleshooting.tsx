@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { buildOntologyStarterJsonGateCommand } from '@/features/docs-vault-local';
 import { Chip } from '@/shared/ui/controls/controls';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { ATLAS_CLI, shellQuoteForPacket } from '@/shared/config/cli-invocation';
+import { ATLAS_CLI, shellQuoteForPacket } from '@/shared/config/agent/cli-invocation';
 import { AGENT_VERIFY_CLI_PREVIEW } from '../../model/agent-setup/agent-setup-packets';
 import type {
   AgentConfigStatus,
