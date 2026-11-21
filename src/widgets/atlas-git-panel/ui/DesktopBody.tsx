@@ -107,11 +107,8 @@ export function DesktopBody({
   locationLine: React.ReactNode;
   snapshotMessage: string;
   setSnapshotMessage: (v: string) => void;
-  /** The connected vault is the exact scope of each selected commit's lazy patch read. */
   vaultPath: string | null;
-  /** `navigator.platform ?? userAgent` — the hint that picks per-platform install guidance. */
   hostPlatformHint: string;
-  /** Re-checks for git, so someone who just installed it need not restart the app. */
   onRecheckGit: () => void;
   t: Translator;
   stage: Extract<GitStage, "not-installed" | "error" | "not-initialized" | "workbench">;
@@ -138,20 +135,16 @@ export function DesktopBody({
   diffFiles: AtlasGitDiffFile[];
   diffTooLarge: boolean;
   history: GitCommitInfo[];
-  /** Whether git holds steps older than `history` — drawn as one "show older steps" row. */
   historyHasMore: boolean;
   historyMoreBusy: boolean;
   onMoreHistory: () => void;
-  /** Restores one document to `source` (`HEAD` or a hash); resolves true when git did it. */
   onRestoreDocument: (relativePath: string, source: string, others: number) => Promise<boolean>;
   /**
    * Selects a step by hash, reading deeper into the list when it is not loaded yet, and keeps
    * following the document the jump was made from.
    */
   onJumpToCommit: (hash: string, follow: DocumentFollow) => void;
-  /** The document a jump is following, and the step it jumped to. */
   followed: (DocumentFollow & { hash: string }) | null;
-  /** The list's own relative-time wording for an ISO instant. */
   whenOf: (isoTime: string) => string;
   restoreBusy: boolean;
   restoreNotice: string | null;
@@ -181,7 +174,6 @@ export function DesktopBody({
   remoteActionNotice: string | null;
   remoteActionError: string | null;
   sessionChangeset: OntologyChangeset | null;
-  /** Step hash → the vault concepts that step changed. */
   concepts: ReadonlyMap<string, readonly { id: string; label: string; kind: string }[]>;
   egoFor: (nodeId: string) => ConceptEgo | null;
   kindLabel: (kind: string) => string;
@@ -298,7 +290,6 @@ export function DesktopBody({
         note={t("initEscape")}
       >
         <div className="flex w-full flex-col items-center gap-4" data-testid="atlas-git-not-initialized">
-          {/* Say what will be created **before** it is pressed. */}
           <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t("initWhatHappens")}
           </p>
@@ -338,7 +329,6 @@ export function DesktopBody({
               {initError}
             </p>
           ) : null}
-          {/* How to undo it (`initEscape`) is the stage's `note`, just before the action. */}
 
           {/* Even without git, what changed this session is known from the per-vault baseline. */}
           <SessionChangeSummary
@@ -438,10 +428,6 @@ export function DesktopBody({
        */
       className="git-fade-in flex flex-1 flex-col xl:min-h-0"
     >
-      {/*
-        No card shell: the workbench is the whole surface, fills the viewport and scrolls inside,
-        under one top bar (title, location, actions) and a divider.
-      */}
       {locationLine ? (
         <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-[color:var(--color-divider)] pb-3">
           <div className="ml-auto flex min-w-0 items-center gap-3">{locationLine}</div>
@@ -452,8 +438,7 @@ export function DesktopBody({
 
       <div
         className={cn(
-          // `content-start` below `xl`: a short list must not be stretched to the window,
-          // which left a dead band between the dock and the stacked reader.
+          // `content-start` below `xl`: a short list must not be stretched to the window.
           "grid flex-1 grid-cols-1 max-xl:content-start xl:min-h-0",
           showEvidence
             ? "xl:grid-cols-[minmax(0,var(--git-timeline-w))_minmax(0,1fr)]"
@@ -462,7 +447,6 @@ export function DesktopBody({
       >
         <div className="flex min-w-0 flex-col xl:min-h-0 xl:border-r xl:border-[color:var(--color-divider)]">
           {remotePanel ? <div className="flex-none px-4 pt-3">{remotePanel}</div> : null}
-          {/* With nothing to commit the list head states the current state, not the dock's message. */}
           {!hasChanges ? (
             <p className="flex-none border-b border-[color:var(--color-divider)] px-4 py-3 text-label leading-prose text-[color:var(--color-text-tertiary)]">
               {t("noChangesHint")}
@@ -519,7 +503,6 @@ export function DesktopBody({
              */
             className="flex min-w-0 flex-col max-xl:max-h-[var(--git-evidence-stack-max)] max-xl:overflow-y-auto xl:min-h-0 xl:overflow-y-auto"
           >
-            {/* The right side draws the one thing selected on the left. */}
             {selection.kind === "pending" ? (
               <PendingDocumentPane
                 t={t}

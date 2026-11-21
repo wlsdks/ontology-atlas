@@ -32,7 +32,6 @@ export function DiscardDock({
   path: string;
   status: string;
   delta: { added: number; removed: number } | null;
-  /** Uncommitted documents that stay untouched — the residue a person must know. */
   others: number;
   busy: boolean;
   onDiscard: (path: string, others: number) => Promise<boolean>;
@@ -75,7 +74,6 @@ function SnapshotResultLine({
   t: Translator;
   result: GitSnapshotResult;
   fallbackCount: number;
-  /** Why the send failed, in the reader's language — git's reason, read by the caller. */
   pushFailure: string | null;
 }) {
   const count = result.counts?.total ?? fallbackCount;
@@ -102,7 +100,6 @@ function SnapshotResultLine({
   );
 }
 
-/** The dock's next-remote-step door (connect, or send once saved), one class since both share a slot. */
 const DOCK_DOOR_CLASS = controlClass({
   shape: "chip",
   size: "sm",
@@ -140,14 +137,11 @@ export function ActionDock({
   setSnapshotMessage,
 }: {
   t: Translator;
-  /** The input the dock's last line opens when there is no remote. */
   onConnectRemote: () => void;
-  /** Where this branch's steps can go; the dock's last line states the next step for it. */
   remoteState: GitRemoteState;
   branch: string | null;
   headShortHash: string | null;
   remoteBusy: null | "fetch" | "pull" | "push";
-  /** The header's first send, offered again where the dock says there is one to make. */
   onSendBranch: () => void;
   hasChanges: boolean;
   changeCount: number;
@@ -158,12 +152,10 @@ export function ActionDock({
   setPushOptIn: (v: boolean) => void;
   snapshotting: boolean;
   snapshotResult: GitSnapshotResult | null;
-  /** Why the last save's send failed, in the reader's language; `null` when it did not fail. */
   snapshotPushFailure: string | null;
   snapshotError: string | null;
   confirmSnapshot: () => void;
   upstream: string | null;
-  /** A subject the user typed. Empty falls back to the automatic wording. */
   snapshotMessage: string;
   setSnapshotMessage: (v: string) => void;
 }) {
@@ -197,7 +189,6 @@ export function ActionDock({
           data-testid="atlas-git-confirm-step"
         >
           <p className="text-caption text-[color:var(--color-text-tertiary)]">{t("confirmBody")}</p>
-          {/* Editable so a step can say why; empty keeps the automatic subject the placeholder shows. */}
           <input
             type="text"
             ref={(node) => {

@@ -25,7 +25,6 @@ function RemoteActionButton({
   id: RemoteAction;
   label: string;
   hint: string;
-  /** The git command the press runs, shown under the hint; the verb itself by default. */
   command?: string;
   busy: boolean;
   disabled: boolean;
@@ -81,11 +80,9 @@ export function LocationLine({
 }: {
   t: Translator;
   className?: string;
-  /** Uncommitted changes. Above zero, Push opens the commit confirm step first. */
   pendingCount: number;
   branch: string | null;
   upstream: string | null;
-  /** Where this branch's steps can go; everything right of the location follows from it. */
   remoteState: GitRemoteState;
   /** The commit a detached HEAD names — shown in place of the `HEAD` git reports as the branch. */
   headShortHash: string | null;
@@ -110,9 +107,6 @@ export function LocationLine({
         Branch and remote names are the user's own, untranslated. Ahead and behind counts sit on
         the Push and Pull buttons they justify.
       */}
-      {/*
-        Branch, tracking arrow and upstream are one fact, drawn as one `tag` badge (`badgeClass`).
-      */}
       <span
         data-testid="atlas-git-location-ref"
         title={upstream ? `${detachedAt ?? branch} → ${upstream}` : (detachedAt ?? branch)}
@@ -126,7 +120,6 @@ export function LocationLine({
         <span className="truncate text-[color:var(--color-text-secondary)]">{detachedAt ?? branch}</span>
         {upstream ? (
           <>
-            {/* The arrow is not decoration but a **tracking relation** — the left follows the right. */}
             <span aria-hidden className="shrink-0 text-[color:var(--color-text-quaternary)]">
               →
             </span>
@@ -262,7 +255,6 @@ export function RemoteResultLine({
 }: {
   notice: string | null;
   error: string | null;
-  /** Which action the line reports; only the test id differs. */
   kind?: "remote" | "restore";
 }) {
   const ref = useRef<HTMLParagraphElement | null>(null);
