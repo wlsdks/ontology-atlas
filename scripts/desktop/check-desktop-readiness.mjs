@@ -77,7 +77,17 @@ const siteEntity = readText("src/shared/config/site-entity.ts");
 const webManifest = JSON.parse(readText("public/manifest.webmanifest"));
 const cargoToml = readText("src-tauri/Cargo.toml");
 const rootReadme = readText("README.md");
-const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
+/** The page and the parts it is built from: the hero and the release controls own the claims this gate reads. */
+const downloadPage = [
+  "src/views/download/ui/DownloadPage.tsx",
+  "src/views/download/ui/hero/HeroSection.tsx",
+  "src/views/download/ui/ClosingSection.tsx",
+  "src/views/download/ui/release/DownloadActions.tsx",
+  "src/views/download/ui/release/FactsStrip.tsx",
+  "src/views/download/ui/release/TrustLine.tsx",
+]
+  .map(readText)
+  .join("\n");
 /** The gateway's top chrome, where the brand name is drawn. The brand gate reads page and chrome together, so it does not pin the brand to one file path. */
 const gatewayChrome = readText("src/widgets/gateway-chrome/ui/GatewayNav.tsx");
 const gatewaySurfaceSource = `${downloadPage}\n${gatewayChrome}`;
@@ -860,9 +870,9 @@ if (
   downloadPage.includes("formatAssetSize") &&
   // The page reads release facts from the generated module: the hero reads the Windows asset
   // (`windowsAsset`) and names the in-development version when nothing is published
-  // (`resolveDisplayReleaseTag`).
+  // (`displayReleaseTag`).
   downloadPage.includes("windowsAsset") &&
-  downloadPage.includes("resolveDisplayReleaseTag") &&
+  downloadPage.includes("displayReleaseTag") &&
   downloadPage.includes("gateway-hero-windows") &&
   internalPipelineLeaks.every(
     (marker) => !downloadPage.includes(marker) && !downloadRoute.includes(marker),

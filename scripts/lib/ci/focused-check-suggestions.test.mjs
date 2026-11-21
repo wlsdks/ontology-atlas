@@ -1064,6 +1064,22 @@ describe('focused check suggestions', () => {
     assert.ok(!commands.some((command) => command.includes('mcp-connector-add')));
   });
 
+  it('points every download page section and its release controls at the scroll-budget and stillness specs', () => {
+    for (const file of [
+      'src/views/download/ui/DownloadPage.tsx',
+      'src/views/download/ui/hero/HeroSection.tsx',
+      'src/views/download/ui/film/FilmSection.tsx',
+      'src/views/download/ui/ClosingSection.tsx',
+      'src/views/download/ui/ScreensSection.tsx',
+      'src/views/download/ui/release/DownloadActions.tsx',
+      'src/views/download/ui/release/FactsStrip.tsx',
+    ]) {
+      const commands = domainCommands(suggestFocusedChecks([file]));
+      assert.ok(commands.includes('pnpm exec playwright test tests/e2e/gateway/download-scroll-budget.spec.ts'), file);
+      assert.ok(commands.includes('pnpm exec playwright test tests/e2e/gateway/download-still.spec.ts'), file);
+    }
+  });
+
   it('points folder-switch and download-hero changes at the leak specs that measure them', () => {
     const cases = [
       ['src/entities/vault-session/model/local-vault/use-local-vault.ts', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
