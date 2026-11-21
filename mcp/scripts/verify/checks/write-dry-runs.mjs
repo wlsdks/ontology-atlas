@@ -1,4 +1,4 @@
-import { isBacklinkKeyValue } from '../../../src/vault/backlink-key-shape.mjs';
+import { isBacklinkKeyValue } from '../../../src/vault/graph/backlink-key-shape.mjs';
 
 import { structuredErrorFailure } from './strict-arguments.mjs';
 import { structuredContentFailure } from './structured-content.mjs';
@@ -270,7 +270,7 @@ function backlinkKeyChangeFailure(row) {
 }
 
 /**
- * Shape validation, including the `relation_notes` map, lives in `mcp/src/vault/backlink-key-shape.mjs`;
+ * Shape validation, including the `relation_notes` map, lives in `mcp/src/vault/graph/backlink-key-shape.mjs`;
  * do not re-implement it here.
  */
 function isBacklinkRewriteValue(value) {

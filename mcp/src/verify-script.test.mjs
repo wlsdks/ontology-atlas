@@ -437,7 +437,7 @@ function humanMeaningRepair(projectSlug) {
   };
 }
 import { expectedResponseIds, missingResponseLabels } from '../scripts/json-rpc-lines.mjs';
-import { GRAPH_ARRAY_KEYS } from './vault/relation-refs.mjs';
+import { GRAPH_ARRAY_KEYS } from './vault/graph/relation-refs.mjs';
 import { NODE_UID_PATTERN } from './schema.mjs';
 import { assertPnpmScriptsExist } from '../../scripts/lib/pnpm-script-refs.mjs';
 import { buildAbsorptionPlan } from './vault/absorb.mjs';

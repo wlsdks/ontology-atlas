@@ -1,4 +1,4 @@
-import { readdirSync, lstatSync } from './confined-source-fs.mjs';
+import { readdirSync, lstatSync } from './confinement/confined-source-fs.mjs';
 import { join } from 'node:path';
 
 export const DEFAULT_IGNORE = new Set([

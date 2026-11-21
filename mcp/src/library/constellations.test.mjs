@@ -18,7 +18,7 @@ import {
   loadLibraryCollections,
   parseLibraryCollections,
 } from './constellations.mjs';
-import { loadVaultDocs } from '../vault/documents.mjs';
+import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
 import { runJsonRpcProcess } from '../../../scripts/lib/mcp-test-rpc.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

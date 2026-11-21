@@ -2246,19 +2246,19 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/absorb.mjs` | `absorb_document` |
 | `src/tools/vault-nodes.mjs` | node identity, the gates every write passes, and the whole-vault issue finders |
 | `src/tools/relation-keys.mjs` | which frontmatter key holds which relation, and how a stored ref matches |
-| `src/tools/maintenance.mjs` | what a result carries rather than being asked for |
-| `src/vault/slug-paths.mjs` | slug ↔ path mapping, the containment check every disk path passes, raw-source slugs, on-disk spelling, similar-slug suggestions, vault-root check |
-| `src/vault/documents.mjs` | the per-vault parse cache, cached document text, and the read and write snapshot scopes |
-| `src/vault/file-snapshot.mjs` | one `.md` read as bytes plus the stamp they were read under |
-| `src/vault/body-delivery.mjs` | body excerpts, the full-body cap, and what a response reports about a cut body |
-| `src/vault/text-read-pacing.mjs` | collection pacing for the text a load pass reads, under bun |
-| `src/vault/relation-refs.mjs` | the relation keys that become graph edges, their aliases, and how a document's refs and relation notes are read |
-| `src/vault/graph-queries.mjs` | kinds, orphans, shortest path and backlinks over one reference index, and the duplicate-title warning |
-| `src/vault/eligibility-gate.mjs` | the node-eligibility gate: its session memory and the advisory findings every committed write produces |
-| `src/vault/atomic-writes.mjs` | the stale-write conflict error, single-file atomic writes, and all-or-nothing multi-file plans |
-| `src/vault/doc-writes.mjs` | the single write point for create, patch, update and delete, with uid minting and identity checks |
-| `src/vault/backlink-rewrite.mjs` | rewriting every reference to a renamed, merged or reclassified node |
-| `src/infer-imports.mjs` + `src/infer-imports/*.mjs` | the import-graph entry, with one module per language and stage: workspace discovery, Autotools, grouping, impact focus |
+| `src/tools/result-attachments.mjs` | what a result carries rather than being asked for |
+| `src/vault/documents/slug-paths.mjs` | slug ↔ path mapping, the containment check every disk path passes, raw-source slugs, on-disk spelling, similar-slug suggestions, vault-root check |
+| `src/vault/documents/document-cache.mjs` | the per-vault parse cache, cached document text, and the read and write snapshot scopes |
+| `src/vault/documents/file-snapshot.mjs` | one `.md` read as bytes plus the stamp they were read under |
+| `src/vault/documents/body-delivery.mjs` | body excerpts, the full-body cap, and what a response reports about a cut body |
+| `src/vault/documents/text-read-pacing.mjs` | collection pacing for the text a load pass reads, under bun |
+| `src/vault/graph/relation-refs.mjs` | the relation keys that become graph edges, their aliases, and how a document's refs and relation notes are read |
+| `src/vault/graph/graph-queries.mjs` | kinds, orphans, shortest path and backlinks over one reference index, and the duplicate-title warning |
+| `src/vault/writes/eligibility-gate.mjs` | the node-eligibility gate: its session memory and the advisory findings every committed write produces |
+| `src/vault/writes/atomic-writes.mjs` | the stale-write conflict error, single-file atomic writes, and all-or-nothing multi-file plans |
+| `src/vault/writes/doc-writes.mjs` | the single write point for create, patch, update and delete, with uid minting and identity checks |
+| `src/vault/writes/backlink-rewrite.mjs` | rewriting every reference to a renamed, merged or reclassified node |
+| `src/infer-imports.mjs` + `src/infer-imports/` | the import-graph entry; `languages/` holds one reader per language (TypeScript, Python, Java and Kotlin, Rust, Go, Autotools C), `confinement/` the scan-root guard every read passes, and the folder itself the shared stages: workspace discovery, grouping, impact focus |
 | `src/ontology-engine.mjs` | public exports and explicit query-family composition |
 | `src/ontology-engine/graph-context/artifact-context.mjs` | graph indexes and reference resolution |
 | `src/ontology-engine/graph-context/context-operations.mjs` | shared graph lookups and scope helpers |

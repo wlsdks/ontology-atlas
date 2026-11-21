@@ -1,3 +1,3 @@
 // Cross-runtime bridge. MCP remains the canonical parser and formatter; the WebView previews the
 // exact same bytes without gaining filesystem access or write authority.
-export { previewDocumentPatch } from '../../../../mcp/src/vault/document-patch.mjs';
+export { previewDocumentPatch } from '../../../../mcp/src/vault/writes/document-patch.mjs';

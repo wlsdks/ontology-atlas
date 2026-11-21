@@ -1,7 +1,7 @@
 /**
  * Ontology construction rules: the single source of every text that tells a
  * model how to build this graph, and of the path heuristics the write gate
- * in `vault/eligibility-gate.mjs` runs. Values live in `schema.mjs`, logic there, text
+ * in `vault/writes/eligibility-gate.mjs` runs. Values live in `schema.mjs`, logic there, text
  * here (`docs/DECISIONS.md`: sibling count is not the target, since a cap is
  * gamed with empty buckets). English only; screen text lives in `messages/*.json`
  * by issue code.

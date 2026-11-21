@@ -7,11 +7,11 @@ import fs from 'node:fs';
 import { syncBuiltinESMExports } from 'node:module';
 import { defaultBody, nodeUidIssue } from '../schema.mjs';
 
-import { canonicalDiskSlug, suggestSimilarSlugs, vaultSlugExists } from './slug-paths.mjs';
-import { FULL_BODY_MAX_CHARS, describeBodyDelivery, extractSummaryExcerpt } from './body-delivery.mjs';
-import { drainNodeEligibilityFindings, resetNodeEligibilityGate } from './eligibility-gate.mjs';
-import { deleteDoc, patchFrontmatter, updateDoc, writeDoc } from './doc-writes.mjs';
-import { detectDuplicateTitle, findOrphans, findPath } from './graph-queries.mjs';
+import { canonicalDiskSlug, suggestSimilarSlugs, vaultSlugExists } from './documents/slug-paths.mjs';
+import { FULL_BODY_MAX_CHARS, describeBodyDelivery, extractSummaryExcerpt } from './documents/body-delivery.mjs';
+import { drainNodeEligibilityFindings, resetNodeEligibilityGate } from './writes/eligibility-gate.mjs';
+import { deleteDoc, patchFrontmatter, updateDoc, writeDoc } from './writes/doc-writes.mjs';
+import { detectDuplicateTitle, findOrphans, findPath } from './graph/graph-queries.mjs';
 
 let root;
 

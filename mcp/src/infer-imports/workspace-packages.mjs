@@ -4,9 +4,9 @@ import {
   statSync,
   lstatSync,
   existsSync,
-} from './confined-source-fs.mjs';
+} from './confinement/confined-source-fs.mjs';
 import { basename, join, relative } from 'node:path';
-import { pathResolvesInsideRoot } from './path-confinement.mjs';
+import { pathResolvesInsideRoot } from './confinement/path-confinement.mjs';
 import { DEFAULT_IGNORE } from './source-files.mjs';
 
 const WORKSPACE_DISCOVERY_MAX_ENTRIES = 10000;

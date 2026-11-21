@@ -412,7 +412,7 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks([
       'mcp/src/analyze.mjs',
       'mcp/src/ontology-compiler.test.mjs',
-      'mcp/src/vault/documents.mjs',
+      'mcp/src/vault/documents/document-cache.mjs',
       'mcp/scripts/json-rpc-lines.mjs',
     ]);
 
@@ -428,6 +428,24 @@ describe('focused check suggestions', () => {
       'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
+  });
+
+  it('treats a vault source one folder down as vault read and write surface, and its test as neither', () => {
+    const source = suggestFocusedChecks(['mcp/src/vault/writes/doc-writes.mjs']);
+    assert.ok(source.commands.some((row) => row.command === 'pnpm integration:mcp:vault-read'));
+    assert.ok(source.commands.some((row) => row.command === 'pnpm integration:mcp:write'));
+
+    const test = suggestFocusedChecks(['mcp/src/vault/writes/conflict-detection.test.mjs']);
+    assert.ok(!test.commands.some((row) => row.command === 'pnpm integration:mcp:vault-read'));
+    assert.ok(!test.commands.some((row) => row.command === 'pnpm integration:mcp:write'));
+  });
+
+  it('treats an infer-imports source one folder down as repo-analysis surface, and its test as not', () => {
+    const source = suggestFocusedChecks(['mcp/src/infer-imports/languages/go-imports.mjs']);
+    assert.ok(source.commands.some((row) => row.command === 'pnpm integration:mcp:repo-analysis'));
+
+    const test = suggestFocusedChecks(['mcp/src/infer-imports/languages/go-imports.test.mjs']);
+    assert.ok(!test.commands.some((row) => row.command === 'pnpm integration:mcp:repo-analysis'));
   });
 
   it('discovers a new MCP source and sibling test without a hand-maintained allowlist', () => {
@@ -502,7 +520,7 @@ describe('focused check suggestions', () => {
 
   it('suggests focused MCP read integration for read/query tool implementation changes', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/vault/documents.mjs',
+      'mcp/src/vault/documents/document-cache.mjs',
       'mcp/src/query.mjs',
       'mcp/src/ontology-engine.mjs',
       'mcp/src/ontology-compiler.mjs',
@@ -600,17 +618,17 @@ describe('focused check suggestions', () => {
 
   it('suggests focused MCP write integration for server write handler changes', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/vault/documents.mjs',
+      'mcp/src/vault/documents/document-cache.mjs',
       'mcp/src/index.js',
-      'mcp/src/vault/redirect-backlinks.test.mjs',
-      'mcp/src/vault/conflict-detection.test.mjs',
+      'mcp/src/vault/writes/redirect-backlinks.test.mjs',
+      'mcp/src/vault/writes/conflict-detection.test.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
       'pnpm docs:surface:check',
       'pnpm exec node --test mcp/src/vault/vault.test.mjs',
-      'pnpm exec node --test mcp/src/vault/redirect-backlinks.test.mjs',
-      'pnpm exec node --test mcp/src/vault/conflict-detection.test.mjs',
+      'pnpm exec node --test mcp/src/vault/writes/redirect-backlinks.test.mjs',
+      'pnpm exec node --test mcp/src/vault/writes/conflict-detection.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:surface',
       'pnpm integration:mcp:vault-read',
@@ -622,7 +640,7 @@ describe('focused check suggestions', () => {
 
   it('suggests focused MCP vault-read integration for vault read handlers', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/vault/documents.mjs',
+      'mcp/src/vault/documents/document-cache.mjs',
       'mcp/src/validate.mjs',
     ]);
 
@@ -658,13 +676,13 @@ describe('focused check suggestions', () => {
 
   it('routes each infer-imports family module to its own test and to repo-analysis integration', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/infer-imports/go-imports.mjs',
-      'mcp/src/infer-imports/path-confinement.mjs',
+      'mcp/src/infer-imports/languages/go-imports.mjs',
+      'mcp/src/infer-imports/confinement/path-confinement.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec node --test mcp/src/infer-imports/go-imports.test.mjs',
-      'pnpm exec node --test mcp/src/infer-imports/confined-source-fs.test.mjs',
+      'pnpm exec node --test mcp/src/infer-imports/languages/go-imports.test.mjs',
+      'pnpm exec node --test mcp/src/infer-imports/confinement/confined-source-fs.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:repo-analysis',
       'pnpm vault:validate',
@@ -2029,7 +2047,7 @@ describe('security surfaces', () => {
 
   it('asks for the security lens where untrusted input meets a capability', () => {
     for (const path of [
-      'mcp/src/vault/documents.mjs',
+      'mcp/src/vault/documents/document-cache.mjs',
       'src-tauri/src/lib.rs',
       '.github/workflows/checks.yml',
       'pnpm-lock.yaml',
