@@ -1,5 +1,6 @@
 import type { VaultSourceFile } from '../../model/types';
 import type { BuiltVaultEntry } from './md-entry';
+import { nameOf } from './vault-paths';
 
 /** `'sources/plan.PDF'` → `'pdf'`; a name with no extension yields `''`. */
 export function vaultSourceFormat(name: string): string {
@@ -11,7 +12,7 @@ export function vaultSourceFormat(name: string): string {
 export function vaultSourceRow(entry: BuiltVaultEntry): VaultSourceFile {
   return {
     path: entry.relativePath,
-    name: entry.relativePath.slice(entry.relativePath.lastIndexOf('/') + 1),
+    name: nameOf(entry.relativePath),
     format: vaultSourceFormat(entry.relativePath),
     bytes: entry.bytes ?? 0,
     mtime: entry.lastModified,
