@@ -9,7 +9,7 @@ import {
   normalizeTypes,
   summarizeNode,
   typeAllowed,
-} from './query-primitives.mjs';
+} from '../query-operation/query-primitives.mjs';
 
 export function createTraversalAnalysis({
   artifact,

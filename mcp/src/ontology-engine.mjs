@@ -1,33 +1,33 @@
 import { fileURLToPath } from 'node:url';
 
-import { createArtifactContext } from './ontology-engine/artifact-context.mjs';
-import { createContextOperations } from './ontology-engine/context-operations.mjs';
-import { createQueryPlanner } from './ontology-engine/query-planner.mjs';
-import { createSelectionQueries } from './ontology-engine/selection-queries.mjs';
-import { createScopeQueries } from './ontology-engine/scope-queries.mjs';
-import { createMaintenanceQueries } from './ontology-engine/maintenance-queries.mjs';
-import { createBriefQueries } from './ontology-engine/brief-queries.mjs';
-import { createHealthQuery } from './ontology-engine/health-query.mjs';
-import { builderFocusParam, normalizeBuilderFocusInput, normalizeCanvasPosition } from './ontology-engine/builder-focus.mjs';
+import { createArtifactContext } from './ontology-engine/graph-context/artifact-context.mjs';
+import { createContextOperations } from './ontology-engine/graph-context/context-operations.mjs';
+import { createQueryPlanner } from './ontology-engine/query-operation/query-planner.mjs';
+import { createSelectionQueries } from './ontology-engine/selection/selection-queries.mjs';
+import { createScopeQueries } from './ontology-engine/traversal/scope-queries.mjs';
+import { createMaintenanceQueries } from './ontology-engine/maintenance/maintenance-queries.mjs';
+import { createBriefQueries } from './ontology-engine/briefs/brief-queries.mjs';
+import { createHealthQuery } from './ontology-engine/maintenance/health-query.mjs';
+import { builderFocusParam, normalizeBuilderFocusInput, normalizeCanvasPosition } from './ontology-engine/traversal/builder-focus.mjs';
 import {
   buildDependencyImpactQualification,
   qualifyDeclaredDependencyEdges,
-} from './ontology-engine/dependency-qualification.mjs';
+} from './ontology-engine/traversal/dependency-qualification.mjs';
 import {
   pageRankScores,
   propagateCommunityLabels,
   roundScore,
   similarityScore,
   undirectedAdjacencyFrom,
-} from './ontology-engine/graph-measures.mjs';
-import { annotateMaintenanceAction, compareMaintenanceActions } from './ontology-engine/maintenance-actions.mjs';
+} from './ontology-engine/traversal/graph-measures.mjs';
+import { annotateMaintenanceAction, compareMaintenanceActions } from './ontology-engine/maintenance/maintenance-actions.mjs';
 import {
   compareCentralityRows,
   compareNodeRows,
   degreeBucket,
   sortLineageRows,
   topHubs,
-} from './ontology-engine/node-ranking.mjs';
+} from './ontology-engine/selection/node-ranking.mjs';
 import {
   normalizeDependencyImpactTypes,
   normalizeEdgeTargetKind,
@@ -41,7 +41,7 @@ import {
   normalizeRecommendRelationKind,
   normalizeStringSet,
   normalizeTraversalDirection,
-} from './ontology-engine/query-arguments.mjs';
+} from './ontology-engine/query-operation/query-arguments.mjs';
 import {
   compareEdges,
   countEdges,
@@ -49,15 +49,15 @@ import {
   publicRelationCountObject,
   publicRelationTypes,
   uniqueEdges,
-} from './ontology-engine/query-primitives.mjs';
-import { findNearMatchSlug, suggestedSlugForReference, titleFromReference } from './ontology-engine/reference-repair.mjs';
-import { limitLayers, normalizeCycle } from './ontology-engine/topology-shape.mjs';
-import { dispatchOntologyQuery } from './ontology-engine/query-dispatch.mjs';
-import { createTraversalQueries } from './ontology-engine/traversal-queries.mjs';
-import { createTraversalAnalysis } from './ontology-engine/traversal-analysis.mjs';
+} from './ontology-engine/query-operation/query-primitives.mjs';
+import { findNearMatchSlug, suggestedSlugForReference, titleFromReference } from './ontology-engine/maintenance/reference-repair.mjs';
+import { limitLayers, normalizeCycle } from './ontology-engine/traversal/topology-shape.mjs';
+import { dispatchOntologyQuery } from './ontology-engine/query-operation/query-dispatch.mjs';
+import { createTraversalQueries } from './ontology-engine/traversal/traversal-queries.mjs';
+import { createTraversalAnalysis } from './ontology-engine/traversal/traversal-analysis.mjs';
 import {
   buildAgentBriefHandoffPrompt,
-} from './ontology-engine/agent-responses.mjs';
+} from './ontology-engine/briefs/agent-responses.mjs';
 
 import { defaultBody } from './schema.mjs';
 
@@ -142,8 +142,8 @@ export {
   NODE_KIND_VALUES,
   RELATION_TYPE_VALUES,
   WRITE_RELATION_TYPE_VALUES,
-} from './ontology-engine/query-values.mjs';
-export { shareArtifact } from './ontology-engine/artifact-context.mjs';
+} from './ontology-engine/query-operation/query-values.mjs';
+export { shareArtifact } from './ontology-engine/graph-context/artifact-context.mjs';
 // Frontmatter key (edge.via) → the public relation `type` for dangling-reference
 // hints; only `dependencies` differs (`depends_on`). The inverse of
 // RELATION_KEY in tools/relation-keys.mjs.

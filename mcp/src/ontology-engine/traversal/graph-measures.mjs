@@ -1,4 +1,4 @@
-import { typeAllowed } from './query-primitives.mjs';
+import { typeAllowed } from '../query-operation/query-primitives.mjs';
 
 export function pageRankScores(nodes, outgoingEdgesBySlug, iterations) {
   const totalNodes = nodes.length;

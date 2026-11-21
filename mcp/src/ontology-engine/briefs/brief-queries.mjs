@@ -4,7 +4,7 @@ import {
   buildAgentBusinessOntologyLens,
   uniqueCliCommands,
 } from './agent-responses.mjs';
-import { normalizeLimit } from './query-primitives.mjs';
+import { normalizeLimit } from '../query-operation/query-primitives.mjs';
 
 export function createBriefQueries({
   cliPrefix,

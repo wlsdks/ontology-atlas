@@ -1,4 +1,4 @@
-import { normalizeLimit, normalizeTypes } from './query-primitives.mjs';
+import { normalizeLimit, normalizeTypes } from '../query-operation/query-primitives.mjs';
 
 export function createHealthQuery({
   artifact,

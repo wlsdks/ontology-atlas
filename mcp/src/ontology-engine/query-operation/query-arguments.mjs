@@ -1,4 +1,4 @@
-import { formatAllowedValueError } from '../suggestions.mjs';
+import { formatAllowedValueError } from '../../suggestions.mjs';
 import {
   normalizeRelationType,
   normalizeTypes,

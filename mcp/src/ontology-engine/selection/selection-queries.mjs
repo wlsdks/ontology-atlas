@@ -1,4 +1,4 @@
-import { buildMatchEdgesFollowUp, buildMatchNodesFollowUp } from './agent-responses.mjs';
+import { buildMatchEdgesFollowUp, buildMatchNodesFollowUp } from '../briefs/agent-responses.mjs';
 import {
   countEdges,
   edgeAllowed,
@@ -12,7 +12,7 @@ import {
   sortedCountObject,
   summarizeNode,
   typeAllowed,
-} from './query-primitives.mjs';
+} from '../query-operation/query-primitives.mjs';
 
 export function createSelectionQueries({
   artifact,

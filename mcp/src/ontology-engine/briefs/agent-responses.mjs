@@ -1,4 +1,4 @@
-import { publicRelationType } from './query-primitives.mjs';
+import { publicRelationType } from '../query-operation/query-primitives.mjs';
 
 export function agentToolCall(tool, args) {
   return { tool, arguments: args };

@@ -1,7 +1,7 @@
-import { hasCapabilityImplementationEvidence } from './capability-evidence.mjs';
-import { refMatchesOntologyAtlasIgnore } from '../vault/ontology-atlas-ignore.mjs';
-import { orderUncertaintyReads } from '../meaning/uncertainty-reads.mjs';
-import { docBodyAnswer, docHasBody, docUncertaintyReads } from '../vault/doc-facts.mjs';
+import { hasCapabilityImplementationEvidence } from '../graph-context/capability-evidence.mjs';
+import { refMatchesOntologyAtlasIgnore } from '../../vault/ontology-atlas-ignore.mjs';
+import { orderUncertaintyReads } from '../../meaning/uncertainty-reads.mjs';
+import { docBodyAnswer, docHasBody, docUncertaintyReads } from '../../vault/doc-facts.mjs';
 import {
   edgeSortKey,
   formatPathEdge,
@@ -12,7 +12,7 @@ import {
   normalizeTypes,
   summarizeNode,
   typeAllowed,
-} from './query-primitives.mjs';
+} from '../query-operation/query-primitives.mjs';
 
 export function createScopeQueries({
   cliPrefix,

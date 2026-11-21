@@ -2260,28 +2260,28 @@ transport. Everything a change would actually touch lives beside it.
 | `src/vault/backlink-rewrite.mjs` | rewriting every reference to a renamed, merged or reclassified node |
 | `src/infer-imports.mjs` + `src/infer-imports/*.mjs` | the import-graph entry, with one module per language and stage: workspace discovery, Autotools, grouping, impact focus |
 | `src/ontology-engine.mjs` | public exports and explicit query-family composition |
-| `src/ontology-engine/artifact-context.mjs` | graph indexes and reference resolution |
-| `src/ontology-engine/context-operations.mjs` | shared graph lookups and scope helpers |
-| `src/ontology-engine/query-planner.mjs` | bounded query planning |
-| `src/ontology-engine/traversal-analysis.mjs` | centrality, reachability, impact, and builder context |
-| `src/ontology-engine/selection-queries.mjs` | scans, profiles, matrices, components, and similarity |
-| `src/ontology-engine/scope-queries.mjs` | containment, lineage, cycles, relation recommendations, and growth |
-| `src/ontology-engine/maintenance-queries.mjs` | repair and review action planning |
-| `src/ontology-engine/brief-queries.mjs` | evidence-aware agent and workspace briefs |
-| `src/ontology-engine/health-query.mjs` | structural health reporting |
-| `src/ontology-engine/query-arguments.mjs` | validates and normalizes the arguments of the query operations |
-| `src/ontology-engine/graph-measures.mjs` | page rank, community labels and node similarity over the compiled graph |
-| `src/ontology-engine/node-ranking.mjs` | degree buckets, hubs and the order of node, lineage and centrality rows |
-| `src/ontology-engine/reference-repair.mjs` | the node a dangling reference most likely meant, and the slug and title to create for it |
-| `src/ontology-engine/topology-shape.mjs` | a cycle in canonical form and topological layers cut at a limit |
-| `src/ontology-engine/dependency-qualification.mjs` | whether declared dependency edges carry a rationale |
-| `src/ontology-engine/maintenance-actions.mjs` | the order of maintenance actions and the stable id each gets |
-| `src/ontology-engine/builder-focus.mjs` | the focus and canvas position `builder_context` takes |
-| `src/ontology-engine/query-dispatch.mjs` | operation-to-query dispatch |
-| `src/ontology-engine/traversal-queries.mjs` | neighbor enumeration, shortest paths, and bounded all-path searches |
-| `src/ontology-engine/query-values.mjs` | shared node/relation vocabulary and default limits |
-| `src/ontology-engine/query-primitives.mjs` | shared input normalization and node/edge result shaping |
-| `src/ontology-engine/agent-responses.mjs` | agent handoff prompts and CLI follow-up formatting |
+| `src/ontology-engine/graph-context/artifact-context.mjs` | graph indexes and reference resolution |
+| `src/ontology-engine/graph-context/context-operations.mjs` | shared graph lookups and scope helpers |
+| `src/ontology-engine/query-operation/query-planner.mjs` | bounded query planning |
+| `src/ontology-engine/traversal/traversal-analysis.mjs` | centrality, reachability, impact, and builder context |
+| `src/ontology-engine/selection/selection-queries.mjs` | scans, profiles, matrices, components, and similarity |
+| `src/ontology-engine/traversal/scope-queries.mjs` | containment, lineage, cycles, relation recommendations, and growth |
+| `src/ontology-engine/maintenance/maintenance-queries.mjs` | repair and review action planning |
+| `src/ontology-engine/briefs/brief-queries.mjs` | evidence-aware agent and workspace briefs |
+| `src/ontology-engine/maintenance/health-query.mjs` | structural health reporting |
+| `src/ontology-engine/query-operation/query-arguments.mjs` | validates and normalizes the arguments of the query operations |
+| `src/ontology-engine/traversal/graph-measures.mjs` | page rank, community labels and node similarity over the compiled graph |
+| `src/ontology-engine/selection/node-ranking.mjs` | degree buckets, hubs and the order of node, lineage and centrality rows |
+| `src/ontology-engine/maintenance/reference-repair.mjs` | the node a dangling reference most likely meant, and the slug and title to create for it |
+| `src/ontology-engine/traversal/topology-shape.mjs` | a cycle in canonical form and topological layers cut at a limit |
+| `src/ontology-engine/traversal/dependency-qualification.mjs` | whether declared dependency edges carry a rationale |
+| `src/ontology-engine/maintenance/maintenance-actions.mjs` | the order of maintenance actions and the stable id each gets |
+| `src/ontology-engine/traversal/builder-focus.mjs` | the focus and canvas position `builder_context` takes |
+| `src/ontology-engine/query-operation/query-dispatch.mjs` | operation-to-query dispatch |
+| `src/ontology-engine/traversal/traversal-queries.mjs` | neighbor enumeration, shortest paths, and bounded all-path searches |
+| `src/ontology-engine/query-operation/query-values.mjs` | shared node/relation vocabulary and default limits |
+| `src/ontology-engine/query-operation/query-primitives.mjs` | shared input normalization and node/edge result shaping |
+| `src/ontology-engine/briefs/agent-responses.mjs` | agent handoff prompts and CLI follow-up formatting |
 
 Adding a module means adding it to `files` in `mcp/package.json` — the bundle and
 the MCPB artifact copy that list, so an undeclared import ships a server that

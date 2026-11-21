@@ -14,7 +14,7 @@ import {
   sortedCountObject,
   summarizeNode,
   typeAllowed,
-} from './query-primitives.mjs';
+} from '../query-operation/query-primitives.mjs';
 
 export function createTraversalQueries({
   resolve,

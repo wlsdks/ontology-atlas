@@ -82,6 +82,8 @@ describe('focused check suggestions', () => {
       ['cli/src/lib/init/run-init.mjs', 'pnpm integration:cli:entry'],
       ['cli/src/lib/help/top-level-help.mjs', 'pnpm integration:cli:entry'],
       ['cli/src/lib/status-lines.mjs', 'pnpm integration:cli:entry'],
+      ['mcp/src/ontology-engine/traversal/graph-measures.mjs', 'pnpm integration:mcp:graph'],
+      ['mcp/src/ontology-engine/query-operation/query-primitives.mjs', 'pnpm integration:mcp:graph'],
     ];
     for (const [path, command] of subjects) {
       assert.ok(existsSync(path), path);

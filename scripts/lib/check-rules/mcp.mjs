@@ -66,7 +66,7 @@ export const rules = [
     order: 480,
     command: 'pnpm integration:mcp:graph',
     reason: 'MCP graph artifact/query handler surface changed',
-    matches: [/^mcp\/src\/(?:ontology-compiler|ontology-engine)\.mjs$/],
+    matches: [/^mcp\/src\/(?:ontology-compiler|ontology-engine)\.mjs$/, /^mcp\/src\/ontology-engine\/(?:[a-z-]+\/)?[^/]+(?<!\.test)\.mjs$/],
   },
   {
     order: 490,

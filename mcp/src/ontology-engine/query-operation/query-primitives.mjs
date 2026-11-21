@@ -1,4 +1,4 @@
-import { formatAllowedValueError } from '../suggestions.mjs';
+import { formatAllowedValueError } from '../../suggestions.mjs';
 import {
   DEFAULT_ALL_PATHS_SEARCH_BUDGET,
   DEFAULT_QUERY_LIMIT,
