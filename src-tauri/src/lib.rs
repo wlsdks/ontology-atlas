@@ -168,6 +168,12 @@ pub fn run() {
         .manage(AcpInstallProgressState::default())
         .manage(AcpSessions::default())
         .manage(planning::PlanningSession::default())
+        // A reload never runs the stage's cleanup, so arming would outlive the drop area.
+        .on_page_load(|_, payload| {
+            if payload.event() == tauri::webview::PageLoadEvent::Started {
+                library::dropped::disarm_source_drop();
+            }
+        })
         .setup(move |app| {
             // Seed the vault-grant registry before any command can run: turn the
             // boundary on, choose where grants persist, and re-grant the app's own
@@ -327,8 +333,12 @@ pub fn run() {
             gray_area::check_gray_area_evidence,
             library::pick_source_files,
             library::import_source_files,
+            library::import_offered_sources,
+            library::stop_source_import,
             library::discover_source_candidates,
             library::reveal_vault_file,
+            library::reveal_sources_folder,
+            library::dropped::arm_source_drop,
             vault::watch::start_vault_watch,
             app_shell::app_log::log_webview_error,
             secrets::secret_set,
@@ -451,6 +461,10 @@ fn on_run_event(app_handle: &tauri::AppHandle, event: RunEvent) {
             llm::requests::cancel_owner(Some(&label));
             audit_read::cancel_owner(Some(&label));
         }
+        RunEvent::WindowEvent {
+            event: tauri::WindowEvent::DragDrop(drop),
+            ..
+        } => app_shell::answer_drag_drop(app_handle, &drop),
         _ => {}
     }
 }

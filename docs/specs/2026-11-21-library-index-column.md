@@ -149,7 +149,7 @@ pane.
    keep their places and the group count counts up. The Log row's date reads `day.now`.
 10. **When the evidence is missing or wrong**: a page whose source file is gone keeps its row,
     and its reason reads `report.rule.citation-target-missing`. When the open page's file
-    disappears, Atlas clears the selection and the right pane says `pageGone` once. A finding
+    disappears, Atlas clears the selection and a toast says `pageGone` once. A finding
     from a Check that is no longer held after reopening (`report.gone`) is simply absent; the
     app checks come back by themselves.
 11. **Sources (I-4)** uses the same anatomy: the tool row's "+" is `sourcesIndex.add`, opening a
@@ -175,7 +175,7 @@ pane.
 | Filter typed | Ranked list as today, same rows | Same |
 | Agent writing | Out of scope: the web writes no pages | New page enters its group's top with the arrival wash; Log row `day.now` |
 | Check running / new results | `report.running` glyph on the Check results row; then the unseen dot | Same |
-| No agent | Check wiki in the report head is disabled with `wiki.compileWebLimit` | `AgentMissingNotice` in the report head |
+| No agent | Check wiki in the report head is disabled with `stage.blockedWeb` | `AgentMissingNotice` in the report head |
 | Open page deleted | `pageGone` once; selection cleared | Same |
 | Reduced motion | End state at once; no wash | Same |
 
@@ -335,3 +335,11 @@ one commit.
   change. Motion gains the late check-results row, drawn by the new
   `src/views/library/ui/parts/index-column/index-motion.ts`, which joins the unmounted files and
   their dead-code exceptions until I-2.
+- 2026-11-21: I-2 mounts the index. Decisions the flow left open: view rows are 32 px and page
+  rows 44 px; the tool row is 32 px on both halves, so the Sources search field grows from 28 px;
+  the Log row shows its date but opens nothing until I-3, as `wiki/_log.md` read as a page drew
+  each line as a heading; `pageGone` is a toast, since the right pane has nothing open to say it
+  in; on the web the report head keeps the reason it already gave (`stage.blockedWeb`), and
+  `wiki.compileWebLimit` leaves with `shelf.*`, `wiki.offTemplate*`, `wiki.folderMark` and the
+  other keys only the old column read. With every source written, the band says all done and the
+  guide's Compile step is the one press that rechecks an outdated page.

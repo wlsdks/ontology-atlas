@@ -34,7 +34,7 @@
   },
   "choose": {
     "openAction": "Open folder",
-    "createAction": "Create new",
+    "createAction": "Create folder",
     "defaultLocationAction": "Create in Documents",
     "chooseLocationAction": "Choose a location",
     "eyebrow": "WHICH FOLDER",
@@ -55,7 +55,6 @@
   "missing": {
     "summary": "{count, plural, one {# folder} other {# folders}} not found",
     "review": "Review",
-    "hide": "Hide",
     "body": "The folder is no longer at the path Atlas remembers: it was renamed, moved, or is on a volume that is not mounted. Forgetting drops a folder from this list only; nothing on disk changes.",
     "forgetAll": "Forget all {count}",
     "locate": "Find a moved folder",

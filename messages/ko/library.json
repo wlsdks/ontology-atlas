@@ -262,13 +262,12 @@
       "error": "확인 필요"
     },
     "complete": {
-      "read": "읽음",
-      "proposal": "쓰기 제안",
-      "waiting": "권한 요청됨",
-      "write": "파일 변경 확인",
-      "error": "실패"
-    },
-    "recentCount": "최근 {count, number}"
+      "read": "파일을 읽었어요",
+      "proposal": "쓸 내용이 제안됐어요",
+      "waiting": "권한 요청이 왔어요",
+      "write": "{count, plural, =1 {위키 문서가 바뀌었어요} other {위키 문서 #개가 바뀌었어요}}",
+      "error": "실패했어요"
+    }
   },
   "eyebrow": "이 폴더 안",
   "lede": "형식을 가리지 않고 모아 둔 문서와, 그 문서를 읽고 쓴 위키 문서가 여기 있어요. 자료는 받은 그대로 보관하고, 위키 문서의 문장은 저마다 자료를 인용해요.",
@@ -281,23 +280,95 @@
     "collapse": "색인 접기",
     "expand": "색인 펼치기"
   },
-  "emptyTitle": "자료와 위키가 아직 없어요",
-  "emptyBody": "이미 갖고 있는 문서를 넣으세요. 기획서, 발표 자료, 표, 내려받아 둔 페이지 무엇이든 돼요. sources/에 그대로 복사하고, 요청하기 전에는 열지 않아요.",
-  "emptyFoundBody": "넣을 수 있는 문서 {count, number}개를 찾았어요. 이름과 형식만 읽었고, 고른 것만 sources/에 복사해요.",
-  "emptyFoundAction": "찾은 문서 {count, number}개 보기",
+  "start": {
+    "title": "가지고 있는 자료를 넣으세요",
+    "body": "{agent}가 자료를 읽고 위키 문서를 써요. 위키 문서의 문장마다 어느 자료에서 왔는지 적혀 있어요.",
+    "agentFallback": "코딩 에이전트",
+    "bodyWikiOnly": "이 폴더에는 위키 문서는 있지만 자료가 아직 없어요. 위키 문서의 바탕이 된 문서를 넣으면 문장마다 어느 자료에서 왔는지 적을 수 있어요.",
+    "where": "자료실에는 「{folder}」 폴더 안 sources 폴더의 파일만 나와요. {fileManagerName}에서 직접 넣어도 돼요.",
+    "whereWeb": "자료실에는 「{folder}」 폴더 안 sources 폴더의 파일만 나와요.",
+    "copyNote": "sources 폴더 밖의 파일은 복사해서 넣어요. 원래 파일은 옮기거나 지우지 않아요.",
+    "reveal": "{fileManager, select, finder {Finder에서 보기} explorer {파일 탐색기에서 보기} other {파일 관리자에서 보기}}",
+    "fileManagerName": "{fileManager, select, finder {Finder} explorer {파일 탐색기} other {파일 관리자}}",
+    "privacy": "Atlas는 자료를 어디에도 보내지 않고, 에이전트에게 맡긴 일만 그 에이전트의 서비스를 거쳐요.",
+    "noAgent": "아직 연결한 코딩 에이전트가 없어요. 자료는 지금 넣고, 에이전트는 나중에 연결해도 돼요.",
+    "noAgentLink": "에이전트 연결하기",
+    "web": "브라우저에서는 자료를 넣고 읽을 수 있어요. 위키 문서 쓰기는 Atlas 앱에서 할 수 있어요.",
+    "drop": {
+      "title": "파일이나 폴더를 끌어다 놓으면 sources 폴더로 복사해요",
+      "or": "또는",
+      "formats": "PDF, Word, Excel, PowerPoint, 텍스트 등 어떤 형식이든 바꾸지 않고 그대로 복사해요.",
+      "over": "놓으면 sources 폴더로 복사해요",
+      "copying": "sources 폴더로 복사하는 중 · {done, number}/{total, number}",
+      "failed": "{count, number}개를 복사하지 못했어요: {reason}. 다시 끌어다 놓거나 「파일 넣기」를 누르세요.",
+      "failedNames": "복사하지 못한 파일: {names}"
+    },
+    "found": {
+      "title": "「{folders}」에 이미 있는 파일 {count, number}개",
+      "basis": "파일 이름·형식·크기만 보고 골랐어요. 파일 내용은 열어 보지 않았어요.",
+      "more": "{count, number}개 모두 보기",
+      "hide": "이 제안 숨기기",
+      "hidden": "숨겼어요. 「폴더에서 문서 찾기」에서 다시 볼 수 있어요."
+    }
+  },
+  "found": {
+    "title": "문서 {count, number}개를 찾았어요",
+    "titleTruncated": "문서를 {count, number}개 넘게 찾았어요",
+    "where": "「{folder}」 폴더 안, sources 폴더 밖 · 파일 이름·형식·크기로만 찾았어요 · {folderCounts}",
+    "folderCount": "{folder} {count, number}",
+    "copyAll": "{count, plural, =1 {sources 폴더로 복사} other {#개 모두 sources 폴더로 복사}}",
+    "choose": "복사할 파일 고르기"
+  },
+  "drop": {
+    "confirmLarge": "{count, plural, other {파일 #개({size})를 sources 폴더로 복사할까요?}} 원래 파일은 그대로 남아요.",
+    "confirm": "복사",
+    "cancel": "취소",
+    "stop": "복사 멈추기",
+    "stopped": "{count, plural, =0 {복사를 멈췄어요. 복사한 파일은 없어요.} other {복사를 멈췄어요. 그전에 복사한 #개는 sources 폴더에 남아 있어요.}}",
+    "skipped": "{count, number}개는 복사하지 않았어요",
+    "skippedReasons": {
+      "same": "이미 넣은 자료와 같은 파일",
+      "notDocument": "문서가 아닌 파일(이미지, 프로그램 파일 등)",
+      "secretName": "비밀번호나 키 파일로 보이는 이름",
+      "licence": "라이선스·안내 파일"
+    },
+    "reasonCount": "{reason}: {count, number}개",
+    "skippedShow": "복사하지 않은 파일 보기",
+    "truncated": "폴더 안 파일 중 처음 {count, number}개만 목록에 넣었어요. 나머지는 따로 끌어다 놓으세요.",
+    "busy": "아직 복사하고 있어요. 끝난 뒤 다시 끌어다 놓으세요.",
+    "holdsOpenFolder": "「{names}」 폴더는 열린 폴더이거나 열린 폴더를 담고 있어서 복사하지 않았어요. 열린 폴더의 문서는 위의 복사 버튼으로 넣으세요.",
+    "skippedUnlisted": "여기 적지 않은 {count, number}개가 더 있어요",
+    "failureReasons": {
+      "sourceChanged": "끌어다 놓은 뒤 파일이 바뀌었어요",
+      "sourceMissing": "파일이 그 자리에 없어요",
+      "sourceUnreadable": "파일을 읽을 수 없어요",
+      "notOffered": "그 뒤에 끌어다 놓은 파일이 이 목록을 대신했어요",
+      "destination": "sources 폴더에 쓸 수 없어요",
+      "permission": "권한이 없어요",
+      "diskFull": "디스크 공간이 모자라요",
+      "nameLimit": "그 폴더에 같은 이름의 파일이 너무 많아요",
+      "unusableName": "쓸 수 없는 파일 이름이에요",
+      "busy": "다른 복사가 진행 중이었어요",
+      "other": "복사하는 중에 문제가 생겼어요"
+    }
+  },
+  "usage": {
+    "where": "자료실의 자료는 모두 「{folder}」 폴더 안 sources 폴더에 있는 파일이에요. {fileManagerName}에서 넣거나 빼면 자료실에도 알아서 반영돼요.",
+    "copy": "「파일 넣기」, 끌어다 놓기, 「모두 복사」는 파일을 sources 폴더로 복사해요. 원래 폴더 구조를 그대로 따르고, 원래 파일은 옮기거나 지우지 않아요.",
+    "read": "Atlas는 자료를 어디로도 보내지 않아요. 에이전트에게 위키 문서 쓰기나 질문을 맡길 때만 그 에이전트가 자료를 읽고, 읽은 내용은 그 에이전트의 서비스로 보내질 수 있어요."
+  },
   "stageTitle": "갖고 있는 문서를, 출처가 달린 위키로",
   "stageBody": "폴더를 열고 파일을 넣으세요. 자료는 그대로 두고, 자료마다 모든 문장이 그 자료를 인용하는 위키 문서가 한 편씩 생겨요.",
   "sources": {
     "listAria": "이 폴더의 자료 파일",
     "add": "파일 넣기",
     "addTooltip": "자료를 이 폴더의 sources/ 안으로 복사해요",
-    "find": "문서 찾기",
+    "find": "폴더에서 문서 찾기",
     "findTooltip": "이 폴더와 연결해 둔 코드 폴더에서 문서를 후보로 제안해요. 고르기 전에는 아무것도 복사하지 않아요.",
     "empty": "아직 자료가 없어요. 이미 갖고 있는 문서를 넣으세요. 형식은 상관없고, 받은 그대로 보관해요.",
     "noFormat": "파일",
     "statesAria": "자료 상태 요약: 가장 흔한 상태는 여기 한 번만 적히고, 줄에는 예외만 남아요",
     "needsCompile": "{count, number}개는 아직 위키 문서가 없어요",
-    "dropHint": "Finder에서 {folder} 안에 sources/ 폴더를 만들고 파일을 넣어도 돼요. 목록은 알아서 바뀌어요.",
     "state": {
       "nobody": "아무도",
       "not-compiled": {
@@ -325,17 +396,17 @@
         "hint": "Atlas가 이 파일을 열어 확인하지 못해 세지 않았어요. 디스크를 다시 연결하거나 파일 권한을 확인하세요."
       }
     },
-    "added": "문서 {count, number}개를 sources/에 넣었어요",
+    "added": "자료 {count, number}개를 넣었어요",
     "duplicate": "{count, number}개는 이미 있어요. 내용이 같아서 복사하지 않았어요.",
     "failed": "{count, number}개는 복사하지 못했어요",
     "failedReason": "넣지 못했어요: {reason}",
-    "revealFailed": "Finder에서 보여 주지 못했어요: {reason}",
+    "revealFailed": "{fileManagerName}에서 보여 주지 못했어요: {reason}",
     "openFailed": "그 파일을 열지 못했어요.",
     "savedInstead": "{name}은 여기서 열면 이 페이지에서 코드가 실행될 수 있는 종류라, 대신 내려받았어요.",
     "needsCompileSplit": "{notCompiled, number}개는 아직 위키 문서가 없고, {stale, number}개는 자료 버전 확인이 필요해요",
     "staleOnly": "자료 {count, number}개의 버전을 확인해야 해요",
     "partialOnly": "{count, number}개는 앞부분만 읽었어요",
-    "import": "외부에서 가져오기",
+    "import": "Notion·Jira 등에서 가져오기",
     "importTooltip": "서비스를 고르고 연결한 뒤 이 폴더로 가져올 문서를 정해요",
     "importedToPlanning": "가져온 문서가 기획 폴더에 들어갔어요",
     "openPlanning": "기획에서 열기",
@@ -346,9 +417,7 @@
   "wiki": {
     "listAria": "이 폴더의 위키 문서",
     "compile": "위키 문서 만들기",
-    "compileTooltip": "에이전트가 자료를 읽고 위키 문서를 쓰거나 갱신해요. 저장한 답은 따로 검토하도록 알려요.",
     "lint": "위키 검사",
-    "lintTooltip": "에이전트가 위키 문서를 읽고 어긋남·대체된 주장·빠진 연결·문서 없는 이름을 보고해요. 아무것도 쓰지 않아요.",
     "candidateKind": {
       "domain": "도메인",
       "capability": "역량",
@@ -361,21 +430,14 @@
     "propose": "개념으로 제안",
     "proposeTooltip": "에이전트가 이 문서들을 읽고 온톨로지 개념 하나를 제안해요. 쓰기 전에 권한을 요청해요.",
     "logLint": "마지막 검사 {when}: {summary}",
-    "empty": "아직 위키 문서가 없어요. 위키 문서는 kind: 가 없는 마크다운이고, 서식은 wiki/_template.md에 있어요.",
     "unknownAuthor": "미상",
-    "offTemplate": "서식 밖",
-    "offTemplateCount": "{count, number}개 문서가 서식에 맞지 않아요",
     "transfer": "코딩 에이전트가 제공자에게 직접 요청하며 Atlas는 그 통신을 기록하지 않아요. 서식에 맞는 위키 문서는 자동으로 저장할 수 있지만, 저장한 답은 항상 따로 검토해야 해요.",
     "compileFailed": "에이전트를 실행하지 못했어요: {reason}",
-    "compileWebLimit": "위키 문서를 쓰려면 이 컴퓨터에서 실행되는 코딩 에이전트가 필요하고, 앱에서만 실행할 수 있어요. 문서를 읽고 고치는 일은 여기서도 할 수 있어요.",
     "compileWebGetApp": "앱 받기",
     "agentMissing": "코딩 에이전트를 연결하면 위키 검사와 위키 문서 만들기를 맡길 수 있어요.",
     "agentMissingDoor": "에이전트 연결하기",
-    "offTemplateReason": "위키 서식에 맞지 않아요: {code}. 문서를 열면 무엇을 고칠지 볼 수 있어요.",
     "offTemplateAriaLabel": "이 문서가 위키 서식과 다른 점",
     "offTemplateTitle": "고칠 곳 {count, number}개 · 서식",
-    "offTemplateBody": "아래를 고치면 다른 문서와 같은 방식으로 읽혀요.",
-    "writtenBy": "쓴이 {author}",
     "writer": {
       "human": "사람",
       "agent": "{name}(에이전트)",
@@ -390,7 +452,7 @@
     "compileModifyFile": "{path} 바꾸기",
     "logCount": {
       "disagreement": "어긋남 {count, number}",
-      "superseded": "대체된 주장 {count, number}",
+      "superseded": "더 새 자료와 다름 {count, number}",
       "missingLink": "빠진 연결 {count, number}",
       "nameWithoutPage": "문서 없는 이름 {count, number}"
     },
@@ -398,8 +460,6 @@
     "logNew": "새로 씀",
     "logRevised": "고침",
     "logNothingNew": "새 내용 없음",
-    "emptyNoTemplate": "아직 위키 문서가 없고 서식도 없어요. 설정 › 온톨로지 폴더에서 위키를 시작하면 wiki/_template.md가 생기고, 문서는 그 서식을 따라요.",
-    "folderMark": "끊긴 링크",
     "candidatesMore": "이름 {count, number}개 더 보기",
     "candidatesLess": "접기",
     "candidatesTooltip": "마지막 검사에서 세 문서 이상에 나왔지만 자기 문서가 없는 이름이에요. 코드가 만드는 것(도메인·역량·요소)만 지도의 개념으로 제안할 수 있고, 사람과 조직은 위키에 남아요.",
@@ -409,13 +469,12 @@
     "fileAnswerRejected": "저장하지 않았어요. 답이 문서 서식에 맞지 않아요({code}). 인용을 달아 다시 물어보세요.",
     "findingKind": {
       "disagreement": "어긋남",
-      "superseded": "대체된 주장",
+      "superseded": "더 새 자료와 다름",
       "missingLink": "빠진 연결"
     },
     "fix": "고치기",
     "fixTooltip": "에이전트가 이 문서들에서 이 항목을 고쳐요. 어긋남은 두 값을 양쪽 인용과 함께, 대체된 주장은 현재 값을 앞에, 빠진 연결은 양쪽에 링크를 적어요.",
     "newPage": "새 문서",
-    "newPageTooltip": "직접 쓰는 문서를 시작해요. 서식의 절과 created_by: human만 있는 빈 문서이고, 어느 편집기에서든 채우면 목록이 따라와요.",
     "newPageDialogTitle": "새 위키 문서",
     "newPageDialogBody": "기본 구성을 갖춘 Markdown 초안을 만들어요.",
     "newPageTitle": "문서 제목",
@@ -444,13 +503,13 @@
     "undoFailed": "되돌리지 못했어요. 파일이 이미 없거나 폴더에 쓸 수 없어요.",
     "linkFindingsAriaLabel": "이 문서가 폴더 안에서 이어지는 방식",
     "linkFindingsTitle": "확인할 연결 {count, number}개",
-    "linkFindingsBody": "서식은 맞아요. 아래는 이 문서 하나만 봐서는 알 수 없는, 폴더 안에서 이어지는 방식에 대한 거예요.",
     "fixWithAgent": "에이전트로 고치기",
     "fixWithAgentTooltip": "에이전트가 이 문서를 서식에 맞게 고쳐요. 고친 문서가 서식에 맞으면 바로 저장되고, 맞지 않으면 저장 전에 권한을 요청해요.",
     "fixWithAgentTooltipAsk": "에이전트가 이 문서를 서식에 맞게 고쳐요. 쓰기 전에 권한을 요청해요.",
     "fixMyself": "직접 고치기",
     "fixMyselfTooltip": "Finder에서 이 문서 파일을 선택해요. 어느 편집기에서 고쳐도 목록에 반영돼요.",
     "technical": "기술 정보 · 점검 코드와 줄 번호",
+    "technicalOpen": "점검 코드 보기",
     "technicalNote": "wiki-validate 명령과 validate_wiki 도구가 아래와 같은 코드를 알려 줘요.",
     "technicalFile": "파일: {path}",
     "goToPlace": "{place}로 가기",
@@ -513,40 +572,34 @@
       },
       "dangling-wikilink": {
         "what": "{where}에서 {target} 문서로 연결했는데 이 폴더에 그 문서가 없어요.",
-        "do": "있는 문서로 연결하거나, 그 문서를 새로 쓰세요."
+        "do": "있는 문서로 연결하거나, 그 문서를 새로 쓰세요.",
+        "short": "{page}의 {where}에서 연결한 {target} 문서가 이 폴더에 없어요",
+        "shortDo": "있는 문서로 연결하거나 그 문서를 쓰세요"
       },
       "orphan-page": {
         "what": "이 문서를 가리키는 문서가 아직 없어요.",
-        "do": "이 주제를 다루는 문서에서 연결하면 찾기 쉬워져요."
+        "do": "이 주제를 다루는 문서에서 연결하면 찾기 쉬워져요.",
+        "short": "{page}에 연결한 문서가 아직 없어요",
+        "shortDo": "같은 주제를 다루는 문서에서 연결하세요"
       },
       "shared-source-unlinked": {
         "what": "{other}도 같은 자료({sources})를 쓰는데 두 문서가 서로를 가리키지 않아요.",
-        "do": "한쪽에서 다른 쪽을 연결하세요."
+        "do": "한쪽에서 다른 쪽을 연결하세요.",
+        "short": "{page}, {other} 두 문서가 같은 자료({sources})를 쓰는데 서로 연결되지 않았어요",
+        "shortDo": "한쪽에서 다른 쪽을 연결하세요"
       },
       "shared-source-unlinked-more": {
-        "what": "같은 자료로 쓴 문서가 {count, number}개 더 있는데, 이 문서와 서로를 가리키지 않아요.",
-        "do": "같은 자료로 쓴 문서끼리 서로 연결하세요."
+        "what": "같은 자료로 쓴 문서가 {count}개 더 있는데, 이 문서와 서로를 가리키지 않아요.",
+        "do": "같은 자료로 쓴 문서끼리 서로 연결하세요.",
+        "short": "같은 자료를 쓰는 문서 {count}개가 {page}에 연결되지 않았어요",
+        "shortDo": "같은 자료로 쓴 문서끼리 연결하세요"
       }
     }
-  },
-  "shelf": {
-    "commonState": "{count, number}개 · {state}",
-    "listAria": "위키 페이지와 자료 버전 상태",
-    "freshness": {
-      "fresh": "확인된 자료 버전이 그대로예요.",
-      "stale": "자료가 바뀌었거나 이 문서와 아직 비교하지 않았어요",
-      "unverified": "이 문서를 파일과 비교한 적이 없어요"
-    },
-    "state": {
-      "fresh": "확인한 자료는 그대로",
-      "stale": "자료 확인 필요",
-      "unverified": "자료 미확인"
-    },
-    "compiling": "자료를 다시 읽고 위키 문서를 쓰는 중이에요."
   },
   "home": {
     "guide": "사용 방법",
     "questions": "{count, plural, =0 {질문} other {질문 #}}",
+    "openAnswer": "저장한 답변 열기",
     "more": "더 보기",
     "compileNext": "위키 문서 만들기: {source}",
     "staleClause": "자료 {count, number}개 달라짐",
@@ -558,12 +611,12 @@
     "searchCount": "전체 {total, number}개 중 {visible, number}개 · 선택 {selected, number}개",
     "noMatches": "검색어와 맞는 파일명이나 경로가 없어요.",
     "clearSearch": "검색 지우기",
-    "title": "허용한 폴더 안의 문서",
-    "preamble": "이름·형식·크기만 읽었어요. 파일은 열지 않았어요. 고르기 전에는 아무것도 복사하지 않아요.",
+    "title": "「{folders}」에서 찾은 문서",
+    "preamble": "파일 이름·형식·크기만 보고 골랐어요. 「넣기」를 누르기 전에는 아무것도 복사하지 않아요.",
     "webLimit": "여기서는 지금 연 폴더만 읽을 수 있어요. 연결한 코드 폴더는 앱에서만 읽을 수 있어요.",
     "walkedRoots": "함께 읽은 위치: {roots}",
     "walking": "폴더 목록을 읽는 중…",
-    "empty": "제안할 것이 없어요. 이 폴더의 문서가 이미 sources/에 있거나, Atlas가 다루는 문서 형식이 없어요.",
+    "empty": "「{folders}」에서 문서로 보이는 파일을 찾지 못했어요. 라이선스·안내 파일, 이름이 무작위 영문·숫자로 된 파일, 빌드·테스트 파일, 빈 파일, public·output·build 같은 폴더는 건너뛰어요.",
     "rootHeader": "{root} · {count, number}",
     "truncated": "500개에서 멈췄어요. 이게 전부는 아니에요.",
     "unreadable": "읽지 못한 곳: {roots}",
@@ -649,11 +702,11 @@
       "title": "읽기",
       "startWith": "{title}부터 읽기",
       "nothingYet": "아직 위키 문서가 없어요. 「위키 문서 만들기」로 첫 문서를 만들어요.",
-      "coveredLine": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음",
-      "coveredChecking": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {checking, number}개 확인 중",
-      "coveredPartial": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {partial, number}개는 앞부분만 읽음",
-      "coveredStale": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {stale, number}개는 자료가 달라짐",
-      "coveredUnreadable": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {unreadable, number}개 읽을 수 없음"
+      "coveredLine": "자료 {total, number}개 중 {compiled, number}개에 위키 문서가 있어요",
+      "coveredChecking": "자료 {total, number}개 중 {compiled, number}개에 위키 문서가 있어요 · {checking, number}개는 확인하고 있어요",
+      "coveredPartial": "자료 {total, number}개 중 {compiled, number}개에 위키 문서가 있어요 · {partial, number}개는 앞부분만 읽었어요",
+      "coveredStale": "자료 {total, number}개 중 {compiled, number}개에 위키 문서가 있어요 · {stale, number}개는 자료가 바뀌었어요",
+      "coveredUnreadable": "자료 {total, number}개 중 {compiled, number}개에 위키 문서가 있어요 · {unreadable, number}개는 읽을 수 없어요"
     },
     "brainAgent": "{name}",
     "brainLocal": "{model} · {host}",
@@ -731,7 +784,7 @@
   "report": {
     "title": "검사 결과",
     "structuralTitle": "앱 검사",
-    "structuralHead": "문서 {pages, number}개 · 서식 벗어남 {offTemplate, number}개 · 항목 {findings, number}개",
+    "structuralHead": "문서 {pages, number}개 · 서식을 따르지 않음 {offTemplate, number}개 · 항목 {findings, number}개",
     "structuralClean": "모든 문서가 서식에 맞고, 모든 링크가 열리고, 같은 자료로 쓴 문서끼리 서로 링크돼 있어요.",
     "advisoryMark": "참고",
     "advisoryFold": "권고 항목 {count, number}개",
@@ -759,7 +812,6 @@
       "shared-source-unlinked": "같은 자료인데 연결이 없어요"
     },
     "namesTitle": "문서 없는 이름",
-    "open": "검사 결과 {count, number}",
     "running": "위키 검사 중…",
     "unseen": "새로 나옴"
   },
@@ -1053,18 +1105,17 @@
     "first": "아직 위키 문서가 있는 자료가 없어요",
     "today": "오늘 +{count, number}",
     "chartAria": "위키 문서가 있는 자료 수, 각 문서에 적힌 날짜 기준",
-    "chartTitle": "위키 문서가 있는 자료 수",
-    "chartNow": "오늘 {count, number}",
+    "chartTitle": "{date}부터 위키 문서가 있는 자료 수",
     "point": "{date}: 지금 자료 {total, number}개 중 {count, number}개 ({percent, number}%)",
     "dateBasis": "각 점은 위키 문서에 적힌 날짜예요.",
     "undated": "{count, number}개는 날짜 없음",
     "continue": "{count, plural, =1 {자료 1개로 위키 문서 만들기} other {다음 #개 위키 문서 만들기}}",
-    "batchRest": "그 뒤로 {count, number}개가 더 기다려요.",
+    "batchRest": "그 밖에 {count, number}개가 더 있어요.",
     "writer": "<name>{agent}</name>가 써요",
     "writerAnyAgent": "연결한 코딩 에이전트가 써요",
     "batchReturned": "지난 요청의 자료 {count, number}개는 아직 위키 문서가 없어 목록 맨 뒤로 옮겼어요.",
     "webLine": "위키 문서는 앱에서만 써요. 읽기는 여기서도 돼요.",
-    "allDone": "모든 자료에 위키 문서가 있어요"
+    "allDone": "더 쓸 위키 문서가 없어요"
   },
   "sourcesHome": {
     "aria": "폴더나 파일 형식으로 묶은 자료와 위키 문서가 있는 자료 수",
@@ -1078,7 +1129,7 @@
       "type": "파일 형식",
       "sources": "자료",
       "withPage": "위키 문서 있음",
-      "waiting": "기다리는 자료",
+      "waiting": "쓸 위키 문서",
       "latest": "최근 위키 문서"
     },
     "topLevel": "sources/ 바로 안",
@@ -1088,15 +1139,15 @@
       "none": "아직 없음",
       "undated": "날짜 없음"
     },
-    "rowAria": "{name}: 자료 {total, number}개 중 위키 문서 있음 {withPage, number}개, 쓸 차례를 기다리는 자료 {waiting, number}개. 누르면 표 옆에 목록이 나와요.",
+    "rowAria": "{name}: 자료 {total, number}개 중 위키 문서 있음 {withPage, number}개, 위키 문서를 쓸 자료 {waiting, number}개. 누르면 표 옆에 목록이 나와요.",
     "writing": "여기 있는 자료로 위키 문서를 쓰는 중이에요",
     "panel": {
-      "nextTitle": "다음에 쓸 자료",
+      "nextTitle": "위키 문서를 쓸 순서",
       "lead": "「{action}」⁠를 누르면 에이전트가 아래 자료를 위에서부터 읽고 위키 문서를 써요.",
       "leadRunning": "에이전트가 위에서부터 위키 문서를 쓰고 있어요. 다 쓴 자료는 목록에서 빠져요.",
-      "privacy": "Atlas는 자료를 어디로도 보내지 않아요. 에이전트에게 위키 문서 쓰기나 질문을 맡기면 그 에이전트가 필요한 자료를 읽고, 읽은 내용은 그 에이전트의 서비스로 보내질 수 있어요.",
-      "webNote": "위키 문서는 앱에서만 써요. 앱에서는 이 자료부터 시작해요.",
-      "waitingTitle": "여기서 기다리는 자료",
+      "privacy": "Atlas는 자료를 어디에도 보내지 않고, 에이전트에게 맡긴 일만 그 에이전트의 서비스를 거쳐요.",
+      "webNote": "앱에서는 이 자료부터 위키 문서를 써요.",
+      "waitingTitle": "여기서 위키 문서를 쓸 자료",
       "nextEmpty": "여기 있는 자료는 모두 지금 내용과 맞는 위키 문서가 있어요.",
       "unreadable": "여기서 읽을 수 없는 자료 {count, number}개",
       "showInList": "목록에서 {count, number}개 모두 보기",

@@ -28,12 +28,15 @@ function takeOver(el: HTMLElement, name: string, next: Animation | null): void {
   running.set(el, byName);
 }
 
-/** Fades a whole view in or out from its current opacity; leaving accelerates away. Instant when reduced. */
-export function fadeView(el: Element, visible: boolean): void {
+/**
+ * Fades a whole view in or out from its current opacity; leaving accelerates away. `quick` enters
+ * over `--motion-fast`, for a swap that follows typing. Instant when reduced.
+ */
+export function fadeView(el: Element, visible: boolean, quick = false): void {
   if (!canAnimate(el)) return;
   const from = Number.parseFloat(getComputedStyle(el).opacity);
   const to = visible ? 1 : 0;
-  const timing = visible ? MOTION.base : EXIT_TRANSITION;
+  const timing = visible ? (quick ? MOTION.fast : MOTION.base) : EXIT_TRANSITION;
   const animation = el.animate([{ opacity: Number.isFinite(from) ? from : 1 - to }, { opacity: to }], {
     duration: prefersReducedMotion() ? 0 : timing.duration * 1000,
     easing: cubic(timing.ease),

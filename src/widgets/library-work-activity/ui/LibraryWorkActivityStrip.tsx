@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { BookOpen, Check, ChevronDown, FilePenLine, Pause, TriangleAlert } from "lucide-react";
+import { BookOpen, Check, FilePenLine, Pause, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { LibraryWorkActivity, LibraryWorkEvent, LibraryWorkTarget } from "@/features/library";
 import { useDismissibleMenu } from "@/shared/lib/overlays/use-dismissible-menu";
@@ -20,9 +20,11 @@ const INK = {
 };
 
 /** Ephemeral observations, not an audit log or a claim that an agent is idle. */
-export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false, compact = false, onOpenConversation }: {
+export function LibraryWorkActivityStrip({ activity, onSelect, pageTitle, reserved = false, compact = false, onOpenConversation }: {
   activity: LibraryWorkActivity;
   onSelect: (target: LibraryWorkTarget) => void;
+  /** The title of the wiki page at a `wiki/<slug>` address; without it, or for a page not listed, the address is shown. */
+  pageTitle?: (ref: string) => string | null;
   compact?: boolean;
   onOpenConversation?: () => void;
   /**
@@ -35,7 +37,11 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false,
   const current = activity.current;
   const headline = current ?? activity.recent[0] ?? null;
   const Icon = headline ? ICONS[headline.kind] : BookOpen;
-  const label = (event: LibraryWorkEvent) => t(`${event.phase}.${event.kind}`);
+  // One receipt is one page, so a change line here never counts.
+  const label = (event: LibraryWorkEvent) =>
+    event.phase === "complete" && event.kind === "write" ? t("complete.write", { count: 1 }) : t(`${event.phase}.${event.kind}`);
+  const wikiTitle = (target: LibraryWorkTarget) => (target.kind === "wiki" ? pageTitle?.(target.ref) ?? null : null);
+  const shown = (target: LibraryWorkTarget) => wikiTitle(target) ?? target.ref;
   const historyTriggerRef = useRef<HTMLButtonElement | null>(null);
   const {
     open: historyOpen,
@@ -81,8 +87,8 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false,
                 {label(headline)}
               </p>
             </div>
-            {!compact || headline.target ? <p title={headline.target?.ref ?? t("unbound")} className="truncate font-mono text-caption leading-body text-[color:var(--color-text-secondary)]">
-              {headline.target?.ref ?? t("unbound")}
+            {!compact || headline.target ? <p title={headline.target?.ref ?? t("unbound")} className={"truncate text-caption leading-body text-[color:var(--color-text-secondary)] " + (headline.target && wikiTitle(headline.target) === null ? "font-mono" : "")}>
+              {headline.target ? shown(headline.target) : t("unbound")}
             </p> : null}
           </div>
         </div>
@@ -104,14 +110,10 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false,
               size: "sm",
               tone: "muted",
               hoverInk: "strong",
+              active: historyOpen,
               className: "gap-1.5",
             })}
           >
-            <ChevronDown
-              size={14}
-              aria-hidden
-              className={"transition-transform " + (historyOpen ? "rotate-180" : "")}
-            />
             <span>{t("recent")}</span>
             <span className="font-mono tabular-nums">{activity.recent.length}</span>
           </button>
@@ -131,7 +133,7 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false,
           >
             {activity.recent.slice(0, 3).map((event) => {
               const EventIcon = ICONS[event.kind];
-              const content = <><EventIcon size={14} aria-hidden="true" /><span className="truncate">{label(event)} · {event.target?.ref ?? t("unbound")}</span></>;
+              const content = <><EventIcon size={14} aria-hidden="true" /><span className="truncate">{label(event)} · {event.target ? shown(event.target) : t("unbound")}</span></>;
               return event.target && (event.kind === "read" || event.kind === "write") ? <Chip key={event.id} size="md" tone="muted" className="min-w-0 max-w-full justify-start"
                 title={[label(event), event.target.ref].join(" · ")} onClick={() => {
                   setHistoryOpen(false);

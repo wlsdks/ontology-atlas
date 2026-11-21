@@ -14,6 +14,8 @@ type Translator = ReturnType<typeof useTranslations<"library">>;
 export interface LibraryHomeStripDoor {
   id: "guide" | "questions" | "conversation" | "review";
   label: string;
+  /** Hover text when it adds to the label, such as the saved answer's title; else the label. */
+  tooltip?: string;
   onPress: () => void;
   testId: string;
   /** True while the surface this door opens is up, for `aria-expanded`. */
@@ -73,7 +75,7 @@ export function LibraryHomeStrip({
               data-testid={door.testId}
               data-library-door={door.id}
               aria-expanded={door.open === undefined ? undefined : door.open}
-              title={door.label}
+              title={door.tooltip ?? door.label}
               active={door.open === true}
               icon={Icon ? <Icon aria-hidden /> : undefined}
               className="min-w-0 max-w-[14rem] flex-none shadow-none"

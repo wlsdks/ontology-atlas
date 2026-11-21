@@ -18,10 +18,12 @@ export interface IndexRowProps {
   rowIndex: number;
   tabIndex: number;
   onFocus: () => void;
+  /** Set on the page's own row only, so a page also listed under "Needs a look" is named once. */
+  testId?: string;
 }
 
 /** One index entry: 44 px and two lines whatever its copy, so every row in a column is one height. */
-export function IndexRow({ title, detail, date, attention, selected, label, onPress, rowIndex, tabIndex, onFocus }: IndexRowProps) {
+export function IndexRow({ title, detail, date, attention, selected, label, onPress, rowIndex, tabIndex, onFocus, testId }: IndexRowProps) {
   return (
     <RowButton
       size="lg"
@@ -29,6 +31,7 @@ export function IndexRow({ title, detail, date, attention, selected, label, onPr
       active={selected}
       data-row-index={rowIndex}
       data-index-row=""
+      data-testid={testId}
       tabIndex={tabIndex}
       onFocus={onFocus}
       onClick={onPress}

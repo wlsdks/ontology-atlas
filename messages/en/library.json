@@ -262,13 +262,12 @@
       "error": "Needs attention"
     },
     "complete": {
-      "read": "Read",
+      "read": "File read",
       "proposal": "Write proposed",
       "waiting": "Permission requested",
-      "write": "File changed",
+      "write": "{count, plural, one {Wiki page changed} other {# wiki pages changed}}",
       "error": "Failed"
-    },
-    "recentCount": "Recent {count, number}"
+    }
   },
   "eyebrow": "In this folder",
   "lede": "The project documents you gathered, in whatever format they arrived, and the wiki pages written from them. A source is kept byte for byte, and every claim on a page cites one.",
@@ -281,23 +280,95 @@
     "collapse": "Hide index",
     "expand": "Show the index"
   },
-  "emptyTitle": "No sources or wiki pages yet",
-  "emptyBody": "Bring in the documents this project already has: a spec, a slide deck, a spreadsheet, a page you exported. Atlas copies them into sources/ untouched and never opens them until you ask.",
-  "emptyFoundBody": "Atlas found {count, plural, one {# document} other {# documents}} that can go in. It read names and formats only, and copies just the ones you pick into sources/.",
-  "emptyFoundAction": "{count, plural, one {Review # found document} other {Review # found documents}}",
+  "start": {
+    "title": "Add the documents you already have",
+    "body": "{agent} reads your sources and writes wiki pages. Each sentence in a page names the source it came from.",
+    "agentFallback": "Your coding agent",
+    "bodyWikiOnly": "This folder has wiki pages but no sources yet. Add the documents they came from, so every claim can cite one.",
+    "where": "The Library lists only files in the sources folder inside {folder}. You can also put files there in {fileManagerName}.",
+    "whereWeb": "The Library lists only files in the sources folder inside {folder}.",
+    "copyNote": "Files outside the sources folder are copied in. The original files are not moved or deleted.",
+    "reveal": "{fileManager, select, finder {Show in Finder} explorer {Show in File Explorer} other {Show in file manager}}",
+    "fileManagerName": "{fileManager, select, finder {Finder} explorer {File Explorer} other {the file manager}}",
+    "privacy": "Atlas sends your sources nowhere; work you give an agent goes through that agent's service.",
+    "noAgent": "No coding agent is connected yet. You can add sources now and connect one later.",
+    "noAgentLink": "Connect an agent",
+    "web": "In the browser you can add and read sources. Writing wiki pages needs the Atlas app.",
+    "drop": {
+      "title": "Drop files or folders to copy them into the sources folder",
+      "or": "or",
+      "formats": "PDF, Word, Excel, PowerPoint, text or any other format, copied without changes.",
+      "over": "Drop to copy into the sources folder",
+      "copying": "Copying into the sources folder · {done, number} of {total, number}",
+      "failed": "{count, plural, one {# file could not be copied: {reason}. Drop it again, or press Add files.} other {# files could not be copied: {reason}. Drop them again, or press Add files.}}",
+      "failedNames": "Not copied: {names}"
+    },
+    "found": {
+      "title": "{count, plural, one {# file} other {# files}} already in {folders}",
+      "basis": "Chosen by file name, format and size. File contents were not opened.",
+      "more": "See all {count, number}",
+      "hide": "Hide this suggestion",
+      "hidden": "Hidden. Find documents in the folder shows these files again."
+    }
+  },
+  "found": {
+    "title": "{count, plural, one {Found # document} other {Found # documents}}",
+    "titleTruncated": "Found {count, number} or more documents",
+    "where": "In {folder}, outside the sources folder · found by file name, format and size · {folderCounts}",
+    "folderCount": "{folder} {count, number}",
+    "copyAll": "{count, plural, one {Copy it into the sources folder} other {Copy all # into the sources folder}}",
+    "choose": "Choose files to copy"
+  },
+  "drop": {
+    "confirmLarge": "{count, plural, one {Copy # file ({size}) into the sources folder?} other {Copy # files ({size}) into the sources folder?}} The original files stay where they are.",
+    "confirm": "Copy",
+    "cancel": "Cancel",
+    "stop": "Stop copying",
+    "stopped": "{count, plural, =0 {Copying stopped before any file was copied.} one {Copying stopped. The # file copied before that stays in the sources folder.} other {Copying stopped. The # files copied before that stay in the sources folder.}}",
+    "skipped": "{count, plural, one {# file was not copied} other {# files were not copied}}",
+    "skippedReasons": {
+      "same": "Same as a source already added",
+      "notDocument": "Not a document (images, program files and similar)",
+      "secretName": "Named like a password or key file",
+      "licence": "Licence or notice file"
+    },
+    "reasonCount": "{reason}: {count, number}",
+    "skippedShow": "Show the files not copied",
+    "truncated": "Only the first {count, number} files in the folder were listed. Drop the rest separately.",
+    "busy": "A copy is still running. Drop again once it ends.",
+    "holdsOpenFolder": "{names} is, or holds, the open folder, so nothing was copied from it. Copy the open folder's documents with the copy button above.",
+    "skippedUnlisted": "{count, number} more not named here",
+    "failureReasons": {
+      "sourceChanged": "the file changed after it was dropped",
+      "sourceMissing": "the file is no longer there",
+      "sourceUnreadable": "the file could not be read",
+      "notOffered": "a later drop replaced this list",
+      "destination": "the sources folder could not be written",
+      "permission": "permission was refused",
+      "diskFull": "the disk is full",
+      "nameLimit": "too many files in that folder share the name",
+      "unusableName": "the file name cannot be used",
+      "busy": "another copy was running",
+      "other": "something went wrong while copying"
+    }
+  },
+  "usage": {
+    "where": "Every source in the Library is a file in the sources folder inside {folder}. Files you add or remove there in {fileManagerName} show up by themselves.",
+    "copy": "Add files, drag and drop, and Copy all copy files into the sources folder, keeping their folders. The original files are not moved or deleted.",
+    "read": "Atlas sends your sources nowhere. An agent reads them only when you ask it to write wiki pages or answer a question, and what it reads may be sent to the agent's service."
+  },
   "stageTitle": "The documents you have, as a wiki that cites them",
   "stageBody": "Open a folder and add files. Each stays untouched, and gets one wiki page whose every claim cites it.",
   "sources": {
     "listAria": "Sources in this folder",
     "add": "Add files",
     "addTooltip": "Copy documents into this folder's sources/",
-    "find": "Find documents",
+    "find": "Find documents in the folder",
     "findTooltip": "Propose documents already in this folder and in the code folders you connected. Nothing is copied until you pick.",
     "empty": "No sources yet. Add the documents you already have. Any format; Atlas keeps them exactly as they arrived.",
     "noFormat": "FILE",
     "statesAria": "Source states: the most common state is said once here, and only exceptions stay on the rows",
     "needsCompile": "{count, plural, one {# without a wiki page yet} other {# without a wiki page yet}}",
-    "dropHint": "Or make a sources/ folder inside {folder} in Finder and drop files there; the list updates by itself.",
     "state": {
       "nobody": "nobody",
       "not-compiled": {
@@ -325,17 +396,17 @@
         "hint": "Atlas could not open this file to check it, so it is not counted. Reconnect its disk or check the file's permissions."
       }
     },
-    "added": "{count, plural, one {# document added to sources/} other {# documents added to sources/}}",
+    "added": "{count, plural, one {# source added} other {# sources added}}",
     "duplicate": "{count, plural, one {# was already here} other {# were already here}}. Same bytes, so nothing was copied.",
     "failed": "{count, plural, one {# could not be copied} other {# could not be copied}}",
     "failedReason": "Could not add: {reason}",
-    "revealFailed": "Could not show it in Finder: {reason}",
+    "revealFailed": "Could not show it in {fileManagerName}: {reason}",
     "openFailed": "Could not open that file.",
     "savedInstead": "Saved {name} to your downloads instead: opened in this page, a file of this kind could run code here.",
     "needsCompileSplit": "{notCompiled, plural, one {# without a wiki page yet} other {# without a wiki page yet}} · {stale, plural, one {# source version needs review} other {# source versions need review}}",
     "staleOnly": "{count, plural, one {# source version needs review} other {# source versions need review}}",
     "partialOnly": "{count, plural, one {# read only in part} other {# read only in part}}",
-    "import": "Bring from a service",
+    "import": "Bring from Notion, Jira and more",
     "importTooltip": "Choose a service, connect it, then choose which documents to bring into this folder",
     "importedToPlanning": "The documents are in your planning folder",
     "openPlanning": "Open in Planning",
@@ -346,9 +417,7 @@
   "wiki": {
     "listAria": "Wiki pages in this folder",
     "compile": "Write wiki page",
-    "compileTooltip": "The agent reads sources and writes or updates their wiki pages. Saved answers are flagged for separate review.",
     "lint": "Check wiki",
-    "lintTooltip": "The agent reads the wiki pages and reports disagreements, superseded claims, missing links and names without a page. It writes nothing.",
     "candidateKind": {
       "domain": "domain",
       "capability": "capability",
@@ -361,21 +430,14 @@
     "propose": "Propose as concept",
     "proposeTooltip": "The agent reads these pages and proposes one ontology concept. The write waits for your permission.",
     "logLint": "Last check {when}: {summary}",
-    "empty": "No wiki pages yet. A page is Markdown with no kind:, in the shape wiki/_template.md holds.",
     "unknownAuthor": "unknown",
-    "offTemplate": "off-template",
-    "offTemplateCount": "{count, plural, one {# page does not fit the template} other {# pages do not fit the template}}",
     "transfer": "The coding agent sends requests directly to its provider; Atlas does not record that traffic. Wiki pages that fit the template can be saved automatically. Saved answers always need separate review.",
     "compileFailed": "Could not start the agent: {reason}",
-    "compileWebLimit": "Writing wiki pages needs a coding agent running on this computer, which only the app can start. Reading and editing pages works here.",
     "compileWebGetApp": "Get the app",
     "agentMissing": "Connect a coding agent to check the wiki and write wiki pages from sources.",
     "agentMissingDoor": "Connect an agent",
-    "offTemplateReason": "Does not fit the wiki template: {code}. Open the page to see what to change.",
     "offTemplateAriaLabel": "How this page differs from the wiki template",
     "offTemplateTitle": "{count, number} to fix · page template",
-    "offTemplateBody": "Fix what follows and it reads the same way every other page does.",
-    "writtenBy": "Written by {author}",
     "writer": {
       "human": "a person",
       "agent": "{name} (agent)",
@@ -390,7 +452,7 @@
     "compileModifyFile": "Replace {path}",
     "logCount": {
       "disagreement": "disagreement {count, number}",
-      "superseded": "superseded {count, number}",
+      "superseded": "newer source differs {count, number}",
       "missingLink": "missing link {count, number}",
       "nameWithoutPage": "names without a page {count, number}"
     },
@@ -398,8 +460,6 @@
     "logNew": "new",
     "logRevised": "revised",
     "logNothingNew": "nothing new",
-    "emptyNoTemplate": "No wiki pages yet, and no template in this folder. Start a wiki from Settings › Ontology folder: it writes wiki/_template.md, the shape every page follows.",
-    "folderMark": "link",
     "candidatesMore": "{count, plural, one {# more name} other {# more names}}",
     "candidatesLess": "Fewer names",
     "candidatesTooltip": "Names the last check saw on three or more pages with no page of their own. Only what the code builds, a domain, a capability or an element, can be proposed as a concept on the map; people and organisations stay names in the wiki.",
@@ -409,13 +469,12 @@
     "fileAnswerRejected": "Not saved: the answer does not match the page format ({code}). Ask for citations and try again.",
     "findingKind": {
       "disagreement": "disagreement",
-      "superseded": "superseded claim",
+      "superseded": "newer source differs",
       "missingLink": "missing link"
     },
     "fix": "Fix",
     "fixTooltip": "The agent fixes this on the pages named: both values with both citations for a disagreement, the current value first for a superseded claim, links both ways for a missing link.",
     "newPage": "New page",
-    "newPageTooltip": "Start a page you write yourself: the template's sections and created_by: human, empty until you fill it in any editor. The list updates by itself.",
     "newPageDialogTitle": "New wiki page",
     "newPageDialogBody": "Create a Markdown draft with the standard structure ready to fill in.",
     "newPageTitle": "Page title",
@@ -444,13 +503,13 @@
     "undoFailed": "Could not undo: the file is already gone or the folder is not writable.",
     "linkFindingsAriaLabel": "How this page connects inside the folder",
     "linkFindingsTitle": "{count, number} connections to check",
-    "linkFindingsBody": "The page fits the template. What follows is about the folder: things no single page can see about itself.",
     "fixWithAgent": "Fix with agent",
     "fixWithAgentTooltip": "The agent brings this page back to the template. A fixed page that fits is saved as it is; one that does not asks for your permission first.",
     "fixWithAgentTooltipAsk": "The agent brings this page back to the template. Each write asks for your permission.",
     "fixMyself": "Fix it myself",
     "fixMyselfTooltip": "Selects this page's file in Finder. Edit it in any editor; the list updates.",
     "technical": "Technical detail · check codes and line numbers",
+    "technicalOpen": "Show check codes",
     "technicalNote": "The wiki-validate command and the validate_wiki tool report these same codes.",
     "technicalFile": "File: {path}",
     "goToPlace": "Go to {place}",
@@ -513,40 +572,34 @@
       },
       "dangling-wikilink": {
         "what": "The link at {where} points at {target}, and there is no such page in this folder.",
-        "do": "Link to a page that exists, or write that page."
+        "do": "Link to a page that exists, or write that page.",
+        "short": "{page} links to {target} at {where}, and that page is not in this folder",
+        "shortDo": "link to a page that exists, or write it"
       },
       "orphan-page": {
         "what": "No other page points at this one yet.",
-        "do": "Link it from the page that talks about its topic and it becomes easy to find."
+        "do": "Link it from the page that talks about its topic and it becomes easy to find.",
+        "short": "No page links to {page} yet",
+        "shortDo": "link it from a page on the same topic"
       },
       "shared-source-unlinked": {
         "what": "{other} is written from the same source ({sources}), and neither page points at the other.",
-        "do": "Link one of them to the other."
+        "do": "Link one of them to the other.",
+        "short": "{page} and {other} use the same source ({sources}) but do not link each other",
+        "shortDo": "link one to the other"
       },
       "shared-source-unlinked-more": {
-        "what": "{count, number} more pages are written from the same source, and none of them points at this one or is pointed at by it.",
-        "do": "Link the pages written from one source to each other."
+        "what": "{count} more pages are written from the same source, and none of them points at this one or is pointed at by it.",
+        "do": "Link the pages written from one source to each other.",
+        "short": "{count} more pages use the same source as {page} but do not link it",
+        "shortDo": "link the pages of one source to each other"
       }
     }
-  },
-  "shelf": {
-    "commonState": "{count, number} pages · {state}",
-    "listAria": "Wiki pages and their source versions",
-    "freshness": {
-      "fresh": "The checked source versions have not changed.",
-      "stale": "The source has changed or has not been checked against this page.",
-      "unverified": "This page has never been checked against a file"
-    },
-    "state": {
-      "fresh": "Checked sources unchanged",
-      "stale": "Source review needed",
-      "unverified": "Source not checked"
-    },
-    "compiling": "Re-reading the sources to write wiki pages."
   },
   "home": {
     "guide": "How to use",
     "questions": "{count, plural, =0 {Questions} one {Questions #} other {Questions #}}",
+    "openAnswer": "Open saved answer",
     "more": "More",
     "compileNext": "Write wiki page: {source}",
     "staleClause": "{count, plural, one {# source changed} other {# sources changed}}",
@@ -558,12 +611,12 @@
     "searchCount": "Showing {visible, number} of {total, number} · {selected, number} selected",
     "noMatches": "No file name or path matches this search.",
     "clearSearch": "Clear search",
-    "title": "Documents in the folders you granted",
-    "preamble": "Atlas listed these by name, format and size. It has not opened any of them. Nothing is copied until you pick.",
+    "title": "Documents found in {folders}",
+    "preamble": "Chosen by file name, format and size. Nothing is copied until you press Add.",
     "webLimit": "Only the open folder can be listed here; a connected code folder needs the app.",
     "walkedRoots": "Also listed: {roots}",
     "walking": "Reading the folder listings…",
-    "empty": "Nothing to propose. Every document in these folders is already in sources/, or none of them is a document format Atlas offers.",
+    "empty": "No file in {folders} looks like a document. Atlas skips licence and notice files, files named by random letters and digits, build and test files, empty files, and folders such as public, output, build and vendor.",
     "rootHeader": "{root} · {count, number}",
     "truncated": "The list stopped at the first 500 files, so this is not all of them.",
     "unreadable": "Could not be read: {roots}",
@@ -731,7 +784,7 @@
   "report": {
     "title": "Check results",
     "structuralTitle": "App checks",
-    "structuralHead": "{pages, plural, one {# page} other {# pages}} · {offTemplate, number} off-template · {findings, plural, one {# finding} other {# findings}}",
+    "structuralHead": "{pages, plural, one {# page} other {# pages}} · {offTemplate, number} not following the template · {findings, plural, one {# finding} other {# findings}}",
     "structuralClean": "Every page fits the template, every link resolves, and pages written from the same source link to each other.",
     "advisoryMark": "Info",
     "advisoryFold": "{count, plural, one {# advisory finding} other {# advisory findings}}",
@@ -759,7 +812,6 @@
       "shared-source-unlinked": "Pages from one source do not link"
     },
     "namesTitle": "Names without a page",
-    "open": "Check results {count, number}",
     "running": "Checking the wiki…",
     "unseen": "new"
   },
@@ -1053,18 +1105,17 @@
     "first": "No source has a wiki page yet",
     "today": "+{count, number} today",
     "chartAria": "Sources with a wiki page, by the date each page records",
-    "chartTitle": "Sources with a wiki page",
-    "chartNow": "Today {count, number}",
+    "chartTitle": "Sources with a wiki page since {date}",
     "point": "{date}: {count, number} of today's {total, number} ({percent, number}%)",
     "dateBasis": "Each point uses the date its wiki page records.",
     "undated": "{count, plural, one {# has no date} other {# have no date}}",
     "continue": "{count, plural, =1 {Write a wiki page from 1 source} other {Write wiki pages for the next #}}",
-    "batchRest": "{count, number} more wait after these.",
+    "batchRest": "{count, number} more besides these.",
     "writer": "<name>{agent}</name> writes the pages",
     "writerAnyAgent": "The coding agent you connected writes the pages",
     "batchReturned": "{count, plural, one {# source from the last request still has no wiki page and moved to the end of the list.} other {# sources from the last request still have no wiki page and moved to the end of the list.}}",
     "webLine": "Only the app writes wiki pages. Reading works here.",
-    "allDone": "Every source has a wiki page"
+    "allDone": "No wiki page left to write"
   },
   "sourcesHome": {
     "aria": "Sources grouped by folder or file type, with how many have a wiki page",
@@ -1078,7 +1129,7 @@
       "type": "File type",
       "sources": "Sources",
       "withPage": "Has a wiki page",
-      "waiting": "Waiting",
+      "waiting": "Pages to write",
       "latest": "Latest wiki page"
     },
     "topLevel": "Directly in sources/",
@@ -1088,15 +1139,15 @@
       "none": "None yet",
       "undated": "No date"
     },
-    "rowAria": "{name}: {total, number} sources, {withPage, number} with a wiki page, {waiting, number} waiting to be written. Press to list them beside the table.",
+    "rowAria": "{name}: {total, number} sources, {withPage, number} with a wiki page, {waiting, number} with a page to write. Press to list them beside the table.",
     "writing": "A wiki page is being written for a source here",
     "panel": {
-      "nextTitle": "Next to write",
+      "nextTitle": "Order for writing wiki pages",
       "lead": "Press “{action}” and the agent reads the sources below, top first, and writes their wiki pages.",
       "leadRunning": "The agent is writing wiki pages from the top. A source leaves this list once its page is written.",
-      "privacy": "Atlas sends your sources nowhere. When you give an agent a wiki page to write or a question, that agent reads the sources it needs, and what it reads may be sent to that agent's service.",
-      "webNote": "Only the app writes wiki pages. In the app, these go first.",
-      "waitingTitle": "Waiting here",
+      "privacy": "Atlas sends your sources nowhere; work you give an agent goes through that agent's service.",
+      "webNote": "In the app, wiki pages are written for these first.",
+      "waitingTitle": "Pages to write here",
       "nextEmpty": "Every source here has a wiki page that matches it.",
       "unreadable": "{count, plural, one {# source here can't be read} other {# sources here can't be read}}",
       "showInList": "Show all {count, number} in the list",

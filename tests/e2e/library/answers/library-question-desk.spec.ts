@@ -52,7 +52,7 @@ async function expectOneDoorEach(page: Page) {
   await expect(page.getByTestId('library-question-desk').locator('[data-testid="library-questions-open"], [data-testid="library-open-conversation"]')).toHaveCount(0);
 }
 
-test('a long retained question is the header door, and stays inside the More list at 200 percent text on a narrow screen', async ({ page }) => {
+test('one saved answer makes the header door Open saved answer with the question as its tooltip, also inside the More list at 200 percent text on a narrow screen', async ({ page }) => {
   const title = 'Which original explains refund approval, inventory restoration timing, exceptions, and the next batch conditions?';
   await installLibraryWorkHarness(page, { files: {
     'project.md': project,
@@ -61,19 +61,21 @@ test('a long retained question is the header door, and stays inside the More lis
       .replace('status: draft', 'status: draft\nanswer_thread: wiki/answers/retained'),
   } });
   await openWiki(page);
-  // The sole kept answer names itself in the page header, and the desk carries no second door to it.
+  // The door names its action; the kept answer's title is its tooltip. The desk carries no second door.
   const door = page.getByTestId('library-questions-open');
-  await expect(door).toContainText(title);
+  await expect(door).toHaveText('Open saved answer');
+  await expect(door).toHaveAttribute('title', title);
   await expect(door).toHaveCount(1);
   await expect(page.getByTestId('library-question-desk').getByTestId('library-questions-open')).toHaveCount(0);
   await expect(page.getByTestId('question-desk-saved')).toContainText(title);
   await expect(page.getByTestId('question-desk-originals')).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
-  // Below `lg` the doors fold into More, and the long title stays inside the screen there.
+  // Below `lg` the doors fold into More, where the entry says the same and stays inside the screen.
   await page.getByTestId('library-home-overflow').click();
   const question = page.getByTestId('library-questions-open-overflow');
-  await expect(question).toContainText(title);
+  await expect(question).toHaveText('Open saved answer');
+  await expect(question).toHaveAttribute('title', title);
   await expect.poll(() => question.evaluate((element) => {
     const button = element.getBoundingClientRect();
     return Math.max(-button.left, button.right - window.innerWidth);

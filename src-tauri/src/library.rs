@@ -6,26 +6,152 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
-use std::sync::{Mutex, OnceLock};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::lower_hex::lower_hex;
 use sha2::{Digest, Sha256};
 
 use crate::{canonical_root, canonical_source_root, resolve_existing_inside};
 
-fn vended_source_paths() -> &'static Mutex<HashMap<String, PathBuf>> {
-    static VENDED: OnceLock<Mutex<HashMap<String, PathBuf>>> = OnceLock::new();
+pub(crate) mod dropped;
+
+/// A path Rust handed to the page, and where its copy lands under `sources/`: the
+/// `/`-joined path below the root Rust offered it from, never a value the page sent.
+#[derive(Clone, Debug)]
+pub(crate) struct SourceOffer {
+    pub(crate) canonical: PathBuf,
+    pub(crate) relative: String,
+    identity: FileIdentity,
+}
+
+/// The file an offer named. The copy reopens the path, so anything swapped in after the offer
+/// (a link to a key, a FIFO, another file) is told apart by this. Windows compares only the
+/// length, since std exposes no stable file index there; a reparse point is refused instead.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct FileIdentity {
+    device: u64,
+    inode: u64,
+    length: u64,
+}
+
+impl FileIdentity {
+    fn of(metadata: &fs::Metadata) -> Self {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            Self {
+                device: metadata.dev(),
+                inode: metadata.ino(),
+                length: metadata.len(),
+            }
+        }
+        #[cfg(not(unix))]
+        {
+            Self {
+                device: 0,
+                inode: 0,
+                length: metadata.len(),
+            }
+        }
+    }
+}
+
+impl SourceOffer {
+    /// Records what is at `canonical` now, without following a link there; only a regular file
+    /// can be offered.
+    pub(crate) fn of_file(canonical: PathBuf, relative: String) -> Option<Self> {
+        let metadata = fs::symlink_metadata(&canonical).ok()?;
+        metadata.is_file().then(|| Self {
+            identity: FileIdentity::of(&metadata),
+            canonical,
+            relative,
+        })
+    }
+}
+
+/// Reopens an offered file without following a link and without waiting on a FIFO, then
+/// requires the very file the offer recorded.
+#[cfg(unix)]
+fn open_offered(offer: &SourceOffer) -> Result<fs::File, &'static str> {
+    use std::os::unix::fs::OpenOptionsExt;
+    let file = fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(&offer.canonical)
+        .map_err(open_failure)?;
+    let metadata = file.metadata().map_err(|_| "source-unreadable")?;
+    if !metadata.is_file() || FileIdentity::of(&metadata) != offer.identity {
+        return Err("source-changed-since-offered");
+    }
+    Ok(file)
+}
+
+#[cfg(windows)]
+fn open_offered(offer: &SourceOffer) -> Result<fs::File, &'static str> {
+    use std::os::windows::fs::{MetadataExt, OpenOptionsExt};
+    const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
+    const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x0000_0400;
+    let file = fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
+        .open(&offer.canonical)
+        .map_err(open_failure)?;
+    let metadata = file.metadata().map_err(|_| "source-unreadable")?;
+    if metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+        || !metadata.is_file()
+        || FileIdentity::of(&metadata) != offer.identity
+    {
+        return Err("source-changed-since-offered");
+    }
+    Ok(file)
+}
+
+fn open_failure(error: std::io::Error) -> &'static str {
+    #[cfg(unix)]
+    if error.raw_os_error() == Some(libc::ELOOP) {
+        // `O_NOFOLLOW` met a link swapped in after the offer.
+        return "source-changed-since-offered";
+    }
+    match error.kind() {
+        std::io::ErrorKind::NotFound => "source-missing",
+        _ => "source-unreadable",
+    }
+}
+
+fn vended_source_paths() -> &'static Mutex<HashMap<String, SourceOffer>> {
+    static VENDED: OnceLock<Mutex<HashMap<String, SourceOffer>>> = OnceLock::new();
     VENDED.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+/// A picked file lands flat, under its own name.
 fn remember_source_path(vended: String, canonical: PathBuf) {
+    let relative = canonical
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    if let Some(offer) = SourceOffer::of_file(canonical, relative) {
+        remember_source_offer(vended, offer);
+    }
+}
+
+pub(crate) fn remember_source_offer(vended: String, offer: SourceOffer) {
     vended_source_paths()
         .lock()
         .unwrap_or_else(|err| err.into_inner())
-        .insert(vended, canonical);
+        .insert(vended, offer);
 }
 
-fn take_source_path(vended: &str) -> Option<PathBuf> {
+pub(crate) fn forget_source_offers(vended: &[String]) {
+    let mut offers = vended_source_paths()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner());
+    for key in vended {
+        offers.remove(key);
+    }
+}
+
+fn take_source_path(vended: &str) -> Option<SourceOffer> {
     vended_source_paths()
         .lock()
         .unwrap_or_else(|err| err.into_inner())
@@ -57,12 +183,30 @@ impl ImportDestination {
 }
 
 /// Must equal TS `DISCOVERY_DOCUMENT_EXTENSIONS`. An allow-list, because a
-/// deny-list fails on the first unforeseen name; `md` is absent so vault Markdown
-/// is never copied into two places.
+/// deny-list fails on the first unforeseen name; `log` is absent because logs are output.
 const DISCOVERY_DOCUMENT_EXTENSIONS: &[&str] = &[
-    "pdf", "docx", "doc", "xlsx", "xls", "csv", "pptx", "ppt", "txt", "rtf", "odt", "ods", "odp",
-    "epub",
+    "pdf", "docx", "doc", "xlsx", "xls", "csv", "tsv", "pptx", "ppt", "txt", "rtf", "odt", "ods",
+    "odp", "epub", "md", "markdown", "html", "htm",
 ];
+
+/// Must equal TS `DISCOVERY_MARKDOWN_EXTENSIONS`. Markdown is offered only from the open
+/// folder, and the page drops any file the vault index knows as a node (`kind:`).
+const DISCOVERY_MARKDOWN_EXTENSIONS: &[&str] = &["md", "markdown"];
+
+/// Must equal TS `DISCOVERY_GUIDE_STEMS`: a repository's guides for people and agents,
+/// refused as Markdown, alone or before a further `.` (`README.ko.md`).
+const DISCOVERY_GUIDE_STEMS: &[&str] = &[
+    "readme",
+    "agents",
+    "claude",
+    "gemini",
+    "contributing",
+    "code_of_conduct",
+    "security",
+];
+
+/// Must equal TS `DISCOVERY_VAULT_OWNED_DIRS`: what Atlas itself keeps in the open folder.
+const DISCOVERY_VAULT_OWNED_DIRS: &[&str] = &["sources", "wiki"];
 
 /// Must equal TS `DISCOVERY_PRUNE_DIR_NAMES`, compared lowercased; dot directories are
 /// skipped separately. Generated, published and test-data folders hold files no one wrote
@@ -193,27 +337,68 @@ fn looks_like_a_hash(stem: &str) -> bool {
             .all(|(group, len)| group.len() == len && is_hex(group))
 }
 
-/// A free function so this test and the TS mirror test measure the same rule.
-pub(crate) fn discovery_accepts_file(name: &str) -> bool {
-    if name.starts_with('.') {
-        return false;
-    }
+/// Why a walk passes a file over, in the words the skipped line uses; mirrors TS
+/// `DiscoverySkipReason`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum SkipReason {
+    SecretName,
+    Licence,
+    NotDocument,
+}
+
+fn file_stem<'a>(lowered: &'a str, extension: &str) -> &'a str {
+    lowered
+        .strip_suffix(extension)
+        .and_then(|rest| rest.strip_suffix('.'))
+        .unwrap_or(lowered)
+}
+
+/// The name rules every folder walk applies; repository guides are discovery's alone.
+pub(crate) fn discovery_skip_reason(name: &str) -> Option<SkipReason> {
     let lowered = name.to_ascii_lowercase();
     if DISCOVERY_DENIED_NAME_FRAGMENTS
         .iter()
         .any(|fragment| lowered.contains(fragment))
     {
-        return false;
+        return Some(SkipReason::SecretName);
     }
     let extension = lower_extension(&lowered);
-    if !DISCOVERY_DOCUMENT_EXTENSIONS.contains(&extension.as_str()) {
+    let stem = file_stem(&lowered, &extension);
+    if names_a_notice(stem) {
+        return Some(SkipReason::Licence);
+    }
+    if !DISCOVERY_DOCUMENT_EXTENSIONS.contains(&extension.as_str())
+        || names_a_build_file(&lowered)
+        || looks_like_a_hash(stem)
+    {
+        return Some(SkipReason::NotDocument);
+    }
+    None
+}
+
+pub(crate) fn is_markdown_name(name: &str) -> bool {
+    DISCOVERY_MARKDOWN_EXTENSIONS.contains(&lower_extension(&name.to_ascii_lowercase()).as_str())
+}
+
+fn names_a_repository_guide(lowered: &str) -> bool {
+    let extension = lower_extension(lowered);
+    if !DISCOVERY_MARKDOWN_EXTENSIONS.contains(&extension.as_str()) {
         return false;
     }
-    let stem = lowered
-        .strip_suffix(extension.as_str())
-        .and_then(|rest| rest.strip_suffix('.'))
-        .unwrap_or(&lowered);
-    !names_a_notice(stem) && !names_a_build_file(&lowered) && !looks_like_a_hash(stem)
+    let stem = file_stem(lowered, &extension);
+    DISCOVERY_GUIDE_STEMS.iter().any(|guide| {
+        stem.strip_prefix(guide)
+            .is_some_and(|rest| rest.is_empty() || rest.starts_with('.'))
+    })
+}
+
+/// A free function so this test and the TS mirror test measure the same rule.
+pub(crate) fn discovery_accepts_file(name: &str) -> bool {
+    if name.starts_with('.') {
+        return false;
+    }
+    discovery_skip_reason(name).is_none() && !names_a_repository_guide(&name.to_ascii_lowercase())
 }
 
 /// Takes the path relative to the walked root, with either separator, so Windows matches too.
@@ -311,7 +496,7 @@ pub fn pick_source_files(dialog_title: Option<String>) -> Result<Vec<String>, St
     Ok(vended)
 }
 
-#[derive(serde::Serialize)]
+#[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SourceImportResult {
     pub picked_name: String,
@@ -377,31 +562,69 @@ fn index_existing_files(root: &Path, folder: &str) -> Result<Vec<(String, String
     Ok(out)
 }
 
+/// Writes the copy under the first of `names` still free in `folder_relative`, never replacing
+/// a file: `(sha256, length, name used)`, or `None` when every name was taken.
 #[cfg(unix)]
 fn copy_source_into(
     root_path: &str,
-    relative_path: &str,
+    folder_relative: &str,
+    names: impl Iterator<Item = String>,
     source: &mut impl std::io::Read,
-) -> Result<(String, u64), String> {
+) -> Result<Option<(String, u64, String)>, String> {
     let root = canonical_root(root_path)?;
     let root_handle = crate::agent_setup::open_absolute_directory_no_follow(&root)?;
-    let (parent, file_name) = crate::agent_setup::open_entry_parent(&root_handle, relative_path)?;
-    crate::agent_setup::write_entry_atomically_with(&parent, &file_name, 0o666, |file| {
-        copy_hashing(source, file)
-    })
+    let (parent, _) =
+        crate::agent_setup::open_entry_parent(&root_handle, &format!("{folder_relative}/name"))
+            .map_err(|_| "import-destination-not-a-folder".to_string())?;
+    let names = names.filter_map(|name| std::ffi::CString::new(name).ok());
+    let published =
+        crate::agent_setup::create_first_free_entry_with(&parent, names, 0o666, |file| {
+            copy_hashing(source, file)
+        })
+        .map_err(|_| "import-destination-unwritable".to_string())?;
+    Ok(published.map(|((hash, length), name)| (hash, length, name.to_string_lossy().into_owned())))
 }
 
 /// Windows lacks `openat`/`O_NOFOLLOW`, so `resolve_write_target_inside` checks the
 /// path instead, the same rule `write_vault_text_file` uses, or bytes could escape.
+/// `create_new` never replaces; a copy that fails removes only the file it created.
 #[cfg(not(unix))]
 fn copy_source_into(
     root_path: &str,
-    relative_path: &str,
+    folder_relative: &str,
+    names: impl Iterator<Item = String>,
     source: &mut impl std::io::Read,
-) -> Result<(String, u64), String> {
-    let target = crate::resolve_write_target_inside(root_path, relative_path)?;
-    let mut file = fs::File::create(&target).map_err(|err| err.to_string())?;
-    copy_hashing(source, &mut file).map_err(|err| err.to_string())
+) -> Result<Option<(String, u64, String)>, String> {
+    for name in names {
+        let target =
+            crate::resolve_write_target_inside(root_path, &format!("{folder_relative}/{name}"))?;
+        let mut file = match fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&target)
+        {
+            Ok(file) => file,
+            Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(_) => return Err("import-destination-unwritable".into()),
+        };
+        return match copy_hashing(source, &mut file) {
+            Ok((hash, length)) => Ok(Some((hash, length, name))),
+            Err(_) => {
+                drop(file);
+                let _ = fs::remove_file(&target);
+                Err("import-destination-unwritable".into())
+            }
+        };
+    }
+    Ok(None)
+}
+
+/// How one import reports and stops. Each call owns its flag, so a page's Stop reaches
+/// only the copy it started; the flag is read between files, so a file is never cut.
+#[derive(Default)]
+pub(crate) struct ImportControl<'a> {
+    pub(crate) stop: Option<&'a AtomicBool>,
+    pub(crate) progress: Option<&'a dyn Fn(usize, usize)>,
 }
 
 /// Never overwrites and refuses a second copy of the same bytes. Nothing is written
@@ -413,145 +636,349 @@ pub fn import_source_files(
     source_paths: Vec<String>,
     destination: Option<ImportDestination>,
 ) -> Result<Vec<SourceImportResult>, String> {
-    let destination = destination.unwrap_or_default();
+    import_sources(
+        &root_path,
+        source_paths,
+        destination.unwrap_or_default(),
+        &ImportControl::default(),
+    )
+}
+
+#[derive(Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SourceImportProgress {
+    pub done: usize,
+    pub total: usize,
+}
+
+/// A 2,000-file copy sends about this many updates a second, not one per file.
+const PROGRESS_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
+
+fn running_imports() -> &'static Mutex<HashMap<String, Arc<AtomicBool>>> {
+    static RUNNING: OnceLock<Mutex<HashMap<String, Arc<AtomicBool>>>> = OnceLock::new();
+    RUNNING.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// One copy into a folder at a time: two copies would race for the same free names.
+struct ImportingFolder(PathBuf);
+
+impl ImportingFolder {
+    /// The lock is released before a claim is built, since a refused claim's drop takes it again.
+    fn claim(root: PathBuf) -> Option<Self> {
+        let claimed = importing_folders()
+            .lock()
+            .unwrap_or_else(|err| err.into_inner())
+            .insert(root.clone());
+        claimed.then(|| Self(root))
+    }
+}
+
+impl Drop for ImportingFolder {
+    fn drop(&mut self) {
+        importing_folders()
+            .lock()
+            .unwrap_or_else(|err| err.into_inner())
+            .remove(&self.0);
+    }
+}
+
+fn importing_folders() -> &'static Mutex<std::collections::HashSet<PathBuf>> {
+    static IMPORTING: OnceLock<Mutex<std::collections::HashSet<PathBuf>>> = OnceLock::new();
+    IMPORTING.get_or_init(|| Mutex::new(std::collections::HashSet::new()))
+}
+
+/// Copies offered paths into `sources/`, each under the folders Rust recorded when it
+/// offered the path, and streams how many are done. Off the main thread, so input stays live.
+#[tauri::command(async)]
+pub fn import_offered_sources(
+    root_path: String,
+    source_paths: Vec<String>,
+    import_id: String,
+    progress: tauri::ipc::Channel<SourceImportProgress>,
+) -> Result<Vec<SourceImportResult>, String> {
+    let Some(_folder) = ImportingFolder::claim(canonical_root(&root_path)?) else {
+        return Err("import-already-running".into());
+    };
+    let stop = Arc::new(AtomicBool::new(false));
+    running_imports()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .insert(import_id.clone(), stop.clone());
+    let last_sent = std::cell::Cell::new(None::<std::time::Instant>);
+    let report = |done: usize, total: usize| {
+        let now = std::time::Instant::now();
+        let recent = last_sent
+            .get()
+            .is_some_and(|at| now.duration_since(at) < PROGRESS_INTERVAL);
+        if done < total && recent {
+            return;
+        }
+        last_sent.set(Some(now));
+        let _ = progress.send(SourceImportProgress { done, total });
+    };
+    let outcome = import_sources(
+        &root_path,
+        source_paths,
+        ImportDestination::Sources,
+        &ImportControl {
+            stop: Some(&stop),
+            progress: Some(&report),
+        },
+    );
+    running_imports()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner())
+        .remove(&import_id);
+    outcome
+}
+
+/// Stops the named import after the file it is copying; what landed stays.
+#[tauri::command]
+pub fn stop_source_import(import_id: String) -> bool {
+    let running = running_imports()
+        .lock()
+        .unwrap_or_else(|err| err.into_inner());
+    match running.get(&import_id) {
+        Some(stop) => {
+            stop.store(true, Ordering::Relaxed);
+            true
+        }
+        None => false,
+    }
+}
+
+pub(crate) fn import_sources(
+    root_path: &str,
+    source_paths: Vec<String>,
+    destination: ImportDestination,
+    control: &ImportControl,
+) -> Result<Vec<SourceImportResult>, String> {
     let folder = destination.folder();
-    let mut resolved: HashMap<String, PathBuf> = HashMap::new();
-    if destination == ImportDestination::Planning {
-        // Every offer is spent before any refusal, so a refused pick never stays importable.
-        for source_path in &source_paths {
-            if !resolved.contains_key(source_path) {
-                if let Some(canonical) = take_source_path(source_path) {
-                    resolved.insert(source_path.clone(), canonical);
-                }
+    // Every offer is spent before any refusal, so a refused pick never stays importable.
+    let mut resolved: HashMap<String, SourceOffer> = HashMap::new();
+    for source_path in &source_paths {
+        if !resolved.contains_key(source_path) {
+            if let Some(offer) = take_source_path(source_path) {
+                resolved.insert(source_path.clone(), offer);
             }
         }
     }
-    let root = canonical_root(&root_path)?;
+    let root = canonical_root(root_path)?;
     let target = root.join(folder);
-    if destination == ImportDestination::Planning {
-        refuse_linked_folder(&target)?;
-    }
+    refuse_linked_folder(&target)?;
     fs::create_dir_all(&target).map_err(|err| err.to_string())?;
-    let mut existing = index_existing_files(&root, folder)?;
-    let mut taken = folded_names(destination, &target);
-    let mut results = Vec::with_capacity(source_paths.len());
-    let mut landed: HashMap<PathBuf, String> = HashMap::new();
+    let mut run = ImportRun {
+        root_path,
+        folder,
+        destination,
+        existing: index_existing_files(&root, folder)?,
+        taken: folded_names(destination, &target),
+        target,
+        landed: HashMap::new(),
+        folder_names: HashMap::new(),
+    };
+    let total = source_paths.len();
+    let mut results = Vec::with_capacity(total);
+    for (index, source_path) in source_paths.iter().enumerate() {
+        if control
+            .stop
+            .is_some_and(|stop| stop.load(Ordering::Relaxed))
+        {
+            break;
+        }
+        results.push(run.copy_one(source_path, resolved.get(source_path)));
+        if let Some(progress) = control.progress {
+            progress(index + 1, total);
+        }
+    }
+    Ok(results)
+}
 
-    for source_path in source_paths {
-        let canonical = match resolved.get(&source_path) {
-            Some(canonical) => Some(canonical.clone()),
-            None => match take_source_path(&source_path) {
-                Some(canonical) => {
-                    resolved.insert(source_path.clone(), canonical.clone());
-                    Some(canonical)
-                }
-                None => None,
-            },
-        };
-        let Some(canonical) = canonical else {
-            let picked_name = Path::new(&source_path)
+struct ImportRun<'a> {
+    root_path: &'a str,
+    folder: &'static str,
+    destination: ImportDestination,
+    target: PathBuf,
+    /// `(sha256, relative path)` of every file already under the folder, hashed once per import.
+    existing: Vec<(String, String)>,
+    taken: Option<std::collections::HashSet<String>>,
+    landed: HashMap<PathBuf, String>,
+    folder_names: HashMap<PathBuf, HashMap<String, String>>,
+}
+
+impl ImportRun<'_> {
+    fn copy_one(&mut self, source_path: &str, offer: Option<&SourceOffer>) -> SourceImportResult {
+        let Some(offer) = offer else {
+            let picked_name = Path::new(source_path)
                 .file_name()
                 .map(|name| name.to_string_lossy().to_string())
-                .unwrap_or_else(|| source_path.clone());
-            results.push(import_failure(&picked_name, "source-not-offered"));
-            continue;
+                .unwrap_or_else(|| source_path.to_string());
+            return import_failure(&picked_name, "source-not-offered");
         };
-
+        let canonical = &offer.canonical;
         let picked_name = canonical
             .file_name()
             .map(|name| name.to_string_lossy().to_string())
-            .unwrap_or_else(|| source_path.clone());
+            .unwrap_or_else(|| source_path.to_string());
         let failure = |reason: &str| import_failure(&picked_name, reason);
 
-        if let Some(relative) = landed.get(&canonical) {
-            results.push(import_duplicate(picked_name, relative.clone(), None, None));
-            continue;
+        if let Some(relative) = self.landed.get(canonical) {
+            return import_duplicate(picked_name.clone(), relative.clone(), None, None);
         }
 
-        let Some(base_name) = safe_source_file_name(&picked_name) else {
-            results.push(failure("unusable-file-name"));
-            continue;
+        let placed = match self.destination {
+            ImportDestination::Planning => {
+                safe_source_file_name(&picked_name).map(|name| (Vec::new(), name))
+            }
+            ImportDestination::Sources => split_destination(&offer.relative),
         };
-        if destination == ImportDestination::Planning && !planning_lists_name(&base_name) {
-            results.push(failure("unsupported-type"));
-            continue;
+        let Some((folders, base_name)) = placed else {
+            return failure("unusable-file-name");
+        };
+        if self.destination == ImportDestination::Planning && !planning_lists_name(&base_name) {
+            return failure("unsupported-type");
         }
 
-        let mut source = match fs::File::open(&canonical) {
+        let mut source = match open_offered(offer) {
             Ok(source) => source,
-            Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
-                results.push(failure("source-missing"));
-                continue;
-            }
-            Err(err) => {
-                results.push(failure(&err.to_string()));
-                continue;
-            }
+            Err(reason) => return failure(reason),
         };
         let (hash, length) = match copy_hashing(&mut source, &mut std::io::sink()) {
             Ok(measured) => measured,
-            Err(err) => {
-                results.push(failure(&err.to_string()));
-                continue;
-            }
+            Err(_) => return failure("source-unreadable"),
         };
-
-        if let Some((_, relative)) = existing
+        if let Some((_, relative)) = self
+            .existing
             .iter()
             .find(|(existing_hash, _)| *existing_hash == hash)
         {
-            results.push(import_duplicate(
-                picked_name,
-                relative.clone(),
-                Some(hash),
-                Some(length),
-            ));
-            continue;
+            return import_duplicate(picked_name, relative.clone(), Some(hash), Some(length));
         }
 
+        let (directory, folders) = match self.prepare_destination_folders(&folders) {
+            Ok(prepared) => prepared,
+            Err(reason) => return failure(&reason),
+        };
         let (stem, extension) = split_name(&base_name);
         let mut candidate = base_name.clone();
         let mut suffix = 2;
-        while name_taken(&target, taken.as_ref(), &candidate) {
+        while name_taken(&directory, self.taken.as_ref(), &candidate) {
             candidate = format!("{stem} ({suffix}){extension}");
             suffix += 1;
             if suffix > 999 {
                 break;
             }
         }
-        if name_taken(&target, taken.as_ref(), &candidate) {
-            results.push(failure("file-name-conflict-limit"));
-            continue;
+        if name_taken(&directory, self.taken.as_ref(), &candidate) {
+            return failure("file-name-conflict-limit");
         }
-        let renamed = candidate != base_name;
-        let relative = format!("{folder}/{candidate}");
+        let folder_relative = std::iter::once(self.folder)
+            .chain(folders.iter().map(String::as_str))
+            .collect::<Vec<_>>()
+            .join("/");
+        // The check above can lose a race; publishing never replaces, so a name taken since
+        // passes to the next number.
+        let taken = self.taken.as_ref();
+        let names = std::iter::once(candidate)
+            .chain((suffix..=999).map(|n| format!("{stem} ({n}){extension}")))
+            .filter(|name| !taken.is_some_and(|names| names.contains(&name.to_lowercase())));
         let copied = source
             .seek(SeekFrom::Start(0))
-            .map_err(|err| err.to_string())
-            .and_then(|_| copy_source_into(&root_path, &relative, &mut source));
-        let (hash, length) = match copied {
-            Ok(written) => written,
-            Err(err) => {
-                results.push(failure(&err));
-                continue;
-            }
+            .map_err(|_| "source-unreadable".to_string())
+            .and_then(|_| copy_source_into(self.root_path, &folder_relative, names, &mut source));
+        let (hash, length, candidate) = match copied {
+            Ok(Some(written)) => written,
+            Ok(None) => return failure("file-name-conflict-limit"),
+            Err(err) => return failure(&err),
         };
-        existing.push((hash.clone(), relative.clone()));
-        if let Some(taken) = taken.as_mut() {
+        let renamed = candidate != base_name;
+        let relative = format!("{folder_relative}/{candidate}");
+        self.existing.push((hash.clone(), relative.clone()));
+        if let Some(taken) = self.taken.as_mut() {
             taken.insert(candidate.to_lowercase());
         }
-        landed.insert(canonical, relative.clone());
-        results.push(SourceImportResult {
+        self.landed.insert(canonical.clone(), relative.clone());
+        SourceImportResult {
             picked_name,
             status: if renamed { "renamed" } else { "added" }.into(),
             relative_path: Some(relative),
             sha256: Some(hash),
             size: Some(length),
             reason: None,
-        });
+        }
+    }
+}
+
+/// An offer's recorded path, split into folders and a file name that each pass the
+/// single-name rule, so no segment can be `..`, absolute, or carry a separator.
+fn split_destination(relative: &str) -> Option<(Vec<String>, String)> {
+    let mut segments = Vec::new();
+    for segment in relative.split('/') {
+        if cfg!(windows) && segment.contains(':') {
+            return None;
+        }
+        segments.push(safe_source_file_name(segment)?);
+    }
+    let name = segments.pop()?;
+    Some((segments, name))
+}
+
+impl ImportRun<'_> {
+    /// Creates each folder below the destination, refusing a link or a file in the way, as
+    /// the planning path does for its one folder; the platform writer then re-checks. A folder
+    /// named like an existing one in another letter case is that folder (`Meetings` joins
+    /// `meetings`), so a case-sensitive disk never grows a second one beside it.
+    fn prepare_destination_folders(
+        &mut self,
+        folders: &[String],
+    ) -> Result<(PathBuf, Vec<String>), String> {
+        let mut directory = self.target.clone();
+        let mut placed = Vec::with_capacity(folders.len());
+        for asked in folders {
+            let name = self
+                .folder_names_in(&directory)
+                .get(&asked.to_lowercase())
+                .cloned()
+                .unwrap_or_else(|| asked.clone());
+            let parent = directory.clone();
+            directory.push(&name);
+            match fs::symlink_metadata(&directory) {
+                Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => {
+                    return Err("import-destination-not-a-folder".into());
+                }
+                Ok(_) => {}
+                Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
+                    fs::create_dir(&directory)
+                        .map_err(|_| "import-destination-unwritable".to_string())?;
+                }
+                Err(_) => return Err("import-destination-unwritable".into()),
+            }
+            self.folder_names_in(&parent)
+                .insert(name.to_lowercase(), name.clone());
+            placed.push(name);
+        }
+        Ok((directory, placed))
     }
 
-    Ok(results)
+    /// Folder names under `directory`, keyed by their lower case; listed once per import.
+    fn folder_names_in(&mut self, directory: &Path) -> &mut HashMap<String, String> {
+        self.folder_names
+            .entry(directory.to_path_buf())
+            .or_insert_with(|| {
+                fs::read_dir(directory)
+                    .map(|entries| {
+                        entries
+                            .flatten()
+                            .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
+                            .map(|entry| {
+                                let name = entry.file_name().to_string_lossy().into_owned();
+                                (name.to_lowercase(), name)
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default()
+            })
+    }
 }
 
 /// The home scan's rule: its file types, and secret-looking words refused for images only.
@@ -595,7 +1022,8 @@ fn name_taken(
     folded: Option<&std::collections::HashSet<String>>,
     candidate: &str,
 ) -> bool {
-    target.join(candidate).exists()
+    // A dangling link still holds its name.
+    fs::symlink_metadata(target.join(candidate)).is_ok()
         || folded.is_some_and(|names| names.contains(&candidate.to_lowercase()))
 }
 
@@ -634,6 +1062,10 @@ pub struct SourceDiscoveryRoot {
     /// The open folder passes `sources` so imported files are not proposed again.
     #[serde(default)]
     pub skip_relative: Vec<String>,
+    /// The open folder, the only root whose Markdown is offered; a bound code root's
+    /// Markdown is developer documentation.
+    #[serde(default)]
+    pub open_folder: bool,
 }
 
 #[derive(serde::Serialize)]
@@ -688,6 +1120,9 @@ fn walk_candidates(
             .skip_relative
             .iter()
             .any(|skip| relative == *skip || relative.starts_with(&format!("{skip}/")))
+            || (root.open_folder
+                && depth == 0
+                && DISCOVERY_VAULT_OWNED_DIRS.contains(&name.to_ascii_lowercase().as_str()))
         {
             continue;
         }
@@ -703,7 +1138,10 @@ fn walk_candidates(
                 continue;
             }
             walk_candidates(&entry.path(), root, &relative, depth + 1, report);
-        } else if file_type.is_file() && discovery_accepts_file(&name) {
+        } else if file_type.is_file()
+            && discovery_accepts_file(&name)
+            && (root.open_folder || !is_markdown_name(&name))
+        {
             let Ok(metadata) = entry.metadata() else {
                 continue;
             };
@@ -754,16 +1192,54 @@ pub fn discover_source_candidates(
         let start = report.candidates.len();
         walk_candidates(&canonical, root, "", 0, &mut report);
         for candidate in report.candidates.iter().skip(start) {
-            remember_source_path(
-                format!("{}/{}", candidate.root_path, candidate.relative_path),
+            if let Some(offer) = SourceOffer::of_file(
                 canonical.join(&candidate.relative_path),
-            );
+                candidate.relative_path.clone(),
+            ) {
+                remember_source_offer(
+                    format!("{}/{}", candidate.root_path, candidate.relative_path),
+                    offer,
+                );
+            }
         }
     }
     report
         .candidates
         .sort_by(|a, b| b.mtime.cmp(&a.mtime).then_with(|| a.name.cmp(&b.name)));
     Ok(report)
+}
+
+/// Creates `sources/` when missing and selects it in the file manager; a linked
+/// `sources/` is refused, as an import into it would be.
+#[tauri::command]
+pub async fn reveal_sources_folder(root_path: String) -> Result<(), String> {
+    crate::blocking::run_blocking(move || reveal_sources_folder_blocking(&root_path)).await
+}
+
+pub(crate) fn reveal_sources_folder_blocking(root_path: &str) -> Result<(), String> {
+    let target = canonical_root(root_path)?.join(SOURCES_DIR);
+    refuse_linked_folder(&target)?;
+    fs::create_dir_all(&target).map_err(|err| err.to_string())?;
+    reveal_path(&target)
+}
+
+#[cfg(target_os = "macos")]
+fn reveal_path(path: &Path) -> Result<(), String> {
+    let status = std::process::Command::new("open")
+        .arg("-R")
+        .arg(path)
+        .status()
+        .map_err(|err| err.to_string())?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("open exited with status {status}"))
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn reveal_path(path: &Path) -> Result<(), String> {
+    crate::app_shell::reveal_in_file_manager(path)
 }
 
 /// Reveal, not open: the app never launches a program on the person's behalf.
@@ -781,25 +1257,7 @@ pub(crate) fn reveal_vault_file_blocking(
     if !path.is_file() {
         return Err("reveal target must be a file".into());
     }
-
-    #[cfg(target_os = "macos")]
-    {
-        let status = std::process::Command::new("open")
-            .arg("-R")
-            .arg(&path)
-            .status()
-            .map_err(|err| err.to_string())?;
-        if status.success() {
-            Ok(())
-        } else {
-            Err(format!("open exited with status {status}"))
-        }
-    }
-
-    #[cfg(not(target_os = "macos"))]
-    {
-        crate::app_shell::reveal_in_file_manager(&path)
-    }
+    reveal_path(&path)
 }
 
 #[cfg(test)]

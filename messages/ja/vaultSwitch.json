@@ -34,7 +34,7 @@
   },
   "choose": {
     "openAction": "フォルダを開く",
-    "createAction": "新規作成",
+    "createAction": "フォルダを作成",
     "defaultLocationAction": "書類フォルダに作成",
     "chooseLocationAction": "場所を選ぶ",
     "eyebrow": "どのフォルダ？",
@@ -55,7 +55,6 @@
   "missing": {
     "summary": "{count}件のフォルダが見つかりません",
     "review": "確認",
-    "hide": "隠す",
     "body": "Atlasが記憶しているパスにフォルダがありません。名前の変更や移動、またはマウントされていないボリュームにある可能性があります。一覧から外してもこの一覧から消えるだけで、ディスク上のものは変わりません。",
     "forgetAll": "{count}件すべて削除",
     "locate": "移動したフォルダを探す",

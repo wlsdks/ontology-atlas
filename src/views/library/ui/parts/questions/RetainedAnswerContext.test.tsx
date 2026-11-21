@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider, useTranslations } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -56,15 +56,16 @@ function englishSentences(text: string): string[] {
   return text.match(/(?:\b[A-Za-z][A-Za-z'-]*\b[ ,]+){2,}\b[A-Za-z][A-Za-z'-]*\b/g) ?? [];
 }
 
-function Harness({ error, historyBlocked, onRefresh }: {
+function Harness({ error, historyBlocked, onRefresh, observation = QUIET }: {
   error: FailureCopy | null;
   historyBlocked?: boolean;
   onRefresh: (() => void) | null;
+  observation?: AnswerObservation;
 }) {
   const t = useTranslations('library');
   return (
     <RetainedAnswerContext
-      observation={QUIET}
+      observation={observation}
       phase="idle"
       historyState="none"
       older={false}
@@ -246,7 +247,7 @@ describe('a press the page knows would be refused is not offered', () => {
     const button = screen.getByTestId('answer-refresh-start');
     expect(button).toBeDisabled();
 
-    // The reason is on the row, not behind the `answers.evidenceMore` disclosure: a state that
+    // The reason is on the row, not behind the `answers.evidenceMore` dialog: a state that
     // changes what the page can do may not be hidden behind a press.
     const reason = screen.getByTestId('answer-refresh-blocked-history');
     expect(reason.textContent).toBe(ANSWERS.refreshBlockedHistory);
@@ -267,5 +268,25 @@ describe('a press the page knows would be refused is not offered', () => {
     // `answer_thread` is a field name in the reader's own file — a name, not a sentence.
     expect(englishSentences(reason.replace(/answer_thread|wiki\/answers\//g, ''))).toEqual([]);
     expect(reason, 'the reader is not told which field to fix').toContain('answer_thread');
+  });
+});
+
+describe('the observation line names the files and keeps the rest one press away', () => {
+  const CHANGED: AnswerObservation = { ...QUIET, state: 'changed', changed: ['sources/contracts/terms.md'] };
+
+  it('shows the changed file on the state line, with no fold-out row', () => {
+    const { container } = draw({ error: null, onRefresh: () => {}, observation: CHANGED });
+    expect(container.querySelector('details')).toBeNull();
+    expect(screen.getByTestId('answer-evidence-state').textContent).toBe(`${ANSWERS.state.changed} · terms.md`);
+    expect(screen.queryByTestId('answer-provenance')).toBeNull();
+  });
+
+  it('opens the full paths, what a refresh sends and the caveat in a dialog', () => {
+    draw({ error: null, onRefresh: () => {}, observation: CHANGED });
+    fireEvent.click(screen.getByTestId('answer-evidence-detail-open'));
+    const dialog = screen.getByTestId('answer-evidence-detail');
+    expect(dialog.textContent).toContain('sources/contracts/terms.md');
+    expect(dialog.textContent).toContain(ANSWERS.refreshHint);
+    expect(dialog.textContent).toContain(ANSWERS.provenance);
   });
 });

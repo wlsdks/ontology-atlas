@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
+import type { LibraryWikiPage } from "@/entities/docs-vault";
 import type { LibraryUiModel, LintFinding } from "@/features/library";
 import { cn } from "@/shared/lib/cn";
 import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";
@@ -33,11 +34,12 @@ const ITEM_HEIGHT_PX: Record<WikiIndexItem["type"], number> = { heading: 38, row
 const LIST_PAD_TOP_PX = 2;
 const CLOCK_TICK_MS = 60_000;
 const INDEX_VIEW = "index";
+const MATCHES_VIEW = "matches";
 
 type Translate = ReturnType<typeof useTranslations<"library">>;
 type RulePath = "report.rule.uncited-fact";
-/** The whole index, or one group shown alone. */
-type ViewKey = WikiIndexGroupKey | typeof INDEX_VIEW;
+/** The whole index, one group shown alone, or the filter's matches. */
+type ViewKey = WikiIndexGroupKey | typeof INDEX_VIEW | typeof MATCHES_VIEW;
 
 export interface WikiIndexProps {
   model: Pick<LibraryUiModel, "wikiPages" | "verdicts" | "pairing" | "sources" | "structural">;
@@ -52,6 +54,8 @@ export interface WikiIndexProps {
   onEmptyPress: () => void;
   /** Pages read so far while the folder is still being read; null once it is read. */
   readingCount: number | null;
+  /** The filter's matches in rank order, drawn with the same rows in place of the groups; null when no filter is typed. */
+  matches?: readonly LibraryWikiPage[] | null;
 }
 
 function groupLabel(key: WikiIndexGroupKey, t: Translate): string {
@@ -72,7 +76,12 @@ function provenance(entry: WikiIndexEntry, t: Translate): string {
 }
 
 function dayText(entry: WikiIndexEntry, nowMs: number, locale: string, t: Translate): string | null {
-  const day = wikiIndexDay(entry.writtenAtMs, nowMs);
+  return wikiDayText(entry.writtenAtMs, nowMs, locale, t);
+}
+
+/** A moment as the index says it: Just now, Today, Yesterday, N days ago, or a short date. */
+export function wikiDayText(writtenAtMs: number, nowMs: number, locale: string, t: Translate): string | null {
+  const day = wikiIndexDay(writtenAtMs, nowMs);
   if (!day) return null;
   if (day.kind === "ago") return t("wikiIndex.day.ago", { count: day.days });
   if (day.kind !== "date") return t(`wikiIndex.day.${day.kind}`);
@@ -119,6 +128,7 @@ export function WikiIndex({
   onOpenCheckResults,
   onEmptyPress,
   readingCount,
+  matches = null,
 }: WikiIndexProps) {
   const t = useTranslations("library");
   const locale = useLocale();
@@ -161,21 +171,31 @@ export function WikiIndex({
   const groups = useMemo(() => (version >= 0 && judged ? builder.groups() : []), [builder, judged, version]);
   const indexItems = useMemo(() => wikiIndexItems(groups), [groups]);
 
-  const viewKey: ViewKey = aloneGroup ? aloneGroup.key : INDEX_VIEW;
+  const matchItems = useMemo(() => {
+    if (!matches || version < 0) return NO_ITEMS;
+    const items: WikiIndexItem[] = [];
+    for (const page of matches) {
+      const entry = builder.entry(page.slug);
+      if (entry) items.push({ type: "row", group: entry.home, entry });
+    }
+    return items;
+  }, [builder, matches, version]);
+
+  const viewKey: ViewKey = matches ? MATCHES_VIEW : aloneGroup ? aloneGroup.key : INDEX_VIEW;
   const { leaving } = useSurfaceSwap<ViewKey>(viewKey);
-  const leavingAlone = leaving && leaving !== INDEX_VIEW ? leaving : null;
+  const leavingAlone = leaving && leaving !== INDEX_VIEW && leaving !== MATCHES_VIEW ? leaving : null;
   const leavingGroup = useMemo(() => (leavingAlone && version >= 0 ? builder.group(leavingAlone) : null), [builder, leavingAlone, version]);
   const aloneItems = useMemo(() => groupItems(aloneGroup), [aloneGroup]);
   const leavingItems = useMemo(() => groupItems(leavingGroup), [leavingGroup]);
   const itemsOf = (view: ViewKey): readonly WikiIndexItem[] =>
-    view === INDEX_VIEW ? indexItems : view === aloneGroup?.key ? aloneItems : view === leavingGroup?.key ? leavingItems : NO_ITEMS;
+    view === INDEX_VIEW ? indexItems : view === MATCHES_VIEW ? matchItems : view === aloneGroup?.key ? aloneItems : view === leavingGroup?.key ? leavingItems : NO_ITEMS;
   const views = [viewKey, leaving].filter((view): view is ViewKey => view !== null).sort((a, b) => (a === INDEX_VIEW ? -1 : b === INDEX_VIEW ? 1 : 0));
 
   const rootRef = useRef<HTMLDivElement | null>(null);
   /** The index's scroll while a group is shown alone, restored when it closes. */
   const indexScrollRef = useRef(0);
   /** The scroll and focus a swap lands on: the pressed line leaves, so focus would fall to the page. */
-  const pendingSwapRef = useRef<{ scrollTop: number; focus: string } | null>(null);
+  const pendingSwapRef = useRef<{ scrollTop: number; focus: string | null } | null>(null);
   const currentScroller = () => rootRef.current?.querySelector<HTMLElement>(`${frameSelector(viewKey)} [data-index-scroller]`) ?? null;
   const showAlone = (key: WikiIndexGroupKey) => {
     indexScrollRef.current = currentScroller()?.scrollTop ?? 0;
@@ -183,6 +203,17 @@ export function WikiIndex({
     pendingSwapRef.current = { scrollTop: 0, focus: "[data-index-chip]" };
     setAlone({ scope: vaultScope, key, headingTop: heading ? heading.getBoundingClientRect().top : null });
   };
+  // Typing in the filter leaves the index from wherever it stood; clearing the field lands there again.
+  const lastViewRef = useRef<ViewKey>(viewKey);
+  useLayoutEffect(() => {
+    const was = lastViewRef.current;
+    lastViewRef.current = viewKey;
+    if (was === viewKey) return;
+    if (viewKey === MATCHES_VIEW && was === INDEX_VIEW) {
+      indexScrollRef.current = rootRef.current?.querySelector<HTMLElement>(`${frameSelector(INDEX_VIEW)} [data-index-scroller]`)?.scrollTop ?? 0;
+    }
+    if (was === MATCHES_VIEW && viewKey === INDEX_VIEW) pendingSwapRef.current = { scrollTop: indexScrollRef.current, focus: null };
+  }, [viewKey]);
   const clearAlone = () => {
     if (aloneKey) pendingSwapRef.current = { scrollTop: indexScrollRef.current, focus: `[data-index-group="${CSS.escape(aloneKey)}"] [data-index-more]` };
     setAlone(null);
@@ -194,17 +225,19 @@ export function WikiIndex({
     if (!pending || !frame || !scroller) return undefined;
     pendingSwapRef.current = null;
     scroller.scrollTop = pending.scrollTop;
+    if (pending.focus === null) return undefined;
+    const focus = pending.focus;
     // At once when the target is drawn, so the next key lands; a windowed one mounts after the scroll.
-    const target = frame.querySelector<HTMLElement>(pending.focus);
+    const target = frame.querySelector<HTMLElement>(focus);
     if (target) {
       target.focus({ preventScroll: true });
       return undefined;
     }
-    const id = requestAnimationFrame(() => frame.querySelector<HTMLElement>(pending.focus)?.focus({ preventScroll: true }));
+    const id = requestAnimationFrame(() => frame.querySelector<HTMLElement>(focus)?.focus({ preventScroll: true }));
     return () => cancelAnimationFrame(id);
   }, [viewKey]);
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Escape" || !aloneGroup) return;
+    if (event.key !== "Escape" || !aloneGroup || viewKey !== aloneGroup.key) return;
     event.stopPropagation();
     clearAlone();
   };
@@ -224,7 +257,8 @@ export function WikiIndex({
     );
   }
 
-  const renderItem = (item: WikiIndexItem, stop: StopProps | null) => {
+  /** `current` is false for the view a swap is fading out: inert, so it names no row by test id. */
+  const renderItem = (item: WikiIndexItem, stop: StopProps | null, current: boolean) => {
     const key = itemKey(item);
     const enter = arrival(key, arrivalStep(item.group));
     if (item.type === "heading") {
@@ -269,6 +303,7 @@ export function WikiIndex({
             selected={entry.page.slug === selectedSlug}
             label={label}
             onPress={() => onOpenPage(entry.page.slug)}
+            testId={current && item.group === entry.home ? `library-wiki-${entry.page.slug}` : undefined}
             {...stop!}
           />
         </div>
@@ -286,12 +321,12 @@ export function WikiIndex({
     <div
       ref={rootRef}
       data-testid="wiki-index"
-      data-state={aloneGroup ? "alone" : "index"}
+      data-state={matches ? "matches" : aloneGroup ? "alone" : "index"}
       className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)]"
       onKeyDown={onKeyDown}
     >
       {views.map((view) => {
-        const group = view === INDEX_VIEW ? null : view === aloneGroup?.key ? aloneGroup : leavingGroup;
+        const group = view === INDEX_VIEW || view === MATCHES_VIEW ? null : view === aloneGroup?.key ? aloneGroup : leavingGroup;
         const chip = group ? (
           <IndexGroupChip
             label={groupLabel(group.key, t)}
@@ -307,10 +342,11 @@ export function WikiIndex({
             view={view}
             current={view === viewKey}
             fadeIn={leaving !== null}
+            quick={view === MATCHES_VIEW || leaving === MATCHES_VIEW}
             chipFromTop={view === aloneGroup?.key ? alone?.headingTop ?? null : null}
             chip={chip}
             items={itemsOf(view)}
-            label={group ? groupLabel(group.key, t) : undefined}
+            label={group ? groupLabel(group.key, t) : view === MATCHES_VIEW ? t("wiki.listAria") : undefined}
             renderItem={renderItem}
             footer={readingLine}
           />
@@ -328,6 +364,7 @@ function IndexFrame({
   view,
   current,
   fadeIn,
+  quick,
   chipFromTop,
   chip,
   items,
@@ -339,11 +376,13 @@ function IndexFrame({
   current: boolean;
   /** Mounted as a swap's incoming view, so it fades in rather than being there at once. */
   fadeIn: boolean;
+  /** The filter's swap, which follows typing and so takes the short fade. */
+  quick: boolean;
   chipFromTop: number | null;
   chip: ReactNode;
   items: readonly WikiIndexItem[];
   label: string | undefined;
-  renderItem: (item: WikiIndexItem, stop: StopProps | null) => ReactNode;
+  renderItem: (item: WikiIndexItem, stop: StopProps | null, current: boolean) => ReactNode;
   footer: ReactNode;
 }) {
   const frameRef = useRef<HTMLDivElement | null>(null);
@@ -356,7 +395,7 @@ function IndexFrame({
     mountedRef.current = true;
     if (firstDraw && !fadeIn) return;
     if (firstDraw) frame.style.opacity = "0";
-    fadeView(frame, current);
+    fadeView(frame, current, quick);
     frame.style.opacity = "";
     const chipEl = frame.querySelector("[data-index-chip]");
     if (firstDraw && chipEl && chipFromTop !== null) glideFrom(chipEl, chipFromTop - chipEl.getBoundingClientRect().top);
@@ -375,7 +414,7 @@ function IndexFrame({
     >
       {chip}
       <div ref={scrollerRef} data-index-scroller="" className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3 [overflow-anchor:none]">
-        <WindowedItems items={items} scrollerRef={scrollerRef} label={label} renderItem={renderItem} />
+        <WindowedItems items={items} scrollerRef={scrollerRef} label={label} renderItem={(item, stop) => renderItem(item, stop, current)} />
         {footer}
       </div>
     </div>
