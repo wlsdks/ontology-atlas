@@ -580,9 +580,16 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   view independently of first-run guidance and preserves the previous reader selection
   while the narrow index stands aside. This is separate from ACP agent permissions
   and from the MCP-mirrored ontology tool catalogue.
-- `src-tauri/src/library.rs` owns the native half: hashing, the native picker, the import
-  copy, metadata-only discovery, and Finder reveal. It writes nothing outside
-  `<vault>/sources/`, and its discovery walk contains no writer.
+- `src-tauri/src/library/` owns the native half, one file per job: hashing
+  (`file_hashing.rs`), the native picker (`source_picker.rs`), the record of offered files and
+  the check that an offered file is unchanged before it is copied (`source_offer.rs`), the
+  file and folder name rules (`discovery_rules.rs`), metadata-only discovery
+  (`source_discovery.rs`), dropped files (`dropped.rs`), the import commands
+  (`source_import.rs`), one import's placing of each file (`import_run.rs`), where a copy may
+  land and which names are taken (`import_destination.rs`), the confined writer
+  (`source_copy.rs`), the stop flags and one-copy-per-folder claim (`running_imports.rs`),
+  and Finder reveal (`reveal.rs`). It writes nothing outside `<vault>/sources/` or
+  `<vault>/planning/`, and its discovery walk contains no writer.
 - **One Library destination, four tabs (2026-09-28).**
   `src/app/library-workspace/` composes `src/views/library/` for Sources/Wiki, Check history,
   and saved Bookmarks, and `src/views/docs-vault/` for Concept documents. Ontology owns the

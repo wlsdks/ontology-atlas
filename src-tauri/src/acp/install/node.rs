@@ -108,7 +108,7 @@ fn download_url(artifact: &ManagedNodeArtifact) -> String {
 
 /// Without this comparison the feature would execute unverified downloads.
 pub(crate) fn file_sha256_matches(path: &Path, expected: &str) -> Result<bool, String> {
-    Ok(crate::library::hash_path(path)?.eq_ignore_ascii_case(expected))
+    Ok(crate::library::file_hashing::hash_path(path)?.eq_ignore_ascii_case(expected))
 }
 
 /// A callback keeps this module free of Tauri; unknown sizes are `None` so the
