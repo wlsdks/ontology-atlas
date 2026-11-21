@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { PLAY_ROW_FRAMES } from '@/shared/ui/marks/moru-rows';
 
-import type { TurnActivityKind } from '../turn-activity';
+import type { TurnActivityKind } from '../../turn-activity';
 import { WORK_PLAYLIST, celebrationClip, stageClip } from './moru-playlist';
 
 const KINDS = Object.keys(WORK_PLAYLIST) as TurnActivityKind[];

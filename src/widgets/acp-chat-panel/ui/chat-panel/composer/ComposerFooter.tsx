@@ -9,9 +9,9 @@ import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { Tooltip, TooltipProvider } from '@/shared/ui/hints/tooltip';
 
-import { composerStatusLive, workingShimmer } from '../working-ink';
-import { PICKER_MAX_WIDTH_CLASS, PICKER_MIN_WIDTH_CLASS } from './constants';
-import type { ChatT, FooterStatus, SessionState } from './types';
+import { composerStatusLive, workingShimmer } from '../../working-ink';
+import { PICKER_MAX_WIDTH_CLASS, PICKER_MIN_WIDTH_CLASS } from '../constants';
+import type { ChatT, FooterStatus, SessionState } from '../types';
 
 /** Values of the one picker: an adapter mode, or the app's own answer to its requests. */
 const AUTO_APPROVE = 'approval:auto';

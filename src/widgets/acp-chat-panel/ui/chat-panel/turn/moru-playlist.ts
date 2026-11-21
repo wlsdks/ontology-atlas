@@ -1,6 +1,6 @@
 import { CELEBRATION_MOTIONS, type CelebrationMotion, type PlayMotion, type WorkMotion } from '@/shared/ui/marks/moru-rows';
 
-import type { TurnActivityKind } from '../turn-activity';
+import type { TurnActivityKind } from '../../turn-activity';
 
 /** Each kind's work clips in order; answer text and commands get the laptop scene alone. */
 export const WORK_PLAYLIST: Readonly<Record<TurnActivityKind, readonly WorkMotion[]>> = {

@@ -99,7 +99,7 @@ import {
 } from './AcpChatPanel';
 import { readMachineApprovals, recordApproval } from '@/shared/lib/connectors/machine-approvals';
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
-import { TURN_DONE_HOLD_MS } from './chat-panel/TurnWorkStage';
+import { TURN_DONE_HOLD_MS } from './chat-panel/turn/TurnWorkStage';
 import { keptPanels } from '../model/kept-panels';
 import { CELEBRATION_MOTIONS } from '@/shared/ui/marks/moru-rows';
 

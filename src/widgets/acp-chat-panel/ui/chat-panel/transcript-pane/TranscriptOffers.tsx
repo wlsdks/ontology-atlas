@@ -6,8 +6,8 @@ import { RowButton, Surface } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import { SuggestionRows } from './SuggestionRows';
-import type { ChatT } from './types';
-import type { usePresentation } from './use-presentation';
+import type { ChatT } from '../types';
+import type { usePresentation } from '../use-presentation';
 
 type PresentationState = ReturnType<typeof usePresentation>;
 

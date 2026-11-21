@@ -1,7 +1,7 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 
-import { splitAppRequest } from '../request-parts';
-import type { DraftStore, SeatedDetail } from './types';
+import { splitAppRequest } from '../../request-parts';
+import type { DraftStore, SeatedDetail } from '../types';
 
 interface PrefillSeatingOptions {
   prefillRequest?: { text: string; nonce: number } | null;

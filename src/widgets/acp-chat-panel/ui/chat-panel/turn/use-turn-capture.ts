@@ -4,8 +4,8 @@ import type { AcpEvent, AcpTurnCompletion, AcpTurnStart } from '@/features/acp-s
 import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 
-import { useMeaningTransitionCapture } from '../../model/use-meaning-transition-capture';
-import type { MeaningTransitionContext, OpeningRequest } from './types';
+import { useMeaningTransitionCapture } from '../../../model/use-meaning-transition-capture';
+import type { MeaningTransitionContext, OpeningRequest } from '../types';
 
 interface TurnCaptureOptions {
   runtimeId: string;

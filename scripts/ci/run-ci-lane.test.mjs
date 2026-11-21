@@ -402,7 +402,7 @@ test('foreground commands finish before the next starts and asynchronous failure
 });
 
 test('a reused main push still runs every browser lane in full, and nothing else', () => {
-  const reused = reuseReviewedMainPlan(buildImpactPlan({ files: ['src/widgets/acp-chat-panel/ui/chat-panel/SuggestionRows.tsx'] }), {
+  const reused = reuseReviewedMainPlan(buildImpactPlan({ files: ['src/widgets/acp-chat-panel/ui/chat-panel/transcript-pane/SuggestionRows.tsx'] }), {
     skip: true, commit: 'a'.repeat(40), tree: 'b'.repeat(40), reviewedHead: 'c'.repeat(40), pullRequest: 7,
   }, { eventName: 'push', base: 'd'.repeat(40), head: 'a'.repeat(40) });
   assert.ok(reused.reusedFrom, 'the plan must really be a reuse');

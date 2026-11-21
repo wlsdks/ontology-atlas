@@ -24,7 +24,7 @@ import { FeedbackGlyph } from '@/shared/motion/feedback-glyph';
 import { Button, Checkbox, Disclosure, Textarea } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 import type { AskMotion } from '@/shared/ui/marks/moru-rows';
-import { AskMoru } from './chat-panel/AskMoru';
+import { AskMoru } from './chat-panel/permission/AskMoru';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { describeWikiProblem, type WikiTemplateProblem } from '@/features/library';
