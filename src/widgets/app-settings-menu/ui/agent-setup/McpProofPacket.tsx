@@ -57,10 +57,8 @@ function buildMcpFirstCallsPacket(vaultName: string, vaultPath: string | null): 
  * standalone where there is no step 3, so the packet cannot drift between copies.
  */
 export function McpProofPacket({
-  /** `boxed` draws its own card; `inline` sits inside a step that already has one. */
   frame = 'boxed',
   vaultName,
-  /** The folder's absolute path where this surface knows it — `null` in a browser, which cannot. */
   vaultPath = null,
 }: {
   frame?: 'boxed' | 'inline';

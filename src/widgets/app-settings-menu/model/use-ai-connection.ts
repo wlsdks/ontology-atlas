@@ -17,19 +17,16 @@ import { AuditReadError, readLlmAuditSummary, type AuditReadFailure, type LlmAud
  * footer see one value after a save. No key lives here, only `stored` and `last4`.
  */
 export interface AiConnectionState {
-  /** Whether this is the desktop runtime — at false the screen renders no input field at all. */
   bridgeAvailable: boolean;
   statuses: Record<SecretProvider, SecretStatus | null>;
   /** Reflect a save or delete result directly, so the screen states the fact immediately with no re-query round trip. */
   applyStatus: (provider: SecretProvider, next: SecretStatus) => void;
   /** The experimental Jev key (a separate Keychain account, never one of the three model vendors). */
   jevStatus: JevSecretStatus | null;
-  /** Whether all model-key lookups have answered. */
   keysRead: boolean;
   keyReads: Record<SecretProvider, boolean>;
   jevRead: boolean;
   applyJevStatus: (next: JevSecretStatus) => void;
-  /** The newest lines of the vault's sent log, oldest first. */
   auditEntries: LlmAuditEntry[];
   /** How many transfers the log holds in all; `null` until read, so "nothing sent" never flashes. */
   auditTotal: number | null;
@@ -43,7 +40,6 @@ const EMPTY_STATUSES: Record<SecretProvider, SecretStatus | null> = {
   gemini: null,
 };
 
-/** How many recent lines the footer lists; the count above them is the whole file. */
 const AUDIT_TAIL = 5;
 
 export function useAiConnection({

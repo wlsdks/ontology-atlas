@@ -46,7 +46,6 @@ export function KeyRow({
 }: {
   provider: SecretProvider;
   status: SecretStatus | null;
-  /** Key actions wait for this provider’s Keychain lookup. */
   read: boolean;
   vaultRootPath: string | null;
   expanded: boolean;

@@ -29,24 +29,11 @@ import { ModelGroup } from './model-connections/ModelRow';
 import { useAnnouncer, useOpenRow } from './model-connections/use-panel-state';
 
 /**
- * The Agents destination's models tab: which model Atlas's own conversation calls, and with
- * whose key (local runners, API keys, the external check, the sent log). The settings sheet
- * keeps only a pointer row, so no fact is stated twice. What this screen holds to:
- * - **There is no path that redraws a full key.** A draft lives only in `KeyDraftForm`, which
- *   unmounts when its row collapses; after a save the screen knows only `last4`.
- * - **Honest web degradation.** With no bridge it renders no input field at all, says why, and
- *   links to the app. It shows no example rows either: a sample key row would be fake data.
- * - **A status is a fact the screen checked, or it says so.** Nothing is probed on arrival: every
- *   request is a line in the sent log, and this screen sends nothing on its own. A runner nobody
- *   checked reads "not connected", never "off"; a saved runner or key reads "saved" in grey until
- *   a check turns it green.
- * - **Looking never breaks what works.** Checking an address saves nothing unless it is the saved
- *   address; a different runner becomes the conversation's only when a model is picked there.
- * - **One row open at a time, every opening reversible**, and every way a row closes (Cancel,
- *   Esc, save, remove, pick) hands focus back to the control that opened it.
- * - **One control grammar.** Every trailing control is a `Chip` at the row size (`lg`); the
- *   status beside it is a dot on the status tokens plus a word, never colour alone. Results are
- *   announced once through one polite live region, not by eight live statuses.
+ * The Agents destination's models tab: which model Atlas's own conversation calls, and with whose
+ * key. No path redraws a full key (a draft lives only in `KeyDraftForm`; after a save only `last4`).
+ * The web renders no input field and no sample row. Nothing is probed on arrival: every request is a
+ * sent-log line. Checking an address saves nothing unless it is the saved one; one row opens at a
+ * time and every close returns focus to its opener; results are announced once, politely.
  */
 
 export interface ModelConnectionsPanelProps {

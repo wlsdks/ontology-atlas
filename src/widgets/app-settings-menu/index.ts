@@ -9,10 +9,8 @@ export { SETTINGS_SEARCH_MESSAGE_PATHS } from './model/catalog';
  */
 export { AcpRuntimeSettings } from './ui/agent-setup/AcpRuntimeSettings';
 
-/** The Agents destination's models tab: API keys, local runners, the external check and the sent log. */
 export { ModelConnections } from './ui/ModelConnectionsPanel';
 
-/** The MCP connection pane, shared by the destination and the settings sheet. */
 export { AgentSetupSection } from './ui/agent-setup/AgentSetupSection';
 
 /** A group's heading row, for a group whose body draws its own frame (the MCP tab's connectors card). */

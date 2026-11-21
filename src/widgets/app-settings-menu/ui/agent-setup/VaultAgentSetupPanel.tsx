@@ -50,7 +50,6 @@ import {
 
 import { McpProofPacket } from './McpProofPacket';
 
-/** One label/value row shape for every definition list in the fold, sized by the widest term. */
 const DEFINITION_ROW = 'grid grid-cols-[92px_1fr] gap-2';
 
 /**
@@ -60,7 +59,6 @@ const DEFINITION_ROW = 'grid grid-cols-[92px_1fr] gap-2';
 const NEUTRAL_COPY_CHIP =
   'border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
 
-/** Only this section's one primary action gets the indigo tint, so the screen says which to press. */
 const ACCENT_ACTION_CHIP =
   'border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]';
 
@@ -268,7 +266,6 @@ interface VaultAgentSetupLocalVault {
     mcpExampleValid?: boolean;
   } | null;
   recentVaults: LocalFsHandleRecord[];
-  /** Writes the configs for one tool, or all of them when none is given. */
   ensureAgentConfigs: (
     client?: AgentClientId,
   ) => Promise<{ created: number; skipped: number }>;
@@ -310,7 +307,6 @@ export function VaultAgentSetupPanel({
     boxRef: advancedBoxRef,
     contentRef: advancedContentRef,
   } = useRowDisclosure(advancedRevealOpen);
-  /** The verification dialog: restart, check, and "not working?" behind one press. */
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [agentSetupBusy, setAgentSetupBusy] = useState(false);
   const [agentSetupError, setAgentSetupError] = useState<string | null>(null);
@@ -464,7 +460,6 @@ export function VaultAgentSetupPanel({
    */
   const clientControls = useAgentClientControls({
     serverAvailability,
-    /* Passes the tool through and returns the promise: the button awaits it to show written or failed. */
     onWriteConfigs:
       serverLaunchable && canEditCurrent ? (client) => handleEnsureAgentConfigs(client) : null,
     cursorDeeplink,
@@ -530,7 +525,6 @@ export function VaultAgentSetupPanel({
   const hasInvalidAgentConfig = agentSetupFiles.some(
     (file) => agentStatus[file.key] && agentStatus[file.validKey] === false,
   );
-  /** Further checks behind the fold: only what comes after step 3. */
   const agentDeeperChecks = [
     { key: 'gate', label: t('agentSetup.stepGate') },
     { key: 'mcpVerify', label: t('agentSetup.stepMcpVerify') },
@@ -764,10 +758,6 @@ export function VaultAgentSetupPanel({
         </p>
       ) : null}
 
-      {/*
-        One row per tool (mark, name, the file it writes) with the one control for its state.
-        What Atlas cannot know itself (restart, attach) opens as a dialog from the heading.
-      */}
       <SettingsGroup
         label={tMcp('shareHeading')}
         testId="agent-setup-steps"
@@ -787,7 +777,6 @@ export function VaultAgentSetupPanel({
                     : t('agentSetup.rootSummaryMissing')}
                 </p>
               </InfoHint>
-              {/* The same control, in the same slot, as the agents tab's Check again. */}
               <Chip
                 size="lg"
                 tone="secondary"
@@ -874,7 +863,6 @@ export function VaultAgentSetupPanel({
             {tc('step3Title')}
           </h2>
 
-          {/* Restarting "the tool you just connected" means nothing until a file exists. */}
           {agentSetupReadyCount > 0 ? (
           <section data-testid="agent-setup-step-2" className="mt-4">
             <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
@@ -944,7 +932,6 @@ export function VaultAgentSetupPanel({
                   })}
                 </dl>
               </div>
-              {/* The proof packet ends the step whose job is proving the connection. */}
               <McpProofPacket
                 frame="inline"
                 vaultName={vaultNameForConfig}
@@ -952,7 +939,6 @@ export function VaultAgentSetupPanel({
               />
           </section>
 
-          {/* Advanced, verification, CLI and other-folder setup: collapsed, and all still reachable. */}
           <button
             type="button"
             onClick={() => setAdvancedOpen((v) => !v)}
@@ -1455,7 +1441,6 @@ export function VaultAgentSetupPanel({
   );
 }
 
-/** A group title inside the fold, in the root sheet's `SETTINGS_SECTION_LABEL` style. */
 function SectionLabel({ children }: { children: ReactNode }) {
   return <h4 className={SETTINGS_SECTION_LABEL}>{children}</h4>;
 }
