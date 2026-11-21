@@ -132,12 +132,10 @@ pub(crate) fn initialize(store: PathBuf, app_vault_container: Option<PathBuf>) {
     if let Some(container) = app_vault_container.and_then(|c| std::fs::canonicalize(c).ok()) {
         restored.push((container.clone(), repo_root_of(&container)));
     }
-    for raw in persisted {
-        if let Ok(canonical) = std::fs::canonicalize(&raw) {
-            let repo = repo_root_of(&canonical);
-            restored.push((canonical, repo));
-        }
-    }
+    restored.extend(restorable_roots(persisted).into_iter().map(|root| {
+        let repo = repo_root_of(&root);
+        (root, repo)
+    }));
     {
         let mut reg = lock();
         reg.store = Some(store);
@@ -146,6 +144,17 @@ pub(crate) fn initialize(store: PathBuf, app_vault_container: Option<PathBuf>) {
         }
     }
     ENFORCING.store(true, Ordering::SeqCst);
+}
+
+/// The recorded roots a launch may grant again. The record is a file any process of
+/// this user can write, so each root passes the picker's refusals again; a refused one
+/// is dropped and leaves the record at its next save.
+fn restorable_roots(persisted: Vec<String>) -> Vec<PathBuf> {
+    persisted
+        .into_iter()
+        .filter_map(|raw| std::fs::canonicalize(raw).ok())
+        .filter(|root| root.is_dir() && crate::vault_root_rejection(root).is_none())
+        .collect()
 }
 
 /// Grants a root the user chose through a Rust-validated path (the native picker or
@@ -399,6 +408,24 @@ mod tests {
             2,
             "a later genuine choice of the fixture is kept"
         );
+    }
+
+    #[test]
+    fn a_recorded_root_the_picker_would_refuse_is_not_granted_again() {
+        let base = tmp("restore");
+        let kept = base.join("notes");
+        std::fs::create_dir_all(&kept).unwrap();
+        let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).unwrap();
+        let file = base.join("not-a-folder.md");
+        std::fs::write(&file, "x").unwrap();
+        let persisted = vec![
+            kept.to_string_lossy().to_string(),
+            home.to_string_lossy().to_string(),
+            "/".to_string(),
+            file.to_string_lossy().to_string(),
+            base.join("gone").to_string_lossy().to_string(),
+        ];
+        assert_eq!(restorable_roots(persisted), vec![kept]);
     }
 
     #[test]

@@ -119,6 +119,18 @@
   --color-source-complete: var(--color-status-success);
 
   /*
+   * Paper (`Sheet`, `src/shared/ui/marks/sheet.tsx`): a source is a folded sheet, a wiki page the
+   * same sheet tinted by the page ink, so "this became a page" reads without a new hue. Every value
+   * is an existing surface, border, paper-white or page-ink step.
+   */
+  --color-paper-source: var(--color-elevated);
+  --color-paper-page: color-mix(in srgb, var(--color-source-page) 10%, var(--color-elevated));
+  --color-paper-edge: var(--color-border-strong);
+  --color-paper-fold: var(--color-indigo-a32);
+  --color-paper-line: var(--color-overlay-3);
+  --color-paper-line-page: var(--color-indigo-accent-a32);
+
+  /*
    * Builder v2 (A2) — Inspector/Palette alpha scale. Tokens extracted 1:1 from the rgba(...) values
    * scattered as inline hardcodes in `OntologyInspector.tsx` /
    * `OntologyKindPalette.tsx` — visual result unchanged, references only changed to CSS variables.
@@ -244,6 +256,13 @@
    */
   --shadow-elevation-dock-bottom: 0 -12px 32px var(--color-shadow-a35);
   --shadow-elevation-dock-side: -20px 0 48px var(--color-shadow-a35);
+
+  /*
+   * A sheet of paper resting on its row: a contact shadow and a short soft one, on the coach-mark
+   * layer's alpha. It is a `filter` (`drop-shadow`), not a `box-shadow`, so the folded corner's cut
+   * keeps its shadow.
+   */
+  --shadow-paper: drop-shadow(0 1px 1px var(--color-shadow-a35)) drop-shadow(0 3px 6px var(--color-shadow-a35));
 
   /* ── Pressed state (control press) ────────────────────────────────────────────────
      Shadow for **pressed controls**, not floating surfaces. The 3-layer ladder measures
