@@ -28,11 +28,11 @@ describe("Library work receipts", () => {
       }} />
     </NextIntlClientProvider>);
     expect(screen.getByTestId("library-work-current")).toHaveTextContent("Waiting for permission");
-    expect(screen.getByTestId("library-work-current")).not.toHaveTextContent("File changed");
+    expect(screen.getByTestId("library-work-current")).not.toHaveTextContent("Wiki page changed");
     expect(screen.getByTestId("library-work-history-toggle")).toHaveTextContent(/Recent\s*1/);
     expect(screen.getByTestId("library-work-history-toggle")).not.toHaveTextContent("wiki/roadmap");
     fireEvent.click(screen.getByTestId("library-work-history-toggle"));
-    fireEvent.click(screen.getByRole("button", { name: /File changed.*wiki\/roadmap/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Wiki page changed.*wiki\/roadmap/ }));
     expect(onSelect).toHaveBeenCalledWith({ kind: "wiki", ref: "wiki/roadmap" });
   });
 

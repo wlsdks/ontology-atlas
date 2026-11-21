@@ -262,13 +262,12 @@
       "error": "Needs attention"
     },
     "complete": {
-      "read": "Read",
+      "read": "File read",
       "proposal": "Write proposed",
       "waiting": "Permission requested",
-      "write": "File changed",
+      "write": "{count, plural, one {Wiki page changed} other {# wiki pages changed}}",
       "error": "Failed"
-    },
-    "recentCount": "Recent {count, number}"
+    }
   },
   "eyebrow": "In this folder",
   "lede": "The project documents you gathered, in whatever format they arrived, and the wiki pages written from them. A source is kept byte for byte, and every claim on a page cites one.",
@@ -1098,8 +1097,7 @@
     "first": "No source has a wiki page yet",
     "today": "+{count, number} today",
     "chartAria": "Sources with a wiki page, by the date each page records",
-    "chartTitle": "Sources with a wiki page",
-    "chartNow": "Today {count, number}",
+    "chartTitle": "Sources with a wiki page since {date}",
     "point": "{date}: {count, number} of today's {total, number} ({percent, number}%)",
     "dateBasis": "Each point uses the date its wiki page records.",
     "undated": "{count, plural, one {# has no date} other {# have no date}}",
@@ -1109,7 +1107,7 @@
     "writerAnyAgent": "The coding agent you connected writes the pages",
     "batchReturned": "{count, plural, one {# source from the last request still has no wiki page and moved to the end of the list.} other {# sources from the last request still have no wiki page and moved to the end of the list.}}",
     "webLine": "Only the app writes wiki pages. Reading works here.",
-    "allDone": "Every source has a wiki page"
+    "allDone": "No wiki page left to write"
   },
   "sourcesHome": {
     "aria": "Sources grouped by folder or file type, with how many have a wiki page",

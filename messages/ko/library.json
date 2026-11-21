@@ -262,13 +262,12 @@
       "error": "확인 필요"
     },
     "complete": {
-      "read": "읽음",
-      "proposal": "쓰기 제안",
-      "waiting": "권한 요청됨",
-      "write": "파일 변경 확인",
-      "error": "실패"
-    },
-    "recentCount": "최근 {count, number}"
+      "read": "파일을 읽었어요",
+      "proposal": "쓸 내용이 제안됐어요",
+      "waiting": "권한 요청이 왔어요",
+      "write": "{count, plural, =1 {위키 문서가 바뀌었어요} other {위키 문서 #개가 바뀌었어요}}",
+      "error": "실패했어요"
+    }
   },
   "eyebrow": "이 폴더 안",
   "lede": "형식을 가리지 않고 모아 둔 문서와, 그 문서를 읽고 쓴 위키 문서가 여기 있어요. 자료는 받은 그대로 보관하고, 위키 문서의 문장은 저마다 자료를 인용해요.",
@@ -695,11 +694,11 @@
       "title": "읽기",
       "startWith": "{title}부터 읽기",
       "nothingYet": "아직 위키 문서가 없어요. 「위키 문서 만들기」로 첫 문서를 만들어요.",
-      "coveredLine": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음",
-      "coveredChecking": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {checking, number}개 확인 중",
-      "coveredPartial": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {partial, number}개는 앞부분만 읽음",
-      "coveredStale": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {stale, number}개는 자료가 달라짐",
-      "coveredUnreadable": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {unreadable, number}개 읽을 수 없음"
+      "coveredLine": "자료 {total, number}개 중 {compiled, number}개에 위키 문서가 있어요",
+      "coveredChecking": "자료 {total, number}개 중 {compiled, number}개에 위키 문서가 있어요 · {checking, number}개는 확인하고 있어요",
+      "coveredPartial": "자료 {total, number}개 중 {compiled, number}개에 위키 문서가 있어요 · {partial, number}개는 앞부분만 읽었어요",
+      "coveredStale": "자료 {total, number}개 중 {compiled, number}개에 위키 문서가 있어요 · {stale, number}개는 자료가 바뀌었어요",
+      "coveredUnreadable": "자료 {total, number}개 중 {compiled, number}개에 위키 문서가 있어요 · {unreadable, number}개는 읽을 수 없어요"
     },
     "brainAgent": "{name}",
     "brainLocal": "{model} · {host}",
@@ -1098,8 +1097,7 @@
     "first": "아직 위키 문서가 있는 자료가 없어요",
     "today": "오늘 +{count, number}",
     "chartAria": "위키 문서가 있는 자료 수, 각 문서에 적힌 날짜 기준",
-    "chartTitle": "위키 문서가 있는 자료 수",
-    "chartNow": "오늘 {count, number}",
+    "chartTitle": "{date}부터 위키 문서가 있는 자료 수",
     "point": "{date}: 지금 자료 {total, number}개 중 {count, number}개 ({percent, number}%)",
     "dateBasis": "각 점은 위키 문서에 적힌 날짜예요.",
     "undated": "{count, number}개는 날짜 없음",
@@ -1109,7 +1107,7 @@
     "writerAnyAgent": "연결한 코딩 에이전트가 써요",
     "batchReturned": "지난 요청의 자료 {count, number}개는 아직 위키 문서가 없어 목록 맨 뒤로 옮겼어요.",
     "webLine": "위키 문서는 앱에서만 써요. 읽기는 여기서도 돼요.",
-    "allDone": "모든 자료에 위키 문서가 있어요"
+    "allDone": "더 쓸 위키 문서가 없어요"
   },
   "sourcesHome": {
     "aria": "폴더나 파일 형식으로 묶은 자료와 위키 문서가 있는 자료 수",

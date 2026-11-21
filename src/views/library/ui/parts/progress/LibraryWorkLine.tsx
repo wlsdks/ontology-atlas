@@ -61,9 +61,10 @@ function useEventSwap(current: LibraryWorkEvent | null): LibraryWorkEvent | null
 }
 
 /**
- * What the agent did last in this folder, as one line: a running mark only while it works, the kind
- * of work, the file as a press that opens it, and "Recent N" for the last three. Ephemeral
- * observations, not an audit log or a claim that an agent is idle.
+ * What last happened to this folder's files, as one line: a running mark only while work runs, what
+ * happened, the file or wiki page it happened to as a press that opens it, and a press that lists
+ * the last three. A wiki page goes by its title, a source by its file name. Ephemeral observations,
+ * not an audit log or a claim that an agent is idle.
  *
  * `reserved` keeps the line's height before the first event, so its arrival moves nothing; a swap
  * crossfades the two lines in the same box.
@@ -71,11 +72,17 @@ function useEventSwap(current: LibraryWorkEvent | null): LibraryWorkEvent | null
 export function LibraryWorkLine({
   activity,
   onSelect,
+  pageTitle,
+  changedPages,
   reserved = false,
   className,
 }: {
   activity: LibraryWorkActivity;
   onSelect: (target: LibraryWorkTarget) => void;
+  /** The title of the wiki page at a `wiki/<slug>` address, or null when no such page is listed. */
+  pageTitle: (ref: string) => string | null;
+  /** Wiki pages whose file changed while this folder has been open: the count a change line states. */
+  changedPages: number;
   reserved?: boolean;
   className?: string;
 }) {
@@ -106,7 +113,17 @@ export function LibraryWorkLine({
   }, [historyOpen, setHistoryOpen]);
 
   if (!reserved && headline === null) return null;
-  const label = (event: LibraryWorkEvent) => t(`${event.phase}.${event.kind}`);
+  /** What happened, in words. A change line counts `pages`; one receipt alone is one page. */
+  const label = (event: LibraryWorkEvent, pages = 1) =>
+    event.phase === "complete" && event.kind === "write"
+      ? t("complete.write", { count: Math.max(1, pages) })
+      : t(`${event.phase}.${event.kind}`);
+  const wikiTitle = (target: LibraryWorkTarget) => (target.kind === "wiki" ? pageTitle(target.ref) : null);
+  const name = (target: LibraryWorkTarget) => wikiTitle(target) ?? fileName(target.ref);
+  const targetName = (target: LibraryWorkTarget) => {
+    const title = wikiTitle(target);
+    return title === null ? <FileName path={target.ref} /> : <span className="min-w-0 truncate">{title}</span>;
+  };
   const line = (event: LibraryWorkEvent, live: boolean) => {
     const pathId = live ? targetPathId : undefined;
     const running = live && activity.current === event && activity.isActive;
@@ -125,31 +142,34 @@ export function LibraryWorkLine({
       >
         {running ? <WorkGlyph phase="running" size={ICON_SIZE.sm} /> : null}
         <p role={live ? "status" : undefined} aria-atomic={live || undefined} className="flex-none text-[color:var(--color-text-secondary)]">
-          {label(event)}
+          {label(event, changedPages)}
         </p>
         {event.target ? (
-          opensTarget(event) ? (
-            <button
-              type="button"
-              tabIndex={live ? undefined : -1}
-              data-testid={live ? "library-work-target" : undefined}
-              title={event.target.ref}
-              aria-describedby={pathId}
-              onClick={() => onSelect(event.target)}
-              className={controlClass({
-                shape: "link",
-                tone: "secondary",
-                hoverInk: "strong",
-                className: "min-w-0 max-w-full",
-              })}
-            >
-              <FileName path={event.target.ref} />
-            </button>
-          ) : (
-            <span title={event.target.ref} aria-describedby={pathId} className="flex min-w-0 text-[color:var(--color-text-tertiary)]">
-              <FileName path={event.target.ref} />
-            </span>
-          )
+          <>
+            <span aria-hidden className="flex-none text-[color:var(--color-text-tertiary)]">·</span>
+            {opensTarget(event) ? (
+              <button
+                type="button"
+                tabIndex={live ? undefined : -1}
+                data-testid={live ? "library-work-target" : undefined}
+                title={event.target.ref}
+                aria-describedby={pathId}
+                onClick={() => onSelect(event.target)}
+                className={controlClass({
+                  shape: "link",
+                  tone: "secondary",
+                  hoverInk: "strong",
+                  className: "min-w-0 max-w-full",
+                })}
+              >
+                {targetName(event.target)}
+              </button>
+            ) : (
+              <span title={event.target.ref} aria-describedby={pathId} className="flex min-w-0 text-[color:var(--color-text-tertiary)]">
+                {targetName(event.target)}
+              </span>
+            )}
+          </>
         ) : null}
         {event.target && pathId ? <span id={pathId} className="sr-only">{event.target.ref}</span> : null}
       </div>
@@ -160,13 +180,13 @@ export function LibraryWorkLine({
       data-testid="library-work-line"
       aria-label={t("title")}
       role="group"
-      className={cn("flex h-6 min-w-0 items-center gap-2", className)}
+      className={cn("flex h-6 min-w-0 items-center gap-3", className)}
     >
-      <div className="grid min-w-0 flex-1">
+      <div className="grid min-w-0">
         {leaving && leaving.id !== headline?.id ? line(leaving, false) : null}
         {headline ? line(headline, true) : null}
       </div>
-      {/* "Recent N" only once there is something to list; the first event alone is the line itself. */}
+      {/* The list's press only once there is something to list; the first event alone is the line itself. */}
       {activity.recent.length > 0 ? (
         <div ref={historyRef} className="relative flex flex-none items-center">
           <button
@@ -182,10 +202,10 @@ export function LibraryWorkLine({
               tone: "muted",
               hoverInk: "strong",
               active: historyOpen,
-              className: "text-label tabular-nums",
+              className: "text-label",
             })}
           >
-            {t("recentCount", { count: activity.recent.length })}
+            {t("recent")}
           </button>
           <Surface
             ref={(node: HTMLElement | null) => {
@@ -202,7 +222,7 @@ export function LibraryWorkLine({
             className="absolute right-0 top-full z-[var(--z-dialog)] mt-1 flex w-[min(24rem,calc(100vw-2.5rem))] flex-col gap-1 rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-2 shadow-[var(--shadow-elevation-2)]"
           >
             {activity.recent.slice(0, 3).map((event) => {
-              const content = <span className="truncate">{label(event)} · {event.target ? fileName(event.target.ref) : t("unbound")}</span>;
+              const content = <span className="truncate">{label(event)} · {event.target ? name(event.target) : t("unbound")}</span>;
               return opensTarget(event) ? (
                 <Chip
                   key={event.id}
@@ -223,9 +243,6 @@ export function LibraryWorkLine({
                 </span>
               );
             })}
-            {activity.recent.length === 0 ? (
-              <span className="text-label text-[color:var(--color-text-tertiary)]">{t("noReceipts")}</span>
-            ) : null}
           </Surface>
         </div>
       ) : null}
