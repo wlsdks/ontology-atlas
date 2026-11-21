@@ -17,7 +17,7 @@ import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter'
 import { fetchServerDocContent } from '../lib/server-doc-content';
 import { readerTree } from '../lib/viewer/reader-tree';
 import { getTopologyProjectHref } from '@/entities/project';
-import { createHighlighter } from './viewer/create-highlighter';
+import { createMatchHighlighter } from './viewer/create-match-highlighter';
 import { createMarkdownComponents } from './viewer/create-markdown-components';
 import type { ViewerCitation } from './viewer/render-markdown-link';
 
@@ -167,7 +167,7 @@ export function DocsVaultViewer({
     else if (error !== null) onBodyPainted?.(null, NO_CITATIONS);
   }, [raw, error, onBodyPainted]);
 
-  const highlightChildren = useMemo(() => createHighlighter(highlightQuery), [highlightQuery]);
+  const highlightChildren = useMemo(() => createMatchHighlighter(highlightQuery), [highlightQuery]);
 
   /** NFC copy of the vault slugs, built once; raw `vaultSlugs` misses NFD Hangul slugs. */
   const normalizedVaultSlugs = useMemo(

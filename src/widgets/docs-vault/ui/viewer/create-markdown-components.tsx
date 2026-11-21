@@ -4,7 +4,7 @@ import { detectCallout } from '../../lib/viewer/detect-callout';
 import { flattenText, slugFromChildren } from '../../lib/viewer/heading-text';
 import { BodyImage } from './BodyImage';
 import { CalloutBlock } from './CalloutBlock';
-import type { Highlighter } from './create-highlighter';
+import type { MatchHighlighter } from './create-match-highlighter';
 import { HeadingAnchor } from './HeadingAnchor';
 import { renderMarkdownLink, type MarkdownLinkContext } from './render-markdown-link';
 import { RemoteImage } from './RemoteImage';
@@ -25,7 +25,7 @@ const PROSE_MEASURE = 'max-w-[var(--measure-prose)]';
 
 interface MarkdownComponentsInput {
   link: MarkdownLinkContext;
-  highlightChildren: Highlighter;
+  highlightChildren: MatchHighlighter;
   markSourceLines: boolean;
   basePath: string;
   resolveImage: ((path: string) => Promise<string | null>) | undefined;

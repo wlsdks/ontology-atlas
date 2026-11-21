@@ -18,4 +18,9 @@ describe('vaultPathFromDoc', () => {
   it('cannot climb above the vault root', () => {
     expect(vaultPathFromDoc('wiki/page', '../../../a.png')).toBe('a.png');
   });
+
+  it('keeps an absolute or file: path inside the document folder, never at the disk root', () => {
+    expect(vaultPathFromDoc('wiki/page', '/etc/passwd')).toBe('wiki/etc/passwd');
+    expect(vaultPathFromDoc('wiki/page', 'file:///etc/passwd')).toBe('wiki/file:/etc/passwd');
+  });
 });

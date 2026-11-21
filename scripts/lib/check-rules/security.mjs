@@ -70,6 +70,7 @@ export const rules = [
       /^src\/widgets\/acp-chat-panel\/(?!.*\.test\.tsx?$).+\.tsx?$/,
       /^src\/shared\/ui\/(?:document\/(?:lang-boot-script|json-ld)|ontology-node\/node-explanation-edit)\.tsx$/,
       /^src\/widgets\/docs-vault\/ui\/(?:(?:DocsVaultBacklinks|DocsVaultEditor|DocsVaultViewer)\.tsx|(?:editor|viewer)\/(?!.*\.test\.tsx?$)[^/]+\.tsx?)$/,
+      /^src\/widgets\/docs-vault\/lib\/(?:editor|viewer)\/(?!.*\.test\.ts$)[^/]+\.ts$/,
       /^src\/features\/project-edit\/ui\/MarkdownField\.tsx$/,
       /^src\/views\/gateway-doc\/ui\/GatewayDocPage\.tsx$/,
       /^src\/views\/library\/ui\/(?:LibraryPage\.tsx|library-page\/[^/]+\.tsx?|parts\/questions\/(?:AnswerRevisionComparison|LibraryQuestionDesk)\.tsx|parts\/questions\/desk\/[^/]+\.tsx?|parts\/wiki\/[^/]+\.tsx?)$/,

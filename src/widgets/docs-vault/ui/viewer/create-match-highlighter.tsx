@@ -1,9 +1,9 @@
 import { splitHighlightSegments } from '@/shared/lib/search-match/highlight-match';
 
-export type Highlighter = (children: React.ReactNode, key?: string) => React.ReactNode;
+export type MatchHighlighter = (children: React.ReactNode, key?: string) => React.ReactNode;
 
 /** Wraps each literal match of `highlightQuery` in the text it is given in a `mark.docs-match`. */
-export function createHighlighter(highlightQuery: string | undefined): Highlighter {
+export function createMatchHighlighter(highlightQuery: string | undefined): MatchHighlighter {
   const hl = (
     children: React.ReactNode,
     q: string,
