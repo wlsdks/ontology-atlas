@@ -79,6 +79,7 @@ fn planning_selection_does_not_grant_existing_vault_or_source_commands() {
             root_path: root,
             label: "selected".into(),
             skip_relative: vec![],
+            open_folder: false,
         }])
         .unwrap();
         assert!(result.candidates.is_empty());

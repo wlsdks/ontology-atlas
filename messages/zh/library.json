@@ -281,23 +281,95 @@
     "collapse": "收起索引",
     "expand": "显示索引"
   },
-  "emptyTitle": "还没有来源和 Wiki 页面",
-  "emptyBody": "把已有的文档放进来：规格说明、演示文稿、表格、导出的页面都可以。Atlas 会原样复制到 sources/，在你提出之前不会打开。",
-  "emptyFoundBody": "找到了 {count, number} 个可以放进来的文档。只读取了名称和格式，只把你选中的复制到 sources/。",
-  "emptyFoundAction": "查看找到的 {count, number} 个文档",
+  "start": {
+    "title": "添加你已有的文档",
+    "body": "{agent} 会阅读你的来源并撰写 Wiki 页面。页面中的每句话都注明出自哪个来源。",
+    "agentFallback": "你的编码智能体",
+    "bodyWikiOnly": "此文件夹有 Wiki 页面，但还没有来源。添加这些页面依据的文档，每个论断就能引用一个来源。",
+    "where": "资料库只列出“{folder}”文件夹中 sources 文件夹里的文件。你也可以在 {fileManagerName} 中把文件放进去。",
+    "whereWeb": "资料库只列出“{folder}”文件夹中 sources 文件夹里的文件。",
+    "copyNote": "sources 文件夹之外的文件会被复制进来。原文件不会被移动或删除。",
+    "reveal": "{fileManager, select, finder {在访达中显示} explorer {在文件资源管理器中显示} other {在文件管理器中显示}}",
+    "fileManagerName": "{fileManager, select, finder {访达} explorer {文件资源管理器} other {文件管理器}}",
+    "privacy": "Atlas 不会把你的来源发送到任何地方，只有交给智能体的工作会经过该智能体的服务。",
+    "noAgent": "尚未连接编码智能体。你可以现在添加来源，稍后再连接智能体。",
+    "noAgentLink": "连接智能体",
+    "web": "在浏览器中可以添加和阅读来源。撰写 Wiki 页面需要 Atlas 应用。",
+    "drop": {
+      "title": "拖放文件或文件夹即可复制到 sources 文件夹",
+      "or": "或",
+      "formats": "PDF、Word、Excel、PowerPoint、文本或任何其他格式，均按原样复制。",
+      "over": "松开即复制到 sources 文件夹",
+      "copying": "正在复制到 sources 文件夹 · {done, number}/{total, number}",
+      "failed": "{count, number} 个文件无法复制：{reason}。请重新拖入，或点按“添加文件”。",
+      "failedNames": "未复制：{names}"
+    },
+    "found": {
+      "title": "“{folders}”中已有 {count, number} 个文件",
+      "basis": "仅根据文件名、格式和大小挑选，未打开文件内容。",
+      "more": "查看全部 {count, number} 个",
+      "hide": "隐藏此建议",
+      "hidden": "已隐藏。“在文件夹中查找文档”可重新显示这些文件。"
+    }
+  },
+  "found": {
+    "title": "找到 {count, number} 份文档",
+    "titleTruncated": "找到 {count, number} 份以上文档",
+    "where": "位于“{folder}”文件夹内、sources 文件夹之外 · 仅按文件名、格式和大小查找 · {folderCounts}",
+    "folderCount": "{folder} {count, number}",
+    "copyAll": "{count, plural, =1 {复制到 sources 文件夹} other {将全部 # 份复制到 sources 文件夹}}",
+    "choose": "选择要复制的文件"
+  },
+  "drop": {
+    "confirmLarge": "{count, plural, other {要将 # 个文件（{size}）复制到 sources 文件夹吗？}}原文件保持不变。",
+    "confirm": "复制",
+    "cancel": "取消",
+    "stop": "停止复制",
+    "stopped": "{count, plural, =0 {已停止复制，尚未复制任何文件。} other {已停止复制。此前复制的 # 个文件仍在 sources 文件夹中。}}",
+    "skipped": "{count, number} 个文件未复制",
+    "skippedReasons": {
+      "same": "与已添加的来源相同",
+      "notDocument": "不是文档（图片、程序文件等）",
+      "secretName": "名称像密码或密钥文件",
+      "licence": "许可证或声明文件"
+    },
+    "reasonCount": "{reason}：{count, number}",
+    "skippedShow": "显示未复制的文件",
+    "truncated": "只列出了文件夹中的前 {count, number} 个文件。其余文件请另行拖入。",
+    "busy": "仍在复制中。复制结束后请再次拖放。",
+    "holdsOpenFolder": "“{names}”就是已打开的文件夹或包含它，因此未复制。请用上方的复制按钮添加已打开文件夹中的文档。",
+    "skippedUnlisted": "另有 {count, number} 个未在此列出",
+    "failureReasons": {
+      "sourceChanged": "拖放后文件已更改",
+      "sourceMissing": "文件已不在原处",
+      "sourceUnreadable": "无法读取文件",
+      "notOffered": "之后拖放的文件取代了此列表",
+      "destination": "无法写入 sources 文件夹",
+      "permission": "权限被拒绝",
+      "diskFull": "磁盘空间不足",
+      "nameLimit": "该文件夹中同名文件过多",
+      "unusableName": "无法使用该文件名",
+      "busy": "另一项复制正在进行",
+      "other": "复制时出现问题"
+    }
+  },
+  "usage": {
+    "where": "资料库中的每个来源都是“{folder}”文件夹中 sources 文件夹里的文件。你在 {fileManagerName} 中添加或移除的文件会自动显示。",
+    "copy": "“添加文件”、拖放和“全部复制”都会把文件复制到 sources 文件夹，并保留原有的文件夹结构。原文件不会被移动或删除。",
+    "read": "Atlas 不会把你的来源发送到任何地方。只有当你让智能体撰写 Wiki 页面或回答问题时，该智能体才会读取来源，读取的内容可能会发送到该智能体的服务。"
+  },
   "stageTitle": "把已有的文档，变成注明出处的 Wiki",
   "stageBody": "打开文件夹并添加文件。来源原样保留，每份来源对应一个 Wiki 页面，每条论断都引用其出处文件。",
   "sources": {
     "listAria": "此文件夹中的来源",
     "add": "添加文件",
     "addTooltip": "将文档复制到此文件夹的 sources/",
-    "find": "查找文档",
+    "find": "在文件夹中查找文档",
     "findTooltip": "列出此文件夹和已连接的代码文件夹中的文档作为候选。选定之前不会复制任何内容。",
     "empty": "还没有来源。请添加已有的文档。任何格式均可，Atlas 会按原样保留。",
     "noFormat": "文件",
     "statesAria": "来源状态：最常见的状态在此只说明一次，各行只显示例外情况",
     "needsCompile": "{count} 份还没有 Wiki 页面",
-    "dropHint": "也可以在访达中的 {folder} 内新建 sources/ 文件夹并把文件拖进去；列表会自动更新。",
     "state": {
       "nobody": "无人",
       "not-compiled": {
@@ -325,17 +397,17 @@
         "hint": "Atlas 无法打开此文件进行检查，因此未计入。请重新连接其所在磁盘或检查文件权限。"
       }
     },
-    "added": "已有 {count} 份文档添加到 sources/",
+    "added": "已添加 {count, number} 个来源",
     "duplicate": "{count} 份已存在。字节相同，因此未复制。",
     "failed": "{count} 份无法复制",
     "failedReason": "无法添加：{reason}",
-    "revealFailed": "无法在访达中显示：{reason}",
+    "revealFailed": "无法在 {fileManagerName} 中显示：{reason}",
     "openFailed": "无法打开该文件。",
     "savedInstead": "{name} 属于在此页面打开时可能运行代码的文件类型，因此改为下载。",
     "needsCompileSplit": "{notCompiled} 份还没有 Wiki 页面 · {stale} 份需要核对来源版本",
     "staleOnly": "{count} 个来源版本待复核",
     "partialOnly": "{count} 个仅读取了部分内容",
-    "import": "从服务导入",
+    "import": "从 Notion、Jira 等导入",
     "importTooltip": "选择并连接服务，再指定要导入此文件夹的文档",
     "importedToPlanning": "导入的文档已放入规划文件夹",
     "openPlanning": "在规划中打开",
@@ -346,9 +418,7 @@
   "wiki": {
     "listAria": "此文件夹中的 Wiki 页面",
     "compile": "生成 Wiki 页面",
-    "compileTooltip": "智能体读取来源，撰写或更新 Wiki 页面。保存的答案会被标记为需要单独复核。",
     "lint": "检查 Wiki",
-    "lintTooltip": "智能体读取 Wiki 页面，报告相互矛盾、已被取代的论断、缺失的链接，以及没有页面的名称。不会写入任何内容。",
     "candidateKind": {
       "domain": "领域",
       "capability": "能力",
@@ -361,21 +431,15 @@
     "propose": "提议为概念",
     "proposeTooltip": "智能体读取这些页面并提议一个本体概念。写入前会请求许可。",
     "logLint": "上次检查 {when}：{summary}",
-    "empty": "还没有 Wiki 页面。页面是不含 kind: 的 Markdown，格式见 wiki/_template.md。",
     "unknownAuthor": "未知",
-    "offTemplate": "偏离模板",
-    "offTemplateCount": "{count} 个页面不符合模板",
     "transfer": "编码智能体直接向其服务商发送请求；Atlas 不记录这部分流量。符合模板的 Wiki 页面可以自动保存，但保存的答案始终需要单独复核。",
     "compileFailed": "无法启动智能体：{reason}",
-    "compileWebLimit": "撰写 Wiki 页面需要在本机运行的编码智能体，只有应用才能启动。在这里也可以阅读和编辑页面。",
     "compileWebGetApp": "获取应用",
     "agentMissing": "连接编码智能体后，就可以让它检查 Wiki 并生成 Wiki 页面。",
     "agentMissingDoor": "连接智能体",
-    "offTemplateReason": "不符合 Wiki 模板：{code}。打开页面查看需要修改的地方。",
     "offTemplateAriaLabel": "此页面与 Wiki 模板的差异",
     "offTemplateTitle": "{count, number} 处待修正 · 页面模板",
     "offTemplateBody": "修正下列问题后，它就会和其他页面一样被读取。",
-    "writtenBy": "撰写者：{author}",
     "writer": {
       "human": "人工",
       "agent": "{name}（智能体）",
@@ -390,7 +454,7 @@
     "compileModifyFile": "替换 {path}",
     "logCount": {
       "disagreement": "矛盾 {count, number}",
-      "superseded": "已取代 {count, number}",
+      "superseded": "较新的原文不同 {count, number}",
       "missingLink": "缺失链接 {count, number}",
       "nameWithoutPage": "无页面的名称 {count, number}"
     },
@@ -398,8 +462,6 @@
     "logNew": "新增",
     "logRevised": "已修订",
     "logNothingNew": "没有新内容",
-    "emptyNoTemplate": "还没有 Wiki 页面，也没有模板。在设置 › 本体文件夹中开始 Wiki，会创建 wiki/_template.md，页面都遵循这个格式。",
-    "folderMark": "链接",
     "candidatesMore": "另有 {count} 个名称",
     "candidatesLess": "收起名称",
     "candidatesTooltip": "上次检查中出现在三个或更多页面、却没有自己页面的名称。只有代码所构建的内容（领域、能力或元素）才能提议为地图上的概念；人物和组织留在 Wiki 中。",
@@ -409,13 +471,12 @@
     "fileAnswerRejected": "未保存：答案不符合页面格式（{code}）。请要求附上引用后重新提问。",
     "findingKind": {
       "disagreement": "矛盾",
-      "superseded": "已取代的论断",
+      "superseded": "较新的原文不同",
       "missingLink": "缺失链接"
     },
     "fix": "修复",
     "fixTooltip": "智能体在所列页面上修复此项：矛盾则列出两个值及两处引用，已取代的论断则把当前值放在前面，缺失链接则双向补上。",
     "newPage": "新建页面",
-    "newPageTooltip": "新建一个由你自己撰写的页面：只有模板的章节和 created_by: human，可在任何编辑器中填写，列表会自动更新。",
     "newPageDialogTitle": "新建 Wiki 页面",
     "newPageDialogBody": "创建一份带有标准结构、可直接填写的 Markdown 草稿。",
     "newPageTitle": "页面标题",
@@ -529,21 +590,6 @@
       }
     }
   },
-  "shelf": {
-    "commonState": "{count, number} 个页面 · {state}",
-    "listAria": "Wiki 页面及其来源版本",
-    "freshness": {
-      "fresh": "已检查的来源版本没有变化。",
-      "stale": "来源已变更，或尚未与此页面核对。",
-      "unverified": "此页面从未与文件核对过"
-    },
-    "state": {
-      "fresh": "已查来源未变",
-      "stale": "来源待复核",
-      "unverified": "来源未检查"
-    },
-    "compiling": "正在重新读取来源并撰写 Wiki 页面。"
-  },
   "home": {
     "guide": "使用方法",
     "questions": "{count, plural, =0 {问题} other {问题 #}}",
@@ -558,12 +604,12 @@
     "searchCount": "共 {total, number} 个，显示 {visible, number} 个 · 已选 {selected, number} 个",
     "noMatches": "没有匹配的文件名或路径。",
     "clearSearch": "清除搜索",
-    "title": "已授权文件夹中的文档",
-    "preamble": "只读取了名称、格式和大小，没有打开文件。选定之前不会复制任何内容。",
+    "title": "在“{folders}”中找到的文档",
+    "preamble": "仅根据文件名、格式和大小挑选。点按“添加”之前不会复制任何内容。",
     "webLimit": "这里只能读取当前打开的文件夹；已连接的代码文件夹只能在应用中读取。",
     "walkedRoots": "同时读取了：{roots}",
     "walking": "正在读取文件夹列表…",
-    "empty": "没有可提议的内容。这些文件夹中的文档要么已在 sources/ 中，要么都不是 Atlas 提供的文档格式。",
+    "empty": "“{folders}”中没有看起来像文档的文件。Atlas 会跳过许可证和声明文件、以随机字母和数字命名的文件、构建和测试文件、空文件，以及 public、output、build 等文件夹。",
     "rootHeader": "{root} · {count, number}",
     "truncated": "列表在前 500 个文件处停止，所以并不完整。",
     "unreadable": "无法读取：{roots}",
@@ -731,7 +777,7 @@
   "report": {
     "title": "检查结果",
     "structuralTitle": "应用检查",
-    "structuralHead": "{pages} 个页面 · {offTemplate, number} 个偏离模板 · {findings} 项发现",
+    "structuralHead": "{pages} 个页面 · {offTemplate, number} 个未遵循模板 · {findings} 项发现",
     "structuralClean": "每个页面都符合模板，每个链接都能打开，根据同一份来源撰写的页面也互相链接。",
     "advisoryMark": "参考",
     "advisoryFold": "{count} 项提示性发现",
@@ -759,7 +805,6 @@
       "shared-source-unlinked": "同一来源的页面没有互相链接"
     },
     "namesTitle": "没有页面的名称",
-    "open": "检查结果 {count, number}",
     "running": "正在检查 Wiki…",
     "unseen": "新"
   },
@@ -1059,7 +1104,7 @@
     "dateBasis": "每个点使用其 Wiki 页面记录的日期。",
     "undated": "{count, number} 份没有日期",
     "continue": "{count, plural, =1 {用 1 份来源写 Wiki 页面} other {为接下来的 # 份生成 Wiki 页面}}",
-    "batchRest": "之后还有 {count, number} 份等待。",
+    "batchRest": "此外还有 {count, number} 份。",
     "writer": "由 <name>{agent}</name> 撰写",
     "writerAnyAgent": "由你连接的编码代理撰写",
     "batchReturned": "上次请求中有 {count, number} 份来源仍没有 Wiki 页面，已移到列表末尾。",
@@ -1078,7 +1123,7 @@
       "type": "文件类型",
       "sources": "来源",
       "withPage": "有 Wiki 页面",
-      "waiting": "等待中",
+      "waiting": "待写页面",
       "latest": "最新 Wiki 页面"
     },
     "topLevel": "sources/ 根目录",
@@ -1088,15 +1133,15 @@
       "none": "暂无",
       "undated": "无日期"
     },
-    "rowAria": "{name}：{total, number} 份来源，{withPage, number} 份有 Wiki 页面，{waiting, number} 份等待撰写。按下后在表格旁列出。",
+    "rowAria": "{name}：{total, number} 份来源，{withPage, number} 份有 Wiki 页面，{waiting, number} 份待写页面。按下后在表格旁列出。",
     "writing": "正在为这里的一份来源写 Wiki 页面",
     "panel": {
-      "nextTitle": "接下来要写的来源",
+      "nextTitle": "撰写 Wiki 页面的顺序",
       "lead": "按下“{action}”后，代理会从上往下读取下面的来源并写 Wiki 页面。",
       "leadRunning": "代理正在从上往下写 Wiki 页面。写完的来源会从这个列表中移除。",
-      "privacy": "Atlas 不会把来源发送到任何地方。当你把撰写 Wiki 页面或提问交给代理时，该代理会读取所需的来源，读到的内容可能会发送到该代理的服务。",
-      "webNote": "只有应用会生成 Wiki 页面。在应用中会先处理这些。",
-      "waitingTitle": "这里等待中的来源",
+      "privacy": "Atlas 不会把你的来源发送到任何地方，只有交给智能体的工作会经过该智能体的服务。",
+      "webNote": "在应用中会先为这些来源撰写 Wiki 页面。",
+      "waitingTitle": "此处待写页面的来源",
       "nextEmpty": "这里的每份来源都有与当前内容一致的 Wiki 页面。",
       "unreadable": "这里有 {count, number} 份来源无法读取",
       "showInList": "在列表中显示全部 {count, number} 份",

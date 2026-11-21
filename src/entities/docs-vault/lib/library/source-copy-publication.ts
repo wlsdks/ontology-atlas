@@ -9,10 +9,15 @@ export function createSourceCopyBatch(root: FileSystemDirectoryHandle) {
   const batch: SourceCopyBatch = { root, paths: new Set() };
   activeBatches.add(batch);
   return {
+    /** `name` may sit in folders below `sources/` (`meetings/weekly.md`); no segment may climb. */
     hold(name: string, temporaryNames: readonly string[] = []) {
-      for (const leaf of [name, ...temporaryNames]) {
-        if (!leaf || leaf === '.' || leaf === '..' || /[/\\\0]/.test(leaf)) throw new Error('Invalid source-copy name');
-        batch.paths.add(`sources/${leaf.normalize('NFC')}`);
+      const at = name.lastIndexOf('/');
+      const folder = at < 0 ? '' : name.slice(0, at + 1);
+      for (const path of [name, ...temporaryNames.map((leaf) => `${folder}${leaf}`)]) {
+        if (path.split('/').some((leaf) => !leaf || leaf === '.' || leaf === '..' || /[\\\0]/.test(leaf))) {
+          throw new Error('Invalid source-copy name');
+        }
+        batch.paths.add(`sources/${path.normalize('NFC')}`);
       }
     },
     finish() { activeBatches.delete(batch); },

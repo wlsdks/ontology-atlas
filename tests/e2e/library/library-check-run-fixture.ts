@@ -169,8 +169,11 @@ export async function startCheck(
   await openFolderFromFirstRun(page, options.locale ?? "en");
   await rail(page).getByTestId("app-nav-rail-item-library").click();
   await page.getByTestId("library-workspace-wiki").click();
-  await page.getByTestId("library-lint").click();
+  await page.getByTestId("library-open-report").click();
+  await page.getByTestId("library-check-report-lint").click();
   await expect.poll(() => harnessCalls(page), { message: "the check's brief reaches the agent" }).toContain("session/prompt");
+  // Check results draws the run in place; back at the Library home the card speaks for it.
+  await page.getByTestId("library-reader-back").click();
   return harness;
 }
 

@@ -259,7 +259,11 @@ for (const { retained, kind, manual, name } of [
     expect(await page.evaluate(() => localStorage.getItem('library.wikiWriteMode'))).toBe('auto');
     if (kind === 'refresh') await page.getByTestId('answer-refresh-start').click();
     /* By testid, not label: this test is about the write permission, not the copy. */
-    else await page.getByTestId('library-compile').click();
+    else {
+      await page.keyboard.press('Escape');
+      await page.getByTestId('library-workspace-sources').click();
+      await page.getByTestId('library-progress-continue').click();
+    }
     await expect.poll(async () => (await harness.snapshot(page)).calls.some((call) => call.method === 'session/prompt')).toBe(true);
     await harness.read(page);
     await harness.wait(page);

@@ -34,7 +34,7 @@
   },
   "choose": {
     "openAction": "打开文件夹",
-    "createAction": "新建",
+    "createAction": "新建文件夹",
     "defaultLocationAction": "在“文稿”中创建",
     "chooseLocationAction": "选择位置",
     "eyebrow": "哪个文件夹",
@@ -55,7 +55,6 @@
   "missing": {
     "summary": "{count} 个文件夹找不到",
     "review": "查看",
-    "hide": "收起",
     "body": "Atlas 记住的路径下已没有这个文件夹：它被重命名、移动，或位于未挂载的卷上。移除只是把文件夹从这个列表中去掉，磁盘上的内容不会变。",
     "forgetAll": "全部移除（{count}）",
     "locate": "找回移动过的文件夹",

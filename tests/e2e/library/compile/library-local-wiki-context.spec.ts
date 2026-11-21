@@ -109,10 +109,10 @@ async function openLocalCompile(page: Page, selectPage = false, options: Paramet
    */
   await expect(page.getByTestId('library-questions-open')).toBeVisible();
   if (selectPage) {
-    await page.getByTestId('library-wiki').getByRole('button', { name: /^Records bulletin/ }).click();
+    await page.getByTestId('library-wiki-wiki/records').click();
     await expect(page.getByTestId('library-page')).toHaveAttribute('data-library-state', 'wiki');
+    await page.getByTestId('library-reader-back').click();
   }
-  await expect(page.getByTestId("library-compile")).toBeEnabled({ timeout: 30_000 });
   /*
    * On the home the brain picker stands in the guide's Compile step; Escape leaves the walk on the
    * home.
@@ -123,7 +123,6 @@ async function openLocalCompile(page: Page, selectPage = false, options: Paramet
     await expect(page.getByTestId('library-guide-popover').getByTestId('library-compile-brain')).toContainText('probe-model');
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('library-guide-popover')).toHaveCount(0);
-    await page.getByTestId('library-workspace-wiki').click();
   }
   // This is the installed-shell local route; the web degradation copy must not be present.
   await expect(page.getByTestId("library-compile-web-limit")).toHaveCount(0);
@@ -132,7 +131,9 @@ async function openLocalCompile(page: Page, selectPage = false, options: Paramet
     return raw ? (JSON.parse(raw) as { baseUrl?: unknown; model?: unknown }) : null;
   });
   expect(endpoint).toEqual({ baseUrl: "http://127.0.0.1:11434/v1", model: "probe-model" });
-  await page.getByTestId("library-compile").click();
+  await page.getByTestId('library-workspace-sources').click();
+  await expect(page.getByTestId("library-progress-continue")).toBeEnabled({ timeout: 30_000 });
+  await page.getByTestId("library-progress-continue").click();
   const checkpointDirectory = process.env.ATLAS_LOCAL_WIKI_EVIDENCE;
   if (checkpointDirectory) {
     const { mkdirSync, writeFileSync } = await import("node:fs");
@@ -382,7 +383,8 @@ test.describe("local Compile carries existing Wiki context safely", () => {
     expect(errors).toEqual([]);
     await page.getByRole('button', { name: 'Back to Library' }).click();
     await expect(page.getByTestId('library-local-review')).toHaveCount(0);
-    await expect(page.getByTestId('library-page')).toHaveAttribute('data-library-state', 'wiki');
+    // Writing starts from the Sources band with nothing open, so the review returns there.
+    await expect(page.getByTestId('library-page')).toHaveAttribute('data-library-state', 'nothing-open');
   });
 
   test("refuses a same-timestamp Wiki correction made after the consent card", async ({ page }) => {

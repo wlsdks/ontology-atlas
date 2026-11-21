@@ -17,6 +17,7 @@ interface DiscoveryRootPlan {
   rootPath: string;
   label: string;
   skipRelative: string[];
+  openFolder?: boolean;
 }
 
 export interface DiscoveryOutcome extends SourceDiscoveryReport {
@@ -66,7 +67,7 @@ export async function discoverSources({
   if (vaultRootPath) {
     const projectRoots = await readBoundProjectRoots(handle);
     const roots = [
-      { rootPath: vaultRootPath, label: vaultLabel, skipRelative: [VAULT_SOURCES_DIR] },
+      { rootPath: vaultRootPath, label: vaultLabel, skipRelative: [VAULT_SOURCES_DIR], openFolder: true },
       ...projectRoots,
     ];
     const report = await discoverTauriSourceCandidates(roots);

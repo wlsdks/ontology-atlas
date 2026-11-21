@@ -345,6 +345,25 @@ pub(crate) fn create_entry_atomically(
     contents: &str,
     create_mode: libc::mode_t,
 ) -> Result<bool, String> {
+    let published = create_first_free_entry_with(
+        parent,
+        std::iter::once(file_name.to_owned()),
+        create_mode,
+        |file| file.write_all(contents.as_bytes()),
+    )?;
+    Ok(published.is_some())
+}
+
+/// Fills one private temporary, then links it under the first of `names` still free. `linkat`
+/// never replaces an entry, so a name another writer took first is passed over. `None` when
+/// every name was taken; the temporary is removed either way.
+#[cfg(unix)]
+pub(crate) fn create_first_free_entry_with<T>(
+    parent: &fs::File,
+    names: impl IntoIterator<Item = std::ffi::CString>,
+    create_mode: libc::mode_t,
+    fill: impl FnOnce(&mut fs::File) -> std::io::Result<T>,
+) -> Result<Option<(T, std::ffi::CString)>, String> {
     use std::os::fd::{AsRawFd, FromRawFd};
 
     static SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -380,30 +399,30 @@ pub(crate) fn create_entry_atomically(
     }
     let (name, mut temporary) = created
         .ok_or_else(|| err_str("could not reserve a private temporary name for file creation"))?;
-    let result = (|| -> std::io::Result<bool> {
+    let result = (|| -> std::io::Result<Option<(T, std::ffi::CString)>> {
         ensure_private_temporary(&temporary, "before writing")?;
-        temporary.write_all(contents.as_bytes())?;
+        let filled = fill(&mut temporary)?;
         temporary.sync_all()?;
         ensure_private_temporary(&temporary, "before commit")?;
-        let linked = unsafe {
-            libc::linkat(
-                parent.as_raw_fd(),
-                name.as_ptr(),
-                parent.as_raw_fd(),
-                file_name.as_ptr(),
-                0,
-            )
-        };
-        if linked == 0 {
-            Ok(true)
-        } else {
+        for file_name in names {
+            let linked = unsafe {
+                libc::linkat(
+                    parent.as_raw_fd(),
+                    name.as_ptr(),
+                    parent.as_raw_fd(),
+                    file_name.as_ptr(),
+                    0,
+                )
+            };
+            if linked == 0 {
+                return Ok(Some((filled, file_name)));
+            }
             let error = std::io::Error::last_os_error();
-            if error.kind() == std::io::ErrorKind::AlreadyExists {
-                Ok(false)
-            } else {
-                Err(error)
+            if error.kind() != std::io::ErrorKind::AlreadyExists {
+                return Err(error);
             }
         }
+        Ok(None)
     })();
     // The destination is never cleanup collateral, including after publication.
     let removed = unsafe { libc::unlinkat(parent.as_raw_fd(), name.as_ptr(), 0) };
@@ -414,7 +433,7 @@ pub(crate) fn create_entry_atomically(
         )));
     }
     let published = result.map_err(|error| err_str(error.to_string()))?;
-    if published {
+    if published.is_some() {
         parent
             .sync_all()
             .map_err(|error| err_str(error.to_string()))?;

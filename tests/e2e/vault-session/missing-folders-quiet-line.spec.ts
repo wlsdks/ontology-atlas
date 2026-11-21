@@ -157,3 +157,28 @@ test('the review opens without moving its line, and forgets only what is pressed
     'recent-vault-open',
   );
 });
+
+test('the rail switcher opens the same centred review and hands focus back to its folder tile', async ({ page }) => {
+  await page.goto('/en/?guides=off');
+  await page.getByTestId('recent-vault-list').getByRole('button', { name: /^Open atlas-vault/ }).click();
+  const tile = page.getByTestId('vault-switch-rail-tile');
+  await tile.click();
+  const line = page.getByTestId('vault-switch-popover').getByTestId('recent-vault-missing-toggle');
+  await expect(line).toBeVisible({ timeout: 30_000 });
+  await expect(line).toHaveAttribute('aria-haspopup', 'dialog');
+
+  await line.click();
+  const review = page.getByTestId('recent-vault-missing-review');
+  await expect(review).toBeVisible();
+  await expect(page.getByTestId('vault-switch-popover')).toHaveCount(0);
+  await expect(review.getByTestId('recent-vault-row')).toHaveCount(3);
+
+  await review.getByRole('button', { name: /qa-run-0925-b/ }).click();
+  await expect(review.getByTestId('recent-vault-row')).toHaveCount(2);
+  expect(await knownPaths(page)).not.toContain('/Users/probe/qa-run-0925-b');
+  await expect(review).toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(review).toHaveCount(0);
+  await expect(tile).toBeFocused();
+});

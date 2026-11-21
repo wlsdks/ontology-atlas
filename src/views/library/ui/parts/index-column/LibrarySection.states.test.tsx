@@ -25,13 +25,14 @@ const BASE = {
   pageFacts: new Map(),
   log: { lastCompile: null, lastLint: null },
   pairing: { originalsByWiki: new Map(), writeUpsBySource: new Map() },
+  structural: { unmeasured: [], findingCount: 0 },
 } as unknown as LibraryUiModel;
 
 function source(index: number, state: string) {
   return { path: `sources/doc-${index}.md`, name: `doc-${index}.md`, format: "md", bytes: 20, mtime: 1, state, citedBy: state === "not-compiled" ? [] : ["wiki/page"] };
 }
 
-function Harness({ model, segment, compile = true, stateFilter = null, groupFilter = null }: { model: LibraryUiModel; segment: "sources" | "wiki"; compile?: boolean; stateFilter?: string | null; groupFilter?: SourceGroupFilter | null }) {
+function Harness({ model, segment, stateFilter = null, groupFilter = null }: { model: LibraryUiModel; segment: "sources" | "wiki"; stateFilter?: string | null; groupFilter?: SourceGroupFilter | null }) {
   const t = useTranslations("library");
   return (
     <LibrarySection
@@ -45,13 +46,9 @@ function Harness({ model, segment, compile = true, stateFilter = null, groupFilt
       onAddFiles={() => {}}
       onFindDocuments={() => {}}
       onImportFromService={() => {}}
-      onCompile={compile ? () => {} : null}
-      onLint={() => {}}
       onNewPage={null}
       report={null}
       segment={segment}
-      actionsNote={null}
-      inApp={false}
       busy={false}
       stateFilter={stateFilter as never}
       groupFilter={groupFilter}
@@ -60,10 +57,10 @@ function Harness({ model, segment, compile = true, stateFilter = null, groupFilt
   );
 }
 
-function mount(model: LibraryUiModel, segment: "sources" | "wiki", compile = true, stateFilter: string | null = null, groupFilter: SourceGroupFilter | null = null) {
+function mount(model: LibraryUiModel, segment: "sources" | "wiki", stateFilter: string | null = null, groupFilter: SourceGroupFilter | null = null) {
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <Harness model={model} segment={segment} compile={compile} stateFilter={stateFilter} groupFilter={groupFilter} />
+      <Harness model={model} segment={segment} stateFilter={stateFilter} groupFilter={groupFilter} />
     </NextIntlClientProvider>,
   );
 }
@@ -90,7 +87,7 @@ describe("the source list marks what waits", () => {
 
   it("lists only the rows of the state the band's press names", () => {
     const sources = [source(0, "compiled"), source(1, "unreadable"), source(2, "checking"), source(3, "unreadable")];
-    mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources", true, "unreadable");
+    mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources", "unreadable");
     expect(list()).toHaveAttribute("data-state-filter", "unreadable");
     expect(list().querySelectorAll("li > button[data-row-index]")).toHaveLength(2);
     cleanup();
@@ -101,7 +98,7 @@ describe("the source list marks what waits", () => {
   it("narrows to the folder picked on the home with a chip whose press clears it", () => {
     const sources = [source(0, "compiled"), source(1, "not-compiled"), source(2, "stale")];
     const onClear = vi.fn();
-    mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources", true, null, {
+    mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources", null, {
       label: "Folder: decks",
       includes: (row) => row.path !== "sources/doc-0.md",
       onClear,
@@ -116,7 +113,7 @@ describe("the source list marks what waits", () => {
   it("says so when a state press and a picked folder leave no row, and offers to clear the pick", () => {
     const sources = [source(0, "compiled"), source(1, "stale")];
     const onClear = vi.fn();
-    mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources", true, "stale", {
+    mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources", "stale", {
       label: "Folder: decks",
       includes: (row) => row.path === "sources/doc-0.md",
       onClear,
@@ -125,115 +122,5 @@ describe("the source list marks what waits", () => {
     expect(screen.getByTestId("library-source-list-none-note")).toHaveTextContent("None of these sources is in that state.");
     screen.getByTestId("library-source-list-none-clear").click();
     expect(onClear).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("the wiki shelf says its common caption once", () => {
-  function pages(count: number, behind: boolean) {
-    return Array.from({ length: count }, (_, i) => ({
-      slug: `wiki/p${i}`,
-      title: `Page ${i}`,
-      sourcePaths: behind ? [`sources/s${i}.md`] : [],
-      createdBy: "agent:claude",
-      compiledAt: null,
-    }));
-  }
-
-  it("past one screen of spines the majority caption is said above the shelf and those rows go quiet", () => {
-    const stale = pages(13, true);
-    const unverified = [{ slug: "wiki/fresh-one", title: "The one that differs", sourcePaths: [], createdBy: "agent:claude", compiledAt: null }];
-    const writeUpsBySource = new Map(stale.map((page) => [page.sourcePaths[0], [{ slug: page.slug, title: page.title, freshness: "behind" }]]));
-    const model = { ...BASE, wikiPages: [...stale, ...unverified], pairing: { originalsByWiki: new Map(), writeUpsBySource } } as unknown as LibraryUiModel;
-    mount(model, "wiki");
-
-    expect(screen.getByTestId("library-wiki-states")).toHaveTextContent("13 pages · Source review needed");
-    // A folded spine keeps its words for a screen reader; the one exception says its own state in sight.
-    const folded = screen.getByTestId("library-wiki-wiki/p0");
-    expect(folded.textContent).toContain("Source review needed");
-    expect(folded.querySelector(".sr-only")?.textContent).toContain("Source review needed");
-    const exception = screen.getByTestId("library-wiki-wiki/fresh-one");
-    expect(exception.querySelector(".sr-only")).toBeNull();
-    expect(exception.textContent).toContain("Source not checked");
-  });
-
-  it("below one screen of spines nothing folds", () => {
-    const stale = pages(5, true);
-    const writeUpsBySource = new Map(stale.map((page) => [page.sourcePaths[0], [{ slug: page.slug, title: page.title, freshness: "behind" }]]));
-    mount({ ...BASE, wikiPages: stale, pairing: { originalsByWiki: new Map(), writeUpsBySource } } as unknown as LibraryUiModel, "wiki");
-    expect(screen.queryByTestId("library-wiki-states")).toBeNull();
-    expect(screen.getByTestId("library-wiki-wiki/p0").querySelector(".sr-only")).toBeNull();
-  });
-});
-
-/**
- * A door at the end of a sentence must not wear the sentence's ink: the link takes the accent while
- * the note stays tertiary.
- */
-describe("the web note's door to the app is a door", () => {
-  it("sets the link in the accent ink while the sentence stays tertiary", () => {
-    mount({ ...BASE, sources: [source(0, "not-compiled")] } as LibraryUiModel, "wiki", false);
-    const note = screen.getByTestId("library-compile-web-limit");
-    const door = screen.getByTestId("library-compile-web-get-app");
-    expect(note.className).toContain("--color-text-tertiary");
-    expect(door.className).toContain("--color-indigo-accent");
-    expect(door.className).not.toContain("--color-text-tertiary");
-  });
-});
-
-/**
- * With no coding agent the installed app draws one notice with its door to the agents page instead
- * of two dead chips; while detection still runs, the doors stay.
- */
-describe("the wiki head with no coding agent", () => {
-  function NoAgent({ agentMissing }: { agentMissing: boolean }) {
-    const t = useTranslations("library");
-    return (
-      <LibrarySection
-        model={{ ...BASE, wikiPages: [{ slug: "wiki/a", title: "A", sourcePaths: [], createdBy: "agent:claude", compiledAt: null }] } as unknown as LibraryUiModel}
-        selectedSlug={null}
-        selectedSourcePath={null}
-        onSelect={() => {}}
-        onOpenSource={() => {}}
-        sourceHandles={new Map()}
-        vaultScope="test"
-        onAddFiles={() => {}}
-        onFindDocuments={() => {}}
-        onImportFromService={() => {}}
-        onCompile={null}
-        onLint={null}
-        onNewPage={null}
-        report={null}
-        segment="wiki"
-        actionsNote="No verified coding agent is set up on this computer."
-        inApp
-        agentMissing={agentMissing}
-        busy={false}
-        t={t}
-      />
-    );
-  }
-  const mountNoAgent = (agentMissing: boolean) =>
-    render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
-        <NoAgent agentMissing={agentMissing} />
-      </NextIntlClientProvider>,
-    );
-
-  it("draws one notice that names both jobs and ends in the agents door", () => {
-    mountNoAgent(true);
-    const notice = screen.getByTestId("library-agent-missing");
-    expect(notice).toHaveTextContent("check the wiki");
-    expect(screen.getByTestId("library-agent-missing-door")).toHaveAttribute("href", expect.stringContaining("agents"));
-    expect(screen.queryByTestId("library-lint")).toBeNull();
-    expect(screen.queryByTestId("library-compile")).toBeNull();
-    // The reason is said once: the notice replaces the paragraph, it does not sit above it.
-    expect(screen.queryByTestId("library-actions-blocked")).toBeNull();
-  });
-
-  it("keeps the doors and their reason while the runtimes are still being looked for", () => {
-    mountNoAgent(false);
-    expect(screen.queryByTestId("library-agent-missing")).toBeNull();
-    expect(screen.getByTestId("library-lint")).toBeDisabled();
-    expect(screen.getByTestId("library-actions-blocked")).toBeInTheDocument();
   });
 });

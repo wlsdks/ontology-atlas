@@ -188,8 +188,8 @@ export async function startWritingTurn(
   const harness = await installLibraryWorkHarness(page, { files: TURN_FILES, writeMode: options.writeMode ?? "ask" });
   await openFolderFromFirstRun(page, options.locale ?? "en");
   await rail(page).getByTestId("app-nav-rail-item-library").click();
-  await page.getByTestId("library-workspace-wiki").click();
-  await page.getByTestId("library-compile").click();
+  await page.getByTestId("library-workspace-sources").click();
+  await page.getByTestId("library-progress-continue").click();
   await expect.poll(() => harnessCalls(page), { message: "the request reaches the agent" }).toContain("session/prompt");
   return harness;
 }
