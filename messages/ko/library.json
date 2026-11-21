@@ -145,34 +145,34 @@
         "afterStart": "진행은 질문 칸 아래에서 볼 수 있고, 그동안 하던 일을 계속해도 돼요."
       }
     },
-    "title": "질문하고, 원문에서 확인하세요.",
+    "title": "질문하고, 자료에서 확인하세요.",
     "browse": "페이지 둘러보기",
     "backToQuestion": "질문으로 돌아가기",
-    "intro": "먼저 구절을 찾고, 인용된 원문에서 근거를 확인하세요.",
+    "intro": "먼저 구절을 찾고, 인용된 자료에서 근거를 확인하세요.",
     "questionLabel": "질문",
     "questionPlaceholder": "이해하고 싶은 결정이나 규칙을 적어보세요",
-    "folderScope": "이 폴더의 위키 {pages, number}개 · 원문 {sources, number}개에서 검색",
-    "originalsTitle": "원문부터 읽기",
+    "folderScope": "이 폴더의 위키 {pages, number}개 · 자료 {sources, number}개에서 검색",
+    "originalsTitle": "자료부터 읽기",
     "readOriginal": "읽기",
     "originalMeta": "{format} · {size} · 위키 {pages, number}개에서 인용",
-    "otherOriginals": "나머지 원문 {count, number}개는 원문 탭에서 볼 수 있어요.",
+    "otherOriginals": "나머지 자료 {count, number}개는 자료 탭에서 볼 수 있어요.",
     "recentTitle": "최근에 쓴 위키 문서",
-    "recentMeta": "{date} · 원문 {count, number}개 인용",
+    "recentMeta": "{date} · 자료 {count, number}개 인용",
     "resultsHead": "찾은 구절 {count, number}개",
     "showMore": "{count, number}개 더 보기",
     "passagesUnderReport": "검색이 찾은 구절",
     "search": "근거 찾기",
     "reading": "파일 {read, number}개 읽는 중…",
-    "coverage": "위키 {totalPages, number}개 중 {readPages, number}개, 원문 {totalSources, number}개 중 {readSources, number}개를 검색했어요.",
-    "coverageCompact": "위키 {readPages, number}/{totalPages, number} · 원문 {readSources, number}/{totalSources, number}",
+    "coverage": "위키 {totalPages, number}개 중 {readPages, number}개, 자료 {totalSources, number}개 중 {readSources, number}개를 검색했어요.",
+    "coverageCompact": "위키 {readPages, number}/{totalPages, number} · 자료 {readSources, number}/{totalSources, number}",
     "coverageOmitted": "후보 {count, number}개 생략",
     "coverageDetails": "검색 범위와 한계",
     "zeroLocalTitle": "일치하는 구절을 찾지 못했어요",
     "zeroLocalBody": "다른 표현이나 다른 언어, 읽지 못한 형식은 단어 검색에서 빠질 수 있어요. 답은 아직 확인되지 않았어요.",
-    "zeroLocalAgentNote": "「원문 조사」는 에이전트가 원문을 다시 읽고 보고서 초안을 쓰는 읽기 전용 작업이에요.",
-    "limits": "읽지 못한 원문 {unreadable, number}개 · 검색 중 변경됨 {changed, number}개 · 읽기 제한으로 제외 {skipped, number}개 · 표시하지 않은 검색 결과 {omitted, number}개. 단어 검색은 마지막으로 확인한 파일 버전을 사용해요. 외부 수정은 폴더 새로고침 뒤에 반영될 수 있어요.",
-    "limitsBoth": "읽지 못한 원문 {unreadable, number}개 · 검색 중 변경됨 {changed, number}개 · 읽기 제한으로 제외 {skipped, number}개 · 표시하지 않은 검색 결과 {omitted, number}개. 단어와 의미 검색은 마지막으로 확인한 파일 버전을 사용해요. 외부 수정은 폴더 새로고침 뒤에 반영될 수 있어요.",
-    "limitUnreadable": "읽지 못한 원문 {count, number}개",
+    "zeroLocalAgentNote": "「자료 조사」는 에이전트가 자료를 다시 읽고 보고서 초안을 쓰는 읽기 전용 작업이에요.",
+    "limits": "읽지 못한 자료 {unreadable, number}개 · 검색 중 변경됨 {changed, number}개 · 읽기 제한으로 제외 {skipped, number}개 · 표시하지 않은 검색 결과 {omitted, number}개. 단어 검색은 마지막으로 확인한 파일 버전을 사용해요. 외부 수정은 폴더 새로고침 뒤에 반영될 수 있어요.",
+    "limitsBoth": "읽지 못한 자료 {unreadable, number}개 · 검색 중 변경됨 {changed, number}개 · 읽기 제한으로 제외 {skipped, number}개 · 표시하지 않은 검색 결과 {omitted, number}개. 단어와 의미 검색은 마지막으로 확인한 파일 버전을 사용해요. 외부 수정은 폴더 새로고침 뒤에 반영될 수 있어요.",
+    "limitUnreadable": "읽지 못한 자료 {count, number}개",
     "limitChanged": "검색 중 변경됨 {count, number}개",
     "limitSkipped": "읽기 제한으로 제외 {count, number}개",
     "limitOmitted": "표시하지 않은 검색 결과 {count, number}개",
@@ -180,42 +180,42 @@
     "limitsMethodBoth": "단어와 의미 검색은 마지막으로 확인한 파일 버전을 사용해요. 외부 수정은 폴더 새로고침 뒤에 반영될 수 있어요.",
     "limitsMeaningCoverage": "의미 검색: 파일 {total, number}개 중 {ready, number}개.",
     "outdated": "검색한 뒤 폴더가 변경됐어요. 현재 파일로 다시 검색하세요.",
-    "wikiCaveat": "페이지에 적힌 문장이지 검증된 답이 아니에요. 원문의 해시가 같아도 주장이 원문에서 따라오는지는 별개예요.",
-    "noCitation": "이 주장에는 원문 앵커가 없어 여기서 원문을 확인할 수 없어요.",
-    "reviewBadge": "원문 검토 필요",
+    "wikiCaveat": "페이지에 적힌 문장이지 검증된 답이 아니에요. 자료의 해시가 같아도 주장이 자료에서 따라오는지는 별개예요.",
+    "noCitation": "이 주장에는 자료 앵커가 없어 여기서 자료를 확인할 수 없어요.",
+    "reviewBadge": "자료 검토 필요",
     "sourceState": {
-      "stale": "위키 작성 뒤 원문 변경됨",
-      "missing": "원문 없음"
+      "stale": "위키 작성 뒤 자료 변경됨",
+      "missing": "자료 없음"
     },
     "report": {
       "summarize": "보고서 만들기",
-      "investigate": "원문 조사",
+      "investigate": "자료 조사",
       "agentUnavailable": "설치된 앱에서 에이전트를 연결하면 보고서 초안을 만들 수 있어요. 아래 로컬 근거는 계속 사용할 수 있어요.",
       "unreviewed": "에이전트 초안 · 미검토",
       "masthead": "ONTOLOGY ATLAS / 질문 보고서",
-      "caveat": "주장을 받아들이기 전에 인용된 원문을 읽으세요. 이 초안은 검토되지 않았고 폴더에 저장되지 않았어요.",
+      "caveat": "주장을 받아들이기 전에 인용된 자료를 읽으세요. 이 초안은 검토되지 않았고 폴더에 저장되지 않았어요.",
       "file": "위키에 저장",
       "filing": "저장 중…",
       "fileRefused": {
         "shape": "위키에 저장하려면 요청한 보고서 구획 네 개가 순서대로 한 번씩 있어야 해요. 자유 형식 초안은 검토하거나 내보낼 수 있어요.",
-        "no-evidence": "위키에 저장하려면 원문 인용이 각각 있는 근거 항목이 하나 이상 필요해요. 초안은 검토하거나 내보낼 수 있어요.",
-        "citation": "원문 인용 위치가 올바르지 않아 저장하지 않았어요. 원문을 열어 초안을 고치세요.",
-        "source": "인용된 원문을 이 폴더에서 찾을 수 없어 저장하지 않았어요.",
+        "no-evidence": "위키에 저장하려면 자료 인용이 각각 있는 근거 항목이 하나 이상 필요해요. 초안은 검토하거나 내보낼 수 있어요.",
+        "citation": "자료 인용 위치가 올바르지 않아 저장하지 않았어요. 자료를 열어 초안을 고치세요.",
+        "source": "인용된 자료를 이 폴더에서 찾을 수 없어 저장하지 않았어요.",
         "unsafe": "초안에 외부 링크, 이미지 또는 원시 HTML이 있어 저장하지 않았어요. 먼저 검토하세요.",
-        "changed": "폴더를 확인한 뒤 인용된 원문이 바뀌어 저장하지 않았어요. 다시 검색하세요.",
-        "anchor": "인용한 위치가 현재 원문의 정확한 구절로 연결되지 않아 저장하지 않았어요."
+        "changed": "폴더를 확인한 뒤 인용된 자료가 바뀌어 저장하지 않았어요. 다시 검색하세요.",
+        "anchor": "인용한 위치가 현재 자료의 정확한 구절로 연결되지 않아 저장하지 않았어요."
       },
       "downloadMarkdown": "Markdown 내려받기",
       "printPdf": "인쇄 / PDF로 저장",
       "printFailed": "인쇄 창을 열 수 없어요. 보고서는 여기에 남아 있어요. 설치된 앱에서 다시 시도하세요.",
       "generated": "작성 시각 {time}",
       "searchScope": "검색 당시 범위와 한계",
-      "citationNote": "인용은 에이전트 초안의 텍스트 주소예요. 사용 가능 여부는 검색 당시 파일 목록 기준이며, 내보낼 때 원문을 다시 읽지 않아요.",
+      "citationNote": "인용은 에이전트 초안의 텍스트 주소예요. 사용 가능 여부는 검색 당시 파일 목록 기준이며, 내보낼 때 자료를 다시 읽지 않아요.",
       "rawFallback": "에이전트 응답이 요청한 네 구획을 따르지 않았어요. 제목을 짐작해 만들지 않고 받은 그대로 보여 줘요.",
       "readyNotice": "미검토 질문 보고서가 본문에 도착했어요. 초점은 현재 작업 위치에 남아 있어요.",
       "emptySection": "에이전트가 이 구획에 쓴 내용이 없어요.",
       "outdated": "이 초안은 이전 검색 또는 폴더 버전을 가리켜요. 내보내거나 위키에 저장하기 전에 다시 검색하고 보고서를 다시 만드세요.",
-      "citationUnavailable": "이 인용은 목록에 있는 원문의 정확한 자리로 연결되지 않아요.",
+      "citationUnavailable": "이 인용은 목록에 있는 자료의 정확한 자리로 연결되지 않아요.",
       "externalUnavailable": "에이전트 초안의 외부 링크는 여기서 열지 않아요.",
       "unavailableShort": "(열 수 없음)",
       "imageUnavailable": "[에이전트 초안의 이미지는 표시하지 않음]"
@@ -225,19 +225,19 @@
       "checking": "Jev 사용 가능 여부 확인 중…",
       "noKey": "이 Mac에 저장된 Jev 키가 없어요. 로컬 근거는 계속 사용할 수 있어요. 선택 검사에 쓰려면 에이전트 → 모델에서 키를 추가하세요.",
       "unavailable": "Jev 키 상태를 확인할 수 없어요. 로컬 근거는 계속 사용할 수 있으며 아무것도 전송되지 않았어요.",
-      "missing": "인용한 정확한 원문을 찾거나 해석할 수 없어 Jev를 사용할 수 없어요.",
-      "stale": "이 위키 주장을 기록한 뒤 원문이 변경되어 Jev를 사용할 수 없어요.",
-      "unmeasured": "이 위키 주장과 원문 버전을 대조할 수 없어 Jev를 사용할 수 없어요.",
-      "too-long": "이 주장이나 원문 구절은 Jev 요청 제한보다 길어요. 여기서 원문을 읽거나 더 짧은 인용 주장을 선택하세요. 아무것도 전송되지 않았어요.",
-      "obsolete": "페이지, 원문 또는 폴더가 변경됐어요. 현재 근거를 검토한 뒤 주장을 다시 선택하세요.",
+      "missing": "인용한 정확한 자료를 찾거나 해석할 수 없어 Jev를 사용할 수 없어요.",
+      "stale": "이 위키 주장을 기록한 뒤 자료가 변경되어 Jev를 사용할 수 없어요.",
+      "unmeasured": "이 위키 주장과 자료 버전을 대조할 수 없어 Jev를 사용할 수 없어요.",
+      "too-long": "이 주장이나 자료 구절은 Jev 요청 제한보다 길어요. 여기서 자료를 읽거나 더 짧은 인용 주장을 선택하세요. 아무것도 전송되지 않았어요.",
+      "obsolete": "페이지, 자료 또는 폴더가 변경됐어요. 현재 근거를 검토한 뒤 주장을 다시 선택하세요.",
       "failed": "Jev 요청이 실패했어요. 조언이 적용되지 않았어요.",
       "consentTitle": "이 주장과 구절을 Jev에 보낼까요?",
-      "transfer": "보내기를 누르면 아래 JSON과 API key(인증 헤더)가 {host}에 전송돼요. 원본 파일은 이 폴더에 남아요.",
+      "transfer": "보내기를 누르면 아래 JSON과 API key(인증 헤더)가 {host}에 전송돼요. 자료 파일은 이 폴더에 남아요.",
       "keyNote": "키 값은 이 미리보기와 위키에 표시되지 않아요. 요청 전에 전송 기록을 먼저 남겨요.",
       "cancel": "취소",
       "send": "한 번 보내기",
       "sending": "전송 중…",
-      "advisory": "Jev의 참고 조언일 뿐이에요. 주장을 승인하거나 원문의 최신 상태를 바꾸거나 폴더에 쓰지 않아요.",
+      "advisory": "Jev의 참고 조언일 뿐이에요. 주장을 승인하거나 자료의 최신 상태를 바꾸거나 폴더에 쓰지 않아요.",
       "choice": {
         "supported": "Jev: 제공한 구절이 주장을 뒷받침해요.",
         "contradicted": "Jev: 제공한 구절이 주장과 모순돼요.",
@@ -271,31 +271,31 @@
     "recentCount": "최근 {count, number}"
   },
   "eyebrow": "이 폴더 안",
-  "lede": "형식을 가리지 않고 모아 둔 문서와, 그 문서를 읽고 쓴 위키 문서가 여기 있어요. 원문은 받은 그대로 보관하고, 위키 문서의 문장은 저마다 원문을 인용해요.",
+  "lede": "형식을 가리지 않고 모아 둔 문서와, 그 문서를 읽고 쓴 위키 문서가 여기 있어요. 자료는 받은 그대로 보관하고, 위키 문서의 문장은 저마다 자료를 인용해요.",
   "index": {
     "tab": "색인",
     "aria": "색인이 보여 줄 목록",
-    "sources": "원문 {count, number}",
+    "sources": "자료 {count, number}",
     "wiki": "위키 {count, number}",
     "about": "이 폴더에 무엇이 있는지",
     "collapse": "색인 접기",
     "expand": "색인 펼치기"
   },
-  "emptyTitle": "원문과 위키가 아직 없어요",
+  "emptyTitle": "자료와 위키가 아직 없어요",
   "emptyBody": "이미 갖고 있는 문서를 넣으세요. 기획서, 발표 자료, 표, 내려받아 둔 페이지 무엇이든 돼요. sources/에 그대로 복사하고, 요청하기 전에는 열지 않아요.",
   "emptyFoundBody": "넣을 수 있는 문서 {count, number}개를 찾았어요. 이름과 형식만 읽었고, 고른 것만 sources/에 복사해요.",
   "emptyFoundAction": "찾은 문서 {count, number}개 보기",
   "stageTitle": "갖고 있는 문서를, 출처가 달린 위키로",
-  "stageBody": "폴더를 열고 파일을 넣으세요. 원문은 그대로 두고, 원문마다 문장이 출처를 인용하는 위키 문서가 한 편씩 생겨요.",
+  "stageBody": "폴더를 열고 파일을 넣으세요. 자료는 그대로 두고, 자료마다 모든 문장이 그 자료를 인용하는 위키 문서가 한 편씩 생겨요.",
   "sources": {
-    "listAria": "이 폴더의 원문 파일",
+    "listAria": "이 폴더의 자료 파일",
     "add": "파일 넣기",
-    "addTooltip": "이 폴더의 sources/ 안으로 문서를 복사해요",
+    "addTooltip": "자료를 이 폴더의 sources/ 안으로 복사해요",
     "find": "문서 찾기",
     "findTooltip": "이 폴더와 연결해 둔 코드 폴더에서 문서를 후보로 제안해요. 고르기 전에는 아무것도 복사하지 않아요.",
-    "empty": "아직 원문이 없어요. 이미 갖고 있는 문서를 넣으세요. 형식은 상관없고, 받은 그대로 보관해요.",
+    "empty": "아직 자료가 없어요. 이미 갖고 있는 문서를 넣으세요. 형식은 상관없고, 받은 그대로 보관해요.",
     "noFormat": "파일",
-    "statesAria": "원문 상태 요약: 가장 흔한 상태는 여기 한 번만 적히고, 줄에는 예외만 남아요",
+    "statesAria": "자료 상태 요약: 가장 흔한 상태는 여기 한 번만 적히고, 줄에는 예외만 남아요",
     "needsCompile": "{count, number}개는 아직 위키 문서가 없어요",
     "dropHint": "Finder에서 {folder} 안에 sources/ 폴더를 만들고 파일을 넣어도 돼요. 목록은 알아서 바뀌어요.",
     "state": {
@@ -332,21 +332,21 @@
     "revealFailed": "Finder에서 보여 주지 못했어요: {reason}",
     "openFailed": "그 파일을 열지 못했어요.",
     "savedInstead": "{name}은 여기서 열면 이 페이지에서 코드가 실행될 수 있는 종류라, 대신 내려받았어요.",
-    "needsCompileSplit": "{notCompiled, number}개는 아직 위키 문서가 없고, {stale, number}개는 원문 버전 확인이 필요해요",
-    "staleOnly": "원문 {count, number}개의 버전을 확인해야 해요",
+    "needsCompileSplit": "{notCompiled, number}개는 아직 위키 문서가 없고, {stale, number}개는 자료 버전 확인이 필요해요",
+    "staleOnly": "자료 {count, number}개의 버전을 확인해야 해요",
     "partialOnly": "{count, number}개는 앞부분만 읽었어요",
     "import": "외부에서 가져오기",
     "importTooltip": "서비스를 고르고 연결한 뒤 이 폴더로 가져올 문서를 정해요",
     "importedToPlanning": "가져온 문서가 기획 폴더에 들어갔어요",
     "openPlanning": "기획에서 열기",
     "pagesNeedReview": "기존 페이지 {count, number}개를 다시 확인해야 해요",
-    "filterShow": "\"{label}\" 원문만 보기",
+    "filterShow": "\"{label}\" 자료만 보기",
     "filterAll": "전체 {count, number}개 보기"
   },
   "wiki": {
     "listAria": "이 폴더의 위키 문서",
     "compile": "위키 문서 만들기",
-    "compileTooltip": "에이전트가 원문을 읽고 위키 문서를 쓰거나 갱신해요. 저장한 답은 따로 검토하도록 알려요.",
+    "compileTooltip": "에이전트가 자료를 읽고 위키 문서를 쓰거나 갱신해요. 저장한 답은 따로 검토하도록 알려요.",
     "lint": "위키 검사",
     "lintTooltip": "에이전트가 위키 문서를 읽고 어긋남·대체된 주장·빠진 연결·문서 없는 이름을 보고해요. 아무것도 쓰지 않아요.",
     "candidateKind": {
@@ -404,7 +404,7 @@
     "candidatesLess": "접기",
     "candidatesTooltip": "마지막 검사에서 세 문서 이상에 나왔지만 자기 문서가 없는 이름이에요. 코드가 만드는 것(도메인·역량·요소)만 지도의 개념으로 제안할 수 있고, 사람과 조직은 위키에 남아요.",
     "fileAnswer": "위키에 저장",
-    "fileAnswerTooltip": "마지막 답을 wiki/answers/ 아래 위키 문서로 써요. 인용한 원문이 그 문서의 출처가 되고, 다른 문서와 같은 서식 검사를 받아요.",
+    "fileAnswerTooltip": "마지막 답을 wiki/answers/ 아래 위키 문서로 써요. 인용한 자료가 그 문서의 출처가 되고, 다른 문서와 같은 서식 검사를 받아요.",
     "fileAnswerDone": "{page}로 저장했어요.",
     "fileAnswerRejected": "저장하지 않았어요. 답이 문서 서식에 맞지 않아요({code}). 인용을 달아 다시 물어보세요.",
     "findingKind": {
@@ -426,14 +426,14 @@
     "newPagePreviewTitle": "만들어질 문서",
     "newPagePreviewExample": "제목을 입력하기 전에는 예시 경로를 보여 줘요",
     "newPageFormat": "Markdown · 초안",
-    "newPageMetadata": "직접 작성 · 원문 연결 없음",
+    "newPageMetadata": "직접 작성 · 자료 연결 없음",
     "newPageStructure": "기본 구성",
     "newPageSection": {
       "summary": "요약",
       "facts": "사실",
       "decisions": "결정",
       "openQuestions": "확인할 질문",
-      "notInSources": "원문에 없는 내용"
+      "notInSources": "자료에 없는 내용"
     },
     "newPageDone": "문서를 만들었어요",
     "newPageExists": "{page}가 이미 있어 그 문서를 열었어요.",
@@ -481,27 +481,27 @@
       },
       "uncited-fact": {
         "what": "{where}에 근거가 없어요.",
-        "do": "원문 한 곳을 달거나, 확인할 수 없으면 문서 끝에 있는 Not in sources 구획으로 옮기세요."
+        "do": "자료 한 곳을 달거나, 확인할 수 없으면 문서 끝에 있는 Not in sources 구획으로 옮기세요."
       },
       "bad-citation": {
         "what": "{where}에 달린 근거 표시를 읽을 수 없어요.",
-        "do": "원문 파일과 그 안의 위치를 함께 가리키도록 고치세요. 정확한 모양은 기술 정보에 있어요."
+        "do": "자료 파일과 그 안의 위치를 함께 가리키도록 고치세요. 정확한 모양은 기술 정보에 있어요."
       },
       "bad-truncation-record-shape": {
-        "what": "어디까지 읽었는지 적는 칸(sources_truncated)이 원문 경로 목록이 아니에요.",
-        "do": "어디까지 읽은 원문인지 그 경로를 목록으로 적어 주세요."
+        "what": "어디까지 읽었는지 적는 칸(sources_truncated)이 자료 경로 목록이 아니에요.",
+        "do": "어디까지 읽은 자료인지 그 경로를 목록으로 적어 주세요."
       },
       "bad-truncation-record-path": {
-        "what": "어디까지 읽었는지 적는 칸에는 {path}, 이 문서가 쓰는 원문 목록에는 없어요.",
-        "do": "원문 목록에 더하거나, 그 줄을 지우세요."
+        "what": "어디까지 읽었는지 적는 칸에는 {path}, 이 문서가 쓰는 자료 목록에는 없어요.",
+        "do": "자료 목록에 더하거나, 그 줄을 지우세요."
       },
       "citation-target-missing-folder": {
         "what": "근거로 {path}, 이 폴더에 그 파일이 없어요.",
         "do": "열어 볼 수 없는 근거는 근거가 아니에요. 파일을 이 폴더에 넣거나, 근거를 고치세요."
       },
       "citation-target-missing-sources": {
-        "what": "근거로 {path}, 이 문서가 쓰는 원문 목록에 없어요.",
-        "do": "원문 목록에 더하거나, 근거를 고치세요."
+        "what": "근거로 {path}, 이 문서가 쓰는 자료 목록에 없어요.",
+        "do": "자료 목록에 더하거나, 근거를 고치세요."
       },
       "describes-target-missing": {
         "what": "이 문서는 {target}을 다룬다고 적혀 있는데, 이 폴더에 그 이름의 개념이 없어요.",
@@ -520,36 +520,36 @@
         "do": "이 주제를 다루는 문서에서 연결하면 찾기 쉬워져요."
       },
       "shared-source-unlinked": {
-        "what": "{other}도 같은 원문({sources})을 쓰는데 두 문서가 서로를 가리키지 않아요.",
+        "what": "{other}도 같은 자료({sources})를 쓰는데 두 문서가 서로를 가리키지 않아요.",
         "do": "한쪽에서 다른 쪽을 연결하세요."
       },
       "shared-source-unlinked-more": {
-        "what": "같은 원문으로 쓴 문서가 {count, number}개 더 있는데, 이 문서와 서로를 가리키지 않아요.",
-        "do": "같은 원문으로 쓴 문서끼리 서로 연결하세요."
+        "what": "같은 자료로 쓴 문서가 {count, number}개 더 있는데, 이 문서와 서로를 가리키지 않아요.",
+        "do": "같은 자료로 쓴 문서끼리 서로 연결하세요."
       }
     }
   },
   "shelf": {
     "commonState": "{count, number}개 · {state}",
-    "listAria": "위키 페이지와 원문 버전 상태",
+    "listAria": "위키 페이지와 자료 버전 상태",
     "freshness": {
-      "fresh": "확인된 원문 버전이 그대로예요.",
-      "stale": "원문이 바뀌었거나 이 문서와 아직 비교하지 않았어요",
+      "fresh": "확인된 자료 버전이 그대로예요.",
+      "stale": "자료가 바뀌었거나 이 문서와 아직 비교하지 않았어요",
       "unverified": "이 문서를 파일과 비교한 적이 없어요"
     },
     "state": {
-      "fresh": "확인한 원문은 그대로",
-      "stale": "원문 확인 필요",
-      "unverified": "원문 미확인"
+      "fresh": "확인한 자료는 그대로",
+      "stale": "자료 확인 필요",
+      "unverified": "자료 미확인"
     },
-    "compiling": "원문을 다시 읽고 위키 문서를 쓰는 중이에요."
+    "compiling": "자료를 다시 읽고 위키 문서를 쓰는 중이에요."
   },
   "home": {
     "guide": "사용 방법",
     "questions": "{count, plural, =0 {질문} other {질문 #}}",
     "more": "더 보기",
     "compileNext": "위키 문서 만들기: {source}",
-    "staleClause": "원문 {count, number}개 달라짐",
+    "staleClause": "자료 {count, number}개 달라짐",
     "compileTitle": "{source} 위키 문서 만들기"
   },
   "find": {
@@ -590,7 +590,7 @@
     "writeUp": {
       "current": "지금 내용",
       "partial": "앞부분만",
-      "behind": "원문보다 오래됨",
+      "behind": "자료보다 오래됨",
       "unchecked": "확인 전"
     },
     "passage": {
@@ -623,10 +623,10 @@
       "paragraphs": "단락 {count, number}개"
     }
   },
-  "kindSourcesTitle": "원문",
+  "kindSourcesTitle": "자료",
   "kindWikiTitle": "위키",
   "stage": {
-    "title": "원문 → 위키 문서 → 읽기",
+    "title": "자료 → 위키 문서 → 읽기",
     "state": {
       "done": "완료",
       "next": "다음",
@@ -642,38 +642,38 @@
     "compile": {
       "title": "위키 문서 만들기",
       "brainLabel": "사용 모델",
-      "checkingLine": "원문 {count, number}개를 위키 문서와 비교하는 중이에요",
+      "checkingLine": "자료 {count, number}개를 위키 문서와 비교하는 중이에요",
       "partialLine": "앞부분만 읽힌 파일은 위키 문서를 다시 만들면 나머지까지 담겨요."
     },
     "read": {
       "title": "읽기",
       "startWith": "{title}부터 읽기",
       "nothingYet": "아직 위키 문서가 없어요. 「위키 문서 만들기」로 첫 문서를 만들어요.",
-      "coveredLine": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음",
-      "coveredChecking": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {checking, number}개 확인 중",
-      "coveredPartial": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {partial, number}개는 앞부분만 읽음",
-      "coveredStale": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {stale, number}개는 원문이 달라짐",
-      "coveredUnreadable": "원문 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {unreadable, number}개 읽을 수 없음"
+      "coveredLine": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음",
+      "coveredChecking": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {checking, number}개 확인 중",
+      "coveredPartial": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {partial, number}개는 앞부분만 읽음",
+      "coveredStale": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {stale, number}개는 자료가 달라짐",
+      "coveredUnreadable": "자료 {total, number}개 중 {compiled, number}개에 위키 문서 있음 · {unreadable, number}개 읽을 수 없음"
     },
     "brainAgent": "{name}",
     "brainLocal": "{model} · {host}",
     "brainNone": "아직 아무것도 연결하지 않음",
-    "transferLocal": "읽은 원문과 기존 위키 내용은 이 컴퓨터의 {host}로 보내져요. 모든 요청은 {file}에 기록돼요.",
+    "transferLocal": "읽은 자료와 기존 위키 내용은 이 컴퓨터의 {host}로 보내져요. 모든 요청은 {file}에 기록돼요.",
     "blockedWeb": "위키 문서를 만들려면 이 컴퓨터에서 실행되는 코딩 에이전트가 필요하고, 앱에서만 실행할 수 있어요.",
     "blockedChecking": "이 컴퓨터에서 쓸 수 있는 코딩 에이전트를 아직 찾는 중이에요.",
     "blockedLocalRemote": "이 폴더에 저장된 모델 주소는 {host}라서 이 컴퓨터가 아니에요. 위키 문서를 만들 때 문서 내용을 보내기 때문에 이 컴퓨터에서 실행되는 모델에서만 동작해요. 에이전트 › 모델에서 주소를 바꾸세요.",
     "blockedLocalFormats": "{model}은 Markdown, 일반 텍스트, CSV, JSON, HTML을 읽어요. 지금 남아 있는 파일은 {formats} 라서, 자기 리더를 가진 코딩 에이전트가 필요해요.",
     "blockedNoAgent": "확인된 코딩 에이전트가 이 컴퓨터에 없고, 저장해 둔 로컬 모델 주소도 없어요. 로컬 주소는 에이전트 › 모델에서 추가해요.",
     "blockedLocalOnly": "로컬 모델은 위키 문서 만들기만 할 수 있어요. 질문과 검사에는 연결된 코딩 에이전트가 필요해요.",
-    "blockedNoSources": "아직 위키 문서를 만들 원문이 없어요. 1단계에서 원문을 넣어요.",
-    "blockedNothingWaiting": "모든 원문에 지금 내용과 맞는 위키 문서가 있어요.",
+    "blockedNoSources": "아직 위키 문서를 만들 자료가 없어요. 1단계에서 자료를 넣어요.",
+    "blockedNothingWaiting": "모든 자료에 지금 내용과 맞는 위키 문서가 있어요.",
     "transferLocalRemote": "여기 저장된 모델 주소는 {host}라서 이 컴퓨터가 아니므로 위키 문서를 만들지 않아요. 만들면 문서 내용이 그 주소로 전송되기 때문이에요. Atlas가 실제로 보내는 요청은 {file}에 기록돼요.",
     "close": "닫기",
     "status": "{step} {state}",
     "statusNotCompiled": "위키 문서 없음 {count, number}개",
     "statusWaiting": "{count, number}개 기다림",
     "statusOffTemplate": "서식 벗어남 {count, number}개",
-    "statusReady": "모든 원문에 위키 문서가 있어요",
+    "statusReady": "모든 자료에 위키 문서가 있어요",
     "statusUnlinked": "끊긴 링크 {count, number}개",
     "statusChecking": "확인 중 {count, number}개",
     "statusPartial": "일부만 읽음 {count, number}개",
@@ -687,7 +687,7 @@
     "sectionsLabel": "절",
     "sectionEntry": "{name} {count, number}",
     "citationsLabel": "출처 표기",
-    "readLabel": "읽은 원문",
+    "readLabel": "읽은 자료",
     "truncatedLabel": "일부만 읽음",
     "unreadableLabel": "읽지 못함",
     "unreadableEntry": "{path} · {reason}",
@@ -732,7 +732,7 @@
     "title": "검사 결과",
     "structuralTitle": "앱 검사",
     "structuralHead": "문서 {pages, number}개 · 서식 벗어남 {offTemplate, number}개 · 항목 {findings, number}개",
-    "structuralClean": "모든 문서가 서식에 맞고, 모든 링크가 열리고, 같은 원문으로 쓴 문서끼리 서로 링크돼 있어요.",
+    "structuralClean": "모든 문서가 서식에 맞고, 모든 링크가 열리고, 같은 자료로 쓴 문서끼리 서로 링크돼 있어요.",
     "advisoryMark": "참고",
     "advisoryFold": "권고 항목 {count, number}개",
     "advisoryLess": "권고 항목 접기",
@@ -753,10 +753,10 @@
       "bad-truncation-record": "읽은 범위 기록이 맞지 않아요",
       "uncited-fact": "근거 없이 적은 사실이 있어요",
       "bad-citation": "근거 표시를 읽을 수 없어요",
-      "citation-target-missing": "근거 원문을 찾을 수 없어요",
+      "citation-target-missing": "근거 자료를 찾을 수 없어요",
       "dangling-wikilink": "없는 문서로 연결했어요",
       "orphan-page": "가리키는 문서가 없어요",
-      "shared-source-unlinked": "같은 원문인데 연결이 없어요"
+      "shared-source-unlinked": "같은 자료인데 연결이 없어요"
     },
     "namesTitle": "문서 없는 이름",
     "open": "검사 결과 {count, number}",
@@ -764,13 +764,13 @@
     "unseen": "새로 나옴"
   },
   "search": {
-    "placeholder": "원문·문서 검색",
-    "matches": "원문 {sources, number}개(구절 {passages, number}개) · 문서 {pages, number}개 일치",
+    "placeholder": "자료·문서 검색",
+    "matches": "자료 {sources, number}개(구절 {passages, number}개) · 문서 {pages, number}개 일치",
     "noneHere": "이 목록에는 없어요.",
-    "nothing": "「{needle}」와 맞는 원문도 문서도 없어요. 다른 말로 찾아보세요.",
+    "nothing": "「{needle}」와 맞는 자료도 문서도 없어요. 다른 말로 찾아보세요.",
     "showPages": "위키 문서 {count, number}개 보기",
-    "showSources": "원문 {count, number}개 보기",
-    "reading": "원문을 읽고 있어요<count> · {read, number}/{total, number}</count>",
+    "showSources": "자료 {count, number}개 보기",
+    "reading": "자료를 읽고 있어요<count> · {read, number}/{total, number}</count>",
     "capped": "앞 {count, number}개만 읽음"
   },
   "conversation": {
@@ -782,14 +782,14 @@
     "lede": "답과 출처, 아직 풀리지 않은 질문을 함께 남겨요. 근거가 달라지면 돌아와 갱신하세요.",
     "ask": "질문하기",
     "empty": "자료에 대해 질문한 뒤 대화에서 ‘위키에 저장’을 선택하세요. 저장한 질문이 여기에 모여요.",
-    "provenance": "출처 관찰은 파일의 변경 여부만 알려줘요. 답의 정확성이나 에이전트가 읽은 원문 버전을 증명하지 않아요.",
+    "provenance": "자료 확인은 파일의 변경 여부만 알려줘요. 답의 정확성이나 에이전트가 읽은 자료 버전을 증명하지 않아요.",
     "state": {
-      "changed": "인용한 원문이 바뀌었어요",
-      "missing": "인용한 원문이 없어요",
+      "changed": "인용한 자료가 바뀌었어요",
+      "missing": "인용한 자료가 없어요",
       "new-sources": "새 자료를 검토해 주세요",
-      "rewritten": "인용한 원문이 바뀌었고, 이 답은 그 버전으로 다시 쓰였어요",
-      "unmeasured": "원문 버전이 확인되지 않았어요",
-      "unchanged": "출처 관찰 이후 변경 없음"
+      "rewritten": "인용한 자료가 바뀌었고, 이 답은 그 버전으로 다시 쓰였어요",
+      "unmeasured": "자료 버전이 확인되지 않았어요",
+      "unchanged": "지난 자료 확인 이후 변경 없음"
     },
     "alternatives": "갱신 대안 {count, number}개",
     "historyProblem": "이전 버전 연결을 확인해 주세요",
@@ -798,7 +798,7 @@
     "refresh": "에이전트에 갱신 초안 요청",
     "previous": "이전 버전 읽기",
     "back": "질문 목록으로",
-    "refreshUnavailable": "답 갱신에는 앱에 연결된 코딩 에이전트가 필요해요. 여기서는 답과 원문, 이전 버전을 읽을 수 있어요.",
+    "refreshUnavailable": "답 갱신에는 앱에 연결된 코딩 에이전트가 필요해요. 여기서는 답과 자료, 이전 버전을 읽을 수 있어요.",
     "history": {
       "none": "",
       "invalid": "이전 버전 주소가 올바르지 않아요.",
@@ -814,12 +814,12 @@
       "saving": "새 버전 저장 중…"
     },
     "compareTitle": "갱신할 답 비교",
-    "compareHint": "출처와 직접 남긴 메모, 미해결 질문을 비교하세요. 저장하면 이전 문서를 보존하고 새 초안을 만들어요.",
+    "compareHint": "자료와 직접 남긴 메모, 미해결 질문을 비교하세요. 저장하면 이전 문서를 보존하고 새 초안을 만들어요.",
     "before": "이전에 저장한 답",
     "after": "새 답 초안",
     "rawText": "정확한 Markdown 보기",
-    "sourceDelta": "인용 원문 {added}개 추가 · {removed}개 제외",
-    "sameSources": "같은 원문을 인용하는 초안이에요.",
+    "sourceDelta": "인용 자료 {added}개 추가 · {removed}개 제외",
+    "sameSources": "같은 자료를 인용하는 초안이에요.",
     "removedLines": "빠지거나 바뀐 이전 문장 {count, number}개",
     "closeCompare": "계속 읽기",
     "saveDraft": "새 초안으로 저장",
@@ -829,10 +829,10 @@
     "comparisonVersion": "비교할 답 선택",
     "refreshHint": "연결한 코딩 에이전트와 해당 제공자에게 초안을 요청해요. 에이전트는 기존 폴더 권한으로 실행돼요. Atlas에서는 비교 후 ‘새 초안으로 저장’을 누르면 새 답을 저장해요.",
     "paths": {
-      "changed": "바뀐 원문",
-      "missing": "없는 원문",
-      "added": "검토할 새 원문",
-      "rewritten": "다시 쓴 원문"
+      "changed": "바뀐 자료",
+      "missing": "없는 자료",
+      "added": "검토할 새 자료",
+      "rewritten": "다시 쓴 자료"
     },
     "version": {
       "head": "최근 초안",
@@ -847,8 +847,8 @@
   "workspace": {
     "aria": "자료실 보기",
     "title": "자료실",
-    "sources": "원문",
-    "sourcesCount": "원문 파일",
+    "sources": "자료",
+    "sourcesCount": "자료 파일",
     "wiki": "위키",
     "wikiCount": "위키 문서",
     "ontology": "온톨로지",
@@ -885,23 +885,23 @@
     },
     "startingMore": "외 {count, number}개 · 지도에서 모두 보기",
     "memberCount": "개념 {count, number}개",
-    "referenceCount": "참고 자료 {count, number}개",
+    "referenceCount": "참고 항목 {count, number}개",
     "viewInMap": "지도에서 보기",
     "viewInMapNamed": "{name} 지도에서 보기",
     "membersNamed": "{name}의 개념",
-    "membersWithReferencesNamed": "{name}의 개념과 참고 자료",
+    "membersWithReferencesNamed": "{name}의 개념과 참고 항목",
     "noMembers": "이 개념 묶음에는 저장한 항목이 없어요.",
     "missing": "찾을 수 없음",
     "ambiguous": "확인 필요",
     "openDocumentNamed": "온톨로지에서 {name} 열기",
     "kind": {
-      "sourceReference": "원문 참고 자료",
-      "wikiReference": "위키 참고 자료"
+      "sourceReference": "자료",
+      "wikiReference": "위키 문서"
     }
   },
   "rounds": {
     "kind": {
-      "consistency": "원문 일치 점검",
+      "consistency": "자료 일치 점검",
       "service": "서비스에서 온 문서"
     },
     "cadence": {
@@ -978,12 +978,12 @@
       "readbackEditNext": " 다음 실행은 {time}이에요.",
       "how": "실행 주기",
       "time": "시각",
-      "onStale": "원문과 다른 내용이 있으면",
+      "onStale": "자료와 다른 내용이 있으면",
       "redraft": "수정 초안 만들기",
-      "redraftHint": "변경된 원문을 바탕으로 초안을 만들어요. 검토 후 문서에 반영할 수 있어요.",
+      "redraftHint": "변경된 자료를 바탕으로 초안을 만들어요. 검토 후 문서에 반영할 수 있어요.",
       "mark": "검토할 문서로 표시",
-      "markHint": "검토할 문서를 표시해요. 문서 내용은 수정하지 않아요.",
-      "noAgent": "이 Mac에 준비된 코딩 에이전트가 없어 「서비스에서 온 문서」 점검은 아직 실행할 수 없어요. 「원문 일치 점검」은 실행할 수 있어요.",
+      "markHint": "자료 목록의 그 줄에 표시만 해요. 아무것도 쓰지 않아요.",
+      "noAgent": "이 Mac에 준비된 코딩 에이전트가 없어 「서비스에서 온 문서」 점검은 아직 실행할 수 없어요. 「자료 일치 점검」은 실행할 수 있어요.",
       "query": "무엇을 찾을지",
       "queryPlaceholder": "ENG 스페이스에서 하루 안에 바뀐 페이지",
       "may": "허용할 작업",
@@ -1017,16 +1017,16 @@
       "rename": "이 예약 점검 이름 바꾸기",
       "nameAria": "예약 점검 이름",
       "readbackServices": "<em>{cadence}</em> <em>{places}</em>에서 온 문서를 다시 읽고,",
-      "readbackFolders": " <em>{folders}</em> 아래 문서가 원문과 여전히 맞는지 확인하고,",
-      "readbackWholeFolder": " 모든 문서가 원문과 여전히 맞는지 확인하고,",
+      "readbackFolders": " <em>{folders}</em> 아래 문서가 자료와 여전히 맞는지 확인하고,",
+      "readbackWholeFolder": " 모든 문서가 자료와 여전히 맞는지 확인하고,",
       "readbackStaleRedraft": " 변경이 있으면 <em>수정 초안을 만들어요</em>.",
       "readbackStaleMark": " 변경이 있으면 <em>검토할 문서로 표시해요</em>.",
       "readbackTurn": " 실행마다 에이전트를 한 번 실행해요.",
       "readbackNow": " 저장 후 첫 점검을 바로 시작해요.",
       "readbackQueued": "진행 중인 점검이 있어 다음 예정 시각부터 시작해요.",
       "mayCallPlace": "{service}에 요청해 {location} 안에서 읽기만 하기, 거기에 쓰지는 않음",
-      "readbackFoldersLead": "<em>{cadence}</em> <em>{folders}</em> 아래 문서가 원문과 여전히 맞는지 확인하고,",
-      "readbackWholeFolderLead": "<em>{cadence}</em> 문서를 원문과 비교하고,",
+      "readbackFoldersLead": "<em>{cadence}</em> <em>{folders}</em> 아래 문서가 자료와 여전히 맞는지 확인하고,",
+      "readbackWholeFolderLead": "<em>{cadence}</em> 문서를 자료와 비교하고,",
       "queryPlaceholderSlack": "이 채널에 지난 한 주 올라온 글",
       "queryPlaceholderNotion": "이 데이터베이스에서 최근 바뀐 페이지",
       "queryPlaceholderConfluence": "ENG 스페이스에서 하루 안에 바뀐 페이지",
@@ -1034,7 +1034,7 @@
       "queryPlaceholderGeneric": "최근 바뀐 문서"
     },
     "name": {
-      "consistency": "원문 일치 점검"
+      "consistency": "자료 일치 점검"
     },
     "picker": {
       "unitMinutes": "분",
@@ -1047,38 +1047,38 @@
     }
   },
   "progress": {
-    "aria": "원문 위키 문서 진행률",
+    "aria": "자료 위키 문서 진행률",
     "percent": "{percent, number}%",
     "underOne": "1% 미만",
-    "first": "아직 위키 문서가 있는 원문이 없어요",
+    "first": "아직 위키 문서가 있는 자료가 없어요",
     "today": "오늘 +{count, number}",
-    "chartAria": "위키 문서가 있는 원문 수, 각 문서에 적힌 날짜 기준",
+    "chartAria": "위키 문서가 있는 자료 수, 각 문서에 적힌 날짜 기준",
     "chartTitle": "위키 문서가 있는 자료 수",
     "chartNow": "오늘 {count, number}",
-    "point": "{date}: 지금 원문 {total, number}개 중 {count, number}개 ({percent, number}%)",
+    "point": "{date}: 지금 자료 {total, number}개 중 {count, number}개 ({percent, number}%)",
     "dateBasis": "각 점은 위키 문서에 적힌 날짜예요.",
     "undated": "{count, number}개는 날짜 없음",
-    "continue": "{count, plural, =1 {원문 1개로 위키 문서 만들기} other {다음 #개 위키 문서 만들기}}",
+    "continue": "{count, plural, =1 {자료 1개로 위키 문서 만들기} other {다음 #개 위키 문서 만들기}}",
     "batchRest": "그 뒤로 {count, number}개가 더 기다려요.",
     "writer": "<name>{agent}</name>가 써요",
     "writerAnyAgent": "연결한 코딩 에이전트가 써요",
-    "batchReturned": "지난 요청의 원문 {count, number}개는 아직 위키 문서가 없어 목록 맨 뒤로 옮겼어요.",
+    "batchReturned": "지난 요청의 자료 {count, number}개는 아직 위키 문서가 없어 목록 맨 뒤로 옮겼어요.",
     "webLine": "위키 문서는 앱에서만 써요. 읽기는 여기서도 돼요.",
-    "allDone": "모든 원문에 위키 문서가 있어요"
+    "allDone": "모든 자료에 위키 문서가 있어요"
   },
   "sourcesHome": {
-    "aria": "폴더나 파일 형식으로 묶은 원문과 위키 문서가 있는 원문 수",
+    "aria": "폴더나 파일 형식으로 묶은 자료와 위키 문서가 있는 자료 수",
     "groupBy": {
-      "label": "원문 묶기",
+      "label": "자료 묶기",
       "folder": "폴더별",
       "type": "파일 형식별"
     },
     "column": {
       "folder": "폴더",
       "type": "파일 형식",
-      "sources": "원문",
+      "sources": "자료",
       "withPage": "위키 문서 있음",
-      "waiting": "기다리는 원문",
+      "waiting": "기다리는 자료",
       "latest": "최근 위키 문서"
     },
     "topLevel": "sources/ 바로 안",
@@ -1088,47 +1088,47 @@
       "none": "아직 없음",
       "undated": "날짜 없음"
     },
-    "rowAria": "{name}: 원문 {total, number}개 중 위키 문서 있음 {withPage, number}개, 쓸 차례를 기다리는 원문 {waiting, number}개. 누르면 표 옆에 목록이 나와요.",
-    "writing": "여기 있는 원문으로 위키 문서를 쓰는 중이에요",
+    "rowAria": "{name}: 자료 {total, number}개 중 위키 문서 있음 {withPage, number}개, 쓸 차례를 기다리는 자료 {waiting, number}개. 누르면 표 옆에 목록이 나와요.",
+    "writing": "여기 있는 자료로 위키 문서를 쓰는 중이에요",
     "panel": {
-      "nextTitle": "다음에 쓸 원문",
-      "lead": "「{action}」⁠를 누르면 에이전트가 아래 원문을 위에서부터 읽고 위키 문서를 써요.",
-      "leadRunning": "에이전트가 위에서부터 위키 문서를 쓰고 있어요. 다 쓴 원문은 목록에서 빠져요.",
+      "nextTitle": "다음에 쓸 자료",
+      "lead": "「{action}」⁠를 누르면 에이전트가 아래 자료를 위에서부터 읽고 위키 문서를 써요.",
+      "leadRunning": "에이전트가 위에서부터 위키 문서를 쓰고 있어요. 다 쓴 자료는 목록에서 빠져요.",
       "privacy": "Atlas는 자료를 어디로도 보내지 않아요. 에이전트에게 위키 문서 쓰기나 질문을 맡기면 그 에이전트가 필요한 자료를 읽고, 읽은 내용은 그 에이전트의 서비스로 보내질 수 있어요.",
-      "webNote": "위키 문서는 앱에서만 써요. 앱에서는 이 원문부터 시작해요.",
-      "waitingTitle": "여기서 기다리는 원문",
-      "nextEmpty": "여기 있는 원문은 모두 지금 내용과 맞는 위키 문서가 있어요.",
-      "unreadable": "여기서 읽을 수 없는 원문 {count, number}개",
+      "webNote": "위키 문서는 앱에서만 써요. 앱에서는 이 자료부터 시작해요.",
+      "waitingTitle": "여기서 기다리는 자료",
+      "nextEmpty": "여기 있는 자료는 모두 지금 내용과 맞는 위키 문서가 있어요.",
+      "unreadable": "여기서 읽을 수 없는 자료 {count, number}개",
       "showInList": "목록에서 {count, number}개 모두 보기",
-      "clear": "전체 원문 보기"
+      "clear": "전체 자료 보기"
     },
     "recent": {
       "title": "최근에 쓴 위키 문서",
       "order": "위키 문서에 적힌 날짜순",
       "from": "{more, plural, =0 {{source}에서} other {{source} 외 #개에서}}",
       "empty": "아직 날짜가 적힌 위키 문서가 없어요.",
-      "none": "위키 문서가 써지면 여기에 원문과 함께 나타나요. 위키 문서는 원문을 요약하고 사실마다 원문의 위치를 달아 둔 Markdown 파일이에요.",
+      "none": "위키 문서가 써지면 여기에 자료와 함께 나타나요. 위키 문서는 자료를 요약하고 사실마다 자료의 위치를 달아 둔 Markdown 파일이에요.",
       "steps": {
         "press": "「{action}」⁠를 누르세요.",
-        "read": "에이전트가 원문을 처음부터 끝까지 읽어요.",
-        "write": "원문을 요약한 위키 문서를 Markdown 파일로 써요. 사실마다 원문의 어느 부분에서 왔는지 적어 두고, 다 쓰면 여기에 나타나요."
+        "read": "에이전트가 자료를 처음부터 끝까지 읽어요.",
+        "write": "자료를 요약한 위키 문서를 Markdown 파일로 써요. 사실마다 자료의 어느 부분에서 왔는지 적어 두고, 다 쓰면 여기에 나타나요."
       }
     },
     "sortBy": "{column} 기준으로 정렬",
     "more": "아래에 폴더 {count, number}개 더 · 스크롤하면 이어서 보여요",
     "moreType": "아래에 파일 형식 {count, number}개 더 · 스크롤하면 이어서 보여요",
-    "meta": "폴더 {folders, number}개 · 원문 {sources, number}개",
-    "metaType": "파일 형식 {groups, number}개 · 원문 {sources, number}개",
+    "meta": "폴더 {folders, number}개 · 자료 {sources, number}개",
+    "metaType": "파일 형식 {groups, number}개 · 자료 {sources, number}개",
     "alike": {
       "row": "상태별 개수가 같은 폴더 {count, number}개",
       "range": "{first} – {last}",
-      "meta": "폴더 {folders, number}개 · 원문 수와 상태가 똑같은 폴더 {count, number}개는 한 줄로 묶음"
+      "meta": "폴더 {folders, number}개 · 자료 수와 상태가 똑같은 폴더 {count, number}개는 한 줄로 묶음"
     },
     "listFolder": "폴더: {folder}",
     "listType": "파일 형식: {type}",
-    "listNone": "여기에는 그 상태인 원문이 없어요.",
-    "reading": "폴더를 읽는 중이에요. 지금까지 원문 {count, number}개",
-    "pickGone": "{folder} 폴더가 sources/에 더 이상 없어요. 전체 원문을 보여 줘요."
+    "listNone": "여기에는 그 상태인 자료가 없어요.",
+    "reading": "폴더를 읽는 중이에요. 지금까지 자료 {count, number}개",
+    "pickGone": "{folder} 폴더가 sources/에 더 이상 없어요. 전체 자료를 보여 줘요."
   },
   "check": {
     "title": "위키 검사 중",
@@ -1154,12 +1154,12 @@
     "stopped": "이 검사를 중지했어요. 보고된 것도, 바뀐 파일도 없어요."
   },
   "wikiReader": {
-    "citedSources": "인용한 원문",
+    "citedSources": "인용한 자료",
     "linkedFrom": "이 문서를 가리키는 문서",
     "concepts": "이 문서가 다루는 개념",
     "citationCount": "인용 {count, number}곳",
     "citationAt": "{file} · {line, number}행",
-    "openSource": "원문 열기",
+    "openSource": "자료 열기",
     "sourceChanged": "문서를 쓴 뒤에 이 파일이 바뀌었어요. 지금 내용이에요.",
     "sourceMissing": "이 폴더에 이 파일이 없어요.",
     "sourceTooLarge": "여기서 보여 주기엔 파일이 너무 커요.",
@@ -1177,20 +1177,20 @@
     "group": {
       "attention": "확인할 문서",
       "answers": "저장한 답",
-      "several": "여러 원문으로 쓴 문서",
-      "one": "원문 하나로 쓴 문서",
-      "none": "원문을 적지 않은 문서"
+      "several": "여러 자료로 쓴 문서",
+      "one": "자료 하나로 쓴 문서",
+      "none": "자료를 적지 않은 문서"
     },
     "row": {
-      "sources": "원문 {count, number}개",
-      "noSource": "원문 없음",
+      "sources": "자료 {count, number}개",
+      "noSource": "자료 없음",
       "moreReasons": "{reason} 외 {count, number}개"
     },
     "reason": {
       "disagreement": "다른 문서와 어긋나요",
-      "superseded": "더 새 원문이 다르게 말해요",
-      "stale": "쓴 뒤 원문이 바뀌었어요",
-      "unhashed": "원문이 바뀌었는지 알 수 없어요",
+      "superseded": "더 새 자료가 다르게 말해요",
+      "stale": "쓴 뒤 자료가 바뀌었어요",
+      "unhashed": "자료가 바뀌었는지 알 수 없어요",
       "missingLink": "이어야 할 문서와 이어지지 않았어요"
     },
     "day": {
@@ -1204,15 +1204,15 @@
     "groupClear": "전체 목록 보기",
     "empty": {
       "title": "아직 위키 문서가 없어요",
-      "body": "에이전트가 원문으로 위키 문서를 쓰면 여기에 모여요. 원문마다 한 문서, 여러 원문을 함께 다룬 문서, 저장한 답으로 나눠 보여 줘요.",
-      "toSources": "원문 탭에서 위키 문서 만들기"
+      "body": "에이전트가 자료로 위키 문서를 쓰면 여기에 모여요. 자료마다 한 문서, 여러 자료를 함께 다룬 문서, 저장한 답으로 나눠 보여 줘요.",
+      "toSources": "자료 탭에서 위키 문서 만들기"
     },
     "reading": "위키 문서를 읽는 중 · 지금까지 {count, number}개",
     "pageGone": "{title} 문서가 wiki/에 더 없어요. 목록으로 돌아왔어요."
   },
   "wikiLog": {
     "title": "기록",
-    "lede": "이 위키에 일어난 일을 최근 것부터 보여 줘요. 원문으로 쓴 문서, 검사, 고친 일, 저장한 답이 여기 쌓여요.",
+    "lede": "이 위키에 일어난 일을 최근 것부터 보여 줘요. 자료로 쓴 문서, 검사, 고친 일, 저장한 답이 여기 쌓여요.",
     "meta": "wiki/_log.md와 wiki/answers/에서 읽어요 · {count, number}건",
     "kind": {
       "compile": "문서 씀",
@@ -1220,16 +1220,16 @@
       "fix": "고침",
       "answer": "답 저장"
     },
-    "compiled": "원문 {sources, number}개 읽음 · 새 문서 {created, number}개 · 고친 문서 {revised, number}개",
-    "noChange": "원문 {sources, number}개 읽음 · 바뀐 문서 없음",
+    "compiled": "자료 {sources, number}개 읽음 · 새 문서 {created, number}개 · 고친 문서 {revised, number}개",
+    "noChange": "자료 {sources, number}개 읽음 · 바뀐 문서 없음",
     "answer": "위키에 저장한 답: {title}",
     "byRound": "자동 점검 「{name}」",
     "pageGone": "{name} (wiki/에 없음)",
-    "empty": "아직 이 위키에 일어난 일이 없어요. 원문으로 문서를 쓰거나, 위키를 검사하거나, 답을 저장하면 여기에 한 줄씩 남아요.",
+    "empty": "아직 이 위키에 일어난 일이 없어요. 자료로 문서를 쓰거나, 위키를 검사하거나, 답을 저장하면 여기에 한 줄씩 남아요.",
     "unreadable": "wiki/_log.md를 읽지 못해 저장한 답만 보여 줘요. 파일 권한을 확인하세요. 읽을 수 있게 되면 목록이 바로 바뀌어요."
   },
   "sourcesIndex": {
-    "add": "원문 넣기",
-    "addBody": "원문은 그대로 둬요. Atlas가 읽고, 에이전트가 원문으로 위키 문서를 써요."
+    "add": "자료 넣기",
+    "addBody": "자료는 그대로 둬요. Atlas가 읽고, 에이전트가 자료로 위키 문서를 써요."
   }
 }

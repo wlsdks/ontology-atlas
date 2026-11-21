@@ -214,7 +214,7 @@
     "findEvidence": "根拠を探す",
     "findOrphans": "未接続の概念を探す",
     "readConstellation": "保存したブックマークを読む",
-    "readSource": "ソースを読む",
+    "readSource": "資料を読む",
     "readHistory": "フォルダの履歴を読む",
     "readCode": "コードを見る",
     "checkPages": "ページを検査",
@@ -224,8 +224,8 @@
     "replaceRelation": "つながりを置換",
     "compile": "ファイルからマップを再構築",
     "absorb": "文書を候補に仕分ける",
-    "connectSource": "ソースを接続",
-    "disconnectSource": "ソースを切断",
+    "connectSource": "コードフォルダを接続",
+    "disconnectSource": "コードフォルダの接続を解除",
     "judgeMeaning": "記録された意味を判定"
   },
   "toolKind": {

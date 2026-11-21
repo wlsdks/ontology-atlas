@@ -148,31 +148,31 @@
     "title": "質問して、出典をたどる。",
     "browse": "ページを見る",
     "backToQuestion": "質問に戻る",
-    "intro": "該当する箇所を見つけ、ソースを開いて根拠を確かめます。",
+    "intro": "該当する箇所を見つけ、資料を開いて根拠を確かめます。",
     "questionLabel": "質問",
     "questionPlaceholder": "知りたい決定やルールは何ですか？",
-    "folderScope": "このフォルダのWikiページ{pages, number}件とソース{sources, number}件を検索します",
-    "originalsTitle": "まずソースを読む",
+    "folderScope": "このフォルダのWikiページ{pages, number}件と資料{sources, number}件を検索します",
+    "originalsTitle": "まず資料を読む",
     "readOriginal": "読む",
     "originalMeta": "{format} · {size} · Wikiページ{pages, number}件が引用",
-    "otherOriginals": "ほかのソース{count, number}件は「ソース」タブにあります。",
+    "otherOriginals": "ほかの資料{count, number}件は「資料」タブにあります。",
     "recentTitle": "最近書かれたWikiページ",
-    "recentMeta": "{date} · ソース{count, number}件を引用",
+    "recentMeta": "{date} · 資料{count, number}件を引用",
     "resultsHead": "見つかった箇所{count, number}件",
     "showMore": "さらに{count, number}件を表示",
     "passagesUnderReport": "検索で見つかった箇所",
     "search": "根拠を探す",
     "reading": "{read, number}件のファイルを読み込み中…",
-    "coverage": "Wikiページ{totalPages, number}件中{readPages, number}件、ソース{totalSources, number}件中{readSources, number}件を検索しました。",
-    "coverageCompact": "Wiki {readPages, number}/{totalPages, number} · ソース{readSources, number}/{totalSources, number}",
+    "coverage": "Wikiページ{totalPages, number}件中{readPages, number}件、資料{totalSources, number}件中{readSources, number}件を検索しました。",
+    "coverageCompact": "Wiki {readPages, number}/{totalPages, number} · 資料{readSources, number}/{totalSources, number}",
     "coverageOmitted": "候補{count, number}件を省略",
     "coverageDetails": "検索範囲と制限",
     "zeroLocalTitle": "該当する箇所はまだありません",
     "zeroLocalBody": "検索したファイルに、一致するテキストはありませんでした。単語検索では、別の言語の文書やAtlasが読めない形式の文書を見落とすことがあります。この結果は、答えがないことを示すものではありません。",
-    "zeroLocalAgentNote": "「ソースを調査」は、エージェントがソースを読み直して報告の下書きを書く、読み取り専用の作業です。",
-    "limits": "読めなかったソース{unreadable, number}件 · 検索中に変更{changed, number}件 · 読み込み上限で除外{skipped, number}件 · 表示しなかった検索結果{omitted, number}件。語句検索は最後に確認したファイルのバージョンを使います。外部での編集は、フォルダを再読み込みすると反映されることがあります。",
-    "limitsBoth": "読めなかったソース{unreadable, number}件 · 検索中に変更{changed, number}件 · 読み込み上限で除外{skipped, number}件 · 表示しなかった検索結果{omitted, number}件。語句と意味の検索は最後に確認したファイルのバージョンを使います。外部での編集は、フォルダを再読み込みすると反映されることがあります。",
-    "limitUnreadable": "読めなかったソース{count, number}件",
+    "zeroLocalAgentNote": "「資料を調査」は、エージェントが資料を読み直して報告の下書きを書く、読み取り専用の作業です。",
+    "limits": "読めなかった資料{unreadable, number}件 · 検索中に変更{changed, number}件 · 読み込み上限で除外{skipped, number}件 · 表示しなかった検索結果{omitted, number}件。語句検索は最後に確認したファイルのバージョンを使います。外部での編集は、フォルダを再読み込みすると反映されることがあります。",
+    "limitsBoth": "読めなかった資料{unreadable, number}件 · 検索中に変更{changed, number}件 · 読み込み上限で除外{skipped, number}件 · 表示しなかった検索結果{omitted, number}件。語句と意味の検索は最後に確認したファイルのバージョンを使います。外部での編集は、フォルダを再読み込みすると反映されることがあります。",
+    "limitUnreadable": "読めなかった資料{count, number}件",
     "limitChanged": "検索中に変更{count, number}件",
     "limitSkipped": "読み込み上限で除外{count, number}件",
     "limitOmitted": "表示しなかった検索結果{count, number}件",
@@ -180,42 +180,42 @@
     "limitsMethodBoth": "語句と意味の検索は最後に確認したファイルのバージョンを使います。外部での編集は、フォルダを再読み込みすると反映されることがあります。",
     "limitsMeaningCoverage": "意味検索：ファイル{total, number}件中{ready, number}件。",
     "outdated": "この検索の後にフォルダが変更されました。もう一度検索して最新のファイルを使ってください。",
-    "wikiCaveat": "ページに書かれた記述であり、検証済みの答えではありません。出典が新しくても、主張が出典から導けることにはなりません。",
-    "noCitation": "この主張はソースの正確な位置を引用していないため、ここでは確認できません。",
-    "reviewBadge": "出典を要確認",
+    "wikiCaveat": "ページに書かれた記述であり、検証済みの答えではありません。資料が新しくても、主張が資料から導けることにはなりません。",
+    "noCitation": "この主張は資料の正確な位置を引用していないため、ここでは確認できません。",
+    "reviewBadge": "資料を要確認",
     "sourceState": {
-      "stale": "ページの作成後に出典が変更されました",
-      "missing": "ソースなし"
+      "stale": "ページの作成後に資料が変更されました",
+      "missing": "資料なし"
     },
     "report": {
       "summarize": "報告を作成",
-      "investigate": "ソースを調査",
+      "investigate": "資料を調査",
       "agentUnavailable": "報告の下書きを作るには、インストール済みのアプリでエージェントを接続してください。ローカルの根拠は下に表示されたままです。",
       "unreviewed": "エージェントの下書き · 未レビュー",
       "masthead": "ONTOLOGY ATLAS / 質問の報告",
-      "caveat": "主張を受け入れる前に、引用されたソースを読んでください。この下書きはレビューもフォルダへの保存もされていません。",
+      "caveat": "主張を受け入れる前に、引用された資料を読んでください。この下書きはレビューもフォルダへの保存もされていません。",
       "file": "Wikiに保存",
       "filing": "保存中…",
       "fileRefused": {
         "shape": "Wikiに保存するには、依頼した4つの報告セクションが順番どおりに1回ずつ必要です。この自由形式の下書きは、レビューと書き出しに使えます。",
-        "no-evidence": "Wikiに保存するには、それぞれソースを引用した根拠の項目が1つ以上必要です。下書きは、レビューと書き出しに使えます。",
-        "citation": "保存しませんでした。ソースの有効な位置を指していない引用があります。ソースを開いて、下書きを直してください。",
-        "source": "保存しませんでした。引用されたソースがこのフォルダにありません。",
+        "no-evidence": "Wikiに保存するには、それぞれ資料を引用した根拠の項目が1つ以上必要です。下書きは、レビューと書き出しに使えます。",
+        "citation": "保存しませんでした。資料の有効な位置を指していない引用があります。資料を開いて、下書きを直してください。",
+        "source": "保存しませんでした。引用された資料がこのフォルダにありません。",
         "unsafe": "保存しませんでした。下書きに外部リンク、画像、または生のHTMLが含まれています。保存する前に確認してください。",
-        "changed": "保存しませんでした。フォルダを確認した後に、引用されたソースが変更されました。もう一度検索してください。",
-        "anchor": "保存しませんでした。引用した位置が、現在のソースの正確な箇所につながっていません。"
+        "changed": "保存しませんでした。フォルダを確認した後に、引用された資料が変更されました。もう一度検索してください。",
+        "anchor": "保存しませんでした。引用した位置が、現在の資料の正確な箇所につながっていません。"
       },
       "downloadMarkdown": "Markdownをダウンロード",
       "printPdf": "印刷 / PDFで保存",
       "printFailed": "印刷ダイアログを開けませんでした。報告はここに残っています。インストール済みのアプリからやり直してください。",
       "generated": "作成日時{time}",
       "searchScope": "検索時の範囲と制限",
-      "citationNote": "引用は、エージェントの下書きにあるテキストの位置です。開けるかどうかは検索時のファイル一覧に基づき、書き出しではソースを読み直しません。",
+      "citationNote": "引用は、エージェントの下書きにあるテキストの位置です。開けるかどうかは検索時のファイル一覧に基づき、書き出しでは資料を読み直しません。",
       "rawFallback": "このエージェントの応答は、依頼した4つのセクションに従っていませんでした。見出しを補わず、書かれたまま表示しています。",
       "readyNotice": "未レビューの質問報告がメインペインに表示されました。フォーカスは作業中の場所のままです。",
       "emptySection": "エージェントはこのセクションに何も書きませんでした。",
       "outdated": "この下書きは、以前の検索またはフォルダのバージョンを参照しています。書き出しやWikiへの保存の前に、もう一度検索して報告を作り直してください。",
-      "citationUnavailable": "この引用は、一覧にあるソースの正確な位置につながっていません。",
+      "citationUnavailable": "この引用は、一覧にある資料の正確な位置につながっていません。",
       "externalUnavailable": "エージェントの下書きにある外部リンクは、ここでは開きません。",
       "unavailableShort": "（利用不可）",
       "imageUnavailable": "[エージェントの下書きの画像は省略]"
@@ -225,19 +225,19 @@
       "checking": "Jevのアクセスを確認中…",
       "noKey": "このMacにはJevのキーが保存されていません。ローカルの根拠は引き続き使えます。この任意の確認を使うには、エージェント › モデルでキーを追加してください。",
       "unavailable": "Jevのキーの状態を確認できませんでした。ローカルの根拠は引き続き使えます。何も送信していません。",
-      "missing": "引用したソースが見つからないか特定できないため、Jevは使えません。",
-      "stale": "このWikiの主張を記録した後にソースが変更されたため、Jevは使えません。",
-      "unmeasured": "このWikiの主張とソースのバージョンを照合できないため、Jevは使えません。",
-      "too-long": "この主張またはソースの箇所は、Jevに送るには長すぎます。ここでソースを読むか、より短い引用の主張を選んでください。何も送信していません。",
-      "obsolete": "ページ、出典、またはフォルダが変更されました。現在の根拠を確認し、もう一度主張を選んでください。",
+      "missing": "引用した資料が見つからないか特定できないため、Jevは使えません。",
+      "stale": "このWikiの主張を記録した後に資料が変更されたため、Jevは使えません。",
+      "unmeasured": "このWikiの主張と資料のバージョンを照合できないため、Jevは使えません。",
+      "too-long": "この主張または資料の箇所は、Jevに送るには長すぎます。ここで資料を読むか、より短い引用の主張を選んでください。何も送信していません。",
+      "obsolete": "ページ、資料、またはフォルダが変更されました。現在の根拠を確認し、もう一度主張を選んでください。",
       "failed": "Jevへのリクエストが失敗しました。助言は適用されていません。",
       "consentTitle": "この主張と箇所をJevに送信しますか？",
-      "transfer": "「送信」を押すと、このJSONとAPI key（認証ヘッダー内）が{host}に送られます。原本のファイルはこのフォルダに残ります。",
+      "transfer": "「送信」を押すと、このJSONとAPI key（認証ヘッダー内）が{host}に送られます。資料のファイルはこのフォルダに残ります。",
       "keyNote": "キーの値は、このプレビューにもWikiにも表示されません。リクエストの前に転送記録を残します。",
       "cancel": "キャンセル",
       "send": "1回だけ送信",
       "sending": "送信中…",
-      "advisory": "Jevの助言のみです。主張の承認、出典の鮮度の変更、フォルダへの書き込みは行いません。",
+      "advisory": "Jevの助言のみです。主張の承認、資料の鮮度の変更、フォルダへの書き込みは行いません。",
       "choice": {
         "supported": "Jev: 提示された箇所が裏づけています。",
         "contradicted": "Jev: 提示された箇所と矛盾しています。",
@@ -271,31 +271,31 @@
     "recentCount": "最近{count, number}"
   },
   "eyebrow": "このフォルダ",
-  "lede": "形式を問わず集めた文書と、それを読んで書いたWikiページです。ソースは受け取ったままの状態で保持され、Wikiページの主張はどれもソースを引用します。",
+  "lede": "形式を問わず集めた文書と、それを読んで書いたWikiページです。資料は受け取ったままの状態で保持され、Wikiページの主張はどれも資料を引用します。",
   "index": {
     "tab": "索引",
     "aria": "索引に表示する一覧",
-    "sources": "ソース{count, number}",
+    "sources": "資料{count, number}",
     "wiki": "Wiki{count, number}",
     "about": "このフォルダの内容",
     "collapse": "索引を隠す",
     "expand": "索引を表示"
   },
-  "emptyTitle": "ソースもWikiもまだありません",
+  "emptyTitle": "資料もWikiもまだありません",
   "emptyBody": "すでにある文書を取り込みましょう。企画書、スライド、表、書き出したページなど何でも構いません。「sources/」にそのままコピーし、依頼するまで開きません。",
   "emptyFoundBody": "取り込める文書を{count, number}件見つけました。名前と形式だけを読み、選んだものだけを「sources/」にコピーします。",
   "emptyFoundAction": "見つけた文書{count, number}件を見る",
   "stageTitle": "手元の文書を、出典を引用するWikiに",
-  "stageBody": "フォルダを開いてファイルを追加しましょう。ソースはそのまま保持され、ソースごとに、すべての主張が元のファイルを引用するWikiページが1つできます。",
+  "stageBody": "フォルダを開いてファイルを追加しましょう。資料はそのまま保持され、資料ごとに、すべての主張が元のファイルを引用するWikiページが1つできます。",
   "sources": {
-    "listAria": "このフォルダのソース",
+    "listAria": "このフォルダの資料",
     "add": "ファイルを追加",
     "addTooltip": "文書をこのフォルダの「sources/」にコピーします",
     "find": "文書を探す",
     "findTooltip": "このフォルダと、接続したコードフォルダにある文書を候補として提示します。選ぶまでコピーはしません。",
-    "empty": "ソースはまだありません。すでにある文書を追加してください。形式は問わず、受け取ったままの状態で保持します。",
+    "empty": "資料はまだありません。すでにある文書を追加してください。形式は問わず、受け取ったままの状態で保持します。",
     "noFormat": "ファイル",
-    "statesAria": "ソースの状態：最も多い状態はここで1回だけ示し、例外だけが各行に残ります",
+    "statesAria": "資料の状態：最も多い状態はここで1回だけ示し、例外だけが各行に残ります",
     "needsCompile": "Wikiページがまだないもの{count, number}件",
     "dropHint": "または、Finderで{folder}の中に「sources/」フォルダを作ってファイルをドロップしてください。一覧は自動で更新されます。",
     "state": {
@@ -332,21 +332,21 @@
     "revealFailed": "Finderで表示できませんでした：{reason}",
     "openFailed": "そのファイルを開けませんでした。",
     "savedInstead": "{name}はこのページで開くとコードが実行される可能性がある種類のファイルなので、代わりにダウンロードしました。",
-    "needsCompileSplit": "Wikiページがまだないもの{notCompiled, number}件 · ソースのバージョン確認が必要なもの{stale, number}件",
-    "staleOnly": "要確認のソースバージョン{count, number}件",
+    "needsCompileSplit": "Wikiページがまだないもの{notCompiled, number}件 · 資料のバージョン確認が必要なもの{stale, number}件",
+    "staleOnly": "要確認の資料のバージョン{count, number}件",
     "partialOnly": "一部のみ読み込み済み{count, number}件",
     "import": "サービスから取り込む",
     "importTooltip": "サービスを選んで接続し、このフォルダに取り込む文書を指定します",
     "importedToPlanning": "取り込んだ文書を企画フォルダに入れました",
     "openPlanning": "企画で開く",
     "pagesNeedReview": "再確認が必要な既存ページ{count, number}件",
-    "filterShow": "「{label}」のソースだけ表示",
+    "filterShow": "「{label}」の資料だけ表示",
     "filterAll": "全{count, number}件を表示"
   },
   "wiki": {
     "listAria": "このフォルダのWikiページ",
     "compile": "Wikiページを作成",
-    "compileTooltip": "エージェントがソースを読み、Wikiページを書いたり更新したりします。保存した回答は別途レビューが必要だと知らせます。",
+    "compileTooltip": "エージェントが資料を読み、Wikiページを書いたり更新したりします。保存した回答は別途レビューが必要だと知らせます。",
     "lint": "Wikiを検査",
     "lintTooltip": "エージェントがWikiページを読み、食い違い、置き換えられた主張、欠けているリンク、ページのない名前を報告します。何も書き込みません。",
     "candidateKind": {
@@ -404,7 +404,7 @@
     "candidatesLess": "名前を減らす",
     "candidatesTooltip": "前回の検査で3ページ以上に出てきたのに、専用のページがない名前です。マップの概念として提案できるのは、コードが作るもの（ドメイン、ケイパビリティ、要素）だけで、人物と組織はWikiに残ります。",
     "fileAnswer": "Wikiに保存",
-    "fileAnswerTooltip": "直前の回答を「wiki/answers/」の下にWikiページとして書き込みます。引用したソースがそのページの出典になり、ほかのページと同じ形式の検査を受けます。",
+    "fileAnswerTooltip": "直前の回答を「wiki/answers/」の下にWikiページとして書き込みます。引用した資料がそのページの出典になり、ほかのページと同じ形式の検査を受けます。",
     "fileAnswerDone": "{page}として保存しました。",
     "fileAnswerRejected": "保存しませんでした。回答がページの形式に合っていません（{code}）。引用を付けるよう頼んで、もう一度質問してください。",
     "findingKind": {
@@ -426,14 +426,14 @@
     "newPagePreviewTitle": "作成される内容",
     "newPagePreviewExample": "タイトルを入力するまでのパスの例",
     "newPageFormat": "Markdown · 下書き",
-    "newPageMetadata": "作成者：人 · ソース：まだなし",
+    "newPageMetadata": "作成者：人 · 資料：まだなし",
     "newPageStructure": "標準の構成",
     "newPageSection": {
       "summary": "要約",
       "facts": "事実",
       "decisions": "決定",
       "openQuestions": "未解決の問い",
-      "notInSources": "ソースにない内容"
+      "notInSources": "資料にない内容"
     },
     "newPageDone": "ページを作成しました",
     "newPageExists": "{page}はすでにあるため、代わりにそれを開きました。",
@@ -481,27 +481,27 @@
       },
       "uncited-fact": {
         "what": "{where}の記述に根拠がありません。",
-        "do": "ソースの1か所を引用するか、確認できない場合はページ末尾の「Not in sources」セクションへ移してください。"
+        "do": "資料の1か所を引用するか、確認できない場合はページ末尾の「Not in sources」セクションへ移してください。"
       },
       "bad-citation": {
         "what": "{where}の引用が読み取れません。",
-        "do": "ソースのファイルと、その中の位置を両方示すように直してください。正確な形式は技術的な詳細にあります。"
+        "do": "資料のファイルと、その中の位置を両方示すように直してください。正確な形式は技術的な詳細にあります。"
       },
       "bad-truncation-record-shape": {
-        "what": "どこまで読んだかを記録する行（sources_truncated）が、ソースのパスの一覧になっていません。",
-        "do": "一部だけ読んだソースのパスを、一覧として書いてください。"
+        "what": "どこまで読んだかを記録する行（sources_truncated）が、資料のパスの一覧になっていません。",
+        "do": "一部だけ読んだ資料のパスを、一覧として書いてください。"
       },
       "bad-truncation-record-path": {
-        "what": "{path}は一部だけ読んだと記録されていますが、このページが使うソースの一覧にありません。",
-        "do": "ソースの一覧に追加するか、その行を削除してください。"
+        "what": "{path}は一部だけ読んだと記録されていますが、このページが使う資料の一覧にありません。",
+        "do": "資料の一覧に追加するか、その行を削除してください。"
       },
       "citation-target-missing-folder": {
         "what": "{path}が引用されていますが、そのファイルはこのフォルダにありません。",
         "do": "読者が開けない引用は引用になりません。ファイルをこのフォルダに置くか、引用を直してください。"
       },
       "citation-target-missing-sources": {
-        "what": "{path}が引用されていますが、このページが使うソースの一覧にありません。",
-        "do": "ソースの一覧に追加するか、引用を直してください。"
+        "what": "{path}が引用されていますが、このページが使う資料の一覧にありません。",
+        "do": "資料の一覧に追加するか、引用を直してください。"
       },
       "describes-target-missing": {
         "what": "このページは{target}を扱うと書かれていますが、このフォルダにその名前の概念はありません。",
@@ -520,36 +520,36 @@
         "do": "その話題を扱っているページからリンクすると、見つけやすくなります。"
       },
       "shared-source-unlinked": {
-        "what": "{other}も同じソース（{sources}）から書かれていますが、2つのページは互いを指していません。",
+        "what": "{other}も同じ資料（{sources}）から書かれていますが、2つのページは互いを指していません。",
         "do": "どちらか一方から、もう一方へリンクしてください。"
       },
       "shared-source-unlinked-more": {
-        "what": "同じソースから書かれたページがほかに{count, number}件あり、どれもこのページと互いを指していません。",
-        "do": "同じソースから書かれたページ同士をリンクしてください。"
+        "what": "同じ資料から書かれたページがほかに{count, number}件あり、どれもこのページと互いを指していません。",
+        "do": "同じ資料から書かれたページ同士をリンクしてください。"
       }
     }
   },
   "shelf": {
     "commonState": "{count, number}ページ · {state}",
-    "listAria": "Wikiページとソースのバージョン",
+    "listAria": "Wikiページと資料のバージョン",
     "freshness": {
-      "fresh": "確認済みのソースバージョンに変更はありません。",
-      "stale": "ソースが変更されたか、このページと照合されていません。",
+      "fresh": "確認済みの資料のバージョンに変更はありません。",
+      "stale": "資料が変更されたか、このページと照合されていません。",
       "unverified": "このページをファイルと照合したことはありません"
     },
     "state": {
-      "fresh": "確認済みのソースに変更なし",
-      "stale": "ソースの確認が必要",
-      "unverified": "ソース未確認"
+      "fresh": "確認済みの資料に変更なし",
+      "stale": "資料の確認が必要",
+      "unverified": "資料未確認"
     },
-    "compiling": "ソースを読み直して、Wikiページを書いています。"
+    "compiling": "資料を読み直して、Wikiページを書いています。"
   },
   "home": {
     "guide": "使い方",
     "questions": "{count, plural, =0 {質問} other {質問#}}",
     "more": "その他",
     "compileNext": "Wikiページを作成：{source}",
-    "staleClause": "変更されたソース{count, number}件",
+    "staleClause": "変更された資料{count, number}件",
     "compileTitle": "{source}のWikiページを作成"
   },
   "find": {
@@ -590,7 +590,7 @@
     "writeUp": {
       "current": "最新",
       "partial": "ファイルの一部",
-      "behind": "ソースより古い",
+      "behind": "資料より古い",
       "unchecked": "未確認"
     },
     "passage": {
@@ -623,10 +623,10 @@
       "paragraphs": "{count, number}段落"
     }
   },
-  "kindSourcesTitle": "ソース",
+  "kindSourcesTitle": "資料",
   "kindWikiTitle": "Wiki",
   "stage": {
-    "title": "ソース → Wikiページ → 読む",
+    "title": "資料 → Wikiページ → 読む",
     "state": {
       "done": "完了",
       "next": "次",
@@ -642,38 +642,38 @@
     "compile": {
       "title": "Wikiページを作成",
       "brainLabel": "使用モデル",
-      "checkingLine": "ソース{count, number}件をWikiページと照合しています",
+      "checkingLine": "資料{count, number}件をWikiページと照合しています",
       "partialLine": "一部だけ読まれたファイルは、Wikiページを作り直すと残りも取り込まれます。"
     },
     "read": {
       "title": "読む",
       "startWith": "まず{title}から",
       "nothingYet": "Wikiページはまだありません。「Wikiページを作成」で最初のページを作ります。",
-      "coveredLine": "ソース{total, number}件中{compiled, number}件にWikiページあり",
-      "coveredChecking": "ソース{total, number}件中{compiled, number}件にWikiページあり · {checking, number}件を確認中",
-      "coveredPartial": "ソース{total, number}件中{compiled, number}件にWikiページあり · {partial, number}件は一部のみ読み込み",
-      "coveredStale": "ソース{total, number}件中{compiled, number}件にWikiページあり · {stale, number}件はソースが変更",
-      "coveredUnreadable": "ソース{total, number}件中{compiled, number}件にWikiページあり · {unreadable, number}件は読み込めない"
+      "coveredLine": "資料{total, number}件中{compiled, number}件にWikiページあり",
+      "coveredChecking": "資料{total, number}件中{compiled, number}件にWikiページあり · {checking, number}件を確認中",
+      "coveredPartial": "資料{total, number}件中{compiled, number}件にWikiページあり · {partial, number}件は一部のみ読み込み",
+      "coveredStale": "資料{total, number}件中{compiled, number}件にWikiページあり · {stale, number}件は資料が変更",
+      "coveredUnreadable": "資料{total, number}件中{compiled, number}件にWikiページあり · {unreadable, number}件は読み込めない"
     },
     "brainAgent": "{name}",
     "brainLocal": "{host}上の{model}",
     "brainNone": "まだ設定されていません",
-    "transferLocal": "ソースのテキストと、読み込む既存のWikiページは、このコンピュータ上の{host}に送られます。{file}にすべてのリクエストが記録されます。",
+    "transferLocal": "資料のテキストと、読み込む既存のWikiページは、このコンピュータ上の{host}に送られます。{file}にすべてのリクエストが記録されます。",
     "blockedWeb": "Wikiページを作るには、このコンピュータで動くコーディングエージェントが必要で、起動できるのはアプリだけです。",
     "blockedChecking": "このコンピュータ上のコーディングエージェントを探しています。",
     "blockedLocalRemote": "このフォルダに保存されているモデルのアドレスは{host}で、このコンピュータではありません。Wikiページを作るときは文書の内容を送るため、このコンピュータで動くモデルでのみ実行します。エージェント › モデルでアドレスを変更してください。",
     "blockedLocalFormats": "{model}が読めるのは、Markdown、プレーンテキスト、CSV、JSON、HTMLです。ここで待機中のものはすべて{formats}で、独自のリーダーを備えたコーディングエージェントが必要です。",
     "blockedNoAgent": "このコンピュータには確認済みのコーディングエージェントがなく、ローカルモデルのアドレスも保存されていません。ローカルのアドレスはエージェント › モデルで追加します。",
     "blockedLocalOnly": "ローカルモデルにできるのは、Wikiページの作成だけです。質問と検査には、接続したコーディングエージェントが必要です。",
-    "blockedNoSources": "Wikiページを作るソースはまだありません。ステップ1でソースを追加します。",
-    "blockedNothingWaiting": "すべてのソースに、今の内容と合うWikiページがあります。",
+    "blockedNoSources": "Wikiページを作る資料はまだありません。ステップ1で資料を追加します。",
+    "blockedNothingWaiting": "すべての資料に、今の内容と合うWikiページがあります。",
     "transferLocalRemote": "ここに保存されているモデルのアドレスは{host}で、このコンピュータではないため、Wikiページを作りません。作ると文書の内容がそのアドレスへ送られるためです。Atlasが実際に送るリクエストは{file}に記録されます。",
     "close": "閉じる",
     "status": "{step} {state}",
     "statusNotCompiled": "Wikiページなし{count, number}件",
     "statusWaiting": "待機中{count, number}件",
     "statusOffTemplate": "テンプレート外{count, number}件",
-    "statusReady": "すべてのソースにWikiページがあります",
+    "statusReady": "すべての資料にWikiページがあります",
     "statusUnlinked": "リンク切れ{count, number}件",
     "statusChecking": "確認中{count, number}件",
     "statusPartial": "一部のみ読み込み済み{count, number}件",
@@ -687,7 +687,7 @@
     "sectionsLabel": "セクション",
     "sectionEntry": "{name} {count, number}",
     "citationsLabel": "引用",
-    "readLabel": "読んだソース",
+    "readLabel": "読んだ資料",
     "truncatedLabel": "一部のみ読み込み済み",
     "unreadableLabel": "読み取れませんでした",
     "unreadableEntry": "{path}: {reason}",
@@ -732,7 +732,7 @@
     "title": "検査結果",
     "structuralTitle": "アプリの検査",
     "structuralHead": "ページ{pages, number}件 · テンプレート外{offTemplate, number}件 · 指摘{findings, number}件",
-    "structuralClean": "すべてのページがテンプレートに合い、すべてのリンクが開き、同じソースから書かれたページどうしが互いにリンクしています。",
+    "structuralClean": "すべてのページがテンプレートに合い、すべてのリンクが開き、同じ資料から書かれたページどうしが互いにリンクしています。",
     "advisoryMark": "参考",
     "advisoryFold": "参考の指摘{count, number}件",
     "advisoryLess": "参考の指摘を隠す",
@@ -753,10 +753,10 @@
       "bad-truncation-record": "読み込み範囲の記録が一致しません",
       "uncited-fact": "根拠のない記述があります",
       "bad-citation": "引用が読み取れません",
-      "citation-target-missing": "引用したソースが見つかりません",
+      "citation-target-missing": "引用した資料が見つかりません",
       "dangling-wikilink": "リンク先のページがありません",
       "orphan-page": "ほかのページから指されていません",
-      "shared-source-unlinked": "同じソースのページがリンクしていません"
+      "shared-source-unlinked": "同じ資料のページがリンクしていません"
     },
     "namesTitle": "ページのない名前",
     "open": "検査結果{count, number}",
@@ -764,13 +764,13 @@
     "unseen": "新規"
   },
   "search": {
-    "placeholder": "ソースとページを検索",
-    "matches": "ソース{sources, number}件（{passages, number}箇所） · ページ{pages, number}件が一致",
+    "placeholder": "資料とページを検索",
+    "matches": "資料{sources, number}件（{passages, number}箇所） · ページ{pages, number}件が一致",
     "noneHere": "この一覧にはありません。",
-    "nothing": "ソースにもページにも「{needle}」に一致するものはありません。別の語で探してください。",
+    "nothing": "資料にもページにも「{needle}」に一致するものはありません。別の語で探してください。",
     "showPages": "Wikiページ{count, number}件を表示",
-    "showSources": "ソース{count, number}件を表示",
-    "reading": "ソースを読み込み中<count> · {read, number}/{total, number}</count>",
+    "showSources": "資料{count, number}件を表示",
+    "reading": "資料を読み込み中<count> · {read, number}/{total, number}</count>",
     "capped": "最初の{count, number}件のみ読み込み"
   },
   "conversation": {
@@ -782,14 +782,14 @@
     "lede": "回答と、その出典、未解決の問いをまとめて残します。根拠が変わったら戻ってきてください。",
     "ask": "質問する",
     "empty": "文書について質問し、会話で「Wikiに保存」を選んでください。保存した質問がここに表示されます。",
-    "provenance": "出典の確認でわかるのは、ファイルが変わったかどうかだけです。回答の正しさや、エージェントが読んだソースのバージョンを証明するものではありません。",
+    "provenance": "資料の確認でわかるのは、ファイルが変わったかどうかだけです。回答の正しさや、エージェントが読んだ資料のバージョンを証明するものではありません。",
     "state": {
-      "changed": "引用したソースが変更されました",
-      "missing": "引用したソースがありません",
-      "new-sources": "新しいソースを確認してください",
-      "rewritten": "引用したソースが変更され、この回答はそのバージョンから書き直されました",
-      "unmeasured": "ソースのバージョンを確認できていません",
-      "unchanged": "前回の出典確認から変更なし"
+      "changed": "引用した資料が変更されました",
+      "missing": "引用した資料がありません",
+      "new-sources": "新しい資料を確認してください",
+      "rewritten": "引用した資料が変更され、この回答はそのバージョンから書き直されました",
+      "unmeasured": "資料のバージョンを確認できていません",
+      "unchanged": "前回の資料確認から変更なし"
     },
     "alternatives": "別の改訂{count, number}件",
     "historyProblem": "改訂履歴の確認が必要です",
@@ -798,7 +798,7 @@
     "refresh": "エージェントに更新版の下書きを依頼",
     "previous": "前のバージョンを読む",
     "back": "質問に戻る",
-    "refreshUnavailable": "更新には、デスクトップアプリで接続されたコーディングエージェントが必要です。回答、出典、以前のバージョンは、ここでも読めます。",
+    "refreshUnavailable": "更新には、デスクトップアプリで接続されたコーディングエージェントが必要です。回答、資料、以前のバージョンは、ここでも読めます。",
     "history": {
       "none": "",
       "invalid": "前のバージョンのアドレスが無効です。",
@@ -814,12 +814,12 @@
       "saving": "改訂を保存中…"
     },
     "compareTitle": "更新された回答を比較",
-    "compareHint": "出典、人によるメモ、未解決の問いを確認してください。保存すると新しい下書きが作られ、前のページは残ります。",
+    "compareHint": "資料、人によるメモ、未解決の問いを確認してください。保存すると新しい下書きが作られ、前のページは残ります。",
     "before": "以前に保存した回答",
     "after": "提案された新しい下書き",
     "rawText": "Markdownをそのまま読む",
-    "sourceDelta": "引用したソースを{added}件追加 · {removed}件除外",
-    "sameSources": "下書きは同じソースを引用しています。",
+    "sourceDelta": "引用した資料を{added}件追加 · {removed}件除外",
+    "sameSources": "下書きは同じ資料を引用しています。",
     "removedLines": "以前の{count, number}行を削除または書き換え",
     "closeCompare": "読み続ける",
     "saveDraft": "新しい下書きとして保存",
@@ -829,9 +829,9 @@
     "comparisonVersion": "読む回答を選択",
     "refreshHint": "接続したコーディングエージェントとそのプロバイダに下書きを依頼します。エージェントは既存のフォルダ権限で動作します。Atlasでは、比較して「新しい下書きとして保存」を押すと新しい回答を保存します。",
     "paths": {
-      "changed": "変更されたソース",
-      "missing": "見つからないソース",
-      "added": "確認する新しいソース",
+      "changed": "変更された資料",
+      "missing": "見つからない資料",
+      "added": "確認する新しい資料",
       "rewritten": "書き直しの元"
     },
     "version": {
@@ -847,8 +847,8 @@
   "workspace": {
     "aria": "資料室の表示",
     "title": "資料室",
-    "sources": "ソース",
-    "sourcesCount": "ソースファイル",
+    "sources": "資料",
+    "sourcesCount": "資料ファイル",
     "wiki": "Wiki",
     "wikiCount": "Wikiページ",
     "ontology": "オントロジー",
@@ -895,13 +895,13 @@
     "ambiguous": "要確認",
     "openDocumentNamed": "{name}をオントロジーで開く",
     "kind": {
-      "sourceReference": "ソースの参照",
+      "sourceReference": "資料の参照",
       "wikiReference": "Wikiの参照"
     }
   },
   "rounds": {
     "kind": {
-      "consistency": "ソース一致チェック",
+      "consistency": "資料一致チェック",
       "service": "サービスの文書"
     },
     "cadence": {
@@ -978,12 +978,12 @@
       "readbackEditNext": "次回の実行は{time}です。",
       "how": "スケジュール",
       "time": "時刻",
-      "onStale": "ソースが変更されたとき",
+      "onStale": "資料が変更されたとき",
       "redraft": "更新版の下書きを準備",
-      "redraftHint": "変更されたソースについてだけエージェントが1回実行し、新しいページは下書きとして待ちます。",
+      "redraftHint": "変更された資料についてだけエージェントが1回実行し、新しいページは下書きとして待ちます。",
       "mark": "要確認として印をつける",
-      "markHint": "ソース一覧の行が琥珀色になります。何も書き込みません。",
-      "noAgent": "このMacに使えるコーディングエージェントがないため、「サービスからの文書」チェックはまだ実行できません。「ソース一致チェック」は実行できます。",
+      "markHint": "資料一覧の行が琥珀色になります。何も書き込みません。",
+      "noAgent": "このMacに使えるコーディングエージェントがないため、「サービスからの文書」チェックはまだ実行できません。「資料一致チェック」は実行できます。",
       "query": "探す内容",
       "queryPlaceholder": "ENGスペースで直近1日に変更されたページ",
       "may": "許可する操作",
@@ -1017,16 +1017,16 @@
       "rename": "この定期チェックの名前を変更",
       "nameAria": "定期チェックの名前",
       "readbackServices": "<em>{cadence}</em>、<em>{places}</em>の文書を読み直し、",
-      "readbackFolders": "<em>{folders}</em>配下の文書がソースと一致しているか確認し、",
-      "readbackWholeFolder": "すべてのページがソースと一致しているか確認し、",
+      "readbackFolders": "<em>{folders}</em>配下の文書が資料と一致しているか確認し、",
+      "readbackWholeFolder": "すべてのページが資料と一致しているか確認し、",
       "readbackStaleRedraft": "古くなったものは<em>書き直します</em>。",
       "readbackStaleMark": "古くなったものには<em>印をつけるだけです</em>。",
       "readbackTurn": "実行ごとにエージェントが1回実行します。",
       "readbackNow": "保存するとすぐ1回実行されます。",
       "readbackQueued": "別のチェックが実行中のため、次の予定時刻から始まります。",
       "mayCallPlace": "{service}に{location}の読み取りだけを依頼する（書き込みは不可）",
-      "readbackFoldersLead": "<em>{cadence}</em>、<em>{folders}</em>配下の文書がソースと一致しているか確認し、",
-      "readbackWholeFolderLead": "<em>{cadence}</em>、すべてのページがソースと一致しているか確認し、",
+      "readbackFoldersLead": "<em>{cadence}</em>、<em>{folders}</em>配下の文書が資料と一致しているか確認し、",
+      "readbackWholeFolderLead": "<em>{cadence}</em>、すべてのページが資料と一致しているか確認し、",
       "queryPlaceholderSlack": "このチャンネルの先週の投稿",
       "queryPlaceholderNotion": "このデータベースで最近変更されたページ",
       "queryPlaceholderConfluence": "ENGスペースで直近1日に変更されたページ",
@@ -1034,7 +1034,7 @@
       "queryPlaceholderGeneric": "最近変更された文書"
     },
     "name": {
-      "consistency": "ソース一致チェック"
+      "consistency": "資料一致チェック"
     },
     "picker": {
       "unitMinutes": "分",
@@ -1047,36 +1047,36 @@
     }
   },
   "progress": {
-    "aria": "ソースのWikiページ進捗",
+    "aria": "資料のWikiページ進捗",
     "percent": "{percent, number}%",
     "underOne": "1%未満",
-    "first": "Wikiページがあるソースはまだありません",
+    "first": "Wikiページがある資料はまだありません",
     "today": "今日 +{count, number}",
-    "chartAria": "Wikiページがあるソースの数（各ページに記された日付順）",
+    "chartAria": "Wikiページがある資料の数（各ページに記された日付順）",
     "chartTitle": "Wikiページがある資料数",
     "chartNow": "今日{count, number}",
-    "point": "{date}：現在のソース{total, number}件中{count, number}件（{percent, number}%）",
+    "point": "{date}：現在の資料{total, number}件中{count, number}件（{percent, number}%）",
     "dateBasis": "各点はWikiページに記された日付です。",
     "undated": "日付なし{count, number}件",
-    "continue": "{count, plural, =1 {ソース1件からWikiページを作成} other {次の#件のWikiページを作成}}",
+    "continue": "{count, plural, =1 {資料1件からWikiページを作成} other {次の#件のWikiページを作成}}",
     "batchRest": "この後に{count, number}件が待っています。",
     "writer": "<name>{agent}</name>が書きます",
     "writerAnyAgent": "接続したコーディングエージェントが書きます",
-    "batchReturned": "前回のリクエストのソース{count, number}件はまだWikiページがないため、一覧の最後に移しました。",
+    "batchReturned": "前回のリクエストの資料{count, number}件はまだWikiページがないため、一覧の最後に移しました。",
     "webLine": "Wikiページを書けるのはアプリだけです。閲覧はここでもできます。",
-    "allDone": "すべてのソースにWikiページがあります"
+    "allDone": "すべての資料にWikiページがあります"
   },
   "sourcesHome": {
-    "aria": "フォルダまたはファイル形式でまとめたソースと、Wikiページがあるソースの数",
+    "aria": "フォルダまたはファイル形式でまとめた資料と、Wikiページがある資料の数",
     "groupBy": {
-      "label": "ソースのまとめ方",
+      "label": "資料のまとめ方",
       "folder": "フォルダ別",
       "type": "ファイル形式別"
     },
     "column": {
       "folder": "フォルダ",
       "type": "ファイル形式",
-      "sources": "ソース",
+      "sources": "資料",
       "withPage": "Wikiページあり",
       "waiting": "待機中",
       "latest": "最新のWikiページ"
@@ -1088,47 +1088,47 @@
       "none": "まだなし",
       "undated": "日付なし"
     },
-    "rowAria": "{name}：ソース{total, number}件のうちWikiページあり{withPage, number}件、作成待ち{waiting, number}件。押すと表の横に一覧が出ます。",
-    "writing": "ここにあるソースからWikiページを作成中です",
+    "rowAria": "{name}：資料{total, number}件のうちWikiページあり{withPage, number}件、作成待ち{waiting, number}件。押すと表の横に一覧が出ます。",
+    "writing": "ここにある資料からWikiページを作成中です",
     "panel": {
-      "nextTitle": "次に書くソース",
-      "lead": "「{action}」を押すと、エージェントが下のソースを上から読み、Wikiページを書きます。",
-      "leadRunning": "エージェントが上からWikiページを書いています。書き終えたソースはこのリストから消えます。",
+      "nextTitle": "次に書く資料",
+      "lead": "「{action}」を押すと、エージェントが下の資料を上から読み、Wikiページを書きます。",
+      "leadRunning": "エージェントが上からWikiページを書いています。書き終えた資料はこのリストから消えます。",
       "privacy": "Atlasは資料をどこにも送りません。Wikiページの作成や質問をエージェントに頼むと、そのエージェントが必要な資料を読み、読んだ内容はそのエージェントのサービスに送られることがあります。",
       "webNote": "Wikiページはアプリだけが作成します。アプリではここから始めます。",
       "waitingTitle": "ここで待機中",
-      "nextEmpty": "ここにあるソースにはすべて、今の内容と合うWikiページがあります。",
-      "unreadable": "ここで読み込めないソース{count, number}件",
+      "nextEmpty": "ここにある資料にはすべて、今の内容と合うWikiページがあります。",
+      "unreadable": "ここで読み込めない資料{count, number}件",
       "showInList": "リストで{count, number}件すべて表示",
-      "clear": "すべてのソースを表示"
+      "clear": "すべての資料を表示"
     },
     "recent": {
       "title": "最近書いたWikiページ",
       "order": "各Wikiページに記録された日付順",
       "from": "{more, plural, =0 {{source}から} other {{source}ほか#件から}}",
       "empty": "日付が記録されたWikiページはまだありません。",
-      "none": "Wikiページが書かれると、元のソースと一緒にここに表示されます。WikiページはソースをまとめたMarkdownファイルで、事実ごとにソース内の位置を記しています。",
+      "none": "Wikiページが書かれると、元の資料と一緒にここに表示されます。Wikiページは資料をまとめたMarkdownファイルで、事実ごとに資料内の位置を記しています。",
       "steps": {
         "press": "「{action}」を押します。",
-        "read": "エージェントがソースを最初から最後まで読みます。",
-        "write": "ソースをまとめたWikiページをMarkdownファイルとして書きます。事実ごとにソースのどこから来たかを記し、書き終えるとここに表示されます。"
+        "read": "エージェントが資料を最初から最後まで読みます。",
+        "write": "資料をまとめたWikiページをMarkdownファイルとして書きます。事実ごとに資料のどこから来たかを記し、書き終えるとここに表示されます。"
       }
     },
     "sortBy": "{column}で並べ替え",
     "more": "下にフォルダがあと{count, number}件 · スクロールすると表示されます",
     "moreType": "下にファイル形式があと{count, number}種類 · スクロールすると表示されます",
-    "meta": "フォルダ{folders, number}件 · ソース{sources, number}件",
-    "metaType": "ファイル形式{groups, number}種類 · ソース{sources, number}件",
+    "meta": "フォルダ{folders, number}件 · 資料{sources, number}件",
+    "metaType": "ファイル形式{groups, number}種類 · 資料{sources, number}件",
     "alike": {
       "row": "状態ごとの件数が同じフォルダ{count, number}件",
       "range": "{first} – {last}",
-      "meta": "フォルダ{folders, number}件 · ソース数と状態がすべて同じ{count, number}件は1行にまとめています"
+      "meta": "フォルダ{folders, number}件 · 資料数と状態がすべて同じ{count, number}件は1行にまとめています"
     },
     "listFolder": "フォルダ：{folder}",
     "listType": "ファイル形式：{type}",
-    "listNone": "ここには、その状態のソースがありません。",
-    "reading": "フォルダを読み込み中です。これまでにソース{count, number}件",
-    "pickGone": "{folder}はもうsources/にありません。すべてのソースを表示しています。"
+    "listNone": "ここには、その状態の資料がありません。",
+    "reading": "フォルダを読み込み中です。これまでに資料{count, number}件",
+    "pickGone": "{folder}はもうsources/にありません。すべての資料を表示しています。"
   },
   "check": {
     "title": "Wikiを検査中",
@@ -1154,12 +1154,12 @@
     "stopped": "この検査を中止しました。報告されたものも、変更されたファイルもありません。"
   },
   "wikiReader": {
-    "citedSources": "引用した原文",
+    "citedSources": "引用した資料",
     "linkedFrom": "このページを指すページ",
     "concepts": "このページが扱う概念",
     "citationCount": "引用{count, number}か所",
     "citationAt": "{file} · {line, number}行目",
-    "openSource": "原文を開く",
+    "openSource": "資料を開く",
     "sourceChanged": "ページを書いた後にこのファイルが変わりました。今の内容です。",
     "sourceMissing": "このフォルダにこのファイルはありません。",
     "sourceTooLarge": "このファイルは大きすぎてここには表示できません。",
@@ -1177,20 +1177,20 @@
     "group": {
       "attention": "確認が必要なページ",
       "answers": "保存した回答",
-      "several": "複数の原文から書いたページ",
-      "one": "1つの原文から書いたページ",
-      "none": "原文の記載がないページ"
+      "several": "複数の資料から書いたページ",
+      "one": "1つの資料から書いたページ",
+      "none": "資料の記載がないページ"
     },
     "row": {
-      "sources": "原文{count, number}件",
-      "noSource": "原文なし",
+      "sources": "資料{count, number}件",
+      "noSource": "資料なし",
       "moreReasons": "{reason}ほか{count, number}件"
     },
     "reason": {
       "disagreement": "ほかのページと食い違っています",
-      "superseded": "新しい原文の内容と違います",
-      "stale": "書いた後に原文が変わりました",
-      "unhashed": "原文が変わったか確認できません",
+      "superseded": "新しい資料の内容と違います",
+      "stale": "書いた後に資料が変わりました",
+      "unhashed": "資料が変わったか確認できません",
       "missingLink": "関連ページへのリンクがありません"
     },
     "day": {
@@ -1204,15 +1204,15 @@
     "groupClear": "一覧全体を表示",
     "empty": {
       "title": "まだwikiページがありません",
-      "body": "エージェントが原文からwikiページを書くと、ここに集まります。原文ごとのページ、複数の原文をまとめたページ、保存した回答に分けて表示します。",
-      "toSources": "原文タブでwikiページを作成"
+      "body": "エージェントが資料からwikiページを書くと、ここに集まります。資料ごとのページ、複数の資料をまとめたページ、保存した回答に分けて表示します。",
+      "toSources": "資料タブでwikiページを作成"
     },
     "reading": "wikiページを読み込み中 · これまでに{count, number}件",
     "pageGone": "{title}はもうwiki/にありません。一覧に戻りました。"
   },
   "wikiLog": {
     "title": "記録",
-    "lede": "このwikiで起きたことを新しい順に表示します。原文から書いたページ、検査、修正、保存した回答がここに積み重なります。",
+    "lede": "このwikiで起きたことを新しい順に表示します。資料から書いたページ、検査、修正、保存した回答がここに積み重なります。",
     "meta": "wiki/_log.mdとwiki/answers/から読み込み · {count, number}件",
     "kind": {
       "compile": "ページを作成",
@@ -1220,16 +1220,16 @@
       "fix": "修正",
       "answer": "回答を保存"
     },
-    "compiled": "原文{sources, number}件を読み込み · 新規{created, number}件 · 修正{revised, number}件",
-    "noChange": "原文{sources, number}件を読み込み · 変更されたページなし",
+    "compiled": "資料{sources, number}件を読み込み · 新規{created, number}件 · 修正{revised, number}件",
+    "noChange": "資料{sources, number}件を読み込み · 変更されたページなし",
     "answer": "wikiに保存した回答：{title}",
     "byRound": "自動点検「{name}」",
     "pageGone": "{name}(wiki/にありません)",
-    "empty": "このwikiではまだ何も起きていません。原文からページを書く、wikiを検査する、回答を保存すると、ここに1行ずつ残ります。",
+    "empty": "このwikiではまだ何も起きていません。資料からページを書く、wikiを検査する、回答を保存すると、ここに1行ずつ残ります。",
     "unreadable": "wiki/_log.mdを読み込めないため、保存した回答だけを表示しています。ファイルの権限を確認してください。読み込めるようになると一覧が更新されます。"
   },
   "sourcesIndex": {
-    "add": "原文を追加",
-    "addBody": "原文はそのまま残ります。Atlasが読み込み、エージェントが原文からwikiページを書きます。"
+    "add": "資料を追加",
+    "addBody": "資料はそのまま残ります。Atlasが読み込み、エージェントが資料からwikiページを書きます。"
   }
 }

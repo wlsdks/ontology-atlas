@@ -291,11 +291,12 @@ jobs:
   # for this public repository. It builds the MCP sidecar first because every cargo call needs it
   # (`tauri.conf.json` declares it as `externalBin`).
   lint-rust-macos:
-    name: Lint Rust on macOS
+    name: Lint and test Rust on macOS
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: macos-15
-    # budget: 300s
-    timeout-minutes: 7
+    # budget: 600s (lint 280 s measured on #3759; the workspace tests take 130 s warm on an M-series
+    # laptop, so the test build and run are estimated until the first runs measure them)
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -344,7 +345,7 @@ jobs:
       - name: Check Rust formatting
         run: cargo fmt --manifest-path src-tauri/Cargo.toml --all --check
 
-      # Mounts FAT32 and exFAT disk images with `hdiutil`, which only macOS has, and proves a
-      # vault there is never answered from a stamp. The release's macOS bridge job runs it too.
-      - name: Vault index on FAT and exFAT volumes
-        run: cargo test --manifest-path src-tauri/Cargo.toml -p vault-index --test volumes
+      # Before this step a `cfg(unix)` or macOS-only test first ran at release. The workspace
+      # includes vault-index's FAT32 and exFAT test, which mounts images with `hdiutil`.
+      - name: Rust tests on macOS
+        run: cargo test --manifest-path src-tauri/Cargo.toml --workspace

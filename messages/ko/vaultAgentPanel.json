@@ -112,7 +112,7 @@
   "retry": {
     "title": "다시 해볼까요"
   },
-  "uncited": "이 턴에 읽은 자료:",
+  "uncited": "이 턴에 읽은 파일:",
   "footerDetail": "이번 차례에 오간 글자 수 {chars}자예요. 대부분은 화면에 안 보이는 안내문이에요.",
   "reground": {
     "title": "{cap}번 중 {round}번째에서 멈췄어요. 이 폴더를 다시 읽고 답하게 하기"

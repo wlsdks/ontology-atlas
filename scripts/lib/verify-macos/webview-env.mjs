@@ -67,7 +67,7 @@ const WEBVIEW_MCP_WORKBENCH_MARKERS = [
  */
 const WEBVIEW_LIBRARY_WORKBENCH_MARKERS = [
   /Library|자료실/,
-  /In this folder|이 폴더 안|Sources|원문|Wiki|위키/i,
+  /In this folder|이 폴더 안|Sources|자료|Wiki|위키/i,
 ];
 
 const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
