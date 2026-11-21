@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  buildLibraryModel,
-  countSourceFormats,
-  countWikiPages,
-  newestWikiPage,
-  selectWikiPages,
-} from './vault-library';
+import { countSourceFormats } from './source-list-summary';
+import { buildLibraryModel } from './vault-library';
+import { countWikiPages, newestWikiPage, selectWikiPages } from './wiki-page-facts';
 import type { VaultDoc, VaultSourceFile } from '../../model/vault-manifest';
 
 /** Reached through `buildLibraryModel`, as screens reach it, so the wiring is tested too. */

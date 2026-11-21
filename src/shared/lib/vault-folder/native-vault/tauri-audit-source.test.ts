@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 const runtime = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock('@tauri-apps/api/core', () => ({ invoke: runtime.invoke, isTauri: () => true }));
-import { createTauriVaultHandle, openTauriAuditSource } from './tauri-vault-fs';
-import { AuditReadError, parseLlmAuditLog, readLlmAuditSummary } from '../llm-connection/llm-audit-log';
+import { openTauriAuditSource } from './tauri-audit-source';
+import { createTauriVaultHandle } from './tauri-vault-handle';
+import { AuditReadError, parseLlmAuditLog, readLlmAuditSummary } from '../../llm-connection/llm-audit-log';
 afterEach(() => runtime.invoke.mockReset());
 function transport(raw: string, fail?: string) {
   const bytes=new TextEncoder().encode(raw);const calls:string[]=[];

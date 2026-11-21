@@ -44,7 +44,7 @@ function fixture(existing: string[] = [], failure = false) {
 }
 
 async function paths(root: FileSystemDirectoryHandle) {
-  return (await walkVault(root)).entries.map(e => e.relativePath).sort();
+  return (await walkVault(root)).entries.map(entry => entry.relativePath).sort();
 }
 
 describe('source copy publication', () => {
@@ -57,7 +57,7 @@ describe('source copy publication', () => {
     f.entries.set('kept.txt', { ...f.file('kept.txt'), getFile: async () => ({ arrayBuffer: async () => new ArrayBuffer(8) }) });
     expect(await paths(f.root)).toEqual(['changed.md', 'sources/external.txt', 'sources/kept.txt']);
     expect(await paths(f.reopened)).toEqual(['changed.md', 'sources/external.txt', 'sources/kept.txt']);
-    const kept = (await walkVault(f.root)).entries.find(e => e.relativePath === 'sources/kept.txt')!;
+    const kept = (await walkVault(f.root)).entries.find(entry => entry.relativePath === 'sources/kept.txt')!;
     expect((await (await kept.handle.getFile()).arrayBuffer()).byteLength).toBe(8);
     f.release();
     const result = await importing;

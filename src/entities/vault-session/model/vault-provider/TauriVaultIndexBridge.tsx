@@ -2,7 +2,10 @@
 
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import {
+  getTauriVaultRootPath,
+  isTauriVaultRuntime,
+} from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { syncVaultIndex, vaultIndexPreference } from "@/shared/lib/vault-folder/vault-index/tauri-vault-index";
 import { vectorStatus } from "@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors";
 import { vaultVectorSource } from "@/shared/lib/vault-folder/vault-vectors/vault-vector-source";

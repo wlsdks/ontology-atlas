@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { forgetChoices, remove as removeVectors, removeModel, useVectorStatus } from '@/features/vault-vectors';
 import { formatSize } from '@/shared/lib/format-size';
 import { useLocalVault } from '@/entities/vault-session';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import {
   clearVaultIndex,
   syncVaultIndex,

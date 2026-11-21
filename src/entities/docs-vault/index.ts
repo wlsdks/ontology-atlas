@@ -42,24 +42,11 @@ export type {
 export type { BuiltVaultEntry } from './lib/local-manifest/md-entry';
 export { VAULT_SOURCES_DIR } from './lib/local-manifest/walk-vault';
 export { createSourceCopyBatch } from './lib/library/source-copy-publication';
-export {
-  buildLibraryModel,
-  createLibraryModelBuilder,
-  selectWikiPages,
-  countWikiPages,
-  countSourceFormats,
-  formatSourceBytes,
-  isWikiPage,
-  newestWikiPage,
-  sourceNeedsCompile,
-} from './lib/library/vault-library';
-export type {
-  LibraryModel,
-  LibraryOriginalLink,
-  LibrarySourceRow,
-  LibraryWikiPage,
-  LibraryWriteUpLink,
-} from './lib/library/vault-library';
+export { buildLibraryModel, createLibraryModelBuilder, sourceNeedsCompile } from './lib/library/vault-library';
+export type { LibraryModel, LibraryOriginalLink, LibrarySourceRow, LibraryWriteUpLink } from './lib/library/vault-library';
+export { countWikiPages, isWikiPage, newestWikiPage, selectWikiPages } from './lib/library/wiki-page-facts';
+export type { LibraryWikiPage } from './lib/library/wiki-page-facts';
+export { countSourceFormats, formatSourceBytes } from './lib/library/source-list-summary';
 export { deriveSourceProgress, recordedInstantMs, recordedLocalDay } from './lib/library/source-progress';
 export type { SourceProgress, SourceProgressPoint } from './lib/library/source-progress';
 export {

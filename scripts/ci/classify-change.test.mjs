@@ -699,7 +699,7 @@ test('exhaustive architecture coverage is owned once across the three lanes', ()
 test('the perf lane starts only for code a measurement could import, and on every full plan', () => {
   const mode = (options) => buildImpactPlan(options).lanes.perf.mode;
   assert.equal(mode({ files: ['src/shared/lib/search-match/node-name-match.ts'] }), 'affected');
-  assert.equal(mode({ files: ['src/shared/lib/library/source-passage.perf.test.ts'] }), 'affected');
+  assert.equal(mode({ files: ['src/shared/lib/library/source-units.perf.test.ts'] }), 'affected');
   // The import graph decides, wherever the imported code lives.
   assert.equal(mode({ files: ['mcp/src/library/wiki-schema.mjs'] }), 'affected');
   assert.equal(mode({ files: ['app/[locale]/page.tsx'] }), 'skip');

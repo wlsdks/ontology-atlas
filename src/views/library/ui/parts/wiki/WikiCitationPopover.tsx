@@ -6,7 +6,8 @@ import type { useTranslations } from "next-intl";
 import { FileText, FolderOpen } from "lucide-react";
 
 import { passageLabelText } from "@/features/library";
-import { passageLabelFor, type SourceUnit } from "@/shared/lib/library/source-passage";
+import { passageLabelFor } from "@/shared/lib/library/source-passage";
+import { type SourceUnit } from "@/shared/lib/library/source-units";
 import { cn } from "@/shared/lib/cn";
 import { Surface } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";

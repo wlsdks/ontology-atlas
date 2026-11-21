@@ -14,10 +14,8 @@ import {
 } from '@/shared/motion';
 import { useBodyScrollLock } from "@/shared/lib/overlays/use-body-scroll-lock";
 import { isPickerAbort } from "@/shared/lib/failures/picker-abort";
-import {
-  isTauriVaultRuntime,
-  pickTauriVaultDirectory,
-} from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { pickTauriVaultDirectory } from "@/shared/lib/vault-folder/native-vault/tauri-vault-location";
+import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 import { controlClass } from "@/shared/ui/control-class";
 import { CloseButton } from "@/shared/ui/controls/close-button";

@@ -3,7 +3,10 @@
 import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import {
+  getTauriVaultRootPath,
+  isTauriVaultRuntime,
+} from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { parseVaultChangeBatch } from "@/shared/lib/vault-folder/vault-change-batch";
 import { useLocalVault } from "./local-vault-context";
 

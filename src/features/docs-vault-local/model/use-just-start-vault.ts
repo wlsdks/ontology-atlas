@@ -4,11 +4,11 @@ import type { VaultShape } from '@/shared/lib/vault-folder/vault-shape';
 import { CURRENT_LOCAL_FS_HANDLE_ID, type LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import type { VaultOpenOptions, VaultOpenResult } from '@/entities/vault-session';
 import {
-  createTauriVaultHandle,
-  ensureDefaultVaultParentDir,
   ensureTauriChildDirectory,
   listTauriDirectoryNames,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import { createTauriVaultHandle } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
+import { ensureDefaultVaultParentDir } from '@/shared/lib/vault-folder/native-vault/tauri-vault-location';
 import { buildDefaultVaultDisplayPath, resolveUniqueVaultDirName } from '../lib/default-vault-naming';
 import type { CreationReport } from './use-vault-create-flow';
 

@@ -14,8 +14,8 @@ const counts = vi.hoisted(() => ({
   emit: null as ((event: VectorStatusEvent) => void) | null,
 }));
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', async (original) => ({
-  ...(await original<typeof import('@/shared/lib/vault-folder/tauri-vault-fs')>()),
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', async (original) => ({
+  ...(await original<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime')>()),
   isTauriVaultRuntime: () => true,
 }));
 vi.mock('@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors', async (original) => {

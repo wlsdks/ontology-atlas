@@ -3,7 +3,8 @@ import {
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
 } from '../../lib/ontology-starter';
-import { getTauriVaultRootPath, readTauriVaultTextTail } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { readTauriVaultTextTail } from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity/agent-activity-log';
 import {
   ACP_WORK_RECEIPT_FILE,

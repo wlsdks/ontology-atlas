@@ -7,7 +7,7 @@ import { useStaticVaultSource } from '@/entities/vault-session';
 import type { VaultDoc, VaultManifest } from '@/entities/docs-vault';
 import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
 import { gitDiff, gitPathsLastChange, isGitBridgeAvailable } from '@/shared/lib/git/tauri-git';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 export function manifestToFreshnessIndex(manifest: VaultManifest): Map<string, string> {
   const map = new Map<string, string>();

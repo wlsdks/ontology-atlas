@@ -9,12 +9,14 @@ import {
   type BuiltVaultEntry,
 } from './md-entry';
 import {
-  nativeVaultFingerprint,
   readTauriVaultTextFile,
   readTauriVaultTextFiles,
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import {
+  nativeVaultFingerprint,
   type NativeVaultStamp,
-  type NativeVaultTextRead,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-fingerprint';
+import { type NativeVaultTextRead } from '@/shared/lib/vault-folder/vault-text-frames';
 import {
   getVaultRows,
   isFramedVaultRowPath,

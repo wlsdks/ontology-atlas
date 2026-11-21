@@ -1,4 +1,4 @@
-import { isTauriVaultRuntime } from '../vault-folder/tauri-vault-fs';
+import { isTauriVaultRuntime } from '../vault-folder/native-vault/tauri-vault-runtime';
 
 /**
  * Decides whether this is the desktop shell (the installed macOS app, a Tauri WebView): `/` in the app

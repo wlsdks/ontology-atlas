@@ -6,7 +6,10 @@ import {
 } from '@/entities/docs-vault';
 import type { GrantedVaultFiles } from '@/entities/vault-session';
 import { bundledDocsBySlug, createBundledDetailReader } from './bundled-detail-reader';
-import { getTauriVaultRootPath, isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import {
+  getTauriVaultRootPath,
+  isTauriVaultRuntime,
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { createVaultTextReader } from '@/shared/lib/vault-folder/vault-text-reader';
 
 export interface ResolvedDocumentStore {

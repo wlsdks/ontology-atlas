@@ -1,4 +1,4 @@
-import { tauriVaultPathExists } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { tauriVaultPathExists } from "@/shared/lib/vault-folder/native-vault/tauri-vault-files";
 
 /** Comma-separated absolute paths, set at build time; never hardcode one, or a home directory ships in the public bundle. */
 const RAW_PATHS = process.env.NEXT_PUBLIC_DOGFOOD_VAULT_PATHS ?? "";

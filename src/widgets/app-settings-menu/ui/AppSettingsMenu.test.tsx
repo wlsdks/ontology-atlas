@@ -30,10 +30,12 @@ vi.mock('@/features/app-update', async (importOriginal) => {
   };
 });
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => ({
+  openTauriVaultInFinder: (...args: unknown[]) => mocks.revealInFinder(...args),
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
   isTauriVaultRuntime: () => mocks.isDesktopRuntime,
   getTauriVaultRootPath: () => mocks.vaultRootPath,
-  openTauriVaultInFinder: (...args: unknown[]) => mocks.revealInFinder(...args),
 }));
 
 vi.mock('@/shared/lib/clipboard/use-copy-feedback', () => ({

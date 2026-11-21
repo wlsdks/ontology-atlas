@@ -13,11 +13,11 @@ import { cn } from '@/shared/lib/cn';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source/project-source-store';
 import { gitStatus, type GitStatusResult } from '@/shared/lib/git/tauri-git';
+import { openTauriVaultInFinder } from '@/shared/lib/vault-folder/native-vault/tauri-vault-location';
 import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
-  openTauriVaultInFinder,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 import { vaultValidationCounts } from '../../model/vault-validation-counts';
 import { controlClass } from '@/shared/ui/control-class';

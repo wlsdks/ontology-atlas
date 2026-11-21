@@ -11,7 +11,7 @@ import {
 } from '@/shared/lib/connectors/connector-store';
 import { forgetApproval, readMachineApprovals, recordApproval, useMachineApprovals } from '@/shared/lib/connectors/machine-approvals';
 import { createConnectorSetup, type ConnectorSetup } from '@/shared/lib/connectors/connector-setup';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 /** The file is the source of truth: each change re-reads before writing (`connector-store.ts`) and the write result updates the screen, since an optimistic copy could disagree with a folder edited elsewhere. Keychain tokens and agent spawning stay app-only. */
 export interface VaultConnectorsState {

@@ -400,7 +400,7 @@ ability. The canonical roster is the bridge table in
 
 | Bridge | Module | Web behaviour |
 |---|---|---|
-| Vault absolute path | `src/shared/lib/vault-folder/tauri-vault-fs.ts` | FSA handle instead (no path) |
+| Vault absolute path | `src/shared/lib/vault-folder/native-vault/tauri-vault-handle.ts` | FSA handle instead (no path) |
 | Git | `src/shared/lib/git/tauri-git.ts` | Cannot run → degraded card |
 | Gray-area evidence | `src/shared/lib/project-source/tauri-gray-area.ts`, `src-tauri/src/gray_area.rs` | Cannot inspect the bound code root → degraded card |
 | Harness source read | `src/shared/lib/project-source/tauri-harness-source.ts`, `src-tauri/src/harness_source/` | Cannot see dot directories → Harness names what it cannot reach |

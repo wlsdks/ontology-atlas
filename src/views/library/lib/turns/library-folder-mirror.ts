@@ -6,7 +6,7 @@ import type { VaultDoc } from "@/entities/docs-vault";
 import { useLocalVault } from "@/entities/vault-session";
 import { useWikiWriteMode, type WikiWriteMode } from "@/shared/lib/preferences/library-preferences";
 import { selectOpenVaultHandle } from "@/shared/lib/vault-folder/select-open-vault-handle";
-import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 
 /**
  * The open folder as it is now, kept above every route. A Library turn outlives the Library page,

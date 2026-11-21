@@ -5,7 +5,7 @@ vi.mock('@/entities/docs-vault', async () => ({
   VAULT_SOURCES_DIR: 'sources',
   ...(await vi.importActual('@/entities/docs-vault/lib/library/source-copy-publication')),
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({ importTauriSourceFiles: vi.fn(), pickTauriSourceFiles: vi.fn() }));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-library-sources', () => ({ importTauriSourceFiles: vi.fn(), pickTauriSourceFiles: vi.fn() }));
 afterEach(() => vi.unstubAllGlobals());
 
 function fixture(occupied: number) {

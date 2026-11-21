@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { zipFile } from "../../../../tests/fixtures/source-passage-cases.mjs";
-import { sourceUnits } from "./source-passage";
+import { sourceUnits } from "./source-units";
 
 const FILE_BYTES = 256 * 1024;
 // The budget is generous on purpose: it catches a change of shape, not small slowdowns.
