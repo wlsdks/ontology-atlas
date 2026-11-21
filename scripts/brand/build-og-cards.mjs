@@ -91,7 +91,7 @@ async function loadMapScene() {
   try {
     const { deriveOntologyFromVault } = await server.ssrLoadModule('/src/entities/docs-vault/lib/derive-ontology-from-vault.ts');
     const { buildStageGraph } = await server.ssrLoadModule('/src/views/download/lib/stage-graph.ts');
-    const { buildFilmScene, crossesClusters } = await server.ssrLoadModule('/src/views/download/lib/film-scene.ts');
+    const { buildFilmScene, crossesClusters } = await server.ssrLoadModule('/src/views/download/lib/film/film-scene.ts');
     const manifest = JSON.parse(readFileSync(join(ROOT, 'src/entities/docs-vault/data/manifest.json'), 'utf8'));
     const derived = deriveOntologyFromVault(manifest);
     const evidence = (stub) => (stub.sourceSlug ? [stub.sourceSlug] : []);

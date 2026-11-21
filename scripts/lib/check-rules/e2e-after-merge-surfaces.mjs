@@ -5,8 +5,8 @@ export const rules = [
     reason: "the download page's scroll frame budget changed",
     matches: [
       /^src\/views\/download\/ui\/DownloadPage\.tsx$/,
-      /^src\/views\/download\/(?:lib\/gateway-frame-loop\.ts|ui\/GatewayFx\.tsx)$/,
-      /^src\/views\/download\/ui\/[A-Za-z]+Section\.tsx$/,
+      /^src\/views\/download\/(?:lib\/page-motion\/gateway-frame-loop\.ts|ui\/GatewayFx\.tsx)$/,
+      /^src\/views\/download\/ui\/(?:film\/)?[A-Za-z]+Section\.tsx$/,
     ],
   },
   {
@@ -15,8 +15,8 @@ export const rules = [
     reason: "the download page's reduced-motion and no-script stillness changed",
     matches: [
       /^src\/views\/download\/ui\/DownloadPage\.tsx$/,
-      /^src\/views\/download\/(?:lib\/gateway-frame-loop\.ts|ui\/GatewayFx\.tsx)$/,
-      /^src\/views\/download\/ui\/[A-Za-z]+Section\.tsx$/,
+      /^src\/views\/download\/(?:lib\/page-motion\/gateway-frame-loop\.ts|ui\/GatewayFx\.tsx)$/,
+      /^src\/views\/download\/ui\/(?:film\/)?[A-Za-z]+Section\.tsx$/,
     ],
   },
   {

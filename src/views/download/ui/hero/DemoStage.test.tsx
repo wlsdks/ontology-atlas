@@ -1,14 +1,14 @@
 import { render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import messages from '../../../../messages/en.json';
+import messages from '../../../../../messages/en.json';
 import { DemoStage } from './DemoStage';
 import {
   DEMO_CLIPS,
   availableDemoClips,
   demoPoster,
   demoSources,
-} from '../model/demo-clips';
+} from '../../model/demo-clips';
 
 /** Playback properties only; length and framing are checked against footage by `/motion-verify`. */
 const wrap = (ui: React.ReactNode, locale = 'en') => (

@@ -1,4 +1,4 @@
-import type { StageGraph } from './stage-graph';
+import type { StageGraph } from '../stage-graph';
 
 export type FilmKind = 'project' | 'domain' | 'capability' | 'element';
 

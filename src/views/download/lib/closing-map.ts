@@ -1,4 +1,4 @@
-import type { FilmScene } from './film-scene';
+import type { FilmScene } from './film/film-scene';
 
 /**
  * The closing map's geometry: the containment tree drawn as curves that leave each container

@@ -9,7 +9,7 @@ import { EXIT_TRANSITION, MOTION, MOTION_EASE } from '@/shared/motion/tokens';
 import { OntologyMapKindGlyph } from '@/shared/ui/ontology-node/map-kind-glyph';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-import type { InViewMotion } from '../lib/use-in-view-motion';
+import type { InViewMotion } from '../lib/page-motion/use-in-view-motion';
 import { kindOf, START_DRAFT, START_FOLDER, START_PATH } from '../model/start-cast';
 
 /** The rail's cycle in `gateway.css` (`--gateway-steps-cycle`); the scenes play on its clock. */

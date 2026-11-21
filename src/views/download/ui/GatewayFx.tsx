@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 
-import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
-import { startGatewayPointer, type GatewayPointer } from '../lib/gateway-pointer';
+import { registerGatedFrameClient } from '../lib/page-motion/gateway-frame-loop';
+import { startGatewayPointer, type GatewayPointer } from '../lib/page-motion/gateway-pointer';
 import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pause';
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MACOS_RELEASE } from '../model/macos-release.generated';
+import { MACOS_RELEASE } from '../../model/macos-release.generated';
 import { RELEASE_VERSION } from './release-facts';
 import { ARCH_ORDER, formatAssetSize, macosAssetFor } from './release-state';
 

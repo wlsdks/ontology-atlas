@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Maximize2 } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
-import { type DemoClip, availableDemoClips, demoPoster, demoSources } from '../model/demo-clips';
+import { type DemoClip, availableDemoClips, demoPoster, demoSources } from '../../model/demo-clips';
 import { controlClass } from '@/shared/ui/control-class';
 import { useMotionPaused } from '@/shared/motion/motion-pause';
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { bundledRelations, bundleRoute, pointAlong, treePath } from './closing-map';
-import { buildFilmScene } from './film-scene';
+import { buildFilmScene } from './film/film-scene';
 import type { StageGraph } from './stage-graph';
 
 const node = (id: string, kind: string) =>

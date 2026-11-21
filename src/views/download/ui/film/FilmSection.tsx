@@ -8,16 +8,16 @@ import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-fram
 import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pause';
 import { readFlatGraphTokens } from '@/widgets/ontology-map';
 
-import { ACT_MS, ACT_SPANS, ACT_START, FADE_MS, FILM_MS, HOLD_MS, SEEK_FADE_MS, seamLight } from '../lib/film-acts';
-import { createFilmClock } from '../lib/film-clock';
-import { clamp01, easeInOut, easeOut, lightSprite } from '../lib/film-kit';
-import { layoutFilmMap, type FilmCopy, type FilmMapLayout, type FilmMarkTokens, type LabelSegment } from '../lib/film-map-layout';
-import { layoutOpen, type OpenLayout } from '../lib/film-open';
-import { pickFilmConcept, readFilmVault, type FilmVault } from '../lib/film-vault';
-import { layoutWall, type WallLayout } from '../lib/film-wall';
-import type { Rect } from '../lib/film-geometry';
-import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
-import type { StageGraph } from '../lib/stage-graph';
+import { ACT_MS, ACT_SPANS, ACT_START, FADE_MS, FILM_MS, HOLD_MS, SEEK_FADE_MS, seamLight } from '../../lib/film/film-acts';
+import { createFilmClock } from '../../lib/film/film-clock';
+import { clamp01, easeInOut, easeOut, lightSprite } from '../../lib/film/film-kit';
+import { layoutFilmMap, type FilmCopy, type FilmMapLayout, type FilmMarkTokens, type LabelSegment } from '../../lib/film/film-map-layout';
+import { layoutOpen, type OpenLayout } from '../../lib/film/film-open';
+import { pickFilmConcept, readFilmVault, type FilmVault } from '../../lib/film/film-vault';
+import { layoutWall, type WallLayout } from '../../lib/film/film-wall';
+import type { Rect } from '../../lib/film/film-geometry';
+import { registerGatedFrameClient } from '../../lib/page-motion/gateway-frame-loop';
+import type { StageGraph } from '../../lib/stage-graph';
 import { FilmActBar } from './FilmActBar';
 import { buildScene, mix, paintFilm, TextStamps, type FilmInks, type FilmScene } from './film-paint';
 import { mountFilmProbe, type FilmProbe } from './film-probe';

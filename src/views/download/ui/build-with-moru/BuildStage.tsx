@@ -17,7 +17,7 @@ import {
   relationsLeft,
   targetConcepts,
   type BuildState,
-} from '../lib/build-play';
+} from '../../lib/build-play';
 import {
   BUILD_CHANGE,
   BUILD_CONCEPTS,
@@ -32,7 +32,7 @@ import {
   dependsOnChange,
   type BuildConceptId,
   type BuildRelation,
-} from '../model/build-cast';
+} from '../../model/build-cast';
 import { TypedLetters } from './TypedLetters';
 
 const CENTER = { x: 50, y: 50 };

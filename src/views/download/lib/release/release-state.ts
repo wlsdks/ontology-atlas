@@ -9,7 +9,7 @@ import {
   WINDOWS_RELEASE,
   type MacosReleaseAsset,
   type WindowsReleaseAsset,
-} from '../model/macos-release.generated';
+} from '../../model/macos-release.generated';
 
 export type DesktopArch = MacosReleaseAsset['arch'];
 

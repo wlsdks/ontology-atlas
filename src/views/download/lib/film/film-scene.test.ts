@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildFilmScene, clusterRing, crossesClusters, labelBox, placeLabels } from './film-scene';
-import type { StageGraph } from './stage-graph';
+import type { StageGraph } from '../stage-graph';
 
 const node = (id: string, kind: string) =>
   ({ id, label: id, kind, size: 0, x: 0, y: 0, isHub: false, ownerKey: null, recentlyUpdated: false, stale: false, fullDegree: 0, descendantCount: 0 }) as StageGraph['nodes'][number];

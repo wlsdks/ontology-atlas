@@ -12,11 +12,11 @@ import { HARNESS_GUTTER_X } from '@/shared/ui/layout/page-header-bar';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { HarnessScanProgressPanel, HarnessSetupView } from '@/widgets/harness-setup';
 
-import { EXAMPLE_SOURCE_ROOT, type ExampleRead } from '../lib/harness-example';
-import { createHarnessDirector, type Director } from '../lib/harness-director';
-import { WINDOW } from '../lib/harness-scene';
+import { EXAMPLE_SOURCE_ROOT, type ExampleRead } from '../../lib/harness-film/harness-example';
+import { createHarnessDirector, type Director } from '../../lib/harness-film/harness-director';
+import { WINDOW } from '../../lib/harness-film/harness-scene';
 
-export { readExample } from '../lib/harness-example';
+export { readExample } from '../../lib/harness-film/harness-example';
 
 /** The category the screen opens on: the instruction files, where an agent's reading starts. */
 const OPENS_ON = 'context:instructions';

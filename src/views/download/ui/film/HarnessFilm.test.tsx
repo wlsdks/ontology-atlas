@@ -2,7 +2,7 @@ import { act, render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import enMessages from '../../../../messages/en.json';
+import enMessages from '../../../../../messages/en.json';
 import { HarnessFilm } from './HarnessFilm';
 
 const LABEL = "The Harness tab: your repository's agent setup";

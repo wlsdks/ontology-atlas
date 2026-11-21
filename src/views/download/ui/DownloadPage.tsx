@@ -4,22 +4,22 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Download } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useFormatter, useTranslations } from 'next-intl';
-import { resolveDisplayReleaseTag } from '../lib/pending-release-tag';
+import { resolveDisplayReleaseTag } from '../lib/release/pending-release-tag';
 import { Link, usePathname } from '@/i18n/navigation';
 import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
-import { DemoStage } from './DemoStage';
-import { HeroTypewriter, heroSentence } from './HeroTypewriter';
+import { DemoStage } from './hero/DemoStage';
+import { HeroTypewriter, heroSentence } from './hero/HeroTypewriter';
 import { buttonVariants } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { BrandCompanion } from '@/shared/ui/marks/brand-companion';
 import { AtlasSymbol } from '@/shared/ui/marks/brand-mark';
 import { GithubMark } from '@/shared/ui/marks/github-mark';
 import { GITHUB_REPO_URL } from '@/shared/config/social-links';
-import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS, RELEASE_VERSION } from '../lib/release-facts';
+import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS, RELEASE_VERSION } from '../lib/release/release-facts';
 import {
   MACOS_RELEASE,
   formatAssetSize,
@@ -28,7 +28,7 @@ import {
   macosPublishedDate,
   releasePageUrl,
   windowsAsset,
-} from '../lib/release-state';
+} from '../lib/release/release-state';
 import { useStageGraph } from '../lib/use-stage-graph';
 import type { StageGraph } from '../lib/stage-graph';
 import { GatewayFx } from './GatewayFx';
@@ -36,17 +36,17 @@ import { ScreensStage } from './ScreensStage';
 import { StartSection } from './StartSection';
 import { FaqSection } from './FaqSection';
 import { OpenSourceSection } from './OpenSourceSection';
-import { BuildWithMoru } from './BuildWithMoru';
-import { FilmSection } from './FilmSection';
-import { HarnessFilm } from './HarnessFilm';
+import { BuildWithMoru } from './build-with-moru/BuildWithMoru';
+import { FilmSection } from './film/FilmSection';
+import { HarnessFilm } from './film/HarnessFilm';
 import { MotionToggle } from '@/shared/ui/controls/motion-toggle';
 import { useMotionPaused } from '@/shared/motion/motion-pause';
 import { SectionIntro } from './SectionIntro';
 import { ClosingContact } from './ClosingContact';
-import { MoruPlayEntry } from './MoruPlayEntry';
+import { MoruPlayEntry } from './hero/MoruPlayEntry';
 import { ClosingMap } from './ClosingMap';
-import { useVisitorDesktopPlatform } from '../lib/visitor-platform';
-import { useSectionPull } from '../lib/use-section-pull';
+import { useVisitorDesktopPlatform } from '../lib/release/visitor-platform';
+import { useSectionPull } from '../lib/page-motion/use-section-pull';
 
 /**
  * One grid: every section's content sits in `PAGE_GUTTER` + `PAGE_COLUMN`, starting at

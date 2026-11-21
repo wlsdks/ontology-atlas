@@ -7,7 +7,7 @@ import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { MOTION, MOTION_EASE } from '@/shared/motion/tokens';
 
-import { usePlayOnce } from '../lib/use-play-once';
+import { usePlayOnce } from '../lib/page-motion/use-play-once';
 import { FAQ_KEYS, splitAnswer } from '../model/faq';
 import { SectionIntro } from './SectionIntro';
 

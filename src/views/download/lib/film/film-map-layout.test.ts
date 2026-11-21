@@ -9,7 +9,7 @@ import { derivationToInsight } from '@/features/vault-ontology/model/use-ontolog
 import { crossings, distanceToRect, grow, inside, overlaps, resample, circleIntoRect, type Pt, type Rect } from './film-geometry';
 import { layoutFilmMap, type FilmCopy, type FilmLabel, type FilmMapLayout, type FilmMarkTokens } from './film-map-layout';
 import { domainFlows, pickFilmConcept, readFilmVault, type FilmVault } from './film-vault';
-import { buildStageGraph } from './stage-graph';
+import { buildStageGraph } from '../stage-graph';
 
 /**
  * The film's map on the bundled vault at the five stage sizes the spec names: the geometry checks

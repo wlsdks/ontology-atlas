@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import enMessages from '../../../../messages/en.json';
+import enMessages from '../../../../../messages/en.json';
 import { MoruPlayEntry } from './MoruPlayEntry';
 
 // jsdom has no 2D canvas; the popup's round runs without one and draws nothing.

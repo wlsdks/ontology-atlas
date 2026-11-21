@@ -7,7 +7,7 @@ import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 
 import type { StageGraph } from '../lib/stage-graph';
-import { useInViewMotion } from '../lib/use-in-view-motion';
+import { useInViewMotion } from '../lib/page-motion/use-in-view-motion';
 import { SectionIntro } from './SectionIntro';
 import { ConnectScene, DraftScene, OpenFolderScene, useStepScenes } from './StepScenes';
 
