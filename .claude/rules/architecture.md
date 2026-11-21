@@ -77,7 +77,13 @@ current need requires, so the source alone carries the meaning.
 
 - Names carry intent: a function names what it returns or does, a boolean
   reads as a question, a unit sits in the name (`delayMs`, `widthPx`), and a
-  meaningful literal is a named constant beside its use.
+  meaningful literal is a named constant beside its use. Write words out
+  (`index`, `value`, `process`, not `idx`, `val`, `proc`); only `id`, `url`,
+  `ctx` and `i` in a short loop stay short. One concept keeps one name across
+  layers, and one verb keeps one meaning (`read` from disk, `load` into state).
+- A file's name is the name of what it exports: a PascalCase file holds the
+  component of that name; a file of several small parts is kebab-case and
+  named for what they share (`settings-primitives.tsx`).
 - One function, one job. When a comment explains what a block does, rename or
   extract so the code says it, then delete the comment.
 - Add no wrapper layer, option object, parameter or defensive branch that no

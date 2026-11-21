@@ -72,6 +72,24 @@ describe('focused check suggestions', () => {
       assert.ok(commands.includes(command), `${path} -> ${command}`);
     }
   });
+  it('selects the lane of a file that now lives in a folder split out of a command or a tool', () => {
+    const subjects = [
+      ['mcp/src/tools/repo-analysis/plan-rules.mjs', 'pnpm integration:mcp:repo-analysis'],
+      ['mcp/src/tools/repo-analysis/plan-rules.mjs', 'pnpm integration:cli:repo-analysis'],
+      ['cli/src/commands/diagnosis/agent-brief/render.mjs', 'pnpm integration:cli:diagnosis'],
+      ['cli/src/commands/local-vault/validate/known-codes.mjs', 'pnpm integration:cli:local-vault'],
+      ['cli/src/commands/local-vault/validate/known-codes.mjs', 'pnpm test:contracts'],
+      ['cli/src/lib/init/run-init.mjs', 'pnpm integration:cli:entry'],
+      ['cli/src/lib/help/top-level-help.mjs', 'pnpm integration:cli:entry'],
+      ['cli/src/lib/status-lines.mjs', 'pnpm integration:cli:entry'],
+      ['mcp/src/ontology-engine/traversal/graph-measures.mjs', 'pnpm integration:mcp:graph'],
+      ['mcp/src/ontology-engine/query-operation/query-primitives.mjs', 'pnpm integration:mcp:graph'],
+    ];
+    for (const [path, command] of subjects) {
+      assert.ok(existsSync(path), path);
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes(command), `${path} -> ${command}`);
+    }
+  });
   it('covers construction registry, replay delegation and rendered guide consumers', () => {
     const subjects = [
       ['mcp/src/server/registry.mjs', 'pnpm test:mcp:unit'],
@@ -1326,6 +1344,19 @@ describe('focused check suggestions', () => {
       const result = suggestFocusedChecks([path]);
       const row = result.commands.find((r) => r.command.includes('retired-game-storage.spec.ts'));
       assert.ok(row, `missing retirement journey for ${path}`);
+    }
+  });
+
+  it('keeps the stacked Git reader E2E on the commit detail entry and its parts', () => {
+    for (const path of [
+      'src/widgets/atlas-git-panel/ui/CommitDetail.tsx',
+      'src/widgets/atlas-git-panel/ui/commit-detail/DocumentHistory.tsx',
+    ]) {
+      const result = suggestFocusedChecks([path]);
+      assert.ok(
+        result.commands.some((row) => row.command.includes('git-workbench-stacked-floor.spec.ts')),
+        `missing stacked Git reader journey for ${path}`,
+      );
     }
   });
 

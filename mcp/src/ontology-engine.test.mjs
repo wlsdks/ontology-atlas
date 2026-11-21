@@ -9,9 +9,9 @@ import { runJsonRpcProcess } from '../../scripts/lib/mcp-test-rpc.mjs';
 
 import { compileOntology } from './ontology-compiler.mjs';
 import { queryCompiledOntology, shareArtifact } from './ontology-engine.mjs';
-import { createArtifactContext } from './ontology-engine/artifact-context.mjs';
-import { createContextOperations } from './ontology-engine/context-operations.mjs';
-import { similarityScore } from './ontology-engine/engine-helpers.mjs';
+import { createArtifactContext } from './ontology-engine/graph-context/artifact-context.mjs';
+import { createContextOperations } from './ontology-engine/graph-context/context-operations.mjs';
+import { similarityScore } from './ontology-engine/traversal/graph-measures.mjs';
 import { defaultBody } from './schema.mjs';
 import { parseFrontmatter } from './parser.mjs';
 import { validateVaultDocument } from './validate.mjs';

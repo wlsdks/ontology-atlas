@@ -18,7 +18,7 @@ Reads a bound code repository and proposes candidate ontology nodes so a person 
 ## Includes
 - Full discovery from package/README and implementation structure, kept separate from accepted business meaning.
 - Bounded source reads by exact lines or declaration outline, with hashes, refusals and continuation coordinates.
-- Opt-in `sourceOnly:true` continuations through `mcp/src/tools/repo-analysis.mjs`: identical sourceEvidence without another candidate scan, delivered as rootPath, delivery, canWrite:false and sourceEvidence.
+- Opt-in `sourceOnly:true` continuations through `mcp/src/tools/repo-analysis/`: identical sourceEvidence without another candidate scan, delivered as rootPath, delivery, canWrite:false and sourceEvidence.
 - Full analysis and proposal/qualification replay when sourceOnly is omitted or false; lifecycle fields are rejected in source-only mode, including explicit null values.
 - Construction guidance that traces entry-point setup, branch conditions, failures, customization and callees before writing supported rules into node bodies.
 
@@ -28,6 +28,6 @@ Reads a bound code repository and proposes candidate ontology nodes so a person 
 - Adding repository tools to the app's internal local conversation.
 
 ## Uncertainty
-- Re-read the source-only branch and original full path in `mcp/src/tools/repo-analysis.mjs` on 2026-10-03. MCP integration exercised identical evidence, false/omitted full-mode parity, null lifecycle rejection, and escaped/sensitive/symlink/stale-hash refusals. Existing stable source-read unit guards also ran.
+- Re-read the source-only branch and original full path in `mcp/src/tools/repo-analysis/` on 2026-10-03. MCP integration exercised identical evidence, false/omitted full-mode parity, null lifecycle rejection, and escaped/sensitive/symlink/stale-hash refusals. Existing stable source-read unit guards also ran.
 - A frozen calibration read returned 11,105 bytes in full mode and 2,042 bytes in source-only mode with identical sourceEvidence. This does not establish general build speed or meaning quality.
 - Actual ACP construction and source-hidden readers ran on a calibration and a fresh source shape. Their partial answers and citation/condition defects remain audit evidence, not formal candidate qualification or human competency acceptance. Native local source construction and installed-app behavior remain unmeasured.

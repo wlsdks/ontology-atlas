@@ -2234,7 +2234,11 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/agent-brief-scope.mjs` | which project and documents an agent brief covers |
 | `src/tools/meaning-readiness.mjs` | the meaning-readiness and project-meaning facts a brief carries, and the next-action hint table |
 | `src/tools/validate-vault.mjs` | `validate_vault`, `validate_wiki` |
-| `src/tools/repo-analysis.mjs` | the four folder-scanning tools and the scan-root guard |
+| `src/tools/repo-analysis.mjs` | the four folder-scanning tools, re-exported from `src/tools/repo-analysis/` |
+| `src/tools/repo-analysis/analyze-structure.mjs` | `analyze_repo_structure`: the breadth map, source reads and the analysis view |
+| `src/tools/repo-analysis/inspect-architecture.mjs` | `inspect_architecture`, with `architecture-profile-selection.mjs` choosing the profile |
+| `src/tools/repo-analysis/infer-imports.mjs` | `infer_imports`, with `import-review-rules.mjs` (review mode, delivery limit, drift summary) and `vault-reconciliation.mjs` (the vault diff) |
+| `src/tools/repo-analysis/index-project.mjs` | `index_project`, with `plan-rules.mjs` (vault alignment, concept delta) |
 | `src/tools/project-source.mjs` | connect / disconnect / finalize a project binding |
 | `src/tools/write-concepts.mjs` | `add_concept`, `add_concepts`, `patch_concept` |
 | `src/tools/write-relations.mjs` | the four edge writes |
@@ -2244,7 +2248,10 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/relation-keys.mjs` | which frontmatter key holds which relation, and how a stored ref matches |
 | `src/tools/maintenance.mjs` | what a result carries rather than being asked for |
 | `src/vault/slug-paths.mjs` | slug ↔ path mapping, the containment check every disk path passes, raw-source slugs, on-disk spelling, similar-slug suggestions, vault-root check |
-| `src/vault/documents.mjs` | walking and reading `.md` documents, stable file snapshots, body excerpts and the full-body cap |
+| `src/vault/documents.mjs` | the per-vault parse cache, cached document text, and the read and write snapshot scopes |
+| `src/vault/file-snapshot.mjs` | one `.md` read as bytes plus the stamp they were read under |
+| `src/vault/body-delivery.mjs` | body excerpts, the full-body cap, and what a response reports about a cut body |
+| `src/vault/text-read-pacing.mjs` | collection pacing for the text a load pass reads, under bun |
 | `src/vault/relation-refs.mjs` | the relation keys that become graph edges, their aliases, and how a document's refs and relation notes are read |
 | `src/vault/graph-queries.mjs` | kinds, orphans, shortest path and backlinks over one reference index, and the duplicate-title warning |
 | `src/vault/eligibility-gate.mjs` | the node-eligibility gate: its session memory and the advisory findings every committed write produces |
@@ -2253,21 +2260,28 @@ transport. Everything a change would actually touch lives beside it.
 | `src/vault/backlink-rewrite.mjs` | rewriting every reference to a renamed, merged or reclassified node |
 | `src/infer-imports.mjs` + `src/infer-imports/*.mjs` | the import-graph entry, with one module per language and stage: workspace discovery, Autotools, grouping, impact focus |
 | `src/ontology-engine.mjs` | public exports and explicit query-family composition |
-| `src/ontology-engine/artifact-context.mjs` | graph indexes and reference resolution |
-| `src/ontology-engine/context-operations.mjs` | shared graph lookups and scope helpers |
-| `src/ontology-engine/query-planner.mjs` | bounded query planning |
-| `src/ontology-engine/traversal-analysis.mjs` | centrality, reachability, impact, and builder context |
-| `src/ontology-engine/selection-queries.mjs` | scans, profiles, matrices, components, and similarity |
-| `src/ontology-engine/scope-queries.mjs` | containment, lineage, cycles, relation recommendations, and growth |
-| `src/ontology-engine/maintenance-queries.mjs` | repair and review action planning |
-| `src/ontology-engine/brief-queries.mjs` | evidence-aware agent and workspace briefs |
-| `src/ontology-engine/health-query.mjs` | structural health reporting |
-| `src/ontology-engine/engine-helpers.mjs` | graph-analysis helpers and normalization shared across families |
-| `src/ontology-engine/query-dispatch.mjs` | operation-to-query dispatch |
-| `src/ontology-engine/traversal-queries.mjs` | neighbor enumeration, shortest paths, and bounded all-path searches |
-| `src/ontology-engine/query-values.mjs` | shared node/relation vocabulary and default limits |
-| `src/ontology-engine/query-primitives.mjs` | shared input normalization and node/edge result shaping |
-| `src/ontology-engine/agent-responses.mjs` | agent handoff prompts and CLI follow-up formatting |
+| `src/ontology-engine/graph-context/artifact-context.mjs` | graph indexes and reference resolution |
+| `src/ontology-engine/graph-context/context-operations.mjs` | shared graph lookups and scope helpers |
+| `src/ontology-engine/query-operation/query-planner.mjs` | bounded query planning |
+| `src/ontology-engine/traversal/traversal-analysis.mjs` | centrality, reachability, impact, and builder context |
+| `src/ontology-engine/selection/selection-queries.mjs` | scans, profiles, matrices, components, and similarity |
+| `src/ontology-engine/traversal/scope-queries.mjs` | containment, lineage, cycles, relation recommendations, and growth |
+| `src/ontology-engine/maintenance/maintenance-queries.mjs` | repair and review action planning |
+| `src/ontology-engine/briefs/brief-queries.mjs` | evidence-aware agent and workspace briefs |
+| `src/ontology-engine/maintenance/health-query.mjs` | structural health reporting |
+| `src/ontology-engine/query-operation/query-arguments.mjs` | validates and normalizes the arguments of the query operations |
+| `src/ontology-engine/traversal/graph-measures.mjs` | page rank, community labels and node similarity over the compiled graph |
+| `src/ontology-engine/selection/node-ranking.mjs` | degree buckets, hubs and the order of node, lineage and centrality rows |
+| `src/ontology-engine/maintenance/reference-repair.mjs` | the node a dangling reference most likely meant, and the slug and title to create for it |
+| `src/ontology-engine/traversal/topology-shape.mjs` | a cycle in canonical form and topological layers cut at a limit |
+| `src/ontology-engine/traversal/dependency-qualification.mjs` | whether declared dependency edges carry a rationale |
+| `src/ontology-engine/maintenance/maintenance-actions.mjs` | the order of maintenance actions and the stable id each gets |
+| `src/ontology-engine/traversal/builder-focus.mjs` | the focus and canvas position `builder_context` takes |
+| `src/ontology-engine/query-operation/query-dispatch.mjs` | operation-to-query dispatch |
+| `src/ontology-engine/traversal/traversal-queries.mjs` | neighbor enumeration, shortest paths, and bounded all-path searches |
+| `src/ontology-engine/query-operation/query-values.mjs` | shared node/relation vocabulary and default limits |
+| `src/ontology-engine/query-operation/query-primitives.mjs` | shared input normalization and node/edge result shaping |
+| `src/ontology-engine/briefs/agent-responses.mjs` | agent handoff prompts and CLI follow-up formatting |
 
 Adding a module means adding it to `files` in `mcp/package.json` — the bundle and
 the MCPB artifact copy that list, so an undeclared import ships a server that
