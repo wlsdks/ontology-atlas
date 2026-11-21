@@ -69,7 +69,6 @@ const TIER_A_GLOBS = [
 const TIER_B_FILES = [
   "README.md",
   "AGENTS.md",
-  "CLAUDE.md",
   "docs/AGENT-GRAPH-WORKFLOW.md",
   "docs/FEATURES.md",
   // The feature inventory split into one file per surface.

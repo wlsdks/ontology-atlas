@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { globSync } from "node:fs";
 import { join } from "node:path";
 
@@ -118,20 +118,21 @@ describe("`.claude/rules` path scoping contract", () => {
   }, 30_000);
 
   /**
-   * `CLAUDE.md` tells the reader which rules load every turn and which wait for a
-   * matching path. That sentence is how someone decides where a new rule goes,
-   * and nothing checked it: the resident set is guarded above, but the wrapper's
-   * description of it could go stale the moment a rule was added or a
-   * frontmatter block was opened, and the reader would be confidently wrong.
+   * `AGENTS.md` tells the reader which rules load every turn and which wait for a
+   * matching path. That sentence is how someone decides where a new rule goes;
+   * it goes stale the moment a rule is added or a frontmatter block opens.
    *
    * Both sides are computed rather than written down. `documentation.md` allows
    * a prose gate only when it derives its expectation from code; a hand-written
    * list here would be the pinned sentence that rule forbids.
    */
-  it("describes its own loading conditions correctly in CLAUDE.md", () => {
-    const wrapper = readFileSync(join(process.cwd(), "CLAUDE.md"), "utf8");
-    const section = wrapper.slice(wrapper.indexOf("## Claude Code loading"));
-    const sentence = section.slice(0, section.indexOf("\n\n`.claude/agents/`"));
+  it("describes its own loading conditions correctly in AGENTS.md", () => {
+    const agents = readFileSync(join(process.cwd(), "AGENTS.md"), "utf8");
+    const start = agents.indexOf("## Harness loading and hooks");
+    expect(start, "AGENTS.md has no harness loading section").toBeGreaterThan(-1);
+    const section = agents.slice(start);
+    const end = section.indexOf("\n## ", 1);
+    const sentence = end === -1 ? section : section.slice(0, end);
 
     const named = new Set([...sentence.matchAll(/`([a-z-]+)`/g)].map((m) => m[1]));
     const resident = rules.filter((r) => r.paths === null).map((r) => r.file.replace(/\.md$/, ""));
@@ -140,9 +141,25 @@ describe("`.claude/rules` path scoping contract", () => {
     for (const name of [...resident, ...conditional]) {
       expect(
         named.has(name),
-        `CLAUDE.md's loading sentence never names \`${name}\`, so a reader cannot tell when it loads`,
+        `AGENTS.md's loading section never names \`${name}\`, so a reader cannot tell when it loads`,
       ).toBe(true);
     }
+  });
+
+  /**
+   * Claude Code reads `AGENTS.md` only when no `CLAUDE.md`, `.claude/CLAUDE.md` or
+   * `CLAUDE.local.md` sits in the working directory or above it. A committed root one,
+   * even an empty one, silently replaces every rule `AGENTS.md` alone states.
+   */
+  it("keeps AGENTS.md the only root instruction file Claude reads", () => {
+    const shadows = ["CLAUDE.md", ".claude/CLAUDE.md"].filter((file) =>
+      existsSync(join(process.cwd(), file)),
+    );
+    expect(
+      shadows,
+      `these files make Claude Code skip AGENTS.md:\n${shadows.join("\n")}\n`
+        + "Move what they say into AGENTS.md and delete them.",
+    ).toEqual([]);
   });
 
   /**
@@ -150,7 +167,7 @@ describe("`.claude/rules` path scoping contract", () => {
    * by importing a view from `@/views/*-redirect` and rendering nothing else, so the set is derived.
    */
   /**
-   * `CLAUDE.md` inventories hooks and says which are mirrored into `.codex/hooks/`. Only one-sided hooks
+   * `AGENTS.md` inventories hooks and says which are mirrored into `.codex/hooks/`. Only one-sided hooks
    * are required by name; the mirrored ones are covered by `pnpm test:claude:hooks`, and a size cap
    * cannot catch a claim rotting without changing size.
    */
@@ -166,11 +183,11 @@ describe("`.claude/rules` path scoping contract", () => {
       ...claude.filter((name) => !codex.includes(name)),
       ...codex.filter((name) => !claude.includes(name)),
     ].sort();
-    const wrapper = readFileSync(join(process.cwd(), "CLAUDE.md"), "utf8");
-    const unnamed = asymmetric.filter((name) => !wrapper.includes(name));
+    const agents = readFileSync(join(process.cwd(), "AGENTS.md"), "utf8");
+    const unnamed = asymmetric.filter((name) => !agents.includes(name));
     expect(
       unnamed,
-      `these hooks run for one tool and not the other, and CLAUDE.md never says so:\n`
+      `these hooks run for one tool and not the other, and AGENTS.md never says so:\n`
         + `${unnamed.join("\n")}\n`
         + "An asymmetry nobody wrote down reads as an oversight the next time someone "
         + "tries to restore parity.",
@@ -199,13 +216,11 @@ describe("`.claude/rules` path scoping contract", () => {
     ).toEqual([]);
   });
 
-  it("leaves no rule unmentioned by the two files every agent reads", () => {
-    const both =
-      readFileSync(join(process.cwd(), "CLAUDE.md"), "utf8")
-      + readFileSync(join(process.cwd(), "AGENTS.md"), "utf8");
+  it("leaves no rule unmentioned by the file every agent reads", () => {
+    const agents = readFileSync(join(process.cwd(), "AGENTS.md"), "utf8");
     const unmentioned = rules
       .map((r) => r.file)
-      .filter((file) => !both.includes(file.replace(/\.md$/, "")));
+      .filter((file) => !agents.includes(file.replace(/\.md$/, "")));
     expect(
       unmentioned,
       `these rules exist but nothing an agent reads points at them:\n${unmentioned.join("\n")}`,
@@ -241,7 +256,7 @@ describe("`.claude/rules` path scoping contract", () => {
   });
 
   it("keeps the whole resident context at or under 20,000 bytes", () => {
-    const files = ["AGENTS.md", "CLAUDE.md", ...ALWAYS_LOADED.map((f) => join(".claude/rules", f))];
+    const files = ["AGENTS.md", ...ALWAYS_LOADED.map((f) => join(".claude/rules", f))];
     const total = files.reduce((sum, file) => sum + authoredBytes(file), 0);
     const detail = files.map((file) => `  ${authoredBytes(file)} ${file}`).join("\n");
 

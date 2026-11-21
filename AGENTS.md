@@ -133,16 +133,29 @@ only with `pnpm pr:land <number>`. Never use `--no-verify`, force-push main,
 `git reset --hard`, or `git push --force` without explicit user authority.
 Publishing needs an explicit request and `npm pack --dry-run` first.
 
-`CLAUDE.md` imports this file and owns Claude loading details. Keep root plus
-the largest nested instruction file below 32 KiB; nested `AGENTS.md` files only
-point to the `.claude/rules/` relevant to their paths, which Codex does not
-auto-load. Keep host-specific skill metadata and agent briefs separate. Shared
-procedures may have one owner; byte identity is not required. Codex briefs
-inherit the caller's model, effort and tools; `access` defines scope, not a grant.
-Run `pnpm agents:check` after editing agent
-files. `.claude/settings.json` owns Claude hooks and `.codex/hooks.json` Codex
-hooks; Codex skips a new or changed entry until a person trusts it in `/hooks`.
-Do not change Claude files while optimizing Codex instructions.
+Keep root plus the largest nested instruction file below 32 KiB; nested
+`AGENTS.md` files only point to the `.claude/rules/` relevant to their paths.
+Keep host-specific skill metadata and agent briefs separate. Shared procedures
+may have one owner; byte identity is not required. Codex briefs inherit the
+caller's model, effort and tools; `access` defines scope, not a grant. Run
+`pnpm agents:check` after editing agent files. Do not change Claude files while
+optimizing Codex instructions.
+
+## Harness loading and hooks
+
+This file is the only root instruction file: Claude Code reads it directly, and
+a root `CLAUDE.md` would replace it. `.claude/rules/` always loads `forbidden`,
+`git` and `local-first`; `design`, `design-gates`, `architecture`, `testing`,
+`surfaces` and `documentation` load by their frontmatter paths
+(`rules-path-scope.contract.test.ts`). Codex loads no rule by itself. Claude
+discovers skills in `.claude/skills/`, Codex in `.agents/skills/`.
+
+`.claude/settings.json` owns Claude permissions and hooks, `.codex/hooks.json`
+Codex hooks; Codex skips a new or changed entry until a person trusts it in
+`/hooks`. Each hook has a `.codex/hooks/` adaptation, except Codex-only
+`block-secret-read.sh` (Claude uses `permissions.deny`) and Claude-only
+`session-length.sh` (it reads Claude's transcript). `pnpm test:claude:hooks`
+guards the wiring.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

@@ -11,16 +11,22 @@ Host loading is versioned behavior; recheck the linked guides before migrating.
 
 ## Instruction files
 
-`AGENTS.md` owns the common repository contract. Keep `CLAUDE.md` as a small
-Claude adapter importing `@AGENTS.md`: this remains compatible with older
-sessions and retains Claude-specific rule and hook ownership. Do not enable a
-second direct load of the same content without removing the import.
+`AGENTS.md` is the only root instruction file. It owns the common repository
+contract and the Claude-specific loading and hook ownership that a `CLAUDE.md`
+adapter used to carry.
 
-Claude Code documents native `AGENTS.md` support from 2.1.277. Its default uses
-`CLAUDE.md` instead when one exists in the working directory or an ancestor;
-local instruction files also affect that choice. Therefore, deleting this
-repository's adapter is not enough to establish which file loads in every
-session. See [Claude instruction loading](https://code.claude.com/docs/en/memory#agentsmd).
+Claude Code reads `AGENTS.md` directly from 2.1.277, but only when no
+`CLAUDE.md`, `CLAUDE.local.md` or `CLAUDE.md` inside a `.claude` folder exists in
+the working directory or an ancestor; any of those replaces it. So the
+repository commits none (`rules-path-scope.contract.test.ts` refuses a root
+one). Two local cases need the user setting **Project instructions** =
+`claude-md-and-agents-md`: a personal `CLAUDE.local.md`, and a profile whose
+`CLAUDE_CONFIG_DIR` is not `~/.claude`, which then counts `~/.claude/CLAUDE.md`
+as an ancestor file. A worktree under `.claude/worktrees/` sits inside the main
+checkout, so a `CLAUDE.md` still in the main checkout counts for it too.
+`.claude/rules/` loads alongside `AGENTS.md`; a nested `AGENTS.md` loads when
+Claude reads a file in its directory. See
+[Claude instruction loading](https://code.claude.com/docs/en/memory#agentsmd).
 
 Codex follows `AGENTS.md` from the repository root toward the working directory,
 with more local instructions applying to their scope. It has its own override
@@ -31,8 +37,7 @@ and discovery behavior; a Claude rule glob is not a Codex loader. See
 
 | Owner | Purpose |
 |---|---|
-| `AGENTS.md` | Short common constraints and workflow entrypoints |
-| `CLAUDE.md` | Claude loading and hook ownership |
+| `AGENTS.md` | Short common constraints, workflow entrypoints, harness loading and hook ownership |
 | `.claude/rules/` | Topic authorities; Claude path loading, explicit Codex reads |
 | `.agents/skills/*/SKILL.md` | Codex discovery metadata and entrypoint |
 | `.agents/skills/*/workflow.md` | Shared procedure for both hosts |
