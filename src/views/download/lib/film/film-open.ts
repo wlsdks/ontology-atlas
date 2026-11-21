@@ -4,7 +4,6 @@ import type { FilmMapLayout, Measure } from './film-map-layout';
 import { dotOffsets } from './film-map-layout';
 import { circleIntoRect, inside, overlaps, quadAt, resample, type Pt, type Rect } from './film-geometry';
 
-/** What one frontmatter line draws in the close-up beside the panel. */
 export type OpenRole = 'rule' | 'kind' | 'title' | 'domain' | 'elements' | 'dependencies';
 
 export interface OpenLine {
@@ -12,16 +11,13 @@ export interface OpenLine {
   key: string | null;
   value: string;
   y: number;
-  /** Where the key's text and the value's start. */
   x: number;
   valueX: number;
-  /** Just after the value: where the active row's hairline leaves. */
   end: number;
 }
 
 export interface LeavingLine {
   id: string;
-  /** From the pick's rim outward. */
   from: Pt;
   to: Pt;
   named: boolean;
@@ -40,17 +36,14 @@ export interface OpenLayout {
   dirW: number;
   lines: OpenLine[];
   lineH: number;
-  /** The close-up's scale over the map's marks. */
   zoom: number;
   pick: Pt;
-  /** The pick's radius with no elements, and with all of them. */
   pickR0: number;
   pickR1: number;
   domain: Pt;
   domainR: number;
   dots: Pt[];
   dotR: number;
-  /** Indexes into `dots` of the pick's own elements it depends on. */
   ownNeeds: number[];
   leaving: LeavingLine[];
   /** The named end of one leaving line and where its name goes; null `label` where no clear spot exists, so the mark stands unnamed. */
@@ -58,7 +51,6 @@ export interface OpenLayout {
   pickName: { x: number; y: number; font: string; size: number };
   domainName: { x: number; y: number; font: string; size: number };
   light: { x: number; y: number; r: number };
-  /** The leaving lines fade out over their last pixels, so they read as continuing. */
   fadePx: number;
 }
 
@@ -73,7 +65,6 @@ export interface OpenInput {
   mono: string;
 }
 
-/** A frontmatter list cut to `room`: whole items, then an ellipsis, and "+N" of the rest when asked. */
 function fitList(items: string[], room: number, measure: (t: string) => number, counted: boolean): string {
   const full = `[${items.join(', ')}]`;
   if (measure(full) <= room) return full;
@@ -81,7 +72,6 @@ function fitList(items: string[], room: number, measure: (t: string) => number, 
     const text = counted ? `[${items.slice(0, k).join(', ')}, … +${items.length - k}]` : `[${items.slice(0, k).join(', ')}, …]`;
     if (measure(text) <= room) return text;
   }
-  /* Even one item is too long: it is cut inside, and the count of the rest still shows. */
   const tail = counted ? `, … +${items.length - 1}]` : '…]';
   let head = `[${items.join(', ')}`;
   while (head.length > 2 && measure(`${head}${counted ? '…' : ''}${tail}`) > room) head = head.slice(0, -1);
@@ -131,7 +121,6 @@ export function layoutOpen(input: OpenInput): OpenLayout {
   const dir = S.wide ? `docs/ontology/${node.path.slice(0, node.path.lastIndexOf('/') + 1)}` : `…/${node.path.slice(0, node.path.lastIndexOf('/') + 1)}`;
   const file = node.path.slice(node.path.lastIndexOf('/') + 1);
 
-  /* The close-up: the part of the map those lines draw, larger than the map, beside the panel. */
   const zoom = S.wide ? 1.5 : 1.25;
   const free: Rect = S.wide
     ? { l: panel.r + 40, r: w - S.safe, t: titleBox.b, b: captionBox.t }
@@ -149,7 +138,6 @@ export function layoutOpen(input: OpenInput): OpenLayout {
   }));
   const ownNeeds = reach.ownNeeds.map((e) => node.elements.indexOf(e)).filter((k) => k >= 0);
 
-  /* Leaving lines keep the real order of their ends' directions on the map, fanned into the free side. */
   const own = new Set(node.elements);
   const here = map.marks.get(pick);
   const far = reach.needs
@@ -193,12 +181,10 @@ export function layoutOpen(input: OpenInput): OpenLayout {
   const pickName = { x: pickAt.x, y: pickAt.y - pickR1 - (S.wide ? 30 : 20), font: `650 ${pickNameSize}px ${sans}`, size: pickNameSize };
   const domainName = { x: domainAt.x, y: domainAt.y + domainR + 10 + domainNameSize * 0.6, font: `650 ${domainNameSize}px ${sans}`, size: domainNameSize };
 
-  /* The example's name: beside its mark, above or below it, wherever no line, dot or name of the close-up runs; with no such spot it is left out. */
   if (namedEnd) {
     const E: NonNullable<OpenLayout['namedEnd']> = namedEnd;
     const textW = measure(vault.byId.get(E.id)!.label, E.font);
     const textH = E.size * 1.24;
-    /* The pick's name is drawn from its left edge, the domain's centred. */
     const textBox = (name: string, font: string, x: number, y: number, size: number, centred: boolean): Rect => {
       const tw = measure(name, font);
       const l = centred ? x - tw / 2 : x;

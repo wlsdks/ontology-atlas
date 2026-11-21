@@ -13,12 +13,10 @@ import { cn } from '@/shared/lib/cn';
 
 /** 26 characters a second still reads as typing, not flicker; a cadence, so not a `--motion-*` token. */
 const CADENCE_MS = 38;
-/** A longer sentence types faster instead of taking longer. */
 const BUDGET_MS = 1800;
 
 export interface HeroTypewriterLine {
   text: string;
-  /** The two lines sit one ink step apart. */
   className?: string;
 }
 
@@ -27,7 +25,6 @@ export function typingStepMs(totalChars: number, budgetMs: number = BUDGET_MS): 
   return Math.min(CADENCE_MS, budgetMs / totalChars);
 }
 
-/** Keeps whitespace as entries so `textContent` still equals the sentence tests read. */
 function toWords(text: string): { value: string; isSpace: boolean }[] {
   return text.split(/(\s+)/).filter(Boolean).map((value) => ({ value, isSpace: /^\s+$/.test(value) }));
 }
@@ -58,7 +55,6 @@ export function HeroTypewriter({
     () => ({ typed: 0, settled: new Set() }),
   );
 
-  /** Memoised on the sentence: the caller passes a fresh array every render. */
   const sentence = heroSentence(lines);
   const model = useMemo(() => {
     /* Scanned, not a mutated counter React's lint rejects; quadratic over two lines is free. */
@@ -88,7 +84,6 @@ export function HeroTypewriter({
 
   const { total } = model;
 
-  /** Derived, not set in an effect, which would cascade a render. */
   const typed = reduced ? total : progress.typed;
 
   /*

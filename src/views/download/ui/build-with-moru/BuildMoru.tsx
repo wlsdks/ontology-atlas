@@ -6,7 +6,6 @@ import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { CELEBRATION_MOTIONS, PLAY_ROW_FRAMES, type CelebrationMotion, type PlayMotion, type WorkMotion } from '@/shared/ui/marks/moru/moru-rows';
 
 export type BuildLoop = WorkMotion | PlayMotion | 'tail-wag';
-/** A finishing gesture, or Moru's puzzled tilt at a tap that did not fit. */
 export type BuildGesture = CelebrationMotion | 'uncertain';
 type Row = BuildLoop | BuildGesture;
 
@@ -21,7 +20,6 @@ const EMOTE: Record<BuildGesture, 'spark' | 'note' | 'heart' | null> = { clap: '
 const MAX_LAYERS = 3;
 
 interface Layer {
-  /** What the layer plays: the loop's name or the gesture's moment. */
   id: string;
   row: Row;
   /** A fresh mount per swap, so a row that comes back starts on its first pose. */
@@ -41,18 +39,12 @@ export function preloadBuildRows() {
   }
 }
 
-/**
- * Moru beside the stage. A loop plays for the phase; a gesture plays one pass over it and hands
- * back. Every row starts on the shared neutral pose; on each swap the new cell fades in while the
- * old ones fade out from where they are and are removed when their fade ends.
- */
 export function BuildMoru({
   loop,
   gesture,
   play,
 }: {
   loop: BuildLoop;
-  /** `at` tells two equal gestures apart. */
   gesture: { motion: BuildGesture; at: number } | null;
   play: 'running' | 'paused' | 'still';
 }) {

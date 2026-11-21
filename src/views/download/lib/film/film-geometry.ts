@@ -1,5 +1,3 @@
-/** Plain 2D helpers the film's layout and paint share; every function is pure. */
-
 export interface Pt {
   x: number;
   y: number;
@@ -19,7 +17,6 @@ export const overlaps = (a: Rect, b: Rect): boolean => a.l < b.r && a.r > b.l &&
 export const inside = (p: Pt, rect: Rect): boolean => p.x > rect.l && p.x < rect.r && p.y > rect.t && p.y < rect.b;
 
 
-/** How far a circle reaches into a rectangle; 0 when they do not touch. */
 export function circleIntoRect(c: Pt, radius: number, rect: Rect): number {
   const nx = Math.max(rect.l, Math.min(c.x, rect.r));
   const ny = Math.max(rect.t, Math.min(c.y, rect.b));
@@ -28,7 +25,6 @@ export function circleIntoRect(c: Pt, radius: number, rect: Rect): number {
   return Math.max(0, radius - d);
 }
 
-/** Distance from a point to a rectangle; 0 inside it. */
 export function distanceToRect(p: Pt, rect: Rect): number {
   const dx = Math.max(rect.l - p.x, 0, p.x - rect.r);
   const dy = Math.max(rect.t - p.y, 0, p.y - rect.b);
@@ -37,7 +33,6 @@ export function distanceToRect(p: Pt, rect: Rect): number {
 
 export const dist = (a: Pt, b: Pt): number => Math.hypot(b.x - a.x, b.y - a.y);
 
-/** The point at `t` on the quadratic curve from `a` through control `c` to `b`. */
 export function quadAt(a: Pt, c: Pt, b: Pt, t: number): Pt {
   const u = 1 - t;
   return { x: u * u * a.x + 2 * u * t * c.x + t * t * b.x, y: u * u * a.y + 2 * u * t * c.y + t * t * b.y };
@@ -51,13 +46,11 @@ export function bowControl(a: Pt, b: Pt, bow: number): Pt {
   return { x: (a.x + b.x) / 2 - (b.y - a.y) * bow, y: (a.y + b.y) / 2 + (b.x - a.x) * bow };
 }
 
-/** `n + 1` points along a bowed curve from `a` to `b`. */
 export function bowedPoints(a: Pt, b: Pt, bow: number, n = 40): Pt[] {
   const c = bowControl(a, b, bow);
   return Array.from({ length: n + 1 }, (_, i) => quadAt(a, c, b, i / n));
 }
 
-/** Drops the points of `pts` closer than `fromStart` to its first and `fromEnd` to its last anchor. */
 export function trim(pts: readonly Pt[], start: Pt, fromStart: number, end: Pt, fromEnd: number): Pt[] {
   return pts.filter((p) => dist(p, start) >= fromStart && dist(p, end) >= fromEnd);
 }
@@ -68,7 +61,6 @@ export function polylineLength(pts: readonly Pt[]): number {
   return len;
 }
 
-/** Points every `step` pixels along a polyline, for collision tests against boxes. */
 export function resample(pts: readonly Pt[], step: number): Pt[] {
   if (pts.length === 0) return [];
   const out: Pt[] = [pts[0]!];
@@ -97,7 +89,6 @@ function segmentsCross(a: Pt, b: Pt, c: Pt, d: Pt): boolean {
   return d1 * d2 < 0 && d3 * d4 < 0;
 }
 
-/** How many times two polylines cross. */
 export function crossings(p: readonly Pt[], q: readonly Pt[]): number {
   let count = 0;
   for (let i = 1; i < p.length; i += 1) {
@@ -106,7 +97,6 @@ export function crossings(p: readonly Pt[], q: readonly Pt[]): number {
   return count;
 }
 
-/** The part of a polyline from fraction `from` to `to` of its length. */
 export function subPolyline(pts: readonly Pt[], from: number, to: number): Pt[] {
   if (pts.length < 2 || to <= from) return [];
   const total = polylineLength(pts);
@@ -131,7 +121,6 @@ export function subPolyline(pts: readonly Pt[], from: number, to: number): Pt[] 
   return out;
 }
 
-/** The point at fraction `t` of a polyline's length. */
 export function pointAlong(pts: readonly Pt[], t: number): Pt {
   if (pts.length === 0) return { x: 0, y: 0 };
   if (t <= 0 || pts.length === 1) return pts[0]!;

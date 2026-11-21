@@ -1,8 +1,3 @@
-/**
- * The page films' shared easing and light. Canvas 2D only; every value is a pure function of the
- * film's progress or clock, so a frame never jumps.
- */
-
 export const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 export const easeInOut = (v: number) => {
   const x = clamp01(v);
@@ -19,7 +14,6 @@ export const LIGHT_STOPS: readonly (readonly [number, number])[] = Array.from({ 
   return [t, Math.exp(-4.2 * t * t) * (1 - t)] as const;
 });
 
-/** `color` as `r, g, b` channels, through the canvas so any CSS colour it understands works. */
 function channels(ctx: CanvasRenderingContext2D, color: string): string {
   ctx.fillStyle = '#000';
   ctx.fillStyle = color;
@@ -33,7 +27,6 @@ function channels(ctx: CanvasRenderingContext2D, color: string): string {
   return rgb ? rgb[1]!.split(',').slice(0, 3).join(',') : '0, 0, 0';
 }
 
-/** A light pool drawn once per colour and stamped with `drawImage`, never a gradient per frame. */
 export function lightSprite(color: string, size = 256): HTMLCanvasElement {
   const sprite = document.createElement('canvas');
   sprite.width = size;

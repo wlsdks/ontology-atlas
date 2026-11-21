@@ -7,7 +7,6 @@ import { scanHarness, type HarnessReport, type HarnessScanPort, type HarnessScan
  * `tools:`, so the diff the film lifts fits one card.
  */
 
-/** Where the screen says it read the example from; no machine's real path. */
 export const EXAMPLE_SOURCE_ROOT = '~/code/my-app';
 
 const SKILL_NAMES = ['code-review', 'db-migrate', 'release-notes', 'write-tests'] as const;
@@ -85,11 +84,9 @@ export function examplePort(files: Readonly<Record<string, string>> = EXAMPLE_FI
 
 export interface ExampleRead {
   report: HarnessReport;
-  /** Every progress event the scan emitted, in order, for the film to replay. */
   progress: readonly HarnessScanProgress[];
 }
 
-/** Runs the app's scanner over the example once and keeps what it reported along the way. */
 export async function readExample(): Promise<ExampleRead> {
   const progress: HarnessScanProgress[] = [];
   const report = await scanHarness(examplePort(), { onProgress: (event) => progress.push({ ...event }) });

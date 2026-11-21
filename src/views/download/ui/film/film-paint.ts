@@ -26,10 +26,6 @@ import type { OpenLayout } from '../../lib/film/film-open';
 import { rowOnPhone, type PlacedRow, type WallLayout } from '../../lib/film/film-wall';
 import type { FilmVault } from '../../lib/film/film-vault';
 
-/* ------------------------------------------------------------------------------------------ */
-/* Inks                                                                                         */
-/* ------------------------------------------------------------------------------------------ */
-
 export interface FilmInks {
   ground: string;
   halo: string;
@@ -46,13 +42,11 @@ export interface FilmInks {
   panel: string;
   border: string;
   borderSoft: string;
-  /** The mark at rest: the name ink mixed toward the ground by the product's rest share. */
   rest: string;
 }
 
 type Rgb = [number, number, number, number];
 
-/** Any CSS colour the canvas understands, as 0..255 channels and an alpha. */
 export function parseColor(color: string, probe?: CanvasRenderingContext2D | null): Rgb {
   let value = color.trim();
   if (probe) {
@@ -97,10 +91,6 @@ export function rgba(color: string, alpha: number): string {
   const [r, g, b] = parseColor(color);
   return `rgba(${r}, ${g}, ${b}, ${Math.round(clamp01(alpha) * 1000) / 1000})`;
 }
-
-/* ------------------------------------------------------------------------------------------ */
-/* Text stamps                                                                                  */
-/* ------------------------------------------------------------------------------------------ */
 
 const STAMP_PAD = 6;
 
@@ -154,7 +144,6 @@ export class TextStamps {
     return stamp;
   }
 
-  /** Draws `text` with its left edge, centre or right edge at `x` and its middle at `y`; returns its width. */
   draw(
     ctx: CanvasRenderingContext2D,
     text: string,
@@ -173,20 +162,13 @@ export class TextStamps {
   }
 }
 
-/* ------------------------------------------------------------------------------------------ */
-/* The scene: everything a frame reads, made once per layout                                    */
-/* ------------------------------------------------------------------------------------------ */
-
 interface FlightPlan {
   id: string;
   start: number;
-  /** The name's middle when the flight starts. */
   from: Pt;
   text: string;
-  /** The row's own light when the flight starts. */
   rowAlpha: number;
   side: number;
-  /** Phone elements: the dot alone travels; the name fades where it stands. */
   dropText: boolean;
   /** How long it flies: longer for a far row, so no frame moves it too far. */
   ms: number;
@@ -196,7 +178,6 @@ interface LitPlan {
   line: FilmLitLine;
   start: number;
   len: number;
-  /** Dots of a `relates` line, from the pick outward. */
   dots: Pt[];
   path: Path2D | null;
   glint: number;
@@ -208,7 +189,6 @@ interface ArcPlan {
   path: Path2D;
 }
 
-/** What one frame drew, for the test probe: every mark and label by key. */
 export interface FrameRecord {
   set(key: string, x: number, y: number, alpha: number): void;
 }
@@ -222,16 +202,13 @@ export interface FilmScene {
   stamps: TextStamps;
   sprites: Map<string, HTMLCanvasElement>;
   flights: Map<string, FlightPlan>;
-  /** The pick, its domain and its elements: the close-up of act 2. */
   fragment: Set<string>;
   arcs: ArcPlan[];
   lit: LitPlan[];
-  /** Which wall row stands for each concept. */
   rowOf: Map<string, PlacedRow>;
   slotSide: Map<string, number>;
   /** How long act 3 carries the close-up's marks to the map: longer where they travel far on a small stage. */
   travelMs: number;
-  /** Ink share kept by unrelated clusters while lit. */
   sink: number;
   mono: string;
   record: FrameRecord | null;
@@ -239,7 +216,6 @@ export interface FilmScene {
 
 const RIBBON_FADE_PX = 90;
 
-/** A tapered ribbon's polygon for the part `from`..`to` of a line, keeping the whole line's taper. */
 function ribbonPath(pts: readonly Pt[], w0: number, from: number, to: number, wideAtStart: boolean): Path2D {
   const path = new Path2D();
   const part = subPolyline(pts, from, to);
@@ -374,10 +350,6 @@ export function buildScene(
   return { vault, map, wall, open, inks, stamps, sprites, flights, fragment, arcs, lit, rowOf, slotSide, travelMs, sink, mono, record: null };
 }
 
-/* ------------------------------------------------------------------------------------------ */
-/* Primitives                                                                                   */
-/* ------------------------------------------------------------------------------------------ */
-
 const TAU = Math.PI * 2;
 
 function disc(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, rim: number, core: number, ink: string, fill: string) {
@@ -457,7 +429,6 @@ function drawLabel(ctx: CanvasRenderingContext2D, scene: FilmScene, label: FilmL
   scene.record?.set(label.key, label.x, label.y + dy, alpha);
 }
 
-/** A capability's disc the product's way: a dot under the smallest size, else rim and core. */
 function capMark(ctx: CanvasRenderingContext2D, scene: FilmScene, x: number, y: number, r: number, ink: string) {
   const S = scene.map.sizes;
   const min = scene.map.capRadius(0);
@@ -493,10 +464,6 @@ function pointer(ctx: CanvasRenderingContext2D, scene: FilmScene, tip: Pt, alpha
   ctx.stroke();
   ctx.restore();
 }
-
-/* ------------------------------------------------------------------------------------------ */
-/* Act 1 and act 2: the wall and the opened file                                                */
-/* ------------------------------------------------------------------------------------------ */
 
 /** The wall's rows at act-1 time `t1` under an extra light `fade`; `rowLight` 0 leaves a row to another painter. */
 function paintWall(
@@ -547,7 +514,6 @@ function roundRect(ctx: CanvasRenderingContext2D, rect: Rect, radius: number) {
 
 const lerpRect = (a: Rect, b: Rect, t: number): Rect => ({ l: lerp(a.l, b.l, t), t: lerp(a.t, b.t, t), r: lerp(a.r, b.r, t), b: lerp(a.b, b.b, t) });
 
-/** The pick's chip (`open` 0) or its file panel (`open` 1), and the file name riding between them. */
 function paintChipOrPanel(ctx: CanvasRenderingContext2D, scene: FilmScene, open: number, chipLight: number, rowsLight: number, t2: number, scroll: number) {
   const { wall, inks, stamps } = scene;
   const O = scene.open;
@@ -575,7 +541,6 @@ function paintChipOrPanel(ctx: CanvasRenderingContext2D, scene: FilmScene, open:
     }
     ctx.globalAlpha = 1;
   }
-  /* The file name rides from its row to the panel's header. */
   const fileFont = wall.font;
   const from = { x: pickRow.x, y: pickRow.y - scroll };
   const dirW = O ? O.dirW : 0;
@@ -591,7 +556,6 @@ function paintChipOrPanel(ctx: CanvasRenderingContext2D, scene: FilmScene, open:
     scene.record?.set('file', x, y, nameLight);
   }
   if (!O || rowsLight <= 0.004) return;
-  /* Header path, the separator and the frontmatter. */
   const header = easeOut(span(t2, OPEN.headerFrom, OPEN.headerMs)) * rowsLight;
   if (header > 0.004) {
     ctx.globalAlpha = header;
@@ -634,7 +598,6 @@ function paintChipOrPanel(ctx: CanvasRenderingContext2D, scene: FilmScene, open:
   });
 }
 
-/** Where each active row's hairline ends: the thing that row just drew. */
 function hairTarget(O: OpenLayout, k: number, r: number): Pt {
   switch (k) {
     case 0:
@@ -654,7 +617,6 @@ function hairTarget(O: OpenLayout, k: number, r: number): Pt {
   }
 }
 
-/** Act 2's close-up at `t2`, faded by `out` (act 3's fold), its parts at `travel` toward the map. */
 function paintFragment(
   ctx: CanvasRenderingContext2D,
   scene: FilmScene,
@@ -683,12 +645,10 @@ function paintFragment(
 
   const P = at(O.pick, pickMap);
   const D = domainMap ? at(O.domain, domainMap) : O.domain;
-  /* The light pool travels with its domain and settles to the map's. */
   if (pass === 'light') {
     if (domainIn > 0.004 && cluster) light(ctx, scene.sprites.get(inks.rest), D.x, D.y, lerp(O.light.r, cluster.footprint * 1.8, travel), 0.2 * domainIn);
     return;
   }
-  /* Leaving lines, then the hairline of the row being read. */
   if (depsIn > 0 && linesLight > 0.004) {
     O.leaving.forEach((line, i) => {
       const grown = easeOut(span(t2, rowStart(4) + OPEN.drawDelay + i * OPEN.lineStep, OPEN.lineMs));
@@ -741,7 +701,6 @@ function paintFragment(
     ctx.stroke();
     ctx.globalAlpha = 1;
   }
-  /* The stem between the domain and the pick. */
   const pickR = lerp(lerp(O.pickR0, O.pickR1, grow), pickMap.r, travel);
   const domainScale = lerp(O.zoom, 1, travel);
   if (domainIn > 0.004) {
@@ -815,18 +774,11 @@ function paintFragment(
   }
 }
 
-/* ------------------------------------------------------------------------------------------ */
-/* Acts 3 and 4: the map                                                                        */
-/* ------------------------------------------------------------------------------------------ */
-
 interface MapState {
-  /** Act 3 time, past its end through act 4. */
   t3: number;
-  /** Act 4 time; negative before act 4. */
   t4: number;
 }
 
-/** A concept's mark position, radius and light in act 3 or 4; null while it has not appeared. */
 function markAt(scene: FilmScene, id: string, st: MapState): { x: number; y: number; light: number } | null {
   const m = scene.map.marks.get(id)!;
   if (scene.fragment.has(id)) return st.t3 < FLIGHT.travelFrom + scene.travelMs ? null : { x: m.x, y: m.y, light: 1 };
@@ -840,7 +792,6 @@ function markAt(scene: FilmScene, id: string, st: MapState): { x: number; y: num
   return { x: p.x, y: p.y, light: f.mark };
 }
 
-/** When a hub's flight lands, so its light and name can follow. */
 function landedAt(scene: FilmScene, id: string): number {
   const plan = scene.flights.get(id);
   if (scene.fragment.has(id)) return FLIGHT.travelFrom + scene.travelMs;
@@ -874,7 +825,6 @@ function paintMap(ctx: CanvasRenderingContext2D, scene: FilmScene, st: MapState)
       ownerLight.set(id, Math.max(0, ...ends.map((e) => endLight.get(e)!)));
     }
   }
-  /** How much of its own ink a concept keeps: 1 at rest, the sink for unrelated clusters while lit. */
   const keep = (id: string, domain: string | null) => {
     if (!lit || domain === pickDomain || domain === null) return 1;
     const end = endLight.get(id) ?? 0;
@@ -883,7 +833,6 @@ function paintMap(ctx: CanvasRenderingContext2D, scene: FilmScene, st: MapState)
     return Math.max(base, lerp(base, 1, end), lerp(base, 0.6, owner));
   };
 
-  /* Lights: one pool per cluster, the pick's turning to the project's ink when selected. */
   for (const c of map.clusters) {
     const landed = landedAt(scene, c.id);
     const grown = scene.fragment.has(c.id) ? 1 : easeOut(span(st.t3, landed, FLIGHT.poolMs));
@@ -899,7 +848,6 @@ function paintMap(ctx: CanvasRenderingContext2D, scene: FilmScene, st: MapState)
     if (own && selected > 0) light(ctx, scene.sprites.get(inks.project), x, y, r, 0.2 * selected);
   }
 
-  /* Rest arcs: grown from the depending domain, a numeral at the middle. */
   const arcLight = lit && t4 >= 0 ? lerp(1, 0.24, sinkT) : 1;
   scene.arcs.forEach((plan) => {
     const arc = map.restArcs[plan.index]!;
@@ -918,7 +866,6 @@ function paintMap(ctx: CanvasRenderingContext2D, scene: FilmScene, st: MapState)
     ctx.globalAlpha = 1;
   });
 
-  /* Membership stems. */
   ctx.lineWidth = 1;
   for (const stem of map.stems) {
     const A = map.marks.get(stem.from);
@@ -947,7 +894,6 @@ function paintMap(ctx: CanvasRenderingContext2D, scene: FilmScene, st: MapState)
   }
   ctx.globalAlpha = 1;
 
-  /* Lit lines. */
   if (lit && t4 >= 0) {
     for (const plan of scene.lit) {
       const grown = easeOut(span(t4, plan.start, LIT.lineMs));
@@ -984,7 +930,6 @@ function paintMap(ctx: CanvasRenderingContext2D, scene: FilmScene, st: MapState)
     }
   }
 
-  /* Marks: elements, capabilities, domains, the project. */
   const selR = lit ? lerp(map.marks.get(lit.pick)!.r, lit.selectedR, selected) : 0;
   const drawConcept = (id: string) => {
     const m = map.marks.get(id)!;
@@ -1026,7 +971,6 @@ function paintMap(ctx: CanvasRenderingContext2D, scene: FilmScene, st: MapState)
   for (const m of map.marks.values()) if (m.kind === 'capability') drawConcept(m.id);
   for (const m of map.marks.values()) if (m.kind === 'domain' || m.kind === 'project') drawConcept(m.id);
 
-  /* The selection's rings, the agent's ring and its leader, and the glints. */
   if (lit && t4 >= 0) {
     const P = map.marks.get(lit.pick)!;
     const grow = 2 * (S.wide ? S.K : 0.84) * (1 - selected);
@@ -1068,7 +1012,6 @@ function paintMap(ctx: CanvasRenderingContext2D, scene: FilmScene, st: MapState)
     ctx.lineCap = 'butt';
   }
 
-  /* Numerals on the rest arcs, then the names. */
   scene.arcs.forEach((plan) => {
     const arc = map.restArcs[plan.index]!;
     if (!arc.numeral) return;
@@ -1157,7 +1100,6 @@ function paintNames(
   }
 }
 
-/** Act 3's flying names: each leaves its row and shrinks away as its mark appears. */
 function paintFlights(ctx: CanvasRenderingContext2D, scene: FilmScene, t3: number) {
   const { stamps, inks, wall } = scene;
   for (const plan of scene.flights.values()) {
@@ -1174,10 +1116,6 @@ function paintFlights(ctx: CanvasRenderingContext2D, scene: FilmScene, t3: numbe
     scene.record?.set(`fly:${plan.id}`, p.x, p.y, alpha);
   }
 }
-
-/* ------------------------------------------------------------------------------------------ */
-/* One frame                                                                                    */
-/* ------------------------------------------------------------------------------------------ */
 
 /**
  * The film at film time `T` (ms, running on through the hold). Every place, size and light is a
@@ -1228,7 +1166,6 @@ export function paintFilm(ctx: CanvasRenderingContext2D, scene: FilmScene, T: nu
     paintFragment(ctx, scene, t2, 1, 0, 1, 'marks');
     return;
   }
-  /* Act 3 onward: the wall returns at half light and its files fly to the map. */
   const fold = easeInOutSine(span(t3, 0, FLIGHT.foldMs));
   const actTwoEnd = ACT_START[2]! - ACT_START[1]!;
   const travel = easeInOut(span(t3, FLIGHT.travelFrom, scene.travelMs));
@@ -1237,7 +1174,6 @@ export function paintFilm(ctx: CanvasRenderingContext2D, scene: FilmScene, T: nu
   const travelling = scene.open && scene.map.pick && t3 < FLIGHT.travelFrom + scene.travelMs;
   if (t4 < 0) {
     const back = 0.5 * easeOut(span(t3, 0, FLIGHT.foldMs));
-    /* Folders and the files already in the close-up leave as the map fills. */
     const leaving = 1 - easeInOut(span(t3, 1400, 600));
     paintWall(
       ctx,

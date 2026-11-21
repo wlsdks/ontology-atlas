@@ -90,7 +90,6 @@ export function DownloadPage() {
   const visitorPlatform = useVisitorDesktopPlatform();
   const windowsInstaller = windowsAsset();
   const windowsPrimary = visitorPlatform === 'windows' && windowsInstaller !== null;
-  /** The browser map wins when there is nothing to download or the visitor holds a phone. */
   const winner: 'file' | 'web' =
     published && primaryAsset && visitorPlatform !== 'handheld' ? 'file' : 'web';
 
@@ -133,7 +132,6 @@ export function DownloadPage() {
           data-gateway-bottom-reserve-active={bottomTabBarPresent ? 'true' : undefined}
           className={cn(
             PAGE_GUTTER,
-            // The closing's map and maker's line already end the page; the colophon follows closely.
             'mt-16 sm:mt-24',
             'shrink-0 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))]',
             bottomTabBarPresent &&
@@ -141,10 +139,6 @@ export function DownloadPage() {
           )}
         >
           <div className={cn(PAGE_COLUMN, '@container')}>
-            {/*
-              A colophon on the closing's grid: who made the page and the legal line under the name,
-              the license, stack and motion control in the map's column.
-            */}
             <footer className="border-t border-[color:var(--color-divider)] pt-8 text-label leading-label text-[color:var(--color-text-quaternary)]">
               <GatewayReadingLinks className="mb-6" />
               <div className="grid min-w-0 gap-x-12 gap-y-6 @min-[52rem]:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
@@ -230,11 +224,6 @@ function HeroSection({
       className={cn(PAGE_GUTTER, 'gateway-hero relative flex w-full flex-col overflow-x-clip')}
     >
       <div aria-hidden className="gateway-hero-stars" />
-      {/*
-        One column on a narrow window: Moru beside the chips, the claim, the app. From 80rem the
-        claim takes the left and the app the right, where Moru walks along the window's top edge
-        (`.gateway-hero-grid`).
-      */}
       <div className={cn(PAGE_COLUMN, 'gateway-hero-grid relative min-w-0')}>
         <div className={cn(rise('gateway-t240'), 'gateway-hero-moru flex justify-center')}>
           <BrandCompanion
@@ -268,7 +257,6 @@ function HeroSection({
                 data-testid="gateway-hero-news"
                 className={cn(controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' }), HERO_CHIP)}
               >
-                {/* Static: the release is a fact, not a state that changes while the page is open. */}
                 <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-indigo-accent)]" />
                 <span>{t('news', { tag: MACOS_RELEASE.tag })}</span>
               </Link>
@@ -277,11 +265,9 @@ function HeroSection({
           </div>
 
           <h1
-            // The visible characters are aria-hidden.
             aria-label={heroSentence(heroLines)}
             className="gateway-hero-title mt-7 w-fit break-keep [text-wrap:balance] text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]"
           >
-            {/* The first line is a step down in ink: the second line is the sentence's subject. */}
             <HeroTypewriter start={heroIn} lines={heroLines} />
           </h1>
 
@@ -299,7 +285,6 @@ function HeroSection({
               {t('heroLead')}
             </p>
 
-            {/* Three controls: the visitor's platform filled, the others outlined at the same height. */}
             <DownloadActions
               scope="hero"
               className={cn(rise('gateway-t320'), 'mt-9 justify-center min-[80rem]:justify-start')}
@@ -316,7 +301,6 @@ function HeroSection({
               handheld={handheld}
             />
 
-            {/* Secondary to the download: a tiny Moru says who it is and opens its game. */}
             <div className={cn(rise('gateway-t400'), 'mt-6')}>
               <MoruPlayEntry />
             </div>
@@ -393,7 +377,6 @@ function MapLink({
   );
 }
 
-/** Below `sm` the actions stack at the column's width, one thumb-sized target per row. */
 const ACTIONS_STACK = 'max-sm:w-full max-sm:flex-col max-sm:items-stretch';
 
 function DownloadActions({
@@ -413,7 +396,6 @@ function DownloadActions({
 }) {
   const t = useTranslations('download');
   const id = TEST_IDS[scope];
-  /** The hero's 26rem column holds both outlined controls on one row at the compact padding. */
   const outlinedPad = cn('px-4 sm:px-6', scope === 'hero' && 'min-[80rem]:px-4');
 
   const macLink = primaryAsset ? (
@@ -476,7 +458,6 @@ function DownloadActions({
           >
             {t('webCta')}
           </MapLink>
-          {/* With no file to offer (a phone, or nothing published), the source is the other way in. */}
           <a
             href={GITHUB_REPO_URL}
             target="_blank"
@@ -506,7 +487,6 @@ function DownloadActions({
   );
 }
 
-/** A phone is offered the browser map, so its line names that, not the installer's malware check. */
 function TrustLine({
   testId,
   className,
@@ -554,11 +534,6 @@ function ClosingSection({
       className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full overflow-x-clip')}
     >
       <div className={cn(PAGE_COLUMN, '@container min-w-0 border-t border-[color:var(--color-divider)] pt-16 sm:pt-20')}>
-        {/*
-          The words and the maker's line on the left, the film's finished map on the right across
-          both rows, where it runs past the column to 2rem from the window's edge as the hero's
-          app window does; stacked, the map sits between the facts and the maker's line.
-        */}
         <div className="grid min-w-0 gap-x-12 gap-y-8 @min-[52rem]:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] @min-[52rem]:gap-y-12">
           <div className="min-w-0">
             <h2
@@ -624,7 +599,6 @@ function FactsStrip({
   handheld,
 }: {
   scope?: 'gateway' | 'gateway-closing';
-  /** One wrapping row in sans under the closing's trust line, with no rule of its own. */
   row?: boolean;
   className?: string;
   published: boolean;
@@ -633,7 +607,6 @@ function FactsStrip({
   windowsPrimary: boolean;
   sizeOnCta: boolean;
   heroIn: boolean;
-  /** A phone cannot install the file, so its size and checksum are noise there. */
   handheld: boolean;
 }) {
   const t = useTranslations('download');
@@ -683,7 +656,6 @@ function FactsStrip({
       label: 'SHA-256',
       value: `${subject.sha256.slice(0, 8)}…${subject.sha256.slice(-8)}`,
       code: true,
-      // The release page lists `<file>.sha256` beside the file; the guide holds the commands.
       href: releasePageUrl(subjectIsWindows ? 'windows' : 'macos'),
       name: t('factShaLink', { file: subject.fileName }),
     });

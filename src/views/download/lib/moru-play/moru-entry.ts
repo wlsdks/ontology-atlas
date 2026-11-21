@@ -13,16 +13,11 @@ export const ENTRY_ROWS = {
 export type EntryRow = keyof typeof ENTRY_ROWS;
 export const ENTRY_CELL = 64;
 
-/** One row and the catalogue timing of its clip, one duration per cell. */
 export interface EntryClip {
   row: EntryRow;
   durations: number[];
 }
 
-/**
- * One wave to say hello, then the blink over and over: its eyes close for under a second between
- * long rests, so a reaction never waits long for the neutral pose.
- */
 export const ENTRY_IDLE: readonly EntryClip[] = [
   { row: 'wave', durations: companion.clips.wave.durationsMs },
   { row: 'blink', durations: companion.clips.blink.durationsMs },
@@ -34,7 +29,6 @@ export const ENTRY_REACTION: EntryClip = {
   durations: reactions.clips.dance.durationsMs.map((ms, i, all) => (i === 0 ? 120 : i === all.length - 1 ? 240 : ms)),
 };
 
-/** A row and the cell in it. */
 export interface EntryPose {
   row: EntryRow;
   cell: number;
@@ -45,7 +39,6 @@ export interface EntryState {
   /** Index into `ENTRY_IDLE` (0, the greeting, plays once), or -1 while the reaction plays. */
   idle: number;
   elapsed: number;
-  /** A hover or focus asked for the reaction; it starts on the next neutral pose. */
   wants: boolean;
 }
 
@@ -62,15 +55,10 @@ function cellAt(line: EntryClip, elapsed: number): { index: number; done: boolea
   return { index: line.durations.length - 1, done: true };
 }
 
-/** Asks for the reaction unless it is already playing: a pass is never cut short to restart it. */
 export function requestReaction(state: EntryState): EntryState {
   return state.idle < 0 ? state : { ...state, wants: true };
 }
 
-/**
- * Advances the tiny Moru by `dtMs`. The reaction begins only on a neutral cell (a clip's first or
- * last), so the switch never jumps a pose; afterwards Moru goes back to blinking.
- */
 export function stepEntry(state: EntryState, dtMs: number): { state: EntryState; pose: EntryPose } {
   let next = { ...state, elapsed: state.elapsed + Math.max(0, dtMs) };
   let line = clipOf(next);

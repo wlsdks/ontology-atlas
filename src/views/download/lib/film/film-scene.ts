@@ -8,23 +8,15 @@ export interface FilmNode {
   file: string;
   kind: FilmKind;
   depth: number;
-  /** How many relations touch it, so the most connected files are the ones named. */
   degree: number;
-  /** Final place on the map: the root at the origin, the farthest concept at radius 1. */
   x: number;
   y: number;
-  /** The first-ring concept it sits under; the root's own index for the root. */
   cluster: number;
-  /** Its container in the drawn tree; the root's own index for the root. */
   parent: number;
-  /** Place among the floating files, a jittered cell of the stage, both in [0, 1]. */
   gx: number;
   gy: number;
-  /** Which of three drifting depth layers it floats on. */
   layer: 0 | 1 | 2;
-  /** 0..1 order of flight, outward from the centre. */
   order: number;
-  /** A stable 0..1 value per node, for the side its flight bows to. */
   seed: number;
 }
 
@@ -32,7 +24,6 @@ export interface FilmEdge {
   from: number;
   to: number;
   contains: boolean;
-  /** 0..1: when a containment line starts drawing, outward from the root. */
   reveal: number;
 }
 
@@ -41,9 +32,7 @@ export interface FilmScene {
   edges: FilmEdge[];
 }
 
-/** Where the first cluster sits, so the clusters never fall on a level square around the root. */
 const CLUSTER_START_ANGLE = -0.35;
-/** Columns of the floating field; rows follow from the count. */
 const FIELD_COLUMNS = 12;
 
 function hash(text: string): number {
@@ -55,15 +44,10 @@ function hash(text: string): number {
   return (h >>> 0) / 4294967295;
 }
 
-/** A cluster's distance from the root: the largest sits nearest, a small one farther out. */
 export function clusterRing(leaves: number, most: number): number {
   return 0.42 + 0.16 * (1 - Math.sqrt(leaves / Math.max(1, most)));
 }
 
-/**
- * A radial tree over the `contains` relations: the project at the centre, each child on the next
- * ring inside a wedge sized by how many leaves it holds. Nodes with no container hang off the root.
- */
 export function buildFilmScene(graph: StageGraph): FilmScene {
   const index = new Map(graph.nodes.map((node, i) => [node.id, i]));
   const parent = new Map<number, number>();
@@ -105,10 +89,6 @@ export function buildFilmScene(graph: StageGraph): FilmScene {
     }
   });
 
-  /*
-   * Like the app's map: each first-ring concept is a cluster around the root, its children ring
-   * it, and their children fan outward from them, each at a slightly different reach.
-   */
   const px = new Array<number>(graph.nodes.length).fill(0);
   const py = new Array<number>(graph.nodes.length).fill(0);
   const cluster = new Array<number>(graph.nodes.length).fill(rootIndex);
@@ -143,7 +123,6 @@ export function buildFilmScene(graph: StageGraph): FilmScene {
     py[c] = Math.sin(a) * r;
     fan(c, a, Math.PI * 2, 0.2 * Math.max(0.6, Math.sqrt(leaves[c] / most)));
   });
-  /* The farthest concept reaches radius 1, so the drawing's scale is the map's whole extent. */
   const reach = Math.max(1e-6, ...px.map((x, i) => Math.hypot(x, py[i])));
 
   const count = graph.nodes.length;
@@ -198,28 +177,21 @@ export function buildFilmScene(graph: StageGraph): FilmScene {
 }
 
 
-/**
- * Whether a relation crosses between clusters, which the map draws as a curve bowed away from the
- * root so it does not run through the hub.
- */
 export function crossesClusters(scene: FilmScene, edge: FilmEdge): boolean {
   const a = scene.nodes[edge.from];
   const b = scene.nodes[edge.to];
   return !edge.contains && a.depth > 0 && b.depth > 0 && a.cluster !== b.cluster;
 }
 
-/** A name to place beside its mark: the mark's centre and radius, the name's size, and which way is outward. */
 export interface LabelRequest {
   x: number;
   y: number;
   r: number;
   w: number;
   h: number;
-  /** Unit direction away from the crowd it sits in, for a name that must stand off its mark. */
   out: { x: number; y: number };
 }
 
-/** Where a name's text starts, relative to its mark, and whether a leader line joins them. */
 export interface LabelSpot {
   dx: number;
   dy: number;
@@ -234,7 +206,6 @@ interface Rect {
   b: number;
 }
 
-/** The box a name covers when its text is anchored at (x, y) with `align`, vertically centred. */
 export function labelBox(x: number, y: number, w: number, h: number, align: LabelSpot['align']): Rect {
   const l = align === 'center' ? x - w / 2 : align === 'end' ? x - w : x;
   return { l, t: y - h / 2, r: l + w, b: y + h / 2 };

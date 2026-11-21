@@ -17,7 +17,6 @@ import { ConnectScene, DraftScene, OpenFolderScene, useStepScenes } from './Step
  */
 type Entrance = 'still' | 'waiting' | 'entering';
 
-/** Each drawing's lines arrive once, in reading order, when its block scrolls into view. */
 function useEntrance(): [(node: HTMLElement | null) => void, Entrance] {
   const [node, setNode] = useState<HTMLElement | null>(null);
   const [entrance, setEntrance] = useState<Entrance>('still');
@@ -27,7 +26,6 @@ function useEntrance(): [(node: HTMLElement | null) => void, Entrance] {
     let first = true;
     const observer = new IntersectionObserver(
       (entries) => {
-        // Several entries can arrive together; the last one is the present.
         const seen = entries[entries.length - 1].isIntersecting;
         if (seen) {
           if (!first) setEntrance('entering');
@@ -111,10 +109,6 @@ export function StartSection({ graph }: { graph: StageGraph }) {
       <div className={cn(PAGE_COLUMN, '@container min-w-0')}>
         <SectionIntro eyebrow={t('eyebrow')} title={t('title')} />
 
-        {/*
-          One rail runs across the steps (down them on a phone): each step is a node on it, and a
-          fill travels from node to node; as it arrives, that step's scene plays once.
-        */}
         <ol
           ref={steps}
           data-testid="gateway-start-steps"
@@ -135,7 +129,6 @@ export function StartSection({ graph }: { graph: StageGraph }) {
               </span>
               <span aria-hidden className="gateway-step-node absolute left-0 top-0 size-3 rounded-full">
                 <span className="gateway-step-lit absolute inset-0.5 rounded-full" />
-                {/* The beat as the fill arrives: a 1px ring grows out of the node and fades. */}
                 <span
                   data-gateway-hit
                   className="gateway-step-press pointer-events-none absolute -inset-7 rounded-full border border-[color:var(--color-text-primary)]"

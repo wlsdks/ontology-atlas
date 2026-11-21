@@ -4,36 +4,26 @@ import type { StageGraph } from '../stage-graph';
 
 export type FilmKind = 'project' | 'domain' | 'capability' | 'element';
 
-/** One concept as the film draws it: its file, the domain it sits in and what it holds. */
 export interface FilmConcept {
   id: string;
   kind: FilmKind;
   label: string;
-  /** The vault path's last part, `vault-graph-query`. */
   slug: string;
-  /** `<kind>s/<slug>.md`, the file's path under `docs/ontology/`. */
   path: string;
-  /** The domain it sits in; null for the project, its own id for a domain. */
   domain: string | null;
-  /** The capability that holds an element; null otherwise. */
   capability: string | null;
-  /** A capability's elements, in the order the vault lists them. */
   elements: string[];
 }
 
-/** The bundled vault reduced to what the film draws: who holds whom, and the relations between them. */
 export interface FilmVault {
   project: FilmConcept | null;
-  /** Each kind sorted by id, so every build draws the same picture. */
   domains: FilmConcept[];
   capabilities: FilmConcept[];
   elements: FilmConcept[];
   byId: ReadonlyMap<string, FilmConcept>;
   /** `[from, to]`: `from` depends on `to`. */
   dependencies: readonly (readonly [string, string])[];
-  /** Undirected `relates` pairs. */
   relates: readonly (readonly [string, string])[];
-  /** Every relation the vault writes, containment included. */
   relationCount: number;
 }
 
@@ -76,7 +66,6 @@ export function readFilmVault(graph: StageGraph): FilmVault {
     } else if (isDirectionalRelation(edge.relationType)) dependencies.push([from.id, to.id]);
     else relates.push([from.id, to.id]);
   }
-  /* An element held only by a capability takes that capability's domain. */
   for (const concept of concepts.values()) {
     if (concept.kind === 'element' && concept.domain === null && concept.capability) {
       concept.domain = concepts.get(concept.capability)?.domain ?? null;
@@ -95,14 +84,10 @@ export function readFilmVault(graph: StageGraph): FilmVault {
   };
 }
 
-/** What one concept's relations reach: the film's lit lines when it is selected. */
 export interface FilmReach {
-  /** Everything it depends on, in the vault's order. */
   needs: string[];
-  /** Everything that depends on it. */
   neededBy: string[];
   relates: string[];
-  /** Its own elements it depends on: answered inside its own fan, without a long line. */
   ownNeeds: string[];
 }
 
@@ -145,7 +130,6 @@ export function pickFilmConcept(vault: FilmVault): string | null {
   return (ranked.find((row) => row.leaving <= MAX_LEAVING_LINES) ?? null)?.cap.id ?? null;
 }
 
-/** Dependencies that cross a domain border, rolled up to their ordered domain pair. */
 export function domainFlows(vault: FilmVault): { from: string; to: string; count: number }[] {
   const counts = new Map<string, number>();
   for (const [a, b] of vault.dependencies) {

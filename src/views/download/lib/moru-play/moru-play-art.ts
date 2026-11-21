@@ -35,7 +35,6 @@ export const GOLD_ROWS = [
   'dd.......dd',
 ];
 
-/** A small red beetle: the error you dodge. */
 export const BUG_ROWS = [
   '..l.....l..',
   '...l...l...',
@@ -52,7 +51,6 @@ export const BUG_ROWS = [
 
 export const HEART_ROWS = ['.ff.ff.', 'fffffff', 'fffffff', '.fffff.', '..fff..', '...f...'];
 
-/** 3×5 digits plus `+`, `×` and `-`. */
 export const GLYPHS: Record<string, string[]> = {
   '0': ['fff', 'f.f', 'f.f', 'f.f', 'fff'],
   '1': ['.f.', 'ff.', '.f.', '.f.', 'fff'],
@@ -69,7 +67,6 @@ export const GLYPHS: Record<string, string[]> = {
   '×': ['...', 'f.f', '.f.', 'f.f', '...'],
 };
 
-/** 5×7 digits and `×` for the countdown and the multiplier, where the 3×5 face reads as blocks. */
 export const BIG_GLYPHS: Record<string, string[]> = {
   '×': ['.....', '.....', 'f...f', '.f.f.', '..f..', '.f.f.', 'f...f'],
   '4': ['...f.', '..ff.', '.f.f.', 'f..f.', 'fffff', '...f.', '...f.'],
@@ -78,7 +75,6 @@ export const BIG_GLYPHS: Record<string, string[]> = {
   '3': ['.fff.', 'f...f', '....f', '..ff.', '....f', 'f...f', '.fff.'],
 };
 
-/** Every filled cell plus the outline ring around it, in grid units with a one-cell margin. */
 export function pixelCells(rows: readonly string[]): { width: number; height: number; fill: Array<[number, number, string]>; edge: Array<[number, number]> } {
   const fill: Array<[number, number, string]> = [];
   const filled = new Set<string>();
@@ -99,14 +95,12 @@ export function pixelCells(rows: readonly string[]): { width: number; height: nu
   return { width: rows[0].length + 2, height: rows.length + 2, fill, edge: [...edge.values()] };
 }
 
-/** An SVG path of one palette letter's cells, for the DOM's crisp-edged marks. */
 export function pixelPath(rows: readonly string[], letter: string | 'edge'): string {
   const cells = pixelCells(rows);
   const list = letter === 'edge' ? cells.edge : cells.fill.filter(([, , c]) => c === letter).map(([x, y]) => [x, y] as [number, number]);
   return list.map(([x, y]) => `M${x} ${y}h1v1h-1z`).join('');
 }
 
-/** Paints a pixel map into a fresh canvas `unit` CSS pixels per cell, at the screen's density. */
 export function pixelSprite(rows: readonly string[], palette: Palette, unit: number, dpr: number, outline: string | null): HTMLCanvasElement {
   const cells = pixelCells(rows);
   const canvas = document.createElement('canvas');
@@ -127,7 +121,6 @@ export function pixelSprite(rows: readonly string[], palette: Palette, unit: num
   return canvas;
 }
 
-/** The glyph rows for a short string, set side by side with one empty column between. */
 export function textRows(text: string, face: Record<string, string[]> = GLYPHS): string[] {
   const glyphs = [...text].map((c) => face[c]).filter(Boolean);
   return Array.from({ length: glyphs[0]?.length ?? 0 }, (_, y) => glyphs.map((g) => g[y]).join('.'));

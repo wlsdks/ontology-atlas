@@ -33,28 +33,20 @@ import {
  */
 
 export interface DirectorHost {
-  /** The window: its own coordinates are `WINDOW` CSS pixels before the stage's scale. */
   root: HTMLElement;
-  /** The film's own layer inside the window: clones, the scrim, the ring, the pointer, the card. */
   layer: HTMLElement;
   pointer: HTMLElement;
   ring: HTMLElement;
   scrim: HTMLElement;
   progress: readonly HarnessScanProgress[];
-  /** Synchronous: the scan panel shows this event when the call returns. */
   setProgress(progress: HarnessScanProgress | null): void;
-  /** Synchronous: a fresh screen, as it is before the scan. */
   remount(): void;
-  /** Runs `fn` and commits what it set before returning. */
   commit(fn: () => void): void;
-  /** The window's scale on screen. */
   scale(): number;
 }
 
 export interface Director {
-  /** Shows film time `T`; a time earlier than the last one remounts and replays up to it. */
   at(T: number): void;
-  /** Remounts and replays every cue up to `T`, landing on the frame `T` names. */
   seek(T: number): void;
   dispose(): void;
 }
@@ -72,7 +64,6 @@ const DIP_MS = 90;
 const POINTER_FADE = 120;
 /** No element on screen moves more than this between two 60fps frames. */
 const FRAME_STEP_MAX = 22;
-/** The entry curve's steepest slope: its fastest frame moves this many times the mean. */
 const EASE_PEAK = 2.3;
 
 interface Track {
@@ -114,8 +105,6 @@ export function createHarnessDirector(host: DirectorHost): Director {
   let last = -1;
   let next = 0;
 
-  /* ---------- reading the screen ---------- */
-
   const frameOf = () => {
     const box = root.getBoundingClientRect();
     return { box, k: box.width / WINDOW.w || 1 };
@@ -153,16 +142,12 @@ export function createHarnessDirector(host: DirectorHost): Director {
     }
   }
 
-  /** Pane 2's subject is the category pane 1 has chosen; its count may change under a filter. */
   const categoryOf = (pane1: HTMLElement) => pane1.querySelector('[aria-selected="true"]')?.getAttribute('data-option-key') ?? '';
 
-  /** Where the pointer presses a control: its middle, or 72px in on a wide row, where its label is. */
   function aim(node: HTMLElement): Point {
     const r = local(node);
     return { x: r.x + Math.min(r.w / 2, 72), y: r.y + r.h / 2 };
   }
-
-  /* ---------- tracks ---------- */
 
   function animate(node: Element, keyframes: Keyframe[], start: number, dur: number, easing: string, end?: () => void): Track {
     const anim = node.animate(keyframes, { duration: dur, easing, fill: 'both' });
@@ -189,13 +174,10 @@ export function createHarnessDirector(host: DirectorHost): Director {
     tracks = live;
   }
 
-  /** Lands every animation still running, so a press reads a settled screen. */
   function settle() {
     const ends = tracks.map((track) => track.start + track.dur);
     if (ends.length) place(Math.max(...ends));
   }
-
-  /* ---------- the pointer ---------- */
 
   function pointerAt(T: number): { p: Point; alpha: number; scale: number } {
     let p = pointerHome ?? { x: WINDOW.w / 2, y: WINDOW.h / 2 };
@@ -220,7 +202,6 @@ export function createHarnessDirector(host: DirectorHost): Director {
     pointer.style.transform = `translate(${p.x - 1.5}px, ${p.y - 1.5}px) scale(${scale})`;
   }
 
-  /** The travel to press `i`, from wherever the pointer rests, long enough that no frame jumps. */
   function aimAt(i: number, from: Point, earliest: number) {
     const node = target(PRESSES[i]!.target);
     if (!node) return;
@@ -231,8 +212,6 @@ export function createHarnessDirector(host: DirectorHost): Director {
     const floor = (Math.PI / 2) * ((px * host.scale()) / FRAME_STEP_MAX) * (1000 / 60);
     segments.push({ t0: Math.min(t0, t1 - floor), t1, from, to });
   }
-
-  /* ---------- a press and what it moved ---------- */
 
   /**
    * `swap` is a pane whose subject changed: the old copy fades out over the new, which rises in.
@@ -304,7 +283,6 @@ export function createHarnessDirector(host: DirectorHost): Director {
     host.commit(() => node.click());
     presses.push(T);
 
-    /* The ring on the pressed control, and the pointer's dip, are the press itself. */
     const radius = getComputedStyle(node).borderRadius;
     Object.assign(ring.style, {
       left: `${ringBox.x - 3}px`,
@@ -357,7 +335,6 @@ export function createHarnessDirector(host: DirectorHost): Director {
     if (after.pane2 !== before.pane2.subject) {
       crossFade(old2, pane2, moved(before.pane2.box), before.pane2.scroll, T);
     } else {
-      /* The same subject under another filter: rows that stay move, rows that leave fade where they were. */
       const paneNow = local(pane2);
       const paneThen = before.pane2.box;
       const seen = new Set<string>();
@@ -377,9 +354,6 @@ export function createHarnessDirector(host: DirectorHost): Director {
     }
   }
 
-  /* ---------- the lift ---------- */
-
-  /** A move's duration, at least `ms`, long enough that its fastest frame stays under the frame step on screen. */
   function paced(ms: number, travel: number): number {
     return Math.max(ms, Math.ceil((EASE_PEAK * travel * host.scale() * (1000 / 60)) / FRAME_STEP_MAX));
   }
@@ -430,7 +404,6 @@ export function createHarnessDirector(host: DirectorHost): Director {
 
     const from = `translate(${box.x - LIFT_PAD}px, ${box.y - LIFT_PAD}px) scale(1)`;
     const to = `translate(${rest.x}px, ${rest.y}px) scale(${z})`;
-    /* The farthest any corner of the card travels, in window pixels. */
     const travel = Math.max(
       Math.abs(rest.x - (box.x - LIFT_PAD)),
       Math.abs(rest.y - (box.y - LIFT_PAD)),
@@ -469,8 +442,6 @@ export function createHarnessDirector(host: DirectorHost): Director {
     });
     cues.sort((a, b) => a.at - b.at);
   }
-
-  /* ---------- the timeline ---------- */
 
   interface Cue {
     at: number;

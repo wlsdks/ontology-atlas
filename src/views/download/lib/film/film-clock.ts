@@ -1,21 +1,10 @@
-/**
- * The time a page film plays on, in place of the visitor's scroll: each act runs for its own
- * duration across its span of the choreography (0..1), the last frame holds, the picture fades
- * out, and the film starts again from its first act while fading back in.
- */
 export interface FilmClock {
-  /** Moves the clock on by `dtMs`; returns the choreography's progress, 0..1. */
   advance(dtMs: number): number;
   progress(): number;
-  /** Opacity for the picture: 0 at the loop's seam, 1 while it plays. */
   fade(): number;
-  /** The act playing now, from 0. */
   act(): number;
-  /** Jumps to the start of an act. */
   seek(act: number): void;
-  /** Whether the film is holding its last frame, where an idle visitor's film rests. */
   resting(): boolean;
-  /** Milliseconds since the cycle began, running on through the hold and the fade. */
   elapsed(): number;
 }
 
@@ -56,7 +45,6 @@ export function createFilmClock(
     resting: () => elapsed >= total && elapsed <= total + holdMs,
     elapsed: () => elapsed,
     seek(act) {
-      /* Past the fade-in, so a chosen act shows at once. */
       elapsed = act === 0 ? fadeMs : starts[Math.min(act, starts.length - 1)];
     },
   };

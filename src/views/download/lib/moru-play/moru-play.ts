@@ -7,16 +7,12 @@ import reactions from '@/shared/ui/marks/moru/moru-reactions.json';
  * popup drives it from one fixed-step clock and the rules are checked without a browser.
  */
 
-/** Moru's native cell; the sheets are drawn at this size so every drawn pixel stays square. */
 export const CELL = 128;
-/** The 12-unit emote grid drawn at four times its size. */
 export const ITEM = 48;
 /** In the neutral cell the feet stand on row 100 and the head starts at row 42. */
 export const FEET = 100;
 export const HEAD = 48;
-/** Half the drawn body (columns 15–112) plus a little forgiveness. */
 export const REACH = 56;
-/** How far past the head line an item may fall and still land in Moru's arms. */
 export const BAND = 36;
 
 export type Sheet = 'companion' | 'reactions';
@@ -36,7 +32,6 @@ const SOURCE: Record<PlayClip, { sheet: Sheet; id: string }> = {
 
 export interface Timeline {
   sheet: Sheet;
-  /** Absolute sheet cells, one per pose. */
   frames: number[];
   durations: number[];
   total: number;
@@ -67,7 +62,6 @@ export function clipTimeline(clip: PlayClip, pace = 1): Timeline {
   return timeline(sheet, durations.map((_, i) => source.firstFrame + i), durations);
 }
 
-/** The same poses stretched or squeezed to last exactly `ms`, so the countdown's wave ends on "go". */
 export function fitTimeline(line: Timeline, ms: number): Timeline {
   const durations = line.durations.map((d) => (d * ms) / line.total);
   return { ...line, durations, total: ms };
@@ -75,7 +69,6 @@ export function fitTimeline(line: Timeline, ms: number): Timeline {
 
 const blink = clipSource('companion', 'blink');
 const hop = clipSource('companion', 'hop');
-/** Idle is the authored blink, looped; its first and last cells are the neutral pose. */
 export const IDLE = timeline('companion', blink.durationsMs.map((_, i) => blink.firstFrame + i), blink.durationsMs);
 /**
  * A seal does not walk: Moru travels by bouncing on the hop clip's own crouch, flight and landing
@@ -87,21 +80,18 @@ export const BOUNCE = timeline(
   Array.from({ length: 18 }, (_, i) => hop.firstFrame + 2 + i),
   hop.durationsMs.slice(2, 20).map((ms) => Math.round(ms * BOUNCE_PACE)),
 );
-/** The hop's own settle back to the neutral pose (cells 20–23). */
 export const SETTLE = timeline('companion', [20, 21, 22, 23].map((i) => hop.firstFrame + i), [60, 80, 120, 100]);
 export const NEUTRAL_FRAME = blink.firstFrame;
 
 /** The lowest drawn row of each hop cell, measured from the sheet: how high Moru is in the air. */
 const HOP_FEET = [100, 100, 100, 100, 101, 99, 95, 87, 85, 81, 77, 74, 78, 81, 86, 90, 93, 94, 93, 92, 97, 97, 97, 100];
 
-/** How wide Moru's floor shadow is for a companion-sheet cell: narrower the higher he flies. */
 export function shadowScale(sheet: Sheet, frame: number): number {
   const index = frame - hop.firstFrame;
   if (sheet !== 'companion' || index < 0 || index >= HOP_FEET.length) return 1;
   return 1 - (Math.max(0, FEET - HOP_FEET[index]) / (FEET - 74)) * 0.35;
 }
 
-/** Which pose is showing `elapsed` ms into a timeline; past the end it holds the last pose. */
 export function poseAt(line: Timeline, elapsed: number): { frame: number; done: boolean } {
   let at = Math.max(0, elapsed);
   for (let i = 0; i < line.durations.length; i += 1) {
@@ -111,7 +101,6 @@ export function poseAt(line: Timeline, elapsed: number): { frame: number; done: 
   return { frame: line.frames[line.frames.length - 1], done: true };
 }
 
-/** The still a clip shows under reduced motion: its middle pose. */
 export function stillFrame(clip: PlayClip): { sheet: Sheet; frame: number } {
   const line = clipTimeline(clip);
   return { sheet: line.sheet, frame: line.frames[Math.floor(line.frames.length / 2)] };
@@ -126,7 +115,6 @@ export function easeOut(t: number): number {
   return 1 - (1 - clamp(t, 0, 1)) ** 3;
 }
 
-/** Ease-out with a small overshoot, so a number lands with a little spring. */
 export function backOut(t: number): number {
   const x = clamp(t, 0, 1);
   const c = 1.7;
@@ -137,26 +125,18 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-/* Steering ---------------------------------------------------------------------------------- */
-
 export interface Mover {
   x: number;
   v: number;
   facing: 1 | -1;
 }
 
-/** Moru's top speed for a field: quick enough to cross it in about a second and a quarter. */
 export function topSpeed(width: number): number {
   return clamp(width * 0.85, 380, 720);
 }
 
-/** Speeding up or braking takes about a sixth of a second at any top speed. */
 export const ACCEL_PER_SPEED = 6;
 
-/**
- * Moves Moru toward a pointer `target` or along a held arrow `direction`, easing in and braking
- * just in time so he never overshoots or snaps to a stop.
- */
 export function steer(
   m: Mover,
   dtMs: number,
@@ -194,14 +174,10 @@ export function steer(
   return { x, v, facing };
 }
 
-/** How far Moru leans into his travel, in radians: up to five degrees at top speed. */
 export function leanFor(v: number, top: number): number {
   return clamp(v / top, -1, 1) * (5 * Math.PI) / 180;
 }
 
-/* The round ---------------------------------------------------------------------------------- */
-
-/** One round lasts a minute, or until the third bug. */
 export const ROUND_MS = 60_000;
 export const LIVES = 3;
 /** The simulation advances in fixed steps; drawing interpolates between the last two. */
@@ -216,7 +192,6 @@ export const POINTS: Record<ItemKind, number> = { note: 10, heart: 10, star: 10,
 export const POWER_MS: Record<PowerKind, number> = { magnet: 5000, slow: 4000 };
 /** After a bug Moru shrugs off further bugs for this long, so one cluster costs one life. */
 const GRACE_MS = 900;
-/** Caught combo length for each step up: ×2 at 5, ×3 at 10, ×4 at 15. */
 export const COMBO_STEP = 5;
 export const MAX_MULTIPLIER = 4;
 const MAX_FALLING = 9;
@@ -224,22 +199,16 @@ const MAX_FALLING = 9;
 export interface Item {
   id: number;
   kind: ItemKind;
-  /** Horizontal centre. */
   x: number;
-  /** Bottom edge. */
   y: number;
-  /** Position at the previous step, for interpolated drawing. */
   px: number;
   py: number;
-  /** Where a power item's sway is centred. */
   homeX: number;
-  /** Ms since it appeared. */
   age: number;
 }
 
 export interface Round {
   rng: number;
-  /** Ms of play, not counting the countdown. */
   t: number;
   score: number;
   lives: number;
@@ -248,7 +217,6 @@ export interface Round {
   caught: number;
   items: Item[];
   nextId: number;
-  /** Ms of (slow-scaled) time until the next drop and the next power item. */
   spawnIn: number;
   powerIn: number;
   power: { kind: PowerKind; left: number } | null;
@@ -269,9 +237,7 @@ export type RoundEvent =
 
 export interface Field {
   width: number;
-  /** The floor line Moru stands on, from the field's top. */
   floor: number;
-  /** Moru's whole-number drawing scale: 2 on a roomy field, 1 on a phone. */
   scale?: number;
 }
 
@@ -295,7 +261,6 @@ export function newRound(seed: number): Round {
   };
 }
 
-/** How far through its climb the pace is: slow to start, steepest in the last third. */
 export function pace(t: number): number {
   return clamp(t / ROUND_MS, 0, 1) ** 1.6;
 }
@@ -321,18 +286,15 @@ export function multiplierFor(combo: number): number {
   return Math.min(MAX_MULTIPLIER, 1 + Math.floor(combo / COMBO_STEP));
 }
 
-/** The y of Moru's head line: an item's bottom edge between it and `BAND` below is caught. */
 export function headLine(floor: number, scale = 1): number {
   return floor - (FEET - HEAD) * scale;
 }
 
-/** True when the item is over Moru's arms in the band just below his head, at his drawing `scale`. */
 export function catches(item: Pick<Item, 'x' | 'y'>, moruX: number, floor: number, scale = 1): boolean {
   const head = headLine(floor, scale);
   return item.y >= head && item.y <= head + BAND * scale && Math.abs(item.x - moruX) <= REACH * scale;
 }
 
-/** mulberry32: a tiny seeded generator, so a round replays exactly in a test. */
 function random(round: Round): number {
   const state = (round.rng + 0x6d2b79f5) | 0;
   let t = Math.imul(state ^ (state >>> 15), 1 | state);
@@ -344,7 +306,6 @@ function random(round: Round): number {
 const isGood = (kind: ItemKind) => kind !== 'bug';
 const isPower = (kind: ItemKind): kind is PowerKind => kind === 'magnet' || kind === 'slow';
 
-/** Falling speed in px/ms for an item kind: gold is a little quicker, power items drift down. */
 function speedOf(kind: ItemKind, head: number, t: number, slow: boolean): number {
   const base = head / fallMs(t);
   const kindPace = kind === 'gold' ? 1.15 : isPower(kind) ? 0.75 : 1;
@@ -372,11 +333,6 @@ function pickDrop(round: Round, field: Field) {
   spawn(round, field, kind, x);
 }
 
-/**
- * Advances `round` by `dtMs` in place and returns what happened. Moru stands at `moruX`.
- * Catching builds the combo (×2 at five, up to ×4); a missed note, heart or star breaks it; a bug
- * costs one of three lives and breaks it; a minute ends the round.
- */
 export function stepRound(round: Round, dtMs: number, field: Field, moruX: number): RoundEvent[] {
   if (round.over) return [];
   const events: RoundEvent[] = [];
@@ -404,7 +360,6 @@ export function stepRound(round: Round, dtMs: number, field: Field, moruX: numbe
     if (isPower(item.kind)) {
       item.x = item.homeX + Math.sin((item.age / 1600) * Math.PI * 2) * 18;
     } else if (magnet && isGood(item.kind)) {
-      // The fish draws every good drop toward Moru; bugs keep their line.
       item.x += (moruX - item.x) * (1 - Math.exp(-dt / 240));
     }
     if (catches(item, moruX, field.floor, scale)) {
@@ -477,8 +432,6 @@ export function stepRound(round: Round, dtMs: number, field: Field, moruX: numbe
   }
   return events;
 }
-
-/* Best score, kept in this browser only ------------------------------------------------------ */
 
 const BEST_KEY = 'atlas.download.moru-play.best';
 

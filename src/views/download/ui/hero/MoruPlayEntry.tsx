@@ -114,7 +114,6 @@ export function MoruPlayEntry({ className }: { className?: string }) {
             ))}
           </span>
         </span>
-        {/* A speech bubble whose tail points back at Moru. */}
         <span className="relative flex min-w-0 flex-col rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] px-3.5 py-2 transition-[border-color,background-color] duration-[var(--motion-fast)] ease-[var(--motion-ease)] group-hover:border-[color:var(--color-indigo-line-a54)] group-hover:bg-[color:var(--color-elevated)] group-focus-visible:border-[color:var(--color-indigo-line-a54)] group-focus-visible:bg-[color:var(--color-elevated)]">
           <span
             aria-hidden
