@@ -22,7 +22,7 @@ const UPDATE_RUNS = 5;
 // Ranked lookups span two-syllable and longer Hangul, English, mixed and rare terms.
 const QUERIES = JSON.parse(readFileSync(new URL('./scale-vault-words.json', import.meta.url), 'utf8')).queries;
 
-/** Limits from the 2026-11-19 derived-index decision, per file count where they differ. */
+/** Limits from the derived-index decision, per file count where they differ. */
 const LIMITS = {
   buildMs: { 10000: 4000, 50000: 15000 },
   reopenMs: { 10000: 150, 50000: 600 },

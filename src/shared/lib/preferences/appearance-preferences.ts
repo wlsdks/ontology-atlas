@@ -38,7 +38,6 @@ const GLYPH_SET_KEY = "ontology-atlas:glyph-set:v1";
 const FOOTPRINT_KEY = "ontology-atlas:footprint:v1";
 const EXPAND_KEY = "ontology-atlas:expand:v1";
 
-/** Same-tab notification; cross-tab arrives through the `storage` event. */
 const PREFERENCE_EVENT = "ontology-atlas:appearance-preference-change";
 
 function isCanvasBackground(value: string | null): value is CanvasBackground {
@@ -498,7 +497,6 @@ export interface FootprintPreference {
    * ordinal; the node's size is the map's.
    */
   size: number;
-  /** Extra offset for the step number, in px. */
   gap: number;
   opacity: number;
   tone: FootprintTone;

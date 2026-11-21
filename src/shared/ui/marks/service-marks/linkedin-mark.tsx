@@ -9,7 +9,6 @@ const LINKEDIN_MARK_24 =
 
 export interface LinkedInMarkProps
   extends Omit<SVGProps<SVGSVGElement>, 'width' | 'height' | 'viewBox' | 'children'> {
-  /** Square, in px. */
   size?: number;
 }
 

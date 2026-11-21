@@ -1,7 +1,6 @@
 // Human-readable console report for the dogfood MCP walk: runs the RPC batch,
 // prints a header + status line per surface, evaluates the gate, and returns
 // the process exit code.
-// Split out of scripts/dogfood/dogfood-mcp-walk.mjs (structural decomposition, logic unchanged).
 import { compileIndexesSummary } from "../../../mcp/scripts/verify/checks/compile.mjs";
 import { destructiveDryRunFailure } from "../../../mcp/scripts/verify/checks/write-dry-runs.mjs";
 import { formatCount } from "../../../mcp/scripts/verify/output.mjs";
@@ -137,7 +136,6 @@ export async function runDogfoodWalk() {
     console.log(`  write row labels: ${writeRowLabelGuidanceSummary(tools)}`);
   }
 
-  // 1. list_kinds
   header("list_kinds — vault census");
   const kinds = getResult(responses, 2);
   const kindsStructured = getRpcResult(responses, 2)?.structuredContent ?? null;
@@ -150,7 +148,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 2. list_concepts (preview)
   header("list_concepts — preview (top 8)");
   const list = getResult(responses, 3);
   const listStructured = getRpcResult(responses, 3)?.structuredContent ?? null;
@@ -174,7 +171,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 2b. project probe
   header("project probe — list_concepts(kind=project)");
   const projectProbe = getResult(responses, 48);
   const projectProbeStructured = getRpcResult(responses, 48)?.structuredContent ?? null;
@@ -184,7 +180,6 @@ export async function runDogfoodWalk() {
     console.log(`  ${formatCount(projectProbe.total ?? 0, "project node")} · ${projectSlugs}`);
   }
 
-  // 3. get_concepts (batch reader + partial row)
   header("get_concepts — batch read + partial row");
   const batch = getResult(responses, 16);
   const batchStructured = getRpcResult(responses, 16)?.structuredContent ?? null;
@@ -231,7 +226,6 @@ export async function runDogfoodWalk() {
     console.log(`  ${toolName}: write metadata ${batchWriteMetadataAbsenceSummary(payload, structuredPayload, key)}`);
   }
 
-  // 4. find_evidence
   header(`find_evidence(title="vault")`);
   const ev = getResult(responses, 4);
   const evStructured = getRpcResult(responses, 4)?.structuredContent ?? null;
@@ -243,7 +237,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 5. find_path
   header(`find_path(${targets.capabilitySlug} → ${targets.pathTargetSlug})`);
   const path = getResult(responses, 5);
   const pathStructured = getRpcResult(responses, 5)?.structuredContent ?? null;
@@ -257,7 +250,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 6. find_backlinks
   header(`find_backlinks(${targets.capabilitySlug})`);
   const bl = getResult(responses, 6);
   const blStructured = getRpcResult(responses, 6)?.structuredContent ?? null;
@@ -271,7 +263,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 7. find_orphans
   header(`find_orphans (isolated nodes with no backlink at all)`);
   const orph = getResult(responses, 7);
   const orphStructured = getRpcResult(responses, 7)?.structuredContent ?? null;
@@ -283,7 +274,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 7b. query_concepts
   header(`query_concepts(kind=capability AND domain=${targets.domainSlug})`);
   const queryConcepts = getResult(responses, 56);
   const queryConceptsStructured = getRpcResult(responses, 56)?.structuredContent ?? null;
@@ -306,7 +296,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 7c. analyze_repo_structure
   header(`analyze_repo_structure(breadth map)`);
   // The breadth map travels as its text rows alone, so the result is that text.
   const analyzedRepoStructured = getRpcResult(responses, 57)?.structuredContent ?? null;
@@ -316,7 +305,6 @@ export async function runDogfoodWalk() {
     console.log(`  ${analyzedRepo.rawText?.split("\n")[0] ?? "not the breadth map"}`);
   }
 
-  // 7d. infer_imports
   header(`infer_imports(repo dependency candidates)`);
   const inferredImports = getResult(responses, 58);
   const inferredImportsStructured = getRpcResult(responses, 58)?.structuredContent ?? null;
@@ -328,7 +316,6 @@ export async function runDogfoodWalk() {
     console.log(`  top module edge kinds: ${importModuleEdgeKindSummary(inferredImports.moduleEdges)}`);
   }
 
-  // 7e. destructive write previews
   header(`destructive dry-runs — preview only`);
   const renameDryRunRes = getRpcResponse(responses, 63);
   const mergeDryRunRes = getRpcResponse(responses, 64);
@@ -348,7 +335,6 @@ export async function runDogfoodWalk() {
     );
   }
 
-  // 8. validate_vault
   header(`validate_vault`);
   const validation = getResult(responses, 8);
   const validationStructured = getRpcResult(responses, 8)?.structuredContent ?? null;
@@ -363,7 +349,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 9. workspace_brief
   header(`query_ontology(workspace_brief)`);
   const brief = getResult(responses, 9);
   const briefStructured = structuredContent(9);
@@ -379,7 +364,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 10. health
   header(`query_ontology(health)`);
   const health = getResult(responses, 10);
   const healthStructured = structuredContent(10);
@@ -394,7 +378,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 10b. health tuned
   header(`query_ontology(health tuned)`);
   const tunedHealth = getResult(responses, 49);
   const tunedHealthStructured = structuredContent(49);
@@ -410,7 +393,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 10c. workspace_brief tuned
   header(`query_ontology(workspace_brief tuned)`);
   const tunedBrief = getResult(responses, 50);
   const tunedBriefStructured = structuredContent(50);
@@ -427,7 +409,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 11. compile_ontology(summary)
   header(`compile_ontology(summary)`);
   const compiled = getResult(responses, 11);
   const compiledStructured = getRpcResult(responses, 11)?.structuredContent ?? null;
@@ -447,7 +428,6 @@ export async function runDogfoodWalk() {
     console.log(`  indexes: ${compileIndexesSummary(compiledIndexes)}`);
   }
 
-  // 12. overview
   header(`query_ontology(overview)`);
   const overview = getResult(responses, 15);
   const overviewStructured = structuredContent(15);
@@ -458,7 +438,6 @@ export async function runDogfoodWalk() {
     );
   }
 
-  // 13. pattern_walk
   header(`query_ontology(pattern_walk ${targets.patternStartSlug} → ${targets.pattern.join(" → ")})`);
   const patternWalk = getResult(responses, 12);
   const patternWalkStructured = structuredContent(12);
@@ -472,7 +451,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 14. all_paths
   header(`query_ontology(all_paths ${targets.capabilitySlug} → ${targets.pathTargetSlug})`);
   const allPaths = getResult(responses, 13);
   const allPathsStructured = structuredContent(13);
@@ -487,7 +465,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 15. all_paths query_plan
   header(`query_ontology(query_plan all_paths ${targets.capabilitySlug} → ${targets.pathTargetSlug})`);
   const allPathsPlan = getResult(responses, 14);
   const allPathsPlanStructured = structuredContent(14);
@@ -501,7 +478,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 16. project_map query_plan
   header(`query_ontology(query_plan project_map)`);
   const projectMapPlan = getResult(responses, 17);
   const projectMapPlanStructured = structuredContent(17);
@@ -512,7 +488,6 @@ export async function runDogfoodWalk() {
     );
   }
 
-  // 17. project_map
   header(`query_ontology(project_map)`);
   const projectMap = getResult(responses, 18);
   const projectMapStructured = structuredContent(18);
@@ -528,7 +503,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 18. domain_profile
   header(`query_ontology(domain_profile ${targets.domainSlug})`);
   const domainProfile = getResult(responses, 19);
   const domainProfileStructured = structuredContent(19);
@@ -542,7 +516,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 19. domain_matrix
   header(`query_ontology(domain_matrix)`);
   const domainMatrix = getResult(responses, 20);
   const domainMatrixStructured = structuredContent(20);
@@ -556,7 +529,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 20. components
   header(`query_ontology(components)`);
   const components = getResult(responses, 21);
   const componentsStructured = structuredContent(21);
@@ -571,7 +543,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 21. relation_check
   header(`query_ontology(relation_check ${targets.capabilitySlug} → ${targets.domainSlug})`);
   const relationCheck = getResult(responses, 22);
   const relationCheckStructured = structuredContent(22);
@@ -585,7 +556,6 @@ export async function runDogfoodWalk() {
     );
   }
 
-  // 22. maintenance_plan
   header(`query_ontology(maintenance_plan)`);
   const maintenancePlan = getResult(responses, 23);
   const maintenancePlanStructured = structuredContent(23);
@@ -617,7 +587,6 @@ export async function runDogfoodWalk() {
     );
   }
 
-  // 23. growth_plan
   header(`query_ontology(growth_plan)`);
   const growthPlan = getResult(responses, 24);
   const growthPlanStructured = structuredContent(24);
@@ -631,7 +600,6 @@ export async function runDogfoodWalk() {
     );
   }
 
-  // 24. recommend_relations
   header(`query_ontology(recommend_relations)`);
   const relationRecommendations = getResult(responses, 25);
   const relationRecommendationsStructured = structuredContent(25);
@@ -645,7 +613,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 25. cycles
   header(`query_ontology(cycles)`);
   const cycles = getResult(responses, 26);
   const cyclesStructured = structuredContent(26);
@@ -659,7 +626,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 26. topological_order
   header(`query_ontology(topological_order)`);
   const topologicalOrder = getResult(responses, 27);
   const topologicalOrderStructured = structuredContent(27);
@@ -673,7 +639,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 27. lineage
   header(`query_ontology(lineage ${targets.capabilitySlug})`);
   const lineage = getResult(responses, 28);
   const lineageStructured = structuredContent(28);
@@ -687,7 +652,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 28. containment_tree
   header(`query_ontology(containment_tree ${targets.projectSlug})`);
   const containmentTree = getResult(responses, 29);
   const containmentTreeStructured = structuredContent(29);
@@ -701,7 +665,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 29. reachability
   header(`query_ontology(reachability ${targets.capabilitySlug})`);
   const reachability = getResult(responses, 30);
   const reachabilityStructured = structuredContent(30);
@@ -715,7 +678,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 30. impact
   header(`query_ontology(impact ${targets.capabilitySlug})`);
   const impact = getResult(responses, 31);
   const impactStructured = structuredContent(31);
@@ -729,7 +691,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 31. blast_radius
   header(`query_ontology(blast_radius ${targets.capabilitySlug})`);
   const blastRadius = getResult(responses, 32);
   const blastRadiusStructured = structuredContent(32);
@@ -743,7 +704,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 32. subgraph
   header(`query_ontology(subgraph ${targets.capabilitySlug})`);
   const subgraph = getResult(responses, 33);
   const subgraphStructured = structuredContent(33);
@@ -757,7 +717,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 33. schema
   header(`query_ontology(schema)`);
   const schema = getResult(responses, 34);
   const schemaStructured = structuredContent(34);
@@ -771,7 +730,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 34. facets
   header(`query_ontology(facets)`);
   const facets = getResult(responses, 35);
   const facetsStructured = structuredContent(35);
@@ -782,7 +740,6 @@ export async function runDogfoodWalk() {
     );
   }
 
-  // 35. match_nodes
   header(`query_ontology(match_nodes capability slugContains=${targets.slugNeedle})`);
   const matchNodes = getResult(responses, 36);
   const matchNodesStructured = structuredContent(36);
@@ -796,7 +753,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 36. match_edges
   header(`query_ontology(match_edges from=${targets.capabilitySlug})`);
   const matchEdges = getResult(responses, 37);
   const matchEdgesStructured = structuredContent(37);
@@ -810,7 +766,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 37. node_profile
   header(`query_ontology(node_profile ${targets.capabilitySlug})`);
   const nodeProfile = getResult(responses, 38);
   const nodeProfileStructured = structuredContent(38);
@@ -824,7 +779,6 @@ export async function runDogfoodWalk() {
     );
   }
 
-  // 38. centrality
   header(`query_ontology(centrality)`);
   const centrality = getResult(responses, 39);
   const centralityStructured = structuredContent(39);
@@ -838,7 +792,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 39. communities
   header(`query_ontology(communities)`);
   const communities = getResult(responses, 40);
   const communitiesStructured = structuredContent(40);
@@ -852,7 +805,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 40. similar_nodes
   header(`query_ontology(similar_nodes candidate=${targets.similarCandidateSlug})`);
   const similarNodes = getResult(responses, 41);
   const similarNodesStructured = structuredContent(41);
@@ -866,7 +818,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 41. explain_relation
   header(`query_ontology(explain_relation ${targets.capabilitySlug} → ${targets.pathTargetSlug})`);
   const explainRelation = getResult(responses, 42);
   const explainRelationStructured = structuredContent(42);
@@ -880,7 +831,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 42. neighbors
   header(`query_ontology(neighbors ${targets.capabilitySlug})`);
   const neighbors = getResult(responses, 43);
   const neighborsStructured = structuredContent(43);
@@ -894,7 +844,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 43. path
   header(`query_ontology(path ${targets.capabilitySlug} → ${targets.pathTargetSlug})`);
   const queryPath = getResult(responses, 44);
   const queryPathStructured = structuredContent(44);
@@ -908,7 +857,6 @@ export async function runDogfoodWalk() {
     }
   }
 
-  // 44. project_scope
   header(`query_ontology(project_scope ${targets.projectSlug})`);
   const projectScope = getResult(responses, 45);
   const projectScopeStructured = structuredContent(45);
@@ -922,7 +870,6 @@ export async function runDogfoodWalk() {
     );
   }
 
-  // 45. strict argument rejection
   header("strict arguments — unknown tool argument rejection");
   const strictArgs = responses.find((response) => response.id === 46);
   const strictArgsText = strictArgs?.result?.content?.[0]?.text || "";
@@ -932,7 +879,6 @@ export async function runDogfoodWalk() {
     console.log(`  ${strictArgsText}`);
   }
 
-  // 46. strict multi-argument rejection
   header("strict arguments — multiple unknown tool argument rejection");
   const strictMultiArgs = responses.find((response) => response.id === 59);
   const strictMultiArgsText = strictMultiArgs?.result?.content?.[0]?.text || "";
@@ -942,7 +888,6 @@ export async function runDogfoodWalk() {
     console.log(`  ${strictMultiArgsText}`);
   }
 
-  // 47. strict enum rejection
   header("strict enums — invalid query operation rejection");
   const strictEnum = responses.find((response) => response.id === 47);
   const strictEnumText = strictEnum?.result?.content?.[0]?.text || "";
@@ -952,7 +897,6 @@ export async function runDogfoodWalk() {
     console.log(`  ${strictEnumText}`);
   }
 
-  // 48. strict unknown tool rejection
   header("strict tool names — unknown tool rejection");
   const strictUnknownTool = responses.find((response) => response.id === 84);
   const strictUnknownToolText = strictUnknownTool?.result?.content?.[0]?.text || "";
@@ -962,7 +906,6 @@ export async function runDogfoodWalk() {
     console.log(`  ${strictUnknownToolText}`);
   }
 
-  // 49. strict maintenance filter rejection
   header("strict maintenance filters — invalid phase/severity/kind rejection");
   const strictMaintenancePhaseFilter = responses.find((response) => response.id === 51);
   const strictMaintenancePhaseFilterText = strictMaintenancePhaseFilter?.result?.content?.[0]?.text || "";
@@ -983,7 +926,6 @@ export async function runDogfoodWalk() {
     console.log(`  ${strictMaintenanceKindFilterText}`);
   }
 
-  // 50. strict relation filter rejection
   header("strict relation filters — invalid dependencyTypes rejection");
   const strictRelationFilter = responses.find((response) => response.id === 61);
   const strictRelationFilterText = strictRelationFilter?.result?.content?.[0]?.text || "";
@@ -1028,7 +970,6 @@ export async function runDogfoodWalk() {
     console.log(`  ${strictListConceptsKindFilterText}`);
   }
 
-  // 51. strict relation_check rejection
   header("strict relation_check — invalid type rejection");
   const strictRelationCheck = responses.find((response) => response.id === 66);
   const strictRelationCheckText = strictRelationCheck?.result?.content?.[0]?.text || "";
@@ -1038,7 +979,6 @@ export async function runDogfoodWalk() {
     console.log(`  ${strictRelationCheckText}`);
   }
 
-  // 52. strict add_relation rejection
   header("strict add_relation — invalid type rejection + no-write metadata");
   const strictAddRelation = responses.find((response) => response.id === 70);
   const strictAddRelationText = strictAddRelation?.result?.content?.[0]?.text || "";
@@ -1049,7 +989,6 @@ export async function runDogfoodWalk() {
     console.log(`  ${strictAddRelationText}`);
   }
 
-  // 53. strict graph kind filter rejection
   header("strict graph filters — invalid match_nodes.kind/sort, match_edges.type, and recommend_relations.kind rejection");
   const strictGraphKindFilter = responses.find((response) => response.id === 67);
   const strictGraphKindFilterText = strictGraphKindFilter?.result?.content?.[0]?.text || "";
@@ -1304,7 +1243,6 @@ export async function runDogfoodWalk() {
   }
   failures.push(...stderrWarningFailures(stderr));
 
-  // Analysis
   header("Analysis — AI agent quality assessment");
   const total = kinds?.total || 0;
   const orphCount = orph?.total || 0;

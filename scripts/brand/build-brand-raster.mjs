@@ -61,7 +61,6 @@ export const ICON_RASTER_PLAN = Object.freeze([
   ['mobile-192', 'compass', 192, 'squircle'],
 ]);
 
-/** Transparent standalone marks consumed inside the app and by brand lockups. */
 const MARK_RASTER_PLAN = Object.freeze([
   ['mark-full', 'full', 512],
   ['mark-compact', 'compact', 64],

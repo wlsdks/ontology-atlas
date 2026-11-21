@@ -15,15 +15,10 @@ import { fileURLToPath } from "node:url";
 import { parseFrontmatter } from "../lib/parse-frontmatter.mjs";
 import { inspectMergedUids, nodeUidIssue } from "../../cli/src/lib/mcp-bridge/schema.mjs";
 /*
- * The body half, imported from the canonical module rather than reimplemented.
- *
- * This script is the one lane that reads *this repository's own* vault on every
- * `pnpm vault:validate`, so it is where a rule first meets 100-odd real
- * documents. A second implementation would mean the number printed here and the
- * number `validate_vault` reports could disagree about the same folder, which is
- * exactly the confusion the three-way validator contract exists to prevent.
- * `meaning-findings.mjs` and `parser.mjs` import only sibling `mcp/src` modules
- * and `node:` builtins, so a plain `node` run resolves them with no install.
+ * The body half is imported from the canonical module, not reimplemented: this lane reads the
+ * repository's own vault, and a second implementation could report a different number than
+ * `validate_vault` for the same folder. `meaning-findings.mjs` and `parser.mjs` import only sibling
+ * `mcp/src` modules and `node:` builtins, so plain `node` resolves them with no install.
  */
 import { bodyMeaningFindings } from "../../mcp/src/meaning/meaning-findings.mjs";
 import { parseFrontmatter as parseMcpFrontmatter } from "../../mcp/src/parser.mjs";

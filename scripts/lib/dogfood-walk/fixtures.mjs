@@ -1,7 +1,6 @@
 // Shared test fixtures for the dogfood MCP walk test suite: mock MCP
 // responses (initialize, tools/list, per-tool "ok" shapes) used across the
 // split test modules in this directory.
-// Split out of scripts/dogfood/dogfood-mcp-walk.test.mjs (structural decomposition, logic unchanged).
 import { readFileSync } from "node:fs";
 
 import { EXPECTED_TOOLS } from "../../../mcp/scripts/verify/tools-list/inventory.mjs";

@@ -13,9 +13,7 @@ export const SITE_NAME = 'Ontology Atlas';
 export const SITE_ORGANIZATION_ID = `${SITE_URL}/#org`;
 export const SITE_WEBSITE_ID = `${SITE_URL}/#website`;
 
-/** Reference the Organization from another node (`author`, `publisher`). */
 export const SITE_ORGANIZATION_REF = { '@id': SITE_ORGANIZATION_ID } as const;
-/** Reference the WebSite from another node (`isPartOf`). */
 export const SITE_WEBSITE_REF = { '@id': SITE_WEBSITE_ID } as const;
 
 const SITE_DESCRIPTION =

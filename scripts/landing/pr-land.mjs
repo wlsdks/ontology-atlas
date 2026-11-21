@@ -304,12 +304,6 @@ export function describeLock(lock, nowMs = Date.now()) {
   return `${subject} held by ${who} since ${age} and ${why}`;
 }
 
-/*
- * ------------------------------------------------------------------------------------------------
- * Check verdicts. Shared by the fast path (a component's own head) and the train (its pull request).
- * ------------------------------------------------------------------------------------------------
- */
-
 /** 2 means completed with a real result, 1 still running, 0 `SKIPPED`. */
 function verdictRank(run) {
   const status = String(run?.status ?? run?.state ?? '').toUpperCase();
@@ -473,12 +467,6 @@ export function runInFlight(pr) {
   });
 }
 
-/*
- * ------------------------------------------------------------------------------------------------
- * Reads that can fail, and what a failure is allowed to mean.
- * ------------------------------------------------------------------------------------------------
- */
-
 export function describeReadFailure(output) {
   const text = String(output ?? '');
   if (/rate limit exceeded/i.test(text)) {
@@ -628,12 +616,8 @@ export function parseArgs(argv) {
   return args;
 }
 
-/*
- * ------------------------------------------------------------------------------------------------
- * The IO shell. Everything below talks to `gh`, `git` and the clock through `deps`, so the tests
- * drive the whole conductor against a fake GitHub and never reach the real one.
- * ------------------------------------------------------------------------------------------------
- */
+// The IO shell: everything below reaches `gh`, `git` and the clock through `deps`, so tests drive the
+// whole conductor against a fake GitHub.
 
 function ghRun(args, { allowFailure = false } = {}) {
   try {
@@ -1041,12 +1025,6 @@ function makeHolder({ deps, token }) {
   return holder;
 }
 
-/*
- * ------------------------------------------------------------------------------------------------
- * The fast path.
- * ------------------------------------------------------------------------------------------------
- */
-
 export function evaluateFastPath({ pr, deps, requiredContexts, allowFailing = [] }) {
   const rollup = pr.statusCheckRollup ?? [];
   const checks = requiredCheckState({ rollup, requiredContexts });
@@ -1140,11 +1118,10 @@ function tryFastPath({ pr, deps, requiredContexts, args, token }) {
  */
 function awaitOwnCi({ pr, deps, args, requiredContexts, deadline, red = null }) {
   const { gh, log } = deps;
-  // One rerun of only the failed jobs per head: in 4 of the 20 red trains before 2026-11-18 the
-  // next train carrying the same head went green, and the failed jobs took about half a run.
-  // `tryRerun` answers `rerun`, `wait` (the run still has jobs going, and GitHub reruns only a
-  // finished run), `not-run` (only cancellations: something replaced the run, not a failure) or
-  // the reason it hands the pull request back.
+  // One rerun of only the failed jobs per head: a red train's head often goes green on the next train,
+  // and the failed jobs take about half a run. `tryRerun` answers `rerun`, `wait` (the run still has
+  // jobs going; GitHub reruns only a finished run), `not-run` (only cancellations: something replaced
+  // the run) or the reason it hands the pull request back.
   let rerunHead = null;
   const tryRerun = (failed, sha, rollup) => {
     if (rerunHead === sha) return 'its failed jobs were rerun once already';
@@ -1250,12 +1227,6 @@ function reportOwnRed({ number, failed, deps, reran = false, why = null }) {
   deps.error('  train reruns it once.');
   return 1;
 }
-
-/*
- * ------------------------------------------------------------------------------------------------
- * The conductor.
- * ------------------------------------------------------------------------------------------------
- */
 
 function eject(deps, number, body) {
   deps.gh.comment(number, body);
@@ -1678,12 +1649,6 @@ export function conduct({ deps, args, requiredContexts, token, force = false, de
     holder.release();
   }
 }
-
-/*
- * ------------------------------------------------------------------------------------------------
- * Commands.
- * ------------------------------------------------------------------------------------------------
- */
 
 function queuePosition(queue, number) {
   const index = queue.findIndex((pr) => pr.number === number);

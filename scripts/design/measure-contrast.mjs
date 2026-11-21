@@ -1,17 +1,11 @@
 /**
- * Contrast measurement — sweeps the rendered DOM and names **text that is not
- * legible**.
+ * Contrast measurement: sweeps the rendered DOM and names text that is not legible. Collection, not
+ * judgement: the computation lives in `scripts/lib/design/contrast.mjs`. Here the real background is
+ * resolved by walking up the ancestors and compositing translucent backgrounds, because skipping that
+ * reports better than reality.
  *
- * **What this file does — collection, not judgement.** The computation lives in
- * `scripts/lib/design/contrast.mjs` (pure functions with fixture probes in
- * `tests/contract/design-tokens/contrast.contract.test.ts`). What happens here is **resolving the
- * real background**: walking up the ancestors and compositing translucent
- * backgrounds in order. This app uses alpha tokens for text and borders, so skipping
- * that step reports **better** than reality, and the optimism is silent.
- *
- * **Usage**
- *
- *   node scripts/web/serve-static-export.mjs --port=4173 &   # run pnpm build first
+ * Usage (run `pnpm build` first):
+ *   node scripts/web/serve-static-export.mjs --port=4173 &
  *   node scripts/design/measure-contrast.mjs [baseUrl] [route...]
  */
 
@@ -62,12 +56,7 @@ export const DEFAULT_ROUTES = [
 const VIEWPORT = { width: 1512, height: 900 };
 const PROFILE = `/tmp/atlas-contrast-${process.pid}`;
 
-/**
- * Extracts, for every element that owns text, its **foreground colour, resolved
- * background colour, and font**. It does not judge.
- */
 function collectInPage() {
-  /** Walks up the ancestors compositing translucent backgrounds to an **opaque background**. */
   const resolveBackground = (el) => {
     const stack = [];
     for (let node = el; node; node = node.parentElement) {
@@ -175,7 +164,6 @@ for (const r of report) {
 }
 console.log(`\n  ${totalFail} below the threshold in total\n`);
 
-// ── Adjacent data marks (WCAG 1.4.11 non-text, 3:1)
 const markTotal = report.reduce((n, r) => n + r.marks.length, 0);
 const markFail = report.reduce((n, r) => n + r.markFailures.length, 0);
 const sepTotal = report.reduce((n, r) => n + r.separated.length, 0);

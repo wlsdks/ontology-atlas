@@ -5,14 +5,12 @@
  */
 import { resolveLocaleDisplayName } from "../locale-text/locale-display-name";
 
-/** Only the part of a manifest row this file reads. A subset of `VaultDoc`. */
 export interface VaultShapeDoc {
   slug: string;
   title?: string;
   frontmatter?: Record<string, unknown> | null;
 }
 
-/** One node row a screen can render as-is — slug for the link, name for the reader. */
 export interface VaultShapeNode {
   slug: string;
   /** `display_<locale>`, then `title`, then the slug's last segment. Never a folder path. */
@@ -22,7 +20,6 @@ export interface VaultShapeNode {
 
 export interface VaultShapeSnapshot {
   nodes: Map<string, VaultShapeNode>;
-  /** Slug → the node that contains it, or null. */
   parents: Map<string, string | null>;
 }
 

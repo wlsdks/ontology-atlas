@@ -67,7 +67,6 @@ function destinationForEvent(
 export interface DestinationShortcutOptions {
   /** Takes the user to a destination. The caller owns the router so that `shared` never knows about it. */
   navigate: (href: string, id: DestinationId) => void;
-  /** True while a blocking surface is open. */
   disabled?: boolean;
   /** Context-dependent overrides for the default href; falls back to `DESTINATION_HREF`. */
   hrefOverrides?: Partial<Record<DestinationId, string>>;
@@ -76,7 +75,6 @@ export interface DestinationShortcutOptions {
    * named a destination. A modal must not let shortcuts through, so say why instead of staying silent.
    */
   onBlockedByOverlay?: (() => void) | null;
-  /** The destinations the rail draws; a key for a hidden one does nothing. */
   visible?: ReadonlySet<DestinationId> | null;
 }
 

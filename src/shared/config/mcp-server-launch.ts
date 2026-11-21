@@ -7,10 +7,8 @@
 
 type McpServerLaunchKind = "app-bundled" | "source-checkout";
 
-/** The launch contract, written verbatim into the client config as stdio `command` + `args`. */
 export interface McpServerLaunch {
   kind: McpServerLaunchKind;
-  /** The executable: the binary's absolute path when bundled, `node` from source. */
   command: string;
   args: readonly string[];
 }
@@ -68,7 +66,6 @@ export function inspectMcpServerLaunch(
   };
 }
 
-/** The name this server carries in an MCP client's config. */
 export const MCP_SERVER_NAME = "ontology-atlas";
 
 /** Launching from the binary inside the app bundle; `mcp_bundled_server` reports the path. */
@@ -76,7 +73,6 @@ export function bundledServerLaunch(binaryPath: string): McpServerLaunch {
   return { kind: "app-bundled", command: binaryPath, args: [] };
 }
 
-/** Launching from a source checkout where no app exists; `repoRoot` is absolute. */
 export function sourceCheckoutLaunch(repoRoot: string): McpServerLaunch {
   return { kind: "source-checkout", command: "node", args: [`${repoRoot}/mcp/src/index.js`] };
 }
@@ -110,7 +106,6 @@ export function agentServerPending(): AgentServerAvailability {
   return { kind: "unavailable", launch: null, binaryPath: null, reason: null, pending: true };
 }
 
-/** The bundled binary was found, so one-click connect holds. */
 export function agentServerFromBundle(binaryPath: string): AgentServerAvailability {
   return {
     kind: "app-bundled",

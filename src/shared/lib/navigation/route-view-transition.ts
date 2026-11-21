@@ -4,16 +4,11 @@
  * because a captured document is not hit-testable.
  */
 
-/** Longest a transition may hold the old snapshot while waiting for the new route (ms). */
 export const ROUTE_VIEW_TRANSITION_SETTLE_TIMEOUT_MS = 900;
 
 type StartViewTransition = (update: () => Promise<void> | void) => unknown;
 
-/**
- * The object `startViewTransition` hands back. Every field is optional because
- * this module also accepts the fakes the tests pass and older implementations
- * that return nothing.
- */
+/** The object `startViewTransition` hands back; every field is optional because tests pass fakes and older implementations return nothing. */
 interface ViewTransitionHandle {
   ready?: Promise<unknown>;
   finished?: Promise<unknown>;
@@ -54,7 +49,6 @@ export function readCrossfadeBudgetMs(
   return ROUTE_VIEW_TRANSITION_CROSSFADE_FALLBACK_MS;
 }
 
-/** True when at least one of the transition's own animations has a start time. */
 function crossfadeHasBegun(animations: readonly { startTime: number | null; pseudo: string | null }[]): boolean {
   return animations.some((animation) => animation.pseudo !== null && animation.startTime !== null);
 }
@@ -132,7 +126,6 @@ export function navigateWithViewTransition(
     startViewTransition?: StartViewTransition | null;
     timeoutMs?: number;
     setTimeoutFn?: typeof setTimeout;
-    /** The crossfade's own budget; defaults to `--motion-base`. */
     crossfadeMs?: number;
     /** The transition's animations, for tests with no compositor. */
     animations?: () => readonly { startTime: number | null; pseudo: string | null }[];
@@ -197,7 +190,6 @@ function releaseCaptureWhenSettled(handle: ViewTransitionHandle | null, generati
   );
 }
 
-/** Called by the shell once the new route has committed: releases the held snapshot. */
 export function settleRouteViewTransition(): void {
   pendingSettle?.();
 }

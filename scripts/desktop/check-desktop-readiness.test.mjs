@@ -160,10 +160,8 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ hosted website verifier sources expected download copy from the message catalog and requires the trust line plus both release-state CTAs/,
   );
-  // The Firebase Hosting deploy preflight and fallback workflow checks went away in
-  // #617 (Firebase removed entirely, GitHub Pages as the single host). The hosting
-  // deployment contract is now covered by the hosted website verifier just above and
-  // the Pages workflow check below.
+  // Hosting is GitHub Pages only: the hosted website verifier above and the Pages workflow check
+  // below cover the deployment contract.
   assert.match(
     result.stdout,
     /✓ GitHub Pages workflow builds the custom-domain root export, deploys the sole hosted download site on push\/release, and verifies the hosted download route/,

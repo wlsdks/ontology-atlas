@@ -21,7 +21,6 @@ interface ProjectSourceCandidate {
   rootPath: string;
   kind: "git" | "folder";
   marker: ProjectSourceCandidateMarker;
-  /** Directory levels between the candidate and the vault root (0 = the vault). */
   ancestorDepth: number;
   evidence: string[];
 }
@@ -33,7 +32,6 @@ export interface ProjectSourceProposal {
   alternatives: ProjectSourceCandidate[];
   confidence: ProjectSourceConfidence;
   reason: ProjectSourceProposalReason;
-  /** supported / total declared paths, or null when nothing is declared yet. */
   supportRatio: number | null;
   witnessSummary: ProjectSourceReceipt["witnessSummary"] | null;
   vaultIsSourceRoot: boolean;

@@ -36,7 +36,6 @@ export function isConnectorSecretBridgeAvailable(): boolean {
 
 export { connectorSecretRef } from './connector-record';
 
-/** Store one value — only on an explicit save, and the caller clears its own field afterwards. */
 export async function connectorSecretSet(
   secretRef: string,
   secret: string,
@@ -85,7 +84,6 @@ export function subscribeConnectorSecretChange(handler: () => void): () => void 
   return () => window.removeEventListener(CONNECTOR_SECRET_CHANGE_EVENT, handler);
 }
 
-/** An invoke rejection turned into one sentence in the reader's language. */
 export function connectorSecretErrorMessage(
   err: unknown,
   lookup?: NativeErrorLookup,

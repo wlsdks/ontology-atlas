@@ -75,7 +75,6 @@ export const AGENTS_MODELS_HREF = '/agents/?tab=models';
 
 export const MCP_CONNECTORS_HREF = withQuery(DESTINATION_HREF.mcp, { mcp: 'connectors' });
 
-/** The leader key: press this, then one of the letters below, to navigate. */
 export const NAV_LEADER_KEY = 'g';
 
 /** The letter after the leader — the first letter, unless it collides, in which case another letter that still carries the meaning. */
@@ -96,10 +95,8 @@ export const DESTINATION_KEY: Record<DestinationId, string> = {
   changes: 'b',
 };
 
-/** How long, in ms, to wait for the second letter after the leader. */
 export const NAV_LEADER_WINDOW_MS = 1500;
 
-/** Letter → destination, the direction the handler needs. */
 export const DESTINATION_BY_KEY: Record<string, DestinationId> = {
   ...Object.fromEntries(DESTINATION_IDS.map((id) => [DESTINATION_KEY[id], id])),
   // Preserve the published shortcut and project-specific Docs href overrides.

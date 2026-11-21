@@ -1,11 +1,7 @@
 /**
- * Progress copy that does not pretend to know what it does not.
- *
- * **Why it lives in `shared`.** Two features on the same layer need this
- * judgement — app-update downloads and agent-tool installation — and two
- * same-layer features needing one decision means it moves a layer down
- * (`.claude/rules/architecture.md`). With a copy each, one of them eventually
- * starts drawing 0% when the total is unknown.
+ * Progress copy that does not pretend to know what it does not. It lives in `shared` because
+ * app-update downloads and agent-tool installation both need the judgement
+ * (`.claude/rules/architecture.md`); a copy each would eventually draw 0% for an unknown total.
  */
 
 /**

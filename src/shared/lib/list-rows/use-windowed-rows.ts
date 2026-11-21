@@ -11,13 +11,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObje
  */
 
 export interface WindowedRows {
-  /** First rendered index, inclusive. */
   start: number;
-  /** Last rendered index, exclusive. */
   end: number;
-  /** Space, in px, standing in for the rows before `start`. */
   before: number;
-  /** Space, in px, standing in for the rows from `end`. */
   after: number;
 }
 
@@ -56,7 +52,6 @@ export function windowRows(
   return { start, end, before, after };
 }
 
-/** Where row `index` starts, measured from the first row's top edge. */
 export function rowTop(heights: ArrayLike<number>, gap: number, index: number): number {
   let y = 0;
   for (let i = 0; i < Math.min(index, heights.length); i += 1) y += heights[i] + gap;
@@ -86,17 +81,13 @@ export function useWindowedRows<E extends HTMLElement = HTMLUListElement>({
   initialRows,
 }: {
   count: number;
-  /** A row's height in px before it has been measured. */
   estimate: number;
   overscan?: number;
-  /** First viewport seed; defaults to 64 rows. */
   initialRows?: number;
 }): [WindowedRows, RefObject<E | null>, (index: number) => void] {
   const listRef = useRef<E | null>(null);
-  /** Every row's height, measured where it has been rendered, the estimate elsewhere. */
   const heightsRef = useRef<number[]>([]);
   const heightIndexRef = useRef<RowHeightIndex | null>(null);
-  /** The `before` pad the list is currently drawn with, so its own top can be found under it. */
   const appliedBeforeRef = useRef(0);
   /**
    * A row asked for while it is not rendered yet. Heights past the window are estimates,

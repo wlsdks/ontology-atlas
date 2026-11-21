@@ -151,7 +151,6 @@ export interface GitFetchResult {
 export interface GitDiffResult {
   count: number;
   files: GitChangeEntry[];
-  /** Text diff of tracked files; untracked new files appear only in `files`. */
   diff: string;
   tooLarge: boolean;
 }
@@ -179,7 +178,6 @@ export interface GitSetRemoteResult {
   /** Always `'origin'`. */
   remote: string;
   url: string;
-  /** The previous URL, when this call replaced an existing one. */
   replaced: string | null;
 }
 
@@ -201,7 +199,6 @@ export async function gitProbe(): Promise<GitProbeResult | null> {
   return invoke<GitProbeResult>('git_probe');
 }
 
-/** Whether the Tauri git IPC is available; false takes the web degradation path. */
 export function isGitBridgeAvailable(): boolean {
   return getInvoke() !== null;
 }
@@ -263,9 +260,7 @@ export async function gitDocumentDiff(
 /** Rust `GitRestoreResult`. */
 export interface GitRestoreResult {
   restored: boolean;
-  /** Vault-relative path of the one document touched. */
   path: string;
-  /** `HEAD` or the commit hash the content came from. */
   source: string;
   /** What the document was before: `added` | `modified` | `deleted` | `renamed`, or `null` when it was clean. */
   previousStatus: string | null;
@@ -285,7 +280,6 @@ export async function gitRestoreFile(
   return invoke<GitRestoreResult>('git_restore_file', { vaultPath, relativePath, source });
 }
 
-/** Git status summary for the vault; `null` without the bridge (web degradation). */
 export async function gitStatus(vaultPath: string): Promise<GitStatusResult | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
@@ -311,7 +305,6 @@ export async function gitSnapshot(
   });
 }
 
-/** Recent commits that touched the vault path; `null` without the bridge. */
 export async function gitHistory(
   vaultPath: string,
   limit = 10,

@@ -1,12 +1,7 @@
 /**
- * The native bridge for connecting an agent — the counterpart of
- * `src-tauri/src/agent_setup.rs`.
- *
- * On the web everything returns null or fails. A browser structurally cannot
- * know the absolute path of the folder it opened (by the File System Access
- * API's design), and without an absolute path no runnable agent config can be
- * written. That is a boundary, not a defect — the UI has to degrade honestly
- * here.
+ * The native bridge for connecting an agent, the counterpart of `src-tauri/src/agent_setup.rs`. On the
+ * web everything returns null or fails: a browser cannot know the absolute path of the folder it
+ * opened, so no runnable agent config can be written and the UI degrades honestly.
  */
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
@@ -24,7 +19,6 @@ export interface BundledMcpServer {
   reason: string | null;
 }
 
-/** Path to the MCP server inside the app bundle. `available: false` on the web. */
 export async function readBundledMcpServer(): Promise<BundledMcpServer> {
   const invoke = getInvoke();
   if (!invoke) {

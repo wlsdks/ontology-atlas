@@ -3,13 +3,11 @@
  * camera, tokens or clock); the canvas and the settings preview share it. Light on a dark canvas
  * must add, so it composites with `lighter`. There is no diffraction cross.
  */
-/** The rim's width on a node large enough to want one, in px. */
 const STAR_RIM_PX = 1.8;
 
 /** A band hides an alpha step about its own width in px; six bands showed rings on a 33 px node. */
 const STAR_GLOW_LAYERS = 20;
 
-/** Accumulated light at `t` of the way out from the silhouette, 0 at full reach. */
 function falloff(t: number): number {
   const u = 1 - Math.min(1, Math.max(0, t));
   return STAR_GLOW_PEAK * u * u;
@@ -27,13 +25,10 @@ const STAR_GLOW_REACH = 2.0;
 export interface StarEmissionState {
   x: number;
   y: number;
-  /** The node's own screen radius. Everything else is a multiple of it. */
   radius: number;
   /** `#rrggbb`. Star ink for a walked node; the selection's indigo for the one you stand on. */
   ink: string;
-  /** 0–1. Below 0.01 nothing is painted. */
   lit: number;
-  /** Bloom reach multiplier while igniting; back to 1 after, so a settled constellation stays still. */
   swell?: number;
 
   core?: number;
@@ -45,7 +40,6 @@ export interface StarEmissionState {
 }
 
 
-/** `#rrggbb` → `rgba(...)`, which a gradient stop takes where a `var()` cannot. */
 function withAlpha(hex: string, alpha: number): string {
   const h = hex.length === 4 ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex;
     const r = parseInt(h.slice(1, 3), 16);

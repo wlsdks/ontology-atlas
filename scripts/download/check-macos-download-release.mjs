@@ -544,14 +544,9 @@ try {
 }
 
 /**
- * Checks that a file really exists where `latest.json` points.
- *
- * An installed app finds updates through this one file. If the URL is off by a
- * single character the app **raises no error** — the user simply sees "you are up
- * to date". GitHub replaces spaces in asset names with dots, so a manifest URL
- * built from Tauri's `<product name>.app.tar.gz` diverges from the real asset.
- * The platform keys must be exactly the required ones: an extra key is an entry
- * nothing verified, which could hand an app another architecture's archive.
+ * Checks that a file exists where `latest.json` points: a URL off by one character raises no error
+ * in the app, the user just sees "up to date" (GitHub replaces spaces in asset names with dots).
+ * The platform keys must be exactly the required ones: an extra key is an entry nothing verified.
  */
 async function verifyUpdaterManifest() {
   const manifestAsset = assets.find((asset) => asset?.name === "latest.json");

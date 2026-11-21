@@ -1,17 +1,10 @@
 #!/usr/bin/env node
-// Living-document metadata gate.
-//
-// Every living document under docs/ carries `title`, `doc_type`, `status` and
-// `area` in frontmatter, and every path it points at exists. The gate checks
-// only facts a machine can derive: keys, enums, the folder a kind may live in,
-// and pointers (`enforced_by`, `routes`, `decisions`, `superseded_by`, the
-// guide registry). It never reads section headings or prose; those belong to
-// their authors (`.claude/rules/documentation.md`).
-//
-// Versions are not written here. `updated` and `revision` come from Git at build
-// time (`scripts/docs-vault/build-docs-vault.mjs`), so a hand-written counter is rejected.
-// The one enforced bump: a changed `contract_version` must arrive with a new
-// decision record that cites the document.
+// Living-document metadata gate: every living document under docs/ carries `title`, `doc_type`,
+// `status` and `area` in frontmatter and every path it points at exists. It checks only facts a
+// machine can derive (keys, enums, folder per kind, pointers) and never reads headings or prose
+// (`.claude/rules/documentation.md`). `updated` and `revision` come from Git at build time
+// (`scripts/docs-vault/build-docs-vault.mjs`), so a hand-written counter is rejected; a changed
+// `contract_version` must arrive with a new decision record that cites the document.
 //
 //   pnpm docs:meta
 
@@ -108,7 +101,6 @@ function hasRevisionLog(raw) {
   return section !== undefined && /^- \d{4}-\d{2}-\d{2}: \S/m.test(section.split(/^## /m)[0]);
 }
 
-/** Problems in one document's frontmatter, as `{ file, key, message }`. */
 export function checkDoc(repoPath, raw, { root = ROOT, decisions = decisionIds(root), guideRegistry = '' } = {}) {
   const problems = [];
   const report = (key, message) => problems.push({ file: repoPath, key, message });
@@ -267,7 +259,6 @@ function walkMarkdown(root, dir, out) {
   return out;
 }
 
-/** Repository paths a document cites, by link or by backticked path, without fragments. */
 export function citedPaths(repoPath, raw) {
   const dir = path.posix.dirname(repoPath);
   const cited = new Set();

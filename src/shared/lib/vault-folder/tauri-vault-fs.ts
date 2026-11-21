@@ -140,7 +140,6 @@ class TauriFileHandle {
   }
 }
 
-/** One walked file: where it is, when it changed, how large it is. Never its bytes. */
 export interface NativeVaultStamp {
   relativePath: string;
   lastModified: number;
@@ -268,7 +267,6 @@ export async function revealTauriVaultFile(
   return true;
 }
 
-/** Classifies the chosen folder as a canonical Git worktree or a bounded folder source. */
 /** `vaultRoot` inside the source is left out of the probe, as the MCP probe does, so the vault's own writes never stale its receipt. */
 export async function inspectTauriProjectSource(
   rootPath: string,
@@ -562,7 +560,6 @@ export async function listTauriVaultLinks(rootPath: string, relativePath: string
   return entries.filter((entry) => entry.kind === 'symlink').map((entry) => entry.name);
 }
 
-/** Reads a text file at a relative path under `rootPath`; `null` when the bridge is absent. */
 export async function readTauriVaultText(
   rootPath: string,
   relativePath: string,
@@ -573,7 +570,6 @@ export async function readTauriVaultText(
   return file.text;
 }
 
-/** The last `maxLines` lines; `null` without the bridge. */
 export async function readTauriVaultTextTail(
   rootPath: string,
   relativePath: string,
@@ -647,7 +643,6 @@ export async function listTauriDirectoryNames(rootPath: string): Promise<string[
   return entries.filter((entry) => entry.kind === 'directory').map((entry) => entry.name);
 }
 
-/** Creates the `name` directory under `rootPath` if absent; a no-op when it exists. */
 export async function ensureTauriChildDirectory(rootPath: string, name: string): Promise<void> {
   const invoke = getInvoke();
   if (!invoke) {

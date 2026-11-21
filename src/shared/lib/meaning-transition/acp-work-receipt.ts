@@ -1,9 +1,7 @@
 /**
- * A bounded, local receipt for one human decision in the in-app ACP workbench.
- *
- * It deliberately excludes full chat transcripts, thoughts, tool output, and absolute
- * paths. The vault already owns execution facts in activity.jsonl; this record closes
- * the missing human-decision boundary: request -> reviewed shape -> allow/reject -> result.
+ * A bounded, local receipt for one human decision in the in-app ACP workbench: request, reviewed
+ * shape, allow/reject, result. It excludes chat transcripts, thoughts, tool output and absolute paths;
+ * execution facts stay in activity.jsonl.
  */
 const ACP_WORK_RECEIPT_DIR = '.ontology-atlas';
 export const ACP_WORK_RECEIPT_FILE = 'acp-work.jsonl';
@@ -39,7 +37,6 @@ interface AcpWorkReceiptItem {
 
 export interface AcpWorkReceipt {
   v: 1;
-  /** Stable across the pending and terminal snapshots of the same tool call. */
   id: string;
   at: string;
   updatedAt: string;
@@ -57,7 +54,6 @@ export interface AcpWorkReceipt {
   approvedBy?: AcpStandingApprover;
 }
 
-/** The only approver besides a person's press: the conversation's auto-approve choice. */
 export const ACP_STANDING_APPROVER = 'auto-approve';
 type AcpStandingApprover = typeof ACP_STANDING_APPROVER;
 

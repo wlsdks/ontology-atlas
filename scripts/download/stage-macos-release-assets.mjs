@@ -13,7 +13,6 @@ import { pathToFileURL } from "node:url";
 /** The folder CI builds the artifact from. One path = a predictable root. */
 export const STAGING_DIR = "release-upload";
 
-/** Where Tauri puts its output. */
 export const DEFAULT_BUNDLE_DIR = "src-tauri/target/release/bundle";
 
 /** On download the folder is the only thing carrying the architecture, so the folder name is the artifact name. */
@@ -38,13 +37,7 @@ export function dsymArchiveName(version, arch) {
   return `Ontology-Atlas-${version}-${arch}.dSYM.zip`;
 }
 
-/**
- * Zips the dSYM bundle so the shipped app keeps no symbols while a crash report stays readable.
- *
- * The release binary is stripped, so `.ips` reports name addresses and nothing else. The dSYM is
- * what turns those addresses back into file and line — it is never inside the `.app`, only beside
- * it in the release, for whoever is holding the crash report.
- */
+/** Zips the dSYM bundle so the shipped app keeps no symbols while a crash report stays readable: the release binary is stripped, and the dSYM, shipped beside the `.app` in the release, turns addresses back into file and line. */
 function stageDsymArchive(dsymDir, outDir, archiveName) {
   const bundle = path.join(dsymDir, DSYM_BUNDLE_NAME);
   if (!fs.existsSync(bundle)) {
@@ -87,16 +80,10 @@ function exactlyOneFile(dir, matches, label) {
 }
 
 /**
- * Gathers the four assets flat into `outDir` and returns the names that will be
- * uploaded.
- *
- * Passing `expectArch` cross-checks the architecture the DMG names — if the build
- * output disagrees with the matrix, it stops here. Letting it through ships users
- * the app for another architecture.
- *
- * The dSYM rides along when Cargo produced one, and `requireDsym` turns its absence into a
- * failure: a release whose symbols were silently dropped looks identical to one that kept them,
- * and the difference only surfaces months later, in front of a crash report nobody can read.
+ * Gathers the four assets flat into `outDir` and returns the names that will be uploaded.
+ * `expectArch` cross-checks the architecture the DMG names against the matrix, so the app for another
+ * architecture is not shipped. The dSYM rides along when Cargo produced one, and `requireDsym` turns
+ * its absence into a failure: dropped symbols are otherwise noticed only months later.
  */
 export function stageReleaseAssets({ bundleDir, outDir, expectArch, dsymDir, requireDsym } = {}) {
   const bundle = bundleDir ?? DEFAULT_BUNDLE_DIR;

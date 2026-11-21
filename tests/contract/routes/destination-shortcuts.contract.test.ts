@@ -201,8 +201,8 @@ describe("the rail, the sheet and the shell read the same table", () => {
   });
 
   /**
-   * The 2026-11-01 Planning decision permits ten. The scrollable rail remains
-   * necessary at minimum height, zoom, and longer translations.
+   * The Planning decision permits ten. The scrollable rail remains necessary at minimum height,
+   * zoom, and longer translations.
    */
   it("destinations do not exceed ten without a new decision", () => {
     expect(

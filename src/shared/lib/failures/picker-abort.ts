@@ -1,26 +1,9 @@
 /**
- * **Cancelling a file/folder picker is not a failure.**
- *
- * Found in the entry review: simply cancelling the folder picker put
- * "user aborted" — the browser's own string — in danger red inside the card.
- * Cancelling is the user's intended, normal exit, so there is no reason to raise
- * an error surface; it should return quietly to the state just before the picker
- * opened.
- *
- * Letting each caller decide with
- * `err instanceof DOMException && err.name === 'AbortError'` leaks in two places,
- * both of which occur in practice:
- *
- * 1. **A DOMException from another realm** — exceptions thrown by an iframe,
- *    worker or extension fail `instanceof`, because their constructor belongs to
- *    a different realm.
- * 2. **Cancellations that are not DOMExceptions** — Tauri commands reject
- *    `Err(String)` as a plain string, and polyfills throw an ordinary `Error`.
- *
- * So the test drops from "the constructor" to **the name and the message**.
- * Misclassifying a cancellation as an error costs the user more than the
- * reverse: the first puts a red warning on a normal action, while the second
- * quietly returns to the previous state.
+ * Cancelling a file/folder picker is not a failure: it returns quietly to the state before the picker
+ * instead of showing the browser's "user aborted" in danger red. `err instanceof DOMException &&
+ * err.name === 'AbortError'` leaks in two cases: a DOMException from another realm (iframe, worker,
+ * extension) fails `instanceof`, and Tauri commands reject `Err(String)` as a plain string. So the test
+ * drops to the name and the message. Misclassifying a cancellation as an error costs more than the reverse.
  */
 const ABORT_NAME = 'AbortError';
 /** The browser's own wording — the fallback test for paths that lose the name (a string reject). */

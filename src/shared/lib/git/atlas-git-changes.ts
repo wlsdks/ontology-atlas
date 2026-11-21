@@ -67,7 +67,6 @@ export function parsePorcelainStatus(out: string): AtlasGitPorcelainRow[] {
   return rows;
 }
 
-/** Mirror of the CLI's classifyChange — a porcelain row → a status. */
 export function classifyPorcelainChange(
   row: Pick<AtlasGitPorcelainRow, "index" | "worktree">,
 ): AtlasGitChangeStatus {
@@ -77,7 +76,6 @@ export function classifyPorcelainChange(
   return "modified";
 }
 
-/** Counts per status — same formula as the Rust `SnapshotCounts`. */
 export function countChangesByStatus(
   changes: readonly AtlasGitChangeLike[],
 ): AtlasGitStatusCounts {

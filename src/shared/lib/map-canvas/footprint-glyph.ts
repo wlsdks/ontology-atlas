@@ -8,7 +8,6 @@ import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 
 import { type FootprintPreference } from "../preferences/appearance-preferences";
 
-/** Footprint ink as an RGB triple — the caller reads it from a token and passes it in. */
 export type FootprintInk = readonly [number, number, number];
 
 export interface FootprintPaintContext {
@@ -52,7 +51,6 @@ export const FOOTPRINT_MIN_SIZE = 4;
 /** The one place the mark's extent is defined; `footprintPairRadius` is this times size. */
 const MARK_RADIUS_RATIO = 0.72;
 
-/** Mark size clamped to the node radius in screen space. */
 export function footprintSizeFor(baseSize: number, screenNodeRadius: number): number {
   if (!Number.isFinite(screenNodeRadius) || screenNodeRadius <= 0) return baseSize;
   const capped = (FOOTPRINT_NODE_RATIO * screenNodeRadius) / MARK_RADIUS_RATIO;
@@ -94,7 +92,6 @@ export function formatStepNumbers(steps: readonly number[], totalLabel = "총 %d
   return `${steps[0]}·…·${steps[steps.length - 1]} (${total})`;
 }
 
-/** Step numbers beside a node — just above the prints. */
 export function drawFootprintSteps(
   paint: FootprintPaintContext,
   x: number,

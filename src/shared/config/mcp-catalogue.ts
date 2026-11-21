@@ -35,7 +35,6 @@ interface CatalogueRemoteVariant {
   kind: 'remote';
   transport: 'http';
   url: string;
-  /** A second address for the same service, e.g. GitHub's read-only endpoint. */
   label?: string;
   /**
    * `oauth` — the agent opens a browser and the provider asks. Atlas holds nothing.
@@ -71,23 +70,19 @@ export interface CatalogueEntry {
   /** The day a person read the vendor's page. Curated facts age, and the screen says when. */
   verifiedAt: string;
   registryName: string | null;
-  /** Whether the generator actually reached the registry for this entry on its last run. */
   registryChecked: boolean;
   variants: readonly CatalogueVariant[];
 }
 
-/** One line naming what will actually run or be reached — the same claim `whatRuns()` makes. */
 export function variantRuns(variant: CatalogueVariant, runtimePath?: string | null): string {
   if (variant.kind === 'remote') return variant.url;
   return [runtimePath ?? variant.runtime, ...variant.args].join(' ');
 }
 
-/** Every variable a variant declares, in the order it declares them. */
 export function variantVariables(variant: CatalogueVariant): readonly CatalogueVariable[] {
   return variant.kind === 'remote' ? variant.headers : variant.env;
 }
 
-/** The variables a person still has to supply; an OAuth remote needs none. */
 export function variantSecrets(variant: CatalogueVariant): readonly CatalogueVariable[] {
   return variantVariables(variant).filter((variable) => variable.required);
 }
@@ -133,7 +128,6 @@ export function catalogueDraft(
   options: {
     id: string;
     capturedAt: string;
-    /** The full path this machine resolved for the variant's runtime, when it found one. */
     runtimePath?: string | null;
     secretRef: (id: string, name: string) => string;
   },

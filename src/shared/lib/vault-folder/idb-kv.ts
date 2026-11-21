@@ -1,4 +1,3 @@
-/** IndexedDB storage for structured-cloneable preferences and folder handles. */
 const DB_NAME = 'demo-kv';
 const DB_VERSION = 1;
 const STORE = 'kv';

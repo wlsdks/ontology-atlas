@@ -1,14 +1,7 @@
 #!/usr/bin/env node
-// Broken-link check.
-//
-// Open-source projects put exactly two kinds of doc check in CI: a cheap wide net
-// (lint, formatting, **broken links**) and a narrow precise one (regenerate and
-// diff). We already have the latter in `scripts/docs/build-docs-surface.mjs`; this is
-// the broken-link half of the former.
-//
-// External URLs are excluded by default — a network-dependent check turns our
-// gate red when somebody else's server is down. Run them separately with
-// `--external`.
+// Broken-link check, the cheap wide net beside the narrow regenerate-and-diff of
+// `scripts/docs/build-docs-surface.mjs`. External URLs are excluded by default (a network-dependent
+// check goes red when someone else's server is down); run them with `--external`.
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -117,7 +110,6 @@ export function resolveLinkTarget(fromFile, target, root = ROOT) {
 
 const anchorCache = new Map();
 
-/** Anchors of one markdown file, or null when it cannot be read as markdown. */
 function anchorsOf(file) {
   if (!anchorCache.has(file)) {
     let anchors = null;

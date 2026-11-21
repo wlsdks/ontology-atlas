@@ -1,6 +1,5 @@
 // JSON-RPC client for the dogfood MCP walk: spawns the stdio server, chunks
 // write batches, decodes stdout/stderr, and exposes response lookup helpers.
-// Split out of scripts/dogfood/dogfood-mcp-walk.mjs (structural decomposition, logic unchanged).
 import { spawn } from "node:child_process";
 import { StringDecoder } from "node:string_decoder";
 import { fileURLToPath } from "node:url";

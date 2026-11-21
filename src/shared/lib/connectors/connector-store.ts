@@ -24,7 +24,6 @@ export type ConnectorReadResult =
   | {
       status: 'ok';
       connectors: ConnectorRecord[];
-      /** `<connector>.<variable>` for every plaintext credential the file held. */
       secretLiteralKeys: string[];
     }
   | { status: 'missing'; connectors: []; secretLiteralKeys: [] }
@@ -45,7 +44,6 @@ export type ConnectorWriteResult =
 
 export interface ConnectorStore {
   read(): Promise<ConnectorReadResult>;
-  /** Replace the whole list. Every mutation is expressed as a replacement of what was just read. */
   save(connectors: ConnectorRecord[]): Promise<ConnectorWriteResult>;
   /** Turn one connector on or off, re-reading first so a concurrent edit is not lost. */
   setEnabled(id: string, enabled: boolean): Promise<ConnectorWriteResult>;

@@ -12,9 +12,7 @@ export function useRowDisclosure(open: boolean): {
   /** Whether to render into the DOM — stays true while collapsing (exit transition). */
   mounted: boolean;
   open: boolean;
-  /** The `.ai-row-disclosure` box, i.e. the element whose height transitions. */
   boxRef: React.RefObject<HTMLDivElement | null>;
-  /** The `.ai-row-disclosure-body` content, i.e. where the real height comes from. */
   contentRef: React.RefObject<HTMLDivElement | null>;
 } {
   const [mounted, setMounted] = useState(open);

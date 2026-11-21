@@ -40,7 +40,6 @@ export function OntologyMapKindGlyph({
   kind: string;
   size?: number;
   className?: string;
-  /** Test and preview override; omitted, the app-wide setting is read. */
   glyphSet?: GlyphSet;
 }) {
   const preferredSet = useGlyphSet();

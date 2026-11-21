@@ -52,7 +52,6 @@ export function resolveVaultSource(value, { cwd = process.cwd() } = {}) {
   return { kind: "dir", dir };
 }
 
-/** The file name `ui:audit --shots` writes for one route and width. */
 export function shotName(route, width) {
   return `${route.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "root"}@${width}.png`;
 }
@@ -89,7 +88,6 @@ async function waitForServer(base) {
   throw new Error(`the static export server at ${base} did not answer within ${SERVER_READY_TIMEOUT_MS} ms`);
 }
 
-/** Serves `out/` on a free port until `stop` is called or this process exits. */
 async function serveStaticExport() {
   const port = await freePort();
   const server = spawn(process.execPath, ["scripts/web/serve-static-export.mjs", `--port=${port}`], {

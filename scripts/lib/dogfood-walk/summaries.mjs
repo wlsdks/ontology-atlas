@@ -1,5 +1,4 @@
 // Human-readable summary/format helpers for the dogfood MCP walk report and gate.
-// Split out of scripts/dogfood/dogfood-mcp-walk.mjs (structural decomposition, logic unchanged).
 import { initializeInstructionsFailure } from "../../../mcp/scripts/verify/checks/initialize.mjs";
 import {
   structuredContentMismatchSummary,

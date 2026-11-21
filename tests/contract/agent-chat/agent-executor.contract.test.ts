@@ -11,7 +11,7 @@
 //
 // Changing one side breaks here: if MCP changes an alias rule the web derive must
 // change with it (and vice versa), otherwise a person and an agent see different
-// ontologies (exactly the defect #691 fixed).
+// ontologies.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';

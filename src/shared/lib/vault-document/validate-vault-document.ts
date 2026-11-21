@@ -56,7 +56,6 @@ export interface VaultDocumentIssue {
 }
 
 export interface VaultDocumentReport {
-  /** True when there are zero error-severity issues. Warnings alone are still ok. */
   ok: boolean;
   issues: VaultDocumentIssue[];
 }
@@ -458,7 +457,6 @@ function pushNonCanonicalGraphArrayIssues(
 }
 
 export interface VaultValidationSummary {
-  /** True when there are zero errors; warnings alone are still ok. */
   ok: boolean;
   total: number;
   errorCount: number;
@@ -467,7 +465,6 @@ export interface VaultValidationSummary {
   issuesBySlug: Array<{ slug: string; issues: VaultDocumentIssue[] }>;
 }
 
-/** Frontmatter validation and UID conflicts, in report order. */
 export function summarizeVaultValidation(
   items: ReadonlyArray<{
     slug: string;

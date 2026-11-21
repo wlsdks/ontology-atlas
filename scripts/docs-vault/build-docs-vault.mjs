@@ -58,18 +58,13 @@ const GATEWAY_CHANGELOG_OUT = path.join(
   'data',
   'gateway-changelog.json',
 );
-// How many CHANGELOG sections go into the bundle. It **must exceed** the screen's
-// display limit (RECENT_SECTIONS = 12 in `app/(gateway)/[locale]/changelog/page.tsx`) — the
-// screen trims what it receives once more against its own limit and adds the two
-// fold counts to report the exact total. Raising the screen's limit above this
-// value makes the excess invisible.
+// How many CHANGELOG sections go into the bundle. It must exceed the screen's display limit
+// (RECENT_SECTIONS = 12 in `app/(gateway)/[locale]/changelog/page.tsx`): the screen trims once more
+// and adds the fold counts, so a higher screen limit makes the excess invisible.
 export const GATEWAY_CHANGELOG_KEEP_SECTIONS = 16;
-// The manifest's headings are used only by the `/docs` screen (the table-of-
-// contents rail and inserts), yet 263KB of them rode in the chunk shared by every
-// route. They are emptied in the bundled manifest and emitted as a separate
-// slug → headings map that `/docs` imports dynamically when needed.
-// Local mode (the user's vault) builds its manifest from disk, so headings stay
-// inline there — this split applies to the bundled vault only.
+// Only `/docs` uses the headings, yet 263KB of them rode in the chunk shared by every route: the
+// bundled manifest is emptied of them and a slug → headings map is emitted for `/docs` to import
+// dynamically. The local mode manifest (the user's vault) keeps headings inline.
 const MANIFEST_HEADINGS_OUT = path.join(
   ROOT,
   'src',
@@ -86,12 +81,9 @@ const STOREFRONT_HEADINGS_OUT = path.join(
   'data',
   'sample-storefront.headings.json',
 );
-// Recognisable sample vault (2026-07): `samples/storefront/` is built as its own
-// manifest/content pair so a non-developer sees an example business ("online
-// storefront") instead of the dogfood vault, which describes this tool itself.
-// The dogfood output (manifest.json / content.json / public/docs-vault) is never
-// touched — `docs-vault:check` must keep passing unchanged. No public raw copies
-// are produced for storefront: its only consumer so far is a JSON import.
+// `samples/storefront/` is built as its own manifest/content pair so a non-developer sees an example
+// business instead of the dogfood vault. The dogfood output is never touched, and no public raw
+// copies are produced for storefront.
 const SAMPLES_STOREFRONT_DIR = path.join(ROOT, 'samples', 'storefront');
 const STOREFRONT_MANIFEST_OUT = path.join(
   ROOT,
@@ -124,22 +116,11 @@ export function isShallowRepository(rootDir) {
 }
 
 /**
- * Per-document "last changed" — the **date** of the commit that last touched the
- * file (`%cs`, YYYY-MM-DD in the commit's own timezone).
- *
- * **Date, not timestamp**, because this value goes into generated output that is
- * committed **alongside** that commit, whose timestamp is unknowable at generation
- * time. GitHub squash-merge discards the PR branch's commits and stamps a new
- * time; rebase and amend do the same. Recorded at timestamp precision the baseline
- * is therefore **wrong from birth** — across 25 commits on main, 1–32 documents
- * were always wrong (24 of 25 commits), and when someone later regenerated it,
- * lines they had not touched appeared in the diff, producing rebase conflicts and
- * phantom diffs.
- *
- * At date precision a merge restamping the time still lands on the **same day**, so
- * the value is unchanged (two PRs on the same day write the same string and git
- * auto-merges). Every consumer works at day granularity or coarser: the "N days
- * ago" ramp, the last-7-days lens, the weekly heatmap, and sorting.
+ * Per-document "last changed": the date of the commit that last touched the file (`%cs`, YYYY-MM-DD
+ * in the commit's own timezone). Date, not timestamp: the value is committed alongside that commit,
+ * whose timestamp is unknowable at generation time, and squash-merge, rebase and amend restamp it.
+ * At date precision a restamp lands on the same day, so the value is unchanged and two PRs on one
+ * day auto-merge. Every consumer works at day granularity or coarser.
  */
 function gitLastCommitDays(rootDir, scopeDir) {
   const days = new Map();
@@ -149,10 +130,8 @@ function gitLastCommitDays(rootDir, scopeDir) {
   const dirty = new Set();
   try {
     const scope = path.relative(rootDir, scopeDir).replace(/\\/g, '/') || '.';
-    // Shallow-clone warning — in a depth-1 checkout the single commit is treated as
-    // a parentless root, so `--name-only` attributes the **entire tree** to it. Every
-    // document then gets the same date and the freshness lens goes completely flat
-    // (measured: 247 paths → 1 distinct date). CI must use `fetch-depth: 0`.
+    // A depth-1 checkout treats the single commit as a parentless root, so `--name-only` attributes the
+    // entire tree to it and the freshness lens goes flat. CI must use `fetch-depth: 0`.
     if (isShallowRepository(rootDir)) {
       console.warn(
         '[docs-vault] shallow git clone: every document date collapses to the same day. Check out full history (CI: fetch-depth: 0).',
@@ -209,13 +188,9 @@ export function documentRevision(relPath, { commits, dirty }, movedFrom = {}) {
 }
 
 /**
- * `YYYY-MM-DD` in the local timezone. `%cs` gives the date in the commit's own
- * timezone, so the mtime path follows the same convention — truncating in UTC
- * would record a file edited on a KST morning as "yesterday", disagreeing with the
- * `%cs` ("today") of the commit that carries the edit. The mtime path is used only
- * for dirty or untracked documents, so the machine-timezone dependence is confined
- * to that author's working tree (a clean checkout has no dirty documents, so CI and
- * fresh worktrees are timezone-independent).
+ * `YYYY-MM-DD` in the local timezone, matching `%cs` (the commit's own timezone): truncating in UTC
+ * would record a KST-morning edit as "yesterday". Used only for dirty or untracked documents, so the
+ * machine-timezone dependence stays in the author's working tree.
  */
 export function localDayStamp(value) {
   const date = value instanceof Date ? value : new Date(value);
@@ -399,17 +374,12 @@ function buildExcerpt(body) {
   return stripped.slice(0, 320);
 }
 
-// Normalises a wikilink target against the vault the document belongs to.
-// Mirrors src/shared/lib/vault-document/parse-frontmatter.ts#resolveWikilinkTargetSlug — the
-// same logic is physically duplicated in both places, and unlike the parser's
-// 3-way contract there is no contract test yet, so a fix here must be applied
-// there too or they drift.
-//
-// docs/ontology/ is the nested MCP vault this project dogfoods. Wikilinks inside
-// it use slugs relative to the ontology vault root (`capabilities/x`) as MCP
-// tools and people write them, but in the merged `/docs` tree the real slug
-// carries an `ontology/` prefix. Without that correction the backlinksDetail keys
-// diverge and real backlinks go missing from lookups.
+// Normalises a wikilink target against the vault the document belongs to. Mirrors
+// `resolveWikilinkTargetSlug` in src/shared/lib/vault-document/parse-frontmatter.ts, physically
+// duplicated with no contract test: apply a fix in both.
+// Wikilinks inside the nested docs/ontology/ vault are relative to its root (`capabilities/x`), but
+// the merged `/docs` slug carries an `ontology/` prefix; without the correction backlinksDetail keys
+// diverge and backlinks go missing.
 export function resolveWikilinkTargetSlug(targetSlug, fromSlug) {
   if (fromSlug.startsWith('ontology/') && !targetSlug.startsWith('ontology/')) {
     return `ontology/${targetSlug}`;
@@ -417,9 +387,6 @@ export function resolveWikilinkTargetSlug(targetSlug, fromSlug) {
   return targetSlug;
 }
 
-// Extracts links — relative md references plus Obsidian wikilinks. External URLs,
-// images, and anchor-only links are ignored. Returns a targetSlug plus 120
-// characters of surrounding context per link.
 export function extractOutLinksWithContext(body, fromSlug) {
   const slugs = new Set();
   const contexts = [];
@@ -502,7 +469,6 @@ function insertIntoTree(root, slug, title) {
 function sortTree(node) {
   if (!node.children) return;
   node.children.sort((a, b) => {
-    // Directories first, then files; within each group sorted by name.
     if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
     return a.name.localeCompare(b.name, 'ko');
   });
@@ -513,11 +479,8 @@ async function ensureDir(dir) {
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
 }
 
-// The manifest stamp is the most recent `updatedAt` **date** among source
-// documents. Never the build wall clock: a wall clock changes the file's third
-// line on every regeneration, so two open PRs **always** conflict here. At date
-// precision two branches regenerating on the same day write the same string and
-// git auto-merges. Fixed fallback when no document carries a date.
+// The stamp is the most recent `updatedAt` date among source documents, never the build wall clock
+// (two open PRs would always conflict on the third line). Fixed fallback when no document has a date.
 const STABLE_GENERATED_AT_FALLBACK = '1970-01-01';
 export function deterministicGeneratedAt(docs) {
   const days = (docs ?? [])
@@ -528,13 +491,9 @@ export function deterministicGeneratedAt(docs) {
 }
 
 /**
- * Keeps the first `limit` `## ` sections. **This must have the same semantics as
- * `trimToRecentSections` in `src/views/gateway-doc/lib/vault-doc.ts`**: the screen
- * trims the bundled preview once more against its own limit, so if the two
- * implementations disagree on section boundaries the reported fold count is a lie.
- * `tests/contract/vault-data/bundled-vault-budget.contract.test.ts` proves the two agree
- * against the real CHANGELOG (the same pattern as the parse-frontmatter 3-way
- * contract).
+ * Keeps the first `limit` `## ` sections. Must match `trimToRecentSections` in
+ * `src/views/gateway-doc/lib/vault-doc.ts` (the screen trims once more, so differing boundaries make
+ * the fold count a lie); `tests/contract/vault-data/bundled-vault-budget.contract.test.ts` proves it.
  */
 export function trimToRecentSections(markdown, limit) {
   const lines = markdown.split('\n');
@@ -731,28 +690,17 @@ async function assertOutputsCurrent({
 }
 
 /**
- * Shared core that scans one vault directory (docs/ or samples/storefront/) and
- * assembles manifest / content / publicFiles. This is the dogfood (docs/) build's
- * original logic, extracted unchanged when the storefront sample vault was added
- * so the dogfood output could not regress by a single byte.
- *
- * When `publicOutDir` is given and `check` is false, raw md is copied beneath it
- * (storefront passes `null` — nothing consumes public raw copies for it yet).
- *
- * Exported because the determinism contract test passes a temporary git
- * repository as `rootDir`/`dir` to prove that rewriting commit times within the
- * same day produces byte-identical output (`check: true` writes nothing).
+ * Shared core that scans one vault directory (docs/ or samples/storefront/) and assembles manifest /
+ * content / publicFiles. With `publicOutDir` given and `check` false, raw md is copied beneath it
+ * (storefront passes `null`). Exported because the determinism contract test passes a temporary git
+ * repository as `rootDir`/`dir` to prove that rewriting commit times within the same day yields
+ * byte-identical output (`check: true` writes nothing).
  */
 /**
- * The canonical meaning judgements, loaded **if this checkout has them**.
- *
- * They live in `mcp/src`, a sibling package with no build step, and are imported here
- * rather than retyped so the static manifest and the app's own builder answer with one
- * rule. The import is dynamic and optional because this script is also copied on its own
- * into a bare worktree by the `prepare` hook (`scripts/worktree-materialization.test.mjs`,
- * `tests/contract/ci-gates/precommit-hook-wired.contract.test.ts` both seed a repository with a
- * `scripts/` and no `mcp/`): a static import there is a module-resolution crash before
- * the first document is read.
+ * The canonical meaning judgements, loaded if this checkout has them: they live in `mcp/src` and are
+ * imported rather than retyped, so the static manifest and the app's builder share one rule. The
+ * import is dynamic and optional because the `prepare` hook copies this script alone into a bare
+ * worktree (no `mcp/`), where a static import is a module-resolution crash.
  */
 const meaningRules = await (async () => {
   try {
@@ -773,24 +721,13 @@ if (!meaningRules) {
 }
 
 /**
- * The meaning findings for one document, as portable codes.
- *
- * Three answers, and the difference between them is what the manifest is for:
- * `undefined` — this document has no `kind:` and was never a node to ask about;
- * `null` — it is a node and the rule was not available, so nothing was measured;
- * an array — the rule ran, and an empty array means it found nothing.
- *
- * This mirrors `meaningFindings` in `src/shared/lib/vault-document/meaning-findings.ts`, which the
- * browser and desktop manifest builder call. The canonical judgements live in
- * `mcp/src/meaning/meaning-findings.mjs`; the fifth, `slug-outside-kind-folder`, sits in the write
- * gate instead of that module, so it is read from the schema it is built on — the same two
- * lines `tests/contract/analysis/meaning-findings-parity.contract.test.ts` runs to prove the port
- * and the canonical rule agree.
- *
- * The sixth finding, `folder-only-evidence`, is deliberately absent on both paths: it asks
- * the filesystem whether a cited path is a directory, and the browser has no filesystem, so
- * including it here would make the static manifest report something a user's own folder
- * never can.
+ * The meaning findings for one document, as portable codes: `undefined` (no `kind:`, never a node),
+ * `null` (a node, rule unavailable, nothing measured), or an array (the rule ran; empty means nothing found).
+ * Mirrors `meaningFindings` in `src/shared/lib/vault-document/meaning-findings.ts`; the canonical rules
+ * live in `mcp/src/meaning/meaning-findings.mjs`, except `slug-outside-kind-folder`, which sits in the
+ * write gate and is read from the schema (`tests/contract/analysis/meaning-findings-parity.contract.test.ts`).
+ * `folder-only-evidence` is absent on both paths: it asks the filesystem whether a cited path is a
+ * directory, which the browser cannot.
  */
 function meaningFindingCodes({ kind, slug, title, body }) {
   if (typeof kind !== 'string' || !kind.trim()) return undefined;
@@ -812,15 +749,7 @@ export async function scanVaultDir(
     check = false,
     treeName = 'docs',
     sourceReaders = [readLedgerSource, readPoPilotSource],
-    /**
-     * The part of a manifest slug that is **not** part of the vault the agent is
-     * handed. The dogfood manifest is scanned over the whole `/docs` tree while the
-     * vault root is `docs/ontology`, so an ontology node's slug reads
-     * `ontology/capabilities/…` here and `capabilities/…` there. The same
-     * subtraction `StaticVaultSource.agentSlugPrefix` makes for copied MCP calls has
-     * to happen before `slug-outside-kind-folder` is asked where a file sits, or
-     * every node in the sample is accused of sitting outside its kind folder.
-     */
+    /** The part of a manifest slug outside the vault the agent is handed: an ontology node reads `ontology/capabilities/…` here and `capabilities/…` there, and `slug-outside-kind-folder` needs the latter (the subtraction `StaticVaultSource.agentSlugPrefix` makes). */
     vaultSlugPrefix = '',
     /** `{ newRepoPath: oldRepoPath }` from `docs/.moved.json`, so a revision count survives a move. */
     movedFrom = {},
@@ -831,7 +760,6 @@ export async function scanVaultDir(
   const docs = [];
   const publicFiles = [];
   const content = {};
-  // Only backlinksDetail is kept; the plain deprecated backlinks list is gone.
   const backlinksDetailMap = new Map(); // slug -> Array<{ fromSlug, context, linkText }>
   const tagsMap = new Map(); // tag -> Set<slug>
 
@@ -920,20 +848,16 @@ export async function scanVaultDir(
     content[slug] = raw;
 
     if (!check && publicOutDir) {
-      // Copy raw md under public/docs-vault by slug, creating subdirectories as needed.
       const outPath = path.join(publicOutDir, `${slug}.md`);
       await ensureDir(path.dirname(outPath));
       await writeFile(outPath, raw, 'utf8');
     }
   }
 
-  // D-1 — register FRONTMATTER relation-ref backlinks (mirrors
-  // `src/entities/docs-vault/lib/local-manifest/md-entry.ts`). The body pass above
-  // only saw markdown links, so a doc referenced purely through frontmatter
-  // (`dependencies: [capabilities/mcp-server]`, …) showed a false "no
-  // backlinks" in the sample (build-time) reader. Same relation-key set as the
-  // MCP `find_backlinks` tool. Deduped by fromSlug in the assembly below, so a
-  // body link to the same target keeps its richer context.
+  // Register frontmatter relation-ref backlinks (mirrors `src/entities/docs-vault/lib/local-manifest/md-entry.ts`):
+  // the body pass sees only markdown links, so a doc referenced purely through frontmatter showed no
+  // backlinks. Same relation-key set as the MCP `find_backlinks`; deduped by fromSlug below, so a body
+  // link to the same target keeps its richer context.
   {
     const RELATION_REF_ARRAY_KEYS = [
       'domains',
@@ -1015,10 +939,7 @@ export async function scanVaultDir(
 
   const manifest = {
     version: '2026-04-23',
-    // The stamp is the most recent change **date** among source documents — never
-    // the build wall clock and never the previous output. So the same source
-    // regenerates to the same bytes on any machine any number of times, and two
-    // branches that diverged on the same day do not conflict on this line.
+    // Never the build wall clock and never the previous output (see `deterministicGeneratedAt`).
     generatedAt: deterministicGeneratedAt(docs),
     docs,
     backlinksDetail,
@@ -1102,12 +1023,7 @@ async function buildDocsVault({ check = false } = {}) {
   );
 }
 
-/**
- * Builds the storefront sample vault (`samples/storefront/`) — only its own
- * manifest/content pair, separate from dogfood. No public raw copies and no
- * PUBLIC_OUT reset: nothing consumes them yet, and when something does
- * the extension stays inside this function.
- */
+/** Builds the storefront sample vault: only its own manifest/content pair, no public raw copies and no PUBLIC_OUT reset. */
 async function buildStorefrontSample({ check = false } = {}) {
   if (!existsSync(SAMPLES_STOREFRONT_DIR)) {
     console.error(`[docs-vault] no samples/storefront/ directory: ${SAMPLES_STOREFRONT_DIR}`);

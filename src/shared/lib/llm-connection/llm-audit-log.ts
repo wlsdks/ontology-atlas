@@ -38,7 +38,6 @@ export interface LlmAuditDownload extends LlmAuditRun {
 }
 
 interface LlmAuditScope {
-  /** Slugs of the nodes whose excerpts were sent; empty for a connection check. */
   nodes: string[];
   promptChars: number;
   vaultChars: number;
@@ -62,7 +61,6 @@ export interface LlmAuditEntry {
    * the parser passes future values through unchanged.
    */
   purpose: string;
-  /** The user's own words; `null` for a connection check. */
   question: string | null;
   scope: LlmAuditScope;
   /**
@@ -77,9 +75,7 @@ export interface LlmAuditEntry {
   httpStatus: number | null;
   responseChars: number | null;
   durationMs: number | null;
-  /** Present only on the two lines of a search-by-meaning preparation. */
   embed: LlmAuditEmbedRun | null;
-  /** Present only on the two lines of a model download. */
   download: LlmAuditDownload | null;
 }
 

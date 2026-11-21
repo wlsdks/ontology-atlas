@@ -9,7 +9,6 @@ const AGENT_CHAT_INTENT_EVENT = 'ontology-atlas:agent-chat-intent';
 const AGENT_CHAT_INTENT_QUEUE_KEY = 'ontology-atlas:agent-chat-intent:pending';
 
 interface AgentChatIntentDetail {
-  /** Which runtime to open with; unset means whichever is currently selected. */
   runtimeId: string | null;
   /**
    * A first turn to open with, or `null` for an empty conversation. It arrives as the person's own
@@ -50,9 +49,7 @@ export function queueAgentChatIntent(
 }
 
 export interface QueuedAgentChatIntent {
-  /** `null` when the caller named a task but not a runner; the map falls back to the connected one. */
   runtimeId: string | null;
-  /** The first turn to open with, or `null` for an empty conversation. */
   prompt: string | null;
 }
 

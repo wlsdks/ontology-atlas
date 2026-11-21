@@ -95,13 +95,8 @@ export function nextTrain({ queue = [], splits = [], batchSize = DEFAULT_BATCH }
   return { batch: queue.slice(0, Math.max(1, batchSize)), splits: [], source: 'queue' };
 }
 
-/*
- * ------------------------------------------------------------------------------------------------
- * Adaptive batch size. A train of `n` is green with `(1 - p)^n` for a per-PR red rate `p`, and a
- * red train bisects sequentially, so the default size is the largest `n` that is green at least
- * half the time on the measured `p`.
- * ------------------------------------------------------------------------------------------------
- */
+// Adaptive batch size: a train of `n` is green with `(1 - p)^n` for a per-PR red rate `p`, and a red
+// train bisects sequentially, so the default is the largest `n` green at least half the time on the measured `p`.
 
 /** Pull requests a train carried, from its title: `land #1 #2 and 3 more` is five. */
 export function trainSizeFromTitle(title) {
@@ -170,12 +165,6 @@ export function adaptiveBatch(rows = [], { max = DEFAULT_BATCH, min = MIN_BATCH,
   };
 }
 
-/*
- * ------------------------------------------------------------------------------------------------
- * Speculation: at most two trains in flight, the second cut from the first one's head.
- * ------------------------------------------------------------------------------------------------
- */
-
 /** Trains in flight at once: one on `main`, one speculating on top of it. */
 const MAX_IN_FLIGHT = 2;
 
@@ -208,16 +197,13 @@ export function splitTrain(numbers) {
 }
 
 /**
- * What a red train does next.
- *
- * - This train has not spent its rerun, and it carries one pull request or every failing context
- *   is in the flaky set: **rerun** only the failed jobs, on the unchanged head. Ejecting a lone
- *   pull request costs its author a fix-and-requeue round; in 4 of the 20 red trains before
- *   2026-11-18 the next train carrying the same head went green. A run with jobs still going,
- *   only cancelled contexts, or a refused rerun request settles as red without one. For several, a bisect over a flaky context costs
- *   `log2(n)` CI runs to learn nothing, so a named one reruns at every size.
- * - More than one component: **split** into halves, run as successive trains (bors-style).
- * - One component: **eject** it, naming the contexts.
+ * What a red train does next. A train that has not spent its rerun and carries one pull request, or
+ * whose failing contexts are all flaky, reruns only the failed jobs on the unchanged head: ejecting a
+ * lone pull request costs its author a fix-and-requeue round. A run with jobs still going, only
+ * cancelled contexts, or a refused rerun settles as red without one. For several components a bisect
+ * over a flaky context costs `log2(n)` CI runs to learn nothing, so a named one reruns at every size.
+ * More than one component: split into halves, run as successive trains. One component: eject it,
+ * naming the contexts.
  */
 export function redTrainPlan({ components, failed = [], flaky = [], reruns = 0 }) {
   const names = unique(failed.map((check) => check.name));

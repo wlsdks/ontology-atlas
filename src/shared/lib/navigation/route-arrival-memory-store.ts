@@ -5,12 +5,10 @@
  */
 const memory = new Map<string, unknown>();
 
-/** The last value remembered under `key`, or `undefined` if there is none. */
 export function readArrivalMemory<T>(key: string): T | undefined {
   return memory.has(key) ? (memory.get(key) as T) : undefined;
 }
 
-/** Remembers `value` under `key` for the life of the tab. */
 export function writeArrivalMemory<T>(key: string, value: T): void {
   memory.set(key, value);
 }

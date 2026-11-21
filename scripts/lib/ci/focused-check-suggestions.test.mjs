@@ -101,7 +101,7 @@ describe('focused check suggestions', () => {
   });
   it('lints changed scripts, tests and packages that the full lint lane covers', () => {
     const lint = (paths) => commandNames(suggestFocusedChecks(paths)).find(isScriptLint);
-    // A scripts-only change once planned no lint and landed a warning on main (train #1921).
+    // A scripts-only change must still plan a lint, or a warning lands on main.
     assert.equal(
       lint(['scripts/landing/pr-land.test.mjs', 'tests/e2e/settle.ts', 'mcp/src/index.js']),
       'pnpm exec eslint --max-warnings 0 --no-warn-ignored scripts/landing/pr-land.test.mjs tests/e2e/settle.ts mcp/src/index.js',

@@ -1,23 +1,16 @@
 #!/usr/bin/env node
 /**
- * Copies the static export into the folder Tauri embeds (`build.frontendDist`), leaving out what
- * only the public website serves. Tauri compiles every file of that folder into the executable,
- * and the updater ships the executable whole, so each web-only megabyte was paid on every install
- * and every update.
- *
- * Everything not named here is kept: a new route reaches the app without touching this file, and
- * only a deliberate entry can take one away. A path the app requests but the folder lacks falls
- * back to the root `index.html`, which sends the window to `/<locale>/`, so a wrong entry costs a
- * detour to the map rather than a blank window. The reasons per entry, and the proof that the
- * installed app links to none of them, live in
- * `tests/contract/desktop/desktop-frontend-paths.contract.test.ts`.
+ * Copies the static export into the folder Tauri embeds (`build.frontendDist`), leaving out what only
+ * the public website serves: Tauri compiles every file into the executable and the updater ships it whole.
+ * Everything not named here is kept, so a new route reaches the app without touching this file. A path
+ * the app requests but the folder lacks falls back to the root `index.html`, which sends the window to
+ * `/<locale>/`. Reasons per entry live in `tests/contract/desktop/desktop-frontend-paths.contract.test.ts`.
  */
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { listLocales } from "../i18n/build-messages.mjs";
 
-/** Top-level files and folders of the export that only the website serves. */
 export const WEB_ONLY_ROOT_ENTRIES = [
   "demo",
   "gateway",
@@ -29,7 +22,6 @@ export const WEB_ONLY_ROOT_ENTRIES = [
   "sitemap.xml",
 ];
 
-/** Per-locale routes that only the website serves. */
 export const WEB_ONLY_LOCALE_ROUTES = ["download"];
 
 /**

@@ -14,7 +14,6 @@ export type AgentNotificationKind =
   | "bridge-inserted"
   | "vault-problem";
 
-/** The list and order shown in settings — single source for both the UI and the stored value. */
 export const AGENT_NOTIFICATION_KINDS: readonly AgentNotificationKind[] = [
   "task-start",
   "task-end",

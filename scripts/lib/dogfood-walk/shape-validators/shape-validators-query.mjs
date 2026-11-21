@@ -1,7 +1,6 @@
 // Response-shape validators for the dogfood MCP walk: core read/query tools
 // (evidence, concepts, pattern_walk, all_paths, query_plan, neighbors, path,
 // project_scope/map, domain_profile/matrix, components, relation_check).
-// Split out of scripts/dogfood/dogfood-mcp-walk.mjs (structural decomposition, logic unchanged).
 import {
   structuredContentMismatchSummary,
   structuredContentParityStatus,

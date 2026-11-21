@@ -1,27 +1,18 @@
 #!/usr/bin/env node
 /**
  * Captures the app screens the gateway's screens stage shows, once per locale
- * (`public/gateway/<screen>.<locale>.webp`, Korean and English in one run).
+ * (`public/gateway/<screen>.<locale>.webp`). A script, not a hand-taken screenshot: these screens
+ * exist only inside the desktop app and the gateway promises each picture is a real screen
+ * (`SurfaceCapture`), so the real static export runs in a browser with the Tauri bridge answered by
+ * Node against real files: this repository's `docs/ontology`, its harness files (`AGENTS.md`,
+ * `.claude/`, `.codex/`) and `git log -- docs/ontology`. Only a small sample library, the
+ * project-source binding and one saved automation are added in memory.
  *
- * Why a script and not a hand-taken screenshot: these screens only exist inside the desktop app
- * (a native folder root, Git, a project source), and the gateway promises that each picture is a
- * real screen, not a mockup (`SurfaceCapture`). So the screens are rendered by the real static
- * export in a browser, with the Tauri bridge answered **by Node against real files**:
+ * Nothing is written but the pictures; every path the app sees is under the fake root
+ * `/work/ontology-atlas`, so no private path reaches a picture. The pictures are 1336×860 CSS pixels
+ * at device scale 2, dark, in the page's own language (the Korean set on `/ko/...`).
  *
- * - the ontology folder is this repository's own `docs/ontology`, read from disk;
- * - the harness reading scans this repository itself (its `AGENTS.md`, `.claude/`, `.codex/`…);
- * - the Git screen is `git log -- docs/ontology` of this repository;
- * - only what the repository does not carry is added in memory: a small sample library
- *   (`sources/` + `wiki/`, with real SHA-256 hashes and one deliberately stale page), the
- *   project-source binding, and one saved automation with a finished round.
- *
- * Nothing is written to disk except the pictures. Every path the app sees is under the fake root
- * `/work/ontology-atlas`, so no private path of the machine that shot them reaches a picture.
- *
- * The pictures are 1336×860 CSS pixels at device scale 2 (2672×1720), dark, and in the page's
- * own language: the Korean set is shot on `/ko/...` with Korean page titles and automation name.
- *
- * Usage (against a static export — the dev server's compile waits make captures flaky):
+ * Usage (against a static export; the dev server's compile waits make captures flaky):
  *
  *   pnpm build
  *   node scripts/web/serve-static-export.mjs --port=3198 &
@@ -29,8 +20,6 @@
  *
  * `--only=harness-film` shoots the download page's harness film stills instead
  * (`harness-film-still.mjs`), in ko, en, ja and zh; it needs no bridge.
- *
- * Re-shoot after any change to one of the six screens; inspect every picture before committing.
  */
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -64,8 +53,6 @@ const BASE_URL = args["base-url"] ?? "http://127.0.0.1:3198";
 const OUT_DIR = path.resolve(REPO, args.out ?? "public/gateway");
 const ONLY = args.only ? new Set(args.only.split(",")) : null;
 const VERBOSE = args.verbose === "true";
-
-// ─── The in-memory overlay: what the repository does not carry ─────────────
 
 const sha256 = (text) => createHash("sha256").update(text).digest("hex");
 
@@ -297,8 +284,6 @@ function buildOverlay(locale) {
   }
   return overlay;
 }
-
-// ─── The bridge: Tauri commands answered from real files ───────────────────
 
 const MTIME = Date.parse("2026-09-23T09:00:00Z");
 
@@ -668,8 +653,6 @@ function makeBridge(overlay, unstubbed) {
   };
 }
 
-// ─── The eight screens ───────────────────────────────────────────────────────
-
 /**
  * Each screen: where to go and what to wait for before the shutter. `prepare` runs after the
  * route settles and may press what the picture needs (a tab, a row).
@@ -800,7 +783,6 @@ async function installRuntime(context, bridge) {
   });
 }
 
-/** Both sets, in one run: the gateway serves `<file>.<locale>.webp` to each page. */
 const LOCALES = args.locales ? args.locales.split(",") : ["ko", "en"];
 const BROWSER_LOCALE = { ko: "ko-KR", en: "en-US" };
 
@@ -836,7 +818,6 @@ async function main() {
     page.setDefaultTimeout(30_000);
     if (VERBOSE) page.on("console", (message) => console.log(`[page] ${message.text()}`));
 
-    // Open the folder once through the app's own chooser, the way a person does.
     await page.goto(`${BASE_URL}/${locale}/?guides=off`);
     await page.waitForLoadState("networkidle");
     await page.getByTestId("first-run-open").click();

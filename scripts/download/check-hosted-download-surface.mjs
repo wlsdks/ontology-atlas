@@ -250,11 +250,8 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
   const downloadText = renderedText(download.body);
   const releasesUrl = "https://github.com/wlsdks/ontology-atlas/releases";
 
-  // The root route hydrates the map client-side, so its INDEX panel CTAs
-  // ("Open my markdown folder") never appear in the static HTML. Asserting them
-  // here is what kept this gate failing on every deploy. What the static
-  // export genuinely guarantees for `/` is that the route exists, is HTML,
-  // and carries the product identity.
+  // The root route hydrates the map client-side, so its INDEX panel CTAs never appear in the static
+  // HTML; the static export guarantees only that `/` exists, is HTML, and carries the product identity.
   assertIncludes(rootText, rootPath, ["Ontology Atlas"]);
 
   const downloadCopy = koMessages.download ?? {};
@@ -272,9 +269,8 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
     downloadCopy.source?.title,
     downloadCopy.faq?.items?.privacy?.a,
   ]);
-  // A deploy can legitimately sit on either side of the release-facts commit:
-  // published offers the real file, pending offers the browser map instead.
-  // Requiring one exact branch made the post-release Pages refresh fail by design.
+  // A deploy can sit on either side of the release-facts commit: published offers the real file,
+  // pending offers the browser map.
   assertIncludesOneOf(downloadText, downloadPath, [
     downloadCopy.primaryCtaPublished,
     downloadCopy.webCta,

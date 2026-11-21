@@ -12,7 +12,6 @@
  */
 export const X_HANDLE = 'stark9777';
 
-/** The real destination when a handle exists; `null` otherwise. */
 export function xProfileUrl(): string | null {
   return X_HANDLE ? `https://x.com/${X_HANDLE}` : null;
 }
@@ -20,5 +19,4 @@ export function xProfileUrl(): string | null {
 /** The maker's LinkedIn profile: the page's direct line to the person behind it. */
 export const MAKER_LINKEDIN_URL = 'https://www.linkedin.com/in/writedev/';
 
-/** This repo's public URL — the chrome and the gateway share this value. */
 export const GITHUB_REPO_URL = 'https://github.com/wlsdks/ontology-atlas';

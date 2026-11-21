@@ -18,9 +18,7 @@ export interface CompactCopyButtonProps {
   iconOnly?: boolean;
 }
 
-/**
- * A compact copy pill whose icon becomes the result, announced as well as drawn.
- */
+/** A compact copy pill whose icon becomes the result, announced as well as drawn. */
 export function CompactCopyButton({
   copied,
   state,

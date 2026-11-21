@@ -11,7 +11,6 @@
  */
 export const ATLAS_CHECKOUT_PLACEHOLDER = "$ATLAS";
 
-/** The repo's only CLI call form. */
 export const ATLAS_CLI = `node ${ATLAS_CHECKOUT_PLACEHOLDER}/cli/src/index.mjs`;
 
 /**
