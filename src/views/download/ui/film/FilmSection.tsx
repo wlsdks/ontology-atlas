@@ -8,10 +8,14 @@ import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-fram
 import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pause';
 import { readFlatGraphTokens } from '@/widgets/ontology-map';
 
-import { ACT_MS, ACT_SPANS, ACT_START, FADE_MS, FILM_MS, HOLD_MS, SEEK_FADE_MS, seamLight } from '../../lib/film/film-acts';
-import { createFilmClock } from '../../lib/film/film-clock';
-import { clamp01, easeInOut, easeOut, lightSprite } from '../../lib/film/film-kit';
-import { layoutFilmMap, type FilmCopy, type FilmMapLayout, type FilmMarkTokens, type LabelSegment } from '../../lib/film/film-map-layout';
+import { ACT_MS, ACT_SPANS, ACT_START, FADE_MS, FILM_MS, HOLD_MS, SEEK_FADE_MS, seamLight } from '../../lib/film/timeline/film-acts';
+import { createFilmClock } from '../../lib/film/timeline/film-clock';
+import { lightSprite } from '../../lib/film/film-light-sprite';
+import { clamp01, easeInOut, easeOut } from '../../lib/film/timeline/film-easing';
+import type { LabelSegment } from '../../lib/film/map/film-map-labels';
+import { layoutFilmMap } from '../../lib/film/map/film-map-layout';
+import type { FilmCopy, FilmMapLayout } from '../../lib/film/map/film-map-shapes';
+import type { FilmMarkTokens } from '../../lib/film/map/film-map-sizes';
 import { layoutOpen, type OpenLayout } from '../../lib/film/film-open';
 import { pickFilmConcept, readFilmVault, type FilmVault } from '../../lib/film/film-vault';
 import { layoutWall, type WallLayout } from '../../lib/film/film-wall';
@@ -19,7 +23,10 @@ import type { Rect } from '../../lib/film/film-geometry';
 import { registerGatedFrameClient } from '../../lib/page-motion/gateway-frame-loop';
 import type { StageGraph } from '../../lib/stage-graph';
 import { FilmActBar } from './FilmActBar';
-import { buildScene, mix, paintFilm, TextStamps, type FilmInks, type FilmScene } from './film-paint';
+import { mix } from './film-colors';
+import { paintFilm } from './film-paint';
+import { buildFilmPaintScene, type FilmInks, type FilmPaintScene } from './film-paint-scene';
+import { TextStamps } from './text-stamps';
 import { mountFilmProbe, type FilmProbe } from './film-probe';
 
 const ACTS = [1, 2, 3, 4] as const;
@@ -190,7 +197,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       }
       return w;
     };
-    let scene: FilmScene | null = null;
+    let scene: FilmPaintScene | null = null;
     let sceneFrom: LaidOut | null = null;
     let size = { w: 0, h: 0, dpr: 1 };
     let stopWarm = () => {};
@@ -271,7 +278,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       const next = same ? kept : layOut(w, h, titleRect, caption, key);
       laid.current = next;
       sceneFrom = next;
-      scene = buildScene(vault, next.map, next.wall, next.open, inks, new TextStamps(dpr), sprites, { sink: marks.sink, mono });
+      scene = buildFilmPaintScene(vault, next.map, next.wall, next.open, inks, new TextStamps(dpr), sprites, { sink: marks.sink, mono });
       probe?.layout(scene);
       stopWarm();
       if (film) {

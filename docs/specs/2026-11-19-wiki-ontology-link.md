@@ -37,11 +37,11 @@ Nobody has captured this moment on a real folder, so acceptance criterion 1 capt
   - `uid` is the permanent identity (`:351-357`).
   - `describes` is a graph array key (`mcp/src/schema.mjs:448`), and its reverse is a backlink only (`ONTOLOGY-ATLAS-SPEC.md:414`).
 - **Rename and merge already reach wiki pages.**
-  - The MCP walks every `.md` file outside `sources/` (`mcp/src/vault/slug-paths.mjs:36`).
-  - `redirectBacklinks` rewrites every array key and every `relation_notes` key on every document (`mcp/src/vault/backlink-rewrite.mjs:59-140`).
+  - The MCP walks every `.md` file outside `sources/` (`mcp/src/vault/documents/slug-paths.mjs:36`).
+  - `redirectBacklinks` rewrites every array key and every `relation_notes` key on every document (`mcp/src/vault/writes/backlink-rewrite.mjs:59-140`).
   - Merge uses that rewrite (`mcp/src/server/tool-definitions/lifecycle.mjs:125`).
   - The app's rename rewrites `describes` (`src/entities/docs-vault/lib/authoring/rename-ref-rewrites.ts:17-28`).
-  - `findBacklinks` returns non-node referrers with `isNode: false` (`mcp/src/vault/graph-queries.mjs:179-215`).
+  - `findBacklinks` returns non-node referrers with `isNode: false` (`mcp/src/vault/graph/graph-queries.mjs:179-215`).
   - `delete_concept` previews backlinks before it deletes (`lifecycle.mjs:189-199`).
   - None of this has been exercised on a wiki fixture yet.
 - **No MCP tool writes a wiki page.**
@@ -351,3 +351,4 @@ All slices are Opus. Their files are disjoint.
 ## Revisions
 
 - 2026-11-19: first draft. The anchor is `describes:` slugs on the wiki page, written by the agent without approval and checked by the MCP's wiki schema. Vectors only rank candidates. The "only on a reviewed page" gate is overturned.
+- 2026-11-22: cites of `mcp/src/vault/` modules now name the subfolders the vault code was grouped into (`documents/`, `writes/`, `graph/`); no plan changed.

@@ -8,8 +8,8 @@ import { AgentSetupSection } from './AgentSetupSection';
 const vaultStatus = { current: 'idle' as 'idle' | 'loaded' };
 const serverState = { launch: null as null | { command: string; args: string[] } };
 
-vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
+vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-provider/LocalVaultProvider')>()),
   useLocalVault: () => ({ status: vaultStatus.current, manifest: null }),
 }));
 vi.mock('@/entities/vault-session/model/use-agent-server', async (importOriginal) => ({

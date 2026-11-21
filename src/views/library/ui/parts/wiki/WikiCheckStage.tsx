@@ -11,7 +11,7 @@ import {
   type WorkRunMarks,
 } from "@/features/work-run";
 import { cn } from "@/shared/lib/cn";
-import { WorkProgress } from "@/shared/motion/work-progress";
+import { WorkProgress } from "@/shared/motion/status-glyphs/WorkProgress";
 import { Button } from "@/shared/ui/controls/button";
 
 /** The count is the stage's largest figure; the page being read is the word that stands out. */

@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Input } from '@/shared/ui/fields/input';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
-import { variantRuns, type CatalogueEntry, type CatalogueVariant } from '@/shared/config/mcp-catalogue';
+import { variantRuns, type CatalogueEntry, type CatalogueVariant } from '@/shared/config/mcp/mcp-catalogue';
 import {
   runtimePath,
   type ResolvedRuntime,

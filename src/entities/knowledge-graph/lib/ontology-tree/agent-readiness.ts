@@ -1,6 +1,6 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
-import type { OntologyTreeBuildResult } from "./types";
-import { ATLAS_CLI } from "@/shared/config/cli-invocation";
+import type { OntologyTreeBuildResult } from "./ontology-tree-node";
+import { ATLAS_CLI } from "@/shared/config/agent/cli-invocation";
 
 type AgentReadinessStatus = "ready" | "needs-links" | "needs-shape";
 type AgentReadinessActionKey =

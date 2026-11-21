@@ -618,7 +618,7 @@ function printUsage(stream = process.stderr) {
 }
 
 async function showActivityLog({ vaultRoot, json, limit }) {
-  const { readActivityEntries } = await loadMcpModule('vault/activity-log.mjs');
+  const { readActivityEntries } = await loadMcpModule('vault/sidecar/activity-log.mjs');
   const entries = readActivityEntries(vaultRoot, { limit });
   if (json) {
     process.stdout.write(`${JSON.stringify({ entries, total: entries.length }, null, 2)}\n`);

@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
-import type { VectorPhase, VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
+import type { VectorPhase, VectorStatus } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
+import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vectors/vault-vector-source';
 import { deskLine, minutesLeftOf, UPDATE_RING_FILES, type DeskLine } from './desk-line';
 import { pressOf, resume, statusOf, stop, subscribe } from './vector-store';
 

@@ -10,7 +10,7 @@ import { useVaultConceptFacts } from '@/features/vault-ontology';
 import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
 import { AGENT_DOCK_INSET_SURFACE_CLASS, CloseButton } from '@/shared/ui';
 import { isLlmChatBridgeAvailable } from '@/shared/lib/llm-connection/tauri-llm';
-import { VAULT_AGENT_PANEL_ID } from '@/shared/config/agent-panel';
+import { VAULT_AGENT_PANEL_ID } from '@/shared/config/agent/agent-panel';
 
 import { connectionHost } from '../model/connection-host';
 import { agentPanelStage, canSendDraft } from '../model/panel-stage';

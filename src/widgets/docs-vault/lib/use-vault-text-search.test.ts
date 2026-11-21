@@ -15,7 +15,7 @@ vi.mock('@/entities/vault-session', () => ({
 vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   getTauriVaultRootPath: (handle: { rootPath: string }) => handle.rootPath,
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-index', () => ({
+vi.mock('@/shared/lib/vault-folder/vault-index/tauri-vault-index', () => ({
   isVaultIndexAvailable: () => bridge.available,
   onVaultIndexUpdated: async (onUpdate: () => void) => {
     bridge.updated.push(onUpdate);

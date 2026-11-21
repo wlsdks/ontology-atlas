@@ -14,7 +14,7 @@ import {
   runCatalogue,
 } from './build-mcp-catalogue.mjs';
 
-const COMMITTED_OUT = new URL('../../src/shared/config/mcp-catalogue.generated.ts', import.meta.url);
+const COMMITTED_OUT = new URL('../../src/shared/config/mcp/mcp-catalogue.generated.ts', import.meta.url);
 const COMMITTED_SNAPSHOT = new URL('../data/mcp-registry-snapshot.json', import.meta.url);
 
 function fixture() {

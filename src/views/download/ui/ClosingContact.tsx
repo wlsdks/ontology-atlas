@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { MAKER_LINKEDIN_URL } from '@/shared/config/social-links';
+import { MAKER_LINKEDIN_URL } from '@/shared/config/site/social-links';
 import { cn } from '@/shared/lib/cn';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';

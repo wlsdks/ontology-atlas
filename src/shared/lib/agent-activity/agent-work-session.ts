@@ -66,7 +66,7 @@ export interface AgentWorkSession {
   lastTarget: string | null;
   lastTool: string | null;
   /**
-   * The last agent to identify itself (`resolveAgentName` in `mcp/src/vault/activity-log.mjs`);
+   * The last agent to identify itself (`resolveAgentName` in `mcp/src/vault/sidecar/activity-log.mjs`);
    * an anonymous line does not erase it. Null if never heard.
    */
   agent: string | null;

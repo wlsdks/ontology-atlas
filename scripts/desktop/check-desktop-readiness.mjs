@@ -73,11 +73,21 @@ const enMessages = JSON.parse(readText("messages/en.json"));
 const koMessages = JSON.parse(readText("messages/ko.json"));
 const rootLayout = readText("app/layout.tsx");
 // The site Organization and WebSite JSON-LD the root layout renders (`siteEntityGraph`).
-const siteEntity = readText("src/shared/config/site-entity.ts");
+const siteEntity = readText("src/shared/config/site/site-entity.ts");
 const webManifest = JSON.parse(readText("public/manifest.webmanifest"));
 const cargoToml = readText("src-tauri/Cargo.toml");
 const rootReadme = readText("README.md");
-const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
+/** The page and the parts it is built from: the hero and the release controls own the claims this gate reads. */
+const downloadPage = [
+  "src/views/download/ui/DownloadPage.tsx",
+  "src/views/download/ui/hero/HeroSection.tsx",
+  "src/views/download/ui/ClosingSection.tsx",
+  "src/views/download/ui/release/DownloadActions.tsx",
+  "src/views/download/ui/release/FactsStrip.tsx",
+  "src/views/download/ui/release/TrustLine.tsx",
+]
+  .map(readText)
+  .join("\n");
 /** The gateway's top chrome, where the brand name is drawn. The brand gate reads page and chrome together, so it does not pin the brand to one file path. */
 const gatewayChrome = readText("src/widgets/gateway-chrome/ui/GatewayNav.tsx");
 const gatewaySurfaceSource = `${downloadPage}\n${gatewayChrome}`;
@@ -127,7 +137,7 @@ const docsVaultPageFiles = [
 ];
 const docsVaultPage = docsVaultPageFiles.map(readText).join("\n");
 // The docs surface's local-source control lives in the vault chip menu.
-const vaultChipSurface = readText("src/views/docs-vault/ui/parts/DocsVaultVaultChip.tsx");
+const vaultChipSurface = readText("src/views/docs-vault/ui/parts/header/DocsVaultVaultChip.tsx");
 const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEmptyState.tsx");
 const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/agent-setup/VaultAgentSetupPanel.tsx");
 const vaultAgentSetupCopySources = [
@@ -783,9 +793,9 @@ if (
 }
 
 // README prose is editable; its download and release references follow runtime config.
-const configuredSite = readText("src/shared/config/site.ts")
+const configuredSite = readText("src/shared/config/site/site.ts")
   .match(/export const SITE_URL = ["']([^"']+)["']/)?.[1];
-const configuredRepository = readText("src/shared/config/social-links.ts")
+const configuredRepository = readText("src/shared/config/site/social-links.ts")
   .match(/export const GITHUB_REPO_URL = ["']([^"']+)["']/)?.[1];
 const readmeLinks = [...rootReadme.matchAll(/(?:href=["']|\]\()(https?:\/\/[^"')\s>]+)/g)]
   .flatMap((match) => {
@@ -798,7 +808,7 @@ if (
 ) {
   pass("root README links to the configured download and release destinations");
 } else {
-  fail("README.md must link to the configured hosted download route and repository releases; check src/shared/config/site.ts and social-links.ts");
+  fail("README.md must link to the configured hosted download route and repository releases; check src/shared/config/site/site.ts and social-links.ts");
 }
 
 /*
@@ -860,9 +870,9 @@ if (
   downloadPage.includes("formatAssetSize") &&
   // The page reads release facts from the generated module: the hero reads the Windows asset
   // (`windowsAsset`) and names the in-development version when nothing is published
-  // (`resolveDisplayReleaseTag`).
+  // (`displayReleaseTag`).
   downloadPage.includes("windowsAsset") &&
-  downloadPage.includes("resolveDisplayReleaseTag") &&
+  downloadPage.includes("displayReleaseTag") &&
   downloadPage.includes("gateway-hero-windows") &&
   internalPipelineLeaks.every(
     (marker) => !downloadPage.includes(marker) && !downloadRoute.includes(marker),

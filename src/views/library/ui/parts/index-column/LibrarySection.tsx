@@ -1,7 +1,7 @@
 "use client";
 
-import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/action-feedback-glyph';
-import { WorkGlyph } from '@/shared/motion/work-glyph';
+import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/status-glyphs/ActionFeedbackGlyph';
+import { WorkGlyph } from '@/shared/motion/status-glyphs/WorkGlyph';
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { useTranslations } from "next-intl";
@@ -29,7 +29,7 @@ import {
 import { isAdvisoryWikiCode, isWikiFolderCode, libraryOffTemplateCount, passageLabelText } from "@/features/library";
 import { captionWindow } from "../../../lib/sources/caption-window";
 import { isIndexedSource, useSourceSearch } from "../../../lib/sources/use-source-search";
-import { useVaultIndexHits } from "@/shared/lib/vault-folder/use-vault-index-hits";
+import { useVaultIndexHits } from "@/shared/lib/vault-folder/vault-index/use-vault-index-hits";
 import { LibraryShelf } from "./LibraryShelf";
 import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";
 import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";

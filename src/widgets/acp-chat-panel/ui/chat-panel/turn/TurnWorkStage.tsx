@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { MOTION } from '@/shared/motion';
-import { WorkTrail } from '@/shared/motion/work-trail';
+import { WorkTrail } from '@/shared/motion/status-glyphs/WorkTrail';
 import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
 import { CELEBRATION_MOTIONS, PLAY_ROW_FRAMES, WORK_ROW_FRAMES } from '@/shared/ui/marks/moru/moru-rows';
 

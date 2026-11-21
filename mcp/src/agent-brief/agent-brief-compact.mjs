@@ -6,7 +6,7 @@ import {
 } from './compact-handoff-text.mjs';
 import { createUncertaintyPlan, projectUncertainty } from './recorded-evidence.mjs';
 import { buildTaskNavigationEvidence } from './task-navigation-evidence.mjs';
-import { extractSummaryExcerpt } from '../vault/body-delivery.mjs';
+import { extractSummaryExcerpt } from '../vault/documents/body-delivery.mjs';
 import { taskIntent } from './task-intent.mjs';
 import { selectCapability } from './capability-selection.mjs';
 import {

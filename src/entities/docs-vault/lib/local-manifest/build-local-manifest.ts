@@ -21,7 +21,7 @@ import {
   putVaultRows,
   vaultRowsAvailable,
   type VaultRowWrite,
-} from '@/shared/lib/vault-folder/tauri-vault-index-rows';
+} from '@/shared/lib/vault-folder/vault-index/tauri-vault-index-rows';
 import { walkVault, type WalkEntry } from './walk-vault';
 import type {
   VaultDoc,

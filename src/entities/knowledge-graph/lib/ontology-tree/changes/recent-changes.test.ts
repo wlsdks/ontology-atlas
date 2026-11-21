@@ -1,0 +1,288 @@
+import { describe, expect, it } from "vitest";
+import type { KnowledgeGraphNode } from "../../../model";
+import {
+  computeAdaptiveRecentChanges,
+  computeRecentChanges,
+  daysAgoFromIso,
+  isGraphDrawnKind,
+  isWithinRecentWindow,
+  selectRecentVaultDocs,
+} from "./recent-changes";
+
+function node(id: string, opts: Partial<KnowledgeGraphNode> = {}): KnowledgeGraphNode {
+  return {
+    id,
+    title: id,
+    kind: "capability",
+    projectIds: [],
+    evidenceIds: [],
+    lastApprovedAt: new Date(0),
+    lastApprovedBy: "vault-frontmatter",
+    ...opts,
+  };
+}
+
+const NOW = Date.parse("2026-07-21T12:00:00.000Z");
+
+describe("isWithinRecentWindow", () => {
+  it("is true for a date inside the window", () => {
+    expect(isWithinRecentWindow("2026-07-19T12:00:00.000Z", NOW, 7)).toBe(true);
+  });
+
+  it("is true exactly at the window boundary", () => {
+    expect(isWithinRecentWindow("2026-07-14T12:00:00.000Z", NOW, 7)).toBe(true);
+  });
+
+  it("is false just past the window boundary", () => {
+    expect(isWithinRecentWindow("2026-07-14T11:59:00.000Z", NOW, 7)).toBe(false);
+  });
+
+  it("is false for an unparseable date", () => {
+    expect(isWithinRecentWindow("not-a-date", NOW, 7)).toBe(false);
+  });
+
+  it("excludes only timestamps beyond the 24h future window", () => {
+    // A timestamp 12 hours ahead is session-created; 25 hours ahead is clock skew.
+    expect(isWithinRecentWindow("2026-07-22T00:00:00.000Z", NOW, 7)).toBe(true);
+    // +25h is clock skew.
+    expect(isWithinRecentWindow("2026-07-22T13:00:00.000Z", NOW, 7)).toBe(false);
+  });
+
+  it("defaults to a 7-day window", () => {
+    expect(isWithinRecentWindow("2026-07-15T12:00:00.000Z", NOW)).toBe(true);
+    expect(isWithinRecentWindow("2026-07-13T00:00:00.000Z", NOW)).toBe(false);
+  });
+});
+
+describe("daysAgoFromIso", () => {
+  it("floors to whole days", () => {
+    expect(daysAgoFromIso("2026-07-20T13:00:00.000Z", NOW)).toBe(0);
+    expect(daysAgoFromIso("2026-07-20T11:00:00.000Z", NOW)).toBe(1);
+  });
+
+  it("returns +Infinity for an unparseable date", () => {
+    expect(daysAgoFromIso("nope", NOW)).toBe(Number.POSITIVE_INFINITY);
+  });
+});
+
+describe("computeRecentChanges", () => {
+  it("includes a node whose evidence doc updated inside the window", () => {
+    const nodes = [node("capability:a", { evidenceIds: ["docs/a"], title: "A" })];
+    const freshness = new Map([["docs/a", "2026-07-19T00:00:00.000Z"]]);
+
+    const result = computeRecentChanges(nodes, freshness, NOW);
+
+    expect(result.recentNodeIds.has("capability:a")).toBe(true);
+    expect(result.rows).toEqual([{ id: "capability:a", title: "A", kind: "capability", agoDays: 2 }]);
+  });
+
+  it("excludes a node whose evidence doc updated outside the window", () => {
+    const nodes = [node("capability:old", { evidenceIds: ["docs/old"] })];
+    const freshness = new Map([["docs/old", "2026-06-01T00:00:00.000Z"]]);
+
+    const result = computeRecentChanges(nodes, freshness, NOW);
+
+    expect(result.recentNodeIds.size).toBe(0);
+    expect(result.rows).toHaveLength(0);
+  });
+
+  it("excludes a node with no evidenceIds (nothing to look up)", () => {
+    const nodes = [node("capability:no-evidence", { evidenceIds: [] })];
+    const freshness = new Map([["docs/whatever", "2026-07-20T00:00:00.000Z"]]);
+
+    const result = computeRecentChanges(nodes, freshness, NOW);
+
+    expect(result.rows).toHaveLength(0);
+  });
+
+  it("excludes a node whose evidence slug is not in the freshness index (unknown, not assumed recent)", () => {
+    const nodes = [node("capability:unknown", { evidenceIds: ["docs/missing"] })];
+    const result = computeRecentChanges(nodes, new Map(), NOW);
+
+    expect(result.rows).toHaveLength(0);
+  });
+
+  it("sorts rows newest-first", () => {
+    const nodes = [
+      node("capability:a", { evidenceIds: ["docs/a"], title: "A" }),
+      node("capability:b", { evidenceIds: ["docs/b"], title: "B" }),
+    ];
+    const freshness = new Map([
+      ["docs/a", "2026-07-18T00:00:00.000Z"],
+      ["docs/b", "2026-07-20T00:00:00.000Z"],
+    ]);
+
+    const result = computeRecentChanges(nodes, freshness, NOW);
+
+    expect(result.rows.map((r) => r.id)).toEqual(["capability:b", "capability:a"]);
+  });
+
+  it("respects a custom windowDays", () => {
+    const nodes = [node("capability:a", { evidenceIds: ["docs/a"] })];
+    const freshness = new Map([["docs/a", "2026-07-10T00:00:00.000Z"]]); // 11 days ago.
+
+    expect(computeRecentChanges(nodes, freshness, NOW, 7).rows).toHaveLength(0);
+    expect(computeRecentChanges(nodes, freshness, NOW, 14).rows).toHaveLength(1);
+  });
+
+  it("returns empty results for no nodes", () => {
+    const result = computeRecentChanges([], new Map(), NOW);
+    expect(result).toEqual({ recentNodeIds: new Set(), rows: [] });
+  });
+});
+
+describe("selectRecentVaultDocs", () => {
+  function doc(slug: string, updatedAt: string) {
+    return { slug, updatedAt };
+  }
+
+  it("keeps only docs inside the window, newest-first", () => {
+    const docs = [
+      doc("a", "2026-07-01T00:00:00.000Z"),
+      doc("b", "2026-07-19T00:00:00.000Z"),
+      doc("c", "2026-07-20T00:00:00.000Z"),
+    ];
+    const result = selectRecentVaultDocs(docs, NOW);
+    expect(result.map((d) => d.slug)).toEqual(["c", "b"]);
+  });
+
+  it("returns an empty array when nothing is recent", () => {
+    expect(selectRecentVaultDocs([doc("old", "2025-01-01T00:00:00.000Z")], NOW)).toEqual([]);
+  });
+});
+/** A document created after the session snapshot counts as today. */
+describe("future-tolerance (session-created docs)", () => {
+  const NOW = Date.parse("2026-07-21T12:00:00Z");
+  it("includes a document created an hour after the snapshot", () => {
+    const iso = new Date(NOW + 60 * 60 * 1000).toISOString();
+    expect(isWithinRecentWindow(iso, NOW, 7)).toBe(true);
+    expect(daysAgoFromIso(iso, NOW)).toBe(0);
+  });
+  it("excludes a timestamp more than 24h in the future", () => {
+    const iso = new Date(NOW + 25 * 60 * 60 * 1000).toISOString();
+    expect(isWithinRecentWindow(iso, NOW, 7)).toBe(false);
+  });
+});
+
+
+describe("computeAdaptiveRecentChanges", () => {
+  const DAY = 24 * 3600 * 1000;
+  const now = Date.parse("2026-07-21T12:00:00Z");
+  const node = (id: string, slug: string) =>
+    ({ id, title: id, kind: "element", evidenceIds: [slug], projectIds: [] }) as never;
+  const iso = (daysAgo: number) => new Date(now - daysAgo * DAY).toISOString();
+
+  it("keeps the 7-day window when at most half pass", () => {
+    const nodes = [node("a", "a"), node("b", "b"), node("c", "c"), node("d", "d")];
+    const fresh = new Map([
+      ["a", iso(2)],
+      ["b", iso(30)],
+      ["c", iso(30)],
+      ["d", iso(30)],
+    ]);
+    const r = computeAdaptiveRecentChanges(nodes, fresh, now);
+    expect(r.windowDays).toBe(7);
+    expect(r.recentNodeIds.size).toBe(1);
+  });
+
+  it("narrows to 3 then 1 day when most pass 7 days", () => {
+    // Mostly 6 days old: all pass at 7d, a quarter at 3d.
+    const nodes = [node("a", "a"), node("b", "b"), node("c", "c"), node("d", "d")];
+    const fresh = new Map([
+      ["a", iso(0.5)],
+      ["b", iso(6)],
+      ["c", iso(6)],
+      ["d", iso(6)],
+    ]);
+    const r = computeAdaptiveRecentChanges(nodes, fresh, now);
+    expect(r.windowDays).toBe(3);
+    expect(r.recentNodeIds.size).toBe(1);
+  });
+
+  it("returns the 1-day result even when most still pass", () => {
+    const nodes = [node("a", "a"), node("b", "b")];
+    const fresh = new Map([
+      ["a", iso(0.1)],
+      ["b", iso(0.2)],
+    ]);
+    const r = computeAdaptiveRecentChanges(nodes, fresh, now);
+    expect(r.windowDays).toBe(1);
+    expect(r.recentNodeIds.size).toBe(2);
+  });
+
+  it("keeps the wider window when the narrower one would hold nothing", () => {
+    const nodes = [node("a", "a"), node("b", "b"), node("c", "c"), node("d", "d")];
+    const fresh = new Map([
+      ["a", iso(2)],
+      ["b", iso(2)],
+      ["c", iso(2)],
+      ["d", iso(30)],
+    ]);
+    const r = computeAdaptiveRecentChanges(nodes, fresh, now);
+    expect(r.windowDays).toBe(3);
+    expect(r.recentNodeIds.size).toBe(3);
+  });
+
+  it("returns an empty 7-day result for an empty graph", () => {
+    const r = computeAdaptiveRecentChanges([], new Map(), now);
+    expect(r.windowDays).toBe(7);
+    expect(r.rows).toEqual([]);
+  });
+});
+
+/** A starter vault's `vault-readme` changes too but is never drawn, so it is not counted. */
+describe("computeRecentChanges — counts only the kinds that are drawn", () => {
+  const STARTER_FRESHNESS = new Map([
+    ["README", "2026-07-21T11:00:00.000Z"],
+    ["project", "2026-07-21T11:00:00.000Z"],
+    ["domains/example-domain", "2026-07-21T11:00:00.000Z"],
+    ["capabilities/example-capability", "2026-07-21T11:00:00.000Z"],
+    ["elements/example-element", "2026-07-21T11:00:00.000Z"],
+  ]);
+  const STARTER_NODES: KnowledgeGraphNode[] = [
+    node("vault-readme:README", { kind: "vault-readme", evidenceIds: ["README"] }),
+    node("project:my-project", { kind: "project", evidenceIds: ["project"] }),
+    node("domain:example-domain", { kind: "domain", evidenceIds: ["domains/example-domain"] }),
+    node("capability:example-capability", {
+      kind: "capability",
+      evidenceIds: ["capabilities/example-capability"],
+    }),
+    node("element:example-element", {
+      kind: "element",
+      evidenceIds: ["elements/example-element"],
+    }),
+  ];
+
+  it("names every kind that reaches a drawn row", () => {
+    expect(isGraphDrawnKind("project")).toBe(true);
+    expect(isGraphDrawnKind("domain")).toBe(true);
+    expect(isGraphDrawnKind("capability")).toBe(true);
+    expect(isGraphDrawnKind("element")).toBe(true);
+    expect(isGraphDrawnKind("unknown")).toBe(true);
+  });
+
+  it("excludes the kinds buildOntologyTree drops before drawing", () => {
+    expect(isGraphDrawnKind("vault-readme")).toBe(false);
+    expect(isGraphDrawnKind("document")).toBe(false);
+  });
+
+  it("counts the starter vault as the four rows the segment draws, not five", () => {
+    const result = computeRecentChanges(STARTER_NODES, STARTER_FRESHNESS, NOW, 1);
+
+    expect(result.recentNodeIds.size).toBe(4);
+    expect(result.recentNodeIds.has("vault-readme:README")).toBe(false);
+    expect(result.rows.map((row) => row.id).sort()).toEqual([
+      "capability:example-capability",
+      "domain:example-domain",
+      "element:example-element",
+      "project:my-project",
+    ]);
+  });
+
+  it("keeps the adaptive ladder's pass rate on the drawn nodes only", () => {
+    const result = computeAdaptiveRecentChanges(STARTER_NODES, STARTER_FRESHNESS, NOW);
+
+    expect(result.recentNodeIds.has("vault-readme:README")).toBe(false);
+    expect(result.recentNodeIds.size).toBe(result.rows.length);
+  });
+});

@@ -10,6 +10,8 @@ import {
   type MacosReleaseAsset,
   type WindowsReleaseAsset,
 } from '../../model/macos-release.generated';
+import { resolveDisplayReleaseTag } from './pending-release-tag';
+import { RELEASE_VERSION } from './release-facts';
 
 export type DesktopArch = MacosReleaseAsset['arch'];
 
@@ -36,6 +38,11 @@ function isWindowsReleasePublished(): boolean {
 export function windowsAsset(): WindowsReleaseAsset | null {
   if (!isWindowsReleasePublished()) return null;
   return WINDOWS_RELEASE.assets[0] ?? null;
+}
+
+/** The tag the page names: the published release's, or the in-development version's. */
+export function displayReleaseTag(published: boolean): string {
+  return resolveDisplayReleaseTag({ published, publishedTag: MACOS_RELEASE.tag, releaseVersion: RELEASE_VERSION });
 }
 
 export function releasePageUrl(platform: 'macos' | 'windows'): string {

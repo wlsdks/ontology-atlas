@@ -1,6 +1,6 @@
 import { SITE_URL } from '@/shared/config';
-import { GITHUB_REPO_URL } from '@/shared/config/social-links';
-import { SITE_ORGANIZATION_REF } from '@/shared/config/site-entity';
+import { GITHUB_REPO_URL } from '@/shared/config/site/social-links';
+import { SITE_ORGANIZATION_REF } from '@/shared/config/site/site-entity';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS } from './release-facts';
 import { MACOS_RELEASE, windowsAsset } from './release-state';
 

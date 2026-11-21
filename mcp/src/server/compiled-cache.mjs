@@ -1,4 +1,4 @@
-import { vaultDocsVersion } from '../vault/documents.mjs';
+import { vaultDocsVersion } from '../vault/documents/document-cache.mjs';
 
 /** Compile options that shape the artifact; anything else is ignored by the key. */
 const VIEW_KEYS = ['includeIndexes', 'summary', 'nodesLimit', 'nodesOffset', 'edgesLimit', 'edgesOffset'];

@@ -6,7 +6,7 @@ import type { useTranslations } from "next-intl";
 import { deriveSourceProgress, type LibrarySourceRow } from "@/entities/docs-vault";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { X } from "lucide-react";
-import { WorkGlyph } from "@/shared/motion/work-glyph";
+import { WorkGlyph } from "@/shared/motion/status-glyphs/WorkGlyph";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";

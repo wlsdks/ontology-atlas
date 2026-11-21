@@ -82,9 +82,9 @@ async function run<T>(name: string, args: unknown = {}): Promise<T> {
 }
 
 // The MCP side reads the vault folder directly, never through our manifest.
-const mcpDocuments = await import('../../../mcp/src/vault/documents.mjs');
-const mcpGraphQueries = await import('../../../mcp/src/vault/graph-queries.mjs');
-const mcpRelationRefs = await import('../../../mcp/src/vault/relation-refs.mjs');
+const mcpDocuments = await import('../../../mcp/src/vault/documents/document-cache.mjs');
+const mcpGraphQueries = await import('../../../mcp/src/vault/graph/graph-queries.mjs');
+const mcpRelationRefs = await import('../../../mcp/src/vault/graph/relation-refs.mjs');
 
 function loadMcpOntologyDocs() {
   return (mcpDocuments.loadVaultDocs(VAULT_DIR) as Array<{

@@ -1,5 +1,5 @@
-export { AGENT_GRAPH_WORKFLOW_HREF } from './agent-workflow-doc';
-export { SITE_URL, absoluteUrl } from './site';
+export { AGENT_GRAPH_WORKFLOW_HREF } from './agent/agent-workflow-doc';
+export { SITE_URL, absoluteUrl } from './site/site';
 export {
   MCP_SERVER_NAME,
   agentServerFromBundle,
@@ -10,4 +10,4 @@ export {
   sourceCheckoutLaunch,
   type AgentServerAvailability,
   type McpServerLaunch,
-} from './mcp-server-launch';
+} from './mcp/mcp-server-launch';

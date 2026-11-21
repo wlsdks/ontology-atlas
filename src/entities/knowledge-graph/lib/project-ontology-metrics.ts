@@ -1,5 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../model/types";
-import { countConnectedDocuments } from "./ontology-tree/domain-census";
+import { countConnectedDocuments } from "./ontology-tree/census/domain-census";
 
 /**
  * Counts for the project hero band from `projectIds`. Edges carry no projectIds, so a relation counts

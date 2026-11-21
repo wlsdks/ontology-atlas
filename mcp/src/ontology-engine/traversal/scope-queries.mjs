@@ -1,7 +1,7 @@
 import { hasCapabilityImplementationEvidence } from '../graph-context/capability-evidence.mjs';
-import { refMatchesOntologyAtlasIgnore } from '../../vault/ontology-atlas-ignore.mjs';
+import { refMatchesOntologyAtlasIgnore } from '../../vault/sidecar/ontology-atlas-ignore.mjs';
 import { orderUncertaintyReads } from '../../meaning/uncertainty-reads.mjs';
-import { docBodyAnswer, docHasBody, docUncertaintyReads } from '../../vault/doc-facts.mjs';
+import { docBodyAnswer, docHasBody, docUncertaintyReads } from '../../vault/documents/doc-facts.mjs';
 import {
   edgeSortKey,
   formatPathEdge,

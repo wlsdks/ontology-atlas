@@ -15,12 +15,12 @@ import {
   requirePlainObject,
 } from '../server/validate.mjs';
 import { formatAllowedValueError } from '../suggestions.mjs';
-import { normalizeRelationRefs } from '../vault/relation-refs.mjs';
-import { slugToPath } from '../vault/slug-paths.mjs';
-import { readDoc } from '../vault/documents.mjs';
-import { VaultConflictError } from '../vault/atomic-writes.mjs';
-import { patchFrontmatter } from '../vault/doc-writes.mjs';
-import { compactPostWriteMaintenance, findingsOnWrittenNodes } from './maintenance.mjs';
+import { normalizeRelationRefs } from '../vault/graph/relation-refs.mjs';
+import { slugToPath } from '../vault/documents/slug-paths.mjs';
+import { readDoc } from '../vault/documents/document-cache.mjs';
+import { VaultConflictError } from '../vault/writes/atomic-writes.mjs';
+import { patchFrontmatter } from '../vault/writes/doc-writes.mjs';
+import { compactPostWriteMaintenance, findingsOnWrittenNodes } from './result-attachments.mjs';
 import {
   RELATION_KEY,
   RELATION_TYPES,

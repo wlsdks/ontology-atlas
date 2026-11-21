@@ -45,7 +45,7 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/map/map-open-folder-stays-named.spec.ts',
     reason: "the INDEX folder name during vault re-reads changed",
     matches: [
-      /^src\/entities\/vault-session\/model\/LocalVaultProvider\.tsx$/,
+      /^src\/entities\/vault-session\/model\/vault-provider\/LocalVaultProvider\.tsx$/,
       /^src\/widgets\/topology-index-panel\/ui\/TopologyIndexPanel\.tsx$/,
     ],
   },

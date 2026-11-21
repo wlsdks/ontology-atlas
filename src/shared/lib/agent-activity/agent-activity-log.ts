@@ -1,6 +1,6 @@
 /**
  * Parser for the agent activity log (`.ontology-atlas/activity.jsonl`).
- * Writing is owned by MCP (`mcp/src/vault/activity-log.mjs`); the web only reads.
+ * Writing is owned by MCP (`mcp/src/vault/sidecar/activity-log.mjs`); the web only reads.
  * Line schema v1: {"v":1,"at":ISO,"tool","target","summary","agent","why"}
  * Broken lines are skipped — a parser dying and showing nothing is worse.
  * Drift against the MCP reader is caught by a cross-package contract test.

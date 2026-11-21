@@ -1,15 +1,15 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { OFF_VECTOR_STATUS, prepareVectors, vectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
+import { OFF_VECTOR_STATUS, prepareVectors, vectorStatus } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
+import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vectors/vault-vector-source';
 import { afterJob, prepare, resume, useVectorStatus } from './vector-store';
 
 const events = vi.hoisted(() => ({
-  send: null as ((event: import('@/shared/lib/vault-folder/tauri-vault-vectors').VectorStatusEvent) => void) | null,
+  send: null as ((event: import('@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors').VectorStatusEvent) => void) | null,
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-vectors', async (original) => ({
-  ...(await original<typeof import('@/shared/lib/vault-folder/tauri-vault-vectors')>()),
+vi.mock('@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors', async (original) => ({
+  ...(await original<typeof import('@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors')>()),
   prepareVectors: vi.fn(),
   vectorStatus: vi.fn(),
   subscribeVectorStatus: (listener: NonNullable<typeof events.send>) => {

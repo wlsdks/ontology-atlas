@@ -59,12 +59,12 @@ vi.mock("@/features/vault-ontology", () => ({
   useOntologyInsight: () => ({ insight: { nodes: [], edges: [] } }),
 }));
 
-vi.mock("@/entities/vault-session/model/LocalVaultProvider", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/entities/vault-session/model/LocalVaultProvider")>()),
+vi.mock("@/entities/vault-session/model/vault-provider/LocalVaultProvider", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-provider/LocalVaultProvider")>()),
   useLocalVault: () => ({ agentActivityStatus: undefined }),
 }));
-vi.mock("@/entities/vault-session/model/use-data-source-mode", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/entities/vault-session/model/use-data-source-mode")>()),
+vi.mock("@/entities/vault-session/model/vault-source/use-data-source-mode", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-source/use-data-source-mode")>()),
   useDataSourceMode: () => "static",
 }));
 vi.mock("@/entities/vault-session/ui/VaultSourceHydrationBoundary", async (importOriginal) => ({

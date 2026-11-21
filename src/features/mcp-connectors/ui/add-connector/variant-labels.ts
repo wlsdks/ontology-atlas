@@ -1,6 +1,6 @@
 import type { useTranslations } from 'next-intl';
 
-import type { CatalogueVariant } from '@/shared/config/mcp-catalogue';
+import type { CatalogueVariant } from '@/shared/config/mcp/mcp-catalogue';
 
 import { requiredVariables } from '../../model/catalogue-variant';
 

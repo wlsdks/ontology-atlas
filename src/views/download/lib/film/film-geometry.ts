@@ -56,9 +56,9 @@ export function trim(pts: readonly Pt[], start: Pt, fromStart: number, end: Pt, 
 }
 
 export function polylineLength(pts: readonly Pt[]): number {
-  let len = 0;
-  for (let i = 1; i < pts.length; i += 1) len += dist(pts[i - 1]!, pts[i]!);
-  return len;
+  let length = 0;
+  for (let i = 1; i < pts.length; i += 1) length += dist(pts[i - 1]!, pts[i]!);
+  return length;
 }
 
 export function resample(pts: readonly Pt[], step: number): Pt[] {
@@ -68,13 +68,13 @@ export function resample(pts: readonly Pt[], step: number): Pt[] {
   for (let i = 1; i < pts.length; i += 1) {
     const a = pts[i - 1]!;
     const b = pts[i]!;
-    const len = dist(a, b);
+    const length = dist(a, b);
     let d = step - carry;
-    while (d <= len) {
-      out.push({ x: a.x + ((b.x - a.x) * d) / len, y: a.y + ((b.y - a.y) * d) / len });
+    while (d <= length) {
+      out.push({ x: a.x + ((b.x - a.x) * d) / length, y: a.y + ((b.y - a.y) * d) / length });
       d += step;
     }
-    carry = len - (d - step);
+    carry = length - (d - step);
   }
   out.push(pts[pts.length - 1]!);
   return out;
@@ -107,12 +107,12 @@ export function subPolyline(pts: readonly Pt[], from: number, to: number): Pt[] 
   for (let i = 1; i < pts.length; i += 1) {
     const p = pts[i - 1]!;
     const q = pts[i]!;
-    const len = dist(p, q);
+    const length = dist(p, q);
     const s0 = run;
-    const s1 = run + len;
+    const s1 = run + length;
     if (s1 >= a && s0 <= b) {
-      const t0 = len > 0 ? Math.max(0, (a - s0) / len) : 0;
-      const t1 = len > 0 ? Math.min(1, (b - s0) / len) : 1;
+      const t0 = length > 0 ? Math.max(0, (a - s0) / length) : 0;
+      const t1 = length > 0 ? Math.min(1, (b - s0) / length) : 1;
       if (out.length === 0) out.push({ x: p.x + (q.x - p.x) * t0, y: p.y + (q.y - p.y) * t0 });
       out.push({ x: p.x + (q.x - p.x) * t1, y: p.y + (q.y - p.y) * t1 });
     }
@@ -127,3 +127,12 @@ export function pointAlong(pts: readonly Pt[], t: number): Pt {
   const part = subPolyline(pts, 0, Math.min(1, t));
   return part[part.length - 1] ?? pts[pts.length - 1]!;
 }
+
+export const DEG = Math.PI / 180;
+
+export const normalizeAngle = (angle: number): number => ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
+export const angleGap = (a: number, b: number): number => {
+  const turn = normalizeAngle(a - b);
+  return Math.min(turn, Math.PI * 2 - turn);
+};

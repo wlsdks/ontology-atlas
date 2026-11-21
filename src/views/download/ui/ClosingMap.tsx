@@ -16,7 +16,7 @@ import {
   type Route,
 } from '../lib/closing-map';
 import { buildFilmScene, labelBox, placeLabels, type FilmScene } from '../lib/film/film-scene';
-import { easeInOut, easeOut, lerp } from '../lib/film/film-kit';
+import { easeInOut, easeOut, lerp } from '../lib/film/timeline/film-easing';
 import { registerGatedFrameClient } from '../lib/page-motion/gateway-frame-loop';
 import type { StageGraph } from '../lib/stage-graph';
 

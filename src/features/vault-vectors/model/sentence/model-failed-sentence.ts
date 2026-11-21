@@ -1,4 +1,4 @@
-import { modelFailedDetail } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import { modelFailedDetail } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 
 type MeaningTranslate = (key: 'modelFailed' | 'modelFailedDetail' | 'modelFailedGeneric', values?: Record<string, string>) => string;
 

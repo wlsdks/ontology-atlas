@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useHydrated } from '@/shared/lib/render-timing/use-hydrated';
 import type { SampleSource } from '@/shared/lib/vault-folder/sample-source';
 import { RouteLoadingFallback, WidgetErrorFallback } from '@/shared/ui';
-import { useStaticVaultGate } from '../model/use-static-vault-source';
+import { useStaticVaultGate } from '../model/vault-source/use-static-vault-source';
 
 /**
  * Prevents build-time sample facts from becoming a destination's first DOM: baking the sample view into route HTML would let an installed app paint Storefront before hydration reads its restored local provider, and a shell effect cannot undo parsed pixels.

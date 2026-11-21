@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
-import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
+import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vectors/vault-vector-source';
 
 /**
  * Launch path depends only on how many folders still exist: one resumes silently,
@@ -48,7 +48,7 @@ vi.mock('@/entities/local-fs-handle', () => ({
 }));
 vi.mock('@/entities/docs-vault', () => docsVault);
 const forgetVaultIndex = vi.hoisted(() => vi.fn(async (_rootPath: string) => {}));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-index', () => ({ forgetVaultIndex }));
+vi.mock('@/shared/lib/vault-folder/vault-index/tauri-vault-index', () => ({ forgetVaultIndex }));
 
 import { useLocalVaultInternal } from './use-local-vault';
 

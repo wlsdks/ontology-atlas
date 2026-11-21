@@ -2,15 +2,15 @@
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
-import { vaultIndexPreference } from '@/shared/lib/vault-folder/tauri-vault-index';
+import { vaultIndexPreference } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
 import {
   searchVectors,
   warmVectors,
   type VectorFound,
   type VectorSource,
   type VectorStatus,
-} from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { vaultVectorSource, type VectorChoice } from '@/shared/lib/vault-folder/vault-vector-source';
+} from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
+import { vaultVectorSource, type VectorChoice } from '@/shared/lib/vault-folder/vault-vectors/vault-vector-source';
 import { deskLine } from './desk-line';
 import { noteSearchAnswer, statusKeepsFailure } from './search-failure';
 import { afterJob, readStatusAgain, useVectorStatusOf } from './vector-store';

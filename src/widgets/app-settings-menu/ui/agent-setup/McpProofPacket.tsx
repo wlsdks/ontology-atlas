@@ -9,7 +9,7 @@ import {
   ATLAS_CLI_HINT_EN,
   shellQuoteForPacket,
   vaultPathForPacket,
-} from '@/shared/config/cli-invocation';
+} from '@/shared/config/agent/cli-invocation';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 

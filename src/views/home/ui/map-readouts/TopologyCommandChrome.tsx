@@ -3,7 +3,7 @@ import { buildConstellationAgentPrompt } from "@/features/saved-constellations";
 import { Link } from "@/i18n/navigation";
 import { writeMapView } from "@/shared/lib/preferences/appearance-preferences";
 import { armMapLayoutMorph } from "@/shared/lib/map-canvas/map-layout-morph-store";
-import { VAULT_AGENT_PANEL_ID } from "@/shared/config/agent-panel";
+import { VAULT_AGENT_PANEL_ID } from "@/shared/config/agent/agent-panel";
 import { withBasePath } from "@/shared/lib/public-pages/base-path";
 import { cn } from "@/shared/lib/cn";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
