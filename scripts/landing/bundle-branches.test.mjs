@@ -72,7 +72,7 @@ test('prune touches only branches main provably contains', () => fixture(({ root
   assert.equal(actions[0].keep, undefined);
   assert.equal(actions[0].worktree, tree);
   assert.match(actions[1].keep, /not provably landed/);
-  assert.equal(actions[2].keep, 'no local branch');
+  assert.equal(actions[2].keep, 'no local or origin branch');
 
   writeFileSync(join(tree, 'd.txt'), 'edited\n');
   assert.match(prunePlan(git, 'main', ['done'], { currentPath: root })[0].keep, /uncommitted changes/);
@@ -262,5 +262,33 @@ test('prune never removes a checkout outside .claude/worktrees', () => fixture((
     assert.equal(prunePlan(git, 'main', picked, { currentPath: root, worktreeDirs: [`${root}-other-session`] })[0].keep, undefined);
   } finally {
     rmSync(other, { recursive: true, force: true });
+  }
+}));
+
+test('apply deletes a landed integration branch that lives only on origin, keeps an unlanded one, and prunes stale refs', () => fixture(({ root, sh, commit, git }) => {
+  const bare = `${root}-origin.git`;
+  execFileSync('git', ['init', '-q', '--bare', bare]);
+  const onOrigin = (...argv) => execFileSync('git', ['--git-dir', bare, ...argv], { encoding: 'utf8' }).trim();
+  try {
+    sh('remote', 'add', 'origin', bare); sh('push', '-q', 'origin', 'main');
+    sh('switch', '-q', '-c', 'integration/topic-2026-11-21', 'main'); commit('i.txt', 'i\n', 'slice');
+    sh('push', '-q', 'origin', 'integration/topic-2026-11-21');
+    sh('switch', '-q', '-c', 'integration/open-2026-11-21', 'main'); commit('o.txt', 'o\n', 'unmerged');
+    sh('push', '-q', 'origin', 'integration/open-2026-11-21');
+    sh('switch', '-q', '-c', 'feat/gone', 'main'); sh('push', '-q', 'origin', 'feat/gone');
+    sh('switch', '-q', 'main'); sh('merge', '-q', '--no-ff', '--no-edit', 'integration/topic-2026-11-21');
+    sh('push', '-q', 'origin', 'main');
+    sh('branch', '-D', 'integration/topic-2026-11-21', 'integration/open-2026-11-21', 'feat/gone');
+    onOrigin('branch', '-D', 'feat/gone');
+
+    const actions = prunePlan(git, 'origin/main', ['integration/topic-2026-11-21', 'integration/open-2026-11-21'], { currentPath: root });
+    assert.equal(actions[0].keep, undefined, 'a merged branch with no local copy is still provably landed');
+    assert.match(actions[1].keep, /not provably landed/);
+    applyPrune(git, actions, { apply: true, base: 'origin/main', io: { log() {} } });
+
+    assert.equal(onOrigin('branch', '--list', 'integration/*'), 'integration/open-2026-11-21');
+    assert.equal(sh('branch', '-r', '--list', 'origin/feat/gone'), '', 'a ref origin no longer has is pruned');
+  } finally {
+    rmSync(bare, { recursive: true, force: true });
   }
 }));

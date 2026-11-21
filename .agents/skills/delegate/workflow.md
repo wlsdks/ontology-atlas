@@ -8,19 +8,32 @@ Keep work local when it needs a handful of tool calls, merely rechecks your own
 result, or edits the same files. Delegate exhaustive inventories,
 environment-isolated work, and reviews whose value is independence.
 
-## 2. Generate the brief
+## 2. Open the integration branch, then generate the brief
+
+Parallel work reaches `main` through one integration branch: create and push
+`integration/<topic>-<yyyy-mm-dd>` from `origin/main` before the first agent
+starts (`/merge`, [integration guide](../merge/guides/bundle.md)). Pushing it
+runs no CI.
 
 ```bash
 pnpm conflicts:scan
-pnpm brief:new -- --slug=<branch> --owns=<path,...> [--read=<path,...>] [--port] [--path=train|integration] [--budget=<text>]
+pnpm brief:new -- --slug=<branch> --owns=<path,...> [--read=<path,...>] [--port] [--budget=<text>]
 ```
 
 `brief:new` fills the eight mandatory lines: the free port and its Playwright
 environment (or no server), owned and read-only files, no stash, no
 `git add -A` and no worktree deletion, scratch in the session scratchpad, the
 focused checks for the owned paths, primary sources, the merge rule, and the
-budget. Under its `## Task` add only what a script cannot know: the decisions
-already made, the acceptance command, and what to report. Choose `--owns` so no
+budget. The merge rule: commit on the slice branch, do not push, open no pull
+request. The check rule: `pnpm checks:changed -- --run --slice`, which runs
+only the unit tests beside the owned files, lint on them, the e2e specs that
+reach them and the Rust lane when `src-tauri/**` changed. Contracts, the
+security set, `pnpm knip` and `pnpm typecheck` run once, from the lead, on the
+integration tree: ten agents each running every lane held a 12-core machine at
+load 104 and timed out the app build's MCP probe twice.
+
+Under its `## Task` add only what a script cannot know: the decisions already
+made, the acceptance command, and what to report. Choose `--owns` so no
 file is in two slices and none is changed by an open pull request.
 
 ## 3. Ownership a script cannot assign
@@ -46,4 +59,7 @@ scratchpad brief and give each agent that file plus its slice id:
 - every slice reports each owned path's outcome (changed, nothing to do, or
   skipped with a reason), so coverage is counted, not trusted.
 
-After the slices return, `/merge` reviews and merges them.
+As each slice returns, `/merge` reviews it and merges it into the
+integration branch at once, so conflicts are resolved one slice at a time;
+the integration pull request then reaches `main` with one CI run, and
+`pnpm bundle:prune` removes every branch and worktree that belonged to it.

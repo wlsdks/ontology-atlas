@@ -2,7 +2,7 @@
 /**
  * `pnpm bundle:plan` / `pnpm bundle:prune`: plan landing many branches (carry work, file overlap,
  * in-order conflicts via `git merge-tree`), prune only branches `main` provably landed. Selection
- * is explicit (names, `--match=<glob>`, `--worktrees=<dir>`); procedure in the `/land` skill.
+ * is explicit (names, `--match=<glob>`, `--worktrees=<dir>`); procedure in the `/merge` skill.
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -224,6 +224,16 @@ function ghJson(args) {
   }
 }
 
+/** A branch that lives only on origin, such as a pushed integration branch whose local copy is gone. */
+function remoteOnlyPlan(git, base, branch) {
+  const ref = `refs/remotes/origin/${branch}`;
+  if (git.try('rev-parse', '--verify', '--quiet', ref).status !== 0) return { branch, keep: 'no local or origin branch' };
+  const head = git.out('rev-parse', ref);
+  const proof = landingProof(git, base, ref);
+  if (proof.keep) return { branch, head, keep: proof.keep };
+  return { branch, head, landedAt: proof.landedAt, worktree: null, unlock: null, twin: null, remote: true, remoteOnly: true };
+}
+
 /** Removes worktrees only under `.claude/worktrees/` or a named `--worktrees` dir. */
 export function prunePlan(git, base, branches, {
   currentPath = process.cwd(), isAlive = processIsAlive, own = null, worktreeDirs = [],
@@ -234,7 +244,7 @@ export function prunePlan(git, base, branches, {
   let ownSet = own;
   return branches.map((branch) => {
     const exists = git.try('rev-parse', '--verify', '--quiet', `refs/heads/${branch}`).status === 0;
-    if (!exists) return { branch, keep: 'no local branch' };
+    if (!exists) return remoteOnlyPlan(git, base, branch);
     const head = git.out('rev-parse', branch);
     const proof = landingProof(git, base, branch);
     if (proof.keep) return { branch, head, keep: proof.keep };
@@ -282,7 +292,6 @@ export function runBundle(argv, io = console) {
 
 /** Prints each action and, with `apply`, performs it; worktree metadata is pruned once at the end. */
 export function applyPrune(git, actions, { apply, base = 'origin/main', io = console }) {
-  let removedWorktree = false;
   for (const action of actions) {
     if (action.keep) {
       io.log(`keep   ${action.branch}: ${action.keep}`);
@@ -302,17 +311,19 @@ export function applyPrune(git, actions, { apply, base = 'origin/main', io = con
         io.log(`keep   ${action.branch}: worktree ${action.worktree} could not be removed`);
         continue;
       }
-      removedWorktree = true;
     }
     if (prNumber) {
       const where = action.landedAt ? `Landed in ${action.landedAt.slice(0, 9)}` : `Contained in ${base}`;
       spawnSync('gh', ['pr', 'close', String(prNumber), '--comment', `${where}; closing the component.`], { stdio: 'ignore' });
     }
-    git.try('branch', '-D', action.branch);
+    if (!action.remoteOnly) git.try('branch', '-D', action.branch);
     if (action.twin) git.try('branch', '-D', action.twin);
     if (action.remote) git.try('push', '--quiet', 'origin', '--delete', action.branch);
   }
-  if (apply && removedWorktree) git.try('worktree', 'prune');
+  if (apply) {
+    git.try('worktree', 'prune');
+    if (git.try('remote', 'get-url', 'origin').status === 0) git.try('fetch', '--quiet', '--prune', 'origin');
+  }
   if (!apply) io.log('\nDry run. Re-run with --apply to prune the branches listed above; each head sha is printed for recovery.');
 }
 

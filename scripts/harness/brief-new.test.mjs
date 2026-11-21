@@ -44,11 +44,15 @@ test('--no-server says no server may run', async () => {
   assert.match(out, /## Task\n/);
 });
 
-test('train pushes a draft while integration does not push', async () => {
+test('a slice commits for the integration branch, pushes nothing and runs only its own checks', async () => {
+  const brief = await run(['--slug=feat/x', '--owns=a.mjs']);
+  assert.equal(brief.code, 0);
+  assert.match(brief.out, /do not push and open no pull request/);
+  assert.match(brief.out, /merges it into the integration branch as soon as it returns/);
+  assert.match(brief.out, /`pnpm checks:changed -- --run --slice`/);
+  assert.doesNotMatch(brief.out, /gh pr create/);
+  assert.equal((await run(['--slug=feat/x', '--owns=a.mjs', '--path=integration'])).code, 0);
   const train = await run(['--slug=feat/x', '--owns=a.mjs', '--path=train']);
-  assert.match(train.out, /gh pr create --draft/);
-  assert.match(train.out, /never mark it ready or run `pnpm pr:land`/);
-  const integration = await run(['--slug=feat/x', '--owns=a.mjs']);
-  assert.match(integration.out, /do not push/);
-  assert.doesNotMatch(integration.out, /gh pr create/);
+  assert.equal(train.code, 1);
+  assert.match(train.err, /--path=train is retired/);
 });

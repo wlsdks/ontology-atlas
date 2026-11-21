@@ -24,8 +24,8 @@ Return one plan:
    a public name or another slice's file is not finished: decide it above. When a spec in `docs/specs/` governs
    the work, each of its acceptance criteria is some slice's acceptance command
    or named capture; list any it leaves uncovered as a gap.
-3. **Order** — which slices run in parallel and which wait, and whether they
-   merge as separate train drafts or one integration branch (`/merge`).
+3. **Order** — which slices run in parallel and which wait; parallel slices
+   merge into one integration branch as each returns (`/merge`).
 4. **Risk** — what a reviewer must check that tests will not catch.
 
 The lead turns each slice into a `/delegate` for an `implementer`.

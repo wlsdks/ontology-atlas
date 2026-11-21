@@ -28,6 +28,12 @@ Escalate to `pnpm test:run`, `pnpm lint`, `pnpm build`, broad Playwright, or
 desktop packaging when a failure, shared contract, routing, configuration,
 release surface, or user workflow requires it. Keep required CI unchanged.
 
+A slice of parallel work runs `pnpm checks:changed -- --run --slice`: only the
+unit tests beside its files, lint on them, the e2e specs that reach them, and
+the Rust lane when `src-tauri/**` changed. The lead runs the repo-wide lanes
+(contracts, the security set, ratchets, `pnpm knip`, `pnpm typecheck`) once on
+the integration tree before its pull request.
+
 ## Where CI internals live
 
 How main treats a reviewed PR's result, how pre-push and PR CI split the
@@ -44,7 +50,7 @@ tests. Relevant documentation-registry and workflow-security checks run locally.
 The whole hook includes preparation in its reported duration. Full contract,
 Knip and browser suites remain CI work.
 
-Before merge, a train's Checks run what its change can affect plus a fixed
+Before merge, a pull request's Checks run what its change can affect plus a fixed
 core: changed-file lint, the typecheck, the contracts whose import graph
 reaches the change (a message part counts as its composed catalogue), every
 security and vault-format contract, and the forbidden-pattern contracts
@@ -53,7 +59,7 @@ to `src/` or `app/` code or styles, or to `messages/`, also runs every ratchet;
 after a merge a ratchet compares with the previous main tip. After the
 merge, each push to main runs the full Checks set, including `pnpm knip` and the
 full contract sweep, so a suite the plan left out turns main red rather than
-the train; `pnpm pr:land` warns while that run is red. The unit shards split by
+the pull request; `pnpm pr:land` warns while that run is red. The unit shards split by
 measured seconds (`scripts/data/vitest-file-durations.json`, refreshed with
 `pnpm unit:durations`). The browser workflow keeps its own policy.
 
@@ -63,7 +69,7 @@ history stay exhaustive. Unit and performance reach excludes explicit type-only
 imports; source-reading contracts retain them. Exact default Node test files run
 once across command aliases; flags and lifecycle hooks keep their semantics.
 
-The browser suite is split by time. Before merge, a train runs the specs its
+The browser suite is split by time. Before merge, a pull request runs the specs its
 change maps plus the merge smoke set in `scripts/ci/merge-smoke-specs.mjs`
 (first run, opening a folder, the map and node selection, the agent panel
 sending, the gateway and download pages), balanced over eight shards. Any
@@ -71,10 +77,10 @@ non-test file under `src/` or `app/` reaches the browser, so one no mapping
 names runs the smoke set alone; only a planner, browser-executor or root
 dependency change (`package.json`, the lockfile, `patches/`) runs the whole
 suite. After merge, every push to `main` runs the whole suite, measurements
-and both surfaces included, even when the push reuses the train's reviewed
+and both surfaces included, even when the push reuses the pull request's reviewed
 result for every other lane. Each push has a concurrency group of its own, so
 no later merge cancels or replaces it. A defect outside the smoke set is
-therefore found on `main`, not on the train.
+therefore found on `main`, not on the pull request.
 
 CI rejects focused `.only` tests on every execution path. It records a trace on
 the first retry, preserves that trace even when the retry passes, and uploads
@@ -87,7 +93,7 @@ intermittent failure, not evidence that its cause was fixed.
 `pnpm pr:land <number>` merges a reviewed pull request and keeps its original
 commits; `.claude/rules/git.md` owns the rest of the merge workflow. While
 `main`'s latest full browser run is red, it prints one line naming that run
-and its failing spec files, and the train's pull request body carries the
+and its failing spec files, and the pull request body carries the
 same line. It still merges: the line tells someone to fix `main`, it does not
 stop the queue.
 
@@ -154,8 +160,8 @@ What each contributor command answers, sorted by command.
 | `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
 | `pnpm build:first-load -- out en en/topology` | Per route, the JavaScript its HTML loads up front (raw and brotli KB) and any generated JSON literal over 50 KB; fails on a page naming no chunks, a missing chunk, or an oversize literal. `pnpm build` runs it for `en`, `en/topology` and `en/download`; `--allow-json=<route>` exempts a route |
 | `pnpm build:static` | Reuse `out/` only for matching build inputs; fail without a reuse stamp if inputs change during the build |
-| `pnpm bundle:plan` · `pnpm bundle:prune` | Plan merging several branches as one, then prune the branches main contains (`/merge`) |
-| `pnpm checks:changed` | Which gates this change needs |
+| `pnpm bundle:plan` · `pnpm bundle:prune` | Plan merging slices into an integration branch, then delete every branch (local and origin, also origin-only), `worktree-agent-*` twin and worktree that main provably contains, close open component drafts, and run `git worktree prune` and `git fetch --prune` (`/merge`) |
+| `pnpm checks:changed` | Which gates this change needs; `-- --run --slice` runs only a parallel slice's own unit, lint, e2e and Rust checks |
 | `pnpm conflicts:scan` | Which open pull requests change the same files as this branch, and whether a trial merge conflicts |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision to cite or overturn, and whether this change owes one |
 | `pnpm design:tokens -- [--prefix=<name>]` | The current token ramps, resolved from app/styles |
@@ -185,8 +191,8 @@ What each contributor command answers, sorted by command.
 | `pnpm perf:vault-open -- --files=10000 --files=50000 --shape=key --shape=all --check` | The installed app's reopen from cached rows on generated vaults: a build from files against a reopen with one changed file, heap held, and the rows and index sizes against their limits; also proves a manifest from rows equals one from files; a few minutes |
 | `pnpm perf:web-open -- --files=2000 --files=20000 --shape=key --shape=all --walk=map --profile --check` | Opens each generated vault in the static export with GPU Chromium and prints every row of `scripts/perf/budgets.json`: heap steady after a forced collection and at peak, what the heap is made of, the time to first concepts and to loaded, the longest Chromium `longtask`, and frame p95 and island open per `--walk`. `--profile` records a CPU profile and names the five largest functions in each long task. It builds `out/` with `next build --no-mangling`, so profiles keep source names. Above 20,000 files the figures are reported, not checked |
 | `pnpm pr:ci <n>` | Mark a finished draft ready so its CI runs before `pnpm pr:land` |
-| `pnpm pr:land --plan <n...>` · `pnpm pr:land --conduct` | Dry-run a merge, or merge queued pull requests until the queue is empty |
-| `pnpm pr:land <n>` · `pnpm pr:queue` | Merge a pull request: on its own CI when its branch contains main and no train overlaps, otherwise on a train; and show the queue. While `main`'s full browser run is red it names the failing specs and still merges |
+| `pnpm pr:land --plan <n...>` | Dry-run a merge |
+| `pnpm pr:land <n>` | Merge a pull request on its own CI run; a head behind `main` falls back to the dormant train code, so merge `origin/main` first. While `main`'s full browser run is red it names the failing specs and still merges |
 | `pnpm review:facts -- --base=<ref>` | The mechanical facts a reviewer would otherwise count by hand: line growth, 800-line files, export and dependency changes, untouched sibling tests, security paths |
 | `pnpm seo:check` | After `pnpm build`: every sitemap URL in `out/` canonicalizes to itself, every other indexable page consolidates into a sitemap URL, `/` and each locale root point at `/{locale}/download/`, and titles and descriptions are unique per locale |
 | `pnpm typecheck` | Types across every file, with Next's generated route and page types |

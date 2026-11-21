@@ -1,108 +1,90 @@
-# Merge many branches
+# Merge parallel work through one integration branch
 
-`pnpm pr:land` merges a slice that nothing on `main` or a train in flight
-touches on its own CI run, and queues the rest with the `landing-queue` label:
-the conductor merges up to 20 queued pull requests onto one `train/*` branch
-behind **one** CI run, bisecting a red train so one bad slice is ejected
-instead of blocking the rest. So independent slices need no hand-made bundle.
-The bundle remains for branches that only make sense resolved together.
+Parallel slices reach `main` through one integration branch and one pull
+request. Slices merge into it as they return, with no CI; the integration
+pull request runs CI once. A single task stays one branch, one draft and one
+`pnpm pr:land`.
 
-## 0. Before the fan-out (when you author the Workflow or brief)
-
-- Each agent works in its own worktree, commits on its own branch, and runs
-  `pnpm checks:changed -- --run` for its slice. Whether it pushes and opens its
-  own draft is the brief's call: yes for the train path, no for a bundle.
-- Name the branches with one prefix you can select later, such as
-  `wf/<topic>/<slice>`, or keep the worktrees under one directory.
-- Give ratchet baselines, a shared message namespace file and shared docs one
-  owner, or expect to recount them on the merged tree (`/delegate` §2).
-
-## 1. Select, plan, and choose the path
-
-```bash
-pnpm bundle:plan -- --match='wf/<topic>/*'          # or branch names, or --worktrees=<dir>
-```
-
-The plan (no ref, index or worktree changes) reports each branch as `empty`,
-`contained` (already in `origin/main`) or `pending`, lists files that two
-branches both touch, and trial-merges the pending ones in the order given.
-Leave `empty` and `contained` branches out. Selection is always explicit. Never
-sweep branches you did not create: other sessions keep theirs in the same
-repository.
-
-- **The train** (default): the pending branches trial-merge cleanly and each
-  stands alone. Go to §2.
-- **A bundle**: the trial merge conflicts, a shared file needs a reading that
-  neither branch can do alone, or a slice does not build without another. The
-  train would eject the conflicting slice; a bundle resolves it once. Go to §3.
-
-## 2. The train path
-
-For each pending branch: push it, open a draft, and land it in the background.
-Before landing, run `pnpm conflicts:scan` on the branch; a conflict with an open pull request outside this bundle is resolved now, not by a train ejection.
-
-```bash
-git push -u origin <branch>
-gh pr create --draft --head <branch> --title "<type>: <slice>" --body-file <file>
-pnpm pr:land <number>          # in the background, one per branch
-```
-
-Each run marks its draft ready, waits for that CI run and merges a green slice
-that contains today's `main` at once; their runs go side by side. A slice
-behind `main` or overlapping a train goes on a train. A slice red on its own CI comes back unqueued; a red
-train is split and rerun, and its breaker gets a comment and loses its label.
-Fix it and `pnpm pr:land <number>` again. To put many slices on one train
-instead, queue each with `pnpm pr:land <number> --no-wait` and run one
-conductor:
-
-```bash
-pnpm pr:land --plan <n...>     # dry run: fast-path verdicts, the next train, trial merges
-pnpm pr:land --conduct         # runs trains until the queue is empty
-pnpm pr:queue                  # the queue, the train in flight and its CI
-```
- The conductor closes merged components and
-deletes branches `main` provably contains; `pnpm bundle:prune` cleans up the
-local worktrees afterwards. Clean up only after `pnpm pr:land` exits 0, and through
-`pnpm bundle:prune`, which keeps any branch `main` does not contain; never
-`git branch -D` on a merge you have not seen succeed.
-
-## 3. The bundle path
-
-In a clean worktree you own (a new one is fine):
+## 0. Before the fan-out
 
 ```bash
 git fetch origin main
-git switch -c <prefix>/bundle-<topic>-<yyyy-mm-dd> origin/main   # prefix per .claude/rules/git.md
-git merge --no-ff --no-edit <branch>                              # once per pending branch, in plan order
+git worktree add .claude/worktrees/integration-<topic> -b integration/<topic>-<yyyy-mm-dd> origin/main
+git -C .claude/worktrees/integration-<topic> push -u origin integration/<topic>-<yyyy-mm-dd>
+```
+
+Pushing the integration branch starts no CI: every workflow under
+`.github/workflows/` limits its `push` trigger to `main`, and the
+`pull_request` triggers need a pull request, which does not exist yet.
+
+- Generate each brief with `pnpm brief:new` (`/delegate`). Each agent works in
+  its own worktree, commits on its own branch, and finishes with
+  `pnpm checks:changed -- --run --slice`: the unit tests beside its files, lint
+  on them, the e2e specs that reach them, and the Rust lane only when
+  `src-tauri/**` changed. It does not push and opens no pull request.
+- Name the branches with one prefix you can select later, such as
+  `wf/<topic>/<slice>`.
+- Give ratchet baselines, a shared message namespace file and shared docs one
+  owner, or expect to recount them on the merged tree (`/delegate` §3).
+
+## 1. Merge each slice as it returns
+
+Review the slice (`/merge` §1-2), then merge it at once, while its conflicts
+are fresh, instead of waiting for the rest:
+
+```bash
+pnpm bundle:plan -- --base=integration/<topic>-<yyyy-mm-dd> <branch>   # pending or not, and its trial-merge conflicts
+git merge --no-ff --no-edit <branch>        # in the integration worktree
 ```
 
 Resolve conflicts by intent, never with a blanket `--ours`/`--theirs`: keep
 both sides' keys in `messages/<locale>/<Namespace>.json` (the composite
 `messages/<locale>.json` is generated and ignored), run
 `pnpm docs-vault:resolve-conflicts -- --dry-run` and then the write command for
-generated docs-vault JSON, and recount a ratchet once on the merged tree instead
-of picking either side's number. After the last merge, read every file the plan
-listed as shared, even without a textual conflict.
+generated docs-vault JSON, and recount a ratchet on the merged tree instead of
+picking either side's number. Run that slice's checks on the merged tree and
+push:
 
 ```bash
-node scripts/ci/classify-change.mjs --base=origin/main   # the CI plan; gates=true means also run pnpm lint
-pnpm checks:changed -- --run
-git push -u origin HEAD
-gh pr create --draft --title "<type>: <what the bundle does>" --body-file <file>
-pnpm pr:land <bundle-number>
+pnpm checks:changed -- --run --slice <the slice's paths...>
+git push
 ```
 
-Body: `## Summary` with one line per component (branch @ short sha, and its PR
-number if it had one), the commits added on top and why, a `### Conflicts`
-section naming each shared file and how it was resolved, then `## Test plan`.
-Leave component drafts unqueued; never merge them separately. After it lands:
+## 2. One pull request, one CI run
+
+After the last slice:
 
 ```bash
-pnpm bundle:prune -- <same selection>            # dry run: lists what main provably contains
-pnpm bundle:prune -- <same selection> --apply    # closes component PRs, removes worktrees and branches
+git fetch origin main
+git merge origin/main
+pnpm checks:changed -- --run                # clean tree: scope origin/main...HEAD
+pnpm test:contracts
+pnpm knip
+pnpm typecheck
+node scripts/ci/classify-change.mjs --base=origin/main   # gates=true means also run pnpm lint
+git push
+gh pr create --draft --base main --head integration/<topic>-<yyyy-mm-dd> --title "<type>: <what it does>" --body-file <file>
+pnpm pr:land <number>
+```
+
+Read every file two slices both touch before opening the pull request, even
+without a textual conflict. Body: `## Summary` with one line per component
+(branch @ short sha) and the commits added on top and why, a `### Conflicts`
+section naming each shared file and how it was resolved, then `## Test plan`.
+One `reviewer` reads it when the `AGENTS.md` workflow table requires one.
+
+## 3. Remove everything that belonged to it
+
+Only after `pnpm pr:land` exited 0, from the main checkout:
+
+```bash
+pnpm bundle:prune -- integration/<topic>-<yyyy-mm-dd> <component branch...>            # dry run
+pnpm bundle:prune -- integration/<topic>-<yyyy-mm-dd> <component branch...> --apply
 ```
 
 `bundle:prune` acts only on branches whose content `origin/main` provably
-contains, skips worktrees with uncommitted changes, and prints each head sha for
-recovery. A branch it keeps means content did not merge as-is: inspect it before
-deleting anything by hand.
+contains and prints each head sha for recovery. It removes each worktree under
+`.claude/worktrees/`, closes a component draft still open, deletes the local
+branch, its `worktree-agent-*` twin and the origin branch (also when only the
+origin copy is left), then runs `git worktree prune` and `git fetch --prune`.
+A branch it keeps did not merge as-is: report it, never delete it by hand.

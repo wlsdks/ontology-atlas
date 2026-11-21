@@ -482,3 +482,34 @@ it('overlapping default Node invocations execute each file once without losing t
   assert.deepEqual(result.commands, [first, { ...pair, command: 'node --test scripts/b.test.mjs' }]);
   assert.deepEqual(collapseCoveredContractCommands([first, pair], { ...scripts, prepair: 'node prepare.mjs' }).commands, [first, pair]);
 });
+
+describe('focused checks --slice', () => {
+  it('runs a slice\'s own unit, lint, e2e and Rust checks and leaves repo-wide lanes to the integration tree', () => {
+    const output = [], ran = [];
+    const status = runSuggestFocusedChecks({
+      argv: ['--', '--run', '--slice', 'src/shared/lib/cn.ts', 'src-tauri/src/lib.rs'],
+      stdout: { write: text => output.push(text) },
+      spawn(command) { ran.push(command); return { status: 0, stdout: '' }; },
+    });
+    assert.equal(status, 0);
+    assert.ok(ran.includes('pnpm exec eslint --max-warnings 0 src/shared/lib/cn.ts'), 'lint on the touched file');
+    assert.ok(ran.some((c) => c.startsWith('pnpm exec vitest related --run')), 'unit suites reaching the touched file');
+    assert.ok(ran.some((c) => c.includes('cargo clippy')), 'the Rust lane when src-tauri changed');
+    assert.ok(ran.some((c) => c.includes('playwright test')), 'the e2e spec that reaches the touched file');
+    for (const repoWide of ['pnpm typecheck', 'pnpm knip', 'pnpm test:contracts']) {
+      assert.ok(!ran.includes(repoWide), `${repoWide} runs once on the integration tree, not per slice`);
+    }
+    assert.ok(!ran.some((c) => /vitest run .*tests\/contract\//.test(c)), 'no contract runs per slice');
+    assert.match(output.join(''), /--slice: \d+ repo-wide check\(s\) left for the lead's run on the integration tree/);
+  });
+
+  it('plans no Rust lane for a slice that leaves src-tauri alone', () => {
+    const output = [];
+    runSuggestFocusedChecks({
+      argv: ['--', '--slice', 'src/shared/lib/cn.ts'],
+      stdout: { write: text => output.push(text) },
+      spawn() { return { status: 0, stdout: '' }; },
+    });
+    assert.doesNotMatch(output.join(''), /cargo|test:desktop:bridge/);
+  });
+});
