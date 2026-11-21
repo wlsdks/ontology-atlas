@@ -1,6 +1,6 @@
 ---
 name: delegate
-description: Before handing work to parallel agents: generate the brief with `pnpm brief:new` (port, owned files, scratch, checks, landing) and add the task, decisions and acceptance. Not for work a few tool calls finish.
+description: Before handing work to parallel agents: open the integration branch, generate each brief with `pnpm brief:new` (port, owned files, scratch, slice-only checks, no push) and add the task, decisions and acceptance. Not for work a few tool calls finish.
 ---
 
 # delegate
