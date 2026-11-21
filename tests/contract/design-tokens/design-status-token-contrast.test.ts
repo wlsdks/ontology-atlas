@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { composite, contrastRatio, parseColor } from '../../../scripts/lib/design/contrast.mjs';
 import { readGlobalCss } from '../../../scripts/lib/design/global-css.mjs';
 
 /**
@@ -100,5 +101,25 @@ describe('source state inks on canvas and panel (WCAG 1.4.11)', () => {
         expect(ratio, `${token} ${value} on ${ground} = ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(NON_TEXT);
       });
     }
+  }
+});
+
+/** The words a `Sheet` writes: the format on the source paper, and a page's source tab on the canvas. */
+const PAPER_TEXT: ReadonlyArray<{ ink: string; ground: string }> = [
+  { ink: '--color-text-tertiary', ground: '--color-paper-source' },
+  { ink: '--color-indigo-text-soft', ground: '--color-canvas' },
+];
+
+describe('paper sheet text (WCAG 1.4.3)', () => {
+  const block = themeBlock();
+  for (const { ink, ground } of PAPER_TEXT) {
+    it(`${ink} is >= ${AA_TEXT}:1 on ${ground}`, () => {
+      const groundRgb = parseColor(resolvedHex(block, ground));
+      const inkRgba = parseColor(resolvedHex(block, ink));
+      expect(groundRgb, `${ground} is not a readable colour`).not.toBeNull();
+      expect(inkRgba, `${ink} is not a readable colour`).not.toBeNull();
+      const ratio = contrastRatio(composite(inkRgba!, groundRgb!), groundRgb!);
+      expect(ratio, `${ink} on ${ground} = ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(AA_TEXT);
+    });
   }
 });

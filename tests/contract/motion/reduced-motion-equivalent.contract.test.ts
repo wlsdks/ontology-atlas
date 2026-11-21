@@ -33,6 +33,8 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
     "Infinite progress travel shown only during a real ACP turn. Reduced motion stops the line while the adjacent planning/editing/verifying/review-wait text preserves the current state.",
   "motion-work-spin":
     "Infinite arc rotation shown only while a WorkStatus step of unknown length runs. Reduced motion stops the arc in place; the step's label and the consumer's live region carry the same fact.",
+  "motion-sheet-scan":
+    "Infinite line of page ink passing down the sheet of the Next to write file a page is being written from, drawn only while that work runs. Reduced motion draws no scan; the row's page-ink tint, its soft accent name and the screen-reader words say the file is being written.",
   "motion-work-sweep":
     "Infinite travel shown only while a WorkProgress of unknown length runs. Reduced motion parks the bar left-anchored at a third of the track, claiming no scale; the consumer's label and count carry the fact.",
   "motion-progress-reveal":
