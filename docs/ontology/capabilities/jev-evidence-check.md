@@ -25,7 +25,7 @@ Lets a person request an advisory comparison of one claim and its evidence throu
 - Browser-hosted Jev requests or browser storage of the key.
 
 ## Evidence
-- `src/features/jev-judgment/ui/JevCheck.tsx` owns the pasted-input entry; `src/views/library/ui/parts/questions/desk/DeskJev.tsx` prepares current cited pairs and explicit consent on the question desk.
+- `src/features/jev-judgment/ui/JevCheck.tsx` owns the pasted-input entry; `src/views/library/ui/questions/desk/DeskJev.tsx` prepares current cited pairs and explicit consent on the question desk.
 - `src/shared/lib/llm-connection/tauri-jev.ts` and `src-tauri/src/jev.rs` carry the fixed native boundary. `tests/e2e/library/answers/library-question-desk.spec.ts` checks preview and usable no-key behavior; the question-desk unit suite checks stale and unavailable pairs.
 
 ## Uncertainty
