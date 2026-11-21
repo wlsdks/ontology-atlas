@@ -4,7 +4,6 @@ import { ChevronRight } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 interface TopologyIndexTabLabels {
-  /** The same message key as the expanded header, so both states use one name. */
   label?: string;
   expandAria: string;
   agentSyncTitle: string;
@@ -16,10 +15,6 @@ export interface TopologyIndexTabProps {
   className?: string;
 }
 
-/**
- * Collapsed INDEX: a slim left edge tab (`--topology-index-tab-width`); a click gives the slot back
- * to INDEX.
- */
 export function TopologyIndexTab({ onExpand, labels, className }: TopologyIndexTabProps) {
   return (
     <button
@@ -43,7 +38,6 @@ export function TopologyIndexTab({ onExpand, labels, className }: TopologyIndexT
       >
         {labels.label ?? "Index"}
       </span>
-      {/* ChevronRight 13 rather than 9px `›` text — the symmetric pair of the expanded `‹`. */}
       <span aria-hidden="true" className="inline-flex text-[color:var(--map-panel-text-quaternary)]">
         <ChevronRight size={ICON_SIZE.sm} aria-hidden="true" />
       </span>
