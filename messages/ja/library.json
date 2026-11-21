@@ -317,7 +317,7 @@
     "titleTruncated": "文書が{count, number}件以上見つかりました",
     "where": "「{folder}」フォルダ内、sourcesフォルダの外にあります · {folderCounts}",
     "folderCount": "{folder} {count, number}",
-    "copyAll": "{count, plural, one {sourcesフォルダにコピー} other {#件すべてsourcesフォルダにコピー}}",
+    "copyAll": "{count, plural, =1 {sourcesフォルダにコピー} other {#件すべてsourcesフォルダにコピー}}",
     "choose": "コピーするファイルを選ぶ"
   },
   "drop": {

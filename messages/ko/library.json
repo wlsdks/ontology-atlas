@@ -317,7 +317,7 @@
     "titleTruncated": "문서를 {count, number}개 넘게 찾았어요",
     "where": "「{folder}」 폴더 안, sources 폴더 밖에 있어요 · {folderCounts}",
     "folderCount": "{folder} {count, number}",
-    "copyAll": "{count, plural, one {sources 폴더로 복사} other {#개 모두 sources 폴더로 복사}}",
+    "copyAll": "{count, plural, =1 {sources 폴더로 복사} other {#개 모두 sources 폴더로 복사}}",
     "choose": "복사할 파일 고르기"
   },
   "drop": {

@@ -283,10 +283,10 @@
   },
   "start": {
     "title": "添加你已有的文档",
-    "body": "{agent}会阅读你的来源并撰写 Wiki 页面。页面中的每句话都注明出自哪个来源。",
+    "body": "{agent} 会阅读你的来源并撰写 Wiki 页面。页面中的每句话都注明出自哪个来源。",
     "agentFallback": "你的编码智能体",
     "bodyWikiOnly": "此文件夹有 Wiki 页面，但还没有来源。添加这些页面依据的文档，每个论断就能引用一个来源。",
-    "where": "资料库只列出“{folder}”文件夹中 sources 文件夹里的文件。你也可以在{fileManagerName}中把文件放进去。",
+    "where": "资料库只列出“{folder}”文件夹中 sources 文件夹里的文件。你也可以在 {fileManagerName} 中把文件放进去。",
     "whereWeb": "资料库只列出“{folder}”文件夹中 sources 文件夹里的文件。",
     "copyNote": "sources 文件夹之外的文件会被复制进来。原文件不会被移动或删除。",
     "reveal": "{fileManager, select, finder {在访达中显示} explorer {在文件资源管理器中显示} other {在文件管理器中显示}}",
@@ -317,7 +317,7 @@
     "titleTruncated": "找到 {count, number} 份以上文档",
     "where": "位于“{folder}”文件夹内、sources 文件夹之外 · {folderCounts}",
     "folderCount": "{folder} {count, number}",
-    "copyAll": "{count, plural, one {复制到 sources 文件夹} other {将全部 # 份复制到 sources 文件夹}}",
+    "copyAll": "{count, plural, =1 {复制到 sources 文件夹} other {将全部 # 份复制到 sources 文件夹}}",
     "choose": "选择要复制的文件"
   },
   "drop": {
@@ -338,7 +338,7 @@
     "truncated": "只列出了文件夹中的前 {count, number} 个文件。其余文件请另行拖入。"
   },
   "usage": {
-    "where": "资料库中的每个来源都是“{folder}”文件夹中 sources 文件夹里的文件。你在{fileManagerName}中添加或移除的文件会自动显示。",
+    "where": "资料库中的每个来源都是“{folder}”文件夹中 sources 文件夹里的文件。你在 {fileManagerName} 中添加或移除的文件会自动显示。",
     "copy": "“添加文件”、拖放和“全部复制”都会把文件复制到 sources 文件夹，并保留原有的文件夹结构。原文件不会被移动或删除。",
     "read": "Atlas 不会把你的来源发送到任何地方。只有当你让智能体撰写 Wiki 页面或回答问题时，该智能体才会读取来源，读取的内容可能会发送到该智能体的服务。"
   },
@@ -385,7 +385,7 @@
     "duplicate": "{count} 份已存在。字节相同，因此未复制。",
     "failed": "{count} 份无法复制",
     "failedReason": "无法添加：{reason}",
-    "revealFailed": "无法在{fileManagerName}中显示：{reason}",
+    "revealFailed": "无法在 {fileManagerName} 中显示：{reason}",
     "openFailed": "无法打开该文件。",
     "savedInstead": "{name} 属于在此页面打开时可能运行代码的文件类型，因此改为下载。",
     "needsCompileSplit": "{notCompiled} 份还没有 Wiki 页面 · {stale} 份需要核对来源版本",

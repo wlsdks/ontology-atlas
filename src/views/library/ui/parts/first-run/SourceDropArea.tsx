@@ -55,7 +55,7 @@ export function SourceDropArea({
         {SAMPLE_SHEETS.map((sheet, index) => (
           <span
             key={sheet.format}
-            className="absolute left-1/2 top-0 transition-transform duration-[var(--motion-settle)] ease-[var(--motion-ease)] [transition-delay:calc(var(--motion-stagger)*var(--sheet-step))]"
+            className="absolute left-1/2 top-0 transition-transform duration-[var(--motion-settle)] ease-[var(--motion-ease)] [transition-delay:calc(var(--motion-stagger)*var(--sheet-step,0))]"
             style={{
               transform: `translateX(calc(-50% + ${sheet.x}px)) translateY(${over ? -6 : 0}px) rotate(${sheet.tilt}deg)`,
               ["--sheet-step" as string]: over ? index : 0,
