@@ -19,7 +19,7 @@ import { dialChipRadiusPx, dialDiscRadiusPx } from "../tokens";
 import { buildDialMarks, dialHubRadiusPx, emptyDialFrameMarks, type DialDisclosureInput, type DialMarksInput } from "./marks";
 import { resolveDialDisclosure } from "./disclosure";
 import { resolveDialTokens } from "../tokens";
-import type { DialCluster, DialEvidence, DialItem, DialLabels, DialModel, DialScene, Point } from "../types";
+import type { DialCluster, DialEvidence, DialItem, DialLabels, DialModel, DialScene, Point } from "../dial-shapes";
 
 vi.mock("../flow-marks", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../flow-marks")>();

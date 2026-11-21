@@ -82,7 +82,7 @@ import {
   type DomeRuntime,
 } from "./runtime";
 import { buildStrataTargets } from "./strata/strata";
-import { KIND_DEPTH, type DomeCoord, type DomeInputNode, type DomeViewKind } from "./types";
+import { KIND_DEPTH, type DomeCoord, type DomeInputNode, type DomeViewKind } from "./dome-shapes";
 
 const cam = (x: number, y: number, scale: number): CameraAxes => ({
   x: { value: x, velocity: 0 },

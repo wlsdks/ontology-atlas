@@ -16,7 +16,7 @@ import { buildRouteFocusHref } from '@/shared/ui/routing/route-focus-manager';
 import { transientSurface } from '@/shared/ui/surfaces/transient-surface';
 
 import { SETTINGS_CATALOG } from '../model/catalog';
-import type { SettingsSectionId } from '../model/catalog/types';
+import type { SettingsSectionId } from '../model/catalog/settings-catalog-entry';
 import { resolveSettingsSection } from '../model/settings-sections';
 import {
   groupSettingsResults,

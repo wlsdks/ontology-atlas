@@ -10,7 +10,7 @@ import { crossfadeInk, inkIndex, mixOver, type DialInks } from "./ink";
 import type { DialResolution } from "./frame/disclosure";
 import { crossesBox } from "./label-marks";
 import { aggregateLinks, domainOfEnd, restBudget, type CrossingGuard, type DialLink } from "./links";
-import type { Box, DialAttention, DialChordLight, DialMarks, DialModel, DialScene, DialTokens, Point, StripMark } from "./types";
+import type { Box, DialAttention, DialChordLight, DialMarks, DialModel, DialScene, DialTokens, Point, StripMark } from "./dial-shapes";
 
 export interface FlowMarksInput {
   model: DialModel;

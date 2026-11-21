@@ -22,7 +22,7 @@ import type {
   GlyphMark,
   Point,
   TextMark,
-} from "../types";
+} from "../dial-shapes";
 
 import { buildBranchMarks, type BranchBlock, type BranchStem } from "../branches/marks";
 

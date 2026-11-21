@@ -1,6 +1,6 @@
-import type { Point } from "../../dial/types";
+import type { Point } from "../../dial/dial-shapes";
 import { openMaxPx } from "../open-star";
-import type { FlatGraphPaintTokens } from "../types";
+import type { FlatGraphPaintTokens } from "../flat-graph-shapes";
 import { screenOf, discRadius, dotRadius } from "./place";
 import { CULL_PX, ROOM_WHOLE_PX, F as frameState, fanPushes, type PushedDot, pushedDots } from "./state";
 

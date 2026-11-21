@@ -1,4 +1,4 @@
-import type { Box, Point } from "../../dial/types";
+import type { Box, Point } from "../../dial/dial-shapes";
 
 export function zoomStep(scale: number, stepsPerOctave: number): number {
   return Math.round(Math.log2(Math.max(1e-6, scale)) * stepsPerOctave);

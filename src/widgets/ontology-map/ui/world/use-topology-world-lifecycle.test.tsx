@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import type { DialMemory } from "../../dial/types";
+import type { DialMemory } from "../../dial/dial-shapes";
 import { isTierAssembling } from "../../morph/tier-assembly";
 import type { FlatRingMemoryStore } from "../loop/topology-loop-contract";
 import type { TopologyWorld } from "./topology-world";

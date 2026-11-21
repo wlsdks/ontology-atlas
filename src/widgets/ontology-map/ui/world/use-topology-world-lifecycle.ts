@@ -42,9 +42,9 @@ import { claimDialOrderFolder } from "../../dial/order";
 import { claimFlatGraphFolder, settleFlatGraph } from "../../flat-graph/scene";
 import { readFlatGraphTokens } from "../../flat-graph/tokens";
 import { labelFontFamily } from "../../render/labels";
-import type { FlatGraphTokens } from "../../flat-graph/types";
+import type { FlatGraphTokens } from "../../flat-graph/flat-graph-shapes";
 import { createDialPlacement, dialPlacementOf, setDialPlacement, type DialPlacementState } from "../../dial/placement";
-import type { DialLabels, DialMemory, DialWorldInput } from "../../dial/types";
+import type { DialLabels, DialMemory, DialWorldInput } from "../../dial/dial-shapes";
 
 interface Dependencies {
   worldRef: RefObject<TopologyWorld | null>;

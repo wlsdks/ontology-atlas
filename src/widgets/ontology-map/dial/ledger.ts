@@ -1,5 +1,5 @@
 import { capabilityNameTries, crossesBox, overlaps } from "./label-marks";
-import type { Box, DialTokens, Point } from "./types";
+import type { Box, DialTokens, Point } from "./dial-shapes";
 
 export interface LedgerDisc {
   id: string;

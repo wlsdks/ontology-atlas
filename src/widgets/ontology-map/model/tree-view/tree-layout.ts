@@ -1,6 +1,6 @@
 import { TREE_POSE_REST } from "./tree-camera";
 import type { TreeWork } from "./tree-model";
-import type { TreeLayout, TreeModel } from "./types";
+import type { TreeLayout, TreeModel } from "./tree-shapes";
 
 /** Lengths are world units; the trunk base is the origin and y is up. */
 /** The trunk's two inner control points as fractions of its height, a slight S-bend. */

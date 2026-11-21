@@ -3,7 +3,7 @@ import { DOME_PLANE } from "../cone-layout";
 import { projectDomePlanePoint, type DomePlaneSample } from "../frame";
 import { DOME_NODE_PX } from "../ink";
 import type { DomeNodeFrame, DomeRuntime } from "../runtime";
-import type { DomeModel, DomeViewKind } from "../types";
+import type { DomeModel, DomeViewKind } from "../dome-shapes";
 
 export type StrataLodPlane = "capability" | "element";
 

@@ -4,7 +4,7 @@ import type React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProjectSourceView } from "@/shared/lib/project-source/project-source-receipt";
 import { OntologyMapDetailPanel } from "./OntologyMapDetailPanel";
-import type { ConceptReview, OntologyMapDetailPanelProps } from "./detail-panel/types";
+import type { ConceptReview, OntologyMapDetailPanelProps } from "./detail-panel/detail-panel-props";
 import enMessages from "../../../../messages/en.json";
 
 /** The zones read their own message namespaces. */

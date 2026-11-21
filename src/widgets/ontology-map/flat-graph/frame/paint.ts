@@ -1,6 +1,6 @@
 import { glowSprite, lightSprite, sunk, type ArcPath } from "../marks";
 import { leaderSegment } from "../names/lit-lines";
-import type { FlatGraphPaintTokens, FlatGraphTokens } from "../types";
+import type { FlatGraphPaintTokens, FlatGraphTokens } from "../flat-graph-shapes";
 import { DRAWN_INK, type Disc, type Dot, type Segment, type Arc, LINE_KINDS, type Glow, type Light, type Name, FrameList, type FramePlan, F as frameState } from "./state";
 
 // A module-local name: see `F` in ./state.

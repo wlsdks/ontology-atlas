@@ -8,7 +8,7 @@ import {
 } from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import { layoutTree } from "../model/tree-view/tree-layout";
 import { buildTreeModel, readTreeFocus } from "../model/tree-view/tree-model";
-import type { TreeDrawList, TreeDrawMark, TreeModel, TreeNamePlacement, TreePose, TreeRect } from "../model/tree-view/types";
+import type { TreeDrawList, TreeDrawMark, TreeModel, TreeNamePlacement, TreePose, TreeRect } from "../model/tree-view/tree-shapes";
 import { treeMarks } from "../morph/tree-marks";
 import { adoptBodyLabelFont, labelFontFamily } from "../render/labels";
 import { readTreeTokens } from "../tokens/read-tree-tokens";

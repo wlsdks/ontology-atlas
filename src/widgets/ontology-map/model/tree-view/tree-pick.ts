@@ -1,4 +1,4 @@
-import type { TreeDrawList } from "./types";
+import type { TreeDrawList } from "./tree-shapes";
 
 /**
  * The node of the nearest mark whose own circle holds the point; failing that, the nearest whose

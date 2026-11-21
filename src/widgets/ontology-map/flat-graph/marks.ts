@@ -1,8 +1,8 @@
 import { mixOver } from "../dial/ink";
-import type { DialModel, Point } from "../dial/types";
+import type { DialModel, Point } from "../dial/dial-shapes";
 import { byId } from "./seed";
 import type { GraphLine } from "./attention";
-import type { FlatGraphLayout, FlatGraphPaintTokens } from "./types";
+import type { FlatGraphLayout, FlatGraphPaintTokens } from "./flat-graph-shapes";
 
 export type GraphKind = "project" | "domain" | "capability" | "element";
 

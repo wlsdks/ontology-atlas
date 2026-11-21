@@ -1,4 +1,4 @@
-import type { Box, Point } from "../types";
+import type { Box, Point } from "../dial-shapes";
 
 export function quadAt(p0: Point, c: Point, p1: Point, t: number): Point {
   const u = 1 - t;

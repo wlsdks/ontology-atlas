@@ -1,6 +1,6 @@
 import { ringPlan } from "./rings";
 import { branchLayout } from "./branches/layout";
-import type { Box, DialCluster, DialItem, DialMemory, DialModel, DialRing, DialScene, DialTokens, Point } from "./types";
+import type { Box, DialCluster, DialItem, DialMemory, DialModel, DialRing, DialScene, DialTokens, Point } from "./dial-shapes";
 
 type LayoutTokens = Pick<
   DialTokens,

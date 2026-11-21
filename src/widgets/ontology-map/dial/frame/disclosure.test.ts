@@ -14,7 +14,7 @@ import { RESOLVE_SLIDE_PX, resolveDialDisclosure, type DialCamera } from "./disc
 import { layoutDial } from "../layout";
 import { circularDomainOrder } from "../order";
 import { resolveDialTokens } from "../tokens";
-import type { Box, DialModel, DialScene } from "../types";
+import type { Box, DialModel, DialScene } from "../dial-shapes";
 
 const css = readFileSync("app/styles/map-dial-tokens.css", "utf8");
 const TOKENS = resolveDialTokens((v) => (v === "--map-panel-text-primary" ? "#ececf0" : css.match(new RegExp(`${v}:\\s*([^;]+);`))?.[1] ?? ""));

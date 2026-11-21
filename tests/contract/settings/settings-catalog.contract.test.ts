@@ -8,7 +8,7 @@ import {
   MCP_CONNECTORS_HREF,
 } from '@/shared/config/destinations';
 import { SETTINGS_CATALOG } from '@/widgets/app-settings-menu/model/catalog';
-import { SETTINGS_SECTION_SCOPE } from '@/widgets/app-settings-menu/model/catalog/types';
+import { SETTINGS_SECTION_SCOPE } from '@/widgets/app-settings-menu/model/catalog/settings-catalog-entry';
 import { SETTINGS_SECTIONS } from '@/widgets/app-settings-menu/model/settings-sections';
 
 const UI = 'src/widgets/app-settings-menu/ui';

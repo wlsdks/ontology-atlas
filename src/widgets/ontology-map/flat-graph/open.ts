@@ -1,7 +1,7 @@
-import type { DialModel, Point } from "../dial/types";
+import type { DialModel, Point } from "../dial/dial-shapes";
 import { conceptLines } from "./attention";
 import { graphDiscRadiusPx } from "./marks";
-import type { FlatGraphLayout, FlatGraphPaintTokens } from "./types";
+import type { FlatGraphLayout, FlatGraphPaintTokens } from "./flat-graph-shapes";
 
 /** Half of the wedge above a selected capability that its name and reach line keep. */
 const TITLE_WEDGE = (70 * Math.PI) / 180;

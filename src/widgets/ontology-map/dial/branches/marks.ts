@@ -3,7 +3,7 @@ import { buildFlowMarks } from "../flow-marks";
 import { crossfadeInk, inkIndex, mixOver } from "../ink";
 import { smoothstep } from "../frame/disclosure";
 import type { DialFrameMarks, DialMarksInput, DialMarksResult } from "../frame/marks";
-import type { Box, DialAttention, DialKind, GlyphMark, Point, TextMark } from "../types";
+import type { Box, DialAttention, DialKind, GlyphMark, Point, TextMark } from "../dial-shapes";
 import { branchPreviewRows, BRANCH_ROW_PITCH } from "./layout";
 import { crossesBox, overlaps } from "../label-marks";
 import { branchNameLines, branchTextStyle } from "./text";

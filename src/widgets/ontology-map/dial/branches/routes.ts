@@ -1,7 +1,7 @@
 import type { FlowMarksInput } from "../flow-marks";
 import { crossesBox } from "../label-marks";
 import { domainOfEnd, type DialLink } from "../links";
-import type { Point } from "../types";
+import type { Point } from "../dial-shapes";
 import { quadAt, trimmedPiece } from "../flow/geometry";
 import { localRelationControl } from "../flow/local-control";
 import { branchPortFraction } from "./ports";

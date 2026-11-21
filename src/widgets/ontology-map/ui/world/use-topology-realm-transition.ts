@@ -35,7 +35,7 @@ import { onWorldSwap } from "./world-swap";
 import { readDialTokens } from "../../dial/tokens";
 import { createMeasureText } from "../../dial/fit";
 import { branchFocusTarget } from "../camera/branch-frame/target";
-import type { DialLabels } from "../../dial/types";
+import type { DialLabels } from "../../dial/dial-shapes";
 
 interface Dependencies {
   view3d?: boolean;

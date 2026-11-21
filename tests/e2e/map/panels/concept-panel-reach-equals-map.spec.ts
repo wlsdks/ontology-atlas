@@ -4,7 +4,7 @@ import "../../atlas-map-probe";
 import { seedFirstRunSeen } from "../../first-run-seed";
 import { waitForMapStill } from "../../settle";
 import { stubDirectoryPicker } from "../../vault-picker-stub";
-import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
+import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 
 const DOMAINS = ["orders", "payments", "catalog", "shipping"] as const;
 const CAPABILITIES_PER_DOMAIN = 4;

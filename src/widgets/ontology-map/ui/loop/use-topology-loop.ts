@@ -44,7 +44,7 @@ import {
   DEFAULT_MAP_NAVIGATION_SPEED,
 } from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import { DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/preferences/map-view-preferences";
-import type { DomeViewKind } from "../../model/dome-view/types";
+import type { DomeViewKind } from "../../model/dome-view/dome-shapes";
 import type { SelectionSource } from "../../model/camera/flat-selection-camera";
 import { createStrataLodState, type StrataLodState } from "../../model/dome-view/strata/strata-lod";
 import { DEFAULT_TIER_REVEAL } from "../../model/visibility/tier-visibility";

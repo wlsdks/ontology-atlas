@@ -7,7 +7,7 @@ import {
 import type { CameraTarget } from "../../engine/camera";
 import { DOME_PITCH_DEFAULT, DOME_POSE_MS, DOME_YAW_DEFAULT, domeNearestYawTurn } from "../../model/dome-view/camera/orbit";
 import type { DomeFitTarget, DomeRuntime } from "../../model/dome-view/runtime";
-import type { DomeModel } from "../../model/dome-view/types";
+import type { DomeModel } from "../../model/dome-view/dome-shapes";
 import {
   type RealmTransitionState
 } from "../../model/realm/realm-transition";

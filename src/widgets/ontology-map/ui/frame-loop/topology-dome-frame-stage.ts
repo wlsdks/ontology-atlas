@@ -50,7 +50,7 @@ import {
   type DomeRuntime,
 } from "../../model/dome-view/runtime";
 import { followTurnWithZoom } from "../../model/dome-view/camera/turn-follow";
-import type { DomeModel } from "../../model/dome-view/types";
+import type { DomeModel } from "../../model/dome-view/dome-shapes";
 import type { RealmTransitionState } from "../../model/realm/realm-transition";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/target/fit-targets";

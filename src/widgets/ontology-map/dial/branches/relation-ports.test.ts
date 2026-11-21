@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DialFrameResult } from "../types";
+import type { DialFrameResult } from "../dial-shapes";
 import { clipBranchRelation } from "./relation-ports";
 import { quadAt } from "../flow/geometry";
 

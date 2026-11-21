@@ -1,4 +1,4 @@
-import type { AcpChatPanelProps } from '../ui/chat-panel/types';
+import type { AcpChatPanelProps } from '../ui/chat-panel/chat-panel-props';
 
 export interface KeptPanel {
   key: string;

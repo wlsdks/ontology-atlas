@@ -4,7 +4,7 @@ import { findCouplingGroups } from './coupling-groups';
 import { clusterDomainOf } from '../neural/neural-cells';
 import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from '../camera/orbit';
 import { DOME_FIT_RADIUS } from '../camera/projection';
-import type { DomeCoord, DomeInputNode, DomeViewKind } from '../types';
+import type { DomeCoord, DomeInputNode, DomeViewKind } from '../dome-shapes';
 
 /**
  * Dome-unit radii, now only the collision radius the coupling cloud relaxes

@@ -9,9 +9,9 @@ import { Chip } from '@/shared/ui';
 import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-import { RETRY_CHIP_CLASS } from '../constants';
+import { RETRY_CHIP_CLASS } from '../chat-panel-class-names';
 import { StartingSuggestionPreview, SuggestionRows } from './SuggestionRows';
-import type { ChatT, SessionState } from '../types';
+import type { ChatT, SessionState } from '../chat-panel-props';
 
 type StartStepState = 'done' | 'current' | 'ahead';
 

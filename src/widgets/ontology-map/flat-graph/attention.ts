@@ -1,4 +1,4 @@
-import type { DialModel } from "../dial/types";
+import type { DialModel } from "../dial/dial-shapes";
 import { domainPartners, type CapabilityRelation } from "../model/containment-tree";
 
 /** How a lit line reads: what the focus needs, what needs it, a symmetric relation, a broader concept. */

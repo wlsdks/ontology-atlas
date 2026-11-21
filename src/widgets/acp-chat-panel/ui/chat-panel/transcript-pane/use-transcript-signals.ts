@@ -4,7 +4,7 @@ import type { ChatSuggestion } from '@/features/acp-session';
 import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
 
 import { lastUserEventIndexOf } from '../turn/turn-state';
-import type { SessionState } from '../types';
+import type { SessionState } from '../chat-panel-props';
 
 interface TranscriptSignalsOptions {
   events: SessionState['events'];

@@ -4,7 +4,7 @@ import { ArrowDown } from 'lucide-react';
 import { Surface } from '@/shared/ui';
 import { ChromeChip } from '@/shared/ui/controls/chrome-chip';
 
-import type { ChatT } from '../types';
+import type { ChatT } from '../chat-panel-props';
 
 export function TranscriptPane({
   t,

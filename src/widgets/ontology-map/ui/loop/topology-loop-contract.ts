@@ -9,7 +9,7 @@ import type { MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation
 import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import type { RefObject } from "react";
 import type { DialFrameSummary } from "../../dial/frame/frame";
-import type { DialEvidence, DialLabels, DialMemory } from "../../dial/types";
+import type { DialEvidence, DialLabels, DialMemory } from "../../dial/dial-shapes";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
 import type { SelectionSource } from "../../model/camera/flat-selection-camera";
 import { type TierNameAnchor } from "../../model/dome-view/strata/tier-names";

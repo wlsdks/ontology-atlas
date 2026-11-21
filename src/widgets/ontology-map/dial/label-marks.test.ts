@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildLabelMarks, crossesBox, domainLabelBlock, overlaps, wrapDialName, type Circle, type LabelMarksInput, type LabelMarksOut } from "./label-marks";
-import type { Box, DialAttention, DialCluster, DialItem, DialLabels, DialModel, DialRing, DialScene, DialTokens, Point } from "./types";
+import type { Box, DialAttention, DialCluster, DialItem, DialLabels, DialModel, DialRing, DialScene, DialTokens, Point } from "./dial-shapes";
 
 const TOKENS = { nameMaxPx: 160, labelScale: 1.1, pitch: 34, capName: 22, elementName: 26, chipMinPx: 12, chipMaxPx: 12, discMinPx: 4, discMaxPx: 4, discPitchShare: 0.2, discCapShare: 1 } as DialTokens;
 const LABELS: DialLabels = {

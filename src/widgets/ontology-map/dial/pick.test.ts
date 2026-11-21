@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { HIT_TOUCH_SLACK_PX } from "../ui/camera/topology-camera-math";
 import { pickDial, pickDialAction } from "./pick";
-import type { DialPick, DialRowPick } from "./types";
+import type { DialPick, DialRowPick } from "./dial-shapes";
 
 const disc = (id: string, x: number, y: number, r: number): DialPick => ({ id, x, y, r });
 const row = (id: string, minX: number, minY: number, maxX: number, maxY: number): DialRowPick => ({ id, box: { minX, minY, maxX, maxY } });

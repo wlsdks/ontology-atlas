@@ -1,11 +1,11 @@
-import type { Point } from "../../dial/types";
+import type { Point } from "../../dial/dial-shapes";
 import { HITTABLE_MIN_TIER_ALPHA } from "../../model/visibility/tier-visibility";
 import { inkUnder } from "../attention";
 import { capabilityDiscRadiusPx, graphDiscRadiusPx, LIT_DOT_SHARE, ORPHAN_ROOM, sunk } from "../marks";
 import { DAMPED, dampedStep, FLAT_MOTION } from "../motion";
 import type { OpenedElements } from "../open";
 import { domainStarRooms, openRadiusPx, roomLimitPx, starRooms, type StarPoint, type StarRoom } from "../open-star";
-import type { FlatGraphLayout } from "../types";
+import type { FlatGraphLayout } from "../flat-graph-shapes";
 import { CULL_PX, ELEMENT_PICK_PX, type StampedPoint, MARK_STEP_MAX_MS, MARK_REST_PX, F as frameState, scratch, fanPushes, pushedDots, movedRoom } from "./state";
 
 // A module-local name: see `F` in ./state.

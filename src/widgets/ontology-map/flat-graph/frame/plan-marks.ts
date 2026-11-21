@@ -1,9 +1,9 @@
-import type { DialChordLight, Point } from "../../dial/types";
+import type { DialChordLight, Point } from "../../dial/dial-shapes";
 import { FLAT_LINE_BITS } from "../attention";
 import { directItemId } from "../layout";
 import { arcPathInto, graphDiscRadiusPx, litLineTrimsInto, smoothstep } from "../marks";
 import type { GraphMotion } from "../motion";
-import type { FlatGraphCluster, FlatGraphItem } from "../types";
+import type { FlatGraphCluster, FlatGraphItem } from "../flat-graph-shapes";
 import { hueOf, loadMarkInk, loadGlowShare, screenOf, fanShare, alongSpoke, screenAt, onScreen, discRadius, dotRadius, segmentOnScreen, lensHidden } from "./place";
 import { crowdClear } from "./push-crowd";
 import { DRAWN_INK, ROOM_GONE_PX, ROOM_WHOLE_PX, type Disc, type Segment, type Arc, LINE_KINDS, type Light, segments, dots, discs, glows, lights, arcMarks, chordPool, alphaCache, frameChords, shownElements, cacheFor, L, F as frameState, movedRoom, scratch } from "./state";

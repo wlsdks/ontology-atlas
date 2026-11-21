@@ -10,7 +10,7 @@ import {
   type TreeNameBox,
   type TreeNodeKind,
   type TreeScreenPoint,
-} from "../model/tree-view/types";
+} from "../model/tree-view/tree-shapes";
 import type { TreeTokens } from "../tokens/read-tree-tokens";
 
 /** A branch is a ribbon through BRANCH_SAMPLES + 1 points of its cubic, plus two edge crossings. */

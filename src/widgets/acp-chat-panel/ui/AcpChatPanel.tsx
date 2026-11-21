@@ -29,7 +29,7 @@ import { TranscriptPane } from './chat-panel/transcript-pane/TranscriptPane';
 import { TranscriptRows } from './chat-panel/transcript-pane/TranscriptRows';
 import { TurnWorkStage, type TurnWork } from './chat-panel/turn/TurnWorkStage';
 import { ConnectStoppedState, EmptyState, FolderBusyState, StartingState } from './chat-panel/transcript-pane/transcript-states';
-import type { AcpChatPanelProps } from './chat-panel/types';
+import type { AcpChatPanelProps } from './chat-panel/chat-panel-props';
 import { useHistoryEscape, useHistoryMenu, useSlashMenu } from './chat-panel/composer/use-composer-menus';
 import { useComposerSizing } from './chat-panel/composer/use-composer-sizing';
 import { planSubmit } from './chat-panel/composer/outgoing-request';
@@ -59,7 +59,7 @@ import { troubleHintKeyOf } from './chat-panel/trouble-hint-key';
 import { useTurnClock, useTurnSilence } from './chat-panel/turn/use-turn-timing';
 
 export type { AcpMapIntent } from '@/features/acp-session';
-export type { AcpOntologyRelationPreview } from './chat-panel/types';
+export type { AcpOntologyRelationPreview } from './chat-panel/chat-panel-props';
 
 export function AcpChatPanelBody({
   runtimeId,

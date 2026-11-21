@@ -22,7 +22,7 @@ import { layoutDial } from "@/widgets/ontology-map/dial/layout";
 import { buildDialMarks, emptyDialFrameMarks } from "@/widgets/ontology-map/dial/frame/marks";
 import { circularDomainOrder } from "@/widgets/ontology-map/dial/order";
 import { resolveDialTokens } from "@/widgets/ontology-map/dial/tokens";
-import type { Box, DialLabels, DialModel, Point } from "@/widgets/ontology-map/dial/types";
+import type { Box, DialLabels, DialModel, Point } from "@/widgets/ontology-map/dial/dial-shapes";
 import type { OntologyMapTokens } from "@/widgets/ontology-map/tokens/read-map-tokens";
 
 import { synthesizeVaultGraph } from "./synth-vault";

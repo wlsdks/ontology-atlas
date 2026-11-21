@@ -1,5 +1,5 @@
-import type { Box } from "../dial/types";
-import type { FlatGraphLayout, FlatGraphPaintTokens } from "./types";
+import type { Box } from "../dial/dial-shapes";
+import type { FlatGraphLayout, FlatGraphPaintTokens } from "./flat-graph-shapes";
 import { admit } from "./names/admit";
 import { zoomStep } from "./names/zoom-step";
 import type { NameAdmission, NameInput, PlacedName } from "./names/placed-name";

@@ -4,7 +4,7 @@ import { withoutErrorEcho } from '@/features/acp-session';
 
 import { groupEvents } from '../../group-events';
 import { chatMarkdownComponents } from '../../chat-markdown/chat-markdown-components';
-import type { SessionState } from '../types';
+import type { SessionState } from '../chat-panel-props';
 
 interface TranscriptModelOptions {
   events: SessionState['events'];

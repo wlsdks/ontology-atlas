@@ -24,7 +24,7 @@ import {
 } from "../../model/dome-view/camera/projection";
 import type { DomeFitTarget } from "../../model/dome-view/runtime";
 import { domeTurnReach } from "../../model/dome-view/camera/turn-follow";
-import type { DomeModel } from "../../model/dome-view/types";
+import type { DomeModel } from "../../model/dome-view/dome-shapes";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeDomeFitCameraTarget, domeFitFreeHalfSize } from "./target/fit-targets";
 

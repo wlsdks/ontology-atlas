@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } fr
 
 import type { ChatSuggestion } from '@/features/acp-session';
 
-import type { SessionState } from '../types';
+import type { SessionState } from '../chat-panel-props';
 import { offersNextSteps, startedPersonTurnId } from './person-turns';
 import { lastUserEventIndexOf } from './turn-state';
 

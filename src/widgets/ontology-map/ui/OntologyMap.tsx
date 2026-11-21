@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { HoverAvoidRect } from "./input/topology-pointer-types";
 import type { FlatDialState, FlatRingMemoryStore } from "./loop/topology-loop-contract";
-import type { DialEvidence, DialLabels } from "../dial/types";
+import type { DialEvidence, DialLabels } from "../dial/dial-shapes";
 import { Orbit } from "lucide-react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
 import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-canvas/map-layout-morph-store";

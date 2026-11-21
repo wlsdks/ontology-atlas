@@ -1,7 +1,7 @@
 import type { MeasureText } from "../../dial/label-marks";
-import type { Box, Point } from "../../dial/types";
+import type { Box, Point } from "../../dial/dial-shapes";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
-import type { FlatGraphPaintTokens } from "../types";
+import type { FlatGraphPaintTokens } from "../flat-graph-shapes";
 import { blockAbove, domainBlock, domainReachLine, font, reachText, tabularPieces, titleMayRise } from "./titles";
 import type { NameInput, PlacedName } from "./placed-name";
 

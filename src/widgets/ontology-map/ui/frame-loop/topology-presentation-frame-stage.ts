@@ -1,4 +1,4 @@
-import type { DialWorld } from '../../dial/types';
+import type { DialWorld } from '../../dial/dial-shapes';
 import type { PanelInsets } from "../../interaction/free-area";
 import type { CanvasBackground } from "@/shared/lib/preferences/canvas-appearance-preferences";
 import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
@@ -14,7 +14,7 @@ import type { ClusterChip } from "../../model/layout/density-gate";
 import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
 import { domeRingAlphaFor } from "../../model/dome-view/ink";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
-import type { DomeViewKind } from "../../model/dome-view/types";
+import type { DomeViewKind } from "../../model/dome-view/dome-shapes";
 import { stepFocusRamp } from "../../model/visibility/focus-state";
 import { fadeStrataLodOut, restStrataLod, stepStrataLod, type StrataLodState } from "../../model/dome-view/strata/strata-lod";
 import { hexToRgb, parseRgbTriple, type DomeLightFrame, type EvidenceLight, type Rgb } from "../../render/dome-view/dome-light";

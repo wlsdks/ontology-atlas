@@ -42,7 +42,7 @@ import { PanelFooter, panelActionClass } from "./detail-panel/PanelFooter";
 import { ProjectSourceRemedy } from "./detail-panel/ProjectSourceRemedy";
 import { ProjectSourcePendingRows, ProjectSourceStatusIcon } from "./detail-panel/project-source-status";
 import { RelationsZone } from "./detail-panel/RelationsZone";
-import type { OntologyMapDetailPanelProps } from "./detail-panel/types";
+import type { OntologyMapDetailPanelProps } from "./detail-panel/detail-panel-props";
 
 /**
  * The compact concept panel (`docs/features/map/node-detail-actions.md`). Its first screen answers

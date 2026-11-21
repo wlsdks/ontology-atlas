@@ -6,7 +6,7 @@ import { createTreeProjector, TREE_POSE_REST } from "../model/tree-view/tree-cam
 import { TREE_MARK_BUDGET } from "../model/tree-view/tree-detail";
 import { layoutTree } from "../model/tree-view/tree-layout";
 import { buildTreeModel } from "../model/tree-view/tree-model";
-import type { TreeDrawList } from "../model/tree-view/types";
+import type { TreeDrawList } from "../model/tree-view/tree-shapes";
 import { readTreeTokens } from "../tokens/read-tree-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../ui/OntologyMap";
 import { OntologyTreeMap } from "../ui/OntologyTreeMap";

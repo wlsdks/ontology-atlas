@@ -1,7 +1,7 @@
 import { NUMERAL_FONT_PX, numeralFont, scaledLabelFont, scaledLabelFontSize, tabularWidth } from "../render/labels";
 import { inkIndex, type DialInks } from "./ink";
 import { overlaps } from "./label-marks";
-import type { Box, DialMarks, DialModel, DialTokens, Point } from "./types";
+import type { Box, DialMarks, DialModel, DialTokens, Point } from "./dial-shapes";
 
 interface FarInput {
   model: DialModel;

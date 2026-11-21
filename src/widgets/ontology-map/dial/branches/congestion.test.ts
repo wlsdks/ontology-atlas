@@ -24,7 +24,7 @@ import { layoutDial } from "@/widgets/ontology-map/dial/layout";
 import { circularDomainOrder } from "@/widgets/ontology-map/dial/order";
 import { applyBranchMemberAction } from "./member-disclosure";
 import { resolveDialTokens } from "@/widgets/ontology-map/dial/tokens";
-import type { Box, DialLabels, DialModel, Point } from "@/widgets/ontology-map/dial/types";
+import type { Box, DialLabels, DialModel, Point } from "@/widgets/ontology-map/dial/dial-shapes";
 import type { OntologyMapTokens } from "@/widgets/ontology-map/tokens/read-map-tokens";
 
 

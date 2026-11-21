@@ -117,7 +117,7 @@ export interface DialMemory { branchOrder?: readonly string[]; order: string[]; 
     }>;
     itemOrder: ReadonlyMap<string, string[]>;
 }
-export interface DialScene { graph?: import("../flat-graph/types").FlatGraphLayout; branches?: boolean; branchPreviewRows?: number; order: string[]; rings: DialRing[]; clusters: DialCluster[]; clusterByDomain: ReadonlyMap<string, DialCluster>; itemById: ReadonlyMap<string, DialItem>; orphans: { ids: string[]; centre: Point; pitch: number; radius: number;
+export interface DialScene { graph?: import("../flat-graph/flat-graph-shapes").FlatGraphLayout; branches?: boolean; branchPreviewRows?: number; order: string[]; rings: DialRing[]; clusters: DialCluster[]; clusterByDomain: ReadonlyMap<string, DialCluster>; itemById: ReadonlyMap<string, DialItem>; orphans: { ids: string[]; centre: Point; pitch: number; radius: number;
     }; axisAngle: number; extent: Box; positions: ReadonlyMap<string, Point>; medianElementPitch: number; memory: DialMemory;
 }
 export interface DialWorld {
@@ -127,7 +127,7 @@ export interface DialWorld {
     /** The labels the graph's names were built with, for camera code that must make room for them. */
     labels?: DialLabels | null;
 }
-export interface DialWorldInput { graph?: import("../flat-graph/types").FlatGraphTokens | null; graphAreaPx?: { width: number; height: number } | null; labels: DialLabels | null; tokens: DialTokens; measureText: (text: string, font: string) => number; rememberOrder: boolean; memory: DialMemory | null;
+export interface DialWorldInput { graph?: import("../flat-graph/flat-graph-shapes").FlatGraphTokens | null; graphAreaPx?: { width: number; height: number } | null; labels: DialLabels | null; tokens: DialTokens; measureText: (text: string, font: string) => number; rememberOrder: boolean; memory: DialMemory | null;
 }
 
 export interface StripMark { flowKey: string; role: "chord" | "stub" | "relates"; ink: number; ax: number; ay: number; cx: number; cy: number; bx: number; by: number; w0: number; w1: number; gapT0: number; gapT1: number; dashed: boolean; headStart: boolean; headEnd: boolean; headSize: number;

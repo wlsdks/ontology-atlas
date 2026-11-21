@@ -4,7 +4,7 @@
  * `centerForInsets`. Shape decides the side: a tall panel is a side panel, a wide one a top bar.
  */
 
-import type { Box } from "../dial/types";
+import type { Box } from "../dial/dial-shapes";
 
 export interface Rect {
   readonly x: number;

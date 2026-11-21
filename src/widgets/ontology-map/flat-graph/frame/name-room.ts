@@ -1,4 +1,4 @@
-import type { Point } from "../../dial/types";
+import type { Point } from "../../dial/dial-shapes";
 import type { PlacedName } from "../names/placed-name";
 import { grownIds } from "./place";
 import { ROOM_GONE_PX, type Disc, type Dot, FrameList, L, NAME_REST_PX, F as frameState } from "./state";

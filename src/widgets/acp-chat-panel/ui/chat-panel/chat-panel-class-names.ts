@@ -1,8 +1,3 @@
-import type { KnownRelations } from '@/features/acp-session';
-
-export const EMPTY_KNOWN_SLUGS: ReadonlySet<string> = new Set();
-export const EMPTY_KNOWN_RELATIONS: KnownRelations = new Set<string>();
-
 export const PICKER_MIN_WIDTH_CLASS = 'min-w-[3rem]';
 export const PICKER_MAX_WIDTH_CLASS = 'max-w-[16rem]';
 /** Retry on the error card and Connect again are the same act, so the same chip. */

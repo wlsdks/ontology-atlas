@@ -9,7 +9,7 @@ import { isContainmentRelation } from "@/entities/knowledge-graph";
 
 import { computeConcentricLayout } from "../../model/layout/layout";
 import { resolveDialTokens } from "../../dial/tokens";
-import type { DialLabels, DialMemory, DialWorldInput } from "../../dial/types";
+import type { DialLabels, DialMemory, DialWorldInput } from "../../dial/dial-shapes";
 import { resolveFlatGraphTokens } from "../../flat-graph/tokens";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { buildTopologyWorld, computeMagnitudeScale, type TopologyWorld, containmentLevelFor } from "./topology-world";

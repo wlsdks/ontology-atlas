@@ -1,4 +1,4 @@
-import type { DialWorld } from '../../dial/types';
+import type { DialWorld } from '../../dial/dial-shapes';
 import type { CameraAxes } from "../../engine/camera";
 import type { ClusterChip } from "../../model/layout/density-gate";
 import type { DomeRuntime } from "../../model/dome-view/runtime";

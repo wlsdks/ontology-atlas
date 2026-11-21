@@ -1,5 +1,5 @@
 import type { CameraTarget } from "../../../engine/camera";
-import type { Box, DialWorld, Point } from "../../../dial/types";
+import type { Box, DialWorld, Point } from "../../../dial/dial-shapes";
 import { branchMemberCount } from "../../../dial/branches/member-disclosure";
 import { branchNameLines, branchTextStyle } from "../../../dial/branches/text";
 import { BRANCH_ROW_PITCH } from "../../../dial/branches/layout";

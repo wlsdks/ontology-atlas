@@ -4,7 +4,7 @@ import {
   domeFogAlpha,
   domeLineWidthFactor,
 } from "../../model/dome-view/ink";
-import type { DomeViewKind } from "../../model/dome-view/types";
+import type { DomeViewKind } from "../../model/dome-view/dome-shapes";
 import { draw as domeRingsDraw } from "../../render/dome-view/dome-rings";
 import { hexToRgb } from "../../render/dome-view/dome-light";
 import {

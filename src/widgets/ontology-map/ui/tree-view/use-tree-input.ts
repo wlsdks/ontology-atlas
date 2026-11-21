@@ -5,7 +5,7 @@ import type { MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation
 import { listenForGesturePinch } from "../../interaction/gesture-pinch";
 import { computeWheelZoomFactor, createPinchWheelStream, normalizeWheelDeltaY, readPinchWheel, shouldIgnoreWheelGlide } from "../../interaction/wheel";
 import { pickTreeMark } from "../../model/tree-view/tree-pick";
-import type { TreeDrawList, TreeDrawMark, TreeLayout, TreeProjector } from "../../model/tree-view/types";
+import type { TreeDrawList, TreeDrawMark, TreeLayout, TreeProjector } from "../../model/tree-view/tree-shapes";
 import type { TreeTokens } from "../../tokens/read-tree-tokens";
 import type { TreeMotion } from "./use-tree-motion";
 

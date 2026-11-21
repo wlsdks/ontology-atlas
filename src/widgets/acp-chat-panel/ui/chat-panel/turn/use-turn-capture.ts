@@ -5,7 +5,7 @@ import type { AcpWorkReceipt } from '@/shared/lib/meaning-transition/acp-work-re
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 
 import { useMeaningTransitionCapture } from '../../../model/use-meaning-transition-capture';
-import type { MeaningTransitionContext, OpeningRequest } from '../types';
+import type { MeaningTransitionContext, OpeningRequest } from '../chat-panel-props';
 
 interface TurnCaptureOptions {
   runtimeId: string;
