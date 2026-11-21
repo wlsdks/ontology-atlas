@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ko from '../../../../messages/ko.json';
 import type { AcpCheck } from '../model/acp-doctor';
-import { useAgentDoctor } from './AgentDoctor';
+import { useAgentDoctor } from './use-agent-doctor';
 
 /** These tests measure how many rows the doctor draws, because an all-clear list became noise. */
 

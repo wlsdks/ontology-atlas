@@ -121,7 +121,7 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
     const reviewed = new Set([
       "src/shared/ui/controls/get-app-link.tsx",
       "src/shared/lib/navigation/nav-destination.ts",
-      "src/features/docs-vault-local/ui/AgentClientButtons.tsx",
+      "src/features/docs-vault-local/ui/use-agent-client-controls.tsx",
       "src/features/docs-vault-local/ui/OpenVaultCta.tsx",
       "src/features/docs-vault-local/ui/VaultOpenGuideSheet.tsx",
       "src/features/first-run-starter/ui/FirstRunStarterModule.tsx",

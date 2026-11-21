@@ -32,7 +32,7 @@ import {
 } from "../model/schema";
 import { buildInitialValues, withKeptTaxonomyOption } from "../model/form-values";
 import { checkProjectSubmission, projectPlacement } from "../model/submission";
-import { CreateExtras, ExtrasGroup, FormSection } from "./project-form-parts";
+import { CreateExtras, ExtrasGroup, FormSection } from "./project-form-primitives";
 import {
   CategoryStatusFields,
   DependenciesField,
@@ -46,10 +46,11 @@ import {
   SlugField,
   TagsStackFields,
   type ProjectFormBinding,
-} from "./ProjectFormFields";
-import { ActionRow, DangerRow, EditSaveBand, SectionNav } from "./ProjectFormActions";
-import { ErrorBanner, WriteDisabledBanner } from "./ProjectFormBanners";
+} from "./project-form-fields";
+import { ActionRow, DangerRow, EditSaveBand } from "./project-form-action-rows";
+import { ErrorBanner, WriteDisabledBanner } from "./project-form-banners";
 import { ProjectFormPreview } from "./ProjectFormPreview";
+import { ProjectFormSectionNav } from "./ProjectFormSectionNav";
 
 interface Props {
   mode: "create" | "edit";
@@ -506,7 +507,7 @@ export function ProjectForm({
         onChooseBehavior={chooseBehavior}
       />
 
-      <SectionNav />
+      <ProjectFormSectionNav />
 
       {errorBanner}
 

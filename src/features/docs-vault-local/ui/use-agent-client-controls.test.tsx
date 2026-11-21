@@ -3,7 +3,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { useAgentClientControls, type AgentClientControlsProps } from "./AgentClientButtons";
+import { useAgentClientControls, type AgentClientControlsProps } from "./use-agent-client-controls";
 import { AGENT_CLIENTS } from "@/entities/vault-session";
 import ko from "../../../../messages/ko.json";
 
@@ -48,7 +48,7 @@ function renderButtons() {
 }
 
 /** The four clients write different files, so none is styled as the right answer. */
-describe("AgentClientButtons gives the four clients equal weight", () => {
+describe("useAgentClientControls gives the four clients equal weight", () => {
   it("gives no client a filled treatment the others cannot get", () => {
     renderButtons();
     const classNames = AGENT_CLIENTS.map(
@@ -73,7 +73,7 @@ describe("AgentClientButtons gives the four clients equal weight", () => {
   });
 });
 
-describe("AgentClientButtons does not show a failed write as success", () => {
+describe("useAgentClientControls does not show a failed write as success", () => {
   function renderWithWriter(onWriteConfigs: () => Promise<void>) {
     return render(
       <NextIntlClientProvider locale="ko" messages={ko}>

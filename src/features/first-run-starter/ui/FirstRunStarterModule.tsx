@@ -18,7 +18,9 @@ import { Button, StaggeredFadeIn, controlClass } from "@/shared/ui";
 import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 
 import { useFirstRunStarter } from "../model/use-first-run-starter";
-import { CliBridgeBody, CliBridgeDialog, GlossaryDialog } from "./StarterDialogs";
+import { CliBridgeBody } from "./CliBridgeBody";
+import { CliBridgeDialog } from "./CliBridgeDialog";
+import { GlossaryDialog } from "./GlossaryDialog";
 import {
   readVaultGuideAutoOpened,
   writeVaultGuideAutoOpened,
