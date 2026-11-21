@@ -11,7 +11,7 @@ import {
   type AcpWorkReceipt,
 } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import { bundledServerLaunch, inspectMcpServerLaunch, type McpServerLaunch } from '@/shared/config';
-import { readBundledMcpServer } from '@/shared/lib/desktop-shell/tauri-agent-setup';
+import { readBundledMcpServer } from '@/shared/lib/desktop-shell/tauri-bundled-mcp-server';
 import {
   emptyAgentActivityStatus,
   parseAgentActivityStatus,

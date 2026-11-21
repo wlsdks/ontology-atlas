@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { stripComments } from "../../../scripts/lib/design/static-surface-census.mjs";
+import { stripComments } from "../../../scripts/lib/design/strip-comments.mjs";
 
 /**
  * Radiogroup behaviour ratchet: a hand-wired `role="radiogroup"` passes only if the same file calls

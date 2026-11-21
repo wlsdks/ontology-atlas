@@ -9,7 +9,7 @@ import {
   agentServerUnavailable,
   type AgentServerAvailability,
 } from '@/shared/config';
-import { readBundledMcpServer } from '@/shared/lib/desktop-shell/tauri-agent-setup';
+import { readBundledMcpServer } from '@/shared/lib/desktop-shell/tauri-bundled-mcp-server';
 
 export function useAgentServer(): AgentServerAvailability {
   // Pending, not "no": answering unavailable first would make the installed app draw the browser's degradation card until the lookup returned.

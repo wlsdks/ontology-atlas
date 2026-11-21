@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { scoreEvidence } from './evidence-rank.mjs';
+import { scoreEvidence } from './evidence-score.mjs';
 
 test('scoreEvidence — title match outranks frontmatter-ref outranks body', () => {
   const exact = scoreEvidence('token issue', { title: 'token issue', frontmatterHaystack: '', body: '' });

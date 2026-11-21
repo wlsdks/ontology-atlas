@@ -43,7 +43,7 @@ never a parallel router or surface fork.
 | Harness source read | `src/shared/lib/project-source/tauri-harness-source.ts`, `src-tauri/src/harness_source/` | unavailable; a browser cannot see dot directories, so Harness names what it cannot reach |
 | Jev evidence check (experimental) | `src/shared/lib/llm-connection/tauri-jev.ts`, `src-tauri/src/jev.rs` | covered by the models tab's degradation card |
 | LLM call | `src/shared/lib/llm-connection/tauri-llm.ts` | action not rendered |
-| Agent setup | `src/shared/lib/desktop-shell/tauri-agent-setup.ts` | degradation card; no absolute path to write a config |
+| Agent setup | `src/shared/lib/desktop-shell/tauri-bundled-mcp-server.ts` | degradation card; no absolute path to write a config |
 | ACP runtime | `src/shared/lib/agent-chat/tauri-acp.ts`, `src-tauri/src/acp/` | degradation card; an externally launched agent can still attach |
 | Connector discovery | `src/shared/lib/connectors/tauri-connectors.ts`, `src-tauri/src/connectors.rs` | degradation card; adding one by hand works and the list lives in the vault |
 | Connector secrets | `src/shared/lib/connectors/tauri-connector-secrets.ts`, `src-tauri/src/connectors/secrets.rs` | degradation card; Rust resolves the token into the outgoing ACP line, so the WebView never holds it |
