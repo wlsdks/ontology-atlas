@@ -3,7 +3,7 @@ import { inflateRaw } from './inflate-raw';
 const EOCD_SIGNATURE = 0x06054b50;
 const CENTRAL_SIGNATURE = 0x02014b50;
 const LOCAL_SIGNATURE = 0x04034b50;
-/** Bytes one read unpacks across a zip's entries, each entry once; as in the MCP module. */
+/** Bytes one read unpacks across a zip's entries, each entry once; as in `mcp/src/library/source-zip.mjs`. */
 const SOURCE_UNPACK_MAX_BYTES = 64 * 1024 * 1024;
 
 const utf8 = new TextDecoder('utf-8');

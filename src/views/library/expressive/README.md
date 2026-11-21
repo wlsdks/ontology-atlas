@@ -2,7 +2,7 @@
 
 Self-contained pieces that give the Library a ground. Each is a pure module with its own
 tests: plain data in, plain numbers out, no three.js, no canvas, no React, no DOM, no
-clock. The hosts (`ui/parts/first-run/LibraryConstellation.tsx`,
+clock. The hosts (`ui/first-run/LibraryConstellation.tsx`,
 `ui/parts/first-run/LibrarySynapseField.tsx`) own the frame, the device pixel ratio, the ink and the
 sleep, and each is one call from a start stage in `ui/library-page/`. Delete this folder and those two
 hosts and the Library is back to a flat panel on a black field; copy the folder, the two

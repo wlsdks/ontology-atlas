@@ -26,7 +26,7 @@ Nobody has captured this moment on a real folder, so acceptance criterion 1 capt
   - Both validators carry this code (`mcp/src/library/wiki-schema.mjs:295-308`; `src/shared/lib/library/wiki-page-schema.ts:311-322`). It is blocking: only `orphan-page` and `shared-source-unlinked` are advisory (`wiki-schema.mjs:32`).
 - **The gate has no decision record of its own.** It shipped in #1452 (commit `cf6361a7b`, 2026-09-06) under the 2026-09-05 record.
   - The Propose turn "is not" to set `describes:` (`docs/DECISIONS.md:716-723`).
-  - Record `5e2f4838` lets a round write no `describes:`; `FORBIDDEN_KEYS` enforces it (`src/features/library-rounds/model/pass-pages.ts:26`).
+  - Record `5e2f4838` lets a round write no `describes:`; `FORBIDDEN_KEYS` enforces it (`src/features/library-rounds/model/round-draft-problem.ts:6`).
 - **Nothing opens the gate.** No screen raises a page to `reviewed`; the app only displays the status (`src/views/library/lib/wiki/writer-label.ts:30`). The Compile brief never mentions `describes` (`src/features/library/lib/wiki/compile/compile-brief.ts`).
 - **The Library graph draws two kinds of line, and neither is `describes:`.** It draws `cites` from `sources:`, and `mentions` from page-body `[[slug]]` links and concept-body `[[wiki/…]]` links (`src/widgets/library-graph/model/build-library-graph.ts:9-19, 181-222`). It never reads `describes:`.
   - `LibraryWikiPage` has no concept field (`src/entities/docs-vault/lib/library/vault-library.ts`).
