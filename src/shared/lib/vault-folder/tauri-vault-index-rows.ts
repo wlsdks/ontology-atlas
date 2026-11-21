@@ -12,25 +12,17 @@ import { vaultIndexPreference } from './tauri-vault-index';
  */
 
 export interface VaultRowsAnswer {
-  /** `[index into the requested paths, the stored value]` for each row that still matches. */
   hits: Array<[number, unknown]>;
-  /** `[index, token]` for every other path; an empty token means the file cannot be kept. */
   misses: Array<[number, string]>;
-  /** Rows the namespace holds, requested or not. */
   stored: number;
-  /** Requested paths that had a row, valid or not. */
   found: number;
-  /** Rows the same producer wrote under another version. */
   otherVersions: number;
 }
 
 export interface VaultRowWrite {
   path: string;
-  /** The token `getVaultRows` answered for this path. */
   token: string;
-  /** The modified time the file was read at, in milliseconds. */
   lastModified: number;
-  /** One JSON object; JSON never holds a raw line break. */
   value: string;
 }
 
@@ -69,7 +61,6 @@ function decodeAnswer(raw: unknown): VaultRowsAnswer {
   return answer;
 }
 
-/** Stored values for `paths` whose files did not change, and tokens for the rest. */
 export async function getVaultRows(
   rootPath: string,
   namespace: string,

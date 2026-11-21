@@ -14,9 +14,7 @@ import {
 const STORAGE_KEY = 'ontology-atlas:local-endpoint';
 
 export interface LocalEndpointSettings {
-  /** The runner's base URL. Empty means this path is not configured yet. */
   baseUrl: string;
-  /** The model the user picked from the list. Empty string until they pick. */
   model: string;
 }
 
@@ -141,19 +139,15 @@ export function countChatCapableModels(models: string[]): number {
 /** Split so the screen can prescribe a different next action for each. */
 export type LocalVerifyReason =
   | 'ok'
-  /** Nothing answered — the runner is off, or the port is different. */
   | 'unreachable'
   /** Something answered, but it is not an OpenAI-compatible endpoint (usually another program on that port). */
   | 'not-compatible'
-  /** Compatible endpoint, but no models are installed. */
   | 'no-models'
-  /** Anything else — the status code / message is shown verbatim. */
   | 'failed';
 
 export interface LocalVerifyVerdict {
   reason: LocalVerifyReason;
   models: string[];
-  /** The fact the screen appends — a status code, or the one line Rust returned. */
   detail: string;
 }
 

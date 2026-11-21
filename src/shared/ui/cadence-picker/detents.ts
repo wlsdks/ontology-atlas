@@ -9,7 +9,6 @@ export const MINUTE_DETENTS: readonly number[] = [1, 5, 10, 15, 30];
 /** An hour and over, in minutes; 1440 is daily said as an interval. */
 export const HOUR_DETENTS: readonly number[] = [60, 120, 180, 360, 720, 1440];
 
-/** 0 at the left end and 1 at the right. */
 export function detentRatio(index: number, count: number): number {
   if (count <= 1) return 0;
   const clamped = Math.min(count - 1, Math.max(0, index));

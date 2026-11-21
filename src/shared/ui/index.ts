@@ -1,5 +1,4 @@
 export { Button, buttonVariants, type ButtonProps } from './controls/button';
-/** Wrap any conditionally appearing surface in `Surface` for its enter and exit motion. */
 export { Surface } from './surfaces/surface';
 export { RowDisclosure } from './controls/row-disclosure';
 export { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle } from './surfaces/agent-dock-surface';

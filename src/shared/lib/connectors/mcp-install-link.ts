@@ -9,7 +9,6 @@ import {
   type ConnectorValueEntry,
 } from './connector-record';
 
-/** Any other key refuses the whole link. */
 const ALLOWED_KEYS = new Set([
   'name',
   'type',
@@ -33,11 +32,9 @@ export type McpInstallLinkProblem =
 
 export interface McpInstallLinkResult {
   ok: boolean;
-  /** The draft to pre-fill, present only when `ok`. Always `enabled: false`. */
   draft?: ConnectorRecord;
   /** Variable names the link tried to hand a value for. The values are gone; the names are shown. */
   droppedValues: string[];
-  /** Why the link was refused, or the field that refused it. */
   problem?: McpInstallLinkProblem;
   /** The offending key, for `unknown-field`. Shown so a person can read what was refused. */
   offendingKey?: string;

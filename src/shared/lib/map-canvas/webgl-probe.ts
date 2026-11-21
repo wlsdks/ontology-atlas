@@ -18,7 +18,6 @@ export interface WebglVerdict {
   accelerated: boolean;
 }
 
-/** Opens one throwaway context, WebGL2 first, and releases it. */
 export function probeWebgl(): WebglVerdict {
   try {
     const canvas = document.createElement("canvas");

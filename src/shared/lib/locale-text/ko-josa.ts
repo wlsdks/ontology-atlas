@@ -10,7 +10,6 @@ const PAIRS = {
   subject: ["이", "가"],
   topic: ["은", "는"],
   with: ["과", "와"],
-  /** The directional particle pair: final rieul exceptionally takes the "without" form. */
   direction: ["으로", "로"],
 } as const;
 
@@ -40,9 +39,7 @@ const DIGIT_HAS_BATCHIM: Record<string, boolean> = {
 };
 
 interface Batchim {
-  /** Does it end in a final consonant; `null` when undecidable. */
   has: boolean | null;
-  /** Is the final consonant rieul (used only by the directional pair). */
   rieul: boolean;
 }
 

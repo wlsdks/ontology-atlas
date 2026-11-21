@@ -12,7 +12,6 @@ function getInvoke(): TauriInvoke | null {
   return (command, args) => tauriInvoke(command, args);
 }
 
-/** Tool calls carried by this round trip — only the name and target are recorded. */
 interface LlmToolRef {
   name: string;
   target: string;
@@ -23,11 +22,8 @@ interface LlmToolRef {
  * on-screen footer and the audit line lie at the same time.
  */
 export interface LlmChatScope {
-  /** Slugs of the vault nodes whose excerpts were sent up to this round trip. */
   nodes: string[];
-  /** Total characters of the system prompt plus the whole conversation. */
   promptChars: number;
-  /** How many of those characters are vault excerpts. */
   vaultChars: number;
   tools: LlmToolRef[];
 }
@@ -35,16 +31,12 @@ export interface LlmChatScope {
 /** Rust `LlmChatEcho` (serde camelCase). */
 export interface LlmChatEcho {
   status: number;
-  /** The vendor's raw response body; the adapter does the normalising. */
   body: string;
-  /** Where this round trip actually went. */
   host: string;
   durationMs: number;
-  /** Timestamp of the audit line this round trip left behind. */
   loggedAt: string;
 }
 
-/** Whether the Tauri chat IPC is available; false takes the web degradation path. */
 export function isLlmChatBridgeAvailable(): boolean {
   return getInvoke() !== null;
 }
@@ -63,7 +55,6 @@ export async function llmChat(args: {
   model: string;
   /** The user's own words that opened this turn; the same value rides every round trip. */
   question: string | null;
-  /** The JSON body in the vendor's own format. */
   body: string;
   scope: LlmChatScope;
   /** Address branch only: Rust rejects it beside a named vendor, whose key must not reach another host. */

@@ -12,15 +12,11 @@
 const CODED = /^([a-z][a-z0-9]*(?:-[a-z0-9]+)*)(?::\s*([\s\S]*))?$/;
 
 export interface NativeErrorParts {
-  /** The machine code, or `null` when this failure did not carry one. */
   code: string | null;
-  /** Everything after the code. English, machine-supplied, possibly empty. */
   detail: string;
-  /** The whole payload as it arrived, for the case where nothing parsed. */
   raw: string;
 }
 
-/** Look up one code's localized sentence. `undefined` means "this code is unknown here". */
 export type NativeErrorLookup = (code: string) => string | undefined;
 
 /** invoke's rejection payload → a string. Rust returns `Err(String)`, but Error/unknown happen. */
@@ -30,7 +26,6 @@ function payloadText(err: unknown): string {
   return String(err);
 }
 
-/** Split an invoke rejection into its code and its English detail. */
 export function parseNativeError(err: unknown): NativeErrorParts {
   const raw = payloadText(err).trim();
   const match = CODED.exec(raw);

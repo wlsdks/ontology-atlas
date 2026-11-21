@@ -176,7 +176,6 @@ function entryHoldsSecretLiteral(entry: ConnectorValueEntry): boolean {
   return typeof entry.value === 'string' && looksLikeSecretKey(entry.name);
 }
 
-/** Thrown instead of writing a credential into the vault folder. */
 export class ConnectorSecretLiteralError extends Error {
   readonly keys: string[];
   constructor(keys: string[]) {

@@ -6,7 +6,6 @@ import { cn } from "@/shared/lib/cn";
 import { controlClass } from "../control-class";
 
 export interface SimilarNodeWarningProps {
-  /** Already interpolated: i18n belongs to the calling view. */
   message: string;
   openLabel: string;
   createAnywayLabel: string;

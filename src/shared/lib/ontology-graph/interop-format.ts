@@ -32,11 +32,9 @@ export interface InteropGraph {
 }
 
 /**
- * Every graph edge key the compiler can emit as `via`, mapped to its oatlas
- * predicate term. Keep in sync with `mcp/src/vault/` NEIGHBOR_KEYS +
- * INLINE_NEIGHBOR_KEYS (`dependencies` is the canonical form of `depends_on`).
- * An unknown `via` falls back to an `oatlas:<via>` term so a new edge type is
- * never silently dropped.
+ * Every graph edge key the compiler can emit as `via`, mapped to its oatlas predicate term; keep in
+ * sync with `mcp/src/vault/` NEIGHBOR_KEYS + INLINE_NEIGHBOR_KEYS. An unknown `via` becomes
+ * `oatlas:<via>` so no edge type is dropped silently.
  */
 const VIA_PREDICATE: Record<string, string> = {
   domains: 'domains',
@@ -132,10 +130,7 @@ function normalizeGraph(graph: InteropGraph): {
   return { nodes, nodeBySlug, edges };
 }
 
-/**
- * JSON-LD 1.1 — `@context` + `@graph`. RDF 1.1 compatible; semantic-web tools
- * (rdflib, Protégé, any triplestore) read it directly.
- */
+/** JSON-LD 1.1 (`@context` + `@graph`); RDF 1.1 tools read it directly. */
 export function buildJsonLd(graph: InteropGraph): string {
   const { nodes, nodeBySlug, edges } = normalizeGraph(graph);
 
@@ -188,9 +183,6 @@ export function buildJsonLd(graph: InteropGraph): string {
   return JSON.stringify({ '@context': context, '@graph': graphNodes }, null, 2) + '\n';
 }
 
-/**
- * GraphML — XML graph format that Gephi / Cytoscape import natively.
- */
 export function buildGraphML(graph: InteropGraph): string {
   const { nodes, nodeBySlug, edges } = normalizeGraph(graph);
   const lines: string[] = [];

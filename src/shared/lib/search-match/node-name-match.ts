@@ -11,11 +11,8 @@ export function normalizeForMatch(value: string): string {
   return value.normalize("NFC").toLowerCase().trim().replace(/\s+/g, " ");
 }
 
-/** The minimum shape of a named node — satisfied by graph nodes and picker candidates alike. */
 export interface NodeNameSource {
-  /** The canonical title from frontmatter — the single source of truth for search and matching. */
   title: string;
-  /** The display name resolved for the current locale, if any. */
   display?: string;
   /** Every raw `display_<locale>` — all searchable regardless of screen language. */
   displayLocales?: Readonly<Record<string, string>>;
@@ -78,7 +75,6 @@ export const NAME_TIER_SCORE: Readonly<Record<NameMatchTier, number>> = {
   "hangul-includes": 3,
 };
 
-/** Which name matched, and how. */
 export interface NameMatch {
   /** The name as written — what a result row shows when it is not the one already on screen. */
   readonly name: string;

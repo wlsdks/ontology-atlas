@@ -16,7 +16,6 @@ export interface SimilarNodeMatch extends SimilarNodeCandidate {
 }
 
 export interface FindSimilarNodeOptions {
-  /** Exclude the node currently being edited from the candidates. */
   excludeSlug?: string;
   /**
    * Higher than the read-tool hint's 0.3 (`growth-hint.mjs`): this warns while the user types, and
@@ -41,7 +40,6 @@ function normalizeTitle(text: string): string {
     .replace(/\s+/g, " ");
 }
 
-/** 1 for an exact match after normalisation, otherwise Jaccard token overlap. */
 function titleSimilarity(a: string, b: string): number {
   const normA = normalizeTitle(a);
   const normB = normalizeTitle(b);

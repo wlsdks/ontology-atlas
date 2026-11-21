@@ -48,7 +48,6 @@ export interface ComposerMetrics {
 export interface ComposerGrowth {
   /** Height (px) to write straight onto the input. Always whole lines plus chrome. */
   height: number;
-  /** Rows the box holds (MIN..MAX). */
   rows: number;
   /** Whether the cap was reached and inner scrolling **actually appeared**. */
   overflowing: boolean;
@@ -61,7 +60,6 @@ export interface ComposerGrowth {
  */
 export function composerGrowth(
   metrics: ComposerMetrics,
-  /** Cap for this site. Tall columns derive it from their own height via `composerMaxRows`. */
   maxRows: number = COMPOSER_MAX_ROWS,
 ): ComposerGrowth | null {
   const { lineHeight, paddingBlock, borderBlock, contentHeight } = metrics;

@@ -4,7 +4,6 @@
  * filesystem.
  */
 
-/** Roughly the shortest English sentence carrying both halves of a definition. */
 const DEFINITION_MIN_WORDS = 8;
 
 /** Length alone cannot tell circular from terse; six new words is where a paraphrase stops. */
@@ -183,7 +182,6 @@ type MeaningFindingCode =
 
 export interface MeaningFinding {
   code: MeaningFindingCode;
-  /** Which part of the document the finding is about — `body`, a boundary side, `slug`. */
   key: string;
   refs: string[];
 }
@@ -194,7 +192,6 @@ interface BodySection {
 }
 
 export interface ParsedBody {
-  /** Prose before the first `##`. */
   lead: string[];
   sections: BodySection[];
 }
@@ -206,14 +203,12 @@ function fold(text: unknown): string {
     .toLowerCase();
 }
 
-/** Strips a list marker (`-`, `*`, `1.`) or a blockquote caret from one line. */
 function stripMarker(line: unknown): string {
   return String(line ?? "")
     .replace(/^\s*(?:[-*+]|\d+[.)]|>)\s*/, "")
     .trim();
 }
 
-/** Lowercased word tokens, punctuation and markup dropped. */
 function wordTokens(text: unknown): string[] {
   return fold(text)
     .split(/[^\p{L}\p{N}]+/u)
@@ -353,7 +348,6 @@ function contentLines(
 
 export interface MeaningFindingInput {
   kind: string;
-  /** The document's vault-relative slug, when the caller knows where the file sits. */
   slug?: string;
   title?: string;
   body?: string;
@@ -458,7 +452,6 @@ export function slugOutsideKindFolderFinding({
   };
 }
 
-/** In the canonical module's order. */
 export function meaningFindings(input: MeaningFindingInput): MeaningFinding[] {
   const findings: MeaningFinding[] = [];
   if (typeof input.kind !== "string" || !input.kind.trim()) return findings;

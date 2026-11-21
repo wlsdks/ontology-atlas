@@ -60,14 +60,12 @@ const ACRONYMS = new Set([
   "jsx",
 ]);
 
-/** Does this title look like a code path — no whitespace, contains '/', and either a known extension or a known root-folder prefix. */
 export function looksLikeCodePath(title: string): boolean {
   const t = title.trim();
   if (!t.includes("/") || /\s/.test(t)) return false;
   return KNOWN_CODE_EXT.test(t) || CODE_PATH_PREFIX.test(t);
 }
 
-/** Three characters or fewer carry no meaning on their own. */
 function isGenericSegment(segment: string): boolean {
   const lower = segment.toLowerCase();
   return GENERIC_LEAF.has(lower) || lower.length <= 3;
@@ -99,7 +97,6 @@ export function humanizeCodePathTitle(title: string): string | null {
   return words.map(capitalizeWord).join(" ");
 }
 
-/** Acronyms fully uppercase, everything else title-cased. */
 function capitalizeWord(word: string): string {
   const lower = word.toLowerCase();
   if (ACRONYMS.has(lower)) return lower.toUpperCase();

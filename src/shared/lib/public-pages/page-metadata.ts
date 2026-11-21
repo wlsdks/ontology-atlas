@@ -10,7 +10,6 @@ import { routing } from '@/i18n/routing';
  */
 export interface PageMetadataInput {
   locale: string;
-  /** Path after the locale prefix; empty for the root. e.g. `download`, `guide/cli`. */
   path: string;
   title: string;
   description: string;

@@ -69,7 +69,6 @@ export function cancelMapNavigation(id?: number | null) {
   emit();
 }
 
-/** A drawn map or a committed start screen completes its own navigation ticket. */
 export function completeMapNavigation(id: number | null) {
   if (id === null || current?.id !== id) return;
   const focus = current.focusCanvas;

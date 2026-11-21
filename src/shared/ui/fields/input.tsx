@@ -32,9 +32,7 @@ type FieldNameProps =
 interface FieldCommonProps {
   size?: FieldSize;
   frame?: FieldFrame;
-  /** One line of guidance, wired through `aria-describedby`. */
   hint?: ReactNode;
-  /** Wired through `aria-invalid`, `aria-describedby` and `role="alert"`. */
   error?: ReactNode;
   /** Placement and width only; spec values do not go here. */
   className?: string;

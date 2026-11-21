@@ -5,7 +5,6 @@ import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
  * a no-op outside Tauri, invoke results swallowed, and at most `WEBVIEW_ERROR_REPORT_CAP` per page.
  */
 
-/** The three shapes a WebView failure arrives in. Mirrored by the Rust command. */
 type WebviewErrorKind = 'error' | 'unhandledrejection' | 'render';
 
 /**

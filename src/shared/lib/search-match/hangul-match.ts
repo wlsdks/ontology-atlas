@@ -10,13 +10,11 @@ const SYLLABLE_LAST = 0xd7a3;
 const JUNG_COUNT = 21;
 const JONG_COUNT = 28;
 
-/** Compatibility-jamo initials, in syllable-index order. */
 const CHO = [
   "ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ",
   "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ",
 ] as const;
 
-/** Compatibility-jamo medials, in syllable-index order. */
 const JUNG = [
   "ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ",
   "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ",
@@ -31,11 +29,7 @@ const JONG = [
 
 const CHO_SET: ReadonlySet<string> = new Set(CHO);
 
-/**
- * Clusters written with one code point but typed as two keys. Splitting them is
- * what lets the state the IME was in one keystroke earlier count as a prefix of
- * the finished syllable.
- */
+/** Clusters written as one code point but typed as two keys; splitting them lets the IME's state one keystroke earlier count as a prefix of the finished syllable. */
 const CLUSTER_PARTS: Readonly<Record<string, readonly [string, string]>> = {
   "ㄳ": ["ㄱ", "ㅅ"],
   "ㄵ": ["ㄴ", "ㅈ"],
@@ -70,11 +64,7 @@ function pushSplit(out: string[], jamo: string): void {
   out.push(jamo);
 }
 
-/**
- * One character as the sequence of keys that types it. A syllable becomes its
- * initial, medial and (when present) final, with clusters split; anything else
- * stays as itself so the comparison degrades to plain equality.
- */
+/** One character as the keys that type it: a syllable becomes initial, medial and final with clusters split; anything else stays itself, so the comparison degrades to plain equality. */
 function jamoOf(char: string): string[] {
   const code = char.codePointAt(0) ?? 0;
   if (!isSyllable(code)) return [char];
@@ -110,7 +100,6 @@ export function chosungKey(value: string): string {
   return toChosung(value).replace(/ /g, "");
 }
 
-/** Consonant jamo and spaces only, with at least one consonant. */
 export function isChosungQuery(value: string): boolean {
   let sawConsonant = false;
   for (const char of value) {
@@ -121,7 +110,6 @@ export function isChosungQuery(value: string): boolean {
   return sawConsonant;
 }
 
-/** Where a Hangul-aware match sits, as indexes into the NFC form of the haystack. */
 export interface HangulMatchRange {
   start: number;
   end: number;

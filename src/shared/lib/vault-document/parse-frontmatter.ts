@@ -1,11 +1,6 @@
-// Lightweight frontmatter parser — handles only a `---\n...\n---\n` block.
-// Recognises all of these without a gray-matter dependency:
-//   key: value                          (scalar)
-//   key: [a, b]                         (inline list)
-//   key: { x: 1, y: 2 }                 (inline object)
-//   key:\n  - item1\n  - item2          (block list)
-//   key:\n  child: 1\n  other: 2        (block object)
-// Same rules as scripts/docs-vault/build-docs-vault.mjs, but TS/browser compatible.
+// Lightweight parser for a `---\n...\n---\n` block, with no gray-matter dependency: scalars, inline
+// lists and objects, block lists and objects. Same rules as scripts/docs-vault/build-docs-vault.mjs,
+// but TS/browser compatible.
 
 export interface ParsedFrontmatter {
   frontmatter: Record<string, unknown>;
@@ -462,13 +457,13 @@ export function buildExcerpt(body: string, max = 320): string {
     .replace(/^#+\s.*$/gm, '') // headings
     .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // images
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links → link text
-    .replace(/^[\s|:-]*-{2,}[\s|:-]*$/gm, '') // table separator / hr rows (| --- |, ---)
-    .replace(/\s*\|\s*/g, ' · ') // table cell pipes → readable middot separators
+    .replace(/^[\s|:-]*-{2,}[\s|:-]*$/gm, '')
+    .replace(/\s*\|\s*/g, ' · ')
     .replace(/^\s*[-•]\s+/gm, '') // `#` is deliberately not in this class: `path.tsx#Symbol` is content and must keep its separator.
-    .replace(/[*_`>]/g, '') // residual emphasis / quote marks
+    .replace(/[*_`>]/g, '')
     .replace(/\s+/g, ' ') // collapse whitespace
-    .replace(/(?:·\s*){2,}/g, '· ') // collapse middot runs left by empty cells
-    .replace(/^[\s·]+|[\s·]+$/g, '') // trim leading/trailing middots
+    .replace(/(?:·\s*){2,}/g, '· ')
+    .replace(/^[\s·]+|[\s·]+$/g, '')
     .trim();
   if (stripped.length <= max) return stripped;
   // Cut at the last space within max so the text never breaks mid-word.

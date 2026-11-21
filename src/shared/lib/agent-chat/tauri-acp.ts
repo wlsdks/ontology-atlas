@@ -27,7 +27,6 @@ export interface AcpRuntimeStatus {
   license: string | null;
   /** So the screen never claims an untested runtime was verified. */
   verified: boolean;
-  /** Path to the bundled icon (`/acp-icons/<id>.svg`), or null. */
   icon: string | null;
   /**
    * `#RRGGBB`, only for pairs a person confirmed: registry icons are monochrome, and a colour

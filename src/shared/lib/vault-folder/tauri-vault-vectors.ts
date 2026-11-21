@@ -43,17 +43,13 @@ export type VectorFailure =
 /** Counts are folder-wide: `ready` means `filesDone === filesTotal`. */
 export interface VectorStatus {
   phase: VectorPhase;
-  /** Set with `failed`, and with `stopped` after a failure. */
   failure: VectorFailure | null;
-  /** A coded reason, never vault text. */
   failureDetail: string | null;
   filesDone: number;
   filesTotal: number;
   passagesDone: number;
   passagesTotal: number;
-  /** Preparing only files that changed after `ready`. */
   updating: boolean;
-  /** Vault-relative, the file being read. */
   currentPath: string | null;
   /** Over at least the last 30 s; `null` until measured. */
   passagesPerSecond: number | null;
@@ -70,7 +66,6 @@ export interface VectorStatus {
 export interface VectorProbe {
   files: number;
   builtin: {
-    /** The model is ready to run. */
     onDisk: boolean;
     /** What the model holds in the app's data folder, a partial download included; 0 when nothing is there. */
     modelBytes: number;
@@ -87,13 +82,10 @@ export interface VectorProbe {
 }
 
 export interface PassageHit {
-  /** Vault-relative, `/`-separated. */
   path: string;
-  /** 1-based, inclusive, in the file as it is now. */
   lineStart: number;
   lineEnd: number;
   heading: string;
-  /** Higher is nearer. */
   score: number;
 }
 
@@ -113,7 +105,6 @@ export interface VectorStatusEvent {
   status: VectorStatus;
 }
 
-/** A search returns at most this many passages. */
 export const MAX_VECTOR_HITS = 64;
 
 /** A search names at most this many path prefixes, each at most `MAX_VECTOR_PREFIX_BYTES` long. */

@@ -10,7 +10,6 @@ const X_MARK_16 =
 
 export interface XMarkProps
   extends Omit<SVGProps<SVGSVGElement>, 'width' | 'height' | 'viewBox' | 'children'> {
-  /** Square, in px. */
   size?: number;
 }
 

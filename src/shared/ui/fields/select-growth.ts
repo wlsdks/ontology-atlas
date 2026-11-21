@@ -14,12 +14,10 @@ export const LISTBOX_MAX_ROWS = 8;
 const SUBPIXEL_ROUNDING_SLACK_PX = 1;
 
 export interface ListboxGrowthMetrics {
-  /** Rendered row heights in screen order; a row with a description is taller. */
   rowHeights: number[];
   paddingBlock: number;
   /** `box-sizing: border-box`, so the border counts toward height. */
   borderBlock: number;
-  /** Vertical room left in the viewport from the anchor (px). */
   availableHeight: number;
 }
 
@@ -29,11 +27,8 @@ export interface ListboxGrowth {
    * growth would make the box scroll its own content. Unbound, it is the remaining space.
    */
   height: number;
-  /** Rows that fit whole. */
   rows: number;
-  /** The cap was reached and inner scroll exists. */
   overflowing: boolean;
-  /** Which cap won, readable by a gate and a person. */
   cappedBy: 'content' | 'rows' | 'space';
 }
 

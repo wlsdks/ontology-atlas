@@ -24,11 +24,8 @@ export function isExternalHttpUrl(href: string): boolean {
 }
 
 /**
- * Intercepts clicks on outbound links and hands them to the OS. Returns a
- * detach function.
- *
- * Listens in the capture phase, so this sees the click first even when another
- * handler wrapping the link would otherwise swallow it.
+ * Intercepts clicks on outbound links and hands them to the OS; returns a detach function. Listens in
+ * the capture phase so it sees the click first even when another handler would swallow it.
  */
 export function installExternalLinkOpener(doc: Document = document): () => void {
   const invoke = getInvoke();
@@ -48,8 +45,7 @@ export function installExternalLinkOpener(doc: Document = document): () => void 
 
     event.preventDefault();
     void invoke('open_external_url', { url: href }).catch(() => {
-      // A failure to open must not halt the app. The honest thing to do here is
-      // nothing, which leaves the state exactly as it was before this fix.
+      // A failure to open must not halt the app; do nothing.
     });
   };
 

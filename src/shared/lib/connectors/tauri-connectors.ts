@@ -20,7 +20,6 @@ function getInvoke(): TauriInvoke | null {
 export const ATTACHABLE_TRANSPORTS = ['stdio', 'http'] as const;
 export type AttachableTransport = (typeof ATTACHABLE_TRANSPORTS)[number];
 
-/** Every transport discovery can report, attachable or not. */
 export type DiscoveredTransport = AttachableTransport | 'sse' | 'unknown';
 
 /** Rust `DiscoveredConnector` (serde camelCase). */
@@ -32,9 +31,7 @@ export interface DiscoveredConnector {
   command: string | null;
   args: string[];
   url: string | null;
-  /** Environment variable **names**. Never values. */
   envKeys: string[];
-  /** HTTP header **names**. Never values. */
   headerKeys: string[];
 }
 

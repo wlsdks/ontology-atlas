@@ -28,7 +28,6 @@ export interface ToastWallRect {
 export interface ToastLane {
   left: number;
   right: number;
-  /** px from the viewport's bottom edge to the top of the highest floor wall. */
   bottom: number;
 }
 

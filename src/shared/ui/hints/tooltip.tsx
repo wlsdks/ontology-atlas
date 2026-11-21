@@ -39,16 +39,13 @@ export interface TooltipProps {
   /** A ReactNode works, but keep it light: it is also the accessible description. */
   content: ReactNode;
   children: ReactNode;
-  /** Defaults to `top`. */
   side?: TooltipPrimitive.TooltipContentProps["side"];
   /**
    * Aligning to `start` suits a panel under a small glyph: centred, it straddles the trigger
    * and the collision logic slides it somewhere arbitrary.
    */
   align?: TooltipPrimitive.TooltipContentProps["align"];
-  /** Set false when the tree already has a `TooltipProvider`. */
   withProvider?: boolean;
-  /** Defaults to 300. */
   delayMs?: number;
   /**
    * Appended to the panel's classes, unlike `className`, which replaces its appearance.
@@ -57,7 +54,6 @@ export interface TooltipProps {
   toggleOnPress?: boolean;
 }
 
-/** Includes its own provider unless `withProvider={false}`. */
 export function Tooltip({
   content,
   children,

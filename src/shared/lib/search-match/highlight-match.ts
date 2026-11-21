@@ -41,8 +41,7 @@ function buildScatteredTokenMatcher(
   return new RegExp(escaped.join('|'), flags);
 }
 
-/** Splits text with the given regex. Returns null when nothing matched — deciding whether
- *  to fall back is the caller's job. */
+/** Returns null when nothing matched; whether to fall back is the caller's job. */
 function scanSegments(text: string, re: RegExp): HighlightSegment[] | null {
   const segments: HighlightSegment[] = [];
   let cursor = 0;

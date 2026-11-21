@@ -10,7 +10,6 @@
  * checks the tool names.
  */
 
-/** What the prompt calls the folder when the vault path is unknown (on the web, say). */
 const UNKNOWN_VAULT = "the folder you are opened in";
 
 function vaultRef(vaultPath: string | null | undefined): string {

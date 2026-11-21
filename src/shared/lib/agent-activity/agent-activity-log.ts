@@ -38,7 +38,6 @@ export function parseAgentActivityLog(raw: string, { limit = 100 }: { limit?: nu
   return entries.slice(-limit);
 }
 
-/** Entries within the last 24h of `nowMs`, for the digest header. */
 export function countRecentEntries(entries: readonly AgentActivityEntry[], nowMs: number, windowMs = 24 * 3600 * 1000): number {
   return entries.filter((entry) => {
     const t = Date.parse(entry.at);

@@ -31,20 +31,15 @@ export type VaultIndexState =
 
 export interface VaultIndexStatus {
   state: VaultIndexState;
-  /** Files whose search data matches the disk so far. */
   indexed: number;
   total: number;
-  /** This folder's index, WAL files included. */
   sizeBytes: number;
-  /** Every folder's index on this computer. */
   allBytes: number;
   vaults: number;
 }
 
 export interface VaultIndexHit {
-  /** Relative to the vault root, `/`-separated. */
   path: string;
-  /** Lower is better. */
   rank: number;
 }
 

@@ -9,9 +9,7 @@ import { useSlidingIndicator } from '@/shared/motion/use-sliding-indicator';
 export interface TabBarItem {
   key: string;
   label: string;
-  /** Stable selector for a product-specific tab. */
   testId?: string;
-  /** Engraved count beside the label; omit on tabs with no count. */
   count?: string | number;
   /** Names the count's unit through `title` only, so it costs no ink. */
   countTitle?: string;
@@ -39,9 +37,7 @@ export function TabBar({
    * matching `aria-labelledby`, or `aria-controls` points nowhere (WCAG 4.1.2).
    */
   idPrefix?: string;
-  /** Stable selector for the complete tab strip. */
   testId?: string;
-  /** Lets a page header provide the strip's one shared bottom rule. */
   placement?: 'default' | 'header';
   /**
    * Stacks the tabs as a column: Up/Down move focus, and the selected tab takes the whole

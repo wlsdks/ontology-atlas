@@ -1,18 +1,11 @@
 import { WIKI_DIR } from "../library/wiki-page-schema";
 
 /**
- * What a folder holds, read from its files and nothing else.
- *
- * The rail, the landing and the settings row all ask the same question — is this a map,
- * a wiki, or both — and the answer is never stored: a preference could disagree with the
- * files a teammate pulled, and vault Markdown wins every such disagreement
- * (`local-first.md`). The signals are the files a creator writes for each part:
- *
- * - **map** — any `kind:` node outside `wiki/`. `project.md` alone is enough, which is
- *   what "start the map" writes; the vault README is not a node.
- * - **wiki** — anything under `wiki/`, the `_template.md` furniture included, which is
- *   what "start a wiki" writes before there is a page.
- *
+ * What a folder holds, read from its files and nothing else: the rail, the landing and the settings
+ * row all ask whether it is a map, a wiki or both, and a stored preference could disagree with files a
+ * teammate pulled (`local-first.md`).
+ * - map: any `kind:` node outside `wiki/`; `project.md` alone is enough, the vault README is not a node.
+ * - wiki: anything under `wiki/`, `_template.md` included.
  * Neither means an empty folder, or no folder: the shell shows everything then.
  */
 export interface VaultShape {
@@ -25,7 +18,6 @@ export interface VaultShapeDoc {
   frontmatter?: Record<string, unknown> | null;
 }
 
-/** How many documents a folder holds, and how many of them are concepts. */
 export interface VaultContents {
   docCount: number;
   conceptCount: number;
@@ -35,12 +27,9 @@ export interface VaultContents {
 export const MAP_CONCEPT_KINDS: ReadonlySet<string> = new Set(["project", "domain", "capability", "element"]);
 
 /**
- * Counts what a folder holds, for a row that has to say what is inside a folder it is
- * offering to open. `conceptCount` is the map's census, so a row and the map agree.
- *
- * `docCount` is every document the walk parsed, wiki pages included, because that is
- * what the rest of the product already calls a document count (the header chip's
- * `{count} documents` reads `manifest.docs.length`).
+ * Counts what a folder holds for a row offering to open it. `conceptCount` is the map's census, so a
+ * row and the map agree; `docCount` is every document the walk parsed, wiki pages included, as
+ * `manifest.docs.length` behind the header chip.
  */
 export function countVaultContents(docs: ReadonlyArray<VaultShapeDoc>): VaultContents {
   let conceptCount = 0;

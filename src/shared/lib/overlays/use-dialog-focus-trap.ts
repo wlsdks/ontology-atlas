@@ -20,13 +20,7 @@ interface UseDialogFocusTrapOptions {
   trapTab?: boolean;
 }
 
-/**
- * Modal focus contract shared by product overlays:
- * - move focus into the dialog on open,
- * - keep Tab/Shift+Tab inside,
- * - optionally consume Escape,
- * - restore the exact opener on close.
- */
+/** Modal focus contract shared by product overlays: focus moves in on open, Tab/Shift+Tab stay inside, Escape is optionally consumed, and the exact opener gets focus back on close. */
 export function useDialogFocusTrap<T extends HTMLElement>({
   open,
   onEscape,

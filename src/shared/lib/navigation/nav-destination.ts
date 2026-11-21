@@ -18,7 +18,6 @@ export type AppNavDestinationId =
  * `/ontology/studio` fold into `map`; other redirects match nothing.
  */
 export function resolveActiveNavDestination(pathname: string): AppNavDestinationId | null {
-  // Raw `next/navigation` pathnames may still carry a locale prefix.
   const path = stripLocalePrefix(pathname || "/");
   if (path.startsWith("/ontology/edit") || path.startsWith("/ontology/studio"))
     return "map";
@@ -53,7 +52,6 @@ export function isGatewayRoute(pathname: string): boolean {
   return GATEWAY_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
 }
 
-/** What `isGatewaySurface` needs beyond the path — who the visitor is. */
 export interface GatewayContext {
   hasVault: boolean;
   desktop: boolean;

@@ -7,29 +7,15 @@ import type { TargetAndTransition, VariantLabels } from 'framer-motion';
 import { EXIT_TRANSITION } from './tokens';
 
 /**
- * Stops a framer `exit` target taking pointer input from its first exit frame,
- * outside framer's value system: a string value
- * such as `pointerEvents` in an exit set keeps `AnimatePresence` from ever completing
- * under jsdom on the Linux CI runner, while passing locally, even with a zero-duration
- * transition.
- *
- * The `onAnimationStart` handler receives the animated definition itself, so an exit is
- * recognized by its `transition` being the `EXIT_TRANSITION` object (identity, not a
- * clone) and `pointerEvents` is set on the node directly.
- *
- * Usage: attach `ref` to the `motion.*` element (through
- * {@link import('@/shared/lib/merge-refs').mergeRefs} when it already owns a ref), spread
- * the returned `onAnimationStart` onto it, and keep `transition: EXIT_TRANSITION` in the
- * exit set without `pointerEvents`. An entry reversing an unfinished exit restores the
- * previous pointer policy.
+ * Stops a framer `exit` target taking pointer input from its first exit frame, outside framer's value
+ * system: a string `pointerEvents` in an exit set keeps `AnimatePresence` from completing under jsdom
+ * on the Linux CI runner. `onAnimationStart` recognizes an exit by its `transition` being the
+ * `EXIT_TRANSITION` object (identity, not a clone) and sets `pointerEvents` on the node directly. An
+ * entry reversing an unfinished exit restores the previous policy.
  *
  * ```tsx
  * const { ref, onAnimationStart } = useExitLockout<HTMLDivElement>();
- * <motion.div
- *   ref={ref}
- *   onAnimationStart={onAnimationStart}
- *   exit={{ opacity: 0, transition: EXIT_TRANSITION }}
- * />
+ * <motion.div ref={ref} onAnimationStart={onAnimationStart} exit={{ opacity: 0, transition: EXIT_TRANSITION }} />
  * ```
  */
 export function useExitLockout<T extends HTMLElement>(): {
