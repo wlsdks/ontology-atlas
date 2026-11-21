@@ -73,6 +73,11 @@ impl Rate {
         }
     }
 
+    /// Forgets what was measured before: a new stretch of work starts its own window.
+    pub(super) fn restart(&mut self) {
+        self.samples.clear();
+    }
+
     pub(super) fn per_second(&self, now: Duration) -> Option<f64> {
         let (start, done_then) = *self.samples.front()?;
         let (end, done_now) = *self.samples.back()?;

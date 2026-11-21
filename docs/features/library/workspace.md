@@ -87,10 +87,19 @@ dialog stays open and says what it freed. Choosing another model says the
 folder's files are prepared again before its press; an Ollama model says each
 question is recorded in the folder's audit log and that Ollama removes it. While
 the folder prepares, the dialog says so and offers Stop instead of a switch or a
-delete. A switch the app refuses keeps the earlier model. Only the dialog's Download and prepare downloads the model: Resume on a folder whose model is gone says so and offers Download again. The work runs in the background; the line shows
-the download, then files prepared of the total with the file being read and
-Stop, and keeps one height in every state. An update of ten or more changed files
-is followed the same way; a smaller one is one quiet sentence. Away from the desk,
+delete. A switch the app refuses keeps the earlier model. Only the dialog's Download and prepare downloads the model: Resume on a folder whose model is gone says so and offers Download again. The work runs in the background. While it runs and no
+results stand under the field, a stage opens below the line: Moru at the work,
+the steps Download the model, Fit it to this computer and Record each passage's
+meaning (only the last for an Ollama model) with the running one lit, a bar for
+that step, the line's sentence and Stop, then the download speed or the last
+three files read, each with the passages it gave. The stage keeps one height
+through every step; with results on screen the job stays one line with its ring.
+A first preparation that finishes in view says how many passages in how many
+files carry their meaning, with **Ask a question**, which puts focus in the
+field; a folder found ready and a finished update say nothing more. A download a
+quit cut off says how much it kept and offers **Continue the download**, and the
+dialog then recommends the built-in model over Ollama. An update of ten or more
+changed files is followed the same way; a smaller one is one quiet sentence. Away from the desk,
 the long-work card on every tab carries the same work after a press in this launch:
 the download in GB, files prepared of the total with the file being read and the
 minutes left, Stop and Hide, then the result with **Ask a question** or a failure

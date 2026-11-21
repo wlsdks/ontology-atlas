@@ -39,7 +39,12 @@ describe('deskLine', () => {
   it('draws the download by bytes with Stop', () => {
     const downloading = deskLine(app(status({ phase: 'modelDownloading', model: { doneBytes: 500, totalBytes: 2000 } })));
     expect(downloading).toMatchObject({ message: 'modelDownloading', action: 'stop', progress: { measure: 'bytes', done: 500, total: 2000, fraction: 0.25 } });
-    expect(deskLine(app(status({ phase: 'modelDownloading', model: { doneBytes: 0, totalBytes: 0 } })))?.progress).toMatchObject({ fraction: 0 });
+    expect(deskLine(app(status({ phase: 'modelDownloading', model: { doneBytes: 0, totalBytes: 0 } })))).toMatchObject({ message: 'modelDownloadStarting', progress: null, action: 'stop' });
+  });
+
+  it('says what a cut-off download kept and continues it, or offers it again when nothing was kept', () => {
+    expect(deskLine(app(status({ phase: 'failed', failure: 'modelGone', model: { doneBytes: 412, totalBytes: 2000 } })))).toMatchObject({ message: 'modelDownloadPaused', action: 'continueDownload', progress: { done: 412, total: 2000 } });
+    expect(deskLine(app(status({ phase: 'failed', failure: 'modelGone' })))).toMatchObject({ message: 'modelGone', action: 'downloadAgain' });
   });
 
   it('holds the ring while the model is converted', () => {

@@ -14,7 +14,7 @@ use super::types::{
     VectorSource, VectorStatus,
 };
 use super::{lock, Vectors};
-use crate::llm::embed::builtin::{Progress, Stage as ModelStage};
+use crate::llm::embed::builtin::{ModelStore, Progress, Stage as ModelStage};
 use crate::llm::embed::{BuildPlan, EmbedError, Embedder, RunEnd};
 use std::cell::Cell;
 use std::collections::VecDeque;
@@ -616,6 +616,16 @@ impl Vectors {
     }
 
     /// Whether the built-in model is missing from this computer, a partial download included.
+    /// What a cut-off download left of the built-in model, said beside `ModelGone` so the screen
+    /// offers to continue it rather than to start again.
+    fn kept_download(&self) -> Option<ModelBytes> {
+        let done = self.sources.builtin().ok()?.model_bytes();
+        (done > 0).then(|| ModelBytes {
+            done_bytes: done,
+            total_bytes: ModelStore::download_bytes().max(done),
+        })
+    }
+
     pub(super) fn builtin_absent(&self) -> bool {
         !self
             .sources
@@ -842,6 +852,8 @@ impl Vectors {
             return Ended::Failed(VectorFailure::Unreadable, "vectors-walk-failed".into());
         };
         run.listed.store(files.len() as u64, Ordering::Relaxed);
+        // The model's download and fit before this pass embed nothing; they never count toward its rate.
+        lock(&run.rate).restart();
         run.set_stage(Stage::Planning);
         self.report_phase(entry);
         let planned = {
@@ -1124,6 +1136,7 @@ impl Vectors {
             }
             gone.failure = Some(VectorFailure::ModelGone);
             gone.failure_detail = Some(EmbedError::ModelNotReady.code().into());
+            gone.model = self.kept_download();
             gone.vectors_bytes = vectors_bytes;
             return gone;
         }
@@ -1182,6 +1195,7 @@ impl Vectors {
             status.phase = VectorPhase::Failed;
             status.failure = Some(VectorFailure::ModelGone);
             status.failure_detail = Some(EmbedError::ModelNotReady.code().into());
+            status.model = self.kept_download();
             return status;
         }
         if held {

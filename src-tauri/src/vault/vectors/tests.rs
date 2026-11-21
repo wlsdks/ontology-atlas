@@ -322,6 +322,25 @@ fn the_model_is_made_ready_first_and_its_progress_is_reported() {
 }
 
 #[test]
+fn a_model_gone_says_what_a_cut_off_download_kept() {
+    let harness = Harness::new();
+    let root = vault("model-gone-kept", 3);
+    let entry = entry(&harness, &root);
+    prepare_and_wait(&harness, &entry, VectorSource::Builtin);
+    harness.vectors.delete_model().unwrap();
+    assert_eq!(status(&harness, &entry).model, None);
+
+    // A quit in the middle of the download leaves its part on disk.
+    harness.model().on_disk.store(60_000, Ordering::SeqCst);
+    let gone = status(&harness, &entry);
+    assert_eq!(gone.failure, Some(VectorFailure::ModelGone));
+    let kept = gone.model.expect("the kept part of the download");
+    assert_eq!(kept.done_bytes, 60_000);
+    assert!(kept.total_bytes >= kept.done_bytes);
+    cleanup(&root);
+}
+
+#[test]
 fn delete_during_a_job_ends_it_and_leaves_nothing() {
     let harness = Harness::new();
     let root = vault("delete", 70);
@@ -651,6 +670,34 @@ fn the_rate_is_measured_over_at_least_thirty_seconds() {
     }
     // The last 30 s ran at 20 passages a second; the slow start no longer counts.
     assert_eq!(rate.per_second(at(90)), Some(20.0));
+}
+
+#[test]
+fn the_rate_counts_only_the_folder_pass_not_the_download_before_it() {
+    let harness = Harness::new();
+    harness.model().ready.store(false, Ordering::SeqCst);
+    let root = vault("rate-after-download", 3);
+    let entry = entry(&harness, &root);
+    let clock = harness.clock.clone();
+    // The download takes 40 s; the folder pass that follows has run for no time at all.
+    harness.events.on_event(move |status| {
+        let converting = status.phase == VectorPhase::ModelConverting;
+        if converting {
+            clock.set(Duration::from_secs(40));
+        }
+        converting
+    });
+    prepare_and_wait(&harness, &entry, VectorSource::Builtin);
+
+    for (_, event) in harness.events.all() {
+        if event.phase == VectorPhase::Preparing {
+            assert_eq!(
+                event.passages_per_second, None,
+                "a rate measured over the download"
+            );
+        }
+    }
+    cleanup(&root);
 }
 
 #[test]

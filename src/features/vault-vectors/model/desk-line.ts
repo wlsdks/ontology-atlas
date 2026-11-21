@@ -7,7 +7,9 @@ export type DeskLineMessage =
   | 'noFiles'
   | 'indexOff'
   | 'waitingTurn'
+  | 'modelDownloadStarting'
   | 'modelDownloading'
+  | 'modelDownloadPaused'
   | 'modelConverting'
   | 'preparing'
   | 'stopped'
@@ -25,7 +27,7 @@ export type DeskLineMessage =
   | 'auditBlocked'
   | 'unreadable';
 
-export type DeskLineAction = 'setup' | 'stop' | 'resume' | 'downloadAgain' | 'openSettings';
+export type DeskLineAction = 'setup' | 'stop' | 'resume' | 'downloadAgain' | 'continueDownload' | 'openSettings';
 
 /** What the ring draws: bytes while the model downloads, files while preparing. */
 export interface DeskProgress {
@@ -91,7 +93,10 @@ const FAILURE_LINES: Record<VectorFailure, (status: VectorStatus, input: DeskLin
   diskShort: (status) => line('modelDownloadFailed', { values: { detail: status.failureDetail ?? '' }, action: 'setup', tone: 'danger' }),
   modelCheck: () => line('modelCheckFailed', { action: 'downloadAgain', tone: 'danger' }),
   needsDirect: () => line('modelNeedsDirect', { action: 'resume', tone: 'warning' }),
-  modelGone: () => line('modelGone', { action: 'downloadAgain', tone: 'warning' }),
+  // A quit cut the download off: what it kept is said, and the dialog continues from there.
+  modelGone: (status) => status.model !== null && status.model.doneBytes > 0
+    ? line('modelDownloadPaused', { progress: progressOf('bytes', status.model.doneBytes, status.model.totalBytes), action: 'continueDownload', tone: 'warning' })
+    : line('modelGone', { action: 'downloadAgain', tone: 'warning' }),
   modelFailed: (status) => line('modelFailed', { values: { detail: status.failureDetail ?? '' }, action: 'resume', tone: 'warning' }),
   runnerDown: () => line('runnerDown', { action: 'resume', tone: 'warning' }),
   modelMissing: (_status, input) => line('modelMissing', { values: { model: input.runnerModel ?? '' }, action: 'resume', tone: 'warning' }),
@@ -116,6 +121,8 @@ export function deskLine(input: DeskLineInput): DeskLine | null {
     case 'waitingTurn':
       return line('waitingTurn', { action: 'stop' });
     case 'modelDownloading':
+      // Until the first answer names the download's size there is nothing to count.
+      if (!status.model || status.model.totalBytes === 0) return line('modelDownloadStarting', { action: 'stop' });
       return line('modelDownloading', {
         progress: progressOf('bytes', status.model?.doneBytes ?? 0, status.model?.totalBytes ?? 0),
         action: 'stop',

@@ -41,6 +41,10 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
     "One light passing along the source progress bar when it reaches 100%. Under reduced motion it is never drawn; the bar turns green and the band says every source has a wiki page. library-source-progress.spec.ts checks the class is absent.",
   "motion-progress-ripple":
     "A ring leaving the chart's today dot as a page lands. Under reduced motion it is never drawn; the `+N today` count beside the chart says the same thing. library-source-progress.spec.ts checks the class is absent.",
+  "motion-run-pulse":
+    "The halo breathing around the search-by-meaning step that runs. Reduced motion hides the halo; the lit step mark, its label and the bar beside it carry which step works.",
+  "motion-run-orbit":
+    "A light circling the rail ring of a counted run. Reduced motion stops it in place; the ring's arc and head still show how far the run is.",
   "motion-work-hop":
     "Infinite node-to-node signal shown only while a WorkTrail of unknown length runs, or on the one step in progress of a known plan. Reduced motion holds every such part evenly half lit, claiming no position; the consumer's label and count carry the fact.",
   "overlay-spring-surface":
