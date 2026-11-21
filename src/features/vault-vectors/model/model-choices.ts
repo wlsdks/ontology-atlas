@@ -66,7 +66,8 @@ export function choiceIdOf(source: VectorSource | null): string {
  */
 export function recommendedChoiceId(choices: ModelChoice[]): string {
   const builtin = choices.find((choice) => choice.kind === 'builtin');
-  if (builtin?.kind === 'builtin' && builtin.holding === 'ready') return builtin.id;
+  // A download begun is the person's choice already; Ollama would make them start over.
+  if (builtin?.kind === 'builtin' && builtin.holding !== 'none') return builtin.id;
   const runner = choices.find((choice) => choice.kind === 'runner' && choice.reachable && baseName(choice.model) === PREFERRED_RUNNER_MODEL);
   return runner?.id ?? 'builtin';
 }

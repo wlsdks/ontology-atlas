@@ -371,7 +371,7 @@ function RunRing({ id, fraction, still = false }: { id: AppNavRailItemId; fracti
       data-still={still || undefined}
       viewBox="0 0 32 32"
       fill="none"
-      className="pointer-events-none absolute left-1/2 top-1/2 size-8 -translate-x-1/2 -translate-y-1/2"
+      className="pointer-events-none absolute left-1/2 top-1/2 size-8 -translate-x-1/2 -translate-y-1/2 overflow-visible"
     >
       <circle cx={16} cy={16} r={14} strokeWidth={1.5} stroke="var(--color-indigo-accent-a12)" />
       <circle
@@ -390,6 +390,26 @@ function RunRing({ id, fraction, still = false }: { id: AppNavRailItemId; fracti
           ? "transition-[stroke-dashoffset] duration-[var(--motion-slow)] ease-[var(--motion-ease)]"
           : cn("motion-work-spin", still && "[animation-play-state:paused]")}
       />
+      {counted ? (
+        <>
+          {/* A light keeps circling the track, so a slow count still reads as running. */}
+          <circle
+            cx={16}
+            cy={16}
+            r={14}
+            strokeWidth={1.5}
+            stroke="var(--color-indigo-pale-a82)"
+            strokeLinecap="round"
+            pathLength={1}
+            strokeDasharray="0.05 0.95"
+            className={cn("motion-run-orbit", still && "[animation-play-state:paused]")}
+          />
+          <g data-testid={`app-nav-rail-ring-head-${id}`} className="motion-run-head" style={{ transform: `rotate(${Math.min(1, Math.max(0, fraction)) * 360}deg)` }}>
+            <circle cx={16} cy={2} r={3.5} fill="var(--color-indigo-accent-a32)" />
+            <circle cx={16} cy={2} r={1.75} fill="var(--color-indigo-pale-a95)" />
+          </g>
+        </>
+      ) : null}
     </svg>
   );
 }

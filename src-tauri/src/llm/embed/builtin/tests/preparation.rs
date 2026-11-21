@@ -567,3 +567,26 @@ fn the_pins_name_one_commit_and_full_hashes() {
         assert_eq!(probe.vector.len(), pins::DIMENSIONS);
     }
 }
+
+#[test]
+fn what_a_download_kept_counts_its_files_and_parts_but_not_a_converted_file() {
+    let served = served("downloaded-bytes");
+    let store = served.store();
+    let total = (served.tokenizer.len() + served.checkpoint.len()) as u64;
+    let mut fake = served.fake();
+    fake.stop_after = Some(total * 2 / 5);
+    let stopped = served.prepare(&fake, &served.recipe());
+    assert!(matches!(stopped.result, Err(EmbedError::Cancelled)));
+    let kept = store.downloaded_for(&served.recipe());
+    assert!(kept > 0 && kept < total, "{kept} of {total}");
+
+    let failing = FailingConversion { work: &served.work };
+    let recipe = Recipe {
+        work: &failing,
+        ..served.recipe()
+    };
+    let failed = served.prepare(&served.fake(), &recipe);
+    assert!(matches!(failed.result, Err(EmbedError::Inference(_))));
+    assert_eq!(store.downloaded_for(&served.recipe()), total);
+    served.clean();
+}

@@ -170,6 +170,7 @@ pub(super) struct FakeModel {
     pub downloads: AtomicUsize,
     /// What the model holds on disk: a download writes it, a delete clears it.
     pub on_disk: AtomicU64,
+    pub downloaded: AtomicU64,
     /// `batch` and `question`, in the order the worker served them.
     pub log: Mutex<Vec<&'static str>>,
     pub sent: Mutex<Vec<String>>,
@@ -197,6 +198,7 @@ impl FakeModel {
             releases: AtomicUsize::new(0),
             downloads: AtomicUsize::new(0),
             on_disk: AtomicU64::new(0),
+            downloaded: AtomicU64::new(0),
             log: Mutex::default(),
             sent: Mutex::default(),
             ends: Mutex::default(),
@@ -356,6 +358,7 @@ impl Builtin for FakeModel {
             on_progress(&Progress { stage, done, total });
             if stage == Stage::Download {
                 self.on_disk.store(done * 1_000, Ordering::SeqCst);
+                self.downloaded.store(done * 1_000, Ordering::SeqCst);
             }
             let fails = lock(&self.prepare_fails_at)
                 .as_ref()
@@ -378,6 +381,7 @@ impl Builtin for FakeModel {
         self.loaded.store(false, Ordering::SeqCst);
         self.ready.store(false, Ordering::SeqCst);
         self.on_disk.store(0, Ordering::SeqCst);
+        self.downloaded.store(0, Ordering::SeqCst);
         Ok(())
     }
 
@@ -413,6 +417,10 @@ impl Builtin for FakeModel {
 
     fn model_bytes(&self) -> u64 {
         self.on_disk.load(Ordering::SeqCst)
+    }
+
+    fn downloaded_bytes(&self) -> u64 {
+        self.downloaded.load(Ordering::SeqCst)
     }
 
     fn dir(&self) -> PathBuf {

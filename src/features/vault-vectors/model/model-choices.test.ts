@@ -52,8 +52,9 @@ describe('the recommended choice', () => {
     expect(recommendedChoiceId(modelChoices(probe(['nomic-embed-text', 'bge-m3:latest'], 'reachable', { onDisk: false, modelBytes: 0 }), null))).toBe('runner:bge-m3:latest');
   });
 
-  it('is the built-in model once it is downloaded, or when Ollama has no bge-m3', () => {
+  it('is the built-in model once its download has begun, or when Ollama has no bge-m3', () => {
     expect(recommendedChoiceId(modelChoices(probe(['bge-m3:latest']), null))).toBe('builtin');
+    expect(recommendedChoiceId(modelChoices(probe(['bge-m3:latest'], 'reachable', { onDisk: false, modelBytes: 412_000_000 }), null))).toBe('builtin');
     expect(recommendedChoiceId(modelChoices(probe(['nomic-embed-text'], 'reachable', { onDisk: false, modelBytes: 0 }), null))).toBe('builtin');
   });
 });
