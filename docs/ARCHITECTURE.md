@@ -639,7 +639,7 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   (for example `capabilities/x.md`) for display only. A saved membership is neither
   an ontology kind nor an edge, and corrupt input is unavailable rather than empty.
 - With nothing selected, Sources draws the source progress band
-  (`src/views/library/ui/parts/progress/`) over the Sources overview
+  (`src/views/library/ui/progress/`) over the Sources overview
   (`LibraryPage` mounts `src/widgets/library-sources-overview/` directly) when the
   folder has a source, and the empty folder's start stage when it has none; Wiki
   draws the question desk. Opening a document replaces either and

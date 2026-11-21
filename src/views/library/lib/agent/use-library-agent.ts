@@ -16,7 +16,7 @@ import type { LibrarySourceRow, WikiRetrievalPage } from "@/entities/docs-vault"
 
 import { isLoopbackAuthority } from "@/shared/lib/llm-connection/loopback";
 import { resolveCompileBrain, useCompileBrainChoice } from "../compile/compile-brain";
-import type { LibraryAgentOpeningRequest } from "../../ui/parts/agent/LibraryAgentDock";
+import type { LibraryAgentOpeningRequest } from "../../ui/agent/LibraryAgentDock";
 
 /**
  * Whether the Library can start an in-app agent turn. `route` is `agent` only when a verified
