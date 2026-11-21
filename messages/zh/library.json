@@ -97,7 +97,9 @@
       "factDeleteBuiltin": "可在此处一键删除，也可在“设置 › 隐私与数据”中删除。",
       "factRunnerDeletePlain": "此模型由 Ollama 保存。请在 Ollama 中删除。",
       "deleteEveryFolder": "使用此模型的其他文件夹在重新下载之前只按字词搜索。",
-      "deleteEveryFolderToo": "使用此模型的其他文件夹也一样。"
+      "deleteEveryFolderToo": "使用此模型的其他文件夹也一样。",
+      "tagRecommended": "{tag} · 推荐",
+      "recommendedRunner": "推荐：此模型已在这台电脑的 Ollama 中，无需下载即可立即开始语义搜索。"
     },
     "title": "提出问题，顺着来源查证。",
     "browse": "浏览页面",

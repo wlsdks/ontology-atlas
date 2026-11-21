@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { VectorProbe } from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { choiceIdOf, modelChoices, offeredRunnerModels } from './model-choices';
+import { choiceIdOf, modelChoices, offeredRunnerModels, recommendedChoiceId } from './model-choices';
 
 const probe = (models: string[], state: 'reachable' | 'unreachable' = 'reachable', builtin: Partial<VectorProbe['builtin']> = {}): VectorProbe => ({
   files: 1,
@@ -44,5 +44,16 @@ describe('the model choices', () => {
   it('selects the folder source, or the built-in model without one', () => {
     expect(choiceIdOf(null)).toBe('builtin');
     expect(choiceIdOf({ kind: 'runner', baseUrl: 'x', model: 'm:1' })).toBe('runner:m:1');
+  });
+});
+
+describe('the recommended choice', () => {
+  it('is Ollama bge-m3 while the built-in model is not downloaded', () => {
+    expect(recommendedChoiceId(modelChoices(probe(['nomic-embed-text', 'bge-m3:latest'], 'reachable', { onDisk: false, modelBytes: 0 }), null))).toBe('runner:bge-m3:latest');
+  });
+
+  it('is the built-in model once it is downloaded, or when Ollama has no bge-m3', () => {
+    expect(recommendedChoiceId(modelChoices(probe(['bge-m3:latest']), null))).toBe('builtin');
+    expect(recommendedChoiceId(modelChoices(probe(['nomic-embed-text'], 'reachable', { onDisk: false, modelBytes: 0 }), null))).toBe('builtin');
   });
 });

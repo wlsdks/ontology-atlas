@@ -59,3 +59,14 @@ export function modelChoices(probe: VectorProbe, current: VectorSource | null): 
 export function choiceIdOf(source: VectorSource | null): string {
   return source?.kind === 'runner' ? runnerChoiceId(source.model) : 'builtin';
 }
+
+/**
+ * The choice the dialog marks and opens on for a folder without one: Ollama's bge-m3 while the
+ * built-in model is not downloaded, since it needs no download; otherwise the built-in model.
+ */
+export function recommendedChoiceId(choices: ModelChoice[]): string {
+  const builtin = choices.find((choice) => choice.kind === 'builtin');
+  if (builtin?.kind === 'builtin' && builtin.holding === 'ready') return builtin.id;
+  const runner = choices.find((choice) => choice.kind === 'runner' && choice.reachable && baseName(choice.model) === PREFERRED_RUNNER_MODEL);
+  return runner?.id ?? 'builtin';
+}

@@ -526,3 +526,17 @@ test('holds the switch and the delete while the folder prepares, until Stop', as
   await expect(page.getByTestId('meaning-model-delete')).toHaveText('Delete the partial download');
   expect(await vectorCalls(harness, page, 'vault_vectors_prepare')).toEqual([]);
 });
+
+test('recommends and opens on Ollama bge-m3 when the built-in model is not downloaded, and still offers the download', async ({ page }) => {
+  const harness = await openDesk(page, { probe: LIBRARY_VECTOR_PROBE });
+  await page.getByTestId('meaning-desk-setup').click();
+  await expect(page.getByTestId('meaning-model-choice-runner:bge-m3:latest')).toContainText('In Ollama · Recommended');
+  await expect(page.getByTestId('meaning-model-recommended')).toContainText('nothing downloads');
+  await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Prepare 2,000 files');
+
+  await page.getByTestId('meaning-model-choice-builtin').click();
+  await expect(page.getByTestId('meaning-model-choice-builtin')).toContainText('Download to use');
+  await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Download and prepare');
+  await page.getByTestId('meaning-setup-cancel').click();
+  expect(await vectorCalls(harness, page, 'vault_vectors_prepare')).toEqual([]);
+});

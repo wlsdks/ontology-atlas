@@ -13,7 +13,7 @@ import { Button, Dialog } from '@/shared/ui';
 import { DialogBody } from '@/shared/ui/surfaces/dialog-sections';
 import { controlClass } from '@/shared/ui/control-class';
 import { formatSize } from '../lib/format-size';
-import { BUILTIN_MODEL_NAME, choiceIdOf, modelChoices, type ModelChoice } from '../model/model-choices';
+import { BUILTIN_MODEL_NAME, choiceIdOf, modelChoices, recommendedChoiceId, type ModelChoice } from '../model/model-choices';
 import { prepare, removeModel, stop, useVectorStatus } from '../model/vector-store';
 
 type ProbeAnswer = { probe: VectorProbe } | { failed: true };
@@ -58,7 +58,7 @@ function isLive(choice: ModelChoice): boolean {
   return choice.inUse && (choice.kind === 'builtin' ? choice.holding === 'ready' : choice.reachable);
 }
 
-function ChoiceRow({ choice, selected, working, onSelect }: { choice: ModelChoice; selected: boolean; working: boolean; onSelect: () => void }) {
+function ChoiceRow({ choice, selected, working, recommended, onSelect }: { choice: ModelChoice; selected: boolean; working: boolean; recommended: boolean; onSelect: () => void }) {
   const t = useTranslations('library.questionDesk.meaning');
   const name = choice.kind === 'builtin' ? BUILTIN_MODEL_NAME : choice.model;
   const live = isLive(choice);
@@ -84,7 +84,7 @@ function ChoiceRow({ choice, selected, working, onSelect }: { choice: ModelChoic
     >
       <span className="w-full truncate text-body leading-body text-[color:var(--color-text-primary)]">{name}</span>
       <span className={cn('text-label leading-label', live || (choice.inUse && working) ? 'text-[color:var(--color-indigo-accent)]' : 'text-[color:var(--color-text-tertiary)]')}>
-        {tag}
+        {recommended ? t('tagRecommended', { tag }) : tag}
       </span>
     </button>
   );
@@ -121,7 +121,8 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
 
   const probe = answer && 'probe' in answer ? answer.probe : null;
   const choices = probe ? modelChoices(probe, current) : [];
-  const selected = choices.find((choice) => choice.id === (selectedId ?? choiceIdOf(current))) ?? choices[0] ?? null;
+  const recommendedId = current === null && choices.length > 0 ? recommendedChoiceId(choices) : null;
+  const selected = choices.find((choice) => choice.id === (selectedId ?? recommendedId ?? choiceIdOf(current))) ?? choices[0] ?? null;
   const fade = reduced ? { duration: 0 } : MOTION.settle;
   const size = (bytes: number) => formatSize(bytes, locale);
 
@@ -229,6 +230,7 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
           </div>
         ) : live ? <p className="text-body leading-body text-[color:var(--color-indigo-accent)]" data-testid="meaning-model-in-use">{t('inUseNote')}</p> : null}
         {switching ? <p className="text-body leading-body text-[color:var(--color-status-warning)]" data-testid="meaning-model-switch-note">{t('switchNote', { files: probe.files })}</p> : null}
+        {choice.id === recommendedId && choice.kind === 'runner' ? <p className="text-body leading-body text-[color:var(--color-text-secondary)]" data-testid="meaning-model-recommended">{t('recommendedRunner')}</p> : null}
         {choice.kind === 'runner' && !choice.reachable ? <p className="text-body leading-body text-[color:var(--color-status-warning)]">{t('runnerOff')}</p> : null}
         {choice.kind === 'builtin' && choice.holding !== 'ready' && diskShort ? (
           <p className="text-body leading-body text-[color:var(--color-danger-text)]" data-testid="meaning-setup-disk-short">
@@ -295,7 +297,7 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
         <div className="grid gap-4 sm:grid-cols-[14rem_minmax(0,1fr)] sm:items-start">
           <div role="group" aria-label={t('choicesLabel')} className="atlas-scroll-quiet flex flex-col gap-1 sm:max-h-[26rem] sm:overflow-y-auto" data-testid="meaning-model-choices">
             {choices.map((choice) => (
-              <ChoiceRow key={choice.id} choice={choice} selected={choice.id === selected?.id} working={working} onSelect={() => select(choice.id)} />
+              <ChoiceRow key={choice.id} choice={choice} selected={choice.id === selected?.id} working={working} recommended={choice.id === recommendedId} onSelect={() => select(choice.id)} />
             ))}
           </div>
           <div className="flex min-h-[22rem] min-w-0 flex-col rounded-card border border-[color:var(--color-divider)] p-4">

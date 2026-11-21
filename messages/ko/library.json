@@ -97,7 +97,9 @@
       "factDeleteBuiltin": "이 창에서 한 번에 지울 수 있어요. 설정 › 개인정보·데이터에서도 지워요.",
       "factRunnerDeletePlain": "이 모델은 Ollama가 갖고 있어요. Ollama에서 지워요.",
       "deleteEveryFolder": "이 모델을 쓰는 다른 폴더는 다시 받을 때까지 단어로만 찾아요.",
-      "deleteEveryFolderToo": "이 모델을 쓰는 다른 폴더도 마찬가지예요."
+      "deleteEveryFolderToo": "이 모델을 쓰는 다른 폴더도 마찬가지예요.",
+      "tagRecommended": "{tag} · 추천",
+      "recommendedRunner": "추천: 이 모델은 이미 이 컴퓨터의 Ollama에 있어서, 받을 것 없이 바로 의미 검색을 시작할 수 있어요."
     },
     "title": "질문하고, 원문에서 확인하세요.",
     "browse": "페이지 둘러보기",

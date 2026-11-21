@@ -97,7 +97,9 @@
       "factDeleteBuiltin": "Delete it here in one press, or in Settings › Privacy · data.",
       "factRunnerDeletePlain": "Ollama keeps this model. Remove it in Ollama.",
       "deleteEveryFolder": "Other folders that use it search by words only until it is downloaded again.",
-      "deleteEveryFolderToo": "The same goes for other folders that use it."
+      "deleteEveryFolderToo": "The same goes for other folders that use it.",
+      "tagRecommended": "{tag} · Recommended",
+      "recommendedRunner": "Recommended: this model is already in Ollama on this computer, so nothing downloads and search by meaning can start now."
     },
     "title": "Ask a question. Follow its sources.",
     "browse": "Browse pages",

@@ -73,7 +73,9 @@ that line opens the same dialog, so the model is always named where it is used.
 The dialog lists on the left every model the folder can use: the built-in bge-m3
 (BAAI, MIT licence) and, where Ollama answers on this computer, its embedding
 models that the spec does not rule out, each tagged In use, On this computer,
-Download to use, Download not finished or In Ollama. The right side states the
+Download to use, Download not finished or In Ollama. A folder with no model yet opens on
+Ollama's bge-m3, marked Recommended, while the built-in model is not downloaded,
+since it needs no download; the built-in download stays one press away. The right side states the
 chosen model's facts: before a download, its size from the hosts the app
 downloads it from (huggingface.co, hf.co) and what stays on this computer, that
 nothing from the folder is sent, the memory used, and that it can be deleted

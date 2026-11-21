@@ -97,7 +97,9 @@
       "factDeleteBuiltin": "この画面からワンクリックで削除できます。設定 › プライバシー・データからも削除できます。",
       "factRunnerDeletePlain": "このモデルはOllamaが保持しています。Ollamaで削除します。",
       "deleteEveryFolder": "このモデルを使う他のフォルダは、再ダウンロードするまで単語だけで検索します。",
-      "deleteEveryFolderToo": "このモデルを使う他のフォルダも同じです。"
+      "deleteEveryFolderToo": "このモデルを使う他のフォルダも同じです。",
+      "tagRecommended": "{tag} · おすすめ",
+      "recommendedRunner": "おすすめ：このモデルはすでにこのコンピュータのOllamaにあるので、ダウンロードなしですぐに意味検索を始められます。"
     },
     "title": "質問して、出典をたどる。",
     "browse": "ページを見る",
