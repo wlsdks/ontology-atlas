@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import type { TopologyWorld, WorldEdge, WorldNode } from "./topology-world";
+import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
+import type { TopologyWorld, WorldEdge, WorldNode } from "../topology-world";
 import { computeEdgeControlPoint, recomputeWorldGeometry } from "./world-geometry";
 
 const tokens = {

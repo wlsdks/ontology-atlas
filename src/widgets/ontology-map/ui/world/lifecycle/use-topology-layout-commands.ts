@@ -7,17 +7,17 @@ import {
 } from "react";
 import {
   type SpringOffset,
-} from "../../expressive/release-offsets";
-import { createForceSimulation, type ForceSimulation } from "../../model/layout/force-layout";
+} from "../../../expressive/release-offsets";
+import { createForceSimulation, type ForceSimulation } from "../../../model/layout/force-layout";
 import {
   type RealmTransitionState
-} from "../../model/realm/realm-transition";
-import { createHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
-import type { NodeDragState } from "../input/topology-pointer-types";
-import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
-import { type RealmRuntimeData } from "./topology-realm-runtime";
+} from "../../../model/realm/realm-transition";
+import { createHomeSpring, type HomeSpringState } from "../../../model/layout/relayout-home";
+import type { NodeDragState } from "../../input/topology-pointer-types";
+import { readOntologyMapTokensOrNull } from "../../../tokens/topology-read-tokens";
+import { type RealmRuntimeData } from "../realm/topology-realm-runtime";
 import { prepareRevealHome } from "./topology-reveal-home";
-import { type TopologyWorld } from "./topology-world";
+import { type TopologyWorld } from "../topology-world";
 import { isWorldBuilding, onWorldSwap } from "./world-swap";
 
 interface Dependencies {

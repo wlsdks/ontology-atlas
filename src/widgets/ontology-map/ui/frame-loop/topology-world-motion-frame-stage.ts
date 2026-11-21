@@ -46,11 +46,11 @@ import { computeOverviewFitScale } from "../camera/target/fit-targets";
 import { dialReleaseHoming } from "./topology-dial-release";
 import { overviewBoundsFor } from "../camera/topology-overview-fit";
 import type { NodeDragState } from "../input/topology-pointer-types";
-import type { RealmRuntimeData } from "../world/topology-realm-runtime";
-import { fallbackAngleFor } from "../world/topology-realm-runtime";
-import { applyForcePositions, recomputeWorldGeometry } from "../world/world-geometry";
+import type { RealmRuntimeData } from "../world/realm/topology-realm-runtime";
+import { fallbackAngleFor } from "../world/realm/topology-realm-runtime";
+import { applyForcePositions, recomputeWorldGeometry } from "../world/geometry/world-geometry";
 import { dialOverviewFit } from "../world/framing/dial-world-framing";
-import { radiusForKind } from "../world/node-radius";
+import { radiusForKind } from "../world/geometry/node-radius";
 import { type TopologyWorld } from "../world/topology-world";
 
 const DRAG_TUG_EASE_TAU = 0.15;

@@ -84,13 +84,13 @@ import {
   addConcept,
   addConceptsBatch,
   patchConcept,
-} from './tools/write-concepts.mjs';
+} from './tools/writes/write-concepts.mjs';
 import {
   addRelation,
   addRelationsBatch,
   removeRelation,
   replaceRelation,
-} from './tools/write-relations.mjs';
+} from './tools/writes/write-relations.mjs';
 import {
   CONSENT_DECLINED,
   requestWriteConsent,

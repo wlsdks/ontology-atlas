@@ -1,12 +1,12 @@
 // Which project and documents an agent brief covers, and the private source
 // access it may use.
 
-import { projectSourceSnapshotUnchanged } from '../agent-brief/agent-brief-compact.mjs';
-import { compileOntology } from '../ontology-compiler.mjs';
-import { queryCompiledOntology, shareArtifact } from '../ontology-engine.mjs';
-import { buildProjectSourceGraphHash } from '../project-source/project-source-graph-hash.mjs';
-import { readProjectSourceBindings, readProjectSourceView } from '../project-source/project-source-receipt.mjs';
-import { VAULT_ROOT } from '../server/runtime.mjs';
+import { projectSourceSnapshotUnchanged } from '../../agent-brief/agent-brief-compact.mjs';
+import { compileOntology } from '../../ontology-compiler.mjs';
+import { queryCompiledOntology, shareArtifact } from '../../ontology-engine.mjs';
+import { buildProjectSourceGraphHash } from '../../project-source/project-source-graph-hash.mjs';
+import { readProjectSourceBindings, readProjectSourceView } from '../../project-source/project-source-receipt.mjs';
+import { VAULT_ROOT } from '../../server/runtime.mjs';
 
 function resolveAgentBriefProject(artifact, requestedProject) {
   if (typeof requestedProject === 'string' && requestedProject.trim()) {

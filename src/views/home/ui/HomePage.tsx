@@ -37,7 +37,7 @@ import { cancelMapNavigation, readMapNavigationPending } from "@/shared/lib/navi
 import { useArrivalMemory } from "@/shared/lib/navigation/route-arrival-memory";
 import { useAgentDockDefaultOpen } from "@/shared/lib/llm-connection/use-agent-dock-default";
 import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
-import { useLocalStorageBoolean } from "@/shared/lib/preferences/use-local-storage-boolean";
+import { useLocalStorageBoolean } from "@/shared/lib/preferences/preference-storage/use-local-storage-boolean";
 import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import { LiveAnnouncer, WidgetErrorFallback, useToast } from "@/shared/ui";

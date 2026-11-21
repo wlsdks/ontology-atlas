@@ -13,15 +13,15 @@ import {
   REVIEW_STATE_CONFIRMED,
   REVIEW_STATE_HUMAN_DECIDES,
   REVIEW_STATE_KEY,
-} from '../schema.mjs';
-import { VAULT_ROOT } from '../server/runtime.mjs';
-import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../server/tool-schemas/array-limits.mjs';
+} from '../../schema.mjs';
+import { VAULT_ROOT } from '../../server/runtime.mjs';
+import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../../server/tool-schemas/array-limits.mjs';
 import {
   requireNonBlankString,
   requireOptionalStringArray,
-} from '../server/validate.mjs';
-import { GRAPH_ARRAY_KEY_SET } from '../vault/graph/relation-refs.mjs';
-import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
+} from '../../server/validate.mjs';
+import { GRAPH_ARRAY_KEY_SET } from '../../vault/graph/relation-refs.mjs';
+import { loadVaultDocs } from '../../vault/documents/document-cache.mjs';
 
 const ADD_CONCEPT_KINDS = new Set(['project', 'domain', 'capability', 'element', 'document']);
 

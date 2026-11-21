@@ -1,5 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react';
-import { PREFERENCE_CHANGE_EVENT } from '@/shared/lib/preferences/define-preference';
+import { PREFERENCE_CHANGE_EVENT } from '@/shared/lib/preferences/preference-storage/define-preference';
 import type { VectorSource } from './tauri-vault-vectors';
 
 /**

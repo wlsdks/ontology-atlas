@@ -118,9 +118,10 @@ fragments in `server/tool-schemas/` (one file per subject) and the `initialize` 
 `server/instructions.mjs`. Handlers live in `mcp/src/tools/` by workflow: reads,
 git, the compiled graph, vault validation, repo analysis, project source,
 concept writes, relation writes, the destructive lifecycle, and absorb, with
-node identity in `tools/vault-nodes.mjs`, the write refusals in
-`tools/write-gates.mjs` and post-write maintenance in
-`tools/result-attachments.mjs`. The full table is in
+node identity in `tools/vault-nodes.mjs`, post-write maintenance in
+`tools/result-attachments.mjs`, the concept and relation writes with their
+refusals in `tools/writes/` and the agent-brief scope and meaning-readiness
+facts in `tools/agent-brief/`. The full table is in
 [`mcp/README.md`](../mcp/README.md#source-layout).
 
 `scripts/records/check-decision-record.mjs` watches `server/registry.mjs` and `server/tool-definitions/`

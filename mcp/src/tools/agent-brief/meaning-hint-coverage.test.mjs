@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const SRC = join(HERE, '..');
+const SRC = join(HERE, '..', '..');
 /** The hint table every emitted remedy needs a sentence in. */
 const HINT_TABLE_FILE = join(HERE, 'meaning-readiness.mjs');
 

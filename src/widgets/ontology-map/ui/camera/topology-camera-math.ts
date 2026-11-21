@@ -2,7 +2,7 @@
 
 import type { CameraAxes } from "../../engine/camera";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { radiusForKind } from "../world/node-radius";
+import { radiusForKind } from "../world/geometry/node-radius";
 import { type TopologyWorld } from "../world/topology-world";
 import type { WorldNode } from "../world/topology-world";
 

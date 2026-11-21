@@ -4,7 +4,7 @@ import { DEFAULT_EXPAND } from "@/shared/lib/preferences/expand-preferences";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../OntologyMap";
 import { clusterBatchShownCount, createClusterFrameStage } from "./topology-cluster-frame-stage";
-import type { RealmRuntimeData } from "../world/topology-realm-runtime";
+import type { RealmRuntimeData } from "../world/realm/topology-realm-runtime";
 import { buildTopologyWorld } from "../world/topology-world";
 
 describe("clusterBatchShownCount", () => {

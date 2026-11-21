@@ -4,14 +4,14 @@ import { INITIAL_REALM_TRANSITION_STATE } from "../../../model/realm/realm-trans
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
 import { createWorldMotionFrameStage, type WorldMotionFrameStageSources } from "../../frame-loop/topology-world-motion-frame-stage";
 import { createRealmFrameStage, type RealmFrameStageSources } from "../../frame-loop/topology-realm-frame-stage";
-import type { RealmRuntimeData } from "../topology-realm-runtime";
+import type { RealmRuntimeData } from "./topology-realm-runtime";
 import type { TopologyWorld, WorldNode } from "../topology-world";
-import { useTopologyRealmTransition } from "../use-topology-realm-transition";
-import { announceWorldSwap } from "../world-swap";
+import { useTopologyRealmTransition } from "./use-topology-realm-transition";
+import { announceWorldSwap } from "../lifecycle/world-swap";
 
 const mocks = vi.hoisted(() => ({ build: vi.fn(), now: 0 }));
-vi.mock("../topology-realm-runtime", async original => ({
-  ...await original<typeof import("../topology-realm-runtime")>(),
+vi.mock("./topology-realm-runtime", async original => ({
+  ...await original<typeof import("./topology-realm-runtime")>(),
   buildRealmRuntimeData: mocks.build,
   realmCameraTarget: () => ({ tx: 0, ty: 0, tscale: 1 }),
 }));
@@ -20,8 +20,8 @@ vi.mock("../../../dial/tokens", () => ({ readDialTokens: () => ({}) }));
 vi.mock("../../../dial/fit", async original => ({
   ...await original<typeof import("../../../dial/fit")>(), createMeasureText: () => (() => 1),
 }));
-vi.mock("../world-geometry", async original => ({
-  ...await original<typeof import("../world-geometry")>(), recomputeWorldGeometry: vi.fn(),
+vi.mock("../geometry/world-geometry", async original => ({
+  ...await original<typeof import("../geometry/world-geometry")>(), recomputeWorldGeometry: vi.fn(),
 }));
 vi.mock("../../camera/target/fit-targets", async original => ({
   ...await original<typeof import("../../camera/target/fit-targets")>(),

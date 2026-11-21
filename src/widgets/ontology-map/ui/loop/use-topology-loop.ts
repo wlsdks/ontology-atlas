@@ -10,25 +10,25 @@ import { useTopologyCameraState } from "../camera/use-topology-camera-state";
 import { useTopologyDomeState } from "./use-topology-dome-state";
 import { useTopologyInteractionState } from "../input/use-topology-interaction-state";
 import { useTopologyPresentationState } from "./use-topology-presentation-state";
-import { useTopologyRealmState } from "../world/use-topology-realm-state";
+import { useTopologyRealmState } from "../world/realm/use-topology-realm-state";
 import { useTopologySurfaceState } from "./use-topology-surface-state";
 import { useTopologyVisibilityState } from "./use-topology-visibility-state";
-import { useTopologyWorldState } from "../world/use-topology-world-state";
+import { useTopologyWorldState } from "../world/lifecycle/use-topology-world-state";
 
 import type { FlatDialFrameProps, UseTopologyLoopArgs } from "./topology-loop-contract";
 export type { UseTopologyLoopArgs } from "./topology-loop-contract";
 
 import { useTopologyCameraNavigation } from "../camera/use-topology-camera-navigation";
 import { useTopologyCameraPolicy } from "../camera/use-topology-camera-policy";
-import { useTopologyClusterExpansion } from "../world/use-topology-cluster-expansion";
+import { useTopologyClusterExpansion } from "../world/cluster/use-topology-cluster-expansion";
 import { useTopologyDomeTransitions } from "./use-topology-dome-transitions";
 import { useTopologyFocusNavigation } from "../camera/use-topology-focus-navigation";
-import { useTopologyGrowthReplay } from "../world/use-topology-growth-replay";
+import { useTopologyGrowthReplay } from "../world/lifecycle/use-topology-growth-replay";
 import { useTopologyInput } from "../input/use-topology-input";
-import { useTopologyLayoutCommands } from "../world/use-topology-layout-commands";
+import { useTopologyLayoutCommands } from "../world/lifecycle/use-topology-layout-commands";
 import { useTopologyMotionPreference } from "./use-topology-motion-preference";
-import { useTopologyRealmTransition } from "../world/use-topology-realm-transition";
-import { useTopologyWorldLifecycle } from "../world/use-topology-world-lifecycle";
+import { useTopologyRealmTransition } from "../world/realm/use-topology-realm-transition";
+import { useTopologyWorldLifecycle } from "../world/lifecycle/use-topology-world-lifecycle";
 
 
 import {

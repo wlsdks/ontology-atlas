@@ -6,10 +6,10 @@ import {
   localeLabelCodes,
   missingExpectedFields,
   normalizeLocaleLabels,
-} from '../schema.mjs';
-import { structuredRowErrorDetails } from '../server/rpc.mjs';
-import { REPO_ROOT, REPO_ROOT_IS_GROUNDED, VAULT_ROOT } from '../server/runtime.mjs';
-import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../server/tool-schemas/array-limits.mjs';
+} from '../../schema.mjs';
+import { structuredRowErrorDetails } from '../../server/rpc.mjs';
+import { REPO_ROOT, REPO_ROOT_IS_GROUNDED, VAULT_ROOT } from '../../server/runtime.mjs';
+import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../../server/tool-schemas/array-limits.mjs';
 import {
   requireAllowedObjectKeys,
   requireNonBlankString,
@@ -17,17 +17,17 @@ import {
   requireOptionalPlainObject,
   requireOptionalStringArray,
   requirePlainObject,
-} from '../server/validate.mjs';
-import { formatAllowedValueError } from '../suggestions.mjs';
-import { isValidVaultTitle } from '../validate.mjs';
-import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
-import { configureNodeEligibilityRepoRoot } from '../vault/writes/eligibility-gate.mjs';
-import { updateDoc, writeDoc } from '../vault/writes/doc-writes.mjs';
-import { detectDuplicateTitle } from '../vault/graph/graph-queries.mjs';
-import { measureBuildDepth, repositorySurvey } from '../construction/build-depth.mjs';
-import { sessionReads } from '../construction/session-reads.mjs';
-import { findingsOnWrittenNodes } from './result-attachments.mjs';
-import { agentProvenance, readDocIfPresent } from './vault-nodes.mjs';
+} from '../../server/validate.mjs';
+import { formatAllowedValueError } from '../../suggestions.mjs';
+import { isValidVaultTitle } from '../../validate.mjs';
+import { loadVaultDocs } from '../../vault/documents/document-cache.mjs';
+import { configureNodeEligibilityRepoRoot } from '../../vault/writes/eligibility-gate.mjs';
+import { updateDoc, writeDoc } from '../../vault/writes/doc-writes.mjs';
+import { detectDuplicateTitle } from '../../vault/graph/graph-queries.mjs';
+import { measureBuildDepth, repositorySurvey } from '../../construction/build-depth.mjs';
+import { sessionReads } from '../../construction/session-reads.mjs';
+import { findingsOnWrittenNodes } from '../result-attachments.mjs';
+import { agentProvenance, readDocIfPresent } from '../vault-nodes.mjs';
 import {
   ADD_CONCEPT_KINDS,
   requireNodeNotReservedForHuman,

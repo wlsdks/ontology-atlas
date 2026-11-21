@@ -1,10 +1,10 @@
 import { renderHook } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import type { DialMemory } from "../../dial/dial-shapes";
-import { isTierAssembling } from "../../morph/tier-assembly";
-import type { FlatRingMemoryStore } from "../loop/topology-loop-contract";
-import type { TopologyWorld } from "./topology-world";
-import { overviewEntryArea } from "../camera/target/fit-targets";
+import type { DialMemory } from "../../../dial/dial-shapes";
+import { isTierAssembling } from "../../../morph/tier-assembly";
+import type { FlatRingMemoryStore } from "../../loop/topology-loop-contract";
+import type { TopologyWorld } from "../topology-world";
+import { overviewEntryArea } from "../../camera/target/fit-targets";
 import { useTopologyWorldLifecycle } from "./use-topology-world-lifecycle";
 
 const builds = vi.hoisted(() => ({ worlds: new Map<unknown, unknown>(), pending: [] as (() => void)[], dialInputs: [] as unknown[] }));
@@ -12,11 +12,11 @@ const MAP_TOKENS = vi.hoisted(() => ({
   hysteresisPx: 4, cameraSpringAngFreqTransition: 1, overviewEntryRatio: 0.9,
   safeInsetLeft: 40, safeInsetRight: 60, safeInsetTop: 30, safeInsetBottom: 20,
 }));
-vi.mock("../../tokens/topology-read-tokens", () => ({ readOntologyMapTokensOrNull: () => MAP_TOKENS }));
-vi.mock("../../flat-graph/tokens", () => ({ readFlatGraphTokens: () => ({ paint: { domainNamePx: 12 } }) }));
-vi.mock("../../dial/tokens", () => ({ readDialTokens: () => ({}) }));
-vi.mock("./topology-world", async (original) => ({
-  ...(await original<typeof import("./topology-world")>()),
+vi.mock("../../../tokens/topology-read-tokens", () => ({ readOntologyMapTokensOrNull: () => MAP_TOKENS }));
+vi.mock("../../../flat-graph/tokens", () => ({ readFlatGraphTokens: () => ({ paint: { domainNamePx: 12 } }) }));
+vi.mock("../../../dial/tokens", () => ({ readDialTokens: () => ({}) }));
+vi.mock("../topology-world", async (original) => ({
+  ...(await original<typeof import("../topology-world")>()),
   buildTopologyWorldSteps: function* (nodes: unknown, _edges: unknown, _tokens: unknown, _expand: unknown, dialInput: unknown) {
     builds.dialInputs.push(dialInput);
     yield;

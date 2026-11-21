@@ -6,7 +6,7 @@ import type { CameraAxes } from "../engine/camera";
 import type { Point } from "../expressive/edge-reveal";
 import type { TopologyMapLensKind } from "../model/visibility/path-lens";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
-import { radiusForKind } from "../ui/world/node-radius";
+import { radiusForKind } from "../ui/world/geometry/node-radius";
 import { type TopologyWorld, type WorldEdge } from "../ui/world/topology-world";
 import {
   bloomAt,

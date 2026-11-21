@@ -28,7 +28,7 @@ import { writeFileAtomically } from '../vault/writes/atomic-writes.mjs';
 import { writeDoc } from '../vault/writes/doc-writes.mjs';
 import { compactPostWriteMaintenance } from './result-attachments.mjs';
 import { agentProvenance } from './vault-nodes.mjs';
-import { destructivePreviewState } from './write-gates.mjs';
+import { destructivePreviewState } from './writes/write-gates.mjs';
 import {
   copyFileSync,
   existsSync,

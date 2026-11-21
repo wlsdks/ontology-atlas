@@ -20,7 +20,7 @@ export const PROJECT_SOURCE_GAP_IDS = Object.freeze(
 
 /**
  * What to do. A new name needs its sentence in `MEANING_NEXT_ACTION_HINTS`
- * (`tools/meaning-readiness.mjs`); `meaning-hint-coverage.test.mjs` blocks the omission.
+ * (`tools/agent-brief/meaning-readiness.mjs`); `meaning-hint-coverage.test.mjs` blocks the omission.
  */
 export const PROJECT_SOURCE_ACTION_IDS = Object.freeze(
   new Set([

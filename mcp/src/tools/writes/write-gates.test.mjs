@@ -11,7 +11,7 @@ import {
   REVIEW_STATE_CONFIRMED,
   REVIEW_STATE_HUMAN_DECIDES,
   REVIEW_STATE_KEY,
-} from '../schema.mjs';
+} from '../../schema.mjs';
 
 const vaultRoot = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-write-gates-')));
 mkdirSync(join(vaultRoot, 'capabilities'));

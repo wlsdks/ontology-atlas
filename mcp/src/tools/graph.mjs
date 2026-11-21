@@ -15,12 +15,12 @@ import {
 } from '../server/validate.mjs';
 import { attachVaultValidation } from './result-attachments.mjs';
 import { buildSummaryFreshness } from './vault-nodes.mjs';
-import { scopedAgentBriefInput, privateCurrentProjectSourceAccess } from './agent-brief-scope.mjs';
+import { scopedAgentBriefInput, privateCurrentProjectSourceAccess } from './agent-brief/agent-brief-scope.mjs';
 import {
   attachMeaningReadiness,
   attachProjectMeaning,
   projectMeaningContext,
-} from './meaning-readiness.mjs';
+} from './agent-brief/meaning-readiness.mjs';
 import { validateQueryOntologyArgs } from './query-ontology-args.mjs';
 
 const COMPILE_SUMMARY_DELIVERY = Object.freeze({
