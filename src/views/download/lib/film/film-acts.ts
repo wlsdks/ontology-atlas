@@ -131,6 +131,15 @@ const FULL_DIAGONAL = Math.hypot(1920, 960);
 export const flightMs = (length: number, diagonal = FULL_DIAGONAL) =>
   Math.max(FLIGHT.flightMs, (length * Math.PI) / 2 / (2.8 * Math.min(1, diagonal / FULL_DIAGONAL)));
 
+/**
+ * How long act 3 carries the close-up's marks to the map: at most 2.2% of the stage's `diagonalPx`
+ * per 60 Hz frame at the peak speed, which `easeInOut` puts at three times the mean speed.
+ */
+export function closeUpTravelMs(farthestLegPx: number, diagonalPx: number): number {
+  const allowedPxPerMs = (0.022 * diagonalPx) / (1000 / 60);
+  return Math.max(FLIGHT.travelMs, (3 * farthestLegPx) / allowedPxPerMs);
+}
+
 export function flight(t3: number, start: number, ms: number = FLIGHT.flightMs): { p: number; name: number; scale: number; mark: number } {
   const u = span(t3, start, ms);
   const leave = span(u, 0, 0.45);

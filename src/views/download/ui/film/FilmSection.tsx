@@ -22,7 +22,10 @@ import type { Rect } from '../../lib/film/film-geometry';
 import { registerGatedFrameClient } from '../../lib/page-motion/gateway-frame-loop';
 import type { StageGraph } from '../../lib/stage-graph';
 import { FilmActBar } from './FilmActBar';
-import { buildScene, mix, paintFilm, TextStamps, type FilmInks, type FilmScene } from './film-paint';
+import { mix } from './film-colors';
+import { paintFilm } from './film-paint';
+import { buildFilmPaintScene, type FilmInks, type FilmPaintScene } from './film-paint-scene';
+import { TextStamps } from './text-stamps';
 import { mountFilmProbe, type FilmProbe } from './film-probe';
 
 const ACTS = [1, 2, 3, 4] as const;
@@ -193,7 +196,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       }
       return w;
     };
-    let scene: FilmScene | null = null;
+    let scene: FilmPaintScene | null = null;
     let sceneFrom: LaidOut | null = null;
     let size = { w: 0, h: 0, dpr: 1 };
     let stopWarm = () => {};
@@ -274,7 +277,7 @@ export function FilmSection({ graph }: { graph: StageGraph }) {
       const next = same ? kept : layOut(w, h, titleRect, caption, key);
       laid.current = next;
       sceneFrom = next;
-      scene = buildScene(vault, next.map, next.wall, next.open, inks, new TextStamps(dpr), sprites, { sink: marks.sink, mono });
+      scene = buildFilmPaintScene(vault, next.map, next.wall, next.open, inks, new TextStamps(dpr), sprites, { sink: marks.sink, mono });
       probe?.layout(scene);
       stopWarm();
       if (film) {

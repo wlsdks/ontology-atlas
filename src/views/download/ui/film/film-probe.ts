@@ -1,9 +1,9 @@
 import type { Pt, Rect } from '../../lib/film/film-geometry';
 import type { FilmLabel } from '../../lib/film/film-map-labels';
-import type { FilmScene, FrameRecord } from './film-paint';
+import type { FilmPaintScene, FrameRecord } from './film-paint-scene';
 
 export interface FilmProbe {
-  layout(scene: FilmScene): void;
+  layout(scene: FilmPaintScene): void;
   frame(T: number, light: number): void;
   cost(ms: number): void;
   readonly recorder: FrameRecord;
@@ -16,7 +16,7 @@ const rect = (r: Rect) => ({ l: round(r.l), t: round(r.t), r: round(r.r), b: rou
 const pts = (list: readonly Pt[]) => list.map((p) => [round(p.x), round(p.y)]);
 const box = (label: FilmLabel) => ({ key: label.key, id: label.id, role: label.role, text: label.segments.map((s) => s.text).join(''), size: label.size, rect: rect(label.box) });
 
-function layoutJson(scene: FilmScene) {
+function layoutJson(scene: FilmPaintScene) {
   const { map } = scene;
   const marks = [...map.marks.values()].map((m) => ({ id: m.id, kind: m.kind, domain: m.domain, x: round(m.x), y: round(m.y), r: round(m.kind === 'project' ? m.r * 1.35 : m.r) }));
   const rest = {
@@ -73,7 +73,7 @@ interface Delta {
 
 export function mountFilmProbe(
   host: HTMLElement | null,
-  current: () => FilmScene | null,
+  current: () => FilmPaintScene | null,
   freeze: (T: number | null) => void,
 ): FilmProbe {
   let json: ReturnType<typeof layoutJson> | null = null;
