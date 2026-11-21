@@ -20,7 +20,6 @@ const STAGE_ROWS = [...Object.keys(WORK_ROW_FRAMES), ...Object.keys(PLAY_ROW_FRA
 export const TURN_DONE_HOLD_MS = Math.round(MOTION.expressive.duration * 1_000) * 7;
 
 export interface TurnWork {
-  /** The request this work answers; a new one starts a new stage. */
   turnId: string;
   phase: 'working' | 'done';
   activity: TurnActivity;
@@ -48,11 +47,9 @@ function writtenLine(t: ChatT, { concepts, relations }: TurnWrites): string | nu
 }
 
 /**
- * The current turn's work, on screen from the send on in a band above the composer, outside the
- * scrolling transcript, so arriving text never moves it. Moru acts the kind of work the turn
- * reports, the line under it names the open call, and the bar is the plan the agent reported or,
- * without one, a sweep that claims no fraction. A finished turn gets one celebration, then the
- * stage folds away so the answer stays the last thing in the conversation.
+ * The current turn's work in a band above the composer, outside the scrolling transcript so arriving
+ * text never moves it. The bar is the agent's plan or a sweep that claims no fraction; a finished
+ * turn gets one celebration, then the stage folds away so the answer stays last.
  */
 export function TurnWorkStage({ t, work }: { t: ChatT; work: TurnWork | null }) {
   // The last work stays drawn while the stage folds away after a stop or a finish.

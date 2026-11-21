@@ -44,7 +44,6 @@ const CHOICE_CLASS = cn(
   'group/choice relative block w-full rounded-card text-left transition-[translate] focus-visible:outline-hidden',
 );
 
-/** The visible card. It sits above the panel at rest and lifts on hover and focus, inside the hit box. */
 const CARD_CLASS = cn(
   'relative isolate flex h-full min-h-10 items-center gap-3 overflow-hidden rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] px-3.5 py-2 shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-[translate,border-color,box-shadow]',
   'group-[:enabled:hover]/choice:-translate-y-px group-[:enabled:hover]/choice:border-[color:var(--color-indigo-accent-a50)] group-[:enabled:hover]/choice:ring-1 group-[:enabled:hover]/choice:ring-[color:var(--color-indigo-accent-a32)]',
@@ -52,13 +51,11 @@ const CARD_CLASS = cn(
   'group-active/choice:translate-y-0',
 );
 
-/** One surface step up, and while pressed a short accent fill. */
 const LIFT_LAYER_CLASS = cn(
   'pointer-events-none absolute inset-0 -z-10 bg-[color:var(--color-overlay-2)] opacity-0 transition-[opacity,background-color]',
   'group-[:enabled:hover]/choice:opacity-100 group-[:focus-visible]/choice:opacity-100 group-[:enabled:active]/choice:bg-[color:var(--color-indigo-accent-a12)]',
 );
 
-/** The pointer spotlight follows the cursor through two custom properties; focus centres it. */
 const SPOTLIGHT_CLASS = cn(
   'pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity',
   'bg-[radial-gradient(circle_at_var(--spot-x,50%)_var(--spot-y,50%),var(--color-indigo-accent-a12),transparent_60%)]',
@@ -82,11 +79,9 @@ interface SuggestionRowsProps {
   testId: string;
   centered: boolean;
   items: readonly ChatSuggestion[];
-  /** Choices that would send stand disabled while the session cannot take a turn. */
   canSend: boolean;
   onSelect: (suggestion: ChatSuggestion) => void;
   onDone: () => void;
-  /** Escape from a choice hands focus back to the message box. */
   onEscape: () => void;
 }
 
@@ -180,7 +175,6 @@ export function SuggestionRows({
                 title={`${label}\n${because}`}
                 data-testid={`acp-chat-suggestion-${suggestion.kind}`}
                 className={cn(CHOICE_CLASS, 'motion-stagger-in')}
-                // Two stagger steps apart, so each row is seen to arrive after the one above it.
                 style={{ '--motion-stagger-index': index * 2 } as CSSProperties}
                 onPointerMove={followPointer}
                 onFocus={() => setActiveIndex(index)}
@@ -228,7 +222,6 @@ export function SuggestionRows({
   );
 }
 
-/** Text, not buttons: the rows become buttons only once the session can take them. */
 export function StartingSuggestionPreview({ heading, items, labelFor }: {
   heading: string;
   items: readonly ChatSuggestion[];

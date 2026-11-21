@@ -6,11 +6,8 @@ export interface KeptPanel {
   node: HTMLDivElement;
   seated: boolean;
   busy: boolean;
-  /** The busy turn started read-only (`useAcpSession`'s `turnReadOnly`). */
   readOnly: boolean;
-  /** The busy turn was started to keep running once its screen is gone (`turnOutlivesScreen`). */
   outlives: boolean;
-  /** The busy turn's enforced Stop; null between turns. */
   stop: (() => void) | null;
   held: boolean;
 }
@@ -53,7 +50,6 @@ function mayRunAway(panel: KeptPanel): boolean {
   return panel.busy && (panel.props.parksTurns !== 'chosen' || panel.readOnly || panel.outlives);
 }
 
-/** A turn that may write and was started to outlive its screen holds its folder until it ends. */
 function holdsFolder(panel: KeptPanel): boolean {
   return panel.busy && panel.outlives && !panel.readOnly;
 }
@@ -65,7 +61,6 @@ function prune() {
   publish(kept);
 }
 
-/** A turn that only reads cannot clash with a writer on its folder, so it may finish beside one. */
 function readsOnly(panel: KeptPanel): boolean {
   return panel.busy && panel.readOnly;
 }

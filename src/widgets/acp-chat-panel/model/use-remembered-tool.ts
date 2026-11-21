@@ -20,7 +20,6 @@ export function useRememberedTool({
   runtimes: ReadonlyArray<{ id: string }>;
   runtimeId: string | null;
   setRuntimeId: (runtimeId: string) => void;
-  /** A tool another entry asked for by name is seated; it outranks the remembered one. */
   held?: boolean;
 }): (runtimeId: string) => void {
   const [seatedFor, setSeatedFor] = useState<string | null>(null);

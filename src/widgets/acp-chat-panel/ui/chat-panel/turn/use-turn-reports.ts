@@ -25,7 +25,6 @@ interface TurnReportsOptions {
   onMapIntent?: (intent: AcpMapIntent) => void;
 }
 
-/** Reports the live turn to the host; nothing here is drawn by the panel. */
 export function useTurnReports({
   status,
   events,
