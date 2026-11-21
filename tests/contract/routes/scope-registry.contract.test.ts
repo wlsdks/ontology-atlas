@@ -291,7 +291,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     key: "ontology-atlas:docs-vault-editor-draft:",
     kind: "storage",
     scope: "vault-scoped",
-    file: "src/widgets/docs-vault/ui/DocsVaultEditor.tsx",
+    file: "src/widgets/docs-vault/lib/editor/editor-draft.ts",
     note: "editor draft; a data-loss path, being fixed by PR #827",
   },
   {
