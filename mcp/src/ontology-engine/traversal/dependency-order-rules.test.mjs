@@ -71,6 +71,13 @@ test('a shorter cycle wins a place over a longer one even when the longer one so
   assert.deepEqual(found.shortest.map((cycle) => cycle.key), ['a->c']);
 });
 
+test('a cycle as short as the longest one kept still competes for the place by name', () => {
+  const edges = ['d', 'c', 'b'].map((to) => edge('a', to)).concat(['d', 'c', 'b'].map((from) => edge(from, 'a')));
+  const found = cyclesOf(edges, ['a', 'b', 'c', 'd'], { limit: 1 });
+  assert.equal(found.totalCycles, 3);
+  assert.deepEqual(found.shortest.map((cycle) => cycle.key), ['a->b']);
+});
+
 test('a search that runs out of budget says so and stops expanding states', () => {
   const edges = [edge('a', 'b'), edge('b', 'c'), edge('c', 'a')];
   const found = cyclesOf(edges, ['a', 'b', 'c'], { searchBudget: 1 });
