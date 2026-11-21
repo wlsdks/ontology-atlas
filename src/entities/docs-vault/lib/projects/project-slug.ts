@@ -15,12 +15,10 @@ export function computeProjectSlug(doc: VaultDoc): string | null {
   return fmSlug ?? (fileSlug || null);
 }
 
-/** Frontmatter `kind`, or a legacy `projects/` path. */
 export function isProjectVaultDoc(doc: VaultDoc): boolean {
   return doc.frontmatter?.kind === "project" || doc.slug.startsWith("projects/");
 }
 
-/** `Project.slug` → its `VaultDoc`, the first hop of the lazy body load. */
 export function findProjectVaultDoc(
   manifest: VaultManifest,
   slug: string,

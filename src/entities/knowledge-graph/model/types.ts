@@ -29,7 +29,6 @@ export interface KnowledgeGraphNode {
   title: string;
   /** `deriveDisplayTitle` output; renderers read `display ?? title`, and search matches both. */
   display?: string;
-  /** Every `display_<locale>`, so a node is findable by name in any language. */
   displayLocales?: Readonly<Record<string, string>>;
   kind: string;
   projectIds: string[];
@@ -42,7 +41,6 @@ export interface KnowledgeGraphNode {
    * or another document's slug. Absent falls back to it (`resolveNodeAgentTarget`).
    */
   agentSlug?: string | null;
-  /** The reference as written, for a node without a document. */
   ref?: string;
   lastApprovedAt: Date;
   lastApprovedBy: string;

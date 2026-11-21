@@ -6,11 +6,7 @@ import { MISSING_TARGET_SIGNATURES, PERMISSION_DENIED_SIGNATURES } from '@/share
 
 export type VaultAccessErrorKind = 'permission-denied' | 'unknown';
 
-/**
- * The signature tables live in `@/shared/lib/failures/failure-code`, which is where every other catch site
- * reads them from. Two copies of "what a refusal looks like" would drift the first time an errno
- * was added to one of them, and the screens they feed would then disagree about the same failure.
- */
+// The signature tables live in `failure-code`, where every other catch site reads them: two copies would drift and the screens would disagree about one failure.
 const DENIED_SIGNATURES: readonly string[] = PERMISSION_DENIED_SIGNATURES;
 
 export function classifyVaultAccessError(message: unknown): VaultAccessErrorKind {
@@ -22,14 +18,7 @@ export function classifyVaultAccessError(message: unknown): VaultAccessErrorKind
     : 'unknown';
 }
 
-/**
- * The folder name to name on screen, so the sentence points at something the person recognises
- * rather than at an absolute path they must read character by character.
- *
- * Returns `null` when there is no path to name — the copy then falls back to a sentence that works
- * without one, because a screen that says "allow access to " is worse than one that never promised
- * a name.
- */
+/** The folder name to show instead of an absolute path; null when there is no path, and the copy then works without one ("allow access to " would be worse). */
 export function deniedFolderName(rootPath: string | null | undefined): string | null {
   if (typeof rootPath !== 'string') return null;
   const trimmed = rootPath.trim().replace(/[/\\]+$/, '');
@@ -38,17 +27,9 @@ export function deniedFolderName(rootPath: string | null | undefined): string | 
   return name ? name : null;
 }
 
-/** Shared with every other catch site — see the note on `DENIED_SIGNATURES` above. */
 const MISSING_SIGNATURES: readonly string[] = MISSING_TARGET_SIGNATURES;
 
-/**
- * Is this failure "the folder is gone" rather than "the read broke"?
- *
- * Kept separate from `classifyVaultAccessError` because the two answer different questions and the
- * remedies differ: a protected folder is allowed in System Settings, a missing one is chosen again.
- * The desktop already reports the missing case as `path-missing` through a path preflight; the web
- * has no path to preflight, so it has to read the exception instead.
- */
+/** Separate from `classifyVaultAccessError`: a protected folder is allowed in System Settings, a missing one is chosen again. The desktop reports "missing" as `path-missing` through a path preflight; the web has none, so it reads the exception. */
 export function isMissingFolderError(error: unknown): boolean {
   if (error instanceof Error && error.name === 'NotFoundError') return true;
   const text = typeof error === 'string' ? error : messageOf(error);

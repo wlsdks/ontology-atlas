@@ -15,7 +15,6 @@ const PERSIST_KEY_PREFIX = "demo:change-baseline:v2:";
 const FIRST_FORM_KEY_PREFIX = "demo:change-baseline:v1:";
 const UNSCOPED_FIRST_FORM_KEY = "demo:change-baseline:v1";
 
-/** The active vault; while null nothing is stored or restored. */
 let baselineScope: string | null = null;
 
 function storage(): Storage | null {
@@ -42,7 +41,6 @@ function warnUnsaved(payload: string, error: unknown): void {
   );
 }
 
-/** Each folder's first-form entry becomes its own current-form entry, once per page. */
 function convertFirstForm(store: Storage): void {
   store.removeItem(UNSCOPED_FIRST_FORM_KEY);
   for (const key of keysStartingWith(store, FIRST_FORM_KEY_PREFIX)) {
@@ -95,7 +93,6 @@ function emit(): void {
   for (const listener of listeners) listener();
 }
 
-/** Declares the active vault and drops the previous vault's baseline and graph signatures. */
 export function setChangeBaselineScope(scope: string): void {
   if (baselineScope === scope) return;
   const first = baselineScope === null;
@@ -151,7 +148,6 @@ function subscribe(onChange: () => void): () => void {
   };
 }
 
-/** Subscribes to the baseline snapshot; re-renders on mark and clear. */
 export function useChangeBaseline(): OntologySnapshot | null {
   return useSyncExternalStore(subscribe, getChangeBaseline, () => null);
 }

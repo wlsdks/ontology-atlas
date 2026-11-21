@@ -20,7 +20,6 @@ export interface HarnessScanPort {
   pathExists?(relativePath: string): Promise<boolean>;
 }
 
-/** Single files that can hold agent instructions. Mirrors the CLI's root candidates. */
 const ROOT_FILES = Object.freeze([
   'CLAUDE.md',
   'AGENTS.md',
@@ -38,7 +37,6 @@ const ROOT_FILES = Object.freeze([
   '.geminiignore',
 ]);
 
-/** The only dot directories this scan walks. */
 const SCAN_DIRS = Object.freeze([
   '.claude/rules',
   '.claude/hooks',
@@ -58,7 +56,6 @@ const SKIPPED_DIRS = new Set([
 /** Depth bound inside a scanned directory — skills nest `guides/` and `scripts/` one or two deep. */
 const SCAN_MAX_DEPTH = 4;
 
-/** The hook configs this scan knows how to read, and whether the tool gates execution on approval. */
 const HOOK_CONFIGS: ReadonlyArray<{ path: string; approvalGate: boolean }> = Object.freeze([
   { path: '.claude/settings.json', approvalGate: false },
   { path: '.codex/hooks.json', approvalGate: true },
@@ -75,20 +72,15 @@ export function isPairDrift(code: string): boolean {
   return PAIR_DRIFT_CODES.has(code);
 }
 
-/** `package.json` script names that run a linter, a type check, or a test suite. */
 const CHECK_SCRIPT_NAME = /^(lint|test|typecheck)(:|$)/;
 
 export interface HarnessReport {
   analysis: AgentFilesAnalysis;
   hookGroups: readonly HookConfigFacts[];
-  /** Every scanned file's text, so the detail and drift views need no second read. */
   contents: ReadonlyMap<string, string>;
-  /** `package.json` scripts matching `CHECK_SCRIPT_NAME`, sorted. */
   checkScripts: readonly string[];
   declarations: readonly ScopeDeclaration[];
-  /** Files under `.githooks/`. */
   gitHookFiles: readonly string[];
-  /** `.github/workflows/*` paths. */
   workflowFiles: readonly string[];
   topLevelFolders: readonly string[];
 }
@@ -138,7 +130,6 @@ async function nestedAgentsFiles(
   }
 }
 
-/** `.githooks/<name>` → its text. */
 async function readGitHooks(port: HarnessScanPort): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   const entries = await port.listDir('.githooks');
@@ -151,7 +142,6 @@ async function readGitHooks(port: HarnessScanPort): Promise<Map<string, string>>
   return out;
 }
 
-/** Workflow texts, read only for a `paths:` trigger filter. */
 async function readWorkflows(port: HarnessScanPort): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   const entries = await port.listDir('.github/workflows');
@@ -164,7 +154,6 @@ async function readWorkflows(port: HarnessScanPort): Promise<Map<string, string>
   return out;
 }
 
-/** Check-script names → their commands, sorted for a stable census. */
 function checkScripts(packageJsonText: string | null): Map<string, string> {
   const out = new Map<string, string>();
   if (!packageJsonText) return out;
@@ -185,7 +174,6 @@ function checkScripts(packageJsonText: string | null): Map<string, string> {
 export interface HarnessScanProgress {
   stage: 'roots' | 'nested' | 'agent-directories' | 'hooks';
   done: number;
-  /** Known before the pass starts, or `null`. */
   total: number | null;
 }
 

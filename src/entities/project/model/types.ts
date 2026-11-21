@@ -22,7 +22,6 @@ export interface ProjectPosition {
 /** A `kind: project` document; any field the frontmatter omits stays undefined rather than defaulted. */
 export interface Project {
   slug: string;
-  /** Frontmatter `name`/`title`. */
   name: string;
   nameEn?: string;
   /** `display_<locale>` names, drawn via `projectDisplayName`. */
@@ -51,7 +50,6 @@ export interface Project {
 export type ProjectInput = {
   slug: string;
   name: string;
-  /** Editing can keep "unset". */
   category?: ProjectCategory;
   status?: ProjectStatus;
   description: string;

@@ -30,11 +30,7 @@ export function useVaultDocWrites(
   { setState, stateRef, load }: VaultSessionCore,
   openFolderHandle: FileSystemDirectoryHandle | null,
 ) {
-  /**
-   * Secures readwrite permission before any write. On refusal the state moves to
-   * 'permission-needed' so the reauth UI appears, and it still throws so the caller's
-   * try/catch keeps showing the inline error.
-   */
+  /** Secures readwrite permission before any write; on refusal the state moves to 'permission-needed' and it still throws, so the caller's inline error shows. */
   const requireWritePermission = useCallback(
     async (handle: FileSystemDirectoryHandle | FileSystemFileHandle) => {
       const result = await verifyHandlePermission(handle, 'readwrite', { ask: true });
@@ -46,7 +42,6 @@ export function useVaultDocWrites(
     [setState],
   );
 
-  /** Walks a slash path from the root handle and returns the parent directory handle plus the file name. */
   const getParentAndName = useCallback(
     async (
       root: FileSystemDirectoryHandle | null,
@@ -57,7 +52,6 @@ export function useVaultDocWrites(
       fileName: string;
     } | null> => {
       if (!root) return null;
-      // Readwrite permission, secured here because this runs only on write paths.
       await requireWritePermission(root);
       const parts = slug.split('/').filter(Boolean);
       if (parts.length === 0) throw new Error('Empty slug');
@@ -86,9 +80,8 @@ export function useVaultDocWrites(
     [stateRef, load],
   );
 
-  // Slugs the app itself just wrote, so the polling diff toaster does not report its own
-  // writes as "added/edited" (the four-toast burst during bootstrap). A one-shot ledger
-  // cleared on consumption: only outside changes (an agent, an IDE) become toasts.
+  // Slugs the app itself just wrote, so the polling diff toaster does not report its own writes; a one-shot ledger cleared
+  // on consumption, so only outside changes (an agent, an IDE) become toasts.
   const selfWrittenSlugsRef = useRef<Set<string>>(new Set());
   // slug → last self-write time in ms, the only source of "last edited · me". An mtime cannot
   // say who changed a file, so only writes through this API mark "me". Not cleared on consumption.
@@ -175,13 +168,11 @@ export function useVaultDocWrites(
       await writable.write(content);
       await writable.close();
       markSelfWrite(slug);
-      // Rescan the whole manifest after a successful save so backlinks and headings follow.
       await reloadIfOpen(live.handle);
     },
     [openState, reloadIfOpen, requireWritePermission, markSelfWrite, guardExpectedMtime],
   );
 
-  /** Creates a new `.md` at the slug path, erroring when one exists; the template seeds the body. */
   const createDoc = useCallback(
     async (slug: string, content: string, opts: { skipRefresh?: boolean } = {}) => {
       const live = openState();
@@ -258,7 +249,7 @@ export function useVaultDocWrites(
       assertIdentityPatch(raw, updates);
       const next = applyFrontmatterUpdates(raw, updates);
       assertNodeIdentityContent(slug, next, live.manifest?.docs ?? []);
-      if (next === raw) return EMPTY_REFERRER_REPORT; // nothing changed
+      if (next === raw) return EMPTY_REFERRER_REPORT;
       const newKind = opts.rewriteBacklinks ? kindChangeOf(raw, updates) : null;
       const writable = await fh.createWritable();
       await writable.write(next);
@@ -360,7 +351,6 @@ export function useVaultDocWrites(
         await oldResolved.parent.removeEntry(oldResolved.fileName);
       }
 
-      // --- optional cascading backlink rewrite
       /*
        * Frontmatter relations are the primary graph: `planReferrerRewrite` applies the MCP
        * `rename_concept` key family and tail rules to every doc, and a kind change moves each entry

@@ -3,7 +3,6 @@ import type { Project } from "./types";
 export interface SuggestedDependency {
   slug: string;
   name: string;
-  /** Why the match fired. */
   excerpt: string;
 }
 

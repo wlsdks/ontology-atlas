@@ -74,7 +74,6 @@ const DENIED_STEMS = new Set([
 
 const DENIED_EXTENSIONS = new Set(['pem', 'key', 'p8', 'p12', 'pfx', 'jks', 'keystore', 'gpg', 'kdbx', 'ppk', 'asc']);
 
-/** Normalized components, or null when the path is not a safe relative path. */
 function components(path: string): string[] | null {
   if (path.includes('\0') || path.includes('\\') || path.startsWith('/')) return null;
   const parts = path.split('/').filter((part) => part !== '' && part !== '.');

@@ -3,14 +3,9 @@ import type { WikiNodeIndex } from '@/shared/lib/library/wiki-page-schema';
 import type { LibraryModel } from './vault-library';
 
 /**
- * How many sources reach a concept on the map: a `compiled` source reaches it when one of the
- * pages that make it compiled has a `describes:` entry naming a `kind:` node in the folder. The
- * entries resolve through the wiki schema's node index, as `describes-target-missing` judges them,
- * so the count and the page problem never disagree. The total is every source, as in source
- * progress, so this count can never exceed that one.
- *
- * Cost: O(S + P + E + C) for S sources, P pages, E `describes:` entries and C covering citations;
- * each entry is one index lookup, and the result is two byte arrays, with no object per row.
+ * A `compiled` source reaches a concept when a page that makes it compiled has a `describes:` entry naming a `kind:` node in the
+ * folder, resolved as `describes-target-missing` judges them so the count and the page problem never disagree. The total is every
+ * source, as in source progress. O(S + P + E + C) for S sources, P pages, E entries, C covering citations; two byte arrays, no object per row.
  */
 
 /** In precedence order: a source takes the first state any of its covering pages gives it. */
@@ -31,20 +26,15 @@ const MISSING_ENTRY = 8;
 const STATE_BITS = 7;
 
 export interface MapReach {
-  /** Every source in the folder, the same total as source progress. */
   total: number;
   /** Sources in `compiled`, the only ones judged; their states sum to it. */
   judged: number;
-  /** Sources that reach a concept on the map: `byState.onMap`. */
   onMap: number;
   byState: Readonly<Record<MapReachState, number>>;
-  /** One code per `model.sources` row; read it with `mapReachOfSource`. */
   sourceCodes: Uint8Array;
-  /** One code per `model.wikiPages` page; read it with `mapReachOfPage`. */
   pageCodes: Uint8Array;
 }
 
-/** A page's own state, by the same rule a source takes from its pages. */
 function pageCode(describes: readonly string[] | null | undefined, nodes: WikiNodeIndex): number {
   if (describes === null || describes === undefined) return NOT_LINKED;
   if (describes.length === 0) return NO_CONCEPT;
@@ -104,13 +94,11 @@ export function deriveMapReach(
   };
 }
 
-/** The map state of source row `row`, or null when it is not `compiled` and so not judged. */
 export function mapReachOfSource(reach: MapReach, row: number): MapReachState | null {
   const code = reach.sourceCodes[row] ?? 0;
   return code === 0 ? null : MAP_REACH_STATES[code - 1]!;
 }
 
-/** The state page `page` gives every source it covers. */
 export function mapReachOfPage(reach: MapReach, page: number): MapReachState {
   return MAP_REACH_STATES[((reach.pageCodes[page] ?? NOT_LINKED) & STATE_BITS) - 1]!;
 }

@@ -15,7 +15,6 @@ interface CategorySize {
 export interface Category {
   /** Stable: lowercase, digits and hyphens, e.g. 'in-progress'; projects reference it. */
   id: string;
-  /** Korean label, the UI default. */
   label: string;
   labelEn?: string;
   labels?: Partial<Record<string, string>>;

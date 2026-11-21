@@ -14,9 +14,7 @@ export interface OntologySnapshot {
   nodeSigs: Map<string, number>;
   /** Kept apart from the signature so a removed node's kind can still be shown. */
   nodeKinds: Map<string, string>;
-  /** `"from\u0001to\u0001type"`, joined with SEP. */
   edgeKeys: Set<string>;
-  /** Stamped by the caller, in ms. */
   takenAt: number;
 }
 
@@ -26,9 +24,7 @@ export interface OntologyChangeset {
   changedNodes: string[];
   addedEdges: string[];
   removedEdges: string[];
-  /** Sum of added + removed + changed nodes and added + removed edges. */
   total: number;
-  /** Added or changed nodes, for highlighting. */
   touchedNodeIds: Set<string>;
   /** Removed nodes' kinds from the baseline; present nodes' kinds come from `nodeById`. */
   removedNodeKinds: Map<string, string>;

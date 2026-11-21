@@ -7,7 +7,6 @@ import type { KnowledgeGraphNode } from "../../model";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Default window in days. */
 export const RECENT_CHANGES_DEFAULT_WINDOW_DAYS = 7;
 
 /** `nowMs` is a session snapshot, so documents created later count as today within 24h. */
@@ -30,7 +29,6 @@ export function isWithinRecentWindow(
 export function daysAgoFromIso(updatedAtIso: string, nowMs: number): number {
   const updatedMs = Date.parse(updatedAtIso);
   if (!Number.isFinite(updatedMs)) return Number.POSITIVE_INFINITY;
-  // Never negative.
   return Math.max(0, Math.floor((nowMs - updatedMs) / DAY_MS));
 }
 
@@ -51,7 +49,6 @@ interface RecentChangeRow {
 
 export interface RecentChangesResult {
   recentNodeIds: Set<string>;
-  /** Newest first. */
   rows: RecentChangeRow[];
 }
 
@@ -91,7 +88,6 @@ export function computeRecentChanges(
 const RECENT_CHANGES_ADAPTIVE_LADDER_DAYS: readonly number[] = [7, 3, 1];
 
 export interface AdaptiveRecentChangesResult extends RecentChangesResult {
-  /** The window used, in days. */
   windowDays: number;
 }
 
@@ -113,7 +109,6 @@ export function computeAdaptiveRecentChanges(
   return last as AdaptiveRecentChangesResult;
 }
 
-/** Recent documents by their own `updatedAt`, with the lens's window arithmetic. */
 export function selectRecentVaultDocs<T extends { updatedAt: string }>(
   docs: readonly T[],
   nowMs: number,
@@ -124,6 +119,3 @@ export function selectRecentVaultDocs<T extends { updatedAt: string }>(
     .slice()
     .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
 }
-
-// The agent-focus badge reuses `resolveAgentFocusNodeId` (views/home/lib) against `recentNodeIds`
-// rather than a second matching heuristic.

@@ -1,6 +1,5 @@
 import type { VaultDoc, VaultHeading, VaultManifest } from '../../model/types';
 
-/** A bundled sample's document: the spine, plus the detail its generated JSON still carries. */
 export interface BundledVaultDoc extends VaultDoc {
   headings?: VaultHeading[];
   excerpt: string;

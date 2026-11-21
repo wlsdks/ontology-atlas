@@ -33,11 +33,9 @@ export async function tauriVaultRecordResolves(
 
 interface ResolvedVaultHandle {
   handle: FileSystemDirectoryHandle;
-  /** The project root the person chose or previously stored, when its `atlas/` child won. */
   redirectedFrom: string | null;
 }
 
-/** Applies the project → `atlas/` rule to every desktop ingress, not only the picker. */
 export async function resolveVaultHandle(handle: FileSystemDirectoryHandle): Promise<ResolvedVaultHandle> {
   const pickedPath = getTauriVaultRootPath(handle);
   if (!pickedPath) return { handle, redirectedFrom: null };

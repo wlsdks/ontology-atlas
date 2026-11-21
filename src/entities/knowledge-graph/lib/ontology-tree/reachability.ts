@@ -32,7 +32,6 @@ export interface BuildOntologyReachabilityOptions {
   depth?: number;
   limit?: number;
   types?: readonly string[];
-  /** Relation types hidden from the walk. */
   excludeTypes?: readonly string[];
 }
 

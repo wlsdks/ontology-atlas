@@ -1,20 +1,9 @@
-// poll-cadence — Atlas roadmap Track A #6.
-//
-// The local-vault auto-refresh polled at a fixed 5s. On the web/non-Tauri
-// surface that is the only live signal (the Tauri shell gets instant OS
-// file-watch), so an agent write took up to 5s to surface — coarse, not "live".
-// Adaptive cadence: right after a change is detected (the agent is likely
-// mid-session), poll fast for a short window; when quiet, decay back to the
-// cheap 5s idle interval. Pure + deterministic so it is unit-testable without
-// the hook/timers; the FS Access API has no native dir-change event, so
-// adaptive polling is the ceiling here without a backend (local-first).
+// Adaptive poll cadence: the FS Access API has no directory-change event, so after a detected change poll fast for a short
+// window, then decay to the idle interval. Pure, so it is testable without the hook or timers.
 
 export interface PollCadenceConfig {
-  /** fast interval (ms) used right after a change is detected */
   burstMs: number;
-  /** slow interval (ms) used when quiet — the prior fixed cadence */
   idleMs: number;
-  /** how long (ms) to keep bursting after the last detected change */
   burstWindowMs: number;
 }
 
@@ -32,12 +21,7 @@ export const DEFAULT_POLL_CADENCE: PollCadenceConfig = {
 const POLL_COST_SHARE = 20;
 export const MAX_POLL_DELAY_MS = 60_000;
 
-/**
- * Delay (ms) before the next poll.
- * @param lastChangeAt epoch ms of the last detected change, or null if none yet
- * @param now epoch ms
- * Bursts while within `burstWindowMs` of the last change; otherwise idles.
- */
+/** Bursts while within `burstWindowMs` of `lastChangeAt` (epoch ms, null if none yet); otherwise idles. */
 export function nextPollDelay(
   lastChangeAt: number | null,
   now: number,
@@ -58,14 +42,8 @@ export interface AdaptivePoller {
 }
 
 /**
- * Self-rescheduling adaptive poll loop with a **generation token** so an
- * in-flight async `poll()` that resolves AFTER a stop/restart can never re-arm
- * a second (orphaned) loop. The naive "boolean active flag" version leaks a
- * concurrent loop when hide→show brackets an in-flight poll (the burst window
- * makes that the common case). Timers/clock are injectable so the lifecycle is
- * unit-testable without React or real timers.
- *
- * @param poll async tick; resolves true when a change was detected (→ burst)
+ * Self-rescheduling poll loop with a generation token: an in-flight `poll()` that resolves after a stop/restart must not
+ * re-arm an orphaned second loop, which a boolean flag leaks when hide→show brackets a poll. Timers and clock are injectable.
  */
 export function createAdaptivePoller(opts: {
   poll: () => Promise<boolean>;

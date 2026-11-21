@@ -35,7 +35,6 @@ export interface VaultDoc {
    */
   citesReadLines?: boolean;
   updatedAt: string;
-  /** Commits touching this document, carried across moves; bundled manifest only. */
   revision?: number;
   linksOut: string[];
   /** `file.lastModified` in local mode, passed back as `expectedMtime` to detect outside edits. */
@@ -44,14 +43,10 @@ export interface VaultDoc {
 
 /** A raw file under `sources/`, known from its directory entry only and never opened. */
 export interface VaultSourceFile {
-  /** Always begins `sources/`. */
   path: string;
   name: string;
-  /** Lowercase extension without the dot, or `''`. */
   format: string;
-  /** Byte length from the directory entry. */
   bytes: number;
-  /** `file.lastModified` in ms, the same representation `VaultDoc.mtime` uses. */
   mtime: number;
 }
 
@@ -67,9 +62,7 @@ export interface VaultTreeNode {
 export interface VaultManifest {
   version: string;
   generatedAt: string;
-  /** The walk hit a limit and saw only part of the tree. */
   walkTruncated?: boolean;
-  /** Directories skipped whole as cache or dependencies. */
   prunedDirs?: string[];
   /** Source files passed over unread; present only when nonzero. */
   sourceFileCount?: number;

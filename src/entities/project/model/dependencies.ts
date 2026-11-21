@@ -87,7 +87,6 @@ export function collectProjectDependentClosure(
   }
 
   const included = new Set<string>();
-  // BFS with a head pointer: O(V + E).
   const queue = [...new Set(targetSlugs)];
   let head = 0;
 
@@ -136,7 +135,6 @@ export function collectProjectConnectedClosure(
   }
 
   const included = new Set<string>();
-  // BFS with a head pointer: O(V + E).
   const queue = [...new Set(targetSlugs)];
   let head = 0;
 

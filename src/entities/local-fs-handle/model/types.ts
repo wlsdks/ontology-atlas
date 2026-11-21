@@ -7,9 +7,7 @@ export interface LocalFsHandleRecord {
   handle: FileSystemDirectoryHandle;
   /** Tauri stores the path because the handle cannot be structured-cloned there. */
   desktopRootPath?: string;
-  /** `handle.name` at registration. */
   name: string;
-  /** Registration time, epoch ms. */
   createdAt: number;
   /** Refreshed on restore and open. */
   lastAccessedAt: number;
@@ -20,6 +18,5 @@ export interface LocalFsHandleRecord {
   docCount?: number;
   /** The map's census (`MAP_CONCEPT_KINDS`). */
   conceptCount?: number;
-  /** Epoch ms. */
   countedAt?: number;
 }

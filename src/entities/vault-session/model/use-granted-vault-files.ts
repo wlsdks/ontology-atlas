@@ -3,7 +3,6 @@
 import { useContext, useMemo } from 'react';
 import { LocalVaultContext } from './local-vault-context';
 
-/** The open folder and the files its walk was granted, as one consistent pair. */
 export interface GrantedVaultFiles {
   root: FileSystemDirectoryHandle;
   fileHandles: ReadonlyMap<string, FileSystemFileHandle>;

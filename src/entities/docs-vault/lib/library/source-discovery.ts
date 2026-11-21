@@ -123,7 +123,6 @@ export const DISCOVERY_MAX_DEPTH = 8;
 /** How many candidates one run returns. **Must equal** Rust `DISCOVERY_MAX_CANDIDATES`. */
 export const DISCOVERY_MAX_CANDIDATES = 500;
 
-/** `'Plan.PDF'` → `'pdf'`; `''` without an extension. */
 export function discoveryExtension(name: string): string {
   const at = name.lastIndexOf('.');
   return at > 0 ? name.slice(at + 1).toLowerCase() : '';
@@ -157,7 +156,6 @@ function looksLikeAHash(stem: string): boolean {
   return UUID_STEM.test(stem);
 }
 
-/** The one judgement both walks make about a file name. */
 export function discoveryAcceptsFile(name: string): boolean {
   if (name.startsWith('.')) return false;
   const lowered = name.toLowerCase();
@@ -182,11 +180,8 @@ export function discoveryAcceptsDirectory(relativePath: string): boolean {
 }
 
 export interface SourceCandidate {
-  /** Absolute root in the app; the folder handle's name on the web. */
   rootPath: string;
-  /** The root's on-screen name. */
   rootLabel: string;
-  /** Path relative to that root. */
   relativePath: string;
   name: string;
   extension: string;
@@ -196,13 +191,10 @@ export interface SourceCandidate {
 
 export interface SourceDiscoveryReport {
   candidates: SourceCandidate[];
-  /** Whether the walk stopped at the cap. */
   truncated: boolean;
-  /** Roots that could not be read. */
   unreadableRoots: string[];
 }
 
-/** The web walk, limited to the opened folder's handle. */
 export async function discoverCandidatesInHandle(
   root: FileSystemDirectoryHandle,
   options: { rootLabel: string; skipRelative?: readonly string[] } = { rootLabel: '' },
@@ -257,7 +249,6 @@ export async function discoverCandidatesInHandle(
   return report;
 }
 
-/** Root plus relative path, since discovery never reads content to hash. */
 export function candidateKey(candidate: SourceCandidate): string {
   // NUL cannot appear in a path, so keys never collide.
   return `${candidate.rootPath}\u0000${candidate.relativePath}`;

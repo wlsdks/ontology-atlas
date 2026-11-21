@@ -20,7 +20,6 @@ interface OntologyStubNode {
   /** Every `display_<locale>` key verbatim; the render boundary picks one, since derivation is cached. */
   displayLocales?: Readonly<Record<string, string>>;
   kind: string;
-  /** The vault document this came from. */
   sourceSlug: string;
   /**
    * Whether the node has its own `.md`. A relation-only node's `sourceSlug` is the citing
@@ -47,18 +46,14 @@ interface OntologyStubEdge {
   type: 'contains' | 'depends_on' | 'describes' | 'related_to' | 'is_a';
   source: OntologyStubSource;
   sourceSlug: string;
-  /** Why this relation exists, from `relation_notes: {ref: why}`. */
   label?: string;
 }
 
 export interface VaultOntologyDerivation {
   nodes: OntologyStubNode[];
   edges: OntologyStubEdge[];
-  /** Frontmatter `kind:` docs before relation-derived stubs are added. */
   sourceConceptCount: number;
-  /** Frontmatter `kind:` docs by kind before relation-derived stubs are added. */
   sourceKindCounts: Record<string, number>;
-  /** Diagnostics for the empty state when no doc produced a candidate. */
   warnings: string[];
 }
 
@@ -81,7 +76,6 @@ function asStringArray(value: unknown): string[] {
   return [];
 }
 
-// Vault folder name → singular kind, for folder-prefixed refs.
 const FOLDER_TO_KIND: Record<string, string> = {
   projects: 'project',
   domains: 'domain',
@@ -172,7 +166,6 @@ type RelationKey =
 interface RelationIntent {
   key: RelationKey;
   ref: string;
-  /** `null`: an unresolved ref draws nothing. */
   fallback: string | null;
 }
 
@@ -182,9 +175,7 @@ interface RelationIntent {
  * only the documents it touched.
  */
 interface DocFacts {
-  /** `deriveDocNode`, before a duplicate id is disambiguated; edges always use this id. */
   node: OntologyStubNode | null;
-  /** The slug's last segment, one of the document's three aliases. */
   tail: string;
   intents: RelationIntent[];
   notes: Record<string, unknown> | null;
@@ -205,13 +196,11 @@ const EDGE_TYPE: Record<RelationKey, OntologyStubEdge['type']> = {
   broader: 'is_a',
 };
 
-/** Slug under a folder ref of `kind`, else the slugified ref. */
 function kindSlug(ref: string, kind: string): string {
   const folderRef = resolveFolderPrefixedRef(ref);
   return folderRef?.kind === kind ? folderRef.id.slice(kind.length + 1) : slugifyName(ref);
 }
 
-/** Last id segment of a folder ref, else the slugified ref. */
 function anySlug(ref: string): string | undefined {
   const folderRef = resolveFolderPrefixedRef(ref);
   return folderRef ? folderRef.id.split(':').at(-1) : slugifyName(ref);
@@ -294,7 +283,6 @@ function docFacts(doc: VaultDoc): DocFacts {
   return facts;
 }
 
-/** A relation-named node without its own document, titled by the first document that names it. */
 function stubNode(intent: RelationIntent, id: string, sourceSlug: string, nodeKind: string): OntologyStubNode {
   const { key, ref } = intent;
   const folderRef = resolveFolderPrefixedRef(ref);
@@ -519,7 +507,6 @@ const PATCH_MAX_CHANGED_DOCS = 64;
 interface DerivationRun {
   docs: readonly VaultDoc[];
   derivation: VaultOntologyDerivation;
-  /** Index in `derivation.nodes` of each document's node, -1 without one. */
   nodeAt: Int32Array;
 }
 
