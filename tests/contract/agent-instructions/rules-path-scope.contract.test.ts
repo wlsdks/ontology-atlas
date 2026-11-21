@@ -147,8 +147,8 @@ describe("`.claude/rules` path scoping contract", () => {
   });
 
   /**
-   * Claude Code reads `AGENTS.md` only when no `CLAUDE.md`, `.claude/CLAUDE.md` or
-   * `CLAUDE.local.md` sits in the working directory or above it. A committed root one,
+   * Claude Code reads `AGENTS.md` only when no `CLAUDE.md` (beside it or in `.claude/`)
+   * or `CLAUDE.local.md` sits in the working directory or above it. A committed one,
    * even an empty one, silently replaces every rule `AGENTS.md` alone states.
    */
   it("keeps AGENTS.md the only root instruction file Claude reads", () => {
