@@ -1,38 +1,32 @@
 "use client";
 
-import { Cable, Check, Folder, Pencil, Plus, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useId, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
 
 import {
   DEFAULT_SERVICE_ROUND_LIMIT,
   type RoundCadence,
   type RoundOnStale,
   type RoundPlace,
-  type RoundPlaceService,
   type RoundRecord,
   cadenceFromMinutes,
-  cadenceMinutes,
   deriveRoundKind,
   isValidClockTime,
   nextDueAt,
-  roundPlaces,
   roundWidens,
-  servicePlaces,
   turnsPerDay,
-  vaultPlace,
 } from "@/entities/library-round";
-import { cn } from "@/shared/lib/cn";
-import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { CadencePicker, type CadenceUnit } from "@/shared/ui/cadence-picker";
-import { controlClass, fieldLabel } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import { fieldLabel } from "@/shared/ui/control-class";
 import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
-import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
-import { Button, Chip, Dialog, DialogBody, DialogFooter, IconButton, Surface } from "@/shared/ui";
-import { Input } from "@/shared/ui/fields/input";
+import { Button, Dialog, DialogBody, DialogFooter } from "@/shared/ui";
 
-import { capitalize, serviceExample, unusedRoundName } from "../../lib/rounds/round-presentation";
+import { capitalize, unusedRoundName } from "../../lib/rounds/round-presentation";
+import { initialRoundDraft, placesOfDraft, roundRecordOf, newRoundId, type ServiceDraft } from "../../model/rounds/round-draft";
+import { cadenceWords, costLine, mayLines } from "../../model/rounds/round-grants";
+import { RoundGrants } from "./RoundGrants";
+import { RoundNameTitle } from "./RoundNameTitle";
+import { RoundPlacesField } from "./RoundPlacesField";
 
 /**
  * A scheduled check as one sentence, one list of places and one rail. `deriveRoundKind` alone
@@ -56,26 +50,6 @@ export interface NewRoundSheetProps {
   allowedHere?: boolean;
 }
 
-/** A service place while it is being edited: the key keeps React rows stable as fields change. */
-interface ServiceDraft {
-  key: string;
-  connectorId: string;
-  connectorName: string;
-  location: string;
-  query: string;
-}
-
-/**
- * From this many agent turns a day the cost line changes ink, not words (spec §2.3: "every 30
- * minutes or faster"). Thirty minutes is exactly 48, and it is the first cadence the spec names
- * as too much, so the comparison includes it.
- */
-const COST_ALARM_TURNS_PER_DAY = 48;
-
-function newId(): string {
-  return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-}
-
 export function NewRoundSheet({
   open,
   onClose,
@@ -91,28 +65,11 @@ export function NewRoundSheet({
   const t = useTranslations("library.rounds");
   const locale = useLocale();
   const titleId = useId();
-  const placesId = useId();
   const staleId = useId();
 
   const enabledConnectors = useMemo(() => connectors.filter((connector) => connector.enabled), [connectors]);
 
-  const [start] = useState(() => {
-    const placesNow = round ? roundPlaces(round) : [];
-    const everyMinutes = round ? cadenceMinutes(round.cadence) : 60;
-    return {
-      vault: vaultPlace(placesNow),
-      services: servicePlaces(placesNow).map<ServiceDraft>((place) => ({
-        key: newId(),
-        connectorId: place.connectorId,
-        connectorName: place.connectorName,
-        location: place.location ?? "",
-        query: place.query ?? "",
-      })),
-      unit: (everyMinutes === null ? "day" : everyMinutes < 60 ? "minutes" : "hours") as CadenceUnit,
-      minutes: everyMinutes ?? 60,
-      daily: round && "daily" in round.cadence ? round.cadence : null,
-    };
-  });
+  const [start] = useState(() => initialRoundDraft(round));
   const [vaultPaths, setVaultPaths] = useState<string[]>(() => [...start.vault.paths]);
   const [ownDocumentsOnly, setOwnDocumentsOnly] = useState(start.vault.ownDocumentsOnly === true);
   const [services, setServices] = useState<ServiceDraft[]>(start.services);
@@ -122,42 +79,22 @@ export function NewRoundSheet({
   const [weekdaysOnly, setWeekdaysOnly] = useState(start.daily?.weekdaysOnly ?? false);
   const [onStale, setOnStale] = useState<RoundOnStale>(round?.onStale ?? "redraft");
   const [nameEdited, setNameEdited] = useState<string | null>(round?.name ?? null);
-  const [renaming, setRenaming] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [folderMenuOpen, setFolderMenuOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
-  const renameRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    if (renaming) renameRef.current?.focus();
-  }, [renaming]);
-
-  const places: RoundPlace[] = useMemo(() => {
-    const vault: RoundPlace = { kind: "vault", paths: vaultPaths };
-    if (ownDocumentsOnly) (vault as { ownDocumentsOnly?: boolean }).ownDocumentsOnly = true;
-    return [
-      vault,
-      ...services.map<RoundPlaceService>((draft) => {
-        const place: RoundPlaceService = { kind: "service", connectorId: draft.connectorId, connectorName: draft.connectorName };
-        if (draft.location.trim()) place.location = draft.location.trim();
-        if (draft.query.trim()) place.query = draft.query.trim();
-        return place;
-      }),
-    ];
-  }, [ownDocumentsOnly, services, vaultPaths]);
+  const places: RoundPlace[] = useMemo(() => placesOfDraft(vaultPaths, ownDocumentsOnly, services), [ownDocumentsOnly, services, vaultPaths]);
 
   const kind = deriveRoundKind(places);
   const timeValid = unit !== "day" || isValidClockTime(time);
   const cadence: RoundCadence = unit === "day" ? { daily: timeValid ? time : "09:00", weekdaysOnly } : cadenceFromMinutes(minutes);
   const perDay = turnsPerDay(cadence);
 
-  const cadenceWords = useMemo(() => {
-    if (unit === "day") return weekdaysOnly ? t("sheet.readbackWeekdays", { time }) : t("sheet.readbackDaily", { time });
-    if (minutes === 60) return t("sheet.readbackHour");
-    if (minutes === 360) return t("sheet.readback6h");
-    return minutes < 60 ? t("cadence.everyMinutes", { count: minutes }) : t("cadence.everyHours", { count: minutes / 60 });
-  }, [minutes, t, time, unit, weekdaysOnly]);
+  const readbackCadence = useMemo(
+    () => cadenceWords({ unit, minutes, time, weekdaysOnly }, t),
+    [minutes, t, time, unit, weekdaysOnly],
+  );
 
   // The cadence is not part of the name: the index and the header already say it, and a
   // name holding a separator reads as two fields wherever the name sits in a sentence.
@@ -193,26 +130,7 @@ export function NewRoundSheet({
     if (!canSave) return;
     setSaving(true);
     setFailure(null);
-    const now = new Date();
-    const record: RoundRecord = {
-      id: round?.id ?? newId(),
-      name: name.trim(),
-      kind,
-      cadence,
-      enabled: round?.enabled ?? true,
-      places,
-      createdAt: round?.createdAt ?? now.toISOString(),
-      nextDueAt: nextDueAt(cadence, now).toISOString(),
-    };
-    record.onStale = onStale;
-    if (round?.lastPassAt) record.lastPassAt = round.lastPassAt;
-    const first = services[0];
-    if (first) {
-      record.connectorId = first.connectorId;
-      record.connectorName = first.connectorName;
-      record.query = first.query.trim();
-      record.limit = limit;
-    }
+    const record = roundRecordOf({ round, name, kind, cadence, places, onStale, services, limit, now: new Date() });
     let saved = false;
     try {
       saved = await onSave(record);
@@ -225,30 +143,8 @@ export function NewRoundSheet({
     if (saved) onClose();
   };
 
-  const may: string[] = [t("sheet.mayReadVault")];
-  for (const draft of services) {
-    const service = capitalize(draft.connectorName);
-    may.push(
-      draft.location.trim()
-        ? t("sheet.mayCallPlace", { service, location: draft.location.trim() })
-        : t("sheet.mayCallConnector", { service }),
-    );
-  }
-  if (kind === "service") {
-    may.push(t("sheet.mayWriteSources"));
-    may.push(t("sheet.mayWritePages"));
-  } else if (onStale === "redraft") {
-    may.push(t("sheet.mayWritePages"));
-  }
-  may.push(t("sheet.mayNothingElse"));
-
-  const cost =
-    kind === "service"
-      ? t("sheet.costPerPass", { count: perDay })
-      : onStale === "redraft"
-        ? t("sheet.costOnStale")
-        : t("sheet.costNone");
-  const costAlarming = kind === "service" && perDay >= COST_ALARM_TURNS_PER_DAY;
+  const may = mayLines({ kind, onStale, services }, t);
+  const cost = costLine({ kind, onStale, turnsPerDay: perDay }, t);
 
   /** The one ink every control's own word wears inside the readback sentence. */
   const em = (chunks: ReactNode) => <span className="text-[color:var(--color-indigo-text-soft)]">{chunks}</span>;
@@ -256,7 +152,7 @@ export function NewRoundSheet({
   const addService = (connector: { id: string; name: string }) => {
     setServices((current) => [
       ...current,
-      { key: newId(), connectorId: connector.id, connectorName: connector.name, location: "", query: "" },
+      { key: newRoundId(), connectorId: connector.id, connectorName: connector.name, location: "", query: "" },
     ]);
     setAddOpen(false);
   };
@@ -308,53 +204,7 @@ export function NewRoundSheet({
           setFolderMenuOpen(false);
           event.currentTarget.querySelector<HTMLButtonElement>(`[data-testid="${trigger}"]`)?.focus();
         }}>
-      <header className="shrink-0">
-      <p className="mb-2 text-body text-[color:var(--color-text-tertiary)]">{round ? t("sheet.editTitle") : t("sheet.title")}</p>
-      {renaming ? (
-        <div className="min-w-0">
-          <h2 id={titleId} className="sr-only">
-            {name}
-          </h2>
-          <Input
-            ref={renameRef}
-            size="lg"
-            value={name}
-            aria-label={t("sheet.nameAria")}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setNameEdited(event.target.value)}
-            onBlur={() => setRenaming(false)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && isImeComposing(event)) return;
-              if (event.key === "Enter" || event.key === "Escape") {
-                event.preventDefault();
-                setRenaming(false);
-              }
-            }}
-            data-testid="library-rounds-name"
-            className="w-full"
-          />
-        </div>
-      ) : (
-        <h2 id={titleId} className="min-w-0">
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => setRenaming(true)}
-            data-testid="library-rounds-rename"
-            title={t("sheet.rename")}
-            className={controlClass({
-              shape: "row",
-              size: "md",
-              hoverSurface: "lift",
-              className: "-mx-2 w-full justify-start px-2 text-title leading-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]",
-            })}
-          >
-            <span className="min-w-0 truncate">{name}</span>
-            <Pencil size={ICON_SIZE.sm} aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]" />
-          </button>
-        </h2>
-      )}
-
-      </header>
+      <RoundNameTitle name={name} titleId={titleId} saving={saving} editing={round !== null} onNameChange={setNameEdited} />
       <DialogBody className="flex flex-col gap-5 pr-1">
       {/* The sheet reads back what it will do as one sentence before anything is saved. It is a paragraph,
          not a boxed field, since a box around text a person cannot type is false about the control; the
@@ -371,20 +221,20 @@ export function NewRoundSheet({
         */}
         {services.length > 0
           ? t.rich("sheet.readbackServices", {
-              cadence: cadenceWords,
+              cadence: readbackCadence,
               places: services.map((draft) => (draft.location.trim() ? `${capitalize(draft.connectorName)} ${draft.location.trim()}` : capitalize(draft.connectorName))).join(", "),
               em,
             })
           : null}
         {folderNames.length > 0
           ? t.rich(services.length > 0 ? "sheet.readbackFolders" : "sheet.readbackFoldersLead", {
-              cadence: cadenceWords,
+              cadence: readbackCadence,
               folders: folderNames.join(", "),
               em,
             })
           : services.length > 0
             ? t("sheet.readbackWholeFolder")
-            : t.rich("sheet.readbackWholeFolderLead", { cadence: cadenceWords, em })}
+            : t.rich("sheet.readbackWholeFolderLead", { cadence: readbackCadence, em })}
         {t.rich(onStale === "redraft" ? "sheet.readbackStaleRedraft" : "sheet.readbackStaleMark", { em })}
         {kind === "service"
           ? t("sheet.readbackTurn")
@@ -396,194 +246,24 @@ export function NewRoundSheet({
         {nextRunLabel ? t("sheet.readbackEditNext", { time: nextRunLabel }) : null}
       </p>
 
-      {/* ---- What to look at ------------------------------------------------------------- */}
-
-      <div className="flex flex-col gap-2">
-        <p id={placesId} className={fieldLabel()}>
-          {t("sheet.places")}
-        </p>
-        <ul aria-labelledby={placesId} data-testid="library-rounds-places" className="flex flex-col">
-          <li
-            data-testid="library-rounds-place-vault"
-            className="flex flex-col gap-2 border-t border-[color:var(--color-divider)] py-2.5"
-          >
-            <div className="flex min-w-0 items-start gap-2">
-              <Folder size={ICON_SIZE.sm} aria-hidden className="mt-0.5 flex-none text-[color:var(--color-text-quaternary)]" />
-              <span className="min-w-0 flex-1">
-                <span className="block text-body leading-body text-[color:var(--color-text-primary)]">{t("sheet.placeVault")}</span>
-                <span className="mt-0.5 block text-body leading-body text-[color:var(--color-text-tertiary)]">
-                  {folderNames.length > 0 ? folderNames.join(" · ") : t("sheet.placeVaultAll")}
-                </span>
-              </span>
-              {/* The first row is the folder itself and has no remove press: a round with no
-                  place at all would be a rule about nothing. */}
-              <span className="relative flex-none">
-                <Chip
-                  size="md"
-                  tone="muted"
-                  onClick={() => {
-                    setAddOpen(false);
-                    setFolderMenuOpen((value) => !value);
-                  }}
-                  aria-expanded={folderMenuOpen}
-                  data-testid="library-rounds-folders"
-                >
-                  {t("sheet.chooseFolders")}
-                </Chip>
-                <Surface
-                  open={folderMenuOpen}
-                  motion="chrome"
-                  role="group"
-                  aria-label={t("sheet.chooseFolders")}
-                  className="absolute right-0 top-[calc(100%+4px)] z-10 max-h-56 w-64 max-w-[calc(100vw-4rem)] overflow-y-auto atlas-scroll-quiet rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-1.5 shadow-[var(--shadow-elevation-2)]"
-                  {...transientSurface("menu")}
-                  data-testid="library-rounds-folder-menu"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOwnDocumentsOnly((value) => !value)}
-                    className={controlClass({ shape: "row", size: "md", active: ownDocumentsOnly, hoverSurface: "lift", className: "w-full justify-start text-left" })}
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-body leading-body">{t("sheet.placeOwn")}</span>
-                      <span className="block truncate text-body leading-body text-[color:var(--color-text-tertiary)]">{t("sheet.placeOwnDetail")}</span>
-                    </span>
-                    {ownDocumentsOnly ? <Check size={ICON_SIZE.sm} aria-hidden className="flex-none" /> : null}
-                  </button>
-                  {folders.length === 0 ? (
-                    <p className="px-2 py-1.5 text-body leading-body text-[color:var(--color-text-tertiary)]">{t("sheet.noFolders")}</p>
-                  ) : (
-                    folders.map((folder) => (
-                      <button
-                        key={folder}
-                        type="button"
-                        onClick={() => toggleFolder(folder)}
-                        data-folder={folder}
-                        className={controlClass({ shape: "row", size: "md", active: vaultPaths.includes(folder), hoverSurface: "lift", className: "w-full justify-start text-left" })}
-                      >
-                        <span className="min-w-0 flex-1 truncate text-body leading-body">{folder}</span>
-                        {vaultPaths.includes(folder) ? <Check size={ICON_SIZE.sm} aria-hidden className="flex-none" /> : null}
-                      </button>
-                    ))
-                  )}
-                </Surface>
-              </span>
-            </div>
-            {vaultPaths.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5 pl-6">
-                {vaultPaths.map((folder) => (
-                  <Chip key={folder} size="md" tone="muted" onClick={() => toggleFolder(folder)} aria-label={t("sheet.removeFolder", { folder })}>
-                    <span className="truncate">{folder}</span>
-                    <Trash2 size={ICON_SIZE.sm} aria-hidden />
-                  </Chip>
-                ))}
-              </div>
-            ) : null}
-          </li>
-
-          {services.map((draft, index) => (
-            <li
-              key={draft.key}
-              data-testid={`library-rounds-place-${index}`}
-              data-connector={draft.connectorName}
-              className="flex flex-col gap-2 border-t border-[color:var(--color-divider)] py-2.5"
-            >
-              <div className="flex min-w-0 items-start gap-2">
-                {/* The kind glyph, matching the folder row above it — never a rotated plus,
-                    which reads as a close button sitting at the head of the row. */}
-                <Cable size={ICON_SIZE.sm} aria-hidden className="mt-0.5 flex-none text-[color:var(--color-text-quaternary)]" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-body leading-body text-[color:var(--color-text-primary)]">{capitalize(draft.connectorName)}</span>
-                  <span className="mt-0.5 block text-body leading-body text-[color:var(--color-text-tertiary)]">
-                    {draft.location.trim() || t("sheet.whereAnywhere")}
-                  </span>
-                </span>
-                <IconButton
-                  size="md"
-                  label={t("sheet.removePlace", { place: capitalize(draft.connectorName) })}
-                  onClick={() => setServices((current) => current.filter((entry) => entry.key !== draft.key))}
-                  data-testid={`library-rounds-place-${index}-remove`}
-                  className="flex-none"
-                >
-                  <Trash2 size={ICON_SIZE.sm} aria-hidden />
-                </IconButton>
-              </div>
-              <div className="grid grid-cols-1 gap-3 pl-6 sm:grid-cols-2">
-                <Input
-                  label={t("sheet.where")}
-                  value={draft.location}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => patchService(draft.key, { location: event.target.value })}
-                  placeholder={t("sheet.wherePlaceholder")}
-                  data-testid={`library-rounds-place-${index}-where`}
-                />
-                <Input
-                  label={t("sheet.query")}
-                  value={draft.query}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => patchService(draft.key, { query: event.target.value })}
-                  placeholder={t(`sheet.queryPlaceholder${serviceExample(draft.connectorName)}`)}
-                  data-testid={`library-rounds-place-${index}-query`}
-                />
-              </div>
-            </li>
-          ))}
-        </ul>
-
-        <div className="relative self-start border-t border-transparent">
-          <Chip
-            size="md"
-            tone="muted"
-            onClick={() => {
-              setFolderMenuOpen(false);
-              setAddOpen((value) => !value);
-            }}
-            aria-expanded={addOpen}
-            data-testid="library-rounds-add-place"
-          >
-            <Plus size={ICON_SIZE.sm} aria-hidden />
-            {t("sheet.addPlace")}
-          </Chip>
-          <Surface
-            open={addOpen}
-            motion="chrome"
-            role="menu"
-            aria-label={t("sheet.addPlace")}
-            className="absolute left-0 top-[calc(100%+4px)] z-10 w-72 max-w-[calc(100vw-4rem)] rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-1.5 shadow-[var(--shadow-elevation-2)]"
-            {...transientSurface("menu")}
-            data-testid="library-rounds-add-menu"
-          >
-            {enabledConnectors.length === 0 ? (
-              <p className="px-2 py-1.5 text-body leading-body text-[color:var(--color-text-tertiary)]">{t("sheet.addNoConnector")}</p>
-            ) : (
-              enabledConnectors.map((connector) => (
-                <button
-                  key={connector.id}
-                  type="button"
-                  role="menuitem"
-                  onClick={() => addService(connector)}
-                  data-connector={connector.name}
-                  className={controlClass({ shape: "row", size: "md", hoverSurface: "lift", className: "w-full justify-start text-left" })}
-                >
-                  <span className="min-w-0 flex-1 truncate text-body leading-body">{capitalize(connector.name)}</span>
-                </button>
-              ))
-            )}
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setAddOpen(false);
-                setFolderMenuOpen(true);
-              }}
-              className={controlClass({ shape: "row", size: "md", hoverSurface: "lift", className: "w-full justify-start text-left" })}
-            >
-              <span className="min-w-0 flex-1 truncate text-body leading-body">{t("sheet.addFolder")}</span>
-            </button>
-          </Surface>
-        </div>
-        {kind === "service" && !agentReady ? (
-          <p className="text-body leading-body text-[color:var(--color-amber-source-a90)]">{t("sheet.noAgent")}</p>
-        ) : null}
-      </div>
+      <RoundPlacesField
+        folders={folders}
+        vaultPaths={vaultPaths}
+        ownDocumentsOnly={ownDocumentsOnly}
+        folderNames={folderNames}
+        services={services}
+        enabledConnectors={enabledConnectors}
+        showNoAgent={kind === "service" && !agentReady}
+        addOpen={addOpen}
+        folderMenuOpen={folderMenuOpen}
+        onAddOpenChange={setAddOpen}
+        onFolderMenuOpenChange={setFolderMenuOpen}
+        onToggleFolder={toggleFolder}
+        onToggleOwnDocumentsOnly={() => setOwnDocumentsOnly((value) => !value)}
+        onAddService={addService}
+        onPatchService={patchService}
+        onRemoveService={(key) => setServices((current) => current.filter((entry) => entry.key !== key))}
+      />
 
       {/* ---- How often — the protagonist -------------------------------------------------- */}
 
@@ -641,37 +321,7 @@ export function NewRoundSheet({
       </div>
 
       {/* ---- What this round may do ------------------------------------------------------- */}
-
-      {/*
-        A hairline and a list, not a fourth card: this is the one block on the sheet a person
-        cannot edit, and a box around it made it look like another question. The cost line
-        under the rule keeps the same words at every cadence and only changes ink above 48
-        agent turns a day, because a drag that feels good must not out-argue the invoice.
-      */}
-      <div className="border-t border-[color:var(--color-divider)] pt-3" data-testid="library-rounds-scope">
-        <p className={fieldLabel()}>{t("sheet.may")}</p>
-        <ul className="mt-2 flex flex-col gap-1.5">
-          {may.map((line) => (
-            <li key={line} className="flex items-start gap-2 text-body leading-body text-[color:var(--color-text-primary)]">
-              <Check size={ICON_SIZE.sm} className="mt-0.5 flex-none text-[color:var(--color-indigo-text-soft)]" aria-hidden />
-              <span>{line}</span>
-            </li>
-          ))}
-        </ul>
-        <p
-          className={cn(
-            "mt-3 text-label leading-label",
-            costAlarming ? "text-[color:var(--color-amber-source-a90)]" : "text-[color:var(--color-text-tertiary)]",
-          )}
-          data-cost-tone={costAlarming ? "alarming" : "quiet"}
-          data-testid="library-rounds-cost"
-        >
-          {cost}
-        </p>
-        {round && widened ? (
-          <p data-testid="library-rounds-widens" className="mt-3 text-body leading-body text-[color:var(--color-amber-source-a90)]">{t("sheet.editWidens")}</p>
-        ) : null}
-      </div>
+      <RoundGrants lines={may} cost={cost.text} costAlarming={cost.alarming} widens={round !== null && widened} />
 
       {failure ? <p role="alert" className="text-body leading-body text-[color:var(--color-danger-text)]">{failure}</p> : null}
 
