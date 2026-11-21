@@ -127,10 +127,12 @@ export function askPermission(request: AcpPermissionRequest, session: Permission
       approvedReceiptsRef.current.set(receipt.id, { toolCallId: request.toolCallId, receipt });
     }
   };
-  // A question that waited in the queue may outlive its session, and one after Stop is refused:
-  // answered-by-nobody beats presenting a card for a conversation that is stopping or dead.
+  // A question that waited in the queue may outlive its session or its turn, and one after Stop is
+  // refused: answered-by-nobody beats presenting a card, or applying a standing choice, for a
+  // conversation that is stopping or dead or a turn that has ended.
   const closed = () => generationRef.current !== generation || statusRef.current === 'exited'
-    || activeTurnRef.current?.stopping === true;
+    || activeTurnRef.current?.stopping === true
+    || (arrivalTurn !== null && activeTurnRef.current !== arrivalTurn);
   const present = async (): Promise<string | null> => {
     if (closed()) return null;
     if (request.reviewKind === 'ontology-write' && (
@@ -152,7 +154,6 @@ export function askPermission(request: AcpPermissionRequest, session: Permission
       }
     }
     if (closed()) return null;
-    if (activeTurnRef.current !== arrivalTurn) decided = null;
     return presentDecided(decided);
   };
   const presentDecided = (decided: AcpAutoDecision) => new Promise<string | null>((resolve) => {

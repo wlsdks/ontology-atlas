@@ -1677,6 +1677,30 @@ describe('auto-approve — the person answers once for the folder', () => {
     await act(async () => { await result.current.stop(); });
   });
 
+  it('refuses a write queued behind a card when its turn ends first, instead of auto-approving it', async () => {
+    bridge.holdPrompt = true;
+    const { result } = await startSession();
+    act(() => result.current.setAutoApprove(true));
+    void result.current.send('Remove the old refund concept and add a new one.');
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+
+    await act(async () => {
+      bridge.listener?.(atlasWrite(601, 'delete_concept'));
+      bridge.listener?.(atlasWrite(602, 'add_concept'));
+    });
+    await waitFor(() => expect(result.current.pending?.request.requestId).toBe(601));
+    await act(async () => {
+      bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', id: bridge.pendingPrompt, result: { stopReason: 'end_turn' } }));
+    });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    await act(async () => { result.current.pending?.resolve('reject'); });
+    await waitFor(() => expect(answerOf(602)).toBeDefined());
+    expect(answerOf(602)).toBe('reject');
+    expect(result.current.pending).toBeNull();
+    await act(async () => { await result.current.stop(); });
+  });
+
   it("lets the screen's own refusal win over auto-approve", async () => {
     bridge.permissionVerdict = 'allow-inside-vault';
     const { result } = await startSession({ autoDecide: () => ({ reject: 'outside-round-scope' }) });
