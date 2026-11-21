@@ -439,7 +439,6 @@
     "agentMissingDoor": "连接智能体",
     "offTemplateAriaLabel": "此页面与 Wiki 模板的差异",
     "offTemplateTitle": "{count, number} 处待修正 · 页面模板",
-    "offTemplateBody": "修正下列问题后，它就会和其他页面一样被读取。",
     "writer": {
       "human": "人工",
       "agent": "{name}（智能体）",
@@ -591,7 +590,7 @@
         "shortDo": "让其中一个链接到另一个"
       },
       "shared-source-unlinked-more": {
-        "what": "另有 {count, number} 个页面根据同一份来源撰写，它们与此页面互不指向。",
+        "what": "另有 {count} 个页面根据同一份来源撰写，它们与此页面互不指向。",
         "do": "把根据同一份来源撰写的页面互相链接起来。",
         "short": "另有 {count} 个页面与 {page} 使用同一份来源，但互不链接",
         "shortDo": "把同一份来源的页面互相链接起来"

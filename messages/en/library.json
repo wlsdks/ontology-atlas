@@ -439,7 +439,6 @@
     "agentMissingDoor": "Connect an agent",
     "offTemplateAriaLabel": "How this page differs from the wiki template",
     "offTemplateTitle": "{count, number} to fix · page template",
-    "offTemplateBody": "Fix what follows and it reads the same way every other page does.",
     "writer": {
       "human": "a person",
       "agent": "{name} (agent)",
@@ -591,7 +590,7 @@
         "shortDo": "link one to the other"
       },
       "shared-source-unlinked-more": {
-        "what": "{count, number} more pages are written from the same source, and none of them points at this one or is pointed at by it.",
+        "what": "{count} more pages are written from the same source, and none of them points at this one or is pointed at by it.",
         "do": "Link the pages written from one source to each other.",
         "short": "{count} more pages use the same source as {page} but do not link it",
         "shortDo": "link the pages of one source to each other"

@@ -439,7 +439,6 @@
     "agentMissingDoor": "エージェントを接続",
     "offTemplateAriaLabel": "このページとWikiテンプレートの違い",
     "offTemplateTitle": "修正が必要な箇所{count, number}件 · ページテンプレート",
-    "offTemplateBody": "以下を直すと、ほかのページと同じ形で読めるようになります。",
     "writer": {
       "human": "人",
       "agent": "{name}（エージェント）",
@@ -591,7 +590,7 @@
         "shortDo": "一方から他方へリンクしてください"
       },
       "shared-source-unlinked-more": {
-        "what": "同じ資料から書かれたページがほかに{count, number}件あり、どれもこのページと互いを指していません。",
+        "what": "同じ資料から書かれたページがほかに{count}件あり、どれもこのページと互いを指していません。",
         "do": "同じ資料から書かれたページ同士をリンクしてください。",
         "short": "{page}と同じ資料を使うページがほかに{count}件あり、互いにリンクしていません",
         "shortDo": "同じ資料のページ同士をリンクしてください"

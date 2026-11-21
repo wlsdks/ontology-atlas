@@ -439,7 +439,6 @@
     "agentMissingDoor": "에이전트 연결하기",
     "offTemplateAriaLabel": "이 문서가 위키 서식과 다른 점",
     "offTemplateTitle": "고칠 곳 {count, number}개 · 서식",
-    "offTemplateBody": "아래를 고치면 다른 문서와 같은 방식으로 읽혀요.",
     "writer": {
       "human": "사람",
       "agent": "{name}(에이전트)",
@@ -591,7 +590,7 @@
         "shortDo": "한쪽에서 다른 쪽을 연결하세요"
       },
       "shared-source-unlinked-more": {
-        "what": "같은 자료로 쓴 문서가 {count, number}개 더 있는데, 이 문서와 서로를 가리키지 않아요.",
+        "what": "같은 자료로 쓴 문서가 {count}개 더 있는데, 이 문서와 서로를 가리키지 않아요.",
         "do": "같은 자료로 쓴 문서끼리 서로 연결하세요.",
         "short": "같은 자료를 쓰는 문서 {count}개가 {page}에 연결되지 않았어요",
         "shortDo": "같은 자료로 쓴 문서끼리 연결하세요"

@@ -88,7 +88,6 @@ describe("WikiTemplateProblems — a folder finding is not an off-template verdi
     renderPanel([LINK_PROBLEM]);
     expect(screen.queryByTestId("library-wiki-problems")).toBeNull();
     expect(screen.getByTestId("library-wiki-link-findings")).toBeInTheDocument();
-    expect(screen.queryByText(ko.library.wiki.offTemplateBody)).toBeNull();
   });
 
   it("a page whose only finding is its own shape keeps the link heading off the screen", () => {
