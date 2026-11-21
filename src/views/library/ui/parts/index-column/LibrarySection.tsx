@@ -216,20 +216,6 @@ const INDEX_QUIET_INSET = "gap-1.5 border border-transparent px-2.5 py-0.5";
  */
 const INDEX_TEXT_LINE = "flex gap-1.5 border-x border-transparent px-2.5";
 
-/**
- * The button group is a two-column grid: every control is `w-full` and a lone or odd last control
- * spans the row. The odd-child span is a selector because the children are written by the two
- * segments and their number depends on the route.
- */
-function SectionActions({ children }: { children?: ReactNode }) {
-  if (!children) return null;
-  return (
-    <div className="grid grid-cols-2 gap-1 px-3 pb-2 [&>*:last-child:nth-child(odd)]:col-span-2">
-      {children}
-    </div>
-  );
-}
-
 /** The log's ISO stamp as a person reads it; the raw stamp when it does not parse. */
 
 /**
