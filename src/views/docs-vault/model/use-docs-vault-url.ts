@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
-import { getTopologyProjectHref } from '@/entities/project';
+import { buildTopologyProjectHref } from '@/entities/project';
 import {
   buildTopologyReturnMarker,
   parseTopologyReturnMarker,
@@ -52,7 +52,7 @@ export function useDocsVaultAddress() {
   );
   // `/?p=` loses its query in the locale-less root redirect; link /topology directly.
   const getProjectHref = useCallback(
-    (slug: string) => getTopologyProjectHref(slug),
+    (slug: string) => buildTopologyProjectHref(slug),
     [],
   );
 

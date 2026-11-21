@@ -1,4 +1,4 @@
-import { getTopologyFocusHref, getTopologyProjectHref } from "@/entities/project";
+import { buildTopologyFocusHref, buildTopologyProjectHref } from "@/entities/project";
 import type { VaultDoc } from "../../model/vault-manifest";
 import { computeProjectSlug } from "../projects/project-slug";
 
@@ -13,10 +13,10 @@ export function buildTopologyDeeplinkForDoc(doc: VaultDoc): string | null {
   const kind = typeof rawKind === "string" ? rawKind.trim() : "";
   if (kind === "project") {
     const slug = computeProjectSlug(doc);
-    return slug ? getTopologyProjectHref(slug) : null;
+    return slug ? buildTopologyProjectHref(slug) : null;
   }
   if (FOCUSABLE_ONTOLOGY_KINDS.has(kind) && doc.slug) {
-    return getTopologyFocusHref(doc.slug);
+    return buildTopologyFocusHref(doc.slug);
   }
   return null;
 }

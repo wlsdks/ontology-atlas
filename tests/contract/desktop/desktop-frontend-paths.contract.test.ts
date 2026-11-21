@@ -8,7 +8,7 @@ import {
   isDesktopFrontendPath,
 } from "../../../scripts/desktop/stage-desktop-frontend.mjs";
 import { listLocales } from "../../../scripts/i18n/build-messages.mjs";
-import { getProjectEditHref, getProjectRuntimeDetailHref } from "@/entities/project";
+import { buildProjectEditHref, buildProjectRuntimeDetailHref } from "@/entities/project";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { SETTINGS_CATALOG } from "@/widgets/app-settings-menu/model/catalog";
 
@@ -161,7 +161,7 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
   });
 
   it("/project/<slug>: the app opens every project, to read or to edit, through the query-addressed pages", () => {
-    for (const href of [getProjectRuntimeDetailHref("a b/c"), getProjectEditHref("a b/c", { returnTo: "/topology" })]) {
+    for (const href of [buildProjectRuntimeDetailHref("a b/c"), buildProjectEditHref("a b/c", { returnTo: "/topology" })]) {
       const page = new URL(href, "https://atlas.invalid").pathname.split("/")[2];
       expect(APP_PROJECT_PAGES).toContain(page);
     }
