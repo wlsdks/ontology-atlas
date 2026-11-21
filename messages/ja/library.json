@@ -1180,5 +1180,69 @@
     "sourceTooLarge": "このファイルは大きすぎてここには表示できません。",
     "linkMissing": "このフォルダにはこの名前のものがありません。",
     "back": "戻る"
+  },
+  "wikiIndex": {
+    "views": {
+      "log": "記録",
+      "logNone": "まだありません",
+      "checkNever": "未実行"
+    },
+    "group": {
+      "attention": "確認が必要なページ",
+      "answers": "保存した回答",
+      "several": "複数の原文から書いたページ",
+      "one": "1つの原文から書いたページ",
+      "none": "原文の記載がないページ"
+    },
+    "row": {
+      "sources": "原文{count, number}件",
+      "noSource": "原文なし",
+      "moreReasons": "{reason}ほか{count, number}件"
+    },
+    "reason": {
+      "disagreement": "ほかのページと食い違っています",
+      "superseded": "新しい原文の内容と違います",
+      "stale": "書いた後に原文が変わりました",
+      "unhashed": "原文が変わったか確認できません",
+      "missingLink": "関連ページへのリンクがありません"
+    },
+    "day": {
+      "now": "たった今",
+      "today": "今日",
+      "yesterday": "昨日",
+      "ago": "{count, number}日前"
+    },
+    "showAll": "{count, number}件をすべて表示",
+    "attentionAll": "検査結果で{count, number}件をすべて表示",
+    "groupClear": "一覧全体を表示",
+    "empty": {
+      "title": "まだwikiページがありません",
+      "body": "エージェントが原文からwikiページを書くと、ここに集まります。原文ごとのページ、複数の原文をまとめたページ、保存した回答に分けて表示します。",
+      "toSources": "原文タブでwikiページを作成"
+    },
+    "reading": "wikiページを読み込み中 · これまでに{count, number}件",
+    "pageGone": "{title}はもうwiki/にありません。一覧に戻りました。"
+  },
+  "wikiLog": {
+    "title": "記録",
+    "lede": "このwikiで起きたことを新しい順に表示します。原文から書いたページ、検査、修正、保存した回答がここに積み重なります。",
+    "meta": "wiki/_log.mdとwiki/answers/から読み込み · {count, number}件",
+    "kind": {
+      "compile": "ページを作成",
+      "lint": "検査",
+      "fix": "修正",
+      "answer": "回答を保存"
+    },
+    "compiled": "原文{sources, number}件を読み込み · 新規{created, number}件 · 修正{revised, number}件",
+    "noChange": "原文{sources, number}件を読み込み · 変更されたページなし",
+    "answer": "wikiに保存した回答：{title}",
+    "byRound": "自動点検「{name}」",
+    "pageGone": "{name}(wiki/にありません)",
+    "empty": "このwikiではまだ何も起きていません。原文からページを書く、wikiを検査する、回答を保存すると、ここに1行ずつ残ります。",
+    "unreadable": "wiki/_log.mdを読み込めないため、保存した回答だけを表示しています。ファイルの権限を確認してください。読み込めるようになると一覧が更新されます。"
+  },
+  "sourcesIndex": {
+    "add": "原文を追加",
+    "addBody": "原文はそのまま残ります。Atlasが読み込み、エージェントが原文からwikiページを書きます。"
   }
 }

@@ -1180,5 +1180,69 @@
     "sourceTooLarge": "This file is too large to show here.",
     "linkMissing": "Nothing in this folder has this name.",
     "back": "Back"
+  },
+  "wikiIndex": {
+    "views": {
+      "log": "Log",
+      "logNone": "Nothing yet",
+      "checkNever": "Not run yet"
+    },
+    "group": {
+      "attention": "Needs a look",
+      "answers": "Saved answers",
+      "several": "From several sources",
+      "one": "From one source",
+      "none": "Lists no source"
+    },
+    "row": {
+      "sources": "{count, plural, one {# source} other {# sources}}",
+      "noSource": "No source",
+      "moreReasons": "{reason} +{count, number} more"
+    },
+    "reason": {
+      "disagreement": "Disagrees with another page",
+      "superseded": "A newer source says otherwise",
+      "stale": "The source changed after this was written",
+      "unhashed": "Can't tell whether the source changed",
+      "missingLink": "Should link to a related page"
+    },
+    "day": {
+      "now": "Just now",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "ago": "{count, number} days ago"
+    },
+    "showAll": "Show all {count, number}",
+    "attentionAll": "All {count, number} in Check results",
+    "groupClear": "Show the whole index",
+    "empty": {
+      "title": "No wiki pages yet",
+      "body": "When the agent writes wiki pages from your sources, they gather here: one page per source, pages that bring several sources together, and the answers you save.",
+      "toSources": "Write wiki pages from Sources"
+    },
+    "reading": "Reading wiki pages · {count, number} so far",
+    "pageGone": "{title} is no longer in wiki/. Showing the index."
+  },
+  "wikiLog": {
+    "title": "Log",
+    "lede": "What happened to this wiki, newest first: pages written from sources, checks, fixes and saved answers.",
+    "meta": "Read from wiki/_log.md and wiki/answers/ · {count, plural, one {# entry} other {# entries}}",
+    "kind": {
+      "compile": "Wrote pages",
+      "lint": "Checked",
+      "fix": "Fixed",
+      "answer": "Saved an answer"
+    },
+    "compiled": "{sources, plural, one {# source} other {# sources}} read · {created, number} new · {revised, number} revised",
+    "noChange": "{sources, plural, one {# source} other {# sources}} read · no page changed",
+    "answer": "Saved to the wiki: {title}",
+    "byRound": "Scheduled check “{name}”",
+    "pageGone": "{name} (no longer in wiki/)",
+    "empty": "Nothing has happened in this wiki yet. Writing pages from sources, checking the wiki and saving an answer each add a line here.",
+    "unreadable": "wiki/_log.md could not be read, so only saved answers are listed. Check the file's permissions; this list updates when it can be read."
+  },
+  "sourcesIndex": {
+    "add": "Add sources",
+    "addBody": "Sources stay as they are. Atlas reads them, and the agent writes wiki pages from them."
   }
 }

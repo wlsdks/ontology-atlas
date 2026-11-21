@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { VaultDoc, VaultSourceFile } from '../../model/types';
-import { deriveSourceProgress, recordedLocalDay, SOURCE_PROGRESS_MAX_POINTS } from './source-progress';
+import { deriveSourceProgress, recordedInstantMs, recordedLocalDay, SOURCE_PROGRESS_MAX_POINTS } from './source-progress';
 import { buildLibraryModel, type LibrarySourceRow, type SourceCompileState } from './vault-library';
 
 /** 2026-11-19 21:00 in Seoul; a fixed offset keeps local days independent of the machine. */
@@ -192,6 +192,19 @@ describe('each source is dated once, by the earliest date it can be believed', (
     expect(recordedLocalDay(late, SEOUL.offsetMinutes)).toBe(Date.UTC(2026, 10, 19) / 86_400_000);
     expect(recordedLocalDay(late, () => -300)).toBe(Date.UTC(2026, 10, 18) / 86_400_000);
     expect(deriveSourceProgress({ sources: [dated(late)] }, SEOUL).today).toBe(1);
+  });
+
+  it.each([
+    ['2026-11-18T20:00:00Z', Date.parse('2026-11-18T20:00:00Z')],
+    ['2026-11-19T05:00:00+09:00', Date.parse('2026-11-18T20:00:00Z')],
+    // No zone: wall time in the injected zone, and a bare date is its midnight.
+    ['2026-11-19T05:00:00', Date.parse('2026-11-18T20:00:00Z')],
+    ['2026-11-19', Date.parse('2026-11-18T15:00:00Z')],
+    ['build 12', null],
+    ['2026-02-30', null],
+    ['1999-12-31', null],
+  ])('reads %s as the same instant the day count uses', (value, ms) => {
+    expect(recordedInstantMs(value, SEOUL.offsetMinutes)).toBe(ms);
   });
 });
 
