@@ -1119,5 +1119,69 @@
     "linkMissing": "이 폴더에 이 이름을 가진 것이 없어요.",
     "back": "뒤로",
     "close": "페이지 닫기"
+  },
+  "wikiIndex": {
+    "views": {
+      "log": "기록",
+      "logNone": "아직 없음",
+      "checkNever": "아직 안 함"
+    },
+    "group": {
+      "attention": "확인할 문서",
+      "answers": "저장한 답",
+      "several": "여러 원문으로 쓴 문서",
+      "one": "원문 하나로 쓴 문서",
+      "none": "원문을 적지 않은 문서"
+    },
+    "row": {
+      "sources": "원문 {count, number}개",
+      "noSource": "원문 없음",
+      "moreReasons": "{reason} 외 {count, number}개"
+    },
+    "reason": {
+      "disagreement": "다른 문서와 어긋나요",
+      "superseded": "더 새 원문이 다르게 말해요",
+      "stale": "쓴 뒤 원문이 바뀌었어요",
+      "unhashed": "원문이 바뀌었는지 알 수 없어요",
+      "missingLink": "이어야 할 문서와 이어지지 않았어요"
+    },
+    "day": {
+      "now": "방금",
+      "today": "오늘",
+      "yesterday": "어제",
+      "ago": "{count, number}일 전"
+    },
+    "showAll": "{count, number}개 모두 보기",
+    "attentionAll": "검사 결과에서 {count, number}개 모두 보기",
+    "groupClear": "전체 목록 보기",
+    "empty": {
+      "title": "아직 위키 문서가 없어요",
+      "body": "에이전트가 원문으로 위키 문서를 쓰면 여기에 모여요. 원문마다 한 문서, 여러 원문을 함께 다룬 문서, 저장한 답으로 나눠 보여 줘요.",
+      "toSources": "원문 탭에서 위키 문서 만들기"
+    },
+    "reading": "위키 문서를 읽는 중 · 지금까지 {count, number}개",
+    "pageGone": "{title} 문서가 wiki/에 더 없어요. 목록으로 돌아왔어요."
+  },
+  "wikiLog": {
+    "title": "기록",
+    "lede": "이 위키에 일어난 일을 최근 것부터 보여 줘요. 원문으로 쓴 문서, 검사, 고친 일, 저장한 답이 여기 쌓여요.",
+    "meta": "wiki/_log.md와 wiki/answers/에서 읽어요 · {count, number}건",
+    "kind": {
+      "compile": "문서 씀",
+      "lint": "검사함",
+      "fix": "고침",
+      "answer": "답 저장"
+    },
+    "compiled": "원문 {sources, number}개 읽음 · 새 문서 {created, number}개 · 고친 문서 {revised, number}개",
+    "noChange": "원문 {sources, number}개 읽음 · 바뀐 문서 없음",
+    "answer": "위키에 저장한 답: {title}",
+    "byRound": "자동 점검 「{name}」",
+    "pageGone": "{name} (wiki/에 없음)",
+    "empty": "아직 이 위키에 일어난 일이 없어요. 원문으로 문서를 쓰거나, 위키를 검사하거나, 답을 저장하면 여기에 한 줄씩 남아요.",
+    "unreadable": "wiki/_log.md를 읽지 못해 저장한 답만 보여 줘요. 파일 권한을 확인하세요. 읽을 수 있게 되면 목록이 바로 바뀌어요."
+  },
+  "sourcesIndex": {
+    "add": "원문 넣기",
+    "addBody": "원문은 그대로 둬요. Atlas가 읽고, 에이전트가 원문으로 위키 문서를 써요."
   }
 }
