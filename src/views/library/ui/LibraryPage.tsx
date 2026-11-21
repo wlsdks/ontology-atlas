@@ -73,6 +73,7 @@ import { useCompileSender } from "../model/sources/use-compile-sender";
 import { useSourcePick } from "../model/sources/use-source-pick";
 import { useConversationWorkReports } from "../model/turns/use-conversation-work-reports";
 import { useWorkRunDoors } from "../model/turns/use-work-run-doors";
+import { answerFilingKind } from "../model/turns/library-answer";
 import { agentWriterId } from "../model/turns/writer-id";
 import { wikiRevisionStamp } from "../model/turns/wiki-revision-stamp";
 
@@ -282,6 +283,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     invalidateDeskReport, filingAnswer, fileAnswerNote, judgeWrite, handleFileAnswer,
     handleFileReport, autoDecide, handleTurnStarted,
   } = turns;
+  const answerFiling = answerFilingKind(lastAnswer, deskReport, workVaultScope);
   const agentDoor = nativeVaultRootPath !== null && (agent.route === "unavailable" || agent.route === "local");
   const { readerRef, paneBodyRef } = useLibraryFocus({
     selected, setSelected, mobileBrowseOpen, mobileBrowseBackRef, homeSurface,
@@ -349,9 +351,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           onTurnWorkChange={observeCheckWork}
           turnReadOnly={turns.turnReadOnly}
           turnOutlivesScreen={turns.turnOutlivesScreen}
-          onFileAnswer={lastAnswer ? lastAnswer.origin === 'question-report'
-            ? deskReport?.answer === lastAnswer && deskReport.vaultScope === workVaultScope ? handleFileReport : null
-            : () => void handleFileAnswer() : null}
+          onFileAnswer={answerFiling === "report" ? handleFileReport : answerFiling === "answer" ? () => void handleFileAnswer() : null}
           filingAnswer={lastAnswer !== null && filingAnswer === lastAnswer}
           fileAnswerNote={fileAnswerNote}
           noticeActions={{

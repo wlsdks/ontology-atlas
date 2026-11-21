@@ -5,10 +5,9 @@ import { workRuns, type useActiveTurn } from "@/features/work-run";
 import type { LibrarySelection } from "../library-selection";
 
 /**
- * The doors the app session's work cards open into this folder's Library. Opening the Library reads
- * every finished turn of this folder and brings a turn still running back on screen; a card's door
- * opens once this folder's Library is showing: a turn's conversation (the asking agent chosen again)
- * or the page it wrote, or the check results, or the conversation.
+ * The doors the app session's work cards open into this folder's Library: opening it reads every
+ * finished turn and brings a running one back on screen, and a card's door (a turn's conversation, the
+ * page it wrote, the check results) opens once this folder's Library is showing.
  */
 export function useWorkRunDoors({ hasFolder, workVaultScope, writingTurn, choose, setAgentOpen, setAgentRuntime }: {
   hasFolder: boolean;

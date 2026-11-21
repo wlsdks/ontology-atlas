@@ -22,10 +22,9 @@ interface Intro {
 }
 
 /**
- * Numbers that move toward targets. The first targets ease in from where they stand over
- * `--motion-expressive`; every later target is followed from the drawn value and its speed on
- * `SPRING.surface`, so a page landing mid-motion bends the motion instead of restarting it. Pure:
- * the caller supplies the clock and draws `positions`.
+ * Numbers that move toward targets: the first ease in over `--motion-expressive`, later ones follow
+ * from the drawn value and its speed on `SPRING.surface`, so a landing mid-motion bends it instead of
+ * restarting. Pure: the caller supplies the clock and draws `positions`.
  */
 export class BandMotion {
   readonly positions: number[];

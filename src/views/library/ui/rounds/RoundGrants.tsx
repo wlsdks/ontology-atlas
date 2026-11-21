@@ -8,10 +8,8 @@ import { fieldLabel } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 /**
- * What this round may do, as a hairline and a list, not a fourth card: this is the one block on the
- * sheet a person cannot edit, and a box around it made it look like another question. The cost line
- * keeps the same words at every cadence and only changes ink above 48 agent turns a day, because a
- * drag that feels good must not out-argue the invoice.
+ * What this round may do, as a hairline and a list: the one block a person cannot edit, so a box would
+ * make it look like another question. The cost line changes ink only above 48 agent turns a day.
  */
 export function RoundGrants({ lines, cost, costAlarming, widens }: {
   lines: readonly string[];

@@ -20,19 +20,13 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
   onRefresh: (() => void) | null;
   refreshButtonRef?: RefObject<HTMLButtonElement | null>;
   /**
-   * Whether `answers.refreshUnavailable` earns a door to `/agents` (slice U2).
-   *
-   * That sentence names only a connected coding agent, so unlike `stage.blockedNoAgent`
-   * it has no second clause the door leaves unanswered. False on the web, where the
-   * missing thing is the app itself.
+   * Whether `answers.refreshUnavailable` earns a door to `/agents`; it names only a connected coding agent,
+   * so no second clause is left unanswered. False on the web.
    */
   agentDoor?: boolean;
   /**
-   * **The page already knows this press would throw** (installed-app inspection before v1.2.2,
-   * B2). A malformed thread edge makes the index card read `answers.version.unresolved` while this block
-   * offered the refresh anyway; pressing it threw, and the developer's English landed in the body.
-   * Set from the same predicate `prepareAnswerRefresh` refuses on (`answerHistoryUnreadable`), so
-   * the two cannot disagree.
+   * The page already knows this press would throw: a malformed thread edge reads `answers.version.unresolved`
+   * on the index card. Set from the predicate `prepareAnswerRefresh` refuses on, so the two cannot disagree.
    */
   historyBlocked?: boolean;
   /**
@@ -76,9 +70,8 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
           </p>
           <span className="flex flex-none flex-wrap items-center gap-2">
             {/*
-             * **The door, beside the reason the detail dialog holds** (slice U2). The refresh is
-             * disabled without a connected coding agent and `answers.refreshUnavailable` says
-             * so; this is the only live control in that state, so it stands first.
+               The door beside the reason the detail dialog holds: the refresh is disabled without a connected
+               agent, so this is the only live control in that state and stands first.
              */}
             {agentDoor && onRefresh === null ? <AgentDoor testId="answer-refresh-blocked-door" /> : null}
             <button

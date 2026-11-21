@@ -56,3 +56,18 @@ export function retryAskApplies(
   const kept = retry.context.report;
   return !kept || (kept.epoch === report.epoch && kept.vaultScope === scope && kept.listingVersion === report.listingVersion);
 }
+
+/**
+ * Which filing the dock's file-answer control runs for the answer on screen: a typed answer files as
+ * itself, a summary report only while it is the report the desk holds for this folder, and nothing
+ * when there is no answer or the report is no longer the one the desk shows.
+ */
+export function answerFilingKind(
+  answer: RetainedLibraryAnswer | null,
+  deskReport: { answer: RetainedLibraryAnswer; vaultScope: string } | null,
+  vaultScope: string,
+): "answer" | "report" | null {
+  if (!answer) return null;
+  if (answer.origin !== "question-report") return "answer";
+  return deskReport?.answer === answer && deskReport.vaultScope === vaultScope ? "report" : null;
+}

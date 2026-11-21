@@ -71,11 +71,8 @@ export function StageStep({
           <span
             data-testid={`library-stage-state-${word}`}
             /*
-             * **The word stays true; only the emphasis is singular.** Two steps can
-             * honestly be next at once — a folder with pages written and sources still
-             * waiting can be compiled or read — and both rows say `next`. Measured at
-             * 1512 on the seeded folder, painting both indigo put two accents in a 360px
-             * panel and the eye found neither. So the ink follows the lead edge.
+             * The word stays true and only the emphasis is singular: two steps can honestly be next, but painting
+             * both indigo put two accents in a 360px panel and the eye found neither, so the ink follows the lead edge.
              */
             className={cn(
               "flex-none text-label leading-body tabular-nums",
@@ -92,21 +89,16 @@ export function StageStep({
         </p>
       </div>
       {/*
-        `min-h-8` is the chip's own height, reserved whether or not this row has a control
-        to put in it — the read step has none until a page exists, and a slot that
-        disappears moves everything under it (`.claude/rules/design.md`, dimensional
-        regularity).
-      */}
+         `min-h-8` is the chip's height, reserved even when this row has no control (the read step has none
+         until a page exists): a slot that disappears moves everything under it.
+       */}
       <div className="library-spine-fold-away mt-2 flex min-h-8 flex-wrap items-center gap-2">
         {action}
       </div>
       {/*
-        ⚠️ **`extra` is never folded away.** The fold exists so that step three's saved
-        questions reach a short pane at all, and step three is `done` on exactly the
-        folder that has them — a rule that hid a done step's whole body would delete the
-        target it was written to reveal. What folds is the record of finished work: the
-        caption and the action row above.
-      */}
+         `extra` is never folded away: step three's saved questions are the reason the fold exists, and step
+         three is `done` on exactly the folder that has them. Only finished work (caption, action row) folds.
+       */}
       {extra}
     </li>
   );

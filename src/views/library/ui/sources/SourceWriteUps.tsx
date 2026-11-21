@@ -43,12 +43,8 @@ export function SourceWriteUps({
                 onClick={() => onOpenWiki(page.slug)}
                 data-testid={`library-source-writeup-${page.slug}`}
                 /*
-                 * **The title is what a reader sees; the slug is still the address.**
-                 * Every other surface addresses a wiki page by its title, so a row of
-                 * slugs here would be a second vocabulary for one thing. But this pane
-                 * is the one place a person copies exact vault paths — it prints the
-                 * source's own `Path` two rows up — so the page's path stays reachable
-                 * rather than becoming information only the index has.
+                 * The title is what a reader sees; the slug is the address. This pane prints the source's own `Path`,
+                 * so it is the one place a person copies exact vault paths, and the page's path stays reachable.
                  */
                 title={page.slug}
                 tone="muted"
@@ -103,9 +99,8 @@ export function SourceWriteUps({
             </p>
           ) : null}
           {/*
-           * The door, when that note is the reason a coding agent is missing rather
-           * than a disclosure about what leaves this computer (slice U2). `compileNote`
-           * carries whichever of the two is true, so the caller says which.
+             The door, when the note says a coding agent is missing rather than what leaves this computer;
+             the caller says which.
            */}
           {compileNote && compileBlocked && agentDoor ? (
             <div className="flex">

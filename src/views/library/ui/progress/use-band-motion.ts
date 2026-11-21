@@ -17,12 +17,9 @@ interface IntroGate {
 }
 
 /**
- * Drives `draw` with values moving toward `targets`: from zero over `--motion-expressive` when
- * `intro` is set when the values first exist, then following each change on `SPRING.surface`. While
- * `hold` is set nothing is drawn, so an intro can wait for its first settled numbers. Reduced motion,
- * and a change in how many values there are, draw the targets at once. Frames run only while a value
- * moves. An intro waits on zero until frames arrive steadily, so the work that follows a folder
- * opening does not freeze the count mid-way; `onStart` tells the caller when it begins.
+ * Drives `draw` with values moving toward `targets`: from zero when `intro` is set, then following each
+ * change on `SPRING.surface`. Nothing is drawn while `hold` is set; reduced motion draws the targets at
+ * once. An intro waits on zero until frames arrive steadily, and `onStart` says when it begins.
  */
 export function useBandMotion(
   targets: readonly number[],

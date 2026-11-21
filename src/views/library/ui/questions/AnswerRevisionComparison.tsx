@@ -198,14 +198,8 @@ export function AnswerRevisionComparison({ open, question, before, after, proble
     .filter((line) => line && !line.startsWith('#') && !newLines.has(line));
 
   /*
-   * **Which original moved, answered from the two pages themselves.**
-   *
-   * `prepareAnswerRefresh` measures every original in scope before the turn starts and
-   * `buildAnswerRevision` writes those hashes into the proposal's
-   * `answer_source_observations`, so the proposed page *is* the current observation. Read
-   * against the previous page's recorded hashes it says, per cited path, what
-   * `answerObservation` says on the answer page itself — the same function, so the dialog
-   * and the page behind it cannot disagree. It needs no hash prop and no new measurement.
+   * Which original moved, read from the two pages: the proposal's recorded hashes against the previous
+   * page's, through `answerObservation`, so the dialog and the page behind it cannot disagree.
    */
   const observation = useMemo(
     () => answerObservation(parseFrontmatter(before).frontmatter, knownOriginalPaths ?? EMPTY_PATHS, recordedObservations(after)),
@@ -227,10 +221,8 @@ export function AnswerRevisionComparison({ open, question, before, after, proble
   const structured = beforeSlices.structured || afterSlices.structured;
   const leadRow = Boolean(beforeSlices.lead) || Boolean(afterSlices.lead) || !structured;
   /*
-   * **One row per contract section, and the row is never dropped.** A section only one side
-   * carries still owns its row with `stage.none` in the empty cell: "nothing here" is itself
-   * something a reader learns, which is the same reason `validateWikiPage` refuses a page
-   * that deletes an empty section.
+   * One row per contract section, never dropped: a section only one side carries keeps its row with
+   * `stage.none`, since nothing here is itself something a reader learns.
    */
   const rows: ReadonlyArray<{ id: string; section: string | null }> = [
     { id: 'head', section: null },

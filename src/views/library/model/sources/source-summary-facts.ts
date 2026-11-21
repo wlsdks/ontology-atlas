@@ -31,10 +31,9 @@ function nameCarriesFormat(row: LibrarySourceRow): boolean {
 }
 
 /**
- * The facts a source pane prints, each once: the format is omitted when the name carries the
- * extension, and the state hides at `lg` while the index shows it. The hash is never a guess: an
- * unmeasured one says so, and one a citation's read measured says it was just read, since a hash whose
- * provenance a reader cannot tell apart from the one a write-up recorded is a fact about nothing.
+ * The facts a source pane prints, each once: no format row when the name ends in it, no state row at
+ * `lg` while the index shows it. A hash is never a guess: an unmeasured one says so, and one a
+ * citation's read measured says it was just read, since its provenance differs from a write-up's.
  */
 export function sourceFacts({ row, hash, passageHash, indexShowsState }: {
   row: LibrarySourceRow;

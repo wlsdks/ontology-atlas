@@ -57,10 +57,8 @@ interface Props {
 }
 
 /**
- * The passage a citation names, beside the citation. It owns its state, so opening one renders
- * this and never the page body; the citation's `aria-expanded` is set on the button directly for
- * the same reason. Each press is its own entry, so two citations after one sentence never merge
- * and the closing one leaves with its own exit while the next rises.
+ * The passage a citation names, beside the citation. It owns its state, so opening one renders this
+ * and never the page body. Each press is its own entry, so two citations after one sentence never merge.
  */
 export const WikiCitationPopover = forwardRef<WikiCitationPopoverHandle, Props>(function WikiCitationPopover(props, ref) {
   const [entries, setEntries] = useState<Entry[]>([]);

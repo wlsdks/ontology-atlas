@@ -34,16 +34,9 @@ const INTRO_WAIT_MS = 1200;
 const lit = new Set<string>();
 
 /**
- * How far the folder's sources are into wiki pages, and the press that writes the next ones: one row
- * above the Sources home, of one height from `md` whatever has arrived (124px beside the panel,
- * 136px when the pane stacks), so the pane under it never moves. The statement (number, sentence, the bar with one press per state, which filters the list)
- * heads the overview's table; the chart beside it shows only the change over time, once the pages
- * record three days or more; Continue, who writes and the work line head the Next to write panel.
- * Aiming at Continue lights, on the bar, the share its sources would add.
- *
- * On a folder's first visit in a session the number, the sentence's count, the bar and the chart
- * count up together, so no frame shows one number beside another; until the count starts they are
- * not drawn. Later changes move on from what is drawn.
+ * How far the folder's sources are into wiki pages, and the press that writes the next ones: one row,
+ * one height from `md`, so the pane under it never moves. On a folder's first visit in a session the
+ * number, sentence count, bar and chart count up together, so no frame shows one number beside another.
  */
 export function SourceProgressBand({
   sources,

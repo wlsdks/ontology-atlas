@@ -75,11 +75,9 @@ export function findClaimBlock(layer: HTMLElement, line: number, sentence: strin
 }
 
 /**
- * Brings the block that shows the claim into view once, with one scroll and no correction after
- * it, and lays a mark behind it in `layer` that holds, then fades and leaves the DOM. Under reduced
- * motion the scroll is instant and the mark is there at once and leaves without fading. Returns a
- * cleanup that removes the mark early. A claim no block shows leaves no mark, and the page opens at
- * its top.
+ * Brings the block that shows the claim into view with one scroll and no correction, and lays a mark in
+ * `layer` that holds, fades and leaves. Reduced motion scrolls instantly and skips the fade. Returns a
+ * cleanup; a claim no block shows leaves no mark and the page opens at its top.
  */
 export function landAtLine(
   scroller: HTMLElement,

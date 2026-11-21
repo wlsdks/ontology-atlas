@@ -9,10 +9,8 @@ import { isRouteCrossfadeRunning, navigateWithViewTransition, subscribeRouteCros
 import type { useToast } from "@/shared/ui";
 
 /**
- * The import dialog's state and the doors out of it: open it for Sources, hand a finished import
- * on to Planning, open a concept in the Ontology tab, or go to the connector settings. An import
- * asked for from Planning arrives through a route crossfade, so the dialog rises only once the pane
- * has settled.
+ * The import dialog's state and the doors out of it. An import asked for from Planning arrives
+ * through a route crossfade, so the dialog rises only once the pane has settled.
  */
 export function useLibraryImportFlow({ handle, t, toast }: {
   handle: FileSystemDirectoryHandle | null;

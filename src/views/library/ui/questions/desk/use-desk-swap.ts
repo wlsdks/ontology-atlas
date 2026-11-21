@@ -5,10 +5,9 @@ import { useEffect, useState } from 'react';
 import { EXIT_WINDOW_MS } from '@/shared/lib/render-timing/use-presence';
 
 /**
- * The slot's children while one value replaces another: the leaving ones first, so React keeps
- * their elements (keyed by the caller) and each fade continues from the value last drawn. Unlike
- * `useSurfaceSwap` it holds every value still leaving: asking again twice within the exit window
- * otherwise unmounts the oldest list mid-fade. Under reduced motion only the current value is drawn.
+ * The slot's children while one value replaces another: the leaving ones first, so each fade continues
+ * from the value last drawn. Unlike `useSurfaceSwap` it holds every value still leaving, or asking twice
+ * within the exit window unmounts the oldest list mid-fade.
  */
 export function useDeskSwap<T extends object>(current: T, reduced: boolean): Array<{ value: T; leaving: boolean }> {
   const [swap, setSwap] = useState<{ current: T; leaving: T[] }>({ current, leaving: [] });

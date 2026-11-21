@@ -22,10 +22,9 @@ import { CheckCodesButton } from "../check-report/CheckCodesDialog";
 export type { WikiTemplateProblem };
 
 /**
- * Why a page does not fit the wiki template, in the reader's own words: one sentence per finding plus
- * what to do, every name a press. `describeWikiProblem` owns both halves; the validator's codes open
- * in a centred dialog from the card's title line. Page findings and folder findings sit on separate
- * cards; a folder finding is one line naming both pages.
+ * Why a page does not fit the wiki template, in the reader's words: one sentence per finding plus what
+ * to do, every name a press. `describeWikiProblem` owns both halves; page findings and folder findings
+ * sit on separate cards.
  */
 
 /** What this surface can open. A handler left out renders that name as plain text. */
@@ -70,11 +69,9 @@ const INLINE_WORD = {
 } as const;
 
 /**
- * A name in the sentence, pressable when this surface can open the thing it names.
- *
- * `INLINE_WORD` above owns the appearance; what is decided here is *whether* there is a
- * press at all. A page nobody wrote and an original that is not in the folder are named
- * but never pressable — a link to nothing teaches a person that links here go nowhere.
+ * A name in the sentence, pressable when this surface can open the thing it names. A page nobody wrote
+ * and an original outside the folder are named but never pressable: a link to nothing teaches that
+ * links here go nowhere.
  */
 function TargetWord({
   target,
@@ -165,11 +162,8 @@ function PlaceWords({
 }
 
 /**
- * One finding's sentence, with each name and the place pressable in place.
- *
- * Exported because the computed check report shows the **same** finding: a person who
- * reads it there and then opens the page must meet one sentence, not two retellings of
- * one folder.
+ * One finding's sentence, with each name and the place pressable. Exported because the computed check
+ * report shows the same finding, and a person must meet one sentence, not two retellings.
  */
 export function WikiProblemSentence({
   words,

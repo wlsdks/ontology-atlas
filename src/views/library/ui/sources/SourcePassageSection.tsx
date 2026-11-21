@@ -32,10 +32,8 @@ function PassageLine({ unit, cited }: { unit: SourceUnit; cited: boolean }) {
 }
 
 /**
- * The passage a citation named, under the facts it was filed with: the one part of the file itself,
- * and only the part a person asked for by pressing its address. The parent keys it by
- * `citationKey`, so each citation is a new node and re-pressing fires `focusin`; landing waits for
- * the read, scrolls at once and focuses the section without a ring.
+ * The passage a citation named: the one part of the file itself, and only the part a person asked for.
+ * The parent keys it by `citationKey`, so re-pressing fires `focusin`; landing waits for the read.
  */
 export function SourcePassageSection({ passage, t }: {
   passage: CitedPassageState;
@@ -115,9 +113,10 @@ export function SourcePassageSection({ passage, t }: {
 
       {passage.phase === "ready" && passage.passage?.state === "unresolved" ? (
         <div className="mt-2 flex flex-col gap-1.5">
-          {/* No passage, and no nearest one. The paragraph beside a renamed heading
-              is not the cited paragraph, and a reader shown it would believe a page
-              that lost its address (brief decision 3). */}
+          {/*
+             No passage and no nearest one: the paragraph beside a renamed heading is not the cited paragraph,
+             and showing it would make a reader believe a page that lost its address.
+           */}
           {/* Atlas's own answer wears neither the quote's voice (`text-reading`) nor the facts' (`text-label`).
              `[overflow-wrap:break-word]` is needed: the interpolated address may have no break opportunity. */}
           <p

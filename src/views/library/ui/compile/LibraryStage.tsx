@@ -32,9 +32,7 @@ export interface LibraryStageProps {
   localModel: LibraryLocalModel | null;
   /** The turn that runner runs, and the card it ends at, seated under the Compile press. */
   /**
-   * The brain that will run, and whether the person gets to change it.
-   *
-   * `choosable` is true only when this computer offers both, which is the one case where
+   * The brain that will run; `choosable` is true only when this computer offers both, the one case where
    * a control can change anything.
    */
   brain: CompileBrain | null;
@@ -63,14 +61,8 @@ export interface LibraryStageProps {
    */
   lintBlockedReasonId: string | null;
   /**
-   * Whether the printed reason earns a door to `/agents` (slice U2).
-   *
-   * True exactly when the sentence is one of the agent-availability ones —
-   * `stage.blockedNoAgent` or `stage.blockedLocalOnly`. It is **false on the web**, where
-   * the missing thing is the app and the existing `/download/` card is the honest door,
-   * and false while an agent is still being looked for, because "checking" is not a
-   * blockage a person can act on. `LibraryPage` decides, for the same reason it decides
-   * which card prints the sentence.
+   * Whether the printed reason earns a door to `/agents`: true only for the agent-availability sentences,
+   * false on the web (the `/download/` card is the door there) and while an agent is still being looked for.
    */
   agentDoor: boolean;
   onOpenWiki: (slug: string) => void;
@@ -264,11 +256,9 @@ export function LibraryStage({
           lead={leadIndex === 2}
           title={t("stage.read.title")}
           /*
-             ⚠️ **A source that has not been measured is neither covered nor waiting.** The
-             plain line read "0 of 7 written up" beside a step two that said everything was
-             done, because `needsCompileCount` counts only what is *known* to be waiting.
-             The third clause is what makes the two agree.
-          */
+           * A source not yet measured is neither covered nor waiting: `needsCompileCount` counts only what is
+           * known to be waiting, so the plain line needs a third clause to agree with step two.
+           */
           /*
             A part-read source is not written up, so it is not in `compiled`; with one page
             on the shelf the plain line read "0 of 2 written up" and looked like a folder

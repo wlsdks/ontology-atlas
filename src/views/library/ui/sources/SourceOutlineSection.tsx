@@ -51,12 +51,9 @@ export function SourceOutlineSection({ outline, onOpenPassage, t }: {
         </p>
       ) : outlineUnreadable ? (
         /*
-         * **A format whose shape this reader does not know says so, and prints no
-         * number.** A PDF yields no units at all; "0 parts" would be a different and
-         * untrue fact, and the kind of number a person would believe. A heading-free text or
-         * HTML file reaches the same sentence by the other road — it has units, and
-         * none of them is structure. The Finder door is the honest answer in both
-         * cases, which is why it stays.
+         * A format whose shape this reader does not know says so and prints no number: a PDF yields no units,
+         * and "0 parts" would be untrue. A heading-free text or HTML file reaches the same sentence; the Finder
+         * door stays as the honest answer in both.
          */
         <p
           data-testid="library-source-outline-unreadable"

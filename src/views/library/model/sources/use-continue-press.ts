@@ -8,10 +8,9 @@ import { useCompileBatch, type CompileBatchState } from "../../lib/compile/use-c
 import type { ContinueBatch } from "./continue-batch";
 
 /**
- * The one Compile press every door shares: `press` picks the next batch, `pressFor` takes the
- * sources a door names; either marks them in flight and hands exactly those to `send`, which builds
- * and starts the request. A `send` that could not start (it returns false) drops the batch at once,
- * so its rows do not stay running.
+ * The one Compile press every door shares: `press` picks the next batch, `pressFor` takes the sources
+ * a door names; both mark them in flight and hand exactly those to `send`. A `send` that returns
+ * false drops the batch at once, so its rows do not stay running.
  */
 export function useContinuePress({
   sources,

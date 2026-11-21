@@ -47,10 +47,9 @@ function stepPaths(shares: readonly number[], width: number): { line: string; fi
 }
 
 /**
- * How the count of sources with a wiki page grew: a step line over a soft fill, as tall as its
- * latest count, and one line under it saying what is counted and since when. It repeats no count
- * the band already shows. One focusable element; Left and Right walk the points, each read out in
- * the line's place.
+ * How the count of sources with a wiki page grew: a step line over a soft fill, and one line saying
+ * what is counted and since when. It repeats no count the band shows. One focusable element; Left and
+ * Right walk the points.
  */
 export function SourceProgressChart({
   progress,

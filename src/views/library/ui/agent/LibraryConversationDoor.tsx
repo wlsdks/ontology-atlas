@@ -7,10 +7,8 @@ import type { AcpTurnActivity } from "@/features/acp-session";
 import { ChromeChip } from "@/shared/ui";
 
 /**
- * Keep the destination visible while a conversation runs behind the closed dock.
- * A phase followed by the internal prompt looked like status text to a fresh reader,
- * who could not find the way back to Stop. The work line owns file targets;
- * this control always names Conversation, with the running phase beside it.
+ * Keeps the destination visible while a conversation runs behind the closed dock: a phase beside the
+ * internal prompt read as status text, with no way back to Stop. This control always names Conversation.
  */
 export function LibraryConversationDoor({
   activity,

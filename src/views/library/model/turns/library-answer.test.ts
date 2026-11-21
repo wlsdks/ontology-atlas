@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clearFiledAnswer, matchLibraryOpeningRequest, restoreFiledAnswer, retryAskApplies, type LibraryAskContext, type RetainedLibraryAnswer, type RetryAsk } from './library-answer';
+import { answerFilingKind, clearFiledAnswer, matchLibraryOpeningRequest, restoreFiledAnswer, retryAskApplies, type LibraryAskContext, type RetainedLibraryAnswer, type RetryAsk } from './library-answer';
 
 describe('Library turn presentation belongs to the actual opening request', () => {
   const compile = { kind: 'compile', text: 'Compile this folder', nonce: 1 } as const;
@@ -84,5 +84,22 @@ describe('a retried ask belongs to its request', () => {
     expect(retryAskApplies(withReport, ask, 'folder-a', { epoch: 4, listingVersion: 'v1' })).toBe(true);
     expect(retryAskApplies(withReport, ask, 'folder-a', { epoch: 5, listingVersion: 'v1' })).toBe(false);
     expect(retryAskApplies(withReport, ask, 'folder-a', { epoch: 4, listingVersion: 'v2' })).toBe(false);
+  });
+});
+
+describe('which filing the dock offers', () => {
+  const typed: RetainedLibraryAnswer = { generation: 1, question: 'Q', text: 'A', askedOn: null };
+  const summary: RetainedLibraryAnswer = { ...typed, generation: 2, origin: 'question-report' };
+
+  it('offers nothing without an answer, and files a typed answer as itself', () => {
+    expect(answerFilingKind(null, null, 'folder')).toBeNull();
+    expect(answerFilingKind(typed, null, 'folder')).toBe('answer');
+  });
+
+  it('files a summary only while it is the report the desk holds for this folder', () => {
+    expect(answerFilingKind(summary, { answer: summary, vaultScope: 'folder' }, 'folder')).toBe('report');
+    expect(answerFilingKind(summary, { answer: summary, vaultScope: 'other' }, 'folder')).toBeNull();
+    expect(answerFilingKind(summary, { answer: { ...summary }, vaultScope: 'folder' }, 'folder')).toBeNull();
+    expect(answerFilingKind(summary, null, 'folder')).toBeNull();
   });
 });

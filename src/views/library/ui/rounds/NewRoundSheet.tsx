@@ -96,12 +96,8 @@ export function NewRoundSheet({
     [minutes, t, time, unit, weekdaysOnly],
   );
 
-  // The cadence is not part of the name: the index and the header already say it, and a
-  // name holding a separator reads as two fields wherever the name sits in a sentence.
-  //
-  // **A sibling already wearing that name earns a number.** Two rounds saved with the default
-  // name stood in the index, the header and every ledger row as the same word, so neither the
-  // "run now" press nor a row of the ledger could be attributed to one of them.
+  // The cadence is not part of the name: the index and header already say it. A sibling already wearing
+  // that name earns a number, or a "run now" press and a ledger row could not be told apart.
   const derivedName = useMemo(
     () =>
       unusedRoundName(
@@ -184,11 +180,6 @@ export function NewRoundSheet({
        */
       className="flex max-h-[calc(100dvh-var(--chrome-inset)*2)] flex-col gap-4 overflow-hidden break-keep"
     >
-      {/*
-        **The name is the title.** Click it and it is a field, the way the project page's own
-        name works; there is no second "Name" box at the foot of the form asking what to call
-        the thing the paragraph below has already described.
-      */}
       <fieldset disabled={saving} className="contents disabled:pointer-events-none"
         onPointerDownCapture={(event) => {
           if (!(event.target instanceof Element) || event.target.closest('[data-testid="library-rounds-add-menu"], [data-testid="library-rounds-folder-menu"], [data-testid="library-rounds-add-place"], [data-testid="library-rounds-folders"]')) return;
@@ -265,8 +256,6 @@ export function NewRoundSheet({
         onRemoveService={(key) => setServices((current) => current.filter((entry) => entry.key !== key))}
       />
 
-      {/* ---- How often — the protagonist -------------------------------------------------- */}
-
       <CadencePicker
         unit={unit}
         onUnitChange={setUnit}
@@ -297,8 +286,6 @@ export function NewRoundSheet({
         }}
       />
 
-      {/* ---- When a page goes stale ------------------------------------------------------- */}
-
       <div className="flex flex-col gap-2">
         <p id={staleId} className={fieldLabel()}>
           {t("sheet.onStale")}
@@ -320,7 +307,6 @@ export function NewRoundSheet({
         </p>
       </div>
 
-      {/* ---- What this round may do ------------------------------------------------------- */}
       <RoundGrants lines={may} cost={cost.text} costAlarming={cost.alarming} widens={round !== null && widened} />
 
       {failure ? <p role="alert" className="text-body leading-body text-[color:var(--color-danger-text)]">{failure}</p> : null}

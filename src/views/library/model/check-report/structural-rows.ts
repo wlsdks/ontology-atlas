@@ -55,11 +55,9 @@ export function sentenceShape(words: WikiProblemWords): string {
 }
 
 /**
- * What every row of a group says identically is the group's rule, printed once. A sentence is
- * shared only when every row's shape and place read alike; where it names a different page or
- * line on each row, that difference is the finding and each row keeps its sentence. The action is
- * judged separately, because one code can carry two repairs and a wrong one printed once is worse
- * than a right one printed twice.
+ * A sentence is shared only when every row's shape and place read alike; one that names a different
+ * page or line on each row is the finding itself. The action is judged apart: one code can carry two
+ * repairs, and a wrong one printed once is worse than a right one printed twice.
  */
 export function sharedRule(rows: readonly StructuralRow[]): { sentence: StructuralRow | null; action: string | null } {
   const first = rows[0];

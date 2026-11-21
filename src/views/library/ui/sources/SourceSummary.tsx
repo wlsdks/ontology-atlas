@@ -43,12 +43,9 @@ export function SourceSummary({
   /** The passage a citation named; `null` when the file was opened from the index and never read. */
   passage: CitedPassageState | null;
   /**
-   * The file's own shape, read once when this pane opened.
-   *
-   * `null` while the folder is not open or the read is not wanted; the section is then
-   * absent rather than empty. `use-source-outline.ts` owns the read and the reason it is
-   * inside the "nothing is read that a person did not name" clause — choosing this row
-   * *is* naming this file.
+   * The file's own shape, read once when this pane opened; `null` while the folder is not open or the read
+   * is not wanted, and the section is then absent. Choosing this row is naming this file, which is why
+   * `use-source-outline.ts` may read it.
    */
   outline: SourceOutlineState | null;
   /** True in the installed app, where the door reveals rather than downloads. */
@@ -65,10 +62,8 @@ export function SourceSummary({
   /** Whether the press is refused; the note above says why. */
   compileBlocked: boolean;
   /**
-   * Whether that refusal earns a door to `/agents`.
-   *
-   * `LibraryPage` decides on the route, not on the sentence, and it is false on the web
-   * and while an agent is still being looked for.
+   * Whether that refusal earns a door to `/agents`: `LibraryPage` decides on the route, and it is false on
+   * the web and while an agent is still being looked for.
    */
   agentDoor: boolean;
   /**

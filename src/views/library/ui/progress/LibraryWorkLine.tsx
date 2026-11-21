@@ -62,12 +62,8 @@ function useEventSwap(current: LibraryWorkEvent | null): LibraryWorkEvent | null
 
 /**
  * What last happened to this folder's files, as one line: a running mark only while work runs, what
- * happened, the file or wiki page it happened to as a press that opens it, and a press that lists
- * the last three. A wiki page goes by its title, a source by its file name. Ephemeral observations,
- * not an audit log or a claim that an agent is idle.
- *
- * `reserved` keeps the line's height before the first event, so its arrival moves nothing; a swap
- * crossfades the two lines in the same box.
+ * happened, the file or page as a press that opens it, and a press listing the last three. Ephemeral
+ * observations, not an audit log. `reserved` keeps the height before the first event.
  */
 export function LibraryWorkLine({
   activity,

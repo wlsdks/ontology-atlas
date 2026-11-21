@@ -3,10 +3,8 @@
 import { AgentDoor } from "../agent/AgentDoor";
 
 /**
- * The sentences under step two's buttons, in the order a person needs them: why Compile is dead, the
- * door that sentence names, why Check the wiki is dead on the one route where Compile has no reason,
- * what a second Compile would be worth, and what leaves this computer. Each is absent when it has
- * nothing to say.
+ * The sentences under step two's buttons, in the order a person needs them: why Compile is dead and the
+ * door it names, why Check the wiki is dead, what a second Compile is worth, what leaves this computer.
  */
 export function CompileStepNotes({ blockedBelow, lintReasonBelow, partialNote, transfer, agentDoor }: {
   blockedBelow: string | null;

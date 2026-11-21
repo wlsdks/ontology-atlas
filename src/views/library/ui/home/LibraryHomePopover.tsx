@@ -58,12 +58,9 @@ export function LibraryHomePopover({
   const [box, setBox] = useState<{ top: number; left: number; maxHeight: number; width: number } | null>(null);
 
   /**
-   * The panel's place, from the door's rect.
-   *
-   * ⚠️ **Measured after it is drawn, not guessed before.** The panel's width depends on
-   * its content up to the 560px cap, so a right-aligned panel placed from an assumed
-   * width jumps on the first frame. The first pass uses the cap, the second corrects it
-   * from the real `offsetWidth` — the same two-pass placement `SelectionAsk` needs.
+   * The panel's place, from the door's rect. Its width depends on its content up to the 560px cap, so
+   * the first pass uses the cap and the second corrects it from the real `offsetWidth`, or a
+   * right-aligned panel would jump on the first frame.
    */
   /** Whichever of the two doors is actually drawn — see `fallbackAnchorRef`. */
   const anchorNow = useCallback((): HTMLElement | null => {
@@ -178,12 +175,8 @@ export function LibraryHomePopover({
   }, [box, open]);
 
   /*
-   * ⚠️ **Starts `true`, so a closed popover never takes focus on mount.**
-   *
-   * Four of these are mounted on the home at once, and with the flag starting `false`
-   * every one of them ran its "give the door the keyboard back" branch on its first
-   * commit — so arriving at the Library threw focus onto a door nobody had pressed, four
-   * times over. Focus comes back only after this surface has actually been open.
+   * Starts `true`: four popovers mount at once, and with `false` each ran its give-the-door-focus branch
+   * on first commit. Focus returns only after this surface has actually been open.
    */
   const returned = useRef(true);
   useEffect(() => {
@@ -194,13 +187,9 @@ export function LibraryHomePopover({
     if (returned.current) return;
     returned.current = true;
     /*
-     * ⚠️ **Only when the close left the keyboard nowhere.** Escape and the `✕` do: focus
-     * is inside the panel, which `Surface` still holds through its exit window, or already
-     * on `body`. A press *somewhere else* does not — the canvas is `tabIndex=0`, so
-     * pressing it both closes this and focuses the picture, and pulling focus back to a
-     * chip the person did not touch is the surface arguing with their own gesture. Asking
-     * the document is what distinguishes the three, without a flag each close has to
-     * remember to set.
+     * Only when the close left the keyboard nowhere (Escape and the close button do). A press elsewhere
+     * focuses the canvas itself, and pulling focus back to a chip the person did not touch would argue
+     * with their gesture. Asking the document tells the cases apart without a flag.
      */
     const active = document.activeElement;
     if (active && active !== document.body && !panelRef.current?.contains(active)) return;

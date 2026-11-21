@@ -8,18 +8,9 @@ import type { CompileBrain } from "../../lib/compile/compile-brain";
 import type { LibraryLocalModel } from "../../lib/agent/use-library-agent";
 
 /**
- * **Which brain Compile runs on**, when this computer offers two.
- *
- * One control, in the two places Compile can be started from: step two of the shelf and
- * the wiki header in the index. Both read and write the same stored answer, so the shelf
- * and the sidebar can never name different brains — the failure the Compile-reason module
- * was written to prevent, applied to the other half of the same question.
- *
- * It is drawn **only when both are available**. With one brain there is nothing to choose
- * and a select would be a control that cannot change anything, so the static line stays.
- * The options are named exactly as the shelf already names them, because a person reading
- * "Runs on: gemma4:12b on localhost:11434" and then opening a picker must find that same
- * string, not a second vocabulary for the same machine.
+ * Which brain Compile runs on, when this computer offers two. It stands in both places Compile starts
+ * from and reads and writes the same stored answer, so the shelf and the sidebar never name different
+ * brains. With one brain there is nothing to choose, so the static line stays; options use the shelf's words.
  */
 export function CompileBrainSelect({
   brain,

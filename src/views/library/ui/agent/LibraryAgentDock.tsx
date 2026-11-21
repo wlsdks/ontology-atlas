@@ -111,25 +111,19 @@ export function LibraryAgentDock({
   const tChat = useTranslations("acpChat");
   const tLibrary = useTranslations("library");
   /*
-   * Only the right-hand wall reads this gate now. `--app-right-dock-width` is dropped the
-   * moment the dock shuts, and surfaces measuring against that wall must not jump into the
-   * space while the frame is still travelling out of it — that is the whole of what the exit
-   * window is for here. What is drawn is decided by `standing` below.
+   * Only the right-hand wall reads this gate: `--app-right-dock-width` is dropped the moment the dock
+   * shuts, and surfaces measuring against it must not jump in while the frame is still leaving.
    */
   const presence = usePanelPresence(open);
   /*
-   * **Has this conversation stood up?** Separate from whether it is visible.
-   *
-   * Once true it stays true for this dock's life, and it is what keeps `Surface` mounted
-   * through a close. Deriving it from `open` alone is the defect this file's header records:
-   * the panel unmounts, its ACP session stops, and the turn a person left running dies.
+   * Has this conversation stood up, apart from whether it is visible. Once true it stays true, and keeps
+   * `Surface` mounted through a close: deriving it from `open` would unmount the panel, stop its ACP
+   * session and kill the turn a person left running.
    */
   const [standing, setStanding] = useState(open);
   /*
-   * Adjusted during render, which is React's own pattern for a value derived from a prop that
-   * must then outlive it. In an effect it would be one frame late — and that frame is the first
-   * frame of the opening, so the panel would mount after the width had already begun moving.
-   * The condition is what keeps it from looping.
+   * Adjusted during render: in an effect it would be one frame late, the first frame of the opening, so
+   * the panel would mount after the width had begun moving. The condition keeps it from looping.
    */
   if (open && !standing) setStanding(true);
   /* The session starts once the dock has its width, however it opened, not only for a door's request. */
@@ -209,10 +203,8 @@ export function LibraryAgentDock({
   }, [open]);
 
   /*
-   * **Focus that entered the dock does not fall out of it by itself.** The composer can be
-   * disabled a moment after it took focus (the runtime check settles after the dock opens),
-   * and a disabled control drops focus to `body`. While the dock is open, a focus that left
-   * for nowhere lands on the dock itself instead.
+   * Focus that entered the dock does not fall out: the composer can be disabled a moment after taking
+   * focus, which drops it to `body`, so while open a focus that left for nowhere lands on the dock.
    */
   useEffect(() => {
     if (!open) return;
@@ -231,13 +223,9 @@ export function LibraryAgentDock({
   }, [open]);
 
   /*
-   * **Escape puts the overlay away.** Only below `xl`, where the dock covers the reader:
-   * there it is a surface on top of the page and owes the key every other surface answers.
-   * At `xl` it is a column beside the reader, and Escape stays with whatever else claims it.
-   * Listened on `document` in the bubble phase — after the chat panel's own Escape (slash
-   * menu, history list) has had its say through `defaultPrevented`, and before the page's
-   * window-level "Escape closes the document" handler, which `preventDefault` then stands
-   * down, so one press closes one thing.
+   * Escape puts the overlay away below `xl`, where the dock covers the reader; at `xl` it is a column
+   * and Escape stays with whatever else claims it. Listened on `document` in the bubble phase: after
+   * the chat panel's own Escape, before the page's, so one press closes one thing.
    */
   useEffect(() => {
     if (!open || typeof window.matchMedia !== "function") return;
@@ -269,11 +257,8 @@ export function LibraryAgentDock({
       data-right-dock={open || presence.mounted ? "library-agent" : undefined}
       data-dock-state={open ? "open" : standing ? "put-away" : "empty"}
       /*
-       * A shut frame is **out of reach**, not merely out of sight. The panel behind it keeps
-       * its composer, its buttons and possibly a permission card; `overflow-hidden` hides
-       * them but leaves every one of them tabbable and readable by assistive technology.
-       * `inert` takes the focus with it, which is also what blurs a composer somebody was
-       * typing in when they pressed X.
+       * A shut frame is out of reach, not merely out of sight: `overflow-hidden` hides the panel's composer
+       * and buttons but leaves them tabbable, and `inert` also blurs a composer someone was typing in.
        */
       inert={!open}
       aria-hidden={!open || undefined}

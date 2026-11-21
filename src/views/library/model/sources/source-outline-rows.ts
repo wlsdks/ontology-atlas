@@ -9,10 +9,9 @@ export interface OutlineRow {
 }
 
 /**
- * Outline rows preserve the source reader's addresses: Markdown headings use original line anchors,
- * DOCX headings keep `h:` anchors. A format the reader cannot describe states the limitation instead
- * of inventing counts or searchable text. The count rides on the section label, not in the list, so
- * the list holds pressable addresses only.
+ * Outline rows keep the reader's addresses: Markdown headings use line anchors, DOCX headings `h:`.
+ * A format the reader cannot describe says so rather than inventing counts. The count rides on the
+ * section label, so the list holds pressable addresses only.
  */
 export function outlineRows(
   outline: SourceOutline,
