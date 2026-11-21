@@ -1,6 +1,6 @@
-import type { useTopologyAuthoring } from "../model/authoring/use-topology-authoring";
-import type { useTopologyNavigationActions } from "../model/use-topology-navigation-actions";
-import type { useTopologyRouteControls } from "../model/route-state/use-topology-route-controls";
+import type { useTopologyAuthoring } from "../../model/authoring/use-topology-authoring";
+import type { useTopologyNavigationActions } from "../../model/use-topology-navigation-actions";
+import type { useTopologyRouteControls } from "../../model/route-state/use-topology-route-controls";
 
 
 const MountedGlobalSearch = dynamic(() => import("@/widgets/global-search").then(m => m.MountedGlobalSearch), { ssr: false });

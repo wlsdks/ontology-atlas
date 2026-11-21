@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const chromeSource = readFileSync("src/views/home/ui/TopologyCommandChrome.tsx", "utf8");
+const chromeSource = readFileSync("src/views/home/ui/map-readouts/TopologyCommandChrome.tsx", "utf8");
 const homePageSource = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
 
 describe("topology sample switch accessibility", () => {

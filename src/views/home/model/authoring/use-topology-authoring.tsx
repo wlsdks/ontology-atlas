@@ -15,7 +15,7 @@ import { type IndexAddConcept } from "@/widgets/topology-index-panel";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { resolveAgentFocusNodeId, resolveOntologyRelationPreview } from "../../lib/agent/resolve-agent-focus-node";
 import { resolveNodeVaultRef, resolveTopologyNodeEditTarget } from "../../lib/authoring/topology-node-edit";
-import { type CreateNodeInput } from "../../ui/CreateNodeForm";
+import { type CreateNodeInput } from "../../ui/create/CreateNodeForm";
 import { type CreateSelection } from "./create-defaults";
 import { renameTitleHeading, replaceLeadParagraph } from "./lead-paragraph";
 import { useManualWriteUndo } from "./use-manual-write-undo";

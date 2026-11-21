@@ -55,13 +55,13 @@ function writeCleanWorkbenchFixtures(root) {
   );
   writeFixture(
     root,
-    "src/views/home/ui/TopologyCanvasSurface.tsx",
+    "src/views/home/ui/map-surfaces/TopologyCanvasSurface.tsx",
     "previewEdge={mapRelationPreview}",
   );
-  writeFixture(root, "src/views/home/ui/TopologyMapRenderer.tsx", "");
+  writeFixture(root, "src/views/home/ui/map-surfaces/TopologyMapRenderer.tsx", "");
   writeFixture(
     root,
-    "src/views/home/ui/CreateNodeForm.tsx",
+    "src/views/home/ui/create/CreateNodeForm.tsx",
     "create-node-change-review",
   );
   writeFixture(

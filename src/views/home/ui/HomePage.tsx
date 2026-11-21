@@ -21,12 +21,12 @@ import { useTopologySourceActions } from "../model/project-source/use-topology-s
 import { useTopologySourceReadiness } from "../model/project-source/use-topology-source-readiness";
 import { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
 import { useMapWaitsForFolder } from "../model/use-map-waits-for-folder";
-import { TopologyAgentDock } from "./TopologyAgentDock";
-import { TopologyCanvasSurface } from "./TopologyCanvasSurface";
-import { TopologyCommandChrome } from "./TopologyCommandChrome";
-import { TopologyIndexSlot } from "./TopologyIndexSlot";
-import { TopologyInspectorSurfaces } from "./TopologyInspectorSurfaces";
-import { TopologyUtilityOverlays } from "./TopologyUtilityOverlays";
+import { TopologyAgentDock } from "./map-overlays/TopologyAgentDock";
+import { TopologyCanvasSurface } from "./map-surfaces/TopologyCanvasSurface";
+import { TopologyCommandChrome } from "./map-readouts/TopologyCommandChrome";
+import { TopologyIndexSlot } from "./map-panels/TopologyIndexSlot";
+import { TopologyInspectorSurfaces } from "./map-panels/TopologyInspectorSurfaces";
+import { TopologyUtilityOverlays } from "./map-overlays/TopologyUtilityOverlays";
 
 import { VaultSourceHydrationBoundary } from "@/entities/vault-session";
 import { useChatSuggestions } from "@/features/acp-session";
@@ -63,7 +63,7 @@ import { type IndexPanelState } from "@/widgets/topology-index-panel";
 import { buildNavRailContextHrefs } from "../lib/selection/nav-rail-context-hrefs";
 import { useFootprintTrail } from "../model/trail/use-footprint-trail";
 import { usePastTrails } from "../model/trail/use-past-trails";
-import { TopologyBlockingOverlays } from "./TopologyBlockingOverlays";
+import { TopologyBlockingOverlays } from "./map-overlays/TopologyBlockingOverlays";
 
 
 

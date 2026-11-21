@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { ComponentProps } from "react";
 import { CreateNodeForm } from "./CreateNodeForm";
-import koMessages from "../../../../messages/ko.json";
+import koMessages from "../../../../../messages/ko.json";
 
 const COPY = koMessages.topology.createNode;
 

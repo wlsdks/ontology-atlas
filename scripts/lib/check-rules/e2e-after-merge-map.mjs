@@ -5,7 +5,7 @@ export const rules = [
     reason: "the hex board relief changed",
     matches: [
       /^src\/widgets\/ontology-map\/board\/relief-projection\.ts$/,
-      /^src\/views\/home\/ui\/TopologyHexBoardSurface\.tsx$/,
+      /^src\/views\/home\/ui\/map-surfaces\/TopologyHexBoardSurface\.tsx$/,
     ],
   },
   {

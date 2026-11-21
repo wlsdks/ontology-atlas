@@ -9,7 +9,7 @@ import { fieldLabel } from "@/shared/ui/control-class";
 import { Input } from "@/shared/ui/fields/input";
 import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
-import { KINDS_WITH_PARENT } from "../model/authoring/create-defaults";
+import { KINDS_WITH_PARENT } from "../../model/authoring/create-defaults";
 
 export type CreateNodeKind = "project" | "domain" | "capability" | "element";
 

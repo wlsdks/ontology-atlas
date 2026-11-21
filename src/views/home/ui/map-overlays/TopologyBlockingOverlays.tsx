@@ -2,7 +2,7 @@
 
 import { CloseButton, controlClass } from "@/shared/ui";
 import type { ComponentProps } from "react";
-import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
+import { OntologyBootstrapForm } from "../create/OntologyBootstrapForm";
 
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 

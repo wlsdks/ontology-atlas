@@ -1,30 +1,30 @@
-import type { useAcpRuntimeController } from "../model/agent/use-acp-runtime-controller";
-import type { useTopologyAgentOrchestration } from "../model/agent/use-topology-agent-orchestration";
-import type { useTopologyAuthoring } from "../model/authoring/use-topology-authoring";
-import type { useTopologyCanvasFocus } from "../model/use-topology-canvas-focus";
-import type { useTopologyCreateIntent } from "../model/authoring/use-topology-create-intent";
-import type { useTopologyGraphProjection } from "../model/map-canvas/use-topology-graph-projection";
-import type { useTopologyInspectorState } from "../model/inspector/use-topology-inspector-state";
-import type { useTopologyNavigationActions } from "../model/use-topology-navigation-actions";
-import type { useTopologyPreferences } from "../model/use-topology-preferences";
-import type { useTopologyRouteControls } from "../model/route-state/use-topology-route-controls";
-import type { useTopologySceneControls } from "../model/map-canvas/use-topology-scene-controls";
-import type { useTopologySourceReadiness } from "../model/project-source/use-topology-source-readiness";
-import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
+import type { useAcpRuntimeController } from "../../model/agent/use-acp-runtime-controller";
+import type { useTopologyAgentOrchestration } from "../../model/agent/use-topology-agent-orchestration";
+import type { useTopologyAuthoring } from "../../model/authoring/use-topology-authoring";
+import type { useTopologyCanvasFocus } from "../../model/use-topology-canvas-focus";
+import type { useTopologyCreateIntent } from "../../model/authoring/use-topology-create-intent";
+import type { useTopologyGraphProjection } from "../../model/map-canvas/use-topology-graph-projection";
+import type { useTopologyInspectorState } from "../../model/inspector/use-topology-inspector-state";
+import type { useTopologyNavigationActions } from "../../model/use-topology-navigation-actions";
+import type { useTopologyPreferences } from "../../model/use-topology-preferences";
+import type { useTopologyRouteControls } from "../../model/route-state/use-topology-route-controls";
+import type { useTopologySceneControls } from "../../model/map-canvas/use-topology-scene-controls";
+import type { useTopologySourceReadiness } from "../../model/project-source/use-topology-source-readiness";
+import type { useTopologyVaultReadModel } from "../../model/use-topology-vault-read-model";
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { filterTreeExcludeKind } from "@/entities/knowledge-graph";
 import { useVaultLoadProgress } from "@/entities/vault-session";
 import { useMapReadingContext } from "@/shared/lib/navigation/map-reading-context";
-import { focusWhenReady } from "../lib/keyboard/topology-focus-return";
+import { focusWhenReady } from "../../lib/keyboard/topology-focus-return";
 import { TopologyIndexPanel, TopologyIndexTab, TopologyRealmLedger } from "@/widgets/topology-index-panel";
 
 
 interface TopologyIndexSlotProps {
   indexSlotFrames: readonly { state: import("@/widgets/topology-index-panel/lib/index-panel-state").IndexPanelState; exiting: boolean; }[];
   setRouteState: (updater: Partial<import("@/views/home/model/route-state/url-state").HomeRouteState> | ((current: import("@/views/home/model/route-state/url-state").HomeRouteState) => import("@/views/home/model/route-state/url-state").HomeRouteState), options?: import("@/views/home/model/route-state/use-home-route-state").HomeRouteStateUpdateOptions | undefined) => void;
-  recentWindow: import("../model/route-state/url-state").HomeRouteState["recentWindow"];
+  recentWindow: import("../../model/route-state/url-state").HomeRouteState["recentWindow"];
   topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "handleIndexTabExpandFromAgent">;
   acpRuntimeController: Pick<ReturnType<typeof useAcpRuntimeController>, "acpRuntimes">;
   topologySourceReadiness: Pick<ReturnType<typeof useTopologySourceReadiness>, "unboundProjectSource" | "projectSourceReadiness">;

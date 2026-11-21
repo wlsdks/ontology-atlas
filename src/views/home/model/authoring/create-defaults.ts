@@ -1,6 +1,6 @@
 import { canonicalizeDomainRef } from "@/shared/lib/vault-document/canonicalize-domain-ref";
 
-import type { CreateNodeKind } from "../../ui/CreateNodeForm";
+import type { CreateNodeKind } from "../../ui/create/CreateNodeForm";
 
 export interface CreateSelection {
   kind: string;

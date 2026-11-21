@@ -11,7 +11,7 @@ import {
   OntologyMapKindGlyph,
   controlClass,
 } from "@/shared/ui";
-import type { FootprintTrailEntry, TrailStepCaption } from "../lib/trail/footprint-trail";
+import type { FootprintTrailEntry, TrailStepCaption } from "../../lib/trail/footprint-trail";
 
 export interface TopologyTrailChipLabels {
   heading: string;

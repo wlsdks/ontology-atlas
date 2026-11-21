@@ -14,7 +14,7 @@ import {
   type PastWalk,
 } from "../../lib/trail/past-trail-record";
 import { createVaultFilePastTrailStore, type PastTrailStore } from "../../lib/trail/past-trail-store";
-import type { TopologyPastWalkRow } from "../../ui/TopologyTrailChip";
+import type { TopologyPastWalkRow } from "../../ui/map-readouts/TopologyTrailChip";
 import { derivedHook } from "@/shared/lib/derived-hook";
 
 // Short, since the wait is a window in which closing loses the last step (tab-hide flushes it).
