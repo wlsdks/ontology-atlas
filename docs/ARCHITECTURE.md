@@ -494,8 +494,10 @@ uses its file-handle iterator. Both preserve lexical ordering, strict cursors,
 and scanned-file totals before filtering parsed records.
 
 Queued permission requests preserve the JSON-RPC request ID without coercing
-numeric and string IDs together. `use-acp-session` snapshots the request, guards
-and options before waiting, with the originating turn, vault and generation;
+numeric and string IDs together. `askPermission`
+(`src/features/acp-session/model/permissions/ask-permission.ts`) snapshots the
+request, guards and options before waiting, with the originating turn, vault and
+generation;
 missing or mismatched ontology-write origins are refused. Unstructured user text
 is retained as the requested outcome; unrecorded non-goals remain unknown.
 
