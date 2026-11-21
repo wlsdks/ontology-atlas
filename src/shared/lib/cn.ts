@@ -24,15 +24,9 @@ export const TYPE_RAMP_STEPS = [
 ] as const;
 
 /**
- * Same discipline as the type ramp, but the failure looks different and is harder
- * to find. tailwind-merge does not misclassify the `leading-` prefix, so nothing
- * is dropped; it simply does not recognise a custom step, so **no conflict merge
- * happens** — in `cn('leading-body', cond && 'leading-prose')` both survive and
- * CSS source order picks the winner. A conditional branch silently losing to the
- * value it meant to override.
- *
- * Must stay in sync with the `--leading-*` ramp in `app/styles/tokens.css`
- * (contract test: `cn.test.ts`).
+ * tailwind-merge does not recognise a custom `leading-` step, so both classes survive and CSS
+ * source order picks the winner. Keep in sync with `--leading-*` in `app/styles/tokens.css`
+ * (`cn.test.ts`).
  */
 export const LEADING_RAMP_STEPS = [
   'caption',
@@ -49,13 +43,8 @@ export const LEADING_RAMP_STEPS = [
 ] as const;
 
 /**
- * Same failure mode as the leading ramp: an unrecognised `rounded-<step>` never
- * merges, so both classes survive and CSS source order decides. The merge became
- * load-bearing when the value layer (`control-class.ts`) started compounding a
- * size radius over a shape's base radius.
- *
- * Must stay in sync with the `--radius-*` ramp in `app/styles/tokens.css`
- * (contract test: `cn.test.ts`).
+ * Same failure as the leading ramp; `control-class.ts` compounds a size radius over a shape's
+ * base radius. Keep in sync with `--radius-*` in `app/styles/tokens.css` (`cn.test.ts`).
  */
 export const RADIUS_RAMP_STEPS = ['micro', 'chip', 'card', 'panel', 'sheet'] as const;
 

@@ -11,6 +11,8 @@
  */
 export const LISTBOX_MAX_ROWS = 8;
 
+const SUBPIXEL_ROUNDING_SLACK_PX = 1;
+
 export interface ListboxGrowthMetrics {
   /** Rendered row heights in screen order; a row with a description is taller. */
   rowHeights: number[];
@@ -55,8 +57,7 @@ export function listboxGrowth(metrics: ListboxGrowthMetrics): ListboxGrowth | nu
       : Number.POSITIVE_INFINITY;
 
   const height = Math.min(rowCap, availableHeight);
-  // 1px of slack, so sub-pixel rounding never claims an overflow.
-  const overflowing = contentHeight > height + 1;
+  const overflowing = contentHeight > height + SUBPIXEL_ROUNDING_SLACK_PX;
   const cappedBy = !overflowing ? 'content' : availableHeight < rowCap ? 'space' : 'rows';
 
   let used = chrome;

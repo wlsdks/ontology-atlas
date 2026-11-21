@@ -1,45 +1,13 @@
 /**
- * **A failure reaches a person as a code, never as the developer's English.**
- *
- * ## The defect this exists to remove
- *
- * Installed-app inspection before v1.2.2 (finding B2): pressing the answer page's redraft
- * button (`library.answers.refresh`) on a Korean screen printed **"The retained question or
- * its history cannot be read."** into the page body, brighter than the copy around it. That
- * sentence is a `throw new Error(...)` argument written for whoever reads the stack, and the UI
- * preferred it over the sentence the product had already written, at **eight sites across
- * six files**, all sharing one shape:
- *
- * ```ts
- * err instanceof Error && err.message ? err.message : t('…')   // the raw wins
- * ```
- *
- * A thrown string cannot be translated: it is minted in a module that has no idea which
- * language the reader chose. So the rule is the same one `native-error.ts` already
- * established for Tauri commands — **the throwing side mints a code, and the screen owns
- * the sentence.** This module is that rule for failures thrown inside the web app.
- *
- * ## Two ways a failure gets its code
- *
- * 1. **It says so.** `codedFailure('answer-history-unreadable')` carries the code as a
- *    field. This is what any throw site in this repository should do.
- * 2. **The operating system said so.** A `DOMException`, a Rust `Err(String)` or a
- *    browser filesystem rejection is not ours to re-mint, so its text is matched against
- *    the signature tables below. These are the same tables
- *    `classify-vault-access-error.ts` reads, kept here so there is one list rather than
- *    two that drift.
- *
- * Anything else has **no code**, and a screen with no code shows the sentence it wrote
- * for that press. The raw text is not lost — it goes to a `data-*` attribute or the
- * console, where the person who can act on it is looking.
+ * A failure reaches a person as a code, never as the developer's English: a thrown string cannot be
+ * translated, so the thrower mints a code and the screen owns the sentence (as `native-error.ts`
+ * does for Tauri). OS text is matched against the signature tables below, which
+ * `classify-vault-access-error.ts` also reads. With no code the screen shows its own sentence.
  */
 
 /**
- * Signatures of a refusal, as `std::io::Error::to_string()` and the browser render them.
- *
- * `EPERM` (1) is what macOS TCC returns for a protected location; `EACCES` (13) is the
- * ordinary filesystem refusal. They reach a person the same way and have the same remedy,
- * so they carry one code.
+ * As `std::io::Error::to_string()` and the browser render them. `EPERM` (macOS TCC) and `EACCES`
+ * reach a person the same way with the same remedy, so they share one code.
  */
 export const PERMISSION_DENIED_SIGNATURES = [
   'operation not permitted',
@@ -48,13 +16,7 @@ export const PERMISSION_DENIED_SIGNATURES = [
   'os error 13)',
 ] as const;
 
-/**
- * Signatures of "that is not there any more", as each runtime words it.
- *
- * The browser throws a `DOMException` named `NotFoundError` whose message is written for a
- * developer ("A requested file or directory could not be found at the time an operation
- * was processed."); Rust words the same fact as `No such file or directory (os error 2)`.
- */
+/** The browser's `NotFoundError` and Rust's `os error 2` word the same fact differently. */
 export const MISSING_TARGET_SIGNATURES = [
   'notfounderror',
   'no such file or directory',
@@ -62,26 +24,13 @@ export const MISSING_TARGET_SIGNATURES = [
   'could not be found',
 ] as const;
 
-/**
- * Signatures of "something is already there, and nothing was overwritten".
- *
- * Not exported: unlike the two tables above it has no second reader, and an export nothing
- * imports is what `pnpm knip` exists to refuse.
- */
 const ALREADY_EXISTS_SIGNATURES = [
   'already exists',
   'file exists',
   'os error 17)',
 ] as const;
 
-/**
- * A failure that names itself.
- *
- * `detail` is machine-supplied fact only — a path, an OS error, a code the runtime
- * returned — and stays English on purpose, exactly as `native-error.ts` requires of the
- * detail half of a Tauri rejection. Prose in the detail would be a second untranslatable
- * sentence, which is the defect this whole module removes.
- */
+/** `detail` is machine fact only (a path, an OS error) and stays English; prose would be untranslatable. */
 export class CodedFailure extends Error {
   readonly code: string;
   readonly detail: string | null;

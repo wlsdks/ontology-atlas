@@ -4,15 +4,10 @@
  * without jsdom.
  */
 
-/** The minimum size offered to someone who has not typed anything yet. */
 export const COMPOSER_MIN_ROWS = 2;
 /**
- * Default growth cap. Past this the input starts pushing the conversation out of
- * view, so further content scrolls inside instead of growing the box.
- *
- * The number was chosen for **a narrow strip inside one screen** (the bottom bar
- * of the key-entry panel). It is too stingy for a tall column — those places
- * derive their cap **from their own height** via `composerMaxRows` below.
+ * Past this the input pushes the conversation out of view. Sized for a narrow strip; a tall column
+ * derives its cap from its own height via `composerMaxRows`.
  */
 export const COMPOSER_MAX_ROWS = 6;
 
@@ -26,11 +21,8 @@ const COMPOSER_MAX_SHARE = 0.4;
 export const COMPOSER_CEILING_ROWS = 16;
 
 /**
- * Max rows allowed at this site, derived from the height available.
- *
- * When it cannot be measured (SSR, just before mount) it falls back to the
- * default cap. There is no path to zero rows: the floor is one row above the
- * starting size, because a growing input that cannot grow is no better than none.
+ * Unmeasured (SSR, before mount) falls back to the default cap. The floor is one row above the
+ * starting size: a growing input that cannot grow is no better than none.
  */
 export function composerMaxRows(availableHeight: number, lineHeight: number): number {
   if (!Number.isFinite(availableHeight) || availableHeight <= 0) return COMPOSER_MAX_ROWS;
@@ -47,11 +39,8 @@ export interface ComposerMetrics {
   /** border-top + border-bottom (included in the height under `box-sizing: border-box`). */
   borderBlock: number;
   /**
-   * The offscreen mirror's `scrollHeight` — padding included, border excluded.
-   *
-   * **Why not measure the visible input**: the `style.height=''` → reflow →
-   * reassign pattern resets the height to 0 and back every frame, which turns
-   * growth into a staircase instead of a smooth transition.
+   * The offscreen mirror's `scrollHeight`, padding included, border excluded: resetting the visible
+   * input every frame would turn growth into a staircase.
    */
   contentHeight: number;
 }
@@ -104,11 +93,7 @@ export function snapScrollTop(scrollTop: number, lineHeight: number): number {
   return Math.round(scrollTop / lineHeight) * lineHeight;
 }
 
-/**
- * When to turn on the top fade — **only once the cap is reached and something is
- * actually hidden above.** While the box is still growing nothing is covered, so
- * there is no signal: overflow that does not exist is not advertised.
- */
+/** Only once the cap is reached and something is hidden above: absent overflow is not advertised. */
 export function composerTopIsHidden(overflowing: boolean, scrollTop: number): boolean {
   return overflowing && Number.isFinite(scrollTop) && scrollTop > 0;
 }

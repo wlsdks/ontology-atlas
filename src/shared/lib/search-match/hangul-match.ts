@@ -1,33 +1,8 @@
 /**
- * Hangul-aware matching — how a Korean keyboard actually produces a query.
- *
- * **Why:** normalised substrings alone miss the two things a Korean typist does
- * first: a query typed as consonant initials alone, and a name whose last syllable
- * the keyboard has not finished. `hangul-match.test.ts` carries those queries.
- *
- * The second case is not a convenience: a Hangul IME emits a syllable one jamo at
- * a time, so **every Korean word passes through it on the way to being typed**. A
- * palette that shows nothing until the syllable closes flickers empty on every
- * character.
- *
- * Two rules, and no general fuzziness beyond them — a subsequence matcher would let
- * one consonant reach half the vault with no way for the reader to see why:
- *
- * 1. **Chosung** — a query made only of consonant jamo matches the initials of
- *    consecutive syllables, in order. Spaces are ignored on both sides, because
- *    nobody types the space between the words of a name they abbreviate to its
- *    initials. The highlighted range spans back over any space the match crossed.
- * 2. **Trailing partial syllable** — every character but the last must match
- *    exactly, and the last must be a jamo prefix of the syllable it lands on plus
- *    the next syllable's initial: a two-set keyboard shows that initial as a final
- *    until a vowel moves it on. Compound medials and final clusters are split into
- *    the keys that type them, so a syllable ending at *o* is a genuine prefix of one
- *    whose medial is *wa* (typed *o* then *a*), and a syllable with no final is a
- *    prefix of the same syllable with one.
- *
- * Positions are returned so the same match can be highlighted; they index the
- * **NFC form** of the haystack, which is what `normalize("NFC")` on the label
- * renders identically. Callers that highlight must normalise the same way.
+ * Two Hangul keyboard states and no general fuzziness, which would let one consonant reach half the
+ * vault: a query of consonant initials, spaces ignored on both sides; and a last syllable the IME
+ * has not finished, whose keys are a jamo prefix of the syllable plus the next one's initial (a
+ * two-set keyboard shows that initial as a final). Ranges index the haystack's NFC form.
  */
 
 const SYLLABLE_FIRST = 0xac00;
@@ -128,20 +103,14 @@ export function toChosung(value: string): string {
 }
 
 /**
- * Syllable initials with spaces dropped — the form a chosung query is compared
- * against. Nobody types the space between the words of a name they are reducing
- * to initials, so neither side keeps it. Positions are lost, which is why
+ * Nobody types the space between words reduced to initials, so neither side keeps it;
  * `findHangulMatch` keeps its own map back for highlighting.
  */
 export function chosungKey(value: string): string {
   return toChosung(value).replace(/ /g, "");
 }
 
-/**
- * True when the query is nothing but consonant jamo and spaces, with at least
- * one consonant: a query of initials only, as against one that already carries a
- * finished syllable.
- */
+/** Consonant jamo and spaces only, with at least one consonant. */
 export function isChosungQuery(value: string): boolean {
   let sawConsonant = false;
   for (const char of value) {
@@ -188,13 +157,8 @@ function sameCharacter(a: string, b: string): boolean {
 }
 
 /**
- * The first Hangul-aware match of `query` in `haystack`, or null. Both are
- * normalised to NFC first, and the returned range indexes that NFC form.
- *
- * This is deliberately *not* a general fuzzy matcher: it only recognises the two
- * states a Hangul keyboard puts a real query in. A literal substring match is
- * the caller's job and should be tried first — it ranks higher.
- * O(|haystack| · |query|): each start compares up to |query| characters of at most five keys.
+ * Try a literal substring first; it ranks higher. O(|haystack| · |query|): each start compares up
+ * to |query| characters of at most five keys.
  */
 export function findHangulMatch(haystack: string, query: string): HangulMatchRange | null {
   const text = haystack.normalize("NFC");
@@ -224,10 +188,8 @@ export function findHangulMatch(haystack: string, query: string): HangulMatchRan
     return { start, end: last + 1 };
   }
 
-  // Code units, not code points: Hangul is entirely inside the BMP, so the two
-  // agree over every character this path can match, and a code-unit range slices
-  // the same string the caller highlights. An astral character elsewhere in the
-  // title compares as a lone surrogate and simply never matches.
+  // Code units, not code points: Hangul lies in the BMP, so a code-unit range slices the string
+  // the caller highlights; an astral character compares as a lone surrogate and never matches.
   const lastIndex = needle.length - 1;
   const limit = text.length - needle.length;
   for (let start = 0; start <= limit; start += 1) {
@@ -246,12 +208,10 @@ export function findHangulMatch(haystack: string, query: string): HangulMatchRan
   return null;
 }
 
-/** Does a Hangul-aware match of `query` appear anywhere in `haystack`? */
 export function hangulIncludes(haystack: string, query: string): boolean {
   return findHangulMatch(haystack, query) !== null;
 }
 
-/** Does a Hangul-aware match of `query` begin `haystack`? */
 export function hangulStartsWith(haystack: string, query: string): boolean {
   return findHangulMatch(haystack, query)?.start === 0;
 }

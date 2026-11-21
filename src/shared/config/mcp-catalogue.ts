@@ -17,7 +17,6 @@ import type { ConnectorRecord, ConnectorValueEntry } from '@/shared/lib/connecto
 /** Where one variant's facts came from. Drawn differently, because the authority differs. */
 type CatalogueSource = 'registry' | 'curated';
 
-/** One environment variable or header the entry declares. */
 export interface CatalogueVariable {
   name: string;
   /**

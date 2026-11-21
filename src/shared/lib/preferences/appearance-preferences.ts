@@ -99,7 +99,6 @@ export function writeGlyphSet(value: GlyphSet): void {
   notifyPreferenceChange();
 }
 
-/** Same-tab custom event plus the cross-tab `storage` event. */
 function subscribe(onChange: () => void): () => void {
   if (typeof window === "undefined") return () => undefined;
   window.addEventListener(PREFERENCE_EVENT, onChange);
@@ -121,8 +120,6 @@ export function useGlyphSet(): GlyphSet {
   const getServerSnapshot = useCallback(() => DEFAULT_GLYPH_SET, []);
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
-
-/* ── Frame meter ────────────────────────────────────────────────────────── */
 
 /**
  * Whether the frame meter is drawn over the map. Off by default: it is a diagnostic, not product
@@ -226,9 +223,6 @@ export function useMapZoomSpeed(): MapSpeed {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/* ── 3D view (map view mode) ────────────────────────────────────────────── */
-
-/** Whether the map opens in the 3D view rather than the flat map. Off by default. */
 const VIEW_3D_KEY = "atlas.appearance.view3d";
 
 const DEFAULT_VIEW_3D = false;
@@ -261,8 +255,6 @@ function readDomainStructure(): boolean {
 export function useDomainStructure(): boolean {
   return useSyncExternalStore(subscribe, readDomainStructure, () => false);
 }
-
-/* ── Hex board (2D map, one tile per capability) ─────────────────────────── */
 
 
 const HEX_BOARD_KEY = "atlas.appearance.hex-board";
@@ -357,17 +349,9 @@ export function writeMapView(view: MapLayoutView): void {
   notifyPreferenceChange();
 }
 
-/* ── Agent activity (working indicator, notifications) ──────────────────── */
-
 /**
- * **On by default**, unlike the frame meter, and for the opposite reason. The
- * frame meter is a diagnostic; this is a fact — something is changing your folder
- * right now. Hiding that behind an opt-in means whoever never turned it on sees
- * nothing while an agent edits their vault. So the default is on and the setting
- * exists to turn it *off*.
- *
- * The cost is kept small in exchange: one quiet status chip, and notifications
- * only at task granularity.
+ * On by default, unlike the frame meter: an agent editing the folder is a fact, not a diagnostic,
+ * so the setting exists to turn it off.
  */
 const AGENT_STATUS_KEY = "atlas.agentActivity.status";
 const AGENT_NOTIFICATIONS_KEY = "atlas.agentActivity.notifications";
@@ -428,9 +412,8 @@ export function useAgentNotificationsEnabled(): boolean {
 }
 
 /**
- * Stores the **muted** kinds, not the enabled ones. Storing the enabled set would
- * make any newly added kind arrive silently off for existing users only; storing
- * mutes means a new kind arrives on for everyone (the default is all on).
+ * Stores the muted kinds, not the enabled ones, so a newly added kind arrives on for everyone
+ * rather than silently off for existing users.
  */
 const EMPTY_MUTED: ReadonlySet<string> = new Set();
 
@@ -485,20 +468,9 @@ export function useMutedAgentNotificationKinds(): ReadonlySet<string> {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/* ── The path you walked ────────────────────────────────────────────────── */
-
 /**
- * Three named tones, not a colour picker.
- *
- * `star` is the default and the map's own ink: `render/starfield.ts` already paints its
- * far-field dust and diffraction spikes at this value, under a header that names the
- * language — "B1 constellation DNA". The walked path was the one mark standing outside it.
- *
- * The other two stay because they were chosen deliberately and neither is broken. Yellow
- * already means something here — hub amber `#d4b478` says "this is a centre" — so the trail
- * uses a different value in the same family rather than the hub's own bits. Indigo is a
- * value on the selection ladder, pale enough to clear contrast where the accent did not.
- * A person who prefers either keeps it; what changed is which one a folder opens with.
+ * Three named tones, not a colour picker. `star` is the map's own ink (`render/starfield.ts`);
+ * `amber` avoids the hub's own value, which already says "this is a centre".
  */
 export type FootprintTone = "amber" | "indigo" | "star";
 
@@ -519,16 +491,7 @@ export const FOOTPRINT_TONE_FALLBACK: Record<FootprintTone, readonly [number, nu
   amber: [232, 196, 122],
 };
 
-/**
- * Footprint appearance. The shape is fixed to a two-foot shoe print: letting users pick it would
- * make the screen unable to say what the mark means. Only how loudly it is said is adjustable. Field
- * names describe what is seen ("Intensity", not "alpha").
- */
-/**
- * What a person may choose about their walked path. The walked path is the node emitting, a line and
- * a number, so only four live fields exist. Stored preferences with older keys still load:
- * `resolveFootprint` reads the fields it knows and ignores the rest.
- */
+/** Stored preferences with older keys still load: `resolveFootprint` ignores fields it does not know. */
 export interface FootprintPreference {
   /**
    * How far the step number sits from the node, in px, before the gap is added. It only places the
@@ -549,13 +512,8 @@ export const DEFAULT_FOOTPRINT: FootprintPreference = {
 };
 
 /**
- * Single source for both the slider bounds and the clamp on stored values.
- *
- * The lower bounds are deliberately not generous. At `size` 6px the toe and heel
- * of the print merge and shape stops being a channel at all; at `opacity` 0.1 the
- * effective contrast over the canvas falls far short of 3:1 (infoviz
- * measurement). What a user can pick has to stay within what is still readable —
- * the freedom to make it invisible is a defect, not a preference.
+ * Bounds both the sliders and the stored-value clamp. Lower bounds stay readable: freedom to make
+ * the mark invisible is a defect, not a preference.
  */
 export const FOOTPRINT_RANGES = {
   size: { min: 9, max: 26, step: 1 },
@@ -563,11 +521,7 @@ export const FOOTPRINT_RANGES = {
   opacity: { min: 0.5, max: 1, step: 0.05 },
 } as const satisfies Record<string, { min: number; max: number; step: number }>;
 
-/**
- * What the settings screen shows first. Spilling all 8 sliders on open gives the
- * attention to the controls rather than to the choice; the rest sits behind
- * 「Manual Tuning」 (the manual-tuning disclosure).
- */
+/** Shown first, so opening settings puts attention on the choice rather than on every slider. */
 export const FOOTPRINT_PRESETS = {
   subtle: { size: 10, opacity: 0.5 },
   default: { size: 13, opacity: 0.7 },
@@ -579,10 +533,8 @@ export type FootprintPresetName = keyof typeof FOOTPRINT_PRESETS;
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
 /**
- * Stored JSON → a valid preference: out-of-range numbers clamped, missing keys
- * defaulted. Kept pure and tested because a hand-edited localStorage or an older
- * shape can otherwise leak `NaN` into the renderer, and the footprints then
- * vanish entirely with no error.
+ * Clamps and defaults stored JSON: a hand-edited or older shape would otherwise leak `NaN` into
+ * the renderer, and the footprints vanish with no error.
  */
 export function resolveFootprint(raw: unknown): FootprintPreference {
   if (typeof raw !== "object" || raw === null) return DEFAULT_FOOTPRINT;
@@ -607,7 +559,6 @@ export function resolveFootprint(raw: unknown): FootprintPreference {
   };
 }
 
-/** Layers a preset over the current preference, keeping what the preset does not set. */
 export function applyFootprintPreset(
   current: FootprintPreference,
   preset: FootprintPresetName,
@@ -636,9 +587,8 @@ export function writeFootprint(value: FootprintPreference): void {
 }
 
 /**
- * The hook must not build a new object per call: `useSyncExternalStore` compares
- * snapshots with `Object.is`, so a fresh object re-subscribes every render and
- * loops. Cache the parse against the raw stored string.
+ * `useSyncExternalStore` compares snapshots with `Object.is`, so a fresh object per call loops.
+ * Cache the parse against the raw stored string.
  */
 let footprintCacheKey: string | null = null;
 let footprintCacheValue: FootprintPreference = DEFAULT_FOOTPRINT;
@@ -663,19 +613,9 @@ export function useFootprint(): FootprintPreference {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/* ── Expansion (how a collapsed group opens) ────────────────────────────── */
-
 /**
- * Where the "expand" control sits and what it looks like. The three options come
- * from a mockup built to measure them side by side, and moved into the product
- * unchanged.
- *
- * - `pill` — floats in empty space away from the node, joined by a dotted line.
- *   The only one that has to *find* a spot, so it drifts further as space fills.
- * - `bar` — a text button directly above the selected node. Nothing is shown
- *   unless a node is selected, and it states how many will open.
- * - `badge` — a small circle on the node's top-right shoulder. It tracks the
- *   node, so it never hunts for space; what it does is revealed on hover.
+ * `pill` floats in free space on a dotted leader; `bar` sits above the selected node and states
+ * how many will open; `badge` rides the node's shoulder and reveals itself on hover.
  */
 export type ExpandAffordance = "pill" | "bar" | "badge";
 
@@ -690,11 +630,8 @@ export const EXPAND_AFFORDANCES: readonly ExpandAffordance[] = ["pill", "bar", "
 export const EXPAND_STRUCTURES: readonly ExpandStructure[] = ["disc", "fan", "ring", "column"];
 
 /**
- * The three numbers already existed as constants in the map code; the mockup only
- * pulled them out as sliders to measure them. So this file owns them and the map
- * constants (`EGO_NEIGHBOR_LIMIT`, `DISC_LABEL_TOP_K`, `MAX_EXPANDED_PARENTS`)
- * read these defaults. The other direction writes the same value in two places,
- * which is where drift starts.
+ * Owns the defaults the map constants (`EGO_NEIGHBOR_LIMIT`, `DISC_LABEL_TOP_K`,
+ * `MAX_EXPANDED_PARENTS`) read, so each value lives in one place.
  */
 export interface ExpandPreference {
   affordance: ExpandAffordance;
@@ -707,11 +644,7 @@ export interface ExpandPreference {
   maxOpenParents: number;
 }
 
-/**
- * `affordance: "bar"` and `structure: "fan"` deliberately change what is on screen; the three
- * numbers are the original constants. Fan arc spacing 34 with a centred last row gave no overlapping
- * marks (`docs/DECISIONS.md`).
- */
+/** Fan arc spacing 34 with a centred last row gave no overlapping marks (`docs/DECISIONS.md`). */
 export const DEFAULT_EXPAND: ExpandPreference = {
   affordance: "bar",
   structure: "fan",
@@ -720,22 +653,14 @@ export const DEFAULT_EXPAND: ExpandPreference = {
   maxOpenParents: 3,
 };
 
-/**
- * The mockup's bounds, carried over unchanged. It picked them while measuring 27
- * combinations, so narrowing them here would leave the product showing only
- * screens that measurement never covered.
- */
+/** The bounds the 27 measured combinations covered; widening them shows unmeasured screens. */
 export const EXPAND_RANGES = {
   batchSize: { min: 4, max: 24, step: 1 },
   labelAttempts: { min: 3, max: 40, step: 1 },
   maxOpenParents: { min: 1, max: 6, step: 1 },
 } as const satisfies Record<string, { min: number; max: number; step: number }>;
 
-/**
- * Stored JSON → a valid preference, same contract as `resolveFootprint`: a
- * hand-edited localStorage leaking `NaN` into the renderer kills expansion on the
- * map entirely, and it fails silently.
- */
+/** Same contract as `resolveFootprint`: a leaked `NaN` silently kills expansion on the map. */
 export function resolveExpand(raw: unknown): ExpandPreference {
   if (typeof raw !== "object" || raw === null) return DEFAULT_EXPAND;
   const src = raw as Record<string, unknown>;
@@ -800,8 +725,6 @@ export function useExpand(): ExpandPreference {
   const getServerSnapshot = useCallback(() => DEFAULT_EXPAND, []);
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
-
-/* ── Library index (which list, and whether the column stands) ───────────── */
 
 /**
  * Sources is the default: a folder with no sources has no pages to list. Opening a file moves the

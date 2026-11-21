@@ -3,31 +3,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 /**
- * Expand/collapse for a list row — the lifecycle that puts **opening, closing, and
- * content swaps through one height transition.** The visual grammar's source of
- * truth is the `.ai-row-disclosure` family in `app/globals.css`; this hook is the
- * **behaviour** side, shared by everything that uses that grammar.
- *
- * It moved down to `shared` from the AI-connection vendor row: the insights queue
- * row does the same interaction (edit one field inline, save or cancel), and a
- * second implementation would make the same behaviour look different per surface.
- * With the curve, the exit duration, and the ResizeObserver re-measure in one place,
- * "the same behaviour looks the same" is structural rather than a matter of
- * discipline.
- *
- * Why go to this length: for a cancel to read as cancelled, the card has to leave
- * **the way it arrived**. Conditional rendering alone gives it no way out — it just
- * vanishes. So the row stays in the DOM after `open` turns false, until the exit
- * transition finishes.
- *
- * Height is driven in px for the reasons recorded in the `.ai-row-disclosure`
- * comment: `auto` cannot be interpolated, and `0fr↔1fr` cannot carry a content swap
- * (draft form → saved confirmation). Writing the real content height continuously
- * from a ResizeObserver puts open, close, swap, and reflow all on the same curve.
- *
- * Why not a permanent mount: the body of a collapsed row (inputs and the like)
- * would stay in the screen-reader output and the tab order. What is not visible
- * must not be reachable either.
+ * The behaviour side of `.ai-row-disclosure` (`app/globals.css`). The row stays mounted until its
+ * exit ends, so a cancel leaves the way it arrived. Height is px from a ResizeObserver: `auto`
+ * cannot interpolate and `0fr↔1fr` cannot carry a content swap. A collapsed body unmounts so it
+ * leaves the tab order.
  */
 export function useRowDisclosure(open: boolean): {
   /** Whether to render into the DOM — stays true while collapsing (exit transition). */
@@ -110,10 +89,7 @@ export function useRowDisclosure(open: boolean): {
     content.style.opacity = '';
 
     if (typeof ResizeObserver === 'undefined') return undefined;
-    // Content swaps (a successful save turning the form into a confirmation line, a
-    // 3-line caption becoming 1) and width changes that alter the line count ride
-    // the same curve. Measuring the height once and pinning it starts clipping from
-    // that moment on.
+    // Content swaps and line-count changes ride the same curve; a height measured once would clip.
     const observer = new ResizeObserver(() => {
       box.style.height = `${content.offsetHeight}px`;
     });

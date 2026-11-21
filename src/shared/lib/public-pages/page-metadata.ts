@@ -4,23 +4,9 @@ import { LOCALE_META, type LocaleMeta } from '@/i18n/locales';
 import { routing } from '@/i18n/routing';
 
 /**
- * Per-page metadata — the layer search engines use to **find and choose** this site.
- *
- * **Why it was needed.** The root layout already had what it needs (`metadataBase`,
- * OG, Twitter, `WebSite` JSON-LD, an hreflang sitemap, robots), but **most individual
- * pages carried only a `title`**, and three things break without more:
- *
- * - **No description** → Google scrapes the snippet out of the body. Most of this
- *   site's body is canvas pixels with almost no prose to scrape, so the snippet ends
- *   up empty or made of UI label fragments.
- * - **No canonical** → several paths to the same document (`/ko/download` and
- *   `/ko/download/`) compete with each other.
- * - **No hreflang** → it is in the sitemap but not in the document, leaving the page
- *   itself with no basis for which of ko/en to serve to whom.
- *
- * **Absolute URLs are required.** Even with `metadataBase`, `alternates` does not
- * auto-prefix an optional deployment basePath — a trap this repo already pinned
- * in the `app/layout.tsx` comments. Hence assembling from `SITE_URL` here.
+ * Each page states its own description, canonical and hreflang: a canvas body leaves nothing to
+ * snippet, and duplicate paths compete. URLs are absolute from `SITE_URL` because `alternates` does
+ * not prefix a deployment basePath, even with `metadataBase`.
  */
 export interface PageMetadataInput {
   locale: string;
@@ -115,11 +101,7 @@ export function buildPageMetadata(
   const canonical = absolute(hasOwnContent ? locale : (ownLocales[0] ?? registry.defaultLocale), path);
   const ogLocaleOf = (l: string) => registry.meta[l]?.ogLocale ?? l;
 
-  /**
-   * Declare every locale to every other, plus `x-default`. Without the latter a
-   * search engine decides for itself what to serve a visitor matching no locale (a
-   * French-language browser, say) — and that choice would not be ours.
-   */
+  /* Plus `x-default`, or a search engine picks what a visitor matching no locale sees. */
   const languages: Record<string, string> = {
     'x-default': absolute(ownLocales.includes(registry.defaultLocale) ? registry.defaultLocale : ownLocales[0]!, path),
   };

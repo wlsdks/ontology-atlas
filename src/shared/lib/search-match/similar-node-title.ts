@@ -1,19 +1,7 @@
 /**
- * Near-duplicate detection for nodes created through the GUI.
- *
- * Combines `detectDuplicateTitle` from `mcp/src/vault/` (normalised *exact*
- * match only) and `findNearTitleMatches` from `mcp/src/ontology-engine/growth-hint.mjs` (Jaccard
- * token overlap) into one pure function. `mcp/` is a separate package and is never
- * imported from `src/`, so the logic is ported rather than shared
- * (`.claude/rules/architecture.md`); there is no vault I/O here.
- *
- * The #1 failure mode of a growing vault is duplicate or hallucinated nodes, and
- * the safety net existed only on the MCP `add_concept` path — the GUI creation
- * paths had none. This module fills that gap.
- *
- * A match requires **a close title *and* the same kind.** Same-named nodes of
- * different kinds (a domain "Payment" and a capability "Payment") are common and
- * legitimate, so pairing them would only produce false alarms.
+ * GUI port of `detectDuplicateTitle` and `findNearTitleMatches`
+ * (`mcp/src/ontology-engine/growth-hint.mjs`); `mcp/` is a separate package, so it is not imported.
+ * A match needs the same kind: same-named nodes of different kinds are legitimate.
  */
 
 export interface SimilarNodeCandidate {
@@ -31,19 +19,15 @@ export interface FindSimilarNodeOptions {
   /** Exclude the node currently being edited from the candidates. */
   excludeSlug?: string;
   /**
-   * Minimum Jaccard score; below it the titles are treated as different concepts.
-   * Set higher than the read-tool hint in `growth-hint.mjs` (0.3) because this
-   * warning appears actively as the user types, so a false alarm costs more — a
-   * threshold set too low teaches people to ignore it. The default 0.6 fires only
-   * when more than half the tokens overlap.
+   * Higher than the read-tool hint's 0.3 (`growth-hint.mjs`): this warns while the user types, and
+   * false alarms teach people to ignore it.
    */
   minScore?: number;
 }
 
 const DEFAULT_MIN_SCORE = 0.6;
-// The TOKEN_RE in growth-hint.mjs (`[a-z0-9]+`) is ASCII-only and cannot tokenise
-// Korean titles, which most titles in this vault are. Widened to the \p{L}\p{N}
-// unicode classes — the same pattern `slugify.ts` already uses.
+// Unicode classes, as `slugify.ts` uses: the ASCII-only pattern in `growth-hint.mjs` cannot
+// tokenise Korean titles.
 const TOKEN_RE = /[\p{L}\p{N}]+/gu;
 
 function tokenize(text: string): string[] {
@@ -57,13 +41,7 @@ function normalizeTitle(text: string): string {
     .replace(/\s+/g, " ");
 }
 
-/**
- * Closeness of two titles (0–1): 1 for an exact match after normalisation,
- * otherwise Jaccard token overlap. This is the pairwise core of
- * `findSimilarNodeByTitle` with no kind gate, exposed so the picker's
- * "similar name" suggestion reuses the same formula instead of growing a second
- * one.
- */
+/** 1 for an exact match after normalisation, otherwise Jaccard token overlap. */
 function titleSimilarity(a: string, b: string): number {
   const normA = normalizeTitle(a);
   const normB = normalizeTitle(b);

@@ -14,13 +14,8 @@ interface UseDialogFocusTrapOptions {
   initialFocus?: "container" | "first" | "none";
   restoreFocus?: boolean;
   /**
-   * Whether Tab/Shift+Tab stay inside this surface. Default `true` (modal).
-   *
-   * **A non-modal surface must pass `false`** — trapping focus while the outside
-   * is still live locks keyboard users out of what everyone else can reach.
-   * WAI-ARIA states that a non-modal dialog does not trap focus. The settings
-   * dock is this case: it exists to adjust values while watching the map, so
-   * tabbing out to the map has to work.
+   * A non-modal surface passes `false`: trapping focus while the outside is live locks keyboard
+   * users out (WAI-ARIA). The settings dock is one.
    */
   trapTab?: boolean;
 }

@@ -1,35 +1,15 @@
 /**
- * The shape of `.ontology-atlas/connectors.json` — the external MCP servers a person has chosen to
- * attach to their in-app agent sessions, kept beside the vault they belong to.
- *
- * ## Why this file exists, and what it must never hold
- *
- * A connector is a command plus an environment, and the environment is where the API token goes.
- * This file is ordinary text in the person's folder, so **it never carries a secret value**. A
- * variable whose name reads like a credential (`…TOKEN`, `…KEY`, `…SECRET`, `…PASSWORD`,
- * `Authorization`) may only carry a `secretRef` — a pointer at the OS keychain — and
- * `serializeConnectorState` throws rather than write a literal for one. The refusal is in the
- * serializer, not in the caller, because the caller is the thing that changes.
- *
- * A variable that is plainly not a credential (`NOTION_VERSION`, `Content-Type`) still carries its
- * value here. Forcing every value into the keychain would make somebody re-enter a version string
- * every time they moved machines, and a rule people route around stops protecting anything.
- *
- * ## A literal somebody wrote by hand
- *
- * If the file already holds a plaintext token — hand-edited, or copied from a config that had one —
- * `deserializeConnectorState` **does not carry the value into memory**. It marks the entry
- * `secretLiteral` and names it in `secretLiteralKeys`, so the screen can say which variable is
- * sitting in plain text and offer to move it into the keychain. The next save then writes the entry
- * without the literal, which is the direction this file should always move in.
+ * `.ontology-atlas/connectors.json`: the external MCP servers attached to in-app agent sessions.
+ * It is plain text in the person's folder, so it never holds a secret: a credential-shaped variable
+ * carries only a keychain `secretRef`, and the serializer throws on a literal. A hand-written
+ * literal is flagged on read, never carried into memory, and dropped by the next save.
  */
 
 export const CONNECTOR_STORE_VERSION = 1;
 
 /**
- * The transports an ACP `session/new` can actually carry (claude-agent-acp 0.74.0, codex-acp
- * 1.6.2). SSE is deprecated and neither adapter accepts it, so nothing here can be stored as SSE —
- * a stored connector is one Atlas is prepared to pass along.
+ * The transports an ACP `session/new` carries (claude-agent-acp 0.74.0, codex-acp 1.6.2); neither
+ * adapter accepts the deprecated SSE.
  */
 export const CONNECTOR_TRANSPORTS = ['stdio', 'http'] as const;
 export type ConnectorTransport = (typeof CONNECTOR_TRANSPORTS)[number];
@@ -79,11 +59,8 @@ export interface ConnectorState {
 }
 
 /**
- * Names that must not carry a literal.
- *
- * Deliberately broad. Over-refusing costs somebody one extra step (store it in the keychain, which
- * is never the wrong place for it); under-refusing puts a live token in a file that syncs, backs
- * up, and gets pasted into an issue.
+ * Deliberately broad: over-refusing costs one keychain step, under-refusing puts a live token in a
+ * file that syncs and gets pasted into issues.
  */
 const SECRET_KEY_PATTERN = /(token|secret|password|passwd|credential|api[-_]?key|authorization|bearer|\bkey\b|_key|key_|key$)/i;
 
@@ -117,23 +94,16 @@ export type ConnectorProblem =
   | 'value-missing';
 
 /**
- * What is wrong with this record, in codes rather than sentences.
- *
- * `command-not-absolute` is the one that surprises people. The agent process Atlas launches runs
- * with a **sanitized environment that has no `PATH`** (`SHARED_RUNTIME_ENV` in
- * `src-tauri/src/acp/runtime_environment.rs`), and a connector the agent spawns inherits that environment. So a bare
- * `npx` resolves to nothing and the session comes up with the connector's tools silently absent —
- * the worst failure this feature has, because it looks like success.
+ * `command-not-absolute`: the agent's spawned connectors inherit an environment without `PATH`
+ * (`SHARED_RUNTIME_ENV` in `src-tauri/src/acp/runtime_environment.rs`), so a bare `npx` silently
+ * attaches no tools.
  */
 export function connectorProblems(
   record: ConnectorRecord,
   siblings: readonly ConnectorRecord[] = [],
   /**
-   * The keychain references this machine actually holds a value for.
-   *
-   * **Omitted means "not asked", not "none"** - and the difference matters, because reporting
-   * every keychain-backed variable as missing on a surface that cannot see a keychain would call
-   * a healthy connector broken. Pass the set only where it was really read.
+   * Omitted means "not asked", not "none": a surface that cannot see the keychain must not call a
+   * healthy connector broken. Pass it only where it was really read.
    */
   storedRefs?: ReadonlySet<string>,
 ): ConnectorProblem[] {
@@ -166,11 +136,7 @@ export function connectorProblems(
   ) {
     problems.push('secret-ref-foreign');
   }
-  /*
-   * A variable the person put in the keychain, with nothing behind it. Left unsaid, the connector
-   * attaches with its credential absent and every call it makes is refused by a service that has
-   * no idea why - the failure this whole per-variable choice exists to prevent.
-   */
+  /* An empty keychain entry would attach the connector without its credential, every call refused. */
   if (
     storedRefs
     && [...record.env, ...record.headers].some(
@@ -220,12 +186,7 @@ export class ConnectorSecretLiteralError extends Error {
   }
 }
 
-/**
- * Write the file. **Throws** rather than put a credential-shaped literal on disk.
- *
- * The throw is not defensive programming: this is the only function that turns records into bytes,
- * so it is the last place a token can be stopped, and every caller reaches it.
- */
+/** Throws on a credential-shaped literal: the only path from records to bytes is the last stop. */
 export function serializeConnectorState(state: ConnectorState): string {
   const offenders = state.connectors.flatMap((connector) =>
     [...connector.env, ...connector.headers]

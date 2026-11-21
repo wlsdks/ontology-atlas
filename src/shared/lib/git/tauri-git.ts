@@ -3,35 +3,10 @@ import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 import { type NativeErrorLookup, nativeErrorMessage } from '../desktop-shell/native-error';
 
 /**
- * Atlas Git — the Tauri IPC bridge: typed wrappers over the commands in
- * `src-tauri/src/git/`, which is the source of truth for the contract.
- *
- * - `git_status(vault_path)` → `GitStatusResult` — outside a repo it returns
- *   `initialized: false`, not an error
- * - `git_snapshot(vault_path, message?, push?, set_upstream?)` → `GitSnapshotResult` —
- *   with no changes, `committed: false` / `reason: "no-changes"`
- * - `git_history(vault_path, limit?, path?)` → `GitCommitInfo[]` — empty array when
- *   there are no commits
- * - `git_diff(vault_path)` → `GitDiffResult`
- * - `git_pull(vault_path)` → `GitPullResult`
- * - `git_fetch(vault_path)` → `GitFetchResult` — fetch only, working tree untouched
- *
- * **Trust-charter invariants** (stated at the top of `git.rs`; the UI must hold
- * them too):
- * 1. Local commits only by default — push/pull happen only through an explicit
- *    opt-in call.
- * 2. Never run `git init` automatically when git is uninitialised — report it
- *    through status instead.
- * 3. No automatic runs and no forced auto-backup — every call must follow an
- *    explicit user click.
- *
- * Web degradation contract: outside the Tauri runtime `isGitBridgeAvailable()`
- * is false and every wrapper returns `null` without invoking, so callers degrade
- * honestly to a session changeset summary plus the equivalent CLI command.
- *
- * Expected failures (not a repo, a hook refusing, a conflict) come back as the
- * `Err` arm of Rust's `Result<_, String>`, so invoke rejects with a **string** —
- * `gitErrorMessage` turns it into one user-facing line.
+ * Typed wrappers over the Tauri commands in `src-tauri/src/git/`, which owns the contract. The
+ * trust invariants of `git.rs` hold here too: push and pull only on explicit opt-in, no automatic
+ * `git init`, and every call follows a user click. Without Tauri every wrapper returns `null`.
+ * Expected failures reject with a string that `gitErrorMessage` turns into one line.
  */
 
 type TauriInvoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
@@ -82,21 +57,13 @@ interface GitSnapshotCounts {
 
 /** Rust `GitStatusResult`. */
 export interface GitStatusResult {
-  /** Is the vault inside a git repo — the first signal for enabling buttons. */
   initialized: boolean;
   repoRoot: string | null;
   branch: string | null;
   /** Upstream ref (e.g. origin/main); `null` means push is unavailable. */
   upstream: string | null;
-  /** Uncommitted changes within the vault — the source of truth for the dirty dot. */
   changedCount: number;
-  /**
-   * Divergence from upstream, `[ahead, behind]`; both `null` with no upstream.
-   *
-   * **Measured as of the last fetch.** Refreshing it requires calling
-   * `gitFetch()` — that is how git works, which is why Fetch is its own control
-   * on screen.
-   */
+  /** `[ahead, behind]` as of the last fetch; both `null` with no upstream. */
   ahead: number | null;
   behind: number | null;
   /** Already-staged paths outside the vault; the snapshot leaves them alone (informational). */
@@ -165,13 +132,7 @@ export interface GitCommitInfo {
   subject: string;
   relativeTime: string;
   isoTime: string;
-  /**
-   * The vault files this step touched, carrying `kind` and `slug`.
-   *
-   * Without this, history was nothing but **commit subject strings**, so the UI
-   * had no way at all to ask which concept a step changed. `kind` is read from
-   * the file on disk right now, so it is `null` for deleted files.
-   */
+  /** `kind` is read from the file on disk now, so it is `null` for deleted files. */
   files: GitChangeEntry[];
 }
 
@@ -204,13 +165,11 @@ export interface GitPullResult {
 
 /** Rust `GitInitResult`. */
 export interface GitInitResult {
-  /** Did this call start tracking? False if it was already a repo. */
   initialized: boolean;
   /** `'already'` when it was already a repo, `null` when it was just started. */
   reason: string | null;
   repoRoot: string;
   branch: string | null;
-  /** Count of not-yet-recorded changes right after starting. */
   changedCount: number;
 }
 
@@ -258,10 +217,8 @@ export async function gitInit(vaultPath: string): Promise<GitInitResult | null> 
 }
 
 /**
- * Set the destination (`origin`) — pass **only a URL the user typed**. Never
- * suggest, guess, or auto-detect one. This call registers the URL and **sends
- * nothing**; transmitting requires the user to press again through
- * `gitSnapshot({ push: true })`.
+ * Pass only a URL the user typed; never suggest or detect one. Registering sends nothing: a push
+ * needs another press through `gitSnapshot({ push: true })`.
  */
 export async function gitSetRemote(
   vaultPath: string,
@@ -315,14 +272,8 @@ export interface GitRestoreResult {
 }
 
 /**
- * Put one document back to the content it had at `source` (`HEAD` = the last
- * commit, i.e. discard uncommitted changes; a hash = that commit's version).
- *
- * **Called only from a confirm button's onClick.** The Rust side touches exactly
- * one path, refuses a path outside the vault, refuses to "restore" a never-committed
- * file (that would delete it), and refuses a source whose frontmatter identity
- * (uid · slug · merged_uids) differs from the file on disk. A restore from a commit
- * lands as an uncommitted change; nothing is committed.
+ * Called only from a confirm button. Rust touches one path inside the vault and refuses a
+ * never-committed file or a source whose frontmatter identity differs; nothing is committed.
  */
 export async function gitRestoreFile(
   vaultPath: string,
@@ -342,14 +293,9 @@ export async function gitStatus(vaultPath: string): Promise<GitStatusResult | nu
 }
 
 /**
- * A meaningful snapshot that adds and commits the vault scope only — **call it
- * only after an explicit user click** (never automatically). `push` is opt-in
- * and defaults to false; with nothing to record, a push still sends the steps
- * already recorded.
- *
- * `setUpstream` is only for the press on "send this branch" when `origin` has never
- * seen it: the push then goes to `origin` and records it as the branch's upstream.
- * Never derive it from a missing upstream alone.
+ * Commits the vault scope only, and only after an explicit click. With nothing to record, a push
+ * still sends recorded steps. `setUpstream` is only for an explicit "send this branch" press;
+ * never derive it from a missing upstream alone.
  */
 export async function gitSnapshot(
   vaultPath: string,
@@ -377,7 +323,6 @@ export async function gitHistory(
   return invoke<GitCommitInfo[]>('git_history', { vaultPath, limit, path: path ?? null });
 }
 
-/** File list plus text diff for uncommitted changes within the vault. */
 export async function gitDiff(
   vaultPath: string,
   options?: { includePatch?: boolean },
@@ -387,12 +332,7 @@ export async function gitDiff(
   return invoke<GitDiffResult>('git_diff', { vaultPath, includePatch: options?.includePatch ?? true });
 }
 
-/**
- * What one commit actually wrote — the vault-scoped patch for that step.
- *
- * Separate from `gitDiff` for the reason the Rust comment gives: that one is the
- * working tree, which has no name yet; this one is a step that already has one.
- */
+/** The vault-scoped patch one commit wrote; `gitDiff` is the uncommitted working tree. */
 export async function gitCommitDiff(
   vaultPath: string,
   hash: string,
@@ -409,15 +349,7 @@ export async function gitPull(vaultPath: string): Promise<GitPullResult | null> 
   return invoke<GitPullResult>('git_pull', { vaultPath });
 }
 
-/**
- * **Fetch only** — brings the remote's latest state without touching the working
- * tree.
- *
- * Of the three calls that use the network (`gitSnapshot(push)`, `gitPull`, this
- * one) it is the only one that changes no local file, which makes it the
- * cheapest answer to "what does the remote look like right now". It still runs
- * **only after an explicit click** — never call it automatically.
- */
+/** The one network call that changes no local file; still only after an explicit click. */
 export async function gitFetch(vaultPath: string): Promise<GitFetchResult | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
@@ -425,12 +357,8 @@ export async function gitFetch(vaultPath: string): Promise<GitFetchResult | null
 }
 
 /**
- * Turns an invoke rejection payload into one user-facing line.
- *
- * Rust answers with `<code>: <git's own words>` (`src-tauri/src/errors.rs`), so the
- * sentence is chosen here, where the reader's locale is known, and git's stderr
- * rides along in parentheses because only git knows what actually went wrong.
- * Without a lookup the payload comes back untouched.
+ * Rust answers `<code>: <git's own words>` (`src-tauri/src/errors.rs`): the sentence is chosen
+ * here in the reader's locale, with git's stderr in parentheses. No lookup returns it untouched.
  */
 export function gitErrorMessage(err: unknown, lookup?: NativeErrorLookup): string {
   return nativeErrorMessage(err, lookup);

@@ -25,10 +25,7 @@ export const AGENT_NOTIFICATION_KINDS: readonly AgentNotificationKind[] = [
 ];
 
 export interface AgentNotification {
-  /**
-   * Re-derived on every poll, so it is built **deterministically from the
-   * content** — otherwise the read marker and React keys would jitter.
-   */
+  /** Built from the content: it is re-derived every poll, and the read marker and keys must hold. */
   id: string;
   kind: AgentNotificationKind;
   at: number;
@@ -39,11 +36,7 @@ export interface AgentNotification {
    * disappeared) — keeps the "what" without offering a link to a node that is gone.
    */
   label?: string;
-  /**
-   * `task-start`/`task-end` — the agent that identified itself for this task
-   * (heartbeat or MCP connection greeting; the session already carries it). When
-   * unknown the field is absent rather than invented.
-   */
+  /** `task-start`/`task-end` only; absent when unknown, never invented. */
   agent?: string;
   /** `task-end` only — the summary. */
   counts?: AgentWriteCounts;
@@ -75,9 +68,8 @@ export function risenVaultProblems(
 }
 
 /**
- * Sessions → start/end notifications. The log is the source of truth, so this is
- * the only kind that **survives a reload** — skeleton and problem notifications
- * are observed during polling only and are never written to the log.
+ * The only kind that survives a reload, since the log is the source of truth; skeleton and problem
+ * notifications are observed while polling and never logged.
  */
 export function deriveTaskNotifications(
   sessions: readonly AgentWorkSession[],
@@ -107,13 +99,7 @@ export function deriveTaskNotifications(
   return out;
 }
 
-/**
- * Merge lists — newest first, deduplicated by id, capped.
- *
- * Why a cap: the inbox is not a replacement for an audit log. It is only readable
- * at a length a person can scan; everything beyond that lives in `/git` and in
- * the vault's `activity.jsonl`.
- */
+/** The inbox is not an audit log: past a scannable length, history lives in `/git` and `activity.jsonl`. */
 export const AGENT_NOTIFICATION_LIMIT = 60;
 
 export function mergeNotifications(
@@ -128,7 +114,6 @@ export function mergeNotifications(
     .slice(0, AGENT_NOTIFICATION_LIMIT);
 }
 
-/** Drop the kinds turned off in settings. */
 export function filterNotifications(
   notifications: readonly AgentNotification[],
   enabledKinds: ReadonlySet<AgentNotificationKind>,
@@ -136,11 +121,7 @@ export function filterNotifications(
   return notifications.filter((item) => enabledKinds.has(item.kind));
 }
 
-/**
- * Unread count. `readAt` is a single "seen up to here" timestamp — a per-item read
- * flag would accumulate state outside the vault, and the vault is the source of
- * truth here.
- */
+/** `readAt` is one "seen up to here" timestamp: per-item flags would keep state outside the vault. */
 export function countUnread(
   notifications: readonly AgentNotification[],
   readAt: number,

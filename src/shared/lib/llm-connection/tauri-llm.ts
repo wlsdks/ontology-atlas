@@ -66,11 +66,7 @@ export async function llmChat(args: {
   /** The JSON body in the vendor's own format. */
   body: string;
   scope: LlmChatScope;
-  /**
-   * Passed only on the connect-by-address branch. Passing it alongside a named
-   * vendor is rejected by Rust: no path is left for a keychain key to leave for a
-   * host the screen never promised.
-   */
+  /** Address branch only: Rust rejects it beside a named vendor, whose key must not reach another host. */
   baseUrl?: string | null;
   signal?: AbortSignal;
 }): Promise<LlmChatEcho | null> {
@@ -123,12 +119,8 @@ export async function llmChat(args: {
 }
 
 /**
- * invoke rejection payload → one line for the user.
- *
- * Rust answers with `<code>: <English detail>` (`src-tauri/src/errors.rs`); the
- * optional lookup is the `nativeErrors` catalogue. Without one the payload comes
- * back untouched, which the agent loop relies on: it recognises a failed turn by the
- * `audit-blocked:` / `timed-out:` prefix.
+ * Rust answers `<code>: <English detail>` (`src-tauri/src/errors.rs`). Without a lookup the payload
+ * is untouched: the agent loop recognises a failed turn by its `audit-blocked:` or `timed-out:` prefix.
  */
 export function llmChatErrorMessage(err: unknown, lookup?: NativeErrorLookup): string {
   return nativeErrorMessage(err, lookup);
