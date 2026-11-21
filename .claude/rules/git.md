@@ -38,7 +38,7 @@
 - Open every pull request as a draft (`gh pr create --draft`); drafts run no CI.
 - `pnpm pr:land <number>` is the only way to `main`: it marks a draft ready,
   awaits its CI run and merges green; red returns. Merge `origin/main` before
-  the last push, or it falls back to its dormant train code.
+  the last push, or it falls back to its train code, a live fallback.
   `pnpm pr:ci <number>` starts that run early; `--plan <n...>` previews.
   Preserve original commits with merge commits; never squash or rebase during
   landing. Disable main's linear-history requirement.

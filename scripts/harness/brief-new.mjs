@@ -52,7 +52,7 @@ export async function freePort({ from = 3200, to = 3299 } = {}) {
 }
 
 export function suggestedChecks(paths, { cwd = process.cwd() } = {}) {
-  const result = spawnSync(process.execPath, ['scripts/ci/suggest-focused-checks.mjs', '--', ...paths], { cwd, encoding: 'utf8' });
+  const result = spawnSync(process.execPath, ['scripts/ci/suggest-focused-checks.mjs', '--', '--slice', ...paths], { cwd, encoding: 'utf8' });
   if (result.status !== 0) return [];
   return String(result.stdout)
     .split('\n')
@@ -62,7 +62,7 @@ export function suggestedChecks(paths, { cwd = process.cwd() } = {}) {
 
 export function renderBrief({ slug, owns, read, budget, port, checks }) {
   const portLine = port == null ? 'No server may run.' : `Use port ${port} only: set \`PLAYWRIGHT_BASE_URL=http://localhost:${port}\`, add \`PLAYWRIGHT_STATIC=1\` when proof must cover the exported build, and pass the same environment to \`pnpm checks:changed\`. Run one spec at a time.`;
-  const landing = `Commit on branch \`${slug}\` in its own worktree; do not push and open no pull request. The lead merges it into the integration branch as soon as it returns.`;
+  const landing = `Commit on branch \`${slug}\` in its own worktree; do not push and open no pull request. The lead merges it into the integration branch with \`--no-ff\` as soon as it returns; never squash, rebase or cherry-pick.`;
   const checkLines = checks.length ? checks.map((command) => `   - \`${command}\``) : ['   - (no focused check suggested)'];
   return [
     `# Brief: ${slug}`,
@@ -73,7 +73,7 @@ export function renderBrief({ slug, owns, read, budget, port, checks }) {
     '4. Scratch: your session scratchpad only; never ~/scratch or the repository.',
     '5. Checks that must stay green:',
     ...checkLines,
-    '   Finish with `pnpm checks:changed -- --run --slice`: the lead runs contracts, security, knip and typecheck once on the integration tree. Quote every command exactly as run.',
+    '   Finish with `pnpm checks:changed -- --run --slice`: the lead runs test:contracts, knip, typecheck, build and the test:mcp suites once on the integration tree. Quote every command exactly as run.',
     `6. Primary sources: ${read.length ? read.map((p) => `\`${p}\``).join(', ') : 'the owned files'}.`,
     `7. Merge: ${landing}`,
     `8. Budget: ${budget || 'none'}.`,

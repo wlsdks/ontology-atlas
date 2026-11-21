@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
 
 import { makeGit } from './bundle-branches.mjs';
@@ -44,20 +44,24 @@ function fixture(fn) {
   }
 }
 
+const idle = () => 0;
+
 test('the integration branch is named for its topic and the local date, and refuses a path-like topic', () => {
   assert.equal(integrationBranch('library-sources', NOW), 'integration/library-sources-2026-11-21');
   assert.throws(() => integrationBranch('Library/Sources', NOW), /lowercase words joined by hyphens/);
 });
 
-test('start branches from origin/main in its own worktree and pushes it', () => fixture(({ root, sh, bare }) => {
-  const { branch, path } = start(makeGit(root), 'topic', { now: NOW });
+test('start branches from origin/main in its own worktree, pushes it and installs that worktree', () => fixture(({ root, sh, bare }) => {
+  const ran = [];
+  const { branch, path } = start(makeGit(root), 'topic', { now: NOW, exec: (command, cwd) => { ran.push([command, cwd]); return 0; } });
+  assert.deepEqual(ran, [['pnpm install --frozen-lockfile --offline', path], ['pnpm messages:build', path]]);
   assert.equal(branch, 'integration/topic-2026-11-21');
   assert.equal(path, join(root, '.claude', 'worktrees', 'integration-topic'));
   assert.equal(execFileSync('git', ['--git-dir', bare, 'rev-parse', branch], { encoding: 'utf8' }).trim(), sh('rev-parse', 'origin/main'));
 }));
 
 test('add merges a slice with --no-ff even when a fast-forward was possible, keeping every slice commit', () => fixture(({ root, at, slice }) => {
-  const { path } = start(makeGit(root), 'topic', { now: NOW });
+  const { path } = start(makeGit(root), 'topic', { now: NOW, exec: idle });
   const a = slice('feat/a', 'a.txt', 'a\n');
   const result = add(makeGit(path), 'feat/a');
   assert.equal(result.state, 'merged');
@@ -68,11 +72,39 @@ test('add merges a slice with --no-ff even when a fast-forward was possible, kee
     assert.equal(at(path)('merge-base', '--is-ancestor', sha, 'HEAD'), '', 'each slice commit is in the integration history');
   }
   assert.deepEqual(result.paths.sort(), ['a.txt', 'a.txt.note']);
-  assert.equal(add(makeGit(path), 'feat/a').state, 'merged', 'run again right after, it continues to checks and push');
+  assert.equal(add(makeGit(path), 'feat/a').state, 'merged', 'run again right after, it continues to checks');
+  writeFileSync(join(path, 'fix.txt'), 'fix\n');
+  at(path)('add', 'fix.txt');
+  at(path)('commit', '-q', '-m', 'fix: the merged tree');
+  const again = add(makeGit(path), 'feat/a');
+  assert.equal(again.state, 'merged', 'a fix commit after the merge still re-runs the slice checks');
+  assert.deepEqual(again.paths.sort(), ['a.txt', 'a.txt.note', 'fix.txt']);
+}));
+
+test('add aborts a merge that fails without a conflict and names the reason', () => fixture(({ root, at, slice }) => {
+  const { path } = start(makeGit(root), 'topic', { now: NOW, exec: idle });
+  slice('feat/a', 'a.txt', 'a\n');
+  const hook = resolve(path, at(path)('rev-parse', '--git-path', 'hooks/pre-merge-commit'));
+  mkdirSync(dirname(hook), { recursive: true });
+  writeFileSync(hook, '#!/bin/sh\necho refused by a hook >&2\nexit 1\n', { mode: 0o755 });
+  assert.throws(() => add(makeGit(path), 'feat/a'), /failed and was aborted: .*refused by a hook/s);
+  assert.ok(!existsSync(resolve(path, at(path)('rev-parse', '--git-path', 'MERGE_HEAD'))), 'no merge is left in progress');
+  assert.equal(at(path)('status', '--porcelain', '--untracked-files=no'), '');
+}));
+
+test('pr checks every path the integration branch changed, untracked files aside', () => fixture(({ root, slice }) => {
+  const { path } = start(makeGit(root), 'topic', { now: NOW, exec: idle });
+  slice('feat/a', 'a.txt', 'a\n');
+  add(makeGit(path), 'feat/a');
+  writeFileSync(join(path, 'scratch.txt'), 'not part of the branch\n');
+  const ran = [];
+  const status = runIntegration(['pr', '--title=chore: topic'], { cwd: path, io: { log() {} }, exec: (command) => { ran.push(command); return 1; } });
+  assert.equal(status, 1);
+  assert.deepEqual(ran, ["pnpm checks:changed -- --run 'a.txt' 'a.txt.note'"], 'explicit paths, so an untracked file never widens or narrows the run');
 }));
 
 test('add stops on a conflict with the files listed and the merge left for the lead', () => fixture(({ root, at, slice }) => {
-  const { path } = start(makeGit(root), 'topic', { now: NOW });
+  const { path } = start(makeGit(root), 'topic', { now: NOW, exec: idle });
   slice('feat/a', 'shared.txt', 'A\ntwo\nthree\n');
   slice('feat/b', 'shared.txt', 'B\ntwo\nthree\n');
   assert.equal(add(makeGit(path), 'feat/a').state, 'merged');
@@ -93,7 +125,7 @@ test('add refuses outside an integration branch', () => fixture(({ root, slice }
 }));
 
 test('the pull request body lists each component at its head and every conflicted file', () => fixture(({ root, at, slice }) => {
-  const { path } = start(makeGit(root), 'topic', { now: NOW });
+  const { path } = start(makeGit(root), 'topic', { now: NOW, exec: idle });
   const a = slice('feat/a', 'shared.txt', 'A\ntwo\nthree\n');
   const b = slice('feat/b', 'shared.txt', 'B\ntwo\nthree\n');
   add(makeGit(path), 'feat/a');
@@ -111,7 +143,7 @@ test('the pull request body lists each component at its head and every conflicte
 }));
 
 test('prune refuses until main holds the integration head, then removes it with every merged component and keeps a moved one', () => fixture(({ root, sh, at, commitIn, slice }) => {
-  const { branch, path } = start(makeGit(root), 'topic', { now: NOW });
+  const { branch, path } = start(makeGit(root), 'topic', { now: NOW, exec: idle });
   const a = slice('feat/a', 'a.txt', 'a\n');
   const b = slice('feat/b', 'b.txt', 'b\n');
   add(makeGit(path), 'feat/a');

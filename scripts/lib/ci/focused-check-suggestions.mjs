@@ -2,7 +2,6 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { posix } from 'node:path';
 
 import { isSupportedSourcePath } from '../../quality/source-language/source-paths.mjs';
-import { RUST_LINT_COMMAND } from '../check-rules/desktop.mjs';
 import { loadTestReach } from '../import-graph/test-reach.mjs';
 
 /**
@@ -430,18 +429,15 @@ function rulesToSuggestions(rules, paths, commentOnly = new Set()) {
   return suggestions;
 }
 
-const RUST_SLICE_COMMANDS = new Set([RUST_LINT_COMMAND, 'pnpm test:desktop:bridge']);
-
 /**
- * Whether a command checks only what one slice touched: sibling unit tests, lint on the changed
- * files, the e2e specs that reach them, and the Rust lane. Contracts, security sets, ratchets,
- * knip and typecheck read the whole tree, so parallel slices leave them to the integration tree.
+ * The lanes a parallel slice leaves to the lead's one run on the integration tree, chosen by cost:
+ * the full contract sweep, knip, typecheck, a production build and the MCP suites each take tens of
+ * seconds to minutes over the whole tree. Per-file gates stay with the slice.
  */
+const REPO_WIDE_COMMAND = /^pnpm (?:test:contracts|knip|typecheck|build|test:mcp:[\w:-]+)(?:\s|$)/;
+
 function isSliceCommand(command) {
-  if (RUST_SLICE_COMMANDS.has(command)) return true;
-  if (/^pnpm exec (?:eslint|playwright test|node --test|vitest related) /.test(command)) return true;
-  const vitestFiles = /^pnpm exec vitest run (.+)$/.exec(command)?.[1];
-  return Boolean(vitestFiles) && !/(?:^|\s|')tests\/contract\//.test(vitestFiles);
+  return !REPO_WIDE_COMMAND.test(command);
 }
 
 /** Keeps the slice's own commands; the rest are returned as `deferred` for the integration tree. */

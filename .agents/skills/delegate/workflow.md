@@ -25,10 +25,9 @@ environment (or no server), owned and read-only files, no stash, no
 focused checks for the owned paths, primary sources, the merge rule, and the
 budget. The merge rule: commit on the slice branch, do not push, open no pull
 request. The check rule: `pnpm checks:changed -- --run --slice`, which runs
-only the unit tests beside the owned files, lint on them, the e2e specs that
-reach them and the Rust lane when `src-tauri/**` changed. Contracts, the
-security set, `pnpm knip` and `pnpm typecheck` run once, from the lead, on the
-integration tree: ten agents each running every lane held a 12-core machine at
+every check the owned files select except `pnpm test:contracts`, `pnpm knip`,
+`pnpm typecheck`, `pnpm build` and the `test:mcp` suites; those run once, from
+the lead, on the integration tree: ten agents each running every lane held a 12-core machine at
 load 104 and timed out the app build's MCP probe twice.
 
 Under its `## Task` add only what a script cannot know: the decisions already

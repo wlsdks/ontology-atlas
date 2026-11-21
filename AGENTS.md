@@ -134,14 +134,10 @@ only with `pnpm pr:land <number>`. Never use `--no-verify`, force-push main,
 Publishing needs an explicit request and `npm pack --dry-run` first.
 
 Parallel work reaches `main` through one integration branch (`/integrate`),
-never a train or a pull request per slice. `pnpm integration:start` precedes the
-fan-out; slices commit on their own branches, run only
-`pnpm checks:changed -- --run --slice` and never push; `pnpm integration:add`
-merges each as it returns; `pnpm integration:pr` runs the repo-wide lanes once
-and opens one draft; its `pnpm pr:land` is the one CI run;
-`pnpm integration:prune` then deletes each branch and worktree whose head
-`git merge-base --is-ancestor` finds in `origin/main`. Every slice commit
-survives: `--no-ff` merges only, never squash, rebase or cherry-pick.
+never a train or a pull request per slice: unpushed slices run
+`pnpm checks:changed -- --run --slice`, the lead merges each `--no-ff` as it
+returns, and repo-wide lanes and CI run once. Never squash, rebase or
+cherry-pick a slice; delete a branch only once `origin/main` holds its head.
 
 Keep root plus the largest nested instruction file below 32 KiB; nested
 `AGENTS.md` files only point to the `.claude/rules/` relevant to their paths.
@@ -157,12 +153,17 @@ This file is the only root instruction file: Claude Code reads it directly, and
 a root `CLAUDE.md` would replace it. `.claude/rules/` always loads `forbidden`,
 `git` and `local-first`; `design`, `design-gates`, `architecture`, `testing`,
 `surfaces` and `documentation` load by their frontmatter paths
-(`rules-path-scope.contract.test.ts`). Codex loads no rule by itself. Claude
-discovers skills in `.claude/skills/`, Codex in `.agents/skills/`.
+(`rules-path-scope.contract.test.ts`). Making a rule resident updates that
+contract, this sentence, and the commit's reason together. Codex loads no rule
+by itself. Claude discovers skills in `.claude/skills/`, Codex in
+`.agents/skills/`.
 
 `.claude/settings.json` owns Claude permissions and hooks, `.codex/hooks.json`
 Codex hooks; Codex skips a new or changed entry until a person trusts it in
-`/hooks`. Each hook has a `.codex/hooks/` adaptation, except Codex-only
+`/hooks`. Hooks block irreversible commands, report lint and language findings
+at edit time, and inject the vault census at session start; each header says
+why. Each has a `.codex/hooks/` adaptation (a Codex edit is an `apply_patch`
+envelope), not a copy, except Codex-only
 `block-secret-read.sh` (Claude uses `permissions.deny`) and Claude-only
 `session-length.sh` (it reads Claude's transcript). `pnpm test:claude:hooks`
 guards the wiring.

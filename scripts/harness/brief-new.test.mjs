@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import net from 'node:net';
 import { test } from 'node:test';
 
-import { freePort, main } from './brief-new.mjs';
+import { freePort, main, suggestedChecks } from './brief-new.mjs';
 
 async function run(argv, extra = {}) {
   let out = '';
@@ -48,11 +48,19 @@ test('a slice commits for the integration branch, pushes nothing and runs only i
   const brief = await run(['--slug=feat/x', '--owns=a.mjs']);
   assert.equal(brief.code, 0);
   assert.match(brief.out, /do not push and open no pull request/);
-  assert.match(brief.out, /merges it into the integration branch as soon as it returns/);
+  assert.match(brief.out, /merges it into the integration branch with `--no-ff` as soon as it returns; never squash, rebase or cherry-pick/);
   assert.match(brief.out, /`pnpm checks:changed -- --run --slice`/);
   assert.doesNotMatch(brief.out, /gh pr create/);
   assert.equal((await run(['--slug=feat/x', '--owns=a.mjs', '--path=integration'])).code, 0);
   const train = await run(['--slug=feat/x', '--owns=a.mjs', '--path=train']);
   assert.equal(train.code, 1);
   assert.match(train.err, /--path=train is retired/);
+});
+
+test('a brief lists only slice checks: the repo-wide lanes wait for the integration tree', () => {
+  const checks = suggestedChecks(['src/shared/lib/cn.ts', 'scripts/harness/brief-new.mjs']);
+  assert.ok(checks.some((command) => command.startsWith('pnpm exec eslint')), 'the planner ran and printed slice checks');
+  for (const repoWide of [/^pnpm knip\b/, /^pnpm typecheck\b/, /^pnpm test:contracts\b/, /^pnpm build\b/, /^pnpm test:mcp:/]) {
+    assert.ok(!checks.some((command) => repoWide.test(command)), `${repoWide} must not be a slice's must-stay-green line`);
+  }
 });

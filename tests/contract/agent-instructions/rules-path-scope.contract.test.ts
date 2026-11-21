@@ -152,7 +152,7 @@ describe("`.claude/rules` path scoping contract", () => {
    * even an empty one, silently replaces every rule `AGENTS.md` alone states.
    */
   it("keeps AGENTS.md the only root instruction file Claude reads", () => {
-    const shadows = ["CLAUDE.md", ".claude/CLAUDE.md"].filter((file) =>
+    const shadows = ["CLAUDE.md", ".claude/CLAUDE.md", "CLAUDE.local.md"].filter((file) =>
       existsSync(join(process.cwd(), file)),
     );
     expect(

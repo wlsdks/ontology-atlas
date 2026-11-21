@@ -26,6 +26,13 @@ function fixture(fn) {
   }
 }
 
+test('prune refuses any base but origin/main, which plan may still take', () => {
+  assert.throws(() => parseArgs(['prune', '--base=integration/topic-2026-11-21', 'feat/a']), /prune deletes only what origin\/main holds/);
+  assert.throws(() => parseArgs(['prune', '--base=main', 'feat/a']), /--base=main is for plan/);
+  assert.equal(parseArgs(['prune', 'feat/a']).base, 'origin/main');
+  assert.equal(parseArgs(['plan', '--base=integration/topic-2026-11-21', 'feat/a']).base, 'integration/topic-2026-11-21');
+});
+
 test('selection must be explicit', () => {
   assert.throws(() => parseArgs(['plan']), /select branches explicitly/);
   assert.deepEqual(parseArgs(['plan', '--', '--match=wf/*', 'a']).match, ['wf/*']);

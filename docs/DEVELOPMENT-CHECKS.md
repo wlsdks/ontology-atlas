@@ -28,11 +28,10 @@ Escalate to `pnpm test:run`, `pnpm lint`, `pnpm build`, broad Playwright, or
 desktop packaging when a failure, shared contract, routing, configuration,
 release surface, or user workflow requires it. Keep required CI unchanged.
 
-A slice of parallel work runs `pnpm checks:changed -- --run --slice`: only the
-unit tests beside its files, lint on them, the e2e specs that reach them, and
-the Rust lane when `src-tauri/**` changed. The lead runs the repo-wide lanes
-(contracts, the security set, ratchets, `pnpm knip`, `pnpm typecheck`) once on
-the integration tree before its pull request.
+A slice of parallel work runs `pnpm checks:changed -- --run --slice`: every
+check its files select except the costly repo-wide lanes (`pnpm test:contracts`,
+`pnpm knip`, `pnpm typecheck`, `pnpm build`, the `test:mcp` suites), which the
+lead runs once on the integration tree before its pull request.
 
 ## Where CI internals live
 
@@ -161,7 +160,7 @@ What each contributor command answers, sorted by command.
 | `pnpm build:first-load -- out en en/topology` | Per route, the JavaScript its HTML loads up front (raw and brotli KB) and any generated JSON literal over 50 KB; fails on a page naming no chunks, a missing chunk, or an oversize literal. `pnpm build` runs it for `en`, `en/topology` and `en/download`; `--allow-json=<route>` exempts a route |
 | `pnpm build:static` | Reuse `out/` only for matching build inputs; fail without a reuse stamp if inputs change during the build |
 | `pnpm bundle:plan` · `pnpm bundle:prune` | Plan a merge and its trial conflicts, then delete every branch (local and origin, also origin-only), `worktree-agent-*` twin and worktree whose head `git merge-base --is-ancestor` finds in `origin/main` (a squashed or cherry-picked copy keeps it), close open drafts, and run `git worktree prune` and `git fetch --prune` (`/merge`, `/integrate`) |
-| `pnpm checks:changed` | Which gates this change needs; `-- --run --slice` runs only a parallel slice's own unit, lint, e2e and Rust checks |
+| `pnpm checks:changed` | Which gates this change needs; `-- --run --slice` leaves `test:contracts`, `knip`, `typecheck`, `build` and the `test:mcp` suites to the integration tree |
 | `pnpm conflicts:scan` | Which open pull requests change the same files as this branch, and whether a trial merge conflicts |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision to cite or overturn, and whether this change owes one |
 | `pnpm design:tokens -- [--prefix=<name>]` | The current token ramps, resolved from app/styles |
@@ -176,10 +175,10 @@ What each contributor command answers, sorted by command.
 | `pnpm gates:yield -- --runs=200` | Which CI checks ever failed, per run, from the lane reports CI uploads |
 | `pnpm gateway:capture -- --base-url=<static export>` | Re-shoots the app screens in `public/gateway/`, in Korean and English; `--only=map,neural` re-shoots this README's two map pictures; `--only=harness-film` re-shoots the download page's harness film stills in all four languages |
 | `pnpm harness:tokens -- --since=<date>` | Where Claude Code tokens went per agent type, from local transcripts, and which runs broke the compaction window or turn caps ([budget](engineering/agent-effort.md#token-budget)) |
-| `pnpm integration:add <branch>` | In the integration worktree: merge one returned slice with `--no-ff` (refusing anything but a merge commit whose second parent is the slice head), stop on a conflict with its files listed, run `pnpm checks:changed -- --run --slice` on the slice's files and push; run it again after resolving a conflict |
-| `pnpm integration:pr -- --title=<title> [--notes=<file>]` | Merge `origin/main` into the integration branch, run `pnpm checks:changed -- --run`, `pnpm test:contracts`, `pnpm knip` and `pnpm typecheck` once, push, and open or update its one draft with each component @ head sha, a `### Conflicts` section and the lanes run |
+| `pnpm integration:add <branch>` | In the integration worktree: merge one returned slice with `--no-ff` (refusing anything but a merge commit whose second parent is the slice head), stop on a conflict with its files listed, run `pnpm checks:changed -- --run --slice` on the slice's files, and leave the push to `integration:pr`; run it again after resolving a conflict or committing a fix |
+| `pnpm integration:pr -- --title=<title> [--notes=<file>]` | Merge `origin/main` into the integration branch, run `pnpm checks:changed -- --run` on every path the branch changed, `pnpm test:contracts`, `pnpm knip` and `pnpm typecheck` once, push, and open or update its one draft with each component @ head sha, a `### Conflicts` section and the lanes run |
 | `pnpm integration:prune -- [<integration branch>] [--apply]` | After the integration pull request merged: the integration branch and every component it merged, through `pnpm bundle:prune`, deleted only when `git merge-base --is-ancestor` puts the head in `origin/main`; exits 1 and names each branch kept |
-| `pnpm integration:start <topic>` | Create `integration/<topic>-<yyyy-mm-dd>` from `origin/main` in `.claude/worktrees/integration-<topic>` and push it; no CI runs |
+| `pnpm integration:start <topic>` | Create `integration/<topic>-<yyyy-mm-dd>` from `origin/main` in `.claude/worktrees/integration-<topic>`, push it, and install that worktree offline; no CI runs |
 | `pnpm knip` | Dead files, exports and types |
 | `pnpm licenses:check` · `pnpm notice:build` · `pnpm notice:check` | Shipped packages are on the license allow-list, and `NOTICE.md` is current ([rules](engineering/third-party-code.md)) |
 | `pnpm messages:build` · `pnpm messages:check` · `pnpm messages:adopt` | Compose `messages/<locale>.json` from one file per namespace, prove it current, and carry an old branch's edits |

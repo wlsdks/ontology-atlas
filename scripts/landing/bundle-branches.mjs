@@ -8,6 +8,9 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { basename, join, resolve, sep } from 'node:path';
 
+/** The only history a branch may be deleted against: anything else would drop work main lacks. */
+export const PRUNE_BASE = 'origin/main';
+
 export function parseArgs(argv) {
   const args = { command: null, base: 'origin/main', fetch: true, apply: false, json: false, match: [], worktrees: [], branches: [] };
   for (const arg of argv) {
@@ -22,7 +25,10 @@ export function parseArgs(argv) {
     else if (arg.startsWith('--')) throw new Error(`unknown option ${arg}`);
     else args.branches.push(arg);
   }
-  if (!args.command) throw new Error('usage: bundle-branches.mjs plan|prune [--base=origin/main] [--match=<glob>] [--worktrees=<dir>] [branch...] [--apply] [--json] [--no-fetch]');
+  if (!args.command) throw new Error('usage: bundle-branches.mjs plan|prune [--base=<ref> (plan only)] [--match=<glob>] [--worktrees=<dir>] [branch...] [--apply] [--json] [--no-fetch]');
+  if (args.command === 'prune' && args.base !== PRUNE_BASE) {
+    throw new Error(`prune deletes only what ${PRUNE_BASE} holds; --base=${args.base} is for plan`);
+  }
   if (args.match.length + args.worktrees.length + args.branches.length === 0) {
     throw new Error('select branches explicitly: name them, or pass --match=<glob> or --worktrees=<dir>');
   }
@@ -35,7 +41,7 @@ export function makeGit(cwd) {
     if (result.status !== 0 && !allowFailure) {
       throw new Error(`git ${argv.join(' ')} failed: ${(result.stderr || result.stdout).trim()}`);
     }
-    return { status: result.status, stdout: result.stdout.trim() };
+    return { status: result.status, stdout: result.stdout.trim(), stderr: result.stderr.trim() };
   };
   return {
     out: (...argv) => run(argv).stdout,
@@ -224,7 +230,7 @@ function remoteOnlyPlan(git, base, branch) {
   const head = git.out('rev-parse', ref);
   const proof = headLanded(git, base, ref);
   if (proof.keep) return { branch, head, keep: proof.keep };
-  return { branch, head, landedAt: proof.landedAt, worktree: null, unlock: null, twin: null, remote: true, remoteOnly: true };
+  return { branch, head, landedAt: proof.landedAt, worktree: null, unlock: null, twin: null, remote: true, remoteOnly: true, remoteHead: head };
 }
 
 /** Removes worktrees only under `.claude/worktrees/` or a named `--worktrees` dir. */
@@ -258,7 +264,8 @@ export function prunePlan(git, base, branches, {
       return { branch, head, keep: 'origin has commits this branch lacks' };
     }
     const twin = tree ? agentTwin(git, base, tree, trees) : null;
-    return { branch, head, landedAt, worktree: tree?.path ?? null, unlock: tree?.locked ?? null, twin, remote };
+    const remoteHead = remote ? git.out('rev-parse', `refs/remotes/origin/${branch}`) : null;
+    return { branch, head, landedAt, worktree: tree?.path ?? null, unlock: tree?.locked ?? null, twin, remote, remoteHead };
   });
 }
 
@@ -310,7 +317,7 @@ export function applyPrune(git, actions, { apply, base = 'origin/main', io = con
     }
     if (!action.remoteOnly) git.try('branch', '-D', action.branch);
     if (action.twin) git.try('branch', '-D', action.twin);
-    if (action.remote) git.try('push', '--quiet', 'origin', '--delete', action.branch);
+    if (action.remote) git.try('push', '--quiet', `--force-with-lease=${action.branch}:${action.remoteHead}`, 'origin', '--delete', action.branch);
   }
   if (apply) {
     git.try('worktree', 'prune');

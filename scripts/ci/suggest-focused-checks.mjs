@@ -348,10 +348,11 @@ export function suggestFocusedChecksUsage() {
   pnpm checks:changed
   pnpm checks:changed -- <path...>
   pnpm checks:changed -- --run          # run every recommendation, stopping at the first failure
-  pnpm checks:changed -- --run --slice  # a parallel slice: only its unit, lint, e2e and Rust checks
+  pnpm checks:changed -- --run --slice  # a parallel slice: everything but the repo-wide lanes
 
-Only --run, --slice, --help and -h are options. --slice leaves contracts, security
-sets, ratchets, knip and typecheck to the lead's run on the integration tree. Prefix a path beginning with a dash with ./.
+Only --run, --slice, --help and -h are options. --slice leaves test:contracts,
+knip, typecheck, build and the test:mcp suites to the lead's one run on the
+integration tree; per-file gates still run. Prefix a path beginning with a dash with ./.
 
 Suggests the first focused checks for changed files so agents avoid full-suite
 verification by default. With no path arguments it

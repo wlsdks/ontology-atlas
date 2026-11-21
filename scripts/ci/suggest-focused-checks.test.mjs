@@ -484,10 +484,10 @@ it('overlapping default Node invocations execute each file once without losing t
 });
 
 describe('focused checks --slice', () => {
-  it('runs a slice\'s own unit, lint, e2e and Rust checks and leaves repo-wide lanes to the integration tree', () => {
+  it('keeps a slice\'s per-file gates and leaves only the costly repo-wide lanes to the integration tree', () => {
     const output = [], ran = [];
     const status = runSuggestFocusedChecks({
-      argv: ['--', '--run', '--slice', 'src/shared/lib/cn.ts', 'src-tauri/src/lib.rs'],
+      argv: ['--', '--run', '--slice', 'src/shared/lib/cn.ts', 'src-tauri/src/lib.rs', 'src-tauri/Cargo.toml', 'messages/en/common.json'],
       stdout: { write: text => output.push(text) },
       spawn(command) { ran.push(command); return { status: 0, stdout: '' }; },
     });
@@ -496,10 +496,13 @@ describe('focused checks --slice', () => {
     assert.ok(ran.some((c) => c.startsWith('pnpm exec vitest related --run')), 'unit suites reaching the touched file');
     assert.ok(ran.some((c) => c.includes('cargo clippy')), 'the Rust lane when src-tauri changed');
     assert.ok(ran.some((c) => c.includes('playwright test')), 'the e2e spec that reaches the touched file');
-    for (const repoWide of ['pnpm typecheck', 'pnpm knip', 'pnpm test:contracts']) {
-      assert.ok(!ran.includes(repoWide), `${repoWide} runs once on the integration tree, not per slice`);
+    for (const cheap of ['pnpm source:language', 'pnpm licenses:check']) {
+      assert.ok(ran.some((c) => c.startsWith(cheap)), `${cheap} is a per-file gate and stays with the slice`);
     }
-    assert.ok(!ran.some((c) => /vitest run .*tests\/contract\//.test(c)), 'no contract runs per slice');
+    assert.ok(ran.some((c) => c.includes('tests/contract/security/security-surfaces.contract.test.ts')), 'the security-surfaces contract stays for src-tauri');
+    for (const repoWide of [/^pnpm typecheck\b/, /^pnpm knip\b/, /^pnpm test:contracts\b/, /^pnpm build\b/, /^pnpm test:mcp:/]) {
+      assert.ok(!ran.some((c) => repoWide.test(c)), `${repoWide} runs once on the integration tree, not per slice`);
+    }
     assert.match(output.join(''), /--slice: \d+ repo-wide check\(s\) left for the lead's run on the integration tree/);
   });
 

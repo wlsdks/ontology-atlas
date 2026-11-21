@@ -18,12 +18,12 @@ adapter used to carry.
 Claude Code reads `AGENTS.md` directly from 2.1.277, but only when no
 `CLAUDE.md`, `CLAUDE.local.md` or `CLAUDE.md` inside a `.claude` folder exists in
 the working directory or an ancestor; any of those replaces it. So the
-repository commits none (`rules-path-scope.contract.test.ts` refuses a root
-one). Two local cases need the user setting **Project instructions** =
-`claude-md-and-agents-md`: a personal `CLAUDE.local.md`, and a profile whose
-`CLAUDE_CONFIG_DIR` is not `~/.claude`, which then counts `~/.claude/CLAUDE.md`
-as an ancestor file. A worktree under `.claude/worktrees/` sits inside the main
-checkout, so a `CLAUDE.md` still in the main checkout counts for it too.
+repository commits none (`rules-path-scope.contract.test.ts` refuses all
+three at the root, a personal `CLAUDE.local.md` included). A profile whose
+`CLAUDE_CONFIG_DIR` is not `~/.claude` counts `~/.claude/CLAUDE.md` as an
+ancestor file and needs the user setting **Project instructions** =
+`claude-md-and-agents-md` in that profile. Without it the failure is silent:
+only `.claude/rules/` loads, and `AGENTS.md` does not.
 `.claude/rules/` loads alongside `AGENTS.md`; a nested `AGENTS.md` loads when
 Claude reads a file in its directory. See
 [Claude instruction loading](https://code.claude.com/docs/en/memory#agentsmd).

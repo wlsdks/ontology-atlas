@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
  * `pnpm integration:<step>`: one integration branch carries parallel slices to `main` (`/integrate`).
- * `start` pushes `integration/<topic>-<date>` from `origin/main` in its own worktree; `add` merges
- * one slice with `--no-ff` and runs that slice's checks; `pr` merges `origin/main`, runs the
- * repo-wide lanes once and opens one draft; `prune` deletes only what `main`'s history contains.
+ * `start` pushes `integration/<topic>-<date>` from `origin/main` in its own installed worktree;
+ * `add` merges one slice with `--no-ff` and runs that slice's checks, locally; `pr` merges
+ * `origin/main`, runs the repo-wide lanes once, pushes and opens one draft; `prune` deletes only
+ * what `main`'s history contains.
  * Every step merges; none squashes, rebases or cherry-picks, so each slice commit reaches `main`.
  */
 
@@ -19,8 +20,11 @@ export const PREFIX = 'integration/';
 const BASE = 'origin/main';
 const TOPIC = /^[a-z0-9][a-z0-9-]*$/;
 
-/** The lanes the lead runs once on the merged tree; each slice ran only `--slice`. */
-export const REPO_WIDE_LANES = ['pnpm checks:changed -- --run', 'pnpm test:contracts', 'pnpm knip', 'pnpm typecheck'];
+/** The lanes the lead runs once on the merged tree, after `checks:changed` on every path it changed. */
+export const REPO_WIDE_LANES = ['pnpm test:contracts', 'pnpm knip', 'pnpm typecheck'];
+
+/** A fresh worktree has no `node_modules` and no generated message types; both come from the store. */
+export const WORKTREE_SETUP = ['pnpm install --frozen-lockfile --offline', 'pnpm messages:build'];
 
 export function integrationBranch(topic, now = new Date()) {
   if (!TOPIC.test(topic ?? '')) throw new Error('name the topic in lowercase words joined by hyphens, such as library-sources');
@@ -48,40 +52,61 @@ function lines(text) {
   return text.split('\n').filter(Boolean);
 }
 
-/** Creates the integration branch from `origin/main` in `.claude/worktrees/integration-<topic>` and pushes it. */
-export function start(git, topic, { now = new Date() } = {}) {
+function shellQuote(text) {
+  return `'${text.replace(/'/g, `'\\''`)}'`;
+}
+
+/** `checks:changed` over the paths that still exist, so a deleted file is not handed to a linter. */
+function checksChangedCommand(cwd, paths, extra) {
+  const present = paths.filter((path) => existsSync(resolve(cwd, path)));
+  return present.length === 0 ? null : `pnpm checks:changed -- --run${extra} ${present.map(shellQuote).join(' ')}`;
+}
+
+/**
+ * Creates the integration branch from `origin/main` in `.claude/worktrees/integration-<topic>`,
+ * pushes it and installs the worktree so the first slice's checks can run there.
+ */
+export function start(git, topic, { now = new Date(), exec = run } = {}) {
   const branch = integrationBranch(topic, now);
   git.out('fetch', '--quiet', 'origin', 'main');
   const path = join(mainCheckout(git), '.claude', 'worktrees', `integration-${topic}`);
   git.out('worktree', 'add', '-q', '-b', branch, path, BASE);
   makeGit(path).out('push', '--quiet', '-u', 'origin', branch);
+  for (const command of WORKTREE_SETUP) {
+    if (exec(command, path) !== 0) throw new Error(`${command} failed in ${path}; run it there by hand before integration:add`);
+  }
   return { branch, path };
+}
+
+/** The first-parent merge commit on HEAD whose second parent is `head`, or null. */
+function mergeOf(git, head) {
+  const merges = lines(git.out('rev-list', '--first-parent', '--merges', '--parents', 'HEAD'));
+  return merges.map((line) => line.split(' ')).find((ids) => ids.length === 3 && ids[2] === head)?.[0] ?? null;
 }
 
 /**
  * Merges `branch` into the checked-out integration branch with `--no-ff`, so the slice keeps its own
- * commits behind one merge commit. A conflict stops with the merge in progress and its files listed;
- * after the lead resolves it and commits, running `add` again for the same branch continues.
+ * commits behind one merge commit. A conflict stops with the merge in progress and its files listed.
+ * Running `add` again for a merged slice, after a resolution or a fix commit, re-checks every path
+ * changed since the merge's first parent.
  */
 export function add(git, branch) {
   currentIntegration(git);
   const head = git.out('rev-parse', '--verify', `${branch}^{commit}`);
-  if (git.try('merge-base', '--is-ancestor', head, 'HEAD').status === 0) {
-    const parents = git.out('rev-list', '--parents', '-n', '1', 'HEAD').split(' ').slice(1);
-    if (parents.length !== 2 || parents[1] !== head) return { state: 'already', head };
-  } else {
+  if (git.try('merge-base', '--is-ancestor', head, 'HEAD').status !== 0) {
     requireClean(git);
     const merged = git.try('merge', '--no-ff', '--no-edit', head, '-m', `Merge branch '${branch}' into ${git.out('branch', '--show-current')}`);
     if (merged.status !== 0) {
       const conflicts = lines(git.out('diff', '--name-only', '--diff-filter=U'));
-      if (conflicts.length === 0) throw new Error(`git merge ${branch} failed: ${merged.stdout}`);
-      return { state: 'conflict', head, conflicts };
+      if (conflicts.length > 0) return { state: 'conflict', head, conflicts };
+      git.try('merge', '--abort');
+      throw new Error(`git merge ${branch} failed and was aborted: ${merged.stderr || merged.stdout}`);
     }
   }
-  const parents = git.out('rev-list', '--parents', '-n', '1', 'HEAD').split(' ').slice(1);
-  if (parents.length !== 2 || parents[1] !== head) throw new Error(`HEAD is not a merge commit of ${branch}; refusing to continue`);
-  const paths = lines(git.out('-c', 'core.quotePath=false', 'diff', '--name-only', 'HEAD^1', 'HEAD'));
-  return { state: 'merged', head, merge: git.out('rev-parse', 'HEAD'), paths };
+  const merge = mergeOf(git, head);
+  if (!merge) return { state: 'already', head };
+  const paths = lines(git.out('-c', 'core.quotePath=false', 'diff', '--name-only', `${merge}^1`, 'HEAD'));
+  return { state: 'merged', head, merge, paths };
 }
 
 /**
@@ -166,14 +191,13 @@ export function runIntegration(argv, { cwd = process.cwd(), io = console, exec =
       for (const file of result.conflicts) io.log(`  ${file}`);
       return 1;
     }
-    const present = result.paths.filter((path) => existsSync(resolve(cwd, path)));
     io.log(`merged ${args[0]} @ ${result.head.slice(0, 9)} with --no-ff in ${result.merge.slice(0, 9)}; running its slice checks`);
-    if (present.length > 0 && exec(`pnpm checks:changed -- --run --slice ${present.map((p) => `'${p.replace(/'/g, `'\\''`)}'`).join(' ')}`, cwd) !== 0) {
-      io.log('slice checks failed on the merged tree; fix it here, commit, and push');
+    const checks = checksChangedCommand(cwd, result.paths, ' --slice');
+    if (checks && exec(checks, cwd) !== 0) {
+      io.log(`slice checks failed on the merged tree; fix it here, commit, and run pnpm integration:add ${args[0]} again`);
       return 1;
     }
-    git.out('push', '--quiet', 'origin', 'HEAD');
-    io.log('pushed; a push to an integration branch starts no CI');
+    io.log('kept local; pnpm integration:pr pushes once at the end');
     return 0;
   }
   if (step === 'pr') {
@@ -190,7 +214,9 @@ export function runIntegration(argv, { cwd = process.cwd(), io = console, exec =
         return 1;
       }
     }
-    for (const lane of REPO_WIDE_LANES) {
+    const changed = lines(git.out('-c', 'core.quotePath=false', 'diff', '--name-only', `${BASE}...HEAD`));
+    const checks = checksChangedCommand(cwd, changed, '');
+    for (const lane of checks ? [checks, ...REPO_WIDE_LANES] : REPO_WIDE_LANES) {
       io.log(`\n[integration] ${lane}`);
       if (exec(lane, cwd) !== 0) {
         io.log(`[integration] ${lane} failed; fix it on this branch, commit, and run pnpm integration:pr again`);
@@ -199,16 +225,15 @@ export function runIntegration(argv, { cwd = process.cwd(), io = console, exec =
     }
     git.out('push', '--quiet', 'origin', 'HEAD');
     const notesFile = argValue(args, 'notes');
-    const body = prBody({ items: components(git, 'HEAD', BASE), lanes: REPO_WIDE_LANES, notes: notesFile ? readFileSync(notesFile, 'utf8') : '' });
+    const body = prBody({ items: components(git, 'HEAD', BASE), lanes: ['pnpm checks:changed -- --run <every changed path>', ...REPO_WIDE_LANES], notes: notesFile ? readFileSync(notesFile, 'utf8') : '' });
     const dir = mkdtempSync(join(tmpdir(), 'integration-pr-'));
     try {
       const file = join(dir, 'body.md');
       writeFileSync(file, body);
       const open = JSON.parse(spawnSync('gh', ['pr', 'list', '--head', branch, '--state', 'open', '--json', 'number'], { cwd, encoding: 'utf8' }).stdout || '[]');
-      const quoted = (text) => `'${text.replace(/'/g, `'\\''`)}'`;
       const command = open[0]
-        ? `gh pr edit ${open[0].number} --title ${quoted(title)} --body-file ${quoted(file)}`
-        : `gh pr create --draft --base main --head ${quoted(branch)} --title ${quoted(title)} --body-file ${quoted(file)}`;
+        ? `gh pr edit ${open[0].number} --title ${shellQuote(title)} --body-file ${shellQuote(file)}`
+        : `gh pr create --draft --base main --head ${shellQuote(branch)} --title ${shellQuote(title)} --body-file ${shellQuote(file)}`;
       if (exec(command, cwd) !== 0) return 1;
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -220,7 +245,7 @@ export function runIntegration(argv, { cwd = process.cwd(), io = console, exec =
     const integration = args.find((arg) => !arg.startsWith('--')) ?? currentIntegration(git);
     const apply = args.includes('--apply');
     const root = makeGit(mainCheckout(git));
-    root.try('fetch', '--quiet', '--prune', 'origin');
+    root.out('fetch', '--quiet', '--prune', 'origin');
     const plan = prunePlanFor(root, integration);
     if (plan.refused) {
       io.log(plan.refused);
