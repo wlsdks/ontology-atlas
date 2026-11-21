@@ -76,6 +76,8 @@ import { SourceProgressBand } from "./parts/progress/SourceProgressBand";
 import { useContinuePress } from "./parts/progress/use-continue-press";
 import { LibraryWorkLine } from "./parts/progress/LibraryWorkLine";
 import { useSourceFilter } from "./library-page/use-source-filter";
+import { AfterFirstFrame } from "./library-page/AfterFirstFrame";
+import { overviewNextBatch } from "./library-page/overview-next-batch";
 import { checkOwner, folderRelativePage } from "./library-page/wiki-check-outcome";
 
 /** A tool's file inside the folder by its folder-relative name; anything else as it came. */
@@ -369,6 +371,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     eligible: localRoute ? opensLocally : undefined,
     send: sendCompile,
   });
+  const overviewBatch = useMemo(() => overviewNextBatch(model.sources, continueBatch), [continueBatch, model.sources]);
 
   const turns = useLibraryTurns({
     t, locale, toast, failureSentence, localVault, markSelfWrite, unmarkSelfWrite, workVaultScope,
@@ -765,11 +768,11 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                 />
               ) : null}
               {model.sources.length > 0 ? (
+                <AfterFirstFrame key={workVaultScope}>
                 <SourcesOverview
-                  key={workVaultScope}
                   sources={model.sources}
                   pages={model.wikiPages}
-                  batch={continueBatch}
+                  batch={overviewBatch}
                   inApp={nativeVaultRootPath !== null}
                   readingCount={localVault.partialTotal > 0 ? model.sources.length : null}
                   pick={sourcePick}
@@ -783,6 +786,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                     choose({ kind: "source", path });
                   }}
                 />
+                </AfterFirstFrame>
               ) : (
                 <LibraryEmptyFolderStage
                   t={t} handle={handle} nativeVaultRootPath={nativeVaultRootPath} busy={busy} openImport={openImport}

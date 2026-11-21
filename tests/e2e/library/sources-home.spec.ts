@@ -127,13 +127,14 @@ test.describe("the Sources home", () => {
         await page.emulateMedia({ reducedMotion: "reduce" });
         await openSources(page, { locale, width, height });
         const found = await page.evaluate(() => {
-          const home = document.querySelector('[data-testid="library-reader-landing"]')!;
+          const home = document.querySelector('[data-testid="sources-overview"]')!;
           const cut = [...home.querySelectorAll("*")]
             .filter((node) => (node as HTMLElement).offsetWidth > 0)
             .filter((node) => !node.closest(".sr-only"))
             .filter((node) => node.scrollWidth > node.clientWidth + 0.5)
-            .map((node) => node.getAttribute("data-testid") ?? `${node.tagName}.${node.className}`.slice(0, 80));
-          return { canvases: home.querySelectorAll("canvas").length, cut };
+            .map((node) => `${node.getAttribute("data-testid") ?? node.tagName}: ${(node.textContent ?? "").slice(0, 60)}`);
+          const canvases = document.querySelectorAll('[data-testid="library-reader-landing"] canvas').length;
+          return { canvases, cut };
         });
         expect(found.canvases).toBe(0);
         expect(found.cut).toEqual([]);

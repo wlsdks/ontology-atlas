@@ -221,11 +221,11 @@ test.describe("source progress on the Sources home", () => {
      * The home is exactly the band and the overview, at every desktop width: the band stays within
      * 112px, the overview takes the rest of the pane with no canvas, and nothing overflows.
      */
-    test(`one source reads 1 / 1 with no chart, and the home is band and overview (${locale})`, async ({ page }) => {
+    test(`one source reads 100% with no chart, and the home is band and overview (${locale})`, async ({ page }) => {
       await page.emulateMedia({ reducedMotion: "reduce" });
       await openSources(page, { vault: oneSourceVault(), locale });
       const band = page.getByTestId("library-progress");
-      await expect(band.getByTestId("library-progress-percent")).toHaveText("1 / 1");
+      await expect(band.getByTestId("library-progress-percent")).toHaveText("100%");
       // The noun follows the total and the verb the count.
       if (locale === "en") await expect(band.getByTestId("library-progress-sentence")).toHaveText("1 of 1 source has a wiki page");
       await expect(band.getByTestId("library-progress-chart")).toHaveCount(0);

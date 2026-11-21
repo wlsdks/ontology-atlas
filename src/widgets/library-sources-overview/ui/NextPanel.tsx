@@ -74,7 +74,7 @@ export function NextPanel({
     <aside
       aria-label={title}
       data-testid="sources-panel"
-      className="flex w-[clamp(22.5rem,25vw,27.5rem)] flex-none flex-col self-start overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-5.5 pt-5 pb-4.5"
+      className="flex w-[clamp(22.5rem,25vw,27.5rem)] flex-none flex-col self-start overflow-hidden @max-[60rem]/overview:w-auto @max-[60rem]/overview:self-stretch rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-5.5 pt-5 pb-4.5"
     >
       <div className="flex h-8 items-center justify-between gap-3">
         <span className="text-label leading-label tracking-[var(--tracking-label)] text-[color:var(--color-text-tertiary)]">{title}</span>

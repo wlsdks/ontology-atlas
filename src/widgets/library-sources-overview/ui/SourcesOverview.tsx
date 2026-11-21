@@ -433,8 +433,14 @@ export function SourcesOverview({
   );
 
   return (
-    <section aria-label={t("sourcesHome.aria")} data-testid="sources-overview" className="flex min-h-0 flex-1 gap-7 px-10 py-6">
-      <div ref={columnRef} className="@container flex min-h-0 min-w-0 flex-1 flex-col">
+    // Below 60rem (a 1440 window with the conversation open) the panel moves under the table, which keeps the pane's height.
+    <div className="@container/overview flex min-h-0 min-w-0 flex-1">
+    <section
+      aria-label={t("sourcesHome.aria")}
+      data-testid="sources-overview"
+      className="flex min-h-0 min-w-0 flex-1 gap-7 px-10 py-6 @max-[60rem]/overview:flex-col @max-[60rem]/overview:overflow-y-auto @max-[40rem]/overview:px-5"
+    >
+      <div ref={columnRef} className="@container flex min-h-0 min-w-0 flex-1 flex-col @max-[60rem]/overview:h-full @max-[60rem]/overview:flex-none">
         <div ref={toolbarRef} className="flex flex-none items-center gap-3.5 pb-3">
           <SegmentedControl
             ariaLabel={t("sourcesHome.groupBy.label")}
@@ -488,5 +494,6 @@ export function SourcesOverview({
       </div>
       {panel}
     </section>
+    </div>
   );
 }
