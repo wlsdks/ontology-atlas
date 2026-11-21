@@ -5,12 +5,11 @@
 //! answer in time (`client::QUESTION_LIMIT`, the load included) and kills that worker, and a
 //! runner's request carries the same limit (`TIMEOUTS.query`). No thread outlives a search.
 
+use super::failure::{failure_of, During};
 use super::job::Entry;
 use super::memory::SEARCHER_IDLE;
 use super::models::{readable_model, Builtin, Runner};
-use super::types::{
-    failure_of, During, FoundState, PassageHit, VectorFailure, VectorFound, VectorSource,
-};
+use super::types::{FoundState, PassageHit, VectorFailure, VectorFound, VectorSource};
 use super::{lock, Vectors};
 use crate::llm::embed::{EmbedError, Embedder, MAX_PASSAGE_CHARS};
 use std::sync::Arc;
