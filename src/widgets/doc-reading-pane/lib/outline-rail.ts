@@ -1,7 +1,5 @@
 import { DOC_COLUMN_PX } from "@/shared/ui/tokens/reading-measure";
 
-/** The outline rail's verdicts: how many headings earn it and how wide the pane must be. */
-
 /**
  * Gated on the heading count so the always-on rail does not become noise on a short
  * document.
@@ -17,13 +15,11 @@ export function shouldShowOutlineRail(headingCount: number): boolean {
  * gap past the column, so the floor is W >= C + gap + railWidth + 2 * minGutter.
  */
 
-/** Space between the column's right edge and the rail's left edge. */
 export const OUTLINE_RAIL_COLUMN_GAP = 32;
 
 /** Smallest gutter outside the column and the rail; equal on both sides by construction. */
 const OUTLINE_RAIL_MIN_GUTTER = 48;
 
-/** The two widths the rail wears. `DocReadingOutlineRail` reads these rather than repeating them. */
 export const OUTLINE_RAIL_NARROW_WIDTH = 168;
 export const OUTLINE_RAIL_WIDE_WIDTH = 200;
 

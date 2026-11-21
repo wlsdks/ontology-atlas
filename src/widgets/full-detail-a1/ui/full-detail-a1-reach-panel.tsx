@@ -13,13 +13,11 @@ import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
  * reserved for the self domain here (`.claude/rules/design.md`).
  */
 export interface FullDetailA1ReachLabels {
-  /** The reach sentence for the chosen depth. */
   summary: (depth: number, count: number, total: number) => string;
   /** The depth control's accessible name; an exclusive choice is a radiogroup and needs one. */
   stepsAria: string;
   selfDomainLabel: string;
   noDomainLabel: string;
-  /** The remainder sentence for domains past `DOMAIN_ROW_LIMIT`. */
   domainsHidden: (hidden: number) => string;
 }
 

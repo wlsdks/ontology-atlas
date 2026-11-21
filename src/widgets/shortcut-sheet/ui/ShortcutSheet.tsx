@@ -54,7 +54,6 @@ interface ShortcutRow {
 
 interface ShortcutSection {
   titleKey: string;
-  /** The surface this section applies to — the source of truth for contextual tab classification. */
   surface: ShortcutSurface;
   /**
    * CSS selector for the control these keys drive; the current-screen tab drops a section whose
@@ -66,7 +65,6 @@ interface ShortcutSection {
 
 const k = (i18nKey: string): ShortcutKey => ({ i18nKey });
 
-/** Which `requiresOnScreen` controls are drawn now, read on the open transition. */
 function sectionsOnScreen(): readonly string[] {
   if (typeof document === "undefined") return [];
   const needed = new Set(
@@ -266,8 +264,6 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
   const pathname = usePathname() ?? "/";
   const searchParams = useSearchParams();
   const currentSurface = surfaceForPathname(pathname, searchParams?.get('tab') ?? null);
-  // Defaults to the current screen: what can be pressed now comes first, and the All tab keeps the
-  // full list.
   const [scope, setScope] = useState<ShortcutScope>("current");
   const [wasOpen, setWasOpen] = useState(open);
   // Read once as the sheet opens: a section is on the current-screen tab only when its control is
@@ -294,14 +290,9 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
       }),
     [scope, currentSurface, onScreen],
   );
-  /*
-   * The tab named after the current surface is dropped when "This screen" already shows the same
-   * sections.
-   */
   const scopes = SHORTCUT_SCOPES.filter((key) => key !== currentSurface);
   const showRelationGuide =
     currentSurface === "topology" && (scope === "current" || scope === "topology" || scope === "all");
-  /** On the current-screen tab with nothing but global sections — say so quietly. */
   const currentHasOwnSections =
     scope !== "current" || visibleSections.some((s) => s.surface !== "global");
 
@@ -362,10 +353,8 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
       if (previous?.isConnected) {
         previous.focus();
       } else if (named?.isConnected && !named.closest("[inert]")) {
-        // The opener came back after its unmount; hand the keyboard to it.
         named.focus({ preventScroll: true });
       } else {
-        // No control to return to: go to the start of the content.
         document.querySelector<HTMLElement>("main#main")?.focus({ preventScroll: true });
       }
       /** Re-check one frame later; the restored element can still unmount right after closing. */
@@ -378,10 +367,6 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
     };
   }, [open, returnFocusSelector]);
 
-  /*
-   * Reduced motion: the shared OVERLAY_SPRING_REDUCED, 120ms opacity only, with zero travel so
-   * nothing teleports.
-   */
   const reducedMotion = useReducedMotion();
   const surfaceMotion = reducedMotion
     ? {
@@ -446,7 +431,6 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
               <CloseButton label={t("closeAriaLabel")} onClick={onClose} data-testid="shortcut-sheet-close" />
             </header>
 
-            {/* Tabs pinned with the header so scope stays visible while scrolling. */}
             <div
               role="tablist"
               aria-label={t("scope.ariaLabel")}
@@ -496,13 +480,10 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
                 role="group"
                 aria-label={t("scrollRegionLabel")}
               >
-              {/* From sm upward it expands into a 2-column grid to cut vertical length.
-                  Small viewports use a single column plus internal scroll to avoid overflow. */}
               <div className="grid grid-cols-1 gap-x-6 divide-y divide-[color:var(--color-overlay-2)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
                 {visibleSections.map((section) => (
                   <section
                     key={section.titleKey}
-                    // No column-local top hairline; the tab row's border already closes the header.
                     className="px-5 py-4"
                   >
                     <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
@@ -543,10 +524,6 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
                     {t("scope.emptyCurrent")}
                   </p>
                 ) : null}
-                {/*
-                 * The glossary sits under the keys inside the scroll, not in the fixed footer where
-                 * it crowded out the list.
-                 */}
                 <div
                   data-testid="shortcut-sheet-words"
                   className="border-t border-[color:var(--color-overlay-2)] px-5 py-4"

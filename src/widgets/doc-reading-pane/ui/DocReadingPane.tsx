@@ -31,9 +31,7 @@ export interface DocReadingPaneProps {
     activeHeadingSlug: string | null;
     onHeadingClick: (slug: string) => void;
   } | null;
-  /** The floating return, or null while the surface below is an editor. */
   backToTop: { visible: boolean; scrollToTop: () => void } | null;
-  /** Extra classes for the scroll container — a caller's own bottom reserve, say. */
   scrollClassName?: string;
   children: ReactNode;
   "data-testid"?: string;

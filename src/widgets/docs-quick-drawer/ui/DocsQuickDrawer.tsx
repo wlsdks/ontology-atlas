@@ -80,10 +80,8 @@ function togglePinnedInStorage(pinnedKey: string, slug: string): string[] {
 interface Props {
   open: boolean;
   onClose: () => void;
-  /** The vault path prefix the drawer's links attach to. Defaults to `/docs`. */
   basePath?: string;
   getDocHref?: (slug?: string | null) => string;
-  /** The project context selected on the map. When present, a related-documents section shows at the top. */
   contextProject?: {
     slug: string;
     name: string;
@@ -97,7 +95,6 @@ interface FlatDoc {
   path: string;
   updatedAt: string;
   tags: string[];
-  /** The manifest document, whose excerpt is read only while its row is hovered. */
   source?: VaultDoc;
 }
 
@@ -133,11 +130,8 @@ function TreeBranch({
   getDocHref: (slug?: string | null) => string;
   onPick: () => void;
   depth: number;
-  /** Held open while searching or at depth 0. */
   forceOpen: boolean;
-  /** The lowercased search text — highlights the matching part of the title when present. */
   needle: string;
-  /** The slug selected by keyboard nav — indigo highlight plus scrollIntoView. */
   focusedSlug: string | null;
 }) {
   const [open, setOpen] = useState(depth === 0);
@@ -363,7 +357,6 @@ export function DocsQuickDrawer({
     return () => {
       window.clearTimeout(t);
     };
-    // A vault change re-reads that vault's scoped pinned and recent.
   }, [open, pinnedKey, recentKey]);
 
   useEffect(() => {
@@ -390,7 +383,6 @@ export function DocsQuickDrawer({
         const canonical = n.title ?? n.name;
         return {
           slug: n.slug as string,
-          // The same display-name rule as the map popover.
           title: resolveLocaleDisplayName(meta?.frontmatter, locale, canonical),
           path: n.path,
           updatedAt: meta?.updatedAt ?? "",
@@ -414,7 +406,6 @@ export function DocsQuickDrawer({
     return map;
   }, [docs]);
 
-  // The top 12 tags, by descending count. Exposed as chips at the top of the screen.
   const topTags = useMemo(() => {
     const counts: { tag: string; count: number }[] = [];
     tagIndex.forEach((slugs, tag) => counts.push({ tag, count: slugs.size }));
@@ -454,7 +445,6 @@ export function DocsQuickDrawer({
     [recentSlugs, docBySlug],
   );
 
-  // Top related documents for the project selected on the map (same scoring as ProjectDrawer).
   const relatedDocs = useMemo(() => {
     if (!contextProject) return [];
     const manifest = activeManifest;
@@ -491,7 +481,6 @@ export function DocsQuickDrawer({
     return flattenTreeSlugs(filteredTree);
   }, [filteredTree, trimmedQuery, activeTag]);
 
-  // Focus returns to the first item when the filter results change.
   useEffect(() => {
     queueMicrotask(() => setFocusedSlug(flatTreeSlugs[0] ?? null));
   }, [flatTreeSlugs]);
@@ -575,7 +564,6 @@ export function DocsQuickDrawer({
                 role="search"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  // Enter → the focused slug first, otherwise the first match.
                   const slug = focusedSlug ?? firstDocSlug(filteredTree);
                   if (!slug) return;
                   router.push(getDocHref(slug));
