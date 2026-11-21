@@ -59,6 +59,7 @@
       "runnerDownNotice": "Ollama가 응답하지 않아서 이 결과는 단어만 맞춰 찾았어요.",
       "failedNotice": "의미 검색이 답하지 않아서 이 결과는 단어만 맞춰 찾았어요.",
       "noMatchBoth": "검색한 파일에서 이 단어나 이 뜻과 맞는 구절을 찾지 못했어요.",
+      "noMatchChanged": "검색한 파일에서 이 단어나 이 뜻과 맞는 구절을 찾지 못했어요. 바뀐 파일의 구절 {count, number}개는 뺐어요.",
       "stoppedEmpty": "준비된 파일 없이 멈췄어요.",
       "modelFailedDetail": "{code, select, load {모델을 불러오지 못함} convert {이 컴퓨터에 맞게 모델을 준비하지 못함} check {준비한 모델이 확인을 통과하지 못함} worker_exited {모델 프로세스가 끝남} timed_out {제시간에 응답 없음} internal {Atlas 내부 오류} other {}}",
       "modelFailedGeneric": "이 컴퓨터에서 모델을 실행하지 못했어요.",

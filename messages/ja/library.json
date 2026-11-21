@@ -59,6 +59,7 @@
       "runnerDownNotice": "Ollamaが応答しなかったため、この結果は単語だけで照合しています。",
       "failedNotice": "意味検索が応答しなかったため、この結果は単語だけで照合しています。",
       "noMatchBoth": "検索したファイルに、この単語やこの意味に合う箇所は見つかりませんでした。",
+      "noMatchChanged": "検索したファイルに、この単語やこの意味に合う箇所は見つかりませんでした。変更されたファイルの箇所{count, number}件は除きました。",
       "stoppedEmpty": "準備できたファイルがないまま停止しました。",
       "modelFailedDetail": "{code, select, load {モデルを読み込めませんでした} convert {このコンピュータ用にモデルを準備できませんでした} check {準備したモデルが確認を通りませんでした} worker_exited {モデルのプロセスが終了しました} timed_out {時間内に応答がありませんでした} internal {Atlasの内部エラーです} other {}}",
       "modelFailedGeneric": "このコンピュータでモデルを実行できませんでした。",

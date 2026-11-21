@@ -53,7 +53,7 @@ describe('tauri-vault-vectors on the web', () => {
     await expect(warmVectors(builtin)).resolves.toBeUndefined();
     await expect(deleteVectorModel()).resolves.toBeUndefined();
     await expect(searchVectors('/vault', builtin, '습지', 8)).resolves.toEqual({
-      state: 'notReady', failure: null, hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0,
+      state: 'notReady', failure: null, hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0, busy: false,
     });
     const probe = await probeVectors('/vault', 'http://localhost:11434');
     expect(probe.files).toBe(0);
@@ -133,7 +133,7 @@ describe('tauri-vault-vectors in the app', () => {
     tauriApiMock.runtimeAvailable = true;
     tauriApiMock.invoke.mockRejectedValue('embed-not-local');
     await expect(searchVectors('/vault', runner, 'q', 8)).resolves.toEqual({
-      state: 'failed', failure: null, hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0,
+      state: 'failed', failure: null, hits: [], staleDropped: 0, filesReady: 0, filesTotal: 0, busy: false,
     });
     await expect(vectorStatus('/vault', runner)).rejects.toBe('embed-not-local');
   });
