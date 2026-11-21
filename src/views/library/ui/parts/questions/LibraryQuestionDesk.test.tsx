@@ -28,7 +28,8 @@ vi.mock('@/shared/lib/llm-connection/tauri-jev', async (importOriginal) => {
   return { ...actual, jevSecretStatus: mocks.status, jevJudge: mocks.judge };
 });
 
-import { libraryPageFacts, type LibraryPageFacts } from '@/features/library';
+import type { LibraryPageFacts } from '@/features/library';
+import { libraryPageFacts } from '@/features/library/model/library-page-facts';
 import { LibraryQuestionDesk, type QuestionDeskReportDraft, type QuestionDeskReportRequest } from './LibraryQuestionDesk';
 
 /** One facts object per page text, as the Library keeps one per page version. */

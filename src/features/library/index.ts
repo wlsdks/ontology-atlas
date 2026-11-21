@@ -38,13 +38,13 @@ export type {
 export { FindDocumentsDialog } from "./ui/FindDocumentsDialog";
 export { buildAskBrief } from "./lib/questions/ask-brief";
 export { buildQuestionDeskReportBrief, planQuestionDeskReportFile, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections } from './lib/questions/question-desk-brief';
-export { countDeskReadablePages, countDeskWikiPages, deskBriefEvidence, deskPageClaims, deskLeadTermRuns, deskMeaningLeads, deskSearchPrefixes, deskSentenceWindow, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskListingVersion, questionDeskReportFileCurrent, questionTerms, recentDeskPages } from './lib/questions/question-desk';
-export type { DeskCitation, DeskClaim, DeskLead, DeskPageClaims, DeskSourceHit } from './lib/questions/question-desk';
+export { countDeskReadablePages, countDeskWikiPages, deskBriefEvidence, deskLeadTermRuns, deskMeaningLeads, deskSearchPrefixes, deskSentenceWindow, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskListingVersion, questionDeskReportFileCurrent, questionTerms, recentDeskPages } from './lib/questions/question-desk';
+export type { DeskCitation, DeskClaim, DeskLead, DeskSourceHit } from './lib/questions/question-desk';
 export type { AskQuestionId } from "./lib/questions/ask-brief";
 export { buildAnswerPage } from "./lib/questions/answer-page";
 export { answerHistoryUnreadable, answerObservation, answerRefreshBrief, automaticWikiWriteAllowed, buildAnswerRevision, isRetainedAnswerPath, retainedAnswerHeads } from './lib/questions/answer-revision';
 export type { AnswerObservation, RetainedAnswerHead } from './lib/questions/answer-revision';
-export { answerRevisionStore, answerTextHash, prepareAnswerRefresh, saveAnswerRevision } from './lib/questions/answer-revision-store';
+export { answerRevisionStore, prepareAnswerRefresh, saveAnswerRevision } from './lib/questions/answer-revision-store';
 export type { AnswerRefreshSnapshot } from './lib/questions/answer-revision-store';
 export { createWikiFile, deleteWikiFile, writeWikiFile } from "./lib/wiki/write-wiki-file";
 export { buildHumanPage, humanPageSlug } from "./lib/wiki/human-page";
@@ -71,7 +71,6 @@ export type {
 } from "./model/library-work-activity";
 export { useLibraryModel } from "./model/use-library-model";
 export type { LibraryUiModel } from "./model/use-library-model";
-export { libraryPageFacts } from "./model/library-page-facts";
 export type { LibraryPageFacts } from "./model/library-page-facts";
 export { sectionSlices } from "./lib/wiki/section-slices";
 export {

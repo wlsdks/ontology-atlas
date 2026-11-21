@@ -51,7 +51,7 @@ vi.mock('@/features/vault-vectors', async (original) => {
   };
 });
 
-import { libraryPageFacts } from '@/features/library';
+import { libraryPageFacts } from '@/features/library/model/library-page-facts';
 import { LibraryQuestionDesk } from './LibraryQuestionDesk';
 
 const ROOT = '/fixture';
