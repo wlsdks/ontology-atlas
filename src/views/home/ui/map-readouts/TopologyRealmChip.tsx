@@ -6,24 +6,14 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/controls/chrome-chip";
 import { controlClass } from "@/shared/ui/control-class";
 
-// Reads "viewing only this" on screen; the internal name stays `realm`.
 export interface TopologyRealmChipProps {
-  /** HomePage substitutes the slug when absent. */
   title: string;
-  /**
-   * en "Viewing only"; not rendered when empty. HomePage splits `realm.chipViewing` around {title}.
-   */
   beforeLabel: string;
-  /** ko "Viewing only", flush against the title. */
   afterLabel: string;
   clearAriaLabel: string;
   onClear: () => void;
 }
 
-/**
- * Scopes the map to one node with a labeled return to the whole map; rides the top-centre row
- * like `TopologyPathChip`.
- */
 export function TopologyRealmChip({
   title,
   beforeLabel,

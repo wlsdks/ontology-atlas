@@ -200,7 +200,6 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
                 }
                 scaffolding={starterScaffolding}
                 scaffoldFailed={starterScaffoldFailed}
-                // With documents present, they are the first step.
                 docsFoundCount={bootstrapPlan?.elements.length ?? 0}
                 sourceFileCount={vault.manifest?.sourceFileCount ?? 0}
                 onStartFromDocs={
@@ -367,10 +366,8 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           projects={renderProjects}
           selectedSlug={canvasSelectedSlug}
           onSelect={(slug) => handleSelect(slug)}
-          // Suppressed while the hero panel is expanded.
           suppressed={!leftPanelCollapsed && !drawerOpen}
         />
-        {/* It settles from the top centre, so it grows from its own top edge. */}
         <Surface
           open={localGraphStack.length > 0}
           origin="top center"
@@ -426,7 +423,6 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           </button>
         </Surface>
 
-        {/* Explains a local graph or category filter that reduced the visible nodes. */}
         {topologyVisibleCount !== null && topologyVisibleCount < localGraphProjects.length ? (
           <div data-toast-wall="bottom" className="pointer-events-none absolute bottom-6 left-[220px] z-10 rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-line-a90)] md:left-[228px] xl:left-[236px]">
             filter · {topologyVisibleCount} / {localGraphProjects.length}
@@ -457,7 +453,6 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
             members={scopeConceptCount}
             synthetic={isSynthetic}
           />
-          {/* The frame meter joins the instrument stack instead of claiming a new corner. */}
           <FrameMeter />
         </div>}
 
@@ -469,14 +464,12 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           onClose={() => setUnsupportedGuideOpen(false)}
         />
 
-        {/* Reuses `requestVaultOpen`, so the unsupported-browser branch exists once. */}
         <RecentChangesNeedsVaultDialog
           open={recentNeedsVaultOpen}
           onClose={() => setRecentNeedsVaultOpen(false)}
           onOpenVault={requestVaultOpen}
         />
 
-        {/* A sample edit needs a different sentence from "these dates are not yours". */}
         <RecentChangesNeedsVaultDialog
           open={needsVaultReason !== null}
           copyKey={needsVaultReason ?? "createNeedsVault"}
@@ -489,10 +482,6 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
   </>);
 }
 
-/**
- * The first-run card sits in the window's centre; on a short window the run's card would cover its
- * buttons, so the stack rises clear of it and settles back once the card goes.
- */
 function StartStackClearOfWorkCard({ children }: { children: React.ReactNode }) {
   const layerRef = useRef<HTMLDivElement>(null);
   const stackOf = useCallback(() => layerRef.current?.querySelector<HTMLElement>('[role="status"]') ?? null, []);

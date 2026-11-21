@@ -22,13 +22,11 @@ import { Checkbox } from "@/shared/ui";
 export interface OntologyBootstrapFormLabels {
   headingId?: string;
   heading: string;
-  /** With an existing project the action adds to that map, so it must not announce a new one. */
   headingAddToMap: string;
   projectName: string;
   folders: string;
   folderDocCount: (count: number) => string;
   summary: (docCount: number, projectFile: string) => string;
-  /** When the vault already has a `kind: project` document. */
   summaryExistingProject: (docCount: number, projectFile: string) => string;
   bodyUntouched: string;
   alreadyTyped: (count: number) => string;
@@ -36,7 +34,6 @@ export interface OntologyBootstrapFormLabels {
   agentPointers: (count: number) => string;
   libraryFiles: (count: number) => string;
   confirm: string;
-  /** When the vault already has a project. */
   confirmAddToMap: (count: number) => string;
   cancel: string;
   errorPrefix: string;
@@ -138,7 +135,6 @@ export function OntologyBootstrapForm({
             <span className="text-label text-[color:var(--color-text-tertiary)]">
               {labels.projectName}
             </span>
-            {/* Same field size as `CreateNodeForm`. */}
             <input
               type="text"
               value={projectTitle}
@@ -199,7 +195,6 @@ export function OntologyBootstrapForm({
               {labels.alreadyTyped(plan.alreadyTypedCount)}
             </p>
           ) : null}
-          {/* Say why these files were left alone, or the list reads as broken. */}
           {plan.runtimeOwnedSkipped > 0 ? (
             <p
               data-testid="ontology-bootstrap-runtime-skills"
@@ -208,7 +203,6 @@ export function OntologyBootstrapForm({
               {labels.runtimeSkills(plan.runtimeOwnedSkipped)}
             </p>
           ) : null}
-          {/* `AGENTS.md` and `CLAUDE.md` address an agent and the starter writes them; say so. */}
           {plan.agentPointerSkipped > 0 ? (
             <p
               data-testid="ontology-bootstrap-agent-pointers"

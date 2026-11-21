@@ -14,13 +14,9 @@ export function resolveNodeVaultRef(node: KnowledgeGraphNode): string {
   return (target.ref ?? resolveOntologyBuilderNodeSlug(node)).replace(/^ontology\//, "");
 }
 
-/** Resolves the selected topology node to its vault `.md` document for the full-detail body editor. */
-
 export interface TopologyNodeEditTarget {
   vaultSlug: string;
-  /** Passed to `updateFrontmatter` as `expectedMtime`. */
   mtime: number | undefined;
-  /** The baseline an edit is compared against. */
   frontmatter: Record<string, unknown>;
 }
 

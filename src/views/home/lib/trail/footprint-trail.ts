@@ -1,8 +1,4 @@
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
-/**
- * Session model for the footprint trail, appended whenever a node takes ego focus.
- * Never in the URL or localStorage; reset on reload.
- */
 
 export const FOOTPRINT_TRAIL_MAX = 30;
 
@@ -41,13 +37,11 @@ export interface TrailEdge {
   label?: string;
 }
 
-/** `null` when the two nodes share no edge: a walk need not follow edges. */
 export interface TrailStepLink {
   type: string;
   reason: string | null;
 }
 
-/** Unordered: the walk may cross an edge in either direction. */
 function pairKey(a: string, b: string): string {
   return a < b ? `${a}\u0000${b}` : `${b}\u0000${a}`;
 }
@@ -112,9 +106,7 @@ export interface FootprintTrailPacketLabels {
   order: string;
   reviewHint: string;
   undocumented: string;
-  /** Only with 2+ visits. */
   pathHint: string;
-  /** Omitted when there are no dusty nodes. */
   dustyHint?: string;
   unrelated?: string;
 }

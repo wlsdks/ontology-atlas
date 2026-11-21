@@ -13,25 +13,16 @@ import type { DomainUsage } from "@/widgets/ontology-map";
 import type { TopologyNodeFocusModel } from "../../lib/inspector/topology-node-focus";
 import type { NodeDatasheetDerivation } from "./use-node-datasheet-model";
 
-/**
- * A closed card never traverses the graph. Reader updates reuse graph facts until their inputs change.
- */
 export interface UseFullDetailA1ModelArgs {
-  /** While `false` the hook returns `null` with no traversal. */
   open: boolean;
   nodeFocus: TopologyNodeFocusModel | null;
   selectedOntologyNode: KnowledgeGraphNode | null;
   insight: { nodes: readonly KnowledgeGraphNode[]; edges: readonly KnowledgeGraphEdge[] } | null;
-  /** The fallback when the datasheet has no verdict. */
   changedSlugs: ReadonlySet<string>;
-  /** Rendered as markdown when present. */
   nodeBody: { slug: string; raw: string; body: string } | null;
-  /** Its presence enables inline editing. */
   nodeEditTarget: { vaultSlug: string } | null;
-  /** Read-only samples offer no edit action. */
   vaultLoaded: boolean;
   onSaveExplanation: (next: string) => void | Promise<void>;
-  /** Verdicts the compact popover already made, never made twice. */
   datasheet: NodeDatasheetDerivation["v2DatasheetModel"];
 }
 
@@ -90,14 +81,12 @@ export function useFullDetailA1Model({
     return {
       node: {
         id: selectedOntologyNode.id,
-        // `fullTitle` renders only when it differs.
         title: nodeFocus.displayTitle,
         fullTitle: nodeFocus.title,
         kind: nodeFocus.kind,
         ownerTitle:
           datasheet?.nodeId === selectedOntologyNode.id ? datasheet.owner?.title ?? null : null,
         slug,
-        // The name the vault knows, not the manifest slug.
         ...(() => {
           const target = resolveNodeAgentTarget(selectedOntologyNode);
           return { agentSlug: target.ref, documented: target.documented };
@@ -110,7 +99,6 @@ export function useFullDetailA1Model({
             : changedSlugs.has(selectedOntologyNode.id),
         updatedAtLabel:
           datasheet?.nodeId === selectedOntologyNode.id ? datasheet.updatedAtLabel : null,
-        // The compact panel's fact for this selection, never computed twice.
         lastEditSubject:
           datasheet?.nodeId === selectedOntologyNode.id ? datasheet.lastEditSubject : null,
         mtimeConflict:

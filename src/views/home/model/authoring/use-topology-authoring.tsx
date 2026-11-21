@@ -72,7 +72,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
   const [acpTurnActivityFrame, setAcpTurnActivityFrame] = useState<{
     activity: AcpTurnActivity;
     at: number;
-    /** Kept across the turn's frames so the chip can count from it. */
     startedAt: number;
   } | null>(null);
   const meaningEditorSource = useMemo(() => {
@@ -88,7 +87,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
   const meaningEditorCandidates = useMemo(() => {
     const nodes = ontologyInsight?.nodes ?? [];
     const byId = new Map(nodes.map((node) => [node.id, node]));
-    // The domain a node sits in, read from containment edges: an element through its capability.
     const container = new Map<string, string>();
     for (const edge of ontologyInsight?.edges ?? []) {
       if (edge.type === "contains" && !container.has(edge.to)) container.set(edge.to, edge.from);
@@ -114,7 +112,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
       }))
       .sort((a, b) => a.title.localeCompare(b.title));
   }, [ontologyInsight]);
-  /** The relations the editor lists: those the open document declares, and those other documents declare toward it. */
   const meaningEditorRelations = useMemo<MeaningEditorRelationRow[]>(() => {
     if (!meaningEditorSource || !ontologyInsight) return [];
     const byId = new Map(ontologyInsight.nodes.map((node) => [node.id, node]));
@@ -215,7 +212,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
       cancelled = true;
     };
   }, [meaningEditParam, meaningEditorIntent, meaningEditorSource, ontologyInsight, selectedOntologyNode, vault.status, closeMeaningEditor, setNeedsVaultReason]);
-  /** Every relation write lands at once and answers with a toast that offers Undo. */
   const applyMeaningEditor = useCallback(
     async (plan: OntologyRelationEditPlan, what: MeaningEditorWrite, targetTitle: string) => {
       if (!nodeEditTarget || !meaningEditorSource) throw new Error("missing edit target");
@@ -234,7 +230,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     },
     [meaningEditorSource, nodeEditTarget, runManualWrite, setRouteState, tMeaningEditor, toast, vault],
   );
-  /** An incoming relation lives in the other document, so its removal writes that document. */
   const removeIncomingRelation = useCallback(
     async (row: MeaningEditorRelationRow) => {
       const other = ontologyInsight?.nodes.find((node) => node.id === row.otherId);
@@ -295,7 +290,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     () => (agentFocusNodeId && recentChanges.recentNodeIds.has(agentFocusNodeId) ? agentFocusNodeId : null),
     [agentFocusNodeId, recentChanges],
   );
-  // Only with a writable local vault.
   const [createNodeOpen, setCreateNodeOpen] = useState(false);
   const closeCreateNode = useCallback(() => {
     setCreateNodeOpen(false);
@@ -314,7 +308,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary, relationRegister,
     manifest: vault.manifest,
   });
-  // The config snippet, deep links and connect button all branch on it.
   const agentServer = useAgentServer();
   // Only asks whether an agent is attached now (`docs/DECISIONS.md`, entry 90).
   const agentConnect = useAgentConnectModel({ agentActivityStatus });
@@ -323,7 +316,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
   const { bootstrapOpen, setBootstrapOpen, bootstrapPlan, runBootstrap } = useBootstrapFlow({
     vault,
     onCompleted: ({ addedToExisting, elementCount }) => {
-      // The reloaded graph arrives as a reveal.
       setMapRevealToken((n) => n + 1);
       toast.show(
         t(addedToExisting ? "bootstrap.toastAdded" : "bootstrap.toastDone", { count: elementCount }),
@@ -331,10 +323,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
       );
     },
   });
-  /**
-   * Writes the new concept at once. Only the on-screen create controls reach this path, so it
-   * stamps `created_by: human`. Returns whether the file was written.
-   */
   const createNode = useCallback(
     async (input: CreateNodeInput, { keepOpen = false }: { keepOpen?: boolean } = {}): Promise<boolean> => {
       let built: { slug: string; markdown: string };
@@ -375,7 +363,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     },
     [runManualWrite, setRouteState, t, toast, vault],
   );
-  /** The concept list's add row: a domain stands alone, a capability or element goes in the group's domain. */
   const addConceptInGroup = useCallback<IndexAddConcept>(
     (group, kind, title) =>
       createNode(
@@ -389,7 +376,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
       ),
     [activeLocale, createNode],
   );
-  /** The concepts a new title is compared with, so a near-duplicate is named before it is made. */
   const createNodeExistingConcepts = useMemo(
     () =>
       (ontologyInsight?.nodes ?? []).map((node) => ({
@@ -476,7 +462,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     },
     [nodeEditTarget, nodeBody, vault, toast, t],
   );
-  /** The file's current bytes, read fresh so an edit never builds on a stale copy. */
   const readEditTarget = useCallback(async () => {
     if (!nodeEditTarget || !selectedOntologyNode) return null;
     const handle = vault.fileHandles.get(nodeEditTarget.vaultSlug);
@@ -494,10 +479,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     },
     [runManualWrite, t, toast, vault],
   );
-  /**
-   * Renames in place: the name shown in this screen's language changes, with the title heading
-   * when it spelled the old name. Slug and uid stay, so every reference still resolves.
-   */
   const renameConcept = useCallback(
     async (next: string) => {
       const name = next.trim();
@@ -508,14 +489,12 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
       const key = typeof frontmatter[localeKey] === "string" && frontmatter[localeKey] !== "" ? localeKey : "title";
       const previous = String(frontmatter[key] ?? "");
       if (previous === name) return;
-      // A title that spelled the same name moves with it, so the two never drift apart.
       const updates = { [key]: name, ...(key !== "title" && frontmatter.title === previous ? { title: name } : {}) };
       const content = renameTitleHeading(applyFrontmatterUpdates(edit.raw, updates), previous, name);
       await saveInPlace(edit.target.vaultSlug, edit.target.mtime, content, t("conceptEdit.renamed", { from: previous, to: name }));
     },
     [activeLocale, readEditTarget, saveInPlace, t],
   );
-  /** The description is `description:` when the file keeps one, else the paragraph under the title. */
   const saveConceptDescription = useCallback(
     async (next: string) => {
       const edit = await readEditTarget();
@@ -533,7 +512,6 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
     },
     [readEditTarget, saveInPlace, t],
   );
-  /** The documents whose lines would point at nothing once this one is gone, as the docs delete names them. */
   const deleteReferrers = useMemo(() => {
     const slug = nodeEditTarget?.vaultSlug;
     if (!slug || !vault.manifest) return [];

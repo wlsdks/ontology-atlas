@@ -18,7 +18,6 @@ interface Options {
   topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "canCreateNode" | "createNodeOpen" | "bootstrapOpen" | "setCreateNodeOpen" | "createSelection">;
 }
 
-/** What the create card opens with; `opening` remounts the card so its fields start empty. */
 export interface CreateNodeDefaults {
   kind: CreateNodeKind;
   parent: string;

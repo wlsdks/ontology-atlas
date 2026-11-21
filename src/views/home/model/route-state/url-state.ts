@@ -31,14 +31,8 @@ export interface HomeRouteState {
   pathSourceSlug: string | null;
   pathTargetSlug: string | null;
   createNodeIntent: boolean;
-  /** `?workbench=edit`. */
   meaningEditorIntent: boolean;
-  /** `edit=<relation>:<targetId>`; the entity parser owns the first-colon split. */
   meaningEditParam: string | null;
-  /**
-   * `?index=`; null when this URL does not say, so the caller's stored preference survives a
-   * round-trip.
-   */
   indexState: IndexPanelState | null;
   /**
    * `?ask=`: only the intent kind, since the map composes the sentence and prose does not belong in
@@ -51,15 +45,7 @@ export interface HomeRouteState {
   // Only the name travels; the sentence is rebuilt at the destination, so a shared link carries no
   // folder text.
   askBusinessFlow: boolean;
-  /**
-   * `?open=`: parents expanded out of their cluster chips; in the URL so a shared link or agent can
-   * reproduce it.
-   */
   expandedParents: string[];
-  /**
-   * `?realm=`: only one node's containment subtree, relaid out as a root. Entering clears `p`
-   * and `open` (`enterRealmRouteState`), since a realm is a new coordinate system.
-   */
   realmSlug: string | null;
   /**
    * `?recent=auto|1|7|30` lights nodes changed in the last N days ("auto" is the adaptive window
@@ -67,20 +53,13 @@ export interface HomeRouteState {
    * windows cannot disagree; null is off.
    */
   recentWindow: RecentSpotlightWindow | null;
-  /** Saved constellation id, or `new` to open its editor; vault-scoped. */
   constellationIntent: string | null;
-  /**
-   * `?view=`; other values drop at parse time. null is the flat map, or on arrival the stored
-   * choice decides.
-   */
   mapView: HomeMapView | null;
 }
 
-/** Every picker view except the flat map, which is the parameter's absence. */
 const HOME_MAP_VIEWS = ["hex", "structure", "3d", "neural"] as const;
 export type HomeMapView = (typeof HOME_MAP_VIEWS)[number];
 
-/** Retired view names old links still carry, read as the view that replaced them. */
 const RETIRED_HOME_MAP_VIEWS: Readonly<Record<string, HomeMapView>> = {
   galaxy: "structure",
   strata: "3d",
@@ -213,7 +192,6 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   mapView: null,
 };
 
-/** Only `auto`/`1`/`7`/`30`; anything else is null (off), so no legend has to explain a bad value. */
 function parseRecentWindowParam(raw: string | null): RecentSpotlightWindow | null {
   if (raw === "auto") return "auto";
   if (raw === "1") return 1;
@@ -222,13 +200,11 @@ function parseRecentWindowParam(raw: string | null): RecentSpotlightWindow | nul
   return null;
 }
 
-/** Null removes the parameter. */
 function serializeRecentWindowParam(window: RecentSpotlightWindow | null): string | null {
   if (window === null) return null;
   return window === "auto" ? "auto" : String(window);
 }
 
-/** Comma split, trimmed, empty and duplicate entries dropped, order kept so round-trips are stable. */
 export function parseExpandedParentsParam(
   raw: string | null,
   max: number = MAX_EXPANDED_PARENTS,
@@ -278,7 +254,6 @@ export function toggleExpandedParent(
     return current.filter((id) => id !== parentId);
   }
   const next = [...current, parentId];
-  // Array order is expansion order (append-only).
   const cap = Math.max(1, Math.floor(max));
   return next.length > cap ? next.slice(next.length - cap) : next;
 }
@@ -325,9 +300,6 @@ export function deriveDeeplinkAncestorExpansion(
     : [...currentExpanded, ...additions];
 }
 
-/**
- * A realm is a new coordinate system, so selection (`p`), expansion (`open`) and path analysis clear.
- */
 export function enterRealmRouteState(
   current: HomeRouteState,
   slug: string,
@@ -344,7 +316,6 @@ export function enterRealmRouteState(
   };
 }
 
-/** Returns to the realm root on the full map. */
 export function exitRealmRouteState(current: HomeRouteState): HomeRouteState {
   return {
     ...current,

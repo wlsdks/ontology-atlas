@@ -42,7 +42,6 @@ export function useTopologyEdgeInteractions({ insight, selectedNode, createNodeO
     const ago = declaredIso ? computeUpdatedAgo(declaredIso, updatedAgoNowMs) : null;
     const meaningRelation = meaningEditRelationForEdgeType(selectedEdge.relationType);
     const authoredByFrom = edgeAuthoredByFromNode(selectedEdge.declaredBySlug, from.evidenceIds[0]);
-    // A line written in the other end's document is edited there, not refused.
     const declaring = authoredByFrom ? from : edgeAuthoredByFromNode(selectedEdge.declaredBySlug, to.evidenceIds[0]) ? to : null;
     const contextualEditTarget = meaningRelation && declaring ? resolveTopologyNodeEditTarget(declaring, manifest?.docs ?? []) : null;
     return {

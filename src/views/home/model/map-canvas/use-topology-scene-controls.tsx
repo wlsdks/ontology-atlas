@@ -175,7 +175,6 @@ export function useTopologySceneControls({
     }),
     [t],
   );
-  // Canonical kind names (`kinds.*`), so the Neural legend needs no second vocabulary.
   const domeTierLabels = useMemo(
     () => ({
       project: tKinds("project"),
@@ -249,7 +248,6 @@ export function useTopologySceneControls({
       completeMapNavigation(mapEntryTicket);
     }
   }, [mapEntryTicket, topologyRenderState.showImmediateEmptyState, topologyRenderState.renderCanvas]);
-  // `?category=` is the only filter source left.
   const topologyFiltersActive = activeCategory !== null;
   const topologyOverlayState = resolveTopologyOverlayState({
     dataReady: projectsQuery.loaded,
@@ -271,7 +269,6 @@ export function useTopologySceneControls({
       activeCategory: null,
     }));
   }, [setRouteState]);
-  // Card badge or double-click: selection and focus in one go.
   const handleExpandRequest = useCallback(
     (slug: string) => {
       interactionSelectedSlugRef.current = slug;

@@ -2,9 +2,7 @@ import { RECENT_SPOTLIGHT_REVEAL_MAX } from '@/widgets/ontology-map';
 import { deriveDeeplinkAncestorExpansion } from '../route-state/url-state';
 
 export interface SpotlightLens {
-  /** The person's own expansion plus what the spotlight unfolds; null leaves their expansion alone. */
   expandedParents: ReadonlySet<string> | null;
-  /** What the map keeps sharp. */
   litIds: ReadonlySet<string>;
 }
 

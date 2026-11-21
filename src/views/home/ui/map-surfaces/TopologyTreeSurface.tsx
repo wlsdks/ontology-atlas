@@ -8,10 +8,6 @@ import { OntologyTreeMap, type OntologyMapEdge, type OntologyMapNode, type TreeM
 import { useMapEvidenceStates, type MapEvidence, type MapEvidenceAvailability } from "@/features/vault-ontology";
 import { ArcSwatch, KindDot } from "../map-readouts/map-legend-swatches";
 
-/**
- * Composes the tree's words and names what the amber stands on; unknown evidence is never shown as
- * current, and the stale count appears only once evidence was measured.
- */
 export function TopologyTreeSurface({
   nodes,
   edges,

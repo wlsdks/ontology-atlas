@@ -19,10 +19,8 @@ export function TopologyNeuralLegend({
   hiddenDependencies = 0,
 }: {
   evidence: MapEvidence;
-  /** The stale count is over these. */
   nodeIds: readonly string[];
   focused: boolean;
-  /** The selection has dependents that depend on it only through other concepts. */
   indirect?: boolean;
   hiddenDependencies?: number;
 }) {
@@ -105,7 +103,6 @@ export function TopologyNeuralLegend({
   );
 }
 
-/** The words Neural paints, in the hex board's wording; the stale part only where evidence was read. */
 export function useNeuralLabels(measured: boolean): NeuralLabels {
   const t = useTranslations("topology.light3d");
   const tHex = useTranslations("topology.hexBoard");
