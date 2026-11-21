@@ -11,11 +11,11 @@ import {
   type EgoView,
 } from "../lib/ego-layout";
 
-function readGeometry(el: Element | null): EgoGeometry {
+function readGeometry(element: Element | null): EgoGeometry {
   const fallback = DEFAULT_EGO_GEOMETRY;
   const read = (name: string, value: number) => {
-    if (!el) return value;
-    const raw = getComputedStyle(el).getPropertyValue(name).trim();
+    if (!element) return value;
+    const raw = getComputedStyle(element).getPropertyValue(name).trim();
     const parsed = Number.parseFloat(raw);
     return Number.isFinite(parsed) ? parsed : value;
   };
@@ -133,17 +133,17 @@ export function ConceptEgoGraph({
   const boxRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<EgoView | null>(null);
   useLayoutEffect(() => {
-    const el = boxRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
+    const element = boxRef.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
     const read = () => {
-      const { width, height } = el.getBoundingClientRect();
+      const { width, height } = element.getBoundingClientRect();
       if (width < 1 || height < 1) return;
       const next = { w: Math.round(width), h: Math.round(height) };
-      setView((prev) => (prev && prev.w === next.w && prev.h === next.h ? prev : next));
+      setView((previous) => (previous && previous.w === next.w && previous.h === next.h ? previous : next));
     };
     read();
     const observer = new ResizeObserver(read);
-    observer.observe(el);
+    observer.observe(element);
     return () => observer.disconnect();
   }, []);
   const box = view ?? DEFAULT_EGO_VIEW;

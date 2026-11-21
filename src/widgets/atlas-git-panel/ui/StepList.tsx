@@ -102,26 +102,26 @@ export function StepListScroller({
    */
   const [edge, setEdge] = useState({ top: false, bottom: false });
   const readEdge = useCallback(() => {
-    const el = ref.current;
-    if (!el || el.clientHeight < 1) return;
-    const top = el.scrollTop > 1;
-    const bottom = el.scrollHeight - el.clientHeight - el.scrollTop > 1;
-    setEdge((prev) => (prev.top === top && prev.bottom === bottom ? prev : { top, bottom }));
+    const element = ref.current;
+    if (!element || element.clientHeight < 1) return;
+    const top = element.scrollTop > 1;
+    const bottom = element.scrollHeight - element.clientHeight - element.scrollTop > 1;
+    setEdge((previous) => (previous.top === top && previous.bottom === bottom ? previous : { top, bottom }));
   }, []);
   useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
     const read = () => {
       readEdge();
       // An unmeasured box (a test DOM, a hidden panel) has no room to fill.
-      if (el.clientHeight < 1) return setRoomy(false);
-      const rowHeightPx = Number.parseFloat(getComputedStyle(el).getPropertyValue("--git-row-h")) || 40;
-      setRoomy(el.scrollHeight - el.clientHeight < rowHeightPx);
+      if (element.clientHeight < 1) return setRoomy(false);
+      const rowHeightPx = Number.parseFloat(getComputedStyle(element).getPropertyValue("--git-row-h")) || 40;
+      setRoomy(element.scrollHeight - element.clientHeight < rowHeightPx);
     };
     read();
     const observer = new ResizeObserver(read);
-    observer.observe(el);
-    const list = el.firstElementChild;
+    observer.observe(element);
+    const list = element.firstElementChild;
     if (list) observer.observe(list);
     return () => observer.disconnect();
   }, [readEdge]);
