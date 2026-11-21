@@ -1,4 +1,4 @@
-import type { KnowledgeGraphNode } from "../../model";
+import type { KnowledgeGraphNode } from "../../../model";
 
 /**
  * Documents changed in the last N days, by caller-supplied dates (Git's last commit for untouched

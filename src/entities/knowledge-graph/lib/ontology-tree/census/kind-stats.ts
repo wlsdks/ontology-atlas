@@ -1,4 +1,4 @@
-import type { KnowledgeGraphNode } from "../../model";
+import type { KnowledgeGraphNode } from "../../../model";
 
 /** Kinds counted in stats: domain, capability, element, and the `unknown` stub; not project or document. */
 export const MEANINGFUL_ONTOLOGY_KINDS = [

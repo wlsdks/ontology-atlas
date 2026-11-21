@@ -1,4 +1,4 @@
-import type { KnowledgeGraphNode } from "../../model";
+import type { KnowledgeGraphNode } from "../../../model";
 import {
   hashNodeSignature,
   joinEdgeKey,

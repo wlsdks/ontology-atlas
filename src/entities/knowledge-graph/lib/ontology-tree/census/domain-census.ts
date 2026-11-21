@@ -1,5 +1,5 @@
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
-import { isContainmentRelation } from "./relations";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../../model";
+import { isContainmentRelation } from "../relations";
 
 export interface DomainCensusRow {
   id: string;

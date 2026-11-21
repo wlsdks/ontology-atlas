@@ -1,6 +1,6 @@
 import { findNameMatch, idSearchText, normalizeForMatch } from "@/shared/lib/search-match/node-name-match";
 import type { KnowledgeGraphNode } from "../../model";
-import type { OntologyTreeNode } from "./types";
+import type { OntologyTreeNode } from "./ontology-tree-node";
 
 /**
  * Whether a node's names or id slug match a `normalizeForMatch` query, by the `⌘K` palette's rule

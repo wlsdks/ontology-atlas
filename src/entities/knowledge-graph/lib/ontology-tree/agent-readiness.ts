@@ -1,5 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
-import type { OntologyTreeBuildResult } from "./types";
+import type { OntologyTreeBuildResult } from "./ontology-tree-node";
 import { ATLAS_CLI } from "@/shared/config/agent/cli-invocation";
 
 type AgentReadinessStatus = "ready" | "needs-links" | "needs-shape";

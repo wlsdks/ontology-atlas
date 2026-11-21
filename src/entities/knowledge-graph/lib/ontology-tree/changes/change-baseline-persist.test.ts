@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { KnowledgeGraphNode } from "../../model";
+import type { KnowledgeGraphNode } from "../../../model";
 import { snapshotOntology } from "./ontology-changeset";
 import {
   deserializeSnapshot,

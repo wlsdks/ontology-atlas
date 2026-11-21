@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { computeDomainCensusRows, domainCensusById } from "./domain-census";
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../../model";
 
 const node = (id: string, kind: string, title = id): KnowledgeGraphNode =>
   ({ id, kind, title }) as KnowledgeGraphNode;

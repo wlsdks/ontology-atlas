@@ -5,7 +5,7 @@ import {
   computeDegreeCentrality,
   nearestDomainId,
   selectRecentNodes,
-} from "./insights";
+} from "./graph-structure";
 
 const node = (
   id: string,

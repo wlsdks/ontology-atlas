@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../../model";
 import {
   forgetGraphSignatures,
   snapshotOntology,

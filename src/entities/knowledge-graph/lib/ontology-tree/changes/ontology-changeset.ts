@@ -1,5 +1,5 @@
 import { runSliced, type RunSlicedOptions } from "@/shared/lib/scheduling/run-sliced";
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../../model";
 
 /**
  * Nodes and relations changed against a session snapshot; the browser runtimes have no Git, so

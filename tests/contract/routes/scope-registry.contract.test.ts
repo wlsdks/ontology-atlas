@@ -192,8 +192,8 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     kind: "storage",
     scope: "vault-scoped",
     scopedBy: "setChangeBaselineScope",
-    file: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.ts",
-    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.test.ts",
+    file: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.ts",
+    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.test.ts",
     note: "Change baseline per folder, hashed per node; other folders' entries give way only when storage refuses a save",
   },
   {
@@ -201,8 +201,8 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     kind: "storage",
     scope: "vault-scoped",
     scopedBy: "setChangeBaselineScope",
-    file: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.ts",
-    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.test.ts",
+    file: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.ts",
+    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.test.ts",
     note: "The first form: each folder's entry is converted once to its own v2 key, then removed",
   },
   {

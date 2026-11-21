@@ -1,6 +1,6 @@
 import { MAP_CONCEPT_KINDS } from "@/shared/lib/vault-folder/vault-shape";
 
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../../model";
 
 /** The single count behind every "N concepts, M relations"; a different scope needs a different word. */
 export interface CanonicalCensus {
