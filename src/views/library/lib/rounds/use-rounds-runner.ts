@@ -150,8 +150,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
     })();
   }, [refresh]);
 
-  /* ---- The agent, headless ------------------------------------------------------------ */
-
   const agentServer = useAgentServer();
   const connectors = useVaultConnectors(handle);
   const runtime = useGuardedAcpRuntime(rootPath);
@@ -196,9 +194,9 @@ export function useRoundsRunner(): RoundsRunnerValue {
       vaultRoot: rootPath,
       vaultServerName: VAULT_MCP_SERVER_NAME,
       atlasToolMode,
-      judgeWrite: (req) => {
+      judgeWrite: (request) => {
         const page = judgePageWrite({
-          request: req,
+          request,
           vaultRoot: rootPath,
           currentText: (slug) => active.data.pages.current(`${slug}.md`),
           knownSources: active.data.knownSources,
@@ -290,8 +288,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
     completionRef.current = null;
     return { failed, ...summarizeAgentTurn(completion?.events ?? []) };
   }, []);
-
-  /* ---- One pass ----------------------------------------------------------------------- */
 
   const readPassData = useCallback(async (observePage: (path: string) => void): Promise<PassData | null> => {
     const manifest = manifestRef.current;
@@ -548,8 +544,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
     }
   }, [agentReady, agentTurn, allowedNow, handle, ledger, locale, readPassData, refresh, rootPath, runtimeId, store]);
 
-  /* ---- The clock ---------------------------------------------------------------------- */
-
   const tick = useCallback(async () => {
     if (!store || !ledger) return;
     const now = new Date();
@@ -620,8 +614,6 @@ export function useRoundsRunner(): RoundsRunnerValue {
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [refresh, store]);
-
-  /* ---- Actions ------------------------------------------------------------------------ */
 
   const save = useCallback(async (round: RoundRecord) => {
     if (!store) return { ok: false, startedNow: false };

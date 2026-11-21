@@ -163,14 +163,7 @@ export function useSourceSearch({
         const handle = sourceHandles.get(file.path);
         let units: SourceUnit[];
         if (!handle) {
-          /*
-           * ⚠️ **Recorded as read-with-nothing, never skipped.** Skipping left the file
-           * out of `readCount`, so `phase` stayed `reading` forever and the matches line
-           * counted up to a total it could never reach — caught by
-           * `LibrarySection.index.test.tsx`, whose folder has rows and no handles. A row
-           * whose file left the folder between the walk and the keystroke is a file this
-           * search cannot read, which is a finished answer about it, not a pending one.
-           */
+          // Recorded as read-with-nothing, never skipped: a skipped file stays out of `readCount` and `phase` stays `reading` forever.
           units = [];
         } else {
           try {
@@ -178,19 +171,12 @@ export function useSourceSearch({
             if (cancelled) return;
             units = sourceUnits(new Uint8Array(bytes), file.path).units;
           } catch {
-            /*
-             * A file that cannot be read, or a format with no text reader, contributes no
-             * units — and is still recorded, so the search does not retry it on every
-             * keystroke. An empty list is the honest answer for a PDF too.
-             */
+            // Recorded with no units, so the search does not retry an unreadable file on every keystroke.
             units = [];
           }
         }
         if (cancelled) return;
-        /*
-         * Publish each result to keep progress visible. A new Map updates matching without
-         * restarting this reader or rereading its next in-flight file.
-         */
+        // A new Map per file keeps progress visible without restarting this reader.
         setCache((current) => {
           if (current.key !== plannedKey || current.units.has(file.stamp)) return current;
           const next = new Map(current.units);

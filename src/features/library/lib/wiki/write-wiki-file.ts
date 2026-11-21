@@ -7,9 +7,9 @@ export async function deleteWikiFile(vault: FileSystemDirectoryHandle, relPath: 
   const parts = relPath.split("/").filter(Boolean);
   const fileName = parts.pop();
   if (!fileName) throw new Error("a file needs a name");
-  let dir = vault;
-  for (const part of parts) dir = await dir.getDirectoryHandle(part);
-  await dir.removeEntry(fileName);
+  let directory = vault;
+  for (const part of parts) directory = await directory.getDirectoryHandle(part);
+  await directory.removeEntry(fileName);
 }
 
 /** Writes one app-composed file whole, creating folders on the way; a partial write tears a page. */
@@ -21,9 +21,9 @@ export async function writeWikiFile(
   const parts = relPath.split("/").filter(Boolean);
   const fileName = parts.pop();
   if (!fileName) throw new Error("a file needs a name");
-  let dir = vault;
-  for (const part of parts) dir = await dir.getDirectoryHandle(part, { create: true });
-  const file = await dir.getFileHandle(fileName, { create: true });
+  let directory = vault;
+  for (const part of parts) directory = await directory.getDirectoryHandle(part, { create: true });
+  const file = await directory.getFileHandle(fileName, { create: true });
   const writable = await file.createWritable();
   await writable.write(text);
   await writable.close();
