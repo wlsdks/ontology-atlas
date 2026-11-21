@@ -33,7 +33,7 @@ const FILES = {
 };
 
 const found = (fields: Partial<VectorFound>): VectorFound => ({
-  state: 'ok', failure: null, hits: [], staleDropped: 0, filesReady: 1240, filesTotal: 2000, ...fields,
+  state: 'ok', failure: null, hits: [], staleDropped: 0, filesReady: 1240, filesTotal: 2000, busy: false, ...fields,
 });
 
 async function openDesk(page: Page, vectors: LibraryVectorsScript = {}, choice?: object): Promise<LibraryWorkHarness> {

@@ -511,6 +511,13 @@ impl Vectors {
         }
     }
 
+    /// A question dropped passages of changed files: someone waits on them, so their update starts
+    /// now and ends the quiet wait it covers.
+    pub(super) fn update_for_question(self: &Arc<Self>, entry: &Arc<Entry>) {
+        lock(&entry.state).deferred = None;
+        self.request_update(entry);
+    }
+
     /// The folder changed: a quiet update follows once its index passes go quiet (`tick`).
     pub(super) fn note_change(self: &Arc<Self>, entry: &Arc<Entry>) {
         self.defer_update(entry);
@@ -1070,7 +1077,7 @@ impl Vectors {
             off.vectors_bytes = vault_index::vectors::vectors_bytes(&entry.root).unwrap_or(0);
             return off;
         }
-        let (run, remembered, failure, held, deleted, at_model) = {
+        let (run, remembered, failure, held, deleted, at_model, busy) = {
             let state = lock(&entry.state);
             (
                 // A pass of an older generation was ended by a Delete and speaks no more.
@@ -1083,6 +1090,7 @@ impl Vectors {
                 state.held,
                 state.deleted,
                 state.failure_at_model,
+                state.running,
             )
         };
         if deleted {
@@ -1124,6 +1132,7 @@ impl Vectors {
             None => self.idle_status(summary, model.as_ref(), failure, held),
         };
         status.vectors_bytes = vectors_bytes;
+        status.busy = busy;
         status
     }
 

@@ -59,6 +59,7 @@
       "runnerDownNotice": "Ollama did not answer, so these results match words only.",
       "failedNotice": "Search by meaning did not answer, so these results match words only.",
       "noMatchBoth": "No passage in the files searched matches these words or this meaning.",
+      "noMatchChanged": "No passage in the files searched matches these words or this meaning. {count, plural, one {# passage from a changed file was left out.} other {# passages from changed files were left out.}}",
       "stoppedEmpty": "Stopped before any file was prepared.",
       "modelFailedDetail": "{code, select, load {the model could not load} convert {the model could not be prepared for this computer} check {the prepared model did not pass its check} worker_exited {its process ended} timed_out {it did not answer in time} internal {Atlas met an internal error} other {}}",
       "modelFailedGeneric": "The model could not run on this computer.",

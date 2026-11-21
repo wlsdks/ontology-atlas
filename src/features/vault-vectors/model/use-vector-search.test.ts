@@ -34,7 +34,7 @@ describe('searchableSource', () => {
 
 describe('askAndFollowFailure', () => {
   const found = (state: VectorFound['state']): VectorFound => ({
-    state, failure: state === 'failed' ? 'modelGone' : null, hits: [], staleDropped: 0, filesReady: 40, filesTotal: 40,
+    state, failure: state === 'failed' ? 'modelGone' : null, hits: [], staleDropped: 0, filesReady: 40, filesTotal: 40, busy: false,
   });
   beforeEach(() => vi.mocked(readStatusAgain).mockClear());
 
