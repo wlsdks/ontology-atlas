@@ -1,6 +1,3 @@
-// `ontology-atlas topological-order [vault]` — prerequisite-first dependency ordering.
-// MCP `query_ontology({operation: 'topological_order'})` thin wrapper.
-
 import { COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import { assertQueryOperation } from '../../lib/query-result-contract/query-operation.mjs';

@@ -1,5 +1,4 @@
 // `ontology-atlas agent-brief [vault]` — Claude Code/Codex handoff snapshot.
-// MCP `query_ontology({operation: 'agent_brief'})` thin wrapper.
 
 import { COLORS, KIND_COLORS } from '../../lib/colors.mjs';
 import { spawn } from 'node:child_process';
@@ -856,7 +855,6 @@ function render(result) {
   }
 }
 
-/** The diagnosis and the command that resolves it, in one block. */
 export function formatProjectSourceSummary(projectSource, remedy = null) {
   if (!projectSource || typeof projectSource !== 'object') return [];
   const gap = projectSource.topGap?.id

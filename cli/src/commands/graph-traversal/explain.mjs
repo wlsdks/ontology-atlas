@@ -1,6 +1,3 @@
-// `ontology-atlas explain <from> <to> [vault]` — relationship evidence.
-// MCP `query_ontology({operation: 'explain_relation'})` thin wrapper.
-
 import { COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import { assertExplainRelationShape } from '../../lib/query-result-contract/graph-traversal.mjs';

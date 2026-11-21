@@ -617,10 +617,6 @@ function printUsage(stream = process.stderr) {
   );
 }
 
-/**
- * Tails the local audit log (`.ontology-atlas/activity.jsonl`) with the MCP package's activity-log
- * module, resolved through `loadMcpModule`.
- */
 async function showActivityLog({ vaultRoot, json, limit }) {
   const { readActivityEntries } = await loadMcpModule('vault/activity-log.mjs');
   const entries = readActivityEntries(vaultRoot, { limit });

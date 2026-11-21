@@ -1,6 +1,3 @@
-// `ontology-atlas pattern-walk <slug> [vault]` — explicit relation-sequence traversal.
-// MCP `query_ontology({operation: 'pattern_walk'})` thin wrapper.
-
 import { COLORS, KIND_COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import { resolveVaultRoot } from '../../lib/resolve-vault.mjs';

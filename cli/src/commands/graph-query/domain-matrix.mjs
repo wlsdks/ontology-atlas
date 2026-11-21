@@ -1,6 +1,3 @@
-// `ontology-atlas domain-matrix [vault]` — domain coupling matrix.
-// MCP `query_ontology({operation: 'domain_matrix'})` thin wrapper.
-
 import { COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import { assertDomainMatrixShape } from '../../lib/query-result-contract/overview-queries.mjs';

@@ -61,7 +61,6 @@ export const AGENT_FILE_RULES = Object.freeze([
   Object.freeze({ id: 'gemini-ignore', kind: 'exclusion', tools: Object.freeze(['gemini-cli']), pattern: /^\.geminiignore$/ }),
 ]);
 
-/** Classify a repo-root-relative path. Returns null for non-agent files. */
 export function classifyAgentFilePath(path) {
   for (const rule of AGENT_FILE_RULES) {
     if (rule.pattern.test(path)) {
@@ -72,7 +71,6 @@ export function classifyAgentFilePath(path) {
 }
 
 
-/** Extensions an @reference must end with to count as a file reference. */
 const AT_REF_EXTENSIONS = Object.freeze([
   '.md', '.mdc', '.mjs', '.js', '.ts', '.tsx', '.json', '.toml', '.sh', '.yml', '.yaml',
 ]);

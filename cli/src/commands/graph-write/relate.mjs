@@ -34,7 +34,6 @@ const RELATION_KEY = Object.freeze({
 // canonical key would split one edge type across two keys that MCP folds.
 const LEGACY_KEYS = Object.freeze({ dependencies: ['depends_on'] });
 
-/** Refs under the canonical key plus its authoring aliases. */
 export function relationRefsFor(frontmatter, key) {
   const refs = [];
   for (const k of [key, ...(LEGACY_KEYS[key] ?? [])]) {

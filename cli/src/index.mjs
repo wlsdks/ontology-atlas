@@ -403,7 +403,6 @@ function copyTree(srcRoot, destRoot, { skip = () => false } = {}) {
   return { created, skipped };
 }
 
-/** Canonical path when it exists, the resolved path when it does not (yet). */
 function realpathOrSelf(path) {
   try {
     return realpathSync(path);
@@ -666,7 +665,6 @@ async function runInit(targetArg, opts = {}) {
     ...['bootstrap', '.', '--vault', cwdVaultArg].map(shellQuote),
   ].join(' ');
 
-  // Local-only telemetry baseline for every init (lib/telemetry.mjs).
   stampInitCompleted(target);
 
   if (quickStart) {

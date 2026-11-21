@@ -1,6 +1,3 @@
-// `ontology-atlas maintenance [vault]` — graph maintenance work queue.
-// MCP `query_ontology({operation: 'maintenance_plan'})` thin wrapper.
-
 import { COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import { assertMaintenancePlanShape } from '../../lib/query-result-contract/maintenance-growth.mjs';

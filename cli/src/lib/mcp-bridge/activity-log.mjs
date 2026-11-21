@@ -4,7 +4,7 @@
 
 import { loadMcpModule } from './mcp-module.mjs';
 
-/** @returns {Promise<Record<string, Function>>} mcp's activity-log module. */
+/** @returns {Promise<Record<string, Function>>} */
 const loadActivityLogModule = () => loadMcpModule('vault/activity-log.mjs');
 
 /**

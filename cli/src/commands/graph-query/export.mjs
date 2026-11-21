@@ -102,7 +102,6 @@ export async function runExport(args) {
   return 0;
 }
 
-/** The node fields this format actually carried, derived from the produced result. */
 function carriedKeysOf(format, payload) {
   // `json` is the raw compile artifact, so nothing is lost.
   if (format === 'json') return null;

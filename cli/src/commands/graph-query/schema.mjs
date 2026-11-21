@@ -1,6 +1,3 @@
-// `ontology-atlas schema [vault]` — relation schema pattern scan.
-// MCP `query_ontology({operation: 'schema'})` thin wrapper.
-
 import { COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import { assertQueryOperation } from '../../lib/query-result-contract/query-operation.mjs';

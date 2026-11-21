@@ -1,6 +1,3 @@
-// `ontology-atlas health [vault]` — graph integrity dashboard.
-// Thin wrapper over MCP `query_ontology({operation: 'health'})`.
-
 import { COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import {
