@@ -26,11 +26,3 @@ export function localHeaderTone(headerVerify: LocalVerifyState, active: boolean)
         ? 'saved'
         : 'idle';
 }
-
-/** Is this machine itself — the same decision as Rust's `is_loopback_authority`. */
-export function isLoopbackHost(authority: string): boolean {
-  const host = authority.startsWith('[')
-    ? (authority.slice(1).split(']')[0] ?? '')
-    : (authority.split(':')[0] ?? '');
-  return host === 'localhost' || host === '::1' || host.startsWith('127.');
-}

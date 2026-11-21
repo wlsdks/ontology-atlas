@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 import { countChatCapableModels } from '@/shared/lib/llm-connection/local-endpoint';
-import { isLoopbackHost, type LocalVerifyState } from './local-runner-rules';
+import { isLoopbackAuthority } from '@/shared/lib/llm-connection/loopback';
+import type { LocalVerifyState } from './local-runner-rules';
 
 /**
  * The open row's one explanatory line — the next thing to do differs per state, so the sentence
@@ -52,7 +53,7 @@ export function LocalCaption({
   }
   return (
     <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
-      {isLoopbackHost(host) ? t('localScopeLoopback', { host }) : t('localScopeRemote', { host })}
+      {isLoopbackAuthority(host) ? t('localScopeLoopback', { host }) : t('localScopeRemote', { host })}
     </p>
   );
 }

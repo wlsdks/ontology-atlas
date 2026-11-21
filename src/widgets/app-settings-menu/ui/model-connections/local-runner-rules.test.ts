@@ -1,19 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isLoopbackHost, localHeaderTone, sameAddress, type LocalVerifyState } from './local-runner-rules';
-
-describe('isLoopbackHost', () => {
-  it('is true only for this machine, with or without a port', () => {
-    for (const authority of ['localhost', 'localhost:11434', '127.0.0.1:1234', '[::1]:8080', '[::1]']) {
-      expect(isLoopbackHost(authority), authority).toBe(true);
-    }
-  });
-
-  it('is false for any other host, including one that merely contains a loopback name', () => {
-    for (const authority of ['192.168.0.4:11434', 'example.com', 'localhost.example.com', '10.0.0.127']) {
-      expect(isLoopbackHost(authority), authority).toBe(false);
-    }
-  });
-});
+import { localHeaderTone, sameAddress, type LocalVerifyState } from './local-runner-rules';
 
 describe('sameAddress', () => {
   it('ignores a trailing slash, a /v1 suffix, host case and surrounding space', () => {

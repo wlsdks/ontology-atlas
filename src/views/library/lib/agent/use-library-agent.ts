@@ -14,6 +14,7 @@ import { useVaultAgentRuntime } from "@/widgets/acp-chat-panel";
 
 import type { LibrarySourceRow, WikiRetrievalPage } from "@/entities/docs-vault";
 
+import { isLoopbackAuthority } from "@/shared/lib/llm-connection/loopback";
 import { resolveCompileBrain, useCompileBrainChoice } from "../compile/compile-brain";
 import type { LibraryAgentOpeningRequest } from "../../ui/parts/agent/LibraryAgentDock";
 
@@ -39,23 +40,6 @@ export interface LibraryLocalModel {
    */
   onThisComputer: boolean;
 }
-
-/** `localhost`, `127.0.0.1`, `[::1]` — the same host test `is_loopback_authority` makes. */
-function isLoopbackHost(host: string): boolean {
-  const bare = host.startsWith('[')
-    ? (host.slice(1).split(']')[0] ?? '')
-    : (host.split(':')[0] ?? '');
-  const lowered = bare.toLowerCase();
-  if (lowered === 'localhost' || lowered === '::1' || lowered === '0:0:0:0:0:0:0:1') return true;
-  // IPv4 loopback is the whole 127.0.0.0/8 block, which is what `is_loopback` accepts.
-  const octets = lowered.split('.');
-  return (
-    octets.length === 4 &&
-    octets[0] === '127' &&
-    octets.every((part) => part !== '' && /^\d{1,3}$/.test(part) && Number(part) <= 255)
-  );
-}
-
 
 export function useLibraryAgent(
   vaultRoot: string | null,
@@ -94,7 +78,7 @@ export function useLibraryAgent(
         return;
       }
       const host = hostOfBaseUrl(settings.baseUrl);
-      setLocalModel({ model: settings.model, host, onThisComputer: isLoopbackHost(host) });
+      setLocalModel({ model: settings.model, host, onThisComputer: isLoopbackAuthority(host) });
       setLocalEndpoint((current) =>
         current && current.baseUrl === settings.baseUrl && current.model === settings.model
           ? current
