@@ -231,6 +231,8 @@ export function useAcpSession({
     const active = activeTurnRef.current;
     if (!active) return;
     activeTurnRef.current = null;
+    // A card of the turn that just ended must not stay answerable: its write would be allowed after the turn is over.
+    refuseOpenAsk({ permissionDecisionTimerRef, pendingResolverRef, setPending });
     setActiveTurnReadOnly(false);
     setActiveTurnOutlivesScreen(false);
     setTurnStopping(false);

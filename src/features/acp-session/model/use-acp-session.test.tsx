@@ -2125,6 +2125,23 @@ describe('a card waiting for an answer is refused, never allowed, when the conve
     await act(async () => { await result.current.stop(); });
   });
 
+  it('refuses it when its turn ends first, and a later click on the old card sends nothing', async () => {
+    const { result } = await waitingCard();
+    const oldCard = result.current.pending;
+    await act(async () => {
+      bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', id: bridge.pendingPrompt, result: { stopReason: 'end_turn' } }));
+    });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    await waitFor(() => expect(answerOf(801)).toBe('reject'));
+    expect(result.current.pending).toBeNull();
+
+    const answered = bridge.sent.filter((message) => message.id === 801).length;
+    await act(async () => { oldCard?.resolve('allow'); });
+    expect(bridge.sent.filter((message) => message.id === 801)).toHaveLength(answered);
+    expect(bridge.sent.some((message) => message.id === 801 && JSON.stringify(message).includes('"allow"'))).toBe(false);
+    await act(async () => { await result.current.stop(); });
+  });
+
   it('refuses it when the agent process exits', async () => {
     const { result } = await waitingCard();
     await act(async () => { bridge.exits.get('acp-1')?.(); });
