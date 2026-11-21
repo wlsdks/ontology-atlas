@@ -1,4 +1,4 @@
-import { DOME_FIT_RADIUS, DOME_FOCAL } from './projection';
+import { DOME_FIT_RADIUS, DOME_FOCAL } from '../camera/projection';
 
 /** A cluster's radius in cloud units: room for its heart plus the square root of its members. */
 const CLUSTER_RADIUS_BASE = 12;

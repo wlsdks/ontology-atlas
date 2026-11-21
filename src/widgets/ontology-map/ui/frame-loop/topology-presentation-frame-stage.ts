@@ -13,7 +13,7 @@ import { domeRingAlphaFor } from "../../model/dome-view/ink";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { DomeViewKind } from "../../model/dome-view/types";
 import { stepFocusRamp } from "../../model/visibility/focus-state";
-import { fadeStrataLodOut, restStrataLod, stepStrataLod, type StrataLodState } from "../../model/dome-view/strata-lod";
+import { fadeStrataLodOut, restStrataLod, stepStrataLod, type StrataLodState } from "../../model/dome-view/strata/strata-lod";
 import { hexToRgb, parseRgbTriple, type DomeLightFrame, type EvidenceLight, type Rgb } from "../../render/dome-view/dome-light";
 import {
   buildFootprintSteps,
@@ -27,7 +27,7 @@ import {
   type DepthParallaxOffset
 } from "../../model/realm/realm-depth-parallax";
 import { stepSpotlightPhase } from "../../model/ambient/spotlight-motion";
-import { placeTierNames, sameTierNames, type TierNameAnchor, type TierPlane } from "../../model/dome-view/tier-names";
+import { placeTierNames, sameTierNames, type TierNameAnchor, type TierPlane } from "../../model/dome-view/strata/tier-names";
 import { type TierRevealConfig } from "../../model/visibility/tier-visibility";
 import { type AnimatedBackground } from "../../render/animated-background";
 import type { ClusterBarLabels } from "../../render/cluster-chips";
@@ -493,7 +493,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
             clusterBarLabels: getClusterBarLabels(),
             domeRingAlpha: domeRingAlphaFor(mapArrangementRef.current),
             domeTierRaisedKind: domeTierRaisedKindRef.current,
-            // Concept names give way to the tier names placed last frame (`model/dome-view/tier-names.ts`).
+            // Concept names give way to the tier names placed last frame (`model/dome-view/strata/tier-names.ts`).
             tierNameBoxes: domeTierAnchorsSentRef.current,
             dial: flatDialRef.current,
         });
@@ -515,7 +515,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
             onHiddenDependenciesChangeRef.current?.(hiddenDependencies);
         }
         /*
-         * **Where each Strata tier name stands this frame** (`model/dome-view/tier-names.ts`). The
+         * **Where each Strata tier name stands this frame** (`model/dome-view/strata/tier-names.ts`). The
          * planes are the rings the frame just drew, not the model: during an orbit or a
          * morph the two are different numbers. The room is the fit's own free box — the
          * canvas minus the chrome it measured on each side — so a name never lands where

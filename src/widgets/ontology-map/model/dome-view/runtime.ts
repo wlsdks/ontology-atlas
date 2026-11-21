@@ -1,6 +1,6 @@
-import { clampDomePitch, DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT, type DomeDragSpring } from './orbit';
+import { clampDomePitch, DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT, type DomeDragSpring } from './camera/orbit';
 import type { DomeCircle, DomeCoord, DomeModel, DomeViewKind } from './types';
-import type { DomeTurnReach } from './turn-follow';
+import type { DomeTurnReach } from './camera/turn-follow';
 
 type CameraPose = { tx: number; ty: number; tscale: number };
 

@@ -7,7 +7,7 @@ import { measureCanvasInsets } from "../../interaction/free-area";
 import type { PointerMachineState } from "../../interaction/pointer-state-machine";
 import type { ClusterChip } from "../../model/layout/density-gate";
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
-import { isNeuralDependency } from "../../model/dome-view/neural-cells";
+import { isNeuralDependency } from "../../model/dome-view/neural/neural-cells";
 import { lastNeuralLit } from "../frame-draw/neural-spread";
 import { neuralRadiusScale, neuralTractsFor } from "../frame-draw/paint-neural";
 import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
@@ -16,7 +16,7 @@ import type { ForceSimulation } from "../../model/layout/force-layout";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../render/preview-edge";
 import type { OntologyMapProps } from "../OntologyMap";
-import type { StrataLodState } from "../../model/dome-view/strata-lod";
+import type { StrataLodState } from "../../model/dome-view/strata/strata-lod";
 import {
   lastDrawnLabelBoxes,
   lastDrawnLod,

@@ -13,7 +13,7 @@ import { createDomeFrameStage, type DomeFrameStageSources } from "./topology-dom
 import { buildTopologyWorld, type TopologyWorld } from "../world/topology-world";
 import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/topology-camera-math";
 import { overviewBoundsFor } from "../camera/topology-overview-fit";
-import { projectDomeCoord } from "../../model/dome-view/projection";
+import { projectDomeCoord } from "../../model/dome-view/camera/projection";
 
 const tokens = {
   radiusProject: 20,

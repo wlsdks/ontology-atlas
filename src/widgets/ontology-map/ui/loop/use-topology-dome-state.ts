@@ -8,7 +8,7 @@ import type { CameraTarget } from "../../engine/camera";
 import type { DomeModelBuild } from "../../model/dome-view/model-build";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { DomeViewKind } from "../../model/dome-view/types";
-import { type TierNameAnchor } from "../../model/dome-view/tier-names";
+import { type TierNameAnchor } from "../../model/dome-view/strata/tier-names";
 interface Dependencies {
     view3d: boolean;
   mapArrangement: MapArrangement;
@@ -96,7 +96,7 @@ export function useTopologyDomeState({
 
   /**
    * The tier names last handed out — the change filter's memory, and the boxes the
-   * next frame's concept names give way to (`model/dome-view/tier-names.ts`).
+   * next frame's concept names give way to (`model/dome-view/strata/tier-names.ts`).
    */
   const domeTierAnchorsSentRef = useRef<TierNameAnchor[] | null>(null);
 

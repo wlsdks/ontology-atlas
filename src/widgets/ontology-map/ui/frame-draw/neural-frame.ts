@@ -1,6 +1,6 @@
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
-import { isNeuralDependency, neuralCellIsStale, neuralFocusSets, neuralGraphOf, type NeuralGraph } from "../../model/dome-view/neural-cells";
-import { isOutwardHop, type NeuralImpact } from "../../model/dome-view/neural-impact";
+import { isNeuralDependency, neuralCellIsStale, neuralFocusSets, neuralGraphOf, type NeuralGraph } from "../../model/dome-view/neural/neural-cells";
+import { isOutwardHop, type NeuralImpact } from "../../model/dome-view/neural/neural-impact";
 import { isPathLensEdge } from "../../model/visibility/path-lens";
 import type { NeuralTokens } from "../../tokens/read-neural-tokens";
 import { radiusForKind } from "../world/topology-world";

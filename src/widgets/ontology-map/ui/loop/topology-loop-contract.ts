@@ -5,7 +5,7 @@ import type { DialFrameSummary } from "../../dial/frame/frame";
 import type { DialEvidence, DialLabels, DialMemory } from "../../dial/types";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
 import type { SelectionSource } from "../../model/camera/flat-selection-camera";
-import { type TierNameAnchor } from "../../model/dome-view/tier-names";
+import { type TierNameAnchor } from "../../model/dome-view/strata/tier-names";
 import { type TierRevealConfig, type ZoomTier } from "../../model/visibility/tier-visibility";
 import type { ClusterBarLabels } from "../../render/cluster-chips";
 import type { HoverAvoidRect } from "../input/topology-pointer-types";
@@ -83,7 +83,7 @@ export interface UseTopologyLoopArgs {
   onDrawnCountChange?: (drawn: number) => void;
   /**
    * Where each Strata tier name stands this frame, beside its plane's rim, in canvas
-   * CSS px (`model/dome-view/tier-names.ts`). Emitted only when a name moved by more than half a
+   * CSS px (`model/dome-view/strata/tier-names.ts`). Emitted only when a name moved by more than half a
    * pixel, so an idle frame does not re-render the overlay, and `null` whenever the
    * arrangement is not Strata or its rings are not up yet.
    */

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildDomeModel } from './model-build';
+import { buildDomeModel } from '../model-build';
 import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from './orbit';
 import { domeWorldBounds, projectDomeCoord } from './projection';
-import { domeFitFocusLeash } from './runtime';
+import { domeFitFocusLeash } from '../runtime';
 import { domeTurnFollowTarget, domeTurnReach, followTurnWithZoom } from './turn-follow';
-import type { DomeInputNode, DomeModel } from './types';
+import type { DomeInputNode, DomeModel } from '../types';
 
 const DEG = Math.PI / 180;
 const FREE = { halfW: 520, halfH: 330 };

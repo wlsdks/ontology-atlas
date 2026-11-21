@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { neuralGraphOf } from "../../model/dome-view/neural-cells";
-import { neuralImpact } from "../../model/dome-view/neural-impact";
+import { neuralGraphOf } from "../../model/dome-view/neural/neural-cells";
+import { neuralImpact } from "../../model/dome-view/neural/neural-impact";
 import type { DomeNodeFrame } from "../../model/dome-view/runtime";
 import type { NeuralTokens } from "../../tokens/read-neural-tokens";
 import type { TopologyWorld, WorldEdge, WorldNode } from "../world/topology-world";

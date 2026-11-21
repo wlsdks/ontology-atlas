@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { clusterRadius, clusterVolumeAnchors } from './cluster-volume';
+import { clusterRadius, clusterVolumeAnchors } from '../coupling/cluster-volume';
 import { standingDomainTitles, type TitleCandidate } from './neural-titles';
-import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from './orbit';
-import { DOME_FIT_RADIUS, DOME_FOCAL } from './projection';
+import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from '../camera/orbit';
+import { DOME_FIT_RADIUS, DOME_FOCAL } from '../camera/projection';
 
 const TITLE_W = 150;
 const TITLE_H = 40;

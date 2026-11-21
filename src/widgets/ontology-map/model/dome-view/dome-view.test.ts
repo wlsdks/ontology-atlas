@@ -5,9 +5,9 @@ import { deriveOntologyFromVault } from "@/entities/docs-vault/lib/derive-ontolo
 
 import type { CameraAxes } from "../../engine/camera";
 import { computeDomeFitCameraTarget, worldToScreen } from "../../ui/camera/topology-camera-math";
-import { findCouplingGroups } from "./coupling-groups";
+import { findCouplingGroups } from "./coupling/coupling-groups";
 import { DOME_PLANE } from "./cone-layout";
-import { CLOUD_ITERATIONS } from "./coupling-cloud";
+import { CLOUD_ITERATIONS } from "./coupling/coupling-cloud";
 import {
   DOME_ASSEMBLE_TOTAL_MS,
   chargeTierLag,
@@ -61,7 +61,7 @@ import {
   domeNearestYawTurn,
   resistDomePitch,
   stepDomeDragSpring,
-} from "./orbit";
+} from "./camera/orbit";
 import {
   DOME_FOCAL,
   domeEgoWorldBounds,
@@ -72,14 +72,14 @@ import {
   domeWorldBounds,
   projectDomeCoord,
   solveDomePlanePoint,
-} from "./projection";
+} from "./camera/projection";
 import {
   createDomeRuntime,
   beginDomeMorph,
   settleDomeRuntimeOffscreen,
   type DomeRuntime,
 } from "./runtime";
-import { buildStrataTargets } from "./strata";
+import { buildStrataTargets } from "./strata/strata";
 import { KIND_DEPTH, type DomeCoord, type DomeInputNode, type DomeViewKind } from "./types";
 
 const cam = (x: number, y: number, scale: number): CameraAxes => ({

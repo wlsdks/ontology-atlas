@@ -684,7 +684,7 @@ export function computeFocusCameraTarget(
  * ego-fit branch of `computeFocusCameraTarget` (`focusBboxMargin` multiplicative
  * padding, the same safe-inset grammar, the same zoom-in ceiling), with different
  * inputs: the bbox is not the 2D ego but the **dome ego bbox projected at the
- * target pose** (`model/dome-view/projection.ts#domeEgoWorldBounds`), and the zoom-out floor
+ * target pose** (`model/dome-view/camera/projection.ts#domeEgoWorldBounds`), and the zoom-out floor
  * is not 2D's `overviewEntryScale` but the **dome fit zoom** (`scaleFloor`) —
  * because the dome's projected bbox is wider than the 2D spine, so its fit zoom
  * lives below the 2D floor (see the `DomeRuntime.fitScale` JSDoc). The insets are

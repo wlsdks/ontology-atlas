@@ -1,6 +1,6 @@
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
-import { neuralCellIsStale, neuralGraphOf, type NeuralGraph } from "../../model/dome-view/neural-cells";
-import { standingDomainTitles, type TitleCandidate } from "../../model/dome-view/neural-titles";
+import { neuralCellIsStale, neuralGraphOf, type NeuralGraph } from "../../model/dome-view/neural/neural-cells";
+import { standingDomainTitles, type TitleCandidate } from "../../model/dome-view/neural/neural-titles";
 import { labelFontFamily } from "../../render/labels";
 import { passState } from "./frame-state";
 import type { FrameInputs } from "./frame-begin";

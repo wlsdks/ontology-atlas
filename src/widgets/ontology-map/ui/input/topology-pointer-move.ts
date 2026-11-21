@@ -3,8 +3,8 @@ import { EGO_NEIGHBOR_CHIP_ID, parseClusterMoreChipId, scheduleRipple } from "..
 import { computeDragTugSets } from "../../interaction/drag-tug";
 import { hitTestEdges } from "./topology-edge-hit";
 import { commitDomeEntrySweep } from "../../model/dome-view/frame";
-import { ORBIT_PITCH_PER_PX, ORBIT_YAW_PER_PX, resistDomePitch } from "../../model/dome-view/orbit";
-import { isInsideDomeGrip, solveDomePlanePoint } from "../../model/dome-view/projection";
+import { ORBIT_PITCH_PER_PX, ORBIT_YAW_PER_PX, resistDomePitch } from "../../model/dome-view/camera/orbit";
+import { isInsideDomeGrip, solveDomePlanePoint } from "../../model/dome-view/camera/projection";
 import { computeGrabOffsetWorld, computePinWorld } from "../../interaction/node-drag";
 import { transitionPointerState } from "../../interaction/pointer-state-machine";
 import { screenToWorld } from "../camera/topology-camera-math";

@@ -21,9 +21,9 @@ import {
   DOME_NODE_FIT_ALLOWANCE_PX,
   domeReachesRect,
   domeWorldBounds,
-} from "../../model/dome-view/projection";
+} from "../../model/dome-view/camera/projection";
 import type { DomeFitTarget } from "../../model/dome-view/runtime";
-import { domeTurnReach } from "../../model/dome-view/turn-follow";
+import { domeTurnReach } from "../../model/dome-view/camera/turn-follow";
 import type { DomeModel } from "../../model/dome-view/types";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeDomeFitCameraTarget, domeFitFreeHalfSize } from "./topology-camera-math";
@@ -201,7 +201,7 @@ export function useTopologyCameraPolicy({
       }
       /*
        * Strata's tier names stand beside their rims in the free map between the
-       * chrome (`model/dome-view/tier-names.ts`), the chrome's columns excluded whether or not
+       * chrome (`model/dome-view/strata/tier-names.ts`), the chrome's columns excluded whether or not
        * the drawing uses them, so the frame reads the box measured here rather than
        * walking the DOM on every frame. No column is reserved for the names: one that
        * finds no clear place beside its rim goes unnamed, and the drawing keeps the width.

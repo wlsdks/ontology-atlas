@@ -44,4 +44,4 @@ export { DomainStructureMap } from "./structure/DomainStructureMap";
 export { readDomainUsage, type DomainUsage } from "./model/domain-usage";
 export { readConceptReach, type ConceptReach } from "./model/concept-reach";
 export type { NeuralLabels } from './ui/frame-draw/paint-neural';
-export { neuralImpactOfMapEdges } from './model/dome-view/neural-impact';
+export { neuralImpactOfMapEdges } from './model/dome-view/neural/neural-impact';

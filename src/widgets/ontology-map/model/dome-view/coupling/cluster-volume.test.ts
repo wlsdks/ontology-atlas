@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { CLUSTER_GAP, CLUSTER_TITLE_ASPECT, CLUSTER_TITLE_SHARE, clusterRadius, clusterVolumeAnchors } from './cluster-volume';
-import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from './orbit';
-import { DOME_FIT_RADIUS, projectWithTrig } from './projection';
-import type { DomeModel } from './types';
+import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from '../camera/orbit';
+import { DOME_FIT_RADIUS, projectWithTrig } from '../camera/projection';
+import type { DomeModel } from '../types';
 
 const MODEL = { centerX: 0, centerY: 0, unit: 1 } as Pick<DomeModel, 'centerX' | 'centerY' | 'unit'> as DomeModel;
 const REST = [Math.cos(DOME_YAW_DEFAULT), Math.sin(DOME_YAW_DEFAULT), Math.cos(DOME_PITCH_DEFAULT), Math.sin(DOME_PITCH_DEFAULT)] as const;
