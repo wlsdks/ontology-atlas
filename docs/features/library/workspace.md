@@ -397,7 +397,7 @@ One `SegmentedControl` at the top of the column now names both lists with their 
 draws **one** of them. The inactive list is not in the document: `hidden` would keep its
 rows in the tab order and its doors reachable from a keyboard while nothing on screen named
 them. The doors travel with the list — Add files, Find documents and Bring from a service
-on Sources; Check the wiki, Compile and the brain picker on Wiki — and the section eyebrow
+on Sources; New page (the "+" beside the search field) on Wiki — and the section eyebrow
 is gone, because a head repeating *SOURCES · 7* under a segment reading *Sources 7* is the
 same fact twice. The choice is remembered per machine
 (`atlas.library.index-segment`), and opening a file from the home, from the guide or from a
@@ -452,26 +452,25 @@ grow to that dialog's inset plus its padding, so the box lands inside the dialog
 across its edge; a dialog that asks a question clears toasts instead, which is what Find
 documents does.
 
-The Wiki half carries what the wiki's own work needs, in this shape (merged from the LLM
-Wiki round, 2026-09-07): the count on the switch above, then **Check the wiki** and
-**Compile** on one unwrapping line so reading stands to the left of writing, then the brain
-picker on the line beneath when this computer offers two, and beneath that the single
-compile disclosure — only while Compile can be pressed; a reason it cannot is the status
-strip's to say. **The column is an index and nothing else** (owner, 2026-09-07, direction
-B of three): the switch, the search field, the door row — Check the wiki and Compile — one
-row that says where the check's answer is (*Check results N*, above the list, present once
-the wiki was ever checked), and the list, whose last row is *New page*. The design council
-(2026-09-07) moved the report's door from the canvas header, which is hidden the moment a
-page is open, into the column, and New page from an icon chip beside the two agent doors
-into the list it acts on, with its own glyph. The app's own record of the last check, the check's findings and the names
-without a page moved out of it to a page in the reading pane (*Check results*, below); the
-write setting moved to Settings; filing an answer moved beside the answer. **The folder's
-findings are not a pill.** A page that misses the
-wiki template still wears the amber `off-template` pill, because the fix is in that page's
-own bytes; a folder finding — `dangling-wikilink`, `orphan-page`,
-`shared-source-unlinked` — is about where the page sits, is true of nearly every row on a
-young wiki, and shows as one quiet word on the row with the count carried once in the
-header strip. It is the same reasoning that took the green chip off every compiled source.
+The Wiki half is the wiki's index (`docs/specs/2026-11-21-library-index-column.md`, I-2):
+the search field with a "+" for **New page** beside it, two 32px view rows — **Log**, with
+the date of the last compile or check, and **Check results**, with the count of findings,
+its running glyph and its unseen dot — a hairline, then the pages in groups: *Needs a look*
+with each page's first reason, *Saved answers*, one group per first-level folder under
+`wiki/`, then pages from several sources, one source and none. Every page row is 44px, two
+lines: the title, then where it came from and when it was written. Above 200 pages a group
+shows its five newest and *Show all*, which shows that group alone under a chip; Escape
+returns to the index at the scroll it had. Typing in the field swaps the groups for the
+ranked matches in the same rows. **The column holds no agent door**: Check the wiki and the
+missing-agent notice stand in the *Check results* head, and writing pages is the Sources
+band's press. When the open page's file leaves `wiki/`, a toast says so once and the
+selection clears. The app's own record of the last check, the check's findings and the names
+without a page live on the *Check results* page in the reading pane (below); the
+write setting moved to Settings; filing an answer moved beside the answer. **Advisory findings stay in Check results.** A page
+that misses the wiki template is listed under *Needs a look*, because the fix is in that
+page's own bytes; an advisory folder finding — `orphan-page`, `shared-source-unlinked` — is
+about where the page sits, is true of nearly every row on a young wiki, and is counted on
+the *Check results* page rather than marked on the row.
 **Names without a page** keeps its list and its **Propose as node** chips on the *Check
 results* page in the pane, five at a time with the map kinds first.
 
