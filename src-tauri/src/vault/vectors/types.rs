@@ -244,6 +244,8 @@ pub(crate) struct BuiltinProbe {
     pub free_bytes: u64,
     pub memory_bytes: u64,
     pub accelerated: bool,
+    /// Where the model is kept, shown to the person; empty when the app has no data folder.
+    pub model_dir: String,
 }
 
 #[derive(Serialize, Clone, Copy, Debug, PartialEq, Eq)]

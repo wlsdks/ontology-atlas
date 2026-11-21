@@ -51,6 +51,7 @@ impl Vectors {
                     free_bytes: builtin.free_bytes().unwrap_or(0),
                     memory_bytes: runtime.memory_bytes,
                     accelerated: runtime.device == "metal",
+                    model_dir: builtin.dir().display().to_string(),
                 }
             }
             Err(_) => BuiltinProbe {
@@ -62,6 +63,7 @@ impl Vectors {
                 free_bytes: 0,
                 memory_bytes: 0,
                 accelerated: false,
+                model_dir: String::new(),
             },
         };
         VectorProbe {
@@ -301,4 +303,47 @@ pub(crate) async fn vault_vectors_delete(
 #[tauri::command]
 pub(crate) async fn vault_vectors_delete_model() -> Result<(), String> {
     run_blocking(move || app().delete_model()).await
+}
+
+/// Shows the built-in model's folder in Finder or Explorer; the path is the app's own, never one
+/// the screen names, and a folder the model does not hold yet is refused.
+#[tauri::command]
+pub(crate) async fn vault_vectors_reveal_model() -> Result<(), String> {
+    run_blocking(move || {
+        let builtin = app()
+            .sources
+            .builtin()
+            .map_err(|error| error.code().to_string())?;
+        reveal_model_dir(&builtin.dir())
+    })
+    .await
+}
+
+fn reveal_model_dir(dir: &Path) -> Result<(), String> {
+    if !dir.is_dir() {
+        return Err(crate::errors::coded(
+            "reveal-failed",
+            "the model folder is not there",
+        ));
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let status = std::process::Command::new("open")
+            .arg("-R")
+            .arg(dir)
+            .status()
+            .map_err(|err| crate::errors::coded("reveal-failed", err))?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err(crate::errors::coded(
+                "reveal-failed",
+                format!("open exited with status {status}"),
+            ))
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        crate::app_shell::reveal_in_file_manager(dir)
+    }
 }

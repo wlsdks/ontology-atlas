@@ -48,6 +48,7 @@ const vectorCalls = async (harness: LibraryWorkHarness, page: Page, command: str
   (await harness.snapshot(page)).calls.filter((call) => call.method === command);
 
 const line = (page: Page) => page.getByTestId('meaning-desk-line');
+const choices = (page: Page) => page.getByTestId('meaning-model-choices').locator('[data-testid^="meaning-model-choice-"]');
 
 async function rowHeight(page: Page): Promise<number> {
   return line(page).evaluate((element) => element.getBoundingClientRect().height);
@@ -91,14 +92,13 @@ test('states the probe figures in every dialog variant and keeps the box size wh
   const after = await dialog.boundingBox();
   expect(after).toEqual(before);
 
-  await expect(page.getByTestId('meaning-setup-fact-model')).toContainText('bge-m3 by BAAI, MIT licence');
+  await expect(page.getByTestId('meaning-model-maker')).toHaveText('Built into Atlas · BAAI · MIT licence');
   await expect(page.getByTestId('meaning-setup-fact-download')).toContainText('2.3 GB from huggingface.co, hf.co, once. 1.2 GB stays on this computer.');
   await expect(page.getByTestId('meaning-setup-fact-memory')).toContainText('About 1.8 GB while preparing, in the background.');
   await expect(page.getByTestId('meaning-setup-fact-sent')).toBeVisible();
-  await expect(page.getByTestId('meaning-setup-fact-delete')).toBeVisible();
   await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Download and prepare');
   await expect(page.getByTestId('meaning-setup-primary')).toBeEnabled();
-  await expect(page.getByTestId('meaning-setup-runner')).toHaveCount(0);
+  await expect(choices(page)).toHaveCount(1);
   await expect(page.getByTestId('meaning-setup-disk-short')).toHaveCount(0);
 });
 
@@ -112,15 +112,16 @@ const VARIANTS: Array<[string, LibraryVectorsScript['probe'], (page: Page) => Pr
     await expect(page.getByTestId('meaning-setup-primary')).toBeDisabled();
   }],
   ['a runner on this computer', LIBRARY_VECTOR_PROBE, async (page) => {
-    const runner = page.getByTestId('meaning-setup-runner');
-    await expect(runner).toHaveText('Use bge-m3:latest in Ollama (no download)');
-    const facts = page.getByTestId('meaning-setup-runner-facts');
-    await expect(facts).toHaveText("Uses bge-m3:latest in Ollama on this computer. Each question is recorded in this folder's audit log.");
-    await expect(runner).toHaveAttribute('aria-describedby', (await facts.getAttribute('id'))!);
+    const runner = page.getByTestId('meaning-model-choice-runner:bge-m3:latest');
+    await expect(runner).toContainText('bge-m3:latest');
+    await expect(runner).toContainText('In Ollama');
+    await runner.click();
+    await expect(page.getByTestId('meaning-setup-fact-runner-where')).toContainText('Ollama on this computer, http://localhost:11434');
+    await expect(page.getByTestId('meaning-setup-fact-download')).toHaveCount(0);
+    await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Prepare 2,000 files');
   }],
   ['a runner offering only models the spec rules out', { ...LIBRARY_VECTOR_PROBE, runner: { state: 'reachable', address: 'http://127.0.0.1:11434', models: ['embeddinggemma:300m', 'jina-embeddings-v3:latest'] } }, async (page) => {
-    await expect(page.getByTestId('meaning-setup-runner')).toHaveCount(0);
-    await expect(page.getByTestId('meaning-setup-runner-facts')).toHaveCount(0);
+    await expect(choices(page)).toHaveCount(1);
   }],
   ['a processor without acceleration', { ...LIBRARY_VECTOR_PROBE, runner: null, builtin: { ...LIBRARY_VECTOR_PROBE.builtin, accelerated: false } }, async (page) => {
     await expect(page.getByTestId('meaning-setup-fact-memory')).toContainText('this computer prepares on the processor');
@@ -130,7 +131,7 @@ const VARIANTS: Array<[string, LibraryVectorsScript['probe'], (page: Page) => Pr
     { ...LIBRARY_VECTOR_PROBE, runner: { state, address: 'http://192.168.1.4:11434', models: ['bge-m3:latest'] } },
     async (page) => {
       await expect(page.getByTestId('meaning-setup-primary')).toBeEnabled();
-      await expect(page.getByTestId('meaning-setup-runner')).toHaveCount(0);
+      await expect(choices(page)).toHaveCount(1);
     },
   ]),
 ];
@@ -452,4 +453,37 @@ test('shows each value at its end under reduced motion', async ({ page }) => {
   await openDesk(page, {}, { source: { kind: 'builtin' }, paused: false });
   const { values, events } = await recordRing(page);
   expect(values.every((value) => value === 0 || events.some((event) => Math.abs(event - value) < 1e-4))).toBe(true);
+});
+
+test('names the folder model on the desk line and switches, deletes and shows its folder in the dialog', async ({ page }) => {
+  const harness = await openDesk(page, {
+    status: LIBRARY_VECTOR_SCRIPT.ready,
+    probe: { ...LIBRARY_VECTOR_PROBE, builtin: { ...LIBRARY_VECTOR_PROBE.builtin, onDisk: true, modelBytes: 1_133_454_928 } },
+  }, { source: { kind: 'builtin' }, paused: false });
+  const model = page.getByTestId('meaning-desk-model');
+  await expect(model).toHaveText('Model: bge-m3');
+  await model.click();
+
+  const builtin = page.getByTestId('meaning-model-choice-builtin');
+  await expect(builtin).toContainText('In use');
+  await expect(page.getByTestId('meaning-model-in-use')).toBeVisible();
+  await expect(page.getByTestId('meaning-setup-primary')).toHaveCount(0);
+  await expect(page.getByTestId('meaning-setup-fact-kept')).toContainText('1.1 GB on this computer');
+  await expect(page.getByTestId('meaning-setup-fact-where')).toContainText('models/bge-m3');
+
+  await page.getByTestId('meaning-model-show-folder').click();
+  await expect.poll(async () => (await vectorCalls(harness, page, 'vault_vectors_reveal_model')).length).toBe(1);
+
+  await page.getByTestId('meaning-model-choice-runner:bge-m3:latest').click();
+  await expect(page.getByTestId('meaning-model-switch-note')).toContainText('prepares this folder’s 2,000 files again');
+  await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Prepare 2,000 files');
+
+  await builtin.click();
+  await page.getByTestId('meaning-model-delete').click();
+  await expect.poll(async () => (await vectorCalls(harness, page, 'vault_vectors_delete_model')).length).toBe(1);
+  await expect(page.getByTestId('meaning-model-notice')).toHaveText('Deleted the model and freed 1.1 GB.');
+  await expect(builtin).toContainText('In use');
+  await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Download and prepare');
+  await expect(page.getByTestId('meaning-setup-dialog')).toBeVisible();
+  expect(await vectorCalls(harness, page, 'vault_vectors_prepare')).toEqual([]);
 });
