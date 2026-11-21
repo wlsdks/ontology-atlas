@@ -384,18 +384,32 @@ function isFailedRun(run) {
   return conclusion !== 'SUCCESS' && conclusion !== 'SKIPPED';
 }
 
+const RUNNING_STATUSES = new Set(['QUEUED', 'IN_PROGRESS', 'WAITING', 'PENDING', 'REQUESTED', 'EXPECTED']);
+
+function isRunningRun(run) {
+  return RUNNING_STATUSES.has(String(run?.status ?? run?.state ?? '').toUpperCase());
+}
+
 /**
- * Every check that is not a required context, and whether it failed: a red unrequired lane must
- * not pass as "every required context is green". Accepting a red lane is decided by name
- * (`--allow-failing`), never a blanket force.
+ * Every check that is not a required context: whether it failed, and whether it is still running.
+ * A red unrequired lane must not pass as "every required context is green", and neither may one
+ * that has not finished: the native Rust lanes outlast the required ones, so a merge that did not
+ * wait for them could never see them fail. Accepting a lane is decided by name (`--allow-failing`),
+ * which also stops waiting for it; never a blanket force.
  */
 export function otherCheckState({ rollup = [], requiredContexts = [], allowFailing = [] }) {
   const required = new Set(requiredContexts);
   const allowed = new Set(allowFailing);
   const failed = [];
   const accepted = [];
+  const running = [];
   for (const [name, run] of latestByName(rollup)) {
-    if (required.has(name) || !isFailedRun(run)) continue;
+    if (required.has(name)) continue;
+    if (isRunningRun(run) && !allowed.has(name)) {
+      running.push(name);
+      continue;
+    }
+    if (!isFailedRun(run)) continue;
     const row = {
       name,
       conclusion: String(run.conclusion ?? run.state ?? '').toUpperCase(),
@@ -404,7 +418,8 @@ export function otherCheckState({ rollup = [], requiredContexts = [], allowFaili
     (allowed.has(name) ? accepted : failed).push(row);
   }
   const unmatched = [...allowed].filter((name) => !accepted.some((row) => row.name === name));
-  return { state: failed.length > 0 ? 'failed' : 'clear', failed, accepted, unmatched };
+  const state = failed.length > 0 ? 'failed' : running.length > 0 ? 'running' : 'clear';
+  return { state, failed, accepted, unmatched, running };
 }
 
 /**

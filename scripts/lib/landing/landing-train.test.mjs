@@ -277,6 +277,13 @@ describe('where pr:land sends a pull request', () => {
     assert.equal(route({ checks: running }).route, 'own-ci');
   });
 
+  it('waits on its own CI instead of merging while an unrequired lane still runs', () => {
+    const windows = { state: 'running', failed: [], running: ['Verify unsigned Windows x64 beta'] };
+    const verdict = route({ other: windows });
+    assert.equal(verdict.route, 'own-ci');
+    assert.match(fastPathEligibility({ ...base, other: windows }).rules.find((r) => r.rule === 'ready-green').detail, /still running/);
+  });
+
   it('takes the train, without a run of its own, when any other rule fails', () => {
     for (const patch of [
       { mainFiles: ['src/a.ts'] },
