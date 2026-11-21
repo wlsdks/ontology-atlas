@@ -8,7 +8,7 @@ import { isMapKind, type LintFinding, type LintNodeCandidate } from "@/features/
 import { isRunActive, useWorkRunStage, type WorkRun } from "@/features/work-run";
 import { Button } from "@/shared/ui/controls/button";
 import type { WikiReport, WikiReportRow } from "@/shared/lib/library/wiki-report.mjs";
-import { Chip, Disclosure, Tooltip } from "@/shared/ui";
+import { Chip, Tooltip } from "@/shared/ui";
 import { BrandMark } from "@/shared/ui/marks/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
@@ -24,6 +24,7 @@ import { localizeWikiLogSummary } from "../../../lib/wiki/wiki-log-summary";
 import { AgentMissingNotice } from "../agent/AgentMissingNotice";
 import { WikiProblemSentence, type WikiProblemDoors } from "./WikiTemplateProblems";
 import { WikiCheckStage } from "./WikiCheckStage";
+import { CheckCodesButton } from "./CheckCodesDialog";
 
 /**
  * Two ledgers, the computed one first: what the app checked (from `model.structural`, needing no
@@ -261,7 +262,7 @@ function placeSuffix(where: WikiProblemWhere): string {
 }
 
 /**
- * The heading is a sentence and the code is one press away under `wiki.technical`. The 1px rule
+ * The heading is a sentence and the codes open in a dialog from its right edge. The 1px rule
  * makes the boundary between kinds structural rather than a matter of ink.
  */
 function StructuralGroup({
@@ -286,15 +287,24 @@ function StructuralGroup({
       data-advisory={group.advisory ? "true" : undefined}
       className="mt-5 border-t border-[color:var(--color-divider)] pt-4"
     >
-      <h4
-        id={`report-code-${group.code}`}
-        className="scroll-mt-4 text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
-      >
-        {reportRuleTitle(group.code, t)}
-        <span className="ml-2 text-label font-normal text-[color:var(--color-text-quaternary)]">
-          {group.count}
-        </span>
-      </h4>
+      <div className="flex items-start justify-between gap-3">
+        <h4
+          id={`report-code-${group.code}`}
+          className="min-w-0 scroll-mt-4 text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+        >
+          {reportRuleTitle(group.code, t)}
+          <span className="ml-2 text-label font-normal text-[color:var(--color-text-quaternary)]">
+            {group.count}
+          </span>
+        </h4>
+        {/* Every finding the validator fired, not the rows this page collapsed them into. */}
+        <CheckCodesButton
+          lines={group.rows.map((row) => `${row.page} — ${wikiProblemMachineLine(row)}`)}
+          testId={`library-structural-technical-${group.code}`}
+          codeTestId="library-structural-code"
+          t={t}
+        />
+      </div>
       {rule.sentence ? (
         <p
           data-testid="library-structural-rule"
@@ -340,27 +350,6 @@ function StructuralGroup({
           </li>
         ))}
       </ul>
-      {/* The machine's own vocabulary, whole, one press away — every finding the validator
-          fired, not the rows this page collapsed them into. Deliberately not localised: a
-          person opening this is holding the screen beside a terminal or an agent
-          transcript, and a translated synonym is a word they would have to map back. */}
-      <Disclosure
-        className="mt-2.5"
-        summary={t("wiki.technical")}
-        summaryTestId={`library-structural-technical-${group.code}`}
-      >
-        <ul className="mt-1.5 flex flex-col gap-1">
-          {group.rows.map((row, index) => (
-            <li
-              key={`${row.page}-${row.code}-${row.line ?? index}`}
-              data-testid="library-structural-code"
-              className="font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"
-            >
-              {`${row.page} — ${wikiProblemMachineLine(row)}`}
-            </li>
-          ))}
-        </ul>
-      </Disclosure>
     </section>
   );
 }

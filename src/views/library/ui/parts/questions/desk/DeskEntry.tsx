@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { BookOpen, BookText, FileText } from 'lucide-react';
 
@@ -10,15 +10,11 @@ import { answerObservation, newestDeskQuestions, recentDeskPages } from '@/featu
 import { RowButton } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { StateBadge } from '../../index-column/StateBadge';
+import { wikiDayText } from '../../index-column/WikiIndex';
 
 const SAVED_ROWS = 3;
 const RECENT_ROWS = 5;
 const ORIGINAL_ROWS = 3;
-
-function formatDay(value: string, locale: string): string {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date);
-}
 
 function EntryRow({ glyph, title, meta, trailing = null, onPress, testId }: {
   glyph: ReactNode;
@@ -63,6 +59,7 @@ export function DeskEntry({ docs, listingVersion, sources, hashes, onOpenWiki, o
 }) {
   const t = useTranslations('library');
   const locale = useLocale();
+  const [nowMs] = useState(() => Date.now());
   /* eslint-disable react-hooks/exhaustive-deps -- `listingVersion` stands for `docs`: a new array of the same files must not re-scan a large wiki. */
   const saved = useMemo(() => newestDeskQuestions(docs, SAVED_ROWS), [listingVersion]);
   const recent = useMemo(() => recentDeskPages(docs, RECENT_ROWS), [listingVersion]);
@@ -89,13 +86,13 @@ export function DeskEntry({ docs, listingVersion, sources, hashes, onOpenWiki, o
 
   return <div data-testid="question-desk-entry">
     {saved.length ? <EntrySection id="question-desk-saved" title={t('answers.title')}>
-      {saved.map(({ head, savedAt }) => {
+      {saved.map(({ head, savedAtMs }) => {
         const state = answerObservation(head.frontmatter, known, hashes).state;
         return <EntryRow key={head.slug} testId={`question-desk-saved-${head.slug}`}
           glyph={<BookOpen size={ICON_SIZE.lg} aria-hidden />} title={head.title}
           meta={<>
             {state === 'changed' || state === 'missing' ? <StateBadge tone="warning">{t(`answers.state.${state}`)}</StateBadge> : null}
-            <span className="truncate">{formatDay(savedAt, locale)}</span>
+            <span className="truncate">{wikiDayText(savedAtMs, nowMs, locale, t) ?? ''}</span>
           </>}
           onPress={() => onOpenWiki(head.slug)} />;
       })}
@@ -103,7 +100,7 @@ export function DeskEntry({ docs, listingVersion, sources, hashes, onOpenWiki, o
     {recent.length ? <EntrySection id="question-desk-recent" title={t('questionDesk.recentTitle')}>
       {recent.map((page) => <EntryRow key={page.slug} testId={`question-desk-recent-${page.slug}`}
         glyph={<BookText size={ICON_SIZE.lg} aria-hidden />} title={page.title}
-        meta={<span className="truncate">{t('questionDesk.recentMeta', { date: formatDay(page.updatedAt, locale), count: page.sources })}</span>}
+        meta={<span className="truncate">{t('questionDesk.recentMeta', { date: wikiDayText(page.writtenAtMs, nowMs, locale, t) ?? '', count: page.sources })}</span>}
         onPress={() => onOpenWiki(page.slug)} />)}
     </EntrySection> : null}
   </div>;

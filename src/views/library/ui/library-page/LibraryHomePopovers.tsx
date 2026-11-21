@@ -239,6 +239,7 @@ export function LibraryHomePopovers({
               <button
                 type="button"
                 data-testid={`${entry.testId}-overflow`}
+                title={entry.tooltip}
                 onClick={() => { setHomeSurface(null); entry.onPress(); }}
                 className={controlClass({
                   shape: "row",

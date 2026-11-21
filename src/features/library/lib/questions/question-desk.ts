@@ -1,7 +1,7 @@
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import type { SourceUnit } from '@/shared/lib/library/source-passage';
 import { MAX_VECTOR_PREFIX_BYTES, MAX_VECTOR_PREFIXES } from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import type { VaultDoc } from '@/entities/docs-vault';
+import { recordedInstantMs, type VaultDoc } from '@/entities/docs-vault';
 import { isRetainedAnswerPath, retainedAnswerHeads, type RetainedAnswerHead } from './answer-revision';
 import { fuseRankedLists } from './lead-fusion';
 
@@ -389,46 +389,57 @@ export function deskBriefEvidence(leads: readonly DeskLead[]): { claims: DeskCla
   return { claims, sourceHits };
 }
 
-function dayValue(value: unknown): number {
-  const time = typeof value === 'string' ? Date.parse(value) : Number.NaN;
-  return Number.isFinite(time) ? time : 0;
+/**
+ * When a page was written: its recorded `compiled_at`, else the day the folder lists for the file.
+ * The Wiki index and the Sources home read the same `compiled_at`, so every list names one date.
+ */
+function pageWrittenAtMs(doc: VaultDoc): number {
+  const recorded = doc.frontmatter.compiled_at;
+  const recordedMs = typeof recorded === 'string' ? recordedInstantMs(recorded) : null;
+  if (recordedMs !== null) return recordedMs;
+  const listedMs = Date.parse(doc.updatedAt);
+  return Number.isFinite(listedMs) ? listedMs : Number.NaN;
 }
 
-export interface DeskRecentPage { slug: string; title: string; updatedAt: string; sources: number }
+/** Undated pages sort last. */
+const sortableMs = (ms: number) => (Number.isNaN(ms) ? 0 : ms);
+
+export interface DeskRecentPage { slug: string; title: string; writtenAtMs: number; sources: number }
 
 /**
- * The newest wiki pages by the day the folder lists for them (`updatedAt`), saved questions
- * excluded. One pass keeping the best `limit`, so a large wiki is never sorted: O(N * limit).
+ * The newest wiki pages by when they were written (`pageWrittenAtMs`), saved questions excluded.
+ * One pass keeping the best `limit`, so a large wiki is never sorted: O(N * limit).
  */
 export function recentDeskPages(docs: readonly VaultDoc[], limit: number): DeskRecentPage[] {
-  const newest: VaultDoc[] = [];
-  const before = (a: VaultDoc, b: VaultDoc) => dayValue(a.updatedAt) - dayValue(b.updatedAt) || b.slug.localeCompare(a.slug);
+  const newest: { doc: VaultDoc; ms: number }[] = [];
+  const before = (a: { doc: VaultDoc; ms: number }, b: { doc: VaultDoc; ms: number }) =>
+    sortableMs(a.ms) - sortableMs(b.ms) || b.doc.slug.localeCompare(a.doc.slug);
   for (const doc of deskPages(docs)) {
     if (isRetainedAnswerPath(doc.slug)) continue;
-    if (newest.length === limit && before(doc, newest[limit - 1]!) <= 0) continue;
+    const row = { doc, ms: pageWrittenAtMs(doc) };
+    if (newest.length === limit && before(row, newest[limit - 1]!) <= 0) continue;
     let at = newest.length;
-    while (at > 0 && before(doc, newest[at - 1]!) > 0) at -= 1;
-    newest.splice(at, 0, doc);
+    while (at > 0 && before(row, newest[at - 1]!) > 0) at -= 1;
+    newest.splice(at, 0, row);
     if (newest.length > limit) newest.pop();
   }
-  return newest.map((doc) => ({
-    slug: doc.slug, title: doc.title, updatedAt: doc.updatedAt,
+  return newest.map(({ doc, ms }) => ({
+    slug: doc.slug, title: doc.title, writtenAtMs: ms,
     sources: Array.isArray(doc.frontmatter.sources) ? doc.frontmatter.sources.filter((path) => typeof path === 'string').length : 0,
   }));
 }
 
-export interface DeskSavedQuestion { head: RetainedAnswerHead; savedAt: string }
+export interface DeskSavedQuestion { head: RetainedAnswerHead; savedAtMs: number }
 
-/** Saved questions, newest first by the `compiled_at` their page records, else the listed day. */
+/** Saved questions, newest first by when their page was written (`pageWrittenAtMs`). */
 export function newestDeskQuestions(docs: readonly VaultDoc[], limit: number): DeskSavedQuestion[] {
-  const listed = new Map(docs.map((doc) => [doc.slug, doc.updatedAt]));
+  const bySlug = new Map(docs.map((doc) => [doc.slug, doc]));
   return retainedAnswerHeads(docs)
     .map((head) => {
-      const recorded = head.frontmatter.compiled_at;
-      const savedAt = dayValue(recorded) ? String(recorded) : listed.get(head.slug) ?? '';
-      return { head, savedAt };
+      const doc = bySlug.get(head.slug);
+      return { head, savedAtMs: doc ? pageWrittenAtMs(doc) : Number.NaN };
     })
-    .sort((a, b) => dayValue(b.savedAt) - dayValue(a.savedAt) || a.head.slug.localeCompare(b.head.slug))
+    .sort((a, b) => sortableMs(b.savedAtMs) - sortableMs(a.savedAtMs) || a.head.slug.localeCompare(b.head.slug))
     .slice(0, limit);
 }
 

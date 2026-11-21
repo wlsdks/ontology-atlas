@@ -2,7 +2,9 @@ import { createTranslator } from "next-intl";
 import { describe, expect, it } from "vitest";
 
 import en from "../../../../../messages/en.json";
+import ja from "../../../../../messages/ja.json";
 import ko from "../../../../../messages/ko.json";
+import zh from "../../../../../messages/zh.json";
 import {
   describeWikiProblem,
   groupWikiProblems,
@@ -258,4 +260,32 @@ describe("groupWikiProblems — one row per thing to fix", () => {
     });
     expect(groupWikiProblems([other("wiki/a.md"), other("wiki/b.md")], translator("ko"))).toHaveLength(2);
   });
+});
+
+describe("every retelling fills its placeholders", () => {
+  const catalogues = { en, ko, ja, zh } as const;
+  const PLACEHOLDER = /\{(\w+)[^{}]*\}/g;
+
+  it.each(Object.keys(catalogues) as (keyof typeof catalogues)[])(
+    "%s leaves no placeholder on screen, in the long or the one-line form",
+    (locale) => {
+      const messages = catalogues[locale];
+      const t = createTranslator({ locale, messages, namespace: "library" }) as unknown as Translate;
+      const shown: string[] = [];
+      for (const [key, entry] of Object.entries(messages.library.wiki.problem)) {
+        if (!("what" in entry)) continue;
+        const templates = Object.values(entry).join(" ");
+        const values = Object.fromEntries(
+          [...templates.matchAll(PLACEHOLDER)].map(([, name]) => [name!, name === "count" ? "3" : `sources/${name}.md`]),
+        );
+        const problem: WikiTemplateProblem = { code: key, message: "machine", line: 4, detail: { key, values } };
+        for (const context of [undefined, { page: "wiki/self" }]) {
+          const words = describeWikiProblem(problem, t, context);
+          shown.push(`${key}: ${words.sentence} | ${words.action ?? ""}`);
+        }
+      }
+      expect(shown.length).toBeGreaterThan(20);
+      expect(shown.filter((line) => /[{}]/.test(line))).toEqual([]);
+    },
+  );
 });

@@ -3,7 +3,7 @@
 import type { useTranslations } from "next-intl";
 import { memo } from "react";
 
-import { Button, Disclosure, Tooltip } from "@/shared/ui";
+import { Button, Tooltip } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 
 import {
@@ -17,12 +17,15 @@ import {
   isWikiFolderCode,
 } from "@/features/library";
 
+import { CheckCodesButton } from "./CheckCodesDialog";
+
 export type { WikiTemplateProblem };
 
 /**
  * Why a page does not fit the wiki template, in the reader's own words: one sentence per finding plus
- * what to do, every name a press. `describeWikiProblem` owns both halves; the validator's codes sit
- * behind one disclosure. Page findings and folder findings sit on separate cards.
+ * what to do, every name a press. `describeWikiProblem` owns both halves; the validator's codes open
+ * in a centred dialog from the card's title line. Page findings and folder findings sit on separate
+ * cards; a folder finding is one line naming both pages.
  */
 
 /** What this surface can open. A handler left out renders that name as plain text. */
@@ -229,15 +232,13 @@ function FixAction({ fix, t }: { fix: WikiProblemFix | null | undefined; t: Tran
   );
 }
 
-/** One heading, one explanation, one list, one way out — used twice with different subjects. */
+/** One heading line, one list, one way out — used twice with different subjects. */
 function ProblemGroup({
   problems,
   ariaLabel,
   title,
-  body,
   testId,
   file,
-  collapsed,
   doors,
   fix,
   context,
@@ -246,74 +247,15 @@ function ProblemGroup({
   problems: ReadonlyArray<WikiTemplateProblem>;
   ariaLabel: string;
   title: string;
-  body: string;
   testId: string;
-  /** `wiki/<slug>.md`, the page's own address, for the technical disclosure. */
+  /** `wiki/<slug>.md`, the page's own address, for the check codes dialog. */
   file?: string;
-  /**
-   * On a wiki page the card is open above the body; on a saved answer it collapses to one summary
-   * line after the content so the answer's own Summary stays high.
-   */
-  collapsed?: boolean;
   doors?: WikiProblemDoors;
   fix?: WikiProblemFix | null;
   context?: WikiProblemContext;
   t: Translate;
 }) {
   if (problems.length === 0) return null;
-  const Body = (
-    <>
-      {/* `ch` resolves at the element's own size, so a second cap on these sentences would end them short of
-         the card's column. `[word-break:keep-all]` stops a Korean word breaking across the wrap. */}
-      <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
-        {body}
-      </p>
-      <ul className="mt-2.5 flex flex-col gap-2.5 font-sans">
-        {groupWikiProblems(problems, t, context).map(({ words, places }, index) => (
-          <li
-            key={`${words.code}-${index}`}
-            data-testid="library-wiki-problem"
-            className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
-          >
-            <p>
-              <WikiProblemSentence words={words} places={places} doors={doors} t={t} />
-            </p>
-            {words.action ? (
-              <p className="text-[color:var(--color-text-tertiary)]">{words.action}</p>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-      {/* The machine's vocabulary, whole and deliberately not localised: readers compare it with a terminal
-         or agent transcript, and a translated synonym would have to be mapped back. */}
-      <Disclosure className="mt-3" summary={t("wiki.technical")} summaryTestId={`${testId}-technical`}>
-        <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
-          {t("wiki.technicalNote")}
-        </p>
-        {/* The page's own address: for these validator codes the message never names the path, so this line
-           says which file holds the claim, matching a `wiki-validate` page group. */}
-        {file ? (
-          <p
-            data-testid={`${testId}-file`}
-            className="mt-1.5 font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"
-          >
-            {t("wiki.technicalFile", { path: file })}
-          </p>
-        ) : null}
-        <ul className="mt-1.5 flex flex-col gap-1">
-          {problems.map((problem, index) => (
-            <li
-              key={`${problem.code}-${index}`}
-              data-testid="library-wiki-problem-code"
-              className="font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"
-            >
-              {wikiProblemMachineLine(problem)}
-            </li>
-          ))}
-        </ul>
-      </Disclosure>
-    </>
-  );
   return (
     <section
       aria-label={ariaLabel}
@@ -321,29 +263,53 @@ function ProblemGroup({
       className="mx-auto mt-4 max-w-[var(--measure-doc-column)] px-6 md:px-10"
     >
       <div className="rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] px-4 py-3">
-        {collapsed ? (
-          <details>
-            <summary
-              data-testid={`${testId}-summary`}
-              className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] marker:text-[color:var(--color-text-quaternary)]"
+        {/* The count and the kind on the left, the codes and the one way out on the right — the
+            card's whole ability on one line, which is where a person looks for it. */}
+        <div className="flex items-start justify-between gap-3">
+          <p className="min-w-0 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
+            {title}
+          </p>
+          <div className="flex shrink-0 items-center gap-2">
+            <CheckCodesButton
+              lines={problems.map(wikiProblemMachineLine)}
+              file={file}
+              testId={`${testId}-technical`}
+              fileTestId={`${testId}-file`}
+              codeTestId="library-wiki-problem-code"
+              t={t}
+            />
+            <FixAction fix={fix} t={t} />
+          </div>
+        </div>
+        {/* `[word-break:keep-all]` stops a Korean word breaking across the wrap. */}
+        <ul className="mt-2.5 flex flex-col gap-2.5 font-sans">
+          {groupWikiProblems(problems, t, context).map(({ words, places }, index) => (
+            <li
+              key={`${words.code}-${index}`}
+              data-testid="library-wiki-problem"
+              className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
             >
-              {title}
-            </summary>
-            {Body}
-          </details>
-        ) : (
-          <>
-            {/* The count and the kind on the left, the one way out on the right — the
-                card's whole ability on one line, which is where a person looks for it. */}
-            <div className="flex items-start justify-between gap-3">
-              <p className="min-w-0 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
-                {title}
-              </p>
-              <FixAction fix={fix} t={t} />
-            </div>
-            {Body}
-          </>
-        )}
+              {/* A finding retold in one line carries its action after a middle dot; the others keep two lines. */}
+              {words.short ? (
+                <p>
+                  <WikiProblemSentence words={words} places={places} doors={doors} t={t} />
+                  {words.action ? (
+                    <span className="text-[color:var(--color-text-tertiary)]"> · {words.action}</span>
+                  ) : null}
+                </p>
+              ) : (
+                <>
+                  <p>
+                    <WikiProblemSentence words={words} places={places} doors={doors} t={t} />
+                  </p>
+                  {words.action ? (
+                    <p className="text-[color:var(--color-text-tertiary)]">{words.action}</p>
+                  ) : null}
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
@@ -356,17 +322,14 @@ function ProblemGroup({
 export const WikiTemplateProblems = memo(function WikiTemplateProblems({
   problems,
   file,
-  collapsed,
   doors,
   fix,
   context,
   t,
 }: {
   problems: ReadonlyArray<WikiTemplateProblem>;
-  /** `wiki/<slug>.md`, the page's own address — printed in the technical disclosure. */
+  /** `wiki/<slug>.md`, the page's own address: printed in the check codes dialog, and `{page}` in a folder line. */
   file?: string;
-  /** One summary line per group instead of the open card — see `ProblemGroup`. */
-  collapsed?: boolean;
   doors?: WikiProblemDoors;
   /** The own-shape card's action. The folder card has none — see `WikiProblemFix`. */
   fix?: WikiProblemFix | null;
@@ -382,10 +345,8 @@ export const WikiTemplateProblems = memo(function WikiTemplateProblems({
         problems={ownShape}
         ariaLabel={t("wiki.offTemplateAriaLabel")}
         title={t("wiki.offTemplateTitle", { count: ownShape.length })}
-        body={t("wiki.offTemplateBody")}
         testId="library-wiki-problems"
         file={file}
-        collapsed={collapsed}
         doors={doors}
         fix={fix}
         context={context}
@@ -395,12 +356,10 @@ export const WikiTemplateProblems = memo(function WikiTemplateProblems({
         problems={folder}
         ariaLabel={t("wiki.linkFindingsAriaLabel")}
         title={t("wiki.linkFindingsTitle", { count: folder.length })}
-        body={t("wiki.linkFindingsBody")}
         testId="library-wiki-link-findings"
         file={file}
-        collapsed={collapsed}
         doors={doors}
-        context={context}
+        context={file ? { ...context, page: file.replace(/\.md$/, "") } : context}
         t={t}
       />
     </>

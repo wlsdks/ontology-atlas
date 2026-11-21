@@ -10,8 +10,8 @@ import type { LibrarySelection, LibraryHomeSurface } from "./library-page-state"
 
 /**
  * The Library-wide doors in the page header, and what the More door lists below `lg`: How to use,
- * Questions (or the one kept answer itself), Conversation, and the updated answer's review while one
- * waits.
+ * Questions (Open saved answer when exactly one is kept), Conversation, and the updated answer's
+ * review while one waits.
  */
 export function libraryHomeStrip({
   t, homeSurface, setHomeSurface, choose, model, retainedAnswers, onOpenConversation, onReview,
@@ -39,7 +39,8 @@ export function libraryHomeStrip({
     },
     {
       id: "questions",
-      label: soleAnswer ? soleAnswer.title : t("home.questions", { count: retainedAnswers.length }),
+      label: soleAnswer ? t("home.openAnswer") : t("home.questions", { count: retainedAnswers.length }),
+      tooltip: soleAnswer?.title,
       onPress: soleAnswer
         ? () => choose({ kind: "wiki", slug: soleAnswer.slug })
         : () => setHomeSurface((current) => (current === "questions" ? null : "questions")),

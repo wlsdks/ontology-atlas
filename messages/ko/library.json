@@ -439,7 +439,6 @@
     "agentMissingDoor": "에이전트 연결하기",
     "offTemplateAriaLabel": "이 문서가 위키 서식과 다른 점",
     "offTemplateTitle": "고칠 곳 {count, number}개 · 서식",
-    "offTemplateBody": "아래를 고치면 다른 문서와 같은 방식으로 읽혀요.",
     "writer": {
       "human": "사람",
       "agent": "{name}(에이전트)",
@@ -505,13 +504,13 @@
     "undoFailed": "되돌리지 못했어요. 파일이 이미 없거나 폴더에 쓸 수 없어요.",
     "linkFindingsAriaLabel": "이 문서가 폴더 안에서 이어지는 방식",
     "linkFindingsTitle": "확인할 연결 {count, number}개",
-    "linkFindingsBody": "서식은 맞아요. 아래는 이 문서 하나만 봐서는 알 수 없는, 폴더 안에서 이어지는 방식에 대한 거예요.",
     "fixWithAgent": "에이전트로 고치기",
     "fixWithAgentTooltip": "에이전트가 이 문서를 서식에 맞게 고쳐요. 고친 문서가 서식에 맞으면 바로 저장되고, 맞지 않으면 저장 전에 권한을 요청해요.",
     "fixWithAgentTooltipAsk": "에이전트가 이 문서를 서식에 맞게 고쳐요. 쓰기 전에 권한을 요청해요.",
     "fixMyself": "직접 고치기",
     "fixMyselfTooltip": "Finder에서 이 문서 파일을 선택해요. 어느 편집기에서 고쳐도 목록에 반영돼요.",
     "technical": "기술 정보 · 점검 코드와 줄 번호",
+    "technicalOpen": "점검 코드 보기",
     "technicalNote": "wiki-validate 명령과 validate_wiki 도구가 아래와 같은 코드를 알려 줘요.",
     "technicalFile": "파일: {path}",
     "goToPlace": "{place}로 가기",
@@ -574,25 +573,34 @@
       },
       "dangling-wikilink": {
         "what": "{where}에서 {target} 문서로 연결했는데 이 폴더에 그 문서가 없어요.",
-        "do": "있는 문서로 연결하거나, 그 문서를 새로 쓰세요."
+        "do": "있는 문서로 연결하거나, 그 문서를 새로 쓰세요.",
+        "short": "{page}의 {where}에서 연결한 {target} 문서가 이 폴더에 없어요",
+        "shortDo": "있는 문서로 연결하거나 그 문서를 쓰세요"
       },
       "orphan-page": {
         "what": "이 문서를 가리키는 문서가 아직 없어요.",
-        "do": "이 주제를 다루는 문서에서 연결하면 찾기 쉬워져요."
+        "do": "이 주제를 다루는 문서에서 연결하면 찾기 쉬워져요.",
+        "short": "{page}에 연결한 문서가 아직 없어요",
+        "shortDo": "같은 주제를 다루는 문서에서 연결하세요"
       },
       "shared-source-unlinked": {
         "what": "{other}도 같은 자료({sources})를 쓰는데 두 문서가 서로를 가리키지 않아요.",
-        "do": "한쪽에서 다른 쪽을 연결하세요."
+        "do": "한쪽에서 다른 쪽을 연결하세요.",
+        "short": "{page}, {other} 두 문서가 같은 자료({sources})를 쓰는데 서로 연결되지 않았어요",
+        "shortDo": "한쪽에서 다른 쪽을 연결하세요"
       },
       "shared-source-unlinked-more": {
-        "what": "같은 자료로 쓴 문서가 {count, number}개 더 있는데, 이 문서와 서로를 가리키지 않아요.",
-        "do": "같은 자료로 쓴 문서끼리 서로 연결하세요."
+        "what": "같은 자료로 쓴 문서가 {count}개 더 있는데, 이 문서와 서로를 가리키지 않아요.",
+        "do": "같은 자료로 쓴 문서끼리 서로 연결하세요.",
+        "short": "같은 자료를 쓰는 문서 {count}개가 {page}에 연결되지 않았어요",
+        "shortDo": "같은 자료로 쓴 문서끼리 연결하세요"
       }
     }
   },
   "home": {
     "guide": "사용 방법",
     "questions": "{count, plural, =0 {질문} other {질문 #}}",
+    "openAnswer": "저장한 답변 열기",
     "more": "더 보기",
     "compileNext": "위키 문서 만들기: {source}",
     "staleClause": "자료 {count, number}개 달라짐",
