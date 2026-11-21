@@ -1,7 +1,8 @@
 import type { FilmVault } from './film-vault';
 import { reachOf } from './film-vault';
-import type { FilmMapLayout, Measure } from './film-map-layout';
-import { dotOffsets } from './film-map-layout';
+import type { FilmMapLayout } from './film-map-shapes';
+import type { Measure } from './film-map-labels';
+import { dotOffsets } from './film-local-cluster';
 import { circleIntoRect, inside, overlaps, quadAt, resample, type Pt, type Rect } from './film-geometry';
 
 export type OpenRole = 'rule' | 'kind' | 'title' | 'domain' | 'elements' | 'dependencies';

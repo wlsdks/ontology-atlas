@@ -127,3 +127,12 @@ export function pointAlong(pts: readonly Pt[], t: number): Pt {
   const part = subPolyline(pts, 0, Math.min(1, t));
   return part[part.length - 1] ?? pts[pts.length - 1]!;
 }
+
+export const DEG = Math.PI / 180;
+
+export const normalizeAngle = (angle: number): number => ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
+export const angleGap = (a: number, b: number): number => {
+  const turn = normalizeAngle(a - b);
+  return Math.min(turn, Math.PI * 2 - turn);
+};

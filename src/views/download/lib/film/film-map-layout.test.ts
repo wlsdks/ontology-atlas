@@ -7,7 +7,10 @@ import { deriveOntologyFromVault, dogfoodManifest, DOGFOOD_AGENT_SLUG_PREFIX } f
 import { derivationToInsight } from '@/features/vault-ontology/model/use-ontology-insight';
 
 import { crossings, distanceToRect, grow, inside, overlaps, resample, circleIntoRect, type Pt, type Rect } from './film-geometry';
-import { layoutFilmMap, type FilmCopy, type FilmLabel, type FilmMapLayout, type FilmMarkTokens } from './film-map-layout';
+import type { FilmLabel } from './film-map-labels';
+import { layoutFilmMap } from './film-map-layout';
+import type { FilmCopy, FilmMapLayout } from './film-map-shapes';
+import type { FilmMarkTokens } from './film-map-sizes';
 import { domainFlows, pickFilmConcept, readFilmVault, type FilmVault } from './film-vault';
 import { buildStageGraph } from '../stage-graph';
 

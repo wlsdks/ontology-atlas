@@ -21,7 +21,8 @@ import {
 } from '../../lib/film/film-acts';
 import { clamp01, easeInOut, easeInOutSine, easeOut, lerp } from '../../lib/film/film-kit';
 import { bowControl, bowedPoints, polylineLength, quadAt, subPolyline, type Pt, type Rect } from '../../lib/film/film-geometry';
-import type { FilmLabel, FilmLitLine, FilmMapLayout, InkRole } from '../../lib/film/film-map-layout';
+import type { FilmLabel, InkRole } from '../../lib/film/film-map-labels';
+import type { FilmLitLine, FilmMapLayout } from '../../lib/film/film-map-shapes';
 import type { OpenLayout } from '../../lib/film/film-open';
 import { rowOnPhone, type PlacedRow, type WallLayout } from '../../lib/film/film-wall';
 import type { FilmVault } from '../../lib/film/film-vault';
