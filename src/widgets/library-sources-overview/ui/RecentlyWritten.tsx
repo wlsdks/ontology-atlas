@@ -66,23 +66,25 @@ export function RecentlyWritten({
                   type="button"
                   data-testid="sources-recent-row"
                   onClick={() => onOpenPage(page.slug)}
-                  className="flex h-13 w-full min-w-0 items-center gap-4 rounded-card px-4 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)]"
+                  className="flex h-13 w-full min-w-0 items-center gap-3.5 rounded-card px-4 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)]"
                 >
                   <Sheet variant="page" name={page.title} format={source !== undefined ? formatOf(fileName(source)) : null} />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span title={page.title} className="truncate text-body-lg leading-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                       {page.title}
                     </span>
-                    {source !== undefined ? (
-                      <span
-                        title={missing ? t("wikiReader.sourceMissing") : source}
-                        className={cn("truncate text-body leading-body text-[color:var(--color-text-tertiary)]", missing && "line-through")}
-                      >
-                        {t("sourcesHome.recent.from", { source: fileName(source), more })}
-                      </span>
-                    ) : null}
+                    <span className="flex min-w-0 items-baseline gap-1.5 text-body leading-body text-[color:var(--color-text-tertiary)]">
+                      {source !== undefined ? (
+                        <>
+                          <span title={missing ? t("wikiReader.sourceMissing") : source} className={cn("min-w-0 truncate", missing && "line-through")}>
+                            {t("sourcesHome.recent.from", { source: fileName(source), more })}
+                          </span>
+                          <span aria-hidden className="flex-none">·</span>
+                        </>
+                      ) : null}
+                      <span data-testid="sources-recent-day" className="flex-none tabular-nums">{dayText(day)}</span>
+                    </span>
                   </span>
-                  <span className="flex-none text-body tabular-nums text-[color:var(--color-text-tertiary)]">{dayText(day)}</span>
                 </button>
               </li>
             );

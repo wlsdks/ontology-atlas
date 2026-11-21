@@ -53,7 +53,7 @@ it.
 | 15 | I-5: Ontology column metrics | index-column | Not started | None |
 | 16 | P-2 to P-7 | this file | Not started | 7, 9 |
 | 17 | Re-measure Library memory and frames | performance-strategy | Not started | 6, 10 |
-| 18 | S-4: Sources home clarity (below) | this file | Not started | 9 |
+| 18 | S-4: Sources home clarity (below) | this file | In review (draft pull request) | 9 |
 
 Row 8 ran on 2026-11-21 (installed app, 40 sources and 24 pages); row 18 is what it found.
 
@@ -132,3 +132,6 @@ separately.
 - 2026-11-21: S-2 and S-3 merged (#3753) and P-1 merged (#3754); the installed-app check (row 8)
   is next.
 - 2026-11-21: row 8 ran on the installed app; S-4 added from its five-second reading.
+- 2026-11-21: S-4 built with the owner's detail polish (sheet scale, icon steps, panel badges,
+  index tools, band grid); the stale state is named for the event, and its press lists those
+  sources. Row 18 is in review.

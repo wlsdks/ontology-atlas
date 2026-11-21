@@ -313,7 +313,7 @@
         "hint": "只读取了此文件前一部分的页面：{pages}。其余内容还没有写进 Wiki 页面。"
       },
       "stale": {
-        "label": "待复核",
+        "label": "Wiki 页面写成后有改动的来源",
         "hint": "{pages} 是根据此文件的另一个版本撰写的，或没有记录它的哈希。"
       },
       "checking": {
@@ -1053,14 +1053,15 @@
     "first": "还没有来源有 Wiki 页面",
     "today": "今天 +{count, number}",
     "chartAria": "有 Wiki 页面的来源数量，按各页面记录的日期",
-    "chartLabel": "有 Wiki 页面的来源数 · 自 {date} 起",
+    "chartTitle": "有 Wiki 页面的来源数",
     "chartNow": "今天 {count, number}",
     "point": "{date}：当前 {total, number} 份来源中的 {count, number} 份（{percent, number}%）",
     "dateBasis": "每个点使用其 Wiki 页面记录的日期。",
     "undated": "{count, number} 份没有日期",
-    "axisToday": "今天",
     "continue": "{count, plural, =1 {用 1 份来源写 Wiki 页面} other {为接下来的 # 份生成 Wiki 页面}}",
     "batchRest": "之后还有 {count, number} 份等待。",
+    "writer": "由 <name>{agent}</name> 撰写",
+    "writerAnyAgent": "由你连接的编码代理撰写",
     "batchReturned": "上次请求中有 {count, number} 份来源仍没有 Wiki 页面，已移到列表末尾。",
     "webLine": "只有应用能撰写 Wiki 页面，在这里可以阅读。",
     "allDone": "每份来源都有 Wiki 页面"
@@ -1093,6 +1094,7 @@
       "nextTitle": "接下来要写的来源",
       "lead": "按下“{action}”后，代理会从上往下读取下面的来源并写 Wiki 页面。",
       "leadRunning": "代理正在从上往下写 Wiki 页面。写完的来源会从这个列表中移除。",
+      "privacy": "Atlas 不会把来源发送到任何地方。当你把撰写 Wiki 页面或提问交给代理时，该代理会读取所需的来源，读到的内容可能会发送到该代理的服务。",
       "webNote": "只有应用会生成 Wiki 页面。在应用中会先处理这些。",
       "waitingTitle": "这里等待中的来源",
       "nextEmpty": "这里的每份来源都有与当前内容一致的 Wiki 页面。",
@@ -1122,7 +1124,6 @@
       "range": "{first} – {last}",
       "meta": "{folders, number} 个文件夹 · 来源数和状态都相同的 {count, number} 个合为一行"
     },
-    "listKey": "等待中的来源",
     "listFolder": "文件夹：{folder}",
     "listType": "文件类型：{type}",
     "listNone": "这里没有处于该状态的来源。",

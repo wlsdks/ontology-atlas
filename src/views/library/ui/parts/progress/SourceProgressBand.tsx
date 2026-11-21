@@ -132,6 +132,7 @@ export function SourceProgressBand({
   inApp,
   filter,
   workLine,
+  agentName,
   locale,
   t,
 }: {
@@ -147,6 +148,8 @@ export function SourceProgressBand({
    * first event moves nothing; null on the web, where no agent works.
    */
   workLine: ReactNode | null;
+  /** The connected agent's name, said beside the write button; null names no agent in particular. */
+  agentName: string | null;
   locale: string;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
@@ -260,20 +263,21 @@ export function SourceProgressBand({
       data-testid="library-progress"
       data-percent={percent}
       data-complete={complete ? "" : undefined}
-      className="@container flex-none border-b border-[color:var(--color-border-soft)] px-5 py-2.5 sm:px-6 md:h-[112px] md:px-10"
+      className="@container flex-none border-b border-[color:var(--color-border-soft)] px-5 py-2.5 sm:px-6 md:flex md:h-[112px] md:items-center md:px-10"
     >
-      <div className="flex items-center gap-x-6 gap-y-2 max-md:flex-wrap md:h-full">
+      {/* Cells share a top line: the number, the bar's middle, the chart's title and the button start on it. */}
+      <div className="flex items-start gap-x-6 gap-y-2 max-md:flex-wrap md:w-full">
         {/* Number over bar while the band is narrow; from 60rem they are two cells of one row. */}
         <div
           className={cn(
-            "flex min-w-0 flex-col gap-1.5 max-md:min-w-[16rem] max-md:flex-1 @min-[60rem]:flex-row @min-[60rem]:items-center @min-[60rem]:gap-6",
+            "flex min-w-0 flex-col gap-1.5 max-md:min-w-[16rem] max-md:flex-1 @min-[60rem]:flex-row @min-[60rem]:items-start @min-[60rem]:gap-6",
             // With no chart beside it the bar may take its full width.
             showChart ? "md:flex-initial" : "md:flex-1",
           )}
         >
           <div
             data-testid="library-progress-number-cell"
-            className="flex min-w-0 flex-col gap-0.5 transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)] @min-[60rem]:w-[16rem] @min-[60rem]:flex-none"
+            className="flex min-w-0 flex-col gap-0.5 transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)] @min-[60rem]:w-[15rem] @min-[60rem]:flex-none"
             style={started ? undefined : { opacity: 0 }}
           >
             <p className="flex min-w-0 items-baseline gap-2">
@@ -313,10 +317,12 @@ export function SourceProgressBand({
           <div
             data-testid="library-progress-bar-cell"
             className={
-              "flex min-w-[280px] max-w-[560px] flex-col gap-1.5 " +
+              "flex min-w-[280px] max-w-[560px] flex-col gap-1.5 @min-[60rem]:gap-1 " +
               (showChart ? "@min-[60rem]:w-fit @min-[60rem]:flex-initial" : "@min-[60rem]:flex-1")
             }
           >
+            {/* In one row it is as tall as the number's line, so the bar sits on its middle and the legend on the sentence's line. */}
+            <span className="flex items-center @min-[60rem]:h-6">
             <span
               aria-hidden
               data-testid="library-progress-bar"
@@ -340,6 +346,7 @@ export function SourceProgressBand({
                   className="motion-progress-light absolute inset-y-0 left-0 w-1/3 bg-[image:linear-gradient(90deg,transparent,var(--color-success-text-a90)_50%,transparent)]"
                 />
               ) : null}
+            </span>
             </span>
             {/* One press per state the folder holds, in the bar's order; each narrows the list and lights its marks. */}
             {legendShown ? (
@@ -373,7 +380,7 @@ export function SourceProgressBand({
                     <span
                       aria-hidden
                       data-testid={`library-source-states-swatch-${state}`}
-                      className="inline-block size-2 flex-none rounded-micro"
+                      className="inline-block size-2 flex-none rounded-full"
                       style={{ background: sourceStateFill(state, complete) }}
                     />
                     {/* Three or more presses in a narrow pane keep swatch and count; the word stays in `title` and for a screen reader. */}
@@ -422,15 +429,9 @@ export function SourceProgressBand({
           /* The chart takes what the other cells leave, and steps aside when that is too little to read. */
           <div className="@container min-w-0 flex-1 max-md:hidden md:max-w-[26rem]">
             <div className="flex flex-col gap-1 @max-[9rem]:hidden">
-              <p data-testid="library-progress-chart-label" className="flex min-w-0 items-baseline justify-between gap-3 whitespace-nowrap text-label leading-label text-[color:var(--color-text-tertiary)]">
-                <span className="min-w-0 truncate">
-                  {t("progress.chartLabel", {
-                    date: new Date(`${progress.series[0]?.start ?? ""}T12:00:00`).toLocaleDateString(locale, { month: "short", day: "numeric" }),
-                  })}
-                </span>
-                <span className="flex-none tabular-nums font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-                  {t("progress.chartNow", { count: compiled })}
-                </span>
+              {/* The axis under the chart names its first day and today's count, so the title is the whole line. */}
+              <p data-testid="library-progress-chart-label" className="truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
+                {t("progress.chartTitle")}
               </p>
               <SourceProgressChart progress={progress} intro={intro} started={started} reduced={reduced} locale={locale} t={t} />
             </div>
@@ -440,8 +441,8 @@ export function SourceProgressBand({
         <div
           data-testid="library-progress-action"
           className={cn(
-            // A bounded width, so a long work-line path truncates rather than widening the row.
-            "flex min-w-0 flex-col items-start gap-1 md:w-[clamp(14rem,24cqw,16rem)] md:flex-none",
+            // A bounded width, so a long work-line path truncates rather than widening the row; it fits the English button.
+            "flex min-w-0 flex-col items-start gap-1 md:w-[14rem] md:flex-none",
             "md:ml-auto",
           )}
         >
@@ -478,11 +479,21 @@ export function SourceProgressBand({
                 <p data-testid="library-progress-returned" className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">
                   {t("progress.batchReturned", { count: batch.returned })}
                 </p>
-              ) : batch.rest > 0 ? (
-                <p data-testid="library-progress-rest" className="text-caption leading-caption tabular-nums text-[color:var(--color-text-tertiary)]">
-                  {t("progress.batchRest", { count: batch.rest })}
+              ) : (
+                /* How many wait after this press is the Next to write panel's foot, so this line names who writes. */
+                <p data-testid="library-progress-writer" className="truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
+                  {agentName === null
+                    ? t("progress.writerAnyAgent")
+                    : t.rich("progress.writer", {
+                        agent: agentName,
+                        name: (chunks) => (
+                          <span data-testid="library-progress-agent" className="font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+                            {chunks}
+                          </span>
+                        ),
+                      })}
                 </p>
-              ) : null}
+              )}
               {blocked?.door ?? null}
             </>
           ) : null}

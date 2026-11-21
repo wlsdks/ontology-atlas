@@ -211,7 +211,9 @@ export function SourceProgressChart({
         ) : (
           <>
             <span data-testid="library-progress-first-date" className="min-w-0 truncate">{firstDate}</span>
-            <span className="flex-none">{t("progress.axisToday")}</span>
+            <span className="flex-none font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+              {t("progress.chartNow", { count: progress.compiled })}
+            </span>
             <span className="sr-only">{basis}</span>
           </>
         )}

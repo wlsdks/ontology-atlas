@@ -2,18 +2,24 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { cn } from "@/shared/lib/cn";
 
-/** One sheet's paper in px: `text-label` DOCX, the widest common format, measures 31.1px inside its 32px. */
-const SHEET_W = 34;
-const SHEET_H = 42;
-const FOLD = 10;
+/**
+ * One sheet's paper in px, about two lines of the row's text tall. `text-caption` DOCX, the widest
+ * common format, measures about 26px inside the 28px paper.
+ */
+const SHEET_W = 28;
+const SHEET_H = 34;
+const FOLD = 8;
 const LINE_INSET = 5;
 const LINE_H = 2;
 const LINE_STEP = 4;
-const FIRST_LINE_TOP = 7;
+const FIRST_LINE_TOP = 6;
 const PAGE_TITLE_H = 3;
 const PAGE_BODY_LINES = 4;
-/** The scan passes over the lines (five at most) and stops above the format word, so it never strikes it through. */
-const SCAN_H = FIRST_LINE_TOP + 5 * LINE_STEP + LINE_H;
+/** A source draws 2 to 4 lines, so the last ends above the format word. */
+const SOURCE_LINES_MIN = 2;
+const SOURCE_LINES_SPREAD = 3;
+/** The scan passes over the lines and stops above the format word, so it never strikes it through. */
+const SCAN_H = FIRST_LINE_TOP + (SOURCE_LINES_MIN + SOURCE_LINES_SPREAD - 2) * LINE_STEP + LINE_H;
 /** A format longer than this is cut, so the word always fits the paper. */
 const FORMAT_CHARS = 4;
 
@@ -77,7 +83,7 @@ function Paper({ page, children }: { page: boolean; children: ReactNode }) {
         className={cn(
           "absolute inset-0 overflow-hidden rounded-micro border",
           page
-            ? "border-[color:var(--color-indigo-accent-a32)] bg-[color:var(--color-paper-page)]"
+            ? "border-[color:var(--color-paper-page-fold)] bg-[color:var(--color-paper-page)]"
             : "border-[color:var(--color-paper-edge)] bg-[color:var(--color-paper-source)]",
         )}
         style={PAPER_CUT}
@@ -87,7 +93,7 @@ function Paper({ page, children }: { page: boolean; children: ReactNode }) {
       <span
         className={cn(
           "absolute top-0 right-0",
-          page ? "bg-[color:var(--color-indigo-accent-a32)]" : "bg-[color:var(--color-paper-fold)]",
+          page ? "bg-[color:var(--color-paper-page-fold)]" : "bg-[color:var(--color-paper-fold)]",
         )}
         style={FOLD_CUT}
       />
@@ -124,8 +130,9 @@ type SheetProps = { className?: string } & (
 );
 
 /**
- * A file drawn as paper: a source is a folded sheet with its format written on it, a wiki page the
- * same sheet tinted and titled with a tab naming its source's format, a folder a stack. It is
+ * A file drawn as paper: a source is a dark folded sheet with its format written on it, a wiki page
+ * lighter paper written in dark ink under a title line, with a tab naming its source's format, a
+ * folder a stack. It is
  * decoration beside the name text, which carries the meaning, so it is hidden from assistive tech.
  */
 export function Sheet(props: SheetProps) {
@@ -144,13 +151,13 @@ export function Sheet(props: SheetProps) {
         {page ? (
           <>
             <span
-              className="absolute rounded-full bg-[color:var(--color-indigo-accent-a50)]"
+              className="absolute rounded-full bg-[color:var(--color-paper-page-title)]"
               style={{ left: LINE_INSET, top: FIRST_LINE_TOP, height: PAGE_TITLE_H, width: Math.round((SHEET_W - 2 * LINE_INSET) * 0.66) }}
             />
             <Lines widths={lineWidths(seed, PAGE_BODY_LINES)} top={FIRST_LINE_TOP + PAGE_TITLE_H + LINE_STEP} ink="bg-[color:var(--color-paper-line-page)]" />
           </>
         ) : (
-          <Lines widths={lineWidths(seed, 2 + (seed % 4))} top={FIRST_LINE_TOP} ink="bg-[color:var(--color-paper-line)]" />
+          <Lines widths={lineWidths(seed, SOURCE_LINES_MIN + (seed % SOURCE_LINES_SPREAD))} top={FIRST_LINE_TOP} ink="bg-[color:var(--color-paper-line)]" />
         )}
         {props.variant === "source" && props.reading ? (
           <span className="absolute inset-x-0 top-0 overflow-hidden" style={{ height: SCAN_H }}>
@@ -159,12 +166,12 @@ export function Sheet(props: SheetProps) {
         ) : null}
       </Paper>
       {format && !page ? (
-        <span className="absolute inset-x-0 bottom-px text-center text-label leading-label font-[var(--font-weight-strong)] whitespace-nowrap text-[color:var(--color-text-tertiary)]">
+        <span className="absolute inset-x-0 bottom-0 text-center text-caption leading-caption font-[var(--font-weight-strong)] whitespace-nowrap text-[color:var(--color-text-tertiary)]">
           {format}
         </span>
       ) : null}
       {format && page ? (
-        <span className="absolute -right-1.5 -bottom-1.5 flex h-4 items-center rounded-micro border border-[color:var(--color-indigo-accent-a32)] bg-[color:var(--color-canvas)] px-1 text-label leading-label font-[var(--font-weight-strong)] whitespace-nowrap text-[color:var(--color-indigo-text-soft)]">
+        <span className="absolute -right-1 bottom-0 flex h-3.5 items-center rounded-micro border border-[color:var(--color-paper-edge)] bg-[color:var(--color-canvas)] px-0.5 text-caption leading-caption font-[var(--font-weight-strong)] whitespace-nowrap text-[color:var(--color-text-secondary)]">
           {format}
         </span>
       ) : null}

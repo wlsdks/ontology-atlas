@@ -119,16 +119,18 @@
   --color-source-complete: var(--color-status-success);
 
   /*
-   * Paper (`Sheet`, `src/shared/ui/marks/sheet.tsx`): a source is a folded sheet, a wiki page the
-   * same sheet tinted by the page ink, so "this became a page" reads without a new hue. Every value
-   * is an existing surface, border, paper-white or page-ink step.
+   * Paper (`Sheet`, `src/shared/ui/marks/sheet.tsx`): a source is a dark folded sheet with faint
+   * lines; a wiki page is lighter paper written in dark ink with a title line, so "this became a
+   * page" reads by lightness alone. Every value mixes existing surface and ink steps; no hue.
    */
   --color-paper-source: var(--color-elevated);
-  --color-paper-page: color-mix(in srgb, var(--color-source-page) 10%, var(--color-elevated));
+  --color-paper-page: color-mix(in srgb, var(--color-text-primary) 62%, var(--color-elevated));
+  --color-paper-page-fold: color-mix(in srgb, var(--color-text-primary) 38%, var(--color-elevated));
+  --color-paper-page-title: color-mix(in srgb, var(--color-canvas) 88%, transparent);
   --color-paper-edge: var(--color-border-strong);
   --color-paper-fold: var(--color-indigo-a32);
   --color-paper-line: var(--color-overlay-3);
-  --color-paper-line-page: var(--color-indigo-accent-a32);
+  --color-paper-line-page: color-mix(in srgb, var(--color-canvas) 34%, transparent);
 
   /*
    * Builder v2 (A2) — Inspector/Palette alpha scale. Tokens extracted 1:1 from the rgba(...) values
