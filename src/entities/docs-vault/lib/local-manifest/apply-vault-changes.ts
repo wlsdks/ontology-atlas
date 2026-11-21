@@ -14,20 +14,17 @@ import {
   walkedKind,
   type WalkEntry,
 } from './walk-vault';
+import { nativeRootPath, type LocalVaultBuild } from './build-local-manifest';
+import { compareCollated } from './collated-order';
 import {
-  addStamp,
-  compareCollated,
-  compareTreeNodes,
   createMarkdownReader,
-  fingerprintText,
   mapPooled,
   NATIVE_BATCH_CONCURRENCY,
   NATIVE_READ_BATCH,
-  nativeRootPath,
-  parseFingerprint,
-  vaultSourceFormat,
-  type LocalVaultBuild,
-} from './build-local-manifest';
+} from './read-vault-files';
+import { addStamp, fingerprintText, parseFingerprint } from './vault-fingerprint';
+import { vaultSourceRow } from './vault-source-row';
+import { compareTreeNodes } from './vault-tree';
 import {
   backlinkTargets,
   buildMdEntry,
@@ -206,16 +203,6 @@ function patchSorted<T>(
 const compareDocs = (a: VaultDoc, b: VaultDoc) => compareCollated(a.slug, b.slug);
 const compareSources = (a: VaultSourceFile, b: VaultSourceFile) => compareCollated(a.path, b.path);
 const compareCodeUnits = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
-
-function sourceRow(entry: BuiltVaultEntry): VaultSourceFile {
-  return {
-    path: entry.relativePath,
-    name: nameOf(entry.relativePath),
-    format: vaultSourceFormat(entry.relativePath),
-    bytes: entry.bytes ?? 0,
-    mtime: entry.lastModified,
-  };
-}
 
 /**
  * Edits a tree by copying only the nodes on each changed path; every other node is shared with
@@ -740,7 +727,7 @@ export async function applyVaultChanges(
     sources = patchSorted(
       sources,
       new Set(oldSources.map((entry) => entry.relativePath)),
-      newSources.map(sourceRow),
+      newSources.map(vaultSourceRow),
       (row) => row.path,
       (path) => ({ path }) as VaultSourceFile,
       compareSources,

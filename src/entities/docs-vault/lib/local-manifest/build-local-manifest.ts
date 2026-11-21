@@ -1,27 +1,41 @@
+import { compareCollated } from './collated-order';
 import {
   backlinkTargets,
   buildMdEntry,
   createMetadataStringPool,
-  mdEntryRowValue,
   refResolver,
   slugTail,
-  storedMdEntry,
   type BuiltVaultEntry,
 } from './md-entry';
 import {
-  nativeVaultFingerprint,
-  readTauriVaultTextFile,
-  readTauriVaultTextFiles,
-  type NativeVaultStamp,
-  type NativeVaultTextRead,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+  createPartialPublisher,
+  PARTIAL_AFTER_MS,
+  PARTIAL_INTERVAL_MS,
+  PARTIAL_VAULT_MIN,
+  readTier,
+  readUnits,
+} from './partial-publisher';
 import {
-  getVaultRows,
-  isFramedVaultRowPath,
-  putVaultRows,
-  vaultRowsAvailable,
-  type VaultRowWrite,
-} from '@/shared/lib/vault-folder/tauri-vault-index-rows';
+  createMarkdownReader,
+  manifestFile,
+  mapPooled,
+  NATIVE_BATCH_CONCURRENCY,
+  NATIVE_READ_BATCH,
+  VAULT_READ_CONCURRENCY,
+} from './read-vault-files';
+import { APP_ENTRY_ROWS, createRowSource } from './vault-entry-rows';
+import {
+  addStamp,
+  fingerprintFromEntries,
+  fingerprintText,
+  type FingerprintSum,
+} from './vault-fingerprint';
+import { vaultSourceRow } from './vault-source-row';
+import { insertIntoTree, sortTree } from './vault-tree';
+import {
+  nativeVaultFingerprint,
+  type NativeVaultStamp,
+} from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { walkVault, type WalkEntry } from './walk-vault';
 import type {
   VaultDoc,
@@ -29,74 +43,6 @@ import type {
   VaultSourceFile,
   VaultTreeNode,
 } from '../../model/types';
-
-/** `'sources/plan.PDF'` → `'pdf'`; a name with no extension yields `''`. */
-export function vaultSourceFormat(name: string): string {
-  const at = name.lastIndexOf('.');
-  return at > 0 ? name.slice(at + 1).toLowerCase() : '';
-}
-
-/** One collator for every sort: `localeCompare(x, 'ko')` resolves the locale per comparison. */
-const KO_COLLATOR = new Intl.Collator('ko');
-
-/**
- * Korean collation, then code units where the collator calls two names equal, so the order is
- * total and does not depend on the order a walk happened to list files in.
- */
-export function compareCollated(a: string, b: string): number {
-  return KO_COLLATOR.compare(a, b) || (a < b ? -1 : a > b ? 1 : 0);
-}
-
-export function compareTreeNodes(a: VaultTreeNode, b: VaultTreeNode): number {
-  if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
-  return compareCollated(a.name, b.name);
-}
-
-/** `childIndex` finds a child by name; a linear search made a flat folder quadratic. */
-function insertIntoTree(
-  root: VaultTreeNode,
-  slug: string,
-  title: string,
-  childIndex: Map<VaultTreeNode, Map<string, VaultTreeNode>>,
-) {
-  const parts = slug.split('/');
-  let node = root;
-  for (let i = 0; i < parts.length; i += 1) {
-    const name = parts[i];
-    const isLeaf = i === parts.length - 1;
-    if (!node.children) node.children = [];
-    let index = childIndex.get(node);
-    if (!index) {
-      index = new Map();
-      childIndex.set(node, index);
-    }
-    let child = index.get(name);
-    if (!child) {
-      child = {
-        name,
-        path: parts.slice(0, i + 1).join('/'),
-        type: isLeaf ? 'doc' : 'dir',
-      };
-      if (isLeaf) {
-        child.slug = slug;
-        child.title = title;
-      }
-      node.children.push(child);
-      index.set(name, child);
-    } else if (isLeaf && !child.slug) {
-      child.type = 'doc';
-      child.slug = slug;
-      child.title = title;
-    }
-    node = child;
-  }
-}
-
-function sortTree(node: VaultTreeNode) {
-  if (!node.children) return;
-  node.children.sort(compareTreeNodes);
-  for (const c of node.children) sortTree(c);
-}
 
 export interface LocalVaultBuild {
   manifest: VaultManifest;
@@ -106,61 +52,6 @@ export interface LocalVaultBuild {
   sourceHandles: Map<string, FileSystemFileHandle>;
   /** Multiset hash of `${path}@${mtime}` stamps; an equal `computeLocalVaultFingerprint` skips a rebuild. */
   fingerprint: string;
-}
-
-export interface FingerprintSum {
-  count: number;
-  a: number;
-  b: number;
-}
-
-/** Murmur3's finalizer: spreads every input bit over the word. */
-function fmix32(h: number): number {
-  h ^= h >>> 16;
-  h = Math.imul(h, 0x85ebca6b);
-  h ^= h >>> 13;
-  h = Math.imul(h, 0xc2b2ae35);
-  return (h ^ (h >>> 16)) >>> 0;
-}
-
-export function addStamp(sum: FingerprintSum, relativePath: string, lastModified: number, sign: 1 | -1): void {
-  // NFC here too, or native NFD names would report a change on every focus.
-  const stamp = `${relativePath.normalize('NFC')}@${lastModified}`;
-  let a = 0x811c9dc5;
-  let b = 0x9747b28c;
-  for (let at = 0; at < stamp.length; at += 1) {
-    const code = stamp.charCodeAt(at);
-    a = Math.imul(a ^ code, 0x01000193);
-    b = Math.imul(b ^ code, 0x5bd1e995);
-    b ^= b >>> 15;
-  }
-  sum.count += sign;
-  sum.a = (sum.a + sign * fmix32(a)) >>> 0;
-  sum.b = (sum.b + sign * fmix32(b ^ stamp.length)) >>> 0;
-}
-
-export function fingerprintText(sum: FingerprintSum): string {
-  return sum.count === 0 ? '' : `${sum.count}.${sum.a.toString(16)}.${sum.b.toString(16)}`;
-}
-
-export function parseFingerprint(text: string): FingerprintSum | null {
-  if (text === '') return { count: 0, a: 0, b: 0 };
-  const [count, a, b] = text.split('.');
-  const sum = { count: Number(count), a: parseInt(a, 16), b: parseInt(b, 16) };
-  return Number.isInteger(sum.count) && Number.isInteger(sum.a) && Number.isInteger(sum.b) ? sum : null;
-}
-
-/**
- * Order-free, so neither a build nor a path delta sorts 50,000 stamps: a delta adds and removes
- * only the stamps it touched. Two different stamp sets collide with probability about 2^-64,
- * and the next change or focus check repairs a collision.
- */
-function fingerprintFromEntries(
-  entries: ReadonlyArray<{ relativePath: string; lastModified: number }>,
-): string {
-  const sum: FingerprintSum = { count: 0, a: 0, b: 0 };
-  for (const entry of entries) addStamp(sum, entry.relativePath, entry.lastModified, 1);
-  return fingerprintText(sum);
 }
 
 /** Size travels with mtime so a raw source is listed without opening it over IPC. */
@@ -256,13 +147,7 @@ function aggregateBuild(
     if (entry.kind === 'source') {
       // A raw source never joins `docs`; its handle only lets a person open the file.
       sourceHandles.set(entry.relativePath, entry.handle);
-      sources.push({
-        path: entry.relativePath,
-        name: entry.relativePath.slice(entry.relativePath.lastIndexOf('/') + 1),
-        format: vaultSourceFormat(entry.relativePath),
-        bytes: entry.bytes ?? 0,
-        mtime: entry.lastModified,
-      });
+      sources.push(vaultSourceRow(entry));
       continue;
     }
     const doc = entry.doc;
@@ -329,44 +214,6 @@ function aggregateBuild(
   };
 }
 
-const VAULT_READ_CONCURRENCY = 64;
-
-/** At most `concurrency` reads in flight, results in input order; the first failure in time rejects and no worker starts another read after it. */
-export async function mapPooled<T, R>(
-  items: readonly T[],
-  concurrency: number,
-  read: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let next = 0;
-  let failed = false;
-  const worker = async () => {
-    while (!failed && next < items.length) {
-      const at = next;
-      next += 1;
-      try {
-        results[at] = await read(items[at]);
-      } catch (error) {
-        failed = true;
-        throw error;
-      }
-    }
-  };
-  await Promise.all(
-    Array.from({ length: Math.min(Math.max(1, concurrency), items.length) }, worker),
-  );
-  return results;
-}
-
-export const NATIVE_READ_BATCH = 64;
-export const NATIVE_BATCH_CONCURRENCY = 8;
-const PARTIAL_AFTER_MS = 200;
-const PARTIAL_INTERVAL_MS = 1000;
-const PARTIAL_SPLIT_PUBLISHES = 3;
-const PARTIAL_SPLIT_MIN = 400;
-const PARTIAL_VAULT_MIN = 400;
-const READ_TIER_FOLDERS = ['projects', 'domains', 'capabilities', 'elements'];
-
 interface VaultLoadProgress {
   read: number;
   total: number;
@@ -379,138 +226,7 @@ export interface VaultBuildObserver {
   partialIntervalMs?: number;
 }
 
-interface MarkdownFile {
-  text: string;
-  lastModified: number;
-}
-
 type WalkInfo = { truncated: boolean; prunedDirs: string[]; sourceFileCount?: number };
-
-async function manifestFile(entry: WalkEntry, nativeRoot: string | null): Promise<Pick<File, 'lastModified' | 'text'>> {
-  if (entry.kind === 'md' && nativeRoot) {
-    const native = await readTauriVaultTextFile(nativeRoot, entry.relativePath);
-    if (native) return { lastModified: native.lastModified, text: async () => native.text };
-  }
-  return entry.handle.getFile();
-}
-
-async function readMarkdownFile(entry: WalkEntry, nativeRoot: string | null): Promise<MarkdownFile> {
-  const file = await manifestFile(entry, nativeRoot);
-  return { text: await file.text(), lastModified: file.lastModified };
-}
-
-export function createMarkdownReader(nativeRoot: string | null) {
-  let batchUnavailable = false;
-  const one = (entry: WalkEntry) => readMarkdownFile(entry, nativeRoot);
-  const fallbackConcurrency = VAULT_READ_CONCURRENCY / NATIVE_BATCH_CONCURRENCY;
-  return async (entries: readonly WalkEntry[]): Promise<MarkdownFile[]> => {
-    if (!nativeRoot || batchUnavailable) {
-      return mapPooled(entries, fallbackConcurrency, one);
-    }
-    let answered: NativeVaultTextRead[] | null = null;
-    try {
-      answered = await readTauriVaultTextFiles(nativeRoot, entries.map((entry) => entry.relativePath));
-    } catch {
-      batchUnavailable = true;
-    }
-    const reads = entries.map((entry, at) => ({ entry, read: answered?.[at] }));
-    return mapPooled(reads, fallbackConcurrency, async ({ entry, read }) =>
-      read && read.relativePath === entry.relativePath && read.text !== null && read.lastModified !== null
-        ? { text: read.text, lastModified: read.lastModified }
-        : one(entry),
-    );
-  };
-}
-
-function readTier(entry: WalkEntry): number {
-  if (entry.kind !== 'md') return READ_TIER_FOLDERS.length + 2;
-  const slash = entry.relativePath.indexOf('/');
-  if (slash < 0) return 0;
-  const folder = READ_TIER_FOLDERS.indexOf(entry.relativePath.slice(0, slash));
-  return folder < 0 ? READ_TIER_FOLDERS.length + 1 : folder + 1;
-}
-
-function readUnits(files: readonly WalkEntry[], tiers: readonly number[], batched: boolean): number[][] {
-  const order = files.map((_, index) => index).sort((a, b) => tiers[a] - tiers[b] || a - b);
-  if (!batched) return order.map((index) => [index]);
-  const units: number[][] = [];
-  let batch: number[] = [];
-  for (const index of order) {
-    if (batch.length > 0 && (batch.length === NATIVE_READ_BATCH || tiers[batch[0]] !== tiers[index])) {
-      units.push(batch);
-      batch = [];
-    }
-    if (files[index].kind === 'md') batch.push(index);
-    else units.push([index]);
-  }
-  if (batch.length > 0) units.push(batch);
-  return units;
-}
-
-function createPartialPublisher(
-  tiers: readonly number[],
-  files: readonly WalkEntry[],
-  results: ReadonlyArray<BuiltVaultEntry | undefined>,
-  publish: (entries: BuiltVaultEntry[]) => void,
-  pacing: { afterMs: number; intervalMs: number },
-) {
-  const tierCount = READ_TIER_FOLDERS.length + 3;
-  const size = new Array<number>(tierCount).fill(0);
-  const done = new Array<number>(tierCount).fill(0);
-  let lastMarkdownTier = -1;
-  tiers.forEach((tier, index) => {
-    size[tier] += 1;
-    if (files[index].kind === 'md') lastMarkdownTier = Math.max(lastMarkdownTier, tier);
-  });
-  const startedAt = performance.now();
-  let lastPublishedAt = Number.NEGATIVE_INFINITY;
-  let publishes = 0;
-  let published = -1;
-  let quarter = 0;
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  const attempt = () => {
-    const now = performance.now();
-    const wait = Math.max(startedAt + pacing.afterMs, lastPublishedAt + pacing.intervalMs) - now;
-    if (wait > 0) {
-      timer ??= setTimeout(() => {
-        timer = null;
-        attempt();
-      }, wait);
-      return;
-    }
-    let complete = published;
-    while (complete + 1 < tierCount && done[complete + 1] === size[complete + 1]) complete += 1;
-    if (complete >= lastMarkdownTier) return;
-    let through = -1;
-    if (complete > published) {
-      published = complete;
-      quarter = 0;
-      through = complete;
-    }
-    const current = published + 1;
-    if (publishes < PARTIAL_SPLIT_PUBLISHES && size[current] >= PARTIAL_SPLIT_MIN) {
-      const reached = Math.floor((done[current] * 4) / size[current]);
-      if (reached > quarter) {
-        quarter = reached;
-        through = current;
-      }
-    }
-    if (through < 0) return;
-    lastPublishedAt = now;
-    publishes += 1;
-    publish(results.filter((entry, index): entry is BuiltVaultEntry => entry !== undefined && tiers[index] <= through));
-  };
-  return {
-    read(unit: readonly number[]) {
-      for (const index of unit) done[tiers[index]] += 1;
-      attempt();
-    },
-    stop() {
-      if (timer !== null) clearTimeout(timer);
-      timer = null;
-    },
-  };
-}
 
 async function stampedEntry(entry: WalkEntry, stamps: VaultStampIndex | null): Promise<BuiltVaultEntry> {
   const stamp = stamps?.get(entry.relativePath);
@@ -522,128 +238,6 @@ async function stampedEntry(entry: WalkEntry, stamps: VaultStampIndex | null): P
   }
   const lastModified = stamp ? stamp.lastModified : (await entry.handle.getFile()).lastModified;
   return { relativePath: entry.relativePath, lastModified, handle: entry.handle, kind: 'image' };
-}
-
-/**
- * The derived index's name for what `buildMdEntry` computes: a hash of `md-entry.ts` and everything
- * it loads, made at build time (scripts/lib/row-producer.mjs), so a build whose derive code changed
- * never reads an older build's rows. A build without one (the dev server) keeps no rows.
- */
-const ROW_PRODUCER = process.env.NEXT_PUBLIC_ROW_PRODUCER;
-export const APP_ENTRY_ROWS = ROW_PRODUCER ? `app-entry/${ROW_PRODUCER}` : null;
-/** Paths per lookup: the node folders come back first, so the first partial paint stays early. */
-const ROWS_LOOKUP_CHUNK = 2048;
-const ROWS_LOOKUP_AHEAD = 2;
-const ROWS_WRITE_BATCH = 500;
-
-let rowWrites: Promise<void> = Promise.resolve();
-
-export function vaultRowWritesSettled(): Promise<void> {
-  return rowWrites;
-}
-
-interface RowSource {
-  /** Entries from stored rows, aligned with `indices`; `undefined` where the file must be read. */
-  take(indices: readonly number[]): Promise<Array<BuiltVaultEntry | undefined>>;
-  keep(index: number, entry: BuiltVaultEntry): void;
-  finish(walkComplete: boolean): void;
-}
-
-/**
- * Looks up stored rows in read order, a chunk at a time and a little ahead of the reads, and
- * writes new rows behind the build in batches. Any failure only means more files are read.
- */
-function createRowSource(
-  namespace: string,
-  rootPath: string,
-  files: readonly WalkEntry[],
-  tiers: readonly number[],
-  internMetadata: (value: string) => string,
-): RowSource | null {
-  if (!vaultRowsAvailable()) return null;
-  const order = files
-    .map((_, index) => index)
-    .filter((index) => files[index].kind === 'md' && isFramedVaultRowPath(files[index].relativePath))
-    .sort((a, b) => tiers[a] - tiers[b] || a - b);
-  const chunks: number[][] = [];
-  for (let at = 0; at < order.length; at += ROWS_LOOKUP_CHUNK) chunks.push(order.slice(at, at + ROWS_LOOKUP_CHUNK));
-  const chunkOf = new Int32Array(files.length).fill(-1);
-  chunks.forEach((chunk, number) => {
-    for (const index of chunk) chunkOf[index] = number;
-  });
-  const lookups: Array<Promise<void> | undefined> = new Array(chunks.length);
-  const fromRows: Array<BuiltVaultEntry | undefined> = new Array(files.length);
-  const tokens = new Map<number, string>();
-  let stored = 0;
-  let found = 0;
-  let otherVersions = 0;
-  let answeredAll = true;
-  const lookUp = (number: number): Promise<void> => {
-    const pending = lookups[number];
-    if (pending) return pending;
-    const chunk = chunks[number];
-    const started = getVaultRows(rootPath, namespace, chunk.map((index) => files[index].relativePath)).then(
-      (answer) => {
-        if (!answer) {
-          answeredAll = false;
-          return;
-        }
-        for (const [at, value] of answer.hits) {
-          const index = chunk[at];
-          if (index !== undefined) fromRows[index] = storedMdEntry(files[index], value, internMetadata);
-        }
-        for (const [at, token] of answer.misses) {
-          const index = chunk[at];
-          if (index !== undefined && token) tokens.set(index, token);
-        }
-        stored = Math.max(stored, answer.stored);
-        found += answer.found;
-        otherVersions = Math.max(otherVersions, answer.otherVersions);
-      },
-      () => {
-        answeredAll = false;
-      },
-    );
-    lookups[number] = started;
-    return started;
-  };
-  let batch: VaultRowWrite[] = [];
-  const write = (rows: VaultRowWrite[], retain: readonly string[] | null) => {
-    rowWrites = rowWrites.then(() => putVaultRows(rootPath, namespace, rows, retain)).catch(() => undefined);
-  };
-  return {
-    async take(indices) {
-      const numbers = new Set<number>();
-      for (const index of indices) if (chunkOf[index] >= 0) numbers.add(chunkOf[index]);
-      for (const number of numbers) {
-        for (let ahead = 1; ahead <= ROWS_LOOKUP_AHEAD && number + ahead < chunks.length; ahead += 1) {
-          void lookUp(number + ahead);
-        }
-      }
-      await Promise.all([...numbers].map(lookUp));
-      return indices.map((index) => {
-        const entry = fromRows[index];
-        fromRows[index] = undefined;
-        return entry;
-      });
-    },
-    keep(index, entry) {
-      const token = tokens.get(index);
-      const value = token ? mdEntryRowValue(entry) : null;
-      if (!token || value === null) return;
-      tokens.delete(index);
-      batch.push({ path: entry.relativePath, token, lastModified: entry.lastModified, value });
-      if (batch.length >= ROWS_WRITE_BATCH) {
-        write(batch, null);
-        batch = [];
-      }
-    },
-    finish(walkComplete) {
-      const prune = walkComplete && answeredAll && (otherVersions > 0 || stored > found);
-      if (batch.length > 0 || prune) write(batch, prune ? order.map((index) => files[index].relativePath) : null);
-      batch = [];
-    },
-  };
 }
 
 async function collectEntries(
