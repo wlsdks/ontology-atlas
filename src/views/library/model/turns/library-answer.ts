@@ -1,5 +1,4 @@
-import type { LibraryAgentOpeningRequest } from "../../ui/agent/LibraryAgentDock";
-import type { QuestionDeskReportRequest } from "../../ui/questions/LibraryQuestionDesk";
+import type { LibraryAgentOpeningRequest, QuestionDeskReportRequest } from "./library-turn-requests";
 
 export interface RetainedLibraryAnswer {
   generation: number;

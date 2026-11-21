@@ -7,16 +7,9 @@ import { Button } from "@/shared/ui";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import type { FoundInFolderSummary } from "../../model/sources/use-library-sources";
 
 type LibraryT = ReturnType<typeof useTranslations<"library">>;
-
-export interface FoundInFolderSummary {
-  count: number;
-  /** Discovery stopped at its cap, so the count is a floor. */
-  truncated: boolean;
-  /** First folder below the open folder, by how many found files each holds. */
-  folders: { name: string; count: number }[];
-}
 
 /** A placeholder no catalogue string can contain, so the chips sit where `{folderCounts}` is. */
 const CHIPS_AT = "\u0000";

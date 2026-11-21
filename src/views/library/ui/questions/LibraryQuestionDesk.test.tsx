@@ -30,7 +30,8 @@ vi.mock('@/shared/lib/llm-connection/tauri-jev', async (importOriginal) => {
 
 import type { LibraryPageFacts } from '@/features/library';
 import { libraryPageFacts } from '@/features/library/model/library-page-facts';
-import { LibraryQuestionDesk, type QuestionDeskReportDraft, type QuestionDeskReportRequest } from './LibraryQuestionDesk';
+import type { QuestionDeskReportRequest } from '../../model/turns/library-turn-requests';
+import { LibraryQuestionDesk, type QuestionDeskReportDraft } from './LibraryQuestionDesk';
 
 /** One facts object per page text, as the Library keeps one per page version. */
 const factsByText = new Map<string, LibraryPageFacts>();

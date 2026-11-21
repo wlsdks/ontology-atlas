@@ -4,7 +4,6 @@ import {
   type LibraryUiModel,
   type RetainedAnswerHead,
 } from "@/features/library";
-import type { LibraryHomeStripDoor } from "../../ui/home/LibraryHomeStrip";
 import type { Dispatch, SetStateAction } from "react";
 import type { LibrarySelection, LibraryHomeSurface } from "../library-selection";
 
@@ -57,4 +56,18 @@ export function libraryHomeStrip({
   ];
 
   return { compileTarget, soleAnswer, homeDoors, overflowDoors };
+}
+
+/**
+ * A Library-wide door: the same on every Sources and Wiki state, so it stands once in the page header.
+ */
+export interface LibraryHomeStripDoor {
+  id: "guide" | "questions" | "conversation" | "review";
+  label: string;
+  /** Hover text when it adds to the label, such as the saved answer's title; else the label. */
+  tooltip?: string;
+  onPress: () => void;
+  testId: string;
+  /** True while the surface this door opens is up, for `aria-expanded`. */
+  open?: boolean;
 }

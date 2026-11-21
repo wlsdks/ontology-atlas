@@ -41,6 +41,7 @@ import type { CitationState } from './desk/DeskLeadRow';
 import { DeskReport, type QuestionDeskReportDraft } from './desk/DeskReport';
 import { DeskResultsHead } from './desk/DeskResultsHead';
 import { useDeskSwap } from './desk/use-desk-swap';
+import type { QuestionDeskReportRequest } from "../../model/turns/library-turn-requests";
 
 export type { QuestionDeskReportDraft } from './desk/DeskReport';
 
@@ -66,16 +67,6 @@ interface DeskMeaningAnswer {
   filesTotal: number;
   /** Passages left out because their file changed, by the app or by the desk's own read. */
   staleDropped: number;
-}
-
-export interface QuestionDeskReportRequest {
-  brief: string;
-  question: string;
-  searchId: number;
-  listingVersion: string;
-  vaultScope: string;
-  coverage: string;
-  limits: string;
 }
 
 /** What the slot under the field holds: the person's own trail, or a search's results. */

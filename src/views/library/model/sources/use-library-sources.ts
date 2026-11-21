@@ -27,7 +27,6 @@ import { revealTauriSourcesFolder, revealTauriVaultFile } from "@/shared/lib/vau
 import { useToast } from "@/shared/ui";
 import { hostFileManager } from "./file-manager";
 import type { CopyRequest } from "./source-drop";
-import type { FoundInFolderSummary } from "../../ui/first-run/FoundInFolder";
 
 /** Found files in the open folder lead; files only a bound code root holds stay a suggestion. */
 function splitByRoot(candidates: readonly SourceCandidate[], openRoot: string) {
@@ -285,4 +284,13 @@ export function useLibrarySources({
     handleFindDocuments, handleShowFoundDocuments, handleAddCandidates, handleForgetDeclined, handleOpenSource,
     found, fileManager, startCopy, copyAllRequest, handleHideSuggestion, handleRevealSourcesFolder,
   };
+}
+
+/** The documents discovery found below the open folder, for the first-run offer to copy them in. */
+export interface FoundInFolderSummary {
+  count: number;
+  /** Discovery stopped at its cap, so the count is a floor. */
+  truncated: boolean;
+  /** First folder below the open folder, by how many found files each holds. */
+  folders: { name: string; count: number }[];
 }

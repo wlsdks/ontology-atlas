@@ -5,22 +5,9 @@ import type { useTranslations } from "next-intl";
 import { BookOpen, HelpCircle, MoreHorizontal } from "lucide-react";
 
 import { ChromeChip } from "@/shared/ui";
+import type { LibraryHomeStripDoor } from "../../model/home/library-home-strip";
 
 type Translator = ReturnType<typeof useTranslations<"library">>;
-
-/**
- * A Library-wide door: the same on every Sources and Wiki state, so it stands once in the page header.
- */
-export interface LibraryHomeStripDoor {
-  id: "guide" | "questions" | "conversation" | "review";
-  label: string;
-  /** Hover text when it adds to the label, such as the saved answer's title; else the label. */
-  tooltip?: string;
-  onPress: () => void;
-  testId: string;
-  /** True while the surface this door opens is up, for `aria-expanded`. */
-  open?: boolean;
-}
 
 const DOOR_ICON = {
   guide: HelpCircle,

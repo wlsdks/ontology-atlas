@@ -5,7 +5,7 @@ import { writeLibraryIndexCollapsed } from "@/shared/lib/preferences/library-pre
 
 import type { useLibraryIndexColumn } from "../index-column/use-library-index-column";
 
-type SourceState = LibrarySourceRow["state"];
+export type SourceState = LibrarySourceRow["state"];
 
 /**
  * The one source state the band's presses narrow the Sources list to. The press belongs to a folder:
@@ -65,4 +65,11 @@ export function useSourceFilter({
   }, [listening, state]);
 
   return { state, press, clear, unfold };
+}
+
+/** The state the list is narrowed to, and the presses that change it (`useSourceFilter`). */
+export interface SourceStateFilter {
+  state: SourceState | null;
+  press: (state: SourceState) => void;
+  clear: () => void;
 }
