@@ -149,9 +149,9 @@ export function fillNear(): void {
     const star = near.stars.push(push.domainId) - 1;
     for (const capabilityId of domain.capabilityIds) {
       addNear(capabilityId, star, true);
-      for (const el of model.capabilityById.get(capabilityId)?.elementIds ?? []) addNear(el, star, false);
+      for (const elementId of model.capabilityById.get(capabilityId)?.elementIds ?? []) addNear(elementId, star, false);
     }
-    for (const el of domain.directElementIds) addNear(el, star, false);
+    for (const elementId of domain.directElementIds) addNear(elementId, star, false);
   }
   let size = Math.max(16, near.heads.length);
   while (size < near.count * 2) size *= 2;

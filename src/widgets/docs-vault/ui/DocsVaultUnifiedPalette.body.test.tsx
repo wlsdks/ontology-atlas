@@ -176,10 +176,10 @@ describe('DocsVaultUnifiedPalette body search results', () => {
   });
 
   it('does not repeat a snippet on title-match rows', () => {
-    const idx: DocsBodyIndex = new Map([
+    const index: DocsBodyIndex = new Map([
       ['alpha', buildBodyEntry('alpha appears in body too', 'alpha@1')],
     ]);
-    renderPalette({ initialQuery: 'alpha', bodyIndex: idx });
+    renderPalette({ initialQuery: 'alpha', bodyIndex: index });
     expect(screen.queryByText(/appears in body too/)).not.toBeInTheDocument();
   });
 });

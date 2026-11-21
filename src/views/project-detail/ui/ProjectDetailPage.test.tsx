@@ -362,7 +362,7 @@ describe("ProjectDetailPage", () => {
     fireEvent.click(screen.getByTestId("project-detail-handoff-preview"));
     const dialog = await screen.findByRole("dialog");
     expect(
-      within(dialog).getByText((_, el) => el?.tagName === "PRE" && el.textContent!.includes(`get_concept("${SLUG}")`)),
+      within(dialog).getByText((_, element) => element?.tagName === "PRE" && element.textContent!.includes(`get_concept("${SLUG}")`)),
     ).toBeInTheDocument();
   });
 

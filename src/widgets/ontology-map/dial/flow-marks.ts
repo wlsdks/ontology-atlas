@@ -83,9 +83,9 @@ function routeControl(a: Point, b: Point, hub: Point, pivot: Point | null, sameR
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   const dx = b.x - a.x;
   const dy = b.y - a.y;
-  const len = Math.hypot(dx, dy) || 1;
-  let nx = -dy / len;
-  let ny = dx / len;
+  const length = Math.hypot(dx, dy) || 1;
+  let nx = -dy / length;
+  let ny = dx / length;
   const anchor = pivot ?? hub;
   if ((mid.x - anchor.x) * nx + (mid.y - anchor.y) * ny < 0) {
     nx = -nx;
@@ -95,16 +95,16 @@ function routeControl(a: Point, b: Point, hub: Point, pivot: Point | null, sameR
     nx = -nx;
     ny = -ny;
   }
-  if (pivot) return { x: mid.x + nx * 0.22 * len, y: mid.y + ny * 0.22 * len };
-  const t = Math.max(0, Math.min(1, ((hub.x - a.x) * dx + (hub.y - a.y) * dy) / (len * len)));
+  if (pivot) return { x: mid.x + nx * 0.22 * length, y: mid.y + ny * 0.22 * length };
+  const t = Math.max(0, Math.min(1, ((hub.x - a.x) * dx + (hub.y - a.y) * dy) / (length * length)));
   const clearance = Math.hypot(a.x + dx * t - hub.x, a.y + dy * t - hub.y);
-  let bow = (sameRing ? 0.16 : 0.08) * len;
+  let bow = (sameRing ? 0.16 : 0.08) * length;
   if (clearance < HUB_CLEAR_PX + bow) {
     if ((mid.x - hub.x) * nx + (mid.y - hub.y) * ny < 0) {
       nx = -nx;
       ny = -ny;
     }
-    bow = Math.max(0.08 * len, (HUB_CLEAR_PX - clearance) * 2.1);
+    bow = Math.max(0.08 * length, (HUB_CLEAR_PX - clearance) * 2.1);
   }
   return { x: mid.x + nx * bow, y: mid.y + ny * bow };
 }
@@ -469,22 +469,22 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
 
 function controlOf(input: FlowMarksInput, l: DialLink, a: End, b: End, hub: Point): Point {
   if (input.scene.branches) {
-    const ca = input.scene.clusterByDomain.get(domainOfEnd(input.model, l.u));
-    const cb = input.scene.clusterByDomain.get(domainOfEnd(input.model, l.v));
-    if (ca && cb && ca.branchPair !== cb.branchPair) {
-      const cx = ((ca.branchCorridorX ?? ca.chip.x) + (cb.branchCorridorX ?? cb.chip.x)) / 2;
+    const clusterA = input.scene.clusterByDomain.get(domainOfEnd(input.model, l.u));
+    const clusterB = input.scene.clusterByDomain.get(domainOfEnd(input.model, l.v));
+    if (clusterA && clusterB && clusterA.branchPair !== clusterB.branchPair) {
+      const cx = ((clusterA.branchCorridorX ?? clusterA.chip.x) + (clusterB.branchCorridorX ?? clusterB.chip.x)) / 2;
       return {
         x: input.toScreen(cx, 0).x,
         y: Math.min(a.p.y, b.p.y) - Math.max(input.tokens.nameMaxPx, Math.abs(a.p.x - b.p.x) * 0.35 + Math.abs(a.p.y - b.p.y) * 0.25),
       };
     }
-    if (ca && cb && ca.branchSide === cb.branchSide) {
-      const side = ca.branchSide ?? 1;
+    if (clusterA && clusterB && clusterA.branchSide === clusterB.branchSide) {
+      const side = clusterA.branchSide ?? 1;
       const inner = side > 0 ? Math.min(a.p.x, b.p.x) : Math.max(a.p.x, b.p.x);
       return { x: inner - side * input.tokens.nameMaxPx, y: (a.p.y + b.p.y) / 2 };
     }
-    if (ca && cb && input.scene.clusters.length > 4 && ca.branchCorridorX !== undefined) {
-      return { x: input.toScreen(ca.branchCorridorX, 0).x, y: (a.p.y + b.p.y) / 2 };
+    if (clusterA && clusterB && input.scene.clusters.length > 4 && clusterA.branchCorridorX !== undefined) {
+      return { x: input.toScreen(clusterA.branchCorridorX, 0).x, y: (a.p.y + b.p.y) / 2 };
     }
     const dx = b.p.x - a.p.x;
     const dy = b.p.y - a.p.y;

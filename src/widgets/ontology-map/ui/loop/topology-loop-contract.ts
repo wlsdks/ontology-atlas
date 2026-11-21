@@ -132,7 +132,7 @@ export interface UseTopologyLoopArgs {
   onToggleCluster?: (parentId: string) => void;
   /** Cluster-chip hover tooltip. Fires only when the identified chip changes; null clears. */
   onHoverCluster?: (
-    info: {
+    cluster: {
       parentId: string;
       /** Direct children collapsed by the density gate at this tier (the chip's `+N`). */
       count: number;

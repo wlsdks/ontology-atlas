@@ -77,8 +77,8 @@ export function ProjectDrawer({
           dragListener={false}
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={{ top: 0, bottom: 0.4 }}
-          onDragEnd={(_, info) => {
-            if (shouldDismissOnDrag(info.offset.y, info.velocity.y)) onClose();
+          onDragEnd={(_, panInfo) => {
+            if (shouldDismissOnDrag(panInfo.offset.y, panInfo.velocity.y)) onClose();
           }}
           className="fixed inset-x-0 bottom-0 top-[38%] z-30 flex w-full flex-col overflow-y-auto overscroll-y-contain rounded-t-sheet border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)] lg:inset-y-0 lg:right-0 lg:left-auto lg:top-0 lg:max-w-md lg:rounded-none lg:border-t-0 lg:border-l"
         >

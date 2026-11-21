@@ -74,8 +74,8 @@ export function useGitWorkspace({
     },
     [rememberWorkspace],
   );
-  const reportWorkspaceReadFailure = useCallback((err: unknown) => {
-    setLoadErrorText(gitErrorMessage(err, nativeErrors));
+  const reportWorkspaceReadFailure = useCallback((error: unknown) => {
+    setLoadErrorText(gitErrorMessage(error, nativeErrors));
     setLoadState("error");
   }, [nativeErrors]);
   /*
@@ -93,16 +93,16 @@ export function useGitWorkspace({
       const next = await readGitWorkspace(vaultPath, limit);
       if (seq !== readSeqRef.current) return;
       if (next) applyWorkspaceRead(next);
-    } catch (err) {
+    } catch (error) {
       if (seq !== readSeqRef.current) return;
-      reportWorkspaceReadFailure(err);
+      reportWorkspaceReadFailure(error);
     }
   }, [applyWorkspaceRead, historyLimit, reportWorkspaceReadFailure, vaultPath]);
   const applyInitialWorkspaceRead = useEffectEvent((next: GitWorkspaceRead) => {
     applyWorkspaceRead(next);
   });
-  const reportInitialWorkspaceReadFailure = useEffectEvent((err: unknown) => {
-    reportWorkspaceReadFailure(err);
+  const reportInitialWorkspaceReadFailure = useEffectEvent((error: unknown) => {
+    reportWorkspaceReadFailure(error);
   });
 
   useEffect(() => {
@@ -114,8 +114,8 @@ export function useGitWorkspace({
       .then((next) => {
         if (!cancelled && seq === readSeqRef.current && next) applyInitialWorkspaceRead(next);
       })
-      .catch((err) => {
-        if (!cancelled && seq === readSeqRef.current) reportInitialWorkspaceReadFailure(err);
+      .catch((error) => {
+        if (!cancelled && seq === readSeqRef.current) reportInitialWorkspaceReadFailure(error);
       });
     return () => {
       cancelled = true;
@@ -145,8 +145,8 @@ export function useGitWorkspace({
     }
     setHistoryLimit(historyLimit + HISTORY_PAGE);
   });
-  const reportHistoryPageFailure = useEffectEvent((err: unknown) => {
-    reportWorkspaceReadFailure(err);
+  const reportHistoryPageFailure = useEffectEvent((error: unknown) => {
+    reportWorkspaceReadFailure(error);
   });
   /*
    * "The list is shorter than the depth asked for, and git has more" is exactly the window in
@@ -161,8 +161,8 @@ export function useGitWorkspace({
       .then((page) => {
         if (!cancelled) landHistoryPage(page);
       })
-      .catch((err) => {
-        if (!cancelled) reportHistoryPageFailure(err);
+      .catch((error) => {
+        if (!cancelled) reportHistoryPageFailure(error);
       });
     return () => {
       cancelled = true;

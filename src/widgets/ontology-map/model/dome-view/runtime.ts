@@ -62,11 +62,11 @@ export interface DomeNodeFrame {
  * (reduced motion).
  */
 export function beginDomeMorph(runtime: DomeRuntime, next: DomeModel, nowMs: number, durationMs: number): void {
-  const prev = runtime.model;
+  const previous = runtime.model;
   runtime.model = next;
   runtime.morph =
     durationMs > 0
-      ? { fromCoords: prev.coords, fromCircles: prev.circles, startMs: nowMs, durationMs }
+      ? { fromCoords: previous.coords, fromCircles: previous.circles, startMs: nowMs, durationMs }
       : null;
 }
 

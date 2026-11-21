@@ -66,7 +66,7 @@ interface Dependencies {
   nodes: UseTopologyLoopArgs["nodes"];
   edges: UseTopologyLoopArgs["edges"];
   expand: ExpandPreference;
-  prevNodeIdsRef: RefObject<Set<string>>;
+  previousNodeIdsRef: RefObject<Set<string>>;
   appearRef: RefObject<Map<string, number>>;
   bornNodeIdsRef: RefObject<Set<string>>;
   hasDependsEdgesRef: RefObject<boolean>;
@@ -82,7 +82,7 @@ interface Dependencies {
   homeSpringsRef: RefObject<Map<string, HomeSpringState>>;
   homingActiveRef: RefObject<boolean>;
   homeTargetOverrideRef: RefObject<ReadonlyMap<string, { x: number; y: number; }> | null>;
-  prevPinnedNodeIdRef: RefObject<string | null>;
+  previousPinnedNodeIdRef: RefObject<string | null>;
   onVisibleCountChange: ((visible: number) => void) | undefined;
   onGraphStatsChange: ((stats: { nodes: number; relations: number; }) => void) | undefined;
   dataSourceKey: string | null;
@@ -129,7 +129,7 @@ export function useTopologyWorldLifecycle({
   nodes,
   edges,
   expand,
-  prevNodeIdsRef,
+  previousNodeIdsRef,
   appearRef,
   bornNodeIdsRef,
   hasDependsEdgesRef,
@@ -145,7 +145,7 @@ export function useTopologyWorldLifecycle({
   homeSpringsRef,
   homingActiveRef,
   homeTargetOverrideRef,
-  prevPinnedNodeIdRef,
+  previousPinnedNodeIdRef,
   onVisibleCountChange,
   onGraphStatsChange,
   dataSourceKey,
@@ -346,16 +346,16 @@ export function useTopologyWorldLifecycle({
       }
       const previousWorld = worldRef.current;
       worldRef.current = world;
-      let armAssembly = prevNodeIdsRef.current.size === 0 && dataSourceKey === null;
+      let armAssembly = previousNodeIdsRef.current.size === 0 && dataSourceKey === null;
       let conceptsReplaced = false;
       {
-        const prevIds = prevNodeIdsRef.current;
+        const previousIds = previousNodeIdsRef.current;
         const appear = appearRef.current;
-        const isFirstBuild = prevIds.size === 0;
+        const isFirstBuild = previousIds.size === 0;
         const nextIds = new Set<string>();
         for (const n of world.nodes) {
           nextIds.add(n.id);
-          if (isFirstBuild || prevIds.has(n.id)) {
+          if (isFirstBuild || previousIds.has(n.id)) {
             if (!appear.has(n.id)) appear.set(n.id, 1);
           } else {
             appear.set(n.id, 0);
@@ -363,10 +363,10 @@ export function useTopologyWorldLifecycle({
             conceptsReplaced = true;
           }
         }
-        if (!isFirstBuild && nextIds.size !== prevIds.size) conceptsReplaced = true;
+        if (!isFirstBuild && nextIds.size !== previousIds.size) conceptsReplaced = true;
         for (const id of [...appear.keys()]) if (!nextIds.has(id)) appear.delete(id);
         for (const id of [...bornNodeIdsRef.current]) if (!nextIds.has(id)) bornNodeIdsRef.current.delete(id);
-        prevNodeIdsRef.current = nextIds;
+        previousNodeIdsRef.current = nextIds;
       }
       hasDependsEdgesRef.current = world.edges.some((e) => e.kind === "depends");
       hasContainsEdgesRef.current = world.edges.some((e) => e.kind === "contains");
@@ -386,7 +386,7 @@ export function useTopologyWorldLifecycle({
       homeSpringsRef.current.clear();
       homingActiveRef.current = false;
       homeTargetOverrideRef.current = null;
-      prevPinnedNodeIdRef.current = null;
+      previousPinnedNodeIdRef.current = null;
       live.onVisibleCountChange?.(live.nodes.length);
       live.onGraphStatsChange?.({ nodes: live.nodes.length, relations: live.edges.length });
       if (dataSourceKey !== null && dataSourceKey !== fittedDataSourceKeyRef.current) {

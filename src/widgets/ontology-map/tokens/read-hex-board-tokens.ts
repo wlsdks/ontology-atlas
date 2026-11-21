@@ -162,8 +162,8 @@ export function readHexBoardTokensOrNull(): HexBoardTokens | null {
     const tokens = resolveHexBoardTokens((v) => style.getPropertyValue(v));
     cached = { key, tokens };
     return tokens;
-  } catch (err) {
-    if (err instanceof HexBoardTokenError) console.error("[hex-board]", err.message);
+  } catch (error) {
+    if (error instanceof HexBoardTokenError) console.error("[hex-board]", error.message);
     return null;
   }
 }

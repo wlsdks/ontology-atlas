@@ -54,8 +54,8 @@ afterEach(() => {
 describe('ScreenPane', () => {
   it('draws the catalog rows in D5 order', () => {
     const { container } = renderPane();
-    const ids = [...container.querySelectorAll('[data-setting-id]')].map((el) =>
-      el.getAttribute('data-setting-id'),
+    const ids = [...container.querySelectorAll('[data-setting-id]')].map((element) =>
+      element.getAttribute('data-setting-id'),
     );
     expect(ids).toEqual(SCREEN_CATALOG.map((entry) => entry.id));
     expect(SCREEN_CATALOG.every((entry) => entry.section === 'screen')).toBe(true);

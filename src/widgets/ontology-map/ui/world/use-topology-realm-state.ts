@@ -53,7 +53,7 @@ export function useTopologyRealmState({
   // the point: mounting from a `?realm=slug` deep link gives prev(null) ≠
   // realmRootId(slug), so the first effect fires realm entry and a shared link
   // or an agent reproduces the realm exactly.
-  const prevRealmRootIdRef = useRef<string | null>(null);
+  const previousRealmRootIdRef = useRef<string | null>(null);
 
   /** The node slug the orbit's enter button currently targets; the button's click reads it. */
   const realmEnterTargetRef = useRef<string | null>(null);
@@ -62,7 +62,7 @@ export function useTopologyRealmState({
   const onEnterRealmRef = useRef<typeof onEnterRealm>(onEnterRealm);
 
   /** Orbit button DOM mirror, so the mount-only rAF effect need not depend on the prop ref. */
-  const realmEnterButtonElRef = useRef<HTMLButtonElement | null>(null);
+  const realmEnterButtonElementRef = useRef<HTMLButtonElement | null>(null);
 
 
   // --- Depth parallax (reacts to camera input while a realm is active) ---
@@ -73,7 +73,7 @@ export function useTopologyRealmState({
   const realmParallaxDepth3Ref = useRef<DepthParallaxOffset>(ZERO_PARALLAX);
 
   /** Previous frame's camera centre in world coords, for the parallax delta. null = no earlier sample. */
-  const prevCameraCenterRef = useRef<{ x: number; y: number; } | null>(null);
+  const previousCameraCenterRef = useRef<{ x: number; y: number; } | null>(null);
 
   /**
    * This frame's parallax data (per-band offsets plus depthById). rAF refreshes
@@ -111,8 +111,8 @@ export function useTopologyRealmState({
   const getClusterBarLabels = useCallback(() => clusterBarLabelsRef.current, []);
   return {
     getRealmCaption, getClusterBarLabels, realmTransitionRef, realmDataRef, realmActiveHandedOffRef,
-    wardingFitRef, prevRealmRootIdRef, realmEnterTargetRef, onEnterRealmRef, realmEnterButtonElRef,
-    realmParallaxDepth2Ref, realmParallaxDepth3Ref, prevCameraCenterRef, realmParallaxRef,
+    wardingFitRef, previousRealmRootIdRef, realmEnterTargetRef, onEnterRealmRef, realmEnterButtonElementRef,
+    realmParallaxDepth2Ref, realmParallaxDepth3Ref, previousCameraCenterRef, realmParallaxRef,
     realmTierKindsRef, realmExpandChainRef, clusterBarLabelsRef,
   };
 }

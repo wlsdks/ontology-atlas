@@ -332,7 +332,7 @@ describe("computeDependsBowControlPoint", () => {
   it("the control point is offset from the midpoint along the left normal of the travel direction", () => {
     const c = computeDependsBowControlPoint({ x: 0, y: 0 }, { x: 100, y: 0 }, 92);
     expect(c.x).toBeCloseTo(50, 5);
-    expect(c.y).toBeCloseTo(12, 5); // len*0.12 = 12 < maxBow; left is +y in screen coordinates
+    expect(c.y).toBeCloseTo(12, 5); // vectorLength*0.12 = 12 < maxBow; left is +y in screen coordinates
   });
 
   it("A to B and B to A bow to opposite sides and separate into two arcs", () => {

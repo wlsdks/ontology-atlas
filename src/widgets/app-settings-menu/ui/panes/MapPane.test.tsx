@@ -19,7 +19,7 @@ describe('MapPane', () => {
     const { container } = render(
       <MapPane screenControls={{ indexCollapsed: false, onIndexCollapsedChange: vi.fn() }} />,
     );
-    const anchored = [...container.querySelectorAll('[data-setting-id]')].map((el) => el.getAttribute('data-setting-id'));
+    const anchored = [...container.querySelectorAll('[data-setting-id]')].map((element) => element.getAttribute('data-setting-id'));
     expect(anchored).toEqual(MAP_CATALOG.map((entry) => entry.id));
   });
 

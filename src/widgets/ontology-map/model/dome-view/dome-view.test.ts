@@ -325,15 +325,15 @@ describe("dome-view in-plane unprojection, the coordinate contract of 3D node dr
     const sp = Math.sin(pitch);
     const uyHorizon = (-DOME_FOCAL * sp) / cp;
     const wyHorizon = model.centerY + uyHorizon * model.unit;
-    let prev: { px: number; pz: number } | null = null;
+    let previousValue: { px: number; pz: number } | null = null;
     for (let dwy = 40; dwy >= -40; dwy -= 1) {
       const solved = solveDomePlanePoint(model, DOME_PLANE.domain.y, model.centerX + 50, wyHorizon + dwy * model.unit, 0.55, pitch);
       expect(solved).not.toBeNull();
-      if (prev !== null) {
-        const jump = Math.hypot(solved!.px - prev.px, solved!.pz - prev.pz);
+      if (previousValue !== null) {
+        const jump = Math.hypot(solved!.px - previousValue.px, solved!.pz - previousValue.pz);
         expect(jump, `dwy=${dwy}`).toBeLessThan(DOME_PLANE.element.r * 1.5);
       }
-      prev = solved;
+      previousValue = solved;
     }
   });
 });
@@ -506,11 +506,11 @@ describe("far-side detail ramp folds only the extra strokes of the back hemisphe
     expect(domeDetailFactor(DOME_DETAIL_FADE_END)).toBe(0);
     expect(domeDetailFactor(1)).toBe(0);
     expect(domeDetailFactor((DOME_DETAIL_FADE_START + DOME_DETAIL_FADE_END) / 2)).toBeCloseTo(0.5, 9);
-    let prev = domeDetailFactor(DOME_DETAIL_FADE_START);
+    let previousValue = domeDetailFactor(DOME_DETAIL_FADE_START);
     for (let u = DOME_DETAIL_FADE_START; u <= DOME_DETAIL_FADE_END; u += 0.005) {
       const cur = domeDetailFactor(u);
-      expect(cur).toBeLessThanOrEqual(prev + 1e-12);
-      prev = cur;
+      expect(cur).toBeLessThanOrEqual(previousValue + 1e-12);
+      previousValue = cur;
     }
   });
 });
@@ -881,11 +881,11 @@ describe("coupling cloud lets relations decide positions", () => {
   it("is deterministic: the same input gives the same bytes (no randomness)", () => {
     const a = buildDomeModel(nodes, { arrangement: "coupling", edges });
     const b = buildDomeModel(nodes, { arrangement: "coupling", edges });
-    for (const [id, ca] of a.coords) {
-      const cb = b.coords.get(id)!;
-      expect(cb.px).toBe(ca.px);
-      expect(cb.py).toBe(ca.py);
-      expect(cb.pz).toBe(ca.pz);
+    for (const [id, coordsA] of a.coords) {
+      const coordsB = b.coords.get(id)!;
+      expect(coordsB.px).toBe(coordsA.px);
+      expect(coordsB.py).toBe(coordsA.py);
+      expect(coordsB.pz).toBe(coordsA.pz);
     }
   });
 

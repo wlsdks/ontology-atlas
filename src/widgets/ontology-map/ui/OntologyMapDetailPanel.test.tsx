@@ -82,7 +82,7 @@ const labels = {
 
 const FILLED = "--map-panel-primary-surface";
 const filledControls = () =>
-  [...screen.getByTestId("map-detail-panel").querySelectorAll("a, button")].filter((el) => el.className.includes(FILLED));
+  [...screen.getByTestId("map-detail-panel").querySelectorAll("a, button")].filter((element) => element.className.includes(FILLED));
 const noReview: ConceptReview = { raised: null, changedSinceReview: false, unverifiable: false, reviewedOn: null };
 
 function renderPanel(
@@ -801,10 +801,10 @@ describe("OntologyMapDetailPanel: footer slug", () => {
         onClose={() => {}}
       />,
     );
-    const slugEl = screen.getByTestId("map-detail-panel-slug");
-    expect(slugEl).toHaveTextContent("mcp-server");
-    expect(slugEl.textContent).not.toContain("ontology/capabilities");
-    expect(slugEl).toHaveAttribute("title", "ontology/capabilities/mcp-server");
+    const slugElement = screen.getByTestId("map-detail-panel-slug");
+    expect(slugElement).toHaveTextContent("mcp-server");
+    expect(slugElement.textContent).not.toContain("ontology/capabilities");
+    expect(slugElement).toHaveAttribute("title", "ontology/capabilities/mcp-server");
   });
 
   it("keeps the slug for a project, the handle an agent takes", () => {

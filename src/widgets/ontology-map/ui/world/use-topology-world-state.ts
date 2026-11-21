@@ -47,7 +47,7 @@ export function useTopologyWorldState() {
   const dragVelRef = useRef<{ x: number; y: number; }>({ x: 0, y: 0 });
 
   /** The dragged node's position last frame, for the velocity above. */
-  const dragPrevPosRef = useRef<{ x: number; y: number; } | null>(null);
+  const dragPreviousPosRef = useRef<{ x: number; y: number; } | null>(null);
 
   /** True once this release's drop has been seeded, so it is seeded exactly once. */
   const dropSeededRef = useRef(false);
@@ -66,9 +66,9 @@ export function useTopologyWorldState() {
    * update to them (`recomputeWorldGeometry(world, tokens, movedIds)`). Measured, not inferred: force application, neighbour tug and separation relaxation write coordinates in one
    * frame and inference eventually misses one, detaching edges from nodes.
    */
-  const geomPrevXRef = useRef<Float64Array | null>(null);
+  const geomPreviousXRef = useRef<Float64Array | null>(null);
 
-  const geomPrevYRef = useRef<Float64Array | null>(null);
+  const geomPreviousYRef = useRef<Float64Array | null>(null);
 
   /**
    * Nodes that separation relaxation displaced last frame and that sit outside the force-applied set: this frame's `applyForcePositions` reverts their coordinates to the sim values,
@@ -89,11 +89,11 @@ export function useTopologyWorldState() {
   const homeTargetOverrideRef = useRef<ReadonlyMap<string, { x: number; y: number; }> | null>(null);
 
   /** Previous frame's pin-dragged node id, to detect the release transition. */
-  const prevPinnedNodeIdRef = useRef<string | null>(null);
+  const previousPinnedNodeIdRef = useRef<string | null>(null);
   return {
     worldRef, simRef, heatRef, nodeDragRef, activeTouchesRef, pinchRef, dragAffectedSetRef, dragStartPosRef,
-    dragTugOffsetsRef, dragVelRef, dragPrevPosRef, dropSeededRef, hoverStartRef, hoverReleasedRef,
-    geomPrevXRef, geomPrevYRef, sepDisplacedIdsRef, homeSpringsRef, homingActiveRef, homeTargetOverrideRef,
-    prevPinnedNodeIdRef,
+    dragTugOffsetsRef, dragVelRef, dragPreviousPosRef, dropSeededRef, hoverStartRef, hoverReleasedRef,
+    geomPreviousXRef, geomPreviousYRef, sepDisplacedIdsRef, homeSpringsRef, homingActiveRef, homeTargetOverrideRef,
+    previousPinnedNodeIdRef,
   };
 }

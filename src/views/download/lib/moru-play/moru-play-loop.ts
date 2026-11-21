@@ -128,7 +128,7 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
   let round: Round | null = null;
   let ending: { at: number; reason: EndReason } | null = null;
   let mover: Mover = { x: 0, v: 0, facing: 1 };
-  let prevX = 0;
+  let previousX = 0;
   let target: number | undefined;
   let keys = { left: false, right: false };
   let motion: 'idle' | 'bounce' | 'settle' = 'idle', motionStart = 0;
@@ -382,7 +382,7 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
     }
 
     const endFade = ending ? 1 - smooth((clock - ending.at) / 400) : 1;
-    const x = prevX + (mover.x - prevX) * alpha;
+    const x = previousX + (mover.x - previousX) * alpha;
     if (round) {
       for (const item of round.items) {
         const ix = item.px + (item.x - item.px) * alpha;
@@ -517,7 +517,7 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
   function fixedStep() {
     const min = half(), max = Math.max(half(), width - half());
     const direction = ((keys.right ? 1 : 0) - (keys.left ? 1 : 0)) as -1 | 0 | 1;
-    prevX = mover.x;
+    previousX = mover.x;
     mover = steer(mover, STEP_MS, direction !== 0 ? { direction } : { target }, min, max, topSpeed(width));
     if (phase === 'playing' && round && !ending) {
       for (const event of stepRound(round, STEP_MS, { width, floor, scale }, mover.x)) {
@@ -598,7 +598,7 @@ export function createGame(nodes: GameNodes, options: GameOptions) {
     canvas.style.height = `${height}px`;
     const x = Math.min(Math.max(half(), first ? width / 2 : mover.x), Math.max(half(), width - half()));
     mover = { ...mover, x };
-    prevX = x;
+    previousX = x;
     sky = paintSky(width, height) ?? sky;
     draw(1);
   };

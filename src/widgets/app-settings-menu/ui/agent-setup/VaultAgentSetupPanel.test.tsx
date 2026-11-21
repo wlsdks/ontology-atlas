@@ -1325,8 +1325,8 @@ describe('VaultAgentSetupPanel', () => {
     const rows = screen.getByTestId('agent-setup-steps');
     // Render order is derived from `AGENT_CLIENTS`: change the array order and the rows follow.
     expect(
-      [...rows.querySelectorAll("[data-testid^='agent-setup-row-']")].map((el) =>
-        el.getAttribute('data-testid'),
+      [...rows.querySelectorAll("[data-testid^='agent-setup-row-']")].map((element) =>
+        element.getAttribute('data-testid'),
       ),
     ).toEqual(AGENT_CLIENTS.map((client) => `agent-setup-row-${client.id}`));
     expect(within(rows).getByTestId('agent-setup-row-claude-code')).toHaveTextContent('.mcp.json');
@@ -1369,12 +1369,12 @@ describe('VaultAgentSetupPanel', () => {
 
     // Matched on the count's shape, so the catalogue can be reworded.
     const countShape = /\d+\/\d+개 준비됨/;
-    const saidTheCount = [...dialog.querySelectorAll('p, span')].filter((el) =>
-      countShape.test(el.textContent ?? ''),
+    const saidTheCount = [...dialog.querySelectorAll('p, span')].filter((element) =>
+      countShape.test(element.textContent ?? ''),
     );
     // Ancestors repeat a descendant's text, so the deepest element carrying it is the count.
     const owners = saidTheCount.filter(
-      (el) => !saidTheCount.some((other) => other !== el && el.contains(other)),
+      (element) => !saidTheCount.some((other) => other !== element && element.contains(other)),
     );
     expect(owners).toHaveLength(1);
   });

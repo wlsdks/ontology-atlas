@@ -255,10 +255,10 @@ export function OntologyTreeMap({
     if (!wrap) return;
     const read = () => {
       const r = wrap.getBoundingClientRect();
-      setSize((prev) => (prev && prev.width === r.width && prev.height === r.height ? prev : { width: r.width, height: r.height }));
+      setSize((previous) => (previous && previous.width === r.width && previous.height === r.height ? previous : { width: r.width, height: r.height }));
       const footer = footerRef.current?.getBoundingClientRect();
       const next = readTreeFreeArea(canvasRef.current, wrap, footer ? footer.top - r.top : null);
-      setFree((prev) => (sameRect(prev, next) ? prev : next));
+      setFree((previous) => (sameRect(previous, next) ? previous : next));
     };
     read();
     let settle: number | null = null;
@@ -440,17 +440,17 @@ export function OntologyTreeMap({
 }
 
 /** Writes each listed concept's drawn mark and name box, and under `?e2e` the frame record. O(listed + marks + names). */
-function writeTreeMirror(listEl: HTMLUListElement | null, canvas: HTMLCanvasElement | null, model: TreeModel, drawn: TreeDrawList, placed: TreeNamePlacement): void {
+function writeTreeMirror(listElement: HTMLUListElement | null, canvas: HTMLCanvasElement | null, model: TreeModel, drawn: TreeDrawList, placed: TreeNamePlacement): void {
   const markOf = new Map<number, number>();
   for (let i = 0; i < drawn.count; i += 1) markOf.set(drawn.marks[i]!.node, i);
   const boxOf = new Map<number, number>();
   for (let i = 0; i < placed.count; i += 1) boxOf.set(placed.boxes[i]!.node, i);
-  for (const el of listEl?.querySelectorAll<HTMLElement>("[data-tree-id]") ?? []) {
-    const node = model.indexOf.get(el.dataset.treeId!) ?? -1;
+  for (const htmlElement of listElement?.querySelectorAll<HTMLElement>("[data-tree-id]") ?? []) {
+    const node = model.indexOf.get(htmlElement.dataset.treeId!) ?? -1;
     const mark = markOf.has(node) ? drawn.marks[markOf.get(node)!]! : null;
-    el.dataset.mark = mark ? `${Math.round(mark.x)},${Math.round(mark.y)},${Math.round(mark.radius)}` : "";
+    htmlElement.dataset.mark = mark ? `${Math.round(mark.x)},${Math.round(mark.y)},${Math.round(mark.radius)}` : "";
     const box = boxOf.has(node) ? placed.boxes[boxOf.get(node)!]! : null;
-    el.dataset.nameBox = box ? `${Math.round(box.x)},${Math.round(box.y)},${Math.round(box.width)},${Math.round(box.height)}` : "";
+    htmlElement.dataset.nameBox = box ? `${Math.round(box.x)},${Math.round(box.y)},${Math.round(box.width)},${Math.round(box.height)}` : "";
   }
   if (canvas && new URLSearchParams(window.location.search).has("e2e")) {
     canvas.dataset.frame = JSON.stringify({ marks: drawn.count, visited: drawn.visited, folded: drawn.folded, names: placed.count, dropped: placed.dropped });

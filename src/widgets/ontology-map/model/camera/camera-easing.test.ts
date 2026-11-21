@@ -81,11 +81,11 @@ describe("easeInOutCubic", () => {
   });
 
   it("is monotonic non-decreasing across the interval", () => {
-    let prev = -Infinity;
+    let previous = -Infinity;
     for (let t = 0; t <= 1.0001; t += 0.05) {
       const v = easeInOutCubic(t);
-      expect(v).toBeGreaterThanOrEqual(prev);
-      prev = v;
+      expect(v).toBeGreaterThanOrEqual(previous);
+      previous = v;
     }
   });
 });
@@ -167,20 +167,20 @@ function opticalFlowSpread(
   path: (p: number) => CameraKeyframe,
   steps = 40,
 ): { min: number; max: number; ratio: number } {
-  let prev = path(0);
+  let previous = path(0);
   const flow: number[] = [];
   for (let i = 1; i <= steps; i += 1) {
     const now = path(i / steps);
-    const du = Math.hypot(now.x - prev.x, now.y - prev.y);
-    const w = (VIEW_W / prev.scale + VIEW_W / now.scale) / 2;
-    const dlnw = Math.abs(Math.log(prev.scale / now.scale));
+    const du = Math.hypot(now.x - previous.x, now.y - previous.y);
+    const w = (VIEW_W / previous.scale + VIEW_W / now.scale) / 2;
+    const dlnw = Math.abs(Math.log(previous.scale / now.scale));
     /*
      * The paper's metric: with u'(s)/w(s) = sech(ρs+r₀)/ρ and w'(s)/w(s) =
      * −ρ·tanh(ρs+r₀), `ρ²(u'/w)² + (w'/w)²/ρ² = sech² + tanh² = 1`. Travel alone (du/w) or
      * ρ applied the other way is not constant along the path and would draw the wrong conclusion.
      */
     flow.push(Math.hypot((VAN_WIJK_RHO * du) / w, dlnw / VAN_WIJK_RHO));
-    prev = now;
+    previous = now;
   }
   const min = Math.min(...flow);
   const max = Math.max(...flow);

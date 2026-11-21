@@ -335,10 +335,10 @@ function addRibbon(ctx: CanvasRenderingContext2D, slot: number, share: number): 
       const b = base + Math.min(n - 1, i + 1);
       const tx = polyX[b]! - polyX[a]!;
       const ty = polyY[b]! - polyY[a]!;
-      const len = Math.hypot(tx, ty) || 1;
+      const length = Math.hypot(tx, ty) || 1;
       const half = ((pass === 0 ? 1 : -1) * polyW[base + i]! * share) / 2;
-      const x = polyX[base + i]! - (ty / len) * half;
-      const y = polyY[base + i]! + (tx / len) * half;
+      const x = polyX[base + i]! - (ty / length) * half;
+      const y = polyY[base + i]! + (tx / length) * half;
       if (pass === 0 && k === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
@@ -582,10 +582,10 @@ function collectArcs(frame: TreeFrameInput, focusAt: number, budget: number): nu
 function addArc(ctx: CanvasRenderingContext2D, a: TreeDrawMark, b: TreeDrawMark, tokens: TreeTokens): void {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
-  const len = Math.hypot(dx, dy) || 1;
+  const length = Math.hypot(dx, dy) || 1;
   const side = dx >= 0 ? 1 : -1;
-  const cx = (a.x + b.x) / 2 + (dy / len) * len * tokens.paint.arcBow * side;
-  const cy = (a.y + b.y) / 2 - (dx / len) * len * tokens.paint.arcBow * side;
+  const cx = (a.x + b.x) / 2 + (dy / length) * length * tokens.paint.arcBow * side;
+  const cy = (a.y + b.y) / 2 - (dx / length) * length * tokens.paint.arcBow * side;
   const ra = outerRadius(a, tokens) + tokens.paint.arcGapPx;
   const rb = outerRadius(b, tokens) + tokens.paint.arcGapPx;
   const la = Math.hypot(cx - a.x, cy - a.y) || 1;

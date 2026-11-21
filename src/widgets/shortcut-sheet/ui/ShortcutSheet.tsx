@@ -324,7 +324,7 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
       if (event.key !== "Tab") return;
       const items = Array.from(
         dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-      ).filter((el) => !el.hasAttribute("disabled"));
+      ).filter((htmlElement) => !htmlElement.hasAttribute("disabled"));
       if (items.length === 0) return;
       const first = items[0];
       const last = items[items.length - 1];
@@ -490,11 +490,11 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
                       {t(`sections.${section.titleKey}`)}
                     </p>
                     <dl className="mt-3 space-y-2.5">
-                      {section.rows.map((row, rowIdx) => (
+                      {section.rows.map((row, rowIndex) => (
                         <div
                           // Aliased shortcuts can share a label within a section, so the index is
                           // part of the key.
-                          key={`${section.titleKey}-${rowIdx}-${row.labelKey}`}
+                          key={`${section.titleKey}-${rowIndex}-${row.labelKey}`}
                           className="flex items-center justify-between gap-4"
                         >
                           <dt className="text-body text-[color:var(--color-text-secondary)]">

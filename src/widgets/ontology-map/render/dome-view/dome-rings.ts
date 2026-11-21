@@ -44,8 +44,8 @@ export function draw(ctx: CanvasRenderingContext2D, state: DomeRingsDrawState, t
   const { rings, baseAlpha, baseWidthPx, fog, widthFactor } = state;
   if (rings.length === 0) return;
 
-  const prevAlpha = ctx.globalAlpha;
-  const prevCap = ctx.lineCap;
+  const previousAlpha = ctx.globalAlpha;
+  const previousCap = ctx.lineCap;
   ctx.strokeStyle = tokens.stroke;
   ctx.lineCap = "butt";
   ctx.setLineDash([]);
@@ -76,6 +76,6 @@ export function draw(ctx: CanvasRenderingContext2D, state: DomeRingsDrawState, t
     }
   }
 
-  ctx.globalAlpha = prevAlpha;
-  ctx.lineCap = prevCap;
+  ctx.globalAlpha = previousAlpha;
+  ctx.lineCap = previousCap;
 }

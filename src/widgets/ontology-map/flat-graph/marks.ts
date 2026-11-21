@@ -139,7 +139,7 @@ function domainStarReach(layout: FlatGraphLayout, domainId: string): number {
       };
       for (const it of c.items) {
         reachTo(it.id);
-        for (const el of it.elementIds) reachTo(el);
+        for (const elementId of it.elementIds) reachTo(elementId);
       }
       byDomain.set(c.domainId, reach);
     }

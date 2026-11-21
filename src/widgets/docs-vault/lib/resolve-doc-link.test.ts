@@ -8,7 +8,7 @@ import {
 
 const vault = new Set(['README', 'ontology/project', 'ontology/README', 'guides/setup']);
 
-const serverCfg = {
+const serverConfig = {
   repoBlobBase: ONTOLOGY_ATLAS_REPO_BLOB_BASE,
   vaultRepoRoot: DOCS_VAULT_REPO_ROOT,
 };
@@ -20,7 +20,7 @@ describe('resolveDocLink', () => {
         href: './README.md',
         fromSlug: 'ontology/project',
         vaultSlugs: vault,
-        ...serverCfg,
+        ...serverConfig,
       }),
     ).toEqual({ kind: 'internal', slug: 'ontology/README', anchor: undefined });
     // Anchor preserved
@@ -29,7 +29,7 @@ describe('resolveDocLink', () => {
         href: '../guides/setup.md#install',
         fromSlug: 'ontology/project',
         vaultSlugs: vault,
-        ...serverCfg,
+        ...serverConfig,
       }),
     ).toEqual({ kind: 'internal', slug: 'guides/setup', anchor: 'install' });
   });
@@ -41,7 +41,7 @@ describe('resolveDocLink', () => {
         href: '../mcp/README.md',
         fromSlug: 'README',
         vaultSlugs: vault,
-        ...serverCfg,
+        ...serverConfig,
       }),
     ).toEqual({
       kind: 'external',
@@ -53,7 +53,7 @@ describe('resolveDocLink', () => {
         href: '../mcp/README.md#tools',
         fromSlug: 'README',
         vaultSlugs: vault,
-        ...serverCfg,
+        ...serverConfig,
       }),
     ).toEqual({
       kind: 'external',
@@ -68,7 +68,7 @@ describe('resolveDocLink', () => {
         href: '../../cli/README.md',
         fromSlug: 'ontology/project',
         vaultSlugs: vault,
-        ...serverCfg,
+        ...serverConfig,
       }),
     ).toEqual({
       kind: 'external',
@@ -82,7 +82,7 @@ describe('resolveDocLink', () => {
         href: 'https://example.com/x.md',
         fromSlug: 'README',
         vaultSlugs: vault,
-        ...serverCfg,
+        ...serverConfig,
       }),
     ).toEqual({ kind: 'passthrough' });
     expect(
@@ -90,7 +90,7 @@ describe('resolveDocLink', () => {
         href: '#section',
         fromSlug: 'README',
         vaultSlugs: vault,
-        ...serverCfg,
+        ...serverConfig,
       }),
     ).toEqual({ kind: 'passthrough' });
     expect(
@@ -98,7 +98,7 @@ describe('resolveDocLink', () => {
         href: '../assets/logo.png',
         fromSlug: 'README',
         vaultSlugs: vault,
-        ...serverCfg,
+        ...serverConfig,
       }),
     ).toEqual({ kind: 'passthrough' });
   });
@@ -127,7 +127,7 @@ describe('resolveDocLink', () => {
         href: './missing-doc.md',
         fromSlug: 'README',
         vaultSlugs: vault,
-        ...serverCfg,
+        ...serverConfig,
       }),
     ).toEqual({
       kind: 'external',

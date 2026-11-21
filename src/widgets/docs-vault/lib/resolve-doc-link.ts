@@ -27,9 +27,9 @@ export interface ResolveDocLinkParams {
   vaultRepoRoot?: string;
 }
 
-function collapsePath(pathStr: string): string {
+function collapsePath(pathText: string): string {
   const out: string[] = [];
-  for (const seg of pathStr.split('/')) {
+  for (const seg of pathText.split('/')) {
     if (seg === '' || seg === '.') continue;
     if (seg === '..') {
       if (out.length > 0 && out[out.length - 1] !== '..') out.pop();

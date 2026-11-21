@@ -73,9 +73,9 @@ export function smooth(ctx: CanvasRenderingContext2D, pts: readonly Point[], R: 
 }
 
 export function notch(ctx: CanvasRenderingContext2D, tip: Point, centre: Point, R: number, RI: number, color: string, edge: string) {
-  const len = Math.hypot(tip.x - centre.x, tip.y - centre.y) || 1;
-  const ux = (tip.x - centre.x) / len;
-  const uy = (tip.y - centre.y) / len;
+  const length = Math.hypot(tip.x - centre.x, tip.y - centre.y) || 1;
+  const ux = (tip.x - centre.x) / length;
+  const uy = (tip.y - centre.y) / length;
   const t0 = (RI * Math.sqrt(3)) / 2 - 1.5;
   const base = (R * Math.sqrt(3)) / 2 + (R >= 28 ? 4 : 2);
   const hw = R >= 44 ? 5 : R >= 28 ? 3.5 : 2.2;
@@ -95,9 +95,9 @@ export function notch(ctx: CanvasRenderingContext2D, tip: Point, centre: Point, 
 export function stubHead(ctx: CanvasRenderingContext2D, tip: Point, centre: Point, R: number, color: string) {
   const dx = centre.x - tip.x;
   const dy = centre.y - tip.y;
-  const len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len;
-  const uy = dy / len;
+  const length = Math.hypot(dx, dy) || 1;
+  const ux = dx / length;
+  const uy = dy / length;
   const size = R >= 44 ? 9 : R >= 28 ? 7 : 5;
   ctx.beginPath();
   ctx.moveTo(tip.x - ux * size - uy * size * 0.6, tip.y - uy * size + ux * size * 0.6);

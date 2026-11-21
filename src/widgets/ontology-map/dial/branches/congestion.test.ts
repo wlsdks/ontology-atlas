@@ -76,24 +76,24 @@ interface FrameOptions { width: number; indexOpen: boolean; zoom?: number; focus
   pose?: { x: number; y: number; scale: number; height: number; free: Box; more: boolean };
 }
 
-function frame({ model, labelOf }: ReturnType<typeof load>, opts: FrameOptions) {
+function frame({ model, labelOf }: ReturnType<typeof load>, options: FrameOptions) {
   const scene = layoutDial(model, circularDomainOrder(model, null).order, TOKENS, null);
-  const free: Box = opts.pose?.free ?? { minX: 8 + (opts.indexOpen ? INDEX_PX : 0), minY: 70, maxX: opts.width - 64, maxY: VIEW_H - 36 };
-  const height = opts.pose?.height ?? VIEW_H;
-  if (opts.pose?.more) applyBranchMemberAction(scene, { type: "branch-members", domainId: opts.focusDomain!, direction: "more" }, 0);
+  const free: Box = options.pose?.free ?? { minX: 8 + (options.indexOpen ? INDEX_PX : 0), minY: 70, maxX: options.width - 64, maxY: VIEW_H - 36 };
+  const height = options.pose?.height ?? VIEW_H;
+  if (options.pose?.more) applyBranchMemberAction(scene, { type: "branch-members", domainId: options.focusDomain!, direction: "more" }, 0);
   const pad = dialOverviewPad(scene, model, LABELS, measure, TOKENS);
   const e = scene.extent;
   const fit = Math.min(
     (free.maxX - free.minX - pad.left - pad.right) / (e.maxX - e.minX),
     (free.maxY - free.minY - pad.top - pad.bottom) / (e.maxY - e.minY),
   );
-  const scale = opts.pose?.scale ?? fit * (opts.zoom ?? 1);
-  const focusId = opts.focusNode ?? opts.focusDomain ?? null;
-  const focus = focusId && opts.recenter !== false ? scene.positions.get(focusId)! : null;
-  const cx = opts.pose?.x ?? (focus ? focus.x : (e.minX + e.maxX) / 2 + (pad.right - pad.left) / 2 / scale);
-  const cy = opts.pose?.y ?? (focus ? focus.y : (e.minY + e.maxY) / 2 + (pad.bottom - pad.top) / 2 / scale);
-  const sx = opts.pose ? opts.width / 2 : (free.minX + free.maxX) / 2;
-  const sy = opts.pose ? height / 2 : (free.minY + free.maxY) / 2;
+  const scale = options.pose?.scale ?? fit * (options.zoom ?? 1);
+  const focusId = options.focusNode ?? options.focusDomain ?? null;
+  const focus = focusId && options.recenter !== false ? scene.positions.get(focusId)! : null;
+  const cx = options.pose?.x ?? (focus ? focus.x : (e.minX + e.maxX) / 2 + (pad.right - pad.left) / 2 / scale);
+  const cy = options.pose?.y ?? (focus ? focus.y : (e.minY + e.maxY) / 2 + (pad.bottom - pad.top) / 2 / scale);
+  const sx = options.pose ? options.width / 2 : (free.minX + free.maxX) / 2;
+  const sy = options.pose ? height / 2 : (free.minY + free.maxY) / 2;
   const toScreen = (x: number, y: number): Point => ({ x: sx + (x - cx) * scale, y: sy + (y - cy) * scale });
   const nodeScreen = (id: string) => {
     const p = scene.positions.get(id);
@@ -105,11 +105,11 @@ function frame({ model, labelOf }: ReturnType<typeof load>, opts: FrameOptions) 
   const result = buildDialMarks({
     model, scene, tokens: TOKENS, mapTokens: MAP, inks: resolveDialInks(MAP, TOKENS), labels: LABELS, evidence: null,
     attention, inkAttention: attention, previous: null, inkMix: 1, chordPresence: 1,
-    scale, zoomRatio: opts.zoom ?? 1, viewportWidth: opts.width, viewportHeight: height, freeRect: free,
+    scale, zoomRatio: options.zoom ?? 1, viewportWidth: options.width, viewportHeight: height, freeRect: free,
     nodeScreen, toScreen, appearOf: () => 1, measureText: measure, elementLabel: (id) => labelOf.get(id) ?? null,
     focusedNodeId: focusId, hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
-    hubLines: opts.pose ? ["Evidence not measured"] : undefined, reducedMotion: true,
-    disclosure: resolveDialDisclosure(model, scene, { scale, viewportWidth: opts.width, viewportHeight: height, toScreen }, free, attention, TOKENS),
+    hubLines: options.pose ? ["Evidence not measured"] : undefined, reducedMotion: true,
+    disclosure: resolveDialDisclosure(model, scene, { scale, viewportWidth: options.width, viewportHeight: height, toScreen }, free, attention, TOKENS),
   }, marks);
   return { scene, flows: result.flows, picks: result.picks, rows: result.rows, marks, lines: sampleStrips(marks.strips), texts: marks.texts, scale, fit, free, nodeScreen };
 }

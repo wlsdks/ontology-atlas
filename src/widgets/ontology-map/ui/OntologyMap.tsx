@@ -191,7 +191,7 @@ export interface OntologyMapProps {
   onToggleCluster?: (parentId: string) => void;
   /** The cluster chip hover tooltip (fires on an identity change; null clears it). */
   onHoverCluster?: (
-    info: {
+    cluster: {
       parentId: string;
   /** Direct gated children collapsed at this tier (the chip's `+N`). */
       count: number;

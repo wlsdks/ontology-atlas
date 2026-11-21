@@ -255,9 +255,9 @@ describe("resolveOntologyMapTokens", () => {
     try {
       resolveOntologyMapTokens(reader);
       throw new Error("expected resolveOntologyMapTokens to throw");
-    } catch (err) {
-      expect(err).toBeInstanceOf(OntologyMapTokenError);
-      const tokenErr = err as OntologyMapTokenError;
+    } catch (error) {
+      expect(error).toBeInstanceOf(OntologyMapTokenError);
+      const tokenErr = error as OntologyMapTokenError;
       expect(tokenErr.missing).toContain("--map-indigo");
       expect(tokenErr.missing).toContain("--map-radius-project");
     }

@@ -81,17 +81,17 @@ const measure = createMeasureText();
 
 interface FrameOptions { width: number; indexOpen: boolean; zoom?: number; focusDomain?: string; focusNode?: string }
 
-function frame({ model, labelOf }: ReturnType<typeof load>, opts: FrameOptions) {
+function frame({ model, labelOf }: ReturnType<typeof load>, options: FrameOptions) {
   const scene = layoutDial(model, circularDomainOrder(model, null).order, TOKENS, null);
-  const free: Box = { minX: 8 + (opts.indexOpen ? INDEX_PX : 0), minY: 70, maxX: opts.width - 64, maxY: VIEW_H - 36 };
+  const free: Box = { minX: 8 + (options.indexOpen ? INDEX_PX : 0), minY: 70, maxX: options.width - 64, maxY: VIEW_H - 36 };
   const pad = dialOverviewPad(scene, model, LABELS, measure, TOKENS);
   const e = scene.extent;
   const fit = Math.min(
     (free.maxX - free.minX - pad.left - pad.right) / (e.maxX - e.minX),
     (free.maxY - free.minY - pad.top - pad.bottom) / (e.maxY - e.minY),
   );
-  const scale = fit * (opts.zoom ?? 1);
-  const focusId = opts.focusNode ?? opts.focusDomain ?? null;
+  const scale = fit * (options.zoom ?? 1);
+  const focusId = options.focusNode ?? options.focusDomain ?? null;
   const focus = focusId ? scene.positions.get(focusId)! : null;
   const cx = focus ? focus.x : (e.minX + e.maxX) / 2 + (pad.right - pad.left) / 2 / scale;
   const cy = focus ? focus.y : (e.minY + e.maxY) / 2 + (pad.bottom - pad.top) / 2 / scale;
@@ -108,10 +108,10 @@ function frame({ model, labelOf }: ReturnType<typeof load>, opts: FrameOptions) 
   const result = buildDialMarks({
     model, scene, tokens: TOKENS, mapTokens: MAP, inks: resolveDialInks(MAP, TOKENS), labels: LABELS, evidence: null,
     attention, inkAttention: attention, previous: null, inkMix: 1, chordPresence: 1,
-    scale, zoomRatio: opts.zoom ?? 1, viewportWidth: opts.width, viewportHeight: VIEW_H, freeRect: free,
+    scale, zoomRatio: options.zoom ?? 1, viewportWidth: options.width, viewportHeight: VIEW_H, freeRect: free,
     nodeScreen, toScreen, appearOf: () => 1, measureText: measure, elementLabel: (id) => labelOf.get(id) ?? null,
     focusedNodeId: focusId, hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
-    disclosure: resolveDialDisclosure(model, scene, { scale, viewportWidth: opts.width, viewportHeight: VIEW_H, toScreen }, free, attention, TOKENS),
+    disclosure: resolveDialDisclosure(model, scene, { scale, viewportWidth: options.width, viewportHeight: VIEW_H, toScreen }, free, attention, TOKENS),
   }, marks);
   return { scene, flows: result.flows, picks: result.picks, lines: sampleStrips(marks.strips), texts: marks.texts, scale, fit, free };
 }

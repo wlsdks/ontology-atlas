@@ -246,8 +246,8 @@ function layoutLedger(
     rows.push({ id: disc.id, text: disc.label, x: colX, y, box: rowBox(widths.get(disc.id)!, y) });
     const dx = anchorX - disc.x;
     const dy = y - disc.y;
-    const len = Math.hypot(dx, dy) || 1;
-    leaders.push({ id: disc.id, x0: disc.x + (dx / len) * disc.r, y0: disc.y + (dy / len) * disc.r, x1: anchorX, y1: y });
+    const length = Math.hypot(dx, dy) || 1;
+    leaders.push({ id: disc.id, x0: disc.x + (dx / length) * disc.r, y0: disc.y + (dy / length) * disc.r, x1: anchorX, y1: y });
   });
   const moreRow = moreText
     ? { count: more, row: { id: input.domainId, text: moreText, x: colX, y: slotY(order.length), box: rowBox(input.measureText(moreText, input.font), slotY(order.length)) } }

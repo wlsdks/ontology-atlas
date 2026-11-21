@@ -72,10 +72,10 @@ export function DocsQuickDrawer({
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={{ left: 0, right: 0.4 }}
             dragMomentum={false}
-            onDragEnd={(_, info) => {
+            onDragEnd={(_, panInfo) => {
               if (
-                info.offset.x > SWIPE_DISMISS_OFFSET_PX ||
-                info.velocity.x > SWIPE_DISMISS_VELOCITY_PX_PER_SECOND
+                panInfo.offset.x > SWIPE_DISMISS_OFFSET_PX ||
+                panInfo.velocity.x > SWIPE_DISMISS_VELOCITY_PX_PER_SECOND
               ) {
                 onClose();
               }

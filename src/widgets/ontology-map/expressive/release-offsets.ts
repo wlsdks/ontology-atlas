@@ -31,20 +31,20 @@ export function springForDegree(degree: number, tokens: MassTokens): SpringRespo
 
 /** Live drag: ease toward the target on the exponential, recording velocity by finite difference so a release starts continuous. */
 export function stepLagOffset(
-  prev: Readonly<SpringOffset>,
+  previous: Readonly<SpringOffset>,
   targetX: number,
   targetY: number,
   dt: number,
   tau: number,
 ): SpringOffset {
-  const x = stepTugAxis(prev.x, targetX, dt, tau);
-  const y = stepTugAxis(prev.y, targetY, dt, tau);
-  return { x, y, vx: dt > 0 ? (x - prev.x) / dt : 0, vy: dt > 0 ? (y - prev.y) / dt : 0 };
+  const x = stepTugAxis(previous.x, targetX, dt, tau);
+  const y = stepTugAxis(previous.y, targetY, dt, tau);
+  return { x, y, vx: dt > 0 ? (x - previous.x) / dt : 0, vy: dt > 0 ? (y - previous.y) / dt : 0 };
 }
 
-export function stepHomeOffset(prev: Readonly<SpringOffset>, dt: number, spring: SpringResponse): SpringOffset {
-  const sx = stepDampedSpring(prev.x, prev.vx, 0, dt, spring);
-  const sy = stepDampedSpring(prev.y, prev.vy, 0, dt, spring);
+export function stepHomeOffset(previous: Readonly<SpringOffset>, dt: number, spring: SpringResponse): SpringOffset {
+  const sx = stepDampedSpring(previous.x, previous.vx, 0, dt, spring);
+  const sy = stepDampedSpring(previous.y, previous.vy, 0, dt, spring);
   return { x: sx.value, y: sy.value, vx: sx.velocity, vy: sy.velocity };
 }
 
@@ -77,12 +77,12 @@ export function orphanedOffsetIds(
 }
 
 export function smoothVelocity(
-  prev: Readonly<{ x: number; y: number }>,
+  previous: Readonly<{ x: number; y: number }>,
   dx: number,
   dy: number,
   dt: number,
   weight = 0.5,
 ): { x: number; y: number } {
-  if (!(dt > 0)) return { x: prev.x, y: prev.y };
-  return { x: prev.x * (1 - weight) + (dx / dt) * weight, y: prev.y * (1 - weight) + (dy / dt) * weight };
+  if (!(dt > 0)) return { x: previous.x, y: previous.y };
+  return { x: previous.x * (1 - weight) + (dx / dt) * weight, y: previous.y * (1 - weight) + (dy / dt) * weight };
 }

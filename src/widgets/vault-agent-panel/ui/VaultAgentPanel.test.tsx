@@ -14,7 +14,7 @@ const secrets = vi.hoisted(() => ({ stored: true, listeners: new Set<() => void>
 vi.mock('@/shared/lib/llm-connection/tauri-llm', () => ({
   isLlmChatBridgeAvailable: () => bridge.available,
   llmChat: vi.fn(async () => null),
-  llmChatErrorMessage: (err: unknown) => String(err),
+  llmChatErrorMessage: (error: unknown) => String(error),
 }));
 
 vi.mock('@/shared/lib/llm-connection/tauri-secrets', () => ({

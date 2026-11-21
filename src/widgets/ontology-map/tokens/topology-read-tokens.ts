@@ -12,10 +12,10 @@ const loggedDriftMessages = new Set<string>();
 export function readOntologyMapTokensOrNull(): OntologyMapTokens | null {
   try {
     return getOntologyMapTokens();
-  } catch (err) {
-    if (err instanceof OntologyMapTokenError && !loggedDriftMessages.has(err.message)) {
-      loggedDriftMessages.add(err.message);
-      console.error("[ontology-map] token drift:", err.message);
+  } catch (error) {
+    if (error instanceof OntologyMapTokenError && !loggedDriftMessages.has(error.message)) {
+      loggedDriftMessages.add(error.message);
+      console.error("[ontology-map] token drift:", error.message);
     }
     return null;
   }

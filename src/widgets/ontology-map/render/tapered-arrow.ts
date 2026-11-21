@@ -31,10 +31,10 @@ export function taperedCurve(
     const y = (1 - t) ** 2 * y1 + 2 * (1 - t) * t * cy + t * t * y2;
     const dx = 2 * (1 - t) * (cx - x1) + 2 * t * (x2 - cx);
     const dy = 2 * (1 - t) * (cy - y1) + 2 * t * (y2 - cy);
-    const len = Math.hypot(dx, dy) || 1;
+    const length = Math.hypot(dx, dy) || 1;
     const half = (w0 + (w1 - w0) * t) / 2;
-    left.push({ x: x - (dy / len) * half, y: y + (dx / len) * half });
-    right.push({ x: x + (dy / len) * half, y: y - (dx / len) * half });
+    left.push({ x: x - (dy / length) * half, y: y + (dx / length) * half });
+    right.push({ x: x + (dy / length) * half, y: y - (dx / length) * half });
   }
   ctx.beginPath();
   left.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));

@@ -42,7 +42,7 @@ interface Dependencies {
   cameraTokens?: <T extends { safeInsetLeft: number; safeInsetRight: number }>(tokens: T) => T;
   dialLabels?: DialLabels | null;
   realmRootId: string | null;
-  prevRealmRootIdRef: RefObject<string | null>;
+  previousRealmRootIdRef: RefObject<string | null>;
   lastActiveMsRef: RefObject<number>;
   worldRef: RefObject<TopologyWorld | null>;
   viewportRef: RefObject<{ width: number; height: number; dpr: number; }>;
@@ -77,7 +77,7 @@ interface Dependencies {
 export function useTopologyRealmTransition({
   view3d = false, cameraTokens, dialLabels,
   realmRootId,
-  prevRealmRootIdRef,
+  previousRealmRootIdRef,
   lastActiveMsRef,
   worldRef,
   viewportRef,
@@ -113,11 +113,11 @@ export function useTopologyRealmTransition({
   useEffect(() => {
     const follow = () => {
       const world = worldRef.current;
-      const sameRoot = realmRootId === prevRealmRootIdRef.current;
+      const sameRoot = realmRootId === previousRealmRootIdRef.current;
       if (sameRoot && (realmRootId === null || (world === realmWorldRef.current && realmDataRef.current !== null && Boolean(realmDataRef.current.flat) === !view3d))) return;
       const savedEntry = realmDataRef.current?.entryCamera;
       const savedPositions = realmDataRef.current?.returnPositions;
-      prevRealmRootIdRef.current = realmRootId;
+      previousRealmRootIdRef.current = realmRootId;
       lastActiveMsRef.current = performance.now();
 
       const tokens = readOntologyMapTokensOrNull();

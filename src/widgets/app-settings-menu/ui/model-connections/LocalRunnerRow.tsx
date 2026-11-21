@@ -137,8 +137,8 @@ export function LocalRunnerRow({
         }
       }
       announce(`${label} · ${statusWord(done)}`);
-    } catch (err) {
-      setVerify({ kind: 'done', url: target, reason: 'failed', models: [], detail: secretErrorMessage(err, nativeErrors) });
+    } catch (error) {
+      setVerify({ kind: 'done', url: target, reason: 'failed', models: [], detail: secretErrorMessage(error, nativeErrors) });
       announce(`${label} · ${t('statusFailed')}`);
     } finally {
       // Success or failure, this call was logged — so the count moves immediately.

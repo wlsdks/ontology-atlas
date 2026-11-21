@@ -76,7 +76,7 @@ export function ComposerInput({
               e.preventDefault();
               const step = e.key === 'ArrowDown' ? 1 : -1;
               slash.setActive(
-                (prev) => (prev + step + slash.matches.length) % slash.matches.length,
+                (previous) => (previous + step + slash.matches.length) % slash.matches.length,
               );
               return;
             }

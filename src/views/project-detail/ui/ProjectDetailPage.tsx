@@ -385,9 +385,9 @@ export function ProjectDetailPage({
 
     const canManageProject = projectMutations.canEdit;
     /* A sentence in the page's language inside `saveErrorPrefix`; the raw error goes to the console only. */
-    const projectSaveErrorMessage = (err: unknown) => {
-      if (err instanceof VaultConflictError) return t("saveErrorConflict");
-      const failure = failureSentence(err, t("saveErrorGeneric"));
+    const projectSaveErrorMessage = (error: unknown) => {
+      if (error instanceof VaultConflictError) return t("saveErrorConflict");
+      const failure = failureSentence(error, t("saveErrorGeneric"));
       if (failure.detail) console.error("project save failed", failure.detail);
       return failure.sentence;
     };
@@ -406,10 +406,10 @@ export function ProjectDetailPage({
             : { description: next.trim() ? next : null },
         );
         showToast(field === "name" ? t("saveSuccessName") : t("saveSuccessDescription"), "success");
-      } catch (err) {
-        const message = projectSaveErrorMessage(err);
+      } catch (error) {
+        const message = projectSaveErrorMessage(error);
         showToast(t("saveErrorPrefix", { message }), "error");
-        throw err;
+        throw error;
       }
     };
 

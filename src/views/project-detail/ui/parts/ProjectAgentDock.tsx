@@ -105,7 +105,7 @@ export function ProjectAgentDock({
       const target = [
         frame.querySelector<HTMLElement>("[data-acp-composer] textarea:not(:disabled)"),
         frame.querySelector<HTMLElement>('[data-testid="acp-dock-close"]'),
-      ].find((el) => el && (el.checkVisibility?.({ visibilityProperty: true }) ?? true));
+      ].find((htmlElement) => htmlElement && (htmlElement.checkVisibility?.({ visibilityProperty: true }) ?? true));
       target?.focus({ preventScroll: true });
       if ((!target || document.activeElement !== target) && tries++ < 60) {
         frameId = window.requestAnimationFrame(attempt);

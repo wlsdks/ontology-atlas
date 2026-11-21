@@ -184,26 +184,26 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
       }
       const a = disclosure.elementAlphaFor(item);
       if (!activeElements && !input.contextAlphas && (a <= 0.5 || (disclosure.entered !== id && input.attention.capabilityId !== item.id))) continue;
-      for (const el of a <= 0.5 && !input.contextAlphas ? activeElements ?? [] : item.elementIds) {
-        const activeElement = activeIds.has(el);
+      for (const elementId of a <= 0.5 && !input.contextAlphas ? activeElements ?? [] : item.elementIds) {
+        const activeElement = activeIds.has(elementId);
         if (a <= 0.5 && !activeElement && !input.contextAlphas) continue;
-        if (input.contextAlphas && (input.contextAlphas.get(el) ?? 0) < 0.5) continue;
-        const at = scene.positions.get(el)!;
-        const e = position(el, at);
+        if (input.contextAlphas && (input.contextAlphas.get(elementId) ?? 0) < 0.5) continue;
+        const at = scene.positions.get(elementId)!;
+        const e = position(elementId, at);
         if (!visible(e, tokens.chipMinPx)) continue;
-        const label = input.elementLabel(el);
+        const label = input.elementLabel(elementId);
         if (!activeElement && (!label || item.elementPitch * input.scale < tokens.elementName)) continue;
         const half = Math.max(tokens.chipMinPx * 0.75, Math.min(tokens.discGlyphPx, item.elementPitch * input.scale * 0.22));
         if (!activeElement && (e.x - half < input.freeRect.minX || e.x + half > input.freeRect.maxX || e.y - half < input.freeRect.minY || e.y + half > input.freeRect.maxY)) continue;
         if (!takeElement(activeElement)) continue;
-        if (activeElement) glyph(el, "element", e, tokens.discGlyphPx, inks.element, inks.elementFill);
+        if (activeElement) glyph(elementId, "element", e, tokens.discGlyphPx, inks.element, inks.elementFill);
         else {
-          out.squares.push({ id: el, ...e, half, fill: ink(inks.elementFill), rim: ink(inks.element) });
-          picks.push({ id: el, ...e, r: tokens.chipMinPx * 1.5 });
-          alphas.set(el, 1);
+          out.squares.push({ id: elementId, ...e, half, fill: ink(inks.elementFill), rim: ink(inks.element) });
+          picks.push({ id: elementId, ...e, r: tokens.chipMinPx * 1.5 });
+          alphas.set(elementId, 1);
         }
-        if (label) text(el, "element", label, { x: e.x + side * (half + tokens.chipMinPx), y: e.y }, side > 0 ? "left" : "right", "element", inks.domainLabel);
-        children.push({ id: el, parent: item.direct ? { x: p.x + side * width / 2 * detail, y: p.y } : q, radius: item.direct ? 0 : radius + (active ? tokens.chipMinPx : 0), p: e, half: activeElement ? tokens.discGlyphPx : half, active: activeElement, direct: item.direct });
+        if (label) text(elementId, "element", label, { x: e.x + side * (half + tokens.chipMinPx), y: e.y }, side > 0 ? "left" : "right", "element", inks.domainLabel);
+        children.push({ id: elementId, parent: item.direct ? { x: p.x + side * width / 2 * detail, y: p.y } : q, radius: item.direct ? 0 : radius + (active ? tokens.chipMinPx : 0), p: e, half: activeElement ? tokens.discGlyphPx : half, active: activeElement, direct: item.direct });
       }
     }
     const more = domain.capabilityIds.length - shownMembers;

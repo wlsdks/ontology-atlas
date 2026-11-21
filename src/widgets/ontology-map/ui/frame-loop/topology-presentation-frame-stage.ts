@@ -65,7 +65,7 @@ interface Dependencies {
   clusteredIdsRef: RefObject<ReadonlySet<string>>;
   realmTierKindsRef: RefObject<ReadonlyMap<string, "capability" | "domain" | "element" | "project"> | null>;
   visitedTrailRef: RefObject<readonly string[]>;
-  footprintTrailLenRef: RefObject<number>;
+  footprintTrailLengthRef: RefObject<number>;
   footprintAppearAtRef: RefObject<number>;
   reducedMotionRef: RefObject<boolean>;
   spotlightRampRef: RefObject<number>;
@@ -147,7 +147,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
   clusteredIdsRef,
   realmTierKindsRef,
   visitedTrailRef,
-  footprintTrailLenRef,
+  footprintTrailLengthRef,
   footprintAppearAtRef,
   reducedMotionRef,
   spotlightRampRef,
@@ -297,11 +297,11 @@ export function createPresentationFrameStage({ domeRuntimeRef,
         const footprintStepsById = buildFootprintSteps(visitedTrailRef.current);
         // A longer trail stamps the arrival motion's start time; a shorter one
         // (cleared) drops the ramp.
-        const trailLen = visitedTrailRef.current.length;
-        if (trailLen > footprintTrailLenRef.current)
+        const trailLength = visitedTrailRef.current.length;
+        if (trailLength > footprintTrailLengthRef.current)
             footprintAppearAtRef.current = now;
-        footprintTrailLenRef.current = trailLen;
-        const footprintNewestId = trailLen > 0 ? visitedTrailRef.current[trailLen - 1] : null;
+        footprintTrailLengthRef.current = trailLength;
+        const footprintNewestId = trailLength > 0 ? visitedTrailRef.current[trailLength - 1] : null;
         // Same step as the movement ramp (`--motion-base`, 180 ms): a surface
         // taking its place.
         const footprintAppear = reducedMotionRef.current

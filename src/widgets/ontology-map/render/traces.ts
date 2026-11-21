@@ -46,9 +46,9 @@ export function computeDependsBowControlPoint(a: Point, b: Point, maxBow: number
   const my = (a.y + b.y) / 2;
   const dx = b.x - a.x;
   const dy = b.y - a.y;
-  const len = Math.hypot(dx, dy) || 1;
-  const bow = Math.min(len * 0.12, maxBow);
-  return { x: mx + (-dy / len) * bow, y: my + (dx / len) * bow };
+  const vectorLength = Math.hypot(dx, dy) || 1;
+  const bow = Math.min(vectorLength * 0.12, maxBow);
+  return { x: mx + (-dy / vectorLength) * bow, y: my + (dx / vectorLength) * bow };
 }
 
 export function bezierPoint(p0: Point, p1: Point, p2: Point, t: number): Point {
@@ -250,41 +250,41 @@ function strokeBody(ctx: CanvasRenderingContext2D, state: TraceDrawState, stroke
         // Width thins source to target; the dash offset carries the length walked so far, so a
         // partial span meets the rest of the line without a seam.
         ctx.setLineDash(DEPENDS_DASH);
-        const prevCap = ctx.lineCap;
-        const prevJoin = ctx.lineJoin;
+        const previousCap = ctx.lineCap;
+        const previousJoin = ctx.lineJoin;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
-        let prevX = a.x;
-        let prevY = a.y;
-        let prevT = 0;
+        let previousX = a.x;
+        let previousY = a.y;
+        let previousT = 0;
         let acc = 0;
         for (let i = 1; i <= DEPENDS_TAPER_SEGMENTS; i += 1) {
             const t = i / DEPENDS_TAPER_SEGMENTS;
             const uu = 1 - t;
             const pointX = uu * uu * a.x + 2 * uu * t * control.x + t * t * b.x;
             const pointY = uu * uu * a.y + 2 * uu * t * control.y + t * t * b.y;
-            const from = prevT < lo ? lo : prevT;
+            const from = previousT < lo ? lo : previousT;
             const to = t > hi ? hi : t;
             if (to > from) {
-                const sx = from > prevT ? quadAt(a, control, b, from, "x") : prevX;
-                const sy = from > prevT ? quadAt(a, control, b, from, "y") : prevY;
+                const sx = from > previousT ? quadAt(a, control, b, from, "x") : previousX;
+                const sy = from > previousT ? quadAt(a, control, b, from, "y") : previousY;
                 const ex = to < t ? quadAt(a, control, b, to, "x") : pointX;
                 const ey = to < t ? quadAt(a, control, b, to, "y") : pointY;
                 const u = (i - 0.5) / DEPENDS_TAPER_SEGMENTS;
                 ctx.beginPath();
                 ctx.lineWidth = Math.max(0.35, width * dependsTaperFactor(u));
-                ctx.lineDashOffset = -(acc + Math.hypot(sx - prevX, sy - prevY));
+                ctx.lineDashOffset = -(acc + Math.hypot(sx - previousX, sy - previousY));
                 ctx.moveTo(sx, sy);
                 ctx.lineTo(ex, ey);
                 ctx.stroke();
             }
-            acc += Math.hypot(pointX - prevX, pointY - prevY);
-            prevX = pointX;
-            prevY = pointY;
-            prevT = t;
+            acc += Math.hypot(pointX - previousX, pointY - previousY);
+            previousX = pointX;
+            previousY = pointY;
+            previousT = t;
         }
-        ctx.lineCap = prevCap;
-        ctx.lineJoin = prevJoin;
+        ctx.lineCap = previousCap;
+        ctx.lineJoin = previousJoin;
         ctx.lineDashOffset = 0;
         ctx.setLineDash([]);
     }
@@ -441,9 +441,9 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
      */
     const halo = state.halo;
     if (halo && halo.px > 0.05 && halo.alpha > 0.01) {
-        const prevAlpha = ctx.globalAlpha;
-        const prevCap = ctx.lineCap;
-        const prevJoin = ctx.lineJoin;
+        const previousAlpha = ctx.globalAlpha;
+        const previousCap = ctx.lineCap;
+        const previousJoin = ctx.lineJoin;
         ctx.globalAlpha = halo.alpha;
         ctx.strokeStyle = halo.color;
         ctx.lineCap = "round";
@@ -453,9 +453,9 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
         ctx.moveTo(a.x, a.y);
         ctx.quadraticCurveTo(control.x, control.y, b.x, b.y);
         ctx.stroke();
-        ctx.globalAlpha = prevAlpha;
-        ctx.lineCap = prevCap;
-        ctx.lineJoin = prevJoin;
+        ctx.globalAlpha = previousAlpha;
+        ctx.lineCap = previousCap;
+        ctx.lineJoin = previousJoin;
     }
     if (reveal && span) {
         const base = normalInk(state, tokens, isDepends, clamp01(reveal.baseLift));
@@ -482,15 +482,15 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
         const phase = clamp01(state.trailGlint);
         const u = state.trailDirection === false ? 1 - phase : phase;
         const at = bezierPoint(a, control, b, u);
-        const prevAlpha = ctx.globalAlpha;
+        const previousAlpha = ctx.globalAlpha;
         // Brightest mid-flight and gone at both ends, so it reads as light travelling, not a dot popping at one node.
         const travel = Math.sin(Math.PI * u);
-        ctx.globalAlpha = prevAlpha * glint * travel * 0.9;
+        ctx.globalAlpha = previousAlpha * glint * travel * 0.9;
         ctx.fillStyle = tokens.edgeTrail;
         ctx.beginPath();
         ctx.arc(at.x, at.y, Math.max(0.9, width * 0.9), 0, Math.PI * 2);
         ctx.fill();
-        ctx.globalAlpha = prevAlpha;
+        ctx.globalAlpha = previousAlpha;
     }
     /* A still direction mark for a walked relation: reduced motion gets no direction from the light and endpoint ordinals are ambiguous on a revisited node; offset from the midpoint to clear the caption. */
     if (glint > 0.01 && tokens.edgeTrail) {
@@ -500,15 +500,15 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
         const tail = bezierPoint(a, control, b, tailAt);
         const dx = head.x - tail.x;
         const dy = head.y - tail.y;
-        const len = Math.hypot(dx, dy);
-        if (len > 0.5) {
-            const ux = dx / len;
-            const uy = dy / len;
+        const vectorLength = Math.hypot(dx, dy);
+        if (vectorLength > 0.5) {
+            const ux = dx / vectorLength;
+            const uy = dy / vectorLength;
             const arm = Math.max(3, width * TRAIL_CHEVRON_ARM);
-            const prevAlpha = ctx.globalAlpha;
-            const prevCap = ctx.lineCap;
-            const prevJoin = ctx.lineJoin;
-            ctx.globalAlpha = prevAlpha * glint;
+            const previousAlpha = ctx.globalAlpha;
+            const previousCap = ctx.lineCap;
+            const previousJoin = ctx.lineJoin;
+            ctx.globalAlpha = previousAlpha * glint;
             ctx.strokeStyle = tokens.edgeTrail;
             ctx.lineWidth = Math.max(1, width * 0.9);
             ctx.lineCap = "round";
@@ -519,9 +519,9 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
             ctx.lineTo(head.x, head.y);
             ctx.lineTo(head.x - (ux * 0.72 - uy * 0.62) * arm, head.y - (uy * 0.72 + ux * 0.62) * arm);
             ctx.stroke();
-            ctx.globalAlpha = prevAlpha;
-            ctx.lineCap = prevCap;
-            ctx.lineJoin = prevJoin;
+            ctx.globalAlpha = previousAlpha;
+            ctx.lineCap = previousCap;
+            ctx.lineJoin = previousJoin;
         }
     }
     if (isDepends) {

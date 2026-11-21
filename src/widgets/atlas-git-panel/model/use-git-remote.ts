@@ -96,8 +96,8 @@ export function useGitRemote({
         }
         /* Announced after the re-read, so the notice never stands beside stale counts. */
         await refresh();
-      } catch (err) {
-        failure = gitErrorMessage(err, nativeErrors);
+      } catch (error) {
+        failure = gitErrorMessage(error, nativeErrors);
         // A stale branch or folder is actionable only after its status is read again.
         await refresh();
       } finally {
@@ -133,8 +133,8 @@ export function useGitRemote({
         setOriginJustSaved(true);
         saved = true;
       }
-    } catch (err) {
-      setRemoteError(gitErrorMessage(err, nativeErrors));
+    } catch (error) {
+      setRemoteError(gitErrorMessage(error, nativeErrors));
     } finally {
       // The press ends when git answers, not after the re-read below.
       setRemoteRunning(false);

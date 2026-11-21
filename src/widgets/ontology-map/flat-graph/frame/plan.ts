@@ -225,7 +225,7 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
   plan.agentRing = null;
   const alphas = cacheFor(alphaCache, layout);
   if (alphas.size === 0) for (const id of model.domainOf.keys()) alphas.set(id, 0);
-  for (let elIndex = 0; elIndex < shownElements.size; elIndex += 1) alphas.set(shownElements.items[elIndex]!, 0);
+  for (let elementIndex = 0; elementIndex < shownElements.size; elementIndex += 1) alphas.set(shownElements.items[elementIndex]!, 0);
   shownElements.restart();
   const picks = framePicks;
   picks.restart();
@@ -422,10 +422,10 @@ export function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion
 
   L.names.seal();
 
-  if (plan.dots.length > 0) for (let elIndex = 0; elIndex < shownElements.size; elIndex += 1) {
-    const el = shownElements.items[elIndex]!;
-    const at = screenAt(el);
-    if (at && pickable(at)) picks.add(elementPick(el, at));
+  if (plan.dots.length > 0) for (let elementIndex = 0; elementIndex < shownElements.size; elementIndex += 1) {
+    const elementId = shownElements.items[elementIndex]!;
+    const at = screenAt(elementId);
+    if (at && pickable(at)) picks.add(elementPick(elementId, at));
   }
   const elementPicks = picks.size;
   for (let dIndex = 0; dIndex < plan.discs.length; dIndex += 1) {

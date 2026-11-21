@@ -63,7 +63,7 @@ export interface RealmFrameStageSources {
     depth3: DepthParallaxOffset;
   } | null>;
   wardingFitRef: SourceRef<WardingFitState | null>;
-  realmEnterButtonElRef: SourceRef<HTMLButtonElement | null>;
+  realmEnterButtonElementRef: SourceRef<HTMLButtonElement | null>;
   focusedSlugRef: SourceRef<string | null>;
   onEnterRealmRef: SourceRef<((slug: string) => void) | undefined>;
   realmEnterTargetRef: SourceRef<string | null>;
@@ -78,7 +78,7 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
     reducedMotionRef,
     realmParallaxRef,
     wardingFitRef,
-    realmEnterButtonElRef,
+    realmEnterButtonElementRef,
     focusedSlugRef,
     onEnterRealmRef,
     realmEnterTargetRef,
@@ -213,8 +213,8 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
     // Orbit enter button sits due east of the focused ring; bearings must stay distinct from the expand
     // badge (`render/cluster-chips.ts`, locked by `expand-settings.contract.test.ts`).
     {
-      const btn = realmEnterButtonElRef.current;
-      if (btn) {
+      const button = realmEnterButtonElementRef.current;
+      if (button) {
         const fid = focusedSlugRef.current;
         const node = fid ? world.nodeById.get(fid) : undefined;
         const hasChildren = fid ? (world.childrenByParent.get(fid)?.length ?? 0) > 0 : false;
@@ -236,22 +236,22 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
           const orbit = orbitButtonRect(s.x, s.y, rr);
           const bx = orbit.x + orbit.w / 2;
           const by = orbit.y + orbit.h / 2;
-          btn.style.transform = `translate(-50%, -50%) translate(${bx}px, ${by}px)`;
+          button.style.transform = `translate(-50%, -50%) translate(${bx}px, ${by}px)`;
         }
         // Toggle the tab stop with visibility: `opacity: 0` stays focusable, so focus would land on an
         // invisible button.
         if (eligible) {
           realmEnterTargetRef.current = fid;
-          btn.style.opacity = "1";
-          btn.style.pointerEvents = "auto";
-          btn.tabIndex = 0;
-          btn.removeAttribute("aria-hidden");
+          button.style.opacity = "1";
+          button.style.pointerEvents = "auto";
+          button.tabIndex = 0;
+          button.removeAttribute("aria-hidden");
         } else {
           realmEnterTargetRef.current = null;
-          btn.style.opacity = "0";
-          btn.style.pointerEvents = "none";
-          btn.tabIndex = -1;
-          btn.setAttribute("aria-hidden", "true");
+          button.style.opacity = "0";
+          button.style.pointerEvents = "none";
+          button.tabIndex = -1;
+          button.setAttribute("aria-hidden", "true");
         }
       }
     }

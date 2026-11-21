@@ -143,7 +143,7 @@ function click(canvas: HTMLCanvasElement, x: number, y: number) {
 }
 
 function listedIds(container: HTMLElement): string[] {
-  return [...container.querySelectorAll<HTMLElement>('[data-testid="tree-map-list"] [data-tree-id]')].map((el) => el.dataset.treeId!).sort();
+  return [...container.querySelectorAll<HTMLElement>('[data-testid="tree-map-list"] [data-tree-id]')].map((htmlElement) => htmlElement.dataset.treeId!).sort();
 }
 
 describe("the tree's accessible list", () => {

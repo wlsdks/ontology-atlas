@@ -236,9 +236,9 @@ describe('the difficulty curve', () => {
     for (const seed of [2, 9, 13]) {
       const { spawns } = botRound(seed, false, true);
       spawns.forEach((s, i) => {
-        const prev = spawns[i - 1];
-        if (s.kind !== 'bug' || !prev || s.t - prev.t >= 600) return;
-        expect(Math.abs(s.x - prev.x)).toBeGreaterThanOrEqual(ITEM * 1.4 - 1e-6);
+        const previous = spawns[i - 1];
+        if (s.kind !== 'bug' || !previous || s.t - previous.t >= 600) return;
+        expect(Math.abs(s.x - previous.x)).toBeGreaterThanOrEqual(ITEM * 1.4 - 1e-6);
       });
     }
   });

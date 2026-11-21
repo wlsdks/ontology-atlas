@@ -111,10 +111,10 @@ export function focusShift(
     y1 = Math.max(y1, sy(t.y) + (SQRT3 / 2) * R * c);
   }
   if (!Number.isFinite(x0) || !sel) return null;
-  const shift = (lo: number, hi: number, freeLo: number, freeLen: number, must: [number, number]) => {
-    const [a, b] = hi - lo <= freeLen - 2 * FOCUS_MARGIN ? [lo, hi] : must;
+  const shift = (lo: number, hi: number, freeLo: number, freeLength: number, must: [number, number]) => {
+    const [a, b] = hi - lo <= freeLength - 2 * FOCUS_MARGIN ? [lo, hi] : must;
     if (a < freeLo + FOCUS_MARGIN) return freeLo + FOCUS_MARGIN - a;
-    if (b > freeLo + freeLen - FOCUS_MARGIN) return freeLo + freeLen - FOCUS_MARGIN - b;
+    if (b > freeLo + freeLength - FOCUS_MARGIN) return freeLo + freeLength - FOCUS_MARGIN - b;
     return 0;
   };
   const sx = (u: number) => cam.ox + u * R;

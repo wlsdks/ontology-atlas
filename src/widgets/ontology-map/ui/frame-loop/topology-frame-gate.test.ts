@@ -36,7 +36,7 @@ function restingGate(neuralRamp: number) {
     navYieldUntilRef: 0,
     cameraRef: { x: { value: 0, velocity: 0 }, y: { value: 0, velocity: 0 }, scale: { value: 1, velocity: 0 } },
     cameraTargetRef: { tx: 0, ty: 0, tscale: 1 },
-    prevCameraSampleRef: { x: 0, y: 0, s: 1 },
+    previousCameraSampleRef: { x: 0, y: 0, s: 1 },
     // A recent input keeps the comets out of ambient sleep, so only Neural can silence them.
     lastInputMsRef: NOW_MS - 10,
     ambientSleepDelayRef: undefined,

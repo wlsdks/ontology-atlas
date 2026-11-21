@@ -129,8 +129,8 @@ export function TopologyRealmLedger({
 
   const focusRow = (nodeId: string) => {
     const rows = treeRef.current?.querySelectorAll<HTMLElement>("[data-index-row]");
-    rows?.forEach((el) => {
-      if (el.dataset.indexRow === nodeId) el.focus();
+    rows?.forEach((htmlElement) => {
+      if (htmlElement.dataset.indexRow === nodeId) htmlElement.focus();
     });
   };
 
@@ -145,8 +145,8 @@ export function TopologyRealmLedger({
   };
 
   const handleTreeFocus = (event: ReactFocusEvent<HTMLElement>) => {
-    const rowEl = (event.target as HTMLElement).closest?.("[data-index-row]") as HTMLElement | null;
-    const id = rowEl?.dataset.indexRow;
+    const rowElement = (event.target as HTMLElement).closest?.("[data-index-row]") as HTMLElement | null;
+    const id = rowElement?.dataset.indexRow;
     if (id && id !== activeRowId) setActiveRowId(id);
   };
 

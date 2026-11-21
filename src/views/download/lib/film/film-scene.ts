@@ -226,12 +226,12 @@ const overlapArea = (a: Rect, b: Rect, gap: number) => {
 export function placeLabels(requests: readonly LabelRequest[], { gap, bounds }: { gap: number; bounds: Rect }): LabelSpot[] {
   const taken: Rect[] = [];
   const marks: Rect[] = requests.map(({ x, y, r }) => ({ l: x - r, t: y - r, r: x + r, b: y + r }));
-  return requests.map((req, k) => {
-    const near = req.r + 6;
-    const side = req.r + 8;
+  return requests.map((request, k) => {
+    const near = request.r + 6;
+    const side = request.r + 8;
     const options: LabelSpot[] = [
-      { dx: 0, dy: near + req.h / 2, align: 'center', leader: false },
-      { dx: 0, dy: -near - req.h / 2, align: 'center', leader: false },
+      { dx: 0, dy: near + request.h / 2, align: 'center', leader: false },
+      { dx: 0, dy: -near - request.h / 2, align: 'center', leader: false },
       { dx: side, dy: 0, align: 'start', leader: false },
       { dx: -side, dy: 0, align: 'end', leader: false },
       { dx: side, dy: near, align: 'start', leader: false },
@@ -239,18 +239,18 @@ export function placeLabels(requests: readonly LabelRequest[], { gap, bounds }: 
       { dx: side, dy: -near, align: 'start', leader: false },
       { dx: -side, dy: -near, align: 'end', leader: false },
     ];
-    const align: LabelSpot['align'] = req.out.x > 0.35 ? 'start' : req.out.x < -0.35 ? 'end' : 'center';
+    const align: LabelSpot['align'] = request.out.x > 0.35 ? 'start' : request.out.x < -0.35 ? 'end' : 'center';
     for (let step = 1; step <= 16; step += 1) {
-      const reach = req.r + 16 + step * 10;
-      options.push({ dx: req.out.x * reach, dy: req.out.y * reach, align, leader: true });
+      const reach = request.r + 16 + step * 10;
+      options.push({ dx: request.out.x * reach, dy: request.out.y * reach, align, leader: true });
     }
     let best = options[0]!;
     let least = Infinity;
     for (const o of options) {
-      const box = labelBox(req.x + o.dx, req.y + o.dy, req.w, req.h, o.align);
+      const box = labelBox(request.x + o.dx, request.y + o.dy, request.w, request.h, o.align);
       const outside =
         Math.max(0, bounds.l - box.l) + Math.max(0, box.r - bounds.r) + Math.max(0, bounds.t - box.t) + Math.max(0, box.b - bounds.b);
-      let cost = outside * req.h * 4;
+      let cost = outside * request.h * 4;
       for (const t of taken) cost += overlapArea(box, t, gap);
       marks.forEach((m, j) => {
         if (j !== k) cost += overlapArea(box, m, gap);
@@ -261,7 +261,7 @@ export function placeLabels(requests: readonly LabelRequest[], { gap, bounds }: 
       }
       if (cost === 0) break;
     }
-    taken.push(labelBox(req.x + best.dx, req.y + best.dy, req.w, req.h, best.align));
+    taken.push(labelBox(request.x + best.dx, request.y + best.dy, request.w, request.h, best.align));
     return best;
   });
 }

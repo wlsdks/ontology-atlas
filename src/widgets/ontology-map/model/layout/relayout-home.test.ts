@@ -36,12 +36,12 @@ describe("stepHomeSpring / isHomeSpringConverged", () => {
 
   it("moves monotonically closer to home each step (no overshoot pop) for a critically damped step", () => {
     let state = initHomeSpring(100, 0);
-    let prevDistance = Infinity;
+    let previousDistance = Infinity;
     for (let i = 0; i < 60; i += 1) {
       state = stepHomeSpring(state, 0, 0, 1 / 60, ANGULAR_FREQUENCY, DAMPING);
       const distance = Math.abs(state.x.value);
-      expect(distance).toBeLessThanOrEqual(prevDistance + 1e-9);
-      prevDistance = distance;
+      expect(distance).toBeLessThanOrEqual(previousDistance + 1e-9);
+      previousDistance = distance;
     }
   });
 });

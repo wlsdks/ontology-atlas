@@ -59,14 +59,14 @@ export function useOpenDocTabs({
   // Guarded so an empty `validSlugs` while loading does not clear everything.
   useEffect(() => {
     if (validSlugs.size === 0) return;
-    setTabs((prev) => {
-      const next = pruneMissingDocTabs(prev, validSlugs);
-      if (next !== prev) storeDocTabs(sourceKeyRef.current, next);
+    setTabs((previous) => {
+      const next = pruneMissingDocTabs(previous, validSlugs);
+      if (next !== previous) storeDocTabs(sourceKeyRef.current, next);
       return next;
     });
   }, [validSlugs]);
 
-  // Merge from storage, never from state: before hydration `prev` is empty, and right after a
+  // Merge from storage, never from state: before hydration `previous` is empty, and right after a
   // vault switch it holds the previous vault's tabs.
   const openTab = useCallback((slug: string, title: string) => {
     setTabs(() => {

@@ -130,7 +130,7 @@ function measure(name: string, width: number, zoom: number): Count {
   }
   const own = new Set<string>(scene.orphans.ids);
   const enteredCluster = disclosure.entered ? scene.clusterByDomain.get(disclosure.entered) : undefined;
-  for (const it of enteredCluster?.items ?? []) for (const el of it.elementIds) own.add(el);
+  for (const it of enteredCluster?.items ?? []) for (const elementId of it.elementIds) own.add(elementId);
   const foreignSquares = out.squares.filter((q) => q.id !== null && !own.has(q.id)).length;
   return {
     previewBudget: scene.clusters.length * (scene.branchPreviewRows ?? 0), foreignSquares, entered: disclosure.entered,

@@ -179,48 +179,48 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
   const itemInk = scratch[0]!;
   const itemR = it.direct ? 0 : discRadius(it.id);
   for (let i = 0; i < it.elementIds.length; i += 1) {
-    const el = it.elementIds[i]!;
-    const lit = attention.lit?.has(el) === true;
-    const uncovered = lensHidden(el) ? 0 : Math.max(F.dotAlpha, lit ? F.focusness : 0, fanShare(el), F.required.has(el) || el === input.agentFocusNodeId ? 1 : 0);
+    const elementId = it.elementIds[i]!;
+    const lit = attention.lit?.has(elementId) === true;
+    const uncovered = lensHidden(elementId) ? 0 : Math.max(F.dotAlpha, lit ? F.focusness : 0, fanShare(elementId), F.required.has(elementId) || elementId === input.agentFocusNodeId ? 1 : 0);
     if (uncovered <= DRAWN_INK) continue;
-    const elAt = screenOf(el);
-    const visible = onScreen(elAt);
+    const elementAt = screenOf(elementId);
+    const visible = onScreen(elementAt);
     // A dot off screen keeps no radius, so it neither steps nor keeps the loop awake.
-    const r = visible ? dotRadius(el) : 0;
+    const r = visible ? dotRadius(elementId) : 0;
     // Only a disc larger than the dot covers it, and never the selection's own, which its ring marks.
-    const coverR = !visible || el === F.selectedId || el === F.leavingId ? 0 : itemR;
-    let clear = coverR > r ? Math.hypot(elAt.x - itemAt.x, elAt.y - itemAt.y) - coverR - r : ROOM_WHOLE_PX;
-    if (visible && el !== F.selectedId && el !== F.leavingId && movedRoom(el) !== undefined) clear = Math.min(clear, crowdClear(el, r, elAt));
+    const coverR = !visible || elementId === F.selectedId || elementId === F.leavingId ? 0 : itemR;
+    let clear = coverR > r ? Math.hypot(elementAt.x - itemAt.x, elementAt.y - itemAt.y) - coverR - r : ROOM_WHOLE_PX;
+    if (visible && elementId !== F.selectedId && elementId !== F.leavingId && movedRoom(elementId) !== undefined) clear = Math.min(clear, crowdClear(elementId, r, elementAt));
     const shown = uncovered * smoothstep(ROOM_GONE_PX, ROOM_WHOLE_PX, clear);
     if (shown <= DRAWN_INK) continue;
-    alphas.set(el, 1);
-    shownElements.add(el);
-    loadMarkInk(el);
-    const elInk = scratch[0]!;
-    if (!contextMode && segmentOnScreen(itemAt, elAt)) {
-      const fanned = fanShare(el);
-      const s = segmentBetween(itemAt, elAt, hue, true);
+    alphas.set(elementId, 1);
+    shownElements.add(elementId);
+    loadMarkInk(elementId);
+    const elementInk = scratch[0]!;
+    if (!contextMode && segmentOnScreen(itemAt, elementAt)) {
+      const fanned = fanShare(elementId);
+      const s = segmentBetween(itemAt, elementAt, hue, true);
       s.spoke = fanned > 0;
       if (s.spoke) {
         // A spoke starts outside the selection ring, so the ring stays one unbroken circle.
-        const length = Math.hypot(elAt.x - itemAt.x, elAt.y - itemAt.y) || 1;
+        const length = Math.hypot(elementAt.x - itemAt.x, elementAt.y - itemAt.y) || 1;
         const start = Math.min(1, ((itemR + P.selectedRingGapPx + P.selectedRingPx) * fanned) / length);
-        s.x0 = itemAt.x + (elAt.x - itemAt.x) * start;
-        s.y0 = itemAt.y + (elAt.y - itemAt.y) * start;
+        s.x0 = itemAt.x + (elementAt.x - itemAt.x) * start;
+        s.y0 = itemAt.y + (elementAt.y - itemAt.y) * start;
       }
-      const alpha = (P.linkElementAlpha + (P.fanSpokeAlpha - P.linkElementAlpha) * fanned) * Math.min(itemInk, elInk) * shown;
+      const alpha = (P.linkElementAlpha + (P.fanSpokeAlpha - P.linkElementAlpha) * fanned) * Math.min(itemInk, elementInk) * shown;
       if (s.alpha !== alpha) s.alpha = alpha;
       L.segments.add(s);
     }
     if (visible) {
       const d = dots.take();
       const alpha = DOT_ALPHA * shown;
-      d.id = el;
-      if (d.x !== elAt.x) d.x = elAt.x;
-      if (d.y !== elAt.y) d.y = elAt.y;
+      d.id = elementId;
+      if (d.x !== elementAt.x) d.x = elementAt.x;
+      if (d.y !== elementAt.y) d.y = elementAt.y;
       if (d.r !== r) d.r = r;
       d.hue = hue;
-      if (d.ink !== elInk) d.ink = elInk;
+      if (d.ink !== elementInk) d.ink = elementInk;
       if (d.alpha !== alpha) d.alpha = alpha;
       d.lit = lit;
       L.dots.add(d);

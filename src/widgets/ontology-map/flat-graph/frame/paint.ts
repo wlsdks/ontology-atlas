@@ -62,10 +62,10 @@ function fillTaper(ctx: CanvasRenderingContext2D, path: ArcPath, width: number, 
       const y = u * u * a.y + 2 * u * t * c.y + t * t * b.y;
       const tx = u * (c.x - a.x) + t * (b.x - c.x);
       const ty = u * (c.y - a.y) + t * (b.y - c.y);
-      const len = Math.hypot(tx, ty) || 1;
+      const length = Math.hypot(tx, ty) || 1;
       const half = side * ((width / 2) * u + TAPER_TIP_PX * t);
-      if (side === 1 && k === 0) ctx.moveTo(x - (ty / len) * half, y + (tx / len) * half);
-      else ctx.lineTo(x - (ty / len) * half, y + (tx / len) * half);
+      if (side === 1 && k === 0) ctx.moveTo(x - (ty / length) * half, y + (tx / length) * half);
+      else ctx.lineTo(x - (ty / length) * half, y + (tx / length) * half);
       if (roundStart && side === -1 && k === TAPER_STEPS) {
         // Back round the start: from the far side's edge, behind the start point, to the near side's.
         const heading = Math.atan2(ty, tx);
@@ -106,9 +106,9 @@ function strokeQuad(ctx: CanvasRenderingContext2D, path: ArcPath, offset: number
   const { a, c, b } = path;
   const dx = b.x - a.x;
   const dy = b.y - a.y;
-  const len = Math.hypot(dx, dy) || 1;
-  const ox = (-dy / len) * offset;
-  const oy = (dx / len) * offset;
+  const length = Math.hypot(dx, dy) || 1;
+  const ox = (-dy / length) * offset;
+  const oy = (dx / length) * offset;
   const u = 1 - reach;
   const cx = a.x + (c.x - a.x) * reach;
   const cy = a.y + (c.y - a.y) * reach;

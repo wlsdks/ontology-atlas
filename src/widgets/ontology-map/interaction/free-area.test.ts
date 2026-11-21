@@ -151,16 +151,16 @@ describe("measureCanvasInsets", () => {
       cameraObstacle?: "side-panel" | "none",
       modal?: boolean,
     ) => {
-      const el = document.createElement("div");
-      el.getBoundingClientRect = (() => ({
+      const divElement = document.createElement("div");
+      divElement.getBoundingClientRect = (() => ({
         x: r.x, y: r.y, width: r.width, height: r.height,
         left: r.x, top: r.y, right: r.x + r.width, bottom: r.y + r.height,
         toJSON: () => ({}),
-      })) as typeof el.getBoundingClientRect;
-      if (hidden) el.style.display = "none";
-      if (cameraObstacle) el.dataset.topologyCameraObstacle = cameraObstacle;
-      if (modal) el.setAttribute("aria-modal", "true");
-      return el;
+      })) as typeof divElement.getBoundingClientRect;
+      if (hidden) divElement.style.display = "none";
+      if (cameraObstacle) divElement.dataset.topologyCameraObstacle = cameraObstacle;
+      if (modal) divElement.setAttribute("aria-modal", "true");
+      return divElement;
     };
     document.body.innerHTML = "";
     const canvas = make({ x: 64, y: 0, width: 1448, height: 982 });
@@ -262,11 +262,11 @@ describe("measureCanvasInsets", () => {
 
 describe("measureNameObstacles", () => {
   const placed = (tag: string, r: { x: number; y: number; width: number; height: number }) => {
-    const el = document.createElement(tag);
-    el.getBoundingClientRect = (() => ({
+    const htmlElement = document.createElement(tag);
+    htmlElement.getBoundingClientRect = (() => ({
       x: r.x, y: r.y, width: r.width, height: r.height, left: r.x, top: r.y, right: r.x + r.width, bottom: r.y + r.height, toJSON: () => ({}),
-    })) as typeof el.getBoundingClientRect;
-    return el;
+    })) as typeof htmlElement.getBoundingClientRect;
+    return htmlElement;
   };
 
   it("covers each side panel out to its canvas edge, the key, and only the tool row's controls, in canvas pixels", () => {

@@ -39,9 +39,9 @@ function besideChip(count: FarCount, w: number, h: number): Point[] {
   const { p, r } = count.chip;
   const dx = count.toward.x - p.x;
   const dy = count.toward.y - p.y;
-  const len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len;
-  const uy = dy / len;
+  const length = Math.hypot(dx, dy) || 1;
+  const ux = dx / length;
+  const uy = dy / length;
   const along = r + FAR_GAP_PX + (Math.abs(ux) * w + Math.abs(uy) * h) / 2;
   return [
     { x: p.x + ux * along, y: p.y + uy * along },

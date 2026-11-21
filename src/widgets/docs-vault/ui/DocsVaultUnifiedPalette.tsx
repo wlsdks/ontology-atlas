@@ -51,7 +51,7 @@ interface Props {
 
 // One id rule for the listbox option and the input's aria-activedescendant (WAI-ARIA combobox).
 const PALETTE_LISTBOX_ID = 'docs-vault-palette-listbox';
-const paletteOptionId = (idx: number) => `docs-vault-palette-option-${idx}`;
+const paletteOptionId = (index: number) => `docs-vault-palette-option-${index}`;
 
 type ResultKind = 'doc' | 'command' | 'tag';
 
@@ -158,7 +158,7 @@ export function DocsVaultUnifiedPalette({
   const t = useTranslations('vaultWidgets.palette');
   const locale = useLocale();
   const [query, setQuery] = useState(initialQuery);
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { ref: scrimLockoutRef, onAnimationStart: scrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
   const { ref: panelLockoutRef, onAnimationStart: panelLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
@@ -193,9 +193,9 @@ export function DocsVaultUnifiedPalette({
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    const el = list.querySelector<HTMLElement>(`[data-idx="${activeIdx}"]`);
-    el?.scrollIntoView({ block: 'nearest' });
-  }, [activeIdx]);
+    const htmlElement = list.querySelector<HTMLElement>(`[data-idx="${activeIndex}"]`);
+    htmlElement?.scrollIntoView({ block: 'nearest' });
+  }, [activeIndex]);
 
   const { rows, sections } = useMemo(() => {
     const trimmed = query.trim();
@@ -296,8 +296,8 @@ export function DocsVaultUnifiedPalette({
         .filter((c) => !q || commandMatches(c, q))
         .slice(0, 30)
         .map((c) => {
-          const idx = q ? c.label.toLowerCase().indexOf(q) : -1;
-          const hit = idx >= 0 ? { start: idx, end: idx + q.length } : null;
+          const index = q ? c.label.toLowerCase().indexOf(q) : -1;
+          const hit = index >= 0 ? { start: index, end: index + q.length } : null;
           return {
             kind: 'command' as const,
             key: `cmd:${c.id}`,
@@ -331,8 +331,8 @@ export function DocsVaultUnifiedPalette({
         .filter((tagItem) => !q || tagItem.tag.toLowerCase().includes(q))
         .slice(0, 20)
         .map((tagItem) => {
-          const idx = q ? tagItem.tag.toLowerCase().indexOf(q) : -1;
-          const hit = idx >= 0 ? { start: idx, end: idx + q.length } : null;
+          const index = q ? tagItem.tag.toLowerCase().indexOf(q) : -1;
+          const hit = index >= 0 ? { start: index, end: index + q.length } : null;
           return {
             kind: 'tag' as const,
             key: `tag:${tagItem.tag}`,
@@ -407,8 +407,8 @@ export function DocsVaultUnifiedPalette({
       });
       out.push(
         ...cmdMatches.map((c) => {
-          const idx = c.label.toLowerCase().indexOf(qLc);
-          const hit = idx >= 0 ? { start: idx, end: idx + qLc.length } : null;
+          const index = c.label.toLowerCase().indexOf(qLc);
+          const hit = index >= 0 ? { start: index, end: index + qLc.length } : null;
           return {
             kind: 'command' as const,
             key: `cmd:${c.id}`,
@@ -472,7 +472,7 @@ export function DocsVaultUnifiedPalette({
 
   const handleQueryChange = (next: string) => {
     setQuery(next);
-    setActiveIdx(0);
+    setActiveIndex(0);
   };
 
   const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -480,14 +480,14 @@ export function DocsVaultUnifiedPalette({
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (rows.length === 0) return;
-      setActiveIdx((i) => (i + 1) % rows.length);
+      setActiveIndex((i) => (i + 1) % rows.length);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (rows.length === 0) return;
-      setActiveIdx((i) => (i - 1 + rows.length) % rows.length);
+      setActiveIndex((i) => (i - 1 + rows.length) % rows.length);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const row = rows[activeIdx];
+      const row = rows[activeIndex];
       if (!row) return;
       row.onRun();
       onClose();
@@ -500,12 +500,12 @@ export function DocsVaultUnifiedPalette({
       if (t.startsWith('>')) setQuery('#');
       else if (t.startsWith('#')) setQuery('');
       else setQuery('> ');
-      setActiveIdx(0);
+      setActiveIndex(0);
       requestAnimationFrame(() => {
         const input = inputRef.current;
         if (!input) return;
-        const len = input.value.length;
-        input.setSelectionRange(len, len);
+        const length = input.value.length;
+        input.setSelectionRange(length, length);
       });
     }
   };
@@ -555,7 +555,7 @@ export function DocsVaultUnifiedPalette({
             aria-controls={PALETTE_LISTBOX_ID}
             aria-autocomplete="list"
             aria-activedescendant={
-              rows.length > 0 ? paletteOptionId(activeIdx) : undefined
+              rows.length > 0 ? paletteOptionId(activeIndex) : undefined
             }
             className={fieldClass({ frame: "bare", className: "min-w-0 flex-1" })}
           />
@@ -621,9 +621,9 @@ export function DocsVaultUnifiedPalette({
               </li>
             )
           ) : (
-            rows.map((row, idx) => {
-              const active = idx === activeIdx;
-              const sectionHeader = sectionOffsets.get(idx);
+            rows.map((row, index) => {
+              const active = index === activeIndex;
+              const sectionHeader = sectionOffsets.get(index);
               return (
                 <Fragment key={row.key}>
                   {sectionHeader ? (
@@ -637,15 +637,15 @@ export function DocsVaultUnifiedPalette({
                   ) : null}
                   <li
                     key={row.key}
-                    id={paletteOptionId(idx)}
-                    data-idx={idx}
+                    id={paletteOptionId(index)}
+                    data-idx={index}
                     role="option"
                     aria-selected={active}
                   >
                     <ResultRow
                       row={row}
                       active={active}
-                      onHover={() => setActiveIdx(idx)}
+                      onHover={() => setActiveIndex(index)}
                       onClose={onClose}
                       getDocHref={getDocHref}
                     />

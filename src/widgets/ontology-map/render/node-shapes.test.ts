@@ -98,8 +98,8 @@ describe("projectPinTicks", () => {
     const cy = 50;
     const ticks = projectPinTicks(cx, cy, r);
     for (const t of ticks) {
-      const len = Math.hypot(t.x2 - t.x1, t.y2 - t.y1);
-      expect(len).toBeCloseTo(6, 6);
+      const length = Math.hypot(t.x2 - t.x1, t.y2 - t.y1);
+      expect(length).toBeCloseTo(6, 6);
       const startDist = Math.hypot(t.x1 - cx, t.y1 - cy);
       expect(startDist).toBeCloseTo(r, 6);
     }
