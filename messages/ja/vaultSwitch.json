@@ -34,7 +34,7 @@
   },
   "choose": {
     "openAction": "フォルダを開く",
-    "createAction": "新規作成",
+    "createAction": "フォルダを作成",
     "defaultLocationAction": "書類フォルダに作成",
     "chooseLocationAction": "場所を選ぶ",
     "eyebrow": "どのフォルダ？",

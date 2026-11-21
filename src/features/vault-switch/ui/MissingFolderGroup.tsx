@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, FolderSearch, FolderX } from 'lucide-react';
+import { FolderSearch, FolderX } from 'lucide-react';
 import { Fragment, useEffect, useId, useRef, useState } from 'react';
 import type { useTranslations } from 'next-intl';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
@@ -120,15 +120,8 @@ export function MissingFolderGroup({
             >
               {t('missing.summary', { count })}
             </span>
-            <span className="flex shrink-0 items-center gap-1 text-label text-[color:var(--color-text-quaternary)]">
+            <span className="shrink-0 text-label text-[color:var(--color-text-quaternary)]">
               {review === 'inline' && open ? t('missing.hide') : t('missing.review')}
-              {review === 'inline' ? (
-                <ChevronDown
-                  size={ICON_SIZE.sm}
-                  aria-hidden
-                  className={cn('transition-transform motion-reduce:transition-none', open && 'rotate-180')}
-                />
-              ) : null}
             </span>
           </button>
           {review === 'inline' ? (

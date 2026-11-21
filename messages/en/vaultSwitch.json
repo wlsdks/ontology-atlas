@@ -34,7 +34,7 @@
   },
   "choose": {
     "openAction": "Open folder",
-    "createAction": "Create new",
+    "createAction": "Create folder",
     "defaultLocationAction": "Create in Documents",
     "chooseLocationAction": "Choose a location",
     "eyebrow": "WHICH FOLDER",

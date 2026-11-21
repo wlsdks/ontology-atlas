@@ -34,7 +34,7 @@
   },
   "choose": {
     "openAction": "打开文件夹",
-    "createAction": "新建",
+    "createAction": "新建文件夹",
     "defaultLocationAction": "在“文稿”中创建",
     "chooseLocationAction": "选择位置",
     "eyebrow": "哪个文件夹",
