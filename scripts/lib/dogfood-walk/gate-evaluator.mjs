@@ -1,6 +1,5 @@
 // Evaluates a dogfood MCP walk response set against the expected shapes and
 // produces the ordered list of gate failures (empty = pass).
-// Split out of scripts/dogfood/dogfood-mcp-walk.mjs (structural decomposition, logic unchanged).
 import {
   analyzeRepoStructureFailure,
   inferImportsFailure,
@@ -106,13 +105,9 @@ import {
   workspaceBriefShapeFailure,
 } from "./shape-validators/shape-validators-workspace.mjs";
 
-// Semantic qualification is intentionally fail-closed in the product
-// response: an unqualified project reports `needs_attention` and a
-// `meaning_assessment` warning. The dogfood walk verifies the transport and
-// structural contracts; it must not turn that honest semantic advisory into a
-// release failure (nor hide any structural/validation failure). Keep this
-// allow-list tiny and explicit so new warning kinds remain blocking until the
-// gate receives a deliberate contract update.
+// Semantic qualification is fail-closed in the product (an unqualified project reports
+// `needs_attention` and a `meaning_assessment` warning). The walk verifies transport and structural
+// contracts, so only this tiny allow-list is non-blocking and new warning kinds stay blocking.
 const NON_BLOCKING_ADVISORY_CHECKS = new Set(["meaning_assessment"]);
 const NON_BLOCKING_ADVISORY_ACTIONS = new Set(["meaning_assessment"]);
 

@@ -1,21 +1,8 @@
 /**
- * Installs the raster-first mascot family into every committed identity consumer.
- *
- * `build-brand-assets.mjs` validates the authored 64/32/16 PNG masters and
- * `build-brand-raster.mjs` bakes every physical size. This file is the final,
- * explicit fan-out so an old logo cannot survive in one platform tree.
- *
- * Usage: run the source validator, open the raster baker once, then run this file.
- *
- * **icns goes through iconutil; ico is written by hand.** On macOS `iconutil` is
- * the standard tool, so filling the `.iconset` directory correctly is enough.
- * Windows ICO is different — PIL's `append_images` is **ignored for ICO and only
- * one frame lands** (measured). The container is simple, so it is written here.
- *
- * **@2x is not a different drawing.** `icon_16x16@2x` is 16pt drawn for retina,
- * so it must be **the same artwork as 16pt**. Putting a simplified variant there
- * makes the drawing change with the display at one logical size. That is why the
- * pairs below share their art.
+ * Fans the raster-first mascot family out to every committed identity consumer, so no old logo
+ * survives in one platform tree. Run the source validator and the raster baker first.
+ * icns goes through `iconutil`; ICO is written by hand because PIL's `append_images` lands one frame.
+ * `@2x` shares the art of its 1x partner: one logical size must not change drawing with the display.
  */
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';

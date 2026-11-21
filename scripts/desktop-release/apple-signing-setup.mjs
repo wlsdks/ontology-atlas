@@ -1,31 +1,15 @@
 #!/usr/bin/env node
 /**
- * Prepares the Developer ID signing credentials and prints the commands for
- * loading them into the protected GitHub environment.
- *
- * **Why a script and not prose**: this procedure runs once every five years (the
- * Developer ID certificate lifetime), and prose written for that occasion is
- * guaranteed to be stale by the time it is needed. Only an executable form stays
- * exact.
- *
- * **What stays manual**: the App Store Connect API key/issuer and the updater key
- * material. Everything else — key pair generation, CSR, `.p12` assembly and
- * verification — is here. GitHub changes are reviewed and run by a person.
- *
- * **Why not the Keychain Access GUI.** The common instructions say to make a CSR
- * in Keychain Access, install the certificate, and export a `.p12`. That path has
- * a silent trap: **exporting from the "Certificates" category instead of "My
- * Certificates" drops the private key**, and the file is still produced
- * successfully. The failure first surfaces minutes later in CI's codesign step.
- * Here we generate and hold the private key ourselves, so that mistake is
- * **structurally impossible** — the `.p12` always contains both key and
- * certificate.
- *
- * **Secrets are never printed.** The `.p12` export password is generated here and
- * **nobody sees it** — not a person, not the log, not a model. Its only job is to
- * wrap the file on its way to GitHub, and the receiving side (CI) gets the same
- * value as a secret. Showing a person a value they have no reason to remember
- * only adds a leak path.
+ * Prepares the Developer ID signing credentials and prints the commands for loading them into the
+ * protected GitHub environment. A script, not prose: the procedure runs once every five years, and
+ * prose written for that occasion is stale by then.
+ * Manual: the App Store Connect API key/issuer and the updater key material. GitHub changes are
+ * reviewed and run by a person.
+ * Not the Keychain Access GUI: exporting from "Certificates" instead of "My Certificates" silently
+ * drops the private key. Here the private key is generated and held locally, so the `.p12` always
+ * contains both key and certificate.
+ * Secrets are never printed: the `.p12` export password is generated here and seen by nobody; CI
+ * receives the same value as a secret.
  */
 
 import { spawnSync, execFileSync } from "node:child_process";
@@ -67,7 +51,6 @@ export const OBSOLETE_REPOSITORY_SECRETS = [
 ];
 export const REQUIRED_SECRETS = [...ENVIRONMENT_SECRETS, ...REPOSITORY_SECRETS];
 
-/** Apple/Tauri credentials the helper does not generate are entered by a person. */
 export const OWNER_ENTERED_SECRETS = [
   "APPLE_API_KEY_P8_BASE64",
   "APPLE_API_KEY_ID",
@@ -227,11 +210,9 @@ export function commandBundle({ dir, cer, repo }) {
     // This password is born here and used only by GitHub. Nobody sees it.
     const password = randomBytes(24).toString("base64");
 
-    // The private key is encrypted, so openssl prompts for its passphrase — the
-    // prompt has to reach the person, hence `stdio: inherit`. The password wrapping
-    // the `.p12` (`-passout`) is the random value we generated, so it is passed via
-    // a file. The two passwords are different, and confusing them makes diagnosis
-    // hard.
+    // openssl prompts for the private key's passphrase, so `stdio: inherit` must reach the person.
+    // The `.p12` password (`-passout`) is the random value generated here, passed via a file; the two
+    // passwords differ, so do not confuse them.
     const passOutPath = path.join(tempDir, "p12-pass");
     fs.writeFileSync(passOutPath, password, { mode: 0o600 });
     console.log("[apple-signing] Enter the private key password (the one you chose in the csr step).");

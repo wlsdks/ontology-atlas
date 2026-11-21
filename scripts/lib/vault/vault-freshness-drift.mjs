@@ -134,9 +134,7 @@ export function computeVaultFreshnessDrift({ docs, changedFiles, vaultDir }) {
   };
 }
 
-// Stable marker so the Action can find-and-update its own comment instead of
-// spamming a new one on every push (spec: update the existing comment, never
-// spam).
+// Stable marker so the Action finds and updates its own comment instead of posting a new one each push.
 export const FRESHNESS_COMMENT_MARKER = "<!-- ontology-atlas-vault-freshness -->";
 
 /**

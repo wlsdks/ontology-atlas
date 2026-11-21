@@ -1,26 +1,13 @@
 #!/usr/bin/env node
 /**
- * Builds `latest.json`, the single file an installed app checks for updates.
- *
- * The app knows only one stable endpoint in `tauri.conf.json`:
- *
- *   https://ontologyatlas.com/update/latest.json
- *
- * Pages deployment copies this file from the newest published plain release (drafts and
- * GitHub pre-releases are skipped) to the stable address above
- * (`stage-hosted-updater-manifest.mjs`). Pre-install minisign verification remains
- * unchanged, so the trust boundary does not change even if the publication address changes.
- *
- * **Why two layers of signature.** The Apple certificate attests who built it; the
- * minisign key attests that this update package is ours. Those are different
- * questions. The app swaps the bundle only after verifying the `.sig` against
- * `pubkey`, so a package not signed with our key installs by no route at all — even
- * if the releases page is compromised.
- *
- * **Why a script.** The `.sig` is one base64 line and the platform key
- * (`darwin-aarch64`) fails silently on a typo — the app just says "no update", so a
- * hand-built manifest gives no sign of being wrong. It is built here and checked
- * here.
+ * Builds `latest.json`, the single file an installed app checks for updates, at the stable endpoint
+ * `https://ontologyatlas.com/update/latest.json` named in `tauri.conf.json`. Pages deployment copies
+ * it from the newest published plain release (`stage-hosted-updater-manifest.mjs`); pre-install
+ * minisign verification does not change with the publication address.
+ * Two signature layers: the Apple certificate attests who built the app, the minisign key that the
+ * update package is ours; the app swaps the bundle only after verifying the `.sig` against `pubkey`.
+ * A script because the `.sig` is one base64 line and a typo in the platform key (`darwin-aarch64`)
+ * fails silently as "no update".
  */
 
 import fs from "node:fs";

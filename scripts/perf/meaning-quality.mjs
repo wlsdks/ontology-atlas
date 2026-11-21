@@ -38,8 +38,6 @@ const QUERY_PREFIX = {
 const DOCUMENT_PREFIX = { 'nomic-embed-text-v2-moe': 'search_document: ' };
 const family = (model) => model.split(':')[0];
 
-// ── passages ─────────────────────────────────────────────────────────────────────
-
 const MANIFEST = join(ROOT, 'src-tauri', 'Cargo.toml');
 const BENCH = join(ROOT, 'src-tauri', 'target', 'release', process.platform === 'win32' ? 'vault-index-bench.exe' : 'vault-index-bench');
 let benchBuilt = false;
@@ -58,8 +56,6 @@ export async function* cratePassages(dir) {
   const code = await closed;
   if (code !== 0) throw new Error(`vault-index-bench passages exited with ${code}`);
 }
-
-// ── Ollama ───────────────────────────────────────────────────────────────────────
 
 export async function ollamaVersion(base) {
   try {
@@ -143,8 +139,6 @@ const dot = (a, b) => {
   return sum;
 };
 
-// ── the desk's word search ─────────────────────────────────────────────────────────
-
 /** Lets Node import the app's TypeScript: `@/` aliases and extensionless relative imports. */
 async function importDesk() {
   const src = `${join(ROOT, 'src')}/`;
@@ -222,8 +216,6 @@ async function loadVault(app) {
   return { files, docs, rawBySlug, sources, unitsByPath, passages };
 }
 
-// ── fusion and scoring ───────────────────────────────────────────────────────────
-
 /**
  * Reciprocal-rank fusion of the desk's word list with the meaning list into 8 leads. A meaning
  * passage that holds a word lead's line counts as the same lead ("both"); ties keep the better
@@ -275,8 +267,6 @@ function summarise(rows, field) {
 
 const fmt = (value) => value.toFixed(1).padStart(6);
 const signed = (value) => `${value >= 0 ? '+' : ''}${value.toFixed(1)}`.padStart(6);
-
-// ── main ─────────────────────────────────────────────────────────────────────────
 
 function parseArgs(argv) {
   const options = { models: DEFAULT_MODELS, ollama: DEFAULT_OLLAMA, json: null, verbose: false, writeVault: null, cache: true, queryPrefix: true };

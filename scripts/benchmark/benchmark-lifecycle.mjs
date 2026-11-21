@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 
-// Paired greenfield/brownfield benchmark.
-//
-// This runner measures Atlas consumption after a vault has been prepared. It
-// deliberately keeps construction cost separate: the source-hidden field trial
-// measures bootstrap and persisted-handoff cost, while this matrix asks whether
-// a prepared meaning layer changes an agent's answer on the same source.
+// Paired greenfield/brownfield benchmark: does a prepared meaning layer change an agent's answer
+// on the same source? Construction cost is measured by the source-hidden field trial, not here.
 
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -41,21 +37,10 @@ const OUTPUT_SCHEMA = {
   },
 };
 
-// Required evidence is sorted by who could possibly have written it, because one
-// blended score hides which half of a gap is a real comparison.
-//
-// `vocabulary` items are Atlas concept names such as `capabilities/checkout`.
-// They exist only inside the prepared vault, so the side without a vault scores
-// zero on them however good its answer is. A gap here says the Atlas side
-// returned a name that can be looked up again; it does not say the answer was
-// better.
-//
-// `path` and `phrase` items are things either side could write: a source path is
-// on disk for both, and either can say a thing is excluded. Only these two can
-// be compared.
-//
-// The sorting is derived here and then proved in `validateDefinitions`, so no
-// token can be filed into the flattering class by hand.
+// Required evidence is sorted by who could have written it. `vocabulary` items (Atlas concept
+// names such as `capabilities/checkout`) exist only in the prepared vault, so a gap there shows
+// a lookup, not a better answer; `path` and `phrase` items are comparable across sides.
+// The sorting is derived here and proved in `validateDefinitions`.
 const VAULT_KINDS = Object.freeze(['projects', 'domains', 'capabilities', 'elements']);
 
 export function classifyEvidence(token) {
@@ -633,8 +618,6 @@ function renderSummary({ date, summary, rows, title = 'Greenfield/brownfield lif
   return `${lines.join('\n')}\n`;
 }
 
-// Prints the specific tokens an arm did not write, so a coverage number is not read without
-// checking which word decided it.
 function renderMissedEvidence(rows) {
   const tally = new Map();
   for (const row of rows) {
@@ -661,16 +644,8 @@ function renderMissedEvidence(rows) {
   ];
 }
 
-// The benchmark's vault is written by this file, so nothing stops it from
-// inventing a section the product never produces — and then measuring the
-// invention. Comparing its headings against the vault this repository actually
-// keeps is the cheapest way to notice.
-//
-// This caught a real one: two capability bodies carried a `## Handoff` section
-// naming what to read first, a shape no node in `docs/ontology/` uses. On the
-// discount question the agent followed that order to the inventory capability,
-// which the change never touches, and the benchmark recorded it as Atlas
-// steering the agent wrong. It was the fixture talking.
+// Compares the fixture's section headings with the vault this repository keeps, so the
+// benchmark cannot measure a section the product never produces.
 export function fixtureHeadings() {
   const headings = new Set();
   for (const entry of CASES) {
@@ -713,9 +688,8 @@ export function validateDefinitions() {
         const kind = classifyEvidence(token);
         const onDisk = existsSync(join(FIXTURE_ROOT, entry.fixture, token));
         if (kind === 'vocabulary') {
-          // An Atlas concept name has to be a real entry in this subject's vault
-          // and absent from the source tree. That is what turns "the side
-          // without a vault cannot score this" into a fact, not an assumption.
+          // A concept name must be a real entry in this subject's vault and absent from the source
+          // tree, so "the side without a vault cannot score this" is a fact.
           if (!vaultSlugs.has(token)) {
             errors.push(`${task.id}: "${token}" is scored as an Atlas concept name, but the ${entry.id} vault has no such entry. Add it to the vault or score something both sides can write.`);
           }
@@ -748,9 +722,8 @@ export function validateDefinitions() {
 
 const TRANSCRIPT_STDERR_MARKER = '\n[stderr]\n';
 
-// A saved transcript is the answer on stdout followed by the captured log. Codex
-// wrote the final structured answer to stdout, so re-grading reads exactly the
-// object the original run scored and never the reasoning log around it.
+// A saved transcript is the answer on stdout followed by the captured log; re-grading reads
+// only the answer object the original run scored.
 export function parseTranscriptAnswer(transcript) {
   const stdout = transcript.split(TRANSCRIPT_STDERR_MARKER)[0].trim();
   if (!stdout) return { value: null, error: 'transcript has no stdout section' };
@@ -761,9 +734,7 @@ export function parseTranscriptAnswer(transcript) {
   }
 }
 
-// The coverage each side published, recovered from the run's own summary. If a
-// re-grade cannot reproduce those numbers it is reading different answers, and
-// its new columns mean nothing.
+// If a re-grade cannot reproduce these published numbers it is reading different answers.
 export function readPublishedCoverage(summaryMarkdown) {
   const published = new Map();
   for (const line of summaryMarkdown.split('\n')) {

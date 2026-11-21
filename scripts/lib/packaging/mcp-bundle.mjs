@@ -4,7 +4,6 @@
  * because Node type stripping is unflagged only from Node 23.6.
  */
 
-/** The bundle's own layout. `server/` mirrors `mcp/`, so entry paths stay readable. */
 export const BUNDLE_SERVER_DIR = 'server';
 export const BUNDLE_ENTRY_POINT = `${BUNDLE_SERVER_DIR}/src/index.js`;
 
@@ -28,13 +27,9 @@ export const importsTypedModule = (source) => new RegExp(TYPED_SPECIFIER.source)
 export const EXCLUDED_FROM_BUNDLE = Object.freeze(['src/parser.test.mjs']);
 
 /**
- * Runtime dependencies are vendored, so the closure is walked the way Node
- * itself resolves it: each package is looked up **from the directory of the
- * package that depends on it**. A flat lookup in `mcp/node_modules` finds the
- * two direct dependencies and misses `zod`, which pnpm keeps in its store and
- * links only under the SDK — measured, and the reason this takes a resolver
- * rather than a path join.
- *
+ * Runtime dependencies are vendored, so the closure is walked the way Node resolves it: each package
+ * is looked up from the directory of the package that depends on it. A flat lookup in
+ * `mcp/node_modules` misses `zod`, which pnpm links only under the SDK.
  * `resolvePackageDir(name, fromDir)` returns the real directory or null.
  */
 export function dependencyClosure({ rootDependencies, rootDir, resolvePackageDir, readManifest }) {
@@ -60,14 +55,7 @@ export function dependencyClosure({ rootDependencies, rootDir, resolvePackageDir
   };
 }
 
-/**
- * The bundle gets its own manifest rather than a copy of the repository's.
- * Copying it shipped three contradictions to end users: an `engines` pin of
- * `>=24 <25` beside a bundle measured on Node 20, a `files` list naming two
- * modules the bundle deliberately does not carry, and a Korean maintainer note
- * in the most public copy of that file. Node needs `type: "module"` here and
- * nothing else.
- */
+/** The bundle gets its own manifest rather than a copy of the repository's, whose `engines` pin, `files` list and maintainer note contradict what the bundle ships. Node needs `type: "module"` here and nothing else. */
 export function bundlePackageJson({ version }) {
   return {
     name: 'ontology-atlas-mcp',
@@ -79,12 +67,7 @@ export function bundlePackageJson({ version }) {
   };
 }
 
-/**
- * A vendored dependency ships its licence and its code, not its test suite.
- * Measured before this: 168 of the bundle's 896 files were `zod`'s own
- * `src/v3/tests/**`, and source maps were most of the unpacked weight. Neither
- * is something a host needs to start a server.
- */
+/** A vendored dependency ships its licence and its code, not its test suite or source maps, which a host does not need to start a server. */
 export function isBundleBallast(relativePath) {
   const normalized = relativePath.split('\\').join('/');
   return (
@@ -205,12 +188,9 @@ export function serverJsonProblems(document) {
 }
 
 /**
- * What a person holding the file can check. Two releases can carry the same
- * server version with different bytes, so the artifact states the commit it was
- * built from; without this, "which source is this?" has no answer inside the zip.
- * It also settles the one contradiction a reader of the unpacked bundle meets:
- * the `engines` field in the server's own `package.json` is the repository's
- * toolchain pin, while the manifest states the floor the bundle was measured on.
+ * What a person holding the file can check: two releases can carry the same server version with
+ * different bytes, so the artifact states the commit it was built from. The server's own `package.json`
+ * `engines` is the repository's toolchain pin, while the manifest states the floor the bundle was measured on.
  */
 export function bundleProvenance({ version, commit, tag, builtAt, witnessedRuntimes }) {
   return [

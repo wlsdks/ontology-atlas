@@ -1,19 +1,8 @@
 #!/usr/bin/env node
-// Docs surface generator — `docs/.generated/mcp-surface.json`.
-//
-// For a long time this repository's doc checks were prose pins counting whether a
-// sentence appeared in a README. Such pins **failed to catch the accident where a
-// tool's behaviour changed and the docs did not** (the sentence was unchanged) and
-// went red when a document was rewritten in better words. So the criterion became one
-// line:
-//
-//   Check only what a machine can generate. Never check a sentence a human wrote.
-//
-// This script writes the public surface by **asking the real MCP server for
-// `tools/list`**, and `--check` regenerates and diffs it (the same shape as
-// Kubernetes' `verify-generated-docs.sh` and GitLab's `graphql-verify`). It also
-// checks that the registered names actually appear in the docs — registering a new
-// tool without documenting it is caught here.
+// Docs surface generator: writes `docs/.generated/mcp-surface.json` by asking the real MCP server for
+// `tools/list`; `--check` regenerates and diffs it, and checks that registered names appear in the docs.
+// Check only what a machine can generate, never a sentence a human wrote: prose pins miss a tool
+// changing while its sentence stays, and go red when the document is rewritten in better words.
 
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';

@@ -7,8 +7,8 @@ import { blankComments } from "../quality/source-language/inventory.mjs";
 export const DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS = [
   "src/views/docs-vault",
   "src/widgets/docs-vault",
-  // Manual writing now lives in the selected map inspector; ACP writing pauses
-  // inside its existing conversation card. The old Studio route is a redirect.
+  // Manual writing lives in the selected map inspector; ACP writing pauses inside its existing
+  // conversation card.
   "src/views/home",
   "src/features/ontology-meaning-editor",
   "src/features/ontology-change-review",
@@ -36,9 +36,7 @@ export const ONTOLOGY_DESIGN_FORBIDDEN_CHECKS = [
 
 export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   {
-    // The audit band was promoted to a centred modal and moved from
-    // `DocsVaultSourceContractBar` to `DocsVaultAuditModal` (a separate file), so the
-    // marker checks for presence across the whole file bundle.
+    // The marker checks for presence across the whole file bundle.
     id: "source-vault-execution-contract",
     files: [
       "src/views/docs-vault/ui/DocsVaultPage.tsx",

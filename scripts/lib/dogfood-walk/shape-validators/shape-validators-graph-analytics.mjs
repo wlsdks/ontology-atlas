@@ -2,7 +2,6 @@
 // surface tools (schema, facets, match_nodes/edges, node_profile, centrality,
 // communities, similar_nodes, explain_relation) plus shared bucket/row helpers
 // reused by the growth/maintenance plan validators.
-// Split out of scripts/dogfood/dogfood-mcp-walk.mjs (structural decomposition, logic unchanged).
 import { matchRowsFailure, numericSummaryFailure } from "./shape-validators-primitives.mjs";
 import { growthCandidateRowFailure } from "./shape-validators-growth.mjs";
 import { graphEdgeFailure, lineageBucketFailure } from "./shape-validators-graph-structure.mjs";

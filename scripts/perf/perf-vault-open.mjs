@@ -25,10 +25,7 @@ const WORK = join(tmpdir(), 'atlas-perf-vault-open');
 const REPORT = join(WORK, 'report.jsonl');
 const MB = 1024 * 1024;
 
-/**
- * Limits from the 2026-11-19 derived-index plan, slice 2. Before: the app's build from files took
- * 1.7 s CPU at 10,000 files and 9.0 s at 50,000, holding 261 to 271 MB of heap at 50,000.
- */
+/** Limits for the derived-index reopen; the app's build from files took 9.0 s CPU at 50,000 files before the index. */
 const LIMITS = {
   reopenMs: { 10000: 1000, 50000: 3000 },
   rowsRatio: 0.9,

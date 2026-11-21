@@ -171,9 +171,8 @@ export function commandsForLane({
 }
 
 /**
- * Commands that read the tree and write nothing, long enough to run beside the rest of their
- * lane. `pnpm lint` was 108 of the gates lane's 210 serial seconds (train run 36285265924);
- * beside the other 57 commands it costs the lane nothing it was not already waiting for.
+ * Commands that read the tree and write nothing, long enough to run beside the rest of their lane
+ * (`pnpm lint` alone is over half the gates lane's serial time).
  */
 export const CONCURRENT_COMMANDS = Object.freeze(['pnpm lint', 'pnpm licenses:check', 'pnpm notice:check']);
 

@@ -1,21 +1,11 @@
 #!/usr/bin/env node
 /**
- * Bakes the 1200x630 link-preview card for each locale into `public/og/<locale>.png`, and the
- * English card into `public/og-image.png` for the root layout and `x-default`.
- *
- * The picture is this repository's own ontology: the map `/download` films, laid out by the same
- * `buildFilmScene` from the same bundled vault, drawn flat (indigo marks, thin lines, the amber
- * project hub, the domain names). Moru sits at the map's left edge facing it. The headline and
- * the fact line are read from `messages/<locale>/download.json` on every run, so a copy or vault
- * change regenerates the same layout.
- *
- * Moru is the presentation master enlarged four times with nearest-neighbour sampling at
- * `MORU`: the same whole pixels `build-brand-raster.test.mjs` audits in the Open Graph image.
- * Moru's face and the centred headline stay inside the middle 630x630 square, which some apps
- * crop a link card to; only Japanese's longer first line runs past it.
- *
- * Japanese and Chinese draw kana and Han from the operating system face, as the site does
- * (`app/styles/lang-cjk.css`); run it on macOS, where Hiragino Sans and PingFang SC exist.
+ * Bakes the 1200x630 link-preview card per locale into `public/og/<locale>.png`, and the English
+ * card into `public/og-image.png`. The picture is this repository's ontology as the `/download`
+ * film lays it out (`buildFilmScene`), drawn flat; headline and fact line come from
+ * `messages/<locale>/download.json`. Moru's face and the centred headline stay inside the middle
+ * 630x630 square that some apps crop a link card to. Japanese and Chinese use the operating
+ * system's CJK faces (`app/styles/lang-cjk.css`), so run it on macOS.
  *
  * Usage: node scripts/brand/build-og-cards.mjs [--out <dir>]
  */

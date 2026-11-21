@@ -8,10 +8,8 @@ import { chromium } from "@playwright/test";
 import { rmSync } from "node:fs";
 
 const BASE = process.argv[2] ?? "http://localhost:4173";
-// **A fresh profile per run.** With a fixed path, `rmSync` pulls the rug from
-// under a Chrome still holding it from the previous run; the window closes
-// itself and the symptom reads as "Target page has been closed", which looks
-// like a measurement failure (it happened twice).
+// A fresh profile per run: deleting a fixed path pulls it from under a Chrome still holding it, the
+// window closes itself and the symptom reads as "Target page has been closed".
 const PROFILE = `/tmp/atlas-perf-${process.pid}`;
 
 /** Vault sizes measured — the small one is the control for "does cost scale with node count". */
@@ -95,10 +93,8 @@ async function dragNode(page, box, target, moves) {
   return { work, backing, grabbed };
 }
 
-// **Delete the profile before launching, not after.** Deleting afterwards pulls
-// the rug from under the running browser; the window closes itself and the
-// symptom reads as "Target page has been closed", which looks like a measurement
-// failure (it happened once).
+// Delete the profile before launching, not after: deleting afterwards pulls it from under the running
+// browser (the same "Target page has been closed" symptom).
 const ctx = await chromium.launchPersistentContext(PROFILE, {
   headless: false, // A real display pipeline is needed to take the same path as a real device
   viewport: null,
@@ -149,10 +145,8 @@ for (const r of rows) {
     `  ${r.label.padEnd(16)} ${ok ? "node grabbed ✓" : `❌ ${r.grabbed?.kind} (pushed the background — this number is invalid)`}` +
       `  [${r.target.kind} ${r.target.label}]`,
   );
-  // **Read p95 as the representative value.** Dragging at human speed mixes idle
-  // frames into the sample and drags the median down to 0.2ms — the app did not get
-  // faster, the actual dragging just became a minority of the sample. The cost
-  // occurs only on dragging frames, so the tail is what to look at.
+  // Read p95 as the representative value: dragging at human speed mixes idle frames into the sample and
+  // drags the median down; the cost occurs only on dragging frames.
   console.log(
     `  ${"".padEnd(16)} p95 ${String(r.work.p95).padStart(6)} · worst ${String(r.work.max).padStart(6)} ` +
       `(median ${r.work.med} — includes idle frames, so it is only for reference) · backing ${r.backing?.width}x${r.backing?.height}\n`,
