@@ -24,6 +24,7 @@ export function LibraryStartStage({
   agentNote,
   wikiOnly,
   busy,
+  foundShown,
   found,
   dropArea,
   suggestion,
@@ -42,6 +43,8 @@ export function LibraryStartStage({
   agentNote: ReactNode;
   wikiOnly: boolean;
   busy: boolean;
+  /** Found documents already name the folder and open the find dialog, so the folder block steps aside. */
+  foundShown: boolean;
   found: ReactNode;
   dropArea: ReactNode;
   suggestion: ReactNode;
@@ -72,7 +75,7 @@ export function LibraryStartStage({
       </header>
       {found}
       {dropArea}
-      <div data-testid="library-start-where" className="flex flex-col gap-2">
+      {foundShown ? null : <div data-testid="library-start-where" className="flex flex-col gap-2">
         <p className="text-body text-[color:var(--color-text-secondary)] [overflow-wrap:anywhere]">
           {inApp
             ? t("start.where", { folder: folderName, fileManagerName })
@@ -100,7 +103,7 @@ export function LibraryStartStage({
             {t("sources.find")}
           </button>
         </div>
-      </div>
+      </div>}
       {suggestion}
       <footer className="flex flex-col items-start gap-2 border-t border-[color:var(--color-divider)] pt-4">
         <p data-testid="library-start-privacy" className="text-label text-[color:var(--color-text-tertiary)]">{t("start.privacy")}</p>

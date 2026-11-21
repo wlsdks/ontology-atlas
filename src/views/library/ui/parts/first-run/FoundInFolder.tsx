@@ -47,7 +47,8 @@ export function FoundInFolder({
       data-found-count={found.count}
       className="motion-stagger-fade flex w-full flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-5 py-4"
     >
-      <h2 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+      {/* The promise that no file was opened rides on the title, so the card keeps one line under it. */}
+      <h2 title={t("start.found.basis")} className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
         {found.truncated ? t("found.titleTruncated", { count: found.count }) : t("found.title", { count: found.count })}
       </h2>
       <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1.5 text-body text-[color:var(--color-text-secondary)]">
@@ -73,7 +74,11 @@ export function FoundInFolder({
         </Button>
         <button
           type="button"
-          onClick={onChoose}
+          onClick={(event) => {
+            /* A click that did not focus the button (Safari) still needs a place for the dialog to return focus. */
+            event.currentTarget.focus({ preventScroll: true });
+            onChoose();
+          }}
           disabled={busy}
           data-testid="library-found-choose"
           className={controlClass({ shape: "chip", size: "lg", tone: "secondary", hoverInk: "strong", hoverBorder: "strong", className: "gap-1.5" })}
@@ -82,7 +87,6 @@ export function FoundInFolder({
           {t("found.choose")}
         </button>
       </div>
-      <p className="text-label text-[color:var(--color-text-tertiary)]">{t("start.found.basis")}</p>
     </section>
   );
 }

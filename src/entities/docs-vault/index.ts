@@ -68,6 +68,7 @@ export {
   walkDroppedFolder,
   withoutVaultOwnedMarkdown,
 } from './lib/library/source-discovery';
+export { sourceFolderOf } from './lib/library/source-folder';
 export type {
   DiscoverySkipReason,
   DroppedEntry,

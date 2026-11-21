@@ -425,7 +425,7 @@ test.describe("the Library destination", () => {
         'project.md': VAULT['project.md'],
         'inbox/Requirements.pdf': '%PDF-1.7 requirements\n%% discovery proposes only files of at least sixty-four bytes\n',
       } : VAULT);
-      const opener = page.getByTestId(empty ? 'library-start-find-documents' : 'library-find-documents');
+      const opener = page.getByTestId(empty ? 'library-found-choose' : 'library-find-documents');
       await opener.evaluate((button) => {
         (document.activeElement as HTMLElement)?.blur();
         button.addEventListener('mousedown', (event) => event.preventDefault(), { once: true });

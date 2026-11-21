@@ -9,7 +9,7 @@ import type { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { BookText, CloudDownload, FilePlus2, FileText, ListFilter, PencilLine, Search, Sparkles, Stethoscope, X } from "lucide-react";
 
-import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
+import { formatSourceBytes, sourceFolderOf, type LibrarySourceRow } from "@/entities/docs-vault";
 import { humanPageSlug } from "@/features/library";
 import { writerLabel } from "../../../lib/wiki/writer-label";
 import { cn } from "@/shared/lib/cn";
@@ -678,6 +678,7 @@ export function LibrarySection({
                 const hit = needle ? search.hits.get(row.path) : undefined;
                 /* The pane is open **at this unit** — not merely on this file. */
                 const hitOpen = Boolean(hit && active && selectedSourceAnchor === hit.anchor);
+                const folder = sourceFolderOf(row.path);
                 return (
                   <li key={row.path}>
                     <RowButton
@@ -701,6 +702,12 @@ export function LibrarySection({
                           the sidebar keeps one left edge from top to bottom. */}
                       <IndexGlyph><FileText size={ICON_SIZE.sm} className="opacity-60" aria-hidden /></IndexGlyph>
                       <span className="min-w-0 flex-1 truncate">{row.name}</span>
+                      {/* Copies keep their folders, so two rows may share a name; the folder tells them apart. */}
+                      {folder ? (
+                        <span data-testid="library-source-folder" className="max-w-[45%] truncate text-label text-[color:var(--color-text-tertiary)]">
+                          {folder}
+                        </span>
+                      ) : null}
                       {/* Format is a fact the directory listing already holds. The tag is drawn only when the name does not
                          already say it, since `row.format` is the name's extension; a name with no extension still gets
                          the word. */}

@@ -72,6 +72,7 @@ export function LibraryEmptyFolderStage({
         agentNote={agentNote}
         wikiOnly={wikiOnly}
         busy={busy}
+        foundShown={found.inFolderSummary !== null}
         found={found.inFolderSummary ? (
           <FoundInFolder
             found={found.inFolderSummary}
