@@ -26,12 +26,7 @@ export { OntologyMapClusterHoverCard } from './ui/OntologyMapClusterHoverCard';
 export { OntologyMapContextMenu } from './ui/OntologyMapContextMenu';
 export { requestOntologyMapFrame } from './ui/frame-loop/use-topology-frame-loop';
 export { buildV2Connections, buildV2ConnectionGroups, buildV2EvidenceRows, formatV2HandoffText, } from './ui/detail-panel/map-datasheet';
-/**
- * INDEX panel's expand/collapse toggles the DOM `data-topology-index`
- * attribute that drives `--map-safe-inset-left` (`app/globals.css`),
- * so the map's camera fit must be forced to re-read the token instead of
- * trusting its mount-time cache (B3 "The Hub is the Map" — HomePage wiring).
- */
+/** Forces the camera fit to re-read `--map-safe-inset-left`, which the INDEX panel toggles through `data-topology-index`. */
 export { refreshIndexDependentTokens } from './tokens/read-map-tokens';
 export { ambientSleepFactor, isAmbientAsleep } from './model/ambient/ambient-sleep';
 export { PLAIN_TIER_REVEAL, RECENT_SPOTLIGHT_REVEAL_MAX } from './model/visibility/tier-visibility';
