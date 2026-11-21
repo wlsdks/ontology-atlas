@@ -5,10 +5,8 @@ import { CONTROL_DISABLED_CLASS } from "@/shared/ui/control-class";
 export interface DocsHeaderTileProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "title" | "className"> {
   icon: ReactNode;
-  /** The tooltip and default accessible name. */
   title: string;
   "aria-label"?: string;
-  /** Indigo border and surface only. */
   active?: boolean;
   className?: string;
 }

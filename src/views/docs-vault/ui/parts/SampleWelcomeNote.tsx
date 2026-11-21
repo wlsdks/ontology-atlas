@@ -4,7 +4,6 @@ import { useTranslations } from "next-intl";
 import { IconButton, controlClass } from "@/shared/ui";
 
 export interface SampleWelcomeNoteProps {
-  /** With FSA a folder can be opened on the web too, as in `SampleNotice`. */
   canOpenLocalVault: boolean;
   onOpenFolder: () => void;
   onDismiss: () => void;

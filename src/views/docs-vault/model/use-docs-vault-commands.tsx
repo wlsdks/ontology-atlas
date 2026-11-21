@@ -67,7 +67,6 @@ export function useDocsVaultCommands({
   const router = useRouter();
   const toast = useToast();
 
-  /** The toast confirms the copy, including failure, since clipboard permission can be refused silently. */
   const handleCopyUrl = useCallback(
     async (slug: string) => {
       if (typeof window === 'undefined') return;

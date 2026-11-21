@@ -34,7 +34,6 @@ export function useDocsVaultAddress() {
   const querySample =
     searchParams?.get('sample') === 'dogfood' ? ('dogfood' as const) : null;
   const queryDogfood = searchParams?.get('dogfood') ?? null;
-  // An unknown order value falls back to the default.
   const queryTreeSort = parseDocsTreeSort(searchParams?.get('sort'));
   const queryTreeGroup = parseDocsTreeGroup(searchParams?.get('group'));
   // `via=topology:<nodeId>` sends the crumb back to that node, selected.
@@ -45,7 +44,6 @@ export function useDocsVaultAddress() {
       buildDocsVaultHref({
         slug,
         hash,
-        // Keep the origin across in-vault hops so the crumb keeps its way back.
         via: topologyReturnNode
           ? buildTopologyReturnMarker(topologyReturnNode)
           : null,
@@ -133,7 +131,6 @@ export function useDocsVaultUrlSync({
   const router = useRouter();
   const [treeSort, setTreeSort] = useState<DocsTreeSort>(queryTreeSort);
   const [treeGroup, setTreeGroup] = useState<DocsTreeGroup>(queryTreeGroup);
-  // Once on mount, backfill from localStorage when the URL carries no value.
   const initialPrefsAppliedRef = useRef(false);
   useEffect(() => {
     if (initialPrefsAppliedRef.current) return;
@@ -143,7 +140,6 @@ export function useDocsVaultUrlSync({
     });
   }, [searchParams, queryView, setView]);
 
-  // URL to state only; user actions push state to the URL themselves.
   useEffect(() => {
     if (!vaultScopeSettled || !outOfScopeQuerySlug) return;
     router.replace(generalDocsHref(outOfScopeQuerySlug), { scroll: false });

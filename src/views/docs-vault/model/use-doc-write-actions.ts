@@ -36,14 +36,12 @@ import type { useVaultManifest } from './use-vault-manifest';
 export interface DeleteDocTarget {
   slug: string;
   title: string;
-  /** By display name. */
   referrers: ReadonlyArray<{ slug: string; title: string }>;
 }
 
 export interface RenameDocTarget {
   slug: string;
   title: string;
-  /** Their references move with the file. */
   referrerCount: number;
 }
 
@@ -54,11 +52,9 @@ export interface DocFrontmatterPatch {
   kind?: string;
   domain?: string | null;
   title?: string;
-  /** A per-language name (`display_ko`, `display_en`, ...); null removes the key. */
   [displayName: `display_${string}`]: string | null | undefined;
 }
 
-/** How many referrer names a kind-change receipt spells out before it counts the rest. */
 const REFERRER_NAMES_SHOWN = 3;
 
 // An updater can run during render, so the write goes to a microtask.
@@ -72,7 +68,6 @@ function storeSlugListSoon(storageKey: string, slugs: readonly string[]): void {
   });
 }
 
-/** The reader's word for a kind-named list key; shared with the write receipts. */
 export function useReferrerListName(): (key: string) => string {
   const t = useTranslations("docsVault.frontmatterBlock.referrerLists.listName");
   return useCallback(
@@ -126,7 +121,6 @@ export function useDocWriteActions({
   const router = useRouter();
   const toast = useToast();
   const failureSentence = useFailureSentence();
-  // Names of documents pointing at `slug`, from the manifest's backlink index.
   const referrersOf = useCallback(
     (slug: string) => {
       return (manifest.backlinkSources?.[slug] ?? []).map((fromSlug) => {
@@ -172,7 +166,6 @@ export function useDocWriteActions({
     if (!canEditCurrent || !selectedSlug) return;
     const doc = manifest.docs.find((d) => d.slug === selectedSlug);
     if (!doc) return;
-    // Clear what would stand above the scrim.
     toast.dismiss();
     setDeleteTarget({
       slug: doc.slug,
@@ -183,11 +176,9 @@ export function useDocWriteActions({
   const confirmDelete = useCallback(async () => {
     if (!deleteTarget) return;
     const slug = deleteTarget.slug;
-    // The version the person was shown is the one they agreed to remove.
     const expectedMtime = manifest.docs.find((d) => d.slug === slug)?.mtime;
     await localVault.deleteDoc(slug, { expectedMtime });
     setDeleteTarget(null);
-    // Mark the slug as app-touched so the missing-document banner ignores it.
     appTouchedSlugsRef.current = new Set([slug]);
     setSelectedSlug(null);
     replaceUrlState({ slug: null });
@@ -238,7 +229,6 @@ export function useDocWriteActions({
     setView('doc');
     setAdvancedOpen(false);
     toast.show(
-      // Concepts and config files are counted separately.
       t('dialog.ontologyStarterDone', {
         concepts: result.markdownCreated,
         configs: result.agentConfigCreated,
@@ -261,16 +251,12 @@ export function useDocWriteActions({
     setView,
   ]);
 
-  // New documents pick a kind first, so every document is a node from creation;
-  // the map creates nodes with the same `buildNewNodeDoc`.
   const [newDocKindDialogOpen, setNewDocKindDialogOpen] = useState(false);
   const handleOpenNewDocDialog = useCallback(() => {
     if (!canEditCurrent) return;
     closePopovers();
     setNewDocKindDialogOpen(true);
   }, [canEditCurrent, closePopovers]);
-  // Warns about a similar title of the same kind before creating, without blocking;
-  // slug collisions are handled separately.
   const [pendingSimilarDoc, setPendingSimilarDoc] = useState<{
     slug: string;
     markdown: string;
@@ -426,7 +412,6 @@ export function useDocWriteActions({
         .sort((a, b) => a.title.localeCompare(b.title)),
     [manifest],
   );
-  // Referrers are named by display name, and each list by its plain name in the reader's language.
   const docDisplayName = useCallback(
     (slug: string) => {
       const doc = docsBySlug.get(slug);
@@ -443,7 +428,6 @@ export function useDocWriteActions({
     },
     [docDisplayName, t],
   );
-  // Rows the quick patch shows before Save, from the same verdict the write applies.
   const kindChangeReferrers = useCallback(
     (newKind: string, newSlug: string) => {
       if (!selectedDoc) return [];
@@ -455,7 +439,6 @@ export function useDocWriteActions({
     },
     [selectedDoc, manifest, docDisplayName],
   );
-  // The receipt after Save: which referrers moved lists, kept it, or could not be written.
   const showKindChangeReceipt = useCallback(
     (report: ReferrerRewriteReport) => {
       const receipt = kindChangeReceipt(report);

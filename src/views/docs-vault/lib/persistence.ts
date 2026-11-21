@@ -1,18 +1,11 @@
-/**
- * URL and localStorage helpers for the docs vault page; pure plus a window guard, so SSR and
- * static export are safe. The docs check modal's open state is deliberately not persisted.
- */
-
 import { VaultConflictError } from "@/entities/vault-session";
 
 export type DocsVaultSource = "server" | "local";
-// One view remains; call-site signatures are kept so adding a view changes only this module.
 export type DocsVaultView = "doc";
 
 export const DOCS_VAULT_SOURCE_KEY = "demo:docs-vault:source";
 export const DOCS_VAULT_LIST_COLLAPSED_KEY = "demo:docs-vault:list-collapsed";
 
-/** A workspace preference persisted in localStorage; defaults to expanded. */
 export function readStoredListCollapsed(): boolean {
   if (typeof window === "undefined") return false;
   try {
@@ -37,7 +30,6 @@ export function storeListCollapsed(collapsed: boolean) {
   }
 }
 
-/** An unknown value falls back to 'doc'. */
 export function parseDocsVaultView(value?: string | null): DocsVaultView {
   void value;
   return "doc";
@@ -173,7 +165,6 @@ export function shouldShowDesktopVaultWelcome({
   );
 }
 
-/** Escapes user input for a popout or print document; four entities suffice without SVG or iframe. */
 export function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -182,7 +173,6 @@ export function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** Re-exported so Docs call sites keep this import while the definition lives in shared. */
 export { scheduleStateSync } from "@/shared/lib/render-timing/schedule-state-sync";
 
 /**

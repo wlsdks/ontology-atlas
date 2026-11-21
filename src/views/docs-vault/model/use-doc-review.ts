@@ -27,7 +27,6 @@ export function useDocReview({
   const localVault = useLocalVault();
   const t = useTranslations('docsVault');
   const toast = useToast();
-  // Built from the whole folder: a reserved node keeps waiting whatever the filter shows.
   const reviewQueue = useReviewQueue({
     docs: scopedDocs,
     getDocContent,
@@ -60,20 +59,17 @@ export function useDocReview({
               }
             : {
                 review_state: 'confirmed',
-                // The reader's calendar day, not UTC's; `sv-SE` formats as `YYYY-MM-DD`.
                 reviewed_at: new Date().toLocaleDateString('sv-SE'),
                 reviewed_digest: await reviewDigest(
                   selectedDoc.frontmatter,
                   parseFrontmatter(await getDocContent(selectedDoc.slug)).body,
                 ),
-                // Confirming answers the reservation, so its question is cleared.
                 review_note: null,
               };
         await localVault.updateFrontmatter(selectedDoc.slug, patch, {
           expectedMtime: selectedDoc.mtime,
         });
       } catch (err) {
-        // Both callers discard this promise, so the failure is told here.
         if (err instanceof VaultConflictError) {
           toast.show(t('dialog.vaultConflict'), 'error');
         } else {

@@ -4,7 +4,6 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTranslations } from "next-intl";
 import { controlClass } from "@/shared/ui";
 
-/** Shown when no document is selected. */
 export function EmptyState({
   docCount,
   onOpenAgentWorkflow,

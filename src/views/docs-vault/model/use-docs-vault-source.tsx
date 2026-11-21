@@ -61,7 +61,6 @@ export function useDocsVaultSource({
   const localWinsInitialSource =
     Boolean(localVault.manifest) && (installedShell || querySource !== 'server');
   const localIntentAutoOpenRef = useRef(false);
-  // A loaded local vault starts local; `?intent=local` switches after mount, in the effect below.
   const [source, setSource] = useState<Source>(() =>
     localWinsInitialSource ? 'local' : querySource ?? 'server',
   );
@@ -72,7 +71,6 @@ export function useDocsVaultSource({
   // deeplink is overwritten by the server manifest.
   const [sourcePreferenceHydrated, setSourcePreferenceHydrated] =
     useState(() => localWinsInitialSource);
-  // The rail gear owns settings at lg+; below lg the header chrome tile does.
   const navRailSettingsSlot = useMemo(
     () => (
       <AppSettingsMenu
@@ -101,11 +99,9 @@ export function useDocsVaultSource({
         setAdvancedOpen(false);
       });
     }
-    // Mount only, so a closed panel does not reopen on reload.
   }, [isDesktopRuntime, querySource, setAdvancedOpen]);
 
   const localVaultStatus = localVault.status;
-  // Distinguishes "not known yet" from "confirmed absent"; the landing decision waits on it.
   const localVaultRestoreAttempted = localVault.restoreAttempted;
   const openRecentLocalVault = localVault.openRecent;
   const localVaultRootPath = localVault.handle
@@ -167,7 +163,6 @@ export function useDocsVaultSource({
 
   useEffect(() => {
     migrateLegacyRecentDocs();
-    // A mounted local vault wins on landing; `?source=server` stays a web-only choice.
     if (localVault.manifest && (installedShell || querySource !== 'server')) {
       scheduleStateSync(() => {
         setSource('local');
@@ -175,7 +170,6 @@ export function useDocsVaultSource({
       });
       return;
     }
-    // The installed shell never revives the stored web/sample preference.
     if (installedShell) return;
     if (querySource) {
       scheduleStateSync(() => {
@@ -184,7 +178,6 @@ export function useDocsVaultSource({
       });
       return;
     }
-    // `?intent=local` holds in every runtime; the mount effect above switches the source.
     if (typeof window !== 'undefined') {
       const intent = new URLSearchParams(window.location.search).get('intent');
       if (shouldHonorLocalIntent(intent, isDesktopRuntime)) {
@@ -198,8 +191,6 @@ export function useDocsVaultSource({
     });
   }, [installedShell, isDesktopRuntime, localVault.manifest, querySource]);
 
-  // Once per mount, when the restore attempt finishes, prefer a live local vault over a
-  // stored sample preference; not persisted.
   const [landingSourceResolved, setLandingSourceResolved] = useState(
     () => localWinsInitialSource,
   );
@@ -242,10 +233,8 @@ export function useDocsVaultSource({
   const vaultScopeSettled =
     sourcePreferenceHydrated &&
     landingSourceResolved &&
-    // A local source with no manifest is settled too: the folder picker owns the screen.
     (source === 'server' || localSourceReady || showDesktopWelcome);
 
-  // Fall back to the sample only when FSA is unsupported; a local web session is valid.
   useEffect(() => {
     if (source === 'local' && localVaultStatus === 'unsupported') {
       scheduleStateSync(() => {
@@ -272,17 +261,14 @@ export function useDocsVaultSource({
     setSource(next);
     setStaticSampleOverride(null);
     storeSource(next);
-    // The same slug rarely exists in both vaults.
     setSelectedSlug(null);
     setActiveTag(null);
-    // Re-show the welcome note on every entry into sample mode.
     if (next === 'server') setSampleWelcomeDismissed(false);
     replaceUrlState(
       next === 'server'
         ? { slug: null, view, intent: null, source: null, sample: null }
         : { slug: null, view, source: null, sample: null },
     );
-    // The native picker opens only from the welcome screen's "open folder".
     if (next === 'local' && isDesktopRuntime && localVault.status !== 'loaded') {
       localIntentAutoOpenRef.current = true;
       setAdvancedOpen(false);

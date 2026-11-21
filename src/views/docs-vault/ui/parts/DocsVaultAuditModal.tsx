@@ -23,9 +23,7 @@ const SOURCE_VAULT_RUNTIME_REPLAY_MARKERS = [
 ] as const;
 
 export interface DocsVaultAuditModalProps {
-  /** Non-null only on desktop with a known absolute path; `null` draws no row rather than a half-true one. */
   skillParity?: SkillParityModel | null;
-  /** The caller composes the handoff sentence. */
   onCopySkillParityHandoff?: (rows: SkillParityRow[]) => void;
   open: boolean;
   manifest: VaultManifest;
@@ -71,7 +69,6 @@ export function DocsVaultAuditModal({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  // Focus trap: focus the first control on open, cycle Tab, restore the trigger on close.
   useEffect(() => {
     if (!open) return;
     previousFocusRef.current = document.activeElement as HTMLElement | null;
@@ -189,7 +186,6 @@ export function DocsVaultAuditModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: EXIT_TRANSITION }}
-          // Leaving is faster than entering.
           transition={reducedMotion ? MOTION.fast : MOTION.base}
           className="fixed inset-0 z-50 flex justify-center px-4"
           style={{ paddingTop: "max(96px, 18vh)" }}
@@ -321,7 +317,6 @@ export function DocsVaultAuditModal({
                       {tSkillParity("chip")}
                     </span>
                   </div>
-                  {/* All-agreed is neutral; only a divergence draws attention. */}
                   <p
                     data-testid="docs-audit-skill-parity-value"
                     className="mt-0.5 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
@@ -336,7 +331,6 @@ export function DocsVaultAuditModal({
                   <p className="mt-0.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
                     {tSkillParity("body")}
                   </p>
-                  {/* Only what diverges is named. */}
                   {disagreeing.length > 0 ? (
                     <div className="mt-1.5 flex flex-wrap gap-1">
                       {disagreeing.map((row) => (

@@ -17,10 +17,6 @@ export function useQuerySlugVerdict({
   const { replaceUrlState } = address;
   const { normalizedQuerySlug, docsBySlug, staticVault } = vault;
   const { recentKey, source, vaultScopeSettled } = src;
-  /**
-   * The unresolved slug leaves the address after capture, so the result does not reappear on every
-   * visit.
-   */
   const [missingQuerySlug, setMissingQuerySlug] = useState<string | null>(null);
   /**
    * Slugs the app itself just renamed or deleted are not "missing"; `useSearchParams` still
@@ -40,7 +36,6 @@ export function useQuerySlugVerdict({
       setMissingQuerySlug((prev) => (prev === normalizedQuerySlug ? null : prev));
       return;
     }
-    // Until the vault loads and the scope settles, the answer is "not known yet".
     if (!vaultScopeSettled) return;
     setMissingQuerySlug((prev) => prev ?? normalizedQuerySlug);
   }, [normalizedQuerySlug, docsBySlug, vaultScopeSettled]);

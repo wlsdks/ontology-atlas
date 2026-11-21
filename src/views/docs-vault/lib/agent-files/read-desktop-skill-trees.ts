@@ -3,10 +3,8 @@ import { listTauriVaultEntries, readTauriVaultText } from '@/shared/lib/vault-fo
 import type { AgentFileEntry } from '@/entities/agent-files';
 
 /**
- * Reads both skill trees by absolute path, desktop only. The manifest walkers skip dot
- * directories by design, so `.claude/skills` never enters the manifest. An FSA handle has no
- * absolute path, so the web returns an empty array (`.claude/rules/surfaces.md`: a desktop
- * capability need not be backfilled).
+ * The manifest walkers skip dot directories, and an FSA handle has no absolute path, so the web
+ * returns an empty array (`.claude/rules/surfaces.md`: a desktop capability need not be backfilled).
  */
 
 const SKILL_TREES = ['.claude/skills', '.agents/skills'] as const;
@@ -28,7 +26,6 @@ async function walk(
   try {
     entries = await listTauriVaultEntries(rootPath, relative);
   } catch {
-    // Most vaults have no `.claude/`.
     return;
   }
   for (const entry of entries) {

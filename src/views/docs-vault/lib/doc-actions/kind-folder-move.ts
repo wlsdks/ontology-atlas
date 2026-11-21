@@ -14,10 +14,6 @@ function splitSlug(slug: string): { dir: string[]; tail: string } {
   return { dir: segments.slice(0, -1), tail: segments[segments.length - 1] ?? "" };
 }
 
-/**
- * Null when the kind keeps no folder or the document is already there. A document in another
- * kind's folder moves beside it, so a vault kept in a subfolder stays there.
- */
 export function kindFolderAddress(slug: string, kind: string): string | null {
   const folderName = folderForKind(kind).replace(/\/$/, "");
   if (!folderName) return null;
@@ -31,10 +27,6 @@ export function kindFolderAddress(slug: string, kind: string): string | null {
   return `${folderName}/${tail}`;
 }
 
-/**
- * Only when the document sits in its old kind's folder; a document kept elsewhere is not
- * relocated by a select.
- */
 export function reclassifyMoveTarget(
   slug: string,
   fromKind: string | null | undefined,

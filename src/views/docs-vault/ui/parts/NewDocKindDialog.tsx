@@ -7,10 +7,6 @@ import { Button, Dialog, OntologyMapKindGlyph, controlClass } from "@/shared/ui"
 import { Input } from "@/shared/ui/fields/input";
 import { NEW_DOC_KINDS, type NewDocKind } from "../../model/use-doc-write-actions";
 
-/**
- * Asks for the kind first, so every new document is a node. `project` has its own
- * flow at `/project/new`. `Dialog` owns scrim, trap, Escape, focus restore and motion.
- */
 export function NewDocKindDialog({
   open,
   onSelect,
