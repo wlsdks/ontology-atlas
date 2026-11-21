@@ -44,6 +44,7 @@ describe('a request the app may answer without showing a card', () => {
   it('asks about an Atlas read that leaves the folder or climbs out of it', () => {
     expect(autoAllowOption(request({ filePath: '../secrets.md' }), 'read', 'ask')).toBeNull();
     expect(autoAllowOption(request({ filePath: 'a/../../b.md' }), 'read', 'ask')).toBeNull();
+    expect(autoAllowOption(request({ filePath: 'a\\..\\b.md' }), 'read', 'ask')).toBeNull();
     expect(autoAllowOption(request({ filePath: '/elsewhere/a.md' }), 'read', 'ask')).toBeNull();
   });
 

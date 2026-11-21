@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { createAcpClient, type AcpTransport } from './acp-client';
+import { createAcpClient, type AcpClient, type AcpTransport } from './acp-client';
 import type { AcpPermissionRequest } from './permissions/permission-request';
 
 /** A fake channel that can carry lines. Measures the protocol with no real process. */
@@ -631,6 +631,29 @@ describe('ACP client: Codex MCP approval correlation', () => {
     expect(outcomeOf(t.sent, 86)).toEqual({ outcome: 'cancelled' });
     expect(outcomeOf(t.sent, 87)).toEqual({ outcome: 'cancelled' });
     expect(outcomeOf(t.sent, 88)).toEqual({ outcome: 'cancelled' });
+  });
+
+  it.each([
+    ['a new session', (client: AcpClient) => client.newSession({ cwd: '/vault' })],
+    ['a loaded session', (client: AcpClient) => client.loadSession({ sessionId: 's1', cwd: '/vault' })],
+  ])('forgets the info of a call remembered before %s opened', async (_name, open) => {
+    const t = fakeTransport();
+    const askUser = vi.fn(async () => 'allow');
+    const client = createAcpClient(t.transport, {
+      vaultMcpServerName: 'atlas-vault',
+      verdict: alwaysAsk,
+      askUser,
+    });
+
+    t.emit(mcpToolUpdate());
+    const opening = open(client);
+    t.reply({ sessionId: 's1' });
+    await opening;
+    t.emit(mcpApprovalRequest({ id: 89 }));
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 89)).toBeTruthy());
+
+    expect(askUser).not.toHaveBeenCalled();
+    expect(outcomeOf(t.sent, 89)).toEqual({ outcome: 'cancelled' });
   });
 });
 
