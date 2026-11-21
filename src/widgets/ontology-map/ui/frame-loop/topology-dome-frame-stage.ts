@@ -56,7 +56,9 @@ import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/target/fit-targets";
 import { computeDomeFocusCameraTarget } from "../camera/target/focus-fit";
 import { overviewBoundsFor } from "../camera/topology-overview-fit";
-import { dialOverviewFit, radiusForKind, type TopologyWorld } from "../world/topology-world";
+import { dialOverviewFit } from "../world/framing/dial-world-framing";
+import { radiusForKind } from "../world/framing/world-bounds";
+import { type TopologyWorld } from "../world/topology-world";
 
 type SourceRef<T> = { current: T; };
 

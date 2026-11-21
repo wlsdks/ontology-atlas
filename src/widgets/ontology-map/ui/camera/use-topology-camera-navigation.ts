@@ -33,7 +33,9 @@ import {
 } from "./topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "../world/topology-realm-runtime";
-import { computeDrawnSpineBounds, computePathPickBounds, dialOverviewFit, type TopologyWorld } from "../world/topology-world";
+import { computeDrawnSpineBounds, computePathPickBounds } from "../world/framing/world-bounds";
+import { dialOverviewFit } from "../world/framing/dial-world-framing";
+import { type TopologyWorld } from "../world/topology-world";
 import { liveDialFocusFrame } from "./use-topology-focus-navigation";
 import {
   type ViewportReframeMotion

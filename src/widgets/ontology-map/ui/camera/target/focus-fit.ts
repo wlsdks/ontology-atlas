@@ -1,6 +1,8 @@
 import { clampPointToPanBounds, type CameraTarget } from "../../../engine/camera";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
-import { computeClusterDiscBounds, computeEgoBounds, computeIdsBounds, dialOverviewFit, type Bounds, type DialFocusFrame, type TopologyWorld } from "../../world/topology-world";
+import { computeClusterDiscBounds, computeEgoBounds, computeIdsBounds } from "../../world/framing/world-bounds";
+import { dialOverviewFit, type DialFocusFrame } from "../../world/framing/dial-world-framing";
+import { type Bounds, type TopologyWorld } from "../../world/topology-world";
 import { computeOverviewCameraTarget } from "./fit-targets";
 import { computeUnfocusedPanBounds, focusLeashPx, focusPanBounds } from "./pan-leash";
 import { centerForInsets, readSafeInsets } from "./safe-insets";

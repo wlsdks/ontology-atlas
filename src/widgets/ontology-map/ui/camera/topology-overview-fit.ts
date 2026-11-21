@@ -1,13 +1,9 @@
 import { dialOverviewBounds } from "../../dial/fit";
 import { measureEdgeFitObstacle } from "../../interaction/free-area";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import {
-  computeFoldedIds,
-  computeRevealedBounds,
-  isSpineNode,
-  radiusForKind,
-  type TopologyWorld,
-} from "../world/topology-world";
+import { computeFoldedIds } from "../world/framing/density-fold";
+import { computeRevealedBounds, isSpineNode, radiusForKind } from "../world/framing/world-bounds";
+import { type TopologyWorld } from "../world/topology-world";
 
 export function overviewBoundsFor(
   fit: "spine" | "full",

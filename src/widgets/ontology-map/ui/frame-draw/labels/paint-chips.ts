@@ -5,7 +5,7 @@ import {
 } from "../../../render/label-layout";
 import { drawClusterChip } from "../../../render/cluster-chips";
 import { clusterChipOccupancyRect, clusterChipScale } from "../../../render/cluster-chips/control-placement";
-import { radiusForKind } from "../../world/topology-world";
+import { radiusForKind } from "../../world/framing/world-bounds";
 import { BACKGROUND_DIM_WHEN_EXPANDED, ZERO_DOME_FRAME } from "../frame-state";
 import type { FrameInputs } from "../frame-begin";
 import type { FrameFocus } from "../frame-focus";

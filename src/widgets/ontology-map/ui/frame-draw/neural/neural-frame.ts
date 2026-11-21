@@ -3,7 +3,7 @@ import { isNeuralDependency, neuralCellIsStale, neuralFocusSets, neuralGraphOf, 
 import { isOutwardHop, type NeuralImpact } from "../../../model/dome-view/neural/neural-impact";
 import { isPathLensEdge } from "../../../model/visibility/path-lens";
 import type { NeuralTokens } from "../../../tokens/read-neural-tokens";
-import { radiusForKind } from "../../world/topology-world";
+import { radiusForKind } from "../../world/framing/world-bounds";
 import { litDrawnStateCounts, passState } from "../frame-state";
 import type { FrameInputs } from "../frame-begin";
 import type { FrameFocus } from "../frame-focus";

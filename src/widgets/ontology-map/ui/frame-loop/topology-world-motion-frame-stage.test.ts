@@ -11,8 +11,8 @@ vi.mock("../../dial/frame/frame", async original => ({
   ...await original<typeof import("../../dial/frame/frame")>(),
   lastDialFrame: () => ({ alphas: frame.alphas }),
 }));
-vi.mock("../world/topology-world", async original => ({
-  ...await original<typeof import("../world/topology-world")>(),
+vi.mock("../world/world-edge-geometry", async original => ({
+  ...await original<typeof import("../world/world-edge-geometry")>(),
   recomputeWorldGeometry: vi.fn(),
 }));
 

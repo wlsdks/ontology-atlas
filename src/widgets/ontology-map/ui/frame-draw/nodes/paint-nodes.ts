@@ -28,7 +28,8 @@ import {
 import { drawDiffractionSpike } from "../../../render/starfield";
 import { isNodeCulled } from "../../../render/viewport-cull";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../../render/preview-edge";
-import { isSpineNode, radiusForKind, type WorldNode } from "../../world/topology-world";
+import { isSpineNode, radiusForKind } from "../../world/framing/world-bounds";
+import { type WorldNode } from "../../world/topology-world";
 import { pressResponse } from "../../../expressive/mass-spring";
 import { drawNodeBloom } from "../../../expressive/ego-light";
 import {

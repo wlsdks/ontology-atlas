@@ -33,7 +33,9 @@ import {
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "../world/topology-realm-runtime";
-import { computePathPickBounds, dialFocusFrame, type DialFocusFrame, type TopologyWorld } from "../world/topology-world";
+import { computePathPickBounds } from "../world/framing/world-bounds";
+import { dialFocusFrame, type DialFocusFrame } from "../world/framing/dial-world-framing";
+import { type TopologyWorld } from "../world/topology-world";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { readDialTokens } from "../../dial/tokens";
 import { selectionSlideTarget } from "./branch-frame/selection-margin";

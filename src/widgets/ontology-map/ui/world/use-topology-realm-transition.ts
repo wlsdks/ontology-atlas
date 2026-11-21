@@ -29,7 +29,8 @@ import {
 import type { NodeDragState } from "../input/topology-pointer-types";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { buildRealmRuntimeData, realmCameraTarget, type RealmRuntimeData } from "./topology-realm-runtime";
-import { dialOverviewFit, type TopologyWorld } from "./topology-world";
+import { dialOverviewFit } from "./framing/dial-world-framing";
+import { type TopologyWorld } from "./topology-world";
 import { onWorldSwap } from "./world-swap";
 import { readDialTokens } from "../../dial/tokens";
 import { createMeasureText } from "../../dial/fit";

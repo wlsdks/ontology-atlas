@@ -2,7 +2,8 @@
 
 import type { CameraAxes } from "../../engine/camera";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { radiusForKind, type TopologyWorld } from "../world/topology-world";
+import { radiusForKind } from "../world/framing/world-bounds";
+import { type TopologyWorld } from "../world/topology-world";
 import type { WorldNode } from "../world/topology-world";
 
 interface Point {

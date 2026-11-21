@@ -1,6 +1,7 @@
 import { initHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { recomputeWorldGeometry, type TopologyWorld } from "./topology-world";
+import { recomputeWorldGeometry } from "./world-edge-geometry";
+import { type TopologyWorld } from "./topology-world";
 
 export interface RevealHomeResult {
   world: TopologyWorld;
