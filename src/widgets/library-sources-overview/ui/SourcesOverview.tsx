@@ -410,6 +410,7 @@ export function SourcesOverview({
         </div>
       }
       lead={picked.group.waiting === 0 ? t("sourcesHome.panel.nextEmpty") : splitTitle(picked.group)}
+      privacy={null}
       files={pickedFiles}
       running={batch.running}
       reserveRows={0}
@@ -431,6 +432,7 @@ export function SourcesOverview({
               ? t("sourcesHome.panel.leadRunning")
               : t("sourcesHome.panel.lead", { action })
       }
+      privacy={inApp && totalWaiting > 0 ? t("sourcesHome.panel.privacy") : null}
       files={batch.next}
       running={batch.running}
       reserveRows={batch.next.length > 0 ? 0 : Math.min(PANEL_LIST_ROWS, totalWaiting)}

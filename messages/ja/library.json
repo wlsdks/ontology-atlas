@@ -313,7 +313,7 @@
         "hint": "このファイルの最初の部分だけを読んだページ：{pages}。残りはまだWikiページにありません。"
       },
       "stale": {
-        "label": "要確認",
+        "label": "Wikiページ作成後に変わった資料",
         "hint": "{pages}は、このファイルの別のバージョンから書かれたか、ハッシュが記録されていません。"
       },
       "checking": {
@@ -1053,14 +1053,15 @@
     "first": "Wikiページがある資料はまだありません",
     "today": "今日 +{count, number}",
     "chartAria": "Wikiページがある資料の数（各ページに記された日付順）",
-    "chartLabel": "Wikiページがある資料数 · {date}から",
+    "chartTitle": "Wikiページがある資料数",
     "chartNow": "今日{count, number}",
     "point": "{date}：現在の資料{total, number}件中{count, number}件（{percent, number}%）",
     "dateBasis": "各点はWikiページに記された日付です。",
     "undated": "日付なし{count, number}件",
-    "axisToday": "今日",
     "continue": "{count, plural, =1 {資料1件からWikiページを作成} other {次の#件のWikiページを作成}}",
     "batchRest": "この後に{count, number}件が待っています。",
+    "writer": "<name>{agent}</name>が書きます",
+    "writerAnyAgent": "接続したコーディングエージェントが書きます",
     "batchReturned": "前回のリクエストの資料{count, number}件はまだWikiページがないため、一覧の最後に移しました。",
     "webLine": "Wikiページを書けるのはアプリだけです。閲覧はここでもできます。",
     "allDone": "すべての資料にWikiページがあります"
@@ -1093,6 +1094,7 @@
       "nextTitle": "次に書く資料",
       "lead": "「{action}」を押すと、エージェントが下の資料を上から読み、Wikiページを書きます。",
       "leadRunning": "エージェントが上からWikiページを書いています。書き終えた資料はこのリストから消えます。",
+      "privacy": "Atlasは資料をどこにも送りません。Wikiページの作成や質問をエージェントに頼むと、そのエージェントが必要な資料を読み、読んだ内容はそのエージェントのサービスに送られることがあります。",
       "webNote": "Wikiページはアプリだけが作成します。アプリではここから始めます。",
       "waitingTitle": "ここで待機中",
       "nextEmpty": "ここにある資料にはすべて、今の内容と合うWikiページがあります。",
@@ -1122,7 +1124,6 @@
       "range": "{first} – {last}",
       "meta": "フォルダ{folders, number}件 · 資料数と状態がすべて同じ{count, number}件は1行にまとめています"
     },
-    "listKey": "待機中の資料",
     "listFolder": "フォルダ：{folder}",
     "listType": "ファイル形式：{type}",
     "listNone": "ここには、その状態の資料がありません。",
