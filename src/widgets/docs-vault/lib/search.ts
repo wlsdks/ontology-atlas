@@ -4,8 +4,6 @@ import { buildPhraseMatcher } from '@/shared/lib/search-match/highlight-match';
 import { stripFrontmatterBlock, type DocsBodyEntry, type DocsBodyIndex } from './body-index';
 import { readDisplayLocales } from '@/shared/lib/locale-text/locale-display-name';
 
-/** A body hit snippet — {@link BODY_SNIPPET_CONTEXT} characters of context on each
- *  side of the match, plus the highlight range within the snippet. */
 export interface DocsBodySnippet {
   text: string;
   hit: { start: number; end: number };
@@ -14,15 +12,11 @@ export interface DocsBodySnippet {
 export interface DocsSearchMatch {
   doc: VaultDoc;
   score: number;
-  /** The range matched in title (first match only). */
   titleHit: { start: number; end: number } | null;
-  /** The range matched in the summary (description, else definition preview). */
   summaryHit: { start: number; end: number } | null;
-  /** A ±60-character snippet around the body's first match. null without a bodyIndex or a match. */
   bodyHit: DocsBodySnippet | null;
 }
 
-/** Snippet context radius (before and after the match). */
 const BODY_SNIPPET_CONTEXT = 60;
 
 /**
@@ -68,7 +62,6 @@ function bodyPhraseScore(idx: number): number {
 
 const excerptLowerByEntry = new WeakMap<DocsBodyEntry, string>();
 
-/** The lowercased first paragraph of an indexed body, cut once per entry, so an index hit scores as before. */
 function indexedExcerptLower(entry: DocsBodyEntry): string {
   let lower = excerptLowerByEntry.get(entry);
   if (lower === undefined) {
@@ -154,13 +147,11 @@ export function searchDocs(
     const summaryLc = (doc.description || doc.definitionPreview || '').toLowerCase();
     const slugLc = doc.slug.toLowerCase();
     const tagLc = doc.tags.map((t) => t.toLowerCase());
-    // Also match the display name the list draws; this only widens the scope.
     const displayLc = Object.values(readDisplayLocales(doc.frontmatter) ?? {}).map((v) =>
       v.toLowerCase(),
     );
     const body = bodyIndex?.get(doc.slug);
     const excerptLc = body ? indexedExcerptLower(body) : '';
-    // Check with AND that each token matches somewhere (body included).
     const allMatch = tokens.every(
       (tok) =>
         titleLc.includes(tok) ||

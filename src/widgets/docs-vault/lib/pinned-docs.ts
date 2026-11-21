@@ -32,7 +32,6 @@ function writePinned(key: VaultRecentKey, list: string[]) {
   }
 }
 
-/** Toggle a pin. Pinning inserts at the front, unpinning removes. Returns the updated list. */
 export function togglePinnedDoc(
   key: VaultRecentKey,
   slug: string,

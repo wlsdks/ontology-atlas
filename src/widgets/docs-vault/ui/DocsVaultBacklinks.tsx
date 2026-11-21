@@ -9,14 +9,12 @@ import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-displa
 import { Chip } from '@/shared/ui';
 
 interface Props {
-  /** Slugs of the documents that link here, in the manifest's order. */
   sources: readonly string[];
   docsBySlug: Map<string, VaultDoc>;
   onNavigate: (slug: string) => void;
   hideHeading?: boolean;
 }
 
-/** The documents that link to this one, as navigating chips at the pane's bottom. */
 export function DocsVaultBacklinks({ sources, docsBySlug, onNavigate, hideHeading = false }: Props) {
   const t = useTranslations('vaultWidgets.backlinks');
   const locale = useLocale();

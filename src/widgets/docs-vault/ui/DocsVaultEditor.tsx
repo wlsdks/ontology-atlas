@@ -44,7 +44,6 @@ import { Button, Chip, Dialog, IconButton, RowButton, Surface, OntologyMapKindGl
 
 interface Props {
   doc: VaultDoc;
-  /** Fetch the raw md — the same resolver as the viewer. A local vault reads through fileHandle. */
   getDocContent: (slug: string) => Promise<string>;
   /** Called on save. expectedMtime is the value at the time this editor read the source. Throws on failure. */
   onSave: (
@@ -52,9 +51,7 @@ interface Props {
     content: string,
     expectedMtime?: number,
   ) => Promise<void>;
-  /** End editing (after a successful save, or on cancel). */
   onClose: () => void;
-  /** Every document in the vault (for wikilink autocomplete). Without it, autocomplete is off. */
   allDocs?: VaultDoc[];
   /**
    * The vault this draft belongs to; with the slug alone, different folders share a key and
@@ -71,11 +68,9 @@ interface EditorDraft {
   updatedAt: number;
 }
 
-/** The mention menu's width and max height — position calculation and drawing use the same values. */
 const MENTION_MENU_WIDTH = 320;
 const MENTION_MENU_MAX_HEIGHT = 280;
 
-/** Same menu dialect as the vault chip and sort menu. */
 const MENTION_MENU_CLASS =
   'pointer-events-auto absolute z-10 overflow-hidden rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]';
 
@@ -83,7 +78,6 @@ function mentionMenuStyle(at: { top: number; left: number } | null) {
   return { width: MENTION_MENU_WIDTH, top: at?.top ?? 0, left: at?.left ?? 0 };
 }
 
-/** A leading frontmatter block, left out of the preview. */
 const FRONTMATTER_BLOCK = /^---[\s\S]*?\n---\n?/;
 
 function dirtyIconInk(dirty: boolean): string {
@@ -98,7 +92,6 @@ function dirtyValueInk(dirty: boolean): string {
     : 'text-[color:var(--color-text-tertiary)]';
 }
 
-/** Focus the textarea and select a range on the next frame, after React commits the new value. */
 function focusRange(ta: HTMLTextAreaElement, start: number, end: number) {
   requestAnimationFrame(() => {
     ta.focus();
@@ -109,9 +102,8 @@ function focusRange(ta: HTMLTextAreaElement, start: number, end: number) {
 const DRAFT_STORAGE_PREFIX = 'ontology-atlas:docs-vault-editor-draft:';
 
 /**
- * Draft key carries the vault, or same-named files in different folders share drafts and a save can
- * write one folder's draft over another's file. Old slug-only keys are never read back, because
- * their vault is unknown.
+ * The draft key carries the vault: same-named files in different folders would share drafts and a
+ * save could write one folder's draft over another's file. Slug-only keys are never read back.
  */
 function draftStorageKey(vaultScope: string, slug: string) {
   return `${DRAFT_STORAGE_PREFIX}${vaultScope}:${slug}`;
@@ -157,9 +149,6 @@ function clearEditorDraft(vaultScope: string, slug: string) {
   }
 }
 
-/**
- * A textarea markdown editor that saves over the original file through the File System Access API.
- */
 export function DocsVaultEditor({
   doc,
   getDocContent,
@@ -171,9 +160,7 @@ export function DocsVaultEditor({
   const t = useTranslations('vaultWidgets.editor');
   const failureSentence = useFailureSentence();
   const locale = useLocale();
-  // The relation vocabulary is read from the same namespace by the map editor and the document editor.
   const tRelations = useTranslations('ontologyRelations');
-  // Kind names use the same source the map and the new-document dialog use.
   const kindLabel = useOntologyKindLabel();
   const [content, setContent] = useState<string | null>(null);
   const [savedContent, setSavedContent] = useState<string | null>(null);
@@ -197,7 +184,6 @@ export function DocsVaultEditor({
   const savedFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingDraftRef = useRef<{ vaultScope: string; draft: EditorDraft } | null>(null);
 
-  // `@` mention menu state; the menu shows while this is not null.
   const [autocomplete, setAutocomplete] = useState<{
     query: string;
     start: number;
@@ -212,7 +198,6 @@ export function DocsVaultEditor({
   const acMatches = useMemo<VaultDoc[]>(() => {
     if (!autocomplete || !allDocs) return [];
     const q = autocomplete.query.toLowerCase();
-    // The current document is not a candidate — a node cannot link to itself.
     if (!q) return allDocs.filter((d) => d.slug !== doc.slug).slice(0, 8);
     return allDocs
       .filter(
@@ -223,10 +208,7 @@ export function DocsVaultEditor({
       .slice(0, 8);
   }, [autocomplete, allDocs, doc.slug]);
 
-  /**
-   * Separate the menu's openness from its content. `useHeldValue` gets a key because the model is a
-   * fresh object each render; without it React #301 loops.
-   */
+  /** `useHeldValue` takes a key because the model is a fresh object each render; without it React #301 loops. */
   /**
    * Opens once a query is typed, even with zero results, so a miss is visible; with only `@` it
    * shows the first 8.
@@ -264,7 +246,6 @@ export function DocsVaultEditor({
     [debounced, content],
   );
 
-  // Wrap the selection and restore the caret; with no selection insert a selected placeholder.
   const wrapSelection = useCallback((wrapper: string, placeholder?: string) => {
     const ta = taRef.current;
     if (!ta || content === null) return;
@@ -295,12 +276,10 @@ export function DocsVaultEditor({
     doc: VaultDoc;
     trigger: { query: string; start: number };
   } | null>(null);
-  /** The bearing currently selected in step 2 — the keyboard cursor. */
   const [pendingRelation, setPendingRelation] = useState<MentionRelationId>(
     MENTION_RELATIONS[0].id,
   );
 
-  /** Announce that the relation was written, since its result is only in frontmatter. */
   const [mentionNotice, setMentionNotice] = useState<'added' | 'exists' | null>(null);
   useEffect(() => {
     if (!mentionNotice) return;
@@ -308,7 +287,6 @@ export function DocsVaultEditor({
     return () => clearTimeout(timer);
   }, [mentionNotice]);
 
-  /** The menu stands where the typing was. */
   const [menuAt, setMenuAt] = useState<{ top: number; left: number } | null>(null);
   const placeMenuAtCaret = useCallback((caretIndex: number) => {
     const ta = taRef.current;
@@ -541,7 +519,6 @@ export function DocsVaultEditor({
     return () => window.clearTimeout(handle);
   }, [content, dirty, doc.slug, draftSavedAt, loadedSlug, savedContent, vaultScope]);
 
-  // Cmd+S / Ctrl+S to save; Cmd+B/I/K formatting shortcuts.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (discardOpen) return;
@@ -630,9 +607,6 @@ export function DocsVaultEditor({
             value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
           })}
         </span>
-        {/*
-         * The status chips on this row share one type step.
-         */}
         <span
           className={
             saveState.tone === 'dirty'
@@ -921,7 +895,6 @@ export function DocsVaultEditor({
               }
             }}
             onKeyUp={(e) => {
-              // An arrow key alone updates the caret position → re-detect.
               if (!allDocs || !taRef.current) return;
               const caret = taRef.current.selectionStart;
               const src = (e.target as HTMLTextAreaElement).value;
@@ -945,7 +918,6 @@ export function DocsVaultEditor({
               style={mentionMenuStyle(menuAt)}
             >
               <div className="border-b border-[color:var(--color-border-soft)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
-                {/* Hide the empty quotes for an empty query. */}
                 <span className="block truncate">
                   {t('mentionLabel', {
                     query: heldAutocomplete.query ? ` · “${heldAutocomplete.query}”` : '',
@@ -974,10 +946,6 @@ export function DocsVaultEditor({
                       onClick={() => pickMentionTarget(d)}
                       className="hover:bg-[color:var(--color-overlay-1)]"
                     >
-                      {/*
-                       * Kind marker, same glyphs as the map and studio, so the relation can be
-                       * chosen knowingly.
-                       */}
                       <OntologyMapKindGlyph
                         kind={String(d.frontmatter?.kind ?? 'unknown')}
                         size={12}
@@ -997,8 +965,6 @@ export function DocsVaultEditor({
               </div>
             </Surface>
           ) : null}
-          {/* Step 2 chooses the relation, with the studio compass's vocabulary. */}
-          {/* Announces the frontmatter write, including to assistive technology. */}
           {mentionNotice ? (
             <p
               role="status"

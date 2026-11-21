@@ -38,43 +38,31 @@ import { getTopologyProjectHref } from '@/entities/project';
 interface Props {
   doc: VaultDoc;
   vaultSlugs: Set<string>;
-  /** Routing when an in-vault link is clicked. Usually HomePage passes setSelectedSlug. */
   onNavigate: (slug: string) => void;
-  /** The current route prefix that in-vault slugs replace. Defaults to '/docs'. */
   basePath?: string;
-  /** Used where the parent has to preserve URL state, such as account-scoped routing. */
   getDocHref?: (slug: string, hash?: string) => string;
   getProjectHref?: (slug: string) => string;
-  /** Optional. When given, the md body is fetched through this function (for a local
-   *  vault). Unset falls back to fetching /docs-vault/{slug}.md. */
   getDocContent?: (slug: string) => Promise<string>;
   /**
    * Bundled bodies from the same vault as the parent's static manifest, so a route-scoped sample
    * override is respected.
    */
   bundledContent?: Record<string, string>;
-  /** The query passed from the search palette. Matches are wrapped in mark per text node. */
   highlightQuery?: string;
-  /** Turn a relative image path into a real src (a local vault's asset blob URL and
-   *  the like). Unset for a server vault. */
   resolveImage?: (path: string) => Promise<string | null>;
   /**
    * Base for turning a vault-escaping `.md` link into a GitHub blob URL; set only for the bundled
    * docs vault.
    */
   repoBlobBase?: string;
-  /** Where this vault sits inside the repo (the bundled docs vault = `docs`). */
   vaultRepoRoot?: string;
-  /** Original source paths that this Library can currently navigate to. */
   knownOriginalPaths?: ReadonlySet<string>;
-  /** Opens a known original source at the cited anchor. */
   onSourceNavigate?: (path: string, anchor?: string) => void;
   /**
    * The original the parent already names beside this page; its citations say only where in it,
    * others also name their file.
    */
   namedSourcePath?: string;
-  /** Uses the smaller top inset when parent context already separates the body. */
   compactTop?: boolean;
   /**
    * Called once a body is painted, or with null when it failed. `citations` counts the citations
@@ -87,7 +75,6 @@ interface Props {
    * plain text, and a link to nothing keeps its written path and says it is missing.
    */
   linkTargets?: ReadonlyMap<string, { title: string; kind: string | null }>;
-  /** Opens a concept somewhere else than `onNavigate`; only read with `linkTargets`. */
   onConceptNavigate?: (slug: string) => void;
   /**
    * When given, a source citation's press hands its resolution and its button here instead of
@@ -95,22 +82,15 @@ interface Props {
    * only the allow-listed one; a missing citation carries `path: null`.
    */
   onCitationPress?: (citation: ViewerCitation, button: HTMLButtonElement) => void;
-  /** Each paragraph, list item and heading carries the body line it starts on (`data-line`). */
   markSourceLines?: boolean;
 }
 
-/** A pressed citation as `resolveSourceCitation` resolved it. */
 export interface ViewerCitation {
-  /** The allow-listed path, or null when the folder does not hold the file. */
   path: string | null;
   rawPath: string;
   anchor?: string;
 }
 
-/**
- * The vault document viewer: fetches the md body and renders it with react-markdown; internal links
- * become Link, external ones open in a new tab.
- */
 export function DocsVaultViewer({
   doc,
   vaultSlugs,
@@ -148,14 +128,12 @@ export function DocsVaultViewer({
     null,
   );
   const [error, setError] = useState<string | null>(null);
-  /* The skeleton appears only when there is something to wait for (`SKELETON_DELAY_MS`). */
   const showSkeleton = useDelayedVisible(raw === null && error === null);
   // Bundled bodies must come from the same vault as the manifest, or title and content point at
   // different documents.
   const { content: preferredBundledContent } = useStaticVaultSource();
   const bundledContent = bundledContentOverride ?? preferredBundledContent;
 
-  // Once the body loads with a highlightQuery, scroll to the first `mark.docs-match`.
   useEffect(() => {
     if (!raw || !highlightQuery) return;
     const handle = requestAnimationFrame(() => {
@@ -203,14 +181,12 @@ export function DocsVaultViewer({
     };
   }, [bundledContent, doc.slug, getDocContent, setRaw]);
 
-  /* The citations the reader's tree step drew, per NFC path, filled while the body renders. */
   const drawnCitations = useRef<ReadonlyMap<string, number>>(NO_CITATIONS);
   useLayoutEffect(() => {
     if (raw !== null) onBodyPainted?.(raw, drawnCitations.current);
     else if (error !== null) onBodyPainted?.(null, NO_CITATIONS);
   }, [raw, error, onBodyPainted]);
 
-  // Pure function taking the query as an argument so useMemo dependencies stay accurate.
   const highlightChildren = useMemo(() => {
     const hl = (
       children: React.ReactNode,
@@ -257,13 +233,11 @@ export function DocsVaultViewer({
     () => normalizeOriginalPaths(knownOriginalPaths),
     [knownOriginalPaths],
   );
-  /** Compared with a citation's decoded path, which `resolveSourceCitation` returns in NFC. */
   const namedSource = namedSourcePath?.normalize('NFC');
 
   /*
-   * One renderer per set of inputs. `react-markdown` takes each entry as a component type, so a
-   * fresh object on every parent render remounted every link and citation in the body; the
-   * parent that keeps its inputs stable now keeps the body's nodes, and a press can anchor to one.
+   * One renderer per set of inputs: `react-markdown` takes each entry as a component type, so a fresh
+   * object on every parent render would remount every link and citation in the body.
    */
   const components = useMemo<Components>(() => {
     /**
@@ -296,14 +270,12 @@ export function DocsVaultViewer({
       );
     };
 
-    /** The body line a block starts on, only when the parent asked for it. */
     const lineOf = (props: object): number | undefined =>
       markSourceLines ? (props as { node?: { position?: { start?: { line?: number } } } }).node?.position?.start?.line : undefined;
 
     return {
       a({ href, children, ...rest }) {
         if (!href) return <span {...rest}>{children}</span>;
-        // The preprocessing sentinel, matched directly against vault slugs.
         const wikilink = parseWikilinkHref(href);
         if (wikilink) {
           const { rawSlug: rawWikiSlug, rawAnchor, labelled } = wikilink;
@@ -325,10 +297,6 @@ export function DocsVaultViewer({
               )
             : null;
           if (citation) {
-            /*
-             * An unlabelled citation's text says where ("line 5") instead of its target; an
-             * author's label is kept.
-             */
             const words = sourceCitationWords(
               { path: citation.path ?? citation.rawPath, anchor: citation.anchor },
               { nameFile: citation.rawPath !== namedSource },
@@ -386,8 +354,6 @@ export function DocsVaultViewer({
                 </button>
               );
             }
-            // Missing and unavailable citations both render as a visibly non-navigable span; only
-            // the title differs.
             return (
               <span
                 className="border-b border-dashed border-[color:var(--color-amber-source-a50)] text-[color:var(--color-amber-source-text-a85)]"
@@ -479,7 +445,6 @@ export function DocsVaultViewer({
               </Link>
             );
           }
-          // A slug absent from the vault renders dotted (an unresolved wikilink).
           return (
             <span
               className="border-b border-dashed border-[color:var(--color-amber-source-a50)] text-[color:var(--color-amber-source-text-a85)]"
@@ -541,7 +506,6 @@ export function DocsVaultViewer({
             </Link>
           );
         }
-        // A file outside the vault opens as a GitHub blob in a new tab.
         if (resolved.kind === 'external') {
           return (
             <a
@@ -557,7 +521,6 @@ export function DocsVaultViewer({
             </a>
           );
         }
-        // Outside the vault with no repo location: non-routing text, not a dead 404.
         if (resolved.kind === 'unresolved') {
           return (
             <span
@@ -639,8 +602,6 @@ export function DocsVaultViewer({
         );
       },
       blockquote({ children, ...rest }) {
-        // Callout detection: `[!type] text` in the first paragraph gets callout styling;
-        // ReactMarkdown already parsed it into children, so the inner text node is inspected.
         const callout = detectCallout(children);
         if (callout) {
           return (
@@ -739,7 +700,6 @@ export function DocsVaultViewer({
     );
   }
   if (raw === null) {
-    /* A body arriving within the delay draws nothing and announces nothing. */
     if (!showSkeleton) return <div className="p-8" aria-hidden />;
     return (
       <div className="flex flex-col gap-3 p-8" role="status" aria-label={t('loadingLabel')}>
@@ -814,7 +774,6 @@ function defaultDocHref(slug: string, hash?: string): string {
 
 const REMARK_PLUGINS = [remarkGfm];
 
-/** The slice of an mdast node the reader's tree step reads and writes. */
 interface ReaderNode {
   type: string;
   value?: string;
@@ -842,11 +801,9 @@ const LINK_SEPARATOR_CLASS = 'text-[color:var(--color-text-tertiary)]';
 const CITATION_RUN_CLASS = 'block [&>:first-child]:ml-0';
 
 /**
- * The Library reader's tree step, after the wikilink rewrite and before rendering; the file is
- * never changed. Whitespace alone between two page or concept links becomes a " · " that belongs
- * to neither, since links that say titles run together otherwise. Citations that end a paragraph
- * or list item and name their file stand together on their own line under the sentence; a
- * citation with words after it, and a page whose citations name no file, keep their places.
+ * The Library reader's tree step, after the wikilink rewrite and before rendering; the file is never
+ * changed. Whitespace between two page or concept links becomes a " · " that belongs to neither;
+ * citations that end a paragraph and name their file stand together on their own line.
  */
 function readerTree(namedSource: string | undefined, onCounted: (counts: ReadonlyMap<string, number>) => void) {
   const counts = new Map<string, number>();
@@ -967,10 +924,6 @@ const CALLOUT_STYLES: Record<
   },
 };
 
-/**
- * Extracts a leading `[!kind] title` from blockquote children; returns null or the remainder
- * as `rest`.
- */
 function detectCallout(
   children: React.ReactNode,
 ): { kind: CalloutKind; title: string; rest: React.ReactNode } | null {
@@ -1042,7 +995,6 @@ function CalloutBlock({
   );
 }
 
-/** Local vault image through a blob URL, revoked on unmount or src change. */
 function VaultImage({
   src,
   alt,
@@ -1153,7 +1105,6 @@ function BodyImage({ src, alt, title }: { src: string; alt: string; title?: stri
   );
 }
 
-/** A path relative to the document's folder, resolved to a vault-root path. */
 function vaultPathFromDoc(docSlug: string, src: string): string {
   const fromDir = docSlug.includes('/') ? docSlug.slice(0, docSlug.lastIndexOf('/')) : '';
   const rel = src.replace(/^\.\//, '');
@@ -1166,7 +1117,6 @@ function vaultPathFromDoc(docSlug: string, src: string): string {
   return stack.join('/');
 }
 
-/** Heading anchor icon: copies the slug#anchor URL and shows a check for 2 seconds. */
 function HeadingAnchor({
   anchor,
   docSlug,
