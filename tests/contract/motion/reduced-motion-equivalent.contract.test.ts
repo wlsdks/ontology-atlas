@@ -327,7 +327,7 @@ describe('reduced-motion equivalent contract', () => {
    * token and that no carve-out is added.
    */
   describe('composer growth: arrives instantly under reduced motion', () => {
-    const PANEL = 'src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx';
+    const PANEL = 'src/widgets/vault-agent-panel/ui/composer/AgentComposer.tsx';
 
     it('the growth time is the surface-move ramp token (zero literal ms)', () => {
       const src = TS(PANEL);
