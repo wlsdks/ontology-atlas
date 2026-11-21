@@ -4,23 +4,17 @@
 use super::super::models::{Builtin, Runner, Sources};
 use super::super::report::Clock;
 use super::super::types::VectorStatus;
-use super::super::{Emit, Vectors};
+use super::super::{lock, Emit, Vectors};
 use crate::llm::embed::builtin::infer::Runtime;
 use crate::llm::embed::builtin::{pins, Progress, Stage};
 use crate::llm::embed::{BuildPlan, EmbedError, EmbedSession, Embedder, RunEnd};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
-use std::sync::{Arc, Condvar, Mutex, MutexGuard, Once};
+use std::sync::{Arc, Condvar, Mutex, Once};
 use std::time::Duration;
 
 /// Long enough for a loaded CI runner; a passing test never waits it out.
 pub(super) const WITHIN: Duration = Duration::from_secs(60);
-
-pub(super) fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
-    mutex
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
-}
 
 /// The clock tests move by hand.
 #[derive(Default)]
