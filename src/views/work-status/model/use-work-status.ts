@@ -59,15 +59,31 @@ export function useWorkStatus(repositoryPath: string | null): WorkStatusRead {
     const schedule = () => {
       window.clearInterval(timer);
       timer = document.visibilityState === 'visible' ? window.setInterval(() => void tick(), WATCH_INTERVAL_MS) : undefined;
-      if (timer !== undefined) void tick();
     };
 
-    void load().then(() => { if (!cancelled) schedule(); });
-    document.addEventListener('visibilitychange', schedule);
+    /** A session can end while the screen is hidden; coming back reads everything once. */
+    const reappear = async () => {
+      schedule();
+      if (timer === undefined || busy) return;
+      busy = true;
+      try {
+        await load();
+      } finally {
+        busy = false;
+      }
+    };
+
+    busy = true;
+    void load().finally(() => {
+      busy = false;
+      if (!cancelled) schedule();
+    });
+    const onVisibility = () => void reappear();
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
-      document.removeEventListener('visibilitychange', schedule);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [repositoryPath]);
 

@@ -17,7 +17,9 @@ pub(crate) fn host_and_slug(url: &str) -> (Option<String>, Option<String>) {
     let (authority, path) = if let Some((_, rest)) = url.split_once("://") {
         rest.split_once('/').unwrap_or((rest, ""))
     } else if let Some((authority, path)) = url.split_once(':') {
-        if authority.contains('/') {
+        let windows_drive =
+            authority.len() == 1 && authority.chars().all(|c| c.is_ascii_alphabetic());
+        if authority.contains('/') || authority.contains('\\') || windows_drive {
             return (None, None);
         }
         (authority, path)

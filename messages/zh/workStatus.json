@@ -1,11 +1,11 @@
 {
   "title": "工作状态",
-  "summary": "进行中 <runningCount>{running}</runningCount> · 受阻 <stuckCount>{stuck}</stuckCount> · 可合并 <readyCount>{ready}</readyCount>",
+  "summary": "由运行中会话占用 <runningCount>{running}</runningCount> · 受阻 <stuckCount>{stuck}</stuckCount>",
   "repoLine": "{repo} · 这台 Mac 上的 {count} 个工作树",
   "headline": {
-    "running": "{count} 个任务正在这台 Mac 上进行",
-    "stuck": "{count} 个任务受阻",
-    "idle": "{repo} 的工作树目前没有被任何代理占用"
+    "running": "{count} 个工作树由运行中的会话占用",
+    "stuck": "{count} 个工作树受阻",
+    "idle": "{repo} 中没有被运行中会话锁定的工作树"
   },
   "band": {
     "mac": "这台 Mac",
@@ -24,7 +24,7 @@
   "group": {
     "stuck": "受阻",
     "merged": "已合并 ({count})",
-    "unheld": "未被代理占用的工作树"
+    "unheld": "没有会话锁"
   },
   "session": {
     "header": "{tool} · 会话 {number}",
@@ -34,8 +34,6 @@
   "tool": {
     "acp": "Atlas 中的 Claude Agent",
     "claudeCode": "Claude Code",
-    "codex": "Codex",
-    "gemini": "Gemini CLI",
     "unknown": "代理"
   },
   "holder": {
@@ -49,10 +47,11 @@
     "ended": "会话已结束"
   },
   "row": {
-    "noCommits": "main 之后没有提交",
-    "commits": "main 之后有 {count} 个提交",
+    "noCommits": "{branch} 之后没有提交",
+    "commits": "{branch} 之后有 {count} 个提交",
     "missing": "文件夹 {folder} 不存在。运行 git worktree prune 会删除它的记录。",
-    "lockLeft": "锁定此工作树的 {tool} 会话已结束。{count, plural, =0 {main 之后没有提交。} other {main 之后有 # 个提交尚未合并。}}"
+    "lockLeft": "锁定此工作树的 {tool} 会话已结束。{count, plural, =0 {{branch} 之后没有提交。} other {{branch} 之后有 # 个提交尚未合并。}}",
+    "unknown": "无法与 {branch} 比较"
   },
   "chip": {
     "missing": "文件夹不存在",
@@ -78,8 +77,5 @@
     "title": "工作状态在桌面应用中运行",
     "body": "浏览器无法运行 git，也无法读取这台计算机的进程。在这个浏览器中，你仍然可以打开文件夹的地图和资料库。"
   },
-  "term": {
-    "worktree": "工作树：项目文件夹的独立副本，每个代理在自己的副本中修改文件，互不干扰。",
-    "subagent": "子代理：代理会话启动的一项任务，通常使用自己的工作树。"
-  }
+  "notRepository": "文件夹 {folder} 不是 Git 仓库。请选择包含项目 .git 的文件夹。"
 }

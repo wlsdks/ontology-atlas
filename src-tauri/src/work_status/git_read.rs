@@ -5,10 +5,14 @@ use std::process::Stdio;
 
 /// Administrative files hold one path or one line; anything larger is not Git's.
 const ADMIN_FILE_CAP_BYTES: u64 = 4 * 1024;
+/// A reflog line is two object ids, an identity, a time and a short message.
+const FIRST_LINE_CAP_BYTES: u64 = 1024;
 
 pub(super) enum GitFailure {
-    /// The `git` program could not be started.
+    /// No `git` program on the path.
     Missing,
+    /// `git` exists but could not be started.
+    Unstartable,
     /// Git ran and refused.
     Refused,
 }
@@ -25,7 +29,10 @@ pub(super) fn git_read(cwd: &Path, args: &[&str]) -> Result<String, GitFailure> 
         .current_dir(cwd)
         .stdin(Stdio::null())
         .output()
-        .map_err(|_| GitFailure::Missing)?;
+        .map_err(|error| match error.kind() {
+            std::io::ErrorKind::NotFound => GitFailure::Missing,
+            _ => GitFailure::Unstartable,
+        })?;
     if !output.status.success() {
         return Err(GitFailure::Refused);
     }
@@ -43,6 +50,17 @@ pub(super) fn read_admin_file(path: &Path) -> Option<String> {
         .read_to_string(&mut text)
         .ok()?;
     (text.len() as u64 <= ADMIN_FILE_CAP_BYTES).then_some(text)
+}
+
+/// The first line of a log Git appends to, without reading the rest of it.
+pub(super) fn read_first_line(path: &Path) -> Option<String> {
+    let file = open_no_follow(path).ok()?;
+    let mut head = Vec::new();
+    file.take(FIRST_LINE_CAP_BYTES)
+        .read_to_end(&mut head)
+        .ok()?;
+    let head = String::from_utf8_lossy(&head);
+    head.lines().next().map(str::to_string)
 }
 
 #[cfg(unix)]

@@ -8,7 +8,9 @@ use super::lock::{
     judge_lock, parse_lock_reason, process_start, LockState, LockTool, ProcessStart,
 };
 use super::remote::host_and_slug;
-use super::{parse_porcelain, read_repository, standing_of, Standing, WorktreeRow};
+use super::{
+    parse_porcelain, read_repository, standing_of, Standing, WorktreeRow, ZeroAheadEvidence,
+};
 
 struct Repo {
     dir: PathBuf,
@@ -153,14 +155,101 @@ fn only_a_head_merged_off_the_first_parent_line_is_merged() {
 
 #[test]
 fn the_standing_rule_never_merges_the_base_and_keeps_zero_commits_apart() {
-    assert_eq!(standing_of(true, Some(0), false), Standing::Base);
-    assert_eq!(standing_of(false, Some(0), true), Standing::NoCommits);
-    assert_eq!(standing_of(false, Some(0), false), Standing::Merged);
-    assert_eq!(standing_of(false, Some(3), false), Standing::Ahead);
-    assert_eq!(standing_of(false, None, false), Standing::Unknown);
+    let evidence = |on_first_parent, moved_since_created| ZeroAheadEvidence {
+        on_first_parent,
+        moved_since_created,
+    };
+    let off_line_moved = evidence(Some(false), true);
+    assert_eq!(standing_of(true, Some(0), off_line_moved), Standing::Base);
+    assert_eq!(
+        standing_of(false, Some(0), evidence(Some(true), true)),
+        Standing::NoCommits
+    );
+    assert_eq!(
+        standing_of(false, Some(0), off_line_moved),
+        Standing::Merged
+    );
+    assert_eq!(
+        standing_of(false, Some(0), evidence(Some(false), false)),
+        Standing::NoCommits
+    );
+    assert_eq!(
+        standing_of(false, Some(0), evidence(None, true)),
+        Standing::Unknown
+    );
+    assert_eq!(standing_of(false, Some(3), off_line_moved), Standing::Ahead);
+    assert_eq!(standing_of(false, None, off_line_moved), Standing::Unknown);
 }
 
-/// Run under `TZ=Asia/Seoul`: a reason read in local time would be nine hours off and read stale.
+/// Every commit on this repository's main is a merge, so a branch created at a merged commit
+/// sits off the first-parent line with nothing of its own; it never moved, so it is not merged.
+#[test]
+fn a_branch_that_never_moved_from_a_merged_commit_has_no_commits_rather_than_merged() {
+    let repo = Repo::new("never-moved");
+    let side = repo.worktree("feat/side");
+    repo.commit(&side, "side.md");
+    let side_head = repo.git(&side, &["rev-parse", "HEAD"]);
+    repo.git(
+        &repo.main,
+        &["merge", "-q", "--no-ff", "-m", "merge", "feat/side"],
+    );
+    let created_there = repo.dir.join("main/worktrees/integration");
+    let target = created_there.to_string_lossy().into_owned();
+    repo.git(
+        &repo.main,
+        &[
+            "worktree",
+            "add",
+            "-q",
+            "-b",
+            "integration",
+            &target,
+            &side_head,
+        ],
+    );
+
+    let rows = repo.rows();
+    assert_eq!(row(&rows, "feat/side").standing, Standing::Merged);
+    assert_eq!(row(&rows, "integration").standing, Standing::NoCommits);
+}
+
+#[test]
+fn a_planted_gitdir_that_leaves_the_folder_by_dot_dot_or_symlink_is_not_shown() {
+    let repo = Repo::new("planted");
+    let unrelated = repo.dir.join("unrelated");
+    fs::create_dir_all(&unrelated).unwrap();
+    fs::write(unrelated.join(".git"), "gitdir: /nowhere\n").unwrap();
+    let admin = repo.main.join(".git/worktrees");
+    let plant = |id: &str, gitdir: PathBuf| {
+        let record = admin.join(id);
+        fs::create_dir_all(&record).unwrap();
+        fs::write(record.join("HEAD"), "ref: refs/heads/main\n").unwrap();
+        fs::write(record.join("commondir"), "../..\n").unwrap();
+        fs::write(
+            record.join("gitdir"),
+            format!("{}\n", gitdir.to_string_lossy()),
+        )
+        .unwrap();
+    };
+    plant("dotdot", repo.main.join("../unrelated/.git"));
+    // Windows needs a privilege to create a directory symlink, so only Unix plants that one.
+    #[cfg(unix)]
+    {
+        let link = repo.main.join("linked");
+        std::os::unix::fs::symlink(&unrelated, &link).unwrap();
+        plant("symlinked", link.join(".git"));
+    }
+
+    let rows = repo.rows();
+    assert!(
+        rows.iter()
+            .all(|row| row.id != "dotdot" && row.id != "symlinked"),
+        "{:?}",
+        rows.iter().map(|row| &row.path).collect::<Vec<_>>()
+    );
+}
+
+/// A reason read in local time would be hours off and read stale wherever the zone is not UTC.
 #[test]
 fn lock_times_are_utc_a_reused_pid_is_stale_and_an_unparsed_reason_is_held() {
     let repo = Repo::new("locks");
@@ -299,6 +388,8 @@ fn the_remote_host_never_carries_user_information() {
         (Some("github.com".into()), Some("owner/name".into()))
     );
     assert_eq!(host_and_slug("/srv/origin.git"), (None, None));
+    assert_eq!(host_and_slug("C:/repos/origin.git"), (None, None));
+    assert_eq!(host_and_slug(r"D:\repos\origin.git"), (None, None));
     assert_eq!(host_and_slug("https://host.example/../../user").1, None);
 }
 
@@ -320,6 +411,6 @@ fn every_worktree_the_listing_reports_appears_in_this_repository() {
         read.rows.len()
     );
     assert_eq!(read.rows.len(), expected);
-    // Measured 2026-11-21: 34 worktrees in 0.7 s at load 50 on 12 cores; the screen's budget is 2 s.
+    // Measured: 34 worktrees in 0.7 s at load 50 (2026-11-21), 11 in 0.21 s with six workers (11-22).
     assert!(elapsed < std::time::Duration::from_secs(10), "{elapsed:?}");
 }

@@ -5,8 +5,12 @@
 use chrono::NaiveDateTime;
 use serde::Serialize;
 
-/// The reason's time has whole seconds and the kernel's start time may round the other way.
+/// The reason's time has whole seconds and the kernel's start time may round the other way;
+/// Linux derives the start from boot time plus clock ticks, so it may round twice.
+#[cfg(not(target_os = "linux"))]
 const START_TOLERANCE_SECS: i64 = 1;
+#[cfg(target_os = "linux")]
+const START_TOLERANCE_SECS: i64 = 2;
 const AGENT_ID_MAX_LEN: usize = 64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -36,11 +40,15 @@ pub(crate) enum LockState {
     Unparsed,
 }
 
+#[cfg_attr(
+    not(any(target_os = "macos", windows, target_os = "linux")),
+    allow(dead_code)
+)]
+#[derive(Hash)]
 pub(crate) enum ProcessStart {
     StartedAt(i64),
     Gone,
-    /// This platform cannot say; the lock is believed.
-    #[cfg_attr(target_os = "macos", allow(dead_code))]
+    /// The process exists but Atlas may not read when it started; the lock is believed.
     Unknown,
 }
 
@@ -120,15 +128,94 @@ pub(crate) fn process_start(pid: u32) -> ProcessStart {
             size,
         )
     };
-    if written != size {
-        return ProcessStart::Gone;
+    if written == size {
+        // SAFETY: the kernel filled all `size` bytes.
+        let info = unsafe { info.assume_init() };
+        return ProcessStart::StartedAt(info.pbi_start_tvsec as i64);
     }
-    // SAFETY: the kernel filled all `size` bytes.
-    let info = unsafe { info.assume_init() };
-    ProcessStart::StartedAt(info.pbi_start_tvsec as i64)
+    // SAFETY: signal 0 only asks whether the pid exists and may be signalled.
+    let exists = unsafe { libc::kill(pid, 0) } == 0
+        || std::io::Error::last_os_error().raw_os_error() == Some(libc::EPERM);
+    if exists {
+        ProcessStart::Unknown
+    } else {
+        ProcessStart::Gone
+    }
 }
 
-#[cfg(not(target_os = "macos"))]
+/// `GetProcessTimes` on a handle that may only query: the creation time, nothing else.
+#[cfg(windows)]
+pub(crate) fn process_start(pid: u32) -> ProcessStart {
+    use windows_sys::Win32::Foundation::{
+        CloseHandle, GetLastError, ERROR_ACCESS_DENIED, FILETIME,
+    };
+    use windows_sys::Win32::System::Threading::{
+        GetProcessTimes, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+    };
+    /// Seconds from 1601-01-01, where FILETIME counts from, to 1970-01-01.
+    const FILETIME_TO_UNIX_SECS: i64 = 11_644_473_600;
+    const FILETIME_TICKS_PER_SEC: u64 = 10_000_000;
+
+    // SAFETY: plain FFI call; a null handle is checked before any use.
+    let handle = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid) };
+    if handle.is_null() {
+        // SAFETY: reads this thread's last error, which `OpenProcess` just set.
+        return if unsafe { GetLastError() } == ERROR_ACCESS_DENIED {
+            ProcessStart::Unknown
+        } else {
+            ProcessStart::Gone
+        };
+    }
+    let mut created = FILETIME::default();
+    let mut exited = FILETIME::default();
+    let mut kernel = FILETIME::default();
+    let mut user = FILETIME::default();
+    // SAFETY: the handle is open and every out pointer is a live, writable FILETIME.
+    let read =
+        unsafe { GetProcessTimes(handle, &mut created, &mut exited, &mut kernel, &mut user) };
+    // SAFETY: the handle came from `OpenProcess` and is closed exactly once.
+    unsafe { CloseHandle(handle) };
+    if read == 0 {
+        return ProcessStart::Unknown;
+    }
+    let ticks = (u64::from(created.dwHighDateTime) << 32) | u64::from(created.dwLowDateTime);
+    let seconds = (ticks / FILETIME_TICKS_PER_SEC) as i64;
+    ProcessStart::StartedAt(seconds - FILETIME_TO_UNIX_SECS)
+}
+
+/// `/proc/<pid>/stat` counts the start in clock ticks after boot; `/proc/stat` says when boot was.
+#[cfg(target_os = "linux")]
+pub(crate) fn process_start(pid: u32) -> ProcessStart {
+    let Ok(stat) = std::fs::read_to_string(format!("/proc/{pid}/stat")) else {
+        return ProcessStart::Gone;
+    };
+    linux_start(&stat).map_or(ProcessStart::Unknown, ProcessStart::StartedAt)
+}
+
+#[cfg(target_os = "linux")]
+fn linux_start(stat: &str) -> Option<i64> {
+    /// `starttime` is field 22; the fields after `comm`'s closing parenthesis begin at field 3.
+    const START_FIELD_AFTER_COMM: usize = 22 - 3;
+    let ticks: i64 = stat
+        .rsplit_once(')')?
+        .1
+        .split_whitespace()
+        .nth(START_FIELD_AFTER_COMM)?
+        .parse()
+        .ok()?;
+    let boot: i64 = std::fs::read_to_string("/proc/stat")
+        .ok()?
+        .lines()
+        .find_map(|line| line.strip_prefix("btime "))?
+        .trim()
+        .parse()
+        .ok()?;
+    /// `/proc` reports clock ticks in USER_HZ, which the kernel fixes at 100 for user space.
+    const USER_HZ: i64 = 100;
+    Some(boot + ticks / USER_HZ)
+}
+
+#[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
 pub(crate) fn process_start(_pid: u32) -> ProcessStart {
     ProcessStart::Unknown
 }

@@ -1,11 +1,11 @@
 {
   "title": "Work status",
-  "summary": "<runningCount>{running}</runningCount> running · <stuckCount>{stuck}</stuckCount> stuck · <readyCount>{ready}</readyCount> ready to merge",
+  "summary": "<runningCount>{running}</runningCount> held by a live session · <stuckCount>{stuck}</stuckCount> stuck",
   "repoLine": "{repo} · {count, plural, one {# worktree} other {# worktrees}} on this Mac",
   "headline": {
-    "running": "{count, plural, one {# task is running on this Mac} other {# tasks are running on this Mac}}",
-    "stuck": "{count, plural, one {# task is stuck} other {# tasks are stuck}}",
-    "idle": "No agent holds a worktree in {repo}"
+    "running": "{count, plural, one {# worktree is held by a live session} other {# worktrees are held by live sessions}}",
+    "stuck": "{count, plural, one {# worktree is stuck} other {# worktrees are stuck}}",
+    "idle": "No worktree in {repo} is locked by a live session"
   },
   "band": {
     "mac": "On this Mac",
@@ -24,7 +24,7 @@
   "group": {
     "stuck": "Stuck",
     "merged": "Merged ({count})",
-    "unheld": "Not held by an agent"
+    "unheld": "No session lock"
   },
   "session": {
     "header": "{tool} · session {number}",
@@ -34,8 +34,6 @@
   "tool": {
     "acp": "Claude Agent in Atlas",
     "claudeCode": "Claude Code",
-    "codex": "Codex",
-    "gemini": "Gemini CLI",
     "unknown": "An agent"
   },
   "holder": {
@@ -49,10 +47,11 @@
     "ended": "Session ended"
   },
   "row": {
-    "noCommits": "No commits beyond main",
-    "commits": "{count, plural, one {# commit} other {# commits}} beyond main",
+    "noCommits": "No commits beyond {branch}",
+    "commits": "{count, plural, one {# commit} other {# commits}} beyond {branch}",
     "missing": "The folder {folder} is missing. git worktree prune removes its record.",
-    "lockLeft": "The {tool} session that locked this worktree has ended. {count, plural, =0 {It has no commits beyond main.} one {Its # commit beyond main is not merged.} other {Its # commits beyond main are not merged.}}"
+    "lockLeft": "The {tool} session that locked this worktree has ended. {count, plural, =0 {It has no commits beyond {branch}.} one {Its # commit beyond {branch} is not merged.} other {Its # commits beyond {branch} are not merged.}}",
+    "unknown": "Not measured against {branch}"
   },
   "chip": {
     "missing": "Folder missing",
@@ -78,8 +77,5 @@
     "title": "Work status runs in the desktop app",
     "body": "A browser cannot run git or read this computer's processes. In this browser you can still open your folder's map and Library."
   },
-  "term": {
-    "worktree": "Worktree: a separate copy of the project folder, so each agent changes files without touching the others.",
-    "subagent": "Subagent: a task an agent session starts, often in its own worktree."
-  }
+  "notRepository": "{folder} is not a Git repository. Choose the folder that holds your project's .git."
 }

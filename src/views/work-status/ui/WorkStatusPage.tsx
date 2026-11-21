@@ -16,12 +16,13 @@ import { Button, PageHeaderBar } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { PAGE_FRAME, PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
 import { SwapText, WorkTracksBoard } from '@/widgets/work-tracks';
+import { useMinuteClock } from '../model/use-minute-clock';
 import { useWorkStatus } from '../model/use-work-status';
 import { WorkStatusStage } from './WorkStatusStage';
 
 const subscribe = () => () => {};
 const webSnapshot = () => false;
-const EMPTY_TRACKS: WorkTracks = { stuck: [], sessions: [], unheld: [], merged: [], counts: { running: 0, stuck: 0, ready: 0 }, worktreeCount: 0 };
+const EMPTY_TRACKS: WorkTracks = { stuck: [], sessions: [], unheld: [], merged: [], counts: { running: 0, stuck: 0 }, worktreeCount: 0 };
 const COUNT_CLASS = 'font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-primary)]';
 const MAIN_CLASS = 'flex min-h-full flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]';
 
@@ -35,6 +36,7 @@ export function WorkStatusPage() {
   const vaultRoot = native && vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
   const root = native ? chosen ?? vaultRoot : null;
   const { snapshot, failed, readAtMs } = useWorkStatus(root);
+  const nowMs = useMinuteClock(readAtMs);
   const tracks = useMemo(() => (snapshot?.status === 'ready' ? buildWorkTracks(snapshot) : null), [snapshot]);
 
   async function chooseRepository() {
@@ -62,7 +64,9 @@ export function WorkStatusPage() {
   if (status === 'ungranted' || status === 'unreadable') {
     return stagePage(<WorkStatusStage state="unreadable" title={t('unreadable', { repo: folder })} action={chooseButton('lg')} />);
   }
-  if (status === 'no-history') return stagePage(<WorkStatusStage state="choose" title={t('choose.title')} action={chooseButton('lg')} />);
+  if (status === 'no-history') {
+    return stagePage(<WorkStatusStage state="not-repository" title={t('notRepository', { folder })} action={chooseButton('lg')} />);
+  }
   if (tracks && snapshot && snapshot.worktrees.length <= 1) {
     return stagePage(<WorkStatusStage state="empty" title={t('empty.title', { repo: snapshot.repository })} body={t('empty.body')} action={chooseButton('lg')} />);
   }
@@ -107,7 +111,6 @@ export function WorkStatusPage() {
               ...shown.counts,
               runningCount: () => <strong className={COUNT_CLASS}><SwapText value={String(shown.counts.running)} /></strong>,
               stuckCount: () => <strong className={COUNT_CLASS}><SwapText value={String(shown.counts.stuck)} ink={shown.counts.stuck > 0 ? 'text-[color:var(--color-danger-text-strong)]' : undefined} /></strong>,
-              readyCount: () => <strong className={COUNT_CLASS}><SwapText value={String(shown.counts.ready)} /></strong>,
             }) :' '}
           </p>
         </div>
@@ -116,7 +119,7 @@ export function WorkStatusPage() {
           folder={folder}
           host={snapshot?.host ?? null}
           baseBranch={snapshot?.baseBranch ?? 'main'}
-          nowMs={readAtMs}
+          nowMs={nowMs}
           reading={!tracks}
         />
       </div>

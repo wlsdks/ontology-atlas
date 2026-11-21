@@ -79,15 +79,16 @@ function stuckReasonOf(track: Track): StuckReason | null {
 }
 
 /** The words under a row's head: what a stuck row is stuck on, else how far past the base branch it is. */
-function useStationCaption(track: Track, stuck: StuckReason | null): string | null {
+function useStationCaption(track: Track, stuck: StuckReason | null, branch: string): string | null {
   const t = useTranslations('workStatus');
   if (stuck === 'missing') return t('row.missing', { folder: folderName(track.path) });
   if (stuck === 'lockLeft' && track.holder.kind === 'ended') {
-    return t('row.lockLeft', { tool: toolName(track.holder.tool, t), count: track.ahead ?? 0 });
+    return t('row.lockLeft', { tool: toolName(track.holder.tool, t), count: track.ahead ?? 0, branch });
   }
-  if (track.station === 'main') return null;
-  if (track.station === 'working' && track.ahead !== null) return t('row.commits', { count: track.ahead });
-  return t('row.noCommits');
+  if (track.station === 'main' || track.standing === 'base') return null;
+  if (track.standing === 'unknown') return t('row.unknown', { branch });
+  if (track.station === 'working' && track.ahead !== null) return t('row.commits', { count: track.ahead, branch });
+  return t('row.noCommits', { branch });
 }
 
 /** The resting fill under the ink layers, so the chip's own surface is the ink its text sits on. */
@@ -147,7 +148,7 @@ export function TrackRow({ track, tone, ink, branchesFromTrunk, arrivalOrder, ba
   // A branch leaves the trunk through its rounded elbow, so its straight part starts where the curve ends.
   const lineInset = branchesFromTrunk ? 'var(--work-elbow) - var(--work-line)' : '0px';
   const stuck = stuckReasonOf(track);
-  const caption = useStationCaption(track, stuck);
+  const caption = useStationCaption(track, stuck, baseBranch);
   // A caption that goes away fades with its last words rather than emptying first.
   const [lastCaption, setLastCaption] = useState(caption ?? '');
   if (caption && caption !== lastCaption) setLastCaption(caption);

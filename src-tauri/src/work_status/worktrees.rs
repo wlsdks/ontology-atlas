@@ -13,10 +13,12 @@ use std::time::UNIX_EPOCH;
 
 use serde::Serialize;
 
-use super::git_read::{git_read, read_admin_file, GitFailure};
+use super::git_read::{git_read, read_admin_file, read_first_line, GitFailure};
 use lock::{judge_lock, parse_lock_reason, process_start, LockState, LockTool};
 
 const AUTHOR_MAX_CHARS: usize = 200;
+/// Each row runs two `git` processes; this bounds how many run at once on a busy Mac.
+const MEASURE_WORKERS: usize = 6;
 const BASE_CANDIDATES: &[&str] = &["main", "master"];
 
 /// Where a worktree's head stands against the base branch (`main` in most repositories).
@@ -25,9 +27,11 @@ const BASE_CANDIDATES: &[&str] = &["main", "master"];
 pub(crate) enum Standing {
     /// The main checkout, or a worktree on the base branch itself; never a merged row.
     Base,
-    /// The head is an ancestor of the base and not on its first-parent line: merged.
+    /// The branch moved after it was created, and its head is an ancestor of the base off the
+    /// base's first-parent line: merged.
     Merged,
-    /// The head is on the base's first-parent line, so the branch has nothing of its own.
+    /// Nothing beyond the base: the head is on the first-parent line, or never moved from where
+    /// the branch was created.
     NoCommits,
     /// The head has commits the base does not.
     Ahead,
@@ -124,14 +128,31 @@ pub(crate) fn parse_porcelain(text: &str) -> Vec<PorcelainEntry> {
     entries
 }
 
-pub(crate) fn standing_of(is_base: bool, ahead: Option<u32>, on_first_parent: bool) -> Standing {
+/// What a head with nothing beyond the base can be told apart by.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ZeroAheadEvidence {
+    /// `None` when the base's first-parent line could not be read.
+    pub(crate) on_first_parent: Option<bool>,
+    /// The branch's head differs from where its reflog says it was created.
+    pub(crate) moved_since_created: bool,
+}
+
+pub(crate) fn standing_of(
+    is_base: bool,
+    ahead: Option<u32>,
+    evidence: ZeroAheadEvidence,
+) -> Standing {
     if is_base {
         return Standing::Base;
     }
     match ahead {
         None => Standing::Unknown,
-        Some(0) if on_first_parent => Standing::NoCommits,
-        Some(0) => Standing::Merged,
+        Some(0) => match evidence.on_first_parent {
+            None => Standing::Unknown,
+            Some(true) => Standing::NoCommits,
+            Some(false) if evidence.moved_since_created => Standing::Merged,
+            Some(false) => Standing::NoCommits,
+        },
         Some(_) => Standing::Ahead,
     }
 }
@@ -139,6 +160,7 @@ pub(crate) fn standing_of(is_base: bool, ahead: Option<u32>, on_first_parent: bo
 fn failure_status(failure: GitFailure) -> &'static str {
     match failure {
         GitFailure::Missing => "git-missing",
+        GitFailure::Unstartable => "unreadable",
         GitFailure::Refused => "no-history",
     }
 }
@@ -182,7 +204,7 @@ pub(super) fn read_repository(
             let missing = !path.exists();
             if !main_checkout
                 && !missing
-                && !path.starts_with(&root)
+                && !normalize(&entry.path).starts_with(&root)
                 && !points_back(&path, &common_dir, &id)
             {
                 return None;
@@ -193,6 +215,7 @@ pub(super) fn read_repository(
 
     measure_heads(
         &root,
+        &common_dir,
         &mut rows,
         base_branch.as_deref(),
         base_head.as_deref(),
@@ -260,11 +283,12 @@ fn base_row(
     let lock = entry.locked.as_ref().map(|reason| {
         let parsed = parse_lock_reason(reason);
         let state = judge_lock(parsed.as_ref(), process_start);
-        let locked_at = std::fs::metadata(common_dir.join("worktrees").join(&id).join("locked"))
-            .and_then(|meta| meta.modified())
-            .ok()
-            .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
-            .map(|elapsed| elapsed.as_millis() as u64);
+        let locked_at =
+            std::fs::symlink_metadata(common_dir.join("worktrees").join(&id).join("locked"))
+                .and_then(|meta| meta.modified())
+                .ok()
+                .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+                .map(|elapsed| elapsed.as_millis() as u64);
         WorktreeLock {
             state,
             tool: parsed
@@ -316,42 +340,86 @@ fn verified_branch_head(root: &Path, branch: &str) -> Option<String> {
         .filter(|head| !head.is_empty())
 }
 
-/// Two reads per row (commits beyond the base, and the last commit's time and author), run in
-/// parallel; the first-parent line is read once, only when some head has nothing beyond the base.
+/// Two reads per row (commits beyond the base, and the last commit's time and author), spread over
+/// at most `MEASURE_WORKERS` threads; the first-parent line is read once, only when some head has
+/// nothing beyond the base.
 fn measure_heads(
     root: &Path,
+    common_dir: &Path,
     rows: &mut [WorktreeRow],
     base: Option<&str>,
     base_head: Option<&str>,
 ) {
+    let per_worker = rows.len().div_ceil(MEASURE_WORKERS).max(1);
     std::thread::scope(|scope| {
-        for row in rows.iter_mut() {
-            scope.spawn(move || measure_head(root, row, base, base_head));
+        for chunk in rows.chunks_mut(per_worker) {
+            scope.spawn(move || {
+                for row in chunk {
+                    measure_head(root, row, base, base_head);
+                }
+            });
         }
     });
     let Some(base_head) = base_head else {
         for row in rows.iter_mut() {
-            row.standing = standing_of(row.main_checkout, None, false);
+            row.standing = Standing::Unknown;
         }
         return;
     };
     let needs_line = rows
         .iter()
         .any(|row| !is_base_row(row, base) && row.ahead == Some(0));
-    let first_parent: HashSet<String> = if needs_line {
+    let first_parent: Option<HashSet<String>> = if needs_line {
         git_read(root, &["rev-list", "--first-parent", base_head])
+            .ok()
             .map(|text| text.lines().map(str::to_string).collect())
-            .unwrap_or_default()
     } else {
-        HashSet::new()
+        Some(HashSet::new())
     };
     for row in rows.iter_mut() {
-        let on_line = row
-            .head
-            .as_ref()
-            .is_some_and(|head| first_parent.contains(head));
-        row.standing = standing_of(is_base_row(row, base), row.ahead, on_line);
+        let is_base = is_base_row(row, base);
+        let evidence = ZeroAheadEvidence {
+            on_first_parent: first_parent
+                .as_ref()
+                .map(|line| row.head.as_ref().is_some_and(|head| line.contains(head))),
+            moved_since_created: !is_base
+                && row.ahead == Some(0)
+                && moved_since_created(common_dir, row),
+        };
+        row.standing = standing_of(is_base, row.ahead, evidence);
     }
+}
+
+/// The first reflog entry's new id is where the branch was created; a head still there never
+/// moved, so it has nothing that could have been merged. A detached head reads its own log.
+fn moved_since_created(common_dir: &Path, row: &WorktreeRow) -> bool {
+    let Some(head) = row.head.as_deref() else {
+        return false;
+    };
+    let log = match row.branch.as_deref() {
+        Some(branch) if is_plain_ref_name(branch) => common_dir
+            .join("logs")
+            .join("refs")
+            .join("heads")
+            .join(branch),
+        Some(_) => return false,
+        None => common_dir
+            .join("worktrees")
+            .join(&row.id)
+            .join("logs")
+            .join("HEAD"),
+    };
+    read_first_line(&log)
+        .and_then(|line| line.split_whitespace().nth(1).map(str::to_string))
+        .is_some_and(|created| created != head)
+}
+
+/// Git refuses `..` and empty components in a branch name; this keeps the reflog path inside
+/// `logs/refs/heads` even for a listing Atlas did not expect.
+fn is_plain_ref_name(branch: &str) -> bool {
+    branch
+        .split('/')
+        .all(|part| !part.is_empty() && part != "." && part != ".." && !part.contains('\\'))
 }
 
 fn is_base_row(row: &WorktreeRow, base: Option<&str>) -> bool {

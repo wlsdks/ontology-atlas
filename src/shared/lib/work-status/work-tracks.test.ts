@@ -55,7 +55,7 @@ describe('buildWorkTracks', () => {
     expect(tracks.sessions.map(session => session.tracks.map(track => track.key))).toEqual([['second', 'first'], ['reused-pid'], ['late']]);
     expect(tracks.sessions.map(session => session.ink)).toEqual([0, 1, 2]);
     expect(tracks.sessions.map(session => session.ordinal)).toEqual([1, 2, 3]);
-    expect(tracks.counts).toEqual({ running: 4, stuck: 0, ready: 0 });
+    expect(tracks.counts).toEqual({ running: 4, stuck: 0 });
     expect(tracks.worktreeCount).toBe(5);
   });
 
@@ -63,7 +63,7 @@ describe('buildWorkTracks', () => {
     const tracks = buildWorkTracks(snapshot([
       row('gone', { missing: true, lock: live(1, 1, 1) }),
       row('ended', { lock: { ...live(9, 9, 9), state: 'stale' } }),
-      row('merged', { standing: 'merged', ahead: 0, lock: live(1, 1, 2) }),
+      row('merged', { standing: 'merged', ahead: 0 }),
       row('fresh', { standing: 'noCommits', ahead: 0 }),
     ]));
     expect(tracks.stuck.map(track => [track.key, track.station])).toEqual([['gone', 'start'], ['ended', 'working']]);
@@ -79,6 +79,19 @@ describe('buildWorkTracks', () => {
     ]));
     expect(tracks.unheld[0].holder).toEqual({ kind: 'locked', lockedAt: 5 });
     expect(headlineOf(tracks)).toEqual({ kind: 'idle' });
+  });
+
+  it('keeps a merged worktree a live session still holds under that session', () => {
+    const tracks = buildWorkTracks(snapshot([row('held-merged', { standing: 'merged', ahead: 0, lock: live(1, 1, 2) })]));
+    expect(tracks.merged).toEqual([]);
+    expect(tracks.sessions).toMatchObject([{ tracks: [{ key: 'held-merged', station: 'main' }] }]);
+  });
+
+  it('draws the main checkout only while an Atlas agent session works in it', () => {
+    const main = { mainCheckout: true, standing: 'base' as const, branch: 'main', path: '/repo' };
+    expect(buildWorkTracks(snapshot([row('main', main)])).sessions).toEqual([]);
+    const tracks = buildWorkTracks(snapshot([row('main', { ...main, acpPid: 77 })]));
+    expect(tracks.sessions).toMatchObject([{ tool: 'acp', tracks: [{ key: 'main', title: 'repo', station: 'start' }] }]);
   });
 
   it('puts a worktree an Atlas agent session works in under that session', () => {

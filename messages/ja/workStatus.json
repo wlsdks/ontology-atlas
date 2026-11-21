@@ -1,11 +1,11 @@
 {
   "title": "作業状況",
-  "summary": "進行中<runningCount>{running}</runningCount> · 停止<stuckCount>{stuck}</stuckCount> · マージ可能<readyCount>{ready}</readyCount>",
+  "summary": "稼働中のセッションが保持<runningCount>{running}</runningCount> · 停止<stuckCount>{stuck}</stuckCount>",
   "repoLine": "{repo} · このMacのワークツリー{count}個",
   "headline": {
-    "running": "このMacで{count}件の作業が進行中です",
-    "stuck": "{count}件の作業が止まっています",
-    "idle": "{repo}のワークツリーを保持しているエージェントはありません"
+    "running": "稼働中のセッションが{count}個のワークツリーを保持しています",
+    "stuck": "{count}個のワークツリーが止まっています",
+    "idle": "{repo}に稼働中のセッションがロックしたワークツリーはありません"
   },
   "band": {
     "mac": "このMac",
@@ -24,7 +24,7 @@
   "group": {
     "stuck": "停止",
     "merged": "マージ済み ({count})",
-    "unheld": "エージェントが保持していないワークツリー"
+    "unheld": "セッションのロックなし"
   },
   "session": {
     "header": "{tool} · セッション{number}",
@@ -34,8 +34,6 @@
   "tool": {
     "acp": "Atlas内のClaude Agent",
     "claudeCode": "Claude Code",
-    "codex": "Codex",
-    "gemini": "Gemini CLI",
     "unknown": "エージェント"
   },
   "holder": {
@@ -49,10 +47,11 @@
     "ended": "セッション終了"
   },
   "row": {
-    "noCommits": "main以降のコミットなし",
-    "commits": "main以降のコミット{count}個",
+    "noCommits": "{branch}以降のコミットなし",
+    "commits": "{branch}以降のコミット{count}個",
     "missing": "{folder}フォルダがありません。git worktree pruneを実行するとこの記録が削除されます。",
-    "lockLeft": "このワークツリーをロックした{tool}セッションは終了しました。{count, plural, =0 {main以降のコミットはありません。} other {main以降のコミット#個は未マージです。}}"
+    "lockLeft": "このワークツリーをロックした{tool}セッションは終了しました。{count, plural, =0 {{branch}以降のコミットはありません。} other {{branch}以降のコミット#個は未マージです。}}",
+    "unknown": "{branch}と比較できませんでした"
   },
   "chip": {
     "missing": "フォルダなし",
@@ -78,8 +77,5 @@
     "title": "作業状況はデスクトップアプリで開きます",
     "body": "ブラウザはgitを実行したり、このコンピュータのプロセスを読んだりできません。このブラウザでも、フォルダのマップとライブラリは開けます。"
   },
-  "term": {
-    "worktree": "ワークツリー：プロジェクトフォルダの別のコピーです。エージェントごとに別のコピーでファイルを変更するので、互いに干渉しません。",
-    "subagent": "サブエージェント：エージェントのセッションが始めた作業の1つです。多くの場合、自分専用のワークツリーを使います。"
-  }
+  "notRepository": "{folder}フォルダはGitリポジトリではありません。リポジトリの最上位フォルダを選んでください。"
 }

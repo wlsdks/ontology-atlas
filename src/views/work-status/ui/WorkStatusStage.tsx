@@ -44,7 +44,7 @@ function TracksArtwork({ arriving, engaged, reduced }: FeatureStageMotion) {
   );
 }
 
-export type WorkStatusStageState = 'web' | 'choose' | 'unreadable' | 'git-missing' | 'empty';
+export type WorkStatusStageState = 'web' | 'choose' | 'not-repository' | 'unreadable' | 'git-missing' | 'empty';
 
 export function WorkStatusStage({ state, title, body, action }: { state: WorkStatusStageState; title: string; body?: string; action?: ReactNode }) {
   const nav = useTranslations('navRail');

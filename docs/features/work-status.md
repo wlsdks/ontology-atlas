@@ -31,25 +31,32 @@ Every read goes through the hardened Git runner in `src-tauri/src/git/runner.rs`
   repository's record for it point at each other.
 - A row whose head has commits the base branch (`origin/HEAD`, else `main`,
   else `master`) does not have stands at **Working** with its commit count.
-- A head on the base branch's first-parent line has **no commits beyond main**,
-  so it is never called merged. A head that is an ancestor of the base branch
-  and not on that line is **merged** and folds into the Merged group. The main
-  checkout and a worktree on the base branch are never merged rows.
+- A head with nothing beyond the base branch has **no commits beyond** it,
+  naming the base branch. It is **merged**, and folds into the Merged group,
+  only when its branch moved after it was created (the first entry of its
+  reflog names another commit) and its head is an ancestor of the base branch
+  off its first-parent line; a branch created at a merged commit that never
+  moved is not merged. When the first-parent line cannot be read the row says
+  it was **not measured**. The main checkout and a worktree on the base branch
+  are never merged rows, and a row a live session holds stays under it.
 - A lock names its holder. Claude Code writes
   `claude agent agent-<id> (pid <pid> start <time>)`; the time is the session's
-  start in UTC. Atlas reads the start time of that one pid (macOS
-  `proc_pidinfo`) and compares it with the reason within one second: a match is
-  a live holder, a mismatch or a gone pid is a lock left by an ended session,
-  and a reason it cannot read counts as held. The lock time is the `locked`
-  file's modified time. No other process is read.
+  start in UTC. Atlas reads the start time of that one pid (`proc_pidinfo` on
+  macOS, `GetProcessTimes` on Windows, `/proc` on Linux) and compares it with
+  the reason within one second (two on Linux): a match is a live holder, a
+  mismatch or a gone pid is a lock left by an ended session, and a reason it
+  cannot read counts as held. The lock time is the `locked` file's modified
+  time. No other process is read.
 - A worktree that an Atlas agent session (ACP) works in sits under
-  **Claude Agent in Atlas**.
+  **Claude Agent in Atlas**; so does the main checkout while such a session
+  works there.
 
 ## The board
 
-The headline states the situation: how many tasks are stuck, else how many are
-running on this Mac. Under it, the counts of running, stuck and ready-to-merge
-tasks. Ready to merge stays at zero until the server side is connected.
+The headline states the situation: how many worktrees are stuck, else how many
+a live session holds, else that no live session has locked one. Under it, the
+counts held and stuck. A tool that writes no lock, such as Codex, is not seen
+in slice 1, so the words say lock, never agent.
 
 The board is a route map across two grounds, **On this Mac** and **On the
 server**, split by the `push` seam, with one ruler of stations shared by every
@@ -61,8 +68,8 @@ row. Rows group by holder:
    own ink: a trunk from the session header, and one branch per worktree it
    holds, titled from its branch name (`feat/library-first-run-stage` reads
    "library first run stage") with the branch in mono underneath.
-3. **Not held by an agent**: unlocked worktrees, most recent commit first, with
-   the time and author of that commit.
+3. **No session lock**: worktrees no live session has locked, most recent
+   commit first, with the time and author of that commit.
 4. **Merged**: rows whose line runs to the `main` rail.
 
 A session row at **Working** carries a chip; a worktree no session holds is a
@@ -79,10 +86,13 @@ the rows scroll.
 
 ## Live updates
 
-While the screen is visible, it stats Git's worktree records once a second
-(`work_status_fingerprint`, no process spawned) and reads again only when they
-changed: a worktree added or removed, locked or unlocked, or committed to. A
-hidden screen asks nothing.
+While the screen is visible, it stats Git's worktree records and the base
+branch's ref once a second, and asks whether each locked pid still runs
+(`work_status_fingerprint`, no process spawned); it reads again only when any
+of that changed: a worktree added or removed, locked or unlocked, committed to,
+merged into the base branch, or its session ended. A change shows within about
+two seconds: one interval plus one read. A hidden screen asks nothing and reads
+once when it shows again; relative ages move once a minute.
 
 Every change animates from where each element was last drawn, with transform
 and opacity only: a new row draws its line out of its session's trunk, a row

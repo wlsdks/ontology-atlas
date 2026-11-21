@@ -4,7 +4,7 @@ doc_type: spec
 status: draft
 area: git
 date: 2026-11-21
-decisions: []
+decisions: [dac7de97-cd83-4c93-8b29-5fecd5db4389]
 ---
 
 # Work status: who holds which worktree, what CI is doing, and what slows this Mac
@@ -164,11 +164,17 @@ steps, conditional fetch in a budget) is introduced when the second host is buil
    worktree outside the chosen folder appears only when its `.git` file and the repository's
    `gitdir` record point at each other. Rows group under the session that holds them.
 3. When a lock names a pid, Atlas checks that pid's liveness and start time against the reason's
-   UTC time (±1 s); a match is a live holder, a mismatch a stale lock, an unparseable reason a live
-   lock. A worktree with no lock says "No lock".
-4. When a worktree's head is on `main`'s first-parent line, it says "No commits beyond main" and
-   offers no fix; it is merged only when its head is an ancestor of `main` and not on that line.
-   The main checkout and the `main` branch are never merged rows.
+   UTC time (±1 s; ±2 s on Linux, which counts from boot); a match is a live holder, a mismatch a
+   stale lock, an unparseable reason a live lock. A pid that exists but whose start Atlas may not
+   read is believed. A worktree with no lock says "No lock".
+4. When a worktree's head has nothing beyond the base branch, it says "No commits beyond {branch}"
+   and offers no fix. It is merged only when its branch moved after it was created (the first
+   entry of the branch's reflog names another commit than its head) and its head is an ancestor of
+   the base off the base's first-parent line. A branch created at a merged commit that never moved
+   is not merged: on a repository whose every base commit is a merge, that is every new
+   integration or PR branch. If the first-parent line cannot be read, the standing is unknown and
+   the row says "Not measured against {branch}". The main checkout and the base branch are never
+   merged rows, and a row a live session holds stays under that session even once merged.
 5. When an agent adds or removes a worktree, starts a hook or a check, or commits, the row changes
    within 5 s. When a hook ends, its result is what changed: after `pre-push`, the remote-tracking
    ref moved to the pushed head (passed) or not (stopped); after `pre-commit` or `commit-msg`,
@@ -459,26 +465,36 @@ Windows each string that says "this Mac" uses its `.pc` variant, which says "thi
 |---|---|---|
 | `navRail.workStatus` | Rail | Work status |
 | `title` | Page heading | Work status |
-| `summary` | Under the heading | {running} running · {stuck} stuck · {ready} ready to merge |
+| `summary` | Under the heading | {running} held by a live session · {stuck} stuck (slice 5 adds ready to merge) |
+| `headline.running` | Page lead | {count, plural, one {# worktree is held by a live session} other {# worktrees are held by live sessions}} |
+| `headline.stuck` | Page lead | {count, plural, one {# worktree is stuck} other {# worktrees are stuck}} |
+| `headline.idle` | Page lead | No worktree in {repo} is locked by a live session |
+| `ruler.working` / `.checks` / `.prePush` / `.pr` / `.ci` / `.ready` / `.main` | Station ruler | Working / Checks / pre-push / PR / CI / Ready to merge / main |
 | `repoLine` | Heading right | {repo} · {count, plural, one {# worktree} other {# worktrees}} on this Mac |
 | `band.mac` / `band.server` | Band headers | On this Mac / On the server |
 | `band.seam` | Seam label | push |
 | `side.notOnMac` / `.notPushed` / `.noPr` | Row halves | Not on this Mac / Not pushed / Pushed, no PR |
-| `group.stuck` / `.notOnMac` / `.merged` | Group labels | Stuck / Not on this Mac / Merged ({count}) |
+| `group.stuck` / `.notOnMac` / `.merged` / `.unheld` | Group labels | Stuck / Not on this Mac / Merged ({count}) / No session lock |
 | `session.header` | Session header | {tool} · session {number} |
+| `session.started` / `.subagents` | Session header | started {time} / {count, plural, one {# subagent} other {# subagents}} |
 | `session.counts` | Session header | {count, plural, one {# subagent} other {# subagents}}: {running} running · {quiet} quiet |
 | `session.quiet` | Fold | {count, plural, one {+ # quiet subagent} other {+ # quiet subagents}} |
 | `session.unlocked` | Session header | a {tool} process |
 | `tool.acp` | Session header | Claude Agent in Atlas |
-| `tool.claudeCode` / `.codex` / `.gemini` | Session header | Claude Code / Codex / Gemini CLI |
+| `tool.claudeCode` / `.unknown` | Session header | Claude Code / An agent; slice 2 adds `.codex` and `.gemini` with process evidence |
 | `tool.unknownProcess` | Row | Process {name} |
-| `holder.locked` | Row | {tool} subagent {id} · locked at {time} |
-| `holder.noLock` | Row | No lock · last commit {ago} by {author} |
+| `holder.locked` | Row tooltip | {tool} subagent {id} · locked at {time} |
+| `holder.lockedUnnamed` | Row | Locked at {time} |
+| `holder.subagent` | Row | Subagent {id} |
+| `holder.lastCommit` | Row | {ago} by {author} |
+| `holder.noLockQuiet` | Row | No lock |
+| `holder.noLock` | Row tooltip | No lock · last commit {ago} by {author} |
 | `holder.staleLock` / `.ended` | Row tooltip / Row | Locked by a {tool} session that has ended / Session ended |
 | `chip.missing` / `.lockLeft` | Head of a stuck row | Folder missing / Lock left behind |
-| `row.lockLeft` | Under a stuck row's line | The {tool} session that locked this worktree has ended. {count, plural, =0 {It has no commits beyond main.} one {Its # commit beyond main is not merged.} other {Its # commits beyond main are not merged.}} |
+| `row.lockLeft` | Under a stuck row's line | The {tool} session that locked this worktree has ended. {count, plural, =0 {It has no commits beyond {branch}.} one {Its # commit beyond {branch} is not merged.} other {Its # commits beyond {branch} are not merged.}} |
 | `holder.twoTools` | Row | {first} and {second} both have processes in this worktree |
-| `row.noCommits` | Row | No commits beyond main |
+| `row.noCommits` / `.commits` | Row | No commits beyond {branch} / {count, plural, one {# commit} other {# commits}} beyond {branch} |
+| `row.unknown` | Row | Not measured against {branch} |
 | `row.missing` | Under a stuck row's line | The folder {folder} is missing. git worktree prune removes its record. |
 | `hook.running` / `.runningUnnamed` | Station | {hook} running {elapsed} · {kinds} / Hook running {elapsed} · {kinds} |
 | `hook.passed` / `.stopped` | Station | {hook} passed / {hook} stopped |
@@ -552,6 +568,8 @@ Windows each string that says "this Mac" uses its `.pc` variant, which says "thi
 | `unsupportedHost` | Server band | Atlas does not read PRs and CI from {host}. On this Mac stays live. |
 | `reading` | Band foot | Reading worktrees: {read} of {total} |
 | `unreadable` | Stage | {repo} could not be read. Choose the repository folder again to grant access. |
+| `notRepository` | Stage | {folder} is not a Git repository. Choose the folder that holds your project's .git. |
+| `searchWidgets.goTo_workStatus` | Command palette | Go to Work status |
 | `choose.title` / `.action` | Stage | Choose the Git repository your agents work in / Choose repository folder |
 | `empty.title` / `.body` | Stage | {repo} has only its main checkout / Each worktree an agent creates gets a row in Work status, with the session that holds it. |
 | `web.title` / `.body` | Web card | Work status runs in the desktop app / A browser cannot run git or read this computer's processes. In this browser you can still open your folder's map and Library. |
@@ -627,14 +645,21 @@ Ordered; file areas are disjoint between slices.
 
 1. **Slice 1, dogfood.** Given this repository, when the owner opens Work status in the installed
    app, then within 2 s every worktree `git worktree list --porcelain` reports appears, each lock's
-   worktree sits under the session its pid names, and each fact sits in its band. Checked:
-   `src-tauri/src/work_status/worktrees/tests.rs` and an installed-app capture.
+   worktree sits under the session its pid names, and each fact sits in its band. Measured
+   2026-11-22: 11 worktrees in 0.21 s at load 15; 34 in 0.7 s at load 50. Checked:
+   `src-tauri/src/work_status/worktrees/tests.rs`, which prints the time and fails only above 10 s
+   (5x the budget, since parallel builds share the machine), and an installed-app capture.
 2. **Slice 1, merged and locks.** Given temp repositories with a zero-commit worktree, a merged
-   one, the main checkout, a lock whose UTC time matches a live pid, one whose pid was reused, and
-   one unparseable, run under `TZ=Asia/Seoul`, then only the merged one is merged, the reused pid
-   reads stale, and the unparseable lock reads live. Checked: same file.
+   one, a branch created at a merged commit that never moved, the main checkout, a lock whose UTC
+   time matches a live pid, one whose pid was reused, and one unparseable, then only the merged
+   one is merged, the reused pid reads stale, and the unparseable lock reads live. The reason's
+   time is read as UTC whatever the local zone: a fixed reason parses to its UTC epoch, so the
+   result cannot depend on `TZ`. Checked: same file, on macOS, Linux and Windows CI.
 3. **Slice 1, live.** When a worktree is added and removed, the row arrives and leaves within 5 s,
-   no frame interval over 50 ms, zero frames at rest. Checked: `tests/e2e/work-status-motion.spec.ts`.
+   no frame interval over 50 ms, zero frames at rest. Checked: the watch cadence and its stop on
+   hide and unmount by `src/views/work-status/model/use-work-status.test.ts`; the motion by a
+   per-frame recording of the static build with 20 worktrees, attached to the pull request, since
+   the screen needs the desktop bridge and the web build has none.
 4. **Slice 2, planted input and hooks.** Given a sleeper whose arguments and environment contain
    `ATLAS_PLANTED_7f3c`, then that string is absent from every serialized record and log; a shell
    `pre-push` hook reads as `pre-push`; a Node hook that closed its script reads as "hook". Checked:
@@ -826,3 +851,8 @@ text in a PR, branch, commit, log, lane name, lease or subagent file; a paused b
   chip names its reason (`chip.missing`, `chip.lockLeft`) and its sentence sits under its own
   line, on this Mac's ground, naming the folder instead of its path. A worktree no session holds
   is a bare dot, never a Working chip. Sessions of one tool are numbered (`session.header`).
+- 2026-11-22: review of slice 1. Merged needs a branch that moved after it was created, and an
+  unreadable first-parent line is unknown, not merged (Flow 4); a held row stays under its
+  session. Lock liveness is read on Windows and Linux too (Flow 3). Copy claims only what a lock
+  proves (`headline.*`, `group.unheld`), names the base branch, and drops the ready count until
+  slice 5; every shipped key is in Copy. Criteria 1 to 3 name what checks them.

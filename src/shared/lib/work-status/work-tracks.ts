@@ -45,7 +45,7 @@ export interface WorkTracks {
   sessions: TrackSession[];
   unheld: Track[];
   merged: Track[];
-  counts: { running: number; stuck: number; ready: number };
+  counts: { running: number; stuck: number };
   worktreeCount: number;
 }
 
@@ -82,11 +82,13 @@ function sessionKeyOf(row: WorktreeRow): string | null {
   return null;
 }
 
+/** A live session keeps its rows under it even once merged: the session is still in that folder. */
 function placeOf(row: WorktreeRow, holder: TrackHolder, sessionKey: string | null): TrackPlace {
   if (row.missing) return 'stuck';
+  if (sessionKey) return 'session';
   if (row.standing === 'merged') return 'merged';
   if (holder.kind === 'ended') return 'stuck';
-  return sessionKey ? 'session' : 'unheld';
+  return 'unheld';
 }
 
 /** A missing folder has no working tree to place on the ruler, so its head stays at the start. */
@@ -102,7 +104,7 @@ function toTrack(row: WorktreeRow): Track {
   const sessionKey = sessionKeyOf(row);
   return {
     key: row.id,
-    title: branchTitle(row.branch, row.path),
+    title: row.mainCheckout ? folderName(row.path) : branchTitle(row.branch, row.path),
     branch: row.branch,
     path: row.path,
     standing: row.standing,
@@ -122,11 +124,12 @@ const commitTime = (track: Track) => (track.holder.kind === 'none' ? track.holde
 
 /**
  * Groups rows the way the board draws them: stuck first, then each session with the worktrees it
- * holds, then worktrees nobody holds, then merged ones. The main checkout is the board's trunk, not
- * a row. Sessions keep their order by start time, so each keeps its ink while it lives.
+ * holds, then worktrees nobody holds, then merged ones. The main checkout is the board's trunk, and a
+ * row only while an Atlas agent session works in it. Sessions keep their order by start time, so
+ * each keeps its ink while it lives.
  */
 export function buildWorkTracks(snapshot: WorkStatusSnapshot): WorkTracks {
-  const rows = snapshot.worktrees.filter(row => !row.mainCheckout);
+  const rows = snapshot.worktrees.filter(row => !row.mainCheckout || row.acpPid !== null);
   const tracks = rows.map(toTrack);
   const sessionsByKey = new Map<string, TrackSession>();
   rows.forEach((row, index) => {
@@ -160,7 +163,6 @@ export function buildWorkTracks(snapshot: WorkStatusSnapshot): WorkTracks {
     counts: {
       running: sessions.reduce((sum, session) => sum + session.tracks.length, 0),
       stuck: stuck.length,
-      ready: 0,
     },
     worktreeCount: snapshot.worktrees.length,
   };
