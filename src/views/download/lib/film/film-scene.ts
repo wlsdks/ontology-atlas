@@ -1,6 +1,5 @@
 import type { StageGraph } from '../stage-graph';
-
-export type FilmKind = 'project' | 'domain' | 'capability' | 'element';
+import type { FilmKind } from './film-vault';
 
 export interface FilmNode {
   id: string;
