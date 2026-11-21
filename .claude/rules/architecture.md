@@ -28,6 +28,14 @@ fall (`same-layer-cross-import-ratchet.contract.test.ts`).
 - When one folder holds about 15 source files, group them into subfolders
   named for what they own (`composer/`, `permission/`), never by kind
   (`hooks/`, `utils/`, `components/`).
+- A folder or file name says what it owns, in the product's words. No mockup,
+  option or work-order labels (`a1`, `option-b`, `new`, `old`, `v2`) and no
+  kind names (`utils`, `helpers`, `common`); a version belongs in a name only
+  when it is the version of a data format the code reads or writes.
+- Spelling: folders and modules are kebab-case (`acp-session/`,
+  `use-acp-session.ts`); a file holding one React component is PascalCase and
+  named after it (`AcpChatPanel.tsx`), while `shared/ui` primitives keep
+  kebab-case (`button.tsx`); Rust modules are snake_case.
 - Idiomatic TypeScript: function components and hooks; data as types plus
   pure functions in `model/`. A class only for something with a lifetime or a
   resource (a cache, a connection, a worker); no service, manager or
