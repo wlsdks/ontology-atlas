@@ -107,11 +107,8 @@ impl Vectors {
         if readable_model(&entry.root, &source).is_none() {
             return;
         }
-        let model_gone = matches!(source, VectorSource::Builtin)
-            && self
-                .sources
-                .builtin()
-                .is_ok_and(|builtin| !builtin.is_ready());
+        let model_gone =
+            matches!(source, VectorSource::Builtin) && self.builtin_missing_from_store();
         if !model_gone {
             self.request(entry, Pass::Update);
         }
@@ -165,7 +162,7 @@ impl Vectors {
         let mut seen = entry.source();
         loop {
             let facts = seen.as_ref().map(|source| {
-                let absent = matches!(source, VectorSource::Builtin) && self.builtin_absent();
+                let absent = matches!(source, VectorSource::Builtin) && self.builtin_unusable();
                 (absent, finished_once(&entry.root, source))
             });
             let mut state = lock(&entry.state);

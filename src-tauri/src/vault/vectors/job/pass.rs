@@ -2,12 +2,12 @@
 //! batch, while a ticker reports progress.
 
 use super::super::failure::{failure_detail, During, ModelFailedDetail, ModelStep};
-use super::super::models::{builtin_model, model_name, readable_model, Builtin, Runner};
+use super::super::models::{builtin_model, model_name, readable_model, Builtin, SourceModel};
 use super::super::types::{VectorFailure, VectorSource};
 use super::super::{lock, Vectors};
 use super::{Ended, Entry, Pass, Run, Stage};
 use crate::llm::embed::builtin::{Progress, Stage as ModelStage};
-use crate::llm::embed::{BuildPlan, EmbedError, Embedder, RunEnd};
+use crate::llm::embed::{BuildPlan, EmbedError, RunEnd};
 use std::cell::Cell;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -57,26 +57,6 @@ impl Drop for BuiltinInUse<'_> {
         let now = self.0.clock.now();
         lock(&self.0.keeper).job_ended(now);
         self.0.release_due();
-    }
-}
-
-enum Active {
-    Builtin(Arc<dyn Builtin>),
-    Runner(Arc<dyn Runner>),
-}
-
-impl Active {
-    fn embedder(&self) -> &dyn Embedder {
-        match self {
-            Active::Builtin(builtin) => builtin.as_ref(),
-            Active::Runner(runner) => runner.as_ref(),
-        }
-    }
-
-    fn during(&self) -> During {
-        During::Embedding {
-            runner: matches!(self, Active::Runner(_)),
-        }
     }
 }
 
@@ -151,7 +131,7 @@ impl Vectors {
         entry: &Entry,
         run: &Run,
         source: &VectorSource,
-    ) -> Result<(Active, Model), Ended> {
+    ) -> Result<(SourceModel, Model), Ended> {
         match source {
             VectorSource::Builtin => {
                 let builtin = self
@@ -161,7 +141,7 @@ impl Vectors {
                 if !builtin.is_ready() {
                     self.make_model_ready(entry, run, builtin.as_ref())?;
                 }
-                Ok((Active::Builtin(builtin), builtin_model()))
+                Ok((SourceModel::Builtin(builtin), builtin_model()))
             }
             VectorSource::Runner { base_url, model } => {
                 let during = During::Embedding { runner: true };
@@ -186,7 +166,7 @@ impl Vectors {
                     name: model_name(source),
                     dimensions,
                 };
-                Ok((Active::Runner(runner), model))
+                Ok((SourceModel::Runner(runner), model))
             }
         }
     }
@@ -241,7 +221,13 @@ impl Vectors {
         }
     }
 
-    fn prepare_folder(&self, entry: &Entry, run: &Run, active: &Active, model: &Model) -> Ended {
+    fn prepare_folder(
+        &self,
+        entry: &Entry,
+        run: &Run,
+        active: &SourceModel,
+        model: &Model,
+    ) -> Ended {
         let root = &entry.root;
         let Ok(files) = self.sources.markdown_files(root) else {
             return Ended::Failed(VectorFailure::Unreadable, "vectors-walk-failed".into());

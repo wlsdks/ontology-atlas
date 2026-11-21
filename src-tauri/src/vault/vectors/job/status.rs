@@ -32,12 +32,34 @@ impl Vectors {
         })
     }
 
-    /// Whether the built-in model is missing from this computer, a partial download included.
-    pub(in crate::vault::vectors) fn builtin_absent(&self) -> bool {
+    /// Whether the built-in model cannot answer now: not ready on this computer, a partial download
+    /// included, or no model store to keep it in. A pass and the status treat all three alike.
+    pub(in crate::vault::vectors) fn builtin_unusable(&self) -> bool {
         !self
             .sources
             .builtin()
             .is_ok_and(|builtin| builtin.is_ready())
+    }
+
+    /// Whether the app's model store is there and the built-in model is not ready in it. Unlike
+    /// `builtin_unusable`, `false` when there is no model store: then no quiet update is skipped
+    /// for it and a stored folder's idle status does not say `modelGone`.
+    pub(in crate::vault::vectors) fn builtin_missing_from_store(&self) -> bool {
+        self.sources
+            .builtin()
+            .is_ok_and(|builtin| !builtin.is_ready())
+    }
+
+    /// `modelGone` with the store's counts and what a cut-off download kept.
+    fn model_gone_status(&self, summary: Option<Summary>) -> VectorStatus {
+        let mut gone = VectorStatus::of_phase(VectorPhase::Failed);
+        if let Some(summary) = summary {
+            fill_counts(&mut gone, &summary, 0, 0);
+        }
+        gone.failure = Some(VectorFailure::ModelGone);
+        gone.failure_detail = Some(EmbedError::ModelNotReady.code().into());
+        gone.model = self.kept_download();
+        gone
     }
 
     /// The folder's status: the running job's, else what the store and the last pass say.
@@ -91,15 +113,9 @@ impl Vectors {
         if matches!(source, Some(VectorSource::Builtin))
             && !downloading
             && !says_why
-            && self.builtin_absent()
+            && self.builtin_unusable()
         {
-            let mut gone = VectorStatus::of_phase(VectorPhase::Failed);
-            if let Some(summary) = summary {
-                fill_counts(&mut gone, &summary, 0, 0);
-            }
-            gone.failure = Some(VectorFailure::ModelGone);
-            gone.failure_detail = Some(EmbedError::ModelNotReady.code().into());
-            gone.model = self.kept_download();
+            let mut gone = self.model_gone_status(summary);
             gone.vectors_bytes = vectors_bytes;
             return gone;
         }
@@ -148,18 +164,11 @@ impl Vectors {
             status.failure_detail = Some(detail);
             return status;
         }
-        let model_gone = summary.is_some()
+        if summary.is_some()
             && model.is_some_and(is_builtin_model)
-            && self
-                .sources
-                .builtin()
-                .is_ok_and(|builtin| !builtin.is_ready());
-        if model_gone {
-            status.phase = VectorPhase::Failed;
-            status.failure = Some(VectorFailure::ModelGone);
-            status.failure_detail = Some(EmbedError::ModelNotReady.code().into());
-            status.model = self.kept_download();
-            return status;
+            && self.builtin_missing_from_store()
+        {
+            return self.model_gone_status(summary);
         }
         if held {
             status.phase = VectorPhase::Stopped;

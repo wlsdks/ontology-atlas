@@ -1,9 +1,10 @@
 use super::job::{Entry, UPDATE_LATEST};
+use super::lock;
 use super::memory::{RELEASE_AFTER, SEARCHER_IDLE};
 use super::models::{builtin_model, readable_model};
 use super::types::{FoundState, VectorFailure, VectorPhase, VectorSource, VectorStatus};
 use crate::llm::embed::{EmbedError, RunEnd};
-use fakes::{cleanup, lock, vault, Harness, WITHIN};
+use fakes::{cleanup, vault, Harness, WITHIN};
 use std::path::Path;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;

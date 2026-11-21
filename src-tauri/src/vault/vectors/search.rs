@@ -8,10 +8,10 @@
 use super::failure::{failure_of, During};
 use super::job::Entry;
 use super::memory::SEARCHER_IDLE;
-use super::models::{readable_model, Builtin, Runner};
+use super::models::{readable_model, SourceModel};
 use super::types::{FoundState, PassageHit, VectorFailure, VectorFound, VectorSource};
 use super::{lock, Vectors};
-use crate::llm::embed::{EmbedError, Embedder, MAX_PASSAGE_CHARS};
+use crate::llm::embed::{EmbedError, MAX_PASSAGE_CHARS};
 use std::sync::Arc;
 use std::time::Duration;
 use vault_index::vectors::{Model, Searcher, MAX_HITS};
@@ -26,20 +26,6 @@ pub(super) struct OpenSearcher {
 impl OpenSearcher {
     pub(super) fn idle_past(&self, now: Duration) -> bool {
         now.saturating_sub(self.last_used) >= SEARCHER_IDLE
-    }
-}
-
-enum Asker {
-    Builtin(Arc<dyn Builtin>),
-    Runner(Arc<dyn Runner>),
-}
-
-impl Asker {
-    fn embedder(&self) -> &dyn Embedder {
-        match self {
-            Asker::Builtin(builtin) => builtin.as_ref(),
-            Asker::Runner(runner) => runner.as_ref(),
-        }
     }
 }
 
@@ -71,7 +57,7 @@ impl Vectors {
             Ok(asker) => asker,
             Err(error) => return self.with_coverage(entry, failed(failure_of(&error, during))),
         };
-        if let Asker::Builtin(builtin) = &asker {
+        if let SourceModel::Builtin(builtin) = &asker {
             if !builtin.is_ready() {
                 return self.with_coverage(entry, failed(VectorFailure::ModelGone));
             }
@@ -125,11 +111,11 @@ impl Vectors {
         )
     }
 
-    fn asker(&self, source: &VectorSource) -> Result<Asker, EmbedError> {
+    fn asker(&self, source: &VectorSource) -> Result<SourceModel, EmbedError> {
         Ok(match source {
-            VectorSource::Builtin => Asker::Builtin(self.sources.builtin()?),
+            VectorSource::Builtin => SourceModel::Builtin(self.sources.builtin()?),
             VectorSource::Runner { base_url, model } => {
-                Asker::Runner(self.sources.runner(base_url, model)?)
+                SourceModel::Runner(self.sources.runner(base_url, model)?)
             }
         })
     }
