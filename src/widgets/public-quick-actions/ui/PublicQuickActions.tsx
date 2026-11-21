@@ -13,7 +13,6 @@ import { getProjectEditHref } from "@/entities/project";
 interface Props {
   projectSlug?: string | null;
   className?: string;
-  /** Overrides the section's aria-label. Unset falls back to the i18n default. */
   label?: string;
 }
 

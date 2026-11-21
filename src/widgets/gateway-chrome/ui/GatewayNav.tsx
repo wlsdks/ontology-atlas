@@ -69,7 +69,6 @@ export function GatewayNav() {
             data-testid="gateway-brand-mark"
             className="size-8 shrink-0"
           />
-          {/* Below `sm` only the link's name. */}
           <span className="sr-only whitespace-nowrap sm:not-sr-only text-body leading-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             Ontology Atlas
           </span>
@@ -100,7 +99,6 @@ export function GatewayNav() {
           data-testid="download-gnb-actions"
           className="ml-auto flex shrink-0 items-center gap-3"
         >
-          {/* Collapsed below `sm`; `GatewayReadingLinks` carries them there. */}
           <span className="hidden items-center gap-3 sm:flex">
             <GatewayNavLink href="/guide" active={path.startsWith('/guide')}>
               {tNav('guide')}
@@ -117,7 +115,6 @@ export function GatewayNav() {
           </span>
 
           <span className="flex items-center gap-1 pointer-coarse:gap-3">
-          {/* The repository link, same shape and tone as the X mark. */}
           <a
             href={GITHUB_REPO_URL}
             target="_blank"
