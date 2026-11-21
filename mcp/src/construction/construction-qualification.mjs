@@ -12,44 +12,44 @@ export {
   CONSTRUCTION_QUALITY_AXES,
   FDE_AUDIENCE_AUTHORITY_DECISION,
   FDE_AUDIENCE_AUTHORITY_WITNESS_KIND,
-} from './qualification-vocabulary.mjs';
-export { CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA } from './qualification-input-schema.mjs';
+} from './qualification/vocabulary.mjs';
+export { CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA } from './qualification/input-schema.mjs';
 
 import {
   CONSTRUCTION_QUALIFICATION_CONTRACT,
   CONSTRUCTION_QUALITY_AXES,
   CLAIM_STATUSES,
   CITATION_STATUSES,
-} from './qualification-vocabulary.mjs';
+} from './qualification/vocabulary.mjs';
 import {
   addFinding,
   countBy,
   isRecord,
   nonBlank,
-} from './qualification-field-rules.mjs';
+} from './qualification/field-rules.mjs';
 import {
   validateRoot,
   validatePurposeAuthority,
   validateScenarios,
   validateQuestions,
-} from './qualification-scenario-review.mjs';
+} from './qualification/scenario-review.mjs';
 import {
   validateWitnesses,
   validateClaims,
   validateCitationChecks,
   validateDiagnostics,
-} from './qualification-evidence-review.mjs';
+} from './qualification/evidence-review.mjs';
 import {
   validateAxisResults,
   validateCqResults,
   normalizedAxes,
-} from './qualification-result-review.mjs';
+} from './qualification/result-review.mjs';
 import {
   validateSourceHiddenTask,
   validateResourceUse,
   validateAcceptance,
   validateRegression,
-} from './qualification-acceptance-review.mjs';
+} from './qualification/acceptance-review.mjs';
 
 function accuracy(correct, total) {
   return {

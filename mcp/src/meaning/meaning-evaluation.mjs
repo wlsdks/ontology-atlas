@@ -9,16 +9,16 @@ import {
   alignedSemanticAuthoritySources,
   domainAuthoritySources,
 } from './meaning-authority.mjs';
-import { validateCompetencyAnswers } from './proposal-competency-review.mjs';
+import { validateCompetencyAnswers } from './proposal-review/competency-review.mjs';
 import {
   repositoryPathExists,
   textNamesExactPath,
   validateCitationsAndConfidence,
   validateElementTaskNavigationEvidence,
   validateOptionalConceptBoundaryList,
-} from './proposal-evidence-review.mjs';
-import { finding, nonEmpty, proposalGates, relationKey } from './proposal-findings.mjs';
-import { validateRepositoryProposalShape } from './proposal-shape.mjs';
+} from './proposal-review/evidence-review.mjs';
+import { finding, proposalGates, relationKey } from './proposal-review/findings.mjs';
+import { nonEmpty, validateRepositoryProposalShape } from './proposal-review/shape.mjs';
 import { buildWritePlan } from './meaning-write-plan.mjs';
 /*
  * The rule lives in the text layer so the write-path findings share it without
@@ -26,13 +26,6 @@ import { buildWritePlan } from './meaning-write-plan.mjs';
  * (`ontology-engine` → findings → here → `ontology-engine`).
  */
 import { isEpistemicExclusionBoundary } from '../construction/construction-rules.mjs';
-
-export {
-  candidateProposalFromAnalysis,
-  evaluateMeaningProposal,
-  proposalFromGolden,
-  repositoryProposalFromGolden,
-} from './golden-corpus-scoring.mjs';
 
 export const COMPETENCY_QUESTION_CONTRACTS = MEANING_COMPETENCY_QUESTIONS;
 

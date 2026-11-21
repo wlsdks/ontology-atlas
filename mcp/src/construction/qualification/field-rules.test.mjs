@@ -9,7 +9,7 @@ import {
   portableSourceRef,
   uniqueStrings,
   validTimestamp,
-} from './qualification-field-rules.mjs';
+} from './field-rules.mjs';
 
 test('a field value is non-blank only when untrimmed-clean, non-empty and within its length cap', () => {
   assert.equal(nonBlank('value'), true);

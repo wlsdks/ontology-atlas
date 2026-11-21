@@ -4,13 +4,13 @@ import {
   FDE_AUDIENCE_AUTHORITY_WITNESS_KIND,
   AXIS_STATUSES,
   CQ_STATUSES,
-} from './qualification-vocabulary.mjs';
+} from './vocabulary.mjs';
 import {
   addFinding,
   mapUnique,
   nonBlank,
   uniqueStrings,
-} from './qualification-field-rules.mjs';
+} from './field-rules.mjs';
 
 export function validateAxisResults(packet, witnesses, diagnostics, findings) {
   const axes = mapUnique(packet.axisResults, 'axis', findings, 'axisResults');

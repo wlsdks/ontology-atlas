@@ -14,6 +14,9 @@ import { deriveProjectSourceWitnessesFromDocs } from '../project-source/project-
 import { VAULT_ROOT } from '../server/runtime.mjs';
 import { loadVaultDocs } from '../vault/documents.mjs';
 
+// One gap id, two situations: when the project document already has a parseable
+// `## Competency answers` section only the finalize receipt is missing, so a person
+// who wrote all five answers is never told to write them.
 const MEANING_AUTHORED_NOT_FINALIZED_HINT =
   'This project\'s five competency answers are already written, but this vault '
   + 'has no finalize receipt for them. Nothing is broken. Call '

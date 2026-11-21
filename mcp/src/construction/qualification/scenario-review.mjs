@@ -6,7 +6,7 @@ import {
   FDE_AUDIENCE_AUTHORITY_DECISION,
   CQ_STATUSES,
   QUANTIFIERS,
-} from './qualification-vocabulary.mjs';
+} from './vocabulary.mjs';
 import {
   addFinding,
   digest,
@@ -16,7 +16,7 @@ import {
   portableSourceRef,
   uniqueStrings,
   validTimestamp,
-} from './qualification-field-rules.mjs';
+} from './field-rules.mjs';
 
 export function validateRoot(packet, findings) {
   if (!isRecord(packet)) {

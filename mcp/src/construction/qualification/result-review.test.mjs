@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CONSTRUCTION_QUALITY_AXES } from './qualification-vocabulary.mjs';
-import { normalizedAxes } from './qualification-result-review.mjs';
+import { CONSTRUCTION_QUALITY_AXES } from './vocabulary.mjs';
+import { normalizedAxes } from './result-review.mjs';
 
 function passingAxisRows() {
   return new Map(CONSTRUCTION_QUALITY_AXES.map((axis) => [axis, { axis, status: 'passed', evidenceRefs: ['w1'], findingIds: [] }]));

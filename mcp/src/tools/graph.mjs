@@ -1,8 +1,4 @@
-/**
- * The compiled-graph workflow: `compile_ontology`, every `query_ontology`
- * operation, the agent-brief project scoping, and the meaning-readiness and
- * project-meaning facts a brief carries.
- */
+/** The compiled-graph tool handlers: `compile_ontology` and `query_ontology`. */
 
 export { meaningSourceFromProjectSource, projectSourceScope, projectMeaningContext } from './meaning-readiness.mjs';
 export { compileOntologyTool, queryOntologyTool };
@@ -193,7 +189,3 @@ async function queryOntologyTool(args = {}) {
     },
   };
 }
-
-// One gap id, two situations: when the project document already has a parseable
-// `## Competency answers` section only the finalize receipt is missing, so a person
-// who wrote all five answers is never told to write them.

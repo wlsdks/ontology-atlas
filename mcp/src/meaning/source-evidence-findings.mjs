@@ -29,6 +29,7 @@ const ENTRY_POINT_BASENAMES = [
   'index', 'main', 'mod', 'app', 'server', 'cli', 'lib', 'init', '__init__',
 ];
 
+/** The file inside a folder an unfamiliar agent would open first, or null. */
 function entryPointInside(directory) {
   let names;
   try {

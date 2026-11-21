@@ -4,7 +4,7 @@ import {
   CONSTRUCTION_QUALIFICATION_CONTRACT,
   CONSTRUCTION_QUALIFICATION_MIN_CASES,
   CONSTRUCTION_QUALITY_AXES,
-} from './qualification-vocabulary.mjs';
+} from './vocabulary.mjs';
 
 const SCHEMA_STRING = Object.freeze({ type: 'string', minLength: 1, maxLength: 2000 });
 const SCHEMA_ID = Object.freeze({ type: 'string', minLength: 1, maxLength: 500 });

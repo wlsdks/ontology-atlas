@@ -1,4 +1,4 @@
-import { nonEmpty } from './proposal-findings.mjs';
+import { nonEmpty } from './proposal-review/shape.mjs';
 
 export const MEANING_AUTHORITY_CONFIDENCE_THRESHOLD = 0.8;
 export const MEANING_AUTHORITY_MIN_SOURCES = 2;

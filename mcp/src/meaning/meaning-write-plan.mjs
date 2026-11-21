@@ -1,7 +1,7 @@
 import { parseTaskNavigationEvidenceSource } from '../agent-brief/task-navigation-evidence.mjs';
 import { renderProjectCompetencyMarkdown } from '../project-meaning/project-meaning-receipt.mjs';
 import { MEANING_COMPETENCY_QUESTIONS } from './meaning-assessment.mjs';
-import { nonEmpty } from './proposal-findings.mjs';
+import { nonEmpty } from './proposal-review/shape.mjs';
 
 export function buildWritePlan(proposal) {
   const typedConcepts = [

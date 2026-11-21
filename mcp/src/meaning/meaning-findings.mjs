@@ -29,6 +29,11 @@ import {
 } from '../schema.mjs';
 import { folderOnlyEvidenceFinding } from './source-evidence-findings.mjs';
 
+/**
+ * Words of prose a definition needs: about the shortest English sentence that
+ * carries both halves of a definition. Lower passes a restated title; higher
+ * accuses a terse real one.
+ */
 const DEFINITION_MIN_WORDS = 8;
 
 /**
@@ -371,8 +376,6 @@ function epistemicExclusionFindingFor(slug, offending) {
     }),
   };
 }
-
-/** The file inside a folder an unfamiliar agent would open first, or null. */
 
 /**
  * Every meaning finding for one written node. `bodyWritten` and `pathWritten`

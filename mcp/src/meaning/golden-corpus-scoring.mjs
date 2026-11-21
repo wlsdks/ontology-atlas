@@ -1,5 +1,5 @@
-import { COMPETENCY_WITNESS_KEYS } from './proposal-competency-review.mjs';
-import { nonEmpty } from './proposal-findings.mjs';
+import { COMPETENCY_WITNESS_KEYS } from './proposal-review/competency-review.mjs';
+import { nonEmpty } from './proposal-review/shape.mjs';
 
 const DEFAULT_THRESHOLDS = Object.freeze({
   conceptPrecision: 0.8,

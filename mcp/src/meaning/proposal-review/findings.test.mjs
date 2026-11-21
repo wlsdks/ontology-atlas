@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { finding, proposalGates, relationKey } from './proposal-findings.mjs';
+import { finding, proposalGates, relationKey } from './findings.mjs';
 
 const proposal = {
   project: { definition: 'Defined.' },
@@ -18,17 +18,34 @@ test('a clean proposal passes every gate', () => {
   assert.deepEqual(Object.values(gatesWith([])).every(Boolean), true);
 });
 
-test('each finding code closes only the gates it names', () => {
-  const closedBy = (code) => Object.entries(gatesWith([code])).filter(([, open]) => !open).map(([gate]) => gate);
-  assert.deepEqual(closedBy('missing-citation'), ['citationsResolved']);
-  assert.deepEqual(closedBy('untrusted-citation'), ['citationsResolved', 'riskyEvidenceControlled']);
-  assert.deepEqual(closedBy('risky-citation-unconfirmed'), ['riskyEvidenceControlled']);
-  assert.deepEqual(closedBy('unresolved-capability-domain'), ['capabilityDomainsResolved']);
-  assert.deepEqual(closedBy('python-selected-import-element-limit'), ['elementPathsResolved']);
-  assert.deepEqual(closedBy('duplicate-relation'), ['relationsResolved']);
-  assert.deepEqual(closedBy('insufficient-domain-relation-authority'), ['relationsResolved', 'confidenceValid']);
-  assert.deepEqual(closedBy('invalid-confidence'), ['confidenceValid']);
-});
+const GATES_CLOSED_BY_CODE = {
+  'missing-citation': ['citationsResolved'],
+  'unknown-citation': ['citationsResolved'],
+  'untrusted-citation': ['citationsResolved', 'riskyEvidenceControlled'],
+  'risky-citation-unconfirmed': ['riskyEvidenceControlled'],
+  'unresolved-capability-domain': ['capabilityDomainsResolved'],
+  'unresolved-element-domain': ['elementDomainsResolved'],
+  'missing-element-path': ['elementPathsResolved'],
+  'python-selected-import-element-limit': ['elementPathsResolved'],
+  'duplicate-relation': ['relationsResolved'],
+  'missing-relation-endpoint': ['relationsResolved'],
+  'missing-relation-rationale': ['relationsResolved'],
+  'relation-source-not-in-write-plan': ['relationsResolved'],
+  'unsupported-relation-type': ['relationsResolved'],
+  'unobserved-python-import-dependency': ['relationsResolved'],
+  'relation-path-citation-mismatch': ['relationsResolved'],
+  'insufficient-domain-relation-authority': ['relationsResolved', 'confidenceValid'],
+  'invalid-confidence': ['confidenceValid'],
+  'insufficient-purpose-authority': ['confidenceValid'],
+  'insufficient-domain-authority': ['confidenceValid'],
+};
+
+for (const [code, expectedClosed] of Object.entries(GATES_CLOSED_BY_CODE)) {
+  test(`${code} closes exactly ${expectedClosed.join(' and ')}`, () => {
+    const closed = Object.entries(gatesWith([code])).filter(([, open]) => !open).map(([gate]) => gate);
+    assert.deepEqual(closed, expectedClosed);
+  });
+}
 
 test('a warning-only code that no gate names closes nothing', () => {
   assert.deepEqual(Object.values(gatesWith(['risky-citation'])).every(Boolean), true);

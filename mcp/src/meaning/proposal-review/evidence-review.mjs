@@ -4,13 +4,14 @@ import { isAbsolute, relative, resolve, sep } from 'node:path';
 import {
   parseTaskNavigationEvidenceSource,
   verifyTaskNavigationEvidenceCoordinate,
-} from '../agent-brief/task-navigation-evidence.mjs';
+} from '../../agent-brief/task-navigation-evidence.mjs';
 import {
   matchingReviewRequiredEvidence,
   proposalAuthorityClaim,
   semanticUnitSupportsClaim,
-} from './meaning-authority.mjs';
-import { finding, nonEmpty } from './proposal-findings.mjs';
+} from '../meaning-authority.mjs';
+import { finding } from './findings.mjs';
+import { nonEmpty } from './shape.mjs';
 
 export function validateOptionalConceptBoundaryList(value, path, findings) {
   if (value == null) return;

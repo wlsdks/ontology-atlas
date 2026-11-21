@@ -1,5 +1,5 @@
-import { evaluateQuantifiedCompetencyCoverage } from './competency-coverage.mjs';
-import { MEANING_COMPETENCY_QUESTIONS } from './meaning-assessment.mjs';
+import { evaluateQuantifiedCompetencyCoverage } from '../competency-coverage.mjs';
+import { MEANING_COMPETENCY_QUESTIONS } from '../meaning-assessment.mjs';
 import {
   MEANING_AUTHORITY_MIN_SOURCES,
   PURPOSE_AUTHORITY_ROLES,
@@ -7,9 +7,10 @@ import {
   domainAuthoritySources,
   matchingReviewRequiredEvidence,
   semanticUnitSupportsClaim,
-} from './meaning-authority.mjs';
-import { finding, nonEmpty, relationKey } from './proposal-findings.mjs';
-import { repositoryPathExists } from './proposal-evidence-review.mjs';
+} from '../meaning-authority.mjs';
+import { finding, relationKey } from './findings.mjs';
+import { nonEmpty } from './shape.mjs';
+import { repositoryPathExists } from './evidence-review.mjs';
 
 const COMPETENCY_STATUSES = new Set(['answered', 'partial', 'visible-gap']);
 

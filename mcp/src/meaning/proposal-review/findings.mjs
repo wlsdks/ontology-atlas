@@ -1,9 +1,7 @@
+import { nonEmpty } from './shape.mjs';
+
 export function finding(code, severity, path, message, sources = []) {
   return { code, severity, path, message, sources };
-}
-
-export function nonEmpty(value) {
-  return typeof value === 'string' && value.trim().length > 0;
 }
 
 export function relationKey(relation) {

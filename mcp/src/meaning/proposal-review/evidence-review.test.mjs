@@ -8,7 +8,7 @@ import {
   textNamesExactPath,
   validateCitationsAndConfidence,
   validateOptionalConceptBoundaryList,
-} from './proposal-evidence-review.mjs';
+} from './evidence-review.mjs';
 
 test('a path named inside a longer path or file name is not a mention', () => {
   assert.equal(textNamesExactPath('Edit src/app/page.tsx to change it', 'src/app/page.tsx'), true);

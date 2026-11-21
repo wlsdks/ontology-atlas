@@ -3,7 +3,7 @@ import {
   CLAIM_STATUSES,
   CITATION_STATUSES,
   FAILURE_CATEGORIES,
-} from './qualification-vocabulary.mjs';
+} from './vocabulary.mjs';
 import {
   addFinding,
   digest,
@@ -12,7 +12,7 @@ import {
   nonBlank,
   portableSourceRef,
   uniqueStrings,
-} from './qualification-field-rules.mjs';
+} from './field-rules.mjs';
 
 export function validateWitnesses(packet, findings) {
   const witnesses = mapUnique(packet.witnesses, 'id', findings, 'witnesses');

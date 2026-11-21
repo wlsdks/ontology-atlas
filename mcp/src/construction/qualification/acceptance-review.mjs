@@ -2,7 +2,7 @@ import {
   SOURCE_HIDDEN_STATUSES,
   ACCEPTANCE_DECISIONS,
   REGRESSION_STATUSES,
-} from './qualification-vocabulary.mjs';
+} from './vocabulary.mjs';
 import {
   addFinding,
   digest,
@@ -10,7 +10,7 @@ import {
   nonBlank,
   uniqueStrings,
   validTimestamp,
-} from './qualification-field-rules.mjs';
+} from './field-rules.mjs';
 
 export function validateSourceHiddenTask(packet, claims, findings) {
   const task = packet.sourceHiddenTask;

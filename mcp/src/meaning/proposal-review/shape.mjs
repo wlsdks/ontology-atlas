@@ -1,4 +1,6 @@
-import { nonEmpty } from './proposal-findings.mjs';
+export function nonEmpty(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
 
 export function validateRepositoryProposalShape(proposal) {
   if (!proposal || typeof proposal !== 'object') {
