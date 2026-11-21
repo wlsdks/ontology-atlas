@@ -5,7 +5,7 @@ use super::repo::{
     divergence_counts, get_current_branch, get_remote_url, get_upstream_ref, require_repo_root,
 };
 use super::runner::{run_git, run_network_git, validate_vault_dir};
-use crate::errors::coded;
+use crate::coded_error::coded;
 
 #[cfg(test)]
 mod tests;

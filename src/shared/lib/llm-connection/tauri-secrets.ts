@@ -167,7 +167,7 @@ export async function secretVerify(
 }
 
 /**
- * Rust answers `<code>: <English detail>` (`src-tauri/src/errors.rs`); the locale lives here. Pass
+ * Rust answers `<code>: <English detail>` (`src-tauri/src/coded_error.rs`); the locale lives here. Pass
  * the `nativeErrors` lookup for the reader's language, or nothing for the payload untouched.
  */
 export function secretErrorMessage(err: unknown, lookup?: NativeErrorLookup): string {

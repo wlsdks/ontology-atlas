@@ -53,7 +53,7 @@ pub(crate) fn sweep_stale_temporaries(
     };
     #[cfg(unix)]
     {
-        if let Ok(directory) = crate::agent_setup::open_absolute_directory_no_follow(root) {
+        if let Ok(directory) = crate::confined_files::open_absolute_directory_no_follow(root) {
             unix::sweep_open_directory(&directory, 0, &mut sweep);
         }
     }

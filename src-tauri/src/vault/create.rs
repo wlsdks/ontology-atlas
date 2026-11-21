@@ -2,9 +2,9 @@
 use super::scope::resolve_write_target_inside;
 #[cfg(unix)]
 use super::scope::{canonical_root, normalize_relative_path, resolve_directory_target_inside};
-#[cfg(unix)]
-use crate::agent_setup;
 use crate::blocking::run_blocking;
+#[cfg(unix)]
+use crate::confined_files;
 use std::fs;
 use std::path::Path;
 #[cfg(any(not(unix), test))]
@@ -44,10 +44,10 @@ fn create_vault_text_file_after_validation(
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
             Err(error) => return Err(error.to_string()),
         }
-        let root_handle = agent_setup::open_absolute_directory_no_follow(&root)?;
-        let (parent, file_name) = agent_setup::open_entry_parent(&root_handle, &relative_path)?;
+        let root_handle = confined_files::open_absolute_directory_no_follow(&root)?;
+        let (parent, file_name) = confined_files::open_entry_parent(&root_handle, &relative_path)?;
         after_validation();
-        agent_setup::create_entry_atomically(&parent, &file_name, &content, 0o666)
+        confined_files::create_entry_atomically(&parent, &file_name, &content, 0o666)
     }
     #[cfg(not(unix))]
     {

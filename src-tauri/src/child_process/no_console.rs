@@ -126,7 +126,7 @@ mod tests {
         // The helper only counts below a spawn, so the hidden one comes first.
         let fixture = [
             r#"let mut e = Command::new("node");"#,
-            r#"crate::process::no_console::hide_console(&mut e);"#,
+            r#"crate::child_process::no_console::hide_console(&mut e);"#,
             r#"let a = Command::new("git").args(["config", "open"]);"#,
             r#"let b = Command::new(program_for("security"));"#,
             r#"let c = Command::new("open").arg(path);"#,

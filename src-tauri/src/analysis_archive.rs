@@ -121,7 +121,8 @@ pub(crate) fn read_analysis_record_text(
     {
         let root = super::canonical_root(&root_path)?;
         use std::os::fd::{AsRawFd, FromRawFd};
-        let parent = crate::agent_setup::open_absolute_directory_no_follow(&root.join(DIRECTORY))?;
+        let parent =
+            crate::confined_files::open_absolute_directory_no_follow(&root.join(DIRECTORY))?;
         let name = std::ffi::CString::new(file_name).map_err(|error| error.to_string())?;
         let fd = unsafe {
             libc::openat(
@@ -210,8 +211,8 @@ fn append_after_open(
 
     #[cfg(unix)]
     let created = {
-        let root_handle = crate::agent_setup::open_absolute_directory_no_follow(&root)?;
-        let (parent, name) = crate::agent_setup::open_entry_parent(&root_handle, &relative)?;
+        let root_handle = crate::confined_files::open_absolute_directory_no_follow(&root)?;
+        let (parent, name) = crate::confined_files::open_entry_parent(&root_handle, &relative)?;
         after_open();
         // The FD pins the destination. A replaced name must not be reported as
         // the file we wrote, even when the old directory is still inside the vault.

@@ -134,7 +134,7 @@ fn adapter_command(
 ) -> Command {
     debug_assert!(!launch_dir.starts_with(vault_root));
     let mut command = Command::new(program);
-    crate::process::no_console::hide_console(&mut command);
+    crate::child_process::no_console::hide_console(&mut command);
     command
         .args(args)
         .current_dir(launch_dir)

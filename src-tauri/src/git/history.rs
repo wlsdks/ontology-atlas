@@ -5,8 +5,8 @@ use std::time::Duration;
 
 use super::repo::{repo_toplevel_is_trustworthy, vault_pathspec};
 use super::runner::{hardened_base_command, validate_vault_dir, with_diff_family_guard};
-use crate::errors::coded;
-use crate::process::command_output::{self, CaptureError};
+use crate::child_process::command_output::{self, CaptureError};
+use crate::coded_error::coded;
 
 const MAX_CONTENT_BYTES: u64 = 2 * 1024 * 1024;
 const MAX_LOG_BYTES: u64 = 64 * 1024;

@@ -90,15 +90,15 @@ pub(crate) fn reveal_in_file_manager(path: &Path) -> Result<(), String> {
             .spawn(|| tauri_plugin_opener::reveal_item_in_dir(path))
             .join()
     })
-    .map_err(|_| crate::errors::coded("reveal-failed", "the file manager call panicked"))?
-    .map_err(|error| crate::errors::coded("reveal-failed", error))
+    .map_err(|_| crate::coded_error::coded("reveal-failed", "the file manager call panicked"))?
+    .map_err(|error| crate::coded_error::coded("reveal-failed", error))
 }
 
 #[cfg(any(windows, target_os = "linux", test))]
 fn reveal_target_present(path: &Path) -> Result<(), String> {
     match std::fs::symlink_metadata(path) {
         Ok(_) => Ok(()),
-        Err(error) => Err(crate::errors::coded("reveal-failed", error)),
+        Err(error) => Err(crate::coded_error::coded("reveal-failed", error)),
     }
 }
 

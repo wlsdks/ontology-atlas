@@ -12,7 +12,7 @@ use super::local_endpoint::{
 use super::requests;
 use super::verify::{wrong_target, Target, AUTH_DENIED_STATUSES};
 use super::{host_of, AUDIT_BLOCKED_PREFIX};
-use crate::errors::coded;
+use crate::coded_error::coded;
 use crate::llm_audit::{self, AuditDraft, AuditOutcome, AuditScope, AuditToolRef};
 use crate::secrets;
 use request::{chat_request, curl_chat_config, model_placement, validate_model_id, ChatRequest};
@@ -112,7 +112,7 @@ fn send_chat_with_policy(
     construction: bool,
 ) -> Result<ChatEcho, String> {
     let mut command = Command::new("curl");
-    crate::process::no_console::hide_console(&mut command);
+    crate::child_process::no_console::hide_console(&mut command);
     command.args(curl_argv_with_timeout(timeout));
     if construction {
         construction_transport_policy(&mut command, request)?;

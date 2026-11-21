@@ -58,7 +58,7 @@ mod tests {
         // The screen matches codes literally; a space, capital or colon silently
         // breaks the lookup.
         let sources = [
-            include_str!("errors.rs"),
+            include_str!("coded_error.rs"),
             include_str!("git/document.rs"),
             include_str!("git/remote.rs"),
             include_str!("git/repo.rs"),

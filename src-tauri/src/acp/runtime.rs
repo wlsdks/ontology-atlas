@@ -212,7 +212,7 @@ pub(crate) fn acp_install_cli(
     emit_install_progress(&app, &runtime_id, "cli", "installing", None, None, None);
 
     let mut command = Command::new(&npm);
-    crate::process::no_console::hide_console(&mut command);
+    crate::child_process::no_console::hide_console(&mut command);
     command
         .arg("install")
         .arg("--prefix")

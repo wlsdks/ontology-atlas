@@ -1,4 +1,4 @@
-use crate::errors::coded;
+use crate::coded_error::coded;
 use crate::llm::curl::curl_config_for;
 use crate::llm::local_endpoint::{
     local_endpoint, normalize_base_url, LOCAL_CHAT_PATH, LOCAL_PROVIDER,
