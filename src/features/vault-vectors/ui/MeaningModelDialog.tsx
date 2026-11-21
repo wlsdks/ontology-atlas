@@ -11,7 +11,7 @@ import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source
 import { MOTION } from '@/shared/motion';
 import { Button, Dialog } from '@/shared/ui';
 import { DialogBody } from '@/shared/ui/surfaces/dialog-sections';
-import { BUILTIN_MODEL_NAME, choiceIdOf, isLive, modelChoices, recommendedChoiceId, type ModelChoice } from '../model/model-choices';
+import { BUILTIN_MODEL_NAME, choiceIdOf, choiceTag, isLive, modelChoices, recommendedChoiceId, type ModelChoice } from '../model/model-choices';
 import { prepare, removeModel, useVectorStatus } from '../model/vector-store';
 import { MeaningModelDetail, type Notice } from './MeaningModelDetail';
 import { WizardIntro, WizardSteps, type WizardStep } from './MeaningSetupWizard';
@@ -38,13 +38,7 @@ function ChoiceRow({ choice, selected, working, recommended, onSelect }: { choic
   const t = useTranslations('library.questionDesk.meaning');
   const name = choice.kind === 'builtin' ? BUILTIN_MODEL_NAME : choice.model;
   const live = isLive(choice);
-  const tag = choice.inUse && working
-    ? t('tagWorking')
-    : live
-      ? t('tagInUse')
-      : choice.kind === 'runner'
-        ? t(choice.reachable ? 'tagRunner' : 'tagRunnerOff')
-        : t(choice.holding === 'ready' ? 'tagReady' : choice.holding === 'partial' ? 'tagPartial' : 'tagNone');
+  const tag = t(choiceTag(choice, working));
   return (
     <button
       type="button"

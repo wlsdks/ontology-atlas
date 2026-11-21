@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useRef, useState, useSyncExternalStore, type MouseEvent } from 'react';
+import { useRef, useState, useSyncExternalStore, type MouseEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Cpu } from 'lucide-react';
@@ -26,6 +26,7 @@ import { meaningGuideSeen } from '../model/guide-seen';
 import { MeaningRunStage } from './MeaningRunStage';
 import { finishedStage, runStage } from '../model/run-stage';
 import { ProgressRing } from './ProgressRing';
+import { MiddleCutName } from '@/shared/ui/middle-cut-name/middle-cut-name';
 
 const FILE_NAME_PACE_MS = 1000;
 /** The end of a file name kept whole when its middle is cut: enough for a word and the extension. */
@@ -34,28 +35,13 @@ const PLACEHOLDER = '\u0000';
 
 const noSubscribe = () => () => undefined;
 
+type DeskPress = Exclude<DeskLineAction, 'openSettings'>;
+
 const TONE_INK: Record<DeskLine['tone'], string> = {
   quiet: 'text-[color:var(--color-text-tertiary)]',
   warning: 'text-[color:var(--color-status-warning)]',
   danger: 'text-[color:var(--color-danger-text)]',
 };
-
-/**
- * The file's name alone, its middle giving way first so the ending and extension stay readable;
- * the full path is its description.
- */
-function MiddleCutName({ path }: { path: string }) {
-  const pathId = useId();
-  const name = path.split('/').pop() || path;
-  const cut = Math.max(0, name.length - KEPT_NAME_END);
-  return <>
-    <span className="flex min-w-0" title={path} aria-describedby={pathId} data-testid="meaning-desk-file">
-      <span className="min-w-0 truncate">{name.slice(0, cut)}</span>
-      <span className="flex-none whitespace-pre">{name.slice(cut)}</span>
-    </span>
-    <span id={pathId} hidden>{path}</span>
-  </>;
-}
 
 function Separator() {
   return <span aria-hidden="true" className="flex-none text-[color:var(--color-text-quaternary)]">·</span>;
@@ -68,13 +54,10 @@ function Separator() {
 export function MeaningDeskLine({
   rootPath,
   markdownFiles,
-  onOpenSettings,
   roomForStage = true,
 }: {
   rootPath: string | null;
   markdownFiles: number;
-  /** Settings › Privacy · data; without it the sentence names the place and offers no press. */
-  onOpenSettings?: () => void;
   /** False while results stand under the field: the job then stays one line, so they never move. */
   roomForStage?: boolean;
 }) {
@@ -110,35 +93,26 @@ export function MeaningDeskLine({
 
   if (!line) return <div ref={stage} aria-hidden="true" className="h-6" data-testid="meaning-desk-line" data-state="pending" />;
 
-  const fraction = ring && ring.total > 0 ? Math.min(1, ring.done / ring.total) : 0;
   const sentence = sentenceOf(line, ring, ring?.done ?? 0);
   const transition = reduced ? { duration: 0 } : MOTION.settle;
   const stageEntrance = reduced ? { duration: 0 } : MOTION.expressive;
 
-  const act = (action: DeskLineAction, event: MouseEvent<HTMLButtonElement>) => {
+  const openDialog = (event: MouseEvent<HTMLButtonElement>, together: boolean) => {
+    // WebKit does not focus a pressed button, so Escape would have nowhere to return focus.
+    event.currentTarget.focus({ preventScroll: true });
+    setGuided(together);
+    setDialogOpen(true);
+  };
+  const act = (action: DeskPress, event: MouseEvent<HTMLButtonElement>) => {
     if (rootPath === null) return;
-    // A download is consented to in the dialog, which states its size and the free room first.
-    if (action === 'setup' || action === 'downloadAgain' || action === 'continueDownload') {
-      // WebKit does not focus a pressed button, so Escape would have nowhere to return focus.
-      event.currentTarget.focus({ preventScroll: true });
-      setGuided(false);
-      setDialogOpen(true);
-    } else if (action === 'stop') void stop(rootPath);
+    if (action === 'stop') void stop(rootPath);
     else if (action === 'resume') void resume(rootPath);
-    else onOpenSettings?.();
+    // A download is consented to in the dialog, which states its size and the free room first.
+    else openDialog(event, false);
   };
-  const action = line.action === 'openSettings' && !onOpenSettings ? null : line.action;
+  // The desk opens no Settings: the sentence names the place.
+  const action = line.action === 'openSettings' ? null : line.action;
   const modelName = source === null ? null : source.kind === 'builtin' ? BUILTIN_MODEL_NAME : source.model;
-  const openModels = (event: MouseEvent<HTMLButtonElement>) => {
-    event.currentTarget.focus({ preventScroll: true });
-    setGuided(false);
-    setDialogOpen(true);
-  };
-  const setUpTogether = (event: MouseEvent<HTMLButtonElement>) => {
-    event.currentTarget.focus({ preventScroll: true });
-    setGuided(true);
-    setDialogOpen(true);
-  };
 
   function sentenceOf(current: DeskLine, progress: DeskProgress | null, done: number): string {
     switch (current.message) {
@@ -190,7 +164,7 @@ export function MeaningDeskLine({
                   <Separator />
                   <span className="flex min-w-0 items-center whitespace-pre">
                     <span className="flex-none">{readingBefore}</span>
-                    <MiddleCutName path={shownPath} />
+                    <MiddleCutName path={shownPath} keepEnd={KEPT_NAME_END} testId="meaning-desk-file" />
                     <span className="flex-none">{readingAfter}</span>
                   </span>
                 </> : null}
@@ -214,7 +188,7 @@ export function MeaningDeskLine({
   const modelChip = modelName !== null && isApp && !web ? (
         <button
           type="button"
-          onClick={openModels}
+          onClick={(event) => openDialog(event, false)}
           aria-label={t('modelButtonLabel', { model: modelName })}
           title={t('modelButtonLabel', { model: modelName })}
           data-testid="meaning-desk-model"
@@ -250,7 +224,7 @@ export function MeaningDeskLine({
           animate={{ opacity: 1, height: 'auto' }}
           transition={stageEntrance}
         >
-          <MeaningGuideCard playing={!dialogOpen} onStart={setUpTogether} onLater={() => meaningGuideSeen.write('on')} />
+          <MeaningGuideCard playing={!dialogOpen} onStart={(event) => openDialog(event, true)} onLater={() => meaningGuideSeen.write('on')} />
         </motion.div>
       ) : shownStage ? (
         <motion.div
@@ -273,7 +247,7 @@ export function MeaningDeskLine({
       <AnimatePresence initial={false}>
         {ring && line.progress !== null ? (
           <motion.span key="ring" className="flex flex-none" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={transition}>
-            <ProgressRing fraction={fraction} measure={ring.measure} track={ringTrack} label={t('ringLabel')} />
+            <ProgressRing fraction={ring.fraction} measure={ring.measure} track={ringTrack} label={t('ringLabel')} />
           </motion.span>
         ) : null}
       </AnimatePresence>

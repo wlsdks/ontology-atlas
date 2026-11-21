@@ -5,7 +5,7 @@ import { formatSize } from '@/shared/lib/format-size';
 import { MODEL_DOWNLOAD_HOSTS, type VectorProbe, type VectorSource } from '@/shared/lib/vault-folder/tauri-vault-vectors';
 import { Button } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
-import { BUILTIN_MODEL_NAME, isLive, type ModelChoice } from '../model/model-choices';
+import { BUILTIN_MODEL_NAME, isDeletable, isDiskShort, isLive, isSwitching, primaryPress, type ModelChoice } from '../model/model-choices';
 import { stop } from '../model/vector-store';
 
 export type Notice = { kind: 'deleted'; freed: number } | { kind: 'deleteFailed' } | { kind: 'revealFailed' } | null;
@@ -61,8 +61,8 @@ export function MeaningModelDetail({
   const t = useTranslations('library.questionDesk.meaning');
   const locale = useLocale();
   const size = (bytes: number) => formatSize(bytes, locale);
-  const switching = current !== null && !choice.inUse && !working;
-  const diskShort = probe.builtin.freeBytes < probe.builtin.neededFreeBytes;
+  const switching = isSwitching(choice, current, working);
+  const diskShort = isDiskShort(probe);
 
   function builtinFacts(choice: Extract<ModelChoice, { kind: 'builtin' }>, builtin: VectorProbe['builtin']): Fact[] {
     const facts: Fact[] = [];
@@ -110,13 +110,9 @@ export function MeaningModelDetail({
   const maker = choice.kind === 'builtin' ? t('builtinMaker') : t('runnerMaker');
   const message = noticeText(notice);
   const live = isLive(choice);
-  const holdsModel = choice.kind === 'builtin' && choice.holding !== 'none';
-  const deletable = holdsModel && !(working && current?.kind === 'builtin');
-  const primary = working || live
-    ? null
-    : choice.kind === 'builtin'
-      ? { label: choice.holding === 'ready' ? t('prepare', { files: probe.files }) : choice.holding === 'partial' ? t('resumeDownload') : t('downloadAndPrepare'), onPress: onStartBuiltin, disabled: diskShort }
-      : { label: t('prepare', { files: probe.files }), onPress: () => onStartRunner(choice), disabled: !choice.reachable };
+  const deletable = isDeletable(choice, current, working);
+  const primary = primaryPress(choice, working, diskShort);
+  const startPrimary = () => (choice.kind === 'builtin' ? onStartBuiltin() : onStartRunner(choice));
   return (
     <div className="flex flex-1 flex-col gap-4" data-testid="meaning-model-detail" data-choice={choice.id}>
       <div>
@@ -166,8 +162,8 @@ export function MeaningModelDetail({
         {primary && guided ? <p className="text-label leading-body text-[color:var(--color-text-tertiary)]" data-testid="meaning-wizard-after-start">{t('wizard.afterStart')}</p> : null}
         {primary ? (
           <div className="flex justify-end">
-            <Button variant="primary" size="sm" disabled={primary.disabled} onClick={primary.onPress} data-testid="meaning-setup-primary">
-              {primary.label}
+            <Button variant="primary" size="sm" disabled={primary.disabled} onClick={startPrimary} data-testid="meaning-setup-primary">
+              {primary.label === 'prepare' ? t('prepare', { files: probe.files }) : t(primary.label)}
             </Button>
           </div>
         ) : null}

@@ -1,4 +1,4 @@
-import type { RunStage, RunStep } from './run-stage';
+import { runSteps, type RunStage, type RunStep } from './run-stage';
 
 /**
  * The first-use guide's sample run: a made-up folder getting ready in twenty seconds, then a
@@ -55,12 +55,6 @@ export interface GuideFrame {
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const easeInOut = (value: number) => (value < 0.5 ? 2 * value * value : 1 - (-2 * value + 2) ** 2 / 2);
 
-function steps(current: RunStep | null): RunStage['steps'] {
-  const order: RunStep[] = ['download', 'fit', 'read'];
-  const at = current === null ? order.length : order.indexOf(current);
-  return order.map((step, index) => ({ step, state: index < at ? 'done' : index === at ? 'now' : 'next' }));
-}
-
 /** The frame at `elapsedMs` into the loop; time past one loop wraps to its start. O(1). */
 export function guideFrame(elapsedMs: number): GuideFrame {
   const at = ((elapsedMs % GUIDE_LOOP_MS) + GUIDE_LOOP_MS) % GUIDE_LOOP_MS;
@@ -69,10 +63,10 @@ export function guideFrame(elapsedMs: number): GuideFrame {
 
   if (at < DOWNLOAD_END_MS) {
     const fraction = easeInOut(at / DOWNLOAD_END_MS);
-    return { ...unread, scene: 'download', downloadedBytes: Math.round(fraction * GUIDE_MODEL_BYTES), stage: { ...noFile, steps: steps('download'), step: 'download', fraction } };
+    return { ...unread, scene: 'download', downloadedBytes: Math.round(fraction * GUIDE_MODEL_BYTES), stage: { ...noFile, steps: runSteps('download'), step: 'download', fraction } };
   }
   if (at < FIT_END_MS) {
-    return { ...unread, scene: 'fit', downloadedBytes: GUIDE_MODEL_BYTES, stage: { ...noFile, steps: steps('fit'), step: 'fit', fraction: null } };
+    return { ...unread, scene: 'fit', downloadedBytes: GUIDE_MODEL_BYTES, stage: { ...noFile, steps: runSteps('fit'), step: 'fit', fraction: null } };
   }
   if (at < READ_END_MS) {
     const into = at - FIT_END_MS;
@@ -81,10 +75,10 @@ export function guideFrame(elapsedMs: number): GuideFrame {
     const readingPath = GUIDE_PATHS[Math.floor(into / FILE_PACE_MS) % GUIDE_PATHS.length]!;
     return {
       scene: 'read', downloadedBytes: GUIDE_MODEL_BYTES, filesDone, typed: 0, results: 0,
-      stage: { steps: steps('read'), step: 'read', fraction: filesDone / GUIDE_FILES, readingPath, passagesDone: Math.round(fraction * GUIDE_PASSAGES) },
+      stage: { steps: runSteps('read'), step: 'read', fraction: filesDone / GUIDE_FILES, readingPath, passagesDone: Math.round(fraction * GUIDE_PASSAGES) },
     };
   }
-  const finished = { steps: steps(null), step: 'read' as const, fraction: 1, readingPath: null, passagesDone: GUIDE_PASSAGES };
+  const finished = { steps: runSteps('finished'), step: 'read' as const, fraction: 1, readingPath: null, passagesDone: GUIDE_PASSAGES };
   if (at < DONE_END_MS) {
     return { scene: 'done', downloadedBytes: GUIDE_MODEL_BYTES, filesDone: GUIDE_FILES, typed: 0, results: 0, stage: finished };
   }
