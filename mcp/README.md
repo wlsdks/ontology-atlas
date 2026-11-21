@@ -2244,7 +2244,10 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/relation-keys.mjs` | which frontmatter key holds which relation, and how a stored ref matches |
 | `src/tools/maintenance.mjs` | what a result carries rather than being asked for |
 | `src/vault/slug-paths.mjs` | slug ↔ path mapping, the containment check every disk path passes, raw-source slugs, on-disk spelling, similar-slug suggestions, vault-root check |
-| `src/vault/documents.mjs` | walking and reading `.md` documents, stable file snapshots, body excerpts and the full-body cap |
+| `src/vault/documents.mjs` | the per-vault parse cache, cached document text, and the read and write snapshot scopes |
+| `src/vault/file-snapshot.mjs` | one `.md` read as bytes plus the stamp they were read under |
+| `src/vault/body-delivery.mjs` | body excerpts, the full-body cap, and what a response reports about a cut body |
+| `src/vault/text-read-pacing.mjs` | collection pacing for the text a load pass reads, under bun |
 | `src/vault/relation-refs.mjs` | the relation keys that become graph edges, their aliases, and how a document's refs and relation notes are read |
 | `src/vault/graph-queries.mjs` | kinds, orphans, shortest path and backlinks over one reference index, and the duplicate-title warning |
 | `src/vault/eligibility-gate.mjs` | the node-eligibility gate: its session memory and the advisory findings every committed write produces |

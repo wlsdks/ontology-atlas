@@ -64,10 +64,8 @@ import {
 } from '../vault/relation-refs.mjs';
 import { slugToPath } from '../vault/slug-paths.mjs';
 import { docBodyIncluder, loadedDocIsEmpty, validateLoadedVaultDocument } from '../vault/doc-facts.mjs';
+import { FULL_BODY_MAX_CHARS, GET_CONCEPTS_FULL_BODY_MAX, describeBodyDelivery } from '../vault/body-delivery.mjs';
 import {
-  FULL_BODY_MAX_CHARS,
-  GET_CONCEPTS_FULL_BODY_MAX,
-  describeBodyDelivery,
   loadVaultDocs,
   readDoc,
   readVaultDocText,
