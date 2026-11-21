@@ -18,6 +18,7 @@ vi.mock('@tauri-apps/api/event', () => ({
 import { vaultIndexPreference } from './tauri-vault-index';
 import {
   deleteVectorModel,
+  revealVectorModel,
   deleteVectors,
   MODEL_FAILED_DETAILS,
   modelFailedDetail,
@@ -91,6 +92,7 @@ describe('tauri-vault-vectors in the app', () => {
     await searchVectors('/vault', runner, '물가의 식물', 8, ['wiki/', 'sources/']);
     await deleteVectors('/vault');
     await deleteVectorModel();
+    await revealVectorModel();
 
     expect(tauriApiMock.invoke.mock.calls).toEqual([
       ['vault_vectors_probe', { rootPath: '/vault', runnerBaseUrl: 'http://localhost:11434' }],
@@ -105,6 +107,7 @@ describe('tauri-vault-vectors in the app', () => {
       ['vault_vectors_search', { rootPath: '/vault', source: runner, question: '물가의 식물', limit: 8, prefixes: ['wiki/', 'sources/'] }],
       ['vault_vectors_delete', { rootPath: '/vault' }],
       ['vault_vectors_delete_model', undefined],
+      ['vault_vectors_reveal_model', undefined],
     ]);
   });
 

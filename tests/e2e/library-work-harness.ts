@@ -116,6 +116,7 @@ export const LIBRARY_VECTOR_PROBE: VectorProbe = {
     freeBytes: 182_000_000_000,
     memoryBytes: 1_800_000_000,
     accelerated: true,
+    modelDir: "/Users/person/Library/Application Support/dev.jinan.ontology-atlas/models/bge-m3",
   },
   runner: { state: "reachable", address: "http://localhost:11434", models: ["bge-m3:latest"] },
 };
@@ -586,6 +587,7 @@ export async function installLibraryWorkHarness(
           currentProbe = { ...currentProbe, builtin: { ...currentProbe.builtin, onDisk: false, modelBytes: 0 } };
           return Promise.resolve(null);
         }
+        if (command === "vault_vectors_reveal_model") return Promise.resolve(null);
         if (command === "vault_vectors_warm") return Promise.resolve(null);
         if (command === "mcp_bundled_server") return Promise.resolve({ path: mcpBinary, available: true, reason: null });
         if (command === "discover_mcp_connectors") return Promise.resolve({ servers: [], problems: [] });

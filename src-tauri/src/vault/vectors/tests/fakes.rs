@@ -414,6 +414,10 @@ impl Builtin for FakeModel {
     fn model_bytes(&self) -> u64 {
         self.on_disk.load(Ordering::SeqCst)
     }
+
+    fn dir(&self) -> PathBuf {
+        PathBuf::from("/fake/models/bge-m3")
+    }
 }
 
 impl Runner for FakeModel {

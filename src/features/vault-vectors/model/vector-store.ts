@@ -132,14 +132,19 @@ export function pressOf(rootPath: string): number | null {
   return presses.get(rootPath) ?? null;
 }
 
+const sameSource = (a: VectorSource, b: VectorSource) =>
+  a.kind === b.kind && (a.kind === 'builtin' || (b.kind === 'runner' && a.baseUrl === b.baseUrl && a.model === b.model));
+
 /**
  * Stores the choice, unpaused, once Rust accepts it. Only the dialog's Download and prepare passes
- * `download`: no other press fetches the model.
+ * `download`: no other press fetches the model. A refused switch keeps the folder's earlier choice.
  */
 export async function prepare(rootPath: string, source: VectorSource, download = false): Promise<boolean> {
+  const earlier = vaultVectorSource.read(rootPath);
   recordPress(rootPath);
   const accepted = await answer('vault_vectors_prepare', rootPath, () => prepareVectors(rootPath, source, download));
   if (accepted) vaultVectorSource.write(rootPath, source);
+  else if (earlier && !sameSource(earlier.source, source)) await refresh(rootPath);
   else refused(rootPath);
   return accepted;
 }
