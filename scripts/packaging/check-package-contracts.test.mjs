@@ -180,9 +180,19 @@ describe('package contract helpers', () => {
 
   it('keeps the CLI entrypoint on natural exit so large stdout can flush', () => {
     const source = readFileSync('cli/src/index.mjs', 'utf-8');
+    // The entry delegates init, help and status lines to these modules; any of them could end the process.
+    const delegated = ['lib/init', 'lib/help']
+      .flatMap((folder) =>
+        readdirSync(join('cli/src', folder))
+          .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
+          .map((name) => `cli/src/${folder}/${name}`),
+      )
+      .concat('cli/src/lib/status-lines.mjs');
 
-    assert.doesNotMatch(source, /import\s*\{[^}]*\bexit\b[^}]*\}\s+from ['"]node:process['"]/);
-    assert.doesNotMatch(source, /\bexit\s*\(/);
+    for (const [file, text] of [['cli/src/index.mjs', source], ...delegated.map((file) => [file, readFileSync(file, 'utf-8')])]) {
+      assert.doesNotMatch(text, /import\s*\{[^}]*\bexit\b[^}]*\}\s+from ['"]node:process['"]/, file);
+      assert.doesNotMatch(text, /\bexit\s*\(/, file);
+    }
     assert.match(source, /process\.exitCode\s*=\s*await main\(\)/);
   });
 
