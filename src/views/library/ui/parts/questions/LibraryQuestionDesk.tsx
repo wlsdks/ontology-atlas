@@ -393,7 +393,7 @@ export function LibraryQuestionDesk({
           <div data-question-desk-status-row="true" className="mt-2 flex min-h-5 flex-wrap items-center gap-x-3 text-label leading-label text-[color:var(--color-text-tertiary)]">
             <p>{t('folderScope', { pages: countDeskWikiPages(docs), sources: sources.length })}</p>
           </div>
-          <MeaningDeskLine rootPath={vaultRoot} markdownFiles={docs.length} />
+          <MeaningDeskLine rootPath={vaultRoot} markdownFiles={docs.length} roomForStage={!result} />
         </form>
         {workActivity ? <div className="mt-3">{workActivity}</div> : null}
         <div className="relative mt-6">

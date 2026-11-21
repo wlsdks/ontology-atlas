@@ -391,6 +391,31 @@ test("payload contract · checks that the fixture vault is that vault", () => {
   );
 });
 
+test("payload contract · a planted fixture the app did not grant is named as the cause", () => {
+  const vault = "/tmp/Atlas Fixture/docs/ontology";
+  const planted = validPayload({
+    markers: { verificationFixtureVault: vault, verificationFixtureVaultError: "" },
+  });
+  const isolated = "[ontology-atlas-window-verify] state_plugin=disabled";
+  const check = (grantLines) =>
+    validateWebviewVerifyPayload(planted, {
+      expectedFixtureVault: vault,
+      launchStdout: [isolated, ...grantLines].join("\n"),
+    });
+
+  assert.equal(check([`[ontology-atlas-verify-vault] root=/private${vault} granted=true`]), null);
+  // The 2026-11-21 deploy failure: no grant, so the map route fell back to first run and the
+  // verdict blamed the route.
+  assert.match(check([]), /never reported granting the fixture vault/);
+  assert.match(
+    check([
+      `[ontology-atlas-verify-vault] root=/private${vault} granted=true`,
+      "[ontology-atlas-verify-vault] root=/Users/me granted=false reason=vault-root-rejected:home-directory",
+    ]),
+    /refused the fixture vault.*home-directory/,
+  );
+});
+
 test("payload contract · measures the WebView size bounds", () => {
   assert.match(
     validateWebviewVerifyPayload(validPayload({ width: 900, height: 600 }), {

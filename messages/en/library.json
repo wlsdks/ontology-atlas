@@ -99,7 +99,51 @@
       "deleteEveryFolder": "Other folders that use it search by words only until it is downloaded again.",
       "deleteEveryFolderToo": "The same goes for other folders that use it.",
       "tagRecommended": "{tag} · Recommended",
-      "recommendedRunner": "Recommended: this model is already in Ollama on this computer, so nothing downloads and search by meaning can start now."
+      "recommendedRunner": "Recommended: this model is already in Ollama on this computer, so nothing downloads and search by meaning can start now.",
+      "modelDownloadStarting": "Starting the model download",
+      "modelDownloadPaused": "The model download stopped at {done} of {total}. What is downloaded is kept.",
+      "continueDownload": "Continue the download",
+      "stageLabel": "Getting search by meaning ready",
+      "stepDownload": "Download the model",
+      "stepFit": "Fit it to this computer",
+      "stepRead": "Record each passage’s meaning",
+      "stageWaiting": "Starts once the other folder finishes",
+      "perSecond": "{size}/s",
+      "feedLabel": "Files just read",
+      "stageDoneTitle": "Search by meaning is ready",
+      "stageDoneFacts": "{passages, number} passages in {files, number} files now carry their meaning. Ask in your own words.",
+      "stageTryAsk": "Ask a question",
+      "stageDismiss": "Close",
+      "passagesRecorded": "{count, plural, one {# passage} other {# passages}} recorded",
+      "downloadChecking": "Checking what was already downloaded",
+      "guide": {
+        "title": "Search by meaning, once it is set up",
+        "body": "It finds the passage that says the same thing in other words or another language. The model runs on this computer, and nothing in the folder leaves it.",
+        "sample": "Sample",
+        "caption": "A sample with made-up files. The real model download takes a few minutes.",
+        "later": "Not now",
+        "start": "Set it up together",
+        "question": "What happens to an order when the card is declined?",
+        "line": "line {line, number}"
+      },
+      "wizard": {
+        "stepIntro": "What happens",
+        "stepChoose": "Choose a model",
+        "stepRun": "Get ready",
+        "introTitle": "Three steps, all on this computer",
+        "download": "Get the model",
+        "downloadNeeded": "{model} comes once from {hosts}: {size}. A cut-off download picks up where it stopped.",
+        "downloadKept": "{model} is already on this computer, so nothing is downloaded.",
+        "runnerToo": "{count, plural, one {A model in Ollama} other {# models in Ollama}} can be chosen next, with nothing to download.",
+        "fit": "Fit it to this computer",
+        "fitBody": "The downloaded model is converted once to run fast here. An Ollama model skips this.",
+        "read": "Read the files",
+        "readBody": "Each passage of the {files, number} Markdown files gets its meaning recorded as numbers in this computer's cache folder. Nothing in the folder is sent anywhere.",
+        "room": "Free space {free} · needs {needed}",
+        "next": "Next: choose a model",
+        "back": "Back",
+        "afterStart": "You can follow it under the question field, and keep working meanwhile."
+      }
     },
     "title": "Ask a question. Follow its sources.",
     "browse": "Browse pages",
@@ -499,68 +543,6 @@
       "unverified": "Source not checked"
     },
     "compiling": "Re-reading the sources to write wiki pages."
-  },
-  "graph": {
-    "title": "Graph",
-    "empty": "Nothing to show yet. Once Write wiki page writes a page, this shows which source it came from and which concepts it names.",
-    "canvasAria": "The library graph: raw sources, wiki pages, and the concepts those pages name.",
-    "islandUnsorted": "Unsorted",
-    "islandUnread": "Unread",
-    "describeIsland": "{name}: a group of {pages, number} pages and the {sources, number} files they read. Press it to open them as columns; zoom in for their names.",
-    "announceIsland": "Group {name}, {position, number} of {total, number}: {pages, number} pages and {sources, number} files. Enter opens it as columns.",
-    "describeUnread": "Unread: {sources, number} files no page has read yet. Press it for where to start.",
-    "unreadPressed": "{sources, number} files no page has read yet, so there is nothing between them to draw. Each is marked no wiki page in the Sources list; Write wiki page, above the picture, starts on the first.",
-    "islandBack": "All groups",
-    "islandName": "{name} · {pages, number} pages · {sources, number} files",
-    "readerClose": "Close the page",
-    "keys": "Arrow keys move between dots, Enter opens a card beside the one you are on, Escape closes it.",
-    "announce": "{kind} {name}, {position, number} of {total, number}. Enter {action}.",
-    "kind": {
-      "page": "Wiki page",
-      "source": "Source",
-      "concept": "Concept"
-    },
-    "actionSelect": "shows what it is",
-    "actionMap": "shows what it is",
-    "openOnMap": "open on the map",
-    "fit": "Fit the whole picture",
-    "fitDone": "The whole picture is already framed",
-    "describe": {
-      "source": "{name}: a source file. A thick line leads to the page written from it; no line means it has no wiki page yet. Press for a card beside it.",
-      "page": "{name}: a wiki page. Thick lines lead to the sources it cites, dashed lines to concepts it names. Press for a card beside it.",
-      "concept": "{name}: a concept on the map. The dashed lines lead to the wiki pages it names or was drawn from. Press for a card beside it."
-    },
-    "describeOpen": {
-      "source": "{name}: a source file. A thick line leads to the page written from it; no line means it has no wiki page yet. Its card is open beside it: Escape, or press again, closes it.",
-      "page": "{name}: a wiki page. Thick lines lead to the sources it cites, dashed lines to concepts it names. Its card is open beside it: Escape, or press again, closes it.",
-      "concept": "{name}: a concept on the map. The dashed lines lead to the wiki pages it names or was drawn from. Its card is open beside it: Escape, or press again, closes it."
-    },
-    "card": {
-      "close": "Close this card",
-      "conceptSentence": "A concept on the map.",
-      "fileFacts": "{format} · {size} · {state}",
-      "sourcesLabel": "Sources used",
-      "pagesLabel": "Wiki pages from this file",
-      "rowMissing": "not in this folder",
-      "open": "Open",
-      "refresh": "Ask for a redraft",
-      "seeAll": "See all {count, number} sources",
-      "factOriginals": "{count, plural, one {# source} other {# sources}}",
-      "factMentions": "{count, plural, one {# mention} other {# mentions}}",
-      "factPassages": "{count, plural, one {# quoted passage} other {# quoted passages}}",
-      "flowInline": "Citations flow from each source into this page.",
-      "flowInlineStale": "Citations flow from each source into this page; an amber dot marks a citation whose source has changed."
-    },
-    "key": {
-      "source": "Source {count, number}",
-      "page": "Wiki page {count, number}",
-      "concept": "Concept {count, number}",
-      "cite": "Citation {count, number}",
-      "mention": "Mention {count, number}",
-      "island": "One group is one concept",
-      "stale": "Changed since written",
-      "gestures": "Press for a card · press twice to open · scroll to zoom"
-    }
   },
   "home": {
     "guide": "How to use",
@@ -1142,6 +1124,8 @@
     },
     "listKey": "Waiting sources",
     "listFolder": "Folder: {folder}",
+    "listType": "File type: {type}",
+    "listNone": "None of these sources is in that state.",
     "reading": "Still reading the folder: {count, plural, one {# source} other {# sources}} so far",
     "pickGone": "{folder} is no longer in sources/. Showing all sources."
   },
@@ -1179,7 +1163,9 @@
     "sourceMissing": "This file is not in the folder.",
     "sourceTooLarge": "This file is too large to show here.",
     "linkMissing": "Nothing in this folder has this name.",
-    "back": "Back"
+    "back": "Back",
+    "close": "Close the page",
+    "changedBadge": "Changed since written"
   },
   "wikiIndex": {
     "views": {

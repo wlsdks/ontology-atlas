@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { deriveSourceProgress, type LibrarySourceRow } from "@/entities/docs-vault";
 
-import { SourceGroupIndex } from "./source-group-index";
+import { SourceGroupIndex, sourceGroupKey } from "./source-group-index";
 import { SOURCE_STATE_ORDER } from "./source-states";
 
 function row(path: string, state: LibrarySourceRow["state"] = "not-compiled", compiledDay = -1): LibrarySourceRow {
@@ -39,6 +39,15 @@ describe("SourceGroupIndex", () => {
     const summed = Object.fromEntries(SOURCE_STATE_ORDER.map((state) => [state, 0]));
     for (const group of index.list("folder")) SOURCE_STATE_ORDER.forEach((state, i) => (summed[state]! += group.byState[i]!));
     expect(summed).toEqual(deriveSourceProgress({ sources: rows }, { now: Date.UTC(2026, 10, 21) }).byState);
+  });
+
+  it("names every row's group with the key the index counts it under, so a pick narrows a list outside it", () => {
+    const rows = [row(`sources/${"회의록".normalize("NFD")}/a.md`), row("sources/contracts/2024/c.pdf"), row("sources/loose")];
+    const index = new SourceGroupIndex();
+    index.sync(rows);
+    for (const source of rows) {
+      for (const grouping of ["folder", "type"] as const) expect(sourceGroupKey(source, grouping)).toBe(index.keyOf(source.path, grouping));
+    }
   });
 
   it("groups by file type, with no extension as its own type", () => {

@@ -99,7 +99,51 @@
       "deleteEveryFolder": "このモデルを使う他のフォルダは、再ダウンロードするまで単語だけで検索します。",
       "deleteEveryFolderToo": "このモデルを使う他のフォルダも同じです。",
       "tagRecommended": "{tag} · おすすめ",
-      "recommendedRunner": "おすすめ：このモデルはすでにこのコンピュータのOllamaにあるので、ダウンロードなしですぐに意味検索を始められます。"
+      "recommendedRunner": "おすすめ：このモデルはすでにこのコンピュータのOllamaにあるので、ダウンロードなしですぐに意味検索を始められます。",
+      "modelDownloadStarting": "モデルのダウンロードを開始中",
+      "modelDownloadPaused": "モデルのダウンロードが止まりました。{total}中{done}まで保存してあります。",
+      "continueDownload": "続きをダウンロード",
+      "stageLabel": "意味検索の準備",
+      "stepDownload": "モデルを取得",
+      "stepFit": "このコンピュータに合わせる",
+      "stepRead": "段落ごとに意味を記録",
+      "stageWaiting": "ほかのフォルダが終わると始まります",
+      "perSecond": "毎秒{size}",
+      "feedLabel": "いま読んだファイル",
+      "stageDoneTitle": "意味検索の準備ができました",
+      "stageDoneFacts": "{files, number}件のファイルの段落{passages, number}件に意味を記録しました。自分の言葉で質問してください。",
+      "stageTryAsk": "質問してみる",
+      "stageDismiss": "閉じる",
+      "passagesRecorded": "段落{count, number}件を記録",
+      "downloadChecking": "保存済みの部分を確認中",
+      "guide": {
+        "title": "意味検索を使うと、こうなります",
+        "body": "言い回しや言語が違っても、同じ意味の箇所を見つけます。モデルはこのコンピューターで動き、フォルダーの内容は外に出ません。",
+        "sample": "サンプル",
+        "caption": "架空のファイルで作ったサンプルです。実際のモデルのダウンロードには数分かかります。",
+        "later": "あとで",
+        "start": "一緒に設定する",
+        "question": "カード決済が拒否されたら注文はどうなる？",
+        "line": "{line, number}行"
+      },
+      "wizard": {
+        "stepIntro": "すること",
+        "stepChoose": "モデルを選ぶ",
+        "stepRun": "準備",
+        "introTitle": "3つの手順、すべてこのコンピューターで",
+        "download": "モデルを取得",
+        "downloadNeeded": "{model}を{hosts}から一度だけ取得します：{size}。途切れても続きから取得します。",
+        "downloadKept": "{model}はすでにこのコンピューターにあります。取得するものはありません。",
+        "runnerToo": "Ollamaにあるモデル{count, number}個も次の手順で選べます。取得なしですぐ始められます。",
+        "fit": "このコンピューターに合わせる",
+        "fitBody": "取得したモデルを、ここで速く動くよう一度だけ変換します。Ollamaのモデルは省略します。",
+        "read": "ファイルを読む",
+        "readBody": "Markdownファイル{files, number}個の各箇所の意味を数値として記録し、このコンピューターのキャッシュフォルダーに置きます。フォルダーの内容はどこにも送りません。",
+        "room": "空き容量{free} · 必要{needed}",
+        "next": "次へ：モデルを選ぶ",
+        "back": "戻る",
+        "afterStart": "進み具合は質問欄の下で見られます。その間も作業を続けられます。"
+      }
     },
     "title": "質問して、出典をたどる。",
     "browse": "ページを見る",
@@ -499,68 +543,6 @@
       "unverified": "ソース未確認"
     },
     "compiling": "ソースを読み直して、Wikiページを書いています。"
-  },
-  "graph": {
-    "title": "グラフ",
-    "empty": "表示するものはまだありません。「Wikiページを作成」で最初のページを書くと、そのページがどのソースから書かれ、どの概念に触れているかがここに表示されます。",
-    "canvasAria": "資料室のグラフ。元ソース、Wikiページ、そのページが挙げる概念。",
-    "islandUnsorted": "未分類",
-    "islandUnread": "未読",
-    "describeIsland": "{name}：ページ{pages, number}件と、それが読んだファイル{sources, number}件のグループです。押すと列として開きます。拡大すると名前が表示されます。",
-    "announceIsland": "グループ{name}、{position, number}/{total, number}: ページ{pages, number}件、ファイル{sources, number}件。Enterキーで列として開きます。",
-    "describeUnread": "未読：どのページもまだ読んでいないファイルが{sources, number}件あります。押すと、どこから始めればよいかが表示されます。",
-    "unreadPressed": "どのページもまだ読んでいないソースが{sources, number}件あるため、その間に描く関係はありません。ソース一覧で「Wikiページなし」と表示されているもので、図の上の「Wikiページを作成」で最初の1件から始まります。",
-    "islandBack": "すべてのグループ",
-    "islandName": "{name} · ページ{pages, number}件 · ファイル{sources, number}件",
-    "readerClose": "ページを閉じる",
-    "keys": "矢印キーで点の間を移動し、Enterキーで今いる点の横にカードを開き、Escapeキーで閉じます。",
-    "announce": "{kind} {name}、{position, number}/{total, number}。Enterキーで{action}。",
-    "kind": {
-      "page": "Wikiページ",
-      "source": "ソース",
-      "concept": "概念"
-    },
-    "actionSelect": "内容を表示",
-    "actionMap": "内容を表示",
-    "openOnMap": "マップで開く",
-    "fit": "全体を収める",
-    "fitDone": "全体はすでに収まっています",
-    "describe": {
-      "source": "{name}：ソースのファイルです。太い線はこれから書いたWikiページにつながり、線がなければまだWikiページはありません。押すと横にカードが開きます。",
-      "page": "{name}：Wikiページです。太い線は引用したソースに、破線は名前を挙げた概念につながります。押すと横にカードが開きます。",
-      "concept": "{name}: マップ上の概念です。破線は、この概念を挙げている、またはこの概念の元になったWikiページにつながります。押すと横にカードが開きます。"
-    },
-    "describeOpen": {
-      "source": "{name}：ソースのファイルです。太い線はこれから書いたWikiページにつながり、線がなければまだWikiページはありません。横にカードが開いています。Escapeキーか、もう一度押すと閉じます。",
-      "page": "{name}：Wikiページです。太い線は引用したソースに、破線は名前を挙げた概念につながります。横にカードが開いています。Escapeキーか、もう一度押すと閉じます。",
-      "concept": "{name}: マップ上の概念です。破線は、この概念を挙げている、またはこの概念の元になったWikiページにつながります。カードが横に開いています。Escapeキーか、もう一度押すと閉じます。"
-    },
-    "card": {
-      "close": "このカードを閉じる",
-      "conceptSentence": "マップ上の概念です。",
-      "fileFacts": "{format} · {size} · {state}",
-      "sourcesLabel": "参照したソース",
-      "pagesLabel": "このファイルから書いたWikiページ",
-      "rowMissing": "このフォルダにありません",
-      "open": "開く",
-      "refresh": "書き直しを依頼",
-      "seeAll": "ソース{count, number}件をすべて表示",
-      "factOriginals": "ソース{count, number}件",
-      "factMentions": "言及{count, number}件",
-      "factPassages": "引用箇所{count, number}件",
-      "flowInline": "引用は、各ソースからこのページへ流れます。",
-      "flowInlineStale": "引用は、各ソースからこのページへ流れます。琥珀色の点は、ソースが変わったため確認し直す必要がある引用です。"
-    },
-    "key": {
-      "source": "ソース{count, number}",
-      "page": "Wikiページ{count, number}",
-      "concept": "概念{count, number}",
-      "cite": "引用{count, number}",
-      "mention": "言及{count, number}",
-      "island": "グループひとつが概念ひとつ",
-      "stale": "書いた後に変更",
-      "gestures": "押すとカード · 2回押すと開く · スクロールで拡大"
-    }
   },
   "home": {
     "guide": "使い方",
@@ -1142,6 +1124,8 @@
     },
     "listKey": "待機中のソース",
     "listFolder": "フォルダ：{folder}",
+    "listType": "ファイル形式：{type}",
+    "listNone": "ここには、その状態のソースがありません。",
     "reading": "フォルダを読み込み中です。これまでにソース{count, number}件",
     "pickGone": "{folder}はもうsources/にありません。すべてのソースを表示しています。"
   },
@@ -1179,7 +1163,9 @@
     "sourceMissing": "このフォルダにこのファイルはありません。",
     "sourceTooLarge": "このファイルは大きすぎてここには表示できません。",
     "linkMissing": "このフォルダにはこの名前のものがありません。",
-    "back": "戻る"
+    "back": "戻る",
+    "close": "ページを閉じる",
+    "changedBadge": "書いた後に変更"
   },
   "wikiIndex": {
     "views": {

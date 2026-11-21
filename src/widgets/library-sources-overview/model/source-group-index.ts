@@ -82,6 +82,13 @@ export function firstLevelFolder(path: string): string | null {
   return slash < 0 ? null : nfc(path.slice(start, slash));
 }
 
+/** The key of the group a source counts in under `grouping`, as the index keys it. */
+export function sourceGroupKey(row: Pick<LibrarySourceRow, "path" | "format">, grouping: SourceGrouping): string {
+  if (grouping === "type") return `type:${row.format}`;
+  const folderName = firstLevelFolder(row.path);
+  return folderName === null ? ROOT_KEY : `folder:${folderName}`;
+}
+
 /**
  * Per-folder and per-file-type counts of the sources, kept up to date in place. Each published array
  * is compared row by row with the last one: an unchanged row object costs one comparison, a changed
@@ -219,8 +226,8 @@ export class SourceGroupIndex {
     const slot = this.allocate();
     this.slotOf.set(row.path, slot);
     const folderName = firstLevelFolder(row.path);
-    const folder = folderName === null ? this.group(ROOT_KEY, "root", VAULT_SOURCES_DIR) : this.group(`folder:${folderName}`, "folder", folderName);
-    const type = this.group(`type:${row.format}`, "type", row.format);
+    const folder = this.group(sourceGroupKey(row, "folder"), folderName === null ? "root" : "folder", folderName ?? VAULT_SOURCES_DIR);
+    const type = this.group(sourceGroupKey(row, "type"), "type", row.format);
     this.folderOf[slot] = this.groupIdOf.get(folder.key)!;
     this.typeOf[slot] = this.groupIdOf.get(type.key)!;
     this.stateOf[slot] = state;

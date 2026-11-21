@@ -99,7 +99,51 @@
       "deleteEveryFolder": "使用此模型的其他文件夹在重新下载之前只按字词搜索。",
       "deleteEveryFolderToo": "使用此模型的其他文件夹也一样。",
       "tagRecommended": "{tag} · 推荐",
-      "recommendedRunner": "推荐：此模型已在这台电脑的 Ollama 中，无需下载即可立即开始语义搜索。"
+      "recommendedRunner": "推荐：此模型已在这台电脑的 Ollama 中，无需下载即可立即开始语义搜索。",
+      "modelDownloadStarting": "正在开始下载模型",
+      "modelDownloadPaused": "模型下载已停止。已保留 {total} 中的 {done}。",
+      "continueDownload": "继续下载",
+      "stageLabel": "语义搜索的准备过程",
+      "stepDownload": "下载模型",
+      "stepFit": "适配这台电脑",
+      "stepRead": "记录每个段落的含义",
+      "stageWaiting": "其他文件夹完成后开始",
+      "perSecond": "每秒 {size}",
+      "feedLabel": "刚读完的文件",
+      "stageDoneTitle": "语义搜索已就绪",
+      "stageDoneFacts": "已为 {files, number} 个文件中的 {passages, number} 个段落记录含义。用你自己的话提问吧。",
+      "stageTryAsk": "试着提问",
+      "stageDismiss": "关闭",
+      "passagesRecorded": "已记录 {count, number} 个段落",
+      "downloadChecking": "正在检查已下载的部分",
+      "guide": {
+        "title": "开启语义搜索后会这样",
+        "body": "即使说法或语言不同，也能找到意思相同的段落。模型在这台电脑上运行，文件夹内容不会离开。",
+        "sample": "示例",
+        "caption": "用虚构文件做的示例。实际下载模型需要几分钟。",
+        "later": "以后再说",
+        "start": "一起设置",
+        "question": "银行卡付款被拒后，订单会怎样？",
+        "line": "第 {line, number} 行"
+      },
+      "wizard": {
+        "stepIntro": "做什么",
+        "stepChoose": "选择模型",
+        "stepRun": "准备",
+        "introTitle": "三个步骤，全部在这台电脑上",
+        "download": "获取模型",
+        "downloadNeeded": "{model} 只从 {hosts} 下载一次：{size}。中断后会从断点继续。",
+        "downloadKept": "{model} 已在这台电脑上，无需下载。",
+        "runnerToo": "下一步也可以选择 Ollama 中的 {count, number} 个模型，无需下载即可开始。",
+        "fit": "适配这台电脑",
+        "fitBody": "把下载的模型转换一次，让它在这里运行得更快。Ollama 模型跳过此步。",
+        "read": "读取文件",
+        "readBody": "把 {files, number} 个 Markdown 文件中每个段落的意思记录为数字，存放在这台电脑的缓存文件夹中。文件夹内容不会发送到任何地方。",
+        "room": "可用空间 {free} · 需要 {needed}",
+        "next": "下一步：选择模型",
+        "back": "上一步",
+        "afterStart": "可以在提问框下方查看进度，期间可以继续工作。"
+      }
     },
     "title": "提出问题，顺着来源查证。",
     "browse": "浏览页面",
@@ -499,68 +543,6 @@
       "unverified": "来源未检查"
     },
     "compiling": "正在重新读取来源并撰写 Wiki 页面。"
-  },
-  "graph": {
-    "title": "图谱",
-    "empty": "暂无可显示的内容。用“生成 Wiki 页面”写出第一个页面后，这里会显示它来自哪份来源、提到了哪些概念。",
-    "canvasAria": "资料库图谱：原始来源、Wiki 页面，以及这些页面提到的概念。",
-    "islandUnsorted": "未归类",
-    "islandUnread": "未读取",
-    "describeIsland": "{name}：一个分组，含 {pages, number} 个页面及它们读取的 {sources, number} 个文件。点按即可展开为列；放大可看到名称。",
-    "announceIsland": "分组 {name}，第 {position, number} 个，共 {total, number} 个：{pages, number} 个页面和 {sources, number} 个文件。按 Enter 展开为列。",
-    "describeUnread": "未读取：{sources, number} 个还没有页面读过的文件。点按查看从哪里开始。",
-    "unreadPressed": "有 {sources, number} 份来源还没有任何页面读过，所以它们之间没有可绘制的关系。它们在来源列表中标为“无 Wiki 页面”；图上方的“生成 Wiki 页面”会从第一份开始。",
-    "islandBack": "全部分组",
-    "islandName": "{name} · {pages, number} 个页面 · {sources, number} 个文件",
-    "readerClose": "关闭页面",
-    "keys": "用方向键在圆点间移动，Enter 在当前圆点旁打开卡片，Escape 关闭卡片。",
-    "announce": "{kind} {name}，第 {position, number} 个，共 {total, number} 个。按 Enter {action}。",
-    "kind": {
-      "page": "Wiki 页面",
-      "source": "来源",
-      "concept": "概念"
-    },
-    "actionSelect": "查看它是什么",
-    "actionMap": "查看它是什么",
-    "openOnMap": "在地图上打开",
-    "fit": "适应全图",
-    "fitDone": "已显示全图",
-    "describe": {
-      "source": "{name}：来源文件。粗线通向据此撰写的 Wiki 页面；没有线说明还没有 Wiki 页面。点按可在旁边打开卡片。",
-      "page": "{name}：Wiki 页面。粗线通向它引用的来源，虚线通向它提到的概念。点按可在旁边打开卡片。",
-      "concept": "{name}：地图上的一个概念。虚线通向提到它或由其绘制而来的 Wiki 页面。点按可在旁边显示卡片。"
-    },
-    "describeOpen": {
-      "source": "{name}：来源文件。粗线通向据此撰写的 Wiki 页面；没有线说明还没有 Wiki 页面。卡片已在旁边打开：按 Escape 或再次点按即可关闭。",
-      "page": "{name}：Wiki 页面。粗线通向它引用的来源，虚线通向它提到的概念。卡片已在旁边打开：按 Escape 或再次点按即可关闭。",
-      "concept": "{name}：地图上的一个概念。虚线通向提到它或由其绘制而来的 Wiki 页面。它的卡片已在旁边打开：按 Escape 或再次点按即可关闭。"
-    },
-    "card": {
-      "close": "关闭此卡片",
-      "conceptSentence": "地图上的一个概念。",
-      "fileFacts": "{format} · {size} · {state}",
-      "sourcesLabel": "参考的来源",
-      "pagesLabel": "由此文件撰写的 Wiki 页面",
-      "rowMissing": "不在此文件夹中",
-      "open": "打开",
-      "refresh": "请求重写",
-      "seeAll": "查看全部 {count, number} 份来源",
-      "factOriginals": "{count} 份来源",
-      "factMentions": "{count} 处提及",
-      "factPassages": "{count} 段引文",
-      "flowInline": "引用从每份来源流向此页面。",
-      "flowInlineStale": "引用从每份来源流向此页面；琥珀色圆点表示来源已变更、需要重新核对的引用。"
-    },
-    "key": {
-      "source": "来源 {count, number}",
-      "page": "Wiki 页面 {count, number}",
-      "concept": "概念 {count, number}",
-      "cite": "引用 {count, number}",
-      "mention": "提及 {count, number}",
-      "island": "一个分组是一个概念",
-      "stale": "撰写后已变更",
-      "gestures": "点按显示卡片 · 点按两次打开 · 滚动缩放"
-    }
   },
   "home": {
     "guide": "使用方法",
@@ -1142,6 +1124,8 @@
     },
     "listKey": "等待中的来源",
     "listFolder": "文件夹：{folder}",
+    "listType": "文件类型：{type}",
+    "listNone": "这里没有处于该状态的来源。",
     "reading": "正在读取文件夹：目前 {count, number} 份来源",
     "pickGone": "{folder} 已不在 sources/ 中。正在显示全部来源。"
   },
@@ -1179,7 +1163,9 @@
     "sourceMissing": "这个文件夹中没有这个文件。",
     "sourceTooLarge": "这个文件太大，无法在这里显示。",
     "linkMissing": "此文件夹中没有这个名称的内容。",
-    "back": "返回"
+    "back": "返回",
+    "close": "关闭页面",
+    "changedBadge": "撰写后已变更"
   },
   "wikiIndex": {
     "views": {

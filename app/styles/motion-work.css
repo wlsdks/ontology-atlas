@@ -145,6 +145,40 @@
     animation: motionProgressRipple var(--motion-expressive) var(--motion-ease) both;
   }
 
+  /* The step that works now breathes: its mark swells a little and its halo fades out, while
+     the work runs and never after. Opacity and scale only. */
+  @keyframes motionRunPulse {
+    0% {
+      opacity: 0.85;
+      transform: scale(0.7);
+    }
+    70%,
+    100% {
+      opacity: 0;
+      transform: scale(2.2);
+    }
+  }
+
+  .motion-run-pulse {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: motionRunPulse calc(var(--motion-settle) * 6) var(--motion-ease) infinite;
+  }
+
+  /* A light that circles a running ring, slower than the spin of work of unknown length. */
+  .motion-run-orbit {
+    transform-box: view-box;
+    transform-origin: center;
+    animation: motionWorkSpin calc(var(--motion-settle) * 10) linear infinite;
+  }
+
+  /* The head of a counted ring turns to its value; rotation only. */
+  .motion-run-head {
+    transform-box: view-box;
+    transform-origin: center;
+    transition: transform var(--motion-slow) var(--motion-ease);
+  }
+
   /* Sources overview. A writing dot's halo breathes only while the agent writes a page from
      that row or file; the dot is unmounted when the work ends. Transform and opacity only. */
   @keyframes motionWritingHalo {
@@ -253,7 +287,8 @@
     }
 
     .motion-work-spin,
-    .motion-work-sweep {
+    .motion-work-sweep,
+    .motion-run-orbit {
       animation: none !important;
       transform: none !important;
     }
@@ -262,6 +297,15 @@
       animation: none !important;
       transform: none !important;
       opacity: 0.6;
+    }
+
+    .motion-run-pulse {
+      animation: none !important;
+      opacity: 0 !important;
+    }
+
+    .motion-run-head {
+      transition: none !important;
     }
 
     .motion-work-mark,

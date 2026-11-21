@@ -3,6 +3,7 @@
 import { useId, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 
+import { formatSize } from '@/shared/lib/format-size';
 import type { MeaningProgress, MeaningRun } from '../model/meaning-run';
 
 const PLACEHOLDER = '\u0000';
@@ -58,10 +59,15 @@ export function MiddleCutName({ path }: { path: string }) {
 /** The desk line's sentence for a failure, with the coded detail in words as the desk says it. */
 function useFailureSentence(run: MeaningRun): string {
   const tDesk = useTranslations('library.questionDesk.meaning');
+  const locale = useLocale();
   const failure = run.failure;
   if (!failure) return '';
   const message = failure.message as Parameters<typeof tDesk>[0];
   const raw = typeof failure.values.detail === 'string' ? failure.values.detail : '';
+  if (failure.message === 'modelDownloadPaused') {
+    const bytes = (value: unknown) => formatSize(typeof value === 'number' ? value : 0, locale);
+    return tDesk(message, { done: bytes(failure.values.done), total: bytes(failure.values.total) });
+  }
   if (failure.message === 'modelDownloadFailed' || failure.message === 'modelFailed' || failure.message === 'writeFailed') {
     return tDesk(message, { detail: tDesk('failureDetail', { code: raw.replaceAll('-', '_'), raw }) });
   }

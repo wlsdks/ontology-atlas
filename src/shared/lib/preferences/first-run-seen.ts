@@ -1,7 +1,11 @@
+/** The question desk's first-use guide to search by meaning, in the installed app. */
+export const MEANING_GUIDE_SEEN_KEY = "atlas.meaning.guide-seen";
+
 export const FIRST_RUN_SEEN_ENTRIES: readonly (readonly [string, string])[] = [
   // The folder-first guidance sheet; this key alone reads '1'.
   ["vault-open-guide:auto:v1", "1"],
   ["atlas.library.guide-seen", "on"],
+  [MEANING_GUIDE_SEEN_KEY, "on"],
 ];
 
 export type GuideOverride = "off" | "reset";

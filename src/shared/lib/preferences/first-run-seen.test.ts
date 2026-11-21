@@ -13,10 +13,11 @@ describe("first-run-seen", () => {
   });
 
   describe("FIRST_RUN_SEEN_ENTRIES", () => {
-    it("covers the surviving folder and Library guidance", () => {
+    it("covers the surviving folder, Library and search-by-meaning guidance", () => {
       expect(FIRST_RUN_SEEN_ENTRIES).toEqual([
         ["vault-open-guide:auto:v1", "1"],
         ["atlas.library.guide-seen", "on"],
+        ["atlas.meaning.guide-seen", "on"],
       ]);
     });
   });

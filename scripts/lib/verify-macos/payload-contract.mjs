@@ -75,6 +75,31 @@ export function validateWindowStatePluginIsolation(launchStdout) {
   return null;
 }
 
+const FIXTURE_VAULT_GRANT_PREFIX = "[ontology-atlas-verify-vault] ";
+
+/**
+ * The WebView store only names the fixture; the app opens it only if Rust granted it
+ * for the launch. Without the grant the fixture restores as "grant needed" and the map
+ * route falls back to first run, which used to surface as a wrong route. Absence fails
+ * too, as with the window-state marker: a build that plants without granting prints
+ * nothing.
+ */
+export function validateFixtureVaultGrant(launchStdout) {
+  const verdicts = String(launchStdout ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith(FIXTURE_VAULT_GRANT_PREFIX))
+    .map((line) => line.slice(FIXTURE_VAULT_GRANT_PREFIX.length));
+  if (verdicts.length === 0) {
+    return "app never reported granting the fixture vault ([ontology-atlas-verify-vault] …); an ungranted fixture restores as grant-needed and the map route falls back to first run";
+  }
+  const refused = verdicts.find((verdict) => !/ granted=true$/.test(verdict));
+  if (refused !== undefined) {
+    return `app refused the fixture vault for this launch: ${refused}`;
+  }
+  return null;
+}
+
 export function validateWebviewVerifyPayload(payload, {
   expectedPath = null,
   expectedFixtureVault = null,
@@ -125,6 +150,10 @@ export function validateWebviewVerifyPayload(payload, {
     }
     if (payload.markers.verificationFixtureVault !== expectedFixtureVault) {
       return `WebView fixture vault was ${payload.markers.verificationFixtureVault || "missing"}, expected ${expectedFixtureVault}`;
+    }
+    if (typeof launchStdout === "string") {
+      const grantError = validateFixtureVaultGrant(launchStdout);
+      if (grantError) return grantError;
     }
   }
   if (

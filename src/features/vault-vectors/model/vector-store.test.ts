@@ -42,7 +42,7 @@ describe('the stored search-by-meaning choice', () => {
   });
 
   it('is forgotten when the app refuses the prepare, and the folder reads as not set up', async () => {
-    vi.mocked(prepareVectors).mockRejectedValueOnce('vault-not-chosen');
+    vi.mocked(prepareVectors).mockRejectedValueOnce('embed-not-local');
     const { result } = renderHook(() => useVectorStatus(rootPath));
     await act(async () => {
       await expect(prepare(rootPath, { kind: 'builtin' })).resolves.toBe(false);
@@ -61,6 +61,16 @@ describe('the stored search-by-meaning choice', () => {
     });
     expect(vaultVectorSource.read(rootPath)).toEqual({ source: { kind: 'builtin' }, paused: false });
     expect(result.current?.phase).toBe('ready');
+  });
+
+  it('is kept when the app refuses the folder rather than the choice, as before the folder is granted again', async () => {
+    vaultVectorSource.write(rootPath, { kind: 'builtin' });
+    vi.mocked(vectorStatus).mockRejectedValueOnce('vault-root-not-granted');
+    renderHook(() => useVectorStatus(rootPath));
+    await act(async () => {
+      await vi.waitFor(() => expect(vectorStatus).toHaveBeenCalledTimes(1));
+    });
+    expect(vaultVectorSource.read(rootPath)).toEqual({ source: { kind: 'builtin' }, paused: false });
   });
 
   it('is forgotten when the app refuses the status it was sent with', async () => {

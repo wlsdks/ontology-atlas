@@ -182,6 +182,8 @@ pub(super) fn failure_detail(
 pub(crate) struct ModelBytes {
     pub done_bytes: u64,
     pub total_bytes: u64,
+    /// The kept part of an earlier download is being hashed: no byte comes from the network.
+    pub checking: bool,
 }
 
 #[derive(Serialize, Clone, Debug, PartialEq)]
@@ -202,7 +204,7 @@ pub(crate) struct VectorStatus {
     pub current_path: Option<String>,
     /// Over at least the last 30 s; `None` until measured.
     pub passages_per_second: Option<f64>,
-    /// While `modelDownloading`.
+    /// While `modelDownloading`, and beside `modelGone` with what a cut-off download kept.
     pub model: Option<ModelBytes>,
     pub vectors_bytes: u64,
     /// A pass runs for this folder or follows the one running; an update reads `ready` until it

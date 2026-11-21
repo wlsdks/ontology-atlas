@@ -46,6 +46,81 @@ fn discovery_refuses_code_and_markdown() {
     }
 }
 
+/// Over the 64-byte floor, so discovery offers it.
+const PLAN_PDF_BYTES: &[u8] = &[b'x'; 64];
+
+const DISCOVERY_CASES: &str = include_str!("../../../tests/fixtures/source-discovery-cases.json");
+
+fn discovery_cases() -> serde_json::Value {
+    serde_json::from_str(DISCOVERY_CASES).unwrap()
+}
+
+/// Plants each row as a file of its size and returns what the real walk offers.
+fn offered_by_the_walk(label: &str, rows: &[serde_json::Value]) -> Vec<String> {
+    let (fixture, vault) = fresh_fixture(label);
+    let project = fixture.join("project");
+    for row in rows {
+        let file = row["path"]
+            .as_str()
+            .unwrap()
+            .split('/')
+            .fold(project.clone(), |path, segment| path.join(segment));
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        let bytes = usize::try_from(row["bytes"].as_u64().unwrap()).unwrap();
+        fs::write(&file, vec![b'x'; bytes]).unwrap();
+    }
+    let project = fs::canonicalize(&project).unwrap();
+    let _scope =
+        crate::vault_grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);
+    let report = discover_source_candidates(vec![SourceDiscoveryRoot {
+        root_path: project.to_string_lossy().into_owned(),
+        label: "project".into(),
+        skip_relative: Vec::new(),
+    }])
+    .unwrap();
+    fs::remove_dir_all(fixture).unwrap();
+    let mut offered: Vec<String> = report
+        .candidates
+        .into_iter()
+        .map(|candidate| candidate.relative_path)
+        .collect();
+    offered.sort();
+    offered
+}
+
+#[test]
+fn the_owners_three_junk_files_yield_no_suggestion() {
+    let cases = discovery_cases();
+    let offered = offered_by_the_walk("owner-report", cases["ownerReport"].as_array().unwrap());
+    assert_eq!(offered, Vec::<String>::new());
+}
+
+#[test]
+fn the_shared_discovery_table_holds_for_the_native_walk() {
+    let cases = discovery_cases();
+    let rows = cases["files"].as_array().unwrap();
+    let mut expected: Vec<String> = rows
+        .iter()
+        .filter(|row| row["offered"].as_bool().unwrap())
+        .map(|row| row["path"].as_str().unwrap().to_string())
+        .collect();
+    expected.sort();
+    assert_eq!(offered_by_the_walk("discovery-table", rows), expected);
+}
+
+#[test]
+fn the_shared_directory_table_holds_with_either_separator() {
+    let cases = discovery_cases();
+    for row in cases["directories"].as_array().unwrap() {
+        let path = row["path"].as_str().unwrap();
+        assert_eq!(
+            discovery_accepts_directory(path),
+            row["descends"].as_bool().unwrap(),
+            "{path:?}"
+        );
+    }
+}
+
 // Asserts what this build compiled: either writer must land bytes inside the
 // sources folder and nowhere else.
 #[test]
@@ -195,7 +270,7 @@ fn a_discovered_candidate_imports_through_the_string_the_page_builds() {
     let project = base.join("project");
     fs::create_dir_all(&vault).unwrap();
     fs::create_dir_all(&project).unwrap();
-    fs::write(project.join("plan.pdf"), b"%PDF-1.7 plan\n").unwrap();
+    fs::write(project.join("plan.pdf"), PLAN_PDF_BYTES).unwrap();
     let root_path = format!("{}/", project.to_string_lossy());
     let vault = fs::canonicalize(&vault).unwrap();
     let project = fs::canonicalize(&project).unwrap();
@@ -606,7 +681,7 @@ fn a_document_discovery_offered_is_still_refused_for_planning_when_its_type_is_u
     let (fixture, vault) = fresh_fixture("planning-discovered");
     let project = fixture.join("project");
     fs::create_dir_all(&project).unwrap();
-    fs::write(project.join("plan.pdf"), b"%PDF-1.7 plan\n").unwrap();
+    fs::write(project.join("plan.pdf"), PLAN_PDF_BYTES).unwrap();
     let project = fs::canonicalize(&project).unwrap();
     let _scope =
         crate::vault_grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);

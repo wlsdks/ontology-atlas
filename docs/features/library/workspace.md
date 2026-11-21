@@ -87,10 +87,32 @@ dialog stays open and says what it freed. Choosing another model says the
 folder's files are prepared again before its press; an Ollama model says each
 question is recorded in the folder's audit log and that Ollama removes it. While
 the folder prepares, the dialog says so and offers Stop instead of a switch or a
-delete. A switch the app refuses keeps the earlier model. Only the dialog's Download and prepare downloads the model: Resume on a folder whose model is gone says so and offers Download again. The work runs in the background; the line shows
-the download, then files prepared of the total with the file being read and
-Stop, and keeps one height in every state. An update of ten or more changed files
-is followed the same way; a smaller one is one quiet sentence. Away from the desk,
+delete. A switch the app refuses keeps the earlier model. Only the dialog's Download and prepare downloads the model: Resume on a folder whose model is gone says so and offers Download again. The work runs in the background. While it runs and no
+results stand under the field, a stage opens below the line: Moru at the work,
+the steps Download the model, Fit it to this computer and Record each passage's
+meaning (only the last for an Ollama model) with the running one lit, a bar for
+that step, the line's sentence and Stop, then the download speed and minutes left
+(or that the kept part is being checked) or the last three files read beside the
+passages recorded so far. The stage keeps one height
+through every step; with results on screen the job stays one line with its ring.
+On a person's first visit in the app, while the folder searches by words and
+nothing runs, a guide stands where the stage will: what search by meaning does,
+a sample that plays by itself (made-up files: the model downloading, fitted,
+files read into passages, then a question in other words finding an English
+passage marked Similar meaning), **Not now** and **Set it up together**. The
+sample takes no input, pauses off screen and while the dialog covers it, and
+holds still on the answered question under reduced motion. **Set it up
+together** opens the dialog as a walk of three steps: what happens, with this
+computer's download size, free space and this folder's file count; then the
+model; then the run, which is the stage on the desk. Only that step's primary
+press prepares, as from Set up. Not now, or a preparation started from the walk,
+retires the guide on this machine; closing the walk keeps it.
+A first preparation that finishes in view says how many passages in how many
+files carry their meaning, with **Ask a question**, which puts focus in the
+field; a folder found ready and a finished update say nothing more. A download a
+quit cut off says how much it kept and offers **Continue the download**, and the
+dialog then recommends the built-in model over Ollama. An update of ten or more
+changed files is followed the same way; a smaller one is one quiet sentence. Away from the desk,
 the long-work card on every tab carries the same work after a press in this launch:
 the download in GB, files prepared of the total with the file being read and the
 minutes left, Stop and Hide, then the result with **Ask a question** or a failure
@@ -226,20 +248,20 @@ sha256 or "not measured") plus one door that reveals it in Finder or hands over 
 With no folder open the whole screen is one centred stage naming the two kinds of file and
 offering the picker, and a folder that is open but holds nothing gets the same grammar with
 the two doors instead. **With a folder open and nothing selected in Sources,
-the right pane is the folder's graph** (2026-09-12, restoring 2026-09-06);
-in Wiki it is the question desk. **The Sources home is exactly three parts: the band, the picture
-and its key** (2026-11-20, `docs/specs/2026-11-20-library-rooms.md`). When the folder has a
-source, the **progress band** (`docs/specs/2026-11-19-source-progress.md`) stands on top of the
-graph, at most 112px tall from `md` up, in four cells. The number: the percent of sources that
-have a wiki page, rounded down (below 10 sources the fraction `1 / 1`), with today's additions on
-its baseline, and under it the sentence in primary ink on one line. The bar: a 6px state bar (has
-a page in the accent, needs review and read in part in amber, checking and can't read neutral, no
-page the track), 280–560px wide, and under it one row of state presses in bar order, each a
+the right pane is the progress band over the Sources overview** (2026-11-21,
+`docs/specs/2026-11-21-library-sources-redesign.md`; decision `docs/records/decisions/2026-11-21-library-sources-home-replaces-graph-ae902a78-d4ff-4e23-b6f9-9e34382bff9a.md`);
+in Wiki it is the question desk. A folder with wiki pages and no source shows the empty
+folder's start stage there. When the folder has a source, the **progress band**
+(`docs/specs/2026-11-19-source-progress.md`) stands on top of the overview, at most 112px tall from `md` up, in four cells. The number: the percent of sources that
+have a wiki page, rounded down (a share above 0 and under 1% reads `under 1%`), with today's additions on
+its baseline, and under it the sentence in primary ink on one line; it carries a `title` only
+when the line is cut. The bar: a 6px state bar, each state in its own `SOURCE_STATE_INK` (has a
+page in the page ink, read in part hatched, needs review in amber, checking and can't read in
+their own inks, no page grey), 280–560px wide, and under it one row of state presses in bar order, each a
 swatch, its word and a count, ending in a clear press (an × named `Show all N`) whose slot is held
 from the first paint, so a press resizes nothing in the band. With one state the row stays empty.
 A press shows only that state's rows in the index, combined with
-the search, and lights that state's marks in the picture (a compiled press lights the pages that
-cite them too); pressing it again, the clear press, or Escape clears both, and a press while the
+the search; pressing it again, the clear press, or Escape clears it, and a press while the
 column is folded unfolds it. The chart: a cumulative step chart by the `compiled_at` each page
 records, at most 26rem wide and captioned with its first date and today, whose Left and Right keys
 read each point, drawn only from three recorded days; without it the bar takes the room. The
@@ -253,20 +275,26 @@ the band stays inside 112px at 1040. The percent and the sentence's count rise t
 folder's first visit in a session, drawn only once the count starts, and later move on from what
 is drawn; at 100% the bar turns green and one light passes along it. Below `md` the chart steps
 aside. A door that names its own sources (a source's Write wiki page, a stale page's refresh)
-sends exactly those. **Under the picture is its key**: one fixed-height `text-label` line of
-glyph, word and count — square source, filled circle wiki page, ring concept, solid line
-citation, dashed line mention — and the gestures in tertiary ink at its right from `lg`; the
-islands picture keys an island, a wiki page, a source and the amber changed source. Items drop
-from the end when the line is narrow, the full key stays in the canvas's description, and a
-pointed-at mark or island is described on the same line. **The Library's doors are in the page
+sends exactly those. **Under the band is the Sources overview**
+(`src/widgets/library-sources-overview/`), drawn from the facts the folder already holds and
+no canvas: on the left a table with one row per first-level folder under `sources/` (per file
+type when there are fewer than two folders; a switch picks either), each row its name, its
+source count, a state bar in the band's inks with its share, how many wait, and the day of its
+latest wiki page; under the table the five pages written last, each with the source it came
+from; on the right the files the band's write button sends next, in its order. Rows arrive as
+the folder is read, sort by a header press and hold their order while a batch runs. Pressing a
+row tints it, gives the panel that folder's waiting files, and narrows the index list with a
+`Folder: name` chip; the chip's ×, the row again or Escape clears it. The index list marks each
+waiting file with one dot in its state's ink (the word in its title and for a screen reader),
+a file with a page with nothing, and a `Waiting sources` key above the list. **The Library's doors are in the page
 header**, left of the info glyph, as 36px chrome pills: `How to use`, the saved questions,
 `Conversation`, and `Review updated answer` while a proposal waits; below `lg` they fold into
 More. Every Sources and Wiki state carries exactly one Conversation control and one Questions
 control; the reader's top row carries the work line at its right, and the question desk keeps its
 compact one. `How to use` holds the three source-to-wiki steps in an anchored popup and raises
 itself once per machine; at exactly one saved answer the questions door is that question, so
-reopening it is one press. Selecting a document replaces the graph or question desk and
-gives it back on close. Below `lg`, Sources keeps the graph above the index;
+reopening it is one press. Selecting a document replaces the overview or question desk and
+gives it back on close. Below `lg`, Sources keeps the overview above the index;
 Wiki gives the question desk the available height and opens its page index with
 an explicit Browse action and return focus. A folder that holds wiki
 pages and no `kind:` node opens here rather than on the map: it is a wiki on its own, and
@@ -294,7 +322,7 @@ row the same height and wrapped rather than cut. A desk row opens its page at th
 that holds for 1.2s and fades over the slow duration (at once and without a fade under reduced
 motion); Close returns to the desk with its results and scroll as they were.
 
-**What to do next, one press from the graph's header** (2026-09-06, third and fourth
+**What to do next, one press from the page header** (2026-09-06, third and fourth
 pass). The owner opened the new destination and said they did not know what to do on it;
 the pane at that moment was either "Nothing gathered yet" or the first wiki page, opened
 on the reader's behalf. The answer was three steps in the order the work happens — and
@@ -327,7 +355,7 @@ the count and one filled button, **Review N found documents**, leads on its own 
 opens the dialog already filled; **Add files** and **Bring from a service** sit beneath it.
 When it finds none the stage keeps its three equal doors.
 
-**With content, guidance is a compact stepper.** **What to do next** in the graph's header
+**With content, guidance is a compact stepper.** **What to do next** in the page header
 opens a 360px `transientSurface("anchored")` panel of three rows, each one head line
 (number, title, and the step's own word), one caption line, and one action row of reserved
 height: **① Gather** with the formats the folder holds and both doors, **② Compile** with
@@ -372,7 +400,7 @@ them. The doors travel with the list — Add files, Find documents and Bring fro
 on Sources; Check the wiki, Compile and the brain picker on Wiki — and the section eyebrow
 is gone, because a head repeating *SOURCES · 7* under a segment reading *Sources 7* is the
 same fact twice. The choice is remembered per machine
-(`atlas.library.index-segment`), and opening a file from the graph, from the guide or from a
+(`atlas.library.index-segment`), and opening a file from the home, from the guide or from a
 reader's own crossing moves the switch to that file's list, so the index can never name one
 thing while the reader shows another.
 
@@ -404,8 +432,11 @@ the index is the bottom half of one column and has nowhere to fold to.
 Rows stay 36px with the name truncated at its end, format and size in mono `text-caption`,
 and none crosses the column's side edge at 1512, 1040, 768 or 390. **`compiled` lost its
 chip** on 2026-09-06: on the owner's folder all seven rows wore the same green pill, which
-is a texture rather than a state, so success is a quiet check in the row's own ink and a
-chip is spent only where a person can act. The one local-first disclosure follows the
+is a texture rather than a state. Since 2026-11-21 a row with a page carries no mark, a waiting
+row one 6px dot in its state's ink, and the list head names the dot; a row picked on the
+Sources home narrows the list under a `Folder: name` or `File type: name` chip whose press
+clears it, and a pick that leaves no row says so and offers Show all sources. A chip is
+spent only where a person can act. The one local-first disclosure follows the
 Compile press it describes — the connect-by-address runner's sentence, under the press, in
 the Compile popover or an open source's pane. The agent route's sentence is not that: it
 says Atlas is **not** in the path, so since 2026-09-12 it is the index head's glyph panel
@@ -472,251 +503,23 @@ and that page's title inside the sentence is the press.
 be drawn there: the pane was hidden whenever nothing was chosen, which is the state it
 exists for, so a phone and any window under 1024px opened a folder and got two lists, no
 overview and no guidance — a measured zero rect at both 390×844 and 768×1024. The row is
-now a column below `lg`: the graph takes the top of it (390: 350×296 of canvas; 768:
-648×406), the two lists take the bottom under a hairline, the popup still hangs from the
+now a column below `lg`: the home takes the top of it, the two lists take the bottom under a hairline, the popup still hangs from the
 row so it keeps the column's whole height, and choosing a file swaps the whole column with
 the same way back. The index's one scroller was first forced here — two list scrollers sharing half
 a phone left the source list 30px and the wiki list zero — and on 2026-09-06 the same
 answer replaced the `lg` split; the switch that replaced the stacking on 2026-09-07 is the
 same answer again, so the column behaves one way at every width. What does not reach a
 phone is the fold: below `lg` the index is the bottom half of one column and there is no
-second pane to give its width to. Cases: `the Library pane` and `the graph takes the top of
-the column at …` in `tests/e2e/library/library.spec.ts`.
+second pane to give its width to. Case: `the Library pane` in
+`tests/e2e/library/library.spec.ts`.
 
-**The graph is a live force simulation** (2026-09-07). The owner opened the installed
-app on the real folder — 7 sources, 6 pages, every page citing 4–7 of them — and read the
-picture as a static hairball: near-identical thin grey straight lines from nearly every
-page to nearly every source, two mark sizes, and nothing that answered a hand. The
-one-shot ForceAtlas2 pass that drew it is gone. `library-force-simulation.ts` steps a
-velocity-Verlet model on `requestAnimationFrame`: springs whose rest length is the
-relation (a citation 52 world units, a mention 96, so concepts ring the outside of a page's
-own sources), many-body repulsion, collision so no mark sits on another, and an
-**aspect-aware gravity** — the one non-standard force here, weaker along the canvas's long
-axis, which *grows* the cloud into the box instead of fitting it into a corner of one.
-Measured at 1512 on that folder shape: the picture fills **93.9% of the canvas width and
-90.5% of its height**, against 33.5% before, and the width cap that used to cut the box
-down to the picture is gone with it. Above 720 nodes the many-body force switches to a
-hand-written Barnes–Hut quadtree — the crossover is measured, not assumed (1.97 ms exact
-against 1.73 ms approximated at 800; one whole tick is 0.10 / 0.40 / 1.73 ms at 100 / 300 /
-800 nodes). Nothing new is installed: Graphology is no longer imported by this widget at
-all.
-
-**The picture is columns** (2026-09-17). The owner opened the home on his own folder —
-two pages, a few files — and read the live cloud as half-made: dots floating in a black
-field at positions that changed with every visit. `library-flow-layout.ts` replaces the
-force picture at rest with a pure, deterministic layout: files in a column on the left,
-the pages written from them in the middle, the concepts those pages name on the right,
-each column ordered by the barycentre of its neighbours so a page sits level with the
-files it cites, and every edge an S-curve from column to column. The layout is laid in a
-world box seen through the zoom ceiling, so a folder of thirty marks or fewer fits with
-its widest mark at 36px on every window; a longer folder lays out taller than the box and
-the camera fits it, down to an 18px row, past which the pages fold into stacks (below).
-A file's name stands left of its square and a page's or concept's right of its disc, where
-no edge runs. **Names share the free width** (2026-11-20): every named column gets an equal
-room, at most 240px, and a name is cut to that room, a title at its end and a file name in
-its middle so the extension stays. A kind is named only when its room is at least 96px on
-screen, in the order pages, then concepts, then files, because a name cut to five characters
-identifies nothing; a column without names at rest names a mark under the pointer, its
-neighbours, and every mark once the view is zoomed one and a half times past its fit. The
-picture keeps 24px clear above and below and 64px at the sides. Measured in the app's state
-on a folder of 54 sources, 60 pages and 45 concepts: at 1512x901 and 1920x1080 every file,
-page and concept is named (124px and 182px rooms), at 1280x800 the pages are named at 122px;
-no name crosses another, and the same folder draws the same picture on every visit.
-The simulation below remains as the engine's position store; its forces are not stepped
-under this layout. Decision: `docs/records/decisions/2026-09-17-library-graph-flow-columns-*.md`.
-
-**Past four hundred marks the picture is a map of islands** (2026-09-18). The owner:
-*"a wiki piles up thousands of files in no time; plan for tens of thousands. Find the
-picture that makes a person go 'wow' and is still calm and good to look at."* Columns name
-everything up to a few hundred marks; past `ISLANDS_MIN_MARKS` (400) no picture can name
-things, and the home shows shape and state instead. The reference is the data map (Nomic
-Atlas's information cartography: points as texture, a few topic labels at rest, detail as
-the camera closes in); Atlas's version uses what the wiki already knows instead of an
-embedding. `library-islands-layout.ts` makes **an island per concept**: the pages that name
-it as small discs at the centre, the files those pages were written from as smaller squares
-packed around them on a sunflower spiral, so an island reads as a body with a shore. Pages
-naming no concept gather on *Unsorted* (or on an island per wiki sub-folder). Files no page
-has read are not a topic, so they are not an island: they are the **shore**, a staggered band
-of dots under the archipelago, as wide as it stands and rows deep in proportion to how much
-is unread (2026-09-18: packed as a disc it was the largest thing on a freshly filled folder
-and took the middle with the topics ringed around it). Named islands pack largest-first
-about the centre on a spiral stretched to the box's aspect, Unsorted after them; every
-island carries its name and count on a ground plate; a stale page is
-an amber dot; no line is drawn at rest, and a pointed-at or held mark still answers with its
-own. The layout is pure and deterministic, like the flow. **A press on an island opens it
-as columns** — its own pages, files and rows, few enough for the flow to name every one —
-with a chip at the picture's top-left back to the islands and Escape as the same way out;
-**zooming the wheel into an island opens it too** once it spans 45% of the view or the camera
-reaches its ceiling (the aim is the island under the pointer at the first wheel step), and
-zooming out of an opened island past 60% of its fit returns the map; **the marks travel**
-between the two pictures over one `--motion-settle` while the rest fade and the camera
-eases, never a cut (sampled: a page 480px in 230 ms on the motion curve); **the islands are
-bodies** (`library-islands-physics.ts`, owner question 2026-09-18 "doesn't it move like a
-force graph?"): a folder's islands start near the middle of the map and are pushed out to
-their places, largest first, in about half a second — the picture assembling rather than
-appearing — and dragging an island carries it while the islands it runs into are shoved
-aside and settle back once it has passed; a map laid again while showing keeps each island
-where it stands. At rest nothing moves, which keeps the 2026-09-08 rule; the physics is a
-spring home, a separation that leaves no two bodies overlapping, and heavy damping at a
-fixed step, deterministic and bounded;
-a dot on the overview takes a press only from an 8px radius, a real target. Inside an
-opened island, and on any folder whose page column folds, **folded pages stand in stacks**,
-and since 2026-11-20 a stack is a whole flow: the files its pages read at its left (named
-when their room allows, a small grid otherwise), its pages, and at its right the concepts
-most of whose naming pages stand in it, each level with those pages. The stack count is the
-one that names the most kinds while rows keep 18px, then the fewest. On the 60-page folder
-the lines that leave their stack fell from 38 of 74 to 6. Measured in Chrome:
-3,424 marks in 26 islands at a 2.5 ms frame; 11,240 marks in 42 islands at 4.8 ms, every
-island named — the quiet overview paints in four fills, one per ink. The layout itself
-takes 36 ms at 10,000 files and 107 ms at 30,000 (`library-islands-layout.perf.test.ts`).
-The folder walk admits up to 100,000 tracked entries in both web and native paths.
-Beyond that ceiling or depth 12 it reports truncation. Folders are listed eight at a time,
-browser reads are pooled at 64 in flight, and the app reads Markdown 64 files per native call
-with eight calls in flight. This capacity bound does not promise a frame rate or an opening time
-for every 100,000-file folder. Gates:
-`tests/e2e/library/graph/library-graph-islands.spec.ts`. Decision:
-`docs/records/decisions/2026-09-18-library-islands-map-*.md`.
-
-**Four gestures, and a picture that is still until a hand moves it.** A drag on a mark
-moves the whole picture, the same pan a drag on the background makes — a mark has a place
-in its column, not a position a hand may improve (under the earlier force picture a drag
-pinned the mark and the springs pulled its neighbours after it). The wheel zooms
-about the pointer between half and four times the fit; dragging empty canvas pans;
-double-click and a `ChromeTile` in the canvas's corner fit the whole picture; a coarse
-pointer gets one-finger drag and pinch. Which gesture a press *is* is decided once, at
-pointerdown, past a 7px threshold. Hovering holds the mark, its neighbours and their edges
-at full ink and dims everything else to 35% over `--motion-fast`. Marks are graded by
-degree inside a band that follows the canvas (below), edges are quadratic bows deeper the
-longer they run, and every mark clears a halo of the canvas ground one line width wide. Under `prefers-reduced-motion` there is no settle: the
-simulation is run to rest synchronously and drawn once, and
-`tests/e2e/library/graph/library-graph-alive.spec.ts` proves the canvas is byte-identical frame to frame.
-
-**Hover changes ink, never position, and a settled picture stops the loop** (2026-09-08).
-The canvas used to keep a 0.28px / 7.2s **ambient drift** after it settled, repainted one
-frame in four so it would never read as a frozen image. The owner looked at it in the
-installed app — *"why does it wriggle whenever the mouse is on the graph? … get rid of that
-effect"* — and it is gone: no phase, no clock, no per-frame offset. Measured at 1400×860 on
-the seeded folder, three idle seconds went from **362 `requestAnimationFrame` callbacks and
-0.74px of travel to 0 callbacks and a byte-identical bitmap**, and a slow hover across the
-canvas from 0.58px of mark movement to **0px**. What is left wakes the loop only for what a
-person did: hover, focus and selection for their dim ramp; drag, release, resize and a
-changed folder for the physics.
-
-**The caption row was the larger half of that**, and it was invisible at the width it was
-built at. The line under the canvas swaps the legend sentence for a description of the
-pointed-at mark, and the two are different lengths: measured on 2026-09-08, at 1040×720,
-768 and 390 the legend wraps to two lines and the description does not, so the row lost
-20px and the `flex-1` canvas above it **grew by a whole line-height the instant a pointer
-touched a dot**, re-fitted, and moved every mark — fifty times the ambient drift, on every
-hover, at every width except the one the picture was last measured at. Both sentences now
-lie in one grid cell, so the taller sets the row's height and the visible one never changes
-it; the canvas height delta across a hover is 0px at 1400, 1040, 768 and 390.
-`docs/DECISIONS.md` (2026-09-08) carries the reversal and what the 2026-09-07 record staked
-on the other answer; `tests/e2e/library/graph/library-graph-alive.spec.ts` owns the standing gate — a
-settled canvas that asks for a frame, or a mark that moves under a hovering pointer, fails
-it.
-
-**Three composition fixes came with it**, each measured on the same folder. An unattached
-mark's ring now starts on the **vertical**, where the fit has slack — the connected mass
-settles wider than its canvas, so one loose page at three o'clock used to stretch the
-picture to aspect 1.79 in a 1.25 box and leave a third of the height empty; vertical fill
-went 0.65 → 0.91 at 1400×860 and 0.49 → 0.89 at 1040×720, and the closest pair of marks
-gained 61 → 72px and 30 → 44px of clearance. The ring stands off the mass's **bounding
-box** rather than its centre of gravity, so the standoff is the distance the code states
-instead of the mass's longest half-span. And a standing name is now legible where the mesh
-is densest: it takes **its own mark's ink** (a source's name was set in the edge ink, 1.17:1
-from every line crossing it), it is stroked in a **2px** ground halo — wider than the 1.5px
-citation line that used to run through the glyphs — and it is shortened **in the middle**,
-so `volunteer-email-2026-09-02.txt` and `…-05.txt` no longer render as one identical
-`volunteer-email-2026-0…` on two different squares.
-
-**Each group of the folder gets a place, and the ink is sized to the canvas**
-(2026-09-12). The graph became the Library's home the same day, and the owner read the first
-frame of it as *"an ugly popup, very poor"*. A folder is usually not one graph — the owner's
-is four groups: two clusters, one page with its single source, and the files nobody has
-written up — and held in one field with one centre the only force with an opinion about where
-two *unconnected* groups go is mutual repulsion, whose answer is always the walls. Measured
-at 1512×901 on a 1088×819 canvas: three clusters at three walls, a **167px** horizontal band
-holding nothing, and **54%** of a fixed 6×4 grid occupied. (The 99.8% bounding-box fill
-reported at the same time is the number that cannot see it: four marks in four corners fill a
-box perfectly.)
-
-So the groups are **composed**. Each connected component is settled on its own by the same
-forces, its measured footprint is packed into a column of an arrangement shaped like the
-canvas, and its gravity is re-aimed at that place with cross-group repulsion removed;
-collision stays, so no mark ever sits on another, and every distance *inside* a group is
-still the springs', drawn at one uniform scale. Unattached files become one more group with a
-place of their own — a folder that is one connected mass keeps the ring around that mass, and
-that case measured better that way. The arrangement is searched for: every assignment of six
-groups or fewer to columns is placed, fitted to the canvas and scored on the grid it leaves
-empty, because four earlier forms of the search each optimised something other than what a
-person sees and each traded one folder's hole for another's. Measured after, on the same two
-fixtures and a sixty-mark folder at 1512×901 and 1040×720: occupancy **0.54 → 0.83**,
-**0.50 → 0.63**, **0.58 → 0.88**, **0.54 → 0.67**, and the tallest band **167 → 58px**,
-**226 → 80px**, **121 → 38px**, **139 → 58px**. Width filled on the sparsest folder went
-**0.62 → 1.00**. The sixty-mark folder is one component and is unchanged.
-
-The ink then follows the canvas rather than the 320px strip this graph was born in. The mark
-band grades from the room each mark has — the side of the square it would get if the canvas
-were split evenly between them — floored at the 10px top 2026-09-06 measured and capped at
-17px, where two marks citing one file would start to touch: twelve marks on 891,000 square
-pixels now wear **34px** where they wore 20. The two relation widths, the mark halo, the
-name's ground outline and the fit's own padding all scale with that band and never below the
-values they were measured at, so a dense folder keeps exactly the lines that shipped. A
-page's name takes the ramp step above a file's (`--text-body` against `--text-label`), read
-from CSS rather than copied, because the page is what somebody wrote and what this screen is
-for. And the canvas stands on the **map's own blueprint grid** (`--map-grid-minor` /
-`--map-grid-major`, 24px minor and 120px major in screen space, never moving), so the two
-canvases in this product share one floor. Every mark still clears the 3:1 non-text floor over
-the worst of that ground — page 12.77:1, source 5.74:1, concept and edge 4.90:1, the selected
-node 3.97:1 over a major grid line — and the grid is 1.07:1 from the canvas it rules.
-
-**A press opens a card beside the mark, and the picture shows where knowledge flows**
-(2026-09-12). A press used to leave for the page, which is the one thing a person cannot
-undo by looking: the owner, on this screen — *"when I click it just navigates straight to
-the page; I want a press to raise a popup that shows me something, and for the motion to
-show something like knowledge flowing."* A press now holds the neighbourhood's ink and hangs
-a ≤320px card off the mark, one gap clear of it and clamped inside the canvas — so it can
-reach neither the mark it belongs to nor the clauses above the picture, and it flips to the
-mark's other side, or below it, rather than spilling off an edge. The card says, in this
-order: the mark's own glyph, its name and its kind; one sentence (a page's `## Summary`
-opening sentence, a file's format · size · state, a concept's place); one facts line, amber
-the moment a citation cannot be vouched for; the marks at the other end of its relations with
-each one's state, five of them and a door to the rest; then the doors — `Open`, which is the
-commit the press used to be, `Ask for a redraft` where a stale page has something that could
-write one (the folder's existing Compile brief, not a second write path) and the sentence
-saying why where it has not, and `See it on the map` for a concept. Escape, a second press on
-the same mark, a press on the empty canvas and the card's own `✕` each close it and give the
-canvas its keyboard back; a double press is still the shortcut straight to the page.
-
-Three motions carry the direction, all bounded: while a card is open its **citations drift**
-from each original toward the write-up — one 9px dash period per 900ms canvas settle budget,
-measured at 10px/s, stalls 0 and cv 0.33 on a real 60fps recording sampled at 66ms; the
-**amber midpoint** of a citation the folder cannot vouch for breathes once per 1.8s while its
-card is open, and once for every standing dot as the home arrives; and a page Compile has
-just written **brightens** while its own citations drift once toward it. Under
-`prefers-reduced-motion` each becomes a still equivalent — a chevron on the line and a
-full-size amber dot — and the canvas is byte-identical frame to frame with a card open.
-Nothing else moves: at rest, and with a concept's card open, the loop asks for zero frames.
-The added frame cost is +0.05ms at 372 marks and +0.53ms at 992 (`< 2ms`, gated in
-`library-force-simulation.perf.test.ts`); in a browser a frame with a card open averages
-1.29–1.74ms at 372 marks. `tests/e2e/library/graph/library-graph-card.spec.ts` holds the geometry, the
-three ways out, both commits, which lines flow, the bounded arrival breath and the frame
-budget; `library-graph-card.test.ts` sweeps 1,638 mark positions for the two rules a
-screenshot cannot check — the card never covers its mark, and never leaves the canvas.
-
-**A stale citation is visible on a small folder and calm on a large one** (2026-09-13). Every
-unverified citation carries its amber dot at rest, at every window, up to **64 standing dots**;
-past that the picture stops repeating the fact and the band's `needs review` press says the
-number instead. The dots are still drawn for the citations a reader has in hand — the open
-card's own, the pointed-at mark's neighbourhood, and every one of them while that press is on,
-which lights both ends — and it is all or nothing above the cap,
-never a sample, so an undotted citation cannot be read as a fresh one. The budget is the
-canvas's own ink: the standing amber holds no more than **4%** of it at rest. Measured on the
-four picture fixtures at 1512x901, 1040x720 and 1920x1080: the three folders under the cap are
-unchanged pixel for pixel (the six-document folder keeps its 97 strict-amber pixels at 1512),
-and the three-hundred-source folder with 480 unverified citations goes from 5,202 amber pixels
-and 15.57% of its ink at the narrowest window to 0, with total graph ink down 9.5-22.4%.
+**The Library graph is retired** (2026-11-21). From 2026-09-06 to 2026-11-21 the Sources home
+drew the folder as a canvas: a force simulation, then columns of sources, pages and concepts,
+then past 400 marks a map of concept islands. The owner rejected both late pictures on
+2026-11-21, a column of empty source squares under a key of zeros and a disc of identical
+circles, and the work they showed has no concept to group by. `src/widgets/library-graph/`,
+its e2e specs, its `graph.*` copy and its page-halo ink were deleted with it; Git keeps the
+history, and graph review belongs to the map. Decision: `docs/records/decisions/2026-11-21-library-sources-home-replaces-graph-ae902a78-d4ff-4e23-b6f9-9e34382bff9a.md`.
 
 **The original and the write-up cross both ways** (2026-09-06). A wiki page's header names
 the action: one cited source is a single **View original** button carrying the file name;
@@ -1059,7 +862,7 @@ arrival 0.85 of the way in.
 **What left `/docs` on 2026-09-06**: Sources, Wiki, the doors, and the agent dock.
 What stayed: the review queue, recently changed, the tree, and the editor.
 
-**The wiki index uses readable horizontal rows** (2026-09-09). Titles get up to two lines, with a short freshness caption below. The selected page has an indigo edge; changed or unmeasured source evidence and invalid page format keep distinct amber markers and accessible explanations. Search remains a ranked list. Compile marks the list busy without suggesting per-page progress. The graph opens through a labelled action above the reader instead of compressing the document into a third column.
+**The wiki index uses readable horizontal rows** (2026-09-09). Titles get up to two lines, with a short freshness caption below. The selected page has an indigo edge; changed or unmeasured source evidence and invalid page format keep distinct amber markers and accessible explanations. Search remains a ranked list. Compile marks the list busy without suggesting per-page progress.
 
 A failed local model turn ends wiki compilation in the existing failure state with
 its diagnostic. It does not become an empty review card or an approval opportunity;

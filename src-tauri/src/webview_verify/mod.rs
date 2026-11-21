@@ -123,18 +123,37 @@ fn build_webview_verify_route_reset_script_for(route: &str, locales: &[&str]) ->
     )
 }
 
-/// `ONTOLOGY_ATLAS_VERIFY_VAULT` may list several folders separated by `::`; the first
-/// opens and all are planted in the recent list, because the nonPersistent store starts
-/// empty every launch and the launch chooser would otherwise be unreachable.
-fn build_webview_verify_vault_bootstrap_script(root_path: &str) -> String {
-    let mut roots = root_path
-        .split("::")
+/// `ONTOLOGY_ATLAS_VERIFY_VAULT` may list several folders separated by `::`.
+fn verify_vault_roots(raw: &str) -> Vec<&str> {
+    raw.split("::")
         .map(str::trim)
-        .filter(|part| !part.is_empty());
-    let primary = roots.next().unwrap_or(root_path);
-    let extra: Vec<&str> = roots.collect();
+        .filter(|part| !part.is_empty())
+        .collect()
+}
+
+/// The planted store record only names a folder, and `vault_grants` honours no folder
+/// the renderer names; without the grant the fixture restores as "grant needed" and
+/// every map route falls back to first run. Each root's verdict is printed so a refused
+/// fixture is reported as itself, not as a wrong route.
+fn grant_and_build_verify_vault_bootstrap(raw: &str) -> String {
+    for root in verify_vault_roots(raw) {
+        let verdict = match crate::vault_grants::grant_launch_vault_root(Path::new(root)) {
+            Ok(granted) => format!("root={} granted=true", granted.display()),
+            Err(reason) => format!("root={root} granted=false reason={reason}"),
+        };
+        write_verify_line(format!("[ontology-atlas-verify-vault] {verdict}"));
+    }
+    build_webview_verify_vault_bootstrap_script(raw)
+}
+
+/// The first folder opens and all are planted in the recent list, because the
+/// nonPersistent store starts empty every launch and the launch chooser would otherwise
+/// be unreachable.
+fn build_webview_verify_vault_bootstrap_script(root_path: &str) -> String {
+    let roots = verify_vault_roots(root_path);
+    let primary = roots.first().copied().unwrap_or(root_path);
     let recent_rows = std::iter::once(primary)
-        .chain(extra.iter().copied())
+        .chain(roots.iter().skip(1).copied())
         .map(|path| {
             let name = Path::new(path)
                 .file_name()
@@ -338,7 +357,7 @@ pub(crate) fn spawn_webview_verify(window: &tauri::WebviewWindow) {
     let verify_acp_install = std::env::var_os(WEBVIEW_VERIFY_ACP_INSTALL_ENV).is_some();
     tauri::async_runtime::spawn(async move {
         if let Some(vault_path) = verify_vault {
-            let bootstrap_script = build_webview_verify_vault_bootstrap_script(&vault_path);
+            let bootstrap_script = grant_and_build_verify_vault_bootstrap(&vault_path);
             let _ = verify_window.eval(&bootstrap_script);
             std::thread::sleep(Duration::from_millis(WEBVIEW_VERIFY_FIXTURE_SETTLE_MS));
         }
@@ -583,6 +602,38 @@ mod tests {
         // No counts: the harness never read those folders.
         assert!(!script.contains("docCount"));
         assert!(!script.contains("conceptCount"));
+    }
+
+    /// A planted but ungranted fixture restored as "grant needed", so `/ko/topology/`
+    /// fell back to first run whenever the person had never picked that exact folder.
+    #[test]
+    fn every_fixture_folder_planted_in_the_webview_is_granted_for_the_launch() {
+        let base = std::env::temp_dir().join(format!("atlas-verify-grant-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let map = base.join("atlas-map");
+        let wiki = base.join("atlas-wiki");
+        std::fs::create_dir_all(&map).unwrap();
+        std::fs::create_dir_all(&wiki).unwrap();
+        let _scope = crate::vault_grants::EnforcedScope::granting(&[]);
+        let map_path = map.to_string_lossy().to_string();
+        let wiki_path = wiki.to_string_lossy().to_string();
+        assert_eq!(
+            crate::canonical_root(&map_path).unwrap_err(),
+            "vault-root-not-granted"
+        );
+
+        let script = grant_and_build_verify_vault_bootstrap(&format!("{map_path}::{wiki_path}"));
+
+        assert!(script.contains("\"docs-vault:fs-handle:current\""));
+        assert!(
+            crate::canonical_root(&map_path).is_ok(),
+            "the folder that opens"
+        );
+        assert!(
+            crate::canonical_root(&wiki_path).is_ok(),
+            "the chooser's other folder"
+        );
+        std::fs::remove_dir_all(base).unwrap();
     }
 
     #[test]

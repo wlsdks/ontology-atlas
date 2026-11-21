@@ -54,13 +54,23 @@ async function rowHeight(page: Page): Promise<number> {
   return line(page).evaluate((element) => element.getBoundingClientRect().height);
 }
 
+const stageSteps = (page: Page) => expect.poll(() => page.getByTestId('meaning-stage-steps').locator('[data-step-state]').evaluateAll((steps) => steps.map((step) => step.getAttribute('data-step-state'))));
+
+async function stageHeight(page: Page): Promise<number> {
+  const stage = page.getByTestId('meaning-run-stage');
+  await expect(stage).toBeVisible();
+  await expect.poll(() => stage.evaluate((element) => element.parentElement!.getAnimations({ subtree: false }).length + (element.parentElement!.style.height && element.parentElement!.style.height !== 'auto' ? 1 : 0))).toBe(0);
+  return stage.evaluate((element) => element.getBoundingClientRect().height);
+}
+
 async function emit(harness: LibraryWorkHarness, page: Page, status: VectorStatus, state: string) {
   await harness.emitVectorStatus(page, status);
   await expect(line(page)).toHaveAttribute('data-state', state);
 }
 
 /** The text of the element just before Stop: a press at the row's end has no separator. */
-const textBeforeStop = (page: Page) => page.getByTestId('meaning-desk-stop')
+// The sentence before stays a moment as it fades; the one coming in is last.
+const textBeforeStop = (page: Page) => page.getByTestId('meaning-desk-stop').last()
   .evaluate((stop) => stop.previousElementSibling?.textContent?.trim() ?? null);
 
 test('offers setup at rest and returns focus to the press when the dialog is dismissed', async ({ page }) => {
@@ -148,6 +158,8 @@ for (const [name, probe, check] of VARIANTS) {
 
 test('closes on the primary press in that frame, stores the choice and follows the job at one height', async ({ page }) => {
   const harness = await openDesk(page);
+  // The line keeps one height at rest; the stage that opens below it for the job keeps its own.
+  const heights = [await rowHeight(page)];
   await page.getByTestId('meaning-desk-setup').click();
   await expect(page.getByTestId('meaning-setup-primary')).toBeEnabled();
   const closedInFrame = await page.evaluate(() => new Promise<boolean>((resolve) => {
@@ -162,25 +174,28 @@ test('closes on the primary press in that frame, stores the choice and follows t
   expect(prepares.map((call) => call.params)).toEqual([{ rootPath: VAULT_ROOT, enabled: true, source: { kind: 'builtin' }, download: true }]);
   expect(JSON.parse(await page.evaluate((key) => window.localStorage.getItem(key) ?? 'null', CHOICE_KEY))).toEqual({ [VAULT_ROOT]: { source: { kind: 'builtin' }, paused: false } });
 
-  const heights = [await rowHeight(page)];
+  const stageHeights: number[] = [];
   await emit(harness, page, LIBRARY_VECTOR_SCRIPT.downloading, 'modelDownloading');
   await expect(line(page)).toContainText('Downloading the model · 32% · 734 MB of 2.3 GB');
   await expect(page.getByTestId('meaning-desk-ring')).toHaveAttribute('data-ring-measure', 'bytes');
-  heights.push(await rowHeight(page));
+  await stageSteps(page).toEqual(['now', 'next', 'next']);
+  stageHeights.push(await stageHeight(page));
   await emit(harness, page, LIBRARY_VECTOR_SCRIPT.converting, 'modelConverting');
   await expect(line(page)).toContainText('Preparing the model for this computer');
   await expect(page.getByTestId('meaning-desk-ring')).toHaveAttribute('data-ring-measure', 'bytes');
-  heights.push(await rowHeight(page));
+  await stageSteps(page).toEqual(['done', 'now', 'next']);
+  stageHeights.push(await stageHeight(page));
   await emit(harness, page, LIBRARY_VECTOR_SCRIPT.preparing, 'preparing');
   await expect(line(page)).toContainText('Preparing search by meaning · 312 of 2,000 files');
   await expect(page.getByTestId('meaning-desk-minutes')).toHaveCount(0);
   await expect(page.getByTestId('meaning-desk-file')).toHaveText('architecture.md');
   await expect(page.getByTestId('meaning-desk-file')).toHaveAccessibleDescription('wiki/architecture.md');
-  heights.push(await rowHeight(page));
+  await stageSteps(page).toEqual(['done', 'done', 'now']);
+  stageHeights.push(await stageHeight(page));
   await emit(harness, page, LIBRARY_VECTOR_SCRIPT.preparingMeasured, 'preparing');
   await expect(page.getByTestId('meaning-desk-minutes')).toHaveText('about 6 min left');
   expect(await textBeforeStop(page)).not.toBe('·');
-  heights.push(await rowHeight(page));
+  stageHeights.push(await stageHeight(page));
   await emit(harness, page, LIBRARY_VECTOR_SCRIPT.updating, 'updating');
   await expect(line(page)).toContainText('Updating 3 changed files for search by meaning');
   // Under ten changed files the update is one quiet sentence.
@@ -194,15 +209,18 @@ test('closes on the primary press in that frame, stores the choice and follows t
   expect(await textBeforeStop(page)).not.toBe('·');
   await expect(page.getByTestId('meaning-desk-file')).toContainText('returns-review.md');
   await expect(page.getByTestId('meaning-desk-file')).toHaveAccessibleDescription('sources/field-notes/2026-04-warehouse-returns-review.md');
-  heights.push(await rowHeight(page));
+  stageHeights.push(await stageHeight(page));
   await emit(harness, page, LIBRARY_VECTOR_SCRIPT.ready, 'ready');
   // The ready line says how the desk searches; the file count is progress and stays in Settings.
   // The sentence before it fades out beside it; read the one that stays.
   await expect(page.getByTestId('meaning-desk-sentence')).toHaveCount(1);
   await expect(page.getByTestId('meaning-desk-sentence')).toHaveText('Searching by words and by meaning');
   heights.push(await rowHeight(page));
-  test.info().annotations.push({ type: 'row heights', description: heights.join(', ') });
+  // An update that ends is no first preparation: nothing is celebrated.
+  await expect(page.getByTestId('meaning-run-stage')).toHaveCount(0);
+  test.info().annotations.push({ type: 'row heights', description: `${heights.join(', ')} · stage ${stageHeights.join(', ')}` });
   expect(new Set(heights).size).toBe(1);
+  expect(new Set(stageHeights).size).toBe(1);
 });
 
 test('stops into Resume, keeps the pause across a reload and resumes with the stored source', async ({ page }) => {
@@ -240,6 +258,23 @@ test('Resume on a folder whose model is gone downloads nothing and offers Downlo
 
   await page.getByTestId('meaning-desk-downloadAgain').click();
   await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Download and prepare');
+  expect(await downloads()).toEqual([]);
+  await page.getByTestId('meaning-setup-primary').click();
+  await expect.poll(async () => (await downloads()).length).toBe(1);
+  await expect(line(page)).toHaveAttribute('data-state', 'modelDownloading');
+});
+
+test('a download stopped part way says what it kept, and Continue the download asks in the dialog before it downloads', async ({ page }) => {
+  const harness = await openDesk(page, {}, { source: { kind: 'builtin' }, paused: false });
+  const downloads = async () => (await vectorCalls(harness, page, 'vault_vectors_prepare'))
+    .filter((call) => (call.params as { download?: boolean }).download === true);
+  await emit(harness, page, LIBRARY_VECTOR_SCRIPT.downloading, 'modelDownloading');
+  await page.getByTestId('meaning-desk-stop').last().click();
+  await expect(line(page)).toHaveAttribute('data-state', 'modelDownloadPaused');
+  await expect(page.getByTestId('meaning-desk-sentence')).toHaveText(/The model download stopped at 734 MB of 2\.3 GB\. What is downloaded is kept\./);
+
+  await page.getByTestId('meaning-desk-continueDownload').click();
+  await expect(page.getByTestId('meaning-setup-primary')).toBeVisible();
   expect(await downloads()).toEqual([]);
   await page.getByTestId('meaning-setup-primary').click();
   await expect.poll(async () => (await downloads()).length).toBe(1);
@@ -394,7 +429,7 @@ test('keeps the line within two lines at 1040 wide with every press reachable', 
     await expect(button).toBeVisible();
     await page.waitForTimeout(400); // measurement window: the sentence cross-over settles before hit-testing.
     const { lines, hits } = await button.evaluate((element) => {
-      const row = element.closest('[data-testid="meaning-desk-line"]')!;
+      const row = element.closest('[data-testid="meaning-desk-facts"]') ?? element.closest('[data-testid="meaning-desk-line"]')!;
       const lineHeight = parseFloat(getComputedStyle(row).lineHeight);
       const box = element.getBoundingClientRect();
       const points = [[0.5, 0.5], [0.15, 0.3], [0.85, 0.3], [0.15, 0.7], [0.85, 0.7]];
@@ -421,7 +456,11 @@ async function recordRing(page: Page): Promise<{ values: number[]; events: numbe
     // The arc as drawn: a CSS transition moves it between values, so the computed offset is read.
     const sample = () => {
       const arc = document.querySelector('[data-testid="meaning-desk-ring-arc"]');
-      if (arc) values.push(Math.round((1 - parseFloat(getComputedStyle(arc).strokeDashoffset)) * 1e4) / 1e4);
+      // The stage's bar scales along x; the line's ring offsets its stroke.
+      if (arc) {
+        const drawn = arc instanceof SVGElement ? 1 - parseFloat(getComputedStyle(arc).strokeDashoffset) : new DOMMatrix(getComputedStyle(arc).transform).a;
+        values.push(Math.round(drawn * 1e4) / 1e4);
+      }
       if (running) requestAnimationFrame(sample);
     };
     requestAnimationFrame(sample);
@@ -539,4 +578,31 @@ test('recommends and opens on Ollama bge-m3 when the built-in model is not downl
   await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Download and prepare');
   await page.getByTestId('meaning-setup-cancel').click();
   expect(await vectorCalls(harness, page, 'vault_vectors_prepare')).toEqual([]);
+});
+
+test('a first preparation that finishes in view says what is ready, and Ask a question hands over to the field', async ({ page }) => {
+  const harness = await openDesk(page, {}, { source: { kind: 'builtin' }, paused: false });
+  await emit(harness, page, LIBRARY_VECTOR_SCRIPT.preparing, 'preparing');
+  await expect(page.getByTestId('meaning-run-stage')).toHaveAttribute('data-stage-step', 'read');
+  await emit(harness, page, LIBRARY_VECTOR_SCRIPT.ready, 'ready');
+  await expect(page.getByTestId('meaning-stage-done')).toHaveText('Search by meaning is ready · 9,800 passages in 2,000 files now carry their meaning. Ask in your own words.');
+  await expect(page.getByTestId('meaning-stage-steps').locator('[data-step-state="done"]')).toHaveCount(3);
+  await page.getByTestId('meaning-stage-ask').click();
+  await expect(page.getByTestId('question-desk-input')).toBeFocused();
+  await expect(page.getByTestId('meaning-run-stage')).toHaveCount(0);
+  await expect(page.getByTestId('meaning-desk-sentence')).toHaveText('Searching by words and by meaning');
+});
+
+test('a folder found ready is not celebrated', async ({ page }) => {
+  await openDesk(page, { status: LIBRARY_VECTOR_SCRIPT.ready }, { source: { kind: 'builtin' }, paused: false });
+  await expect(line(page)).toHaveAttribute('data-state', 'ready');
+  await expect(page.getByTestId('meaning-run-stage')).toHaveCount(0);
+});
+
+test('a resumed update that first reads as a preparation is not celebrated when it ends', async ({ page }) => {
+  const harness = await openDesk(page, {}, { source: { kind: 'builtin' }, paused: false });
+  await emit(harness, page, { ...LIBRARY_VECTOR_SCRIPT.updatingMany, updating: false }, 'preparing');
+  await emit(harness, page, LIBRARY_VECTOR_SCRIPT.updatingMany, 'updating');
+  await emit(harness, page, LIBRARY_VECTOR_SCRIPT.ready, 'ready');
+  await expect(page.getByTestId('meaning-run-stage')).toHaveCount(0);
 });

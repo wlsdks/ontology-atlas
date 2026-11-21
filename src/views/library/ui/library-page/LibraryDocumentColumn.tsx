@@ -28,14 +28,13 @@ import type { LibrarySelection, LibraryHomeSurface } from "./library-page-state"
 import type { useLibraryReader } from "./use-library-reader";
 import type { useLibrarySources } from "./use-library-sources";
 import type { useLibraryTurns } from "./use-library-turns";
-import type { useLibraryGraphCards } from "./use-library-graph-cards";
 import type { useLibraryIndexColumn } from "./use-library-index-column";
 import type { useWikiTemplateProblems } from "./use-wiki-template-problems";
 
 export function LibraryDocumentColumn({
   t, locale, nativeVaultRootPath, selected, setHomeSurface, setSourceCitation, skipReaderFocusRef,
   turnRunning, lintRunning, choose, busy, model, retainedAnswers, knownOriginalPaths, agent,
-  answerRefresh, compileSources, reader, sources, turns, graphCards, indexColumn, templateProblems,
+  answerRefresh, compileSources, reader, sources, turns, agentDoor, indexColumn, templateProblems,
   reducedMotion, landingRef, onOpenLinkedPage, onOpenConcept,
 }: {
   t: ReturnType<typeof useTranslations<"library">>;
@@ -59,7 +58,8 @@ export function LibraryDocumentColumn({
   reader: ReturnType<typeof useLibraryReader>;
   sources: ReturnType<typeof useLibrarySources>;
   turns: ReturnType<typeof useLibraryTurns>;
-  graphCards: ReturnType<typeof useLibraryGraphCards>;
+  /** The app has no agent to write with, so a blocked write names the agents page. */
+  agentDoor: boolean;
   indexColumn: ReturnType<typeof useLibraryIndexColumn>;
   templateProblems: ReturnType<typeof useWikiTemplateProblems>;
   reducedMotion: boolean;
@@ -82,7 +82,6 @@ export function LibraryDocumentColumn({
     hasOntology, handlePropose, handleLint, compileBlocked, compileTransfer, agentOnlyReason,
     checkRun, checkFolder,
   } = turns;
-  const { agentDoor } = graphCards;
   const { indexSegment, indexCollapsed } = indexColumn;
   const { wikiProblems, wikiPageTitle, wikiProblemDoors, wikiProblemFix } = templateProblems;
   const pageSlug = selectedWikiDoc?.slug ?? null;
