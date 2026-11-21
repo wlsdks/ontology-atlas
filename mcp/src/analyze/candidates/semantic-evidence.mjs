@@ -22,13 +22,13 @@ import {
   SEMANTIC_EVIDENCE_SEEDS,
   WORKSPACE_FOLDERS,
   WORKSPACE_SEMANTIC_EVIDENCE_MAX_MEMBERS,
-} from './constants.mjs';
+} from '../constants.mjs';
 import {
   cleanHeadingLabel,
   headingLevelForAdornment,
   humanize,
   isHeadingAdornment,
-} from './text.mjs';
+} from '../text.mjs';
 import {
   packageContractPathIssue,
   pathResolvesInsideRoot,

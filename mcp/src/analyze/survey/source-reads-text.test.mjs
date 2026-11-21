@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 
-import { readSourceEvidence } from '../evidence-search/source-evidence.mjs';
+import { readSourceEvidence } from '../../evidence-search/source-evidence.mjs';
 import { SURVEY_RESPONSE_CHARS } from './breadth-map.mjs';
 import { fitSourceReads, renderSourceReads } from './source-reads-text.mjs';
 

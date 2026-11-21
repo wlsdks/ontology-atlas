@@ -7,9 +7,9 @@
  * escaped (`repo-text.mjs`); code sits inside a fence no line of it can close.
  */
 
-import { outlineLine } from '../evidence-search/source-evidence.mjs';
+import { outlineLine } from '../../evidence-search/source-evidence.mjs';
 import { SURVEY_RESPONSE_CHARS } from './breadth-map.mjs';
-import { repoText as t } from './repo-text.mjs';
+import { repoText as t } from '../repo-text.mjs';
 
 function fenced(text) {
   const longest = Math.max(0, ...[...String(text).matchAll(/`+/g)].map((match) => match[0].length));

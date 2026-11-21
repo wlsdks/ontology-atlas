@@ -22,8 +22,8 @@ import {
   RUST_MODULES_PER_TARGET_LIMIT,
   RUST_SOURCE_MAX_BYTES,
   SOURCE_FOLDERS,
-} from './constants.mjs';
-import { forwardFinder, humanize, slugify } from './text.mjs';
+} from '../constants.mjs';
+import { forwardFinder, humanize, slugify } from '../text.mjs';
 import {
   packageContractPathIssue,
   pathResolvesInsideRoot,

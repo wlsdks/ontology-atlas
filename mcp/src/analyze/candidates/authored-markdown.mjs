@@ -1,5 +1,5 @@
-import { markdownTree } from '../markdown-tree.mjs';
-import { cleanHeadingLabel } from './text.mjs';
+import { markdownTree } from '../../markdown-tree.mjs';
+import { cleanHeadingLabel } from '../text.mjs';
 
 export function authoredMarkdownLines(text) {
   const rawLines = text.split(/\r\n|\r|\n/);

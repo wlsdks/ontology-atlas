@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { analyzeRepoStructure } from './analyze.mjs';
-import { detectDomainsFromReadme } from './analyze/project-detection.mjs';
+import { detectDomainsFromReadme } from './analyze/candidates/project-detection.mjs';
 import { readSourceEvidence } from './evidence-search/source-evidence.mjs';
 
 function withAdversarialRepo(readme, extraSetup = () => {}) {

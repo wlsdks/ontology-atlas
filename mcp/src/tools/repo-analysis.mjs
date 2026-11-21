@@ -4,11 +4,11 @@
  * guard that keeps them inside the vault's own repository.
  */
 
-import { cachedSurvey } from '../analyze/breadth-map.mjs';
-import { fitSourceReads, renderSourceReads } from '../analyze/source-reads-text.mjs';
+import { cachedSurvey } from '../analyze/survey/breadth-map.mjs';
+import { fitSourceReads, renderSourceReads } from '../analyze/survey/source-reads-text.mjs';
 import { noteReadFamilies } from '../construction/read-family.mjs';
 import { recordSourceEvidence, sessionReads } from '../construction/session-reads.mjs';
-import { analyzeRepoStructure } from '../analyze/repo-structure.mjs';
+import { analyzeRepoStructure } from '../analyze/candidates/repo-structure.mjs';
 import {
   buildArchitectureBrief,
   buildArchitectureMeasuredStamp,

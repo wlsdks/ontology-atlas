@@ -2,7 +2,7 @@
 // the sentence that witnesses each, what is in the vault versus proposed, and the
 // extraction contract its competency questions form.
 
-import { COMPETENCY_QUESTION_CONTRACTS } from '../meaning/meaning-evaluation.mjs';
+import { COMPETENCY_QUESTION_CONTRACTS } from '../../meaning/meaning-evaluation.mjs';
 import {
   BUSINESS_CAPABILITY_CLUES,
   GENERIC_BUSINESS_CAPABILITY_CANDIDATE_LIMIT,
@@ -10,14 +10,14 @@ import {
   GENERIC_NARRATIVE_CAPABILITY_CLUES,
   IMPLEMENTATION_SHAPED_CAPABILITY_TOKENS,
   STARTER_ONTOLOGY_SLUGS,
-} from './constants.mjs';
+} from '../constants.mjs';
 import {
   matchDomainSlug,
   pathSemanticTokens,
   semanticTokens,
   tailSlug,
   uniqueStrings,
-} from './text.mjs';
+} from '../text.mjs';
 
 export function deriveBusinessCapabilityCandidates({
   domains,

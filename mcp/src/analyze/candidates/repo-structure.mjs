@@ -4,10 +4,10 @@
 
 import { readdirSync, statSync, existsSync } from 'node:fs';
 import { join, basename, relative } from 'node:path';
-import { validateMeaningProposalAgainstAnalysis } from '../meaning/meaning-evaluation.mjs';
-import { evaluateConstructionLifecycle } from '../construction/construction-lifecycle.mjs';
-import { discoverDeclaredWorkspacePackages } from '../infer-imports/workspace-packages.mjs';
-import { collectRustFeatureConfigurationEvidence } from '../rust-feature-evidence.mjs';
+import { validateMeaningProposalAgainstAnalysis } from '../../meaning/meaning-evaluation.mjs';
+import { evaluateConstructionLifecycle } from '../../construction/construction-lifecycle.mjs';
+import { discoverDeclaredWorkspacePackages } from '../../infer-imports/workspace-packages.mjs';
+import { collectRustFeatureConfigurationEvidence } from '../../rust-feature-evidence.mjs';
 import {
   BUSINESS_CAPABILITY_CLUES,
   DEFAULT_IGNORE,
@@ -21,8 +21,8 @@ import {
   SOURCE_LAYOUT_CODE_FILE,
   SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT,
   SOURCE_LAYOUT_COORDINATION_ROLE,
-} from './constants.mjs';
-import { humanize, matchDomainSlug, slugify } from './text.mjs';
+} from '../constants.mjs';
+import { humanize, matchDomainSlug, slugify } from '../text.mjs';
 import {
   optionalNonNegativeInteger,
   optionalStringArray,

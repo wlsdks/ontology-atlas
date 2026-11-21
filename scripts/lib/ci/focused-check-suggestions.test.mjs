@@ -86,7 +86,7 @@ describe('focused check suggestions', () => {
       ['mcp/src/tools/repo-analysis.mjs', 'pnpm integration:cli:repo-analysis'],
       ['mcp/src/construction/construction-card.mjs', 'pnpm dogfood:verify'],
       ['mcp/src/server/instructions.mjs', 'pnpm dogfood:verify'],
-      ['mcp/src/analyze/repo-structure.mjs', 'pnpm integration:cli:repo-analysis'],
+      ['mcp/src/analyze/candidates/repo-structure.mjs', 'pnpm integration:cli:repo-analysis'],
       ['cli/src/commands/repo-analysis/index.mjs', 'pnpm integration:cli:repo-analysis'],
       ['.claude/skills/ontology-field-trial/scripts/acp-replay.sh', 'pnpm exec vitest run tests/contract/agent-instructions/field-trial-replay-scripts.contract.test.ts'],
       ['scripts/lib/benchmark/construction-prompts.mjs', 'pnpm exec vitest run tests/contract/agent-instructions/field-trial-replay-scripts.contract.test.ts'],

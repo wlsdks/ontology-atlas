@@ -13,7 +13,7 @@ import {
   NODE_PACKAGE_EXPORT_LIMIT,
   NODE_PACKAGE_SCRIPT_LIMIT,
   SEMANTIC_EVIDENCE_MAX_EXCERPT,
-} from './constants.mjs';
+} from '../constants.mjs';
 
 export function extractPythonSetupPackageContract(text) {
   const packageFields = new Map();

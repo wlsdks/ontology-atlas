@@ -6,8 +6,8 @@
 import { lstatSync, readFileSync } from 'node:fs';
 import { isAbsolute, join, posix } from 'node:path';
 
-import { pathResolvesInsideRoot } from '../infer-imports/path-confinement.mjs';
-import { namesHiddenOrCredentialFile } from '../evidence-search/source-evidence.mjs';
+import { pathResolvesInsideRoot } from '../../infer-imports/path-confinement.mjs';
+import { namesHiddenOrCredentialFile } from '../../evidence-search/source-evidence.mjs';
 
 const KEY_FILE = /\.(?:pem|key|p12|pfx|jks|keystore)$/i;
 
