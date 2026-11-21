@@ -4,7 +4,8 @@ import { normalizeCycle } from './topology-shape.mjs';
 /**
  * Every simple cycle over the allowed relation types, up to `maxDepth` hops, with the shortest
  * `limit` of them kept. Johnson's minimum-vertex rule finds each cycle once, from its lowest-ranked
- * node, in O(searchBudget · (out-degree + log limit)); a hit budget is reported, never hidden.
+ * node. Setup sorts the nodes and indexes the edges, O(V log V + E); the search then costs
+ * O(searchBudget · (out-degree + log limit)). A hit budget is reported, never hidden.
  */
 export function findDependencyCycles({ nodes, outgoing, typeSet, maxDepth, limit, searchBudget }) {
   const rank = new Map(

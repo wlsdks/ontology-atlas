@@ -2,7 +2,7 @@ import { countEdges, summarizeNode, typeAllowed } from '../query-operation/query
 
 /**
  * The connected groups of `nodes`, largest first, each with its slugs sorted. `neighborsOf(slug)`
- * yields rows with a `next` slug. Breadth-first from every unvisited node: O(nodes + edges).
+ * yields rows with a `next` slug. Breadth-first from every unvisited node, then sorted: O(V log V + E).
  */
 export function connectedComponents(nodes, neighborsOf) {
   const visited = new Set();
