@@ -1225,6 +1225,7 @@ fn import_offered(vault: &str, keys: Vec<String>) -> Vec<SourceImportResult> {
     .unwrap()
 }
 
+#[cfg(unix)]
 fn files_under(root: &Path) -> Vec<PathBuf> {
     let mut found = Vec::new();
     let mut stack = vec![root.to_path_buf()];
