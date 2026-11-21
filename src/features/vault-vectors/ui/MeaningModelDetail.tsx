@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import { formatSize } from '@/shared/lib/format-size';
-import { MODEL_DOWNLOAD_HOSTS, type VectorProbe, type VectorSource } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import { MODEL_DOWNLOAD_HOSTS, type VectorProbe, type VectorSource } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import { Button } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { BUILTIN_MODEL_NAME, isDeletable, isDiskShort, isLive, isSwitching, primaryPress, type ModelChoice } from '../model/model-choices';

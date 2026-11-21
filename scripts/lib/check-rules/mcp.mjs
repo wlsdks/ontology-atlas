@@ -38,7 +38,7 @@ export const rules = [
     reason: 'the committed MCP connector catalogue or its generator changed',
     matches: [
       /^scripts\/registry-snapshots\/build-mcp-catalogue\.(?:mjs|test\.mjs)$/,
-      /^src\/shared\/config\/mcp-catalogue(?:\.generated)?\.ts$/,
+      /^src\/shared\/config\/mcp\/mcp-catalogue(?:\.generated)?\.ts$/,
     ],
   },
   {

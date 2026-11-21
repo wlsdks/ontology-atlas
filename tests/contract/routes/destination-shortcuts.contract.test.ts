@@ -138,7 +138,7 @@ describe("the rail, the sheet and the shell read the same table", () => {
 
   it("the library inherits the docs drawer and leaves no stale door", () => {
     expect(DESTINATION_IDS).toContain("library");
-    const sidebar = read("src/views/docs-vault/ui/parts/DocsSidebarBody.tsx");
+    const sidebar = read("src/views/docs-vault/ui/parts/sidebar/DocsSidebarBody.tsx");
     expect(sidebar, "the old library navigation row is left inside the merged screen").not.toContain(
       'data-testid="docs-sidebar-library-link"',
     );

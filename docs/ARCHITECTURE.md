@@ -276,7 +276,7 @@ when its stdin closes, and after five idle minutes of its own. The WebView reach
 `_prepare`, `_stop`, `_warm`, `_search`, `_delete`, `_delete_model` and
 `_reveal_model`
 (`src-tauri/src/vault/vectors/commands.rs`, bridged by
-`src/shared/lib/vault-folder/tauri-vault-vectors.ts`), and follows each folder's
+`src/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors.ts`), and follows each folder's
 job through the `vault-vectors-status` event. The web playground has none.
 One store in `src/features/vault-vectors/` keeps each folder's last status for
 the Wiki desk; the shell's adapter `src/app/providers/MeaningRunSeat.tsx`
@@ -372,7 +372,7 @@ addresses and any URL that writes or executes remain out, and
 
 **One page policy for both.** A static host sends no headers, so the production export
 carries its Content-Security-Policy as a meta tag in the root layout
-(`src/shared/config/web-content-security-policy.ts`): no remote image, connection,
+(`src/shared/config/site/web-content-security-policy.ts`): no remote image, connection,
 plugin, `<base>` or form target, and scripts from the page's own origin (inline ones
 included until the export's inline scripts are hashed). The app loads the same HTML
 under its own policy (`tauri.conf.json`), and both apply there, so the web policy allows

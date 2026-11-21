@@ -64,7 +64,7 @@ vi.mock('@/shared/lib/connectors/tauri-connector-secrets', async () => {
   };
 });
 
-import { MCP_CATALOGUE } from '@/shared/config/mcp-catalogue';
+import { MCP_CATALOGUE } from '@/shared/config/mcp/mcp-catalogue';
 import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
 
 import { ConnectorsPanel } from './ConnectorsPanel';

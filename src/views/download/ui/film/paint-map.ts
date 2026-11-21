@@ -1,6 +1,6 @@
-import { FLIGHT, LIT, arcMidpointMs, flight, span } from '../../lib/film/film-acts';
+import { FLIGHT, LIT, arcMidpointMs, flight, span } from '../../lib/film/timeline/film-acts';
 import { bowControl, quadAt, subPolyline } from '../../lib/film/film-geometry';
-import { clamp01, easeInOut, easeOut, lerp } from '../../lib/film/film-kit';
+import { clamp01, easeInOut, easeOut, lerp } from '../../lib/film/timeline/film-easing';
 import { mix, rgba } from './film-colors';
 import { TAU, capMark, disc, domainMark, dot, drawLabel, light, pointer, ring } from './film-marks';
 import type { FilmPaintScene } from './film-paint-scene';

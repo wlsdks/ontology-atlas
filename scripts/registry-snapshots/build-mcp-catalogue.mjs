@@ -10,7 +10,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
-const OUT = join(ROOT, 'src', 'shared', 'config', 'mcp-catalogue.generated.ts');
+const OUT = join(ROOT, 'src', 'shared', 'config', 'mcp', 'mcp-catalogue.generated.ts');
 const REGISTRY_SNAPSHOT = join(ROOT, 'scripts', 'data', 'mcp-registry-snapshot.json');
 const REGISTRY = 'https://registry.modelcontextprotocol.io/v0/servers';
 const REGISTRY_TIMEOUT_MS = 15_000;

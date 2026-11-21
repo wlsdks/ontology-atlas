@@ -6,7 +6,7 @@ import koMessages from '../../../../messages/ko.json';
 import { DocsVaultUnifiedPalette } from './DocsVaultUnifiedPalette';
 import { buildBodyEntry, type DocsBodyIndex } from '../lib/body-index';
 import type { VaultDoc } from '@/entities/docs-vault';
-import type { VaultIndexStatus } from '@/shared/lib/vault-folder/tauri-vault-index';
+import type { VaultIndexStatus } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
 
 const textSearch = vi.hoisted(() => ({
   bodyIndex: undefined as DocsBodyIndex | undefined,

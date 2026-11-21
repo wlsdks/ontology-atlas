@@ -1,5 +1,5 @@
 import type { Pt, Rect } from '../../lib/film/film-geometry';
-import type { FilmLabel } from '../../lib/film/film-map-labels';
+import type { FilmLabel } from '../../lib/film/map/film-map-labels';
 import type { FilmPaintScene, FrameRecord } from './film-paint-scene';
 
 export interface FilmProbe {

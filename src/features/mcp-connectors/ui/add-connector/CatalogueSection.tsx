@@ -9,7 +9,7 @@ import {
   variantRuns,
   type CatalogueEntry,
   type CatalogueVariant,
-} from '@/shared/config/mcp-catalogue';
+} from '@/shared/config/mcp/mcp-catalogue';
 import {
   runtimePath,
   type ResolvedRuntime,

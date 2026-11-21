@@ -1,4 +1,4 @@
-import type { VectorSource, VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import type { VectorSource, VectorStatus } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import { UPDATE_RING_FILES } from '../desk-line';
 
 /** The work a preparation does, in order; a runner's model is Ollama's, so only `read` is Atlas's. */

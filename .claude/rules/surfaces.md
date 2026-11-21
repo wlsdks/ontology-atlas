@@ -6,7 +6,7 @@ paths:
   - "src-tauri/**"
   - "tests/e2e/web-surface-smoke.spec.ts"
   - "tests/e2e/design-audits/responsive-overflow-audit.spec.ts"
-  - "src/shared/config/mcp-server-launch.ts"
+  - "src/shared/config/mcp/mcp-server-launch.ts"
   - ".github/workflows/e2e.yml"
 ---
 
@@ -137,7 +137,7 @@ app separately".
 The app bundle, whose connect button writes absolute paths, or a source checkout
 run as `node <checkout>/cli/src/index.mjs`. Neither `ontology-atlas` nor
 `ontology-atlas-mcp` exists on npm; `npx ontology-atlas init` is a 404. Code
-authority: `src/shared/config/mcp-server-launch.ts`. Gate:
+authority: `src/shared/config/mcp/mcp-server-launch.ts`. Gate:
 `tests/contract/release/npm-channel-retired.contract.test.ts`.
 
 ### Installing an agent tool for the user

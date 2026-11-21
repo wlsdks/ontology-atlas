@@ -1,6 +1,6 @@
-import { FLIGHT, closeUpTravelMs, flightMs, flightStart, litLineStart } from '../../lib/film/film-acts';
+import { FLIGHT, closeUpTravelMs, flightMs, flightStart, litLineStart } from '../../lib/film/timeline/film-acts';
 import { bowedPoints, polylineLength, subPolyline, type Pt } from '../../lib/film/film-geometry';
-import type { FilmLitLine, FilmMapLayout } from '../../lib/film/film-map-shapes';
+import type { FilmLitLine, FilmMapLayout } from '../../lib/film/map/film-map-shapes';
 import type { OpenLayout } from '../../lib/film/film-open';
 import type { FilmVault } from '../../lib/film/film-vault';
 import { rowOnPhone, type PlacedRow, type WallLayout } from '../../lib/film/film-wall';

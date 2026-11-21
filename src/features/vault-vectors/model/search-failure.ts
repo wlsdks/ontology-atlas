@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useSyncExternalStore } from 'react';
-import { subscribeVectorStatus, type VectorFailure, type VectorFound, type VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import { subscribeVectorStatus, type VectorFailure, type VectorFound, type VectorStatus } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 
 /** The app leaves the status as it was after these failures, so the line says one until a search answers or the app sends the folder's next status event. */
 const HELD_FAILURES: ReadonlySet<VectorFailure> = new Set(['runnerDown', 'modelMissing']);

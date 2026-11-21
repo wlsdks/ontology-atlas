@@ -8,7 +8,7 @@ import type { useTopologyVaultReadModel } from "../use-topology-vault-read-model
 
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { buildBusinessFlowRequest, nodeIntent, screenIntentFor, sentenceForIntent, type FirstWordsLabels, type ScreenContextSnapshot } from "@/features/vault-agent";
-import { buildAgentAnalyzePrompt } from "@/shared/config/agent-prompts";
+import { buildAgentAnalyzePrompt } from "@/shared/config/agent/agent-prompts";
 import { consumeQueuedAgentChatIntent, subscribeAgentChatIntent } from "@/shared/lib/agent-chat/agent-chat-intent";
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/overlays/right-dock-reserve";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";

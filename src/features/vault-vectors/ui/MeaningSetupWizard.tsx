@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Check } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { formatSize } from '@/shared/lib/format-size';
-import { MODEL_DOWNLOAD_HOSTS, type VectorProbe } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import { MODEL_DOWNLOAD_HOSTS, type VectorProbe } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import { Button } from '@/shared/ui';
 import { BUILTIN_MODEL_NAME } from '../model/model-choices';
 

@@ -16,13 +16,13 @@ import {
 import { recordLocalFsHandleContents, verifyHandlePermission } from '@/entities/local-fs-handle';
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import type { VaultChangeBatch, VaultPathChange } from '@/shared/lib/vault-folder/vault-change-batch';
-import { classifyVaultAccessError } from '../classify-vault-access-error';
+import { classifyVaultAccessError } from '../vault-opening/classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/failures/error-message';
 import { codedFailure } from '@/shared/lib/failures/failure-code';
 import { AGENT_ACTIVITY_STALE_AFTER_MS, emptyAgentActivityStatus } from '../agent-activity-status';
 import { createAdaptivePoller, type PollCadenceConfig } from './poll-cadence';
-import { createVaultLoadProgressStore } from '../vault-load-progress';
-import { createVaultArrivalStore } from '../vault-arrival';
+import { createVaultLoadProgressStore } from '../vault-opening/vault-load-progress';
+import { createVaultArrivalStore } from '../vault-opening/vault-arrival';
 import {
   comparableAgentActivityStatus,
   structurallyEqualStatus,

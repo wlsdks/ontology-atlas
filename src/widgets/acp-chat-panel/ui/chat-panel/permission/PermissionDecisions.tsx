@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 
 import type { PendingPermission, permissionScope } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
-import { FeedbackGlyph } from '@/shared/motion/feedback-glyph';
+import { FeedbackGlyph } from '@/shared/motion/status-glyphs/FeedbackGlyph';
 import { Button } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';

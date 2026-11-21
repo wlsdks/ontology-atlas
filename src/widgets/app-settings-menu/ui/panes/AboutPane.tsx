@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Newspaper } from 'lucide-react';
 
 import { useLocalVault } from '@/entities/vault-session';
-import { GITHUB_REPO_URL } from '@/shared/config/social-links';
+import { GITHUB_REPO_URL } from '@/shared/config/site/social-links';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { revealAppLogFolder } from '@/shared/lib/desktop-shell/tauri-app-logs';

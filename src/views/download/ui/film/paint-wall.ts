@@ -1,6 +1,6 @@
-import { OPEN, WALL, chipIn, phoneScroll, rowHighlight, rowStart, span, wallColumn, wallDim } from '../../lib/film/film-acts';
+import { OPEN, WALL, chipIn, phoneScroll, rowHighlight, rowStart, span, wallColumn, wallDim } from '../../lib/film/timeline/film-acts';
 import type { Rect } from '../../lib/film/film-geometry';
-import { easeOut, lerp } from '../../lib/film/film-kit';
+import { easeOut, lerp } from '../../lib/film/timeline/film-easing';
 import { rowOnPhone, type PlacedRow } from '../../lib/film/film-wall';
 import { mix, rgba } from './film-colors';
 import { roundRect } from './film-marks';

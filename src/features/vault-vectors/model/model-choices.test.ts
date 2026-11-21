@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { VectorProbe } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import type { VectorProbe } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import { choiceIdOf, choiceTag, isDeletable, isDiskShort, isSwitching, modelChoices, offeredRunnerModels, primaryPress, recommendedChoiceId, type ModelChoice } from './model-choices';
 
 const probe = (models: string[], state: 'reachable' | 'unreachable' = 'reachable', builtin: Partial<VectorProbe['builtin']> = {}): VectorProbe => ({

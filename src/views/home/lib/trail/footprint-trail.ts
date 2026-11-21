@@ -1,4 +1,4 @@
-import { ATLAS_CLI } from "@/shared/config/cli-invocation";
+import { ATLAS_CLI } from "@/shared/config/agent/cli-invocation";
 
 export const FOOTPRINT_TRAIL_MAX = 30;
 

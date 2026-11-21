@@ -4,7 +4,7 @@ import en from '../../../../../messages/en.json';
 import ja from '../../../../../messages/ja.json';
 import ko from '../../../../../messages/ko.json';
 import zh from '../../../../../messages/zh.json';
-import { MODEL_FAILED_DETAILS } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import { MODEL_FAILED_DETAILS } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import { modelFailedSentence } from './model-failed-sentence';
 
 const catalogues = { en, ko, ja, zh } as const;

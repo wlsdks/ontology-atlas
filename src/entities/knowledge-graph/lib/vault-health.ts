@@ -3,7 +3,7 @@
  * auto-healed derived graph so app and CLI agree (`tests/contract/analysis/vault-health.contract.test.ts`).
  */
 
-import { ATLAS_CLI, ATLAS_CLI_HINT_EN } from '@/shared/config/cli-invocation';
+import { ATLAS_CLI, ATLAS_CLI_HINT_EN } from '@/shared/config/agent/cli-invocation';
 
 /** CLI checks this mirror does not run (frontmatter validation, meaning assessment), named so the list never reads as complete. */
 export const UNAVAILABLE_CHECKS = [

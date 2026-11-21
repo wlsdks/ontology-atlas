@@ -30,7 +30,7 @@ vi.mock('@tauri-apps/api/core', () => ({
 }));
 
 import { buildLocalManifestWithEntries, vaultRowWritesSettled } from './build-local-manifest';
-import { vaultIndexPreference } from '@/shared/lib/vault-folder/tauri-vault-index';
+import { vaultIndexPreference } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
 
 let vault = new MemoryVault();
 

@@ -1345,12 +1345,12 @@ describe('focused check suggestions', () => {
 
   it('suggests lint, related suites and typecheck for app/source TypeScript files without sibling tests', () => {
     const result = suggestFocusedChecks([
-      'src/shared/config/site.ts',
+      'src/shared/config/site/site.ts',
       'src/shared/lib/theme.ts',
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec eslint --max-warnings 0 src/shared/config/site.ts src/shared/lib/theme.ts',
+      'pnpm exec eslint --max-warnings 0 src/shared/config/site/site.ts src/shared/lib/theme.ts',
       'pnpm typecheck',
     ]);
   });
@@ -2112,6 +2112,39 @@ describe('rendered UI audit coverage', () => {
       const commands = commandNames(suggestFocusedChecks([path]));
       assert.ok(commands.includes('pnpm test:ui:audit'), path);
       assert.ok(commands.includes('pnpm exec playwright test tests/e2e/design-audits/ui-audit-probe.spec.ts'), path);
+    }
+  });
+});
+
+describe('files moved into a subfolder keep their rules', () => {
+  it('checks the committed MCP catalogue and runs the security contracts for the site content security policy', () => {
+    const subjects = [
+      ['src/shared/config/mcp/mcp-catalogue.generated.ts', 'pnpm mcp:catalogue:check'],
+      ['src/shared/config/site/web-content-security-policy.ts', SECURITY_COMMAND],
+    ];
+    for (const [path, command] of subjects) {
+      assert.ok(existsSync(path), path);
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes(command), `${path} -> ${command}`);
+    }
+  });
+
+  it('runs the security contracts for a native bridge in a nested folder such as the vector search commands', () => {
+    const path = 'src/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors.ts';
+    assert.ok(existsSync(path), path);
+    assert.ok(commandNames(suggestFocusedChecks([path])).includes(SECURITY_COMMAND));
+  });
+
+  it('runs the security contracts for the folder watch bridge and the folder-name proof for the vault provider', () => {
+    const subjects = [
+      ['src/entities/vault-session/model/vault-provider/TauriVaultWatchBridge.tsx', SECURITY_COMMAND],
+      [
+        'src/entities/vault-session/model/vault-provider/LocalVaultProvider.tsx',
+        'pnpm exec playwright test tests/e2e/map/map-open-folder-stays-named.spec.ts',
+      ],
+    ];
+    for (const [path, command] of subjects) {
+      assert.ok(existsSync(path), path);
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes(command), `${path} -> ${command}`);
     }
   });
 });

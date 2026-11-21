@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { SITE_URL } from '@/shared/config';
-import { GITHUB_REPO_URL } from '@/shared/config/social-links';
-import { SITE_ORGANIZATION_ID } from '@/shared/config/site-entity';
+import { GITHUB_REPO_URL } from '@/shared/config/site/social-links';
+import { SITE_ORGANIZATION_ID } from '@/shared/config/site/site-entity';
 
 import { MACOS_RELEASE, windowsAsset } from './release-state';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS } from './release-facts';

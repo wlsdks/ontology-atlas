@@ -1,5 +1,5 @@
 import type { FilmVault } from './film-vault';
-import type { Measure } from './film-map-labels';
+import type { Measure } from './map/film-map-labels';
 import type { Pt, Rect } from './film-geometry';
 
 export interface WallRow {

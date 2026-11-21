@@ -11,7 +11,7 @@ import {
   variantVariables,
   type CatalogueEntry,
   type CatalogueVariant,
-} from '@/shared/config/mcp-catalogue';
+} from '@/shared/config/mcp/mcp-catalogue';
 import type { DiscoveredConnector } from '@/shared/lib/connectors/tauri-connectors';
 import {
   runtimePath,

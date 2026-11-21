@@ -1,6 +1,6 @@
-import { OPEN, rowHighlight, rowStart, span } from '../../lib/film/film-acts';
+import { OPEN, rowHighlight, rowStart, span } from '../../lib/film/timeline/film-acts';
 import { polylineLength, quadAt, subPolyline, type Pt } from '../../lib/film/film-geometry';
-import { clamp01, easeInOut, easeOut, lerp } from '../../lib/film/film-kit';
+import { clamp01, easeInOut, easeOut, lerp } from '../../lib/film/timeline/film-easing';
 import type { OpenLayout } from '../../lib/film/film-open';
 import { mix, rgba } from './film-colors';
 import { capMark, domainMark, dot, light } from './film-marks';

@@ -73,7 +73,7 @@ const enMessages = JSON.parse(readText("messages/en.json"));
 const koMessages = JSON.parse(readText("messages/ko.json"));
 const rootLayout = readText("app/layout.tsx");
 // The site Organization and WebSite JSON-LD the root layout renders (`siteEntityGraph`).
-const siteEntity = readText("src/shared/config/site-entity.ts");
+const siteEntity = readText("src/shared/config/site/site-entity.ts");
 const webManifest = JSON.parse(readText("public/manifest.webmanifest"));
 const cargoToml = readText("src-tauri/Cargo.toml");
 const rootReadme = readText("README.md");
@@ -137,7 +137,7 @@ const docsVaultPageFiles = [
 ];
 const docsVaultPage = docsVaultPageFiles.map(readText).join("\n");
 // The docs surface's local-source control lives in the vault chip menu.
-const vaultChipSurface = readText("src/views/docs-vault/ui/parts/DocsVaultVaultChip.tsx");
+const vaultChipSurface = readText("src/views/docs-vault/ui/parts/header/DocsVaultVaultChip.tsx");
 const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEmptyState.tsx");
 const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/agent-setup/VaultAgentSetupPanel.tsx");
 const vaultAgentSetupCopySources = [
@@ -793,9 +793,9 @@ if (
 }
 
 // README prose is editable; its download and release references follow runtime config.
-const configuredSite = readText("src/shared/config/site.ts")
+const configuredSite = readText("src/shared/config/site/site.ts")
   .match(/export const SITE_URL = ["']([^"']+)["']/)?.[1];
-const configuredRepository = readText("src/shared/config/social-links.ts")
+const configuredRepository = readText("src/shared/config/site/social-links.ts")
   .match(/export const GITHUB_REPO_URL = ["']([^"']+)["']/)?.[1];
 const readmeLinks = [...rootReadme.matchAll(/(?:href=["']|\]\()(https?:\/\/[^"')\s>]+)/g)]
   .flatMap((match) => {
@@ -808,7 +808,7 @@ if (
 ) {
   pass("root README links to the configured download and release destinations");
 } else {
-  fail("README.md must link to the configured hosted download route and repository releases; check src/shared/config/site.ts and social-links.ts");
+  fail("README.md must link to the configured hosted download route and repository releases; check src/shared/config/site/site.ts and social-links.ts");
 }
 
 /*

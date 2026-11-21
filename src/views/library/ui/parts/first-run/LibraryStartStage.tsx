@@ -1,6 +1,6 @@
 "use client";
 
-import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/action-feedback-glyph';
+import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/status-glyphs/ActionFeedbackGlyph';
 import type { MouseEvent } from "react";
 import type { useTranslations } from "next-intl";
 import { CloudDownload, FilePlus2, Search } from "lucide-react";

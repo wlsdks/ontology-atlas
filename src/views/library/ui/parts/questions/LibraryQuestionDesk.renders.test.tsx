@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import en from '../../../../../../messages/en.json';
 import type { LibrarySourceRow, VaultDoc } from '@/entities/docs-vault';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
-import { OFF_VECTOR_STATUS, type VectorStatus, type VectorStatusEvent } from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
+import { OFF_VECTOR_STATUS, type VectorStatus, type VectorStatusEvent } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
+import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vectors/vault-vector-source';
 
 const counts = vi.hoisted(() => ({
   desk: 0,
@@ -18,8 +18,8 @@ vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', async (original) => ({
   ...(await original<typeof import('@/shared/lib/vault-folder/tauri-vault-fs')>()),
   isTauriVaultRuntime: () => true,
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-vectors', async (original) => {
-  const actual = await original<typeof import('@/shared/lib/vault-folder/tauri-vault-vectors')>();
+vi.mock('@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors', async (original) => {
+  const actual = await original<typeof import('@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors')>();
   return {
     ...actual,
     vectorStatus: async () => ({ ...actual.OFF_VECTOR_STATUS, phase: 'preparing', filesTotal: 400, passagesTotal: 4000 }),

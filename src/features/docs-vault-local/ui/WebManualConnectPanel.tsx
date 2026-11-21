@@ -151,7 +151,7 @@ export function WebManualConnectPanel({
   const ready = vault.ok && checkout.ok && pathConfirmed;
 
   // An unfilled field is drawn as a real config with a placeholder. Not `<…>`: next-intl parses
-  // angle brackets as rich-text tags and the text disappears (`shared/config/cli-invocation.ts`).
+  // angle brackets as rich-text tags and the text disappears (`shared/config/agent/cli-invocation.ts`).
   const input = {
     vaultAbsolute: vault.ok ? vault.value : t('manualVaultPlaceholderPath'),
     checkoutAbsolute: checkout.ok ? checkout.value : t('manualCheckoutPlaceholderPath'),

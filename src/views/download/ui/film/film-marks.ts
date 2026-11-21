@@ -1,5 +1,5 @@
 import type { Pt, Rect } from '../../lib/film/film-geometry';
-import type { FilmLabel, InkRole } from '../../lib/film/film-map-labels';
+import type { FilmLabel, InkRole } from '../../lib/film/map/film-map-labels';
 import type { FilmInks, FilmPaintScene } from './film-paint-scene';
 
 export const TAU = Math.PI * 2;

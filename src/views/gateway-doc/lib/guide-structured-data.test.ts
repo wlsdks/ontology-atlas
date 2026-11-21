@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { SITE_URL } from '@/shared/config';
-import { SITE_ORGANIZATION_ID, SITE_WEBSITE_ID } from '@/shared/config/site-entity';
+import { SITE_ORGANIZATION_ID, SITE_WEBSITE_ID } from '@/shared/config/site/site-entity';
 
 import { GUIDE_ENTRY_PAGE, GUIDE_PAGES } from '../model/guide-pages';
 import { guideStructuredData } from './guide-structured-data';

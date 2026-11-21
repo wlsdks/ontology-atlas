@@ -1,5 +1,5 @@
-import { ACT_START, FILM_MS, FLIGHT, OPEN, WALL, chipIn, local, phoneScroll, span, wallColumn } from '../../lib/film/film-acts';
-import { easeInOutSine, easeInOut, easeOut } from '../../lib/film/film-kit';
+import { ACT_START, FILM_MS, FLIGHT, OPEN, WALL, chipIn, local, phoneScroll, span, wallColumn } from '../../lib/film/timeline/film-acts';
+import { easeInOutSine, easeInOut, easeOut } from '../../lib/film/timeline/film-easing';
 import { rowOnPhone, type PlacedRow } from '../../lib/film/film-wall';
 import { mix, rgba } from './film-colors';
 import { roundRect } from './film-marks';

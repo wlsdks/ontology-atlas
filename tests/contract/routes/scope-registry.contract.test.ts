@@ -115,7 +115,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "ontology-atlas:canvas-background:v1", kind: "storage", scope: "global", note: "canvas background preference" },
   { key: "ontology-atlas:glyph-set:v1", kind: "storage", scope: "global", note: "glyph set preference" },
   { key: "ontology-atlas:vault-index:v1", kind: "storage", scope: "global", note: "search index on/off preference" },
-  { key: "ontology-atlas:vault-vectors:v1", kind: "storage", scope: "global", file: "src/shared/lib/vault-folder/vault-vector-source.ts", note: "One machine-wide map from a folder's absolute path to its search-by-meaning choice and pause; the path keys each folder's entry" },
+  { key: "ontology-atlas:vault-vectors:v1", kind: "storage", scope: "global", file: "src/shared/lib/vault-folder/vault-vectors/vault-vector-source.ts", note: "One machine-wide map from a folder's absolute path to its search-by-meaning choice and pause; the path keys each folder's entry" },
   { key: "ontology-atlas:footprint:v1", kind: "storage", scope: "global", note: "footprint trail preference" },
   // Expansion affordance, structure, and three numbers. Screen preferences like the
   // footprint and the background, so vault-independent — changing folder must not
@@ -192,8 +192,8 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     kind: "storage",
     scope: "vault-scoped",
     scopedBy: "setChangeBaselineScope",
-    file: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.ts",
-    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.test.ts",
+    file: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.ts",
+    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.test.ts",
     note: "Change baseline per folder, hashed per node; other folders' entries give way only when storage refuses a save",
   },
   {
@@ -201,8 +201,8 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     kind: "storage",
     scope: "vault-scoped",
     scopedBy: "setChangeBaselineScope",
-    file: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.ts",
-    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.test.ts",
+    file: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.ts",
+    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.test.ts",
     note: "The first form: each folder's entry is converted once to its own v2 key, then removed",
   },
   {

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 
-import { VAULT_AGENT_PANEL_ID } from '@/shared/config/agent-panel';
+import { VAULT_AGENT_PANEL_ID } from '@/shared/config/agent/agent-panel';
 
 import { focusIsOutsidePanel, isEscapeInsidePanel, openerToRemember } from './panel-dismissal';
 
