@@ -60,7 +60,7 @@ export type {
   LibraryWikiPage,
   LibraryWriteUpLink,
 } from './lib/library/vault-library';
-export { deriveSourceProgress } from './lib/library/source-progress';
+export { deriveSourceProgress, recordedInstantMs } from './lib/library/source-progress';
 export type { SourceProgress, SourceProgressPoint } from './lib/library/source-progress';
 export { candidateKey, discoverCandidatesInHandle } from './lib/library/source-discovery';
 export type { SourceCandidate, SourceDiscoveryReport } from './lib/library/source-discovery';

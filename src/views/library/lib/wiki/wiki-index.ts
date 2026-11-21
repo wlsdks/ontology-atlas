@@ -1,13 +1,11 @@
-import type { LibraryWikiPage, LibraryWriteUpLink } from "@/entities/docs-vault";
+import { recordedInstantMs, type LibraryWikiPage, type LibraryWriteUpLink } from "@/entities/docs-vault";
 import type { LintFinding } from "@/features/library";
 import { wikiFindingCode } from "@/shared/lib/library/wiki-report.mjs";
 
-import { spineFreshness } from "./spine-shape";
-
 /**
  * The Wiki column's index: groups by what a page is, "Needs a look" first
- * (`docs/specs/2026-11-21-library-index-column.md`, flow 2-6). Placing a page is O(1) apart from its
- * citations; each group keeps its five newest by insertion and sorts in full only when read whole.
+ * (`docs/specs/2026-11-21-library-index-column.md`, flow 2-6). Placing a page is O(1) map lookups plus
+ * its problem codes; each group keeps its five newest by insertion and sorts in full only when read whole.
  */
 
 /** At or under this many pages every group is listed whole; above it each shows its newest five. */
@@ -17,12 +15,14 @@ export const WIKI_INDEX_PREVIEW_ROWS = 5;
 const CLOCK_SKEW_MS = 60_000;
 const ANSWERS_FOLDER = "answers";
 const WIKI_PREFIX = "wiki/";
+/** Saved answers record `unmeasured` hashes and are reviewed through their own flow, never as stale. */
+const ANSWERS_PREFIX = `${WIKI_PREFIX}${ANSWERS_FOLDER}/`;
 
 export type WikiIndexGroupKey = "attention" | "answers" | "several" | "one" | "none" | `folder:${string}`;
 
 /** `rule` codes are `report.rule.*` keys; the others are `wikiIndex.reason.*` keys. */
 export type WikiIndexReason =
-  | { kind: "disagreement" | "superseded" | "stale" | "missingLink" }
+  | { kind: "disagreement" | "superseded" | "stale" | "unhashed" | "missingLink" }
   | { kind: "rule"; code: string };
 
 export interface WikiIndexEntry {
@@ -76,12 +76,10 @@ const AGENT_REASON: Readonly<Record<LintFinding["code"], AgentReason>> = {
 
 const NON_ASCII = /[^\u0000-\u007f]/;
 const nfc = (text: string) => (NON_ASCII.test(text) ? text.normalize("NFC") : text);
-const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-/** A bare date is that local day's midnight, as the Sources table reads `compiled_at`. */
+/** Read by the Sources table's rules, so the column and the table agree on every `compiled_at`. */
 function parseCompiledAt(compiledAt: string): number {
-  const day = DATE_ONLY.exec(compiledAt);
-  return day ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])).getTime() : Date.parse(compiledAt);
+  return recordedInstantMs(compiledAt) ?? Number.NaN;
 }
 
 function notInFuture(ms: number, nowMs: number): number {
@@ -108,26 +106,48 @@ export function wikiIndexHome(page: Pick<LibraryWikiPage, "slug" | "sourcePaths"
 }
 
 function findingSlug(page: string): string {
-  return page.startsWith(WIKI_PREFIX) ? page : `${WIKI_PREFIX}${page}`;
+  const slug = nfc(page);
+  return slug.startsWith(WIKI_PREFIX) ? slug : `${WIKI_PREFIX}${slug}`;
 }
 
-/** Agent findings by page slug, built once per Check: O(total pages named). */
-function agentReasonsBySlug(findings: readonly LintFinding[]): Map<string, Set<AgentReason>> {
-  const out = new Map<string, Set<AgentReason>>();
+const AGENT_BIT: Readonly<Record<AgentReason, number>> = { disagreement: 1, superseded: 2, missingLink: 4 };
+
+/** Agent findings by page slug as a bit set, built once per Check: O(total pages named). */
+function agentReasonsBySlug(findings: readonly LintFinding[]): Map<string, number> {
+  const out = new Map<string, number>();
   for (const finding of findings) {
-    const reason = AGENT_REASON[finding.code];
+    const bit = AGENT_BIT[AGENT_REASON[finding.code]];
     for (const page of finding.pages) {
       const slug = findingSlug(page);
-      const held = out.get(slug) ?? new Set<AgentReason>();
-      held.add(reason);
-      out.set(slug, held);
+      out.set(slug, (out.get(slug) ?? 0) | bit);
+    }
+  }
+  return out;
+}
+
+/** `stale`: a recorded hash differs from the file. `unhashed`: no hash was recorded, so no cause is known. */
+type SourceDoubt = "stale" | "unhashed";
+
+/** Each page's doubt about its sources, one pass over every citation: O(total links). */
+function sourceDoubtBySlug(writeUpsBySource: ReadonlyMap<string, readonly LibraryWriteUpLink[]>): Map<string, SourceDoubt> {
+  const out = new Map<string, SourceDoubt>();
+  for (const links of writeUpsBySource.values()) {
+    for (const link of links) {
+      if (link.freshness !== "behind" || link.slug.startsWith(ANSWERS_PREFIX)) continue;
+      if (!link.unhashed) out.set(link.slug, "stale");
+      else if (!out.has(link.slug)) out.set(link.slug, "unhashed");
     }
   }
   return out;
 }
 
 const NO_REASONS: readonly WikiIndexReason[] = Object.freeze([]);
-const STALE: WikiIndexReason = Object.freeze({ kind: "stale" });
+const NO_CODES: readonly string[] = Object.freeze([]);
+const NO_PROBLEMS: ReadonlyArray<{ code: string }> = Object.freeze([]);
+const DOUBT_REASON: Readonly<Record<SourceDoubt, WikiIndexReason>> = {
+  stale: Object.freeze({ kind: "stale" }),
+  unhashed: Object.freeze({ kind: "unhashed" }),
+};
 
 function ruleReasons(problems: ReadonlyArray<{ code: string }>): WikiIndexReason[] {
   const codes = new Set<string>();
@@ -139,19 +159,26 @@ function ruleReasons(problems: ReadonlyArray<{ code: string }>): WikiIndexReason
   return [...codes].sort((a, b) => RULE_RANK.get(a)! - RULE_RANK.get(b)!).map((code) => ({ kind: "rule", code }));
 }
 
-function pageReasons(
-  agent: ReadonlySet<AgentReason> | undefined,
-  stale: boolean,
-  problems: ReadonlyArray<{ code: string }> | undefined,
-): readonly WikiIndexReason[] {
-  if (!agent && !stale && !problems?.length) return NO_REASONS;
+function pageReasons(agent: number, doubt: SourceDoubt | undefined, problems: ReadonlyArray<{ code: string }>): readonly WikiIndexReason[] {
+  if (!agent && !doubt && problems.length === 0) return NO_REASONS;
   const reasons: WikiIndexReason[] = [];
-  if (agent?.has("disagreement")) reasons.push({ kind: "disagreement" });
-  if (agent?.has("superseded")) reasons.push({ kind: "superseded" });
-  if (stale) reasons.push(STALE);
-  if (problems?.length) reasons.push(...ruleReasons(problems));
-  if (agent?.has("missingLink")) reasons.push({ kind: "missingLink" });
+  if (agent & AGENT_BIT.disagreement) reasons.push({ kind: "disagreement" });
+  if (agent & AGENT_BIT.superseded) reasons.push({ kind: "superseded" });
+  if (doubt) reasons.push(DOUBT_REASON[doubt]);
+  if (problems.length > 0) reasons.push(...ruleReasons(problems));
+  if (agent & AGENT_BIT.missingLink) reasons.push({ kind: "missingLink" });
   return reasons;
+}
+
+/** The model rebuilds verdict objects on every batch, so a verdict is compared by its codes. */
+function sameCodes(held: readonly string[], problems: ReadonlyArray<{ code: string }>): boolean {
+  if (held.length !== problems.length) return false;
+  for (let i = 0; i < held.length; i += 1) if (held[i] !== problems[i]!.code) return false;
+  return true;
+}
+
+function codesOf(problems: ReadonlyArray<{ code: string }>): readonly string[] {
+  return problems.length === 0 ? NO_CODES : problems.map((problem) => problem.code);
 }
 
 function sameReasons(a: readonly WikiIndexReason[], b: readonly WikiIndexReason[]): boolean {
@@ -176,10 +203,10 @@ function samePage(a: LibraryWikiPage, b: LibraryWikiPage): boolean {
 interface Placed extends WikiIndexEntry {
   /** The sweep that last confirmed this page is still in the folder. */
   seen: number;
-  /** Fact objects the reasons were read from; a new object means read again. */
-  verdict: unknown;
-  agent: unknown;
-  stale: boolean;
+  /** The facts the reasons were read from, held by value so rebuilt objects still compare equal. */
+  codes: readonly string[];
+  agent: number;
+  doubt: SourceDoubt | undefined;
 }
 
 /** One group's members, its five newest kept on insert, and a full order built only on demand. */
@@ -242,8 +269,9 @@ export interface WikiIndexSweep {
 /**
  * The index for one folder. `retarget` points it at the latest pages and facts; `advance` then
  * visits pages in order until its deadline, re-reading only a page whose inputs changed, and drops
- * pages the folder no longer has once a sweep completes. Revisiting an unchanged page is a few
- * reference compares, so a batch costs O(batch) real work plus an O(n) compare pass.
+ * pages the folder no longer has once a sweep completes. Revisiting an unchanged page is three map
+ * lookups and a compare of its fields and problem codes, allocating nothing, so a batch costs
+ * O(batch) real work, an O(n) compare pass, and O(total links) to re-read source doubt.
  */
 export class WikiIndexBuilder {
   private readonly entries = new Map<string, Placed>();
@@ -251,8 +279,10 @@ export class WikiIndexBuilder {
   private readonly collator: Intl.Collator;
   private pages: readonly LibraryWikiPage[] = [];
   private facts: WikiIndexFacts | null = null;
-  private agent = new Map<string, Set<AgentReason>>();
+  private agent = new Map<string, number>();
   private agentSource: readonly LintFinding[] | null = null;
+  private doubt = new Map<string, SourceDoubt>();
+  private doubtSource: WikiIndexFacts["writeUpsBySource"] | null = null;
   private readonly parsed = new Map<string, number>();
   private sweep = 0;
   private cursor = 0;
@@ -281,6 +311,10 @@ export class WikiIndexBuilder {
     if (facts.findings !== this.agentSource) {
       this.agentSource = facts.findings;
       this.agent = agentReasonsBySlug(facts.findings);
+    }
+    if (facts.writeUpsBySource !== this.doubtSource) {
+      this.doubtSource = facts.writeUpsBySource;
+      this.doubt = sourceDoubtBySlug(facts.writeUpsBySource);
     }
     this.sweep += 1;
     this.cursor = 0;
@@ -324,11 +358,10 @@ export class WikiIndexBuilder {
     const held = this.entries.get(page.slug);
     // A slug listed twice is placed once, as its first listing.
     if (held?.seen === this.sweep) return;
-    const verdict = facts.verdicts.get(page.slug);
-    const agent = this.agent.get(page.slug);
-    // Recomputed rather than compared: the model rebuilds `writeUpsBySource` on every batch.
-    const stale = spineFreshness({ page, writeUpsBySource: facts.writeUpsBySource }) === "stale";
-    if (held && held.verdict === verdict && held.agent === agent && held.stale === stale && samePage(held.page, page)) {
+    const problems = facts.verdicts.get(page.slug)?.problems ?? NO_PROBLEMS;
+    const agent = this.agent.get(page.slug) ?? 0;
+    const doubt = this.doubt.get(page.slug);
+    if (held && held.agent === agent && held.doubt === doubt && sameCodes(held.codes, problems) && samePage(held.page, page)) {
       held.seen = this.sweep;
       return;
     }
@@ -337,16 +370,16 @@ export class WikiIndexBuilder {
       title: nfc(page.title),
       writtenAtMs: this.writtenAt(page.compiledAt, facts.nowMs),
       home: wikiIndexHome(page),
-      reasons: pageReasons(agent, stale, verdict?.problems),
+      reasons: pageReasons(agent, doubt, problems),
       seen: this.sweep,
-      verdict,
+      codes: codesOf(problems),
       agent,
-      stale,
+      doubt,
     };
     if (held && samePage(held.page, page) && Object.is(held.writtenAtMs, entry.writtenAtMs)
       && held.home === entry.home && sameReasons(held.reasons, entry.reasons)) {
       // Only the fact objects moved; the row and its place are unchanged.
-      Object.assign(held, { seen: entry.seen, verdict, agent, stale });
+      Object.assign(held, { seen: entry.seen, codes: entry.codes, agent, doubt });
       return;
     }
     if (held) this.unplace(held);

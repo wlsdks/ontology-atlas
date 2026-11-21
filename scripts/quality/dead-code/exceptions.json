@@ -502,6 +502,12 @@
       "reason": "The wiki index column is built ahead of its mount (slice I-1 of this spec); I-2 mounts it in LibrarySection.tsx and removes this exception.",
       "consumer": "docs/specs/2026-11-21-library-index-column.md",
       "witness": "src/views/library/ui/parts/index-column/IndexRow.tsx"
+    },
+    {
+      "key": "frontend:runtime:files:src/views/library/ui/parts/index-column/index-motion.ts:src/views/library/ui/parts/index-column/index-motion.ts",
+      "reason": "The wiki index column is built ahead of its mount (slice I-1 of this spec); I-2 mounts it in LibrarySection.tsx and removes this exception.",
+      "consumer": "docs/specs/2026-11-21-library-index-column.md",
+      "witness": "src/views/library/ui/parts/index-column/index-motion.ts"
     }
   ]
 }

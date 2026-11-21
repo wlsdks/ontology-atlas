@@ -1129,7 +1129,7 @@
       "answers": "Saved answers",
       "several": "From several sources",
       "one": "From one source",
-      "none": "Written without a source"
+      "none": "Lists no source"
     },
     "row": {
       "sources": "{count, plural, one {# source} other {# sources}}",
@@ -1140,6 +1140,7 @@
       "disagreement": "Disagrees with another page",
       "superseded": "A newer source says otherwise",
       "stale": "The source changed after this was written",
+      "unhashed": "Can't tell whether the source changed",
       "missingLink": "Should link to a related page"
     },
     "day": {

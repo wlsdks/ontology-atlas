@@ -328,6 +328,8 @@ export interface LibraryWriteUpLink {
   slug: string;
   title: string;
   freshness: WriteUpFreshness;
+  /** Set on a `behind` link whose page recorded no hash for this source, so no change is claimed. */
+  unhashed?: true;
 }
 
 interface LibraryPairing {
@@ -392,11 +394,13 @@ function sourceRow(source: VaultSourceFile, cited: WikiCitation[] | undefined, h
 function writeUpsOf(cited: readonly WikiCitation[], actual: string | undefined, titles: ReadonlyMap<string, string>): LibraryWriteUpLink[] {
   const bySlug = new Map<string, LibraryWriteUpLink>();
   for (const citation of cited) {
-    bySlug.set(citation.wikiSlug, {
+    const link: LibraryWriteUpLink = {
       slug: citation.wikiSlug,
       title: titles.get(citation.wikiSlug) ?? citation.wikiSlug,
       freshness: writeUpFreshness(citation, actual),
-    });
+    };
+    if (citation.sourceHash === null) link.unhashed = true;
+    bySlug.set(citation.wikiSlug, link);
   }
   return [...bySlug.values()].sort((a, b) => a.slug.localeCompare(b.slug));
 }

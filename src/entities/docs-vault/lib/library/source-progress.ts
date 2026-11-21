@@ -104,30 +104,54 @@ export function recordedLocalDay(
   value: string,
   offsetMinutes: (epochMs: number) => number = runtimeOffset,
 ): number | null {
-  const day = recordedDay(value, offsetMinutes);
-  return day === null || day < MIN_DAY ? null : day;
+  const parts = recordedParts(value);
+  if (!parts) return null;
+  const day = parts.zoneMinutes === null
+    ? parts.date
+    : localDay(parts.date * DAY_MS + parts.timeMs - parts.zoneMinutes * 60_000, offsetMinutes);
+  return day < MIN_DAY ? null : day;
 }
 
-function recordedDay(
+/**
+ * A recorded `compiled_at` as epoch ms, read by the rules `recordedLocalDay` uses, or null. A bare
+ * date is that local day's midnight and a date-time with no zone is local wall time.
+ */
+export function recordedInstantMs(
   value: string,
-  offsetMinutes: (epochMs: number) => number,
+  offsetMinutes: (epochMs: number) => number = runtimeOffset,
 ): number | null {
+  if (recordedLocalDay(value, offsetMinutes) === null) return null;
+  const parts = recordedParts(value)!;
+  const asWritten = parts.date * DAY_MS + parts.timeMs;
+  if (parts.zoneMinutes !== null) return asWritten - parts.zoneMinutes * 60_000;
+  const guess = asWritten - offsetMinutes(asWritten) * 60_000;
+  return asWritten - offsetMinutes(guess) * 60_000;
+}
+
+interface RecordedParts {
+  /** Day number of the calendar date as written. */
+  date: number;
+  /** Milliseconds into that day, as written. */
+  timeMs: number;
+  /** Minutes east of UTC; null when the value names no zone. */
+  zoneMinutes: number | null;
+}
+
+function recordedParts(value: string): RecordedParts | null {
   const match = ISO_DATE.exec(value);
   if (!match) return null;
   const [, year, month, day, hour, minute, second, fraction, zulu, sign, zoneHour, zoneMinute] = match;
   const date = dayOfDate(Number(year), Number(month), Number(day));
   // `Date.UTC` rolls 2026-02-30 into March; a date that rolled is not a date.
   if (isoDay(date) !== `${year}-${month}-${day}`) return null;
-  if (hour === undefined) return date;
+  if (hour === undefined) return { date, timeMs: 0, zoneMinutes: null };
   if (Number(hour) > 23 || Number(minute) > 59 || Number(second ?? 0) > 59) return null;
-  // A local time with no zone (Python's `isoformat()`) is the day as written, like a bare date.
-  if (!zulu && sign === undefined) return date;
-  if (!zulu && (Number(zoneHour) > 23 || Number(zoneMinute) > 59)) return null;
-  const zone = zulu ? 0 : (sign === '-' ? -1 : 1) * (Number(zoneHour) * 60 + Number(zoneMinute));
-  const instant = date * DAY_MS
-    + ((Number(hour) * 60 + Number(minute) - zone) * 60 + Number(second ?? 0)) * 1000
+  const timeMs = ((Number(hour) * 60 + Number(minute)) * 60 + Number(second ?? 0)) * 1000
     + Number((fraction ?? '').slice(0, 3).padEnd(3, '0'));
-  return localDay(instant, offsetMinutes);
+  // A local time with no zone (Python's `isoformat()`) is the day as written, like a bare date.
+  if (!zulu && sign === undefined) return { date, timeMs, zoneMinutes: null };
+  if (!zulu && (Number(zoneHour) > 23 || Number(zoneMinute) > 59)) return null;
+  return { date, timeMs, zoneMinutes: zulu ? 0 : (sign === '-' ? -1 : 1) * (Number(zoneHour) * 60 + Number(zoneMinute)) };
 }
 
 /** Months since 1970-01 of a day number. */

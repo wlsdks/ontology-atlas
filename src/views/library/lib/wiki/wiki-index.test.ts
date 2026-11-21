@@ -67,7 +67,7 @@ describe("the wiki index's groups", () => {
   });
 
   it("gives each page that needs a look its plain reasons, most serious first, and leaves advisory codes out", () => {
-    const pages = [page("wiki/carrier-terms", 2, 1), page("wiki/lonely", 1, 1)];
+    const pages = [page("wiki/carrier-terms", 2, 1), page("wiki/lonely", 1, 1), page("wiki/가격", 1, 2)];
     const verdicts = new Map([
       ["wiki/carrier-terms", { problems: [{ code: "dangling-wikilink" }, { code: "missing-field:title" }, { code: "uncited-fact" }, { code: "missing-field:summary" }] }],
       ["wiki/lonely", { problems: [{ code: "orphan-page" }, { code: "shared-source-unlinked" }] }],
@@ -76,13 +76,15 @@ describe("the wiki index's groups", () => {
       { code: "missing-link", pages: ["wiki/carrier-terms"], summary: "x" },
       { code: "superseded", pages: ["carrier-terms"], summary: "y" },
       { code: "disagreement", pages: ["wiki/carrier-terms", "wiki/other"], summary: "z" },
+      { code: "superseded", pages: ["가격".normalize("NFD")], summary: "w" },
     ];
     const stale: LibraryWriteUpLink[] = [{ slug: "wiki/carrier-terms", title: "", freshness: "behind" }];
     const index = build(pages, facts({ verdicts, findings, writeUpsBySource: new Map([["sources/wiki/carrier-terms-1.md", stale]]) }));
 
     const attention = index.groups()[0]!;
     expect(attention.key).toBe("attention");
-    expect(attention.entries.map((entry) => entry.page.slug)).toEqual(["wiki/carrier-terms"]);
+    expect(attention.entries.map((entry) => entry.page.slug)).toEqual(["wiki/carrier-terms", "wiki/가격"]);
+    expect(attention.entries[1]!.reasons).toEqual([{ kind: "superseded" }]);
     expect(attention.entries[0]!.reasons).toEqual([
       { kind: "disagreement" },
       { kind: "superseded" },
@@ -92,6 +94,25 @@ describe("the wiki index's groups", () => {
       { kind: "rule", code: "dangling-wikilink" },
       { kind: "missingLink" },
     ]);
+  });
+
+  it("says a source changed only when a recorded hash differs, and never for saved answers", () => {
+    const pages = [page("wiki/differs", 1, 1), page("wiki/unhashed", 1, 1), page("wiki/both", 2, 1), page("wiki/answers/refund", 1, 1)];
+    const behind = (slug: string, unhashed?: true): LibraryWriteUpLink[] => [{ slug, title: "", freshness: "behind", ...(unhashed ? { unhashed } : {}) }];
+    const writeUpsBySource = new Map([
+      ["sources/wiki/differs-0.md", behind("wiki/differs")],
+      ["sources/wiki/unhashed-0.md", behind("wiki/unhashed", true)],
+      ["sources/wiki/both-0.md", behind("wiki/both", true)],
+      ["sources/wiki/both-1.md", behind("wiki/both")],
+      ["sources/wiki/answers/refund-0.md", behind("wiki/answers/refund")],
+    ]);
+    const attention = build(pages, facts({ writeUpsBySource })).group("attention")!;
+    const reasonsOf = (slug: string) => attention.entries.find((entry) => entry.page.slug === slug)?.reasons;
+    expect(attention.entries).toHaveLength(3);
+    expect(reasonsOf("wiki/differs")).toEqual([{ kind: "stale" }]);
+    expect(reasonsOf("wiki/unhashed")).toEqual([{ kind: "unhashed" }]);
+    expect(reasonsOf("wiki/both")).toEqual([{ kind: "stale" }]);
+    expect(reasonsOf("wiki/answers/refund")).toBeUndefined();
   });
 
   it("orders a group newest first, undated and future pages last, then by title with NFD and NFC Hangul as one", () => {
@@ -156,6 +177,18 @@ describe("the index's updates", () => {
     expect(index.group("one")!.count).toBe(301);
   });
 
+  it("keeps a page's entry when its verdict is rebuilt with the same problems", () => {
+    const pages = [page("wiki/a", 1, 1)];
+    const verdict = () => new Map([["wiki/a", { problems: [{ code: "uncited-fact" }] }]]);
+    const index = build(pages, facts({ verdicts: verdict() }));
+    const kept = index.group("attention")!.entries[0];
+    const version = index.version;
+    index.retarget(pages, facts({ verdicts: verdict(), writeUpsBySource: new Map() }));
+    index.advance();
+    expect(index.group("attention")!.entries[0]).toBe(kept);
+    expect(index.version).toBe(version);
+  });
+
   it("moves a page into Needs a look when its check result arrives, and keeps it in its own group", () => {
     const pages = [page("wiki/a", 1, 1), page("wiki/b", 1, 2)];
     const index = build(pages);
@@ -188,9 +221,10 @@ describe("a row's date", () => {
     expect(wikiIndexDay(Number.NaN, NOW)).toBeNull();
   });
 
-  it("treats a bare date as that local day and a future or broken one as undated", () => {
+  it("treats a bare date as that local day and a future, broken or non-ISO one as undated", () => {
     expect(wikiIndexDay(parseWrittenAt("2026-11-21", NOW), NOW)).toEqual({ kind: "today" });
     expect(parseWrittenAt("2026-12-30", NOW)).toBeNaN();
     expect(parseWrittenAt("someday", NOW)).toBeNaN();
+    expect(parseWrittenAt("build 12", NOW)).toBeNaN();
   });
 });

@@ -74,7 +74,7 @@ export function IndexGroupChip({
       aria-label={`${label} ${count.toLocaleString(locale)} · ${clearLabel}`}
       title={clearLabel}
       data-index-chip=""
-      className="motion-stagger-fade mx-2 mb-0.5 mt-2.5 max-w-[calc(100%-1rem)] gap-2 self-start pr-1.5"
+      className="mx-2 mb-0.5 mt-2.5 max-w-[calc(100%-1rem)] gap-2 self-start pr-1.5"
     >
       <span className="min-w-0 truncate">{label}</span>
       <span className="flex-none tabular-nums text-[color:var(--color-text-tertiary)]">{count.toLocaleString(locale)}</span>

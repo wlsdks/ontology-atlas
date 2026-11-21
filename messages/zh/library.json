@@ -1129,7 +1129,7 @@
       "answers": "已保存的回答",
       "several": "由多个原文写成",
       "one": "由一个原文写成",
-      "none": "没有原文"
+      "none": "未写明原文的页面"
     },
     "row": {
       "sources": "{count, number} 个原文",
@@ -1140,6 +1140,7 @@
       "disagreement": "与另一个页面矛盾",
       "superseded": "较新的原文说法不同",
       "stale": "写成后原文已更改",
+      "unhashed": "无法确认原文是否更改",
       "missingLink": "应链接到相关页面"
     },
     "day": {

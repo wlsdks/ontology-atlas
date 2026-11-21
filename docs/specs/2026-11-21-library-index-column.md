@@ -128,7 +128,9 @@ pane.
    is the first reason, `row.moreReasons` when there are more. The row's `title` and accessible
    name carry the title, the summary, the provenance and the date.
 4. **Reasons, most serious first:** `reason.disagreement`, `reason.superseded` (from the latest
-   Check wiki), `reason.stale` (`spineFreshness` is `stale`), then the page's own app-check
+   Check wiki), `reason.stale` (a hash the page recorded differs from the file) or else
+   `reason.unhashed` (the page recorded no hash, so no cause is claimed), neither for a saved
+   answer under `wiki/answers/`, then the page's own app-check
    codes in `report.rule.*` wording (`uncited-fact` first, then the format codes, the citation
    codes and `dangling-wikilink`), then `reason.missingLink`. Advisory codes (`orphan-page`,
    `shared-source-unlinked`) stay in Check results only.
@@ -189,10 +191,10 @@ New keys sit in `messages/<locale>/library.json` under `wikiIndex`, `wikiLog` an
 |---|---|---|
 | `wikiIndex.views.log` / `.logNone` / `.checkNever` | View rows | Log / Nothing yet / Not run yet |
 | `wikiIndex.group.attention` / `.answers` | Group headings | Needs a look / Saved answers |
-| `wikiIndex.group.several` / `.one` / `.none` | Group headings | From several sources / From one source / Written without a source |
+| `wikiIndex.group.several` / `.one` / `.none` | Group headings | From several sources / From one source / Lists no source |
 | `wikiIndex.row.sources` / `.noSource` / `.moreReasons` | Row line 2 | {count} sources / No source / {reason} +{count} more |
 | `wikiIndex.reason.disagreement` / `.superseded` | Row line 2 | Disagrees with another page / A newer source says otherwise |
-| `wikiIndex.reason.stale` / `.missingLink` | Row line 2 | The source changed after this was written / Should link to a related page |
+| `wikiIndex.reason.stale` / `.unhashed` / `.missingLink` | Row line 2 | The source changed after this was written / Can't tell whether the source changed / Should link to a related page |
 | `wikiIndex.day.now` / `.today` / `.yesterday` / `.ago` | Row date | Just now / Today / Yesterday / {count} days ago |
 | `wikiIndex.showAll` / `.attentionAll` / `.groupClear` | Cap line; chip × | Show all {count} / All {count} in Check results / Show the whole index |
 | `wikiIndex.empty.title` / `.body` | First day | No wiki pages yet / When the agent writes wiki pages from your sources, they gather here: one page per source, pages that bring several sources together, and the answers you save. |
@@ -204,10 +206,12 @@ New keys sit in `messages/<locale>/library.json` under `wikiIndex`, `wikiLog` an
 | `wikiLog.byRound` / `.pageGone` | Log row | Scheduled check “{name}” / {name} (no longer in wiki/) |
 | `wikiLog.empty` / `.unreadable` | Log body | Nothing has happened in this wiki yet. Writing pages from sources, checking the wiki and saving an answer each add a line here. / wiki/_log.md could not be read, so only saved answers are listed. Check the file's permissions; this list updates when it can be read. |
 | `sourcesIndex.add` / `.addBody` | "+" on Sources; dialog | Add sources / Sources stay as they are. Atlas reads them, and the agent writes wiki pages from them. |
-| `wiki.findingKind.superseded`, `wiki.logCount.superseded` (changed) | Report, log | newer source differs; newer source differs {count} (was "superseded claim") |
-| `report.structuralHead` (changed) | Report head | … · {offTemplate} not following the template · … (was "off-template") |
+| `wiki.findingKind.superseded`, `wiki.logCount.superseded` (changed in I-2) | Report, log | newer source differs; newer source differs {count} (was "superseded claim") |
+| `report.structuralHead` (changed in I-2) | Report head | … · {offTemplate} not following the template · … (was "off-template") |
 
-`wiki.offTemplate`, `shelf.*` and `wiki.folderMark` leave once nothing reads them (I-2).
+The changed keys alter copy the mounted report already shows, so they change with the mount in
+I-2; until then "off-template" still ships. `wiki.offTemplate`, `shelf.*` and `wiki.folderMark`
+leave once nothing reads them (I-2).
 
 ## Edge cases
 
@@ -230,7 +234,8 @@ New keys sit in `messages/<locale>/library.json` under `wikiIndex`, `wikiLog` an
 |---|---|---|
 | First arrival | Groups rise 4 px and fade over `--motion-base`, 35 ms stagger | End state |
 | A page written | Enters its group's top from 4 px above with an accent wash fading over `--motion-choreography`; rows below glide by transform over `--motion-settle`; the count counts up | Instant, no wash |
-| Show all / restore | List cross-fades over `--motion-base`; the chip grows from the heading's place | Instant |
+| Show all / restore | List cross-fades: in over `--motion-base`, out on the exit curve within one exit window, the leaving list inert; the chip rises from the heading's place | Instant |
+| Check results arrive late | The first draw waits for the first check results; rows that later move glide over `--motion-settle` from where they were drawn, rows new to the data fade in where they land, and a focused row pushed out of a group's five hands focus to its page elsewhere or to its group's line | Instant moves; focus kept |
 | Row pick | Tint over `--motion-fast` | Instant |
 | Filter typed | Groups cross-fade to the ranked list over `--motion-fast` | Instant |
 
@@ -246,8 +251,10 @@ New keys sit in `messages/<locale>/library.json` under `wikiIndex`, `wikiLog` an
 
 1. **Groups are exact.** Given pages under `wiki/answers/`, `wiki/meetings/` and the top of
    `wiki/` with 0, 1 and 3 sources, and NFD and NFC Hangul titles, the groups, their order, the
-   rows' order and the reasons' order match flow 2-5; 50,000 pages group in under 30 ms of CPU
-   time (`process.cpuUsage`) (`src/views/library/lib/wiki/wiki-index.test.ts`).
+   rows' order and the reasons' order match flow 2-5 (`src/views/library/lib/wiki/wiki-index.test.ts`);
+   50,000 pages, all citing one shared source, group in under 100 ms of CPU time
+   (`process.cpuUsage`), five times the measured cost, and a re-sweep of rebuilt but unchanged
+   facts costs under half of that (`src/views/library/lib/wiki/wiki-index.perf.test.ts`).
 2. **One height, no overflow, no coined words.** Every row in the Wiki column is 44 px and every
    Sources row 32 px, in English and Korean at 1440×900 and 1920×1080, web and app state; no
    element has `scrollWidth > clientWidth`; the column renders no `wiki.offTemplate` or
@@ -271,15 +278,15 @@ New keys sit in `messages/<locale>/library.json` under `wikiIndex`, `wikiLog` an
    back; no frame interval over 50 ms, no row moving under the pointer; reduced motion draws end
    states (`pnpm ui:look` frames on the pull request).
 8. **One design.** The three columns' tool rows, headings and rows share `IndexRow` and
-   `IndexGroup`, measured equal in height, inset and type at 1920
-   (`src/views/library/ui/parts/index-column/IndexRow.test.tsx`, a capture of each tab).
+   `IndexGroup`, measured equal in height, inset and type at 1920 in the DOM through
+   `pnpm ui:look` (I-1 measures the parts alone; each later slice adds its tab's capture).
 
 ## Slices
 
 | Slice | What | Files | Order |
 |---|---|---|---|
-| I-1 | Grouping model with reasons and caps; `IndexRow`, `IndexGroup`, `WikiIndex` (reads `LibraryUiModel`, takes agent findings as a prop); catalogue patch; criteria 1, 8 (part) | New `src/views/library/lib/wiki/wiki-index.ts`, new files in `src/views/library/ui/parts/index-column/`; `messages/*/library.json` (`wikiIndex`, `wikiLog`, `sourcesIndex`, the changed keys) | Now, parallel with S3 and S-1: new files; the catalogue edits are distinct keys |
-| I-2 | Mount `WikiIndex` in the Wiki half; remove its `SectionActions`, the report row and `LibraryShelf`; view rows; Check wiki and `AgentMissingNotice` into the report head; New page into "+"; criteria 2-4, 6, 7 | `LibrarySection.tsx` (Wiki half), `LibraryShelf.tsx` (delete), `LibraryIndexColumn.tsx`, `parts/wiki/LibraryCheckReport.tsx` | After S-2, which edits `LibrarySection.tsx` |
+| I-1 | Grouping model with reasons and caps; `IndexRow`, `IndexGroup`, `WikiIndex` (reads `LibraryUiModel`, takes agent findings as a prop); catalogue patch; criteria 1, 8 (part) | New `src/views/library/lib/wiki/wiki-index.ts`, new files in `src/views/library/ui/parts/index-column/`; `messages/*/library.json` (`wikiIndex`, `wikiLog`, `sourcesIndex`) | Now, parallel with S3 and S-1: new files; the catalogue edits are distinct keys |
+| I-2 | Mount `WikiIndex` in the Wiki half; remove its `SectionActions`, the report row and `LibraryShelf`; view rows; Check wiki and `AgentMissingNotice` into the report head; New page into "+"; the changed copy keys; criteria 2-4, 6, 7 | `LibrarySection.tsx` (Wiki half), `LibraryShelf.tsx` (delete), `LibraryIndexColumn.tsx`, `parts/wiki/LibraryCheckReport.tsx`, `messages/*/library.json` (the changed keys) | After S-2, which edits `LibrarySection.tsx` |
 | I-3 | Log view: the model keeps every log entry; selection kind `log`; Recently written's heading opens it; criterion 5 | `src/features/library/model/use-library-model.ts`, `library-page-state.ts`, `LibraryPage.tsx`, `LibraryDocumentColumn.tsx`, new `parts/wiki/LibraryWikiLog.tsx`, `src/widgets/library-sources-overview/**` (heading link) | After S3 (owns the model and `LibraryPage.tsx`) and S-1 |
 | I-4 | Sources half on `IndexRow`: tool row, add dialog, folder groups | `LibrarySection.tsx` (Sources half), new `parts/index-column/AddSourcesDialog.tsx` | After I-2 |
 | I-5 | Ontology column on the shared metrics; headings split label and count | `src/views/docs-vault/ui/parts/DocsSidebarBody.tsx`, `ReviewQueueSection.tsx`, `messages/*/vaultWidgets.json` (`review.*Header`) | After I-1; parallel with I-2 |
@@ -320,3 +327,11 @@ one commit.
 - 2026-11-21: first draft, after the owner's comment on the Wiki tab's left panel and the
   request to fit the LLM wiki pattern.
 - 2026-11-21: I-1 landed ahead of its mount. Until I-2 mounts the column in `LibrarySection.tsx`, nothing at runtime imports `src/views/library/ui/parts/index-column/WikiIndex.tsx`, `src/views/library/ui/parts/index-column/IndexGroup.tsx` or `src/views/library/ui/parts/index-column/IndexRow.tsx`; their dead-code exceptions name this spec and go with I-2.
+- 2026-11-21: I-1 after review. Staleness no longer counts a missing hash or a saved answer as a
+  changed source (`reason.unhashed` names the first, answers get neither); `group.none` reads
+  "Lists no source". Criterion 1 takes the 100 ms bound the repository's five-times headroom rule
+  gives the measured cost and names the perf test; criterion 8 names the DOM measurement, as no
+  `IndexRow.test.tsx` exists. The changed copy keys move to I-2, which mounts the report they
+  change. Motion gains the late check-results row, drawn by the new
+  `src/views/library/ui/parts/index-column/index-motion.ts`, which joins the unmounted files and
+  their dead-code exceptions until I-2.
