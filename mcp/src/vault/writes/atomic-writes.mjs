@@ -46,7 +46,7 @@ export class VaultConflictError extends Error {
 }
 
 /** File mtime in ms, or null when absent; capture it right after a read to pass as `expectedMtime`. */
-export function getFileMtime(filePath) {
+export function readFileMtime(filePath) {
   try {
     return statSync(filePath).mtimeMs;
   } catch {
@@ -63,7 +63,7 @@ export function assertSnapshotMtime(slug, expectedMtime, currentMtime) {
 
 export function assertCurrentDocSnapshot(slug, filePath, expectedRaw, expectedMtime) {
   if (!fileMatchesExpectedRaw(filePath, expectedRaw)) {
-    throw new VaultConflictError(slug, expectedMtime, getFileMtime(filePath));
+    throw new VaultConflictError(slug, expectedMtime, readFileMtime(filePath));
   }
 }
 
@@ -95,7 +95,7 @@ function entryChangedOnDisk(entry) {
     return true;
   }
   if (entry.expectedMtime === null || entry.expectedMtime === undefined) return false;
-  const current = getFileMtime(entry.path);
+  const current = readFileMtime(entry.path);
   return current === null || Math.abs(current - entry.expectedMtime) >= 1;
 }
 
@@ -137,7 +137,7 @@ export function writeFileAtomically(filePath, text, options = {}) {
         throw new VaultConflictError(
           options.conflictSlug,
           options.expectedMtime,
-          getFileMtime(filePath),
+          readFileMtime(filePath),
         );
       }
       throw changedOnDiskError([filePath]);

@@ -10,7 +10,7 @@ import {
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { readDoc } from "../documents/document-cache.mjs";
-import { getFileMtime, VaultConflictError } from "./atomic-writes.mjs";
+import { readFileMtime, VaultConflictError } from "./atomic-writes.mjs";
 import { writeDoc, patchFrontmatter, updateDoc, deleteDoc } from "./doc-writes.mjs";
 
 let passed = 0;
@@ -70,7 +70,7 @@ test("skips the check when expectedMtime is omitted (existing callers stay compa
 test("patchFrontmatter passes when expectedMtime matches", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
-  const mtime = getFileMtime(file);
+  const mtime = readFileMtime(file);
   patchFrontmatter(root, "foo", { title: "Foo" }, { expectedMtime: mtime });
   rmSync(root, { recursive: true, force: true });
 });
@@ -78,7 +78,7 @@ test("patchFrontmatter passes when expectedMtime matches", () => {
 test("throws VaultConflictError when expectedMtime differs", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
-  const stale = getFileMtime(file) - 5000; // 5s ago — simulates an external change
+  const stale = readFileMtime(file) - 5000; // 5s ago — simulates an external change
   // Set an explicitly different mtime: some filesystems truncate below a millisecond.
   const now = Date.now();
   utimesSync(file, now / 1000, now / 1000);
@@ -99,7 +99,7 @@ test("throws VaultConflictError when expectedMtime differs", () => {
 test("VaultConflictError exposes the slug and both mtimes", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
-  const stale = getFileMtime(file) - 5000;
+  const stale = readFileMtime(file) - 5000;
   const now = Date.now();
   utimesSync(file, now / 1000, now / 1000);
 
@@ -119,7 +119,7 @@ test("VaultConflictError exposes the slug and both mtimes", () => {
 test("updateDoc honours the expectedMtime option", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
-  const stale = getFileMtime(file) - 5000;
+  const stale = readFileMtime(file) - 5000;
   utimesSync(file, Date.now() / 1000, Date.now() / 1000);
 
   assert.throws(
@@ -216,7 +216,7 @@ test("updateDoc rejects an invalid frontmatter patch before writing", () => {
 test("deleteDoc honours the expectedMtime option", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
-  const stale = getFileMtime(file) - 5000;
+  const stale = readFileMtime(file) - 5000;
   utimesSync(file, Date.now() / 1000, Date.now() / 1000);
 
   assert.throws(
