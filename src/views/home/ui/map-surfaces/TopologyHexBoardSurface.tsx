@@ -3,7 +3,8 @@
 import { useCallback, useMemo, type ComponentProps } from "react";
 import { useTranslations } from "next-intl";
 import { isMapConcept, type KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { useHexRelief, writeHexRelief, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import { type MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation-speed-preferences";
+import { useHexRelief, writeHexRelief } from "@/shared/lib/preferences/map-view-preferences";
 import { OntologyHexBoardMap, type HexBoardLabels, type HexPlacementRecord, type OntologyMapEdge, type OntologyMapNode } from "@/widgets/ontology-map";
 import { readHexPlacement, writeHexPlacement } from "../../model/map-canvas/hex-board-placement-store";
 import { useMapEvidenceStates, type MapEvidence, type MapEvidenceAvailability } from "@/features/vault-ontology";

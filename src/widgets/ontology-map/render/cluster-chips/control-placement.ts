@@ -3,7 +3,7 @@
  * hit-testing and label reservation all read these, so none of this touches a canvas.
  */
 
-import type { ExpandAffordance } from "@/shared/lib/preferences/appearance-preferences";
+import type { ExpandAffordance } from "@/shared/lib/preferences/expand-preferences";
 import { estimateCanvasTextWidth } from "./text-width";
 
 /** Chip base height (px, screen space — multiplied by `clusterChipScale`). */

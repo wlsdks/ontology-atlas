@@ -202,7 +202,7 @@ function normalize(raw, brandInk = {}) {
   };
 }
 
-/** npx's `--before` for the hardened runtimes (src-tauri/src/acp/runtime_environment.rs); moves with the snapshot. */
+/** npx's `--before` for the hardened runtimes (src-tauri/src/acp/launch/runtime_environment.rs); moves with the snapshot. */
 export function withDependencyCutoff(normalized, committed, now = new Date()) {
   const bare = (snapshot) => JSON.stringify({ ...snapshot, npmDependencyCutoff: null });
   const kept = committed?.npmDependencyCutoff && bare(committed) === bare(normalized);

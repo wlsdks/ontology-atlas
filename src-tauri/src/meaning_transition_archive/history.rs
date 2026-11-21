@@ -64,7 +64,7 @@ pub(crate) fn list_meaning_transition_history(
     #[cfg(unix)]
     let archive_handle = {
         use std::os::unix::fs::MetadataExt;
-        let root_handle = crate::agent_setup::open_absolute_directory_no_follow(&root)?;
+        let root_handle = crate::confined_files::open_absolute_directory_no_follow(&root)?;
         let (handle, _) =
             open_existing_parent(&root_handle, &format!("{DIRECTORY}/.history-entry"))?;
         let metadata = handle.metadata().map_err(|error| error.to_string())?;

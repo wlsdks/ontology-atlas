@@ -2,15 +2,16 @@ use std::io::Write;
 use tauri::{Manager, RunEvent};
 
 mod acp;
-mod acp_runtime;
-mod acp_session;
 mod agent_setup;
 mod analysis_archive;
 mod app_shell;
 mod audit_read;
 mod blocking;
+mod child_process;
+mod coded_error;
+#[cfg(unix)]
+mod confined_files;
 mod connectors;
-mod errors;
 mod git;
 mod gray_area;
 mod harness_source;
@@ -21,14 +22,13 @@ mod llm_audit;
 mod lower_hex;
 mod meaning_transition_archive;
 mod planning;
-mod process;
 mod project_source;
 mod secrets;
 mod vault;
 mod webview_verify;
 
-use acp_runtime::AcpInstallProgressState;
-use acp_session::{terminate_all_acp_sessions, AcpSessions};
+use acp::runtime::AcpInstallProgressState;
+use acp::session::{terminate_all_acp_sessions, AcpSessions};
 #[cfg(desktop)]
 use app_shell::answer_deep_link;
 use app_shell::app_log::{install_panic_logger, QuietStderr};
@@ -81,7 +81,10 @@ pub fn run_embed_worker() -> i32 {
 pub fn run() {
     install_panic_logger();
     if let Some(path) = std::env::var_os("PATH") {
-        std::env::set_var("PATH", acp::search_path::sanitized_process_path(&path));
+        std::env::set_var(
+            "PATH",
+            acp::detection::search_path::sanitized_process_path(&path),
+        );
     }
     let verify_webview = std::env::var_os(WEBVIEW_VERIFY_ENV).is_some();
     let mut context = tauri::generate_context!();
@@ -235,20 +238,20 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            acp_runtime::acp_detect_runtimes,
-            acp_runtime::acp_diagnose,
-            acp_runtime::acp_repair,
-            acp_runtime::acp_reset_connection,
+            acp::runtime::acp_detect_runtimes,
+            acp::runtime::acp_diagnose,
+            acp::runtime::acp_repair,
+            acp::runtime::acp_reset_connection,
             app_shell::open_external_url,
-            acp_runtime::acp_node_plan,
-            acp_runtime::acp_install_node,
-            acp_runtime::acp_install_plan,
-            acp_runtime::acp_install_cli,
-            acp_runtime::acp_install_progress,
-            acp_session::acp_start,
-            acp_session::acp_send,
-            acp_session::acp_stop,
-            acp_session::acp_permission_verdict,
+            acp::runtime::acp_node_plan,
+            acp::runtime::acp_install_node,
+            acp::runtime::acp_install_plan,
+            acp::runtime::acp_install_cli,
+            acp::runtime::acp_install_progress,
+            acp::session::acp_start,
+            acp::session::acp_send,
+            acp::session::acp_stop,
+            acp::session::acp_permission_verdict,
             vault::location::pick_vault_directory,
             project_source::access::pick_source_directory,
             planning::commands::planning_supported,
@@ -271,8 +274,8 @@ pub fn run() {
             vault::index::vault_index_search,
             vault::index::vault_index_clear,
             vault::index::vault_index_forget,
-            vault::index_rows::vault_index_rows_get,
-            vault::index_rows::vault_index_rows_put,
+            vault::index::rows::vault_index_rows_get,
+            vault::index::rows::vault_index_rows_put,
             vault::vectors::commands::vault_vectors_probe,
             vault::vectors::commands::vault_vectors_status,
             vault::vectors::commands::vault_vectors_prepare,

@@ -3,11 +3,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  createAcpClient,
-  toPermissionRequest,
-  type AcpTransport,
-} from '@/features/acp-session/model/acp-client';
+import { createAcpClient, type AcpTransport } from '@/features/acp-session/model/acp-client';
+import { toPermissionRequest } from '@/features/acp-session/model/permissions/permission-request';
 import { standingApproval } from '@/features/acp-session/model/permissions/standing-approval';
 
 /**

@@ -7,7 +7,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::blocking::run_blocking;
-use crate::errors::coded;
+use crate::coded_error::coded;
 use crate::secrets::{is_cleared, Step};
 
 /// Distinct from the provider service so this group can be deleted alone.

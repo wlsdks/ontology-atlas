@@ -97,7 +97,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "app-update:last-check", kind: "storage", scope: "global", note: "time of the last update check" },
   { key: "app-update:auto-check", kind: "storage", scope: "global", file: "src/features/app-update/model/update-state.ts", note: "Automatic update check on this computer: on (default) or off" },
   { key: "atlas.appearance.text-size", kind: "storage", scope: "global", file: "src/shared/lib/preferences/text-size.ts", note: "Text size: default, large or larger" },
-  { key: "library.wikiWriteMode", kind: "storage", scope: "global", file: "src/shared/lib/preferences/appearance-preferences.ts", note: "How an agent's wiki page lands on this computer: auto or ask" },
+  { key: "library.wikiWriteMode", kind: "storage", scope: "global", file: "src/shared/lib/preferences/library-preferences.ts", note: "How an agent's wiki page lands on this computer: auto or ask" },
   { key: "atlas.appearance.frameMeter", kind: "storage", scope: "global", note: "frame meter display preference" },
   { key: "atlas.appearance.view3d", kind: "storage", scope: "global", note: "3D view (the tree) preference, off (2D) by default" },
   { key: "atlas.appearance.structure", kind: "storage", scope: "global", note: "Domain structure preference" },

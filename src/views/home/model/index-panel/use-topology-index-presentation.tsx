@@ -9,7 +9,7 @@ import { useSurfaceSwap } from "@/shared/lib/render-timing/use-presence";
 import { VAULT_START_STEPS_DISMISSED_KEY } from "@/widgets/topology-controls";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { FLAT_SELECTION_KEEPS_INDEX_FROM_PX, resolveContextualIndexState } from "../../lib/index-panel/resolve-contextual-index-state";
-import { useFlatMapView } from "@/shared/lib/preferences/appearance-preferences";
+import { useFlatMapView } from "@/shared/lib/preferences/map-view-preferences";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { useIndexSelectionOverride } from "./use-index-selection-override";
 import type { NodeDatasheetDerivation } from "../inspector/use-node-datasheet-model";

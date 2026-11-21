@@ -5,7 +5,7 @@
 // cannot be renamed or replaced while a reservation holds it.
 
 use super::{AUDIT_LOCK_RETRIES, AUDIT_LOCK_RETRY_PAUSE};
-use crate::errors::coded;
+use crate::coded_error::coded;
 use crate::llm_audit::{audit_log_path, SIDECAR_DIR};
 use std::fs::{self, File, OpenOptions};
 use std::io::{Seek, SeekFrom};

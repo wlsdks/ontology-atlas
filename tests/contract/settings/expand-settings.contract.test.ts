@@ -8,7 +8,7 @@ import {
   EXPAND_STRUCTURES,
   resolveExpand,
   type ExpandStructure,
-} from "@/shared/lib/preferences/appearance-preferences";
+} from "@/shared/lib/preferences/expand-preferences";
 import { drawClusterChip, type ClusterChipColors } from "@/widgets/ontology-map/render/cluster-chips";
 import {
   CLUSTER_BADGE_HEIGHT,

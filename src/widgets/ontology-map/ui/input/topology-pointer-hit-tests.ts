@@ -19,7 +19,7 @@ import {
   clusterChipScale,
   clusterControlForm,
 } from "../../render/cluster-chips/control-placement";
-import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/expand-preferences";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../../model/realm/realm-depth-parallax";
 import type { DomeNodeFrame } from "../../model/dome-view/runtime";
 import { HIT_TOUCH_SLACK_PX, hitTestWorld, worldToScreen } from "../camera/topology-camera-math";

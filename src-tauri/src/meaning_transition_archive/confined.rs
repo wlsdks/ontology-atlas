@@ -56,8 +56,8 @@ pub(super) fn publish_confined(
         return Err("archive payload exceeds byte budget".into());
     }
     checked_root(root_path, expected)?;
-    let root_handle = crate::agent_setup::open_absolute_directory_no_follow(root)?;
-    let (parent, name) = crate::agent_setup::open_entry_parent(&root_handle, relative)?;
+    let root_handle = crate::confined_files::open_absolute_directory_no_follow(root)?;
+    let (parent, name) = crate::confined_files::open_entry_parent(&root_handle, relative)?;
     checked_root(root_path, expected)?;
     verify_named_parent(root, relative, &parent)?;
     let metadata = parent.metadata().map_err(|error| error.to_string())?;
@@ -69,7 +69,7 @@ pub(super) fn publish_confined(
 
 /// The vault-open sweep removes a leftover only under a name it recognises.
 pub(super) fn temporary_name() -> String {
-    crate::vault::temporary_names::next_create_temporary_name()
+    crate::vault::temporary_files::names::next_create_temporary_name()
 }
 
 #[cfg(unix)]
@@ -209,7 +209,7 @@ pub(super) fn read_confined(
     use std::os::fd::{AsRawFd, FromRawFd};
     checked_root(root_path, expected)?;
     let root = std::path::PathBuf::from(&expected.canonical_path);
-    let root_handle = crate::agent_setup::open_absolute_directory_no_follow(&root)?;
+    let root_handle = crate::confined_files::open_absolute_directory_no_follow(&root)?;
     let (parent, name) = open_existing_parent(&root_handle, relative)?;
     let fd = unsafe {
         libc::openat(

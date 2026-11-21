@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use crate::errors::coded;
+use crate::coded_error::coded;
 
 #[cfg(test)]
 mod tests;
@@ -68,7 +68,7 @@ fn read_pathspecs_literally(command: &mut Command) {
 /// The root of every runner: base hardening, literal paths, no credential prompt.
 fn git_command() -> Command {
     let mut command = Command::new("git");
-    crate::process::no_console::hide_console(&mut command);
+    crate::child_process::no_console::hide_console(&mut command);
     command.args(BASE_HARDENING);
     read_pathspecs_literally(&mut command);
     silence_git_credential_prompts(&mut command);

@@ -5,7 +5,7 @@ use super::changes::{classify_change, get_porcelain_status, unquote};
 use super::classify::first_nonempty_line;
 use super::repo::{require_repo_root, vault_pathspec};
 use super::runner::{run_git, validate_vault_dir};
-use crate::errors::coded;
+use crate::coded_error::coded;
 
 #[cfg(test)]
 mod tests;

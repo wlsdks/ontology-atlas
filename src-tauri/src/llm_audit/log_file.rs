@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 #[cfg(any(unix, windows, test))]
 use std::time::Duration;
 
-use crate::errors::coded;
+use crate::coded_error::coded;
 
 /// NUL-terminated twins for `openat`/`mkdirat`, so no `CString::new(..).expect(..)`
 /// exists: a panic unwinding through an Objective-C frame aborts the process. `names_stay_in_step`

@@ -7,8 +7,8 @@
  * iteration for k nodes in a 3×3 cell block, O(N²) for coincident seeds.
  */
 
-import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
-import type { ExpandStructure } from "@/shared/lib/preferences/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/expand-preferences";
+import type { ExpandStructure } from "@/shared/lib/preferences/expand-preferences";
 import { DENSITY_GATE_THRESHOLD } from "./density-gate";
 import { rankEgoNeighborsByDOI } from "../visibility/focus-state";
 

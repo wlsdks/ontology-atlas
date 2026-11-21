@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useMapView, writeMapView } from '@/shared/lib/preferences/appearance-preferences';
+import { useMapView, writeMapView } from '@/shared/lib/preferences/map-view-preferences';
 import type { HomeMapView, HomeRouteState } from './url-state';
 import type { HomeRouteStateUpdateOptions } from './use-home-route-state';
 

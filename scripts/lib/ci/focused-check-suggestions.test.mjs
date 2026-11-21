@@ -925,7 +925,7 @@ describe('focused check suggestions', () => {
       'src-tauri/src/acp-registry.json',
       'src-tauri/src/acp.rs',
       'src-tauri/src/acp/isolation.rs',
-      'src-tauri/src/acp/runtime_environment/tests.rs',
+      'src-tauri/src/acp/launch/runtime_environment/tests.rs',
       '.github/workflows/release-macos.yml',
     ];
     assert.ok(subjects.length > 0, 'the ACP launch-boundary subject inventory must not be empty');
@@ -2054,6 +2054,7 @@ describe('security surfaces', () => {
       'mcp/pnpm-lock.yaml',
       'src/shared/lib/desktop-shell/tauri-external-link.ts',
       'src/features/acp-session/model/acp-client.ts',
+      'src/features/acp-session/model/permissions/permission-answer.ts',
     ]) {
       assert.match(securityRow(path)?.reason ?? '', /`security` lens/, path);
     }

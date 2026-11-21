@@ -89,7 +89,7 @@ describe('nativeErrorMessage', () => {
 describe('the catalogue covers every code Rust mints', () => {
   const crate = join(import.meta.dirname, '..', '..', '..', '..', 'src-tauri', 'src');
   const sources = [
-    'errors.rs',
+    'coded_error.rs',
     'git/classify.rs',
     'git/document.rs',
     'git/remote.rs',

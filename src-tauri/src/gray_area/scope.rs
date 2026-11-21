@@ -17,8 +17,8 @@ pub(crate) fn read_text(root: &Path, relative: &Path) -> Result<String, String> 
     }
     #[cfg(unix)]
     {
-        let handle = crate::agent_setup::open_absolute_directory_no_follow(root)?;
-        let parent = crate::agent_setup::open_relative_directory(
+        let handle = crate::confined_files::open_absolute_directory_no_follow(root)?;
+        let parent = crate::confined_files::open_relative_directory(
             &handle,
             relative.parent().unwrap_or(Path::new("")),
         )?
@@ -30,7 +30,7 @@ pub(crate) fn read_text(root: &Path, relative: &Path) -> Result<String, String> 
                 .as_encoded_bytes(),
         )
         .map_err(|_| "unsafe_path")?;
-        crate::agent_setup::read_entry_text(&parent, &name)?
+        crate::confined_files::read_entry_text(&parent, &name)?
             .ok_or_else(|| "source_unavailable".into())
     }
     #[cfg(not(unix))]
@@ -297,7 +297,7 @@ fn observe_with_exclusions(
         excluded_roots,
         limits,
     };
-    let handle = crate::agent_setup::open_absolute_directory_no_follow(root)?;
+    let handle = crate::confined_files::open_absolute_directory_no_follow(root)?;
     capture_directory(&handle, Path::new(""), 0, &mut result)?;
     result.entries.sort_by(|a, b| a.path.cmp(&b.path));
     result.files.sort();

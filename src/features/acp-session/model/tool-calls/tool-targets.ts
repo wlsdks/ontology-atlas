@@ -49,7 +49,7 @@ export function readToolTargets(
   return out;
 }
 
-/** Plain text, never a marker, when no vault node is named: paths use the permission list in `acp-client.ts`, names reuse `SLUG_ARG_KEYS` order. */
+/** Plain text, never a marker, when no vault node is named: paths use the permission list in `permission-request.ts`, names reuse `SLUG_ARG_KEYS` order. */
 export type ToolFallbackTarget = {
   kind: 'path' | 'name' | 'query';
   value: string;

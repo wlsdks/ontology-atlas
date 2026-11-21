@@ -1449,7 +1449,7 @@ describe('chat panel: the permission card really blocks', () => {
     }));
     fireEvent.click(await screen.findByTestId('task-review-defer'));
     fireEvent.click(screen.getByTestId('acp-chat-stop'));
-    await waitFor(() => expect(answerFor(193)).toEqual({ outcome: 'selected', optionId: 'reject' }));
+    await waitFor(() => expect(answerFor(193)).toEqual({ outcome: 'cancelled' }));
     act(() => replyTo('session/prompt', { stopReason: 'cancelled' }));
     await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
     await startUserTurn('Review the replacement request');

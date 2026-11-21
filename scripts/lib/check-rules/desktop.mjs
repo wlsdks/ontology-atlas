@@ -76,7 +76,7 @@ export const rules = [
     reason: 'native macOS vault bridge changed',
     matches: [
       /^src\/shared\/lib\/vault-folder\/tauri-vault-fs(?:\.test)?\.ts$/,
-      /^src-tauri\/src\/(?:lib\.rs|(?:acp_runtime|acp_session|app_shell|project_source|vault|webview_verify)\/[^/]+\.rs)$/,
+      /^src-tauri\/src\/(?:lib\.rs|acp\/(?:runtime|session)\.rs|(?:app_shell|project_source|vault|webview_verify)\/[^/]+\.rs|vault\/(?:index\/rows|temporary_files\/[^/]+)\.rs)$/,
       /^src-tauri\/Cargo\.(?:toml|lock)$/,
     ],
   },

@@ -21,7 +21,7 @@ import {
   type FootprintPresetName,
   FOOTPRINT_TONE_FALLBACK,
   FOOTPRINT_TONE_TOKEN,
-} from '@/shared/lib/preferences/appearance-preferences';
+} from '@/shared/lib/preferences/footprint-preferences';
 import { drawFootprintSteps } from '@/shared/lib/map-canvas/footprint-glyph';
 import { drawStarEmission } from '@/shared/lib/map-canvas/star-emission';
 

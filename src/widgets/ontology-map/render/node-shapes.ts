@@ -107,7 +107,7 @@ export interface NodeShapeDrawState {
     /** Frame timestamp for the hover shimmer, passed in because this layer knows nothing of time; the static hover ring is drawn regardless, the shimmer arc only when `!reducedMotion`. */
     now: number;
     reducedMotion: boolean;
-    /** `"fill"` (default) is the kind fill plus sheen gradient, `"line"` an unfilled dark body with a thinner outline; render style only, shared with the DOM `OntologyMapKindGlyph` through `appearance-preferences`. */
+    /** `"fill"` (default) is the kind fill plus sheen gradient, `"line"` an unfilled dark body with a thinner outline; render style only, shared with the DOM `OntologyMapKindGlyph` through `canvas-appearance-preferences`. */
     glyphStyle?: "fill" | "line";
     /**
      * 3D depth shading strength, 0..1; at 0 (default) no extra stroke is issued. One luminance gradient lit from

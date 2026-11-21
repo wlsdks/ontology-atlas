@@ -1,6 +1,6 @@
 "use client";
 
-import type { GlyphSet } from "@/shared/lib/preferences/appearance-preferences";
+import type { GlyphSet } from "@/shared/lib/preferences/canvas-appearance-preferences";
 import {
   useEffect,
   type RefObject

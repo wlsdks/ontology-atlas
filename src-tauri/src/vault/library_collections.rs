@@ -4,9 +4,9 @@ use super::scope::canonical_root;
 use super::scope::{ensure_inside_canonical, resolve_inside, resolve_write_target_inside};
 #[cfg(not(unix))]
 use super::write::write_text_atomically;
-#[cfg(unix)]
-use crate::agent_setup;
 use crate::blocking::run_blocking;
+#[cfg(unix)]
+use crate::confined_files;
 use serde::Serialize;
 use std::path::Path;
 use std::sync::Mutex;
@@ -44,14 +44,14 @@ pub(crate) fn read_library_collections(root_path: String) -> Result<Option<Strin
     #[cfg(unix)]
     {
         let root = canonical_root(&root_path)?;
-        let root_handle = agent_setup::open_absolute_directory_no_follow(&root)?;
+        let root_handle = confined_files::open_absolute_directory_no_follow(&root)?;
         let Some(parent) =
-            agent_setup::open_relative_directory(&root_handle, Path::new(DIRECTORY))?
+            confined_files::open_relative_directory(&root_handle, Path::new(DIRECTORY))?
         else {
             return Ok(None);
         };
         let file_name = std::ffi::CString::new(FILE_NAME).map_err(|error| error.to_string())?;
-        agent_setup::read_entry_text(&parent, &file_name)
+        confined_files::read_entry_text(&parent, &file_name)
     }
     #[cfg(not(unix))]
     {
@@ -95,16 +95,16 @@ fn write_library_collections_blocking(
     #[cfg(unix)]
     {
         let root = canonical_root(&root_path)?;
-        let root_handle = agent_setup::open_absolute_directory_no_follow(&root)?;
-        let (parent, file_name) = agent_setup::open_entry_parent(&root_handle, RELATIVE_PATH)?;
-        let current = agent_setup::read_entry_text(&parent, &file_name)?;
+        let root_handle = confined_files::open_absolute_directory_no_follow(&root)?;
+        let (parent, file_name) = confined_files::open_entry_parent(&root_handle, RELATIVE_PATH)?;
+        let current = confined_files::read_entry_text(&parent, &file_name)?;
         if current != expected_content {
             return Ok(LibraryCollectionsWriteResult {
                 written: false,
                 current_content: current,
             });
         }
-        agent_setup::write_entry_atomically(&parent, &file_name, &content, 0o600)?;
+        confined_files::write_entry_atomically(&parent, &file_name, &content, 0o600)?;
         Ok(LibraryCollectionsWriteResult {
             written: true,
             current_content: Some(content),

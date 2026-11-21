@@ -2,6 +2,8 @@
 //! passed in, and a search that never creates an index. The WebView holds the on/off choice and
 //! sends it with every command; off means no index files exist.
 
+pub(crate) mod rows;
+
 use super::scope::resolve_existing_inside;
 use super::walk::vault_fingerprint;
 use crate::blocking::run_blocking;

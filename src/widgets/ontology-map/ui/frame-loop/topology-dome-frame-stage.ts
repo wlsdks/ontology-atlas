@@ -1,4 +1,4 @@
-import type { MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import type { PointerMachineState } from "../../interaction/pointer-state-machine";
 import { followOrbitTarget, startOrbitCadence, type OrbitCadence } from "../../model/camera/orbit-cadence";

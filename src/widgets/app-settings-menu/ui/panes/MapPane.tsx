@@ -1,7 +1,10 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useFrameMeter, writeFrameMeter } from '@/shared/lib/preferences/appearance-preferences';
+import {
+  useFrameMeter,
+  writeFrameMeter,
+} from '@/shared/lib/preferences/canvas-appearance-preferences';
 import { CanvasBackgroundPicker } from '../pane-settings/AppearancePickers';
 import { MapSpeedSettings } from '../pane-settings/MapSpeedSettings';
 import { SegmentSwitch, SettingsGroup, SettingsRow } from '../settings-primitives';
