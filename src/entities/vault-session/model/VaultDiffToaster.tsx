@@ -17,18 +17,20 @@ import { useLocalVault } from './local-vault-context';
 const APP_WIKI_LOG_SLUG = 'wiki/_log';
 
 /**
- * Toasts surface polling changes; the first mount records a baseline only. Kind is never invented:
+ * Toasts surface polling changes; the first load of each folder records a baseline only, so a switch
+ * never reports the next folder's files as added. Kind is never invented:
  * when unknown, text uses the plain event and the digest counts it as other.
  * Deletions are not detected here; `delete_concept` raises its own toast.
  */
 export function VaultDiffToaster() {
-  const { status, manifest, consumeSelfWrittenSlugs, consumeReportedConflicts, agentActivityLog } =
+  const { status, manifest, handle, consumeSelfWrittenSlugs, consumeReportedConflicts, agentActivityLog } =
     useLocalVault();
   const toast = useToast();
   const t = useTranslations('featuresMisc.vaultDiffToaster');
   const kindLabel = useOntologyKindLabel();
   const locale = useLocale();
   const prevMapRef = useRef<Map<string, number | null> | null>(null);
+  const prevHandleRef = useRef<typeof handle>(null);
   /**
    * When the previous diff was seen — only `delete_concept` entries inside this window belong to
    * this burst. Calling `Date.now()` during render would be impure (`react-hooks/purity`), so it is
@@ -50,9 +52,9 @@ export function VaultDiffToaster() {
       docs.map((d) => [d.slug, d.mtime ?? null]),
     );
 
-    // First load — record the baseline and stop.
-    if (prevMapRef.current === null) {
+    if (prevMapRef.current === null || prevHandleRef.current !== handle) {
       prevMapRef.current = currentMap;
+      prevHandleRef.current = handle;
       prevSeenAtRef.current = Date.now();
       return;
     }
@@ -98,7 +100,7 @@ export function VaultDiffToaster() {
     })) {
       toast.show(formatVaultDiffToastMessage(planned, t, kindLabel), planned.variant);
     }
-  }, [status, manifest, toast, t, kindLabel, locale, consumeSelfWrittenSlugs, consumeReportedConflicts, agentActivityLog]);
+  }, [status, manifest, handle, toast, t, kindLabel, locale, consumeSelfWrittenSlugs, consumeReportedConflicts, agentActivityLog]);
 
   return null;
 }
