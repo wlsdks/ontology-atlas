@@ -5,11 +5,8 @@ import { computeOntologyChangeset, useChangeBaseline } from "@/entities/knowledg
 import { useArrivingVaultIdentityScope, useLocalVault, useSummaryFreshness, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useArrivingOntologyInsight, useOntologyInsight, useVaultConceptFacts, useVaultDocDates, useVaultDocFileDates, useVaultValidationSummary } from "@/features/vault-ontology";
-import { useRouter } from "@/i18n/navigation";
-import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/llm-connection/tauri-llm";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
-import { describeVaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { useToast } from "@/shared/ui";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -20,7 +17,6 @@ import { clearVaultScopedRouteState } from "./route-state/url-state";
 import { buildSpotlightFitSignature, useSpotlightFitTransition } from "./map-canvas/use-spotlight-fit-transition";
 const DEEPLINK_MISS_GRACE_MS = 4000;
 interface Options {
-  router: ReturnType<typeof useRouter>;
   recentWindow: import("./route-state/url-state").HomeRouteState["recentWindow"];
   pathSourceSlug: string | null;
   pathTargetSlug: string | null;
@@ -34,26 +30,13 @@ interface Options {
   topologyRouteControls: Pick<ReturnType<typeof useTopologyRouteControls>, "selectedProject">;
 }
 export function useTopologyVaultReadModel({
-  router, recentWindow, pathSourceSlug, pathTargetSlug, expandAllActive, setRouteState, setFitViewToken,
+  recentWindow, pathSourceSlug, pathTargetSlug, expandAllActive, setRouteState, setFitViewToken,
   selectedSlug, projectsQuery, toast, topologyRouteControls, topologyPreferences
 }: Options) {
   const { selectedProject } = topologyRouteControls;
   const { t } = topologyPreferences;
 
   const vault = useLocalVault();
-  /**
-   * A folder of pages with no map opens on the Library. Read from the manifest, since the derived
-   * graph is briefly empty on every open, and once per manifest, so walking back to the map is not
-   * redirected again.
-   */
-  const landedManifestRef = useRef<object | null>(null);
-  useEffect(() => {
-    if (vault.status !== "loaded" || !vault.manifest) return;
-    if (landedManifestRef.current === vault.manifest) return;
-    landedManifestRef.current = vault.manifest;
-    const shape = describeVaultShape(vault.manifest.docs ?? []);
-    if (!shape.map && shape.wiki) router.replace(DESTINATION_HREF.library);
-  }, [router, vault.manifest, vault.status]);
   const tAgent = useTranslations("vaultAgentPanel");
   // Without a bridge (web build) neither button nor panel is drawn: never paint a door that will
   // not open.
