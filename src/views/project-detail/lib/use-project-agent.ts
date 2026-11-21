@@ -12,10 +12,6 @@ export interface ProjectAgentOpeningRequest {
   nonce: number;
 }
 
-/**
- * The dock's open state and the brief request sent as the first turn once the session is ready;
- * runtime wiring is the shared `useVaultAgentRuntime`. Any `route` but `agent` falls back to copying.
- */
 export function useProjectAgent(vaultRoot: string | null) {
   const { route, runtime, runtimes, runtimeId, setRuntimeId, mcpServers } = useVaultAgentRuntime(vaultRoot);
   const [open, setOpen] = useState(false);

@@ -19,16 +19,13 @@ interface Props {
   project: Project;
   displayName: string | null;
   canManage: boolean;
-  /** Where the quick-edit panel's "all settings" door leads. */
   fullEditHref: string;
   projectHref: string;
   documentHref: string;
   handoffSnippet: string;
   brief: {
     prompt: string;
-    /** The sentence that says what the agent will do with the prompt. */
     explanation: string;
-    /** Set when a guarded agent can be opened on this page; otherwise the prompt is copied. */
     startAgent: ((prompt: string) => void) | null;
   };
   review: {
@@ -38,10 +35,6 @@ interface Props {
   };
 }
 
-/**
- * One filled action, one outline hand-off and one overflow menu. The previews open the shared
- * centred dialog; nothing on the page unfolds in place.
- */
 export function ProjectActions({
   project,
   displayName,
@@ -232,7 +225,6 @@ function copyStateLabel(state: string, labels: { idle: string; copied: string; f
   return state === "copied" ? labels.copied : state === "failed" ? labels.failed : labels.idle;
 }
 
-/** The longest label reserves the width, so "copied" does not resize the button. */
 function StableLabel({ current, options }: { current: string; options: readonly string[] }) {
   return (
     <span className="inline-grid">

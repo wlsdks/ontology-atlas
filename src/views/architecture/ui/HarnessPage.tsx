@@ -34,8 +34,6 @@ import { HarnessConnectSource } from './HarnessConnectSource';
 import { HarnessUnreadStage } from './HarnessUnreadStage';
 import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
 
-/** The Harness destination. One chrome row holds the `h1` and the single tab set, so the ladder keeps its height. */
-
 /**
  * How long a read may take before the progress screen is shown: the app's anti-flash delay, the
  * same 400ms `route-loading-in` waits. No minimum visible duration: holding the panel would delay
@@ -43,7 +41,6 @@ import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
  */
 const PROGRESS_REVEAL_MS = 400;
 
-/** The read never changes within a session, so nothing has to be watched. */
 const subscribeNever = () => () => {};
 
 /** The server's answer is the browser's: a static export is built with no desktop bridge. */
@@ -112,7 +109,6 @@ function HarnessPageInner() {
   }, [searchParams]);
 
   useEffect(() => {
-    /* Back and forward move the view too, so the address and the screen never disagree. */
     const onPopState = () => {
       const params = new URL(window.location.href).searchParams;
       setViewOverride(resolveAddressView(params, isTauriVaultRuntime()));
@@ -138,7 +134,6 @@ function HarnessPageInner() {
   /* `no-source` still arrives on Setup, where the repository is connected; a named `?view=` wins. */
   const canReadHarness = surfaceHasBridge && reportState.status !== 'unsupported';
   const addressView = resolveAddressView(searchParams, canReadHarness);
-  /* A press wins over the address until the next history move; see `setView`. */
   const view: HarnessView = viewOverride ?? addressView;
 
   const setView = useCallback(
@@ -248,9 +243,8 @@ function HarnessPageInner() {
               </div>
             ) : reportState.status === 'loading' ? (
               /*
-                Nothing until the read outlasts the threshold; a `Surface` for its entrance but no exit,
-                since the ternary unmounts the branch as the read finishes. an `overlay`,
-                not a `chrome`, surface: the `globals.css` note records why a large surface moves on brightness alone.
+                Entrance only: the ternary unmounts the branch as the read finishes. An `overlay`, not a
+                `chrome`, surface: the `globals.css` note records why a large surface moves on brightness alone.
               */
               <Surface
                 open={waitedPastThreshold}
@@ -267,7 +261,6 @@ function HarnessPageInner() {
                 onConnected={rereadHarness}
               />
             ) : reportState.status === 'failed' ? (
-              /* A dead end with no way out was the one irreversible state on a read-only screen. */
               <FeatureStage
                 data-testid="harness-failed-stage"
                 art={() => <div className="flex justify-center"><BrandPortrait expression="curious" /></div>}

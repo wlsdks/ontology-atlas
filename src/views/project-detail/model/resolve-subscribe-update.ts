@@ -1,7 +1,6 @@
 import type { Project } from "@/entities/project";
 
 export interface SubscribeUpdate {
-  /** Null means "keep the previous project". */
   next: Project | null;
   related: Project[];
 }

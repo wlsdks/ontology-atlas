@@ -20,9 +20,7 @@ const FOCUS_RING = 'focus-visible:outline-hidden focus-visible:ring-2 focus-visi
 
 interface Mark {
   key: string;
-  /** Accessible name: the time or date and how many changes it holds. */
   name: string;
-  /** What pointing at or focusing the mark reads out: its time and newest title. */
   readout: string;
   hash: string;
 }
@@ -35,7 +33,6 @@ interface DigestTimelineProps {
   onSelect?: (hash: string) => void;
 }
 
-/** When the period's changes were merged: ticks on a day's 24 hours, or columns of days or weeks. */
 export function DigestTimeline({ unit, range, changes, notable, onSelect }: DigestTimelineProps) {
   const t = useTranslations('changeDigest');
   const locale = useLocale();

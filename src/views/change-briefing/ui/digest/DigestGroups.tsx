@@ -17,7 +17,6 @@ const CONCEPTS_SHOWN = 3;
 const DIRECTORIES_SHOWN = 4;
 const PATHS_SHOWN = 6;
 
-/** The neutral ladder for the period's kinds, loudest first; the remainder is the quietest step. */
 const KIND_INKS = [
   'bg-[color:var(--color-text-primary)]',
   'bg-[color:var(--color-text-secondary)]',
@@ -36,11 +35,8 @@ const DETAIL_FRAME = 'mt-4 space-y-4 border-t border-[color:var(--color-border-s
 const FOCUS_RING = 'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]';
 
 export interface DigestSelection {
-  /** The selected group's key; null takes the first group. */
   group: string | null;
-  /** The hash of the change whose detail is shown, inside the selected group. */
   change: string | null;
-  /** Changes listed per group key; a missing key lists the first page. */
   shown: Record<string, number>;
 }
 
@@ -58,7 +54,6 @@ function selectedGroup(digest: ChangeDigest, selection: DigestSelection) {
   return digest.groups.find(group => group.key === selection.group) ?? digest.groups[0];
 }
 
-/** The groups as master and detail: one group is always selected and its changes stand beside the list. */
 export function DigestGroups({ digest, selection, onSelection, conceptTitle, formatTime, pullUrl, onOpen }: DigestGroupsProps) {
   const t = useTranslations('changeDigest');
   const headingId = useId();
@@ -127,7 +122,6 @@ function GroupOption({ group, kinds, selected, accent, share, optionRef, onPress
   </div>;
 }
 
-/** The period's kinds as one segmented bar, in the legend's order and inks. */
 export function KindsBar({ kinds }: { kinds: WorkKinds }) {
   const counts = [...kinds.kinds.map(kind => kind.count), kinds.other];
   return <span aria-hidden data-testid="change-digest-kinds-bar" className="flex h-2 w-full gap-px">
@@ -135,7 +129,6 @@ export function KindsBar({ kinds }: { kinds: WorkKinds }) {
   </span>;
 }
 
-/** A kinds line in the period's ink order, for a whole period or one group. */
 export function KindsLine({ kinds, counts, className, label }: { kinds: WorkKinds; counts: number[]; className?: string; label: string }) {
   const t = useTranslations('changeDigest');
   const entries = [...kinds.kinds.map((kind, index) => ({ type: kind.type, ink: KIND_INKS[index], count: counts[index] })), { type: t('other'), ink: OTHER_KIND_INK, count: counts[kinds.kinds.length] }];

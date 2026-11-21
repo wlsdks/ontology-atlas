@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl';
 import { gitBriefingClearSavedPulls } from '@/shared/lib/git/tauri-change-briefing';
 import { Button } from '@/shared/ui';
 
-/** App-owned copies can be cleared even when no repository can be opened. */
 export function SavedPullCopies({ onCleared }: { onCleared: () => void }) {
   const t = useTranslations('gitBriefing');
   const [status, setStatus] = useState<'idle' | 'clearing' | 'cleared' | 'failed'>('idle');
