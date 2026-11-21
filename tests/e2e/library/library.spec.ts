@@ -220,7 +220,7 @@ test.describe("the Library destination", () => {
     const planRow = page.getByTestId("library-source-sources/quarter-plan.pdf");
     // A page cites it, but its all-zero YAML value is not a usable string receipt.
     // The screen asks for review without asserting a proven byte change.
-    await expect(planRow).toContainText("needs review");
+    await expect(planRow).toContainText("changed after its wiki page");
 
     const budgetRow = page.getByTestId("library-source-sources/budget.xlsx");
     await expect(budgetRow).toContainText("no wiki page");
@@ -246,7 +246,7 @@ test.describe("the Library destination", () => {
     await expect(page.getByTestId("library-source-state-partial")).toHaveText("read in part", {
       timeout: 25_000,
     });
-    await expect(row).not.toContainText("needs review");
+    await expect(row).not.toContainText("changed after its wiki page");
 
     // The summary counts it as work Compile can still do, never folded into "not written up yet".
     await page.getByTestId("library-guide-open").click();
@@ -359,7 +359,7 @@ test.describe("the Library destination", () => {
     await expect(writeUp).toContainText("Quarter plan");
     await expect(writeUp).toContainText("older than source");
     await expect(writeUp).toHaveAttribute("title", "wiki/quarter-plan");
-    await expect(summary).toContainText("needs review");
+    await expect(summary).toContainText("changed after its wiki page");
     // The one door: a browser cannot reveal in Finder, so it offers the bytes instead.
     await expect(page.getByTestId("library-source-open")).toBeVisible();
   });
@@ -722,7 +722,11 @@ test.describe("the Library pane", () => {
     const measureRows = async () => {
       const rows = await aside.evaluate((element) => {
         const box = element.getBoundingClientRect();
-        return [...element.querySelectorAll('[data-control="row"]')].map((node) => {
+        // The tool doors above the list keep their own 28px step; the list rows are measured here.
+        const listRows = [...element.querySelectorAll('[data-control="row"]')].filter(
+          (node) => !node.closest('[data-testid="library-source-actions"]'),
+        );
+        return listRows.map((node) => {
           const rect = node.getBoundingClientRect();
           return {
             height: Math.round(rect.height),
