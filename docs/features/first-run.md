@@ -15,7 +15,7 @@ ontology map of a codebase, or both. While it is asked, the question is the scre
 `wiki/_template.md`, the map's starter nodes and skills — and every folder of the fixed
 `atlas/` tree is made either way. Nothing is stored as a preference: `describeVaultShape`
 reads the folder, so a teammate who pulls it sees the same thing. A wiki without a map lands
-on `/library`. Settings › Workspace carries an add-only row, "This folder holds", whose one
+on `/library`, and the map view is never drawn on the way there. Settings › Workspace carries an add-only row, "This folder holds", whose one
 chip writes the missing part's starter files; the tabs follow the files.
 
 Under it, "Clear all concepts" takes the map back to empty after a confirm dialog. It moves
