@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   buildLibraryModel,
+  createWikiTermIntern,
   type LibraryModel,
   type VaultDoc,
   type VaultSourceFile,
@@ -12,27 +13,18 @@ import { nativeVaultFileHashResults } from "@/shared/lib/vault-folder/tauri-vaul
 import { isRetainedAnswerPath, retainedAnswerHeads, type RetainedAnswerHead } from "../lib/questions/answer-revision";
 import { parseWikiLog, type WikiLogEntry } from "../lib/wiki/wiki-log";
 import { wikiNodeIndexOfDocs } from "../lib/wiki/judge-page-write";
-import { isWikiFurnitureSlug, validateWikiFolder, validateWikiPage } from "@/shared/lib/library/wiki-page-schema";
-import { aggregateWikiFindings, type WikiReport } from "@/shared/lib/library/wiki-report.mjs";
+import { isWikiFurnitureSlug } from "@/shared/lib/library/wiki-page-schema";
+import { createVaultTextReader } from "@/shared/lib/vault-folder/vault-text-reader";
+import type { WikiReport } from "@/shared/lib/library/wiki-report.mjs";
 import { useLatestRef } from "@/shared/lib/use-latest-ref";
-import { mergeWikiVerdict } from "./merge-wiki-verdict";
+import { libraryPageFacts, withAnswerHash, type LibraryPageFacts } from "./library-page-facts";
+import { judgeLibraryWiki, libraryWikiReport, type LibraryWikiVerdict } from "./library-wiki-judgement";
 import { useStampedCache, useStampStable } from "./use-stamped-cache";
 
 /**
  * The library for one open folder. Source hashes and wiki page bytes cost a read, so both are
  * lazy and cached in memory only: the folder is the state (`.claude/rules/forbidden.md`).
  */
-
-interface LibraryWikiVerdict {
-  ok: boolean;
-  /** The first problem's code, which is what a one-line row has room to say. */
-  firstProblem: string | null;
-  /** Its sentence, so the reader can show a reason without asking for a hover. */
-  firstProblemMessage: string | null;
-  problemCount: number;
-  /** Every problem, for the block drawn beside the page itself. */
-  problems: ReadonlyArray<{ code: string; message: string; line?: number }>;
-}
 
 export interface LibraryUiModel extends LibraryModel {
   retainedAnswers?: readonly RetainedAnswerHead[];
@@ -41,7 +33,8 @@ export interface LibraryUiModel extends LibraryModel {
   verdicts: Map<string, LibraryWikiVerdict>;
   /** Wiki pages that do not fit the contract, and have been measured. */
   offTemplateCount: number;
-  pageTexts: ReadonlyMap<string, string>;
+  /** What each read wiki page gives the Library, by slug; no page text is kept once these exist. */
+  pageFacts: ReadonlyMap<string, LibraryPageFacts>;
   /** Last Compile and Check runs from `wiki/_log.md`; null when the log has no such line. */
   log: { lastCompile: WikiLogEntry | null; lastLint: WikiLogEntry | null };
   /**
@@ -61,8 +54,11 @@ export const SOURCE_HASH_CHUNK = 256;
 /** The longest a measured hash waits before the model shows it; well inside the 2 s the spec allows. */
 export const SOURCE_HASH_PUBLISH_MS = 1000;
 
-/** Each shown batch of page text is at least 1/4 of the pages already shown, so judging every shown page per batch is O(pages) in total. */
+/** Each shown batch of pages is at least 1/4 of the pages already shown, so judging every shown page per batch is O(pages) in total. */
 const PAGE_TEXT_BATCH_SHARE = 4;
+
+/** Pages per read: one bridge call in the app, so the text held at once is one chunk's. */
+const PAGE_READ_CHUNK = 64;
 
 /** The cached value of a file that could not be opened; kept until its stamp (path and mtime) changes. */
 const UNREADABLE = "";
@@ -160,11 +156,10 @@ export function useLibraryModel({
   }, [enabled, vaultRootPath, vaultScope]);
 
   /*
-   * One run at a time, chunk by chunk. Results are published at most once per interval, because
-   * each publish rebuilds the model (about 0.3 s at 50,000 sources). A result is stamped with the
-   * path and mtime it was read under, so it stays true after a rerender; the stamped cache drops it
-   * if that file has since changed. When a run ends, `hashRound` lets the next one pick up whatever
-   * became wanted meanwhile.
+   * One run at a time, chunk by chunk, published at most once per interval because each publish
+   * redraws every screen the rows feed. A result is stamped with the path and mtime it was read
+   * under, so the stamped cache drops it once that file changes; `hashRound` lets the next run pick
+   * up whatever became wanted meanwhile.
    */
   useEffect(() => {
     if (!enabled || hashing.current || wanted.length === 0) return;
@@ -249,59 +244,69 @@ export function useLibraryModel({
     const bySlug = new Map(docs.map((doc) => [doc.slug, doc] as const));
     return wikiPages
       .filter((page) => !isWikiFurnitureSlug(page.slug))
-      .map((page) => ({
-        slug: page.slug,
-        stamp: `${vaultScope}\u0000${page.slug}@${bySlug.get(page.slug)?.mtime ?? 0}`,
-      }));
+      .map((page) => {
+        const doc = bySlug.get(page.slug);
+        return {
+          slug: page.slug,
+          path: doc?.path ?? `${page.slug}.md`,
+          stamp: `${vaultScope}\u0000${page.slug}@${doc?.mtime ?? 0}`,
+        };
+      });
   }, [docs, vaultScope, wikiPages]);
   // Every hash publish rebuilds `wikiPages`; the pages to read change only when a stamp does.
   const pageInputs = useStampStable(pageInputsOfModel);
 
   const pageStamps = useMemo(() => pageInputs.map(({ stamp }) => stamp), [pageInputs]);
-  const { values: rawByStamp, publish: cacheBodies } = useStampedCache(pageStamps);
-  const latestRawByStamp = useLatestRef(rawByStamp);
+  const { values: factsByStamp, publish: cacheFacts } = useStampedCache<LibraryPageFacts>(pageStamps);
+  const latestFactsByStamp = useLatestRef(factsByStamp);
   const latestPageInputs = useLatestRef(pageInputs);
   const latestFileHandles = useLatestRef(fileHandles);
-  const [pageTextRound, setPageTextRound] = useState(0);
+  const [pageReadRound, setPageReadRound] = useState(0);
   const readingPages = useRef(false);
-  const pageTextGeneration = useRef(0);
+  const pageReadGeneration = useRef(0);
+  // One term table per open folder, so a term shared by many pages is kept once.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const termIntern = useMemo(() => createWikiTermIntern(), [vaultScope]);
 
-  // A run for a folder that is no longer open, or a hidden library, stops at its next page.
+  // A run for a folder that is no longer open, or a hidden library, stops at its next batch.
   useEffect(() => () => {
-    pageTextGeneration.current += 1;
+    pageReadGeneration.current += 1;
   }, [enabled, vaultScope]);
 
   /*
-   * One run at a time, page by page, shown in batches so the read count only grows. A rerender does
-   * not restart it; when it ends with other pages or handles than it began with, `pageTextRound`
-   * starts the next run for what is still unread.
+   * One run at a time, `PAGE_READ_CHUNK` pages per read, each page's text turned into its facts
+   * and dropped. Shown in batches so the read count only grows; when the run ends with other pages
+   * or handles than it began with, `pageReadRound` starts the next run for what is still unread.
    */
   useEffect(() => {
     if (!enabled || readingPages.current) return;
-    const shown = latestRawByStamp.current;
+    const shown = latestFactsByStamp.current;
     const unread = pageInputs.filter(({ stamp }) => !shown.has(stamp));
     if (unread.length === 0) return;
-    const generation = pageTextGeneration.current;
-    const isCurrent = () => generation === pageTextGeneration.current;
+    const generation = pageReadGeneration.current;
+    const isCurrent = () => generation === pageReadGeneration.current;
+    const readTexts = createVaultTextReader(vaultRootPath, fileHandles);
     readingPages.current = true;
     void (async () => {
-      let unpublished = new Map<string, string>();
+      let unpublished = new Map<string, LibraryPageFacts>();
       let shownCount = shown.size;
       let publishedAt = performance.now();
       try {
-        for (const { slug, stamp } of unread) {
+        for (let at = 0; at < unread.length; at += PAGE_READ_CHUNK) {
           if (!isCurrent()) return;
-          const handle = fileHandles.get(slug);
-          if (!handle) continue;
-          try {
-            unpublished.set(stamp, await (await handle.getFile()).text());
-          } catch {
-            // An unreadable page has no result; a later folder poll may retry it.
+          const chunk = unread.slice(at, at + PAGE_READ_CHUNK);
+          // An unreadable page has no result; a later folder poll may retry it.
+          const texts = await readTexts(chunk);
+          for (let index = 0; index < chunk.length; index += 1) {
+            const text = texts[index];
+            if (text === null || text === undefined) continue;
+            const { slug, stamp } = chunk[index]!;
+            unpublished.set(stamp, await withAnswerHash(slug, text, libraryPageFacts(text, termIntern)));
           }
           const batchDue = performance.now() - publishedAt >= SOURCE_HASH_PUBLISH_MS &&
             unpublished.size * PAGE_TEXT_BATCH_SHARE >= shownCount;
           if (batchDue && isCurrent()) {
-            cacheBodies(unpublished);
+            cacheFacts(unpublished);
             shownCount += unpublished.size;
             unpublished = new Map();
             publishedAt = performance.now();
@@ -309,56 +314,36 @@ export function useLibraryModel({
         }
       } finally {
         readingPages.current = false;
-        if (isCurrent() && unpublished.size > 0) cacheBodies(unpublished);
+        if (isCurrent() && unpublished.size > 0) cacheFacts(unpublished);
         const inputsMoved = latestPageInputs.current !== pageInputs || latestFileHandles.current !== fileHandles;
-        if (!isCurrent() || inputsMoved) setPageTextRound((round) => round + 1);
+        if (!isCurrent() || inputsMoved) setPageReadRound((round) => round + 1);
       }
     })();
-  }, [cacheBodies, enabled, fileHandles, latestFileHandles, latestPageInputs, latestRawByStamp, pageInputs, pageTextRound]);
+  }, [cacheFacts, enabled, fileHandles, latestFileHandles, latestPageInputs, latestFactsByStamp, pageInputs, pageReadRound, termIntern, vaultRootPath]);
 
   // The folder's concepts, so a `describes:` entry whose concept is gone is reported here as
   // `wiki-validate` reports it.
   const concepts = useMemo(() => wikiNodeIndexOfDocs(docs), [docs]);
-  const { pageTexts, verdicts } = useMemo(() => {
-    const pageTexts = new Map<string, string>();
+  const knownSources = useMemo(() => new Set((sources ?? []).map((source) => source.path)), [sources]);
+  const pageFacts = useMemo(() => {
+    const bySlug = new Map<string, LibraryPageFacts>();
     for (const { slug, stamp } of pageInputs) {
-      const raw = rawByStamp.get(stamp);
-      if (raw !== undefined) pageTexts.set(slug, raw);
+      const facts = factsByStamp.get(stamp);
+      if (facts !== undefined) bySlug.set(slug, facts);
     }
-    const folderInput = [...pageTexts].map(([slug, raw]) => ({ path: `${slug}.md`, raw }));
-    const folderByPath = new Map(
-      validateWikiFolder(folderInput).map((entry) => [entry.path, entry.problems] as const),
-    );
-    const knownSources = new Set((sources ?? []).map((source) => source.path));
-    const verdicts = new Map<string, LibraryWikiVerdict>();
-    for (const [slug, raw] of pageTexts) {
-      const { ok, problems } = validateWikiPage(raw, { knownSources, nodes: concepts });
-      verdicts.set(slug, mergeWikiVerdict({
-        ok,
-        firstProblem: problems[0]?.code ?? null,
-        firstProblemMessage: problems[0]?.message ?? null,
-        problemCount: problems.length,
-        problems,
-      }, folderByPath.get(`${slug}.md`) ?? []));
-    }
-    return { pageTexts, verdicts };
-  }, [concepts, pageInputs, rawByStamp, sources]);
+    return bySlug;
+  }, [factsByStamp, pageInputs]);
+  const verdicts = useMemo(
+    () => judgeLibraryWiki([...pageFacts].map(([slug, facts]) => ({ slug, facts: facts.wiki })), { knownSources, nodes: concepts }),
+    [concepts, knownSources, pageFacts],
+  );
 
   /*
    * The pages are judged with the inputs `wiki-validate` passes (the folder's sources and its
    * concepts), and one aggregator decides both numbers, so the footer and `wiki-validate` agree.
    */
   const structural = useMemo(
-    () =>
-      aggregateWikiFindings({
-        pages: [...verdicts].map(([slug, verdict]) => ({
-          path: `${slug}.md`,
-          problems: verdict.problems,
-        })),
-        unmeasured: pageInputs
-          .filter(({ slug }) => !verdicts.has(slug))
-          .map(({ slug }) => `${slug}.md`),
-      }),
+    () => libraryWikiReport(verdicts, pageInputs.filter(({ slug }) => !verdicts.has(slug)).map(({ slug }) => slug)),
     [pageInputs, verdicts],
   );
 
@@ -374,10 +359,10 @@ export function useLibraryModel({
       offTemplateCount: structural.blockingPageCount,
       structural,
       hashes,
-      pageTexts,
+      pageFacts,
       retainedAnswers,
       answerVersions,
       log: { lastCompile, lastLint },
     };
-  }, [answerVersions, hashes, logDoc, logEntries, model, pageTexts, retainedAnswers, structural, verdicts]);
+  }, [answerVersions, hashes, logDoc, logEntries, model, pageFacts, retainedAnswers, structural, verdicts]);
 }

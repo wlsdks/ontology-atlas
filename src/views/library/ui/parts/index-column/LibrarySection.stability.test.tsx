@@ -35,7 +35,7 @@ const MODEL = {
   verdicts: new Map(),
   offTemplateCount: 0,
   hashes: new Map(),
-  pageTexts: new Map(),
+  pageFacts: new Map(),
   log: { lastCompile: null, lastLint: null },
   pairing: { originalsByWiki: new Map(), writeUpsBySource: new Map() },
 } as unknown as LibraryUiModel;

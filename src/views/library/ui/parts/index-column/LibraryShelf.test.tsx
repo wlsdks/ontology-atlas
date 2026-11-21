@@ -31,10 +31,7 @@ const MODEL = {
   verdicts: new Map(),
   offTemplateCount: 0,
   hashes: new Map(),
-  pageTexts: new Map([
-    ["wiki/plan", "x".repeat(200)],
-    ["wiki/budget", "x".repeat(5_000)],
-  ]),
+  pageFacts: new Map(),
   log: { lastCompile: null, lastLint: null },
   pairing: {
     originalsByWiki: new Map(),

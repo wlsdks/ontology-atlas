@@ -12,10 +12,8 @@ import {
   WIKI_REPORT_FOLDER,
   WIKI_REPORT_SOURCES,
 } from '../../fixtures/wiki-report-folder.mjs';
-import {
-  validateWikiFolder as validateFolderTs,
-  validateWikiPage as validatePageTs,
-} from '@/shared/lib/library/wiki-page-schema';
+import { validateWikiPage as validatePageTs } from '@/shared/lib/library/wiki-page-schema';
+import { validateWikiFolder as validateFolderTs } from '@/shared/lib/library/wiki-folder';
 import { aggregateWikiFindings as aggregateBridged } from '@/shared/lib/library/wiki-report.mjs';
 import { validateWikiFolder as validateFolderMcp } from '../../../mcp/src/library/wiki-folder.mjs';
 import { validateWikiPage as validatePageMcp } from '../../../mcp/src/library/wiki-schema.mjs';

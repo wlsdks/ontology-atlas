@@ -7,9 +7,7 @@ const bridge = vi.hoisted(() => ({
   failInBatch: new Set<string>(),
 }));
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
-  isTauriVaultRuntime: () => bridge.runtime,
-  getTauriVaultRootPath: () => '/vault',
+vi.mock('./tauri-vault-fs', () => ({
   readTauriVaultTextFiles: async (_root: string, paths: readonly string[]) => {
     bridge.reads.push([...paths]);
     return paths.map((relativePath) =>
@@ -24,16 +22,16 @@ vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   },
 }));
 
-import { createLocalTextReader } from './local-text-reader';
+import { createVaultTextReader } from './vault-text-reader';
 
 function fileHandle(text: string) {
   const getFile = vi.fn(async () => new File([text], 'doc.md'));
   return { handle: { getFile } as unknown as FileSystemFileHandle, getFile };
 }
 
-const root = {} as FileSystemDirectoryHandle;
+const nativeRoot = () => (bridge.runtime ? '/vault' : null);
 
-describe('createLocalTextReader', () => {
+describe('createVaultTextReader', () => {
   beforeEach(() => {
     bridge.runtime = false;
     bridge.reads = [];
@@ -43,11 +41,11 @@ describe('createLocalTextReader', () => {
 
   it('reads on the web only through the handle the walk gave the document', async () => {
     const granted = fileHandle('# A');
-    const read = createLocalTextReader(root, new Map([['a', granted.handle]]));
+    const read = createVaultTextReader(nativeRoot(), new Map([['a', granted.handle]]));
     const texts = await read([
-      { slug: 'a', path: 'a.md', mtime: 1 },
-      { slug: 'a', path: '../outside.md', mtime: 1 },
-      { slug: 'missing', path: 'missing.md', mtime: 1 },
+      { slug: 'a', path: 'a.md' },
+      { slug: 'a', path: '../outside.md' },
+      { slug: 'missing', path: 'missing.md' },
     ]);
     expect(texts).toEqual(['# A', null, null]);
     expect(granted.getFile).toHaveBeenCalledTimes(1);
@@ -55,11 +53,11 @@ describe('createLocalTextReader', () => {
 
   it('sends the app bridge one batch holding only granted paths', async () => {
     bridge.runtime = true;
-    const read = createLocalTextReader(root, new Map([['a', fileHandle('').handle], ['b', fileHandle('').handle]]));
+    const read = createVaultTextReader(nativeRoot(), new Map([['a', fileHandle('').handle], ['b', fileHandle('').handle]]));
     const texts = await read([
-      { slug: 'a', path: 'a.md', mtime: 1 },
-      { slug: 'b', path: '/etc/passwd', mtime: 1 },
-      { slug: 'b', path: 'b.md', mtime: 1 },
+      { slug: 'a', path: 'a.md' },
+      { slug: 'b', path: '/etc/passwd' },
+      { slug: 'b', path: 'b.md' },
     ]);
     expect(bridge.reads).toEqual([['a.md', 'b.md']]);
     expect(bridge.singles).toEqual([]);
@@ -69,10 +67,10 @@ describe('createLocalTextReader', () => {
   it('reads a file whose batch frame carries an error once more on its own', async () => {
     bridge.runtime = true;
     bridge.failInBatch = new Set(['b.md']);
-    const read = createLocalTextReader(root, new Map([['a', fileHandle('').handle], ['b', fileHandle('').handle]]));
+    const read = createVaultTextReader(nativeRoot(), new Map([['a', fileHandle('').handle], ['b', fileHandle('').handle]]));
     const texts = await read([
-      { slug: 'a', path: 'a.md', mtime: 1 },
-      { slug: 'b', path: 'b.md', mtime: 1 },
+      { slug: 'a', path: 'a.md' },
+      { slug: 'b', path: 'b.md' },
     ]);
     expect(bridge.singles).toEqual(['b.md']);
     expect(texts).toEqual(['text of a.md', 'alone b.md']);

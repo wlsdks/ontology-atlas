@@ -51,6 +51,7 @@ vi.mock('@/features/vault-vectors', async (original) => {
   };
 });
 
+import { libraryPageFacts } from '@/features/library';
 import { LibraryQuestionDesk } from './LibraryQuestionDesk';
 
 const ROOT = '/fixture';
@@ -61,7 +62,7 @@ const doc: VaultDoc = {
 };
 const source: LibrarySourceRow = { path: 'sources/refund.md', name: 'refund.md', format: 'md', bytes: 10, mtime: 1, state: 'compiled', citedBy: [] };
 const docs = [doc];
-const pageTexts = new Map([[doc.slug, raw]]);
+const pageFacts = new Map([[doc.slug, libraryPageFacts(raw)]]);
 const sources = [source];
 const empty = new Map();
 const noop = () => {};
@@ -82,7 +83,7 @@ describe('the Wiki desk while search by meaning prepares', () => {
   it('is not drawn again by status events; only the line is', async () => {
     render(
       <NextIntlClientProvider locale="en" messages={en} timeZone="UTC">
-        <LibraryQuestionDesk docs={docs} pageTexts={pageTexts} sources={sources} sourceHandles={empty} hashes={empty}
+        <LibraryQuestionDesk docs={docs} pageFacts={pageFacts} sources={sources} sourceHandles={empty} hashes={empty}
           vaultRoot={ROOT} vaultScope="folder" agentReady dockOpen={false} visible turnRunning={false} report={null}
           onSummarize={noop} onInvalidateReport={noop} onFileReport={null} filingReport={false} fileReportNote={null}
           onBrowse={noop} onOpenWiki={noop} onOpenSource={noop} />

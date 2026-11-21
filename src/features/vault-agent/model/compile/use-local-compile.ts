@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { buildWikiRetrievalIndex, isWikiPage, sourceNeedsCompile, type LibrarySourceRow } from "@/entities/docs-vault";
+import { buildWikiRetrievalIndex, isWikiPage, sourceNeedsCompile, type LibrarySourceRow, type WikiRetrievalPage } from "@/entities/docs-vault";
 import { isWikiFurnitureSlug } from "@/shared/lib/library/wiki-page-schema";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { llmChat, llmChatErrorMessage } from "@/shared/lib/llm-connection/tauri-llm";
@@ -63,8 +63,8 @@ export interface UseLocalCompileArgs {
   endpoint: { baseUrl: string; model: string } | null;
   /** The library's own rows, already carrying their compile state. */
   sources: readonly LibrarySourceRow[];
-  /** Existing Library read cache; no additional folder walk for retrieval. */
-  wikiTexts?: ReadonlyMap<string, string>;
+  /** The retrieval terms of each wiki page the Library has read; no additional folder walk for retrieval. */
+  wikiPages?: ReadonlyMap<string, WikiRetrievalPage>;
   labels: {
     createFile: (path: string) => string;
     modifyFile: (path: string) => string;
@@ -101,7 +101,7 @@ export function useLocalCompile({
   vaultRoot,
   endpoint,
   sources,
-  wikiTexts,
+  wikiPages,
   labels,
 }: UseLocalCompileArgs): LocalCompileSession {
   const vault = useLocalVault();
@@ -186,7 +186,7 @@ export function useLocalCompile({
       setWrittenPaths([]);
       setToolActivity(null);
 
-      const wikiIndex = buildWikiRetrievalIndex(vault.manifest?.docs ?? [], wikiTexts);
+      const wikiIndex = buildWikiRetrievalIndex(vault.manifest?.docs ?? [], wikiPages);
       const executor = createCompileExecutor({
         sourcePort,
         model: endpoint.model,
@@ -287,7 +287,7 @@ export function useLocalCompile({
         if (abortRef.current === controller) abortRef.current = null;
       }
     },
-    [endpoint, labels, readExistingPage, sourcePort, sources, targets, vault.manifest, vaultRoot, vaultSessionScope, wikiTexts],
+    [endpoint, labels, readExistingPage, sourcePort, sources, targets, vault.manifest, vaultRoot, vaultSessionScope, wikiPages],
   );
 
   const allow = useCallback(async () => {
