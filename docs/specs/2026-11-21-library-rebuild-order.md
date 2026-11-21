@@ -46,8 +46,8 @@ it.
 | 8 | Installed-app check after 6 and 7 | this file | Not started | 7 |
 | 9 | F3: word sweep and `sourceWord` row | words-and-first-run | Merged #3761 | 6 |
 | 10 | I-2: mount the wiki index | index-column | Not started | 6 |
-| 11 | F2: drop-first stage, widened by "Documents already in the folder" | words-and-first-run | Not started | 9 |
-| 11b | F2b: notice a changed original | words-and-first-run | Not started | 11 |
+| 11 | F2: drop-first stage, widened by "Documents already in the folder" | words-and-first-run | In review (#3782) | 9 |
+| 11b | F2b: notice a changed original | words-and-first-run | Not started; F2 left origin tracking out | 11 |
 | 12 | F4: plain find dialog | words-and-first-run | Not started | 11 |
 | 13 | I-3: log view | index-column | Not started | 10 |
 | 14 | I-4: Sources half on `IndexRow` | index-column | Not started | 10 |
@@ -139,3 +139,5 @@ separately.
 - 2026-11-21: S-4 built with the owner's detail polish (sheet scale, icon steps, panel badges,
   index tools, band grid); the stale state is named for the event, and its press lists those
   sources. Row 18 is in review.
+- 2026-11-21: row 11 (F2) opened as draft #3782: found documents lead the empty Library,
+  drops copy in the background, and Rust offers native drops. Row 11b stays for decision 9.
