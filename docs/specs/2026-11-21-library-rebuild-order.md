@@ -45,7 +45,7 @@ it.
 | 7 | P-1: paper tokens and `Sheet` | this file | Merged (#3754) | 6 |
 | 8 | Installed-app check after 6 and 7 | this file | Not started | 7 |
 | 9 | F3: word sweep and `sourceWord` row | words-and-first-run | Merged #3761 | 6 |
-| 10 | I-2: mount the wiki index | index-column | Not started | 6 |
+| 10 | I-2: mount the wiki index | index-column | Draft #3775 | 6 |
 | 11 | F2: drop-first stage, widened by "Documents already in the folder" | words-and-first-run | Not started | 9 |
 | 11b | F2b: notice a changed original | words-and-first-run | Not started | 11 |
 | 12 | F4: plain find dialog | words-and-first-run | Not started | 11 |
@@ -136,3 +136,5 @@ separately.
 - 2026-11-21: row 9 (F3) opened as draft #3761: the ko and ja source word sweep and the
   `sourceWord` row.
 - 2026-11-21: row 9 merged; row 11 widened and row 11b added for documents already in the folder.
+- 2026-11-21: row 10 (I-2) opened as draft #3775: the Wiki column is the wiki's index, Check
+  wiki moved into the Check results head, and the shelf is gone.
