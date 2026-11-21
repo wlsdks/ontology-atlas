@@ -91,7 +91,6 @@ mod tests {
         assert!(!error.is_empty());
     }
 
-    /// The container stays outside TCC-protected folders.
     #[test]
     fn just_start_container_sits_outside_the_protected_folders() {
         assert_eq!(

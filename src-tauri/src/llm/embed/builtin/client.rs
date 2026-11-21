@@ -503,7 +503,6 @@ impl Embedder for BuiltinModel {
         MODEL_NAME
     }
 
-    /// Starts and loads the worker.
     fn start_build<'a>(
         &'a self,
         _vault_dir: &Path,

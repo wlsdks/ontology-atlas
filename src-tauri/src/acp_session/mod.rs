@@ -73,7 +73,6 @@ impl AcpSessions {
             .map_err(|err| format!("write-failed:{err}"))
     }
 
-    /// Tells the progress thread when to stop.
     fn contains(&self, session_id: &str) -> bool {
         self.0
             .lock()
@@ -303,7 +302,6 @@ pub(crate) fn acp_start(
     }
 
     let first_run_message = match &npx_preflight {
-        // Mention the healing for diagnostics.
         acp::npx_cache::NpxCachePreflight::HealedBrokenEntry { reason } => {
             Some(format!("npx-first-run-download:healed:{reason}"))
         }

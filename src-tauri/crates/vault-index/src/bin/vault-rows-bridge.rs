@@ -1,10 +1,6 @@
-//! Stands in for the app's two row commands outside the app, for `pnpm perf:vault-open`, the
-//! manifest equality test and the crate's process tests. It calls the same decode and row
-//! functions as `src-tauri/src/vault/index_rows.rs`.
-//!
-//! Frames on stdin: `<get|put|size|delete> <body bytes>\n<body>`. Each answer on stdout:
-//! `<ok|err> <bytes>\n<body>`. A `get` or `put` body is the wire body the app sends; a `size` or
-//! `delete` body is the vault root.
+//! Stands in for the app's row commands outside the app (`pnpm perf:vault-open`, the manifest equality
+//! test, process tests), calling the same functions as `src-tauri/src/vault/index_rows.rs`.
+//! Frames on stdin: `<get|put|size|delete> <body bytes>\n<body>`; each answer: `<ok|err> <bytes>\n<body>`.
 
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::path::Path;

@@ -706,7 +706,7 @@ fn a_document_discovery_offered_is_still_refused_for_planning_when_its_type_is_u
     fs::remove_dir_all(fixture).unwrap();
 }
 
-/// Reveal reaches Explorer now, so the vault guard must refuse Windows path syntax before
+/// Reveal reaches Explorer, so the vault guard must refuse Windows path syntax before
 /// anything is handed to the shell: a parent hop, a drive prefix and a UNC prefix. Only
 /// refusals are exercised, because an accepted path would open a real Explorer window.
 #[cfg(windows)]

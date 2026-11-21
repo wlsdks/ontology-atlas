@@ -134,7 +134,6 @@ pub struct GitSetRemoteResult {
     /// Always "origin".
     remote: String,
     url: String,
-    /// Tells the user what changed.
     replaced: Option<String>,
 }
 

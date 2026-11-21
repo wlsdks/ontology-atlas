@@ -466,7 +466,6 @@ mod tests {
         fs::remove_dir_all(&vault).ok();
     }
 
-    /// Where the audit log cannot be written safely, nothing is sent.
     #[test]
     fn sends_nothing_where_the_record_cannot_be_written() {
         let vault = temp_vault("closed");

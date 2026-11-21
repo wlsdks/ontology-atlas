@@ -262,7 +262,7 @@ mod vault_text_batch_tests {
     };
     use tauri::ipc::{InvokeResponseBody, IpcResponse};
 
-    /// The shape `vault-text-frames.ts` decodes into, which is what the JSON answer used to be.
+    /// The shape `vault-text-frames.ts` decodes into.
     #[derive(Debug, PartialEq, serde::Deserialize)]
     #[serde(rename_all = "camelCase")]
     struct DecodedRead {

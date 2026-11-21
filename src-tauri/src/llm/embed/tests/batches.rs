@@ -1,5 +1,3 @@
-//! Batches.
-
 use super::*;
 
 #[test]

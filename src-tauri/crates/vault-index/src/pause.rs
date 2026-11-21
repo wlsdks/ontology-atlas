@@ -4,7 +4,6 @@
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-/// Where a run can be parked.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Point {
     /// `vectors::plan`, after it read the deletion count and before it takes the writer lock.

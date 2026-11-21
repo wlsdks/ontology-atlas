@@ -20,7 +20,6 @@ pub(crate) fn managed_cli_prefix(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join("managed-node")
 }
 
-/// Added to PATH candidates.
 pub(crate) fn managed_cli_bin_dir(app_data_dir: &Path) -> PathBuf {
     managed_cli_prefix(app_data_dir).join("bin")
 }

@@ -56,7 +56,6 @@ pub(crate) struct AcpInstallProgress {
     stage: &'static str,
     received: Option<u64>,
     total: Option<u64>,
-    /// The tool's own line.
     note: Option<String>,
     /// Epoch ms, so an old completion is not shown as fresh.
     at: u64,

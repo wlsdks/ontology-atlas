@@ -1,22 +1,10 @@
-//! The set of filesystem roots the user actually granted, and the gate that keeps
-//! the vault-scope commands operating only inside them.
-//!
-//! Every vault command takes a `root_path` from the WebView and, on its own, only
-//! proves a relative path cannot escape *that argument*. With a WebView XSS the
-//! attacker chooses the argument, so `invoke('read_vault_text_file', { rootPath:
-//! '/Users/me', relativePath: '.ssh/id_rsa' })` walked straight out of any vault.
-//! This registry is the missing boundary: a root is honoured only when it equals or
-//! sits inside a directory the user genuinely chose — the native folder picker, the
-//! app's own vault container, or a vault restored from a Rust-owned record of a
-//! prior choice (never a path the renderer merely asserts). A verification launch
-//! adds one more source: the fixture folders its launch environment names, granted
-//! for that launch only and never persisted (`grant_launch_vault_root`). The
-//! environment is fixed before the WebView exists, so the renderer still cannot
-//! widen the set.
-//!
-//! Enforcement turns on once `initialize` runs at startup. Before that (unit tests
-//! that never call it) the gate is permissive; a test enforces on its own thread
-//! through `EnforcedScope` rather than flipping global state.
+//! The filesystem roots the user actually granted, and the gate keeping vault-scope commands inside them.
+//! A `root_path` from the WebView only proves a relative path cannot escape that argument, so a root is
+//! honoured only when it equals or sits inside a native-picker choice, the app's vault container, or a
+//! Rust-owned record of a prior choice; a verification launch adds its fixture folders for that launch only
+//! and never persisted (`grant_launch_vault_root`).
+//! Enforcement starts at `initialize`; before it (unit tests) the gate is permissive, and a test enforces
+//! on its own thread through `EnforcedScope`.
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};

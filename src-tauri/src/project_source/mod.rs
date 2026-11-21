@@ -46,7 +46,7 @@ struct SourceInventory {
     truncated: bool,
 }
 
-/// `std::io::copy` needs a writer; digest 0.11 hashers no longer implement `io::Write`.
+/// `std::io::copy` needs a writer; digest 0.11 hashers do not implement `io::Write`.
 struct HashingWriter<'a>(&'a mut Sha256);
 
 impl std::io::Write for HashingWriter<'_> {

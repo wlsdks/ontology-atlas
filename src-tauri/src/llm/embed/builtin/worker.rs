@@ -28,7 +28,6 @@ const EXIT_OUTPUT: i32 = 1;
 const EXIT_REQUEST: i32 = 2;
 const EXIT_NO_DATA_DIR: i32 = 3;
 
-/// A loaded model as the worker uses it.
 pub(crate) trait Model {
     fn embed(&self, texts: &[&str], stop: &AtomicBool) -> Result<Vec<Vec<f32>>, EmbedError>;
     fn runtime(&self) -> Runtime;

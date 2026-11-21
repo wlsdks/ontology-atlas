@@ -513,7 +513,6 @@ mod tests {
         assert_eq!(gate.state, "problem");
     }
 
-    /// A runtime without isolation gets none of the four isolation checks.
     #[test]
     fn a_runtime_without_isolation_gets_no_isolation_checks() {
         // `amp-acp` is a runtime the app does not isolate.

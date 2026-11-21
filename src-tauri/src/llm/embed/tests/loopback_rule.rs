@@ -1,5 +1,3 @@
-//! The loopback rule.
-
 use super::*;
 
 #[test]

@@ -487,8 +487,8 @@ mod atomic_write_tests {
         std::fs::remove_dir_all(&base).ok();
     }
 
-    /// Off the main thread, two writes to one file can now run at once. Each must still
-    /// land whole: the file holds exactly one of them, with no temporary file left behind.
+    /// Two writes to one file can run at once. Each must still land whole: the file holds exactly one of
+    /// them, with no temporary file left behind.
     #[test]
     fn concurrent_command_writes_to_one_file_leave_one_complete_version() {
         let dir = std::env::temp_dir().join(format!(
