@@ -28,7 +28,9 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   folder reads the project first, then `domains/`, `capabilities/` and `elements/`, then
   everything else. In a folder of 400 or more documents, once the read has run 0.2 s, the
   map draws what has arrived, at most once a second: each finished subfolder, and a quarter
-  of a subfolder of 400 or more only among the first three draws. It draws documents only,
+  of a subfolder of 400 or more only among the first three draws. The first draw waits for a
+  part that holds a concept; until then the opening frame stays, so a folder of wiki pages
+  reaches the Library without an empty map on the way. It draws documents only,
   never a relation-only node a later file might own. In a folder of up to 2,000 documents
   (`ARRIVAL_GLIDE_CONCEPT_CEILING`), marks already drawn glide to their new places on the
   homing spring and the camera keeps the overview framed until a hand moves it; above that,
