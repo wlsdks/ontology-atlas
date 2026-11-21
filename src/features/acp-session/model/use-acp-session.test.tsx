@@ -115,7 +115,8 @@ vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   },
 }));
 
-import { snapshotPermissionRequest, TURN_STOP_GRACE_MS, useAcpSession } from './use-acp-session';
+import { snapshotPermissionRequest } from './permissions/ask-permission';
+import { TURN_STOP_GRACE_MS, useAcpSession } from './use-acp-session';
 import { unavailableTaskBaseline } from './task-baseline';
 
 describe('queued permission identity', () => {
