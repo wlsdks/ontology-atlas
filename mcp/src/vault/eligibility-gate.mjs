@@ -13,7 +13,7 @@ import {
   pathShapedTitleMessage,
   slugOutsideKindFolderMessage,
 } from '../construction/construction-rules.mjs';
-import { hasCapabilityImplementationEvidence } from '../ontology-engine/capability-evidence.mjs';
+import { hasCapabilityImplementationEvidence } from '../ontology-engine/graph-context/capability-evidence.mjs';
 import {
   dependencyWitnessFinding,
   isStarterExampleNode,

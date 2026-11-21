@@ -250,9 +250,10 @@ await test('command inventory — help and command modules stay aligned', async 
     assert.equal(typeof mod[runner.exportName], 'function', `${command} exports ${runner.exportName}`);
   }
 
+  // A command is `<group>/<command>.mjs`; a folder inside a group holds that command's own parts.
   const commandFiles = readdirSync(join(__dirname, 'commands'), { recursive: true })
     .map((name) => name.replaceAll('\\', '/'))
-    .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
+    .filter((name) => name.split('/').length <= 2 && name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
     .sort();
   assert.deepEqual(commandFiles, Object.values(CLI_COMMAND_MODULES).sort());
 });

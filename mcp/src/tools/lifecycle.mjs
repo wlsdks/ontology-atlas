@@ -23,7 +23,8 @@ import {
 } from '../server/validate.mjs';
 import { formatAllowedValueError } from '../suggestions.mjs';
 import { canonicalDiskSlug, slugToWritePath, vaultSlugExists } from '../vault/slug-paths.mjs';
-import { extractSummaryExcerpt, readDoc } from '../vault/documents.mjs';
+import { extractSummaryExcerpt } from '../vault/body-delivery.mjs';
+import { readDoc } from '../vault/documents.mjs';
 import { VaultConflictError, applyAllOrNothing } from '../vault/atomic-writes.mjs';
 import { deleteDoc } from '../vault/doc-writes.mjs';
 import { findBacklinks } from '../vault/graph-queries.mjs';

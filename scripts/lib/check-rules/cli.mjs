@@ -35,7 +35,7 @@ export const rules = [
     order: 1170,
     command: 'pnpm integration:cli:entry',
     reason: 'CLI entrypoint, help, or init dispatch changed',
-    matches: [/^cli\/src\/index\.mjs$/, /^cli\/src\/lib\/cli-commands\.mjs$/],
+    matches: [/^cli\/src\/index\.mjs$/, /^cli\/src\/lib\/(?:init|help)\/[a-z-]+\.mjs$/, /^cli\/src\/lib\/status-lines\.mjs$/, /^cli\/src\/lib\/cli-commands\.mjs$/],
   },
   {
     order: 1180,
@@ -68,7 +68,7 @@ export const rules = [
     order: 1220,
     command: 'pnpm integration:cli:diagnosis',
     reason: 'CLI health/agent-brief/workspace-brief diagnosis command changed',
-    matches: [/^cli\/src\/commands\/diagnosis\/(?:health|agent-brief|workspace-brief)\.mjs$/],
+    matches: [/^cli\/src\/commands\/diagnosis\/(?:health|agent-brief|workspace-brief)(?:\.mjs|\/[a-z-]+\.mjs)$/],
   },
   {
     order: 1230,
@@ -91,7 +91,7 @@ export const rules = [
     reason: 'CLI repo analysis command, or the MCP analysis it prints, changed',
     matches: [
       /^cli\/src\/commands\/repo-analysis\/[^/]+\.mjs$/,
-      /^mcp\/src\/tools\/repo-analysis\.mjs$/,
+      /^mcp\/src\/tools\/repo-analysis(?:\/[^/]+(?<!\.test)\.mjs|\.mjs)$/,
       /^mcp\/src\/analyze\/.+\.mjs$/,
       /^tsconfig\.json$/,
     ],
@@ -100,7 +100,7 @@ export const rules = [
     order: 1260,
     command: 'pnpm integration:cli:local-vault',
     reason: 'CLI local vault/frontmatter command changed',
-    matches: [/^cli\/src\/commands\/local-vault\/(?:add|import|list|find|validate)\.mjs$/],
+    matches: [/^cli\/src\/commands\/local-vault\/(?:add|import|list|find|validate)(?:\.mjs|\/[a-z-]+\.mjs)$/],
   },
   {
     order: 1270,
