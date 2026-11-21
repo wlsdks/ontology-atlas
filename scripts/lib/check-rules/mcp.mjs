@@ -166,7 +166,7 @@ export const directTests = {
     ['mcp/src/vault/slug-paths.mjs', 'mcp/src/vault/vault.test.mjs'],
     ['mcp/src/vault/documents.mjs', 'mcp/src/vault/vault.test.mjs'],
     ['mcp/src/vault/body-delivery.mjs', 'mcp/src/vault/vault.test.mjs'],
-    ['mcp/src/vault/file-snapshot.mjs', 'mcp/src/vault/documents.test.mjs'],
+    ['mcp/src/vault/file-snapshot.mjs', 'mcp/src/vault/file-snapshot.test.mjs'],
     ['mcp/src/vault/text-read-pacing.mjs', 'mcp/src/vault/documents.test.mjs'],
     ['mcp/src/vault/graph-queries.mjs', 'mcp/src/vault/vault.test.mjs'],
     ['mcp/src/vault/eligibility-gate.mjs', 'mcp/src/vault/write-path-gate.test.mjs'],
