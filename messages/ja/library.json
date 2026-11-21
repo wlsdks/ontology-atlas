@@ -1119,7 +1119,7 @@
     "linkMissing": "このフォルダにはこの名前のものがありません。",
     "back": "戻る",
     "close": "ページを閉じる",
-    "sourceChanged": "書いた後に変更"
+    "changedBadge": "書いた後に変更"
   },
   "wikiIndex": {
     "views": {

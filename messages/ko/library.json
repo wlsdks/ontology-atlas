@@ -1119,7 +1119,7 @@
     "linkMissing": "이 폴더에 이 이름을 가진 것이 없어요.",
     "back": "뒤로",
     "close": "페이지 닫기",
-    "sourceChanged": "쓴 뒤 달라짐"
+    "changedBadge": "쓴 뒤 달라짐"
   },
   "wikiIndex": {
     "views": {
