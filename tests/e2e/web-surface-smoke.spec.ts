@@ -160,7 +160,7 @@ test.describe("web smoke 2: fallback workbench", () => {
     await page.getByTestId("library-open-vault").click();
     await expect(page.getByTestId("sources-table")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("sources-row")).toHaveCount(1);
-    await expect(page.getByTestId("sources-panel")).toContainText("위키 문서는 앱에서만 써요. 앱에서는 이 원문부터 시작해요.");
+    await expect(page.getByTestId("sources-panel")).toContainText("위키 문서는 앱에서만 써요. 앱에서는 이 자료부터 시작해요.");
     await expect(page.getByTestId("library-progress-continue")).toHaveCount(0);
   });
 

@@ -302,7 +302,7 @@
     "alreadyTyped": "すでにマップにある{count}件の文書はそのままです。",
     "runtimeSkills": "エージェントのスキルファイル{count}件は変更しません。エージェントが管理するファイルです。",
     "agentPointers": "エージェントの指示ファイル{count}件（AGENTS.md、CLAUDE.md）は変更しません。エージェントにこのフォルダの使い方を伝えるファイルなので、概念ではありません。",
-    "libraryFiles": "資料室のファイル{count}件（sources/、wiki/）は変更しません。原文は受け取ったまま残し、Wikiページは原文についてAtlasがすでに書いた文書です。",
+    "libraryFiles": "資料室のファイル{count}件（sources/、wiki/）は変更しません。資料は受け取ったまま残し、Wikiページは資料についてAtlasがすでに書いた文書です。",
     "confirm": "マップを作成",
     "cancel": "閉じる",
     "errorPrefix": "保存できませんでした：",

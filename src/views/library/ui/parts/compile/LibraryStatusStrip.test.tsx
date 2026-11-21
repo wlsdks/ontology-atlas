@@ -113,13 +113,13 @@ describe("LibraryStatusStrip — the waiting clauses are the home's own", () => 
   it("prints not-compiled and changed apart, under the home's words, never their sum", () => {
     const text = strip({ "wiki/a": [] }, { needsCompileCount: 12, notCompiledCount: 2, staleCount: 10 });
     expect(text).toContain("위키 문서 없음 2개");
-    expect(text).toContain("원문 10개 달라짐");
+    expect(text).toContain("자료 10개 달라짐");
     expect(text).not.toContain("기다림");
   });
 
   it("keeps the part-read count in its own clause", () => {
     const text = strip({ "wiki/a": [] }, { needsCompileCount: 3, staleCount: 2, partialCount: 1 });
-    expect(text).toContain("원문 2개 달라짐");
+    expect(text).toContain("자료 2개 달라짐");
     expect(text).toContain("일부만 읽음 1개");
     expect(text).not.toContain("기다림");
   });
@@ -128,7 +128,7 @@ describe("LibraryStatusStrip — the waiting clauses are the home's own", () => 
     // Four sources Compile acts on; two not compiled, one changed, one compiled with a page to review.
     const text = strip({ "wiki/a": [] }, { needsCompileCount: 4, notCompiledCount: 2, staleCount: 1 });
     expect(text).toContain("위키 문서 없음 2개");
-    expect(text).toContain("원문 1개 달라짐");
+    expect(text).toContain("자료 1개 달라짐");
     expect(text).toContain("1개 기다림");
   });
 });
@@ -141,7 +141,7 @@ describe("LibraryStatusStrip — counts past a thousand are grouped", () => {
   it("groups the not-compiled and changed counts the way the index chip does", () => {
     const text = strip({ "wiki/a": [] }, { needsCompileCount: 3000, notCompiledCount: 1400, staleCount: 1600 });
     expect(text).toContain("위키 문서 없음 1,400개");
-    expect(text).toContain("원문 1,600개 달라짐");
+    expect(text).toContain("자료 1,600개 달라짐");
     expect(text).not.toMatch(/\d{4}/);
   });
 });

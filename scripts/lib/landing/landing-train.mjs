@@ -245,6 +245,7 @@ export function trainCiStep({ checks, other, inFlight = false, emptyRollupObserv
   }
   if (checks.state === 'waiting') return { action: 'wait' };
   if (other?.state === 'failed') return { action: 'red', failed: other.failed };
+  if (other?.state === 'running') return { action: 'wait' };
   return { action: 'green' };
 }
 
@@ -265,7 +266,8 @@ export function driftVerdict({ trainFiles, mainFiles }) {
  * Every rule is evaluated and returned, so the caller prints which one qualified or disqualified
  * it. Inputs a caller could not read arrive as `null` and fail their rule; a guess is never a pass.
  *
- * - `ready-green`: every required context is green on its head and no unaccepted check is red.
+ * - `ready-green`: every required context is green on its head and no unaccepted check is red
+ *   or still running.
  * - `clean-merge`: `git merge-tree --write-tree origin/main <head>` is clean.
  * - `contains-main`: its head already contains today's `main`, so the tree its own CI tested is
  *   the tree that lands. A head behind `main` may import a file `main` changed since; it takes
@@ -288,6 +290,7 @@ export function fastPathEligibility({ checks, other, mergeClean, containsMain, p
       : `${checks.pending.length} required context(s) running, ${checks.unrun.length} not run (a draft runs none until it is marked ready)`;
     add('ready-green', false, why);
   } else if (other?.state === 'failed') add('ready-green', false, `unrequired check(s) red: ${other.failed.map((c) => c.name).join(', ')}`);
+  else if (other?.state === 'running') add('ready-green', false, `unrequired check(s) still running: ${other.running.join(', ')}`);
   else add('ready-green', true, 'every required context is green on its head');
 
   if (mergeClean === null || mergeClean === undefined) add('clean-merge', false, 'the trial merge could not run');
@@ -359,7 +362,7 @@ export function landingRoute({ verdict, checks, other, tolerated = [] }) {
       ? { route: 'train', blockers: ['ready-green'] }
       : { route: 'red', blockers: ['ready-green'], failed };
   }
-  if (checks?.state === 'waiting') return { route: 'own-ci', blockers: [] };
+  if (checks?.state === 'waiting' || other?.state === 'running') return { route: 'own-ci', blockers: [] };
   return { route: 'train', blockers: ['ready-green'] };
 }
 

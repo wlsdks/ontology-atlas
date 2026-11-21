@@ -208,7 +208,7 @@
     "caption": "マップの概念文書をすべて外して、最初から作り直せます。削除はせず、「.ontology-atlas/removed/」に移します。",
     "action": "クリア",
     "dialogTitle": "{count, number}件の概念文書をマップから外しますか？",
-    "dialogBody": "Wiki・ソース・企画の文書とエージェント設定ファイルはそのまま残ります。外した文書はこのフォルダの「.ontology-atlas/removed/」に保管されるので、元に戻せます。",
+    "dialogBody": "Wiki・資料・企画の文書とエージェント設定ファイルはそのまま残ります。外した文書はこのフォルダの「.ontology-atlas/removed/」に保管されるので、元に戻せます。",
     "confirm": "概念を外す",
     "confirming": "外しています…",
     "done": "{count, number}件の概念文書を外しました。",

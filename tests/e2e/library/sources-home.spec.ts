@@ -131,6 +131,7 @@ test.describe("the Sources home", () => {
           const cut = [...home.querySelectorAll("*")]
             .filter((node) => (node as HTMLElement).offsetWidth > 0)
             .filter((node) => !node.closest(".sr-only"))
+            .filter((node) => getComputedStyle(node).overflowX !== "visible")
             .filter((node) => node.scrollWidth > node.clientWidth + 0.5)
             .map((node) => `${node.getAttribute("data-testid") ?? node.tagName}: ${(node.textContent ?? "").slice(0, 60)}`);
           const canvases = document.querySelectorAll('[data-testid="library-reader-landing"] canvas').length;

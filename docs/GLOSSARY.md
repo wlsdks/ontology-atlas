@@ -134,11 +134,18 @@ message files already use for it (`settingsFolder.json` names the folder).
 | Git repository | repository |
 | AI coding tool | coding agent, then agent |
 | Text copied for an agent | prompt · Copy prompt |
-| Library input / output | source / wiki page |
+| Library input / output | source / wiki page (ko and ja: the everyday word for gathered material, see below) |
 | Library actions | Write wiki page · Check wiki · Save to wiki |
 | Named set of concepts | concept set |
 | Scheduled job / one execution | scheduled check / run |
 | Settings reference | Settings › Ontology folder |
+
+A Library source takes each locale's everyday word for gathered material: in
+ko and ja it is the stem of the Library's own name, never a word for "original
+text" and never the loanword developers read as source code. zh keeps its
+word. A citation keeps the citation word, and wiki and wiki page stay in every
+locale. The exact forms, and the keys where the old ko word keeps another
+sense, are the `sourceWord` row of `scripts/lib/i18n/locale-vocabulary.mjs`.
 
 A button names its action and a heading is a noun. Option labels describe what
 the option looks like, not a design nickname. Placeholders use a role or a

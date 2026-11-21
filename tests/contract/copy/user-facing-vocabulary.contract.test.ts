@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import en from '../../../messages/en.json';
+import ja from '../../../messages/ja.json';
 import ko from '../../../messages/ko.json';
-import { column } from '../../../scripts/lib/i18n/locale-vocabulary.mjs';
+import { column, sourceWordOffenders } from '../../../scripts/lib/i18n/locale-vocabulary.mjs';
 
 /**
  * One word per thing in the strings people read: this gate counts synonyms and does not pin prose.
@@ -148,6 +149,19 @@ describe('words the user reads — one thing, one name', () => {
       `"node" grew from ${NODE_BASELINE} to ${survivors.length}: ${survivors.join(', ')}. ` +
         'Name the Node.js runtime or a CLI command only; a node on the map is a concept.',
     ).toBeLessThanOrEqual(NODE_BASELINE);
+  });
+
+  it.each([
+    ['ko', ko],
+    ['ja', ja],
+  ] as const)('a Library source keeps one everyday word in %s', (locale, catalog) => {
+    const entries = strings(catalog);
+    expect(entries.length, `the ${locale} catalog read nothing`).toBeGreaterThan(1000);
+    const { word } = column('sourceWord', locale);
+    expect(
+      sourceWordOffenders(locale, entries),
+      `A Library source is "${word}" on screen; another sense goes in the row's kept keys with a reason.`,
+    ).toEqual([]);
   });
 
   it('the empty-map screen does not speak in kind names', () => {
