@@ -39,6 +39,20 @@ function readVerifyMacosAppLaunchScript() {
   return `${entry}\n${libText}`;
 }
 
+// check-macos-release-status.mjs is an entry plus scripts/desktop-release/release-status/*.mjs modules; the
+// `.includes(...)` gates below check the combined surface, so read all of them.
+function readReleaseStatusScript() {
+  const entry = readText("scripts/desktop-release/check-macos-release-status.mjs");
+  const moduleDir = path.join(root, "scripts/desktop-release/release-status");
+  const moduleFiles = fs.existsSync(moduleDir)
+    ? fs.readdirSync(moduleDir).filter((name) => name.endsWith(".mjs") && !name.endsWith(".test.mjs")).sort()
+    : [];
+  const moduleText = moduleFiles
+    .map((name) => readText(path.join("scripts/desktop-release/release-status", name)))
+    .join("\n");
+  return `${entry}\n${moduleText}`;
+}
+
 function fail(message) {
   console.error(`[desktop-check] ${message}`);
   process.exitCode = 1;
@@ -108,7 +122,7 @@ const releaseTagScript = readText("scripts/desktop-release/check-macos-release-t
 const releaseSlotScript = readText("scripts/desktop-release/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/desktop-release/check-macos-release-github.mjs");
 const releaseRunScript = readText("scripts/desktop-release/watch-macos-release-run.mjs");
-const releaseStatusScript = readText("scripts/desktop-release/check-macos-release-status.mjs");
+const releaseStatusScript = readReleaseStatusScript();
 const goalAuditScript = readText("scripts/desktop-release/check-desktop-goal-audit.mjs");
 const macosReleaseNamesHelper = readText("scripts/lib/macos-release-names.mjs");
 const hostedDownloadSurfaceScript = readText("scripts/download/check-hosted-download-surface.mjs");

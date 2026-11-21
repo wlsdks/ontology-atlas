@@ -1648,6 +1648,12 @@ describe('focused check suggestions', () => {
     }
   });
 
+  it('suggests the desktop checker tests when a release-status module changes', () => {
+    for (const path of ['scripts/desktop-release/release-status/status-report.mjs', 'scripts/desktop-release/release-status/status-report.test.mjs']) {
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes('pnpm test:desktop:check'), `${path} must recommend the desktop checker tests`);
+    }
+  });
+
   it('routes every CI impact surface to its planner and executor contract', () => {
     const paths = [
       'scripts/ci/classify-change.mjs',
