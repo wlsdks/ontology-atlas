@@ -788,6 +788,7 @@ fn the_contract_shapes_cross_as_camel_case() {
         "passagesPerSecond",
         "model",
         "vectorsBytes",
+        "busy",
     ] {
         assert!(shown.get(key).is_some(), "{key}");
     }

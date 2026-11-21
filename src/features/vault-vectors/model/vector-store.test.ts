@@ -3,13 +3,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { OFF_VECTOR_STATUS, prepareVectors, vectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
 import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
-import { prepare, resume, useVectorStatus } from './vector-store';
+import { afterJob, prepare, resume, useVectorStatus } from './vector-store';
 
+const events = vi.hoisted(() => ({
+  send: null as ((event: import('@/shared/lib/vault-folder/tauri-vault-vectors').VectorStatusEvent) => void) | null,
+}));
 vi.mock('@/shared/lib/vault-folder/tauri-vault-vectors', async (original) => ({
   ...(await original<typeof import('@/shared/lib/vault-folder/tauri-vault-vectors')>()),
   prepareVectors: vi.fn(),
   vectorStatus: vi.fn(),
-  subscribeVectorStatus: () => () => undefined,
+  subscribeVectorStatus: (listener: NonNullable<typeof events.send>) => {
+    events.send = listener;
+    return () => undefined;
+  },
 }));
 
 const ready = { ...OFF_VECTOR_STATUS, phase: 'ready' as const, filesDone: 4, filesTotal: 4 };
@@ -60,5 +66,28 @@ describe('the stored search-by-meaning choice', () => {
     vi.mocked(prepareVectors).mockResolvedValueOnce({ ...OFF_VECTOR_STATUS, phase: 'failed', failure: 'modelGone' });
     await expect(resume(rootPath)).resolves.toBe(true);
     expect(vi.mocked(prepareVectors).mock.calls).toEqual([[rootPath, { kind: 'builtin' }]]);
+  });
+});
+
+describe('waiting for a folder job to end', () => {
+  it('resolves at the first status the app publishes with no pass running, not before', async () => {
+    // What the folder held before the search answered `busy` does not end the wait.
+    vaultVectorSource.write(rootPath, { kind: 'builtin' });
+    vi.mocked(vectorStatus).mockResolvedValueOnce(ready);
+    renderHook(() => useVectorStatus(rootPath));
+    await act(async () => {});
+    let ended = false;
+    const waiting = afterJob(rootPath).then(() => { ended = true; });
+    events.send!({ rootPath: '/another-folder', status: ready });
+    await act(async () => {});
+    expect(ended).toBe(false);
+    events.send!({ rootPath, status: { ...ready, busy: true } });
+    events.send!({ rootPath: '/another-folder', status: ready });
+    await act(async () => {});
+    expect(ended).toBe(false);
+
+    events.send!({ rootPath, status: { ...ready } });
+    await waiting;
+    expect(ended).toBe(true);
   });
 });

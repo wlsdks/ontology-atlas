@@ -13,7 +13,7 @@ import {
 import { vaultVectorSource, type VectorChoice } from '@/shared/lib/vault-folder/vault-vector-source';
 import { deskLine } from './desk-line';
 import { noteSearchAnswer, statusKeepsFailure } from './search-failure';
-import { readStatusAgain, useVectorStatusOf } from './vector-store';
+import { afterJob, readStatusAgain, useVectorStatusOf } from './vector-store';
 
 /** Passages one question asks for; the desk keeps those in the files it searches. */
 export const VECTOR_SEARCH_LIMIT = 24;
@@ -51,6 +51,8 @@ export interface VectorSearch {
   warm: () => void;
   /** In the app with the index on and nothing set up, so a search that finds nothing offers setup. */
   offerSetup: boolean;
+  /** After an answer that said `busy`: resolves when the folder's job, such as the update that question started, has ended. */
+  afterJob: () => Promise<void>;
 }
 
 /**
@@ -81,5 +83,7 @@ export function useVectorSearch(rootPath: string | null, markdownFiles: number, 
     void warmVectors(source).catch(() => undefined);
   }, [rootPath, source]);
 
-  return { ask, warm, offerSetup };
+  const waitForJob = useCallback(() => (rootPath === null ? Promise.resolve() : afterJob(rootPath)), [rootPath]);
+
+  return { ask, warm, offerSetup, afterJob: waitForJob };
 }

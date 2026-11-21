@@ -59,6 +59,7 @@
       "runnerDownNotice": "Ollama 没有响应，因此这些结果只按词语匹配。",
       "failedNotice": "语义搜索没有响应，因此这些结果只按词语匹配。",
       "noMatchBoth": "已搜索的文件中没有与这些词语或这个意思相符的段落。",
+      "noMatchChanged": "已搜索的文件中没有与这些词语或这个意思相符的段落。已略去已更改文件中的 {count, number} 段内容。",
       "stoppedEmpty": "尚未准备任何文件就已停止。",
       "modelFailedDetail": "{code, select, load {无法加载模型} convert {无法为这台电脑准备模型} check {准备好的模型未通过校验} worker_exited {模型进程已结束} timed_out {未能及时响应} internal {Atlas 内部错误} other {}}",
       "modelFailedGeneric": "无法在这台电脑上运行模型。",

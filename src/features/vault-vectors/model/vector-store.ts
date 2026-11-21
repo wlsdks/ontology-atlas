@@ -103,6 +103,22 @@ export function readStatusAgain(rootPath: string): Promise<void> {
   return refresh(rootPath);
 }
 
+/**
+ * Resolves at the first status the app publishes for the folder after this call that runs no
+ * pass. Called once a search answered `busy`, so the job it reports is the one this waits for.
+ */
+export function afterJob(rootPath: string): Promise<void> {
+  const before = statuses.get(rootPath);
+  return new Promise((resolve) => {
+    const stopListening = subscribe(() => {
+      const status = statuses.get(rootPath);
+      if (status === before || status?.busy !== false) return;
+      stopListening();
+      resolve();
+    });
+  });
+}
+
 /** The folder's last known status without asking for one: the long-work seat only listens. */
 export function statusOf(rootPath: string): VectorStatus | null {
   return statuses.get(rootPath) ?? null;

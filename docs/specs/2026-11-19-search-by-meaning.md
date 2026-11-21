@@ -148,7 +148,9 @@ section wins: those were written for a runner-only design and are kept for the O
    store records itself; its counts are the changed files alone. A folder never finished
    continues as preparing, with folder-wide counts. An update starts after 30 s with no index pass
    for that folder, and no later than 10 min after the first change it waits on, so an agent
-   writing every few seconds starts the worker once, not once per write.
+   writing every few seconds starts the worker once, not once per write. A question that drops
+   passages of changed files starts their update at once: someone is waiting, and a question
+   never pushes the wait back.
 9. **A question.** Find evidence runs word search and meaning search together and fuses them
    (reciprocal rank, k = 60) into the desk's one list. Each row carries the reason it is there:
    **Same words**, **Similar meaning**, or both. The model loads when the question field takes
@@ -306,6 +308,8 @@ interface VectorStatus {
   passagesPerSecond: number | null;    // smoothed over the run; null until measured
   model: { doneBytes: number; totalBytes: number } | null;   // while 'modelDownloading'
   vectorsBytes: number;
+  busy: boolean;                       // a pass runs or follows the running one; an update
+                                       // reads 'ready' until it knows something changed
 }
 
 interface VectorProbe {
@@ -323,7 +327,8 @@ interface PassageHit { path: string; lineStart: number; lineEnd: number; heading
                        score: number }
 interface VectorFound { state: 'ok' | 'notReady' | 'failed'; failure: VectorFailure | null;
                          hits: PassageHit[]; staleDropped: number;
-                         filesReady: number; filesTotal: number }
+                         filesReady: number; filesTotal: number;
+                         busy: boolean }   // the folder's busy once answered
 ```
 
 | Command | Does | Never |
@@ -420,7 +425,7 @@ Where else it connects in this slice:
 5. When the person presses Stop, or quits the app, Atlas keeps every finished passage. **Resume**, or the next app open, continues from there and sends only passages not yet prepared.
 6. When the person presses Find evidence with the folder prepared, Atlas runs word search and meaning search together. It merges them by reciprocal-rank fusion (k = 60) into the same 8 claims and 8 source passages. Each lead is labelled **Same words**, **Similar meaning** or both, and shows its passage with lines, as leads do today. The coverage line adds "By meaning: N of M files prepared".
 7. When a file changes, the index's stamp pass prepares again only the passages whose text changed. The desk head says "Updating N changed files" only while N > 0.
-8. **The model is wrong or the evidence missing.** When a meaning hit's file has changed since it was prepared, Atlas drops that hit and counts it with changed files. When the runner does not answer within 10 s, Atlas shows the word results with "Ollama did not answer, so these results match words only." When neither search finds anything, Atlas says so and keeps **Investigate sources**. A meaning hit is a lead to read; it never fills in an answer or changes a page's status. It reaches an agent only as a row of a report's brief, after the consent the report already asks for.
+8. **The model is wrong or the evidence missing.** When a meaning hit's file has changed since it was prepared, Atlas drops that hit and counts it with changed files and starts that file's update. A list with nothing found says how many passages of changed files it left out instead of only saying no passage matches; when the answer says the folder is `busy`, the desk asks that question once more at the first status that is not. When the runner does not answer within 10 s, Atlas shows the word results with "Ollama did not answer, so these results match words only." When neither search finds anything, Atlas says so and keeps **Investigate sources**. A meaning hit is a lead to read; it never fills in an answer or changes a page's status. It reaches an agent only as a row of a report's brief, after the consent the report already asks for.
 
 **What leaves the machine, per source.**
 
@@ -609,3 +614,4 @@ Order: S1 and S2 first and in parallel, then S3. S4 follows once #3607 merges, a
 - 2026-11-20: the long-work seat carries preparation on every tab. The card opens for a press made in this launch and shows the model download in GB, files prepared of the total with the file being read and minutes left, then the result with Ask a question, which opens the Wiki desk with focus in the field. A preparation that continues by itself after a restart, and an update of ten or more changed files, draw only the Library tile's ring, which fills with the fraction prepared; a failure raises the card even when hidden. While the desk's line is on screen, the card stands down. The seat only listens to the job's events, so the folder is still told its choice once at open. Item 8 measured in the static build: the card and the rail commit at most 4 times a second at 20 events a second, and no frame interval exceeds 50 ms while the count rolls or the phase changes.
 - 2026-11-20: after the second review the screens follow the contract's download, prefix and model-size rules. Only the dialog's Download and prepare asks for a download; Resume on a folder whose model is gone says so and offers Download again. A search names the top folders the desk searches, in composed and decomposed form, and a hit joins its file in composed form. Settings shows the model whenever it holds bytes, a download that did not finish included, with the index off or no folder open. A runner that did not answer, or no longer has the model, is held for the line until a search answers or the app's next status event, since the app leaves the status as it was. A choice is stored only once the app accepts it and is forgotten with its folder. When meaning covered part of the folder, the limits say how much. The desk is not drawn again on a status event; only the line is, and its ring moves by a CSS transition.
 - 2026-11-20: second independent review, Rust side. Consent is enforced in Rust: only a prepare with `download: true` fetches the model, and every other path answers `modelGone` without fetching or creating anything. A built-in folder whose model is not ready reads `modelGone` ahead of `stopped` and of other failures, so a stopped download no longer reads "stopped at 0 of 0". A job cut off by a quit continues 30 s after the status call that arms it. A search takes path prefixes that choose candidates before the limit; the probe reads the folder's counts from the search index and adds `modelBytes`; Delete model removes every byte it counts. `modelFailed` details are a closed list of six. Offline is a failed download, and `needsDirect` needs a proxy named in the environment. A runner question has one 10 s limit. A Delete that leaves its files is reported as an error, not as a delete. The download hosts are the one constant `MODEL_DOWNLOAD_HOSTS`.
+- 2026-11-21: a question in the half minute after files change found nothing and said no passage matched, while the quiet wait it reset kept the update from starting. A question that drops passages of changed files now starts their update at once and ends that wait. Status and search answers carry `busy`, since an update reads `ready` while it plans; an empty list says how many passages it left out and, when the answer was `busy`, is asked once more when the job ends. A list with rows is not asked again, so a report or a Jev check on it stays.
