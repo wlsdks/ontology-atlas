@@ -262,13 +262,12 @@
       "error": "要対応"
     },
     "complete": {
-      "read": "読み込み済み",
-      "proposal": "書き込みを提案",
-      "waiting": "許可を要求",
-      "write": "ファイルを変更",
-      "error": "失敗"
-    },
-    "recentCount": "最近{count, number}"
+      "read": "ファイルを読み込みました",
+      "proposal": "書き込みが提案されました",
+      "waiting": "許可が求められました",
+      "write": "{count, plural, =1 {Wikiページが変更されました} other {Wikiページ#件が変更されました}}",
+      "error": "失敗しました"
+    }
   },
   "eyebrow": "このフォルダ",
   "lede": "形式を問わず集めた文書と、それを読んで書いたWikiページです。資料は受け取ったままの状態で保持され、Wikiページの主張はどれも資料を引用します。",
@@ -703,11 +702,11 @@
       "title": "読む",
       "startWith": "まず{title}から",
       "nothingYet": "Wikiページはまだありません。「Wikiページを作成」で最初のページを作ります。",
-      "coveredLine": "資料{total, number}件中{compiled, number}件にWikiページあり",
-      "coveredChecking": "資料{total, number}件中{compiled, number}件にWikiページあり · {checking, number}件を確認中",
-      "coveredPartial": "資料{total, number}件中{compiled, number}件にWikiページあり · {partial, number}件は一部のみ読み込み",
-      "coveredStale": "資料{total, number}件中{compiled, number}件にWikiページあり · {stale, number}件は資料が変更",
-      "coveredUnreadable": "資料{total, number}件中{compiled, number}件にWikiページあり · {unreadable, number}件は読み込めない"
+      "coveredLine": "資料{total, number}件中{compiled, number}件にWikiページがあります",
+      "coveredChecking": "資料{total, number}件中{compiled, number}件にWikiページがあります · {checking, number}件は確認中です",
+      "coveredPartial": "資料{total, number}件中{compiled, number}件にWikiページがあります · {partial, number}件は一部だけ読み込みました",
+      "coveredStale": "資料{total, number}件中{compiled, number}件にWikiページがあります · {stale, number}件は資料が変わりました",
+      "coveredUnreadable": "資料{total, number}件中{compiled, number}件にWikiページがあります · {unreadable, number}件は読み込めません"
     },
     "brainAgent": "{name}",
     "brainLocal": "{host}上の{model}",
@@ -1106,8 +1105,7 @@
     "first": "Wikiページがある資料はまだありません",
     "today": "今日 +{count, number}",
     "chartAria": "Wikiページがある資料の数（各ページに記された日付順）",
-    "chartTitle": "Wikiページがある資料数",
-    "chartNow": "今日{count, number}",
+    "chartTitle": "{date}からの、Wikiページがある資料数",
     "point": "{date}：現在の資料{total, number}件中{count, number}件（{percent, number}%）",
     "dateBasis": "各点はWikiページに記された日付です。",
     "undated": "日付なし{count, number}件",
@@ -1117,7 +1115,7 @@
     "writerAnyAgent": "接続したコーディングエージェントが書きます",
     "batchReturned": "前回のリクエストの資料{count, number}件はまだWikiページがないため、一覧の最後に移しました。",
     "webLine": "Wikiページを書けるのはアプリだけです。閲覧はここでもできます。",
-    "allDone": "すべての資料にWikiページがあります"
+    "allDone": "書くWikiページはもうありません"
   },
   "sourcesHome": {
     "aria": "フォルダまたはファイル形式でまとめた資料と、Wikiページがある資料の数",

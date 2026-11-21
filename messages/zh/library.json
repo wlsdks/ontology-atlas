@@ -262,13 +262,12 @@
       "error": "需要处理"
     },
     "complete": {
-      "read": "已读取",
+      "read": "已读取文件",
       "proposal": "已提出写入",
       "waiting": "已请求许可",
-      "write": "文件已更改",
+      "write": "{count, plural, =1 {Wiki 页面已更改} other {# 个 Wiki 页面已更改}}",
       "error": "失败"
-    },
-    "recentCount": "最近 {count, number}"
+    }
   },
   "eyebrow": "此文件夹中",
   "lede": "你收集的各种格式的文档，以及据此撰写的 Wiki 页面。来源按原样保留，Wiki 页面上的每条论断都引用来源。",
@@ -1106,8 +1105,7 @@
     "first": "还没有来源有 Wiki 页面",
     "today": "今天 +{count, number}",
     "chartAria": "有 Wiki 页面的来源数量，按各页面记录的日期",
-    "chartTitle": "有 Wiki 页面的来源数",
-    "chartNow": "今天 {count, number}",
+    "chartTitle": "自 {date} 起有 Wiki 页面的来源数",
     "point": "{date}：当前 {total, number} 份来源中的 {count, number} 份（{percent, number}%）",
     "dateBasis": "每个点使用其 Wiki 页面记录的日期。",
     "undated": "{count, number} 份没有日期",
@@ -1117,7 +1115,7 @@
     "writerAnyAgent": "由你连接的编码代理撰写",
     "batchReturned": "上次请求中有 {count, number} 份来源仍没有 Wiki 页面，已移到列表末尾。",
     "webLine": "只有应用能撰写 Wiki 页面，在这里可以阅读。",
-    "allDone": "每份来源都有 Wiki 页面"
+    "allDone": "没有待写的 Wiki 页面了"
   },
   "sourcesHome": {
     "aria": "按文件夹或文件类型分组的来源，以及有 Wiki 页面的来源数",

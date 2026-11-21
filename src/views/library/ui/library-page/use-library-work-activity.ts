@@ -62,7 +62,7 @@ export function useLibraryWorkActivity({
   const receiveObservedWork = useCallback((receipts: readonly LibraryWorkEvent[]) => {
     scheduleLibraryWork((current) => receipts.reduce(appendLibraryWorkReceipt, current));
   }, [scheduleLibraryWork]);
-  useObservedWikiWork(workVaultScope, wikiRevisionStamp, resetObservedWork, receiveObservedWork);
+  const changedWikiPages = useObservedWikiWork(workVaultScope, wikiRevisionStamp, resetObservedWork, receiveObservedWork);
   useEffect(() => {
     if (agent.route !== "local" || !localWorkInScope || !localToolActivity) return;
     const event = libraryWorkEventFromLocalSnapshot(
@@ -129,6 +129,6 @@ export function useLibraryWorkActivity({
     agentActivity, setAgentActivity, libraryWorkActivity, setLibraryWorkActivity,
     scheduleLibraryWork, handleAcpToolActivityChange, localToolActivity, localWorkInScope,
     localReviewVisible, localReviewBusy, handleTerminalToolObservation, resetObservedWork,
-    receiveObservedWork,
+    receiveObservedWork, changedWikiPages,
   };
 }

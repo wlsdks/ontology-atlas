@@ -41,16 +41,20 @@ test.describe("Library live work activity", () => {
     await harness.write(page);
     await expect.poll(async () => (await harness.snapshot(page)).writes.some((write) => write.relativePath === "wiki/architecture.md")).toBe(true);
     await page.getByTestId("library-work-history-toggle").click();
-    await expect(page.getByTestId("library-work-recent")).toContainText("File changed");
+    await expect(page.getByTestId("library-work-recent")).toContainText("Wiki page changed");
     await page.getByTestId("library-work-history-toggle").click();
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-kind", "write");
+    // The line says what changed and names the page by its title; the address is its description.
+    await expect(page.getByTestId("library-work-current").getByRole("status")).toHaveText("Wiki page changed");
+    await expect(page.getByTestId("library-work-target")).toHaveText("Architecture evidence");
+    await expect(page.getByTestId("library-work-target")).toHaveAccessibleDescription("wiki/architecture");
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-phase", "complete");
     await harness.finish(page);
     await expect(page.getByTestId("acp-chat-panel")).toHaveAttribute("data-acp-status", "ready");
     await page.getByRole("button", { name: "Close conversation" }).click();
     await page.getByTestId("library-work-history-toggle").click();
-    await page.getByRole("button", { name: "File changed · architecture", exact: true }).focus();
-    await expect(page.getByRole("button", { name: "File changed · architecture", exact: true })).toBeFocused();
+    await page.getByRole("button", { name: "Wiki page changed · Architecture evidence", exact: true }).focus();
+    await expect(page.getByRole("button", { name: "Wiki page changed · Architecture evidence", exact: true })).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("library-reader-back")).toBeVisible();
     // A wiki page open: still one Conversation control and one Questions control, both in the header.
@@ -91,7 +95,7 @@ test.describe("Library live work activity", () => {
     await harness.read(page);
     await expect(band.getByTestId("library-work-current")).toHaveAttribute("data-work-kind", "read");
     expect(await geometry()).toEqual(before);
-    // The line is the kind of work and the file as a press; "Recent N" waits until there is a recent one.
+    // The line is the kind of work and the file as a press; the list's press waits until there is a receipt.
     // While work runs Continue carries no ring of its own, and its label sits centred.
     const press = band.getByTestId("library-progress-continue");
     await expect(press.locator("svg")).toHaveCount(0);
@@ -106,7 +110,7 @@ test.describe("Library live work activity", () => {
     await expect(target).toHaveText("architecture.docx");
     await expect(target).toHaveAttribute("title", "sources/architecture.docx");
     await expect(target).toHaveAccessibleDescription("sources/architecture.docx");
-    await expect(band.getByText(/^Recent 0$/)).toHaveCount(0);
+    await expect(band.getByTestId("library-work-history-toggle")).toHaveCount(0);
     await expect(page.getByText(/^(happening now|latest observation)$/i)).toHaveCount(0);
     await expect(page.getByTestId("library-reader-landing").locator("svg.lucide-chevron-down")).toHaveCount(0);
 
@@ -137,7 +141,7 @@ test.describe("Library live work activity", () => {
     await expect.poll(async () => (await harness.snapshot(page)).writes.length).toBe(0);
     await harness.finish(page);
     await page.getByTestId("library-work-history-toggle").click();
-    await expect(page.getByTestId("library-work-recent")).not.toContainText("File changed");
+    await expect(page.getByTestId("library-work-recent")).not.toContainText("Wiki page changed");
     await page.getByTestId("library-work-history-toggle").click();
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-kind", "error");
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-phase", "complete");

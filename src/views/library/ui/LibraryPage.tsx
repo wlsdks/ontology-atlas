@@ -198,6 +198,11 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       ),
     [docs],
   );
+  const wikiTitleBySlug = useMemo(
+    () => new Map(docs.filter((doc) => isWikiPage(doc)).map((doc) => [doc.slug, doc.title] as const)),
+    [docs],
+  );
+  const wikiPageTitle = useCallback((ref: string) => wikiTitleBySlug.get(ref) ?? null, [wikiTitleBySlug]);
   const model = useLibraryModel({
     docs,
     sources: manifest?.sources,
@@ -276,7 +281,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const workActivity = useLibraryWorkActivity({ workVaultScope, nativeVaultRootPath, wikiRevisionStamp, agent });
   const {
     agentActivity, setAgentActivity, libraryWorkActivity, handleAcpToolActivityChange,
-    localReviewVisible, localReviewBusy, handleTerminalToolObservation,
+    localReviewVisible, localReviewBusy, handleTerminalToolObservation, changedWikiPages,
   } = workActivity;
   const conversationDoor =
     agent.route === "agent" && agent.runtime !== null && nativeVaultRootPath !== null && !agent.open ? (
@@ -692,7 +697,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                 t={t}
               />}</div>
               {nativeVaultRootPath !== null ? (
-                <LibraryWorkLine activity={libraryWorkActivity} onSelect={openWorkTarget} className="max-w-[45%] flex-none" />
+                <LibraryWorkLine activity={libraryWorkActivity} onSelect={openWorkTarget} pageTitle={wikiPageTitle} changedPages={changedWikiPages} className="max-w-[45%] flex-none" />
               ) : null}
             </div>
           ) : null}
@@ -720,6 +725,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               workActivity={questionDeskVisible && showLibraryWorkStrip(deskWorkActivity, true) ? <LibraryWorkActivityStrip
                 compact activity={deskWorkActivity}
                 onSelect={openWorkTarget}
+                pageTitle={wikiPageTitle}
               /> : null}
               report={deskReport && deskReport.answer === lastAnswer ? {
                 question: deskReport.answer.question,
@@ -771,6 +777,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                     <LibraryWorkLine
                       activity={libraryWorkActivity}
                       onSelect={openWorkTarget}
+                      pageTitle={wikiPageTitle}
+                      changedPages={changedWikiPages}
                       // Reserved from the first paint while an agent can work here, so its first event moves nothing.
                       reserved={!turns.compileBlocked}
                       className="w-full"
