@@ -242,7 +242,7 @@ export function matchesAll(id, locale, text, table = VOCABULARY) {
 
 /**
  * Keys whose text still uses an old word for a Library source. ko is checked across the whole
- * catalog; ja only where a key means a Library source, because ja also writes code as ソース.
+ * catalog; ja only where a key means a Library source, because ja also names source code with that loanword.
  */
 export function sourceWordOffenders(locale, entries, table = VOCABULARY) {
   const { banned, kept, namespaces, keys } = column('sourceWord', locale, table);
