@@ -109,6 +109,35 @@ describe('VaultDiffToaster', () => {
     expect(toastMocks.show).not.toHaveBeenCalled();
   });
 
+  it('records a new baseline when another folder opens, so its files are not reported as added', () => {
+    const first = { name: 'first' };
+    const second = { name: 'second' };
+    localVaultMocks.useLocalVault.mockReturnValue({
+      status: 'loaded',
+      handle: first,
+      manifest: manifestWith([{ slug: 'a', mtime: 1000 }]),
+      consumeSelfWrittenSlugs: () => new Set(),
+    });
+    const { rerender } = render(<VaultDiffToaster />);
+    localVaultMocks.useLocalVault.mockReturnValue({
+      status: 'loaded',
+      handle: second,
+      manifest: manifestWith([{ slug: 'x', mtime: 1000 }, { slug: 'y', mtime: 1000 }]),
+      consumeSelfWrittenSlugs: () => new Set(),
+    });
+    rerender(<VaultDiffToaster />);
+    expect(toastMocks.show).not.toHaveBeenCalled();
+
+    localVaultMocks.useLocalVault.mockReturnValue({
+      status: 'loaded',
+      handle: second,
+      manifest: manifestWith([{ slug: 'x', mtime: 1000 }, { slug: 'y', mtime: 1000 }, { slug: 'z', mtime: 1000 }]),
+      consumeSelfWrittenSlugs: () => new Set(),
+    });
+    rerender(<VaultDiffToaster />);
+    expect(toastMocks.show).toHaveBeenCalledWith('추가 — z', 'info');
+  });
+
   it('raises no toast for the line a finished wiki check appends to the wiki log', () => {
     localVaultMocks.useLocalVault.mockReturnValue({
       status: 'loaded',
