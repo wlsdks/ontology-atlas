@@ -411,7 +411,7 @@ function backProject(
 /**
  * Cluster centres filling a volume: packed `gap` apart in the rest pose with room for a title each, at depth levels that
  * differ between screen neighbours, a loose group of `centreRadius` at the centre. A small pack that reads poorly is packed
- * again rounder. O(k² · PACK_DIRECTIONS) per pass; one settle of 200 clusters took 18-21 ms (M-series, 2026-11-15), budget 50 ms.
+ * again rounder. O(k² · PACK_DIRECTIONS) per pass; one settle of 200 clusters took 18-21 ms on an M-series Mac, budget 50 ms.
  */
 export function clusterVolumeAnchors(
   radii: readonly number[],
