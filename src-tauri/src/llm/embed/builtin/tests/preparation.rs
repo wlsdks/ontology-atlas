@@ -2,6 +2,7 @@ use super::super::download::part_path;
 #[cfg(unix)]
 use super::super::download::OPEN_RUN;
 use super::super::pins::{self, PinnedFile};
+use super::super::reference::{check_conversion, References};
 use super::fake::*;
 use super::tiny::{self, Tiny};
 use super::*;
