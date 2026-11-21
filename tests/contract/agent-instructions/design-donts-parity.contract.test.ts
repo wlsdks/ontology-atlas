@@ -22,7 +22,7 @@ import { describe, expect, it } from 'vitest';
  * arrow and the card height — **both already backed by contract tests** — so a
  * copy was behind the spec and nobody knew. The discipline this repository wrote
  * down for skill copies had never been applied here: *"With two copies and no gate,
- * drifting is the default"* — CLAUDE.md.
+ * drifting is the default"* — the root instruction file.
  *
  * ## Why slugs are compared rather than sentences
  *
