@@ -36,11 +36,10 @@ export interface AcpClientHandlers {
   verdict: (filePath: string | null) => Promise<AcpPermissionVerdict>;
   /** The chosen `optionId`, or null for a rejection. With no screen or no answer, rejection is the default: an unasked question counted as allowed is no gate. */
   askUser: (request: AcpPermissionRequest) => Promise<string | null>;
-  /** True while every request must be refused unseen, before any automatic allow (a stopped turn). */
-  refuseAll?: () => boolean;
   /**
-   * True once the screen asked the agent to cancel the turn. A request still waiting for an answer then
-   * gets the `cancelled` outcome, as the protocol requires of every request pending at `session/cancel`.
+   * True once the screen asked the agent to cancel the turn, which a stop does too. Every request arriving
+   * after that, before any automatic allow, and every one still waiting for an answer gets the `cancelled`
+   * outcome, as the protocol requires of a client that sent `session/cancel`.
    */
   cancelRequested?: () => boolean;
   onProtocolNotice?: (message: string) => void;
@@ -154,10 +153,6 @@ export function createAcpClient(
     correlatedMcpTool: CorrelatedMcpToolContext | null = null,
   ) => {
     const request = toPermissionRequest(params, correlatedMcpTool, id);
-    if (handlers.refuseAll?.()) {
-      write({ jsonrpc: '2.0', id, result: permissionOutcome(request.options, null) });
-      return;
-    }
     if (handlers.cancelRequested?.()) {
       write({ jsonrpc: '2.0', id, result: cancelledOutcome() });
       return;

@@ -430,9 +430,7 @@ export function useAcpSession({
           if (decision !== undefined && isPromise(decision)) void decision.then(noteAllowed, () => undefined);
           else noteAllowed(decision);
         },
-        refuseAll: () => activeTurnRef.current?.stopping === true,
-        // A stopped turn keeps its own refusal (`refuseAll`), which selects reject_once.
-        cancelRequested: () => activeTurnRef.current?.cancelRequested === true && activeTurnRef.current.stopping !== true,
+        cancelRequested: () => activeTurnRef.current?.cancelRequested === true,
         // Pass the name only when wired, or someone else's `atlas-vault` server would inherit the auto-allow.
         vaultMcpServerName: hasVaultMcp ? VAULT_MCP_SERVER_NAME : undefined,
         verdict: (filePath) => acpPermissionVerdict(acpSessionId, filePath),

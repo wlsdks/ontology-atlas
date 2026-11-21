@@ -1999,7 +1999,7 @@ it('keeps a stopped investigation idle when its source check returns late',async
  expect(bridge.sent.filter(row=>row.method==='session/prompt')).toHaveLength(0);
 });
 
-describe('Stop holds when the agent ignores it', () => {
+describe('Stop holds when the agent ignores it: every waiting and later request is answered cancelled', () => {
   const OPTIONS = [
     { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
     { kind: 'allow_once', name: 'Allow', optionId: 'allow' },
@@ -2009,7 +2009,7 @@ describe('Stop holds when the agent ignores it', () => {
     params: { sessionId: 's-1', options: OPTIONS, toolCall: { toolCallId: `call-${id}`, title: `Edit ${path}`, kind, rawInput: { file_path: path } } },
   });
   const answerOf = (id: number) =>
-    (bridge.sent.find((message) => message.id === id && 'result' in message) as { result: { outcome: { optionId?: string } } } | undefined)?.result.outcome.optionId;
+    (bridge.sent.find((message) => message.id === id && 'result' in message) as { result: { outcome: { outcome: string } } } | undefined)?.result.outcome.outcome;
 
   async function waitingTurn(autoDecide: Parameters<typeof useAcpSession>[0]['autoDecide'], turnReadOnly?: () => boolean) {
     const hook = renderHook(() => useAcpSession({
@@ -2035,13 +2035,13 @@ describe('Stop holds when the agent ignores it', () => {
 
     const timers = vi.spyOn(window, 'setTimeout');
     act(() => result.current.stopTurn());
-    await waitFor(() => expect(answerOf(501)).toBe('reject'));
+    await waitFor(() => expect(answerOf(501)).toBe('cancelled'));
     expect(result.current.turnStopping).toBe(true);
     expect(bridge.sent.some((message) => message.method === 'session/cancel')).toBe(true);
 
     await act(async () => { bridge.listener?.(request(502, '/vault/wiki/a.md')); });
     await act(async () => { bridge.listener?.(request(503, '/vault/wiki/b.md', 'read')); });
-    await waitFor(() => expect([answerOf(502), answerOf(503)]).toEqual(['reject', 'reject']));
+    await waitFor(() => expect([answerOf(502), answerOf(503)]).toEqual(['cancelled', 'cancelled']));
     expect(autoDecide).not.toHaveBeenCalled();
     expect(result.current.pending).toBeNull();
     expect(result.current.events.some((event) => event.kind === 'notice' && /^auto-/.test(event.text))).toBe(false);
@@ -2068,7 +2068,7 @@ describe('Stop holds when the agent ignores it', () => {
     const { result } = await waitingTurn(() => null);
     const timers = vi.spyOn(window, 'setTimeout');
     act(() => result.current.stopTurn());
-    await waitFor(() => expect(answerOf(501)).toBe('reject'));
+    await waitFor(() => expect(answerOf(501)).toBe('cancelled'));
     await act(async () => {
       bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', id: bridge.pendingPrompt, result: { stopReason: 'cancelled' } }));
     });
