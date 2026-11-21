@@ -11,7 +11,7 @@ import {
   CONSTRUCTION_GUIDE_TOPICS,
 } from '../construction/construction-card.mjs';
 import { META_MODEL_RULES_EN } from '../construction/construction-rules.mjs';
-import { scoreEvidence } from '../evidence-search/evidence-rank.mjs';
+import { scoreEvidence } from '../evidence-search/evidence-score.mjs';
 import {
   buildFindEvidenceZeroHitsGrowthHint,
   buildFindPathGrowthHint,

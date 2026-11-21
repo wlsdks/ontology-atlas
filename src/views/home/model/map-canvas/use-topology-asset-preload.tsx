@@ -1,6 +1,6 @@
 import type { useTopologyGraphProjection } from "./use-topology-graph-projection";
 
-import { getProjectRuntimeDetailHref } from "@/entities/project";
+import { buildProjectRuntimeDetailHref } from "@/entities/project";
 import { useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect } from "react";
 
@@ -20,7 +20,7 @@ export function useTopologyAssetPreload({ prefetchedProjectHrefsRef, router, pre
       const project = projectBySlug.get(slug);
       if (!project) return;
 
-      const href = getProjectRuntimeDetailHref(slug);
+      const href = buildProjectRuntimeDetailHref(slug);
       if (!prefetchedProjectHrefsRef.current.has(href)) {
         prefetchedProjectHrefsRef.current.add(href);
         router.prefetch(href);

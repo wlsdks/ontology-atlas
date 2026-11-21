@@ -184,7 +184,7 @@ function wordSearch(app, vault, question) {
   return { claims, sources: hits.slice(0, TOP).map((hit) => ({ id: hit.path, line: Number(hit.anchor.slice(1)) })) };
 }
 
-async function loadVault(app) {
+async function readVaultFixture(app) {
   const { files } = JSON.parse(readFileSync(join(FIXTURE, 'vault.json'), 'utf8'));
   const docs = [];
   const rawBySlug = new Map();
@@ -287,7 +287,7 @@ function parseArgs(argv) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const app = await importDesk();
-  const vault = await loadVault(app);
+  const vault = await readVaultFixture(app);
   const { questions } = JSON.parse(readFileSync(join(FIXTURE, 'questions.json'), 'utf8'));
   if (options.writeVault) {
     for (const [path, text] of Object.entries(vault.files)) {

@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 // comments and blank lines are skipped; `*` excludes `/`, `**` crosses
 // directories, `?` is one non-`/` character, a trailing `/` is stripped.
 // Negation (`!pattern`) is unsupported.
-export function loadOntologyAtlasIgnore(vaultRoot) {
+export function readOntologyAtlasIgnore(vaultRoot) {
   const file = resolve(vaultRoot, '.ontology-atlasignore');
   if (!existsSync(file)) return [];
   const text = readFileSync(file, 'utf-8');

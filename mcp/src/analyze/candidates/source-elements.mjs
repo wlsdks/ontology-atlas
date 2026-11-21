@@ -10,11 +10,9 @@ import {
   IMPLEMENTATION_SOURCE_ELEMENT_LIMIT,
   PYTHON_IMPORT_ELEMENT_LIMIT,
   PYTHON_IMPORT_RISK_ELEMENT_LIMIT,
-  PYTHON_NON_PRODUCT_PACKAGES,
-  SOURCE_FOLDERS,
   WORKSPACE_ELEMENT_LIMIT,
-  WORKSPACE_FOLDERS,
-} from '../analysis-limits-and-tables.mjs';
+} from '../scan-limits.mjs';
+import { PYTHON_NON_PRODUCT_PACKAGES, SOURCE_FOLDERS, WORKSPACE_FOLDERS } from '../scan-tables.mjs';
 import { humanize, slugify, uniqueStrings } from '../text.mjs';
 import { pathResolvesInsideRoot, pushSkippedOnce } from './scan-guards.mjs';
 

@@ -5,7 +5,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Bell } from 'lucide-react';
 
 import { Link } from '@/i18n/navigation';
-import { getTopologyFocusHref } from '@/entities/project';
+import { buildTopologyFocusHref } from '@/entities/project';
 import { ChromeChip, CHROME_STATUS_CHIP_CLASS } from '@/shared/ui/controls/chrome-chip';
 import { controlClass } from '@/shared/ui/control-class';
 import { Surface } from '@/shared/ui/surfaces/surface';
@@ -431,7 +431,7 @@ export function AgentActivityChip({
                       </button>
                     ) : (
                       <Link
-                        href={getTopologyFocusHref(feed.lastNode.slug)}
+                        href={buildTopologyFocusHref(feed.lastNode.slug)}
                         data-testid="agent-activity-target"
                         aria-label={t('openOnMap', { name: feed.lastNode.name })}
                         className={controlClass({

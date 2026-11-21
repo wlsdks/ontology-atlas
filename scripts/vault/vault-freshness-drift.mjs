@@ -42,7 +42,7 @@ function walkMd(directory, out = []) {
   return out;
 }
 
-function loadVaultDocs(vaultDir) {
+function readVaultDocs(vaultDir) {
   return walkMd(vaultDir).map((filePath) => {
     const { frontmatter } = parseFrontmatter(readFileSync(filePath, "utf-8"));
     return { slug: String(frontmatter.slug ?? "").trim() || filePath, frontmatter };
@@ -105,7 +105,7 @@ if (!existsSync(repoRoot) || !statSync(repoRoot).isDirectory()) {
 // same "no vault → no noise" principle as the pre-commit preflight command.
 let docs = [];
 if (existsSync(vaultDir) && statSync(vaultDir).isDirectory()) {
-  docs = loadVaultDocs(vaultDir);
+  docs = readVaultDocs(vaultDir);
 }
 
 let changedFiles;

@@ -5,7 +5,7 @@
 
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
-import { runDogfoodWalk as main } from "../lib/dogfood-walk/report.mjs";
+import { runDogfoodWalk as main } from "../lib/dogfood-walk/run-dogfood-walk.mjs";
 
 export {
   toolsListAnnotationSummary,

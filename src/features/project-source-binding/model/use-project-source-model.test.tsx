@@ -7,7 +7,7 @@ import { buildProjectSourceReceipt, serializeProjectSourceState } from "@/shared
 import { createMemoryProjectSourceStore } from "@/shared/lib/project-source/project-source-store";
 import type { ProjectSourceInspection } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import {
-  loadProjectSourceSnapshot,
+  readProjectSourceSnapshot,
   projectSlugForSource,
   useProjectSourceModel,
   type ProjectSourceRuntime,
@@ -123,7 +123,7 @@ describe("project source model", () => {
   });
 
   it("loads a missing sidecar as unmeasured rather than a failure or score", async () => {
-    const snapshot = await loadProjectSourceSnapshot({
+    const snapshot = await readProjectSourceSnapshot({
       store: createMemoryProjectSourceStore(),
       projectSlug: "music",
       graphHash: "project-graph-v1:test",
@@ -151,7 +151,7 @@ describe("project source model", () => {
 
   it("reads a bound folder with no receipt without walking it", async () => {
     const inspect = vi.fn(async () => inspection);
-    const snapshot = await loadProjectSourceSnapshot({
+    const snapshot = await readProjectSourceSnapshot({
       store: createMemoryProjectSourceStore(serializeProjectSourceState({ bindings: [binding] })),
       projectSlug: "music",
       graphHash: "project-graph-v1:test",
@@ -176,7 +176,7 @@ describe("project source model", () => {
       witnesses: [],
       measuredAt: "2026-08-02T12:00:00.000Z",
     });
-    const snapshot = await loadProjectSourceSnapshot({
+    const snapshot = await readProjectSourceSnapshot({
       store: createMemoryProjectSourceStore(serializeProjectSourceState({ bindings: [{ ...binding, receipt }] })),
       projectSlug: "music",
       graphHash: "project-graph-v1:after",
@@ -196,7 +196,7 @@ describe("project source model", () => {
       witnesses: [],
       measuredAt: "2026-08-02T12:00:00.000Z",
     });
-    const snapshot = await loadProjectSourceSnapshot({
+    const snapshot = await readProjectSourceSnapshot({
       store: createMemoryProjectSourceStore(serializeProjectSourceState({ bindings: [{ ...binding, receipt }] })),
       projectSlug: "music",
       graphHash: "project-graph-v1:test",

@@ -27,12 +27,12 @@ export type {
 } from "./model";
 // No api/ folder: vault frontmatter is the source of truth.
 export {
-  getProjectEditHref,
-  getProjectRuntimeDetailHref,
-  getProjectRuntimeDetailUrl,
+  buildProjectEditHref,
+  buildProjectRuntimeDetailHref,
+  buildProjectRuntimeDetailUrl,
   resolveProjectFallbackRoute,
 } from "./lib/detail-href";
-export { getTopologyFocusHref, getTopologyProjectHref, getTopologyProjectNodeHref } from "./lib/topology-href";
+export { buildTopologyFocusHref, buildTopologyProjectHref, buildTopologyProjectNodeHref } from "./lib/topology-href";
 export { ProjectCard } from "./ui/ProjectCard";
 export { ProjectMetaGrid } from "./ui/ProjectMetaGrid";
 export { projectDisplayName, projectHasDisplayName, readDisplayNames } from "./lib/display-name";

@@ -29,8 +29,8 @@ import {
 } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 import {
-  getProjectEditHref,
-  getProjectRuntimeDetailHref,
+  buildProjectEditHref,
+  buildProjectRuntimeDetailHref,
   projectDisplayName,
   projectHasDisplayName,
   type Project,
@@ -245,7 +245,7 @@ export function ProjectDetailPage({
     (nextSlug: string) => {
       setSearchOpen(false);
       if (nextSlug === slug) return;
-      router.push(getProjectRuntimeDetailHref(nextSlug));
+      router.push(buildProjectRuntimeDetailHref(nextSlug));
     },
     [router, slug],
   );
@@ -424,7 +424,7 @@ export function ProjectDetailPage({
     ]
       .filter(Boolean)
       .join(" · ");
-    const projectHref = getProjectRuntimeDetailHref(project.slug);
+    const projectHref = buildProjectRuntimeDetailHref(project.slug);
     const documentHref = projectDoc ? buildDocsVaultHref({ slug: projectDoc.slug }) : "/docs/";
     const briefIsStructured = splitProjectBrief(dedupedBodyContent).sections.length > 0;
     const hasLibrary = librarySources + libraryWikiPages > 0;
@@ -477,7 +477,7 @@ export function ProjectDetailPage({
               project={project}
               displayName={displayName ?? null}
               canManage={canManageProject}
-              fullEditHref={getProjectEditHref(project.slug, { returnTo: projectHref })}
+              fullEditHref={buildProjectEditHref(project.slug, { returnTo: projectHref })}
               projectHref={projectHref}
               documentHref={documentHref}
               handoffSnippet={buildAgentHandoffSnippet(project.slug)}
@@ -705,7 +705,7 @@ export function ProjectDetailPage({
           {connectedProjects.length > 0 ? (
             <span data-testid="project-detail-connected" className="flex min-w-0 flex-wrap items-baseline gap-x-2">
               {t("connectedTitle")}
-              <Link href={getProjectRuntimeDetailHref(connectedProjects[0].slug)} className={quietLinkClass}>
+              <Link href={buildProjectRuntimeDetailHref(connectedProjects[0].slug)} className={quietLinkClass}>
                 {projectDisplayName(connectedProjects[0], locale)}
               </Link>
               {connectedProjects.length > 1 ? <span>{t("connectedMoreNote", { count: connectedProjects.length - 1 })}</span> : null}

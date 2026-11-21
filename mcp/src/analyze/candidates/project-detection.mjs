@@ -5,7 +5,6 @@
 import { closeSync, fstatSync, openSync, readFileSync, readSync, readdirSync, statSync, lstatSync, existsSync, realpathSync } from 'node:fs';
 import { join, basename, relative, isAbsolute, sep } from 'node:path';
 import {
-  AUTOTOOLS_IDENTITY_FILES,
   AUTOTOOLS_IDENTITY_MAX_BYTES,
   AUTOTOOLS_IDENTITY_MAX_LENGTH,
   ONTOLOGY_EVIDENCE_MAX_ENTRIES,
@@ -13,8 +12,8 @@ import {
   PYTHON_PROJECT_MAX_BYTES,
   PYTHON_SETUP_MAX_BYTES,
   SEMANTIC_EVIDENCE_MAX_BYTES,
-  STARTER_ONTOLOGY_SLUGS,
-} from '../analysis-limits-and-tables.mjs';
+} from '../scan-limits.mjs';
+import { AUTOTOOLS_IDENTITY_FILES, STARTER_ONTOLOGY_SLUGS } from '../scan-tables.mjs';
 import { cleanHeadingLabel, humanize, isHeadingAdornment, slugify } from '../text.mjs';
 import { authoredMarkdownLines } from './authored-markdown.mjs';
 import { VAULT_SOURCES_DIR } from '../../schema.mjs';

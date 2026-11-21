@@ -6,7 +6,7 @@ import {
   buildOntologyNodeHref,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
-import { type Project, getProjectRuntimeDetailHref } from "@/entities/project";
+import { type Project, buildProjectRuntimeDetailHref } from "@/entities/project";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { useGlobalSearchHotkey } from "../lib/use-global-search-hotkey";
@@ -73,7 +73,7 @@ export function MountedGlobalSearch({
           onSelectProject(project);
           return;
         }
-        router.push(getProjectRuntimeDetailHref(project.slug));
+        router.push(buildProjectRuntimeDetailHref(project.slug));
       }}
     />
   );

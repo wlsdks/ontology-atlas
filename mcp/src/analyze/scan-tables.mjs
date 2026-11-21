@@ -1,13 +1,11 @@
-// Detection tables and read limits shared by the `analyze_repo_structure` topic
-// modules. Several topics read the same table, so they live in one leaf file
-// rather than forcing one topic to import another for a number.
+// Detection tables shared by the `analyze_repo_structure` topic modules, in one
+// leaf file so no topic imports another for a list.
 
 /**
  * The folders FSD mode actually scans. Detection must use the same list, or a
  * repository is called FSD and then nothing is read.
  */
 export const FSD_SCAN_ROOTS = ['features', 'entities', 'widgets', 'views'];
-
 export const DEFAULT_IGNORE = new Set([
   'node_modules',
   '.git',
@@ -26,26 +24,19 @@ export const DEFAULT_IGNORE = new Set([
   '.venv',
   'venv',
 ]);
-
 export const SOURCE_FOLDERS = ['src', 'source', 'lib', 'app', 'internal'];
 export const IMPLEMENTATION_ONLY_SOURCE_FOLDERS = new Set(['internal']);
 export const WORKSPACE_FOLDERS = ['apps', 'packages'];
-export const SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT = 10;
 export const SOURCE_LAYOUT_COORDINATION_ROLE =
   /(?:^|[-_.])(app|main|index|manager|loader|registry|storage|client|server|router|controller)(?:[-_.]|$)/i;
 export const SOURCE_LAYOUT_CODE_FILE = /\.(?:[cm]?[jt]sx?|py)$/i;
 export const NATIVE_SOURCE_FILE = /\.(?:c|h)$/i;
 export const NATIVE_ROLE_EVIDENCE_FILE = /\.(?:c|h(?:\.in)?)$/i;
 export const PYTHON_NON_PRODUCT_PACKAGES = new Set(['test', 'tests']);
-export const PYTHON_IMPORT_ELEMENT_LIMIT = 12;
-export const PYTHON_IMPORT_RISK_ELEMENT_LIMIT = 2;
-export const GO_PACKAGE_ELEMENT_LIMIT = 24;
 export const STARTER_ONTOLOGY_SLUGS = new Set([
   'domains/example-domain',
   'capabilities/example-capability',
 ]);
-export const ONTOLOGY_EVIDENCE_MAX_FILES = 8000;
-export const ONTOLOGY_EVIDENCE_MAX_ENTRIES = 20000;
 export const SEMANTIC_EVIDENCE_SEEDS = [
   ['README.md', 'mission'],
   ['README.rst', 'mission'],
@@ -58,37 +49,12 @@ export const SEMANTIC_EVIDENCE_SEEDS = [
   ['docs/SYSTEM-MAP.md', 'architecture'],
   ['AGENTS.md', 'agent-guidance'],
 ];
-export const SEMANTIC_EVIDENCE_MAX_EXCERPT = 1200;
-export const SEMANTIC_EVIDENCE_MAX_HEADINGS = 8;
-export const SEMANTIC_EVIDENCE_MAX_DOCUMENTS = 6;
-export const SEMANTIC_EVIDENCE_MAX_BYTES = 256 * 1024;
-export const WORKSPACE_SEMANTIC_EVIDENCE_MAX_MEMBERS = 48;
-export const WORKSPACE_ELEMENT_LIMIT = 48;
-export const NODE_PACKAGE_DESCRIPTION_MAX_LENGTH = 320;
-export const CARGO_MANIFEST_MAX_BYTES = 256 * 1024;
-export const PYTHON_SETUP_MAX_BYTES = 256 * 1024;
-export const PYTHON_PROJECT_MAX_BYTES = 256 * 1024;
-export const NODE_PACKAGE_MANIFEST_MAX_BYTES = 256 * 1024;
-export const NODE_PACKAGE_EXPORT_LIMIT = 24;
-export const NODE_PACKAGE_SCRIPT_LIMIT = 24;
-export const NODE_PACKAGE_DEPENDENCY_LIMIT = 48;
-export const RUST_IMPLEMENTATION_ELEMENT_LIMIT = 24;
-export const RUST_MODULES_PER_TARGET_LIMIT = 12;
-export const RUST_SOURCE_MAX_BYTES = 256 * 1024;
-export const NATIVE_SOURCE_ELEMENT_LIMIT = 36;
-export const NATIVE_DOC_BUILD_ELEMENT_LIMIT = 12;
 export const AUTOTOOLS_IMPLEMENTATION_MANIFESTS = new Map([
   ['configure.ac', { slug: 'elements/autotools-configure', title: 'Autotools Configure' }],
   ['configure.in', { slug: 'elements/autotools-configure', title: 'Autotools Configure' }],
   ['Makefile.am', { slug: 'elements/autotools-build', title: 'Autotools Build' }],
 ]);
 export const AUTOTOOLS_IDENTITY_FILES = ['configure.ac', 'configure.in'];
-export const AUTOTOOLS_IDENTITY_MAX_BYTES = 256 * 1024;
-export const AUTOTOOLS_IDENTITY_MAX_LENGTH = 160;
-export const AUTOTOOLS_ROLE_MANIFEST_MAX_BYTES = 256 * 1024;
-export const AUTOTOOLS_ROLE_TARGET_LIMIT = 48;
-export const AUTOTOOLS_ROLE_ASSIGNMENT_LIMIT = 256;
-export const AUTOTOOLS_ROLE_LITERAL_PATH_MAX_LENGTH = 240;
 export const AUTOTOOLS_ROLE_SELECTION_PRIORITY = new Map([
   ['Public interface contract', 0],
   ['Core implementation source', 1],
@@ -102,12 +68,6 @@ export const AUTOTOOLS_ROLE_CLASSIFICATION_PRIORITY = new Map([
   ['Core implementation source', 2],
   ['Selectable platform backend', 3],
 ]);
-export const LIBRARY_SOURCE_ELEMENT_LIMIT = 24;
-export const IMPLEMENTATION_SOURCE_ELEMENT_LIMIT = 48;
-export const CARGO_MANIFEST_MAX_FEATURES = 48;
-export const CARGO_MANIFEST_MAX_FEATURE_VALUES = 16;
-export const CARGO_MANIFEST_MAX_TOKEN_LENGTH = 80;
-export const CARGO_MANIFEST_MAX_DESCRIPTION_LENGTH = 320;
 export const CARGO_PACKAGE_EVIDENCE_FIELDS = new Set([
   'name',
   'version',
@@ -115,7 +75,6 @@ export const CARGO_PACKAGE_EVIDENCE_FIELDS = new Set([
   'edition',
   'rust-version',
 ]);
-
 // Outcome-oriented clues, not framework or folder names. A rule needs both
 // semantic prose and a matching implementation witness before it becomes a
 // proposal, and a person or agent still approves it.
@@ -277,10 +236,6 @@ export const IMPLEMENTATION_SHAPED_CAPABILITY_TOKENS = new Set([
   'ui',
   'web',
 ]);
-export const GENERIC_BUSINESS_CAPABILITY_CANDIDATE_LIMIT = 12;
-export const GENERIC_BUSINESS_CAPABILITY_EVIDENCE_LIMIT = 3;
-export const SEMANTIC_DISCOVERY_MAX_FILES = 200;
-export const SEMANTIC_DISCOVERY_MAX_ENTRIES = 1000;
 export const SEMANTIC_DISCOVERY_ROOTS = ['docs', 'site', 'website'];
 export const SEMANTIC_DISCOVERY_SKIP_DIRS = new Set([
   '_theme',
@@ -292,8 +247,6 @@ export const SEMANTIC_DISCOVERY_SKIP_DIRS = new Set([
   'images',
   'ontology',
 ]);
-export const IGNORE_ARRAY_MAX_ITEMS = 200;
-
 export const ELEMENT_ENTRY_FILES = [
   'index.ts',
   'index.tsx',

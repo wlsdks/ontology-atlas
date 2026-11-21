@@ -9,19 +9,21 @@ import { evaluateConstructionLifecycle } from '../../construction/construction-l
 import { discoverDeclaredWorkspacePackages } from '../../infer-imports/workspace-packages.mjs';
 import { collectRustFeatureConfigurationEvidence } from '../../rust-feature-evidence.mjs';
 import {
+  IGNORE_ARRAY_MAX_ITEMS,
+  IMPLEMENTATION_SOURCE_ELEMENT_LIMIT,
+  LIBRARY_SOURCE_ELEMENT_LIMIT,
+  SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT,
+} from '../scan-limits.mjs';
+import {
   BUSINESS_CAPABILITY_CLUES,
   DEFAULT_IGNORE,
   ELEMENT_ENTRY_FILES,
   FSD_SCAN_ROOTS,
-  IGNORE_ARRAY_MAX_ITEMS,
   IMPLEMENTATION_ONLY_SOURCE_FOLDERS,
-  IMPLEMENTATION_SOURCE_ELEMENT_LIMIT,
-  LIBRARY_SOURCE_ELEMENT_LIMIT,
   SOURCE_FOLDERS,
   SOURCE_LAYOUT_CODE_FILE,
-  SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT,
   SOURCE_LAYOUT_COORDINATION_ROLE,
-} from '../analysis-limits-and-tables.mjs';
+} from '../scan-tables.mjs';
 import { humanize, matchDomainSlug, slugify } from '../text.mjs';
 import {
   optionalNonNegativeInteger,

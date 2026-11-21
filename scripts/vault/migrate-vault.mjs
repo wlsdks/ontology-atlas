@@ -40,7 +40,7 @@ async function listMigrations() {
   return out.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-async function loadMigration(id) {
+async function importMigration(id) {
   const all = await listMigrations();
   const found = all.find((m) => m.id === id);
   if (!found) {
@@ -148,7 +148,7 @@ Options:
     return;
   }
 
-  const mod = await loadMigration(args.id);
+  const mod = await importMigration(args.id);
 
   // Safety net for write mode when the vault is a git repo with uncommitted .md.
   // dry-run touches no disk, so it skips the check.

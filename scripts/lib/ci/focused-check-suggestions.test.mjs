@@ -14,7 +14,7 @@ import {
   CHECK_RULES_DIRECTORY,
   composeCheckRules,
   formatFocusedCheckSuggestions,
-  loadCheckRules,
+  importCheckRules,
   normalizeChangedPath,
   suggestFocusedChecks,
 } from './focused-check-suggestions.mjs';
@@ -1983,7 +1983,7 @@ describe('rule files under scripts/lib/check-rules are the registry', () => {
     try {
       const directory = join(scratch, 'check-rules');
       cpSync(CHECK_RULES_DIRECTORY, directory, { recursive: true });
-      const before = await loadCheckRules(pathToFileURL(`${directory}/`));
+      const before = await importCheckRules(pathToFileURL(`${directory}/`));
       writeFileSync(
         join(directory, 'zz-new-area.mjs'),
         [
@@ -1996,7 +1996,7 @@ describe('rule files under scripts/lib/check-rules are the registry', () => {
           '',
         ].join('\n'),
       );
-      const after = await loadCheckRules(pathToFileURL(`${directory}/`));
+      const after = await importCheckRules(pathToFileURL(`${directory}/`));
 
       assert.deepEqual(after.rules.slice(0, -1), before.rules);
       assert.equal(after.rules.at(-1).command, 'pnpm test:new-area');
