@@ -35,6 +35,7 @@ export const rules = [
     matches: [
       /^src\/widgets\/atlas-git-panel\/ui\/(AtlasGitPanel|DesktopBody|StepList|ActionDock|RemoteControls|SetupMode)\.tsx$/,
       /^src\/widgets\/atlas-git-panel\/ui\/CommitDetail\.tsx$/,
+      /^src\/widgets\/atlas-git-panel\/ui\/commit-detail\/[^/]+\.tsx$/,
     ],
   },
   {

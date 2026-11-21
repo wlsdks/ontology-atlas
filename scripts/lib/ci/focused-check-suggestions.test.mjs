@@ -1334,6 +1334,19 @@ describe('focused check suggestions', () => {
     }
   });
 
+  it('keeps the stacked Git reader E2E on the commit detail entry and its parts', () => {
+    for (const path of [
+      'src/widgets/atlas-git-panel/ui/CommitDetail.tsx',
+      'src/widgets/atlas-git-panel/ui/commit-detail/DocumentHistory.tsx',
+    ]) {
+      const result = suggestFocusedChecks([path]);
+      assert.ok(
+        result.commands.some((row) => row.command.includes('git-workbench-stacked-floor.spec.ts')),
+        `missing stacked Git reader journey for ${path}`,
+      );
+    }
+  });
+
   it('suggests the legacy-route E2E for its HomePage owner', () => {
     const result = suggestFocusedChecks(['src/views/home/ui/HomePage.tsx']);
 

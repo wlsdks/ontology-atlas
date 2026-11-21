@@ -18,7 +18,7 @@ const CONSUMERS = [
   'src/widgets/analysis-workbench/ui/AnalysisWorkbench.tsx',
   'src/widgets/acp-chat-panel/ui/AcpDockHeader.tsx',
   'src/widgets/full-detail/ui/FullDetail.tsx',
-  'src/widgets/project-drawer/ui/ProjectDrawer.tsx',
+  'src/widgets/project-drawer/ui/ProjectDrawerHeader.tsx',
   'src/widgets/library-import/ui/LibraryImportDialog.tsx',
   'src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx',
   'src/views/library/ui/parts/LibraryHomePopover.tsx',
