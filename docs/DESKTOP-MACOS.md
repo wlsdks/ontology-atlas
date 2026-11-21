@@ -160,12 +160,11 @@ The legacy names `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and
 must equal `main` head.
 
 The version pull request changes `package.json`, so its CI run executes every
-lane. Queue it straight after the last change the release ships
-(`pnpm pr:land <change>`, then `pnpm pr:land <version>`), so both merge behind
-one CI run instead of two. `pnpm pr:queue` shows whether they share a train;
-if the first train was already built, the version pull request rides the next
-one. Queue the version pull request last, since the tag must name the head it
-leaves on `main`.
+lane. When a last change still has to ship, put the version commit on that
+change's branch (or on the integration branch of parallel work) so one CI run
+covers both. Otherwise merge `origin/main` into the version branch and run
+`pnpm pr:land <version>` after everything else has merged, since the tag must
+name the head it leaves on `main`.
 
 ```bash
 pnpm desktop:release-preflight

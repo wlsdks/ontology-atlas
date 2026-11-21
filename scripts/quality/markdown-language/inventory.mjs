@@ -21,7 +21,6 @@ const LANGUAGE_SWITCHER_LINK = /\[[^\]\n]{1,8}\]\((?:\.\/)?(README\.[a-z]{2}\.md
 
 const OPERATIONAL_PATHS = new Set([
   'AGENTS.md',
-  'CLAUDE.md',
 ]);
 
 const HISTORICAL_PATHS = new Set([

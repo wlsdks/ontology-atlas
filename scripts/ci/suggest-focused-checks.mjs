@@ -9,6 +9,7 @@ import { contentTree, proofFile, proofToRecord, recordProof, treeOf } from '../l
 
 import {
   formatFocusedCheckSuggestions,
+  sliceOnlySuggestions,
   suggestFocusedChecks,
 } from '../lib/ci/focused-check-suggestions.mjs';
 
@@ -295,11 +296,12 @@ export function runSuggestFocusedChecks({
   }
   // `--run` is not a path; without filtering it is treated as a changed file.
   const run = args.includes('--run');
-  const pathArgs = args.filter((arg) => arg !== '--run');
+  const slice = args.includes('--slice');
+  const pathArgs = args.filter((arg) => arg !== '--run' && arg !== '--slice');
   try {
     const unsupported = pathArgs.find((arg) => arg.startsWith('-'));
     if (unsupported) {
-      throw new Error(`unsupported option ${JSON.stringify(unsupported)}; use --run or --help, or prefix a path with ./`);
+      throw new Error(`unsupported option ${JSON.stringify(unsupported)}; use --run, --slice or --help, or prefix a path with ./`);
     }
     const explicit = pathArgs.length > 0;
     let paths = explicit ? pathArgs : changedPathsFromGit({ cwd, spawn });
@@ -321,7 +323,8 @@ export function runSuggestFocusedChecks({
     if (commentOnlyPaths.length > 0) {
       stdout.write(`[focused-checks] ${commentOnlyPaths.length} file(s) changed only in comments or formatting; their tests are skipped\n`);
     }
-    const suggestions = suggestFocusedChecks(paths, { deletedPaths, commentOnlyPaths });
+    const planned = suggestFocusedChecks(paths, { deletedPaths, commentOnlyPaths });
+    const suggestions = slice ? sliceOnlySuggestions(planned) : planned;
     stdout.write(`${formatFocusedCheckSuggestions(suggestions)}\n`);
     if (!run) return 0;
     const checked = !explicit && baseRev ? tryContentTree({ cwd, spawn }) : null;
@@ -345,8 +348,11 @@ export function suggestFocusedChecksUsage() {
   pnpm checks:changed
   pnpm checks:changed -- <path...>
   pnpm checks:changed -- --run          # run every recommendation, stopping at the first failure
+  pnpm checks:changed -- --run --slice  # a parallel slice: everything but the repo-wide lanes
 
-Only --run, --help and -h are options. Prefix a path beginning with a dash with ./.
+Only --run, --slice, --help and -h are options. --slice leaves test:contracts,
+knip, typecheck, build and the test:mcp suites to the lead's one run on the
+integration tree; per-file gates still run. Prefix a path beginning with a dash with ./.
 
 Suggests the first focused checks for changed files so agents avoid full-suite
 verification by default. With no path arguments it
