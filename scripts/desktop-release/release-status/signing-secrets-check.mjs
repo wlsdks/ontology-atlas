@@ -1,6 +1,6 @@
 /** The signing requirement: the release-signing and release environments, and the secrets kept in them. */
 
-import { runGh } from "./environment.mjs";
+import { runGh } from "./command-runners.mjs";
 import { blocked, ok } from "./check-result.mjs";
 
 export const SIGNING_ENVIRONMENT = "release-signing";

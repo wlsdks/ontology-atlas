@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { runGh, runNode } from "./release-status/environment.mjs";
+import { runGh, runNode } from "./release-status/command-runners.mjs";
 import { blocked, ok, skipped } from "./release-status/check-result.mjs";
 import { parseArgs } from "./release-status/options.mjs";
 import { checkPullRequest } from "./release-status/pull-request-check.mjs";

@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { currentDate } from "./environment.mjs";
+import { currentDate } from "./command-runners.mjs";
 
 /** The JSON document `--json` prints and `--json-file` writes. */
 export function buildStatusPayload(options, checks, generatedAt) {

@@ -1,4 +1,4 @@
-/** How the release status reaches gh, git, node and the clock; each is replaceable through the environment. */
+/** How the release status runs gh, git and node, and reads the clock; tests replace each through an environment variable. */
 
 import { spawnSync } from "node:child_process";
 

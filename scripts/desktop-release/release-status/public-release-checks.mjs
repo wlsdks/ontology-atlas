@@ -1,6 +1,6 @@
 /** The public release requirements: the workflow, the tag slot, the GitHub Release and its download assets. */
 
-import { runGh, runGhStatus, runGitStatus, runNode } from "./environment.mjs";
+import { runGh, runGhStatus, runGitStatus, runNode } from "./command-runners.mjs";
 import { blocked, ok } from "./check-result.mjs";
 import { prMerged } from "./pull-request-check.mjs";
 import { SIGNING_ENVIRONMENT } from "./signing-secrets-check.mjs";

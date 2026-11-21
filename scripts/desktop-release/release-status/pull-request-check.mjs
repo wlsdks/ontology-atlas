@@ -1,6 +1,6 @@
 /** The pull request requirement: is it merge-ready, or the latest merged one, and what to do next. */
 
-import { runGh, currentDate } from "./environment.mjs";
+import { runGh, currentDate } from "./command-runners.mjs";
 import { blocked, ok } from "./check-result.mjs";
 
 export function prChecksPassed(pr) {
