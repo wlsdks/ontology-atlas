@@ -2234,7 +2234,6 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/agent-brief-scope.mjs` | which project and documents an agent brief covers |
 | `src/tools/meaning-readiness.mjs` | the meaning-readiness and project-meaning facts a brief carries, and the next-action hint table |
 | `src/tools/validate-vault.mjs` | `validate_vault`, `validate_wiki` |
-| `src/tools/repo-analysis.mjs` | the four folder-scanning tools, re-exported from `src/tools/repo-analysis/` |
 | `src/tools/repo-analysis/analyze-structure.mjs` | `analyze_repo_structure`: the breadth map, source reads and the analysis view |
 | `src/tools/repo-analysis/inspect-architecture.mjs` | `inspect_architecture`, with `architecture-profile-selection.mjs` choosing the profile |
 | `src/tools/repo-analysis/infer-imports.mjs` | `infer_imports`, with `import-review-rules.mjs` (review mode, delivery limit, drift summary) and `vault-reconciliation.mjs` (the vault diff) |

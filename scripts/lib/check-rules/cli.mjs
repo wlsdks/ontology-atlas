@@ -91,7 +91,7 @@ export const rules = [
     reason: 'CLI repo analysis command, or the MCP analysis it prints, changed',
     matches: [
       /^cli\/src\/commands\/repo-analysis\/[^/]+\.mjs$/,
-      /^mcp\/src\/tools\/repo-analysis(?:\/[^/]+(?<!\.test)\.mjs|\.mjs)$/,
+      /^mcp\/src\/tools\/repo-analysis\/[^/]+(?<!\.test)\.mjs$/,
       /^mcp\/src\/analyze\/.+\.mjs$/,
       /^tsconfig\.json$/,
     ],

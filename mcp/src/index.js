@@ -72,12 +72,10 @@ import {
   queryConceptsTool,
   readSourceTool,
 } from './tools/read.mjs';
-import {
-  analyzeRepoStructureTool,
-  indexProjectTool,
-  inferImportsTool,
-  inspectArchitectureTool,
-} from './tools/repo-analysis.mjs';
+import { analyzeRepoStructureTool } from './tools/repo-analysis/analyze-structure.mjs';
+import { indexProjectTool } from './tools/repo-analysis/index-project.mjs';
+import { inferImportsTool } from './tools/repo-analysis/infer-imports.mjs';
+import { inspectArchitectureTool } from './tools/repo-analysis/inspect-architecture.mjs';
 import {
   validateVaultTool,
   validateWikiTool,

@@ -66,7 +66,6 @@
     "src/tools/query-ontology-args.mjs",
     "src/tools/project-source.mjs",
     "src/tools/validate-vault.mjs",
-    "src/tools/repo-analysis.mjs",
     "src/tools/repo-analysis/analyze-structure.mjs",
     "src/tools/repo-analysis/architecture-profile-selection.mjs",
     "src/tools/repo-analysis/import-review-rules.mjs",
