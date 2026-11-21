@@ -1,5 +1,6 @@
 import { useCallback, useSyncExternalStore } from "react";
 import type { MapLayoutView } from "../map-canvas/map-layout-morph-store";
+import { createStoredSnapshot } from "./stored-snapshot";
 
 /**
  * Appearance preferences: the single source of truth for canvas background and glyph set, read live
@@ -440,26 +441,11 @@ export function writeMutedAgentNotificationKinds(kinds: ReadonlySet<string>): vo
   notifyPreferenceChange();
 }
 
-/**
- * `useSyncExternalStore` compares snapshots with `Object.is`, so returning a
- * fresh Set on every call loops forever. Cache it against the raw stored string.
- */
-let mutedCacheKey: string | null = null;
-let mutedCacheValue: ReadonlySet<string> = EMPTY_MUTED;
-
-function mutedSnapshot(): ReadonlySet<string> {
-  if (typeof window === "undefined") return EMPTY_MUTED;
-  let raw: string | null = null;
-  try {
-    raw = window.localStorage.getItem(AGENT_NOTIFICATION_KINDS_KEY);
-  } catch {
-    return EMPTY_MUTED;
-  }
-  if (raw === mutedCacheKey) return mutedCacheValue;
-  mutedCacheKey = raw;
-  mutedCacheValue = readMutedAgentNotificationKinds();
-  return mutedCacheValue;
-}
+const mutedSnapshot = createStoredSnapshot(
+  AGENT_NOTIFICATION_KINDS_KEY,
+  EMPTY_MUTED,
+  readMutedAgentNotificationKinds,
+);
 
 export function useMutedAgentNotificationKinds(): ReadonlySet<string> {
   const getSnapshot = useCallback(() => mutedSnapshot(), []);
@@ -584,26 +570,7 @@ export function writeFootprint(value: FootprintPreference): void {
   notifyPreferenceChange();
 }
 
-/**
- * `useSyncExternalStore` compares snapshots with `Object.is`, so a fresh object per call loops.
- * Cache the parse against the raw stored string.
- */
-let footprintCacheKey: string | null = null;
-let footprintCacheValue: FootprintPreference = DEFAULT_FOOTPRINT;
-
-function footprintSnapshot(): FootprintPreference {
-  if (typeof window === "undefined") return DEFAULT_FOOTPRINT;
-  let raw: string | null = null;
-  try {
-    raw = window.localStorage.getItem(FOOTPRINT_KEY);
-  } catch {
-    return DEFAULT_FOOTPRINT;
-  }
-  if (raw === footprintCacheKey) return footprintCacheValue;
-  footprintCacheKey = raw;
-  footprintCacheValue = readFootprint();
-  return footprintCacheValue;
-}
+const footprintSnapshot = createStoredSnapshot(FOOTPRINT_KEY, DEFAULT_FOOTPRINT, readFootprint);
 
 export function useFootprint(): FootprintPreference {
   const getSnapshot = useCallback(() => footprintSnapshot(), []);
@@ -700,23 +667,7 @@ export function writeExpand(value: ExpandPreference): void {
   notifyPreferenceChange();
 }
 
-/** Same caching reason as the footprint snapshot: `Object.is` on snapshots. */
-let expandCacheKey: string | null = null;
-let expandCacheValue: ExpandPreference = DEFAULT_EXPAND;
-
-function expandSnapshot(): ExpandPreference {
-  if (typeof window === "undefined") return DEFAULT_EXPAND;
-  let raw: string | null = null;
-  try {
-    raw = window.localStorage.getItem(EXPAND_KEY);
-  } catch {
-    return DEFAULT_EXPAND;
-  }
-  if (raw === expandCacheKey) return expandCacheValue;
-  expandCacheKey = raw;
-  expandCacheValue = readExpand();
-  return expandCacheValue;
-}
+const expandSnapshot = createStoredSnapshot(EXPAND_KEY, DEFAULT_EXPAND, readExpand);
 
 export function useExpand(): ExpandPreference {
   const getSnapshot = useCallback(() => expandSnapshot(), []);
