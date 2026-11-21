@@ -3,14 +3,14 @@ import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import ko from '../../../messages/ko.json';
+import ko from '../../../../../messages/ko.json';
 import { type RoundLedger, type RoundRecord, createMemoryRoundLedger, createMemoryRoundStore, parseRoundLedger, roundFingerprint } from '@/entities/library-round';
 import { writeWikiFile } from '@/features/library';
 import { proposedPageText } from '@/features/library/lib/wiki/judge-page-write';
 import { recordApproval } from '@/shared/lib/connectors/machine-approvals';
 import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/library/wiki-page-schema';
 
-import { useRoundsRunner } from './lib/rounds/use-rounds-runner';
+import { useRoundsRunner } from './use-rounds-runner';
 
 const h = vi.hoisted(() => ({
   store: null as unknown,
@@ -60,15 +60,19 @@ vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   detectAcpRuntimes: vi.fn(async () => [{ id: 'claude-acp', label: 'Claude', state: 'ready', verified: true, isolated: true }]),
   isAcpBridgeAvailable: () => true,
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
-  getTauriVaultRootPath: () => '/vault',
-  nativeVaultFileHashes: async () => new Map(),
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   readTauriVaultText: async (_root: string, path: string) => {
     const text = h.files[path] ?? null;
     if (h.delays[path]) await new Promise((resolve) => setTimeout(resolve, h.delays[path]));
     return text;
   },
   listTauriVaultLinks: async (_root: string, directory: string) => h.links[directory] ?? [],
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-fingerprint', () => ({
+  nativeVaultFileHashes: async () => new Map(),
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
+  getTauriVaultRootPath: () => '/vault',
 }));
 
 const notFound = () => Object.assign(new Error('not found'), { name: 'NotFoundError' });

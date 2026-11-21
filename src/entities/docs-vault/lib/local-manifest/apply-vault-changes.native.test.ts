@@ -8,8 +8,8 @@ import { MemoryVault } from '../../../../../tests/helpers/memory-vault';
 
 const native = vi.hoisted(() => ({ vault: null as MemoryVault | null }));
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', async (original) => ({
-  ...(await original<typeof import('@/shared/lib/vault-folder/tauri-vault-fs')>()),
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', async (original) => ({
+  ...(await original<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-files')>()),
   listTauriVaultStamped: async (_rootPath: string, dir: string) => native.vault!.stampedListing(dir),
 }));
 

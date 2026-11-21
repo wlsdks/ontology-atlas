@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { readMeaningTransitionHistory } from '@/entities/meaning-transition';
 import type { MeaningTransitionCandidate } from '@/shared/lib/meaning-transition/meaning-transition';
 import type { MeaningTransitionV2 } from '@/shared/lib/meaning-transition/meaning-transition-v2';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { canArchiveMeaningTransitions, observeMeaningTransitionRoot, readTauriMeaningTransitionArtifact } from '@/shared/lib/meaning-transition/tauri-meaning-transition-archive';
 import { Chip, Disclosure, RowButton } from '@/shared/ui';
 

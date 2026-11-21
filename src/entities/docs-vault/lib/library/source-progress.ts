@@ -1,4 +1,5 @@
-import type { LibraryModel, SourceCompileState } from './vault-library';
+import type { SourceCompileState } from './source-compile-state';
+import type { LibraryModel } from './vault-library';
 
 /**
  * A source counts only when `compiled`; `checking` and `unreadable` stay in the total. Dates are the `compiled_at` each citing

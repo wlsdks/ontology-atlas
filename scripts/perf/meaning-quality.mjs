@@ -3,7 +3,7 @@
 // word plus meaning (search-by-meaning spec, acceptance criterion 1).
 // Usage: pnpm perf:meaning-quality [-- --models=bge-m3,qwen3-embedding:0.6b] [--ollama=http://localhost:11434]
 //        [--json=<file>] [--verbose] [--write-vault=<dir>] [--no-cache] [--no-query-prefix]
-// The word side runs the desk's own ranking (`question-desk.ts`, `source-passage.ts`) under Node's type
+// The word side runs the desk's own ranking (`question-desk.ts`, `source-units.ts`) under Node's type
 // stripping, as `LibraryQuestionDesk.tsx` calls it. The meaning side embeds passages and questions
 // through Ollama's `/api/embed` on this computer and fuses both rankings by reciprocal rank (k = 60)
 // into the desk's 8 claims and 8 source passages. Without Ollama only the word side runs.
@@ -162,7 +162,7 @@ async function importDesk() {
     }`;
   register(`data:text/javascript,${encodeURIComponent(hooks)}`);
   const desk = await import(pathToFileURL(join(ROOT, 'src/features/library/lib/questions/question-desk.ts')).href);
-  const passage = await import(pathToFileURL(join(ROOT, 'src/shared/lib/library/source-passage.ts')).href);
+  const passage = await import(pathToFileURL(join(ROOT, 'src/shared/lib/library/source-units.ts')).href);
   const frontmatter = await import(pathToFileURL(join(ROOT, 'src/shared/lib/vault-document/parse-frontmatter.ts')).href);
   return { ...desk, ...passage, ...frontmatter };
 }

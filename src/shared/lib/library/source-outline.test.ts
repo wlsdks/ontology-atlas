@@ -2,12 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { SOURCE_PASSAGE_CASES } from '../../../../tests/fixtures/source-passage-cases.mjs';
 
-import {
-  READ_SOURCE_DEFAULT_LIMIT,
-  readSourceUnits,
-  sourceOutline,
-  sourceUnits,
-} from './source-passage';
+import { sourceOutline } from './source-outline';
+import { READ_SOURCE_DEFAULT_LIMIT, readSourceUnits, sourceUnits } from './source-units';
 
 /**
  * **What slice U2 added to the reader, and the one thing it may never do.**

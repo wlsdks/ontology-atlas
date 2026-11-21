@@ -48,8 +48,8 @@ vi.mock("@/entities/vault-session/model/vault-source/use-data-source-mode", asyn
   useDataSourceMode: () => "static",
 }));
 
-vi.mock("@/shared/lib/vault-folder/tauri-vault-fs", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/shared/lib/vault-folder/tauri-vault-fs")>()),
+vi.mock("@/shared/lib/vault-folder/native-vault/tauri-vault-runtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/lib/vault-folder/native-vault/tauri-vault-runtime")>()),
   getTauriVaultRootPath: (handle: { rootPath?: string }) => handle.rootPath,
 }));
 

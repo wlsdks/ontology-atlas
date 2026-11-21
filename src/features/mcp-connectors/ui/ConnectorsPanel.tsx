@@ -17,7 +17,7 @@ import {
   type DiscoveredConnector,
 } from '@/shared/lib/connectors/tauri-connectors';
 import { isConnectorSecretBridgeAvailable } from '@/shared/lib/connectors/tauri-connector-secrets';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 import { AddConnectorDialog } from './AddConnectorDialog';
 import { AttachedList } from './AttachedList';

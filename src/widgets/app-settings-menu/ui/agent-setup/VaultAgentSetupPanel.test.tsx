@@ -15,7 +15,7 @@ const setupCopy = koMessages.docsVault.agentSetup;
 vi.mock('@/shared/lib/clipboard/copy-text', () => ({
   copyText: vi.fn(),
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
   getTauriVaultRootPath: (handle: FileSystemDirectoryHandle) =>
     (handle as unknown as { rootPath?: string }).rootPath,
 }));

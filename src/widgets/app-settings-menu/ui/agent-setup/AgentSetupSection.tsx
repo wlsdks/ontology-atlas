@@ -12,7 +12,7 @@ import { Check, Copy, Download } from 'lucide-react';
 
 import { useAgentServer, useLocalVault } from '@/entities/vault-session';
 import { OpenVaultCta } from '@/features/docs-vault-local';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { vaultValidationCounts } from '../../model/vault-validation-counts';
 
 import { TermHint } from '@/shared/ui/hints/term-hint';

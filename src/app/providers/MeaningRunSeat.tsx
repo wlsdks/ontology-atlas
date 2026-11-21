@@ -8,7 +8,7 @@ import { deskSentence, useVectorRun, useVectorRunStageShown, type VectorRun } fr
 import { workRuns, type MeaningRunObservation } from "@/features/work-run";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { navigateWithViewTransition } from "@/shared/lib/navigation/route-view-transition";
-import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 
 const WIKI_DESK_HREF = `${DESTINATION_HREF.library}?tab=wiki`;
 const DESK_FIELD_WAIT_MS = 4_000;

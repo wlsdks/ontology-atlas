@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Cpu } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { vaultIndexPreference } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
 import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vectors/vault-vector-source';
 import { MOTION } from '@/shared/motion';

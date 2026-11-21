@@ -957,8 +957,8 @@ describe('focused check suggestions', () => {
       'scripts/lib/desktop-release/redact-command.mjs',
       'scripts/download/check-macos-download-release.mjs',
       'docs/DESKTOP-MACOS.md',
-      'src/shared/lib/vault-folder/tauri-vault-fs.ts',
-      'src/shared/lib/vault-folder/tauri-vault-fs.test.ts',
+      'src/shared/lib/vault-folder/native-vault/tauri-vault-handle.ts',
+      'src/shared/lib/vault-folder/native-vault/tauri-vault-handle.test.ts',
       'src/views/root-entry/ui/RootEntryPage.tsx',
       'src/views/root-entry/ui/RootEntryPage.test.tsx',
       'src/views/docs-vault/lib/persistence.ts',
@@ -975,11 +975,11 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test scripts/verify-macos/verify-macos-install-smoke.test.mjs',
       'pnpm exec node --test scripts/lib/macos-artifact/macos-dmg-layout.test.mjs',
       'pnpm exec node --test scripts/lib/desktop-release/redact-command.test.mjs',
-      'pnpm exec eslint --max-warnings 0 src/shared/lib/vault-folder/tauri-vault-fs.ts src/shared/lib/vault-folder/tauri-vault-fs.test.ts ' +
+      'pnpm exec eslint --max-warnings 0 src/shared/lib/vault-folder/native-vault/tauri-vault-handle.ts src/shared/lib/vault-folder/native-vault/tauri-vault-handle.test.ts ' +
         'src/views/root-entry/ui/RootEntryPage.tsx src/views/root-entry/ui/RootEntryPage.test.tsx ' +
         'src/views/docs-vault/lib/persistence.ts src/views/docs-vault/ui/DocsVaultPage.tsx ' +
         'src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx',
-      'pnpm exec vitest run src/shared/lib/vault-folder/tauri-vault-fs.test.ts',
+      'pnpm exec vitest run src/shared/lib/vault-folder/native-vault/tauri-vault-handle.test.ts',
       'pnpm exec vitest run src/views/root-entry/ui/RootEntryPage.test.tsx',
       'pnpm docs-vault:build',
       'pnpm exec vitest run tests/contract/vault-data/bundled-vault-budget.contract.test.ts',
@@ -1024,6 +1024,18 @@ describe('focused check suggestions', () => {
   it('runs the native bridge tests for code split out of the crate root', () => {
     for (const path of ['src-tauri/src/vault/write.rs', 'src-tauri/src/webview_verify/mod.rs']) {
       assert.ok(commandNames(suggestFocusedChecks([path])).includes('pnpm test:desktop:bridge'), path);
+    }
+  });
+
+  it('runs the native bridge tests, the readiness check and the security contracts for every native vault bridge file', () => {
+    const folder = 'src/shared/lib/vault-folder/native-vault';
+    for (const name of ['tauri-vault-files', 'tauri-library-sources', 'tauri-audit-source']) {
+      const path = `${folder}/${name}.ts`;
+      assert.ok(existsSync(path), path);
+      const suggested = suggestFocusedChecks([path]);
+      assert.ok(commandNames(suggested).includes('pnpm test:desktop:bridge'), path);
+      assert.ok(commandNames(suggested).includes('pnpm desktop:check'), path);
+      assert.ok(commandNames(suggested).includes(SECURITY_COMMAND), path);
     }
   });
 

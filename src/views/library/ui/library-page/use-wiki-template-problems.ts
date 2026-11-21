@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { buildWikiShapeFixBrief, isWikiFolderCode, type LibraryUiModel } from "@/features/library";
-import { revealTauriVaultFile } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { revealTauriVaultFile } from "@/shared/lib/vault-folder/native-vault/tauri-vault-location";
 import { useToast } from "@/shared/ui";
 import { useLibraryAgent } from "../../lib/agent/use-library-agent";
 import type { LibrarySelection } from "./library-page-state";

@@ -8,7 +8,7 @@ import {
   type SecretProvider,
   type SecretStatus,
 } from '@/shared/lib/llm-connection/tauri-secrets';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { jevSecretStatus, type JevSecretStatus } from '@/shared/lib/llm-connection/tauri-jev';
 import { AuditReadError, readLlmAuditSummary, type AuditReadFailure, type LlmAuditEntry } from '@/shared/lib/llm-connection/llm-audit-log';
 

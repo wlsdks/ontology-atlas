@@ -15,7 +15,7 @@ import { buildOntologyDeeplinkForDoc } from '@/entities/docs-vault';
 import { useDocumentTitle } from '@/shared/lib/public-pages/use-document-title';
 import { firstHeading, parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { useClaimShellKey } from '@/shared/lib/keyboard/shell-key-claims';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';

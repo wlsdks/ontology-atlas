@@ -39,6 +39,15 @@ function readEntryWithModules(entryPath, moduleDirectory) {
   return `${entry}\n${moduleText}`;
 }
 
+function readTypeScriptFolder(directory) {
+  const absoluteDirectory = path.join(root, directory);
+  const names = fs.existsSync(absoluteDirectory)
+    ? fs.readdirSync(absoluteDirectory).filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts")).sort()
+    : [];
+  if (names.length === 0) fail(`tracked source folder is empty or missing — ${directory}.`);
+  return names.map((name) => readText(path.join(directory, name))).join("\n");
+}
+
 function fail(message) {
   console.error(`[desktop-check] ${message}`);
   process.exitCode = 1;
@@ -96,7 +105,9 @@ const bottomTabBar = readText("src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx");
 const bottomTabBarPolicy = readText("src/widgets/bottom-tab-bar/lib/is-tab-active.ts");
 const tauriLib = readText("src-tauri/src/lib.rs");
 const tauriVaultScope = readText("src-tauri/src/vault/scope.rs");
-const tauriShim = readText("src/shared/lib/vault-folder/tauri-vault-fs.ts");
+const tauriShim = readTypeScriptFolder("src/shared/lib/vault-folder/native-vault");
+const tauriRuntimeShim = readText("src/shared/lib/vault-folder/native-vault/tauri-vault-runtime.ts");
+const tauriHandleShim = readText("src/shared/lib/vault-folder/native-vault/tauri-vault-handle.ts");
 const tauriInfoPlist = readText("src-tauri/Info.plist");
 const packageMacosDmgScript = readText("scripts/desktop/package-macos-dmg.mjs");
 const cleanTauriMacosAppsScript = readText("scripts/desktop/clean-tauri-macos-apps.mjs");
@@ -422,7 +433,7 @@ if (
  */
 if (
   pkg.scripts?.["test:desktop:bridge"] ===
-  "pnpm exec vitest run src/shared/lib/vault-folder/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/local-vault/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml --workspace && node scripts/perf/vault-rows-equality.mjs"
+  "pnpm exec vitest run src/shared/lib/vault-folder/native-vault src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/local-vault/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml --workspace && node scripts/perf/vault-rows-equality.mjs"
 ) {
   pass(
     "desktop native vault bridge tests build the sidecar, then cover WebView handle shim, agent config validation, Rust path guard, and a manifest from cached rows equal to one from files",
@@ -1591,26 +1602,26 @@ if (missingTauriCommands.length === 0) {
 }
 
 if (
-  tauriShim.includes("from '@tauri-apps/api/core'") &&
-  tauriShim.includes("isTauri()") &&
-  tauriShim.includes("tauriInvoke(command, args)") &&
+  tauriRuntimeShim.includes("from '@tauri-apps/api/core'") &&
+  tauriRuntimeShim.includes("isTauri()") &&
+  tauriRuntimeShim.includes("tauriInvoke(command, args)") &&
   !tauriShim.includes("__TAURI_INTERNALS__")
 ) {
   pass("Tauri vault bridge uses the supported JavaScript invoke API");
 } else {
-  fail("src/shared/lib/vault-folder/tauri-vault-fs.ts must use @tauri-apps/api/core invoke/isTauri instead of private Tauri internals");
+  fail("src/shared/lib/vault-folder/native-vault/tauri-vault-runtime.ts must use @tauri-apps/api/core invoke/isTauri instead of private Tauri internals");
 }
 
 if (
-  tauriShim.includes("options.create") &&
-  tauriShim.includes("'vault_path_exists'") &&
-  tauriShim.includes("if (!exists)") &&
-  tauriShim.includes("'write_vault_text_file'")
+  tauriHandleShim.includes("options.create") &&
+  tauriHandleShim.includes("'vault_path_exists'") &&
+  tauriHandleShim.includes("if (!exists)") &&
+  tauriHandleShim.includes("'write_vault_text_file'")
 ) {
   pass("Tauri getFileHandle create semantics avoid truncating existing vault files");
 } else {
   fail(
-    "src/shared/lib/vault-folder/tauri-vault-fs.ts must match File System Access create semantics: create missing files without truncating existing ones",
+    "src/shared/lib/vault-folder/native-vault/tauri-vault-handle.ts must match File System Access create semantics: create missing files without truncating existing ones",
   );
 }
 
@@ -1745,7 +1756,7 @@ const tauriScaffoldFiles = [
   "src-tauri/capabilities/default.json",
   "src-tauri/icons/icon.png",
   "src-tauri/icons/icon.icns",
-  "src/shared/lib/vault-folder/tauri-vault-fs.test.ts",
+  "src/shared/lib/vault-folder/native-vault/tauri-vault-handle.test.ts",
   // The settings sheet carries recent-vault recovery and copy path / Finder, covered by its test.
   "src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx",
   "src/views/root-entry/ui/RootEntryPage.test.tsx",
@@ -1760,7 +1771,7 @@ const tauriScaffoldFiles = [
   "scripts/desktop-release/check-macos-release-github.mjs",
   "scripts/desktop/sign-macos-app.mjs",
   "scripts/desktop-release/notarize-macos-dmg.mjs",
-  "src/shared/lib/vault-folder/tauri-vault-fs.ts",
+  "src/shared/lib/vault-folder/native-vault/tauri-vault-runtime.ts",
 ];
 const missingTauriFiles = tauriScaffoldFiles.filter(
   (relativePath) => !fs.existsSync(path.join(root, relativePath)),

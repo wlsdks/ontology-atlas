@@ -1,4 +1,7 @@
-import { importTauriSourceFiles, pickTauriSourceFiles } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import {
+  importTauriSourceFiles,
+  pickTauriSourceFiles,
+} from '@/shared/lib/vault-folder/native-vault/tauri-library-sources';
 import { planningNameKey } from './document-name';
 import { PLANNING_HOME_FOLDER, PLANNING_IMAGE_EXTENSIONS, planningHomeFileName, planningIdentity } from './home-source';
 

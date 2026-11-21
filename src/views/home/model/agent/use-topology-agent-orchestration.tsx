@@ -11,7 +11,7 @@ import { buildBusinessFlowRequest, nodeIntent, screenIntentFor, sentenceForInten
 import { buildAgentAnalyzePrompt } from "@/shared/config/agent/agent-prompts";
 import { consumeQueuedAgentChatIntent, subscribeAgentChatIntent } from "@/shared/lib/agent-chat/agent-chat-intent";
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/overlays/right-dock-reserve";
-import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { useAgentDockDefaultOpen } from "@/shared/lib/llm-connection/use-agent-dock-default";
 import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import { useCallback, useEffect, useMemo, useRef } from "react";

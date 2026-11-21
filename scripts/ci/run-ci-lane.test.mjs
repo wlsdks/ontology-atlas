@@ -169,6 +169,7 @@ test('a change inside the wiki reader folder or its passage read selects the rea
     'src/views/library/ui/parts/wiki/WikiCitationPopover.tsx',
     'src/views/library/lib/sources/use-cited-passage.ts',
     'src/shared/lib/library/source-passage.ts',
+    'src/shared/lib/library/source-zip.ts',
   ]) {
     const plan = buildImpactPlan({ files: [file] });
     const [command] = commandsForLane({ lane: 'e2e', plan, shard: '1/8' });

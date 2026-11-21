@@ -1,11 +1,13 @@
 import { verifyHandlePermission, type LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import {
-  createTauriVaultHandle,
-  getTauriVaultRootPath,
-  isTauriVaultRuntime,
   listTauriDirectoryNames,
   tauriVaultPathExists,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import { createTauriVaultHandle } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
+import {
+  getTauriVaultRootPath,
+  isTauriVaultRuntime,
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { resolvePickedVaultFolder } from './resolve-picked-vault-folder';
 
 /**

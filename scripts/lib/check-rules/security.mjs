@@ -75,7 +75,7 @@ export const rules = [
       /^src\/views\/gateway-doc\/ui\/GatewayDocPage\.tsx$/,
       /^src\/views\/library\/ui\/(?:LibraryPage\.tsx|library-page\/[^/]+\.tsx?|parts\/questions\/(?:AnswerRevisionComparison|LibraryQuestionDesk)\.tsx|parts\/questions\/desk\/[^/]+\.tsx?|parts\/wiki\/[^/]+\.tsx?)$/,
       /^src\/views\/library\/lib\/sources\/use-cited-passage\.ts$/,
-      /^src\/shared\/lib\/library\/source-passage\.ts$/,
+      /^src\/shared\/lib\/library\/source-(?:passage|units|outline|zip|markup-scan)\.ts$/,
       /^src\/views\/project-detail\/ui\/ProjectDetailPage\.tsx$/,
       /^src\/views\/project-detail\/model\/project-lead\.ts$/,
       /^src\/views\/change-briefing\/ui\/sources\/OriginalSourceBody\.tsx$/,

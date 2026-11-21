@@ -9,7 +9,7 @@ import {
   readLocalEndpoint,
   type LocalEndpointSettings,
 } from '@/shared/lib/llm-connection/local-endpoint';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { useLocalVault } from '@/entities/vault-session';
 import { buildRouteFocusHref, rememberRouteFocusIntent } from '@/shared/ui/routing/route-focus-manager';
 import { buttonVariants } from '@/shared/ui/controls/button';

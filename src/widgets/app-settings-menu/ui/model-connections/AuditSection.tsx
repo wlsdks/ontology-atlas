@@ -3,7 +3,7 @@ import {
   LLM_AUDIT_LOG_RELATIVE_PATH,
   type LlmAuditEntry,
 } from '@/shared/lib/llm-connection/llm-audit-log';
-import { revealTauriVaultFile } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { revealTauriVaultFile } from '@/shared/lib/vault-folder/native-vault/tauri-vault-location';
 import { Chip } from '@/shared/ui/controls/controls';
 import { cn } from '@/shared/lib/cn';
 import { SettingsGroupHeading } from '../settings-primitives';

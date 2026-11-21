@@ -1,6 +1,6 @@
 import { discoverySkipReason, walkDroppedFolder, type DiscoverySkipReason, type DroppedEntry } from "@/entities/docs-vault";
 import type { SkippedUnlisted, SourceCopyPlan, SourceCopySkip } from "@/features/library";
-import type { TauriDropOffer } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import type { TauriDropOffer } from "@/shared/lib/vault-folder/native-vault/tauri-library-sources";
 
 /** What a drop or Copy all would copy, before the large-copy question. */
 export interface CopyRequest {

@@ -11,7 +11,8 @@ import {
 } from "@/entities/docs-vault";
 import { passageLabelText } from "@/features/library";
 import { cn } from "@/shared/lib/cn";
-import type { SourceOutline, SourceUnit } from "@/shared/lib/library/source-passage";
+import type { SourceOutline } from "@/shared/lib/library/source-outline";
+import type { SourceUnit } from "@/shared/lib/library/source-units";
 import { RowButton } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";

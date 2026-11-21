@@ -6,7 +6,7 @@ import type { VaultDoc } from '@/entities/docs-vault';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import { buildEvidenceConcepts, resolveEvidenceStates } from '@/shared/lib/git/evidence-states';
 import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { gitPathsLastChange, isGitBridgeAvailable, type GitPathLastChange } from '@/shared/lib/git/tauri-git';
 
 type MapEvidenceState = 'current' | 'stale' | 'unknown';

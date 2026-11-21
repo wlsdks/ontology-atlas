@@ -23,7 +23,8 @@ import {
   type DiscoveryOutcome,
 } from "@/features/library";
 import { handOverVaultFile } from "@/shared/lib/library/open-vault-file";
-import { revealTauriSourcesFolder, revealTauriVaultFile } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { revealTauriSourcesFolder } from "@/shared/lib/vault-folder/native-vault/tauri-library-sources";
+import { revealTauriVaultFile } from "@/shared/lib/vault-folder/native-vault/tauri-vault-location";
 import { useToast } from "@/shared/ui";
 import { hostFileManager } from "../parts/first-run/file-manager";
 import type { CopyRequest } from "../parts/first-run/source-drop";
@@ -188,7 +189,7 @@ export function useLibrarySources({
       void (async () => {
         try {
           if (nativeVaultRootPath) {
-            const { importTauriSourceFiles } = await import("@/shared/lib/vault-folder/tauri-vault-fs");
+            const { importTauriSourceFiles } = await import("@/shared/lib/vault-folder/native-vault/tauri-library-sources");
             const absolute = chosen.map(
               (candidate) => `${candidate.rootPath}/${candidate.relativePath}`,
             );

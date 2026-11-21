@@ -33,8 +33,8 @@ vi.mock('@/shared/lib/git/tauri-git', async (importOriginal) => ({
   gitPathsLastChange: (...args: unknown[]) => mocks.pathsLastChange(...args),
   gitDiff: (...args: unknown[]) => mocks.diff(...args),
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/tauri-vault-fs')>()),
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime')>()),
   getTauriVaultRootPath: (handle: { rootPath?: string }) => handle.rootPath,
 }));
 

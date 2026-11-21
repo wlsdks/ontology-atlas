@@ -4,7 +4,7 @@ import { readSourceCopy, subscribeSourceCopy, type SourceCopyJob } from "@/featu
 import {
   armTauriSourceDrop,
   subscribeTauriSourceDrop,
-} from "@/shared/lib/vault-folder/tauri-vault-fs";
+} from "@/shared/lib/vault-folder/native-vault/tauri-library-sources";
 
 import {
   captureDroppedItems,

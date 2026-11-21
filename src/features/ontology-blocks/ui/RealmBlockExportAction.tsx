@@ -7,10 +7,8 @@ import { useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import type { OntologyTreeNode } from "@/entities/knowledge-graph";
 import { isPickerAbort } from "@/shared/lib/failures/picker-abort";
-import {
-  isTauriVaultRuntime,
-  pickTauriVaultDirectory,
-} from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { pickTauriVaultDirectory } from "@/shared/lib/vault-folder/native-vault/tauri-vault-location";
+import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { buildBlockManifest, type BlockCensus } from "../model/block-manifest";
 import { writeBlockToDirectory, type BlockDirectoryHandleLike } from "../model/block-fsa";
 import { collectSubtreeNodeIds, selectRealmBlockDocs } from "../model/collect-realm-block";
