@@ -1658,6 +1658,8 @@ describe('focused check suggestions', () => {
     const paths = [
       'scripts/ci/classify-change.mjs',
       'scripts/ci/classify-change.test.mjs',
+      'scripts/ci/plan-base.mjs',
+      'scripts/ci/plan-base.test.mjs',
       'scripts/ci/run-ci-lane.mjs',
       'scripts/ci/run-ci-lane.test.mjs',
       'scripts/lib/ci/focused-check-suggestions.mjs',

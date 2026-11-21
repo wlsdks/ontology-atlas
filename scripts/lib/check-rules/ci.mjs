@@ -14,7 +14,7 @@ export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
   /^scripts\/(?:lib\/)?ci\/reviewed-main-push(?:\.test)?\.mjs$/,
   /^scripts\/lib\/ci\/package-script-files(?:\.test)?\.mjs$/,
   /^scripts\/fixtures\/reviewed-main-push\.json$/,
-  /^scripts\/ci\/classify-change(?:\.test)?\.mjs$/,
+  /^scripts\/ci\/(?:classify-change|plan-base)(?:\.test)?\.mjs$/,
   /^scripts\/ci\/run-ci-lane(?:\.test)?\.mjs$/,
   /^scripts\/ci\/merge-smoke-specs\.mjs$/,
   /^scripts\/lib\/ci\/focused-check-suggestions(?:\.test)?\.mjs$/,
