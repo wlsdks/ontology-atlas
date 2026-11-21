@@ -12,7 +12,6 @@ import { cn } from '@/shared/lib/cn';
 import type { SetupItem } from '../model/harness-setup';
 import { formatBytes } from './harness-setup-format';
 
-/** The amber pair every failing status on this screen wears. */
 export const WARNING_BADGE =
   'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]';
 
@@ -139,7 +138,6 @@ function tagText(tag: StatusTag, item: SetupItem, t: TranslateFn): { text: strin
   }
 }
 
-/** Amber only for what fails; every other status stays neutral. */
 export function ItemStatus({ item, oneLine = false, t }: { item: SetupItem; oneLine?: boolean; t: TranslateFn }) {
   const tags = statusTags(item);
   if (tags.length === 0) return null;
@@ -161,7 +159,6 @@ export function ItemStatus({ item, oneLine = false, t }: { item: SetupItem; oneL
   );
 }
 
-/** What each status means, as text a person can read without hovering. */
 function StatusHints({ item, t }: { item: SetupItem; t: TranslateFn }) {
   const hints = statusTags(item).flatMap((tag) => tagText(tag, item, t).hint ?? []);
   if (hints.length === 0) return null;
@@ -189,9 +186,7 @@ export function SetupItemDetail({
   report: HarnessReport;
   current: boolean;
   headingId?: string;
-  /** False leaves the tools' logos out of the drift diff; their names stay. */
   showVendorMarks?: boolean;
-  /** A control that sits beside the heading, such as a dialog's close button. */
   action?: ReactNode;
   t: TranslateFn;
 }) {
