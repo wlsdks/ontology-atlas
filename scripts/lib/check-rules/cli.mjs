@@ -35,7 +35,7 @@ export const rules = [
     order: 1170,
     command: 'pnpm integration:cli:entry',
     reason: 'CLI entrypoint, help, or init dispatch changed',
-    matches: [/^cli\/src\/index\.mjs$/, /^cli\/src\/lib\/cli-commands\.mjs$/],
+    matches: [/^cli\/src\/index\.mjs$/, /^cli\/src\/lib\/(?:init|help)\/[a-z-]+\.mjs$/, /^cli\/src\/lib\/status-lines\.mjs$/, /^cli\/src\/lib\/cli-commands\.mjs$/],
   },
   {
     order: 1180,
