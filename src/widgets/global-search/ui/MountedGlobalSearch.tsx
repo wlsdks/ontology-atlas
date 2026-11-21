@@ -17,12 +17,9 @@ import { GlobalSearch } from "./GlobalSearch";
 const EMPTY_NODES: readonly KnowledgeGraphNode[] = Object.freeze([]);
 
 export interface MountedGlobalSearchProps {
-  /** Ontology node selection; defaults to pushing the `/ontology/` route. */
   onSelectNode?: (node: KnowledgeGraphNode) => void;
-  /** Project selection; defaults to the static-export-safe fallback detail. */
   onSelectProject?: (project: Project) => void;
   onSelectionFocus?: (keyboard: boolean) => void;
-  /** Controls the open state externally; unset means self-managed. */
   open?: boolean;
   onOpenChange?: (next: boolean) => void;
   /**
@@ -30,14 +27,9 @@ export interface MountedGlobalSearchProps {
    * own key.
    */
   bindHotkey?: boolean;
-  /** The map's own mount: there the dialog may speak of "this map" (`GlobalSearch`'s `onMap`). */
   onMap?: boolean;
 }
 
-/**
- * Single mount for global search: vault ontology nodes plus projects, the Cmd+K hotkey and
- * GlobalSearch. Raw markdown search belongs to `/docs`.
- */
 export function MountedGlobalSearch({
   onSelectNode,
   onSelectProject,
@@ -55,14 +47,10 @@ export function MountedGlobalSearch({
     if (isControlled) onOpenChange?.(next);
     else setInternalOpen(next);
   };
-  // Ontology nodes from vault frontmatter or the build-time dogfood; useOntologyInsight picks the
-  // source.
   const { insight } = useOntologyInsight({ demand: open });
   const nodes = insight?.nodes ?? EMPTY_NODES;
   const { projects } = useProjects({ demand: open });
 
-  // Inactive on a controlled mount unless the caller asked the hotkey to travel with the dialog
-  // (`bindHotkey`).
   useGlobalSearchHotkey(open, setOpen, { disabled: isControlled && !bindHotkey });
 
   return (
@@ -78,7 +66,6 @@ export function MountedGlobalSearch({
           onSelectNode(node);
           return;
         }
-        // Default: the /ontology page with `?node=<id>`.
         router.push(buildOntologyNodeHref(node.id));
       }}
       onSelectProject={(project) => {
@@ -86,7 +73,6 @@ export function MountedGlobalSearch({
           onSelectProject(project);
           return;
         }
-        // Default — jump to the fallback that also opens local slugs unknown at build time.
         router.push(getProjectRuntimeDetailHref(project.slug));
       }}
     />
