@@ -16,7 +16,6 @@ export function AgentHandoffPacket({
   vaultPath: string;
   focusedSlug: string | null;
   labels: {
-    /** Why hand over — this surface's boundary. */
     boundary: string;
     note: string;
     copy: string;
@@ -24,16 +23,14 @@ export function AgentHandoffPacket({
   };
 }) {
   const [copied, setCopied] = useState(false);
-  // The confirmation has to mean it was copied **just now**. Pressing once and
-  // leaving "copied" there permanently makes it a lie to whoever looks later — it is
-  // true only briefly, right after the press.
+  // The confirmation must mean "copied just now"; a permanent "copied" would be a lie to whoever
+  // looks later.
   useEffect(() => {
     if (!copied) return;
     const timer = window.setTimeout(() => setCopied(false), COPY_FEEDBACK_RESET_MS);
     return () => window.clearTimeout(timer);
   }, [copied]);
-  // The concept name is exactly what the screen calls it — it has to resolve in the
-  // vault the moment it is pasted. (The caller passes the `resolveNodeAgentTarget` result.)
+  // The concept name is exactly what the screen calls it, so it resolves in the vault when pasted.
   const packet = [
     `cd ${vaultPath}`,
     '',

@@ -52,20 +52,9 @@ import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { VAULT_AGENT_PANEL_ID } from '@/shared/config/agent-panel';
 
 /**
- * The agent panel — a vertical dock the map yields space to on the right.
- *
- * ## Why the reflow is built this way
- *
- * The panel animates **width only**, inside `<main>`'s flex row. That one width
- * animation moves both columns (map `flex-1`, panel fixed width) in the same frame,
- * so the map's shrink and the panel's entry share **the same start and the same
- * curve** — not two animations tuned to match but physically one. That is what makes
- * it read as "it yielded space" rather than "the map was taken away".
- *
- * ## Closing = stopping
- *
- * Closing the panel cuts any in-flight call through the same path. There is no
- * continuing in the background.
+ * The agent panel: a dock the map yields space to on the right. It animates width only inside
+ * `<main>`'s flex row, so the map's shrink and the panel's entry share one start and one curve.
+ * Closing the panel cuts any in-flight call; nothing continues in the background.
  */
 export function VaultAgentPanel({
   open,
@@ -90,14 +79,11 @@ export function VaultAgentPanel({
   vaultIsGit: boolean;
   canWrite: boolean;
   onFocusNode: (slug: string) => void;
-  /** The route this panel can open itself when there is no folder — without it, that state has no door. */
   onOpenFolder?: () => void;
   downloadHref: string;
   /**
-   * A first message handed over from outside (S7) — pressing "Ask the agent" (ask the agent)
-   * on a queue row or a node's detail brings a sentence
-   * carrying that row's context here. **It is a prefill, not a send.** `nonce` is the
-   * value that lets the same sentence be seated again on a repeat.
+   * A first message handed over from outside, such as "Ask the agent" on a queue row: a prefill, not
+   * a send. `nonce` lets the same sentence be seated again.
    */
   prefillRequest?: { text: string; nonce: number } | null;
 }) {
@@ -114,15 +100,8 @@ export function VaultAgentPanel({
   const sourceSelectionNonce = useRef(0);
   const heldSourceSelection = useHeldValue(sourceSelection, sourceSelection ? `${sourceSelection.nonce}:${sourceSelection.status}` : null);
   /**
-   * The two side branches below the composer — "View instructions" (view instructions) and
-   * "Continue in the terminal" (continue in the terminal). **Only one opens at a time.**
-   *
-   * Why one: the old layout, with both sitting permanently as bordered strips,
-   * stacked four strips at the panel's floor (instructions · composer · boundary
-   * sentence · handoff card), with the protagonist (the composer) on the second row.
-   * Side branches are needed **only when leaving or when in doubt**, so they have no
-   * reason to sit permanently — the opening and closing folds into one row, and the
-   * area that opens is limited to one (zero overlapping transient surfaces).
+   * The two side branches below the composer, "View instructions" and "Continue in the terminal",
+   * open one at a time: they are needed only when leaving or in doubt, so they do not sit permanently.
    */
   const [meta, setMeta] = useState<'prompt' | 'handoff' | null>(null);
   /**
@@ -132,38 +111,29 @@ export function VaultAgentPanel({
   const heldMeta = useHeldValue(meta);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   /**
-   * An **off-screen mirror** for measuring growth. The common pattern of resetting
-   * the visible composer's height to `''` and reading `scrollHeight` collapses the box
-   * to 0 and reopens it every frame, turning growth into a staircase rather than a
-   * transition. The mirror has the same typography and width so it gives the same
-   * value, and the visible box is never reset.
+   * An off-screen mirror measures growth: resetting the visible composer's height to `''` to read
+   * `scrollHeight` collapses the box every frame and turns growth into a staircase. The mirror has
+   * the same typography and width, and the visible box is never reset.
    */
   const mirrorRef = useRef<HTMLTextAreaElement>(null);
-  /** Has the cap (6 rows) been hit so the top is **actually clipped**? Only then the top fade. */
   const [composerHidesTop, setComposerHidesTop] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const bridgeAvailable = isLlmChatBridgeAvailable();
-  /** The basis for the blanks the first words point at — the same fact map the "To-do" queue reads. */
   const conceptFacts = useVaultConceptFacts();
   /**
-   * Which vendor's key is on this computer. The first in registration order (=
-   * `secrets.rs`'s allowlist order) is used — no model picker and no vendor picker is
-   * built. The full key never arrives by any route, so all that is known here is
-   * "there is one".
+   * Which vendor's key is on this computer: the first in registration order (`secrets.rs`'s allowlist
+   * order). No picker exists, and the full key never arrives here, so only "there is one" is known.
    */
   const [provider, setProvider] = useState<ConnectionProvider | null>(null);
   /**
-   * The "Connect by address" (connect by address) path's settings — the address and the
-   * chosen model. It lives in localStorage rather than the keychain (it is not a
-   * secret), and a signal arrives when the settings sheet changes it.
+   * The connect-by-address settings: the address and the chosen model. They live in localStorage, not
+   * the keychain (not a secret), and a signal arrives when the settings sheet changes them.
    */
   const [localEndpoint, setLocalEndpoint] = useState<LocalEndpointSettings | null>(null);
   /**
-   * The **way back** after entering a key. When a key is saved in the settings sheet
-   * a signal arrives at that moment and it is re-queried here — no reload is demanded
-   * (demanding one would be a defect). The query itself is owned by the single effect
-   * below, and this value is only the trigger that re-runs that effect.
+   * The signal that a key was saved in the settings sheet. It only re-runs the effect below that owns
+   * the query, so no reload is demanded.
    */
   const [secretNonce, setSecretNonce] = useState(0);
 
@@ -224,12 +194,9 @@ export function VaultAgentPanel({
     let cancelled = false;
     void (async () => {
       /**
-       * **The address path comes first.** Why the order is this way: that path is
-       * reached only by someone who typed an address, verified the connection and
-       * chose a model from the list (one step more explicit than pasting a key), so if
-       * an old key kept being used after all that, what the user just did would count
-       * for nothing. Which one is live is stated continuously by the panel footer,
-       * through the provider name and host.
+       * The address path comes first: it is reached only by someone who typed an address, verified the
+       * connection and chose a model, so an old key must not override that. The panel footer states which
+       * one is live, by provider name and host.
        */
       const local = readLocalEndpoint();
       if (isLocalEndpointReady(local)) {
@@ -256,11 +223,9 @@ export function VaultAgentPanel({
   }, [open, bridgeAvailable, secretNonce]);
 
   /**
-   * Continuity between sessions — this folder's recent commit subjects. It is the
-   * basis on which a new conversation inherits past work **without storing the
-   * conversation** (every write landed in frontmatter and git). It is read only when
-   * the panel opens and when an apply finishes: background polling is something the
-   * user did not ask for, and without git the bridge honestly returns empty.
+   * Continuity between sessions: this folder's recent commit subjects, so a new conversation inherits
+   * past work without storing the conversation. Read only when the panel opens and when an apply
+   * finishes; no background polling, and without git the bridge returns empty.
    */
   const [recentChanges, setRecentChanges] = useState<readonly string[]>([]);
 
@@ -270,10 +235,8 @@ export function VaultAgentPanel({
   );
 
   /**
-   * Where this conversation actually goes. A named vendor is the official host
-   * hard-coded here, and the address path is the host of the address the user typed —
-   * **the same grammar** as the value recorded in the audit row, so the screen and the
-   * record state the same thing.
+   * Where this conversation actually goes: the official host for a named vendor, the typed address's
+   * host for the address path, in the same form as the audit row, so screen and record agree.
    */
   const providerHost =
     provider === LOCAL_PROVIDER
@@ -283,12 +246,9 @@ export function VaultAgentPanel({
         : '';
 
   /**
-   * An absolute path alone does not make it ready to send. During a desktop restore
-   * the handle and absolute path can come back before the manifest. The screen in that
-   * frame is the bundled sample, and using the path straight away makes the agent
-   * write its audit log into a hidden local folder, splitting the vault of the screen,
-   * the grounding and the record. With no manifest there is no vault to read, so it
-   * honestly falls back to the existing no-folder state.
+   * An absolute path alone is not ready to send: a desktop restore can return the handle and path
+   * before the manifest, while the screen shows the bundled sample, and the audit log would land in a
+   * hidden folder. With no manifest it falls back to the no-folder state.
    */
   const readableVaultPath = manifest ? vaultPath : null;
 
@@ -361,7 +321,6 @@ export function VaultAgentPanel({
     void agent.sendConstruction(preview, draft.trim() || t('construction.action'));
   };
 
-  // Closing = stopping. Not open means anything in flight ends with it.
   const { stop } = agent;
   useEffect(() => {
     if (!open) stop();
@@ -372,10 +331,8 @@ export function VaultAgentPanel({
   }, [open]);
 
   /**
-   * There are only two moments history is read: when the panel opens, and **after an
-   * apply lands** (the next conversation has to know what was just done for
-   * "continues" to be true). Background polling is not done, because the user did not
-   * ask for it.
+   * History is read at two moments: when the panel opens and after an apply lands, so the next
+   * conversation knows what was just done. No background polling.
    */
   const appliedTally = agent.sessionSummary.concepts + agent.sessionSummary.relations;
   useEffect(() => {
@@ -404,19 +361,9 @@ export function VaultAgentPanel({
   }, [open, readableVaultPath, appliedTally]);
 
   /**
-   * Seat a prefilled sentence so it **reads from the beginning** — the caret at the
-   * end of the sentence (where you continue writing), the view on the first line.
-   *
-   * The old implementation was `input.select()`. Selecting everything means "the next
-   * keystroke erases this sentence", while the user just pressed it **to choose** that
-   * sentence — the opposite of the intent. And select scrolls to the end of the
-   * selection (the last line), so the moment 3 lines arrived in a 2-line fixed box it
-   * pushed `scrollTop` to 9px in one frame. The line height is 20px, 9 is not a
-   * multiple of it, and so a row with glyphs cut in half caught on the top edge
-   * (measured: frame f231 of 420, 16.7ms).
-   *
-   * `scrollTop` is always snapped to the line grid. This is **alignment**, not motion,
-   * so it survives under reduced-motion too.
+   * Seat a prefilled sentence so it reads from the beginning: caret at the end, view on the first line.
+   * `input.select()` would make the next keystroke erase the chosen sentence and scroll to the last
+   * line, so `scrollTop` is snapped to the 20px line grid (alignment, so it holds under reduced motion).
    */
   const seatDraft = useCallback((input: HTMLTextAreaElement) => {
     input.focus();
@@ -428,12 +375,8 @@ export function VaultAgentPanel({
   }, []);
 
   /**
-   * Chip → prefill. The sentence is seated **in the frame it was pressed**. Sending is
-   * always [Send].
-   *
-   * Seating is deferred behind `requestAnimationFrame` — immediately after `setDraft`
-   * React has not written the value yet, so the caret is computed against the old
-   * (empty) value.
+   * Chip to prefill: seated in the frame it was pressed; sending is always [Send]. Seating waits for
+   * `requestAnimationFrame`, as right after `setDraft` React has not written the value yet.
    */
   const prefill = useCallback(
     (text: string) => {
@@ -450,14 +393,9 @@ export function VaultAgentPanel({
   );
 
   /**
-   * A first message handed over from outside (S7).
-   *
-   * Taken as **an adjustment during render** rather than an effect (React's "adjust
-   * state when a prop changes" pattern): in an effect the screen paints once with the
-   * stale value and then repaints, and that single frame looks exactly like "I pressed
-   * it and it responded late". It seats only when `nonce` changes, so pressing the same
-   * sentence again seats it again, and a draft the user was editing is not overwritten
-   * every render.
+   * A first message handed over from outside is taken as an adjustment during render, not an effect:
+   * an effect paints the stale value once first, which reads as a late response. It seats only when
+   * `nonce` changes, so a draft being edited is not overwritten every render.
    */
   const prefillNonce = prefillRequest?.nonce ?? null;
   const prefillText = prefillRequest?.text ?? null;
@@ -475,18 +413,9 @@ export function VaultAgentPanel({
   }, [seenPrefillNonce, seatDraft]);
 
   /**
-   * Composer growth — it starts at 2 rows and grows **with the content** to 6.
-   *
-   * The old implementation was a fixed `rows={2}`, so the box stayed the same even
-   * with a three-line sentence (height fixed at 58px across all 420 frames, mean
-   * inter-frame pixel diff 0.013) and the user could see only a third of the sentence
-   * they had just chosen.
-   *
-   * Height goes through **real `height`**, not `transform` — the siblings (send button,
-   * side-branch row) have to yield space along with it for it to read as "this box
-   * grew", and transform makes no space. The curve is the single surface-movement ramp
-   * (`--motion-base`) with no spring: with no retargeting, overshooting the baseline
-   * shakes the text while it is being read.
+   * Composer growth: from 2 rows with the content up to 6, through real `height` (not `transform`) so
+   * the send button and side-branch row yield space with it. The curve is the single surface-movement
+   * ramp with no spring: overshoot would shake text being read.
    */
   useLayoutEffect(() => {
     const input = inputRef.current;
@@ -575,11 +504,7 @@ export function VaultAgentPanel({
       ref={panelRef}
       id={VAULT_AGENT_PANEL_ID}
       data-testid="vault-agent-panel"
-      /*
-       * What stands at the screen's right — notifications (toasts) step aside by this
-       * width. Marked only while open: a closed panel is 0 wide and has nothing to
-       * reserve.
-       */
+      // What stands at the screen's right, so toasts step aside by this width; set only while open.
       data-right-dock={open ? 'key-agent' : undefined}
       data-agent-panel-state={open ? 'open' : 'closed'}
       data-agent-panel-reflow-token="--agent-panel-reflow-duration"
@@ -607,10 +532,7 @@ export function VaultAgentPanel({
             <p className="truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t('title')}
             </p>
-            {/* There is one subtitle slot — when progress happens, only the **text** on
-                that row changes. Position and size stay, so the layout does not jump,
-                and no decoration such as rolling numbers is attached (progress is a
-                fact, not a notification). */}
+            {/* One subtitle slot: when progress happens only the text changes, so the layout does not jump. */}
             <p
               data-testid="vault-agent-panel-subtitle"
               className="truncate text-label tracking-label text-[color:var(--color-text-quaternary)]"
@@ -635,9 +557,7 @@ export function VaultAgentPanel({
           // `min-h-full` is not reliable inside a scroll container.
           className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-3"
         >
-          {/* The same box becomes a different state — the state name is the key so a
-              short cross-fade (--motion-base) runs exactly once. Looking like a new
-              screen appeared reads as "I went elsewhere" rather than "this opened". */}
+          {/* The state name is the key, so one short cross-fade runs exactly once per state change. */}
           <div key={stage} className="agent-panel-stage-swap flex grow flex-col">
           <div className="mb-3 space-y-2">
             {!bridgeAvailable ? <p className="text-label text-[color:var(--color-text-secondary)]">{t('construction.webUnavailable')}</p> : readableVaultPath ? (
@@ -714,10 +634,7 @@ export function VaultAgentPanel({
             />
           ) : !scopeAccepted ? (
             <>
-              {/* The consent card also stands at the floor — [Got it] is where
-                  [Send] will stand. The next control opening in the same place
-                  reads as "this opened"; floating above and then producing a composer
-                  below reads as "something else appeared". */}
+              {/* The consent card stands at the floor where [Send] will stand, so the next control reads as "this opened". */}
               <div aria-hidden="true" className="min-h-0 shrink grow" />
               <AgentScopeSheet
               provider={t(`provider.${provider}`)}
@@ -738,13 +655,8 @@ export function VaultAgentPanel({
             </>
           ) : (
             <>
-              {/* The conversation **grows from the bottom** — the leftover height while it
-                  is short is pushed up. The old layout pinned the first turn to the top,
-                  leaving 400–640px empty down to the composer, and that whitespace only
-                  separated the answer from the hand. Why a spacer rather than
-                  `justify-end`: on overflow, `justify-end` eats the scroll container's top
-                  (the first turn disappears above the scroll). A spacer shrinks, so it
-                  quietly becomes 0 on overflow. */}
+              {/* The conversation grows from the bottom. A spacer, not `justify-end`, which on overflow eats the
+                  scroll container's top (the first turn disappears above the scroll). */}
               <div aria-hidden="true" className="min-h-0 shrink grow" />
               <AgentTranscript
                 turns={agent.turns}
@@ -809,10 +721,8 @@ export function VaultAgentPanel({
                   }}
                 />
               ) : null}
-              {/* An empty conversation — a blank page is not offered. Three sentences drawn
-                  from this folder's real state are already seated, and pressing one brings
-                  it down to the composer. It is computed locally with no wait, so it
-                  arrives in **the same frame** as the skeleton. */}
+              {/* An empty conversation seats three sentences from this folder's real state, computed locally, so
+                  they arrive in the same frame as the skeleton. */}
               {agent.turns.length === 0 ? (
                 <AgentFirstWords
                   chips={firstWordsChips}
@@ -826,10 +736,7 @@ export function VaultAgentPanel({
           </div>
         </div>
 
-        {/* The locked state's composer position — it stands on **the same strip** as the
-            real composer (panel floor, same divider). Both states use the same place, so
-            the moment a key arrives reads as "this opened". Only the guidance and the
-            destination differ per state. */}
+        {/* The locked state's composer position stands on the same strip as the real composer. */}
         {stage === 'web' ? (
           <AgentLockedComposer
             testId="vault-agent-download-link"
@@ -854,19 +761,13 @@ export function VaultAgentPanel({
         ) : null}
 
         {ready && scopeAccepted ? (
-          // One state change arrives as **one curve**. The stage (the content) and this
-          // strip (the composer) are two parts of the same event, but the old
-          // implementation cross-faded only the stage and hard-cut this strip — the same
-          // input arriving on different curves reads as two events. Zero new durations
-          // (the same class is reused), zero start offset (the same render).
+          // The stage and this strip arrive on one curve, with no new duration, or the same input would read
+          // as two events.
           <footer
             key={stage}
             className="agent-panel-stage-swap shrink-0 border-t border-[color:var(--color-border-soft)] p-2.5"
           >
-            {/* The button is `items-end` — a text input's primary action is pinned at the
-                bottom (Apple HIG: the destination of direct manipulation does not move).
-                As the box grows the button follows its bottom edge, so vertical alignment
-                stays correct too. */}
+            {/* `items-end`: the primary action stays at the bottom edge as the box grows. */}
             <div className="flex items-end gap-2">
               <div className="relative min-w-0 flex-1">
               <textarea
@@ -883,8 +784,6 @@ export function VaultAgentPanel({
                   );
                 }}
                 style={{
-                  // Growth is **surface movement** — it rides the app's shared ramp.
-                  // Zero new tokens, zero new durations.
                   transitionProperty: 'height',
                   transitionDuration: 'var(--motion-base)',
                   transitionTimingFunction: 'var(--motion-ease)',
@@ -895,10 +794,8 @@ export function VaultAgentPanel({
                     ? 'linear-gradient(to bottom, transparent 0, #000 var(--leading-body))'
                     : undefined,
                 }}
-                // "Continue talking" is a sentence with nothing to continue for someone
-                // who has said nothing yet. The first-message placeholder uses **the same
-                // key** as the locked strip's copy, so the moment a key arrives the same
-                // text stays in the same place ("this opened").
+                // The first-message placeholder uses the same key as the locked strip's copy, so the text stays in
+                // place when a key arrives.
                 placeholder={
                   agent.turns.length === 0 ? t('placeholderFirst') : t('placeholder')
                 }
@@ -911,15 +808,9 @@ export function VaultAgentPanel({
                 }}
                 className={`${COMPOSER_BOX_CLASS} block w-full text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]`}
               />
-              {/* The mirror that measures growth. **Same class = same typography and same
-                  width**, so it wraps identically. Why it is not moved off screen but kept
-                  in the same place: the width (padding and border included) has to match
-                  the real box for the row count to match.
-
-                  `invisible` (visibility: hidden), not `opacity-0` — a transparent element
-                  is still a painted element, so it shows up in overlap audits and can
-                  still take a caret or a selection. Layout still runs, so `scrollHeight`
-                  comes out the same. */}
+              {/* The mirror that measures growth: same class, so same typography and width, and kept in place so
+                  the padded width matches. `invisible`, not `opacity-0`, which would still paint, join overlap
+                  audits and take a caret; layout still runs, so `scrollHeight` matches. */}
               <textarea
                 ref={mirrorRef}
                 aria-hidden="true"
@@ -934,10 +825,8 @@ export function VaultAgentPanel({
                   type="button"
                   data-testid="vault-agent-stop"
                   onClick={agent.stop}
-                  /* Stop and send replace each other in **one position**, so they take the
-                     same step. `px-3` is `lg`'s inset on the ramp and `lg`'s pair is
-                     `text-body` — the hand-written `px-3` plus `text-label` was a
-                     combination straddling two steps. */
+                  /* Stop and send replace each other in one position, so they take the same step: `px-3` is `lg`'s
+                  inset and its pair is `text-body`. */
                   className={controlClass({
                     shape: 'chip',
                     size: 'lg',
@@ -967,9 +856,7 @@ export function VaultAgentPanel({
               )}
             </div>
 
-            {/* One row of side branches — only the open/close control sits permanently, and
-                the content arrives only when opened. The two buttons close each other: no
-                overlapping transient surface is created. */}
+            {/* One row of side branches: only the toggle sits permanently, and the two buttons close each other. */}
             <div className="mt-2 flex items-center gap-2">
               <MetaToggle
                 testId="agent-meta-prompt"
@@ -997,12 +884,8 @@ export function VaultAgentPanel({
               ) : null}
             </div>
 
-            {/* `origin` is the trigger's direction — the toggle that opens this box is
-                directly above and to the left, and the box grows below it. Born at the
-                centre, where it was pressed and where it was born would not match (the
-                motion seat's rejection rationale). The content is held with `heldMeta`:
-                the moment `meta` becomes null the child empties and the box would collapse
-                «while empty». */}
+            {/* `origin` is the trigger's direction, up and to the left of the box. The content is held with
+                `heldMeta`: once `meta` is null the child empties and the box would collapse while empty. */}
             <Surface
               open={meta !== null}
               origin="top left"
@@ -1035,17 +918,12 @@ export function VaultAgentPanel({
 }
 
 /**
- * The box specification the composer and the mirror use **together**. It is one
- * string, so there is nowhere for their typography to diverge — and diverging would
- * make the mirror measure a different row count and the box stand at the wrong height
- * (a value written in two places has already begun drifting).
+ * The box class the composer and the mirror share: one string, so their typography cannot diverge
+ * and make the mirror measure a different row count.
  */
 const COMPOSER_BOX_CLASS = fieldClass({ multiline: true, size: 'md' });
 
-/**
- * The one-row control that opens a side branch. No border, no background — if this
- * row looked as heavy as the composer, the floor would become "several strips" again.
- */
+/** The one-row control that opens a side branch: unbordered, or the floor reads as several strips. */
 function MetaToggle({
   testId,
   open,
