@@ -2,10 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { inferImports } from '../infer-imports.mjs';
+import { inferImports } from '../../infer-imports.mjs';
 import { classifyJvmImports, parseJvmSource } from './java-imports.mjs';
-import { createPathFacts } from './path-confinement.mjs';
-import { withRepo } from './repo-fixture.mjs';
+import { createPathFacts } from '../confinement/path-confinement.mjs';
+import { withRepo } from '../repo-fixture.mjs';
 
 function write(root, path, text) {
   mkdirSync(dirname(join(root, path)), { recursive: true });

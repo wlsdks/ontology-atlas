@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { inferImports } from '../infer-imports.mjs';
-import { withRepo } from './repo-fixture.mjs';
+import { inferImports } from '../../infer-imports.mjs';
+import { withRepo } from '../repo-fixture.mjs';
 
 test('Autotools C repositories expose unsupported import-graph coverage instead of presenting zero edges as absence', () => {
   const root = withRepo((r) => {

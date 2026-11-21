@@ -1,8 +1,8 @@
-import { readFileSync, lstatSync, existsSync } from './confined-source-fs.mjs';
+import { readFileSync, lstatSync, existsSync } from '../confinement/confined-source-fs.mjs';
 import { join, dirname, resolve, relative, isAbsolute, sep } from 'node:path';
-import { pathResolvesInsideRoot } from './path-confinement.mjs';
-import { RUST_SOURCE_EXTENSION, isIgnoredPath } from './source-files.mjs';
-import { sourceRoleOf } from './source-role.mjs';
+import { pathResolvesInsideRoot } from '../confinement/path-confinement.mjs';
+import { RUST_SOURCE_EXTENSION, isIgnoredPath } from '../source-files.mjs';
+import { sourceRoleOf } from '../source-role.mjs';
 
 export const RUST_IMPORT_TEXT_MAX_BYTES = 256 * 1024;
 const RUST_DEPENDENCIES_PER_FILE_LIMIT = 256;

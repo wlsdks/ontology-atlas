@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs, { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { syncBuiltinESMExports } from 'node:module';
 import { join } from 'node:path';
-import { inferImports } from '../infer-imports.mjs';
-import { withRepo } from './repo-fixture.mjs';
+import { inferImports } from '../../infer-imports.mjs';
+import { withRepo } from '../repo-fixture.mjs';
 
 /** How many times `run` reads a file whose path ends with `suffix`. */
 function readsOf(suffix, run) {

@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { inferImports } from '../infer-imports.mjs';
-import { withRepo } from './repo-fixture.mjs';
+import { inferImports } from '../../infer-imports.mjs';
+import { withRepo } from '../repo-fixture.mjs';
 
 test('root Go module reports exact local package imports as a separate typed receipt', () => {
   const root = withRepo((r) => {

@@ -2258,7 +2258,7 @@ transport. Everything a change would actually touch lives beside it.
 | `src/vault/writes/atomic-writes.mjs` | the stale-write conflict error, single-file atomic writes, and all-or-nothing multi-file plans |
 | `src/vault/writes/doc-writes.mjs` | the single write point for create, patch, update and delete, with uid minting and identity checks |
 | `src/vault/writes/backlink-rewrite.mjs` | rewriting every reference to a renamed, merged or reclassified node |
-| `src/infer-imports.mjs` + `src/infer-imports/*.mjs` | the import-graph entry, with one module per language and stage: workspace discovery, Autotools, grouping, impact focus |
+| `src/infer-imports.mjs` + `src/infer-imports/` | the import-graph entry; `languages/` holds one reader per language (TypeScript, Python, Java and Kotlin, Rust, Go, Autotools C), `confinement/` the scan-root guard every read passes, and the folder itself the shared stages: workspace discovery, grouping, impact focus |
 | `src/ontology-engine.mjs` | public exports and explicit query-family composition |
 | `src/ontology-engine/graph-context/artifact-context.mjs` | graph indexes and reference resolution |
 | `src/ontology-engine/graph-context/context-operations.mjs` | shared graph lookups and scope helpers |

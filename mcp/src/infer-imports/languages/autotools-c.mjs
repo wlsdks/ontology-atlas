@@ -1,7 +1,7 @@
-import { readdirSync, lstatSync, realpathSync } from './confined-source-fs.mjs';
+import { readdirSync, lstatSync, realpathSync } from '../confinement/confined-source-fs.mjs';
 import { join } from 'node:path';
-import { pathResolvesInsideRoot } from './path-confinement.mjs';
-import { DEFAULT_IGNORE } from './source-files.mjs';
+import { pathResolvesInsideRoot } from '../confinement/path-confinement.mjs';
+import { DEFAULT_IGNORE } from '../source-files.mjs';
 
 const AUTOTOOLS_C_DISCOVERY_MAX_ENTRIES = 2000;
 const AUTOTOOLS_C_SOURCE_FOLDERS = Object.freeze(['src', 'source', 'lib', 'app', 'internal']);

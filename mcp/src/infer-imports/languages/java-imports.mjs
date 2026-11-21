@@ -7,10 +7,10 @@
 // package, which needs no import, is an edge too. A name that resolves inside
 // no source root is external. Text is masked, never compiled or run.
 
-import { confinedSourceReadsEnabled, readdirSync } from './confined-source-fs.mjs';
+import { confinedSourceReadsEnabled, readdirSync } from '../confinement/confined-source-fs.mjs';
 import { dirname, join, relative, sep } from 'node:path';
-import { isIgnoredPath } from './source-files.mjs';
-import { sourceRoleOf } from './source-role.mjs';
+import { isIgnoredPath } from '../source-files.mjs';
+import { sourceRoleOf } from '../source-role.mjs';
 
 const JVM_FILE_EXTENSIONS = ['.java', '.kt'];
 const SOURCE_SET_LANGUAGES = ['java', 'kotlin'];
@@ -344,7 +344,7 @@ function listNames(folder) {
  * their parent folder.
  *
  * @param {{ file: string, packageName: string|null, imports: { spec: string, wildcard: boolean }[], declarations: string[], types: string[], typeReferences: string[] }[]} parsedFiles absolute paths
- * @param {{ rootPath: string, edges: object[], externalImports: object[], ignore: Set<string>, facts: ReturnType<import('./path-confinement.mjs').createPathFacts> }} pass
+ * @param {{ rootPath: string, edges: object[], externalImports: object[], ignore: Set<string>, facts: ReturnType<import('../confinement/path-confinement.mjs').createPathFacts> }} pass
  */
 export function classifyJvmImports(parsedFiles, { rootPath, edges, externalImports, ignore, facts }) {
   if (parsedFiles.length === 0) return;

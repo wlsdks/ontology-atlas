@@ -440,6 +440,14 @@ describe('focused check suggestions', () => {
     assert.ok(!test.commands.some((row) => row.command === 'pnpm integration:mcp:write'));
   });
 
+  it('treats an infer-imports source one folder down as repo-analysis surface, and its test as not', () => {
+    const source = suggestFocusedChecks(['mcp/src/infer-imports/languages/go-imports.mjs']);
+    assert.ok(source.commands.some((row) => row.command === 'pnpm integration:mcp:repo-analysis'));
+
+    const test = suggestFocusedChecks(['mcp/src/infer-imports/languages/go-imports.test.mjs']);
+    assert.ok(!test.commands.some((row) => row.command === 'pnpm integration:mcp:repo-analysis'));
+  });
+
   it('discovers a new MCP source and sibling test without a hand-maintained allowlist', () => {
     const result = suggestFocusedChecks([
       'mcp/src/agent-brief/task-navigation-evidence.mjs',
@@ -668,13 +676,13 @@ describe('focused check suggestions', () => {
 
   it('routes each infer-imports family module to its own test and to repo-analysis integration', () => {
     const result = suggestFocusedChecks([
-      'mcp/src/infer-imports/go-imports.mjs',
-      'mcp/src/infer-imports/path-confinement.mjs',
+      'mcp/src/infer-imports/languages/go-imports.mjs',
+      'mcp/src/infer-imports/confinement/path-confinement.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec node --test mcp/src/infer-imports/go-imports.test.mjs',
-      'pnpm exec node --test mcp/src/infer-imports/confined-source-fs.test.mjs',
+      'pnpm exec node --test mcp/src/infer-imports/languages/go-imports.test.mjs',
+      'pnpm exec node --test mcp/src/infer-imports/confinement/confined-source-fs.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:repo-analysis',
       'pnpm vault:validate',

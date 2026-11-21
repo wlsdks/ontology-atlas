@@ -1,7 +1,7 @@
-import { readdirSync, lstatSync, existsSync } from './confined-source-fs.mjs';
+import { readdirSync, lstatSync, existsSync } from '../confinement/confined-source-fs.mjs';
 import { join, dirname, relative } from 'node:path';
-import { isIgnoredPath } from './source-files.mjs';
-import { sourceRoleOf } from './source-role.mjs';
+import { isIgnoredPath } from '../source-files.mjs';
+import { sourceRoleOf } from '../source-role.mjs';
 
 export function discoverRootPythonPackages(rootPath, ignore) {
   let entries;
@@ -165,7 +165,7 @@ function stripPythonStringsAndComment(line, state) {
  *
  * @param {string} rootPath
  * @param {string[]} sourceFolders
- * @param {ReturnType<import('./path-confinement.mjs').createPathFacts>} facts
+ * @param {ReturnType<import('../confinement/path-confinement.mjs').createPathFacts>} facts
  * @returns {(spec: string) => string|null} the root-relative file, or null
  */
 export function createPythonModuleResolver(rootPath, sourceFolders, facts) {

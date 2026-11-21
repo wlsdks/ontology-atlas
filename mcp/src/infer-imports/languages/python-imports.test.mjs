@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs, { mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
 import { syncBuiltinESMExports } from 'node:module';
 import { join } from 'node:path';
-import { inferImports } from '../infer-imports.mjs';
-import { withRepo } from './repo-fixture.mjs';
+import { inferImports } from '../../infer-imports.mjs';
+import { withRepo } from '../repo-fixture.mjs';
 
 const PATH_QUESTIONS = ['existsSync', 'lstatSync', 'statSync', 'realpathSync'];
 

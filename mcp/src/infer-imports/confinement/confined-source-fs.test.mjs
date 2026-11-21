@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, rmSync, realpathSyn
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { withSourceSnapshot } from './confined-source-fs.mjs';
-import { inferImports as infer } from '../infer-imports.mjs';
+import { inferImports as infer } from '../../infer-imports.mjs';
 
 function capture(root){
   const entries=[];

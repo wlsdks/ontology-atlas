@@ -1,8 +1,8 @@
-import { readFileSync, existsSync } from './confined-source-fs.mjs';
+import { readFileSync, existsSync } from '../confinement/confined-source-fs.mjs';
 import { join, resolve, relative, isAbsolute } from 'node:path';
-import { pathResolvesInsideRoot } from './path-confinement.mjs';
-import { DEFAULT_IGNORE, isIgnoredPath } from './source-files.mjs';
-import { sourceRoleOf } from './source-role.mjs';
+import { pathResolvesInsideRoot } from '../confinement/path-confinement.mjs';
+import { DEFAULT_IGNORE, isIgnoredPath } from '../source-files.mjs';
+import { sourceRoleOf } from '../source-role.mjs';
 
 const RESOLVE_EXT_ORDER = [
   '.ts',
@@ -50,7 +50,7 @@ export function importUsageOf(rawMatch) {
  * specifier once per pass, and every probe goes through `facts`, so a pass costs
  * O(distinct specifiers) resolutions however often a module is imported.
  *
- * @param {{ rootPath: string, pathAliases?: object[], workspacePackages?: object[], facts: ReturnType<import('./path-confinement.mjs').createPathFacts> }} options
+ * @param {{ rootPath: string, pathAliases?: object[], workspacePackages?: object[], facts: ReturnType<import('../confinement/path-confinement.mjs').createPathFacts> }} options
  */
 export function createTypeScriptResolver({ rootPath, pathAliases = [], workspacePackages = [], facts }) {
   const relativeImports = new Map();

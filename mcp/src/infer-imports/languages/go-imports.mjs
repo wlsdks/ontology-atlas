@@ -4,10 +4,10 @@ import {
   statSync,
   lstatSync,
   existsSync,
-} from './confined-source-fs.mjs';
+} from '../confinement/confined-source-fs.mjs';
 import { join, dirname, resolve, relative, extname, sep } from 'node:path';
-import { pathResolvesInsideRoot } from './path-confinement.mjs';
-import { zeroCounts } from './zero-counts.mjs';
+import { pathResolvesInsideRoot } from '../confinement/path-confinement.mjs';
+import { zeroCounts } from '../zero-counts.mjs';
 
 const GO_IMPORT_TEXT_MAX_BYTES = 256 * 1024;
 const GO_IMPORTS_PER_FILE_LIMIT = 256;
