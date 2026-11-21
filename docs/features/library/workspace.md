@@ -341,19 +341,39 @@ both index lists were already saying the same emptiness.
 
 So there are now two shapes and neither is that one.
 
-**An empty folder is an empty state.** With no sources *and* no pages — exactly the
-condition that makes the canvas draw nothing — the whole screen is one centred stage in the
-repository's own empty-state grammar (`PAGE_COLUMN_STAGE`, 640px, dashed edge, first
-overlay): eyebrow, one title, one sentence, the two doors **Add files** and **Find
-documents**, and one quiet line naming the folder a drop goes into. No index, no canvas, no
-caption, no status strip, no popup. Page hairlines at 1512 fell 63 → 12.
+**An empty folder is one drop-first stage** (2026-11-21, F2 in
+`docs/specs/2026-11-21-library-words-and-first-run.md`). With no sources the screen is one
+640px column anchored at the top, so a block that arrives later moves nothing above it: one
+title, one sentence naming the connected agent (or the folder-only sentence when wiki pages
+exist without sources), the drop area with **Add files**, a line naming the sources folder
+inside the open folder (with **Show in Finder** or **Show in File Explorer** in the app and
+**Find documents**), the line that copying leaves the original files where they are, the
+sentence about what leaves the computer, and **Bring from Notion, Jira and more**. Without a
+connected agent the app adds one line and a link to the agents page; the web says writing
+wiki pages needs the app. No index, canvas, status strip or popup.
 
-**The empty stage looks first.** On arrival it runs the same metadata-only walk **Find
-documents** runs (names, formats and sizes in the open folder and each bound project root;
-no file is opened and nothing is copied). When the walk finds documents the sentence states
-the count and one filled button, **Review N found documents**, leads on its own row and
-opens the dialog already filled; **Add files** and **Bring from a service** sit beneath it.
-When it finds none the stage keeps its three equal doors.
+**Documents already in the folder lead.** On arrival the stage runs the metadata-only walk
+**Find documents** runs. Files inside the open folder but outside the sources folder sit
+above the drop area: the count, a chip per first-level folder with its count, **Copy all N
+into the sources folder** and **Choose files to copy** (the find dialog, filled). Markdown is
+offered only from the open folder, never a file the ontology knows as a concept (`kind:`),
+never under `sources/`, `wiki/` or `.ontology-atlas/`, and never a repository guide; Rust and
+the browser apply the same rules (`source-discovery-rules.contract.test.ts`). Files only a
+connected code folder holds stay a quiet suggestion below the folder line: up to four sheets,
+**Add N**, and **Hide this suggestion**, which the find dialog can undo.
+
+**Drops copy in the background.** A file or folder dropped anywhere on the window while the
+stage is open is copied into the sources folder, a folder keeping its structure below its own
+name. In the app Rust takes the paths from the native drop event, walks a dropped folder
+under the discovery rules, and offers each file; the page only sends back strings Rust
+offered, and anything else fails `source-not-offered`, as does a landing path that would
+leave the sources folder or pass through a link. A single dropped file is copied whatever its
+format. At 500 files or 500 MB the count and size are asked about first. Progress streams to
+one line with **Stop copying**; input stays live, and files already copied stay. The first
+copied file turns the stage into the Sources home, and the same line follows there. After a
+copy, the files not copied are counted by reason (same as a source already added, not a
+document, named like a password or key file, licence or notice file) and one press lists
+their names in a centred dialog.
 
 **With content, guidance is a compact stepper.** **What to do next** in the page header
 opens a 360px `transientSurface("anchored")` panel of three rows, each one head line

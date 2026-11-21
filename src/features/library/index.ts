@@ -1,4 +1,19 @@
-export { addSources, addSourcesInBrowser, summarizeAddSources } from "./lib/sources/add-sources";
+export {
+  addSources,
+  addSourcesInBrowser,
+  copyNeedsConfirm,
+  dismissSourceCopy,
+  readSourceCopy,
+  startSourceCopy,
+  stopSourceCopy,
+  subscribeSourceCopy,
+  summarizeAddSources,
+  type BrowserSourcePick,
+  type SourceCopyJob,
+  type SourceCopyPlan,
+  type SourceCopySkip,
+  type SourceCopySkipReason,
+} from "./lib/sources/add-sources";
 export { useSourceImportFeedback } from './model/use-source-import-feedback';
 export {
   discoverSources,

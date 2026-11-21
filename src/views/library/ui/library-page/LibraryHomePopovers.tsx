@@ -9,6 +9,7 @@ import { AgentDoor } from "../parts/agent/AgentDoor";
 import { CompileBrainSelect } from "../parts/compile/CompileBrainSelect";
 import { LibraryStage } from "../parts/compile/LibraryStage";
 import { LibraryQuestions } from "../parts/questions/LibraryQuestions";
+import { LibraryUsageRows } from "../parts/first-run/LibraryUsageRows";
 import { LibraryHomePopover } from "../parts/LibraryHomePopover";
 import type { LibrarySelection, LibraryHomeSurface } from "./library-page-state";
 import type { useLibrarySources } from "./use-library-sources";
@@ -20,10 +21,12 @@ export function LibraryHomePopovers({
   t, nativeVaultRootPath, homeSurface, setHomeSurface, guideDoorRef, questionsDoorRef,
   compileClauseRef, overflowDoorRef, choose, busy, model, retainedAnswers, knownOriginalPaths,
   retainedAnswerSlugs, agent, closeHomeSurface, handleCompile, sources, home, turns, agentDoor,
-  homeStrip, compileBatch,
+  homeStrip, compileBatch, folderName,
 }: {
   t: ReturnType<typeof useTranslations<"library">>;
   nativeVaultRootPath: string | null;
+  /** The open folder's name, for Usage's rows. */
+  folderName: string;
   homeSurface: LibraryHomeSurface;
   setHomeSurface: Dispatch<SetStateAction<LibraryHomeSurface>>;
   guideDoorRef: RefObject<HTMLButtonElement | null>;
@@ -87,6 +90,7 @@ export function LibraryHomePopovers({
           questions={null}
           t={t}
         />
+        <LibraryUsageRows folderName={folderName} t={t} />
       </LibraryHomePopover>
       <LibraryHomePopover
         open={homeSurface === "questions"}

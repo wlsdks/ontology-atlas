@@ -521,11 +521,12 @@ test.describe("the Library pane", () => {
       );
     }
 
-    // The three doors, and the one quiet line that names where a drop goes.
-    await expect(stage.getByTestId("library-start-add-files")).toBeVisible();
+    // The drop area with Add files, the line naming the one folder sources live in, and the doors.
+    await expect(stage.getByTestId("library-start-drop").getByTestId("library-start-add-files")).toBeVisible();
+    await expect(stage.getByTestId("library-start-where")).toContainText("the sources folder inside");
     await expect(stage.getByTestId("library-start-find-documents")).toBeVisible();
     await expect(stage.getByTestId("library-start-import")).toBeVisible();
-    await expect(stage.getByTestId("library-start-drop")).toContainText("sources/");
+    await expect(stage.getByTestId("library-found-in-folder")).toHaveCount(0);
 
     /*
      * The column is the 640px stage, and its centre is the viewport's within half a column, which is what
@@ -548,15 +549,16 @@ test.describe("the Library pane", () => {
       "inbox/Schedule.pdf": "%PDF-1.7 schedule\n%% discovery proposes only files of at least sixty-four bytes\n",
     });
     const stage = page.getByTestId("library-start-stage");
-    const found = stage.getByTestId("library-start-find-documents");
+    const found = stage.getByTestId("library-found-in-folder");
     await expect(found).toHaveAttribute("data-found-count", "2");
-    await expect(found).toHaveText("Review 2 found documents");
-    const doors = await stage.locator("button[data-testid^='library-start-']").evaluateAll((buttons) =>
-      buttons.map((button) => button.getAttribute("data-testid")),
+    await expect(found.getByRole("heading")).toHaveText("Found 2 documents");
+    await expect(found.getByTestId("library-found-folder")).toHaveText(["inbox 2"]);
+    const order = await stage.locator("[data-testid='library-found-in-folder'], [data-testid='library-start-drop']").evaluateAll(
+      (blocks) => blocks.map((block) => block.getAttribute("data-testid")),
     );
-    expect(doors[0], "the found documents are not the first door").toBe("library-start-find-documents");
+    expect(order, "the found documents do not lead the drop area").toEqual(["library-found-in-folder", "library-start-drop"]);
 
-    await found.click();
+    await found.getByTestId("library-found-choose").click();
     await expect(page.getByTestId("find-documents-candidate-inbox/Requirements.pdf")).toBeVisible();
     await expect(page.getByTestId("find-documents-candidate-inbox/Schedule.pdf")).toBeVisible();
   });

@@ -53,17 +53,7 @@ describe("gateway FX: reduced-motion equivalent", () => {
     }
   });
 
-  it("(c) the Library's two ambient canvases draw one still frame under reduced motion", () => {
-    const field = read("src/views/library/ui/parts/first-run/LibrarySynapseField.tsx");
-    // The still frame is drawn, then the effect returns before any loop is registered.
-    const guard = field.indexOf("if (reducedMotion || paused) return");
-    expect(guard, "the reduced-motion branch is gone").toBeGreaterThan(-1);
-    expect(
-      field.indexOf("requestAnimationFrame"),
-      "a loop is registered before the reduced-motion branch",
-    ).toBeGreaterThan(guard);
-    expect(field.slice(0, guard)).toMatch(/\n\s*draw\(\);/);
-
+  it("(c) the Library's ambient canvas draws one still frame under reduced motion", () => {
     /*
      * Pins the guarantee, not the lines: the reduced branch draws exactly one frame and registers
      * no loop or pointer listener before the `else`.

@@ -68,6 +68,7 @@ import { useWikiTemplateProblems } from "./library-page/use-wiki-template-proble
 import { libraryHomeStrip } from "./library-page/library-home-strip";
 import { LibraryNoFolderStage } from "./library-page/LibraryNoFolderStage";
 import { LibraryEmptyFolderStage } from "./library-page/LibraryEmptyFolderStage";
+import { SourceCopyStrip } from "./parts/first-run/SourceCopyStrip";
 import { LibraryIndexColumn } from "./library-page/LibraryIndexColumn";
 import { LibraryDocumentColumn } from "./library-page/LibraryDocumentColumn";
 import { LibraryHomePopovers } from "./library-page/LibraryHomePopovers";
@@ -253,6 +254,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     modifyFile: (path: string) => t("wiki.compileModifyFile", { path }),
     bridgeMissing: t("stage.blockedWeb"),
   }, retrievalPages);
+  const stageAgentName = agent.runtime?.label ?? null;
   const answerRefresh = useAnswerRefresh({
     handle, sources: model.sources, vaultRoot: nativeVaultRootPath,
     writer: agent.runtime ? `agent:${agent.runtime.id}` : 'agent:unknown', start: agent.start,
@@ -496,6 +498,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       open={findOpen}
       onClose={() => setFindOpen(false)}
       outcome={discovery}
+      folders={[handle.name, ...(discovery?.walkedRoots ?? [])].join(", ")}
       declinedCount={declinedCount}
       onForgetDeclined={handleForgetDeclined}
       onAdd={handleAddCandidates}
@@ -569,6 +572,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           key="empty-stage"
           t={t} handle={handle} nativeVaultRootPath={nativeVaultRootPath} busy={busy} openImport={openImport}
           conversationDoor={agent.openingRequest ? conversationDoor : null} sources={sources}
+          agentName={stageAgentName} agentConnected={agent.route === "agent"}
         />
         {agentDock}
         {importDialog}
@@ -796,6 +800,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                 <LibraryEmptyFolderStage
                   t={t} handle={handle} nativeVaultRootPath={nativeVaultRootPath} busy={busy} openImport={openImport}
                   conversationDoor={null} sources={sources}
+                  agentName={stageAgentName} agentConnected={agent.route === "agent"} wikiOnly
                 />
               )}
             </div>
@@ -836,9 +841,10 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         model={model} retainedAnswers={retainedAnswers} knownOriginalPaths={knownOriginalPaths}
         retainedAnswerSlugs={retainedAnswerSlugs} agent={agent} closeHomeSurface={closeHomeSurface}
         handleCompile={handleCompile} sources={sources} home={home} turns={turns} agentDoor={agentDoor}
-        homeStrip={homeStrip} compileBatch={compileBatch}
+        homeStrip={homeStrip} compileBatch={compileBatch} folderName={handle.name}
       />
       {agentDock}
+      {model.sources.length > 0 ? <SourceCopyStrip scope={sources.vaultScope} t={t} /> : null}
 
       {importDialog}
 

@@ -1,7 +1,9 @@
-import { createSourceCopyBatch, VAULT_SOURCES_DIR } from "@/entities/docs-vault";
+import { createSourceCopyBatch, VAULT_SOURCES_DIR, type DiscoverySkipReason } from "@/entities/docs-vault";
 import {
+  importTauriOfferedSources,
   importTauriSourceFiles,
   pickTauriSourceFiles,
+  stopTauriSourceImport,
   type TauriSourceImportResult,
 } from "@/shared/lib/vault-folder/tauri-vault-fs";
 
@@ -15,6 +17,18 @@ export interface AddSourcesOutcome {
   results: TauriSourceImportResult[];
   /** True when the picker was dismissed without choosing anything. */
   cancelled: boolean;
+}
+
+/** A browser file and where it lands below `sources/`, `/`-joined (`meetings/weekly.md`). */
+export interface BrowserSourcePick {
+  file: File;
+  relativePath: string;
+}
+
+export interface SourceCopyControl {
+  onProgress?: (done: number, total: number) => void;
+  /** Read between files, so a file is never cut in half. */
+  shouldStop?: () => boolean;
 }
 
 const EMPTY: AddSourcesOutcome = { results: [], cancelled: true };
@@ -34,128 +48,141 @@ function safeName(name: string): string | null {
   return withoutLeadingDots || null;
 }
 
+/** Folders and a file name, each passing the single-name rule; mirrors Rust `split_destination`. */
+function splitDestination(relativePath: string): { folders: string[]; name: string } | null {
+  const segments: string[] = [];
+  for (const segment of relativePath.split("/")) {
+    const safe = safeName(segment);
+    if (!safe) return null;
+    segments.push(safe);
+  }
+  const name = segments.pop();
+  return name ? { folders: segments, name } : null;
+}
+
 function splitName(name: string): [string, string] {
   const at = name.lastIndexOf(".");
   return at > 0 ? [name.slice(0, at), name.slice(at)] : [name, ""];
 }
 
-/** The browser half: hash the picks, refuse bytes already in `sources/`, write the rest. */
+function failure(pickedName: string, reason: string, sha256: string | null = null, size: number | null = null): TauriSourceImportResult {
+  return { pickedName, status: "failed", relativePath: null, sha256, size, reason };
+}
+
+function reasonOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/** Every file already under `sources/`, by hash, and the names each folder holds. */
+async function indexExistingSources(sources: FileSystemDirectoryHandle) {
+  const existing = new Map<string, string>();
+  const takenNames = new Map<string, Set<string>>();
+  const visit = async (directory: FileSystemDirectoryHandle, folder: string) => {
+    const names = new Set<string>();
+    takenNames.set(folder, names);
+    for await (const [name, handle] of directory.entries()) {
+      if (handle.kind === "directory") {
+        names.add(name);
+        await visit(handle as FileSystemDirectoryHandle, folder ? `${folder}/${name}` : name);
+        continue;
+      }
+      if (handle.kind !== "file") continue;
+      names.add(name);
+      try {
+        const file = await (handle as FileSystemFileHandle).getFile();
+        const hash = await sha256Hex(await file.arrayBuffer());
+        if (hash) existing.set(hash, [VAULT_SOURCES_DIR, folder, name].filter(Boolean).join("/"));
+      } catch {
+        /* An unreadable existing file cannot prove sameness; the import proceeds. */
+      }
+    }
+  };
+  await visit(sources, "");
+  return { existing, takenNames };
+}
+
+/**
+ * The browser half: hash the picks, refuse bytes already in `sources/`, write the rest, each
+ * under its folders. One file's bytes are in memory at a time.
+ */
 export async function addSourcesInBrowser(
   root: FileSystemDirectoryHandle,
-  picked: readonly File[],
+  picked: readonly (File | BrowserSourcePick)[],
+  control: SourceCopyControl = {},
 ): Promise<AddSourcesOutcome> {
   if (picked.length === 0) return EMPTY;
   const sources = await root.getDirectoryHandle(VAULT_SOURCES_DIR, { create: true });
-
   // A browser has no index, so existing bytes are hashed to answer "you already have this".
-  const existing = new Map<string, string>();
-  const takenNames = new Set<string>();
-  for await (const [name, handle] of sources.entries()) {
-    if (handle.kind !== "file") continue;
-    takenNames.add(name);
-    try {
-      const file = await (handle as FileSystemFileHandle).getFile();
-      const hash = await sha256Hex(await file.arrayBuffer());
-      if (hash) existing.set(hash, `${VAULT_SOURCES_DIR}/${name}`);
-    } catch {
-      /* An unreadable existing file cannot prove sameness; the import proceeds. */
-    }
-  }
+  const { existing, takenNames } = await indexExistingSources(sources);
 
   const results: TauriSourceImportResult[] = [];
   const publication = createSourceCopyBatch(root);
   try {
-    for (const file of picked) {
-      const base = safeName(file.name);
-      if (!base) {
-        results.push({
-          pickedName: file.name,
-          status: "failed",
-          relativePath: null,
-          sha256: null,
-          size: null,
-          reason: "unusable-file-name",
-        });
-        continue;
-      }
-      let bytes: ArrayBuffer;
-      try {
-        bytes = await file.arrayBuffer();
-      } catch (error) {
-        results.push({
-          pickedName: file.name,
-          status: "failed",
-          relativePath: null,
-          sha256: null,
-          size: null,
-          reason: error instanceof Error ? error.message : String(error),
-        });
-        continue;
-      }
-      const hash = await sha256Hex(bytes);
-      const already = hash ? existing.get(hash) : undefined;
-      if (already) {
-        results.push({
-          pickedName: file.name,
-          status: "duplicate",
-          relativePath: already,
-          sha256: hash,
-          size: file.size,
-          reason: null,
-        });
-        continue;
-      }
-
-      const [stem, extension] = splitName(base);
-      let candidate = base;
-      let suffix = 2;
-      while (takenNames.has(candidate) && suffix <= 999) {
-        candidate = `${stem} (${suffix})${extension}`;
-        suffix += 1;
-      }
-      if (takenNames.has(candidate)) {
-        results.push({
-          pickedName: file.name,
-          status: "failed",
-          relativePath: null,
-          sha256: hash,
-          size: file.size,
-          reason: "file-name-conflict-limit",
-        });
-        continue;
-      }
-      publication.hold(candidate, takenNames.has(`${candidate}.crswap`) ? [] : [`${candidate}.crswap`]);
-      let writable: FileSystemWritableFileStream | null = null;
-      try {
-        const target = await sources.getFileHandle(candidate, { create: true });
-        writable = await target.createWritable();
-        await writable.write(bytes);
-        await writable.close();
-      } catch (error) {
-        try { await writable?.abort(); } catch {}
-        results.push({
-          pickedName: file.name,
-          status: "failed",
-          relativePath: null,
-          sha256: hash,
-          size: file.size,
-          reason: error instanceof Error ? error.message : String(error),
-        });
-        continue;
-      }
-      takenNames.add(candidate);
-      if (hash) existing.set(hash, `${VAULT_SOURCES_DIR}/${candidate}`);
-      results.push({
-        pickedName: file.name,
-        status: candidate === base ? "added" : "renamed",
-        relativePath: `${VAULT_SOURCES_DIR}/${candidate}`,
-        sha256: hash,
-        size: file.size,
-        reason: null,
-      });
+    for (const [index, pick] of picked.entries()) {
+      if (control.shouldStop?.()) break;
+      results.push(await copyOne(pick));
+      control.onProgress?.(index + 1, picked.length);
     }
     return { results, cancelled: false };
   } finally { publication.finish(); }
+
+  async function copyOne(pick: File | BrowserSourcePick): Promise<TauriSourceImportResult> {
+    const file = pick instanceof File || !("file" in pick) ? pick : pick.file;
+    const placed = splitDestination("relativePath" in pick ? pick.relativePath : file.name);
+    if (!placed) return failure(file.name, "unusable-file-name");
+    let bytes: ArrayBuffer;
+    try {
+      bytes = await file.arrayBuffer();
+    } catch (error) {
+      return failure(file.name, reasonOf(error));
+    }
+    const hash = await sha256Hex(bytes);
+    const already = hash ? existing.get(hash) : undefined;
+    if (already) {
+      return { pickedName: file.name, status: "duplicate", relativePath: already, sha256: hash, size: file.size, reason: null };
+    }
+
+    const folder = placed.folders.join("/");
+    let directory = sources;
+    try {
+      for (const segment of placed.folders) directory = await directory.getDirectoryHandle(segment, { create: true });
+    } catch (error) {
+      return failure(file.name, reasonOf(error), hash, file.size);
+    }
+    const names = takenNames.get(folder) ?? new Set<string>();
+    takenNames.set(folder, names);
+    const [stem, extension] = splitName(placed.name);
+    let candidate = placed.name;
+    let suffix = 2;
+    while (names.has(candidate) && suffix <= 999) {
+      candidate = `${stem} (${suffix})${extension}`;
+      suffix += 1;
+    }
+    if (names.has(candidate)) return failure(file.name, "file-name-conflict-limit", hash, file.size);
+    const below = folder ? `${folder}/${candidate}` : candidate;
+    publication.hold(below, names.has(`${candidate}.crswap`) ? [] : [`${candidate}.crswap`]);
+    let writable: FileSystemWritableFileStream | null = null;
+    try {
+      const target = await directory.getFileHandle(candidate, { create: true });
+      writable = await target.createWritable();
+      await writable.write(bytes);
+      await writable.close();
+    } catch (error) {
+      try { await writable?.abort(); } catch {}
+      return failure(file.name, reasonOf(error), hash, file.size);
+    }
+    names.add(candidate);
+    const relativePath = `${VAULT_SOURCES_DIR}/${below}`;
+    if (hash) existing.set(hash, relativePath);
+    return {
+      pickedName: file.name,
+      status: candidate === placed.name ? "added" : "renamed",
+      relativePath,
+      sha256: hash,
+      size: file.size,
+      reason: null,
+    };
+  }
 }
 
 /** Whether this browser can open a file picker at all. */
@@ -215,4 +242,125 @@ export function summarizeAddSources(
     else failed += 1;
   }
   return { added, duplicate, failed };
+}
+
+/** Why a file was not copied, in the four reasons the skipped line names. */
+export type SourceCopySkipReason = "same" | DiscoverySkipReason;
+
+export interface SourceCopySkip {
+  /** Where the file would have landed below `sources/`, or its name. */
+  name: string;
+  reason: SourceCopySkipReason;
+}
+
+/** A large copy asks first: at or above either bound. */
+export const LARGE_COPY_FILES = 500;
+export const LARGE_COPY_BYTES = 500 * 1024 * 1024;
+
+export function copyNeedsConfirm(files: number, bytes: number): boolean {
+  return files >= LARGE_COPY_FILES || bytes >= LARGE_COPY_BYTES;
+}
+
+export type SourceCopyPlan = {
+  skipped: SourceCopySkip[];
+  /** A folder drop listed only its first files; the line says so. */
+  truncatedAt?: number;
+} & (
+  | { kind: "native"; rootPath: string; paths: string[] }
+  | { kind: "browser"; root: FileSystemDirectoryHandle; picks: BrowserSourcePick[] }
+);
+
+export interface SourceCopyJob {
+  id: string;
+  phase: "copying" | "done" | "stopped";
+  done: number;
+  total: number;
+  added: number;
+  skipped: SourceCopySkip[];
+  failed: { name: string; reason: string }[];
+  /** The first failure's reason, as the import reported it. */
+  failureReason: string | null;
+  truncatedAt: number | null;
+}
+
+/**
+ * One copy per open folder, outside React, so leaving the Library neither stops the copy nor
+ * loses its line: the stage and the Sources home read the same job.
+ */
+const jobs = new Map<string, SourceCopyJob>();
+const stopRequests = new Set<string>();
+const listeners = new Set<() => void>();
+let nextJobNumber = 1;
+
+function publish(scope: string, job: SourceCopyJob | null) {
+  if (job) jobs.set(scope, job);
+  else jobs.delete(scope);
+  for (const listener of listeners) listener();
+}
+
+export function subscribeSourceCopy(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+export function readSourceCopy(scope: string): SourceCopyJob | null {
+  return jobs.get(scope) ?? null;
+}
+
+/** Clears a finished copy's line; a running copy stays. */
+export function dismissSourceCopy(scope: string): void {
+  if (jobs.get(scope)?.phase !== "copying") publish(scope, null);
+}
+
+export function stopSourceCopy(scope: string): void {
+  const job = jobs.get(scope);
+  if (!job || job.phase !== "copying") return;
+  stopRequests.add(job.id);
+  void stopTauriSourceImport(job.id);
+}
+
+/** Copies a plan in the background, streaming `done` into the job; resolves with the final job. */
+export async function startSourceCopy(scope: string, plan: SourceCopyPlan): Promise<SourceCopyJob> {
+  const id = `source-copy-${Date.now()}-${nextJobNumber++}`;
+  const total = plan.kind === "native" ? plan.paths.length : plan.picks.length;
+  let job: SourceCopyJob = {
+    id, phase: "copying", done: 0, total, added: 0, skipped: plan.skipped, failed: [], failureReason: null,
+    truncatedAt: plan.truncatedAt ?? null,
+  };
+  publish(scope, job);
+  const onProgress = (done: number) => {
+    job = { ...job, done };
+    publish(scope, job);
+  };
+  let results: TauriSourceImportResult[] = [];
+  try {
+    results = plan.kind === "native"
+      ? (await importTauriOfferedSources(plan.rootPath, plan.paths, id, ({ done }) => onProgress(done))) ?? []
+      : (await addSourcesInBrowser(plan.root, plan.picks, {
+          onProgress,
+          shouldStop: () => stopRequests.has(id),
+        })).results;
+  } catch (error) {
+    job = { ...job, failed: [{ name: "", reason: reasonOf(error) }], failureReason: reasonOf(error) };
+  }
+  const stopped = stopRequests.delete(id) && results.length < total;
+  const failed = [...job.failed];
+  const skipped = [...plan.skipped];
+  let added = 0;
+  for (const row of results) {
+    if (row.status === "added" || row.status === "renamed") added += 1;
+    else if (row.status === "duplicate") skipped.push({ name: row.pickedName, reason: "same" });
+    else failed.push({ name: row.pickedName, reason: row.reason ?? "" });
+  }
+  job = {
+    ...job,
+    phase: stopped ? "stopped" : "done",
+    done: results.length,
+    added,
+    skipped,
+    failed,
+    failureReason: failed[0]?.reason ?? null,
+  };
+  publish(scope, job);
+  return job;
 }
