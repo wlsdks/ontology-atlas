@@ -8,9 +8,9 @@ import {
   headingSlug,
   htmlUnits,
   readSourceText,
-  readZipEntries,
   xlsxUnits,
 } from './source-text.mjs';
+import { readZipEntries } from './source-zip.mjs';
 
 // A minimal zip writer, shaped like Office output, for these tests only.
 
