@@ -145,3 +145,6 @@ separately.
   drops copy in the background, and Rust offers native drops. Row 11b stays for decision 9.
 - 2026-11-21: rows 10 and 11 joined `integration/library-2026-11-21` with the folder chooser
   polish; one PR to main carries them.
+- 2026-11-22: P-4 built on `design/library-progress-band` (no pull request; the lead merges
+  it): the band says the count once, the write button heads the Next to write panel, and the
+  work line names the page by its title. The sources-redesign Revisions line has the detail.

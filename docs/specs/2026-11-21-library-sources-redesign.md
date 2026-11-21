@@ -228,7 +228,7 @@ word repeats a word the band or the index list already shows. Reused: `progress.
 | `alike.row` / `.range` / `.meta` | Alike row; toolbar | {count} folders alike / {first} – {last} / {folders} folders · the {count} with the same counts in every state share one row |
 | `more` | Last line of the table | {count} more folders below · scroll to see them |
 | `listKey` | Beside the index list's count | Waiting sources |
-| `progress.chartLabel` / `.chartNow` | Above the band's chart | Sources with a wiki page · since {date} / Today {count} |
+| `progress.chartTitle` | Under the band's chart, one line | Sources with a wiki page since {date} |
 | `progress.continue` (=1, changed) | Band button | Write a wiki page from 1 source (was "for the last source", wrong on a first day) |
 | `panel.nextTitle` | Panel label, nothing picked | Next to write |
 | `panel.lead` | Panel's first line, app | Press “{action}” and the agent reads the sources below, top first, and writes their wiki pages. |
@@ -405,3 +405,12 @@ with the pull request, so the owner can reverse this by choosing the treemap.
   sentence carries a title only when cut. Criteria 1 (cold readers) and 5 (`perf:app-open`
   at 50,000), and the app halves of 6 and 7, move to a follow-up run on the installed app
   after merge.
+- 2026-11-22: the band, after the owner found its place and its button odd. Its cells stand on
+  the overview's two columns: the statement (percent, sentence and today's count on one line,
+  over the bar and the state presses) heads the table, and the write button heads the Next to
+  write panel at the panel's width, at the 40px primary size with the writer beside it. The
+  band is 124px beside the panel and 136px when the pane stacks. The count is said once: the
+  chart draws against its own latest count and its one line names the start day, with no end
+  count. Pointing at the button lights on the bar the share its sources would add. The work
+  line reads "6 wiki pages changed · <page title>", counting pages that differ from the
+  folder's first listing this session, and is hidden while the button is blocked.

@@ -9,7 +9,7 @@ import { cn } from "@/shared/lib/cn";
 import { useBandMotion } from "./use-band-motion";
 
 const CHART_HEIGHT = 52;
-/** Room above the ceiling and right of today's dot, so neither is cut by the box. */
+/** Room above the latest step and right of today's dot, so neither is cut by the box. */
 const INSET_TOP = 4;
 const INSET_RIGHT = 5;
 const INSET_BOTTOM = 1;
@@ -25,7 +25,13 @@ function pointDate(point: SourceProgressPoint, unit: SourceProgress["unit"], loc
   return format.formatRange(at(point.start), at(point.end));
 }
 
-/** The cumulative step line and its fill, in pixels, for shares of today's total. */
+/** The day the chart starts on: its first point's first day, or its month when points are months. */
+function chartStart(point: SourceProgressPoint, unit: SourceProgress["unit"], locale: string): string {
+  const first = new Date(`${point.start}T12:00:00`);
+  return first.toLocaleDateString(locale, unit === "month" ? { month: "short", year: "numeric" } : { month: "short", day: "numeric" });
+}
+
+/** The cumulative step line and its fill, in pixels, for shares of the latest count. */
 function stepPaths(shares: readonly number[], width: number): { line: string; fill: string; lastY: number } {
   const plotWidth = Math.max(1, width - INSET_RIGHT);
   const y = (share: number) => INSET_TOP + (1 - Math.min(1, Math.max(0, share))) * (CHART_HEIGHT - INSET_TOP - INSET_BOTTOM);
@@ -41,8 +47,10 @@ function stepPaths(shares: readonly number[], width: number): { line: string; fi
 }
 
 /**
- * Sources with a wiki page over time, as a share of today's total: a step line over a soft fill,
- * under a dashed ceiling at today's total. One focusable element; Left and Right walk the points.
+ * How the count of sources with a wiki page grew: a step line over a soft fill, as tall as its
+ * latest count, and one line under it saying what is counted and since when. It repeats no count
+ * the band already shows. One focusable element; Left and Right walk the points, each read out in
+ * the line's place.
  */
 export function SourceProgressChart({
   progress,
@@ -79,7 +87,9 @@ export function SourceProgressChart({
   }, []);
 
   const { series, total, today } = progress;
-  const shares = useMemo(() => series.map((point) => (total === 0 ? 0 : point.count / total)), [series, total]);
+  // Drawn against its own latest count, not the folder's total, so each day's step is tall enough to read.
+  const latest = series[series.length - 1]?.count ?? 0;
+  const shares = useMemo(() => series.map((point) => (latest === 0 ? 0 : point.count / latest)), [series, latest]);
   // The chart reveals on a first open, and again when it had nothing to draw and now has.
   const [revealed] = useState(() => intro && !reduced && series.length > 0);
   const [wasEmpty, setWasEmpty] = useState(series.length === 0);
@@ -138,14 +148,14 @@ export function SourceProgressChart({
     setCursor(Math.min(series.length - 1, Math.max(0, index)));
   };
 
-  // At rest the caption names the chart's two ends; a point under the cursor or the keys replaces it.
-  const firstDate = series[0] ? pointDate(series[0], progress.unit, locale) : null;
+  // At rest the caption says what the line counts and since when; a point under the cursor or the keys replaces it.
+  const title = series[0] ? t("progress.chartTitle", { date: chartStart(series[0], progress.unit, locale) }) : null;
   const basis = [t("progress.dateBasis"), progress.undated > 0 ? t("progress.undated", { count: progress.undated }) : null]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <div className="flex min-w-0 flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-2">
       <div
         ref={boxRef}
         tabIndex={series.length > 0 ? 0 : -1}
@@ -172,7 +182,6 @@ export function SourceProgressChart({
               <stop offset="1" stopColor="var(--color-indigo-accent-a12)" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <line x1={0} x2={plotWidth} y1={INSET_TOP} y2={INSET_TOP} stroke="var(--color-border-strong)" strokeWidth={1} strokeDasharray="3 4" />
           <line x1={0} x2={plotWidth} y1={CHART_HEIGHT - 0.5} y2={CHART_HEIGHT - 0.5} stroke="var(--color-divider)" strokeWidth={1} />
           {series.length > 0 ? (
             <>
@@ -204,17 +213,11 @@ export function SourceProgressChart({
         aria-live="polite"
         data-testid="library-progress-caption"
         title={basis}
-        className="flex min-w-0 justify-between gap-3 text-caption leading-caption tabular-nums text-[color:var(--color-text-tertiary)]"
+        className="min-w-0 truncate text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]"
       >
-        {pointText ? (
-          <span className="min-w-0 truncate">{pointText}</span>
-        ) : (
+        {pointText ?? (
           <>
-            <span data-testid="library-progress-first-date" className="min-w-0 truncate">{firstDate}</span>
-            <span className="flex-none font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-              {t("progress.chartNow", { count: progress.compiled })}
-            </span>
-            <span className="sr-only">{basis}</span>
+            <span data-testid="library-progress-chart-title">{title}</span> <span className="sr-only">{basis}</span>
           </>
         )}
       </p>

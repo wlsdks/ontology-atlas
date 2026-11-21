@@ -301,7 +301,6 @@ export function LibraryDocumentColumn({
             <WikiTemplateProblems
               problems={wikiProblems}
               file={`${selectedWikiDoc.slug}.md`}
-              collapsed
               doors={wikiProblemDoors}
               context={problemContext}
               t={t}

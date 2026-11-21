@@ -262,13 +262,12 @@
       "error": "需要处理"
     },
     "complete": {
-      "read": "已读取",
+      "read": "已读取文件",
       "proposal": "已提出写入",
       "waiting": "已请求许可",
-      "write": "文件已更改",
+      "write": "{count, plural, =1 {Wiki 页面已更改} other {# 个 Wiki 页面已更改}}",
       "error": "失败"
-    },
-    "recentCount": "最近 {count, number}"
+    }
   },
   "eyebrow": "此文件夹中",
   "lede": "你收集的各种格式的文档，以及据此撰写的 Wiki 页面。来源按原样保留，Wiki 页面上的每条论断都引用来源。",
@@ -439,7 +438,6 @@
     "agentMissingDoor": "连接智能体",
     "offTemplateAriaLabel": "此页面与 Wiki 模板的差异",
     "offTemplateTitle": "{count, number} 处待修正 · 页面模板",
-    "offTemplateBody": "修正下列问题后，它就会和其他页面一样被读取。",
     "writer": {
       "human": "人工",
       "agent": "{name}（智能体）",
@@ -505,13 +503,13 @@
     "undoFailed": "无法撤销：文件已不存在，或文件夹不可写入。",
     "linkFindingsAriaLabel": "此页面在文件夹内的关联方式",
     "linkFindingsTitle": "{count, number} 处关联待检查",
-    "linkFindingsBody": "页面符合模板。下列问题关乎整个文件夹：单个页面自己看不到的事情。",
     "fixWithAgent": "用智能体修复",
     "fixWithAgentTooltip": "智能体把此页面修正为符合模板。修正后符合模板的页面会直接保存，不符合的会在保存前请求许可。",
     "fixWithAgentTooltipAsk": "智能体把此页面修正为符合模板。写入前会请求许可。",
     "fixMyself": "自己修复",
     "fixMyselfTooltip": "在访达中选中此页面的文件。用任何编辑器修改，列表都会同步更新。",
     "technical": "技术细节 · 检查代码与行号",
+    "technicalOpen": "查看检查代码",
     "technicalNote": "wiki-validate 命令和 validate_wiki 工具会报告同样的代码。",
     "technicalFile": "文件：{path}",
     "goToPlace": "前往 {place}",
@@ -574,25 +572,34 @@
       },
       "dangling-wikilink": {
         "what": "{where} 处的链接指向 {target}，但此文件夹中没有这个页面。",
-        "do": "改链到已有的页面，或者写出那个页面。"
+        "do": "改链到已有的页面，或者写出那个页面。",
+        "short": "{page} 在 {where} 链接的 {target} 不在此文件夹中",
+        "shortDo": "改链到已有的页面，或者写出那个页面"
       },
       "orphan-page": {
         "what": "目前还没有其他页面指向此页面。",
-        "do": "从谈论其主题的页面链接过来，就容易找到了。"
+        "do": "从谈论其主题的页面链接过来，就容易找到了。",
+        "short": "还没有页面链接到 {page}",
+        "shortDo": "从同一主题的页面链接过来"
       },
       "shared-source-unlinked": {
         "what": "{other} 也根据同一份来源（{sources}）撰写，但两个页面互不指向。",
-        "do": "让其中一个链接到另一个。"
+        "do": "让其中一个链接到另一个。",
+        "short": "{page} 和 {other} 使用同一份来源（{sources}），但互不链接",
+        "shortDo": "让其中一个链接到另一个"
       },
       "shared-source-unlinked-more": {
-        "what": "另有 {count, number} 个页面根据同一份来源撰写，它们与此页面互不指向。",
-        "do": "把根据同一份来源撰写的页面互相链接起来。"
+        "what": "另有 {count} 个页面根据同一份来源撰写，它们与此页面互不指向。",
+        "do": "把根据同一份来源撰写的页面互相链接起来。",
+        "short": "另有 {count} 个页面与 {page} 使用同一份来源，但互不链接",
+        "shortDo": "把同一份来源的页面互相链接起来"
       }
     }
   },
   "home": {
     "guide": "使用方法",
     "questions": "{count, plural, =0 {问题} other {问题 #}}",
+    "openAnswer": "打开已保存的回答",
     "more": "更多",
     "compileNext": "生成 Wiki 页面：{source}",
     "staleClause": "{count} 份来源已变更",
@@ -1098,8 +1105,7 @@
     "first": "还没有来源有 Wiki 页面",
     "today": "今天 +{count, number}",
     "chartAria": "有 Wiki 页面的来源数量，按各页面记录的日期",
-    "chartTitle": "有 Wiki 页面的来源数",
-    "chartNow": "今天 {count, number}",
+    "chartTitle": "自 {date} 起有 Wiki 页面的来源数",
     "point": "{date}：当前 {total, number} 份来源中的 {count, number} 份（{percent, number}%）",
     "dateBasis": "每个点使用其 Wiki 页面记录的日期。",
     "undated": "{count, number} 份没有日期",
@@ -1109,7 +1115,7 @@
     "writerAnyAgent": "由你连接的编码代理撰写",
     "batchReturned": "上次请求中有 {count, number} 份来源仍没有 Wiki 页面，已移到列表末尾。",
     "webLine": "只有应用能撰写 Wiki 页面，在这里可以阅读。",
-    "allDone": "每份来源都有 Wiki 页面"
+    "allDone": "没有待写的 Wiki 页面了"
   },
   "sourcesHome": {
     "aria": "按文件夹或文件类型分组的来源，以及有 Wiki 页面的来源数",

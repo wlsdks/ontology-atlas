@@ -262,13 +262,12 @@
       "error": "要対応"
     },
     "complete": {
-      "read": "読み込み済み",
-      "proposal": "書き込みを提案",
-      "waiting": "許可を要求",
-      "write": "ファイルを変更",
-      "error": "失敗"
-    },
-    "recentCount": "最近{count, number}"
+      "read": "ファイルを読み込みました",
+      "proposal": "書き込みが提案されました",
+      "waiting": "許可が求められました",
+      "write": "{count, plural, =1 {Wikiページが変更されました} other {Wikiページ#件が変更されました}}",
+      "error": "失敗しました"
+    }
   },
   "eyebrow": "このフォルダ",
   "lede": "形式を問わず集めた文書と、それを読んで書いたWikiページです。資料は受け取ったままの状態で保持され、Wikiページの主張はどれも資料を引用します。",
@@ -439,7 +438,6 @@
     "agentMissingDoor": "エージェントを接続",
     "offTemplateAriaLabel": "このページとWikiテンプレートの違い",
     "offTemplateTitle": "修正が必要な箇所{count, number}件 · ページテンプレート",
-    "offTemplateBody": "以下を直すと、ほかのページと同じ形で読めるようになります。",
     "writer": {
       "human": "人",
       "agent": "{name}（エージェント）",
@@ -505,13 +503,13 @@
     "undoFailed": "元に戻せませんでした。ファイルがすでにないか、フォルダに書き込めません。",
     "linkFindingsAriaLabel": "このページがフォルダ内でどうつながっているか",
     "linkFindingsTitle": "確認が必要なつながり{count, number}件",
-    "linkFindingsBody": "このページはテンプレートに合っています。以下はフォルダについてのことで、1ページだけでは自分では気づけない点です。",
     "fixWithAgent": "エージェントで直す",
     "fixWithAgentTooltip": "エージェントがこのページをテンプレートに合わせて直します。直したページがテンプレートに合えばそのまま保存され、合わなければ保存の前に許可を求めます。",
     "fixWithAgentTooltipAsk": "エージェントがこのページをテンプレートに合わせて直します。書き込む前に許可を求めます。",
     "fixMyself": "自分で直す",
     "fixMyselfTooltip": "このページのファイルをFinderで選択します。どのエディタで直しても一覧に反映されます。",
     "technical": "技術的な詳細 · チェックコードと行番号",
+    "technicalOpen": "チェックコードを表示",
     "technicalNote": "wiki-validateコマンドとvalidate_wikiツールも、これと同じコードを報告します。",
     "technicalFile": "ファイル：{path}",
     "goToPlace": "{place}へ移動",
@@ -574,25 +572,34 @@
       },
       "dangling-wikilink": {
         "what": "{where}のリンクは{target}を指していますが、このフォルダにそのページはありません。",
-        "do": "存在するページにリンクするか、そのページを書いてください。"
+        "do": "存在するページにリンクするか、そのページを書いてください。",
+        "short": "{page}の{where}でリンクした{target}は、このフォルダにありません",
+        "shortDo": "存在するページにリンクするか、そのページを書いてください"
       },
       "orphan-page": {
         "what": "このページを指している別のページは、まだありません。",
-        "do": "その話題を扱っているページからリンクすると、見つけやすくなります。"
+        "do": "その話題を扱っているページからリンクすると、見つけやすくなります。",
+        "short": "{page}にリンクしているページはまだありません",
+        "shortDo": "同じ話題のページからリンクしてください"
       },
       "shared-source-unlinked": {
         "what": "{other}も同じ資料（{sources}）から書かれていますが、2つのページは互いを指していません。",
-        "do": "どちらか一方から、もう一方へリンクしてください。"
+        "do": "どちらか一方から、もう一方へリンクしてください。",
+        "short": "{page}と{other}は同じ資料（{sources}）を使っていますが、互いにリンクしていません",
+        "shortDo": "一方から他方へリンクしてください"
       },
       "shared-source-unlinked-more": {
-        "what": "同じ資料から書かれたページがほかに{count, number}件あり、どれもこのページと互いを指していません。",
-        "do": "同じ資料から書かれたページ同士をリンクしてください。"
+        "what": "同じ資料から書かれたページがほかに{count}件あり、どれもこのページと互いを指していません。",
+        "do": "同じ資料から書かれたページ同士をリンクしてください。",
+        "short": "{page}と同じ資料を使うページがほかに{count}件あり、互いにリンクしていません",
+        "shortDo": "同じ資料のページ同士をリンクしてください"
       }
     }
   },
   "home": {
     "guide": "使い方",
     "questions": "{count, plural, =0 {質問} other {質問#}}",
+    "openAnswer": "保存した回答を開く",
     "more": "その他",
     "compileNext": "Wikiページを作成：{source}",
     "staleClause": "変更された資料{count, number}件",
@@ -695,11 +702,11 @@
       "title": "読む",
       "startWith": "まず{title}から",
       "nothingYet": "Wikiページはまだありません。「Wikiページを作成」で最初のページを作ります。",
-      "coveredLine": "資料{total, number}件中{compiled, number}件にWikiページあり",
-      "coveredChecking": "資料{total, number}件中{compiled, number}件にWikiページあり · {checking, number}件を確認中",
-      "coveredPartial": "資料{total, number}件中{compiled, number}件にWikiページあり · {partial, number}件は一部のみ読み込み",
-      "coveredStale": "資料{total, number}件中{compiled, number}件にWikiページあり · {stale, number}件は資料が変更",
-      "coveredUnreadable": "資料{total, number}件中{compiled, number}件にWikiページあり · {unreadable, number}件は読み込めない"
+      "coveredLine": "資料{total, number}件中{compiled, number}件にWikiページがあります",
+      "coveredChecking": "資料{total, number}件中{compiled, number}件にWikiページがあります · {checking, number}件は確認中です",
+      "coveredPartial": "資料{total, number}件中{compiled, number}件にWikiページがあります · {partial, number}件は一部だけ読み込みました",
+      "coveredStale": "資料{total, number}件中{compiled, number}件にWikiページがあります · {stale, number}件は資料が変わりました",
+      "coveredUnreadable": "資料{total, number}件中{compiled, number}件にWikiページがあります · {unreadable, number}件は読み込めません"
     },
     "brainAgent": "{name}",
     "brainLocal": "{host}上の{model}",
@@ -1098,8 +1105,7 @@
     "first": "Wikiページがある資料はまだありません",
     "today": "今日 +{count, number}",
     "chartAria": "Wikiページがある資料の数（各ページに記された日付順）",
-    "chartTitle": "Wikiページがある資料数",
-    "chartNow": "今日{count, number}",
+    "chartTitle": "{date}からの、Wikiページがある資料数",
     "point": "{date}：現在の資料{total, number}件中{count, number}件（{percent, number}%）",
     "dateBasis": "各点はWikiページに記された日付です。",
     "undated": "日付なし{count, number}件",
@@ -1109,7 +1115,7 @@
     "writerAnyAgent": "接続したコーディングエージェントが書きます",
     "batchReturned": "前回のリクエストの資料{count, number}件はまだWikiページがないため、一覧の最後に移しました。",
     "webLine": "Wikiページを書けるのはアプリだけです。閲覧はここでもできます。",
-    "allDone": "すべての資料にWikiページがあります"
+    "allDone": "書くWikiページはもうありません"
   },
   "sourcesHome": {
     "aria": "フォルダまたはファイル形式でまとめた資料と、Wikiページがある資料の数",

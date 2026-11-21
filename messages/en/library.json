@@ -262,13 +262,12 @@
       "error": "Needs attention"
     },
     "complete": {
-      "read": "Read",
+      "read": "File read",
       "proposal": "Write proposed",
       "waiting": "Permission requested",
-      "write": "File changed",
+      "write": "{count, plural, one {Wiki page changed} other {# wiki pages changed}}",
       "error": "Failed"
-    },
-    "recentCount": "Recent {count, number}"
+    }
   },
   "eyebrow": "In this folder",
   "lede": "The project documents you gathered, in whatever format they arrived, and the wiki pages written from them. A source is kept byte for byte, and every claim on a page cites one.",
@@ -439,7 +438,6 @@
     "agentMissingDoor": "Connect an agent",
     "offTemplateAriaLabel": "How this page differs from the wiki template",
     "offTemplateTitle": "{count, number} to fix · page template",
-    "offTemplateBody": "Fix what follows and it reads the same way every other page does.",
     "writer": {
       "human": "a person",
       "agent": "{name} (agent)",
@@ -505,13 +503,13 @@
     "undoFailed": "Could not undo: the file is already gone or the folder is not writable.",
     "linkFindingsAriaLabel": "How this page connects inside the folder",
     "linkFindingsTitle": "{count, number} connections to check",
-    "linkFindingsBody": "The page fits the template. What follows is about the folder: things no single page can see about itself.",
     "fixWithAgent": "Fix with agent",
     "fixWithAgentTooltip": "The agent brings this page back to the template. A fixed page that fits is saved as it is; one that does not asks for your permission first.",
     "fixWithAgentTooltipAsk": "The agent brings this page back to the template. Each write asks for your permission.",
     "fixMyself": "Fix it myself",
     "fixMyselfTooltip": "Selects this page's file in Finder. Edit it in any editor; the list updates.",
     "technical": "Technical detail · check codes and line numbers",
+    "technicalOpen": "Show check codes",
     "technicalNote": "The wiki-validate command and the validate_wiki tool report these same codes.",
     "technicalFile": "File: {path}",
     "goToPlace": "Go to {place}",
@@ -574,25 +572,34 @@
       },
       "dangling-wikilink": {
         "what": "The link at {where} points at {target}, and there is no such page in this folder.",
-        "do": "Link to a page that exists, or write that page."
+        "do": "Link to a page that exists, or write that page.",
+        "short": "{page} links to {target} at {where}, and that page is not in this folder",
+        "shortDo": "link to a page that exists, or write it"
       },
       "orphan-page": {
         "what": "No other page points at this one yet.",
-        "do": "Link it from the page that talks about its topic and it becomes easy to find."
+        "do": "Link it from the page that talks about its topic and it becomes easy to find.",
+        "short": "No page links to {page} yet",
+        "shortDo": "link it from a page on the same topic"
       },
       "shared-source-unlinked": {
         "what": "{other} is written from the same source ({sources}), and neither page points at the other.",
-        "do": "Link one of them to the other."
+        "do": "Link one of them to the other.",
+        "short": "{page} and {other} use the same source ({sources}) but do not link each other",
+        "shortDo": "link one to the other"
       },
       "shared-source-unlinked-more": {
-        "what": "{count, number} more pages are written from the same source, and none of them points at this one or is pointed at by it.",
-        "do": "Link the pages written from one source to each other."
+        "what": "{count} more pages are written from the same source, and none of them points at this one or is pointed at by it.",
+        "do": "Link the pages written from one source to each other.",
+        "short": "{count} more pages use the same source as {page} but do not link it",
+        "shortDo": "link the pages of one source to each other"
       }
     }
   },
   "home": {
     "guide": "How to use",
     "questions": "{count, plural, =0 {Questions} one {Questions #} other {Questions #}}",
+    "openAnswer": "Open saved answer",
     "more": "More",
     "compileNext": "Write wiki page: {source}",
     "staleClause": "{count, plural, one {# source changed} other {# sources changed}}",
@@ -1098,8 +1105,7 @@
     "first": "No source has a wiki page yet",
     "today": "+{count, number} today",
     "chartAria": "Sources with a wiki page, by the date each page records",
-    "chartTitle": "Sources with a wiki page",
-    "chartNow": "Today {count, number}",
+    "chartTitle": "Sources with a wiki page since {date}",
     "point": "{date}: {count, number} of today's {total, number} ({percent, number}%)",
     "dateBasis": "Each point uses the date its wiki page records.",
     "undated": "{count, plural, one {# has no date} other {# have no date}}",
@@ -1109,7 +1115,7 @@
     "writerAnyAgent": "The coding agent you connected writes the pages",
     "batchReturned": "{count, plural, one {# source from the last request still has no wiki page and moved to the end of the list.} other {# sources from the last request still have no wiki page and moved to the end of the list.}}",
     "webLine": "Only the app writes wiki pages. Reading works here.",
-    "allDone": "Every source has a wiki page"
+    "allDone": "No wiki page left to write"
   },
   "sourcesHome": {
     "aria": "Sources grouped by folder or file type, with how many have a wiki page",

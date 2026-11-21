@@ -288,10 +288,11 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     expect(uncited.querySelector("h4")!.textContent).toContain("No source backs this up");
     expect(uncited.querySelector("h4")!.textContent).not.toContain("uncited-fact");
     // Nothing is taken away: the code, its line anchor and the English message the CLI
-    // prints are under the same disclosure the wiki page beside it uses.
-    expect(screen.getByTestId("library-structural-technical-uncited-fact")).not.toBeNull();
+    // prints open in the same check codes dialog the wiki page beside it uses.
+    expect(uncited.querySelector('[data-testid="library-structural-code"]')).toBeNull();
     fireEvent.click(screen.getByTestId("library-structural-technical-uncited-fact"));
-    const codes = [...uncited.querySelectorAll('[data-testid="library-structural-code"]')].map(
+    const dialog = screen.getByTestId("library-structural-technical-uncited-fact-dialog");
+    const codes = [...dialog.querySelectorAll('[data-testid="library-structural-code"]')].map(
       (node) => node.textContent ?? "",
     );
     expect(codes).toHaveLength(2);
