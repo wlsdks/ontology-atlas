@@ -83,6 +83,7 @@ mod vault_scope_tests {
                 root_path: home_path.clone(),
                 label: "home".into(),
                 skip_relative: Vec::new(),
+                open_folder: false,
             }])
             .unwrap();
         assert!(

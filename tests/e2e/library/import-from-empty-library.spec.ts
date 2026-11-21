@@ -66,7 +66,7 @@ test('an import started on the empty Library keeps its conversation when the fir
   const harness = await openEmptyVault(page);
   await page.goto('/en/library/?guides=off&e2e=1');
   await expect(page.getByTestId('library-page')).toHaveAttribute('data-library-state', 'empty-folder');
-  await page.getByTestId('library-start-stage').getByRole('button', { name: 'Bring from a service' }).click();
+  await page.getByTestId('library-start-stage').getByTestId('library-start-import').click();
   await startNotionImport(page, harness);
   await expect(page.getByTestId('library-agent-dock')).toBeVisible();
 

@@ -11,7 +11,11 @@ afterEach(() => vi.unstubAllGlobals());
 function fixture(occupied: number) {
   vi.stubGlobal('crypto', undefined);
   const write = vi.fn();
-  const getFileHandle = vi.fn(async () => ({ createWritable: async () => ({ write, close: vi.fn() }) }));
+  const notFound = () => new DOMException('missing', 'NotFoundError');
+  const getFileHandle = vi.fn(async (_name: string, options?: { create?: boolean }) => {
+    if (!options?.create) throw notFound();
+    return { createWritable: async () => ({ write, close: vi.fn() }) };
+  });
   const sources = {
     async *entries() {
       for (let index = 1; index <= occupied; index++) {
@@ -19,6 +23,7 @@ function fixture(occupied: number) {
       }
     },
     getFileHandle,
+    getDirectoryHandle: async () => { throw notFound(); },
   };
   const root = { getDirectoryHandle: async () => sources } as unknown as FileSystemDirectoryHandle;
   const picked = { name: 'source.txt', size: 3, arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer } as File;

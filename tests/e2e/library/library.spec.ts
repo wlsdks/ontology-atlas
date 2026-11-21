@@ -354,7 +354,7 @@ test.describe("the Library destination", () => {
     }
   });
 
-  test("ticking a candidate and confirming copies it into sources/", async ({ page }) => {
+  test("ticking a candidate and confirming copies it into sources/ under its folder", async ({ page }) => {
     await openLibrary(page, { ...VAULT,
       'inbox/Schedule.pdf': '%PDF-1.7 schedule\n%% discovery proposes only files of at least sixty-four bytes\n',
       'other/Notes.pdf': '%PDF-1.7 notes\n%% discovery proposes only files of at least sixty-four bytes\n',
@@ -376,12 +376,12 @@ test.describe("the Library destination", () => {
     await query.fill('schedule');
     await page.getByTestId("find-documents-add").click();
 
-    // The copy is the artifact: the row appears in the library because the walk found a
+    // The copy keeps its folder. The row appears because the walk found a
     // new file, not because anything recorded that an import happened.
     await expect(
-      page.getByTestId("library-source-sources/Requirements v3.pdf"),
+      page.getByTestId("library-source-sources/inbox/Requirements v3.pdf"),
     ).toBeVisible({ timeout: 25_000 });
-    await expect(page.getByTestId('library-source-sources/Schedule.pdf')).toBeVisible();
+    await expect(page.getByTestId("library-source-sources/inbox/Schedule.pdf")).toBeVisible();
     await expect(page.getByTestId("library-source-list")).toContainText("no wiki page");
     await page.getByTestId('library-find-documents').click();
     await expect(dialog.getByRole('searchbox')).toHaveValue('');
@@ -395,7 +395,7 @@ test.describe("the Library destination", () => {
         'project.md': VAULT['project.md'],
         'inbox/Requirements.pdf': '%PDF-1.7 requirements\n%% discovery proposes only files of at least sixty-four bytes\n',
       } : VAULT);
-      const opener = page.getByTestId(empty ? 'library-start-find-documents' : 'library-find-documents');
+      const opener = page.getByTestId(empty ? 'library-found-choose' : 'library-find-documents');
       await opener.evaluate((button) => {
         (document.activeElement as HTMLElement)?.blur();
         button.addEventListener('mousedown', (event) => event.preventDefault(), { once: true });
@@ -491,11 +491,12 @@ test.describe("the Library pane", () => {
       );
     }
 
-    // The three doors, and the one quiet line that names where a drop goes.
-    await expect(stage.getByTestId("library-start-add-files")).toBeVisible();
+    // The drop area with Add files, the line naming the one folder sources live in, and the doors.
+    await expect(stage.getByTestId("library-start-drop").getByTestId("library-start-add-files")).toBeVisible();
+    await expect(stage.getByTestId("library-start-where")).toContainText("the sources folder inside");
     await expect(stage.getByTestId("library-start-find-documents")).toBeVisible();
     await expect(stage.getByTestId("library-start-import")).toBeVisible();
-    await expect(stage.getByTestId("library-start-drop")).toContainText("sources/");
+    await expect(stage.getByTestId("library-found-in-folder")).toHaveCount(0);
 
     /*
      * The column is the 640px stage, and its centre is the viewport's within half a column, which is what
@@ -518,15 +519,16 @@ test.describe("the Library pane", () => {
       "inbox/Schedule.pdf": "%PDF-1.7 schedule\n%% discovery proposes only files of at least sixty-four bytes\n",
     });
     const stage = page.getByTestId("library-start-stage");
-    const found = stage.getByTestId("library-start-find-documents");
+    const found = stage.getByTestId("library-found-in-folder");
     await expect(found).toHaveAttribute("data-found-count", "2");
-    await expect(found).toHaveText("Review 2 found documents");
-    const doors = await stage.locator("button[data-testid^='library-start-']").evaluateAll((buttons) =>
-      buttons.map((button) => button.getAttribute("data-testid")),
+    await expect(found.getByRole("heading")).toHaveText("Found 2 documents");
+    await expect(found.getByTestId("library-found-folder")).toHaveText(["inbox 2"]);
+    const order = await stage.locator("[data-testid='library-found-in-folder'], [data-testid='library-start-drop']").evaluateAll(
+      (blocks) => blocks.map((block) => block.getAttribute("data-testid")),
     );
-    expect(doors[0], "the found documents are not the first door").toBe("library-start-find-documents");
+    expect(order, "the found documents do not lead the drop area").toEqual(["library-found-in-folder", "library-start-drop"]);
 
-    await found.click();
+    await found.getByTestId("library-found-choose").click();
     await expect(page.getByTestId("find-documents-candidate-inbox/Requirements.pdf")).toBeVisible();
     await expect(page.getByTestId("find-documents-candidate-inbox/Schedule.pdf")).toBeVisible();
   });
