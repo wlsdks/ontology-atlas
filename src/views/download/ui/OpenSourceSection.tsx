@@ -12,7 +12,7 @@ import { buttonVariants } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-import { usePlayOnce } from '../lib/use-play-once';
+import { usePlayOnce } from '../lib/page-motion/use-play-once';
 import { REPO_FACTS } from '../model/repo-facts.generated';
 import { SectionIntro } from './SectionIntro';
 

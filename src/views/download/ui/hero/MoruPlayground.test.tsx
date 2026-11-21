@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import enMessages from '../../../../messages/en.json';
+import enMessages from '../../../../../messages/en.json';
 import { setMotionPaused } from '@/shared/motion/motion-pause';
 import { MoruPlayground } from './MoruPlayground';
 

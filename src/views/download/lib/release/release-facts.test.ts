@@ -8,7 +8,7 @@ import {
   RELEASE_VERSION,
   buildDmgName,
 } from "./release-facts";
-import { RELEASE_ARTIFACT_STEPS } from "../../../../scripts/desktop-release/build-macos-release-artifact.mjs";
+import { RELEASE_ARTIFACT_STEPS } from "../../../../../scripts/desktop-release/build-macos-release-artifact.mjs";
 
 function readJson(relativePath: string): Record<string, unknown> {
   return JSON.parse(readFileSync(join(process.cwd(), relativePath), "utf8"));
@@ -21,7 +21,7 @@ describe("release-facts", () => {
     expect(RELEASE_VERSION).not.toBe("unknown");
     expect(RELEASE_VERSION).toBe(pkg.version);
     const source = readFileSync(
-      join(process.cwd(), "src/views/download/lib/release-facts.ts"),
+      join(process.cwd(), "src/views/download/lib/release/release-facts.ts"),
       "utf8",
     );
     expect(source).toMatch(/RELEASE_VERSION\s*=\s*process\.env\.NEXT_PUBLIC_RELEASE_VERSION/);

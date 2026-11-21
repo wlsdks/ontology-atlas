@@ -7,7 +7,7 @@ import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
 import { GITHUB_REPO_URL, MAKER_LINKEDIN_URL } from '@/shared/config/social-links';
 import { DEMO_CLIPS } from '../model/demo-clips';
 import { FAQ_KEYS } from '../model/faq';
-import { RELEASE_VERSION } from '../lib/release-facts';
+import { RELEASE_VERSION } from '../lib/release/release-facts';
 import { DownloadPage } from './DownloadPage';
 
 vi.mock('@/features/locale-switch', () => ({

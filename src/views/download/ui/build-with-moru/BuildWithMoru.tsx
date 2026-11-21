@@ -27,8 +27,8 @@ import {
   type BuildAction,
   type BuildPhase,
   type BuildState,
-} from '../lib/build-play';
-import { useInViewMotion } from '../lib/use-in-view-motion';
+} from '../../lib/build-play';
+import { useInViewMotion } from '../../lib/page-motion/use-in-view-motion';
 import {
   BUILD_CHANGE,
   BUILD_CONCEPTS,
@@ -44,10 +44,10 @@ import {
   dependsOnChange,
   touchesChange,
   type BuildConceptId,
-} from '../model/build-cast';
+} from '../../model/build-cast';
 import { BuildMoru, preloadBuildRows, type BuildGesture, type BuildLoop } from './BuildMoru';
 import { Burst, BuildStage, isFirstPress } from './BuildStage';
-import { SectionIntro } from './SectionIntro';
+import { SectionIntro } from '../SectionIntro';
 import { TypedLetters } from './TypedLetters';
 
 const SECTION = cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full scroll-mt-24');

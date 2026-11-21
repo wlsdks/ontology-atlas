@@ -9,11 +9,11 @@ import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pause';
 
-import { createFilmClock } from '../lib/film-clock';
-import { clamp01 as clamp, easeInOut as inOut } from '../lib/film-kit';
-import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
-import type { Director } from '../lib/harness-director';
-import type { ExampleRead } from '../lib/harness-example';
+import { createFilmClock } from '../../lib/film/film-clock';
+import { clamp01 as clamp, easeInOut as inOut } from '../../lib/film/film-kit';
+import { registerGatedFrameClient } from '../../lib/page-motion/gateway-frame-loop';
+import type { Director } from '../../lib/harness-film/harness-director';
+import type { ExampleRead } from '../../lib/harness-film/harness-example';
 import {
   ACT_MS,
   EXAMPLE_REPO,
@@ -27,7 +27,7 @@ import {
   pictureZone,
   windowFrame,
   type WindowFrame,
-} from '../lib/harness-scene';
+} from '../../lib/harness-film/harness-scene';
 import { FilmActBar } from './FilmActBar';
 
 const ACTS = [1, 2, 3, 4] as const;
@@ -207,7 +207,7 @@ export function HarnessFilm() {
       (entries) => {
         if (!entries.some((entry) => entry.isIntersecting)) return;
         near.disconnect();
-        void Promise.all([import('./HarnessFilmWindow'), import('../lib/harness-example').then((module) => module.readExample())]).then(
+        void Promise.all([import('./HarnessFilmWindow'), import('../../lib/harness-film/harness-example').then((module) => module.readExample())]).then(
           ([module, example]) => {
             if (live) setLoaded({ Window: module.HarnessFilmWindow, example });
           },

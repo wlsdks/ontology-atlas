@@ -14,9 +14,9 @@ import companionSheet from '@/shared/ui/marks/moru-companion.json';
 import reactionSheet from '@/shared/ui/marks/moru-reactions.json';
 import { Dialog } from '@/shared/ui/surfaces/dialog';
 
-import { CELL, COMBO_STEP, FEET, LIVES, NEUTRAL_FRAME, POWER_MS, ROUND_MS, readBest, writeBest } from '../lib/moru-play';
-import { BUG_ROWS, GOLD_ROWS, HEART_ROWS, STAR_ROWS, pixelCells, pixelPath } from '../lib/moru-play-art';
-import { FLOOR_BAND, createGame, type GameHandle, type Phase, type Result } from '../lib/moru-play-loop';
+import { CELL, COMBO_STEP, FEET, LIVES, NEUTRAL_FRAME, POWER_MS, ROUND_MS, readBest, writeBest } from '../../lib/moru-play/moru-play';
+import { BUG_ROWS, GOLD_ROWS, HEART_ROWS, STAR_ROWS, pixelCells, pixelPath } from '../../lib/moru-play/moru-play-art';
+import { FLOOR_BAND, createGame, type GameHandle, type Phase, type Result } from '../../lib/moru-play/moru-play-loop';
 
 const SHEETS = {
   companion: { ...companionSheet, src: withBasePath(`/brand/moru-companion.png?v=${companionSheet.digest}`) },

@@ -15,9 +15,9 @@ import {
   type Point,
   type Route,
 } from '../lib/closing-map';
-import { buildFilmScene, labelBox, placeLabels, type FilmScene } from '../lib/film-scene';
-import { easeInOut, easeOut, lerp } from '../lib/film-kit';
-import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
+import { buildFilmScene, labelBox, placeLabels, type FilmScene } from '../lib/film/film-scene';
+import { easeInOut, easeOut, lerp } from '../lib/film/film-kit';
+import { registerGatedFrameClient } from '../lib/page-motion/gateway-frame-loop';
 import type { StageGraph } from '../lib/stage-graph';
 
 /** The draw-in, from the core's first light to the last strand. */

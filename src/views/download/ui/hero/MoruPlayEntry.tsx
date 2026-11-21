@@ -9,7 +9,7 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { isMotionPaused } from '@/shared/motion/motion-pause';
 import { controlClass } from '@/shared/ui/control-class';
 
-import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
+import { registerGatedFrameClient } from '../../lib/page-motion/gateway-frame-loop';
 import {
   ENTRY_CELL,
   ENTRY_NEUTRAL,
@@ -18,7 +18,7 @@ import {
   requestReaction,
   stepEntry,
   type EntryRow,
-} from '../lib/moru-entry';
+} from '../../lib/moru-play/moru-entry';
 import { MoruPlayground } from './MoruPlayground';
 
 const ROWS = Object.keys(ENTRY_ROWS) as EntryRow[];

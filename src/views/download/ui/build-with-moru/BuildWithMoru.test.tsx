@@ -2,8 +2,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import enMessages from '../../../../messages/en.json';
-import { AGENT_BEATS } from '../lib/build-play';
+import enMessages from '../../../../../messages/en.json';
+import { AGENT_BEATS } from '../../lib/build-play';
 import { BuildWithMoru } from './BuildWithMoru';
 
 vi.mock('@/i18n/navigation', () => ({
