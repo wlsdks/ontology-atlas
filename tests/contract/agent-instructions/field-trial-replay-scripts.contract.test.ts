@@ -98,7 +98,7 @@ describe('field trial replay scripts', () => {
     expect(script).toContain('scripts/lib/benchmark/construction-prompts.mjs');
     expect(script).toMatch(/constructionPrompts\(repoRoot,\s*targetRoot\)/);
     const helper = readFileSync(join(ROOT, 'scripts/lib/benchmark/construction-prompts.mjs'), 'utf8');
-    expect(helper).toContain('src/features/acp-session/model/use-acp-session.ts');
+    expect(helper).toContain('src/features/acp-session/model/runtime-wiring/vault-handoff-prompt.ts');
     expect(helper).toContain('src/features/first-run-starter/model/build-from-code-prompt.ts');
   });
 });

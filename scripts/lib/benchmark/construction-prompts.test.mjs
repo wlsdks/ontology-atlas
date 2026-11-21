@@ -8,7 +8,7 @@ import { constructionPrompts } from './construction-prompts.mjs';
 
 const checkout = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const files = ['src/i18n/locales.ts', 'src/i18n/answer-language.ts',
-  'src/features/acp-session/model/use-acp-session.ts',
+  'src/features/acp-session/model/runtime-wiring/vault-handoff-prompt.ts',
   'src/features/first-run-starter/model/build-from-code-prompt.ts'];
 
 test('reads the current shared language helper without loading the app', () => {

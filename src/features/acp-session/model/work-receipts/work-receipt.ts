@@ -6,7 +6,7 @@ import {
   type AcpWorkResult,
 } from '@/shared/lib/meaning-transition/acp-work-receipt';
 
-import type { AcpPermissionRequest } from '../acp-client';
+import type { AcpPermissionRequest } from '../permissions/permission-request';
 import type { PendingPermission } from '../permissions/ask-permission';
 
 const RECEIPT_REQUEST_LIMIT = 160;

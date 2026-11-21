@@ -2054,6 +2054,7 @@ describe('security surfaces', () => {
       'mcp/pnpm-lock.yaml',
       'src/shared/lib/desktop-shell/tauri-external-link.ts',
       'src/features/acp-session/model/acp-client.ts',
+      'src/features/acp-session/model/permissions/permission-answer.ts',
     ]) {
       assert.match(securityRow(path)?.reason ?? '', /`security` lens/, path);
     }

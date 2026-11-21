@@ -2,7 +2,8 @@ import type { Dispatch, RefObject, SetStateAction } from 'react';
 
 import type { AcpWorkReceipt, AcpWorkResult } from '@/shared/lib/meaning-transition/acp-work-receipt';
 
-import { applyCurrentMode, type AcpPermissionRequest, type AcpSessionChoices } from '../acp-client';
+import type { AcpPermissionRequest } from '../permissions/permission-request';
+import { applyCurrentMode, type AcpSessionChoices } from '../session-choices/acp-session-choices';
 import { nextEventId, type AcpEvent } from '../conversation/acp-events';
 import { readReportedPlan, type ReportedPlan } from '../investigation/reported-plan';
 import { modeKeepsGate } from '../session-choices/mode-safety';
