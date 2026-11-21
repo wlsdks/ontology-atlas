@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { sourceSearchPrefix } from './source-search-prefix';
 
-import { passageLabelFor, sourceUnits, type PassageLabel, type SourceUnit } from '@/shared/lib/library/source-passage';
+import { passageLabelFor, type PassageLabel } from '@/shared/lib/library/source-passage';
+import { sourceUnits, type SourceUnit } from '@/shared/lib/library/source-units';
 
 /**
  * Reads only on the first keystroke, never on folder open, through granted handles; nothing is kept

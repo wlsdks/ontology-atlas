@@ -74,7 +74,7 @@ export const rules = [
     matches: [
       /^src\/views\/library\/ui\/parts\/wiki\/[^/]+\.tsx?$/,
       /^src\/views\/library\/lib\/sources\/use-cited-passage\.ts$/,
-      /^src\/shared\/lib\/library\/source-passage\.ts$/,
+      /^src\/shared\/lib\/library\/source-(?:passage|units|zip|markup-scan)\.ts$/,
     ],
   },
 ]
