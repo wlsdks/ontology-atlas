@@ -148,7 +148,7 @@ describe("walked-path lens: trail ink on nodes and lines", () => {
    */
   it("with the lens on, an unwalked line stays dim", () => {
     const source = readFileSync(
-      join(repoRoot, "src/widgets/ontology-map/ui/frame-draw/paint-edges.ts"),
+      join(repoRoot, "src/widgets/ontology-map/ui/frame-draw/edges/paint-edges.ts"),
       "utf8",
     );
     expect(source).toContain("walkedEdgeKeys");

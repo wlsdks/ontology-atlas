@@ -1,8 +1,8 @@
-import { DOME_NODE_PX } from "../../model/dome-view/ink";
-import { neuralCellRadiusPx, neuralGraphOf, neuralTracts, type NeuralTracts } from "../../model/dome-view/neural/neural-cells";
-import { readNeuralTokens, type NeuralTokens } from "../../tokens/read-neural-tokens";
-import type { DomeNodeFrame } from "../../model/dome-view/runtime";
-import type { TopologyWorld, WorldNode } from "../world/topology-world";
+import { DOME_NODE_PX } from "../../../model/dome-view/ink";
+import { neuralCellRadiusPx, neuralGraphOf, neuralTracts, type NeuralTracts } from "../../../model/dome-view/neural/neural-cells";
+import { readNeuralTokens, type NeuralTokens } from "../../../tokens/read-neural-tokens";
+import type { DomeNodeFrame } from "../../../model/dome-view/runtime";
+import type { TopologyWorld, WorldNode } from "../../world/topology-world";
 import { at, AXON_BANDS, bandWidthPx, glowSprite, stamp, taperedAxon, traceAxon } from "./neural-axons";
 import type { NeuralFrame } from "./neural-frame";
 import { IMPACT_STEP_DISTANCES, impactStepOf, impactStrength } from "./neural-spread";

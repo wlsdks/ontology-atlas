@@ -15,7 +15,7 @@ import { DEFAULT_TIER_REVEAL, spotlightRevealsHidden } from "../../model/visibil
 import { labelZoomScale } from "../../render/labels";
 import { worldToScreen } from "../camera/topology-camera-math";
 import { passState, ZERO_DOME_FRAME, domeNodeFrameReused } from "./frame-state";
-import { TRAIL_GLINT_PERIOD_MS } from "./trail-curves";
+import { TRAIL_GLINT_PERIOD_MS } from "./edges/trail-curves";
 import type { FrameDrawParams } from "./frame-draw-params";
 
 type DefaultedKey = "neuralRamp" | "panelInsets" | "devicePixelRatio" | "hoverReleasedNodeId" | "hoverStartedAt"

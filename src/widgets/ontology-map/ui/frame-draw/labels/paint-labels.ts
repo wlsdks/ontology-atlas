@@ -1,13 +1,13 @@
-import type { NodeEgoState } from "../../model/visibility/focus-state";
-import { isPathLensNode } from "../../model/visibility/path-lens";
-import { classifyZoomTier } from "../../model/visibility/tier-visibility";
+import type { NodeEgoState } from "../../../model/visibility/focus-state";
+import { isPathLensNode } from "../../../model/visibility/path-lens";
+import { classifyZoomTier } from "../../../model/visibility/tier-visibility";
 import {
   LABEL_TOP_K,
   isEgoNeighborLabelExempt,
   selectDiscLabelEligible,
   selectTopKLabels,
   type LabelRankEntry,
-} from "../../model/visibility/label-lod";
+} from "../../../model/visibility/label-lod";
 import {
   ACTIVITY_MARK_GAP,
   ACTIVITY_MARK_RADIUS,
@@ -18,7 +18,7 @@ import {
   measureLabelWidth,
   measureLabelVerticalMetrics,
   scaledLabelFontSize,
-} from "../../render/labels";
+} from "../../../render/labels";
 import {
   ellipsizeToWidth,
   greedyPlaceLabels,
@@ -32,15 +32,15 @@ import {
   type LabelCandidate,
   type ReservedBox,
   type SafeRect,
-} from "../../render/label-layout";
-import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../render/preview-edge";
-import { rankedDiscChildren, rankedEgoNeighbors } from "../frame-cache/structure";
-import { radiusForKind, type WorldNode } from "../world/topology-world";
-import { passState } from "./frame-state";
-import type { FrameInputs } from "./frame-begin";
-import type { FrameFocus } from "./frame-focus";
-import type { NodeAlpha } from "./node-alpha";
-import type { NodeLayer } from "./node-layer";
+} from "../../../render/label-layout";
+import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../../render/preview-edge";
+import { rankedDiscChildren, rankedEgoNeighbors } from "../../frame-cache/structure";
+import { radiusForKind, type WorldNode } from "../../world/topology-world";
+import { passState } from "../frame-state";
+import type { FrameInputs } from "../frame-begin";
+import type { FrameFocus } from "../frame-focus";
+import type { NodeAlpha } from "../nodes/node-alpha";
+import type { NodeLayer } from "../nodes/node-layer";
 
 const LABEL_SIDE_GAP = 3;
 const labelScreenScratch = { x: 0, y: 0 };

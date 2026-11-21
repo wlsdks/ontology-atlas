@@ -1,9 +1,9 @@
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
-import { neuralCellIsStale, neuralGraphOf, type NeuralGraph } from "../../model/dome-view/neural/neural-cells";
-import { standingDomainTitles, type TitleCandidate } from "../../model/dome-view/neural/neural-titles";
-import { labelFontFamily } from "../../render/labels";
-import { passState } from "./frame-state";
-import type { FrameInputs } from "./frame-begin";
+import { neuralCellIsStale, neuralGraphOf, type NeuralGraph } from "../../../model/dome-view/neural/neural-cells";
+import { standingDomainTitles, type TitleCandidate } from "../../../model/dome-view/neural/neural-titles";
+import { labelFontFamily } from "../../../render/labels";
+import { passState } from "../frame-state";
+import type { FrameInputs } from "../frame-begin";
 import { litRaster } from "./neural-lit-raster";
 import type { NeuralFrame, NeuralPool } from "./neural-frame";
 import { lastLit } from "./neural-spread";

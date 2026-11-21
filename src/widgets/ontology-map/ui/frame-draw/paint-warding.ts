@@ -1,7 +1,7 @@
 import { drawInstrumentCaption } from "../../render/labels";
 import type { FrameInputs } from "./frame-begin";
 import type { FrameFocus } from "./frame-focus";
-import type { NodeLayer } from "./node-layer";
+import type { NodeLayer } from "./nodes/node-layer";
 
 const WARDING_CAPTION_OFFSET_PX = 24;
 const WARDING_CAPTION_ALPHA = 0.62;

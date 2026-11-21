@@ -8,8 +8,8 @@ import type { PointerMachineState } from "../../interaction/pointer-state-machin
 import type { ClusterChip } from "../../model/layout/density-gate";
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
 import { isNeuralDependency } from "../../model/dome-view/neural/neural-cells";
-import { lastNeuralLit } from "../frame-draw/neural-spread";
-import { neuralRadiusScale, neuralTractsFor } from "../frame-draw/paint-neural";
+import { lastNeuralLit } from "../frame-draw/neural/neural-spread";
+import { neuralRadiusScale, neuralTractsFor } from "../frame-draw/neural/paint-neural";
 import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { ForceSimulation } from "../../model/layout/force-layout";
@@ -221,7 +221,7 @@ export function useTopologyMapInstrumentation({
             /**
              * ★ For the graph-readability instrument: overlap cannot be counted
              * without radii. Uses the **same formula** as the draw
-             * (`radiusForKind × magnitudeScale` in `frame-draw/paint-nodes.ts`, times
+             * (`radiusForKind × magnitudeScale` in `frame-draw/nodes/paint-nodes.ts`, times
              * the camera zoom for the screen radius). Diverging formulas measure
              * the instrument's imagination, not the screen.
              */
@@ -278,7 +278,7 @@ export function useTopologyMapInstrumentation({
                         /**
                          * ★ So the instrument measures **the curve that is drawn**, not its
                          * chord. The draw path is `quadraticCurveTo(control, b)`
-                         * (`frame-draw/paint-edges.ts`); joining endpoints instead counts
+                         * (`frame-draw/edges/paint-edges.ts`); joining endpoints instead counts
                          * crossings that are not on screen and misses crossings that are —
                          * measuring an approximation rather than the map.
                          */

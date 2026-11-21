@@ -1,6 +1,6 @@
-import { neuralSignalProgress, type NeuralGraph } from "../../model/dome-view/neural/neural-cells";
-import { impactHopsByIndex, neuralImpact, neuralSpreadAt, neuralSpreadHopMs, type NeuralImpact } from "../../model/dome-view/neural/neural-impact";
-import type { NeuralTokens } from "../../tokens/read-neural-tokens";
+import { neuralSignalProgress, type NeuralGraph } from "../../../model/dome-view/neural/neural-cells";
+import { impactHopsByIndex, neuralImpact, neuralSpreadAt, neuralSpreadHopMs, type NeuralImpact } from "../../../model/dome-view/neural/neural-impact";
+import type { NeuralTokens } from "../../../tokens/read-neural-tokens";
 
 /**
  * A focus's signal and a selection's spread: when each started, how far it has come, and the impact

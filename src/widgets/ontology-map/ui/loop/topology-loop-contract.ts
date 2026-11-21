@@ -1,4 +1,4 @@
-import type { NeuralLabels } from "../frame-draw/paint-neural";
+import type { NeuralLabels } from "../frame-draw/neural/paint-neural";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import type { RefObject } from "react";
 import type { DialFrameSummary } from "../../dial/frame/frame";

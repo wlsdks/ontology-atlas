@@ -642,7 +642,7 @@ export interface ClusterChipDrawInput {
 }
 
 /**
- * Draw one chip. The caller (`ui/frame-draw/paint-chips.ts`) has already set
+ * Draw one chip. The caller (`ui/frame-draw/labels/paint-chips.ts`) has already set
  * `ctx.globalAlpha` to the parent's tier alpha; this function only multiplies
  * into that base and restores it before returning.
  */

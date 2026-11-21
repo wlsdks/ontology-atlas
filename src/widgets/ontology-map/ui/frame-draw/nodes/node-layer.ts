@@ -1,15 +1,15 @@
-import { domeFogAlpha } from "../../model/dome-view/ink";
+import { domeFogAlpha } from "../../../model/dome-view/ink";
 import {
   addStrataLodDust,
   createStrataLodDust,
   drawStrataLodDust,
   resetStrataLodDust,
-} from "../../render/dome-view/strata-lod";
-import type { ReservedBox } from "../../render/label-layout";
-import { isPreviewEndpointHidden } from "../../render/preview-edge";
-import { passState, domeNodeFrameReused, drawnScreenRadiusByIdReused, lodDustByState } from "./frame-state";
-import type { FrameInputs } from "./frame-begin";
-import type { FrameFocus } from "./frame-focus";
+} from "../../../render/dome-view/strata-lod";
+import type { ReservedBox } from "../../../render/label-layout";
+import { isPreviewEndpointHidden } from "../../../render/preview-edge";
+import { passState, domeNodeFrameReused, drawnScreenRadiusByIdReused, lodDustByState } from "../frame-state";
+import type { FrameInputs } from "../frame-begin";
+import type { FrameFocus } from "../frame-focus";
 
 const lodDust = createStrataLodDust();
 

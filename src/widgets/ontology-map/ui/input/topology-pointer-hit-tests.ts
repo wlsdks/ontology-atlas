@@ -1,6 +1,6 @@
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
 import { lastDrawnLabelBoxes, lastDrawnNodeAlphas } from "../frame-draw/topology-frame-draw";
-import { neuralRadiusScale, neuralTractsFor } from "../frame-draw/paint-neural";
+import { neuralRadiusScale, neuralTractsFor } from "../frame-draw/neural/paint-neural";
 import { isNeuralDependency } from "../../model/dome-view/neural/neural-cells";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { pickDial, pickDialAction } from "../../dial/pick";
@@ -104,7 +104,7 @@ export function createPointerHitTests(ctx: PointerContext) {
     const camera = cameraRef.current;
     const world = worldRef.current;
     const tokens = readOntologyMapTokensOrNull();
-    // Use **the same** zoom scale as the draw (`frame-draw/paint-chips.ts`) so the rectangle cannot drift.
+    // Use **the same** zoom scale as the draw (`frame-draw/labels/paint-chips.ts`) so the rectangle cannot drift.
     const scale = clusterChipScale(camera.scale.value);
     // The hit test reads **the same decision function** as the draw — when the
     // affordance changes, the drawn shape and the pressable rectangle have to change
@@ -190,7 +190,7 @@ export function createPointerHitTests(ctx: PointerContext) {
     const zoomRatio = computeZoomRatio(camera.scale.value, overviewEntryScale);
     // C1 A2 — focus ego tier exemption: the focused node + its 1-hop neighbors
     // are hittable even below the tier's own alpha threshold, matching the
-    // draw pass's `effectiveNodeAlpha` exemption (`frame-draw/node-alpha.ts`) —
+    // draw pass's `effectiveNodeAlpha` exemption (`frame-draw/nodes/node-alpha.ts`) —
     // otherwise a capability that's now VISIBLE (ego-revealed) would still be
     // unclickable, defeating the entire "click a domain to expand it" flow.
     const focusedNodeId = focusedSlugRef.current;

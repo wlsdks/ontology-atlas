@@ -1,12 +1,12 @@
-import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
-import { isNeuralDependency, neuralCellIsStale, neuralFocusSets, neuralGraphOf, type NeuralGraph } from "../../model/dome-view/neural/neural-cells";
-import { isOutwardHop, type NeuralImpact } from "../../model/dome-view/neural/neural-impact";
-import { isPathLensEdge } from "../../model/visibility/path-lens";
-import type { NeuralTokens } from "../../tokens/read-neural-tokens";
-import { radiusForKind } from "../world/topology-world";
-import { litDrawnStateCounts, passState } from "./frame-state";
-import type { FrameInputs } from "./frame-begin";
-import type { FrameFocus } from "./frame-focus";
+import { projectDomeEdgeControl } from "../../../model/dome-view/dome-edge";
+import { isNeuralDependency, neuralCellIsStale, neuralFocusSets, neuralGraphOf, type NeuralGraph } from "../../../model/dome-view/neural/neural-cells";
+import { isOutwardHop, type NeuralImpact } from "../../../model/dome-view/neural/neural-impact";
+import { isPathLensEdge } from "../../../model/visibility/path-lens";
+import type { NeuralTokens } from "../../../tokens/read-neural-tokens";
+import { radiusForKind } from "../../world/topology-world";
+import { litDrawnStateCounts, passState } from "../frame-state";
+import type { FrameInputs } from "../frame-begin";
+import type { FrameFocus } from "../frame-focus";
 import { impactStrength, lastLit, neuralSpreadFrame } from "./neural-spread";
 import { NEURAL_CELL, neuralRadiusScale, neuralTokens, neuralTractsFor, zoomGrowthOf } from "./paint-neural";
 

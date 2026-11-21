@@ -1,5 +1,5 @@
-import type { NeuralLabels } from "./paint-neural";
-import type { NeuralSurface } from "./neural-frame";
+import type { NeuralLabels } from "./neural/paint-neural";
+import type { NeuralSurface } from "./neural/neural-frame";
 import type { DialWorld } from '../../dial/types';
 import type { PanelInsets } from "../../interaction/free-area";
 import type { CameraAxes } from "../../engine/camera";
