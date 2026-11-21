@@ -91,9 +91,10 @@ pub(crate) fn vault_root_rejection(root: &Path) -> Option<&'static str> {
     let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
         .map(PathBuf::from)
         .and_then(|p| fs::canonicalize(p).ok());
+    let root_directory = DirectoryIdentity::of(root);
     if home
         .as_deref()
-        .is_some_and(|home| is_same_directory(home, root))
+        .is_some_and(|home| root_directory.is_named(home))
     {
         return Some("home-directory");
     }
@@ -102,7 +103,10 @@ pub(crate) fn vault_root_rejection(root: &Path) -> Option<&'static str> {
     const SYSTEM_DIRS: &[&str] = &[
         "/Applications",
         "/System",
+        "/System/Volumes",
         "/System/Volumes/Data",
+        // The no-symlink view of `/`: a directory of its own whose children are the root's.
+        "/.nofollow",
         "/Library",
         "/Users",
         "/Volumes",
@@ -130,7 +134,7 @@ pub(crate) fn vault_root_rejection(root: &Path) -> Option<&'static str> {
     // Only that exact directory; places inside it can be valid.
     if SYSTEM_DIRS
         .iter()
-        .any(|dir| is_same_directory(Path::new(dir), root))
+        .any(|dir| root_directory.is_named(Path::new(dir)))
     {
         return Some("system-directory");
     }
@@ -138,25 +142,43 @@ pub(crate) fn vault_root_rejection(root: &Path) -> Option<&'static str> {
     None
 }
 
-/// One directory under any name. A macOS firmlink such as `/System/Volumes/Data/Users`
-/// is `/Users` with the same device and inode, and a Windows canonical path carries a
-/// `\\?\` prefix the named positions do not, so a string comparison alone lets both pass.
-fn is_same_directory(named: &Path, root: &Path) -> bool {
-    if named == root {
-        return true;
-    }
+/// A root compared with named positions as a directory, not a string. A macOS firmlink
+/// such as `/System/Volumes/Data/Users` is `/Users` with the same device and inode, and a
+/// Windows canonical path carries a `\\?\` prefix the named positions do not.
+struct DirectoryIdentity<'a> {
+    path: &'a Path,
     #[cfg(unix)]
-    {
-        use std::os::unix::fs::MetadataExt;
-        match (fs::metadata(named), fs::metadata(root)) {
-            (Ok(a), Ok(b)) => a.dev() == b.dev() && a.ino() == b.ino(),
-            _ => false,
+    device_inode: Option<(u64, u64)>,
+}
+
+impl<'a> DirectoryIdentity<'a> {
+    fn of(path: &'a Path) -> Self {
+        Self {
+            path,
+            #[cfg(unix)]
+            device_inode: device_inode(path),
         }
     }
-    #[cfg(not(unix))]
-    {
-        fs::canonicalize(named).is_ok_and(|named| named == root)
+
+    fn is_named(&self, named: &Path) -> bool {
+        if named == self.path {
+            return true;
+        }
+        #[cfg(unix)]
+        {
+            self.device_inode.is_some() && device_inode(named) == self.device_inode
+        }
+        #[cfg(not(unix))]
+        {
+            fs::canonicalize(named).is_ok_and(|named| named == self.path)
+        }
     }
+}
+
+#[cfg(unix)]
+fn device_inode(path: &Path) -> Option<(u64, u64)> {
+    use std::os::unix::fs::MetadataExt;
+    fs::metadata(path).ok().map(|meta| (meta.dev(), meta.ino()))
 }
 
 pub(crate) fn ensure_inside_canonical(root_path: &str, path: &Path) -> Result<PathBuf, String> {
@@ -359,11 +381,11 @@ mod tests {
     fn vault_root_rejection_sees_through_the_data_volume_names() {
         let home = fs::canonicalize(std::env::var_os("HOME").unwrap()).unwrap();
         let data_home = Path::new("/System/Volumes/Data").join(home.strip_prefix("/").unwrap());
-        if !data_home.exists() {
-            return;
-        }
+        assert!(data_home.exists(), "{data_home:?}");
         assert_eq!(vault_root_rejection(&data_home), Some("home-directory"));
         for dir in [
+            "/.nofollow",
+            "/System/Volumes",
             "/System/Volumes/Data",
             "/System/Volumes/Data/Users",
             "/System/Volumes/Data/Applications",
