@@ -28,6 +28,7 @@ export const rules = [
       /^scripts\/lib\/desktop-release\/redact-command\.(?:mjs|test\.mjs)$/,
       /^scripts\/download\/check-macos-download-release\.mjs$/,
       /^scripts\/desktop-release\/build-updater-manifest\.(?:mjs|test\.mjs)$/,
+      /^scripts\/desktop-release\/check-macos-release-status\.(?:mjs|test\.mjs)$/,
       /^scripts\/desktop-release\/release-status\/[^/]+\.mjs$/,
       /^scripts\/download\/stage-macos-release-assets\.(?:mjs|test\.mjs)$/,
       /^scripts\/download\/gateway-capture\/[^/]+\.mjs$/,

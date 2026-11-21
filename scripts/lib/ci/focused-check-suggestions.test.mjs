@@ -1648,8 +1648,13 @@ describe('focused check suggestions', () => {
     }
   });
 
-  it('suggests the desktop checker tests when a release-status module changes', () => {
-    for (const path of ['scripts/desktop-release/release-status/status-report.mjs', 'scripts/desktop-release/release-status/status-report.test.mjs']) {
+  it('suggests the desktop checker tests when the release-status entry or a module changes', () => {
+    for (const path of [
+      'scripts/desktop-release/check-macos-release-status.mjs',
+      'scripts/desktop-release/check-macos-release-status.test.mjs',
+      'scripts/desktop-release/release-status/status-report.mjs',
+      'scripts/desktop-release/release-status/status-report.test.mjs',
+    ]) {
       assert.ok(commandNames(suggestFocusedChecks([path])).includes('pnpm test:desktop:check'), `${path} must recommend the desktop checker tests`);
     }
   });
