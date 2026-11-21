@@ -9,3 +9,4 @@
 // their side effects here is equivalent to the tests living inline.
 import "../lib/dogfood-walk/gate-evaluator.test.mjs";
 import "../lib/dogfood-walk/summaries.test.mjs";
+import "../lib/dogfood-walk/strict-rejection-report.test.mjs";
