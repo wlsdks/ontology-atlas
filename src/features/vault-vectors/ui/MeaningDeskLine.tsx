@@ -9,7 +9,6 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { vaultIndexPreference } from '@/shared/lib/vault-folder/tauri-vault-index';
 import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
-import type { VectorSource, VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
 import { MOTION } from '@/shared/motion';
 import { controlClass } from '@/shared/ui/control-class';
 import { formatSize } from '@/shared/lib/format-size';
@@ -18,19 +17,19 @@ import { modelFailedSentence } from '../model/model-failed-sentence';
 import { deskLine, type DeskLine, type DeskLineAction, type DeskProgress } from '../model/desk-line';
 import { useSearchFailure, withSearchFailure } from '../model/search-failure';
 import { resume, stop, useVectorStatus } from '../model/vector-store';
-import { useVectorRunStage } from '../model/use-vector-run';
+import { useVectorRunStage } from '../model/desk-stage-presence';
+import { useFinishedInView } from '../model/use-finished-in-view';
 import { BUILTIN_MODEL_NAME } from '../model/model-choices';
 import { MeaningModelDialog } from './MeaningModelDialog';
 import { MeaningGuideCard } from './MeaningGuideCard';
 import { meaningGuideSeen } from '../model/guide-seen';
 import { MeaningRunStage } from './MeaningRunStage';
-import { runStage, type RunStage } from '../model/run-stage';
+import { finishedStage, runStage } from '../model/run-stage';
+import { ProgressRing } from './ProgressRing';
 
 const FILE_NAME_PACE_MS = 1000;
 /** The end of a file name kept whole when its middle is cut: enough for a word and the extension. */
 const KEPT_NAME_END = 12;
-const RING_PX = 14;
-const RING_RADIUS = 6;
 const PLACEHOLDER = '\u0000';
 
 const noSubscribe = () => () => undefined;
@@ -40,45 +39,6 @@ const TONE_INK: Record<DeskLine['tone'], string> = {
   warning: 'text-[color:var(--color-status-warning)]',
   danger: 'text-[color:var(--color-danger-text)]',
 };
-
-/**
- * The ring moves to each new value by a CSS transition: no React state changes per frame, and a
- * hidden ring has nothing running. A new quantity or total starts a new arc at its own value.
- */
-function ProgressRing({ fraction, label, measure, track }: { fraction: number; label: string; measure: DeskProgress['measure']; track: string }) {
-  return (
-    <span
-      role="progressbar"
-      aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.floor(fraction * 100)}
-      data-testid="meaning-desk-ring"
-      data-ring-measure={measure}
-      data-ring-value={fraction.toFixed(4)}
-      className="inline-grid size-3.5 flex-none place-items-center"
-    >
-      <svg width={RING_PX} height={RING_PX} viewBox={`0 0 ${RING_PX} ${RING_PX}`} fill="none" aria-hidden="true">
-        <circle cx={RING_PX / 2} cy={RING_PX / 2} r={RING_RADIUS} strokeWidth={1.5} stroke="var(--color-overlay-3)" />
-        <circle
-          key={track}
-          cx={RING_PX / 2}
-          cy={RING_PX / 2}
-          r={RING_RADIUS}
-          strokeWidth={1.5}
-          stroke="var(--color-indigo-accent)"
-          strokeLinecap="round"
-          pathLength={1}
-          strokeDasharray="1 1"
-          style={{ strokeDashoffset: 1 - fraction }}
-          data-testid="meaning-desk-ring-arc"
-          className="transition-[stroke-dashoffset] duration-[var(--motion-slow)] ease-[var(--motion-ease)] motion-reduce:transition-none"
-          transform={`rotate(-90 ${RING_PX / 2} ${RING_PX / 2})`}
-        />
-      </svg>
-    </span>
-  );
-}
 
 /**
  * The file's name alone, its middle giving way first so the ending and extension stay readable;
@@ -99,36 +59,6 @@ function MiddleCutName({ path }: { path: string }) {
 
 function Separator() {
   return <span aria-hidden="true" className="flex-none text-[color:var(--color-text-quaternary)]">·</span>;
-}
-
-/** The stage a finished job leaves in view: every step done. */
-function finishedStage(source: VectorSource | null): RunStage {
-  const steps = source?.kind === 'runner' ? (['read'] as const) : (['download', 'fit', 'read'] as const);
-  return { steps: steps.map((step) => ({ step, state: 'done' as const })), step: 'read', fraction: 1, readingPath: null, passagesDone: 0 };
-}
-
-/**
- * What a first preparation that ended ready while its stage was in view prepared, until the person
- * moves on: a press on the stage, or the folder leaving `ready`. A folder found ready, or an update
- * of changed files, is never celebrated.
- */
-function useFinishedInView(running: RunStage | null, status: VectorStatus | null) {
-  const [staged, setStaged] = useState<'first' | 'update' | null>(null);
-  const [done, setDone] = useState<{ passages: number; files: number } | null>(null);
-  const runKind = running ? (status?.updating ? 'update' : 'first') : null;
-  // A Resume of an update first reads as a preparation; its later `updating` says what it is.
-  if (runKind !== null && staged !== runKind) {
-    setStaged(runKind);
-    if (done) setDone(null);
-  }
-  if (runKind === null && staged !== null) {
-    setStaged(null);
-    if (staged === 'first' && status?.phase === 'ready') {
-      setDone({ passages: Math.max(status.passagesTotal, status.passagesDone), files: status.filesTotal });
-    }
-  }
-  if (done && runKind === null && status !== null && status.phase !== 'ready') setDone(null);
-  return done ? { ...done, dismiss: () => setDone(null) } : null;
 }
 
 /**

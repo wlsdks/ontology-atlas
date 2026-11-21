@@ -57,3 +57,9 @@ export function runStage(status: VectorStatus | null, source: VectorSource | nul
       return null;
   }
 }
+
+/** The stage a finished job leaves in view: every step done. */
+export function finishedStage(source: VectorSource | null): RunStage {
+  const steps = source?.kind === 'runner' ? (['read'] as const) : (['download', 'fit', 'read'] as const);
+  return { steps: steps.map((step) => ({ step, state: 'done' as const })), step: 'read', fraction: 1, readingPath: null, passagesDone: 0 };
+}

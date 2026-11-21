@@ -71,3 +71,8 @@ export function recommendedChoiceId(choices: ModelChoice[]): string {
   const runner = choices.find((choice) => choice.kind === 'runner' && choice.reachable && baseName(choice.model) === PREFERRED_RUNNER_MODEL);
   return runner?.id ?? 'builtin';
 }
+
+/** The folder searches with this choice now: its model is here and answering. */
+export function isLive(choice: ModelChoice): boolean {
+  return choice.inUse && (choice.kind === 'builtin' ? choice.holding === 'ready' : choice.reachable);
+}
