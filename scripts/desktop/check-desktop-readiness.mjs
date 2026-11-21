@@ -152,6 +152,12 @@ const docsVaultPage = docsVaultPageFiles.map(readText).join("\n");
 const vaultChipSurface = readText("src/views/docs-vault/ui/parts/DocsVaultVaultChip.tsx");
 const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEmptyState.tsx");
 const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/agent-setup/VaultAgentSetupPanel.tsx");
+const vaultAgentSetupCopySources = [
+  "src/widgets/app-settings-menu/model/agent-setup/agent-setup-packets.ts",
+  "src/widgets/app-settings-menu/ui/agent-setup/AgentSetupTroubleshooting.tsx",
+]
+  .map(readText)
+  .join("\n");
 const appSettingsMenu = readText("src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx");
 const workspacePane = readText("src/widgets/app-settings-menu/ui/panes/WorkspacePane.tsx");
 // After that merge the old `LocalVaultPicker` was an orphan no surface rendered
@@ -1797,14 +1803,14 @@ if (
 }
 
 if (
-  vaultAgentSetupPanel.includes("buildAgentVerifyCliCommand") &&
-  vaultAgentSetupPanel.includes("buildAgentSetupCliCommand") &&
-  vaultAgentSetupPanel.includes("buildAgentSetupPacket(localVault.handle?.name ?? 'vault', vaultRootPath)") &&
-  vaultAgentSetupPanel.includes("buildAgentFirstContactProofPacket(localVault.handle?.name ?? 'vault', vaultRootPath)") &&
-  vaultAgentSetupPanel.includes("buildOntologyStarterAgentVerifyPrompt(vaultRootPath)") &&
-  vaultAgentSetupPanel.includes("buildOntologyStarterJsonGateCommand(vaultRootPath)") &&
-  vaultAgentSetupPanel.includes("agentJsonGatePreview") &&
-  vaultAgentSetupPanel.includes("hubs ${target} --plan")
+  vaultAgentSetupCopySources.includes("buildAgentVerifyCliCommand") &&
+  vaultAgentSetupCopySources.includes("buildAgentSetupCliCommand") &&
+  vaultAgentSetupCopySources.includes("buildAgentSetupPacket(vaultName, vaultRootPath)") &&
+  vaultAgentSetupCopySources.includes("buildAgentFirstContactProofPacket(vaultName, vaultRootPath)") &&
+  vaultAgentSetupCopySources.includes("buildOntologyStarterAgentVerifyPrompt(vaultRootPath)") &&
+  vaultAgentSetupCopySources.includes("buildOntologyStarterJsonGateCommand(vaultRootPath)") &&
+  vaultAgentSetupCopySources.includes("agentJsonGatePreview") &&
+  vaultAgentSetupCopySources.includes("hubs ${target} --plan")
 ) {
   pass("desktop agent setup panel copies path-aware setup packets, CLI runbooks, and JSON gates");
 } else {
