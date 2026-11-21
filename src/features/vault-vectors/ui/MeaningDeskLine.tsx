@@ -11,9 +11,8 @@ import { vaultIndexPreference } from '@/shared/lib/vault-folder/tauri-vault-inde
 import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
 import { MOTION } from '@/shared/motion';
 import { controlClass } from '@/shared/ui/control-class';
-import { formatSize } from '@/shared/lib/format-size';
 import { usePacedValue } from '../lib/use-paced-value';
-import { modelFailedSentence } from '../model/model-failed-sentence';
+import { deskSentence } from '../model/desk-sentence';
 import { deskLine, type DeskLine, type DeskLineAction, type DeskProgress } from '../model/desk-line';
 import { useSearchFailure, withSearchFailure } from '../model/search-failure';
 import { resume, stop, useVectorStatus } from '../model/vector-store';
@@ -93,7 +92,7 @@ export function MeaningDeskLine({
 
   if (!line) return <div ref={stage} aria-hidden="true" className="h-6" data-testid="meaning-desk-line" data-state="pending" />;
 
-  const sentence = sentenceOf(line, ring, ring?.done ?? 0);
+  const sentence = deskSentence(t, locale, line, ring);
   const transition = reduced ? { duration: 0 } : MOTION.settle;
   const stageEntrance = reduced ? { duration: 0 } : MOTION.expressive;
 
@@ -113,30 +112,6 @@ export function MeaningDeskLine({
   // The desk opens no Settings: the sentence names the place.
   const action = line.action === 'openSettings' ? null : line.action;
   const modelName = source === null ? null : source.kind === 'builtin' ? BUILTIN_MODEL_NAME : source.model;
-
-  function sentenceOf(current: DeskLine, progress: DeskProgress | null, done: number): string {
-    switch (current.message) {
-      case 'modelDownloading': {
-        const total = progress?.total ?? 0;
-        return t('modelDownloading', {
-          percent: total > 0 ? Math.floor((done / total) * 100) : 0,
-          done: formatSize(done, locale),
-          total: formatSize(total, locale),
-        });
-      }
-      case 'modelDownloadPaused':
-        return t('modelDownloadPaused', { done: formatSize(current.values.done ?? 0, locale), total: formatSize(current.values.total ?? 0, locale) });
-      case 'preparing':
-        return t('preparing', { done: Math.floor(done), total: progress?.total ?? 0 });
-      case 'modelFailed':
-        return modelFailedSentence(t, current.values.detail ?? null);
-      case 'modelDownloadFailed':
-      case 'writeFailed':
-        return t(current.message, { detail: t('failureDetail', { code: (current.values.detail ?? '').replaceAll('-', '_') }) });
-      default:
-        return t(current.message, current.values);
-    }
-  }
 
   const [readingBefore, readingAfter] = t('readingNow', { file: PLACEHOLDER }).split(PLACEHOLDER);
   const web = line.message === 'web';
