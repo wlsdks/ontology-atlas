@@ -131,7 +131,7 @@ export function askPermission(request: AcpPermissionRequest, session: Permission
   // refused: answered-by-nobody beats presenting a card, or applying a standing choice, for a
   // conversation that is stopping or dead or a turn that has ended.
   const closed = () => generationRef.current !== generation || statusRef.current === 'exited'
-    || activeTurnRef.current?.stopping === true
+    || activeTurnRef.current?.stopping === true || activeTurnRef.current?.cancelRequested === true
     || (arrivalTurn !== null && activeTurnRef.current !== arrivalTurn);
   const present = async (): Promise<string | null> => {
     if (closed()) return null;

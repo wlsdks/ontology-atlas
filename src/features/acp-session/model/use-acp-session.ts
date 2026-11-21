@@ -429,6 +429,8 @@ export function useAcpSession({
           else noteAllowed(decision);
         },
         refuseAll: () => activeTurnRef.current?.stopping === true,
+        // A stopped turn keeps its own refusal (`refuseAll`), which selects reject_once.
+        cancelRequested: () => activeTurnRef.current?.cancelRequested === true && activeTurnRef.current.stopping !== true,
         // Pass the name only when wired, or someone else's `atlas-vault` server would inherit the auto-allow.
         vaultMcpServerName: hasVaultMcp ? VAULT_MCP_SERVER_NAME : undefined,
         verdict: (filePath) => acpPermissionVerdict(acpSessionId, filePath),
@@ -601,8 +603,10 @@ export function useAcpSession({
   const send = useCallback(async (text: string) => { await sendInternal(text); }, [sendInternal]);
   const sendInvestigation = useCallback((text: string, guard: InvestigationSendGuard) => sendInternal(text, guard), [sendInternal]);
 
+  /** Asks the agent to cancel and answers every request still waiting with `cancelled`, as the protocol requires. */
   const cancel = useCallback(() => {
     if (activeTurnRef.current) activeTurnRef.current.cancelRequested = true;
+    refuseOpenAsk({ permissionDecisionTimerRef, pendingResolverRef, setPending });
     const client = clientRef.current;
     const sessionId = sessionIdRef.current;
     if (client && sessionId) void client.cancel(sessionId);
@@ -617,7 +621,6 @@ export function useAcpSession({
     if (!active || active.stopping) return;
     active.stopping = true;
     setTurnStopping(true);
-    refuseOpenAsk({ permissionDecisionTimerRef, pendingResolverRef, setPending });
     cancel();
     turnStopTimerRef.current = window.setTimeout(() => {
       turnStopTimerRef.current = null;

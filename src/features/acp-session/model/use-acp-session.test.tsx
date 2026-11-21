@@ -2104,6 +2104,27 @@ describe('a card waiting for an answer is refused, never allowed, when the conve
     return hook;
   }
 
+  const outcomeOf = (id: number) =>
+    (bridge.sent.find((message) => message.id === id && 'result' in message) as { result: { outcome: { outcome: string; optionId?: string } } } | undefined)?.result.outcome;
+  const editRequest = (id: number) => JSON.stringify({
+    jsonrpc: '2.0', id, method: 'session/request_permission',
+    params: { sessionId: 's-1', options: [{ kind: 'reject_once', name: 'Deny', optionId: 'reject' }, { kind: 'allow_once', name: 'Allow', optionId: 'allow' }],
+      toolCall: { toolCallId: `call-${id}`, title: 'Edit notes.md', kind: 'edit', rawInput: { file_path: '/outside/notes.md' } } },
+  });
+
+  it('answers every waiting and later request of a cancelled turn with the cancelled outcome', async () => {
+    const { result } = await waitingCard();
+    await act(async () => { bridge.listener?.(editRequest(802)); });
+    act(() => result.current.cancel());
+    await waitFor(() => expect(outcomeOf(801)).toBeDefined());
+    await act(async () => { bridge.listener?.(editRequest(803)); });
+    await waitFor(() => expect([outcomeOf(802), outcomeOf(803)]).not.toContain(undefined));
+    for (const id of [801, 802, 803]) expect(outcomeOf(id)).toEqual({ outcome: 'cancelled' });
+    expect(result.current.pending).toBeNull();
+    expect(bridge.sent.some((message) => message.method === 'session/cancel')).toBe(true);
+    await act(async () => { await result.current.stop(); });
+  });
+
   it('refuses it when the agent process exits', async () => {
     const { result } = await waitingCard();
     await act(async () => { bridge.exits.get('acp-1')?.(); });

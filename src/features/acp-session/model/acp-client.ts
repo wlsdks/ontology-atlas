@@ -38,6 +38,11 @@ export interface AcpClientHandlers {
   askUser: (request: AcpPermissionRequest) => Promise<string | null>;
   /** True while every request must be refused unseen, before any automatic allow (a stopped turn). */
   refuseAll?: () => boolean;
+  /**
+   * True once the screen asked the agent to cancel the turn. A request still waiting for an answer then
+   * gets the `cancelled` outcome, as the protocol requires of every request pending at `session/cancel`.
+   */
+  cancelRequested?: () => boolean;
   onProtocolNotice?: (message: string) => void;
 }
 
@@ -188,6 +193,10 @@ export function createAcpClient(
       chosen = null; // a failure while asking is a rejection
     }
 
+    if (handlers.cancelRequested?.()) {
+      write({ jsonrpc: '2.0', id, result: cancelledOutcome() });
+      return;
+    }
     write({ jsonrpc: '2.0', id, result: permissionOutcome(request.options, chosen) });
   };
 

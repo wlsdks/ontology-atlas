@@ -327,6 +327,19 @@ describe('ACP client: permission policy', () => {
     expect(outcomeOf(t.sent, 7)).toEqual({ outcome: 'selected', optionId: 'allow' });
   });
 
+  it('answers cancelled, whatever the screen chose, once the turn was cancelled while it waited', async () => {
+    const t = fakeTransport();
+    let cancelled = false;
+    const askUser = vi.fn(async () => {
+      cancelled = true;
+      return 'allow';
+    });
+    createAcpClient(t.transport, { verdict: alwaysAsk, askUser, cancelRequested: () => cancelled });
+    t.emit(permissionRequest('/outside/a.md', 21));
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 21)).toBeTruthy());
+    expect(outcomeOf(t.sent, 21)).toEqual({ outcome: 'cancelled' });
+  });
+
   it('rejects when the user does not answer; an unasked request is not counted as allowed', async () => {
     const t = fakeTransport();
     createAcpClient(t.transport, { verdict: alwaysAsk, askUser: async () => null });
