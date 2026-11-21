@@ -20,12 +20,12 @@ import type { ResolvedRuntime } from '@/shared/lib/connectors/tauri-connector-ru
 import {
   buildDraftRecord,
   draftForWrite,
-  draftRuns,
   newConnectorId,
   type CustomPrefill,
   type DraftVariable,
   type SecretToStore,
 } from '../../model/connector-draft';
+import { whatRuns } from '../../model/connector-summary';
 import { CONNECTOR_SUBMIT_CLASS } from './connector-button-class';
 
 type ProblemKey = `problem.${ConnectorProblem}`;
@@ -60,7 +60,7 @@ export function CustomConnectorForm({
   );
 
   const problems = connectorProblems(draft);
-  const runs = draftRuns(draft);
+  const runs = whatRuns(draft);
   const changeVariable = (index: number, next: Partial<DraftVariable>) =>
     setVariables((current) =>
       current.map((variable, position) =>

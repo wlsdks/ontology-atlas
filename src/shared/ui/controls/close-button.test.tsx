@@ -26,7 +26,7 @@ const CONSUMERS = [
   'src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx',
   'src/features/library/ui/FindDocumentsDialog.tsx',
   'src/features/mcp-connectors/ui/AddConnectorDialog.tsx',
-  'src/features/mcp-connectors/ui/ConnectorsPanel.tsx',
+  'src/features/mcp-connectors/ui/ConnectorDetailDialog.tsx',
   'src/features/vault-ontology/ui/RecentChangesNeedsVaultDialog.tsx',
   'src/features/docs-vault-local/ui/VaultOpenGuideSheet.tsx',
   'src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx',
