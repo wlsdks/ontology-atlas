@@ -53,8 +53,8 @@ vi.mock("@/i18n/navigation", () => ({
   usePathname: () => mocks.pathname,
 }));
 
-vi.mock("@/entities/vault-session/model/LocalVaultProvider", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/entities/vault-session/model/LocalVaultProvider")>()),
+vi.mock("@/entities/vault-session/model/vault-provider/LocalVaultProvider", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-provider/LocalVaultProvider")>()),
   useLocalVault: () => ({ agentActivityStatus: mocks.agentActivityStatus }),
 }));
 

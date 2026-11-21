@@ -48,7 +48,7 @@ export const rules = [
       /^src\/shared\/lib\/library\/(?:open-vault-file|inflate-raw)\.ts$/,
       /^src\/shared\/config\/site\/web-content-security-policy\.ts$/,
       /^src\/widgets\/app-settings-menu\/model\/outbound-paths\.ts$/,
-      /^src\/entities\/vault-session\/model\/TauriVaultWatchBridge\.tsx$/,
+      /^src\/entities\/vault-session\/model\/vault-provider\/TauriVaultWatchBridge\.tsx$/,
       /^src\/features\/(?:acp-session|acp-doctor|mcp-connectors)\/model\/(?!.*\.test\.tsx?$).+\.tsx?$/,
       /^\.github\/(?:workflows|actions)\/.+\.ya?ml$/,
       /^\.bun-version$/,

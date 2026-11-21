@@ -2,7 +2,7 @@
 
 import { vaultIdentityScope, type VaultIdentityScope } from '@/entities/docs-vault';
 import { useDataSourceMode } from './use-data-source-mode';
-import { useLocalVault } from './LocalVaultProvider';
+import { useLocalVault } from '../vault-provider/LocalVaultProvider';
 import { useSampleSource } from './use-sample-source';
 
 const localHandleIdentity = new WeakMap<FileSystemDirectoryHandle, string>();

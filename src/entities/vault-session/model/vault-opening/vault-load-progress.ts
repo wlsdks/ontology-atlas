@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { useLocalVault } from './local-vault-context';
+import { useLocalVault } from '../vault-provider/local-vault-context';
 
 const NOTIFY_INTERVAL_MS = 250;
 

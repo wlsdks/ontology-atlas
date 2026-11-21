@@ -2127,4 +2127,24 @@ describe('files moved into a subfolder keep their rules', () => {
       assert.ok(commandNames(suggestFocusedChecks([path])).includes(command), `${path} -> ${command}`);
     }
   });
+
+  it('runs the security contracts for a native bridge in a nested folder such as the vector search commands', () => {
+    const path = 'src/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors.ts';
+    assert.ok(existsSync(path), path);
+    assert.ok(commandNames(suggestFocusedChecks([path])).includes(SECURITY_COMMAND));
+  });
+
+  it('runs the security contracts for the folder watch bridge and the folder-name proof for the vault provider', () => {
+    const subjects = [
+      ['src/entities/vault-session/model/vault-provider/TauriVaultWatchBridge.tsx', SECURITY_COMMAND],
+      [
+        'src/entities/vault-session/model/vault-provider/LocalVaultProvider.tsx',
+        'pnpm exec playwright test tests/e2e/map/map-open-folder-stays-named.spec.ts',
+      ],
+    ];
+    for (const [path, command] of subjects) {
+      assert.ok(existsSync(path), path);
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes(command), `${path} -> ${command}`);
+    }
+  });
 });

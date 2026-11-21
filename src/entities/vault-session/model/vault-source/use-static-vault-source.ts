@@ -5,7 +5,7 @@ import { bundledSamples, type StaticVaultSource } from '@/entities/docs-vault';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { getDataSourceMode } from '@/shared/lib/vault-folder/data-source-mode';
 import { getSampleSourceSnapshot, type SampleSource } from '@/shared/lib/vault-folder/sample-source';
-import { LocalVaultContext } from './local-vault-context';
+import { LocalVaultContext } from '../vault-provider/local-vault-context';
 import { useSampleSource } from './use-sample-source';
 
 /** `loading`: a web visitor's sample is on its way. `ready`: in hand. `failed`: not downloaded even after a retry. `none`: nothing will load (the installed app never renders a bundled sample, or a vault has been chosen). */

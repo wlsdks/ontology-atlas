@@ -10,7 +10,7 @@ import {
   toVaultDiffNode,
   type VaultDiffActionCount,
   type VaultDiffToast,
-} from '../lib/diff-manifest';
+} from '../../lib/diff-manifest';
 import { useLocalVault } from './local-vault-context';
 
 /** Only the app appends to the wiki log, and the run that wrote a line already said it finished. */

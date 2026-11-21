@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('./use-data-source-mode', () => ({
   useDataSourceMode: () => mocks.mode,
 }));
-vi.mock('./LocalVaultProvider', () => ({
+vi.mock('../vault-provider/LocalVaultProvider', () => ({
   useLocalVault: () => ({ status: mocks.status, handle: mocks.handle }),
 }));
 vi.mock('./use-sample-source', () => ({
