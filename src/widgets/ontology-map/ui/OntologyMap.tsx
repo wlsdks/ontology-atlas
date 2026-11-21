@@ -20,7 +20,7 @@ import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet,
 import { controlClass } from '@/shared/ui/control-class';
 import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { measureCanvasInsets } from "../interaction/free-area";
-import type { NeuralLabels } from "./frame-draw/paint-neural";
+import type { NeuralLabels } from "./frame-draw/neural/paint-neural";
 
 /**
  * How long the notice stays on screen.

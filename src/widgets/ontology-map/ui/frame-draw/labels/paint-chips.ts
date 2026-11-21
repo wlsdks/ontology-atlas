@@ -2,18 +2,18 @@ import {
   CLUSTER_CHIP_LABEL_PRIORITY,
   NODE_DISC_LABEL_PRIORITY,
   type ReservedBox,
-} from "../../render/label-layout";
+} from "../../../render/label-layout";
 import {
   clusterChipOccupancyRect,
   drawClusterChip,
   clusterChipScale,
-} from "../../render/cluster-chips";
-import { radiusForKind } from "../world/topology-world";
-import { BACKGROUND_DIM_WHEN_EXPANDED, ZERO_DOME_FRAME } from "./frame-state";
-import type { FrameInputs } from "./frame-begin";
-import type { FrameFocus } from "./frame-focus";
-import type { NodeAlpha } from "./node-alpha";
-import type { NodeLayer } from "./node-layer";
+} from "../../../render/cluster-chips";
+import { radiusForKind } from "../../world/topology-world";
+import { BACKGROUND_DIM_WHEN_EXPANDED, ZERO_DOME_FRAME } from "../frame-state";
+import type { FrameInputs } from "../frame-begin";
+import type { FrameFocus } from "../frame-focus";
+import type { NodeAlpha } from "../nodes/node-alpha";
+import type { NodeLayer } from "../nodes/node-layer";
 
 const CLUSTER_CHIP_HOVER_MS = 150;
 

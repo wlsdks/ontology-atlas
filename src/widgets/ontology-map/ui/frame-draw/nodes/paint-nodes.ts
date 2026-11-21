@@ -1,5 +1,5 @@
-import { trailNodeInkStrength } from "../../model/visibility/focus-state";
-import { computeSelectionPulse, type SelectionPulseVisual } from "../../model/ambient/selection-pulse";
+import { trailNodeInkStrength } from "../../../model/visibility/focus-state";
+import { computeSelectionPulse, type SelectionPulseVisual } from "../../../model/ambient/selection-pulse";
 import { drawFootprintSteps } from "@/shared/lib/map-canvas/footprint-glyph";
 import {
   DOME_HALO_ALPHA_CAP,
@@ -8,29 +8,29 @@ import {
   domeFogAlpha,
   DOME_RIM_FOG_FLOOR,
   domeHaloPx,
-} from "../../model/dome-view/ink";
+} from "../../../model/dome-view/ink";
 import {
   drawEmissiveHalo,
   drawEvidenceRing,
   EVIDENCE_EMISSION,
   focusFogFactor,
   type EvidenceLight,
-} from "../../render/dome-view/dome-light";
-import { realmDepthClarityAlpha, realmDepthClarityScale } from "../../model/realm/realm-transition";
-import { HITTABLE_MIN_TIER_ALPHA } from "../../model/visibility/tier-visibility";
-import { lerpColorHex } from "../../render/grid";
-import { NODE_DISC_LABEL_PRIORITY } from "../../render/label-layout";
+} from "../../../render/dome-view/dome-light";
+import { realmDepthClarityAlpha, realmDepthClarityScale } from "../../../model/realm/realm-transition";
+import { HITTABLE_MIN_TIER_ALPHA } from "../../../model/visibility/tier-visibility";
+import { lerpColorHex } from "../../../render/grid";
+import { NODE_DISC_LABEL_PRIORITY } from "../../../render/label-layout";
 import {
   draw as nodeShapesDraw,
   drawNodeStar,
   SPOTLIGHT_RING_OFFSET,
-} from "../../render/node-shapes";
-import { drawDiffractionSpike } from "../../render/starfield";
-import { isNodeCulled } from "../../render/viewport-cull";
-import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../render/preview-edge";
-import { isSpineNode, radiusForKind, type WorldNode } from "../world/topology-world";
-import { pressResponse } from "../../expressive/mass-spring";
-import { drawNodeBloom } from "../../expressive/ego-light";
+} from "../../../render/node-shapes";
+import { drawDiffractionSpike } from "../../../render/starfield";
+import { isNodeCulled } from "../../../render/viewport-cull";
+import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../../render/preview-edge";
+import { isSpineNode, radiusForKind, type WorldNode } from "../../world/topology-world";
+import { pressResponse } from "../../../expressive/mass-spring";
+import { drawNodeBloom } from "../../../expressive/ego-light";
 import {
   BACKGROUND_DIM_WHEN_EXPANDED,
   EMPTY_NEIGHBOR_SET,
@@ -38,7 +38,7 @@ import {
   ZERO_DOME_FRAME,
   domeNodeFrameReused,
   litDrawnStateCounts,
-} from "./frame-state";
+} from "../frame-state";
 import {
   KIND_CACHE_INDEX,
   LIT_KIND_STRENGTH,
@@ -57,11 +57,11 @@ import {
   starAttackCurve,
   starSwellCurve,
   trailIgniteStartMs,
-} from "./trail-curves";
-import type { FrameInputs } from "./frame-begin";
-import type { FrameFocus } from "./frame-focus";
+} from "../edges/trail-curves";
+import type { FrameInputs } from "../frame-begin";
+import type { FrameFocus } from "../frame-focus";
 import type { NodeAlpha } from "./node-alpha";
-import type { DomeStage } from "./paint-dome-stage";
+import type { DomeStage } from "../paint-dome-stage";
 import type { NodeLayer } from "./node-layer";
 
 // Spike arms reach 2.6 times the radius.

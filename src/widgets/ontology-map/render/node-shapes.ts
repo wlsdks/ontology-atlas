@@ -23,7 +23,7 @@ import { drawStarEmission } from "@/shared/lib/map-canvas/star-emission";
 
 /**
  * How far outside the disc the recent-changes ring is drawn; the label placer reserves it too
- * (`ui/frame-draw/paint-nodes.ts`), so a name is not laid across a neighbour's ring.
+ * (`ui/frame-draw/nodes/paint-nodes.ts`), so a name is not laid across a neighbour's ring.
  */
 export const SPOTLIGHT_RING_OFFSET = 6;
 
@@ -122,7 +122,7 @@ export interface NodeShapeDrawState {
     countLabel: string | null;
     /**
      * The currently-hovered node (no focus active — hover is suppressed under
-       * focus, `ui/frame-draw/paint-nodes.ts` nulls `hoveredNodeId` there). Draws a
+       * focus, `ui/frame-draw/nodes/paint-nodes.ts` nulls `hoveredNodeId` there). Draws a
        * static 1px indigo hairline preview ring — the "Can grab this"
        * affordance of the canvas-emphasis slice §C — never for the already-`"center"` node, which
        * has its own stronger selection ring below.
@@ -246,7 +246,7 @@ export interface NodeShapeTokens {
        * Layer-0 containers only). Inner offset hairline for the
        * project hexagon's double-hairline "machined bezel" (spec §A1's second
        * stroke — the outer stroke itself is `amberHub`, applied to the BODY
-       * stroke by `ui/frame-draw/node-visual.ts#resolveNodeVisual`, not here).
+       * stroke by `ui/frame-draw/nodes/node-visual.ts#resolveNodeVisual`, not here).
        */
     projectHairlineInner: string;
     /** Canvas-emphasis slice — project hexagon's 4-direction chassis-leg pin ticks (spec §A2). */
@@ -750,7 +750,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     // (design.md: "Amber allowed on hub nodes and Layer 0 containers only" — amber on
     // hub nodes and Layer-0 containers only). The
     // OUTER amber stroke is the body's own `stroke` (set by
-    // `ui/frame-draw/node-visual.ts#resolveNodeVisual` for kind==="project", not
+    // `ui/frame-draw/nodes/node-visual.ts#resolveNodeVisual` for kind==="project", not
     // here) — this block only adds the inner offset hairline + the 4-direction
     // chassis pin ticks, both fading out toward far field like domain's pins.
     if (kind === "project" && egoState !== "dim") {
@@ -771,7 +771,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     }
     // Canvas-emphasis slice §C — hover preview: a static 1px indigo hairline
     // ring, "Can grab this" affordance. `isHovered` is only ever
-    // true while no focus is active (`ui/frame-draw/paint-nodes.ts` nulls
+    // true while no focus is active (`ui/frame-draw/nodes/paint-nodes.ts` nulls
     // `hoveredNodeId` under focus), so this never collides with the selection
     // ring below — but the `egoState` guards stay as defense in depth.
     if (isHovered && egoState !== "dim" && egoState !== "center") {

@@ -1,7 +1,7 @@
-import { domeAncestryEdgeKey } from "../../model/dome-view/dome-ancestry";
-import { trailGlintLocalPhase } from "../../model/visibility/footprint-steps";
-import { resolveEdgeEgoStateWithPair, type EdgeEgoState } from "../../model/visibility/focus-state";
-import { isPathLensEdge } from "../../model/visibility/path-lens";
+import { domeAncestryEdgeKey } from "../../../model/dome-view/dome-ancestry";
+import { trailGlintLocalPhase } from "../../../model/visibility/footprint-steps";
+import { resolveEdgeEgoStateWithPair, type EdgeEgoState } from "../../../model/visibility/focus-state";
+import { isPathLensEdge } from "../../../model/visibility/path-lens";
 import { isDirectionalRelation } from "@/entities/knowledge-graph";
 import {
   DOME_HALO_ALPHA_CAP,
@@ -11,27 +11,27 @@ import {
   domeEdgeMinWidthPx,
   domeEdgeWidthFactor,
   domeHaloPx,
-} from "../../model/dome-view/ink";
-import { focusFogFactor } from "../../render/dome-view/dome-light";
+} from "../../../model/dome-view/ink";
+import { focusFogFactor } from "../../../render/dome-view/dome-light";
 import {
   captionNormal,
   captionWithinFlatBudget,
   relationCaptionText,
-} from "../../render/relation-captions";
-import { isEdgeCulled, isPassthroughEdge } from "../../render/viewport-cull";
-import { draw as tracesDraw } from "../../render/traces";
-import { drawPreviewEdge } from "../../render/preview-edge";
-import { drawPulses, edgePairMeta } from "../../render/edge-fireflies";
-import { indexedPulseEdges } from "../frame-cache/structure";
-import { radiusForKind } from "../world/topology-world";
-import { beginEdgeGlow, endEdgeGlow } from "../../expressive/ego-light";
+} from "../../../render/relation-captions";
+import { isEdgeCulled, isPassthroughEdge } from "../../../render/viewport-cull";
+import { draw as tracesDraw } from "../../../render/traces";
+import { drawPreviewEdge } from "../../../render/preview-edge";
+import { drawPulses, edgePairMeta } from "../../../render/edge-fireflies";
+import { indexedPulseEdges } from "../../frame-cache/structure";
+import { radiusForKind } from "../../world/topology-world";
+import { beginEdgeGlow, endEdgeGlow } from "../../../expressive/ego-light";
 import {
   passState,
   ZERO_DOME_FRAME,
   domeEdgeFrameAReused,
   domeEdgeFrameBReused,
   domeEdgeIndexReused,
-} from "./frame-state";
+} from "../frame-state";
 import {
   TRAIL_HALO_ALPHA,
   TRAIL_HALO_PX,
@@ -39,11 +39,11 @@ import {
   igniteCurve,
   trailIgniteStartMs,
 } from "./trail-curves";
-import type { FrameInputs } from "./frame-begin";
-import type { FrameFocus } from "./frame-focus";
-import type { NodeAlpha } from "./node-alpha";
+import type { FrameInputs } from "../frame-begin";
+import type { FrameFocus } from "../frame-focus";
+import type { NodeAlpha } from "../nodes/node-alpha";
 import type { EdgePrep } from "./edge-prep";
-import type { DomeStage } from "./paint-dome-stage";
+import type { DomeStage } from "../paint-dome-stage";
 
 const EDGE_CULL_MARGIN_PX = 24;
 // Shared scratch: use the result before the next call and never keep it.

@@ -27,7 +27,7 @@ import {
 } from "./frame-state";
 import type { FrameInputs } from "./frame-begin";
 import type { FrameFocus } from "./frame-focus";
-import type { EdgePrep } from "./edge-prep";
+import type { EdgePrep } from "./edges/edge-prep";
 
 const domeEdgeOrderReused: WorldEdge[] = [];
 const domeEdgeDepthReused: number[] = [];

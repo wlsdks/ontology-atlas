@@ -1,7 +1,7 @@
-import { at } from "../ui/frame-draw/neural-axons";
-import type { NeuralFrame } from "../ui/frame-draw/neural-frame";
-import { AXON_DOT_GAIN, AXON_DOT_T, IMPACT_WIDTH_FLOOR, LIT_DOT_T, NEURAL_CELL, RING_ALPHA, SIGNAL_GLOW_ALPHA } from "../ui/frame-draw/paint-neural";
-import { IMPACT_STEP_DISTANCES, impactStepOf, impactStrength } from "../ui/frame-draw/neural-spread";
+import { at } from "../ui/frame-draw/neural/neural-axons";
+import type { NeuralFrame } from "../ui/frame-draw/neural/neural-frame";
+import { AXON_DOT_GAIN, AXON_DOT_T, IMPACT_WIDTH_FLOOR, LIT_DOT_T, NEURAL_CELL, RING_ALPHA, SIGNAL_GLOW_ALPHA } from "../ui/frame-draw/neural/paint-neural";
+import { IMPACT_STEP_DISTANCES, impactStepOf, impactStrength } from "../ui/frame-draw/neural/neural-spread";
 
 /**
  * A spot: one disc with an optional soft glow under it, a nucleus inside it and a ring around it.

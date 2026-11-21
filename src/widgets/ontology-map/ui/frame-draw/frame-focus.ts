@@ -3,7 +3,7 @@ import { worldToScreen } from "../camera/topology-camera-math";
 import { domeFamily } from "../frame-cache/structure";
 import type { WorldEdge } from "../world/topology-world";
 import { EMPTY_NEIGHBOR_SET, passState, lodHoverEgoReused } from "./frame-state";
-import { resetNodeVisualCacheFor } from "./node-visual";
+import { resetNodeVisualCacheFor } from "./nodes/node-visual";
 import type { FrameInputs } from "./frame-begin";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { clipBranchRelation } from "../../dial/branches/relation-ports";

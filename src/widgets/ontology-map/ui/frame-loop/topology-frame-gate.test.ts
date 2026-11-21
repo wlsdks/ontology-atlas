@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const signal = vi.hoisted(() => ({ travelling: false }));
-vi.mock("../frame-draw/neural-spread", () => ({ isNeuralSignalTravelling: () => signal.travelling }));
+vi.mock("../frame-draw/neural/neural-spread", () => ({ isNeuralSignalTravelling: () => signal.travelling }));
 vi.mock("../../tokens/topology-read-tokens", () => ({
   readOntologyMapTokensOrNull: () => ({ edgePulseSpeed: 1, selectPulseDurationMs: 0 }),
 }));

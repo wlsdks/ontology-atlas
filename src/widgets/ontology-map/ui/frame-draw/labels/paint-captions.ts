@@ -1,12 +1,12 @@
-import { isPathLensNode } from "../../model/visibility/path-lens";
-import { measureLabelWidth, scaledLabelFontSize, scaledLabelFont } from "../../render/labels";
-import { placeRelationCaptions } from "../../render/relation-captions";
-import { isPreviewEndpoint } from "../../render/preview-edge";
-import { passState } from "./frame-state";
-import type { ReservedBox, SafeRect } from "../../render/label-layout";
-import type { FrameInputs } from "./frame-begin";
-import type { EdgePrep } from "./edge-prep";
-import type { NodeLayer } from "./node-layer";
+import { isPathLensNode } from "../../../model/visibility/path-lens";
+import { measureLabelWidth, scaledLabelFontSize, scaledLabelFont } from "../../../render/labels";
+import { placeRelationCaptions } from "../../../render/relation-captions";
+import { isPreviewEndpoint } from "../../../render/preview-edge";
+import { passState } from "../frame-state";
+import type { ReservedBox, SafeRect } from "../../../render/label-layout";
+import type { FrameInputs } from "../frame-begin";
+import type { EdgePrep } from "../edges/edge-prep";
+import type { NodeLayer } from "../nodes/node-layer";
 
 export function paintRelationCaptions(frame: FrameInputs, edges: EdgePrep, layer: NodeLayer, chipReservations: readonly ReservedBox[], safeRect: SafeRect): void {
   const { mapLensKind, spotlightIds, colorSelectedEdge, colorFocusedNodeId, hoveredNodeId,

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { DomeNodeFrame } from "../model/dome-view/runtime";
 import type { NeuralTokens } from "../tokens/read-neural-tokens";
-import { buildNeuralFrame, type NeuralFrameInputs } from "../ui/frame-draw/neural-frame";
+import { buildNeuralFrame, type NeuralFrameInputs } from "../ui/frame-draw/neural/neural-frame";
 import type { TopologyWorld, WorldEdge, WorldNode } from "../ui/world/topology-world";
 import {
   BEHIND_CELLS,

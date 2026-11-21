@@ -1,9 +1,9 @@
-import { egoRestSink } from "../../model/visibility/focus-state";
-import { effectiveNodeAlpha, nodeTierAlpha } from "../../model/visibility/tier-visibility";
-import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../render/preview-edge";
-import { passState, domeNodeFrameReused, effectiveAlphaByIdReused, lodHoverEgoReused } from "./frame-state";
-import type { FrameInputs } from "./frame-begin";
-import type { FrameFocus } from "./frame-focus";
+import { egoRestSink } from "../../../model/visibility/focus-state";
+import { effectiveNodeAlpha, nodeTierAlpha } from "../../../model/visibility/tier-visibility";
+import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../../render/preview-edge";
+import { passState, domeNodeFrameReused, effectiveAlphaByIdReused, lodHoverEgoReused } from "../frame-state";
+import type { FrameInputs } from "../frame-begin";
+import type { FrameFocus } from "../frame-focus";
 
 let effectiveAlphaByIndexReused = new Float64Array(0);
 

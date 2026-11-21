@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { neuralGraphOf } from "../../model/dome-view/neural-cells";
-import { neuralImpact } from "../../model/dome-view/neural-impact";
-import type { DomeNodeFrame } from "../../model/dome-view/runtime";
-import type { NeuralTokens } from "../../tokens/read-neural-tokens";
-import type { TopologyWorld, WorldEdge, WorldNode } from "../world/topology-world";
-import { lastDrawnNodeCount, lastLitStateCounts } from "./frame-state";
+import { neuralGraphOf } from "../../../model/dome-view/neural-cells";
+import { neuralImpact } from "../../../model/dome-view/neural-impact";
+import type { DomeNodeFrame } from "../../../model/dome-view/runtime";
+import type { NeuralTokens } from "../../../tokens/read-neural-tokens";
+import type { TopologyWorld, WorldEdge, WorldNode } from "../../world/topology-world";
+import { lastDrawnNodeCount, lastLitStateCounts } from "../frame-state";
 import { buildNeuralFrame, type NeuralFrameInputs } from "./neural-frame";
 
 const TOKENS = vi.hoisted((): NeuralTokens => ({
@@ -18,7 +18,7 @@ const TOKENS = vi.hoisted((): NeuralTokens => ({
   plateRadiusPx: 6, impactNear: 0.9, impactMid: 0.6, impactFar: 0.35, signalMs: 400, spreadMs: 1200,
   inks: { strong: "#fff", name: "#ccc", arc: "#88f", reach: "#f8a", project: "#99f", warning: "#fa0", ground: "#000", halo: "#000", plate: "#111" },
 }));
-vi.mock("../../tokens/read-neural-tokens", () => ({ readNeuralTokens: () => TOKENS }));
+vi.mock("../../../tokens/read-neural-tokens", () => ({ readNeuralTokens: () => TOKENS }));
 
 const CAMERA = { camX: 0, camY: 0, camScale: 1, halfW: 400, halfH: 300 };
 
