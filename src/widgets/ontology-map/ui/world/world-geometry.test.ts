@@ -11,7 +11,7 @@ const tokens = {
   radiusElement: 5,
   edgeBowDepends: 10,
   edgeBowContains: 40,
-  edgeBlendContains: 0,
+  edgeBlendContains: 0.5,
 } as unknown as OntologyMapTokens;
 
 describe("computeEdgeControlPoint", () => {
@@ -19,8 +19,8 @@ describe("computeEdgeControlPoint", () => {
     expect(computeEdgeControlPoint("depends", { x: 0, y: 0 }, { x: 100, y: 0 }, tokens)).toEqual({ x: 50, y: 10 });
   });
 
-  it("scales a contains bow by its blend, so a zero blend stays on the segment midpoint", () => {
-    expect(computeEdgeControlPoint("contains", { x: 0, y: 0 }, { x: 100, y: 0 }, tokens)).toEqual({ x: 50, y: 0 });
+  it("pulls a contains bow toward the inner node's far angle, capped by its own token and scaled by its blend", () => {
+    expect(computeEdgeControlPoint("contains", { x: 0, y: 0 }, { x: 100, y: 0 }, tokens)).toEqual({ x: 30, y: 0 });
   });
 });
 
@@ -58,7 +58,9 @@ describe("recomputeWorldGeometry", () => {
     world.nodeById.get("a")!.x = -300;
     recomputeWorldGeometry(world, tokens, new Set(["a"]));
     expect(world.edges[0].ax).toBe(-300);
+    expect([world.edges[0].controlX, world.edges[0].controlY]).toEqual([-100, 10]);
     expect(world.edges[1].ax).toBe(-1);
+    expect([world.edges[1].controlX, world.edges[1].controlY]).toEqual([-1, -1]);
     expect(world.bounds.minX).toBe(-305);
 
     world.nodeById.get("a")!.x = 0;
@@ -72,6 +74,8 @@ describe("recomputeWorldGeometry", () => {
     recomputeWorldGeometry(world, tokens, new Set(["a", "c"]));
     expect(world.edges[0].bx).toBe(100);
     expect(world.edges[1].bx).toBe(100);
+    expect([world.edges[0].controlX, world.edges[0].controlY]).toEqual([50, 10]);
+    expect([world.edges[1].controlX, world.edges[1].controlY]).toEqual([50, 210]);
     expect(world.bounds).toEqual({ minX: -5, minY: -5, maxX: 105, maxY: 205 });
   });
 
@@ -79,5 +83,6 @@ describe("recomputeWorldGeometry", () => {
     const world = twoEdgeWorld();
     recomputeWorldGeometry(world, tokens);
     expect(world.edges[1].ay).toBe(200);
+    expect([world.edges[1].controlX, world.edges[1].controlY]).toEqual([50, 210]);
   });
 });

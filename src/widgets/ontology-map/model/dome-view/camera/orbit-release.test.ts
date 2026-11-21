@@ -23,6 +23,8 @@ describe("stepOrbitRelease", () => {
     stepOrbitRelease(dome, 16);
     expect(dome.yaw).toBeCloseTo(1 - Math.exp(-16 / 320), 12);
     expect(dome.yawSnap).toBe(1);
+    expect(dome.yawVel).toBeGreaterThan(0);
+    expect(dome.yawVel).toBeLessThan(0.001);
   });
 
   it("lands exactly on the meridian once within arrival distance, clears the landing and stops", () => {
@@ -39,5 +41,14 @@ describe("stepOrbitRelease", () => {
     expect(dome.pitch).toBeGreaterThan(DOME_PITCH_MAX);
     expect(dome.pitch).toBeLessThan(DOME_PITCH_MAX + 0.2);
     expect(dome.pitchVel).toBe(0);
+  });
+
+  it("springs the pitch back the same way while carrying a meridian landing", () => {
+    const dome = pose({ pitch: DOME_PITCH_MAX + 0.2, pitchVel: 0.0001, yawVel: 0.001, yawSnap: 1 });
+    stepOrbitRelease(dome, 16);
+    expect(dome.pitch).toBeGreaterThan(DOME_PITCH_MAX);
+    expect(dome.pitch).toBeLessThan(DOME_PITCH_MAX + 0.2);
+    expect(dome.pitchVel).toBe(0);
+    expect(dome.pitchTarget).toBe(dome.pitch);
   });
 });

@@ -14,6 +14,10 @@ describe("domeNudgeSlidePx", () => {
     expect(domeNudgeSlidePx(300, 250, 600, freeLeftPx, freeRightPx)).toBe(100);
   });
 
+  it("slides back only as far as a neighbourhood overhanging the left edge needs", () => {
+    expect(domeNudgeSlidePx(300, 50, 350, freeLeftPx, freeRightPx)).toBe(-50);
+  });
+
   it("centres a neighbourhood wider than the band", () => {
     expect(domeNudgeSlidePx(300, 150, 800, freeLeftPx, freeRightPx)).toBe(175);
   });
