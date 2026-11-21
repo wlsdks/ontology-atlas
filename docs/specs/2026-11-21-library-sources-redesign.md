@@ -373,4 +373,4 @@ with the pull request, so the owner can reverse this by choosing the treemap.
   panel's first line says what the button does; the chart gets a label; the panel carries
   state words and the index list a dot; a 1-source first day; motion for the bar fill, the
   writing dot and the re-sort; rows hold their order while a batch runs.
-- 2026-11-21: the owner reviewed the v2 mockups and asked for this direction to be built ("이대로 만들어줘"). Two fixes go into S-1: the first-day row names the real folder instead of "sources/ 바로 안", and the first-day empty space explains what a wiki page is.
+- 2026-11-21: the owner reviewed the v2 mockups and asked for this direction to be built as shown. Two fixes go into S-1: the first-day row names the real folder instead of a "directly in sources/" label, and the first-day empty space explains what a wiki page is.
