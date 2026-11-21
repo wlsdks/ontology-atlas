@@ -2243,7 +2243,8 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/write-relations.mjs` | the four edge writes |
 | `src/tools/lifecycle.mjs` | `rename_concept`, `reclassify_concept`, `merge_concepts`, `delete_concept` |
 | `src/tools/absorb.mjs` | `absorb_document` |
-| `src/tools/vault-nodes.mjs` | node identity, the gates every write passes, and the whole-vault issue finders |
+| `src/tools/vault-nodes.mjs` | node identity, not-found errors, the review summary and authorship stamp, and the whole-vault issue finders |
+| `src/tools/write-gates.mjs` | the refusals every write passes: a forbidden frontmatter patch, a node reserved for a person, a relation endpoint without a kind, and when a preview may be confirmed |
 | `src/tools/relation-keys.mjs` | which frontmatter key holds which relation, and how a stored ref matches |
 | `src/tools/result-attachments.mjs` | what a result carries rather than being asked for |
 | `src/vault/documents/slug-paths.mjs` | slug ↔ path mapping, the containment check every disk path passes, raw-source slugs, on-disk spelling, similar-slug suggestions, vault-root check |

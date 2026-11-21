@@ -27,10 +27,8 @@ import { slugToPath } from '../vault/documents/slug-paths.mjs';
 import { writeFileAtomically } from '../vault/writes/atomic-writes.mjs';
 import { writeDoc } from '../vault/writes/doc-writes.mjs';
 import { compactPostWriteMaintenance } from './result-attachments.mjs';
-import {
-  agentProvenance,
-  destructivePreviewState,
-} from './vault-nodes.mjs';
+import { agentProvenance } from './vault-nodes.mjs';
+import { destructivePreviewState } from './write-gates.mjs';
 import {
   copyFileSync,
   existsSync,
