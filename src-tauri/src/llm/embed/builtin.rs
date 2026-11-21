@@ -10,12 +10,12 @@ mod fetch;
 pub(crate) mod infer;
 pub(crate) mod pins;
 mod protocol;
+mod reference;
 pub(crate) mod worker;
 
 use super::audit;
 use super::EmbedError;
 use crate::lower_hex::lower_hex;
-use candle_core::{DType, Device};
 use download::{remove_if_present, remove_link, write_synced, Downloader};
 use fetch::Fetch;
 use infer::Encoder;
@@ -187,19 +187,6 @@ struct Manifest {
 struct ManifestFile {
     bytes: u64,
     sha256: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct References {
-    /// The least cosine each probe may show against its reference vector.
-    floor: f32,
-    probes: Vec<Probe>,
-}
-
-#[derive(Debug, Deserialize)]
-struct Probe {
-    text: String,
-    vector: Vec<f32>,
 }
 
 /// Model directories being prepared or deleted in this process, whichever window
@@ -684,44 +671,6 @@ fn sweep_dir(dir: &Path, keep: &dyn Fn(&str, &fs::Metadata) -> bool) -> Result<(
         } else {
             remove_link(&path)?;
             remove_if_present(&path)?;
-        }
-    }
-    Ok(())
-}
-
-/// The converted file must turn each reference text into a vector within the floor
-/// of the one recorded from an independent implementation of the same model.
-pub(crate) fn check_conversion(
-    references: &str,
-    config: &str,
-    (device, dtype): (Device, DType),
-    weights: &Path,
-    tokenizer: &Path,
-) -> Result<(), EmbedError> {
-    let references: References =
-        serde_json::from_str(references).map_err(|_| EmbedError::ModelLoad("references".into()))?;
-    if references.probes.is_empty() {
-        return Err(EmbedError::ModelLoad("references".into()));
-    }
-    let config = infer::config(config)?;
-    let encoder = Encoder::load(weights, tokenizer, &config, device, dtype)?;
-    let texts: Vec<&str> = references
-        .probes
-        .iter()
-        .map(|probe| probe.text.as_str())
-        .collect();
-    let vectors = encoder.embed(&texts)?;
-    for (index, (vector, probe)) in vectors.iter().zip(&references.probes).enumerate() {
-        let mut expected = probe.vector.clone();
-        if vector.len() != config.hidden_size || expected.len() != vector.len() {
-            return Err(EmbedError::ModelLoad(format!("reference {index} width")));
-        }
-        infer::normalize(&mut expected)?;
-        let cosine: f32 = vector.iter().zip(&expected).map(|(a, b)| a * b).sum();
-        if cosine < references.floor {
-            return Err(EmbedError::ModelLoad(format!(
-                "reference {index} cosine {cosine:.4}"
-            )));
         }
     }
     Ok(())

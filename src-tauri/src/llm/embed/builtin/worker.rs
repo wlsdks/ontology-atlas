@@ -7,7 +7,8 @@ use super::protocol::{
     decode_request, encode_reply, encode_vectors, read_frame, write_frame, Reply, Request,
     MAX_REQUEST_BYTES, PROTOCOL,
 };
-use super::{check_conversion, load_from_store, pins, ModelStore};
+use super::reference::check_conversion;
+use super::{load_from_store, pins, ModelStore};
 use crate::llm::embed::{check_passages, EmbedError, MAX_BATCH_BYTES, MAX_BATCH_PASSAGES};
 use std::cell::Cell;
 use std::io::{Read, Write};

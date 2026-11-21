@@ -1,5 +1,6 @@
 use super::*;
 use crate::llm::embed::{BuildPlan, Embedder, RunEnd};
+use candle_core::{DType, Device};
 use std::sync::Arc;
 use std::time::Instant;
 
