@@ -10,7 +10,7 @@ elements: []
 path: src/features/acp-doctor/model/acp-doctor.ts
 created_by: "agent:claude-code"
 dependencies: [elements/acp-runtime-gate]
-relation_notes: { elements/acp-runtime-gate: "The doctor's declared copy of the gated session modes must match the runtime gate: `SESSION_MODE_GATE` in src-tauri/src/acp_doctor.rs mirrors `GATED_SESSION_MODE` from src/features/acp-session/model/runtime-wiring/runtime-gate.ts, and tests/contract/agent-chat/agent-doctor-checks.contract.test.ts blocks the two from diverging. The dependency is on the gate, not on the session hook that also imports it." }
+relation_notes: { elements/acp-runtime-gate: "The doctor's declared copy of the gated session modes must match the runtime gate: `SESSION_MODE_GATE` in src-tauri/src/acp/doctor.rs mirrors `GATED_SESSION_MODE` from src/features/acp-session/model/runtime-wiring/runtime-gate.ts, and tests/contract/agent-chat/agent-doctor-checks.contract.test.ts blocks the two from diverging. The dependency is on the gate, not on the session hook that also imports it." }
 ---
 
 Checks whether a local agent runtime is actually installed and reachable, names each check that failed, and offers to repair it and measure again.
@@ -24,4 +24,4 @@ Checks whether a local agent runtime is actually installed and reachable, names 
 - Registering Atlas with agent hosts, which connector setup does.
 
 ## Uncertainty
-- Read the bridge (`src/features/acp-doctor/model/acp-doctor.ts`) and its source of truth `src-tauri/src/acp_doctor.rs` on 2026-11-19: eight checks in dependency order (`cli`, `launcher`, `gate`, `npx-cache`, `config-dir`, `credentials-link`, `shadow-keychain`, `login`), of which only the middle four are repairable; `acp_diagnose` and `acp_repair` are defined in `src-tauri/src/acp_runtime/mod.rs`. No diagnosis was run, because that needs the installed app.
+- Read the bridge (`src/features/acp-doctor/model/acp-doctor.ts`) and its source of truth `src-tauri/src/acp/doctor.rs` on 2026-11-19: eight checks in dependency order (`cli`, `launcher`, `gate`, `npx-cache`, `config-dir`, `credentials-link`, `shadow-keychain`, `login`), of which only the middle four are repairable; `acp_diagnose` and `acp_repair` are defined in `src-tauri/src/acp_runtime/mod.rs`. No diagnosis was run, because that needs the installed app.
