@@ -175,5 +175,7 @@ test.describe("the empty Library brings documents in", () => {
     const failed = page.getByTestId("library-start-drop").getByTestId("library-copy-failed");
     await expect(failed).toContainText("1 file could not be copied: Simulated write refusal");
     await expect(failed).toContainText("refused.txt");
+    // The refused file leaves nothing behind, so the folder still has no sources.
+    await expect(page.getByTestId("library-page")).toHaveAttribute("data-library-state", "empty-folder");
   });
 });

@@ -19,14 +19,21 @@ function memoryFolder(name = 'vault') {
         else yield [head, { kind: 'file', name: head, getFile: async () => new File([files.get(path)! as BlobPart], head) }];
       }
     },
+    async removeEntry(child: string) {
+      files.delete(prefix ? `${prefix}/${child}` : child);
+    },
     async getDirectoryHandle(child: string) {
       return folder(prefix ? `${prefix}/${child}` : child, child);
     },
-    async getFileHandle(child: string) {
+    async getFileHandle(child: string, options?: { create?: boolean }) {
       const path = prefix ? `${prefix}/${child}` : child;
+      if (options?.create && !files.has(path)) files.set(path, new Uint8Array());
       return {
         createWritable: async () => ({
-          write: async (bytes: ArrayBuffer) => { files.set(path, new Uint8Array(bytes)); },
+          write: async (bytes: ArrayBuffer) => {
+            if (new TextDecoder().decode(bytes).startsWith('refused')) throw new Error('disk refused');
+            files.set(path, new Uint8Array(bytes));
+          },
           close: async () => {},
           abort: async () => {},
         }),
@@ -66,6 +73,13 @@ describe('a browser copy keeps the folders a file came from', () => {
     const outcome = await addSourcesInBrowser(root, [pick('../escape.md', 'x'), pick('a/../../b.md', 'y')]);
     expect(outcome.results.map((row) => row.reason)).toEqual(['unusable-file-name', 'unusable-file-name']);
     expect(files.size).toBe(0);
+  });
+
+  it('leaves no empty file behind when the disk refuses a write', async () => {
+    const { root, files } = memoryFolder();
+    const outcome = await addSourcesInBrowser(root, [pick('notes/refused.txt', 'refused bytes'), pick('notes/kept.txt', 'kept')]);
+    expect(outcome.results.map((row) => row.status)).toEqual(['failed', 'added']);
+    expect([...files.keys()]).toEqual(['sources/notes/kept.txt']);
   });
 
   it('stops between files and keeps what landed', async () => {

@@ -169,6 +169,8 @@ export async function addSourcesInBrowser(
       await writable.close();
     } catch (error) {
       try { await writable?.abort(); } catch {}
+      // The name was free before this copy, so the empty file `create` made is this copy's own.
+      try { await directory.removeEntry(candidate); } catch {}
       return failure(file.name, reasonOf(error), hash, file.size);
     }
     names.add(candidate);
