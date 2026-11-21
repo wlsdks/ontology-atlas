@@ -17,18 +17,13 @@ import { Button, CloseButton } from '@/shared/ui';
 
 export interface RecentChangesNeedsVaultDialogProps {
   open: boolean;
-  /** Which feature needs the folder; each has its own reason, so its own sentence. */
   copyKey?: 'recentChangesNeedsVault' | 'createNeedsVault' | 'editNeedsVault';
   onClose: () => void;
   /** "Open my folder" — must be the **same** handler the first-run card uses. */
   onOpenVault: () => void;
 }
 
-/**
- * On the sample, recent changes cannot mean anything before a folder opens, so the press leads
- * to opening one (`.claude/rules/surfaces.md`: why and where). An opened folder with zero
- * changes stays disabled. Same scrim contract as `AgentConnectSheet` (`.claude/rules/design.md`).
- */
+/** On the sample, recent changes cannot mean anything before a folder opens, so the press leads to opening one (`.claude/rules/surfaces.md`). */
 export function RecentChangesNeedsVaultDialog({
   open,
   onClose,
@@ -111,7 +106,6 @@ export function RecentChangesNeedsVaultDialog({
 
             <div className="px-5 py-4">
               <p className="text-body text-[color:var(--color-text-secondary)]">{t('body')}</p>
-              {/* The standard `<Button>` shape; the adoption ratchet counts hand-written classNames. */}
               <Button
                 ref={primaryRef}
                 onClick={() => {

@@ -24,27 +24,14 @@ import {
   resetAgentConnection,
 } from '../model/acp-doctor';
 
-/**
- * Measures step by step why an agent connection fails and fixes here what can be fixed.
- * Unknown is never drawn as ok, and a fix shows the re-measured value rather than a claim.
- * An all-clear folds to one line; only blocked checks unfold.
- */
-/**
- * Checks with a written next step; meaningful only for problems the app cannot fix.
- * An id absent here has no copy, and asking for it would print the key.
- */
+/** Unknown is never drawn as ok, and a fix shows the re-measured value rather than a claim. An all-clear folds to one line; only blocked checks unfold. */
+/** An id absent here has no copy, and asking for it would print the key. */
 const NEXT_STEP = new Set(['cli', 'launcher', 'login', 'gate']);
 
-/**
- * Returns the check button and the results separately: the button sits in the row and the
- * results go full width beneath it.
- */
+/** The button sits in the row and the results go full width beneath it. */
 export function useAgentDoctor(
   runtimeId: string,
-  /**
-   * Called when the app changed something so the list is re-measured; without it the badge
-   * above and the diagnosis below would disagree.
-   */
+  /** Without it the badge above and the diagnosis below would disagree. */
   onChanged?: () => void,
 ) {
   const t = useTranslations('acpChat.doctor');
@@ -66,10 +53,7 @@ export function useAgentDoctor(
       if (alive) stop = unlisten;
       else unlisten();
     });
-    /*
-     * The sheet unmounts when closed and `done` is a single event, so the last state is fetched on
-     * mount. A value already received is newer and is not overwritten.
-     */
+    /* The sheet unmounts when closed and `done` is a single event, so the last state is fetched on mount; a value already received is newer. */
     void lastInstallProgress(runtimeId).then((last) => {
       if (alive && last) setProgress((current) => current ?? last);
     });
@@ -93,7 +77,6 @@ export function useAgentDoctor(
     }
   }, [runtimeId]);
 
-  /** Runs one app-side change and draws the re-measured checks it returns. */
   const applyChange = useCallback(
     async (busyKey: string, change: () => Promise<AcpCheck[]>) => {
       setBusy(busyKey);
@@ -119,10 +102,7 @@ export function useAgentDoctor(
     [applyChange, runtimeId],
   );
 
-  /**
-   * The install command, shown before pressing. Asked only when the tool is missing, so a healthy
-   * tool gets no install offer.
-   */
+  /** Asked only when the tool is missing, so a healthy tool gets no install offer. */
   const [installPlan, setInstallPlan] = useState<string | null>(null);
   const toolMissing = useMemo(
     () => (checks ?? []).some((check) => check.id === 'cli' && check.state === 'problem'),
@@ -141,7 +121,6 @@ export function useAgentDoctor(
     };
   }, [toolMissing, runtimeId]);
 
-  /** The Node download plan, asked only when launching the tool is blocked. */
   const [nodePlan, setNodePlan] = useState<string | null>(null);
   const launcherMissing = useMemo(
     () => (checks ?? []).some((check) => check.id === 'launcher' && check.state === 'problem'),
@@ -180,15 +159,7 @@ export function useAgentDoctor(
 
   const scanButton = (
     <>
-    {/*
-      Uses the `Chip` primitive: a hand-written button reads as a different object beside it,
-      and a ratchet blocks new hand-written controls.
-    */}
     <Chip
-      /*
-       * `lg` matches the chat chip beside it; the order is said by ink instead: `default` puts
-       * the check after the chat chip and the install link.
-       */
       size="lg"
       tone="default"
       hoverInk="strong"
@@ -201,13 +172,9 @@ export function useAgentDoctor(
       <Stethoscope size={ICON_SIZE.md} aria-hidden />
       {busy === 'scan' ? t('scanning') : t('scan')}
     </Chip>
-    {/*
-      Reconnect, not log out: the app has no login of its own, so a logout would erase someone
-      else's login. Offered only after check results, or it reads as a sign of trouble.
-    */}
+    {/* Reconnect, not log out: the app has no login of its own, so a logout would erase someone else's login. Offered only after check results, or it reads as a sign of trouble. */}
     {checks && !prerequisiteBlocked ? (
       <Chip
-        /* Same row as the scan chip above, so the same step. */
         size="lg"
         tone="default"
         hoverInk="strong"
@@ -265,7 +232,6 @@ export function useAgentDoctor(
         </span>
       </p>
       {percent ? (
-        /* A bar only while the total is known. */
         <span
           data-testid="agent-doctor-progress-bar"
           aria-hidden
@@ -307,10 +273,7 @@ export function useAgentDoctor(
             {t('failed')}
           </p>
         ) : !checks ? null : blocked.length === 0 ? (
-          /*
-           * All-clear is one plain sentence with no count (the check count differs per tool), and the
-           * checks fold into a `<details>` with a rotating chevron so it looks openable.
-           */
+          /* All-clear is one plain sentence with no count (the check count differs per tool). */
           <details data-testid="agent-doctor-all-clear" className="group">
             <summary
               className={controlClass({
@@ -354,9 +317,6 @@ export function useAgentDoctor(
                 data-state={check.state}
                 className="flex min-w-0 flex-wrap items-start gap-x-2 gap-y-1 break-keep text-label leading-prose"
               >
-                {/*
-                  The dot is not the only channel; the copy beside it says the same in words.
-                */}
                 <span
                   aria-hidden
                   className={`mt-[0.45em] size-1.5 shrink-0 rounded-full ${
@@ -384,9 +344,6 @@ export function useAgentDoctor(
                   </Chip>
                 ) : null}
                 {check.id === 'cli' && check.state === 'problem' && toolMissing && installPlan ? (
-                  /*
-                    Shows exactly what will run and where it installs, before pressing.
-                  */
                   <span
                     data-testid="agent-doctor-install-plan"
                     className="w-full basis-full min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5"
@@ -394,10 +351,7 @@ export function useAgentDoctor(
                     <span className="block break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
                       {t('installPlanTitle')}
                     </span>
-                    {/*
-                      The 142-character command overflows the 698px pane and its path contains a
-                      space, so it uses `break-all`; a horizontal scroll would hide what will run.
-                    */}
+                    {/* The command overflows the pane and its path contains a space, so `break-all`; a horizontal scroll would hide what will run. */}
                     <code className="mt-1 block min-w-0 break-all whitespace-pre-wrap text-caption leading-caption text-[color:var(--color-text-secondary)]">
                       {installPlan}
                     </code>
@@ -464,7 +418,6 @@ export function useAgentDoctor(
                 ) : null}
               </li>
             ))}
-            {/* Passing checks remain as a count so what was measured stays visible. */}
             {(checks?.length ?? 0) > blocked.length ? (
               <li
                 data-testid="agent-doctor-rest"

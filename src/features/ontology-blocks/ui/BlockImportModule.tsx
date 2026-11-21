@@ -39,19 +39,13 @@ interface PreviewSource {
 
 type InlineText = { kind: "done" | "error"; text: string } | null;
 
-/** What a host needs to draw the trigger in its own row grammar; the module keeps every state. */
 export interface BlockImportTrigger {
-  /** The row's name — what this does. */
   label: string;
-  /** One sentence under the name while there is no status to report. */
   caption: string;
-  /** The button's verb. */
   action: string;
-  /** Why the button is disabled, or its longer description when it is not. */
   title: string;
   disabled: boolean;
   onPick: () => void;
-  /** The last pick's outcome (no files, unreadable, imported N), shown in place of the caption. */
   status: string | null;
   statusKind: "done" | "error" | null;
 }
@@ -86,15 +80,10 @@ function importUiReducer(state: ImportUiState, action: ImportUiAction): ImportUi
   }
 }
 
-/**
- * "Import a block": zero writes before approval. The dry run `planBlockImport` reports new and
- * conflicting files; conflicts skip or take a block prefix like the CLI's `import --rename`
- * (see `merge-plan.ts`). Without a local vault it stays, disabled with a hint.
- */
+/** Zero writes before approval; conflicts skip or take a block prefix like the CLI's `import --rename` (`merge-plan.ts`). */
 export function BlockImportModule({
   renderTrigger,
 }: {
-  /** Draw the trigger in the host's own row grammar; without it the module draws its chip. */
   renderTrigger?: (trigger: BlockImportTrigger) => ReactNode;
 } = {}) {
   const t = useTranslations("ontologyBlocks");
@@ -105,7 +94,6 @@ export function BlockImportModule({
   });
   const [resolution, setResolution] = useState<BlockConflictResolution>("skip");
 
-  /* Arrow keys move the choice. The container keeps `p-1`/`gap-1` until the hover axis is decided. */
   const resolutionGroup = useRovingRadioGroup<BlockConflictResolution>({
     value: resolution,
     values: ["skip", "prefix"],
@@ -274,7 +262,6 @@ export function BlockImportModule({
         })
       ) : (
       <>
-        {/* The quiet row grammar of the "documents not on the map" row. */}
       <button
         type="button"
         onClick={() => void pickBlockFolder()}

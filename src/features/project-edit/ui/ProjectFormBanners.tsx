@@ -44,7 +44,6 @@ export function ErrorBanner({
 }) {
   const t = useTranslations("settings.projectForm");
   const reducedMotion = usePrefersReducedMotion();
-  /** A failed save has no field to focus, so focus goes to this banner. */
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!globalError) return;

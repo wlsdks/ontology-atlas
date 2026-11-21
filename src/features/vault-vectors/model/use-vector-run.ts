@@ -12,26 +12,20 @@ const RUN_PHASES: ReadonlySet<VectorPhase> = new Set([
 
 export interface VectorRun {
   phase: VectorPhase;
-  /** Preparing only files that changed after `ready`; the rail draws no ring under ten of them. */
   updating: boolean;
-  /** An update of fewer than ten changed files: nothing outside the desk draws it. */
   quiet: boolean;
-  /** Bytes while the model downloads, files otherwise. */
   fraction: number;
   filesDone: number;
   filesTotal: number;
   currentPath: string | null;
   minutesLeft: number | null;
   model: { doneBytes: number; totalBytes: number } | null;
-  /** The desk line's sentence for a failure, under `library.questionDesk.meaning`. */
   failure: Pick<DeskLine, 'message' | 'values'> | null;
-  /** The press that started or resumed the job in this launch; `null` when it continues by itself. */
   pressed: number | null;
   stop: () => void;
   resume: () => void;
 }
 
-/** What the seat says of a failure is what the desk line says of it. */
 function failureLine(rootPath: string, status: VectorStatus): VectorRun['failure'] {
   if (status.failure === null) return null;
   const source = vaultVectorSource.read(rootPath)?.source ?? null;
@@ -42,11 +36,7 @@ function failureLine(rootPath: string, status: VectorStatus): VectorRun['failure
   return line ? { message: line.message, values: line.values } : null;
 }
 
-/**
- * The long-work seat's view of the folder's job: `null` until the folder has one to tell. It never
- * asks Rust: the folder bridge tells the stored choice once at open, and a running job's events
- * reach the store by themselves.
- */
+/** Never asks Rust: the folder bridge tells the stored choice once at open, and a running job's events reach the store by themselves. */
 export function useVectorRun(rootPath: string | null): VectorRun | null {
   const readStatus = useCallback(() => (rootPath === null ? null : statusOf(rootPath)), [rootPath]);
   const status = useSyncExternalStore(subscribe, readStatus, () => null);

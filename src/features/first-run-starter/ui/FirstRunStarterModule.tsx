@@ -42,7 +42,6 @@ const readApplePlatform = () =>
   /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
 const readApplePlatformOnServer = () => false;
 
-/** The quiet text buttons under the primary action share this one size step. */
 const SECONDARY_ACTION_CLASS = controlClass({
   shape: "link",
   scope: "panel",
@@ -297,8 +296,7 @@ export function FirstRunStarterModule({
               <p className="text-label leading-label text-[color:var(--color-status-danger)]">{errorText}</p>
             </div>
           ) : null}
-          {/* The terminal start lives in the folder guide; without folder access that guide never
-              opens, so it takes the create button's place here. */}
+          {/* Without folder access the folder guide never opens, so the terminal start takes the create button's place. */}
           <div data-testid="first-run-starter-secondary" className="flex items-center gap-4">
             {fsaUnsupported ? (
               <button

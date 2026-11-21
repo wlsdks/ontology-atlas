@@ -23,7 +23,6 @@ function DialogHeader({ titleId, title, onClose }: { titleId: string; title: str
   );
 }
 
-/** What the three authored kinds mean, and the plain view for anyone who wants fewer of these words. */
 export function GlossaryDialog({
   open,
   onClose,
@@ -86,7 +85,6 @@ export function GlossaryDialog({
   );
 }
 
-/** The terminal start: the command, its copy button and the note that it needs a source checkout. */
 export function CliBridgeBody() {
   const t = useTranslations("firstRunStarter");
   const { state, copy } = useCopyFeedback();
@@ -118,7 +116,6 @@ export function CliBridgeBody() {
   );
 }
 
-/** The terminal start as its own dialog, for a browser whose folder guide cannot open. */
 export function CliBridgeDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useTranslations("firstRunStarter");
   const titleId = useId();

@@ -1,6 +1,5 @@
 import type { VectorFailure, VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
 
-/** Keys under `library.questionDesk.meaning` that the line under the question field can say. */
 export type DeskLineMessage =
   | 'web'
   | 'words'
@@ -29,7 +28,6 @@ export type DeskLineMessage =
 
 export type DeskLineAction = 'setup' | 'stop' | 'resume' | 'downloadAgain' | 'continueDownload' | 'openSettings';
 
-/** What the ring draws: bytes while the model downloads, files while preparing. */
 export interface DeskProgress {
   measure: 'bytes' | 'files';
   done: number;
@@ -39,7 +37,6 @@ export interface DeskProgress {
 
 export interface DeskLine {
   message: DeskLineMessage;
-  /** The message's own values; `done`/`total` of a working line come from `progress`. */
   values: { count?: number; done?: number; total?: number; detail?: string; model?: string };
   /** `hold`: the ring keeps the value it last drew while the model is converted. */
   progress: DeskProgress | 'hold' | null;
@@ -50,17 +47,14 @@ export interface DeskLine {
 }
 
 export interface DeskLineInput {
-  /** `null` until the app's first answer. */
   status: VectorStatus | null;
   isApp: boolean;
   indexOn: boolean;
   markdownFiles: number;
-  /** The runner model the folder's stored source names, for `modelMissing`. */
   runnerModel: string | null;
 }
 
 const SECONDS_PER_MINUTE = 60;
-/** An update of this many changed files or more is followed like a first preparation. */
 export const UPDATE_RING_FILES = 10;
 
 const line = (message: DeskLineMessage, fields: Partial<DeskLine> = {}): DeskLine => ({
@@ -110,7 +104,6 @@ const FAILURE_LINES: Record<VectorFailure, (status: VectorStatus, input: DeskLin
   unreadable: () => line('unreadable', { action: 'resume', tone: 'danger' }),
 };
 
-/** The one line under the Wiki desk's question field, from the spec's States table. */
 export function deskLine(input: DeskLineInput): DeskLine | null {
   const { status, isApp, indexOn, markdownFiles } = input;
   if (!isApp) return line('web');

@@ -4,7 +4,6 @@ import { useState, type MouseEvent, type ReactNode } from 'react';
 import { Button } from '@/shared/ui';
 import { MeaningModelDialog } from './MeaningModelDialog';
 
-/** A press among the no-match block's actions that opens the search-by-meaning dialog. */
 export function MeaningSetupPress({ rootPath, testId, children }: {
   rootPath: string;
   testId: string;

@@ -1,25 +1,17 @@
 import { gitHostPlatformFrom } from '@/shared/lib/git/git-install-guide';
 import { definePreference } from '@/shared/lib/preferences/define-preference';
 
-/**
- * The in-app update state machine, pure, so the rules of when to speak up are testable. The app
- * spoke, the user did not ask: easy to dismiss, and the dismissal is remembered.
- */
+/** Pure, so the rules of when to speak up are testable. The user did not ask, so it is easy to dismiss and the dismissal is remembered. */
 
 export type UpdatePhase =
-  /** Not checked yet, or not the desktop app. Nothing is drawn. */
   | { kind: 'idle' }
   /** Checking. This stage is **never drawn** — the user did not ask for it. */
   | { kind: 'checking' }
   /** Up to date. Visible only when the user pressed check themselves. */
   | { kind: 'current' }
-  /** A new version exists. This is the first point at which it speaks. */
   | { kind: 'available'; version: string; notes: string | null }
-  /** Downloading. It states only as much of the progress as it knows. */
   | { kind: 'downloading'; version: string; received: number; total: number | null }
-  /** Installed. All that remains is a restart. */
   | { kind: 'ready'; version: string }
-  /** Failure. State what failed, and leave a path for manual handling. */
   | { kind: 'failed'; operation: 'check' | 'install'; message: string };
 
 /** An app left open for days still hears about a release within a working session. */
@@ -67,7 +59,6 @@ export function useUpdateAutoCheck(): UpdateAutoCheck {
 export interface AutomaticDueInput {
   readonly now: number;
   readonly lastSuccessAt: number | null;
-  /** The last automatic or manual request, whatever its outcome. */
   readonly lastAttemptAt: number | null;
   readonly consecutiveFailures: number;
 }
@@ -140,11 +131,9 @@ export function canAutomaticResultReplace(phase: UpdatePhase): boolean {
 }
 
 export interface CheckResultInput {
-  /** The version the feed offers, or `null` when this build is current. */
   readonly found: { version: string; notes: string | null } | null;
   readonly manual: boolean;
   readonly phase: UpdatePhase;
-  /** Installed in this session and waiting for a restart. */
   readonly readyVersion: string | null;
   readonly dismissedVersion: string | null;
 }
@@ -188,12 +177,10 @@ export function phaseAfterFailedCheck({
 
 const BYTES_PER_MEGABYTE = 1024 * 1024;
 
-/** Megabytes with one decimal, the precision a download line can honestly move by. */
 export function formatMegabytes(bytes: number): string {
   return (Math.max(0, bytes) / BYTES_PER_MEGABYTE).toFixed(1);
 }
 
-/** Re-exported from `shared/lib`, where the agent tool install shares it. */
 export { formatDownloadProgress } from '@/shared/lib/locale-text/progress-format';
 
 /** One paragraph of release notes is enough. A popover that becomes reading material goes unread. */

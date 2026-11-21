@@ -4,11 +4,7 @@ import { useState } from 'react';
 import type { VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
 import type { RunStage } from './run-stage';
 
-/**
- * What a first preparation that ended ready while its stage was in view prepared, until the person
- * moves on: a press on the stage, or the folder leaving `ready`. A folder found ready, or an update
- * of changed files, is never celebrated.
- */
+/** Until the person moves on: a press on the stage, or the folder leaving `ready`. A folder found ready, or an update of changed files, is never celebrated. */
 export function useFinishedInView(running: RunStage | null, status: VectorStatus | null) {
   const [staged, setStaged] = useState<'first' | 'update' | null>(null);
   const [done, setDone] = useState<{ passages: number; files: number } | null>(null);

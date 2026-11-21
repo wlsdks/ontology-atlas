@@ -8,11 +8,7 @@ import {
 
 const NO_HEADINGS: StaticVaultHeadings = {};
 
-/**
- * A bundled sample carries its detail in its JSON and its headings in a lazy chunk: nothing is
- * derived. Without `headings` the chunk (460 KB for the dogfood sample) is never fetched, and the
- * answers' headings are empty; the hooks type them away so no surface can read them.
- */
+/** Without `headings` the chunk (460 KB for the dogfood sample) is never fetched and the answers' headings are empty; the hooks type them away so no surface can read them. */
 export function createBundledDetailReader(sample: StaticVaultSource, { headings }: { headings: boolean }) {
   let headingsChunk: Promise<StaticVaultHeadings> | null = null;
   return async (docs: readonly DocumentRef[]): Promise<(VaultDocDetail | null)[]> => {

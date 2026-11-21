@@ -13,31 +13,23 @@ import type { ProjectInput } from '@/entities/project';
 
 export interface ProjectFrontmatterPatch {
   name?: string;
-  /** One `display_<locale>` key: the word a screen in that locale draws for the project. */
   displayName?: { locale: string; value: string };
   description?: string | null;
   owner?: string | null;
   tags?: string[] | null;
 }
 
-/** Project mutations: local mode writes `projects/<slug>.md`; static mode rejects every mutation. */
 export interface ProjectMutations {
-  /** Creates a project. Throws when the same slug already exists. */
   createProject: (input: ProjectInput) => Promise<void>;
-  /** Updates an existing project (upsert). Creates when the slug is missing, though that is discouraged. */
   updateProject: (input: ProjectInput) => Promise<void>;
-  /** Detail and quick edit: updates while preserving only the frontmatter keys the user touched. */
   patchProject: (
     slug: string,
     patch: ProjectFrontmatterPatch,
   ) => Promise<void>;
-  /** A no-op when the slug does not exist. */
   deleteProject: (slug: string) => Promise<void>;
-  /** The up-front gate for UI — whether mutation is possible in the current mode. */
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
-  /** For debugging and gate messages. */
   mode: 'static' | 'local';
 }
 
@@ -79,7 +71,6 @@ export function useProjectMutations(): ProjectMutations {
         ? findProjectVaultDoc(vault.manifest, input.slug)
         : null;
       const slug = existing?.slug ?? `projects/${input.slug}`;
-      // Upsert: create when missing.
       if (!existing && !vault.fileHandles.has(slug)) {
         const md = buildProjectMarkdown(input);
         await vault.createDoc(slug, md);
@@ -130,11 +121,9 @@ export function useProjectMutations(): ProjectMutations {
               ? 'title'
               : 'name';
         updates[nameKey] = patch.name;
-        // Carry the rename into display names still at their starter default.
         Object.assign(updates, buildStarterDisplaySync(existing.frontmatter, patch.name));
       }
       if (patch.displayName !== undefined) {
-        // On a locale with a display name, the heading edits that display key.
         updates[`display_${patch.displayName.locale}`] = patch.displayName.value;
       }
       if (patch.description !== undefined) {
@@ -161,7 +150,7 @@ export function useProjectMutations(): ProjectMutations {
         ? findProjectVaultDoc(vault.manifest, slug)
         : null;
       const path = existing?.slug ?? `projects/${slug}`;
-      if (!vault.fileHandles.has(path)) return; // no-op
+      if (!vault.fileHandles.has(path)) return;
       await vault.deleteDoc(path);
     },
     [mode, vault],

@@ -34,7 +34,6 @@ export function CopyProjectLinkButton({
         basePath: BASE_PATH,
       });
     } catch {
-      // An address that cannot be built is a copy that failed: the button says so.
       fail();
       return;
     }
@@ -61,7 +60,6 @@ export function CopyProjectLinkButton({
         {...props}
       >
         {icon}
-        {/* All labels share one grid cell so the button never changes width. */}
         <span className="inline-grid">
           {[t("labelIdle"), t("labelCopied"), t("labelError")].map((option) => (
             <span

@@ -30,9 +30,7 @@ const VAULT_SENTINEL_AUTHOR = 'vault-frontmatter';
 
 export function derivationToInsight(
   d: VaultOntologyDerivation,
-  /** Promotes the `display_<locale>` matching the screen to `display`; `title` stays the match key. */
   locale?: string,
-  /** The slug prefix stripped for agent names; a local vault passes none. */
   options?: { agentSlugPrefix?: string },
 ): KnowledgeProjectInsight {
   const agentSlugPrefix = options?.agentSlugPrefix;
@@ -48,7 +46,6 @@ export function derivationToInsight(
     evidenceIds: stub.sourceSlug ? [stub.sourceSlug] : [],
     // `evidenceIds` cannot tell those apart, so the own-document flag is passed through.
     hasOwnDocument: stub.hasOwnDocument,
-    // The name every copyable MCP/CLI call uses (`resolveNodeAgentTarget`).
     agentSlug:
       stub.hasOwnDocument && stub.sourceSlug
         ? stripVaultSlugPrefix(stub.sourceSlug, agentSlugPrefix)
@@ -79,7 +76,6 @@ export function derivationToInsight(
     for (const e of edges) {
       const isContains = isContainmentRelation(e.type);
       if (!isContains) continue;
-      // `belongs_to` is normalised to container → contained.
       const [from, to] = e.type === 'contains' ? [e.from, e.to] : [e.to, e.from];
       const arr = containsAdj.get(from);
       if (arr) arr.push(to);
@@ -162,7 +158,6 @@ function localInsight(d: VaultOntologyDerivation, locale: string): KnowledgeProj
   return insight;
 }
 
-/** Mode-aware insight: local derives from the user's vault; static from the bundled sample, memoized. */
 export function useOntologyInsight(options?: { demand?: boolean }): {
   insight: KnowledgeProjectInsight | null;
   error: Error | null;
