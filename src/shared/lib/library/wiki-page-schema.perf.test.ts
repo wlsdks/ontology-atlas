@@ -8,9 +8,9 @@ import {
 } from '../../../../mcp/src/library/wiki-schema.mjs';
 import {
   buildWikiNodeIndex as buildNodesTs,
-  validateWikiFolder as validateFolderTs,
   validateWikiPage as validateTs,
 } from './wiki-page-schema';
+import { validateWikiFolder as validateFolderTs } from './wiki-folder';
 
 describe('validation stays linear as a folder grows', () => {
   /**

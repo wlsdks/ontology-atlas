@@ -12,7 +12,7 @@ import {
 import { isLlmChatBridgeAvailable } from "@/shared/lib/llm-connection/tauri-llm";
 import { useVaultAgentRuntime } from "@/widgets/acp-chat-panel";
 
-import type { LibrarySourceRow } from "@/entities/docs-vault";
+import type { LibrarySourceRow, WikiRetrievalPage } from "@/entities/docs-vault";
 
 import { resolveCompileBrain, useCompileBrainChoice } from "../compile/compile-brain";
 import type { LibraryAgentOpeningRequest } from "../../ui/parts/agent/LibraryAgentDock";
@@ -65,7 +65,7 @@ export function useLibraryAgent(
     modifyFile: (path: string) => string;
     bridgeMissing: string;
   } = DEFAULT_COMPILE_LABELS,
-  wikiTexts?: ReadonlyMap<string, string>,
+  wikiPages?: ReadonlyMap<string, WikiRetrievalPage>,
 ) {
   // Runtime, vault MCP server and connectors are read the one way every dock reads them.
   const vaultAgent = useVaultAgentRuntime(vaultRoot);
@@ -163,7 +163,7 @@ export function useLibraryAgent(
     endpoint: localEndpoint,
     sources,
     labels: compileLabels,
-    wikiTexts,
+    wikiPages,
   });
 
   const start = useCallback(

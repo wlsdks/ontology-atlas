@@ -2,8 +2,8 @@
 
 import { useCallback, useState } from "react";
 
-function retainCurrent(values: ReadonlyMap<string, string>, stamps: readonly string[], overrides?: ReadonlyMap<string, string>): Map<string, string> {
-  const retained = new Map<string, string>();
+function retainCurrent<T>(values: ReadonlyMap<string, T>, stamps: readonly string[], overrides?: ReadonlyMap<string, T>): Map<string, T> {
+  const retained = new Map<string, T>();
   for (const stamp of stamps) {
     const value = overrides?.has(stamp) ? overrides.get(stamp) : values.get(stamp);
     if (value !== undefined) retained.set(stamp, value);
@@ -22,13 +22,13 @@ export function useStampStable<T extends { stamp: string }>(items: readonly T[])
 }
 
 /** O(current stamps): completed reads survive only while their exact input remains current. */
-export function useStampedCache(stamps: readonly string[]) {
-  const [cache, setCache] = useState(() => ({ stamps, values: new Map<string, string>() }));
+export function useStampedCache<T = string>(stamps: readonly string[]) {
+  const [cache, setCache] = useState(() => ({ stamps, values: new Map<string, T>() }));
   if (cache.stamps !== stamps && (cache.stamps.length !== stamps.length ||
     cache.stamps.some((stamp, index) => stamp !== stamps[index]))) {
     setCache({ stamps, values: retainCurrent(cache.values, stamps) });
   }
-  const publish = useCallback((read: ReadonlyMap<string, string>) => {
+  const publish = useCallback((read: ReadonlyMap<string, T>) => {
     setCache((current) => ({
       stamps: current.stamps,
       values: retainCurrent(current.values, current.stamps, read),

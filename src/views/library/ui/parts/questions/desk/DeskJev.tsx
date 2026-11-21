@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import type { LibrarySourceRow } from '@/entities/docs-vault';
-import { jevClaimEligibility, jevPayloadEligibility, type DeskCitation, type DeskClaim } from '@/features/library';
+import { jevClaimEligibility, jevPayloadEligibility, type DeskCitation, type DeskClaim, type LibraryPageFacts } from '@/features/library';
 import { buildJevPayload, jevJudge, jevSecretStatus, JEV_DESTINATION, type JevJudgment } from '@/shared/lib/llm-connection/tauri-jev';
 import { citedPassage } from '@/shared/lib/library/source-passage';
 import { Button, Dialog } from '@/shared/ui';
@@ -15,7 +15,7 @@ interface JevSelection {
   claim: DeskClaim;
   citation: DeskCitation;
   payload: string;
-  pageRaw: string;
+  page: LibraryPageFacts;
   sourceMtime: number;
   sourceHash: string;
   vaultScope: string;
@@ -26,7 +26,7 @@ interface LocatedJevFinding {
   pageSlug: string;
   claimText: string;
   citation: DeskCitation;
-  pageRaw: string;
+  page: LibraryPageFacts;
   sourceMtime: number;
   sourceHash: string;
 }
@@ -43,8 +43,8 @@ async function digestHex(bytes: ArrayBuffer): Promise<string | null> {
  * consent dialog's Send, and every await re-checks that the folder, page and source are the ones
  * the preview showed.
  */
-export function useDeskJev({ pageTexts, sources, sourceHandles, hashes, vaultRoot, vaultScope }: {
-  pageTexts: ReadonlyMap<string, string>;
+export function useDeskJev({ pageFacts, sources, sourceHandles, hashes, vaultRoot, vaultScope }: {
+  pageFacts: ReadonlyMap<string, LibraryPageFacts>;
   sources: readonly LibrarySourceRow[];
   sourceHandles: ReadonlyMap<string, FileSystemFileHandle>;
   hashes: ReadonlyMap<string, string>;
@@ -59,11 +59,11 @@ export function useDeskJev({ pageTexts, sources, sourceHandles, hashes, vaultRoo
   const [sending, setSending] = useState(false);
   const requestId = useRef(0);
   const liveScope = useRef(vaultScope);
-  const livePageTexts = useRef(pageTexts);
+  const livePageFacts = useRef(pageFacts);
   useEffect(() => {
     liveScope.current = vaultScope;
-    livePageTexts.current = pageTexts;
-  }, [pageTexts, vaultScope]);
+    livePageFacts.current = pageFacts;
+  }, [pageFacts, vaultScope]);
   useEffect(() => () => { requestId.current += 1; }, []);
 
   const reset = () => {
@@ -81,12 +81,12 @@ export function useDeskJev({ pageTexts, sources, sourceHandles, hashes, vaultRoo
     setNote(null);
     const handle = sourceHandles.get(citation.path);
     const listed = sources.find((source) => source.path === citation.path);
-    const pageRaw = pageTexts.get(claim.pageSlug);
+    const page = pageFacts.get(claim.pageSlug);
     const stillCurrent = () => id === requestId.current
       && liveScope.current === vaultScope
-      && livePageTexts.current.get(claim.pageSlug) === pageRaw;
+      && livePageFacts.current.get(claim.pageSlug) === page;
     try {
-      if (!handle || !listed || !vaultRoot || !pageRaw) { setNote(t('jev.missing')); return; }
+      if (!handle || !listed || !vaultRoot || !page) { setNote(t('jev.missing')); return; }
       let status: Awaited<ReturnType<typeof jevSecretStatus>>;
       try { status = await jevSecretStatus(); }
       catch { if (stillCurrent()) setNote(t('jev.unavailable')); return; }
@@ -107,7 +107,7 @@ export function useDeskJev({ pageTexts, sources, sourceHandles, hashes, vaultRoo
       const payloadState = jevPayloadEligibility(claimText, evidence, payload);
       if (payloadState !== 'ready') { setNote(t(`jev.${payloadState}`)); return; }
       if (!hash) { setNote(t('jev.obsolete')); return; }
-      setSelection({ claim, citation, payload, pageRaw, sourceMtime: file.lastModified, sourceHash: hash, vaultScope });
+      setSelection({ claim, citation, payload, page, sourceMtime: file.lastModified, sourceHash: hash, vaultScope });
     } catch { if (stillCurrent()) setNote(t('jev.missing')); }
     finally { if (id === requestId.current) setPreparing(false); }
   };
@@ -121,19 +121,19 @@ export function useDeskJev({ pageTexts, sources, sourceHandles, hashes, vaultRoo
     try {
       const source = await sourceHandles.get(selected.citation.path)?.getFile();
       const currentHash = source ? await digestHex(await source.arrayBuffer()) : null;
-      if (liveScope.current !== selected.vaultScope || pageTexts.get(selected.claim.pageSlug) !== selected.pageRaw || livePageTexts.current.get(selected.claim.pageSlug) !== selected.pageRaw || source?.lastModified !== selected.sourceMtime || currentHash !== selected.sourceHash) {
+      if (liveScope.current !== selected.vaultScope || pageFacts.get(selected.claim.pageSlug) !== selected.page || livePageFacts.current.get(selected.claim.pageSlug) !== selected.page || source?.lastModified !== selected.sourceMtime || currentHash !== selected.sourceHash) {
         setSelection(null);
         setNote(t('jev.obsolete'));
         return;
       }
       const judgment = await jevJudge(vaultRoot, selected.payload);
-      if (requestId.current !== id || liveScope.current !== selected.vaultScope || livePageTexts.current.get(selected.claim.pageSlug) !== selected.pageRaw) return;
+      if (requestId.current !== id || liveScope.current !== selected.vaultScope || livePageFacts.current.get(selected.claim.pageSlug) !== selected.page) return;
       const after = await sourceHandles.get(selected.citation.path)?.getFile();
       const afterHash = after ? await digestHex(await after.arrayBuffer()) : null;
       if (after?.lastModified !== selected.sourceMtime || afterHash !== selected.sourceHash) { setNote(t('jev.obsolete')); setSelection(null); return; }
       if (judgment) setFinding({
         judgment, pageSlug: selected.claim.pageSlug, claimText: selected.claim.text,
-        citation: selected.citation, pageRaw: selected.pageRaw,
+        citation: selected.citation, page: selected.page,
         sourceMtime: selected.sourceMtime, sourceHash: selected.sourceHash,
       });
       setSelection(null);
@@ -145,7 +145,7 @@ export function useDeskJev({ pageTexts, sources, sourceHandles, hashes, vaultRoo
   const findingFor = (claim: DeskClaim, citation: DeskCitation) => finding
     && finding.pageSlug === claim.pageSlug && finding.claimText === claim.text
     && finding.citation.path === citation.path && finding.citation.anchor === citation.anchor
-    && finding.pageRaw === pageTexts.get(claim.pageSlug)
+    && finding.page === pageFacts.get(claim.pageSlug)
     && finding.sourceMtime === sources.find((source) => source.path === citation.path)?.mtime
     && (!hashes.has(citation.path) || hashes.get(citation.path) === finding.sourceHash)
     ? finding.judgment : null;
