@@ -1,7 +1,7 @@
-import type { Pt, Rect } from './film-geometry';
+import type { Pt, Rect } from '../film-geometry';
 import type { FilmLabel, LabelSegment, Measure } from './film-map-labels';
 import type { FilmMarkTokens, FilmSizes } from './film-map-sizes';
-import type { FilmConcept, FilmReach, FilmVault } from './film-vault';
+import type { FilmConcept, FilmReach, FilmVault } from '../film-vault';
 
 export interface FilmMark {
   id: string;

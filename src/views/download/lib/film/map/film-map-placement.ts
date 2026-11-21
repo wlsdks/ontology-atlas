@@ -1,10 +1,10 @@
-import { DEG, bowedPoints, circleIntoRect, dist, distanceToRect, grow, inside, normalizeAngle, overlaps, trim, type Pt, type Rect } from './film-geometry';
+import { DEG, bowedPoints, circleIntoRect, dist, distanceToRect, grow, inside, normalizeAngle, overlaps, trim, type Pt, type Rect } from '../film-geometry';
 import { fontOf } from './film-map-labels';
 import type { FilmCluster, FilmLayoutInput, FilmMark } from './film-map-shapes';
 import { REST_NAMES_PX, filmSizes, litReach, type FilmSizes } from './film-map-sizes';
 import { GATE_HALF, dotOffsets, layoutLocalCluster, titleHalfAngle, upReach, type ClusterItem, type LocalCluster } from './film-local-cluster';
 import { slotOrder } from './film-slot-order';
-import { domainFlows, reachOf } from './film-vault';
+import { domainFlows, reachOf } from '../film-vault';
 
 interface FilmPlacement {
   marks: Map<string, FilmMark>;

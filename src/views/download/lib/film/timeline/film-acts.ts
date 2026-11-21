@@ -1,4 +1,4 @@
-import { clamp01, easeInOut, easeInOutSine, easeOut } from './film-kit';
+import { clamp01, easeInOut, easeInOutSine, easeOut } from './film-easing';
 
 /**
  * The film's clock: when every move starts and how far along it is at film time `T`. Every value

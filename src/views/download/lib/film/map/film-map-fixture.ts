@@ -1,5 +1,5 @@
 import type { FilmMarkTokens } from './film-map-sizes';
-import type { FilmConcept, FilmVault } from './film-vault';
+import type { FilmConcept, FilmVault } from '../film-vault';
 
 /** The product's mark tokens (`app/styles/map-graph-tokens.css`) as plain numbers for tests. */
 export const FILM_TEST_TOKENS: FilmMarkTokens = {

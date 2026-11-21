@@ -15,13 +15,13 @@ import {
   trim,
   type Pt,
   type Rect,
-} from './film-geometry';
+} from '../film-geometry';
 import { LABEL_PAD, LabelField, fontOf, makeLabel, type FilmLabel, type InkRole, type LabelRole, type LabelSegment } from './film-map-labels';
 import type { FilmClusterPlacement } from './film-map-placement';
 import type { FilmArc, FilmCluster, FilmLayoutInput, FilmLit, FilmLitLine, FilmMapLayout, FilmMark } from './film-map-shapes';
 import { REST_NAMES_PX } from './film-map-sizes';
 import { dotOffsets } from './film-local-cluster';
-import { reachOf } from './film-vault';
+import { reachOf } from '../film-vault';
 
 const NAME_GAP = 7;
 const CROSSING_COST = 4000;

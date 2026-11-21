@@ -6,13 +6,13 @@ import { describe, expect, it } from 'vitest';
 import { deriveOntologyFromVault, dogfoodManifest, DOGFOOD_AGENT_SLUG_PREFIX } from '@/entities/docs-vault';
 import { derivationToInsight } from '@/features/vault-ontology/model/use-ontology-insight';
 
-import { crossings, distanceToRect, grow, inside, overlaps, resample, circleIntoRect, type Pt, type Rect } from './film-geometry';
+import { crossings, distanceToRect, grow, inside, overlaps, resample, circleIntoRect, type Pt, type Rect } from '../film-geometry';
 import type { FilmLabel } from './film-map-labels';
 import { layoutFilmMap } from './film-map-layout';
 import type { FilmCopy, FilmMapLayout } from './film-map-shapes';
 import type { FilmMarkTokens } from './film-map-sizes';
-import { domainFlows, pickFilmConcept, readFilmVault, type FilmVault } from './film-vault';
-import { buildStageGraph } from '../stage-graph';
+import { domainFlows, pickFilmConcept, readFilmVault, type FilmVault } from '../film-vault';
+import { buildStageGraph } from '../../stage-graph';
 
 /**
  * The film's map on the bundled vault at the five stage sizes the spec names: the geometry checks

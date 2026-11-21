@@ -9,8 +9,8 @@ import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pause';
 
-import { createFilmClock } from '../../lib/film/film-clock';
-import { clamp01 as clamp, easeInOut as inOut } from '../../lib/film/film-kit';
+import { createFilmClock } from '../../lib/film/timeline/film-clock';
+import { clamp01 as clamp, easeInOut as inOut } from '../../lib/film/timeline/film-easing';
 import { registerGatedFrameClient } from '../../lib/page-motion/gateway-frame-loop';
 import type { Director } from '../../lib/harness-film/harness-director';
 import type { ExampleRead } from '../../lib/harness-film/harness-example';

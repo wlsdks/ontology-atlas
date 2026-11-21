@@ -1,4 +1,4 @@
-import { circleIntoRect, grow, inside, overlaps, type Pt, type Rect } from './film-geometry';
+import { circleIntoRect, grow, inside, overlaps, type Pt, type Rect } from '../film-geometry';
 
 export type Measure = (text: string, font: string) => number;
 export type InkRole = 'primary' | 'secondary' | 'tertiary' | 'name' | 'strong' | 'arc' | 'reach' | 'agent';

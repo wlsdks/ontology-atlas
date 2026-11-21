@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { FADE_MS, FILM_MS, closeUpTravelMs, flight, flightMs, HOLD_MS, seamLight } from './film-acts';
-import { easeInOut } from './film-kit';
+import { easeInOut } from './film-easing';
 
 const CYCLE = FILM_MS + HOLD_MS + FADE_MS;
 const FRAME_60 = 1000 / 60;

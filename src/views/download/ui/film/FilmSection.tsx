@@ -8,13 +8,14 @@ import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-fram
 import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pause';
 import { readFlatGraphTokens } from '@/widgets/ontology-map';
 
-import { ACT_MS, ACT_SPANS, ACT_START, FADE_MS, FILM_MS, HOLD_MS, SEEK_FADE_MS, seamLight } from '../../lib/film/film-acts';
-import { createFilmClock } from '../../lib/film/film-clock';
-import { clamp01, easeInOut, easeOut, lightSprite } from '../../lib/film/film-kit';
-import type { LabelSegment } from '../../lib/film/film-map-labels';
-import { layoutFilmMap } from '../../lib/film/film-map-layout';
-import type { FilmCopy, FilmMapLayout } from '../../lib/film/film-map-shapes';
-import type { FilmMarkTokens } from '../../lib/film/film-map-sizes';
+import { ACT_MS, ACT_SPANS, ACT_START, FADE_MS, FILM_MS, HOLD_MS, SEEK_FADE_MS, seamLight } from '../../lib/film/timeline/film-acts';
+import { createFilmClock } from '../../lib/film/timeline/film-clock';
+import { lightSprite } from '../../lib/film/film-light-sprite';
+import { clamp01, easeInOut, easeOut } from '../../lib/film/timeline/film-easing';
+import type { LabelSegment } from '../../lib/film/map/film-map-labels';
+import { layoutFilmMap } from '../../lib/film/map/film-map-layout';
+import type { FilmCopy, FilmMapLayout } from '../../lib/film/map/film-map-shapes';
+import type { FilmMarkTokens } from '../../lib/film/map/film-map-sizes';
 import { layoutOpen, type OpenLayout } from '../../lib/film/film-open';
 import { pickFilmConcept, readFilmVault, type FilmVault } from '../../lib/film/film-vault';
 import { layoutWall, type WallLayout } from '../../lib/film/film-wall';

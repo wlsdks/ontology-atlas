@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEG, angleGap, circleIntoRect } from './film-geometry';
+import { DEG, angleGap, circleIntoRect } from '../film-geometry';
 import { GATE_HALF, dotOffsets, layoutLocalCluster, titleHalfAngle, type LocalClusterInput } from './film-local-cluster';
 import { FILM_TEST_TOKENS, eightPixelsPerCharacter, fixtureVault } from './film-map-fixture';
 import { filmSizes } from './film-map-sizes';

@@ -1,4 +1,4 @@
-import { clamp01 } from '../../lib/film/film-kit';
+import { clamp01 } from '../../lib/film/timeline/film-easing';
 
 type Rgb = [number, number, number, number];
 

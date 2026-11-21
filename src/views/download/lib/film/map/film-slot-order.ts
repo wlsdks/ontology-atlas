@@ -1,4 +1,4 @@
-import { domainFlows, type FilmVault } from './film-vault';
+import { domainFlows, type FilmVault } from '../film-vault';
 
 export function slotOrder(vault: FilmVault, first: string | null): string[] {
   const ids = vault.domains.map((d) => d.id);
