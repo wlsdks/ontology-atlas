@@ -77,7 +77,7 @@ is the one name everywhere: plain "work" already means Atlas's own long runs
   request elsewhere goes through `src-tauri/src/llm/curl.rs:5,17` (configuration over stdin).
 - **`gh`:** `/opt/homebrew/bin/gh` is installed; `gh config get -h github.com user` returns the
   account with no network request; `gh auth status` makes one (reviewer).
-- **`pr:land` spends both GitHub buckets:** GraphQL (`scripts/landing/pr-land.mjs:702`) and REST
+- **`pr:land` spends both GitHub buckets:** GraphQL (`scripts/lib/landing/pr-land/github-cli.mjs:128`) and REST
   (`:707-725`); seven landers measured 2,600 REST requests an hour on 2026-09-20 (lead's note).
 - **GitHub rate facts (docs.github.com, 2026-11-21):** a user's token, OAuth app or App acting for
   the user shares 5,000 REST requests an hour; a `304 Not Modified` does not count; 100 concurrent,
@@ -88,7 +88,7 @@ is the one name everywhere: plain "work" already means Atlas's own long runs
 - **Brand rule:** Atlas's own agent list says "Claude Agent", never "Claude Code"; a sentence naming
   a separately installed product by its real name is allowed
   (`tests/contract/brand/vendor-naming.contract.test.ts:4-8`, decision 2026-08-16 (5)).
-- **Rail:** nine destinations (`src/shared/config/destinations.ts:10-24`); e7d1f38a permits ten;
+- **Rail:** nine destinations (`src/shared/config/destinations.ts`); e7d1f38a permits ten;
   `g w` is free (`:82-97`). **Repository choice:** Changes grants source reading of a chosen
   repository without a vault (`docs/features/change-briefing.md:170-174`).
 
@@ -322,7 +322,7 @@ chain only groups it under a session for display.
 | Signal | Gives | Tools | Status | Slice |
 |---|---|---|---|---|
 | Lock reason pid and UTC time; `locked` file mtime | subagent id, session pid, lock time | Claude Code | verified | 1 |
-| ACP session pids and `cwd` | session, exactly | Claude Agent in Atlas | verified (`tauri-acp.ts:106`) | 1 |
+| ACP session pids and `cwd` | session, exactly | Claude Agent in Atlas | verified (`tauri-acp.ts:92`) | 1 |
 | Own working folder, parent chain, executable name | which processes run in which worktree, under which session | all | `claude`, `codex` seen | 2 |
 | Open file paths matched to `<hooksPath>/<hook name>` | a running hook and its name | Git | reviewer verified `proc_pidfdinfo` | 2 |
 | `finished` in one exact Claude Code subagent meta file | subagent finished | Claude Code, `~/.claude` only | observed, undocumented | 2 |
@@ -856,3 +856,4 @@ text in a PR, branch, commit, log, lane name, lease or subagent file; a paused b
   session. Lock liveness is read on Windows and Linux too (Flow 3). Copy claims only what a lock
   proves (`headline.*`, `group.unheld`), names the base branch, and drops the ready count until
   slice 5; every shipped key is in Copy. Criteria 1 to 3 name what checks them.
+- 2026-11-22: source line cites follow the code into the files and lines that hold it after the structure cleanup; a cite whose code changed keeps its file and drops the line; no plan changed.
