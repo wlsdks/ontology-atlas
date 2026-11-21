@@ -4,15 +4,21 @@ import { BookOpen, FileText, Sparkles } from "lucide-react";
 import type { useTranslations } from "next-intl";
 
 import { cn } from "@/shared/lib/cn";
+import { Sheet } from "@/shared/ui/marks/sheet";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 import { RECENT_PAGE_COUNT, type RecentPages } from "../model/recent-pages";
 
 /** One recent row's height in px; the list reserves five of them so an arriving page moves nothing. */
-const RECENT_ROW_PX = 44;
+const RECENT_ROW_PX = 52;
 
 function fileName(path: string): string {
   return path.slice(path.lastIndexOf("/") + 1);
+}
+
+function formatOf(name: string): string {
+  const dot = name.lastIndexOf(".");
+  return dot > 0 ? name.slice(dot + 1) : "";
 }
 
 /**
@@ -55,31 +61,28 @@ export function RecentlyWritten({
             const more = Math.max(0, page.sourcePaths.length - 1);
             const missing = source !== undefined && !sourceExists(source);
             return (
-              <li key={page.slug} className="border-b border-[color:var(--color-border-soft)] last:border-b-0">
+              <li key={page.slug}>
                 <button
                   type="button"
                   data-testid="sources-recent-row"
                   onClick={() => onOpenPage(page.slug)}
-                  className="flex h-11 w-full min-w-0 items-center gap-3.5 px-4 text-left text-body-lg transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)]"
+                  className="flex h-13 w-full min-w-0 items-center gap-4 rounded-card px-4 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)]"
                 >
-                  <BookOpen size={ICON_SIZE.md} aria-hidden className="flex-none text-[color:var(--color-source-page)]" />
-                  <span title={page.title} className="min-w-0 max-w-[48%] flex-none truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                    {page.title}
-                  </span>
-                  {source !== undefined ? (
-                    <span
-                      title={missing ? t("wikiReader.sourceMissing") : source}
-                      className={cn(
-                        "min-w-0 flex-1 truncate text-body text-[color:var(--color-text-tertiary)] @max-[52rem]:hidden",
-                        missing && "line-through",
-                      )}
-                    >
-                      {t("sourcesHome.recent.from", { source: fileName(source), more })}
+                  <Sheet variant="page" name={page.title} format={source !== undefined ? formatOf(fileName(source)) : null} />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span title={page.title} className="truncate text-body-lg leading-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                      {page.title}
                     </span>
-                  ) : (
-                    <span className="flex-1" />
-                  )}
-                  <span className="ml-auto flex-none text-body tabular-nums text-[color:var(--color-text-tertiary)]">{dayText(day)}</span>
+                    {source !== undefined ? (
+                      <span
+                        title={missing ? t("wikiReader.sourceMissing") : source}
+                        className={cn("truncate text-body leading-body text-[color:var(--color-text-tertiary)]", missing && "line-through")}
+                      >
+                        {t("sourcesHome.recent.from", { source: fileName(source), more })}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="flex-none text-body tabular-nums text-[color:var(--color-text-tertiary)]">{dayText(day)}</span>
                 </button>
               </li>
             );

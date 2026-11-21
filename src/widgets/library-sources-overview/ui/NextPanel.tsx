@@ -7,12 +7,13 @@ import type { LibrarySourceRow } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
+import { Sheet } from "@/shared/ui/marks/sheet";
 
 import { SOURCE_STATE_INK, type SourceState } from "../model/source-states";
 
 /** The panel lists at most this many files: the write button's batch, or a picked row's first ones. */
 export const PANEL_LIST_ROWS = 10;
-const PANEL_ROW_PX = 38;
+const PANEL_ROW_PX = 48;
 
 type LibraryT = ReturnType<typeof useTranslations<"library">>;
 
@@ -95,31 +96,35 @@ export function NextPanel({
       </p>
       <ol
         data-testid="sources-panel-list"
-        className="mt-4 flex flex-col border-t border-[color:var(--color-border-soft)]"
+        className="-mx-2 mt-4 flex flex-col"
         style={{ minHeight: Math.min(PANEL_LIST_ROWS, reserveRows) * PANEL_ROW_PX }}
       >
         {files.map((row, i) => {
           const writing = running.has(row.path);
           return (
-            <li key={row.path} className="border-b border-[color:var(--color-border-soft)]">
+            <li key={row.path}>
               <button
                 type="button"
                 data-testid="sources-panel-file"
+                data-writing={writing || undefined}
                 onClick={() => onOpenSource(row.path)}
                 title={row.path}
-                className="flex h-[37px] w-full min-w-0 items-center gap-3 text-left text-body-lg transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)]"
+                className={cn(
+                  "flex h-12 w-full min-w-0 items-center gap-3 rounded-card px-2 text-left text-body-lg transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)]",
+                  writing ? "bg-[color:var(--color-indigo-accent-a12)] text-[color:var(--color-indigo-text-soft)]" : "text-[color:var(--color-text-primary)] hover:bg-[color:var(--color-overlay-1)]",
+                )}
               >
-                <span className="flex w-4.5 flex-none items-center justify-end text-body tabular-nums text-[color:var(--color-text-quaternary)]">
-                  {writing ? <span className="motion-writing-dot" title={t("sourcesHome.writing")} /> : i + 1}
-                </span>
                 <span
                   className={cn(
-                    "min-w-0 flex-1 truncate",
-                    writing ? "text-[color:var(--color-indigo-text-soft)]" : "text-[color:var(--color-text-primary)]",
+                    "w-4.5 flex-none text-right text-body tabular-nums",
+                    writing ? "text-[color:var(--color-text-tertiary)]" : "text-[color:var(--color-text-quaternary)]",
                   )}
                 >
-                  {row.name}
+                  {i + 1}
                 </span>
+                <Sheet variant="source" name={row.name} format={row.format} reading={writing} />
+                <span className="min-w-0 flex-1 truncate">{row.name}</span>
+                {writing ? <span className="sr-only">{t("sourcesHome.writing")}</span> : null}
                 <SourceStateWord state={row.state} t={t} />
               </button>
             </li>

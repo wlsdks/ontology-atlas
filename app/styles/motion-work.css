@@ -178,6 +178,32 @@
     animation: motionWritingHalo calc(var(--motion-base) * 9) var(--motion-ease) infinite;
   }
 
+  /* A source sheet being read: one line of page ink passes down its lines and leaves past their
+     clipped bottom edge before it starts again, so the restart is never drawn. */
+  @keyframes motionSheetScan {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(250%);
+    }
+  }
+
+  .motion-sheet-scan {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 40%;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--color-indigo-accent-a50) 70%,
+      var(--color-source-page) 72%,
+      transparent 74%
+    );
+    animation: motionSheetScan calc(var(--motion-settle) * 6) var(--motion-ease) infinite;
+  }
+
   /* Table rows glide by script (`useRowMotion`); one that leaves fades on the exit ease and a new
      one fades in. `transform` carries the 4px rise, `translate` the row's place. */
   @keyframes motionRowIn {
@@ -207,7 +233,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .motion-writing-dot::after {
+    .motion-writing-dot::after,
+    .motion-sheet-scan {
       animation: none !important;
       display: none !important;
     }
