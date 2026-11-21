@@ -20,6 +20,19 @@ Root `app/` is thin Next routing; `src/` imports flow
 cross-imports: move shared behaviour down one layer. The remaining edges only
 fall (`same-layer-cross-import-ratchet.contract.test.ts`).
 
+## Slice layout
+
+- A slice splits by segment: `ui/` renders, `model/` holds state, hooks and
+  domain logic, `lib/` holds helpers its segments share. A test sits beside
+  its source.
+- When one folder holds about 15 source files, group them into subfolders
+  named for what they own (`composer/`, `permission/`), never by kind
+  (`hooks/`, `utils/`, `components/`).
+- Idiomatic TypeScript: function components and hooks; data as types plus
+  pure functions in `model/`. A class only for something with a lifetime or a
+  resource (a cache, a connection, a worker); no service, manager or
+  dependency-injection classes.
+
 ## Static export
 
 Build-time fetching reads only the committed dogfood manifest under
