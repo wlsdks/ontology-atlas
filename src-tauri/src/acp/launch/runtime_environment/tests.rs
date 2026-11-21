@@ -1,7 +1,7 @@
 use super::*;
+use crate::acp::detection::login_probe::LOGIN_PROBE;
+use crate::acp::launch::npx_cache::npx_launch_package;
 use crate::acp::launch::AcpLaunch;
-use crate::acp::login_probe::LOGIN_PROBE;
-use crate::acp::npx_cache::npx_launch_package;
 use crate::acp::registry::registry_agent;
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -133,7 +133,7 @@ fn applied_runtime_environment_clears_command_overrides_before_spawn() {
     command
         .args([
             "--exact",
-            "acp::runtime_environment::tests::runtime_environment_probe_child",
+            "acp::launch::runtime_environment::tests::runtime_environment_probe_child",
             "--nocapture",
         ])
         .env("ATLAS_TEST_SECRET", "must-not-cross")
@@ -160,7 +160,7 @@ fn codex_runtime_environment_forces_the_measured_read_only_adapter_mode() {
     command
         .args([
             "--exact",
-            "acp::runtime_environment::tests::runtime_environment_probe_child",
+            "acp::launch::runtime_environment::tests::runtime_environment_probe_child",
             "--nocapture",
         ])
         .env("INITIAL_AGENT_MODE", "agent")
@@ -196,7 +196,7 @@ fn hardened_npx_launches_resolve_only_up_to_the_snapshot() {
         command
             .args([
                 "--exact",
-                "acp::runtime_environment::tests::runtime_environment_probe_child",
+                "acp::launch::runtime_environment::tests::runtime_environment_probe_child",
                 "--nocapture",
             ])
             .stdout(std::process::Stdio::piped())

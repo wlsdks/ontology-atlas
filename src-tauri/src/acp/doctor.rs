@@ -134,16 +134,16 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
     // No cache outside npx is not applicable, so it is left off rather than shown green.
     if let Some(entry) = npx_entry_path(ctx) {
         out.push(
-            match acp::npx_cache::npx_entry_health(
+            match acp::launch::npx_cache::npx_entry_health(
                 &entry,
                 npx_package(ctx).as_deref().unwrap_or(""),
             ) {
-                acp::npx_cache::NpxEntryHealth::Usable => AcpCheck::ok("npx-cache", None),
+                acp::launch::npx_cache::NpxEntryHealth::Usable => AcpCheck::ok("npx-cache", None),
                 // Not yet downloaded is fine: it downloads on first launch.
-                acp::npx_cache::NpxEntryHealth::Missing => {
+                acp::launch::npx_cache::NpxEntryHealth::Missing => {
                     AcpCheck::ok("npx-cache", Some("not-downloaded".into()))
                 }
-                acp::npx_cache::NpxEntryHealth::Broken(reason) => {
+                acp::launch::npx_cache::NpxEntryHealth::Broken(reason) => {
                     AcpCheck::problem("npx-cache", true, Some(reason.into()))
                 }
             },
@@ -230,8 +230,8 @@ fn npx_package(ctx: &DoctorContext<'_>) -> Option<String> {
 
 fn npx_entry_path(ctx: &DoctorContext<'_>) -> Option<PathBuf> {
     let package = npx_package(ctx)?;
-    let root = acp::npx_cache::npx_cache_root(ctx.home)?;
-    Some(acp::npx_cache::npx_cache_entry_dir(&root, &package))
+    let root = acp::launch::npx_cache::npx_cache_root(ctx.home)?;
+    Some(acp::launch::npx_cache::npx_cache_entry_dir(&root, &package))
 }
 
 pub(crate) fn repair(ctx: &DoctorContext<'_>, check_id: &str) -> Result<(), String> {

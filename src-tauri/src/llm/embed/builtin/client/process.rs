@@ -65,13 +65,13 @@ impl Launch for SelfLaunch {
     fn launch(&self) -> Result<Spawned, EmbedError> {
         let exe = std::env::current_exe().map_err(start_error)?;
         let mut command = Command::new(exe);
-        crate::process::no_console::hide_console(&mut command).arg(WORKER_FLAG);
+        crate::child_process::no_console::hide_console(&mut command).arg(WORKER_FLAG);
         spawn_piped(command)
     }
 }
 
 fn start_error(error: impl std::fmt::Display) -> EmbedError {
-    EmbedError::WorkerStart(crate::errors::squeeze(&error.to_string()))
+    EmbedError::WorkerStart(crate::coded_error::squeeze(&error.to_string()))
 }
 
 /// Starts `command` with piped stdin and stdout and stderr discarded.

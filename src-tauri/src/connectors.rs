@@ -14,7 +14,7 @@ use serde_json::Value;
 
 use codex_toml::collect_codex_servers;
 
-/// Injected so tests judge without a real disk, as `acp::command_lookup::FsProbe` does.
+/// Injected so tests judge without a real disk, as `acp::detection::command_lookup::FsProbe` does.
 pub(crate) struct ConfigFs<'a> {
     pub read_text: &'a dyn Fn(&Path) -> Option<String>,
 }

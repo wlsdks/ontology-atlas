@@ -17,7 +17,7 @@ mod ollama;
 mod response;
 mod transport;
 
-use crate::errors::coded;
+use crate::coded_error::coded;
 use loopback::{Endpoint, Resolve};
 use sha2::{Digest, Sha256};
 use std::fmt;

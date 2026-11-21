@@ -11,7 +11,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, Mutex, MutexGuard};
 
-use crate::errors::coded;
+use crate::coded_error::coded;
 
 mod log_file;
 #[cfg(test)]

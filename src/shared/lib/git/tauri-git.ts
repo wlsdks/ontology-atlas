@@ -350,7 +350,7 @@ export async function gitFetch(vaultPath: string): Promise<GitFetchResult | null
 }
 
 /**
- * Rust answers `<code>: <git's own words>` (`src-tauri/src/errors.rs`): the sentence is chosen
+ * Rust answers `<code>: <git's own words>` (`src-tauri/src/coded_error.rs`): the sentence is chosen
  * here in the reader's locale, with git's stderr in parentheses. No lookup returns it untouched.
  */
 export function gitErrorMessage(err: unknown, lookup?: NativeErrorLookup): string {

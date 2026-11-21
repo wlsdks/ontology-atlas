@@ -12,7 +12,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 const HASH_CHUNK: usize = 1024 * 1024;
 
 pub(super) fn store_error(error: std::io::Error) -> EmbedError {
-    EmbedError::Store(crate::errors::squeeze(&error.to_string()))
+    EmbedError::Store(crate::coded_error::squeeze(&error.to_string()))
 }
 
 /// Bytes the current user may still write on the volume holding `path`.

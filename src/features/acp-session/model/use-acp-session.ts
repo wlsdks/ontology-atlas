@@ -114,7 +114,7 @@ export function useAcpSession({
   // A ref too: `onExit` runs outside render and needs the status at that moment (died mid-answer or finished).
   const statusRef = useRef<AcpSessionStatus>('idle');
   // null means none. An interrupted first npx fetch leaves a half-built cache (healed in
-  // `src-tauri/src/acp/npx_cache.rs`); `mb` is null until the first notice, as the total is unknown.
+  // `src-tauri/src/acp/launch/npx_cache.rs`); `mb` is null until the first notice, as the total is unknown.
   const [download, setDownload] = useState<{ mb: number | null } | null>(null);
   const setStatusTracked = useCallback((next: AcpSessionStatus) => {
     statusRef.current = next;

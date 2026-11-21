@@ -1,5 +1,5 @@
 //! Stands in for the app's row commands outside the app (`pnpm perf:vault-open`, the manifest equality
-//! test, process tests), calling the same functions as `src-tauri/src/vault/index_rows.rs`.
+//! test, process tests), calling the same functions as `src-tauri/src/vault/index/rows.rs`.
 //! Frames on stdin: `<get|put|size|delete> <body bytes>\n<body>`; each answer: `<ok|err> <bytes>\n<body>`.
 
 use std::io::{self, BufRead, BufReader, Read, Write};

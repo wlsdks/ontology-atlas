@@ -48,7 +48,7 @@ describe('the gate: what is said and what is applied must match', () => {
   });
 
   it('a runner that promised settings isolation does not start a process after a preparation failure', () => {
-    const src = readFileSync(join(ROOT, 'src-tauri/src/acp_session/mod.rs'), 'utf8');
+    const src = readFileSync(join(ROOT, 'src-tauri/src/acp/session.rs'), 'utf8');
     expect(src).toMatch(/prepare_runtime_isolation\([\s\S]*?\)\?/);
     expect(src, 'a branch remains that swallows the isolation failure and starts a non-isolated process').not.toContain(
       'isolation_failure',
@@ -56,7 +56,7 @@ describe('the gate: what is said and what is applied must match', () => {
   });
 
   it('session start and the login check use the same parent-environment blocking function', () => {
-    const lib = readFileSync(join(ROOT, 'src-tauri/src/acp_session/mod.rs'), 'utf8');
+    const lib = readFileSync(join(ROOT, 'src-tauri/src/acp/session.rs'), 'utf8');
     const acp = readAcpRust(ROOT);
     const start = lib.slice(lib.indexOf('fn acp_start('), lib.indexOf('fn acp_permission_verdict('));
     // The login probe spawns from its own function; slice that function or the gate measures a wrapper

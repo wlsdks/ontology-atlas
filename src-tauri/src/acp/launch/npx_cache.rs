@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use super::launch::{adapter_bin_name, AcpLaunch};
+use super::{adapter_bin_name, AcpLaunch};
 
 // An interrupted first npx download leaves a half-made `~/.npm/_npx/<hash>/` that
 // npx never repairs, so the entry is checked and deleted before launch. The hash is

@@ -3,7 +3,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 #[cfg(target_os = "macos")]
-use super::bounded_command::{bounded_output, bounded_success, KEYCHAIN_PROBE_TIMEOUT};
+use crate::acp::bounded_command::{bounded_output, bounded_success, KEYCHAIN_PROBE_TIMEOUT};
 
 /// `Claude Code-credentials-<first 8 hex of sha256(config dir)>`; tests pin two measured values.
 #[cfg(any(target_os = "macos", test))]

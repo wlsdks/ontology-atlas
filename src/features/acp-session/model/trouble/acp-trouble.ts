@@ -14,7 +14,7 @@ const AUTH = /authentication[_ ]?(failed|required)|oauth|not logged ?in|unauthor
 /**
  * An interrupted first download leaves a half-built npx cache. Matches an `_npx/<hex>` path
  * or npm's "could not read package.json". The app self-heals it
- * (`src-tauri/src/acp/npx_cache.rs`), so the next step is a new conversation.
+ * (`src-tauri/src/acp/launch/npx_cache.rs`), so the next step is a new conversation.
  */
 const INSTALL = /_npx[\\/][0-9a-f]{4,16}|could not read package\.json/i;
 const TIMEOUT = /acp-timeout|timed? ?out|ETIMEDOUT/i;

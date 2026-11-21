@@ -1,6 +1,6 @@
 use std::ffi::{OsStr, OsString};
 
-use super::registry::snapshot;
+use crate::acp::registry::snapshot;
 
 /// Measured to keep subscription login without the parent environment; clearing it
 /// for others on a guess would break tools that rely on env API keys.

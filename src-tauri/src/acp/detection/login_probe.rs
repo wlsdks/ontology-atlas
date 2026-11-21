@@ -1,11 +1,11 @@
 use std::path::Path;
 
-use super::bounded_command::LOGIN_PROBE_TIMEOUT;
-use super::runtime_environment::apply_runtime_environment;
+use crate::acp::bounded_command::LOGIN_PROBE_TIMEOUT;
+use crate::acp::launch::runtime_environment::apply_runtime_environment;
 
 // Only measured login-status commands. Exit code only: `claude auth status` prints
 // the email and organization ID, which must never enter process memory.
-pub(super) const LOGIN_PROBE: &[(&str, &[&str])] = &[
+pub(in crate::acp) const LOGIN_PROBE: &[(&str, &[&str])] = &[
     ("claude-acp", &["auth", "status"]),
     ("codex-acp", &["login", "status"]),
 ];
@@ -44,7 +44,7 @@ fn run_login_probe(runtime_id: &str, path: &Path, args: &[&str], child_path: &st
     use std::process::{Command, Stdio};
     let started = std::time::Instant::now();
     let mut command = Command::new(path);
-    crate::process::no_console::hide_console(&mut command);
+    crate::child_process::no_console::hide_console(&mut command);
     command
         .args(args)
         .stdin(Stdio::null())

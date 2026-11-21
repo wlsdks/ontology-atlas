@@ -1,4 +1,4 @@
-use crate::acp::{self, doctor, managed_node};
+use crate::acp::{self, doctor};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -13,9 +13,9 @@ pub(crate) fn acp_detect_runtimes(
     app: tauri::AppHandle,
     probe_login: Option<bool>,
 ) -> Vec<acp::detection::AcpRuntimeStatus> {
-    let (is_executable, list_dir, read_text, login_ok) = acp::login_probe::real_probe();
+    let (is_executable, list_dir, read_text, login_ok) = acp::detection::login_probe::real_probe();
     let skip = |_: &str, _: &std::path::Path, _: &[&str], _: &str| None;
-    let probe = acp::command_lookup::FsProbe {
+    let probe = acp::detection::command_lookup::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,
         read_text: &read_text,
@@ -32,10 +32,10 @@ pub(crate) fn acp_detect_runtimes(
     let app_data_for_paths = app.path().app_data_dir().ok();
     let managed_bin = app_data_for_paths
         .as_deref()
-        .map(acp::managed_cli::managed_cli_bin_dir);
+        .map(acp::install::cli::managed_cli_bin_dir);
     let managed_node_bin = app_data_for_paths
         .as_deref()
-        .and_then(managed_node::managed_node_bin_dir);
+        .and_then(acp::install::node::managed_node_bin_dir);
     acp::detection::detect_runtimes(
         home.as_deref(),
         path.as_deref(),
@@ -126,7 +126,7 @@ fn forget_install_progress(app: &tauri::AppHandle, runtime_id: &str) {
 /// `None` means an unlisted platform.
 #[tauri::command]
 pub(crate) fn acp_node_plan() -> Option<String> {
-    managed_node::managed_node_plan()
+    acp::install::node::managed_node_plan()
 }
 
 /// Only on a click, after showing the source, inside `<app-data>/runtimes/node`, with a
@@ -143,7 +143,7 @@ pub(crate) fn acp_install_node(
     let reporter = |stage: &'static str, received: Option<u64>, total: Option<u64>| {
         emit_install_progress(&app, &runtime_id, "node", stage, received, total, None);
     };
-    managed_node::ensure_managed_node(&app_data, &reporter).inspect_err(|_| {
+    acp::install::node::ensure_managed_node(&app_data, &reporter).inspect_err(|_| {
         emit_install_progress(&app, &runtime_id, "node", "failed", None, None, None);
     })?;
     emit_install_progress(
@@ -164,7 +164,7 @@ pub(crate) fn acp_install_node(
 #[tauri::command]
 pub(crate) fn acp_install_plan(app: tauri::AppHandle, runtime_id: String) -> Option<String> {
     let app_data = app.path().app_data_dir().ok()?;
-    acp::managed_cli::managed_install_command(&runtime_id, &app_data)
+    acp::install::cli::managed_install_command(&runtime_id, &app_data)
 }
 
 /// Only on a user press, after `acp_install_plan` showed the command, under `--prefix
@@ -175,17 +175,17 @@ pub(crate) fn acp_install_cli(
     app: tauri::AppHandle,
     runtime_id: String,
 ) -> Result<Vec<doctor::AcpCheck>, String> {
-    let package = acp::managed_cli::installable_package(&runtime_id)
+    let package = acp::install::cli::installable_package(&runtime_id)
         .ok_or_else(|| format!("not-installable:{runtime_id}"))?;
     let app_data = app
         .path()
         .app_data_dir()
         .map_err(|err| format!("app-data-dir-unavailable:{err}"))?;
-    let prefix = acp::managed_cli::managed_cli_prefix(&app_data);
+    let prefix = acp::install::cli::managed_cli_prefix(&app_data);
     std::fs::create_dir_all(&prefix).map_err(|err| format!("prefix-failed:{err}"))?;
 
-    let (is_executable, list_dir, read_text, login_ok) = acp::login_probe::real_probe();
-    let probe = acp::command_lookup::FsProbe {
+    let (is_executable, list_dir, read_text, login_ok) = acp::detection::login_probe::real_probe();
+    let probe = acp::detection::command_lookup::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,
         read_text: &read_text,
@@ -194,8 +194,8 @@ pub(crate) fn acp_install_cli(
     let home =
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     // The bundled npm is the fallback when the system has none.
-    let managed_node_bin = managed_node::managed_node_bin_dir(&app_data);
-    let dirs = acp::command_lookup::candidate_bin_dirs(
+    let managed_node_bin = acp::install::node::managed_node_bin_dir(&app_data);
+    let dirs = acp::detection::command_lookup::candidate_bin_dirs(
         home.as_deref(),
         std::env::var_os("PATH").as_deref(),
         &probe,
@@ -203,7 +203,7 @@ pub(crate) fn acp_install_cli(
         managed_node_bin.as_deref(),
     );
     // Never by name: a GUI app's PATH differs from the shell's.
-    let npm = acp::command_lookup::resolve_command("npm", &dirs, &probe)
+    let npm = acp::detection::command_lookup::resolve_command("npm", &dirs, &probe)
         .ok_or_else(|| "npm-missing".to_string())?;
     let child_path = std::env::join_paths(dirs.iter())
         .map(|joined| joined.to_string_lossy().to_string())
@@ -212,7 +212,7 @@ pub(crate) fn acp_install_cli(
     emit_install_progress(&app, &runtime_id, "cli", "installing", None, None, None);
 
     let mut command = Command::new(&npm);
-    crate::process::no_console::hide_console(&mut command);
+    crate::child_process::no_console::hide_console(&mut command);
     command
         .arg("install")
         .arg("--prefix")
@@ -351,8 +351,8 @@ impl OwnedDoctorContext {
 }
 
 fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDoctorContext, String> {
-    let (is_executable, list_dir, read_text, login_ok) = acp::login_probe::real_probe();
-    let probe = acp::command_lookup::FsProbe {
+    let (is_executable, list_dir, read_text, login_ok) = acp::detection::login_probe::real_probe();
+    let probe = acp::detection::command_lookup::FsProbe {
         is_executable: &is_executable,
         list_dir: &list_dir,
         read_text: &read_text,
@@ -364,11 +364,11 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
     let app_data_for_paths = app.path().app_data_dir().ok();
     let managed_bin = app_data_for_paths
         .as_deref()
-        .map(acp::managed_cli::managed_cli_bin_dir);
+        .map(acp::install::cli::managed_cli_bin_dir);
     let managed_node_bin = app_data_for_paths
         .as_deref()
-        .and_then(managed_node::managed_node_bin_dir);
-    let dirs = acp::command_lookup::candidate_bin_dirs(
+        .and_then(acp::install::node::managed_node_bin_dir);
+    let dirs = acp::detection::command_lookup::candidate_bin_dirs(
         home.as_deref(),
         path.as_deref(),
         &probe,
@@ -384,7 +384,7 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
     let cli = agent
         .cli
         .as_deref()
-        .and_then(|name| acp::command_lookup::resolve_command(name, &dirs, &probe));
+        .and_then(|name| acp::detection::command_lookup::resolve_command(name, &dirs, &probe));
     let launcher = acp::launch::resolve_launch(
         runtime_id,
         home.as_deref(),

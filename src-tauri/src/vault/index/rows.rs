@@ -3,8 +3,8 @@
 //! commands are async and do their work on the blocking pool, never on the main thread. The
 //! WebView sends neither command while the search switch is off, so no row file is created then.
 
-use super::scope::resolve_existing_inside;
 use crate::blocking::run_blocking;
+use crate::vault::scope::resolve_existing_inside;
 use serde::Serialize;
 use tauri::ipc::{InvokeBody, Request, Response};
 use vault_index::rows::{self, GetRequest, PutRequest};

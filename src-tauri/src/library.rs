@@ -384,9 +384,10 @@ fn copy_source_into(
     source: &mut impl std::io::Read,
 ) -> Result<(String, u64), String> {
     let root = canonical_root(root_path)?;
-    let root_handle = crate::agent_setup::open_absolute_directory_no_follow(&root)?;
-    let (parent, file_name) = crate::agent_setup::open_entry_parent(&root_handle, relative_path)?;
-    crate::agent_setup::write_entry_atomically_with(&parent, &file_name, 0o666, |file| {
+    let root_handle = crate::confined_files::open_absolute_directory_no_follow(&root)?;
+    let (parent, file_name) =
+        crate::confined_files::open_entry_parent(&root_handle, relative_path)?;
+    crate::confined_files::write_entry_atomically_with(&parent, &file_name, 0o666, |file| {
         copy_hashing(source, file)
     })
 }
