@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import type { VaultDoc, VaultSourceFile } from '../../model/vault-manifest';
 import { deriveSourceProgress, recordedInstantMs, recordedLocalDay, SOURCE_PROGRESS_MAX_POINTS } from './source-progress';
-import { buildLibraryModel, type LibrarySourceRow, type SourceCompileState } from './vault-library';
+import { type SourceCompileState } from './source-compile-state';
+import { buildLibraryModel, type LibrarySourceRow } from './vault-library';
 
 /** 2026-11-19 21:00 in Seoul; a fixed offset keeps local days independent of the machine. */
 const SEOUL = { now: Date.parse('2026-11-19T12:00:00Z'), offsetMinutes: () => 540 };
