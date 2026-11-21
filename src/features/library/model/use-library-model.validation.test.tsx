@@ -73,7 +73,7 @@ describe("Library validation follows the current folder", () => {
     expect(file.getFile).toHaveBeenCalledTimes(1);
   });
 
-  it("rejudges incoming links on page deletion and restores them from cached text", async () => {
+  it("rejudges incoming links on page deletion and restores them when the page returns", async () => {
     const props = input([["wiki/plan", page("[[wiki/detail]]")], ["wiki/detail", page()]]);
     const { result, rerender } = renderHook(useLibraryModel, { initialProps: props });
     await waitFor(() => expect(result.current.verdicts.get("wiki/plan")?.ok).toBe(true));
@@ -81,12 +81,12 @@ describe("Library validation follows the current folder", () => {
     rerender({ ...props, docs: props.docs.slice(0, 1), fileHandles: new Map([["wiki/plan", props.fileHandles.get("wiki/plan")!]]) });
     await waitFor(() => expect(result.current.verdicts.get("wiki/plan")?.problems)
       .toEqual(expect.arrayContaining([expect.objectContaining({ code: "dangling-wikilink" })])));
-    expect(result.current.pageTexts.has("wiki/detail")).toBe(false);
+    expect(result.current.pageFacts.has("wiki/detail")).toBe(false);
     expect(result.current.verdicts.has("wiki/detail")).toBe(false);
 
     rerender(props);
     await waitFor(() => expect(result.current.verdicts.get("wiki/plan")?.ok).toBe(true));
-    expect(result.current.pageTexts.has("wiki/detail")).toBe(true);
+    expect(result.current.pageFacts.has("wiki/detail")).toBe(true);
   });
 
   it("does not let an interrupted read consume the verdict needed by the next folder poll", async () => {
@@ -98,22 +98,23 @@ describe("Library validation follows the current folder", () => {
     rerender({ ...props, docs: [...props.docs], fileHandles: new Map(props.fileHandles) });
     await act(async () => { finish(page()); });
     await waitFor(() => expect(result.current.verdicts.get("wiki/plan")?.ok).toBe(true));
-    expect(result.current.pageTexts.get("wiki/plan")).toBe(page());
+    expect(result.current.pageFacts.get("wiki/plan")?.claims.claims.map((claim) => claim.text))
+      .toEqual(["Delivery is in September. [[src:sources/plan.md#l1]]"]);
   });
 
   it("withdraws removed pages while an old read is pending", async () => {
     const props = input([["wiki/plan", page()]]);
     const { result, rerender } = renderHook(useLibraryModel, { initialProps: props });
-    await waitFor(() => expect(result.current.pageTexts.has("wiki/plan")).toBe(true));
+    await waitFor(() => expect(result.current.pageFacts.has("wiki/plan")).toBe(true));
     let finish!: (raw: string) => void;
     const pending = new Promise<string>((resolve) => { finish = resolve; });
     const next = { ...props, docs: [doc("wiki/plan", page(), 2)], fileHandles: new Map([["wiki/plan", handle(() => pending).handle]]) };
     rerender(next);
-    expect(result.current.pageTexts.has("wiki/plan")).toBe(false);
+    expect(result.current.pageFacts.has("wiki/plan")).toBe(false);
     expect(result.current.verdicts.has("wiki/plan")).toBe(false);
     rerender({ ...next, docs: [], fileHandles: new Map() });
     await act(async () => { finish(page()); });
-    expect(result.current.pageTexts.size).toBe(0);
+    expect(result.current.pageFacts.size).toBe(0);
     expect(result.current.verdicts.size).toBe(0);
   });
 

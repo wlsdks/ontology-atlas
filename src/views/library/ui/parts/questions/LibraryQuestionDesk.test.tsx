@@ -28,7 +28,17 @@ vi.mock('@/shared/lib/llm-connection/tauri-jev', async (importOriginal) => {
   return { ...actual, jevSecretStatus: mocks.status, jevJudge: mocks.judge };
 });
 
+import type { LibraryPageFacts } from '@/features/library';
+import { libraryPageFacts } from '@/features/library/model/library-page-facts';
 import { LibraryQuestionDesk, type QuestionDeskReportDraft, type QuestionDeskReportRequest } from './LibraryQuestionDesk';
+
+/** One facts object per page text, as the Library keeps one per page version. */
+const factsByText = new Map<string, LibraryPageFacts>();
+function factsOf(raw: string): LibraryPageFacts {
+  let facts = factsByText.get(raw);
+  if (!facts) factsByText.set(raw, (facts = libraryPageFacts(raw)));
+  return facts;
+}
 
 const original = '# Refund handling\nRefund approval queues a stock restoration job.\n';
 const currentHash = createHash('sha256').update(original).digest('hex');
@@ -72,7 +82,7 @@ function Desk({ hash = currentHash, scope = 'folder-a', listedMtime = 10, includ
   const { doc, raw, source, handle } = fixture(hash, listedMtime);
   return <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? ko : en}>
     <LibraryQuestionDesk docs={[...(includeWiki ? [doc] : []), ...extraPages.map((page) => page.doc)]}
-      pageTexts={new Map([...(includeWiki ? [[doc.slug, raw] as const] : []), ...extraPages.map((page) => [page.doc.slug, page.raw] as const)])}
+      pageFacts={new Map([...(includeWiki ? [[doc.slug, factsOf(raw)] as const] : []), ...extraPages.map((page) => [page.doc.slug, factsOf(page.raw)] as const)])}
       sources={[source]} sourceHandles={new Map([[path, handle]])} hashes={new Map([[path, currentHash]])}
       vaultRoot="/fixture" vaultScope={scope} agentReady={agentReady} dockOpen={dockOpen}
       visible={visible}

@@ -243,11 +243,15 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     findOpen, setFindOpen, discovery, declinedCount, sourceImportFeedback, handleAddFiles,
     handleAddCandidates, handleForgetDeclined,
   } = sources;
+  const retrievalPages = useMemo(
+    () => new Map([...model.pageFacts].map(([slug, facts]) => [slug, facts.retrieval] as const)),
+    [model.pageFacts],
+  );
   const agent = useLibraryAgent(nativeVaultRootPath, model.sources, {
     createFile: (path: string) => t("wiki.compileCreateFile", { path }),
     modifyFile: (path: string) => t("wiki.compileModifyFile", { path }),
     bridgeMissing: t("stage.blockedWeb"),
-  }, model.pageTexts);
+  }, retrievalPages);
   const answerRefresh = useAnswerRefresh({
     handle, sources: model.sources, vaultRoot: nativeVaultRootPath,
     writer: agent.runtime ? `agent:${agent.runtime.id}` : 'agent:unknown', start: agent.start,
@@ -674,7 +678,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
             <LibraryQuestionDesk
               key={workVaultScope}
               docs={docs}
-              pageTexts={model.pageTexts}
+              pageFacts={model.pageFacts}
               sources={model.sources}
               sourceHandles={localVault.sourceHandles}
               hashes={model.hashes}

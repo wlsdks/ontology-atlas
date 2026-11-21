@@ -22,7 +22,7 @@ function setup(compileSources: Args["compileSources"]) {
   const model = {
     sources: SOURCES,
     wikiPages: [{ slug: "wiki/notes", title: "Notes", sourcePaths: ["sources/changed.md", "sources/current.md"] }],
-    pageTexts: new Map(),
+    pageFacts: new Map(),
     pairing: {
       writeUpsBySource: new Map(),
       originalsByWiki: new Map([

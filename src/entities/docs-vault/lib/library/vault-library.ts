@@ -289,58 +289,6 @@ export interface LibraryModel {
   compiledBy: LibraryCompiledBy;
 }
 
-/**
- * Derived from the manifest and known hashes; the only held state is a session hash cache, since a
- * second canonical store is refused (`.claude/rules/forbidden.md`).
- */
-export function buildLibraryModel({
-  sources,
-  docs,
-  hashes,
-  unreadable,
-  offsetMinutes,
-}: {
-  sources: readonly VaultSourceFile[] | undefined;
-  docs: readonly VaultDoc[];
-  hashes: ReadonlyMap<string, string>;
-  /** Paths whose file could not be opened to hash this session. */
-  unreadable?: ReadonlySet<string>;
-  /** Minutes east of UTC at an instant, for `compiledDay`; defaults to the runtime's zone. */
-  offsetMinutes?: (epochMs: number) => number;
-}): LibraryModel {
-  const citations = collectWikiCitations(docs, offsetMinutes);
-  const offsets = new Int32Array((sources?.length ?? 0) + 1);
-  const covering: number[] = [];
-  const rows: LibrarySourceRow[] = (sources ?? []).map((source, index) => {
-    const cited = citations.get(source.path);
-    const actual = hashes.get(source.path)?.toLowerCase();
-    const state = judgeSource(cited, actual, unreadable?.has(source.path) ?? false);
-    if (state === 'compiled' && cited && actual) pushCoveringPages(covering, cited, actual);
-    offsets[index + 1] = covering.length;
-    return {
-      ...source,
-      state,
-      compiledDay: state === 'compiled' && cited && actual ? earliestCoveredDay(cited, actual) : -1,
-      citedBy: [...new Set((cited ?? []).map((citation) => citation.wikiSlug))].sort(),
-      reviewPages: actual === undefined ? [] : [...new Set((cited ?? [])
-        .filter((citation) => citation.sourceHash !== actual && !citation.wikiSlug.startsWith(WIKI_ANSWERS_PREFIX))
-        .map((citation) => citation.wikiSlug))].sort(),
-    };
-  });
-  return {
-    sources: rows,
-    wikiPages: selectWikiPages(docs),
-    needsCompileCount: rows.filter(sourceNeedsCompile).length,
-    notCompiledCount: rows.filter((row) => row.state === 'not-compiled').length,
-    staleCount: rows.filter((row) => row.state === 'stale').length,
-    partialCount: rows.filter((row) => row.state === 'partial').length,
-    // `checking` rows are exactly the paths worth hashing; an mtime change drops a cached hash.
-    pathsNeedingHash: rows.filter((row) => row.state === 'checking').map((row) => row.path),
-    pairing: buildLibraryPairing({ docs, sources, hashes, unreadable, citations }),
-    compiledBy: { offsets, pages: Int32Array.from(covering) },
-  };
-}
-
 /** `1536` → `1.5 KB`; locale-independent. */
 export function formatSourceBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '—';
@@ -389,57 +337,185 @@ interface LibraryPairing {
   writeUpsBySource: Map<string, LibraryWriteUpLink[]>;
 }
 
-/** Both pairing directions from the manifest and the lazily filled hash map. */
-function buildLibraryPairing({
-  docs,
-  sources,
-  hashes,
-  unreadable,
-  citations,
-}: {
-  docs: readonly VaultDoc[];
-  sources: readonly VaultSourceFile[] | undefined;
-  hashes: ReadonlyMap<string, string>;
-  unreadable: ReadonlySet<string> | undefined;
-  citations: ReadonlyMap<string, WikiCitation[]>;
-}): LibraryPairing {
-  const present = new Map((sources ?? []).map((source) => [source.path, source] as const));
-  const titles = new Map<string, string>();
-  const originalsByWiki = new Map<string, LibraryOriginalLink[]>();
+/** What the manifest alone decides; kept while the manifest's `docs` array is the same one. */
+interface DocsFacts {
+  citations: Map<string, WikiCitation[]>;
+  wikiPages: LibraryWikiPage[];
+  titles: Map<string, string>;
+  /** Each wiki page, furniture included, with the source paths it cites; a repeated slug keeps its last. */
+  pathsBySlug: Map<string, string[]>;
+}
 
+function docsFacts(docs: readonly VaultDoc[], offsetMinutes: ((epochMs: number) => number) | undefined): DocsFacts {
+  const titles = new Map<string, string>();
+  const pathsBySlug = new Map<string, string[]>();
   for (const doc of docs) {
     if (!isWikiPage(doc)) continue;
     titles.set(doc.slug, doc.title);
-    originalsByWiki.set(
-      doc.slug,
-      readPathArray(doc.frontmatter.sources).map((path) => ({
-        path,
-        name: path.split('/').pop() || path,
-        state: present.has(path)
-          ? judgeSource(citations.get(path), hashes.get(path)?.toLowerCase(), unreadable?.has(path) ?? false)
-          : null,
-      })),
-    );
+    pathsBySlug.set(doc.slug, readPathArray(doc.frontmatter.sources));
   }
+  return { citations: collectWikiCitations(docs, offsetMinutes), wikiPages: selectWikiPages(docs), titles, pathsBySlug };
+}
 
-  const writeUpsBySource = new Map<string, LibraryWriteUpLink[]>();
-  for (const [path, cited] of citations) {
-    const actual = hashes.get(path)?.toLowerCase();
-    const bySlug = new Map<string, LibraryWriteUpLink>();
-    for (const citation of cited) {
-      bySlug.set(citation.wikiSlug, {
-        slug: citation.wikiSlug,
-        title: titles.get(citation.wikiSlug) ?? citation.wikiSlug,
-        freshness: writeUpFreshness(citation, actual),
-      });
+/** One source row with what it was judged from, so the next build reuses it while those hold. */
+interface KeptRow {
+  source: VaultSourceFile;
+  cited: WikiCitation[] | undefined;
+  /** The hash as the map held it, so an unchanged one is recognised without lowercasing it again. */
+  hash: string | undefined;
+  unreadable: boolean;
+  row: LibrarySourceRow;
+  /** The listed pages that make the row `compiled`, for `compiledBy`. */
+  covering: readonly number[];
+}
+
+const NO_PAGES: readonly number[] = Object.freeze([]);
+
+function sourceRow(source: VaultSourceFile, cited: WikiCitation[] | undefined, hash: string | undefined, unreadable: boolean): KeptRow {
+  const actual = hash?.toLowerCase();
+  const state = judgeSource(cited, actual, unreadable);
+  const compiled = state === 'compiled' && cited !== undefined && actual !== undefined;
+  const covering: number[] = [];
+  if (compiled) pushCoveringPages(covering, cited, actual);
+  const row: LibrarySourceRow = {
+    ...source,
+    state,
+    compiledDay: compiled ? earliestCoveredDay(cited, actual) : -1,
+    citedBy: [...new Set((cited ?? []).map((citation) => citation.wikiSlug))].sort(),
+    reviewPages: actual === undefined ? [] : [...new Set((cited ?? [])
+      .filter((citation) => citation.sourceHash !== actual && !citation.wikiSlug.startsWith(WIKI_ANSWERS_PREFIX))
+      .map((citation) => citation.wikiSlug))].sort(),
+  };
+  return { source, cited, hash, unreadable, row, covering: covering.length > 0 ? covering : NO_PAGES };
+}
+
+function writeUpsOf(cited: readonly WikiCitation[], actual: string | undefined, titles: ReadonlyMap<string, string>): LibraryWriteUpLink[] {
+  const bySlug = new Map<string, LibraryWriteUpLink>();
+  for (const citation of cited) {
+    bySlug.set(citation.wikiSlug, {
+      slug: citation.wikiSlug,
+      title: titles.get(citation.wikiSlug) ?? citation.wikiSlug,
+      freshness: writeUpFreshness(citation, actual),
+    });
+  }
+  return [...bySlug.values()].sort((a, b) => a.slug.localeCompare(b.slug));
+}
+
+function originalsOf(paths: readonly string[], stateOf: (path: string) => SourceCompileState | null): LibraryOriginalLink[] {
+  return paths.map((path) => ({ path, name: path.split('/').pop() || path, state: stateOf(path) }));
+}
+
+type LibraryModelInput = {
+  sources: readonly VaultSourceFile[] | undefined;
+  docs: readonly VaultDoc[];
+  hashes: ReadonlyMap<string, string>;
+  /** Paths whose file could not be opened to hash this session. */
+  unreadable?: ReadonlySet<string>;
+  /** Minutes east of UTC at an instant, for `compiledDay`; defaults to the runtime's zone. */
+  offsetMinutes?: (epochMs: number) => number;
+};
+
+/**
+ * Derived from the manifest and known hashes; the only held state is a session hash cache, since a
+ * second canonical store is refused (`.claude/rules/forbidden.md`).
+ */
+export function buildLibraryModel(input: LibraryModelInput): LibraryModel {
+  return createLibraryModelBuilder()(input);
+}
+
+/**
+ * `buildLibraryModel` that keeps its last answer. While `docs` and `sources` are the same arrays, a
+ * call compares each row's hash and readability, O(sources), and rebuilds only the rows, page lists
+ * and write-up lists whose inputs changed; anything else rebuilds everything once. `hashes` names
+ * only paths in `sources`, as the Library measures them.
+ */
+export function createLibraryModelBuilder(): (input: LibraryModelInput) => LibraryModel {
+  let keptDocs: readonly VaultDoc[] | null = null;
+  let keptSources: readonly VaultSourceFile[] | null = null;
+  let keptOffset: LibraryModelInput['offsetMinutes'];
+  let facts: DocsFacts | null = null;
+  let rows: KeptRow[] = [];
+  let pairing: LibraryPairing | null = null;
+
+  return ({ sources, docs, hashes, unreadable, offsetMinutes }) => {
+    const list = sources ?? [];
+    if (facts === null || docs !== keptDocs || offsetMinutes !== keptOffset) {
+      facts = docsFacts(docs, offsetMinutes);
+      pairing = null;
     }
-    writeUpsBySource.set(
-      path,
-      [...bySlug.values()].sort((a, b) => a.slug.localeCompare(b.slug)),
-    );
-  }
+    if (list !== keptSources) pairing = null;
+    keptDocs = docs;
+    keptOffset = offsetMinutes;
+    const { citations, wikiPages, titles, pathsBySlug } = facts;
 
-  return { originalsByWiki, writeUpsBySource };
+    const kept = pairing === null ? [] : rows;
+    const nextRows: KeptRow[] = [];
+    const restated = new Set<string>();
+    const rehashed = new Set<string>();
+    const offsets = new Int32Array(list.length + 1);
+    const covering: number[] = [];
+    for (let index = 0; index < list.length; index += 1) {
+      const source = list[index]!;
+      const cited = citations.get(source.path);
+      const hash = hashes.get(source.path);
+      const isUnreadable = unreadable?.has(source.path) ?? false;
+      const before = kept[index];
+      let row = before;
+      if (!row || row.source !== source || row.cited !== cited || row.hash !== hash || row.unreadable !== isUnreadable) {
+        row = sourceRow(source, cited, hash, isUnreadable);
+        if (before && before.row.state !== row.row.state) restated.add(source.path);
+        if (before && before.hash !== hash) rehashed.add(source.path);
+      }
+      nextRows.push(row);
+      for (const page of row.covering) covering.push(page);
+      offsets[index + 1] = covering.length;
+    }
+    rows = nextRows;
+    const sourceRows = nextRows.map((row) => row.row);
+
+    if (pairing === null) {
+      const stateByPath = new Map(sourceRows.map((row) => [row.path, row.state] as const));
+      const stateOf = (path: string) => stateByPath.get(path) ?? null;
+      pairing = {
+        originalsByWiki: new Map([...pathsBySlug].map(([slug, paths]) => [slug, originalsOf(paths, stateOf)] as const)),
+        writeUpsBySource: new Map([...citations].map(([path, cited]) => [path, writeUpsOf(cited, hashes.get(path)?.toLowerCase(), titles)] as const)),
+      };
+    } else if (restated.size > 0 || rehashed.size > 0) {
+      const stateByPath = new Map(sourceRows.map((row) => [row.path, row.state] as const));
+      const stateOf = (path: string) => stateByPath.get(path) ?? null;
+      const originalsByWiki = new Map(pairing.originalsByWiki);
+      for (const path of restated) {
+        for (const citation of citations.get(path) ?? []) {
+          originalsByWiki.set(citation.wikiSlug, originalsOf(pathsBySlug.get(citation.wikiSlug) ?? [], stateOf));
+        }
+      }
+      const writeUpsBySource = new Map(pairing.writeUpsBySource);
+      for (const path of rehashed) {
+        const cited = citations.get(path);
+        if (cited) writeUpsBySource.set(path, writeUpsOf(cited, hashes.get(path)?.toLowerCase(), titles));
+      }
+      pairing = { originalsByWiki, writeUpsBySource };
+    }
+    keptSources = list;
+
+    const count = (judge: (row: LibrarySourceRow) => boolean) => {
+      let total = 0;
+      for (const row of sourceRows) if (judge(row)) total += 1;
+      return total;
+    };
+    return {
+      sources: sourceRows,
+      wikiPages,
+      needsCompileCount: count(sourceNeedsCompile),
+      notCompiledCount: count((row) => row.state === 'not-compiled'),
+      staleCount: count((row) => row.state === 'stale'),
+      partialCount: count((row) => row.state === 'partial'),
+      // `checking` rows are exactly the paths worth hashing; an mtime change drops a cached hash.
+      pathsNeedingHash: sourceRows.filter((row) => row.state === 'checking').map((row) => row.path),
+      pairing: { originalsByWiki: pairing.originalsByWiki, writeUpsBySource: pairing.writeUpsBySource },
+      compiledBy: { offsets, pages: Int32Array.from(covering) },
+    };
+  };
 }
 
 /** Newest `compiled_at` first, then slug, so hand-written folders still get a stable answer. */

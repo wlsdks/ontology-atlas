@@ -49,7 +49,7 @@ export function useLibraryReader({
     enabled: hasFolder,
   });
   const selectedAnswer = selectedWikiDoc && isRetainedAnswerPath(selectedWikiDoc.slug) ? selectedWikiDoc : null;
-  const answerHistory = useAnswerHistory(selectedAnswer, docs, model.pageTexts);
+  const answerHistory = useAnswerHistory(selectedAnswer, docs, model.pageFacts);
   const answerRefreshButtonRef = useRef<HTMLButtonElement>(null);
   const pendingAnswerFocus = useRef<string | null>(null);
   useEffect(() => {
