@@ -3,7 +3,7 @@ import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter'
 import type { VaultDoc } from '@/entities/docs-vault';
 import { sourceUnits } from '@/shared/lib/library/source-passage';
 import { MAX_VECTOR_PREFIX_BYTES, MAX_VECTOR_PREFIXES } from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { countDeskReadablePages, deskBriefEvidence, deskLeadTermRuns, deskMeaningLeads, deskSearchPrefixes, deskSentenceWindow, DESK_SENTENCE_LIMIT, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskReportFileCurrent, questionTermRuns, questionTerms, recentDeskPages, type DeskClaim } from './question-desk';
+import { countDeskReadablePages, deskBriefEvidence, deskPageClaims, deskLeadTermRuns, deskMeaningLeads, deskSearchPrefixes, deskSentenceWindow, DESK_SENTENCE_LIMIT, findDeskClaims, findDeskSourceHits, fuseDeskLeads, jevClaimEligibility, jevPayloadEligibility, newestDeskQuestions, planDeskSourceReads, questionDeskReportFileCurrent, questionTermRuns, questionTerms, recentDeskPages, type DeskClaim } from './question-desk';
 import { buildQuestionDeskBrief, buildQuestionDeskReportBrief, questionDeskReportFilename, serializeQuestionDeskReport, splitQuestionDeskReportSections, QUESTION_DESK_BRIEF_MAX_CHARS } from './question-desk-brief';
 import { planQuestionDeskReportFile } from './question-desk-brief';
 import { buildAnswerPage } from './answer-page';
@@ -26,10 +26,12 @@ const doc = (slug: string, text = raw): VaultDoc => ({
   slug, path: `${slug}.md`, title: slug, frontmatter: parseFrontmatter(text).frontmatter,
   tags: [], updatedAt: '', linksOut: [],
 });
+const claimsOf = (texts: Iterable<readonly [string, string]>) =>
+  new Map([...texts].map(([slug, text]) => [slug, deskPageClaims(text)] as const));
 
 describe('question desk evidence', () => {
   it('retrieves a schema-valid but false claim as a lead and preserves its exact citation', () => {
-    const found = findDeskClaims('When does refund approval restore stock?', [doc('wiki/refund')], new Map([['wiki/refund', raw]]));
+    const found = findDeskClaims('When does refund approval restore stock?', [doc('wiki/refund')], claimsOf([['wiki/refund', raw]]));
     expect(found.readPages).toBe(1);
     expect(found.claims).toEqual([expect.objectContaining({
       pageSlug: 'wiki/refund', citations: [{ path: 'sources/refund.md', anchor: 'l2' }],
@@ -40,12 +42,12 @@ describe('question desk evidence', () => {
 
   it('never treats a citation file name as topical evidence', () => {
     const citedOnly = raw.replace('Refund approval immediately restores stock.', 'An unrelated decision was recorded.');
-    const found = findDeskClaims('refund stock', [doc('wiki/refund', citedOnly)], new Map([['wiki/refund', citedOnly]]));
+    const found = findDeskClaims('refund stock', [doc('wiki/refund', citedOnly)], claimsOf([['wiki/refund', citedOnly]]));
     expect(found.claims).toHaveLength(0);
   });
 
   it('keeps unread pages and absent answers explicit', () => {
-    const found = findDeskClaims('nonexistent settlement', [doc('wiki/refund'), doc('wiki/unread')], new Map([['wiki/refund', raw]]));
+    const found = findDeskClaims('nonexistent settlement', [doc('wiki/refund'), doc('wiki/unread')], claimsOf([['wiki/refund', raw]]));
     expect(found.claims).toHaveLength(0);
     expect(found.readPages).toBe(1);
     expect(found.totalPages).toBe(2);
@@ -58,12 +60,12 @@ describe('question desk evidence', () => {
     const texts = new Map(docs.map((item, index) => [item.slug, unrelated(index)]));
     docs.push(doc('wiki/refund'));
     texts.set('wiki/refund', raw);
-    const found = findDeskClaims('refund approval stock', docs, texts);
+    const found = findDeskClaims('refund approval stock', docs, claimsOf(texts));
     expect(found.totalPages).toBe(37);
     expect(found.readPages).toBe(37);
     expect(found.claims[0]?.pageSlug).toBe('wiki/refund');
     expect(found.omitted).toBe(0);
-    const broad = findDeskClaims('policy reimbursement', docs, texts);
+    const broad = findDeskClaims('policy reimbursement', docs, claimsOf(texts));
     expect(broad.claims).toHaveLength(8);
     expect(broad.omitted).toBe(28);
   });
@@ -99,7 +101,7 @@ describe('question desk evidence', () => {
   });
 
   it('reads exact original units and withholds Jev for missing, stale, and unmeasured evidence', () => {
-    const claim = findDeskClaims('refund stock', [doc('wiki/refund')], new Map([['wiki/refund', raw]])).claims[0]!;
+    const claim = findDeskClaims('refund stock', [doc('wiki/refund')], claimsOf([['wiki/refund', raw]])).claims[0]!;
     const citation = claim.citations[0]!;
     const unit = { anchor: 'l2', kind: 'line' as const, text: 'Refund approval queues a stock restoration job.' };
     expect(findDeskSourceHits('sources/refund.md', [unit], questionTerms('refund approval job'))).toEqual({
@@ -112,7 +114,7 @@ describe('question desk evidence', () => {
   });
 
   it('hands off a read-only question with coverage and original addresses', () => {
-    const claim = findDeskClaims('refund stock', [doc('wiki/refund')], new Map([['wiki/refund', raw]])).claims[0]!;
+    const claim = findDeskClaims('refund stock', [doc('wiki/refund')], claimsOf([['wiki/refund', raw]])).claims[0]!;
     const brief = buildQuestionDeskBrief({
       question: 'When does stock return?', vaultRoot: '/folder', locale: 'en', claims: [claim],
       sourceHits: [{ path: 'sources/refund.md', anchor: 'l2', text: 'A job runs later.', score: 2 }],
@@ -159,7 +161,7 @@ describe('question desk evidence', () => {
   });
 
   it('requests a bounded report draft with four evidence categories and no write authority', () => {
-    const claim = findDeskClaims('refund stock', [doc('wiki/refund')], new Map([['wiki/refund', raw]])).claims[0]!;
+    const claim = findDeskClaims('refund stock', [doc('wiki/refund')], claimsOf([['wiki/refund', raw]])).claims[0]!;
     const report = buildQuestionDeskReportBrief({
       question: 'When does stock return?', vaultRoot: '/folder', locale: 'en', claims: [claim],
       sourceHits: [{ path: 'sources/refund.md', anchor: 'l2', text: 'A job runs later.', score: 2 }],
@@ -536,7 +538,7 @@ describe('question desk rows found by meaning', () => {
   const pageRaw = `---\ntitle: Returns\nsource_hash:\n  sources/returns.md: ${'a'.repeat(64)}\n---\n## Summary\nHow returns work.\n## Facts\n- Opened items are excluded. [[src:sources/returns.md#l5]]\n- Defects waive the fee. [[src:sources/returns.md#l6]]\n`;
   const page = doc('wiki/returns', pageRaw);
   const base = {
-    docs: [page], rawBySlug: new Map([['wiki/returns', pageRaw]]),
+    docs: [page], claimsBySlug: claimsOf([['wiki/returns', pageRaw]]),
     searchedSources: new Set(['sources/returns.md']), sourceUnitsByPath: new Map([['sources/returns.md', units]]),
   };
 
@@ -571,7 +573,7 @@ describe('question desk rows found by meaning', () => {
   });
 
   it('takes a word claim in range over the first claim there', () => {
-    const words = findDeskClaims('fee defects', [page], base.rawBySlug).claims;
+    const words = findDeskClaims('fee defects', [page], base.claimsBySlug).claims;
     const meaning = deskMeaningLeads({ ...base, hits: [{ path: 'wiki/returns.md', lineStart: 9, lineEnd: 10 }], claims: words, sourceHits: [] });
     expect(meaning.leads).toEqual([{ kind: 'claim', claim: words[0] }]);
     expect(fuseDeskLeads(words, [], meaning.leads).map((lead) => lead.reason)).toEqual(['both']);
@@ -624,7 +626,7 @@ describe('question desk search by meaning in names Finder wrote', () => {
         { path: nfd(`wiki/${hangul}.md`), lineStart: 1, lineEnd: 5 },
         { path: nfd(listed), lineStart: 1, lineEnd: 2 },
       ],
-      docs: [page], rawBySlug: new Map([[page.slug, pageRaw]]),
+      docs: [page], claimsBySlug: claimsOf([[page.slug, pageRaw]]),
       searchedSources: new Set([listed]), sourceUnitsByPath: new Map([[listed, units]]),
       claims: [], sourceHits: [],
     });
@@ -640,7 +642,7 @@ describe('question desk search by meaning in names Finder wrote', () => {
     const units = sourceUnits(new TextEncoder().encode(sourceText), listed).units;
     const meaning = deskMeaningLeads({
       hits: [{ path: listed.normalize('NFC'), lineStart: 2, lineEnd: 2 }],
-      docs: [], rawBySlug: new Map(), searchedSources: new Set([listed]), sourceUnitsByPath: new Map([[listed, units]]),
+      docs: [], claimsBySlug: new Map(), searchedSources: new Set([listed]), sourceUnitsByPath: new Map([[listed, units]]),
       claims: [], sourceHits: [],
     });
     expect(meaning.leads).toEqual([{ kind: 'source', hit: expect.objectContaining({ path: listed, anchor: 'l2' }) }]);

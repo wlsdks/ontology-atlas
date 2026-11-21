@@ -20,6 +20,7 @@ import { useTopologySceneControls } from "../model/map-canvas/use-topology-scene
 import { useTopologySourceActions } from "../model/project-source/use-topology-source-actions";
 import { useTopologySourceReadiness } from "../model/project-source/use-topology-source-readiness";
 import { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
+import { useWikiFolderLanding } from "../model/use-wiki-folder-landing";
 import { TopologyAgentDock } from "./TopologyAgentDock";
 import { TopologyCanvasSurface } from "./TopologyCanvasSurface";
 import { TopologyCommandChrome } from "./TopologyCommandChrome";
@@ -42,6 +43,7 @@ import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import { LiveAnnouncer, WidgetErrorFallback, useToast } from "@/shared/ui";
 import { ErrorBoundary } from "@/shared/ui/fallbacks/error-boundary";
 import { MapEntryLoadingVisual } from "@/shared/ui/fallbacks/map-entry-loading-visual";
+import { RouteLoadingFallback } from "@/shared/ui/fallbacks/route-loading-fallback";
 import { OPEN_SHORTCUTS_EVENT, useSurfaceRequest } from "@/shared/lib/keyboard/surface-requests";
 import { useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { GestureHint } from "@/widgets/gesture-hint";
@@ -82,11 +84,13 @@ export function HomePage() {
   const [bootedOnce, rememberBooted] = useArrivalMemory("home-map-booted", false);
   const [bootRenderReady, setBootRenderReady] = useState(bootedOnce);
   const [loaderOnScreen] = useState(() => typeof document === 'undefined' || document.querySelector('[data-testid="map-entry-fallback"]') !== null);
+  const leavingForLibrary = useWikiFolderLanding(mapEntryTicket);
   useEffect(() => {
     rememberBooted(true);
     if (bootRenderReady) return;
     startTransition(() => setBootRenderReady(true));
   }, [bootRenderReady, rememberBooted]);
+  if (leavingForLibrary) return <RouteLoadingFallback />;
   if (!bootRenderReady) {
     const visual = (
       <MapEntryLoadingVisual
@@ -232,7 +236,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   });
   const { selectedProject, indexPanelCollapsedStored, handleChangeIndexDefaultCollapsed } = topologyRouteControls;
   const topologyVaultReadModel = useTopologyVaultReadModel({
-    router, recentWindow, pathSourceSlug, pathTargetSlug, expandAllActive, setRouteState, setFitViewToken,
+    recentWindow, pathSourceSlug, pathTargetSlug, expandAllActive, setRouteState, setFitViewToken,
     selectedSlug, projectsQuery, toast, topologyRouteControls, topologyPreferences
   });
   const {

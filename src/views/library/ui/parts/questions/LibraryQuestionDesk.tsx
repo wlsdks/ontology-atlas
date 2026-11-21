@@ -23,6 +23,7 @@ import {
   type DeskCitation,
   type DeskClaim,
   type DeskSourceHit,
+  type LibraryPageFacts,
 } from '@/features/library';
 import { sourceUnits, type SourceUnit } from '@/shared/lib/library/source-passage';
 import type { VectorFound } from '@/shared/lib/vault-folder/tauri-vault-vectors';
@@ -83,7 +84,7 @@ const RESULTS = { slot: 'results' } as const;
 
 export function LibraryQuestionDesk({
   docs,
-  pageTexts,
+  pageFacts,
   sources,
   sourceHandles,
   hashes,
@@ -105,7 +106,7 @@ export function LibraryQuestionDesk({
   workActivity = null,
 }: {
   docs: readonly VaultDoc[];
-  pageTexts: ReadonlyMap<string, string>;
+  pageFacts: ReadonlyMap<string, LibraryPageFacts>;
   sources: readonly LibrarySourceRow[];
   sourceHandles: ReadonlyMap<string, FileSystemFileHandle>;
   hashes: ReadonlyMap<string, string>;
@@ -136,14 +137,15 @@ export function LibraryQuestionDesk({
   const [expandedFor, setExpandedFor] = useState<number | null>(null);
   const searchId = useRef(0);
   const sourceUnitsByStamp = useRef(new Map<string, SourceUnit[]>());
-  const jev = useDeskJev({ pageTexts, sources, sourceHandles, hashes, vaultRoot, vaultScope });
+  const jev = useDeskJev({ pageFacts, sources, sourceHandles, hashes, vaultRoot, vaultScope });
   const meaningSearch = useVectorSearch(vaultRoot, docs.length, visible);
 
   useEffect(() => () => { searchId.current += 1; }, []);
 
   // Both read every page and source: worked out when the listing changes, not on each render.
   const listingVersion = useMemo(() => questionDeskListingVersion(docs, sources), [docs, sources]);
-  const readablePages = useMemo(() => countDeskReadablePages(docs, pageTexts), [docs, pageTexts]);
+  const readablePages = useMemo(() => countDeskReadablePages(docs, pageFacts), [docs, pageFacts]);
+  const claimsBySlug = useMemo(() => new Map([...pageFacts].map(([slug, facts]) => [slug, facts.claims] as const)), [pageFacts]);
   const fresh = result !== null && result.listingVersion === listingVersion
     && result.readPages === readablePages;
   const outdated = result !== null && !fresh;
@@ -156,7 +158,7 @@ export function LibraryQuestionDesk({
     jev.reset();
     setReading(true);
     setReadCount(0);
-    const wiki = findDeskClaims(asked, docs, pageTexts);
+    const wiki = findDeskClaims(asked, docs, claimsBySlug);
     const searchedVersion = listingVersion;
     const terms = questionTerms(asked);
     const plan = planDeskSourceReads(sources);
@@ -217,7 +219,7 @@ export function LibraryQuestionDesk({
       const found = askedByMeaning ? await askedByMeaning : null;
       if (id !== searchId.current) return;
       const byMeaning = found?.state === 'ok' ? deskMeaningLeads({
-        hits: found.hits, docs, rawBySlug: pageTexts, searchedSources: new Set(plan.map((source) => source.path)),
+        hits: found.hits, docs, claimsBySlug, searchedSources: new Set(plan.map((source) => source.path)),
         sourceUnitsByPath: unitsByPath, claims: wiki.claims, sourceHits,
       }) : null;
       const leads = fuseDeskLeads(wiki.claims, sourceHits, byMeaning?.leads ?? []);

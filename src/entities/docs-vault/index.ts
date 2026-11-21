@@ -44,6 +44,7 @@ export { VAULT_SOURCES_DIR } from './lib/local-manifest/walk-vault';
 export { createSourceCopyBatch } from './lib/library/source-copy-publication';
 export {
   buildLibraryModel,
+  createLibraryModelBuilder,
   selectWikiPages,
   countWikiPages,
   countSourceFormats,
@@ -96,7 +97,7 @@ export type {
   VaultOntologyDerivation,
 } from './lib/derive-ontology-from-vault';
 export { findRelatedDocs } from './lib/doc-navigation/related-docs';
-export { buildWikiRetrievalIndex, type WikiRetrievalResult } from './lib/library/wiki-retrieval';
+export { buildWikiRetrievalIndex, createWikiTermIntern, wikiRetrievalPage, type WikiRetrievalPage, type WikiRetrievalResult, type WikiTermIntern } from './lib/library/wiki-retrieval';
 export { buildDocsVaultHref } from './lib/doc-navigation/href';
 export { buildOntologyDeeplinkForDoc } from './lib/doc-navigation/ontology-deeplink';
 export { buildTopologyDeeplinkForDoc } from './lib/doc-navigation/topology-deeplink';

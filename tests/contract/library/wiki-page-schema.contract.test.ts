@@ -17,9 +17,15 @@ import {
   WIKI_PAGE_TEMPLATE as TEMPLATE_TS,
   WIKI_REQUIRED_FIELDS as REQUIRED_TS,
   WIKI_SECTION_ORDER as SECTIONS_TS,
-  validateWikiFolder as validateFolderTs,
   validateWikiPage as validateTs,
 } from '@/shared/lib/library/wiki-page-schema';
+import {
+  validateWikiFolder as validateFolderTs,
+  wikiFolderJudgement as folderJudgementTs,
+  wikiPageCodes as wikiPageCodesTs,
+  wikiPageFacts as wikiPageFactsTs,
+  wikiPageProblems,
+} from '@/shared/lib/library/wiki-folder';
 import {
   WIKI_CITATION_PATTERN as PATTERN_MCP,
   WIKI_FIELDS as FIELDS_MCP,
@@ -33,6 +39,7 @@ import {
 } from '../../../mcp/src/library/wiki-schema.mjs';
 import {
   validateWikiFolder as validateFolderMcp,
+  wikiFolderJudgement as folderJudgementMcp,
   wikiPageCodes,
   wikiPageFacts,
 } from '../../../mcp/src/library/wiki-folder.mjs';
@@ -233,6 +240,30 @@ describe('wiki page facts — judging from facts equals judging from text', () =
         expect(distinct(wikiPageCodes(facts, options))).toEqual(distinct(validateTs(raw, options).problems.map((p) => p.code)));
       }
     }
+  });
+
+  it('the web twin keeps the same page facts as MCP, and rebuilds the full problem list from them', () => {
+    const pages = [...WIKI_PAGE_CASES.map((testCase) => testCase.input), ...generated.pages.map((page) => page.raw)];
+    const optionSets = [{}, { knownSources: new Set(generated.knownSources) }, { nodes: generated.nodes }, { knownSources: new Set(generated.knownSources), nodes: generated.nodes }];
+    for (const raw of pages) {
+      const twin = wikiPageFactsTs(raw);
+      const { head: _head, tail: _tail, ...shared } = twin;
+      expect(shared).toEqual(wikiPageFacts(raw));
+      for (const options of optionSets) {
+        expect(JSON.stringify(wikiPageProblems(twin, options))).toBe(JSON.stringify(validateTs(raw, options).problems));
+        expect(distinct(wikiPageCodesTs(twin, options))).toEqual(distinct(wikiPageCodes(wikiPageFacts(raw), options)));
+      }
+    }
+  });
+
+  it('the web folder judgement asked page by page equals the MCP one on the generated folder', () => {
+    const facts = generated.pages.map((page) => ({ path: page.path, raw: page.raw }));
+    const twin = folderJudgementTs(facts.map((page) => ({ path: page.path, facts: wikiPageFactsTs(page.raw) })));
+    const mcp = folderJudgementMcp(facts.map((page) => ({ path: page.path, facts: wikiPageFacts(page.raw) })));
+    facts.forEach((_, index) => {
+      expect(JSON.stringify(twin.problemsOf(index))).toBe(JSON.stringify(mcp.problemsOf(index)));
+      expect(twin.codesOf(index)).toEqual(mcp.codesOf(index));
+    });
   });
 
   it('validate_wiki over a folder on disk returns what judging every page text returns, page for page', () => {

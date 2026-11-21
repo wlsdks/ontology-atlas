@@ -20,7 +20,7 @@ const MODEL = {
   verdicts: new Map(),
   offTemplateCount: 0,
   hashes: new Map(),
-  pageTexts: new Map(),
+  pageFacts: new Map(),
   log: { lastCompile: null, lastLint: null },
   /* The shelf reads its freshness from the pairing, so a model without one is not a model. */
   pairing: { originalsByWiki: new Map(), writeUpsBySource: new Map() },

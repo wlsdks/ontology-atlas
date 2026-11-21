@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildWikiRetrievalIndex, type VaultDoc } from '@/entities/docs-vault';
+import { buildWikiRetrievalIndex, wikiRetrievalPage, type VaultDoc } from '@/entities/docs-vault';
 import { createCompileExecutor } from '@/features/vault-agent/model/compile/compile-executor';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
@@ -11,7 +11,7 @@ function indexFor(fixture: typeof accumulationCases[number]) {
   const pages = [...distractors, fixture.existing];
   const docs: VaultDoc[] = pages.map(({ slug, title, raw }) => ({ slug, path: `${slug}.md`, title,
     frontmatter: parseFrontmatter(raw).frontmatter, tags: [], headings: [], excerpt: '', linksOut: [], updatedAt: '', wordCount: 0 }));
-  return buildWikiRetrievalIndex(docs, new Map(pages.map(({ slug, raw }) => [slug, raw])));
+  return buildWikiRetrievalIndex(docs, new Map(pages.map(({ slug, raw }) => [slug, wikiRetrievalPage(raw)])));
 }
 
 async function readWikiCompletely(
