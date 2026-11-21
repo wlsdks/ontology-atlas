@@ -65,7 +65,7 @@ impl std::io::Write for HashingWriter<'_> {
 // fails on drift.
 const SOURCE_INVENTORY_VERSION: &str = "inventory-v2";
 const SOURCE_INVENTORY_MAX_DEPTH: usize = 20;
-const SOURCE_INVENTORY_MAX_FILES: usize = 8000;
+const SOURCE_INVENTORY_MAX_FILES: usize = 16000;
 const SOURCE_INVENTORY_MAX_HASH_BYTES: u64 = 32 * 1024 * 1024;
 const SOURCE_PRUNE_DIR_NAMES: &[&str] = &[
     ".git",
