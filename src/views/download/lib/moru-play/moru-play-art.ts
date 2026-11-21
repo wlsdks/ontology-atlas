@@ -125,3 +125,6 @@ export function textRows(text: string, face: Record<string, string[]> = GLYPHS):
   const glyphs = [...text].map((c) => face[c]).filter(Boolean);
   return Array.from({ length: glyphs[0]?.length ?? 0 }, (_, y) => glyphs.map((g) => g[y]).join('.'));
 }
+
+/** Height in pixels of the ground strip at the field's foot. */
+export const FLOOR_BAND = 28;
