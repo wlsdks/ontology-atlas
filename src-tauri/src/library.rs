@@ -92,6 +92,7 @@ const DISCOVERY_PRUNE_DIR_NAMES: &[&str] = &[
     "third_party",
     "third-party",
     "licenses",
+    "licences",
     "fixtures",
     "__fixtures__",
     "testdata",
@@ -116,6 +117,10 @@ const DISCOVERY_NOTICE_STEMS: &[&str] = &[
     "changelog",
     "patents",
 ];
+
+/// Must equal TS `DISCOVERY_NOTICE_SUFFIXES`: a bundled library's licence, `x-1.0.LICENSE.txt`.
+/// A hyphen is absent so `driver-license.pdf` stays a document.
+const DISCOVERY_NOTICE_SUFFIXES: &[&str] = &[".license", "_license", ".licence", "_licence"];
 
 /// Must equal TS `DISCOVERY_BUILD_FILE_NAMES`; `requirements-*.txt` is matched by prefix.
 const DISCOVERY_BUILD_FILE_NAMES: &[&str] = &["cmakelists.txt", "requirements.txt", "robots.txt"];
@@ -163,7 +168,9 @@ fn names_a_notice(stem: &str) -> bool {
     DISCOVERY_NOTICE_STEMS.iter().any(|notice| {
         stem.strip_prefix(notice)
             .is_some_and(|rest| rest.is_empty() || rest.starts_with(['-', '_', '.']))
-    })
+    }) || DISCOVERY_NOTICE_SUFFIXES
+        .iter()
+        .any(|suffix| stem.ends_with(suffix))
 }
 
 fn names_a_build_file(lowered: &str) -> bool {

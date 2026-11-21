@@ -55,6 +55,7 @@ export const DISCOVERY_PRUNE_DIR_NAMES = [
   'third_party',
   'third-party',
   'licenses',
+  'licences',
   'fixtures',
   '__fixtures__',
   'testdata',
@@ -79,6 +80,12 @@ export const DISCOVERY_NOTICE_STEMS = [
   'changelog',
   'patents',
 ] as const;
+
+/**
+ * Must equal Rust `DISCOVERY_NOTICE_SUFFIXES`: a bundled library's licence, `x-1.0.LICENSE.txt`.
+ * A hyphen is absent so `driver-license.pdf` stays a document.
+ */
+export const DISCOVERY_NOTICE_SUFFIXES = ['.license', '_license', '.licence', '_licence'] as const;
 
 /** Must equal Rust `DISCOVERY_BUILD_FILE_NAMES`; `requirements-*.txt` is matched by prefix. */
 export const DISCOVERY_BUILD_FILE_NAMES = ['cmakelists.txt', 'requirements.txt', 'robots.txt'] as const;
@@ -123,11 +130,12 @@ export function discoveryExtension(name: string): string {
 }
 
 function namesANotice(stem: string): boolean {
-  return DISCOVERY_NOTICE_STEMS.some((notice) => {
+  const startsWithANotice = DISCOVERY_NOTICE_STEMS.some((notice) => {
     if (!stem.startsWith(notice)) return false;
     const next = stem.charAt(notice.length);
     return next === '' || next === '-' || next === '_' || next === '.';
   });
+  return startsWithANotice || DISCOVERY_NOTICE_SUFFIXES.some((suffix) => stem.endsWith(suffix));
 }
 
 function namesABuildFile(lowered: string): boolean {

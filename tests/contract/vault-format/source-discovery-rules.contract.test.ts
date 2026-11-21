@@ -10,6 +10,7 @@ import {
   DISCOVERY_MAX_DEPTH,
   DISCOVERY_MIN_FILE_BYTES,
   DISCOVERY_NOTICE_STEMS,
+  DISCOVERY_NOTICE_SUFFIXES,
   DISCOVERY_PRUNE_DIR_NAMES,
   DISCOVERY_PRUNE_DIR_PATHS,
   discoveryAcceptsFile,
@@ -74,6 +75,9 @@ describe('the discovery rule is the same in both walks', () => {
 
   it('refuses the same notice names and build files', () => {
     expect(rustList('DISCOVERY_NOTICE_STEMS').sort()).toEqual([...DISCOVERY_NOTICE_STEMS].sort());
+    expect(rustList('DISCOVERY_NOTICE_SUFFIXES').sort()).toEqual(
+      [...DISCOVERY_NOTICE_SUFFIXES].sort(),
+    );
     expect(rustList('DISCOVERY_BUILD_FILE_NAMES').sort()).toEqual(
       [...DISCOVERY_BUILD_FILE_NAMES].sort(),
     );
