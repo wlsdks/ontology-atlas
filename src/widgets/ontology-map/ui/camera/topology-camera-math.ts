@@ -63,12 +63,7 @@ export function fitWorldTarget(
   };
 }
 
-/**
- * The courtesy ring outside a node's painted disc, in screen px. An element draws
- * at 7 px world radius and can be under 4 px on screen in 3D, which is not a
- * pressable target on its own; this is what makes it one. It is a **slack ring,
- * not a second disc** — `hitTestWorld` ranks painted ink above it (see there).
- */
+/** The courtesy ring outside a node's painted disc (screen px): an element draws at 7 px world radius and can be under 4 px in 3D, not pressable alone. A slack ring, not a second disc: `hitTestWorld` ranks painted ink above it. */
 export const HIT_TOUCH_SLACK_PX = 5;
 
 /** The node under `(screenX, screenY)`, `null` if none is within its padded radius. */
@@ -82,18 +77,9 @@ export function hitTestWorld(
   screenY: number,
   /** Optional filter — skips nodes that aren't currently hittable (e.g. semantic-zoom-hidden tiers). Defaults to "all hittable". */
   isHittable?: (node: WorldNode) => boolean,
-  /**
-   * Optional per-node render offset (world units). The draw pass shifts
-   * deep realm nodes by the depth-parallax offset; passing the SAME offset here
-   * keeps the clickable disc under where the node is actually drawn. Defaults to
-   * no offset (the common case).
-   */
+  /** Optional per-node render offset (world units): the draw shifts deep realm nodes by the depth-parallax offset, so the clickable disc must follow. Defaults to none. */
   renderOffsetForNode?: (node: WorldNode) => Point,
-  /**
-   * 3D view — multiply the hit disc by the same perspective factor
-   * (`DomeNodeFrame.s`) the draw multiplied the node radius by. Omitted means 1
-   * (the previous 2D behaviour unchanged).
-   */
+  /** 3D: multiplies the hit disc by the perspective factor (`DomeNodeFrame.s`) the draw applied to the node radius. Omitted means 1. */
   radiusScaleForNode?: (node: WorldNode) => number,
   /**
    * 3D view: the node's normalised depth (0 near, 1 far, `DomeNodeFrame.u`). When given, the
@@ -150,12 +136,7 @@ export function hitTestWorld(
  * above the far-high ratio (0.92) so `farT` lands at 0 on load. It anchors `overviewScaleRef`;
  * zooming out still crosses `farHigh` to `farLow`.
  */
-/**
- * Fixed-chrome safe insets (px) — the left ReaderLens panel, right popover rail,
- * top utility lane, bottom hint. Optional on the token param so the pure
- * camera-math tests (which pass a token literal without insets) still type-check
- * and behave as a zero-inset full-viewport fit.
- */
+/** Fixed-chrome safe insets (px): left ReaderLens panel, right popover rail, top utility lane, bottom hint. Optional so pure camera-math tests behave as a zero-inset fit. */
 export type SafeInsetTokens = Partial<
   Pick<OntologyMapTokens, "safeInsetLeft" | "safeInsetRight" | "safeInsetTop" | "safeInsetBottom">
 > & {
@@ -678,12 +659,8 @@ export function computeDomeFocusCameraTarget(
   const focusZoomInCeiling = overviewEntryScale * (tokens.focusMaxZoomRatio ?? Number.POSITIVE_INFINITY);
   const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(scaleFloor ?? 0, fitScale));
   const target = { ...centerForInsets(centerX, centerY, insets, scale), tscale: scale };
-  // Keep the target **inside** the focus pan leash's envelope
-  // (`cameraFocusPanMargin`) — the dome's ego neighbours project asymmetrically onto
-  // the tiers above rather than around the subject, so the bbox centre can fall
-  // outside the leash; the elastic clamp then pulls the camera back after the tween
-  // arrives and «sliding after landing» becomes visible (measured 38 units). A target
-  // inside the envelope makes arrival mean a stop.
+  // Keep the target inside the focus pan leash's envelope (`cameraFocusPanMargin`): the dome's ego neighbours project asymmetrically, so the bbox centre can
+  // fall outside the leash and the elastic clamp would pull the camera back after the tween arrives (measured 38 units, a visible slide after landing).
   if (focusAnchor && tokens.cameraFocusPanMargin > 0) {
     const m = tokens.cameraFocusPanMargin;
     target.tx = Math.min(focusAnchor.x + m, Math.max(focusAnchor.x - m, target.tx));
