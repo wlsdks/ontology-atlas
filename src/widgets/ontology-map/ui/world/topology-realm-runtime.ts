@@ -4,7 +4,7 @@
  */
 
 import type { CameraTarget } from "../../engine/camera";
-import { fitWorldTarget } from "../camera/topology-camera-math";
+import { fitWorldTarget } from "../camera/target/fit-targets";
 import {
   computeRealmLayout,
   computeVisibleBounds,

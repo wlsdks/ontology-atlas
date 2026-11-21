@@ -11,13 +11,15 @@ import type { TopologyWorld } from "../../world/topology-world";
 import { cachedGraphAttention } from "../../../flat-graph/attention";
 import { lastOpenedDomainStar } from "../../../flat-graph/frame";
 import { graphDiscRadiusPx } from "../../../flat-graph/marks";
-import { domainTitleBlocks, memberNameReachPx, nameReachBox, selectedDiscRadius, type NameReachInput } from "../../../flat-graph/names";
+import { selectedDiscRadius } from "../../../flat-graph/names";
+import { memberNameReachPx, nameReachBox, type NameReachInput } from "../../../flat-graph/names/sides";
+import { domainTitleBlocks } from "../../../flat-graph/names/titles";
 import { domainStarIds, domainStarRooms, openRadiusPx, type StarRoom } from "../../../flat-graph/open-star";
 import { readFlatGraphTokens } from "../../../flat-graph/tokens";
 import type { FlatGraphPaintTokens } from "../../../flat-graph/types";
 import { labelFontFamily } from "../../../render/labels";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
-import { computeEffectiveCameraScaleMax } from "../topology-camera-math";
+import { computeEffectiveCameraScaleMax } from "../target/zoom-range";
 import { domainSelectionZoom, elementSelectionZoom, graphSelectionZoom } from "./graph-selection-zoom";
 
 const staleBounds = new WeakMap<DialModel, ReadonlyMap<string, number>>();

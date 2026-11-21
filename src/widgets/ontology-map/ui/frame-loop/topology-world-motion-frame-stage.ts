@@ -42,7 +42,7 @@ import {
 import { holdTierAssemblyBounds, isTierAssembling, settleTierAssembly, stepTierAssembly } from "../../morph/tier-assembly";
 import { relaxNodeSeparation, type SeparationNode } from "../../model/layout/separation";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { computeOverviewFitScale } from "../camera/topology-camera-math";
+import { computeOverviewFitScale } from "../camera/target/fit-targets";
 import { dialReleaseHoming } from "./topology-dial-release";
 import { overviewBoundsFor } from "../camera/topology-overview-fit";
 import type { NodeDragState } from "../input/topology-pointer-types";

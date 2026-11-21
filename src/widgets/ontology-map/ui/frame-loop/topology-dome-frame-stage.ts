@@ -53,11 +53,8 @@ import { followTurnWithZoom } from "../../model/dome-view/camera/turn-follow";
 import type { DomeModel } from "../../model/dome-view/types";
 import type { RealmTransitionState } from "../../model/realm/realm-transition";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import {
-  computeDomeFocusCameraTarget,
-  computeOverviewCameraTarget,
-  computeOverviewFitScale,
-} from "../camera/topology-camera-math";
+import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/target/fit-targets";
+import { computeDomeFocusCameraTarget } from "../camera/target/focus-fit";
 import { overviewBoundsFor } from "../camera/topology-overview-fit";
 import { dialOverviewFit, radiusForKind, type TopologyWorld } from "../world/topology-world";
 

@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { bodyPoints } from "@/widgets/ontology-map/render/node-shapes";
+import { bodyPoints } from "@/widgets/ontology-map/render/node-shapes/silhouette";
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 
 /**

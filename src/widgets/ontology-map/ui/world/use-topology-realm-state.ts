@@ -14,7 +14,7 @@ import {
   type RealmTransitionState
 } from "../../model/realm/realm-transition";
 import type { WardingFitState } from "../../model/realm/realm-warding-fit";
-import type { ClusterBarLabels } from "../../render/cluster-chips";
+import type { ClusterBarLabels } from "../../render/cluster-chips/control-placement";
 import { type RealmRuntimeData } from "./topology-realm-runtime";
 
 interface Dependencies {

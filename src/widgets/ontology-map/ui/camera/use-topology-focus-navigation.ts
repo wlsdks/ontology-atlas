@@ -23,7 +23,9 @@ import { isPathTargetPick, type TopologyMapLensKind } from "../../model/visibili
 import {
   type RealmTransitionState
 } from "../../model/realm/realm-transition";
-import { computeFocusCameraTarget, computeOverviewCameraTarget, focusPanBounds, focusTargetLeashPx, type FocusLeashPx } from "./topology-camera-math";
+import { computeOverviewCameraTarget } from "./target/fit-targets";
+import { computeFocusCameraTarget } from "./target/focus-fit";
+import { focusPanBounds, focusTargetLeashPx, type FocusLeashPx } from "./target/pan-leash";
 import {
   foldedPanelTokens,
   overviewBoundsFor

@@ -18,7 +18,7 @@ import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
 import { readHexBoardTokensOrNull } from "../tokens/read-hex-board-tokens";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../ui/OntologyMap";
-import { computeOverviewCameraTarget, overviewEntryArea } from "../ui/camera/topology-camera-math";
+import { computeOverviewCameraTarget, overviewEntryArea } from "../ui/camera/target/fit-targets";
 import { lastDrawnNodeAlphas } from "../ui/frame-draw/topology-frame-draw";
 import { overviewBoundsFor, overviewFitTokens } from "../ui/camera/topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "../tokens/topology-read-tokens";

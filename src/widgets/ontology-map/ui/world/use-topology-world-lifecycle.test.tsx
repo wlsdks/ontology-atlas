@@ -4,7 +4,7 @@ import type { DialMemory } from "../../dial/types";
 import { isTierAssembling } from "../../morph/tier-assembly";
 import type { FlatRingMemoryStore } from "../loop/topology-loop-contract";
 import type { TopologyWorld } from "./topology-world";
-import { overviewEntryArea } from "../camera/topology-camera-math";
+import { overviewEntryArea } from "../camera/target/fit-targets";
 import { useTopologyWorldLifecycle } from "./use-topology-world-lifecycle";
 
 const builds = vi.hoisted(() => ({ worlds: new Map<unknown, unknown>(), pending: [] as (() => void)[], dialInputs: [] as unknown[] }));

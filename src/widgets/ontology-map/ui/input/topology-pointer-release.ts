@@ -10,7 +10,7 @@ import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom } from "../../mo
 import { hitTestEdges } from "./topology-edge-hit";
 import { clampOrbitReleaseVelocity, domeFacingYaws, projectOrbitLanding, snapOrbitLanding, ORBIT_PITCH_PER_PX, ORBIT_YAW_PER_PX } from "../../model/dome-view/camera/orbit";
 import { INITIAL_POINTER_MACHINE_STATE, resolveClickAction, transitionPointerState } from "../../interaction/pointer-state-machine";
-import { computeUnfocusedPanBounds } from "../camera/topology-camera-math";
+import { computeUnfocusedPanBounds } from "../camera/target/pan-leash";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import type { PointerContext } from "./topology-pointer-context";
 import type { PointerHitTests } from "./topology-pointer-hit-tests";

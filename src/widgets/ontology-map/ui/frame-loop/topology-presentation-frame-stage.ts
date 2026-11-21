@@ -30,7 +30,7 @@ import { stepSpotlightPhase } from "../../model/ambient/spotlight-motion";
 import { placeTierNames, sameTierNames, type TierNameAnchor, type TierPlane } from "../../model/dome-view/strata/tier-names";
 import { type TierRevealConfig } from "../../model/visibility/tier-visibility";
 import { type AnimatedBackground } from "../../render/animated-background";
-import type { ClusterBarLabels } from "../../render/cluster-chips";
+import type { ClusterBarLabels } from "../../render/cluster-chips/control-placement";
 import type { Pulse } from "../../render/edge-fireflies";
 import type { DustPoint } from "../../render/starfield";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";

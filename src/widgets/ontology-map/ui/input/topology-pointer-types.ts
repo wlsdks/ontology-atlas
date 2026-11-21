@@ -6,7 +6,7 @@ import type { SelectionSource } from "../../model/camera/flat-selection-camera";
 import type { ForceSimulation } from "../../model/layout/force-layout";
 import type { TierRevealConfig } from "../../model/visibility/tier-visibility";
 import type { DragTugSets } from "../../interaction/drag-tug";
-import type { ClusterBarLabels } from "../../render/cluster-chips";
+import type { ClusterBarLabels } from "../../render/cluster-chips/control-placement";
 import type { ClusterChip } from "../../model/layout/density-gate";
 import type { ExpandPreference, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import type { DepthParallaxOffset } from "../../model/realm/realm-depth-parallax";

@@ -12,7 +12,7 @@ import type { DomeViewKind } from "../../model/dome-view/types";
 import type { DomeLightFrame } from "../../render/dome-view/dome-light";
 import type { TierRevealConfig } from "../../model/visibility/tier-visibility";
 import type { CanvasBackgroundVariant } from "../../render/grid";
-import type { ClusterBarLabels } from "../../render/cluster-chips";
+import type { ClusterBarLabels } from "../../render/cluster-chips/control-placement";
 import type { ClusterChip } from "../../model/layout/density-gate";
 import type { DustPoint } from "../../render/starfield";
 import type { Pulse } from "../../render/edge-fireflies";

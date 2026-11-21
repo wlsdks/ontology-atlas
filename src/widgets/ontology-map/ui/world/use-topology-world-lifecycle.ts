@@ -20,7 +20,8 @@ import { createForceSimulation, type ForceSimulation } from "../../model/layout/
 import { initHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
 import type { Pulse } from "../../render/edge-fireflies";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, overviewEntryArea } from "../camera/topology-camera-math";
+import { hasAnyNodeOnScreen } from "../camera/topology-camera-math";
+import { computeOverviewCameraTarget, computeOverviewFitScale, overviewEntryArea } from "../camera/target/fit-targets";
 import { layoutSizeOf } from "../camera/use-topology-viewport-lifecycle";
 import type { UseTopologyLoopArgs } from "../loop/topology-loop-contract";
 import {
