@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { WorkTrail } from "./work-trail";
+import { WorkTrail } from "./WorkTrail";
 
 const states = (container: HTMLElement) => [...container.querySelectorAll("[data-work-trail-node]")].map((node) => node.getAttribute("data-work-trail-node"));
 

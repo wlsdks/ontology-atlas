@@ -1,7 +1,7 @@
 "use client";
 
-import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/action-feedback-glyph';
-import { WorkGlyph } from '@/shared/motion/work-glyph';
+import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/status-glyphs/ActionFeedbackGlyph';
+import { WorkGlyph } from '@/shared/motion/status-glyphs/WorkGlyph';
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { useTranslations } from "next-intl";

@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import type { CopyFeedbackState } from "@/shared/lib/clipboard/use-copy-feedback";
-import { DrawnCheck } from "./drawn-check";
+import { DrawnCheck } from "./DrawnCheck";
 
 const LAYER =
   "col-start-1 row-start-1 grid place-items-center transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)]";

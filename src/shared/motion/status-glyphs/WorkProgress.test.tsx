@@ -1,6 +1,6 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { WorkProgress } from "./work-progress";
+import { WorkProgress } from "./WorkProgress";
 
 function parts(container: HTMLElement) {
   return {

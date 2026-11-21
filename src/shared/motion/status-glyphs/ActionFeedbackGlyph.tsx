@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { CopyFeedbackState } from '@/shared/lib/clipboard/use-copy-feedback';
-import { FeedbackGlyph } from './feedback-glyph';
-import { WorkGlyph } from './work-glyph';
+import { FeedbackGlyph } from './FeedbackGlyph';
+import { WorkGlyph } from './WorkGlyph';
 
 export type ActionFeedbackState = CopyFeedbackState | 'working';
 

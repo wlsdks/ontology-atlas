@@ -4,7 +4,7 @@ import { RotateCcw, Square, Undo2 } from 'lucide-react';
 
 import { isPressableSuggestion, type ChatSuggestion } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
-import { WorkProgress } from '@/shared/motion/work-progress';
+import { WorkProgress } from '@/shared/motion/status-glyphs/WorkProgress';
 import { Chip } from '@/shared/ui';
 import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DrawnCheck } from "./drawn-check";
+import { DrawnCheck } from "./DrawnCheck";
 
 export type WorkPhase = "waiting" | "running" | "done" | "failed";
 

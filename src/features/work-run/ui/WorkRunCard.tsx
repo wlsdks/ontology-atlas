@@ -7,7 +7,7 @@ import { cn } from '@/shared/lib/cn';
 import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION } from '@/shared/motion';
-import { WorkProgress } from '@/shared/motion/work-progress';
+import { WorkProgress } from '@/shared/motion/status-glyphs/WorkProgress';
 import { Button } from '@/shared/ui/controls/button';
 
 import { isRunActive, type WorkRun, type WorkRunPhase } from '../model/work-run';

@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 
 import { cn } from "@/shared/lib/cn";
-import type { WorkPhase } from "./work-glyph";
+import type { WorkPhase } from "./WorkGlyph";
 
 const WIDTH = 160;
 const HEIGHT = 20;
