@@ -10,7 +10,7 @@ import { Button } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-import type { meaningAuthority as readMeaningAuthority } from './permission-card-rules';
+import type { meaningAuthority as readMeaningAuthority } from './allow-once-gate';
 import type { usePermissionAnswer } from './use-permission-answer';
 
 type PermissionOption = PendingPermission['request']['options'][number];

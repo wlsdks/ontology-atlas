@@ -19,14 +19,13 @@ import type { TaskMeaningReviewController } from '../model/use-task-meaning-revi
 import { PermissionDecisions } from './chat-panel/permission/PermissionDecisions';
 import { PermissionHeader } from './chat-panel/permission/PermissionHeader';
 import { PermissionWriteVerdict } from './chat-panel/permission/PermissionWriteVerdict';
+import { isAllowOnceDisabled, meaningAuthority } from './chat-panel/permission/allow-once-gate';
 import {
   allowEffect as allowEffectOf,
   answeredKey,
-  isAllowOnceDisabled,
-  meaningAuthority,
   permissionBodyKey,
   permissionTitleKey,
-} from './chat-panel/permission/permission-card-rules';
+} from './chat-panel/permission/permission-wording';
 import { summarizeProposal } from './chat-panel/permission/task-review/meaning-units';
 import { TaskReview } from './chat-panel/permission/task-review/TaskReview';
 import { useTaskReviewState } from './chat-panel/permission/task-review/use-task-review-state';
