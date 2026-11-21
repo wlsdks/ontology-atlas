@@ -54,12 +54,8 @@ import {
   type McpInstallLinkProblem,
 } from '@/shared/lib/connectors/mcp-install-link';
 
-import {
-  AddConnectorDialog,
-  newConnectorId,
-  prefillFromRecord,
-  type CustomPrefill,
-} from './AddConnectorDialog';
+import { AddConnectorDialog } from './AddConnectorDialog';
+import { newConnectorId, prefillFromRecord, type CustomPrefill } from '../model/connector-draft';
 
 import type { VaultConnectorsState } from '../model/use-vault-connectors';
 
