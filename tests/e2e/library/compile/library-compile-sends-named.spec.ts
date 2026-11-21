@@ -38,7 +38,7 @@ test.describe("a Compile door sends exactly the sources it names", () => {
     const harness = await openSources(page);
     const band = page.getByTestId("library-progress");
     await expect(band.getByTestId("library-progress-continue")).toHaveText("Write wiki pages for the next 10");
-    await expect(band.getByTestId("library-progress-rest")).toHaveText("6 more wait after these.");
+    await expect(page.getByTestId("sources-panel-foot")).toHaveText("6 more wait after these.");
     await band.getByTestId("library-progress-continue").click();
 
     const prompt = await promptSent(page, harness);

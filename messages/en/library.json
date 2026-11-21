@@ -313,7 +313,7 @@
         "hint": "{pages} read only the first part of this file, so the rest is not in a wiki page yet."
       },
       "stale": {
-        "label": "needs review",
+        "label": "changed after its wiki page",
         "hint": "{pages} was written from a different version of this file, or recorded no hash for it."
       },
       "checking": {
@@ -1026,14 +1026,15 @@
     "first": "No source has a wiki page yet",
     "today": "+{count, number} today",
     "chartAria": "Sources with a wiki page, by the date each page records",
-    "chartLabel": "Sources with a wiki page · since {date}",
+    "chartTitle": "Sources with a wiki page",
     "chartNow": "Today {count, number}",
     "point": "{date}: {count, number} of today's {total, number} ({percent, number}%)",
     "dateBasis": "Each point uses the date its wiki page records.",
     "undated": "{count, plural, one {# has no date} other {# have no date}}",
-    "axisToday": "Today",
     "continue": "{count, plural, =1 {Write a wiki page from 1 source} other {Write wiki pages for the next #}}",
     "batchRest": "{count, number} more wait after these.",
+    "writer": "<name>{agent}</name> writes the pages",
+    "writerAnyAgent": "The coding agent you connected writes the pages",
     "batchReturned": "{count, plural, one {# source from the last request still has no wiki page and moved to the end of the list.} other {# sources from the last request still have no wiki page and moved to the end of the list.}}",
     "webLine": "Only the app writes wiki pages. Reading works here.",
     "allDone": "Every source has a wiki page"
@@ -1066,6 +1067,7 @@
       "nextTitle": "Next to write",
       "lead": "Press “{action}” and the agent reads the sources below, top first, and writes their wiki pages.",
       "leadRunning": "The agent is writing wiki pages from the top. A source leaves this list once its page is written.",
+      "privacy": "Atlas sends your sources nowhere. When you give an agent a wiki page to write or a question, that agent reads the sources it needs, and what it reads may be sent to that agent's service.",
       "webNote": "Only the app writes wiki pages. In the app, these go first.",
       "waitingTitle": "Waiting here",
       "nextEmpty": "Every source here has a wiki page that matches it.",
@@ -1095,7 +1097,6 @@
       "range": "{first} – {last}",
       "meta": "{folders, number} folders · the {count, number} with the same counts in every state share one row"
     },
-    "listKey": "Waiting sources",
     "listFolder": "Folder: {folder}",
     "listType": "File type: {type}",
     "listNone": "None of these sources is in that state.",

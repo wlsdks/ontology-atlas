@@ -17,24 +17,22 @@ const PANEL_ROW_PX = 48;
 
 type LibraryT = ReturnType<typeof useTranslations<"library">>;
 
-/** A state as a word on its own ink; no wiki page wears a hairline, since text never wears its grey. */
-export function SourceStateWord({ state, t }: { state: SourceState; t: LibraryT }) {
-  const none = state === "not-compiled";
+/** Every row the panel lists waits for its first page unless it says otherwise, so only another state wears a word. */
+const PANEL_DEFAULT_STATE: SourceState = "not-compiled";
+
+/** A state as a word on its own ink. */
+function SourceStateWord({ state, t }: { state: SourceState; t: LibraryT }) {
   const ink = SOURCE_STATE_INK[state];
   return (
     <span
       data-testid="sources-state-word"
       data-state={state}
       className={badgeClass({ shape: "tag", className: "h-5 whitespace-nowrap border" })}
-      style={
-        none
-          ? { color: "var(--color-text-tertiary)", borderColor: "var(--color-border-strong)" }
-          : {
-              color: ink,
-              backgroundColor: `color-mix(in srgb, ${ink} 12%, transparent)`,
-              borderColor: `color-mix(in srgb, ${ink} 34%, transparent)`,
-            }
-      }
+      style={{
+        color: ink,
+        backgroundColor: `color-mix(in srgb, ${ink} 12%, transparent)`,
+        borderColor: `color-mix(in srgb, ${ink} 34%, transparent)`,
+      }}
     >
       {t(`sources.state.${state}.label`)}
     </span>
@@ -49,6 +47,7 @@ export function SourceStateWord({ state, t }: { state: SourceState; t: LibraryT 
 export function NextPanel({
   title,
   lead,
+  privacy,
   heading,
   files,
   running,
@@ -60,6 +59,8 @@ export function NextPanel({
 }: {
   title: string;
   lead: ReactNode;
+  /** What leaves the computer when the lead's press runs; null where nothing can be pressed. */
+  privacy: string | null;
   /** The picked row's name and bar, above the list. */
   heading: ReactNode | null;
   files: readonly LibrarySourceRow[];
@@ -75,7 +76,7 @@ export function NextPanel({
     <aside
       aria-label={title}
       data-testid="sources-panel"
-      className="flex w-[clamp(22.5rem,25vw,27.5rem)] flex-none flex-col self-start overflow-hidden @max-[60rem]/overview:order-first @max-[60rem]/overview:w-auto @max-[60rem]/overview:self-stretch rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-5.5 pt-5 pb-4.5"
+      className="flex max-h-full w-[clamp(22.5rem,25vw,27.5rem)] flex-none flex-col self-start overflow-hidden @max-[60rem]/overview:order-first @max-[60rem]/overview:w-auto @max-[60rem]/overview:self-stretch rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-5.5 pt-5 pb-4.5"
     >
       <div className="flex h-8 items-center justify-between gap-3">
         <span className="text-label leading-label tracking-[var(--tracking-label)] text-[color:var(--color-text-tertiary)]">{title}</span>
@@ -91,13 +92,18 @@ export function NextPanel({
         ) : null}
       </div>
       {heading}
-      <p className="mt-2.5 text-title leading-title tracking-[var(--tracking-title)] text-pretty font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+      <p className="mt-2 text-body-lg leading-body-lg text-pretty text-[color:var(--color-text-secondary)]">
         {lead}
       </p>
-      {/* In a narrow pane the panel stands above the table, so its list shows three names and scrolls. */}
+      {privacy ? (
+        <p data-testid="sources-panel-privacy" className="mt-1.5 text-body leading-body text-pretty text-[color:var(--color-text-tertiary)]">
+          {privacy}
+        </p>
+      ) : null}
+      {/* A short window scrolls the list, never the lead or the foot; in a narrow pane the panel stands above the table and shows three names. */}
       <ol
         data-testid="sources-panel-list"
-        className="-mx-2 mt-4 flex min-h-[var(--panel-reserve)] flex-col @max-[60rem]/overview:max-h-[calc(var(--panel-row)*3)] @max-[60rem]/overview:min-h-0 @max-[60rem]/overview:overflow-y-auto"
+        className="-mx-2 mt-4 flex min-h-[var(--panel-reserve)] flex-col overflow-y-auto overscroll-contain [scrollbar-width:thin] @max-[60rem]/overview:max-h-[calc(var(--panel-row)*3)] @max-[60rem]/overview:min-h-0"
         style={{ "--panel-reserve": `${Math.min(PANEL_LIST_ROWS, reserveRows) * PANEL_ROW_PX}px`, "--panel-row": `${PANEL_ROW_PX}px` } as CSSProperties}
       >
         {files.map((row, i) => {
@@ -126,13 +132,13 @@ export function NextPanel({
                 <Sheet variant="source" name={row.name} format={row.format} reading={writing} />
                 <span className="min-w-0 flex-1 truncate">{row.name}</span>
                 {writing ? <span className="sr-only">{t("sourcesHome.writing")}</span> : null}
-                <SourceStateWord state={row.state} t={t} />
+                {row.state === PANEL_DEFAULT_STATE ? null : <SourceStateWord state={row.state} t={t} />}
               </button>
             </li>
           );
         })}
       </ol>
-      {foot ? <div className="mt-3 flex min-h-5 items-center text-body leading-body text-[color:var(--color-text-tertiary)]">{foot}</div> : null}
+      {foot ? <div data-testid="sources-panel-foot" className="mt-3 flex min-h-5 items-center text-body leading-body text-[color:var(--color-text-tertiary)]">{foot}</div> : null}
     </aside>
   );
 }

@@ -107,7 +107,7 @@ describe('source state inks on canvas and panel (WCAG 1.4.11)', () => {
 /** The words a `Sheet` writes: the format on the source paper, and a page's source tab on the canvas. */
 const PAPER_TEXT: ReadonlyArray<{ ink: string; ground: string }> = [
   { ink: '--color-text-tertiary', ground: '--color-paper-source' },
-  { ink: '--color-indigo-text-soft', ground: '--color-canvas' },
+  { ink: '--color-text-secondary', ground: '--color-canvas' },
 ];
 
 describe('paper sheet text (WCAG 1.4.3)', () => {

@@ -78,18 +78,11 @@ describe("the source list marks what waits", () => {
     expect(screen.queryByTestId("library-source-states")).toBeNull();
     const stale = screen.getAllByTestId("library-source-state-stale");
     expect(stale).toHaveLength(13);
-    expect(stale[0]).toHaveAttribute("title", "needs review");
-    expect(stale[0]).toHaveTextContent("needs review");
+    expect(stale[0]).toHaveAttribute("title", "changed after its wiki page");
+    expect(stale[0]).toHaveTextContent("changed after its wiki page");
     expect(screen.getByTestId("library-source-state-not-compiled")).toHaveAttribute("title", "no wiki page");
     // Done is heard, not seen.
     expect(screen.getByTestId("library-source-state-compiled")).toHaveClass("sr-only");
-    expect(screen.getByTestId("library-source-list-key")).toHaveTextContent("Waiting sources");
-  });
-
-  it("draws no key when every source has a page", () => {
-    const sources = Array.from({ length: 3 }, (_, i) => source(i, "compiled"));
-    mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources");
-    expect(screen.queryByTestId("library-source-list-key")).toBeNull();
   });
 
   it("lists only the rows of the state the band's press names", () => {
