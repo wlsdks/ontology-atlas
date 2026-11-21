@@ -8,9 +8,16 @@ import {
   discoveryExtension,
   type SourceCandidate,
 } from './source-discovery';
+import discoveryCases from '../../../../../tests/fixtures/source-discovery-cases.json';
 
-/** A minimal FSA directory implementing only what the walk touches, so a read would fail loudly. */
-function fakeDirectory(files: Record<string, string>, name = 'vault'): FileSystemDirectoryHandle {
+/**
+ * A minimal FSA directory implementing only what the walk touches, so a read would fail loudly.
+ * A file is its body or just its size in bytes.
+ */
+function fakeDirectory(
+  files: Record<string, string | number>,
+  name = 'vault',
+): FileSystemDirectoryHandle {
   const build = (prefix: string, dirName: string): FileSystemDirectoryHandle => {
     const children = new Map<string, FileSystemHandle>();
     const subdirectories = new Set<string>();
@@ -20,10 +27,11 @@ function fakeDirectory(files: Record<string, string>, name = 'vault'): FileSyste
       const slash = rest.indexOf('/');
       if (slash < 0) {
         const body = files[path]!;
+        const size = typeof body === 'number' ? body : body.length;
         children.set(rest, {
           kind: 'file',
           name: rest,
-          getFile: async () => ({ size: body.length, lastModified: 1_757_000_000_000 }),
+          getFile: async () => ({ size, lastModified: 1_757_000_000_000 }),
         } as unknown as FileSystemFileHandle);
       } else {
         subdirectories.add(rest.slice(0, slash));
@@ -67,13 +75,13 @@ describe('discovery never proposes what local-first forbids reading', () => {
   it('walks past a planted secret and never lists it as a candidate', async () => {
     const report = await discoverCandidatesInHandle(
       fakeDirectory({
-        'Requirements.pdf': 'a',
+        'Requirements.pdf': 2_000,
         '.env': 'SECRET=1',
         'id_rsa': 'key',
         'credentials.json': '{}',
         'config/credentials.csv': 'user,password',
-        'node_modules/pkg/manual.pdf': 'x',
-        'sources/already.pdf': 'x',
+        'node_modules/pkg/manual.pdf': 2_000,
+        'sources/already.pdf': 2_000,
       }),
       { rootLabel: 'my folder', skipRelative: ['sources'] },
     );
@@ -115,6 +123,37 @@ describe('the walk skips dependency and build directories', () => {
   it('descends into ordinary folders', () => {
     expect(discoveryAcceptsDirectory('specs')).toBe(true);
   });
+});
+
+type DiscoveryRow = { path: string; bytes: number };
+
+async function offeredByTheWalk(rows: readonly DiscoveryRow[]): Promise<string[]> {
+  const report = await discoverCandidatesInHandle(
+    fakeDirectory(Object.fromEntries(rows.map((row) => [row.path, row.bytes]))),
+    { rootLabel: 'project' },
+  );
+  return report.candidates.map((candidate) => candidate.relativePath).sort();
+}
+
+describe('the shared discovery table (tests/fixtures/source-discovery-cases.json)', () => {
+  it("offers none of the owner's three junk files", async () => {
+    expect(await offeredByTheWalk(discoveryCases.ownerReport)).toEqual([]);
+  });
+
+  it('offers exactly the rows the table keeps, as the native walk does', async () => {
+    const expected = discoveryCases.files
+      .filter((row) => row.offered)
+      .map((row) => row.path)
+      .sort();
+    expect(await offeredByTheWalk(discoveryCases.files)).toEqual(expected);
+  });
+
+  it.each(discoveryCases.directories)(
+    'judges the folder $path the same with either separator',
+    ({ path, descends }) => {
+      expect(discoveryAcceptsDirectory(path)).toBe(descends);
+    },
+  );
 });
 
 describe('a candidate keeps a stable identity so a refusal can be remembered', () => {
