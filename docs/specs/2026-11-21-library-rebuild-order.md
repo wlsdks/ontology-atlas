@@ -54,7 +54,7 @@ it.
 | 15 | I-5: Ontology column metrics | index-column | Not started | None |
 | 16 | P-2 to P-7 | this file | Not started | 7, 9 |
 | 17 | Re-measure Library memory and frames | performance-strategy | Not started | 6, 10 |
-| 18 | S-4: Sources home clarity (below) | this file | In review (draft pull request) | 9 |
+| 18 | S-4: Sources home clarity (below) | this file | In review (#3770) | 9 |
 
 Row 8 ran on 2026-11-21 (installed app, 40 sources and 24 pages); row 18 is what it found.
 
