@@ -517,12 +517,8 @@ describe('checks main does not require', () => {
   });
 });
 
-/*
- * ------------------------------------------------------------------------------------------------
- * The conductor against a fake GitHub. Every `gh` and `git` call lands in memory; a write the
- * scenario does not expect is visible in `world.calls`.
- * ------------------------------------------------------------------------------------------------
- */
+// The conductor against a fake GitHub: every `gh` and `git` call lands in memory, so a write the
+// scenario does not expect is visible in `world.calls`.
 
 const green = () => REQUIRED_CONTEXTS.map((name) => ({ name, status: 'COMPLETED', conclusion: 'SUCCESS', startedAt: '2026-09-26T10:00:00Z' }));
 const red = (names, runId = 777) => REQUIRED_CONTEXTS.map((name) => ({

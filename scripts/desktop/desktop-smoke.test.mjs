@@ -411,9 +411,8 @@ test("desktop smoke detects drift in the current download handoff", () => {
   const outDir = makeCurrentOut();
   const routePath = routeIndexPath("ko", "/download");
   const html = fs.readFileSync(path.join(outDir, routePath), "utf8");
-  // The sentence being removed also comes from the catalogue — pinning a literal
-  // would make this probe itself silently meaningless at the next remake (which is
-  // exactly what happened after #730).
+  // The sentence being removed also comes from the catalogue: pinning a literal would make this
+  // probe silently meaningless at the next remake.
   const [firstFragment] = ROUTE_TEXT["ko:/download"];
   write(outDir, routePath, html.replace(firstFragment, ""));
 

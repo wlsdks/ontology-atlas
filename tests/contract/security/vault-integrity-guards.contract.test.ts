@@ -204,11 +204,10 @@ describe("frontmatter object meta keys: graph boundary", () => {
  *
  * macOS commonly hands back Korean in filenames as NFD (decomposed jamo), while what
  * a user types into frontmatter is NFC. The two strings have **exactly the same
- * characters and different bytes.** Previously `validate` warned that a name did not
- * resolve while `list` showed that very node on the next line, and the compiler
- * dropped the edge as `resolved: false` — **nodes with Korean names lose their
- * relations**, on this product's primary platform. The difference is invisible to
- * the eye, so it cannot be fixed by hand either.
+ * characters and different bytes.** Unnormalized, `validate` warns that a name does not
+ * resolve while `list` shows that very node, and the compiler drops the edge as
+ * `resolved: false`: nodes with Korean names lose their relations. The difference is
+ * invisible to the eye, so it cannot be fixed by hand.
  */
 describe("Unicode normalization: NFD file names", () => {
   const NFD = "한글".normalize("NFD");
@@ -306,9 +305,9 @@ describe("node count matches: .md without a kind", () => {
 /**
  * **A file that could not be read is never certified "clean".**
  *
- * Previously a read failure was skipped silently while still counting toward
- * `scanned`. One unreadable `.md` produced `6 files scanned — 0 issues. vault clean
- * ✓`, while `compile` on the same vault exited 2 with EACCES.
+ * A read failure is never skipped while still counting toward `scanned`: one unreadable `.md`
+ * must not produce `6 files scanned — 0 issues. vault clean ✓` while `compile` on the same
+ * vault exits 2 with EACCES.
  *
  * In CI running as root, `chmod 000` does not block reading, so this check skips
  * itself when the block did not take — it **confirms the block first** rather than

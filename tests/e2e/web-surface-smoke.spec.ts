@@ -8,7 +8,7 @@ import ko from "../../messages/ko.json";
  * honest degradation of app-only capabilities). Pixel equivalence with the app is not checked.
  */
 
-// ── Shared ──────────────────────────────────────────────────────────────────
+// Shared
 
 /**
  * `next dev` compiles a route on first entry. When suites run back to back,
@@ -72,7 +72,7 @@ const SEED_VAULT: Record<string, string> = {
   ].join("\n"),
 };
 
-// ── ① Gateway — the face and the map are each alive at their own address ────
+// ① Gateway — the face and the map are each alive at their own address
 
 /**
  * The gateway face is at `/` and the map at `/topology`; the map-alive check with a non-zero count
@@ -129,7 +129,7 @@ test.describe("web smoke 1: gateway", () => {
   });
 });
 
-// ── ② Fallback workbench — the folder is actually read ──────────────────────
+// ② Fallback workbench — the folder is actually read
 
 test.describe("web smoke 2: fallback workbench", () => {
   test("choosing a folder makes the web read it for real and turn it into a map", async ({ page }) => {
@@ -194,7 +194,7 @@ test.describe("web smoke 2: fallback workbench", () => {
   });
 });
 
-// ── ③ Honest degradation — app-only capabilities state why + where ──────────
+// ③ Honest degradation — app-only capabilities state why + where
 
 /**
  * Registry of desktop-only surfaces as opened on the web.

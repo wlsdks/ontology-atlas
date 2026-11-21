@@ -9,59 +9,17 @@ import { FULL_LANE_COMMANDS } from "../../../scripts/ci/classify-change.mjs";
 /**
  * Lint warning ratchet — **the warning count can never rise, and when it falls the cap falls with it.**
  *
- * ════════════════════════════════════════════════════════════════════
- * ## Why this file exists — the repository was breaking its own discipline
- * ════════════════════════════════════════════════════════════════════
+ * The repository-wide lint command has a zero-warning cap: catching things at `warn` with no
+ * `--max-warnings` fails nothing, so it is not a gate (`.claude/skills/ui-proof/SKILL.md`, severity
+ * blind spot). The command owns the exhaustive scan; this contract proves the cap, live
+ * warning/error behavior and CI wiring without paying for the same scan again in the Vitest lane.
  *
- * `.claude/skills/ui-proof/SKILL.md`'s 「Level blind spot」 (the severity
- * blind spot) section already pinned it:
+ * The floors measured here are the scanner's field of view (files swept, whether the warning
+ * severity exists), not debt, so the ratchet still passes on the day warnings reach 0: the cap
+ * just moves to `--max-warnings 0`.
  *
- * > *"Catching things at `warn` with no warning cap (`--max-warnings`) **fails
- * > nothing, so it is not a gate**."*
- *
- * Yet `package.json`'s own `"lint": "eslint"` had no such cap. Measured 2026-08-06:
- * **91 warnings** (0 errors) were passing CI green, and a 92nd would have changed
- * nothing. The audit document was carrying the very defect it described to others.
- *
- * ### Why a ratchet rather than clearing them all
- *
- * Composition of the 91 (measured 2026-08-06):
- *
- * | Rule | Count |
- * |---|---:|
- * | `react-hooks/refs` | 41 |
- * | `@typescript-eslint/no-unused-vars` | 25 |
- * | `react-hooks/set-state-in-effect` | 12 |
- * | `react-hooks/exhaustive-deps` | 8 |
- * | unused `eslint-disable` directives (no ruleId) | 3 |
- * | `@typescript-eslint/no-unused-expressions` | 1 |
- * | `react-hooks/immutability` | 1 |
- *
- * The largest group, 41 `react-hooks/refs`, is **ref access during render**,
- * concentrated in per-frame code such as the map loop (`use-topology-loop.ts`).
- * Touching it can change behaviour, and that belongs to rendering work rather than
- * a lint PR. The same judgement this repository made about ramp coverage
- * (`.claude/rules/design-gates.md`: *"the 125 were not cleared in the same PR
- * because of their nature, not their number"*).
- *
- * So the repository-wide command has a zero-warning cap. The command itself owns the
- * exhaustive scan; this contract proves the cap, live warning/error behavior, and CI
- * wiring without paying for the same scan a second time inside the full Vitest lane.
- *
- * ### This ratchet **still passes on the day warnings reach 0**
- *
- * The trap this repository stepped on five times in one day on 2026-08-06 is the
- * "the denominator must be at least N" kind of floor — debt falls, the gate turns
- * red, and the next person **reverts the spec instead of the gate**. The floors
- * measured here are **the scanner's field of view, not debt** (files swept, whether
- * the warning severity exists at all). When warnings reach 0 the cap simply moves to
- * `--max-warnings 0`, and all four assertions stay green.
- *
- * ### The number is written in **one place only**
- *
- * Repeating the cap as a constant in this file would make two copies with
- * `package.json`, and two copies with no gate means drift is the default. So this
- * file holds no number — it **reads** it from the lint script in `package.json`.
+ * The number is written in one place only: this file reads it from the lint script in
+ * `package.json`, since a second copy with no gate would drift.
  */
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");

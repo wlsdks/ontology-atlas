@@ -708,8 +708,8 @@ describe('hover axis — the result strings of the value layer', () => {
 
   it('a selected item receives no hover — "soon" and "now" must not say the same thing', () => {
     /*
-     * Hover over a selected item's border weakens it, so selected items take no hover; the key absorbs
-     * a guard consumers used to write by hand.
+     * Hover over a selected item's border weakens it, so selected items take no hover; the key carries
+     * the guard.
      */
     for (const v of [
       { hoverInk: 'strong' },

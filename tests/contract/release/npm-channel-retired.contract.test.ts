@@ -228,7 +228,6 @@ describe("the npm channel is retired: block dead npx instructions", () => {
     ).toEqual([]);
   });
 
-  // ── Probe: proves the gate actually catches things ────────────────────────
   // design.md's procedure of proving "one violation fails, one valid line passes"
   // before switching a rule on, made resident inside the gate itself. A silently
   // disabled detector fails here first.

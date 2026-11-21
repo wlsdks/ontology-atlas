@@ -65,7 +65,7 @@ const pressDockClose = (page: Page) => page.getByTestId("analysis-workbench").ge
 
 /**
  * How far the closing dock has handed its width back to the map when the Escape lands: late in the
- * close, so the resize ends under the deselect's glide. Measured 2026-11-17: there the code before the
+ * close, so the resize ends under the deselect's glide. Measured: there the code before the
  * deselect refit fails 5 of 5, at the first widened frame 1 of 3.
  */
 const NEARLY_CLOSED_SHARE = 0.85;

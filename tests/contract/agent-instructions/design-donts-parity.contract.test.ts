@@ -7,22 +7,11 @@ import { describe, expect, it } from 'vitest';
  * **There is one authoritative list of design Don'ts** — copies are subsets, and
  * they are matched by slug.
  *
- * ## Why this gate exists (2026-08-05 design-system audit)
+ * ## Why this gate exists
  *
- * The same "absolute rules" list lived in **three places** and **no two of them
- * agreed**:
- *
- * | | Items | Something it had that others lacked |
- * |---|---|---|
- * | `docs/DESIGN-SYSTEM.md` | 14 | floating-box soup · stacked popovers · allowing overlap |
- * | `.claude/rules/forbidden.md` | 9 | — |
- * | `.claude/rules/design.md` | 8 | the glow boxShadow ring |
- *
- * And there was **no gate** reconciling them. `design.md` was missing the label
- * arrow and the card height — **both already backed by contract tests** — so a
- * copy was behind the spec and nobody knew. The discipline this repository wrote
- * down for skill copies had never been applied here: *"With two copies and no gate,
- * drifting is the default"* — CLAUDE.md.
+ * The "absolute rules" list lived in three places that disagreed, each holding items the others
+ * lacked, with no gate reconciling them. With two copies and no gate, drifting is the default
+ * (CLAUDE.md).
  *
  * ## Why slugs are compared rather than sentences
  *

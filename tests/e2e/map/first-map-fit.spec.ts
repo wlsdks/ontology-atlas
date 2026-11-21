@@ -29,7 +29,7 @@ const USES_ELEMENT = new Set(["Complete a checkout", "Process payments"]);
 
 /**
  * Share of the free canvas, on its fuller axis, that the domain titles' bounding box must span.
- * Measured 2026-11-20 at these sizes: 0.66 to 0.76 fitted to the folder, 0.36 to 0.56 left at the bundled sample's fit.
+ * Measured at these sizes: 0.66 to 0.76 fitted to the folder, 0.36 to 0.56 left at the bundled sample's fit.
  */
 const MIN_TITLE_SPAN = 0.6;
 
