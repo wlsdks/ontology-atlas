@@ -68,7 +68,7 @@ import { MCP_CATALOGUE } from '@/shared/config/mcp-catalogue';
 import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
 
 import { ConnectorsPanel, connectorDestination, whatRuns } from './ConnectorsPanel';
-import { groupDiscovered, shortSourceKey } from './discovered-groups';
+import { groupDiscovered, shortSourceKey } from '../model/discovered-groups';
 import { useVaultConnectors } from '../model/use-vault-connectors';
 
 /**

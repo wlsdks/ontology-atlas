@@ -127,7 +127,7 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
       "src/features/first-run-starter/ui/FirstRunStarterModule.tsx",
       "src/features/gray-area/ui/GrayAreaInspector.tsx",
       "src/features/library/ui/FindDocumentsDialog.tsx",
-      "src/features/mcp-connectors/ui/AddConnectorDialog.tsx",
+      "src/features/mcp-connectors/ui/add-connector/FoundSection.tsx",
       "src/views/architecture/ui/ArchitectureWorkbench.tsx",
       "src/views/architecture/ui/HarnessPage.tsx",
       "src/views/automations/ui/AutomationsPage.tsx",
