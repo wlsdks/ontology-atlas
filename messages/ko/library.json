@@ -1035,16 +1035,78 @@
     "first": "아직 위키 문서가 있는 원문이 없어요",
     "today": "오늘 +{count, number}",
     "chartAria": "위키 문서가 있는 원문 수, 각 문서에 적힌 날짜 기준",
+    "chartLabel": "위키 문서가 있는 원문 수 · {date}부터",
+    "chartNow": "오늘 {count, number}",
     "point": "{date}: 지금 원문 {total, number}개 중 {count, number}개 ({percent, number}%)",
     "dateBasis": "각 점은 위키 문서에 적힌 날짜예요.",
     "undated": "{count, number}개는 날짜 없음",
     "axisToday": "오늘",
-    "continue": "{count, plural, =1 {마지막 원문 위키 문서 만들기} other {다음 #개 위키 문서 만들기}}",
+    "continue": "{count, plural, =1 {원문 1개로 위키 문서 만들기} other {다음 #개 위키 문서 만들기}}",
     "batchRest": "그 뒤로 {count, number}개가 더 기다려요.",
     "batchReturned": "지난 요청의 원문 {count, number}개는 아직 위키 문서가 없어 목록 맨 뒤로 옮겼어요.",
     "webLine": "위키 문서는 앱에서만 써요. 읽기는 여기서도 돼요.",
-    "allDone": "모든 원문에 위키 문서가 있어요",
-    "fraction": "{compiled, number} / {total, number}"
+    "allDone": "모든 원문에 위키 문서가 있어요"
+  },
+  "sourcesHome": {
+    "aria": "폴더나 파일 형식으로 묶은 원문과 위키 문서가 있는 원문 수",
+    "groupBy": {
+      "label": "원문 묶기",
+      "folder": "폴더별",
+      "type": "파일 형식별"
+    },
+    "column": {
+      "folder": "폴더",
+      "type": "파일 형식",
+      "sources": "원문",
+      "withPage": "위키 문서 있음",
+      "waiting": "기다리는 원문",
+      "latest": "최근 위키 문서"
+    },
+    "topLevel": "sources/ 바로 안",
+    "day": {
+      "today": "오늘",
+      "ago": "{count, number}일 전",
+      "none": "아직 없음",
+      "undated": "날짜 없음"
+    },
+    "rowAria": "{name}: 원문 {total, number}개 중 위키 문서 있음 {withPage, number}개, 쓸 차례를 기다리는 원문 {waiting, number}개. 누르면 표 옆에 목록이 나와요.",
+    "writing": "여기 있는 원문으로 위키 문서를 쓰는 중이에요",
+    "panel": {
+      "nextTitle": "다음에 쓸 원문",
+      "lead": "「{action}」⁠를 누르면 에이전트가 아래 원문을 위에서부터 읽고 위키 문서를 써요.",
+      "leadRunning": "에이전트가 위에서부터 위키 문서를 쓰고 있어요. 다 쓴 원문은 목록에서 빠져요.",
+      "webNote": "위키 문서는 앱에서만 써요. 앱에서는 이 원문부터 시작해요.",
+      "waitingTitle": "여기서 기다리는 원문",
+      "nextEmpty": "여기 있는 원문은 모두 지금 내용과 맞는 위키 문서가 있어요.",
+      "unreadable": "여기서 읽을 수 없는 원문 {count, number}개",
+      "showInList": "목록에서 {count, number}개 모두 보기",
+      "clear": "전체 원문 보기"
+    },
+    "recent": {
+      "title": "최근에 쓴 위키 문서",
+      "order": "위키 문서에 적힌 날짜순",
+      "from": "{more, plural, =0 {{source}에서} other {{source} 외 #개에서}}",
+      "empty": "아직 날짜가 적힌 위키 문서가 없어요.",
+      "none": "위키 문서가 써지면 여기에 원문과 함께 나타나요. 위키 문서는 원문을 요약하고 사실마다 원문의 위치를 달아 둔 Markdown 파일이에요.",
+      "steps": {
+        "press": "「{action}」⁠를 누르세요.",
+        "read": "에이전트가 원문을 처음부터 끝까지 읽어요.",
+        "write": "원문을 요약한 위키 문서를 Markdown 파일로 써요. 사실마다 원문의 어느 부분에서 왔는지 적어 두고, 다 쓰면 여기에 나타나요."
+      }
+    },
+    "sortBy": "{column} 기준으로 정렬",
+    "more": "아래에 폴더 {count, number}개 더 · 스크롤하면 이어서 보여요",
+    "meta": "폴더 {folders, number}개 · 원문 {sources, number}개",
+    "metaType": "파일 형식 {groups, number}개 · 원문 {sources, number}개",
+    "alike": {
+      "row": "똑같은 폴더 {count, number}개",
+      "range": "{first} – {last}",
+      "meta": "폴더 {folders, number}개 · 원문 수와 상태가 똑같은 폴더 {count, number}개는 한 줄로 묶음"
+    },
+    "listKey": "기다리는 원문",
+    "listFolder": "폴더: {folder}",
+    "reading": "폴더를 읽는 중이에요. 지금까지 원문 {count, number}개",
+    "pickGone": "{folder} 폴더가 sources/에 더 이상 없어요. 전체 원문을 보여 줘요."
   },
   "check": {
     "title": "위키 검사 중",

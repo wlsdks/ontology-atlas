@@ -145,7 +145,54 @@
     animation: motionProgressRipple var(--motion-expressive) var(--motion-ease) both;
   }
 
+  /* Sources overview. A writing dot's halo breathes only while the agent writes a page from
+     that row or file; the dot is unmounted when the work ends. Transform and opacity only. */
+  @keyframes motionWritingHalo {
+    0%,
+    100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.1;
+      transform: scale(1.8);
+    }
+  }
+
+  .motion-writing-dot {
+    position: relative;
+    display: inline-block;
+    flex: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 9999px;
+    background-color: var(--color-source-page);
+  }
+
+  .motion-writing-dot::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    background-color: var(--color-source-page);
+    animation: motionWritingHalo calc(var(--motion-base) * 9) var(--motion-ease) infinite;
+  }
+
+  /* A table row glides to its new place when the order changes (a header press, or a batch ends). */
+  .motion-row-glide {
+    transition: translate var(--motion-settle) var(--motion-ease);
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    .motion-writing-dot::after {
+      animation: none !important;
+      display: none !important;
+    }
+
+    .motion-row-glide {
+      transition: none !important;
+    }
+
     .motion-work-spin,
     .motion-work-sweep {
       animation: none !important;

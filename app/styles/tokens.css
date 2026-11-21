@@ -104,6 +104,21 @@
   --color-status-danger: #e5484d;
 
   /*
+   * One ink per source state (Library, Sources): the band, the row bars, the legend, the index
+   * list's dots and the panel's words share them. Read in part is the one new hue, hatched with its
+   * a55 step so it differs from the page ink without colour; no wiki page is a drawn warm grey
+   * (3.75:1 on canvas) that text never wears.
+   */
+  --color-source-page: var(--color-indigo-accent);
+  --color-source-partial: #c4a7f5;
+  --color-source-partial-a55: rgba(196, 167, 245, 0.55);
+  --color-source-review: var(--color-status-warning);
+  --color-source-checking: var(--color-status-paused);
+  --color-source-unreadable: var(--color-status-danger);
+  --color-source-none: #6e6c66;
+  --color-source-complete: var(--color-status-success);
+
+  /*
    * Builder v2 (A2) — Inspector/Palette alpha scale. Tokens extracted 1:1 from the rgba(...) values
    * scattered as inline hardcodes in `OntologyInspector.tsx` /
    * `OntologyKindPalette.tsx` — visual result unchanged, references only changed to CSS variables.
