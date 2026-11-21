@@ -71,7 +71,7 @@ same-input stages cannot start more than `--motion-fast` apart.
 ## Topology context
 
 `/topology` is the custom canvas-2D `ontology-map`; read `.claude/rules/design.md`
-for its current tokens before touching it. `topology-camera-math.ts` owns
+for its current tokens before touching it. `ui/camera/camera-target/` owns
 safe-inset fitting, and motion uses `--topology-motion-*` with a reduced-motion
 equivalent.
 

@@ -213,7 +213,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
 
   // The camera's real zoom-in ceiling is now ratio-based (viewport-
   // relative), not the absolute `cameraScaleMax` token — see
-  // `topology-camera-math.ts#computeEffectiveCameraScaleMax`'s JSDoc for the
+  // `camera-target/focus-fit.ts#computeEffectiveCameraScaleMax`'s JSDoc for the
   // audit finding this fixes (capability/element tiers were unreachable).
   const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax, world.dialScaleMax ?? undefined);
   const effectiveScaleMin = Math.min(
