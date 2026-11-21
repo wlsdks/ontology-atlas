@@ -1,12 +1,14 @@
+mod credential_mirror;
+
 use std::path::{Path, PathBuf};
 
 #[cfg(target_os = "macos")]
 use super::bounded_command::KEYCHAIN_PROBE_TIMEOUT;
 use super::bounded_command::{bounded_output, LOGIN_PROBE_TIMEOUT};
-#[cfg(target_os = "macos")]
-use super::credential_mirror::claude_credentials_service;
-use super::credential_mirror::mirror_terminal_login;
 use super::registry::chat_eligible;
+#[cfg(target_os = "macos")]
+use credential_mirror::claude_credentials_service;
+use credential_mirror::mirror_terminal_login;
 
 /// Only measured executors: guessed env vars or credential files silently break login.
 #[derive(Debug, Clone, Copy)]
