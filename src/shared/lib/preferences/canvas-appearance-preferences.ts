@@ -1,5 +1,5 @@
 import { useCallback, useSyncExternalStore } from "react";
-import { notifyPreferenceChange, subscribeToPreferenceChange } from "./preference-change-event";
+import { notifyPreferenceChange, subscribeToPreferenceChange } from "./preference-storage/preference-change-event";
 
 /**
  * `dot`: static grid. `web`: proximity constellation, the one moving background. `depth`: dots in

@@ -1,6 +1,6 @@
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { definePreference } from '@/shared/lib/preferences/define-preference';
+import { definePreference } from '@/shared/lib/preferences/preference-storage/define-preference';
 
 /**
  * The installed app's search index of every Markdown file (`src-tauri/crates/vault-index`). It

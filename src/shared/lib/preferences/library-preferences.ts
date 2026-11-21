@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from "react";
-import { readOnOff, writeOnOff } from "./on-off-preference";
-import { notifyPreferenceChange, subscribeToPreferenceChange } from "./preference-change-event";
+import { readOnOff, writeOnOff } from "./preference-storage/on-off-preference";
+import { notifyPreferenceChange, subscribeToPreferenceChange } from "./preference-storage/preference-change-event";
 
 /**
  * Sources is the default: a folder with no sources has no pages to list. Opening a file moves the

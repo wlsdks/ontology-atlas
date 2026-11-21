@@ -1,5 +1,5 @@
 import { gitHostPlatformFrom } from '@/shared/lib/git/git-install-guide';
-import { definePreference } from '@/shared/lib/preferences/define-preference';
+import { definePreference } from '@/shared/lib/preferences/preference-storage/define-preference';
 
 /** Pure, so the rules of when to speak up are testable. The user did not ask, so it is easy to dismiss and the dismissal is remembered. */
 

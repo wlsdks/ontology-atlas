@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from "react";
-import { readOnOff, writeOnOff } from "./on-off-preference";
-import { notifyPreferenceChange, subscribeToPreferenceChange } from "./preference-change-event";
-import { createStoredSnapshot } from "./stored-snapshot";
+import { readOnOff, writeOnOff } from "./preference-storage/on-off-preference";
+import { notifyPreferenceChange, subscribeToPreferenceChange } from "./preference-storage/preference-change-event";
+import { createStoredSnapshot } from "./preference-storage/stored-snapshot";
 
 /**
  * On by default, unlike the opt-in frame meter: an agent editing the folder is a fact, not a diagnostic,

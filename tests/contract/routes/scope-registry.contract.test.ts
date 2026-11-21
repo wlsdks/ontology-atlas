@@ -326,7 +326,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "ontology-atlas:appearance-preference-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:audience-preference-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:guide-auto-start-change", kind: "event", scope: "global", note: "" },
-  { key: "ontology-atlas:preference-change", kind: "event", scope: "global", file: "src/shared/lib/preferences/define-preference.ts", note: "Same-tab change of a definePreference store" },
+  { key: "ontology-atlas:preference-change", kind: "event", scope: "global", file: "src/shared/lib/preferences/preference-storage/define-preference.ts", note: "Same-tab change of a definePreference store" },
   { key: "ontology-atlas:open-settings", kind: "event", scope: "global", file: "src/shared/lib/keyboard/surface-requests.ts", note: "Request that a visible settings trigger open the sheet" },
   { key: "ontology-atlas:open-shortcuts", kind: "event", scope: "global", file: "src/shared/lib/keyboard/surface-requests.ts", note: "Request that the keyboard shortcut sheet open" },
   { key: "ontology-atlas:local-endpoint-change", kind: "event", scope: "global", note: "" },

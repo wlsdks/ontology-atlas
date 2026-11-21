@@ -1,5 +1,5 @@
 import { useCallback, useSyncExternalStore } from "react";
-import { notifyPreferenceChange, subscribeToPreferenceChange } from "./preference-change-event";
+import { notifyPreferenceChange, subscribeToPreferenceChange } from "./preference-storage/preference-change-event";
 
 export const MAP_SPEEDS = [0.5, 0.75, 1, 1.5, 2] as const;
 

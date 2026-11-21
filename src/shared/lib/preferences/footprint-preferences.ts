@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { clamp } from "./clamp";
-import { notifyPreferenceChange, subscribeToPreferenceChange } from "./preference-change-event";
-import { createStoredSnapshot } from "./stored-snapshot";
+import { notifyPreferenceChange, subscribeToPreferenceChange } from "./preference-storage/preference-change-event";
+import { createStoredSnapshot } from "./preference-storage/stored-snapshot";
 
 const FOOTPRINT_KEY = "ontology-atlas:footprint:v1";
 

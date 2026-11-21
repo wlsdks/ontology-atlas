@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from "react";
 import type { MapLayoutView } from "../map-canvas/map-layout-morph-store";
-import { readOnOff, writeOnOff } from "./on-off-preference";
-import { notifyPreferenceChange, subscribeToPreferenceChange } from "./preference-change-event";
+import { readOnOff, writeOnOff } from "./preference-storage/on-off-preference";
+import { notifyPreferenceChange, subscribeToPreferenceChange } from "./preference-storage/preference-change-event";
 
 const VIEW_3D_KEY = "atlas.appearance.view3d";
 
