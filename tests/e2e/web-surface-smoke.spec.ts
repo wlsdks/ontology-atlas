@@ -288,6 +288,13 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     destination: "briefing-get-app",
   },
   {
+    name: "work status: the browser cannot run git or read this computer's processes",
+    url: "/ko/work-status/",
+    card: "work-status-stage",
+    reason: /브라우저는[\s\S]*git[\s\S]*프로세스를 읽을 수 없어요/,
+    destination: "work-status-get-app",
+  },
+  {
     // Registering it on the web would promise nothing could keep: it keeps a clock and opens a headless
     // agent session while the person is away, which a browser tab cannot do.
     // The retired Library address lands here too, so the old link keeps its destination.

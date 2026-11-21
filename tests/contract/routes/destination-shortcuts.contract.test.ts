@@ -212,16 +212,17 @@ describe("the rail, the sheet and the shell read the same table", () => {
     ).toBeLessThanOrEqual(10);
   });
 
-  it("the current list has nine including Planning and source changes", () => {
+  it("the current list has ten including Planning, source changes and Work status", () => {
     /*
      * A ceiling far above the current count turns slack into a free pass, so the exact inventory is
      * pinned: a change to the list needs a decision.
      */
     expect(
       DESTINATION_IDS.length,
-      "the destination list changed; review the Planning rail decision",
-    ).toBe(9);
+      "the destination list changed; review the Planning and Work status rail decisions",
+    ).toBe(10);
     expect(DESTINATION_IDS).toContain("planning");
+    expect(DESTINATION_IDS).toContain("workStatus");
   });
 
   /**

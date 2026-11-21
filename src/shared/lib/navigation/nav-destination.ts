@@ -11,7 +11,8 @@ export type AppNavDestinationId =
   | "agents"
   | "mcp"
   | "git"
-  | "changes";
+  | "changes"
+  | "workStatus";
 
 /**
  * Pure prefix matcher for the canonical app destinations (feat/chrome-system
@@ -34,6 +35,7 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
   if (path.startsWith("/architecture")) return "architecture";
   if (path.startsWith("/git")) return "git";
   if (path.startsWith("/changes")) return "changes";
+  if (path.startsWith("/work-status")) return "workStatus";
   if (path.startsWith("/agents")) return "agents";
   if (path.startsWith("/mcp")) return "mcp";
   if (path.startsWith("/library")) return "library";

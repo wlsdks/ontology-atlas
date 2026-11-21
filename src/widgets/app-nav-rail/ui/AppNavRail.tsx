@@ -14,6 +14,7 @@ import {
   CalendarClock,
   Download,
   FolderKanban,
+  GitFork,
   // Aliased: a bare `History` can resolve to the DOM History constructor under some HMR states.
   History as HistoryIcon,
   Library,
@@ -167,6 +168,7 @@ export function AppNavRail({
     },
     { id: "changes", href: DESTINATION_HREF.changes, label: t("changes"), Icon: Newspaper },
     { id: "git", href: DESTINATION_HREF.git, label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
+    { id: "workStatus", href: DESTINATION_HREF.workStatus, label: t("workStatus"), Icon: GitFork },
   ];
   const destinations = allDestinations.filter(
     (destination) => !visibleDestinations || visibleDestinations.has(destination.id),
