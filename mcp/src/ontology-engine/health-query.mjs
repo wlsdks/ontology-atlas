@@ -7,7 +7,6 @@ export function createHealthQuery({
   components,
   connectedComponentGroups,
   cycles,
-  healthCheck,
   overview,
   recommendRelations,
   topologicalOrder,
@@ -192,4 +191,8 @@ export function createHealthQuery({
   }
 
   return health;
+}
+
+function healthCheck({ id, status, count, message }) {
+  return { id, status, count, message };
 }

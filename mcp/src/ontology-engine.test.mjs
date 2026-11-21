@@ -11,7 +11,7 @@ import { compileOntology } from './ontology-compiler.mjs';
 import { queryCompiledOntology, shareArtifact } from './ontology-engine.mjs';
 import { createArtifactContext } from './ontology-engine/artifact-context.mjs';
 import { createContextOperations } from './ontology-engine/context-operations.mjs';
-import { similarityScore } from './ontology-engine/engine-helpers.mjs';
+import { similarityScore } from './ontology-engine/graph-measures.mjs';
 import { defaultBody } from './schema.mjs';
 import { parseFrontmatter } from './parser.mjs';
 import { validateVaultDocument } from './validate.mjs';

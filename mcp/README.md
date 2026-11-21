@@ -2269,7 +2269,14 @@ transport. Everything a change would actually touch lives beside it.
 | `src/ontology-engine/maintenance-queries.mjs` | repair and review action planning |
 | `src/ontology-engine/brief-queries.mjs` | evidence-aware agent and workspace briefs |
 | `src/ontology-engine/health-query.mjs` | structural health reporting |
-| `src/ontology-engine/engine-helpers.mjs` | graph-analysis helpers and normalization shared across families |
+| `src/ontology-engine/query-arguments.mjs` | validates and normalizes the arguments of the query operations |
+| `src/ontology-engine/graph-measures.mjs` | page rank, community labels and node similarity over the compiled graph |
+| `src/ontology-engine/node-ranking.mjs` | degree buckets, hubs and the order of node, lineage and centrality rows |
+| `src/ontology-engine/reference-repair.mjs` | the node a dangling reference most likely meant, and the slug and title to create for it |
+| `src/ontology-engine/topology-shape.mjs` | a cycle in canonical form and topological layers cut at a limit |
+| `src/ontology-engine/dependency-qualification.mjs` | whether declared dependency edges carry a rationale |
+| `src/ontology-engine/maintenance-actions.mjs` | the order of maintenance actions and the stable id each gets |
+| `src/ontology-engine/builder-focus.mjs` | the focus and canvas position `builder_context` takes |
 | `src/ontology-engine/query-dispatch.mjs` | operation-to-query dispatch |
 | `src/ontology-engine/traversal-queries.mjs` | neighbor enumeration, shortest paths, and bounded all-path searches |
 | `src/ontology-engine/query-values.mjs` | shared node/relation vocabulary and default limits |

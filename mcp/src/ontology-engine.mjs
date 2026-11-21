@@ -8,49 +8,50 @@ import { createScopeQueries } from './ontology-engine/scope-queries.mjs';
 import { createMaintenanceQueries } from './ontology-engine/maintenance-queries.mjs';
 import { createBriefQueries } from './ontology-engine/brief-queries.mjs';
 import { createHealthQuery } from './ontology-engine/health-query.mjs';
+import { builderFocusParam, normalizeBuilderFocusInput, normalizeCanvasPosition } from './ontology-engine/builder-focus.mjs';
 import {
-  healthCheck,
-  qualifyDeclaredDependencyEdges,
   buildDependencyImpactQualification,
-  countBy,
-  degreeBucket,
-  topHubs,
-  findNearMatchSlug,
-  suggestedSlugForReference,
-  titleFromReference,
-  sortLineageRows,
-  normalizeCycle,
-  limitLayers,
-  normalizeDependencyImpactTypes,
-  normalizeMatchEdgesTypes,
-  normalizePattern,
-  normalizeOptionalString,
-  normalizeNonNegativeInteger,
-  normalizeRecommendRelationKind,
-  normalizeNodeKind,
-  normalizeEdgeTargetKind,
-  normalizeNodeSort,
-  compareNodeRows,
+  qualifyDeclaredDependencyEdges,
+} from './ontology-engine/dependency-qualification.mjs';
+import {
   pageRankScores,
-  undirectedAdjacencyFrom,
   propagateCommunityLabels,
-  similarityScore,
-  compareCentralityRows,
   roundScore,
-  compareMaintenanceActions,
-  annotateMaintenanceAction,
-  normalizeStringSet,
+  similarityScore,
+  undirectedAdjacencyFrom,
+} from './ontology-engine/graph-measures.mjs';
+import { annotateMaintenanceAction, compareMaintenanceActions } from './ontology-engine/maintenance-actions.mjs';
+import {
+  compareCentralityRows,
+  compareNodeRows,
+  degreeBucket,
+  sortLineageRows,
+  topHubs,
+} from './ontology-engine/node-ranking.mjs';
+import {
+  normalizeDependencyImpactTypes,
+  normalizeEdgeTargetKind,
   normalizeIterations,
-  publicRelationTypes,
-  publicRelationCountObject,
+  normalizeMatchEdgesTypes,
+  normalizeNodeKind,
+  normalizeNodeSort,
+  normalizeNonNegativeInteger,
+  normalizeOptionalString,
+  normalizePattern,
+  normalizeRecommendRelationKind,
+  normalizeStringSet,
   normalizeTraversalDirection,
-  normalizeCanvasPosition,
-  builderFocusParam,
-  normalizeBuilderFocusInput,
-  formatCompiledEdge,
-  uniqueEdges,
+} from './ontology-engine/query-arguments.mjs';
+import {
   compareEdges,
-} from './ontology-engine/engine-helpers.mjs';
+  countEdges,
+  formatCompiledEdge,
+  publicRelationCountObject,
+  publicRelationTypes,
+  uniqueEdges,
+} from './ontology-engine/query-primitives.mjs';
+import { findNearMatchSlug, suggestedSlugForReference, titleFromReference } from './ontology-engine/reference-repair.mjs';
+import { limitLayers, normalizeCycle } from './ontology-engine/topology-shape.mjs';
 import { dispatchOntologyQuery } from './ontology-engine/query-dispatch.mjs';
 import { createTraversalQueries } from './ontology-engine/traversal-queries.mjs';
 import { createTraversalAnalysis } from './ontology-engine/traversal-analysis.mjs';
@@ -367,7 +368,7 @@ export function createOntologyEngine(artifact, options = {}) {
     builderFocusParam,
     commonNeighborRows,
     compareCentralityRows,
-    countBy,
+    countBy: countEdges,
     nearestDomainFor: (...args) => nearestDomainFor(...args),
     normalizeBuilderFocusInput,
     normalizeCanvasPosition,
@@ -394,7 +395,7 @@ export function createOntologyEngine(artifact, options = {}) {
     aliasesFor, collectContainmentScope: (...args) => collectContainmentScope(...args),
     collectLineage: (...args) => collectLineage(...args), compareNodeRows, compareEdges,
     containmentChildren: (...args) => containmentChildren(...args),
-    containmentParentsFor: (...args) => containmentParentsFor(...args), countBy, degreeBucket,
+    containmentParentsFor: (...args) => containmentParentsFor(...args), countBy: countEdges, degreeBucket,
     domainMapRow: (...args) => domainMapRow(...args), formatCompiledEdge,
     intersectSlugSets: (...args) => intersectSlugSets(...args),
     limitedNodeList: (...args) => limitedNodeList(...args), nearbySchemaPatterns,
@@ -428,7 +429,7 @@ export function createOntologyEngine(artifact, options = {}) {
     artifact, nodes, nodeBySlug, sourceDocFor, nodeEligibilityFindings, staleSummaries,
     maintenancePhases: MAINTENANCE_PHASES, maintenanceSeverities: MAINTENANCE_SEVERITIES,
     maintenanceKinds: MAINTENANCE_KINDS, capabilityWithoutEvidenceCandidates,
-    compareMaintenanceActions, countBy, cycles, danglingReferenceCandidates, emptyDomainCandidates,
+    compareMaintenanceActions, countBy: countEdges, cycles, danglingReferenceCandidates, emptyDomainCandidates,
     externalElementCandidates, normalizeStringSet, recommendRelations, unassignedNodeCandidates,
     unearnedNodeCandidates, annotateMaintenanceAction,
   });
@@ -442,7 +443,7 @@ export function createOntologyEngine(artifact, options = {}) {
 
   const health = createHealthQuery({
     artifact, healthIgnoredComponentKinds: HEALTH_IGNORED_COMPONENT_KINDS,
-    componentGroupOnlyHasKinds, components, connectedComponentGroups, cycles, healthCheck,
+    componentGroupOnlyHasKinds, components, connectedComponentGroups, cycles,
     overview, recommendRelations, topologicalOrder,
   });
 

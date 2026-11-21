@@ -176,3 +176,45 @@ export function publicRelationType(type) {
 export function edgeSortKey(edge) {
   return `${edge.from}:${edge.via}:${edge.to}:${edge.ref}`;
 }
+
+export function publicRelationTypes(typeSet) {
+  return typeSet ? [...typeSet].map(publicRelationType).sort() : null;
+}
+
+export function publicRelationCountObject(bucket) {
+  const mapped = new Map();
+  for (const [relation, count] of bucket.entries()) {
+    const publicName = publicRelationType(relation);
+    mapped.set(publicName, (mapped.get(publicName) || 0) + count);
+  }
+  return sortedCountObject(mapped);
+}
+
+export function formatCompiledEdge(edge) {
+  return {
+    id: edge.id,
+    from: edge.from,
+    to: edge.to,
+    via: edge.via,
+    relationType: publicRelationType(edge.via),
+    ref: edge.ref,
+    resolved: edge.resolved,
+    external: edge.external,
+  };
+}
+
+export function uniqueEdges(edges) {
+  const seen = new Set();
+  const out = [];
+  for (const edge of edges) {
+    const key = `${edge.id}:${edge.traversedFrom}:${edge.traversedTo}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(edge);
+  }
+  return out;
+}
+
+export function compareEdges(a, b) {
+  return edgeSortKey(a).localeCompare(edgeSortKey(b));
+}
