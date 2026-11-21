@@ -119,6 +119,20 @@ describe("the source list marks what waits", () => {
     chip.click();
     expect(onClear).toHaveBeenCalledTimes(1);
   });
+
+  it("says so when a state press and a picked folder leave no row, and offers to clear the pick", () => {
+    const sources = [source(0, "compiled"), source(1, "stale")];
+    const onClear = vi.fn();
+    mount({ ...BASE, sources } as unknown as LibraryUiModel, "sources", true, "stale", {
+      label: "Folder: decks",
+      includes: (row) => row.path === "sources/doc-0.md",
+      onClear,
+    });
+    expect(list().querySelectorAll("li > button[data-row-index]")).toHaveLength(0);
+    expect(screen.getByTestId("library-source-list-none-note")).toHaveTextContent("None of these sources is in that state.");
+    screen.getByTestId("library-source-list-none-clear").click();
+    expect(onClear).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("the wiki shelf says its common caption once", () => {

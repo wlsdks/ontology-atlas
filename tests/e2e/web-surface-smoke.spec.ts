@@ -154,6 +154,16 @@ test.describe("web smoke 2: fallback workbench", () => {
     await expect(index).toContainText("2 관계");
   });
 
+  test("the Sources home on the web lists the folder's sources and says only the app writes pages", async ({ page }) => {
+    await stubDirectoryPicker(page, SEED_VAULT);
+    await gotoSettled(page, "/ko/library/?tab=sources");
+    await page.getByTestId("library-open-vault").click();
+    await expect(page.getByTestId("sources-table")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("sources-row")).toHaveCount(1);
+    await expect(page.getByTestId("sources-panel")).toContainText("위키 문서는 앱에서만 써요. 앱에서는 이 원문부터 시작해요.");
+    await expect(page.getByTestId("library-progress-continue")).toHaveCount(0);
+  });
+
   test("a browser that cannot open folders gives a reason and a destination instead of a promise", async ({ page }) => {
     // Reproduce a browser without FSA. The app decides that capability by whether
     // `showDirectoryPicker` is **callable**, so deleting it is enough.

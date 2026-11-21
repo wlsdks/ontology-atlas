@@ -1080,6 +1080,8 @@
     },
     "listKey": "待機中のソース",
     "listFolder": "フォルダ：{folder}",
+    "listType": "ファイル形式：{type}",
+    "listNone": "ここには、その状態のソースがありません。",
     "reading": "フォルダを読み込み中です。これまでにソース{count, number}件",
     "pickGone": "{folder}はもうsources/にありません。すべてのソースを表示しています。"
   },

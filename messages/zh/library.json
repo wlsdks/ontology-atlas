@@ -1080,6 +1080,8 @@
     },
     "listKey": "等待中的来源",
     "listFolder": "文件夹：{folder}",
+    "listType": "文件类型：{type}",
+    "listNone": "这里没有处于该状态的来源。",
     "reading": "正在读取文件夹：目前 {count, number} 份来源",
     "pickGone": "{folder} 已不在 sources/ 中。正在显示全部来源。"
   },

@@ -142,6 +142,75 @@ test.describe("the Sources home", () => {
     }
   }
 
+  test("in a narrow pane the next-to-write panel starts on screen, above the table", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openSources(page, { width: 1040, height: 800 });
+    const panel = page.getByTestId("sources-panel");
+    const top = (await panel.boundingBox())!.y;
+    expect(top, "panel top at 1040x800").toBeLessThan(800);
+    const firstFile = (await panel.getByTestId("sources-panel-file").first().boundingBox())!;
+    expect(firstFile.y + firstFile.height, "first named file at 1040x800").toBeLessThanOrEqual(800);
+    expect(top).toBeLessThan((await page.getByTestId("sources-table").boundingBox())!.y);
+  });
+
+  test("a return from Wiki draws the row bars at their values, not from empty", async ({ page }) => {
+    await openSources(page);
+    const decks = page.locator('[data-testid="sources-row"][data-key="folder:decks"]').getByTestId("sources-row-share");
+    await expect(decks).not.toHaveText("0%");
+    await page.getByTestId("library-workspace-wiki").click();
+    await expect(page.getByTestId("sources-overview")).toHaveCount(0);
+    // The first committed text of the row, before any frame could move it.
+    await page.evaluate(() => {
+      const w = window as unknown as { __firstDecksShare?: string };
+      const observer = new MutationObserver(() => {
+        const share = document.querySelector('[data-testid="sources-row"][data-key="folder:decks"] [data-testid="sources-row-share"]');
+        if (!share) return;
+        w.__firstDecksShare = share.textContent ?? "";
+        observer.disconnect();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+    await page.getByTestId("library-workspace-sources").click();
+    await expect(decks).toBeVisible();
+    const first = await page.evaluate(() => (window as unknown as { __firstDecksShare?: string }).__firstDecksShare);
+    expect(first).toBe(await decks.textContent());
+    expect(first).not.toBe("0%");
+  });
+
+  test("a picked folder renamed on disk says so and shows every source again", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openSources(page, { height: 2400 });
+    await page.locator('[data-testid="sources-row"][data-key="folder:inbox"]').click();
+    await expect(page.getByTestId("library-source-group-chip")).toHaveText("Folder: inbox");
+    await page.evaluate(async () => {
+      const root = await navigator.storage.getDirectory();
+      let vault: FileSystemDirectoryHandle | null = null;
+      for await (const [name, handle] of (root as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
+        if (name.startsWith("stub-vault-") && handle.kind === "directory") vault = handle as FileSystemDirectoryHandle;
+      }
+      const sources = await vault!.getDirectoryHandle("sources");
+      const from = await sources.getDirectoryHandle("inbox");
+      const to = await sources.getDirectoryHandle("inbox-archive", { create: true });
+      for await (const [name, handle] of (from as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
+        const text = await (await (handle as FileSystemFileHandle).getFile()).text();
+        const writable = await (await to.getFileHandle(name, { create: true })).createWritable();
+        await writable.write(text);
+        await writable.close();
+      }
+      await sources.removeEntry("inbox", { recursive: true });
+    });
+    // The web rereads the folder on focus; each poll offers one.
+    await expect
+      .poll(async () => {
+        await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+        return page.getByTestId("sources-pick-gone").count();
+      }, { timeout: 20_000 })
+      .toBe(1);
+    await expect(page.getByTestId("sources-pick-gone")).toHaveText("inbox is no longer in sources/. Showing all sources.");
+    await expect(page.getByTestId("library-source-group-chip")).toHaveCount(0);
+    await expect(listRows(page)).toHaveCount(total);
+  });
+
   test("on the first day the band's sentence raises no title of its own", async ({ page }) => {
     await openSources(page, { vault: buildVault({ written: false }) });
     const sentence = page.getByTestId("library-progress-sentence");

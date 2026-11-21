@@ -1080,6 +1080,8 @@
     },
     "listKey": "기다리는 원문",
     "listFolder": "폴더: {folder}",
+    "listType": "파일 형식: {type}",
+    "listNone": "여기에는 그 상태인 원문이 없어요.",
     "reading": "폴더를 읽는 중이에요. 지금까지 원문 {count, number}개",
     "pickGone": "{folder} 폴더가 sources/에 더 이상 없어요. 전체 원문을 보여 줘요."
   },

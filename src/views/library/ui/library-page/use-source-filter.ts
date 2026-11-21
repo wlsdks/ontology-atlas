@@ -33,6 +33,13 @@ export function useSourceFilter({
   }, [pick, sources, vaultScope]);
 
   const clear = useCallback(() => setPick(null), []);
+  /** A filter on a folded list changes nothing anyone can see, so every narrowing opens the list. */
+  const unfold = useCallback(() => {
+    if (!indexCollapsed) return;
+    if (autoFolded) autoFoldDeclinedRef.current = true;
+    setAutoFolded(false);
+    writeLibraryIndexCollapsed(false);
+  }, [autoFoldDeclinedRef, autoFolded, indexCollapsed, setAutoFolded]);
   const press = useCallback(
     (next: SourceState) => {
       if (state === next) {
@@ -40,14 +47,9 @@ export function useSourceFilter({
         return;
       }
       setPick({ scope: vaultScope, state: next });
-      // A filter on a folded list changes nothing anyone can see, so the press opens the list.
-      if (indexCollapsed) {
-        if (autoFolded) autoFoldDeclinedRef.current = true;
-        setAutoFolded(false);
-        writeLibraryIndexCollapsed(false);
-      }
+      unfold();
     },
-    [autoFoldDeclinedRef, autoFolded, indexCollapsed, setAutoFolded, state, vaultScope],
+    [state, unfold, vaultScope],
   );
 
   useEffect(() => {
@@ -62,5 +64,5 @@ export function useSourceFilter({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [listening, state]);
 
-  return { state, press, clear };
+  return { state, press, clear, unfold };
 }

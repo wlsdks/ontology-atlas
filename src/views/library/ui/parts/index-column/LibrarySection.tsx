@@ -812,6 +812,14 @@ export function LibrarySection({
             ) : null}
             {/* A search that matches nowhere says so in a sentence. This covers both halves empty and waits for
                reading to finish, like the other-half note. */}
+            {groupFilter && stateFilter && listedSources.length === 0 && visibleSources.length > 0 ? (
+              <div data-testid="library-source-list-none" className={`flex flex-col items-start gap-1.5 ${INDEX_LIST_INSET}`}>
+                <ListNote testId="library-source-list-none-note">{t("sourcesHome.listNone")}</ListNote>
+                <Chip data-testid="library-source-list-none-clear" onClick={groupFilter.onClear} tone="muted" className="ml-3">
+                  {t("sourcesHome.panel.clear")}
+                </Chip>
+              </div>
+            ) : null}
             {needle && search.phase !== "reading" && visibleSources.length === 0 && visiblePages.length === 0 ? (
               <ListNote testId="library-search-nothing-note">{t("search.nothing", { needle })}</ListNote>
             ) : null}

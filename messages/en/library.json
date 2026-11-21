@@ -1080,6 +1080,8 @@
     },
     "listKey": "Waiting sources",
     "listFolder": "Folder: {folder}",
+    "listType": "File type: {type}",
+    "listNone": "None of these sources is in that state.",
     "reading": "Still reading the folder: {count, plural, one {# source} other {# sources}} so far",
     "pickGone": "{folder} is no longer in sources/. Showing all sources."
   },

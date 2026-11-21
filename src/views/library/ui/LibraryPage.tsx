@@ -343,15 +343,19 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   // A row picked on the Sources home belongs to its folder and narrows the index list with it.
   const [sourcePickAt, setSourcePickAt] = useState<{ scope: string; pick: SourcePick } | null>(null);
   const sourcePick = sourcePickAt?.scope === workVaultScope ? sourcePickAt.pick : null;
+  const { unfold: unfoldIndex } = sourceFilter;
   const setSourcePick = useCallback(
-    (pick: SourcePick | null) => setSourcePickAt(pick ? { scope: workVaultScope, pick } : null),
-    [workVaultScope],
+    (pick: SourcePick | null) => {
+      setSourcePickAt(pick ? { scope: workVaultScope, pick } : null);
+      if (pick) unfoldIndex();
+    },
+    [unfoldIndex, workVaultScope],
   );
   const sourceGroupFilter = useMemo(() => {
     if (!sourcePick) return null;
     const keys = new Set(sourcePick.keys);
     return {
-      label: sourcePick.grouping === "folder" ? t("sourcesHome.listFolder", { folder: sourcePick.name }) : sourcePick.name,
+      label: sourcePick.grouping === "folder" ? t("sourcesHome.listFolder", { folder: sourcePick.name }) : t("sourcesHome.listType", { type: sourcePick.name }),
       includes: (row: LibrarySourceRow) => keys.has(sourceGroupKey(row, sourcePick.grouping)),
       onClear: () => setSourcePick(null),
     };
@@ -768,8 +772,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                 />
               ) : null}
               {model.sources.length > 0 ? (
-                <AfterFirstFrame key={workVaultScope}>
+                <AfterFirstFrame key={workVaultScope} reading={localVault.partialTotal > 0}>
                 <SourcesOverview
+                  scope={workVaultScope}
                   sources={model.sources}
                   pages={model.wikiPages}
                   batch={overviewBatch}

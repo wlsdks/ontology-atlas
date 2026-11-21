@@ -231,10 +231,11 @@ the right pane is the progress band over the Sources overview** (2026-11-21,
 in Wiki it is the question desk. A folder with wiki pages and no source shows the empty
 folder's start stage there. When the folder has a source, the **progress band**
 (`docs/specs/2026-11-19-source-progress.md`) stands on top of the overview, at most 112px tall from `md` up, in four cells. The number: the percent of sources that
-have a wiki page, rounded down (below 10 sources the fraction `1 / 1`), with today's additions on
-its baseline, and under it the sentence in primary ink on one line. The bar: a 6px state bar (has
-a page in the accent, needs review and read in part in amber, checking and can't read neutral, no
-page the track), 280–560px wide, and under it one row of state presses in bar order, each a
+have a wiki page, rounded down (a share above 0 and under 1% reads `under 1%`), with today's additions on
+its baseline, and under it the sentence in primary ink on one line; it carries a `title` only
+when the line is cut. The bar: a 6px state bar, each state in its own `SOURCE_STATE_INK` (has a
+page in the page ink, read in part hatched, needs review in amber, checking and can't read in
+their own inks, no page grey), 280–560px wide, and under it one row of state presses in bar order, each a
 swatch, its word and a count, ending in a clear press (an × named `Show all N`) whose slot is held
 from the first paint, so a press resizes nothing in the band. With one state the row stays empty.
 A press shows only that state's rows in the index, combined with
@@ -409,8 +410,11 @@ the index is the bottom half of one column and has nowhere to fold to.
 Rows stay 36px with the name truncated at its end, format and size in mono `text-caption`,
 and none crosses the column's side edge at 1512, 1040, 768 or 390. **`compiled` lost its
 chip** on 2026-09-06: on the owner's folder all seven rows wore the same green pill, which
-is a texture rather than a state, so success is a quiet check in the row's own ink and a
-chip is spent only where a person can act. The one local-first disclosure follows the
+is a texture rather than a state. Since 2026-11-21 a row with a page carries no mark, a waiting
+row one 6px dot in its state's ink, and the list head names the dot; a row picked on the
+Sources home narrows the list under a `Folder: name` or `File type: name` chip whose press
+clears it, and a pick that leaves no row says so and offers Show all sources. A chip is
+spent only where a person can act. The one local-first disclosure follows the
 Compile press it describes — the connect-by-address runner's sentence, under the press, in
 the Compile popover or an open source's pane. The agent route's sentence is not that: it
 says Atlas is **not** in the path, so since 2026-09-12 it is the index head's glyph panel
