@@ -5,15 +5,15 @@ import type { LintFinding } from "./lint-brief";
 function composeFixBrief({ finding, locale, vaultRoot }: { finding: LintFinding; locale: string; vaultRoot: string }): string {
   const pages = finding.pages.map((slug) => `${slug}.md`).join(", ");
   if (locale === "ko") {
-    const what = { disagreement: "두 문서의 값이 어긋납니다", superseded: "나중 문서가 바꿔 놓은 주장이 옛 값으로 남아 있습니다", "missing-link": "같은 주제나 원문을 다루는데 서로 링크가 없습니다" }[finding.code];
+    const what = { disagreement: "두 문서의 값이 어긋납니다", superseded: "나중 문서가 바꿔 놓은 주장이 옛 값으로 남아 있습니다", "missing-link": "같은 주제나 자료를 다루는데 서로 링크가 없습니다" }[finding.code];
     return [
       `폴더: ${vaultRoot}`,
       `고칠 문서: ${pages}`,
       `점검이 찾은 것: ${what}. ${finding.summary}`,
       "",
       "할 일:",
-      "- 그 문서들과 인용된 원문을 먼저 읽어. DOCX·XLSX·CSV·텍스트 원문은 `read_source` 도구로 읽고(인용 앵커가 단위마다 붙어 와) 셸 명령은 쓰지 마. 원문이 말하지 않는 것은 쓰지 마.",
-      "- 어긋남이면 한쪽을 고르지 말고 양쪽 문서 모두에 두 값을 각자 인용과 함께 적고, 어느 원문이 나중인지 밝혀.",
+      "- 그 문서들과 인용된 자료를 먼저 읽어. DOCX·XLSX·CSV·텍스트 자료는 `read_source` 도구로 읽고(인용 앵커가 단위마다 붙어 와) 셸 명령은 쓰지 마. 자료가 말하지 않는 것은 쓰지 마.",
+      "- 어긋남이면 한쪽을 고르지 말고 양쪽 문서 모두에 두 값을 각자 인용과 함께 적고, 어느 자료가 나중인지 밝혀.",
       "- 대체된 주장이면 현재 값을 앞에, 옛 값을 \"이전\"으로 남기고 둘 다 인용해.",
       "- 빠진 링크면 양쪽 문서에 `[[wiki/<슬러그>]]` 링크를 서로 걸어.",
       "- 서식(wiki/_template.md)을 지켜. 그 문서들 밖의 파일은 건드리지 마.",

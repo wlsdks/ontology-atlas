@@ -178,19 +178,19 @@ describe('question desk evidence', () => {
     const korean = buildQuestionDeskReportBrief({
       question: '재고는 언제 돌아오나요?', vaultRoot: '/folder', locale: 'ko', claims: [claim],
       sourceHits: [{ path: 'sources/refund.md', anchor: 'l2', text: '작업은 나중에 실행됩니다.', score: 2 }],
-      coverage: '위키 1/1; 원문 1/1',
+      coverage: '위키 1/1; 자료 1/1',
     });
     expect(korean).toContain('## 답의 첫 문단은 160자 이하의 짧은 결론 한 문장');
   });
 
   it('separates only exact ordered localized report headings and keeps freeform text raw', () => {
-    const korean = '## 답\n승인 뒤 작업이 실행됩니다.\n## 원문 근거\n- 원문은 작업 대기라고 말합니다. [[src:sources/refund.md#l2]]\n## 불일치하거나 변경된 주장\n- 즉시 복구 주장은 어긋납니다.\n## 모르는 점과 검색 한계\n- 실행 시각은 알 수 없습니다.';
+    const korean = '## 답\n승인 뒤 작업이 실행됩니다.\n## 자료 근거\n- 자료는 작업 대기라고 말합니다. [[src:sources/refund.md#l2]]\n## 불일치하거나 변경된 주장\n- 즉시 복구 주장은 어긋납니다.\n## 모르는 점과 검색 한계\n- 실행 시각은 알 수 없습니다.';
     const sections = splitQuestionDeskReportSections(korean, 'ko');
-    expect(sections?.map((section) => section.title)).toEqual(['답', '원문 근거', '불일치하거나 변경된 주장', '모르는 점과 검색 한계']);
+    expect(sections?.map((section) => section.title)).toEqual(['답', '자료 근거', '불일치하거나 변경된 주장', '모르는 점과 검색 한계']);
     expect(sections?.[0]?.markdown).toBe('승인 뒤 작업이 실행됩니다.');
     expect(sections?.[1]?.markdown).toContain('[[src:sources/refund.md#l2]]');
     expect(splitQuestionDeskReportSections('# 자유 형식\n\n모델 답변입니다.', 'ko')).toBeNull();
-    expect(splitQuestionDeskReportSections(korean.replace('## 원문 근거', '## 바뀐 근거'), 'ko')).toBeNull();
+    expect(splitQuestionDeskReportSections(korean.replace('## 자료 근거', '## 바뀐 근거'), 'ko')).toBeNull();
     expect(splitQuestionDeskReportSections(korean + '\n## 답\n반복', 'ko')).toBeNull();
   });
 
@@ -338,15 +338,15 @@ describe('question desk evidence', () => {
   it('files a realistic Korean ACP report with explanatory prose without promoting it to Facts', () => {
     const report = {
       question: '재고는 언제 복구되나요?', generatedAt: '2026-09-27T17:00:00Z',
-      coverage: '위키 2/2 · 원문 2/2', limits: '로컬 단어 일치 없음; 다른 언어 문서는 빠질 수 있음',
+      coverage: '위키 2/2 · 자료 2/2', limits: '로컬 단어 일치 없음; 다른 언어 문서는 빠질 수 있음',
       text: [
         '## 답', '즉시는 아닙니다. 별도 작업이 실행된 뒤 반영됩니다.',
-        '## 원문 근거', '두 영어 원문을 다시 읽었습니다.', '- sources/refund.md',
+        '## 자료 근거', '두 영어 자료를 다시 읽었습니다.', '- sources/refund.md',
         '- 환불 승인은 재고 복구 작업을 대기열에 넣습니다. [[src:sources/refund.md#l2]]',
         '이것은 승인 즉시 수량이 바뀐다는 뜻이 아닙니다.',
-        '## 불일치하거나 변경된 주장', '위키의 즉시 복구 주장은 원문과 어긋납니다. [[src:sources/refund.md#l2]]',
+        '## 불일치하거나 변경된 주장', '위키의 즉시 복구 주장은 자료와 어긋납니다. [[src:sources/refund.md#l2]]',
         '## 모르는 점과 검색 한계', '실제 작업 완료 시각은 문서에 없습니다.',
-        '마지막으로 로컬 단어 검색은 한국어 질문과 영어 원문을 연결하지 못했습니다.',
+        '마지막으로 로컬 단어 검색은 한국어 질문과 영어 자료를 연결하지 못했습니다.',
       ].join('\n'),
     };
     const plan = planQuestionDeskReportFile(report, 'ko', new Set(['sources/refund.md']));
@@ -357,10 +357,10 @@ describe('question desk evidence', () => {
     expect(page.problems).toEqual([]);
     const facts = page.text.split('## Facts\n')[1]!.split('## Decisions')[0]!;
     expect(facts).toContain('환불 승인은 재고 복구 작업을 대기열에 넣습니다.');
-    expect(facts).not.toContain('두 영어 원문을 다시 읽었습니다.');
+    expect(facts).not.toContain('두 영어 자료를 다시 읽었습니다.');
     expect(facts).not.toContain('즉시 복구 주장은');
     expect(page.text.split('## Open questions\n')[1]!).toContain('즉시 복구 주장은');
-    expect(page.text.split('## Not in sources\n')[1]!).toContain('두 영어 원문을 다시 읽었습니다.');
+    expect(page.text.split('## Not in sources\n')[1]!).toContain('두 영어 자료를 다시 읽었습니다.');
     expect(page.text.split('## Not in sources\n')[1]!).not.toContain('근거 해설 (사실로 승격하지 않음): - sources/refund.md');
     expect(page.text.split('## Not in sources\n')[1]!).toContain('로컬 단어 검색은 한국어 질문');
   });
@@ -382,7 +382,7 @@ describe('question desk evidence', () => {
     expect(planQuestionDeskReportFile({ ...base, text: base.text.replace('Later.', '[outside]( https://example.com)') }, 'en', known)).toMatchObject({ ok: false, reason: 'unsafe' });
     expect(planQuestionDeskReportFile({ ...base, text: base.text.replace('Later.', '![a [b]](https://example.com/image.png)') }, 'en', known)).toMatchObject({ ok: false, reason: 'unsafe' });
     expect(planQuestionDeskReportFile({ ...base, text: base.text.replace('Later.', '[see][remote]\n[remote]: https://example.com') }, 'en', known)).toMatchObject({ ok: false, reason: 'unsafe' });
-    const korean = { ...base, text: base.text.replace('## Answer', '## 답').replace('## Source-backed evidence', '## 원문 근거').replace('## Disagreements or changed claims', '## 불일치하거나 변경된 주장').replace('## Unknowns and search limits', '## 모르는 점과 검색 한계') };
+    const korean = { ...base, text: base.text.replace('## Answer', '## 답').replace('## Source-backed evidence', '## 자료 근거').replace('## Disagreements or changed claims', '## 불일치하거나 변경된 주장').replace('## Unknowns and search limits', '## 모르는 점과 검색 한계') };
     expect(planQuestionDeskReportFile(korean, 'ko', known)).toMatchObject({ ok: true });
   });
 
