@@ -2057,6 +2057,52 @@ describe('Stop holds when the agent ignores it', () => {
   });
 });
 
+describe('a card waiting for an answer is refused, never allowed, when the conversation ends', () => {
+  const answerOf = (id: number) =>
+    (bridge.sent.find((message) => message.id === id && 'result' in message) as { result: { outcome: { optionId?: string } } } | undefined)?.result.outcome.optionId;
+
+  async function waitingCard() {
+    const hook = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault', mcpServers: [{ name: 'atlas-vault' }] }));
+    const starting = hook.result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => { bridge.release?.(); await starting; });
+    bridge.holdPrompt = true;
+    void hook.result.current.send('Write the wiki pages.');
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+    await act(async () => {
+      bridge.listener?.(JSON.stringify({
+        jsonrpc: '2.0', id: 801, method: 'session/request_permission',
+        params: { sessionId: 's-1', options: [{ kind: 'reject_once', name: 'Deny', optionId: 'reject' }, { kind: 'allow_once', name: 'Allow', optionId: 'allow' }],
+          toolCall: { toolCallId: 'call-801', title: 'Edit notes.md', kind: 'edit', rawInput: { file_path: '/outside/notes.md' } } },
+      }));
+    });
+    await waitFor(() => expect(hook.result.current.pending?.request.requestId).toBe(801));
+    return hook;
+  }
+
+  it('refuses it when the agent process exits', async () => {
+    const { result } = await waitingCard();
+    await act(async () => { bridge.exits.get('acp-1')?.(); });
+    await waitFor(() => expect(answerOf(801)).toBe('reject'));
+    expect(result.current.pending).toBeNull();
+    expect(result.current.status).toBe('exited');
+  });
+
+  it('refuses it when the conversation is closed', async () => {
+    const { result } = await waitingCard();
+    await act(async () => { await result.current.stop(); });
+    await waitFor(() => expect(answerOf(801)).toBe('reject'));
+    expect(result.current.pending).toBeNull();
+  });
+
+  it('refuses it when the screen goes away', async () => {
+    const { unmount } = await waitingCard();
+    await act(async () => { unmount(); });
+    await waitFor(() => expect(answerOf(801)).toBe('reject'));
+    expect(bridge.stopped).toEqual(['acp-1']);
+  });
+});
+
 describe('a request that arrives after its turn has ended', () => {
   const OPTIONS = [
     { kind: 'reject_once', name: 'Deny', optionId: 'reject' },

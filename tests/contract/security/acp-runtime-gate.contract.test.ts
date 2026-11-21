@@ -39,7 +39,7 @@ describe('the gate: what is said and what is applied must match', () => {
      * not there.
      */
     const src = readFileSync(
-      join(ROOT, 'src/features/acp-session/model/use-acp-session.ts'),
+      join(ROOT, 'src/features/acp-session/model/connection/open-session.ts'),
       'utf8',
     );
     expect(src).toContain('GATED_SESSION_MODE');
@@ -94,7 +94,7 @@ describe('the gate: what is said and what is applied must match', () => {
      * gated mode; users judge safety by that screen.
      */
     const src = readFileSync(
-      join(ROOT, 'src/features/acp-session/model/use-acp-session.ts'),
+      join(ROOT, 'src/features/acp-session/model/connection/open-session.ts'),
       'utf8',
     );
     expect(
