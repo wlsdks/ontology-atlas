@@ -196,7 +196,7 @@ jobs:
       - name: Build bundled MCP sidecar
         run: pnpm mcp:build-binary
 
-      # The only macOS `cargo test` in CI.
+      # Pull requests run the same workspace tests in `lint-rust-macos`; this reruns them on the tag.
       - name: Native vault bridge tests
         run: pnpm test:desktop:bridge
 
