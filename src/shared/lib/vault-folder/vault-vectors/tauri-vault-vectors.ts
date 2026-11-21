@@ -1,6 +1,6 @@
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { vaultIndexPreference } from './tauri-vault-index';
+import { vaultIndexPreference } from '../vault-index/tauri-vault-index';
 
 /**
  * The installed app's search by meaning (`src-tauri/src/vault/vectors.rs`): a vector for each

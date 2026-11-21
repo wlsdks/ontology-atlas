@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import type { VectorStatus } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import type { RunStage } from './run-stage';
 
 /** Until the person moves on: a press on the stage, or the folder leaving `ready`. A folder found ready, or an update of changed files, is never celebrated. */

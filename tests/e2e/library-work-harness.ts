@@ -8,7 +8,7 @@ import {
   type VectorFound,
   type VectorProbe,
   type VectorStatus,
-} from "../../src/shared/lib/vault-folder/tauri-vault-vectors";
+} from "../../src/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 const VAULT_ROOT = "/Users/probe/Ontology Atlas/launch";

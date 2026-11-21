@@ -21,7 +21,7 @@ import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
 import { IconButton, LiveAnnouncer, controlClass } from '@/shared/ui';
 import { searchDocs, type DocsSearchMatch } from '../lib/search';
 import { useVaultTextSearch } from '../lib/use-vault-text-search';
-import type { VaultIndexStatus } from '@/shared/lib/vault-folder/tauri-vault-index';
+import type { VaultIndexStatus } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
 import { githubBlobUrl } from '../lib/resolve-doc-link';
 import type { VaultCommand } from '../model/command';
 import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';

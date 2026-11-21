@@ -1,4 +1,4 @@
-import type { VectorProbe, VectorSource } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import type { VectorProbe, VectorSource } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 
 export type BuiltinHolding = 'ready' | 'partial' | 'none';
 

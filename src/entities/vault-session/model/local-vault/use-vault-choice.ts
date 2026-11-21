@@ -20,8 +20,8 @@ import {
 import { classifyVaultAccessError, isMissingFolderError } from '../classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/failures/error-message';
 import { isPickerAbort } from '@/shared/lib/failures/picker-abort';
-import { forgetVaultIndex } from '@/shared/lib/vault-folder/tauri-vault-index';
-import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
+import { forgetVaultIndex } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
+import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vectors/vault-vector-source';
 import { emptyAgentActivityStatus } from '../agent-activity-status';
 import {
   isSupported,

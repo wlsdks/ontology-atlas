@@ -11,8 +11,8 @@ import {
   vectorStatus,
   type VectorSource,
   type VectorStatus,
-} from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
+} from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
+import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vectors/vault-vector-source';
 
 /** One event subscription feeds every screen, so leaving the Library and coming back reads the job where it is. */
 const statuses = new Map<string, VectorStatus>();

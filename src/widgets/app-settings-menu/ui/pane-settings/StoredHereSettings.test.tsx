@@ -29,13 +29,13 @@ vi.mock('@/entities/vault-session', () => ({
 vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   getTauriVaultRootPath: (handle: { rootPath: string }) => handle.rootPath,
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-index', () => ({
+vi.mock('@/shared/lib/vault-folder/vault-index/tauri-vault-index', () => ({
   clearVaultIndex: bridge.clear,
   syncVaultIndex: bridge.sync,
   vaultIndexStatus: bridge.status,
   vaultIndexPreference: { use: () => bridge.indexSwitch, write: vi.fn() },
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-vectors', () => ({ probeVectors: vectors.probe }));
+vi.mock('@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors', () => ({ probeVectors: vectors.probe }));
 vi.mock('@/features/vault-vectors', () => ({
   useVectorStatus: () => ({ vectorsBytes: vectors.vectorsBytes }),
   remove: vectors.remove,

@@ -29,7 +29,7 @@ import {
 import { isAdvisoryWikiCode, isWikiFolderCode, libraryOffTemplateCount, passageLabelText } from "@/features/library";
 import { captionWindow } from "../../../lib/sources/caption-window";
 import { isIndexedSource, useSourceSearch } from "../../../lib/sources/use-source-search";
-import { useVaultIndexHits } from "@/shared/lib/vault-folder/use-vault-index-hits";
+import { useVaultIndexHits } from "@/shared/lib/vault-folder/vault-index/use-vault-index-hits";
 import { LibraryShelf } from "./LibraryShelf";
 import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";
 import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";

@@ -115,7 +115,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "ontology-atlas:canvas-background:v1", kind: "storage", scope: "global", note: "canvas background preference" },
   { key: "ontology-atlas:glyph-set:v1", kind: "storage", scope: "global", note: "glyph set preference" },
   { key: "ontology-atlas:vault-index:v1", kind: "storage", scope: "global", note: "search index on/off preference" },
-  { key: "ontology-atlas:vault-vectors:v1", kind: "storage", scope: "global", file: "src/shared/lib/vault-folder/vault-vector-source.ts", note: "One machine-wide map from a folder's absolute path to its search-by-meaning choice and pause; the path keys each folder's entry" },
+  { key: "ontology-atlas:vault-vectors:v1", kind: "storage", scope: "global", file: "src/shared/lib/vault-folder/vault-vectors/vault-vector-source.ts", note: "One machine-wide map from a folder's absolute path to its search-by-meaning choice and pause; the path keys each folder's entry" },
   { key: "ontology-atlas:footprint:v1", kind: "storage", scope: "global", note: "footprint trail preference" },
   // Expansion affordance, structure, and three numbers. Screen preferences like the
   // footprint and the background, so vault-independent — changing folder must not

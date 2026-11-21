@@ -38,7 +38,7 @@ export const rules = [
       /^src-tauri\/capabilities\/.+\.json$/,
       /^src-tauri\/tauri(?:\.[a-z0-9-]+)?\.conf\.json$/,
       /^src-tauri\/Cargo\.lock$/,
-      /^src\/shared\/lib\/(?:[a-z-]+\/)?tauri-[a-z0-9-]+\.ts$/,
+      /^src\/shared\/lib\/(?:[a-z-]+\/)*tauri-[a-z0-9-]+\.ts$/,
       /^src\/shared\/lib\/planning\/bridge\.ts$/,
       /^src\/shared\/lib\/library\/source-citation\.ts$/,
       /^src\/shared\/lib\/desktop-shell\/cancellable-request\.ts$/,

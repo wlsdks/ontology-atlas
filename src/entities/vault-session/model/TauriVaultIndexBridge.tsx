@@ -3,9 +3,9 @@
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
-import { syncVaultIndex, vaultIndexPreference } from "@/shared/lib/vault-folder/tauri-vault-index";
-import { vectorStatus } from "@/shared/lib/vault-folder/tauri-vault-vectors";
-import { vaultVectorSource } from "@/shared/lib/vault-folder/vault-vector-source";
+import { syncVaultIndex, vaultIndexPreference } from "@/shared/lib/vault-folder/vault-index/tauri-vault-index";
+import { vectorStatus } from "@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors";
+import { vaultVectorSource } from "@/shared/lib/vault-folder/vault-vectors/vault-vector-source";
 import { useLocalVault } from "./local-vault-context";
 
 /** Rust remembers a folder's source for the launch, so each folder is told once per page life. */

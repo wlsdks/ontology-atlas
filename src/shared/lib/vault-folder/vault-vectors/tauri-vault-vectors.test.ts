@@ -15,7 +15,7 @@ vi.mock('@tauri-apps/api/event', () => ({
   listen: tauriApiMock.listen,
 }));
 
-import { vaultIndexPreference } from './tauri-vault-index';
+import { vaultIndexPreference } from '../vault-index/tauri-vault-index';
 import {
   deleteVectorModel,
   revealVectorModel,

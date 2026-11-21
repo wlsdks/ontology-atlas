@@ -26,7 +26,7 @@ import {
   type LibraryPageFacts,
 } from '@/features/library';
 import { sourceUnits, type SourceUnit } from '@/shared/lib/library/source-passage';
-import type { VectorFound } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import type { VectorFound } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { Button, Chip } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';

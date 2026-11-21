@@ -1,4 +1,4 @@
-import type { VectorFailure, VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import type { VectorFailure, VectorStatus } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 
 export type DeskLineMessage =
   | 'web'

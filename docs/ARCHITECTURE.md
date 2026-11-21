@@ -276,7 +276,7 @@ when its stdin closes, and after five idle minutes of its own. The WebView reach
 `_prepare`, `_stop`, `_warm`, `_search`, `_delete`, `_delete_model` and
 `_reveal_model`
 (`src-tauri/src/vault/vectors/commands.rs`, bridged by
-`src/shared/lib/vault-folder/tauri-vault-vectors.ts`), and follows each folder's
+`src/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors.ts`), and follows each folder's
 job through the `vault-vectors-status` event. The web playground has none.
 One store in `src/features/vault-vectors/` keeps each folder's last status for
 the Wiki desk; the shell's adapter `src/app/providers/MeaningRunSeat.tsx`
