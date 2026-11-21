@@ -1094,7 +1094,7 @@ describe('focused check suggestions', () => {
       assert.ok(existsSync(path), `${path} moved; move its mapping with it`);
       assert.ok(commandNames(suggestFocusedChecks([path])).includes(command), path);
     }
-    assert.ok(!commandNames(suggestFocusedChecks(['src/widgets/ontology-map/flat-graph/names/step-space.test.ts'])).includes(command));
+    assert.ok(!commandNames(suggestFocusedChecks(['src/widgets/ontology-map/flat-graph/names/zoom-step.test.ts'])).includes(command));
   });
 
   it('routes the vault session files the desktop readiness gate reads to that gate', () => {
