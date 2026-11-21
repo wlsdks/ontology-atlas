@@ -63,10 +63,10 @@ export function paintFragment(
       const grown = easeOut(span(t2, rowStart(4) + OPEN.drawDelay + i * OPEN.lineStep, OPEN.lineMs));
       if (grown <= 0) return;
       const pts = [line.from, { x: lerp(line.from.x, line.to.x, 0.5), y: lerp(line.from.y, line.to.y, 0.5) }, line.to];
-      const len = polylineLength(pts);
+      const length = polylineLength(pts);
       const path = ribbonPath(pts, (S.wide ? 4.2 : 2.8) * 1, 0, grown, true);
       const g = ctx.createLinearGradient(line.from.x, line.from.y, line.to.x, line.to.y);
-      const fadeAt = line.named ? 1 : clamp01(1 - O.fadePx / Math.max(1, len));
+      const fadeAt = line.named ? 1 : clamp01(1 - O.fadePx / Math.max(1, length));
       g.addColorStop(0, rgba(inks.arc, 0.92));
       g.addColorStop(fadeAt, rgba(inks.arc, line.named ? 0.92 : 0.6));
       g.addColorStop(1, rgba(inks.arc, line.named ? 0.92 : 0));

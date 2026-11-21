@@ -90,9 +90,9 @@ export function paintMap(ctx: CanvasRenderingContext2D, scene: FilmPaintScene, s
     const a = arc.pts[0]!;
     const b = arc.pts[arc.pts.length - 1]!;
     const g = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
-    const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    const length = Math.hypot(b.x - a.x, b.y - a.y) || 1;
     g.addColorStop(0, rgba(inks.rest, 0));
-    g.addColorStop(clamp01(RIBBON_FADE_PX / len), rgba(inks.rest, 0.5));
+    g.addColorStop(clamp01(RIBBON_FADE_PX / length), rgba(inks.rest, 0.5));
     g.addColorStop(1, rgba(inks.rest, 0.5));
     ctx.globalAlpha = arcLight;
     ctx.fillStyle = g;

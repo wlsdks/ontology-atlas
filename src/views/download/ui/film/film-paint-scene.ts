@@ -41,7 +41,7 @@ interface FlightPlan {
 interface LitPlan {
   line: FilmLitLine;
   start: number;
-  len: number;
+  length: number;
   dots: Pt[];
   path: Path2D | null;
   glint: number;
@@ -154,16 +154,16 @@ export function buildFilmPaintScene(
     const rank = { needs: 0, neededBy: 0, relates: 0, own: 0 };
     let glint = 0;
     for (const line of map.lit.lines) {
-      const len = polylineLength(line.pts);
+      const length = polylineLength(line.pts);
       const dots: Pt[] = [];
       if (line.kind === 'relates') {
         const gap = map.sizes.wide ? 6.4 : 5.6;
-        for (let d = 0; d <= len; d += gap) dots.push(subPolyline(line.pts, 0, d / len).pop() ?? line.pts[0]!);
+        for (let d = 0; d <= length; d += gap) dots.push(subPolyline(line.pts, 0, d / length).pop() ?? line.pts[0]!);
       }
       lit.push({
         line,
         start: litLineStart(line.kind, rank[line.kind]++, counts),
-        len,
+        length,
         dots,
         path: line.kind === 'own' || line.kind === 'relates' ? null : ribbonPath(line.pts, line.width, 0, 1, !line.towardPick),
         glint: line.kind === 'own' ? -1 : glint++,
