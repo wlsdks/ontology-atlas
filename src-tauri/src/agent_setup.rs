@@ -355,7 +355,7 @@ pub(crate) fn create_entry_atomically(
     let mut created = None;
     for _ in 0..64 {
         let sequence = SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let name = std::ffi::CString::new(crate::temporary_names::create_temporary_name(
+        let name = std::ffi::CString::new(crate::vault::temporary_names::create_temporary_name(
             std::process::id(),
             nonce,
             sequence,
@@ -457,7 +457,7 @@ pub(crate) fn write_entry_atomically_with_guard<T>(
         // Cannot fail for a `&CStr` name, but stays an error: a panic on the macOS main
         // thread aborts the app.
         let temporary_name =
-            match std::ffi::CString::new(crate::temporary_names::atomic_temporary_name(
+            match std::ffi::CString::new(crate::vault::temporary_names::atomic_temporary_name(
                 &printable_name,
                 std::process::id(),
                 nonce,
@@ -564,7 +564,7 @@ fn verify_inner(vault_path: &str, sample_slug: Option<&str>) -> Result<McpVerify
         )));
     }
 
-    let mut child = crate::no_console::hide_console(&mut Command::new(&binary))
+    let mut child = crate::process::no_console::hide_console(&mut Command::new(&binary))
         .env("OATLAS_VAULT", &vault)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

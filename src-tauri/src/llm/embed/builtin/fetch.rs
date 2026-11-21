@@ -146,7 +146,7 @@ impl Fetch for CurlFetch {
         sink: &mut dyn Sink,
     ) -> Result<(), EmbedError> {
         let mut child = KillOnDrop(
-            crate::no_console::hide_console(&mut Command::new("curl"))
+            crate::process::no_console::hide_console(&mut Command::new("curl"))
                 .args([
                     "--disable",
                     "--silent",

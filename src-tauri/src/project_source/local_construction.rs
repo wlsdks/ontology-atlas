@@ -34,7 +34,7 @@ pub(crate) struct SourceRange {
     pub file_complete: bool,
 }
 fn eligible(path: &Path) -> bool {
-    crate::gray_area_scope::safe_source_path(path)
+    crate::gray_area::scope::safe_source_path(path)
         && (matches!(
             path.extension().and_then(|x| x.to_str()),
             Some("ts" | "tsx" | "js" | "jsx" | "mjs" | "cjs" | "mts" | "cts" | "py" | "rs" | "go")
@@ -44,7 +44,7 @@ fn eligible(path: &Path) -> bool {
         ))
 }
 pub(crate) fn preview(root: &Path, destination: &Path) -> Result<SourcePreview, String> {
-    let observed = crate::gray_area_scope::observe_construction_source(root, destination)?;
+    let observed = crate::gray_area::scope::observe_construction_source(root, destination)?;
     let mut excluded = observed.excluded;
     let mut files = Vec::new();
     for entry in observed.entries {
@@ -183,7 +183,7 @@ pub(crate) fn read_range(
         end_line,
         bytes: captured.len(),
         text: captured,
-        full_file_sha256: crate::gray_area_scope::digest(text.as_bytes()),
+        full_file_sha256: crate::gray_area::scope::digest(text.as_bytes()),
         next_line: (end_line < lines.len()).then_some(end_line + 1),
         total_lines: lines.len(),
         file_complete: start_line == 1 && end_line == lines.len(),
@@ -191,7 +191,7 @@ pub(crate) fn read_range(
 }
 fn roots(source_path: &str, destination_path: &str) -> Result<(PathBuf, PathBuf), String> {
     let root = crate::canonical_source_root(source_path)?;
-    if !crate::vault_grants::is_selected_source(&root) {
+    if !crate::vault::grants::is_selected_source(&root) {
         return Err("construction_source_selection_required".into());
     }
     Ok((root, crate::canonical_root(destination_path)?))
@@ -257,9 +257,9 @@ mod tests {
         let vault = root.join("vault");
         std::fs::create_dir(&source).unwrap();
         std::fs::create_dir(&vault).unwrap();
-        let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&root));
+        let _scope = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&root));
         assert!(roots(&source.to_string_lossy(), &vault.to_string_lossy()).is_err());
-        crate::vault_grants::grant_source_root(&source);
+        crate::vault::grants::grant_source_root(&source);
         assert!(roots(&source.to_string_lossy(), &vault.to_string_lossy()).is_ok());
         assert!(roots(&root.to_string_lossy(), &vault.to_string_lossy()).is_err());
         std::fs::remove_dir_all(root).unwrap();
@@ -281,7 +281,7 @@ mod tests {
         assert_eq!(range.bytes, text.len());
         assert_eq!(
             range.full_file_sha256,
-            crate::gray_area_scope::digest(text.as_bytes())
+            crate::gray_area::scope::digest(text.as_bytes())
         );
         assert!(read_range(&root, &vault, &prepared.fingerprint, "vault/private.ts", 1).is_err());
         std::fs::remove_dir_all(root).unwrap();

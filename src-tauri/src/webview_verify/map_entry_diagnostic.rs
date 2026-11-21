@@ -9,7 +9,7 @@ const ENABLE_ENV: &str = "ONTOLOGY_ATLAS_DIAGNOSE_MAP_ENTRY";
 const DEFAULT_PACING_ENV: &str = "ONTOLOGY_ATLAS_DIAGNOSE_MAP_ENTRY_DEFAULT_PACING";
 const MAIN_WEBVIEW_LABEL: &str = "main";
 const PREFIX: &str = "[ontology-atlas-map-entry-diagnostic]";
-const OBSERVER_SCRIPT: &str = include_str!("webview_verify/map_entry_observer.js");
+const OBSERVER_SCRIPT: &str = include_str!("map_entry_observer.js");
 const REPORT_QUERY: &str = r#"(() => {
   const diagnostic = window.__ontologyAtlasMapEntryDiagnostic;
   return diagnostic && typeof diagnostic.read === "function"

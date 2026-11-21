@@ -271,7 +271,7 @@ export function ConnectorsPanel({
    * `parseMcpInstallLink` refuses any unknown field, because a confirmation showing less than
    * the truth is the CVE this surface avoids (`src/shared/lib/connectors/mcp-install-link.ts`). The link
    * only opens the dialog: nothing is written and the switch stays off. The installed app's
-   * `ontology-atlas://mcp?install=` reaches this address through `src-tauri/src/deep_link.rs`.
+   * `ontology-atlas://mcp?install=` reaches this address through `src-tauri/src/app_shell/deep_link.rs`.
    * `useSearchParams`, not `window.location`: an effect would paint the dialog closed first, and
    * static export has no `window` (`.claude/rules/architecture.md`).
    */

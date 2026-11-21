@@ -130,10 +130,11 @@ pub(crate) fn terminate_tree(pid: u32) -> Result<(), String> {
     }
     #[cfg(windows)]
     {
-        let status = crate::no_console::hide_console(&mut std::process::Command::new("taskkill"))
-            .args(["/PID", &pid.to_string(), "/T", "/F"])
-            .status()
-            .map_err(|err| format!("taskkill failed: {err}"))?;
+        let status =
+            crate::process::no_console::hide_console(&mut std::process::Command::new("taskkill"))
+                .args(["/PID", &pid.to_string(), "/T", "/F"])
+                .status()
+                .map_err(|err| format!("taskkill failed: {err}"))?;
         if status.success() {
             Ok(())
         } else {

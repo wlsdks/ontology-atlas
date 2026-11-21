@@ -1,7 +1,7 @@
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
 /**
- * Bridge to the two commands in `src-tauri/src/acp_doctor.rs`; Rust is the source of truth.
+ * Bridge to the two commands in `src-tauri/src/acp/doctor.rs`; Rust is the source of truth.
  * `acp_diagnose` fixes nothing; `acp_repair` returns the checks re-measured after fixing.
  * Rust returns ids and measured facts only; copy comes from i18n, or the English screen lies.
  * App-only: a browser cannot spawn processes or read the keychain (`.claude/rules/surfaces.md`).

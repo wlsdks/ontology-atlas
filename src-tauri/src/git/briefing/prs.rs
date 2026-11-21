@@ -173,7 +173,7 @@ fn fetch(path: &str, limit: usize, cancelled: &AtomicBool) -> Result<(Value, usi
     let max = limit.min(524_288);
     let max_text = max.to_string();
     let mut command = std::process::Command::new("curl");
-    crate::no_console::hide_console(&mut command);
+    crate::process::no_console::hide_console(&mut command);
     command
         .args([
             "--disable",

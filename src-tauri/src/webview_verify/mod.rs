@@ -1,3 +1,5 @@
+pub(crate) mod map_entry_diagnostic;
+
 use crate::{APP_LOCALES, DEFAULT_APP_LOCALE, MAIN_WINDOW_LABEL};
 use std::io::Write;
 use std::path::Path;
@@ -131,13 +133,13 @@ fn verify_vault_roots(raw: &str) -> Vec<&str> {
         .collect()
 }
 
-/// The planted store record only names a folder, and `vault_grants` honours no folder
+/// The planted store record only names a folder, and `vault::grants` honours no folder
 /// the renderer names; without the grant the fixture restores as "grant needed" and
 /// every map route falls back to first run. Each root's verdict is printed so a refused
 /// fixture is reported as itself, not as a wrong route.
 fn grant_and_build_verify_vault_bootstrap(raw: &str) -> String {
     for root in verify_vault_roots(raw) {
-        let verdict = match crate::vault_grants::grant_launch_vault_root(Path::new(root)) {
+        let verdict = match crate::vault::grants::grant_launch_vault_root(Path::new(root)) {
             Ok(granted) => format!("root={} granted=true", granted.display()),
             Err(reason) => format!("root={root} granted=false reason={reason}"),
         };
@@ -614,7 +616,7 @@ mod tests {
         let wiki = base.join("atlas-wiki");
         std::fs::create_dir_all(&map).unwrap();
         std::fs::create_dir_all(&wiki).unwrap();
-        let _scope = crate::vault_grants::EnforcedScope::granting(&[]);
+        let _scope = crate::vault::grants::EnforcedScope::granting(&[]);
         let map_path = map.to_string_lossy().to_string();
         let wiki_path = wiki.to_string_lossy().to_string();
         assert_eq!(

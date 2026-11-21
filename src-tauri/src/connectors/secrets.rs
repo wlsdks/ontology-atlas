@@ -1,5 +1,5 @@
 //! Keychain entries for MCP connector tokens, apart from the frozen provider list
-//! in secrets.rs. The WebView writes a `__atlasSecretRef` reference, never a value, and
+//! in `crate::secrets`. The WebView writes a `__atlasSecretRef` reference, never a value, and
 //! an unresolvable reference stops the session rather than attaching an empty token.
 
 use keyring::Entry;
@@ -47,7 +47,7 @@ fn entry(reference: &str) -> Result<Entry, String> {
     Entry::new(SERVICE, account).map_err(|err| coded("keychain-unavailable", err))
 }
 
-/// Duplicated from `secrets.rs` so neither module can silently widen the other.
+/// Duplicated from `crate::secrets` so neither module can silently widen the other.
 fn tail4(secret: &str) -> String {
     let skip = secret.chars().count().saturating_sub(4);
     secret.chars().skip(skip).collect()
@@ -98,7 +98,7 @@ pub async fn connector_secret_status(secret_ref: String) -> Result<ConnectorSecr
                 stored: true,
                 last4: Some(tail4(&secret)),
             }),
-            // A locked keychain reads as absent, as in `secrets.rs`.
+            // A locked keychain reads as absent, as in `crate::secrets`.
             Err(_) => Ok(ConnectorSecretStatus {
                 secret_ref,
                 stored: false,
@@ -342,7 +342,7 @@ mod tests {
     fn there_is_no_command_that_returns_the_whole_secret() {
         // Only code above the test module is counted; a command that returns
         // the `get_password` result directly would be caught here.
-        let source = include_str!("connector_secrets.rs")
+        let source = include_str!("secrets.rs")
             .split("#[cfg(test)]")
             .next()
             .unwrap();
@@ -359,7 +359,7 @@ mod tests {
 
     #[test]
     fn the_resolver_never_prints_a_value() {
-        let body = include_str!("connector_secrets.rs")
+        let body = include_str!("secrets.rs")
             .split("#[cfg(test)]")
             .next()
             .unwrap()
@@ -383,12 +383,12 @@ mod tests {
     #[test]
     fn deleting_a_token_that_is_not_there_is_not_an_error() {
         // The screen deletes tokens before the row, so absence must count as success
-        // here through the shared `secrets.rs` judgment.
+        // here through the shared `crate::secrets` judgment.
         assert!(is_cleared(Step::Missing, Step::Failed));
         assert!(is_cleared(Step::Missing, Step::Missing));
         assert!(!is_cleared(Step::Failed, Step::Failed));
 
-        let body = include_str!("connector_secrets.rs")
+        let body = include_str!("secrets.rs")
             .split("#[cfg(test)]")
             .next()
             .unwrap();

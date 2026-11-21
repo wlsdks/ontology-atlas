@@ -1,3 +1,6 @@
+pub(crate) mod access;
+pub(crate) mod local_construction;
+
 use crate::git;
 use crate::lower_hex::lower_hex;
 use crate::vault::scope::{canonical_root, canonical_source_root, normalize_relative_path};

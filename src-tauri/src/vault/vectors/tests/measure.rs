@@ -71,7 +71,7 @@ impl Launch for MeasuredWorker {
     fn launch(&self) -> Result<Spawned, EmbedError> {
         let mut command =
             Command::new(std::env::current_exe().map_err(|_| EmbedError::WorkerExited)?);
-        crate::no_console::hide_console(&mut command)
+        crate::process::no_console::hide_console(&mut command)
             .args([
                 "--exact",
                 CHILD_TEST,

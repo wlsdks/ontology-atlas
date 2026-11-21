@@ -2,12 +2,12 @@
 //! it and renaming it: a crash, a forced quit, or the Windows updater's immediate exit.
 //! Opening a vault removes those leftovers so they do not pile up.
 //!
-//! Only a whole name in a writer's exact shape is removed (`crate::temporary_names`), only in
+//! Only a whole name in a writer's exact shape is removed (`crate::vault::temporary_names`), only in
 //! folders the vault walk itself enters plus the root `.ontology-atlas` sidecar, and only
 //! after an hour untouched, because the MCP server and the CLI may be mid-write.
 
 use super::walk::{vault_walk_skips_directory, VAULT_CACHE_DIR_TAG, VAULT_WALK_MAX_DEPTH};
-use crate::temporary_names::is_atlas_temporary;
+use crate::vault::temporary_names::is_atlas_temporary;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 
@@ -209,7 +209,7 @@ mod portable {
 #[cfg(test)]
 mod tests {
     use super::{sweep_stale_temporaries, STALE_AFTER};
-    use crate::temporary_names::{atomic_temporary_name, create_temporary_name};
+    use crate::vault::temporary_names::{atomic_temporary_name, create_temporary_name};
     use std::fs;
     use std::path::PathBuf;
     use std::time::{Duration, SystemTime};

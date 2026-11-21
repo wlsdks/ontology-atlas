@@ -145,7 +145,7 @@ impl Transport for CurlTransport {
         config.push_str(&format!("max-time = {}\n", limits.total.as_secs().max(1)));
         config.push_str(&format!("connect-timeout = {}\n", request.timeout));
         let mut child = KillOnDrop(
-            crate::no_console::hide_console(&mut Command::new("curl"))
+            crate::process::no_console::hide_console(&mut Command::new("curl"))
                 .args([
                     "--disable",
                     "--silent",

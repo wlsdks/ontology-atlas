@@ -4,7 +4,7 @@ use super::super::commands;
 use super::super::search::cut_to_cap;
 use super::*;
 use crate::llm::embed::MAX_PASSAGE_CHARS;
-use crate::vault_grants::EnforcedScope;
+use crate::vault::grants::EnforcedScope;
 
 fn shown(root: &Path) -> String {
     root.to_string_lossy().into_owned()

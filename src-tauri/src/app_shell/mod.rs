@@ -1,9 +1,10 @@
 pub(crate) mod app_log;
+mod deep_link;
 #[cfg(target_os = "macos")]
 pub(crate) mod tray;
 pub(crate) mod window;
 
-use crate::{deep_link, MAIN_WINDOW_LABEL};
+use crate::MAIN_WINDOW_LABEL;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::Duration;
