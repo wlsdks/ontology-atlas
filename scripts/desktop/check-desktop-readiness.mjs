@@ -25,30 +25,16 @@ function readText(relativePath) {
   return blankComments(relativePath, fs.readFileSync(absolute, "utf8").replace(/\r\n?/g, "\n"));
 }
 
-// verify-macos-app-launch.mjs is a thin orchestrator plus scripts/lib/verify-macos/*.mjs modules; the
-// `.includes(...)` gates below check the combined surface, so read all of them.
-function readVerifyMacosAppLaunchScript() {
-  const entry = readText("scripts/verify-macos/verify-macos-app-launch.mjs");
-  const libDir = path.join(root, "scripts/lib/verify-macos");
-  const libFiles = fs.existsSync(libDir)
-    ? fs.readdirSync(libDir).filter((name) => name.endsWith(".mjs")).sort()
-    : [];
-  const libText = libFiles
-    .map((name) => readText(path.join("scripts/lib/verify-macos", name)))
-    .join("\n");
-  return `${entry}\n${libText}`;
-}
-
-// check-macos-release-status.mjs is an entry plus scripts/desktop-release/release-status/*.mjs modules; the
-// `.includes(...)` gates below check the combined surface, so read all of them.
-function readReleaseStatusScript() {
-  const entry = readText("scripts/desktop-release/check-macos-release-status.mjs");
-  const moduleDir = path.join(root, "scripts/desktop-release/release-status");
-  const moduleFiles = fs.existsSync(moduleDir)
-    ? fs.readdirSync(moduleDir).filter((name) => name.endsWith(".mjs") && !name.endsWith(".test.mjs")).sort()
+// A script that is an entry plus a folder of modules: the `.includes(...)` gates check the combined
+// surface, so read the entry and every non-test module of the folder.
+function readEntryWithModules(entryPath, moduleDirectory) {
+  const entry = readText(entryPath);
+  const absoluteDirectory = path.join(root, moduleDirectory);
+  const moduleFiles = fs.existsSync(absoluteDirectory)
+    ? fs.readdirSync(absoluteDirectory).filter((name) => name.endsWith(".mjs") && !name.endsWith(".test.mjs")).sort()
     : [];
   const moduleText = moduleFiles
-    .map((name) => readText(path.join("scripts/desktop-release/release-status", name)))
+    .map((name) => readText(path.join(moduleDirectory, name)))
     .join("\n");
   return `${entry}\n${moduleText}`;
 }
@@ -106,7 +92,7 @@ const packageMacosDmgScript = readText("scripts/desktop/package-macos-dmg.mjs");
 const cleanTauriMacosAppsScript = readText("scripts/desktop/clean-tauri-macos-apps.mjs");
 const desktopPerformanceScript = readText("scripts/desktop/check-desktop-performance.mjs");
 const verifyDmgScript = readText("scripts/verify-macos/verify-macos-dmg.mjs");
-const verifyAppScript = readVerifyMacosAppLaunchScript();
+const verifyAppScript = readEntryWithModules("scripts/verify-macos/verify-macos-app-launch.mjs", "scripts/lib/verify-macos");
 const verifyInstallScript = readText("scripts/verify-macos/verify-macos-install-smoke.mjs");
 const deployMacosAppLocalScript = readText("scripts/desktop/deploy-macos-app-local.mjs");
 const codexBuildRunScript = readText("script/build_and_run.sh");
@@ -122,7 +108,7 @@ const releaseTagScript = readText("scripts/desktop-release/check-macos-release-t
 const releaseSlotScript = readText("scripts/desktop-release/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/desktop-release/check-macos-release-github.mjs");
 const releaseRunScript = readText("scripts/desktop-release/watch-macos-release-run.mjs");
-const releaseStatusScript = readReleaseStatusScript();
+const releaseStatusScript = readEntryWithModules("scripts/desktop-release/check-macos-release-status.mjs", "scripts/desktop-release/release-status");
 const goalAuditScript = readText("scripts/desktop-release/check-desktop-goal-audit.mjs");
 const macosReleaseNamesHelper = readText("scripts/lib/macos-release-names.mjs");
 const hostedDownloadSurfaceScript = readText("scripts/download/check-hosted-download-surface.mjs");
