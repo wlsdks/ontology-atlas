@@ -10,7 +10,7 @@
 export const DESTINATION_IDS = [
   'map',
   'architecture',
-  // Ontology documents now live inside Library; /docs remains a link alias.
+  // Ontology documents live inside Library; /docs is a link alias.
   'library',
   'planning',
   // Automation management owns schedules; execution context remains Map or Library.
@@ -104,7 +104,7 @@ export const DESTINATION_BY_KEY: Record<string, DestinationId> = {
   ...Object.fromEntries(DESTINATION_IDS.map((id) => [DESTINATION_KEY[id], id])),
   // Preserve the published shortcut and project-specific Docs href overrides.
   d: 'docs',
-  // `g c` still lands on the connectors, now the MCP tab of Agents.
+  // `g c` lands on the connectors, the MCP tab of Agents.
   c: 'mcp',
 };
 
