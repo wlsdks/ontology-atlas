@@ -84,6 +84,18 @@ fn word(generation: u64, state: u64) -> u64 {
     generation << 2 | state
 }
 
+/// Marks worker `generation` not running, unless a later worker took its place.
+fn mark_ended(state: &AtomicU64, generation: u64) {
+    for from in [STARTING, LOADED] {
+        let _ = state.compare_exchange(
+            word(generation, from),
+            word(generation, NOT_RUNNING),
+            Ordering::SeqCst,
+            Ordering::SeqCst,
+        );
+    }
+}
+
 /// The built-in model, run in a worker process. Builds and questions share the
 /// one worker; a question takes the next turn before a build's next batch.
 pub(crate) struct BuiltinModel {
@@ -283,22 +295,11 @@ impl BuiltinModel {
         now >> 2 == generation && now & 3 != NOT_RUNNING
     }
 
-    fn mark_ended(&self, generation: u64) {
-        for from in [STARTING, LOADED] {
-            let _ = self.state.compare_exchange(
-                word(generation, from),
-                word(generation, NOT_RUNNING),
-                Ordering::SeqCst,
-                Ordering::SeqCst,
-            );
-        }
-    }
-
     fn end(&self, slot: &mut Option<Connection>) {
         if let Some(connection) = slot.take() {
             let generation = connection.generation;
             connection.end(self.limits);
-            self.mark_ended(generation);
+            mark_ended(&self.state, generation);
         }
     }
 
@@ -306,7 +307,7 @@ impl BuiltinModel {
         if let Some(connection) = slot.take() {
             let generation = connection.generation;
             connection.kill();
-            self.mark_ended(generation);
+            mark_ended(&self.state, generation);
         }
     }
 
@@ -339,16 +340,7 @@ impl BuiltinModel {
             self.state
                 .store(word(generation, STARTING), Ordering::SeqCst);
             let state = self.state.clone();
-            let on_end = move || {
-                for from in [STARTING, LOADED] {
-                    let _ = state.compare_exchange(
-                        word(generation, from),
-                        word(generation, NOT_RUNNING),
-                        Ordering::SeqCst,
-                        Ordering::SeqCst,
-                    );
-                }
-            };
+            let on_end = move || mark_ended(&state, generation);
             let opened = Connection::open(&*self.launch, limits, generation, on_end)
                 .and_then(|connection| self.load(connection, limits));
             match opened {
@@ -359,7 +351,7 @@ impl BuiltinModel {
                     self.touch();
                 }
                 Err(error) => {
-                    self.mark_ended(generation);
+                    mark_ended(&self.state, generation);
                     return Err(error);
                 }
             }

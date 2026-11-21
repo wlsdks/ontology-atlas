@@ -122,6 +122,28 @@ impl Connection {
         Ok(answer)
     }
 
+    /// The next answer within one poll; `None` when none came yet.
+    fn poll(&self) -> Result<Option<Answer>, Wait> {
+        match self.answers.recv_timeout(POLL) {
+            Ok(Ok(answer)) => Ok(Some(answer)),
+            Ok(Err(error)) => Err(Wait::Failed(error)),
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                Err(Wait::Failed(EmbedError::WorkerExited))
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => Ok(None),
+        }
+    }
+
+    /// The answer to request `id` within one poll; another id is a broken worker.
+    fn poll_for(&self, id: u64) -> Result<Option<Answer>, Wait> {
+        match self.poll()? {
+            Some(answer) if answer.id() != Some(id) => {
+                Err(Wait::Failed(EmbedError::ResponseInvalid("id")))
+            }
+            answer => Ok(answer),
+        }
+    }
+
     /// Waits for request `id`, telling the worker to stop it once `stop` is set.
     pub(super) fn wait(
         &mut self,
@@ -131,14 +153,8 @@ impl Connection {
     ) -> Result<Answer, Wait> {
         let started = Instant::now();
         loop {
-            match self.answers.recv_timeout(POLL) {
-                Ok(Ok(answer)) if answer.id() == Some(id) => return Ok(answer),
-                Ok(Ok(_)) => return Err(Wait::Failed(EmbedError::ResponseInvalid("id"))),
-                Ok(Err(error)) => return Err(Wait::Failed(error)),
-                Err(mpsc::RecvTimeoutError::Disconnected) => {
-                    return Err(Wait::Failed(EmbedError::WorkerExited))
-                }
-                Err(mpsc::RecvTimeoutError::Timeout) => {}
+            if let Some(answer) = self.poll_for(id)? {
+                return Ok(answer);
             }
             if stop.load(Ordering::Relaxed) {
                 let _ = self.send(&Request::Stop { id });
@@ -167,27 +183,23 @@ impl Connection {
         let started = Instant::now();
         let mut heard = started;
         loop {
-            match self.answers.recv_timeout(POLL) {
-                Ok(Ok(Answer::Reply(Reply::Progress {
+            match self.poll()? {
+                Some(Answer::Reply(Reply::Progress {
                     id: of,
                     done,
                     total,
-                }))) if of == id => {
+                })) if of == id => {
                     on_progress(done, total);
                     heard = Instant::now();
                 }
-                Ok(Ok(Answer::Reply(Reply::Converted { id: of }))) if of == id => return Ok(()),
-                Ok(Ok(Answer::Reply(Reply::Failed {
+                Some(Answer::Reply(Reply::Converted { id: of })) if of == id => return Ok(()),
+                Some(Answer::Reply(Reply::Failed {
                     id: of,
                     code,
                     detail,
-                }))) if of == id => return Err(Wait::Failed(from_worker(&code, detail))),
-                Ok(Ok(_)) => return Err(Wait::Failed(EmbedError::ResponseInvalid("id"))),
-                Ok(Err(error)) => return Err(Wait::Failed(error)),
-                Err(mpsc::RecvTimeoutError::Disconnected) => {
-                    return Err(Wait::Failed(EmbedError::WorkerExited))
-                }
-                Err(mpsc::RecvTimeoutError::Timeout) => {}
+                })) if of == id => return Err(Wait::Failed(from_worker(&code, detail))),
+                Some(_) => return Err(Wait::Failed(EmbedError::ResponseInvalid("id"))),
+                None => {}
             }
             if stop.load(Ordering::Relaxed) {
                 let _ = self.send(&Request::Stop { id });
@@ -216,14 +228,8 @@ impl Connection {
     ) -> Result<Answer, Wait> {
         let started = Instant::now();
         loop {
-            match self.answers.recv_timeout(POLL) {
-                Ok(Ok(answer)) if answer.id() == Some(id) => return Ok(answer),
-                Ok(Ok(_)) => return Err(Wait::Failed(EmbedError::ResponseInvalid("id"))),
-                Ok(Err(error)) => return Err(Wait::Failed(error)),
-                Err(mpsc::RecvTimeoutError::Disconnected) => {
-                    return Err(Wait::Failed(EmbedError::WorkerExited))
-                }
-                Err(mpsc::RecvTimeoutError::Timeout) => {}
+            if let Some(answer) = self.poll_for(id)? {
+                return Ok(answer);
             }
             if stop.load(Ordering::Relaxed) {
                 return Err(Wait::StoppedUnanswered);
