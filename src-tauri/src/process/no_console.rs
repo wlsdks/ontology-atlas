@@ -42,7 +42,15 @@ mod tests {
 
     fn is_test_file(path: &Path) -> bool {
         let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-        name == "tests.rs" || name.ends_with("_tests.rs") || name == "test_support.rs"
+        let relative = path
+            .strip_prefix(env!("CARGO_MANIFEST_DIR"))
+            .unwrap_or(path);
+        name == "tests.rs"
+            || name.ends_with("_tests.rs")
+            || name == "test_support.rs"
+            || relative
+                .components()
+                .any(|part| part.as_os_str() == "tests")
     }
 
     /// The program argument of the `Command::new(` call that starts at `from`,
@@ -126,6 +134,14 @@ mod tests {
         ]
         .join("\n");
         assert_eq!(unhidden_lines(&fixture), vec![3, 4]);
+    }
+
+    #[test]
+    fn a_child_of_a_tests_directory_is_a_test_file() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        assert!(is_test_file(&root.join("llm_audit/tests/links.rs")));
+        assert!(is_test_file(&root.join("llm_audit/tests.rs")));
+        assert!(!is_test_file(&root.join("llm_audit/log_file.rs")));
     }
 
     #[test]

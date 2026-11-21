@@ -103,6 +103,7 @@ describe('the catalogue covers every code Rust mints', () => {
     'llm/local_endpoint.rs',
     'llm/verify.rs',
     'llm_audit.rs',
+    'llm_audit/log_file.rs',
     'secrets.rs',
   ]
     .map((name) => readFileSync(join(crate, name), 'utf8'))
