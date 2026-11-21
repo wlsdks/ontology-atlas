@@ -229,7 +229,7 @@ MCP and the CLI do not share this code. `mcp/src/parser.mjs` and `mcp/src/meanin
    - `createDocumentStore({ readTexts })` in `src/entities/docs-vault/store/document-store.ts` answers `detail(doc)` and `details(docs)`, where a doc is `Pick<VaultDoc, 'slug' | 'path' | 'mtime'>`.
    - It reads at most 64 paths per call (strategy decision 7).
    - It keeps the 256 most recent details in an LRU keyed by path and file stamp, so an edited file never answers with its old detail.
-   - Text comes from three readers. In the app, `readTauriVaultTextFiles` (framed bytes since #3723). On the web, the folder's file handles. For the bundled samples, the inline JSON fields plus `loadStaticVaultHeadings`, with no derivation at all.
+   - Text comes from three readers. In the app, `readTauriVaultTextFiles` (framed bytes since #3723). On the web, the folder's file handles. For the bundled samples, the inline JSON fields plus `importStaticVaultHeadings`, with no derivation at all.
    - React uses `useDocumentDetail(doc)` and `useDocumentDetails(docs)`, in `src/features/document-detail/` and exported from `@/features/document-detail`: they join session state with the store, so they sit one layer above both entities. Both return `undefined` until the answer is known.
    - A surface that already holds the document's text, such as the open document, derives from that text and reads nothing.
 5. **The index keeps no detail rows.** Reading one stored row and reading one file each cost one bridge call per batch, and deriving one file's detail takes about 0.1 ms. A detail namespace would double the row writes and gain nothing measurable. Falsifier: in the app at 50,000 documents, `useDocumentDetails` for five documents takes more than 50 ms at p95.
@@ -332,3 +332,4 @@ What a reviewer must check that tests will not catch:
 - 2026-11-22: the excerpt cites in the detail-consumer table now name the files the drawers were split into (`doc-list/DocRow.tsx`, `more-info/ProjectConnectionLists.tsx`); no plan changed.
 - 2026-11-22: cites of `mcp/src/vault/` modules now name the subfolders the vault code was grouped into (`documents/`, `writes/`, `graph/`); no plan changed.
 - 2026-11-22: the manifest type cite names `vault-manifest.ts`, renamed from `types.ts`; no plan changed.
+- 2026-11-22: `loadStaticVaultHeadings` is cited by its new name `importStaticVaultHeadings`; no plan changed.
