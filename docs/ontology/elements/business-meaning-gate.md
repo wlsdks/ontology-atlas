@@ -6,7 +6,7 @@ title: Business meaning gate
 display_en: Business meaning gate
 display_ko: 업무 의미 게이트
 domain: domains/code-evidence
-path: mcp/src/analyze/meaning-gate.mjs
+path: mcp/src/analyze/candidates/meaning-gate.mjs
 created_by: "agent:claude-code"
 ---
 
