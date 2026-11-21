@@ -26,6 +26,13 @@ function fixture(fn) {
   }
 }
 
+test('prune refuses any base but origin/main, which plan may still take', () => {
+  assert.throws(() => parseArgs(['prune', '--base=integration/topic-2026-11-21', 'feat/a']), /prune deletes only what origin\/main holds/);
+  assert.throws(() => parseArgs(['prune', '--base=main', 'feat/a']), /--base=main is for plan/);
+  assert.equal(parseArgs(['prune', 'feat/a']).base, 'origin/main');
+  assert.equal(parseArgs(['plan', '--base=integration/topic-2026-11-21', 'feat/a']).base, 'integration/topic-2026-11-21');
+});
+
 test('selection must be explicit', () => {
   assert.throws(() => parseArgs(['plan']), /select branches explicitly/);
   assert.deepEqual(parseArgs(['plan', '--', '--match=wf/*', 'a']).match, ['wf/*']);
@@ -63,7 +70,7 @@ test('plan reports the conflicting step and keeps measuring the rest', () => fix
 test('prune touches only branches main provably contains', () => fixture(({ root, sh, commit, git }) => {
   sh('switch', '-q', '-c', 'done', 'main'); commit('d.txt', 'd\n', 'd');
   sh('switch', '-q', '-c', 'open', 'main'); commit('o.txt', 'o\n', 'o');
-  sh('switch', '-q', 'main'); sh('merge', '-q', '--squash', 'done'); sh('commit', '-q', '-m', 'bundle');
+  sh('switch', '-q', 'main'); sh('merge', '-q', '--no-ff', '-m', 'bundle', 'done');
   const tree = join(root, '.claude', 'worktrees', 'wt-done');
   sh('worktree', 'add', '-q', tree, 'done');
 
@@ -72,7 +79,7 @@ test('prune touches only branches main provably contains', () => fixture(({ root
   assert.equal(actions[0].keep, undefined);
   assert.equal(actions[0].worktree, tree);
   assert.match(actions[1].keep, /not provably landed/);
-  assert.equal(actions[2].keep, 'no local branch');
+  assert.equal(actions[2].keep, 'no local or origin branch');
 
   writeFileSync(join(tree, 'd.txt'), 'edited\n');
   assert.match(prunePlan(git, 'main', ['done'], { currentPath: root })[0].keep, /uncommitted changes/);
@@ -87,12 +94,12 @@ test('plan sees through a branch cut from commits that later landed as one squas
   const [row] = planBundle(git, 'main', ['second']).rows;
   assert.equal(row.state, 'pending');
   assert.deepEqual(row.files, ['c.txt'], 'only the follow-up is new to main');
-  assert.equal(row.landed, sh('rev-parse', 'first'), 'names the commit to rebase from');
+  assert.equal(row.landed, sh('rev-parse', 'first'), 'names the newest commit main already has');
 }));
 
 test('prune proves a landing that main later edited', () => fixture(({ root, sh, commit, git }) => {
   sh('switch', '-q', '-c', 'feat/x', 'main'); commit('shared.txt', 'ONE\ntwo\nthree\n', 'x'); commit('x.txt', 'x\n', 'x file');
-  sh('switch', '-q', 'main'); sh('merge', '-q', '--squash', 'feat/x'); sh('commit', '-q', '-m', 'x (#12)');
+  sh('switch', '-q', 'main'); sh('merge', '-q', '--no-ff', '-m', 'x (#12)', 'feat/x');
   const landed = sh('rev-parse', 'HEAD');
   commit('shared.txt', 'One!\ntwo\nthree\n', 'a later edit of the same line');
 
@@ -103,7 +110,7 @@ test('prune proves a landing that main later edited', () => fixture(({ root, sh,
 
 test('prune keeps a branch whose later commit never landed', () => fixture(({ root, sh, commit, git }) => {
   sh('switch', '-q', '-c', 'feat/y', 'main'); commit('y.txt', 'y\n', 'y');
-  sh('switch', '-q', 'main'); sh('merge', '-q', '--squash', 'feat/y'); sh('commit', '-q', '-m', 'y (#13)');
+  sh('switch', '-q', 'main'); sh('merge', '-q', '--no-ff', '-m', 'y (#13)', 'feat/y');
   commit('y.txt', 'y later\n', 'a later edit');
   sh('switch', '-q', 'feat/y'); commit('z.txt', 'z\n', 'a follow-up that never landed'); sh('switch', '-q', 'main');
 
@@ -131,7 +138,7 @@ test('apply removes the agent worktree, its twin branch and the landed branch', 
   inTree('switch', '-q', '-c', 'feat/z');
   writeFileSync(join(tree, 'z.txt'), 'z\n'); inTree('add', 'z.txt'); inTree('commit', '-q', '-m', 'z');
   sh('worktree', 'lock', '--reason', 'claude agent agent-ab12 (pid 4242 start test)', tree);
-  sh('merge', '-q', '--squash', 'feat/z'); sh('commit', '-q', '-m', 'z (#14)');
+  sh('merge', '-q', '--no-ff', '-m', 'z (#14)', 'feat/z');
 
   const actions = prunePlan(git, 'main', ['feat/z'], { currentPath: root, isAlive: () => false });
   assert.equal(actions[0].unlock, 'claude agent agent-ab12 (pid 4242 start test)');
@@ -165,8 +172,8 @@ test('a lock held by the caller\'s own session lifts for a landed branch; anothe
   writeFileSync(join(other.tree, 'other.txt'), 'x\n'); other.inTree('add', 'other.txt'); other.inTree('commit', '-q', '-m', 'other');
   sh('worktree', 'lock', '--reason', 'claude agent agent-0a1 (pid 700 start test)', own.tree);
   sh('worktree', 'lock', '--reason', 'claude agent agent-0b2 (pid 800 start test)', other.tree);
-  sh('merge', '-q', '--squash', 'feat/own'); sh('commit', '-q', '-m', 'own (#20)');
-  sh('merge', '-q', '--squash', 'feat/other'); sh('commit', '-q', '-m', 'other (#21)');
+  sh('merge', '-q', '--no-ff', '-m', 'own (#20)', 'feat/own');
+  sh('merge', '-q', '--no-ff', '-m', 'other (#21)', 'feat/other');
 
   const [mine, theirs] = prunePlan(git, 'main', ['feat/own', 'feat/other'], { currentPath: root, isAlive: () => true, own: new Set([700]) });
   assert.equal(mine.keep, undefined);
@@ -184,22 +191,22 @@ test('an own-session lock on an unlanded branch still keeps it', () => fixture((
 
 test('prune keeps a branch whose later commit only removes landed content', () => fixture(({ root, sh, commit, git }) => {
   sh('switch', '-q', '-c', 'feat/r', 'main'); commit('shared.txt', 'ONE\ntwo\nthree\n', 'r1'); commit('r.txt', 'r\n', 'r2');
-  sh('switch', '-q', 'main'); sh('merge', '-q', '--squash', 'feat/r'); sh('commit', '-q', '-m', 'r (#22)');
+  sh('switch', '-q', 'main'); sh('merge', '-q', '--no-ff', '-m', 'r (#22)', 'feat/r');
   sh('switch', '-q', 'feat/r'); sh('rm', '-q', 'r.txt'); sh('commit', '-q', '-m', 'revert r'); sh('switch', '-q', 'main');
-  assert.match(prunePlan(git, 'main', ['feat/r'], { currentPath: root })[0].keep, /moved after what landed/);
+  assert.match(prunePlan(git, 'main', ['feat/r'], { currentPath: root })[0].keep, /not provably landed/);
 }));
 
 test('prune keeps a revert-only commit after main edited the landed line', () => fixture(({ root, sh, commit, git }) => {
   sh('switch', '-q', '-c', 'feat/rb', 'main'); commit('shared.txt', 'ONE\ntwo\nthree\n', 'r1'); commit('r.txt', 'r\n', 'r2');
-  sh('switch', '-q', 'main'); sh('merge', '-q', '--squash', 'feat/rb'); sh('commit', '-q', '-m', 'r (#23)');
+  sh('switch', '-q', 'main'); sh('merge', '-q', '--no-ff', '-m', 'r (#23)', 'feat/rb');
   commit('shared.txt', 'One!\ntwo\nthree\n', 'later');
   sh('switch', '-q', 'feat/rb'); sh('rm', '-q', 'r.txt'); sh('commit', '-q', '-m', 'revert r'); sh('switch', '-q', 'main');
-  assert.match(prunePlan(git, 'main', ['feat/rb'], { currentPath: root })[0].keep, /moved after what landed/);
+  assert.match(prunePlan(git, 'main', ['feat/rb'], { currentPath: root })[0].keep, /not provably landed/);
 }));
 
 test('prune proves a landing of a non-ASCII path', () => fixture(({ root, sh, commit, git }) => {
   sh('switch', '-q', '-c', 'feat/h', 'main'); commit('\uAC1C\uB150.md', 'h\n', 'h');
-  sh('switch', '-q', 'main'); sh('merge', '-q', '--squash', 'feat/h'); sh('commit', '-q', '-m', 'h (#24)');
+  sh('switch', '-q', 'main'); sh('merge', '-q', '--no-ff', '-m', 'h (#24)', 'feat/h');
   commit('\uAC1C\uB150.md', 'h2\n', 'later');
   const [action] = prunePlan(git, 'main', ['feat/h'], { currentPath: root });
   assert.equal(action.keep, undefined);
@@ -214,7 +221,7 @@ test('prune keeps a branch whose origin copy has commits it lacks', () => fixtur
     sh('switch', '-q', '-c', 'feat/p', 'main'); commit('p.txt', 'p\n', 'p');
     commit('p2.txt', 'extra\n', 'pushed only'); sh('push', '-q', 'origin', 'feat/p');
     sh('reset', '-q', '--hard', 'HEAD~1'); sh('fetch', '-q', 'origin');
-    sh('switch', '-q', 'main'); sh('merge', '-q', '--squash', 'feat/p'); sh('commit', '-q', '-m', 'p (#25)');
+    sh('switch', '-q', 'main'); sh('merge', '-q', '--no-ff', '-m', 'p (#25)', 'feat/p');
     assert.equal(prunePlan(git, 'main', ['feat/p'], { currentPath: root })[0].keep, 'origin has commits this branch lacks');
   } finally {
     rmSync(bare, { recursive: true, force: true });
@@ -225,7 +232,7 @@ test('a failed removal restores the worktree lock and keeps the branch', () => f
   const { tree, inTree } = agentTree(root, sh, 'agent-ee99', 'feat/q');
   writeFileSync(join(tree, 'q.txt'), 'q\n'); inTree('add', 'q.txt'); inTree('commit', '-q', '-m', 'q');
   sh('worktree', 'lock', '--reason', 'claude agent agent-ee99 (pid 999999 start test)', tree);
-  sh('merge', '-q', '--squash', 'feat/q'); sh('commit', '-q', '-m', 'q (#26)');
+  sh('merge', '-q', '--no-ff', '-m', 'q (#26)', 'feat/q');
   const actions = prunePlan(git, 'main', ['feat/q'], { currentPath: root, isAlive: () => false });
   assert.equal(actions[0].keep, undefined);
   writeFileSync(join(tree, 'late.txt'), 'written between plan and apply\n');
@@ -237,12 +244,12 @@ test('a failed removal restores the worktree lock and keeps the branch', () => f
   assert.match(sh('branch', '--list', 'feat/q'), /feat\/q/);
 }));
 
-test('prune proves both components of a squashed integration branch that share a file', () => fixture(({ root, sh, commit, git }) => {
+test('prune proves both components of a merged integration branch that share a file', () => fixture(({ root, sh, commit, git }) => {
   sh('switch', '-q', '-c', 'feat/a', 'main'); commit('shared.txt', 'ONE\ntwo\nthree\n', 'a'); commit('a.txt', 'a\n', 'a2');
   sh('switch', '-q', '-c', 'feat/b', 'main'); commit('shared.txt', 'one\ntwo\nTHREE\n', 'b'); commit('b.txt', 'b\n', 'b2');
   sh('switch', '-q', '-c', 'bundle', 'main');
   sh('merge', '-q', '--no-ff', '--no-edit', 'feat/a'); sh('merge', '-q', '--no-ff', '--no-edit', 'feat/b');
-  sh('switch', '-q', 'main'); sh('merge', '-q', '--squash', 'bundle'); sh('commit', '-q', '-m', 'bundle (#28)');
+  sh('switch', '-q', 'main'); sh('merge', '-q', '--no-ff', '-m', 'bundle (#28)', 'bundle');
   const actions = prunePlan(git, 'main', ['feat/a', 'feat/b'], { currentPath: root });
   assert.deepEqual(actions.map((a) => a.keep), [undefined, undefined]);
 }));
@@ -253,7 +260,7 @@ test('prune never removes a checkout outside .claude/worktrees', () => fixture((
   try {
     const inOther = (...argv) => execFileSync('git', argv, { cwd: other, encoding: 'utf8' }).trim();
     writeFileSync(join(other, 'o.txt'), 'o\n'); inOther('add', 'o.txt'); inOther('commit', '-q', '-m', 'other session work');
-    sh('merge', '-q', '--squash', 'feat/other-session'); sh('commit', '-q', '-m', 'other (#27)');
+    sh('merge', '-q', '--no-ff', '-m', 'other (#27)', 'feat/other-session');
     const picked = selectBranches(git, { branches: [], match: ['feat/*'], worktrees: [] }, root);
     const actions = prunePlan(git, 'main', picked, { currentPath: root });
     assert.match(actions[0].keep, /outside \.claude\/worktrees/);
@@ -263,4 +270,55 @@ test('prune never removes a checkout outside .claude/worktrees', () => fixture((
   } finally {
     rmSync(other, { recursive: true, force: true });
   }
+}));
+
+test('apply deletes a landed integration branch that lives only on origin, keeps an unlanded one, and prunes stale refs', () => fixture(({ root, sh, commit, git }) => {
+  const bare = `${root}-origin.git`;
+  execFileSync('git', ['init', '-q', '--bare', bare]);
+  const onOrigin = (...argv) => execFileSync('git', ['--git-dir', bare, ...argv], { encoding: 'utf8' }).trim();
+  try {
+    sh('remote', 'add', 'origin', bare); sh('push', '-q', 'origin', 'main');
+    sh('switch', '-q', '-c', 'integration/topic-2026-11-21', 'main'); commit('i.txt', 'i\n', 'slice');
+    sh('push', '-q', 'origin', 'integration/topic-2026-11-21');
+    sh('switch', '-q', '-c', 'integration/open-2026-11-21', 'main'); commit('o.txt', 'o\n', 'unmerged');
+    sh('push', '-q', 'origin', 'integration/open-2026-11-21');
+    sh('switch', '-q', '-c', 'feat/gone', 'main'); sh('push', '-q', 'origin', 'feat/gone');
+    sh('switch', '-q', 'main'); sh('merge', '-q', '--no-ff', '--no-edit', 'integration/topic-2026-11-21');
+    sh('push', '-q', 'origin', 'main');
+    sh('branch', '-D', 'integration/topic-2026-11-21', 'integration/open-2026-11-21', 'feat/gone');
+    onOrigin('branch', '-D', 'feat/gone');
+
+    const actions = prunePlan(git, 'origin/main', ['integration/topic-2026-11-21', 'integration/open-2026-11-21'], { currentPath: root });
+    assert.equal(actions[0].keep, undefined, 'a merged branch with no local copy is still provably landed');
+    assert.match(actions[1].keep, /not provably landed/);
+    const closed = [];
+    const pulls = { openFor: (branch) => (branch === 'integration/topic-2026-11-21' ? 41 : null), close: (number) => closed.push(number) };
+    applyPrune(git, actions, { apply: true, base: 'origin/main', io: { log() {} }, pulls });
+
+    assert.deepEqual(closed, [41], 'an open pull request of a pruned branch is closed');
+    assert.equal(onOrigin('branch', '--list', 'integration/*'), 'integration/open-2026-11-21');
+    assert.equal(sh('branch', '-r', '--list', 'origin/feat/gone'), '', 'a ref origin no longer has is pruned');
+  } finally {
+    rmSync(bare, { recursive: true, force: true });
+  }
+}));
+
+test('prune keeps a branch main took as a squash, a rebase or a cherry-pick: its own commits are not in main', () => fixture(({ root, sh, commit, git }) => {
+  sh('switch', '-q', '-c', 'feat/squashed', 'main'); commit('s.txt', 's\n', 's');
+  sh('switch', '-q', '-c', 'feat/picked', 'main'); commit('p.txt', 'p\n', 'p');
+  sh('switch', '-q', '-c', 'feat/merged', 'main'); commit('m.txt', 'm\n', 'm');
+  sh('switch', '-q', 'main');
+  sh('merge', '-q', '--squash', 'feat/squashed'); sh('commit', '-q', '-m', 'squashed (#30)');
+  sh('cherry-pick', 'feat/picked');
+  sh('merge', '-q', '--no-ff', '-m', 'merged (#31)', 'feat/merged');
+
+  const actions = prunePlan(git, 'main', ['feat/squashed', 'feat/picked', 'feat/merged'], { currentPath: root });
+  assert.ok(actions[0].keep, 'a squash leaves the branch commits out of main, so its name must stay');
+  assert.match(actions[0].keep, /not provably landed: head [0-9a-f]+ is not in main's history/);
+  assert.match(actions[1].keep, /not provably landed/);
+  assert.equal(actions[2].keep, undefined);
+  assert.equal(actions[2].landedAt, sh('rev-parse', 'HEAD'), 'names the merge commit that brought it in');
+  applyPrune(git, actions, { apply: true, base: 'main', io: { log() {} } });
+  assert.equal(sh('branch', '--list', 'feat/squashed', 'feat/picked').split('\n').length, 2, 'unmerged history keeps its name');
+  assert.equal(sh('branch', '--list', 'feat/merged'), '');
 }));

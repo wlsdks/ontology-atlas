@@ -482,3 +482,37 @@ it('overlapping default Node invocations execute each file once without losing t
   assert.deepEqual(result.commands, [first, { ...pair, command: 'node --test scripts/b.test.mjs' }]);
   assert.deepEqual(collapseCoveredContractCommands([first, pair], { ...scripts, prepair: 'node prepare.mjs' }).commands, [first, pair]);
 });
+
+describe('focused checks --slice', () => {
+  it('keeps a slice\'s per-file gates and leaves only the costly repo-wide lanes to the integration tree', () => {
+    const output = [], ran = [];
+    const status = runSuggestFocusedChecks({
+      argv: ['--', '--run', '--slice', 'src/shared/lib/cn.ts', 'src-tauri/src/lib.rs', 'src-tauri/Cargo.toml', 'messages/en/common.json'],
+      stdout: { write: text => output.push(text) },
+      spawn(command) { ran.push(command); return { status: 0, stdout: '' }; },
+    });
+    assert.equal(status, 0);
+    assert.ok(ran.includes('pnpm exec eslint --max-warnings 0 src/shared/lib/cn.ts'), 'lint on the touched file');
+    assert.ok(ran.some((c) => c.startsWith('pnpm exec vitest related --run')), 'unit suites reaching the touched file');
+    assert.ok(ran.some((c) => c.includes('cargo clippy')), 'the Rust lane when src-tauri changed');
+    assert.ok(ran.some((c) => c.includes('playwright test')), 'the e2e spec that reaches the touched file');
+    for (const cheap of ['pnpm source:language', 'pnpm licenses:check']) {
+      assert.ok(ran.some((c) => c.startsWith(cheap)), `${cheap} is a per-file gate and stays with the slice`);
+    }
+    assert.ok(ran.some((c) => c.includes('tests/contract/security/security-surfaces.contract.test.ts')), 'the security-surfaces contract stays for src-tauri');
+    for (const repoWide of [/^pnpm typecheck\b/, /^pnpm knip\b/, /^pnpm test:contracts\b/, /^pnpm build\b/, /^pnpm test:mcp:/]) {
+      assert.ok(!ran.some((c) => repoWide.test(c)), `${repoWide} runs once on the integration tree, not per slice`);
+    }
+    assert.match(output.join(''), /--slice: \d+ repo-wide check\(s\) left for the lead's run on the integration tree/);
+  });
+
+  it('plans no Rust lane for a slice that leaves src-tauri alone', () => {
+    const output = [];
+    runSuggestFocusedChecks({
+      argv: ['--', '--slice', 'src/shared/lib/cn.ts'],
+      stdout: { write: text => output.push(text) },
+      spawn() { return { status: 0, stdout: '' }; },
+    });
+    assert.doesNotMatch(output.join(''), /cargo|test:desktop:bridge/);
+  });
+});
