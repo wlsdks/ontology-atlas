@@ -1803,6 +1803,7 @@ if (
 }
 
 if (
+  vaultAgentSetupPanel.includes("useAgentSetupCopy(vaultNameForConfig, vaultRootPath)") &&
   vaultAgentSetupCopySources.includes("buildAgentVerifyCliCommand") &&
   vaultAgentSetupCopySources.includes("buildAgentSetupCliCommand") &&
   vaultAgentSetupCopySources.includes("buildAgentSetupPacket(vaultName, vaultRootPath)") &&

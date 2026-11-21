@@ -181,8 +181,6 @@ export function AgentSetupInspection({
       {hasMissingAgentConfig && canEditCurrent ? (
         <Chip
           size="md"
-          /* The message is already on screen; this catch only stops an unhandled rejection
-             from the re-throw that tells the per-tool buttons their write failed. */
           onClick={() => onRepair()}
           disabled={repairBusy}
           title={t('agentSetup.repairTitle')}

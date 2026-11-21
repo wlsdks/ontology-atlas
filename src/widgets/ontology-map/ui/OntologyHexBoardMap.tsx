@@ -52,8 +52,6 @@ import { HexBoardFooter } from "./hex-board/HexBoardFooter";
 import type { HexBoardLabels } from "./hex-board/hex-board-labels";
 import { HexTileList } from "./hex-board/HexTileList";
 
-export type { HexBoardLabels };
-
 export interface OntologyHexBoardMapProps {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
