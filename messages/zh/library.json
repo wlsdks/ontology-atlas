@@ -505,13 +505,13 @@
     "undoFailed": "无法撤销：文件已不存在，或文件夹不可写入。",
     "linkFindingsAriaLabel": "此页面在文件夹内的关联方式",
     "linkFindingsTitle": "{count, number} 处关联待检查",
-    "linkFindingsBody": "页面符合模板。下列问题关乎整个文件夹：单个页面自己看不到的事情。",
     "fixWithAgent": "用智能体修复",
     "fixWithAgentTooltip": "智能体把此页面修正为符合模板。修正后符合模板的页面会直接保存，不符合的会在保存前请求许可。",
     "fixWithAgentTooltipAsk": "智能体把此页面修正为符合模板。写入前会请求许可。",
     "fixMyself": "自己修复",
     "fixMyselfTooltip": "在访达中选中此页面的文件。用任何编辑器修改，列表都会同步更新。",
     "technical": "技术细节 · 检查代码与行号",
+    "technicalOpen": "查看检查代码",
     "technicalNote": "wiki-validate 命令和 validate_wiki 工具会报告同样的代码。",
     "technicalFile": "文件：{path}",
     "goToPlace": "前往 {place}",
@@ -574,19 +574,27 @@
       },
       "dangling-wikilink": {
         "what": "{where} 处的链接指向 {target}，但此文件夹中没有这个页面。",
-        "do": "改链到已有的页面，或者写出那个页面。"
+        "do": "改链到已有的页面，或者写出那个页面。",
+        "short": "{page} 在 {where} 链接的 {target} 不在此文件夹中",
+        "shortDo": "改链到已有的页面，或者写出那个页面"
       },
       "orphan-page": {
         "what": "目前还没有其他页面指向此页面。",
-        "do": "从谈论其主题的页面链接过来，就容易找到了。"
+        "do": "从谈论其主题的页面链接过来，就容易找到了。",
+        "short": "还没有页面链接到 {page}",
+        "shortDo": "从同一主题的页面链接过来"
       },
       "shared-source-unlinked": {
         "what": "{other} 也根据同一份来源（{sources}）撰写，但两个页面互不指向。",
-        "do": "让其中一个链接到另一个。"
+        "do": "让其中一个链接到另一个。",
+        "short": "{page} 和 {other} 使用同一份来源（{sources}），但互不链接",
+        "shortDo": "让其中一个链接到另一个"
       },
       "shared-source-unlinked-more": {
         "what": "另有 {count, number} 个页面根据同一份来源撰写，它们与此页面互不指向。",
-        "do": "把根据同一份来源撰写的页面互相链接起来。"
+        "do": "把根据同一份来源撰写的页面互相链接起来。",
+        "short": "另有 {count} 个页面与 {page} 使用同一份来源，但互不链接",
+        "shortDo": "把同一份来源的页面互相链接起来"
       }
     }
   },

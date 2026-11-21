@@ -1,9 +1,9 @@
 "use client";
 
 import type { useTranslations } from "next-intl";
-import { memo } from "react";
+import { memo, useId, useState } from "react";
 
-import { Button, Disclosure, Tooltip } from "@/shared/ui";
+import { Button, Dialog, DialogBody, DialogFooter, Tooltip } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 
 import {
@@ -21,8 +21,9 @@ export type { WikiTemplateProblem };
 
 /**
  * Why a page does not fit the wiki template, in the reader's own words: one sentence per finding plus
- * what to do, every name a press. `describeWikiProblem` owns both halves; the validator's codes sit
- * behind one disclosure. Page findings and folder findings sit on separate cards.
+ * what to do, every name a press. `describeWikiProblem` owns both halves; the validator's codes open
+ * in a centred dialog from the card's title line. Page findings and folder findings sit on separate
+ * cards; a folder finding is one line naming both pages.
  */
 
 /** What this surface can open. A handler left out renders that name as plain text. */
@@ -229,7 +230,75 @@ function FixAction({ fix, t }: { fix: WikiProblemFix | null | undefined; t: Tran
   );
 }
 
-/** One heading, one explanation, one list, one way out — used twice with different subjects. */
+/**
+ * The machine's vocabulary, whole and deliberately not localised: readers compare it with a terminal
+ * or agent transcript, and a translated synonym would have to be mapped back.
+ */
+function TechnicalCodes({
+  problems,
+  file,
+  testId,
+  t,
+}: {
+  problems: ReadonlyArray<WikiTemplateProblem>;
+  file?: string;
+  testId: string;
+  t: Translate;
+}) {
+  const [open, setOpen] = useState(false);
+  const titleId = useId();
+  return (
+    <>
+      <button
+        type="button"
+        data-testid={`${testId}-technical`}
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
+        className={controlClass({ shape: "link", size: "md", tone: "default", hoverInk: "strong", className: "-my-0.5 shrink-0 whitespace-nowrap" })}
+      >
+        {t("wiki.technicalOpen")}
+      </button>
+      <Dialog open={open} onClose={() => setOpen(false)} size="md" labelledBy={titleId} testId={`${testId}-technical-dialog`}>
+        <div className="flex max-h-[min(70vh,36rem)] flex-col gap-4">
+          <h2 id={titleId} className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+            {t("wiki.technical")}
+          </h2>
+          <DialogBody className="flex flex-col gap-2 pr-1">
+            <p className="text-label leading-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+              {t("wiki.technicalNote")}
+            </p>
+            {/* For these validator codes the message never names the path, so this line says which file holds
+               the claim, matching a `wiki-validate` page group. */}
+            {file ? (
+              <p
+                data-testid={`${testId}-file`}
+                className="font-mono text-label leading-label text-[color:var(--color-text-secondary)]"
+              >
+                {t("wiki.technicalFile", { path: file })}
+              </p>
+            ) : null}
+            <ul className="flex flex-col gap-1">
+              {problems.map((problem, index) => (
+                <li
+                  key={`${problem.code}-${index}`}
+                  data-testid="library-wiki-problem-code"
+                  className="font-mono text-label leading-label text-[color:var(--color-text-secondary)] [overflow-wrap:anywhere]"
+                >
+                  {wikiProblemMachineLine(problem)}
+                </li>
+              ))}
+            </ul>
+          </DialogBody>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setOpen(false)}>{t("find.close")}</Button>
+          </DialogFooter>
+        </div>
+      </Dialog>
+    </>
+  );
+}
+
+/** One heading, an optional explanation, one list, one way out — used twice with different subjects. */
 function ProblemGroup({
   problems,
   ariaLabel,
@@ -246,9 +315,10 @@ function ProblemGroup({
   problems: ReadonlyArray<WikiTemplateProblem>;
   ariaLabel: string;
   title: string;
-  body: string;
+  /** A sentence under the title; the folder card has none, its lines name both pages. */
+  body?: string;
   testId: string;
-  /** `wiki/<slug>.md`, the page's own address, for the technical disclosure. */
+  /** `wiki/<slug>.md`, the page's own address, for the check codes dialog. */
   file?: string;
   /**
    * On a wiki page the card is open above the body; on a saved answer it collapses to one summary
@@ -265,9 +335,11 @@ function ProblemGroup({
     <>
       {/* `ch` resolves at the element's own size, so a second cap on these sentences would end them short of
          the card's column. `[word-break:keep-all]` stops a Korean word breaking across the wrap. */}
-      <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
-        {body}
-      </p>
+      {body ? (
+        <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+          {body}
+        </p>
+      ) : null}
       <ul className="mt-2.5 flex flex-col gap-2.5 font-sans">
         {groupWikiProblems(problems, t, context).map(({ words, places }, index) => (
           <li
@@ -275,43 +347,27 @@ function ProblemGroup({
             data-testid="library-wiki-problem"
             className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
           >
-            <p>
-              <WikiProblemSentence words={words} places={places} doors={doors} t={t} />
-            </p>
-            {words.action ? (
-              <p className="text-[color:var(--color-text-tertiary)]">{words.action}</p>
-            ) : null}
+            {/* A finding retold in one line carries its action after a middle dot; the others keep two lines. */}
+            {words.short ? (
+              <p>
+                <WikiProblemSentence words={words} places={places} doors={doors} t={t} />
+                {words.action ? (
+                  <span className="text-[color:var(--color-text-tertiary)]"> · {words.action}</span>
+                ) : null}
+              </p>
+            ) : (
+              <>
+                <p>
+                  <WikiProblemSentence words={words} places={places} doors={doors} t={t} />
+                </p>
+                {words.action ? (
+                  <p className="text-[color:var(--color-text-tertiary)]">{words.action}</p>
+                ) : null}
+              </>
+            )}
           </li>
         ))}
       </ul>
-      {/* The machine's vocabulary, whole and deliberately not localised: readers compare it with a terminal
-         or agent transcript, and a translated synonym would have to be mapped back. */}
-      <Disclosure className="mt-3" summary={t("wiki.technical")} summaryTestId={`${testId}-technical`}>
-        <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
-          {t("wiki.technicalNote")}
-        </p>
-        {/* The page's own address: for these validator codes the message never names the path, so this line
-           says which file holds the claim, matching a `wiki-validate` page group. */}
-        {file ? (
-          <p
-            data-testid={`${testId}-file`}
-            className="mt-1.5 font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"
-          >
-            {t("wiki.technicalFile", { path: file })}
-          </p>
-        ) : null}
-        <ul className="mt-1.5 flex flex-col gap-1">
-          {problems.map((problem, index) => (
-            <li
-              key={`${problem.code}-${index}`}
-              data-testid="library-wiki-problem-code"
-              className="font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"
-            >
-              {wikiProblemMachineLine(problem)}
-            </li>
-          ))}
-        </ul>
-      </Disclosure>
     </>
   );
   return (
@@ -330,16 +386,22 @@ function ProblemGroup({
               {title}
             </summary>
             {Body}
+            <div className="mt-3">
+              <TechnicalCodes problems={problems} file={file} testId={testId} t={t} />
+            </div>
           </details>
         ) : (
           <>
-            {/* The count and the kind on the left, the one way out on the right — the
+            {/* The count and the kind on the left, the codes and the one way out on the right — the
                 card's whole ability on one line, which is where a person looks for it. */}
             <div className="flex items-start justify-between gap-3">
               <p className="min-w-0 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
                 {title}
               </p>
-              <FixAction fix={fix} t={t} />
+              <div className="flex shrink-0 items-center gap-2">
+                <TechnicalCodes problems={problems} file={file} testId={testId} t={t} />
+                <FixAction fix={fix} t={t} />
+              </div>
             </div>
             {Body}
           </>
@@ -363,7 +425,7 @@ export const WikiTemplateProblems = memo(function WikiTemplateProblems({
   t,
 }: {
   problems: ReadonlyArray<WikiTemplateProblem>;
-  /** `wiki/<slug>.md`, the page's own address — printed in the technical disclosure. */
+  /** `wiki/<slug>.md`, the page's own address: printed in the check codes dialog, and `{page}` in a folder line. */
   file?: string;
   /** One summary line per group instead of the open card — see `ProblemGroup`. */
   collapsed?: boolean;
@@ -395,12 +457,11 @@ export const WikiTemplateProblems = memo(function WikiTemplateProblems({
         problems={folder}
         ariaLabel={t("wiki.linkFindingsAriaLabel")}
         title={t("wiki.linkFindingsTitle", { count: folder.length })}
-        body={t("wiki.linkFindingsBody")}
         testId="library-wiki-link-findings"
         file={file}
         collapsed={collapsed}
         doors={doors}
-        context={context}
+        context={file ? { ...context, page: file.replace(/\.md$/, "") } : context}
         t={t}
       />
     </>

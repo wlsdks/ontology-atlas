@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 
@@ -77,8 +77,10 @@ const SHARED_SOURCE: WikiTemplateProblem = {
   },
 };
 
-function openTechnical() {
-  for (const toggle of document.querySelectorAll<HTMLElement>('[data-testid$="-technical"][aria-expanded="false"]')) fireEvent.click(toggle);
+/** Opens one card's check codes dialog and returns it. */
+function openTechnical(card: "library-wiki-problems" | "library-wiki-link-findings" = "library-wiki-link-findings") {
+  fireEvent.click(screen.getByTestId(`${card}-technical`));
+  return screen.getByTestId(`${card}-technical-dialog`);
 }
 
 describe("WikiTemplateProblems — a folder finding is not an off-template verdict", () => {
@@ -95,13 +97,13 @@ describe("WikiTemplateProblems — a folder finding is not an off-template verdi
     expect(screen.queryByTestId("library-wiki-link-findings")).toBeNull();
   });
 
-  it("a page carrying both gets both headings, each over its own findings", () => {
+  it("a page carrying both gets both headings, each with its own findings' codes", () => {
     renderPanel([TEMPLATE_PROBLEM, LINK_PROBLEM]);
-    openTechnical();
-    const shape = screen.getByTestId("library-wiki-problems");
-    const folder = screen.getByTestId("library-wiki-link-findings");
+    const shape = openTechnical("library-wiki-problems");
     expect(shape.textContent).toContain("missing-field:title");
     expect(shape.textContent).not.toContain("dangling-wikilink");
+    fireEvent.keyDown(shape, { key: "Escape" });
+    const folder = openTechnical("library-wiki-link-findings");
     expect(folder.textContent).toContain("dangling-wikilink");
     expect(folder.textContent).not.toContain("missing-field:title");
   });
@@ -322,40 +324,58 @@ describe("WikiTemplateProblems — one action per card, or none", () => {
 });
 
 describe("WikiTemplateProblems — the machine's vocabulary is one press away, not deleted", () => {
-  it("keeps every code, its line and the validator's own sentence behind the disclosure", () => {
+  it("keeps every code, its line and the validator's own sentence in the check codes dialog", () => {
     renderPanel([LINK_PROBLEM]);
     const technical = screen.getByTestId("library-wiki-link-findings-technical");
-    expect(technical.textContent).toContain(ko.library.wiki.technical);
-    openTechnical();
-    const codes = screen.getAllByTestId("library-wiki-problem-code");
+    expect(technical.textContent).toContain(ko.library.wiki.technicalOpen);
+    const dialog = openTechnical();
+    expect(dialog.textContent).toContain(ko.library.wiki.technical);
+    const codes = within(dialog).getAllByTestId("library-wiki-problem-code");
     expect(codes[0]!.textContent).toContain("dangling-wikilink:15");
     expect(codes[0]!.textContent).toContain("names a page that is not in this folder");
   });
 
-  it("says there that the command and the tool report the same codes", () => {
+  it("says there that the command and the tool report the same codes, and only there", () => {
     renderPanel([LINK_PROBLEM]);
-    openTechnical();
-    const card = screen.getByTestId("library-wiki-link-findings");
-    expect(card.textContent).toContain("wiki-validate");
-    expect(card.textContent).toContain("validate_wiki");
-    expect(screen.getByText(ko.library.wiki.linkFindingsBody).textContent).not.toContain(
-      "wiki-validate",
-    );
+    expect(screen.getByTestId("library-wiki-link-findings").textContent).not.toContain("wiki-validate");
+    const dialog = openTechnical();
+    expect(dialog.textContent).toContain("wiki-validate");
+    expect(dialog.textContent).toContain("validate_wiki");
   });
 
   /* Some codes' messages omit the path, so the card must name the file on disk. */
   it("names the file on disk the findings are about", () => {
     renderPanel([UNCITED], "ko", { file: "wiki/merchant-onboarding.md" });
-    openTechnical();
+    openTechnical("library-wiki-problems");
     expect(screen.getByTestId("library-wiki-problems-file").textContent).toContain(
       "wiki/merchant-onboarding.md",
     );
   });
 
-  it("starts closed — the disclosure is a fold, not a second list", () => {
+  it("draws no codes on the card itself, only a button that opens them", () => {
     renderPanel([LINK_PROBLEM]);
-    const toggle = screen.getByTestId("library-wiki-link-findings-technical");
-    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    const button = screen.getByTestId("library-wiki-link-findings-technical");
+    expect(button.getAttribute("aria-haspopup")).toBe("dialog");
     expect(screen.queryAllByTestId("library-wiki-problem-code")).toHaveLength(0);
+  });
+});
+
+describe("WikiTemplateProblems — a folder finding on an open page is one line", () => {
+  const ORPHAN: WikiTemplateProblem = {
+    code: "orphan-page",
+    message: "No other page links here.",
+    detail: { key: "orphan-page" },
+  };
+
+  it("names both pages and what to do, with no explanation paragraph above", () => {
+    renderPanel([ORPHAN, SHARED_SOURCE], "ko", { file: "wiki/payments-02.md" });
+    const card = screen.getByTestId("library-wiki-link-findings");
+    const rows = within(card).getAllByTestId("library-wiki-problem");
+    expect(rows).toHaveLength(2);
+    for (const row of rows) expect(row.querySelectorAll("p")).toHaveLength(1);
+    expect(rows[0]!.textContent).toBe("payments-02에 연결한 문서가 아직 없어요 · 같은 주제를 다루는 문서에서 연결하세요");
+    expect(rows[1]!.textContent).toContain("payments-02, Payments, January");
+    expect(rows[1]!.textContent).toContain("한쪽에서 다른 쪽을 연결하세요");
+    expect(card.querySelectorAll("p")).toHaveLength(3);
   });
 });

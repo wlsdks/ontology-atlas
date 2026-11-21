@@ -50,6 +50,8 @@ export interface WikiProblemWords {
   targets: readonly WikiProblemTarget[];
   /** `sentence` in order, so a name can be a press rather than a word about a press. */
   segments: readonly WikiProblemSegment[];
+  /** True when `sentence` and `action` are the one-line retelling (`.short`, `.shortDo`). */
+  short: boolean;
 }
 
 type Translate = ReturnType<typeof useTranslations<"library">>;
@@ -64,6 +66,11 @@ export interface WikiProblemContext {
    * findings into one row whose door carries every line.
    */
   place?: "full" | "section";
+  /**
+   * The page the findings are about, by slug. With it, a finding that has a one-line retelling
+   * (`wiki.problem.<key>.short` and `.shortDo`) uses that, naming this page as `{page}`.
+   */
+  page?: string;
 }
 
 /** `wiki/payments-01.md` → `wiki/payments-01`, which is how every surface addresses a page. */
@@ -193,6 +200,10 @@ function segmentsOf(
       );
       continue;
     }
+    if (name === "page" && context?.page) {
+      out.push({ kind: "text", text: context.pageTitle?.(context.page) ?? pageName(context.page) });
+      continue;
+    }
     const raw = values[name];
     if (raw === undefined) {
       // A placeholder the validator did not fill. Printing `{other}` on a screen is worse
@@ -235,12 +246,15 @@ export function describeWikiProblem(
       where: whereOf(problem, key ?? "", t, place),
       targets: [],
       segments: [{ kind: "text", text: problem.message }],
+      short: false,
     };
   }
   const values = problem.detail?.values ?? {};
   const where = whereOf(problem, key!, t, place);
-  const segments = segmentsOf(t.raw(what) as string, values, key!, where, context, t);
-  const doPath = `wiki.problem.${key}.do` as ProblemPath;
+  const shortPath = `wiki.problem.${key}.short` as ProblemPath;
+  const short = context?.page !== undefined && t.has(shortPath);
+  const segments = segmentsOf(t.raw(short ? shortPath : what) as string, values, key!, where, context, t);
+  const doPath = `wiki.problem.${key}.${short ? "shortDo" : "do"}` as ProblemPath;
   return {
     code: problem.code,
     sentence: flatten(segments),
@@ -248,6 +262,7 @@ export function describeWikiProblem(
     where,
     targets: segments.flatMap((segment) => (segment.kind === "target" ? [segment.target] : [])),
     segments,
+    short,
   };
 }
 

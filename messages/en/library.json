@@ -505,13 +505,13 @@
     "undoFailed": "Could not undo: the file is already gone or the folder is not writable.",
     "linkFindingsAriaLabel": "How this page connects inside the folder",
     "linkFindingsTitle": "{count, number} connections to check",
-    "linkFindingsBody": "The page fits the template. What follows is about the folder: things no single page can see about itself.",
     "fixWithAgent": "Fix with agent",
     "fixWithAgentTooltip": "The agent brings this page back to the template. A fixed page that fits is saved as it is; one that does not asks for your permission first.",
     "fixWithAgentTooltipAsk": "The agent brings this page back to the template. Each write asks for your permission.",
     "fixMyself": "Fix it myself",
     "fixMyselfTooltip": "Selects this page's file in Finder. Edit it in any editor; the list updates.",
     "technical": "Technical detail · check codes and line numbers",
+    "technicalOpen": "Show check codes",
     "technicalNote": "The wiki-validate command and the validate_wiki tool report these same codes.",
     "technicalFile": "File: {path}",
     "goToPlace": "Go to {place}",
@@ -574,19 +574,27 @@
       },
       "dangling-wikilink": {
         "what": "The link at {where} points at {target}, and there is no such page in this folder.",
-        "do": "Link to a page that exists, or write that page."
+        "do": "Link to a page that exists, or write that page.",
+        "short": "{page} links to {target} at {where}, and that page is not in this folder",
+        "shortDo": "link to a page that exists, or write it"
       },
       "orphan-page": {
         "what": "No other page points at this one yet.",
-        "do": "Link it from the page that talks about its topic and it becomes easy to find."
+        "do": "Link it from the page that talks about its topic and it becomes easy to find.",
+        "short": "No page links to {page} yet",
+        "shortDo": "link it from a page on the same topic"
       },
       "shared-source-unlinked": {
         "what": "{other} is written from the same source ({sources}), and neither page points at the other.",
-        "do": "Link one of them to the other."
+        "do": "Link one of them to the other.",
+        "short": "{page} and {other} use the same source ({sources}) but do not link each other",
+        "shortDo": "link one to the other"
       },
       "shared-source-unlinked-more": {
         "what": "{count, number} more pages are written from the same source, and none of them points at this one or is pointed at by it.",
-        "do": "Link the pages written from one source to each other."
+        "do": "Link the pages written from one source to each other.",
+        "short": "{count} more pages use the same source as {page} but do not link it",
+        "shortDo": "link the pages of one source to each other"
       }
     }
   },
