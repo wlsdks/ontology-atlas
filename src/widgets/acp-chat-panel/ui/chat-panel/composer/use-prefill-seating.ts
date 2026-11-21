@@ -2,6 +2,7 @@ import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 
 import { splitAppRequest } from '../../request-parts';
 import type { DraftStore, SeatedDetail } from '../types';
+import { seatedRequestText } from './outgoing-request';
 
 interface PrefillSeatingOptions {
   prefillRequest?: { text: string; nonce: number } | null;
@@ -40,8 +41,7 @@ export function usePrefillSeating({
 
   const seatedRequestWaiting = (seenPrefillNonce !== null || seatedDetail !== null) && draft.trim().length > 0;
   useEffect(() => {
-    const text = seatedDetail ? draft === seatedDetail.lead ? seatedDetail.full : `${draft}\n\n${seatedDetail.detail}` : draft;
-    draftStore?.write({ text, prefillNonce: seenPrefillNonce });
+    draftStore?.write({ text: seatedRequestText(draft, seatedDetail), prefillNonce: seenPrefillNonce });
   }, [draftStore, draft, seatedDetail, seenPrefillNonce]);
   useEffect(() => {
     onDraftPresenceChange?.(draftPresent);

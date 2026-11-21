@@ -98,7 +98,7 @@ const TEXT_CAP: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/widgets/search-palette/ui/SearchPalette.tsx", 1],
   ["src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx", 1],
   ["src/widgets/topology-index-panel/ui/TopologyRealmLedger.tsx", 1],
-  ["src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx", 2],
+  ["src/widgets/vault-agent-panel/ui/composer/AgentComposer.tsx", 2],
 ];
 
 /**

@@ -78,8 +78,12 @@ function writeCleanWorkbenchFixtures(root) {
     [
       "acp-ontology-change-review",
       "request.reviewKind === 'ontology-write'",
-      "allowAlways && !ontologyWrite",
     ].join("\n"),
+  );
+  writeFixture(
+    root,
+    "src/widgets/acp-chat-panel/ui/chat-panel/permission/PermissionDecisions.tsx",
+    "allowAlways && !ontologyWrite",
   );
   writeFixture(
     root,

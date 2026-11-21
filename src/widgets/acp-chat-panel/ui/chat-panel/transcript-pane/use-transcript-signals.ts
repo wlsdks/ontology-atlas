@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react';
 import type { ChatSuggestion } from '@/features/acp-session';
 import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
 
+import { lastUserEventIndexOf } from '../turn/turn-state';
 import type { SessionState } from '../types';
 
 interface TranscriptSignalsOptions {
@@ -26,12 +27,7 @@ export function useTranscriptSignals({
   followTranscript,
   restoreTranscript,
 }: TranscriptSignalsOptions) {
-  const lastUserEventIndex = useMemo(() => {
-    for (let index = events.length - 1; index >= 0; index -= 1) {
-      if (events[index].kind === 'user') return index;
-    }
-    return -1;
-  }, [events]);
+  const lastUserEventIndex = useMemo(() => lastUserEventIndexOf(events), [events]);
   const postTurnSuggestions = suggestions.filter(
     (suggestion) => suggestion.kind !== 'connectSource',
   );
