@@ -68,8 +68,8 @@ ships (`committed-media.contract.test.ts`). Skill design:
 | Meaningful code change in an existing vault | `/ontology-sync` |
 | Requested extraction from prose or wiki | `/ontology-extract`; a wiki page only through the user's registered third-party MCP |
 | Construction rules or MCP behavior that can change vault quality | `/ontology-field-trial`; wording-only changes that keep evidence/approval/write contracts skip it |
-| Authorized parallel work | `/delegate` |
-| Returned or ready branches | `/merge`; your own branch merges with `pnpm pr:land` |
+| Authorized parallel work | `/delegate` to brief, `/integrate` to merge |
+| Returned or ready branches | Parallel slices: `/integrate`; one branch: `/merge`, then `pnpm pr:land` |
 
 Delegate only large, independent, parallelizable work; finish what a handful of
 tool calls can do yourself, and never delegate to verify or double-check your
@@ -133,17 +133,15 @@ only with `pnpm pr:land <number>`. Never use `--no-verify`, force-push main,
 `git reset --hard`, or `git push --force` without explicit user authority.
 Publishing needs an explicit request and `npm pack --dry-run` first.
 
-Parallel work merges through one integration branch, never a train. Before the
-fan-out the lead pushes `integration/<topic>-<yyyy-mm-dd>` from `origin/main`.
-Each slice commits on its own branch and worktree, runs only
-`pnpm checks:changed -- --run --slice`, and neither pushes nor opens a pull
-request. As each returns, the lead merges it (`git merge --no-ff`), resolves
-conflicts by intent, runs that slice's checks and pushes; that push runs no CI.
-After the last, the lead merges `origin/main`, runs the repo-wide lanes once
-(`pnpm checks:changed -- --run`, `pnpm test:contracts`, `pnpm knip`,
-`pnpm typecheck`), opens one draft listing each component and its
-`### Conflicts`, and `pnpm pr:land`s it: the one CI run. Once merged, `pnpm bundle:prune` deletes the integration and
-component branches, local and origin, and their worktrees (`/merge`).
+Parallel work reaches `main` through one integration branch (`/integrate`),
+never a train or a pull request per slice. `pnpm integration:start` precedes the
+fan-out; slices commit on their own branches, run only
+`pnpm checks:changed -- --run --slice` and never push; `pnpm integration:add`
+merges each as it returns; `pnpm integration:pr` runs the repo-wide lanes once
+and opens one draft; its `pnpm pr:land` is the one CI run;
+`pnpm integration:prune` then deletes each branch and worktree whose head
+`git merge-base --is-ancestor` finds in `origin/main`. Every slice commit
+survives: `--no-ff` merges only, never squash, rebase or cherry-pick.
 
 Keep root plus the largest nested instruction file below 32 KiB; nested
 `AGENTS.md` files only point to the `.claude/rules/` relevant to their paths.

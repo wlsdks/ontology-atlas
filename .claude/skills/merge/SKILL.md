@@ -1,6 +1,6 @@
 ---
 name: merge
-description: Merge returned or ready branches into main: read each slice, one independent review when one is due, one fix round; a single branch merges with `pnpm pr:land`, parallel slices merge into one integration branch as each returns and reach main as one pull request with one CI run; then prune everything main provably contains.
+description: Review a returned slice or a ready branch (one independent review when due, one fix round) and merge a single branch into main with `pnpm pr:land`, then prune what main's history holds. Parallel slices merge through `/integrate`.
 ---
 
 # merge

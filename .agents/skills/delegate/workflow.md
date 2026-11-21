@@ -10,10 +10,9 @@ environment-isolated work, and reviews whose value is independence.
 
 ## 2. Open the integration branch, then generate the brief
 
-Parallel work reaches `main` through one integration branch: create and push
-`integration/<topic>-<yyyy-mm-dd>` from `origin/main` before the first agent
-starts (`/merge`, [integration guide](../merge/guides/bundle.md)). Pushing it
-runs no CI.
+Parallel work reaches `main` through one integration branch: run
+`pnpm integration:start <topic>` before the first agent starts
+([`/integrate`](../integrate/workflow.md)). Pushing it runs no CI.
 
 ```bash
 pnpm conflicts:scan
@@ -59,7 +58,7 @@ scratchpad brief and give each agent that file plus its slice id:
 - every slice reports each owned path's outcome (changed, nothing to do, or
   skipped with a reason), so coverage is counted, not trusted.
 
-As each slice returns, `/merge` reviews it and merges it into the
-integration branch at once, so conflicts are resolved one slice at a time;
-the integration pull request then reaches `main` with one CI run, and
-`pnpm bundle:prune` removes every branch and worktree that belonged to it.
+As each slice returns, `/merge` reviews it and `pnpm integration:add` merges
+it into the integration branch at once with `--no-ff`, so conflicts are
+resolved one slice at a time; `/integrate` then carries the one pull request to
+`main` and prunes every branch and worktree whose head `main` holds.

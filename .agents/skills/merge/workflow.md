@@ -40,8 +40,8 @@ the current host's reviewer brief. The brief carries:
 
 In a campaign of many slices the pilot slice goes first; its findings become
 lettered amendments at the top of the shared brief before the rest start
-(`/delegate`). Review each slice as it returns, then merge it into the
-integration branch at once (§3); do not hold slices for the end.
+(`/delegate`). Review each slice as it returns, then add it to the
+integration branch at once (`/integrate`); do not hold slices for the end.
 
 ## 2. One fix round
 
@@ -64,7 +64,8 @@ integration branch at once (§3); do not hold slices for the end.
 
 `pnpm pr:land` marks the draft ready, waits for its CI run and merges it green.
 Merge `origin/main` into the branch before the last push: a head behind `main`
-makes it fall back to its dormant train code. Do not poll GitHub in a loop:
+makes it fall back to its dormant train code. `pnpm pr:land` merges with a
+merge commit and refuses squash and rebase. Do not poll GitHub in a loop:
 every merge shares one API quota.
 
 - **Refused on a conflict**: in the branch worktree run
@@ -80,56 +81,26 @@ every merge shares one API quota.
   failure goes to a debugging agent with the run URL and what `pnpm pr:land`
   printed.
 
-**Parallel work** always merges through one integration branch, with one CI
-run at the end ([integration guide](guides/bundle.md)):
-
-1. Before the fan-out, create and push
-   `integration/<topic>-<yyyy-mm-dd>` from `origin/main` in its own worktree
-   under `.claude/worktrees/`. Pushing it starts no CI: every workflow's `push`
-   trigger is limited to `main`, and the `pull_request` ones need a pull
-   request.
-2. Each slice commits on its own branch in its own worktree and runs
-   `pnpm checks:changed -- --run --slice`; it neither pushes nor opens a pull
-   request (`pnpm brief:new` writes this into its brief).
-3. As each slice returns and passes §1-2, merge it right away:
-   `git merge --no-ff --no-edit <branch>` in the integration worktree. Resolve
-   conflicts by intent as above while that slice is fresh, keep both sides'
-   keys in `messages/<locale>/<Namespace>.json`, resolve generated docs-vault
-   JSON with `pnpm docs-vault:resolve-conflicts -- --dry-run` and then its
-   write command, and recount a ratchet on the merged tree. Run only that
-   slice's checks (`pnpm checks:changed -- --run --slice` with its paths), then
-   push.
-4. After the last slice: `git fetch origin main`, `git merge origin/main`, read
-   every file two slices share (`pnpm bundle:plan -- <components>` lists
-   them), and run the
-   repo-wide lanes once: `pnpm checks:changed -- --run` (its clean-tree scope
-   is `origin/main...HEAD`), `pnpm test:contracts`, `pnpm knip` and
-   `pnpm typecheck`; `node scripts/ci/classify-change.mjs --base=origin/main`
-   with `gates=true` also means `pnpm lint`. Push and open one draft,
-   `integration/...` into `main`, whose body lists each component (branch @
-   short sha) and a `### Conflicts` section naming each shared file and how it
-   was resolved. One `reviewer` reads it when the `AGENTS.md` table requires
-   one. Then `pnpm pr:land <number>` once: that is the one CI run.
+**Parallel work** never merges here slice by slice: reviewed slices go into one
+integration branch and reach `main` as one pull request (`/integrate`).
 
 ## 4. Clean up after the proof
 
-Only after it merged, when the waiting `pnpm pr:land <number>` exited 0, remove
-everything that belonged to it: the integration branch, every component branch
-and its `worktree-agent-*` twin, local and origin, and every component and
-integration worktree. Run it from the main checkout, not from a worktree it
-removes:
+Only after it merged, when the waiting `pnpm pr:land <number>` exited 0, from
+the main checkout:
 
-    pnpm bundle:prune -- <integration branch> <component branch...>            # dry run
-    pnpm bundle:prune -- <integration branch> <component branch...> --apply
+    pnpm bundle:prune -- <branch>            # dry run: the merging commit, or why it keeps
+    pnpm bundle:prune -- <branch> --apply
 
-`bundle:prune` deletes only what `origin/main` provably contains and reports
-the rest. The apply step removes each worktree, closes an open component draft,
+It deletes a branch only when `git merge-base --is-ancestor <head> origin/main`
+holds, so a squashed, rebased or cherry-picked copy never costs the original
+commits their name. The apply step removes the worktree, closes an open draft,
 deletes the local branch, its `worktree-agent-*` twin and the origin branch
 (also when only the origin copy is left), then runs `git worktree prune` and
 `git fetch --prune`. It lifts a worktree lock only when the locking process has
 exited, or when the lock is your own session's (the prune process or one of its
 ancestors) on a branch proven merged with a clean worktree; a lock held by any
-other live process stays. `not provably landed` means it did not merge as-is:
-read it. A branch kept for a lock or uncommitted changes merged and waits for
-its holder. Never delete either by hand, and never select a branch another
-session created. `git status` in the main checkout is clean at the end.
+other live process stays. `not provably landed` means the head is not in
+`main`'s history: report it. A branch kept for a lock or uncommitted changes
+merged and waits for its holder. Never delete either by hand, and never select
+a branch another session created.

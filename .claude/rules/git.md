@@ -42,8 +42,8 @@
   `pnpm pr:ci <number>` starts that run early; `--plan <n...>` previews.
   Preserve original commits with merge commits; never squash or rebase during
   landing. Disable main's linear-history requirement.
-- Several branches merge through one integration branch (`AGENTS.md`,
-  `/merge`), never one pull request each.
+- Several branches merge through one integration branch (`/integrate`), each
+  by `git merge --no-ff`; never squash, rebase or cherry-pick a component.
 - Never run `gh pr merge`, `gh pr update-branch`, or `gh pr create` without
   `--draft`; `.claude/hooks/block-manual-landing.sh` refuses them.
 - Title: a conventional prefix. Body: `Summary` and `Test plan`, naming the

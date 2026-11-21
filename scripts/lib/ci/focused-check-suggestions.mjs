@@ -437,7 +437,7 @@ const RUST_SLICE_COMMANDS = new Set([RUST_LINT_COMMAND, 'pnpm test:desktop:bridg
  * files, the e2e specs that reach them, and the Rust lane. Contracts, security sets, ratchets,
  * knip and typecheck read the whole tree, so parallel slices leave them to the integration tree.
  */
-export function isSliceCommand(command) {
+function isSliceCommand(command) {
   if (RUST_SLICE_COMMANDS.has(command)) return true;
   if (/^pnpm exec (?:eslint|playwright test|node --test|vitest related) /.test(command)) return true;
   const vitestFiles = /^pnpm exec vitest run (.+)$/.exec(command)?.[1];
