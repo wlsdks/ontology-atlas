@@ -1,4 +1,4 @@
-import type { WorldNode } from "./topology-world";
+import type { WorldNode } from "../topology-world";
 
 /**
  * A "spine" node is one shown at the overview entry (tier alpha 1 at zoom ratio 1): the project root, every domain and any hub node. It MUST mirror `nodeTierAlpha`'s

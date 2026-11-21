@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { RealmRuntimeData } from "../../world/topology-realm-runtime";
+import type { RealmRuntimeData } from "../../world/realm/topology-realm-runtime";
 import type { TopologyWorld } from "../../world/topology-world";
 import { useTopologyOverviewNavigation } from "../use-topology-overview-navigation";
 

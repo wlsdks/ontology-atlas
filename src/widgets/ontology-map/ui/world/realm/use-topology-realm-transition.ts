@@ -5,11 +5,11 @@ import {
   useRef,
   type RefObject
 } from "react";
-import type { CameraAxes, CameraTarget } from "../../engine/camera";
+import type { CameraAxes, CameraTarget } from "../../../engine/camera";
 import {
   type SpringOffset,
-} from "../../expressive/release-offsets";
-import { createForceSimulation, type ForceSimulation } from "../../model/layout/force-layout";
+} from "../../../expressive/release-offsets";
+import { createForceSimulation, type ForceSimulation } from "../../../model/layout/force-layout";
 import {
   isRealmOutsideCulled,
   REALM_EXIT_OUTSIDE_RETURN_DELAY_MS,
@@ -19,23 +19,23 @@ import {
   realmWardingEraseProgress,
   realmTransitionReducer,
   type RealmTransitionState
-} from "../../model/realm/realm-transition";
-import type { WardingFitState } from "../../model/realm/realm-warding-fit";
-import { createHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
-import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/target/fit-targets";
+} from "../../../model/realm/realm-transition";
+import type { WardingFitState } from "../../../model/realm/realm-warding-fit";
+import { createHomeSpring, type HomeSpringState } from "../../../model/layout/relayout-home";
+import { computeOverviewCameraTarget, computeOverviewFitScale } from "../../camera/target/fit-targets";
 import {
   overviewBoundsFor
-} from "../camera/topology-overview-fit";
-import type { NodeDragState } from "../input/topology-pointer-types";
-import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
+} from "../../camera/topology-overview-fit";
+import type { NodeDragState } from "../../input/topology-pointer-types";
+import { readOntologyMapTokensOrNull } from "../../../tokens/topology-read-tokens";
 import { buildRealmRuntimeData, realmCameraTarget, type RealmRuntimeData } from "./topology-realm-runtime";
-import { dialOverviewFit } from "./framing/dial-world-framing";
-import { type TopologyWorld } from "./topology-world";
-import { onWorldSwap } from "./world-swap";
-import { readDialTokens } from "../../dial/tokens";
-import { createMeasureText } from "../../dial/fit";
-import { branchFocusTarget } from "../camera/branch-frame/target";
-import type { DialLabels } from "../../dial/dial-shapes";
+import { dialOverviewFit } from "../framing/dial-world-framing";
+import { type TopologyWorld } from "../topology-world";
+import { onWorldSwap } from "../lifecycle/world-swap";
+import { readDialTokens } from "../../../dial/tokens";
+import { createMeasureText } from "../../../dial/fit";
+import { branchFocusTarget } from "../../camera/branch-frame/target";
+import type { DialLabels } from "../../../dial/dial-shapes";
 
 interface Dependencies {
   view3d?: boolean;

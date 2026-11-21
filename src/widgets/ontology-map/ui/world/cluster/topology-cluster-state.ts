@@ -9,8 +9,8 @@ import {
   type ClusterChip,
   type DensityGateParentGeometry,
   type DensityGateResult,
-} from "../../model/layout/density-gate";
-import type { TopologyWorld } from "./topology-world";
+} from "../../../model/layout/density-gate";
+import type { TopologyWorld } from "../topology-world";
 
 export function computeTopologyClusterState(
   world: Pick<TopologyWorld, "nodeById" | "childrenByParent" | "clusterMetaByParent"> & Partial<Pick<TopologyWorld, "dial">>,

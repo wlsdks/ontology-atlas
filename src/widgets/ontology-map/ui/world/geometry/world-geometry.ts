@@ -1,8 +1,8 @@
-import { computeBowControlPoint, computeDependsBowControlPoint } from "../../render/traces";
-import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { accumulateBounds, computeSpineBounds, extentBounds, growBounds } from "./framing/world-bounds";
+import { computeBowControlPoint, computeDependsBowControlPoint } from "../../../render/traces";
+import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
+import { accumulateBounds, computeSpineBounds, extentBounds, growBounds } from "../framing/world-bounds";
 import { isSpineNode } from "./spine-node";
-import type { TopologyWorld, WorldEdge, WorldNode } from "./topology-world";
+import type { TopologyWorld, WorldEdge, WorldNode } from "../topology-world";
 
 /** A `depends` edge bows by its own token; a `contains` edge bows toward the inner node's far angle. */
 export function computeEdgeControlPoint(

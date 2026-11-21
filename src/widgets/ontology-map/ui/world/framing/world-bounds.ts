@@ -1,7 +1,7 @@
 import type { DialWorld } from "../../../dial/dial-shapes";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
-import { radiusForKind } from "../node-radius";
-import { isSpineNode } from "../spine-node";
+import { radiusForKind } from "../geometry/node-radius";
+import { isSpineNode } from "../geometry/spine-node";
 import type { Bounds, TopologyWorld, WorldNode } from "../topology-world";
 import { computeFoldedIds } from "./density-fold";
 import type { DialBearing } from "./dial-world-framing";

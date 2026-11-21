@@ -24,7 +24,7 @@ import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../../model/realm/realm-d
 import type { DomeNodeFrame } from "../../model/dome-view/runtime";
 import { HIT_TOUCH_SLACK_PX, hitTestWorld, worldToScreen } from "../camera/topology-camera-math";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
-import { radiusForKind } from "../world/node-radius";
+import { radiusForKind } from "../world/geometry/node-radius";
 import { type TopologyWorld } from "../world/topology-world";
 import type { PointerContext } from "./topology-pointer-context";
 import type { HoverAvoidRect } from "./topology-pointer-types";

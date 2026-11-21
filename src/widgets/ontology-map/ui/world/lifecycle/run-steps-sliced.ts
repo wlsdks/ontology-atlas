@@ -1,5 +1,5 @@
 import { yieldToFrame } from "@/shared/lib/scheduling/yield-to-frame";
-import type { LayoutSteps } from "../../flat-graph/layout";
+import type { LayoutSteps } from "../../../flat-graph/layout";
 
 /** Slice length on the main thread, decision 1 of `docs/specs/2026-11-20-performance-strategy.md`. */
 export const WORLD_SLICE_MS = 8;

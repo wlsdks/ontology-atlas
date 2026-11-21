@@ -5,11 +5,11 @@ import {
 } from "react";
 import {
   type SpringOffset,
-} from "../../expressive/release-offsets";
-import { type ForceSimulation } from "../../model/layout/force-layout";
-import { type HomeSpringState } from "../../model/layout/relayout-home";
-import type { NodeDragState } from "../input/topology-pointer-types";
-import { type TopologyWorld } from "./topology-world";
+} from "../../../expressive/release-offsets";
+import { type ForceSimulation } from "../../../model/layout/force-layout";
+import { type HomeSpringState } from "../../../model/layout/relayout-home";
+import type { NodeDragState } from "../../input/topology-pointer-types";
+import { type TopologyWorld } from "../topology-world";
 
 /** Own simulation, drag deformation, and coordinate homing state. */
 export function useTopologyWorldState() {

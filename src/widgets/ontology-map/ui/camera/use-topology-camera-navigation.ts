@@ -32,7 +32,7 @@ import {
   overviewFitTokens
 } from "./topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
-import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "../world/topology-realm-runtime";
+import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "../world/realm/topology-realm-runtime";
 import { computeDrawnSpineBounds, computePathPickBounds } from "../world/framing/world-bounds";
 import { dialOverviewFit } from "../world/framing/dial-world-framing";
 import { type TopologyWorld } from "../world/topology-world";

@@ -3,8 +3,8 @@
  * A thin adapter between `model/realm/realm.ts` and the live world; per frame the loop only feeds this data to the evaluate functions in `model/realm/realm-transition.ts`.
  */
 
-import type { CameraTarget } from "../../engine/camera";
-import { fitWorldTarget } from "../camera/target/fit-targets";
+import type { CameraTarget } from "../../../engine/camera";
+import { fitWorldTarget } from "../../camera/target/fit-targets";
 import {
   computeRealmLayout,
   computeVisibleBounds,
@@ -13,14 +13,14 @@ import {
   realmMaxDepth,
   realmRingsForDepth,
   type RealmBounds,
-} from "../../model/realm/realm";
-import type { LayoutRadii, LayoutRings } from "../../model/layout/layout";
-import { computeTopologyClusterState } from "./topology-cluster-state";
-import { radiusForKind } from "./node-radius";
-import { type TopologyWorld } from "./topology-world";
-import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import type { DialWorld, DialWorldInput, Pad } from "../../dial/dial-shapes";
-import { scopedBranches, scopedTreePositions } from "./realm/scoped-branches";
+} from "../../../model/realm/realm";
+import type { LayoutRadii, LayoutRings } from "../../../model/layout/layout";
+import { computeTopologyClusterState } from "../cluster/topology-cluster-state";
+import { radiusForKind } from "../geometry/node-radius";
+import { type TopologyWorld } from "../topology-world";
+import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
+import type { DialWorld, DialWorldInput, Pad } from "../../../dial/dial-shapes";
+import { scopedBranches, scopedTreePositions } from "./scoped-branches";
 
 /** Content bbox slack (world units) — so the camera fit holds the outermost node comfortably. */
 const CONTENT_BOUNDS_MARGIN = 40;

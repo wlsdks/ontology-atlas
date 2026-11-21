@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { computeTopologyClusterState } from "./topology-cluster-state";
-import type { ClusterParentMeta, WorldNode } from "./topology-world";
-import { DENSITY_GATE_THRESHOLD } from "../../model/layout/density-gate";
+import type { ClusterParentMeta, WorldNode } from "../topology-world";
+import { DENSITY_GATE_THRESHOLD } from "../../../model/layout/density-gate";
 
 /**
  * `computeTopologyClusterState` is an adapter that combines the world's static

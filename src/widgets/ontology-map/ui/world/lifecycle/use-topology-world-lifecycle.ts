@@ -9,42 +9,42 @@ import {
   useState,
   type RefObject
 } from "react";
-import type { CameraAxes, CameraTarget } from "../../engine/camera";
-import type { DomeRuntime } from "../../model/dome-view/runtime";
+import type { CameraAxes, CameraTarget } from "../../../engine/camera";
+import type { DomeRuntime } from "../../../model/dome-view/runtime";
 import {
   type SpringOffset,
-} from "../../expressive/release-offsets";
-import { ARRIVAL_GLIDE_CONCEPT_CEILING } from "../../morph/layout-morph";
-import { armTierAssembly, carryTierAssembly, claimTierAssembly, FLAT_TIER_TIMING, isTierAssembling, settleTierAssembly, TIER_ASSEMBLE_TOTAL_MS } from "../../morph/tier-assembly";
-import { createForceSimulation, type ForceSimulation } from "../../model/layout/force-layout";
-import { createHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
-import type { Pulse } from "../../render/edge-fireflies";
-import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { hasAnyNodeOnScreen } from "../camera/topology-camera-math";
-import { computeOverviewCameraTarget, computeOverviewFitScale, overviewEntryArea } from "../camera/target/fit-targets";
-import { layoutSizeOf } from "../camera/use-topology-viewport-lifecycle";
-import type { UseTopologyLoopArgs } from "../loop/topology-loop-contract";
+} from "../../../expressive/release-offsets";
+import { ARRIVAL_GLIDE_CONCEPT_CEILING } from "../../../morph/layout-morph";
+import { armTierAssembly, carryTierAssembly, claimTierAssembly, FLAT_TIER_TIMING, isTierAssembling, settleTierAssembly, TIER_ASSEMBLE_TOTAL_MS } from "../../../morph/tier-assembly";
+import { createForceSimulation, type ForceSimulation } from "../../../model/layout/force-layout";
+import { createHomeSpring, type HomeSpringState } from "../../../model/layout/relayout-home";
+import type { Pulse } from "../../../render/edge-fireflies";
+import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
+import { hasAnyNodeOnScreen } from "../../camera/topology-camera-math";
+import { computeOverviewCameraTarget, computeOverviewFitScale, overviewEntryArea } from "../../camera/target/fit-targets";
+import { layoutSizeOf } from "../../camera/use-topology-viewport-lifecycle";
+import type { UseTopologyLoopArgs } from "../../loop/topology-loop-contract";
 import {
   overviewBoundsFor,
   overviewFitTokens
-} from "../camera/topology-overview-fit";
-import type { NodeDragState } from "../input/topology-pointer-types";
-import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
-import { buildTopologyWorldSteps, type TopologyWorld } from "./topology-world";
-import { dialOverviewFit } from "./framing/dial-world-framing";
-import { recomputeWorldGeometry } from "./world-geometry";
+} from "../../camera/topology-overview-fit";
+import type { NodeDragState } from "../../input/topology-pointer-types";
+import { readOntologyMapTokensOrNull } from "../../../tokens/topology-read-tokens";
+import { buildTopologyWorldSteps, type TopologyWorld } from "../topology-world";
+import { dialOverviewFit } from "../framing/dial-world-framing";
+import { recomputeWorldGeometry } from "../geometry/world-geometry";
 import { runStepsSliced } from "./run-steps-sliced";
 import { announceWorldSwap, isWorldBuilding, markWorldBuilding } from "./world-swap";
-import type { FlatRingMemoryStore } from "../loop/topology-loop-contract";
-import { createMeasureText } from "../../dial/fit";
-import { readDialTokens } from "../../dial/tokens";
-import { claimDialOrderFolder } from "../../dial/order";
-import { claimFlatGraphFolder, settleFlatGraph } from "../../flat-graph/scene";
-import { readFlatGraphTokens } from "../../flat-graph/tokens";
-import { labelFontFamily } from "../../render/labels";
-import type { FlatGraphTokens } from "../../flat-graph/flat-graph-shapes";
-import { createDialPlacement, dialPlacementOf, setDialPlacement, type DialPlacementState } from "../../dial/placement";
-import type { DialLabels, DialMemory, DialWorldInput } from "../../dial/dial-shapes";
+import type { FlatRingMemoryStore } from "../../loop/topology-loop-contract";
+import { createMeasureText } from "../../../dial/fit";
+import { readDialTokens } from "../../../dial/tokens";
+import { claimDialOrderFolder } from "../../../dial/order";
+import { claimFlatGraphFolder, settleFlatGraph } from "../../../flat-graph/scene";
+import { readFlatGraphTokens } from "../../../flat-graph/tokens";
+import { labelFontFamily } from "../../../render/labels";
+import type { FlatGraphTokens } from "../../../flat-graph/flat-graph-shapes";
+import { createDialPlacement, dialPlacementOf, setDialPlacement, type DialPlacementState } from "../../../dial/placement";
+import type { DialLabels, DialMemory, DialWorldInput } from "../../../dial/dial-shapes";
 
 interface Dependencies {
   worldRef: RefObject<TopologyWorld | null>;

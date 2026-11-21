@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import type { TopologyWorld, WorldNode } from "./topology-world";
+import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
+import type { TopologyWorld, WorldNode } from "../topology-world";
 import { prepareRevealHome } from "./topology-reveal-home";
 
 const tokens = {

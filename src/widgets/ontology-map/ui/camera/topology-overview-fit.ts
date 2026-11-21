@@ -3,8 +3,8 @@ import { measureEdgeFitObstacle } from "../../interaction/free-area";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeFoldedIds } from "../world/framing/density-fold";
 import { computeRevealedBounds } from "../world/framing/world-bounds";
-import { isSpineNode } from "../world/spine-node";
-import { radiusForKind } from "../world/node-radius";
+import { isSpineNode } from "../world/geometry/spine-node";
+import { radiusForKind } from "../world/geometry/node-radius";
 import { type TopologyWorld } from "../world/topology-world";
 
 export function overviewBoundsFor(

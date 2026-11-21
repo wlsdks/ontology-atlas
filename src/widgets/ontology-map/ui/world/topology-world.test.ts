@@ -16,9 +16,9 @@ import { buildTopologyWorld, computeMagnitudeScale, type TopologyWorld, containm
 import { computeDrawnSpineBounds, computeRevealedBounds } from "./framing/world-bounds";
 import { computeFoldedIds } from "./framing/density-fold";
 import { dialOverviewFit, dialFocusFrame } from "./framing/dial-world-framing";
-import { recomputeWorldGeometry } from "./world-geometry";
+import { recomputeWorldGeometry } from "./geometry/world-geometry";
 import type { OntologyMapEdge, OntologyMapNode } from "../OntologyMap";
-import { computeTopologyClusterState } from "./topology-cluster-state";
+import { computeTopologyClusterState } from "./cluster/topology-cluster-state";
 
 vi.mock("../../model/layout/layout", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../model/layout/layout")>();
@@ -318,7 +318,7 @@ describe("buildTopologyWorld with the Flat graph", () => {
     async function freshBuilder() {
         vi.resetModules();
         const world = await import("./topology-world");
-        const { runStepsSliced } = await import("./run-steps-sliced");
+        const { runStepsSliced } = await import("./lifecycle/run-steps-sliced");
         const forceAtlas2 = (await import("graphology-layout-forceatlas2")).default;
         let clock = 0;
         let waiting: (() => void)[] = [];
