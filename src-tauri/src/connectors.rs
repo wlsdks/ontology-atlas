@@ -2,6 +2,8 @@
 //! configs. Only env and header key names leave, never values, which are tokens.
 //! Unclassifiable Codex TOML entries are counted, not guessed, so no list is silently short.
 
+mod codex_toml;
+pub(crate) mod runtimes;
 pub(crate) mod secrets;
 
 use std::collections::BTreeSet;
@@ -9,6 +11,8 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 use serde_json::Value;
+
+use codex_toml::collect_codex_servers;
 
 /// Injected so tests judge without a real disk, as `acp::command_lookup::FsProbe` does.
 pub(crate) struct ConfigFs<'a> {
@@ -261,234 +265,6 @@ fn object_keys(node: Option<&Value>) -> Vec<String> {
         .unwrap_or_default()
 }
 
-/// A narrow scanner, not a TOML parser: header then `key = value` lines, plus
-/// nested env keys; any unclassified table counts into `unreadable`.
-fn collect_codex_servers(text: &str) -> Found {
-    struct Draft {
-        name: String,
-        command: Option<String>,
-        args: Vec<String>,
-        url: Option<String>,
-        env_keys: BTreeSet<String>,
-        header_keys: BTreeSet<String>,
-    }
-
-    let mut drafts: Vec<Draft> = Vec::new();
-    enum Cursor {
-        Server(usize),
-        Env(usize),
-        Headers(usize),
-        Elsewhere,
-    }
-    let mut cursor = Cursor::Elsewhere;
-
-    for raw in text.lines() {
-        let line = strip_comment(raw);
-        if line.is_empty() {
-            continue;
-        }
-        if let Some(header) = line
-            .strip_prefix('[')
-            .and_then(|rest| rest.strip_suffix(']'))
-        {
-            let header = header.trim();
-            let Some(rest) = header.strip_prefix("mcp_servers.") else {
-                cursor = Cursor::Elsewhere;
-                continue;
-            };
-            let (name, child) = split_table_name(rest);
-            if name.is_empty() {
-                cursor = Cursor::Elsewhere;
-                continue;
-            }
-            let index = match drafts.iter().position(|draft| draft.name == name) {
-                Some(index) => index,
-                None => {
-                    drafts.push(Draft {
-                        name: name.clone(),
-                        command: None,
-                        args: Vec::new(),
-                        url: None,
-                        env_keys: BTreeSet::new(),
-                        header_keys: BTreeSet::new(),
-                    });
-                    drafts.len() - 1
-                }
-            };
-            cursor = match child.as_deref() {
-                None => Cursor::Server(index),
-                Some("env") => Cursor::Env(index),
-                Some("headers") => Cursor::Headers(index),
-                // An unmodelled child table's keys must not be read as env names.
-                Some(_) => Cursor::Elsewhere,
-            };
-            continue;
-        }
-        let Some((key, value)) = line.split_once('=') else {
-            continue;
-        };
-        let key = unquote(key.trim());
-        let value = value.trim();
-        let (Cursor::Server(index) | Cursor::Env(index) | Cursor::Headers(index)) = cursor else {
-            continue;
-        };
-        let Some(draft) = drafts.get_mut(index) else {
-            continue;
-        };
-        match cursor {
-            Cursor::Server(_) => match key.as_str() {
-                "command" => draft.command = toml_string(value),
-                "url" => draft.url = toml_string(value),
-                "args" => draft.args = toml_string_array(value),
-                // Names only.
-                "env" => draft.env_keys.extend(inline_table_keys(value)),
-                "headers" => draft.header_keys.extend(inline_table_keys(value)),
-                _ => {}
-            },
-            Cursor::Env(_) => {
-                draft.env_keys.insert(key);
-            }
-            Cursor::Headers(_) => {
-                draft.header_keys.insert(key);
-            }
-            Cursor::Elsewhere => {}
-        }
-    }
-
-    let mut unreadable = 0usize;
-    let mut connectors: Vec<DiscoveredConnector> = Vec::new();
-    for draft in drafts {
-        let transport = match (&draft.command, &draft.url) {
-            (Some(_), _) => "stdio",
-            (None, Some(_)) => "http",
-            (None, None) => {
-                unreadable += 1;
-                continue;
-            }
-        };
-        connectors.push(DiscoveredConnector {
-            source: CODEX_USER.to_string(),
-            name: draft.name,
-            transport: transport.to_string(),
-            command: draft.command,
-            args: draft.args,
-            url: draft.url,
-            env_keys: draft.env_keys.into_iter().collect(),
-            header_keys: draft.header_keys.into_iter().collect(),
-        });
-    }
-    connectors.sort_by(|a, b| a.name.cmp(&b.name));
-    Found {
-        connectors,
-        unreadable,
-    }
-}
-
-/// A `#` inside quotes is kept, or a Windows path or URL fragment is truncated.
-fn strip_comment(line: &str) -> &str {
-    let bytes = line.as_bytes();
-    let mut quoted = false;
-    for (index, byte) in bytes.iter().enumerate() {
-        match byte {
-            b'"' => quoted = !quoted,
-            b'#' if !quoted => return line[..index].trim(),
-            _ => {}
-        }
-    }
-    line.trim()
-}
-
-/// A quoted segment keeps its spaces.
-fn split_table_name(rest: &str) -> (String, Option<String>) {
-    if let Some(tail) = rest.strip_prefix('"') {
-        if let Some((name, remainder)) = tail.split_once('"') {
-            let child = remainder
-                .trim()
-                .strip_prefix('.')
-                .map(|c| c.trim().to_string());
-            return (name.to_string(), child.filter(|c| !c.is_empty()));
-        }
-    }
-    match rest.split_once('.') {
-        Some((name, child)) => (
-            name.trim().to_string(),
-            Some(child.trim().to_string()).filter(|c| !c.is_empty()),
-        ),
-        None => (rest.trim().to_string(), None),
-    }
-}
-
-fn unquote(raw: &str) -> String {
-    let trimmed = raw.trim();
-    trimmed
-        .strip_prefix('"')
-        .and_then(|rest| rest.strip_suffix('"'))
-        .unwrap_or(trimmed)
-        .to_string()
-}
-
-fn toml_string(value: &str) -> Option<String> {
-    let trimmed = value.trim();
-    let inner = trimmed
-        .strip_prefix('"')
-        .and_then(|rest| rest.strip_suffix('"'))?;
-    Some(inner.replace("\\\\", "\\").replace("\\\"", "\""))
-}
-
-fn toml_string_array(value: &str) -> Vec<String> {
-    let trimmed = value.trim();
-    let Some(inner) = trimmed
-        .strip_prefix('[')
-        .and_then(|rest| rest.strip_suffix(']'))
-    else {
-        return Vec::new();
-    };
-    split_top_level(inner)
-        .into_iter()
-        .filter_map(|item| toml_string(&item))
-        .collect()
-}
-
-/// Names only: the values must not leave this process.
-fn inline_table_keys(value: &str) -> Vec<String> {
-    let trimmed = value.trim();
-    let Some(inner) = trimmed
-        .strip_prefix('{')
-        .and_then(|rest| rest.strip_suffix('}'))
-    else {
-        return Vec::new();
-    };
-    split_top_level(inner)
-        .into_iter()
-        .filter_map(|item| item.split_once('=').map(|(key, _)| unquote(key)))
-        .filter(|key| !key.is_empty())
-        .collect()
-}
-
-fn split_top_level(inner: &str) -> Vec<String> {
-    let mut out = Vec::new();
-    let mut current = String::new();
-    let mut quoted = false;
-    for ch in inner.chars() {
-        match ch {
-            '"' => {
-                quoted = !quoted;
-                current.push(ch);
-            }
-            ',' if !quoted => {
-                out.push(current.trim().to_string());
-                current = String::new();
-            }
-            _ => current.push(ch),
-        }
-    }
-    let last = current.trim().to_string();
-    if !last.is_empty() {
-        out.push(last);
-    }
-    out.into_iter().filter(|item| !item.is_empty()).collect()
-}
-
 fn discovery_vault_root(
     vault_path: Option<&str>,
     resolve: impl Fn(&str) -> Result<PathBuf, String>,
@@ -516,53 +292,6 @@ pub fn discover_mcp_connectors(vault_path: Option<String>) -> Result<ConnectorDi
         vault_mcp_json.as_deref(),
         &fs,
     ))
-}
-
-/// Resolves a fixed allow-list of runtimes to paths because the agent's spawned
-/// connector gets no `PATH`. It enumerates nothing and executes nothing: starting a
-/// program unasked differs from the person pressing a button.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ResolvedRuntime {
-    pub name: String,
-    /// `None` when not installed.
-    pub path: Option<String>,
-}
-
-/// A sixth name is a deliberate edit; taking names from the caller would make this
-/// "resolve anything", a different capability.
-pub(crate) const CONNECTOR_RUNTIMES: &[&str] = &["npx", "node", "uvx", "python3", "docker"];
-
-/// Reads only, executes nothing.
-#[tauri::command]
-pub fn resolve_connector_runtimes() -> Result<Vec<ResolvedRuntime>, String> {
-    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
-        .filter(|value| !value.is_empty())
-        .map(PathBuf::from);
-    let (is_executable, list_dir, read_text, login_ok) = crate::acp::login_probe::real_probe();
-    let probe = crate::acp::command_lookup::FsProbe {
-        is_executable: &is_executable,
-        list_dir: &list_dir,
-        read_text: &read_text,
-        login_ok: &login_ok,
-    };
-    // No managed directories: those hold the agent's runtime, and a connector path
-    // only this app can reach would break the person's config.
-    let dirs = crate::acp::command_lookup::candidate_bin_dirs(
-        home.as_deref(),
-        std::env::var_os("PATH").as_deref(),
-        &probe,
-        None,
-        None,
-    );
-    Ok(CONNECTOR_RUNTIMES
-        .iter()
-        .map(|name| ResolvedRuntime {
-            name: (*name).to_string(),
-            path: crate::acp::command_lookup::resolve_command(name, &dirs, &probe)
-                .map(|path| path.to_string_lossy().into_owned()),
-        })
-        .collect())
 }
 
 fn home_dir() -> Option<PathBuf> {
@@ -821,57 +550,27 @@ url = "https://example.test/mcp"
     #[test]
     fn discovery_never_writes_anything() {
         // The injected filesystem has no writer, so a write here would not compile.
-        let source = include_str!("connectors.rs");
-        let body = source.split("#[cfg(test)]").next().unwrap();
-        for writer in ["fs::write", "create_dir", "OpenOptions", "File::create"] {
-            assert!(
-                !body.contains(writer),
-                "discovery must not write: found {writer}"
-            );
+        let sources = [
+            include_str!("connectors.rs"),
+            include_str!("connectors/codex_toml.rs"),
+            include_str!("connectors/runtimes.rs"),
+        ];
+        for source in sources {
+            let body = source.split("#[cfg(test)]").next().unwrap();
+            for writer in ["fs::write", "create_dir", "OpenOptions", "File::create"] {
+                assert!(
+                    !body.contains(writer),
+                    "discovery must not write: found {writer}"
+                );
+            }
+            // It says where a program is and never starts one.
+            for runner in ["Command::new", "process::Command", "spawn("] {
+                assert!(
+                    !body.contains(runner),
+                    "discovery must not execute anything: found {runner}"
+                );
+            }
         }
-        // It says where a program is and never starts one.
-        for runner in ["Command::new", "process::Command", "spawn("] {
-            assert!(
-                !body.contains(runner),
-                "discovery must not execute anything: found {runner}"
-            );
-        }
-    }
-
-    #[test]
-    fn the_runtime_allow_list_is_fixed_and_small() {
-        assert_eq!(
-            CONNECTOR_RUNTIMES,
-            &["npx", "node", "uvx", "python3", "docker"]
-        );
-        let source = include_str!("connectors.rs");
-        let body = source.split("#[cfg(test)]").next().unwrap();
-        assert!(
-            body.contains(
-                "pub fn resolve_connector_runtimes() -> Result<Vec<ResolvedRuntime>, String>"
-            ),
-            "resolve_connector_runtimes must take no caller-supplied name"
-        );
-    }
-
-    #[test]
-    fn a_quoted_hash_inside_a_value_is_not_treated_as_a_comment() {
-        assert_eq!(
-            strip_comment(r#"url = "https://x.test/a#b""#),
-            r#"url = "https://x.test/a#b""#
-        );
-        assert_eq!(
-            strip_comment(r#"command = "npx" # note"#),
-            r#"command = "npx""#
-        );
-    }
-
-    #[test]
-    fn an_inline_env_table_still_yields_names_only() {
-        assert_eq!(
-            inline_table_keys(r#"{ TOKEN = "abc, def", OTHER = "x" }"#),
-            ["TOKEN", "OTHER"]
-        );
     }
 
     #[test]
