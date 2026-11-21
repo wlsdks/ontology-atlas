@@ -196,7 +196,7 @@ Readers outside the build, found with `grep -rnw` on 2026-11-20:
 |---|---|---|
 | `headings` | `views/docs-vault/ui/DocsVaultPage.tsx:362`; `views/docs-vault/model/use-doc-outline.ts:21`; `views/docs-vault/model/use-vault-manifest.ts:76` (bundled headings); `views/docs-vault/model/use-doc-write-actions.ts:349` (insert table of contents); `views/library/ui/library-page/use-library-reader.ts:107` (S3's file) | The selected document |
 | `wordCount` | `views/docs-vault/ui/parts/DocMetaBar.tsx:46,153` | The selected document |
-| `excerpt`, shown on screen | `widgets/docs-quick-drawer/ui/DocsQuickDrawer.tsx:234,281,386` (the hover preview of one row); `widgets/project-drawer/ui/ProjectDrawer.tsx:920,940` (at most five related documents) | Documents on screen |
+| `excerpt`, shown on screen | `widgets/docs-quick-drawer/ui/doc-list/DocRow.tsx:31,79,85` (the hover preview of one row); `widgets/project-drawer/ui/more-info/ProjectConnectionLists.tsx:121,140` (at most five related documents) | Documents on screen |
 | `excerpt`, matched or scored across every document | `widgets/docs-vault/lib/search.ts:140`; `widgets/search-palette/ui/SearchPalette.tsx:47` (bundled sample only); `views/library/ui/parts/index-column/LibrarySection.tsx:460`, through `entities/docs-vault/lib/library/vault-library.ts:152`; `entities/docs-vault/lib/doc-navigation/related-docs.ts:52,62`; `entities/docs-vault/lib/library/wiki-retrieval.ts:51` | Search and ranking |
 | `excerpt`, used as fallback text | `entities/docs-vault/lib/projects/derive-projects-from-vault.ts:41`; `views/project-selector/lib/authored-description.ts:31`; the in-app agent (`widgets/vault-agent-panel/model/use-vault-agent.ts:163`, `features/vault-agent/model/agent-tools/{vault-read-port,tool-executor}.ts`) | Project descriptions; the agent's `excerpt` body mode and its list summaries |
 | `definitionPreview` | `entities/docs-vault/lib/derive-ontology-from-vault.ts:156` | The `summary` of every concept |
@@ -329,3 +329,4 @@ What a reviewer must check that tests will not catch:
 - 2026-11-21: S6 "Opening an island" lost its subject when the Library graph was removed
   (`docs/records/decisions/2026-11-21-library-sources-home-replaces-graph-ae902a78-d4ff-4e23-b6f9-9e34382bff9a.md`);
   the Library walk now times a Sources home row pick (`row-pick-first-frame`).
+- 2026-11-22: the excerpt cites in the detail-consumer table now name the files the drawers were split into (`doc-list/DocRow.tsx`, `more-info/ProjectConnectionLists.tsx`); no plan changed.
