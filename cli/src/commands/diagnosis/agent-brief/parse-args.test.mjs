@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { parseArgs } from './agent-brief/parse-args.mjs';
+import { parseArgs } from './parse-args.mjs';
 
 describe('agent-brief flags', () => {
   it('reads --help anywhere', () => {

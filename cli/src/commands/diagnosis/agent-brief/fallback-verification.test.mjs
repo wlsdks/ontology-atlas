@@ -6,7 +6,7 @@ import {
   parseFallbackCommand,
   positiveIntegerFromEnv,
   summarizeFallbackRows,
-} from './agent-brief/fallback-verification.mjs';
+} from './fallback-verification.mjs';
 
 describe('a fallback command counts as failed', () => {
   it('passes on exit 0 and on an advisory exit 1 that wrote nothing to stderr', () => {

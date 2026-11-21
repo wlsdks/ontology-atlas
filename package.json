@@ -132,7 +132,7 @@
     "package:check": "node scripts/packaging/check-package-contracts.mjs && pnpm test:cli:lib && pnpm test:cli:commands && pnpm perf:graph:check && node --test scripts/packaging/check-package-contracts.test.mjs",
     "test:cli:args": "node --test cli/src/lib/cli-args.test.mjs",
     "test:cli:lib": "node --test cli/src/lib/*.test.mjs cli/src/lib/*/*.test.mjs cli/src/lib/query-result-contract/agent-brief/*.test.mjs",
-    "test:cli:commands": "node --test cli/src/commands/*/*.test.mjs",
+    "test:cli:commands": "node --test cli/src/commands/*/*.test.mjs cli/src/commands/*/*/*.test.mjs",
     "test:cli:mcp-call": "node --test cli/src/lib/mcp-bridge/mcp-call.test.mjs",
     "test:e2e:static": "pnpm build:static && PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/contextual-meaning-editor.spec.ts",
     "test:contracts": "vitest run tests/contract",

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { parseArgs } from './validate/parse-args.mjs';
+import { parseArgs } from './parse-args.mjs';
 
 test('no arguments means the current folder as vault, text output and no failure policy', () => {
   assert.deepEqual(parseArgs([]), { vault: '.', json: false, strict: false, listCodes: false, failOn: null });

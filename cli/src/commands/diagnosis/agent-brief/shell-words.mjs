@@ -1,6 +1,6 @@
 
 
-export function shellQuote(value) {
+export function graphDbShellQuote(value) {
   const text = String(value);
   return /^[A-Za-z0-9_./:@-]+$/.test(text) ? text : `'${text.replaceAll("'", "'\\''")}'`;
 }

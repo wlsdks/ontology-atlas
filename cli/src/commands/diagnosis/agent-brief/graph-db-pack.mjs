@@ -1,5 +1,5 @@
 import { cliInvocation } from '../../../lib/self-invocation.mjs';
-import { shellQuote } from './shell-words.mjs';
+import { graphDbShellQuote } from './shell-words.mjs';
 
 const WORKFLOW_GUIDE_PATH = 'docs/AGENT-GRAPH-WORKFLOW.md';
 
@@ -7,7 +7,7 @@ export function formatGraphDbCliPack(result, vaultRoot) {
   const graphDbQueryPack = Array.isArray(result?.graphDbQueryPack) ? result.graphDbQueryPack : [];
   const commands = [];
   const seen = new Set();
-  const selfCheckCommand = graphDbWithFlags(`${cliInvocation()} agent-brief ${shellQuote(vaultRoot)}`, [
+  const selfCheckCommand = graphDbWithFlags(`${cliInvocation()} agent-brief ${graphDbShellQuote(vaultRoot)}`, [
     '--verify-fallbacks',
     '--json',
     '--exit-zero',
@@ -17,7 +17,7 @@ export function formatGraphDbCliPack(result, vaultRoot) {
   ]);
   for (const item of Array.isArray(graphDbQueryPack) ? graphDbQueryPack : []) {
     for (const command of graphDbPackItemCliCommands(item)) {
-      const runnableCommand = command.replaceAll('[vault]', shellQuote(vaultRoot));
+      const runnableCommand = command.replaceAll('[vault]', graphDbShellQuote(vaultRoot));
       if (!runnableCommand || seen.has(runnableCommand)) continue;
       seen.add(runnableCommand);
       commands.push({ id: item.id, intent: item.intent, goal: item.goal, command: runnableCommand });
@@ -112,7 +112,7 @@ function graphDbToolCallCliCommand(call) {
   if (args.operation === 'explain_relation') {
     const from = graphDbStringArg(args.from, '<from-slug>');
     const to = graphDbStringArg(args.to, '<to-slug>');
-    return graphDbWithFlags(`${cliInvocation()} explain ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+    return graphDbWithFlags(`${cliInvocation()} explain ${graphDbShellQuote(from)} ${graphDbShellQuote(to)} [vault]`, [
       graphDbStringFlag('--direction', args.direction),
       graphDbNonNegativeFlag('--max-hops', args.maxHops),
       graphDbCsvFlag('--types', args.types),
@@ -125,7 +125,7 @@ function graphDbToolCallCliCommand(call) {
 function graphDbAllPathsCliCommand(args, options = {}) {
   const from = graphDbStringArg(args.from, '<from-slug>');
   const to = graphDbStringArg(args.to, '<to-slug>');
-  return graphDbWithFlags(`${cliInvocation()} all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+  return graphDbWithFlags(`${cliInvocation()} all-paths ${graphDbShellQuote(from)} ${graphDbShellQuote(to)} [vault]`, [
     options.plan ? '--plan' : null,
     options.plan ? '--force' : null,
     graphDbNonNegativeFlag('--max-hops', args.maxHops),
@@ -176,7 +176,7 @@ function graphDbStringArg(value, fallback) {
 }
 
 function graphDbStringFlag(name, value) {
-  return typeof value === 'string' && value.trim() ? `${name} ${shellQuote(value)}` : null;
+  return typeof value === 'string' && value.trim() ? `${name} ${graphDbShellQuote(value)}` : null;
 }
 
 function graphDbPositiveFlag(name, value) {
@@ -194,5 +194,5 @@ function graphDbBooleanFlag(name, value) {
 function graphDbCsvFlag(name, value) {
   if (!Array.isArray(value) || value.length === 0) return null;
   const values = value.filter((item) => typeof item === 'string' && item.trim().length > 0);
-  return values.length > 0 ? `${name} ${values.map(shellQuote).join(',')}` : null;
+  return values.length > 0 ? `${name} ${values.map(graphDbShellQuote).join(',')}` : null;
 }
