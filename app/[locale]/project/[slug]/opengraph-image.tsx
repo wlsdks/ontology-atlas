@@ -3,8 +3,6 @@ import { bundledProjectSlugs, deriveBundledProjects } from '@/entities/docs-vaul
 import { routing } from '@/i18n/routing';
 import { INDIGO_BRAND, INDIGO_HIGHLIGHT } from '@/shared/config/indigo-tokens';
 
-// Static export: pinned to force-static like sitemap.ts, so it runs once at build time and the PNG
-// is baked into out/.
 export const dynamic = 'force-static';
 export const runtime = 'nodejs';
 export const contentType = 'image/png';
@@ -55,7 +53,6 @@ export default async function ProjectOgImage({
             'Inter, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif',
         }}
       >
-        {/* Top — brand plus the category badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div
             style={{
@@ -103,7 +100,6 @@ export default async function ProjectOgImage({
           </div>
         </div>
 
-        {/* Centre — the project name and description */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div
             style={{
@@ -132,7 +128,6 @@ export default async function ProjectOgImage({
           </div>
         </div>
 
-        {/* Bottom — the url */}
         <div
           style={{
             display: 'flex',

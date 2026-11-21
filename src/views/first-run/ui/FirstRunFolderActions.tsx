@@ -7,14 +7,12 @@ import { useDismissibleMenu } from '@/shared/lib/overlays/use-dismissible-menu';
 import { Button, RowButton, Surface } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-/** Returning users choose a folder; creation stays in one compact disclosure. */
 export function FirstRunFolderActions({ busy, showJustStart, onOpen, onCreate, onCodeProject, trigger }: {
   trigger: RefObject<HTMLButtonElement | null>;
   busy: boolean;
   showJustStart: boolean;
   onOpen: () => void;
   onCreate: (kind: 'just-start' | 'create') => void;
-  /** Starts the project picker; the path is confirmed in a dialog before anything is written. */
   onCodeProject: () => void;
 }) {
   const t = useTranslations('vaultSwitch.choose');

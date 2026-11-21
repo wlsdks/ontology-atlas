@@ -15,7 +15,6 @@ import { cn } from "@/shared/lib/cn";
 import { WorkProgress } from "@/shared/motion/work-progress";
 import { Button } from "@/shared/ui/controls/button";
 
-/** The document being checked is the stage's largest line; the count rolls in the figures. */
 const STAGE_MARKS: WorkRunMarks = {
   page: (name) => name,
   count: (value) => (
@@ -23,10 +22,6 @@ const STAGE_MARKS: WorkRunMarks = {
   ),
 };
 
-/**
- * A scheduled run where it belongs: the same facts the card carries on every other screen, at the
- * page's scale, with a Stop that ends this run and leaves its schedule as it is.
- */
 export function ScheduledRunStage({ run }: { run: ScheduledRun }) {
   const t = useTranslations("automations");
   const tCard = useTranslations("workCard");

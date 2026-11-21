@@ -15,11 +15,6 @@ import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import { MCP_SECTION_PARAM, parseMcpTab } from '../lib/mcp-tab-state';
 
-/**
- * The Agents page's MCP tab body: the folder's own MCP connection and its connectors, as two
- * groups, since a strip inside the strip would nest switches. Drawn on the web too, since MCP
- * attaches to the folder; what a browser cannot do is stated where it is missing.
- */
 export function McpPage({
   connectors: providedConnectors,
   handle: providedHandle,
@@ -40,7 +35,6 @@ export function McpPage({
   const countKnown = connectors.status === 'ready';
   const noFolder = connectors.status === 'unavailable';
 
-  /* The heading's add chip opens the panel's dialog and takes focus back after a removal. */
   const addOpenerRef = useRef<HTMLButtonElement | null>(null);
   const [addOpenRequest, setAddOpenRequest] = useState(0);
   /* Only `ready` can take a write; an empty list while loading means nothing was read yet. */
@@ -101,7 +95,6 @@ export function McpPage({
           }
           trailing={
             connectorsListed ? (
-              /* The destination's one heading-action size. */
               <Chip
                 ref={addOpenerRef}
                 size="lg"

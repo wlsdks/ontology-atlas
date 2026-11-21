@@ -7,14 +7,7 @@ export const metadata: Metadata = {
   alternates: { canonical: absoluteUrl(`/${routing.defaultLocale}/download/`) },
 };
 
-/**
- * Root entry — static-export-friendly client-side locale detection.
- *
- * The static export cannot run middleware, so locale negotiation happens
- * in the browser: a stored choice wins, else the first entry of
- * `navigator.languages` that maps to a routed locale (`detectLocale`), else
- * `/en`.
- */
+/** The static export cannot run middleware, so locale negotiation happens in the browser. */
 export default function RootPage() {
   return <LocaleRedirect />;
 }

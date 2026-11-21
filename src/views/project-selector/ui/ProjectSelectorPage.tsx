@@ -69,7 +69,6 @@ export function ProjectSelectorPage() {
   const loading = dataSourceMode === "local" && (vault.status === "opening" || vault.status === "loading");
   const empty = projects.length === 0;
   const stage = usePanelPresence(empty && !loading);
-  /* The list keeps the stage's frame until the stage has left, so nothing it stood in moves. */
   const placedOnStage = staged || stage.mounted;
   const openingName = vault.handle?.name;
   const ready = loaded && dataSourceMode === "local";
@@ -139,7 +138,6 @@ export function ProjectSelectorPage() {
                 aria-hidden={stage.exiting || undefined}
                 className={cn(
                   "flex min-w-0 flex-1 flex-col",
-                  /* Leaving, it keeps the box it stood in so it fades where it was. */
                   stage.exiting && cn("motion-swap-out pointer-events-none absolute inset-x-0 top-0 min-h-full px-5 md:px-10", PAGE_STAGE_FILL),
                 )}
               >
@@ -184,7 +182,6 @@ export function ProjectSelectorPage() {
                   );
                 })}
               </ul>
-              {/* A card arriving above lengthens the grid; the section glides down instead of jumping. */}
               <motion.div layout={reducedMotion ? false : "position"} layoutDependency={setKey} transition={TILE_SPRING}>
                 <NextProjectSection t={t} />
               </motion.div>
@@ -199,7 +196,6 @@ export function ProjectSelectorPage() {
   );
 }
 
-/** The selected project leads; the rest keep the order they were derived in. */
 function selectedFirst(projects: Project[], selectedSlug: string | null): Project[] {
   const selected = projects.find((project) => project.slug === selectedSlug);
   return selected ? [selected, ...projects.filter((project) => project !== selected)] : projects;
@@ -247,7 +243,6 @@ function ProjectCard({
                 className:
                   "min-w-0 max-w-full text-title text-[color:var(--color-text-primary)] after:absolute after:inset-0 after:rounded-card after:content-[''] focus-visible:ring-0 focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-[color:var(--color-indigo-focus-ring)]",
               })}
-              /* The focus ring outlines the whole card, which is what the pointer presses. */
             >
               <span className="min-w-0 truncate">{name}</span>
             </Link>
@@ -296,10 +291,6 @@ function ProjectCard({
 }
 
 
-/**
- * The page's one way to add a project, set apart from the cards it would add to: the form or a
- * request to paste into an agent, each control under the sentence that explains it.
- */
 function NextProjectSection({ t }: { t: SelectorTranslator }) {
   const copy = useCopyFeedback();
   const copyLabel = copyLabelFor(copy.state, t);
@@ -347,14 +338,12 @@ function copyLabelFor(state: ReturnType<typeof useCopyFeedback>["state"], t: Sel
   return state === "copied" ? t("nextSlotCopied") : state === "failed" ? t("nextSlotCopyError") : t("nextSlotCopy");
 }
 
-/** The sentence's backticked span is what the person types, so it reads as code. */
 function withInlineCode(sentence: string) {
   return sentence.split("`").map((part, index) => (index % 2 === 1 ? (
     <code key={index} className="whitespace-nowrap rounded-micro bg-[color:var(--color-overlay-2)] px-1 font-mono text-[color:var(--color-text-primary)]">{part}</code>
   ) : part));
 }
 
-/** A folder with no project yet: the card it will hold, drawn being composed, and the same two ways in as the tile. */
 function FirstProjectStage({ t }: { t: SelectorTranslator }) {
   const copy = useCopyFeedback();
   const copyLabel = copyLabelFor(copy.state, t);

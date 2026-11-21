@@ -14,11 +14,6 @@ interface Params {
   slug: string;
 }
 
-/**
- * Projects with their own localized title and description (`metadata.projectTitles`,
- * `metadata.projectDescriptions`). Any other project's name and description come from its vault
- * document, in the language it was written in.
- */
 const LOCALIZED_PROJECT_COPY: Readonly<Record<string, 'ontologyAtlas'>> = {
   'ontology-atlas': 'ontologyAtlas',
 };
@@ -39,9 +34,6 @@ export async function generateStaticParams(): Promise<Params[]> {
   return bundledProjectSlugs().map((slug) => ({ slug }));
 }
 
-/**
- * Per-project metadata, including Open Graph and the Twitter card.
- */
 export async function generateMetadata({
   params,
 }: {
@@ -71,7 +63,6 @@ export async function generateMetadata({
     hasFileConventionImage: true,
   });
 
-  // Tags, stack, and category are folded into keywords to strengthen the SEO signal. Deduplicated.
   const keywords = Array.from(
     new Set(
       [
@@ -91,16 +82,11 @@ export async function generateMetadata({
     keywords,
     openGraph: {
       ...base.openGraph,
-      // A project detail page is writing about one subject, not an introduction to the site.
-      type: 'article',
-      // og:image is injected automatically by `opengraph-image.tsx` in the same directory, which
-      // generates a per-slug 1200×630 PNG at build time. Overriding `images` here would discard
-      // that file-convention result, so it is omitted.
+        type: 'article',
+      // `images` stays unset: `opengraph-image.tsx` supplies the card, and setting it would discard that.
     },
     twitter: {
       ...base.twitter,
-      // twitter:image is injected by the file convention (twitter-image.tsx, falling back to
-      // opengraph-image.tsx). Omitted.
     },
   };
 }
@@ -118,9 +104,7 @@ export default async function Page({
     notFound();
   }
 
-  // CreativeWork structured data — lets Google's rich snippets recognize the project's name,
-  // description, author, and keywords. CreativeWork is more general than SoftwareApplication (a
-  // portfolio entry is not necessarily runnable software).
+  // CreativeWork, not SoftwareApplication: a project entry is not necessarily runnable software.
   const copy = await projectCopy(locale, project);
   const inLanguage = isAppLocale(locale) ? LOCALE_META[locale].intlTag : LOCALE_META.en.intlTag;
   const creativeWorkLd = {
