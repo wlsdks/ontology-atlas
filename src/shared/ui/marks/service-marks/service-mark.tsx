@@ -3,7 +3,7 @@ import { Plug } from 'lucide-react';
 
 import { cn } from '@/shared/lib/cn';
 
-import { ICON_SIZE } from '../tokens/icon-size';
+import { ICON_SIZE } from '../../tokens/icon-size';
 
 /**
  * 20px monochrome marks for connector services, copied from Simple Icons (CC0). CC0 does not cover

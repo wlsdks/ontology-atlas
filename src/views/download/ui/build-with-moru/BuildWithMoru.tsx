@@ -10,7 +10,7 @@ import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { Button, buttonVariants } from '@/shared/ui/controls/button';
-import { GithubMark } from '@/shared/ui/marks/github-mark';
+import { GithubMark } from '@/shared/ui/marks/service-marks/github-mark';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import {

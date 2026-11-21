@@ -20,7 +20,7 @@ import { SPRING, springEasing, springSettleMs } from "@/shared/motion/spring";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { RoundsLedger } from "@/widgets/round-ledger";
 import { Button, FeatureStage, GetAppLink, PageHeaderBar, TabBar, useToast, WaitStage } from "@/shared/ui";
-import { BrandPortrait } from "@/shared/ui/marks/brand-portrait";
+import { BrandPortrait } from "@/shared/ui/marks/moru/brand-portrait";
 
 import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";

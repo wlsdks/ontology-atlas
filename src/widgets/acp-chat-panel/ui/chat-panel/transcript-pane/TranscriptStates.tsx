@@ -6,7 +6,7 @@ import { isPressableSuggestion, type ChatSuggestion } from '@/features/acp-sessi
 import { cn } from '@/shared/lib/cn';
 import { WorkProgress } from '@/shared/motion/work-progress';
 import { Chip } from '@/shared/ui';
-import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import { RETRY_CHIP_CLASS } from '../constants';

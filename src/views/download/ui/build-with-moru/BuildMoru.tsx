@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
-import { CELEBRATION_MOTIONS, PLAY_ROW_FRAMES, type CelebrationMotion, type PlayMotion, type WorkMotion } from '@/shared/ui/marks/moru-rows';
+import { CELEBRATION_MOTIONS, PLAY_ROW_FRAMES, type CelebrationMotion, type PlayMotion, type WorkMotion } from '@/shared/ui/marks/moru/moru-rows';
 
 export type BuildLoop = WorkMotion | PlayMotion | 'tail-wag';
 /** A finishing gesture, or Moru's puzzled tilt at a tap that did not fit. */

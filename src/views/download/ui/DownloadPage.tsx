@@ -15,9 +15,9 @@ import { DemoStage } from './hero/DemoStage';
 import { HeroTypewriter, heroSentence } from './hero/HeroTypewriter';
 import { buttonVariants } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
-import { BrandCompanion } from '@/shared/ui/marks/brand-companion';
+import { BrandCompanion } from '@/shared/ui/marks/moru/brand-companion';
 import { AtlasSymbol } from '@/shared/ui/marks/brand-mark';
-import { GithubMark } from '@/shared/ui/marks/github-mark';
+import { GithubMark } from '@/shared/ui/marks/service-marks/github-mark';
 import { GITHUB_REPO_URL } from '@/shared/config/social-links';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS, RELEASE_VERSION } from '../lib/release/release-facts';
 import {

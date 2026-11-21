@@ -1,5 +1,5 @@
-import companion from '@/shared/ui/marks/moru-companion.json';
-import reactions from '@/shared/ui/marks/moru-reactions.json';
+import companion from '@/shared/ui/marks/moru/moru-companion.json';
+import reactions from '@/shared/ui/marks/moru/moru-reactions.json';
 
 /**
  * The download page's "Play with Moru" game: a one-minute catch round built only from Moru's

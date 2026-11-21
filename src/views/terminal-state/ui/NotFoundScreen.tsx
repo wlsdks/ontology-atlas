@@ -9,7 +9,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { Button, buttonVariants } from '@/shared/ui/controls/button';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { cn } from '@/shared/lib/cn';
-import { BrandPortrait } from '@/shared/ui/marks/brand-portrait';
+import { BrandPortrait } from '@/shared/ui/marks/moru/brand-portrait';
 import { TerminalState, TerminalStatePending } from './TerminalState';
 import {
   StandaloneLocaleProvider,

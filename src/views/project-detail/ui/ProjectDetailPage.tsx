@@ -10,7 +10,7 @@ import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { PAGE_STAGE_FILL, PAGE_TITLE, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
-import { BrandPortrait } from "@/shared/ui/marks/brand-portrait";
+import { BrandPortrait } from "@/shared/ui/marks/moru/brand-portrait";
 import { useLocale, useTranslations } from "next-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useTypingShortcuts } from "@/shared/lib/keyboard/use-typing-shortcut";

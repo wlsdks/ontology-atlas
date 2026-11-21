@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
-import { ASK_ROW_FRAMES, type AskMotion } from '@/shared/ui/marks/moru-rows';
+import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
+import { ASK_ROW_FRAMES, type AskMotion } from '@/shared/ui/marks/moru/moru-rows';
 
 /**
  * Moru above a permission ask. A new clip fades in over the one it replaces, which keeps playing

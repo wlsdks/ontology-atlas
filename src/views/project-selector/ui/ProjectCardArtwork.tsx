@@ -7,7 +7,7 @@ import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { MOTION } from '@/shared/motion';
 import { framerSpring, SPRING } from '@/shared/motion/spring';
 import type { FeatureStageMotion } from '@/shared/ui';
-import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
 import { OntologyMapKindGlyph } from '@/shared/ui/ontology-node/map-kind-glyph';
 
 export type ProjectCardClip = 'write' | 'waiting';

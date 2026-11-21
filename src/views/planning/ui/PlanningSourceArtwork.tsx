@@ -8,7 +8,7 @@ import { cn } from '@/shared/lib/cn';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { MOTION } from '@/shared/motion';
 import { framerSpring, SPRING } from '@/shared/motion/spring';
-import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
 import type { FeatureStageMotion } from '@/shared/ui';
 
 export type PlanningClip = 'folder-open' | 'waiting' | 'compare' | 'hop';
