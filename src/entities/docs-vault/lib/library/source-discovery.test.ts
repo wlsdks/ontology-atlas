@@ -208,9 +208,9 @@ describe('Markdown the vault owns is never offered', () => {
     expect(kept).toEqual([]);
   });
 
-  it('never walks the sources or wiki folders of the open folder', async () => {
+  it('never walks the sources or wiki folders of the open folder, in any letter case', async () => {
     const report = await discoverCandidatesInHandle(
-      fakeDirectory({ 'sources/a.pdf': 300, 'wiki/page.md': 300, 'meetings/b.pdf': 300 }),
+      fakeDirectory({ 'Sources/a.pdf': 300, 'WIKI/page.md': 300, 'meetings/b.pdf': 300 }),
       { rootLabel: 'vault' },
     );
     expect(report.candidates.map((row) => row.relativePath)).toEqual(['meetings/b.pdf']);
@@ -263,6 +263,13 @@ describe('a dropped folder keeps documents and counts what it skipped', () => {
       ['contracts/id_rsa', 'secretName'],
     ]);
     expect(walk.totalBytes).toBe(800);
+  });
+
+  it('names a thousand skipped files and counts every one', async () => {
+    const files = Object.fromEntries(Array.from({ length: 1_005 }, (_, index) => [`secret-${index}.txt`, 80]));
+    const walk = await walkDroppedFolder(droppedFolder('keys', files));
+    expect(walk.skipped).toHaveLength(1_000);
+    expect(walk.skippedCounts.secretName).toBe(1_005);
   });
 });
 

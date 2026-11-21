@@ -372,9 +372,17 @@ stage is open is copied into the sources folder, a folder keeping its structure 
 name. In the app Rust takes the paths from the native drop event, walks a dropped folder
 under the discovery rules, and offers each file; the page only sends back strings Rust
 offered, and anything else fails `source-not-offered`, as does a landing path that would
-leave the sources folder or pass through a link. A single dropped file is copied whatever its
-format. At 500 files or 500 MB the count and size are asked about first. Progress streams to
-one line with **Stop copying**; input stays live, and files already copied stay. The first
+leave the sources folder or pass through a link. Each offer records which file it named, and
+the copy refuses anything swapped in since (a link, a FIFO, another file) with "the file
+changed after it was dropped". A copy never replaces a file in the sources folder: a name
+taken in any letter case, even one taken a moment ago, moves to the next `(2)`. A folder that
+is, or holds, the open folder is refused whole. A single dropped file is copied whatever its
+format unless its name reads like a password or key file. The walk stops at 20,000 files or
+200,000 entries and names the first 1,000 files it skipped. One copy runs per open folder: a
+drop during a copy says so, and **Add files** and the find dialog's **Add** wait. At 500 files
+or 500 MB the count and size are asked about first. Progress streams to one line with **Stop
+copying**; input stays live, and files already copied stay. A failure is said in words, never
+as a system error. The first
 copied file turns the stage into the Sources home, and the same line follows there. After a
 copy, the files not copied are counted by reason (same as a source already added, not a
 document, named like a password or key file, licence or notice file) and one press lists

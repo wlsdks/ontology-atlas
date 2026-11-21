@@ -164,6 +164,7 @@ export function useLibrarySources({
   /** Copies in the background; the toast and the refresh come when the last file lands. */
   const startCopy = useCallback((request: CopyRequest) => {
     void startSourceCopy(vaultScope, request.plan).then(async (job) => {
+      if (!job) return;
       if (job.added > 0) toast.show(t("sources.added", { count: job.added }), "success");
       await localVault.refresh();
       void runDiscovery();
@@ -176,7 +177,7 @@ export function useLibrarySources({
     const plan = nativeVaultRootPath
       ? { kind: "native" as const, rootPath: nativeVaultRootPath, skipped: [], paths: found.inFolder.map((candidate) => `${candidate.rootPath}/${candidate.relativePath}`) }
       : { kind: "browser" as const, root: handle, skipped: [], picks: await browserPicks(handle, found.inFolder) };
-    return { files: found.inFolder.length, totalBytes, plan };
+    return { files: found.inFolder.length, totalBytes, plan, holdsOpenFolder: [] };
   }, [found.inFolder, handle, nativeVaultRootPath]);
 
   const handleAddCandidates = useCallback(

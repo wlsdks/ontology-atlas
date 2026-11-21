@@ -296,7 +296,7 @@
     "noAgentLink": "에이전트 연결하기",
     "web": "브라우저에서는 자료를 넣고 읽을 수 있어요. 위키 문서 쓰기는 Atlas 앱에서 할 수 있어요.",
     "drop": {
-      "title": "파일이나 폴더를 여기에 끌어다 놓으세요",
+      "title": "파일이나 폴더를 끌어다 놓으면 sources 폴더로 복사해요",
       "or": "또는",
       "formats": "PDF, Word, Excel, PowerPoint, 텍스트 등 어떤 형식이든 바꾸지 않고 그대로 복사해요.",
       "over": "놓으면 sources 폴더로 복사해요",
@@ -321,24 +321,40 @@
     "choose": "복사할 파일 고르기"
   },
   "drop": {
-    "confirmLarge": "파일 {count, number}개({size})를 sources 폴더로 복사할까요? 원래 파일은 그대로 남아요.",
+    "confirmLarge": "{count, plural, other {파일 #개({size})를 sources 폴더로 복사할까요?}} 원래 파일은 그대로 남아요.",
     "confirm": "복사",
     "cancel": "취소",
     "stop": "복사 멈추기",
-    "stopped": "복사를 멈췄어요. 그전에 복사한 {count, number}개는 sources 폴더에 남아 있어요.",
+    "stopped": "{count, plural, =0 {복사를 멈췄어요. 복사한 파일은 없어요.} other {복사를 멈췄어요. 그전에 복사한 #개는 sources 폴더에 남아 있어요.}}",
     "skipped": "{count, number}개는 복사하지 않았어요",
     "skippedReasons": {
       "same": "이미 넣은 자료와 같은 파일",
       "notDocument": "문서가 아닌 파일(이미지, 프로그램 파일 등)",
-      "secretName": "비밀번호나 열쇠 파일로 보이는 이름",
+      "secretName": "비밀번호나 키 파일로 보이는 이름",
       "licence": "라이선스·안내 파일"
     },
     "reasonCount": "{reason}: {count, number}개",
     "skippedShow": "복사하지 않은 파일 보기",
-    "truncated": "폴더 안 파일 중 처음 {count, number}개만 목록에 넣었어요. 나머지는 따로 끌어다 놓으세요."
+    "truncated": "폴더 안 파일 중 처음 {count, number}개만 목록에 넣었어요. 나머지는 따로 끌어다 놓으세요.",
+    "busy": "아직 복사하고 있어요. 끝난 뒤 다시 끌어다 놓으세요.",
+    "holdsOpenFolder": "「{names}」 폴더는 열린 폴더이거나 열린 폴더를 담고 있어서 복사하지 않았어요. 열린 폴더의 문서는 위의 복사 버튼으로 넣으세요.",
+    "skippedUnlisted": "여기 적지 않은 {count, number}개가 더 있어요",
+    "failureReasons": {
+      "sourceChanged": "끌어다 놓은 뒤 파일이 바뀌었어요",
+      "sourceMissing": "파일이 그 자리에 없어요",
+      "sourceUnreadable": "파일을 읽을 수 없어요",
+      "notOffered": "그 뒤에 끌어다 놓은 파일이 이 목록을 대신했어요",
+      "destination": "sources 폴더에 쓸 수 없어요",
+      "permission": "권한이 없어요",
+      "diskFull": "디스크 공간이 모자라요",
+      "nameLimit": "그 폴더에 같은 이름의 파일이 너무 많아요",
+      "unusableName": "쓸 수 없는 파일 이름이에요",
+      "busy": "다른 복사가 진행 중이었어요",
+      "other": "복사하는 중에 문제가 생겼어요"
+    }
   },
   "usage": {
-    "where": "자료실의 자료는 모두 「{folder}」 폴더 안 sources 폴더에 있는 파일이에요. {fileManagerName}에서 넣거나 빼면 자료실에도 바로 반영돼요.",
+    "where": "자료실의 자료는 모두 「{folder}」 폴더 안 sources 폴더에 있는 파일이에요. {fileManagerName}에서 넣거나 빼면 자료실에도 알아서 반영돼요.",
     "copy": "「파일 넣기」, 끌어다 놓기, 「모두 복사」는 파일을 sources 폴더로 복사해요. 원래 폴더 구조를 그대로 따르고, 원래 파일은 옮기거나 지우지 않아요.",
     "read": "Atlas는 자료를 어디로도 보내지 않아요. 에이전트에게 위키 문서 쓰기나 질문을 맡길 때만 그 에이전트가 자료를 읽고, 읽은 내용은 그 에이전트의 서비스로 보내질 수 있어요."
   },

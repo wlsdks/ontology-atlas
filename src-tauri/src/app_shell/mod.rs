@@ -111,7 +111,7 @@ pub(crate) fn reveal_in_file_manager(_path: &Path) -> Result<(), String> {
 /// walk runs on its own thread because this callback is on the main thread.
 pub(crate) fn answer_drag_drop(app: &AppHandle, event: &tauri::DragDropEvent) {
     use crate::library::dropped::{
-        drop_armed, offer_dropped_paths, SourceDropEvent, SOURCE_DROP_EVENT,
+        begin_armed_drop, drop_armed, offer_drop, SourceDropEvent, SOURCE_DROP_EVENT,
     };
     use tauri::Emitter;
 
@@ -126,12 +126,16 @@ pub(crate) fn answer_drag_drop(app: &AppHandle, event: &tauri::DragDropEvent) {
             let _ = app.emit(SOURCE_DROP_EVENT, SourceDropEvent::Leave);
         }
         tauri::DragDropEvent::Drop { paths, .. } => {
+            let Some(drop) = begin_armed_drop() else {
+                return;
+            };
             let _ = app.emit(SOURCE_DROP_EVENT, SourceDropEvent::Reading);
             let app = app.clone();
             let paths = paths.clone();
             std::thread::spawn(move || {
-                let offer = offer_dropped_paths(&paths);
-                let _ = app.emit(SOURCE_DROP_EVENT, SourceDropEvent::Offered { offer });
+                offer_drop(drop, &paths, |offer| {
+                    let _ = app.emit(SOURCE_DROP_EVENT, SourceDropEvent::Offered { offer });
+                });
             });
         }
         _ => {}

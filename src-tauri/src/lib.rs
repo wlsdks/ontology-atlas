@@ -167,6 +167,12 @@ pub fn run() {
         .manage(AcpInstallProgressState::default())
         .manage(AcpSessions::default())
         .manage(planning::PlanningSession::default())
+        // A reload never runs the stage's cleanup, so arming would outlive the drop area.
+        .on_page_load(|_, payload| {
+            if payload.event() == tauri::webview::PageLoadEvent::Started {
+                library::dropped::disarm_source_drop();
+            }
+        })
         .setup(move |app| {
             // Seed the vault-grant registry before any command can run: turn the
             // boundary on, choose where grants persist, and re-grant the app's own

@@ -296,7 +296,7 @@
     "noAgentLink": "连接智能体",
     "web": "在浏览器中可以添加和阅读来源。撰写 Wiki 页面需要 Atlas 应用。",
     "drop": {
-      "title": "把文件或文件夹拖到这里",
+      "title": "拖放文件或文件夹即可复制到 sources 文件夹",
       "or": "或",
       "formats": "PDF、Word、Excel、PowerPoint、文本或任何其他格式，均按原样复制。",
       "over": "松开即复制到 sources 文件夹",
@@ -321,11 +321,11 @@
     "choose": "选择要复制的文件"
   },
   "drop": {
-    "confirmLarge": "要将 {count, number} 个文件（{size}）复制到 sources 文件夹吗？原文件保持不变。",
+    "confirmLarge": "{count, plural, other {要将 # 个文件（{size}）复制到 sources 文件夹吗？}}原文件保持不变。",
     "confirm": "复制",
     "cancel": "取消",
     "stop": "停止复制",
-    "stopped": "已停止复制。此前复制的 {count, number} 个文件仍在 sources 文件夹中。",
+    "stopped": "{count, plural, =0 {已停止复制，尚未复制任何文件。} other {已停止复制。此前复制的 # 个文件仍在 sources 文件夹中。}}",
     "skipped": "{count, number} 个文件未复制",
     "skippedReasons": {
       "same": "与已添加的来源相同",
@@ -335,7 +335,23 @@
     },
     "reasonCount": "{reason}：{count, number}",
     "skippedShow": "显示未复制的文件",
-    "truncated": "只列出了文件夹中的前 {count, number} 个文件。其余文件请另行拖入。"
+    "truncated": "只列出了文件夹中的前 {count, number} 个文件。其余文件请另行拖入。",
+    "busy": "仍在复制中。复制结束后请再次拖放。",
+    "holdsOpenFolder": "“{names}”就是已打开的文件夹或包含它，因此未复制。请用上方的复制按钮添加已打开文件夹中的文档。",
+    "skippedUnlisted": "另有 {count, number} 个未在此列出",
+    "failureReasons": {
+      "sourceChanged": "拖放后文件已更改",
+      "sourceMissing": "文件已不在原处",
+      "sourceUnreadable": "无法读取文件",
+      "notOffered": "之后拖放的文件取代了此列表",
+      "destination": "无法写入 sources 文件夹",
+      "permission": "权限被拒绝",
+      "diskFull": "磁盘空间不足",
+      "nameLimit": "该文件夹中同名文件过多",
+      "unusableName": "无法使用该文件名",
+      "busy": "另一项复制正在进行",
+      "other": "复制时出现问题"
+    }
   },
   "usage": {
     "where": "资料库中的每个来源都是“{folder}”文件夹中 sources 文件夹里的文件。你在 {fileManagerName} 中添加或移除的文件会自动显示。",

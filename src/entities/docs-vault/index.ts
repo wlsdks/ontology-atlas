@@ -65,6 +65,7 @@ export type { SourceProgress, SourceProgressPoint } from './lib/library/source-p
 export {
   candidateKey,
   discoverCandidatesInHandle,
+  discoverySkipReason,
   walkDroppedFolder,
   withoutVaultOwnedMarkdown,
 } from './lib/library/source-discovery';

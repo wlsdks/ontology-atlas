@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
+import { useLocalVault, useVaultIdentityScope, useVaultSessionIdentityScope } from "@/entities/vault-session";
 import { isWikiPage, type LibrarySourceRow } from "@/entities/docs-vault";
 import { opensLocally } from "@/features/vault-agent";
 import { useRouter } from "@/i18n/navigation";
@@ -47,6 +47,7 @@ import { isWikiFurnitureSlug } from "@/shared/lib/library/wiki-page-schema";
 import { useLibraryAgent } from "../lib/agent/use-library-agent";
 import { useAnswerRefresh } from "../lib/questions/use-answer-refresh";
 import { LocalCompileCard } from "./parts/compile/LocalCompileCard";
+import { useSourceCopy } from "./parts/first-run/use-source-drop";
 import { LibraryStatusStrip } from "./parts/compile/LibraryStatusStrip";
 import { LibraryAgentDock } from "./parts/agent/LibraryAgentDock";
 import { LibraryConversationDoor } from "./parts/agent/LibraryConversationDoor";
@@ -181,7 +182,11 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
       onSegmentChange?.(nextSegment);
     }
   }, [onSegmentChange, workVaultScope]);
-  const [busy, setBusy] = useState(false);
+  const [workBusy, setBusy] = useState(false);
+  const sourceCopyScope = useVaultIdentityScope();
+  // A copy outlives this page, so its store answers; while it runs no other import may start.
+  const sourceCopyRunning = useSourceCopy(sourceCopyScope)?.phase === "copying";
+  const busy = workBusy || sourceCopyRunning;
 
   const docs = manifest?.docs ?? EMPTY_DOCS;
   const wikiRevisionStamp = useMemo(

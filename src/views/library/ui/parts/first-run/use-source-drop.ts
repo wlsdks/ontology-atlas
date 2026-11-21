@@ -10,6 +10,7 @@ import {
   captureDroppedItems,
   requestFromBrowserDrop,
   requestFromNativeOffer,
+  requestHasNews,
   type CopyRequest,
 } from "./source-drop";
 
@@ -54,9 +55,8 @@ export function useSourceDrop({
       else if (event.phase === "leave") setOver(false);
       else if (event.phase === "offered") {
         setOver(false);
-        if (event.offer.files.length > 0 || event.offer.skipped.length > 0) {
-          latest.current(requestFromNativeOffer(nativeRootPath, event.offer));
-        }
+        const request = requestFromNativeOffer(nativeRootPath, event.offer);
+        if (requestHasNews(request)) latest.current(request);
       }
     });
     return () => {
@@ -90,7 +90,7 @@ export function useSourceDrop({
       setOver(false);
       const items = captureDroppedItems(event.dataTransfer);
       void requestFromBrowserDrop(root, items).then((request) => {
-        if (request.files > 0 || request.plan.skipped.length > 0) latest.current(request);
+        if (requestHasNews(request)) latest.current(request);
       });
     };
     window.addEventListener("dragenter", enter);

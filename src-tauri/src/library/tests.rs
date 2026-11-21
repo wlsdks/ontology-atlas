@@ -134,8 +134,15 @@ fn the_platform_writer_lands_inside_sources_and_nowhere_else() {
         .to_string_lossy()
         .to_string();
 
-    let (hash, length) =
-        copy_source_into(&root_path, "sources/plan.pdf", &mut &b"%PDF-1.7\n"[..]).unwrap();
+    let (hash, length, name) = copy_source_into(
+        &root_path,
+        "sources",
+        std::iter::once("plan.pdf".to_string()),
+        &mut &b"%PDF-1.7\n"[..],
+    )
+    .unwrap()
+    .unwrap();
+    assert_eq!(name, "plan.pdf");
     assert_eq!(
         fs::read(root.join("sources/plan.pdf")).unwrap(),
         b"%PDF-1.7\n".to_vec()
@@ -143,7 +150,13 @@ fn the_platform_writer_lands_inside_sources_and_nowhere_else() {
     assert_eq!(length, 9);
     assert_eq!(hash, hash_path(&root.join("sources/plan.pdf")).unwrap());
 
-    assert!(copy_source_into(&root_path, "../escaped.pdf", &mut &b"x"[..]).is_err());
+    assert!(copy_source_into(
+        &root_path,
+        "..",
+        std::iter::once("escaped.pdf".to_string()),
+        &mut &b"x"[..]
+    )
+    .is_err());
 
     let _ = fs::remove_dir_all(&root);
 }
@@ -989,10 +1002,7 @@ fn an_offered_landing_path_cannot_climb_out_of_sources() {
         let key = format!("traversal-{index}-{}", fixture.display());
         remember_source_offer(
             key.clone(),
-            SourceOffer {
-                canonical: canonical.clone(),
-                relative: relative.into(),
-            },
+            SourceOffer::of_file(canonical.clone(), relative.into()).unwrap(),
         );
         keys.push(key);
     }
@@ -1025,10 +1035,11 @@ fn a_linked_folder_inside_sources_is_refused_not_followed() {
     let key = format!("linked-sub-{}", fixture.display());
     remember_source_offer(
         key.clone(),
-        SourceOffer {
-            canonical: fs::canonicalize(&original).unwrap(),
-            relative: "meetings/weekly.pdf".into(),
-        },
+        SourceOffer::of_file(
+            fs::canonicalize(&original).unwrap(),
+            "meetings/weekly.pdf".into(),
+        )
+        .unwrap(),
     );
     let results = import_sources(
         &vault,
@@ -1202,4 +1213,294 @@ fn stop_ends_an_import_between_files_and_keeps_what_landed() {
 #[test]
 fn stop_reaches_only_a_running_import() {
     assert!(!stop_source_import("never-started".into()));
+}
+
+fn import_offered(vault: &str, keys: Vec<String>) -> Vec<SourceImportResult> {
+    import_sources(
+        vault,
+        keys,
+        ImportDestination::Sources,
+        &ImportControl::default(),
+    )
+    .unwrap()
+}
+
+fn files_under(root: &Path) -> Vec<PathBuf> {
+    let mut found = Vec::new();
+    let mut stack = vec![root.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        for entry in fs::read_dir(&dir).into_iter().flatten().flatten() {
+            let path = entry.path();
+            if entry.file_type().unwrap().is_dir() {
+                stack.push(path);
+            } else {
+                found.push(path);
+            }
+        }
+    }
+    found
+}
+
+/// A `git pull` may turn an offered file into a link to a key between the offer and the copy.
+#[cfg(unix)]
+#[test]
+fn an_offered_file_swapped_for_a_link_to_a_secret_copies_nothing() {
+    let _turn = drop_turn();
+    let (fixture, vault) = fresh_fixture("swap-link");
+    let secret = fixture.join("home/.ssh/id_ed25519");
+    plant(&secret, 400);
+    let dropped = fixture.join("docs");
+    let spec = dropped.join("spec.pdf");
+    plant(&spec, 400);
+    let offer = dropped::offer_dropped_paths(std::slice::from_ref(&dropped));
+    assert_eq!(offer.files.len(), 1);
+
+    fs::remove_file(&spec).unwrap();
+    std::os::unix::fs::symlink(&secret, &spec).unwrap();
+    let results = import_offered(&vault, vec![offer.files[0].path.clone()]);
+    assert_eq!(
+        results[0].reason.as_deref(),
+        Some("source-changed-since-offered")
+    );
+    let secret_bytes = fs::read(&secret).unwrap();
+    for landed in files_under(&PathBuf::from(&vault)) {
+        assert_ne!(fs::read(&landed).unwrap(), secret_bytes, "{landed:?}");
+    }
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+/// A parent folder swapped for a link reaches another file, whose identity differs.
+#[cfg(unix)]
+#[test]
+fn an_offered_files_folder_swapped_for_a_link_copies_nothing() {
+    let _turn = drop_turn();
+    let (fixture, vault) = fresh_fixture("swap-parent");
+    let planted = fixture.join("home/.ssh/spec.pdf");
+    plant(&planted, 400);
+    let dropped = fixture.join("docs");
+    plant(&dropped.join("inner/spec.pdf"), 400);
+    let offer = dropped::offer_dropped_paths(std::slice::from_ref(&dropped));
+    assert_eq!(offer.files.len(), 1);
+
+    fs::remove_dir_all(dropped.join("inner")).unwrap();
+    std::os::unix::fs::symlink(planted.parent().unwrap(), dropped.join("inner")).unwrap();
+    let results = import_offered(&vault, vec![offer.files[0].path.clone()]);
+    assert_eq!(
+        results[0].reason.as_deref(),
+        Some("source-changed-since-offered")
+    );
+    assert!(files_under(&PathBuf::from(&vault)).is_empty());
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+#[cfg(unix)]
+fn make_fifo(path: &Path) {
+    use std::os::unix::ffi::OsStrExt;
+    let name = std::ffi::CString::new(path.as_os_str().as_bytes()).unwrap();
+    assert_eq!(unsafe { libc::mkfifo(name.as_ptr(), 0o600) }, 0);
+}
+
+/// Opening a FIFO for reading waits for a writer forever; neither a drop nor a copy may.
+#[cfg(unix)]
+#[test]
+fn a_fifo_is_never_offered_and_one_swapped_in_never_hangs_the_copy() {
+    let _turn = drop_turn();
+    let (fixture, vault) = fresh_fixture("fifo");
+    let pipe = fixture.join("pipe.pdf");
+    make_fifo(&pipe);
+    let offer = dropped::offer_dropped_paths(std::slice::from_ref(&pipe));
+    assert!(offer.files.is_empty());
+    assert_eq!(offer.skipped_counts.not_document, 1);
+
+    let spec = fixture.join("spec.pdf");
+    plant(&spec, 400);
+    let offer = dropped::offer_dropped_paths(std::slice::from_ref(&spec));
+    fs::remove_file(&spec).unwrap();
+    make_fifo(&spec);
+    let results = import_offered(&vault, vec![offer.files[0].path.clone()]);
+    assert_eq!(
+        results[0].reason.as_deref(),
+        Some("source-changed-since-offered")
+    );
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+/// `sources/` is read by agents and may be pushed, so even a deliberate drop of a key is held back.
+#[test]
+fn a_single_dropped_file_named_like_a_secret_is_skipped() {
+    let _turn = drop_turn();
+    let (fixture, _vault) = fresh_fixture("drop-secret");
+    let key = fixture.join("id_rsa");
+    plant(&key, 400);
+    let offer = dropped::offer_dropped_paths(std::slice::from_ref(&key));
+    assert!(offer.files.is_empty());
+    assert_eq!(offer.skipped[0].reason, SkipReason::SecretName);
+    assert_eq!(offer.skipped_counts.secret_name, 1);
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+#[test]
+fn a_dropped_folder_that_is_or_holds_the_open_folder_is_refused_whole() {
+    let _turn = drop_turn();
+    let (fixture, vault) = fresh_fixture("drop-vault");
+    let vault_path = PathBuf::from(&vault);
+    plant(&vault_path.join("notes/plan.pdf"), 400);
+    plant(&fixture.join("elsewhere/plan.pdf"), 400);
+    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault_path));
+    for dropped in [fixture.clone(), vault_path.clone()] {
+        let offer = dropped::offer_dropped_paths(std::slice::from_ref(&dropped));
+        assert!(offer.files.is_empty(), "{dropped:?}");
+        assert_eq!(offer.holds_open_folder.len(), 1, "{dropped:?}");
+    }
+    let inside = dropped::offer_dropped_paths(&[vault_path.join("notes")]);
+    assert_eq!(inside.files.len(), 1);
+    let beside = dropped::offer_dropped_paths(&[fixture.join("elsewhere")]);
+    assert_eq!(beside.files.len(), 1);
+    assert!(beside.holds_open_folder.is_empty());
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+#[test]
+fn a_dropped_folder_names_a_thousand_skipped_files_and_counts_every_one() {
+    let _turn = drop_turn();
+    let (fixture, _vault) = fresh_fixture("drop-skip-cap");
+    let dropped = fixture.join("keys");
+    fs::create_dir_all(&dropped).unwrap();
+    for index in 0..1_005 {
+        fs::write(dropped.join(format!("secret-{index}.txt")), [b'x'; 80]).unwrap();
+    }
+    let offer = dropped::offer_dropped_paths(std::slice::from_ref(&dropped));
+    assert_eq!(offer.skipped.len(), 1_000);
+    assert_eq!(offer.skipped_counts.secret_name, 1_005);
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+/// A slow walk of an earlier drop must not replace, or reach the page after, a newer one.
+#[test]
+fn only_the_newest_drop_remembers_its_offers() {
+    let _turn = drop_turn();
+    let (fixture, vault) = fresh_fixture("drop-race");
+    let older = fixture.join("older.pdf");
+    let newer = fixture.join("newer.pdf");
+    plant(&older, 200);
+    plant(&newer, 200);
+    dropped::arm_source_drop(true);
+    let first = dropped::begin_armed_drop().unwrap();
+    let second = dropped::begin_armed_drop().unwrap();
+    dropped::arm_source_drop(false);
+    let published = dropped::offer_drop(second, std::slice::from_ref(&newer), |offer| offer);
+    assert!(published.is_some());
+    assert!(dropped::offer_drop(first, std::slice::from_ref(&older), |offer| offer).is_none());
+    let results = import_offered(&vault, vec![older.to_string_lossy().into_owned()]);
+    assert_eq!(results[0].reason.as_deref(), Some("source-not-offered"));
+    let results = import_offered(&vault, vec![newer.to_string_lossy().into_owned()]);
+    assert_eq!(results[0].status, "added");
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+/// A reload never runs the stage's cleanup, so loading a page disarms the drop.
+#[test]
+fn a_drop_after_the_page_reloads_walks_nothing() {
+    let _turn = drop_turn();
+    dropped::arm_source_drop(true);
+    dropped::disarm_source_drop();
+    assert_eq!(dropped::begin_armed_drop(), None);
+}
+
+/// On a case-insensitive disk `Meetings/weekly.md` is `meetings/weekly.md`; it must not be replaced.
+#[test]
+fn a_copy_never_replaces_a_source_in_a_folder_named_in_another_case() {
+    let _turn = drop_turn();
+    let (fixture, vault) = fresh_fixture("case-folder");
+    let vault_path = PathBuf::from(&vault);
+    let existing = vault_path.join("sources/meetings/weekly.md");
+    plant(&existing, 300);
+    let before = fs::read(&existing).unwrap();
+    let dropped = fixture.join("Meetings");
+    fs::create_dir_all(&dropped).unwrap();
+    fs::write(dropped.join("weekly.md"), [b'n'; 300]).unwrap();
+    let offer = dropped::offer_dropped_paths(std::slice::from_ref(&dropped));
+    let results = import_offered(&vault, vec![offer.files[0].path.clone()]);
+    assert_eq!(results[0].status, "renamed", "{results:?}");
+    assert_eq!(
+        results[0].relative_path.as_deref(),
+        Some("sources/meetings/weekly (2).md")
+    );
+    assert_eq!(fs::read(&existing).unwrap(), before);
+    let folders: Vec<String> = fs::read_dir(vault_path.join("sources"))
+        .unwrap()
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(folders, vec!["meetings"]);
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+/// Publishing links under a free name; a name taken after the check is passed over, never replaced.
+#[cfg(unix)]
+#[test]
+fn publishing_passes_over_a_name_taken_since_the_check_and_a_failed_fill_leaves_it_alone() {
+    use std::io::Write;
+    let (fixture, _vault) = fresh_fixture("no-replace");
+    let folder = fixture.join("folder");
+    fs::create_dir_all(&folder).unwrap();
+    fs::write(folder.join("a.md"), b"kept").unwrap();
+    let parent = fs::File::open(&folder).unwrap();
+    let names = ["a.md", "a (2).md"].map(|name| std::ffi::CString::new(name).unwrap());
+
+    let published =
+        crate::agent_setup::create_first_free_entry_with(&parent, names.clone(), 0o666, |file| {
+            file.write_all(b"new")
+        })
+        .unwrap();
+    assert_eq!(published.unwrap().1.to_str().unwrap(), "a (2).md");
+    assert_eq!(fs::read(folder.join("a.md")).unwrap(), b"kept");
+
+    let refused = crate::agent_setup::create_first_free_entry_with(&parent, names, 0o666, |_| {
+        Err::<(), _>(std::io::Error::other("disk full"))
+    });
+    assert!(refused.is_err());
+    assert_eq!(fs::read(folder.join("a.md")).unwrap(), b"kept");
+    let mut left: Vec<String> = fs::read_dir(&folder)
+        .unwrap()
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect();
+    left.sort();
+    assert_eq!(left, vec!["a (2).md", "a.md"]);
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+#[test]
+fn a_second_copy_into_the_same_folder_waits_for_the_first() {
+    let (fixture, vault) = fresh_fixture("one-copy");
+    let first = ImportingFolder::claim(PathBuf::from(&vault)).unwrap();
+    assert!(ImportingFolder::claim(PathBuf::from(&vault)).is_none());
+    drop(first);
+    assert!(ImportingFolder::claim(PathBuf::from(&vault)).is_some());
+    fs::remove_dir_all(fixture).unwrap();
+}
+
+#[test]
+fn the_open_folders_own_folders_are_skipped_in_any_letter_case() {
+    let (fixture, vault) = fresh_fixture("owned-case");
+    let vault_path = PathBuf::from(&vault);
+    for name in ["Sources/old.pdf", "WIKI/page.pdf", "notes/plan.pdf"] {
+        plant(&vault_path.join(name), 200);
+    }
+    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault_path));
+    let report = discover_source_candidates(vec![SourceDiscoveryRoot {
+        root_path: vault.clone(),
+        label: "vault".into(),
+        skip_relative: Vec::new(),
+        open_folder: true,
+    }])
+    .unwrap();
+    let found: Vec<&str> = report
+        .candidates
+        .iter()
+        .map(|c| c.relative_path.as_str())
+        .collect();
+    assert_eq!(found, vec!["notes/plan.pdf"]);
+    fs::remove_dir_all(fixture).unwrap();
 }

@@ -296,7 +296,7 @@
     "noAgentLink": "エージェントを接続",
     "web": "ブラウザでは資料の追加と閲覧ができます。Wikiページの作成にはAtlasアプリが必要です。",
     "drop": {
-      "title": "ファイルやフォルダをここにドロップしてください",
+      "title": "ファイルやフォルダをドロップするとsourcesフォルダにコピーします",
       "or": "または",
       "formats": "PDF、Word、Excel、PowerPoint、テキストなど、どの形式でも変更せずにそのままコピーします。",
       "over": "ドロップするとsourcesフォルダにコピーします",
@@ -321,11 +321,11 @@
     "choose": "コピーするファイルを選ぶ"
   },
   "drop": {
-    "confirmLarge": "{count, number}件のファイル（{size}）をsourcesフォルダにコピーしますか？元のファイルはそのまま残ります。",
+    "confirmLarge": "{count, plural, other {#件のファイル（{size}）をsourcesフォルダにコピーしますか？}}元のファイルはそのまま残ります。",
     "confirm": "コピー",
     "cancel": "キャンセル",
     "stop": "コピーを止める",
-    "stopped": "コピーを止めました。それまでにコピーした{count, number}件はsourcesフォルダに残っています。",
+    "stopped": "{count, plural, =0 {コピーを止めました。コピーしたファイルはありません。} other {コピーを止めました。それまでにコピーした#件はsourcesフォルダに残っています。}}",
     "skipped": "{count, number}件はコピーしませんでした",
     "skippedReasons": {
       "same": "追加済みの資料と同じファイル",
@@ -335,7 +335,23 @@
     },
     "reasonCount": "{reason}：{count, number}件",
     "skippedShow": "コピーしなかったファイルを表示",
-    "truncated": "フォルダ内のファイルは最初の{count, number}件だけを一覧にしました。残りは別にドロップしてください。"
+    "truncated": "フォルダ内のファイルは最初の{count, number}件だけを一覧にしました。残りは別にドロップしてください。",
+    "busy": "まだコピー中です。終わってからもう一度ドロップしてください。",
+    "holdsOpenFolder": "「{names}」は開いているフォルダそのもの、またはそれを含むフォルダなので、コピーしませんでした。開いているフォルダの文書は上のコピーボタンで追加してください。",
+    "skippedUnlisted": "ここに載せていないものがほかに{count, number}件あります",
+    "failureReasons": {
+      "sourceChanged": "ドロップした後にファイルが変わりました",
+      "sourceMissing": "ファイルがその場所にありません",
+      "sourceUnreadable": "ファイルを読み取れません",
+      "notOffered": "後からドロップしたファイルがこの一覧に置き換わりました",
+      "destination": "sourcesフォルダに書き込めません",
+      "permission": "権限がありません",
+      "diskFull": "ディスクの空き容量が足りません",
+      "nameLimit": "そのフォルダに同じ名前のファイルが多すぎます",
+      "unusableName": "使えないファイル名です",
+      "busy": "別のコピーが進行中でした",
+      "other": "コピー中に問題が起きました"
+    }
   },
   "usage": {
     "where": "資料室の資料はすべて「{folder}」フォルダ内のsourcesフォルダにあるファイルです。{fileManagerName}で追加や削除をすると、資料室にもそのまま反映されます。",

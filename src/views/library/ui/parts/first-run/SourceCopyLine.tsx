@@ -11,11 +11,38 @@ const SKIP_REASONS: readonly SourceCopySkipReason[] = ["same", "notDocument", "s
 /** The failed line names this many files, then the count says the rest. */
 const FAILED_NAMES_SHOWN = 5;
 
-export function skippedByReason(job: SourceCopyJob): { reason: SourceCopySkipReason; count: number }[] {
-  return SKIP_REASONS.map((reason) => ({
-    reason,
-    count: job.skipped.filter((row) => row.reason === reason).length,
-  })).filter((row) => row.count > 0);
+/** Per reason, the named files plus those only counted. */
+export function skippedByReason(job: SourceCopyJob): { reason: SourceCopySkipReason; count: number; unlisted: number }[] {
+  return SKIP_REASONS.map((reason) => {
+    const unlisted = reason === "same" ? 0 : job.skippedUnlisted[reason] ?? 0;
+    return { reason, unlisted, count: job.skipped.filter((row) => row.reason === reason).length + unlisted };
+  }).filter((row) => row.count > 0);
+}
+
+export function skippedTotal(job: SourceCopyJob): number {
+  return skippedByReason(job).reduce((sum, row) => sum + row.count, 0);
+}
+
+/** Reason codes the copy reports, in the words the failed line uses; the rest read as `other`. */
+const FAILURE_WORDS: Record<string, FailureWord> = {
+  "source-changed-since-offered": "sourceChanged",
+  "source-missing": "sourceMissing",
+  "source-unreadable": "sourceUnreadable",
+  "source-not-offered": "notOffered",
+  "import-destination-not-a-folder": "destination",
+  "import-destination-unwritable": "destination",
+  "permission-denied": "permission",
+  "disk-full": "diskFull",
+  "file-name-conflict-limit": "nameLimit",
+  "unusable-file-name": "unusableName",
+  "import-already-running": "busy",
+};
+type FailureWord =
+  | "sourceChanged" | "sourceMissing" | "sourceUnreadable" | "notOffered" | "destination"
+  | "permission" | "diskFull" | "nameLimit" | "unusableName" | "busy" | "other";
+
+function failureWord(reason: string | null): FailureWord {
+  return (reason && FAILURE_WORDS[reason]) || "other";
 }
 
 /**
@@ -36,6 +63,7 @@ export function SourceCopyLine({
   const copying = job.phase === "copying";
   const share = job.total > 0 ? job.done / job.total : 0;
   const reasons = skippedByReason(job);
+  const skippedCount = skippedTotal(job);
   const failedNames = job.failed.map((row) => row.name).filter(Boolean);
   return (
     <div data-testid="library-copy-line" data-phase={job.phase} className="flex w-full flex-col gap-2 text-body" aria-live="polite">
@@ -69,7 +97,7 @@ export function SourceCopyLine({
       ) : null}
       {!copying && job.failed.length > 0 ? (
         <div data-testid="library-copy-failed" className="flex flex-col gap-1 text-[color:var(--color-danger-text)]">
-          <p>{t("start.drop.failed", { count: job.failed.length, reason: job.failureReason ?? "" })}</p>
+          <p>{t("start.drop.failed", { count: job.failed.length, reason: t(`drop.failureReasons.${failureWord(job.failureReason)}`) })}</p>
           {failedNames.length > 0 ? (
             <p className="text-label [overflow-wrap:anywhere]">
               {t("start.drop.failedNames", {
@@ -80,12 +108,12 @@ export function SourceCopyLine({
           ) : null}
         </div>
       ) : null}
-      {!copying && job.skipped.length > 0 ? (
+      {!copying && skippedCount > 0 ? (
         <button
           type="button"
           onClick={onShowSkipped}
           data-testid="library-copy-skipped"
-          data-skipped-count={job.skipped.length}
+          data-skipped-count={skippedCount}
           className={controlClass({
             shape: "link",
             tone: "secondary",
@@ -93,7 +121,7 @@ export function SourceCopyLine({
             className: "flex-wrap justify-start gap-x-2 text-left",
           })}
         >
-          <span className="font-[var(--font-weight-emphasis)]">{t("drop.skipped", { count: job.skipped.length })}</span>
+          <span className="font-[var(--font-weight-emphasis)]">{t("drop.skipped", { count: skippedCount })}</span>
           {reasons.map(({ reason, count }) => (
             <span key={reason} className="text-[color:var(--color-text-tertiary)]">
               {t("drop.reasonCount", { reason: t(`drop.skippedReasons.${reason}`), count })}

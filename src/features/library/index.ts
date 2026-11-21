@@ -9,6 +9,7 @@ export {
   subscribeSourceCopy,
   summarizeAddSources,
   type BrowserSourcePick,
+  type SkippedUnlisted,
   type SourceCopyJob,
   type SourceCopyPlan,
   type SourceCopySkip,

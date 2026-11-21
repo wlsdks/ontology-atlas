@@ -43,13 +43,21 @@ export function LibraryEmptyFolderStage({
   const [skippedOpen, setSkippedOpen] = useState(false);
   const job = useSourceCopy(vaultScope);
   const copying = job?.phase === "copying";
+  /** What a drop could not do, said where the copy line speaks; the next drop replaces it. */
+  const [notice, setNotice] = useState<{ kind: "busy" } | { kind: "holdsOpenFolder"; names: string[] } | null>(null);
 
   const request = useCallback((next: CopyRequest) => {
-    if (copying) return;
+    // One import per open folder: a second would race the first for free names.
+    if (busy || copying) {
+      setNotice({ kind: "busy" });
+      return;
+    }
+    setNotice(next.holdsOpenFolder.length > 0 ? { kind: "holdsOpenFolder", names: next.holdsOpenFolder } : null);
+    if (next.files === 0 && next.plan.skipped.length === 0) return;
     dismissSourceCopy(vaultScope);
     if (copyNeedsConfirm(next.files, next.totalBytes)) setConfirming(next);
     else startCopy(next);
-  }, [copying, startCopy, vaultScope]);
+  }, [busy, copying, startCopy, vaultScope]);
   const { over } = useSourceDrop({ root: handle, nativeRootPath: nativeVaultRootPath, onRequest: request });
 
   const inApp = nativeVaultRootPath !== null;
@@ -86,11 +94,22 @@ export function LibraryEmptyFolderStage({
         dropArea={(
           <SourceDropArea
             over={over}
-            busy={busy}
+            busy={busy || copying}
             onAddFiles={handleAddFiles}
             addFilesFeedback={sourceImportFeedback}
-            line={job ? (
-              <SourceCopyLine job={job} onStop={() => stopSourceCopy(vaultScope)} onShowSkipped={() => setSkippedOpen(true)} t={t} />
+            line={job || notice ? (
+              <>
+                {notice ? (
+                  <p data-testid="library-copy-notice" data-notice={notice.kind} role="status" className="text-body text-[color:var(--color-text-secondary)]">
+                    {notice.kind === "busy"
+                      ? t("drop.busy")
+                      : t("drop.holdsOpenFolder", { names: notice.names.map((name) => name.normalize("NFC")).join(", ") })}
+                  </p>
+                ) : null}
+                {job ? (
+                  <SourceCopyLine job={job} onStop={() => stopSourceCopy(vaultScope)} onShowSkipped={() => setSkippedOpen(true)} t={t} />
+                ) : null}
+              </>
             ) : null}
             t={t}
           />

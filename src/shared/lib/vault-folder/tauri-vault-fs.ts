@@ -288,9 +288,13 @@ export type TauriSourceSkipReason = 'secretName' | 'licence' | 'notDocument';
 export interface TauriDropOffer {
   /** Each `path` is the string to send back; `relativePath` is where it lands under `sources/`. */
   files: { path: string; relativePath: string; size: number }[];
+  /** The first thousand skipped files; `skippedCounts` counts every one. */
   skipped: { relativePath: string; reason: TauriSourceSkipReason }[];
+  skippedCounts: Record<TauriSourceSkipReason, number>;
   totalBytes: number;
   truncated: boolean;
+  /** Dropped folders refused whole because they are, or hold, an open folder. */
+  holdsOpenFolder: string[];
 }
 
 export type TauriSourceDropEvent =

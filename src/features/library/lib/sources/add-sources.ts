@@ -73,21 +73,63 @@ function reasonOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-/** Every file already under `sources/`, by hash, and the names each folder holds. */
+function domErrorName(error: unknown): string {
+  return error instanceof DOMException ? error.name : "";
+}
+
+/** A browser error while reading a pick, as the import's reason code, never the browser's text. */
+function readFailureCode(error: unknown): string {
+  const name = domErrorName(error);
+  if (name === "NotFoundError") return "source-missing";
+  if (name === "NotAllowedError" || name === "SecurityError") return "permission-denied";
+  return "source-unreadable";
+}
+
+/** A browser error while writing into `sources/`, as the import's reason code. */
+function writeFailureCode(error: unknown): string {
+  const name = domErrorName(error);
+  if (name === "QuotaExceededError") return "disk-full";
+  if (name === "NotAllowedError" || name === "SecurityError") return "permission-denied";
+  if (name === "TypeMismatchError") return "import-destination-not-a-folder";
+  return "import-destination-unwritable";
+}
+
+/** Whether `name` is taken in `directory`, asked without `create`; any answer but "not found" counts. */
+async function entryExists(directory: FileSystemDirectoryHandle, name: string): Promise<boolean> {
+  for (const lookup of [() => directory.getFileHandle(name), () => directory.getDirectoryHandle(name)]) {
+    try {
+      await lookup();
+      return true;
+    } catch (error) {
+      if (domErrorName(error) !== "NotFoundError") return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Every file already under `sources/`, by hash, and the names each folder holds in lower case: a
+ * case-insensitive disk takes `Weekly.md` as `weekly.md`, so names are compared that way.
+ */
 async function indexExistingSources(sources: FileSystemDirectoryHandle) {
   const existing = new Map<string, string>();
   const takenNames = new Map<string, Set<string>>();
+  /** Folder names below each folder, keyed by lower case, so `Meetings` joins `meetings`. */
+  const folderNames = new Map<string, Map<string, string>>();
   const visit = async (directory: FileSystemDirectoryHandle, folder: string) => {
     const names = new Set<string>();
+    const folders = new Map<string, string>();
     takenNames.set(folder, names);
+    folderNames.set(folder, folders);
     for await (const [name, handle] of directory.entries()) {
       if (handle.kind === "directory") {
-        names.add(name);
+        names.add(name.toLowerCase());
+        folders.set(name.toLowerCase(), name);
         await visit(handle as FileSystemDirectoryHandle, folder ? `${folder}/${name}` : name);
         continue;
       }
       if (handle.kind !== "file") continue;
-      names.add(name);
+      names.add(name.toLowerCase());
       try {
         const file = await (handle as FileSystemFileHandle).getFile();
         const hash = await sha256Hex(await file.arrayBuffer());
@@ -98,7 +140,7 @@ async function indexExistingSources(sources: FileSystemDirectoryHandle) {
     }
   };
   await visit(sources, "");
-  return { existing, takenNames };
+  return { existing, takenNames, folderNames };
 }
 
 /**
@@ -113,7 +155,7 @@ export async function addSourcesInBrowser(
   if (picked.length === 0) return EMPTY;
   const sources = await root.getDirectoryHandle(VAULT_SOURCES_DIR, { create: true });
   // A browser has no index, so existing bytes are hashed to answer "you already have this".
-  const { existing, takenNames } = await indexExistingSources(sources);
+  const { existing, takenNames, folderNames } = await indexExistingSources(sources);
 
   const results: TauriSourceImportResult[] = [];
   const publication = createSourceCopyBatch(root);
@@ -134,7 +176,7 @@ export async function addSourcesInBrowser(
     try {
       bytes = await file.arrayBuffer();
     } catch (error) {
-      return failure(file.name, reasonOf(error));
+      return failure(file.name, readFailureCode(error));
     }
     const hash = await sha256Hex(bytes);
     const already = hash ? existing.get(hash) : undefined;
@@ -142,38 +184,51 @@ export async function addSourcesInBrowser(
       return { pickedName: file.name, status: "duplicate", relativePath: already, sha256: hash, size: file.size, reason: null };
     }
 
-    const folder = placed.folders.join("/");
     let directory = sources;
+    const folders: string[] = [];
     try {
-      for (const segment of placed.folders) directory = await directory.getDirectoryHandle(segment, { create: true });
+      for (const segment of placed.folders) {
+        const parent = folders.join("/");
+        const known = folderNames.get(parent) ?? new Map<string, string>();
+        folderNames.set(parent, known);
+        const name = known.get(segment.toLowerCase()) ?? segment;
+        directory = await directory.getDirectoryHandle(name, { create: true });
+        known.set(name.toLowerCase(), name);
+        folders.push(name);
+      }
     } catch (error) {
-      return failure(file.name, reasonOf(error), hash, file.size);
+      return failure(file.name, writeFailureCode(error), hash, file.size);
     }
+    const folder = folders.join("/");
     const names = takenNames.get(folder) ?? new Set<string>();
     takenNames.set(folder, names);
+    // The index is a snapshot; the folder is asked again, so a file that appeared since is never replaced.
+    const taken = async (name: string) => names.has(name.toLowerCase()) || (await entryExists(directory, name));
     const [stem, extension] = splitName(placed.name);
     let candidate = placed.name;
     let suffix = 2;
-    while (names.has(candidate) && suffix <= 999) {
+    while (await taken(candidate)) {
+      if (suffix > 999) return failure(file.name, "file-name-conflict-limit", hash, file.size);
       candidate = `${stem} (${suffix})${extension}`;
       suffix += 1;
     }
-    if (names.has(candidate)) return failure(file.name, "file-name-conflict-limit", hash, file.size);
     const below = folder ? `${folder}/${candidate}` : candidate;
-    publication.hold(below, names.has(`${candidate}.crswap`) ? [] : [`${candidate}.crswap`]);
+    publication.hold(below, names.has(`${candidate}.crswap`.toLowerCase()) ? [] : [`${candidate}.crswap`]);
+    let created = false;
     let writable: FileSystemWritableFileStream | null = null;
     try {
       const target = await directory.getFileHandle(candidate, { create: true });
+      created = true;
       writable = await target.createWritable();
       await writable.write(bytes);
       await writable.close();
     } catch (error) {
       try { await writable?.abort(); } catch {}
-      // The name was free before this copy, so the empty file `create` made is this copy's own.
-      try { await directory.removeEntry(candidate); } catch {}
-      return failure(file.name, reasonOf(error), hash, file.size);
+      // Only the entry this copy created goes: the name was asked free just before.
+      if (created) try { await directory.removeEntry(candidate); } catch {}
+      return failure(file.name, writeFailureCode(error), hash, file.size);
     }
-    names.add(candidate);
+    names.add(candidate.toLowerCase());
     const relativePath = `${VAULT_SOURCES_DIR}/${below}`;
     if (hash) existing.set(hash, relativePath);
     return {
@@ -263,8 +318,12 @@ export function copyNeedsConfirm(files: number, bytes: number): boolean {
   return files >= LARGE_COPY_FILES || bytes >= LARGE_COPY_BYTES;
 }
 
+/** Skipped files counted but not named, so a dropped home folder cannot fill memory with names. */
+export type SkippedUnlisted = Partial<Record<DiscoverySkipReason, number>>;
+
 export type SourceCopyPlan = {
   skipped: SourceCopySkip[];
+  skippedUnlisted?: SkippedUnlisted;
   /** A folder drop listed only its first files; the line says so. */
   truncatedAt?: number;
 } & (
@@ -279,6 +338,7 @@ export interface SourceCopyJob {
   total: number;
   added: number;
   skipped: SourceCopySkip[];
+  skippedUnlisted: SkippedUnlisted;
   failed: { name: string; reason: string }[];
   /** The first failure's reason, as the import reported it. */
   failureReason: string | null;
@@ -321,13 +381,17 @@ export function stopSourceCopy(scope: string): void {
   void stopTauriSourceImport(job.id);
 }
 
-/** Copies a plan in the background, streaming `done` into the job; resolves with the final job. */
-export async function startSourceCopy(scope: string, plan: SourceCopyPlan): Promise<SourceCopyJob> {
+/**
+ * Copies a plan in the background, streaming `done` into the job; resolves with the final job, or
+ * `null` without copying while another copy of the same folder runs: two would race for names.
+ */
+export async function startSourceCopy(scope: string, plan: SourceCopyPlan): Promise<SourceCopyJob | null> {
+  if (jobs.get(scope)?.phase === "copying") return null;
   const id = `source-copy-${Date.now()}-${nextJobNumber++}`;
   const total = plan.kind === "native" ? plan.paths.length : plan.picks.length;
   let job: SourceCopyJob = {
-    id, phase: "copying", done: 0, total, added: 0, skipped: plan.skipped, failed: [], failureReason: null,
-    truncatedAt: plan.truncatedAt ?? null,
+    id, phase: "copying", done: 0, total, added: 0, skipped: plan.skipped, skippedUnlisted: plan.skippedUnlisted ?? {},
+    failed: [], failureReason: null, truncatedAt: plan.truncatedAt ?? null,
   };
   publish(scope, job);
   const onProgress = (done: number) => {

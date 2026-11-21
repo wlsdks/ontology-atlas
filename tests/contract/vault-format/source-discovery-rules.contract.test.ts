@@ -10,6 +10,8 @@ import {
   DISCOVERY_MARKDOWN_EXTENSIONS,
   DISCOVERY_VAULT_OWNED_DIRS,
   DROP_MAX_FILES,
+  DROP_MAX_VISITED,
+  DROP_SKIPPED_NAMES,
   DISCOVERY_MAX_CANDIDATES,
   DISCOVERY_MAX_DEPTH,
   DISCOVERY_MIN_FILE_BYTES,
@@ -120,11 +122,15 @@ describe('the discovery rule is the same in both walks', () => {
     expect(rustSource).toMatch(/root\.open_folder \|\| !is_markdown_name\(&name\)/);
   });
 
-  it('caps a dropped folder at the same file count', () => {
+  it('caps a dropped folder at the same file, visit and skipped-name counts', () => {
     const dropSource = readFileSync(resolve(repoRoot, 'src-tauri/src/library/dropped.rs'), 'utf8');
-    expect(dropSource).toMatch(
-      new RegExp(`const DROP_MAX_FILES: usize = ${DROP_MAX_FILES.toLocaleString('en').replaceAll(',', '_')};`),
-    );
+    for (const [name, value] of [
+      ['DROP_MAX_FILES', DROP_MAX_FILES],
+      ['DROP_MAX_VISITED', DROP_MAX_VISITED],
+      ['DROP_SKIPPED_NAMES', DROP_SKIPPED_NAMES],
+    ] as const) {
+      expect(dropSource).toMatch(new RegExp(`const ${name}: usize = ${value.toLocaleString('en').replaceAll(',', '_')};`));
+    }
   });
 
   /**

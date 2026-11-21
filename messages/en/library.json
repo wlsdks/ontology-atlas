@@ -296,12 +296,12 @@
     "noAgentLink": "Connect an agent",
     "web": "In the browser you can add and read sources. Writing wiki pages needs the Atlas app.",
     "drop": {
-      "title": "Drop files or folders here",
+      "title": "Drop files or folders to copy them into the sources folder",
       "or": "or",
       "formats": "PDF, Word, Excel, PowerPoint, text or any other format, copied without changes.",
       "over": "Drop to copy into the sources folder",
       "copying": "Copying into the sources folder · {done, number} of {total, number}",
-      "failed": "{count, plural, one {# file} other {# files}} could not be copied: {reason}. Drop them again, or press Add files.",
+      "failed": "{count, plural, one {# file could not be copied: {reason}. Drop it again, or press Add files.} other {# files could not be copied: {reason}. Drop them again, or press Add files.}}",
       "failedNames": "Not copied: {names}"
     },
     "found": {
@@ -321,11 +321,11 @@
     "choose": "Choose files to copy"
   },
   "drop": {
-    "confirmLarge": "Copy {count, number} files ({size}) into the sources folder? The original files stay where they are.",
+    "confirmLarge": "{count, plural, one {Copy # file ({size}) into the sources folder?} other {Copy # files ({size}) into the sources folder?}} The original files stay where they are.",
     "confirm": "Copy",
     "cancel": "Cancel",
     "stop": "Stop copying",
-    "stopped": "Copying stopped. The {count, number} files copied before that stay in the sources folder.",
+    "stopped": "{count, plural, =0 {Copying stopped before any file was copied.} one {Copying stopped. The # file copied before that stays in the sources folder.} other {Copying stopped. The # files copied before that stay in the sources folder.}}",
     "skipped": "{count, plural, one {# file was not copied} other {# files were not copied}}",
     "skippedReasons": {
       "same": "Same as a source already added",
@@ -335,7 +335,23 @@
     },
     "reasonCount": "{reason}: {count, number}",
     "skippedShow": "Show the files not copied",
-    "truncated": "Only the first {count, number} files in the folder were listed. Drop the rest separately."
+    "truncated": "Only the first {count, number} files in the folder were listed. Drop the rest separately.",
+    "busy": "A copy is still running. Drop again once it ends.",
+    "holdsOpenFolder": "{names} is, or holds, the open folder, so nothing was copied from it. Copy the open folder's documents with the copy button above.",
+    "skippedUnlisted": "{count, number} more not named here",
+    "failureReasons": {
+      "sourceChanged": "the file changed after it was dropped",
+      "sourceMissing": "the file is no longer there",
+      "sourceUnreadable": "the file could not be read",
+      "notOffered": "a later drop replaced this list",
+      "destination": "the sources folder could not be written",
+      "permission": "permission was refused",
+      "diskFull": "the disk is full",
+      "nameLimit": "too many files in that folder share the name",
+      "unusableName": "the file name cannot be used",
+      "busy": "another copy was running",
+      "other": "something went wrong while copying"
+    }
   },
   "usage": {
     "where": "Every source in the Library is a file in the sources folder inside {folder}. Files you add or remove there in {fileManagerName} show up by themselves.",

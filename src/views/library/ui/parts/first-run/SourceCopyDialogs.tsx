@@ -7,7 +7,7 @@ import type { SourceCopyJob } from "@/features/library";
 import { formatSize } from "@/shared/lib/format-size";
 import { Button, Dialog, DialogBody, DialogFooter } from "@/shared/ui";
 
-import { skippedByReason } from "./SourceCopyLine";
+import { skippedByReason, skippedTotal } from "./SourceCopyLine";
 
 type LibraryT = ReturnType<typeof useTranslations<"library">>;
 
@@ -58,10 +58,10 @@ export function SkippedFilesDialog({
     <Dialog open={open && job !== null} onClose={onClose} size="md" labelledBy={titleId} testId="library-skipped-files">
       <div className="flex max-h-[min(70vh,36rem)] flex-col gap-4">
         <h2 id={titleId} className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-          {job ? t("drop.skipped", { count: job.skipped.length }) : null}
+          {job ? t("drop.skipped", { count: skippedTotal(job) }) : null}
         </h2>
         <DialogBody className="flex flex-col gap-4 pr-1">
-          {groups.map(({ reason, count }) => (
+          {groups.map(({ reason, count, unlisted }) => (
             <section key={reason} data-testid="library-skipped-group" data-reason={reason} className="flex flex-col gap-1.5">
               <h3 className="text-body text-[color:var(--color-text-secondary)]">
                 {t("drop.reasonCount", { reason: t(`drop.skippedReasons.${reason}`), count })}
@@ -73,6 +73,9 @@ export function SkippedFilesDialog({
                   </li>
                 ))}
               </ul>
+              {unlisted > 0 ? (
+                <p className="text-label text-[color:var(--color-text-tertiary)]">{t("drop.skippedUnlisted", { count: unlisted })}</p>
+              ) : null}
             </section>
           ))}
         </DialogBody>
