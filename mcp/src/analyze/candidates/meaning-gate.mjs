@@ -4,13 +4,15 @@
 
 import { COMPETENCY_QUESTION_CONTRACTS } from '../../meaning/meaning-evaluation.mjs';
 import {
-  BUSINESS_CAPABILITY_CLUES,
   GENERIC_BUSINESS_CAPABILITY_CANDIDATE_LIMIT,
   GENERIC_BUSINESS_CAPABILITY_EVIDENCE_LIMIT,
+} from '../scan-limits.mjs';
+import {
+  BUSINESS_CAPABILITY_CLUES,
   GENERIC_NARRATIVE_CAPABILITY_CLUES,
   IMPLEMENTATION_SHAPED_CAPABILITY_TOKENS,
   STARTER_ONTOLOGY_SLUGS,
-} from '../analysis-limits-and-tables.mjs';
+} from '../scan-tables.mjs';
 import {
   matchDomainSlug,
   pathSemanticTokens,

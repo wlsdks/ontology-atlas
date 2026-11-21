@@ -10,7 +10,7 @@
 import { lstatSync, readdirSync, readFileSync } from 'node:fs';
 import { extname, join, relative, sep } from 'node:path';
 
-import { DEFAULT_IGNORE } from '../analysis-limits-and-tables.mjs';
+import { DEFAULT_IGNORE } from '../scan-tables.mjs';
 import { discoverDeclaredWorkspacePackages } from '../../infer-imports/workspace-packages.mjs';
 
 export const UNIT_SOURCE_EXTENSIONS = new Set([
