@@ -1,4 +1,4 @@
-import type { DialWorld } from "../../../dial/types";
+import type { DialWorld } from "../../../dial/dial-shapes";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
 import { radiusForKind } from "../node-radius";
 import { isSpineNode } from "../spine-node";

@@ -4,8 +4,8 @@ import { useTranslations } from 'next-intl';
 
 import { Surface } from '@/shared/ui';
 
-import { AgentHandoffPacket } from '../AgentHandoffCard';
-import { AgentPromptText } from '../AgentPromptDisclosure';
+import { AgentHandoffPacket } from '../AgentHandoffPacket';
+import { AgentPromptText } from '../AgentPromptText';
 import { MetaToggle } from './MetaToggle';
 
 export type AgentMetaBranch = 'prompt' | 'handoff';

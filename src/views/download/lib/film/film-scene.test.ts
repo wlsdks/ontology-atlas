@@ -83,8 +83,8 @@ describe('placeLabels', () => {
     { x: 296, y: 320, r: 5 },
     { x: 312, y: 318, r: 5 },
   ].map((m) => {
-    const len = Math.hypot(m.x - 297.5, m.y - 312.5) || 1;
-    return { ...m, w: 150, h: 20, out: { x: (m.x - 297.5) / len, y: (m.y - 312.5) / len } };
+    const length = Math.hypot(m.x - 297.5, m.y - 312.5) || 1;
+    return { ...m, w: 150, h: 20, out: { x: (m.x - 297.5) / length, y: (m.y - 312.5) / length } };
   });
   const bounds = { l: 0, t: 0, r: 1440, b: 900 };
 

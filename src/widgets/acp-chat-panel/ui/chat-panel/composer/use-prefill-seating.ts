@@ -1,7 +1,7 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 
 import { splitAppRequest } from '../../request-parts';
-import type { DraftStore, SeatedDetail } from '../types';
+import type { DraftStore, SeatedDetail } from '../chat-panel-props';
 import { seatedRequestText } from './outgoing-request';
 
 interface PrefillSeatingOptions {

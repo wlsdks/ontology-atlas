@@ -3,7 +3,7 @@ import { createMeasureText } from "../../../dial/fit";
 import { branchMemberCount } from "../../../dial/branches/member-disclosure";
 import { branchNameLines, branchTextStyle } from "../../../dial/branches/text";
 import { readDialTokens } from "../../../dial/tokens";
-import type { DialModel, DialWorld } from "../../../dial/types";
+import type { DialModel, DialWorld } from "../../../dial/dial-shapes";
 import {
   SELECTION_NUDGE_MARGIN_PX, selectionFrameTarget, selectionNudgeTarget, type FramedMark, type FreeMapRect,
 } from "../../../model/camera/flat-selection-camera";
@@ -16,7 +16,7 @@ import { memberNameReachPx, nameReachBox, type NameReachInput } from "../../../f
 import { domainTitleBlocks } from "../../../flat-graph/names/titles";
 import { domainStarIds, domainStarRooms, openRadiusPx, type StarRoom } from "../../../flat-graph/open-star";
 import { readFlatGraphTokens } from "../../../flat-graph/tokens";
-import type { FlatGraphPaintTokens } from "../../../flat-graph/types";
+import type { FlatGraphPaintTokens } from "../../../flat-graph/flat-graph-shapes";
 import { labelFontFamily } from "../../../render/labels";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
 import { computeEffectiveCameraScaleMax } from "../target/zoom-range";

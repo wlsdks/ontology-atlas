@@ -1,4 +1,4 @@
-import type { SettingsCatalogEntry } from './types';
+import type { SettingsCatalogEntry } from './settings-catalog-entry';
 
 export const MAP_CATALOG: readonly SettingsCatalogEntry[] = [
   { id: 'canvas-background', section: 'map', labelKey: 'nav.settingsMenu.canvasBgLabel', surface: 'both' },

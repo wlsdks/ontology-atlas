@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { LABEL_PAD, LabelField, fontOf, makeLabel } from './film-map-labels';
+import { LABEL_PAD, LabelField, fontOf, buildLabel } from './film-map-labels';
 
 const measure = (text: string) => text.length * 10;
 const segments = [{ text: 'hello', ink: 'strong' as const }];
@@ -11,16 +11,16 @@ describe('label boxes', () => {
   });
 
   it('anchors the box by alignment around the text middle, 0.62 of the size either side', () => {
-    const left = makeLabel(measure, 'k', null, 'cap', segments, 'f', 20, 100, 50, 'left');
-    const center = makeLabel(measure, 'k', null, 'cap', segments, 'f', 20, 100, 50, 'center');
-    const right = makeLabel(measure, 'k', null, 'cap', segments, 'f', 20, 100, 50, 'right');
+    const left = buildLabel(measure, 'k', null, 'cap', segments, 'f', 20, 100, 50, 'left');
+    const center = buildLabel(measure, 'k', null, 'cap', segments, 'f', 20, 100, 50, 'center');
+    const right = buildLabel(measure, 'k', null, 'cap', segments, 'f', 20, 100, 50, 'right');
     expect(left.box).toEqual({ l: 100, t: 37.6, r: 150, b: 62.4 });
     expect(center.box.l).toBe(75);
     expect(right.box.r).toBe(100);
   });
 
   it('adds the widths of every segment', () => {
-    const label = makeLabel(measure, 'k', null, 'reach', [...segments, { text: 'ab', ink: 'reach' }], 'f', 10, 0, 0, 'left');
+    const label = buildLabel(measure, 'k', null, 'reach', [...segments, { text: 'ab', ink: 'reach' }], 'f', 10, 0, 0, 'left');
     expect(label.box.r).toBe(70);
   });
 });

@@ -14,7 +14,7 @@ import {
   type AlignedLine,
   type AlignedRow,
 } from '../lib/align-lines';
-import type { TranslateFn } from './HarnessGuideDetail';
+import type { TranslateFn } from './harness-setup-item';
 
 const MARKED_TEXT = 'text-[color:var(--color-text-primary)]';
 const MARKED_ROW = 'bg-[color:var(--color-indigo-accent-a12)]';

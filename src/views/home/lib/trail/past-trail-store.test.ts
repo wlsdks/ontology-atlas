@@ -44,12 +44,12 @@ function createFakeVaultHandle(options: { readOnly?: boolean } = {}) {
     },
   });
   const makeDirHandle = (name: string) => ({
-    getFileHandle: async (fileName: string, opts?: { create?: boolean }) => {
+    getFileHandle: async (fileName: string, fileOptions?: { create?: boolean }) => {
       const path = `${name}/${fileName}`;
-      if (!files.has(path) && !opts?.create) {
+      if (!files.has(path) && !fileOptions?.create) {
         throw new DOMException("not found", "NotFoundError");
       }
-      if (opts?.create) guardWrite();
+      if (fileOptions?.create) guardWrite();
       return makeFileHandle(path);
     },
     removeEntry: async (fileName: string) => {
@@ -60,9 +60,9 @@ function createFakeVaultHandle(options: { readOnly?: boolean } = {}) {
     },
   });
   const handle = {
-    getDirectoryHandle: async (name: string, opts?: { create?: boolean }) => {
+    getDirectoryHandle: async (name: string, directoryOptions?: { create?: boolean }) => {
       if (!dirs.has(name)) {
-        if (!opts?.create) throw new DOMException("not found", "NotFoundError");
+        if (!directoryOptions?.create) throw new DOMException("not found", "NotFoundError");
         guardWrite();
         dirs.add(name);
       }

@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { controlClass } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { slugDisplaySegment } from "./map-datasheet";
-import type { OntologyMapDetailPanelLabels, OntologyMapDetailPanelProps } from "./types";
+import type { OntologyMapDetailPanelLabels, OntologyMapDetailPanelProps } from "./detail-panel-props";
 
 const FILLED_SKIN =
   "font-[var(--font-weight-emphasis)] border-[color:var(--map-panel-primary-border)] bg-[color:var(--map-panel-primary-surface)] text-[color:var(--map-panel-primary-text)] hover:border-[color:var(--map-panel-primary-border-hover)] hover:bg-[color:var(--map-panel-primary-surface-hover)]";

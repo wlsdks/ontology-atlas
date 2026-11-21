@@ -1,6 +1,6 @@
 import type { DomeNodeFrame } from './runtime';
 import { isNeuralDependency, neuralAxonControl, type NeuralTracts } from './neural/neural-cells';
-import type { DomeArrangement } from './types';
+import type { DomeArrangement } from './dome-shapes';
 
 interface EdgeCoordinates {
   sourceId: string;

@@ -316,8 +316,8 @@ export function TopologyIndexPanel({
 
   // Align the active row to wherever focus lands, so the entry point is the row focused last.
   const handleTreeFocus = (event: ReactFocusEvent<HTMLElement>) => {
-    const rowEl = (event.target as HTMLElement).closest?.("[data-index-row]") as HTMLElement | null;
-    const id = rowEl?.dataset.indexRow;
+    const rowElement = (event.target as HTMLElement).closest?.("[data-index-row]") as HTMLElement | null;
+    const id = rowElement?.dataset.indexRow;
     if (id && id !== activeRowId) setActiveRowId(id);
   };
 

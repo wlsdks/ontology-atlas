@@ -37,8 +37,8 @@ export function NewDocKindDialog({
     let problem: string | undefined | void;
     try {
       problem = await onSelect(kind, title.trim());
-    } catch (err) {
-      problem = dialog("createFailed", { message: err instanceof Error ? err.message : String(err) });
+    } catch (caughtError) {
+      problem = dialog("createFailed", { message: caughtError instanceof Error ? caughtError.message : String(caughtError) });
     }
     setSaving(false);
     if (problem) {

@@ -70,13 +70,13 @@ export function hexFreeArea(canvas: HTMLCanvasElement | null, board: Element | n
 
 const ROOM_REST_SLACK = 12;
 
-export function roomMovesRest(prev: Rect | null, next: Rect): boolean {
-  if (!prev) return true;
+export function roomMovesRest(previous: Rect | null, next: Rect): boolean {
+  if (!previous) return true;
   return (
-    Math.abs(prev.x - next.x) > ROOM_REST_SLACK ||
-    Math.abs(prev.y - next.y) > ROOM_REST_SLACK ||
-    Math.abs(prev.x + prev.width - (next.x + next.width)) > ROOM_REST_SLACK ||
-    Math.abs(prev.y + prev.height - (next.y + next.height)) > ROOM_REST_SLACK
+    Math.abs(previous.x - next.x) > ROOM_REST_SLACK ||
+    Math.abs(previous.y - next.y) > ROOM_REST_SLACK ||
+    Math.abs(previous.x + previous.width - (next.x + next.width)) > ROOM_REST_SLACK ||
+    Math.abs(previous.y + previous.height - (next.y + next.height)) > ROOM_REST_SLACK
   );
 }
 

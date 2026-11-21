@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { buildOntologyChangeSet, type OntologyChangeSet } from '@/entities/knowledge-graph';
 
-import type { AcpOntologyRelationPreview, SessionState } from '../types';
+import type { AcpOntologyRelationPreview, SessionState } from '../chat-panel-props';
 
 function relationPreviewForChangeSet(
   changeSet: OntologyChangeSet | null,

@@ -15,7 +15,7 @@ import { History as HistoryIcon, RotateCcw } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { isReviewResult } from '../model/review-result';
 import { MeaningTransitionHistory, type MeaningTransitionArchiveState } from './MeaningTransitionHistory';
-import { FindingDetail, FindingRow, type EvidenceConcept, type FindingDisposition } from './ReviewFindings';
+import { FindingDetail, FindingRow, type EvidenceConcept, type FindingDisposition } from './review-findings';
 import { ReviewRecordDialog } from './ReviewRecordDialog';
 
 const DIVIDED = 'border-t border-[color:var(--color-divider)] pt-4';

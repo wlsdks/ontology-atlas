@@ -70,8 +70,8 @@ export function computeSynthCounts(total: number): SynthVaultCounts {
 function skewedCapabilityIndex(e: number, capabilityCount: number): number {
   if (capabilityCount <= 1) return 0;
   const u = ((e * 2654435761) >>> 0) / 4294967296;
-  const idx = Math.floor(capabilityCount * Math.pow(u, CAPABILITY_SKEW));
-  return Math.min(capabilityCount - 1, idx);
+  const index = Math.floor(capabilityCount * Math.pow(u, CAPABILITY_SKEW));
+  return Math.min(capabilityCount - 1, index);
 }
 
 function makeNode(

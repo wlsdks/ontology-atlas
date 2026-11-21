@@ -1,6 +1,6 @@
 import { cubicBezierAt } from "@/shared/motion/ease";
 import { EXIT_TRANSITION, MOTION, MOTION_EASE } from "@/shared/motion/tokens";
-import type { Point } from "../dial/types";
+import type { Point } from "../dial/dial-shapes";
 import type { GraphAttention, GraphLine } from "./attention";
 
 /** A pointer resting on a concept for less than this lights nothing, so a sweep across the map never strobes. */

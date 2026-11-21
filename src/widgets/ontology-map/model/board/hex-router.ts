@@ -171,7 +171,7 @@ interface Scratch {
   stamp: number;
   seen: Uint32Array;
   dist: Float64Array;
-  prev: Int32Array;
+  previous: Int32Array;
   src: Uint32Array;
   dst: Uint32Array;
   heapCost: Float64Array;
@@ -214,7 +214,7 @@ function scratchOf(L: HexLattice): Scratch {
       stamp: 0,
       seen: new Uint32Array(n),
       dist: new Float64Array(n),
-      prev: new Int32Array(n),
+      previous: new Int32Array(n),
       src: new Uint32Array(n),
       dst: new Uint32Array(n),
       heapCost: new Float64Array(1024),
@@ -254,7 +254,7 @@ export class HexRouter {
     const { start, to, cost, edge, terminal } = csrOf(L);
     const s = scratchOf(L);
     const stamp = s.stamp;
-    const { seen, dist, prev } = s;
+    const { seen, dist, previous } = s;
     const inSrc = s.src;
     const inDst = s.dst;
     for (const i of dst) inDst[i] = stamp;
@@ -290,14 +290,14 @@ export class HexRouter {
     for (const i of src) {
       seen[i] = stamp;
       dist[i] = 0;
-      prev[i] = -1;
+      previous[i] = -1;
       push(0, i);
     }
     const blocked = this.blocked;
     const used = this.used;
     const walk = (end: number) => {
       const path: number[] = [];
-      for (let v = end; v !== -1; v = prev[v]!) path.push(v);
+      for (let v = end; v !== -1; v = previous[v]!) path.push(v);
       return path.reverse();
     };
     let best = -1;
@@ -346,7 +346,7 @@ export class HexRouter {
         if (seen[v] !== stamp || nd < dist[v]!) {
           seen[v] = stamp;
           dist[v] = nd;
-          prev[v] = u;
+          previous[v] = u;
           push(nd, v);
         }
       }

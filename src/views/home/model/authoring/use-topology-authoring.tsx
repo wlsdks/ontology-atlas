@@ -345,8 +345,8 @@ export function useTopologyAuthoring({ setRouteState, meaningEditorIntent, meani
           written: markdown,
           message: t("createNode.toastCreated", { name: input.title.trim() }),
         });
-      } catch (err) {
-        const exists = err instanceof Error && err.message.includes("already exists");
+      } catch (caughtError) {
+        const exists = caughtError instanceof Error && caughtError.message.includes("already exists");
         toast.show(exists ? t("createNode.toastExists") : t("createNode.toastError"), "error");
         return false;
       }

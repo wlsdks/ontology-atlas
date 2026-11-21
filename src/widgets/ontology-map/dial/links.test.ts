@@ -12,7 +12,7 @@ import {
 import { buildDialModel, resolveDialAttention } from "./dial-model";
 import { aggregateLinks, domainOfEnd, ownLinkCount, restBudget, type CrossingGuard, type DialLink } from "./links";
 import { resolveDialTokens } from "./tokens";
-import type { DialModel } from "./types";
+import type { DialModel } from "./dial-shapes";
 
 const css = readFileSync("app/styles/map-dial-tokens.css", "utf8");
 const TOKENS = resolveDialTokens((v) => (v === "--map-panel-text-primary" ? "#ececf0" : css.match(new RegExp(`${v}:\\s*([^;]+);`))?.[1] ?? ""));

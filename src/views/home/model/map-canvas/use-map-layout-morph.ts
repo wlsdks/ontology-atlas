@@ -74,8 +74,8 @@ export function useMapLayoutMorph({
           target: kind === "ghost" ? targetFor(view) : null,
           source: swapsSurface ? null : () => frameRef.current?.querySelector("canvas") ?? null,
         };
-        setTransition((prev) => ({
-          id: (prev?.id ?? 0) + 1,
+        setTransition((previous) => ({
+          id: (previous?.id ?? 0) + 1,
           job,
           phase: kind === "ghost" ? "travel" : "handoff",
           drawn: !swapsSurface,

@@ -15,7 +15,7 @@ import {
 } from '@/shared/lib/preferences/canvas-appearance-preferences';
 import { controlClass } from '@/shared/ui/control-class';
 import { OntologyMapKindGlyph } from '@/shared/ui/ontology-node/map-kind-glyph';
-import type { SettingId } from '../../model/catalog/types';
+import type { SettingId } from '../../model/catalog/settings-catalog-entry';
 
 const PICKER_TILE_INK = (active: boolean) =>
   active

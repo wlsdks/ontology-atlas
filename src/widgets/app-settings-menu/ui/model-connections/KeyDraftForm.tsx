@@ -46,8 +46,8 @@ export function KeyDraftForm({
       await onSave(draftKey);
       // Cleared the instant the save succeeds — the only moment a full key exists on screen ends.
       setDraftKey('');
-    } catch (err) {
-      onError(secretErrorMessage(err, nativeErrors));
+    } catch (error) {
+      onError(secretErrorMessage(error, nativeErrors));
       // The save button was disabled while it worked; the field is where the fix happens.
       refocusIfLost(inputRef);
     } finally {

@@ -1,6 +1,6 @@
 import { Disclosure } from '@/shared/ui';
 
-import type { ChatT, GrayT, SeatedDetail, SessionState } from '../types';
+import type { ChatT, GrayT, SeatedDetail, SessionState } from '../chat-panel-props';
 
 export function SeatedDetailDisclosure({ t, detail }: { t: ChatT; detail: SeatedDetail }) {
   return (

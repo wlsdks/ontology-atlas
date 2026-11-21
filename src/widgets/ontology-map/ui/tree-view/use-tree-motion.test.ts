@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { TreeNameSide, TreePose } from "../../model/tree-view/types";
+import type { TreeNameSide, TreePose } from "../../model/tree-view/tree-shapes";
 import { TreeMotion, type TreeMotionHost } from "./use-tree-motion";
 
 const FREE = { x: 0, y: 0, width: 1000, height: 800 };

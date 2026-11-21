@@ -19,7 +19,7 @@ import { dialChipRadiusPx, dialDiscRadiusPx } from "../tokens";
 import { buildDialMarks, dialHubRadiusPx, emptyDialFrameMarks, type DialDisclosureInput, type DialMarksInput } from "./marks";
 import { resolveDialDisclosure } from "./disclosure";
 import { resolveDialTokens } from "../tokens";
-import type { DialCluster, DialEvidence, DialItem, DialLabels, DialModel, DialScene, Point } from "../types";
+import type { DialCluster, DialEvidence, DialItem, DialLabels, DialModel, DialScene, Point } from "../dial-shapes";
 
 vi.mock("../flow-marks", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../flow-marks")>();
@@ -83,7 +83,7 @@ function sceneOf(model: DialModel, capOffset = CAP_OFFSET): DialScene {
       const p = { x: chip.x + Math.cos(a) * capOffset, y: chip.y + Math.sin(a) * capOffset };
       positions.set(id, p);
       const elementIds = model.capabilityById.get(id)!.elementIds;
-      elementIds.forEach((el, j) => positions.set(el, { x: p.x + 8 * Math.cos(j * 2.1), y: p.y + 8 * Math.sin(j * 2.1) }));
+      elementIds.forEach((elementId, j) => positions.set(elementId, { x: p.x + 8 * Math.cos(j * 2.1), y: p.y + 8 * Math.sin(j * 2.1) }));
       return { id, direct: false, x: p.x, y: p.y, elementIds, elementPitch: 8 };
     });
     return { domainId: d.id, step: 0, angle, chip, footprint: capOffset + 10, items };

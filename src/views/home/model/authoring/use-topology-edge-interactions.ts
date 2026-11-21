@@ -80,8 +80,8 @@ export function useTopologyEdgeInteractions({ insight, selectedNode, createNodeO
   }, [hoverEdge, insight, t, relationVocabulary, relationRegister]);
 
   const [hoverCluster, setHoverCluster] = useState<{ parentId: string; count: number; descendantTotal: number; expanded: boolean; x: number; y: number } | null>(null);
-  const handleHoverCluster = useCallback((info: { parentId: string; count: number; descendantTotal: number; expanded: boolean; position: { x: number; y: number } } | null) => {
-    setHoverCluster(info ? { ...info, x: info.position.x, y: info.position.y } : null);
+  const handleHoverCluster = useCallback((cluster: { parentId: string; count: number; descendantTotal: number; expanded: boolean; position: { x: number; y: number } } | null) => {
+    setHoverCluster(cluster ? { ...cluster, x: cluster.position.x, y: cluster.position.y } : null);
   }, []);
   const clusterHoverCardModel = useMemo(() => {
     if (!hoverCluster) return null;

@@ -428,17 +428,17 @@ function GuidePager({ activeSegment }: { activeSegment?: string }) {
   const segment = activeSegment ?? GUIDE_ENTRY_PAGE.segment;
   const index = GUIDE_PAGES.findIndex((page) => page.segment === segment);
   if (index === -1) return null;
-  const prev = GUIDE_PAGES[index - 1] ?? null;
+  const previous = GUIDE_PAGES[index - 1] ?? null;
   const next = GUIDE_PAGES[index + 1] ?? null;
-  if (!prev && !next) return null;
+  if (!previous && !next) return null;
   return (
     <nav
       aria-label={t('guidePagerLabel')}
       data-testid="guide-pager"
       className="mt-12 flex w-full max-w-[var(--measure-prose)] items-stretch gap-3 border-t border-[color:var(--color-divider)] pt-4"
     >
-      {prev ? (
-        <GuidePagerLink page={prev} eyebrow={t('guidePrev')} edge="start" testId="guide-pager-prev" />
+      {previous ? (
+        <GuidePagerLink page={previous} eyebrow={t('guidePrev')} edge="start" testId="guide-pager-prev" />
       ) : (
         <span aria-hidden className="flex-1" />
       )}

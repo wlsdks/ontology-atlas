@@ -189,7 +189,7 @@ function DomainList({
     if (!option) return;
     const next = { y: option.offsetTop, height: option.offsetHeight };
     // eslint-disable-next-line react-hooks/set-state-in-effect -- the tint follows a measured row, known only after layout.
-    setTint((prev) => (prev && prev.y === next.y && prev.height === next.height ? prev : next));
+    setTint((previous) => (previous && previous.y === next.y && previous.height === next.height ? previous : next));
   }, [selectedId, optionRefs, domains]);
 
   return (

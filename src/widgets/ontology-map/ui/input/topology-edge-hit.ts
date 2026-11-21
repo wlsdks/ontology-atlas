@@ -85,8 +85,8 @@ export function hitTestEdges(
     const maxY = Math.max(a.y, b.y, control.y) + thresholdPx;
     if (screenX < minX || screenX > maxX || screenY < minY || screenY > maxY) continue;
 
-    let prev = bezier(a.x, a.y, control.x, control.y, b.x, b.y, 0);
-    let prevInNode = withinRadius(prev.x, prev.y, a.x, a.y, aRadius) || withinRadius(prev.x, prev.y, b.x, b.y, bRadius);
+    let previous = bezier(a.x, a.y, control.x, control.y, b.x, b.y, 0);
+    let previousInNode = withinRadius(previous.x, previous.y, a.x, a.y, aRadius) || withinRadius(previous.x, previous.y, b.x, b.y, bRadius);
     for (let i = 1; i <= SAMPLE_STEPS; i += 1) {
       const cur = bezier(a.x, a.y, control.x, control.y, b.x, b.y, i / SAMPLE_STEPS);
       const curInNode =
@@ -94,15 +94,15 @@ export function hitTestEdges(
       // Only spans with both ends outside a node body are measured for hit distance —
       // excluding the edge's tail beside an end node (node territory) keeps a nearby
       // click from leaking to the edge.
-      if (!prevInNode && !curInNode) {
-        const d2 = distSqToSegment(screenX, screenY, prev.x, prev.y, cur.x, cur.y);
+      if (!previousInNode && !curInNode) {
+        const d2 = distSqToSegment(screenX, screenY, previous.x, previous.y, cur.x, cur.y);
         if (d2 < bestD2) {
           bestD2 = d2;
           best = edge;
         }
       }
-      prev = cur;
-      prevInNode = curInNode;
+      previous = cur;
+      previousInNode = curInNode;
     }
   }
   return best;

@@ -36,8 +36,8 @@ export function DocsVaultTabStrip({
     const maxScroll = strip.scrollWidth - strip.clientWidth;
     const left = strip.scrollLeft > 1;
     const right = strip.scrollLeft < maxScroll - 1;
-    setEdgeOverflow((prev) =>
-      prev.left === left && prev.right === right ? prev : { left, right },
+    setEdgeOverflow((previous) =>
+      previous.left === left && previous.right === right ? previous : { left, right },
     );
   }, []);
 
@@ -65,10 +65,10 @@ export function DocsVaultTabStrip({
     // `scrollIntoView(inline:"nearest")` can leave the active tab half shown when a new tab changes
     // the width in the same frame, so compute `scrollLeft` after layout. Tab count is a dependency.
     const frame = requestAnimationFrame(() => {
-      const el = activeTabRef.current;
-      const strip = el?.closest("nav");
-      if (!el || !strip) return;
-      const cell = el.parentElement ?? el; // `offsetLeft` is relative to the header, not the nav; rect differences are exact.
+      const buttonElement = activeTabRef.current;
+      const strip = buttonElement?.closest("nav");
+      if (!buttonElement || !strip) return;
+      const cell = buttonElement.parentElement ?? buttonElement; // `offsetLeft` is relative to the header, not the nav; rect differences are exact.
       const cellRect = cell.getBoundingClientRect();
       const stripRect = strip.getBoundingClientRect();
       const left = cellRect.left - stripRect.left + strip.scrollLeft;

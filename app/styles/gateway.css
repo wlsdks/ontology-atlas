@@ -666,7 +666,7 @@ html[data-gateway-cursor] body :not(input, textarea, select, [contenteditable='t
  * rail's end, holds, and everything fades together before step one lights again. Each step's fill
  * and light have their own keyframes because they share one clock; the press is the same beat
  * offset per step, plus the scene's own `--gateway-step-press-at`. The scenes above the titles
- * (`StepScenes.tsx`) read this clock, so `STEP_CYCLE_MS` there must equal the cycle here.
+ * (`step-scenes.tsx`) read this clock, so `STEP_CYCLE_MS` there must equal the cycle here.
  */
 @media (prefers-reduced-motion: no-preference) {
   [data-gateway-steps-motion] {

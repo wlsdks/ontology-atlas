@@ -7,7 +7,7 @@ import type {
   DialEvidence,
   DialEvidenceView,
   DialModel,
-} from "./types";
+} from "./dial-shapes";
 
 export interface DialModelInput {
   tree: ContainmentTree;

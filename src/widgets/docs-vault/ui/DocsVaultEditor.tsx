@@ -278,14 +278,14 @@ export function DocsVaultEditor({
       savedFlashTimerRef.current = setTimeout(() => {
         setSavedFlash(false);
       }, 1500);
-    } catch (err) {
+    } catch (caughtError) {
       // A rejected save (e.g. VaultConflictError) must not mark the buffer clean, so the poll guard
       // keeps the edits; show a localized message for conflicts.
-      const messageKey = saveFailureMessageKey(err);
+      const messageKey = saveFailureMessageKey(caughtError);
       setError(
         messageKey
           ? { sentence: t(messageKey), detail: null }
-          : failureSentence(err, t('saveFailed')),
+          : failureSentence(caughtError, t('saveFailed')),
       );
     } finally {
       setSaving(false);
@@ -330,14 +330,14 @@ export function DocsVaultEditor({
         setDraftSavedAt(opened.draftSavedAt);
         setAutocomplete(null);
       })
-      .catch((err) => {
+      .catch((caughtError) => {
         if (cancelled) return;
         setContent(null);
         setSavedContent(null);
         setLoadedSlug(doc.slug);
         setDraftSavedAt(null);
         setLegacyDraftConflict(false);
-        setError(failureSentence(err, t('loadFailed')));
+        setError(failureSentence(caughtError, t('loadFailed')));
       });
     return () => {
       cancelled = true;

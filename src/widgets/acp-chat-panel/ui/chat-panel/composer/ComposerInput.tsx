@@ -5,7 +5,7 @@ import { COMPOSER_MIN_ROWS } from '@/shared/lib/agent-chat/composer-growth';
 import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { Textarea } from '@/shared/ui';
 
-import type { ChatT, SeatedDetail } from '../types';
+import type { ChatT, SeatedDetail } from '../chat-panel-props';
 
 interface ComposerInputProps {
   t: ChatT;
@@ -76,7 +76,7 @@ export function ComposerInput({
               e.preventDefault();
               const step = e.key === 'ArrowDown' ? 1 : -1;
               slash.setActive(
-                (prev) => (prev + step + slash.matches.length) % slash.matches.length,
+                (previous) => (previous + step + slash.matches.length) % slash.matches.length,
               );
               return;
             }

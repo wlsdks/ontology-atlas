@@ -5,7 +5,7 @@ import { cn } from '@/shared/lib/cn';
 import type { groupEvents } from '../../group-events';
 import { TranscriptEntry } from '../../transcript/TranscriptEntry';
 import { WorkGroup } from '../../transcript/WorkGroup';
-import type { AnswerFold, NoticeActions } from '../types';
+import type { AnswerFold, NoticeActions } from '../chat-panel-props';
 
 interface TranscriptRowsProps {
   items: ReturnType<typeof groupEvents>;

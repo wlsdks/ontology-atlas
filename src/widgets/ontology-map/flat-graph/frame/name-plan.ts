@@ -1,4 +1,4 @@
-import type { Box, Point } from "../../dial/types";
+import type { Box, Point } from "../../dial/dial-shapes";
 import { inkUnder } from "../attention";
 import { FLAT_MOTION } from "../motion";
 import { nameBlockDraws } from "../names";

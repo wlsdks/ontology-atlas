@@ -15,7 +15,7 @@ import {
 import { cn } from '@/shared/lib/cn';
 import { Chip } from '@/shared/ui/controls/controls';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import type { SettingsSectionId } from '../../model/catalog/types';
+import type { SettingsSectionId } from '../../model/catalog/settings-catalog-entry';
 import {
   OUTBOUND_DESTINATION_PLACEHOLDERS,
   OUTBOUND_PATHS,

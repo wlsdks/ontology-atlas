@@ -1,4 +1,4 @@
-import type { DialWorld } from '../../dial/types';
+import type { DialWorld } from '../../dial/dial-shapes';
 import type { PanelInsets } from "../../interaction/free-area";
 import type { CanvasBackground } from "@/shared/lib/preferences/canvas-appearance-preferences";
 import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
@@ -14,7 +14,7 @@ import type { ClusterChip } from "../../model/layout/density-gate";
 import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
 import { domeRingAlphaFor } from "../../model/dome-view/ink";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
-import type { DomeViewKind } from "../../model/dome-view/types";
+import type { DomeViewKind } from "../../model/dome-view/dome-shapes";
 import { stepFocusRamp } from "../../model/visibility/focus-state";
 import { fadeStrataLodOut, restStrataLod, stepStrataLod, type StrataLodState } from "../../model/dome-view/strata/strata-lod";
 import { hexToRgb, parseRgbTriple, type DomeLightFrame, type EvidenceLight, type Rgb } from "../../render/dome-view/dome-light";
@@ -65,7 +65,7 @@ interface Dependencies {
   clusteredIdsRef: RefObject<ReadonlySet<string>>;
   realmTierKindsRef: RefObject<ReadonlyMap<string, "capability" | "domain" | "element" | "project"> | null>;
   visitedTrailRef: RefObject<readonly string[]>;
-  footprintTrailLenRef: RefObject<number>;
+  footprintTrailLengthRef: RefObject<number>;
   footprintAppearAtRef: RefObject<number>;
   reducedMotionRef: RefObject<boolean>;
   spotlightRampRef: RefObject<number>;
@@ -147,7 +147,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
   clusteredIdsRef,
   realmTierKindsRef,
   visitedTrailRef,
-  footprintTrailLenRef,
+  footprintTrailLengthRef,
   footprintAppearAtRef,
   reducedMotionRef,
   spotlightRampRef,
@@ -297,11 +297,11 @@ export function createPresentationFrameStage({ domeRuntimeRef,
         const footprintStepsById = buildFootprintSteps(visitedTrailRef.current);
         // A longer trail stamps the arrival motion's start time; a shorter one
         // (cleared) drops the ramp.
-        const trailLen = visitedTrailRef.current.length;
-        if (trailLen > footprintTrailLenRef.current)
+        const trailLength = visitedTrailRef.current.length;
+        if (trailLength > footprintTrailLengthRef.current)
             footprintAppearAtRef.current = now;
-        footprintTrailLenRef.current = trailLen;
-        const footprintNewestId = trailLen > 0 ? visitedTrailRef.current[trailLen - 1] : null;
+        footprintTrailLengthRef.current = trailLength;
+        const footprintNewestId = trailLength > 0 ? visitedTrailRef.current[trailLength - 1] : null;
         // Same step as the movement ramp (`--motion-base`, 180 ms): a surface
         // taking its place.
         const footprintAppear = reducedMotionRef.current

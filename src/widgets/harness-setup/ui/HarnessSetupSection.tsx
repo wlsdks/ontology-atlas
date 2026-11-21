@@ -7,7 +7,7 @@ import { cn } from '@/shared/lib/cn';
 import { RowButton } from '@/shared/ui';
 
 import type { CodexSessionSize, SetupGroupId, SetupItem, SetupSectionId } from '../model/harness-setup';
-import { ItemStatus, type TranslateFn } from './HarnessGuideDetail';
+import { ItemStatus, type TranslateFn } from './harness-setup-item';
 import { formatBytes, shortLabel } from './harness-setup-format';
 
 const COUNT = 'shrink-0 text-label tabular-nums text-[color:var(--color-text-tertiary)]';

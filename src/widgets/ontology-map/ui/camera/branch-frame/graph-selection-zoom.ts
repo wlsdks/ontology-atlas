@@ -1,10 +1,10 @@
-import type { Box, DialLabels, DialModel } from "../../../dial/types";
+import type { Box, DialLabels, DialModel } from "../../../dial/dial-shapes";
 import type { GraphAttention } from "../../../flat-graph/attention";
 import { graphDiscRadiusPx, zoomGrowth } from "../../../flat-graph/marks";
 import { admitNamesAt, selectedDiscRadius } from "../../../flat-graph/names";
 import { type NameAdmission } from "../../../flat-graph/names/placed-name";
 import { stepScale, zoomStep } from "../../../flat-graph/names/zoom-step";
-import type { FlatGraphLayout, FlatGraphPaintTokens } from "../../../flat-graph/types";
+import type { FlatGraphLayout, FlatGraphPaintTokens } from "../../../flat-graph/flat-graph-shapes";
 import type { FramedMark, SelectionZoomIn } from "../../../model/camera/flat-selection-camera";
 
 /** Rounding of a name box edge to canvas pixels. */

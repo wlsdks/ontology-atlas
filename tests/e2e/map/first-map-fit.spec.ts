@@ -5,7 +5,7 @@ import "../atlas-map-probe";
 import { seedFirstRunSeen } from "../first-run-seed";
 import { waitForMapStill } from "../settle";
 import { stubDirectoryPicker } from "../vault-picker-stub";
-import type { DialProbe } from "../../../src/widgets/ontology-map/dial/types";
+import type { DialProbe } from "../../../src/widgets/ontology-map/dial/dial-shapes";
 
 /** One project, six domains whose titles are long enough to collide, eighteen capabilities and one shared element. */
 const DOMAINS: readonly (readonly [title: string, capabilities: readonly string[]])[] = [

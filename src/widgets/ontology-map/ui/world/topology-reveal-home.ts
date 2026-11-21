@@ -1,4 +1,4 @@
-import { initHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
+import { createHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { recomputeWorldGeometry } from "./world-geometry";
 import { type TopologyWorld } from "./topology-world";
@@ -36,6 +36,6 @@ export function prepareRevealHome(
 
   return {
     world: nextWorld,
-    springs: new Map(nodes.map((node) => [node.id, initHomeSpring(node.x, node.y)])),
+    springs: new Map(nodes.map((node) => [node.id, createHomeSpring(node.x, node.y)])),
   };
 }

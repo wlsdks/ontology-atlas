@@ -85,12 +85,12 @@ export function useTopologyVaultReadModel({
   }, [spotlightNeedsVault, setRouteState, setRecentNeedsVaultOpen]);
   // On lens on, one full fit so all changed places fit one screen; once per off-to-on so manual
   // exploration wins.
-  const prevSpotlightOnRef = useRef(spotlightOn);
+  const previousSpotlightOnRef = useRef(spotlightOn);
   useEffect(() => {
-    if (spotlightOn && !prevSpotlightOnRef.current) {
+    if (spotlightOn && !previousSpotlightOnRef.current) {
       setFitViewToken((token) => token + 1);
     }
-    prevSpotlightOnRef.current = spotlightOn;
+    previousSpotlightOnRef.current = spotlightOn;
   }, [setFitViewToken, spotlightOn]);
   const [updatedAgoNowMs] = useState(() => Date.now());
   // A pinned baseline makes nodes changed since it pulse, matching the change panel during a

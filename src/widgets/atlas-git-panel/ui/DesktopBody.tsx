@@ -24,8 +24,8 @@ import { PendingDocumentPane, type ChangedDocument } from "./PendingDocumentPane
 import { cn } from "@/shared/lib/cn";
 import type { Translator } from "../lib/translator";
 import type { WorkbenchSelection } from "../model/use-workbench-selection";
-import { SETUP_ACTION_PLACEMENT, SetupFrame, SessionChangeSummary } from "./SetupMode";
-import { RemoteResultLine, RemoteSetup } from "./RemoteControls";
+import { SETUP_ACTION_PLACEMENT, SetupFrame, SessionChangeSummary } from "./setup-panels";
+import { RemoteResultLine, RemoteSetup } from "./remote-controls";
 import { StepList, StepListScroller } from "./StepList";
 import { ActionDock, DiscardDock } from "./ActionDock";
 

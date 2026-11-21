@@ -78,10 +78,10 @@ export function useAiConnection({
           status = null;
         }
         if (cancelled) return;
-        setStatuses((prev) => statusEpochs.current[provider] === initialEpochs[provider]
-          ? { ...prev, [provider]: status }
-          : prev);
-        setKeyReads((prev) => ({ ...prev, [provider]: true }));
+        setStatuses((previous) => statusEpochs.current[provider] === initialEpochs[provider]
+          ? { ...previous, [provider]: status }
+          : previous);
+        setKeyReads((previous) => ({ ...previous, [provider]: true }));
       })();
     }
     void (async () => {
@@ -92,7 +92,7 @@ export function useAiConnection({
         status = null;
       }
       if (cancelled) return;
-      setJevStatus((prev) => jevEpoch.current === initialJevEpoch ? status : prev);
+      setJevStatus((previous) => jevEpoch.current === initialJevEpoch ? status : previous);
       setJevRead(true);
     })();
     return () => {
@@ -112,7 +112,7 @@ export function useAiConnection({
   useEffect(() => {
     const handle = vaultHandleRef.current;
     if (!enabled || !handle) {
-      setAuditEntries((prev) => (prev.length === 0 ? prev : []));
+      setAuditEntries((previous) => (previous.length === 0 ? previous : []));
       setAuditTotal(0);
       setAuditError(null);
       return undefined;
@@ -140,7 +140,7 @@ export function useAiConnection({
 
   const applyStatus = useCallback((provider: SecretProvider, next: SecretStatus) => {
     statusEpochs.current[provider] = (statusEpochs.current[provider] ?? 0) + 1;
-    setStatuses((prev) => ({ ...prev, [provider]: next }));
+    setStatuses((previous) => ({ ...previous, [provider]: next }));
   }, []);
 
   const applyJevStatus = useCallback((next: JevSecretStatus) => {

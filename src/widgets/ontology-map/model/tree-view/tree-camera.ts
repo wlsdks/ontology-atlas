@@ -1,5 +1,5 @@
 import { MOMENTUM_TAU_MS, rubberband } from "../motion-physics";
-import type { TreeLayout, TreePose, TreeProjector, TreeRect, TreeScreenPoint } from "./types";
+import type { TreeLayout, TreePose, TreeProjector, TreeRect, TreeScreenPoint } from "./tree-shapes";
 
 const TAU = Math.PI * 2;
 

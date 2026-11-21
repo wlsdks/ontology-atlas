@@ -6,7 +6,7 @@ import { createTreeProjector, TREE_POSE_REST } from "../model/tree-view/tree-cam
 import { TREE_MARK_BUDGET } from "../model/tree-view/tree-detail";
 import { layoutTree } from "../model/tree-view/tree-layout";
 import { buildTreeModel } from "../model/tree-view/tree-model";
-import type { TreeDrawList } from "../model/tree-view/types";
+import type { TreeDrawList } from "../model/tree-view/tree-shapes";
 import { readTreeTokens } from "../tokens/read-tree-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../ui/OntologyMap";
 import { OntologyTreeMap } from "../ui/OntologyTreeMap";
@@ -105,10 +105,10 @@ describe("the tree's morph marks", () => {
     const { container } = render(
       <OntologyTreeMap nodes={nodes} edges={edges} selectedId={null} evidence={new Map()} evidenceMeasured={false} labels={labels} />,
     );
-    const drawn = [...container.querySelectorAll<HTMLElement>("[data-tree-id]")].filter((el) => el.dataset.mark);
+    const drawn = [...container.querySelectorAll<HTMLElement>("[data-tree-id]")].filter((domElement) => domElement.dataset.mark);
     const at = new Map(predicted.marks.map((m) => [m.id, `${Math.round(m.x)},${Math.round(m.y)},${Math.round(m.size)}`]));
     expect(drawn.length).toBeGreaterThan(30);
-    for (const el of drawn) expect(at.get(el.dataset.treeId!), el.dataset.treeId).toBe(el.dataset.mark);
+    for (const domElement of drawn) expect(at.get(domElement.dataset.treeId!), domElement.dataset.treeId).toBe(domElement.dataset.mark);
   });
 
   it("carries a concept folded in the tree to the closed mark that holds it", () => {

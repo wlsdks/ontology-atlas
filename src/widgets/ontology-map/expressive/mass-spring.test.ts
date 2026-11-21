@@ -21,11 +21,11 @@ describe("mass — degree on a smoothstep", () => {
     expect(massForDegree(40, 12)).toBe(1);
   });
   it("is monotone, so a degree change never pops", () => {
-    let prev = -1;
+    let previous = -1;
     for (let d = 0; d <= 12; d += 1) {
       const m = massForDegree(d, 12);
-      expect(m).toBeGreaterThanOrEqual(prev);
-      prev = m;
+      expect(m).toBeGreaterThanOrEqual(previous);
+      previous = m;
     }
   });
   it("a zero heavy degree makes everything light instead of dividing by zero", () => {

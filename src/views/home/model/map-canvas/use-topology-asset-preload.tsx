@@ -49,7 +49,7 @@ export function useTopologyAssetPreload({ prefetchedProjectHrefsRef, router, pre
       candidateSlugs.forEach(preloadProjectAsset);
     };
     const win = window as Window & {
-      requestIdleCallback?: (cb: () => void) => number;
+      requestIdleCallback?: (callback: () => void) => number;
       cancelIdleCallback?: (id: number) => void;
     };
     if (typeof win.requestIdleCallback === 'function') {

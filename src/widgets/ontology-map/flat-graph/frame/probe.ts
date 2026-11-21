@@ -1,7 +1,7 @@
 import { emptyDialFrameMarks, type DialFrameMarks } from "../../dial/frame/marks";
-import type { GlyphMark, StripMark, TextMark } from "../../dial/types";
+import type { GlyphMark, StripMark, TextMark } from "../../dial/dial-shapes";
 import { sunk } from "../marks";
-import type { FlatGraphTokens } from "../types";
+import type { FlatGraphTokens } from "../flat-graph-shapes";
 import { sideOf } from "./name-plan";
 import { grownIds } from "./place";
 import { type Disc, type Arc, LINE_KINDS, REST_ARC, markPool, FrameList, setBox, type FramePlan } from "./state";

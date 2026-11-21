@@ -16,7 +16,7 @@ import {
   type Pt,
   type Rect,
 } from '../film-geometry';
-import { LABEL_PAD, LabelField, fontOf, makeLabel, type FilmLabel, type InkRole, type LabelRole, type LabelSegment } from './film-map-labels';
+import { LABEL_PAD, LabelField, fontOf, buildLabel, type FilmLabel, type InkRole, type LabelRole, type LabelSegment } from './film-map-labels';
 import type { FilmClusterPlacement } from './film-map-placement';
 import type { FilmArc, FilmCluster, FilmLayoutInput, FilmLit, FilmLitLine, FilmMapLayout, FilmMark } from './film-map-shapes';
 import { REST_NAMES_PX } from './film-map-sizes';
@@ -50,7 +50,7 @@ export function annotateFilmMap(input: FilmLayoutInput, placement: FilmClusterPl
   for (const c of clusters) {
     for (const row of locals.get(c.id)!.rows) {
       blockLabels.push(
-        makeLabel(measure, `${row.key}:${c.id}`, c.id, row.role, [{ text: row.text, ink: row.role === 'domain' ? 'strong' : 'tertiary' }], row.font, row.size, c.x, c.y + row.dy, 'center'),
+        buildLabel(measure, `${row.key}:${c.id}`, c.id, row.role, [{ text: row.text, ink: row.role === 'domain' ? 'strong' : 'tertiary' }], row.font, row.size, c.x, c.y + row.dy, 'center'),
       );
     }
   }
@@ -61,7 +61,7 @@ export function annotateFilmMap(input: FilmLayoutInput, placement: FilmClusterPl
   if (project) {
     const font = fontOf(510, S.fProject, sans);
     const at = (dy: number) =>
-      makeLabel(measure, `project:${project.id}`, project.id, 'project', [{ text: vault.project!.label, ink: 'name' }], font, S.fProject, project.x, project.y + dy, 'center');
+      buildLabel(measure, `project:${project.id}`, project.id, 'project', [{ text: vault.project!.label, ink: 'name' }], font, S.fProject, project.x, project.y + dy, 'center');
     const lift = project.r * 1.35 + 8 + S.fProject * 0.6;
     projectAt = at;
     projectLift = lift;
@@ -128,7 +128,7 @@ export function annotateFilmMap(input: FilmLayoutInput, placement: FilmClusterPl
     spots: { x: number; y: number; align: FilmLabel['align'] }[],
   ): FilmLabel | null => {
     for (const spot of spots) {
-      const label = makeLabel(measure, key, id, role, segments, font, size, spot.x, spot.y, spot.align);
+      const label = buildLabel(measure, key, id, role, segments, font, size, spot.x, spot.y, spot.align);
       if (field.free(label.box)) {
         field.take(label.box);
         return label;
@@ -208,8 +208,8 @@ export function annotateFilmMap(input: FilmLayoutInput, placement: FilmClusterPl
         return {
           box: row.box,
           labels: [
-            makeLabel(measure, `pick:${pick}`, pick, 'pick', [{ text: label, ink: 'strong' }], nameFont, S.fPick, ax, nameY, row.c.align),
-            makeLabel(measure, `reach:${pick}`, pick, 'reach', reachSegs, reachFont, S.fReach, ax, reachY, row.c.align),
+            buildLabel(measure, `pick:${pick}`, pick, 'pick', [{ text: label, ink: 'strong' }], nameFont, S.fPick, ax, nameY, row.c.align),
+            buildLabel(measure, `reach:${pick}`, pick, 'reach', reachSegs, reachFont, S.fReach, ax, reachY, row.c.align),
           ],
         };
       });
@@ -494,8 +494,8 @@ export function annotateFilmMap(input: FilmLayoutInput, placement: FilmClusterPl
             if (leaderPts.some((p) => tagField.boxes.some((b) => inside(p, b)))) continue;
             const x = toRight ? l : l + tagW;
             const align = toRight ? ('left' as const) : ('right' as const);
-            litLabels.push(makeLabel(measure, 'agent', null, 'agent', [{ text: copy.agent, ink: 'agent' }], tagSans, S.fTag, x, t + rowH / 2, align));
-            litLabels.push(makeLabel(measure, 'tool', null, 'tool', [{ text: copy.tool, ink: 'secondary' }], tagMono, S.fTag, x, t + rowH + 3 + rowH / 2, align));
+            litLabels.push(buildLabel(measure, 'agent', null, 'agent', [{ text: copy.agent, ink: 'agent' }], tagSans, S.fTag, x, t + rowH / 2, align));
+            litLabels.push(buildLabel(measure, 'tool', null, 'tool', [{ text: copy.tool, ink: 'secondary' }], tagMono, S.fTag, x, t + rowH + 3 + rowH / 2, align));
             tagField.take(box);
             leader = { from, to: q };
             break done;
@@ -531,11 +531,11 @@ export function annotateFilmMap(input: FilmLayoutInput, placement: FilmClusterPl
         keys.push({ x: x0 + 6, y: y1, ink: 'project' }, { x: x0 + 6, y: y2, ink: 'agent' });
         const nameFont = fontOf(650, S.fPick, sans);
         const reachFont = fontOf(400, S.fReach, sans);
-        const name = makeLabel(measure, `pick:${pick}`, pick, 'pick', [{ text: vault.byId.get(pick)!.label, ink: 'strong' }], nameFont, S.fPick, x0 + 20, y1, 'left');
-        const reachLabel = makeLabel(measure, `reach:${pick}`, pick, 'reach', copy.reach(reach.needs.length, reach.neededBy.length), reachFont, S.fReach, name.box.r + 10, y1, 'left');
+        const name = buildLabel(measure, `pick:${pick}`, pick, 'pick', [{ text: vault.byId.get(pick)!.label, ink: 'strong' }], nameFont, S.fPick, x0 + 20, y1, 'left');
+        const reachLabel = buildLabel(measure, `reach:${pick}`, pick, 'reach', copy.reach(reach.needs.length, reach.neededBy.length), reachFont, S.fReach, name.box.r + 10, y1, 'left');
         const agentFont = fontOf(510, S.fTag, sans);
-        const agent = makeLabel(measure, 'agent', null, 'agent', [{ text: copy.agent, ink: 'agent' }], agentFont, S.fTag, x0 + 20, y2, 'left');
-        const tool = makeLabel(measure, 'tool', null, 'tool', [{ text: copy.tool, ink: 'secondary' }], fontOf(400, S.fTag, mono), S.fTag, agent.box.r + 10, y2, 'left');
+        const agent = buildLabel(measure, 'agent', null, 'agent', [{ text: copy.agent, ink: 'agent' }], agentFont, S.fTag, x0 + 20, y2, 'left');
+        const tool = buildLabel(measure, 'tool', null, 'tool', [{ text: copy.tool, ink: 'secondary' }], fontOf(400, S.fTag, mono), S.fTag, agent.box.r + 10, y2, 'left');
         litLabels.push(name, reachLabel, agent, tool);
       }
       const paths = [...lines.flatMap((line) => resample(line.pts, 3)), ...(leader ? resample([leader.from, leader.to], 3) : [])];
@@ -562,7 +562,7 @@ export function annotateFilmMap(input: FilmLayoutInput, placement: FilmClusterPl
       field.samples = [];
       let ban: FilmLitLine[] | null = null;
       for (const spot of ringSpots(lost, S.fCap, outwardOf(lostEnd), lost.kind === 'element' ? [0, 6, 12, 18] : [0, 8, 18, 30, 44, 60])) {
-        const box = makeLabel(measure, 'probe', lostEnd, 'end', [{ text: vault.byId.get(lostEnd)!.label, ink: 'strong' }], fontOf(510, S.fCap, sans), S.fCap, spot.x, spot.y, spot.align).box;
+        const box = buildLabel(measure, 'probe', lostEnd, 'end', [{ text: vault.byId.get(lostEnd)!.label, ink: 'strong' }], fontOf(510, S.fCap, sans), S.fCap, spot.x, spot.y, spot.align).box;
         if (!field.free(box)) continue;
         const pad = grow(box, LABEL_PAD);
         const blockers = lines.filter((l) => resample(l.pts, 8).some((q) => inside(q, pad)));

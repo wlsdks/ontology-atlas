@@ -143,7 +143,7 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
       "src/widgets/app-settings-menu/ui/agent-setup/AgentSetupSection.tsx",
       "src/widgets/app-settings-menu/ui/ModelConnectionsPanel.tsx",
       "src/widgets/app-settings-menu/ui/panes/WorkspacePane.tsx",
-      "src/widgets/atlas-git-panel/ui/SetupMode.tsx",
+      "src/widgets/atlas-git-panel/ui/setup-panels.tsx",
       "src/widgets/bottom-tab-bar/lib/is-tab-active.ts",
       "src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx",
       "src/widgets/gateway-chrome/ui/GatewayNav.tsx",

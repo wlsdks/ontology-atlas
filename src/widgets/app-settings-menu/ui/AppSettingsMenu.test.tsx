@@ -795,8 +795,8 @@ describe('AppSettingsMenu appearance pickers', () => {
     openSection('expand');
     fireEvent.click(screen.getByTestId('app-settings-expand-detail-toggle'));
     const range = (id: string) => {
-      const el = screen.getByTestId(id) as HTMLInputElement;
-      return [el.min, el.max];
+      const inputElement = screen.getByTestId(id) as HTMLInputElement;
+      return [inputElement.min, inputElement.max];
     };
     expect(range('app-settings-expand-batch')).toEqual(['4', '24']);
     expect(range('app-settings-expand-label-attempts')).toEqual(['3', '40']);

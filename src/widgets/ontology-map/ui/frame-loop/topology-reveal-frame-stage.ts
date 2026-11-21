@@ -47,10 +47,10 @@ export function createRevealFrameStage(sources: RevealFrameStageSources) {
       const tracked = new Set<string>([...expandedNow, ...revealMap.keys()]);
       for (const pid of tracked) {
         const target = expandedNow.has(pid);
-        const prev = revealMap.get(pid) ?? 0;
+        const previous = revealMap.get(pid) ?? 0;
         const nextVal = reducedMotionRef.current
           ? (target ? 1 : 0)
-          : stepEmphasis(prev, target, true, dt, tokens.clusterRevealTau, tokens.clusterRevealTau);
+          : stepEmphasis(previous, target, true, dt, tokens.clusterRevealTau, tokens.clusterRevealTau);
         if (!target && nextVal <= 0.02) revealMap.delete(pid);
         else revealMap.set(pid, nextVal);
       }
@@ -82,9 +82,9 @@ export function createRevealFrameStage(sources: RevealFrameStageSources) {
     // Re-relax only newly visible nodes and their bbox neighbours: `relaxScope` is fixed at world build,
     // so expanded children collide with other fans, and a full re-relax moves nodes already in view.
     {
-      const prevClustered = clusteredIdsRef.current;
+      const previousClustered = clusteredIdsRef.current;
       const newlyVisible = new Set<string>();
-      for (const id of prevClustered) if (!frameClusteredIds.has(id)) newlyVisible.add(id);
+      for (const id of previousClustered) if (!frameClusteredIds.has(id)) newlyVisible.add(id);
       if (newlyVisible.size > 0) {
         const alreadyPlaced = new Set<string>();
         for (const node of world.nodes) {
@@ -141,10 +141,10 @@ export function createRevealFrameStage(sources: RevealFrameStageSources) {
       }
       const tracked = new Set<string>([...target, ...revealMap.keys()]);
       for (const id of tracked) {
-        const prev = revealMap.get(id) ?? 0;
+        const previous = revealMap.get(id) ?? 0;
         const next = reducedMotionRef.current
           ? (target.has(id) ? 1 : 0)
-          : stepEmphasis(prev, target.has(id), true, dt, tokens.clusterRevealTau, tokens.clusterRevealTau);
+          : stepEmphasis(previous, target.has(id), true, dt, tokens.clusterRevealTau, tokens.clusterRevealTau);
         if (!target.has(id) && next <= 0.02) revealMap.delete(id);
         else revealMap.set(id, next);
       }

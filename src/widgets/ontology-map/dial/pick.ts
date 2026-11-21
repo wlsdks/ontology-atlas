@@ -1,4 +1,4 @@
-import type { DialPick, DialRowPick, DialRowAction } from "./types";
+import type { DialPick, DialRowPick, DialRowAction } from "./dial-shapes";
 
 /**
  * The concept under a canvas point: a solid disc, then a name or dot row, then any drawn disc, and

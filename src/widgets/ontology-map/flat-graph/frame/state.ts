@@ -1,11 +1,11 @@
-import type { Box, DialChordLight, DialEvidenceView, DialFrameInput, DialFrameResult, DialModel, DialPick, DialRowPick, Point } from "../../dial/types";
+import type { Box, DialChordLight, DialEvidenceView, DialFrameInput, DialFrameResult, DialModel, DialPick, DialRowPick, Point } from "../../dial/dial-shapes";
 import type { GraphAttention, GraphLineKind } from "../attention";
 import { emptyArcPath, type ArcPath } from "../marks";
 import type { GraphMotion } from "../motion";
 import type { PlacedName } from "../names/placed-name";
 import type { OpenedElements } from "../open";
 import type { StarRoom } from "../open-star";
-import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "../types";
+import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "../flat-graph-shapes";
 
 export const CULL_PX = 80;
 export const DRAWN_INK = 0.02;

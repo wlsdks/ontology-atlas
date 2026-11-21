@@ -14,7 +14,7 @@ import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import { type CameraTween, type CameraTweenEase } from "../../model/camera/camera-easing";
 import { recordSelectionCamera, selectionZoomBase, type SelectionCamera } from "../../model/camera/flat-selection-camera";
 import type { DomeFitTarget, DomeRuntime } from "../../model/dome-view/runtime";
-import type { DomeModel } from "../../model/dome-view/types";
+import type { DomeModel } from "../../model/dome-view/dome-shapes";
 import { isPathTargetPick, type TopologyMapLensKind } from "../../model/visibility/path-lens";
 import {
   type RealmTransitionState
