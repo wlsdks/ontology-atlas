@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { FADE_MS, FILM_MS, flight, flightMs, HOLD_MS, seamLight } from './film-acts';
+import { FADE_MS, FILM_MS, closeUpTravelMs, flight, flightMs, HOLD_MS, seamLight } from './film-acts';
+import { easeInOut } from './film-kit';
 
 const CYCLE = FILM_MS + HOLD_MS + FADE_MS;
 const FRAME_60 = 1000 / 60;
@@ -48,5 +49,21 @@ describe('a flight', () => {
   it('keeps the spec\'s 640 ms for a near row and lands exactly', () => {
     expect(flightMs(300)).toBe(640);
     expect(flight(flightMs(1400), 0, flightMs(1400)).p).toBe(1);
+  });
+});
+
+describe('the close-up travel', () => {
+  it('keeps the spec\'s 700 ms for a short way', () => {
+    expect(closeUpTravelMs(40, 2000)).toBe(700);
+  });
+
+  it('lengthens a far way so no 60 Hz frame moves a mark more than 2.2% of the diagonal at the peak', () => {
+    const diagonal = Math.hypot(402, 874);
+    for (const farthest of [300, 600, 900]) {
+      const ms = closeUpTravelMs(farthest, diagonal);
+      let worst = 0;
+      for (let t = 0; t + FRAME_60 <= ms; t += 1) worst = Math.max(worst, (easeInOut((t + FRAME_60) / ms) - easeInOut(t / ms)) * farthest);
+      expect(worst, `${farthest}px`).toBeLessThanOrEqual(0.022 * diagonal + 1e-9);
+    }
   });
 });

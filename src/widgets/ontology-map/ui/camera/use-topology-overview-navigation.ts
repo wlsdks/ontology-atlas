@@ -13,7 +13,7 @@ import {
 } from "../../model/realm/realm-transition";
 import { landTierAssembly } from "../../morph/tier-assembly";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { computeOverviewCameraTarget, computeOverviewFitScale } from "./topology-camera-math";
+import { computeOverviewCameraTarget, computeOverviewFitScale } from "./target/fit-targets";
 import {
   overviewBoundsFor,
   overviewFitTokens

@@ -7,7 +7,7 @@ import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
 import type { SelectionSource } from "../../model/camera/flat-selection-camera";
 import { type TierNameAnchor } from "../../model/dome-view/strata/tier-names";
 import { type TierRevealConfig, type ZoomTier } from "../../model/visibility/tier-visibility";
-import type { ClusterBarLabels } from "../../render/cluster-chips";
+import type { ClusterBarLabels } from "../../render/cluster-chips/control-placement";
 import type { HoverAvoidRect } from "../input/topology-pointer-types";
 
 import type { OntologyMapProps } from "../OntologyMap";

@@ -11,10 +11,8 @@ import { settleTierAssembly, tierAssemblyAppear } from "../../morph/tier-assembl
 import { selectEgoContainsComets, updateParticles, type ParticleEdge } from "../../render/edge-fireflies";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom, type TierRevealConfig } from "../../model/visibility/tier-visibility";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import {
-  computeEffectiveCameraScaleMax,
-  computeEffectiveCameraScaleMin,
-  computeUnfocusedPanBounds, focusPanBounds, type FocusLeashPx } from "../camera/topology-camera-math";
+import { computeUnfocusedPanBounds, focusPanBounds, type FocusLeashPx } from "../camera/target/pan-leash";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "../camera/target/zoom-range";
 import type { TopologyWorld } from "../world/topology-world";
 
 export interface PhysicsStepInput {
@@ -213,7 +211,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
 
   // The camera's real zoom-in ceiling is now ratio-based (viewport-
   // relative), not the absolute `cameraScaleMax` token — see
-  // `topology-camera-math.ts#computeEffectiveCameraScaleMax`'s JSDoc for the
+  // `target/zoom-range.ts#computeEffectiveCameraScaleMax`'s JSDoc for the
   // audit finding this fixes (capability/element tiers were unreachable).
   const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax, world.dialScaleMax ?? undefined);
   const effectiveScaleMin = Math.min(

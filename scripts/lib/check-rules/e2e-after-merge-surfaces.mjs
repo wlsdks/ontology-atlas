@@ -6,7 +6,8 @@ export const rules = [
     matches: [
       /^src\/views\/download\/ui\/DownloadPage\.tsx$/,
       /^src\/views\/download\/(?:lib\/page-motion\/gateway-frame-loop\.ts|ui\/GatewayFx\.tsx)$/,
-      /^src\/views\/download\/ui\/(?:film\/)?[A-Za-z]+Section\.tsx$/,
+      /^src\/views\/download\/ui\/(?:(?:film|hero)\/)?[A-Za-z]+Section\.tsx$/,
+      /^src\/views\/download\/ui\/release\/[A-Za-z]+\.tsx$/,
     ],
   },
   {
@@ -16,7 +17,8 @@ export const rules = [
     matches: [
       /^src\/views\/download\/ui\/DownloadPage\.tsx$/,
       /^src\/views\/download\/(?:lib\/page-motion\/gateway-frame-loop\.ts|ui\/GatewayFx\.tsx)$/,
-      /^src\/views\/download\/ui\/(?:film\/)?[A-Za-z]+Section\.tsx$/,
+      /^src\/views\/download\/ui\/(?:(?:film|hero)\/)?[A-Za-z]+Section\.tsx$/,
+      /^src\/views\/download\/ui\/release\/[A-Za-z]+\.tsx$/,
     ],
   },
   {

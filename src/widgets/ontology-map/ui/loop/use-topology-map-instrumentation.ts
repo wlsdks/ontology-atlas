@@ -39,7 +39,7 @@ import {
   radiusForKind,
   type TopologyWorld,
 } from "../world/topology-world";
-import { lastFocusFrame } from "../camera/topology-camera-math";
+import { lastFocusFrame } from "../camera/target/focus-fit";
 import { neuralPainterOf } from "../../neural-gl/neural-gl-stage";
 
 type SourceRef<T> = { current: T; };

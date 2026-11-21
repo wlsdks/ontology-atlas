@@ -22,7 +22,7 @@ import { dialOverviewPad } from "../../dial/fit";
 import { layoutDial } from "../../dial/layout";
 import { circularDomainOrder, rememberDialOrder, rememberedDialOrder } from "../../dial/order";
 import type { DialModel, DialTokens, DialWorld, DialWorldInput } from "../../dial/types";
-import { domainTitleBlocks, hubBlockReachPx } from "../../flat-graph/names";
+import { domainTitleBlocks, hubBlockReachPx } from "../../flat-graph/names/titles";
 import { drainSteps, type LayoutSteps } from "../../flat-graph/layout";
 import { buildFlatGraphSceneSteps, flatGraphPins } from "../../flat-graph/scene";
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../../model/layout/layout";

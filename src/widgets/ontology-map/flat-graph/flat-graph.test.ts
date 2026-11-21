@@ -28,7 +28,12 @@ import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attenti
 import { layoutFlatGraph } from "./layout";
 import { arcPathInto, crowdShare, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto, zoomGrowth } from "./marks";
 import { capabilityLineTurns, openedElements } from "./open";
-import { admittedNames, chooseSide, domainTitleBlocks, leaderSegment, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
+import { admittedNames, nameBlockClear, nameBlockDraws, nameBlockEnd, selectedDiscRadius } from "./names";
+import { leaderSegment, linePolylines, segmentCrossesBox } from "./names/lit-lines";
+import { type PlacedName } from "./names/placed-name";
+import { chooseSide } from "./names/sides";
+import { domainTitleBlocks, reachText } from "./names/titles";
+import { stepScale, zoomStep } from "./names/zoom-step";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame, FlatGraphLayout } from "./types";

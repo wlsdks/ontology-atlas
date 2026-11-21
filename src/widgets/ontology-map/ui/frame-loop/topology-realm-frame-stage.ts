@@ -22,7 +22,7 @@ import {
   stepWardingFit,
   type WardingFitState,
 } from "../../model/realm/realm-warding-fit";
-import { orbitButtonRect } from "../../render/cluster-chips";
+import { orbitButtonRect } from "../../render/cluster-chips/control-placement";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { worldToScreen } from "../camera/topology-camera-math";
 import type { RealmRuntimeData } from "../world/topology-realm-runtime";

@@ -1064,6 +1064,22 @@ describe('focused check suggestions', () => {
     assert.ok(!commands.some((command) => command.includes('mcp-connector-add')));
   });
 
+  it('points every download page section and its release controls at the scroll-budget and stillness specs', () => {
+    for (const file of [
+      'src/views/download/ui/DownloadPage.tsx',
+      'src/views/download/ui/hero/HeroSection.tsx',
+      'src/views/download/ui/film/FilmSection.tsx',
+      'src/views/download/ui/ClosingSection.tsx',
+      'src/views/download/ui/ScreensSection.tsx',
+      'src/views/download/ui/release/DownloadActions.tsx',
+      'src/views/download/ui/release/FactsStrip.tsx',
+    ]) {
+      const commands = domainCommands(suggestFocusedChecks([file]));
+      assert.ok(commands.includes('pnpm exec playwright test tests/e2e/gateway/download-scroll-budget.spec.ts'), file);
+      assert.ok(commands.includes('pnpm exec playwright test tests/e2e/gateway/download-still.spec.ts'), file);
+    }
+  });
+
   it('points folder-switch and download-hero changes at the leak specs that measure them', () => {
     const cases = [
       ['src/entities/vault-session/model/local-vault/use-local-vault.ts', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
@@ -1082,6 +1098,19 @@ describe('focused check suggestions', () => {
       assert.ok(existsSync(path), `${path} moved; move its mapping with it`);
       assert.ok(commandNames(suggestFocusedChecks([path])).includes(`pnpm exec playwright test ${spec}`), `${path} → ${spec}`);
     }
+  });
+
+  it('points every Flat name admission file at the star-motion spec that measures names in motion', () => {
+    const command = 'pnpm exec playwright test tests/e2e/map/flat-graph/map-flat-graph-star-motion.spec.ts';
+    for (const path of [
+      'src/widgets/ontology-map/flat-graph/names.ts',
+      'src/widgets/ontology-map/flat-graph/names/admit.ts',
+      'src/widgets/ontology-map/flat-graph/names/sides.ts',
+    ]) {
+      assert.ok(existsSync(path), `${path} moved; move its mapping with it`);
+      assert.ok(commandNames(suggestFocusedChecks([path])).includes(command), path);
+    }
+    assert.ok(!commandNames(suggestFocusedChecks(['src/widgets/ontology-map/flat-graph/names/zoom-step.test.ts'])).includes(command));
   });
 
   it('routes the vault session files the desktop readiness gate reads to that gate', () => {

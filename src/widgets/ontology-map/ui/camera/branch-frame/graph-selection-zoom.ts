@@ -1,7 +1,9 @@
 import type { Box, DialLabels, DialModel } from "../../../dial/types";
 import type { GraphAttention } from "../../../flat-graph/attention";
 import { graphDiscRadiusPx, zoomGrowth } from "../../../flat-graph/marks";
-import { admitNamesAt, selectedDiscRadius, stepScale, zoomStep, type NameAdmission } from "../../../flat-graph/names";
+import { admitNamesAt, selectedDiscRadius } from "../../../flat-graph/names";
+import { type NameAdmission } from "../../../flat-graph/names/placed-name";
+import { stepScale, zoomStep } from "../../../flat-graph/names/zoom-step";
 import type { FlatGraphLayout, FlatGraphPaintTokens } from "../../../flat-graph/types";
 import type { FramedMark, SelectionZoomIn } from "../../../model/camera/flat-selection-camera";
 
