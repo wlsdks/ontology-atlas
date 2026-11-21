@@ -8,7 +8,11 @@
 //! This registry is the missing boundary: a root is honoured only when it equals or
 //! sits inside a directory the user genuinely chose — the native folder picker, the
 //! app's own vault container, or a vault restored from a Rust-owned record of a
-//! prior choice (never a path the renderer merely asserts).
+//! prior choice (never a path the renderer merely asserts). A verification launch
+//! adds one more source: the fixture folders its launch environment names, granted
+//! for that launch only and never persisted (`grant_launch_vault_root`). The
+//! environment is fixed before the WebView exists, so the renderer still cannot
+//! widen the set.
 //!
 //! Enforcement turns on once `initialize` runs at startup. Before that (unit tests
 //! that never call it) the gate is permissive; a test enforces on its own thread
@@ -33,6 +37,9 @@ pub(crate) struct Registry {
     /// what the content commands can read; `harness_source` reads its allowlist under one.
     sources: HashSet<PathBuf>,
     selected_sources: HashSet<PathBuf>,
+    /// The subset of `vaults` granted for this launch only. `persist` leaves them out,
+    /// so a verification run leaves the person's grant list as it found it.
+    launch_only: HashSet<PathBuf>,
     /// Where granted vault roots persist across launches; `None` in tests.
     store: Option<PathBuf>,
 }
@@ -58,7 +65,18 @@ impl Registry {
         if let Some(repo) = repo_root {
             self.sources.insert(repo);
         }
+        // A genuine choice outlives the launch even when a verification run named it first.
+        self.launch_only.remove(&root);
         self.vaults.insert(root);
+    }
+
+    /// Like `grant`, but a root the person had not already chosen is not persisted.
+    fn grant_for_launch(&mut self, root: PathBuf, repo_root: Option<PathBuf>) {
+        let already_chosen = self.vaults.contains(&root);
+        self.grant(root.clone(), repo_root);
+        if !already_chosen {
+            self.launch_only.insert(root);
+        }
     }
 
     fn persist(&self) {
@@ -68,6 +86,7 @@ impl Registry {
         let mut roots: Vec<String> = self
             .vaults
             .iter()
+            .filter(|root| !self.launch_only.contains(*root))
             .map(|p| p.to_string_lossy().to_string())
             .collect();
         roots.sort();
@@ -159,6 +178,34 @@ pub(crate) fn grant_source_root(root: &Path) {
     let mut registry = lock();
     registry.sources.insert(canonical.clone());
     registry.selected_sources.insert(canonical);
+}
+
+/// Grants, for this launch only, a folder a verification run names in its launch
+/// environment. The same roots the picker refuses are refused here, so the
+/// environment cannot grant the home folder or a filesystem root. Returns the
+/// canonical root, or why it was refused.
+pub(crate) fn grant_launch_vault_root(root: &Path) -> Result<PathBuf, String> {
+    let canonical = std::fs::canonicalize(root).map_err(|error| error.to_string())?;
+    if !canonical.is_dir() {
+        return Err("vault root must be a directory".into());
+    }
+    if let Some(reason) = crate::vault_root_rejection(&canonical) {
+        return Err(format!("vault-root-rejected:{reason}"));
+    }
+    let repo = repo_root_of(&canonical);
+    #[cfg(test)]
+    if THREAD_REGISTRY.with(|slot| {
+        if let Some(reg) = slot.borrow_mut().as_mut() {
+            reg.grant_for_launch(canonical.clone(), repo.clone());
+            true
+        } else {
+            false
+        }
+    }) {
+        return Ok(canonical);
+    }
+    lock().grant_for_launch(canonical.clone(), repo);
+    Ok(canonical)
 }
 
 /// Gate for vault content, git and archive commands. Permissive until `initialize`.
@@ -305,5 +352,60 @@ mod tests {
             reloaded[0].ends_with("vault"),
             "the canonical vault path is what a later launch re-grants"
         );
+    }
+
+    #[test]
+    fn a_launch_grant_admits_its_root_but_never_reaches_the_persisted_list() {
+        let base = tmp("launch");
+        let store = base.join("granted-vault-roots.json");
+        let chosen = base.join("chosen");
+        let fixture = base.join("fixture");
+        std::fs::create_dir_all(&chosen).unwrap();
+        std::fs::create_dir_all(&fixture).unwrap();
+        let mut reg = Registry {
+            store: Some(store.clone()),
+            ..Registry::default()
+        };
+        reg.grant(chosen.clone(), None);
+        reg.grant_for_launch(fixture.clone(), None);
+        assert!(
+            reg.is_vault_granted(&fixture),
+            "the fixture opens this launch"
+        );
+
+        reg.persist();
+        let chosen_only = vec![chosen.to_string_lossy().to_string()];
+        assert_eq!(
+            read_persisted(&store),
+            chosen_only,
+            "the fixture is not kept"
+        );
+
+        reg.grant_for_launch(chosen.clone(), None);
+        reg.persist();
+        assert_eq!(
+            read_persisted(&store),
+            chosen_only,
+            "a run naming a folder the person chose does not drop it"
+        );
+
+        reg.grant(fixture.clone(), None);
+        reg.persist();
+        assert_eq!(
+            read_persisted(&store).len(),
+            2,
+            "a later genuine choice of the fixture is kept"
+        );
+    }
+
+    #[test]
+    fn a_launch_grant_refuses_the_home_folder_like_the_picker() {
+        let _scope = EnforcedScope::granting(&[]);
+        let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
+            .map(PathBuf::from)
+            .unwrap();
+        let refusal = grant_launch_vault_root(&home).unwrap_err();
+        assert!(refusal.contains("home-directory"), "{refusal}");
+        assert!(!is_vault_granted(&std::fs::canonicalize(&home).unwrap()));
     }
 }
