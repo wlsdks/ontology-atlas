@@ -2,8 +2,6 @@ import { useCallback, useMemo } from "react";
 import { useLocalVault } from "@/entities/vault-session";
 import type { LibraryGraphCardFacts, LibraryGraphCardRow, LibraryGraphNode } from "@/widgets/library-graph";
 import { compactOntologyDescription } from "@/shared/lib/concept-display/ontology-description";
-import { WIKI_CITATION_PATTERN } from "@/shared/lib/library/wiki-page-schema";
-import { sectionSlices } from "../../lib/wiki/section-slices";
 import { useLibraryAgent } from "../../lib/agent/use-library-agent";
 import type { LibraryUiModel } from "@/features/library";
 import type { LibrarySourceRow, VaultDoc } from "@/entities/docs-vault";
@@ -63,12 +61,11 @@ export function useLibraryGraphCards({
       if (!page) return null;
       const doc = docsBySlug.get(page.slug);
       const originals = model.pairing.originalsByWiki.get(page.slug) ?? [];
-      const text = model.pageTexts.get(page.slug);
-      const summarySection = text ? sectionSlices(text).sections.get("Summary") : undefined;
+      const facts = model.pageFacts.get(page.slug);
       const frontmatterSummary =
         typeof doc?.frontmatter?.summary === "string" ? doc.frontmatter.summary : null;
       const sentence =
-        compactOntologyDescription(summarySection ?? frontmatterSummary ?? undefined) ?? null;
+        facts?.summary !== undefined ? facts.summary : compactOntologyDescription(frontmatterSummary ?? undefined) ?? null;
       const stale = originals.filter((original) => original.state === "stale").length;
       const mentions = (doc?.linksOut ?? []).filter(
         (target) => conceptSlugs.has(target) && !wikiPageSlugs.has(target),
@@ -82,7 +79,7 @@ export function useLibraryGraphCards({
         sentence,
         counts: {
           sources: page.sourcePaths.length,
-          cites: text ? [...text.matchAll(new RegExp(WIKI_CITATION_PATTERN, "g"))].length : null,
+          cites: facts?.cites ?? null,
           mentions,
           stale,
         },
@@ -113,7 +110,7 @@ export function useLibraryGraphCards({
       compileSources,
       handleOpenSource,
       localVault.sourceHandles,
-      model.pageTexts,
+      model.pageFacts,
       model.pairing,
       model.sources,
       model.wikiPages,

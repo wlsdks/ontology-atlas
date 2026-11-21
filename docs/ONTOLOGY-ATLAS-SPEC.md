@@ -901,8 +901,9 @@ than one document shares, a wiki page and the vault README all report
 caller that passes none skips it, and `validate_wiki`, `wiki-validate` and the
 app's page-write judge always pass them.
 
-Three more codes come from the folder, not the page. `validateWikiFolder` (the same
-two modules) judges every page under `wiki/` together, and `wiki-validate` and
+Three more codes come from the folder, not the page. `validateWikiFolder`
+(`mcp/src/library/wiki-folder.mjs`, mirrored in `src/shared/lib/library/wiki-folder.ts`)
+judges every page under `wiki/` together, and `wiki-validate` and
 `validate_wiki` append its findings to the page they concern. A page link is
 `[[wiki/<slug>]]`, `[[<slug>]]`, optionally with `|text` or `#anchor`; a citation
 (`src:`) is never a link.

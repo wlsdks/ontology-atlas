@@ -44,8 +44,9 @@ export function questionDeskReportFileCurrent(reportScope: string, currentScope:
   return reportScope === currentScope && reportListing === currentListing;
 }
 
-export function countDeskReadablePages(docs: readonly VaultDoc[], rawBySlug: ReadonlyMap<string, string>): number {
-  return deskPages(docs).filter((doc) => rawBySlug.has(doc.slug)).length;
+/** `read` holds an entry for each page the Library has read. */
+export function countDeskReadablePages(docs: readonly VaultDoc[], read: ReadonlyMap<string, unknown>): number {
+  return deskPages(docs).filter((doc) => read.has(doc.slug)).length;
 }
 
 export function planDeskSourceReads<T extends { path: string; bytes: number }>(sources: readonly T[]): T[] {
@@ -82,16 +83,25 @@ function recordedHashes(frontmatter: Record<string, unknown>): Record<string, st
 }
 
 /**
- * Every claim on a page, in page order, before any question scores it: a list item under Facts or
- * Decisions that is not a question. `bodyOffset` counts the lines above the body, so a claim's
- * line in the file is `line + bodyOffset`.
+ * What the desk keeps of one page read: each claim's sentence and body line, in page order, and the
+ * hashes the page records. `bodyOffset` counts the lines above the body, so a claim's line in the
+ * file is `line + bodyOffset`.
  */
-function pageClaims(doc: VaultDoc, raw: string): { claims: DeskClaim[]; bodyOffset: number } {
+export interface DeskPageClaims {
+  readonly bodyOffset: number;
+  readonly recordedHashes: Readonly<Record<string, string>>;
+  readonly claims: ReadonlyArray<{ readonly text: string; readonly line: number }>;
+}
+
+/**
+ * The claims of a page before any question scores them: list items under Facts or Decisions that
+ * are not questions. Copied out by `JSON`, so what is kept holds none of the page text. O(page bytes).
+ */
+export function deskPageClaims(raw: string): DeskPageClaims {
   const parsed = parseFrontmatter(raw);
-  const hashes = recordedHashes(parsed.frontmatter);
   const whole = raw.replace(/^﻿/u, '').replace(/\r\n/gu, '\n');
   const bodyOffset = whole.endsWith(parsed.body) ? whole.slice(0, whole.length - parsed.body.length).split('\n').length - 1 : 0;
-  const claims: DeskClaim[] = [];
+  const claims: Array<{ text: string; line: number }> = [];
   let section = '';
   for (const [index, line] of parsed.body.split(/\r?\n/).entries()) {
     const trimmed = line.trim();
@@ -100,13 +110,18 @@ function pageClaims(doc: VaultDoc, raw: string): { claims: DeskClaim[]; bodyOffs
     if (!/^[-*] /.test(trimmed)) continue;
     const text = trimmed.slice(2).trim();
     if (text.endsWith('?')) continue;
-    const citations = [...text.matchAll(CITATION)].map((match) => ({ path: match[1]!, anchor: match[2]! }));
-    claims.push({ pageSlug: doc.slug, pageTitle: doc.title, text, citations, line: index + 1, score: 0, recordedHashes: hashes });
+    claims.push({ text, line: index + 1 });
   }
-  return { claims, bodyOffset };
+  const hashes = recordedHashes(parsed.frontmatter);
+  return JSON.parse(JSON.stringify({ bodyOffset, recordedHashes: hashes, claims })) as DeskPageClaims;
 }
 
-export function findDeskClaims(question: string, docs: readonly VaultDoc[], rawBySlug: ReadonlyMap<string, string>): {
+function deskClaim(doc: VaultDoc, page: DeskPageClaims, claim: DeskPageClaims['claims'][number], score: number): DeskClaim {
+  const citations = [...claim.text.matchAll(CITATION)].map((match) => ({ path: match[1]!, anchor: match[2]! }));
+  return { pageSlug: doc.slug, pageTitle: doc.title, text: claim.text, citations, line: claim.line, score, recordedHashes: page.recordedHashes as Record<string, string> };
+}
+
+export function findDeskClaims(question: string, docs: readonly VaultDoc[], claimsBySlug: ReadonlyMap<string, DeskPageClaims>): {
   claims: DeskClaim[]; readPages: number; totalPages: number; omitted: number;
 } {
   const terms = questionTerms(question);
@@ -114,12 +129,12 @@ export function findDeskClaims(question: string, docs: readonly VaultDoc[], rawB
   const claims: DeskClaim[] = [];
   let readPages = 0;
   for (const doc of pages) {
-    const raw = rawBySlug.get(doc.slug);
-    if (raw === undefined) continue;
+    const page = claimsBySlug.get(doc.slug);
+    if (page === undefined) continue;
     readPages += 1;
-    for (const claim of pageClaims(doc, raw).claims) {
+    for (const claim of page.claims) {
       const score = questionScore(claim.text, terms);
-      if (score) claims.push({ ...claim, score });
+      if (score) claims.push(deskClaim(doc, page, claim, score));
     }
   }
   claims.sort((a, b) => b.score - a.score || a.pageSlug.localeCompare(b.pageSlug));
@@ -239,10 +254,10 @@ const MARKDOWN_HEADING = /^#{1,6}(?:\s|$)/u;
  * first claim in range. A passage whose file was not read, or whose range holds no such sentence,
  * is dropped and counted in `dropped`.
  */
-export function deskMeaningLeads({ hits, docs, rawBySlug, searchedSources, sourceUnitsByPath, claims, sourceHits }: {
+export function deskMeaningLeads({ hits, docs, claimsBySlug, searchedSources, sourceUnitsByPath, claims, sourceHits }: {
   hits: readonly DeskPassageHit[];
   docs: readonly VaultDoc[];
-  rawBySlug: ReadonlyMap<string, string>;
+  claimsBySlug: ReadonlyMap<string, DeskPageClaims>;
   /** The source paths this search planned to read. */
   searchedSources: ReadonlySet<string>;
   /** The units of each planned source this search read; a path absent here could not be read. */
@@ -256,20 +271,18 @@ export function deskMeaningLeads({ hits, docs, rawBySlug, searchedSources, sourc
   const nfc = (path: string) => path.normalize('NFC');
   const pageByPath = new Map(deskPages(docs).map((doc) => [nfc(`${doc.slug}.md`), doc]));
   const listedSource = new Map([...searchedSources].map((path) => [nfc(path), path]));
-  const parsedPages = new Map<string, ReturnType<typeof pageClaims>>();
   const leads: DeskMeaningLead[] = [];
   let dropped = 0;
   const within = (line: number, hit: DeskPassageHit) => line >= hit.lineStart && line <= hit.lineEnd;
   for (const hit of hits) {
     const doc = pageByPath.get(nfc(hit.path));
     if (doc) {
-      const raw = rawBySlug.get(doc.slug);
-      if (raw === undefined) { dropped += 1; continue; }
-      let page = parsedPages.get(doc.slug);
-      if (!page) { page = pageClaims(doc, raw); parsedPages.set(doc.slug, page); }
+      const page = claimsBySlug.get(doc.slug);
+      if (page === undefined) { dropped += 1; continue; }
       const { bodyOffset } = page;
+      const inRange = page.claims.find((candidate) => within(candidate.line + bodyOffset, hit));
       const claim = claims.find((worded) => worded.pageSlug === doc.slug && within(worded.line + bodyOffset, hit))
-        ?? page.claims.find((candidate) => within(candidate.line + bodyOffset, hit));
+        ?? (inRange ? deskClaim(doc, page, inRange, 0) : undefined);
       if (claim) leads.push({ kind: 'claim', claim });
       else dropped += 1;
       continue;

@@ -158,6 +158,18 @@ test.describe("A folder of pages and no nodes opens on the Library", () => {
   });
 
   test("opening the folder lands on the Library with the page listed", async ({ page }) => {
+    // The map and its loader must never mount on the way, not even for the frame before the redirect.
+    await page.addInitScript(() => {
+      const mapParts = '[data-testid="map-entry-fallback"], [data-testid="topology-command-chrome"], [data-testid="topology-map-surface"]';
+      const seen = window as unknown as { mapMounted?: boolean };
+      new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (node instanceof Element && (node.matches(mapParts) || node.querySelector(mapParts))) seen.mapMounted = true;
+          }
+        }
+      }).observe(document, { childList: true, subtree: true });
+    });
     await page.goto("/en/");
     await page.waitForLoadState("networkidle");
     const door = page.getByRole("button", { name: /^Open (?:a|my) folder/ });
@@ -172,6 +184,7 @@ test.describe("A folder of pages and no nodes opens on the Library", () => {
     await expect(page).toHaveURL(/\/en\/library\/?/);
     await expect(page.getByTestId("library-workspace-wiki")).toHaveAccessibleName("Wiki, 1");
     await expect(page.getByTestId("library-reader-landing")).toBeVisible();
+    expect(await page.evaluate(() => (window as unknown as { mapMounted?: boolean }).mapMounted ?? false)).toBe(false);
     /*
      * The home draws the picture with nothing chosen; the guide is behind its door. Seeding the first-run
      * keys includes the guide's self-raise, so it is not up.

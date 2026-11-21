@@ -6,7 +6,8 @@ import {
 } from '@/entities/docs-vault';
 import type { GrantedVaultFiles } from '@/entities/vault-session';
 import { bundledDocsBySlug, createBundledDetailReader } from './bundled-detail-reader';
-import { createLocalTextReader } from './local-text-reader';
+import { getTauriVaultRootPath, isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { createVaultTextReader } from '@/shared/lib/vault-folder/vault-text-reader';
 
 export interface ResolvedDocumentStore {
   store: DocumentStore;
@@ -24,7 +25,8 @@ const bundledStores = { withHeadings: new WeakMap<StaticVaultSource, DocumentSto
 function localStoreFor({ root, fileHandles }: GrantedVaultFiles): DocumentStore {
   let store = localStores.get(fileHandles);
   if (!store) {
-    store = createDocumentStore({ readTexts: createLocalTextReader(root, fileHandles) });
+    const nativeRoot = isTauriVaultRuntime() ? getTauriVaultRootPath(root) ?? null : null;
+    store = createDocumentStore({ readTexts: createVaultTextReader(nativeRoot, fileHandles) });
     localStores.set(fileHandles, store);
   }
   return store;

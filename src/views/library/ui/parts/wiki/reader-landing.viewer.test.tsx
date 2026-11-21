@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import en from "../../../../../../messages/en.json";
 import type { VaultDoc } from "@/entities/docs-vault";
 import { findDeskClaims } from "@/features/library";
+import { deskPageClaims } from "@/features/library/lib/questions/question-desk";
 import { DocsVaultViewer } from "@/widgets/docs-vault";
 import { claimSentence } from "../questions/desk/DeskLeadRow";
 import { findClaimBlock } from "./reader-landing";
@@ -22,7 +23,7 @@ const CLAIM_B = "Bravo: the return label is free for members. [[src:sources/retu
 
 /** Renders the page as the reader does, then finds the block a desk row for its "free label" claim marks. */
 async function pressedBlock(raw: string, pick: (lines: number[]) => number = (lines) => lines[0]!) {
-  const { claims } = findDeskClaims("free return label members", [page], new Map([[page.slug, raw]]));
+  const { claims } = findDeskClaims("free return label members", [page], new Map([[page.slug, deskPageClaims(raw)]]));
   const line = pick(claims.map((one) => one.line));
   const claim = claims.find((each) => each.line === line)!;
   const { container } = render(
