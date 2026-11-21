@@ -63,6 +63,12 @@ export function checkOwner(vaultRoot: string | null, runtimeId: string): string 
   return `${vaultRoot ?? ""}:${runtimeId}`;
 }
 
+/** A tool's file inside the folder by its folder-relative name; anything else as it came. */
+export function folderRelativeFile(target: string, vaultRoot: string): string {
+  const root = vaultRoot.replace(/\/+$/, "");
+  return target.startsWith(`${root}/`) ? target.slice(root.length + 1) : target;
+}
+
 /** A tool's path as the folder stores it, or null when it lies outside the folder. */
 export function folderRelativePage(target: string, vaultRoot: string | null): string | null {
   const path = target.trim().replaceAll("\\", "/");

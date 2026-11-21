@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { folderRelativePage, wikiCheckOutcome } from "./wiki-check-outcome";
+import { folderRelativeFile, folderRelativePage, wikiCheckOutcome } from "./wiki-check-outcome";
 
 const answer = (text: string) => ({ outcome: "completed" as const, stopReason: "end_turn", events: [{ kind: "agent" as const, id: "a", text }] });
 const block = (value: unknown) => `Report.\n\n\`\`\`json\n${JSON.stringify(value)}\n\`\`\``;
@@ -40,5 +40,14 @@ describe("naming a page the agent reads", () => {
     expect(folderRelativePage("/Users/probe/launch/wiki/alpha.md", "/Users/probe/launch")).toBe("wiki/alpha");
     expect(folderRelativePage("sources/a.csv", "/Users/probe/launch")).toBe("sources/a.csv");
     expect(folderRelativePage("/etc/hosts", "/Users/probe/launch")).toBeNull();
+  });
+});
+
+describe("naming a file the agent touches", () => {
+  it("strips the folder, tolerates a trailing slash on the root, and leaves other paths as they came", () => {
+    expect(folderRelativeFile("/Users/probe/launch/sources/a.csv", "/Users/probe/launch")).toBe("sources/a.csv");
+    expect(folderRelativeFile("/Users/probe/launch/wiki/a.md", "/Users/probe/launch/")).toBe("wiki/a.md");
+    expect(folderRelativeFile("/etc/hosts", "/Users/probe/launch")).toBe("/etc/hosts");
+    expect(folderRelativeFile("/Users/probe/launch-two/a.md", "/Users/probe/launch")).toBe("/Users/probe/launch-two/a.md");
   });
 });
