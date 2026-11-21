@@ -12,6 +12,15 @@ use super::{
     parse_porcelain, read_repository, standing_of, Standing, WorktreeRow, ZeroAheadEvidence,
 };
 
+/// Git cannot take a Windows verbatim path (`\\?\C:\...`) as an argument, and the canonical
+/// fixture root is one there.
+fn git_arg(path: &Path) -> String {
+    let text = path.to_string_lossy().into_owned();
+    text.strip_prefix(r"\\?\")
+        .map(str::to_owned)
+        .unwrap_or(text)
+}
+
 struct Repo {
     dir: PathBuf,
     main: PathBuf,
@@ -61,7 +70,7 @@ impl Repo {
     /// Nested inside the main checkout, as agent worktrees are.
     fn worktree(&self, branch: &str) -> PathBuf {
         let path = self.main.join("worktrees").join(branch.replace('/', "-"));
-        let target = path.to_string_lossy().into_owned();
+        let target = git_arg(&path);
         self.git(
             &self.main,
             &["worktree", "add", "-q", "-b", branch, &target],
@@ -70,7 +79,7 @@ impl Repo {
     }
 
     fn lock(&self, path: &Path, reason: &str) {
-        let target = path.to_string_lossy().into_owned();
+        let target = git_arg(path);
         self.git(
             &self.main,
             &["worktree", "lock", "--reason", reason, &target],
@@ -194,7 +203,7 @@ fn a_branch_that_never_moved_from_a_merged_commit_has_no_commits_rather_than_mer
         &["merge", "-q", "--no-ff", "-m", "merge", "feat/side"],
     );
     let created_there = repo.dir.join("main/worktrees/integration");
-    let target = created_there.to_string_lossy().into_owned();
+    let target = git_arg(&created_there);
     repo.git(
         &repo.main,
         &[
@@ -225,11 +234,7 @@ fn a_planted_gitdir_that_leaves_the_folder_by_dot_dot_or_symlink_is_not_shown() 
         fs::create_dir_all(&record).unwrap();
         fs::write(record.join("HEAD"), "ref: refs/heads/main\n").unwrap();
         fs::write(record.join("commondir"), "../..\n").unwrap();
-        fs::write(
-            record.join("gitdir"),
-            format!("{}\n", gitdir.to_string_lossy()),
-        )
-        .unwrap();
+        fs::write(record.join("gitdir"), format!("{}\n", git_arg(&gitdir))).unwrap();
     };
     plant("dotdot", repo.main.join("../unrelated/.git"));
     // Windows needs a privilege to create a directory symlink, so only Unix plants that one.
@@ -331,7 +336,7 @@ fn a_lock_reason_reads_its_pid_and_utc_start_with_a_space_padded_day() {
 fn a_record_outside_the_chosen_folder_needs_its_worktree_to_point_back() {
     let repo = Repo::new("outside");
     let outside = repo.dir.join("outside");
-    let target = outside.to_string_lossy().into_owned();
+    let target = git_arg(&outside);
     repo.git(
         &repo.main,
         &["worktree", "add", "-q", "-b", "feat/outside", &target],
