@@ -61,7 +61,7 @@ try {
   const { parseFrontmatter } = await server.ssrLoadModule('/src/shared/lib/vault-document/parse-frontmatter.ts');
   const { buildWikiRetrievalIndex } = await server.ssrLoadModule('/src/entities/docs-vault/lib/library/wiki-retrieval.ts');
   const { buildLibraryModel } = await server.ssrLoadModule('/src/entities/docs-vault/lib/library/vault-library.ts');
-  const { buildCompileBrief } = await server.ssrLoadModule('/src/features/library/lib/wiki/compile-brief.ts');
+  const { buildCompileBrief } = await server.ssrLoadModule('/src/features/library/lib/wiki/compile/compile-brief.ts');
   const notices = { roundCap: 'round cap', noToolCall: () => 'no tool', aborted: 'aborted', networkFailed: 'network', timedOut: 'timeout', rateLimited: 'rate', rejected: 'rejected', auditBlocked: 'audit', providerRefused: 'refused', failed: 'failed' };
   const readWikiCompletely = async (execute, slug) => {
     let cursor;

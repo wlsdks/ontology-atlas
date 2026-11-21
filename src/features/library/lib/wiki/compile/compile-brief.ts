@@ -11,7 +11,7 @@ import {
   type BriefPage,
 } from "./compile-brief-pages";
 import { compileRuleLines } from "./compile-brief-rules";
-import { isRetainedAnswerPath } from "../questions/answer-revision";
+import { isRetainedAnswerPath } from "../../questions/answer-revision";
 
 /**
  * The one place a runner is told the compilation contract. Source text is untrusted data, or a

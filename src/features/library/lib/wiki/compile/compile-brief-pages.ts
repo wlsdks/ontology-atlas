@@ -1,7 +1,7 @@
 import type { LibrarySourceRow, LibraryWikiPage } from "@/entities/docs-vault";
 import { WIKI_DIR } from "@/shared/lib/library/wiki-page-schema";
 
-import { isRetainedAnswerPath } from "../questions/answer-revision";
+import { isRetainedAnswerPath } from "../../questions/answer-revision";
 
 /** Existing pages a brief lists at most: those citing the request's sources first, then the newest. */
 export const COMPILE_BRIEF_PAGE_CAP = 200;
