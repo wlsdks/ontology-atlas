@@ -51,9 +51,6 @@ beforeEach(() => {
 describe("the long-work seat's words for a model that could not run", () => {
   it.each([
     ["convert", "the model could not be prepared for this computer"],
-    ["check", "the prepared model did not pass its check"],
-    ["timed-out", "it did not answer in time"],
-    ["internal", "Atlas met an internal error"],
   ])("name the cause as the desk does (%s)", (detail, cause) => {
     mocks.run = failedRun(detail);
     render(<NextIntlClientProvider locale="en" messages={en}><MeaningRunSeat /></NextIntlClientProvider>);

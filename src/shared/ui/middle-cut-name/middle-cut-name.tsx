@@ -9,8 +9,9 @@ function middleCut(name: string, keepEnd: number, wholeUpTo: number): number {
 }
 
 /**
- * A file's name alone, its middle giving way first so the ending and extension stay readable; the
- * full path is its title and its description.
+ * A file's name alone, its middle giving way first so the ending and extension stay readable; a name
+ * written whole gives way at its end in a row too narrow for it. The full path is its title and its
+ * description.
  */
 export function MiddleCutName({ path, keepEnd, wholeUpTo = keepEnd, testId, className }: {
   path: string;
