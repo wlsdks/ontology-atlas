@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ConsistencyPassResult } from './consistency-pass';
-import { passLedgerFacts } from './pass-outcome';
+import { passLedgerFacts } from './pass-ledger-facts';
 
 function check(overrides: Partial<ConsistencyPassResult> = {}): ConsistencyPassResult {
   return { checked: 14, stalePages: [], staleSources: [], offTemplate: [], notCompiled: 3, ...overrides };
