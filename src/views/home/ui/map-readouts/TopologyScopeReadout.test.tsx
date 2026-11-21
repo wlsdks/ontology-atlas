@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it } from "vitest";
-import en from "../../../../messages/en.json";
-import ko from "../../../../messages/ko.json";
+import en from "../../../../../messages/en.json";
+import ko from "../../../../../messages/ko.json";
 import { TopologyScopeReadout } from "./TopologyScopeReadout";
 
 describe("map scope readout", () => {

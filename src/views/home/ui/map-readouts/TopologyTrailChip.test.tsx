@@ -5,7 +5,7 @@ import {
   type TopologyPastWalkRow,
   type TopologyTrailChipLabels,
 } from "./TopologyTrailChip";
-import type { FootprintTrailEntry, TrailStepCaption } from "../lib/trail/footprint-trail";
+import type { FootprintTrailEntry, TrailStepCaption } from "../../lib/trail/footprint-trail";
 
 const LABELS: TopologyTrailChipLabels = {
   heading: "걸어온 길",

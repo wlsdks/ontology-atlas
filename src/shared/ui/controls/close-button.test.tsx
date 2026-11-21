@@ -22,7 +22,7 @@ const CONSUMERS = [
   'src/widgets/library-import/ui/LibraryImportDialog.tsx',
   'src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx',
   'src/views/library/ui/parts/LibraryHomePopover.tsx',
-  'src/views/home/ui/TopologyBlockingOverlays.tsx',
+  'src/views/home/ui/map-overlays/TopologyBlockingOverlays.tsx',
   'src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx',
   'src/features/library/ui/FindDocumentsDialog.tsx',
   'src/features/mcp-connectors/ui/AddConnectorDialog.tsx',

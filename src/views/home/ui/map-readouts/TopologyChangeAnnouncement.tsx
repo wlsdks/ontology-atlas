@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { decideChangeAnnouncement } from "../lib/map-canvas/change-announcement";
+import { decideChangeAnnouncement } from "../../lib/map-canvas/change-announcement";
 
 /**
  * A transient chip confirming a manifest refresh landed ("N concepts updated"), once per real

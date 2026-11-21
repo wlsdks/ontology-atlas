@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { TopologyRealmChip } from "../TopologyRealmChip";
+import { TopologyRealmChip } from "./TopologyRealmChip";
 
 describe("TopologyRealmChip", () => {
   it("exposes a visible localized action to return from the named scope", () => {

@@ -1309,7 +1309,7 @@ describe('focused check suggestions', () => {
   });
 
   it('keeps personal-save and verified-status journeys on their entry owners', () => {
-    for (const path of ['src/views/first-run/ui/FirstRunPage.tsx', 'src/views/home/ui/TopologyCommandChrome.tsx', 'src/features/agent-activity/ui/AgentActivityChip.tsx']) {
+    for (const path of ['src/views/first-run/ui/FirstRunPage.tsx', 'src/views/home/ui/map-readouts/TopologyCommandChrome.tsx', 'src/features/agent-activity/ui/AgentActivityChip.tsx']) {
       const result = suggestFocusedChecks([path]);
       const row = result.commands.find((r) => r.command.includes('retired-game-storage.spec.ts'));
       assert.ok(row, `missing retirement journey for ${path}`);

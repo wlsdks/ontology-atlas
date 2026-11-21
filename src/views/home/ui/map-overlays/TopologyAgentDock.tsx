@@ -1,14 +1,14 @@
-import type { VaultAgentPrefill } from "../model/agent/agent-chat-door";
-import type { useAcpRuntimeController } from "../model/agent/use-acp-runtime-controller";
-import type { useHomeWorkbenchController } from "../model/use-home-workbench-controller";
-import type { useTopologyAgentActivity } from "../model/agent/use-topology-agent-activity";
-import type { useTopologyAgentOrchestration } from "../model/agent/use-topology-agent-orchestration";
-import type { useTopologyAnalysisReview } from "../model/agent/use-topology-analysis-review";
-import type { useTopologyAuthoring } from "../model/authoring/use-topology-authoring";
-import type { useTopologyCanvasFocus } from "../model/use-topology-canvas-focus";
-import type { useTopologyNavigationActions } from "../model/use-topology-navigation-actions";
-import type { useTopologyPreferences } from "../model/use-topology-preferences";
-import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
+import type { VaultAgentPrefill } from "../../model/agent/agent-chat-door";
+import type { useAcpRuntimeController } from "../../model/agent/use-acp-runtime-controller";
+import type { useHomeWorkbenchController } from "../../model/use-home-workbench-controller";
+import type { useTopologyAgentActivity } from "../../model/agent/use-topology-agent-activity";
+import type { useTopologyAgentOrchestration } from "../../model/agent/use-topology-agent-orchestration";
+import type { useTopologyAnalysisReview } from "../../model/agent/use-topology-analysis-review";
+import type { useTopologyAuthoring } from "../../model/authoring/use-topology-authoring";
+import type { useTopologyCanvasFocus } from "../../model/use-topology-canvas-focus";
+import type { useTopologyNavigationActions } from "../../model/use-topology-navigation-actions";
+import type { useTopologyPreferences } from "../../model/use-topology-preferences";
+import type { useTopologyVaultReadModel } from "../../model/use-topology-vault-read-model";
 
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle, Surface, WidgetErrorFallback } from "@/shared/ui";
@@ -19,8 +19,8 @@ import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { useTranslations } from 'next-intl';
 import { subjectSuggestions } from "@/features/acp-session";
-import { createChatDraftStore, reportChatDraftPresence, type ChatDraftPresence } from "../model/agent/chat-draft-store";
-import { resolveAnalysisFindingTarget } from '../model/agent/analysis-finding-target';
+import { createChatDraftStore, reportChatDraftPresence, type ChatDraftPresence } from "../../model/agent/chat-draft-store";
+import { resolveAnalysisFindingTarget } from '../../model/agent/analysis-finding-target';
 const VaultAgentPanel = dynamic(
   () => import("@/widgets/vault-agent-panel").then((m) => m.VaultAgentPanel),
   { ssr: false },

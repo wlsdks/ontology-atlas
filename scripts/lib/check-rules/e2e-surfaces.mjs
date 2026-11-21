@@ -13,7 +13,7 @@ export const rules = [
     reason: 'folder entry and work status must preserve personal saves and verified activity after game retirement',
     matches: [
       /^src\/views\/first-run\/ui\/FirstRunPage\.tsx$/,
-      /^src\/views\/home\/ui\/TopologyCommandChrome\.tsx$/,
+      /^src\/views\/home\/ui\/map-readouts\/TopologyCommandChrome\.tsx$/,
       /^src\/features\/agent-activity\/ui\/Agent(?:ActivityChip|MascotPresence)\.tsx$/,
       /^tests\/e2e\/vault-session\/retired-game-storage\.spec\.ts$/,
     ],

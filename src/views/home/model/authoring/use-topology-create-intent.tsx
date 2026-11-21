@@ -2,7 +2,7 @@ import type { useTopologyAuthoring } from "./use-topology-authoring";
 import type { useTopologyCanvasFocus } from "../use-topology-canvas-focus";
 
 import { useCallback, useEffect, useState } from "react";
-import { type CreateNodeKind } from "../../ui/CreateNodeForm";
+import { type CreateNodeKind } from "../../ui/create/CreateNodeForm";
 import { createDefaultsFromSelection } from "./create-defaults";
 
 interface Options {

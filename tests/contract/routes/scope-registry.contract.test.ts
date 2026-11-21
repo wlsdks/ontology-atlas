@@ -488,7 +488,7 @@ describe("scope registry: URL query keys", () => {
       ['src/views/home/model/use-topology-vault-read-model.tsx', 'useTopologyVaultReadModel', ['clearVaultScopedRouteState', 'useVaultSessionIdentityScope']],
       ['src/views/home/model/map-canvas/use-topology-graph-projection.ts', 'useTopologyGraphProjection', ['resolveCanvasSelectedSlug']],
       ['src/views/home/model/map-canvas/use-topology-scene-controls.tsx', 'useTopologySceneControls', ['useTopologyPathLens']],
-      ['src/views/home/ui/TopologyCommandChrome.tsx', 'TopologyCommandChrome', ['canCopyTopologyPathPacket']]
+      ['src/views/home/ui/map-readouts/TopologyCommandChrome.tsx', 'TopologyCommandChrome', ['canCopyTopologyPathPacket']]
         ] as const;
     for (const [file, owner, witnesses] of owners) {
       const source = readFileSync(join(REPO_ROOT, file), "utf8");

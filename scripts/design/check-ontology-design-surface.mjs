@@ -64,9 +64,9 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     id: "contextual-write-review-loop",
     files: [
       "src/views/home/ui/HomePage.tsx",
-      "src/views/home/ui/TopologyCanvasSurface.tsx",
-      "src/views/home/ui/TopologyMapRenderer.tsx",
-      "src/views/home/ui/CreateNodeForm.tsx",
+      "src/views/home/ui/map-surfaces/TopologyCanvasSurface.tsx",
+      "src/views/home/ui/map-surfaces/TopologyMapRenderer.tsx",
+      "src/views/home/ui/create/CreateNodeForm.tsx",
       "src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx",
       "src/features/ontology-change-review/ui/OntologyChangeReview.tsx",
       "src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx",

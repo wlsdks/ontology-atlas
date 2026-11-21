@@ -782,7 +782,7 @@ describe("bar above the head: a text button carrying a verb", () => {
   it("the map screen translates the three wordings and hands them to the canvas", () => {
     const source = readFileSync("src/views/home/model/map-canvas/use-topology-scene-controls.tsx", "utf8");
     const composition = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
-    const renderer = readFileSync("src/views/home/ui/TopologyMapRenderer.tsx", "utf8");
+    const renderer = readFileSync("src/views/home/ui/map-surfaces/TopologyMapRenderer.tsx", "utf8");
     expect(composition).toContain("useTopologySceneControls({");
     expect(composition).toContain("topologySceneControls={topologySceneControls}");
     expect(source).toContain('t("cluster.barExpand")');

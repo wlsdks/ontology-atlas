@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/preferences/appearance-preferences";
 import type { HexBoardLabels, OntologyMapNode } from "@/widgets/ontology-map";
-import en from "../../../../messages/en.json";
+import en from "../../../../../messages/en.json";
 import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
 
 const seen = vi.hoisted(() => ({ labels: null as HexBoardLabels | null }));

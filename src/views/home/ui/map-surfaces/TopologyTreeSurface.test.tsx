@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/preferences/appearance-preferences";
 import type { OntologyMapNode } from "@/widgets/ontology-map";
-import en from "../../../../messages/en.json";
+import en from "../../../../../messages/en.json";
 import type { MapEvidence } from "@/features/vault-ontology";
 import { TopologyTreeSurface } from "./TopologyTreeSurface";
 
