@@ -28,9 +28,14 @@ function nextTask(step: () => void): () => void {
  * the first paint, so the rows of the first files counted show at once, and the rest follow in later
  * tasks. `revision` changes whenever a slice changed a count.
  */
-export function useSourceGroups(sources: readonly LibrarySourceRow[]): { index: SourceGroupIndex; revision: number; applied: boolean } {
+export function useSourceGroups(sources: readonly LibrarySourceRow[]): { index: SourceGroupIndex; revision: number; applied: boolean; appliedOnce: boolean } {
   const [index] = useState(() => new SourceGroupIndex());
-  const [state, setState] = useState({ revision: 0, applied: false });
+  // `appliedTo` names the array fully applied, so a new array reads as not applied from its first render.
+  const [state, setState] = useState<{ revision: number; appliedTo: readonly LibrarySourceRow[] | null; appliedOnce: boolean }>({
+    revision: 0,
+    appliedTo: null,
+    appliedOnce: false,
+  });
 
   useLayoutEffect(() => {
     let live = true;
@@ -39,10 +44,11 @@ export function useSourceGroups(sources: readonly LibrarySourceRow[]): { index: 
       if (!live) return;
       const result = index.sync(sources, performance.now() + SLICE_MS);
       if (result.foldersTouched > 0 || result.done) {
+        const appliedTo = result.done ? sources : null;
         setState((previous) =>
-          result.foldersTouched === 0 && previous.applied === result.done
+          result.foldersTouched === 0 && previous.appliedTo === appliedTo
             ? previous
-            : { revision: previous.revision + (result.foldersTouched > 0 ? 1 : 0), applied: result.done },
+            : { revision: previous.revision + (result.foldersTouched > 0 ? 1 : 0), appliedTo, appliedOnce: previous.appliedOnce || result.done },
         );
       }
       cancel = result.done ? null : nextTask(run);
@@ -54,5 +60,5 @@ export function useSourceGroups(sources: readonly LibrarySourceRow[]): { index: 
     };
   }, [index, sources]);
 
-  return { index, revision: state.revision, applied: state.applied };
+  return { index, revision: state.revision, applied: state.appliedTo === sources, appliedOnce: state.appliedOnce };
 }

@@ -46,30 +46,30 @@ describe("SourceGroupIndex", () => {
     index.sync([row("sources/a.md"), row("sources/x/b.md"), row("sources/Makefile")]);
     expect(index.get("type:md")!.total).toBe(2);
     expect(index.get("type:")!.total).toBe(1);
-    expect(index.shape).toEqual({ folders: 2, types: 2 });
+    expect(index.shape).toEqual({ folders: 2, firstLevel: 1, types: 2 });
   });
 
-  it("touches only the folders a published batch changes", () => {
+  it("re-counts only the rows a published batch changed, and touches only their folders", () => {
     const base = Array.from({ length: 300 }, (_, i) => row(`sources/f${i % 30}/doc-${i}.md`));
     const index = new SourceGroupIndex();
     index.sync(base);
 
     const written = base.map((source) => (source.path === "sources/f3/doc-3.md" || source.path === "sources/f7/doc-7.md" ? { ...source, state: "compiled" as const } : source));
-    expect(index.sync(written).foldersTouched).toBe(2);
+    expect(index.sync(written)).toMatchObject({ rowsApplied: 2, foldersTouched: 2 });
 
     const appended = [...written, row("sources/f1/new-a.md"), row("sources/f1/new-b.md"), row("sources/fresh/new-c.md")];
-    expect(index.sync(appended).foldersTouched).toBe(2);
+    expect(index.sync(appended)).toMatchObject({ rowsApplied: 3, foldersTouched: 2 });
     expect(index.get("folder:fresh")!.total).toBe(1);
 
     const rebuilt = appended.map((source) => ({ ...source }));
-    expect(index.sync(rebuilt).foldersTouched).toBe(0);
+    expect(index.sync(rebuilt)).toMatchObject({ rowsApplied: 0, foldersTouched: 0 });
   });
 
   it("drops a removed source and its emptied folder", () => {
     const index = new SourceGroupIndex();
     const rows = [row("sources/keep/a.md"), row("sources/gone/b.md", "compiled", 20_000)];
     index.sync(rows);
-    expect(index.sync([rows[0]!, row("sources/keep/renamed.md")]).foldersTouched).toBe(2);
+    expect(index.sync([rows[0]!, row("sources/keep/renamed.md")])).toMatchObject({ rowsApplied: 2, foldersTouched: 2 });
     expect(index.get("folder:gone")).toBeUndefined();
     expect(index.get("folder:keep")!.total).toBe(2);
     expect(index.shape.folders).toBe(1);

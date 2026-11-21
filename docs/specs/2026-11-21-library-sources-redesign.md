@@ -315,11 +315,13 @@ final consonant, so `nextNote`'s particle is fixed. `graph.*` keys leave in S-3.
    app; each state's segment, dot and word share one token, and every `--color-source-*` ink
    reaches 3:1 on canvas and panel (`sources-home.spec.ts`, `tests/contract/design-tokens/contrast.contract.test.ts`).
 8. **Drawn as it arrives.** The first rows draw before the folder's read completes; counts and
-   bars grow in place from the drawn width; grouping costs O(batch) per publish after one pass at
-   mount, in slices of at most 6 ms; Recently written and the panel hold their heights, so the
-   table, panel and Recently written never shift while the rest arrives
-   (`SourcesOverview.test.tsx`, `source-group-index.test.ts`; layout shift measured in the
-   pull request).
+   bars grow in place from the drawn width; after one pass at mount, a publish re-counts and
+   re-folds only the sources and folders it changed (O(batch)) behind one identity compare per
+   source (O(n), in slices of at most 6 ms), keeps the row list when no row joined or left, and
+   builds row views only for the rows in view; Recently written and the panel hold their
+   heights, so the table, panel and Recently written never shift while the rest arrives
+   (`SourcesOverview.test.tsx`, `source-group-index.test.ts`, `table-rows.test.ts`; layout
+   shift measured in the pull request).
 9. **The web says it once.** The web shows the table, `panel.webNote` and the band's web line,
    and no write control (`tests/e2e/web-surface-smoke.spec.ts`).
 
@@ -384,3 +386,11 @@ with the pull request, so the owner can reverse this by choosing the treemap.
   before the read completes, O(batch) grouping, held heights, no shift), built in S-1; criterion
   2 gates grouping by the folders a batch touches instead of a CPU-time bound, and names the
   test file S-1 shipped.
+- 2026-11-21: criterion 8 restated after review measured it. At 50,000 sources a 10-file publish
+  reads every row once by identity (0.24 ms) and applies 10; the fold re-buckets the 10 changed
+  folders (0.03 ms in 500 folders; 1.5 ms in 50,000 one-file folders, where a leaving end of an
+  alike row's name range costs one pass over that row's members). Not O(batch): the Library
+  model's builder, upstream of this widget, re-reads pages and sources on a page change, 25 ms
+  at 50,000 sources and 2,000 pages (51 ms before it kept unchanged rows), and is left for its
+  own slice; and the first fold of a slice's new folders costs about as much as that slice's
+  count.

@@ -36,6 +36,14 @@ interface MutableGroup {
   days: Map<number, number>;
   /** The sync pass that last changed it, so a pass counts each group once. */
   touchedIn: number;
+  /** The sync pass that last logged it, so the change log holds a group once per pass. */
+  loggedIn: number;
+}
+
+/** Groups changed since a cursor, or null when the log no longer reaches back to it (read them all). */
+export interface SourceGroupChanges {
+  groups: readonly SourceGroup[] | null;
+  cursor: number;
 }
 
 /** What one `sync` step did. */
@@ -46,6 +54,8 @@ export interface SourceGroupSync {
   foldersTouched: number;
   /** Rows read in this step. */
   rowsRead: number;
+  /** Rows whose path, state or page day differed from what was counted, so their counts moved. */
+  rowsApplied: number;
 }
 
 const ROOT_KEY = "root";
@@ -53,6 +63,8 @@ const SOURCES_PREFIX = `${VAULT_SOURCES_DIR}/`;
 const NON_ASCII = /[^\u0000-\u007f]/;
 /** Rows between two clock reads while a step runs against a deadline. */
 const CLOCK_EVERY_ROWS = 256;
+/** Entries the change log keeps beyond twice the groups before it restarts; a reader then reads all. */
+const LOG_SLACK = 4096;
 const NO_DAY = -1;
 
 function nfc(value: string): string {
@@ -97,6 +109,11 @@ export class SourceGroupIndex {
   private pending: readonly LibrarySourceRow[] | null = null;
   private cursor = 0;
   private pass = 0;
+  /** Distinct folder groups changed in the running step. */
+  private touched = 0;
+  /** Groups changed per pass, in order; `logStart` is the cursor of its first entry. */
+  private log: MutableGroup[] = [];
+  private logStart = 0;
 
   /** Applies `rows` until done or until `deadline` (a `performance.now()` value) passes. */
   sync(rows: readonly LibrarySourceRow[], deadline = Infinity, now: () => number = defaultNow): SourceGroupSync {
@@ -105,7 +122,12 @@ export class SourceGroupIndex {
       this.cursor = 0;
     }
     this.pass += 1;
-    let foldersTouched = 0;
+    this.touched = 0;
+    if (this.log.length > 2 * this.groups.length + LOG_SLACK) {
+      this.logStart += this.log.length;
+      this.log = [];
+    }
+    let rowsApplied = 0;
     const start = this.cursor;
     const previous = this.applied;
     let index = start;
@@ -113,17 +135,32 @@ export class SourceGroupIndex {
       if ((index - start) % CLOCK_EVERY_ROWS === CLOCK_EVERY_ROWS - 1 && now() > deadline) break;
       const row = rows[index]!;
       if (previous[index] === row) continue;
-      foldersTouched += this.applyRow(row);
+      if (this.applyRow(row)) rowsApplied += 1;
     }
     this.cursor = index;
     const done = index >= rows.length;
     if (done) {
-      if (this.slotOf.size > rows.length) foldersTouched += this.removeAbsent(rows);
+      if (this.slotOf.size > rows.length) rowsApplied += this.removeAbsent(rows);
       this.applied = rows;
       this.pending = null;
       this.cursor = 0;
     }
-    return { done, foldersTouched, rowsRead: index - start };
+    return { done, foldersTouched: this.touched, rowsRead: index - start, rowsApplied };
+  }
+
+  /**
+   * The groups of `grouping` whose counts changed since `cursor` (an emptied one included, at total 0),
+   * O(changes); a group may repeat. A cursor of -1, or one the log no longer reaches, gets null.
+   */
+  changesSince(cursor: number, grouping: SourceGrouping): SourceGroupChanges {
+    const end = this.logStart + this.log.length;
+    if (cursor < this.logStart) return { groups: null, cursor: end };
+    const groups: SourceGroup[] = [];
+    for (let i = cursor - this.logStart; i < this.log.length; i += 1) {
+      const group = this.log[i]!;
+      if ((group.kind === "type") === (grouping === "type")) groups.push(group);
+    }
+    return { groups, cursor: end };
   }
 
   /** Groups with at least one source, in no particular order. */
@@ -148,9 +185,10 @@ export class SourceGroupIndex {
     return this.groups[grouping === "type" ? this.typeOf[slot]! : this.folderOf[slot]!]?.key;
   }
 
-  /** Folder groups (the root included) and file types that hold at least one source. */
-  get shape(): { folders: number; types: number } {
-    return { folders: this.folderGroups, types: this.typeGroups };
+  /** Folder groups (the root included), first-level folders (the root left out) and file types holding a source. */
+  get shape(): { folders: number; firstLevel: number; types: number } {
+    const root = this.get(ROOT_KEY) ? 1 : 0;
+    return { folders: this.folderGroups, firstLevel: this.folderGroups - root, types: this.typeGroups };
   }
 
   /** The newest believed page day in a group: -1 when no page is dated on or before `today`. */
@@ -160,12 +198,13 @@ export class SourceGroupIndex {
     return latest;
   }
 
-  private applyRow(row: LibrarySourceRow): number {
+  /** Returns whether the row's counts moved. */
+  private applyRow(row: LibrarySourceRow): boolean {
     const state = sourceStateIndex(row.state) * 2 + (sourceNeedsCompile(row) ? 1 : 0);
     const day = row.state === "compiled" && row.compiledDay !== undefined && row.compiledDay >= 0 ? row.compiledDay : NO_DAY;
     const known = this.slotOf.get(row.path);
     if (known !== undefined) {
-      if (this.stateOf[known] === state && this.dayOf[known] === day) return 0;
+      if (this.stateOf[known] === state && this.dayOf[known] === day) return false;
       const folder = this.groups[this.folderOf[known]!]!;
       const type = this.groups[this.typeOf[known]!]!;
       this.count(folder, known, -1);
@@ -174,7 +213,8 @@ export class SourceGroupIndex {
       this.dayOf[known] = day;
       this.count(folder, known, 1);
       this.count(type, known, 1);
-      return this.touch(folder);
+      this.touch(folder);
+      return true;
     }
     const slot = this.allocate();
     this.slotOf.set(row.path, slot);
@@ -187,24 +227,26 @@ export class SourceGroupIndex {
     this.dayOf[slot] = day;
     this.count(folder, slot, 1);
     this.count(type, slot, 1);
-    return this.touch(folder);
+    this.touch(folder);
+    return true;
   }
 
-  /** Drops sources no longer in `rows`: one pass, run only when the array lost rows. */
+  /** Drops sources no longer in `rows`: one pass, run only when the array lost rows. Returns how many. */
   private removeAbsent(rows: readonly LibrarySourceRow[]): number {
     const present = new Set<string>();
     for (const row of rows) present.add(row.path);
-    let touched = 0;
+    let removed = 0;
     for (const [path, slot] of this.slotOf) {
       if (present.has(path)) continue;
       const folder = this.groups[this.folderOf[slot]!]!;
       this.count(folder, slot, -1);
       this.count(this.groups[this.typeOf[slot]!]!, slot, -1);
-      touched += this.touch(folder);
+      this.touch(folder);
+      removed += 1;
       this.slotOf.delete(path);
       this.freeSlots.push(slot);
     }
-    return touched;
+    return removed;
   }
 
   private count(group: MutableGroup, slot: number, sign: 1 | -1): void {
@@ -214,6 +256,10 @@ export class SourceGroupIndex {
     group.byState[packed >> 1]! += sign;
     group.waiting += (packed & 1) * sign;
     group.revision += 1;
+    if (group.loggedIn !== this.pass) {
+      group.loggedIn = this.pass;
+      this.log.push(group);
+    }
     const day = this.dayOf[slot]!;
     if (day !== NO_DAY) {
       const next = (group.days.get(day) ?? 0) + sign;
@@ -227,10 +273,10 @@ export class SourceGroupIndex {
     }
   }
 
-  private touch(folder: MutableGroup): number {
-    if (folder.touchedIn === this.pass) return 0;
+  private touch(folder: MutableGroup): void {
+    if (folder.touchedIn === this.pass) return;
     folder.touchedIn = this.pass;
-    return 1;
+    this.touched += 1;
   }
 
   private group(key: string, kind: SourceGroupKind, name: string): MutableGroup {
@@ -247,6 +293,7 @@ export class SourceGroupIndex {
       revision: 0,
       days: new Map(),
       touchedIn: 0,
+      loggedIn: 0,
     };
     this.groupIdOf.set(key, this.groups.length);
     this.groups.push(group);

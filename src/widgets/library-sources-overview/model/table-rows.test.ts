@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { LibrarySourceRow } from "@/entities/docs-vault";
 
 import { SourceGroupIndex } from "./source-group-index";
-import { DEFAULT_SOURCE_SORT, foldAlikeFolders, nextSourceSort, sortTableRows } from "./table-rows";
+import { AlikeFolds, DEFAULT_SOURCE_SORT, nextSourceSort, sortTableRows } from "./table-rows";
 
 function rows(folder: string, compiled: number, waiting: number): LibrarySourceRow[] {
   return Array.from({ length: compiled + waiting }, (_, i) => ({
@@ -25,40 +25,79 @@ function indexOf(...groups: LibrarySourceRow[][]): SourceGroupIndex {
 
 const noDay = () => -1;
 
-describe("foldAlikeFolders", () => {
-  it("folds five folders with the same counts into one row, names in natural order", () => {
+describe("AlikeFolds", () => {
+  it("folds five folders with the same counts into one row, bounded by the first and last name in natural order", () => {
     const index = indexOf(...["batch-10", "batch-3", "batch-4", "batch-5", "batch-6"].map((name) => rows(name, 4, 1)), rows("other", 2, 2));
-    const folded = foldAlikeFolders(index.list("folder"), new Set());
+    const folded = new AlikeFolds().fold(index.list("folder"), new Set());
     expect(folded).toHaveLength(2);
     const alike = folded.find((row) => row.members)!;
-    expect(alike.members!.map((member) => member.name)).toEqual(["batch-3", "batch-4", "batch-5", "batch-6", "batch-10"]);
+    expect([alike.range!.first.name, alike.range!.last.name]).toEqual(["batch-3", "batch-10"]);
     expect(alike.group.total).toBe(25);
     expect(alike.group.waiting).toBe(5);
   });
 
   it("keeps four alike folders apart", () => {
     const index = indexOf(...["a", "b", "c", "d"].map((name) => rows(name, 1, 1)));
-    expect(foldAlikeFolders(index.list("folder"), new Set()).every((row) => row.members === null)).toBe(true);
+    expect(new AlikeFolds().fold(index.list("folder"), new Set()).every((row) => row.members === null)).toBe(true);
   });
 
   it("never folds a folder being written", () => {
     const index = indexOf(...["a", "b", "c", "d", "e"].map((name) => rows(name, 1, 1)));
-    const folded = foldAlikeFolders(index.list("folder"), new Set(["folder:c"]));
+    const folded = new AlikeFolds().fold(index.list("folder"), new Set(["folder:c"]));
     expect(folded).toHaveLength(5);
     expect(folded.some((row) => row.members)).toBe(false);
+  });
+
+  it("keeps an alike row's key while a member leaves it, and re-buckets only the groups that changed", () => {
+    const index = indexOf(...["z1", "z2", "z3", "z4", "z5", "z6"].map((name) => rows(name, 0, 3)), ...["a1", "a2", "a3", "a4", "a5"].map((name) => rows(name, 0, 2)));
+    const folds = new AlikeFolds();
+    const before = folds.fold(index.list("folder"), new Set());
+    expect(folds.movedInLastFold).toBe(11);
+    const after = folds.fold(index.list("folder"), new Set(["folder:z1"]));
+    expect(folds.movedInLastFold).toBe(1);
+    expect(after.filter((row) => row.members).map((row) => row.key).sort()).toEqual(before.filter((row) => row.members).map((row) => row.key).sort());
+    expect(after.map((row) => row.key)).toContain("folder:z1");
+    folds.fold(index.list("folder"), new Set(["folder:z1"]));
+    expect(folds.movedInLastFold).toBe(0);
+  });
+
+  it("folds only the groups the index logged since the last read, and keeps the rows while none joined or left", () => {
+    const folders = Array.from({ length: 2000 }, (_, i) => rows(`f${i}`, 0, 1));
+    const index = indexOf(...folders);
+    const folds = new AlikeFolds();
+    const first = folds.fold(index.list("folder"), new Set());
+    let cursor = index.changesSince(-1, "folder").cursor;
+    expect(first).toHaveLength(1);
+
+    const written = folders.flat().map((row, i) => (i < 3 ? { ...row, state: "compiled" as const } : row));
+    index.sync(written);
+    const changes = index.changesSince(cursor, "folder");
+    cursor = changes.cursor;
+    expect(changes.groups!.map((group) => group.key)).toEqual(["folder:f0", "folder:f1", "folder:f2"]);
+    const after = folds.fold(changes.groups!, new Set(), false);
+    expect(folds.movedInLastFold).toBe(3);
+    expect(after.map((row) => row.key)).toEqual([first[0]!.key, "folder:f0", "folder:f1", "folder:f2"]);
+    expect(after[0]!.members).toHaveLength(1997);
+    expect(folds.rowOf("folder:f5")).toBe(after[0]);
+
+    const restated = written.map((row) => ({ ...row }));
+    index.sync(restated);
+    const none = index.changesSince(cursor, "folder");
+    expect(none.groups).toEqual([]);
+    expect(folds.fold(none.groups!, new Set(), false)).toBe(after);
   });
 });
 
 describe("sortTableRows", () => {
   it("orders by waiting, then sources, then name with numbers in natural order", () => {
     const index = indexOf(rows("batch-10", 0, 2), rows("batch-2", 0, 2), rows("big", 5, 2), rows("done", 9, 0), rows("most", 0, 7));
-    const sorted = sortTableRows(foldAlikeFolders(index.list("folder"), new Set()), DEFAULT_SOURCE_SORT, noDay);
+    const sorted = sortTableRows(new AlikeFolds().fold(index.list("folder"), new Set()), DEFAULT_SOURCE_SORT, noDay);
     expect(sorted.map((row) => row.group.name)).toEqual(["most", "big", "batch-2", "batch-10", "done"]);
   });
 
   it("reverses only the pressed column on a second press", () => {
     const index = indexOf(rows("a", 1, 3), rows("b", 3, 1), rows("c", 2, 2));
-    const all = foldAlikeFolders(index.list("folder"), new Set());
+    const all = new AlikeFolds().fold(index.list("folder"), new Set());
     const byShare = nextSourceSort(DEFAULT_SOURCE_SORT, "withPage");
     expect(byShare).toEqual({ column: "withPage", direction: "descending" });
     expect(sortTableRows(all, byShare, noDay).map((row) => row.group.name)).toEqual(["b", "c", "a"]);

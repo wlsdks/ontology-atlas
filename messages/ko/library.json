@@ -1096,10 +1096,11 @@
     },
     "sortBy": "{column} 기준으로 정렬",
     "more": "아래에 폴더 {count, number}개 더 · 스크롤하면 이어서 보여요",
+    "moreType": "아래에 파일 형식 {count, number}개 더 · 스크롤하면 이어서 보여요",
     "meta": "폴더 {folders, number}개 · 원문 {sources, number}개",
     "metaType": "파일 형식 {groups, number}개 · 원문 {sources, number}개",
     "alike": {
-      "row": "똑같은 폴더 {count, number}개",
+      "row": "상태별 개수가 같은 폴더 {count, number}개",
       "range": "{first} – {last}",
       "meta": "폴더 {folders, number}개 · 원문 수와 상태가 똑같은 폴더 {count, number}개는 한 줄로 묶음"
     },

@@ -1096,16 +1096,17 @@
     },
     "sortBy": "Sort by {column}",
     "more": "{count, plural, one {# more folder below} other {# more folders below}} · scroll to see them",
-    "meta": "{folders, number} folders · {sources, number} sources",
-    "metaType": "{groups, number} file types · {sources, number} sources",
+    "moreType": "{count, plural, one {# more file type below} other {# more file types below}} · scroll to see them",
+    "meta": "{folders, plural, one {# folder} other {# folders}} · {sources, plural, one {# source} other {# sources}}",
+    "metaType": "{groups, plural, one {# file type} other {# file types}} · {sources, plural, one {# source} other {# sources}}",
     "alike": {
-      "row": "{count, number} folders alike",
+      "row": "{count, number} folders with equal counts",
       "range": "{first} – {last}",
       "meta": "{folders, number} folders · the {count, number} with the same counts in every state share one row"
     },
     "listKey": "Waiting sources",
     "listFolder": "Folder: {folder}",
-    "reading": "Still reading the folder: {count, number} sources so far",
+    "reading": "Still reading the folder: {count, plural, one {# source} other {# sources}} so far",
     "pickGone": "{folder} is no longer in sources/. Showing all sources."
   },
   "check": {
