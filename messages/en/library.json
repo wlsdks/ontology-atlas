@@ -115,7 +115,35 @@
       "stageTryAsk": "Ask a question",
       "stageDismiss": "Close",
       "passagesRecorded": "{count, plural, one {# passage} other {# passages}} recorded",
-      "downloadChecking": "Checking what was already downloaded"
+      "downloadChecking": "Checking what was already downloaded",
+      "guide": {
+        "title": "Search by meaning, once it is set up",
+        "body": "It finds the passage that says the same thing in other words or another language. The model runs on this computer, and nothing in the folder leaves it.",
+        "sample": "Sample",
+        "caption": "A sample with made-up files. The real model download takes a few minutes.",
+        "later": "Not now",
+        "start": "Set it up together",
+        "question": "What happens to an order when the card is declined?",
+        "line": "line {line, number}"
+      },
+      "wizard": {
+        "stepIntro": "What happens",
+        "stepChoose": "Choose a model",
+        "stepRun": "Get ready",
+        "introTitle": "Three steps, all on this computer",
+        "download": "Get the model",
+        "downloadNeeded": "{model} comes once from {hosts}: {size}. A cut-off download picks up where it stopped.",
+        "downloadKept": "{model} is already on this computer, so nothing is downloaded.",
+        "runnerToo": "{count, plural, one {A model in Ollama} other {# models in Ollama}} can be chosen next, with nothing to download.",
+        "fit": "Fit it to this computer",
+        "fitBody": "The downloaded model is converted once to run fast here. An Ollama model skips this.",
+        "read": "Read the files",
+        "readBody": "Each passage of the {files, number} Markdown files gets its meaning recorded as numbers in this computer's cache folder. Nothing in the folder is sent anywhere.",
+        "room": "Free space {free} · needs {needed}",
+        "next": "Next: choose a model",
+        "back": "Back",
+        "afterStart": "You can follow it under the question field, and keep working meanwhile."
+      }
     },
     "title": "Ask a question. Follow its sources.",
     "browse": "Browse pages",
