@@ -13,7 +13,7 @@ export function realPath(root, relativePath = "") {
   else if (root === FAKE_SOURCE_ROOT) base = REPO;
   else throw new Error(`unknown root ${root}`);
   const full = path.resolve(base, rel);
-  if (!full.startsWith(REPO)) throw new Error(`outside the repository: ${rel}`);
+  if (full !== REPO && !full.startsWith(REPO + path.sep)) throw new Error(`outside the repository: ${rel}`);
   return { full, rel };
 }
 

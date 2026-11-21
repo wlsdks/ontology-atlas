@@ -17,6 +17,7 @@ describe('fake roots', () => {
   it('refuses an unknown root and a path that climbs out of the repository', () => {
     assert.throws(() => realPath('/home/someone', 'x'), /unknown root/);
     assert.throws(() => realPath(FAKE_SOURCE_ROOT, '../../outside'), /outside the repository/);
+    assert.throws(() => realPath(FAKE_SOURCE_ROOT, `../${path.basename(REPO)}-sibling/x`), /outside the repository/);
   });
 
   it('lists overlay files as entries of the vault root, with their folder as a directory', () => {
