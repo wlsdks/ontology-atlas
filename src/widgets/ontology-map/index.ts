@@ -7,7 +7,7 @@ export { conceptDegrees } from './morph/glide';
 export { extractRealmSubtree } from './model/realm/realm';
 export { predictMapLayoutTarget } from './morph/map-marks';
 export { predictTreeTarget } from './morph/tree-marks';
-export type { HexBoardLabels } from './ui/OntologyHexBoardMap';
+export type { HexBoardLabels } from './ui/hex-board/hex-board-labels';
 export { OntologyTreeMap } from './ui/OntologyTreeMap';
 export type { TreeMapLabels } from './ui/OntologyTreeMap';
 export type { HexPlacementRecord } from './model/board/hex-board';

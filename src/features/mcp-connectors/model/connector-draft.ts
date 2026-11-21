@@ -12,6 +12,7 @@ import {
   type CatalogueEntry,
   type CatalogueVariant,
 } from '@/shared/config/mcp-catalogue';
+import type { DiscoveredConnector } from '@/shared/lib/connectors/tauri-connectors';
 import {
   runtimePath,
   type ResolvedRuntime,
@@ -148,10 +149,29 @@ export function buildDraftRecord({
   };
 }
 
-export function draftRuns(draft: ConnectorRecord): string {
-  return draft.transport === 'http'
-    ? (draft.url ?? '').trim()
-    : [draft.command ?? '', ...draft.args].join(' ').trim();
+/**
+ * A server found in another tool's config, copied as a record that is switched off. A
+ * credential-shaped variable name gets a keychain reference, never a value: discovery reads
+ * names only, and the file must not hold a secret.
+ */
+export function recordFromDiscovered(server: DiscoveredConnector, id: string): ConnectorRecord {
+  const toEntries = (names: string[]): ConnectorValueEntry[] =>
+    names.map((name) =>
+      looksLikeSecretKey(name) ? { name, secretRef: connectorSecretRef(id, name) } : { name },
+    );
+  return {
+    id,
+    name: server.name,
+    transport: server.transport === 'http' ? 'http' : 'stdio',
+    ...(server.command ? { command: server.command } : {}),
+    args: [...server.args],
+    ...(server.url ? { url: server.url } : {}),
+    env: toEntries(server.envKeys),
+    headers: toEntries(server.headerKeys),
+    // Copied, not switched on; the person still decides.
+    enabled: false,
+    origin: server.source,
+  };
 }
 
 /** Re-keys every secret reference to the real id and pairs each typed value with its reference. */

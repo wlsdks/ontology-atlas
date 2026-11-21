@@ -104,6 +104,7 @@ describe('the ontology-atlas:// scheme has exactly one door', () => {
       ...crate,
       'src/shared/lib/connectors/mcp-install-link.ts',
       'src/features/mcp-connectors/ui/ConnectorsPanel.tsx',
+      'src/features/mcp-connectors/model/use-install-link-arrival.ts',
     ]) {
       const body = path === 'src-tauri/src/app_shell/deep_link.rs' ? shippedBody(path) : read(path);
       for (const address of mintedAddresses(body)) {

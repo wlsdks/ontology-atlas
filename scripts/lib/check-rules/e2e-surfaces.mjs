@@ -79,7 +79,9 @@ export const rules = [
       /^src\/views\/(?:agents|mcp|mcp-redirect)\/.+\.tsx?$/,
       /^src\/app\/agents-workspace\/.+\.tsx?$/,
       /^src\/features\/mcp-connectors\/.+\.tsx?$/,
-      /^src\/widgets\/app-settings-menu\/ui\/agent-setup\/(?:AgentSetupSection|VaultAgentSetupPanel)\.tsx$/,
+      /^src\/widgets\/app-settings-menu\/ui\/agent-setup\/(?:AgentSetupSection|AgentSetupSectionLabel|VaultAgentSetupPanel|AgentSetupTroubleshooting|AgentSetupInspection|AgentConnectionStatus)\.tsx$/,
+      /^src\/widgets\/app-settings-menu\/ui\/agent-setup\/agent-setup-chips\.ts$/,
+      /^src\/widgets\/app-settings-menu\/model\/agent-setup\/[^/.]+\.ts$/,
     ],
   },
   {

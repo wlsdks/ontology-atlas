@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildDraftRecord, draftForWrite, draftRuns, prefillFromRecord } from './connector-draft';
+import type { DiscoveredConnector } from '@/shared/lib/connectors/tauri-connectors';
+
+import {
+  buildDraftRecord,
+  draftForWrite,
+  prefillFromRecord,
+  recordFromDiscovered,
+} from './connector-draft';
 
 const blank = {
   name: ' notion ',
@@ -60,14 +67,43 @@ describe('buildDraftRecord', () => {
   });
 });
 
-describe('draftRuns', () => {
-  it('shows the command line for stdio and the address for http', () => {
-    expect(draftRuns(buildDraftRecord(blank))).toBe(
-      '/opt/homebrew/bin/npx -y @notionhq/notion-mcp-server',
+describe('recordFromDiscovered', () => {
+  const found: DiscoveredConnector = {
+    name: 'notion',
+    source: 'claude-code',
+    transport: 'stdio',
+    command: 'npx',
+    args: ['-y', 'notion-mcp'],
+    url: null,
+    envKeys: ['NOTION_TOKEN', 'REGION'],
+    headerKeys: [],
+  };
+
+  it('gives a credential-shaped name a keychain reference and never a value', () => {
+    const record = recordFromDiscovered(found, 'abc');
+    expect(record.env).toEqual([
+      { name: 'NOTION_TOKEN', secretRef: 'connector:abc:NOTION_TOKEN' },
+      { name: 'REGION' },
+    ]);
+    expect(JSON.stringify(record)).not.toContain('"value"');
+  });
+
+  it('copies the server switched off, with where it came from', () => {
+    const record = recordFromDiscovered(found, 'abc');
+    expect(record.enabled).toBe(false);
+    expect(record.origin).toBe('claude-code');
+    expect(record.id).toBe('abc');
+  });
+
+  it('keeps the address for http, and treats any other transport as stdio', () => {
+    const http = recordFromDiscovered(
+      { ...found, transport: 'http', url: 'https://a.example/mcp', command: null },
+      'h',
     );
-    expect(
-      draftRuns(buildDraftRecord({ ...blank, transport: 'http', url: ' https://a.example/mcp ' })),
-    ).toBe('https://a.example/mcp');
+    expect(http.transport).toBe('http');
+    expect(http.url).toBe('https://a.example/mcp');
+    expect(http.command).toBeUndefined();
+    expect(recordFromDiscovered({ ...found, transport: 'sse' }, 's').transport).toBe('stdio');
   });
 });
 
