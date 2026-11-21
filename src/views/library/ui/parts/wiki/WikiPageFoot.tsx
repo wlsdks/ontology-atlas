@@ -7,7 +7,7 @@ import { BookText, FileText } from "lucide-react";
 import { OntologyMapKindGlyph } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { citedSources, type FootLink, type FootSource } from "./wiki-reader-facts";
+import { citedSources, type FootLink, type FootSource } from "../../../model/reader/wiki-reader-facts";
 
 /**
  * The citations the viewer drew in the painted body, per NFC path, or null before a body is

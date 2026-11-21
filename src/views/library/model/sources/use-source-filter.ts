@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { LibrarySourceRow } from "@/entities/docs-vault";
 import { writeLibraryIndexCollapsed } from "@/shared/lib/preferences/library-preferences";
 
-import type { useLibraryIndexColumn } from "./use-library-index-column";
+import type { useLibraryIndexColumn } from "../index-column/use-library-index-column";
 
 type SourceState = LibrarySourceRow["state"];
 

@@ -4,9 +4,9 @@ import { buildWikiShapeFixBrief, isWikiFolderCode, type LibraryUiModel } from "@
 import { revealTauriVaultFile } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { useToast } from "@/shared/ui";
 import { useLibraryAgent } from "../../lib/agent/use-library-agent";
-import type { LibrarySelection } from "./library-page-state";
+import type { LibrarySelection } from "../library-selection";
 import type { useLibraryReader } from "./use-library-reader";
-import type { useLibraryTurns } from "./use-library-turns";
+import type { useLibraryTurns } from "../turns/use-library-turns";
 
 export function useWikiTemplateProblems({
   t, locale, toast, nativeVaultRootPath, turnRunning, choose, busy, model, agent, reader, turns,

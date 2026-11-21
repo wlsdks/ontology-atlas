@@ -3,12 +3,12 @@ import { NextIntlClientProvider } from "next-intl";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
 
-import en from "../../../../../../messages/en.json";
+import en from "../../../../../messages/en.json";
 import type { VaultDoc } from "@/entities/docs-vault";
 import { findDeskClaims } from "@/features/library";
 import { deskPageClaims } from "@/features/library/lib/questions/question-desk";
 import { DocsVaultViewer } from "@/widgets/docs-vault";
-import { claimSentence } from "../questions/desk/DeskLeadRow";
+import { claimSentence } from "../../ui/parts/questions/desk/DeskLeadRow";
 import { findClaimBlock } from "./reader-landing";
 
 vi.mock("@/i18n/navigation", () => ({

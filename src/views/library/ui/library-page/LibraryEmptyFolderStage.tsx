@@ -10,9 +10,9 @@ import { LibraryStartStage } from "../parts/first-run/LibraryStartStage";
 import { LargeCopyConfirm, SkippedFilesDialog } from "../parts/first-run/SourceCopyDialogs";
 import { SourceCopyLine } from "../parts/first-run/SourceCopyLine";
 import { SourceDropArea } from "../parts/first-run/SourceDropArea";
-import type { CopyRequest } from "../parts/first-run/source-drop";
-import { useSourceCopy, useSourceDrop } from "../parts/first-run/use-source-drop";
-import type { useLibrarySources } from "./use-library-sources";
+import type { CopyRequest } from "../../model/sources/source-drop";
+import { useSourceCopy, useSourceDrop } from "../../model/sources/use-source-drop";
+import type { useLibrarySources } from "../../model/sources/use-library-sources";
 
 export function LibraryEmptyFolderStage({
   t, handle, nativeVaultRootPath, busy, openImport, conversationDoor, sources, agentName, agentConnected, wikiOnly = false,

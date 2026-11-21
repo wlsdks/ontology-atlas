@@ -7,7 +7,7 @@ import { CloudDownload, FolderOpen, Search } from "lucide-react";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
-import type { FileManager } from "./file-manager";
+import type { FileManager } from "../../../model/sources/file-manager";
 
 type LibraryT = ReturnType<typeof useTranslations<"library">>;
 

@@ -11,11 +11,11 @@ import { LibraryStage } from "../parts/compile/LibraryStage";
 import { LibraryQuestions } from "../parts/questions/LibraryQuestions";
 import { LibraryUsageRows } from "../parts/first-run/LibraryUsageRows";
 import { LibraryHomePopover } from "../parts/LibraryHomePopover";
-import type { LibrarySelection, LibraryHomeSurface } from "./library-page-state";
-import type { useLibrarySources } from "./use-library-sources";
-import type { useLibraryHome } from "./use-library-home";
-import type { useLibraryTurns } from "./use-library-turns";
-import type { libraryHomeStrip } from "./library-home-strip";
+import type { LibrarySelection, LibraryHomeSurface } from "../../model/library-selection";
+import type { useLibrarySources } from "../../model/sources/use-library-sources";
+import type { useLibraryHome } from "../../model/home/use-library-home";
+import type { useLibraryTurns } from "../../model/turns/use-library-turns";
+import type { libraryHomeStrip } from "../../model/home/library-home-strip";
 
 export function LibraryHomePopovers({
   t, nativeVaultRootPath, homeSurface, setHomeSurface, guideDoorRef, questionsDoorRef,

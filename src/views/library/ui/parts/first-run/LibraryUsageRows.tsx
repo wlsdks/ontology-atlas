@@ -5,7 +5,7 @@ import { FolderOpen, Copy, ShieldCheck } from "lucide-react";
 
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
-import { hostFileManager } from "./file-manager";
+import { hostFileManager } from "../../../model/sources/file-manager";
 
 type LibraryT = ReturnType<typeof useTranslations<"library">>;
 

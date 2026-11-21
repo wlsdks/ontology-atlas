@@ -5,9 +5,9 @@ import {
   type LibrarySelection,
   type LibraryHomeSurface,
   librarySelectionFocusTarget,
-} from "./library-page-state";
-import type { useLibrarySources } from "./use-library-sources";
-import type { useLibraryWorkActivity } from "./use-library-work-activity";
+} from "../library-selection";
+import type { useLibrarySources } from "../sources/use-library-sources";
+import type { useLibraryWorkActivity } from "../turns/use-library-work-activity";
 
 export function useLibraryFocus({
   selected, setSelected, mobileBrowseOpen, mobileBrowseBackRef, homeSurface, answerComparisonOpen,

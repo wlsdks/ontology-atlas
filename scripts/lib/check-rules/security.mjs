@@ -74,6 +74,7 @@ export const rules = [
       /^src\/features\/project-edit\/ui\/MarkdownField\.tsx$/,
       /^src\/views\/gateway-doc\/ui\/GatewayDocPage\.tsx$/,
       /^src\/views\/library\/ui\/(?:LibraryPage\.tsx|library-page\/[^/]+\.tsx?|parts\/questions\/(?:AnswerRevisionComparison|LibraryQuestionDesk)\.tsx|parts\/questions\/desk\/[^/]+\.tsx?|parts\/wiki\/[^/]+\.tsx?)$/,
+      /^src\/views\/library\/model\/.+\.tsx?$/,
       /^src\/views\/library\/lib\/sources\/use-cited-passage\.ts$/,
       /^src\/shared\/lib\/library\/source-passage\.ts$/,
       /^src\/views\/project-detail\/ui\/ProjectDetailPage\.tsx$/,

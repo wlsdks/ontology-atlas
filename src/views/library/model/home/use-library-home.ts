@@ -6,8 +6,8 @@ import {
 } from "@/shared/lib/preferences/library-preferences";
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/overlays/right-dock-reserve";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
-import type { LibrarySelection, LibraryHomeSurface } from "./library-page-state";
-import type { useLibraryWorkActivity } from "./use-library-work-activity";
+import type { LibrarySelection, LibraryHomeSurface } from "../library-selection";
+import type { useLibraryWorkActivity } from "../turns/use-library-work-activity";
 
 export function useLibraryHome({
   selected, setHomeSurface, chatWidth, dockOpen, workActivity, importOpen,

@@ -13,7 +13,7 @@ import { controlClass } from "@/shared/ui/control-class";
 import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useCitedPassage } from "../../../lib/sources/use-cited-passage";
-import { changedSinceWritten } from "./wiki-reader-facts";
+import { changedSinceWritten } from "../../../model/reader/wiki-reader-facts";
 
 /** Lines of the cited unit shown at most; the rest is one press away, in the source. */
 export const POPOVER_CITED_LINES = 12;

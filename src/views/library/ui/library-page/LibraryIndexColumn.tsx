@@ -18,12 +18,12 @@ import { useLibraryAgent } from "../../lib/agent/use-library-agent";
 import { LibrarySection, type SourceGroupFilter } from "../parts/index-column/LibrarySection";
 import type { LibraryUiModel } from "@/features/library";
 import type { LibrarySourceRow, VaultDoc } from "@/entities/docs-vault";
-import type { LibrarySelection } from "./library-page-state";
-import type { useLibraryReader } from "./use-library-reader";
-import type { useLibrarySources } from "./use-library-sources";
-import type { useLibraryHome } from "./use-library-home";
-import type { useLibraryTurns } from "./use-library-turns";
-import type { useLibraryIndexColumn } from "./use-library-index-column";
+import type { LibrarySelection } from "../../model/library-selection";
+import type { useLibraryReader } from "../../model/reader/use-library-reader";
+import type { useLibrarySources } from "../../model/sources/use-library-sources";
+import type { useLibraryHome } from "../../model/home/use-library-home";
+import type { useLibraryTurns } from "../../model/turns/use-library-turns";
+import type { useLibraryIndexColumn } from "../../model/index-column/use-library-index-column";
 import { LibraryHeader } from "./LibraryHeader";
 
 /**

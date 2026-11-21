@@ -8,7 +8,7 @@ import { CloseButton } from "@/shared/ui";
 
 import { SkippedFilesDialog } from "./SourceCopyDialogs";
 import { SourceCopyLine } from "./SourceCopyLine";
-import { useSourceCopy } from "./use-source-drop";
+import { useSourceCopy } from "../../../model/sources/use-source-drop";
 
 /**
  * The copy's line once the stage has handed over to the Sources home: the first landed file turns

@@ -4,9 +4,9 @@ import {
   type LibraryUiModel,
   type RetainedAnswerHead,
 } from "@/features/library";
-import type { LibraryHomeStripDoor } from "../parts/LibraryHomeStrip";
+import type { LibraryHomeStripDoor } from "../../ui/parts/LibraryHomeStrip";
 import type { Dispatch, SetStateAction } from "react";
-import type { LibrarySelection, LibraryHomeSurface } from "./library-page-state";
+import type { LibrarySelection, LibraryHomeSurface } from "../library-selection";
 
 /**
  * The Library-wide doors in the page header, and what the More door lists below `lg`: How to use,

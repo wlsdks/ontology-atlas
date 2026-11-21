@@ -9,9 +9,9 @@ import { vaultImageUrl } from "@/shared/lib/library/open-vault-file";
 import { useCitedPassage } from "../../lib/sources/use-cited-passage";
 import { useSourceOutline } from "../../lib/sources/use-source-outline";
 import { useAnswerHistory } from "../../lib/questions/use-answer-history";
-import { advisoryReportSlugs } from "../parts/wiki/LibraryCheckReport";
-import { useWikiReaderFacts } from "../parts/wiki/use-wiki-reader-facts";
-import type { LibrarySelection } from "./library-page-state";
+import { advisoryReportSlugs } from "../../ui/parts/wiki/LibraryCheckReport";
+import { useWikiReaderFacts } from "./use-wiki-reader-facts";
+import type { LibrarySelection } from "../library-selection";
 
 export function useLibraryReader({
   reducedMotion, localVault, manifest, hasFolder, selected, sourceCitation, docs, model, locale,
