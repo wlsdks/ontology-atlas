@@ -56,7 +56,7 @@
     "src/server/validate.mjs",
     "src/server/write-log.mjs",
     "src/tools/vault-nodes.mjs",
-    "src/tools/maintenance.mjs",
+    "src/tools/result-attachments.mjs",
     "src/tools/read.mjs",
     "src/tools/constellations.mjs",
     "src/tools/git.mjs",

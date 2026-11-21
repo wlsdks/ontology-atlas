@@ -172,7 +172,7 @@ test('write-side maintenance and project-source tools read each vault document o
         .map(([key, value]) => `${key}: ${JSON.stringify(value)}`), '---', 'Recorded meaning.',
       ].join('\n'));
     }
-    const maintenanceModule = new URL('./maintenance.mjs', import.meta.url).href;
+    const maintenanceModule = new URL('./result-attachments.mjs', import.meta.url).href;
     const projectSourceModule = new URL('./project-source.mjs', import.meta.url).href;
     const script = `
       import fs from 'node:fs';

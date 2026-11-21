@@ -2246,7 +2246,7 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/absorb.mjs` | `absorb_document` |
 | `src/tools/vault-nodes.mjs` | node identity, the gates every write passes, and the whole-vault issue finders |
 | `src/tools/relation-keys.mjs` | which frontmatter key holds which relation, and how a stored ref matches |
-| `src/tools/maintenance.mjs` | what a result carries rather than being asked for |
+| `src/tools/result-attachments.mjs` | what a result carries rather than being asked for |
 | `src/vault/documents/slug-paths.mjs` | slug ↔ path mapping, the containment check every disk path passes, raw-source slugs, on-disk spelling, similar-slug suggestions, vault-root check |
 | `src/vault/documents/document-cache.mjs` | the per-vault parse cache, cached document text, and the read and write snapshot scopes |
 | `src/vault/documents/file-snapshot.mjs` | one `.md` read as bytes plus the stamp they were read under |

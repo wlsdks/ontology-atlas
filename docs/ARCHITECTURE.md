@@ -117,7 +117,7 @@ fragments in `server/tool-schemas/` (one file per subject) and the `initialize` 
 git, the compiled graph, vault validation, repo analysis, project source,
 concept writes, relation writes, the destructive lifecycle, and absorb, with
 node identity in `tools/vault-nodes.mjs` and post-write maintenance in
-`tools/maintenance.mjs`. The full table is in
+`tools/result-attachments.mjs`. The full table is in
 [`mcp/README.md`](../mcp/README.md#source-layout).
 
 `scripts/records/check-decision-record.mjs` watches `server/registry.mjs` and `server/tool-definitions/`

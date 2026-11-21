@@ -20,7 +20,7 @@ import { slugToPath } from '../vault/documents/slug-paths.mjs';
 import { readDoc } from '../vault/documents/document-cache.mjs';
 import { VaultConflictError } from '../vault/writes/atomic-writes.mjs';
 import { patchFrontmatter } from '../vault/writes/doc-writes.mjs';
-import { compactPostWriteMaintenance, findingsOnWrittenNodes } from './maintenance.mjs';
+import { compactPostWriteMaintenance, findingsOnWrittenNodes } from './result-attachments.mjs';
 import {
   RELATION_KEY,
   RELATION_TYPES,

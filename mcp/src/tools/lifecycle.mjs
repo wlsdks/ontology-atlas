@@ -29,7 +29,7 @@ import { VaultConflictError, applyAllOrNothing } from '../vault/writes/atomic-wr
 import { deleteDoc } from '../vault/writes/doc-writes.mjs';
 import { findBacklinks } from '../vault/graph/graph-queries.mjs';
 import { redirectBacklinks } from '../vault/writes/backlink-rewrite.mjs';
-import { compactPostWriteMaintenance } from './maintenance.mjs';
+import { compactPostWriteMaintenance } from './result-attachments.mjs';
 import {
   ADD_CONCEPT_KINDS,
   destructivePreviewState,

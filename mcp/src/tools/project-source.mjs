@@ -55,11 +55,8 @@ import { loadVaultDocs, readDoc } from '../vault/documents/document-cache.mjs';
 import { VaultConflictError } from '../vault/writes/atomic-writes.mjs';
 import { updateDoc } from '../vault/writes/doc-writes.mjs';
 import { logWrite } from '../server/write-log.mjs';
-import {
-  projectMeaningContext,
-  projectSourceScope,
-} from './graph.mjs';
-import { attachVaultValidation } from './maintenance.mjs';
+import { projectMeaningContext, projectSourceScope } from './meaning-readiness.mjs';
+import { attachVaultValidation } from './result-attachments.mjs';
 import { validateVaultReport } from './validate-vault.mjs';
 import { requireNodeNotReservedForHuman, resolveExistingVaultSlug } from './vault-nodes.mjs';
 import { isAbsolute } from 'node:path';

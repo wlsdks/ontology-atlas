@@ -1,6 +1,5 @@
 /** The compiled-graph tool handlers: `compile_ontology` and `query_ontology`. */
 
-export { meaningSourceFromProjectSource, projectSourceScope, projectMeaningContext } from './meaning-readiness.mjs';
 export { compileOntologyTool, queryOntologyTool };
 
 import { buildCompactAgentBrief } from '../agent-brief/agent-brief-compact.mjs';
@@ -14,7 +13,7 @@ import {
   requireOptionalNonNegativeInteger,
   requireOptionalPositiveInteger,
 } from '../server/validate.mjs';
-import { attachVaultValidation } from './maintenance.mjs';
+import { attachVaultValidation } from './result-attachments.mjs';
 import { buildSummaryFreshness } from './vault-nodes.mjs';
 import { scopedAgentBriefInput, privateCurrentProjectSourceAccess } from './agent-brief-scope.mjs';
 import {
