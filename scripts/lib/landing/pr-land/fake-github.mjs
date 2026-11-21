@@ -53,10 +53,10 @@ export function fakeWorld({ prs = [], queued = [], ci = () => green(), ownCi = (
   const branchTrain = new Map();
   const branchBase = new Map();
   let trainCount = 0;
-  const write = (name, fn) => (...args) => {
+  const write = (name, callback) => (...args) => {
     calls.push([name, ...args]);
     if (readOnly) throw new Error(`--plan wrote to GitHub: ${name}`);
-    return fn(...args);
+    return callback(...args);
   };
   const view = (pr) => {
     const train = trains.get(pr.number);

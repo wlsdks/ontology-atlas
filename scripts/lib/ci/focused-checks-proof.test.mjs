@@ -25,9 +25,9 @@ test('covers follows proof edges from the base tree to the head tree', () => {
 });
 
 test('recordProof keeps the newest 200 lines and skips a no-op', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'atlas-proof-record-'));
+  const directory = mkdtempSync(join(tmpdir(), 'atlas-proof-record-'));
   try {
-    const file = join(dir, 'proofs.jsonl');
+    const file = join(directory, 'proofs.jsonl');
     recordProof({ from: 'x', to: 'x', file });
     assert.throws(() => readFileSync(file, 'utf8'));
     for (let index = 0; index < 205; index += 1) {
@@ -38,7 +38,7 @@ test('recordProof keeps the newest 200 lines and skips a no-op', () => {
     assert.equal(lines[0].from, 'f5');
     assert.equal(lines.at(-1).to, 't204');
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 

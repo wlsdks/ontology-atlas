@@ -3,7 +3,7 @@ import { isWikiFurnitureSlug, WIKI_DIR } from '@/shared/lib/library/wiki-page-sc
 
 import { wrapUntrusted } from '../agent-tools/concept-evidence-pack';
 import type { ToolExecution } from '../agent-tools/tool-executor';
-import { AGENT_TURN_VAULT_CHAR_CAP } from '../types';
+import { AGENT_TURN_VAULT_CHAR_CAP } from '../agent-turn';
 
 const WIKI_CHUNK_CHAR_CAP = 4_000;
 const WIKI_BASENAME_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;

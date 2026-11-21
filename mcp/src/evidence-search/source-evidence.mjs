@@ -10,7 +10,7 @@ import {
 } from 'node:fs';
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
-import { DEFAULT_IGNORE } from '../analyze/constants.mjs';
+import { DEFAULT_IGNORE } from '../analyze/analysis-limits-and-tables.mjs';
 import { repoText } from '../analyze/repo-text.mjs';
 import { calleesOf } from './callees.mjs';
 import { productFiles } from './declaration-index.mjs';

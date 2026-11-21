@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildChatNodeIndex } from './chat-node-index';
-import type { KnowledgeGraphNode } from '../model/types';
+import type { KnowledgeGraphNode } from '../model/knowledge-graph';
 
 /** The map's name and the agent's name for one node, as seen in the installed app. */
 const CANVAS_ID = 'domain:example-domain';

@@ -2,7 +2,7 @@ import { isWikiFurnitureSlug } from '@/shared/lib/library/wiki-page-schema';
 
 import { recordedLocalDay } from './source-progress';
 
-import type { VaultDoc, VaultSourceFile } from '../../model/types';
+import type { VaultDoc, VaultSourceFile } from '../../model/vault-manifest';
 
 /** The two vault file kinds that are not the graph: raw sources under `sources/` and wiki pages under `wiki/` (no `kind:`). */
 

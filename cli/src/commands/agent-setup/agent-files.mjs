@@ -56,9 +56,9 @@ export async function runAgentFiles(args) {
   let result;
   try {
     result = buildAgentFilesReport(parsed);
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }
@@ -116,10 +116,10 @@ function scanAgentFiles(root) {
       entries.push(readEntry(abs, relative, realRoot));
     }
   }
-  for (const dir of SCAN_DIRS) {
-    const abs = join(root, dir);
+  for (const directory of SCAN_DIRS) {
+    const abs = join(root, directory);
     if (!existsSync(abs) || !statSync(abs).isDirectory()) continue;
-    for (const relative of walkFiles(abs, dir)) {
+    for (const relative of walkFiles(abs, directory)) {
       if (classifyAgentFilePath(relative)) {
         entries.push(readEntry(join(root, relative), relative, realRoot));
       }
@@ -169,12 +169,12 @@ function resolveReferencedPaths(root, files) {
   const existing = new Set();
   for (const entry of files) {
     if (!/\.(md|mdc)$/.test(entry.path) || typeof entry.content !== 'string') continue;
-    const dir = entry.path.includes('/')
+    const directory = entry.path.includes('/')
       ? entry.path.slice(0, entry.path.lastIndexOf('/'))
       : '';
     for (const { ref } of extractAtRefs(entry.content)) {
       if (ref.includes('*')) continue;
-      for (const candidate of [ref, dir ? `${dir}/${ref}` : ref]) {
+      for (const candidate of [ref, directory ? `${directory}/${ref}` : ref]) {
         const normalized = candidate.split('/').filter((p) => p !== '.' && p !== '').join('/');
         if (normalized.includes('..')) continue;
         if (existsSync(join(root, normalized))) existing.add(normalized);

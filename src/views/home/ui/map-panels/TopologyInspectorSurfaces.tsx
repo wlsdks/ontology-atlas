@@ -39,7 +39,7 @@ interface TopologyInspectorSurfacesProps {
   grayAreaAction?: {label:string;onOpen:()=>void};
   projectsError: string | null;
   heldProjectsError: string | null;
-  renderProjects: import("@/entities/project/model/types").Project[];
+  renderProjects: import("@/entities/project/model/project").Project[];
   impactMode: import("@/entities/project/model/insights").ProjectImpactMode;
   tEditProvenance: ReturnType<typeof useTranslations<"editProvenance">>;
   tSummaryFreshness: ReturnType<typeof useTranslations<"summaryFreshness">>;

@@ -16,9 +16,9 @@ export function parseColor(input) {
     const n = (i) => parseInt(wide.slice(i * 2, i * 2 + 2), 16);
     return [n(0), n(1), n(2), wide.length >= 8 ? n(3) / 255 : 1];
   }
-  const fn = /^rgba?\(([^)]+)\)$/i.exec(s);
-  if (fn) {
-    const parts = fn[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+  const functionMatch = /^rgba?\(([^)]+)\)$/i.exec(s);
+  if (functionMatch) {
+    const parts = functionMatch[1].split(/[\s,/]+/).filter(Boolean).map(Number);
     if (parts.length < 3 || parts.slice(0, 3).some(Number.isNaN)) return null;
     return [parts[0], parts[1], parts[2], parts.length > 3 && !Number.isNaN(parts[3]) ? parts[3] : 1];
   }
@@ -99,8 +99,8 @@ export function judgeAdjacentMarks({ a, b, over }) {
    */
   if (!ma || !mb) return null;
   const ca = composite(ma, solidBase);
-  const cb = composite(mb, solidBase);
-  const ratio = contrastRatio(ca, cb);
+  const callback = composite(mb, solidBase);
+  const ratio = contrastRatio(ca, callback);
   return {
     ratio: +ratio.toFixed(2),
     passes: ratio >= 3,

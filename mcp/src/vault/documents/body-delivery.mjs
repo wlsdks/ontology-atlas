@@ -32,9 +32,9 @@ export function extractSummaryExcerpt(body, maxLen = 800) {
     }
     const para = [];
     while (i < lines.length) {
-      const cur = lines[i];
-      if (cur.trim() === '' || isBlockStart(cur)) break;
-      para.push(cur.trim());
+      const current = lines[i];
+      if (current.trim() === '' || isBlockStart(current)) break;
+      para.push(current.trim());
       i += 1;
     }
     if (para.length > 0) {

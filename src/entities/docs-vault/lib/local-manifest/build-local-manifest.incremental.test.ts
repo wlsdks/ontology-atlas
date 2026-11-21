@@ -4,7 +4,7 @@ import {
   buildLocalManifestWithEntries,
   rebuildLocalManifestIncremental,
 } from './build-local-manifest';
-import type { VaultManifest } from '../../model/types';
+import type { VaultManifest } from '../../model/vault-manifest';
 
 /**
  * `rebuildLocalManifestIncremental` must equal a full `buildLocalManifest` except `generatedAt`

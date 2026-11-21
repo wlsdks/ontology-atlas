@@ -1,5 +1,5 @@
 import { getTopologyFocusHref, getTopologyProjectHref } from "@/entities/project";
-import type { VaultDoc } from "../../model/types";
+import type { VaultDoc } from "../../model/vault-manifest";
 import { computeProjectSlug } from "../projects/project-slug";
 
 const FOCUSABLE_ONTOLOGY_KINDS = new Set(["domain", "capability", "element"]);

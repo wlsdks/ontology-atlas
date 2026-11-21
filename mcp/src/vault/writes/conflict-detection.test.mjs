@@ -10,7 +10,7 @@ import {
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { readDoc } from "../documents/document-cache.mjs";
-import { getFileMtime, VaultConflictError } from "./atomic-writes.mjs";
+import { readFileMtime, VaultConflictError } from "./atomic-writes.mjs";
 import { writeDoc, patchFrontmatter, updateDoc, deleteDoc } from "./doc-writes.mjs";
 
 let passed = 0;
@@ -22,15 +22,15 @@ function nextTestUid() {
   return `00000000-0000-4000-8000-${String(uidSequence).padStart(12, "0")}`;
 }
 
-function test(name, fn) {
+function test(name, body) {
   try {
-    fn();
+    body();
     passed += 1;
     console.log(`  ✓ ${name}`);
-  } catch (err) {
+  } catch (error) {
     failed += 1;
     console.error(`  ✗ ${name}`);
-    console.error(`    ${err.message}`);
+    console.error(`    ${error.message}`);
   }
 }
 
@@ -70,7 +70,7 @@ test("skips the check when expectedMtime is omitted (existing callers stay compa
 test("patchFrontmatter passes when expectedMtime matches", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
-  const mtime = getFileMtime(file);
+  const mtime = readFileMtime(file);
   patchFrontmatter(root, "foo", { title: "Foo" }, { expectedMtime: mtime });
   rmSync(root, { recursive: true, force: true });
 });
@@ -78,7 +78,7 @@ test("patchFrontmatter passes when expectedMtime matches", () => {
 test("throws VaultConflictError when expectedMtime differs", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
-  const stale = getFileMtime(file) - 5000; // 5s ago — simulates an external change
+  const stale = readFileMtime(file) - 5000; // 5s ago — simulates an external change
   // Set an explicitly different mtime: some filesystems truncate below a millisecond.
   const now = Date.now();
   utimesSync(file, now / 1000, now / 1000);
@@ -91,7 +91,7 @@ test("throws VaultConflictError when expectedMtime differs", () => {
         { title: "Foo" },
         { expectedMtime: stale },
       ),
-    (err) => err instanceof VaultConflictError && err.code === "VAULT_CONFLICT",
+    (error) => error instanceof VaultConflictError && error.code === "VAULT_CONFLICT",
   );
   rmSync(root, { recursive: true, force: true });
 });
@@ -99,19 +99,19 @@ test("throws VaultConflictError when expectedMtime differs", () => {
 test("VaultConflictError exposes the slug and both mtimes", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
-  const stale = getFileMtime(file) - 5000;
+  const stale = readFileMtime(file) - 5000;
   const now = Date.now();
   utimesSync(file, now / 1000, now / 1000);
 
   try {
     patchFrontmatter(root, "foo", { title: "Foo" }, { expectedMtime: stale });
     assert.fail("expected throw");
-  } catch (err) {
-    assert.equal(err.code, "VAULT_CONFLICT");
-    assert.equal(err.slug, "foo");
-    assert.equal(err.expectedMtime, stale);
-    assert.ok(typeof err.currentMtime === "number");
-    assert.match(err.message, /modified externally/);
+  } catch (error) {
+    assert.equal(error.code, "VAULT_CONFLICT");
+    assert.equal(error.slug, "foo");
+    assert.equal(error.expectedMtime, stale);
+    assert.ok(typeof error.currentMtime === "number");
+    assert.match(error.message, /modified externally/);
   }
   rmSync(root, { recursive: true, force: true });
 });
@@ -119,7 +119,7 @@ test("VaultConflictError exposes the slug and both mtimes", () => {
 test("updateDoc honours the expectedMtime option", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
-  const stale = getFileMtime(file) - 5000;
+  const stale = readFileMtime(file) - 5000;
   utimesSync(file, Date.now() / 1000, Date.now() / 1000);
 
   assert.throws(
@@ -128,7 +128,7 @@ test("updateDoc honours the expectedMtime option", () => {
         frontmatter: { title: "X" },
         expectedMtime: stale,
       }),
-    (err) => err instanceof VaultConflictError,
+    (error) => error instanceof VaultConflictError,
   );
   rmSync(root, { recursive: true, force: true });
 });
@@ -216,12 +216,12 @@ test("updateDoc rejects an invalid frontmatter patch before writing", () => {
 test("deleteDoc honours the expectedMtime option", () => {
   const root = makeVault();
   const file = writeMd(root, "foo", "---\nkind: capability\n---\n");
-  const stale = getFileMtime(file) - 5000;
+  const stale = readFileMtime(file) - 5000;
   utimesSync(file, Date.now() / 1000, Date.now() / 1000);
 
   assert.throws(
     () => deleteDoc(root, "foo", { expectedMtime: stale }),
-    (err) => err instanceof VaultConflictError,
+    (error) => error instanceof VaultConflictError,
   );
   rmSync(root, { recursive: true, force: true });
 });

@@ -28,7 +28,7 @@ import type {
   VaultManifest,
   VaultSourceFile,
   VaultTreeNode,
-} from '../../model/types';
+} from '../../model/vault-manifest';
 
 /** `'sources/plan.PDF'` → `'pdf'`; a name with no extension yields `''`. */
 export function vaultSourceFormat(name: string): string {

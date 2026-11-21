@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildWikiNodeIndex } from '@/shared/lib/library/wiki-page-schema';
 
-import type { VaultDoc, VaultSourceFile } from '../../model/types';
+import type { VaultDoc, VaultSourceFile } from '../../model/vault-manifest';
 import {
   deriveMapReach,
   mapReachOfPage,

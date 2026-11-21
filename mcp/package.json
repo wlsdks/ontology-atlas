@@ -140,7 +140,7 @@
     "src/analyze/repo-text.mjs",
     "src/analyze/survey/breadth-map.mjs",
     "src/analyze/abilities/abilities.mjs",
-    "src/analyze/constants.mjs",
+    "src/analyze/analysis-limits-and-tables.mjs",
     "src/analyze/text.mjs",
     "src/analyze/candidates/scan-guards.mjs",
     "src/analyze/candidates/package-contracts.mjs",

@@ -10,6 +10,6 @@ export const CLAUDE_ISOLATED_CONFIG_SUBPATH = `Library/Application Support/${APP
  * The entry is `Claude Code-credentials-<first 8 of the sha256 of the config folder's absolute path>`, hashed by the shell because the home path differs per person; the path contains a space, so quotes are required.
  */
 export function claudeLoginRepairCommand(): string {
-  const dir = `$HOME/${CLAUDE_ISOLATED_CONFIG_SUBPATH}`;
-  return `security delete-generic-password -s "Claude Code-credentials-$(printf %s "${dir}" | shasum -a 256 | cut -c1-8)"`;
+  const directory = `$HOME/${CLAUDE_ISOLATED_CONFIG_SUBPATH}`;
+  return `security delete-generic-password -s "Claude Code-credentials-$(printf %s "${directory}" | shasum -a 256 | cut -c1-8)"`;
 }

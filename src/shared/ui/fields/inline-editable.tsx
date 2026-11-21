@@ -53,10 +53,10 @@ export function InlineEditable({
 
   useEffect(() => {
     if (!editing) return;
-    const el = multiline ? textareaRef.current : inputRef.current;
-    el?.focus();
-    if (el && "select" in el && typeof el.select === "function") {
-      el.select();
+    const element = multiline ? textareaRef.current : inputRef.current;
+    element?.focus();
+    if (element && "select" in element && typeof element.select === "function") {
+      element.select();
     }
   }, [editing, multiline]);
 

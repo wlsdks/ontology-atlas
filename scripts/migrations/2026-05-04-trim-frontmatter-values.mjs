@@ -28,8 +28,8 @@ export function migrate(file) {
 
   const lines = block.split("\n");
   let changed = false;
-  const transformed = lines.map((line, idx) => {
-    if (idx === 0) return line; // leading ---
+  const transformed = lines.map((line, index) => {
+    if (index === 0) return line; // leading ---
     if (/^\s+-\s/.test(line)) return line;
     const m = line.match(/^([^:]*:\s*)(.*?)(\s+)$/);
     if (!m) return line;

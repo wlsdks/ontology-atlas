@@ -147,18 +147,18 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   const value = rest.value;
   useLayoutEffect(() => {
     if (!autoGrow) return;
-    const el = innerRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    const style = getComputedStyle(el);
+    const element = innerRef.current;
+    if (!element) return;
+    element.style.height = "auto";
+    const style = getComputedStyle(element);
     const line = parseFloat(style.lineHeight) || 20;
     const chrome =
       parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) +
       parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
     const ceiling = maxRows ? maxRows * line + (Number.isFinite(chrome) ? chrome : 0) : Number.POSITIVE_INFINITY;
-    const next = Math.min(el.scrollHeight, ceiling);
-    el.style.height = `${next}px`;
-    el.style.overflowY = el.scrollHeight > ceiling ? "auto" : "hidden";
+    const next = Math.min(element.scrollHeight, ceiling);
+    element.style.height = `${next}px`;
+    element.style.overflowY = element.scrollHeight > ceiling ? "auto" : "hidden";
   }, [autoGrow, maxRows, value]);
   return (
     <FieldShell {...{ id, label, labelledBy, className, hint, hintId, error, errorId }}>

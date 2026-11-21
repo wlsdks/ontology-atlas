@@ -90,17 +90,17 @@ export function useVaultDocWrites(
   );
   const markSelfWrite = useCallback((slug: string) => {
     selfWrittenSlugsRef.current.add(slug);
-    setSelfEditTimestamps((prev) => {
-      const next = new Map(prev);
+    setSelfEditTimestamps((previous) => {
+      const next = new Map(previous);
       next.set(slug, Date.now());
       return next;
     });
   }, []);
   const unmarkSelfWrite = useCallback((slug: string) => {
     selfWrittenSlugsRef.current.delete(slug);
-    setSelfEditTimestamps((prev) => {
-      if (!prev.has(slug)) return prev;
-      const next = new Map(prev);
+    setSelfEditTimestamps((previous) => {
+      if (!previous.has(slug)) return previous;
+      const next = new Map(previous);
       next.delete(slug);
       return next;
     });
@@ -174,7 +174,7 @@ export function useVaultDocWrites(
   );
 
   const createDoc = useCallback(
-    async (slug: string, content: string, opts: { skipRefresh?: boolean } = {}) => {
+    async (slug: string, content: string, options: { skipRefresh?: boolean } = {}) => {
       const live = openState();
       if (live.fileHandles.has(slug)) {
         throw new Error(`Document already exists: "${slug}"`);
@@ -202,7 +202,7 @@ export function useVaultDocWrites(
       markSelfWrite(slug);
       // `opts.skipRefresh` lets a caller that creates several documents in a row (bootstrap)
       // reload only on the last write — same contract as `updateFrontmatter`.
-      if (!opts.skipRefresh) await reloadIfOpen(live.handle);
+      if (!options.skipRefresh) await reloadIfOpen(live.handle);
     },
     [openState, getParentAndName, reloadIfOpen, markSelfWrite],
   );
@@ -237,20 +237,20 @@ export function useVaultDocWrites(
     async (
       slug: string,
       updates: Record<string, FrontmatterUpdateValue>,
-      opts: { skipRefresh?: boolean; expectedMtime?: number; rewriteBacklinks?: boolean } = {},
+      options: { skipRefresh?: boolean; expectedMtime?: number; rewriteBacklinks?: boolean } = {},
     ): Promise<ReferrerRewriteReport> => {
       const live = openState();
       const fh = live.fileHandles.get(slug);
       if (!fh) throw new Error(`Local vault: no file handle for "${slug}"`);
       await requireWritePermission(fh);
       const file = await fh.getFile();
-      guardExpectedMtime(slug, opts.expectedMtime, file.lastModified);
+      guardExpectedMtime(slug, options.expectedMtime, file.lastModified);
       const raw = await file.text();
       assertIdentityPatch(raw, updates);
       const next = applyFrontmatterUpdates(raw, updates);
       assertNodeIdentityContent(slug, next, live.manifest?.docs ?? []);
       if (next === raw) return EMPTY_REFERRER_REPORT;
-      const newKind = opts.rewriteBacklinks ? kindChangeOf(raw, updates) : null;
+      const newKind = options.rewriteBacklinks ? kindChangeOf(raw, updates) : null;
       const writable = await fh.createWritable();
       await writable.write(next);
       await writable.close();
@@ -266,7 +266,7 @@ export function useVaultDocWrites(
               markSelfWrite,
             })
           : EMPTY_REFERRER_REPORT;
-      if (!opts.skipRefresh) await reloadIfOpen(live.handle);
+      if (!options.skipRefresh) await reloadIfOpen(live.handle);
       return report;
     },
     [openState, reloadIfOpen, requireWritePermission, markSelfWrite, guardExpectedMtime],
@@ -276,9 +276,9 @@ export function useVaultDocWrites(
     async (
       slug: string,
       updates: Record<string, FrontmatterUpdateValue>,
-      opts: { skipRefresh?: boolean; expectedMtime?: number } = {},
+      options: { skipRefresh?: boolean; expectedMtime?: number } = {},
     ): Promise<void> => {
-      await writeFrontmatterPatch(slug, updates, opts);
+      await writeFrontmatterPatch(slug, updates, options);
     },
     [writeFrontmatterPatch],
   );
@@ -292,9 +292,9 @@ export function useVaultDocWrites(
     (
       slug: string,
       updates: Record<string, FrontmatterUpdateValue>,
-      opts: { expectedMtime?: number } = {},
+      options: { expectedMtime?: number } = {},
     ): Promise<ReferrerRewriteReport> =>
-      writeFrontmatterPatch(slug, updates, { ...opts, rewriteBacklinks: true }),
+      writeFrontmatterPatch(slug, updates, { ...options, rewriteBacklinks: true }),
     [writeFrontmatterPatch],
   );
 
@@ -308,7 +308,7 @@ export function useVaultDocWrites(
     async (
       oldSlug: string,
       newSlug: string,
-      opts: {
+      options: {
         rewriteBacklinks?: boolean;
         expectedMtime?: number;
         frontmatterUpdates?: Record<string, FrontmatterUpdateValue>;
@@ -329,13 +329,13 @@ export function useVaultDocWrites(
       const oldFh = live.fileHandles.get(oldSlug);
       if (!oldFh) throw new Error(`Local vault: no file handle for "${oldSlug}"`);
       const file = await oldFh.getFile();
-      guardExpectedMtime(oldSlug, opts.expectedMtime, file.lastModified);
+      guardExpectedMtime(oldSlug, options.expectedMtime, file.lastModified);
       const raw = await file.text();
-      if (opts.frontmatterUpdates) assertIdentityPatch(raw, opts.frontmatterUpdates);
+      if (options.frontmatterUpdates) assertIdentityPatch(raw, options.frontmatterUpdates);
       const content = rewriteMovedDocSelf(raw, {
         oldSlug,
         newSlug,
-        updates: opts.frontmatterUpdates,
+        updates: options.frontmatterUpdates,
       });
       const newResolved = await getParentAndName(live.handle, newSlug, true);
       if (!newResolved) throw new Error('Vault is not open');
@@ -357,13 +357,13 @@ export function useVaultDocWrites(
        * into the list for the new kind.
        */
       const report =
-        opts.rewriteBacklinks && live.manifest
+        options.rewriteBacklinks && live.manifest
           ? await rewriteReferrerFiles({
               docs: live.manifest.docs,
               fileHandles: live.fileHandles,
               oldSlug,
               newSlug,
-              newKind: kindChangeOf(raw, opts.frontmatterUpdates) ?? undefined,
+              newKind: kindChangeOf(raw, options.frontmatterUpdates) ?? undefined,
               markSelfWrite,
             })
           : EMPTY_REFERRER_REPORT;

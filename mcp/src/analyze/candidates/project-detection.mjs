@@ -14,7 +14,7 @@ import {
   PYTHON_SETUP_MAX_BYTES,
   SEMANTIC_EVIDENCE_MAX_BYTES,
   STARTER_ONTOLOGY_SLUGS,
-} from '../constants.mjs';
+} from '../analysis-limits-and-tables.mjs';
 import { cleanHeadingLabel, humanize, isHeadingAdornment, slugify } from '../text.mjs';
 import { authoredMarkdownLines } from './authored-markdown.mjs';
 import { VAULT_SOURCES_DIR } from '../../schema.mjs';
@@ -94,10 +94,10 @@ export function detectProject(rootPath, skipped = []) {
       // sentence-long project names; prefer the README H1, then the package name.
       const title = detectReadmeH1(rootPath) || humanize(slug);
       return { slug, title };
-    } catch (err) {
+    } catch (error) {
       skipped.push({
         path: pkgPath,
-        reason: `package-json-parse-error: ${err.message}`,
+        reason: `package-json-parse-error: ${error.message}`,
       });
     }
   }
@@ -126,10 +126,10 @@ export function detectProject(rootPath, skipped = []) {
           }
         }
       }
-    } catch (err) {
+    } catch (error) {
       skipped.push({
         path: pyprojectPath,
-        reason: `python-package-contract-read-error: ${err.message}`,
+        reason: `python-package-contract-read-error: ${error.message}`,
       });
     }
   }
@@ -158,10 +158,10 @@ export function detectProject(rootPath, skipped = []) {
           }
         }
       }
-    } catch (err) {
+    } catch (error) {
       skipped.push({
         path: setupPath,
-        reason: `python-package-contract-read-error: ${err.message}`,
+        reason: `python-package-contract-read-error: ${error.message}`,
       });
     }
   }
@@ -259,23 +259,23 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
   let budgetSpent = false;
 
   // O(entries) under the budgets; only a link can leave a folder inside the root.
-  function visit(dir) {
-    const realDirectory = realpathSync.native(dir);
+  function visit(directory) {
+    const realDirectory = realpathSync.native(directory);
     if (realDirectory === realSourcesDirectory) return;
     if (ancestors.has(realDirectory)) {
       pushSkippedOnce(skipped, {
-        path: dir,
-        reason: `ontology-evidence-skip: ${relative(rootPath, dir)} repeats a visited directory`,
+        path: directory,
+        reason: `ontology-evidence-skip: ${relative(rootPath, directory)} repeats a visited directory`,
       });
       return;
     }
     if (visitedDirectories.has(realDirectory)) return;
     visitedDirectories.add(realDirectory);
     ancestors.add(realDirectory);
-    for (const entry of readdirSync(dir).sort()) {
-      if (walkBudgetReached(dir)) return;
+    for (const entry of readdirSync(directory).sort()) {
+      if (walkBudgetReached(directory)) return;
       entriesSeen += 1;
-      const path = join(dir, entry);
+      const path = join(directory, entry);
       let stat;
       let linked = false;
       let insideRoot = true;
@@ -286,8 +286,8 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
           stat = statSync(path);
           insideRoot = pathResolvesInsideRoot(rootPath, path);
         }
-      } catch (err) {
-        skipped.push({ path, reason: `ontology-stat-error: ${err.message}` });
+      } catch (error) {
+        skipped.push({ path, reason: `ontology-stat-error: ${error.message}` });
         continue;
       }
       if (!insideRoot) {
@@ -319,7 +319,7 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
       : join(ontologyRoot, fromOntologyRoot);
   }
 
-  function walkBudgetReached(dir) {
+  function walkBudgetReached(directory) {
     if (budgetSpent) return true;
     const budget =
       entriesSeen >= ONTOLOGY_EVIDENCE_MAX_ENTRIES
@@ -330,8 +330,8 @@ export function detectExistingOntologyEvidence(rootPath, skipped = []) {
     if (!budget) return false;
     budgetSpent = true;
     pushSkippedOnce(skipped, {
-      path: dir,
-      reason: `ontology-evidence-skip: ${relative(rootPath, dir)} reached ${budget} walk budget`,
+      path: directory,
+      reason: `ontology-evidence-skip: ${relative(rootPath, directory)} reached ${budget} walk budget`,
     });
     return true;
   }
@@ -374,10 +374,10 @@ function parseSimpleFrontmatter(text) {
   const lines = block.split(/\r?\n/);
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
-    const idx = line.indexOf(':');
-    if (idx === -1) continue;
-    const key = line.slice(0, idx).trim();
-    const value = line.slice(idx + 1).trim();
+    const index = line.indexOf(':');
+    if (index === -1) continue;
+    const key = line.slice(0, index).trim();
+    const value = line.slice(index + 1).trim();
     if (!key) continue;
     if (!value) {
       const items = [];

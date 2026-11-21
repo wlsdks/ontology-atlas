@@ -70,12 +70,12 @@ export function listMcpTools({ entry = MCP_ENTRY, cwd = ROOT, timeoutMs = DEFAUL
     let stdout = '';
     let stderr = '';
     let settled = false;
-    const finish = (err, value) => {
+    const finish = (error, value) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
       child.kill();
-      if (err) reject(err);
+      if (error) reject(error);
       else resolve(value);
     };
     const timer = setTimeout(
@@ -83,7 +83,7 @@ export function listMcpTools({ entry = MCP_ENTRY, cwd = ROOT, timeoutMs = DEFAUL
       timeoutMs,
     );
 
-    child.on('error', (err) => finish(err));
+    child.on('error', (error) => finish(error));
     child.stderr.on('data', (chunk) => {
       stderr += chunk;
     });
@@ -216,8 +216,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     .then((code) => {
       process.exitCode = code;
     })
-    .catch((err) => {
-      console.error('[docs-surface] failed:', err.message ?? err);
+    .catch((error) => {
+      console.error('[docs-surface] failed:', error.message ?? error);
       process.exitCode = 1;
     });
 }

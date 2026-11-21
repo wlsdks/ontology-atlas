@@ -29,16 +29,16 @@ test('the card fits the window a truncating host leaves', () => {
 });
 
 test('connection_info carries the card and the topic list without being asked', () => {
-  const info = connectionInfoTool({});
-  assert.equal(info.guide.card, CONSTRUCTION_CARD_EN);
-  assert.deepEqual(info.guide.topics, [...CONSTRUCTION_GUIDE_TOPICS]);
-  assert.equal('guideText' in info, false);
+  const connectionInfo = connectionInfoTool({});
+  assert.equal(connectionInfo.guide.card, CONSTRUCTION_CARD_EN);
+  assert.deepEqual(connectionInfo.guide.topics, [...CONSTRUCTION_GUIDE_TOPICS]);
+  assert.equal('guideText' in connectionInfo, false);
 });
 
 test('connection_info({guide:"construction"}) returns the construction guide within its budget', () => {
-  const info = connectionInfoTool({ guide: 'construction' });
-  assert.equal(info.guideText, CONSTRUCTION_GUIDE_EN);
-  assert.equal(info.guide.card, CONSTRUCTION_CARD_EN);
+  const connectionInfo = connectionInfoTool({ guide: 'construction' });
+  assert.equal(connectionInfo.guideText, CONSTRUCTION_GUIDE_EN);
+  assert.equal(connectionInfo.guide.card, CONSTRUCTION_CARD_EN);
   assert.ok(
     CONSTRUCTION_GUIDE_EN.length <= CONSTRUCTION_GUIDE_MAX_CHARS,
     `guide is ${CONSTRUCTION_GUIDE_EN.length} characters, budget is ${CONSTRUCTION_GUIDE_MAX_CHARS}`,

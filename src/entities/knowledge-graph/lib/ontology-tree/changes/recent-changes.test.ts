@@ -9,7 +9,7 @@ import {
   selectRecentVaultDocs,
 } from "./recent-changes";
 
-function node(id: string, opts: Partial<KnowledgeGraphNode> = {}): KnowledgeGraphNode {
+function node(id: string, options: Partial<KnowledgeGraphNode> = {}): KnowledgeGraphNode {
   return {
     id,
     title: id,
@@ -18,7 +18,7 @@ function node(id: string, opts: Partial<KnowledgeGraphNode> = {}): KnowledgeGrap
     evidenceIds: [],
     lastApprovedAt: new Date(0),
     lastApprovedBy: "vault-frontmatter",
-    ...opts,
+    ...options,
   };
 }
 

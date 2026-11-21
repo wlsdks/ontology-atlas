@@ -129,10 +129,10 @@ function unitImports(rootPath, collection, ignore) {
   } catch {
     return edges;
   }
-  const unitOfDir = (dir) => {
-    const file = collection.files.find((row) => row.class === 'product' && dirname(row.path) === dir);
+  const unitOfDir = (directory) => {
+    const file = collection.files.find((row) => row.class === 'product' && dirname(row.path) === directory);
     if (file) return collection.unitOfFile.get(file.path) ?? null;
-    return collection.units.find((unit) => unit.path === dir) ?? null;
+    return collection.units.find((unit) => unit.path === directory) ?? null;
   };
   const add = (fromPath, target) => {
     const from = collection.unitOfFile.get(fromPath);
@@ -342,14 +342,14 @@ const DOC_SKIP = /(?:^|\/)(?:blog|changelog|changelogs|release-notes|news|_[^/]*
 
 function docPages(rootPath, ignore) {
   const pages = [];
-  const visit = (dir, depth) => {
+  const visit = (directory, depth) => {
     if (depth > 4) return;
-    if (!surveyEntry(rootPath, dir, 'directory')) return;
+    if (!surveyEntry(rootPath, directory, 'directory')) return;
     let names;
-    try { names = readdirSync(join(rootPath, dir)).sort(); } catch { return; }
+    try { names = readdirSync(join(rootPath, directory)).sort(); } catch { return; }
     for (const name of names) {
       if (name.startsWith('.') || ignore.has(name)) continue;
-      const path = `${dir}/${name}`;
+      const path = `${directory}/${name}`;
       if (DOC_SKIP.test(path)) continue;
       if (/\.(?:md|mdx|markdown|rst)$/i.test(name)) { if (surveyEntry(rootPath, path)) pages.push(path); }
       else if (!/\.[a-z0-9]+$/i.test(name)) visit(path, depth + 1);

@@ -56,7 +56,7 @@ export const EXPAND_RANGES = {
 export function resolveExpand(raw: unknown): ExpandPreference {
   if (typeof raw !== "object" || raw === null) return DEFAULT_EXPAND;
   const src = raw as Record<string, unknown>;
-  const num = (key: keyof typeof EXPAND_RANGES): number => {
+  const preferenceNumber = (key: keyof typeof EXPAND_RANGES): number => {
     const v = src[key];
     if (typeof v !== "number" || !Number.isFinite(v)) return DEFAULT_EXPAND[key];
     return Math.round(clamp(v, EXPAND_RANGES[key].min, EXPAND_RANGES[key].max));
@@ -68,9 +68,9 @@ export function resolveExpand(raw: unknown): ExpandPreference {
     structure: (EXPAND_STRUCTURES as readonly string[]).includes(src.structure as string)
       ? (src.structure as ExpandStructure)
       : DEFAULT_EXPAND.structure,
-    batchSize: num("batchSize"),
-    labelAttempts: num("labelAttempts"),
-    maxOpenParents: num("maxOpenParents"),
+    batchSize: preferenceNumber("batchSize"),
+    labelAttempts: preferenceNumber("labelAttempts"),
+    maxOpenParents: preferenceNumber("maxOpenParents"),
   };
 }
 

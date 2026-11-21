@@ -3,7 +3,7 @@
  * namespaces never coincide; the test asserts they differ.
  */
 
-import type { KnowledgeGraphNode } from '../model/types';
+import type { KnowledgeGraphNode } from '../model/knowledge-graph';
 
 /** Agent names first; map ids are added too so an agent copying one still matches. */
 export function buildChatNodeIndex(

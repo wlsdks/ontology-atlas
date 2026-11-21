@@ -1,4 +1,4 @@
-import type { KnowledgeGraphNode } from "../model/types";
+import type { KnowledgeGraphNode } from "../model/knowledge-graph";
 
 /**
  * The one name to hand an agent for a node. `evidenceIds[0]` may carry a bundle-root prefix or,

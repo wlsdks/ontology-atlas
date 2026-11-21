@@ -83,9 +83,9 @@ export async function runRelate(args, runtimeOverrides = {}) {
   let check;
   try {
     check = await runtime.runRelationCheckQuery(vaultRoot, from, to, type);
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }
@@ -107,9 +107,9 @@ export async function runRelate(args, runtimeOverrides = {}) {
     try {
       const { frontmatter } = runtime.readDocFrontmatter(vaultRoot, check.from);
       refusal = relationWriteRefusal({ frontmatter, relation: check.relation, to: check.to, why });
-    } catch (err) {
+    } catch (error) {
       process.stderr.write(
-        `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+        `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
       );
       return 1;
     }
@@ -152,9 +152,9 @@ export async function runRelate(args, runtimeOverrides = {}) {
       process.stdout.write(`\n${COLORS.green}ok${COLORS.reset}    wrote ${filePath}\n`);
     }
     return 0;
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 1;
   }

@@ -125,8 +125,8 @@ function normalizePath(path) {
 }
 
 function dirnamePath(path) {
-  const idx = path.lastIndexOf('/');
-  return idx === -1 ? '' : path.slice(0, idx);
+  const index = path.lastIndexOf('/');
+  return index === -1 ? '' : path.slice(0, index);
 }
 
 /**
@@ -327,9 +327,9 @@ function checkAtRefs(records, options, drift) {
     for (const { ref } of extractAtRefs(record.entry.content)) {
       if (ref.includes('*')) continue;
       refsChecked += 1;
-      const dir = dirnamePath(record.path);
+      const directory = dirnamePath(record.path);
       const candidates = [];
-      const fileRelative = normalizePath(dir ? `${dir}/${ref}` : ref);
+      const fileRelative = normalizePath(directory ? `${directory}/${ref}` : ref);
       if (fileRelative) candidates.push(fileRelative);
       const rootRelative = normalizePath(ref);
       if (rootRelative && !candidates.includes(rootRelative)) candidates.push(rootRelative);

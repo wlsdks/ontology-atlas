@@ -73,7 +73,7 @@ export type FootprintPresetName = keyof typeof FOOTPRINT_PRESETS;
 export function resolveFootprint(raw: unknown): FootprintPreference {
   if (typeof raw !== "object" || raw === null) return DEFAULT_FOOTPRINT;
   const src = raw as Record<string, unknown>;
-  const num = (key: keyof typeof FOOTPRINT_RANGES): number => {
+  const preferenceNumber = (key: keyof typeof FOOTPRINT_RANGES): number => {
     const v = src[key];
     if (typeof v !== "number" || !Number.isFinite(v)) return DEFAULT_FOOTPRINT[key];
     return clamp(v, FOOTPRINT_RANGES[key].min, FOOTPRINT_RANGES[key].max);
@@ -83,9 +83,9 @@ export function resolveFootprint(raw: unknown): FootprintPreference {
    * keeps this function total: a stored shape from any version resolves.
    */
   return {
-    size: num("size"),
-    gap: num("gap"),
-    opacity: num("opacity"),
+    size: preferenceNumber("size"),
+    gap: preferenceNumber("gap"),
+    opacity: preferenceNumber("opacity"),
     tone:
       src.tone === "indigo" || src.tone === "amber" || src.tone === "star"
         ? src.tone

@@ -1,4 +1,4 @@
-import type { Category } from "./types";
+import type { Category } from "./category";
 
 /** Seed categories; ids stay byte-compatible, or projects referencing them are orphaned. */
 export const DEFAULT_CATEGORIES: Category[] = [

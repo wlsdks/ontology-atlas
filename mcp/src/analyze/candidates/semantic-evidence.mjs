@@ -29,7 +29,7 @@ import {
   SEMANTIC_EVIDENCE_SEEDS,
   WORKSPACE_FOLDERS,
   WORKSPACE_SEMANTIC_EVIDENCE_MAX_MEMBERS,
-} from '../constants.mjs';
+} from '../analysis-limits-and-tables.mjs';
 import { humanize } from '../text.mjs';
 import {
   packageContractPathIssue,
@@ -146,10 +146,10 @@ export function collectSemanticEvidence(rootPath, skipped = []) {
         _riskText: extracted.riskText,
         _score: pathScore + semanticContentScore(extracted),
       });
-    } catch (err) {
+    } catch (error) {
       skipped.push({
         path,
-        reason: `semantic-evidence-read-error: ${err.message}`,
+        reason: `semantic-evidence-read-error: ${error.message}`,
       });
     }
   }
@@ -218,31 +218,31 @@ function discoverSemanticEvidenceCandidates(rootPath, skipped = []) {
   let filesSeen = 0;
   let entriesSeen = 0;
   const visitedDirectories = new Set();
-  function walkBudgetReached(dir) {
+  function walkBudgetReached(directory) {
     if (entriesSeen < SEMANTIC_DISCOVERY_MAX_ENTRIES) return false;
     pushSkippedOnce(skipped, {
-      path: dir,
-      reason: `semantic-evidence-skip: ${relative(rootPath, dir)} reached ${SEMANTIC_DISCOVERY_MAX_ENTRIES} entry walk budget`,
+      path: directory,
+      reason: `semantic-evidence-skip: ${relative(rootPath, directory)} reached ${SEMANTIC_DISCOVERY_MAX_ENTRIES} entry walk budget`,
     });
     return true;
   }
   // Sorted depth-first walk: O(entries), capped by the file and entry budgets;
   // `visitedDirectories` (real paths) stops symlink loops.
-  function visit(dir) {
-    if (filesSeen >= SEMANTIC_DISCOVERY_MAX_FILES || walkBudgetReached(dir)) return;
-    const realDirectory = realpathSync(dir);
+  function visit(directory) {
+    if (filesSeen >= SEMANTIC_DISCOVERY_MAX_FILES || walkBudgetReached(directory)) return;
+    const realDirectory = realpathSync(directory);
     if (visitedDirectories.has(realDirectory)) {
       pushSkippedOnce(skipped, {
-        path: dir,
-        reason: `semantic-evidence-skip: ${relative(rootPath, dir)} repeats a visited directory`,
+        path: directory,
+        reason: `semantic-evidence-skip: ${relative(rootPath, directory)} repeats a visited directory`,
       });
       return;
     }
     visitedDirectories.add(realDirectory);
-    for (const entry of readdirSync(dir).sort()) {
-      if (filesSeen >= SEMANTIC_DISCOVERY_MAX_FILES || walkBudgetReached(dir)) return;
+    for (const entry of readdirSync(directory).sort()) {
+      if (filesSeen >= SEMANTIC_DISCOVERY_MAX_FILES || walkBudgetReached(directory)) return;
       entriesSeen += 1;
-      const path = join(dir, entry);
+      const path = join(directory, entry);
       let resolvesInsideRoot = false;
       try {
         resolvesInsideRoot = pathResolvesInsideRoot(rootPath, path);

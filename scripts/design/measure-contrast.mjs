@@ -57,9 +57,9 @@ const VIEWPORT = { width: 1512, height: 900 };
 const PROFILE = `/tmp/atlas-contrast-${process.pid}`;
 
 function collectInPage() {
-  const resolveBackground = (el) => {
+  const resolveBackground = (element) => {
     const stack = [];
-    for (let node = el; node; node = node.parentElement) {
+    for (let node = element; node; node = node.parentElement) {
       const bg = getComputedStyle(node).backgroundColor;
       const m = /rgba?\(([^)]+)\)/.exec(bg);
       if (!m) continue;
@@ -84,21 +84,21 @@ function collectInPage() {
 
   const out = [];
   const seen = new Set();
-  for (const el of document.querySelectorAll("*")) {
+  for (const element of document.querySelectorAll("*")) {
     // **Directly owned text only.** Counting ancestors measures the same glyphs several
     // times and still cannot name which element to fix.
-    const own = [...el.childNodes]
+    const own = [...element.childNodes]
       .filter((n) => n.nodeType === 3)
       .map((n) => n.textContent.trim())
       .join(" ")
       .trim();
     if (!own) continue;
-    const cs = getComputedStyle(el);
+    const cs = getComputedStyle(element);
     if (cs.visibility === "hidden" || cs.display === "none" || Number(cs.opacity) === 0) continue;
-    const rect = el.getBoundingClientRect();
+    const rect = element.getBoundingClientRect();
     if (rect.width < 1 || rect.height < 1) continue;
     if (rect.bottom < 0 || rect.top > innerHeight || rect.right < 0 || rect.left > innerWidth) continue;
-    const key = `${cs.color}|${cs.fontSize}|${cs.fontWeight}|${resolveBackground(el)}`;
+    const key = `${cs.color}|${cs.fontSize}|${cs.fontWeight}|${resolveBackground(element)}`;
     // Each (colour, size, background) combination once — printing 200 repeated cards as
     // 200 lines makes the report unreadable, and the prescription is per combination
     // anyway.
@@ -106,11 +106,11 @@ function collectInPage() {
     seen.add(key);
     out.push({
       fg: cs.color,
-      bg: resolveBackground(el),
+      bg: resolveBackground(element),
       fontSizePx: parseFloat(cs.fontSize),
       fontWeight: cs.fontWeight,
       sample: own.slice(0, 40),
-      selector: el.tagName.toLowerCase() + (el.className && typeof el.className === "string" ? `.${el.className.trim().split(/\s+/).slice(0, 3).join(".")}` : ""),
+      selector: element.tagName.toLowerCase() + (element.className && typeof element.className === "string" ? `.${element.className.trim().split(/\s+/).slice(0, 3).join(".")}` : ""),
     });
   }
   return out;

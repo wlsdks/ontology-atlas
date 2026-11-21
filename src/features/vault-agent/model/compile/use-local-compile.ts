@@ -17,7 +17,7 @@ import { COMPILE_ROUND_CAP, COMPILE_SOURCES_PER_TURN, COMPILE_TOOLS } from "./co
 import { applyProposal } from "../proposals/proposal-applier";
 import type { SourceReadEntry, SourceReadPort } from "./source-read-port";
 import { classifySourceFormat } from "./source-text";
-import type { AgentTurn, ToolCallRecord } from "../types";
+import type { AgentTurn, ToolCallRecord } from "../agent-turn";
 
 /**
  * Compile run by the model on this computer, apart from `use-vault-agent.ts`'s ontology

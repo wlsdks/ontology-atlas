@@ -17,7 +17,7 @@ import {
   SOURCE_TEXT_CHAR_CAP,
 } from './source-text';
 import type { ToolExecution } from '../agent-tools/tool-executor';
-import { AGENT_TURN_VAULT_CHAR_CAP } from '../types';
+import { AGENT_TURN_VAULT_CHAR_CAP } from '../agent-turn';
 import {
   buildWikiPageProposal,
   type CompileSourceRead,

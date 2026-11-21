@@ -133,13 +133,13 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
   const parentEdge = new Map();
   let head = 0;
   while (head < queue.length) {
-    const { node: cur, depth } = queue[head++];
+    const { node: current, depth } = queue[head++];
     if (depth >= maxHops) continue;
-    const neighbors = adj.get(cur) || new Map();
+    const neighbors = adj.get(current) || new Map();
     for (const [n, meta] of neighbors) {
       if (visited.has(n)) continue;
       visited.add(n);
-      parent.set(n, cur);
+      parent.set(n, current);
       parentEdge.set(n, meta);
       if (n === resolvedTo) {
         // hops are pushed then reversed once; edges are unshifted (O(D²), but
@@ -149,9 +149,9 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
         const edges = [];
         let p = n;
         while (parent.has(p)) {
-          const prev = parent.get(p);
-          edges.unshift({ from: prev, to: p, ...parentEdge.get(p) });
-          p = prev;
+          const previous = parent.get(p);
+          edges.unshift({ from: previous, to: p, ...parentEdge.get(p) });
+          p = previous;
           hops.push(p);
         }
         hops.reverse();

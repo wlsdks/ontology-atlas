@@ -145,19 +145,19 @@ export function parseFrontmatter(input) {
         continue;
       }
       if (lookahead === "object") {
-        const obj = {};
+        const mapping = {};
         let j = i + 1;
         while (j < lines.length) {
           if (!/^\s+/.test(lines[j]) || !lines[j].trim()) break;
           const child = readMappingMember(lines[j], diagnostics, j + 2);
           if (child) {
             pushQuotedScalarDiagnostic(diagnostics, child.key, j + 2, child.value);
-            assignParsedKey(obj, child.key, parseScalar(child.value), diagnostics, j + 2);
+            assignParsedKey(mapping, child.key, parseScalar(child.value), diagnostics, j + 2);
           }
           j += 1;
         }
-        assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
-        pushGraphArrayDiagnostic(diagnostics, key, i + 2, obj);
+        assignParsedKey(frontmatter, key, mapping, diagnostics, i + 2);
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, mapping);
         i = j - 1;
         continue;
       }
@@ -174,17 +174,17 @@ export function parseFrontmatter(input) {
     }
     if (value.startsWith("{") && value.endsWith("}")) {
       const inner = value.slice(1, -1).trim();
-      const obj = {};
+      const mapping = {};
       if (inner) {
         for (const part of splitTopLevel(inner, ',', true)) {
           const member = readMappingMember(part, diagnostics, i + 2);
           if (!member) continue;
           pushQuotedScalarDiagnostic(diagnostics, member.key, i + 2, member.value);
-          assignParsedKey(obj, member.key, parseScalar(member.value), diagnostics, i + 2);
+          assignParsedKey(mapping, member.key, parseScalar(member.value), diagnostics, i + 2);
         }
       }
-      assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
-      pushGraphArrayDiagnostic(diagnostics, key, i + 2, obj);
+      assignParsedKey(frontmatter, key, mapping, diagnostics, i + 2);
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, mapping);
       continue;
     }
     pushQuotedScalarDiagnostic(diagnostics, key, i + 2, value);
@@ -351,11 +351,11 @@ function readBlockScalar(lines, start, indicator) {
   if (fold) {
     // Folded scalar: a blank line becomes a newline, consecutive lines join with one space.
     text = collected
-      .reduce((acc, cur) => {
-        if (cur === '') return acc.concat('');
+      .reduce((acc, current) => {
+        if (current === '') return acc.concat('');
         const last = acc[acc.length - 1];
-        if (acc.length === 0 || last === '') return acc.concat(cur);
-        acc[acc.length - 1] = `${last} ${cur}`;
+        if (acc.length === 0 || last === '') return acc.concat(current);
+        acc[acc.length - 1] = `${last} ${current}`;
         return acc;
       }, [])
       .join('\n');

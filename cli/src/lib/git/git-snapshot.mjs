@@ -210,26 +210,26 @@ export function getRemoteUrl({ repoRoot, remoteName, run = defaultRun }) {
 // commitPathspec / pushCurrentBranch / pullCurrentBranch propagate execFileSync's throw; the command
 // wrapper hands it to `classifyGitError`, which turns it into one line of cause plus the next action.
 
-function gitErrorText(err) {
-  if (!err) return '';
+function gitErrorText(error) {
+  if (!error) return '';
   const parts = [];
   for (const key of ['stderr', 'stdout']) {
-    const v = err[key];
+    const v = error[key];
     if (typeof v === 'string') parts.push(v);
     else if (v && typeof v.toString === 'function') parts.push(v.toString('utf-8'));
   }
-  if (typeof err.message === 'string') parts.push(err.message);
+  if (typeof error.message === 'string') parts.push(error.message);
   return parts.join('\n');
 }
 
 /**
  * Classifies a git failure into one line a user understands plus a next action.
- * @param {Error} err the error execFileSync threw
+ * @param {Error} error the error execFileSync threw
  * @param {{ operation?: 'commit'|'push'|'pull'|'git' }} opts
  * @returns {{ reason: string, message: string, note: string|null, guidance: string|null }}
  */
-export function classifyGitError(err, { operation = 'git' } = {}) {
-  const raw = gitErrorText(err);
+export function classifyGitError(error, { operation = 'git' } = {}) {
+  const raw = gitErrorText(error);
   const text = raw.toLowerCase();
   const firstLine = raw.split('\n').map((l) => l.trim()).filter(Boolean)[0] || null;
 

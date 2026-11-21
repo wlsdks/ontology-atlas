@@ -55,12 +55,12 @@ async function loadMigration(id) {
   return mod;
 }
 
-async function walk(dir) {
+async function walk(directory) {
   const out = [];
-  const entries = await readdir(dir, { withFileTypes: true });
+  const entries = await readdir(directory, { withFileTypes: true });
   for (const entry of entries) {
     if (entry.name.startsWith(".")) continue;
-    const full = path.join(dir, entry.name);
+    const full = path.join(directory, entry.name);
     if (entry.isDirectory()) out.push(...(await walk(full)));
     else if (entry.isFile() && entry.name.endsWith(".md")) out.push(full);
   }
@@ -220,7 +220,7 @@ Options:
   }
 }
 
-main().catch((err) => {
-  console.error(`[migrate-vault] failed: ${err.message}`);
+main().catch((error) => {
+  console.error(`[migrate-vault] failed: ${error.message}`);
   process.exit(1);
 });

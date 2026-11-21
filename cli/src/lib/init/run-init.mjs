@@ -24,20 +24,20 @@ function realpathOrSelf(path) {
   }
 }
 
-export async function runInit(targetArg, opts = {}) {
-  const quickStart = Boolean(opts.quickStart);
-  const documentsOnly = Boolean(opts.documents);
+export async function runInit(targetArg, options = {}) {
+  const quickStart = Boolean(options.quickStart);
+  const documentsOnly = Boolean(options.documents);
   // `atlas/` is the folder's fixed name inside a code repository — the same name the app's
   // permission locality reads a project root from — so the default says what the docs say.
   const target = resolve(cwd(), targetArg ?? 'atlas');
   let serverCommand;
   try {
     serverCommand = resolveMcpServerCommand();
-  } catch (err) {
-    fail(err?.message ?? String(err));
+  } catch (error) {
+    fail(error?.message ?? String(error));
     return 2;
   }
-  const locale = typeof opts.locale === 'string' ? opts.locale.toLowerCase() : 'en';
+  const locale = typeof options.locale === 'string' ? options.locale.toLowerCase() : 'en';
   if (!Object.hasOwn(TEMPLATE_ROOTS, locale)) {
     fail(`unknown --locale "${locale}": supported: ${Object.keys(TEMPLATE_ROOTS).join(', ')}`);
     return 2;
@@ -173,7 +173,7 @@ export async function runInit(targetArg, opts = {}) {
   stampInitCompleted(target);
 
   if (quickStart) {
-    return runQuickStart({ target, cwdVaultArg, runBootstrap: opts.runBootstrap });
+    return runQuickStart({ target, cwdVaultArg, runBootstrap: options.runBootstrap });
   }
 
 

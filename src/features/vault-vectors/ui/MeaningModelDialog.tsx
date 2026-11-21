@@ -14,7 +14,8 @@ import { DialogBody } from '@/shared/ui/surfaces/dialog-sections';
 import { BUILTIN_MODEL_NAME, choiceIdOf, choiceTag, isLive, modelChoices, recommendedChoiceId, type ModelChoice } from '../model/model-choices';
 import { prepare, removeModel, useVectorStatus } from '../model/vector-store';
 import { MeaningModelDetail, type Notice } from './MeaningModelDetail';
-import { WizardIntro, WizardSteps, type WizardStep } from './MeaningSetupWizard';
+import { WizardIntro } from './WizardIntro';
+import { WizardSteps, type WizardStep } from './WizardSteps';
 
 type ProbeAnswer = { probe: VectorProbe } | { failed: true };
 const RUNNING_PHASES: readonly VectorPhase[] = ['waitingTurn', 'modelDownloading', 'modelConverting', 'preparing'];

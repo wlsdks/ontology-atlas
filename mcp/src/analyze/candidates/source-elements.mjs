@@ -14,7 +14,7 @@ import {
   SOURCE_FOLDERS,
   WORKSPACE_ELEMENT_LIMIT,
   WORKSPACE_FOLDERS,
-} from '../constants.mjs';
+} from '../analysis-limits-and-tables.mjs';
 import { humanize, slugify, uniqueStrings } from '../text.mjs';
 import { pathResolvesInsideRoot, pushSkippedOnce } from './scan-guards.mjs';
 
@@ -288,7 +288,7 @@ export function materializeImplementationOnlySourceElements(
  */
 export function detectRootPackages(rootPath, { ignore, domainForName, existingElements }) {
   const out = [];
-  const claimed = new Set(existingElements.map((el) => el.slug));
+  const claimed = new Set(existingElements.map((element) => element.slug));
   let entries;
   try {
     entries = readdirSync(rootPath).sort();
@@ -640,7 +640,7 @@ export function detectWorkspaceElements(
       const source = relative(rootPath, memberPath);
       // Flat slugs — the workspace member name is the role name. When apps/foo and
       // packages/foo collide, the folder prefix splits them and avoids a tail collision.
-      const flatName = elements.some((el) => el.slug === `elements/${entry}`)
+      const flatName = elements.some((element) => element.slug === `elements/${entry}`)
         ? `${folder}-${entry}`
         : entry;
       elements.push({

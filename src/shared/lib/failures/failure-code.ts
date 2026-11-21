@@ -48,11 +48,11 @@ export function codedFailure(code: string, detail?: string | null): CodedFailure
   return new CodedFailure(code, detail);
 }
 
-function textOf(err: unknown): string {
-  if (typeof err === 'string') return err;
-  if (err instanceof Error) return `${err.name} ${err.message}`;
-  if (err && typeof err === 'object' && 'message' in err) {
-    const message = (err as { message?: unknown }).message;
+function textOf(error: unknown): string {
+  if (typeof error === 'string') return error;
+  if (error instanceof Error) return `${error.name} ${error.message}`;
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
     if (typeof message === 'string') return message;
   }
   return '';
@@ -69,10 +69,10 @@ function matches(text: string, signatures: readonly string[]): boolean {
  * A bare kebab-case string is accepted and returned as-is so a hook can hand a code it
  * already stored (`actionError`) to the same lookup a raw rejection goes through.
  */
-export function failureCodeOf(err: unknown): string | null {
-  if (err instanceof CodedFailure) return err.code;
-  if (typeof err === 'string' && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(err)) return err;
-  const text = textOf(err);
+export function failureCodeOf(error: unknown): string | null {
+  if (error instanceof CodedFailure) return error.code;
+  if (typeof error === 'string' && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(error)) return error;
+  const text = textOf(error);
   if (!text) return null;
   if (matches(text, PERMISSION_DENIED_SIGNATURES)) return 'permission-denied';
   if (matches(text, MISSING_TARGET_SIGNATURES)) return 'target-missing';
@@ -84,9 +84,9 @@ export function failureCodeOf(err: unknown): string | null {
  * The English fact behind the failure, for a place a developer reads — a `data-*`
  * attribute, the console, a technical-information fold. **Never for the page body.**
  */
-export function failureDetailOf(err: unknown): string | null {
-  if (err instanceof CodedFailure) return err.detail;
-  if (typeof err === 'string') return err.trim() || null;
-  if (err instanceof Error) return err.message.trim() || null;
+export function failureDetailOf(error: unknown): string | null {
+  if (error instanceof CodedFailure) return error.detail;
+  if (typeof error === 'string') return error.trim() || null;
+  if (error instanceof Error) return error.message.trim() || null;
   return null;
 }

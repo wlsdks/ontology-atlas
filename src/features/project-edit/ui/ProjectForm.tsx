@@ -32,7 +32,7 @@ import {
 } from "../model/schema";
 import { buildInitialValues, withKeptTaxonomyOption } from "../model/form-values";
 import { checkProjectSubmission, projectPlacement } from "../model/submission";
-import { CreateExtras, ExtrasGroup, FormSection } from "./project-form-parts";
+import { CreateExtras, ExtrasGroup, FormSection } from "./project-form-primitives";
 import {
   CategoryStatusFields,
   DependenciesField,
@@ -46,10 +46,11 @@ import {
   SlugField,
   TagsStackFields,
   type ProjectFormBinding,
-} from "./ProjectFormFields";
-import { ActionRow, DangerRow, EditSaveBand, SectionNav } from "./ProjectFormActions";
-import { ErrorBanner, WriteDisabledBanner } from "./ProjectFormBanners";
+} from "./project-form-fields";
+import { ActionRow, DangerRow, EditSaveBand } from "./project-form-action-rows";
+import { ErrorBanner, WriteDisabledBanner } from "./project-form-banners";
 import { ProjectFormPreview } from "./ProjectFormPreview";
+import { ProjectFormSectionNav } from "./ProjectFormSectionNav";
 
 interface Props {
   mode: "create" | "edit";
@@ -246,7 +247,7 @@ export function ProjectForm({
     v: ProjectFormValues[K],
   ) => {
     setSaveNotice(null);
-    setValues((prev) => ({ ...prev, [key]: v }));
+    setValues((previous) => ({ ...previous, [key]: v }));
     // `Path<T>` is not compatible with `keyof T` in RHF 7.x, hence `as never`.
     rhfSetValue(
       key as Parameters<typeof rhfSetValue>[0],
@@ -277,7 +278,7 @@ export function ProjectForm({
     if (mode !== "create") return;
     if (slugManuallyEdited) return;
     const nextSlug = slugify(name);
-    setValues((prev) => ({ ...prev, slug: nextSlug }));
+    setValues((previous) => ({ ...previous, slug: nextSlug }));
     rhfSetValue("slug", nextSlug, { shouldDirty: true, shouldValidate: false });
   };
 
@@ -319,8 +320,8 @@ export function ProjectForm({
             : t("actions.editNoticeStay"),
         );
       }
-    } catch (err) {
-      setGlobalError(failureSentence(err, t("validation.saveFailed")));
+    } catch (error) {
+      setGlobalError(failureSentence(error, t("validation.saveFailed")));
     } finally {
       setSubmitting(false);
     }
@@ -332,8 +333,8 @@ export function ProjectForm({
     setDeleting(true);
     try {
       await onDelete();
-    } catch (err) {
-      setGlobalError(failureSentence(err, t("validation.deleteFailed")));
+    } catch (error) {
+      setGlobalError(failureSentence(error, t("validation.deleteFailed")));
     } finally {
       setDeleting(false);
     }
@@ -506,7 +507,7 @@ export function ProjectForm({
         onChooseBehavior={chooseBehavior}
       />
 
-      <SectionNav />
+      <ProjectFormSectionNav />
 
       {errorBanner}
 

@@ -23,9 +23,9 @@ export async function runExport(args) {
   // Pipe-safety — `export ... | head` (or any reader that closes early) makes
   // the large stdout payload fail with EPIPE. Swallow it instead of crashing
   // with an unhandled 'error' event.
-  process.stdout.on('error', (err) => {
-    if (err && err.code === 'EPIPE') process.exit(0);
-    throw err;
+  process.stdout.on('error', (error) => {
+    if (error && error.code === 'EPIPE') process.exit(0);
+    throw error;
   });
 
   const parsed = parseArgs(args);
@@ -44,9 +44,9 @@ export async function runExport(args) {
   try {
     // Full graph — no pagination — so the export is a complete snapshot.
     artifact = await callMcpTool(vaultRoot, 'compile_ontology', { full: true });
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }
@@ -68,9 +68,9 @@ export async function runExport(args) {
     } else {
       payload = buildJsonLd(graph);
     }
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }

@@ -8,11 +8,11 @@ import { inferImports as infer } from '../../infer-imports.mjs';
 
 function capture(root){
   const entries=[];
-  const walk=(path,relative)=>{const info=lstatSync(path);const kind=info.isSymbolicLink()?'symlink':info.isDirectory()?'directory':'file';const row={path:relative,kind,size:info.size};entries.push(row);if(kind==='directory'){row.children=readdirSync(path).filter(n=>!n.startsWith('.'));for(const name of row.children)walk(join(path,name),relative==='.'?name:`${relative}/${name}`);}else if(kind==='file')row.text=readFileSync(path,'utf8');};
+  const walk=(path,relative)=>{const stats=lstatSync(path);const kind=stats.isSymbolicLink()?'symlink':stats.isDirectory()?'directory':'file';const row={path:relative,kind,size:stats.size};entries.push(row);if(kind==='directory'){row.children=readdirSync(path).filter(n=>!n.startsWith('.'));for(const name of row.children)walk(join(path,name),relative==='.'?name:`${relative}/${name}`);}else if(kind==='file')row.text=readFileSync(path,'utf8');};
   walk(root,'.');return {contract:'confinedSourceSnapshot:v1',rootPath:root,truncated:false,entries};
 }
 function inferImports(root,options){return withSourceSnapshot(capture(root),()=>infer(root,options));}
-function fixture(fn){const base=realpathSync(mkdtempSync(join(tmpdir(),'atlas-confined-')));const root=join(base,'repo');mkdirSync(join(root,'src'),{recursive:true});try{fn(root,base);}finally{rmSync(base,{recursive:true,force:true});}}
+function fixture(callback){const base=realpathSync(mkdtempSync(join(tmpdir(),'atlas-confined-')));const root=join(base,'repo');mkdirSync(join(root,'src'),{recursive:true});try{callback(root,base);}finally{rmSync(base,{recursive:true,force:true});}}
 test('the actual scanner refuses an authored source-root symlink and never emits its outside edge',()=>fixture((root,base)=>{
   const outside=join(base,'outside');mkdirSync(outside);writeFileSync(join(outside,'a.ts'),"import './b';");writeFileSync(join(outside,'b.ts'),'export const b=1;');symlinkSync(outside,join(root,'linked'));
   assert.throws(()=>inferImports(root,{sourceFolders:['linked'],maxFiles:20}),/Confined source read refused/);

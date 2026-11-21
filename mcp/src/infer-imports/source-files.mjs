@@ -52,18 +52,18 @@ export function listSourceFiles(rootPath, maxFiles = 4000) {
   return out;
 }
 
-export function walk(dir, ignore, out, maxFiles, extensions = SOURCE_EXT) {
+export function walk(directory, ignore, out, maxFiles, extensions = SOURCE_EXT) {
   if (out.length >= maxFiles) return;
   let entries;
   try {
-    entries = readdirSync(dir).sort();
+    entries = readdirSync(directory).sort();
   } catch {
     return;
   }
   for (const name of entries) {
     if (ignore.has(name)) continue;
     if (name.startsWith('.') && name !== '.') continue;
-    const p = join(dir, name);
+    const p = join(directory, name);
     let st;
     try {
       st = lstatSync(p);

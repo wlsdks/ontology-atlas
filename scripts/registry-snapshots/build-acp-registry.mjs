@@ -147,12 +147,12 @@ function pickLaunch(distribution) {
  * — that row needs a person to re-verify it.
  */
 async function fetchBrandInk() {
-  const res = await fetch(BRAND_SOURCE, { headers: { accept: 'application/json' } });
-  if (!res.ok) {
-    console.error(`[acp-registry] failed to fetch the brand colors: HTTP ${res.status}`);
+  const response = await fetch(BRAND_SOURCE, { headers: { accept: 'application/json' } });
+  if (!response.ok) {
+    console.error(`[acp-registry] failed to fetch the brand colors: HTTP ${response.status}`);
     process.exit(1);
   }
-  const data = await res.json();
+  const data = await response.json();
   const icons = Array.isArray(data) ? data : (data.icons ?? []);
   const byTitle = new Map(icons.map((i) => [String(i.title).toLowerCase(), i]));
   const ink = {};
@@ -253,14 +253,14 @@ async function npmPublishTimes(snapshot, hardened) {
     const launch = snapshot.agents.find((agent) => agent.id === id)?.launch;
     const spec = launch?.kind === 'npx' ? npmPackageSpec(launch.package) : null;
     if (!spec) continue;
-    const res = await fetch(`https://registry.npmjs.org/${spec.name.replace('/', '%2f')}`, {
+    const response = await fetch(`https://registry.npmjs.org/${spec.name.replace('/', '%2f')}`, {
       headers: { accept: 'application/json' },
     });
-    if (!res.ok) {
-      console.error(`[acp-registry] npm answered HTTP ${res.status} for ${spec.name}`);
+    if (!response.ok) {
+      console.error(`[acp-registry] npm answered HTTP ${response.status} for ${spec.name}`);
       process.exit(1);
     }
-    times.set(`${spec.name}@${spec.version}`, (await res.json()).time?.[spec.version] ?? null);
+    times.set(`${spec.name}@${spec.version}`, (await response.json()).time?.[spec.version] ?? null);
   }
   return (name, version) => times.get(`${name}@${version}`) ?? null;
 }
@@ -269,9 +269,9 @@ async function npmPublishTimes(snapshot, hardened) {
 async function fetchIcon(agent) {
   if (!agent.icon) return false;
   try {
-    const res = await fetch(agent.icon);
-    if (!res.ok) return false;
-    const svg = await res.text();
+    const response = await fetch(agent.icon);
+    if (!response.ok) return false;
+    const svg = await response.text();
     // Reject scripts and external references inside the SVG. An image drawn inside
     // the app has no reason to reach outward or execute code.
     if (/<script|xlink:href\s*=\s*["']https?:|href\s*=\s*["']https?:/i.test(svg)) return false;

@@ -1,4 +1,4 @@
-import type { AgentProposal, ProposalChange } from '../types';
+import type { AgentProposal, ProposalChange } from '../agent-turn';
 import type { CompileSourceRefusal, WikiPageProposal } from './wiki-proposal';
 
 export interface CompileCardRow {

@@ -214,8 +214,8 @@ export async function scanHarness(
   report({ stage: 'nested', done: 0, total: null });
   const rootFolders: string[] = [];
   await nestedAgentsFiles(port, rootEntries, files, rootFolders);
-  for (const [index, dir] of SCAN_DIRS.entries()) {
-    await walk(port, dir, 0, files);
+  for (const [index, directory] of SCAN_DIRS.entries()) {
+    await walk(port, directory, 0, files);
     report({ stage: 'agent-directories', done: index + 1, total: SCAN_DIRS.length });
   }
 

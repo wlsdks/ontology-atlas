@@ -22,13 +22,13 @@ export interface FailureCopy {
  * sentence, never the English detail: here the English is the whole sentence. `t.has`, so a code
  * not yet in `messages/*.json` falls back instead of throwing on a missing key.
  */
-export function useFailureSentence(): (err: unknown, fallback: string) => FailureCopy {
+export function useFailureSentence(): (error: unknown, fallback: string) => FailureCopy {
   const t = useTranslations('failures');
   return useCallback(
-    (err: unknown, fallback: string): FailureCopy => {
-      const code = failureCodeOf(err);
+    (error: unknown, fallback: string): FailureCopy => {
+      const code = failureCodeOf(error);
       const sentence = code && t.has(code) ? t(code) : fallback;
-      return { sentence, detail: failureDetailOf(err) };
+      return { sentence, detail: failureDetailOf(error) };
     },
     [t],
   );

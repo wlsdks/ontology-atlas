@@ -17,7 +17,7 @@ export interface RovingRadioGroupOptions<T> {
 }
 
 interface RovingRadioItemProps {
-  ref: (el: HTMLButtonElement | null) => void;
+  ref: (element: HTMLButtonElement | null) => void;
   role: "radio";
   "aria-checked": boolean;
   "aria-disabled": true | undefined;
@@ -68,8 +68,8 @@ export function useRovingRadioGroup<T>({
     groupProps: { role: "radiogroup", "aria-busy": busy || undefined },
     checkedIndex,
     itemProps: (index) => ({
-      ref: (el) => {
-        itemRefs.current[index] = el;
+      ref: (element) => {
+        itemRefs.current[index] = element;
       },
       role: "radio",
       "aria-checked": index === checkedIndex,

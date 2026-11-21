@@ -86,8 +86,8 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   },
 ];
 
-function collectFiles(root, dir, allowedExtensions, ignoredFilePattern) {
-  const absoluteDir = join(root, dir);
+function collectFiles(root, directory, allowedExtensions, ignoredFilePattern) {
+  const absoluteDir = join(root, directory);
   const files = [];
 
   for (const entry of readdirSync(absoluteDir)) {
@@ -182,7 +182,7 @@ export function evaluateOntologyDesignSurface({
   requiredSurfaceMarkers = ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS,
 } = {}) {
   const files = targetDirs
-    .flatMap((dir) => collectFiles(root, dir, allowedExtensions, ignoredFilePattern))
+    .flatMap((directory) => collectFiles(root, directory, allowedExtensions, ignoredFilePattern))
     .sort();
   const idleViolations = files.length === 0
     ? [{

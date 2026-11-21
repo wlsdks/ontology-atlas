@@ -8,7 +8,7 @@ import { citesReadLines } from '@/shared/lib/vault-document/line-cite';
 import { meaningFindings } from '@/shared/lib/vault-document/meaning-findings';
 import { extractProjectMeaningEvidencePaths } from '@/shared/lib/project-source/project-meaning-evidence';
 import type { WalkEntry } from './walk-vault';
-import type { VaultDoc } from '../../model/types';
+import type { VaultDoc } from '../../model/vault-manifest';
 
 /**
  * Frontmatter keys whose refs count as backlinks: the same set as `mcp/src/vault/`

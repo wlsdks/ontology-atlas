@@ -68,8 +68,8 @@ export function selectBranches(git, { branches, match, worktrees }, cwd = proces
   }
   if (worktrees.length > 0) {
     const trees = parseWorktrees(git.out('worktree', 'list', '--porcelain'));
-    for (const dir of worktrees) {
-      const root = resolve(cwd, dir) + sep;
+    for (const directory of worktrees) {
+      const root = resolve(cwd, directory) + sep;
       picked.push(...trees.filter((t) => t.branch && (t.path + sep).startsWith(root)).map((t) => t.branch));
     }
   }
@@ -229,8 +229,8 @@ export function prunePlan(git, base, branches, {
   currentPath = process.cwd(), isAlive = processIsAlive, own = null, worktreeDirs = [],
 } = {}) {
   const trees = parseWorktrees(git.out('worktree', 'list', '--porcelain'));
-  const roots = [join(trees[0]?.path ?? currentPath, '.claude', 'worktrees'), ...worktreeDirs.map((dir) => resolve(currentPath, dir))]
-    .map((dir) => resolve(dir) + sep);
+  const roots = [join(trees[0]?.path ?? currentPath, '.claude', 'worktrees'), ...worktreeDirs.map((directory) => resolve(currentPath, directory))]
+    .map((directory) => resolve(directory) + sep);
   let ownSet = own;
   return branches.map((branch) => {
     const exists = git.try('rev-parse', '--verify', '--quiet', `refs/heads/${branch}`).status === 0;

@@ -48,7 +48,7 @@ export function RealmBlockExportAction({
         ? await pickTauriVaultDirectory(t("exportAria"))
         : await (
             window as unknown as {
-              showDirectoryPicker: (opts?: {
+              showDirectoryPicker: (options?: {
                 mode?: "read" | "readwrite";
               }) => Promise<BlockDirectoryHandleLike>;
             }
@@ -83,8 +83,8 @@ export function RealmBlockExportAction({
       );
       setExportedCount(files.length);
       setPhase("done");
-    } catch (err) {
-      if (isPickerAbort(err)) {
+    } catch (error) {
+      if (isPickerAbort(error)) {
         setPhase("idle");
         return;
       }

@@ -10,7 +10,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import type { BellTodo } from '../../model/bell-inbox';
 import { problemSummary } from '../../model/inbox-row-copy';
-import { MAP_TIDY_LIST_HREF, ROW_HEADLINE_CLASS, RowMark } from './inbox-row-parts';
+import { MAP_TIDY_LIST_HREF, ROW_HEADLINE_CLASS, RowMark } from './inbox-row-primitives';
 
 export function TodoRow({
   todo,

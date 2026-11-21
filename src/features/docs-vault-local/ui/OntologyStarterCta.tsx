@@ -124,8 +124,8 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
     setBusy(true);
     try {
       await onScaffold();
-    } catch (err) {
-      setError(failureSentence(err, t('errorFallback')));
+    } catch (error) {
+      setError(failureSentence(error, t('errorFallback')));
     } finally {
       setBusy(false);
     }

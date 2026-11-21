@@ -21,7 +21,7 @@ import {
   SOURCE_LAYOUT_CODE_FILE,
   SOURCE_LAYOUT_COORDINATION_ELEMENT_LIMIT,
   SOURCE_LAYOUT_COORDINATION_ROLE,
-} from '../constants.mjs';
+} from '../analysis-limits-and-tables.mjs';
 import { humanize, matchDomainSlug, slugify } from '../text.mjs';
 import {
   optionalNonNegativeInteger,
@@ -159,14 +159,14 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       // basenames that collide across layers get a singular layer suffix.
       const elementCandidates = [];
       for (const r of fsdRoots) {
-        const dir = join(srcDir, r);
-        if (!existsSync(dir)) continue;
-        for (const sub of readdirSync(dir).sort()) {
+        const directory = join(srcDir, r);
+        if (!existsSync(directory)) continue;
+        for (const sub of readdirSync(directory).sort()) {
           if (ignore.has(sub) || sub.startsWith('.')) {
-            skipped.push({ path: join(dir, sub), reason: 'dotfile/ignore' });
+            skipped.push({ path: join(directory, sub), reason: 'dotfile/ignore' });
             continue;
           }
-          const subPath = join(dir, sub);
+          const subPath = join(directory, sub);
           if (!statSync(subPath).isDirectory()) continue;
           // FSD semantics: features are user-facing capability candidates;
           // entities/widgets/views are implementation evidence, not business

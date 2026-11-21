@@ -6,14 +6,14 @@ import test from "node:test";
 import { findRawColorLiterals, ALLOWLIST } from "./check-no-raw-color.mjs";
 
 function withTempSrc(files, run) {
-  const dir = mkdtempSync(join(tmpdir(), "check-no-raw-color-"));
+  const directory = mkdtempSync(join(tmpdir(), "check-no-raw-color-"));
   try {
     for (const [name, content] of Object.entries(files)) {
-      writeFileSync(join(dir, name), content, "utf8");
+      writeFileSync(join(directory, name), content, "utf8");
     }
-    run(dir);
+    run(directory);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 }
 
@@ -25,8 +25,8 @@ test("flags a raw indigo rgba() literal in a className string", () => {
 );
 `,
     },
-    (dir) => {
-      const violations = findRawColorLiterals(dir);
+    (directory) => {
+      const violations = findRawColorLiterals(directory);
       assert.equal(violations.length, 1);
       assert.equal(violations[0].file, "Widget.tsx");
       assert.equal(violations[0].line, 2);
@@ -43,8 +43,8 @@ test("flags a raw indigo-line rgba() literal", () => {
 );
 `,
     },
-    (dir) => {
-      const violations = findRawColorLiterals(dir);
+    (directory) => {
+      const violations = findRawColorLiterals(directory);
       assert.equal(violations.length, 1);
       assert.equal(violations[0].family, "indigo-line");
     },
@@ -59,8 +59,8 @@ test("flags a raw success-emerald rgba() literal (converged and pre-convergence 
 );
 `,
     },
-    (dir) => {
-      const violations = findRawColorLiterals(dir);
+    (directory) => {
+      const violations = findRawColorLiterals(directory);
       assert.equal(violations.length, 1); // one violation per line, first match wins
       assert.equal(violations[0].family, "success");
     },
@@ -75,8 +75,8 @@ test("flags a raw amber warning/source rgba() literal", () => {
 );
 `,
     },
-    (dir) => {
-      const violations = findRawColorLiterals(dir);
+    (directory) => {
+      const violations = findRawColorLiterals(directory);
       assert.equal(violations.length, 1);
       assert.equal(violations[0].family, "amber-source-warning");
     },
@@ -91,8 +91,8 @@ test("flags a raw kind-tone hue rgba() literal", () => {
 );
 `,
     },
-    (dir) => {
-      const violations = findRawColorLiterals(dir);
+    (directory) => {
+      const violations = findRawColorLiterals(directory);
       assert.equal(violations.length, 1);
       assert.equal(violations[0].family, "kind-tone");
     },
@@ -107,8 +107,8 @@ test("passes when the literal is already a var() token reference", () => {
 );
 `,
     },
-    (dir) => {
-      assert.deepEqual(findRawColorLiterals(dir), []);
+    (directory) => {
+      assert.deepEqual(findRawColorLiterals(directory), []);
     },
   );
 });
@@ -118,8 +118,8 @@ test("skips .test. files", () => {
     {
       "Widget.test.tsx": `const c = "rgba(94,106,210,0.24)";\n`,
     },
-    (dir) => {
-      assert.deepEqual(findRawColorLiterals(dir), []);
+    (directory) => {
+      assert.deepEqual(findRawColorLiterals(directory), []);
     },
   );
 });
@@ -129,11 +129,11 @@ test("skips .test. files", () => {
  * not looked at" look the same. Exemptions exist only as per-file `ALLOWLIST` entries.
  */
 test("scans the ontology-map canvas engine directory — no directory-wide exemption", () => {
-  withTempSrc({}, (dir) => {
-    const nested = join(dir, "widgets", "ontology-map", "lib");
+  withTempSrc({}, (directory) => {
+    const nested = join(directory, "widgets", "ontology-map", "lib");
     mkdirSync(nested, { recursive: true });
     writeFileSync(join(nested, "colors.ts"), `const c = "rgba(94,106,210,0.24)";\n`, "utf8");
-    const found = findRawColorLiterals(dir);
+    const found = findRawColorLiterals(directory);
     assert.equal(found.length, 1, "the canvas directory is exempt as a whole again");
     assert.equal(found[0].family, "indigo");
     assert.match(found[0].file, /ontology-map/);
@@ -153,16 +153,16 @@ test("documented ALLOWLIST entries stay clean of raw literals so future edits do
  */
 
 test("flags an rgba() the hue table has never heard of, the hole in the earlier gate", () => {
-  withTempSrc({ "New.tsx": `const c = "rgba(210,218,255,0.98)";\n` }, (dir) => {
-    const found = findRawColorLiterals(dir);
+  withTempSrc({ "New.tsx": `const c = "rgba(210,218,255,0.98)";\n` }, (directory) => {
+    const found = findRawColorLiterals(directory);
     assert.equal(found.length, 1, "an unregistered color that passes makes the gate pointless");
     assert.match(found[0].family, /search-mark/, "the finding must name which token to use");
   });
 });
 
 test("flags a hand-copied duplicate of an existing token", () => {
-  withTempSrc({ "Copy.tsx": `const c = "rgba(159, 170, 235, 0.95)";\n` }, (dir) => {
-    const found = findRawColorLiterals(dir);
+  withTempSrc({ "Copy.tsx": `const c = "rgba(159, 170, 235, 0.95)";\n` }, (directory) => {
+    const found = findRawColorLiterals(directory);
     assert.equal(found.length, 1, "a literal does not follow the token even when it has the same value");
     assert.match(found[0].family, /indigo-text-strong/);
   });
@@ -176,8 +176,8 @@ const o = "rgba(255, 255, 255, 0.08)";
 const g = "rgba(24,24,24,0.4)";
 `,
     },
-    (dir) => {
-      assert.deepEqual(findRawColorLiterals(dir), [], "r=g=b is not a palette color");
+    (directory) => {
+      assert.deepEqual(findRawColorLiterals(directory), [], "r=g=b is not a palette color");
     },
   );
 });
@@ -190,8 +190,8 @@ test("passes rgba named inside a comment because explaining a banned value needs
 const ok = "var(--color-indigo-accent-a50)";
 `,
     },
-    (dir) => {
-      assert.deepEqual(findRawColorLiterals(dir), []);
+    (directory) => {
+      assert.deepEqual(findRawColorLiterals(directory), []);
     },
   );
 });

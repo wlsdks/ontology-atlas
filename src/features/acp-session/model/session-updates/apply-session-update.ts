@@ -71,7 +71,7 @@ export function applySessionUpdate(
     // The adapter moves the session on its own and announces it only here; a gate-removing mode raises the `gate-off` notice.
     const modeId = typeof update.currentModeId === 'string' ? update.currentModeId.trim() : '';
     if (!modeId) return;
-    setChoices((prev) => applyCurrentMode(prev, modeId));
+    setChoices((previous) => applyCurrentMode(previous, modeId));
     if (!modeKeepsGate(modeId)) noteModeMoved(modeId, `mode-clamped:${modeId}`);
     return;
   }
@@ -114,8 +114,8 @@ export function applySessionUpdate(
     const kept = hasRawOutput ? keptOutput(update.rawOutput) : null;
     // The adapter sends a pending row, then its input in a status-less update: merge every
     // field an update carries, not only its status.
-    updateEvents((prev) =>
-      prev.map((event) => {
+    updateEvents((previous) =>
+      previous.map((event) => {
         if (event.kind !== 'tool' || event.id !== id) return event;
         return {
           ...event,

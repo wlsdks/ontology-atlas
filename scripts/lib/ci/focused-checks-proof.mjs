@@ -19,14 +19,14 @@ export function treeOf(rev, { cwd = process.cwd(), spawn = spawnSync } = {}) {
 }
 
 export function contentTree({ cwd = process.cwd(), spawn = spawnSync } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'atlas-content-tree-'));
+  const directory = mkdtempSync(join(tmpdir(), 'atlas-content-tree-'));
   try {
-    const env = { ...process.env, GIT_INDEX_FILE: join(dir, 'index') };
+    const env = { ...process.env, GIT_INDEX_FILE: join(directory, 'index') };
     git(['read-tree', 'HEAD'], { cwd, spawn, env });
     git(['add', '-A'], { cwd, spawn, env });
     return git(['write-tree'], { cwd, spawn, env });
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 }
 

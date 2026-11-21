@@ -1,4 +1,4 @@
-import type { AnswerGrounding, CitedParagraph } from './types';
+import type { AnswerGrounding, CitedParagraph } from './agent-turn';
 
 /**
  * Citation enforcement before rendering: only slugs read this turn count, and model markdown

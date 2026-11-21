@@ -60,20 +60,20 @@ export function parseDmgName(name) {
   return match ? { version: match[1], arch: match[2] } : null;
 }
 
-function exactlyOneFile(dir, matches, label) {
-  if (!fs.existsSync(dir)) {
-    throw new Error(`no folder to look for ${label} in: ${dir}`);
+function exactlyOneFile(directory, matches, label) {
+  if (!fs.existsSync(directory)) {
+    throw new Error(`no folder to look for ${label} in: ${directory}`);
   }
   const hits = fs
-    .readdirSync(dir, { withFileTypes: true })
+    .readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isFile() && matches(entry.name))
     .map((entry) => entry.name);
   if (hits.length === 0) {
-    throw new Error(`${dir} has no ${label}.`);
+    throw new Error(`${directory} has no ${label}.`);
   }
   if (hits.length > 1) {
     throw new Error(
-      `${dir} has ${hits.length} ${label} candidates: ${hits.join(", ")} - cannot decide which one to ship.`,
+      `${directory} has ${hits.length} ${label} candidates: ${hits.join(", ")} - cannot decide which one to ship.`,
     );
   }
   return hits[0];

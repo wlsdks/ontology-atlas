@@ -18,7 +18,7 @@ import {
   type AgentTurn,
   type ScreenContextSnapshot,
   type ToolCallRecord,
-} from './types';
+} from './agent-turn';
 
 /**
  * One turn's state machine: `startTurn` returns synchronously, `abort()` stops in place, and

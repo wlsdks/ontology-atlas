@@ -70,7 +70,7 @@ export function withConfinedSourceReads(root,operation){
   if(process.env.OATLAS_CONFINED_SOURCE_READS!=='1')return operation();
   if(!inheritedSnapshot){
     if(process.env.OATLAS_SOURCE_SNAPSHOT_FD!=='198')throw new Error('Confined source snapshot descriptor is unavailable');
-    const descriptor=198;const info=fs.fstatSync(descriptor);if(info.size>64*1024*1024)throw new Error('Confined source snapshot exceeds its transport limit');
+    const descriptor=198;const stats=fs.fstatSync(descriptor);if(stats.size>64*1024*1024)throw new Error('Confined source snapshot exceeds its transport limit');
     try{inheritedSnapshot=JSON.parse(fs.readFileSync(descriptor,'utf8'));}finally{fs.closeSync(descriptor);}
   }
   if(resolve(root)!==inheritedSnapshot.rootPath)throw new Error('Confined source snapshot root mismatch');

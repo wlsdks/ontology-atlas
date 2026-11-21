@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computeSuggestedDependencies } from "./suggestions";
-import type { Project } from "./types";
+import type { Project } from "./project";
 
 function makeProject(overrides: Partial<Project> = {}): Project {
   return {

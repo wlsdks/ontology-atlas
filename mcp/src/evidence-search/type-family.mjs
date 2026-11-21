@@ -147,9 +147,9 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     const defaults = new Set(defaultImports ?? []);
     if (defaults.size) defaultLocalsIn.set(path, [...defaults]);
     const folder = posix.dirname(path);
-    for (let dir = folder; dir !== '.' && dir !== '/' && !dirs.has(dir); dir = posix.dirname(dir)) {
-      dirs.add(dir);
-      folderNames.add(posix.basename(dir));
+    for (let directory = folder; directory !== '.' && directory !== '/' && !dirs.has(directory); directory = posix.dirname(directory)) {
+      dirs.add(directory);
+      folderNames.add(posix.basename(directory));
     }
     const go = path.endsWith('.go');
     if (go) {
@@ -224,17 +224,17 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
     const subpath = segments.slice(raw.startsWith('@') ? 2 : 1).join('/');
     const leaf = posix.basename(packageName);
     const found = [];
-    for (const dir of [...dirs].filter((candidate) => posix.basename(candidate) === leaf).slice(0, FAMILY_LIMITS.workspaceDirs)) {
+    for (const directory of [...dirs].filter((candidate) => posix.basename(candidate) === leaf).slice(0, FAMILY_LIMITS.workspaceDirs)) {
       let manifest = null;
       try {
-        if (existsSync(join(repoRoot, dir, 'package.json'))) manifest = JSON.parse(readFileSync(join(repoRoot, dir, 'package.json'), 'utf8'));
+        if (existsSync(join(repoRoot, directory, 'package.json'))) manifest = JSON.parse(readFileSync(join(repoRoot, directory, 'package.json'), 'utf8'));
       } catch {
         manifest = null;
       }
       const name = typeof manifest?.name === 'string' ? manifest.name : '';
       if (name !== packageName) continue;
       if (subpath) {
-        found.push(...[posix.join(dir, subpath), posix.join(dir, 'src', subpath)].flatMap((stem) => surveyed().modulePaths({ exact: jsStem(stem) })));
+        found.push(...[posix.join(directory, subpath), posix.join(directory, 'src', subpath)].flatMap((stem) => surveyed().modulePaths({ exact: jsStem(stem) })));
         continue;
       }
       const fields = [manifest.source, manifest.types, manifest.typings, manifest.module, manifest.main, manifest.exports?.['.']?.import, manifest.exports?.['.']?.default]
@@ -247,7 +247,7 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
         for (const extension of ENTRY_EXTENSIONS) tries.push(`${stem}${extension}`);
       }
       tries.push('src/index.ts', 'src/index.tsx', 'src/index.js', 'index.ts', 'index.js');
-      const entry = tries.map((candidate) => posix.join(dir, candidate)).find((candidate) => productPaths.has(candidate));
+      const entry = tries.map((candidate) => posix.join(directory, candidate)).find((candidate) => productPaths.has(candidate));
       if (entry) found.push(entry);
     }
     const list = found.length === 1 ? found : [];
@@ -260,9 +260,9 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
   function pathConfigs() {
     if (configs) return configs;
     configs = [];
-    for (const dir of ['', ...dirs]) {
+    for (const directory of ['', ...dirs]) {
       for (const name of ['tsconfig.json', 'jsconfig.json']) {
-        const file = join(repoRoot, dir, name);
+        const file = join(repoRoot, directory, name);
         try {
           if (!existsSync(file)) continue;
           const text = readFileSync(file, 'utf8');
@@ -270,7 +270,7 @@ export function createFamilies(repoRoot, files, { truncated: walkTruncated = fal
           const options = JSON.parse(withoutJsonComments(text))?.compilerOptions ?? {};
           const baseUrl = typeof options.baseUrl === 'string' ? options.baseUrl : null;
           const paths = options.paths && typeof options.paths === 'object' ? options.paths : null;
-          if (baseUrl !== null || paths) configs.push({ dir, base: posix.join(dir, baseUrl ?? '.'), paths: paths ?? {}, baseUrl: baseUrl !== null });
+          if (baseUrl !== null || paths) configs.push({ dir: directory, base: posix.join(directory, baseUrl ?? '.'), paths: paths ?? {}, baseUrl: baseUrl !== null });
         } catch {
           // An unreadable config maps nothing.
         }

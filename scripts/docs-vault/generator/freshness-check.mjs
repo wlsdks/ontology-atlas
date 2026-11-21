@@ -33,9 +33,9 @@ export function comparableManifest(manifest) {
 async function readJsonIfExists(file) {
   try {
     return JSON.parse(await readFile(file, 'utf8'));
-  } catch (err) {
-    if (err?.code === 'ENOENT') return null;
-    throw err;
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    throw error;
   }
 }
 
@@ -95,11 +95,11 @@ export async function assertOutputsCurrent({
       if (current !== raw) {
         issues.push(`stale ${path.posix.join('public/docs-vault', relativePath)}`);
       }
-    } catch (err) {
-      if (err?.code === 'ENOENT') {
+    } catch (error) {
+      if (error?.code === 'ENOENT') {
         issues.push(`missing ${path.posix.join('public/docs-vault', relativePath)}`);
       } else {
-        throw err;
+        throw error;
       }
     }
   }

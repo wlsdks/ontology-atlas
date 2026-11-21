@@ -56,11 +56,11 @@ const NODE_UID_PATTERN =
 
 /** `capabilities/login` + `auth-block` → `capabilities/auth-block-login`. Already prefixed stays as is. */
 export function prefixBlockSlug(slug: string, blockPrefix: string): string {
-  const idx = slug.lastIndexOf('/');
-  const dir = idx === -1 ? '' : slug.slice(0, idx + 1);
-  const tail = idx === -1 ? slug : slug.slice(idx + 1);
+  const index = slug.lastIndexOf('/');
+  const directory = index === -1 ? '' : slug.slice(0, index + 1);
+  const tail = index === -1 ? slug : slug.slice(index + 1);
   if (blockPrefix && tail.startsWith(`${blockPrefix}-`)) return slug;
-  return `${dir}${blockPrefix}-${tail}`;
+  return `${directory}${blockPrefix}-${tail}`;
 }
 
 export function appendProvenance(
@@ -165,11 +165,11 @@ function nextFreeSlug(base: string, taken: (slug: string) => boolean): string {
 export function planBlockImport(
   files: readonly BlockImportFile[],
   existingSlugs: ReadonlySet<string>,
-  opts: BlockImportPlanOptions,
+  options: BlockImportPlanOptions,
 ): BlockImportPlan {
-  const uidFactory = opts.uidFactory ?? (() => globalThis.crypto.randomUUID());
-  const manifestNodesBySlug = new Map(opts.manifest?.nodes.map((node) => [node.slug, node]) ?? []);
-  const blockPrefix = slugify(opts.blockName) || 'block';
+  const uidFactory = options.uidFactory ?? (() => globalThis.crypto.randomUUID());
+  const manifestNodesBySlug = new Map(options.manifest?.nodes.map((node) => [node.slug, node]) ?? []);
+  const blockPrefix = slugify(options.blockName) || 'block';
   const sorted = [...files].sort((a, b) => a.path.localeCompare(b.path));
   const claimed = new Set<string>();
   const taken = (slug: string) => existingSlugs.has(slug) || claimed.has(slug);
@@ -196,7 +196,7 @@ export function planBlockImport(
         ? fm.title.trim()
         : extractFirstH1(parsed.body) ?? baseSlug;
 
-    if (kind && opts.manifest && !manifestNodesBySlug.has(baseSlug)) {
+    if (kind && options.manifest && !manifestNodesBySlug.has(baseSlug)) {
       throw new Error(`Block manifest is missing node "${baseSlug}" from the Markdown files.`);
     }
     if (kind) {
@@ -238,7 +238,7 @@ export function planBlockImport(
       continue;
     }
 
-    if (opts.resolution === 'skip') {
+    if (options.resolution === 'skip') {
       pushDraft(null, 'conflict-skipped');
       continue;
     }
@@ -250,8 +250,8 @@ export function planBlockImport(
     pushDraft(renamedSlug, 'conflict-renamed');
   }
 
-  if (opts.manifest) {
-    const manifestOnlyNode = opts.manifest.nodes.find((node) => !sourceNodeSlugs.has(node.slug));
+  if (options.manifest) {
+    const manifestOnlyNode = options.manifest.nodes.find((node) => !sourceNodeSlugs.has(node.slug));
     if (manifestOnlyNode) {
       throw new Error(
         `Block manifest node "${manifestOnlyNode.slug}" has no matching Markdown file.`,
@@ -268,7 +268,7 @@ export function planBlockImport(
     const contentFrontmatter = parseFrontmatter(content).frontmatter;
     const identity = validatedIdentityClaims(contentFrontmatter, d.entry.originalSlug);
     for (const claimedUid of identity.claims) {
-      if (opts.existingUidClaims?.has(claimedUid)) {
+      if (options.existingUidClaims?.has(claimedUid)) {
         throw new Error(
           `Block import UID collision: ${claimedUid} for "${d.entry.originalSlug}" already exists in the open vault.`,
         );
@@ -287,7 +287,7 @@ export function planBlockImport(
     if (d.entry.status === 'conflict-renamed') {
       content = setFrontmatterSlug(content, d.entry.finalSlug);
     }
-    content = appendProvenance(content, opts.blockName, opts.sourceProject);
+    content = appendProvenance(content, options.blockName, options.sourceProject);
     writes.push({ slug: d.entry.finalSlug, content });
   }
 

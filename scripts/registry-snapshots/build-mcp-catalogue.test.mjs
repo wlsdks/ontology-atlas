@@ -18,12 +18,12 @@ const COMMITTED_OUT = new URL('../../src/shared/config/mcp/mcp-catalogue.generat
 const COMMITTED_SNAPSHOT = new URL('../data/mcp-registry-snapshot.json', import.meta.url);
 
 function fixture() {
-  const dir = mkdtempSync(join(tmpdir(), 'atlas-mcp-catalogue-'));
-  const outPath = join(dir, 'mcp-catalogue.generated.ts');
-  const snapshotPath = join(dir, 'mcp-registry-snapshot.json');
+  const directory = mkdtempSync(join(tmpdir(), 'atlas-mcp-catalogue-'));
+  const outPath = join(directory, 'mcp-catalogue.generated.ts');
+  const snapshotPath = join(directory, 'mcp-registry-snapshot.json');
   writeFileSync(outPath, readFileSync(COMMITTED_OUT));
   writeFileSync(snapshotPath, readFileSync(COMMITTED_SNAPSHOT));
-  return { dir, outPath, snapshotPath };
+  return { dir: directory, outPath, snapshotPath };
 }
 
 /**

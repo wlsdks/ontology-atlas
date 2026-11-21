@@ -41,11 +41,11 @@ export async function runPreflight(args) {
   let vaultRoot;
   try {
     vaultRoot = resolveVaultRoot(parsed.vault);
-  } catch (err) {
-    if (err instanceof VaultRootError) {
-      return emitSkip(parsed.json, 'vault-not-found', { message: err.message });
+  } catch (error) {
+    if (error instanceof VaultRootError) {
+      return emitSkip(parsed.json, 'vault-not-found', { message: error.message });
     }
-    throw err;
+    throw error;
   }
 
   const stagedFiles = getStagedFiles({ cwd: process.cwd() });
@@ -114,7 +114,7 @@ async function buildRow(vaultRoot, match, depth) {
       decisionCount: Number(byKind.decision) || 0,
       error: null,
     };
-  } catch (err) {
+  } catch (error) {
     return {
       slug: match.slug,
       kind: match.kind,
@@ -123,7 +123,7 @@ async function buildRow(vaultRoot, match, depth) {
       risk: null,
       affectedNodes: 0,
       decisionCount: 0,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }

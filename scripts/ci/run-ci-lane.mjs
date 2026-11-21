@@ -178,8 +178,8 @@ export const CONCURRENT_COMMANDS = Object.freeze(['pnpm lint', 'pnpm licenses:ch
 
 /** Start a command beside the serial ones, its output held in a file until it is reported. */
 function startConcurrent(command, { cwd, env }) {
-  const dir = mkdtempSync(join(tmpdir(), 'atlas-ci-lane-'));
-  const file = join(dir, 'output.log');
+  const directory = mkdtempSync(join(tmpdir(), 'atlas-ci-lane-'));
+  const file = join(directory, 'output.log');
   const fd = openSync(file, 'w');
   const started = Date.now();
   const child = spawnAsync(command, { cwd, env, shell: true, stdio: ['ignore', fd, fd] });
@@ -190,7 +190,7 @@ function startConcurrent(command, { cwd, env }) {
   });
   return done.then(({ status, finished }) => {
     const output = readFileSync(file, 'utf8');
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
     return { status, output, started, finished };
   });
 }

@@ -183,8 +183,8 @@ async function main() {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((err) => {
-    console.error('[docs-vault] build failed:', err);
+  main().catch((error) => {
+    console.error('[docs-vault] build failed:', error);
     process.exit(1);
   });
 }

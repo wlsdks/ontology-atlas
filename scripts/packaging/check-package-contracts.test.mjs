@@ -33,7 +33,7 @@ import {
 } from './check-package-contracts.mjs';
 import { assertPnpmScriptsExist } from '../lib/pnpm-script-refs.mjs';
 
-function withPackage(pkg, files, fn) {
+function withPackage(pkg, files, callback) {
   const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-package-contract-'));
   try {
     writeFileSync(join(root, 'package.json'), JSON.stringify(pkg, null, 2));
@@ -42,7 +42,7 @@ function withPackage(pkg, files, fn) {
       mkdirSync(dirname(full), { recursive: true });
       writeFileSync(full, content);
     }
-    fn(root);
+    callback(root);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -85,10 +85,10 @@ describe('package contract helpers', () => {
       ...readdirSync('.claude/skills', { withFileTypes: true })
         .filter((entry) => entry.isDirectory())
         .flatMap((entry) => {
-          const dir = join('.claude/skills', entry.name);
-          return readdirSync(dir, { recursive: true })
+          const directory = join('.claude/skills', entry.name);
+          return readdirSync(directory, { recursive: true })
             .filter((name) => String(name).endsWith('.md'))
-            .map((name) => join(dir, String(name)));
+            .map((name) => join(directory, String(name)));
         }),
     ].sort();
     assert.ok(
@@ -395,7 +395,7 @@ describe('package contract helpers', () => {
         'src/integration.test.mjs': 'throw new Error("not runtime");\n',
         'src/parser.test.mjs': 'throw new Error("not runtime");\n',
       },
-      (dir) => {
+      (directory) => {
         const entrypoints = packageEntrypoints(
           {
             main: 'src/index.mjs',
@@ -405,8 +405,8 @@ describe('package contract helpers', () => {
               'test:smoke': 'node src/parser.test.mjs',
             },
           },
-          dir,
-        ).map((entry) => entry.replace(`${dir}/`, ''));
+          directory,
+        ).map((entry) => entry.replace(`${directory}/`, ''));
 
         assert.deepEqual(entrypoints.sort(), ['scripts/verify.mjs', 'src/index.mjs']);
       },
@@ -485,8 +485,8 @@ describe('checkPackage', () => {
         'src/index.mjs': "import './lib/util.mjs';\n",
         'src/lib/util.mjs': 'export const ok = true;\n',
       },
-      (dir) => {
-        assert.doesNotThrow(() => checkPackage({ label: 'ok', dir }, { silent: true }));
+      (directory) => {
+        assert.doesNotThrow(() => checkPackage({ label: 'ok', dir: directory }, { silent: true }));
       },
     );
   });
@@ -502,9 +502,9 @@ describe('checkPackage', () => {
         'src/index.mjs': "import './lib/util.mjs';\n",
         'src/lib/util.mjs': 'export const ok = true;\n',
       },
-      (dir) => {
+      (directory) => {
         assert.throws(
-          () => checkPackage({ label: 'missing-reachable', dir }, { silent: true }),
+          () => checkPackage({ label: 'missing-reachable', dir: directory }, { silent: true }),
           /src\/lib\/util\.mjs is reachable/,
         );
       },
@@ -521,9 +521,9 @@ describe('checkPackage', () => {
       {
         'src/index.mjs': 'export const ok = true;\n',
       },
-      (dir) => {
+      (directory) => {
         assert.throws(
-          () => checkPackage({ label: 'stale-entry', dir }, { silent: true }),
+          () => checkPackage({ label: 'stale-entry', dir: directory }, { silent: true }),
           /entry does not match any package file: src\/missing\/\*\.mjs/,
         );
       },

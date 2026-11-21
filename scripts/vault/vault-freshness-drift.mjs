@@ -32,10 +32,10 @@ function usage() {
   ].join("\n");
 }
 
-function walkMd(dir, out = []) {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+function walkMd(directory, out = []) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
     if (entry.name.startsWith(".")) continue;
-    const full = join(dir, entry.name);
+    const full = join(directory, entry.name);
     if (entry.isDirectory()) walkMd(full, out);
     else if (entry.isFile() && entry.name.endsWith(".md")) out.push(full);
   }
@@ -114,8 +114,8 @@ if (parsed.changedFiles !== null) {
 } else {
   try {
     changedFiles = getChangedFiles({ repoRoot, base: parsed.base, head: parsed.head });
-  } catch (err) {
-    process.stderr.write(`git diff failed: ${err instanceof Error ? err.message : String(err)}\n`);
+  } catch (error) {
+    process.stderr.write(`git diff failed: ${error instanceof Error ? error.message : String(error)}\n`);
     process.exit(2);
   }
 }

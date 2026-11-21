@@ -163,9 +163,9 @@ test('writes nothing when someone else edited a target in between', async () => 
    * Multi-file plans rewrite documents from a snapshot read minutes earlier, so an
    * edit a person made in between must stop the whole plan.
    */
-  const dir = mkdtempSync(join(tmpdir(), 'oatlas-conflict-'));
-  const kept = join(dir, 'kept.md');
-  const stale = join(dir, 'stale.md');
+  const directory = mkdtempSync(join(tmpdir(), 'oatlas-conflict-'));
+  const kept = join(directory, 'kept.md');
+  const stale = join(directory, 'stale.md');
   writeFileSync(kept, 'kept-before', 'utf-8');
   writeFileSync(stale, 'stale-before', 'utf-8');
 
@@ -188,13 +188,13 @@ test('writes nothing when someone else edited a target in between', async () => 
   // Not one character written: the person's edit and the earlier file both stand.
   assert.equal(readFileSync(stale, 'utf-8'), 'edited by the human');
   assert.equal(readFileSync(kept, 'utf-8'), 'kept-before');
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(directory, { recursive: true, force: true });
 });
 
 test('does not revive a deleted expectedMtime target with stale content', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'oatlas-deleted-conflict-'));
-  const kept = join(dir, 'kept.md');
-  const deleted = join(dir, 'deleted.md');
+  const directory = mkdtempSync(join(tmpdir(), 'oatlas-deleted-conflict-'));
+  const kept = join(directory, 'kept.md');
+  const deleted = join(directory, 'deleted.md');
   writeFileSync(kept, 'kept-before', 'utf-8');
   writeFileSync(deleted, 'human-owned', 'utf-8');
   const expectedMtime = statSync(deleted).mtimeMs;
@@ -211,12 +211,12 @@ test('does not revive a deleted expectedMtime target with stale content', () => 
 
   assert.equal(readFileSync(kept, 'utf-8'), 'kept-before');
   assert.equal(existsSync(deleted), false, 'revived a file a person deleted with stale content');
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(directory, { recursive: true, force: true });
 });
 
 test('does not write when the read bytes changed even with an equal mtime', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'oatlas-content-conflict-'));
-  const file = join(dir, 'same-clock.md');
+  const directory = mkdtempSync(join(tmpdir(), 'oatlas-content-conflict-'));
+  const file = join(directory, 'same-clock.md');
   writeFileSync(file, 'agent-snapshot', 'utf-8');
   const snapshotMtime = statSync(file).mtimeMs;
 
@@ -236,13 +236,13 @@ test('does not write when the read bytes changed even with an equal mtime', () =
     /changed on disk/i,
   );
   assert.equal(readFileSync(file, 'utf-8'), 'human-edited!');
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(directory, { recursive: true, force: true });
 });
 
 test('rechecks each item before applying it and rolls back earlier writes on a late edit', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'oatlas-late-conflict-'));
-  const first = join(dir, 'first.md');
-  const second = join(dir, 'second.md');
+  const directory = mkdtempSync(join(tmpdir(), 'oatlas-late-conflict-'));
+  const first = join(directory, 'first.md');
+  const second = join(directory, 'second.md');
   writeFileSync(first, 'first-before', 'utf-8');
   writeFileSync(second, 'second-before', 'utf-8');
 
@@ -260,12 +260,12 @@ test('rechecks each item before applying it and rolls back earlier writes on a l
 
   assert.equal(readFileSync(first, 'utf-8'), 'first-before');
   assert.equal(readFileSync(second, 'utf-8'), 'human-second');
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(directory, { recursive: true, force: true });
 });
 
 test('rechecks bytes right before the atomic rename', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'oatlas-final-check-'));
-  const file = join(dir, 'doc.md');
+  const directory = mkdtempSync(join(tmpdir(), 'oatlas-final-check-'));
+  const file = join(directory, 'doc.md');
   writeFileSync(file, 'before', 'utf-8');
 
   assert.throws(
@@ -278,13 +278,13 @@ test('rechecks bytes right before the atomic rename', () => {
     /changed on disk/i,
   );
   assert.equal(readFileSync(file, 'utf-8'), 'human-after');
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(directory, { recursive: true, force: true });
 });
 
 test('a revision-required plan refuses a missing revision on existing and new targets before starting', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'oatlas-required-revision-'));
-  const existing = join(dir, 'existing.md');
-  const missing = join(dir, 'missing.md');
+  const directory = mkdtempSync(join(tmpdir(), 'oatlas-required-revision-'));
+  const existing = join(directory, 'existing.md');
+  const missing = join(directory, 'missing.md');
   writeFileSync(existing, 'before', 'utf-8');
 
   assert.throws(
@@ -296,5 +296,5 @@ test('a revision-required plan refuses a missing revision on existing and new ta
   );
   assert.equal(readFileSync(existing, 'utf-8'), 'before');
   assert.equal(existsSync(missing), false);
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(directory, { recursive: true, force: true });
 });

@@ -43,12 +43,12 @@ const BENCH = join(ROOT, 'src-tauri', 'target', 'release', process.platform === 
 let benchBuilt = false;
 
 /** Every passage the app's index embeds for the Markdown files under `dir`: `{ path, start, end, heading, text }`. */
-export async function* cratePassages(dir) {
+export async function* cratePassages(directory) {
   if (!benchBuilt) {
     execFileSync('cargo', ['build', '--release', '--quiet', '-p', 'vault-index', '--bin', 'vault-index-bench', '--features', 'index-dir-override', '--manifest-path', MANIFEST], { stdio: 'inherit' });
     benchBuilt = true;
   }
-  const child = spawn(BENCH, ['passages', dir], { stdio: ['ignore', 'pipe', 'inherit'] });
+  const child = spawn(BENCH, ['passages', directory], { stdio: ['ignore', 'pipe', 'inherit'] });
   const closed = new Promise((done) => child.on('close', done));
   for await (const line of createInterface({ input: child.stdout, crlfDelay: Infinity })) {
     if (line) yield JSON.parse(line);
@@ -202,16 +202,16 @@ async function loadVault(app) {
       unitsByPath.set(path, app.sourceUnits(bytes, path).units);
     }
   }
-  const dir = mkdtempSync(join(tmpdir(), 'atlas-meaning-quality-vault-'));
+  const directory = mkdtempSync(join(tmpdir(), 'atlas-meaning-quality-vault-'));
   const passages = [];
   try {
     for (const [path, text] of Object.entries(files)) {
-      mkdirSync(dirname(join(dir, path)), { recursive: true });
-      writeFileSync(join(dir, path), text);
+      mkdirSync(dirname(join(directory, path)), { recursive: true });
+      writeFileSync(join(directory, path), text);
     }
-    for await (const passage of cratePassages(dir)) passages.push(passage);
+    for await (const passage of cratePassages(directory)) passages.push(passage);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
   return { files, docs, rawBySlug, sources, unitsByPath, passages };
 }

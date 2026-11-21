@@ -8,7 +8,7 @@ import {
 } from "../model/schema";
 import { DependencyPicker } from "./DependencyPicker";
 import { MarkdownField } from "./MarkdownField";
-import { FieldRow, Hint, Input, Textarea } from "./project-form-parts";
+import { FieldRow, Hint, Input, Textarea } from "./project-form-primitives";
 
 export const PROJECT_FIELD_IDS: Partial<Record<keyof ProjectFormValues, string>> = {
   slug: "project-field-slug",

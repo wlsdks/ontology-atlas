@@ -8265,7 +8265,7 @@ Continue.`;
     assert.ok(infer?.params?.arguments?.rootPath, 'infer_imports rootPath should be populated');
     assert.equal(inferFocus?.params?.name, 'infer_imports');
     assert.equal(inferFocus?.params?.arguments?.reviewMode, 'focus');
-    assert.equal(inferFocus?.params?.arguments?.focusPath, 'src/entities/knowledge-graph/model/types.ts');
+    assert.equal(inferFocus?.params?.arguments?.focusPath, 'src/entities/knowledge-graph/model/knowledge-graph.ts');
     assert.equal(inferFocus?.params?.arguments?.focusLimit, 25);
     assert.equal(conceptBatchCap?.params?.name, 'add_concepts');
     assert.equal(conceptBatchCap?.params?.arguments?.concepts?.length, 51);

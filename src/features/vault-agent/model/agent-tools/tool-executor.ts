@@ -10,7 +10,7 @@ import {
 } from './concept-evidence-pack';
 import { findAgentTool } from './tool-catalog';
 import type { NormalizedToolCall } from '../providers/provider-adapter';
-import { AGENT_TOOL_RESULT_CHAR_CAP } from '../types';
+import { AGENT_TOOL_RESULT_CHAR_CAP } from '../agent-turn';
 import type { VaultReadDoc, VaultReadPort } from './vault-read-port';
 import {
   containsCompetencyQualification,
@@ -46,11 +46,11 @@ function asArgs(value: unknown): Args {
   return value && typeof value === 'object' ? (value as Args) : {};
 }
 
-function str(value: unknown): string | undefined {
+function stringOrUndefined(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
-function num(value: unknown): number | undefined {
+function numberOrUndefined(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
@@ -309,7 +309,7 @@ export function createToolExecutor(port: VaultReadPort) {
           content: SOURCE_BACKED_COMPETENCY_MESSAGE,
           isError: true,
           outcome: 'error',
-          target: str(args.slug) ?? call.name,
+          target: stringOrUndefined(args.slug) ?? call.name,
           summary: '소스 근거 자격은 MCP에서만 가능',
           readSlugs: [],
           vaultChars: 0,
@@ -320,7 +320,7 @@ export function createToolExecutor(port: VaultReadPort) {
           'Recorded as a proposal. Nothing was written — the person reviews the exact files and content and decides. Continue explaining your reasoning; do not repeat this call.',
         isError: false,
         outcome: 'blocked-write',
-        target: str(args.slug) ?? str(args.from) ?? call.name,
+        target: stringOrUndefined(args.slug) ?? stringOrUndefined(args.from) ?? call.name,
         summary: '제안으로 담음 (아직 쓰지 않음)',
         readSlugs: [],
         vaultChars: 0,
@@ -330,7 +330,7 @@ export function createToolExecutor(port: VaultReadPort) {
 
     switch (call.name) {
       case 'get_concept': {
-        const slug = str(args.slug);
+        const slug = stringOrUndefined(args.slug);
         if (!slug) return missingArg('slug');
         const result = await readConcept(slug, args.body === 'excerpt' ? 'excerpt' : 'full');
         const packed = pack(result.payload);
@@ -347,7 +347,7 @@ export function createToolExecutor(port: VaultReadPort) {
 
       case 'get_concepts': {
         const slugs = Array.isArray(args.slugs)
-          ? (args.slugs as unknown[]).map((value) => str(value)).filter(Boolean)
+          ? (args.slugs as unknown[]).map((value) => stringOrUndefined(value)).filter(Boolean)
           : [];
         if (slugs.length === 0) return missingArg('slugs');
         const rows: ConceptEvidenceInput[] = [];
@@ -403,12 +403,12 @@ export function createToolExecutor(port: VaultReadPort) {
       }
 
       case 'list_concepts': {
-        const kind = str(args.kind);
-        const domain = str(args.domain);
-        const since = num(args.since);
+        const kind = stringOrUndefined(args.kind);
+        const domain = stringOrUndefined(args.domain);
+        const since = numberOrUndefined(args.since);
         const wantSummary = args.summary === true;
-        const offset = Math.max(num(args.offset) ?? 0, 0);
-        const limit = Math.min(Math.max(num(args.limit) ?? 100, 1), 500);
+        const offset = Math.max(numberOrUndefined(args.offset) ?? 0, 0);
+        const limit = Math.min(Math.max(numberOrUndefined(args.limit) ?? 100, 1), 500);
         const filtered = port.docs
           .filter((doc) => (kind ? doc.kind === kind : true))
           .filter((doc) => (domain ? doc.domain === domain : true))
@@ -458,10 +458,10 @@ export function createToolExecutor(port: VaultReadPort) {
       }
 
       case 'find_evidence': {
-        const title = str(args.title);
+        const title = stringOrUndefined(args.title);
         if (!title) return missingArg('title');
         const needle = title.toLowerCase();
-        const limit = Math.min(Math.max(num(args.limit) ?? 20, 1), 500);
+        const limit = Math.min(Math.max(numberOrUndefined(args.limit) ?? 20, 1), 500);
         const matches = port.nodes
           .filter((node) => node.title.toLowerCase().includes(needle))
           .slice(0, limit)
@@ -479,7 +479,7 @@ export function createToolExecutor(port: VaultReadPort) {
       }
 
       case 'find_backlinks': {
-        const slug = str(args.slug);
+        const slug = stringOrUndefined(args.slug);
         if (!slug) return missingArg('slug');
         const node = resolve(slug);
         if (!node) return notFound(slug);
@@ -511,15 +511,15 @@ export function createToolExecutor(port: VaultReadPort) {
       }
 
       case 'find_neighbors': {
-        const slug = str(args.slug);
+        const slug = stringOrUndefined(args.slug);
         if (!slug) return missingArg('slug');
         const node = resolve(slug);
         if (!node) return notFound(slug);
-        const direction = str(args.direction) ?? 'both';
+        const direction = stringOrUndefined(args.direction) ?? 'both';
         const types = Array.isArray(args.types)
           ? new Set((args.types as unknown[]).map((value) => String(value)))
           : null;
-        const limit = Math.floor(Math.min(Math.max(num(args.limit) ?? 100, 1), 500));
+        const limit = Math.floor(Math.min(Math.max(numberOrUndefined(args.limit) ?? 100, 1), 500));
         const edges = neighborsOf(node, direction, limit, types);
         const packed = pack({ slug, edges });
         return {
@@ -534,15 +534,15 @@ export function createToolExecutor(port: VaultReadPort) {
       }
 
       case 'find_path': {
-        const from = str(args.from);
-        const to = str(args.to);
+        const from = stringOrUndefined(args.from);
+        const to = stringOrUndefined(args.to);
         if (!from) return missingArg('from');
         if (!to) return missingArg('to');
         const fromNode = resolve(from);
         const toNode = resolve(to);
         if (!fromNode) return notFound(from);
         if (!toNode) return notFound(to);
-        const maxHops = Math.min(Math.max(num(args.maxHops) ?? 5, 0), 20);
+        const maxHops = Math.min(Math.max(numberOrUndefined(args.maxHops) ?? 5, 0), 20);
         const path = breadthFirstPath(port.edges, fromNode.id, toNode.id, maxHops);
         const hops = path?.map((id) => {
           const node = nodeById.get(id);
@@ -561,7 +561,7 @@ export function createToolExecutor(port: VaultReadPort) {
       }
 
       case 'find_orphans': {
-        const kind = str(args.kind);
+        const kind = stringOrUndefined(args.kind);
         const excludeKinds = new Set(
           Array.isArray(args.excludeKinds)
             ? (args.excludeKinds as unknown[]).map((value) => String(value))
@@ -590,8 +590,8 @@ export function createToolExecutor(port: VaultReadPort) {
       }
 
       case 'validate_vault': {
-        const offset = Math.max(num(args.offset) ?? 0, 0);
-        const limit = Math.min(Math.max(num(args.limit) ?? 100, 1), 500);
+        const offset = Math.max(numberOrUndefined(args.offset) ?? 0, 0);
+        const limit = Math.min(Math.max(numberOrUndefined(args.limit) ?? 100, 1), 500);
         const missingDomain = port.docs
           .filter((doc) => doc.kind === 'capability' || doc.kind === 'element')
           .filter((doc) => !doc.domain)

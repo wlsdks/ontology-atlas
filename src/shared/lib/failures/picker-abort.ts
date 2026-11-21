@@ -9,10 +9,10 @@ const ABORT_NAME = 'AbortError';
 /** The browser's own wording — the fallback test for paths that lose the name (a string reject). */
 const ABORT_MESSAGE = /\buser\s+aborted\b/i;
 
-export function isPickerAbort(err: unknown): boolean {
-  if (err === null || err === undefined) return false;
-  if (typeof err === 'string') return ABORT_MESSAGE.test(err);
-  const candidate = err as { name?: unknown; message?: unknown };
+export function isPickerAbort(error: unknown): boolean {
+  if (error === null || error === undefined) return false;
+  if (typeof error === 'string') return ABORT_MESSAGE.test(error);
+  const candidate = error as { name?: unknown; message?: unknown };
   if (candidate.name === ABORT_NAME) return true;
   return typeof candidate.message === 'string' && ABORT_MESSAGE.test(candidate.message);
 }

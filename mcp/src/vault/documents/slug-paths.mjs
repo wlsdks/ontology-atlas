@@ -22,10 +22,10 @@ export function walkMd(rootPath) {
     '.serena',
   ]);
   while (stack.length > 0) {
-    const dir = stack.pop();
+    const directory = stack.pop();
     let entries;
     try {
-      entries = readdirSync(dir, { withFileTypes: true });
+      entries = readdirSync(directory, { withFileTypes: true });
     } catch {
       continue;
     }
@@ -33,10 +33,10 @@ export function walkMd(rootPath) {
       if (entry.name.startsWith('.')) continue;
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name)) continue;
-        if (dir === rootPath && entry.name === VAULT_SOURCES_DIR) continue;
-        stack.push(join(dir, entry.name));
+        if (directory === rootPath && entry.name === VAULT_SOURCES_DIR) continue;
+        stack.push(join(directory, entry.name));
       } else if (entry.isFile() && entry.name.endsWith('.md')) {
-        out.push(join(dir, entry.name));
+        out.push(join(directory, entry.name));
       }
     }
   }
@@ -179,13 +179,13 @@ export function canonicalDiskSlug(rootPath, slug) {
   }
   const existsAsGiven = existsSync(contained);
   const parts = slug.split('/');
-  let dir = resolve(rootPath);
+  let directory = resolve(rootPath);
   const canonical = [];
   for (let i = 0; i < parts.length; i += 1) {
     const want = i === parts.length - 1 ? `${parts[i]}.md` : parts[i];
     let entries;
     try {
-      entries = readdirSync(dir);
+      entries = readdirSync(directory);
     } catch {
       return existsAsGiven ? slug : null;
     }
@@ -197,7 +197,7 @@ export function canonicalDiskSlug(rootPath, slug) {
       hit = caseMatches[0];
     }
     canonical.push(i === parts.length - 1 ? hit.slice(0, -3) : hit);
-    dir = join(dir, hit);
+    directory = join(directory, hit);
   }
   return canonical.join('/');
 }
