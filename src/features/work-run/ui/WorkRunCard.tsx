@@ -48,11 +48,6 @@ function layerOf(entry: SeatRun): string {
   return `${entry.key}:${phase === 'running' || phase === 'asking' ? 'live' : phase}`;
 }
 
-/**
- * The runs' card in the shell's notice seat, on every screen but the one whose stage already
- * shows them. It names the latest run and counts the rest; it never remounts across routes, its
- * box never changes between states, and it glides aside for docks (`useSeatStepAside`).
- */
 export function WorkRunCard() {
   const snapshot = useWorkRunSnapshot();
   const seated = seatRuns(snapshot);
@@ -67,7 +62,6 @@ export function WorkRunCard() {
   return (
     <div aria-live="polite" data-testid="work-run-live">
       {mounted && drawn ? <CardBox entry={drawn} open={open} others={others} onOpenList={() => setListOpen(true)} /> : null}
-      {/* Mounted only while there is a list to open, so a screen with no run carries none of it. */}
       {others.length > 0 || listOpen ? <WorkRunsDialog open={listOpen && open} runs={seated} onClose={() => setListOpen(false)} /> : null}
     </div>
   );
@@ -148,7 +142,6 @@ const LIGHT_BY_TINT: Record<Exclude<SeatTint, 'running'>, string> = {
 };
 const LIGHT_WHILE_RUNNING = 'bg-[radial-gradient(closest-side,var(--color-indigo-accent-a32),var(--color-indigo-accent-a12)_45%,transparent)]';
 
-/** The light under Moru says how it ended before a word is read; the ladders' nearest steps. */
 function MoruLight({ tint, tintKey }: { tint: SeatTint; tintKey: string }) {
   const tinted = tint === 'running' ? undefined : LIGHT_BY_TINT[tint];
   return (
@@ -174,7 +167,6 @@ function MoruLight({ tint, tintKey }: { tint: SeatTint; tintKey: string }) {
   );
 }
 
-/** The count leads; the page being read is the line's one bright word. */
 const CARD_MARKS: WorkRunMarks = {
   page: (name) => <span className="font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{name}</span>,
   count: (value) => (
@@ -185,7 +177,6 @@ const CARD_MARKS: WorkRunMarks = {
   ),
 };
 
-/** The document being checked is the card's largest line; the count rolls inside the figures. */
 const SCHEDULED_MARKS: WorkRunMarks = {
   page: (name) => name,
   count: (value) => (
@@ -226,7 +217,6 @@ function LayerFrame({ motion, children }: { motion: LayerProps['motion']; childr
   );
 }
 
-/** "1 more running" names what else the card speaks for, and opens the list of runs. */
 function MoreRuns({ others, onOpenList, testId }: { others: readonly SeatRun[]; onOpenList: () => void; testId: (id: string) => string | undefined }) {
   const tCard = useTranslations('workCard');
   if (others.length === 0) return null;
@@ -351,7 +341,6 @@ function ScheduledLayer({ run, motion, others, onOpenList }: LayerProps & { run:
   return (
     <LayerFrame motion={motion}>
       <WorkRunMoru run={copy.moru} />
-      {/* Title pinned to the top and buttons to the bottom, so no state moves either row. */}
       <div className="ml-[8.25rem] grid h-full min-w-0 flex-1 content-between max-sm:ml-[4.5rem]">
         {running ? (
           <p data-testid={testId('work-run-title')} className="truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
@@ -419,7 +408,6 @@ function ScheduledLayer({ run, motion, others, onOpenList }: LayerProps & { run:
   );
 }
 
-/** The meaning run's lead figure rolls like the check's count. */
 const MEANING_FIGURE: MeaningFigure = (value, format) => (
   <RollingCount
     value={value}
@@ -452,7 +440,6 @@ function MeaningLayer({ entry, run, motion, others, onOpenList }: LayerProps & {
   return (
     <LayerFrame motion={motion}>
       <MeaningRunMoru phase={run.phase} />
-      {/* Title pinned to the top and buttons to the bottom, so no state moves either row. */}
       <div className="ml-[8.25rem] grid h-full min-w-0 flex-1 content-between max-sm:ml-[4.5rem]">
         <p
           data-testid={testId('work-run-title')}
@@ -515,7 +502,6 @@ function MeaningLayer({ entry, run, motion, others, onOpenList }: LayerProps & {
   );
 }
 
-/** A Library turn that may write: its door's name, files written and the line, or what it waits on. */
 function TurnLayer({ run, motion, others, onOpenList }: LayerProps & { run: TurnRun }) {
   const tCheck = useTranslations('library.check');
   const tTurn = useTranslations('workCard.turn');
@@ -540,7 +526,6 @@ function TurnLayer({ run, motion, others, onOpenList }: LayerProps & { run: Turn
   return (
     <LayerFrame motion={motion}>
       <WorkRunMoru run={copy.moru} />
-      {/* Title pinned to the top and buttons to the bottom, so no state moves either row. */}
       <div className="ml-[8.25rem] grid h-full min-w-0 flex-1 content-between max-sm:ml-[4.5rem]">
         {live ? (
           <p data-testid={testId('work-run-title')} className="truncate text-label leading-label text-[color:var(--color-text-tertiary)]">

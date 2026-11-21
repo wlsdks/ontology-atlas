@@ -21,7 +21,6 @@ export function primaryVariant(entry: CatalogueEntry): CatalogueVariant {
   return entry.variants.find((variant) => variant.kind === 'remote') ?? entry.variants[0];
 }
 
-/** For the unfolded panel and the test hooks. */
 export function variantKey(variant: CatalogueVariant): string {
   return variantRuns(variant);
 }
@@ -33,7 +32,6 @@ export function pressOutcome(entry: CatalogueEntry, variant: CatalogueVariant): 
     : 'asks';
 }
 
-/** The typed values that go to the keychain, one per secret reference the record holds. */
 export function secretsFromAnswers(
   record: ConnectorRecord,
   values: Record<string, string>,

@@ -54,9 +54,6 @@ export function CatalogueSection({
   if (entries.length === 0 && query.trim()) return null;
   return (
     <section data-testid={`${testIdPrefix}-catalogue-section`}>
-      {/*
-       * When the list was captured and that nobody here audited it.
-       */}
       <GroupHeading
         title={t('groupCatalogue')}
         meta={t('catalogueMeta', { date: MCP_CATALOGUE_CAPTURED_AT })}
@@ -72,7 +69,6 @@ export function CatalogueSection({
               : null;
           const primaryPath =
             primary.kind === 'local' ? runtimePath(runtimes, primary.runtime) : null;
-          // One disclosure contract: the panel has an id and each opener says it controls it.
           const askId = `${testIdPrefix}-catalogue-ask-${entry.id}`;
           return (
             <li
@@ -105,18 +101,12 @@ export function CatalogueSection({
                   >
                     {entry.title}
                   </p>
-                  {/*
-                   * The line is localized; the facts are not (`messages/<locale>.json`).
-                   */}
                   <p className="mt-0.5 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
                     {t.has(`catalogueSummary.${entry.id}` as 'catalogueSummary.notion')
                       ? t(`catalogueSummary.${entry.id}` as 'catalogueSummary.notion')
                       : entry.summary}
                   </p>
-                  {/*
-                   * The verbatim address or command before the press: the last thing seen is what
-                   * will run, the distance between this and the one-click CVEs.
-                   */}
+                  {/* The verbatim address or command before the press: what the person last saw is what will run (the one-click CVE class). */}
                   <p
                     data-testid={`${testIdPrefix}-catalogue-runs`}
                     className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-2 text-label leading-label text-[color:var(--color-text-quaternary)]"

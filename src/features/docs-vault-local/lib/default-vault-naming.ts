@@ -24,7 +24,6 @@ export function resolveUniqueVaultDirName(
   return `${baseName}-${suffix}`;
 }
 
-/** For the success toast. */
 export function buildDefaultVaultDisplayPath(dirName: string): string {
   return `${DEFAULT_VAULT_PARENT_LABEL}/${dirName}`;
 }

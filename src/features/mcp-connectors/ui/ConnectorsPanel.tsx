@@ -60,13 +60,9 @@ import { newConnectorId, prefillFromRecord, type CustomPrefill } from '../model/
 import type { VaultConnectorsState } from '../model/use-vault-connectors';
 
 /**
- * Connectors: external MCP servers the in-app agent may reach. Atlas runs none; the descriptor
- * goes to the coding agent in `session/new`, so Atlas never executes third-party code. Before
- * one is switched on the screen owes: what actually runs (command and arguments, or address);
- * where the traffic goes, stating that Atlas's `.ontology-atlas/llm-audit.jsonl` does not cover
- * it; and whether codex-acp will silently drop the name. Everything starts off. The list lives
- * in the vault folder, so it works on the web; scanning `~/.claude.json` and keychain storage
- * do not, and the screen says so where they are missing.
+ * External MCP servers the in-app agent may reach. Atlas runs none: the descriptor goes to the coding agent in `session/new`, so Atlas never executes third-party code.
+ * Before one is switched on the screen owes what actually runs, where the traffic goes (Atlas's `.ontology-atlas/llm-audit.jsonl` does not cover it) and whether codex-acp will silently drop the name. Everything starts off.
+ * The list lives in the vault folder, so it works on the web; scanning `~/.claude.json` and keychain storage do not, and the screen says so.
  */
 
 function ownRefs(connectorId: string, entries: readonly ConnectorValueEntry[]): string[] {
@@ -76,11 +72,8 @@ function ownRefs(connectorId: string, entries: readonly ConnectorValueEntry[]): 
 }
 
 /**
- * Forgets the keychain tokens a connector's variables pointed at, or an orphaned token stays on
- * the machine. Best effort and before the file is written: a refusing keychain must not stop
- * the removal, and the file never claims a reference the keychain still answers to. Absence
- * counts as success in `connector_secret_delete`. Only its own entries: a shared row naming
- * another connector's reference must not delete that token.
+ * Forgets the keychain tokens a connector's variables pointed at, or an orphaned token stays on the machine. Best effort and before the file is written: a refusing keychain must not stop the removal, and the file never claims a reference the keychain still answers to.
+ * Only its own entries: a shared row naming another connector's reference must not delete that token.
  */
 async function forgetSecrets(connectorId: string, entries: readonly ConnectorValueEntry[]): Promise<void> {
   await Promise.all(
@@ -94,7 +87,6 @@ export function whatRuns(connector: ConnectorRecord): string {
   return [connector.command ?? '', ...connector.args].join(' ').trim();
 }
 
-/** For the sentence that names the destination. */
 export function connectorDestination(connector: ConnectorRecord): string {
   if (connector.transport !== 'http') return whatRuns(connector);
   try {
@@ -104,7 +96,6 @@ export function connectorDestination(connector: ConnectorRecord): string {
   }
 }
 
-/** What an arriving install link did, when worth telling. */
 type InstallLinkNotice =
   | { kind: 'dropped'; keys: string[] }
   | { kind: 'refused'; problem: McpInstallLinkProblem };
@@ -119,30 +110,15 @@ export function ConnectorsPanel({
   countInHeading = false,
 }: {
   handle: FileSystemDirectoryHandle | null;
-  /**
-   * Owned by the caller, because the tab strip's count and this list must come from one read; a
-   * second `useVaultConnectors` would be a second store that never hears the first one's writes
-   * (`.claude/rules/forbidden.md`).
-   */
+  /** Owned by the caller: the tab strip's count and this list must come from one read, and a second `useVaultConnectors` would be a store that never hears the first one's writes. */
   store: VaultConnectorsState;
-  /**
-   * A slot, not an import: `OpenVaultCta` lives in `features/docs-vault-local`, and a same-layer
-   * import would raise `same-layer-cross-import-ratchet`. The view owns both features.
-   */
+  /** A slot, not an import: `OpenVaultCta` lives in `features/docs-vault-local`, and a same-layer import would raise `same-layer-cross-import-ratchet`. */
   openFolderAction?: ReactNode;
   testIdPrefix?: string;
-  /**
-   * The opener may stand outside the card, in the caller's group heading: the parent bumps
-   * `addOpenRequest` to open the dialog and lends its chip's ref so focus returns after a
-   * removal. With `externalAddOpener` the listed state draws no opener; the empty state keeps its
-   * indigo ask, which is the card's content.
-   */
+  /** The parent may open the dialog (`addOpenRequest`) and lend its chip's ref so focus returns after a removal; with `externalAddOpener` the listed state draws no opener, while the empty state keeps its indigo ask. */
   addOpenRequest?: number;
   externalAddOpener?: RefObject<HTMLButtonElement | null>;
-  /**
-   * The caller's heading already states the count, so the list does not repeat it. Off by
-   * default for callers without a heading.
-   */
+  /** The caller's heading already states the count, so the list does not repeat it. */
   countInHeading?: boolean;
 }) {
   const t = useTranslations('connectors');
@@ -150,26 +126,16 @@ export function ConnectorsPanel({
   const canDiscover = isConnectorDiscoveryAvailable();
   const canStoreSecrets = isConnectorSecretBridgeAvailable();
 
-  /*
-   * Three named states, so a rejected scan stops claiming it is reading: with only `null` for
-   * "not answered", a rejection left the screen reading forever and `registeredNames` empty, so
-   * the name-collision warning never fired.
-   */
+  // Three named states: with only `null` for "not answered", a rejected scan left the screen reading forever and the name-collision warning never fired.
   const [discovery, setDiscovery] = useState<ConnectorDiscoveryState>({ status: 'scanning' });
   const discovered = discovery.status === 'done' ? discovery.connectors : null;
   useEffect(() => {
     let cancelled = false;
-    /*
-     * No synchronous reset to `scanning`: `react-hooks/set-state-in-effect` forbids it, and the
-     * values describe this machine, not the folder.
-     */
+    // No synchronous reset to `scanning` (`react-hooks/set-state-in-effect`); the values describe this machine, not the folder.
     void discoverMcpConnectors(vaultPath)
       .then((result) => {
         if (cancelled) return;
-        /*
-         * `done` means a list arrived. `null` is the web path (no bridge, `canDiscover` false); a
-         * settled call without a list must not paint "nothing is registered".
-         */
+        // `null` is the web path (no bridge); a settled call without a list must not paint "nothing is registered".
         setDiscovery(
           Array.isArray(result?.connectors)
             ? { status: 'done', connectors: result.connectors }
@@ -184,10 +150,7 @@ export function ConnectorsPanel({
     };
   }, [vaultPath]);
 
-  /**
-   * Names already held by a config layer this machine reads; codex-acp silently drops an
-   * ACP-supplied server under such a name, so the person is told before switching it on.
-   */
+  /** Names already held by a config layer this machine reads: codex-acp silently drops an ACP-supplied server under such a name, so the person is told first. */
   const registeredNames = useMemo(
     () => new Set((discovered ?? []).map((server) => server.name)),
     [discovered],
@@ -198,10 +161,7 @@ export function ConnectorsPanel({
     [store.connectors],
   );
 
-  /*
-   * Read once here, not per field, because the row decides: a connector whose token is absent
-   * must not be switchable on.
-   */
+  // Read once here: a connector whose token is absent must not be switchable on.
   const storedRefs = useConnectorSecretPresence(store.connectors, canStoreSecrets);
 
   const addDiscovered = useCallback(
@@ -230,10 +190,7 @@ export function ConnectorsPanel({
     [store],
   );
 
-  /**
-   * The toast says both halves, attached and still off, so a closing dialog does not read as
-   * connected.
-   */
+  // The toast says both halves, attached and still off, so a closing dialog does not read as connected.
   const toast = useToast();
   const announceAttached = useCallback(
     async (name: string, write: Promise<ConnectorWriteResult | null>) => {
@@ -245,31 +202,19 @@ export function ConnectorsPanel({
   );
 
   const [addOpen, setAddOpen] = useState(false);
-  /** `null` is none. */
   const [detailId, setDetailId] = useState<string | null>(null);
   const detail = store.connectors.find((connector) => connector.id === detailId) ?? null;
-  /**
-   * The record is held, not looked up, because the confirmation outlives the row; a title derived
-   * from `store.connectors` would blank mid-sentence.
-   */
+  // Held, not looked up: the confirmation outlives the row, and a title derived from `store.connectors` would blank mid-sentence.
   const [pending, setPending] = useState<ConnectorRecord | null>(null);
   const [removalAnnouncement, setRemovalAnnouncement] = useState('');
   const addOpenRef = useRef<HTMLButtonElement | null>(null);
   /** No folder, so there is no file to write into; not an empty list. */
   const noFolder = store.status === 'unavailable';
-  /**
-   * Nothing attached, and the folder has said so: `loading` is not emptiness, and the empty card
-   * waits for a real answer.
-   */
+  // `loading` is not emptiness: the empty card waits for a real answer.
   const isEmpty = store.status !== 'loading' && !noFolder && store.connectors.length === 0;
   /*
-   * `?install=<base64 json>` is the "Add to …" shape Cursor and VS Code publish.
-   * `parseMcpInstallLink` refuses any unknown field, because a confirmation showing less than
-   * the truth is the CVE this surface avoids (`src/shared/lib/connectors/mcp-install-link.ts`). The link
-   * only opens the dialog: nothing is written and the switch stays off. The installed app's
-   * `ontology-atlas://mcp?install=` reaches this address through `src-tauri/src/app_shell/deep_link.rs`.
-   * `useSearchParams`, not `window.location`: an effect would paint the dialog closed first, and
-   * static export has no `window` (`.claude/rules/architecture.md`).
+   * `?install=<base64 json>` is the "Add to …" shape Cursor and VS Code publish; `parseMcpInstallLink` refuses any unknown field because a confirmation showing less than the truth is the CVE this surface avoids. The link only opens the dialog: nothing is written and the switch stays off.
+   * `useSearchParams`, not `window.location`: an effect would paint the dialog closed first, and static export has no `window`. The installed app's `ontology-atlas://mcp?install=` arrives via `src-tauri/src/app_shell/deep_link.rs`.
    */
   const searchParams = useSearchParams() as ReturnType<typeof useSearchParams> | null;
   // `useSearchParams` returns null outside a router, the ordinary case for a component test.
@@ -292,18 +237,12 @@ export function ConnectorsPanel({
       : arrival.droppedValues.length > 0
         ? { kind: 'dropped', keys: arrival.droppedValues }
         : null;
-  /**
-   * Bumped when a removal completes, so an effect places focus after `useDialogFocusTrap`'s
-   * cleanup; focusing in the click handler would be undone by that restore.
-   */
+  // Bumped when a removal completes so an effect places focus after `useDialogFocusTrap`'s cleanup; focusing in the click handler would be undone by its restore.
   const [removedTick, setRemovedTick] = useState(0);
   useEffect(() => {
     if (removedTick === 0) return;
     (externalAddOpener?.current ?? addOpenRef.current)?.focus();
-    /*
-     * `connectors.length` is a dependency on purpose: removal is async, so when the last row goes
-     * the header chip unmounts and focus must move again to the empty card's door.
-     */
+    // `connectors.length` is a dependency on purpose: when the last row goes the header chip unmounts and focus must move again to the empty card's door.
   }, [removedTick, store.connectors.length, externalAddOpener]);
 
   // The parent's opener, adjusted during render like an arriving install link.
@@ -313,10 +252,7 @@ export function ConnectorsPanel({
     setAddOpen(true);
   }
 
-  /*
-   * A link opens the dialog once: comparing with the last render opens it on the first frame,
-   * and a person who closes it can leave it closed while the query stays in the address bar.
-   */
+  // A link opens the dialog once: comparing with the last render opens it on the first frame, and a person who closes it can leave it closed while the query stays in the address bar.
   const [seenArrival, setSeenArrival] = useState<CustomPrefill | null>(null);
   if (incoming && incoming !== seenArrival) {
     setSeenArrival(incoming);
@@ -328,17 +264,7 @@ export function ConnectorsPanel({
       data-testid={`${testIdPrefix}-panel`}
       className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]"
     >
-      {/*
-       * The column holds the whole card, so the rows and the sentences share a left edge.
-       */}
       <div className={PAGE_COLUMN_FORM}>
-      {/*
-       * No title inside the card: the tab already says Connectors.
-       */}
-      {/*
-       * With no folder open there is nowhere to save, so nothing offers to; the same answer as
-       * the Share tab.
-       */}
       {noFolder || isEmpty || externalAddOpener ? null : (
         <div className="flex flex-wrap items-start justify-end gap-x-4 gap-y-2">
           <Chip
@@ -353,10 +279,6 @@ export function ConnectorsPanel({
         </div>
       )}
       {noFolder ? (
-        /*
-         * Same shape and ask as the Share tab's "No folder open" card; the folder control is the
-         * region's one emphasis.
-         */
         <div data-testid={`${testIdPrefix}-no-folder`}>
           <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             {t('noFolderTitle')}
@@ -392,11 +314,7 @@ export function ConnectorsPanel({
       ) : null}
 
       {isEmpty ? (
-        /*
-         * The empty state: a sentence, a line and a door. Only one fact is true before the first
-         * connector: whatever you attach talks to that service itself, and Atlas's transfer log
-         * does not cover it. The full disclosure appears under the list once there is one.
-         */
+        /* Empty state: whatever you attach talks to that service itself and Atlas's transfer log does not cover it; the full disclosure appears under the list once there is one. */
         <div data-testid={`${testIdPrefix}-empty`}>
           <p className="break-keep text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             {t('emptyTitle')}
@@ -437,9 +355,6 @@ export function ConnectorsPanel({
         </p>
       ) : null}
 
-      {/*
-       * While this computer is being read, say so beside the list; empty is not still looking.
-       */}
       {canDiscover && !isEmpty && discovery.status !== 'done' ? (
         <p
           role="status"
@@ -473,11 +388,7 @@ export function ConnectorsPanel({
         testIdPrefix={testIdPrefix}
       />
 
-      {/*
-       * The standing disclosure, once, below the rows it is about: where traffic goes and who
-       * is not recording it, what a token can do, and which sessions carry connectors. Below,
-       * so it is not a toll gate before the first row.
-       */}
+      {/* The standing disclosure, once, below the rows it is about: where traffic goes and who is not recording it, what a token can do, and which sessions carry connectors; below, so it is not a toll gate before the first row. */}
       {isEmpty ? null : (
         <div
           data-testid={`${testIdPrefix}-transfer`}
@@ -498,9 +409,6 @@ export function ConnectorsPanel({
         </div>
       )}
 
-      {/*
-       * Everything but the attached rows sits behind blocking dialogs, so the list stays readable.
-       */}
       <AddConnectorDialog
         open={addOpen}
         onClose={() => setAddOpen(false)}
@@ -508,19 +416,13 @@ export function ConnectorsPanel({
         canDiscover={canDiscover}
         canStoreSecrets={canStoreSecrets}
         attachedNames={attachedNames}
-        /*
-         * The write result decides whether the dialog closes, so a failed write does not look
-         * like a saved one.
-         */
+        /* The write result decides whether the dialog closes, so a failed write does not look like a saved one. */
         onAddDiscovered={(server) => announceAttached(server.name, addDiscovered(server))}
         onAddCustom={(draft) => announceAttached(draft.name, store.upsert(draft))}
         incoming={incoming}
         testIdPrefix={testIdPrefix}
       />
 
-      {/*
-       * One connector's traffic, keychain variables and removal live in its own dialog.
-       */}
       <ConnectorDetailDialog
         connector={detail}
         on={detail ? store.isOnHere(detail) : false}
@@ -528,11 +430,7 @@ export function ConnectorsPanel({
         storedRefs={storedRefs}
         onClose={() => setDetailId(null)}
         onUpsert={(connector) => void store.upsert(connector)}
-        /*
-         * Remove asks first, naming the irreversible half: `forgetSecrets` cannot be undone.
-         * The detail dialog closes as the confirmation opens, because stacked modals are
-         * forbidden (`.claude/rules/design.md`).
-         */
+        /* Remove asks first, naming the irreversible half (`forgetSecrets` cannot be undone); the detail dialog closes as the confirmation opens, since stacked modals are forbidden. */
         onRemove={(connector) => {
           setDetailId(null);
           setPending(connector);
@@ -545,10 +443,7 @@ export function ConnectorsPanel({
         onCancel={() => setPending(null)}
         onConfirm={(connector) => {
           setPending(null);
-          /*
-           * The opener's dialog closed and its row is leaving, so `removedTick` puts focus on "Add
-           * a connector" instead of `main#main`.
-           */
+          /* The opener's dialog closed and its row is leaving, so `removedTick` puts focus on "Add a connector" instead of `main#main`. */
           setRemovedTick((tick) => tick + 1);
           setRemovalAnnouncement(t('removedAnnouncement', { name: connector.name }));
           void forgetSecrets(connector.id, [...connector.env, ...connector.headers]).then(() =>
@@ -567,16 +462,10 @@ export function ConnectorsPanel({
   );
 }
 
-/**
- * One row per connector: the service, what runs, and whether it is on; the rest is one press
- * away. Problem and collision lines stay in the row because they explain a disabled switch.
- */
+/** Problem and collision lines stay in the row because they explain a disabled switch. */
 function AttachedList({
   connectors,
-  /*
-   * Destructure it: left out, `status` resolves to the global `window.status` and the static
-   * export throws on the server.
-   */
+  /* Destructure it: left out, `status` resolves to the global `window.status` and the static export throws on the server. */
   status,
   registeredNames,
   storedRefs,
@@ -590,7 +479,6 @@ function AttachedList({
   countStatedAbove,
 }: {
   connectors: ConnectorRecord[];
-  /** `loading` is not "none", and this list must not say it is. */
   status: VaultConnectorsState['status'];
   registeredNames: Set<string>;
   /** `null` where no keychain could be read: "not asked", not "none". */
@@ -602,13 +490,10 @@ function AttachedList({
   onAllow: (id: string) => void;
   onOpenDetail: (id: string) => void;
   testIdPrefix: string;
-  /** The group heading above states the count; see `countInHeading`. */
   countStatedAbove?: boolean;
 }) {
   const t = useTranslations('connectors');
-  /*
-   * "Nothing attached yet" cannot be claimed before the first read.
-   */
+  /* "Nothing attached yet" cannot be claimed before the first read. */
   if (status === 'loading') {
     return (
       <p
@@ -620,16 +505,10 @@ function AttachedList({
       </p>
     );
   }
-  /*
-   * Emptiness belongs to the panel's card, so the list does not repeat the claim.
-   */
   if (connectors.length === 0) return null;
   const enabled = connectors.filter(isOnHere).length;
   return (
     <>
-      {/*
-       * The enabled count in words, where the rows are, unless the caller's heading states it.
-       */}
       {countStatedAbove ? null : (
         <p
           data-testid={`${testIdPrefix}-on-of-total`}
@@ -640,10 +519,6 @@ function AttachedList({
       )}
     <ul
       data-testid={`${testIdPrefix}-list`}
-      /*
-       * The card has no heading, so the list names itself; under a caller's heading this names
-       * the rows inside that group.
-       */
       aria-label={t('title')}
       className="mt-2 flex flex-col gap-2"
     >
@@ -663,10 +538,7 @@ function AttachedList({
             className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2.5"
           >
             <div className="flex items-center gap-3">
-              {/*
-               * The service mark matches the name and what runs, since a renamed row still runs
-               * the same service.
-               */}
+              {/* The service mark matches the name and what runs: a renamed row still runs the same service. */}
               <ServiceMark
                 mark={resolveServiceMark(connector.name, runs)}
                 className="text-[color:var(--color-text-tertiary)]"
@@ -675,10 +547,7 @@ function AttachedList({
                 <p className="shrink-0 truncate text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                   {connector.name}
                 </p>
-                {/*
-                 * What will actually run, before the switch; the only monospace on the row, for a
-                 * command or address, never prose.
-                 */}
+                {/* What will actually run, before the switch; the only monospace on the row. */}
                 <code
                   data-testid={`${testIdPrefix}-item-runs`}
                   className="min-w-0 flex-1 break-all font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"
@@ -686,10 +555,7 @@ function AttachedList({
                   {runs}
                 </code>
               </div>
-              {/*
-               * `gap-3`: the more-actions button's 44px `touch-hit-expand` area overhangs 8px each
-               * side, and a narrower gap puts the switch label under it.
-               */}
+              {/* `gap-3`: the more-actions button's 44px `touch-hit-expand` area overhangs 8px each side, and a narrower gap puts the switch label under it. */}
               <div className="flex shrink-0 items-center gap-3">
                 <Checkbox
                   data-testid={`${testIdPrefix}-item-toggle`}
@@ -697,16 +563,12 @@ function AttachedList({
                   checked={on}
                   disabled={problems.length > 0}
                   onChange={(event) => onToggle(connector.id, event.target.checked)}
-                  /*
-                   * `atlas-touch-floor-wide`: "On"/"Off" is too short for the 44px width floor
-                   * (`app/globals.css`, coarse-pointer block).
-                   */
+                  /* `atlas-touch-floor-wide`: "On"/"Off" is too short for the 44px floor (`app/globals.css`, coarse-pointer block). */
                   className="atlas-touch-floor-wide justify-center text-label text-[color:var(--color-text-secondary)]"
                 />
                 <IconButton
                   data-testid={`${testIdPrefix}-item-menu`}
                   label={t('detailOpen', { name: connector.name })}
-                  /* Rest and hover were the same pixels; the axes say the difference. */
                   hoverSurface="lift"
                   hoverBorder="strong"
                   onClick={() => onOpenDetail(connector.id)}
@@ -752,10 +614,7 @@ function AttachedList({
   );
 }
 
-/**
- * The row already shows what runs, whole; this adds what it would pass, the rest of what the
- * press allows.
- */
+/** The row shows what runs, whole; this adds what it would pass, the rest of what the press allows. */
 function WaitingHere({
   connector,
   changed,
@@ -806,11 +665,7 @@ function WaitingHere({
   );
 }
 
-/**
- * One connector's dialog: traffic, variables and removal. A blocking `Dialog` because it
- * holds credential fields and only it owns focus trap, Escape and restoration
- * (`.claude/rules/design.md`).
- */
+/** A blocking `Dialog` because it holds credential fields and only it owns focus trap, Escape and restoration (`.claude/rules/design.md`). */
 function ConnectorDetailDialog({
   connector,
   on,
@@ -839,17 +694,11 @@ function ConnectorDetailDialog({
       size="md"
       labelledBy={`${testIdPrefix}-detail-title`}
       testId={`${testIdPrefix}-item-dialog`}
-      /*
-       * Focus lands on the container, not in a keychain password field nobody chose to fill.
-       */
+      /* Focus lands on the container, not in a keychain password field nobody chose to fill. */
       initialFocus="container"
     >
       {connector ? (
         <>
-          {/*
-           * Read top to bottom: what it is, whether it is on, what runs, where traffic goes, what
-           * this machine holds for it, and last the way out.
-           */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2.5">
               <ServiceMark
@@ -924,11 +773,7 @@ function ConnectorDetailDialog({
               type="button"
               data-testid={`${testIdPrefix}-item-remove`}
               onClick={() => onRemove(connector)}
-              /*
-               * No hand-written hover: `hoverInk` has no danger option and inventing one is
-               * reserved to the design-systems seat (`.claude/rules/design.md`). The word and its
-               * position carry the weight.
-               */
+              /* No hand-written hover: `hoverInk` has no danger option and inventing one is reserved to the design-systems seat (`.claude/rules/design.md`). */
               className={controlClass({
                 shape: 'link',
                 tone: 'secondary',
@@ -945,11 +790,7 @@ function ConnectorDetailDialog({
   );
 }
 
-/**
- * Confirms removal because forgetting tokens (`connector_secret_delete`) cannot be undone,
- * unlike the retypeable row. Names the keys to be forgotten. `role="alertdialog"` so the body
- * is read on open; `initialFocus="container"` keeps the caret off the destructive button.
- */
+/** Confirms removal because forgetting tokens (`connector_secret_delete`) cannot be undone, unlike the retypeable row. `role="alertdialog"` so the body is read on open; `initialFocus="container"` keeps the caret off the destructive button. */
 function RemoveConfirmDialog({
   connector,
   onCancel,
@@ -985,10 +826,7 @@ function RemoveConfirmDialog({
             {t('removeConfirmTitle', { name: connector.name })}
           </h2>
           <p className="mt-2 break-keep text-label leading-prose text-[color:var(--color-text-secondary)]">
-            {/*
-             * With keys, the irreversible half is named with them; without, "and its tokens" would
-             * invent a loss.
-             */}
+            {/* With keys, the irreversible half is named with them; without, "and its tokens" would invent a loss. */}
             {keys.length > 0
               ? t('removeConfirmBodyKeys', { keys: keys.join(', ') })
               : t('removeConfirmBody')}
@@ -1013,11 +851,7 @@ function RemoveConfirmDialog({
 
 type ProblemKey = `problem.${ConnectorProblem}`;
 
-/**
- * Keychain references this machine holds a value for, read at the panel because the row
- * decides whether the switch may turn on. `null` means the keychain was never asked (a
- * browser); treating that as none would call every web connector broken.
- */
+/** Read at the panel because the row decides whether the switch may turn on. `null` means the keychain was never asked (a browser); treating that as none would call every web connector broken. */
 function useConnectorSecretPresence(
   connectors: readonly ConnectorRecord[],
   canStoreSecrets: boolean,
@@ -1065,12 +899,7 @@ function useConnectorSecretPresence(
   return canStoreSecrets ? stored : null;
 }
 
-/**
- * Each declared variable and where its value lives. The person chooses per variable, because
- * a name does not reveal a credential (`OPENAPI_MCP_HEADERS` carries a bearer token). A
- * credential-shaped name is still never written to the file: with the keychain off it gets no
- * field, and the row says why.
- */
+/** The person chooses per variable, because a name does not reveal a credential (`OPENAPI_MCP_HEADERS` carries a bearer token). A credential-shaped name is still never written to the file: with the keychain off it gets no field, and the row says why. */
 function VariableFields({
   connector,
   canStoreSecrets,
@@ -1197,9 +1026,7 @@ function VariableFields({
                 </>
               ) : null}
               {!inKeychain && looksLikeSecretKey(entry.name) ? (
-                /*
-                 * No box: the writer refuses a literal under this name.
-                 */
+                /* No box: the writer refuses a literal under this name. */
                 <p
                   data-testid={`${testIdPrefix}-item-variable-refused`}
                   className="break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]"

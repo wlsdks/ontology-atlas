@@ -29,7 +29,6 @@ import {
  */
 
 export interface WebManualConnectPanelProps {
-  /** One place, so the sheet and the settings panel share testid prefixes. */
   testIdPrefix?: string;
 }
 
@@ -200,7 +199,6 @@ export function WebManualConnectPanel({
           issueMessage={issueMessage(checkout)}
           testId={`${testIdPrefix}-checkout-input`}
         />
-        {/* Without a checkout they can never fill the field above. */}
         <button
           type="button"
           data-testid={`${testIdPrefix}-clone`}
@@ -223,7 +221,6 @@ export function WebManualConnectPanel({
         </button>
       </div>
 
-      {/* Separates what the browser confirmed from what it could not. */}
       <p
         data-testid={`${testIdPrefix}-shape-only`}
         className="text-body leading-body text-[color:var(--color-text-quaternary)]"
@@ -295,7 +292,6 @@ export function WebManualConnectPanel({
                 ? t('copyFailed')
                 : t('manualCopyConfig')}
           </button>
-          {/* The web has no restart step, so what to do after saving is said here. */}
           <p
             data-testid={ready ? `${testIdPrefix}-restart` : `${testIdPrefix}-not-ready`}
             className="mt-1.5 text-body leading-body text-[color:var(--color-text-quaternary)]"
@@ -305,7 +301,6 @@ export function WebManualConnectPanel({
         </div>
       </div>
 
-      {/* The same result in one CLI line, for someone who does not want to create files by hand. */}
       <div className="flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] pt-3">
         <CommandRow
           label={t('manualCliLabel')}

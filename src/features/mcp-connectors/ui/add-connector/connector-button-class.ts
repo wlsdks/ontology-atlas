@@ -1,6 +1,5 @@
 import { controlClass } from '@/shared/ui/control-class';
 
-/** One action with one shape wherever it is pressed. */
 export const CONNECTOR_SUBMIT_CLASS = controlClass({
   shape: 'chip',
   size: 'lg',

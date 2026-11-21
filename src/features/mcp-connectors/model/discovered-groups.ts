@@ -9,7 +9,6 @@ import type { DiscoveredConnector } from '@/shared/lib/connectors/tauri-connecto
 export interface DiscoveredGroup {
   key: string;
   server: DiscoveredConnector;
-  /** Every source id the identical entry appeared in, in the order discovery reported them. */
   sources: string[];
 }
 

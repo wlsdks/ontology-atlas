@@ -1,4 +1,3 @@
-/** What the rows below have in common, with a quiet fact beside it. */
 export function GroupHeading({ title, meta }: { title: string; meta?: string }) {
   return (
     <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
