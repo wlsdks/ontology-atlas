@@ -158,6 +158,10 @@ export function createAcpClient(
       write({ jsonrpc: '2.0', id, result: permissionOutcome(request.options, null) });
       return;
     }
+    if (handlers.cancelRequested?.()) {
+      write({ jsonrpc: '2.0', id, result: cancelledOutcome() });
+      return;
+    }
 
     const atlasMode = atlasToolMode(
       request.toolName,
