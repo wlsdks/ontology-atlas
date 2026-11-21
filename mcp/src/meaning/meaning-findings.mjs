@@ -721,7 +721,6 @@ export function dependencyWitnessFinding({
   return findings;
 }
 
-/** The kinds `init` ships a starter example for. */
 const STARTER_EXAMPLE_KINDS = new Set(Object.keys(STARTER_EXAMPLE_SLUGS));
 
 /**

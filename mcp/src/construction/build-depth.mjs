@@ -33,13 +33,11 @@ const OUTLINED_ONLY = /\b(?:outlined only|only outlined|outline only|outlined,? 
 const SHARED_PATH_LIMIT = 5;
 const PATH_KINDS = new Set(['capability', 'element']);
 
-/** The `## Uncertainty` section of a body, or '' when it has none. */
 function uncertaintySection(body) {
   const match = /^##\s+Uncertainty\s*$([\s\S]*?)(?=^##\s|(?![\s\S]))/im.exec(String(body ?? ''));
   return match ? match[1] : '';
 }
 
-/** Whether a node says, under `## Uncertainty`, that its subject was outlined and not read. */
 export function saysOutlinedOnly(body) {
   return OUTLINED_ONLY.test(uncertaintySection(body));
 }
@@ -328,10 +326,6 @@ function readCall(unread) {
   return `analyze_repo_structure(${JSON.stringify({ sourceOnly: true, sourceReads: selectors })})`;
 }
 
-/**
- * Which capabilities' entry files this server process served a line or symbol read
- * for. Null when it served none: a restarted server cannot tell, and says so.
- */
 /**
  * A capability counts as read when its body cites lines this session served, under
  * the file's current stamp, and those lines hold a condition. Opening a file, or
@@ -639,10 +633,6 @@ export function measureBuildDepth(docs, repo, reads) {
   };
 }
 
-/* ---------------------------------------------------------------------------
- * validate_vault findings
- * ------------------------------------------------------------------------- */
-
 const NOTE_KEYS = ['dependencies', 'depends_on', 'relates', 'elements', 'capabilities'];
 const TYPE_OF_KEY = { dependencies: 'depends_on', depends_on: 'depends_on', relates: 'relates', elements: 'elements', capabilities: 'capabilities' };
 
@@ -800,10 +790,6 @@ export function buildDepthFindings(docs, { repoRoot, collection, reads } = {}) {
     ...(repoRoot ? entryPathFindings(docs, repoRoot, collection) : []),
   ];
 }
-
-/* ---------------------------------------------------------------------------
- * finalize_project_meaning
- * ------------------------------------------------------------------------- */
 
 /**
  * Why an `answered` competency row is not supported by the map, one reason per row.

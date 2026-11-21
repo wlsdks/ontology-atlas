@@ -373,7 +373,6 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   const identityHistory = mergeNodeIdentityHistory(fromDoc.frontmatter, intoDoc.frontmatter);
   const absorbedUids = identityHistory.absorbedUids;
 
-  // fromSlug mtime conflict guard.
   if (typeof expected_mtime === 'number' && fromDoc.mtime !== expected_mtime) {
     throw new VaultConflictError(fromSlug, expected_mtime, fromDoc.mtime);
   }

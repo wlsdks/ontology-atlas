@@ -76,9 +76,6 @@ try {
   process.exit(1);
 }
 
-// Thin wrapper over analyze_repo_structure. Zero side effects — it never touches
-// vault frontmatter. Only the exact writePlan returned after reviewPlan plus
-// independent qualification is a truth entry point for the batch writer.
 /**
  * Whether a scan root lies inside the vault or its repository, compared as real
  * paths so a symlink cannot escape. The scanning tools are read tools that

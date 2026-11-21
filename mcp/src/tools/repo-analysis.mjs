@@ -230,8 +230,6 @@ function inspectArchitectureTool({ rootPath, profileSlug, maxFiles } = {}) {
   );
 }
 
-// Thin wrapper over infer_imports. Zero side effects. The resulting moduleEdges
-// are rationale-review candidates carrying exact source evidence.
 function buildImportStaleEdgeFollowUp(result) {
   const count = Array.isArray(result?.reconciliation?.inVaultNotInCode)
     ? result.reconciliation.inVaultNotInCode.length

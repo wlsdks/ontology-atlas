@@ -27,7 +27,7 @@ function isOntologySlug(s) {
  * @param {object} args
  * @param {Array<{slug?:string, frontmatter?:object}>} [args.docs]  parsed vault docs (e.g. loadVaultDocs())
  * @param {string} [args.repoRoot]  root the paths resolve against (default cwd)
- * @param {(absPath:string)=>boolean} [args.fileExists]  default existsSync
+ * @param {(absPath:string)=>boolean} [args.fileExists]
  * @returns {{repoRoot:string, nodesScanned:number, pathsChecked:number, drifts:Array<{slug:string,kind:string,key:string,missingPath:string}>}}
  */
 export function detectVaultPathDrift({ docs = [], repoRoot = process.cwd(), fileExists = existsSync } = {}) {

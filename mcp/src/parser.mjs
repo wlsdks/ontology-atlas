@@ -291,10 +291,9 @@ function parseScalar(value) {
 
 function unquote(value) {
   const trimmed = value.trim();
-  // Unescape **only** while stripping the wrapping quotes. The serializer writes
-  // `"` as `\\"`, and without reversing it here every save adds one more
-  // backslash layer (measured over 3 round trips: 1 → 2 → 4). An unquoted value
-  // is literal text rather than escape syntax, so it is left alone.
+  // Unescape **only** while stripping the wrapping quotes: the serializer writes
+  // `"` as `\\"`, so skipping it adds a backslash layer on every save. An
+  // unquoted value is literal text rather than escape syntax, so it is left alone.
   const quote = trimmed.length >= 2 ? trimmed[0] : '';
   if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
     const inner = trimmed.slice(1, -1);
@@ -387,8 +386,7 @@ function needsQuote(s) {
  * counterpart of `unquote`.
  *
  * Backslashes are escaped **first**. Otherwise a `\\` inside the value loses a
- * layer on read and the round trip never closes (back when only quotes were
- * escaped, the quote side leaked the other way and backslashes doubled on every save).
+ * layer on read and the round trip never closes.
  */
 function escapeQuoted(s) {
   return s
@@ -398,8 +396,6 @@ function escapeQuoted(s) {
     .replace(/\t/g, '\\t');
 }
 
-// Joins frontmatter and body into markdown.
-//
 // Leading newlines in `body` are stripped. When importing an outside `.md`,
 // `parseFrontmatter` strips only the first newline after the closing `---\n`, so
 // ordinary markdown that leaves one blank line between frontmatter and body

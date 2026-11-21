@@ -659,7 +659,6 @@ export function normalizeLocaleLabels(labels) {
   return out;
 }
 
-/** Extracts just the locale codes from a `normalizeLocaleLabels` result, for warning text. */
 export function localeLabelCodes(normalized) {
   return Object.keys(normalized)
     .map((key) => key.slice('display_'.length))

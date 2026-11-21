@@ -222,13 +222,13 @@ function docFromSnapshot(rootPath, filePath, snapshot) {
   return result;
 }
 
+/** @typedef {ReturnType<typeof docFromSnapshot>} VaultDoc */
+
 /**
  * Reads one `.md` from disk, never from the cache; its `mtime` passed as a later
  * `expectedMtime` enables conflict detection. Write paths use this, so a cached
  * parse can never stand in for the file a write is about to replace.
  */
-/** @typedef {ReturnType<typeof docFromSnapshot>} VaultDoc */
-
 export function readDoc(rootPath, filePath) {
   const snapshot = readStableFileSnapshot(filePath);
   const doc = docFromSnapshot(rootPath, filePath, snapshot);
@@ -498,10 +498,7 @@ function copyFrontmatter(value, shared) {
  *   there measured no lower;
  * - every {@link COLLECT_AFTER_CHARS} characters read, a full collection runs once
  *   the call's synchronous work is done.
- * Measured on the compiled server at 50,000 files over the perf gate's 20 calls:
- * footprint after them 146 MB (flow a) and 85 MB (flow b) against 201 and 95 MB
- * with neither, peaks 397 and 204 MB against 427 and 247 MB; without the second,
- * 154 and 144 MB, peaks 499 and 213 MB.
+ * Measured on the compiled server at 50,000 files: both steps lower footprint and peak.
  */
 const COLLECT_EVERY_CHARS = 4 * 1024 * 1024;
 const COLLECT_AFTER_CHARS = 16 * 1024 * 1024;

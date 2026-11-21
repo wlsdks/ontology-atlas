@@ -35,8 +35,6 @@ import {
   requireValidFrontmatterPatch,
 } from './vault-nodes.mjs';
 
-/** Creating and patching nodes: `add_concept`, `add_concepts`, `patch_concept`. */
-
 /** The `display_<locale>` codes any node in the vault carries. */
 function vaultLocaleCodes(docs) {
   const codes = new Set();
