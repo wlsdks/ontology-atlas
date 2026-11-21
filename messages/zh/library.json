@@ -1094,7 +1094,7 @@
         "write": "它会把来源总结成一个 Markdown 格式的 Wiki 页面，并为每条事实注明出自来源的哪个位置。写好后会显示在这里。"
       }
     },
-    "sortBy": "按{column}排序",
+    "sortBy": "按 {column} 排序",
     "more": "下方还有 {count, number} 个文件夹 · 滚动即可查看",
     "meta": "{folders, number} 个文件夹 · {sources, number} 份来源",
     "metaType": "{groups, number} 种文件类型 · {sources, number} 份来源",

@@ -1036,7 +1036,7 @@
     "today": "今日 +{count, number}",
     "chartAria": "Wikiページがあるソースの数（各ページに記された日付順）",
     "chartLabel": "Wikiページがあるソース数 · {date}から",
-    "chartNow": "今日 {count, number}",
+    "chartNow": "今日{count, number}",
     "point": "{date}：現在のソース{total, number}件中{count, number}件（{percent, number}%）",
     "dateBasis": "各点はWikiページに記された日付です。",
     "undated": "日付なし{count, number}件",
@@ -1106,7 +1106,7 @@
     "listKey": "待機中のソース",
     "listFolder": "フォルダ：{folder}",
     "reading": "フォルダを読み込み中です。これまでにソース{count, number}件",
-    "pickGone": "{folder} はもう sources/ にありません。すべてのソースを表示しています。"
+    "pickGone": "{folder}はもうsources/にありません。すべてのソースを表示しています。"
   },
   "check": {
     "title": "Wikiを検査中",
