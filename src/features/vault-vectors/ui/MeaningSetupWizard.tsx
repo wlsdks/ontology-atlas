@@ -12,7 +12,6 @@ export type WizardStep = 'intro' | 'choose' | 'run';
 const WIZARD_STEPS: readonly WizardStep[] = ['intro', 'choose', 'run'];
 const WIZARD_KEY = { intro: 'wizard.stepIntro', choose: 'wizard.stepChoose', run: 'wizard.stepRun' } as const;
 
-/** Where the setup-together walk stands: what happens, then the model, then the run on the desk. */
 export function WizardSteps({ at }: { at: WizardStep }) {
   const t = useTranslations('library.questionDesk.meaning');
   const index = WIZARD_STEPS.indexOf(at);
@@ -39,10 +38,6 @@ export function WizardSteps({ at }: { at: WizardStep }) {
   );
 }
 
-/**
- * The walk's first step: the three things preparation does, with this computer's and this folder's
- * own figures, before any model is chosen or anything is fetched.
- */
 export function WizardIntro({ probe, runners, onNext }: { probe: VectorProbe; runners: number; onNext: () => void }) {
   const t = useTranslations('library.questionDesk.meaning');
   const locale = useLocale();

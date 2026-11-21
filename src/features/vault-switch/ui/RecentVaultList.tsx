@@ -20,10 +20,6 @@ import {
 import { useRecentVaultReachability } from '../model/use-recent-vault-reachability';
 import { MissingFolderGroup, type MissingFolderReviewMode } from './MissingFolderGroup';
 
-/**
- * The known folders, each stating what it holds and whether it opens. One component for the
- * launch chooser and the rail switcher, so both answer "which folder is which" the same way.
- */
 export function RecentVaultList({
   records,
   currentKey,
@@ -39,23 +35,14 @@ export function RecentVaultList({
   className,
 }: {
   records: ReadonlyArray<LocalFsHandleRecord>;
-  /** Key of the folder the last session had open, so one row can be marked as such. */
   currentKey: string | null;
   busy: boolean;
   onOpen: (record: LocalFsHandleRecord) => void;
   onForget: (record: LocalFsHandleRecord) => void;
-  /** Forgets several folders in one write, so the list redraws once. */
   onForgetAll?: (records: readonly LocalFsHandleRecord[]) => void;
-  /** Opens the folder picker, so a row that cannot be pressed is still not a dead end. */
   onLocate?: () => void;
-  /** The chooser's one accent stroke; the rail switcher leaves it off. */
   emphasis?: boolean;
-  /** The viewport chooser fills its allocated space; popovers retain their compact cap. */
   scroll?: 'page' | 'contained' | 'viewport';
-  /**
-   * How the folders that are gone are reviewed: in a dialog on a page (the default), in place in
-   * a popover that grows downward. `MissingFolderReviewMode` says why the two differ.
-   */
   missingReview?: MissingFolderReviewMode;
   /** A line under the list, drawn with it so it never jumps down when the list appears. */
   footnote?: ReactNode;
@@ -63,10 +50,7 @@ export function RecentVaultList({
 }) {
   const t = useTranslations('vaultSwitch');
   const reachability = useRecentVaultReachability(records);
-  /*
-   * One clock for the whole list, taken at mount: per-row reads disagree at ladder boundaries,
-   * and a read during render is impure (`react-hooks/purity`).
-   */
+  /* One clock for the whole list: per-row reads disagree at ladder boundaries, and a read during render is impure (`react-hooks/purity`). */
   const [nowMs] = useState(() => Date.now());
   const listRef = useRef<HTMLDivElement | null>(null);
   /* After the last missing folder is forgotten, focus lands on the list's first control. */
@@ -129,10 +113,7 @@ export function RecentVaultList({
             t={t}
           />
         ))}
-        {/*
-          Mounted with no missing folders too: it then draws nothing in the list, and its review
-          dialog can still leave through its exit after the last one is forgotten.
-        */}
+        {/* Mounted with no missing folders too, so its review dialog can still leave through its exit after the last one is forgotten. */}
         <MissingFolderGroup
           rows={missing}
           wide={wide}
@@ -151,7 +132,6 @@ export function RecentVaultList({
   );
 }
 
-/** The caution each unreachable or gesture-requiring state owes the person before a press. */
 function noticeFor(
   state: RecentVaultReachability,
   t: ReturnType<typeof useTranslations>,
@@ -200,10 +180,7 @@ function RecentVaultRowView({
         concepts: row.counts.conceptCount,
       })
     : t('contentsUncounted');
-  /*
-   * The count carries its own age: `openRecent` writes `lastAccessedAt` before loading, so a
-   * refused folder can show old counts beside "opened just now". Shown only when the ages differ.
-   */
+  /* The count carries its own age: `openRecent` writes `lastAccessedAt` before loading, so a refused folder can show old counts beside "opened just now". */
   const countedAge = row.counts ? computeEditAge(row.counts.countedAt, nowMs) : null;
   const countedLabel =
     countedAge && countedAge.key !== age.key
@@ -252,7 +229,6 @@ function RecentVaultRowView({
               {t('lastOpenBadge')}
             </span>
           ) : null}
-          {/* The compact "Open" wears the chip face; it is a label, hidden from the accessibility tree. */}
           {openable ? (
             <span
               aria-hidden={wrapName ? undefined : true}
@@ -271,7 +247,6 @@ function RecentVaultRowView({
             </span>
           ) : null}
         </span>
-        {/* What is inside, and when it was last open - the two facts a name cannot carry. */}
         <span className="mt-0.5 block truncate text-label leading-body text-[color:var(--color-text-tertiary)]">
           <span className="tabular-nums">{contents}</span>
           {countedLabel ? (
@@ -339,7 +314,6 @@ function RecentVaultRowView({
           onClick={() => onOpen(row.record)}
           disabled={busy}
           aria-label={openAriaLabel}
-          // Hover comes from the axis; the hover-axis ratchet only lets hand hovers fall.
           className={controlClass({
             shape: 'row',
             stacked: true,
@@ -350,7 +324,6 @@ function RecentVaultRowView({
           {body}
         </button>
       ) : (
-        /* A folder that cannot be opened is not a button; the row states why and offers forget. */
         <div className={rowClass}>{body}</div>
       )}
       {!openable && onLocate ? (

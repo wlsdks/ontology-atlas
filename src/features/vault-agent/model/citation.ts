@@ -11,7 +11,6 @@ const CITATION_PATTERN = /\[\[([^[\]]+)\]\]/g;
 export interface CitationResult {
   paragraphs: CitedParagraph[];
   grounding: AnswerGrounding;
-  /** Names invalidated because they were never read. The screen says so rather than deleting them quietly. */
   droppedCitations: string[];
 }
 

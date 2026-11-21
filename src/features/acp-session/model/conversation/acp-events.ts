@@ -11,7 +11,6 @@ export type AcpEvent =
       title: string;
       toolKind: string;
       status: string;
-      /** The only record of which node was touched (`tool-targets.ts`). */
       rawInput?: unknown;
       /** The only record of how much came back (`tool-outcome.ts`); large ones are previews. */
       rawOutput?: unknown;
@@ -27,13 +26,8 @@ export type AcpEvent =
        * `auto-approved` passed under the person's auto-approve choice (a file or tool name).
        */
       detail?: string;
-      /**
-       * The mode the adapter moved this session into, verbatim as the adapter names it. Present
-       * only on mode-change notices. Not translated: it is the id the tool itself shows, and inventing a
-       * friendly name for a mode this app refuses to offer would name something nobody can pick.
-       */
+      /** The mode the adapter moved this session into, verbatim: it is the id the tool itself shows, and a friendly name for a mode this app refuses to offer would name something nobody can pick. */
       mode?: string;
-      /** Whether the server-side Atlas write checkpoint is actually on for this session. */
       serverGate?: boolean;
     };
 

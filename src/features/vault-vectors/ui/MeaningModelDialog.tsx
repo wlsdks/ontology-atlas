@@ -60,17 +60,10 @@ function ChoiceRow({ choice, selected, working, recommended, onSelect }: { choic
   );
 }
 
-/**
- * The folder's model for search by meaning: every model it can use on the left, the chosen one's
- * facts and presses on the right. Downloading, switching, deleting the built-in model and showing
- * its folder all happen here; the download states its size and hosts before its press.
- */
 export function MeaningModelDialog({ open, rootPath, guided = false, onStarted, onClose }: {
   open: boolean;
   rootPath: string;
-  /** Opened to set up together: what happens first, then the model. */
   guided?: boolean;
-  /** A press here started preparing. */
   onStarted?: () => void;
   onClose: () => void;
 }) {

@@ -8,7 +8,6 @@ export interface WikiRetrievalResult {
   /** Suggestions only: no currentness, entailment, or complete-read claim. */
   candidates: { slug: string; title: string; sameSource: boolean; matchedTerms: string[] }[];
   searchedPages: number;
-  /** Pages with bodies in the Library cache; the rest match on metadata. */
   fullTextPages: number;
   limit: number;
   omittedMatches: number;
@@ -24,7 +23,6 @@ export interface WikiRetrievalPage {
   readonly grams: readonly string[];
 }
 
-/** Hands back one copy of each term, cut loose from the text it was matched in. */
 export type WikiTermIntern = (terms: readonly string[]) => readonly string[];
 
 const LIMIT = 3;

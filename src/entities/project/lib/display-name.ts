@@ -12,7 +12,6 @@ export function projectDisplayName(
   return display && display.length > 0 ? display : project.name;
 }
 
-/** Whether this screen's word for the project comes from a `display_<locale>` key. */
 export function projectHasDisplayName(
   project: Pick<Project, 'displayNames'>,
   locale: string,

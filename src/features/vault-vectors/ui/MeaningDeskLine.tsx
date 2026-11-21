@@ -28,7 +28,6 @@ import { ProgressRing } from './ProgressRing';
 import { MiddleCutName } from '@/shared/ui/middle-cut-name/middle-cut-name';
 
 const FILE_NAME_PACE_MS = 1000;
-/** The end of a file name kept whole when its middle is cut: enough for a word and the extension. */
 const KEPT_NAME_END = 12;
 const PLACEHOLDER = '\u0000';
 
@@ -46,10 +45,6 @@ function Separator() {
   return <span aria-hidden="true" className="flex-none text-[color:var(--color-text-quaternary)]">·</span>;
 }
 
-/**
- * The line under the Wiki desk's question field: how search runs now, the press that sets up search
- * by meaning, and the job's progress while it prepares. One row of label type in every state.
- */
 export function MeaningDeskLine({
   rootPath,
   markdownFiles,
@@ -60,7 +55,6 @@ export function MeaningDeskLine({
   markdownFiles: number;
   /** False while results stand under the field: the job then stays one line, so they never move. */
   roomForStage?: boolean;
-  /** Takes the person to the question field once search by meaning is ready. */
   onAsk: () => void;
 }) {
   const t = useTranslations('library.questionDesk.meaning');
@@ -176,7 +170,6 @@ export function MeaningDeskLine({
         </button>
       ) : null;
   const shownStage = running ?? (finished && roomForStage ? finishedStage(source) : null);
-  // First use: the sample of search by meaning stands where its real stage will run.
   const showGuide = !shownStage && isApp && roomForStage && !guideSeen && line.message === 'words' && rootPath !== null;
   const dismiss = () => finished?.dismiss();
   const ask = () => {

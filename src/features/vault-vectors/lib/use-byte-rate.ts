@@ -9,11 +9,7 @@ const WINDOW_MS = 10_000;
 /** No new byte for this long is a stall: the last speed no longer says anything. */
 const STALL_MS = 5000;
 
-/**
- * Bytes per second over the newest ten seconds of `doneBytes`, or `null` until three seconds were
- * measured and after five seconds without a new byte. `null` or a value that goes back (a new
- * download) starts over.
- */
+/** `null` or a value that goes back (a new download) starts over. */
 export function useByteRate(doneBytes: number | null): number | null {
   const samples = useRef<{ at: number; bytes: number }[]>([]);
   const [rate, setRate] = useState<number | null>(null);

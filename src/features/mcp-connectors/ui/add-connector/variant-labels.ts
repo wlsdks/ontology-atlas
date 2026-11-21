@@ -6,7 +6,6 @@ import { requiredVariables } from '../../model/catalogue-variant';
 
 export type Translate = ReturnType<typeof useTranslations<'connectors'>>;
 
-/** What pressing will ask of the person. */
 export function asksClause(t: Translate, variant: CatalogueVariant): string {
   const required = requiredVariables(variant);
   if (required.length > 0)

@@ -324,7 +324,6 @@ export function buildAgentReadinessPrompt(summary: AgentReadinessSummary): strin
 
 const MEANINGFUL_KINDS = new Set(["domain", "capability", "element", "unknown"]);
 
-/** Whether the derived graph gives an agent enough shaped nodes and relations; mirrors MCP first-contact without calling it. */
 export function buildAgentReadinessSummary(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],

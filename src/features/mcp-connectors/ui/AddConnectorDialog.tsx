@@ -43,14 +43,12 @@ export function AddConnectorDialog({
 }: {
   open: boolean;
   onClose: () => void;
-  /** See `ConnectorDiscoveryState`; only `done` has rows. */
   discovery: ConnectorDiscoveryState;
   canDiscover: boolean;
   canStoreSecrets: boolean;
   attachedNames: Set<string>;
   onAddDiscovered: (server: DiscoveredConnector) => Promise<ConnectorWriteResult | null>;
   onAddCustom: (connector: ConnectorRecord) => Promise<ConnectorWriteResult | null>;
-  /** A draft handed in from outside, such as an install link. */
   incoming?: CustomPrefill | null;
   testIdPrefix: string;
 }) {
@@ -129,10 +127,7 @@ export function AddConnectorDialog({
         />
       </div>
 
-      {/*
-       * Takes focus on open (see `searchRef`) and wears the strong border so it reads as the
-       * control over all rows. `initialFocus="none"` keeps the trap off the corner close.
-       */}
+      {/* Takes focus on open (see `searchRef`) and wears the strong border so it reads as the control over all rows; `initialFocus="none"` keeps the trap off the corner close. */}
       <Input
         aria-label={t('searchLabel')}
         size="md"
@@ -204,11 +199,7 @@ export function AddConnectorDialog({
 
         {nothingMatches ? null : foundSection}
 
-        {/*
-         * By hand is the last row, folded; a link from outside unfolds it filled.
-         */}
         <section ref={customRef} data-testid={`${testIdPrefix}-custom-section`} className="pb-2">
-          {/* While the empty card offers the same door, the fold's toggle waits behind it. */}
           {nothingMatches && !customOpen ? null : (
           <button
             type="button"

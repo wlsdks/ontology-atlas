@@ -52,34 +52,20 @@ export interface AgentClientControlsProps {
    * will not connect is a trap.
    */
   serverAvailability: AgentServerAvailability;
-  /**
-   * Writes the config for the given tool, so a button can never write for every tool at once.
-   * Installed app only; null on the web.
-   */
+  /** Writes the config for the given tool, so a button can never write for every tool at once; installed app only, null on the web. */
   onWriteConfigs: ((client: AgentClientId) => void | Promise<void>) | null;
-  /** Without an absolute path it degrades to copying. */
   cursorDeeplink: string | null;
-  /** For the copy fallback. */
   mcpJsonSnippet: string;
   /** Replaces an invalid vault-local `.mcp.json`; usually `OATLAS_VAULT=.`. */
   replacementMcpJsonSnippet?: string;
-  /** For the copy fallback. */
   codexCommand: string;
-  /** Installed app; shows the confirmation copy first. */
   mcpJsonReady?: boolean;
-  /** Keeps existence and validity separate. */
   mcpJsonState?: AgentClientConfigState;
-  /** Keeps existence and validity separate. */
   codexConfigState?: AgentClientConfigState;
-  /** Copied when a user replaces an invalid Codex config. */
   codexConfigSnippet?: string;
-  /** No known absolute path, so copy instructions replace the deeplink. */
   needsManualPath: boolean;
 }
 
-/**
- * The write, copy and deeplink state machine for the four clients; callers lay out the controls.
- */
 export function useAgentClientControls({
   serverAvailability,
   onWriteConfigs,
@@ -359,11 +345,8 @@ export function useAgentClientControls({
 }
 
 export interface AgentClientControls {
-  /** When no server can be launched; the controls are null then. */
   serverUnavailable: React.ReactNode | null;
-  /** One control per client in its current state. */
   controls: Record<AgentClientId, React.ReactNode> | null;
-  /** A deeplink needs a path a browser does not know. */
   manualPathNote: React.ReactNode | null;
 }
 
@@ -394,7 +377,6 @@ export function RowStateBadge({
       {...rest}
       className={badgeClass({
         shape: "tag",
-        /* A fixed floor with the word centred, so badges form one column. */
         className: cn(
           "inline-flex min-w-18 shrink-0 items-center justify-center gap-1.5 py-0.5 bg-[color:var(--color-overlay-2)]",
           ready ? "text-[color:var(--color-text-secondary)]" : "text-[color:var(--color-text-tertiary)]",
@@ -439,9 +421,6 @@ function ClientAction({
   onClick,
 }: {
   testId: string;
-  /**
-   * The verb's glyph; a write without one falls back to the plug.
-   */
   icon?: React.ReactNode;
   label: Wording;
   feedback: Feedback;
@@ -455,9 +434,7 @@ function ClientAction({
   const isDone = feedback === "done";
   const isCopied = feedback === "copied";
   const isBusy = feedback === "busy";
-  // A failure is said on this control; the label beside it already says what did not happen.
   const isFailed = feedback === "failed";
-  // The native 16px micro mark sits in the 14px slot, keeping the label in place.
   const shownIcon = isBusy ? (
     <span className="relative inline-flex size-3.5 shrink-0" aria-hidden="true">
       <BrandMark detail="micro" alt="" className="atlas-inline-waiting-mark absolute left-1/2 top-1/2 size-4 max-w-none -translate-x-1/2 -translate-y-1/2" />
@@ -492,7 +469,6 @@ function ClientAction({
       onClick={isBusy ? undefined : onClick}
       aria-disabled={isBusy || undefined}
       aria-busy={isBusy || undefined}
-      /* Only the verb is drawn; the sentence is the accessible name (see `Wording`). */
       aria-label={shownLabel.full}
       className={ROW_CHIP_EDGE}
     >

@@ -5,7 +5,6 @@ import type { KnowledgeGraphNode } from "../model/types";
  * for a derived node, another document's slug.
  */
 export interface NodeAgentTarget {
-  /** The name MCP and the CLI accept, or null. */
   ref: string | null;
   /** When false, `add_concept` must create the document first. */
   documented: boolean;

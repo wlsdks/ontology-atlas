@@ -15,7 +15,6 @@ export function deriveProjectsFromVault(manifest: VaultManifest): Project[] {
 
 function mapVaultDocToProject(doc: VaultDoc): Project | null {
   const fm = doc.frontmatter;
-  // `computeProjectSlug` is shared with the topology deeplink, so `?p=<slug>` opens the right drawer.
   const slug = computeProjectSlug(doc);
   if (!slug) return null;
   // The name falls back to the filename even when `fm.slug` differs.

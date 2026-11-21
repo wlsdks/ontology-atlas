@@ -47,7 +47,6 @@ export function compareCollated(a: string, b: string): number {
   return KO_COLLATOR.compare(a, b) || (a < b ? -1 : a > b ? 1 : 0);
 }
 
-/** Folders before documents, then by name: the order every tree level is kept in. */
 export function compareTreeNodes(a: VaultTreeNode, b: VaultTreeNode): number {
   if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
   return compareCollated(a.name, b.name);
@@ -102,7 +101,6 @@ function sortTree(node: VaultTreeNode) {
 export interface LocalVaultBuild {
   manifest: VaultManifest;
   fileHandles: Map<string, FileSystemFileHandle>;
-  /** Asset files such as images, keyed by path relative to the vault root ('img/foo.png'). */
   imageHandles: Map<string, FileSystemFileHandle>;
   /** Raw sources under `sources/`; opened only on a person's explicit request, never by the build. */
   sourceHandles: Map<string, FileSystemFileHandle>;
@@ -110,7 +108,6 @@ export interface LocalVaultBuild {
   fingerprint: string;
 }
 
-/** Running multiset hash of `${NFC path}@${mtime}` stamps: a count and two 32-bit sums. */
 export interface FingerprintSum {
   count: number;
   a: number;
@@ -126,7 +123,6 @@ function fmix32(h: number): number {
   return (h ^ (h >>> 16)) >>> 0;
 }
 
-/** Adds (`sign` 1) or removes (`sign` -1) one stamp in O(path length). */
 export function addStamp(sum: FingerprintSum, relativePath: string, lastModified: number, sign: 1 | -1): void {
   // NFC here too, or native NFD names would report a change on every focus.
   const stamp = `${relativePath.normalize('NFC')}@${lastModified}`;
@@ -176,13 +172,11 @@ function stampIndex(entries: readonly NativeVaultStamp[]): VaultStampIndex {
   );
 }
 
-/** The desktop shim's absolute root path, or `null` for a web handle. */
 export function nativeRootPath(root: FileSystemDirectoryHandle): string | null {
   const rootPath = (root as { rootPath?: unknown }).rootPath;
   return typeof rootPath === 'string' && rootPath ? rootPath : null;
 }
 
-/** The native stamp index for this handle, or `null` on the web where there is none. */
 async function nativeStampIndex(
   root: FileSystemDirectoryHandle,
 ): Promise<VaultStampIndex | null> {
@@ -281,12 +275,10 @@ function aggregateBuild(
     docs.push(doc);
   }
 
-  // Body links and frontmatter relation refs, one entry per (target, document).
   const slugSet = new Set(docs.map((doc) => doc.slug));
   const tailToSlug = new Map<string, string | null>();
   for (const doc of docs) {
     const tail = slugTail(doc.slug);
-    // A tail shared by two docs becomes null (ambiguous).
     tailToSlug.set(tail, tailToSlug.has(tail) ? null : doc.slug);
   }
   const resolve = refResolver((slug) => slugSet.has(slug), (tail) => tailToSlug.get(tail) ?? null);
@@ -339,10 +331,7 @@ function aggregateBuild(
 
 const VAULT_READ_CONCURRENCY = 64;
 
-/**
- * Maps `items` through `read` with at most `concurrency` in flight, results in input order. The
- * first failure in time rejects the call, and no worker starts another read after it.
- */
+/** At most `concurrency` reads in flight, results in input order; the first failure in time rejects and no worker starts another read after it. */
 export async function mapPooled<T, R>(
   items: readonly T[],
   concurrency: number,
@@ -549,7 +538,6 @@ const ROWS_WRITE_BATCH = 500;
 
 let rowWrites: Promise<void> = Promise.resolve();
 
-/** Settles once every row a build handed to the derived index was written or refused. */
 export function vaultRowWritesSettled(): Promise<void> {
   return rowWrites;
 }
@@ -557,9 +545,7 @@ export function vaultRowWritesSettled(): Promise<void> {
 interface RowSource {
   /** Entries from stored rows, aligned with `indices`; `undefined` where the file must be read. */
   take(indices: readonly number[]): Promise<Array<BuiltVaultEntry | undefined>>;
-  /** Hands a freshly built entry to the index, if the lookup gave its file a token. */
   keep(index: number, entry: BuiltVaultEntry): void;
-  /** Writes what is left; with a complete walk, also drops rows of files no longer listed. */
   finish(walkComplete: boolean): void;
 }
 

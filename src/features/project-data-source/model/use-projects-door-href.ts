@@ -10,7 +10,6 @@ import { useVaultDocs } from "./use-vault-docs";
 
 const NO_SELECTION = () => null;
 
-/** The selected project's slug, or null when the folder has several projects and none was opened yet. */
 export function useSelectedProjectSlug(options?: { demand?: boolean }): string | null {
   const scope = useVaultSessionIdentityScope();
   const docs = useVaultDocs(options);
@@ -29,7 +28,6 @@ export function useProjectsDoorHref(): string | null {
   return slug ? getProjectRuntimeDetailHref(slug) : null;
 }
 
-/** A project page that shows an existing project makes it the selected one. */
 export function useRecordSelectedProject(slug: string | null): void {
   const scope = useVaultSessionIdentityScope();
   useEffect(() => {

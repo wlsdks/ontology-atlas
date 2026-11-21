@@ -54,7 +54,6 @@ export type VaultChangeResult =
   /** `sidecarsTouched`: a path under `.ontology-atlas/` or an agent config changed too. */
   | { kind: 'applied'; snapshot: LocalVaultSnapshot; sidecarsTouched: boolean }
   | { kind: 'unchanged'; sidecarsTouched: boolean }
-  /** The paths cannot be applied exactly; the caller re-reads the folder. */
   | { kind: 'rescan' };
 
 const RESCAN: VaultChangeResult = { kind: 'rescan' };
@@ -246,7 +245,6 @@ class TreeEditor {
     return -1;
   }
 
-  /** The editable child `name`, copied on first touch; `undefined` when absent. */
   private child(parent: VaultTreeNode, name: string): VaultTreeNode | undefined {
     const at = this.childIndex(parent, name);
     if (at < 0) return undefined;
@@ -257,7 +255,6 @@ class TreeEditor {
     return next;
   }
 
-  /** Re-sorts one child after its `type` changed, which moves it among folders and documents. */
   private reposition(parent: VaultTreeNode, node: VaultTreeNode): void {
     const children = parent.children!;
     children.splice(children.indexOf(node), 1);
@@ -327,7 +324,6 @@ class TreeEditor {
   }
 }
 
-/** A file to (re)read, with the stamp the watcher or a folder listing found. */
 interface Upsert {
   path: string;
   kind: WalkEntry['kind'];
@@ -360,11 +356,7 @@ async function fileHandle(root: FileSystemDirectoryHandle, lookup: DirLookup, pa
 
 type ListDir = (dir: string) => Promise<StampedVaultEntry[]>;
 
-/**
- * One folder's children with each file's stamp. The app answers natively in one call without
- * reading a byte (its `getFile()` would transfer the whole body); the web's `File` is a lazy
- * reference, so its stamp reads nothing either.
- */
+/** The app answers natively without reading a byte (`getFile()` would transfer the whole body); the web's `File` is a lazy reference, so its stamp reads nothing either. */
 function directoryLister(root: FileSystemDirectoryHandle, lookup: DirLookup): ListDir {
   const rootPath = nativeRootPath(root);
   return async (dir) => {
@@ -434,12 +426,7 @@ function withinAny(path: string, dirs: ReadonlySet<string>, inclusive: boolean):
   return found;
 }
 
-/**
- * Past this many changed files the walk is the cheaper answer: a fifth of the vault, and never
- * below 1,000. Measured 2026-11-19 at 50,000 files (CPU, delta + derive against walk + derive):
- * 10,000 removed 231 vs 294 ms, 17,945 removed 320 vs 251 ms; 10,000 created 781 vs 942 ms,
- * 20,000 created 1,127 vs 1,169 ms. Removals cross over near a quarter, so a fifth keeps margin.
- */
+/** Past this many changed files the walk is cheaper: a fifth of the vault, never below 1,000. At 50,000 files removals cross over near a quarter (10,000: 231 vs 294 ms; 17,945: 320 vs 251 ms), so a fifth keeps margin. */
 function deltaCeiling(knownFiles: number): number {
   return Math.max(1_000, Math.floor(knownFiles / 5));
 }
@@ -618,13 +605,9 @@ function sameTags(a: readonly string[], b: readonly string[]): boolean {
 }
 
 /**
- * Applies the watcher's changed paths to the last snapshot without walking the folder: reads only
- * the Markdown files whose stamp moved and patches the manifest. O(changed · log n) plus one O(n)
- * copy of the document list; a created or removed document adds one O(refs) scan for the
- * frontmatter refs it re-resolves, and a reported folder one listing of what it holds. The result
- * equals a full build of the same disk (except `generatedAt`); where it could not, or past
- * `deltaCeiling`, it returns `rescan` and the caller walks. Nothing changed answers `unchanged`, so
- * the caller keeps its manifest object. Never writes.
+ * Applies the watcher's changed paths to the last snapshot without walking the folder: reads only the Markdown files whose stamp moved
+ * and patches the manifest, O(changed · log n) plus one O(n) copy of the document list. Equals a full build of the same disk (except `generatedAt`);
+ * where it could not, or past `deltaCeiling`, it returns `rescan`. Nothing changed answers `unchanged`. Never writes.
  */
 export async function applyVaultChanges(
   root: FileSystemDirectoryHandle,

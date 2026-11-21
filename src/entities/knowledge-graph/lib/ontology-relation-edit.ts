@@ -40,7 +40,6 @@ export const IMPACT_EDIT_RELATIONS: readonly MeaningEditRelation[] = (
   Object.keys(RELATION_EDGE_TYPE) as MeaningEditRelation[]
 ).filter((relation) => IMPACT_RELATION_TYPES.includes(RELATION_EDGE_TYPE[relation]));
 
-/** The frontmatter key a relation from a `sourceKind` concept to a `targetKind` concept is written under. */
 export function relationFrontmatterKey(
   relation: MeaningEditRelation,
   sourceKind?: string | null,

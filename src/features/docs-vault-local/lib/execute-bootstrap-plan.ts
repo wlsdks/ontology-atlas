@@ -34,7 +34,6 @@ export interface BootstrapVaultWriter {
 }
 
 export interface ExecuteBootstrapResult {
-  /** Branches the toast. */
   addedToExisting: boolean;
   elementCount: number;
 }

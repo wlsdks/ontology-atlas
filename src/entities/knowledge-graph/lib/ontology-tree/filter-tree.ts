@@ -50,7 +50,6 @@ export function filterTreeByQuery(
       return { ...node, children: node.children };
     }
     if (filteredChildren.length > 0) {
-      // Kept only as an ancestor.
       return { ...node, children: filteredChildren };
     }
     return null;

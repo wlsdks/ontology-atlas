@@ -124,7 +124,6 @@ export async function deleteLocalFsHandle(
   return queueHandleWrite(() => idbDel(recordKey(id)));
 }
 
-/** The open vault's record is untouched. */
 export async function forgetRecentLocalFsHandle(
   record: LocalFsHandleRecord,
 ): Promise<void> {
@@ -139,7 +138,6 @@ export async function forgetRecentLocalFsHandle(
   });
 }
 
-/** No-op without a record. */
 export async function touchLocalFsHandle(
   id: string = CURRENT_LOCAL_FS_HANDLE_ID,
 ): Promise<void> {
@@ -171,7 +169,6 @@ export async function recordLocalFsHandleContents(
   });
 }
 
-/** On Tauri the handle shim is rebuilt from the stored path. */
 export async function listRecentLocalFsHandles(): Promise<LocalFsHandleRecord[]> {
   const records = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];
   return records

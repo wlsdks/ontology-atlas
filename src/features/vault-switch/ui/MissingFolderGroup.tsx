@@ -17,10 +17,7 @@ import type { RecentVaultRow } from '../lib/recent-vault-row';
  */
 export type MissingFolderReviewMode = 'dialog' | 'inline';
 
-/**
- * Folders that are gone, as one quiet line at the end of the list that opens onto a review.
- * Nothing leaves the list unless the person presses for it. `wide` follows the page list's columns.
- */
+/** Nothing leaves the list unless the person presses for it. `wide` follows the page list's columns. */
 export function MissingFolderGroup({
   rows,
   wide,
@@ -241,7 +238,6 @@ export function MissingFolderGroup({
   );
 }
 
-/** The reason, said once, and the missing folders under it — the same in both review modes. */
 function MissingFolderReview({
   rows,
   wide,

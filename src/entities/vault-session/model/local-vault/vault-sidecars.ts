@@ -118,7 +118,6 @@ function configTomlStringArray(section: string | null, key: string): string[] | 
   }
 }
 
-/** The command string registered by `.codex/config.toml`, or `null`. */
 export function readOmotCodexCommand(raw: string | null): string | null {
   if (!raw) return null;
   return configTomlString(configTomlSection(raw, 'mcp_servers.ontology-atlas'), 'command');
@@ -223,7 +222,6 @@ export async function readVaultSidecarStatuses(handle: FileSystemDirectoryHandle
 
 const ACTIVITY_LOG_SHOWN_ENTRIES = 50;
 
-/** Tail of the local audit log (read-only; empty array when absent). */
 async function readAgentActivityLog(handle: FileSystemDirectoryHandle): Promise<AgentActivityEntry[]> {
   try {
     const rootPath = getTauriVaultRootPath(handle);

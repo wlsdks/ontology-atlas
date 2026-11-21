@@ -13,13 +13,9 @@ import { buildDefaultVaultDisplayPath, resolveUniqueVaultDirName } from '../lib/
 import type { CreationReport } from './use-vault-create-flow';
 
 export interface JustStartReport extends CreationReport {
-  /** Receives how the screen names the new folder. */
   created?: (displayPath: string) => void;
 }
 
-/**
- * The narrow part of `useLocalVault()` this hook needs, so a test double satisfies it.
- */
 export interface JustStartVaultVault {
   openRecent: (record: LocalFsHandleRecord, options?: VaultOpenOptions) => Promise<VaultOpenResult>;
 }
@@ -40,7 +36,6 @@ export function useJustStartVault(
   const [actionError, setActionError] = useState<string | null>(null);
   const { created, starterFailed } = report;
 
-  /** `null` keeps the full starter. */
   const justStart = useCallback(async (chosen: VaultShape | null = null) => {
     setActionError(null);
     setBusy(true);

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore, type RefCallback } from 'react';
 
-/** Folders whose Wiki desk shows the meaning line now, with how many lines show each. */
 const stages = new Map<string, number>();
 const stageListeners = new Set<() => void>();
 
@@ -20,11 +19,7 @@ function moveStage(rootPath: string, by: 1 | -1): void {
   for (const listener of stageListeners) listener();
 }
 
-/**
- * Registers the desk's meaning line as the job's stage while it is drawn: the seat stands down
- * there, so the progress is never said twice. A line inside a hidden desk has no box and is not
- * a stage.
- */
+/** The seat stands down while the line is drawn, so progress is never said twice; a line inside a hidden desk has no box and is not a stage. */
 export function useVectorRunStage(rootPath: string | null): RefCallback<HTMLElement> {
   const [element, setElement] = useState<HTMLElement | null>(null);
   useEffect(() => {
@@ -47,7 +42,6 @@ export function useVectorRunStage(rootPath: string | null): RefCallback<HTMLElem
   return setElement;
 }
 
-/** Whether the folder's desk line stands on screen now. */
 export function useVectorRunStageShown(rootPath: string | null): boolean {
   const read = useCallback(() => rootPath !== null && stages.has(rootPath), [rootPath]);
   return useSyncExternalStore(subscribeStages, read, () => false);

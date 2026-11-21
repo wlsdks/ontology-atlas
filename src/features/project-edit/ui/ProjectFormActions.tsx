@@ -148,7 +148,6 @@ export function EditSaveBand({
             </span>
           </div>
           <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:justify-end">
-            {/* Delete lives in the danger row at the foot, away from the save cluster. */}
             <Button
               data-testid="project-cancel-top"
               type="button"

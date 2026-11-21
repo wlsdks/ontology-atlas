@@ -11,7 +11,6 @@ import type { BlockManifest } from './block-manifest';
 export type BlockConflictResolution = 'skip' | 'prefix';
 
 export interface BlockImportFile {
-  /** Path relative to the block folder root (e.g. `capabilities/login.md`). */
   path: string;
   raw: string;
 }
@@ -24,7 +23,6 @@ type BlockImportEntryStatus =
 
 interface BlockImportEntry {
   originalSlug: string;
-  /** null = not written (skipped, or kindless). */
   finalSlug: string | null;
   kind: string | null;
   title: string;
@@ -38,7 +36,6 @@ interface BlockImportWrite {
 
 export interface BlockImportPlan {
   entries: BlockImportEntry[];
-  /** The files that will be written to the vault on approval — data only at the plan stage. */
   writes: BlockImportWrite[];
   newCount: number;
   conflictCount: number;
@@ -66,7 +63,6 @@ export function prefixBlockSlug(slug: string, blockPrefix: string): string {
   return `${dir}${blockPrefix}-${tail}`;
 }
 
-/** One provenance citation appended to the body — the import audit trail (a literal spec contract). */
 export function appendProvenance(
   raw: string,
   blockName: string,
@@ -76,7 +72,6 @@ export function appendProvenance(
   return `${raw.replace(/\n*$/, '')}\n\n${line}\n`;
 }
 
-/** Replaces only the `slug:` line inside the frontmatter block (absent, it stays — the path is the source of truth). */
 function setFrontmatterSlug(raw: string, newSlug: string): string {
   if (!raw.startsWith('---')) return raw;
   const end = raw.indexOf('\n---', 3);
@@ -248,7 +243,6 @@ export function planBlockImport(
       continue;
     }
 
-    // Resolve by prefix — if the prefix also collides, fall back to the CLI's -2/-3.
     let renamedSlug = prefixBlockSlug(baseSlug, blockPrefix);
     if (taken(renamedSlug)) renamedSlug = nextFreeSlug(renamedSlug, taken);
     claimed.add(renamedSlug);

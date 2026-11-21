@@ -3,10 +3,7 @@ import type { DeskProgress } from '../model/desk-line';
 const RING_PX = 14;
 const RING_RADIUS = 6;
 
-/**
- * The ring moves to each new value by a CSS transition: no React state changes per frame, and a
- * hidden ring has nothing running. A new quantity or total starts a new arc at its own value.
- */
+/** A CSS transition, so no React state changes per frame and a hidden ring has nothing running. */
 export function ProgressRing({ fraction, label, measure, track }: { fraction: number; label: string; measure: DeskProgress['measure']; track: string }) {
   return (
     <span

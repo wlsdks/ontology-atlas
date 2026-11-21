@@ -9,10 +9,6 @@ import { LocalVaultContext } from "./local-vault-context";
 
 export { useLocalVault } from "./local-vault-context";
 
-/**
- * One provider mounts in the layout so all `useLocalVault()` consumers share one state
- * and one folder walk.
- */
 export function LocalVaultProvider({ children }: { children: ReactNode }) {
   const value = useLocalVaultInternal();
   return (

@@ -15,11 +15,7 @@ import {
 /** Past this deadline the list draws anyway, so one unresponsive network volume cannot hold it. */
 const FIRST_ANSWER_DEADLINE_MS = 400;
 
-/**
- * Probes each stored folder without asking the person for anything: `vault_path_exists` in the
- * app, `queryPermission` in a browser; never `requestPermission`, which needs a gesture. Null
- * until the first answer, so the list is drawn once in its real shape.
- */
+/** Never `requestPermission`, which needs a gesture; null until the first answer, so the list is drawn once in its real shape. */
 export function useRecentVaultReachability(
   records: ReadonlyArray<LocalFsHandleRecord>,
 ): Record<string, RecentVaultReachability> | null {
@@ -79,7 +75,6 @@ async function probe(record: LocalFsHandleRecord, desktop: boolean): Promise<Rec
   } catch (error) {
     /* On the desktop a gone folder rejects: `canonical_root` errors before `vault_path_exists` returns false. */
     if (isMissingFolderError(error)) return 'missing';
-    /* Anything else is `unknown`, never `ready`. */
     return 'unknown';
   }
 }

@@ -33,13 +33,9 @@ import {
 
 export interface CompileExecutorDeps {
   sourcePort: SourceReadPort;
-  /** The runner's model name — `created_by: model:<name>`. */
   model: string;
-  /** Injected so a proposal's `compiled_at` is testable. */
   now: () => Date;
-  /** The page already at this slug, when one is there. Null otherwise. */
   readExistingPage: (slug: string) => Promise<{ text: string; mtime: number } | null>;
-  /** How many pages this turn may propose. */
   pageCap: number;
   /** Wiki-only inventory from this vault; never graph nodes or underscore furniture. */
   wikiSlugs?: readonly string[];
@@ -49,9 +45,7 @@ export interface CompileExecutorDeps {
 
 export interface CompileExecutor {
   execute(call: NormalizedToolCall): Promise<ToolExecution>;
-  /** Everything `read_source_text` touched this turn, in call order. */
   reads(): CompileSourceRead[];
-  /** The surviving proposal per page, in first-proposed order. */
   proposals(): WikiPageProposal[];
 }
 

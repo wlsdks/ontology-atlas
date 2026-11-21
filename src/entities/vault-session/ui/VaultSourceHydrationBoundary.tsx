@@ -9,20 +9,8 @@ import { RouteLoadingFallback, WidgetErrorFallback } from '@/shared/ui';
 import { useStaticVaultGate } from '../model/use-static-vault-source';
 
 /**
- * Prevents build-time sample facts from becoming a destination's first DOM.
- *
- * Vault-backed routes are statically exported with a complete web sample. That is useful only
- * after the browser has established that no local vault owns the screen. Baking the sample view
- * itself into route HTML lets an installed app parse and paint Storefront before hydration can
- * read its restored local provider. A shell effect cannot undo pixels already parsed.
- *
- * These routes therefore export the existing neutral loading surface and reveal their content
- * after hydration. A vault-less web visitor receives the sample as soon as its chunk arrives: until
- * then this component suspends, so the page's own fallback (the exported HTML) stays on screen and
- * only one loading state ever shows. Once revealed it stays revealed, so choosing the other sample
- * swaps data in place instead of remounting the screen. A restored app mounts the component against
- * its local manifest and never waits for, or loads, a sample. `sample` pins one sample, for a
- * screen whose address names it. A sample that cannot be downloaded says so with a retry.
+ * Prevents build-time sample facts from becoming a destination's first DOM: baking the sample view into route HTML would let an installed app paint Storefront before hydration reads its restored local provider, and a shell effect cannot undo parsed pixels.
+ * Routes export the neutral loading surface and reveal content after hydration; this component suspends until the sample arrives, so only one loading state shows. Once revealed it stays revealed, so choosing the other sample swaps data in place. A restored app mounts against its local manifest and never loads a sample.
  */
 export function VaultSourceHydrationBoundary({
   children,

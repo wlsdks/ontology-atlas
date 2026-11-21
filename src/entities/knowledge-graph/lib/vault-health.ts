@@ -21,7 +21,6 @@ export const UNAVAILABLE_CHECKS = [
   },
 ];
 
-/** The subset of `VaultDoc` this needs. */
 export interface VaultHealthDoc {
   slug: string;
   frontmatter: Record<string, unknown>;
@@ -43,20 +42,16 @@ interface VaultHealthCheck {
   count: number;
 }
 
-/** A check this surface knows about and does not run, with where it can be run. */
 interface UnavailableVaultHealthCheck {
   id: string;
   reason: string;
   /** A runnable command; there is no npm package. */
   where: string;
-  /** How to fill in the placeholder in `where`. */
   hint: string;
 }
 
 interface MissingContainmentTarget {
-  /** e.g. `capabilities/invoice` */
   slug: string;
-  /** Domain slug that should link back. */
   domain: string;
 }
 
@@ -76,9 +71,7 @@ export interface VaultHealthResult {
     dependencyCyclesPartial: boolean;
     relationRecommendations: number;
   };
-  /** Repair targets for linking to the offending node, sorted by slug. */
   missingContainment: MissingContainmentTarget[];
-  /** Members of every actionable island except the largest, largest first. */
   islands: string[][];
 }
 
@@ -449,7 +442,6 @@ export function computeVaultHealth(docs: readonly VaultHealthDoc[]): VaultHealth
   const { count: dependencyCycles, partial: dependencyCyclesPartial } = dependencyCycleCount(graph);
   const missingContainment = missingDomainContainment(graph);
   const relationRecommendations = missingContainment.length;
-  // Every actionable group except the largest.
   const islands = actionableGroups.slice(1);
 
   const checks: VaultHealthCheck[] = [

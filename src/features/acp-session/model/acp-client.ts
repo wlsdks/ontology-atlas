@@ -1,6 +1,5 @@
 /**
- * ACP client: turns line-delimited JSON-RPC into a conversation; transport is injected.
- * Only `session/request_permission` and `session/update` are implemented; options are found by `kind`.
+ * Line-delimited JSON-RPC ACP client; only `session/request_permission` and `session/update` are implemented.
  * Never pick `allow_always` for the user (it grants the directory); inside-vault is decided in Rust.
  */
 
@@ -8,38 +7,24 @@ import { modeKeepsGate, partitionModes } from './session-choices/mode-safety';
 import { atlasToolMode } from './permissions/atlas-tool-policy';
 import type { AcpPermissionVerdict } from '@/shared/lib/agent-chat/tauri-acp';
 
-/** The channel that carries lines. A process or a fake, as long as it satisfies this. */
 export interface AcpTransport {
   send(line: string): void | Promise<void>;
-  /** Called for every incoming line. Calling the returned function unsubscribes. */
   subscribe(onLine: (line: string) => void): () => void;
 }
 
-/** One selectable option — a model or a mode; the screen draws both the same way. */
 export interface AcpChoice {
   id: string;
   name: string;
   description: string | null;
-  /**
-   * `_meta.kind` as the adapter stated it; the safety check reads it, so dropping it disarms that
-   * check. `mode-safety.ts` owns the values.
-   */
+  /** `_meta.kind` as the adapter stated it; the safety check reads it, so dropping it disarms that check. */
   metaKind?: string | null;
-  /**
-   * The adapter's `_meta` verbatim. Kept whole because the next field we need will arrive inside it,
-   * and a parser that keeps only the fields it already understands has to be edited before anyone
-   * can even see what changed.
-   */
+  /** The adapter's `_meta` verbatim, so a new field can be seen without first editing the parser. */
   meta?: Record<string, unknown> | null;
 }
 
-/**
- * Ceiling on waiting for an answer. One conversation turn can take longer than this, so it applies
- * **only to the handshake and to queries** (`prompt` gets no limit — see its implementation below).
- */
+/** Only the handshake and queries time out; a conversation turn (`prompt`) can take longer. */
 const CALL_TIMEOUT_MS = 45_000;
 
-/** Owned by `mode-safety.ts`: hide what is dangerous, offer the unmeasured marked unknown. */
 export function keepGateSafeModes(modes: AcpChoice[]): AcpChoice[] {
   return partitionModes(modes).offered;
 }
@@ -49,7 +34,6 @@ interface ParsedChoices {
   dropped: number;
 }
 
-/** Reshapes `{availableModels|availableModes, current…Id}` into what the screen uses. */
 function toChoices(raw: unknown, listKey: string): ParsedChoices {
   const block = asRecord(raw);
   const list = block && Array.isArray(block[listKey]) ? (block[listKey] as unknown[]) : [];
@@ -85,7 +69,6 @@ function currentId(raw: unknown, key: string): string | null {
   return typeof value === 'string' ? value : null;
 }
 
-/** What one session offers to choose from. An empty array when the adapter offers nothing. */
 export interface AcpSessionChoices {
   models: AcpChoice[];
   currentModelId: string | null;
@@ -93,7 +76,6 @@ export interface AcpSessionChoices {
   currentModeId: string | null;
   /** Modes that remain in the list but whose outside-the-folder gate has not been measured. */
   unverifiedModeIds: string[];
-  /** Number of modes unreadable because the adapter's response shape was malformed. */
   droppedModeCount: number;
 }
 
@@ -104,7 +86,6 @@ export function readSessionChoices(result: Record<string, unknown>): AcpSessionC
   return {
     models: modelChoices.choices,
     currentModelId: currentId(result.models, 'currentModelId'),
-    // Filter out the dangerous; emit the unknown along with its status.
     modes: modePartition.offered,
     currentModeId: currentId(result.modes, 'currentModeId'),
     unverifiedModeIds: modePartition.unverified,
@@ -113,9 +94,8 @@ export function readSessionChoices(result: Record<string, unknown>): AcpSessionC
 }
 
 /**
- * Choices after the adapter moved the session itself (`current_mode_update`).
- * A gate-removing mode is shown as current but not re-listed; `use-acp-session.ts` raises `gate-off`.
- * An unadvertised mode is shown marked unchecked.
+ * A gate-removing mode is shown as current but not re-listed (`use-acp-session.ts` raises `gate-off`);
+ * an unadvertised mode is shown marked unchecked.
  */
 export function applyCurrentMode(
   choices: AcpSessionChoices,
@@ -135,20 +115,16 @@ export function applyCurrentMode(
   };
 }
 
-/** One past conversation — only as much as the list needs to draw. */
 export interface AcpSessionSummary {
   sessionId: string;
-  /** The absolute path of the folder that conversation was opened in. **This is the filter key.** */
   cwd: string;
-  /** The title the adapter composed. Null when absent — the screen does not invent one. */
   title: string | null;
-  /** An ISO string, or null. */
   updatedAt: string | null;
 }
 
 /**
- * The adapter ignores `cwd` in `session/list`, so filter here to keep unopened folders off screen.
- * Gate: `tests/contract/security/acp-session-scope.contract.test.ts`.
+ * The adapter ignores `cwd` in `session/list`, so filter here to keep unopened folders off screen
+ * (`tests/contract/security/acp-session-scope.contract.test.ts`).
  */
 export function keepSessionsInFolder(
   sessions: AcpSessionSummary[],
@@ -159,89 +135,57 @@ export function keepSessionsInFolder(
   return sessions.filter((s) => normalizeFolder(s.cwd) === root);
 }
 
-/** Only trims a trailing `/`. Anything more is Rust's job (symlinks, relative paths). */
+/** Only trims a trailing `/`; symlinks and relative paths are Rust's job. */
 function normalizeFolder(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim().replace(/\/+$/, '');
   return trimmed.length > 0 ? trimmed : null;
 }
 
-/** One permission request, reduced to what the screen shows the user. */
 export interface AcpPermissionRequest {
   /** Exact JSON-RPC request id. Numeric zero is valid and is never replaced. */
   requestId?: string | number | null;
-  /** Session named by the permission request itself. */
   sessionId?: string | null;
-  /** The human-readable line, exactly as the adapter gave it. */
   title: string | null;
-  /** The ACP identifier linking this decision to the same tool's progress and completion updates. */
   toolCallId: string | null;
-  /**
-   * The **identifier** of the tool called (such as `mcp__atlas-vault__add_concept`). Policy reads
-   * this, because an MCP tool call has no file path.
-   */
+  /** The identifier (such as `mcp__atlas-vault__add_concept`); policy reads it because an MCP tool call has no file path. */
   toolName: string | null;
-  /** `edit`, `execute`, `read`, … — the typed fact the screen picks its icon and colour from. */
   toolKind: string | null;
   filePath: string | null;
-  /** The arguments the tool actually requested. A meaning write builds its typed change from this. */
   rawInput: Record<string, unknown>;
-  /** An ordinary file permission, or an ontology write needing the person's decision about meaning. */
   reviewKind: 'permission' | 'ontology-write';
   /** Rust's inside-the-folder verdict on `filePath`, computed once before asking; absent means unjudged. */
   pathVerdict?: AcpPermissionVerdict;
-  /** Present only for the structured MCP tool-call + structured approval cache chain. */
   writerCorrelation?: { status: 'verified'; server: string; tool: string; toolCall: 'structured-mcp'; approval: 'structured-mcp' };
-  /** The available options — handled only by `kind`. */
   options: Array<{ optionId: string; kind: string; name: string | null }>;
 }
 
 export interface AcpClientHandlers {
-  /** Streaming updates — text chunks, tool calls, plans. */
   onUpdate?: (update: Record<string, unknown>, context: { sessionId: string | null }) => void;
   /**
-   * Reports a read that this client allowed without asking the screen. The caller needs this
-   * because the direct auto-allow path deliberately does not enter `askUser`, where unattended
-   * rounds normally record their standing scope. Without this callback a scheduled pass can finish
-   * successfully while its ledger says it reached no vault tool.
+   * Reports a read allowed without asking the screen: that path skips `askUser`, where unattended rounds
+   * record their standing scope, so without this a pass can finish with a ledger that says it reached no vault tool.
    */
   onAutoAllowed?: (request: AcpPermissionRequest) => void;
-  /**
-   * The name of the vault MCP server we wired into the session. Only that server's read tools are
-   * auto-allowed; its write tools go through the person's change review. Not passing it turns this
-   * classification off — we do not pretend something exists.
-   */
+  /** The vault MCP server wired into the session: only its read tools are auto-allowed; omitted, the classification is off. */
   vaultMcpServerName?: string;
   verdict: (filePath: string | null) => Promise<AcpPermissionVerdict>;
-  /**
-   * Asks the user. Returns the chosen `optionId`, or null for a rejection.
-   *
-   * With no screen, or with no answer from the user, **rejection must be the default** — counting
-   * an unasked question as allowed is the same as having no permission gate.
-   */
+  /** The chosen `optionId`, or null for a rejection. With no screen or no answer, rejection is the default: an unasked question counted as allowed is no gate. */
   askUser: (request: AcpPermissionRequest) => Promise<string | null>;
   /** True while every request must be refused unseen, before any automatic allow (a stopped turn). */
   refuseAll?: () => boolean;
-  /** For diagnosis. Called when a line arrives that is outside the protocol. */
   onProtocolNotice?: (message: string) => void;
 }
 
 interface PendingCall {
   resolve: (value: Record<string, unknown>) => void;
   reject: (error: Error) => void;
-  /**
-   * Restarts this call's deadline. Used while a first-run download is **still advancing** —
-   * see `extendPendingDeadlines` below.
-   */
   extend: () => void;
 }
 
 /**
- * The only MCP identity trusted for a correlated permission request.
- *
- * Codex ACP intentionally keeps the permission request itself sparse and emits this structured
- * triple on the preceding `session/update`. The dotted, human-facing update title is not policy
- * input: only the adapter's explicit server/tool/arguments fields cross this boundary.
+ * The only MCP identity trusted for a correlated permission request: Codex ACP keeps the request sparse and emits
+ * this structured triple on the preceding `session/update`; the dotted human-facing title is not policy input.
  */
 interface CorrelatedMcpToolContext {
   server: string;
@@ -249,7 +193,6 @@ interface CorrelatedMcpToolContext {
   arguments: Record<string, unknown>;
 }
 
-/** The JSON-RPC error code answering a method we did not declare. */
 const METHOD_NOT_FOUND = -32601;
 
 export interface AcpClient {
@@ -257,39 +200,22 @@ export interface AcpClient {
   newSession(params: {
     cwd: string;
     mcpServers?: unknown[];
-    /** A paragraph appended to the session's start instructions. It **does not replace** them. */
     appendSystemPrompt?: string;
   }): Promise<{ sessionId: string; choices: AcpSessionChoices }>;
   prompt(sessionId: string, blocks: unknown[]): Promise<{ stopReason?: string }>;
   cancel(sessionId: string): Promise<void>;
-  /**
-   * Past conversations in this folder, **filtered by `cwd`** — see the comment above. An empty array
-   * when the adapter does not offer this (we do not pretend something exists).
-   */
   listSessions(cwd: string): Promise<AcpSessionSummary[]>;
-  /** Resumes a past conversation. Throws on failure — the caller falls through to a new one. */
   loadSession(params: {
     sessionId: string;
     cwd: string;
     mcpServers?: unknown[];
-    /** Gives **the same instructions** as a new conversation, so resuming does not change the rules. */
     appendSystemPrompt?: string;
   }): Promise<{ sessionId: string; choices: AcpSessionChoices }>;
-  /**
-   * Changes the model. **Some adapters do not offer this** — for claude, `session/set_model` itself
-   * is "no such method" (measured). So failure is swallowed and `false` returned: the screen draws
-   * only what works and quietly leaves what does not absent.
-   */
+  /** Some adapters do not offer this (claude's `session/set_model` is "no such method"), so failure is swallowed and false returned. */
   setModel(sessionId: string, modelId: string): Promise<boolean>;
-  /** Changes the mode. Both adapters support it (measured). */
   setMode(sessionId: string, modeId: string): Promise<boolean>;
-  /** Feeds one line from the transport. Used only when the subscription is wired directly. */
   ingest(line: string): void;
-  /**
-   * Restarts the deadline on every in-flight call. The first launch of an adapter downloads
-   * via `npx`, and nothing answers `initialize` meanwhile; the caller restarts on each
-   * `npx-download-progress` notice, so the ceiling means no sign of life, not wall clock.
-   */
+  /** Restarts the deadline on every in-flight call: a first launch downloads via `npx` and nothing answers `initialize` meanwhile. */
   extendPendingDeadlines(): void;
   dispose(): void;
 }
@@ -328,7 +254,7 @@ export function createAcpClient(
       return;
     }
 
-    // A later status-only update refines the same row. It must not erase the structured start event.
+    // A status-only update refines the same row; it must not erase the structured start event.
     const context = readCorrelatedMcpToolContext(update);
     if (!context) {
       // An update that claims to replace MCP input but cannot supply the full structured triple
@@ -355,21 +281,16 @@ export function createAcpClient(
     return context;
   };
 
-  /**
-   * Send failures are swallowed but reported: `void` would not catch a rejection after the
-   * adapter died.
-   */
+  // Failures are reported, not dropped: `void` would not catch a rejection after the adapter died.
   const send = (payload: unknown): Promise<void> => {
     try {
-      // A synchronous transport records the line in the same tick — not only the tests but the local
-      // bridge's request/response ordering relies on that property.
+      // A synchronous transport records the line in the same tick; the local bridge's request/response ordering relies on it.
       return Promise.resolve(transport.send(JSON.stringify(payload)));
     } catch (error) {
       return Promise.reject(error);
     }
   };
 
-  /** Sends a notification or response that expects no answer. Failure is kept only as a diagnostic. */
   const write = (payload: unknown) => {
     void send(payload).catch((error: unknown) => {
       // Writing to an already-finished session is a normal race — kept only as a diagnostic.
@@ -377,7 +298,6 @@ export function createAcpClient(
     });
   };
 
-  /** Without an answer a request never finishes, so it ends in a rejection after the timeout. */
   const call = (
     method: string,
     params: unknown,
@@ -434,9 +354,8 @@ export function createAcpClient(
     }
 
     /*
-     * The Atlas reads we wired do not block the conversation. A write continues only after the person
-     * has seen the typed change, even on the same server and the same vault. Path safety and meaning
-     * approval are different questions: the first being true does not answer the second.
+     * Atlas reads do not block the conversation; a write continues only after the person has seen the typed
+     * change. Path safety and meaning approval are different questions.
      */
     const atlasMode = atlasToolMode(
       request.toolName,
@@ -456,9 +375,8 @@ export function createAcpClient(
     // Reads keep their auto-allow inside dot folders; only auto-approved writes need the stricter verdict.
     const insideVault = verdict === 'allow-inside-vault' || verdict === 'allow-inside-vault-hidden';
     /*
-     * A read is auto-allowed only with no path or inside the vault. Our server names files
-     * vault-relative and Rust judges absolute paths only; a relative path without `..` on an
-     * Atlas read is inside by construction, since the server resolves it against its vault root.
+     * Our server names files vault-relative and Rust judges absolute paths only: a relative path without
+     * `..` on an Atlas read is inside by construction.
      */
     const vaultRelativeAtlasPath =
       atlasMode !== null &&
@@ -475,9 +393,8 @@ export function createAcpClient(
       return;
     }
     /*
-     * A non-Atlas tool is auto-allowed only inside the vault AND with a read-only kind: an agent
-     * edit tool on vault Markdown can rewrite frontmatter, so it must reach the card like an
-     * Atlas write. An unknown or missing kind fails closed to asking.
+     * A non-Atlas tool is auto-allowed only inside the vault with a read-only kind: an agent edit tool on
+     * vault Markdown can rewrite frontmatter. An unknown or missing kind fails closed to asking.
      */
     const readOnlyKind = request.toolKind === 'read' || request.toolKind === 'search';
     if (atlasMode === null && readOnlyKind && insideVault && allowOnce) {
@@ -517,7 +434,6 @@ export function createAcpClient(
     const method = typeof message.method === 'string' ? message.method : null;
     const hasId = message.id !== undefined && message.id !== null;
 
-    // Agent → us, a **request**: it must be answered.
     if (method && hasId) {
       if (method === 'session/request_permission') {
         const params = asRecord(message.params);
@@ -525,9 +441,8 @@ export function createAcpClient(
           const correlatedMcpTool = takeCorrelatedMcpTool(params);
           if (!correlatedMcpTool) {
             /*
-             * A generic card cannot make an unidentified MCP write reviewable. Fail closed without
-             * pretending the person rejected a change they were never shown. This is deliberately
-             * `cancelled`, not a synthetic `reject_once` selection.
+             * A generic card cannot make an unidentified MCP write reviewable: fail closed as `cancelled`, not a
+             * synthetic `reject_once` the person never made.
              */
             handlers.onProtocolNotice?.('permission-context-missing:mcp-tool-approval');
             write({ jsonrpc: '2.0', id: message.id, result: cancelled() });
@@ -549,7 +464,6 @@ export function createAcpClient(
       return;
     }
 
-    // A notification: no answer.
     if (method) {
       if (method === 'session/update') {
         const params = asRecord(message.params);
@@ -560,7 +474,6 @@ export function createAcpClient(
       return;
     }
 
-    // A response to one of our requests.
     const id = typeof message.id === 'number' ? message.id : null;
     if (id === null) return;
     const waiting = pending.get(id);
@@ -595,8 +508,7 @@ export function createAcpClient(
     initialize: () =>
       call('initialize', {
         protocolVersion: 1,
-    // ⚠️ File and terminal capabilities are not declared. What is not declared is treated as
-    // "unsupported" (the ACP initialization convention).
+    // File and terminal capabilities are not declared; undeclared means "unsupported" (the ACP initialization convention).
         clientCapabilities: {},
       }),
     newSession: async (params) => {
@@ -604,9 +516,8 @@ export function createAcpClient(
       const result = await call('session/new', {
         cwd: params.cwd,
         mcpServers: params.mcpServers ?? [],
-        // The adapter takes an **append** through `_meta.systemPrompt` (its `type` and `preset` are
-        // fixed and only `append` flows through). The default instructions are not replaced wholesale
-        // because they are what make that tool itself, and we have no grounds to rewrite them.
+        // The adapter takes an append through `_meta.systemPrompt` (only `append` flows through); the default instructions are
+        // not replaced because they are what make that tool itself.
         ...(params.appendSystemPrompt
           ? { _meta: { systemPrompt: { append: params.appendSystemPrompt } } }
           : {}),
@@ -617,16 +528,13 @@ export function createAcpClient(
     },
     prompt: async (sessionId, blocks) => {
       /*
-       * A conversation turn gets **no time limit.** An agent sweeping a codebase can take minutes,
-       * and throughout the screen keeps saying what is happening with "thinking" and tool rows — a
-       * wait that is explained. The handshake and queries must answer promptly, so the ceiling above
-       * applies to them.
+       * A turn gets no time limit: an agent sweeping a codebase can take minutes, and the screen keeps saying
+       * what is happening. The handshake and queries must answer promptly, so the ceiling applies to them.
        */
       const result = await call('session/prompt', { sessionId, prompt: blocks }, 0);
       return { stopReason: typeof result.stopReason === 'string' ? result.stopReason : undefined };
     },
     cancel: async (sessionId) => {
-      // Cancel is a notification — no answer awaited.
       clearCorrelatedSession(sessionId);
       write({ jsonrpc: '2.0', method: 'session/cancel', params: { sessionId } });
     },
@@ -635,8 +543,6 @@ export function createAcpClient(
       try {
         result = await call('session/list', { cwd });
       } catch {
-        // Some adapters do not offer this. Absent stays absent — an empty list produces the same
-        // screen as "no past conversations" (nothing to choose either way).
         return [];
       }
       const raw = Array.isArray(result.sessions) ? result.sessions : [];
@@ -663,10 +569,6 @@ export function createAcpClient(
         sessionId: params.sessionId,
         cwd: params.cwd,
         mcpServers: params.mcpServers ?? [],
-        /*
-         * A resumed conversation gets the same system prompt as a new one, or the two run under
-         * different rules.
-         */
         ...(params.appendSystemPrompt
           ? { _meta: { systemPrompt: { append: params.appendSystemPrompt } } }
           : {}),
@@ -747,17 +649,10 @@ function readCorrelatedMcpToolContext(
   return { server, tool, arguments: argumentsValue };
 }
 
-/** Reduces the raw permission request to what the screen and the policy use. */
 /**
- * Extracts the **name of the tool** called. Structured fields first, falling back to the title.
- *
- * ⚠️ This looks like it conflicts with this file's rule against judging policy by title
- * (contract ②), but it does not. What that rule prevents is scraping a path out of **a sentence
- * written for a person to read** (change the wording and the policy silently flips). What is
- * looked for here is an **identifier**, not a sentence, and the structured field takes precedence —
- * the `_meta` of an `allow_always` option carries `targets[].toolName` (measured). The title is the
- * fallback when that is absent, and measured, that value was the tool name itself
- * (`"mcp__atlas-vault__add_concept"`).
+ * The tool's identifier, structured fields first and the title as fallback. This does not break the rule against
+ * judging policy by title: an identifier is read, not a sentence written for a person (`allow_always`'s `_meta`
+ * carries `targets[].toolName`).
  */
 function readToolName(params: Record<string, unknown>): string | null {
   const options = Array.isArray(params.options) ? params.options : [];
@@ -777,11 +672,7 @@ function readToolName(params: Record<string, unknown>): string | null {
   return typeof title === 'string' ? title : null;
 }
 
-/**
- * Finds the path carried by the request; the argument name differs per tool. Our server uses
- * `filePath`, claude built-ins use `file_path`. Folder-sweeping tools take a directory
- * (`rootPath`), which is checked too.
- */
+/** The argument name differs per tool: our server uses `filePath`, claude built-ins `file_path`; folder sweeps take `rootPath`. */
 export const PATH_ARGUMENT_KEYS = ['file_path', 'filePath', 'rootPath', 'root_path', 'path', 'targetPath'] as const;
 
 function readPathArg(rawInput: Record<string, unknown>): string | null {
@@ -792,11 +683,7 @@ function readPathArg(rawInput: Record<string, unknown>): string | null {
   return null;
 }
 
-/**
- * The sentence shown on the permission card. A server-side elicitation reaches ACP with no
- * `toolCall.title`; `codex-acp` puts the message in `toolCall.content[]`. `title` wins when
- * present.
- */
+/** A server-side elicitation reaches ACP with no `toolCall.title`; `codex-acp` puts the message in `toolCall.content[]`. */
 function readPermissionTitle(toolCall: Record<string, unknown>): string | null {
   if (typeof toolCall.title === 'string' && toolCall.title.trim()) return toolCall.title;
   const content = Array.isArray(toolCall.content) ? toolCall.content : [];

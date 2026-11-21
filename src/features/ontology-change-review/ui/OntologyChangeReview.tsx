@@ -166,7 +166,6 @@ function FieldName({ fieldKey, testId }: { fieldKey: string; testId: string }) {
   );
 }
 
-/** One target and the sentence written about it, so each can be judged per line. */
 function SentenceRow({
   id,
   entry,
@@ -193,7 +192,6 @@ function SentenceRow({
         </p>
       )}
       {entry.change === 'removed' ? (
-        /* A sentence going away says "after: none" in the field rows' words. */
         <p className="text-label leading-label text-[color:var(--color-text-secondary)]">
           <span className="mr-1.5 text-caption text-[color:var(--color-text-quaternary)]">{t('afterLabel')}</span>
           {t('noValue')}
@@ -266,7 +264,6 @@ function ChangeDetails({
           ))}
           {item.relation.why ? (
             <>
-              {/* The reason gets the space; from/relation/to already appear in the row summary. */}
               <dt className="text-[color:var(--color-text-quaternary)]">{t('why')}</dt>
               <dd className="break-words leading-prose text-[color:var(--color-text-secondary)]">
                 {item.relation.why}

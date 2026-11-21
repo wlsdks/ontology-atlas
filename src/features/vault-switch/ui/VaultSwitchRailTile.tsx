@@ -17,10 +17,7 @@ import { recentVaultRowKey } from '../lib/recent-vault-row';
 import { measureSwitcherPlacement, type SwitcherPlacement } from '../lib/switcher-placement';
 import { RecentVaultList } from './RecentVaultList';
 
-/**
- * Characters the 64px rail label shows, keeping the tail where sibling folders differ. Small
- * enough that CSS `truncate` never cuts again; `vault-launch-chooser.spec.ts` measures it.
- */
+/** Keeps the tail where sibling folders differ; small enough that CSS `truncate` never cuts again (`vault-launch-chooser.spec.ts` measures it). */
 export const RAIL_LABEL_MAX_CHARS = 9;
 
 export function railLabel(name: string): string {
@@ -31,7 +28,6 @@ export function railLabel(name: string): string {
 const TABBABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-/** Keyboard stops inside `root`, in document order, that are actually on screen. */
 function tabbables(root: ParentNode): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(TABBABLE)).filter(
     (node) => node.getAttribute('aria-hidden') !== 'true' && node.getClientRects().length > 0,
@@ -41,11 +37,7 @@ function tabbables(root: ParentNode): HTMLElement[] {
 /* 416, not 320: at 320 the text column was 168px against a ~260px facts line; the placement shrinks it when the free map is narrower. */
 const POPOVER_WIDTH_PX = 416;
 
-/**
- * Dims and blocks the workspace right of the rail while the popover is open; a press on it
- * closes the popover and never reaches a map node. It reuses the settings scrim classes
- * so reduced motion keeps its fade.
- */
+/** A press on it closes the popover and never reaches a map node; it reuses the settings scrim classes so reduced motion keeps its fade. */
 function SwitcherScrim({ open, left }: { open: boolean; left: number }) {
   const { mounted, exiting } = usePanelPresence(open);
   if (!mounted) return null;
@@ -60,20 +52,14 @@ function SwitcherScrim({ open, left }: { open: boolean; left: number }) {
 }
 const POPOVER_MAX_HEIGHT_PX = 640;
 
-/**
- * The open folder's name and the way to switch it, at the top of the rail on every destination.
- * Renders only while a folder is open: the chooser and the sample have no folder to name.
- */
+/** Renders only while a folder is open: the chooser and the sample have no folder to name. */
 export function VaultSwitchRailTile() {
   const t = useTranslations('vaultSwitch');
   const vault = useLocalVault();
   const { open: pickFolder, openRecent, forgetRecent, status: vaultStatus } = vault;
   const { open, setOpen, ref, surfaceRef } = useDismissibleMenu();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
-  /*
-   * The popover is portalled to `document.body` so INDEX cannot paint over it, hence coordinates.
-   * The spec `app-chrome-interaction.spec.ts` measures the placement by elementFromPoint.
-   */
+  /* Portalled to `document.body` so INDEX cannot paint over it, hence coordinates; `app-chrome-interaction.spec.ts` measures the placement by elementFromPoint. */
   const [anchor, setAnchor] = useState<SwitcherPlacement | null>(null);
   const place = useCallback(() => {
     const trigger = triggerRef.current;
@@ -136,10 +122,7 @@ export function VaultSwitchRailTile() {
     if (vaultStatus === 'loaded') returnFocusIfLost();
   }, [busy, vaultStatus, returnFocusIfLost]);
 
-  /*
-   * Tab past either edge closes the popover and continues where Tab from the chip would go.
-   * Handled on keydown, not blur: a blur timeout misfires when the window itself loses focus.
-   */
+  /* Tab past either edge closes the popover; handled on keydown, not blur, since a blur timeout misfires when the window itself loses focus. */
   const handleSurfaceKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return;
@@ -273,14 +256,12 @@ export function VaultSwitchRailTile() {
         tabIndex={-1}
         aria-label={t('switcherAriaLabel')}
         data-testid="vault-switch-popover"
-        /* Focusing the portalled surface puts its list next in the tab order. */
         ref={setSurface}
         onExited={returnFocusIfLost}
         {...transientSurface('anchored')}
         style={{ top: anchor.top, left: anchor.left, width: anchor.width, maxHeight: anchor.maxHeight }}
         className="fixed z-50 overflow-y-auto rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--shadow-elevation-2)]"
       >
-        {/* One start line: captions, row glyphs and the picker glyph all begin 12px in. */}
         <div>
         <p className="px-3 pt-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
           {t('openFolderLabel')}
@@ -293,7 +274,6 @@ export function VaultSwitchRailTile() {
             {path}
           </p>
         ) : null}
-        {/* The current folder is not offered as somewhere to switch to. */}
         {alternatives.length > 0 ? (
           <>
             <p className="px-3 pb-1.5 pt-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">

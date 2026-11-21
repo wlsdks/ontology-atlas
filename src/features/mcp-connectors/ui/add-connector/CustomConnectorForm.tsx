@@ -50,7 +50,6 @@ export function CustomConnectorForm({
   const [args, setArgs] = useState(prefill.args);
   const [url, setUrl] = useState(prefill.url);
   const [variables, setVariables] = useState<DraftVariable[]>(prefill.variables);
-  /** Once the person types a path, the picker stops overwriting it. */
   const [typedCommand, setTypedCommand] = useState(false);
 
   const installed = (runtimes ?? []).filter((runtime) => runtime.path !== null);
@@ -105,9 +104,6 @@ export function CustomConnectorForm({
           className="w-full"
         />
 
-        {/*
-         * One exclusive choice, so a segmented control; `aria-pressed` chips announce two toggles.
-         */}
         <div>
           <p className="text-label leading-label text-[color:var(--color-text-secondary)]">
             {t('transportLabel')}
@@ -172,7 +168,6 @@ export function CustomConnectorForm({
                     </Chip>
                   </div>
                   {command && !typedCommand ? (
-                    // The full path is what gets written, so it is shown under the choice.
                     <code
                       data-testid={`${testIdPrefix}-custom-runtime-path`}
                       className="mt-1 block break-all font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"

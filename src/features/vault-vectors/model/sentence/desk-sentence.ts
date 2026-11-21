@@ -2,16 +2,12 @@ import { formatSize } from '@/shared/lib/format-size';
 import type { DeskLine, DeskLineMessage, DeskProgress } from '../desk-line';
 import { modelFailedSentence } from './model-failed-sentence';
 
-/** `useTranslations('library.questionDesk.meaning')`, or any translator with its keys. */
 type DeskTranslate = (
   key: DeskLineMessage | 'failureDetail' | 'modelFailedDetail' | 'modelFailedGeneric',
   values?: Record<string, string | number> | DeskLine['values'],
 ) => string;
 
-/**
- * The desk line's sentence in words, wherever the line is said: under the question field and in
- * the long-work seat. `progress` is what the ring draws; a working line without it counts nothing.
- */
+/** A working line without `progress` counts nothing. */
 export function deskSentence(
   t: DeskTranslate,
   locale: string,

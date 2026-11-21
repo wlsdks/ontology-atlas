@@ -8,19 +8,13 @@ import { getSampleSourceSnapshot, type SampleSource } from '@/shared/lib/vault-f
 import { LocalVaultContext } from './local-vault-context';
 import { useSampleSource } from './use-sample-source';
 
-/**
- * `loading`: a web visitor's sample is on its way. `ready`: a sample is in hand. `failed`: it could
- * not be downloaded, even after a retry. `none`: nothing will load, because the installed app never
- * renders a bundled sample (docs/DECISIONS.md, 2026-08-30) or a vault has been chosen and the
- * sample is not wanted.
- */
+/** `loading`: a web visitor's sample is on its way. `ready`: in hand. `failed`: not downloaded even after a retry. `none`: nothing will load (the installed app never renders a bundled sample, or a vault has been chosen). */
 export type StaticVaultStatus = 'loading' | 'ready' | 'failed' | 'none';
 
 interface StaticVaultState {
   source: StaticVaultSource;
   status: StaticVaultStatus;
   sample: SampleSource;
-  /** Starts the download if needed and returns a promise that settles when the sample has arrived or failed. */
   wait: () => Promise<unknown>;
   retry: () => void;
 }
@@ -30,11 +24,8 @@ const getServerState = () => 'idle' as const;
 const settled = () => Promise.resolve();
 
 /**
- * Reads the bundled sample the screen shows. With `demand` (the default) the first reader starts
- * its download; a reader that only wants whatever is there, like a closed palette, passes false so
- * a surface that never draws the sample never fetches it. While the next sample downloads, the
- * previous one stays in `source`, so a change of sample swaps in place; before any has arrived
- * `source` is the empty sample of the same name.
+ * With `demand` (the default) the first reader starts the download; a reader that only wants what is there passes false, so a
+ * surface that never draws the sample never fetches it. While the next sample downloads the previous one stays in `source`.
  */
 function useStaticVaultState(
   override: SampleSource | undefined,
@@ -89,12 +80,7 @@ function useStaticVaultState(
   return { source, status: 'loading', sample, wait: () => bundledSamples.load(target), retry };
 }
 
-/**
- * Screen code must use this hook, not the bundled JSON, or it ignores the sample choice. In local
- * mode callers discard the value. `override` pins one sample regardless of the choice (the docs
- * screen's dogfood link). The value is empty until `useStaticVaultStatus()` says `ready`, and
- * stays empty in the installed app. See `entities/docs-vault/lib/bundled-vault/load-static-vault-source.ts`.
- */
+/** Screen code must use this hook, not the bundled JSON, or it ignores the sample choice. `override` pins one sample; the value is empty until the status is `ready`, and stays empty in the installed app. */
 export function useStaticVaultSource(
   override?: SampleSource,
   options?: { demand?: boolean },
@@ -109,7 +95,6 @@ export function useStaticVaultStatus(
   return useStaticVaultState(override, options?.demand ?? true).status;
 }
 
-/** What the hydration boundary needs: the status, a promise to suspend on, and a retry. */
 export function useStaticVaultGate(override?: SampleSource): {
   status: StaticVaultStatus;
   wait: () => Promise<unknown>;
@@ -119,12 +104,7 @@ export function useStaticVaultGate(override?: SampleSource): {
   return { status, wait, retry };
 }
 
-/**
- * Starts the preferred sample's download without a screen: a web route that is about to draw the
- * sample calls this when its code loads, so the download overlaps the rest of the page's scripts
- * instead of waiting for the first render. The installed app, which never draws a sample, starts
- * nothing, and neither does a build step.
- */
+/** Starts the preferred sample's download without a screen, so it overlaps the page's scripts; the installed app and a build step start nothing. */
 export function startPreferredSampleDownload(): void {
   if (typeof window === 'undefined') return;
   try {

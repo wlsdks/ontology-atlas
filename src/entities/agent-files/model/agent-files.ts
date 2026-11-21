@@ -768,7 +768,6 @@ export interface AgentFilesUiModel {
   driftCount: number;
 }
 
-/** Joins analysis records back to manifest docs by slug. */
 export function buildAgentFilesUiModel(
   analysis: AgentFilesAnalysis,
   docs: Array<Pick<VaultDocRef, 'path' | 'slug'>>,

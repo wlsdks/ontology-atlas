@@ -23,7 +23,6 @@ const STEP_KEY: Record<RunStep, 'stepDownload' | 'stepFit' | 'stepRead'> = {
 
 type Clip = 'think' | 'compare' | 'read' | 'waiting' | 'success';
 
-/** Moru's row for the step: thinking while the model comes, comparing while it is fitted, reading the files. */
 function clipOf(step: RunStep | null, done: boolean): Clip {
   if (done) return 'success';
   if (step === 'download') return 'think';
@@ -32,7 +31,7 @@ function clipOf(step: RunStep | null, done: boolean): Clip {
   return 'waiting';
 }
 
-/** Moru at 64px: the native 128px cell at half size, so a 2x screen draws every pixel of it. */
+/** The native 128px cell at half size, so a 2x screen draws every pixel of it. */
 function StageMoru({ clip }: { clip: Clip }) {
   const reduced = usePrefersReducedMotion();
   const [shown, setShown] = useState<Clip>(clip);
@@ -88,11 +87,6 @@ function Steps({ stage, done }: { stage: RunStage; done: boolean }) {
   );
 }
 
-/**
- * The bar of the step that runs: an indigo fill that eases to each value, with a light that keeps
- * passing over it while the work runs; with nothing to count it is a full, faint track the light
- * still crosses.
- */
 function StageBar({ fraction, measure, label, done }: { fraction: number | null; measure: 'bytes' | 'files' | null; label: string; done: boolean }) {
   const shown = done ? 1 : fraction ?? 1;
   const counted = done || fraction !== null;
@@ -126,10 +120,7 @@ function StageBar({ fraction, measure, label, done }: { fraction: number | null;
   );
 }
 
-/**
- * The files just read, sliding in as each lands, and the passages recorded so far. Passages are
- * recorded in batches across files, so the count is the folder's, never one file's.
- */
+/** Passages are recorded in batches across files, so the count is the folder's, never one file's. */
 function ReadFeed({ stage }: { stage: RunStage }) {
   const t = useTranslations('library.questionDesk.meaning');
   const reduced = usePrefersReducedMotion();
@@ -169,7 +160,6 @@ function ReadFeed({ stage }: { stage: RunStage }) {
 
 const SECONDS_PER_MINUTE = 60;
 
-/** The download's speed, and the minutes left at that speed, once three seconds were measured. */
 function DownloadRate({ download }: { download: { doneBytes: number; totalBytes: number; checking: boolean } | null }) {
   const t = useTranslations('library.questionDesk.meaning');
   const locale = useLocale();
@@ -191,11 +181,6 @@ function DownloadRate({ download }: { download: { doneBytes: number; totalBytes:
   );
 }
 
-/**
- * The desk's stage while search by meaning gets ready: Moru at the work, the three steps with the
- * one that runs lit, its bar, the line's own sentence and press, and the files turning into
- * passages as they are read. Finished in view, it says what is ready and hands over to the question.
- */
 export function MeaningRunStage({
   stage,
   done,
@@ -206,11 +191,9 @@ export function MeaningRunStage({
   onDismiss,
 }: {
   stage: RunStage;
-  /** The job finished while the stage was in view. */
   done: { passages: number; files: number } | null;
   download: { doneBytes: number; totalBytes: number; checking: boolean } | null;
   measure: 'bytes' | 'files' | null;
-  /** The desk line's sentence, minutes, file and presses. */
   facts: ReactNode;
   onAsk: () => void;
   onDismiss: () => void;

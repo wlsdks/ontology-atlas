@@ -8,7 +8,6 @@ import {
 } from '../../lib/ontology-starter';
 import { resolveBundledLaunch, writeAgentConfigFiles } from './vault-sidecars';
 
-/** The starter a door writes when nobody was asked what the folder holds: all of it. */
 export const FULL_STARTER_SHAPE: VaultShape = { map: true, wiki: true };
 
 /**
@@ -16,9 +15,7 @@ export const FULL_STARTER_SHAPE: VaultShape = { map: true, wiki: true };
  * chose, but only into a folder that holds no documents yet.
  */
 interface VaultStarterRequest {
-  /** The screen's language. The starter bodies are written in it. */
   locale: string;
-  /** What the person said the folder will hold. Omitted means the whole starter. */
   shape?: VaultShape;
 }
 
@@ -26,9 +23,7 @@ export interface VaultOpenOptions {
   starter?: VaultStarterRequest;
 }
 
-/** What an open settled into, for the door that asked for it. */
 export interface VaultOpenResult {
-  /** The folder was read and is the open vault now. False on a cancel or a failure: the state says which. */
   opened: boolean;
   /** Starter files written before the folder was first shown. 0 when none was asked for or it already held documents. */
   starterWritten: number;
@@ -49,7 +44,6 @@ interface StarterWrite {
   agentConfigCreated: number;
   created: number;
   skipped: number;
-  /** The first file that could not be written (an existing file is a skip, not a failure). */
   firstFailure: unknown;
 }
 
@@ -118,7 +112,6 @@ export async function writeVaultStarter(
     // Claude Code does not read `AGENTS.md` directly; it goes through `CLAUDE.md`'s import.
     // With only one of them, one of the two runtimes gets no guide at all.
     vaultClaudeBridgeForLocale(starterLocale),
-    // The procedural skill set: in what order and where to stop. See `VAULT_SKILL_NAMES`.
     ...(shape.map ? vaultSkillFilesForLocale(starterLocale) : []),
     // The wiki page template, the same string the validator enforces; the CLI `init` writes it too.
     ...(shape.wiki ? [{ relPath: 'wiki/_template.md', content: WIKI_PAGE_TEMPLATE }] : []),

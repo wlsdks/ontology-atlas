@@ -13,7 +13,6 @@ import { terminalMatchesWriter } from '../work-receipts/work-receipt';
 
 const TERMINAL_TOOL_STATES = new Set(['completed', 'failed', 'cancelled']);
 
-/** What one `session/update` notification may change in the session that received it. */
 export interface SessionUpdateTargets {
   sessionIdRef: RefObject<string | null>;
   activeTurnRef: RefObject<ActiveTurn | null>;
@@ -31,11 +30,7 @@ export interface SessionUpdateTargets {
   setApprovedOntologyWriteTracked: (request: AcpPermissionRequest | null) => void;
 }
 
-/**
- * Reads one update the agent reported and changes only what it reports: text and thought
- * chunks, tool rows, the plan, slash commands and the mode. A tool row appears only after the
- * agent really called that tool. An allowed ontology write's receipt closes on its terminal update.
- */
+/** Changes only what the update reports; a tool row appears only after the agent really called that tool, and an allowed ontology write's receipt closes on its terminal update. */
 export function applySessionUpdate(
   update: Record<string, unknown>,
   updateContext: { sessionId: string | null },
@@ -58,7 +53,6 @@ export function applySessionUpdate(
     setApprovedOntologyWriteTracked,
   } = targets;
   if (!updateContext.sessionId || updateContext.sessionId !== sessionIdRef.current) return;
-  // Any update at all counts as the turn speaking; what it says does not matter here.
   setLastTurnUpdateAt(Date.now());
   const kind = typeof update.sessionUpdate === 'string' ? update.sessionUpdate : '';
   const content = update.content as { text?: unknown } | undefined;
@@ -69,17 +63,11 @@ export function applySessionUpdate(
   }
 
   if (kind === 'available_commands_update') {
-    // What `/` can invoke. It holds **only what arrived** — with nothing, typing `/` in the
-    // composer does nothing (`slash-commands.ts`).
     setSlashCommands(readSlashCommands(update));
     return;
   }
   if (kind === 'current_mode_update') {
-    /*
-     * The adapter moves the session on its own and announces it only with this notification.
-     * State follows (`applyCurrentMode`); if the new mode removes the gate, the `gate-off`
-     * notice is raised.
-     */
+    // The adapter moves the session on its own and announces it only here; a gate-removing mode raises the `gate-off` notice.
     const modeId = typeof update.currentModeId === 'string' ? update.currentModeId.trim() : '';
     if (!modeId) return;
     setChoices((prev) => applyCurrentMode(prev, modeId));

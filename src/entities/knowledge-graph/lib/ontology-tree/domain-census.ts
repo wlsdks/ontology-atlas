@@ -1,7 +1,6 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
 import { isContainmentRelation } from "./relations";
 
-/** First-parent, cycle-safe capability and element counts. */
 export interface DomainCensusRow {
   id: string;
   title: string;
@@ -14,7 +13,6 @@ export interface DomainCensusRow {
 const DEFAULT_TARGET_KINDS: readonly string[] = ["domain", "project"];
 
 export interface DomainCensusOptions {
-  /** Also collect member ids, e.g. for ranking top capabilities. */
   collectCapabilityIds?: boolean;
 }
 
@@ -195,7 +193,6 @@ export function computeDomainCensusRows(
   return rows.sort((a, b) => b.total - a.total || a.title.localeCompare(b.title));
 }
 
-/** id → row. */
 export function domainCensusById(rows: readonly DomainCensusRow[]): ReadonlyMap<string, DomainCensusRow> {
   return new Map(rows.map((row) => [row.id, row]));
 }

@@ -5,7 +5,6 @@ export type FsPermissionMode = 'read' | 'readwrite';
 export type FsPermissionState = 'granted' | 'prompt' | 'denied';
 
 interface VerifyOptions {
-  /** Re-prompts when not granted; default false. */
   ask?: boolean;
 }
 

@@ -28,7 +28,6 @@ function FactList({ facts }: { facts: Fact[] }) {
   );
 }
 
-/** The chosen model's facts and presses: what it downloads or keeps, what is sent, and its start. */
 export function MeaningModelDetail({
   choice,
   probe,

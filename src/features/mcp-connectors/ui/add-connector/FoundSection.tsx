@@ -18,10 +18,8 @@ import { GroupHeading } from './GroupHeading';
 
 type SourceKey = `source.${ReturnType<typeof shortSourceKey>}`;
 
-/** Enough to recognise a machine, not to list it. */
 const FOUND_FOLD = 3;
 
-/** One row per server that actually runs. */
 export function FoundSection({
   canDiscover,
   discovery,

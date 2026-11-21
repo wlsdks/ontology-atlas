@@ -17,7 +17,6 @@ export interface AcpTurnCompletion extends AcpTurnStart {
   events: readonly AcpEvent[];
 }
 
-/** The turn in flight, from the person's send until the agent's prompt answer. */
 export interface ActiveTurn {
   start: AcpTurnStart;
   observer: ((turn: AcpTurnCompletion) => void | Promise<void>) | null;

@@ -60,7 +60,7 @@ export function applyFrontmatterUpdates(
     updatedKeys.add(key);
     swallowingBlock = entry.value === '' || /^[|>](?:[1-9][-+]?|[-+][1-9]?)?$/.test(entry.value);
     const value = updates[key];
-    if (value === null) continue; // delete
+    if (value === null) continue;
     nextLines.push(`${serializeKey(key)}: ${serializeFrontmatterValue(value)}`);
   }
   for (const [key, value] of Object.entries(updates)) {
@@ -114,7 +114,6 @@ function needsQuote(s: string): boolean {
   return s === 'true' || s === 'false' || (s !== '' && !Number.isNaN(Number(s)));
 }
 
-/** Folds newlines to the two-character `\n` escape. */
 function escapeQuoted(s: string): string {
   return s
     .replace(/\\/g, '\\\\')

@@ -48,12 +48,10 @@ export interface AddConnectorDialogInput {
   attachedNames: Set<string>;
   onAddDiscovered: (server: DiscoveredConnector) => Promise<ConnectorWriteResult | null>;
   onAddCustom: (connector: ConnectorRecord) => Promise<ConnectorWriteResult | null>;
-  /** A draft handed in from outside, such as an install link. */
   incoming?: CustomPrefill | null;
   testIdPrefix: string;
 }
 
-/** What the dialog holds while it is open, and the presses that change it. */
 export function useAddConnectorDialog({
   open,
   onClose,
@@ -69,15 +67,11 @@ export function useAddConnectorDialog({
   const [query, setQuery] = useState('');
   const [failure, setFailure] = useState<AddFailureReason | null>(null);
   const [prefill, setPrefill] = useState<CustomPrefill>(EMPTY_PREFILL);
-  /** Bumped on every pre-fill so the form remounts with the new values. */
   const [prefillTick, setPrefillTick] = useState(0);
   const [customOpen, setCustomOpen] = useState(false);
   const [asking, setAsking] = useState<{ entryId: string; variant: string } | null>(null);
 
-  /**
-   * This machine's runtimes, read once on open; asking per keystroke would walk directories
-   * while somebody types.
-   */
+  /** Read once on open: asking per keystroke would walk directories while somebody types. */
   const [runtimes, setRuntimes] = useState<ResolvedRuntime[] | null>(null);
   useEffect(() => {
     if (!open) return;
@@ -91,10 +85,8 @@ export function useAddConnectorDialog({
   }, [open]);
 
   /*
-   * Two resets adjusted during render, not in an effect, so the dialog never paints a frame in
-   * the wrong state (`react-hooks/set-state-in-effect` refuses the effect): opening folds
-   * everything back, and a draft from outside unfolds the form filled but unsaved, because a link
-   * is an invitation and the press stays the person's (`src/shared/lib/connectors/mcp-install-link.ts`).
+   * Two resets adjusted during render, not in an effect (`react-hooks/set-state-in-effect`), so the dialog never paints a frame in the wrong state:
+   * opening folds everything back, and a draft from outside unfolds the form filled but unsaved, because a link is an invitation and the press stays the person's.
    */
   const [seenOpen, setSeenOpen] = useState(open);
   if (open !== seenOpen) {
@@ -106,10 +98,7 @@ export function useAddConnectorDialog({
       setCustomOpen(false);
     }
   }
-  /*
-   * Seeded `null`, not with `incoming`, so the first arrival is always a change; otherwise a link
-   * opened the dialog with the filled form folded out of sight.
-   */
+  // Seeded null, not `incoming`, so the first arrival is always a change; otherwise a link opened the dialog with the filled form folded away.
   const [seenIncoming, setSeenIncoming] = useState<CustomPrefill | null>(null);
   if (open && incoming && incoming !== seenIncoming) {
     setSeenIncoming(incoming);
@@ -118,11 +107,7 @@ export function useAddConnectorDialog({
     setCustomOpen(true);
   }
 
-  /*
-   * Focuses the search after the dialog records its opener. With `autoFocus` the trap recorded
-   * the search box as opener, and Escape dropped focus to `<body>`. This parent effect runs after
-   * the trap's child effect.
-   */
+  // Focuses the search after the dialog records its opener: with `autoFocus` the trap recorded the search box as opener and Escape dropped focus to `<body>`.
   const searchRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     if (open) searchRef.current?.focus({ preventScroll: true });
@@ -199,7 +184,6 @@ export function useAddConnectorDialog({
   const nothingMatches =
     needle.length > 0 && catalogueMatches.length === 0 && (!canDiscover || foundMatches.length === 0);
 
-  /** As the record the folder will hold. */
   const catalogueRecord = (entry: CatalogueEntry, variant: CatalogueVariant) => {
     const id = newConnectorId();
     return catalogueDraft(entry, variant, {
@@ -221,7 +205,6 @@ export function useAddConnectorDialog({
     setAsking({ entryId: entry.id, variant: variantKey(variant) });
   };
 
-  /** The same facts in the editable by-hand form. */
   const editCatalogue = (entry: CatalogueEntry, variant: CatalogueVariant) => {
     setPrefill(prefillFromCatalogue(entry, variant, runtimes));
     setPrefillTick((tick) => tick + 1);

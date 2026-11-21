@@ -11,7 +11,6 @@ import { createVaultTextReader } from '@/shared/lib/vault-folder/vault-text-read
 
 export interface ResolvedDocumentStore {
   store: DocumentStore;
-  /** The folder handle or the bundled sample; a different origin never shows another's detail. */
   origin: object;
 }
 
@@ -51,10 +50,7 @@ function sampleHolding(doc: DocumentRef, samples: readonly (StaticVaultSource | 
   );
 }
 
-/**
- * A local document carries the stamp it was read at; a bundled one has none. `null`: no source can
- * read this document now.
- */
+/** `null`: no source can read this document now. */
 export function documentStoreFor(
   doc: DocumentRef,
   local: GrantedVaultFiles | null,

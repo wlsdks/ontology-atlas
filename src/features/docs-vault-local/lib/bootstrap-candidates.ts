@@ -1,20 +1,7 @@
 /**
- * Derives ontology candidates deterministically from a scanned vault manifest (no AI, nothing
- * transmitted, no side effects) for a folder that has `.md` files but no ontology nodes; the
- * browser counterpart of the CLI `bootstrap` and MCP `analyze_repo_structure`.
- *
- * Candidate rules:
- * - the root README sources the project title (the file itself is never touched, so GitHub does
- *   not render a frontmatter table)
- * - a top-level folder holding at least one md → domain candidate
- * - every other `.md` → element candidate whose `domain:` is its top-level folder
- * - a root-level `.md` (README excepted) → an element with no domain, linked by project.md's
- *   `elements:` array (derive-ontology's elements[] rule)
- * - files somebody else owns are tallied instead, so the screen can say why they are missing
- *
- * An element's `domain: <name>` and a project's `domains: [<name>]` both resolve to
- * `domain:slugifyName(name)` (derive-ontology-from-vault.ts); both use the original name or the
- * graph does not connect.
+ * Derives ontology candidates deterministically from a scanned vault manifest (no AI, nothing transmitted, no side effects) for a folder with `.md` files but no ontology nodes; the browser counterpart of the CLI `bootstrap` and MCP `analyze_repo_structure`.
+ * The root README sources the project title (never touched, so GitHub renders no frontmatter table); a top-level folder holding md is a domain candidate; every other `.md` an element whose `domain:` is its top-level folder; a root-level `.md` an element linked by project.md's `elements:`; files somebody else owns are tallied so the screen can say why they are missing.
+ * An element's `domain: <name>` and a project's `domains: [<name>]` both resolve to `domain:slugifyName(name)`; both must use the original name or the graph does not connect.
  */
 
 import { generateNodeUid, slugifyName } from '@/entities/docs-vault';
@@ -53,9 +40,7 @@ export interface BootstrapPlan {
   alreadyTypedCount: number;
   /** Runtime-owned `SKILL.md` files excluded, so the screen can say why they are missing. */
   runtimeOwnedSkipped: number;
-  /** How many were excluded as agent pointer documents (`AGENTS.md`, `CLAUDE.md`, `.claude/**` …). */
   agentPointerSkipped: number;
-  /** How many were excluded as the Library's own files (`sources/`, `wiki/`, `.ontology-atlas/`). */
   librarySkipped: number;
 }
 
@@ -107,7 +92,6 @@ function isLibraryOwnedDoc(slug: string): boolean {
   return LIBRARY_OWNED_DIRS.some((dir) => slug.startsWith(`${dir}/`));
 }
 
-/** Documents that already carry ontology nodes drop out and are tallied in `alreadyTypedCount`. */
 export function deriveBootstrapPlan(
   docs: readonly BootstrapDocInput[],
   vaultName: string,

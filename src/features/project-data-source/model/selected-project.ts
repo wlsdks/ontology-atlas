@@ -24,10 +24,6 @@ export function subscribeSelectedProject(listener: () => void): () => void {
   };
 }
 
-/**
- * The project the Projects door opens: the recorded one while it still exists, else the folder's
- * only project, else none (the list). O(n) in the folder's documents.
- */
 export function resolveSelectedProjectSlug(recorded: string | null, docs: readonly VaultDoc[]): string | null {
   if (recorded !== null && findProjectDocInList(docs, recorded) !== null) return recorded;
   return resolveSoleProjectSlug(docs);

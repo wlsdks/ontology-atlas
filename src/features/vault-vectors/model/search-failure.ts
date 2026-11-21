@@ -3,11 +3,7 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import { subscribeVectorStatus, type VectorFailure, type VectorFound, type VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
 
-/**
- * What the last search learned that the folder's status does not hold: Ollama did not answer, or
- * no longer has the model. The app leaves the status as it was, so the line says this failure until
- * a search answers or the app sends the folder's next status event.
- */
+/** The app leaves the status as it was after these failures, so the line says one until a search answers or the app sends the folder's next status event. */
 const HELD_FAILURES: ReadonlySet<VectorFailure> = new Set(['runnerDown', 'modelMissing']);
 
 const failures = new Map<string, VectorFailure>();
@@ -28,12 +24,10 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-/** Whether the app keeps this failure in the folder's status, so the status is worth reading again. */
 export function statusKeepsFailure(failure: VectorFailure | null): boolean {
   return failure === null || !HELD_FAILURES.has(failure);
 }
 
-/** Holds a runner failure the search answered, and lets it go once a search answers. */
 export function noteSearchAnswer(rootPath: string, found: VectorFound): void {
   const before = failures.get(rootPath) ?? null;
   if (found.state === 'failed' && !statusKeepsFailure(found.failure)) failures.set(rootPath, found.failure!);
@@ -46,7 +40,6 @@ export function useSearchFailure(rootPath: string | null): VectorFailure | null 
   return useSyncExternalStore(subscribe, getSnapshot, () => null);
 }
 
-/** The status the line reads: the folder's, with the last search's runner failure laid over it. */
 export function withSearchFailure(status: VectorStatus | null, failure: VectorFailure | null): VectorStatus | null {
   if (status === null || failure === null) return status;
   return {

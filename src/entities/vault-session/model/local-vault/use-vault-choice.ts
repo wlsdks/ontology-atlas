@@ -127,14 +127,12 @@ export function useVaultChoice({
       return loaded ? { opened: true, ...loaded } : NOT_OPENED;
     } catch (err) {
       if (!isCurrent()) return NOT_OPENED;
-      // A cancel is not a failure: restore the state from before the picker (see `isPickerAbort`).
       if (isPickerAbort(err)) {
         setState(previousState);
         return NOT_OPENED;
       }
-      // A "cannot be a vault root" rejection is handled differently from a failure. Leaking
-      // the cause string to the screen would show the user `vault-root-rejected:filesystem-root`,
-      // and "please try again" is false guidance when every retry gives the same result.
+      // A "cannot be a vault root" rejection is not a failure: the cause string `vault-root-rejected:filesystem-root` would
+      // read badly, and "please try again" is false guidance when every retry gives the same result.
       const rejection = vaultRootRejectionReason(err);
       if (rejection) {
         setState((s) => ({
@@ -159,7 +157,6 @@ export function useVaultChoice({
     }
   }, [beginVaultReadSession, load, refreshRecentVaults, stateRef, mountedRef, pickerSequenceRef, setState, vaultReadSessionRef]);
 
-  /** Reopens a known folder; `options.starter` as in `open`. */
   const openRecent = useCallback(
     async (record: LocalFsHandleRecord, options: VaultOpenOptions = {}): Promise<VaultOpenResult> => {
       if (!isSupported()) {
@@ -228,11 +225,7 @@ export function useVaultChoice({
     [beginVaultReadSession, load, refreshRecentVaults, mountedRef, pickerSequenceRef, setState, vaultReadSessionRef],
   );
 
-  /**
-   * Stops listing one folder, or several, as a known folder, and deletes their search indexes; the
-   * folders are never touched.
-   * Every write goes through the store's queue and the list is read back once, so it redraws once.
-   */
+  /** Stops listing folders as known and deletes their search indexes; the folders are never touched. Every write goes through the store's queue and the list is read back once. */
   const forgetRecent = useCallback(
     async (target: LocalFsHandleRecord | readonly LocalFsHandleRecord[]) => {
       const records = ([] as LocalFsHandleRecord[]).concat(target);
@@ -295,10 +288,8 @@ export function useVaultChoice({
       }
       if (!isCurrent()) return;
       /*
-       * Two or more existing folders means the app asks instead of guessing; the count alone decides.
-       * No launch-chooser preference: forgetting a folder on the chooser is the control.
-       * Returning early leaves `status` 'idle' with the stored record untouched; `close()` would
-       * delete the `current` record.
+       * Two or more existing folders means the app asks instead of guessing; the count alone decides. Returning early
+       * leaves `status` 'idle' with the stored record untouched; `close()` would delete the `current` record.
        */
       const resolutions = await Promise.all(recent.map(tauriVaultRecordResolves));
       if (!isCurrent()) return;
@@ -316,7 +307,6 @@ export function useVaultChoice({
       const permission = await verifyRead(storedHandle, false);
       if (!isCurrent()) return;
       if (permission === 'granted') {
-        // (Desktop) Preflight so a moved or deleted stored folder classifies as 'path-missing'.
         const resolution = await tauriVaultRecordResolves(record);
         if (!isCurrent()) return;
         if (resolution !== 'ok') {

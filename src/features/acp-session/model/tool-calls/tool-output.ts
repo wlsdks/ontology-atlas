@@ -12,7 +12,6 @@ export const TOOL_OUTPUT_KEEP_CHARS = 64 * 1024;
 interface ToolOutputPreview {
   readonly preview: 'tool-output';
   readonly chars: number;
-  /** Tells the answer apart when repeated calls fold into one row. */
   readonly hash: string;
   readonly total?: number;
   readonly count?: number;
@@ -57,7 +56,6 @@ function serialize(value: unknown): string {
   }
 }
 
-/** What a tool event keeps of `rawOutput`; `evidence` says a turn awaits capture. */
 export function keepToolOutput(
   rawOutput: unknown,
   options: { evidence: boolean },

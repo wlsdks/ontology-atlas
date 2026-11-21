@@ -17,14 +17,12 @@ import {
   type ResolvedRuntime,
 } from '@/shared/lib/connectors/tauri-connector-runtimes';
 
-/** `crypto.randomUUID` exists on every surface this ships to. */
 export function newConnectorId(): string {
   return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
     ? crypto.randomUUID()
     : `c${Date.now().toString(36)}`;
 }
 
-/** A name, a value, and where the value goes. */
 export interface DraftVariable {
   name: string;
   value: string;
@@ -32,7 +30,6 @@ export interface DraftVariable {
   secret: boolean;
 }
 
-/** Handed to the by-hand form by a catalogue entry or an install link. */
 export interface CustomPrefill {
   name: string;
   transport: ConnectorTransport;
@@ -40,7 +37,6 @@ export interface CustomPrefill {
   args: string;
   url: string;
   variables: DraftVariable[];
-  /** Drawn above the form; absent for a blank form. */
   provenance?: { title: string; detail: string; docsUrl?: string };
 }
 
@@ -85,7 +81,6 @@ export function prefillFromCatalogue(
   };
 }
 
-/** An install link's parsed record, in the by-hand shape. */
 export function prefillFromRecord(record: ConnectorRecord): CustomPrefill {
   const entries: ConnectorValueEntry[] =
     record.transport === 'http' ? record.headers : record.env;
@@ -117,7 +112,6 @@ export interface DraftFields {
   variables: DraftVariable[];
 }
 
-/** The record the by-hand form currently describes; it never carries a secret's value. */
 export function buildDraftRecord({
   name,
   transport,
@@ -154,7 +148,6 @@ export function buildDraftRecord({
   };
 }
 
-/** The command line or address that will run, as shown before the press. */
 export function draftRuns(draft: ConnectorRecord): string {
   return draft.transport === 'http'
     ? (draft.url ?? '').trim()

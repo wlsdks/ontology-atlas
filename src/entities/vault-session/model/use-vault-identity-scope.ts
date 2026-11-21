@@ -34,13 +34,7 @@ export function useVaultIdentityScope(): VaultIdentityScope {
   });
 }
 
-/**
- * Session-only identity for transient state such as route cleanup, camera state,
- * and an open editor baseline. A folder name is display text, not identity: two
- * different parents can both contain `ontology/`, so each actual directory handle
- * gets its own in-memory token. Unlike `useVaultIdentityScope`, this value must
- * never become a persisted storage key.
- */
+/** Session-only identity for transient state (route cleanup, camera, an open editor baseline). A folder name is display text, not identity (two parents can both hold `ontology/`), so each directory handle gets an in-memory token; never a persisted storage key. */
 export function useVaultSessionIdentityScope(): VaultIdentityScope {
   const mode = useDataSourceMode();
   const localVault = useLocalVault();

@@ -9,7 +9,6 @@ import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vau
 import { gitDiff, gitPathsLastChange, isGitBridgeAvailable } from '@/shared/lib/git/tauri-git';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 
-/** Document slug → its manifest date: the file's own date locally, the build's stamp in a sample. */
 export function manifestToFreshnessIndex(manifest: VaultManifest): Map<string, string> {
   const map = new Map<string, string>();
   for (const doc of manifest.docs) {
@@ -20,19 +19,12 @@ export function manifestToFreshnessIndex(manifest: VaultManifest): Map<string, s
 
 const EMPTY_FRESHNESS_INDEX: Map<string, string> = new Map();
 
-/** What Git says about a vault's documents, keyed by vault-relative path (`VaultDoc.path`). */
 export interface VaultDocGitState {
-  /** The newest commit touching each document, as far as the walk reached; null when none did. */
   committedAt: ReadonlyMap<string, string | null>;
-  /** Documents Git shows changed since their last commit: edited, added, renamed or never tracked. */
   pending: ReadonlySet<string>;
 }
 
-/**
- * Change dates by the manifest's rule (`scripts/docs-vault/build-docs-vault.mjs`, `latestInputDay`): Git's
- * last commit unless Git shows the file changed since. A file date alone is not a change date,
- * since a clone or checkout stamps every file.
- */
+/** A file date alone is not a change date, since a clone or checkout stamps every file. */
 export function resolveDocChangeDates(
   docs: readonly Pick<VaultDoc, 'slug' | 'path' | 'updatedAt'>[],
   git: VaultDocGitState,
@@ -45,11 +37,7 @@ export function resolveDocChangeDates(
   return dates;
 }
 
-/**
- * The documents among `docPaths` that Git lists as changed. Git names a path from the
- * repository's root and the vault may sit anywhere inside it (`<project>/atlas`), so each
- * changed path is matched to the longest document path it ends with, on whole segments.
- */
+/** Git names a path from the repository's root and the vault may sit anywhere inside it, so each changed path is matched to the longest document path it ends with, on whole segments. */
 export function pendingDocPaths(changedRepoPaths: readonly string[], docPaths: Iterable<string>): Set<string> {
   const docs = new Set(docPaths);
   const pending = new Set<string>();
@@ -69,22 +57,17 @@ export function pendingDocPaths(changedRepoPaths: readonly string[], docPaths: I
 /** Dates docs by `git_paths_last_change` walk (MAX_EVIDENCE_PATHS: src-tauri/src/git/evidence.rs). */
 const GIT_WALK_PATH_LIMIT = 512;
 
-/** A document that is a node — the only documents the change dates are read for. */
 function isNodeDocument(doc: VaultDoc): boolean {
   return typeof doc.frontmatter.kind === 'string' && doc.frontmatter.kind.trim() !== '';
 }
 
-/** One settled Git walk: the folder and the read it answered, and what the files said then. */
 interface GitWalk {
   root: string;
   manifest: VaultManifest;
-  /** null: Git could not be read for this folder (no repository, no Git). */
   git: VaultDocGitState | null;
-  /** Each document's file date when Git was asked, by path. */
   fileDates: ReadonlyMap<string, string>;
 }
 
-/* One Git walk per folder read, shared by every reader and kept after it settles. */
 let settledWalk: GitWalk | null = null;
 let pendingWalk: { root: string; manifest: VaultManifest } | null = null;
 const walkListeners = new Set<() => void>();
@@ -127,17 +110,11 @@ function requestDocGitState(root: string, manifest: VaultManifest): void {
 }
 
 export interface VaultDocDates {
-  /** Document slug → when that document last changed (ISO). */
   index: ReadonlyMap<string, string>;
   /** Git is being asked for the first time; nothing is dated, or file dates flash everything as changed today. */
   reading: boolean;
 }
 
-/**
- * When each vault document last changed, keyed by slug, for every recency surface. In the app
- * inside Git this uses `resolveDocChangeDates`; elsewhere the manifest dates stand. A re-read
- * keeps the last walk's answer for unwritten files.
- */
 export function useVaultDocDates(): VaultDocDates {
   const mode = useDataSourceMode();
   const vault = useLocalVault();

@@ -1,12 +1,6 @@
 'use client';
 
-/**
- * Asks once whether an agent can be attached from here.
- *
- * The installed app knows the path of the MCP server inside its own bundle, which is what makes
- * one-click possible; a browser does not. This hook returns that one fact and the screen branches on
- * it. The native side is not re-asked on every render (it does not change for the app's lifetime).
- */
+/** Asks once whether an agent can be attached from here: the installed app knows the MCP server's path inside its bundle, a browser does not. The native side is not re-asked on every render. */
 import { useEffect, useState } from 'react';
 
 import {
@@ -18,11 +12,7 @@ import {
 import { readBundledMcpServer } from '@/shared/lib/desktop-shell/tauri-agent-setup';
 
 export function useAgentServer(): AgentServerAvailability {
-  /*
-   * **Pending, not "no"** — the first render happens before the lookup answers, and starting
-   * at the answered-unavailable value made the installed app draw the browser's degradation
-   * card until it came back.
-   */
+  // Pending, not "no": answering unavailable first would make the installed app draw the browser's degradation card until the lookup returned.
   const [availability, setAvailability] = useState<AgentServerAvailability>(agentServerPending);
 
   useEffect(() => {

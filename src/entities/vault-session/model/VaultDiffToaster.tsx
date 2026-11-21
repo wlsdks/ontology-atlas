@@ -31,11 +31,7 @@ export function VaultDiffToaster() {
   const locale = useLocale();
   const prevMapRef = useRef<Map<string, number | null> | null>(null);
   const prevHandleRef = useRef<typeof handle>(null);
-  /**
-   * When the previous diff was seen — only `delete_concept` entries inside this window belong to
-   * this burst. Calling `Date.now()` during render would be impure (`react-hooks/purity`), so it is
-   * filled inside the effect when the first baseline is stored.
-   */
+  /** Only `delete_concept` entries inside the window since the previous diff belong to this burst; filled inside the effect because `Date.now()` during render is impure (`react-hooks/purity`). */
   const prevSeenAtRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -79,17 +75,14 @@ export function VaultDiffToaster() {
       (slug) => observedSlugs.has(slug) && !selfWritten.has(slug) && !alreadyReported.has(slug),
     );
 
-    // Deletions cannot be counted from the manifest — a rename or merge looks like "deleted +
-    // added" (measured, see the diff-manifest.ts comment). A tool name knows the intent, so only
-    // `delete_concept` entries inside this burst's window are counted.
+    // A rename or merge looks like "deleted + added" in the manifest; the tool name knows the intent, so only `delete_concept`
+    // entries inside this burst's window are counted.
     const removed = countRecentDeletes(agentActivityLog, prevSeenAtRef.current ?? 0);
     prevSeenAtRef.current = Date.now();
 
     if (externalAdded.length === 0 && externalModified.length === 0 && removed === 0) return;
 
-    // Slugs are not passed straight through — converting to a manifest row here (kind plus
-    // display_*/title) is what lets the screen say "Capability · Payment authorization" instead of
-    // a folder path.
+    // Converting to a manifest row (kind plus display_*/title) lets the screen say "Capability · Payment authorization", not a folder path.
     const docBySlug = new Map(docs.map((d) => [d.slug, d]));
     const toNode = (slug: string) => toVaultDiffNode(docBySlug.get(slug) ?? { slug }, locale);
 
@@ -105,12 +98,7 @@ export function VaultDiffToaster() {
   return null;
 }
 
-/**
- * How many `delete_concept` entries were recorded in this burst's window (after `since`).
- *
- * The activity log is an audit log the server appends immediately after a successful MCP write, so
- * the tool name *is* the intent — unlike a manifest slug diff, it never misreads a rename as a deletion.
- */
+/** The activity log is appended right after a successful MCP write, so the tool name is the intent; unlike a slug diff it never misreads a rename as a deletion. */
 function countRecentDeletes(
   entries: { at: string; tool: string }[] | undefined,
   since: number,

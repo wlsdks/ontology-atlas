@@ -27,13 +27,10 @@ function excerptOfText(raw: string | null): string {
 /** Reads the vault through a read-only port; write tools return proposal intents. */
 
 export interface ToolExecution {
-  /** The result string carried into the next round trip. */
   content: string;
   isError: boolean;
   outcome: 'ok' | 'error' | 'blocked-write' | 'unknown-tool' | 'args-invalid';
-  /** The target the screen's row names (a node slug and the like). */
   target: string;
-  /** One line for the screen's row (plain language). */
   summary: string;
   /** The node slugs this call actually read — the basis for citation validation and warning rows. */
   readSlugs: string[];

@@ -7,13 +7,7 @@ import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/vault-f
 import { parseVaultChangeBatch } from "@/shared/lib/vault-folder/vault-change-batch";
 import { useLocalVault } from "./local-vault-context";
 
-/**
- * Under Tauri, starts the Rust file watcher (`start_vault_watch`) and hands each `vault-changed`
- * batch of changed paths to `applyVaultChangeBatch`, so the screen follows an agent's writes at
- * the cost of the files that changed. A no-op on the web. The callback goes through a ref, so a
- * reload does not resubscribe. A batch naming another root than this watcher's (a late event from
- * the folder the app just left) is dropped.
- */
+/** Under Tauri, starts the Rust file watcher and hands each `vault-changed` batch to `applyVaultChangeBatch`, so the screen follows an agent's writes at the cost of the files that changed. The callback goes through a ref so a reload does not resubscribe; a batch for another root (a late event from the folder just left) is dropped. */
 export function TauriVaultWatchBridge() {
   const { status, handle, applyVaultChangeBatch } = useLocalVault();
   const rootPath = handle ? getTauriVaultRootPath(handle) ?? null : null;

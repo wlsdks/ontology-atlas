@@ -27,7 +27,6 @@ import {
 
 export interface AgentLoopDeps {
   adapter: ProviderAdapter;
-  /** The Rust bridge. Throws on failure. */
   send(args: {
     body: string;
     scope: LlmChatScope;
@@ -35,7 +34,6 @@ export interface AgentLoopDeps {
     model: string;
   }): Promise<LlmChatEcho>;
   execute(call: NormalizedToolCall): Promise<ToolExecution>;
-  /** The tool list carried in this turn. */
   tools: readonly AgentToolDefinition[];
   /** Defaults to `AGENT_ROUND_CAP`; Compile passes more, but always a finite cap. */
   roundCap?: number;
@@ -65,7 +63,6 @@ export interface StartTurnInput {
 export interface TurnRunResult {
   turn: AgentTurn;
   readSlugs: string[];
-  /** The writes the model attempted — the caller turns these into proposal cards. */
   writeIntents: Array<{ name: string; args: unknown }>;
 }
 
@@ -109,7 +106,6 @@ function noticeFor(deps: AgentLoopDeps, status: number | null, message: string):
   return { kind: 'notice', code: 'network-failed', text: deps.notices.networkFailed };
 }
 
-/** Runs one turn to completion, tidying up where it stands if `signal` is cut. */
 export async function runTurn(
   deps: AgentLoopDeps,
   initial: AgentTurn,
@@ -164,7 +160,6 @@ export async function runTurn(
   });
   const sendScope = (body: string) => ({
     nodes: [...new Set(readSlugs)],
-    // Measured: the UTF-16 length actually sent in this round trip.
     promptChars: body.length,
     vaultChars,
     tools: [...toolRefs],
@@ -255,7 +250,6 @@ export async function runTurn(
       return { turn: snapshot(), readSlugs, writeIntents };
     }
 
-    // Text before the tool rows, in the order the model said it.
     if (parsed.text.trim()) pushAssistant(parsed.text);
 
     const results: ToolResultPayload[] = [];
@@ -268,7 +262,6 @@ export async function runTurn(
         name: call.name,
         args: call.args,
         target: execution.target,
-    // The character count this result will carry into the next round trip — measured.
         sentChars: execution.content.length,
         outcome: execution.outcome,
         summary: execution.summary,
