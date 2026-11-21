@@ -1118,7 +1118,8 @@
     "sourceTooLarge": "This file is too large to show here.",
     "linkMissing": "Nothing in this folder has this name.",
     "back": "Back",
-    "close": "Close the page"
+    "close": "Close the page",
+    "sourceChanged": "Changed since written"
   },
   "wikiIndex": {
     "views": {

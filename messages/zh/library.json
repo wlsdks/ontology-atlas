@@ -1118,7 +1118,8 @@
     "sourceTooLarge": "这个文件太大，无法在这里显示。",
     "linkMissing": "此文件夹中没有这个名称的内容。",
     "back": "返回",
-    "close": "关闭页面"
+    "close": "关闭页面",
+    "sourceChanged": "撰写后已变更"
   },
   "wikiIndex": {
     "views": {
