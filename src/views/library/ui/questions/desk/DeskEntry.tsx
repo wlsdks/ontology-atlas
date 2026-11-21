@@ -10,7 +10,7 @@ import { answerObservation, newestDeskQuestions, recentDeskPages } from '@/featu
 import { RowButton } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { StateBadge } from '../../index-column/StateBadge';
-import { wikiDayText } from '../../index-column/WikiIndex';
+import { wikiDayText } from '../../../model/index-column/wiki-day-text';
 
 const SAVED_ROWS = 3;
 const RECENT_ROWS = 5;

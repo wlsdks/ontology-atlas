@@ -1,13 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
 import type { LibraryWikiPage } from "@/entities/docs-vault";
 import type { LibraryUiModel, LintFinding } from "@/features/library";
-import { cn } from "@/shared/lib/cn";
-import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";
-import { useWindowedRows } from "@/shared/lib/list-rows/use-windowed-rows";
 import { useSurfaceSwap } from "@/shared/lib/render-timing/use-presence";
 import { yieldToFrame } from "@/shared/lib/scheduling/yield-to-frame";
 import { useStaggerOnce } from "@/shared/motion/stagger";
@@ -15,31 +12,20 @@ import { Button } from "@/shared/ui";
 
 import {
   WikiIndexBuilder,
-  wikiIndexDay,
   wikiIndexItems,
-  type WikiIndexEntry,
   type WikiIndexGroupKey,
   type WikiIndexGroupView,
   type WikiIndexItem,
-  type WikiIndexReason,
 } from "../../lib/wiki/wiki-index";
+import { arrivalStep, groupLabel, itemKey, wikiRowText } from "../../model/index-column/wiki-index-rows";
+import { IndexFrame, INDEX_VIEW, MATCHES_VIEW, frameSelector, type ViewKey } from "./IndexFrame";
 import { IndexGroupChip, IndexGroupHeading, IndexGroupMore } from "./IndexGroup";
 import { IndexRow } from "./IndexRow";
-import { arriveInPlace, fadeView, glideFrom } from "./index-motion";
+import type { StopProps } from "./WindowedItems";
 
 /** Work per slice before the browser gets a turn, so typing and scrolling never wait on the index. */
 const SLICE_BUDGET_MS = 8;
-/** Item heights are fixed, so the window and keyboard scrolling compute offsets instead of measuring. */
-const ITEM_HEIGHT_PX: Record<WikiIndexItem["type"], number> = { heading: 38, row: 44, more: 32 };
-const LIST_PAD_TOP_PX = 2;
 const CLOCK_TICK_MS = 60_000;
-const INDEX_VIEW = "index";
-const MATCHES_VIEW = "matches";
-
-type Translate = ReturnType<typeof useTranslations<"library">>;
-type RulePath = "report.rule.uncited-fact";
-/** The whole index, one group shown alone, or the filter's matches. */
-type ViewKey = WikiIndexGroupKey | typeof INDEX_VIEW | typeof MATCHES_VIEW;
 
 export interface WikiIndexProps {
   model: Pick<LibraryUiModel, "wikiPages" | "verdicts" | "pairing" | "sources" | "structural">;
@@ -58,58 +44,11 @@ export interface WikiIndexProps {
   matches?: readonly LibraryWikiPage[] | null;
 }
 
-function groupLabel(key: WikiIndexGroupKey, t: Translate): string {
-  return key.startsWith("folder:") ? `${key.slice("folder:".length)}/` : t(`wikiIndex.group.${key as "attention"}`);
-}
-
-function reasonText(reason: WikiIndexReason, t: Translate): string {
-  if (reason.kind !== "rule") return t(`wikiIndex.reason.${reason.kind}`);
-  const path = `report.rule.${reason.code}` as RulePath;
-  return t.has(path) ? t(path) : reason.code;
-}
-
-function provenance(entry: WikiIndexEntry, t: Translate): string {
-  const sources = entry.page.sourcePaths;
-  if (sources.length === 0) return t("wikiIndex.row.noSource");
-  if (sources.length > 1) return t("wikiIndex.row.sources", { count: sources.length });
-  return sources[0]!.slice(sources[0]!.lastIndexOf("/") + 1);
-}
-
-function dayText(entry: WikiIndexEntry, nowMs: number, locale: string, t: Translate): string | null {
-  return wikiDayText(entry.writtenAtMs, nowMs, locale, t);
-}
-
-/** A moment as the index says it: Just now, Today, Yesterday, N days ago, or a short date. */
-export function wikiDayText(writtenAtMs: number, nowMs: number, locale: string, t: Translate): string | null {
-  const day = wikiIndexDay(writtenAtMs, nowMs);
-  if (!day) return null;
-  if (day.kind === "ago") return t("wikiIndex.day.ago", { count: day.days });
-  if (day.kind !== "date") return t(`wikiIndex.day.${day.kind}`);
-  return new Date(day.ms).toLocaleDateString(locale, day.otherYear
-    ? { year: "numeric", month: "short", day: "numeric" }
-    : { month: "short", day: "numeric" });
-}
-
-function itemKey(item: WikiIndexItem): string {
-  return item.type === "row" ? `${item.group}\u0000${item.entry.page.slug}` : `${item.type}\u0000${item.group}`;
-}
-
-/** The arrival step by kind of group, so a group appearing late never shifts the others' delays. */
-function arrivalStep(group: WikiIndexGroupKey): number {
-  if (group === "attention") return 0;
-  if (group === "answers") return 1;
-  return group.startsWith("folder:") ? 2 : 3;
-}
-
 const NO_ITEMS: readonly WikiIndexItem[] = Object.freeze([]);
 
 /** A group shown alone lists its rows under the chip, which names it, so it has no heading row. */
 function groupItems(group: WikiIndexGroupView | null): readonly WikiIndexItem[] {
   return group ? wikiIndexItems([group]).filter((item) => item.type !== "heading") : NO_ITEMS;
-}
-
-function frameSelector(view: ViewKey): string {
-  return `[data-index-frame="${CSS.escape(view)}"]`;
 }
 
 interface AloneView {
@@ -285,13 +224,7 @@ export function WikiIndex({
       );
     }
     const { entry } = item;
-    const reasons = entry.reasons.map((reason) => reasonText(reason, t));
-    const inAttention = item.group === "attention";
-    const detail = inAttention
-      ? reasons.length > 1 ? t("wikiIndex.row.moreReasons", { reason: reasons[0]!, count: reasons.length - 1 }) : reasons[0]!
-      : provenance(entry, t);
-    const date = dayText(entry, nowMs, locale, t);
-    const label = [entry.title, entry.page.summary, reasons.join(", "), provenance(entry, t), date].filter(Boolean).join(" · ");
+    const { needsLook, detail, date, label } = wikiRowText({ entry, group: item.group, nowMs, locale, t });
     return (
       <div key={key} data-glide-key={key} data-index-slug={entry.page.slug} data-index-group={item.group}>
         <div className={enter.className} style={enter.style}>
@@ -299,7 +232,7 @@ export function WikiIndex({
             title={entry.title}
             detail={detail}
             date={date}
-            attention={reasons.length > 0}
+            attention={needsLook}
             selected={entry.page.slug === selectedSlug}
             label={label}
             onPress={() => onOpenPage(entry.page.slug)}
@@ -354,207 +287,4 @@ export function WikiIndex({
       })}
     </div>
   );
-}
-
-/**
- * One view of the column: the whole index, or a group alone under its chip. Two exist at once only
- * while one replaces the other; the leaving one is inert and fades out from where it was drawn.
- */
-function IndexFrame({
-  view,
-  current,
-  fadeIn,
-  quick,
-  chipFromTop,
-  chip,
-  items,
-  label,
-  renderItem,
-  footer,
-}: {
-  view: ViewKey;
-  current: boolean;
-  /** Mounted as a swap's incoming view, so it fades in rather than being there at once. */
-  fadeIn: boolean;
-  /** The filter's swap, which follows typing and so takes the short fade. */
-  quick: boolean;
-  chipFromTop: number | null;
-  chip: ReactNode;
-  items: readonly WikiIndexItem[];
-  label: string | undefined;
-  renderItem: (item: WikiIndexItem, stop: StopProps | null, current: boolean) => ReactNode;
-  footer: ReactNode;
-}) {
-  const frameRef = useRef<HTMLDivElement | null>(null);
-  const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const mountedRef = useRef(false);
-  useLayoutEffect(() => {
-    const frame = frameRef.current;
-    if (!frame) return;
-    const firstDraw = !mountedRef.current;
-    mountedRef.current = true;
-    if (firstDraw && !fadeIn) return;
-    if (firstDraw) frame.style.opacity = "0";
-    fadeView(frame, current, quick);
-    frame.style.opacity = "";
-    const chipEl = frame.querySelector("[data-index-chip]");
-    if (firstDraw && chipEl && chipFromTop !== null) glideFrom(chipEl, chipFromTop - chipEl.getBoundingClientRect().top);
-    // `fadeIn` and `chipFromTop` matter only at mount; `current` drives every later fade.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current]);
-
-  return (
-    <div
-      ref={frameRef}
-      data-index-frame={view}
-      data-current={current ? "" : undefined}
-      inert={!current || undefined}
-      aria-hidden={!current || undefined}
-      className={cn("col-start-1 row-start-1 flex min-h-0 flex-col", current ? "z-[1]" : "pointer-events-none")}
-    >
-      {chip}
-      <div ref={scrollerRef} data-index-scroller="" className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-3 [overflow-anchor:none]">
-        <WindowedItems items={items} scrollerRef={scrollerRef} label={label} renderItem={(item, stop) => renderItem(item, stop, current)} />
-        {footer}
-      </div>
-    </div>
-  );
-}
-
-interface StopProps {
-  rowIndex: number;
-  tabIndex: number;
-  onFocus: () => void;
-}
-
-/** The row that held focus, so it keeps focus when an update moves it out of the window. */
-interface HeldFocus {
-  el: HTMLElement;
-  key: string;
-  slug: string | null;
-  group: string | null;
-}
-
-/**
- * One list's window, keyboard stops and moves. Each view has its own, so a swap between the index
- * and one group starts a fresh window rather than reading the other list's row heights. When the
- * data changes, rows still drawn glide from where they were and rows new to the data fade in.
- */
-function WindowedItems({
-  items,
-  scrollerRef,
-  label,
-  renderItem,
-}: {
-  items: readonly WikiIndexItem[];
-  scrollerRef: RefObject<HTMLDivElement | null>;
-  label: string | undefined;
-  renderItem: (item: WikiIndexItem, stop: StopProps | null) => ReactNode;
-}) {
-  const itemTops = useMemo(() => {
-    const tops = new Float64Array(items.length + 1);
-    for (let i = 0; i < items.length; i += 1) tops[i + 1] = tops[i]! + ITEM_HEIGHT_PX[items[i]!.type];
-    return tops;
-  }, [items]);
-  const stops = useMemo(() => items.flatMap((item, index) => (item.type === "heading" ? [] : [index])), [items]);
-  const stopOfItem = useMemo(() => new Map(stops.map((itemIndex, stop) => [itemIndex, stop])), [stops]);
-
-  const [range, listRef] = useWindowedRows<HTMLDivElement>({ count: items.length, estimate: ITEM_HEIGHT_PX.row });
-  const scrollToStop = useCallback((stop: number) => {
-    const scroller = scrollerRef.current;
-    const itemIndex = stops[stop];
-    if (!scroller || itemIndex === undefined) return;
-    const top = LIST_PAD_TOP_PX + itemTops[itemIndex]!;
-    const bottom = LIST_PAD_TOP_PX + itemTops[itemIndex + 1]!;
-    if (top < scroller.scrollTop) scroller.scrollTop = top;
-    else if (bottom > scroller.scrollTop + scroller.clientHeight) scroller.scrollTop = bottom - scroller.clientHeight;
-  }, [itemTops, scrollerRef, stops]);
-  const renderedStops = useMemo(() => {
-    let start = stops.length;
-    let end = 0;
-    for (let i = range.start; i < range.end; i += 1) {
-      const stop = stopOfItem.get(i);
-      if (stop === undefined) continue;
-      start = Math.min(start, stop);
-      end = stop + 1;
-    }
-    return { start: Math.min(start, end), end };
-  }, [range.end, range.start, stopOfItem, stops.length]);
-  const roving = useRovingRows({ count: stops.length, listRef, scrollToRow: scrollToStop, rendered: renderedStops });
-
-  const heldFocusRef = useRef<HeldFocus | null>(null);
-  const onFocusCapture = (event: FocusEvent<HTMLDivElement>) => {
-    const wrapper = (event.target as HTMLElement).closest<HTMLElement>("[data-glide-key]");
-    heldFocusRef.current = wrapper ? {
-      el: event.target as HTMLElement,
-      key: wrapper.dataset.glideKey!,
-      slug: wrapper.dataset.indexSlug ?? null,
-      group: wrapper.dataset.indexGroup ?? null,
-    } : null;
-  };
-  const onBlurCapture = (event: FocusEvent<HTMLDivElement>) => {
-    const next = event.relatedTarget as Node | null;
-    if (next && !event.currentTarget.contains(next)) heldFocusRef.current = null;
-  };
-
-  const lastTopsRef = useRef<{ items: readonly WikiIndexItem[]; tops: Map<string, number> } | null>(null);
-  useLayoutEffect(() => {
-    const list = listRef.current;
-    const tops = new Map<string, number>();
-    items.forEach((item, index) => tops.set(itemKey(item), itemTops[index]!));
-    const last = lastTopsRef.current;
-    lastTopsRef.current = { items, tops };
-    if (!list || !last || last.items.length === 0) return;
-    const reach = scrollerRef.current?.clientHeight ?? 0;
-    for (const wrapper of list.querySelectorAll<HTMLElement>(":scope > [data-glide-key]")) {
-      const key = wrapper.dataset.glideKey!;
-      const was = last.tops.get(key);
-      if (was === undefined) arriveInPlace(wrapper);
-      else if (Math.abs(was - tops.get(key)!) <= reach) glideFrom(wrapper, was - tops.get(key)!);
-    }
-    keepFocus(list, heldFocusRef.current);
-  }, [items, itemTops, listRef, scrollerRef]);
-
-  return (
-    <div
-      ref={listRef}
-      onKeyDown={roving.onKeyDown}
-      onFocusCapture={onFocusCapture}
-      onBlurCapture={onBlurCapture}
-      aria-label={label}
-      data-window={`${range.start}-${range.end}`}
-      className="flex flex-col px-2"
-      style={{ paddingTop: LIST_PAD_TOP_PX + range.before, paddingBottom: range.after }}
-    >
-      {items.slice(range.start, range.end).map((item, offset) => {
-        const stop = stopOfItem.get(range.start + offset);
-        return renderItem(item, stop === undefined ? null : {
-          rowIndex: stop,
-          tabIndex: roving.tabIndexOf(stop),
-          onFocus: () => roving.onRowFocus(stop),
-        });
-      })}
-    </div>
-  );
-}
-
-/** A focused row an update took away hands focus to its page elsewhere, else its group's line. */
-function keepFocus(list: HTMLElement, held: HeldFocus | null): void {
-  if (!held || held.el.isConnected) return;
-  const active = document.activeElement;
-  if (active && active !== document.body && list.ownerDocument.contains(active)) return;
-  const stop = "[data-row-index]";
-  const candidates = [
-    `[data-glide-key="${CSS.escape(held.key)}"] ${stop}`,
-    held.slug ? `[data-index-slug="${CSS.escape(held.slug)}"] ${stop}` : null,
-    held.group ? `[data-index-group="${CSS.escape(held.group)}"] [data-index-more]` : null,
-    stop,
-  ];
-  for (const selector of candidates) {
-    const target = selector ? list.querySelector<HTMLElement>(selector) : null;
-    if (target) {
-      target.focus({ preventScroll: true });
-      return;
-    }
-  }
 }
