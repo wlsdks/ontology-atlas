@@ -3,11 +3,15 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  DISCOVERY_BUILD_FILE_NAMES,
   DISCOVERY_DENIED_NAME_FRAGMENTS,
   DISCOVERY_DOCUMENT_EXTENSIONS,
   DISCOVERY_MAX_CANDIDATES,
   DISCOVERY_MAX_DEPTH,
+  DISCOVERY_MIN_FILE_BYTES,
+  DISCOVERY_NOTICE_STEMS,
   DISCOVERY_PRUNE_DIR_NAMES,
+  DISCOVERY_PRUNE_DIR_PATHS,
   discoveryAcceptsFile,
 } from '@/entities/docs-vault/lib/library/source-discovery';
 
@@ -27,11 +31,9 @@ import {
  * silent widening on either side is the failure this gate exists to catch, so the
  * constants are compared as sets rather than as prose.
  *
- * The gate compares the **rules**, not the walks. Whether each walk applies them
- * correctly is measured by `source-discovery.test.ts` (TypeScript) and the
- * `discovery_refuses_the_files_local_first_forbids_reading` test in
- * `src-tauri/src/library.rs` (Rust), each planting a secret and asserting it never
- * appears.
+ * The gate compares the **rules**, not the walks. Both walks run one table,
+ * `tests/fixtures/source-discovery-cases.json`, through `source-discovery.test.ts`
+ * (TypeScript) and `src-tauri/src/library/tests.rs` (Rust), planting each row as a file.
  */
 const repoRoot = resolve(__dirname, '../../..');
 const rustSource = readFileSync(resolve(repoRoot, 'src-tauri/src/library.rs'), 'utf8');
@@ -64,7 +66,23 @@ describe('the discovery rule is the same in both walks', () => {
     );
   });
 
-  it('stops at the same depth and the same candidate count', () => {
+  it('prunes the same folder paths', () => {
+    expect(rustList('DISCOVERY_PRUNE_DIR_PATHS').sort()).toEqual(
+      [...DISCOVERY_PRUNE_DIR_PATHS].sort(),
+    );
+  });
+
+  it('refuses the same notice names and build files', () => {
+    expect(rustList('DISCOVERY_NOTICE_STEMS').sort()).toEqual([...DISCOVERY_NOTICE_STEMS].sort());
+    expect(rustList('DISCOVERY_BUILD_FILE_NAMES').sort()).toEqual(
+      [...DISCOVERY_BUILD_FILE_NAMES].sort(),
+    );
+  });
+
+  it('stops at the same depth, candidate count and size floor', () => {
+    expect(rustSource).toMatch(
+      new RegExp(`const DISCOVERY_MIN_FILE_BYTES: u64 = ${DISCOVERY_MIN_FILE_BYTES};`),
+    );
     expect(rustSource).toMatch(
       new RegExp(`const DISCOVERY_MAX_DEPTH: usize = ${DISCOVERY_MAX_DEPTH};`),
     );
