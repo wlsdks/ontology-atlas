@@ -109,7 +109,11 @@ function pickedRowOf(folds: AlikeFolds, pick: SourcePick | null, grouping: Sourc
   return null;
 }
 
+/** Folders whose bars already filled from empty this session; a later visit draws them at once. */
+const arrived = new Set<string>();
+
 export function SourcesOverview({
+  scope,
   sources,
   pages,
   batch,
@@ -120,6 +124,8 @@ export function SourcesOverview({
   onOpenPage,
   onOpenSource,
 }: {
+  /** The open folder; the bars fill from empty only on its first arrival this session. */
+  scope: string;
   sources: readonly LibrarySourceRow[];
   pages: readonly LibraryWikiPage[];
   batch: SourcesNextBatch;
@@ -137,11 +143,12 @@ export function SourcesOverview({
   const today = useSyncExternalStore(subscribeToDay, localToday, localToday);
   const grouped = useMemo(() => new Intl.NumberFormat(locale), [locale]);
   const { index, revision, applied, appliedOnce } = useSourceGroups(sources);
-  const [arrivalOpen, setArrivalOpen] = useState(true);
+  const [arrivalOpen, setArrivalOpen] = useState(() => !arrived.has(scope));
   useEffect(() => {
+    arrived.add(scope);
     const id = setTimeout(() => setArrivalOpen(false), ARRIVAL_WINDOW_MS);
     return () => clearTimeout(id);
-  }, []);
+  }, [scope]);
 
   const shape = index.shape;
   // A folder walk publishes one folder first, so the shape is judged only once the read is complete.
@@ -314,7 +321,9 @@ export function SourcesOverview({
     (row: SourceTableRow) => {
       const keys = row.members ? row.members.map((member) => member.key) : [row.key];
       const same = picked !== null && picked.key === row.key;
-      onPick(same ? null : { grouping, keys, name: nameOf(row).name });
+      // An alike row is named by the range of folders it holds, which is what the pick narrows to.
+      const label = nameOf(row);
+      onPick(same ? null : { grouping, keys, name: row.members ? label.fullName : label.name });
     },
     [grouping, nameOf, onPick, picked],
   );
@@ -433,8 +442,16 @@ export function SourcesOverview({
   );
 
   return (
-    <section aria-label={t("sourcesHome.aria")} data-testid="sources-overview" className="flex min-h-0 flex-1 gap-7 px-10 py-6">
-      <div ref={columnRef} className="@container flex min-h-0 min-w-0 flex-1 flex-col">
+    // Below 60rem (a 1440 window with the conversation open) the panel stands above the table, which keeps the pane's height.
+    <div className="@container/overview flex min-h-0 min-w-0 flex-1">
+    <section
+      aria-label={t("sourcesHome.aria")}
+      data-testid="sources-overview"
+      className="flex min-h-0 min-w-0 flex-1 gap-7 px-10 py-6 @max-[60rem]/overview:flex-col @max-[60rem]/overview:overflow-y-auto @max-[40rem]/overview:px-5"
+    >
+      {/* The column is a size container, so its own flex must not ride the query: a stale `flex-none`
+          after a resize collapsed it to 0px. Stacked, it only gains a floor of the pane's height. */}
+      <div ref={columnRef} className="@container flex min-h-0 min-w-0 flex-1 flex-col @max-[60rem]/overview:min-h-full">
         <div ref={toolbarRef} className="flex flex-none items-center gap-3.5 pb-3">
           <SegmentedControl
             ariaLabel={t("sourcesHome.groupBy.label")}
@@ -488,5 +505,6 @@ export function SourcesOverview({
       </div>
       {panel}
     </section>
+    </div>
   );
 }

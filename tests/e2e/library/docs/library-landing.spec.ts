@@ -186,10 +186,10 @@ test.describe("A folder of pages and no nodes opens on the Library", () => {
     await expect(page.getByTestId("library-reader-landing")).toBeVisible();
     expect(await page.evaluate(() => (window as unknown as { mapMounted?: boolean }).mapMounted ?? false)).toBe(false);
     /*
-     * The home draws the picture with nothing chosen; the guide is behind its door. Seeding the first-run
+     * The home draws the overview with nothing chosen; the guide is behind its door. Seeding the first-run
      * keys includes the guide's self-raise, so it is not up.
      */
-    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+    await expect(page.getByTestId("sources-overview")).toBeVisible();
     await expect(page.getByTestId("library-guide-open")).toHaveCount(1);
     await expect(page.getByTestId("library-stage")).toHaveCount(0);
     await page.getByTestId("library-workspace-wiki").click();
@@ -207,10 +207,10 @@ test.describe("A folder of pages and no nodes opens on the Library", () => {
 
 /**
  * The guide raises itself once per machine (`atlas.library.guide-seen`). Every other case seeds that
- * key, so this one seeds nothing: raise, settle on one press, then the second open is the picture.
+ * key, so this one seeds nothing: raise, settle on one press, then the second open is the overview.
  */
 test.describe("the Library guide raises itself once per machine", () => {
-  test("the first open raises it, a press settles it, and the second open is the picture", async ({
+  test("the first open raises it, a press settles it, and the second open is the overview", async ({
     page,
   }) => {
     /*
@@ -233,9 +233,9 @@ test.describe("the Library guide raises itself once per machine", () => {
     const door = page.getByRole("button", { name: /^Open (?:a|my) folder/ });
     await door.first().waitFor({ timeout: 25_000 });
     await door.first().click();
-    await page.getByTestId("library-graph-canvas").waitFor({ timeout: 30_000 });
+    await page.getByTestId("sources-overview").waitFor({ timeout: 30_000 });
 
-    // 1 — up on its own, and hanging from the door rather than floating over the canvas.
+    // 1 — up on its own, and hanging from the door rather than floating over the overview.
     const guide = page.getByTestId("library-guide-popover");
     await expect(guide).toBeVisible();
     const opener = (await page.getByTestId("library-guide-open").boundingBox())!;
@@ -253,7 +253,7 @@ test.describe("the Library guide raises itself once per machine", () => {
 
     // 3 — and it never raises itself again.
     await page.reload();
-    await page.getByTestId("library-graph-canvas").waitFor({ timeout: 30_000 });
+    await page.getByTestId("sources-overview").waitFor({ timeout: 30_000 });
     await expect(page.getByTestId("library-guide-popover")).toHaveCount(0);
     await expect(page.getByTestId("library-guide-open")).toBeVisible();
   });

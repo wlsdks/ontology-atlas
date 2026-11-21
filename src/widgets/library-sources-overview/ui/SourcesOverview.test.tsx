@@ -21,6 +21,8 @@ function nextBatch(sources: readonly LibrarySourceRow[], running: ReadonlySet<st
   return { next: sources.filter((source) => source.state !== "compiled").slice(0, 10), running, rest: 0 };
 }
 
+let renders = 0;
+
 function Harness({
   sources,
   pages = [],
@@ -33,9 +35,12 @@ function Harness({
   batch?: SourcesNextBatch;
 }) {
   const [pick, setPick] = useState<SourcePick | null>(null);
+  // Each render is a first arrival: a folder seen once draws its bars at once afterwards.
+  const [scope] = useState(() => `folder-${(renders += 1)}`);
   return (
     <NextIntlClientProvider locale="en" messages={en}>
       <SourcesOverview
+        scope={scope}
         sources={sources}
         pages={pages}
         batch={batch ?? nextBatch(sources)}
@@ -80,7 +85,7 @@ describe("SourcesOverview", () => {
     expect(rowNames()).toEqual(["alpha", "beta"]);
     expect(screen.getByTestId("sources-reading").textContent).toContain(String(first.length));
     // Five rows of Recently written are held while pages may still arrive.
-    expect(screen.getByTestId("sources-recent").querySelector("ol")!.style.minHeight).toBe("220px");
+    expect(screen.getByTestId("sources-recent").querySelector("ol")!.style.minHeight).toBe("260px");
   });
 
   it("sorts the rows of the publish that ends the read", () => {
@@ -177,6 +182,16 @@ describe("SourcesOverview", () => {
     const written = files.map((file, i) => (i === 0 ? { ...file, state: "compiled" as const } : file));
     act(() => rerender(<Harness sources={written} batch={{ next: files.slice(1, 11), running: new Set(), rest: 0 }} />));
     expect(listed()).toEqual(files.slice(1, 11).map((file) => file.path));
+  });
+
+  it("tints the file being written and passes a reading scan down its sheet, saying so to a screen reader", () => {
+    const files = folder("queue", 0, 3);
+    render(<Harness sources={files} batch={{ next: files, running: new Set([files[0]!.path]), rest: 0 }} />);
+    const [reading, waiting] = screen.getAllByTestId("sources-panel-file");
+    expect(reading!.getAttribute("data-writing")).toBe("true");
+    expect(reading!.querySelector(".motion-sheet-scan")).not.toBeNull();
+    expect(reading!.textContent).toContain(en.library.sourcesHome.writing);
+    expect(waiting!.querySelector(".motion-sheet-scan")).toBeNull();
   });
 
   it("shares one row among five alike folders", () => {

@@ -248,7 +248,7 @@ async function measure(shape, files) {
       'loaded-first-open': seconds(first, 'loaded'),
       'longest-task': first.page?.longestGap?.ms ?? null,
       'frame-p95': nav.length ? Math.max(...nav.map((s) => s.intervalP95 ?? 0)) : null,
-      'island-open-first-frame': first.page?.island?.firstFrameMs ?? null,
+      'row-pick-first-frame': first.page?.rowPick?.firstFrameMs ?? null,
     },
     notes: {
       'app-webview-steady': crashed(first) ?? 'not loaded within the cap',
@@ -257,7 +257,7 @@ async function measure(shape, files) {
       'loaded-app-reopen': crashed(reopen) ?? 'the reopen did not load within the cap',
       'loaded-first-open': crashed(first) ?? 'not loaded within the cap',
       'frame-p95': opts.walks.includes('map') ? 'the map walk did not finish' : 'add --walk=map',
-      'island-open-first-frame': opts.walks.includes('library') ? (first.page?.log ?? []).slice(-1)[0] ?? 'no island opened' : 'add --walk=library',
+      'row-pick-first-frame': opts.walks.includes('library') ? (first.page?.log ?? []).slice(-1)[0] ?? 'no row picked' : 'add --walk=library',
     },
   });
 
@@ -274,7 +274,7 @@ async function measure(shape, files) {
   for (const [name, s] of Object.entries(segments)) {
     console.log(`- walk ${name}: ${s.frames} frames, interval p95 ${fmt(s.intervalP95, 'ms')} max ${fmt(s.intervalMax, 'ms')}, rAF work p95 ${fmt(s.workP95, 'ms')} max ${fmt(s.workMax, 'ms')}${s.error ? `, error ${s.error}` : ''}`);
   }
-  if (firstPage?.island) console.log(`- island ${firstPage.island.label} (${firstPage.island.kind}, ${firstPage.island.pages} pages, ${firstPage.island.sources} sources): first frame ${fmt(firstPage.island.firstFrameMs, 'ms')}, press handled in ${fmt(firstPage.island.pressMs, 'ms')}`);
+  if (firstPage?.rowPick) console.log(`- row pick ${firstPage.rowPick.label}: first frame ${fmt(firstPage.rowPick.firstFrameMs, 'ms')}, press handled in ${fmt(firstPage.rowPick.pressMs, 'ms')}`);
   if (libraryMb !== null) console.log(`- WebView with the Library open ${libraryMb.toFixed(0)} MB`);
   console.log(`- processes: app ${mainPid} (peak ${fmt(mainPid ? peakMb(first, [mainPid]) : null, 'MB')}); WebKit ${Object.entries(first.helpers).map(([pid, info]) => `${info.kind} ${pid} (peak ${fmt(peakMb(first, [Number(pid)]), 'MB')})`).join(', ')}; children of the app: ${kids.length ? kids.map((pid) => `${first.childNames[pid] || '?'} ${pid} (peak ${fmt(peakMb(first, [pid]), 'MB')})`).join(', ') : 'none'}`);
   for (const [pid, info] of Object.entries(first.extra)) {

@@ -618,10 +618,11 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   `lastKnownPath` keeps the manifest's exact `document.path`
   (for example `capabilities/x.md`) for display only. A saved membership is neither
   an ontology kind nor an edge, and corrupt input is unavailable rather than empty.
-- With nothing selected, Sources draws the Library graph in the pane
-  (`LibraryPage` mounts `src/widgets/library-graph/` directly), under the source
-  progress band (`src/views/library/ui/parts/progress/`) when the folder has a
-  source; Wiki draws the question desk. Opening a document replaces either and
+- With nothing selected, Sources draws the source progress band
+  (`src/views/library/ui/parts/progress/`) over the Sources overview
+  (`LibraryPage` mounts `src/widgets/library-sources-overview/` directly) when the
+  folder has a source, and the empty folder's start stage when it has none; Wiki
+  draws the question desk. Opening a document replaces either and
   gives it back on close. The band derives from the library model alone
   (`deriveSourceProgress`), sends nothing, and its press starts the bounded
   Compile request `useCompileBatch` names.
@@ -683,9 +684,8 @@ graph. The separation is a property of the **walk**, not a filter applied later.
 The Library's live-work projection is separate from the persisted graph:
 `src/features/library/model/library-work-activity.ts` normalizes structured ACP
 and local tool observations into bounded active/completed events. The Library
-view owns their lifecycle, `src/widgets/library-graph/` projects exact targets
-without changing layout, and `src/widgets/library-work-activity/` exposes recent
-receipts for inspection. No additional store, background service or write
+view owns their lifecycle, the progress band's work line names the current target,
+and `src/widgets/library-work-activity/` exposes recent receipts for inspection. No additional store, background service or write
 authority is introduced.
 
 ## FSD layers
