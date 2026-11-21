@@ -31,7 +31,7 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/map/flat-graph/map-flat-graph-star-motion.spec.ts',
     reason: "an opened Flat star's radii, camera zoom or names in motion changed",
     matches: [
-      /^src\/widgets\/ontology-map\/flat-graph\/frame\.ts$/,
+      /^src\/widgets\/ontology-map\/flat-graph\/frame(?:\.ts|\/[^/]+\.ts)$/,
       /^src\/widgets\/ontology-map\/flat-graph\/motion\.ts$/,
       /^src\/widgets\/ontology-map\/flat-graph\/open-star\.ts$/,
       /^src\/widgets\/ontology-map\/flat-graph\/names\.ts$/,
