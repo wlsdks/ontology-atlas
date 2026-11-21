@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useSyncExternalStore, type MouseEvent } from 'react';
+import { useState, useSyncExternalStore, type MouseEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Cpu } from 'lucide-react';
@@ -54,11 +54,14 @@ export function MeaningDeskLine({
   rootPath,
   markdownFiles,
   roomForStage = true,
+  onAsk,
 }: {
   rootPath: string | null;
   markdownFiles: number;
   /** False while results stand under the field: the job then stays one line, so they never move. */
   roomForStage?: boolean;
+  /** Takes the person to the question field once search by meaning is ready. */
+  onAsk: () => void;
 }) {
   const t = useTranslations('library.questionDesk.meaning');
   const locale = useLocale();
@@ -88,7 +91,6 @@ export function MeaningDeskLine({
   const staged = isApp && roomForStage ? runStage(status, source) : null;
   const running = staged && { ...staged, readingPath: shownPath };
   const finished = useFinishedInView(running, status);
-  const frame = useRef<HTMLDivElement>(null);
 
   if (!line) return <div ref={stage} aria-hidden="true" className="h-6" data-testid="meaning-desk-line" data-state="pending" />;
 
@@ -179,15 +181,12 @@ export function MeaningDeskLine({
   const dismiss = () => finished?.dismiss();
   const ask = () => {
     finished?.dismiss();
-    frame.current?.closest('form')?.querySelector<HTMLInputElement>('input')?.focus();
+    onAsk();
   };
 
   return (
     <div
-      ref={(element) => {
-        frame.current = element;
-        stage(element);
-      }}
+      ref={stage}
       data-testid="meaning-desk-line"
       data-state={line.message}
       data-stage={running?.step ?? (finished ? 'done' : undefined)}

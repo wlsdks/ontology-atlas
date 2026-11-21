@@ -7,8 +7,6 @@ import { MeaningModelDialog } from './MeaningModelDialog';
 /** A press among the no-match block's actions that opens the search-by-meaning dialog. */
 export function MeaningSetupPress({ rootPath, testId, children }: {
   rootPath: string;
-  /** The block's own action look, the only one the press has. */
-  look: 'button';
   testId: string;
   children: ReactNode;
 }) {
