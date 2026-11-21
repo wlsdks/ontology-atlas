@@ -53,6 +53,9 @@ it.
 | 15 | I-5: Ontology column metrics | index-column | Not started | None |
 | 16 | P-2 to P-7 | this file | Not started | 7, 9 |
 | 17 | Re-measure Library memory and frames | performance-strategy | Not started | 6, 10 |
+| 18 | S-4: Sources home clarity (below) | this file | Not started | 9 |
+
+Row 8 ran on 2026-11-21 (installed app, 40 sources and 24 pages); row 18 is what it found.
 
 Rows 9 and 10 may run in parallel when their files do not overlap; `library.json` conflicts keep
 both sides.
@@ -100,11 +103,34 @@ request) was chosen.
 | P-6 | First-day demo | The empty Sources home plays one short loop: a sheet is read and a page comes out, with Moru beside it; it stops under reduced motion |
 | P-7 | Name lists | The prototype showed three lists of names; keep one per moment so the pane does not read as three tables |
 
+## S-4: Sources home clarity
+
+### Why
+
+The installed-app check on 2026-11-21 (row 8) and a five-second reading of its capture by three
+fresh agent readers (an office worker, a graduate student, a developer; agent readers, not the
+three cold people the S-2 falsifier names, which stays open) agreed on what the pane is and what
+to press, at 3.3 of 5 confidence, and stumbled on the same places.
+
+### Changes
+
+| # | Finding | Change |
+|---|---|---|
+| 1 | All three: who is "the agent", and does my file leave the computer | Name the connected agent beside the write button, and say the true privacy line from the words-and-first-run spec under it |
+| 2 | All three: what "needs review" asks of them | Name the event ("Source changed since its page"), and its press shows those sources |
+| 3 | Two of three, and the capture: the band chart's title cuts at 1512 and reads too small | No cut title at 1040, 1512 and 1920; the chart's label reads at the band's label step |
+| 4 | Capture: source and wiki-page sheets look alike since chrome turned achromatic | The page sheet reads as written paper (lighter paper, darker title line) without a hue |
+| 5 | Two of three: "wiki page" and "waiting" are unclear | Handled in F3's words; S-4 checks them on the pane |
+
+The Ontology tab's name confused all three; it spans more than the Library and is decided
+separately.
+
 ## Revisions
 
 - 2026-11-21: first draft at the owner's request, so the Library work is not lost between
   sessions: the order across four specs and the paper and motion layer.
 - 2026-11-21: S-2 and S-3 merged (#3753) and P-1 merged (#3754); the installed-app check (row 8)
   is next.
+- 2026-11-21: row 8 ran on the installed app; S-4 added from its five-second reading.
 - 2026-11-21: row 9 (F3) opened as draft #3761: the ko and ja source word sweep and the
   `sourceWord` row.
