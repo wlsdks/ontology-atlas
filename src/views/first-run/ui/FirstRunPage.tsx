@@ -21,7 +21,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { FirstRunFolderActions } from "./FirstRunFolderActions";
 import { Chip } from '@/shared/ui/controls/controls';
 import { Button, Dialog, IconButton } from '@/shared/ui';
-import { BrandPortrait } from '@/shared/ui/marks/brand-portrait';
+import { BrandPortrait } from '@/shared/ui/marks/moru/brand-portrait';
 import styles from './first-run-chooser.module.css';
 
 /**

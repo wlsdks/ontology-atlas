@@ -7,7 +7,7 @@ import { Check, X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION } from '@/shared/motion';
-import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
 import { Button } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { formatSize } from '@/shared/lib/format-size';

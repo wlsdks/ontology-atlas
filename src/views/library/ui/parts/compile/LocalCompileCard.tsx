@@ -8,7 +8,7 @@ import type { CompileCardRow, LocalCompileSession } from "@/features/vault-agent
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 
 /**

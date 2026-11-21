@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { VendorMark } from "@/shared/ui/marks/vendor-mark";
+import { VendorMark } from "@/shared/ui/marks/service-marks/vendor-mark";
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {

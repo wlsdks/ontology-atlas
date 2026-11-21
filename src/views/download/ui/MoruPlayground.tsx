@@ -9,9 +9,9 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { useMotionPaused } from '@/shared/motion/motion-pause';
 import { Button } from '@/shared/ui/controls/button';
 import { CloseButton } from '@/shared/ui/controls/close-button';
-import { moruFrame } from '@/shared/ui/marks/moru-frame';
-import companionSheet from '@/shared/ui/marks/moru-companion.json';
-import reactionSheet from '@/shared/ui/marks/moru-reactions.json';
+import { moruFrame } from '@/shared/ui/marks/moru/moru-frame';
+import companionSheet from '@/shared/ui/marks/moru/moru-companion.json';
+import reactionSheet from '@/shared/ui/marks/moru/moru-reactions.json';
 import { Dialog } from '@/shared/ui/surfaces/dialog';
 
 import { CELL, COMBO_STEP, FEET, LIVES, NEUTRAL_FRAME, POWER_MS, ROUND_MS, readBest, writeBest } from '../lib/moru-play';

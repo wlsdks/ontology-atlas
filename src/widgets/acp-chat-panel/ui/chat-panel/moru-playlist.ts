@@ -1,4 +1,4 @@
-import { CELEBRATION_MOTIONS, type CelebrationMotion, type PlayMotion, type WorkMotion } from '@/shared/ui/marks/moru-rows';
+import { CELEBRATION_MOTIONS, type CelebrationMotion, type PlayMotion, type WorkMotion } from '@/shared/ui/marks/moru/moru-rows';
 
 import type { TurnActivityKind } from '../turn-activity';
 

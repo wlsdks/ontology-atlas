@@ -14,7 +14,7 @@ import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { RefreshCw } from 'lucide-react';
 
 import { Button, FeatureStage, GetAppLink, PageHeaderBar, Surface, TabBar } from '@/shared/ui';
-import { BrandPortrait } from '@/shared/ui/marks/brand-portrait';
+import { BrandPortrait } from '@/shared/ui/marks/moru/brand-portrait';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { cn } from '@/shared/lib/cn';
 

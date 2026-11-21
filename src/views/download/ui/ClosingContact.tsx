@@ -10,7 +10,7 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { useMotionPaused } from '@/shared/motion/motion-pause';
 import { MOTION } from '@/shared/motion/tokens';
 import { controlClass } from '@/shared/ui/control-class';
-import { WORK_ROW_FRAMES } from '@/shared/ui/marks/moru-rows';
+import { WORK_ROW_FRAMES } from '@/shared/ui/marks/moru/moru-rows';
 
 /** Moru's acted `write` row at its native 128px cell, the catalogue clip `pnpm brand:sprites` copies. */
 const CELL = 128;

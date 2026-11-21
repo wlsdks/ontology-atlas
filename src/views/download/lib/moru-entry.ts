@@ -1,5 +1,5 @@
-import companion from '@/shared/ui/marks/moru-companion.json';
-import reactions from '@/shared/ui/marks/moru-reactions.json';
+import companion from '@/shared/ui/marks/moru/moru-companion.json';
+import reactions from '@/shared/ui/marks/moru/moru-reactions.json';
 
 /**
  * The 64px rows `pnpm brand:sprites` writes to `public/brand/` (24 cells each), drawn for that size

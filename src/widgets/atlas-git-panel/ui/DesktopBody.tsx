@@ -17,7 +17,7 @@ import type {
 import type { OntologyChangeset } from "@/entities/knowledge-graph";
 import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git/git-install-guide";
 import { Button, controlClass } from "@/shared/ui";
-import { BrandPortrait } from "@/shared/ui/marks/brand-portrait";
+import { BrandPortrait } from "@/shared/ui/marks/moru/brand-portrait";
 import type { ConceptEgo } from "../model/build-concept-ego";
 import { CommitDetail } from "./CommitDetail";
 import { PendingDocumentPane, type ChangedDocument } from "./PendingDocumentPane";

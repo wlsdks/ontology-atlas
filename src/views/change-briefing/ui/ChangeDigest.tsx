@@ -6,7 +6,7 @@ import { cn } from '@/shared/lib/cn';
 import type { BriefingCommit } from '@/shared/lib/git/tauri-change-briefing';
 import { FeatureStage } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
-import { BrandPortrait } from '@/shared/ui/marks/brand-portrait';
+import { BrandPortrait } from '@/shared/ui/marks/moru/brand-portrait';
 import type { BriefingRange } from '../model/briefing-model';
 import { changeTitle, type ChangeDigest as Digest, type NotableChange, type NotableReason } from '../model/change-digest';
 import type { TimelineUnit } from '../model/digest-timeline';

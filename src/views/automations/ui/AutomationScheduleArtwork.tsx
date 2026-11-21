@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { EXIT_TRANSITION, MOTION, STAGGER } from '@/shared/motion';
 import type { FeatureStageMotion } from '@/shared/ui';
-import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 export type AutomationClip = 'waiting' | 'read' | 'curious';

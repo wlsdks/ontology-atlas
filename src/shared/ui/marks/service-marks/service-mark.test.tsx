@@ -68,7 +68,7 @@ describe('service marks — only what a read guideline permits', () => {
      * Each key in the table must appear in a comment carrying a guideline URL and the date it
      * was read.
      */
-    const source = readFileSync('src/shared/ui/marks/service-mark.tsx', 'utf8');
+    const source = readFileSync('src/shared/ui/marks/service-marks/service-mark.tsx', 'utf8');
     const table = source.slice(
       source.indexOf('const SERVICE_MARK_PATHS'),
       source.indexOf('export type ServiceMarkName'),
