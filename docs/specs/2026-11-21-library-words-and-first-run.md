@@ -245,6 +245,136 @@ F2 removes `emptyTitle`, `emptyBody`, `emptyFoundBody`, `emptyFoundAction`, `sou
 F4 removes `find.searchHint` and `find.walkedRoots` (read at `FindDocumentsDialog.tsx:136,146`).
 `{folder}` is the folder's name, never its path.
 
+## Documents already in the folder
+
+Added 2026-11-21 after the installed-app check. A test folder held 40 documents in five folders
+(md, txt, csv, log, tsv, html) and the Library said zero sources: it counts only files under
+`sources/` (`VAULT_SOURCES_DIR`, `walk-vault.ts`). What the code does today, on `main` at
+7bf782a83:
+
+- **Discovery skips Markdown and most text formats.** Its allow-list has 14 extensions; `md` is
+  left out "because Markdown is already a vault file kind" (`source-discovery.ts`, `library.rs:59`),
+  and `html`, `tsv` and `log` are absent too. Of the 40 files, discovery offers the 9 txt and csv.
+- **Import flattens.** Every file lands at `sources/<name>` (`library.rs:519`); a second
+  `meetings/weekly.md` from another folder becomes `weekly (2).md`, and the folder table shows one row.
+- **A dropped folder is refused** (flow 9 above), so the one gesture that matches "these 40 files"
+  does nothing.
+- **Copies do not follow their original.** Atlas copies, never moves, and keeps no link back; when
+  a person edits the note the copy came from, the source and the pages citing it go stale silently.
+
+### Decisions
+
+1. **`sources/` stays the one place a source lives.** A wiki page cites a stable path and its
+   sha256, an agent never edits a source, and a file elsewhere may be an ontology node, a wiki
+   page, a draft or a secret. Counting files in place would change the MCP, CLI and vault
+   contracts for no gain the copy does not give. The screen says this once, in plain words.
+2. **Atlas copies and never moves or deletes the original.** Unchanged; the screen says so.
+3. **A copy keeps the folders it came from.** A file found at `meetings/weekly.md` lands at
+   `sources/meetings/weekly.md`; a dropped folder `contracts` lands at `sources/contracts/...`. Rust computes
+   each relative path from the root it offered (the open folder, a bound project root, or the
+   dropped folder) and the page never sends one. Name collisions inside one folder keep the
+   `(2)` rule. This reverses Out of scope's "Folder drops keeping their structure".
+4. **Discovery offers Markdown and text notes that Atlas does not own.** Add `md`, `markdown`,
+   `html`, `htm` and `tsv` to the allow-list. A Markdown file is offered only when it is inside
+   the open folder, is not under `sources/`, `wiki/` or `.ontology-atlas/`, has no `kind:`
+   frontmatter (the vault index already knows this, so nothing new is read), and its stem is not a
+   repository guide (`readme`, `agents`, `claude`, `gemini`, `contributing`, `code_of_conduct`,
+   `security`, plus the existing notice stems). Markdown in a bound project root is never offered:
+   there it is developer documentation, which is the owner's junk case. `log` stays out: logs are
+   output, and the `logs` folder is already pruned.
+5. **Found files lead when they are in the open folder.** When the Library has no sources and
+   discovery finds candidates inside the open folder, the found block sits above the drop area:
+   the count, the folders they are in, one primary `found.copyAll` and a quiet `found.choose`.
+   Candidates only from a bound project root stay the quiet suggestion below the drop area that
+   the 2026-11-21 decision chose. The person put those files in this folder; a code repository's
+   files may be anything.
+6. **A dropped folder is accepted.** Rust walks only the dropped root from the native drop event,
+   with the discovery rules (allow-list, pruned folders, dot folders, secret names, notices, hash
+   names, 64-byte floor) and keeps its structure. A single dropped file is still copied whatever
+   its format: dropping it is the person's explicit choice.
+7. **A large copy asks first and never blocks.** At 500 files or 500 MB and above, Atlas shows
+   the count and total size and asks before copying (`drop.confirmLarge`). Copying streams in the
+   background, files appear in the Sources home as they land, and `drop.stop` stops it; what
+   landed stays. This brings Later 3 forward, since a folder drop is the first gesture likely to
+   pass 10 s.
+8. **The person sees what was not copied, and why.** After a folder drop or Copy all, one line
+   counts the skipped files by reason (already a source, not a document format, a name that looks
+   like a secret or a licence); pressing it opens the centred list of names. Nothing is hidden
+   silently.
+9. **An original that changes is noticed (separate slice, its own decision).** For copies whose
+   original is inside the open folder, Atlas records the vault-relative origin in
+   `.ontology-atlas/source-origins.jsonl` and, when the original's hash differs, the source row
+   says `origin.changed` with `origin.recopy`. Recopying replaces the copy, and the pages citing
+   it turn "Source changed" through the existing `source_hash` check. Originals outside the
+   folder are not tracked: an absolute path would carry the user name into Git.
+
+### Cases
+
+| Case | What the person sees | What happens |
+|---|---|---|
+| Empty folder | Stage: drop area, Add files, folder line, `start.how` | Nothing until they add |
+| Documents elsewhere in the folder (the 40-file case) | Title `found.title` ("Found 40 documents in this folder"), folder chips with counts, `found.copyAll`, `found.choose`, `start.how`; drop area below | Copy all keeps `meetings/`, `contracts/`…; the Sources home shows five folder rows |
+| Only a bound code repository has candidates | Drop area leads; quiet suggestion below (flow 3) | Unchanged from the 2026-11-21 decision |
+| Notes the person keeps writing (Markdown in the folder) | Offered like other documents; after copying, a source row says when the note has changed | Slice 9: recopy on press; pages turn "Source changed" |
+| Ontology nodes, wiki pages, repo guides | Never offered | Filter rule 4 |
+| A folder dropped | Same copy line as files; confirm above 500 files or 500 MB | Structure kept, filters applied, skipped files counted |
+| One file of any format dropped | Copied | Explicit choice wins |
+| The same file twice | `sources.duplicate`, counted in the skipped line | sha256 match, nothing copied |
+| Two folders with the same file name | Each keeps its folder | No `(2)` unless one folder has both |
+| Files put into `sources/` by hand in Finder | Appear by themselves (app: folder watch; web: periodic reread) | `start.where` says so |
+| Wiki pages but no sources | `start.bodyWikiOnly` stage (flow 2) with the found block when there are candidates | Same rules |
+| Original deleted after copying | Nothing changes | The copy is the source |
+| Copy stopped midway | `drop.stopped` with the count copied | What landed stays; dropping again skips duplicates |
+| Over 500 candidates | `found.title` says "500 or more"; Copy all copies what discovery listed, and the folder drop takes the rest | Discovery's 500 stop is unchanged |
+| Web | Same; folder drop through `getAsFileSystemHandle` (Chrome, Edge), `webkitGetAsEntry` elsewhere; no reveal | Same import with relative paths from the dropped handle |
+| Windows | Same; paths stored with `/` | Rust tests on the Windows CI job |
+
+### Explaining it to the person
+
+- On the stage, `start.how`, one line under the body: "The Library works from files in the
+  sources folder. Files from elsewhere are copied in; the originals stay where they are."
+- In Usage (the header's help popover), three short rows: where sources live, that copies keep their folders and
+  leave the originals, and that an agent reads a source only when you give it a task (the privacy
+  line).
+- In the skipped line, the reason in the person's words, never a rule name.
+
+### Copy (en; ko, ja, zh in the pull request)
+
+| Key | Where | en |
+|---|---|---|
+| `start.how` | Under the stage body | The Library works from files in the sources folder. Files from elsewhere are copied in; the originals stay where they are. |
+| `found.title` | Found block | {count, plural, one {Found # document in this folder} other {Found # documents in this folder}} |
+| `found.copyAll` | Primary | Copy all into sources |
+| `found.choose` | Quiet | Choose files |
+| `drop.confirmLarge` | Before a large copy | Copy {count, number} files ({size}) into sources? |
+| `drop.stop` / `drop.stopped` | Copy line | Stop / Stopped. {count, number} files were copied. |
+| `drop.skipped` | After a copy | {count, plural, one {# file was not copied} other {# files were not copied}}: {reasons} |
+| `origin.changed` / `origin.recopy` | Source row | The original has changed since it was copied / Copy again |
+
+### Acceptance
+
+1. Given the 40-file fixture (five folders, md, txt, csv, log, tsv, html), when the Library opens
+   with no sources, then the found block leads with 36 candidates (the 4 log files skipped) in five
+   folder chips; after Copy all, the Sources home shows five folder rows and `sources/meetings/` exists.
+   `first-run-drop.spec.ts`.
+2. Given this repository's `docs/ontology` bound to the repository, then the found block does not
+   lead and no Markdown file is offered (99 nodes, all with `kind:`). Rust and TS tests.
+3. Given a dropped folder holding `.env`, `id_rsa`, `LICENSE.txt` and `node_modules/x.md` besides
+   two documents, then only the two copy, and the skipped line counts three. A Rust test, plus a
+   page that sends a path it was not offered failing `source-not-offered`.
+4. Given 2,000 dropped files, then the confirm shows the count and size, input stays live, Stop
+   keeps what landed, and the frame gap stays at or under 50 ms. Installed-app walk with a
+   recording.
+5. Given a copied Markdown note edited in place (slice 9), then its source row says
+   `origin.changed` and Copy again turns its pages "Source changed".
+
+### Slices
+
+| Slice | What | After |
+|---|---|---|
+| F2 (widened) | Decisions 1-8: stage order, found block, folder drop, relative import, confirm, stop, skipped line, `start.how`, Usage rows | F3 (merged) |
+| F2b | Decision 9: origins file, changed row, recopy; its own decision record (a new vault file) | F2 |
+
 ## Edge cases
 
 - **Zero, one, most.** Zero filtered candidates shows no block (the owner's folder: 3 before, 0
@@ -272,7 +402,6 @@ F4 removes `find.searchHint` and `find.walkedRoots` (read at `FindDocumentsDialo
 
 ## Out of scope
 
-- **Folder drops keeping their structure**: needs a sub-folder import contract; F2 refuses clearly.
 - **Git-ignore as a filter**: no matcher exists on either side; the folder list covers the case.
 - **Stopping a copy midway, and a long-work card for copies**: next once a measured drop takes
   over 10 s.
@@ -352,8 +481,7 @@ reason.source_basis_unavailable}`, `acpChat.checkAnswerFull`, `analysisWorkbench
 ## Later
 
 1. F4 plain dialog: next when F2 merges.
-2. Folder drops keeping structure: next when a person drops a folder twice in a week of use.
-3. Stop a copy midway, with progress in the long-work card: next when a measured drop passes 10 s.
+2. Folder drops and stopping a copy moved into F2 ("Documents already in the folder").
 4. Git-ignore filter: next when a misfire comes from an ignored folder not on the list.
 
 ## Owner question
@@ -374,3 +502,7 @@ None. Decided: ko jaryo, ja shiryo, zh unchanged, wiki kept. Reversing is a cata
   repository the start-only rule still suggested 22 licence texts (21 bundled-library files
   such as `commons-cli-1.5.0.LICENSE.txt` and one under `licences/`), 22 of its 37 kept files.
   A hyphen ending is left out so `driver-license.pdf` stays a suggestion.
+- 2026-11-21: "Documents already in the folder" added from the installed-app check: copies keep
+  their folders, discovery offers Markdown the vault does not own, found files lead when they are
+  in the open folder, folders can be dropped, large copies confirm and stop, skipped files are
+  counted, and a changed original is noticed (F2b).
