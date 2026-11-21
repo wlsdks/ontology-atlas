@@ -63,18 +63,3 @@ export function nearestDomainId(
   }
   return null;
 }
-
-/** Newest `lastApprovedAt` first, then title; in vault mode the field is a sentinel, so nodes tie. */
-export function selectRecentNodes(
-  nodes: readonly KnowledgeGraphNode[],
-  limit = 8,
-): KnowledgeGraphNode[] {
-  return [...nodes]
-    .sort((a, b) => {
-      const ta = a.lastApprovedAt.getTime();
-      const tb = b.lastApprovedAt.getTime();
-      if (tb !== ta) return tb - ta;
-      return a.title.localeCompare(b.title);
-    })
-    .slice(0, limit);
-}
