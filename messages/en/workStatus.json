@@ -1,0 +1,79 @@
+{
+  "title": "Work status",
+  "summary": "<runningCount>{running}</runningCount> running · <stuckCount>{stuck}</stuckCount> stuck · <readyCount>{ready}</readyCount> ready to merge",
+  "repoLine": "{repo} · {count, plural, one {# worktree} other {# worktrees}} on this Mac",
+  "headline": {
+    "running": "{count, plural, one {# task is running on this Mac} other {# tasks are running on this Mac}}",
+    "stuck": "{count, plural, one {# task is stuck} other {# tasks are stuck}}",
+    "idle": "No agent holds a worktree in {repo}"
+  },
+  "band": {
+    "mac": "On this Mac",
+    "server": "On the server",
+    "seam": "push"
+  },
+  "ruler": {
+    "working": "Working",
+    "checks": "Checks",
+    "prePush": "pre-push",
+    "pr": "PR",
+    "ci": "CI",
+    "ready": "Ready to merge",
+    "main": "main"
+  },
+  "group": {
+    "stuck": "Stuck",
+    "merged": "Merged ({count})",
+    "unheld": "Not held by an agent"
+  },
+  "session": {
+    "header": "{tool} · session in {folder}",
+    "started": "started {time}",
+    "subagents": "{count, plural, one {# subagent} other {# subagents}}"
+  },
+  "tool": {
+    "acp": "Claude Agent in Atlas",
+    "claudeCode": "Claude Code",
+    "codex": "Codex",
+    "gemini": "Gemini CLI",
+    "unknown": "An agent"
+  },
+  "holder": {
+    "locked": "{tool} subagent {id} · locked at {time}",
+    "lockedUnnamed": "Locked at {time}",
+    "noLock": "No lock · last commit {ago} by {author}",
+    "noLockQuiet": "No lock",
+    "subagent": "Subagent {id}",
+    "lastCommit": "{ago} by {author}",
+    "staleLock": "Locked by a {tool} session that has ended"
+  },
+  "row": {
+    "noCommits": "No commits beyond main",
+    "commits": "{count, plural, one {# commit} other {# commits}} beyond main",
+    "missing": "The folder {path} is missing. git worktree prune removes its record."
+  },
+  "station": {
+    "mergedInto": "Merged into {branch}"
+  },
+  "connect": {
+    "offer": "Show PRs and CI from {host}"
+  },
+  "noRemote": "{repo} has no remote, so there are no PRs or CI to show.",
+  "unreadable": "{repo} could not be read. Choose the repository folder again to grant access.",
+  "choose": {
+    "title": "Choose the Git repository your agents work in",
+    "action": "Choose repository folder"
+  },
+  "empty": {
+    "title": "{repo} has only its main checkout",
+    "body": "Each worktree an agent creates gets a row in Work status, with the session that holds it."
+  },
+  "web": {
+    "title": "Work status runs in the desktop app",
+    "body": "A browser cannot run git or read this computer's processes. In this browser you can still open your folder's map and Library."
+  },
+  "term": {
+    "worktree": "Worktree: a separate copy of the project folder, so each agent changes files without touching the others.",
+    "subagent": "Subagent: a task an agent session starts, often in its own worktree."
+  }
+}

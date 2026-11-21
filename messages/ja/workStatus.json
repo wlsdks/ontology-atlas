@@ -1,0 +1,79 @@
+{
+  "title": "作業状況",
+  "summary": "進行中<runningCount>{running}</runningCount> · 停止<stuckCount>{stuck}</stuckCount> · マージ可能<readyCount>{ready}</readyCount>",
+  "repoLine": "{repo} · このMacのワークツリー{count}個",
+  "headline": {
+    "running": "このMacで{count}件の作業が進行中です",
+    "stuck": "{count}件の作業が止まっています",
+    "idle": "{repo}のワークツリーを保持しているエージェントはありません"
+  },
+  "band": {
+    "mac": "このMac",
+    "server": "サーバー",
+    "seam": "push"
+  },
+  "ruler": {
+    "working": "作業中",
+    "checks": "チェック",
+    "prePush": "pre-push",
+    "pr": "PR",
+    "ci": "CI",
+    "ready": "マージ可能",
+    "main": "main"
+  },
+  "group": {
+    "stuck": "停止",
+    "merged": "マージ済み ({count})",
+    "unheld": "エージェントが保持していないワークツリー"
+  },
+  "session": {
+    "header": "{tool} · {folder}のセッション",
+    "started": "{time}開始",
+    "subagents": "サブエージェント{count}個"
+  },
+  "tool": {
+    "acp": "Atlas内のClaude Agent",
+    "claudeCode": "Claude Code",
+    "codex": "Codex",
+    "gemini": "Gemini CLI",
+    "unknown": "エージェント"
+  },
+  "holder": {
+    "locked": "{tool}のサブエージェント{id} · {time}にロック",
+    "lockedUnnamed": "{time}にロック",
+    "noLock": "ロックなし · 最後のコミットは{ago}、{author}",
+    "noLockQuiet": "ロックなし",
+    "subagent": "サブエージェント{id}",
+    "lastCommit": "{ago}、{author}",
+    "staleLock": "終了した{tool}セッションがロックしたワークツリー"
+  },
+  "row": {
+    "noCommits": "main以降のコミットなし",
+    "commits": "main以降のコミット{count}個",
+    "missing": "{path}フォルダがありません。git worktree pruneを実行するとこの記録が削除されます。"
+  },
+  "station": {
+    "mergedInto": "{branch}にマージ済み"
+  },
+  "connect": {
+    "offer": "{host}のPRとCIを表示"
+  },
+  "noRemote": "{repo}にはリモートがないため、表示するPRとCIはありません。",
+  "unreadable": "{repo}を読み込めませんでした。リポジトリフォルダをもう一度選んでアクセスを許可してください。",
+  "choose": {
+    "title": "エージェントが作業するGitリポジトリを選んでください",
+    "action": "リポジトリフォルダを選ぶ"
+  },
+  "empty": {
+    "title": "{repo}にはメインのチェックアウトしかありません",
+    "body": "エージェントがワークツリーを作るたびに作業状況に1行ずつ増え、そのワークツリーを保持するセッションも表示されます。"
+  },
+  "web": {
+    "title": "作業状況はデスクトップアプリで開きます",
+    "body": "ブラウザはgitを実行したり、このコンピュータのプロセスを読んだりできません。このブラウザでも、フォルダのマップとライブラリは開けます。"
+  },
+  "term": {
+    "worktree": "ワークツリー：プロジェクトフォルダの別のコピーです。エージェントごとに別のコピーでファイルを変更するので、互いに干渉しません。",
+    "subagent": "サブエージェント：エージェントのセッションが始めた作業の1つです。多くの場合、自分専用のワークツリーを使います。"
+  }
+}

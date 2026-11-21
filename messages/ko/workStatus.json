@@ -1,0 +1,79 @@
+{
+  "title": "작업 현황",
+  "summary": "진행 <runningCount>{running}</runningCount> · 막힘 <stuckCount>{stuck}</stuckCount> · 머지 가능 <readyCount>{ready}</readyCount>",
+  "repoLine": "{repo} · 이 Mac의 워크트리 {count}개",
+  "headline": {
+    "running": "작업 {count}개가 이 Mac에서 진행 중이에요",
+    "stuck": "작업 {count}개가 막혔어요",
+    "idle": "{repo}의 워크트리를 잡은 에이전트가 없어요"
+  },
+  "band": {
+    "mac": "이 Mac",
+    "server": "서버",
+    "seam": "push"
+  },
+  "ruler": {
+    "working": "작업 중",
+    "checks": "검사",
+    "prePush": "pre-push",
+    "pr": "PR",
+    "ci": "CI",
+    "ready": "머지 가능",
+    "main": "main"
+  },
+  "group": {
+    "stuck": "막힘",
+    "merged": "머지됨 ({count})",
+    "unheld": "에이전트가 잡지 않은 워크트리"
+  },
+  "session": {
+    "header": "{tool} · {folder}의 세션",
+    "started": "{time} 시작",
+    "subagents": "서브에이전트 {count}개"
+  },
+  "tool": {
+    "acp": "Atlas 안의 Claude Agent",
+    "claudeCode": "Claude Code",
+    "codex": "Codex",
+    "gemini": "Gemini CLI",
+    "unknown": "에이전트"
+  },
+  "holder": {
+    "locked": "{tool} 서브에이전트 {id} · {time}에 잠금",
+    "lockedUnnamed": "{time}에 잠금",
+    "noLock": "잠금 없음 · 마지막 커밋 {ago}, {author}",
+    "noLockQuiet": "잠금 없음",
+    "subagent": "서브에이전트 {id}",
+    "lastCommit": "{ago}, {author}",
+    "staleLock": "끝난 {tool} 세션이 잠근 워크트리"
+  },
+  "row": {
+    "noCommits": "main 이후 커밋 없음",
+    "commits": "main 이후 커밋 {count}개",
+    "missing": "{path} 폴더가 없어요. git worktree prune을 실행하면 이 기록이 지워져요."
+  },
+  "station": {
+    "mergedInto": "{branch}에 머지됨"
+  },
+  "connect": {
+    "offer": "{host}의 PR과 CI 보기"
+  },
+  "noRemote": "{repo}에는 원격 저장소가 없어서 보여 줄 PR과 CI가 없어요.",
+  "unreadable": "{repo}를 읽을 수 없어요. 저장소 폴더를 다시 골라 접근을 허용하세요.",
+  "choose": {
+    "title": "에이전트가 작업하는 Git 저장소를 고르세요",
+    "action": "저장소 폴더 고르기"
+  },
+  "empty": {
+    "title": "{repo}에는 기본 체크아웃만 있어요",
+    "body": "에이전트가 워크트리를 만들 때마다 작업 현황에 한 줄씩 생기고, 그 워크트리를 잡은 세션이 함께 표시돼요."
+  },
+  "web": {
+    "title": "작업 현황은 데스크톱 앱에서 열려요",
+    "body": "브라우저는 git을 실행하거나 이 컴퓨터의 프로세스를 읽을 수 없어요. 이 브라우저에서도 폴더의 지도와 자료실은 열 수 있어요."
+  },
+  "term": {
+    "worktree": "워크트리: 프로젝트 폴더의 별도 사본이에요. 에이전트마다 다른 사본에서 파일을 바꾸므로 서로 건드리지 않아요.",
+    "subagent": "서브에이전트: 에이전트 세션이 시작한 작업 하나예요. 보통 자기 워크트리를 따로 써요."
+  }
+}

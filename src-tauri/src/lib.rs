@@ -38,6 +38,7 @@ mod temporary_names;
 mod vault;
 mod vault_grants;
 mod webview_verify;
+mod work_status;
 
 use acp_runtime::AcpInstallProgressState;
 use acp_session::{terminate_all_acp_sessions, AcpSessions};
@@ -378,6 +379,8 @@ pub fn run() {
             connector_secrets::connector_secret_set,
             connector_secrets::connector_secret_status,
             connector_secrets::connector_secret_delete,
+            work_status::work_status_read,
+            work_status::work_status_fingerprint,
         ])
         .build(context)
         .expect("error while building ontology-atlas desktop app")

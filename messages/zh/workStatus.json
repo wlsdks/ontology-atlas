@@ -1,0 +1,79 @@
+{
+  "title": "工作状态",
+  "summary": "进行中 <runningCount>{running}</runningCount> · 受阻 <stuckCount>{stuck}</stuckCount> · 可合并 <readyCount>{ready}</readyCount>",
+  "repoLine": "{repo} · 这台 Mac 上的 {count} 个工作树",
+  "headline": {
+    "running": "{count} 个任务正在这台 Mac 上进行",
+    "stuck": "{count} 个任务受阻",
+    "idle": "{repo} 的工作树目前没有被任何代理占用"
+  },
+  "band": {
+    "mac": "这台 Mac",
+    "server": "服务器",
+    "seam": "push"
+  },
+  "ruler": {
+    "working": "工作中",
+    "checks": "检查",
+    "prePush": "pre-push",
+    "pr": "PR",
+    "ci": "CI",
+    "ready": "可合并",
+    "main": "main"
+  },
+  "group": {
+    "stuck": "受阻",
+    "merged": "已合并 ({count})",
+    "unheld": "未被代理占用的工作树"
+  },
+  "session": {
+    "header": "{tool} · {folder} 中的会话",
+    "started": "{time} 开始",
+    "subagents": "{count} 个子代理"
+  },
+  "tool": {
+    "acp": "Atlas 中的 Claude Agent",
+    "claudeCode": "Claude Code",
+    "codex": "Codex",
+    "gemini": "Gemini CLI",
+    "unknown": "代理"
+  },
+  "holder": {
+    "locked": "{tool} 子代理 {id} · {time} 锁定",
+    "lockedUnnamed": "{time} 锁定",
+    "noLock": "未锁定 · 最后一次提交 {ago}，{author}",
+    "noLockQuiet": "未锁定",
+    "subagent": "子代理 {id}",
+    "lastCommit": "{ago}，{author}",
+    "staleLock": "由已结束的 {tool} 会话锁定"
+  },
+  "row": {
+    "noCommits": "main 之后没有提交",
+    "commits": "main 之后有 {count} 个提交",
+    "missing": "文件夹 {path} 不存在。运行 git worktree prune 会删除它的记录。"
+  },
+  "station": {
+    "mergedInto": "已合并到 {branch}"
+  },
+  "connect": {
+    "offer": "显示 {host} 上的 PR 和 CI"
+  },
+  "noRemote": "{repo} 没有远程仓库，因此没有可显示的 PR 和 CI。",
+  "unreadable": "无法读取 {repo}。请重新选择仓库文件夹以授予访问权限。",
+  "choose": {
+    "title": "选择你的代理工作的 Git 仓库",
+    "action": "选择仓库文件夹"
+  },
+  "empty": {
+    "title": "{repo} 只有主检出",
+    "body": "代理每创建一个工作树，工作状态中就多一行，并显示占用它的会话。"
+  },
+  "web": {
+    "title": "工作状态在桌面应用中运行",
+    "body": "浏览器无法运行 git，也无法读取这台计算机的进程。在这个浏览器中，你仍然可以打开文件夹的地图和资料库。"
+  },
+  "term": {
+    "worktree": "工作树：项目文件夹的独立副本，每个代理在自己的副本中修改文件，互不干扰。",
+    "subagent": "子代理：代理会话启动的一项任务，通常使用自己的工作树。"
+  }
+}

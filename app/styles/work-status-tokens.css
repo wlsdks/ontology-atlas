@@ -1,0 +1,41 @@
+/*
+ * Work status (src/widgets/work-tracks). Two grounds tell which side a fact is from: this Mac is
+ * the warm graphite of the workbench, the server a cool night blue, joined at the push seam. One
+ * ink per agent session, so a session's trunk and every worktree it holds read as one line; each
+ * ink clears 3:1 on both grounds, and none borrows a signal tone (warning, error, success).
+ */
+@layer base {
+  :root {
+    --work-ground-mac: #161513;
+    --work-ground-server: #0f1420;
+    --work-ground-stuck: rgba(229, 72, 77, 0.09);
+    --work-seam: rgba(143, 176, 234, 0.34);
+    --work-rail: rgba(255, 255, 255, 0.12);
+    --work-rail-faint: rgba(255, 255, 255, 0.05);
+
+    --work-session-1: #79b6ff;
+    --work-session-2: #b9a4ff;
+    --work-session-3: #f095c9;
+    --work-session-4: #62d2da;
+    --work-session-5: #d9c69c;
+    --work-unheld: #8d8b84;
+    /* The ink of the session holding a row; each session group and row sets its own. */
+    --work-held-ink: var(--work-unheld);
+
+    --work-label-w: 22rem;
+    --work-track-end: 1.5rem;
+    --work-row-h: 3.75rem;
+    --work-session-h: 2.75rem;
+    --work-header-h: 4.25rem;
+    --work-ruler-line-y: 2.4375rem;
+    --work-dot: 0.75rem;
+    --work-line: 3px;
+    --work-elbow: 0.875rem;
+  }
+
+  @media (max-width: 1279px) {
+    :root {
+      --work-label-w: 16rem;
+    }
+  }
+}

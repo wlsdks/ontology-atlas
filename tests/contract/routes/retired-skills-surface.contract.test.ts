@@ -26,6 +26,7 @@ describe("retired Skills product surface", () => {
       // assertions below still say so.
       "changes",
       "git",
+      "workStatus",
     ]);
     expect(resolveActiveNavDestination("/skills")).toBeNull();
     expect(resolveActiveNavDestination("/ko/skills/")).toBeNull();

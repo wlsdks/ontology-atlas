@@ -32,6 +32,8 @@ export const AUDITED_ROUTES = [
   "/ko/project/fallback/",
   "/ko/git/",
   "/ko/changes/",
+  // The web state is the desktop-only card: a browser cannot run Git.
+  "/ko/work-status/",
   // Measures the no-tools state: the web cannot spawn processes.
   "/ko/agents/",
   // Measures the no-vault state: a browser cannot read agent config files or hold a token.
