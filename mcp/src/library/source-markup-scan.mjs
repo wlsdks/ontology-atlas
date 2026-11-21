@@ -11,7 +11,7 @@ export function decodeXmlText(text) {
   });
 }
 
-/** The character data of every `<tag>` element in order, tags themselves dropped. */
+/** The text of `xml` with every tag dropped and references decoded. */
 export function textOf(xml) {
   return decodeXmlText(xml.replace(/<[^<>]*>/g, ''));
 }

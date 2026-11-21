@@ -51,8 +51,8 @@ Ink comes from the existing ramps and is read at mount:
 ## Contracts the pieces keep
 
 - **Reduced motion stops them dead.** Neither host registers a loop; each draws one still
-  frame of a deterministic field. Measured in the browser 2026-09-09: **0 rAF callbacks
-  per second** under `prefers-reduced-motion: reduce`, against 120 with it off.
+  frame of a deterministic field: **0 rAF callbacks per second** under
+  `prefers-reduced-motion: reduce`.
 - **They sleep.** Both use `ambientSleepFactor` from the map — full speed until 30s after
   the last input, a 2s deceleration to a complete stop, and any input restores them on the
   next frame. Both release their frame callbacks while asleep, hidden or outside the

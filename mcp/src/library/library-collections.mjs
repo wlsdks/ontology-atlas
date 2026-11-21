@@ -163,8 +163,8 @@ function parseLibraryCollections(raw) {
 
 function isInsideRoot(root, candidate) {
   if (candidate === root) return true;
-  const rel = relative(root, candidate);
-  return rel !== '' && rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
+  const relativePath = relative(root, candidate);
+  return relativePath !== '' && relativePath !== '..' && !relativePath.startsWith(`..${sep}`) && !isAbsolute(relativePath);
 }
 
 function describeCollectionsFile(status, { raw = null, mtime = null, reason } = {}) {
