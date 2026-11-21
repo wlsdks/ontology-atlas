@@ -484,6 +484,30 @@
       "reason": "The MCP scale benchmark reads the macOS physical footprint, which RSS overstates there.",
       "consumer": "scripts/perf/perf-mcp-scale.mjs",
       "witness": "vmmap"
+    },
+    {
+      "key": "frontend:runtime:exports:src/widgets/library-sources-overview/index.ts:SourcesOverview",
+      "reason": "The Sources home overview is built ahead of its mount (docs/specs/2026-11-21-library-sources-redesign.md, slice S-1); S-2 mounts it in LibraryPage.tsx and this exception goes with that change. Until then its component test is the only consumer.",
+      "consumer": "src/widgets/library-sources-overview/ui/SourcesOverview.test.tsx",
+      "witness": "SourcesOverview"
+    },
+    {
+      "key": "frontend:runtime:exports:src/widgets/library-sources-overview/ui/SourcesOverview.tsx:SourcesOverview",
+      "reason": "The Sources home overview is built ahead of its mount (docs/specs/2026-11-21-library-sources-redesign.md, slice S-1); S-2 mounts it in LibraryPage.tsx and this exception goes with that change. Until then its component test is the only consumer.",
+      "consumer": "src/widgets/library-sources-overview/ui/SourcesOverview.test.tsx",
+      "witness": "SourcesOverview"
+    },
+    {
+      "key": "frontend:runtime:types:src/widgets/library-sources-overview/index.ts:SourcePick",
+      "reason": "The Sources home overview is built ahead of its mount (docs/specs/2026-11-21-library-sources-redesign.md, slice S-1); S-2 mounts it in LibraryPage.tsx and this exception goes with that change. Until then its component test is the only consumer.",
+      "consumer": "src/widgets/library-sources-overview/ui/SourcesOverview.test.tsx",
+      "witness": "SourcePick"
+    },
+    {
+      "key": "frontend:runtime:types:src/widgets/library-sources-overview/index.ts:SourcesNextBatch",
+      "reason": "The Sources home overview is built ahead of its mount (docs/specs/2026-11-21-library-sources-redesign.md, slice S-1); S-2 mounts it in LibraryPage.tsx and this exception goes with that change. Until then its component test is the only consumer.",
+      "consumer": "src/widgets/library-sources-overview/ui/SourcesOverview.test.tsx",
+      "witness": "SourcesNextBatch"
     }
   ]
 }

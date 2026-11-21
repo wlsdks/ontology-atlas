@@ -70,3 +70,35 @@ describe('status token contrast on the dark canvas (WCAG AA)', () => {
     });
   }
 });
+
+/** A source state's ink is a mark (bar segment, dot), so the non-text floor applies (WCAG 1.4.11). */
+const SOURCE_STATE_TOKENS = [
+  '--color-source-page',
+  '--color-source-partial',
+  '--color-source-review',
+  '--color-source-checking',
+  '--color-source-unreadable',
+  '--color-source-none',
+  '--color-source-complete',
+];
+const NON_TEXT = 3;
+
+function resolvedHex(block: string, name: string): string {
+  const value = tokenValue(block, name);
+  const alias = value.match(/^var\((--[\w-]+)\)$/);
+  return alias ? resolvedHex(block, alias[1]) : value;
+}
+
+describe('source state inks on canvas and panel (WCAG 1.4.11)', () => {
+  const block = themeBlock();
+  for (const token of SOURCE_STATE_TOKENS) {
+    for (const ground of ['--color-canvas', '--color-panel']) {
+      it(`${token} is >= ${NON_TEXT}:1 on ${ground}`, () => {
+        const value = resolvedHex(block, token);
+        expect(value).toMatch(/^#[0-9a-fA-F]{6}$/);
+        const ratio = contrast(value, resolvedHex(block, ground));
+        expect(ratio, `${token} ${value} on ${ground} = ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(NON_TEXT);
+      });
+    }
+  }
+});
