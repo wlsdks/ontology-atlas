@@ -44,7 +44,7 @@ it.
 | 6 | S-2 and S-3: mount the overview, retire the graph | sources-redesign | Merged (#3753) | None |
 | 7 | P-1: paper tokens and `Sheet` | this file | Merged (#3754) | 6 |
 | 8 | Installed-app check after 6 and 7 | this file | Not started | 7 |
-| 9 | F3: word sweep and `sourceWord` row | words-and-first-run | Draft PR | 6 |
+| 9 | F3: word sweep and `sourceWord` row | words-and-first-run | Draft #3761 | 6 |
 | 10 | I-2: mount the wiki index | index-column | Not started | 6 |
 | 11 | F2: drop-first stage | words-and-first-run | Not started | 9 |
 | 12 | F4: plain find dialog | words-and-first-run | Not started | 11 |
@@ -106,5 +106,5 @@ request) was chosen.
   sessions: the order across four specs and the paper and motion layer.
 - 2026-11-21: S-2 and S-3 merged (#3753) and P-1 merged (#3754); the installed-app check (row 8)
   is next.
-- 2026-11-21: row 9 (F3) opened as a draft pull request: the ko and ja source word sweep and the
+- 2026-11-21: row 9 (F3) opened as draft #3761: the ko and ja source word sweep and the
   `sourceWord` row.
