@@ -150,7 +150,7 @@
     "integration:cli:growth": "node scripts/ci/run-focused-node-test.mjs --test-name-pattern \"growth\" cli/src/integration.test.mjs",
     "integration:cli:maintenance": "node scripts/ci/run-focused-node-test.mjs --test-name-pattern \"maintenance\" cli/src/integration.test.mjs",
     "cli:mcp-verify": "node cli/src/index.mjs mcp-verify",
-    "test:mcp:unit": "node --test $(ls mcp/src/*.test.mjs mcp/src/*/*.test.mjs | grep -v '/integration.test.mjs')",
+    "test:mcp:unit": "node --test $(find mcp/src -name '*.test.mjs' ! -name integration.test.mjs | sort)",
     "eval:meaning-extraction": "node scripts/benchmark/evaluate-meaning-corpus.mjs",
     "test:meaning-corpus": "node --test scripts/benchmark/evaluate-meaning-corpus.test.mjs && pnpm eval:meaning-extraction",
     "test:benchmark": "node --test scripts/benchmark/benchmark-lifecycle.test.mjs scripts/benchmark/benchmark-change-flow.test.mjs scripts/benchmark/benchmark-blind-set.test.mjs scripts/benchmark/benchmark-grade.test.mjs scripts/benchmark/benchmark-construction.test.mjs scripts/lib/benchmark/construction-prompts.test.mjs",
