@@ -22,8 +22,6 @@ import { CatalogueSection } from './add-connector/CatalogueSection';
 import { CustomConnectorForm } from './add-connector/CustomConnectorForm';
 import { FoundSection } from './add-connector/FoundSection';
 
-export { newConnectorId, prefillFromRecord, type CustomPrefill } from '../model/connector-draft';
-
 type AddFailureKey = `addFailReason.${AddFailureReason}`;
 
 /**

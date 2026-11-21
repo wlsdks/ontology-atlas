@@ -172,6 +172,7 @@ export function CustomConnectorForm({
                     </Chip>
                   </div>
                   {command && !typedCommand ? (
+                    // The full path is what gets written, so it is shown under the choice.
                     <code
                       data-testid={`${testIdPrefix}-custom-runtime-path`}
                       className="mt-1 block break-all font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"
