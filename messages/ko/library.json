@@ -346,9 +346,7 @@
   "wiki": {
     "listAria": "이 폴더의 위키 문서",
     "compile": "위키 문서 만들기",
-    "compileTooltip": "에이전트가 자료를 읽고 위키 문서를 쓰거나 갱신해요. 저장한 답은 따로 검토하도록 알려요.",
     "lint": "위키 검사",
-    "lintTooltip": "에이전트가 위키 문서를 읽고 어긋남·대체된 주장·빠진 연결·문서 없는 이름을 보고해요. 아무것도 쓰지 않아요.",
     "candidateKind": {
       "domain": "도메인",
       "capability": "역량",
@@ -361,21 +359,15 @@
     "propose": "개념으로 제안",
     "proposeTooltip": "에이전트가 이 문서들을 읽고 온톨로지 개념 하나를 제안해요. 쓰기 전에 권한을 요청해요.",
     "logLint": "마지막 검사 {when}: {summary}",
-    "empty": "아직 위키 문서가 없어요. 위키 문서는 kind: 가 없는 마크다운이고, 서식은 wiki/_template.md에 있어요.",
     "unknownAuthor": "미상",
-    "offTemplate": "서식 밖",
-    "offTemplateCount": "{count, number}개 문서가 서식에 맞지 않아요",
     "transfer": "코딩 에이전트가 제공자에게 직접 요청하며 Atlas는 그 통신을 기록하지 않아요. 서식에 맞는 위키 문서는 자동으로 저장할 수 있지만, 저장한 답은 항상 따로 검토해야 해요.",
     "compileFailed": "에이전트를 실행하지 못했어요: {reason}",
-    "compileWebLimit": "위키 문서를 쓰려면 이 컴퓨터에서 실행되는 코딩 에이전트가 필요하고, 앱에서만 실행할 수 있어요. 문서를 읽고 고치는 일은 여기서도 할 수 있어요.",
     "compileWebGetApp": "앱 받기",
     "agentMissing": "코딩 에이전트를 연결하면 위키 검사와 위키 문서 만들기를 맡길 수 있어요.",
     "agentMissingDoor": "에이전트 연결하기",
-    "offTemplateReason": "위키 서식에 맞지 않아요: {code}. 문서를 열면 무엇을 고칠지 볼 수 있어요.",
     "offTemplateAriaLabel": "이 문서가 위키 서식과 다른 점",
     "offTemplateTitle": "고칠 곳 {count, number}개 · 서식",
     "offTemplateBody": "아래를 고치면 다른 문서와 같은 방식으로 읽혀요.",
-    "writtenBy": "쓴이 {author}",
     "writer": {
       "human": "사람",
       "agent": "{name}(에이전트)",
@@ -390,7 +382,7 @@
     "compileModifyFile": "{path} 바꾸기",
     "logCount": {
       "disagreement": "어긋남 {count, number}",
-      "superseded": "대체된 주장 {count, number}",
+      "superseded": "더 새 자료와 다름 {count, number}",
       "missingLink": "빠진 연결 {count, number}",
       "nameWithoutPage": "문서 없는 이름 {count, number}"
     },
@@ -398,8 +390,6 @@
     "logNew": "새로 씀",
     "logRevised": "고침",
     "logNothingNew": "새 내용 없음",
-    "emptyNoTemplate": "아직 위키 문서가 없고 서식도 없어요. 설정 › 온톨로지 폴더에서 위키를 시작하면 wiki/_template.md가 생기고, 문서는 그 서식을 따라요.",
-    "folderMark": "끊긴 링크",
     "candidatesMore": "이름 {count, number}개 더 보기",
     "candidatesLess": "접기",
     "candidatesTooltip": "마지막 검사에서 세 문서 이상에 나왔지만 자기 문서가 없는 이름이에요. 코드가 만드는 것(도메인·역량·요소)만 지도의 개념으로 제안할 수 있고, 사람과 조직은 위키에 남아요.",
@@ -409,13 +399,12 @@
     "fileAnswerRejected": "저장하지 않았어요. 답이 문서 서식에 맞지 않아요({code}). 인용을 달아 다시 물어보세요.",
     "findingKind": {
       "disagreement": "어긋남",
-      "superseded": "대체된 주장",
+      "superseded": "더 새 자료와 다름",
       "missingLink": "빠진 연결"
     },
     "fix": "고치기",
     "fixTooltip": "에이전트가 이 문서들에서 이 항목을 고쳐요. 어긋남은 두 값을 양쪽 인용과 함께, 대체된 주장은 현재 값을 앞에, 빠진 연결은 양쪽에 링크를 적어요.",
     "newPage": "새 문서",
-    "newPageTooltip": "직접 쓰는 문서를 시작해요. 서식의 절과 created_by: human만 있는 빈 문서이고, 어느 편집기에서든 채우면 목록이 따라와요.",
     "newPageDialogTitle": "새 위키 문서",
     "newPageDialogBody": "기본 구성을 갖춘 Markdown 초안을 만들어요.",
     "newPageTitle": "문서 제목",
@@ -528,21 +517,6 @@
         "do": "같은 자료로 쓴 문서끼리 서로 연결하세요."
       }
     }
-  },
-  "shelf": {
-    "commonState": "{count, number}개 · {state}",
-    "listAria": "위키 페이지와 자료 버전 상태",
-    "freshness": {
-      "fresh": "확인된 자료 버전이 그대로예요.",
-      "stale": "자료가 바뀌었거나 이 문서와 아직 비교하지 않았어요",
-      "unverified": "이 문서를 파일과 비교한 적이 없어요"
-    },
-    "state": {
-      "fresh": "확인한 자료는 그대로",
-      "stale": "자료 확인 필요",
-      "unverified": "자료 미확인"
-    },
-    "compiling": "자료를 다시 읽고 위키 문서를 쓰는 중이에요."
   },
   "home": {
     "guide": "사용 방법",
@@ -731,7 +705,7 @@
   "report": {
     "title": "검사 결과",
     "structuralTitle": "앱 검사",
-    "structuralHead": "문서 {pages, number}개 · 서식 벗어남 {offTemplate, number}개 · 항목 {findings, number}개",
+    "structuralHead": "문서 {pages, number}개 · 서식을 따르지 않음 {offTemplate, number}개 · 항목 {findings, number}개",
     "structuralClean": "모든 문서가 서식에 맞고, 모든 링크가 열리고, 같은 자료로 쓴 문서끼리 서로 링크돼 있어요.",
     "advisoryMark": "참고",
     "advisoryFold": "권고 항목 {count, number}개",
@@ -759,7 +733,6 @@
       "shared-source-unlinked": "같은 자료인데 연결이 없어요"
     },
     "namesTitle": "문서 없는 이름",
-    "open": "검사 결과 {count, number}",
     "running": "위키 검사 중…",
     "unseen": "새로 나옴"
   },

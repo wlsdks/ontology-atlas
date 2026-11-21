@@ -32,7 +32,6 @@ test('ordinary Library questions can be explicitly filed and do not impersonate 
     await chat.getByRole('textbox').fill(question);
     await page.getByTestId('acp-chat-send').click();
     await expect(chat).toHaveAttribute('data-acp-status', 'thinking');
-    await expect(page.getByTestId('library-shelf-compiling')).toHaveCount(0);
     await expect(page.getByTestId('library-file-answer')).toHaveCount(0);
   };
   await ask('What is the current capacity?');
@@ -55,9 +54,10 @@ test('ordinary Library questions can be explicitly filed and do not impersonate 
 
   // A completed explicit request remains in the dock's opening envelope. Its kind
   // must not leak into the next ordinary question or its retained answer title.
-  await page.getByTestId('library-compile').click();
+  await page.getByTestId('library-workspace-sources').click();
+  await page.getByTestId('library-progress-continue').click();
   await expect(chat).toHaveAttribute('data-acp-status', 'thinking');
-  await expect(page.getByTestId('library-shelf-compiling')).toBeVisible();
+  await expect(page.getByTestId('library-progress-continue')).toBeDisabled();
   await harness.answer(page, 'No page changes were needed.');
   await expect(chat).toHaveAttribute('data-acp-status', 'ready');
   await expect.poll(async () => 'wiki/_log.md' in (await harness.snapshot(page)).files).toBe(true);

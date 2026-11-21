@@ -346,9 +346,7 @@
   "wiki": {
     "listAria": "此文件夹中的 Wiki 页面",
     "compile": "生成 Wiki 页面",
-    "compileTooltip": "智能体读取来源，撰写或更新 Wiki 页面。保存的答案会被标记为需要单独复核。",
     "lint": "检查 Wiki",
-    "lintTooltip": "智能体读取 Wiki 页面，报告相互矛盾、已被取代的论断、缺失的链接，以及没有页面的名称。不会写入任何内容。",
     "candidateKind": {
       "domain": "领域",
       "capability": "能力",
@@ -361,21 +359,15 @@
     "propose": "提议为概念",
     "proposeTooltip": "智能体读取这些页面并提议一个本体概念。写入前会请求许可。",
     "logLint": "上次检查 {when}：{summary}",
-    "empty": "还没有 Wiki 页面。页面是不含 kind: 的 Markdown，格式见 wiki/_template.md。",
     "unknownAuthor": "未知",
-    "offTemplate": "偏离模板",
-    "offTemplateCount": "{count} 个页面不符合模板",
     "transfer": "编码智能体直接向其服务商发送请求；Atlas 不记录这部分流量。符合模板的 Wiki 页面可以自动保存，但保存的答案始终需要单独复核。",
     "compileFailed": "无法启动智能体：{reason}",
-    "compileWebLimit": "撰写 Wiki 页面需要在本机运行的编码智能体，只有应用才能启动。在这里也可以阅读和编辑页面。",
     "compileWebGetApp": "获取应用",
     "agentMissing": "连接编码智能体后，就可以让它检查 Wiki 并生成 Wiki 页面。",
     "agentMissingDoor": "连接智能体",
-    "offTemplateReason": "不符合 Wiki 模板：{code}。打开页面查看需要修改的地方。",
     "offTemplateAriaLabel": "此页面与 Wiki 模板的差异",
     "offTemplateTitle": "{count, number} 处待修正 · 页面模板",
     "offTemplateBody": "修正下列问题后，它就会和其他页面一样被读取。",
-    "writtenBy": "撰写者：{author}",
     "writer": {
       "human": "人工",
       "agent": "{name}（智能体）",
@@ -390,7 +382,7 @@
     "compileModifyFile": "替换 {path}",
     "logCount": {
       "disagreement": "矛盾 {count, number}",
-      "superseded": "已取代 {count, number}",
+      "superseded": "较新的原文不同 {count, number}",
       "missingLink": "缺失链接 {count, number}",
       "nameWithoutPage": "无页面的名称 {count, number}"
     },
@@ -398,8 +390,6 @@
     "logNew": "新增",
     "logRevised": "已修订",
     "logNothingNew": "没有新内容",
-    "emptyNoTemplate": "还没有 Wiki 页面，也没有模板。在设置 › 本体文件夹中开始 Wiki，会创建 wiki/_template.md，页面都遵循这个格式。",
-    "folderMark": "链接",
     "candidatesMore": "另有 {count} 个名称",
     "candidatesLess": "收起名称",
     "candidatesTooltip": "上次检查中出现在三个或更多页面、却没有自己页面的名称。只有代码所构建的内容（领域、能力或元素）才能提议为地图上的概念；人物和组织留在 Wiki 中。",
@@ -409,13 +399,12 @@
     "fileAnswerRejected": "未保存：答案不符合页面格式（{code}）。请要求附上引用后重新提问。",
     "findingKind": {
       "disagreement": "矛盾",
-      "superseded": "已取代的论断",
+      "superseded": "较新的原文不同",
       "missingLink": "缺失链接"
     },
     "fix": "修复",
     "fixTooltip": "智能体在所列页面上修复此项：矛盾则列出两个值及两处引用，已取代的论断则把当前值放在前面，缺失链接则双向补上。",
     "newPage": "新建页面",
-    "newPageTooltip": "新建一个由你自己撰写的页面：只有模板的章节和 created_by: human，可在任何编辑器中填写，列表会自动更新。",
     "newPageDialogTitle": "新建 Wiki 页面",
     "newPageDialogBody": "创建一份带有标准结构、可直接填写的 Markdown 草稿。",
     "newPageTitle": "页面标题",
@@ -528,21 +517,6 @@
         "do": "把根据同一份来源撰写的页面互相链接起来。"
       }
     }
-  },
-  "shelf": {
-    "commonState": "{count, number} 个页面 · {state}",
-    "listAria": "Wiki 页面及其来源版本",
-    "freshness": {
-      "fresh": "已检查的来源版本没有变化。",
-      "stale": "来源已变更，或尚未与此页面核对。",
-      "unverified": "此页面从未与文件核对过"
-    },
-    "state": {
-      "fresh": "已查来源未变",
-      "stale": "来源待复核",
-      "unverified": "来源未检查"
-    },
-    "compiling": "正在重新读取来源并撰写 Wiki 页面。"
   },
   "home": {
     "guide": "使用方法",
@@ -731,7 +705,7 @@
   "report": {
     "title": "检查结果",
     "structuralTitle": "应用检查",
-    "structuralHead": "{pages} 个页面 · {offTemplate, number} 个偏离模板 · {findings} 项发现",
+    "structuralHead": "{pages} 个页面 · {offTemplate, number} 个未遵循模板 · {findings} 项发现",
     "structuralClean": "每个页面都符合模板，每个链接都能打开，根据同一份来源撰写的页面也互相链接。",
     "advisoryMark": "参考",
     "advisoryFold": "{count} 项提示性发现",
@@ -759,7 +733,6 @@
       "shared-source-unlinked": "同一来源的页面没有互相链接"
     },
     "namesTitle": "没有页面的名称",
-    "open": "检查结果 {count, number}",
     "running": "正在检查 Wiki…",
     "unseen": "新"
   },

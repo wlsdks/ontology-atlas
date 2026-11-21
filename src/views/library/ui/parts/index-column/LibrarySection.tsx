@@ -4,19 +4,15 @@ import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/a
 import { WorkGlyph } from '@/shared/motion/work-glyph';
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import type { useTranslations } from "next-intl";
+import { useLocale, type useTranslations } from "next-intl";
 
-import { Link } from "@/i18n/navigation";
-import { BookText, CloudDownload, FilePlus2, FileText, ListFilter, PencilLine, Search, Sparkles, Stethoscope, X } from "lucide-react";
+import { CloudDownload, FilePlus2, FileText, ListFilter, Plus, Search, X } from "lucide-react";
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
-import { humanPageSlug } from "@/features/library";
-import { writerLabel } from "../../../lib/wiki/writer-label";
+import { humanPageSlug, type LintFinding } from "@/features/library";
 import { cn } from "@/shared/lib/cn";
-import { BrandMark } from "@/shared/ui/marks/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";
-import { Button, Chip, Dialog, RowButton, Tooltip } from "@/shared/ui";
-import { AgentMissingNotice } from "../agent/AgentMissingNotice";
+import { Button, Chip, Dialog, IconButton, RowButton, Tooltip } from "@/shared/ui";
 import { Input } from "@/shared/ui/fields/input";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import {
@@ -26,23 +22,25 @@ import {
   type LibraryIndexSegment,
 } from "@/shared/lib/preferences/appearance-preferences";
 
-import { isAdvisoryWikiCode, isWikiFolderCode, libraryOffTemplateCount, passageLabelText } from "@/features/library";
+import { passageLabelText } from "@/features/library";
 import { captionWindow } from "../../../lib/sources/caption-window";
 import { isIndexedSource, useSourceSearch } from "../../../lib/sources/use-source-search";
 import { useVaultIndexHits } from "@/shared/lib/vault-folder/use-vault-index-hits";
-import { LibraryShelf } from "./LibraryShelf";
 import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";
 import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { useWindowedRows } from "@/shared/lib/list-rows/use-windowed-rows";
-import { StateBadge } from "./StateBadge";
 import { SOURCE_STATE_INK } from "@/widgets/library-sources-overview";
 import { IndexGlyph } from "./IndexGlyph";
+import { WikiIndex, wikiDayText } from "./WikiIndex";
+import { WikiViewRows } from "./WikiViewRows";
 
 /** A source row before it is measured: one line of `text-body` in `RowButton` with its inset. */
 const SOURCE_ROW_ESTIMATE_PX = 36;
 /** Every page the wiki list can show for one query; the app's search command caps at the same. */
 const LIBRARY_INDEX_HITS = 5000;
 const NO_SOURCES: ReadonlySet<string> = new Set();
+const NO_FINDINGS: readonly LintFinding[] = [];
+const VIEW_CLOCK_TICK_MS = 60_000;
 import type { LibraryUiModel } from "@/features/library";
 import { WIKI_SECTION_ORDER } from "@/shared/lib/library/wiki-page-schema";
 
@@ -120,23 +118,13 @@ export interface LibrarySectionProps {
    * that reaches outside.
    */
   onImportFromService: () => void;
-  /** Starts one in-app agent turn that writes the pages. Absent when no agent can run. */
-  onCompile: (() => void) | null;
-  /** Starts the report-only health check; null where no agent can run, like Compile. */
-  onLint: (() => void) | null;
-  /** Names the last check found with no page of their own — offered as ontology node candidates. */
-  /** What the last check found under its first three categories, each with a door to fix it. */
-  /** Starts one agent turn that proposes the candidate through the ontology-write card; null like the others. */
-  /** Whether `wiki/_template.md` exists: without it the empty state says how to get one. */
-  hasWikiTemplate?: boolean;
-  /** How an agent's wiki page write is handled: lands when it fits, or asks each time. */
-  /** Files the last answer the agent gave as a wiki page; null when there is none. */
   /** Starts a page a person writes by hand, from a title. Null where the folder cannot be written. */
   onNewPage?: ((title: string) => void | Promise<boolean>) | null;
-  /**
-   * The Check results page: findings and names it holds, whether it is the open page, and the press
-   * that opens it. Null when the wiki was never checked.
-   */
+  /** The latest Check wiki's findings, which put pages under "Needs a look"; stable between checks. */
+  findings?: readonly LintFinding[];
+  /** Wiki pages read so far while the folder is still being read; null once it is read. */
+  readingCount?: number | null;
+  /** The Check results view: what it holds, whether it is open, and the press that opens it. */
   report?: {
     count: number;
     open: boolean;
@@ -146,24 +134,7 @@ export interface LibrarySectionProps {
     /** A check finished and this person has not opened the report since. */
     unseen?: boolean;
   } | null;
-  /**
-   * The brain picker, when this computer offers two and Compile can therefore be pointed
-   * at either. Null draws nothing: with one brain there is no choice to make.
-   */
-  brainControl?: ReactNode;
-  /**
-   * Why the agent-only doors cannot run: one label line, or nothing. `null` while the landing is
-   * drawn, since the stage prints the one reason and `agentReasonPrintedId` says which card, so a
-   * reason prints once per screen.
-   */
-  actionsNote: string | null;
-  /** True in the installed app. On the web, Compile has no runtime at all. */
-  inApp: boolean;
-  /**
-   * The installed app looked for a coding agent and found none. With both agent doors dead for that
-   * reason, the column draws one notice with a door to the agents page instead of two disabled chips.
-   */
-  agentMissing?: boolean;
+
   /**
    * Which of the two lists this column is showing. There is no "both": the switch above
    * is exclusive, and rendering the inactive list `hidden` would leave its rows in the tab
@@ -171,17 +142,6 @@ export interface LibrarySectionProps {
    */
   segment: LibraryIndexSegment;
   busy: boolean;
-  /**
-   * True while a **Compile** turn is in flight.
-   *
-   * Separate from `busy`, which disables the doors for every kind of work this column
-   * can start. Only Compile acts on the shelf, so only Compile earns the shelf's own
-   * progress; a Check or an Ask running would otherwise light a row of pages nothing is
-   * writing.
-   */
-  compiling?: boolean;
-  /** A turn runs in this folder's conversation: the doors that start another stay disabled until it ends. */
-  turnRunning?: boolean;
   /** Sources the Continue request in flight named; their rows show it running, then their check draws. */
   runningSources?: ReadonlySet<string>;
   /** The state the band's press narrows the list to, or null for every source. */
@@ -228,16 +188,6 @@ function OtherHalf({
 }
 
 /**
- * A door whose label is a sentence takes the whole row: at 11px `wiki.compile` needs about 119px of
- * a 125px cell, so a half-width cell would truncate it mid-word. Both halves still fill the column
- * (`docs/DESIGN-SYSTEM.md`, "Control groups fill their column").
- */
-const AGENT_DOOR_SPAN = "col-span-2";
-
-/** The one line under the index's button group, so a dead door can point at its reason. */
-const SECTION_ACTIONS_NOTE_ID = "library-actions-blocked";
-
-/**
  * Where an index chip's explanation opens: **into the reader, wrapped.**
  *
  * The shared panel has no measure of its own, so a sentence rendered as one line —
@@ -265,20 +215,6 @@ const INDEX_QUIET_INSET = "gap-1.5 border border-transparent px-2.5 py-0.5";
  * edge, pad and gap and leads with an empty `IndexGlyph`.
  */
 const INDEX_TEXT_LINE = "flex gap-1.5 border-x border-transparent px-2.5";
-
-/**
- * The button group is a two-column grid: every control is `w-full` and a lone or odd last control
- * spans the row. The odd-child span is a selector because the children are written by the two
- * segments and their number depends on the route.
- */
-function SectionActions({ children }: { children?: ReactNode }) {
-  if (!children) return null;
-  return (
-    <div className="grid grid-cols-2 gap-1 px-3 pb-2 [&>*:last-child:nth-child(odd)]:col-span-2">
-      {children}
-    </div>
-  );
-}
 
 /** The log's ISO stamp as a person reads it; the raw stamp when it does not parse. */
 
@@ -315,19 +251,12 @@ export function LibrarySection({
   addFilesFeedback = 'idle',
   onFindDocuments,
   onImportFromService,
-  onCompile,
-  onLint,
-  hasWikiTemplate = true,
   onNewPage = null,
+  findings = NO_FINDINGS,
+  readingCount = null,
   report = null,
-  brainControl,
-  actionsNote,
-  inApp,
-  agentMissing = false,
   segment,
   busy,
-  compiling = false,
-  turnRunning = false,
   runningSources = NO_SOURCES,
   stateFilter = null,
   groupFilter = null,
@@ -430,7 +359,7 @@ export function LibrarySection({
     scrollToSource(index);
     sourceRowFocus(index);
   }, [listedSources, scrollToSource, selectedSourcePath, sourceRowFocus]);
-  /* Memoised for the same reason, and because `LibraryShelf` derives its spines from this array. */
+  /* Memoised for the same reason: the index rebuilds its matches from this array. */
   const visiblePages = useMemo(
     () =>
       needle
@@ -444,22 +373,6 @@ export function LibrarySection({
         : model.wikiPages,
     [indexedPaths, model.wikiPages, needle],
   );
-  /*
-   * The writer label prints only on exception rows: the majority writer is silent and every other
-   * writer is named. Two tied writers print both.
-   */
-  const majorityWriter = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const page of model.wikiPages) counts.set(page.createdBy ?? "", (counts.get(page.createdBy ?? "") ?? 0) + 1);
-    let best: string | null = null;
-    let bestCount = 0;
-    let tied = false;
-    for (const [writer, count] of counts) {
-      if (count > bestCount) { best = writer; bestCount = count; tied = false; }
-      else if (count === bestCount) tied = true;
-    }
-    return tied ? null : best;
-  }, [model.wikiPages]);
   const [newPageOpen, setNewPageOpen] = useState(false);
   const [newPageTitle, setNewPageTitle] = useState("");
   const [newPageCreating, setNewPageCreating] = useState(false);
@@ -478,21 +391,13 @@ export function LibrarySection({
       setNewPageCreating(false);
     }
   };
-  const agentNotice = agentMissing && onLint === null && onCompile === null;
   const hasSources = model.sources.length > 0;
-  const hasWiki = model.wikiPages.length > 0;
-  /**
-   * Pages whose own shape misses the template, counted among the rows on screen. The folder-wide
-   * figure stays with the header strip and the home clause.
-   */
-  const offTemplateRows = libraryOffTemplateCount(
-    needle
-      ? new Map(visiblePages.flatMap((page) => {
-          const verdict = model.verdicts.get(page.slug);
-          return verdict ? [[page.slug, verdict] as const] : [];
-        }))
-      : model.verdicts,
-  );
+  const locale = useLocale();
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), VIEW_CLOCK_TICK_MS);
+    return () => window.clearInterval(timer);
+  }, []);
   const newPagePreviewIsExample = newPageTitle.trim() === "";
   const newPagePreviewTitle = newPageTitle.trim() || t("wiki.newPageExampleTitle");
   const newPagePreviewPath = humanPageSlug(newPagePreviewTitle) + ".md";
@@ -502,13 +407,14 @@ export function LibrarySection({
    * count is provisional while files arrive and the reading line replaces it. The cap (200 files, 20
    * MB) is named where it binds.
    */
-  const searchField =
-    model.sources.length + model.wikiPages.length > 0 ? (
+  const searchFieldWith = (trailing: ReactNode) =>
+    model.sources.length + model.wikiPages.length > 0 || trailing ? (
       <div className={searchHost ? "flex min-w-0 flex-1 flex-col gap-1" : "flex flex-none flex-col gap-1 px-3 pb-2"}>
+        <div className="flex min-w-0 items-center gap-1.5">
         {/* The field's words start on the column's text line: the box is drawn here with the chips' edge,
            inset and slot, and the field inside is `bare`. The slot holds a filter mark since the magnifier
            belongs to Find documents. A `div`, not a `label`. */}
-        <div data-testid="library-search-box" className="atlas-touch-floor flex h-7 min-w-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 transition-colors focus-within:border-[color:var(--color-indigo-focus-ring)]">
+        <div data-testid="library-search-box" className="atlas-touch-floor flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 transition-colors focus-within:border-[color:var(--color-indigo-focus-ring)]">
           <IndexGlyph>
             <ListFilter size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
           </IndexGlyph>
@@ -522,6 +428,8 @@ export function LibrarySection({
             value={query}
             onChange={(event) => changeQuery(event.target.value)}
           />
+        </div>
+        {trailing}
         </div>
         {/* The line is always present, even empty: appearing is a layout event that would push the list on
            the first keystroke. One line is reserved through `--leading-caption`; hosted in the head, the
@@ -581,6 +489,7 @@ export function LibrarySection({
     ) : null;
 
   if (segment === "sources") {
+    const searchField = searchFieldWith(null);
     return (
       /* No `min-h-0` and no overflow: the column above owns the one scroller, and a
          section that could shrink is a section that can cut a row in half. */
@@ -829,29 +738,24 @@ export function LibrarySection({
     );
   }
 
-  /*
-   * A hand-written page is the list's own last row, hoisted here because the list has two shapes, a
-   * shelf at rest and rows while searching, and one control cannot be written twice.
-   */
-  /*
-   * Drawn as a door, not a list row: it is an action, so it wears the doors' chip at the head of the
-   * column.
-   */
+  /* "+" in the tool row starts a page a person writes, through the centred dialog. */
   const newPageControl = onNewPage ? (
     <>
-      <Chip
+      <IconButton
         data-testid="library-new-page"
+        label={t("wiki.newPage")}
         onClick={() => setNewPageOpen(true)}
         disabled={busy}
         aria-expanded={newPageOpen}
         aria-haspopup="dialog"
-        title={t("wiki.newPageTooltip")}
+        size="lg"
         tone="muted"
-        className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
+        hoverInk="strong"
+        hoverSurface="lift"
+        className="atlas-touch-floor border border-[color:var(--color-border-soft)]"
       >
-        <IndexGlyph><PencilLine size={ICON_SIZE.sm} aria-hidden /></IndexGlyph>
-        <span className="min-w-0 flex-1 truncate text-left">{t("wiki.newPage")}</span>
-      </Chip>
+        <Plus size={ICON_SIZE.sm} aria-hidden />
+      </IconButton>
       <Dialog
         open={newPageOpen}
         onClose={closeNewPage}
@@ -955,280 +859,59 @@ export function LibrarySection({
     </>
   ) : null;
 
+  const searchField = searchFieldWith(newPageControl);
+  const lastLogMs = Math.max(
+    Date.parse(model.log.lastCompile?.at ?? "") || Number.NEGATIVE_INFINITY,
+    Date.parse(model.log.lastLint?.at ?? "") || Number.NEGATIVE_INFINITY,
+  );
+  const lastLintMs = Date.parse(model.log.lastLint?.at ?? "");
+  const reportCount = report?.count ?? 0;
+  const checkValue = reportCount > 0
+    ? reportCount.toLocaleString(locale)
+    : Number.isFinite(lastLintMs)
+      ? wikiDayText(lastLintMs, nowMs, locale, t) ?? ""
+      : t("wikiIndex.views.checkNever");
+  const logValue = Number.isFinite(lastLogMs)
+    ? wikiDayText(lastLogMs, nowMs, locale, t) ?? ""
+    : t("wikiIndex.views.logNone");
+
   return (
-    <section data-testid="library-wiki" className={cn("flex flex-col pb-1", searchHost ? "pt-1.5" : "pt-3")}>
+    /* `min-h-0 flex-1`: the index below owns its scroller, so the column above never scrolls this half. */
+    <section data-testid="library-wiki" className={cn("flex min-h-0 flex-1 flex-col", searchHost ? "pt-1.5" : "pt-3")}>
       {searchHost && searchField ? createPortal(searchField, searchHost) : searchField}
-      {agentNotice ? (
-        /*
-         * No agent on this computer: the two dead doors become one notice ending in the door
-         * (`AgentMissingNotice`). While runtimes are still being detected the doors stay drawn.
-         */
-        <AgentMissingNotice id={SECTION_ACTIONS_NOTE_ID} className="mx-3 mb-2" t={t} />
+      <WikiViewRows
+        logLabel={t("wikiIndex.views.log")}
+        logValue={logValue}
+        checkLabel={t("report.title")}
+        checkValue={checkValue}
+        checkOpen={report?.open ?? false}
+        onOpenCheck={report?.onOpen ?? (() => {})}
+        checkRunning={report?.running ?? false}
+        checkUnseen={report?.unseen ?? false}
+        runningText={t("report.running")}
+        unseenText={t("report.unseen")}
+      />
+      <div aria-hidden className="mx-4 h-px flex-none bg-[color:var(--color-divider)]" />
+      <WikiIndex
+        model={model}
+        findings={findings}
+        vaultScope={vaultScope}
+        selectedSlug={selectedSlug}
+        onOpenPage={onSelect}
+        onOpenCheckResults={report?.onOpen ?? (() => {})}
+        onEmptyPress={hasSources ? () => writeLibraryIndexSegment("sources") : onAddFiles}
+        readingCount={readingCount}
+        matches={needle ? visiblePages : null}
+      />
+      {/* The same rule as the sources half: a count still being read is not an answer. */}
+      {needle && search.phase !== "reading" && visiblePages.length === 0 && visibleSources.length > 0 ? (
+        <ListNote testId="library-search-other-half-note">
+          <OtherHalf count={visibleSources.length} segment="sources" t={t} />
+        </ListNote>
       ) : null}
-      <SectionActions>
-        {agentNotice ? null : <>
-        {/* Reading before writing, both drawn whether or not they can run: Check page format left, Ask the
-           agent to compile right, the geometry `library-lint-dock.spec.ts` measures. The picker is a third
-           cell and spans the row. */}
-        <Tooltip content={t("wiki.lintTooltip")} {...INDEX_CHIP_TIP}>
-          <Chip
-            data-testid="library-lint"
-            onClick={onLint ?? undefined}
-            disabled={busy || turnRunning || onLint === null || model.wikiPages.length < 2}
-            aria-describedby={onLint === null && actionsNote ? SECTION_ACTIONS_NOTE_ID : undefined}
-            tone="muted"
-            className={`w-full justify-start ${AGENT_DOOR_SPAN} hover:text-[color:var(--color-text-primary)]`}
-          >
-            <IndexGlyph><Stethoscope size={ICON_SIZE.sm} aria-hidden /></IndexGlyph>
-            <span className="min-w-0 truncate">{t("wiki.lint")}</span>
-          </Chip>
-        </Tooltip>
-        <Tooltip content={t("wiki.compileTooltip")} {...INDEX_CHIP_TIP}>
-          <Chip
-            data-testid="library-compile"
-            onClick={onCompile ?? undefined}
-            disabled={busy || turnRunning || onCompile === null || model.needsCompileCount === 0}
-            aria-describedby={
-              onCompile === null && actionsNote ? SECTION_ACTIONS_NOTE_ID : undefined
-            }
-            tone="muted"
-            className={`w-full justify-start ${AGENT_DOOR_SPAN} hover:text-[color:var(--color-text-primary)]`}
-          >
-            <IndexGlyph><Sparkles size={ICON_SIZE.sm} aria-hidden /></IndexGlyph>
-            <span className="min-w-0 truncate">{t("wiki.compile")}</span>
-          </Chip>
-        </Tooltip>
-        {brainControl ? (
-          <span data-testid="library-brain-control" className="min-w-0">
-            {brainControl}
-          </span>
-        ) : null}
-        </>}
-      </SectionActions>
-
-      {/* One line under the group is the reason: `actionsNote`, printed here only while the landing is not
-         drawn, else the web's degradation sentence (`.claude/rules/surfaces.md`). One slot prints one
-         reason or none. */}
-      {agentNotice ? null : actionsNote ? (
-        <p
-          id={SECTION_ACTIONS_NOTE_ID}
-          data-testid="library-actions-blocked"
-          className="px-3 pb-1 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-        >
-          {actionsNote}
-        </p>
-      ) : onCompile === null && !inApp ? (
-        <p
-          data-testid="library-compile-web-limit"
-          className="px-3 pb-1 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-        >
-          {t("wiki.compileWebLimit")}{" "}
-          {/* Accent, not the sentence's grey, so Get the app does not read as more words of the note; the
-             Rounds tab's door to the same page wears this tone. */}
-          <Link
-            href="/download"
-            data-testid="library-compile-web-get-app"
-            className={controlClass({
-              shape: "link",
-              tone: "accent",
-              hoverInk: "strong",
-              className: "rounded-chip px-1.5 py-0.5",
-            })}
-          >
-            {t("wiki.compileWebGetApp")}
-          </Link>
-        </p>
+      {needle && search.phase !== "reading" && visiblePages.length === 0 && visibleSources.length === 0 && model.wikiPages.length > 0 ? (
+        <ListNote testId="library-search-nothing-note">{t("search.nothing", { needle })}</ListNote>
       ) : null}
-
-      {report ? (
-        /* The index's one line about the check: where its answer is, and how much it holds.
-           A row, not a door — pressing it opens a page, it starts nothing. */
-        <div className={`${INDEX_LIST_INSET} pb-1`}>
-          <RowButton
-            data-testid="library-open-report"
-            active={report.open}
-            aria-current={report.open ? "page" : undefined}
-            data-report-state={report.running ? "running" : report.unseen ? "unseen" : undefined}
-            onClick={report.onOpen}
-            hoverSurface="lift"
-            hoverInk="strong"
-            className={cn("relative", INDEX_ROW_INSET, report.open && "bg-[color:var(--color-indigo-a16)]")}
-          >
-            {report.open ? (
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-y-1 left-0 w-[2px] rounded-full bg-[color:var(--color-indigo-accent)]"
-              />
-            ) : null}
-            <IndexGlyph><Stethoscope size={ICON_SIZE.sm} className="opacity-60" aria-hidden /></IndexGlyph>
-            <span className="min-w-0 flex-1 truncate">
-              {report.count > 0 ? t("report.open", { count: report.count }) : t("report.title")}
-            </span>
-            {/* `aria-live` sits on the running word, not the row, so a live label does not re-announce the count
-               on every poll. The mark is the inline micro form, since a full-size mark would displace the cards
-               below. */}
-            {report.running ? (
-              <span
-                data-testid="library-report-running"
-                className="relative flex size-3.5 flex-none items-center"
-              >
-                <BrandMark
-                  detail="micro"
-                  alt=""
-                  aria-hidden
-                  className="atlas-inline-waiting-mark absolute left-1/2 top-1/2 size-4 max-w-none -translate-x-1/2 -translate-y-1/2"
-                />
-                <span aria-live="polite" className="sr-only">
-                  {t("report.running")}
-                </span>
-              </span>
-            ) : report.unseen ? (
-              /* A dot, not a word: the row already carries the count, and the one thing
-                 this mark adds is "you have not seen this yet". */
-              <span data-testid="library-report-unseen" className="flex flex-none items-center">
-                <span
-                  aria-hidden
-                  className="size-1.5 rounded-full bg-[color:var(--color-indigo-brand)]"
-                />
-                <span className="sr-only">{t("report.unseen")}</span>
-              </span>
-            ) : null}
-          </RowButton>
-        </div>
-      ) : null}
-      {hasWiki ? (
-        <>
-          {/*
-            **The shelf is the resting state; a search is a list.** A shelf is a picture of
-            a folder — equal heights, freshness on every spine, comparable at a glance. A
-            search result is a ranked answer to a question a person just typed, and an
-            answer reads down a column, not across a row of vertical books.
-          */}
-          {needle ? (
-          <ul
-            data-testid="library-wiki-list"
-            aria-label={t("wiki.listAria")}
-            className={`flex flex-col gap-0.5 ${INDEX_LIST_INSET}`}
-          >
-            {visiblePages.map((page) => {
-              const active = page.slug === selectedSlug;
-              const verdict = model.verdicts.get(page.slug);
-              /*
-               * Two kinds of finding, drawn two ways: a page missing the template wears the amber pill because the
-               * fix is in its own bytes; folder findings a person can act on are a quiet word. Advisory kinds like
-               * `orphan-page` stay in the report (`mergeWikiVerdict`).
-               */
-              const problems = verdict?.problems ?? [];
-              const ownProblem = problems.find((problem) => !isWikiFolderCode(problem.code));
-              const folderProblem = problems.find(
-                (problem) => isWikiFolderCode(problem.code) && !isAdvisoryWikiCode(problem.code),
-              );
-              const reason = verdict && problems.length > 0 && verdict.firstProblem
-                ? t("wiki.offTemplateReason", { code: verdict.firstProblem })
-                : undefined;
-              return (
-                <li key={page.slug}>
-                  <RowButton
-                    active={active}
-                    aria-current={active ? "true" : undefined}
-                    data-testid={`library-wiki-${page.slug}`}
-                    onClick={() => onSelect(page.slug)}
-                    /*
-                     * The pill says one fixed word; **which** rule the page missed lives
-                     * here until the page's own block carries it on screen.
-                     * `aria-description` rather than a bare title: a screen reader
-                     * announces it with the row, so the reason is not reachable only by
-                     * a pointer that hovers.
-                     */
-                    aria-description={reason}
-                    title={reason}
-                    hoverSurface="lift"
-                    hoverInk="strong"
-                    className={cn("group relative", INDEX_ROW_INSET, active && "bg-[color:var(--color-indigo-a16)]")}
-                  >
-                    <IndexGlyph><BookText size={ICON_SIZE.sm} className="opacity-60" aria-hidden /></IndexGlyph>
-                    <span className="min-w-0 flex-1 truncate">{page.title}</span>
-                    {model.answerVersions?.get(page.slug) ? <span className="flex-none text-caption text-[color:var(--color-text-secondary)]">{t(`answers.version.${model.answerVersions.get(page.slug)}`)}</span> : null}
-                    {(page.createdBy ?? "") !== majorityWriter ? (
-                      <span
-                        data-testid="library-wiki-writer"
-                        className="flex-none text-caption text-[color:var(--color-text-quaternary)]"
-                      >
-                        {writerLabel(page.createdBy, t)}
-                      </span>
-                    ) : null}
-                    {folderProblem ? (
-                      <span
-                        data-testid="library-wiki-folder-mark"
-                        title={folderProblem.message}
-                        className="flex-none text-caption text-[color:var(--color-text-quaternary)]"
-                      >
-                        {t("wiki.folderMark")}
-                      </span>
-                    ) : null}
-                    {ownProblem ? (
-                      <StateBadge tone="warning" testId="library-wiki-off-template">
-                        {t("wiki.offTemplate")}
-                      </StateBadge>
-                    ) : null}
-                  </RowButton>
-                </li>
-              );
-            })}
-            {newPageControl ? <li>{newPageControl}</li> : null}
-          </ul>
-          ) : (
-            <LibraryShelf
-              model={model}
-              pages={visiblePages}
-              selectedSlug={selectedSlug}
-              onSelect={onSelect}
-              majorityWriter={majorityWriter}
-              compiling={compiling}
-              trailing={newPageControl}
-              t={t}
-            />
-          )}
-          {/* The same count the rows draw and the header strip prints: `offTemplateCount` includes a dangling
-             link, which this list marks with a quiet word rather than the amber pill. */}
-          {/* The same rule as the sources half: a count still being read is not an answer. */}
-          {needle && search.phase !== "reading" && visiblePages.length === 0 && visibleSources.length > 0 ? (
-            <ListNote testId="library-search-other-half-note">
-              <OtherHalf count={visibleSources.length} segment="sources" t={t} />
-            </ListNote>
-          ) : null}
-          {/* Both halves empty: the same sentence the sources half prints, for the same reason. */}
-          {needle && search.phase !== "reading" && visiblePages.length === 0 && visibleSources.length === 0 ? (
-            <ListNote testId="library-search-nothing-note">{t("search.nothing", { needle })}</ListNote>
-          ) : null}
-          {/* No off-template count under a resting shelf: the header strip and each card already say it. Under
-             a search the rows are a subset, so the count stays (see `offTemplateRows`). */}
-          {needle && offTemplateRows > 0 ? (
-            <ListNote testId="library-off-template-count">
-              {t("wiki.offTemplateCount", { count: offTemplateRows })}
-            </ListNote>
-          ) : null}
-        </>
-      ) : (
-        <>
-          <p
-            data-testid="library-wiki-empty"
-            className="px-3 pb-1 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-          >
-            {needle && visibleSources.length > 0 ? (
-              <OtherHalf count={visibleSources.length} segment="sources" t={t} />
-            ) : hasWikiTemplate ? (
-              t("wiki.empty")
-            ) : (
-              t("wiki.emptyNoTemplate")
-            )}
-          </p>
-          {/* A hand-written page keeps its door on an empty wiki, where the list's last row would not be drawn.
-             `buildHumanPage` carries the shape, so it works with or without `wiki/_template.md`. */}
-          {newPageControl ? <div className={`${INDEX_LIST_INSET} pb-1`}>{newPageControl}</div> : null}
-        </>
-      )}
-
     </section>
   );
 }

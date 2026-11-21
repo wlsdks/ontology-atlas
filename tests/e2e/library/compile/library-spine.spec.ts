@@ -201,7 +201,7 @@ test.describe('the Library index with an empty wiki', () => {
     await page.getByRole('button', { name: /Open (?:a|my) folder|폴더 열기/i }).click();
     await page.getByTestId('app-nav-rail-item-library').click();
     await page.getByTestId('library-workspace-wiki').click();
-    await expect(page.getByTestId('library-wiki-empty')).toBeVisible();
+    await expect(page.getByTestId('wiki-index')).toHaveAttribute('data-state', 'empty');
 
     const door = page.getByTestId('library-new-page');
     await expect(door).toBeVisible();

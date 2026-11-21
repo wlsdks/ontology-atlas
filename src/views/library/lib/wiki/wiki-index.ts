@@ -422,6 +422,11 @@ export class WikiIndexBuilder {
     });
   }
 
+  /** One page's placed entry, for the filter's matches; null until a sweep has visited it. */
+  entry(slug: string): WikiIndexEntry | null {
+    return this.entries.get(slug) ?? null;
+  }
+
   /** One group whole, for "Show all"; null once it has emptied. */
   group(key: WikiIndexGroupKey): WikiIndexGroupView | null {
     const bucket = this.buckets.get(key);

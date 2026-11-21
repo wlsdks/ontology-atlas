@@ -1,4 +1,4 @@
-import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
+import { useEffect, useRef, type Dispatch, type ReactNode, type RefObject, type SetStateAction } from "react";
 import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import { PanelLeftOpen } from "lucide-react";
@@ -9,10 +9,10 @@ import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
 import { Chip } from "@/shared/ui";
+import { useToast } from "@/shared/ui/toast/toast";
 import { libraryProviderDisclosure } from "../../lib/compile/compile-availability";
 import { useLibraryAgent } from "../../lib/agent/use-library-agent";
 import { LibrarySection, type SourceGroupFilter } from "../parts/index-column/LibrarySection";
-import { CompileBrainSelect } from "../parts/compile/CompileBrainSelect";
 import type { LibraryUiModel } from "@/features/library";
 import type { LibrarySourceRow, VaultDoc } from "@/entities/docs-vault";
 import type { LibrarySelection } from "./library-page-state";
@@ -23,11 +23,44 @@ import type { useLibraryTurns } from "./use-library-turns";
 import type { useLibraryIndexColumn } from "./use-library-index-column";
 import { LibraryHeader } from "./LibraryHeader";
 
+/**
+ * When the open page's file leaves the folder, the selection clears and the person is told once.
+ * Only a page that was there and then went counts, so a page still being read never trips it.
+ */
+function usePageGone({ openWikiSlug, docs, reading, onGone, t }: {
+  openWikiSlug: string | null;
+  docs: readonly VaultDoc[];
+  reading: boolean;
+  onGone: () => void;
+  t: ReturnType<typeof useTranslations<"library">>;
+}) {
+  const toast = useToast();
+  const seenRef = useRef<{ slug: string; title: string } | null>(null);
+  useEffect(() => {
+    if (!openWikiSlug) {
+      seenRef.current = null;
+      return;
+    }
+    const doc = docs.find((candidate) => candidate.slug === openWikiSlug);
+    if (doc) {
+      seenRef.current = { slug: openWikiSlug, title: doc.title || openWikiSlug };
+      return;
+    }
+    const seen = seenRef.current;
+    if (reading || seen?.slug !== openWikiSlug) return;
+    seenRef.current = null;
+    toast.show(t("wikiIndex.pageGone", { title: seen.title }), "info");
+    onGone();
+    // `toast`, `onGone` and `t` are new each render; only the folder's documents and the open page decide.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docs, openWikiSlug, reading]);
+}
+
 export function LibraryIndexColumn({
-  segment, toolsHost, t, localVault, workVaultScope, handle, nativeVaultRootPath, selected,
+  segment, toolsHost, t, localVault, workVaultScope, handle, nativeVaultRootPath,
   mobileBrowseOpen, setMobileBrowseOpen, mobileBrowseBackRef, browseFocusPendingRef, searchHost,
-  setSearchHost, setSourceCitation, sourceCitation, compileRunning, runningSources, lintRunning, turnRunning, reportUnseen,
-  choose, busy, docs, model, agent, openImport, handleCompile, narrowShowsReader, indexTitle,
+  setSearchHost, setSourceCitation, sourceCitation, runningSources, lintRunning, reportUnseen,
+  choose, busy, docs, model, agent, openImport, narrowShowsReader, indexTitle,
   reader, sources, home, turns, indexColumn, stateFilter, groupFilter, headerDoors,
 }: {
   segment: LibraryIndexSegment | undefined;
@@ -37,7 +70,6 @@ export function LibraryIndexColumn({
   workVaultScope: ReturnType<typeof useVaultSessionIdentityScope>;
   handle: FileSystemDirectoryHandle | null;
   nativeVaultRootPath: string | null;
-  selected: LibrarySelection;
   mobileBrowseOpen: boolean;
   setMobileBrowseOpen: Dispatch<SetStateAction<boolean>>;
   mobileBrowseBackRef: RefObject<HTMLButtonElement | null>;
@@ -46,11 +78,9 @@ export function LibraryIndexColumn({
   setSearchHost: Dispatch<SetStateAction<HTMLDivElement | null>>;
   setSourceCitation: Dispatch<SetStateAction<{ path: string; anchor?: string } | null>>;
   sourceCitation: { path: string; anchor?: string } | null;
-  compileRunning: boolean;
   /** Sources the Continue request in flight named. */
   runningSources: ReadonlySet<string>;
   lintRunning: boolean;
-  turnRunning: boolean;
   reportUnseen: boolean;
   choose: (next: LibrarySelection) => void;
   busy: boolean;
@@ -58,7 +88,6 @@ export function LibraryIndexColumn({
   model: LibraryUiModel;
   agent: ReturnType<typeof useLibraryAgent>;
   openImport: () => void;
-  handleCompile: () => void;
   narrowShowsReader: boolean;
   indexTitle: string;
   reader: ReturnType<typeof useLibraryReader>;
@@ -75,7 +104,9 @@ export function LibraryIndexColumn({
   const { opened } = reader;
   const { sourceImportFeedback, handleAddFiles, handleFindDocuments } = sources;
   const { homeVisible } = home;
-  const { handleNewPage, reportDoorCount, handleLint, agentOnlyReason } = turns;
+  const { handleNewPage, reportDoorCount, findings } = turns;
+  const openWikiSlug = opened?.kind === "wiki" ? opened.slug : null;
+  usePageGone({ openWikiSlug, docs, reading: localVault.partialTotal > 0, onGone: () => choose(null), t });
   const {
     indexSegment, autoFolded, setAutoFolded, autoFoldDeclinedRef, indexCollapsed, indexTabRef,
     indexCollapseRef, setIndexCollapsed, indexScrollRef, indexEdge, handleIndexScroll,
@@ -202,40 +233,17 @@ export function LibraryIndexColumn({
           addFilesFeedback={sourceImportFeedback}
             onFindDocuments={handleFindDocuments}
             onImportFromService={openImport}
-            onCompile={agent.route === "agent" || agent.route === "local" ? handleCompile : null}
-            onLint={agent.route === "agent" ? handleLint : null}
-            hasWikiTemplate={docs.some((doc) => doc.slug === "wiki/_template")}
             onNewPage={handle ? handleNewPage : null}
-            report={
-              reportDoorCount !== null
-                ? {
-                    count: reportDoorCount,
-                    open: opened?.kind === "report",
-                    onOpen: () => choose({ kind: "report" }),
-                    running: lintRunning,
-                    unseen: reportUnseen && opened?.kind !== "report",
-                  }
-                : null
-            }
-            brainControl={
-              agent.brainChoosable && narrowShowsReader ? (
-                <CompileBrainSelect
-                  brain={agent.brain}
-                  agentLabel={agent.runtime?.label ?? null}
-                  localModel={agent.localModel}
-                  onChoose={agent.chooseBrain}
-                  t={t}
-                />
-              ) : null
-            }
-            actionsNote={
-              selected === null || nativeVaultRootPath === null ? null : agentOnlyReason
-            }
-            inApp={nativeVaultRootPath !== null}
-            agentMissing={nativeVaultRootPath !== null && agent.route === "unavailable"}
+            findings={findings}
+            readingCount={localVault.partialTotal > 0 ? model.wikiPages.length : null}
+            report={{
+              count: reportDoorCount ?? 0,
+              open: opened?.kind === "report",
+              onOpen: () => choose({ kind: "report" }),
+              running: lintRunning,
+              unseen: reportUnseen && opened?.kind !== "report",
+            }}
             busy={busy}
-            compiling={compileRunning || agent.localCompile.status === "running"}
-            turnRunning={turnRunning}
             runningSources={runningSources}
             stateFilter={stateFilter}
             groupFilter={groupFilter}

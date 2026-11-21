@@ -187,8 +187,6 @@ test.describe("Compile opens the agent dock", () => {
     page,
   }) => {
     await openFolder(page);
-    await expect(page.getByTestId("library-compile")).toBeVisible({ timeout: 25_000 });
-    await expect(page.getByTestId("library-compile")).toBeEnabled();
     await page.getByTestId("library-workspace-sources").click();
     /* The progress band's press names the four waiting sources and can run. */
     const press = page.getByTestId("library-progress-continue");
@@ -234,12 +232,6 @@ test.describe("Compile opens the agent dock", () => {
     await expect(page.getByTestId("library-transfer")).toHaveCount(0);
     await expect(inlineDisclosure).toHaveCount(0);
 
-    /*
-     * What the index does owe a dead door is the reason it cannot run, one line, directly
-     * under the group — and with a verified agent there is no reason, so there is no line.
-     */
-    await expect(page.getByTestId("library-actions-blocked")).toHaveCount(0);
-
     await page.getByTestId("library-workspace-sources").click();
     await expect(page.getByTestId("library-sources")).toBeVisible();
     await page.getByTestId("library-source-sources/architecture.docx").click();
@@ -278,7 +270,8 @@ test.describe("Compile opens the agent dock", () => {
     page,
   }) => {
     await openFolder(page);
-    await page.getByTestId("library-compile").click();
+    await page.getByTestId("library-workspace-sources").click();
+    await page.getByTestId("library-progress-continue").click();
 
     const dock = page.getByTestId("library-agent-dock");
     await expect(dock).toBeVisible({ timeout: 25_000 });
@@ -321,7 +314,8 @@ test.describe("Compile opens the agent dock", () => {
 
   test("the dock carries the compile request and names the runtime it will use", async ({ page }) => {
     await openFolder(page);
-    await page.getByTestId("library-compile").click();
+    await page.getByTestId("library-workspace-sources").click();
+    await page.getByTestId("library-progress-continue").click();
 
     const dock = page.getByTestId("library-agent-dock");
     await expect(dock).toBeVisible({ timeout: 25_000 });
@@ -337,9 +331,11 @@ test.describe("Compile opens the agent dock", () => {
   test("with the conversation open, the toast stops at the dock's edge", async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 901 });
     await openFolder(page);
-    await page.getByTestId("library-compile").click();
+    await page.getByTestId("library-workspace-sources").click();
+    await page.getByTestId("library-progress-continue").click();
     await expect(page.getByTestId("library-agent-dock")).toBeVisible({ timeout: 25_000 });
 
+    await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-new-page").click();
     await page.getByTestId("library-new-page-title").fill("Dock wall probe");
     await page.getByTestId("library-new-page-make").click();
