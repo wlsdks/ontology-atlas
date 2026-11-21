@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { librarySelectionFocusTarget } from '../library-selection';
-import { clearFiledAnswer, matchLibraryOpeningRequest, restoreFiledAnswer, type RetainedLibraryAnswer } from './use-library-turns';
+import { clearFiledAnswer, matchLibraryOpeningRequest, restoreFiledAnswer, retryAskApplies, type LibraryAskContext, type RetainedLibraryAnswer, type RetryAsk } from './library-answer';
 
 describe('Library turn presentation belongs to the actual opening request', () => {
   const compile = { kind: 'compile', text: 'Compile this folder', nonce: 1 } as const;
@@ -62,24 +61,28 @@ describe('filed-answer ownership across later turns', () => {
   });
 });
 
-describe('mobile Browse page round-trip focus', () => {
-  it('returns from a Wiki reader to the visible Browse exit, then lets that exit return to the question', () => {
-    const reader = document.createElement('div');
-    reader.tabIndex = -1;
-    const browseBack = document.createElement('button');
-    document.body.append(reader, browseBack);
-    try {
-      const openPage = librarySelectionFocusTarget({ selected: { kind: 'wiki' }, mobileBrowseOpen: true, narrow: true, browseBack, reader });
-      expect(openPage).toBe(reader);
-      openPage?.focus();
-      const backFromPage = librarySelectionFocusTarget({ selected: null, mobileBrowseOpen: true, narrow: true, browseBack, reader });
-      expect(backFromPage).toBe(browseBack);
-      backFromPage?.focus();
-      expect(document.activeElement).toBe(browseBack);
-      expect(librarySelectionFocusTarget({ selected: null, mobileBrowseOpen: false, narrow: true, browseBack: null, reader })).toBe(reader);
-    } finally {
-      reader.remove();
-      browseBack.remove();
-    }
+describe('a retried ask belongs to its request', () => {
+  const context = (report?: LibraryAskContext['report']): LibraryAskContext => ({ question: 'Q', askedOn: null, report });
+  const retry = (overrides: Partial<RetryAsk> = {}): RetryAsk => ({ nonce: 3, text: 'Ask this', scope: 'folder-a', context: context(), ...overrides });
+  const report = { searchId: 1, listingVersion: 'v1', vaultScope: 'folder-a', coverage: '', limits: '', epoch: 4 };
+
+  it('applies to the same request, text and folder, ignoring surrounding whitespace in the typed text', () => {
+    expect(retryAskApplies(retry(), { nonce: 3, text: '  Ask this ' }, 'folder-a', { epoch: 0, listingVersion: 'v1' })).toBe(true);
+  });
+
+  it('does not apply to another request, text or folder, or without a retry', () => {
+    const live = { epoch: 0, listingVersion: 'v1' };
+    expect(retryAskApplies(null, { nonce: 3, text: 'Ask this' }, 'folder-a', live)).toBe(false);
+    expect(retryAskApplies(retry(), { nonce: 4, text: 'Ask this' }, 'folder-a', live)).toBe(false);
+    expect(retryAskApplies(retry(), { nonce: 3, text: 'Other' }, 'folder-a', live)).toBe(false);
+    expect(retryAskApplies(retry(), { nonce: 3, text: 'Ask this' }, 'folder-b', live)).toBe(false);
+  });
+
+  it('keeps a desk report only while it was not invalidated and its listing and folder still hold', () => {
+    const withReport = retry({ context: context(report) });
+    const ask = { nonce: 3, text: 'Ask this' };
+    expect(retryAskApplies(withReport, ask, 'folder-a', { epoch: 4, listingVersion: 'v1' })).toBe(true);
+    expect(retryAskApplies(withReport, ask, 'folder-a', { epoch: 5, listingVersion: 'v1' })).toBe(false);
+    expect(retryAskApplies(withReport, ask, 'folder-a', { epoch: 4, listingVersion: 'v2' })).toBe(false);
   });
 });

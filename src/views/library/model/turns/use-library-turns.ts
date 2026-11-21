@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useTranslations } from "next-intl";
 import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-session";
-import { isWikiPage, type VaultDoc } from "@/entities/docs-vault";
+import type { VaultDoc } from "@/entities/docs-vault";
 import {
   type LintFinding,
   type LintNodeCandidate,
@@ -22,15 +22,12 @@ import {
   judgePageWrite,
   wikiPagePathOf,
   wikiNodeIndexOfDocs,
-  dropCandidatesWithNodes,
   planQuestionDeskReportFile,
   questionDeskReportFileCurrent,
   buildFixBrief,
   buildAnswerPage,
-  buildHumanPage,
   createWikiFile,
   deleteWikiFile,
-  writeWikiFile,
   clearLibraryWork,
   completeLibraryWork,
   libraryWorkErrorEvent,
@@ -39,70 +36,38 @@ import {
   type LibraryUiModel,
 } from "@/features/library";
 import type { AcpTurnCompletion } from "@/features/acp-session";
-import { latestReport, useFolderWorkRun, workRuns, type TurnToolEvent } from "@/features/work-run";
+import { workRuns } from "@/features/work-run";
 import { useWikiWriteMode } from "@/shared/lib/preferences/library-preferences";
 import { nativeVaultFileHashes } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
 import { citedPassage as resolveCitedPassage } from "@/shared/lib/library/source-passage";
-import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
-import { useToast } from "@/shared/ui";
-import { isWikiFurnitureSlug } from "@/shared/lib/library/wiki-page-schema";
+import type { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
+import type { useToast } from "@/shared/ui";
 import { libraryCompileBlockedReason, libraryTransferSentence } from "../../lib/compile/compile-availability";
-import { useLibraryAgent } from "../../lib/agent/use-library-agent";
-import { useAnswerRefresh } from "../../lib/questions/use-answer-refresh";
-import { findingKey, reportOutline } from "../check-report/check-report-outline";
-import type { LibraryAgentOpeningRequest } from "../../ui/agent/LibraryAgentDock";
-import type { QuestionDeskReportRequest } from "../../ui/questions/LibraryQuestionDesk";
-import type { LibrarySelection } from "../library-selection";
-import type { useLibraryWorkActivity } from "./use-library-work-activity";
-import { checkOwner, wikiCheckOutcome, wikiCheckPayload } from "./wiki-check-outcome";
+import type { useLibraryAgent } from "../../lib/agent/use-library-agent";
+import type { useAnswerRefresh } from "../../lib/questions/use-answer-refresh";
 import { libraryAutoDecision, NATIVE_FOLDER_READS } from "../../lib/turns/library-auto-decision";
 import { readLiveLibraryFolder } from "../../lib/turns/library-folder-mirror";
 import { writingDoor } from "../../lib/turns/writing-door";
+import { findingKey } from "../check-report/check-report-outline";
+import { useWikiCheckReport } from "../check-report/use-wiki-check-report";
+import type { LibrarySelection } from "../library-selection";
+import { useNewWikiPage } from "../reader/use-new-wiki-page";
+import { agentOnlyReason } from "./agent-only-reason";
+import {
+  clearFiledAnswer,
+  matchLibraryOpeningRequest,
+  restoreFiledAnswer,
+  retryAskApplies,
+  type LibraryAskContext,
+  type RetainedLibraryAnswer,
+  type RetryAsk,
+} from "./library-answer";
+import { turnToolEvents } from "./turn-tool-events";
 import { useEditedPageText } from "./use-edited-page-text";
-
-/** The tool calls of a finished turn, as the work card counts them. */
-function turnToolEvents(completion: AcpTurnCompletion): TurnToolEvent[] {
-  const tools: TurnToolEvent[] = [];
-  for (const event of completion.events) {
-    if (event.kind === "tool") tools.push({ id: event.id, toolKind: event.toolKind, status: event.status, title: event.title, rawInput: event.rawInput });
-  }
-  return tools;
-}
-
-export function matchLibraryOpeningRequest(
-  text: string,
-  request: LibraryAgentOpeningRequest | null,
-  consumedNonce: number | null,
-): LibraryAgentOpeningRequest | null {
-  return request && request.nonce !== consumedNonce && request.text.trim() === text.trim()
-    ? request
-    : null;
-}
-
-export interface RetainedLibraryAnswer {
-  generation: number;
-  question: string;
-  text: string;
-  askedOn: string | null;
-  origin?: 'question-report';
-}
-
-export type LibraryAskContext = {
-  question: string;
-  askedOn: string | null;
-  report?: Pick<QuestionDeskReportRequest, 'searchId' | 'listingVersion' | 'vaultScope' | 'coverage' | 'limits'> & { epoch: number };
-};
-
-export function clearFiledAnswer(current: RetainedLibraryAnswer | null, filed: RetainedLibraryAnswer): RetainedLibraryAnswer | null {
-  return current === filed ? null : current;
-}
-
-export function restoreFiledAnswer(current: RetainedLibraryAnswer | null, filed: RetainedLibraryAnswer, generation: number): RetainedLibraryAnswer | null {
-  return generation === filed.generation && current === null ? filed : current;
-}
-
-const NO_FIXED_KEYS: ReadonlySet<string> = new Set();
+import type { useLibraryWorkActivity } from "./use-library-work-activity";
+import { checkOwner, wikiCheckOutcome } from "./wiki-check-outcome";
+import { wikiRevisionStamp } from "./wiki-revision-stamp";
 
 export function useLibraryTurns({
   t, locale, toast, failureSentence, localVault, markSelfWrite, unmarkSelfWrite, workVaultScope,
@@ -143,7 +108,7 @@ export function useLibraryTurns({
   const { libraryWorkActivity, setLibraryWorkActivity } = workActivity;
   const writeMode = useWikiWriteMode();
   const pendingAskRef = useRef<LibraryAskContext | null>(null);
-  const retryAskRef = useRef<{ nonce: number; text: string; scope: string; context: LibraryAskContext } | null>(null);
+  const retryAskRef = useRef<RetryAsk | null>(null);
   const activeReadOnlyTurnRef = useRef(false);
   // Only the check is read-only to the session; it and a turn that may write keep running after the Library goes.
   const activeCheckTurnRef = useRef(false);
@@ -214,52 +179,9 @@ export function useLibraryTurns({
     [agent, locale, nativeVaultRootPath],
   );
 
-  const handleNewPage = useCallback(
-    async (title: string) => {
-      if (!handle) return false;
-      const page = buildHumanPage({ title, now: new Date() });
-      if (knownSlugs.has(page.slug)) {
-        toast.show(t("wiki.newPageExists", { page: page.slug }), "error");
-        setSelected({ kind: "wiki", slug: page.slug });
-        return true;
-      }
-      let nativeWriteReserved = false;
-      try {
-        if (nativeVaultRootPath) {
-          markSelfWrite(page.slug);
-          nativeWriteReserved = true;
-          if (!await createWikiFile(handle, page.path, page.text)) throw new Error(`Document already exists: "${page.slug}"`);
-        } else {
-          await writeWikiFile(handle, page.path, page.text);
-          markSelfWrite(page.slug);
-        }
-        setSelected({ kind: "wiki", slug: page.slug });
-        toast.show(
-          t("wiki.newPageDone"),
-          "success",
-          {
-            label: t("wiki.undo"),
-            onClick: () => {
-              void deleteWikiFile(handle, page.path).then(
-                () => {
-                  setSelected((current) => (current?.kind === "wiki" && current.slug === page.slug ? null : current));
-                  toast.show(t("wiki.undone", { page: page.slug }), "success");
-                },
-                () => toast.show(t("wiki.undoFailed"), "error"),
-              );
-            },
-          },
-          { description: title },
-        );
-        return true;
-      } catch (err) {
-        if (nativeWriteReserved) unmarkSelfWrite(page.slug);
-        toast.show(failureSentence(err, t("wiki.newPageFailed")).sentence, "error");
-        return false;
-      }
-    },
-    [failureSentence, handle, knownSlugs, markSelfWrite, nativeVaultRootPath, setSelected, t, toast, unmarkSelfWrite],
-  );
+  const handleNewPage = useNewWikiPage({
+    t, toast, failureSentence, handle, nativeVaultRootPath, knownSlugs, markSelfWrite, unmarkSelfWrite, setSelected,
+  });
 
   const handleFileAnswer = useCallback(async (answerOverride?: string) => {
     if (!lastAnswer || !handle || lastAnswer.generation !== answerGenerationRef.current || filedAnswersRef.current.has(lastAnswer)) return;
@@ -393,22 +315,9 @@ export function useLibraryTurns({
   );
 
   const pageBodyRef = useRef<HTMLDivElement | null>(null);
-  const checkRun = useFolderWorkRun(workVaultScope);
-  const { candidates, findings } = wikiCheckPayload(checkRun);
-  const fixedKeys = latestReport(checkRun)?.handled ?? NO_FIXED_KEYS;
-  const openCandidates = useMemo(() => dropCandidatesWithNodes(candidates, docs), [candidates, docs]);
-  const reportHeadings = useMemo(
-    () => reportOutline(model.structural, findings, openCandidates.length, t),
-    [findings, model.structural, openCandidates.length, t],
-  );
-  const reportDoorCount = useMemo(() => {
-    const structuralCount = model.structural.findingCount;
-    const agentCount = findings.length + openCandidates.length;
-    if (model.wikiPages.length === 0 && structuralCount + agentCount === 0 && !model.log.lastLint) {
-      return null;
-    }
-    return structuralCount + agentCount;
-  }, [findings.length, model.log.lastLint, model.structural.findingCount, model.wikiPages.length, openCandidates.length]);
+  const { checkRun, candidates, findings, fixedKeys, openCandidates, reportHeadings, reportDoorCount } = useWikiCheckReport({
+    workVaultScope, docs, model, t,
+  });
   const latestDocsRef = useRef(docs);
   useEffect(() => {
     latestDocsRef.current = docs;
@@ -434,10 +343,7 @@ export function useLibraryTurns({
           pendingAskRef.current = null;
         }
         const retry = retryAskRef.current;
-        if (retry?.nonce === exactAsk.nonce && retry.text === start.text.trim() && retry.scope === workVaultScope
-          && (!retry.context.report || (retry.context.report.epoch === reportEpochRef.current
-            && retry.context.report.vaultScope === workVaultScope
-            && retry.context.report.listingVersion === currentDeskListingVersion))) {
+        if (retryAskApplies(retry, { nonce: exactAsk.nonce, text: start.text }, workVaultScope, { epoch: reportEpochRef.current, listingVersion: currentDeskListingVersion })) {
           asked = retry.context;
           if (asked.report) setDeskWorkRequest({ scope: workVaultScope, startedAt: Date.now() });
         }
@@ -448,17 +354,11 @@ export function useLibraryTurns({
       setLastAnswer(null);
       setDeskReport(null);
       setFileAnswerNote(null);
-      const stamp = (list: readonly VaultDoc[]) =>
-        new Map(
-          list
-            .filter((doc) => isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug))
-            .map((doc) => [doc.slug, doc.mtime ?? 0] as const),
-        );
       const currentDocs = () => {
         const live = readLiveLibraryFolder();
         return live.vaultRoot !== null && live.vaultRoot === start.vaultRoot ? live.docs : latestDocsRef.current;
       };
-      const before = stamp(currentDocs());
+      const before = wikiRevisionStamp(currentDocs());
       // The log names the sources this turn was sent, not every source still waiting.
       const sources = opening?.sources ? [...opening.sources] : [];
       const writer = agent.runtime ? `agent:${agent.runtime.id}` : "agent:unknown";
@@ -517,7 +417,7 @@ export function useLibraryTurns({
           );
           return;
         }
-        const after = stamp(currentDocs());
+        const after = wikiRevisionStamp(currentDocs());
         const observedAt = Date.now();
         const receipts = observedWikiWriteEvents(before, after, observedAt);
         setLibraryWorkActivity((current) =>
@@ -625,17 +525,6 @@ export function useLibraryTurns({
     t,
   );
 
-  const agentOnlyReason =
-    agent.route === "agent"
-      ? null
-      : nativeVaultRootPath === null
-        ? t("stage.blockedWeb")
-        : agent.route === "checking"
-          ? t("stage.blockedChecking")
-          : agent.route === "unavailable"
-            ? t("stage.blockedNoAgent")
-            : t("stage.blockedLocalOnly");
-
   return {
     writeMode, pendingAskRef, retryAskRef, activeReadOnlyTurnRef, turnReadOnly, turnOutlivesScreen, checkRun,
     checkFolder: workVaultScope, lastAnswer, setLastAnswer,
@@ -646,6 +535,6 @@ export function useLibraryTurns({
     handleFix, handleNewPage, handleFileAnswer, handleFileReport, autoDecide, pageBodyRef,
     candidates, findings, openCandidates, reportHeadings,
     reportDoorCount, latestDocsRef, handleTurnStarted, hasOntology, handlePropose, handleLint,
-    compileBlocked, compileTransfer, agentOnlyReason,
+    compileBlocked, compileTransfer, agentOnlyReason: agentOnlyReason(agent.route, nativeVaultRootPath !== null, t),
   };
 }
