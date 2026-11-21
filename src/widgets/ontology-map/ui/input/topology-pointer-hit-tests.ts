@@ -1,7 +1,7 @@
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
 import { lastDrawnLabelBoxes, lastDrawnNodeAlphas } from "../frame-draw/topology-frame-draw";
 import { neuralRadiusScale, neuralTractsFor } from "../frame-draw/paint-neural";
-import { isNeuralDependency } from "../../model/dome-view/neural-cells";
+import { isNeuralDependency } from "../../model/dome-view/neural/neural-cells";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { pickDial, pickDialAction } from "../../dial/pick";
 import { clipBranchRelation } from "../../dial/branches/relation-ports";

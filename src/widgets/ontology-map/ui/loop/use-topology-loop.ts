@@ -46,7 +46,7 @@ import {
 } from "@/shared/lib/preferences/appearance-preferences";
 import type { DomeViewKind } from "../../model/dome-view/types";
 import type { SelectionSource } from "../../model/camera/flat-selection-camera";
-import { createStrataLodState, type StrataLodState } from "../../model/dome-view/strata-lod";
+import { createStrataLodState, type StrataLodState } from "../../model/dome-view/strata/strata-lod";
 import { DEFAULT_TIER_REVEAL } from "../../model/visibility/tier-visibility";
 import type { TopologyPointerHandlers } from "../input/topology-pointer-types";
 

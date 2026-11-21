@@ -10,10 +10,10 @@ import { type PointerMachineState } from "../../interaction/pointer-state-machin
 import { ambientSleepFactor, isAmbientAsleep } from "../../model/ambient/ambient-sleep";
 import { easeInOutCubic } from "../../model/camera/camera-easing";
 import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
-import { clampDomePitch } from "../../model/dome-view/orbit";
+import { clampDomePitch } from "../../model/dome-view/camera/orbit";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import { stepGrowthReplay, type GrowthReplay } from "../../model/ambient/growth-replay";
-import type { StrataLodState } from "../../model/dome-view/strata-lod";
+import type { StrataLodState } from "../../model/dome-view/strata/strata-lod";
 import {
   extendsGrace,
   isCameraUnsettled,

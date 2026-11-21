@@ -6,7 +6,7 @@ import {
   isCanvasActive,
   isEgoTailAnimating, shouldSkipFrame, type CanvasActivityFlags, type EgoTailActivityInput } from "./idle-gate";
 import { stepFocusRamp } from "../visibility/focus-state";
-import { neuralSignalProgress } from "../dome-view/neural-cells";
+import { neuralSignalProgress } from "../dome-view/neural/neural-cells";
 
 const IDLE: CanvasActivityFlags = {
   pointerActive: false,

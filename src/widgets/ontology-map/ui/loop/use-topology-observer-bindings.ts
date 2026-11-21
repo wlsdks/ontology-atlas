@@ -6,7 +6,7 @@ import {
   type RefObject
 } from "react";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
-import { type TierNameAnchor } from "../../model/dome-view/tier-names";
+import { type TierNameAnchor } from "../../model/dome-view/strata/tier-names";
 import { type ZoomTier } from "../../model/visibility/tier-visibility";
 import type { HoverAvoidRect } from "../input/topology-pointer-types";
 

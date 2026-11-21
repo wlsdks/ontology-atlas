@@ -1,5 +1,5 @@
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
-import { isInsideDomeGrip } from "../../model/dome-view/projection";
+import { isInsideDomeGrip } from "../../model/dome-view/camera/projection";
 import { transitionPointerState } from "../../interaction/pointer-state-machine";
 import { screenToWorld } from "../camera/topology-camera-math";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";

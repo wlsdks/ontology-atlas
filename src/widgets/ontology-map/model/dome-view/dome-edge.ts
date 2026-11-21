@@ -1,5 +1,5 @@
 import type { DomeNodeFrame } from './runtime';
-import { isNeuralDependency, neuralAxonControl, type NeuralTracts } from './neural-cells';
+import { isNeuralDependency, neuralAxonControl, type NeuralTracts } from './neural/neural-cells';
 import type { DomeArrangement } from './types';
 
 interface EdgeCoordinates {

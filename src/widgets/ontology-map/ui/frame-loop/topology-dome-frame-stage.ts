@@ -35,12 +35,12 @@ import {
   ORBIT_SNAP_ARRIVE_RAD,
   orbitSnapTauMs,
   stepDomeDragSpring,
-} from "../../model/dome-view/orbit";
+} from "../../model/dome-view/camera/orbit";
 import {
   domeEgoWorldBounds,
   domeWorldBounds,
   projectDomeCoord,
-} from "../../model/dome-view/projection";
+} from "../../model/dome-view/camera/projection";
 import {
   beginDomeMorph,
   createDomeRuntime,
@@ -49,7 +49,7 @@ import {
   type DomeFitTarget,
   type DomeRuntime,
 } from "../../model/dome-view/runtime";
-import { followTurnWithZoom } from "../../model/dome-view/turn-follow";
+import { followTurnWithZoom } from "../../model/dome-view/camera/turn-follow";
 import type { DomeModel } from "../../model/dome-view/types";
 import type { RealmTransitionState } from "../../model/realm/realm-transition";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";

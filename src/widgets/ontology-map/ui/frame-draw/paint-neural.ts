@@ -1,5 +1,5 @@
 import { DOME_NODE_PX } from "../../model/dome-view/ink";
-import { neuralCellRadiusPx, neuralGraphOf, neuralTracts, type NeuralTracts } from "../../model/dome-view/neural-cells";
+import { neuralCellRadiusPx, neuralGraphOf, neuralTracts, type NeuralTracts } from "../../model/dome-view/neural/neural-cells";
 import { readNeuralTokens, type NeuralTokens } from "../../tokens/read-neural-tokens";
 import type { DomeNodeFrame } from "../../model/dome-view/runtime";
 import type { TopologyWorld, WorldNode } from "../world/topology-world";

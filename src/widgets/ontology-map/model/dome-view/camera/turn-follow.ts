@@ -1,5 +1,5 @@
 import { DOME_FOCAL, domeWorldBounds, projectWithTrig } from './projection';
-import type { DomeCoord, DomeModel } from './types';
+import type { DomeCoord, DomeModel } from '../types';
 
 type CameraPose = { tx: number; ty: number; tscale: number };
 

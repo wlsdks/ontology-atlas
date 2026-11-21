@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { clusterRadius, clusterVolumeAnchors } from './cluster-volume';
-import { buildDomeModel } from './model-build';
-import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from './orbit';
-import type { DomeInputNode } from './types';
+import { buildDomeModel } from '../model-build';
+import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from '../camera/orbit';
+import type { DomeInputNode } from '../types';
 
 const EPS = 1e-6;
 

@@ -4,7 +4,7 @@
  * `shadowBlur`). Unknown is never drawn as current. Token-free: colours arrive as `rgb` triples.
  */
 
-import type { StrataLodState } from "../../model/dome-view/strata-lod";
+import type { StrataLodState } from "../../model/dome-view/strata/strata-lod";
 
 export type Rgb = readonly [number, number, number];
 

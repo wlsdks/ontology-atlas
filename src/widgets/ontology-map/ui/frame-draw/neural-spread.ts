@@ -1,5 +1,5 @@
-import { neuralSignalProgress, type NeuralGraph } from "../../model/dome-view/neural-cells";
-import { impactHopsByIndex, neuralImpact, neuralSpreadAt, neuralSpreadHopMs, type NeuralImpact } from "../../model/dome-view/neural-impact";
+import { neuralSignalProgress, type NeuralGraph } from "../../model/dome-view/neural/neural-cells";
+import { impactHopsByIndex, neuralImpact, neuralSpreadAt, neuralSpreadHopMs, type NeuralImpact } from "../../model/dome-view/neural/neural-impact";
 import type { NeuralTokens } from "../../tokens/read-neural-tokens";
 
 /**

@@ -1,4 +1,4 @@
-import type { DomeViewKind } from './types';
+import type { DomeViewKind } from '../types';
 
 interface NeuralNodeInput {
   id: string;
