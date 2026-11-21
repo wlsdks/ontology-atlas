@@ -143,7 +143,7 @@ export const framePlan: FramePlan = {
 };
 export const PLAN_LISTS = [L.lights, L.segments, L.arcs, L.focusArcs, L.dots, L.glows, L.discs, L.domains, L.project, L.names];
 
-/** One frame's inputs, rewritten in place each frame so the helpers below need no per-frame closures. */
+/** One frame's inputs, rewritten in place each frame so the frame parts need no per-frame closures. */
 interface FrameState {
   input: DialFrameInput;
   model: DialModel;
