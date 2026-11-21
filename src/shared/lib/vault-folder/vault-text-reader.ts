@@ -1,17 +1,20 @@
-import type { DocumentRef } from '@/entities/docs-vault';
 import {
-  getTauriVaultRootPath,
-  isTauriVaultRuntime,
   readTauriVaultTextFile,
   readTauriVaultTextFiles,
   type NativeVaultTextRead,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from './tauri-vault-fs';
+
+/** A document the folder's walk listed: its slug and the vault-relative path it came from. */
+export interface VaultTextRef {
+  slug: string;
+  path: string;
+}
 
 /**
  * Reads only documents the folder's walk handed a file to, at the path the walk derived the slug
  * from, so a path a page supplies never reaches outside the granted folder.
  */
-function isGranted(doc: DocumentRef, fileHandles: ReadonlyMap<string, FileSystemFileHandle>): boolean {
+function isGranted(doc: VaultTextRef, fileHandles: ReadonlyMap<string, FileSystemFileHandle>): boolean {
   return fileHandles.has(doc.slug) && doc.path === `${doc.slug}.md`;
 }
 
@@ -33,15 +36,15 @@ async function readOneNative(nativeRoot: string, path: string): Promise<string |
 }
 
 /**
- * The app reads a batch in one bridge call (Rust checks scope again) and reads a file whose frame
- * carries an error once more on its own, as the build does; the web reads each handle.
+ * With `nativeRoot` (the app's open folder) a batch is one bridge call, Rust checking scope again,
+ * and a file whose frame carries an error is read once more on its own; the web reads each handle.
+ * `null` stands for a document that could not be read.
  */
-export function createLocalTextReader(
-  root: FileSystemDirectoryHandle,
+export function createVaultTextReader(
+  nativeRoot: string | null,
   fileHandles: ReadonlyMap<string, FileSystemFileHandle>,
 ) {
-  const nativeRoot = isTauriVaultRuntime() ? getTauriVaultRootPath(root) : undefined;
-  return async (docs: readonly DocumentRef[]): Promise<(string | null)[]> => {
+  return async (docs: readonly VaultTextRef[]): Promise<(string | null)[]> => {
     const granted = docs.map((doc) => isGranted(doc, fileHandles));
     if (!nativeRoot) {
       return Promise.all(docs.map((doc, index) => (granted[index] ? readThroughHandle(fileHandles.get(doc.slug)) : null)));
@@ -60,7 +63,10 @@ export function createLocalTextReader(
       docs.map((doc, index) => {
         if (!granted[index]) return null;
         const text = textByPath.get(doc.path);
-        return typeof text === 'string' ? text : readOneNative(nativeRoot, doc.path);
+        if (typeof text === 'string') return text;
+        return readOneNative(nativeRoot, doc.path).then(
+          (alone) => alone ?? readThroughHandle(fileHandles.get(doc.slug)),
+        );
       }),
     );
   };

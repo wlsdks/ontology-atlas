@@ -14,6 +14,19 @@ export interface WikiRetrievalResult {
   omittedMatches: number;
 }
 
+/**
+ * What retrieval keeps of one page read, so its body need not stay: the `sources:` it declares and
+ * its body terms by weight (`words` 1, `grams` 0.25), each string shared through `intern`.
+ */
+export interface WikiRetrievalPage {
+  readonly sources: readonly string[];
+  readonly words: readonly string[];
+  readonly grams: readonly string[];
+}
+
+/** Hands back one copy of each term, cut loose from the text it was matched in. */
+export type WikiTermIntern = (terms: readonly string[]) => readonly string[];
+
 const LIMIT = 3;
 const STOP = new Set('a an and are as at be been by can do for from has have in is it its of on or that the their this to was were will with summary facts decisions open questions not sources human note'.split(' '));
 
@@ -35,24 +48,55 @@ function terms(text: string): Map<string, number> {
   return found;
 }
 
-/** Built when a Compile turn starts, from Library data already read; no I/O. */
-export function buildWikiRetrievalIndex(docs: readonly VaultDoc[], rawBySlug: ReadonlyMap<string, string> = new Map()) {
+/** A term table for one folder: each distinct term is copied once, by `JSON`, so no page text stays reachable. */
+export function createWikiTermIntern(): WikiTermIntern {
+  const kept = new Map<string, string>();
+  return (values) => {
+    const fresh = values.filter((value) => !kept.has(value));
+    if (fresh.length > 0) {
+      const copies = JSON.parse(JSON.stringify(fresh)) as string[];
+      fresh.forEach((value, at) => kept.set(copies[at]!, copies[at]!));
+    }
+    return values.map((value) => kept.get(value)!);
+  };
+}
+
+/** O(page bytes): what `buildWikiRetrievalIndex` needs of a page, from its text. */
+export function wikiRetrievalPage(raw: string, intern: WikiTermIntern = createWikiTermIntern()): WikiRetrievalPage {
+  const parsed = parseFrontmatter(raw);
+  const sourceValue = parsed.frontmatter.sources;
+  const sources = [...new Set((Array.isArray(sourceValue) ? sourceValue : [sourceValue])
+    .filter((value): value is string => typeof value === 'string').map((value) => value.trim()))];
+  const words: string[] = [];
+  const grams: string[] = [];
+  for (const [term, weight] of terms(parsed.body)) (weight === 1 ? words : grams).push(term);
+  return { sources: intern(sources), words: intern(words), grams: intern(grams) };
+}
+
+/** Built when a Compile turn starts, from Library data already read; no I/O. O(pages · terms). */
+export function buildWikiRetrievalIndex(docs: readonly VaultDoc[], readPages: ReadonlyMap<string, WikiRetrievalPage> = new Map()) {
   const frequencies = new Map<string, number>();
   const pages = docs.filter((doc) => isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug)
     && !/[\\#?\x00-\x1f\x7f]/.test(doc.slug) && !doc.slug.endsWith('.md')
     && doc.slug.split('/').every((part) => part && !part.startsWith('.') && !part.startsWith('_')))
     .map((doc) => {
-      const raw = rawBySlug.get(doc.slug);
-      const parsed = raw === undefined ? null : parseFrontmatter(raw);
-      const frontmatter = parsed?.frontmatter ?? doc.frontmatter;
-      const sourceValue = frontmatter.sources;
-      const sources = new Set((Array.isArray(sourceValue) ? sourceValue : [sourceValue])
-        .filter((value): value is string => typeof value === 'string').map((value) => value.trim()));
-      const body = parsed?.body ?? [doc.title, doc.description ?? '', doc.definitionPreview ?? '', ...doc.tags].join(' ');
-      const weights = terms(body);
+      const read = readPages.get(doc.slug);
+      let sources: Set<string>;
+      let weights: Map<string, number>;
+      if (read) {
+        sources = new Set(read.sources);
+        weights = new Map<string, number>();
+        for (const term of read.words) weights.set(term, 1);
+        for (const term of read.grams) weights.set(term, 0.25);
+      } else {
+        const sourceValue = doc.frontmatter.sources;
+        sources = new Set((Array.isArray(sourceValue) ? sourceValue : [sourceValue])
+          .filter((value): value is string => typeof value === 'string').map((value) => value.trim()));
+        weights = terms([doc.title, doc.description ?? '', doc.definitionPreview ?? '', ...doc.tags].join(' '));
+      }
       for (const [term, weight] of terms(doc.title)) weights.set(term, (weights.get(term) ?? 0) + weight * 2);
       for (const term of weights.keys()) frequencies.set(term, (frequencies.get(term) ?? 0) + 1);
-      return { slug: doc.slug, title: doc.title, sources, weights, hasBody: raw !== undefined };
+      return { slug: doc.slug, title: doc.title, sources, weights, hasBody: read !== undefined };
     });
   const fullTextPages = pages.filter((page) => page.hasBody).length;
 

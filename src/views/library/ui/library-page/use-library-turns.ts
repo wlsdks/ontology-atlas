@@ -20,6 +20,7 @@ import {
   describeCompileTurn,
   describeLintTurn,
   judgePageWrite,
+  wikiPagePathOf,
   wikiNodeIndexOfDocs,
   dropCandidatesWithNodes,
   planQuestionDeskReportFile,
@@ -58,6 +59,7 @@ import { checkOwner, wikiCheckOutcome, wikiCheckPayload } from "./wiki-check-out
 import { libraryAutoDecision, NATIVE_FOLDER_READS } from "../../lib/turns/library-auto-decision";
 import { readLiveLibraryFolder } from "../../lib/turns/library-folder-mirror";
 import { writingDoor } from "../../lib/turns/writing-door";
+import { useEditedPageText } from "./use-edited-page-text";
 
 /** The tool calls of a finished turn, as the work card counts them. */
 function turnToolEvents(completion: AcpTurnCompletion): TurnToolEvent[] {
@@ -184,18 +186,23 @@ export function useLibraryTurns({
   const [fileAnswerNote, setFileAnswerNote] = useState<string | null>(null);
   const consumedOpeningNonceRef = useRef<number | null>(null);
   const conceptIndex = useMemo(() => wikiNodeIndexOfDocs(docs), [docs]);
+  const editedPageText = useEditedPageText(nativeVaultRootPath, docs);
   const judgeWrite = useCallback(
-    (request: { filePath: string | null; rawInput: Record<string, unknown>; toolKind: string | null }) =>
-      nativeVaultRootPath
-        ? judgePageWrite({
-            request,
-            vaultRoot: nativeVaultRootPath,
-            currentText: (slug) => model.pageTexts.get(slug) ?? null,
-            knownSources: model.sources.map((row) => row.path),
-            nodes: conceptIndex,
-          })
-        : null,
-    [conceptIndex, model.pageTexts, model.sources, nativeVaultRootPath],
+    (request: { filePath: string | null; rawInput: Record<string, unknown>; toolKind: string | null }) => {
+      if (!nativeVaultRootPath || request.toolKind === "read") return null;
+      const path = wikiPagePathOf(request.filePath, nativeVaultRootPath);
+      // A whole-file write needs no current text; an edit waits for its page's read.
+      const current = path && typeof request.rawInput.content !== "string" ? editedPageText(path) : null;
+      if (current === undefined) return null;
+      return judgePageWrite({
+        request,
+        vaultRoot: nativeVaultRootPath,
+        currentText: () => current,
+        knownSources: model.sources.map((row) => row.path),
+        nodes: conceptIndex,
+      });
+    },
+    [conceptIndex, editedPageText, model.sources, nativeVaultRootPath],
   );
   const pendingFixRef = useRef<LintFinding | null>(null);
   const handleFix = useCallback(
