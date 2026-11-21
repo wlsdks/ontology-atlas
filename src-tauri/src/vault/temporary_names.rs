@@ -117,14 +117,14 @@ mod tests {
     /// this module accepts; a change there fails here instead of leaving debris or worse.
     #[test]
     fn the_mcp_and_cli_writers_still_use_the_recognised_shapes() {
-        let sidecar = include_str!("../../mcp/src/vault/vault-sidecar.mjs");
+        let sidecar = include_str!("../../../mcp/src/vault/vault-sidecar.mjs");
         assert!(sidecar.contains("`.${filename}.oatlas-tmp-${process.pid}-${randomUUID()}`"));
         assert!(is_atlas_temporary(
             ".library-collections.json.oatlas-tmp-912-3b241101-e2bb-4255-8caf-4136c566a962"
         ));
         for source in [
-            include_str!("../../mcp/src/vault/atomic-writes.mjs"),
-            include_str!("../../cli/src/lib/vault-files/atomic-write.mjs"),
+            include_str!("../../../mcp/src/vault/atomic-writes.mjs"),
+            include_str!("../../../cli/src/lib/vault-files/atomic-write.mjs"),
         ] {
             assert!(source.contains("`${filePath}.oatlas-tmp-${process.pid}`"));
         }
@@ -136,7 +136,7 @@ mod tests {
     #[test]
     fn the_shared_list_matches_this_recognizer() {
         let cases: serde_json::Value = serde_json::from_str(include_str!(
-            "../../tests/fixtures/atlas-temporary-names.json"
+            "../../../tests/fixtures/atlas-temporary-names.json"
         ))
         .unwrap();
         for (key, expected) in [("temporary", true), ("notTemporary", false)] {

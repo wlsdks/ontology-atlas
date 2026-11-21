@@ -19,7 +19,7 @@ pub(crate) struct EvidenceReader {
 impl EvidenceReader {
     pub(crate) fn start(
         vault: &Path,
-        snapshot: &crate::gray_area_scope::SourceObservation,
+        snapshot: &crate::gray_area::scope::SourceObservation,
     ) -> Result<Self, String> {
         let binary = crate::agent_setup::resolve_bundled_binary()?;
         let input_namespace = InputNamespace::new()?;
@@ -27,7 +27,7 @@ impl EvidenceReader {
         #[cfg(not(unix))]
         let _ = &snapshot_file;
         let mut command = Command::new(&binary);
-        crate::no_console::hide_console(&mut command);
+        crate::process::no_console::hide_console(&mut command);
         command.current_dir(binary.parent().ok_or("reader_unavailable")?);
         command
             .env_clear()
@@ -158,7 +158,7 @@ impl Drop for EvidenceReader {
 
 fn snapshot_descriptor(
     source: &Path,
-    snapshot: &crate::gray_area_scope::SourceObservation,
+    snapshot: &crate::gray_area::scope::SourceObservation,
 ) -> Result<std::fs::File, String> {
     #[cfg(unix)]
     {

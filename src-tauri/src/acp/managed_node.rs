@@ -176,15 +176,16 @@ fn download_with_progress(
     limit: std::time::Duration,
     report: NodeProgress<'_>,
 ) -> Result<(), String> {
-    let mut child = crate::no_console::hide_console(&mut std::process::Command::new("curl"))
-        .args(["-fsSL", "--max-time", "600", "-o"])
-        .arg(dest)
-        .arg(url)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn()
-        .map_err(|err| format!("node-download-failed:{err}"))?;
+    let mut child =
+        crate::process::no_console::hide_console(&mut std::process::Command::new("curl"))
+            .args(["-fsSL", "--max-time", "600", "-o"])
+            .arg(dest)
+            .arg(url)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .map_err(|err| format!("node-download-failed:{err}"))?;
 
     let started = std::time::Instant::now();
     report("downloading", Some(0), Some(total));
@@ -218,7 +219,7 @@ fn extract(archive: &Path, into: &Path) -> Result<(), String> {
     #[cfg(windows)]
     let mut command = {
         let mut c = std::process::Command::new("powershell");
-        crate::no_console::hide_console(&mut c);
+        crate::process::no_console::hide_console(&mut c);
         c.args(["-NoProfile", "-Command", "Expand-Archive", "-LiteralPath"])
             .arg(archive)
             .arg("-DestinationPath")
@@ -242,7 +243,7 @@ fn extract(archive: &Path, into: &Path) -> Result<(), String> {
 
 fn command_ref(command: &mut std::process::Command) -> std::process::Command {
     let mut out = std::process::Command::new(command.get_program());
-    crate::no_console::hide_console(&mut out);
+    crate::process::no_console::hide_console(&mut out);
     out.args(command.get_args());
     out
 }

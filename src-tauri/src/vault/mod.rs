@@ -1,4 +1,5 @@
 pub(crate) mod create;
+pub(crate) mod grants;
 pub(crate) mod index;
 pub(crate) mod index_rows;
 pub(crate) mod library_collections;
@@ -6,6 +7,7 @@ pub(crate) mod location;
 pub(crate) mod read;
 pub(crate) mod scope;
 pub(crate) mod temp_sweep;
+pub(crate) mod temporary_names;
 pub(crate) mod vectors;
 pub(crate) mod walk;
 pub(crate) mod watch;
@@ -35,7 +37,7 @@ mod vault_scope_tests {
         let vault = std::fs::canonicalize(base.join("vault")).unwrap();
         let home_path = home.to_string_lossy().to_string();
         let vault_path = vault.to_string_lossy().to_string();
-        let scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault));
+        let scope = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault));
 
         let refused = |result: Result<(), String>| {
             let err = result.unwrap_err();

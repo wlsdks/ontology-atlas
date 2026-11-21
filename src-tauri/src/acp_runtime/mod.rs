@@ -1,4 +1,4 @@
-use crate::{acp, acp_doctor, managed_node};
+use crate::acp::{self, doctor, managed_node};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -136,7 +136,7 @@ pub(crate) fn acp_node_plan() -> Option<String> {
 pub(crate) fn acp_install_node(
     app: tauri::AppHandle,
     runtime_id: String,
-) -> Result<Vec<acp_doctor::AcpCheck>, String> {
+) -> Result<Vec<doctor::AcpCheck>, String> {
     let app_data = app
         .path()
         .app_data_dir()
@@ -158,7 +158,7 @@ pub(crate) fn acp_install_node(
     );
     let after = doctor_context(&app, &runtime_id)?;
     emit_install_progress(&app, &runtime_id, "node", "done", None, None, None);
-    Ok(acp_doctor::diagnose(&after.borrow()))
+    Ok(doctor::diagnose(&after.borrow()))
 }
 
 /// The screen shows the raw command before the press; `None` leaves only the guide link.
@@ -175,7 +175,7 @@ pub(crate) fn acp_install_plan(app: tauri::AppHandle, runtime_id: String) -> Opt
 pub(crate) fn acp_install_cli(
     app: tauri::AppHandle,
     runtime_id: String,
-) -> Result<Vec<acp_doctor::AcpCheck>, String> {
+) -> Result<Vec<doctor::AcpCheck>, String> {
     let package = acp::managed_cli::installable_package(&runtime_id)
         .ok_or_else(|| format!("not-installable:{runtime_id}"))?;
     let app_data = app
@@ -213,7 +213,7 @@ pub(crate) fn acp_install_cli(
     emit_install_progress(&app, &runtime_id, "cli", "installing", None, None, None);
 
     let mut command = Command::new(&npm);
-    crate::no_console::hide_console(&mut command);
+    crate::process::no_console::hide_console(&mut command);
     command
         .arg("install")
         .arg("--prefix")
@@ -283,7 +283,7 @@ pub(crate) fn acp_install_cli(
     );
     let after = doctor_context(&app, &runtime_id)?;
     emit_install_progress(&app, &runtime_id, "cli", "done", None, None, None);
-    Ok(acp_doctor::diagnose(&after.borrow()))
+    Ok(doctor::diagnose(&after.borrow()))
 }
 
 /// Returns facts per step; the screen writes the sentences.
@@ -291,11 +291,11 @@ pub(crate) fn acp_install_cli(
 pub(crate) fn acp_diagnose(
     app: tauri::AppHandle,
     runtime_id: String,
-) -> Result<Vec<acp_doctor::AcpCheck>, String> {
+) -> Result<Vec<doctor::AcpCheck>, String> {
     // The screen clears its state at the same moment.
     forget_install_progress(&app, &runtime_id);
     let ctx = doctor_context(&app, &runtime_id)?;
-    Ok(acp_doctor::diagnose(&ctx.borrow()))
+    Ok(doctor::diagnose(&ctx.borrow()))
 }
 
 /// Only `fixable` items arrive.
@@ -304,12 +304,12 @@ pub(crate) fn acp_repair(
     app: tauri::AppHandle,
     runtime_id: String,
     check_id: String,
-) -> Result<Vec<acp_doctor::AcpCheck>, String> {
+) -> Result<Vec<doctor::AcpCheck>, String> {
     let ctx = doctor_context(&app, &runtime_id)?;
-    acp_doctor::repair(&ctx.borrow(), &check_id)?;
+    doctor::repair(&ctx.borrow(), &check_id)?;
     // Return the re-verified state, never a bare claim of success.
     let after = doctor_context(&app, &runtime_id)?;
-    Ok(acp_doctor::diagnose(&after.borrow()))
+    Ok(doctor::diagnose(&after.borrow()))
 }
 
 /// Returns the re-verified value, never a bare claim.
@@ -317,11 +317,11 @@ pub(crate) fn acp_repair(
 pub(crate) fn acp_reset_connection(
     app: tauri::AppHandle,
     runtime_id: String,
-) -> Result<Vec<acp_doctor::AcpCheck>, String> {
+) -> Result<Vec<doctor::AcpCheck>, String> {
     let ctx = doctor_context(&app, &runtime_id)?;
-    acp_doctor::reset_connection(&ctx.borrow())?;
+    doctor::reset_connection(&ctx.borrow())?;
     let after = doctor_context(&app, &runtime_id)?;
-    Ok(acp_doctor::diagnose(&after.borrow()))
+    Ok(doctor::diagnose(&after.borrow()))
 }
 
 /// Owned values; `borrow()` converts them.
@@ -337,8 +337,8 @@ struct OwnedDoctorContext {
 }
 
 impl OwnedDoctorContext {
-    fn borrow(&self) -> acp_doctor::DoctorContext<'_> {
-        acp_doctor::DoctorContext {
+    fn borrow(&self) -> doctor::DoctorContext<'_> {
+        doctor::DoctorContext {
             runtime_id: &self.runtime_id,
             home: self.home.as_deref(),
             app_data_dir: &self.app_data_dir,

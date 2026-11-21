@@ -39,14 +39,14 @@ never a parallel router or surface fork.
 | Git | `src/shared/lib/git/tauri-git.ts` | degradation card |
 | Keychain | `src/shared/lib/llm-connection/tauri-secrets.ts` | degradation card |
 | Gray-area evidence | `src/shared/lib/project-source/tauri-gray-area.ts`, `src-tauri/src/gray_area.rs` | degradation card; local folder confirmation and secure bounded reads are macOS-only |
-| Source-folder read grant | `pickTauriSourceDirectory` in `src/shared/lib/vault-folder/tauri-vault-fs.ts`, `src-tauri/src/source_access.rs` | unavailable; native picker grants read-only source access, not vault write access |
+| Source-folder read grant | `pickTauriSourceDirectory` in `src/shared/lib/vault-folder/tauri-vault-fs.ts`, `src-tauri/src/project_source/access.rs` | unavailable; native picker grants read-only source access, not vault write access |
 | Harness source read | `src/shared/lib/project-source/tauri-harness-source.ts`, `src-tauri/src/harness_source/` | unavailable; a browser cannot see dot directories, so Harness names what it cannot reach |
 | Jev evidence check (experimental) | `src/shared/lib/llm-connection/tauri-jev.ts`, `src-tauri/src/jev.rs` | covered by the models tab's degradation card |
 | LLM call | `src/shared/lib/llm-connection/tauri-llm.ts` | action not rendered |
 | Agent setup | `src/shared/lib/desktop-shell/tauri-agent-setup.ts` | degradation card; no absolute path to write a config |
 | ACP runtime | `src/shared/lib/agent-chat/tauri-acp.ts`, `src-tauri/src/acp/` | degradation card; an externally launched agent can still attach |
 | Connector discovery | `src/shared/lib/connectors/tauri-connectors.ts`, `src-tauri/src/connectors.rs` | degradation card; adding one by hand works and the list lives in the vault |
-| Connector secrets | `src/shared/lib/connectors/tauri-connector-secrets.ts`, `src-tauri/src/connector_secrets.rs` | degradation card; Rust resolves the token into the outgoing ACP line, so the WebView never holds it |
+| Connector secrets | `src/shared/lib/connectors/tauri-connector-secrets.ts`, `src-tauri/src/connectors/secrets.rs` | degradation card; Rust resolves the token into the outgoing ACP line, so the WebView never holds it |
 | Connector runtimes | `src/shared/lib/connectors/tauri-connector-runtimes.ts`, `resolve_connector_runtimes` in `src-tauri/src/connectors.rs` | typed absolute path; **not** a degradation card, because only a convenience is missing |
 | Folder watch | `start_vault_watch` in `src-tauri/src/vault/watch.rs`, `TauriVaultWatchBridge.tsx` | periodic reread (`poll-cadence.ts`); delayed, not unavailable |
 | Library sources | `src/shared/lib/vault-folder/tauri-vault-fs.ts`, `src-tauri/src/library.rs` | same ability by other means (`showOpenFilePicker`, `crypto.subtle`); Rust hashes whole scans so files do not cross IPC; Planning's Add files uses the same import with its `planning` destination |

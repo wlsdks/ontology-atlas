@@ -1,8 +1,8 @@
+use super::grants;
 use super::scope::{canonical_root, vault_root_rejection};
 #[cfg(target_os = "macos")]
 use crate::app_shell::reveal_in_finder_command;
 use crate::blocking::run_blocking;
-use crate::vault_grants;
 use std::fs;
 use std::path::PathBuf;
 
@@ -23,7 +23,7 @@ pub(crate) fn pick_vault_directory(dialog_title: Option<String>) -> Result<Optio
     }
     // The native picker is a genuine user choice, so this is where a vault becomes a
     // granted root; the redirect into `<project>/atlas` stays inside it.
-    vault_grants::grant_vault_root(&resolved);
+    grants::grant_vault_root(&resolved);
     Ok(Some(picked.to_string_lossy().to_string()))
 }
 
@@ -77,7 +77,7 @@ pub(crate) fn ensure_default_vault_parent_dir() -> Result<String, String> {
     let canonical = fs::canonicalize(&parent).map_err(|err| err.to_string())?;
     // The app's own "just start" container: creating a vault under it is a granted
     // operation, so the create/list/write commands that follow are allowed.
-    vault_grants::grant_vault_root(&canonical);
+    grants::grant_vault_root(&canonical);
     Ok(canonical.to_string_lossy().to_string())
 }
 

@@ -473,7 +473,7 @@ pub(crate) async fn vault_index_clear(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::vault_grants::EnforcedScope;
+    use crate::vault::grants::EnforcedScope;
 
     fn temp_vault(label: &str) -> PathBuf {
         static INDEX_DIR: Once = Once::new();

@@ -8,7 +8,7 @@ fn grant_selected_source(path: &Path) -> Result<String, String> {
     if let Some(reason) = crate::vault_root_rejection(&root) {
         return Err(format!("source-root-rejected:{reason}"));
     }
-    crate::vault_grants::grant_source_root(&root);
+    crate::vault::grants::grant_source_root(&root);
     Ok(root.to_string_lossy().into_owned())
 }
 
@@ -33,7 +33,7 @@ mod tests {
         let root = std::env::temp_dir().join(format!("atlas-source-access-{}", std::process::id()));
         let source = root.join("source");
         std::fs::create_dir_all(&source).unwrap();
-        let _scope = crate::vault_grants::EnforcedScope::granting(&[]);
+        let _scope = crate::vault::grants::EnforcedScope::granting(&[]);
         let chosen = grant_selected_source(&source).unwrap();
         assert!(crate::canonical_source_root(&chosen).is_ok());
         assert_eq!(

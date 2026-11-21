@@ -2,7 +2,6 @@ use std::io::Write;
 use tauri::{Manager, RunEvent};
 
 mod acp;
-mod acp_doctor;
 mod acp_runtime;
 mod acp_session;
 mod agent_setup;
@@ -10,33 +9,22 @@ mod analysis_archive;
 mod app_shell;
 mod audit_read;
 mod blocking;
-mod command_output;
-mod connector_secrets;
 mod connectors;
-mod deep_link;
 mod errors;
 mod git;
 mod gray_area;
-mod gray_area_rpc;
-mod gray_area_scope;
 mod harness_source;
 mod jev;
 mod library;
 mod llm;
 mod llm_audit;
-mod local_construction;
 mod lower_hex;
-mod managed_node;
-mod map_entry_diagnostic;
 mod meaning_transition_archive;
-mod no_console;
 mod planning;
+mod process;
 mod project_source;
 mod secrets;
-mod source_access;
-mod temporary_names;
 mod vault;
-mod vault_grants;
 mod webview_verify;
 
 use acp_runtime::AcpInstallProgressState;
@@ -63,7 +51,8 @@ pub(crate) use vault::scope::{
 };
 use vault::watch::VaultWatcherState;
 use webview_verify::{
-    apply_verify_window_size, isolate_verify_webview_storage, WEBVIEW_VERIFY_ENV,
+    apply_verify_window_size, isolate_verify_webview_storage, map_entry_diagnostic,
+    WEBVIEW_VERIFY_ENV,
 };
 pub(crate) use webview_verify::{js_string_literal, write_verify_line};
 
@@ -175,7 +164,7 @@ pub fn run() {
                 let container = std::env::var("HOME")
                     .ok()
                     .map(|home| default_vault_parent_dir(&home));
-                vault_grants::initialize(store.join("granted-vault-roots.json"), container);
+                vault::grants::initialize(store.join("granted-vault-roots.json"), container);
             }
 
             #[cfg(target_os = "macos")]
@@ -262,15 +251,15 @@ pub fn run() {
             acp_session::acp_stop,
             acp_session::acp_permission_verdict,
             vault::location::pick_vault_directory,
-            source_access::pick_source_directory,
+            project_source::access::pick_source_directory,
             planning::commands::planning_supported,
             planning::commands::planning_pick_folder,
             planning::commands::planning_scan,
             planning::commands::planning_read_file,
             planning::commands::planning_open_document,
             planning::commands::planning_revoke,
-            local_construction::preview_local_construction_source,
-            local_construction::read_local_construction_source,
+            project_source::local_construction::preview_local_construction_source,
+            project_source::local_construction::read_local_construction_source,
             harness_source::list_harness_source_directory,
             harness_source::read_harness_source_text,
             harness_source::harness_source_path_exists,
@@ -375,9 +364,9 @@ pub fn run() {
             agent_setup::verify_mcp_server,
             connectors::discover_mcp_connectors,
             connectors::resolve_connector_runtimes,
-            connector_secrets::connector_secret_set,
-            connector_secrets::connector_secret_status,
-            connector_secrets::connector_secret_delete,
+            connectors::secrets::connector_secret_set,
+            connectors::secrets::connector_secret_status,
+            connectors::secrets::connector_secret_delete,
         ])
         .build(context)
         .expect("error while building ontology-atlas desktop app")

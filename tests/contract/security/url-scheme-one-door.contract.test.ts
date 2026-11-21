@@ -71,7 +71,7 @@ describe('the ontology-atlas:// scheme has exactly one door', () => {
   });
 
   it('answers only the MCP install destination, and only the install parameter', () => {
-    const door = shippedBody('src-tauri/src/deep_link.rs');
+    const door = shippedBody('src-tauri/src/app_shell/deep_link.rs');
 
     // The two rules that make this one door rather than a router. A third destination, or a
     // second accepted query key, is the change this assertion exists to stop.
@@ -105,7 +105,7 @@ describe('the ontology-atlas:// scheme has exactly one door', () => {
       'src/shared/lib/connectors/mcp-install-link.ts',
       'src/features/mcp-connectors/ui/ConnectorsPanel.tsx',
     ]) {
-      const body = path === 'src-tauri/src/deep_link.rs' ? shippedBody(path) : read(path);
+      const body = path === 'src-tauri/src/app_shell/deep_link.rs' ? shippedBody(path) : read(path);
       for (const address of mintedAddresses(body)) {
         expect(
           address === 'ontology-atlas://' || address.startsWith(THE_ONE_DOOR),

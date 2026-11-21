@@ -4,7 +4,7 @@ use super::super::commands;
 use super::super::job::{UPDATE_LATEST, UPDATE_QUIET};
 use super::held::{rewrite, sent_rewritten, shown, stopped_in_an_earlier_launch};
 use super::*;
-use crate::vault_grants::EnforcedScope;
+use crate::vault::grants::EnforcedScope;
 
 #[test]
 fn a_folder_quit_mid_job_continues_by_itself_after_the_quiet_wait() {

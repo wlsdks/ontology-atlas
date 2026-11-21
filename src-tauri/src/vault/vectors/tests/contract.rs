@@ -7,7 +7,7 @@ use super::super::failure::{failure_detail, During, ModelFailedDetail, ModelStep
 use super::super::job::UPDATE_QUIET;
 use super::held::{shown, stopped_in_an_earlier_launch};
 use super::*;
-use crate::vault_grants::EnforcedScope;
+use crate::vault::grants::EnforcedScope;
 
 /// How the built-in model is missing: never fetched, or a download cut off at 40 %.
 #[derive(Clone, Copy, Debug)]

@@ -133,7 +133,7 @@ fn clear_shadowing_credentials(config_dir: &Path, cli: Option<&Path>, path_env: 
             return;
         };
         let mut probe = std::process::Command::new(cli);
-        crate::no_console::hide_console(&mut probe);
+        crate::process::no_console::hide_console(&mut probe);
         probe
             .args(["auth", "status"])
             .env("PATH", path_env)
@@ -185,7 +185,7 @@ pub(crate) fn probe_isolated_logged_out(
     path_env: &str,
 ) -> Option<bool> {
     let mut command = std::process::Command::new(cli);
-    crate::no_console::hide_console(&mut command);
+    crate::process::no_console::hide_console(&mut command);
     command
         .args(["auth", "status"])
         .env("PATH", path_env)

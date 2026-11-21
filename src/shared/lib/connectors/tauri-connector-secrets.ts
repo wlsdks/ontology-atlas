@@ -1,6 +1,6 @@
 /**
  * A connector's tokens in the OS keychain — the Tauri IPC bridge over
- * `src-tauri/src/connector_secrets.rs`.
+ * `src-tauri/src/connectors/secrets.rs`.
  *
  * ## The value goes down, and never comes back
  *
@@ -40,7 +40,7 @@ function getInvoke(): TauriInvoke | null {
 /**
  * The marker key that stands in for a value in an outgoing ACP line.
  *
- * The same literal exists in `src-tauri/src/connector_secrets.rs` as `SECRET_REF_KEY`, and
+ * The same literal exists in `src-tauri/src/connectors/secrets.rs` as `SECRET_REF_KEY`, and
  * `tests/contract/security/connector-secret-ref-parity.contract.test.ts` compares the two. If they drifted,
  * the marker would travel to the agent verbatim — a connector configured with the string
  * `connector:c1:NOTION_TOKEN` as its token, failing on every call for a reason nothing states.

@@ -37,7 +37,7 @@ fn fake_worker_child() {
 /// Starts this test binary again as a worker selecting only `test`.
 pub(super) fn harness_child(test: &str, env: &[(&str, String)]) -> Result<Spawned, EmbedError> {
     let mut command = Command::new(std::env::current_exe().map_err(|_| EmbedError::WorkerExited)?);
-    crate::no_console::hide_console(&mut command)
+    crate::process::no_console::hide_console(&mut command)
         .args([
             "--exact",
             test,

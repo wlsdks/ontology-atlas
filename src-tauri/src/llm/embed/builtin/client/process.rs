@@ -65,7 +65,7 @@ impl Launch for SelfLaunch {
     fn launch(&self) -> Result<Spawned, EmbedError> {
         let exe = std::env::current_exe().map_err(start_error)?;
         let mut command = Command::new(exe);
-        crate::no_console::hide_console(&mut command).arg(WORKER_FLAG);
+        crate::process::no_console::hide_console(&mut command).arg(WORKER_FLAG);
         spawn_piped(command)
     }
 }

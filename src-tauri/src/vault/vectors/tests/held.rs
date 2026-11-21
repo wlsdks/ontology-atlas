@@ -6,7 +6,7 @@ use super::super::job::{UPDATE_LATEST, UPDATE_QUIET};
 use super::super::models::Sources;
 use super::*;
 use crate::llm::embed::builtin::Stage as ModelStage;
-use crate::vault_grants::EnforcedScope;
+use crate::vault::grants::EnforcedScope;
 use std::path::PathBuf;
 
 pub(super) fn shown(root: &Path) -> String {

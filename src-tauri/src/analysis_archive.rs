@@ -345,7 +345,7 @@ fn publish_exclusively(
 
 /// The vault-open sweep removes a leftover only under a name it recognises.
 fn temporary_name() -> String {
-    crate::temporary_names::next_create_temporary_name()
+    crate::vault::temporary_names::next_create_temporary_name()
 }
 
 #[cfg(not(unix))]

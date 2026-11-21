@@ -737,7 +737,7 @@ pub(crate) fn verify_identity(binding: &BoundSource) -> Result<(), String> {
 }
 
 #[cfg(test)]
-#[path = "gray_area_scope_construction_tests.rs"]
+#[path = "scope_construction_tests.rs"]
 mod construction_tests;
 
 #[cfg(test)]

@@ -2,6 +2,8 @@
 //! configs. Only env and header key names leave, never values, which are tokens.
 //! Unclassifiable Codex TOML entries are counted, not guessed, so no list is silently short.
 
+pub(crate) mod secrets;
+
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 

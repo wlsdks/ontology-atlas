@@ -1,5 +1,6 @@
+use crate::acp::{self, managed_node};
 use crate::vault::scope::{canonical_root, vault_root_rejection};
-use crate::{acp, connector_secrets, git, managed_node};
+use crate::{connectors, git};
 use serde::Serialize;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -131,7 +132,7 @@ fn adapter_command(
 ) -> Command {
     debug_assert!(!launch_dir.starts_with(vault_root));
     let mut command = Command::new(program);
-    crate::no_console::hide_console(&mut command);
+    crate::process::no_console::hide_console(&mut command);
     command
         .args(args)
         .current_dir(launch_dir)
@@ -468,7 +469,7 @@ pub(crate) fn acp_send(
 ) -> Result<(), String> {
     // Connector tokens become values only here, one line before leaving the process;
     // ordinary lines pass after one substring check.
-    let line = connector_secrets::resolve_secret_refs(&line)?;
+    let line = connectors::secrets::resolve_secret_refs(&line)?;
     sessions.send_line(&session_id, &line)
 }
 

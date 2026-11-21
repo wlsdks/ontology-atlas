@@ -84,7 +84,7 @@ pub(crate) fn run_curl_until(
     deadline: Option<std::time::Instant>,
 ) -> Result<(u16, String), String> {
     let mut command = Command::new("curl");
-    crate::no_console::hide_console(&mut command);
+    crate::process::no_console::hide_console(&mut command);
     command.args(argv);
     let ends = http_output::Ends { cancel, deadline };
     let captured = http_output::capture_until(command, config.as_bytes(), ends);

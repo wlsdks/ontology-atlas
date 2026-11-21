@@ -71,7 +71,7 @@ fn offered_by_the_walk(label: &str, rows: &[serde_json::Value]) -> Vec<String> {
     }
     let project = fs::canonicalize(&project).unwrap();
     let _scope =
-        crate::vault_grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);
+        crate::vault::grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);
     let report = discover_source_candidates(vec![SourceDiscoveryRoot {
         root_path: project.to_string_lossy().into_owned(),
         label: "project".into(),
@@ -275,7 +275,7 @@ fn a_discovered_candidate_imports_through_the_string_the_page_builds() {
     let vault = fs::canonicalize(&vault).unwrap();
     let project = fs::canonicalize(&project).unwrap();
 
-    let _scope = crate::vault_grants::EnforcedScope::granting(&[vault.clone(), project.clone()]);
+    let _scope = crate::vault::grants::EnforcedScope::granting(&[vault.clone(), project.clone()]);
 
     let report = discover_source_candidates(vec![SourceDiscoveryRoot {
         root_path: root_path.clone(),
@@ -304,7 +304,7 @@ fn discovery_refuses_a_source_root_the_vault_gate_forbids() {
     fs::write(bundle.join("plan.pdf"), b"%PDF-1.7\n").unwrap();
     let bundle = fs::canonicalize(&bundle).unwrap();
 
-    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&bundle));
+    let _scope = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&bundle));
 
     let report = discover_source_candidates(vec![SourceDiscoveryRoot {
         root_path: bundle.to_string_lossy().to_string(),
@@ -684,7 +684,7 @@ fn a_document_discovery_offered_is_still_refused_for_planning_when_its_type_is_u
     fs::write(project.join("plan.pdf"), PLAN_PDF_BYTES).unwrap();
     let project = fs::canonicalize(&project).unwrap();
     let _scope =
-        crate::vault_grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);
+        crate::vault::grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);
 
     let report = discover_source_candidates(vec![SourceDiscoveryRoot {
         root_path: project.to_string_lossy().into_owned(),
