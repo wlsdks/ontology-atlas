@@ -48,17 +48,13 @@ pub struct McpVerifyResult {
     pub failure: Option<String>,
 }
 
-fn err_str(message: impl Into<String>) -> String {
-    message.into()
-}
-
 /// A sibling of the app executable; `tauri dev` copies it next to the dev executable.
 pub(crate) fn resolve_bundled_binary() -> Result<PathBuf, String> {
     let exe = std::env::current_exe()
-        .map_err(|e| err_str(format!("could not resolve the app executable: {e}")))?;
+        .map_err(|e| format!("could not resolve the app executable: {e}"))?;
     let dir = exe
         .parent()
-        .ok_or_else(|| err_str("the app executable has no parent directory"))?;
+        .ok_or_else(|| String::from("the app executable has no parent directory"))?;
     Ok(dir.join(bundled_binary_name()))
 }
 
@@ -89,15 +85,12 @@ pub fn mcp_bundled_server() -> BundledServer {
 fn canonical_dir(raw: &str) -> Result<PathBuf, String> {
     let path = PathBuf::from(raw);
     if !path.is_absolute() {
-        return Err(err_str("vault path must be absolute"));
+        return Err(String::from("vault path must be absolute"));
     }
     let canonical = fs::canonicalize(&path)
-        .map_err(|e| err_str(format!("could not resolve {}: {e}", path.display())))?;
+        .map_err(|e| format!("could not resolve {}: {e}", path.display()))?;
     if !canonical.is_dir() {
-        return Err(err_str(format!(
-            "{} is not a directory",
-            canonical.display()
-        )));
+        return Err(format!("{} is not a directory", canonical.display()));
     }
     Ok(canonical)
 }
@@ -133,10 +126,10 @@ fn verify_inner(vault_path: &str, sample_slug: Option<&str>) -> Result<McpVerify
     let vault = canonical_dir(vault_path)?;
     let binary = resolve_bundled_binary()?;
     if !binary.is_file() {
-        return Err(err_str(format!(
+        return Err(format!(
             "The bundled MCP server is missing at {}.",
             binary.display()
-        )));
+        ));
     }
 
     let mut child = crate::child_process::no_console::hide_console(&mut Command::new(&binary))
@@ -146,20 +139,20 @@ fn verify_inner(vault_path: &str, sample_slug: Option<&str>) -> Result<McpVerify
         .stderr(Stdio::piped())
         .spawn()
         .map_err(|e| {
-            err_str(format!(
+            format!(
                 "could not start the bundled MCP server ({}): {e}",
                 binary.display()
-            ))
+            )
         })?;
 
     let mut stdin = child
         .stdin
         .take()
-        .ok_or_else(|| err_str("the MCP server did not expose stdin"))?;
+        .ok_or_else(|| String::from("the MCP server did not expose stdin"))?;
     let stdout = child
         .stdout
         .take()
-        .ok_or_else(|| err_str("the MCP server did not expose stdout"))?;
+        .ok_or_else(|| String::from("the MCP server did not expose stdout"))?;
 
     let slug = sample_slug.unwrap_or("project").to_string();
     let requests = [

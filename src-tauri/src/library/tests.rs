@@ -1449,17 +1449,20 @@ fn publishing_passes_over_a_name_taken_since_the_check_and_a_failed_fill_leaves_
     let parent = fs::File::open(&folder).unwrap();
     let names = ["a.md", "a (2).md"].map(|name| std::ffi::CString::new(name).unwrap());
 
-    let published =
-        crate::confined_files::create_first_free_entry_with(&parent, names.clone(), 0o666, |file| {
-            file.write_all(b"new")
-        })
-        .unwrap();
+    let published = crate::confined_files::create_first_free_entry_with(
+        &parent,
+        names.clone(),
+        0o666,
+        |file| file.write_all(b"new"),
+    )
+    .unwrap();
     assert_eq!(published.unwrap().1.to_str().unwrap(), "a (2).md");
     assert_eq!(fs::read(folder.join("a.md")).unwrap(), b"kept");
 
-    let refused = crate::confined_files::create_first_free_entry_with(&parent, names, 0o666, |_| {
-        Err::<(), _>(std::io::Error::other("disk full"))
-    });
+    let refused =
+        crate::confined_files::create_first_free_entry_with(&parent, names, 0o666, |_| {
+            Err::<(), _>(std::io::Error::other("disk full"))
+        });
     assert!(refused.is_err());
     assert_eq!(fs::read(folder.join("a.md")).unwrap(), b"kept");
     let mut left: Vec<String> = fs::read_dir(&folder)

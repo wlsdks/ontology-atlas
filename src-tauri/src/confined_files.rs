@@ -7,15 +7,11 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
-fn err_str(message: impl Into<String>) -> String {
-    message.into()
-}
-
 fn unix_name(value: &std::ffi::OsStr) -> Result<std::ffi::CString, String> {
     use std::os::unix::ffi::OsStrExt;
 
     std::ffi::CString::new(value.as_bytes())
-        .map_err(|_| err_str("agent config path contains an unsupported NUL byte"))
+        .map_err(|_| String::from("agent config path contains an unsupported NUL byte"))
 }
 
 /// Opens each component with `openat(O_NOFOLLOW)` from `/`, or a parent swapped to
@@ -24,7 +20,7 @@ pub(crate) fn open_absolute_directory_no_follow(path: &Path) -> Result<fs::File,
     use std::os::fd::{AsRawFd, FromRawFd};
 
     if !path.is_absolute() {
-        return Err(err_str("native write root must be absolute"));
+        return Err(String::from("native write root must be absolute"));
     }
 
     // Not `CString::new(..).expect(..)`: callers are sync commands on the macOS main
@@ -37,10 +33,10 @@ pub(crate) fn open_absolute_directory_no_follow(path: &Path) -> Result<fs::File,
         )
     };
     if root_fd < 0 {
-        return Err(err_str(format!(
+        return Err(format!(
             "could not open filesystem root safely: {}",
             std::io::Error::last_os_error()
-        )));
+        ));
     }
     let mut current = unsafe { fs::File::from_raw_fd(root_fd) };
 
@@ -49,7 +45,7 @@ pub(crate) fn open_absolute_directory_no_follow(path: &Path) -> Result<fs::File,
             if matches!(component, std::path::Component::RootDir) {
                 continue;
             }
-            return Err(err_str(
+            return Err(String::from(
                 "native write root contains an unsupported path component",
             ));
         };
@@ -62,11 +58,11 @@ pub(crate) fn open_absolute_directory_no_follow(path: &Path) -> Result<fs::File,
             )
         };
         if next_fd < 0 {
-            return Err(err_str(format!(
+            return Err(format!(
                 "could not open {} without following links: {}",
                 path.display(),
                 std::io::Error::last_os_error()
-            )));
+            ));
         }
         current = unsafe { fs::File::from_raw_fd(next_fd) };
     }
@@ -83,20 +79,22 @@ pub(crate) fn open_or_create_relative_directory(
 
     let mut current = root
         .try_clone()
-        .map_err(|error| err_str(format!("could not clone root directory handle: {error}")))?;
+        .map_err(|error| format!("could not clone root directory handle: {error}"))?;
     for component in relative_path.components() {
         let std::path::Component::Normal(part) = component else {
-            return Err(err_str("directory target must be a normal relative path"));
+            return Err(String::from(
+                "directory target must be a normal relative path",
+            ));
         };
         let name = unix_name(part)?;
         let made = unsafe { libc::mkdirat(current.as_raw_fd(), name.as_ptr(), create_mode) };
         if made != 0 {
             let error = std::io::Error::last_os_error();
             if error.kind() != std::io::ErrorKind::AlreadyExists {
-                return Err(err_str(format!(
+                return Err(format!(
                     "could not create target directory {:?}: {error}",
                     part
-                )));
+                ));
             }
         }
         let next_fd = unsafe {
@@ -107,11 +105,11 @@ pub(crate) fn open_or_create_relative_directory(
             )
         };
         if next_fd < 0 {
-            return Err(err_str(format!(
+            return Err(format!(
                 "target directory {:?} is a link or is not a directory: {}",
                 part,
                 std::io::Error::last_os_error()
-            )));
+            ));
         }
         current = unsafe { fs::File::from_raw_fd(next_fd) };
     }
@@ -125,12 +123,12 @@ pub(crate) fn open_relative_directory(
 ) -> Result<Option<fs::File>, String> {
     use std::os::fd::{AsRawFd, FromRawFd};
 
-    let mut current = root
-        .try_clone()
-        .map_err(|error| err_str(error.to_string()))?;
+    let mut current = root.try_clone().map_err(|error| error.to_string())?;
     for component in relative_path.components() {
         let std::path::Component::Normal(part) = component else {
-            return Err(err_str("directory target must be a normal relative path"));
+            return Err(String::from(
+                "directory target must be a normal relative path",
+            ));
         };
         let name = unix_name(part)?;
         let fd = unsafe {
@@ -145,7 +143,7 @@ pub(crate) fn open_relative_directory(
             if error.kind() == std::io::ErrorKind::NotFound {
                 return Ok(None);
             }
-            return Err(err_str(error.to_string()));
+            return Err(error.to_string());
         }
         current = unsafe { fs::File::from_raw_fd(fd) };
     }
@@ -159,11 +157,11 @@ pub(crate) fn open_entry_parent(
 ) -> Result<(fs::File, std::ffi::CString), String> {
     let target = Path::new(relative_path);
     if !target.is_relative() {
-        return Err(err_str("agent config target must be relative"));
+        return Err(String::from("agent config target must be relative"));
     }
     let file_name = target
         .file_name()
-        .ok_or_else(|| err_str("agent config target has no file name"))?;
+        .ok_or_else(|| String::from("agent config target has no file name"))?;
     let parent = target.parent().unwrap_or_else(|| Path::new(""));
     let parent = open_or_create_relative_directory(config_root, parent, 0o700)?;
     Ok((parent, unix_name(file_name)?))
@@ -212,26 +210,28 @@ pub(crate) fn read_entry_text(
         if error.kind() == std::io::ErrorKind::NotFound {
             return Ok(None);
         }
-        return Err(err_str(error.to_string()));
+        return Err(error.to_string());
     }
     let file = unsafe { fs::File::from_raw_fd(fd) };
-    let metadata = file
-        .metadata()
-        .map_err(|error| err_str(error.to_string()))?;
+    let metadata = file.metadata().map_err(|error| error.to_string())?;
     if !metadata.is_file() {
-        return Err(err_str(
+        return Err(String::from(
             "collection preferences target is not a regular file",
         ));
     }
     if metadata.len() > 1024 * 1024 {
-        return Err(err_str("collection preferences exceed the 1 MiB limit"));
+        return Err(String::from(
+            "collection preferences exceed the 1 MiB limit",
+        ));
     }
     let mut text = String::new();
     file.take(1024 * 1024 + 1)
         .read_to_string(&mut text)
-        .map_err(|error| err_str(error.to_string()))?;
+        .map_err(|error| error.to_string())?;
     if text.len() > 1024 * 1024 {
-        return Err(err_str("collection preferences exceed the 1 MiB limit"));
+        return Err(String::from(
+            "collection preferences exceed the 1 MiB limit",
+        ));
     }
     Ok(Some(text))
 }
@@ -268,17 +268,18 @@ pub(crate) fn create_first_free_entry_with<T>(
     static SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let nonce = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|error| err_str(error.to_string()))?
+        .map_err(|error| error.to_string())?
         .as_nanos();
     let mut created = None;
     for _ in 0..64 {
         let sequence = SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let name = std::ffi::CString::new(crate::vault::temporary_files::names::create_temporary_name(
-            std::process::id(),
-            nonce,
-            sequence,
-        ))
-        .map_err(|error| err_str(error.to_string()))?;
+        let name =
+            std::ffi::CString::new(crate::vault::temporary_files::names::create_temporary_name(
+                std::process::id(),
+                nonce,
+                sequence,
+            ))
+            .map_err(|error| error.to_string())?;
         let fd = unsafe {
             libc::openat(
                 parent.as_raw_fd(),
@@ -293,11 +294,12 @@ pub(crate) fn create_first_free_entry_with<T>(
         }
         let error = std::io::Error::last_os_error();
         if error.kind() != std::io::ErrorKind::AlreadyExists {
-            return Err(err_str(error.to_string()));
+            return Err(error.to_string());
         }
     }
-    let (name, mut temporary) = created
-        .ok_or_else(|| err_str("could not reserve a private temporary name for file creation"))?;
+    let (name, mut temporary) = created.ok_or_else(|| {
+        String::from("could not reserve a private temporary name for file creation")
+    })?;
     let result = (|| -> std::io::Result<Option<(T, std::ffi::CString)>> {
         ensure_private_temporary(&temporary, "before writing")?;
         let filled = fill(&mut temporary)?;
@@ -326,16 +328,14 @@ pub(crate) fn create_first_free_entry_with<T>(
     // The destination is never cleanup collateral, including after publication.
     let removed = unsafe { libc::unlinkat(parent.as_raw_fd(), name.as_ptr(), 0) };
     if removed != 0 {
-        return Err(err_str(format!(
+        return Err(format!(
             "could not clean the private creation temporary: {}",
             std::io::Error::last_os_error()
-        )));
+        ));
     }
-    let published = result.map_err(|error| err_str(error.to_string()))?;
+    let published = result.map_err(|error| error.to_string())?;
     if published.is_some() {
-        parent
-            .sync_all()
-            .map_err(|error| err_str(error.to_string()))?;
+        parent.sync_all().map_err(|error| error.to_string())?;
     }
     Ok(published)
 }
@@ -363,7 +363,7 @@ pub(crate) fn write_entry_atomically_with_guard<T>(
     static TEMP_SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let nonce = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|error| err_str(error.to_string()))?
+        .map_err(|error| error.to_string())?
         .as_nanos();
     let printable_name = file_name.to_string_lossy();
     let mut created = None;
@@ -382,7 +382,7 @@ pub(crate) fn write_entry_atomically_with_guard<T>(
         ) {
             Ok(name) => name,
             Err(_) => {
-                return Err(err_str(
+                return Err(String::from(
                     "temporary file name contained an unsupported NUL byte",
                 ))
             }
@@ -403,14 +403,14 @@ pub(crate) fn write_entry_atomically_with_guard<T>(
         }
         let error = std::io::Error::last_os_error();
         if error.kind() != std::io::ErrorKind::AlreadyExists {
-            return Err(err_str(format!(
+            return Err(format!(
                 "could not create a private temporary file: {error}"
-            )));
+            ));
         }
     }
 
     let (temporary_name, mut temporary) = created.ok_or_else(|| {
-        err_str("could not reserve a private temporary name for the native write")
+        String::from("could not reserve a private temporary name for the native write")
     })?;
     let result = (|| -> std::io::Result<T> {
         ensure_private_temporary(&temporary, "before writing")?;
@@ -436,12 +436,7 @@ pub(crate) fn write_entry_atomically_with_guard<T>(
     if result.is_err() {
         let _ = unsafe { libc::unlinkat(parent.as_raw_fd(), temporary_name.as_ptr(), 0) };
     }
-    result.map_err(|error| {
-        err_str(format!(
-            "could not atomically replace {}: {error}",
-            printable_name
-        ))
-    })
+    result.map_err(|error| format!("could not atomically replace {}: {error}", printable_name))
 }
 
 #[cfg(test)]
