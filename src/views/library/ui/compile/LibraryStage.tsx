@@ -6,35 +6,23 @@ import type { useTranslations } from "next-intl";
 import { BookText, FilePlus2, Search, Sparkles, Stethoscope } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
-import { countSourceFormats, newestWikiPage } from "@/entities/docs-vault";
-import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
-import {
-  libraryCompileBlockedReason,
-  libraryTransferSentence,
-  type CompileAvailability,
-} from "../../lib/compile/compile-availability";
-
+import type { CompileAvailability } from "../../lib/compile/compile-availability";
 import type { CompileBrain } from "../../lib/compile/compile-brain";
-import {
-  libraryCoverageCaption,
-  libraryStepStates,
-  libraryWaitingLine,
-  type LibraryStepState,
-} from "../../lib/compile/stage-steps";
 import type { LibraryUiModel } from "@/features/library";
 import type { LibraryLocalModel } from "../../lib/agent/use-library-agent";
+import { libraryStageLines } from "../../model/compile/library-stage-lines";
 import { CompileBrainSelect } from "./CompileBrainSelect";
-import { AgentDoor } from "../agent/AgentDoor";
+import { CompileStepNotes } from "./CompileStepNotes";
+import { StageStep as Step } from "./StageStep";
 
 /**
  * Three rows, not three essays: `libraryStepStates` decides done/next/waiting for this stage and the
  * header strip. The transfer sentence, blocked reason and local runner card sit in step two under
  * Compile, the one row whose height may differ.
  */
-
 export interface LibraryStageProps {
   model: LibraryUiModel;
   route: CompileAvailability["route"];
@@ -97,112 +85,6 @@ export interface LibraryStageProps {
   t: ReturnType<typeof useTranslations<"library">>;
 }
 
-/**
- * One row. The shell is identical for all three, which is what makes the heights match:
- * head line, exactly one caption line, and one action row with a reserved height.
- */
-function Step({
-  index,
-  title,
-  caption,
-  state,
-  lead,
-  action,
-  extra,
-  testId,
-  t,
-}: {
-  index: number;
-  title: string;
-  /** One line, always present. A row whose caption is optional moves the rows under it. */
-  caption: string;
-  state: LibraryStepState;
-  /**
-   * Whether this is the **first** step that is next. Two steps can honestly be next at
-   * once, but two indigo edges is no emphasis at all, so the edge goes to the earliest.
-   */
-  lead: boolean;
-  action: ReactNode;
-  /** Step two's own state: the blocked reason, the runner's card, the transfer sentence. */
-  extra?: ReactNode;
-  testId: string;
-  t: LibraryStageProps["t"];
-}) {
-  /**
-   * Only the lead step prints the `next` word; a later step that is not done prints `waiting`.
-   * `data-step-state` keeps the derived state, so `libraryStepStates` (read by the header strip too)
-   * is untouched.
-   */
-  const word: LibraryStepState = !lead && state === "next" ? "waiting" : state;
-  return (
-    <li
-      data-testid={testId}
-      data-step-state={state}
-      className={cn(
-        /* `library-spine-step` is the fold's handle: inside a short
-           `@container library-landing` a `done` step keeps this head line and drops the
-           parts marked `library-spine-fold-away` (`app/globals.css`). */
-        "library-spine-step flex flex-col rounded-panel border bg-[color:var(--color-panel)] px-3 py-2.5",
-        lead
-          ? /* Solid accent edge: an alpha border falls under the 3:1 WCAG 1.4.11 asks. */
-            "border-[color:var(--color-indigo-accent)]"
-          : "border-[color:var(--color-border-soft)]",
-      )}
-    >
-      <div data-testid="library-step-core" className="flex flex-col gap-1">
-        <div className="flex items-baseline gap-2">
-          <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-            {index}
-          </span>
-          <h3 className="min-w-0 flex-1 truncate text-body font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
-            {title}
-          </h3>
-          {/* The step's word is in ink rather than a badge, so the row does not stack bordered boxes on one
-             line. `next` keeps the one indigo the row's edge already carries. */}
-          <span
-            data-testid={`library-stage-state-${word}`}
-            /*
-             * **The word stays true; only the emphasis is singular.** Two steps can
-             * honestly be next at once — a folder with pages written and sources still
-             * waiting can be compiled or read — and both rows say `next`. Measured at
-             * 1512 on the seeded folder, painting both indigo put two accents in a 360px
-             * panel and the eye found neither. So the ink follows the lead edge.
-             */
-            className={cn(
-              "flex-none text-label leading-body tabular-nums",
-              lead
-                ? "text-[color:var(--color-indigo-text-soft)]"
-                : "text-[color:var(--color-text-quaternary)]",
-            )}
-          >
-            {t(`stage.state.${word}`)}
-          </span>
-        </div>
-        <p className="library-spine-fold-away truncate text-label leading-body text-[color:var(--color-text-tertiary)]">
-          {caption}
-        </p>
-      </div>
-      {/*
-        `min-h-8` is the chip's own height, reserved whether or not this row has a control
-        to put in it — the read step has none until a page exists, and a slot that
-        disappears moves everything under it (`.claude/rules/design.md`, dimensional
-        regularity).
-      */}
-      <div className="library-spine-fold-away mt-2 flex min-h-8 flex-wrap items-center gap-2">
-        {action}
-      </div>
-      {/*
-        ⚠️ **`extra` is never folded away.** The fold exists so that step three's saved
-        questions reach a short pane at all, and step three is `done` on exactly the
-        folder that has them — a rule that hid a done step's whole body would delete the
-        target it was written to reveal. What folds is the record of finished work: the
-        caption and the action row above.
-      */}
-      {extra}
-    </li>
-  );
-}
-
 export function LibraryStage({
   model,
   route,
@@ -226,110 +108,13 @@ export function LibraryStage({
   busy,
   t,
 }: LibraryStageProps) {
-  const sourceCount = model.sources.length;
-  const formats = countSourceFormats(model.sources);
-  const newest = newestWikiPage(
-    answerSlugs && answerSlugs.size > 0
-      ? model.wikiPages.filter((page) => !answerSlugs.has(page.slug))
-      : model.wikiPages,
-  );
-
-  /**
-   * What leaves the computer, said once and where the press is. The index carries this sentence
-   * whenever this panel is closed (`LibraryPage`), so exactly one surface prints it. `null` on the
-   * agent route.
-   */
-  const transfer = libraryTransferSentence({ route, localModel }, t);
-
-  const blocked = libraryCompileBlockedReason(
-    { route, inApp, sourceCount, needsCompileCount: model.needsCompileCount, localModel, sources: model.sources },
-    t,
-  );
-
   const {
-    gather: gatherState,
-    compile: compileState,
-    read: readState,
-    leadIndex,
-    checkingCount,
-  } = libraryStepStates(model);
-
-  /** Which coverage sentence step three prints, and with which numbers. */
-  const coverage = libraryCoverageCaption(model, checkingCount);
-
-  /** Step one's line: the formats the folder actually holds, in the index's own words. */
-  const gatherCaption =
-    formats.length === 0
-      ? t("stage.none")
-      : formats
-          .map((entry) =>
-            t("stage.formatEntry", {
-              format: entry.format ? entry.format.toUpperCase() : t("sources.noFormat"),
-              count: entry.count,
-            }),
-          )
-          .join(" · ");
-
-  /*
-   * Step two's line is the **index's own sentence**, not a second phrasing of it: the
-   * same counts appear beside the file rows, and one word per thing is a repository rule.
-   */
-  /*
-   * The reason is not printed twice: with every source written up the caption and the blocked reason
-   * are the same sentence (`blockedNothingWaiting`). The caption keeps it; the paragraph under the
-   * button appears only with something else to say.
-   */
-  const waitingLine = libraryWaitingLine(model, t);
-  const compileCaption =
-    waitingLine ??
-    (checkingCount > 0
-      ? // Not "every source already has a write-up that matches its bytes": nothing has
-        // been measured yet, so that sentence would be a claim about files nobody read.
-        t("stage.compile.checkingLine", { count: checkingCount })
-      : t("stage.blockedNothingWaiting"));
-
-  /**
-   * The reason under the button, unless the caption above it is already that sentence.
-   *
-   * ⚠️ **While the hashes are still being taken, "everything already matches" is not a
-   * reason — it is a guess.** `libraryCompileBlockedReason` says it whenever nothing is
-   * *known* to be waiting, which is also true of a folder nobody has measured yet. The
-   * reason becomes the same checking sentence the caption carries, and the dedupe below
-   * then prints it once. The button stays disabled either way: there is still nothing this
-   * press could compile.
-   */
-  const blockedReason =
-    blocked !== null && checkingCount > 0 && blocked === t("stage.blockedNothingWaiting")
-      ? compileCaption
-      : blocked;
-  const blockedBelow = blockedReason && blockedReason !== compileCaption ? blockedReason : null;
-
-  /**
-   * **Why a partial read is worth a second run**, once and without a number.
-   *
-   * The caption above already counts them, and this screen's standing rule is that a
-   * reason is not printed twice. What the count cannot say is that the cure is the
-   * ordinary Compile button already sitting in this row — so this is the sentence and not
-   * a control: a partial page needs the same press, not a different one.
-   */
-  const partialNote = model.partialCount > 0 ? t("stage.compile.partialLine") : null;
-
-  /**
-   * Check the wiki's own reason: the sentence itself, never a second printing. The landing prints it
-   * once and `lintBlockedReasonId` says where, so this button points at that paragraph.
-   */
-  const lintBlocked = onLint === null ? lintBlockedReason : null;
-
-  /**
-   * This card prints the agent-only reason itself when no other surface owns it (no id given). That
-   * keeps the button from being dead with no reason on the `local` route, where Compile runs but
-   * agent-only turns cannot.
-   */
-  const lintReasonBelow =
-    lintBlocked && !lintBlockedReasonId && lintBlocked !== blockedBelow ? lintBlocked : null;
-  const lintReasonId =
-    lintBlockedReasonId ??
-    (lintReasonBelow ? "library-stage-lint-blocked" : blockedBelow ? "library-stage-compile-blocked" : null);
+    steps: { gather: gatherState, compile: compileState, read: readState, leadIndex },
+    newest, transfer, blocked, gatherCaption, compileCaption, blockedBelow, partialNote,
+    lintBlocked, lintReasonBelow, lintReasonId, coverage,
+  } = libraryStageLines({
+    model, route, inApp, localModel, canCheck: onLint !== null, lintBlockedReason, lintBlockedReasonId, answerSlugs, t,
+  });
 
   return (
     <div data-testid="library-stage" className="w-full px-3 pb-3 pt-2">
@@ -463,78 +248,13 @@ export function LibraryStage({
             </>
           }
           extra={
-            blockedBelow || lintReasonBelow || partialNote || transfer ? (
-              <div className="mt-2 flex flex-col gap-1.5">
-                {blockedBelow ? (
-                  <p
-                    id="library-stage-compile-blocked"
-                    data-testid="library-stage-compile-blocked"
-                    /* The count marker for "the landing's availability sentence", set
-                       only when this paragraph is the one carrying it — `LibraryPage`
-                       decides, and the spec counts this attribute exactly once. */
-                    /*
-                     * The marker for the one availability sentence on this surface, set whenever this paragraph is
-                     * drawn; the spec counts the attribute exactly once.
-                     */
-                    data-landing-blocked-reason="true"
-                    /*
-                     * The reason is one type step under the button, not two: the sentence explaining a dead card may not
-                     * be the smallest text on it (`.claude/rules/design.md`). Same grade as the pane's own reason.
-                     */
-                    className="text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-                  >
-                    {blockedBelow}
-                  </p>
-                ) : null}
-                {/* The door the sentence above named: `AgentDoor` carries the rail's agents word, so the two are
-                   visibly one destination. */}
-                {blockedBelow && agentDoor ? (
-                  <div className="flex">
-                    <AgentDoor testId="library-stage-compile-blocked-door" />
-                  </div>
-                ) : null}
-                {/*
-                  Check the wiki's own reason, on the one route where Compile has none: a
-                  disabled control beside the sentence that disables it, at the same grade
-                  as Compile's own so the two read as one voice.
-                */}
-                {lintReasonBelow ? (
-                  <>
-                    <p
-                      id="library-stage-lint-blocked"
-                      data-testid="library-stage-lint-blocked"
-                      data-landing-blocked-reason={blockedBelow ? undefined : "true"}
-                      className="text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-                    >
-                      {lintReasonBelow}
-                    </p>
-                    {agentDoor ? (
-                      <div className="flex">
-                        <AgentDoor testId="library-stage-lint-blocked-door" />
-                      </div>
-                    ) : null}
-                  </>
-                ) : null}
-                {/* After the reason, never before it: why the button is dead is what a
-                    person reads first, and this is what the press would be worth. */}
-                {partialNote ? (
-                  <p
-                    data-testid="library-stage-compile-partial"
-                    className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-                  >
-                    {partialNote}
-                  </p>
-                ) : null}
-                {transfer ? (
-                  <p
-                    data-testid="library-stage-transfer"
-                    className="text-caption leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all] [overflow-wrap:anywhere]"
-                  >
-                    {transfer}
-                  </p>
-                ) : null}
-              </div>
-            ) : null
+            <CompileStepNotes
+              blockedBelow={blockedBelow}
+              lintReasonBelow={lintReasonBelow}
+              partialNote={partialNote}
+              transfer={transfer}
+              agentDoor={agentDoor}
+            />
           }
         />
 
