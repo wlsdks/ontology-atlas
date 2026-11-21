@@ -10,7 +10,7 @@ import type { BriefingCommit } from '@/shared/lib/git/tauri-change-briefing';
 import { Button, RowButton } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { changeBody, changeTitle, directoryCounts, kindCounts, titleWithoutHead, type ChangeDigest, type DigestChange, type DigestGroup, type WorkKinds } from '../model/change-digest';
+import { changeBody, changeTitle, directoryCounts, kindCounts, titleWithoutHead, type ChangeDigest, type DigestChange, type DigestGroup, type WorkKinds } from '../../model/change-digest';
 
 export const PAGE_SIZE = 40;
 const CONCEPTS_SHOWN = 3;

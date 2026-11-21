@@ -3,9 +3,9 @@
 import { useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
-import type { BriefingRange } from '../model/briefing-model';
-import { changeTitle, type DigestChange } from '../model/change-digest';
-import { dayTicks, timelineColumns, type TimelineUnit } from '../model/digest-timeline';
+import type { BriefingRange } from '../../model/briefing-model';
+import { changeTitle, type DigestChange } from '../../model/change-digest';
+import { dayTicks, timelineColumns, type TimelineUnit } from '../../model/digest-timeline';
 
 /** Horizontal room one drawn tick takes, its 1px gap included; it sets how many minutes share a slot. */
 const TICK_PITCH_PX = 4;

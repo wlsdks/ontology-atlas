@@ -2,14 +2,14 @@
 // workspace_brief, health, and the cross-tool consistency + next-action
 // helpers the gate uses to summarize dogfood-walk health.
 // Split out of scripts/dogfood/dogfood-mcp-walk.mjs (structural decomposition, logic unchanged).
-import { compileSummaryFailure } from "../../../mcp/scripts/verify/checks/compile.mjs";
-import { formatCount } from "../../../mcp/scripts/verify/output.mjs";
-import { listConceptsFailure } from "../../../mcp/scripts/verify/checks/concept-reads.mjs";
+import { compileSummaryFailure } from "../../../../mcp/scripts/verify/checks/compile.mjs";
+import { formatCount } from "../../../../mcp/scripts/verify/output.mjs";
+import { listConceptsFailure } from "../../../../mcp/scripts/verify/checks/concept-reads.mjs";
 import {
   listKindsFailure,
   validateVaultFailure,
-} from "../../../mcp/scripts/verify/checks/vault-census.mjs";
-import { overviewFailure } from "../../../mcp/scripts/verify/checks/query-plans.mjs";
+} from "../../../../mcp/scripts/verify/checks/vault-census.mjs";
+import { overviewFailure } from "../../../../mcp/scripts/verify/checks/query-plans.mjs";
 import {
   hasOptionalNonNegativeInteger,
   isNonBlankString,

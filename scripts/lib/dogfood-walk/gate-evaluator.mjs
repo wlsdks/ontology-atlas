@@ -66,13 +66,13 @@ import {
   recordStructuredContentFailure,
   relationCheckShapeFailure,
   structuredContentMismatchFailure,
-} from "./shape-validators-query.mjs";
+} from "./shape-validators/shape-validators-query.mjs";
 import {
   growthPlanShapeFailure,
   maintenancePlanMissingCursorShapeFailure,
   maintenancePlanShapeFailure,
   recommendRelationsShapeFailure,
-} from "./shape-validators-plans.mjs";
+} from "./shape-validators/shape-validators-plans.mjs";
 import {
   blastRadiusShapeFailure,
   containmentTreeShapeFailure,
@@ -82,7 +82,7 @@ import {
   reachabilityShapeFailure,
   subgraphShapeFailure,
   topologicalOrderShapeFailure,
-} from "./shape-validators-graph-structure.mjs";
+} from "./shape-validators/shape-validators-graph-structure.mjs";
 import {
   centralityShapeFailure,
   communitiesShapeFailure,
@@ -93,7 +93,7 @@ import {
   nodeProfileShapeFailure,
   schemaShapeFailure,
   similarNodesShapeFailure,
-} from "./shape-validators-graph-analytics.mjs";
+} from "./shape-validators/shape-validators-graph-analytics.mjs";
 import {
   blockingNextActions,
   crossToolConsistencyFailures,
@@ -104,7 +104,7 @@ import {
   orphansShapeFailure,
   pathShapeFailure,
   workspaceBriefShapeFailure,
-} from "./shape-validators-workspace.mjs";
+} from "./shape-validators/shape-validators-workspace.mjs";
 
 // Semantic qualification is intentionally fail-closed in the product
 // response: an unqualified project reports `needs_attention` and a
