@@ -193,8 +193,17 @@ fn a_child_killed_during_a_row_batch_leaves_the_next_open_equal_to_a_build_from_
         .min()
         .unwrap();
 
+    // Rounds continue until enough kills land inside a batch: a slow runner's batches vary
+    // more than the calibration shows, so a fixed round count made coverage a coin toss.
+    const INTERRUPTED_WANTED: u32 = 10;
+    const MAX_ROUNDS: u64 = 60;
     let mut interrupted = 0;
-    for round in 0..20u64 {
+    let mut rounds = 0;
+    for round in 0..MAX_ROUNDS {
+        if interrupted >= INTERRUPTED_WANTED {
+            break;
+        }
+        rounds += 1;
         edit_half(round, &mut rng);
         let opened = open(&vault.root, NS, &files);
         assert_eq!(
@@ -225,11 +234,10 @@ fn a_child_killed_during_a_row_batch_leaves_the_next_open_equal_to_a_build_from_
             .unwrap();
         assert_eq!(verdict, "ok", "round {round}");
     }
-    eprintln!("20 kills over a {batch:?} batch; {interrupted} landed before it finished");
-    // Kill points are spread over the batch's own measured length, so most must land inside it.
+    eprintln!("{rounds} kills over a {batch:?} batch; {interrupted} landed before it finished");
     assert!(
-        interrupted >= 10,
-        "only {interrupted} of 20 kills interrupted a batch"
+        interrupted >= INTERRUPTED_WANTED,
+        "only {interrupted} of {rounds} kills interrupted a batch"
     );
 }
 
