@@ -500,68 +500,6 @@
     },
     "compiling": "Re-reading the sources to write wiki pages."
   },
-  "graph": {
-    "title": "Graph",
-    "empty": "Nothing to show yet. Once Write wiki page writes a page, this shows which source it came from and which concepts it names.",
-    "canvasAria": "The library graph: raw sources, wiki pages, and the concepts those pages name.",
-    "islandUnsorted": "Unsorted",
-    "islandUnread": "Unread",
-    "describeIsland": "{name}: a group of {pages, number} pages and the {sources, number} files they read. Press it to open them as columns; zoom in for their names.",
-    "announceIsland": "Group {name}, {position, number} of {total, number}: {pages, number} pages and {sources, number} files. Enter opens it as columns.",
-    "describeUnread": "Unread: {sources, number} files no page has read yet. Press it for where to start.",
-    "unreadPressed": "{sources, number} files no page has read yet, so there is nothing between them to draw. Each is marked no wiki page in the Sources list; Write wiki page, above the picture, starts on the first.",
-    "islandBack": "All groups",
-    "islandName": "{name} · {pages, number} pages · {sources, number} files",
-    "readerClose": "Close the page",
-    "keys": "Arrow keys move between dots, Enter opens a card beside the one you are on, Escape closes it.",
-    "announce": "{kind} {name}, {position, number} of {total, number}. Enter {action}.",
-    "kind": {
-      "page": "Wiki page",
-      "source": "Source",
-      "concept": "Concept"
-    },
-    "actionSelect": "shows what it is",
-    "actionMap": "shows what it is",
-    "openOnMap": "open on the map",
-    "fit": "Fit the whole picture",
-    "fitDone": "The whole picture is already framed",
-    "describe": {
-      "source": "{name}: a source file. A thick line leads to the page written from it; no line means it has no wiki page yet. Press for a card beside it.",
-      "page": "{name}: a wiki page. Thick lines lead to the sources it cites, dashed lines to concepts it names. Press for a card beside it.",
-      "concept": "{name}: a concept on the map. The dashed lines lead to the wiki pages it names or was drawn from. Press for a card beside it."
-    },
-    "describeOpen": {
-      "source": "{name}: a source file. A thick line leads to the page written from it; no line means it has no wiki page yet. Its card is open beside it: Escape, or press again, closes it.",
-      "page": "{name}: a wiki page. Thick lines lead to the sources it cites, dashed lines to concepts it names. Its card is open beside it: Escape, or press again, closes it.",
-      "concept": "{name}: a concept on the map. The dashed lines lead to the wiki pages it names or was drawn from. Its card is open beside it: Escape, or press again, closes it."
-    },
-    "card": {
-      "close": "Close this card",
-      "conceptSentence": "A concept on the map.",
-      "fileFacts": "{format} · {size} · {state}",
-      "sourcesLabel": "Sources used",
-      "pagesLabel": "Wiki pages from this file",
-      "rowMissing": "not in this folder",
-      "open": "Open",
-      "refresh": "Ask for a redraft",
-      "seeAll": "See all {count, number} sources",
-      "factOriginals": "{count, plural, one {# source} other {# sources}}",
-      "factMentions": "{count, plural, one {# mention} other {# mentions}}",
-      "factPassages": "{count, plural, one {# quoted passage} other {# quoted passages}}",
-      "flowInline": "Citations flow from each source into this page.",
-      "flowInlineStale": "Citations flow from each source into this page; an amber dot marks a citation whose source has changed."
-    },
-    "key": {
-      "source": "Source {count, number}",
-      "page": "Wiki page {count, number}",
-      "concept": "Concept {count, number}",
-      "cite": "Citation {count, number}",
-      "mention": "Mention {count, number}",
-      "island": "One group is one concept",
-      "stale": "Changed since written",
-      "gestures": "Press for a card · press twice to open · scroll to zoom"
-    }
-  },
   "home": {
     "guide": "How to use",
     "questions": "{count, plural, =0 {Questions} one {Questions #} other {Questions #}}",
@@ -1179,6 +1117,7 @@
     "sourceMissing": "This file is not in the folder.",
     "sourceTooLarge": "This file is too large to show here.",
     "linkMissing": "Nothing in this folder has this name.",
-    "back": "Back"
+    "back": "Back",
+    "close": "Close the page"
   }
 }

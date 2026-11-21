@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { waitForPageSettled } from "../../settle";
+import { waitForPageSettled } from "../settle";
 
 test("returning from Library releases retired renderers and their detached panes", async ({ page, browserName }) => {
   test.skip(browserName !== "chromium", "DOM ownership is measured through Chromium CDP");

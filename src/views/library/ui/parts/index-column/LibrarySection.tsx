@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import type { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
-import { BookText, Check, CloudDownload, FilePlus2, FileText, ListFilter, PencilLine, Search, Sparkles, Stethoscope } from "lucide-react";
+import { BookText, CloudDownload, FilePlus2, FileText, ListFilter, PencilLine, Search, Sparkles, Stethoscope, X } from "lucide-react";
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
 import { humanPageSlug } from "@/features/library";
@@ -35,16 +35,13 @@ import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";
 import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { useWindowedRows } from "@/shared/lib/list-rows/use-windowed-rows";
 import { StateBadge } from "./StateBadge";
+import { SOURCE_STATE_INK } from "@/widgets/library-sources-overview";
 import { IndexGlyph } from "./IndexGlyph";
 
 /** A source row before it is measured: one line of `text-body` in `RowButton` with its inset. */
 const SOURCE_ROW_ESTIMATE_PX = 36;
 /** Every page the wiki list can show for one query; the app's search command caps at the same. */
 const LIBRARY_INDEX_HITS = 5000;
-/** One screen of index rows: past this, a pill repeated on every row is texture and folds into the head. */
-const SOURCE_STATE_FOLDS_FROM = 12;
-/** The order the head counts states in: what to act on first, what is done last. */
-const SOURCE_STATE_ORDER: readonly LibrarySourceRow["state"][] = ["stale", "partial", "not-compiled", "compiled", "checking", "unreadable"];
 const NO_SOURCES: ReadonlySet<string> = new Set();
 import type { LibraryUiModel } from "@/features/library";
 import { WIKI_SECTION_ORDER } from "@/shared/lib/library/wiki-page-schema";
@@ -59,11 +56,17 @@ const WIKI_SECTION_PREVIEW_KEYS = {
 
 /**
  * The index draws one list at a time, Sources or Wiki, chosen by the control `LibraryPage` draws;
- * the inactive list renders nothing, so its rows and doors leave the tab order. Source states: not
- * compiled (quiet chip), compiled (a check), stale (amber chip), checking (a quiet word).
+ * the inactive list renders nothing, so its rows and doors leave the tab order. A source still waiting
+ * for its wiki page wears a dot in its state's ink; one with a page wears nothing.
  */
 
 /** Candidate rows drawn before the list folds; the rail's height at 14 inches fits five with the wiki list above. */
+
+export interface SourceGroupFilter {
+  label: string;
+  includes: (row: LibrarySourceRow) => boolean;
+  onClear: () => void;
+}
 
 export interface LibrarySectionProps {
   model: LibraryUiModel;
@@ -183,6 +186,8 @@ export interface LibrarySectionProps {
   runningSources?: ReadonlySet<string>;
   /** The state the band's press narrows the list to, or null for every source. */
   stateFilter?: LibrarySourceRow["state"] | null;
+  /** The folder or file type picked on the Sources home, which narrows the list with a chip. */
+  groupFilter?: SourceGroupFilter | null;
   t: ReturnType<typeof useTranslations<"library">>;
 }
 
@@ -336,6 +341,7 @@ export function LibrarySection({
   turnRunning = false,
   runningSources = NO_SOURCES,
   stateFilter = null,
+  groupFilter = null,
   t,
 }: LibrarySectionProps) {
   /*
@@ -417,29 +423,15 @@ export function LibrarySection({
         : model.sources,
     [indexedPaths, model.sources, needle, search.hits, search.phase, search.read],
   );
-  /**
-   * The majority state is said once, by its press in the band above the picture, and rows keep the
-   * exceptions, as `majorityWriter` does for the wiki list. `compiled` never folds and `checking` is a
-   * moment; below `SOURCE_STATE_FOLDS_FROM` rows nothing folds.
-   */
-  const stateCounts = useMemo(() => {
-    const counts = new Map<LibrarySourceRow["state"], number>();
-    for (const row of visibleSources) counts.set(row.state, (counts.get(row.state) ?? 0) + 1);
-    return SOURCE_STATE_ORDER.filter((state) => counts.has(state)).map((state) => ({ state, count: counts.get(state)! }));
-  }, [visibleSources]);
-  const foldedState = (() => {
-    if (visibleSources.length < SOURCE_STATE_FOLDS_FROM) return null;
-    const candidates = stateCounts.filter(({ state }) => state !== "compiled" && state !== "checking");
-    if (candidates.length === 0) return null;
-    const best = candidates.reduce((a, b) => (b.count > a.count ? b : a));
-    if (candidates.some((c) => c !== best && c.count === best.count)) return null;
-    return best.count * 2 > visibleSources.length ? best.state : null;
-  })();
-  /* One state at a time, pressed in the band above the picture; it narrows what the search left. */
+  /* A state pressed in the band and a row picked on the home each narrow what the search left. */
   const listedSources = useMemo(
-    () => (stateFilter ? visibleSources.filter((row) => row.state === stateFilter) : visibleSources),
-    [stateFilter, visibleSources],
+    () =>
+      stateFilter || groupFilter
+        ? visibleSources.filter((row) => (!stateFilter || row.state === stateFilter) && (!groupFilter || groupFilter.includes(row)))
+        : visibleSources,
+    [groupFilter, stateFilter, visibleSources],
   );
+  const anyWaiting = useMemo(() => model.sources.some((row) => row.state !== "compiled"), [model.sources]);
   const [sourceWindow, sourceListRef, scrollToSource] = useWindowedRows({ count: listedSources.length, estimate: SOURCE_ROW_ESTIMATE_PX });
   const sourceRoving = useRovingRows({ count: listedSources.length, listRef: sourceListRef, scrollToRow: scrollToSource, rendered: sourceWindow });
   const { onRowFocus: sourceRowFocus } = sourceRoving;
@@ -654,11 +646,33 @@ export function LibrarySection({
 
         {hasSources ? (
           <>
+            {groupFilter || anyWaiting ? (
+              <div data-testid="library-source-list-head" className={`flex h-7 items-center gap-2 ${INDEX_LIST_INSET}`}>
+                {groupFilter ? (
+                  <Chip
+                    data-testid="library-source-group-chip"
+                    onClick={groupFilter.onClear}
+                    title={t("sourcesHome.panel.clear")}
+                    aria-label={`${groupFilter.label} · ${t("sourcesHome.panel.clear")}`}
+                    tone="muted"
+                    className="min-w-0 max-w-full gap-1 hover:text-[color:var(--color-text-primary)]"
+                  >
+                    <span className="min-w-0 truncate">{groupFilter.label}</span>
+                    <X size={ICON_SIZE.sm} aria-hidden className="flex-none" />
+                  </Chip>
+                ) : null}
+                {anyWaiting ? (
+                  <span data-testid="library-source-list-key" className="ml-auto flex flex-none items-center gap-1.5 text-label text-[color:var(--color-text-tertiary)]">
+                    <span aria-hidden className="size-1.5 rounded-full" style={{ background: SOURCE_STATE_INK["not-compiled"] }} />
+                    {t("sourcesHome.listKey")}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
             <ul
               ref={sourceListRef}
               onKeyDown={sourceRoving.onKeyDown}
               data-testid="library-source-list"
-              data-folded-state={foldedState ?? undefined}
               data-state-filter={stateFilter ?? undefined}
               /* The list says which phase drew it, so a proof can assert that a finished
                  answer and an unfinished read never share a frame. */
@@ -718,49 +732,20 @@ export function LibrarySection({
                           <span className="sr-only">{stateLabel}</span>
                         </span>
                       ) : row.state === "compiled" ? (
-                        /*
-                         * A check, not a pill. The word is still announced — the glyph is
-                         * `aria-hidden` and the label rides with it in `sr-only`, so a
-                         * screen reader hears "compiled" exactly as it did before, while
-                         * the eye is left to find the rows that are **not** done.
-                         */
-                        <span
-                          data-testid="library-source-state-compiled"
-                          className="flex flex-none items-center text-[color:var(--color-text-quaternary)]"
-                        >
-                          <Check size={ICON_SIZE.sm} aria-hidden />
-                          <span className="sr-only">{stateLabel}</span>
-                        </span>
-                      ) : row.state === "checking" ? (
-                        /*
-                         * The same badge as every other unfinished state; its word tells it from `not compiled` (see
-                         * `StateBadge`).
-                         */
-                        <StateBadge tone="neutral" testId="library-source-state-checking">
-                          {stateLabel}
-                        </StateBadge>
-                      ) : row.state === foldedState ? (
-                        /* The head already says this state once; the row keeps the word
-                           for a screen reader and shows nothing. */
-                        <span data-testid="library-source-state-folded" className="sr-only">
+                        /* Done needs no mark: the eye is left to find the rows that wait. */
+                        <span data-testid="library-source-state-compiled" className="sr-only">
                           {stateLabel}
                         </span>
                       ) : (
-                        /*
-                         * Amber marks a row to act on, not a wrong page: `partial` is counted with waiting sources and
-                         * Compile acts on it. `stale` and `partial` differ by their words; `not-compiled` keeps the quiet
-                         * border.
-                         */
-                        <StateBadge
-                          tone={
-                            row.state === "stale" || row.state === "partial"
-                              ? "warning"
-                              : "neutral"
-                          }
-                          testId={`library-source-state-${row.state}`}
+                        /* One dot in the state's ink, the ink of its segment in the bars above; the word rides in `title`. */
+                        <span
+                          data-testid={`library-source-state-${row.state}`}
+                          title={stateLabel}
+                          className="flex size-4 flex-none items-center justify-center"
                         >
-                          {stateLabel}
-                        </StateBadge>
+                          <span aria-hidden className="size-1.5 rounded-full" style={{ background: SOURCE_STATE_INK[row.state] }} />
+                          <span className="sr-only">{stateLabel}</span>
+                        </span>
                       )}
                     </RowButton>
                     {hit ? (

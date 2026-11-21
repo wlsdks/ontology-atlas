@@ -17,7 +17,6 @@ const NOT_TEXT_ENTRY: ReadonlyArray<readonly [file: string, sites: number, targe
   ['src/shared/ui/fields/select.tsx', 2, 'listbox trigger and options'],
   ['src/widgets/atlas-git-panel/ui/ConceptEgoGraph.tsx', 1, 'SVG graph mark'],
   ['src/widgets/global-search/ui/GlobalSearch.tsx', 1, 'rows other than the search field, whose Enter cmdk guards'],
-  ['src/widgets/library-graph/ui/LibraryGraph.tsx', 2, 'graph canvas'],
   ['src/widgets/ontology-map/ui/input/use-topology-input.ts', 1, 'map canvas'],
   ['src/widgets/topology-index-panel/ui/TopologyIndexTreeRow.tsx', 1, 'tree row'],
 ];

@@ -31,7 +31,7 @@ policy or the notice generator changes.
 DFG lookup-texture allocation on `WebGLRenderer.dispose()`; three r187 (0.187.0) fixed
 this upstream, because the renderer now tracks every texture it uploads and destroys
 them all on dispose. Repeated Library navigation is still covered by
-`tests/e2e/library/graph/library-renderer-disposal.spec.ts`; if it fails after a `three`
+`tests/e2e/library/library-renderer-disposal.spec.ts`; if it fails after a `three`
 upgrade, restore the fix with `pnpm patch` (the deleted patch is in commit `e3ad68277`).
 A restored fix must leave other renderers' allocations alone and must not force context
 loss: the Library remounts a renderer on the same canvas. Both packages are pinned to

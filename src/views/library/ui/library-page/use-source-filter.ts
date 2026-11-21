@@ -8,9 +8,9 @@ import type { useLibraryIndexColumn } from "./use-library-index-column";
 type SourceState = LibrarySourceRow["state"];
 
 /**
- * The one source state the band's presses narrow the Sources list to, and the marks it lights in
- * the picture. The press belongs to a folder: switching folders drops it, and a state with no source
- * left in it drops it too, so the list is never filtered to nothing.
+ * The one source state the band's presses narrow the Sources list to. The press belongs to a folder:
+ * switching folders drops it, and a state with no source left in it drops it too, so the list is
+ * never filtered to nothing.
  */
 export function useSourceFilter({
   sources,
@@ -50,17 +50,6 @@ export function useSourceFilter({
     [autoFoldDeclinedRef, autoFolded, indexCollapsed, setAutoFolded, state, vaultScope],
   );
 
-  const highlight = useMemo(() => {
-    if (state === null) return null;
-    const ids = new Set<string>();
-    for (const row of sources) {
-      if (row.state !== state) continue;
-      ids.add(`source:${row.path}`);
-      for (const slug of row.citedBy) ids.add(`page:${slug}`);
-    }
-    return ids;
-  }, [sources, state]);
-
   useEffect(() => {
     if (state === null || !listening) return;
     const onKey = (event: KeyboardEvent) => {
@@ -73,5 +62,5 @@ export function useSourceFilter({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [listening, state]);
 
-  return { state, press, clear, highlight };
+  return { state, press, clear };
 }

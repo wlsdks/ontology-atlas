@@ -500,68 +500,6 @@
     },
     "compiling": "ソースを読み直して、Wikiページを書いています。"
   },
-  "graph": {
-    "title": "グラフ",
-    "empty": "表示するものはまだありません。「Wikiページを作成」で最初のページを書くと、そのページがどのソースから書かれ、どの概念に触れているかがここに表示されます。",
-    "canvasAria": "資料室のグラフ。元ソース、Wikiページ、そのページが挙げる概念。",
-    "islandUnsorted": "未分類",
-    "islandUnread": "未読",
-    "describeIsland": "{name}：ページ{pages, number}件と、それが読んだファイル{sources, number}件のグループです。押すと列として開きます。拡大すると名前が表示されます。",
-    "announceIsland": "グループ{name}、{position, number}/{total, number}: ページ{pages, number}件、ファイル{sources, number}件。Enterキーで列として開きます。",
-    "describeUnread": "未読：どのページもまだ読んでいないファイルが{sources, number}件あります。押すと、どこから始めればよいかが表示されます。",
-    "unreadPressed": "どのページもまだ読んでいないソースが{sources, number}件あるため、その間に描く関係はありません。ソース一覧で「Wikiページなし」と表示されているもので、図の上の「Wikiページを作成」で最初の1件から始まります。",
-    "islandBack": "すべてのグループ",
-    "islandName": "{name} · ページ{pages, number}件 · ファイル{sources, number}件",
-    "readerClose": "ページを閉じる",
-    "keys": "矢印キーで点の間を移動し、Enterキーで今いる点の横にカードを開き、Escapeキーで閉じます。",
-    "announce": "{kind} {name}、{position, number}/{total, number}。Enterキーで{action}。",
-    "kind": {
-      "page": "Wikiページ",
-      "source": "ソース",
-      "concept": "概念"
-    },
-    "actionSelect": "内容を表示",
-    "actionMap": "内容を表示",
-    "openOnMap": "マップで開く",
-    "fit": "全体を収める",
-    "fitDone": "全体はすでに収まっています",
-    "describe": {
-      "source": "{name}：ソースのファイルです。太い線はこれから書いたWikiページにつながり、線がなければまだWikiページはありません。押すと横にカードが開きます。",
-      "page": "{name}：Wikiページです。太い線は引用したソースに、破線は名前を挙げた概念につながります。押すと横にカードが開きます。",
-      "concept": "{name}: マップ上の概念です。破線は、この概念を挙げている、またはこの概念の元になったWikiページにつながります。押すと横にカードが開きます。"
-    },
-    "describeOpen": {
-      "source": "{name}：ソースのファイルです。太い線はこれから書いたWikiページにつながり、線がなければまだWikiページはありません。横にカードが開いています。Escapeキーか、もう一度押すと閉じます。",
-      "page": "{name}：Wikiページです。太い線は引用したソースに、破線は名前を挙げた概念につながります。横にカードが開いています。Escapeキーか、もう一度押すと閉じます。",
-      "concept": "{name}: マップ上の概念です。破線は、この概念を挙げている、またはこの概念の元になったWikiページにつながります。カードが横に開いています。Escapeキーか、もう一度押すと閉じます。"
-    },
-    "card": {
-      "close": "このカードを閉じる",
-      "conceptSentence": "マップ上の概念です。",
-      "fileFacts": "{format} · {size} · {state}",
-      "sourcesLabel": "参照したソース",
-      "pagesLabel": "このファイルから書いたWikiページ",
-      "rowMissing": "このフォルダにありません",
-      "open": "開く",
-      "refresh": "書き直しを依頼",
-      "seeAll": "ソース{count, number}件をすべて表示",
-      "factOriginals": "ソース{count, number}件",
-      "factMentions": "言及{count, number}件",
-      "factPassages": "引用箇所{count, number}件",
-      "flowInline": "引用は、各ソースからこのページへ流れます。",
-      "flowInlineStale": "引用は、各ソースからこのページへ流れます。琥珀色の点は、ソースが変わったため確認し直す必要がある引用です。"
-    },
-    "key": {
-      "source": "ソース{count, number}",
-      "page": "Wikiページ{count, number}",
-      "concept": "概念{count, number}",
-      "cite": "引用{count, number}",
-      "mention": "言及{count, number}",
-      "island": "グループひとつが概念ひとつ",
-      "stale": "書いた後に変更",
-      "gestures": "押すとカード · 2回押すと開く · スクロールで拡大"
-    }
-  },
   "home": {
     "guide": "使い方",
     "questions": "{count, plural, =0 {質問} other {質問#}}",
@@ -1179,6 +1117,7 @@
     "sourceMissing": "このフォルダにこのファイルはありません。",
     "sourceTooLarge": "このファイルは大きすぎてここには表示できません。",
     "linkMissing": "このフォルダにはこの名前のものがありません。",
-    "back": "戻る"
+    "back": "戻る",
+    "close": "ページを閉じる"
   }
 }

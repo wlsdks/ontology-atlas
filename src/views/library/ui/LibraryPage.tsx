@@ -19,7 +19,7 @@ import {
 import { isRunActive, useActiveTurn, useTurnStage, useWorkRunSnapshot, workCardHoldsSeat, workRuns, type TurnWorkReport, type WorkRunActivity } from "@/features/work-run";
 import type { AcpEvent } from "@/features/acp-session";
 import { completedAcpReadEvent } from "@/features/library";
-import { LibraryGraph } from "@/widgets/library-graph";
+import { SourcesOverview, sourceGroupKey, type SourcePick } from "@/widgets/library-sources-overview";
 import { LibraryWorkActivityStrip } from "@/widgets/library-work-activity";
 import { LibraryImportDialog } from "@/widgets/library-import";
 import { clearLibraryImportRequest, pendingLibraryImport, type ImportDestination } from "@/shared/lib/library-import/destination";
@@ -62,7 +62,6 @@ import { useLibrarySources } from "./library-page/use-library-sources";
 import { useLibraryWorkActivity } from "./library-page/use-library-work-activity";
 import { useLibraryHome } from "./library-page/use-library-home";
 import { useLibraryTurns } from "./library-page/use-library-turns";
-import { useLibraryGraphCards } from "./library-page/use-library-graph-cards";
 import { useLibraryFocus } from "./library-page/use-library-focus";
 import { useLibraryIndexColumn } from "./library-page/use-library-index-column";
 import { useWikiTemplateProblems } from "./library-page/use-wiki-template-problems";
@@ -339,6 +338,22 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const sourceFilter = useSourceFilter({
     sources: model.sources, vaultScope: workVaultScope, indexColumn, listening: bandShown,
   });
+  // A row picked on the Sources home belongs to its folder and narrows the index list with it.
+  const [sourcePickAt, setSourcePickAt] = useState<{ scope: string; pick: SourcePick } | null>(null);
+  const sourcePick = sourcePickAt?.scope === workVaultScope ? sourcePickAt.pick : null;
+  const setSourcePick = useCallback(
+    (pick: SourcePick | null) => setSourcePickAt(pick ? { scope: workVaultScope, pick } : null),
+    [workVaultScope],
+  );
+  const sourceGroupFilter = useMemo(() => {
+    if (!sourcePick) return null;
+    const keys = new Set(sourcePick.keys);
+    return {
+      label: sourcePick.grouping === "folder" ? t("sourcesHome.listFolder", { folder: sourcePick.name }) : sourcePick.name,
+      includes: (row: LibrarySourceRow) => keys.has(sourceGroupKey(row, sourcePick.grouping)),
+      onClear: () => setSourcePick(null),
+    };
+  }, [setSourcePick, sourcePick, t]);
   /*
    * Every Compile door sends what it names: the band and the popover the next batch, a source's own
    * door that source. The batch is picked only while one of them draws it, and on press.
@@ -368,10 +383,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     invalidateDeskReport, filingAnswer, fileAnswerNote, judgeWrite, handleFileAnswer,
     handleFileReport, autoDecide, handleTurnStarted,
   } = turns;
-  const graphCards = useLibraryGraphCards({
-    localVault, nativeVaultRootPath, docs, model, agent, compileSources, sources, turns,
-  });
-  const { cardFacts } = graphCards;
+  const agentDoor = nativeVaultRootPath !== null && (agent.route === "unavailable" || agent.route === "local");
   const { readerRef, paneBodyRef } = useLibraryFocus({
     selected, setSelected, mobileBrowseOpen, mobileBrowseBackRef, homeSurface,
     answerComparisonOpen, skipReaderFocusRef, agent, sources, workActivity,
@@ -615,7 +627,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         reportUnseen={reportUnseen} choose={choose} busy={busy} docs={docs} model={model} agent={agent}
         openImport={openImport} handleCompile={handleCompile} narrowShowsReader={narrowShowsReader}
         indexTitle={indexTitle} reader={reader} sources={sources} home={home} turns={turns}
-        indexColumn={indexColumn} stateFilter={sourceFilter.state} headerDoors={headerDoors}
+        indexColumn={indexColumn} stateFilter={sourceFilter.state} groupFilter={sourceGroupFilter}
+        headerDoors={headerDoors}
       />
 
       <div
@@ -637,7 +650,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                 data-testid="library-reader-back"
                 className={controlClass({ shape: "chip", tone: "muted" })}
               >
-                {t(localReviewVisible ? "localCompile.back" : "graph.readerClose")}
+                {t(localReviewVisible ? "localCompile.back" : "wikiReader.close")}
               </button>
               {activeTrail.length > 0 && !localReviewVisible ? (
                 <button
@@ -734,7 +747,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                   vaultScope={workVaultScope}
                   batch={continueBatch}
                   blocked={turns.compileBlocked
-                    ? { reason: turns.compileBlocked, door: graphCards.agentDoor ? <AgentDoor testId="library-progress-blocked-door" /> : null }
+                    ? { reason: turns.compileBlocked, door: agentDoor ? <AgentDoor testId="library-progress-blocked-door" /> : null }
                     : null}
                   inApp={nativeVaultRootPath !== null}
                   filter={sourceFilter}
@@ -751,19 +764,31 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
                   t={t}
                 />
               ) : null}
-              <LibraryGraph
-                docs={manifest?.docs ?? EMPTY_DOCS}
-                wikiPages={model.wikiPages}
-                sources={model.sources}
-                activity={libraryWorkActivity}
-                selection={null}
-                highlight={sourceFilter.highlight}
-                onSelect={(next) => {
-                  setHomeSurface(null);
-                  choose(next.kind === "wiki" ? { kind: "wiki", slug: next.ref } : { kind: "source", path: next.ref });
-                }}
-                cardFacts={cardFacts}
-              />
+              {model.sources.length > 0 ? (
+                <SourcesOverview
+                  key={workVaultScope}
+                  sources={model.sources}
+                  pages={model.wikiPages}
+                  batch={continueBatch}
+                  inApp={nativeVaultRootPath !== null}
+                  readingCount={localVault.partialTotal > 0 ? model.sources.length : null}
+                  pick={sourcePick}
+                  onPick={setSourcePick}
+                  onOpenPage={(slug) => {
+                    setHomeSurface(null);
+                    choose({ kind: "wiki", slug });
+                  }}
+                  onOpenSource={(path) => {
+                    setHomeSurface(null);
+                    choose({ kind: "source", path });
+                  }}
+                />
+              ) : (
+                <LibraryEmptyFolderStage
+                  t={t} handle={handle} nativeVaultRootPath={nativeVaultRootPath} busy={busy} openImport={openImport}
+                  conversationDoor={null} sources={sources}
+                />
+              )}
             </div>
           ) : null}
           {!localReviewVisible ? (
@@ -774,7 +799,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
               choose={choose} busy={busy} model={model} retainedAnswers={retainedAnswers}
               knownOriginalPaths={knownOriginalPaths} agent={agent} answerRefresh={answerRefresh}
               compileSources={compileSources} reader={reader} sources={sources} turns={turns}
-              graphCards={graphCards} indexColumn={indexColumn} templateProblems={templateProblems}
+              agentDoor={agentDoor} indexColumn={indexColumn} templateProblems={templateProblems}
               reducedMotion={reducedMotion} landingRef={landingRef} onOpenLinkedPage={openLinkedPage}
               onOpenConcept={openConcept}
             />
@@ -801,7 +826,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         compileClauseRef={compileClauseRef} overflowDoorRef={overflowDoorRef} choose={choose} busy={busy}
         model={model} retainedAnswers={retainedAnswers} knownOriginalPaths={knownOriginalPaths}
         retainedAnswerSlugs={retainedAnswerSlugs} agent={agent} closeHomeSurface={closeHomeSurface}
-        handleCompile={handleCompile} sources={sources} home={home} turns={turns} graphCards={graphCards}
+        handleCompile={handleCompile} sources={sources} home={home} turns={turns} agentDoor={agentDoor}
         homeStrip={homeStrip} compileBatch={compileBatch}
       />
       {agentDock}

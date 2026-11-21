@@ -39,14 +39,11 @@ export const rules = [
   },
   {
     order: 5219,
-    command:
-      'pnpm exec playwright test tests/e2e/library/graph/library-graph-alive.spec.ts tests/e2e/library/graph/library-graph-card.spec.ts ' +
-      'tests/e2e/library/graph/library-graph-islands.spec.ts',
-    reason: "the library graph changed; these specs measure its motion, card, islands and picture, and other library specs that draw it keep the smoke sweep",
+    command: 'pnpm exec playwright test tests/e2e/library/sources-home.spec.ts',
+    reason: "the Sources home overview changed; this spec presses its rows and measures its overflow, and other library specs that draw it keep the smoke sweep",
     additive: true,
     matches: [
-      /^src\/widgets\/library-graph\/.+(?<!\.test)\.tsx?$/,
-      /^tests\/e2e\/library\/graph\/library-graph-probe\.ts$/,
+      /^src\/widgets\/library-sources-overview\/.+(?<!\.test)\.tsx?$/,
     ],
   },
   {
@@ -60,7 +57,7 @@ export const rules = [
   },
   {
     order: 5223,
-    command: 'pnpm exec playwright test tests/e2e/library/graph/library-renderer-disposal.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/library/library-renderer-disposal.spec.ts',
     reason: "the library constellation renderer's disposal changed",
     matches: [
       /^src\/views\/library\/ui\/LibraryConstellations\.tsx$/,
