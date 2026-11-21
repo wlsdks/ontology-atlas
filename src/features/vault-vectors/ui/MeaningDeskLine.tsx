@@ -308,7 +308,7 @@ export function MeaningDeskLine({
           <MeaningRunStage
             stage={shownStage}
             done={running ? null : finished}
-            downloadedBytes={status?.phase === 'modelDownloading' ? status.model?.doneBytes ?? null : null}
+            download={status?.phase === 'modelDownloading' ? status.model : null}
             measure={ring?.measure ?? null}
             facts={<div data-testid="meaning-desk-facts" className={rowClass}>{sentenceRow}{modelChip}</div>}
             onAsk={ask}

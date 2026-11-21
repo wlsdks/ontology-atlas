@@ -155,13 +155,22 @@ function ReadFeed({ stage }: { stage: RunStage }) {
   );
 }
 
-function DownloadRate({ doneBytes }: { doneBytes: number | null }) {
+const SECONDS_PER_MINUTE = 60;
+
+/** The download's speed, and the minutes left at that speed, once three seconds were measured. */
+function DownloadRate({ download }: { download: { doneBytes: number; totalBytes: number } | null }) {
   const t = useTranslations('library.questionDesk.meaning');
   const locale = useLocale();
-  const rate = useByteRate(doneBytes);
+  const rate = useByteRate(download?.doneBytes ?? null);
+  const measured = rate !== null && rate > 0 && download !== null && download.totalBytes > 0;
+
   return (
-    <span data-testid="meaning-stage-rate" className="flex h-6 items-center text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]">
-      {rate !== null && rate > 0 ? t('perSecond', { size: formatSize(rate, locale) }) : null}
+    <span data-testid="meaning-stage-rate" className="flex h-6 items-center gap-x-1.5 text-label leading-label tabular-nums text-[color:var(--color-text-tertiary)]">
+      {measured ? <>
+        <span>{t('perSecond', { size: formatSize(rate, locale) })}</span>
+        <span aria-hidden>·</span>
+        <span data-testid="meaning-stage-download-minutes">{t('minutesLeft', { minutes: Math.ceil(Math.max(0, download.totalBytes - download.doneBytes) / rate / SECONDS_PER_MINUTE) })}</span>
+      </> : null}
     </span>
   );
 }
@@ -174,7 +183,7 @@ function DownloadRate({ doneBytes }: { doneBytes: number | null }) {
 export function MeaningRunStage({
   stage,
   done,
-  downloadedBytes,
+  download,
   measure,
   facts,
   onAsk,
@@ -183,7 +192,7 @@ export function MeaningRunStage({
   stage: RunStage;
   /** The job finished while the stage was in view. */
   done: { passages: number; files: number } | null;
-  downloadedBytes: number | null;
+  download: { doneBytes: number; totalBytes: number } | null;
   measure: 'bytes' | 'files' | null;
   /** The desk line's sentence, minutes, file and presses. */
   facts: ReactNode;
@@ -223,7 +232,7 @@ export function MeaningRunStage({
         ) : (
           <>
             {facts}
-            {stage.step === 'read' ? <ReadFeed stage={stage} /> : stage.step === 'download' ? <DownloadRate doneBytes={downloadedBytes} /> : <span className="flex h-6 items-center text-label leading-label text-[color:var(--color-text-tertiary)]">{stage.step === null ? t('stageWaiting') : null}</span>}
+            {stage.step === 'read' ? <ReadFeed stage={stage} /> : stage.step === 'download' ? <DownloadRate download={download} /> : <span className="flex h-6 items-center text-label leading-label text-[color:var(--color-text-tertiary)]">{stage.step === null ? t('stageWaiting') : null}</span>}
           </>
         )}
       </div>
