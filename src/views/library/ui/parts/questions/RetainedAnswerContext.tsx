@@ -1,16 +1,16 @@
 "use client";
 
 import type { useTranslations } from 'next-intl';
-import type { RefObject } from 'react';
+import { useId, useState, type RefObject } from 'react';
 import type { AnswerObservation } from '@/features/library';
 import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
-import { Button, controlClass } from '@/shared/ui';
+import { Button, Dialog, DialogBody, DialogFooter, controlClass } from '@/shared/ui';
 import { AgentDoor } from '../agent/AgentDoor';
 
 /**
- * One line above the body says what the observation found and the press that acts on it; the rest
- * sits behind a disclosure. `older`, the history state and the error stay outside it since they
- * change what the page is.
+ * One line above the body says what the observation found, which files, and the press that acts on
+ * it; the full paths, what a refresh sends and the provenance caveat open in a centred dialog.
+ * `older`, the history state and the error stay on the row since they change what the page is.
  */
 export function RetainedAnswerContext({ observation, phase, historyState, older, onRefresh, refreshButtonRef, agentDoor = false, historyBlocked = false, error, t }: {
   observation: AnswerObservation;
@@ -45,6 +45,9 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
   const working = phase === 'preparing' || phase === 'running' || phase === 'saving';
   const refusable = onRefresh !== null && !historyBlocked;
   const paths = (['changed', 'missing', 'added', 'rewritten'] as const).filter((kind) => observation[kind].length);
+  const files = paths.flatMap((kind) => observation[kind]);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const detailTitleId = useId();
   return (
     /*
      * The column is the line: `--measure-doc-column` already ends lines where the body does, so no `ch`
@@ -65,14 +68,28 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
             className="min-w-0 flex-1 text-label leading-body text-[color:var(--color-text-secondary)]"
           >
             {t(`answers.state.${observation.state}`)}
+            {files.length ? (
+              <span data-testid="answer-evidence-files" title={files.join('\n')} className="text-[color:var(--color-text-tertiary)]">
+                {' · '}{files.map((path) => path.slice(path.lastIndexOf('/') + 1)).join(', ')}
+              </span>
+            ) : null}
           </p>
           <span className="flex flex-none flex-wrap items-center gap-2">
             {/*
-             * **The door, beside the reason the disclosure holds** (slice U2). The refresh is
+             * **The door, beside the reason the detail dialog holds** (slice U2). The refresh is
              * disabled without a connected coding agent and `answers.refreshUnavailable` says
              * so; this is the only live control in that state, so it stands first.
              */}
             {agentDoor && onRefresh === null ? <AgentDoor testId="answer-refresh-blocked-door" /> : null}
+            <button
+              type="button"
+              data-testid="answer-evidence-detail-open"
+              aria-haspopup="dialog"
+              onClick={() => setDetailOpen(true)}
+              className={controlClass({ shape: 'link', size: 'md', tone: 'default', hoverInk: 'strong', className: 'atlas-touch-floor whitespace-nowrap' })}
+            >
+              {t('answers.evidenceMore')}
+            </button>
             <Button
               ref={refreshButtonRef}
               className="atlas-touch-floor max-w-full"
@@ -87,24 +104,25 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
             >{t(working ? `answers.phase.${phase}` : 'answers.refresh')}</Button>
           </span>
         </div>
-        {/*
-          The paths, the provenance caveat and what a refresh sends — every line that is true
-          and none that a reader needs before the answer itself.
-        */}
-        <details data-testid="answer-evidence-detail" className="mt-2">
-          <summary className={controlClass({ shape: 'link', size: 'sm', tone: 'muted', hoverInk: 'strong', className: 'atlas-touch-floor text-label' })}>
-            {t('answers.evidenceMore')}
-          </summary>
-          <div className="mt-2 flex flex-col gap-1">
-            {paths.map((kind) => (
-              <p key={kind} data-testid={`answer-evidence-paths-${kind}`} className="break-words text-label leading-body text-[color:var(--color-text-tertiary)]">
-                {t(`answers.paths.${kind}`)}: {observation[kind].join(' · ')}
-              </p>
-            ))}
-            <p className="text-label leading-body text-[color:var(--color-text-tertiary)]">{t(onRefresh ? 'answers.refreshHint' : 'answers.refreshUnavailable')}</p>
-            <p data-testid="answer-provenance" className="text-label leading-body text-[color:var(--color-text-tertiary)]">{t('answers.provenance')}</p>
+        <Dialog open={detailOpen} onClose={() => setDetailOpen(false)} size="md" labelledBy={detailTitleId} testId="answer-evidence-detail">
+          <div className="flex max-h-[min(70vh,36rem)] flex-col gap-4">
+            <h2 id={detailTitleId} className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+              {t(`answers.state.${observation.state}`)}
+            </h2>
+            <DialogBody className="flex flex-col gap-2 pr-1">
+              {paths.map((kind) => (
+                <p key={kind} data-testid={`answer-evidence-paths-${kind}`} className="break-words text-label leading-body text-[color:var(--color-text-secondary)]">
+                  {t(`answers.paths.${kind}`)}: {observation[kind].join(' · ')}
+                </p>
+              ))}
+              <p className="text-label leading-body text-[color:var(--color-text-tertiary)]">{t(onRefresh ? 'answers.refreshHint' : 'answers.refreshUnavailable')}</p>
+              <p data-testid="answer-provenance" className="text-label leading-body text-[color:var(--color-text-tertiary)]">{t('answers.provenance')}</p>
+            </DialogBody>
+            <DialogFooter>
+              <Button variant="outline" size="sm" onClick={() => setDetailOpen(false)}>{t('find.close')}</Button>
+            </DialogFooter>
           </div>
-        </details>
+        </Dialog>
         {/* Not behind a press: each of these says the page is not what a reader assumes. */}
         {older ? <p className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)]">{t('answers.older')}</p> : null}
         {historyState !== 'none' ? <p data-testid="answer-history-state" className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)]">{t(`answers.history.${historyState}`)}</p> : null}
