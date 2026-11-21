@@ -17,10 +17,10 @@ export function walkMd(rootPath) {
   const out = [];
   const stack = [rootPath];
   while (stack.length > 0) {
-    const dir = stack.pop();
+    const directory = stack.pop();
     let entries;
     try {
-      entries = readdirSync(dir, { withFileTypes: true });
+      entries = readdirSync(directory, { withFileTypes: true });
     } catch {
       continue;
     }
@@ -28,10 +28,10 @@ export function walkMd(rootPath) {
       if (entry.name.startsWith('.')) continue;
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name)) continue;
-        if (dir === rootPath && entry.name === VAULT_SOURCES_DIR) continue;
-        stack.push(join(dir, entry.name));
+        if (directory === rootPath && entry.name === VAULT_SOURCES_DIR) continue;
+        stack.push(join(directory, entry.name));
       } else if (entry.isFile() && entry.name.endsWith('.md')) {
-        out.push(join(dir, entry.name));
+        out.push(join(directory, entry.name));
       }
     }
   }

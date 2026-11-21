@@ -20,6 +20,8 @@ import {
   validateDefinitions,
   vaultHeadings,
 } from './benchmark-lifecycle.mjs';
+import { armIntegrity, transcriptCallCounts } from './lifecycle/scoring.mjs';
+import { buildSummary } from './lifecycle/summary-stats.mjs';
 
 test('lifecycle benchmark definitions cover paired greenfield and brownfield subjects', () => {
   assert.deepEqual(CASES.map(({ id }) => id), ['greenfield', 'brownfield']);
@@ -214,4 +216,52 @@ test('no prepared node tells the agent what to read first', () => {
     .filter((node) => ordering.test(node.body))
     .map((node) => `${entry.id}/${node.slug}`));
   assert.deepEqual(offenders, [], 'a prepared node prescribed a reading order');
+});
+
+test('transcript call counts separate completed, failed and shell calls', () => {
+  const transcript = [
+    'exec',
+    'mcp: ontology-atlas/get_concept (completed)',
+    'mcp: ontology-atlas/find_path (completed)',
+    'mcp: ontology-atlas/add_concept (failed)',
+    'mcp: ontology-atlas/validate_vault (error)',
+    'mcp: other-server/get_concept (completed)',
+    'exec',
+    '  exec',
+  ].join('\n');
+  assert.deepEqual(transcriptCallCounts(transcript), { mcpCalls: 2, failedMcpCalls: 2, shellCalls: 2 });
+  assert.deepEqual(transcriptCallCounts(''), { mcpCalls: 0, failedMcpCalls: 0, shellCalls: 0 });
+});
+
+test('arm integrity needs Atlas used on the Atlas side and absent on the control side', () => {
+  assert.deepEqual(armIntegrity('on', { mcpCalls: 3, failedMcpCalls: 0 }), { passed: true, reason: 'MCP observed' });
+  assert.deepEqual(armIntegrity('on', { mcpCalls: 0, failedMcpCalls: 0 }), { passed: false, reason: 'MCP arm was not exercised' });
+  assert.deepEqual(armIntegrity('on', { mcpCalls: 3, failedMcpCalls: 1 }), { passed: false, reason: 'MCP call failed' });
+  assert.deepEqual(armIntegrity('off', { mcpCalls: 0, failedMcpCalls: 0 }), { passed: true, reason: 'No MCP exposed' });
+  assert.deepEqual(armIntegrity('off', { mcpCalls: 1, failedMcpCalls: 0 }), { passed: false, reason: 'MCP leaked into control arm' });
+});
+
+test('summary pairs the Atlas side with the control side by subject', () => {
+  const row = (mode, coverage, durationMs, pass) => ({
+    caseId: 'greenfield',
+    mode,
+    usable: true,
+    durationMs,
+    shellCalls: 4,
+    mcpCalls: mode === 'on' ? 2 : 0,
+    grade: { coverage, vocabularyCoverage: null, comparableCoverage: coverage, pass, breakdown: { unknownSignal: true } },
+  });
+  const summary = buildSummary({
+    rows: [row('off', 0.5, 1000, false), row('off', 0.75, 3000, true), row('on', 1, 2000, true)],
+    cases: [{ id: 'greenfield' }],
+    repeat: 2,
+    modes: ['off', 'on'],
+  });
+  const off = summary.arms.find((arm) => arm.mode === 'off');
+  assert.equal(off.coverage, 0.625);
+  assert.equal(off.medianDurationMs, 2000);
+  assert.equal(off.contentPasses, 1);
+  assert.deepEqual(summary.paired, [
+    { caseId: 'greenfield', coverageDelta: 0.375, comparableDelta: 0.375, vocabularyDelta: null, passDelta: 0, durationDeltaMs: 0 },
+  ]);
 });

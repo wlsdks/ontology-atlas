@@ -17,8 +17,8 @@ const tauriMocks = vi.hoisted(() => ({
   pickTauriVaultDirectory: vi.fn(),
 }));
 
-vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
+vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-provider/LocalVaultProvider')>()),
   useLocalVault: () => mocks.vault,
 }));
 
@@ -95,12 +95,12 @@ function makeVault(): MockVault {
 /** A write-tracking fake target folder (the block-fsa structural type). */
 function fakeTargetDir() {
   const written = new Map<string, string>();
-  function dir(prefix: string) {
+  function directory(prefix: string) {
     return {
       kind: 'directory' as const,
       name: prefix || 'target',
       async *values() {},
-      getDirectoryHandle: async (name: string) => dir(`${prefix}${name}/`),
+      getDirectoryHandle: async (name: string) => directory(`${prefix}${name}/`),
       getFileHandle: async (name: string) => ({
         kind: 'file' as const,
         name,
@@ -114,7 +114,7 @@ function fakeTargetDir() {
       }),
     };
   }
-  return { written, handle: dir('') };
+  return { written, handle: directory('') };
 }
 
 describe('RealmBlockExportAction', () => {

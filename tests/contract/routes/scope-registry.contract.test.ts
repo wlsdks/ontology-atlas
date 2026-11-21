@@ -9,9 +9,6 @@ import {
  * Registry gate for state that outlives its scope: every URL query key and persistent storage
  * key has one row. A key missing from registry or code fails; a `vault-scoped` key must be protected.
  */
-// ────────────────────────────────────────────────────────────────────────────
-// Scope providers — **which functions count as an exact scope**
-// ────────────────────────────────────────────────────────────────────────────
 /**
  * Scope providers that separate vaults **exactly**. They distinguish both
  * `local:<folder>` and `sample:<sample>`.
@@ -42,10 +39,6 @@ const FROZEN_COARSE_SCOPE_KEYS = new Set([
     "docsVault:openTabs:",
     "docsVault:activeTab:"
 ]);
-
-// ────────────────────────────────────────────────────────────────────────────
-// ① URL query key registry — the map's address vocabulary (`/topology`)
-// ────────────────────────────────────────────────────────────────────────────
 
 type Scope = "global" | "vault-scoped";
 
@@ -78,10 +71,6 @@ const URL_KEY_REGISTRY: Record<string, { scope: Scope; note: string;
   view: { scope: "global", note: "map view enumeration: hex, structure, 3d, neural; strata reads as 3d and coupling as neural" },
 };
 
-// ────────────────────────────────────────────────────────────────────────────
-// ② Persistent storage key registry
-// ────────────────────────────────────────────────────────────────────────────
-
 interface StorageEntry {
   key: string;
   /**
@@ -103,12 +92,12 @@ interface StorageEntry {
 }
 
 const STORAGE_KEY_REGISTRY: StorageEntry[] = [
-  // ── State about the app itself (vault-independent) ───────────────────────
+  // State about the app itself (vault-independent)
   { key: "app-update:dismissed-version", kind: "storage", scope: "global", note: "dismissed update version" },
   { key: "app-update:last-check", kind: "storage", scope: "global", note: "time of the last update check" },
   { key: "app-update:auto-check", kind: "storage", scope: "global", file: "src/features/app-update/model/update-state.ts", note: "Automatic update check on this computer: on (default) or off" },
   { key: "atlas.appearance.text-size", kind: "storage", scope: "global", file: "src/shared/lib/preferences/text-size.ts", note: "Text size: default, large or larger" },
-  { key: "library.wikiWriteMode", kind: "storage", scope: "global", file: "src/shared/lib/preferences/appearance-preferences.ts", note: "How an agent's wiki page lands on this computer: auto or ask" },
+  { key: "library.wikiWriteMode", kind: "storage", scope: "global", file: "src/shared/lib/preferences/library-preferences.ts", note: "How an agent's wiki page lands on this computer: auto or ask" },
   { key: "atlas.appearance.frameMeter", kind: "storage", scope: "global", note: "frame meter display preference" },
   { key: "atlas.appearance.view3d", kind: "storage", scope: "global", note: "3D view (the tree) preference, off (2D) by default" },
   { key: "atlas.appearance.structure", kind: "storage", scope: "global", note: "Domain structure preference" },
@@ -126,7 +115,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "ontology-atlas:canvas-background:v1", kind: "storage", scope: "global", note: "canvas background preference" },
   { key: "ontology-atlas:glyph-set:v1", kind: "storage", scope: "global", note: "glyph set preference" },
   { key: "ontology-atlas:vault-index:v1", kind: "storage", scope: "global", note: "search index on/off preference" },
-  { key: "ontology-atlas:vault-vectors:v1", kind: "storage", scope: "global", file: "src/shared/lib/vault-folder/vault-vector-source.ts", note: "One machine-wide map from a folder's absolute path to its search-by-meaning choice and pause; the path keys each folder's entry" },
+  { key: "ontology-atlas:vault-vectors:v1", kind: "storage", scope: "global", file: "src/shared/lib/vault-folder/vault-vectors/vault-vector-source.ts", note: "One machine-wide map from a folder's absolute path to its search-by-meaning choice and pause; the path keys each folder's entry" },
   { key: "ontology-atlas:footprint:v1", kind: "storage", scope: "global", note: "footprint trail preference" },
   // Expansion affordance, structure, and three numbers. Screen preferences like the
   // footprint and the background, so vault-independent — changing folder must not
@@ -183,28 +172,28 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.download.moru-play.best", kind: "storage", scope: "global", note: "The best score in the download page's Play with Moru popup (`moru-play.ts`): a per-browser convenience, never vault data" },
   { key: "ontology-atlas:last-route", kind: "storage", scope: "global", note: "**Nobody reads it**: route restoration was retired on 2026-07-30 (`locale-redirect.tsx`). It is a dead key rather than a defect, so this registry records only the fact and leaves deletion as a separate matter" },
 
-  // ── Things that *define* the scope (they are the answer to "which vault") ──
+  // Things that *define* the scope (they are the answer to "which vault")
   { key: "demo:sample-source:v1", kind: "storage", scope: "global", note: "which built-in sample this is; an input to the scope, not state inside the scope" },
   { key: "demo:docs-vault:source", kind: "storage", scope: "global", note: "which of local|server is being viewed" },
   { key: "docs-vault:current-handle", kind: "storage", scope: "global", note: "IndexedDB: current vault handle" },
   { key: "docs-vault:fs-handle:", kind: "storage", scope: "global", note: "IndexedDB store prefix: vault handle storage" },
   { key: "docs-vault:fs-handle:recent", kind: "storage", scope: "global", note: "IndexedDB: recent vault handles" },
 
-  // ── One-shot intent handed from one screen to the next (session) ─────────
+  // One-shot intent handed from one screen to the next (session)
   { key: "demo:open-search", kind: "storage", scope: "global", note: "session: intent to open the search palette" },
   { key: "demo:open-shortcuts", kind: "storage", scope: "global", note: "session: intent to open the shortcut sheet" },
   { key: "ontology-atlas:route-focus-intent", kind: "storage", scope: "global", note: "session: focus target after a route change" },
   { key: "ontology-atlas:settings-locale-focus", kind: "storage", scope: "global", note: "session: focus on the language field of the settings sheet" },
   { key: "ontology-atlas:agent-chat-intent:pending", kind: "storage", scope: "global", note: "session: runner id handed from the agent destination to the map chat dock" },
 
-  // ── Per-vault content — protected by an exact scope ──────────────────────
+  // Per-vault content — protected by an exact scope
   {
     key: "demo:change-baseline:v2:",
     kind: "storage",
     scope: "vault-scoped",
     scopedBy: "setChangeBaselineScope",
-    file: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.ts",
-    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.test.ts",
+    file: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.ts",
+    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.test.ts",
     note: "Change baseline per folder, hashed per node; other folders' entries give way only when storage refuses a save",
   },
   {
@@ -212,8 +201,8 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     kind: "storage",
     scope: "vault-scoped",
     scopedBy: "setChangeBaselineScope",
-    file: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.ts",
-    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.test.ts",
+    file: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.ts",
+    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/changes/change-baseline-store.test.ts",
     note: "The first form: each folder's entry is converted once to its own v2 key, then removed",
   },
   {
@@ -257,7 +246,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "notification \"seen up to here\"; the feed is per vault, so the threshold is per vault too",
   },
 
-  // ── Per-vault content — protected only by the coarse scope (`vaultScopeKey`) ──
+  // Per-vault content — protected only by the coarse scope (`vaultScopeKey`)
   //    Already-shipped storage locations; widening them orphans users' lists.
   //    The `FROZEN_COARSE_SCOPE_KEYS` paragraph above is the evidence.
   {
@@ -297,12 +286,12 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "active tab; same as above",
   },
 
-  // ── Per-vault content that is **not protected** (see KNOWN_UNPROTECTED below) ──
+  // Per-vault content that is **not protected** (see KNOWN_UNPROTECTED below)
   {
     key: "ontology-atlas:docs-vault-editor-draft:",
     kind: "storage",
     scope: "vault-scoped",
-    file: "src/widgets/docs-vault/ui/DocsVaultEditor.tsx",
+    file: "src/widgets/docs-vault/lib/editor/editor-draft.ts",
     note: "editor draft; a data-loss path, being fixed by PR #827",
   },
   {
@@ -332,7 +321,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "recent documents v1; after migrating to v2 it is only read and cleared",
   },
 
-  // ── Event names (not storage — registered here because they share the namespace) ──
+  // Event names (not storage — registered here because they share the namespace)
   { key: "ontology-atlas:agent-activity-read", kind: "event", scope: "global", note: "read-mark broadcast" },
   { key: "ontology-atlas:appearance-preference-change", kind: "event", scope: "global", note: "" },
   { key: "ontology-atlas:audience-preference-change", kind: "event", scope: "global", note: "" },
@@ -374,10 +363,6 @@ const KNOWN_UNPROTECTED: Record<string, string> = {
     "the consumer filters by intersection with the current node, so nothing false shows on screen; low repair priority",
 };
 const MAX_KNOWN_UNPROTECTED = 2;
-
-// ────────────────────────────────────────────────────────────────────────────
-// Scanner — key literals that really exist in the code
-// ────────────────────────────────────────────────────────────────────────────
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 
@@ -440,10 +425,6 @@ function scanKeyLiterals(): Map<string, string[]> {
 const SCANNED = scanKeyLiterals();
 const REGISTERED = new Map(STORAGE_KEY_REGISTRY.map((entry) => [entry.key, entry]));
 
-// ────────────────────────────────────────────────────────────────────────────
-// Checks
-// ────────────────────────────────────────────────────────────────────────────
-
 describe("scope registry: URL query keys", () => {
   it("every query key of the map is registered", () => {
     const declared = new Set(Object.values(HOME_QUERY_KEYS));
@@ -488,7 +469,7 @@ describe("scope registry: URL query keys", () => {
       ['src/views/home/model/use-topology-vault-read-model.tsx', 'useTopologyVaultReadModel', ['clearVaultScopedRouteState', 'useVaultSessionIdentityScope']],
       ['src/views/home/model/map-canvas/use-topology-graph-projection.ts', 'useTopologyGraphProjection', ['resolveCanvasSelectedSlug']],
       ['src/views/home/model/map-canvas/use-topology-scene-controls.tsx', 'useTopologySceneControls', ['useTopologyPathLens']],
-      ['src/views/home/ui/TopologyCommandChrome.tsx', 'TopologyCommandChrome', ['canCopyTopologyPathPacket']]
+      ['src/views/home/ui/map-readouts/TopologyCommandChrome.tsx', 'TopologyCommandChrome', ['canCopyTopologyPathPacket']]
         ] as const;
     for (const [file, owner, witnesses] of owners) {
       const source = readFileSync(join(REPO_ROOT, file), "utf8");

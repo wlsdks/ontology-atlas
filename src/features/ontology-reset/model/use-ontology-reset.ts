@@ -38,7 +38,6 @@ export function useOntologyReset() {
   const paths = useMemo(() => (manifest ? conceptDocumentPaths(manifest.docs) : []), [manifest]);
   const { refresh, markSelfWrite } = localVault;
 
-  /** Throws the failure that stopped the run, after reloading whatever did move. */
   const clear = async (): Promise<ClearedConcepts> => {
     const root = await writableRoot(handle);
     const outcome: MoveOutcome = await moveConceptDocuments(root, paths, resetStamp(new Date()));

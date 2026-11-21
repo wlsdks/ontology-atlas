@@ -12,11 +12,7 @@ import {
 } from "@/entities/knowledge-graph";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 
-/**
- * Once per vault scope: restore a persisted baseline if it matches the graph, otherwise capture
- * one, so later edits appear as one changeset. Per scope, not per mount, or a folder switch
- * compares one vault's baseline against another's graph. Once, so an explicit Clear is not re-marked.
- */
+/** Per scope, not per mount, or a folder switch compares one vault's baseline against another's graph. Once, so an explicit Clear is not re-marked. */
 export function OntologyLiveBaselineInit() {
   const mode = useDataSourceMode();
   const { insight } = useOntologyInsight({ demand: false });
@@ -26,16 +22,13 @@ export function OntologyLiveBaselineInit() {
   useEffect(() => {
     if (!insight) return;
     if (handledScopeRef.current === vaultScope) return;
-    // A scope change discards the previous vault's baseline and switches the save key.
     setChangeBaselineScope(vaultScope);
     handledScopeRef.current = null;
     const preparing = new AbortController();
-    // The per-node hashing runs in slices first; marking or diffing below reuses it.
     prepareGraphSignatures(insight.nodes, insight.edges, { signal: preparing.signal }).then(() => {
       // A pass can finish after its abort; its graph is no longer the one on screen.
       if (preparing.signal.aborted) return;
       handledScopeRef.current = vaultScope;
-      // Try restoring a persisted baseline (overlap-guarded); on success, skip auto-mark.
       const restored = restorePersistedBaseline(insight.nodes);
       // Read `getChangeBaseline()` directly: the scope switch above may just have discarded it.
       if (

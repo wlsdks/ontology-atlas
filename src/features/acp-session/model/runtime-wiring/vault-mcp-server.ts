@@ -1,14 +1,10 @@
 import type { McpServerLaunch } from '@/shared/config';
 
-/**
- * Wires the loaded vault into ACP without a user-written config. A Codex name collision silently
- * discards the injected server, so use a distinct session name.
- */
+/** Wires the loaded vault into ACP without a user-written config; a Codex name collision silently discards the injected server, so use a distinct session name. */
 import { PROJECT_VAULT_DIR } from '@/shared/lib/vault-folder/project-vault-dir';
 
 export const VAULT_MCP_SERVER_NAME = 'atlas-vault';
 
-/** An entry in ACP `session/new`'s `mcpServers` (the stdio variant). */
 export interface AcpMcpServer {
   name: string;
   command: string;
@@ -17,34 +13,23 @@ export interface AcpMcpServer {
 }
 
 export interface ExistingVaultMcpRegistration {
-  /** The launch command written in the config file. */
   command: string | null | undefined;
-  /** Did it pass full config validation, not just the command but the current vault environment? */
   validForCurrentVault: boolean;
 }
 
-/**
- * The config file this runtime's CLI reads by itself from the working folder; if the vault registers
- * our server there, the app must not wire it again or it runs twice. Only measured runtimes are
- * listed: an unmeasured one could end with no tools.
- */
+/** The config file this runtime's CLI reads itself from the working folder; wiring there too would run our server twice. Only measured runtimes are listed: an unmeasured one could end with no tools. */
 const MEASURED_SELF_READ_SLOT: Readonly<Record<string, 'codex-config'>> = {
   'codex-acp': 'codex-config',
 };
 
-/** The config slot this runtime reads from the vault itself — `null` when unmeasured. */
 export function vaultSelfReadSlot(runtimeId: string | null | undefined): 'codex-config' | null {
   if (typeof runtimeId !== 'string') return null;
   return MEASURED_SELF_READ_SLOT[runtimeId] ?? null;
 }
 
 /**
- * Is what the vault already registered **exactly what we were about to wire**?
- *
- * Skipping on "a registration exists" alone is wrong — a vault entry pointing at a stale path or a
- * different `OATLAS_VAULT` produces a session with no tools at all, or one reading the wrong vault.
- * It counts as the same only when it passes full validation for the current vault **and the command
- * matches character for character**.
+ * Skipping on "a registration exists" alone is wrong: a stale path or a different `OATLAS_VAULT` yields no tools or the
+ * wrong vault. It counts as the same only when it passes full validation for the current vault and the command matches exactly.
  */
 export function vaultAlreadyRegisters(
   launch: McpServerLaunch | null,
@@ -56,10 +41,7 @@ export function vaultAlreadyRegisters(
   return registeredCommand.length > 0 && registeredCommand === launch.command.trim();
 }
 
-/**
- * Was the vault server itself wired? Look for it by name, not a non-empty list: external connectors
- * share the array, which would otherwise hand the `atlas-vault` auto-allow to another server.
- */
+/** By name, not a non-empty list: external connectors share the array and would otherwise inherit the `atlas-vault` auto-allow. */
 export function hasVaultMcpServer(servers: readonly unknown[] | null | undefined): boolean {
   if (!Array.isArray(servers)) return false;
   return servers.some(
@@ -67,11 +49,7 @@ export function hasVaultMcpServer(servers: readonly unknown[] | null | undefined
   );
 }
 
-/**
- * Is the server-side write checkpoint on? Read back from the env `vaultMcpServers` writes
- * (`OATLAS_WRITE_CONSENT=on`, only for runtimes that do not already ask), not from the runtime name.
- * Only the vault server's own entry is read.
- */
+/** Read back from the env `vaultMcpServers` writes (`OATLAS_WRITE_CONSENT=on`, only for runtimes that do not already ask), not from the runtime name. */
 export function vaultWriteConsentOn(servers: readonly unknown[] | null | undefined): boolean {
   if (!Array.isArray(servers)) return false;
   return servers.some((server) => {
@@ -86,13 +64,7 @@ export function vaultWriteConsentOn(servers: readonly unknown[] | null | undefin
   });
 }
 
-/**
- * The one MCP server that reads this vault. **An empty array** when there is no known way to launch
- * it — passing a path that does not exist gives a session that starts while its tools are quietly absent.
- *
- * Also an empty array when the vault already registers the same server for this runtime (see
- * `vaultAlreadyRegisters` above) — which is what stops it becoming two copies.
- */
+/** Empty when there is no known way to launch it (a nonexistent path gives a session with tools quietly absent) or the vault already registers the same server (see `vaultAlreadyRegisters`). */
 export function vaultMcpServers(
   launch: McpServerLaunch | null,
   vaultPath: string | null,
@@ -104,9 +76,8 @@ export function vaultMcpServers(
   // Preserve ordinary deduplication; explicitly scoped analysis needs its own known-root server.
   if (!options?.sourceRoot&&vaultAlreadyRegisters(launch, registration)) return [];
   /*
-   * One session, one checkpoint, held by whoever can: a runtime with app-owned config isolation
-   * (Claude) already asks, so the server gate is off for it and on for the rest. `ownsWriteGate`
-   * defaults to false so an unmeasured runtime gets the gate.
+   * One checkpoint per session, held by whoever can: a runtime with app-owned config isolation (Claude) already asks,
+   * so the server gate is on for the rest, an unmeasured runtime included.
    */
   const serverGate = options?.ownsWriteGate === true ? null : 'on';
   const projectRoot = options?.sourceRoot??projectRootForVault(vaultPath);
@@ -117,11 +88,8 @@ export function vaultMcpServers(
       args: [...launch.args],
       env: [
         { name: 'OATLAS_VAULT', value: vaultPath },
-        /*
-         * The repository root when known: with the vault at `<project>/atlas`, MCP would otherwise resolve
-         * its code root to the vault itself and not see the product. `projectRootForVault` returns a path
-         * only for the shape Atlas creates; elsewhere MCP finds the root itself.
-         */
+        // With the vault at `<project>/atlas`, MCP would resolve its code root to the vault itself; `projectRootForVault`
+        // returns a path only for the shape Atlas creates.
         ...(projectRoot ? [{ name: 'OATLAS_REPO_ROOT', value: projectRoot }] : []),
         ...(serverGate ? [{ name: 'OATLAS_WRITE_CONSENT', value: serverGate }] : []),
       ],
@@ -129,14 +97,7 @@ export function vaultMcpServers(
   ];
 }
 
-/**
- * The project a vault was created inside, or `null` when this vault is not one of ours.
- *
- * Recognition is by the folder name Atlas creates (`PROJECT_VAULT_DIR`) and nothing else. A vault
- * somebody keeps at `~/notes` has no project above it, and naming its parent as a code root would
- * point the survey at their home directory — the exact wrong-root failure the old comment guarded
- * against, which is why that guard survives for every other shape.
- */
+/** null when the vault is not one Atlas created: recognition is by `PROJECT_VAULT_DIR` only, since naming the parent of `~/notes` as a code root would point the survey at a home directory. */
 export function projectRootForVault(vaultPath: string): string | null {
   const trimmed = vaultPath.trim().replace(/[/\\]+$/, '');
   if (!trimmed) return null;

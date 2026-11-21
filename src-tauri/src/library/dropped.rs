@@ -205,7 +205,7 @@ fn walk_dropped_folder(root: &Path, name: &str, walk: &mut DropWalk) {
         walk.skip(name.to_string(), SkipReason::NotDocument);
         return;
     };
-    if crate::vault_grants::holds_a_vault_root(&canonical) {
+    if crate::vault::grants::holds_a_vault_root(&canonical) {
         walk.offer.holds_open_folder.push(name.to_string());
         return;
     }

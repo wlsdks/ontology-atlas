@@ -8,7 +8,7 @@ import type { useTopologyVaultReadModel } from "../use-topology-vault-read-model
 
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { buildBusinessFlowRequest, nodeIntent, screenIntentFor, sentenceForIntent, type FirstWordsLabels, type ScreenContextSnapshot } from "@/features/vault-agent";
-import { buildAgentAnalyzePrompt } from "@/shared/config/agent-prompts";
+import { buildAgentAnalyzePrompt } from "@/shared/config/agent/agent-prompts";
 import { consumeQueuedAgentChatIntent, subscribeAgentChatIntent } from "@/shared/lib/agent-chat/agent-chat-intent";
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/overlays/right-dock-reserve";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
@@ -139,7 +139,6 @@ export function useTopologyAgentOrchestration({
       setVaultAgentOpen(true);
       setAcpChatOpen(false);
     }
-    // Retreating surfaces take their own close paths, so nothing blinks out.
     setOntologySearchOpen(false);
     setCreateNodeOpen(false);
   }, [workbenchOpenRef, requestWorkbenchSection, cancelAcpSessionStart, agentChatUsesRuntime, setOntologySearchOpen, setCreateNodeOpen, setChatMounted, setAcpChatOpen, setAcpDockFrameOpen, setVaultAgentOpen, setMeaningWorkbenchOpen]);
@@ -149,7 +148,6 @@ export function useTopologyAgentOrchestration({
     }
   }, [agentChatUsesRuntime, setAcpChatOpen, setAcpDockFrameOpen, setChatMounted, workbenchOpenRef]);
 
-  /** The same keys as the empty-chat chips, so one idea is not phrased two ways. */
   const firstWordsLabels = useMemo<FirstWordsLabels>(
     () => ({
       missingDefinition: (title) => tAgent("firstWords.missingDefinition", { title }),
@@ -161,10 +159,6 @@ export function useTopologyAgentOrchestration({
     [tAgent],
   );
 
-  /**
-   * The sentence comes from `screenIntentFor`, matching the empty chat's first chip; opening seats
-   * it, sending stays manual.
-   */
   const askAgentAboutSelectedNode = useCallback(() => {
     const intent = screenIntentFor(selectedOntologyNode, vaultConceptFactsRef.current);
     if (!intent) return;
@@ -175,21 +169,18 @@ export function useTopologyAgentOrchestration({
     openVaultAgent();
   }, [selectedOntologyNode, vaultConceptFactsRef, setVaultAgentPrefill, firstWordsLabels, openVaultAgent]);
 
-  /** A constant URL must not re-seat on every render. */
   const BUSINESS_FLOW_PREFILL_NONCE = 0;
   const businessFlowRequest = useMemo(
     () => buildBusinessFlowRequest({ request: businessFlowRequestText }),
     [businessFlowRequestText],
   );
 
-  /** `?ask=`: the URL is the state and carries only the intent kind; the sentence is written here. */
   const askPrefill = useMemo(() => {
     // Rebuilt from the app's localized string, so no sentence rides a shared URL and old links get
     // today's request.
     if (llmBridgeAvailable && routeState.askBusinessFlow) {
       return {
         text: businessFlowRequest,
-        // Constant for a constant URL, so a re-render never overwrites a draft.
         nonce: BUSINESS_FLOW_PREFILL_NONCE,
       };
     }
@@ -243,7 +234,6 @@ export function useTopologyAgentOrchestration({
     // unmount.
     // Set here too because a URL request never goes through this function.
     setChatMounted(true);
-    // One window, one close for whichever branch is open.
     setAcpDockFrameOpen(false);
     setVaultAgentOpen(false);
     setAcpChatOpen(false);
@@ -258,11 +248,9 @@ export function useTopologyAgentOrchestration({
     );
   }, [agentDockTouchedRef, cancelAcpSessionStart, setChatMounted, setAcpDockFrameOpen, setVaultAgentOpen, setAcpChatOpen, setVaultAgentPrefill, setMeaningWorkbenchOpen, setAgentOpeningRequest, setAnalysisParentRunId, setAnalysisParentRequestText, setRouteState]);
 
-  /** Which branch owns the one panel; a URL "ask this" follows the same rule. */
   const {
     runtime: runtimeChatOpen,
     key: keyChatOpen,
-    /** The chip's pressed state reads this. */
     open: agentChatOpen,
   } = agentChatDoor({
     hasRuntime: agentChatUsesRuntime,
@@ -290,7 +278,6 @@ export function useTopologyAgentOrchestration({
     [vaultHandle],
   );
 
-  /** Seats it in the composer; a person still sends, like "ask about this". */
   const sendAnalyzeToAgent = useCallback(() => {
     setVaultAgentPrefill({ text: analyzePrompt, nonce: Date.now() });
     openVaultAgent();

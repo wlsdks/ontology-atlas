@@ -10,9 +10,9 @@ import type { VaultDoc, LibrarySourceRow } from '@/entities/docs-vault';
 const mocks = vi.hoisted(() => ({
   status: vi.fn(), judge: vi.fn(),
   /** What search by meaning answers; `null` asks by words alone, as a folder with nothing set up. */
-  meaning: null as import('@/shared/lib/vault-folder/tauri-vault-vectors').VectorFound | null,
+  meaning: null as import('@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors').VectorFound | null,
   /** Each question's answer by meaning: `meaning`, unless a test queues its own. */
-  ask: vi.fn<() => Promise<import('@/shared/lib/vault-folder/tauri-vault-vectors').VectorFound> | null>(),
+  ask: vi.fn<() => Promise<import('@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors').VectorFound> | null>(),
   /** Resolves when the update a question started has ended. */
   updated: Promise.resolve(),
 }));

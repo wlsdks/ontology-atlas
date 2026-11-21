@@ -6,9 +6,7 @@
 
 export interface DemoClip {
   id: 'atlas-tour';
-  /** Measured with ffprobe; the post-shoot gate compares against it. */
   seconds: number;
-  /** Filename stem in `public/demo/`; `.ko` / `.en` is appended. */
   basename: string;
   /**
    * Frame size of every take and poster, in px, measured with ffprobe. The video reserves this
@@ -18,7 +16,6 @@ export interface DemoClip {
   height: number;
 }
 
-/** Declared before filming, so the post-shoot gate has something to compare against. */
 export const DEMO_CLIPS: readonly DemoClip[] = [
   { id: 'atlas-tour', seconds: 37, basename: 'atlas-tour', width: 1512, height: 868 },
 ];
@@ -46,7 +43,6 @@ function localeTag(locale: string): 'ko' | 'en' {
  */
 export const DEMO_WEBM_TYPE = 'video/webm; codecs="av01.0.09M.08"';
 
-/** AV1 webm first with an MP4 fallback that every iPhone decodes. */
 export function demoSources(clip: DemoClip, locale: string): { src: string; type: string }[] {
   const base = `/demo/${clip.basename}.${localeTag(locale)}`;
   return [

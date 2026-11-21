@@ -128,12 +128,12 @@ describe("stepTugAxis (decay convergence)", () => {
 
   it("never overshoots the target (monotonic approach, no spring bounce)", () => {
     let current = 0;
-    let prev = -Infinity;
+    let previous = -Infinity;
     for (let i = 0; i < 30; i += 1) {
       current = stepTugAxis(current, 10, 1 / 60, 0.12);
-      expect(current).toBeGreaterThanOrEqual(prev);
+      expect(current).toBeGreaterThanOrEqual(previous);
       expect(current).toBeLessThanOrEqual(10 + 1e-9);
-      prev = current;
+      previous = current;
     }
   });
 });

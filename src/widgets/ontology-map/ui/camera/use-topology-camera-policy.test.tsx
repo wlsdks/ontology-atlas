@@ -13,8 +13,8 @@ class FakeResizeObserver {
     this.notify = notify;
     FakeResizeObserver.last = this;
   }
-  observe(el: Element) { this.observed.add(el); }
-  unobserve(el: Element) { this.observed.delete(el); }
+  observe(domElement: Element) { this.observed.add(domElement); }
+  unobserve(domElement: Element) { this.observed.delete(domElement); }
   disconnect() { this.observed.clear(); }
 }
 

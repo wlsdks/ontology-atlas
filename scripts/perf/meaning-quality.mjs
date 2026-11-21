@@ -38,19 +38,17 @@ const QUERY_PREFIX = {
 const DOCUMENT_PREFIX = { 'nomic-embed-text-v2-moe': 'search_document: ' };
 const family = (model) => model.split(':')[0];
 
-// ── passages ─────────────────────────────────────────────────────────────────────
-
 const MANIFEST = join(ROOT, 'src-tauri', 'Cargo.toml');
 const BENCH = join(ROOT, 'src-tauri', 'target', 'release', process.platform === 'win32' ? 'vault-index-bench.exe' : 'vault-index-bench');
 let benchBuilt = false;
 
 /** Every passage the app's index embeds for the Markdown files under `dir`: `{ path, start, end, heading, text }`. */
-export async function* cratePassages(dir) {
+export async function* cratePassages(directory) {
   if (!benchBuilt) {
     execFileSync('cargo', ['build', '--release', '--quiet', '-p', 'vault-index', '--bin', 'vault-index-bench', '--features', 'index-dir-override', '--manifest-path', MANIFEST], { stdio: 'inherit' });
     benchBuilt = true;
   }
-  const child = spawn(BENCH, ['passages', dir], { stdio: ['ignore', 'pipe', 'inherit'] });
+  const child = spawn(BENCH, ['passages', directory], { stdio: ['ignore', 'pipe', 'inherit'] });
   const closed = new Promise((done) => child.on('close', done));
   for await (const line of createInterface({ input: child.stdout, crlfDelay: Infinity })) {
     if (line) yield JSON.parse(line);
@@ -58,8 +56,6 @@ export async function* cratePassages(dir) {
   const code = await closed;
   if (code !== 0) throw new Error(`vault-index-bench passages exited with ${code}`);
 }
-
-// ── Ollama ───────────────────────────────────────────────────────────────────────
 
 export async function ollamaVersion(base) {
   try {
@@ -143,8 +139,6 @@ const dot = (a, b) => {
   return sum;
 };
 
-// ── the desk's word search ─────────────────────────────────────────────────────────
-
 /** Lets Node import the app's TypeScript: `@/` aliases and extensionless relative imports. */
 async function importDesk() {
   const src = `${join(ROOT, 'src')}/`;
@@ -190,7 +184,7 @@ function wordSearch(app, vault, question) {
   return { claims, sources: hits.slice(0, TOP).map((hit) => ({ id: hit.path, line: Number(hit.anchor.slice(1)) })) };
 }
 
-async function loadVault(app) {
+async function readVaultFixture(app) {
   const { files } = JSON.parse(readFileSync(join(FIXTURE, 'vault.json'), 'utf8'));
   const docs = [];
   const rawBySlug = new Map();
@@ -208,21 +202,19 @@ async function loadVault(app) {
       unitsByPath.set(path, app.sourceUnits(bytes, path).units);
     }
   }
-  const dir = mkdtempSync(join(tmpdir(), 'atlas-meaning-quality-vault-'));
+  const directory = mkdtempSync(join(tmpdir(), 'atlas-meaning-quality-vault-'));
   const passages = [];
   try {
     for (const [path, text] of Object.entries(files)) {
-      mkdirSync(dirname(join(dir, path)), { recursive: true });
-      writeFileSync(join(dir, path), text);
+      mkdirSync(dirname(join(directory, path)), { recursive: true });
+      writeFileSync(join(directory, path), text);
     }
-    for await (const passage of cratePassages(dir)) passages.push(passage);
+    for await (const passage of cratePassages(directory)) passages.push(passage);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
   return { files, docs, rawBySlug, sources, unitsByPath, passages };
 }
-
-// ── fusion and scoring ───────────────────────────────────────────────────────────
 
 /**
  * Reciprocal-rank fusion of the desk's word list with the meaning list into 8 leads. A meaning
@@ -276,8 +268,6 @@ function summarise(rows, field) {
 const fmt = (value) => value.toFixed(1).padStart(6);
 const signed = (value) => `${value >= 0 ? '+' : ''}${value.toFixed(1)}`.padStart(6);
 
-// ── main ─────────────────────────────────────────────────────────────────────────
-
 function parseArgs(argv) {
   const options = { models: DEFAULT_MODELS, ollama: DEFAULT_OLLAMA, json: null, verbose: false, writeVault: null, cache: true, queryPrefix: true };
   for (const arg of argv) {
@@ -297,7 +287,7 @@ function parseArgs(argv) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const app = await importDesk();
-  const vault = await loadVault(app);
+  const vault = await readVaultFixture(app);
   const { questions } = JSON.parse(readFileSync(join(FIXTURE, 'questions.json'), 'utf8'));
   if (options.writeVault) {
     for (const [path, text] of Object.entries(vault.files)) {

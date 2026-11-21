@@ -19,13 +19,13 @@ pub(super) fn copy_source_into(
     source: &mut impl std::io::Read,
 ) -> Result<Option<(String, u64, String)>, String> {
     let root = canonical_root(root_path)?;
-    let root_handle = crate::agent_setup::open_absolute_directory_no_follow(&root)?;
+    let root_handle = crate::confined_files::open_absolute_directory_no_follow(&root)?;
     let (parent, _) =
-        crate::agent_setup::open_entry_parent(&root_handle, &format!("{folder_relative}/name"))
+        crate::confined_files::open_entry_parent(&root_handle, &format!("{folder_relative}/name"))
             .map_err(|_| "import-destination-not-a-folder".to_string())?;
     let names = names.filter_map(|name| std::ffi::CString::new(name).ok());
     let published =
-        crate::agent_setup::create_first_free_entry_with(&parent, names, 0o666, |file| {
+        crate::confined_files::create_first_free_entry_with(&parent, names, 0o666, |file| {
             copy_hashing(source, file)
         })
         .map_err(|_| "import-destination-unwritable".to_string())?;

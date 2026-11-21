@@ -5,10 +5,7 @@ import { useDataSourceMode, useStaticVaultSource, useLocalVault } from '@/entiti
 import type { VaultManifest } from '@/entities/docs-vault';
 import { computeVaultHealth, type VaultHealthResult } from '@/entities/knowledge-graph';
 
-/**
- * Browser twin of the CLI `health`: same rule outcomes from raw frontmatter, with
- * `useOntologyInsight`'s mode selection.
- */
+/** Browser twin of the CLI `health`. */
 const staticHealthCache = new WeakMap<VaultManifest, VaultHealthResult>();
 function manifestHealth(manifest: VaultManifest): VaultHealthResult {
   const cached = staticHealthCache.get(manifest);
@@ -18,7 +15,6 @@ function manifestHealth(manifest: VaultManifest): VaultHealthResult {
   return result;
 }
 
-/** One mode selection for every health reading, so they never read different vaults. */
 function useHealthManifest(): VaultManifest | null {
   const mode = useDataSourceMode();
   // The manifest only through the hook (tests/contract/vault-data/static-vault-source.contract.test.ts).

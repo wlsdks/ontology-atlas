@@ -3,7 +3,7 @@ export type {
   VaultManifest,
   VaultSourceFile,
   VaultTreeNode,
-} from './model/types';
+} from './model/vault-manifest';
 // The bundled samples are built by `scripts/docs-vault/build-docs-vault.mjs` from `docs/ontology/`
 // and `samples/storefront/`. The browser reads them through the loader; only build-time callers
 // and `/download` take the synchronous resolver, whose static JSON imports a screen must not reach.
@@ -15,7 +15,7 @@ export { dogfoodManifest } from './lib/bundled-vault/dogfood-manifest';
 export { DOGFOOD_AGENT_SLUG_PREFIX } from './lib/bundled-vault/dogfood-slug-prefix';
 export { bundledSamples } from './lib/bundled-vault/load-static-vault-source';
 export {
-  loadStaticVaultHeadings,
+  importStaticVaultHeadings,
   type StaticVaultHeadings,
 } from './lib/bundled-vault/static-headings';
 export { deriveDocumentDetail, type DocumentRef, type VaultDocDetail } from './store/document-detail';

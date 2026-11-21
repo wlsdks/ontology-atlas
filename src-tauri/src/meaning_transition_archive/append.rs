@@ -112,9 +112,11 @@ fn append_bundle_after_artifacts(
     let root = checked_root(&root_path, &expected)?;
     #[cfg(unix)]
     let archive_handle = {
-        let root_handle = crate::agent_setup::open_absolute_directory_no_follow(&root)?;
-        let (handle, _) =
-            crate::agent_setup::open_entry_parent(&root_handle, &format!("{DIRECTORY}/.record"))?;
+        let root_handle = crate::confined_files::open_absolute_directory_no_follow(&root)?;
+        let (handle, _) = crate::confined_files::open_entry_parent(
+            &root_handle,
+            &format!("{DIRECTORY}/.record"),
+        )?;
         handle
     };
     #[cfg(unix)]

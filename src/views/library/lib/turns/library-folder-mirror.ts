@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import type { VaultDoc } from "@/entities/docs-vault";
 import { useLocalVault } from "@/entities/vault-session";
-import { useWikiWriteMode, type WikiWriteMode } from "@/shared/lib/preferences/appearance-preferences";
+import { useWikiWriteMode, type WikiWriteMode } from "@/shared/lib/preferences/library-preferences";
 import { selectOpenVaultHandle } from "@/shared/lib/vault-folder/select-open-vault-handle";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
 

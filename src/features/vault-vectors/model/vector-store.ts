@@ -11,17 +11,13 @@ import {
   vectorStatus,
   type VectorSource,
   type VectorStatus,
-} from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
+} from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
+import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vectors/vault-vector-source';
 
-/**
- * The app session's last search-by-meaning status per folder root. One event subscription feeds
- * it for every screen, so leaving the Library and coming back reads the job where it is.
- */
+/** One event subscription feeds every screen, so leaving the Library and coming back reads the job where it is. */
 const statuses = new Map<string, VectorStatus>();
 const listeners = new Set<() => void>();
 const reading = new Map<string, Promise<void>>();
-/** The last press that started or resumed each folder's job in this launch, numbered in order. */
 const presses = new Map<string, number>();
 let pressCount = 0;
 let unsubscribeEvents: (() => void) | null = null;
@@ -45,7 +41,6 @@ export function subscribe(listener: () => void): () => void {
   };
 }
 
-/** `true` when Rust accepted; otherwise the refusal's code. */
 type Answer = true | { refused: string };
 
 /** A rejected command keeps the last status; the warning names the command, never the folder. */
@@ -60,22 +55,16 @@ async function answer(command: string, rootPath: string | null, call: () => Prom
   }
 }
 
-/**
- * Codes Rust refuses the source itself with (`check_source`): a runner off this computer or a model
- * name no store can hold. A refused folder (not granted again yet after an update, gone, unreadable)
- * says nothing about the choice, which waits for the folder.
- */
+/** Codes Rust refuses the source itself with (`check_source`); a refused folder says nothing about the choice, which waits for the folder. */
 const refusesTheChoice = (answered: Answer) =>
   answered !== true && (answered.refused.startsWith('embed-') || answered.refused.startsWith('vectors-model-name'));
 
-/** A choice Rust refused is no choice: it is forgotten and the folder reads as not set up. */
 function refused(rootPath: string, answered: Answer): void {
   if (!refusesTheChoice(answered)) return;
   vaultVectorSource.clear(rootPath);
   publish(rootPath, { ...OFF_VECTOR_STATUS, phase: 'notSetUp' });
 }
 
-/** Asks Rust for the folder's status once at a time, with the stored choice and its pause. */
 function refresh(rootPath: string): Promise<void> {
   const inFlight = reading.get(rootPath);
   if (inFlight) return inFlight;
@@ -87,7 +76,6 @@ function refresh(rootPath: string): Promise<void> {
   return read;
 }
 
-/** The folder's last known status, or `null` until the first answer; asks once when none is held. */
 export function useVectorStatus(rootPath: string | null): VectorStatus | null {
   const getSnapshot = useCallback(() => (rootPath === null ? null : statuses.get(rootPath) ?? null), [rootPath]);
   const status = useSyncExternalStore(subscribe, getSnapshot, () => null);
@@ -97,10 +85,7 @@ export function useVectorStatus(rootPath: string | null): VectorStatus | null {
   return status;
 }
 
-/**
- * One value read from the folder's status: a caller renders only when that value changes, so a
- * screen that needs a yes or no is not drawn again on every progress event.
- */
+/** A caller renders only when the selected value changes, so a yes-or-no screen is not redrawn on every progress event. */
 export function useVectorStatusOf<T>(rootPath: string | null, select: (status: VectorStatus | null) => T): T {
   const getSnapshot = () => select(rootPath === null ? null : statuses.get(rootPath) ?? null);
   const value = useSyncExternalStore(subscribe, getSnapshot, () => select(null));
@@ -110,15 +95,11 @@ export function useVectorStatusOf<T>(rootPath: string | null, select: (status: V
   return value;
 }
 
-/** Reads the folder's status again, so the line says what a search that failed just learned. */
 export function readStatusAgain(rootPath: string): Promise<void> {
   return refresh(rootPath);
 }
 
-/**
- * Resolves at the first status the app publishes for the folder after this call that runs no
- * pass. Called once a search answered `busy`, so the job it reports is the one this waits for.
- */
+/** Resolves at the first status after this call that runs no pass; called once a search answered `busy`. */
 export function afterJob(rootPath: string): Promise<void> {
   const before = statuses.get(rootPath);
   return new Promise((resolve) => {
@@ -131,15 +112,11 @@ export function afterJob(rootPath: string): Promise<void> {
   });
 }
 
-/** The folder's last known status without asking for one: the long-work seat only listens. */
 export function statusOf(rootPath: string): VectorStatus | null {
   return statuses.get(rootPath) ?? null;
 }
 
-/**
- * The press that last started or resumed this folder's job in this launch, or `null` when the job
- * continues by itself (a restart, an update of changed files).
- */
+/** `null` when the job continues by itself (a restart, an update of changed files). */
 export function pressOf(rootPath: string): number | null {
   return presses.get(rootPath) ?? null;
 }
@@ -147,10 +124,7 @@ export function pressOf(rootPath: string): number | null {
 const sameSource = (a: VectorSource, b: VectorSource) =>
   a.kind === b.kind && (a.kind === 'builtin' || (b.kind === 'runner' && a.baseUrl === b.baseUrl && a.model === b.model));
 
-/**
- * Stores the choice, unpaused, once Rust accepts it. Only the dialog's Download and prepare passes
- * `download`: no other press fetches the model. A refused switch keeps the folder's earlier choice.
- */
+/** Only the dialog's Download and prepare passes `download`: no other press fetches the model. */
 export async function prepare(rootPath: string, source: VectorSource, download = false): Promise<boolean> {
   const earlier = vaultVectorSource.read(rootPath);
   recordPress(rootPath);
@@ -161,16 +135,13 @@ export async function prepare(rootPath: string, source: VectorSource, download =
   return answered === true;
 }
 
-/** The pause is the person's: it is stored, so the next opening keeps the job stopped. */
+/** The pause is stored, so the next opening keeps the job stopped. */
 export function stop(rootPath: string): Promise<boolean> {
   vaultVectorSource.setPaused(rootPath, true);
   return answer('vault_vectors_stop', rootPath, () => stopVectors(rootPath)).then((answered) => answered === true);
 }
 
-/**
- * Prepares again with the stored source and never downloads: a missing model answers `modelGone`,
- * whose press opens the dialog. Without a choice there is nothing to resume.
- */
+/** Never downloads: a missing model answers `modelGone`, whose press opens the dialog. */
 export async function resume(rootPath: string): Promise<boolean> {
   const choice = vaultVectorSource.read(rootPath);
   if (choice === null) return false;
@@ -181,21 +152,19 @@ export async function resume(rootPath: string): Promise<boolean> {
   return answered === true;
 }
 
-/** Deletes this folder's vectors and forgets its choice once Rust says they are gone. */
 export async function remove(rootPath: string): Promise<boolean> {
   const removed = (await answer('vault_vectors_delete', rootPath, () => deleteVectors(rootPath))) === true;
   if (removed) vaultVectorSource.clear(rootPath);
   return removed;
 }
 
-/** Deletes the built-in model; prepared vectors stay, and each known folder reads its status again. */
 export async function removeModel(): Promise<boolean> {
   const removed = (await answer('vault_vectors_delete_model', null, () => deleteVectorModel())) === true;
   await Promise.all([...statuses.keys()].map((rootPath) => refresh(rootPath)));
   return removed;
 }
 
-/** The search index's own Delete or switch-off removed the vectors with it; `null` means every folder. */
+/** `null` means every folder. */
 export async function forgetChoices(rootPath: string | null): Promise<void> {
   if (rootPath === null) vaultVectorSource.clearAll();
   else vaultVectorSource.clear(rootPath);

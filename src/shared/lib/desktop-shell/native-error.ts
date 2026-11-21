@@ -12,48 +12,34 @@
 const CODED = /^([a-z][a-z0-9]*(?:-[a-z0-9]+)*)(?::\s*([\s\S]*))?$/;
 
 export interface NativeErrorParts {
-  /** The machine code, or `null` when this failure did not carry one. */
   code: string | null;
-  /** Everything after the code. English, machine-supplied, possibly empty. */
   detail: string;
-  /** The whole payload as it arrived, for the case where nothing parsed. */
   raw: string;
 }
 
-/** Look up one code's localized sentence. `undefined` means "this code is unknown here". */
 export type NativeErrorLookup = (code: string) => string | undefined;
 
 /** invoke's rejection payload → a string. Rust returns `Err(String)`, but Error/unknown happen. */
-function payloadText(err: unknown): string {
-  if (typeof err === 'string') return err;
-  if (err instanceof Error) return err.message;
-  return String(err);
+function payloadText(error: unknown): string {
+  if (typeof error === 'string') return error;
+  if (error instanceof Error) return error.message;
+  return String(error);
 }
 
-/** Split an invoke rejection into its code and its English detail. */
-export function parseNativeError(err: unknown): NativeErrorParts {
-  const raw = payloadText(err).trim();
+export function parseNativeError(error: unknown): NativeErrorParts {
+  const raw = payloadText(error).trim();
   const match = CODED.exec(raw);
   if (!match) return { code: null, detail: raw, raw };
   return { code: match[1], detail: (match[2] ?? '').trim(), raw };
 }
 
 /**
- * One line for the user.
- *
- * With **no lookup at all** the payload comes back untouched — byte for byte what
- * these three bridges returned before codes existed. That is not politeness: the
- * agent loop's `noticeFor` recognises a failed turn by `audit-blocked:` and
- * `timed-out:` prefixes, so a caller that has not been wired to a catalogue must
- * keep its code, or an unwritable folder silently becomes "check your network" —
- * the exact regression `tests/contract/agent-chat/agent-notice-codes.contract.test.ts` exists
- * to prevent.
- *
- * With a lookup, an **unknown** code still degrades to the English detail, so a
- * code minted in Rust and forgotten in `messages/*.json` says something true.
+ * Without a lookup the payload is untouched: the agent loop's `noticeFor` matches the
+ * `audit-blocked:` and `timed-out:` prefixes (`agent-notice-codes.contract.test.ts`). With one, an
+ * unknown code still degrades to the English detail.
  */
-export function nativeErrorMessage(err: unknown, lookup?: NativeErrorLookup): string {
-  const { code, detail, raw } = parseNativeError(err);
+export function nativeErrorMessage(error: unknown, lookup?: NativeErrorLookup): string {
+  const { code, detail, raw } = parseNativeError(error);
   if (!lookup) return raw;
   const sentence = code ? lookup(code) : undefined;
   if (!sentence) return detail || raw;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { VaultDoc, VaultSourceFile } from '../../model/types';
+import type { VaultDoc, VaultSourceFile } from '../../model/vault-manifest';
 import { deriveSourceProgress, recordedInstantMs, recordedLocalDay, SOURCE_PROGRESS_MAX_POINTS } from './source-progress';
 import { buildLibraryModel, type LibrarySourceRow, type SourceCompileState } from './vault-library';
 

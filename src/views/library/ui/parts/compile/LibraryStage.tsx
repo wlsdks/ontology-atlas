@@ -1,6 +1,6 @@
 "use client";
 
-import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/action-feedback-glyph';
+import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/status-glyphs/ActionFeedbackGlyph';
 import type { ReactNode } from "react";
 import type { useTranslations } from "next-intl";
 import { BookText, FilePlus2, Search, Sparkles, Stethoscope } from "lucide-react";

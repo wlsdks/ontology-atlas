@@ -28,7 +28,7 @@ import {
   writeLibraryIndexSegment,
   writeWikiWriteMode,
   type LibraryIndexSegment,
-} from "@/shared/lib/preferences/appearance-preferences";
+} from "@/shared/lib/preferences/library-preferences";
 import { cn } from "@/shared/lib/cn";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";

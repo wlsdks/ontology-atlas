@@ -10,11 +10,7 @@ import {
 } from '@/entities/docs-vault';
 import { derivationToInsight } from './use-ontology-insight';
 
-/**
- * This repository's own vault, pinned, because the `/download` caption claims it and its hero map
- * draws it before first paint. The manifest is a static import
- * (docs/DECISIONS.md, 2026-07-28), so only the screens that reach this file pay for that chunk. Derived once per locale.
- */
+/** Pinned: the `/download` caption claims this vault and its hero map draws it before first paint. The manifest is a static import, so only the screens that reach this file pay for that chunk. */
 const DOGFOOD_DERIVATION = deriveOntologyFromVault(dogfoodManifest);
 const insightByLocale = new Map<string, KnowledgeProjectInsight>();
 

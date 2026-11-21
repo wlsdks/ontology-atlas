@@ -17,7 +17,6 @@ import { findProjectPlacement } from "./placement";
 type Translate = ReturnType<typeof useTranslations>;
 type FieldErrors = Partial<Record<keyof ProjectFormValues, string>>;
 
-// schema.ts cannot use hooks, so it returns `validation.<key>` i18n keys translated here.
 function resolveValidationMessage(t: Translate, message: string): string {
   if (message.startsWith("validation.linkLine:")) {
     const [, index, code] = message.split(":");
@@ -189,7 +188,6 @@ export function projectPlacement({
   // category. Edit must not silently fill in a category or position the original lacked.
   const initialPos = initialProject?.position;
   const categoryChanged = initialProject?.category !== category?.id;
-  // Branch on mode: duplicate is create with an initialProject and needs a fresh slot.
   return mode === "edit" && initialProject
     ? categoryChanged && category
       ? findProjectPlacement(

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const BUDGETS = JSON.parse(readFileSync(new URL('../budgets.json', import.meta.url), 'utf8'));
 
-export function loadBudgets() {
+export function getBudgets() {
   return BUDGETS;
 }
 

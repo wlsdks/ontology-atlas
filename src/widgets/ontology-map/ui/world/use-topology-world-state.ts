@@ -47,7 +47,7 @@ export function useTopologyWorldState() {
   const dragVelRef = useRef<{ x: number; y: number; }>({ x: 0, y: 0 });
 
   /** The dragged node's position last frame, for the velocity above. */
-  const dragPrevPosRef = useRef<{ x: number; y: number; } | null>(null);
+  const dragPreviousPosRef = useRef<{ x: number; y: number; } | null>(null);
 
   /** True once this release's drop has been seeded, so it is seeded exactly once. */
   const dropSeededRef = useRef(false);
@@ -62,29 +62,17 @@ export function useTopologyWorldState() {
   const hoverReleasedRef = useRef<string | null>(null);
 
   /**
-   * Coordinate snapshot from the **start** of a sim frame (in node-array
-   * order). Comparing against it at the end of the frame yields the nodes that
-   * really moved, and narrows the derived geometry update to those
-   * (`recomputeWorldGeometry(world, tokens, movedIds)`).
-   *
-   * Measured rather than inferred from "which set is about to move" because
-   * three separate things write coordinates in one frame — force application,
-   * neighbour tug, and separation relaxation — and their reaches differ.
-   * Inference eventually misses one, and the symptom is a visible defect:
-   * edges detached from their nodes.
+   * Coordinate snapshot from the start of a sim frame (node-array order): comparing at the end of the frame yields the nodes that really moved and narrows the derived geometry
+   * update to them (`recomputeWorldGeometry(world, tokens, movedIds)`). Measured, not inferred: force application, neighbour tug and separation relaxation write coordinates in one
+   * frame and inference eventually misses one, detaching edges from nodes.
    */
-  const geomPrevXRef = useRef<Float64Array | null>(null);
+  const geomPreviousXRef = useRef<Float64Array | null>(null);
 
-  const geomPrevYRef = useRef<Float64Array | null>(null);
+  const geomPreviousYRef = useRef<Float64Array | null>(null);
 
   /**
-   * Nodes that **separation relaxation displaced** last frame and that sit
-   * outside the force-applied set.
-   *
-   * This frame's `applyForcePositions` reverting their coordinates to the sim
-   * values is the pre-existing behaviour, so the narrowed write-back has to
-   * include them to preserve it. (Whether that revert is correct at all is a
-   * separate question — nothing here changes the behaviour.)
+   * Nodes that separation relaxation displaced last frame and that sit outside the force-applied set: this frame's `applyForcePositions` reverts their coordinates to the sim values,
+   * so the narrowed write-back must include them to keep that behaviour.
    */
   const sepDisplacedIdsRef = useRef<Set<string>>(new Set());
 
@@ -101,11 +89,11 @@ export function useTopologyWorldState() {
   const homeTargetOverrideRef = useRef<ReadonlyMap<string, { x: number; y: number; }> | null>(null);
 
   /** Previous frame's pin-dragged node id, to detect the release transition. */
-  const prevPinnedNodeIdRef = useRef<string | null>(null);
+  const previousPinnedNodeIdRef = useRef<string | null>(null);
   return {
     worldRef, simRef, heatRef, nodeDragRef, activeTouchesRef, pinchRef, dragAffectedSetRef, dragStartPosRef,
-    dragTugOffsetsRef, dragVelRef, dragPrevPosRef, dropSeededRef, hoverStartRef, hoverReleasedRef,
-    geomPrevXRef, geomPrevYRef, sepDisplacedIdsRef, homeSpringsRef, homingActiveRef, homeTargetOverrideRef,
-    prevPinnedNodeIdRef,
+    dragTugOffsetsRef, dragVelRef, dragPreviousPosRef, dropSeededRef, hoverStartRef, hoverReleasedRef,
+    geomPreviousXRef, geomPreviousYRef, sepDisplacedIdsRef, homeSpringsRef, homingActiveRef, homeTargetOverrideRef,
+    previousPinnedNodeIdRef,
   };
 }

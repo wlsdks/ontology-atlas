@@ -8,7 +8,7 @@ import { isContainmentRelation } from "@/entities/knowledge-graph";
 
 import { buildDialModel } from "../dial/dial-model";
 import { circularDomainOrder } from "../dial/order";
-import type { DialModel } from "../dial/types";
+import type { DialModel } from "../dial/dial-shapes";
 import {
   directRelations,
   readContainmentTree,
@@ -23,7 +23,7 @@ import { layoutFlatGraph, runForceAtlas2, steppedForceAtlas2 } from "./layout";
 import { flatGraphPins, settleFlatGraph } from "./scene";
 import { separate, type Body } from "./separate";
 import { resolveFlatGraphTokens } from "./tokens";
-import type { FlatGraphFrame } from "./types";
+import type { FlatGraphFrame } from "./flat-graph-shapes";
 
 function cssValues(): Map<string, string> {
   const values = new Map<string, string>();

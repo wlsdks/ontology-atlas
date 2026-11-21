@@ -2,11 +2,11 @@
  * Tauri `invoke` rejects with the bare string from `Err(String)`, not an `Error`, so an `instanceof
  * Error` guard would discard every desktop failure.
  */
-export function toErrorMessage(err: unknown): string | null {
-  if (typeof err === 'string') return nonEmpty(err);
-  if (err instanceof Error) return nonEmpty(err.message);
-  if (err && typeof err === 'object' && 'message' in err) {
-    const message = (err as { message?: unknown }).message;
+export function toErrorMessage(error: unknown): string | null {
+  if (typeof error === 'string') return nonEmpty(error);
+  if (error instanceof Error) return nonEmpty(error.message);
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
     if (typeof message === 'string') return nonEmpty(message);
   }
   return null;

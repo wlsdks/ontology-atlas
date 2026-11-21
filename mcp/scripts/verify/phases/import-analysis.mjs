@@ -68,7 +68,7 @@ export function verifyImportAnalysis(responses) {
     if (
       parsed.contract !== 'inferImportsFocus:v1' ||
       focus?.contract !== 'importImpactFocus:v1' ||
-      focus?.focusPath !== 'src/entities/knowledge-graph/model/types.ts' ||
+      focus?.focusPath !== 'src/entities/knowledge-graph/model/knowledge-graph.ts' ||
       focus?.writeAllowed !== false ||
       !Array.isArray(focus?.edges) ||
       focus.edges.length > 25 ||

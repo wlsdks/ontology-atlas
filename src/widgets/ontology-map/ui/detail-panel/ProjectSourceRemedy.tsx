@@ -1,7 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { truncateMiddlePath } from "@/shared/lib/concept-display/truncate-middle-path";
 import { controlClass } from "@/shared/ui";
-import type { OntologyMapDetailPanelProps } from "./types";
+import type { OntologyMapDetailPanelProps } from "./detail-panel-props";
 
 /** One remedy after the status; a proposed folder keeps its explicit confirmation. */
 export function ProjectSourceRemedy({

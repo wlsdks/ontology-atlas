@@ -24,8 +24,8 @@ describe('StaggeredFadeIn', () => {
         <div key="k" data-testid="k" className="own" style={{ color: 'red' }}>z</div>
       </StaggeredFadeIn>,
     );
-    const el = screen.getByTestId('k');
-    expect(el.className).toContain('own');
-    expect(el.style.color).toBe('red');
+    const element = screen.getByTestId('k');
+    expect(element.className).toContain('own');
+    expect(element.style.color).toBe('red');
   });
 });

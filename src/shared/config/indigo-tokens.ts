@@ -19,7 +19,6 @@ export const INDIGO_HUB = "#6c77d4";
 export const INDIGO_FOCUS = "#7c87e6";
 export const INDIGO_HIGHLIGHT = "#8b97ff";
 
-/** Exported for inline composition; prefer the `indigoRgba` helper below. */
 const INDIGO_RGB = {
   brand: "94, 106, 210",
   accent: "113, 112, 255",
@@ -31,12 +30,7 @@ const INDIGO_RGB = {
 
 export type IndigoVariant = keyof typeof INDIGO_RGB;
 
-/**
- * For SVG fills and canvas paints that need an alpha.
- *
- * @example
- *   indigoRgba("highlight", 0.95) // "rgba(139, 151, 255, 0.95)"
- */
+/** For SVG fills and canvas paints that need an alpha: `indigoRgba("highlight", 0.95)` is `rgba(139, 151, 255, 0.95)`. */
 export function indigoRgba(variant: IndigoVariant, alpha: number): string {
   return `rgba(${INDIGO_RGB[variant]}, ${alpha})`;
 }

@@ -2,29 +2,24 @@
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
-import { vaultIndexPreference } from '@/shared/lib/vault-folder/tauri-vault-index';
+import { vaultIndexPreference } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
 import {
   searchVectors,
   warmVectors,
   type VectorFound,
   type VectorSource,
   type VectorStatus,
-} from '@/shared/lib/vault-folder/tauri-vault-vectors';
-import { vaultVectorSource, type VectorChoice } from '@/shared/lib/vault-folder/vault-vector-source';
+} from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
+import { vaultVectorSource, type VectorChoice } from '@/shared/lib/vault-folder/vault-vectors/vault-vector-source';
 import { deskLine } from './desk-line';
 import { noteSearchAnswer, statusKeepsFailure } from './search-failure';
 import { afterJob, readStatusAgain, useVectorStatusOf } from './vector-store';
 
-/** Passages one question asks for; the desk keeps those in the files it searches. */
 export const VECTOR_SEARCH_LIMIT = 24;
 
 const noSubscribe = () => () => undefined;
 
-/**
- * The source a question asks by meaning through, or `null` when it asks by words alone: only in
- * the app, with the index on, for a folder with a stored choice whose vectors hold something
- * (ready, preparing, or stopped after at least one file).
- */
+/** `null` (words alone) unless in the app, with the index on, for a folder with a stored choice whose vectors hold something. */
 export function searchableSource(status: VectorStatus | null, choice: VectorChoice | null, isApp: boolean, indexOn: boolean): VectorSource | null {
   if (!isApp || !indexOn || choice === null || status === null) return null;
   if (status.phase === 'ready' || status.phase === 'preparing') return choice.source;
@@ -32,11 +27,7 @@ export function searchableSource(status: VectorStatus | null, choice: VectorChoi
   return null;
 }
 
-/**
- * A search that failed with what the app keeps in the folder's status (the model is gone) reads
- * that status again before the results show. A runner that did not answer is held for the line
- * instead, since the app leaves the status as it was. Either way line and notice agree.
- */
+/** A runner that did not answer is held for the line instead, since the app leaves the status as it was. */
 export async function askAndFollowFailure(rootPath: string, source: VectorSource, question: string, prefixes: readonly string[] = []): Promise<VectorFound> {
   const found = await searchVectors(rootPath, source, question, VECTOR_SEARCH_LIMIT, prefixes);
   noteSearchAnswer(rootPath, found);
@@ -45,20 +36,13 @@ export async function askAndFollowFailure(rootPath: string, source: VectorSource
 }
 
 export interface VectorSearch {
-  /** Asks by meaning beside the word search, within `prefixes`; `null` when this folder asks by words alone. */
   ask: (question: string, prefixes?: readonly string[]) => Promise<VectorFound> | null;
-  /** Loads the model once per visit, on the field's first focus, for a folder that can ask. */
   warm: () => void;
-  /** In the app with the index on and nothing set up, so a search that finds nothing offers setup. */
   offerSetup: boolean;
-  /** After an answer that said `busy`: resolves when the folder's job, such as the update that question started, has ended. */
   afterJob: () => Promise<void>;
 }
 
-/**
- * The Wiki desk's search by meaning for one folder; a visit ends when the desk is hidden. The
- * folder's status is read as two yes-or-no values, so a progress event does not draw the desk.
- */
+/** The folder's status is read as two yes-or-no values, so a progress event does not draw the desk. */
 export function useVectorSearch(rootPath: string | null, markdownFiles: number, visible: boolean): VectorSearch {
   const isApp = useSyncExternalStore(noSubscribe, isTauriVaultRuntime, () => false);
   const indexOn = vaultIndexPreference.use() === 'on';

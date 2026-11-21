@@ -5,7 +5,7 @@ import type { useTranslations } from "next-intl";
 import { FilePlus2 } from "lucide-react";
 
 import { cn } from "@/shared/lib/cn";
-import { ActionFeedbackGlyph, type ActionFeedbackState } from "@/shared/motion/action-feedback-glyph";
+import { ActionFeedbackGlyph, type ActionFeedbackState } from "@/shared/motion/status-glyphs/ActionFeedbackGlyph";
 import { controlClass } from "@/shared/ui/control-class";
 import { Sheet } from "@/shared/ui/marks/sheet";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";

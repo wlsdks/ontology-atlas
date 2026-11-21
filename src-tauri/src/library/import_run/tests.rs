@@ -1,8 +1,9 @@
-use super::*;
 use crate::library::dropped;
 use crate::library::fixture_folder::{
     fixture_with_vault, import_offered, offer_as_picked, plant_file, take_drop_turn,
 };
+#[cfg(unix)]
+use crate::library::import_destination::ImportDestination;
 use crate::library::import_destination::SOURCES_DIR;
 use crate::library::source_import::import_source_files;
 #[cfg(unix)]

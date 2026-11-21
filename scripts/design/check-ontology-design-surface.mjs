@@ -7,8 +7,8 @@ import { blankComments } from "../quality/source-language/inventory.mjs";
 export const DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS = [
   "src/views/docs-vault",
   "src/widgets/docs-vault",
-  // Manual writing now lives in the selected map inspector; ACP writing pauses
-  // inside its existing conversation card. The old Studio route is a redirect.
+  // Manual writing lives in the selected map inspector; ACP writing pauses inside its existing
+  // conversation card.
   "src/views/home",
   "src/features/ontology-meaning-editor",
   "src/features/ontology-change-review",
@@ -36,9 +36,7 @@ export const ONTOLOGY_DESIGN_FORBIDDEN_CHECKS = [
 
 export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   {
-    // The audit band was promoted to a centred modal and moved from
-    // `DocsVaultSourceContractBar` to `DocsVaultAuditModal` (a separate file), so the
-    // marker checks for presence across the whole file bundle.
+    // The marker checks for presence across the whole file bundle.
     id: "source-vault-execution-contract",
     files: [
       "src/views/docs-vault/ui/DocsVaultPage.tsx",
@@ -64,19 +62,18 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     id: "contextual-write-review-loop",
     files: [
       "src/views/home/ui/HomePage.tsx",
-      "src/views/home/ui/TopologyCanvasSurface.tsx",
-      "src/views/home/ui/TopologyMapRenderer.tsx",
-      "src/views/home/ui/CreateNodeForm.tsx",
+      "src/views/home/ui/map-surfaces/TopologyCanvasSurface.tsx",
+      "src/views/home/ui/map-surfaces/TopologyMapRenderer.tsx",
+      "src/views/home/ui/create/CreateNodeForm.tsx",
       "src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx",
       "src/features/ontology-change-review/ui/OntologyChangeReview.tsx",
       "src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx",
+      "src/widgets/acp-chat-panel/ui/chat-panel/permission/PermissionDecisions.tsx",
       "src/features/acp-session/model/acp-client.ts",
     ],
     markers: [
       "MeaningEditorPanel",
       "buildOntologyRelationEditPlan",
-      "meaning-editor-change-review",
-      "create-node-change-review",
       "<TopologyCanvasSurface",
       "previewEdge={mapRelationPreview}",
       "acp-ontology-change-review",
@@ -85,12 +82,12 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "atlasMode === 'write'",
     ],
     reason:
-      "Map and ACP writes must both stop on a typed pre-write change review; the map must preview the proposed relation without mutating layout, and ontology writes must never expose allow-always.",
+      "A person's own map write lands at once with Undo (docs/records/decisions/2026-11-20-hand-writes-at-once-with-undo-875477f1-bacd-4a91-9dbd-93235f2c9e5f.md) and the map previews a proposed relation without mutating layout; an agent's ACP write stops on a typed change review and never exposes allow-always.",
   },
 ];
 
-function collectFiles(root, dir, allowedExtensions, ignoredFilePattern) {
-  const absoluteDir = join(root, dir);
+function collectFiles(root, directory, allowedExtensions, ignoredFilePattern) {
+  const absoluteDir = join(root, directory);
   const files = [];
 
   for (const entry of readdirSync(absoluteDir)) {
@@ -185,7 +182,7 @@ export function evaluateOntologyDesignSurface({
   requiredSurfaceMarkers = ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS,
 } = {}) {
   const files = targetDirs
-    .flatMap((dir) => collectFiles(root, dir, allowedExtensions, ignoredFilePattern))
+    .flatMap((directory) => collectFiles(root, directory, allowedExtensions, ignoredFilePattern))
     .sort();
   const idleViolations = files.length === 0
     ? [{

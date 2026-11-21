@@ -25,7 +25,7 @@ import type {
   DialTokens,
   Point,
   TextMark,
-} from "../types";
+} from "../dial-shapes";
 
 const FOCUS_MS = MOTION.fast.duration * 1000;
 const CURVE_STEPS = 16;

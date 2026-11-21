@@ -154,7 +154,7 @@ fn restoring_a_document_named_like_a_pattern_leaves_other_documents_alone() {
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(dir.join("docs/sub")).unwrap();
     let dir = fs::canonicalize(&dir).unwrap();
-    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&dir));
+    let _scope = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&dir));
     let git = |args: &[&str]| {
         let out = std::process::Command::new("git")
             .args(args)

@@ -7,7 +7,7 @@ import type { LibraryWorkActivity, LibraryWorkEvent, LibraryWorkTarget } from "@
 import { cn } from "@/shared/lib/cn";
 import { useDismissibleMenu } from "@/shared/lib/overlays/use-dismissible-menu";
 import { EXIT_WINDOW_MS } from "@/shared/lib/render-timing/use-presence";
-import { WorkGlyph } from "@/shared/motion/work-glyph";
+import { WorkGlyph } from "@/shared/motion/status-glyphs/WorkGlyph";
 import { controlClass } from "@/shared/ui/control-class";
 import { Chip } from "@/shared/ui/controls/controls";
 import { Surface } from "@/shared/ui/surfaces/surface";

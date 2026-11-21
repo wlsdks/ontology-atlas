@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { VaultManifest } from '../../model/types';
+import type { VaultManifest } from '../../model/vault-manifest';
 
 const nativeVaultFingerprint = vi.fn();
 const readTauriVaultTextFile = vi.fn();

@@ -13,9 +13,7 @@ type Translate = (key: string, values?: Record<string, string | number>) => stri
 interface ManualWriteRequest {
   slug: string;
   write: () => Promise<unknown>;
-  /** The toast line that names what happened. */
   message: string;
-  /** The bytes the write leaves when they are known up front: the new file, or `null` for a delete. */
   written?: string | null;
 }
 
@@ -31,7 +29,6 @@ export function useManualWriteUndo({
   t,
 }: {
   vault: Vault;
-  /** The open folder's identity (`vaultIdentity`). */
   folder: string | null;
   toast: ReturnType<typeof useToast>;
   t: Translate;
@@ -85,7 +82,6 @@ export function useManualWriteUndo({
     [readText, t, toast],
   );
 
-  /** Runs one manual write and answers with a toast that names it and offers Undo; rethrows a failure. */
   const runManualWrite = useCallback(
     async ({ slug, write, message, written }: ManualWriteRequest) => {
       const handle = vaultRef.current.fileHandles.get(slug) ?? null;
@@ -100,7 +96,6 @@ export function useManualWriteUndo({
     [t, toast, undo],
   );
 
-  /** Undoes the most recent manual write, for the keyboard; answers whether there was one. */
   const undoLastManualWrite = useCallback(() => {
     const write = lastWriteRef.current;
     if (!write) return false;

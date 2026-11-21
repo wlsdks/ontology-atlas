@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import regression from "./ledger-regression.fixture.json";
 import { overlaps } from "./label-marks";
-import type { Point } from "./types";
+import type { Point } from "./dial-shapes";
 import { buildLedger, countLeaderCrossings, ledgerWanted, namesFitInPlace, type LedgerDisc, type LedgerInput } from "./ledger";
 
 const TOKENS = { ledgerRowPx: 14, ledgerGapPx: 24 };

@@ -46,16 +46,12 @@ const WINDOW_STATE_PLUGIN_MARKER_PREFIX =
   "[ontology-atlas-window-verify] state_plugin=";
 
 /**
- * **The harness's geometry isolation must be observable, not asserted in a comment**
- * (2026-08-24). `tauri-plugin-window-state` restores and saves real window geometry,
- * so a verify launch that keeps it registered fails twice: it inherits the owner's
- * saved size (the size verdict stops being deterministic) and it overwrites that
- * saved size on exit (the harness damages the owner's setup). The Rust side skips
- * registering the plugin under ONTOLOGY_ATLAS_VERIFY_WEBVIEW and prints
- * `state_plugin=disabled` to say so; this check turns that line into evidence.
- *
- * Absence fails too: a silent launch is indistinguishable from a build where the
- * marker — and the guard behind it — was deleted.
+ * The harness's geometry isolation must be observable, not asserted in a comment:
+ * `tauri-plugin-window-state` restores and saves real window geometry, so a verify launch that keeps it
+ * registered inherits the owner's saved size and overwrites it on exit. The Rust side skips registering
+ * the plugin under ONTOLOGY_ATLAS_VERIFY_WEBVIEW and prints `state_plugin=disabled`; this check turns
+ * that line into evidence. Absence fails too: a silent launch is indistinguishable from a build where
+ * the guard was deleted.
  */
 export function validateWindowStatePluginIsolation(launchStdout) {
   const states = String(launchStdout ?? "")
@@ -297,16 +293,9 @@ export function validateWebviewVerifyPayload(payload, {
       return `WebView Add Concept composer top token was ${payload.markers.topologyCreateNodePanelTopToken || "missing"}`;
     }
     /*
-     * ⚠️ **Do not pin the token name** (2026-08-11). This used to accept only
-     * `--topology-blocking-composer-width`, while the product **deliberately** moved
-     * to the canonical dialog width (`--dialog-w-md`) — `HomePage.tsx`: *"Use the canonical --dialog-w-md
-     * (560px) directly instead of composer-width"* (use the canonical --dialog-w-md
-     * (560px) directly instead of composer-width). So this check was guaranteed to
-     * fail from the day the spec improved — exactly the shape `design-gates.md` warns
-     * about, and such a gate makes the next person **revert the spec**.
-     *
-     * The property to lock is not "which name" but **"does the width come from a
-     * token"**.
+     * Do not pin the token name: the product moved to the canonical dialog width (`--dialog-w-md`), and a
+     * name pin fails the day the spec improves (`design-gates.md`). The property to lock is "does the
+     * width come from a token".
      */
     const widthToken = payload.markers.topologyCreateNodePanelWidthToken || "";
     if (!widthToken.startsWith("--")) {

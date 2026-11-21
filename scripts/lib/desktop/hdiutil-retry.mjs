@@ -1,33 +1,11 @@
 /**
- * Decides whether an `hdiutil create` failure is worth another attempt.
- *
- * ⚠️ **Why this exists — one flaky line cost a whole signed release.** rc.15 built,
- * signed and notarized on aarch64 and then died on x64 with:
- *
- * ```text
- * hdiutil: create failed - Resource busy
- * [desktop-release-artifact] package DMG failed with exit 1
- * ```
- *
- * Nothing was wrong with the build. `hdiutil` is reading a folder that the runner's
- * own indexing, an antivirus pass, or a still-attached volume of the same name is
- * holding open, and the window is milliseconds wide. Because the DMG is the last step
- * before staging, the two publish jobs were skipped and the release had to be
- * dispatched again from the beginning — the same shape of waste as the ACP registry
- * gate: a green product stopped by machine weather.
- *
- * ⚠️ **Why the retry is conditional and not a loop around every failure.** A blind
- * retry is worse than none: a genuinely unsignable bundle, a missing app, or a full
- * disk would be attempted three times and then reported with the *last* error, which
- * hides both the cause and the fact that it never varied. Only failures whose text
- * names a busy or locked resource are transient; everything else fails on the first
- * attempt exactly as before.
- *
- * ⚠️ **Why the matching is on text rather than exit code.** `hdiutil` exits 1 for
- * everything. The distinguishing information is only in the message, so that is what
- * is read — and it is read case-insensitively across both streams, because the same
- * condition is reported as "Resource busy" by `create` and as "resource temporarily
- * unavailable" by the attach path underneath it.
+ * Decides whether an `hdiutil create` failure is worth another attempt. `hdiutil: create failed -
+ * Resource busy` is transient (the runner's indexing, an antivirus pass or a still-attached volume of
+ * the same name holds the folder open), and as the last step before staging it would skip both publish jobs.
+ * The retry is conditional: a blind retry would report an unsignable bundle or a full disk three times
+ * with the last error. Matching is on text, not exit code, because `hdiutil` exits 1 for everything; it
+ * is case-insensitive across both streams ("Resource busy" from `create`, "resource temporarily
+ * unavailable" from the attach path).
  */
 
 /**

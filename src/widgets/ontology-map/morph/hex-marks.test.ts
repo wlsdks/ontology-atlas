@@ -17,10 +17,10 @@ describe("roomMovesRest", () => {
   });
 });
 
-function placed<T extends HTMLElement>(el: T, x: number, y: number, width: number, height: number, parent: HTMLElement = document.body): T {
-  el.getBoundingClientRect = () => ({ x, y, left: x, top: y, right: x + width, bottom: y + height, width, height, toJSON: () => ({}) });
-  parent.append(el);
-  return el;
+function placed<T extends HTMLElement>(element: T, x: number, y: number, width: number, height: number, parent: HTMLElement = document.body): T {
+  element.getBoundingClientRect = () => ({ x, y, left: x, top: y, right: x + width, bottom: y + height, width, height, toJSON: () => ({}) });
+  parent.append(element);
+  return element;
 }
 
 describe("readHexRoom", () => {

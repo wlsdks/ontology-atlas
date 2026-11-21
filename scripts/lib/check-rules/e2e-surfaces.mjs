@@ -13,7 +13,7 @@ export const rules = [
     reason: 'folder entry and work status must preserve personal saves and verified activity after game retirement',
     matches: [
       /^src\/views\/first-run\/ui\/FirstRunPage\.tsx$/,
-      /^src\/views\/home\/ui\/TopologyCommandChrome\.tsx$/,
+      /^src\/views\/home\/ui\/map-readouts\/TopologyCommandChrome\.tsx$/,
       /^src\/features\/agent-activity\/ui\/Agent(?:ActivityChip|MascotPresence)\.tsx$/,
       /^tests\/e2e\/vault-session\/retired-game-storage\.spec\.ts$/,
     ],
@@ -79,7 +79,9 @@ export const rules = [
       /^src\/views\/(?:agents|mcp|mcp-redirect)\/.+\.tsx?$/,
       /^src\/app\/agents-workspace\/.+\.tsx?$/,
       /^src\/features\/mcp-connectors\/.+\.tsx?$/,
-      /^src\/widgets\/app-settings-menu\/ui\/(?:AgentSetupSection|VaultAgentSetupPanel)\.tsx$/,
+      /^src\/widgets\/app-settings-menu\/ui\/agent-setup\/(?:AgentSetupSection|AgentSetupSectionLabel|VaultAgentSetupPanel|AgentSetupTroubleshooting|AgentSetupInspection|AgentConnectionStatus)\.tsx$/,
+      /^src\/widgets\/app-settings-menu\/ui\/agent-setup\/agent-setup-chips\.ts$/,
+      /^src\/widgets\/app-settings-menu\/model\/agent-setup\/[^/.]+\.ts$/,
     ],
   },
   {
@@ -92,7 +94,7 @@ export const rules = [
      */
     command: 'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
     reason: 'the runtime list changed — the web surface draws its degradation card instead',
-    matches: [/^src\/widgets\/app-settings-menu\/ui\/AcpRuntimeSettings\.tsx$/],
+    matches: [/^src\/widgets\/app-settings-menu\/ui\/agent-setup\/AcpRuntimeSettings\.tsx$/],
   },
   {
     order: 850,

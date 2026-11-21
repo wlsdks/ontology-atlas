@@ -1,9 +1,5 @@
-//! A rebuildable full-text index of a vault's Markdown files, kept per vault in the OS cache
-//! directory. The vault files are the only truth: the index holds only what can be recomputed from
-//! them, every row carries the stamp of the file it came from, and deleting it changes no answer.
-//! The crate never interprets frontmatter; the caller's folder walk lists the files, and the crate
-//! itself admits only `.md` files under the root that are reached without a symlink or dot-name
-//! (`confine`).
+//! A rebuildable full-text index of a vault's Markdown files, kept per vault in the OS cache directory.
+//! The files are the only truth: every row carries the stamp of its file, and deleting the index changes no answer.
 
 mod confine;
 mod lifecycle;
@@ -87,7 +83,6 @@ impl From<rusqlite::Error> for Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// Shared between a running `sync` and whoever reports on it.
 #[derive(Debug, Default)]
 pub struct Progress {
     indexed: AtomicU64,
@@ -267,7 +262,6 @@ struct Row {
     sha: Vec<u8>,
 }
 
-/// One file the stamp pass could not trust.
 struct Work<'a> {
     path: &'a str,
     row_id: Option<i64>,

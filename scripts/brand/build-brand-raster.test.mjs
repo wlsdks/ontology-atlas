@@ -144,17 +144,17 @@ describe('brand raster save boundary', () => {
 
 function postJson(port, requestPath, body) {
   return new Promise((resolve, reject) => {
-    const req = request({
+    const outgoingRequest = request({
       host: '127.0.0.1',
       port,
       path: requestPath,
       method: 'POST',
       headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) },
-    }, (res) => {
-      res.resume();
-      res.on('end', () => resolve(res));
+    }, (response) => {
+      response.resume();
+      response.on('end', () => resolve(response));
     });
-    req.on('error', reject);
-    req.end(body);
+    outgoingRequest.on('error', reject);
+    outgoingRequest.end(body);
   });
 }

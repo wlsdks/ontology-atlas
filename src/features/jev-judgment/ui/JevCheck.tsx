@@ -25,7 +25,6 @@ export function JevCheck({
 }: {
   /** The open folder's absolute path, where the transfer is recorded. `null` blocks sending. */
   vaultPath: string | null;
-  /** Called after every attempt that reached the bridge, so the sent-log count refreshes. */
   onSent: () => void;
 }) {
   const t = useTranslations('agents.models.jev');
@@ -107,7 +106,6 @@ export function JevCheck({
           {t('requestNote')}
         </p>
       </section>
-      {/* A disabled send says why beside it. */}
       <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
         {!ready ? (
           <p

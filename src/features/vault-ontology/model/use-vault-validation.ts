@@ -10,7 +10,6 @@ import {
   type VaultValidationSummary,
 } from '@/shared/lib/vault-document/validate-vault-document';
 
-/** The settings sheet's `summarizeVaultValidation`, with `useVaultHealth`'s mode selection, so both screens agree. */
 const summaryCache = new WeakMap<VaultManifest, VaultValidationSummary>();
 function manifestValidation(manifest: VaultManifest): VaultValidationSummary {
   const cached = summaryCache.get(manifest);

@@ -3,7 +3,7 @@ import {
   collectProjectDependencyClosure,
   collectProjectDependentClosure,
 } from "./dependencies";
-import type { Project } from "./types";
+import type { Project } from "./project";
 
 export type ProjectImpactMode = "none" | "upstream" | "downstream" | "network";
 
@@ -24,7 +24,6 @@ export interface ProjectCompletenessInsight {
 
 type ProjectFreshnessLevel = "fresh" | "active" | "stale";
 
-/** A grade only; the screen supplies the words. */
 export interface ProjectFreshnessInsight {
   level: ProjectFreshnessLevel;
   ageDays: number;

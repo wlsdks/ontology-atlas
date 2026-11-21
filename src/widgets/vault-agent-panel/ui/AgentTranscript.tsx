@@ -12,27 +12,18 @@ export interface AgentTranscriptLabels {
   you: string;
   lookingAt: (title: string) => string;
   wholeMap: string;
-  /** The `unread` branch — nothing at all was read in this turn. */
   unsupported: string;
-  /** The `uncited` branch — it read, but the citation is missing. A correction, not a demotion. */
   uncited: string;
   charsLabel: (chars: number) => string;
   thinking: string;
   thinkingSeconds: (seconds: number) => string;
-  /** One-line label, in human language. The raw value (character count) drops to `footerDetail`. */
   footer: (args: { provider: string; rounds: number }) => string;
-  /** The raw value, available only on hover. The data is not erased; only the render is demoted. */
   footerDetail: (args: { chars: number }) => string;
   nextStepTitle: string;
-  /** The way back from a failed turn — it seats the same words in the composer again (it does not send). */
   retryTitle: string;
   /**
-   * The way back from the `unread` branch — same slot, different copy.
-   *
-   * **This one line carries the reason it stopped (the round) along with it.**
-   * Standing "It stopped without calling a tool once" (it stopped without calling a tool
-   * once) as a separate notice row makes three warnings in one turn, and at three
-   * they become wallpaper.
+   * The way back from the `unread` branch, same slot, different copy. It carries the stop reason
+   * (the round) itself: a separate notice row would make three warnings in one turn.
    */
   regroundTitle: (args: { round: number; cap: number }) => string;
 }
@@ -42,10 +33,8 @@ export interface AgentTranscriptLabels {
  * progress reports and may stay quiet.
  */
 /**
- * Notice codes the recovery chip **absorbs into its title**. They stay in the data
- * and are folded only on screen — this is to avoid stating the same fact in two
- * rows, not to erase the fact (the type code is still read as the basis for handoff
- * and for the record).
+ * Notice codes the recovery chip absorbs into its title. They stay in the data and fold only on
+ * screen, so the same fact is not stated in two rows.
  */
 const ABSORBED_BY_RECOVERY: ReadonlySet<string> = new Set(['no-tool-call']);
 const EMPTY_CODES: ReadonlySet<string> = new Set();
@@ -60,13 +49,8 @@ const BLOCKING_NOTICES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * The conversation body — it grows downward only.
- *
- * Citations become chips, and pressing one moves the map with **exactly the same
- * grammar as the existing ego focus**. The same action has to look the same — a map
- * node click and a chip click using different motion would be a defect. So the
- * camera is never moved directly here; only `onFocusNode` is called (the same
- * function as the map's own selection path).
+ * The conversation body; it grows downward only. Citation chips move the map only through
+ * `onFocusNode`, the map's own selection path, so a chip and a map click share one motion.
  */
 export function AgentTranscript({
   turns,
@@ -81,7 +65,6 @@ export function AgentTranscript({
   labels: AgentTranscriptLabels;
   providerLabel: string;
   onFocusNode: (slug: string) => void;
-  /** The next-step chip — it only seats a sentence in the composer; it does not send. */
   onPrefill: (text: string) => void;
   renderProposal: (event: Extract<AgentEvent, { kind: 'proposal' }>) => React.ReactNode;
   elapsedSeconds: number | null;
@@ -97,19 +80,15 @@ export function AgentTranscript({
           (found, event, index) => (event.kind === 'assistant' ? index : found),
           -1,
         );
-        /** The original text to retry from a failed turn — the words of the user who opened this turn. */
         const askedEvent = turn.events.find((event) => event.kind === 'user');
         const asked = askedEvent?.kind === 'user' ? askedEvent.text : null;
         /**
-         * Is the conclusion **an answer produced without reading anything**? Only then
-         * is a way back offered — 「it read but did not cite」 is not a problem to fix
-         * but an accurate self-description, so attaching a control there invents a
-         * problem that does not exist.
+         * An answer produced without reading anything. Only then is a way back offered: "read but did not
+         * cite" is an accurate self-description, not a problem to fix.
          */
         const conclusion = lastAssistant >= 0 ? turn.events[lastAssistant] : null;
         const unread =
           conclusion?.kind === 'assistant' && conclusion.grounding === 'unread';
-        // Same position, same grammar. Two reasons, so only the copy differs.
         const recoveryTitle =
           turn.status === 'failed'
             ? labels.retryTitle
@@ -118,13 +97,8 @@ export function AgentTranscript({
               : null;
         const showsRecovery = Boolean(recoveryTitle && asked);
         /**
-         * **The chip absorbs the notice row.** `no-tool-call` stays in the data layer
-         * intact (the next person has to be able to read it programmatically) and is
-         * folded into the recovery chip's title only on screen — the same fact is not
-         * stated in two rows.
-         *
-         * Where no chip stands (a turn that lost its original question) **the notice
-         * remains**. Absorption only holds when the absorbing side actually exists.
+         * The chip absorbs the notice row: `no-tool-call` stays in the data layer and folds into the chip's
+         * title only on screen. Where no chip stands (a turn that lost its question) the notice remains.
          */
         const absorbedCodes: ReadonlySet<string> = showsRecovery
           ? ABSORBED_BY_RECOVERY
@@ -161,15 +135,8 @@ export function AgentTranscript({
             </p>
           ) : null}
 
-          {/* A stopped turn is given **a way back**. Stating the reason without giving
-              a route makes that position a dead end. It uses the same grammar as
-              "The next step", so no new interaction has to be learned —
-              pressing it only seats the same words in the composer, and sending is
-              always [Send].
-
-              A turn that **never looked at the vault at all** uses the same slot. Why
-              no new banner: filling one existing chip is the whole of it, and the user
-              still has exactly one interaction to learn. */}
+          {/* A stopped turn gets a way back in the same grammar as "The next step": pressing it only seats
+              words in the composer, and sending is always [Send]. A turn that never read the vault uses the same chip. */}
           {showsRecovery && asked ? (
             <div data-testid="agent-retry" className="mt-2 flex flex-col gap-1.5">
               <p
@@ -223,9 +190,7 @@ function renderEvent(
   onFocusNode: (slug: string) => void,
   onPrefill: (text: string) => void,
   renderProposal: (event: Extract<AgentEvent, { kind: 'proposal' }>) => React.ReactNode,
-  /** Is this the turn's last answer? The demotion warning attaches only to the conclusion. */
   isConclusion: boolean,
-  /** Notice codes the recovery chip absorbed into its title — folded on screen only. */
   absorbedCodes: ReadonlySet<string>,
 ) {
   switch (event.kind) {
@@ -238,9 +203,8 @@ function renderEvent(
             </span>
             {event.text}
           </p>
-          {/* The screen-context echo — what the agent saw always stays on screen. Moving
-              to another node after sending makes the mismatch visible, and that is the
-              signal to correct. */}
+          {/* The screen-context echo: what the agent saw stays on screen, so moving to another node after
+              sending makes the mismatch visible. */}
           <p
             data-testid="agent-screen-context-echo"
             className="mt-1 text-label tracking-label text-[color:var(--color-text-quaternary)]"
@@ -264,12 +228,10 @@ function renderEvent(
     case 'assistant': {
       // The judgement applies **only to the conclusion**. An intermediate remark makes no claim about the vault.
       const grounding = isConclusion ? event.grounding : 'grounded';
-      /** An answer produced without reading anything — it cannot be drawn at the same weight as a grounded one. */
       const unread = grounding === 'unread';
       /**
-       * An answer that read but did not cite. **It is not demoted** — the grounding
-       * really exists, and the screen corrects by showing that list as chips. A dashed
-       * border here would make the screen contradict the "Read" row it just drew.
+       * An answer that read but did not cite is not demoted: the grounding exists, and the chips below
+       * correct the citation. A dashed border would contradict the "Read" row just drawn.
        */
       const sources = grounding === 'uncited' ? (event.sources ?? []) : [];
       return (
@@ -295,9 +257,7 @@ function renderEvent(
           {event.paragraphs.map((paragraph, index) => (
             <CitedText key={index} paragraph={paragraph} onFocusNode={onFocusNode} />
           ))}
-          {/* The citation was missing but the grounding was there — the read list is laid
-              out as chips directly. It is the **same component** as a citation chip, so
-              pressing goes to the same place (map ego focus). Zero new interactions. */}
+          {/* Citation missing, grounding present: the read list as chips, the same component as a citation chip. */}
           {sources.length > 0 ? (
             <p
               data-testid="agent-answer-sources"
@@ -309,9 +269,7 @@ function renderEvent(
               ))}
             </p>
           ) : null}
-          {/* The next step — what landed is shown first, and the suggestion comes after.
-              Order is narrative, so this row comes **after** the answer, and its entry is
-              one short fade (no decoration such as rolling numbers or emphasis pulses). */}
+          {/* The next step comes after what landed; its entry is one short fade. */}
           {event.nextStep ? (
             <div
               data-testid="agent-next-step"
@@ -346,10 +304,8 @@ function renderEvent(
       return renderProposal(event);
 
     case 'notice': {
-      // A fact the recovery chip's title already states does not spend another row.
       if (absorbedCodes.has(event.code)) return null;
-      // The reason it stopped is the most important fact in that turn, so it is drawn at
-      // body weight. Progress reports (aborted, cap) stay quiet as before.
+      // The reason it stopped is drawn at body weight; progress reports (aborted, cap) stay quiet.
       const blocking = BLOCKING_NOTICES.has(event.code);
       return (
         <p
@@ -375,10 +331,8 @@ function renderEvent(
 const CITATION_PATTERN = /\[\[([^[\]]+)\]\]/g;
 
 /**
- * A chip leading to one concept. A `[[slug]]` citation inside the body and the
- * "Sources consulted" the screen lays out as a correction when the
- * citation is missing use **the same control** — the same action looking different
- * is itself the defect.
+ * A chip leading to one concept. A `[[slug]]` citation and the "Sources consulted" correction use the
+ * same control, so the same action never looks different.
  */
 function ConceptChip({
   slug,
@@ -402,13 +356,11 @@ function ConceptChip({
   );
 }
 
-/** Only the name is seated in a chip — the full path eats a whole row and adds no information. */
 function tailOfSlug(slug: string): string {
   const index = slug.lastIndexOf('/');
   return index >= 0 ? slug.slice(index + 1) : slug;
 }
 
-/** `[[slug]]` as a chip — pressing it moves the map to that concept. */
 function CitedText({
   paragraph,
   onFocusNode,

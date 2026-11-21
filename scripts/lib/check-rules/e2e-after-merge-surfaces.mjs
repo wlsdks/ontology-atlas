@@ -5,8 +5,9 @@ export const rules = [
     reason: "the download page's scroll frame budget changed",
     matches: [
       /^src\/views\/download\/ui\/DownloadPage\.tsx$/,
-      /^src\/views\/download\/(?:lib\/gateway-frame-loop\.ts|ui\/GatewayFx\.tsx)$/,
-      /^src\/views\/download\/ui\/[A-Za-z]+Section\.tsx$/,
+      /^src\/views\/download\/(?:lib\/page-motion\/gateway-frame-loop\.ts|ui\/GatewayFx\.tsx)$/,
+      /^src\/views\/download\/ui\/(?:(?:film|hero)\/)?[A-Za-z]+Section\.tsx$/,
+      /^src\/views\/download\/ui\/release\/[A-Za-z]+\.tsx$/,
     ],
   },
   {
@@ -15,8 +16,9 @@ export const rules = [
     reason: "the download page's reduced-motion and no-script stillness changed",
     matches: [
       /^src\/views\/download\/ui\/DownloadPage\.tsx$/,
-      /^src\/views\/download\/(?:lib\/gateway-frame-loop\.ts|ui\/GatewayFx\.tsx)$/,
-      /^src\/views\/download\/ui\/[A-Za-z]+Section\.tsx$/,
+      /^src\/views\/download\/(?:lib\/page-motion\/gateway-frame-loop\.ts|ui\/GatewayFx\.tsx)$/,
+      /^src\/views\/download\/ui\/(?:(?:film|hero)\/)?[A-Za-z]+Section\.tsx$/,
+      /^src\/views\/download\/ui\/release\/[A-Za-z]+\.tsx$/,
     ],
   },
   {
@@ -33,8 +35,9 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/git/git-workbench-stacked-floor.spec.ts',
     reason: 'the stacked Git reader at the window floor changed',
     matches: [
-      /^src\/widgets\/atlas-git-panel\/ui\/(AtlasGitPanel|DesktopBody|StepList|ActionDock|RemoteControls|SetupMode)\.tsx$/,
+      /^src\/widgets\/atlas-git-panel\/ui\/(AtlasGitPanel|DesktopBody|StepList|ActionDock|remote-controls|setup-panels)\.tsx$/,
       /^src\/widgets\/atlas-git-panel\/ui\/CommitDetail\.tsx$/,
+      /^src\/widgets\/atlas-git-panel\/ui\/commit-detail\/[^/]+\.tsx$/,
     ],
   },
   {

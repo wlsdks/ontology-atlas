@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   keepSessionsInFolder,
   type AcpSessionSummary,
-} from '@/features/acp-session/model/acp-client';
+} from '@/features/acp-session/model/session-summaries';
 
 /**
  * `session/list` ignores `cwd` and returns conversations from other folders, so the list is filtered

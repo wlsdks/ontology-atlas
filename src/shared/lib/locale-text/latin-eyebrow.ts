@@ -19,12 +19,8 @@ export function latinEyebrowClass(locale: string, tracking = ''): string {
 }
 
 /**
- * For components — picks the eyebrow classes from the current screen language.
- *
- * `useLocale()` is called unconditionally. A component rendered outside the intl
- * provider cannot use this hook, and that is a render tree to fix rather than
- * something to paper over with a fallback (widget tests that inject labels as
- * props mock the provider).
+ * Picks the eyebrow classes from the current screen language. `useLocale()` needs the intl provider:
+ * a render outside it is a tree to fix, not something to paper over with a fallback.
  */
 export function useLatinEyebrow(tracking = ''): string {
   return latinEyebrowClass(useLocale(), tracking);

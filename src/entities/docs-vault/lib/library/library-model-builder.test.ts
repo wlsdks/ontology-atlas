@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildLibraryModel, createLibraryModelBuilder } from './vault-library';
-import type { VaultDoc, VaultSourceFile } from '../../model/types';
+import type { VaultDoc, VaultSourceFile } from '../../model/vault-manifest';
 
 const HASH = (n: number) => n.toString(16).padStart(64, '0');
 

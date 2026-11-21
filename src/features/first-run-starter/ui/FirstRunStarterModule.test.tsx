@@ -43,12 +43,12 @@ vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', async () => {
   };
 });
 
-vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
+vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-provider/LocalVaultProvider')>()),
   useLocalVault: () => mocks.vault,
 }));
-vi.mock('@/entities/vault-session/model/use-data-source-mode', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/use-data-source-mode')>()),
+vi.mock('@/entities/vault-session/model/vault-source/use-data-source-mode', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-source/use-data-source-mode')>()),
   useDataSourceMode: () => mocks.mode,
 }));
 
@@ -130,7 +130,7 @@ describe('FirstRunStarterModule', () => {
     expect(screen.getByTestId('first-run-starter-context')).toHaveTextContent('body');
     const card = screen.getByTestId('first-run-starter');
     const order = ['first-run-starter-sample-line', 'first-run-starter-headline', 'first-run-starter-context', 'first-run-starter-open'];
-    const positions = order.map((id) => [...card.querySelectorAll('[data-testid]')].findIndex((el) => el.getAttribute('data-testid') === id));
+    const positions = order.map((id) => [...card.querySelectorAll('[data-testid]')].findIndex((element) => element.getAttribute('data-testid') === id));
     expect(positions.every((position) => position >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
   });

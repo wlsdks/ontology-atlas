@@ -7,7 +7,7 @@ import {
   newestWikiPage,
   selectWikiPages,
 } from './vault-library';
-import type { VaultDoc, VaultSourceFile } from '../../model/types';
+import type { VaultDoc, VaultSourceFile } from '../../model/vault-manifest';
 
 /** Reached through `buildLibraryModel`, as screens reach it, so the wiring is tested too. */
 const buildLibraryPairing = (input: {

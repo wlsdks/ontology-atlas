@@ -1,7 +1,6 @@
 import type { KnowledgeGraphNode } from "../model";
 import { translateOntologyDeeplinkToTopologyParam } from "./translate-ontology-deeplink";
 
-/** `/ontology/?node=<encoded-id>`, encoded like `translateOntologyDeeplinkToTopologyParam`. */
 export function buildOntologyNodeHref(
   nodeId: string,
   options?: { ask?: string },
@@ -13,7 +12,6 @@ export function buildOntologyNodeHref(
     : base;
 }
 
-/** The `ask` value meaning "explain the whole product". */
 export const BUSINESS_FLOW_ASK_VALUE = "business-flow";
 
 /** The kind of opening line for the agent; stripped from the address on arrival. */
@@ -60,14 +58,12 @@ export function resolveOntologyBuilderNodeSlugFromGraphId(nodeId: string): strin
   return folder ? `${folder}/${tail}` : normalized;
 }
 
-/** Map editor link with the canonical `<kind>:<slug>` in `?p=`, normalized like the map's own `?p=`. */
 export function buildTopologyMeaningEditorNodeHref(nodeId: string): string {
   return `/topology/?p=${encodeURIComponent(
     translateOntologyDeeplinkToTopologyParam(nodeId),
   )}&workbench=edit`;
 }
 
-/** The four relations the map's editor can write. */
 export type MeaningEditRelation = "isA" | "dependsOn" | "contains" | "relates";
 const MEANING_EDIT_RELATIONS: readonly MeaningEditRelation[] = [
   "isA",
@@ -114,7 +110,6 @@ export function edgeAuthoredByFromNode(
   return a !== "" && a === b;
 }
 
-/** Map edge editor link; `edit=<relation>:<targetId>` splits on the first colon only. */
 export function buildTopologyMeaningEditorEdgeHref(
   fromId: string,
   toId: string,
@@ -131,7 +126,6 @@ export function buildTopologyMeaningCreateHref(): string {
   return "/topology/?workbench=create";
 }
 
-/** Parses `edit=<relation>:<targetId>` on the first colon; null for anything else. */
 export function parseOntologyMeaningEditParam(
   raw: string | null | undefined,
 ): { relation: MeaningEditRelation; targetId: string } | null {

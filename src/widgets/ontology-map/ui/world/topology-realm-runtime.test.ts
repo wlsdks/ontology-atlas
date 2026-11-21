@@ -238,7 +238,7 @@ describe('Flat scoped branches', () => {
   const dialInput = {
     tokens: { pitch: 34, spiralC: 0.61, spiralK0: 4.5, elementRoom: 0.42, elementHole: 0.13, angularGap: 0.9, ringGap: 2.1, hubClearance: 78, orphanPitch: 0.5, nameMaxPx: 164, labelScale: 1, chipMinPx: 8, ledgerGapPx: 16 },
     labels: null, measureText: (text: string) => text.length * 8, memory: null, rememberOrder: false,
-  } as unknown as import('../../dial/types').DialWorldInput;
+  } as unknown as import('../../dial/dial-shapes').DialWorldInput;
   it('keeps domain and member kinds in a scoped branch scene instead of promoting their depth', () => {
     const data = buildRealmRuntimeData(buildFixtureWorld(), 'd', tokens, new Set(['d']), dialInput)!;
     expect(data.flat).toBe(true);

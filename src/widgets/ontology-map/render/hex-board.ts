@@ -51,11 +51,7 @@ export interface HexDrawRoute {
   count?: number;
   twoWay?: boolean;
   pill?: { x: number; y: number } | null;
-  /**
-   * The route stops short of its target: the free map had no way through, so it runs as far
-   * toward the target as it can and ends in an arrow pointing at it, rather than leaving the
-   * free map to arrive.
-   */
+  /** The route stops short of its target: the free map had no way through, so it runs as far as it can and ends in an arrow pointing at it. */
   stub?: boolean;
 }
 
@@ -116,7 +112,6 @@ export interface HexFrameStats {
   focus: string | null;
   offset: [number, number];
   arrived: boolean;
-  /** Milliseconds into the arrival, or null once arrived. */
   arrivalMs: number | null;
 }
 

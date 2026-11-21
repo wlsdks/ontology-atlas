@@ -7,7 +7,7 @@ import {
   keepGateSafeModes,
   readSessionChoices,
   type AcpChoice,
-} from '@/features/acp-session/model/acp-client';
+} from '@/features/acp-session/model/session-choices/acp-session-choices';
 
 /**
  * Modes that let tool use through without `session/request_permission` are never offered; `dontAsk`

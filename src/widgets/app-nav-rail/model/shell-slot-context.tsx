@@ -19,11 +19,9 @@ interface NavRailShellState {
   contextHrefs: NavRailContextHrefs | null;
 }
 
-/** Reading and project targets shared by the persistent navigation. */
 export interface NavRailContextHrefs {
   map?: string;
   docs?: string;
-  /** The Projects door target when the folder holds exactly one project; absent otherwise. */
   projects?: string;
 }
 
@@ -62,7 +60,6 @@ function useNavRailShellContext(): NavRailShellContextValue {
   return ctx;
 }
 
-/** The current slot/hidden/contextHrefs values the rail itself renders — used only inside `AppShell`. */
 export function useNavRailShellValue(): NavRailShellState {
   const { settingsSlot, hidden, contextHrefs } = useNavRailShellContext();
   return { settingsSlot, hidden, contextHrefs };

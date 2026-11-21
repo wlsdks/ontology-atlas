@@ -24,7 +24,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { Chip, RowButton } from '@/shared/ui/controls/controls';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { buildRouteFocusHref, rememberRouteFocusIntent } from '@/shared/ui/routing/route-focus-manager';
-import { SETTINGS_SECTION_SCOPE } from '../../model/catalog/types';
+import { SETTINGS_SECTION_SCOPE } from '../../model/catalog/settings-catalog-entry';
 import {
   ArmedChip,
   DETAIL_TOGGLE_CHIP,
@@ -33,8 +33,8 @@ import {
   SettingsGroup,
   SettingsRow,
 } from '../settings-primitives';
-import { OntologyResetSettings } from '../OntologyResetSettings';
-import { VaultShapeSettings } from '../VaultShapeSettings';
+import { OntologyResetSettings } from '../pane-settings/OntologyResetSettings';
+import { VaultShapeSettings } from '../pane-settings/VaultShapeSettings';
 
 interface Kept {
   rounds: { count: number; paused: number } | null | 'failed';

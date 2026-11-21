@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use serde::Serialize;
 use tauri::State;
 
-use crate::acp_session::AcpSessions;
+use crate::acp::session::AcpSessions;
 use worktrees::WorktreeRow;
 
 #[derive(Debug, Serialize)]

@@ -14,22 +14,17 @@ export interface AnchoredPopoverInput {
   trigger: PopoverRect;
   /** The region the popover must stay inside (the free map, not the viewport). */
   boundary: PopoverRect;
-  /** Preferred width in px. */
   width: number;
-  /** Space kept between the popover and the boundary's edges. */
   inset: number;
-  /** Space between the trigger's bottom and the popover's top. */
   gap: number;
 }
 
 export interface AnchoredPopoverPlacement {
-  /** Viewport coordinates of the popover's left edge and top. */
   left: number;
   top: number;
   width: number;
   /** Which edge of the trigger the popover's matching edge follows before any clamp. */
   align: 'start' | 'end';
-  /** `transform-origin` x relative to the popover's own left edge. */
   originX: number;
 }
 

@@ -1,11 +1,15 @@
+pub(crate) mod command_lookup;
+pub(crate) mod login_probe;
+pub(crate) mod search_path;
+
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
-use super::command_lookup::{candidate_bin_dirs, resolve_command, FsProbe};
 use super::isolation::isolation_for;
 use super::launch::adapter_bin_name;
-use super::login_probe::login_probe_args;
 use super::registry::{registry, RegistryLaunch};
+use command_lookup::{candidate_bin_dirs, resolve_command, FsProbe};
+use login_probe::login_probe_args;
 
 #[derive(Debug, Clone, serde::Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]

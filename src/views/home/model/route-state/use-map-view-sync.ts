@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useMapView, writeMapView } from '@/shared/lib/preferences/appearance-preferences';
+import { useMapView, writeMapView } from '@/shared/lib/preferences/map-view-preferences';
 import type { HomeMapView, HomeRouteState } from './url-state';
 import type { HomeRouteStateUpdateOptions } from './use-home-route-state';
 
-/** Writes all the flags as the view picker does. */
 export function applyMapView(view: HomeMapView | null): void {
   writeMapView(view ?? 'flat');
 }
@@ -29,10 +28,6 @@ export function decideMapViewSync(
   return { adopt: null, write: undefined };
 }
 
-/**
- * Keeps `?view=` and the picker's stored choice equal, writing the address only on a pick or
- * arrival. Every picker view is addressable; the flat map is the parameter's absence.
- */
 export function useMapViewSync(
   routeMapView: HomeRouteState['mapView'],
   setRouteState: (

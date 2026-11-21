@@ -22,21 +22,24 @@ import {
   requireOptionalNonNegativeNumber,
 } from '../server/validate.mjs';
 import { formatAllowedValueError } from '../suggestions.mjs';
-import { canonicalDiskSlug, slugToWritePath, vaultSlugExists } from '../vault/slug-paths.mjs';
-import { extractSummaryExcerpt, readDoc } from '../vault/documents.mjs';
-import { VaultConflictError, applyAllOrNothing } from '../vault/atomic-writes.mjs';
-import { deleteDoc } from '../vault/doc-writes.mjs';
-import { findBacklinks } from '../vault/graph-queries.mjs';
-import { redirectBacklinks } from '../vault/backlink-rewrite.mjs';
-import { compactPostWriteMaintenance } from './maintenance.mjs';
+import { canonicalDiskSlug, slugToWritePath, vaultSlugExists } from '../vault/documents/slug-paths.mjs';
+import { extractSummaryExcerpt } from '../vault/documents/body-delivery.mjs';
+import { readDoc } from '../vault/documents/document-cache.mjs';
+import { VaultConflictError, applyAllOrNothing } from '../vault/writes/atomic-writes.mjs';
+import { deleteDoc } from '../vault/writes/doc-writes.mjs';
+import { findBacklinks } from '../vault/graph/graph-queries.mjs';
+import { redirectBacklinks } from '../vault/writes/backlink-rewrite.mjs';
+import { compactPostWriteMaintenance } from './result-attachments.mjs';
+import {
+  missingSlugMessage,
+  readDocIfPresent,
+  resolveExistingVaultSlug,
+} from './vault-nodes.mjs';
 import {
   ADD_CONCEPT_KINDS,
   destructivePreviewState,
-  missingSlugMessage,
-  readDocIfPresent,
   requireNodeNotReservedForHuman,
-  resolveExistingVaultSlug,
-} from './vault-nodes.mjs';
+} from './write-gates.mjs';
 
 function warningsOf(list) {
   return list.length > 0 ? { warnings: list } : {};
@@ -373,7 +376,6 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   const identityHistory = mergeNodeIdentityHistory(fromDoc.frontmatter, intoDoc.frontmatter);
   const absorbedUids = identityHistory.absorbedUids;
 
-  // fromSlug mtime conflict guard.
   if (typeof expected_mtime === 'number' && fromDoc.mtime !== expected_mtime) {
     throw new VaultConflictError(fromSlug, expected_mtime, fromDoc.mtime);
   }

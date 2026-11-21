@@ -91,8 +91,8 @@ function requireUuid(meta, file) {
   if (!basename.endsWith(`-${meta.id}`)) throw new RecordLedgerError(`${file}: filename must end with its id`);
 }
 
-function readFragments(root, dir, kind) {
-  return filesBelow(root, dir).map((file) => {
+function readFragments(root, directory, kind) {
+  return filesBelow(root, directory).map((file) => {
     const raw = readFileSync(path.join(root, file), 'utf8');
     const parsed = parseFrontmatter(raw, file);
     requireUuid(parsed.meta, file);
@@ -181,9 +181,8 @@ function changelog(root, legacy) {
   const renderFacts = (facts) => CHANGE_CATEGORIES.flatMap((category) => {
     const rows = facts.filter((f) => f.meta.category === category).sort((a, b) => a.meta.id.localeCompare(b.meta.id));
     /*
-     * One bullet per fact under a bold category label, with a blank line between categories; joining
-     * facts with "; " made each release one paragraph, and category lines without a blank line folded
-     * into it. The frozen ledger keeps its one-line template.
+     * One bullet per fact under a bold category label, with a blank line between categories, so category
+     * lines do not fold into one paragraph. The frozen ledger keeps its one-line template.
      */
     return rows.length ? [`**${category}**\n\n${rows.map((r) => `- ${r.body}`).join('\n')}`] : [];
   }).join('\n\n');

@@ -1,12 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import {
-  formatMeaningAssessmentSummary,
-  formatProjectSourceSummary,
-  fallbackReportPayload,
-  readinessExitCode,
-} from './agent-brief.mjs';
+import { fallbackReportPayload } from './agent-brief/fallback-verification.mjs';
+import { formatMeaningAssessmentSummary, formatProjectSourceSummary } from './agent-brief/render.mjs';
+import { normalizeHandoffPrompt, readinessExitCode } from './agent-brief.mjs';
 
 // agent-brief exits by graph readiness, not command success; --exit-zero lets scripts read
 // readiness from JSON instead.
@@ -139,5 +136,27 @@ describe('agent-brief --verify-fallbacks --json payload', () => {
     const payload = fallbackReportPayload(report, undefined);
     assert.equal(payload.status, null);
     assert.equal(payload.readiness, null);
+  });
+});
+
+describe('agent-brief handoff prompt', () => {
+  it("replaces the readiness line the MCP prompt was generated with by this call's result", () => {
+    const prompt = normalizeHandoffPrompt({
+      status: 'attention',
+      readiness: { status: 'needs_attention', score: 62 },
+      graph: { nodes: 14, edges: 9 },
+      handoffPrompt: 'Intro\nCurrent readiness: ready 100/100; graph 1 nodes, 0 edges; status healthy.\nOutro',
+    });
+    assert.equal(
+      prompt,
+      'Intro\nCurrent readiness: needs_attention 62/100; graph 14 nodes, 9 edges; status attention.\nOutro',
+    );
+  });
+
+  it('reads an absent result as unknown instead of claiming a ready graph', () => {
+    assert.equal(
+      normalizeHandoffPrompt({ handoffPrompt: 'Current readiness: ready 100/100; graph 1 nodes, 0 edges; status healthy.' }),
+      'Current readiness: unknown 0/100; graph 0 nodes, 0 edges; status unknown.',
+    );
   });
 });

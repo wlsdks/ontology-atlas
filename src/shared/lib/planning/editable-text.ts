@@ -1,4 +1,3 @@
-/** Editor text and the line ending it goes back to disk with. */
 export type PlanningEditableText = { text: string; lineEnding: '\n' | '\r\n' };
 
 /**

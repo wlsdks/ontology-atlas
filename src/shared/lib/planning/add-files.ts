@@ -15,7 +15,6 @@ function splitName(name: string): [string, string] {
   return at > 0 ? [name.slice(0, at), name.slice(at)] : [name, ''];
 }
 
-/** Whether any entry, file or folder, already holds `name`. */
 async function nameInUse(directory: FileSystemDirectoryHandle, name: string): Promise<boolean> {
   try {
     await directory.getFileHandle(name);
@@ -131,7 +130,6 @@ function browserPicker(): PickerWindow['showOpenFilePicker'] | null {
   return typeof window !== 'undefined' && 'showOpenFilePicker' in window ? (window as PickerWindow).showOpenFilePicker.bind(window) : null;
 }
 
-/** Whether "Add files" can work here: the app's native import, or a browser file picker. */
 export function planningAddAvailable(rootPath: string | null): boolean {
   return rootPath !== null || browserPicker() !== null;
 }

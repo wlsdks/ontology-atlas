@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MOTION } from "@/shared/motion/tokens";
-import type { DialCluster, DialRowAction, DialScene } from "../types";
+import type { DialCluster, DialRowAction, DialScene } from "../dial-shapes";
 import { applyBranchMemberAction, branchMemberAlpha, branchMemberCount, branchMembersAnimating } from "./member-disclosure";
 
 function sceneOf(total = 7): DialScene {

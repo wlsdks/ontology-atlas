@@ -1,8 +1,4 @@
-/**
- * Picks names of nodes that really exist out of chat text; arbitrary `a/b` shapes would link
- * file paths. Not picked when flanked by word characters; longer names go first so `a/b-c`
- * is not split.
- */
+/** Picks names of nodes that really exist out of chat text (arbitrary `a/b` shapes would link file paths); longer names go first so `a/b-c` is not split. */
 
 interface PlainSegment {
   text: string;
@@ -15,7 +11,6 @@ interface SlugSegment {
 
 export type LinkedSegment = PlainSegment | SlugSegment;
 
-/** Is this **a standalone word** rather than part of a name? */
 const WORD_CHAR = /[A-Za-z0-9_/.-]/;
 
 function isBoundary(char: string | undefined): boolean {
@@ -23,12 +18,7 @@ function isBoundary(char: string | undefined): boolean {
   return !WORD_CHAR.test(char);
 }
 
-/**
- * The **trailing** boundary. One full stop makes its rule differ from the leading one: the `.` in
- * `capabilities/invoice.md` is an extension and part of the name, while the `.` in
- * `capabilities/invoice.` ends a sentence and is a boundary. What separates them is the character
- * **after** that stop.
- */
+/** The `.` in `capabilities/invoice.md` is an extension and part of the name, while in `capabilities/invoice.` it ends a sentence: the character after the stop decides. */
 function isTrailingBoundary(text: string, at: number): boolean {
   const char = text[at];
   if (char === undefined) return true;

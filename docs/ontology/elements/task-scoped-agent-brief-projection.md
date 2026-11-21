@@ -18,6 +18,7 @@ Task-scoped agent brief projection is the read-side implementation that turns on
 
 - `mcp/src/agent-brief/agent-brief-compact.mjs`
 - `mcp/src/tools/graph.mjs`
+- `mcp/src/tools/agent-brief-scope.mjs`
 - `mcp/package.json`
 - `cli/src/commands/diagnosis/agent-brief.mjs`
 - `mcp/src/agent-brief/agent-brief-compact.test.mjs`

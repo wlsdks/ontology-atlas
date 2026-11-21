@@ -4,7 +4,6 @@ import {
   type NativeVaultTextRead,
 } from './tauri-vault-fs';
 
-/** A document the folder's walk listed: its slug and the vault-relative path it came from. */
 export interface VaultTextRef {
   slug: string;
   path: string;

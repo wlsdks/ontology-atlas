@@ -44,30 +44,30 @@ for (const target of ["elements/checkout", "elements/deleted", "capabilities/for
       const repair = page.getByRole("button", { name: "Fix code location", exact: true });
       await repair.focus();
       await page.keyboard.press("Enter");
-      await expect(page.getByTestId("full-detail-a1").getByTestId("full-detail-a1-title")).toHaveText("Checkout implementation");
-      await expect(page.getByTestId("full-detail-a1")).toHaveAttribute("data-fulldetail-node", "element:checkout");
+      await expect(page.getByTestId("full-detail").getByTestId("full-detail-title")).toHaveText("Checkout implementation");
+      await expect(page.getByTestId("full-detail")).toHaveAttribute("data-fulldetail-node", "element:checkout");
       await page.keyboard.press("Escape");
-      await expect(page.getByTestId("full-detail-a1")).toHaveCount(0);
+      await expect(page.getByTestId("full-detail")).toHaveCount(0);
       await page.goto("/en/topology/?e2e=1&guides=off&p=project%3Astorefront", { waitUntil: "domcontentloaded" });
       await expect(receipt).toHaveAttribute("data-source-action", "repair_source_path");
       await page.getByRole("button", { name: "Details", exact: true }).click();
-      const fullDetail = page.getByTestId("full-detail-a1");
-      await expect(fullDetail.getByTestId("full-detail-a1-title")).toHaveText("Storefront");
+      const fullDetail = page.getByTestId("full-detail");
+      await expect(fullDetail.getByTestId("full-detail-title")).toHaveText("Storefront");
       await expect(fullDetail).toContainText("nextActionTarget: elements/checkout");
       await expect(fullDetail).toContainText("missingSourcePath: src/missing-checkout.ts");
       await expect(fullDetail).not.toContainText("/private/source-repair-fixture");
       await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
-      await fullDetail.getByTestId("full-detail-a1-handoff-copy").click();
+      await fullDetail.getByTestId("full-detail-handoff-copy").click();
       const copied = await page.evaluate(() => navigator.clipboard.readText());
       expect(copied).toContain("nextActionTarget: elements/checkout");
       expect(copied).toContain("missingSourcePath: src/missing-checkout.ts");
       expect(copied).not.toContain("/private/source-repair-fixture");
       await fullDetail.getByRole("button", { name: "Fix code location", exact: true }).click();
-      await expect(fullDetail.getByTestId("full-detail-a1-title")).toHaveText("Checkout implementation");
+      await expect(fullDetail.getByTestId("full-detail-title")).toHaveText("Checkout implementation");
     } else {
       await expect(receipt).toHaveAttribute("data-source-action", "remeasure_source");
       await expect(receipt).toHaveAttribute("data-source-top-gap", "receipt_malformed");
-      await expect(page.getByTestId("full-detail-a1")).toHaveCount(0);
+      await expect(page.getByTestId("full-detail")).toHaveCount(0);
     }
     if (process.env.REPAIR_CAPTURE_DIR) await page.screenshot({ path: `${process.env.REPAIR_CAPTURE_DIR}/${target.replace("/", "-")}-after.png` });
   });

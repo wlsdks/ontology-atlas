@@ -6,15 +6,8 @@ import {
 } from "./meaning-findings";
 
 /**
- * Makes silent frontmatter corruption visible.
- *
- * `parseFrontmatter` is lenient by design: a missing closing `---` or an empty key still
- * returns empty frontmatter rather than throwing. So malformed frontmatter makes the node
- * *disappear from the graph without a word*, and the user has no way to learn why.
- *
- * This validator reads the raw `.md` text and reports only the patterns that mean "the
- * author intended frontmatter and it is broken". A docs file with no frontmatter at all is
- * normal.
+ * `parseFrontmatter` is lenient, so broken frontmatter silently drops a node from the graph. This
+ * reports only patterns where the author intended frontmatter and broke it; none at all is normal.
  */
 
 type VaultIssueSeverity = "error" | "warning";
@@ -45,10 +38,8 @@ export type VaultIssueCode =
   | "slug-outside-kind-folder";
 
 /**
- * R14 — per-kind fields that ought to be present. Matches `requiredExtras` in
- * `mcp/src/schema.mjs` and `cli/src/lib/mcp-bridge/schema.mjs`; a contract test keeps the three in
- * sync. These drive advisory warnings only, never hard errors, so pre-existing vaults stay
- * valid.
+ * Matches `requiredExtras` in `mcp/src/schema.mjs` and `cli/src/lib/mcp-bridge/schema.mjs` (a
+ * contract test keeps them in sync). Advisory warnings only, so existing vaults stay valid.
  */
 export const KIND_EXPECTED_EXTRAS: Readonly<Record<string, readonly string[]>> = {
   project: [],
@@ -65,16 +56,11 @@ export interface VaultDocumentIssue {
 }
 
 export interface VaultDocumentReport {
-  /** True when there are zero error-severity issues. Warnings alone are still ok. */
   ok: boolean;
   issues: VaultDocumentIssue[];
 }
 
-/**
- * The canonical `kind` values for vault frontmatter — the same five that
- * derive-ontology-from-vault recognises. `unknown` is a stub the system mints, never
- * something a user writes, so `unknown` as input is reported as an unknown-kind warning.
- */
+/** `unknown` is a stub the system mints, never user input, so as input it is an unknown kind. */
 const KNOWN_VAULT_KINDS = [
   "project",
   "domain",
@@ -102,12 +88,7 @@ const GRAPH_ARRAY_KEYS = [
 ] as const;
 
 export interface VaultDocumentOptions {
-  /**
-   * The document's vault-relative slug, when the caller knows where the file
-   * sits. Only `slug-outside-kind-folder` needs it, and that code is a fact
-   * about position rather than about bytes — so a caller holding only the text
-   * is never told a node is in the wrong place.
-   */
+  /** Only `slug-outside-kind-folder` needs it; a caller holding only text is never told a node is misplaced. */
   slug?: string;
 }
 
@@ -180,8 +161,6 @@ export function validateVaultDocument(
       message: `\`kind: ${rawKind.trim()}\` 는 인식되지 않는 값입니다. 인식되는 값: ${KNOWN_VAULT_KINDS.join(" / ")}.`,
     });
   } else {
-    // R14 — advisory warning for a missing expected field (e.g. `domain` on a capability
-    // or element). The parser already read the raw text, so check the object directly.
     const trimmedKind = rawKind.trim();
     pushMissingExpectedExtrasIssues(trimmedKind, frontmatter, issues);
   }
@@ -196,13 +175,7 @@ export function validateVaultDocument(
   return { ok: issuesHaveNoErrors(issues), issues };
 }
 
-/**
- * The slug this document is addressed by, when anybody knows it.
- *
- * The caller's value wins: it is the file's real position in the vault, while
- * `slug:` in frontmatter is a claim the document makes about itself, and a
- * document can claim the wrong one.
- */
+/** The caller's value is the file's real position, so it wins over the document's own `slug:` claim. */
 function resolveDocumentSlug(
   frontmatter: Record<string, unknown>,
   options: VaultDocumentOptions,
@@ -214,14 +187,8 @@ function resolveDocumentSlug(
 }
 
 /**
- * The body half, read from the same raw text the frontmatter came out of.
- *
- * Message text is composed here rather than imported, because the two sides of
- * this port write for different readers: `mcp/src/construction/construction-rules.mjs`
- * answers an agent mid-write and names the tool call that repairs it, while this
- * validator's messages sit beside the Korean ones this file has always spoken to
- * the person reading a screen. What the parity contract holds is the *judgement*
- * — identical code sets for identical bodies — not the sentence.
+ * Messages are composed here, not imported from `mcp/src/construction/construction-rules.mjs`,
+ * which addresses an agent; the parity contract holds the code sets, not the sentences.
  */
 function pushMeaningIssues(
   frontmatter: Record<string, unknown>,
@@ -368,19 +335,8 @@ function issuesHaveNoErrors(issues: readonly VaultDocumentIssue[]): boolean {
 }
 
 /**
- * Validates an already-parsed frontmatter object, so the UI (LocalVaultProvider's
- * `VaultManifest.docs`) can check every file without re-reading each `.md` raw.
- *
- * Precision differs from `validateVaultDocument`:
- *   - unclosed-frontmatter and parse-zero-keys are **undetectable** here, because this only
- *     sees what the lenient parser already produced. The CLI
- *     (`scripts/vault/validate-vault.mjs`) covers the raw side; this is the fast UI path.
- *   - missing-kind / empty-kind / unknown-kind are detected as usual.
- *
- * Heuristic for skipping noise: frontmatter that is empty, or has neither `kind` nor any
- * ontology signal key (`domain`, `domains`, `capabilities`, `elements`, `relates`,
- * `dependencies`), is treated as a docs-only file. A signal key present without `kind`
- * raises missing-kind.
+ * Parsed frontmatter alone cannot show unclosed frontmatter or a zero-key parse; the raw
+ * validators cover those. Neither `kind` nor any signal key below means a docs-only file.
  */
 const ONTOLOGY_SIGNAL_KEYS = [
   "domain",
@@ -439,7 +395,6 @@ export function validateVaultDocFrontmatter(
       message: `\`kind: ${rawKind.trim()}\` 는 인식되지 않는 값입니다. 인식되는 값: ${KNOWN_VAULT_KINDS.join(" / ")}.`,
     });
   } else {
-    // R14 — same advisory warning for a missing expected field on this parsed-only path.
     const trimmedKind = rawKind.trim();
     pushMissingExpectedExtrasIssues(trimmedKind, frontmatter, issues);
   }
@@ -455,18 +410,8 @@ export function validateVaultDocFrontmatter(
 }
 
 /**
- * The only meaning finding this fast path can answer.
- *
- * ⚠️ **The other four need the body, and this function never sees one.** It
- * exists so the UI can check a whole manifest without re-reading every `.md`,
- * and the manifest keeps a flattened excerpt rather than the prose — headings,
- * placeholders and section boundaries are all gone by then, and a definition
- * check run on an excerpt would answer a different question under the same code
- * name. Half an answer under a shared code is worse than no answer: it would put
- * the app and the CLI into disagreement about one document while both claimed to
- * run "the validator". Those four stay with `validateVaultDocument`,
- * `validate_vault`, and the CLI's own validate command, which all hold the raw
- * text.
+ * The only meaning finding without the body: the manifest's flattened excerpt would make the
+ * others answer a different question under the same code, and the app would contradict the CLI.
  */
 function pushPositionIssue(
   frontmatter: Record<string, unknown>,
@@ -512,7 +457,6 @@ function pushNonCanonicalGraphArrayIssues(
 }
 
 export interface VaultValidationSummary {
-  /** True when there are zero errors; warnings alone are still ok. */
   ok: boolean;
   total: number;
   errorCount: number;
@@ -521,7 +465,6 @@ export interface VaultValidationSummary {
   issuesBySlug: Array<{ slug: string; issues: VaultDocumentIssue[] }>;
 }
 
-/** Frontmatter validation and UID conflicts, in report order. */
 export function summarizeVaultValidation(
   items: ReadonlyArray<{
     slug: string;

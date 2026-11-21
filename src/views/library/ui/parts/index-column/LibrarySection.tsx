@@ -1,7 +1,7 @@
 "use client";
 
-import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/action-feedback-glyph';
-import { WorkGlyph } from '@/shared/motion/work-glyph';
+import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/status-glyphs/ActionFeedbackGlyph';
+import { WorkGlyph } from '@/shared/motion/status-glyphs/WorkGlyph';
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLocale, type useTranslations } from "next-intl";
@@ -20,12 +20,12 @@ import {
   writeLibraryIndexQuery,
   writeLibraryIndexSegment,
   type LibraryIndexSegment,
-} from "@/shared/lib/preferences/appearance-preferences";
+} from "@/shared/lib/preferences/library-preferences";
 
 import { passageLabelText } from "@/features/library";
 import { captionWindow } from "../../../lib/sources/caption-window";
 import { isIndexedSource, useSourceSearch } from "../../../lib/sources/use-source-search";
-import { useVaultIndexHits } from "@/shared/lib/vault-folder/use-vault-index-hits";
+import { useVaultIndexHits } from "@/shared/lib/vault-folder/vault-index/use-vault-index-hits";
 import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";
 import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { useWindowedRows } from "@/shared/lib/list-rows/use-windowed-rows";
@@ -272,7 +272,7 @@ export function LibrarySection({
    * `use-source-search.ts` owns that read.
    */
   /*
-   * The field comes back holding what was typed; `appearance-preferences.ts` owns the slot and why it
+   * The field comes back holding what was typed; `library-preferences.ts` owns the slot and why it
    * is scoped to the folder and kept in session storage.
    */
   const [query, setQuery] = useState(() => readLibraryIndexQuery(vaultScope));

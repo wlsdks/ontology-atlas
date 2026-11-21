@@ -8,7 +8,6 @@ export const SEARCH_LANE_CROWDED_BELOW_PX = 1728;
 
 export function isSearchLaneCrowded(input: {
   viewportBelowCrowdedWidth: boolean;
-  /** Expanded, not the collapsed rail. */
   indexExpanded: boolean;
 }): boolean {
   return input.viewportBelowCrowdedWidth && input.indexExpanded;

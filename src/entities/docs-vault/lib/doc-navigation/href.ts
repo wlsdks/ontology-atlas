@@ -4,11 +4,9 @@ interface DocsVaultHrefInput {
   hash?: string | null;
   intent?: 'local' | null;
   dogfood?: boolean;
-  /** Return context; pass only a valid `via` marker. */
   via?: string | null;
 }
 
-/** Document address with return context and fragment. */
 export function buildDocsVaultHref({
   slug,
   collection,

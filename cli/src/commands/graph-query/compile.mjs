@@ -65,9 +65,9 @@ export async function runCompile(args) {
       edgesLimit: parsed.edgesLimit,
       edgesOffset: parsed.edgesOffset,
     });
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }
@@ -126,9 +126,9 @@ export async function runCompile(args) {
         edgesLimit: parsed.edgesLimit,
         edgesOffset: parsed.edgesOffset,
       });
-    } catch (err) {
+    } catch (error) {
       process.stderr.write(
-        `${COLORS.red}error${COLORS.reset}  recompile: ${err instanceof Error ? err.message : String(err)}\n`,
+        `${COLORS.red}error${COLORS.reset}  recompile: ${error instanceof Error ? error.message : String(error)}\n`,
       );
       return 2;
     }
@@ -208,12 +208,12 @@ async function applyCanonicalizationActions(vaultRoot, actions) {
         expected_mtime: action.expected_mtime,
       });
       rows.push({ ok: true, slug: action.slug, keys: action.keys ?? [] });
-    } catch (err) {
+    } catch (error) {
       rows.push({
         ok: false,
         slug: action.slug,
         keys: action.keys ?? [],
-        error: err instanceof Error ? err.message : String(err),
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }

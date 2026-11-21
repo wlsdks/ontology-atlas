@@ -65,13 +65,9 @@ export function resolveRouteTitles({ root = process.cwd(), locales = DESKTOP_SMO
 export const DESKTOP_SMOKE_ROUTE_TITLES = resolveRouteTitles();
 
 /**
- * Server-rendered copy is required only where it is itself the static product
- * surface. Client workbenches are covered by route-specific component markers
- * below instead of brittle historical prose.
- *
- * The copy is read from the message catalogue, never pinned here: a pinned sentence
- * goes stale when a screen is rebuilt, while a deleted key stops `resolveRouteText`
- * at once. The gate protects whether today's screen landed in the static output.
+ * Server-rendered copy is required only where it is the static product surface; client workbenches
+ * are covered by the route markers below. The copy is read from the message catalogue, never pinned:
+ * a deleted key stops `resolveRouteText` at once.
  */
 export const DESKTOP_SMOKE_ROUTE_TEXT_KEYS = {
   // `eyebrow` is one line (the hero's `stageTitle` has a line break, so its rendered text differs

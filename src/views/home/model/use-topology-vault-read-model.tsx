@@ -41,12 +41,10 @@ export function useTopologyVaultReadModel({
   // Without a bridge (web build) neither button nor panel is drawn: never paint a door that will
   // not open.
   const llmBridgeAvailable = isLlmChatBridgeAvailable();
-  /** The same fact map the panel and the insight queue read. */
   const vaultConceptFacts = useVaultConceptFacts();
   const arrivingInsight = useArrivingOntologyInsight();
   const { insight: settledInsight } = useOntologyInsight();
   const ontologyInsight = arrivingInsight ?? settledInsight;
-  // Git dates where Git knows, else the file's date (`useVaultDocDates`).
   const { index: docFreshnessIndex, reading: docDatesReading } = useVaultDocDates();
   // File dates, not commits, answer whether the document on screen changed since it opened
   // (conflict baseline).
@@ -73,10 +71,6 @@ export function useTopologyVaultReadModel({
   // fixture's count non-zero; in a user's folder zero means nothing to show, so the chip stays
   // disabled with its tooltip.
   const [recentNeedsVaultOpen, setRecentNeedsVaultOpen] = useState(false);
-  /**
-   * Which "open your folder" sentence a write on the sample shows: creating and editing are
-   * different promises. `null` keeps it closed.
-   */
   const [needsVaultReason, setNeedsVaultReason] = useState<"createNeedsVault" | "editNeedsVault" | null>(null);
   const spotlightNeedsVault = vault.status !== 'loaded';
   const handleToggleSpotlight = useCallback(() => {
@@ -91,26 +85,23 @@ export function useTopologyVaultReadModel({
   }, [spotlightNeedsVault, setRouteState, setRecentNeedsVaultOpen]);
   // On lens on, one full fit so all changed places fit one screen; once per off-to-on so manual
   // exploration wins.
-  const prevSpotlightOnRef = useRef(spotlightOn);
+  const previousSpotlightOnRef = useRef(spotlightOn);
   useEffect(() => {
-    if (spotlightOn && !prevSpotlightOnRef.current) {
+    if (spotlightOn && !previousSpotlightOnRef.current) {
       setFitViewToken((token) => token + 1);
     }
-    prevSpotlightOnRef.current = spotlightOn;
+    previousSpotlightOnRef.current = spotlightOn;
   }, [setFitViewToken, spotlightOn]);
-  // Day resolution: one snapshot per session keeps labels still and render pure.
   const [updatedAgoNowMs] = useState(() => Date.now());
   // A pinned baseline makes nodes changed since it pulse, matching the change panel during a
   // review.
   const changeBaseline = useChangeBaseline();
-  // Used by both the pulse (`touchedNodeIds`) and the re-entry review pill.
   const ontologyChangeset = useMemo(
     () =>
       computeOntologyChangeset(changeBaseline, ontologyInsight?.nodes ?? [], ontologyInsight?.edges ?? []),
     [changeBaseline, ontologyInsight],
   );
   const changedSlugs = ontologyChangeset.touchedNodeIds;
-  // Uses the session snapshot instant so the judgement does not shift mid-session.
   const dustySlugs = useMemo(
     () => deriveDustySlugs(ontologyInsight?.nodes ?? [], docFreshnessIndex, updatedAgoNowMs),
     [ontologyInsight, docFreshnessIndex, updatedAgoNowMs],

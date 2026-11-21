@@ -41,7 +41,6 @@ const SCREEN_ORDER: readonly CapturedId[] = DESTINATION_IDS.filter(
   (id): id is CapturedId => (CAPTURED as readonly string[]).includes(id),
 );
 
-/** Half the 2672px capture. */
 const CAPTURE_WIDTH = 1336;
 const CAPTURE_HEIGHT = 860;
 
@@ -51,7 +50,6 @@ const CAPTURE_HEIGHT = 860;
  */
 const COLUMN_FROM_PX = 1792;
 
-/** The crossfade's length (`--motion-settle`): the leaving capture stays mounted that long. */
 const SWAP_MS = MOTION.settle.duration * 1000;
 
 /**
@@ -70,7 +68,6 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
   /* Prerendered as the strip: most windows are narrower than the column layout. */
   const narrow = useViewportBelow(COLUMN_FROM_PX, true);
 
-  /** Shared by the panels and the captions. */
   const stateOf = (id: CapturedId) =>
     id === active ? 'active' : id === leaving ? 'leaving' : 'hidden';
   const swapClass = (id: CapturedId) => {
@@ -95,7 +92,6 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
         {intro}
       </div>
       <div className="flex min-w-0 items-end max-[112rem]:mb-3 min-[112rem]:col-start-1 min-[112rem]:row-start-2 min-[112rem]:flex-col min-[112rem]:items-stretch min-[112rem]:gap-0.5">
-        {/* The map row opens the live map in this browser. */}
         <Link
           href="/topology"
           data-testid="gateway-screens-map"
@@ -106,7 +102,6 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
             hoverInk: 'strong',
             hoverSurface: 'lift',
             className: cn(
-              // The same box as a tab row beside it.
               'min-h-[var(--control-h-lg)] w-auto shrink-0 gap-2 whitespace-nowrap px-3 py-0 leading-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] min-[112rem]:w-full',
               'rounded-none border-b border-[color:var(--color-divider)] min-[112rem]:rounded-card min-[112rem]:border-b-0',
             ),
@@ -204,7 +199,6 @@ export function ScreensStage({ intro }: { intro: ReactNode }) {
                 data-testid={`gateway-${id}-door`}
                 className={cn(
                   controlClass({ shape: 'link', size: 'md' }),
-                  // The touch-hit-expand class gives a 44px coarse-pointer target without moving layout.
                   'touch-hit-expand shrink-0 text-body font-[var(--font-weight-emphasis)] leading-body text-[color:var(--color-indigo-text-soft)] underline decoration-[color:var(--color-indigo-a40)] underline-offset-4 hover:decoration-[color:var(--color-indigo-accent)]',
                 )}
               >

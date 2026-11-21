@@ -11,11 +11,6 @@ import {
   type TopologyRelationQualityBreakdown,
 } from "../topology-analysis";
 
-/**
- * Node facts shared by the canvas popover and the significance line, which project it without
- * recompute.
- */
-
 export interface TopologyOntologyDrawerRelation {
   edge: KnowledgeGraphEdge;
   other: KnowledgeGraphNode | null;
@@ -29,9 +24,7 @@ export type TopologyRelationProvenance =
   | "needs_review";
 
 interface TopologyOntologyDrawerReach {
-  /** Transitive incoming closure: the blast radius, as CLI `blast-radius --direction incoming`. */
   dependents: number;
-  /** Transitive outgoing closure. */
   dependencies: number;
 }
 
@@ -42,9 +35,7 @@ export interface TopologyOntologyDrawerModel {
    * another document.
    */
   ownDocumentSlug: string | null;
-  /** Null when the node has its own document. */
   mentionedInSlug: string | null;
-  /** The source of the first incoming edge from a `kind: domain` node. */
   ownerDomain: { id: string; title: string } | null;
   incomingCount: number;
   outgoingCount: number;
@@ -52,7 +43,6 @@ export interface TopologyOntologyDrawerModel {
   provenanceCounts: Array<{ provenance: TopologyRelationProvenance; count: number }>;
   relationQuality: TopologyRelationQualityBreakdown;
   previewRelations: TopologyOntologyDrawerRelation[];
-  /** The transitive impact that 1-hop degree understates, shared with the agent brief. */
   reach: TopologyOntologyDrawerReach;
 }
 
@@ -102,7 +92,6 @@ export function buildTopologyOntologyDrawerModel(
   // impact.
   const fullDepth = Math.max(nodes.length, 1);
   const reach: TopologyOntologyDrawerReach = {
-    // The change diff calls this same function, so the two counts cannot drift.
     dependents: computeOntologyDependents(node.id, nodes, edges),
     dependencies: buildOntologyReachability(node.id, nodes, edges, {
       direction: "outgoing",

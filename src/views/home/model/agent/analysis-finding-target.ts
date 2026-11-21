@@ -2,7 +2,6 @@ import type { AnalysisFinding } from '@/entities/analysis-record';
 import { buildChatNodeIndex, resolveNodeAgentTarget, type KnowledgeProjectInsight } from '@/entities/knowledge-graph';
 import { presentationRelationKeysForGraphEdge } from '@/features/acp-session';
 
-/** The recorded typed relationship first, then a still-existing target node. */
 export function resolveAnalysisFindingTarget(finding: AnalysisFinding, insight: KnowledgeProjectInsight | null | undefined) {
   if (!insight) return null;
   const index = buildChatNodeIndex(insight.nodes);

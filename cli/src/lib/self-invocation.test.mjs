@@ -44,10 +44,10 @@ test('cliCommand appends the subcommand to the self-invocation', () => {
 // This is the exact reproduction of the defect — run the printed line **verbatim**
 // and check that it succeeds.
 test('the command init suggests runs as printed', () => {
-  const dir = mkdtempSync(path.join(tmpdir(), 'oatlas-init-'));
+  const directory = mkdtempSync(path.join(tmpdir(), 'oatlas-init-'));
   try {
     const stdout = stripAnsi(
-      execFileSync(process.execPath, [CLI_ENTRY, 'init', 'vault'], { cwd: dir, encoding: 'utf8' }),
+      execFileSync(process.execPath, [CLI_ENTRY, 'init', 'vault'], { cwd: directory, encoding: 'utf8' }),
     );
 
     // No dead name may appear on a runnable line of the "Next steps" block.
@@ -67,9 +67,9 @@ test('the command init suggests runs as printed', () => {
 
     const command = listLine.split('#')[0].trim();
     const args = command.split(/\s+/).slice(1); // everything after `node`
-    const listed = execFileSync(process.execPath, args, { cwd: dir, encoding: 'utf8' });
+    const listed = execFileSync(process.execPath, args, { cwd: directory, encoding: 'utf8' });
     assert.match(stripAnsi(listed), /example-capability/);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 });

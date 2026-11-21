@@ -58,7 +58,7 @@ function scanProduction(): Map<string, number> {
  */
 const REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: string]> = [
   [
-    "src/views/home/ui/TopologyBlockingOverlays.tsx",
+    "src/views/home/ui/map-overlays/TopologyBlockingOverlays.tsx",
     3,
     "map composer — lives inside the --z-map-scrim(25) layer and the map coordinate system. Lifting it to a body portal (--z-dialog 60) breaks the layer contract with the other chrome on the map.",
   ],

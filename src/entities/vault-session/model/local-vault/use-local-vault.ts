@@ -16,13 +16,13 @@ import {
 import { recordLocalFsHandleContents, verifyHandlePermission } from '@/entities/local-fs-handle';
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import type { VaultChangeBatch, VaultPathChange } from '@/shared/lib/vault-folder/vault-change-batch';
-import { classifyVaultAccessError } from '../classify-vault-access-error';
+import { classifyVaultAccessError } from '../vault-opening/classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/failures/error-message';
 import { codedFailure } from '@/shared/lib/failures/failure-code';
 import { AGENT_ACTIVITY_STALE_AFTER_MS, emptyAgentActivityStatus } from '../agent-activity-status';
 import { createAdaptivePoller, type PollCadenceConfig } from './poll-cadence';
-import { createVaultLoadProgressStore } from '../vault-load-progress';
-import { createVaultArrivalStore } from '../vault-arrival';
+import { createVaultLoadProgressStore } from '../vault-opening/vault-load-progress';
+import { createVaultArrivalStore } from '../vault-opening/vault-arrival';
 import {
   comparableAgentActivityStatus,
   structurallyEqualStatus,
@@ -39,30 +39,22 @@ import { emptyState, withArrivedPart, type State, type VaultSessionCore } from '
 import { useVaultChoice } from './use-vault-choice';
 import { useVaultDocWrites } from './use-vault-doc-writes';
 
-/** Minimum interval (ms) between auto-refreshes when the tab regains focus.
- *  Without the throttle every quick trip to an IDE and back makes the UI flash. */
+/** Throttle: every quick trip to an IDE and back would otherwise flash the UI. */
 const AUTO_REFRESH_DEBOUNCE_MS = 2000;
 
 /** Network drives, a watcher that failed to start, and events the OS dropped. */
 const APP_SAFETY_POLL: PollCadenceConfig = { burstMs: 60_000, idleMs: 60_000, burstWindowMs: 0 };
 const HEARTBEAT_STALE_MARGIN_MS = 1000;
 
-/**
- * @internal — mount through `LocalVaultProvider`, read through `useLocalVault()`. One mounted
- * instance keeps IDB rehydration, fingerprint rescans and FS reads from running per consumer.
- */
+/** @internal — mount through `LocalVaultProvider`, read through `useLocalVault()`; one instance keeps IDB rehydration, fingerprint rescans and FS reads from running per consumer. */
 export function useLocalVaultInternal() {
   // Start 'idle' on both server and client; a mount effect switches to 'unsupported' when FSA
   // is missing, so hydration matches.
   const [state, setState] = useState<State>(() => emptyState('idle'));
   const stateRef = useLatestRef(state);
-  /**
-   * The launch stopped at the chooser on purpose: two or more folders are known and the app
-   * will not guess. Not a failure; the docs surface needs it because 'idle' alone would land on the sample.
-   */
+  /** The launch stopped at the chooser on purpose (two or more folders are known); not a failure, and 'idle' alone would land on the sample. */
   const [awaitingVaultChoice, setAwaitingVaultChoice] = useState(false);
 
-  /** Fingerprint of the last successful build — the comparison that lets auto-refresh skip. */
   const lastFingerprintRef = useRef<string | null>(null);
 
   /** The last build, its entries and their handle, for incremental rebuilds and path deltas. A ref, no re-render. */
@@ -110,9 +102,8 @@ export function useLocalVaultInternal() {
       session.handle === handle && loadSequenceRef.current === sequence;
     let settled = false;
     let arrivedPart = false;
-    // Any folder actually being opened ends the choosing state, whichever door it came
-    // through — the chooser row, the picker, or a restore. Clearing it here rather than in
-    // each caller is why a new door cannot forget to.
+    // Any folder being opened ends the choosing state, whichever door it came through; clearing it here is why a new
+    // door cannot forget to.
     setAwaitingVaultChoice(false);
     setState((s) => {
       const cleared = { ...s, handle, errorMessage: null, errorCode: null, partialTotal: 0 };
@@ -123,7 +114,6 @@ export function useLocalVaultInternal() {
       return s.status === 'loaded' && s.handle === handle ? cleared : { ...cleared, status: 'loading' };
     });
     try {
-      // Same handle as the previous build: rebuild incrementally; otherwise (or on failure) build in full.
       const reuse =
         lastBuildRef.current && lastBuildRef.current.handle === handle
           ? lastBuildRef.current.entries
@@ -227,7 +217,7 @@ export function useLocalVaultInternal() {
         /* The counts stay absent; the row says so. */
       }
       return { starterWritten, starterError };
-    } catch (err) {
+    } catch (error) {
       if (!isCurrent()) return null;
       lastBuildRef.current = null;
       lastFingerprintRef.current = null;
@@ -246,11 +236,11 @@ export function useLocalVaultInternal() {
         fileHandles: new Map(),
         imageHandles: new Map(),
     sourceHandles: new Map(),
-        errorMessage: toErrorMessage(err),
+        errorMessage: toErrorMessage(error),
         // A refusal by the operating system is not the same event as a broken folder, and sending
         // somebody to System Settings to fix a folder that is simply gone would be worse than vague.
         errorCode:
-          classifyVaultAccessError(err) === 'permission-denied' ? 'permission-denied' : 'access-failed',
+          classifyVaultAccessError(error) === 'permission-denied' ? 'permission-denied' : 'access-failed',
         lastLoadedAt: null,
         manifestHandle: null,
         partialTotal: 0,
@@ -268,7 +258,6 @@ export function useLocalVaultInternal() {
     return running;
   }, [runLoad]);
 
-  /** User-initiated refresh: an unchanged fingerprint skips the rebuild but updates `lastLoadedAt`. */
   const refresh = useCallback(async () => {
     const handle = stateRef.current.handle;
     const session = vaultReadSessionRef.current;
@@ -276,7 +265,6 @@ export function useLocalVaultInternal() {
     if (!handle || !isCurrent()) return;
     let nativeStamps: VaultStampIndex | null = null;
     try {
-      // Take the fingerprint and its stamps together so the incremental rebuild walks once.
       const { fingerprint: fp, nativeStamps: stamps } =
         await computeLocalVaultFingerprintWithStamps(handle);
       if (!isCurrent()) return;
@@ -293,7 +281,6 @@ export function useLocalVaultInternal() {
     if (isCurrent()) await load(handle, {}, nativeStamps);
   }, [stateRef, load]);
 
-  // Refresh when the tab regains focus; the fingerprint check skips unchanged vaults.
   const autoRefreshRef = useRef<{
     lastAt: number;
     timer: ReturnType<typeof setTimeout> | null;
@@ -302,8 +289,6 @@ export function useLocalVaultInternal() {
   useEffect(() => {
     loadRef.current = load;
   }, [load]);
-  // Returns true when a change was detected (a reload was triggered) — drives
-  // the adaptive poll cadence (burst after a change, idle when quiet).
   const loadedHandle = state.status === 'loaded' ? state.handle : null;
   const syncWithDisk = useCallback(async (): Promise<boolean> => {
     if (!loadedHandle) return false;
@@ -347,11 +332,9 @@ export function useLocalVaultInternal() {
     return true;
   }, [loadedHandle]);
   /**
-   * Applies one watcher batch on top of the last build without walking the folder
-   * (`applyVaultChanges`), after any load in flight has settled. Falls back to `syncWithDisk` for a
-   * rescan or a batch the delta cannot apply exactly; a load that starts meanwhile read the disk
-   * after these changes, so its result wins and the delta is dropped. A batch watched for another
-   * folder than the one now loaded is dropped too: its paths describe that folder's disk.
+   * Applies one watcher batch on top of the last build (`applyVaultChanges`) after any load in flight settles; falls back to
+   * `syncWithDisk` for a rescan. A load that starts meanwhile read the disk after these changes, so its result wins and the
+   * delta is dropped, as is a batch watched for another folder than the one now loaded.
    */
   const applyChangeBatch = useCallback(async (
     watched: FileSystemDirectoryHandle,
@@ -421,7 +404,6 @@ export function useLocalVaultInternal() {
     }
     const queued = queuedChangesRef.current;
     queued.rescan ||= batch.rescan;
-    // The later stamp for a path wins.
     for (const change of batch.changes) queued.changes.set(change.path, change);
     if (drainingChangesRef.current) return Promise.resolve();
     drainingChangesRef.current = true;
@@ -565,11 +547,7 @@ export function useLocalVaultInternal() {
     errorMessage: state.errorMessage,
     errorCode: state.errorCode,
     lastLoadedAt: state.lastLoadedAt,
-    /**
-     * Is this a re-read of the same folder (save, focus rescan)? False while switching folders,
-     * so the previous folder is never drawn as the new one. Consumers branch on this, not on
-     * `status`, so a save does not blank the screen.
-     */
+    /** True for a re-read of the same folder (save, focus rescan), false while switching folders; consumers branch on this, not on `status`, so a save does not blank the screen. */
     isReloadingSameVault:
       state.status === 'loading' &&
       state.manifest !== null &&
@@ -578,9 +556,7 @@ export function useLocalVaultInternal() {
     loadProgressStore,
     arrivalStore,
     restoreAttempted,
-    /** The folder the person picked, when the map inside it was opened instead. Screens must say so. */
     openedInsidePickedFolder,
-    /** Clears the one-time substitution notice once read. */
     dismissOpenedInsideNotice: () => setOpenedInsidePickedFolder(null),
     // Derived from state to stay SSR-consistent (avoiding an `isSupported()` call in the lazy
     // initializer). The switch to 'unsupported' happens in a mount effect.
@@ -591,7 +567,6 @@ export function useLocalVaultInternal() {
     close,
     refresh,
     syncWithDisk,
-    /** The app watcher's changed paths; `TauriVaultWatchBridge` feeds it. */
     applyVaultChangeBatch,
     requestPermission,
     saveDoc,

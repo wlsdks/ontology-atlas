@@ -14,7 +14,7 @@ const secrets = vi.hoisted(() => ({ stored: true, listeners: new Set<() => void>
 vi.mock('@/shared/lib/llm-connection/tauri-llm', () => ({
   isLlmChatBridgeAvailable: () => bridge.available,
   llmChat: vi.fn(async () => null),
-  llmChatErrorMessage: (err: unknown) => String(err),
+  llmChatErrorMessage: (error: unknown) => String(error),
 }));
 
 vi.mock('@/shared/lib/llm-connection/tauri-secrets', () => ({
@@ -63,8 +63,8 @@ vi.mock('@/shared/lib/git/tauri-git', () => ({
   gitHistory: vi.fn(async () => gitBridge.commits),
 }));
 
-vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
+vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-provider/LocalVaultProvider')>()),
   useLocalVault: () => ({
     fileHandles: new Map(),
     createDoc: vi.fn(),

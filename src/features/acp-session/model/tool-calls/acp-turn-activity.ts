@@ -14,10 +14,7 @@ export interface AcpTurnActivity {
   toolName: string | null;
 }
 
-/**
- * The current, actually reported ACP tool call. Consumers classify this from its exact
- * `toolKind` and structured input; this helper does not infer a target from tool prose.
- */
+/** The current, actually reported tool call; this helper does not infer a target from tool prose. */
 export interface AcpTurnToolActivity {
   id: string;
   toolKind: string | null;

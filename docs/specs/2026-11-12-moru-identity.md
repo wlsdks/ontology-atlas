@@ -32,7 +32,7 @@ Observed baseline before this change at `43d02994ffd36ab3e301b11a5d0e3425eaaf1fa
   `src/views/first-run/ui/FirstRunPage.tsx:169`, `src/views/terminal-state/ui/NotFoundScreen.tsx:82`).
 - Pending art is decorative; its parent owns status/cancellation. It pauses
   offscreen/hidden and stays still under reduced motion
-  (`src/shared/ui/marks/brand-waiting-mark.tsx:7`, `src/shared/ui/marks/brand-waiting-mark.tsx:28`).
+  (`src/shared/ui/marks/moru/brand-waiting-mark.tsx:7`, `src/shared/ui/marks/moru/brand-waiting-mark.tsx:28`).
 - Read poses require a current read-like tool; completion requires a timestamped
   terminal projection (`src/features/agent-activity/model/mascot-state.ts:5`).
   Idle/unverified work hides the finite sequence (`src/features/agent-activity/ui/AgentMascotPresence.tsx:100`).

@@ -5,7 +5,7 @@ import { seedFirstRunSeen } from "../../first-run-seed";
 import { useDogfoodSample } from "../../sample-source";
 import { waitForMapStill } from "../../settle";
 import { stubDirectoryPicker } from "../../vault-picker-stub";
-import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
+import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 
 const DOMAINS = ["orders", "catalog", "payments", "shipping", "returns", "inventory", "merchants", "platform"];
 const CAPABILITIES_PER_DOMAIN = 6;

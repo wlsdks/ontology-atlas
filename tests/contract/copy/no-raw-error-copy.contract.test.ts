@@ -448,7 +448,7 @@ const REPAIRED = [
   'src/views/home/ui/HomePage.tsx',
   'src/views/first-run/ui/FirstRunPage.tsx',
   'src/views/project-detail/ui/ProjectDetailPage.tsx',
-  'src/widgets/app-settings-menu/ui/VaultShapeSettings.tsx',
+  'src/widgets/app-settings-menu/ui/pane-settings/VaultShapeSettings.tsx',
   'src/widgets/docs-vault/ui/DocsVaultEditor.tsx',
   'src/features/docs-vault-local/model/use-just-start-vault.ts',
   'src/features/docs-vault-local/model/use-vault-create-flow.ts',

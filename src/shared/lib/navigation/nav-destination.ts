@@ -15,20 +15,10 @@ export type AppNavDestinationId =
   | "workStatus";
 
 /**
- * Pure prefix matcher for the canonical app destinations (feat/chrome-system
- * `#375` + feat/rail-rollout `#377`) — `AppNavRail` (desktop, `lg`+) and
- * `BottomTabBar` (mobile, `<lg`) share this ladder and MUST agree on which one
- * is "active" for a given pathname, so it lives here once instead of being
- * duplicated per widget. Compatibility routes under `/ontology/edit` and
- * `/ontology/studio` fold into `map`; other redirects match nothing. The mobile
- * `BottomTabBar` renders its persistent destinations from
- * `MOBILE_DESTINATION_IDS`.
+ * `AppNavRail` and `BottomTabBar` must agree on the active destination. `/ontology/edit` and
+ * `/ontology/studio` fold into `map`; other redirects match nothing.
  */
 export function resolveActiveNavDestination(pathname: string): AppNavDestinationId | null {
-  // `usePathname()` from `@/i18n/navigation` is already locale-agnostic, but
-  // this strips a stray locale prefix defensively anyway (raw
-  // `next/navigation` pathnames, direct unit-test input) so the ladder below
-  // never silently misses on a locale-prefixed path.
   const path = stripLocalePrefix(pathname || "/");
   if (path.startsWith("/ontology/edit") || path.startsWith("/ontology/studio"))
     return "map";
@@ -64,21 +54,12 @@ export function isGatewayRoute(pathname: string): boolean {
   return GATEWAY_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
 }
 
-/** What `isGatewaySurface` needs beyond the path — who the visitor is. */
 export interface GatewayContext {
-  /** Is a vault open — i.e. this person is working, not visiting. */
   hasVault: boolean;
-  /** Are we inside the installed desktop app? */
   desktop: boolean;
   /**
-   * Is this the first frame, where the vault state is still unknown? (Static
-   * export cannot know it on the server.)
-   *
-   * While unknown, `/` **leans towards the gateway**. Leaning the other way paints
-   * the rail on a visitor's first frame and then removes it — exactly the flash
-   * this file exists to prevent. A returning user with a vault is carried to their
-   * last screen by route memory and rarely passes through `/` at all, so leaning
-   * this way costs fewer people.
+   * While unknown, `/` leans towards the gateway: the other way flashes the rail on a visitor's
+   * first frame, and a returning user rarely passes through `/`.
    */
   vaultKnown: boolean;
 }

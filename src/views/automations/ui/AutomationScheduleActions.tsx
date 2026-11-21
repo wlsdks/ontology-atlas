@@ -9,7 +9,6 @@ import { Button } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { AutomationRowMenu } from './AutomationRowMenu';
 
-/** One pending change at a time per schedule, and whether the last one failed. */
 export function useScheduleChange() {
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -29,15 +28,12 @@ export function useScheduleChange() {
 
 export type ScheduleChange = ReturnType<typeof useScheduleChange>;
 
-/** The id of the line the run-now press points to while another schedule runs. */
 export const AUTOMATIONS_RUNNING_ID = 'automations-running';
 
-/** `Run now` stands as itself; the rest wait in the row's menu. */
 export const AutomationScheduleActions = forwardRef<HTMLButtonElement, {
   round: RoundRecord;
   runner: RoundsRunnerValue;
   change: ScheduleChange;
-  /** While set, "Run now" waits and names why; Resume stays, because resuming here allows. */
   notAllowedSentenceId: string | null;
   onEdit: () => void;
   onRemove: () => void;
@@ -66,7 +62,6 @@ export const AutomationScheduleActions = forwardRef<HTMLButtonElement, {
   </>;
 });
 
-/** Stands under the row until answered; Escape is Cancel. */
 export function AutomationRemoveConfirm({ round, runner, change, onClose }: {
   round: RoundRecord;
   runner: RoundsRunnerValue;

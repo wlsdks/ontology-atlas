@@ -26,7 +26,7 @@ import {
   type LibraryPageFacts,
 } from '@/features/library';
 import { sourceUnits, type SourceUnit } from '@/shared/lib/library/source-passage';
-import type { VectorFound } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import type { VectorFound } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { Button, Chip } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';
@@ -137,6 +137,7 @@ export function LibraryQuestionDesk({
   const [expandedFor, setExpandedFor] = useState<number | null>(null);
   const searchId = useRef(0);
   const sourceUnitsByStamp = useRef(new Map<string, SourceUnit[]>());
+  const questionField = useRef<HTMLInputElement>(null);
   const jev = useDeskJev({ pageFacts, sources, sourceHandles, hashes, vaultRoot, vaultScope });
   const meaningSearch = useVectorSearch(vaultRoot, docs.length, visible);
 
@@ -359,7 +360,7 @@ export function LibraryQuestionDesk({
         {agentReady ? <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('zeroLocalAgentNote')}</p>
           : <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('report.agentUnavailable')}</p>}
         {offerSetup || reportAction ? <div className="mt-4 flex flex-wrap items-center gap-2">
-          {offerSetup ? <MeaningSetupPress rootPath={vaultRoot} look="button" testId="question-desk-meaning-setup">{t('meaning.setup')}</MeaningSetupPress> : null}
+          {offerSetup ? <MeaningSetupPress rootPath={vaultRoot} testId="question-desk-meaning-setup">{t('meaning.setup')}</MeaningSetupPress> : null}
           {reportAction}
         </div> : null}
       </section>}
@@ -378,7 +379,7 @@ export function LibraryQuestionDesk({
         <form id="question-desk-question-form" onSubmit={(event) => { event.preventDefault(); void search(); }}>
           <div className="flex flex-wrap items-center gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] transition-colors focus-within:border-[color:var(--color-indigo-focus-ring)]">
             <Search size={ICON_SIZE.lg} className="flex-none text-[color:var(--color-text-tertiary)]" aria-hidden="true" />
-            <Input frame="bare" size="lg" aria-label={t('questionLabel')} placeholder={t('questionPlaceholder')} value={question} readOnly={jev.sending} onChange={(event) => {
+            <Input ref={questionField} frame="bare" size="lg" aria-label={t('questionLabel')} placeholder={t('questionPlaceholder')} value={question} readOnly={jev.sending} onChange={(event) => {
               /* A report on screen stays until new rows arrive; one still being written stops answering. */
               if (!activeReport) onInvalidateReport();
               searchId.current += 1;
@@ -393,7 +394,7 @@ export function LibraryQuestionDesk({
           <div data-question-desk-status-row="true" className="mt-2 flex min-h-5 flex-wrap items-center gap-x-3 text-label leading-label text-[color:var(--color-text-tertiary)]">
             <p>{t('folderScope', { pages: countDeskWikiPages(docs), sources: sources.length })}</p>
           </div>
-          <MeaningDeskLine rootPath={vaultRoot} markdownFiles={docs.length} roomForStage={!result} />
+          <MeaningDeskLine rootPath={vaultRoot} markdownFiles={docs.length} roomForStage={!result} onAsk={() => questionField.current?.focus()} />
         </form>
         {workActivity ? <div className="mt-3">{workActivity}</div> : null}
         <div className="relative mt-6">

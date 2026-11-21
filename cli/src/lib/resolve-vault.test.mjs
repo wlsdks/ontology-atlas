@@ -6,8 +6,8 @@ import test from 'node:test';
 import { resolveVaultRoot } from './resolve-vault.mjs';
 
 test('resolveVaultRoot prefers the explicit argument over env', () => {
-  const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
-  const explicit = resolve(tmp, 'my-vault');
+  const temporaryDirectory = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
+  const explicit = resolve(temporaryDirectory, 'my-vault');
   mkdirSync(explicit, { recursive: true });
   process.env.OATLAS_VAULT = '/tmp/env-vault';
   try {
@@ -15,43 +15,43 @@ test('resolveVaultRoot prefers the explicit argument over env', () => {
     assert.equal(got, explicit);
   } finally {
     delete process.env.OATLAS_VAULT;
-    rmSync(tmp, { recursive: true, force: true });
+    rmSync(temporaryDirectory, { recursive: true, force: true });
   }
 });
 
 test("resolveVaultRoot treats an explicit '.' as default and falls to env", () => {
-  const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
-  process.env.OATLAS_VAULT = tmp;
+  const temporaryDirectory = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
+  process.env.OATLAS_VAULT = temporaryDirectory;
   try {
     const got = resolveVaultRoot('.');
-    assert.equal(got, tmp);
+    assert.equal(got, temporaryDirectory);
   } finally {
     delete process.env.OATLAS_VAULT;
-    rmSync(tmp, { recursive: true, force: true });
+    rmSync(temporaryDirectory, { recursive: true, force: true });
   }
 });
 
 test('resolveVaultRoot uses env second', () => {
-  const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
+  const temporaryDirectory = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
   delete process.env.OATLAS_VAULT;
-  process.env.OATLAS_VAULT = tmp;
+  process.env.OATLAS_VAULT = temporaryDirectory;
   try {
     const got = resolveVaultRoot();
-    assert.equal(got, tmp);
+    assert.equal(got, temporaryDirectory);
   } finally {
     delete process.env.OATLAS_VAULT;
-    rmSync(tmp, { recursive: true, force: true });
+    rmSync(temporaryDirectory, { recursive: true, force: true });
   }
 });
 
 test('resolveVaultRoot — explicit/env vault paths must exist and be directories', () => {
-  const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
-  const file = resolve(tmp, 'not-a-vault.md');
+  const temporaryDirectory = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
+  const file = resolve(temporaryDirectory, 'not-a-vault.md');
   writeFileSync(file, 'not a directory\n');
 
   try {
     assert.throws(
-      () => resolveVaultRoot(resolve(tmp, 'missing')),
+      () => resolveVaultRoot(resolve(temporaryDirectory, 'missing')),
       /Vault root not found:/,
     );
     assert.throws(
@@ -59,11 +59,11 @@ test('resolveVaultRoot — explicit/env vault paths must exist and be directorie
       /Vault root is not a directory:/,
     );
 
-    process.env.OATLAS_VAULT = resolve(tmp, 'missing-env');
+    process.env.OATLAS_VAULT = resolve(temporaryDirectory, 'missing-env');
     assert.throws(() => resolveVaultRoot(), /Vault root not found:/);
   } finally {
     delete process.env.OATLAS_VAULT;
-    rmSync(tmp, { recursive: true, force: true });
+    rmSync(temporaryDirectory, { recursive: true, force: true });
   }
 });
 
@@ -71,44 +71,44 @@ test('resolveVaultRoot detects cwd/docs/ontology third', () => {
   // Create docs/ontology under a temporary cwd and chdir into it. macOS tmp is a
   // symlink (`/var/folders` → `/private/var/folders`), so compare after
   // normalising with realpathSync.
-  const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
-  const vaultDir = resolve(tmp, 'docs/ontology');
+  const temporaryDirectory = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
+  const vaultDir = resolve(temporaryDirectory, 'docs/ontology');
   mkdirSync(vaultDir, { recursive: true });
   const prevCwd = process.cwd();
-  process.chdir(tmp);
+  process.chdir(temporaryDirectory);
   try {
     delete process.env.OATLAS_VAULT;
     const got = resolveVaultRoot();
     assert.equal(got, vaultDir);
   } finally {
     process.chdir(prevCwd);
-    rmSync(tmp, { recursive: true, force: true });
+    rmSync(temporaryDirectory, { recursive: true, force: true });
   }
 });
 
 test('resolveVaultRoot falls back to cwd when nothing else applies', () => {
   // A temporary directory with no docs/ontology in cwd — normalised with realpathSync.
-  const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
+  const temporaryDirectory = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
   const prevCwd = process.cwd();
-  process.chdir(tmp);
+  process.chdir(temporaryDirectory);
   try {
     delete process.env.OATLAS_VAULT;
     const got = resolveVaultRoot();
-    assert.equal(got, tmp);
+    assert.equal(got, temporaryDirectory);
   } finally {
     process.chdir(prevCwd);
-    rmSync(tmp, { recursive: true, force: true });
+    rmSync(temporaryDirectory, { recursive: true, force: true });
   }
 });
 
 test('resolveVaultRoot treats an empty explicit argument as default', () => {
-  const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
-  process.env.OATLAS_VAULT = tmp;
+  const temporaryDirectory = realpathSync(mkdtempSync(resolve(tmpdir(), 'ontology-atlas-vault-test-')));
+  process.env.OATLAS_VAULT = temporaryDirectory;
   try {
     const got = resolveVaultRoot('');
-    assert.equal(got, tmp);
+    assert.equal(got, temporaryDirectory);
   } finally {
     delete process.env.OATLAS_VAULT;
-    rmSync(tmp, { recursive: true, force: true });
+    rmSync(temporaryDirectory, { recursive: true, force: true });
   }
 });

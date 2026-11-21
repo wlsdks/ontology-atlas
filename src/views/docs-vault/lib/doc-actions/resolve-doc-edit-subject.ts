@@ -10,7 +10,6 @@ import { hasUnaccountedMtimeChange } from "@/shared/lib/edit-provenance/mtime-co
  */
 export function resolveDocLastEditSubject(params: {
   doc: { slug: string; path: string };
-  /** Null on server and sample vaults: the agent candidate is unevidenced, the human one still evaluated. */
   agentActivityStatus: AgentActivityStatus | null;
   selfEditTimestamps: ReadonlyMap<string, number>;
 }): LastEditSubjectFact | null {

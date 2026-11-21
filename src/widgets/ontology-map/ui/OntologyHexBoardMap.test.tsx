@@ -15,7 +15,8 @@ vi.mock("../morph/hex-marks", async (importOriginal) => ({
 
 import { computeHexBoard } from "../model/board/hex-board";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
-import { OntologyHexBoardMap, type HexBoardLabels } from "./OntologyHexBoardMap";
+import { OntologyHexBoardMap } from "./OntologyHexBoardMap";
+import type { HexBoardLabels } from "./hex-board/hex-board-labels";
 
 const nodes = [
   { id: "project:p", label: "Project", kind: "project" },

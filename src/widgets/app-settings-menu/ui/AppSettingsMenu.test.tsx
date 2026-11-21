@@ -73,8 +73,8 @@ vi.mock('@/entities/vault-session/model/use-agent-server', async (importOriginal
     reason: 'The bundled MCP server is only available in the installed app.',
   }),
 }));
-vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
+vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-provider/LocalVaultProvider')>()),
   useLocalVault: () => ({
     status: mocks.vaultStatus,
     handle: mocks.vaultHandleName ? { name: mocks.vaultHandleName } : null,
@@ -795,8 +795,8 @@ describe('AppSettingsMenu appearance pickers', () => {
     openSection('expand');
     fireEvent.click(screen.getByTestId('app-settings-expand-detail-toggle'));
     const range = (id: string) => {
-      const el = screen.getByTestId(id) as HTMLInputElement;
-      return [el.min, el.max];
+      const inputElement = screen.getByTestId(id) as HTMLInputElement;
+      return [inputElement.min, inputElement.max];
     };
     expect(range('app-settings-expand-batch')).toEqual(['4', '24']);
     expect(range('app-settings-expand-label-attempts')).toEqual(['3', '40']);

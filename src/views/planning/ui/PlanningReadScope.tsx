@@ -11,7 +11,6 @@ const PLACEMENT_CLASS = {
   stage: 'max-w-md text-center [&>div]:justify-center',
 } as const;
 
-/** What the last folder check covered, and the door to its limits: at the foot of the file list, or under an empty folder's stage. */
 export function PlanningReadScope({ placement, inventory, status, checkedAt, slow, writable }: {
   placement: keyof typeof PLACEMENT_CLASS;
   inventory: PlanningInventory | null;

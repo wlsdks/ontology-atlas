@@ -39,7 +39,6 @@ export interface OntologyChangeSet {
   relation: OntologyRelationChange | null;
   fields: OntologyChangeField[];
   itemCount: number;
-  /** Every requested row in protocol order; `relation`/`fields` mirror item 0. */
   items: OntologyChangeItem[];
 }
 

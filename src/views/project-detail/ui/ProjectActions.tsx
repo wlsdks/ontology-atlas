@@ -4,7 +4,7 @@ import { useRef, useState, type InputHTMLAttributes, type ReactNode } from "reac
 import { useLocale, useTranslations } from "next-intl";
 import { BookOpen, FileText, FilePlus2, Link2, NotebookPen, PencilLine } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { getProjectRuntimeDetailUrl, getTopologyProjectNodeHref, type Project } from "@/entities/project";
+import { buildProjectRuntimeDetailUrl, buildTopologyProjectNodeHref, type Project } from "@/entities/project";
 import { ProjectQuickEditPanel } from "@/features/project-quick-edit";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { BASE_PATH } from "@/shared/lib/public-pages/base-path";
@@ -19,16 +19,13 @@ interface Props {
   project: Project;
   displayName: string | null;
   canManage: boolean;
-  /** Where the quick-edit panel's "all settings" door leads. */
   fullEditHref: string;
   projectHref: string;
   documentHref: string;
   handoffSnippet: string;
   brief: {
     prompt: string;
-    /** The sentence that says what the agent will do with the prompt. */
     explanation: string;
-    /** Set when a guarded agent can be opened on this page; otherwise the prompt is copied. */
     startAgent: ((prompt: string) => void) | null;
   };
   review: {
@@ -38,10 +35,6 @@ interface Props {
   };
 }
 
-/**
- * One filled action, one outline hand-off and one overflow menu. The previews open the shared
- * centred dialog; nothing on the page unfolds in place.
- */
 export function ProjectActions({
   project,
   displayName,
@@ -80,7 +73,7 @@ export function ProjectActions({
     let copied = false;
     try {
       copied = await linkCopy.copy(
-        getProjectRuntimeDetailUrl(window.location.origin, project.slug, { locale, basePath: BASE_PATH }),
+        buildProjectRuntimeDetailUrl(window.location.origin, project.slug, { locale, basePath: BASE_PATH }),
       );
     } catch {
       // An address that cannot be built is a copy that failed.
@@ -126,7 +119,7 @@ export function ProjectActions({
     <div data-testid="project-detail-actions" data-agent-route={brief.startAgent ? "agent" : "copy"} className="flex min-w-0 flex-col items-start gap-2 @5xl/project-page:items-end">
       <div className="flex flex-wrap items-center gap-2">
         <Link
-          href={getTopologyProjectNodeHref(project.slug)}
+          href={buildTopologyProjectNodeHref(project.slug)}
           data-testid="project-detail-topology-link"
           className={cn(buttonVariants({ variant: "primary", size: "sm" }), "atlas-touch-floor")}
         >
@@ -232,7 +225,6 @@ function copyStateLabel(state: string, labels: { idle: string; copied: string; f
   return state === "copied" ? labels.copied : state === "failed" ? labels.failed : labels.idle;
 }
 
-/** The longest label reserves the width, so "copied" does not resize the button. */
 function StableLabel({ current, options }: { current: string; options: readonly string[] }) {
   return (
     <span className="inline-grid">

@@ -5,9 +5,9 @@ import path from 'node:path';
 const MAX_BUFFER = 64 * 1024 * 1024;
 const LICENSE_FILE = /^(?:licen[cs]e|copying|copyright|notice|unlicense)(?:[-_.][^/]*)?$/i;
 
-export function listLicenseFiles(dir) {
+export function listLicenseFiles(directory) {
   return fs
-    .readdirSync(dir, { withFileTypes: true })
+    .readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isFile() && LICENSE_FILE.test(entry.name) && !/\.spdx$/i.test(entry.name))
     .map((entry) => entry.name)
     .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
@@ -18,10 +18,10 @@ function isPlatformSpecific(manifest) {
   return ['os', 'cpu', 'libc'].some((field) => Array.isArray(manifest[field]) && manifest[field].length > 0);
 }
 
-function readManifest(dir, cwd) {
-  const file = path.join(dir, 'package.json');
+function readManifest(directory, cwd) {
+  const file = path.join(directory, 'package.json');
   if (!fs.existsSync(file)) {
-    throw new Error(`${path.relative(cwd, dir)} is not installed; run pnpm install in ${path.basename(cwd)} first`);
+    throw new Error(`${path.relative(cwd, directory)} is not installed; run pnpm install in ${path.basename(cwd)} first`);
   }
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
@@ -31,8 +31,8 @@ function collectNpmPackages({ cwd, scope }) {
   const packages = [];
   for (const [license, entries] of Object.entries(JSON.parse(raw))) {
     for (const entry of entries) {
-      for (const dir of entry.paths) {
-        const manifest = readManifest(dir, cwd);
+      for (const directory of entry.paths) {
+        const manifest = readManifest(directory, cwd);
         packages.push({
           ecosystem: 'npm',
           scope,
@@ -40,7 +40,7 @@ function collectNpmPackages({ cwd, scope }) {
           version: manifest.version,
           license,
           authors: entry.author ? [entry.author] : [],
-          dir,
+          dir: directory,
           platformSpecific: isPlatformSpecific(manifest),
         });
       }

@@ -15,10 +15,9 @@ import { History as HistoryIcon, RotateCcw } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { isReviewResult } from '../model/review-result';
 import { MeaningTransitionHistory, type MeaningTransitionArchiveState } from './MeaningTransitionHistory';
-import { FindingDetail, FindingRow, type EvidenceConcept, type FindingDisposition } from './ReviewFindings';
+import { FindingDetail, FindingRow, type EvidenceConcept, type FindingDisposition } from './review-findings';
 import { ReviewRecordDialog } from './ReviewRecordDialog';
 
-/** Hairline between groups, only where no label already separates them. */
 const DIVIDED = 'border-t border-[color:var(--color-divider)] pt-4';
 const LIST_VIEW = 'list';
 
@@ -29,7 +28,6 @@ const EMPTY_PROBLEMS: string[] = [];
 /* The fix request names its record by id inside a quoted argument; anything else is not offered. */
 const PLAIN_RECORD_ID = /^[A-Za-z0-9_-]{1,200}$/;
 
-/** One context slot beside the canvas. Hiding conversation never unmounts its ACP session. */
 /**
  * Module-level on purpose: the workbench unmounts when its dock closes, and a saved record must not
  * toast again on reopen.
@@ -44,7 +42,6 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   context: AnalysisCaptureContext;
   contextLabel: string;
   conversationLabel?: string | null;
-  /** The picked node's kind, shown in the header eyebrow beside the view name. */
   contextKind?: string | null;
   open: boolean;
   requestNonce?: number;
@@ -80,7 +77,6 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     if (!open) return;
     const panel = panelRef.current;
     const isPageContainer = (element: Element | null) => element === document.body || Boolean(element?.matches('main, [role="main"]'));
-    /* Record the opener once: later runs of this effect already see focus on the close button. */
     const active = document.activeElement;
     const origin = active instanceof HTMLElement && !isPageContainer(active) && !panel?.contains(active)
       ? active : null;
@@ -130,7 +126,6 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   const setSaveState = capture?.setState;
   const [checked, setChecked] = useState<{ run: AnalysisRun; context: AnalysisCaptureContext; state: AnalysisCompatibility } | null>(null);
   const [reviewText, setReviewText] = useState('');
-  /* `LIST_VIEW` or the open finding as `runId:findingId`; the tab navigates between them. */
   const [view, setView] = useState(LIST_VIEW);
   const [recordOpen, setRecordOpen] = useState(false);
   const historyPanelRef = useRef<HTMLDivElement>(null);
@@ -325,7 +320,6 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  /** Offered beside each review request, wherever that request stands. */
   const fillNotesChip = onRequest && relationNoteGaps > 0 && context.mode === 'meaning'
     ? <Chip size="lg" data-testid="workbench-fill-notes" onClick={requestNotes}>{t('fillNotes', { count: relationNoteGaps })}</Chip> : null;
   const refreshButton = context.handle ? <IconButton size="lg" hoverSurface="lift" hoverInk="strong" label={t('refresh')} onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden /></IconButton> : null;
@@ -340,7 +334,6 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
           {!finished && run.findings.length ? ` · ${t('toCheck', { count: openFindings.length })}` : null}
           {dismissedFindings.length ? <span className="text-[color:var(--color-text-tertiary)]"> · {t('dismissedCount', { count: dismissedFindings.length })}</span> : null}
         </h3>
-        {/* The trigger carries the review's date; the id moves to the option description. */}
         {runs.length > 1
           ? <Select size="sm" quiet ariaLabel={t('version')} value={run.id} onChange={(id) => { setSelectedId(id); setView(LIST_VIEW); }} className="min-w-0" options={runs.map((item, index) => ({ value: item.id, label: `${index === 0 ? `${t('latest')} · ` : ''}${new Date(item.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}`, description: `${item.id.slice(0, 8)} · ${item.request.text.slice(0, 80)}` }))} />
           : <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">{new Date(run.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}</span>}
@@ -405,10 +398,6 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     {tab === 'meaning' && facts ? <div role="tabpanel" id="workbench-tabpanel-meaning" aria-labelledby="workbench-tab-meaning" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1">
       <div className="flex flex-col gap-2">
         <p className="text-body leading-body text-[color:var(--color-text-primary)]">{t('architectureCriteria')}</p>
-        {/*
-         * The primary is the same chip box in filled indigo, so only the fill separates it from its
-         * neighbour.
-         */}
         {onRequest ? <div className="flex flex-wrap items-center gap-2">
           <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip>
         </div> : <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('agentUnavailable')}</p>}
@@ -478,7 +467,6 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   </>;
 }
 
-/** The exception text behind a failure sentence, folded; see the `error` state above. */
 function FailureDetail({ summary, detail }: { summary: string; detail: string }) {
   return <Disclosure summary={summary} className="min-w-0 text-[color:var(--color-text-tertiary)]">
     <pre className="mt-1 whitespace-pre-wrap break-all font-mono text-caption leading-caption">{detail}</pre>

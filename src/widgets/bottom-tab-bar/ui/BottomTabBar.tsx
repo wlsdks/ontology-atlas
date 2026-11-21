@@ -30,8 +30,6 @@ const getServerRuntimeSnapshot = (): boolean | null => null;
 interface TabItem {
   id: AppNavDestinationId;
   href: string;
-  /** Translation key under `navRail.*` — same copy as the desktop rail so
-   *  mobile and desktop read as one nav system, not two. */
   labelKey: AppNavDestinationId;
   icon: typeof MapIcon;
 }
@@ -52,7 +50,6 @@ const TABS: ReadonlyArray<TabItem> = [
     } satisfies Record<MobileDestinationId, typeof MapIcon>)[id],
   })),
 ];
-/** A wiki without a map: the Library is the one tab worth the slot (`destinationsForVaultShape`). */
 const WIKI_ONLY_TABS: ReadonlyArray<TabItem> = WIKI_ONLY_MOBILE_DESTINATION_IDS.map((id) => ({
   id,
   href: DESTINATION_HREF[id],
@@ -62,7 +59,6 @@ const WIKI_ONLY_TABS: ReadonlyArray<TabItem> = WIKI_ONLY_MOBILE_DESTINATION_IDS.
 
 export function BottomTabBar() {
   const pathname = usePathname() ?? '/';
-  /* The same selected-project target as the desktop rail. */
   const projectsDoorHref = useProjectsDoorHref();
   const t = useTranslations('nav');
   const tRail = useTranslations('navRail');
@@ -129,7 +125,6 @@ export function BottomTabBar() {
             {active ? (
               <span
                 aria-hidden
-                // No glow: the indigo line alone clears 3:1 against the track.
                 className="absolute top-1 h-0.5 w-6 rounded-full bg-[color:var(--color-indigo-line-a90)]"
                 data-active-indicator="true"
               />
@@ -149,7 +144,6 @@ export function BottomTabBar() {
         );
       })}
 
-      {/* Web-only utility slot; reuses the sibling tabs' touch-target classes. */}
       {showGetApp ? (
         <Link
           href="/download/"

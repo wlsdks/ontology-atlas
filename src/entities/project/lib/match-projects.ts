@@ -4,7 +4,7 @@ import {
   normalizeForMatch,
   type NodeNameSource,
 } from "@/shared/lib/search-match/node-name-match";
-import type { Project } from "../model/types";
+import type { Project } from "../model/project";
 
 export type ProjectMatchSource = "name" | "nameEn" | "description" | "tags" | "stack" | "category" | "slug";
 

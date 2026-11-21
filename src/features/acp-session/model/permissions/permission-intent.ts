@@ -1,14 +1,8 @@
-/**
- * The one word the permission card shows for what the agent is trying to do. Unknown stays
- * unknown: guessing "read" errs toward the dangerous side, and `other` is not "read".
- */
+/** Unknown stays unknown: guessing "read" errs toward the dangerous side, and `other` is not "read". */
 
 export type PermissionIntent = 'read' | 'edit' | 'delete' | 'execute' | 'unknown';
 
-/**
- * The adapter's word → our kind. Widening this table means confirming **the value that adapter
- * actually sends** before adding it — guessing makes something dangerous read as safe.
- */
+/** Widening this table needs the value that adapter actually sends: guessing makes something dangerous read as safe. */
 const INTENT_BY_KIND: Readonly<Record<string, PermissionIntent>> = {
   read: 'read',
   fetch: 'read',

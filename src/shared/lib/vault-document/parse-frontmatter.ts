@@ -1,11 +1,6 @@
-// Lightweight frontmatter parser — handles only a `---\n...\n---\n` block.
-// Recognises all of these without a gray-matter dependency:
-//   key: value                          (scalar)
-//   key: [a, b]                         (inline list)
-//   key: { x: 1, y: 2 }                 (inline object)
-//   key:\n  - item1\n  - item2          (block list)
-//   key:\n  child: 1\n  other: 2        (block object)
-// Same rules as scripts/docs-vault/build-docs-vault.mjs, but TS/browser compatible.
+// Lightweight parser for a `---\n...\n---\n` block, with no gray-matter dependency: scalars, inline
+// lists and objects, block lists and objects. Same rules as scripts/docs-vault/build-docs-vault.mjs,
+// but TS/browser compatible.
 
 export interface ParsedFrontmatter {
   frontmatter: Record<string, unknown>;
@@ -170,19 +165,19 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
         continue;
       }
       if (lookahead === 'object') {
-        const obj: Record<string, ParsedScalar> = {};
+        const mapping: Record<string, ParsedScalar> = {};
         let j = i + 1;
         while (j < lines.length) {
           if (!/^\s+/.test(lines[j]) || !lines[j].trim()) break;
           const child = readMappingMember(lines[j], diagnostics, j + 2);
           if (child) {
             pushQuotedScalarDiagnostic(diagnostics, child.key, j + 2, child.value);
-            assignParsedKey(obj, child.key, parseScalar(child.value), diagnostics, j + 2);
+            assignParsedKey(mapping, child.key, parseScalar(child.value), diagnostics, j + 2);
           }
           j += 1;
         }
-        assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
-        pushGraphArrayDiagnostic(diagnostics, key, i + 2, obj);
+        assignParsedKey(frontmatter, key, mapping, diagnostics, i + 2);
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, mapping);
         i = j - 1;
         continue;
       }
@@ -191,7 +186,6 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
       continue;
     }
 
-    // Inline forms
     if (value.startsWith('[') && value.endsWith(']')) {
       assignParsedKey(frontmatter, key, parseInlineList(value), diagnostics, i + 2);
       continue;
@@ -234,7 +228,6 @@ function quotedScalarFault(value: string): 'trailing' | 'unterminated' | null {
   return 'unterminated';
 }
 
-/** Whether the last character closes the opening quote rather than being escaped. */
 function closesWithQuote(trimmed: string, quote: string): boolean {
   if (trimmed.length < 2 || trimmed[trimmed.length - 1] !== quote) return false;
   let backslashes = 0;
@@ -311,10 +304,8 @@ function parseScalar(value: string): ParsedScalar {
 
 function unquote(value: string): string {
   const trimmed = value.trim();
-  // Unescape **only** when stripping surrounding quotes. The serializer escapes
-  // `"`, so failing to reverse it here adds one more backslash layer per save
-  // (measured over 3 round trips: 1 → 2 → 4). An unquoted value is literal text,
-  // not escape syntax, so it is left alone.
+  // Unescape only when stripping surrounding quotes: the serializer escapes `"`, so skipping this
+  // adds a backslash layer per save. An unquoted value is literal text.
   const quote = trimmed.length >= 2 ? trimmed[0] : '';
   if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
     const inner = trimmed.slice(1, -1);
@@ -460,41 +451,29 @@ export function buildDefinitionPreview(
 }
 
 export function buildExcerpt(body: string, max = 320): string {
-  // Produce a readable prose preview. Markdown tables are the main hazard: a
-  // raw excerpt of a table renders as a wall of `|` pipes (e.g.
-  // "| Tool | Action | --- | listconcepts |"), which is unreadable in the
-  // node-detail panel. Strip table separator/hr rows and turn cell pipes into
-  // middot separators so a table reads as "Tool · Action · listconcepts · …".
+  // A raw table excerpt renders as a wall of pipes, so separator rows go and cell pipes become middots.
   const stripped = body
     .replace(/```[\s\S]*?```/g, '') // fenced code blocks
     .replace(/^#+\s.*$/gm, '') // headings
     .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // images
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links → link text
-    .replace(/^[\s|:-]*-{2,}[\s|:-]*$/gm, '') // table separator / hr rows (| --- |, ---)
-    .replace(/\s*\|\s*/g, ' · ') // table cell pipes → readable middot separators
+    .replace(/^[\s|:-]*-{2,}[\s|:-]*$/gm, '')
+    .replace(/\s*\|\s*/g, ' · ')
     .replace(/^\s*[-•]\s+/gm, '') // `#` is deliberately not in this class: `path.tsx#Symbol` is content and must keep its separator.
-    .replace(/[*_`>]/g, '') // residual emphasis / quote marks
+    .replace(/[*_`>]/g, '')
     .replace(/\s+/g, ' ') // collapse whitespace
-    .replace(/(?:·\s*){2,}/g, '· ') // collapse middot runs left by empty cells
-    .replace(/^[\s·]+|[\s·]+$/g, '') // trim leading/trailing middots
+    .replace(/(?:·\s*){2,}/g, '· ')
+    .replace(/^[\s·]+|[\s·]+$/g, '')
     .trim();
   if (stripped.length <= max) return stripped;
   // Cut at the last space within max so the text never breaks mid-word.
-  // (Korean spaces separate eojeol, English separates words — either way this
-  // lands on a boundary.)
   const cut = stripped.slice(0, max);
   const lastSpace = cut.lastIndexOf(' ');
   const safe = lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut;
   return `${safe.replace(/[\s·,.:;]+$/g, '')}…`;
 }
 
-/**
- * Vault folder holding wiki pages — the one name a bare `[[slug]]` folds into.
- *
- * It lives here rather than in `wiki-page-schema.ts` because that module already
- * imports this one; re-exporting it from there keeps the dependency running one way
- * and both link resolvers reading the same constant.
- */
+/** Here, not in `wiki-page-schema.ts`, which imports this module: the dependency runs one way. */
 export const WIKI_DIR = 'wiki';
 
 /**
@@ -548,15 +527,7 @@ export function extractOutLinkTargets(body: string, fromSlug: string): string[] 
   return [...targets];
 }
 
-/**
- * The **line ending and BOM the file originally used** — normalised on read and
- * restored on write.
- *
- * The parser normalises CRLF and BOM so relations do not vanish. But **saving
- * the normalised form would silently rewrite someone else's line endings**,
- * turning the git diff into the whole file — the kind of thing this product does
- * not do. So the shape is remembered and put back.
- */
+/** Restored on write: saving the normalised form would rewrite the line endings of the whole file. */
 export interface VaultSourceShape {
   bom: string;
   eol: "\n" | "\r\n";
@@ -576,7 +547,6 @@ export function normalizeVaultSource(raw: string): string {
   return raw.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
 }
 
-/** Write-side restoration — back to the shape the original file used. */
 export function restoreVaultSourceShape(text: string, shape: VaultSourceShape): string {
   const withEol = shape.eol === "\r\n" ? text.replace(/\n/g, "\r\n") : text;
   return `${shape.bom}${withEol}`;
@@ -595,11 +565,8 @@ function readBlockScalar(
   const chomp = indicator.includes('-') ? 'strip' : indicator.includes('+') ? 'keep' : 'clip';
   const collected: string[] = [];
   let j = start;
-  // An explicit indentation indicator (`|2-`) fixes the base indent. Without it
-  // the first non-blank line decides — the writer emits the digit whenever the
-  // value's own first line carries leading whitespace, because a first-line
-  // base would swallow that whitespace and eject shallower lines back into the
-  // top-level key loop.
+  // An explicit indicator (`|2-`) fixes the base indent; otherwise the first non-blank line
+  // decides. The writer emits the digit when that line starts with whitespace.
   const explicitIndent = /[1-9]/.exec(indicator);
   let baseIndent: number | null = explicitIndent ? Number(explicitIndent[0]) : null;
   while (j < lines.length) {
@@ -621,11 +588,11 @@ function readBlockScalar(
   if (fold) {
     // Folded scalar: a blank line is a newline, consecutive lines join with one space.
     text = collected
-      .reduce<string[]>((acc, cur) => {
-        if (cur === '') return acc.concat('');
+      .reduce<string[]>((acc, current) => {
+        if (current === '') return acc.concat('');
         const last = acc[acc.length - 1];
-        if (acc.length === 0 || last === '') return acc.concat(cur);
-        acc[acc.length - 1] = `${last} ${cur}`;
+        if (acc.length === 0 || last === '') return acc.concat(current);
+        acc[acc.length - 1] = `${last} ${current}`;
         return acc;
       }, [])
       .join('\n');

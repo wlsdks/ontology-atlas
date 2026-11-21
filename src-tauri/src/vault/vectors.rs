@@ -4,6 +4,7 @@
 //! disk are derived and rebuildable, and code names them by what they are.
 
 pub(crate) mod commands;
+mod failure;
 mod job;
 mod memory;
 mod models;

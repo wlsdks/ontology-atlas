@@ -1,5 +1,5 @@
 import { DESTINATION_HREF, MCP_CONNECTORS_HREF } from '@/shared/config/destinations';
-import type { SettingsCatalogEntry } from './types';
+import type { SettingsCatalogEntry } from './settings-catalog-entry';
 
 export const WORKSPACE_CATALOG: readonly SettingsCatalogEntry[] = [
   {

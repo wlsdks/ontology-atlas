@@ -115,7 +115,8 @@ vi.mock('@/shared/lib/agent-chat/tauri-acp', () => ({
   },
 }));
 
-import { snapshotPermissionRequest, TURN_STOP_GRACE_MS, useAcpSession } from './use-acp-session';
+import { snapshotPermissionRequest } from './permissions/ask-permission';
+import { TURN_STOP_GRACE_MS, useAcpSession } from './use-acp-session';
 import { unavailableTaskBaseline } from './task-baseline';
 
 describe('queued permission identity', () => {
@@ -1676,6 +1677,30 @@ describe('auto-approve — the person answers once for the folder', () => {
     await act(async () => { await result.current.stop(); });
   });
 
+  it('refuses a write queued behind a card when its turn ends first, instead of auto-approving it', async () => {
+    bridge.holdPrompt = true;
+    const { result } = await startSession();
+    act(() => result.current.setAutoApprove(true));
+    void result.current.send('Remove the old refund concept and add a new one.');
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+
+    await act(async () => {
+      bridge.listener?.(atlasWrite(601, 'delete_concept'));
+      bridge.listener?.(atlasWrite(602, 'add_concept'));
+    });
+    await waitFor(() => expect(result.current.pending?.request.requestId).toBe(601));
+    await act(async () => {
+      bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', id: bridge.pendingPrompt, result: { stopReason: 'end_turn' } }));
+    });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    await act(async () => { result.current.pending?.resolve('reject'); });
+    await waitFor(() => expect(answerOf(602)).toBeDefined());
+    expect(answerOf(602)).toBe('reject');
+    expect(result.current.pending).toBeNull();
+    await act(async () => { await result.current.stop(); });
+  });
+
   it("lets the screen's own refusal win over auto-approve", async () => {
     bridge.permissionVerdict = 'allow-inside-vault';
     const { result } = await startSession({ autoDecide: () => ({ reject: 'outside-round-scope' }) });
@@ -1974,7 +1999,7 @@ it('keeps a stopped investigation idle when its source check returns late',async
  expect(bridge.sent.filter(row=>row.method==='session/prompt')).toHaveLength(0);
 });
 
-describe('Stop holds when the agent ignores it', () => {
+describe('Stop holds when the agent ignores it: every waiting and later request is answered cancelled', () => {
   const OPTIONS = [
     { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
     { kind: 'allow_once', name: 'Allow', optionId: 'allow' },
@@ -1984,7 +2009,7 @@ describe('Stop holds when the agent ignores it', () => {
     params: { sessionId: 's-1', options: OPTIONS, toolCall: { toolCallId: `call-${id}`, title: `Edit ${path}`, kind, rawInput: { file_path: path } } },
   });
   const answerOf = (id: number) =>
-    (bridge.sent.find((message) => message.id === id && 'result' in message) as { result: { outcome: { optionId?: string } } } | undefined)?.result.outcome.optionId;
+    (bridge.sent.find((message) => message.id === id && 'result' in message) as { result: { outcome: { outcome: string } } } | undefined)?.result.outcome.outcome;
 
   async function waitingTurn(autoDecide: Parameters<typeof useAcpSession>[0]['autoDecide'], turnReadOnly?: () => boolean) {
     const hook = renderHook(() => useAcpSession({
@@ -2010,13 +2035,13 @@ describe('Stop holds when the agent ignores it', () => {
 
     const timers = vi.spyOn(window, 'setTimeout');
     act(() => result.current.stopTurn());
-    await waitFor(() => expect(answerOf(501)).toBe('reject'));
+    await waitFor(() => expect(answerOf(501)).toBe('cancelled'));
     expect(result.current.turnStopping).toBe(true);
     expect(bridge.sent.some((message) => message.method === 'session/cancel')).toBe(true);
 
     await act(async () => { bridge.listener?.(request(502, '/vault/wiki/a.md')); });
     await act(async () => { bridge.listener?.(request(503, '/vault/wiki/b.md', 'read')); });
-    await waitFor(() => expect([answerOf(502), answerOf(503)]).toEqual(['reject', 'reject']));
+    await waitFor(() => expect([answerOf(502), answerOf(503)]).toEqual(['cancelled', 'cancelled']));
     expect(autoDecide).not.toHaveBeenCalled();
     expect(result.current.pending).toBeNull();
     expect(result.current.events.some((event) => event.kind === 'notice' && /^auto-/.test(event.text))).toBe(false);
@@ -2043,7 +2068,7 @@ describe('Stop holds when the agent ignores it', () => {
     const { result } = await waitingTurn(() => null);
     const timers = vi.spyOn(window, 'setTimeout');
     act(() => result.current.stopTurn());
-    await waitFor(() => expect(answerOf(501)).toBe('reject'));
+    await waitFor(() => expect(answerOf(501)).toBe('cancelled'));
     await act(async () => {
       bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', id: bridge.pendingPrompt, result: { stopReason: 'cancelled' } }));
     });
@@ -2053,6 +2078,90 @@ describe('Stop holds when the agent ignores it', () => {
     expect(bridge.stopped).toEqual([]);
     timers.mockRestore();
     await act(async () => { await result.current.stop(); });
+  });
+});
+
+describe('a card waiting for an answer is refused, never allowed, when the conversation ends', () => {
+  const answerOf = (id: number) =>
+    (bridge.sent.find((message) => message.id === id && 'result' in message) as { result: { outcome: { optionId?: string } } } | undefined)?.result.outcome.optionId;
+
+  async function waitingCard() {
+    const hook = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault', mcpServers: [{ name: 'atlas-vault' }] }));
+    const starting = hook.result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => { bridge.release?.(); await starting; });
+    bridge.holdPrompt = true;
+    void hook.result.current.send('Write the wiki pages.');
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+    await act(async () => {
+      bridge.listener?.(JSON.stringify({
+        jsonrpc: '2.0', id: 801, method: 'session/request_permission',
+        params: { sessionId: 's-1', options: [{ kind: 'reject_once', name: 'Deny', optionId: 'reject' }, { kind: 'allow_once', name: 'Allow', optionId: 'allow' }],
+          toolCall: { toolCallId: 'call-801', title: 'Edit notes.md', kind: 'edit', rawInput: { file_path: '/outside/notes.md' } } },
+      }));
+    });
+    await waitFor(() => expect(hook.result.current.pending?.request.requestId).toBe(801));
+    return hook;
+  }
+
+  const outcomeOf = (id: number) =>
+    (bridge.sent.find((message) => message.id === id && 'result' in message) as { result: { outcome: { outcome: string; optionId?: string } } } | undefined)?.result.outcome;
+  const editRequest = (id: number) => JSON.stringify({
+    jsonrpc: '2.0', id, method: 'session/request_permission',
+    params: { sessionId: 's-1', options: [{ kind: 'reject_once', name: 'Deny', optionId: 'reject' }, { kind: 'allow_once', name: 'Allow', optionId: 'allow' }],
+      toolCall: { toolCallId: `call-${id}`, title: 'Edit notes.md', kind: 'edit', rawInput: { file_path: '/outside/notes.md' } } },
+  });
+
+  it('answers every waiting and later request of a cancelled turn with the cancelled outcome', async () => {
+    const { result } = await waitingCard();
+    await act(async () => { bridge.listener?.(editRequest(802)); });
+    act(() => result.current.cancel());
+    await waitFor(() => expect(outcomeOf(801)).toBeDefined());
+    await act(async () => { bridge.listener?.(editRequest(803)); });
+    await waitFor(() => expect([outcomeOf(802), outcomeOf(803)]).not.toContain(undefined));
+    for (const id of [801, 802, 803]) expect(outcomeOf(id)).toEqual({ outcome: 'cancelled' });
+    expect(result.current.pending).toBeNull();
+    expect(bridge.sent.some((message) => message.method === 'session/cancel')).toBe(true);
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('refuses it when its turn ends first, and a later click on the old card sends nothing', async () => {
+    const { result } = await waitingCard();
+    const oldCard = result.current.pending;
+    await act(async () => {
+      bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', id: bridge.pendingPrompt, result: { stopReason: 'end_turn' } }));
+    });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    await waitFor(() => expect(answerOf(801)).toBe('reject'));
+    expect(result.current.pending).toBeNull();
+
+    const answered = bridge.sent.filter((message) => message.id === 801).length;
+    await act(async () => { oldCard?.resolve('allow'); });
+    expect(bridge.sent.filter((message) => message.id === 801)).toHaveLength(answered);
+    expect(bridge.sent.some((message) => message.id === 801 && JSON.stringify(message).includes('"allow"'))).toBe(false);
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('refuses it when the agent process exits', async () => {
+    const { result } = await waitingCard();
+    await act(async () => { bridge.exits.get('acp-1')?.(); });
+    await waitFor(() => expect(answerOf(801)).toBe('reject'));
+    expect(result.current.pending).toBeNull();
+    expect(result.current.status).toBe('exited');
+  });
+
+  it('refuses it when the conversation is closed', async () => {
+    const { result } = await waitingCard();
+    await act(async () => { await result.current.stop(); });
+    await waitFor(() => expect(answerOf(801)).toBe('reject'));
+    expect(result.current.pending).toBeNull();
+  });
+
+  it('refuses it when the screen goes away', async () => {
+    const { unmount } = await waitingCard();
+    await act(async () => { unmount(); });
+    await waitFor(() => expect(answerOf(801)).toBe('reject'));
+    expect(bridge.stopped).toEqual(['acp-1']);
   });
 });
 

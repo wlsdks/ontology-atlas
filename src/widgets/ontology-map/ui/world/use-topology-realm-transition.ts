@@ -21,27 +21,28 @@ import {
   type RealmTransitionState
 } from "../../model/realm/realm-transition";
 import type { WardingFitState } from "../../model/realm/realm-warding-fit";
-import { initHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
-import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/topology-camera-math";
+import { createHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
+import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/target/fit-targets";
 import {
   overviewBoundsFor
 } from "../camera/topology-overview-fit";
 import type { NodeDragState } from "../input/topology-pointer-types";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { buildRealmRuntimeData, realmCameraTarget, type RealmRuntimeData } from "./topology-realm-runtime";
-import { dialOverviewFit, type TopologyWorld } from "./topology-world";
+import { dialOverviewFit } from "./framing/dial-world-framing";
+import { type TopologyWorld } from "./topology-world";
 import { onWorldSwap } from "./world-swap";
 import { readDialTokens } from "../../dial/tokens";
 import { createMeasureText } from "../../dial/fit";
 import { branchFocusTarget } from "../camera/branch-frame/target";
-import type { DialLabels } from "../../dial/types";
+import type { DialLabels } from "../../dial/dial-shapes";
 
 interface Dependencies {
   view3d?: boolean;
   cameraTokens?: <T extends { safeInsetLeft: number; safeInsetRight: number }>(tokens: T) => T;
   dialLabels?: DialLabels | null;
   realmRootId: string | null;
-  prevRealmRootIdRef: RefObject<string | null>;
+  previousRealmRootIdRef: RefObject<string | null>;
   lastActiveMsRef: RefObject<number>;
   worldRef: RefObject<TopologyWorld | null>;
   viewportRef: RefObject<{ width: number; height: number; dpr: number; }>;
@@ -76,7 +77,7 @@ interface Dependencies {
 export function useTopologyRealmTransition({
   view3d = false, cameraTokens, dialLabels,
   realmRootId,
-  prevRealmRootIdRef,
+  previousRealmRootIdRef,
   lastActiveMsRef,
   worldRef,
   viewportRef,
@@ -112,11 +113,11 @@ export function useTopologyRealmTransition({
   useEffect(() => {
     const follow = () => {
       const world = worldRef.current;
-      const sameRoot = realmRootId === prevRealmRootIdRef.current;
+      const sameRoot = realmRootId === previousRealmRootIdRef.current;
       if (sameRoot && (realmRootId === null || (world === realmWorldRef.current && realmDataRef.current !== null && Boolean(realmDataRef.current.flat) === !view3d))) return;
       const savedEntry = realmDataRef.current?.entryCamera;
       const savedPositions = realmDataRef.current?.returnPositions;
-      prevRealmRootIdRef.current = realmRootId;
+      previousRealmRootIdRef.current = realmRootId;
       lastActiveMsRef.current = performance.now();
 
       const tokens = readOntologyMapTokensOrNull();
@@ -220,7 +221,7 @@ export function useTopologyRealmTransition({
           // snap path, where the frame loop's reduced homing block jumps straight
           // to homeX/homeY. Nodes are never mutated from inside an effect.
           const springs = new Map<string, HomeSpringState>();
-          for (const node of world.nodes) springs.set(node.id, initHomeSpring(node.x, node.y));
+          for (const node of world.nodes) springs.set(node.id, createHomeSpring(node.x, node.y));
           homeSpringsRef.current = springs;
           homeTargetOverrideRef.current = data?.returnPositions ?? null;
           homingActiveRef.current = true;

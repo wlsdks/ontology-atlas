@@ -47,7 +47,7 @@ export function drawNodeBloom(
 ): void {
   const k = clamp01(ramp);
   if (k <= 0.001) return;
-  const prevAlpha = ctx.globalAlpha;
+  const previousAlpha = ctx.globalAlpha;
   ctx.shadowColor = hexWithAlpha(ink?.halo ?? tokens.indigoBright, 0.9 * k);
   ctx.shadowBlur = tokens.nodeBloomBlurPx * k;
   ctx.fillStyle = hexWithAlpha(ink?.core ?? tokens.indigo, tokens.nodeBloomAlpha * k);
@@ -55,7 +55,7 @@ export function drawNodeBloom(
   ctx.arc(disc.x, disc.y, disc.r * 1.05, 0, Math.PI * 2);
   ctx.fill();
   ctx.shadowBlur = 0;
-  ctx.globalAlpha = prevAlpha;
+  ctx.globalAlpha = previousAlpha;
 }
 
 /**

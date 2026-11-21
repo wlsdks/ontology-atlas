@@ -11,7 +11,7 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 use super::runner::{hardened_base_command, validate_vault_dir, with_diff_family_guard};
-use crate::gray_area_scope::{resolve_binding_metadata, verify_identity};
+use crate::gray_area::scope::{resolve_binding_metadata, verify_identity};
 
 pub(crate) mod prs;
 

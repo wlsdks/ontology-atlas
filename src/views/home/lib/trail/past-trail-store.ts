@@ -13,16 +13,13 @@ import {
   type UpsertPastWalkOptions,
 } from "./past-trail-record";
 
-/** Where `agent-activity.json` already lives. */
 export const PAST_TRAILS_VAULT_DIR = ".ontology-atlas";
 export const PAST_TRAILS_VAULT_FILE = "past-trails.json";
 export const PAST_TRAILS_RELATIVE_PATH = `${PAST_TRAILS_VAULT_DIR}/${PAST_TRAILS_VAULT_FILE}`;
 export const SIDECAR_IGNORE_FILE = ".gitignore";
 export const SIDECAR_IGNORE_CONTENT = "# Ontology Atlas local runtime state — not for commit.\n*\n";
 
-/** Each call returns the updated list, so no caller re-reads. */
 export interface PastTrailStore {
-  /** A read failure degrades to an empty list. */
   list(): Promise<PastWalk[]>;
   /**
    * Below the threshold it does nothing; a failed write returns the list, since saving never blocks
@@ -37,7 +34,6 @@ export interface PastTrailStore {
   clear(): Promise<PastWalk[]>;
 }
 
-/** The swap point: one blob of text; the medium knows no schema, cap or dedup rule. */
 export interface PastTrailMedium {
   read(): Promise<string | null>;
   write(text: string): Promise<void>;

@@ -1,4 +1,4 @@
-import type { Project } from '../model/types';
+import type { Project } from '../model/project';
 
 /**
  * `display_<locale>` when present, else the canonical `title`/`name`, so every screen names a
@@ -12,7 +12,6 @@ export function projectDisplayName(
   return display && display.length > 0 ? display : project.name;
 }
 
-/** Whether this screen's word for the project comes from a `display_<locale>` key. */
 export function projectHasDisplayName(
   project: Pick<Project, 'displayNames'>,
   locale: string,

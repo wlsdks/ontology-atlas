@@ -102,7 +102,6 @@ export function useTopologyNavigationActions({
     return true;
   }, [closeVaultAgent, handleSelect, unboundProjectSource]);
 
-  // The last replayed step is ego-focused as "you are here".
   const handleReplayPastWalk = useCallback(
     (walkId: string) => {
       const last = replayPastWalk(walkId);

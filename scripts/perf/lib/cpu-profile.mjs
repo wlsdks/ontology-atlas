@@ -54,9 +54,9 @@ function declarationIndex(root) {
   if (declarations) return declarations;
   declarations = new Map();
   const pattern = /(?:function\s*\*?\s*([A-Za-z_$][\w$]*)\s*[(<])|(?:(?:const|let)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*(?:async\s*)?(?:function|\(|[A-Za-z_$][\w$]*\s*=>|use[A-Z]))|(?:^\s*(?:async\s+|static\s+|private\s+|public\s+)*([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*(?::[^{]+)?\{)/gm;
-  const visit = (dir) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const path = join(dir, entry.name);
+  const visit = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
       if (entry.isDirectory()) visit(path);
       else if (/\.(ts|tsx|mjs|js)$/.test(entry.name) && !/\.(test|spec)\./.test(entry.name)) {
         const text = readFileSync(path, 'utf8');
@@ -113,11 +113,11 @@ export function describeWindows(results, root) {
   for (const result of results) {
     lines.push(`\n${result.label}: ${Math.round((result.endUs - result.startUs) / 1000)} ms, ${Math.round(result.sampledMs)} ms sampled busy, ${Math.round(result.gcMs)} ms GC`);
     lines.push('  self time:');
-    for (const fn of topFunctions(result.self, root, 5, { callers: result.callers })) lines.push(`    ${String(fn.ms).padStart(7)} ms  ${fn.name}  ${fn.source}`);
+    for (const profiledFunction of topFunctions(result.self, root, 5, { callers: result.callers })) lines.push(`    ${String(profiledFunction.ms).padStart(7)} ms  ${profiledFunction.name}  ${profiledFunction.source}`);
     lines.push('  inclusive time:');
-    for (const fn of topFunctions(result.inclusive, root, 5, { callers: result.callers })) lines.push(`    ${String(fn.ms).padStart(7)} ms  ${fn.name}  ${fn.source}`);
+    for (const profiledFunction of topFunctions(result.inclusive, root, 5, { callers: result.callers })) lines.push(`    ${String(profiledFunction.ms).padStart(7)} ms  ${profiledFunction.name}  ${profiledFunction.source}`);
     lines.push('  inclusive time, declared under src/:');
-    for (const fn of topFunctions(result.inclusive, root, 8, { srcOnly: true, callers: result.callers })) lines.push(`    ${String(fn.ms).padStart(7)} ms  ${fn.name}  ${fn.source}`);
+    for (const profiledFunction of topFunctions(result.inclusive, root, 8, { srcOnly: true, callers: result.callers })) lines.push(`    ${String(profiledFunction.ms).padStart(7)} ms  ${profiledFunction.name}  ${profiledFunction.source}`);
   }
   return lines;
 }

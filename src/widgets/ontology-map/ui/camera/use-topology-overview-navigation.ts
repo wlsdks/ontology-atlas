@@ -5,22 +5,23 @@ import {
   type RefObject
 } from "react";
 import type { CameraTarget } from "../../engine/camera";
-import { DOME_PITCH_DEFAULT, DOME_POSE_MS, DOME_YAW_DEFAULT, domeNearestYawTurn } from "../../model/dome-view/orbit";
+import { DOME_PITCH_DEFAULT, DOME_POSE_MS, DOME_YAW_DEFAULT, domeNearestYawTurn } from "../../model/dome-view/camera/orbit";
 import type { DomeFitTarget, DomeRuntime } from "../../model/dome-view/runtime";
-import type { DomeModel } from "../../model/dome-view/types";
+import type { DomeModel } from "../../model/dome-view/dome-shapes";
 import {
   type RealmTransitionState
 } from "../../model/realm/realm-transition";
 import { landTierAssembly } from "../../morph/tier-assembly";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { computeOverviewCameraTarget, computeOverviewFitScale } from "./topology-camera-math";
+import { computeOverviewCameraTarget, computeOverviewFitScale } from "./target/fit-targets";
 import {
   overviewBoundsFor,
   overviewFitTokens
 } from "./topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "../world/topology-realm-runtime";
-import { dialOverviewFit, type TopologyWorld } from "../world/topology-world";
+import { dialOverviewFit } from "../world/framing/dial-world-framing";
+import { type TopologyWorld } from "../world/topology-world";
 import { branchFocusTarget } from "./branch-frame/target";
 
 interface Dependencies {

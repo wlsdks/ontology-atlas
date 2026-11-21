@@ -25,7 +25,6 @@ export function useDocAccess({
 }) {
   const localVault = useLocalVault();
   const [editing, setEditing] = useState(false);
-  // With no file handles yet, fall back to a server fetch so demo content shows.
   const getDocContent = useMemo<
     ((slug: string) => Promise<string>) | undefined
   >(() => {

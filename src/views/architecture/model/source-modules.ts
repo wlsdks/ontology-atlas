@@ -12,7 +12,6 @@ export interface RoleSourceModule {
    * (`checkout/domain`) — the plain segment would collapse every service to the same word.
    */
   name: string;
-  /** Repo-relative. */
   path: string;
   kind: 'dir' | 'file';
 }
@@ -29,7 +28,6 @@ function normalizePattern(pattern: string): string {
   return pattern.replaceAll('\\', '/').replace(/^\.\//, '').replace(/\/+$/, '');
 }
 
-/** One glob segment (no slashes) as a regexp: `*`/`?` never cross a separator. */
 function segmentToRegExp(segment: string): RegExp {
   let source = '^';
   for (const char of segment) {

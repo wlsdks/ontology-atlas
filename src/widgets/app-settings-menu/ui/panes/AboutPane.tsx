@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Newspaper } from 'lucide-react';
 
 import { useLocalVault } from '@/entities/vault-session';
-import { GITHUB_REPO_URL } from '@/shared/config/social-links';
+import { GITHUB_REPO_URL } from '@/shared/config/site/social-links';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { revealAppLogFolder } from '@/shared/lib/desktop-shell/tauri-app-logs';
@@ -19,7 +19,7 @@ import { Dialog } from '@/shared/ui/surfaces/dialog';
 import { DialogBody, DialogFooter } from '@/shared/ui/surfaces/dialog-sections';
 
 import { useRunningVersion } from '../../model/use-running-version';
-import { AppUpdateSettings } from '../AppUpdateSettings';
+import { AppUpdateSettings } from '../pane-settings/AppUpdateSettings';
 import { SettingsDoorRow, SettingsGroup, SettingsRow } from '../settings-primitives';
 
 const WEBSITE_VERSION = process.env.NEXT_PUBLIC_RELEASE_VERSION ?? '';

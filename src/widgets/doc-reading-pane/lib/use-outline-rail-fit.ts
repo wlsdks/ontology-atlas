@@ -12,7 +12,6 @@ import { resolveOutlineRailFit, type OutlineRailFit } from "./outline-rail";
  * window. State holds only the fit, so a dock transition costs at most two renders.
  */
 export function useOutlineRailFit(): {
-  /** Attach to the box the body actually lives in. */
   paneRef: (node: HTMLElement | null) => void;
   fit: OutlineRailFit;
 } {

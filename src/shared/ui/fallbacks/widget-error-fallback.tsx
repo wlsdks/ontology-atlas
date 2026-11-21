@@ -6,11 +6,9 @@ import { reportWebviewError } from '@/shared/lib/failures/report-webview-error';
 import { controlClass } from '../control-class';
 
 interface WidgetErrorFallbackProps {
-  /** Forwarded to the app log, never printed on screen. */
   error: Error;
   onReset: () => void;
   title: string;
-  /** One sentence: the rest of the screen still works. */
   body: string;
   retryLabel: string;
   className?: string;

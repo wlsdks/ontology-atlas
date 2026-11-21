@@ -16,8 +16,8 @@ relation_notes: { capabilities/import-dependency-inference: "Gray Area reads the
 Helps a person investigate overlooked code references, source changes and recorded uncertainties around a selected concept or concept set, then optionally continue that question with ACP and review a separate improvement.
 
 ## Includes
-- An entry on a selected concept's panel menu and on a routed concept set. Nothing is offered without a selection: the map's corner carries no standing analysis entry (`src/views/home/model/gray-area/use-topology-gray-area.tsx`; `src/widgets/ontology-map/ui/OntologyMapDetailPanel.tsx`; `src/views/home/ui/TopologyCommandChrome.tsx`).
-- Explicit bounded inspection of the connected code folder in the installed app. Source recovery grants source reading separately from vault writing. Oversized or invalid selections offer narrowing rather than repeating an unchanged scan (`src/features/gray-area/ui/GrayAreaInspector.tsx`; `src-tauri/src/source_access.rs`; `src-tauri/src/gray_area.rs`).
+- An entry on a selected concept's panel menu and on a routed concept set. Nothing is offered without a selection: the map's corner carries no standing analysis entry (`src/views/home/model/gray-area/use-topology-gray-area.tsx`; `src/widgets/ontology-map/ui/OntologyMapDetailPanel.tsx`; `src/views/home/ui/map-readouts/TopologyCommandChrome.tsx`).
+- Explicit bounded inspection of the connected code folder in the installed app. Source recovery grants source reading separately from vault writing. Oversized or invalid selections offer narrowing rather than repeating an unchanged scan (`src/features/gray-area/ui/GrayAreaInspector.tsx`; `src-tauri/src/project_source/access.rs`; `src-tauri/src/gray_area.rs`).
 - Up to three visible reasons to investigate: static imports missing from the recorded graph, source changes behind a dependency, and authored reading gaps. Each states an observation, relation to the selection, unknowns and a next read; folded suggestions remain session-local (`src/features/gray-area/model/candidates.ts`).
 
 ## Continued analysis contract

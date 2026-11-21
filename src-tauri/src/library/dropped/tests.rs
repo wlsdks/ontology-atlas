@@ -177,7 +177,7 @@ fn a_dropped_folder_that_is_or_holds_the_open_folder_is_refused_whole() {
     let vault_path = PathBuf::from(&vault);
     plant_file(&vault_path.join("notes/plan.pdf"), 400);
     plant_file(&fixture.join("elsewhere/plan.pdf"), 400);
-    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault_path));
+    let _scope = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault_path));
     for dropped in [fixture.clone(), vault_path.clone()] {
         let offer = offer_dropped_paths(std::slice::from_ref(&dropped));
         assert!(offer.files.is_empty(), "{dropped:?}");

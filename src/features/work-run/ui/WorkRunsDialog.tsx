@@ -4,7 +4,7 @@ import { useId, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
-import { WorkProgress } from '@/shared/motion/work-progress';
+import { WorkProgress } from '@/shared/motion/status-glyphs/WorkProgress';
 import { Button } from '@/shared/ui/controls/button';
 import { CloseButton, Dialog, DialogBody, TabBar } from '@/shared/ui';
 import type { TabBarItem } from '@/shared/ui/controls/tab-bar';

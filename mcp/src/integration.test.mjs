@@ -28,8 +28,8 @@ import {
   RELATION_TYPE_VALUES,
   WRITE_RELATION_TYPE_VALUES,
 } from "./ontology-engine.mjs";
-import { GRAPH_ARRAY_KEYS } from "./vault/relation-refs.mjs";
-import { loadVaultDocs } from "./vault/documents.mjs";
+import { GRAPH_ARRAY_KEYS } from "./vault/graph/relation-refs.mjs";
+import { loadVaultDocs } from "./vault/documents/document-cache.mjs";
 import { analysisRecordFileName, serializeAnalysisRecord } from './analysis-history/analysis-record.mts';
 import { buildProjectSourceGraphHash } from "./project-source/project-source-graph-hash.mjs";
 import { renderProjectCompetencyMarkdown } from "./project-meaning/project-meaning-receipt.mjs";
@@ -60,28 +60,28 @@ const TEST_NAME_PATTERN = TEST_FILTER.pattern;
 function resolveTestFilter() {
   try {
     return resolveTestNamePattern();
-  } catch (err) {
-    console.error(err.message ?? err);
+  } catch (error) {
+    console.error(error.message ?? error);
     process.exit(1);
   }
 }
 
-function test(name, fn) {
+function test(name, body) {
   if (TEST_NAME_PATTERN && !TEST_NAME_PATTERN.test(name)) {
     skipped += 1;
     return Promise.resolve();
   }
   matched += 1;
-  return fn()
+  return body()
     .then(() => {
       passed += 1;
       console.log(`  ✓ ${name}`);
     })
-    .catch((err) => {
+    .catch((error) => {
       failed += 1;
       console.error(`  ✗ ${name}`);
-      console.error(`    ${err.message ?? err}`);
-      if (err.stack) console.error(err.stack);
+      console.error(`    ${error.message ?? error}`);
+      if (error.stack) console.error(error.stack);
     });
 }
 
@@ -224,10 +224,10 @@ function callTool(id, name, args = {}) {
 }
 
 function getCallText(responses, id) {
-  const res = responses.find((r) => r.id === id);
-  if (!res) throw new Error(`no response for id ${id}`);
-  if (res.error) throw new Error(`error response: ${JSON.stringify(res.error)}`);
-  const text = res.result?.content?.[0]?.text;
+  const response = responses.find((r) => r.id === id);
+  if (!response) throw new Error(`no response for id ${id}`);
+  if (response.error) throw new Error(`error response: ${JSON.stringify(response.error)}`);
+  const text = response.result?.content?.[0]?.text;
   if (!text) throw new Error(`no text in response id ${id}`);
   return text;
 }
@@ -255,10 +255,10 @@ function unitPaths(text) {
 }
 
 function getCallStructured(responses, id) {
-  const res = responses.find((r) => r.id === id);
-  if (!res) throw new Error(`no response for id ${id}`);
-  if (res.error) throw new Error(`error response: ${JSON.stringify(res.error)}`);
-  return res.result?.structuredContent;
+  const response = responses.find((r) => r.id === id);
+  if (!response) throw new Error(`no response for id ${id}`);
+  if (response.error) throw new Error(`error response: ${JSON.stringify(response.error)}`);
+  return response.result?.structuredContent;
 }
 
 function assertStructuredValueRepair(responses, id, { valueName, receivedValue, suggestion, allowedValues }) {
@@ -273,9 +273,9 @@ function assertStructuredValueRepair(responses, id, { valueName, receivedValue, 
 }
 
 function isErrorResponse(responses, id) {
-  const res = responses.find((r) => r.id === id);
-  if (!res) return false;
-  return res.result?.isError === true;
+  const response = responses.find((r) => r.id === id);
+  if (!response) return false;
+  return response.result?.isError === true;
 }
 
 function assertPostWriteMaintenanceShape(value, label = "postWriteMaintenance") {
@@ -9246,18 +9246,18 @@ await test("connection_info — active vault/repo roots and resolution sources a
       ...INIT_REQUESTS,
       callTool(2, "connection_info"),
     ], 1500, { OATLAS_REPO_ROOT: repoRoot });
-    const info = getCallParsed(responses, 2);
-    assert.equal(info.vaultRoot, root);
-    assert.equal(info.repoRoot, repoRoot);
-    assert.equal(info.vaultResolution, "OATLAS_VAULT");
-    assert.equal(info.repoResolution, "OATLAS_REPO_ROOT");
-    assert.equal(info.server.name, "ontology-atlas-mcp");
-    assert.equal(info.server.readOnly, false);
-    assert.equal(info.server.toolCount, EXPECTED_TOOLS.length);
-    assert.ok(info.server.toolNames.includes("git_history"));
-    assert.ok(info.server.toolNames.includes("query_ontology"));
-    assert.match(info.server.toolsetHash, /^[a-f0-9]{64}$/);
-    assert.equal(info.restartRequiredForRootChange, true);
+    const connectionInfo = getCallParsed(responses, 2);
+    assert.equal(connectionInfo.vaultRoot, root);
+    assert.equal(connectionInfo.repoRoot, repoRoot);
+    assert.equal(connectionInfo.vaultResolution, "OATLAS_VAULT");
+    assert.equal(connectionInfo.repoResolution, "OATLAS_REPO_ROOT");
+    assert.equal(connectionInfo.server.name, "ontology-atlas-mcp");
+    assert.equal(connectionInfo.server.readOnly, false);
+    assert.equal(connectionInfo.server.toolCount, EXPECTED_TOOLS.length);
+    assert.ok(connectionInfo.server.toolNames.includes("git_history"));
+    assert.ok(connectionInfo.server.toolNames.includes("query_ontology"));
+    assert.match(connectionInfo.server.toolsetHash, /^[a-f0-9]{64}$/);
+    assert.equal(connectionInfo.restartRequiredForRootChange, true);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -9280,10 +9280,10 @@ await test("connection_info — repository root auto-discovers from a nested Git
       callTool(2, "connection_info"),
       callTool(3, "validate_vault"),
     ]);
-    const info = getCallParsed(responses, 2);
+    const connectionInfo = getCallParsed(responses, 2);
     const validation = getCallParsed(responses, 3);
-    assert.equal(info.repoRoot, realpathSync(root));
-    assert.equal(info.repoResolution, "git.rev-parse");
+    assert.equal(connectionInfo.repoRoot, realpathSync(root));
+    assert.equal(connectionInfo.repoResolution, "git.rev-parse");
     assert.equal(validation.pathDrift.repoRoot, realpathSync(root));
     assert.equal(validation.pathDrift.drifts.length, 0);
   } finally {
@@ -9304,13 +9304,13 @@ await test("initialize — read-only inventory matches the actually advertised t
       responses.find((response) => response.id === 1),
       listed,
     );
-    const info = getCallParsed(responses, 3);
-    assert.equal(info.server.readOnly, true);
-    assert.equal(info.server.toolCount, EXPECTED_READ_TOOLS.length);
-    assert.deepEqual(info.server.toolNames, listed.map((tool) => tool.name));
-    assert.ok(info.server.toolNames.includes("git_history"));
-    assert.ok(!info.server.toolNames.includes("git_snapshot"));
-    assert.match(info.server.toolsetHash, /^[a-f0-9]{64}$/);
+    const connectionInfo = getCallParsed(responses, 3);
+    assert.equal(connectionInfo.server.readOnly, true);
+    assert.equal(connectionInfo.server.toolCount, EXPECTED_READ_TOOLS.length);
+    assert.deepEqual(connectionInfo.server.toolNames, listed.map((tool) => tool.name));
+    assert.ok(connectionInfo.server.toolNames.includes("git_history"));
+    assert.ok(!connectionInfo.server.toolNames.includes("git_snapshot"));
+    assert.match(connectionInfo.server.toolsetHash, /^[a-f0-9]{64}$/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -9332,10 +9332,10 @@ await test("construction profile — advertised inventories agree and retain col
       const names = expected.filter((name) => readOnly === '0' || EXPECTED_READ_TOOLS.includes(name));
       assert.deepEqual(listed.map((tool) => tool.name).sort(), names.sort());
       assertInstructionToolInventoryMatches(responses.find((row) => row.id === 1), listed);
-      const info = getCallParsed(responses, 3);
-      assert.deepEqual(info.server.toolNames, listed.map((tool) => tool.name));
-      assert.equal(info.server.toolCount, readOnly === '0' ? 20 : 15);
-      assert.match(info.server.toolsetHash, /^[a-f0-9]{64}$/);
+      const connectionInfo = getCallParsed(responses, 3);
+      assert.deepEqual(connectionInfo.server.toolNames, listed.map((tool) => tool.name));
+      assert.equal(connectionInfo.server.toolCount, readOnly === '0' ? 20 : 15);
+      assert.match(connectionInfo.server.toolsetHash, /^[a-f0-9]{64}$/);
       for (const tool of listed) {
         assert.equal(tool.inputSchema.additionalProperties, false);
         assert.equal(typeof tool.annotations.readOnlyHint, 'boolean');

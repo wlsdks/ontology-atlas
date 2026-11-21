@@ -5,7 +5,7 @@ import enMessages from "../../../../../messages/en.json";
 import koMessages from "../../../../../messages/ko.json";
 import type { VaultDoc } from "@/entities/docs-vault";
 import type { AgentActivityStatus } from "@/entities/vault-session";
-import { DocFrontmatterBlock, nameLocalesFor } from "./DocFrontmatterBlock";
+import { DocFrontmatterBlock } from "./DocFrontmatterBlock";
 
 const doc: VaultDoc = {
   slug: "capabilities/cli-developer-entry",
@@ -252,7 +252,7 @@ describe("DocFrontmatterBlock", () => {
     );
     const row = screen
       .getAllByTestId("doc-frontmatter-issue")
-      .find((el) => el.getAttribute("data-issue-code") === "dangling-graph-reference");
+      .find((element) => element.getAttribute("data-issue-code") === "dangling-graph-reference");
     expect(row).toBeDefined();
     expect(row).toHaveAttribute("data-severity", "warning");
     expect(row).toHaveTextContent("capabilities/qa-probe-delete-me");
@@ -313,13 +313,13 @@ describe("DocFrontmatterBlock", () => {
       </NextIntlClientProvider>,
     );
     const rows = screen.getAllByTestId("doc-frontmatter-issue");
-    const row = rows.find((el) => el.getAttribute("data-issue-code") === "kind-list-mismatch");
+    const row = rows.find((element) => element.getAttribute("data-issue-code") === "kind-list-mismatch");
     expect(row).toBeDefined();
     expect(row).toHaveAttribute("data-severity", "warning");
     expect(row).toHaveTextContent("elements/companion-memories (Element, in capabilities)");
     expect(row?.textContent).not.toContain("agent-work-visibility");
     expect(row?.textContent).not.toContain("map-camera");
-    expect(rows.some((el) => el.getAttribute("data-issue-code") === "dangling-graph-reference")).toBe(false);
+    expect(rows.some((element) => element.getAttribute("data-issue-code") === "dangling-graph-reference")).toBe(false);
   });
 
   it("names, before Save, each document whose list a kind change moves or leaves", () => {
@@ -735,25 +735,6 @@ describe("DocFrontmatterBlock unreadable parser lines", () => {
   it("renders no issue rows for a doc without diagnostics", () => {
     renderBlock("ko");
     expect(screen.queryByTestId("doc-frontmatter-issue")).not.toBeInTheDocument();
-  });
-});
-
-describe("nameLocalesFor", () => {
-  const FOUR = ["en", "ko", "ja", "zh"];
-
-  it("keeps the en/ko pair in the reader's order", () => {
-    expect(nameLocalesFor("en", {})).toEqual(["en", "ko"]);
-    expect(nameLocalesFor("ko", {})).toEqual(["ko", "en"]);
-  });
-
-  it("asks for the reader's locale, the locales the document names, then the companion", () => {
-    expect(nameLocalesFor("ja", { display_zh: "x" }, FOUR)).toEqual(["ja", "zh", "en"]);
-    expect(nameLocalesFor("en", { display_ja: "x" }, FOUR)).toEqual(["en", "ja", "ko"]);
-    expect(nameLocalesFor("ko", {}, FOUR)).toEqual(["ko", "en"]);
-  });
-
-  it("ignores names in locales the app does not route", () => {
-    expect(nameLocalesFor("en", { display_fr: "x" }, FOUR)).toEqual(["en", "ko"]);
   });
 });
 

@@ -9,7 +9,7 @@ import { PROVIDER_ADAPTERS } from './providers';
 import { EMPTY_SCREEN_CONTEXT } from './screen-context';
 import { AGENT_TOOLS } from './agent-tools/tool-catalog';
 import type { ToolExecution } from './agent-tools/tool-executor';
-import { AGENT_ROUND_CAP } from './types';
+import { AGENT_ROUND_CAP } from './agent-turn';
 
 const NOTICES: AgentLoopDeps['notices'] = {
   roundCap: '여기까지 하고 정리할게요',

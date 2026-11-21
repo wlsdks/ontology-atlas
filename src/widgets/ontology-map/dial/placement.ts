@@ -1,5 +1,5 @@
 import { ladderStep } from "./rings";
-import type { DialLabels, DialMemory, DialModel, DialWorld } from "./types";
+import type { DialLabels, DialMemory, DialModel, DialWorld } from "./dial-shapes";
 
 export type DialPlacementState = "reading" | "provisional" | "settled";
 

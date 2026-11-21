@@ -9,8 +9,8 @@ import {
 } from '@/features/acp-session';
 import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
 
-import { EMPTY_KNOWN_RELATIONS, EMPTY_KNOWN_SLUGS } from './constants';
-import type { ChatT, SessionState } from './types';
+import { EMPTY_KNOWN_RELATIONS, EMPTY_KNOWN_SLUGS } from './empty-known-names';
+import type { ChatT, SessionState } from './chat-panel-props';
 
 interface PresentationOptions {
   presentationIntent: AcpPresentationIntent | null;

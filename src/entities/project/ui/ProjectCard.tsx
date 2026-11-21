@@ -3,16 +3,13 @@ import { badgeClass } from "@/shared/ui/badge-class";
 import { cn } from '@/shared/lib/cn';
 import { MOTION, OVERLAY_RISE } from '@/shared/motion';
 import { staggerDelaySeconds } from '@/shared/motion/stagger';
-import type { Project } from '../model/types';
+import type { Project } from '../model/project';
 
-/** The category facts a card needs; callers map `Category` → `CardCategoryMeta`. */
 export interface CardCategoryMeta {
   borderStyle: 'underline' | 'dashed' | 'sideLabel' | 'solid';
-  /** Vertical text on the left, for the `sideLabel` style. */
   sideLabelText?: string;
 }
 
-/** Same set as `StatusDotColor` in entities/status. */
 export type CardStatusDotColor = 'success' | 'warning' | 'paused' | 'neutral';
 type ProjectCardViewMode = 'card' | 'compact';
 
@@ -22,16 +19,12 @@ interface Props {
   category?: CardCategoryMeta;
   /** Defaults to `neutral`. */
   statusDotColor?: CardStatusDotColor;
-  /** Dimmed against the topology background. */
   dimmed?: boolean;
   selected?: boolean;
   /** Shown when the project depends on two or more hubs. */
   shared?: boolean;
-  /** Whether this is directly connected to the selected project. */
   related?: boolean;
-  /** Staggers the initial fade-in. */
   index?: number;
-  /** Lowers information density on large graphs. */
   dense?: boolean;
   /** No pointer cursor or motion. */
   preview?: boolean;
@@ -41,7 +34,6 @@ interface Props {
   sharedEyebrow?: string;
   /** Defaults to 'No description'. */
   descriptionEmptyLabel?: string;
-  /** How the public map renders this card. */
   viewMode?: ProjectCardViewMode;
 }
 
@@ -77,7 +69,6 @@ function borderClass(borderStyle: CardCategoryMeta['borderStyle'], isHub: boolea
   }
 }
 
-/** Renderer-independent card visuals; category and status meta come from the caller. */
 export function ProjectCard({
   project,
   category,
@@ -95,7 +86,6 @@ export function ProjectCard({
   descriptionEmptyLabel = 'No description',
 }: Props) {
   const { name, description, owner, tags } = project;
-  // A missing `isHub` reads as false.
   const isHub = Boolean(project.isHub);
   const borderStyle = category?.borderStyle ?? 'solid';
   const sideLabelText = category?.sideLabelText;

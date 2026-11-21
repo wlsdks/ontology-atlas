@@ -34,7 +34,7 @@ import {
 } from "../../model/realm/realm-transition";
 import type { WardingFitState } from "../../model/realm/realm-warding-fit";
 import {
-  initHomeSpring,
+  createHomeSpring,
   isHomeSpringConverged,
   stepHomeSpring,
   type HomeSpringState,
@@ -42,19 +42,16 @@ import {
 import { holdTierAssemblyBounds, isTierAssembling, settleTierAssembly, stepTierAssembly } from "../../morph/tier-assembly";
 import { relaxNodeSeparation, type SeparationNode } from "../../model/layout/separation";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { computeOverviewFitScale } from "../camera/topology-camera-math";
+import { computeOverviewFitScale } from "../camera/target/fit-targets";
 import { dialReleaseHoming } from "./topology-dial-release";
 import { overviewBoundsFor } from "../camera/topology-overview-fit";
 import type { NodeDragState } from "../input/topology-pointer-types";
 import type { RealmRuntimeData } from "../world/topology-realm-runtime";
 import { fallbackAngleFor } from "../world/topology-realm-runtime";
-import {
-  applyForcePositions,
-  dialOverviewFit,
-  radiusForKind,
-  recomputeWorldGeometry,
-  type TopologyWorld,
-} from "../world/topology-world";
+import { applyForcePositions, recomputeWorldGeometry } from "../world/world-geometry";
+import { dialOverviewFit } from "../world/framing/dial-world-framing";
+import { radiusForKind } from "../world/node-radius";
+import { type TopologyWorld } from "../world/topology-world";
 
 const DRAG_TUG_EASE_TAU = 0.15;
 const SCOPED_FRAME_SPARSITY = 5;
@@ -66,17 +63,17 @@ export function collectSeparationNodes(
   tokens: OntologyMapTokens,
   clusteredIds: ReadonlySet<string>,
   dialAlphas: ReadonlyMap<string, number> | null,
-): { drawnIdx: number[]; sepNodes: SeparationNode[] } {
-  const drawnIdx: number[] = [];
+): { drawnIndex: number[]; sepNodes: SeparationNode[] } {
+  const drawnIndex: number[] = [];
   const sepNodes: SeparationNode[] = [];
   for (let i = 0; i < world.nodes.length; i += 1) {
     const node = world.nodes[i];
     if (clusteredIds.has(node.id)) continue;
     if (dialAlphas !== null && (dialAlphas.get(node.id) ?? 0) <= 0) continue;
-    drawnIdx.push(i);
+    drawnIndex.push(i);
     sepNodes.push({ id: node.id, x: node.x, y: node.y, r: radiusForKind(node.kind, tokens) * node.magnitudeScale });
   }
-  return { drawnIdx, sepNodes };
+  return { drawnIndex, sepNodes };
 }
 
 export function collectActiveMotionIds(
@@ -107,14 +104,14 @@ export interface WorldMotionFrameStageSources {
   dragStartPosRef: SourceRef<{ x: number; y: number; } | null>;
   dragTugOffsetsRef: SourceRef<Map<string, SpringOffset>>;
   dragVelRef: SourceRef<{ x: number; y: number; }>;
-  dragPrevPosRef: SourceRef<{ x: number; y: number; } | null>;
+  dragPreviousPosRef: SourceRef<{ x: number; y: number; } | null>;
   dropSeededRef: SourceRef<boolean>;
-  geomPrevXRef: SourceRef<Float64Array | null>;
-  geomPrevYRef: SourceRef<Float64Array | null>;
+  geomPreviousXRef: SourceRef<Float64Array | null>;
+  geomPreviousYRef: SourceRef<Float64Array | null>;
   sepDisplacedIdsRef: SourceRef<Set<string>>;
   homeSpringsRef: SourceRef<Map<string, HomeSpringState>>;
   homeTargetOverrideRef: SourceRef<ReadonlyMap<string, { x: number; y: number; }> | null>;
-  prevPinnedNodeIdRef: SourceRef<string | null>;
+  previousPinnedNodeIdRef: SourceRef<string | null>;
   clusteredIdsRef: SourceRef<ReadonlySet<string>>;
   expandedParentsRef: SourceRef<ReadonlySet<string>>;
   view3dRef: SourceRef<boolean>;
@@ -152,14 +149,14 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
     dragStartPosRef,
     dragTugOffsetsRef,
     dragVelRef,
-    dragPrevPosRef,
+    dragPreviousPosRef,
     dropSeededRef,
-    geomPrevXRef,
-    geomPrevYRef,
+    geomPreviousXRef,
+    geomPreviousYRef,
     sepDisplacedIdsRef,
     homeSpringsRef,
     homeTargetOverrideRef,
-    prevPinnedNodeIdRef,
+    previousPinnedNodeIdRef,
     clusteredIdsRef,
     expandedParentsRef,
     view3dRef,
@@ -196,8 +193,8 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
     // springs and target override.
     {
       const pinnedId = nodeDragRef.current?.nodeId ?? null;
-      const releasedId = prevPinnedNodeIdRef.current !== null && pinnedId === null ? prevPinnedNodeIdRef.current : null;
-      prevPinnedNodeIdRef.current = pinnedId;
+      const releasedId = previousPinnedNodeIdRef.current !== null && pinnedId === null ? previousPinnedNodeIdRef.current : null;
+      previousPinnedNodeIdRef.current = pinnedId;
       const realmData = realmDataRef.current;
       if (releasedId !== null && realmData !== null && realmTransitionRef.current.phase === "active") {
         const target = realmData.insideTargets.get(releasedId);
@@ -231,7 +228,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
             const t = realmData.insideTargets.get(id);
             const n = world.nodeById.get(id);
             if (!t || !n) continue;
-            springs.set(id, initHomeSpring(n.x, n.y));
+            springs.set(id, createHomeSpring(n.x, n.y));
             override.set(id, t);
           }
           homeSpringsRef.current = springs;
@@ -297,32 +294,28 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
       const scoped =
         affected !== null &&
         (dialMotionIds?.size ?? (affected.oneHop.size + affected.twoHop.size + 1)) * SCOPED_FRAME_SPARSITY < nodeCount;
-      let prevX: Float64Array | null = null;
-      let prevY: Float64Array | null = null;
+      let previousX: Float64Array | null = null;
+      let previousY: Float64Array | null = null;
       if (scoped) {
         // Snapshot the frame's starting coordinates, so the end of the frame
         // can measure what really moved and narrow the derived geometry
         // update to it.
-        if (geomPrevXRef.current?.length !== nodeCount) {
-          geomPrevXRef.current = new Float64Array(nodeCount);
-          geomPrevYRef.current = new Float64Array(nodeCount);
+        if (geomPreviousXRef.current?.length !== nodeCount) {
+          geomPreviousXRef.current = new Float64Array(nodeCount);
+          geomPreviousYRef.current = new Float64Array(nodeCount);
         }
-        prevX = geomPrevXRef.current!;
-        prevY = geomPrevYRef.current!;
+        previousX = geomPreviousXRef.current!;
+        previousY = geomPreviousYRef.current!;
         for (let i = 0; i < nodeCount; i += 1) {
-          prevX[i] = world.nodes[i].x;
-          prevY[i] = world.nodes[i].y;
+          previousX[i] = world.nodes[i].x;
+          previousY[i] = world.nodes[i].y;
         }
       }
 
       sim.tick(forceIterationsForDt(dt), restrictToIds);
-      // **The write-back is restricted too.** A restricted tick never
-      // touches coordinates outside the subgraph, so writing those values
-      // back is a pointless 3,000-element round trip. But it **must include
-      // the tug neighbours and the previous frame's separation-displaced
-      // nodes**: reverting their frame displacement to 0 is the existing
-      // contract, and omitting them accumulates the tug offset every frame
-      // until neighbours fly away.
+      // The write-back is restricted too: a restricted tick never touches coordinates outside the subgraph, so writing them back is a
+      // 3,000-element round trip. It must include the tug neighbours and the previous frame's separation-displaced nodes, whose frame
+      // displacement reverts to 0, or the tug offset accumulates every frame until neighbours fly away.
       const applyOnly =
         scoped && affected
           ? new Set<string>([
@@ -353,9 +346,9 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
         const springFor = (id: string) => springForDegree(world.neighborMap.get(id)?.size ?? 0, massTokens);
         if (pinned && draggedNode) {
           // Remember the hand's velocity so the drop can carry it; reset the drop latch.
-          const prev = dragPrevPosRef.current;
-          if (prev) dragVelRef.current = smoothVelocity(dragVelRef.current, draggedNode.x - prev.x, draggedNode.y - prev.y, dt);
-          dragPrevPosRef.current = { x: draggedNode.x, y: draggedNode.y };
+          const previous = dragPreviousPosRef.current;
+          if (previous) dragVelRef.current = smoothVelocity(dragVelRef.current, draggedNode.x - previous.x, draggedNode.y - previous.y, dt);
+          dragPreviousPosRef.current = { x: draggedNode.x, y: draggedNode.y };
           dropSeededRef.current = false;
         } else if (draggedNode && !dropSeededRef.current) {
           // Drop: seeded once per release. Reduced motion: the node stops where the hand left it.
@@ -366,7 +359,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
               seedDropOffset(dragVelRef.current.x, dragVelRef.current.y, springFor(affected.draggedId), tokens.massDropMaxPx));
                     }
                     dragVelRef.current = { x: 0, y: 0 };
-                    dragPrevPosRef.current = null;
+                    dragPreviousPosRef.current = null;
                 }
                 for (const id of tugIds) {
                     const hop = affected.oneHop.has(id) ? 1 : 2;
@@ -387,14 +380,14 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
                         targetX = (draggedNode.x - dragStart.x) * factor;
                         targetY = (draggedNode.y - dragStart.y) * factor;
                     }
-                    const prevOffset = dragTugOffsetsRef.current.get(id) ?? REST_OFFSET;
+                    const previousOffset = dragTugOffsetsRef.current.get(id) ?? REST_OFFSET;
                     // Reduced motion tracks the pointer 1:1; a live drag lags on the exponential as
                     // before; a release springs home on this neighbour's own mass.
                     const nextOffset = reducedMotionRef.current
                         ? snapOffset(targetX, targetY)
                         : pinned
-                            ? stepLagOffset(prevOffset, targetX, targetY, dt, DRAG_TUG_EASE_TAU)
-                            : stepHomeOffset(prevOffset, dt, springFor(id));
+                            ? stepLagOffset(previousOffset, targetX, targetY, dt, DRAG_TUG_EASE_TAU)
+                            : stepHomeOffset(previousOffset, dt, springFor(id));
                     dragTugOffsetsRef.current.set(id, nextOffset);
                     if (tugged) {
                         tugged.x += nextOffset.x;
@@ -416,19 +409,17 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
                     }
                 }
                 /*
-                 * Grabbing a second node replaces `dragAffectedSetRef` while the first group's
-                 * offsets are still in flight. Nothing above iterates them any more, so those
-                 * nodes stopped being offset and jumped home in a single frame — up to 21 px on
-                 * the sample vault, on nodes the hand never touched. They keep their own spring
-                 * until they are at rest (`expressive/release-offsets.ts#orphanedOffsetIds`).
+                 * Grabbing a second node replaces `dragAffectedSetRef` while the first group's offsets are in flight; nothing else iterates
+                 * them, so those nodes would jump home in one frame (up to 21 px). They keep their spring until at rest
+                 * (`expressive/release-offsets.ts#orphanedOffsetIds`).
                  */
                 const stepped = new Set<string>(tugIds);
                 stepped.add(affected.draggedId);
                 for (const id of orphanedOffsetIds(dragTugOffsetsRef.current, stepped)) {
-                    const prev = dragTugOffsetsRef.current.get(id);
-                    if (!prev)
+                    const previous = dragTugOffsetsRef.current.get(id);
+                    if (!previous)
                         continue;
-                    const next = stepHomeOffset(prev, dt, springFor(id));
+                    const next = stepHomeOffset(previous, dt, springFor(id));
                     if (isOffsetAtRest(next)) {
                         dragTugOffsetsRef.current.delete(id);
                         continue;
@@ -445,7 +436,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
             // block is not reached while homing, so the first-map reveal's
             // deliberate gathering is protected.
             {
-                const { drawnIdx, sepNodes } = collectSeparationNodes(
+                const { drawnIndex, sepNodes } = collectSeparationNodes(
                     world, tokens, clusteredIdsRef.current,
                     dialAlphas,
                 );
@@ -465,7 +456,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
                 const sepDisplaced = sepDisplacedIdsRef.current;
                 sepDisplaced.clear();
                 for (let i = 0; i < sepNodes.length; i += 1) {
-                    const target = world.nodes[drawnIdx[i]];
+                    const target = world.nodes[drawnIndex[i]];
                     if (scoped && (target.x !== sepNodes[i].x || target.y !== sepNodes[i].y)) {
                         sepDisplaced.add(target.id);
                     }
@@ -477,11 +468,11 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
             // by result rather than by author means none of the three writers
             // (force, tug, separation) can be missed.
             let movedIds: Set<string> | null = null;
-            if (prevX && prevY) {
+            if (previousX && previousY) {
                 movedIds = new Set<string>();
                 for (let i = 0; i < nodeCount; i += 1) {
                     const node = world.nodes[i];
-                    if (node.x !== prevX[i] || node.y !== prevY[i])
+                    if (node.x !== previousX[i] || node.y !== previousY[i])
                         movedIds.add(node.id);
                 }
             }
@@ -496,7 +487,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
                 dragAffectedSetRef.current = null;
                 dragTugOffsetsRef.current.clear();
                 dropSeededRef.current = false;
-                dragPrevPosRef.current = null;
+                dragPreviousPosRef.current = null;
                 sepDisplacedIdsRef.current.clear();
                 // During a drag the bbox only ever grew, because it feeds the pan
                 // clamp and erring generous is the safe direction. This one frame,

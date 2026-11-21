@@ -17,20 +17,13 @@ import { collectSubtreeNodeIds, selectRealmBlockDocs } from "../model/collect-re
 import { controlClass } from '@/shared/ui/control-class';
 
 export interface RealmBlockExportActionProps {
-  /** The realm root's title — this becomes the block name. */
   rootTitle: string;
-  /** The realm census, carried into the manifest verbatim (same source as `TopologyRealmLedger`). */
   census: BlockCensus;
-  /** The realm subtree — the source of truth for which nodes are exported. */
   subtree: OntologyTreeNode;
 }
 
 type ExportPhase = "idle" | "exporting" | "done" | "error";
 
-/**
- * "Export this realm as a block": each subtree node's `.md` copied verbatim plus one
- * manifest file, `block-manifest.json`. Without a local vault it stays, disabled with a hint.
- */
 export function RealmBlockExportAction({
   rootTitle,
   census,
@@ -55,7 +48,7 @@ export function RealmBlockExportAction({
         ? await pickTauriVaultDirectory(t("exportAria"))
         : await (
             window as unknown as {
-              showDirectoryPicker: (opts?: {
+              showDirectoryPicker: (options?: {
                 mode?: "read" | "readwrite";
               }) => Promise<BlockDirectoryHandleLike>;
             }
@@ -69,7 +62,7 @@ export function RealmBlockExportAction({
       const files: { slug: string; content: string }[] = [];
       for (const doc of realmDocs) {
         const fh = fileHandles.get(doc.slug);
-        if (!fh) continue; // skip entries with no file handle, such as a static fallback doc
+        if (!fh) continue;
         files.push({ slug: doc.slug, content: await (await fh.getFile()).text() });
       }
       const projectDoc = manifest.docs.find(
@@ -90,8 +83,8 @@ export function RealmBlockExportAction({
       );
       setExportedCount(files.length);
       setPhase("done");
-    } catch (err) {
-      if (isPickerAbort(err)) {
+    } catch (error) {
+      if (isPickerAbort(error)) {
         setPhase("idle");
         return;
       }

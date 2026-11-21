@@ -13,7 +13,6 @@ type RenderableKind = OntologyMapNode["kind"];
 
 export interface BuildOntologyMapGraphOptions {
   changedSlugs?: ReadonlySet<string>;
-  /** Result of `deriveDustySlugs`; those nodes sink through the engine's stale channel. */
   dustySlugs?: ReadonlySet<string>;
 }
 
@@ -43,8 +42,6 @@ export function buildOntologyMapGraph(
   );
 
   const subtreeWeightBySlug = computeSubtreeWeights(nodes, edges);
-  // One numeral source for project/domain nodes: the capability+element census INDEX and /projects
-  // show.
   const censusById = domainCensusById(computeDomainCensusRows(nodes, edges));
 
   const fullDegreeById = new Map<string, number>();
@@ -86,7 +83,6 @@ export function buildOntologyMapGraph(
     createdBy: node.createdBy,
     stale: options.dustySlugs?.has(node.id) ?? false,
     fullDegree: fullDegreeById.get(node.id) ?? 0,
-    // Engraved numeral (project/domain only); `size` keeps the element weight.
     descendantCount: censusById.get(node.id)?.total ?? subtreeWeightBySlug.get(node.id) ?? 0,
   }));
 
@@ -100,7 +96,6 @@ export function buildOntologyMapGraph(
       relationQuality: quality === "strong" ? "strong" : quality === "weak" ? "weak" : null,
       evidenceCount: edge.evidenceIds.length,
       kind: isContainmentRelation(edge.type) ? "contains" : "depends",
-      // Derivation puts the declaring document's slug in `evidenceIds[0]`.
       declaredBySlug: edge.evidenceIds[0] ?? null,
     };
   });

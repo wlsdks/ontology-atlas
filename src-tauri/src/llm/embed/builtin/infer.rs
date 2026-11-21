@@ -73,11 +73,11 @@ pub(crate) struct Encoder {
 }
 
 fn model_error(error: impl std::fmt::Display) -> EmbedError {
-    EmbedError::ModelLoad(crate::errors::squeeze(&error.to_string()))
+    EmbedError::ModelLoad(crate::coded_error::squeeze(&error.to_string()))
 }
 
 fn inference_error(error: impl std::fmt::Display) -> EmbedError {
-    EmbedError::Inference(crate::errors::squeeze(&error.to_string()))
+    EmbedError::Inference(crate::coded_error::squeeze(&error.to_string()))
 }
 
 /// Metal on macOS with the weights' f16; elsewhere the CPU, computing in f32.

@@ -1,7 +1,3 @@
-/**
- * Decides the transient "N concepts updated" chip (`ui/TopologyChangeAnnouncement.tsx`): did the
- * touched-node count just grow.
- */
 export interface ChangeAnnouncementDecision {
   show: boolean;
   delta: number;

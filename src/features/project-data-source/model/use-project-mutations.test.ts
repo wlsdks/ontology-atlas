@@ -15,12 +15,12 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/entities/vault-session/model/use-data-source-mode", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/entities/vault-session/model/use-data-source-mode")>()),
+vi.mock("@/entities/vault-session/model/vault-source/use-data-source-mode", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-source/use-data-source-mode")>()),
   useDataSourceMode: () => mocks.mode,
 }));
-vi.mock("@/entities/vault-session/model/LocalVaultProvider", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/entities/vault-session/model/LocalVaultProvider")>()),
+vi.mock("@/entities/vault-session/model/vault-provider/LocalVaultProvider", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/vault-provider/LocalVaultProvider")>()),
   useLocalVault: () => mocks.vault,
 }));
 

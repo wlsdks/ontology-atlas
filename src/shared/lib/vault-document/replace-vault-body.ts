@@ -1,15 +1,8 @@
 /**
- * Replaces only the prose body of a node's markdown, leaving the frontmatter block
- * untouched — the inverse of `parseFrontmatter`.
- *
- * A node's body *is* its description, so saving an edited description must preserve
- * the frontmatter (slug, kind, domain, relation keys) losslessly. The counterpart of
- * `applyFrontmatterUpdates`, which preserves the body and changes the frontmatter.
- *
- * With no frontmatter block (`---\n...\n---`) the whole file is body and is replaced
- * whole. Surrounding whitespace is trimmed and the result is serialised as
- * `---\n...\n---\n\n<body>\n`, the same delimiter rule as buildVaultMarkdown and
- * applyFrontmatterUpdates.
+ * Replaces only the prose body of a node's markdown, leaving the frontmatter untouched (the inverse of
+ * `parseFrontmatter`; `applyFrontmatterUpdates` does the opposite). With no frontmatter block the
+ * whole file is body. Surrounding whitespace is trimmed and the result is `---\n...\n---\n\n<body>\n`,
+ * the delimiter rule of buildVaultMarkdown.
  */
 import {
   normalizeVaultSource,

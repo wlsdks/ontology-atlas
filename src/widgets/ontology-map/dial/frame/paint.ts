@@ -4,7 +4,7 @@ import { draw as drawNodeShape, type NodeShapeTokens } from "../../render/node-s
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { mixOver } from "../ink";
 import type { DialFrameMarks } from "./marks";
-import type { Box, DialKind, GlyphMark, StripMark, TextMark } from "../types";
+import type { Box, DialKind, GlyphMark, StripMark, TextMark } from "../dial-shapes";
 
 export interface DialPaintOptions {
   now: number;

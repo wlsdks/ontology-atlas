@@ -74,8 +74,8 @@ describe("validate-vault script arguments", () => {
     assert.match(missing.stderr, /Vault path does not exist:/);
     assert.doesNotMatch(missing.stderr, /at async/);
 
-    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-"));
-    const file = join(dir, "not-a-dir.md");
+    const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-"));
+    const file = join(directory, "not-a-dir.md");
     try {
       writeFileSync(file, "---\nkind: project\n---\n");
       const notDirectory = spawnSync(process.execPath, [SCRIPT, file], {
@@ -88,26 +88,26 @@ describe("validate-vault script arguments", () => {
       assert.match(notDirectory.stderr, /Vault path is not a directory:/);
       assert.doesNotMatch(notDirectory.stderr, /at async/);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 
   it("does not read a Markdown file under sources/ as a vault document", () => {
-    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-sources-"));
+    const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-sources-"));
     try {
-      mkdirSync(join(dir, "sources"));
-      writeFileSync(join(dir, "sources", "roadmap.md"), "---\nkind: domain\ntitle: Roadmap\nelements\n---\n");
-      const result = spawnSync(process.execPath, [SCRIPT, dir], { cwd: ROOT, encoding: "utf8" });
+      mkdirSync(join(directory, "sources"));
+      writeFileSync(join(directory, "sources", "roadmap.md"), "---\nkind: domain\ntitle: Roadmap\nelements\n---\n");
+      const result = spawnSync(process.execPath, [SCRIPT, directory], { cwd: ROOT, encoding: "utf8" });
       assert.equal(result.status, 0, result.stdout);
       assert.match(result.stdout, /0 files scanned/);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 
   it("fails closed when frontmatter parser reports malformed lines", () => {
-    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-malformed-"));
-    const file = join(dir, "broken.md");
+    const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-malformed-"));
+    const file = join(directory, "broken.md");
     try {
       writeFileSync(
         file,
@@ -120,7 +120,7 @@ describe("validate-vault script arguments", () => {
           "---\n",
       );
 
-      const result = spawnSync(process.execPath, [SCRIPT, dir], {
+      const result = spawnSync(process.execPath, [SCRIPT, directory], {
         cwd: ROOT,
         encoding: "utf8",
       });
@@ -132,13 +132,13 @@ describe("validate-vault script arguments", () => {
       );
       assert.match(result.stdout, /error 1/);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 
   it("fails closed when a scalar closes its quote before the end of the value", () => {
-    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-quoted-"));
-    const file = join(dir, "agents-destination.md");
+    const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-quoted-"));
+    const file = join(directory, "agents-destination.md");
     try {
       writeFileSync(
         file,
@@ -151,7 +151,7 @@ describe("validate-vault script arguments", () => {
           "---\n",
       );
 
-      const result = spawnSync(process.execPath, [SCRIPT, dir], {
+      const result = spawnSync(process.execPath, [SCRIPT, directory], {
         cwd: ROOT,
         encoding: "utf8",
       });
@@ -161,15 +161,15 @@ describe("validate-vault script arguments", () => {
       assert.match(result.stdout, /display_ko: 에이전트 목적지/);
       assert.match(result.stdout, /error 1/);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 
   it("accepts a correctly quoted, unquoted or escaped scalar", () => {
-    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-quoted-ok-"));
+    const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-quoted-ok-"));
     try {
       writeFileSync(
-        join(dir, "clean.md"),
+        join(directory, "clean.md"),
         "---\n" +
           "uid: 981cd7f6-506a-4b2b-b62c-cd56896e81b0\n" +
           "kind: element\n" +
@@ -180,7 +180,7 @@ describe("validate-vault script arguments", () => {
           "---\n",
       );
 
-      const result = spawnSync(process.execPath, [SCRIPT, dir], {
+      const result = spawnSync(process.execPath, [SCRIPT, directory], {
         cwd: ROOT,
         encoding: "utf8",
       });
@@ -188,17 +188,17 @@ describe("validate-vault script arguments", () => {
       assert.equal(result.status, 0);
       assert.doesNotMatch(result.stdout, /malformed-quoted-scalar/);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 
   it("does not let a keyless malformed block pass the zero-key fast path", () => {
-    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-keyless-"));
-    const file = join(dir, "broken.md");
+    const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-keyless-"));
+    const file = join(directory, "broken.md");
     try {
       writeFileSync(file, "---\nmalformed declaration\n---\n");
 
-      const result = spawnSync(process.execPath, [SCRIPT, dir], {
+      const result = spawnSync(process.execPath, [SCRIPT, directory], {
         cwd: ROOT,
         encoding: "utf8",
       });
@@ -208,7 +208,7 @@ describe("validate-vault script arguments", () => {
       assert.match(result.stdout, /\[parse-zero-keys\]/);
       assert.match(result.stdout, /error 1/);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 });

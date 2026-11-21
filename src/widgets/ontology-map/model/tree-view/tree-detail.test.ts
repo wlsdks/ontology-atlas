@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { TREE_POSE_REST, aimTreeProjector, createTreeProjector } from "./tree-camera";
 import { TREE_MARK_BUDGET, cutTreeDetail } from "./tree-detail";
-import { TREE_TONE_STEPS } from "./types";
+import { TREE_TONE_STEPS } from "./tree-shapes";
 import type {
   TreeDetailInput,
   TreeDrawList,
@@ -12,7 +12,7 @@ import type {
   TreeProjector,
   TreeRect,
   TreeScreenPoint,
-} from "./types";
+} from "./tree-shapes";
 
 interface Spec {
   kind: TreeNodeKind;

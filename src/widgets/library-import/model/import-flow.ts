@@ -13,7 +13,7 @@ import {
   variantSecrets,
   type CatalogueEntry,
   type CatalogueVariant,
-} from '@/shared/config/mcp-catalogue';
+} from '@/shared/config/mcp/mcp-catalogue';
 import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
 import type { ImportDestination } from '@/shared/lib/library-import/destination';
 

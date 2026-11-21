@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
 
 import type { MeaningRunPhase } from '../model/meaning-run';
 import type { WorkRunLine, WorkRunPhase } from '../model/work-run';

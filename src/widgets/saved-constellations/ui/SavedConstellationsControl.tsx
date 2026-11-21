@@ -36,9 +36,7 @@ interface Props {
 
 const TITLE_ID = 'saved-constellation-editor-title';
 
-/** The popover's preferred width (it shrinks to a narrower free map). */
 const LIST_WIDTH = 320;
-/** Trigger bottom to popover top, the chrome's one small step. */
 const LIST_GAP = 8;
 
 interface ListPlacement {
@@ -190,7 +188,6 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
     };
   }, [listOpen]);
 
-  /* Measured before paint on open, and again when the boundary or viewport resizes while open. */
   useLayoutEffect(() => {
     if (!listOpen) return;
     const root = rootRef.current;
@@ -433,15 +430,12 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
         as="section"
         id={listId}
         aria-labelledby={listHeadingId}
-        /*
-         * Hangs from its trigger, clamped inside the toolbar box so it never covers INDEX.
-         */
         origin={listPlacement ? `${listPlacement.originX}px top` : 'top left'}
         style={listPlacement ? { left: listPlacement.left, top: listPlacement.top, width: listPlacement.width } : undefined}
         data-testid="saved-constellations-list"
         className={cn(
           'absolute z-40 overflow-hidden rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-2)] [--topology-motion-panel-duration:var(--motion-fast)]',
-          // Until the first measurement lands (it does before paint) keep the old hang.
+          // Until the first measurement lands (before paint) the fixed hang stands.
           listPlacement ? null : 'left-0 top-[calc(100%+0.5rem)] w-80',
         )}
       >

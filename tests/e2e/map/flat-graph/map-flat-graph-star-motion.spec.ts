@@ -27,7 +27,7 @@ type Sample = { t: number; zoom: number; w: number; h: number; marks: SampledMar
  * The resting overview a fresh load draws with the dock closed: these title and caption rows, and a
  * capability name count within the bounds. A load lays the map out from the text it measures, so
  * wider text moves the fit and the count from load to load; a round trip keeps a load's count.
- * Measured 2026-11-17: 17 on every macOS load, 14 to 18 with a 2 % wider measure, 13 to 19 on Linux CI.
+ * Measured: 17 on every macOS load, 14 to 18 with a 2 % wider measure, 13 to 19 on Linux CI.
  */
 const OVERVIEW_TITLES: readonly string[] = [
   "domain domain:agent-access",

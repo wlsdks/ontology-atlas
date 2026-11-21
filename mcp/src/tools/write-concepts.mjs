@@ -20,22 +20,19 @@ import {
 } from '../server/validate.mjs';
 import { formatAllowedValueError } from '../suggestions.mjs';
 import { isValidVaultTitle } from '../validate.mjs';
-import { loadVaultDocs } from '../vault/documents.mjs';
-import { configureNodeEligibilityRepoRoot } from '../vault/eligibility-gate.mjs';
-import { updateDoc, writeDoc } from '../vault/doc-writes.mjs';
-import { detectDuplicateTitle } from '../vault/graph-queries.mjs';
+import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
+import { configureNodeEligibilityRepoRoot } from '../vault/writes/eligibility-gate.mjs';
+import { updateDoc, writeDoc } from '../vault/writes/doc-writes.mjs';
+import { detectDuplicateTitle } from '../vault/graph/graph-queries.mjs';
 import { measureBuildDepth, repositorySurvey } from '../construction/build-depth.mjs';
 import { sessionReads } from '../construction/session-reads.mjs';
-import { findingsOnWrittenNodes } from './maintenance.mjs';
+import { findingsOnWrittenNodes } from './result-attachments.mjs';
+import { agentProvenance, readDocIfPresent } from './vault-nodes.mjs';
 import {
   ADD_CONCEPT_KINDS,
-  agentProvenance,
-  readDocIfPresent,
   requireNodeNotReservedForHuman,
   requireValidFrontmatterPatch,
-} from './vault-nodes.mjs';
-
-/** Creating and patching nodes: `add_concept`, `add_concepts`, `patch_concept`. */
+} from './write-gates.mjs';
 
 /** The `display_<locale>` codes any node in the vault carries. */
 function vaultLocaleCodes(docs) {

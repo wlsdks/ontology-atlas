@@ -26,14 +26,12 @@ export function DocMetaBar({
   review,
 }: {
   doc: VaultDoc;
-  /** Passed in so the sidebar and the document share one drift result (a hash comparison). */
   reviewRow?: ReviewQueueRow;
   /**
    * Present only for a writable local folder. The lane the MCP server refuses an agent, not
    * an identity check: Atlas has no login.
    */
   review?: {
-    /** True while this document carries `review_state: human_decides`. */
     reserved: boolean;
     busy: boolean;
     onConfirm: () => void;
@@ -44,7 +42,6 @@ export function DocMetaBar({
   const tReview = useTranslations("vaultWidgets.parts.sidebar.review");
   const locale = useLocale();
   const numberLocale = (LOCALE_META as Record<string, LocaleMeta>)[locale]?.intlTag ?? "en-US";
-  // Absent while the document's detail is read: the count appears once known, never as 0.
   const wordCount = useDocumentDetail(doc)?.wordCount;
   const updated = new Date(doc.updatedAt);
   // Two clocks, one row: `reviewed_at` is meaning time (a person judged it right), `updatedAt`
@@ -56,12 +53,7 @@ export function DocMetaBar({
       : null;
   const formatDay = (value: Date) =>
     value.toLocaleDateString(numberLocale, { year: "numeric", month: "2-digit", day: "2-digit" });
-  // Every node kind has a map node; `buildTopologyDeeplinkForDoc` handles each.
   const topologyHref = buildTopologyDeeplinkForDoc(doc);
-  /**
-   * One result for chip, body and CTA: a document the deeplink builder cannot address has no place
-   * on the map.
-   */
   const inGraph = topologyHref != null;
   // The explanation shows only for documents not on the map; for the rest the chip and link
   // already say it. A wiki page gets its own sentence: the generic one would have it add
@@ -75,7 +67,6 @@ export function DocMetaBar({
     >
       {proofBody ? (
         <div className="flex min-w-0 flex-wrap items-start gap-x-2 gap-y-1.5">
-          {/* Not being on the map is a fact, not an alarm. */}
           <span
             data-testid="doc-map-evidence"
             data-in-graph="false"
@@ -90,7 +81,6 @@ export function DocMetaBar({
         </div>
       ) : null}
 
-      {/* What a person has to judge reads as a sentence above the controls, never as one of them. */}
       {reviewRow ? (
         <p
           data-testid="doc-review-chip"
@@ -112,8 +102,6 @@ export function DocMetaBar({
       ) : null}
 
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
-        {/* One entrance to the map (`/ontology` only redirects), and the one statement that the */}
-        {/* document is on it. With no address nothing is drawn (`.claude/rules/surfaces.md`). */}
         {topologyHref ? (
           <span data-testid="doc-map-evidence" data-in-graph="true" className="contents">
             <Link
@@ -178,7 +166,6 @@ export function DocMetaBar({
           >
             {formatDay(updated)}
           </span>
-          {/* Git's commit count for this file, derived at build time. */}
           {doc.revision ? (
             <span data-testid="doc-revision" title={t("revisionTitle", { count: doc.revision })}>
               {t("revisionLabel", { count: doc.revision })}

@@ -309,7 +309,7 @@ fn a_document_discovery_offered_is_still_refused_for_planning_when_its_type_is_u
     fs::write(project.join("plan.pdf"), PLAN_PDF_BYTES).unwrap();
     let project = fs::canonicalize(&project).unwrap();
     let _scope =
-        crate::vault_grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);
+        crate::vault::grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);
 
     let report = discover_source_candidates(vec![SourceDiscoveryRoot {
         root_path: project.to_string_lossy().into_owned(),

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ExpandPreference } from "@/shared/lib/preferences/appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
 import {
   useEffect,
   type RefObject
@@ -8,12 +8,12 @@ import {
 import type { CameraTarget } from "../../engine/camera";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import { rankEgoNeighborsByDOI } from "../../model/visibility/focus-state";
-import { computeClusterFitTarget } from "../camera/topology-camera-math";
+import { computeClusterFitTarget } from "../camera/target/focus-fit";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { type TopologyWorld } from "./topology-world";
 
 interface Dependencies {
-  prevExpandedParentsRef: RefObject<ReadonlySet<string>>;
+  previousExpandedParentsRef: RefObject<ReadonlySet<string>>;
   expandedParents: ReadonlySet<string>;
   expandedParentsRef: RefObject<ReadonlySet<string>>;
   lastActiveMsRef: RefObject<number>;
@@ -33,7 +33,7 @@ interface Dependencies {
 
 /** Apply expansion changes to the visibility and appearance clocks. */
 export function useTopologyClusterExpansion({
-  prevExpandedParentsRef,
+  previousExpandedParentsRef,
   expandedParents,
   expandedParentsRef,
   lastActiveMsRef,
@@ -52,8 +52,8 @@ export function useTopologyClusterExpansion({
 }: Dependencies) {
 
   useEffect(() => {
-    const prev = prevExpandedParentsRef.current;
-    prevExpandedParentsRef.current = expandedParents;
+    const previous = previousExpandedParentsRef.current;
+    previousExpandedParentsRef.current = expandedParents;
     expandedParentsRef.current = expandedParents;
     // An expansion toggle is a static state transition: wake even while idle
     // skipping so the collapsed children appearing or disappearing is drawn at
@@ -64,7 +64,7 @@ export function useTopologyClusterExpansion({
     // through tier alpha as the camera descends, reusing the existing ramp.
     let newlyExpanded: string | null = null;
     for (const id of expandedParents) {
-      if (!prev.has(id)) {
+      if (!previous.has(id)) {
         newlyExpanded = id;
         break;
       }
@@ -122,6 +122,6 @@ export function useTopologyClusterExpansion({
     // with once the tween ends or is interrupted.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     beginCameraTween(target);
-  }, [expandedParents, beginCameraTween, cameraTokens, domeRuntimeRef, prevExpandedParentsRef, expandedParentsRef, lastActiveMsRef, worldRef, viewportRef, hasInitializedRef, overviewScaleRef, expandPrefRef, dampingRef, cameraTargetRef, userDrivenCameraRef, cameraAngularFreqRef]);
+  }, [expandedParents, beginCameraTween, cameraTokens, domeRuntimeRef, previousExpandedParentsRef, expandedParentsRef, lastActiveMsRef, worldRef, viewportRef, hasInitializedRef, overviewScaleRef, expandPrefRef, dampingRef, cameraTargetRef, userDrivenCameraRef, cameraAngularFreqRef]);
 
 }

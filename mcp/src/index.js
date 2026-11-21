@@ -31,7 +31,7 @@ import {
 } from './server/rpc.mjs';
 import { VAULT_ROOT } from './server/runtime.mjs';
 import { normalizeToolArguments } from './server/validate.mjs';
-import { withVaultReadSnapshot, withVaultWriteSnapshot } from './vault/documents.mjs';
+import { withVaultReadSnapshot, withVaultWriteSnapshot } from './vault/documents/document-cache.mjs';
 import { logWrite } from './server/write-log.mjs';
 import { absorbDocumentTool } from './tools/absorb.mjs';
 import {
@@ -72,12 +72,10 @@ import {
   queryConceptsTool,
   readSourceTool,
 } from './tools/read.mjs';
-import {
-  analyzeRepoStructureTool,
-  indexProjectTool,
-  inferImportsTool,
-  inspectArchitectureTool,
-} from './tools/repo-analysis.mjs';
+import { analyzeRepoStructureTool } from './tools/repo-analysis/analyze-structure.mjs';
+import { indexProjectTool } from './tools/repo-analysis/index-project.mjs';
+import { inferImportsTool } from './tools/repo-analysis/infer-imports.mjs';
+import { inspectArchitectureTool } from './tools/repo-analysis/inspect-architecture.mjs';
 import {
   validateVaultTool,
   validateWikiTool,

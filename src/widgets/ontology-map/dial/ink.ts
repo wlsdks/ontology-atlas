@@ -1,5 +1,5 @@
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
-import type { DialMarks, DialTokens } from "./types";
+import type { DialMarks, DialTokens } from "./dial-shapes";
 
 export interface DialInks {
   bg: string;

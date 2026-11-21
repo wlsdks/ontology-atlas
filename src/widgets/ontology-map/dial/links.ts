@@ -1,4 +1,4 @@
-import type { DialAttention, DialModel, DialTokens } from "./types";
+import type { DialAttention, DialModel, DialTokens } from "./dial-shapes";
 
 export interface DialLink {
   key: string;

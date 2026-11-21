@@ -3,12 +3,12 @@ import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../../messages/en.json";
-import { writeLibraryIndexQuery } from "@/shared/lib/preferences/appearance-preferences";
+import { writeLibraryIndexQuery } from "@/shared/lib/preferences/library-preferences";
 import type { LibraryUiModel } from "@/features/library";
 import { LibrarySection } from "./LibrarySection";
 
 const index = vi.hoisted(() => ({ hits: undefined as Array<{ path: string; rank: number }> | undefined }));
-vi.mock("@/shared/lib/vault-folder/use-vault-index-hits", () => ({
+vi.mock("@/shared/lib/vault-folder/vault-index/use-vault-index-hits", () => ({
   useVaultIndexHits: () => ({ hits: index.hits, answeredQuery: null, status: null }),
 }));
 

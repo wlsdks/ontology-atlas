@@ -8,7 +8,6 @@ import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import type { BriefingCommit, ChangeBriefing } from '@/shared/lib/git/tauri-change-briefing';
 
-/** A commit opened from elsewhere: the reader starts on it and its back control returns there. */
 export interface OpenedCommit { hash: string; backLabel: string; onBack: () => void }
 
 type CommitInventoryProps = { data: ChangeBriefing; onExplain: () => void; onFiles?: (paths: string[]) => void; opened?: OpenedCommit | null };

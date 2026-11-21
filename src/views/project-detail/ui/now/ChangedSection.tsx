@@ -4,7 +4,7 @@ import { useId } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { getTopologyFocusHref } from "@/entities/project";
+import { buildTopologyFocusHref } from "@/entities/project";
 import { OntologyMapKindGlyph } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
@@ -69,7 +69,6 @@ export function ChangedSection({
           </Link>
         }
       />
-      {/* A column of three slots, or one strip of three equal slots while the band has two columns. */}
       <ul
         data-testid="project-detail-changed-rows"
         className="relative -mx-2 mt-2 grid min-h-[calc(3*2rem+2px)] grid-cols-1 content-start gap-px @5xl/project-page:min-h-8 @5xl/project-page:grid-cols-3 @5xl/project-page:gap-x-8 @[90rem]/project-page:min-h-[calc(3*2rem+2px)] @[90rem]/project-page:grid-cols-1 @[90rem]/project-page:gap-x-0"
@@ -78,7 +77,7 @@ export function ChangedSection({
           {changed.visible.map((row, index) => (
             <motion.li key={row.id} layout="position" className="min-w-0" {...rowMotion({ index: index + arrivalOffset, arrival, reducedMotion })}>
               <Link
-                href={getTopologyFocusHref(row.id)}
+                href={buildTopologyFocusHref(row.id)}
                 data-testid="project-detail-changed-row"
                 aria-labelledby={`${rowId}-${row.id}-name ${rowId}-${row.id}-age`}
                 aria-describedby={`${rowId}-opens`}

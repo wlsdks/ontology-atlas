@@ -4,16 +4,11 @@
  * because a captured document is not hit-testable.
  */
 
-/** Longest a transition may hold the old snapshot while waiting for the new route (ms). */
 export const ROUTE_VIEW_TRANSITION_SETTLE_TIMEOUT_MS = 900;
 
 type StartViewTransition = (update: () => Promise<void> | void) => unknown;
 
-/**
- * The object `startViewTransition` hands back. Every field is optional because
- * this module also accepts the fakes the tests pass and older implementations
- * that return nothing.
- */
+/** The object `startViewTransition` hands back; every field is optional because tests pass fakes and older implementations return nothing. */
 interface ViewTransitionHandle {
   ready?: Promise<unknown>;
   finished?: Promise<unknown>;
@@ -54,7 +49,6 @@ export function readCrossfadeBudgetMs(
   return ROUTE_VIEW_TRANSITION_CROSSFADE_FALLBACK_MS;
 }
 
-/** True when at least one of the transition's own animations has a start time. */
 function crossfadeHasBegun(animations: readonly { startTime: number | null; pseudo: string | null }[]): boolean {
   return animations.some((animation) => animation.pseudo !== null && animation.startTime !== null);
 }
@@ -75,16 +69,10 @@ let pendingSettle: (() => void) | null = null;
 let pendingBound: (() => void) | null = null;
 
 /**
- * The class that makes the stylesheet capture the pane instead of the document.
- *
- * It is added before `startViewTransition` — the browser reads the old state inside that
- * call, so a class added afterwards would name nothing — and removed once the transition
- * has finished, however it ended. A skipped transition settles `finished` too, so the
- * class is never left behind; the counter below is what keeps a second navigation from
- * having the first one's cleanup strip the name out from under it.
+ * Paired with `html.route-crossfade` in `app/globals.css`. Added before `startViewTransition`,
+ * which reads the old state inside the call; the counter below stops a second navigation's cleanup
+ * from stripping it.
  */
-/** Paired with `html.route-crossfade` in `app/globals.css`; not exported, so the name lives
- *  in exactly two places and `pnpm knip` does not carry an unused export. */
 const ROUTE_CROSSFADE_CLASS = "route-crossfade";
 
 let crossfadeGeneration = 0;
@@ -138,7 +126,6 @@ export function navigateWithViewTransition(
     startViewTransition?: StartViewTransition | null;
     timeoutMs?: number;
     setTimeoutFn?: typeof setTimeout;
-    /** The crossfade's own budget; defaults to `--motion-base`. */
     crossfadeMs?: number;
     /** The transition's animations, for tests with no compositor. */
     animations?: () => readonly { startTime: number | null; pseudo: string | null }[];
@@ -188,12 +175,8 @@ export function navigateWithViewTransition(
 }
 
 /**
- * Puts the document back to capturing nothing once the transition is over.
- *
- * `finished` settles on a skipped transition as well as a completed one, and a handle that
- * carries neither (an older implementation, or a test's fake) is released immediately —
- * leaving the class on would keep a `view-transition-name` on the pane for the rest of the
- * session, which is a containing block the pane does not otherwise have.
+ * `finished` settles on a skipped transition too; a handle without it is released at once, or a
+ * `view-transition-name` would stay on the pane, a containing block it otherwise lacks.
  */
 function releaseCaptureWhenSettled(handle: ViewTransitionHandle | null, generation: number): void {
   const settled = handle?.finished ?? handle?.updateCallbackDone;
@@ -207,7 +190,6 @@ function releaseCaptureWhenSettled(handle: ViewTransitionHandle | null, generati
   );
 }
 
-/** Called by the shell once the new route has committed: releases the held snapshot. */
 export function settleRouteViewTransition(): void {
   pendingSettle?.();
 }

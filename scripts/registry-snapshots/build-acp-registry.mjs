@@ -1,18 +1,10 @@
 #!/usr/bin/env node
 /**
- * ACP registry snapshot — fetched once at build time and committed to the repo.
- *
- * **Why not fetch at runtime.** It would break trust-charter promises ① ("works
- * without the internet") and ② ("nothing leaves unless the user turns it on") at
- * the same time: hitting a CDN on every app launch is traffic the user never
- * enabled, and on a plane the list would simply be empty. So the list is
- * **committed as a file**; it only changes when a person runs this script, and
- * what changed is visible in the git diff.
- *
- * **What is kept and what is dropped.** Kept: what is needed to launch (how to
- * run it) and what the screen must say (name, one-line description, where to go,
- * licence). Dropped: icon URLs (the app does not fetch external images — same
- * reason) and the author list (no screen uses it).
+ * ACP registry snapshot, fetched once at build time and committed: fetching at runtime would break the
+ * trust promises "works without the internet" and "nothing leaves unless the user turns it on", and
+ * a committed list changes only when a person runs this script, visible in the git diff.
+ * Kept: what is needed to launch and what the screen says (name, description, where to go, licence).
+ * Dropped: icon URLs (the app fetches no external images) and the author list.
  *
  * Usage:
  *   node scripts/registry-snapshots/build-acp-registry.mjs           # fetch and update
@@ -25,27 +17,11 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const OUT = join(ROOT, 'src-tauri', 'src', 'acp-registry.json');
-/**
- * Icons are **fetched and bundled at build time** too, for the same reason the
- * list is committed as a file: fetching images from a CDN on every launch is
- * traffic the user never enabled, and on a plane the list becomes grey squares.
- *
- * Using another vendor's logo is not the same as copying their design. This is
- * an identification mark saying "this is that tool", and the registry publishes
- * it specifically for client UIs.
- */
+/** Icons are fetched and bundled at build time too: a CDN fetch on every launch is traffic the user never enabled. The registry publishes them for client UIs as identification marks. */
 const ICON_DIR = join(ROOT, 'public', 'acp-icons');
 const SOURCE = 'https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json';
 
-/**
- * Where brand colours come from. Every registry icon is **monochrome
- * `currentColor`** (the registration rules reject SVGs with baked-in colour), so
- * the colour is sourced separately here.
- *
- * simple-icons path data is CC0-1.0, and all we take from it is **one colour
- * value** — the artwork stays the vendor's own mark as supplied by the registry.
- * A colour value is not itself copyrightable, but the provenance is recorded.
- */
+/** Where brand colours come from: every registry icon is monochrome `currentColor`, so the colour is sourced separately. simple-icons path data is CC0-1.0 and only one colour value is taken from it; the provenance is recorded. */
 const BRAND_SOURCE = 'https://cdn.jsdelivr.net/npm/simple-icons@latest/data/simple-icons.json';
 
 /**
@@ -67,13 +43,7 @@ const BRAND_MARK = {
   cline: 'Cline',
 };
 
-/**
- * Launchers we have **actually tested**.
- *
- * The rest stay listed and launchable, but only these two are marked "verified",
- * so the screen never claims we tried something we did not. This set grows only
- * with measured evidence (`docs/DECISIONS.md`).
- */
+/** Launchers actually tested: the rest stay listed and launchable, but only these are marked "verified", so the screen never claims a try that did not happen. The set grows only with measured evidence (`docs/DECISIONS.md`). */
 const VERIFIED = new Set(['claude-acp', 'codex-acp']);
 
 /**
@@ -120,39 +90,15 @@ function applyRuntimeLaunchPin(id, launch) {
 }
 
 /**
- * Display-name overrides — only for launchers whose registry name differs from
- * what people actually call them.
- *
- * **Empty today, and it must stay empty**. It once held
- * `'claude-acp': 'Claude Code'`, on the grounds that *the registry's `Claude
- * Agent` is accurate but nobody calls it that*. That name is **explicitly not
- * permitted**:
- *
- * > **Not permitted:** "Claude Code" or "Claude Code Agent"
- * > **Allowed:** "Claude Agent", preferred for **dropdown menus**
- * > — Anthropic, Claude Agent SDK docs, "Branding guidelines"
- * >   (https://code.claude.com/docs/en/agent-sdk/overview)
- *
- * This list is exactly such a dropdown menu, and the registry was already using
- * the allowed name. Overriding it is what broke the rule.
- *
- * ⚠️ **This does not mean erasing the words "Claude Code" from the repository.**
- * Sentences referring to **the product the user installed separately on their own
- * machine** (for example "connect to Claude Code" in the MCP setup guidance) name
- * that product correctly and stay as they are — renaming there would make the
- * guidance wrong. What is forbidden is **attaching that name to an agent our
- * product ships**.
+ * Display-name overrides, only for launchers whose registry name differs from what people call them.
+ * It must stay empty: Anthropic's branding guidelines
+ * (https://code.claude.com/docs/en/agent-sdk/overview) do not permit "Claude Code" for an agent a
+ * product ships ("Claude Agent" is allowed in dropdown menus), and the registry already uses the
+ * allowed name. Sentences about the product the user installed separately may still say "Claude Code".
  */
 const DISPLAY_NAME = {};
 
-/**
- * The executable name of the **real CLI** each adapter wraps. The registry does
- * not carry this, so it is paired here — it is what lets the screen distinguish
- * "the tool is missing" from "Node is missing", and those need different actions
- * from the user.
- *
- * Unknown ones are left out. Guessing makes the screen invent a reason.
- */
+/** The executable name of the real CLI each adapter wraps, which the registry lacks: it lets the screen tell "the tool is missing" from "Node is missing". Unknown ones are left out, because guessing invents a reason. */
 const UNDERLYING_CLI = {
   'claude-acp': 'claude',
   'codex-acp': 'codex',
@@ -201,12 +147,12 @@ function pickLaunch(distribution) {
  * — that row needs a person to re-verify it.
  */
 async function fetchBrandInk() {
-  const res = await fetch(BRAND_SOURCE, { headers: { accept: 'application/json' } });
-  if (!res.ok) {
-    console.error(`[acp-registry] failed to fetch the brand colors: HTTP ${res.status}`);
+  const response = await fetch(BRAND_SOURCE, { headers: { accept: 'application/json' } });
+  if (!response.ok) {
+    console.error(`[acp-registry] failed to fetch the brand colors: HTTP ${response.status}`);
     process.exit(1);
   }
-  const data = await res.json();
+  const data = await response.json();
   const icons = Array.isArray(data) ? data : (data.icons ?? []);
   const byTitle = new Map(icons.map((i) => [String(i.title).toLowerCase(), i]));
   const ink = {};
@@ -256,7 +202,7 @@ function normalize(raw, brandInk = {}) {
   };
 }
 
-/** npx's `--before` for the hardened runtimes (src-tauri/src/acp/runtime_environment.rs); moves with the snapshot. */
+/** npx's `--before` for the hardened runtimes (src-tauri/src/acp/launch/runtime_environment.rs); moves with the snapshot. */
 export function withDependencyCutoff(normalized, committed, now = new Date()) {
   const bare = (snapshot) => JSON.stringify({ ...snapshot, npmDependencyCutoff: null });
   const kept = committed?.npmDependencyCutoff && bare(committed) === bare(normalized);
@@ -307,14 +253,14 @@ async function npmPublishTimes(snapshot, hardened) {
     const launch = snapshot.agents.find((agent) => agent.id === id)?.launch;
     const spec = launch?.kind === 'npx' ? npmPackageSpec(launch.package) : null;
     if (!spec) continue;
-    const res = await fetch(`https://registry.npmjs.org/${spec.name.replace('/', '%2f')}`, {
+    const response = await fetch(`https://registry.npmjs.org/${spec.name.replace('/', '%2f')}`, {
       headers: { accept: 'application/json' },
     });
-    if (!res.ok) {
-      console.error(`[acp-registry] npm answered HTTP ${res.status} for ${spec.name}`);
+    if (!response.ok) {
+      console.error(`[acp-registry] npm answered HTTP ${response.status} for ${spec.name}`);
       process.exit(1);
     }
-    times.set(`${spec.name}@${spec.version}`, (await res.json()).time?.[spec.version] ?? null);
+    times.set(`${spec.name}@${spec.version}`, (await response.json()).time?.[spec.version] ?? null);
   }
   return (name, version) => times.get(`${name}@${version}`) ?? null;
 }
@@ -323,9 +269,9 @@ async function npmPublishTimes(snapshot, hardened) {
 async function fetchIcon(agent) {
   if (!agent.icon) return false;
   try {
-    const res = await fetch(agent.icon);
-    if (!res.ok) return false;
-    const svg = await res.text();
+    const response = await fetch(agent.icon);
+    if (!response.ok) return false;
+    const svg = await response.text();
     // Reject scripts and external references inside the SVG. An image drawn inside
     // the app has no reason to reach outward or execute code.
     if (/<script|xlink:href\s*=\s*["']https?:|href\s*=\s*["']https?:/i.test(svg)) return false;
@@ -494,11 +440,7 @@ async function main() {
   );
 }
 
-/*
- * ⚠️ Only when run as a command. Without this guard, importing this module to test its pure
- * helpers would fetch the upstream registry — a test that needs the network to check a string
- * comparison is a test that fails on a plane.
- */
+/* Only when run as a command: importing this module to test its pure helpers must not fetch the upstream registry. */
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   await main();
 }

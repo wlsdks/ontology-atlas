@@ -1,7 +1,3 @@
-/**
- * `/architecture` view state. `?view=` is the source of truth (refresh, shared link, agent handoff),
- * with the same grammar as `/mcp`'s `?tab=`. Retired names resolve to `overview`.
- */
 const HARNESS_VIEWS = ['overview', 'architecture'] as const;
 
 export type HarnessView = (typeof HARNESS_VIEWS)[number];
@@ -31,10 +27,8 @@ export function parseHarnessView(raw: string | null | undefined): HarnessView {
  */
 const BLUEPRINT_ONLY_PARAMS = ['role', 'stage'] as const;
 
-/** The view an address names, directly or by a blueprint-only parameter; `?view=` always wins. */
 export function resolveAddressView(
   params: URLSearchParams | null | undefined,
-  /** Whether this surface can read the dot directories the overview is about. */
   canReadHarness = true,
 ): HarnessView {
   const raw = params?.get('view');
@@ -57,7 +51,6 @@ export function buildHarnessViewHref(
   view: HarnessView,
   pathname = '/architecture/',
   search = '',
-  /** The view this surface opens with no `?view=` on the address — `defaultViewForSurface`. */
   surfaceDefault: HarnessView = DEFAULT_HARNESS_VIEW,
 ): string {
   const params = new URLSearchParams(search);
@@ -69,7 +62,6 @@ export function buildHarnessViewHref(
 
 export const HARNESS_VIEW_ORDER: readonly HarnessView[] = HARNESS_VIEWS;
 
-/** The query with a retired `view=` set to its current name in place, or null when nothing is retired. */
 export function rewriteRetiredView(search: string): string | null {
   const params = new URLSearchParams(search);
   const raw = params.get('view');

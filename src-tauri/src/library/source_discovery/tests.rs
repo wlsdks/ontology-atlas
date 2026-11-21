@@ -23,7 +23,7 @@ fn offered_by_the_walk(label: &str, rows: &[serde_json::Value]) -> Vec<String> {
     }
     let project = fs::canonicalize(&project).unwrap();
     let _scope =
-        crate::vault_grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);
+        crate::vault::grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);
     let report = discover_source_candidates(vec![SourceDiscoveryRoot {
         root_path: project.to_string_lossy().into_owned(),
         label: "project".into(),
@@ -74,7 +74,7 @@ fn a_discovered_candidate_imports_through_the_string_the_page_builds() {
     let vault = fs::canonicalize(&vault).unwrap();
     let project = fs::canonicalize(&project).unwrap();
 
-    let _scope = crate::vault_grants::EnforcedScope::granting(&[vault.clone(), project.clone()]);
+    let _scope = crate::vault::grants::EnforcedScope::granting(&[vault.clone(), project.clone()]);
 
     let report = discover_source_candidates(vec![SourceDiscoveryRoot {
         root_path: root_path.clone(),
@@ -104,7 +104,7 @@ fn discovery_refuses_a_source_root_the_vault_gate_forbids() {
     fs::write(bundle.join("plan.pdf"), b"%PDF-1.7\n").unwrap();
     let bundle = fs::canonicalize(&bundle).unwrap();
 
-    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&bundle));
+    let _scope = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&bundle));
 
     let report = discover_source_candidates(vec![SourceDiscoveryRoot {
         root_path: bundle.to_string_lossy().to_string(),
@@ -132,7 +132,7 @@ fn found_files_keep_their_folders_and_vault_folders_are_never_walked() {
     ] {
         plant_file(&vault_path.join(name), 200);
     }
-    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault_path));
+    let _scope = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault_path));
     let report = discover_source_candidates(vec![SourceDiscoveryRoot {
         root_path: vault.clone(),
         label: "vault".into(),
@@ -189,7 +189,7 @@ fn markdown_is_offered_only_from_the_open_folder() {
     plant_file(&project.join("docs/design.pdf"), 300);
     let project = fs::canonicalize(&project).unwrap();
     let _scope =
-        crate::vault_grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);
+        crate::vault::grants::EnforcedScope::granting(&[PathBuf::from(&vault), project.clone()]);
     let report = discover_source_candidates(vec![SourceDiscoveryRoot {
         root_path: project.to_string_lossy().into_owned(),
         label: "project".into(),
@@ -213,7 +213,7 @@ fn the_open_folders_own_folders_are_skipped_in_any_letter_case() {
     for name in ["Sources/old.pdf", "WIKI/page.pdf", "notes/plan.pdf"] {
         plant_file(&vault_path.join(name), 200);
     }
-    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault_path));
+    let _scope = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault_path));
     let report = discover_source_candidates(vec![SourceDiscoveryRoot {
         root_path: vault.clone(),
         label: "vault".into(),
