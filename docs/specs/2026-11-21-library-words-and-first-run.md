@@ -212,34 +212,34 @@ body and a ready patch; F2 applies them (spec prose stays English, `pnpm docs:la
 
 | Key | Where | English |
 |---|---|---|
-| `start.title` | h1 | Add the sources you already have |
-| `start.body` | Under the title | An agent reads them and writes a wiki: pages that sum them up, where every claim names the source it came from. |
+| `start.title` | h1 | Add the documents you already have |
+| `start.body` | Under the title | {agent} reads your sources and writes wiki pages. Each sentence in a page names the source it came from. (`{agent}` is the connected agent's name, else "Your coding agent".) |
 | `start.bodyWikiOnly` | Same, wiki pages but no sources | This folder has wiki pages but no sources yet. Add the documents they came from, so every claim can cite one. |
-| `start.drop.title` | Drop area | Drop files here |
+| `start.drop.title` | Drop area | Drop files or folders here |
 | `start.drop.or` | Before `sources.add` (Add files, unchanged) | or |
-| `start.drop.formats` | Drop area foot | PDF, Word, Excel, PowerPoint, text or any other format. Each file is copied as it is. |
-| `start.drop.over` | While dragging | Drop to copy into sources/ |
-| `start.drop.copying` | While copying | Copying {done, number} of {total, number}… |
-| `start.drop.failed` | After a failure | {count, plural, one {# file} other {# files}} could not be copied: {reason}. Drop them again, or use Add files. |
+| `start.drop.formats` | Drop area foot | PDF, Word, Excel, PowerPoint, text or any other format. Files are copied without changes. |
+| `start.drop.over` | While dragging | Drop to copy into the sources folder |
+| `start.drop.copying` | While copying | Copying into the sources folder · {done, number} of {total, number} |
+| `start.drop.failed` | After a failure | {count, plural, one {# file} other {# files}} could not be copied: {reason}. Drop them again, or press Add files. |
 | `start.drop.failedNames` | Under it | Not copied: {names} |
-| `start.drop.folderRefused` | Folder dropped | {where, select, web {A folder can't be dropped here yet. Drop the files inside it.} other {A folder can't be dropped here yet. Drop the files inside it, or put the folder into sources/ in {fileManagerName}.}} |
+| `start.drop.folderRefused` | Removed | Folders are accepted ("Documents already in the folder", decision 6) |
 | `start.fileManagerName` | Fills `{fileManagerName}` | {fileManager, select, finder {Finder} explorer {File Explorer} other {the file manager}} |
-| `start.where` / `start.whereWeb` | Folder line | Sources go into sources/ inside {folder}. You can put files there yourself. / Sources go into sources/ inside {folder}. |
+| `start.where` / `start.whereWeb` | Folder line | The Library lists only files in the sources folder inside {folder}. You can also put files there in {fileManagerName}. / The Library lists only files in the sources folder inside {folder}. |
 | `start.reveal` | Folder line | {fileManager, select, finder {Show in Finder} explorer {Show in File Explorer} other {Show in file manager}} |
-| `sources.find` (changed) | Folder line; index chip | Find files |
-| `start.privacy` | Stage foot | The copies stay in this folder. Atlas sends nothing on its own; an agent reads them only when you give it a task. |
-| `start.noAgent` / `start.noAgentLink` | Under the body, app | No agent is connected yet. Add sources now and connect one later. / Connect an agent |
-| `start.web` | Under the body, web | On the web you can add and read sources; the app writes wiki pages. |
+| `sources.find` (changed) | Folder line; index chip | Find documents in the folder |
+| `start.privacy` | Stage foot | Atlas sends your sources nowhere. When you ask an agent to write wiki pages or answer a question, that agent reads the sources it needs, and what it reads may be sent to the agent's service. |
+| `start.noAgent` / `start.noAgentLink` | Under the body, app | No coding agent is connected yet. You can add sources now and connect one later. / Connect an agent |
+| `start.web` | Under the body, web | In the browser you can add and read sources. Writing wiki pages needs the Atlas app. |
 | `start.found.title` | Suggestion | {count, plural, one {# file} other {# files}} already in {folders} |
-| `start.found.basis` | Beside it | Picked by name, format and size only |
+| `start.found.basis` | Beside it | Chosen by file name, format and size. File contents were not opened. |
 | `start.found.more` | Suggestion | See all {count, number} |
-| `start.found.hide` / `.hidden` | Suggestion / toast | Hide these / Hidden. Find files shows them again. |
-| `sources.import` (ko changed) | Stage link | Bring from a service |
+| `start.found.hide` / `.hidden` | Suggestion / toast | Hide this suggestion / Hidden. Find documents in the folder shows these files again. |
+| `sources.import` (changed) | Stage link | Bring from Notion, Jira and more |
 | `sources.added` (changed) | Toast | {count, plural, one {# source added} other {# sources added}} |
 | `sources.revealFailed` (changed) | Toast | Could not show it in {fileManagerName}: {reason} |
-| `find.title` (changed) | Dialog | Files already in {folders} |
-| `find.preamble` (changed) | Dialog | Picked by name, format and size only. Nothing is copied until you add it. |
-| `find.empty` (changed) | Dialog | Nothing here looks like a source. Atlas skips licence and notice files, hash-named files, build and test files, empty files, and folders such as public, output, build and vendor. |
+| `find.title` (changed) | Dialog | Documents found in {folders} |
+| `find.preamble` (changed) | Dialog | Chosen by file name, format and size. Nothing is copied until you press Add. |
+| `find.empty` (changed) | Dialog | No file in {folders} looks like a document. Atlas skips licence and notice files, files named by random letters and digits, build and test files, empty files, and folders such as public, output, build and vendor. |
 
 F2 removes `emptyTitle`, `emptyBody`, `emptyFoundBody`, `emptyFoundAction`, `sources.dropHint`;
 F4 removes `find.searchHint` and `find.walkedRoots` (read at `FindDocumentsDialog.tsx:136,146`).
@@ -329,27 +329,50 @@ Added 2026-11-21 after the installed-app check. A test folder held 40 documents 
 | Web | Same; folder drop through `getAsFileSystemHandle` (Chrome, Edge), `webkitGetAsEntry` elsewhere; no reveal | Same import with relative paths from the dropped handle |
 | Windows | Same; paths stored with `/` | Rust tests on the Windows CI job |
 
+### Wording rules
+
+The owner rejected "the Library works from files" (the Library does not work) and "files from
+elsewhere" (elsewhere names no place). Every string in this spec, in every locale, follows these:
+
+- Atlas, the Library and agents do not work, think or want. Say what happens to the file.
+- No place word without its name: not "elsewhere", "other places", "here", "external" or "the
+  other side". Name the folder (`{folder}`, the sources folder), the app (Finder, File Explorer)
+  or the services (Notion, Jira).
+- A button says the action and where it goes: "Copy all 36 into the sources folder".
+- A notice says what happened, then what it means for the person.
+- Sentences say "the sources folder"; `sources/` appears only where a path is shown.
+- One word per thing: source, wiki page, the sources folder, the original file. ko never uses
+  the old word for the original file, so the two are not confused.
+
 ### Explaining it to the person
 
-- On the stage, `start.how`, one line under the body: "The Library works from files in the
-  sources folder. Files from elsewhere are copied in; the originals stay where they are."
-- In Usage (the header's help popover), three short rows: where sources live, that copies keep their folders and
-  leave the originals, and that an agent reads a source only when you give it a task (the privacy
-  line).
-- In the skipped line, the reason in the person's words, never a rule name.
+- The folder line (`start.where`) names the one place, and `start.copyNote` under it says what
+  adding does.
+- Usage (the header's help popover) gets three rows, `usage.where`, `usage.copy`, `usage.read`.
+- The skipped line gives each reason in the person's words, never a rule name.
 
-### Copy (en; ko, ja, zh in the pull request)
+### Copy (en; ko, ja, zh in the pull request, written to the rules above)
 
 | Key | Where | en |
 |---|---|---|
-| `start.how` | Under the stage body | The Library works from files in the sources folder. Files from elsewhere are copied in; the originals stay where they are. |
-| `found.title` | Found block | {count, plural, one {Found # document in this folder} other {Found # documents in this folder}} |
-| `found.copyAll` | Primary | Copy all into sources |
-| `found.choose` | Quiet | Choose files |
-| `drop.confirmLarge` | Before a large copy | Copy {count, number} files ({size}) into sources? |
-| `drop.stop` / `drop.stopped` | Copy line | Stop / Stopped. {count, number} files were copied. |
-| `drop.skipped` | After a copy | {count, plural, one {# file was not copied} other {# files were not copied}}: {reasons} |
-| `origin.changed` / `origin.recopy` | Source row | The original has changed since it was copied / Copy again |
+| `start.copyNote` | Under the folder line | Files outside the sources folder are copied in. The original files are not moved or deleted. |
+| `found.title` | Found block | {count, plural, one {Found # document} other {Found # documents}} |
+| `found.where` | Under it, with folder counts | In {folder}, outside the sources folder · {folderCounts} |
+| `found.copyAll` | Primary | {count, plural, one {Copy it into the sources folder} other {Copy all # into the sources folder}} |
+| `found.choose` | Quiet | Choose files to copy |
+| `drop.confirmLarge` | Before a large copy | Copy {count, number} files ({size}) into the sources folder? The original files stay where they are. |
+| `drop.confirm` / `drop.cancel` | Its buttons | Copy / Cancel |
+| `drop.stop` | Copy line | Stop copying |
+| `drop.stopped` | After Stop | Copying stopped. The {count, number} files copied before that stay in the sources folder. |
+| `drop.skipped` | After a copy | {count, plural, one {# file was not copied} other {# files were not copied}} |
+| `drop.skipped.same` / `.notDocument` / `.secretName` / `.licence` | Reasons | Same as a source already added / Not a document (images, program files and similar) / Named like a password or key file / Licence or notice file |
+| `drop.skippedShow` | Button | Show the files not copied |
+| `origin.changed` | Source row | The original file ({origin}) changed after it was copied |
+| `origin.recopy` | Its button | Copy the new version |
+| `origin.recopied` | Toast | Copied again. {pages, plural, one {# wiki page that cites it needs checking} other {# wiki pages that cite it need checking}}. |
+| `usage.where` | Usage row | Every source in the Library is a file in the sources folder inside {folder}. Files you add or remove there in {fileManagerName} show up by themselves. |
+| `usage.copy` | Usage row | Add files, drag and drop, and Copy all copy files into the sources folder, keeping their folders. The original files are not moved or deleted. |
+| `usage.read` | Usage row | Atlas sends your sources nowhere. An agent reads them only when you ask it to write wiki pages or answer a question, and what it reads may be sent to the agent's service. |
 
 ### Acceptance
 
@@ -506,3 +529,5 @@ None. Decided: ko jaryo, ja shiryo, zh unchanged, wiki kept. Reversing is a cata
   their folders, discovery offers Markdown the vault does not own, found files lead when they are
   in the open folder, folders can be dropped, large copies confirm and stop, skipped files are
   counted, and a changed original is noticed (F2b).
+- 2026-11-21: wording rules after the owner rejected "the Library works" and "elsewhere"; every
+  first-run string rewritten to name the folder, the app or the service, and Usage rows added.
