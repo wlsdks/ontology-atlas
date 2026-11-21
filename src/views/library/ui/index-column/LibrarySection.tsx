@@ -1,0 +1,924 @@
+"use client";
+
+import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/status-glyphs/ActionFeedbackGlyph';
+import { WorkGlyph } from '@/shared/motion/status-glyphs/WorkGlyph';
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { useLocale, type useTranslations } from "next-intl";
+
+import { CloudDownload, FilePlus2, FileText, ListFilter, Plus, Search, X } from "lucide-react";
+
+import { formatSourceBytes, sourceFolderOf, type LibrarySourceRow } from "@/entities/docs-vault";
+import { humanPageSlug, type LintFinding } from "@/features/library";
+import { cn } from "@/shared/lib/cn";
+import { controlClass } from "@/shared/ui/control-class";
+import { Button, Chip, Dialog, IconButton, RowButton, Tooltip } from "@/shared/ui";
+import { Input } from "@/shared/ui/fields/input";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import {
+  readLibraryIndexQuery,
+  writeLibraryIndexQuery,
+  writeLibraryIndexSegment,
+  type LibraryIndexSegment,
+} from "@/shared/lib/preferences/library-preferences";
+
+import { passageLabelText } from "@/features/library";
+import { captionWindow } from "../../lib/sources/caption-window";
+import { isIndexedSource, useSourceSearch } from "../../lib/sources/use-source-search";
+import { useVaultIndexHits } from "@/shared/lib/vault-folder/vault-index/use-vault-index-hits";
+import { useRovingRows } from "@/shared/lib/list-rows/use-roving-rows";
+import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
+import { useWindowedRows } from "@/shared/lib/list-rows/use-windowed-rows";
+import { SOURCE_STATE_INK } from "@/widgets/library-sources-overview";
+import { IndexGlyph } from "./IndexGlyph";
+import { WikiIndex, wikiDayText } from "./WikiIndex";
+import { WikiViewRows } from "./WikiViewRows";
+
+/** A source row before it is measured: one line of `text-body` in `RowButton` with its inset. */
+const SOURCE_ROW_ESTIMATE_PX = 36;
+/** Every page the wiki list can show for one query; the app's search command caps at the same. */
+const LIBRARY_INDEX_HITS = 5000;
+const NO_SOURCES: ReadonlySet<string> = new Set();
+const NO_FINDINGS: readonly LintFinding[] = [];
+const VIEW_CLOCK_TICK_MS = 60_000;
+import type { LibraryUiModel } from "@/features/library";
+import { WIKI_SECTION_ORDER } from "@/shared/lib/library/wiki-page-schema";
+
+const WIKI_SECTION_PREVIEW_KEYS = {
+  Summary: "summary",
+  Facts: "facts",
+  Decisions: "decisions",
+  "Open questions": "openQuestions",
+  "Not in sources": "notInSources",
+} as const;
+
+/**
+ * The index draws one list at a time, Sources or Wiki, chosen by the control `LibraryPage` draws;
+ * the inactive list renders nothing, so its rows and doors leave the tab order. A source still waiting
+ * for its wiki page wears a dot in its state's ink; one with a page wears nothing.
+ */
+
+/** Candidate rows drawn before the list folds; the rail's height at 14 inches fits five with the wiki list above. */
+
+export interface SourceGroupFilter {
+  label: string;
+  includes: (row: LibrarySourceRow) => boolean;
+  onClear: () => void;
+}
+
+export interface LibrarySectionProps {
+  model: LibraryUiModel;
+  /**
+   * Where the search field stands when the column's head offers a place for it; this component keeps
+   * owning its state through a portal.
+   */
+  searchHost?: HTMLElement | null;
+  selectedSlug: string | null;
+  onSelect: (slug: string) => void;
+  /**
+   * Opens a raw source in the reading pane.
+   *
+   * `anchor` arrives only from a search hit's caption, and means *open this file at this
+   * unit* — the same `{path, anchor}` a pressed citation sends, so one press lands on
+   * U1's passage section rather than at the top of the pane (slice U2).
+   */
+  onOpenSource: (row: LibrarySourceRow, anchor?: string) => void;
+  /** The source the reader is showing, so the selected row differs from a resting one. */
+  selectedSourcePath: string | null;
+  /**
+   * The anchor the reader is standing on, when the pane was opened at one. A caption lights only for a
+   * passage opened, not for a file opened plainly.
+   */
+  selectedSourceAnchor?: string | null;
+  /**
+   * The folder walk's own handles, so a search can read the words inside a source.
+   *
+   * The column asks for these rather than receiving finished results because the query
+   * lives here: the field, its state and the rows it filters are one unit, and lifting
+   * the query to `LibraryPage` to hand back matches would put the input's state a pane
+   * away from the input.
+   */
+  sourceHandles: Map<string, FileSystemFileHandle>;
+  /**
+   * The open folder's session identity, which keys the units a search keeps.
+   *
+   * Two browser folders can carry the same name, so the scope — not the path — is what
+   * stops one folder's text from answering another folder's search.
+   */
+  vaultScope: string;
+  /** The installed app's folder path; with it, the wiki list searches inside pages through the index. */
+  vaultRootPath?: string | null;
+  /** The one-click "add files" door. */
+  onAddFiles: () => void;
+  addFilesFeedback?: ActionFeedbackState;
+  /** Proposes candidates from the open folder and any bound project root. */
+  onFindDocuments: () => void;
+  /**
+   * The third door: documents that are not on this computer yet. It sits third because it is the one
+   * that reaches outside.
+   */
+  onImportFromService: () => void;
+  /** Starts a page a person writes by hand, from a title. Null where the folder cannot be written. */
+  onNewPage?: ((title: string) => void | Promise<boolean>) | null;
+  /** The latest Check wiki's findings, which put pages under "Needs a look"; stable between checks. */
+  findings?: readonly LintFinding[];
+  /** Wiki pages read so far while the folder is still being read; null once it is read. */
+  readingCount?: number | null;
+  /** The Check results view: what it holds, whether it is open, and the press that opens it. */
+  report?: {
+    count: number;
+    open: boolean;
+    onOpen: () => void;
+    /** A check is in flight right now. The row says so live, rather than wearing a label. */
+    running?: boolean;
+    /** A check finished and this person has not opened the report since. */
+    unseen?: boolean;
+  } | null;
+
+  /**
+   * Which of the two lists this column is showing. There is no "both": the switch above
+   * is exclusive, and rendering the inactive list `hidden` would leave its rows in the tab
+   * order and its doors reachable from the keyboard while nothing on screen names them.
+   */
+  segment: LibraryIndexSegment;
+  busy: boolean;
+  /** Sources the Continue request in flight named; their rows show it running, then their check draws. */
+  runningSources?: ReadonlySet<string>;
+  /** The state the band's press narrows the list to, or null for every source. */
+  stateFilter?: LibrarySourceRow["state"] | null;
+  /** The folder or file type picked on the Sources home, which narrows the list with a chip. */
+  groupFilter?: SourceGroupFilter | null;
+  t: ReturnType<typeof useTranslations<"library">>;
+}
+
+/**
+ * The doors and nothing that repeats the switch: the segmented control at the top is the column's
+ * head, so no second eyebrow is drawn.
+ */
+/**
+ * A search whose matches all sit on the other half of the switch names where they are and switches
+ * there, instead of an empty list under a count.
+ */
+function OtherHalf({
+  count,
+  segment,
+  t,
+}: {
+  count: number;
+  segment: LibraryIndexSegment;
+  t: ReturnType<typeof useTranslations<"library">>;
+}) {
+  return (
+    <>
+      {t("search.noneHere")}{" "}
+      <button
+        type="button"
+        data-testid="library-search-other-half"
+        onClick={() => writeLibraryIndexSegment(segment)}
+        /*
+         * Accent, not muted: in a quaternary caption a muted link reads as more caption, and this is the one
+         * way out of the dead end.
+         */
+        className={controlClass({ shape: "link", size: "sm", tone: "accent", hoverInk: "strong", className: "atlas-touch-floor" })}
+      >
+        {t(segment === "wiki" ? "search.showPages" : "search.showSources", { count })}
+      </button>
+    </>
+  );
+}
+
+/**
+ * Where an index chip's explanation opens: **into the reader, wrapped.**
+ *
+ * The shared panel has no measure of its own, so a sentence rendered as one line —
+ * measured 449px for "Find documents", from x 44 across the 0–64 nav rail and the
+ * bottom 8px of the search box above. `right` + `start` hangs it off the chip's own
+ * row into the free reader beside the column; the cap keeps it a short paragraph.
+ */
+const INDEX_CHIP_TIP = {
+  side: "right",
+  align: "start",
+  panelClassName: "max-w-[min(20rem,calc(100vw-2rem))] [word-break:keep-all]",
+} as const;
+
+/*
+ * One box edge and one text line for every control in the column: boxes stand on the column's `px-3`
+ * edge, and content starts after the same 1px edge, 10px pad and 16px glyph slot (`IndexGlyph`). The
+ * row carries a transparent edge so its inset matches the chip's.
+ */
+const INDEX_LIST_INSET = "px-3";
+const INDEX_ROW_INSET = "gap-1.5 border border-transparent px-2.5 py-1.5";
+/** A quiet door on the row text line, on the 28px step under a 32px primary. */
+const INDEX_QUIET_INSET = "gap-1.5 border border-transparent px-2.5 py-0.5";
+/**
+ * A caption with no glyph of its own still starts on the text line: it takes a control's transparent
+ * edge, pad and gap and leads with an empty `IndexGlyph`.
+ */
+const INDEX_TEXT_LINE = "flex gap-1.5 border-x border-transparent px-2.5";
+
+/** The log's ISO stamp as a person reads it; the raw stamp when it does not parse. */
+
+/**
+ * How long the search reads before the screen says it is reading: the threshold under which a state
+ * is a flicker rather than a message. Pinned by `LibrarySection.search.test.tsx`.
+ */
+const READING_TEXT_DELAY_MS = 200;
+
+/** One line of counting under a list. `text-caption`, because it is a footnote to rows. */
+function ListNote({ testId, children }: { testId: string; children: ReactNode }) {
+  return (
+    <p
+      data-testid={testId}
+      className="px-3 pt-1 text-caption leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+    >
+      {children}
+    </p>
+  );
+}
+
+export function LibrarySection({
+  model,
+  searchHost = null,
+  selectedSlug,
+  onSelect,
+  onOpenSource,
+  selectedSourcePath,
+  selectedSourceAnchor = null,
+  sourceHandles,
+  vaultScope,
+  vaultRootPath = null,
+  onAddFiles,
+  addFilesFeedback = 'idle',
+  onFindDocuments,
+  onImportFromService,
+  onNewPage = null,
+  findings = NO_FINDINGS,
+  readingCount = null,
+  report = null,
+  segment,
+  busy,
+  runningSources = NO_SOURCES,
+  stateFilter = null,
+  groupFilter = null,
+  t,
+}: LibrarySectionProps) {
+  /*
+   * Five candidate rows show, map kinds first since those carry the list's one door; the rest fold
+   * behind a count.
+   */
+  /*
+   * One search over both lists: headers keep the folder's totals and the line under the field says
+   * what matched. Sources are read on the keystroke, per file, kept for the session;
+   * `use-source-search.ts` owns that read.
+   */
+  /*
+   * The field comes back holding what was typed; `library-preferences.ts` owns the slot and why it
+   * is scoped to the folder and kept in session storage.
+   */
+  const [query, setQuery] = useState(() => readLibraryIndexQuery(vaultScope));
+  const changeQuery = (next: string) => {
+    setQuery(next);
+    writeLibraryIndexQuery(vaultScope, next);
+  };
+  const needle = query.trim().toLowerCase();
+  const search = useSourceSearch({
+    sources: model.sources,
+    sourceHandles,
+    vaultScope,
+    needle,
+    enabled: true,
+  });
+  /*
+   * A page matches on its title, summary and tags everywhere, and a page or a Markdown source also
+   * on its text in the installed app, through the same index the documents palette asks.
+   */
+  const { hits: indexHits } = useVaultIndexHits({ rootPath: vaultRootPath, query: needle, limit: LIBRARY_INDEX_HITS });
+  const indexedPaths = useMemo(() => (indexHits ? new Set(indexHits.map((hit) => hit.path)) : null), [indexHits]);
+  /*
+   * **Hold the reading sentence back for `READING_TEXT_DELAY_MS`.** Measured on the
+   * day-one folder: the six files are read and split in 34 ms, which draws the state for
+   * two frames — a flicker, not an explanation. Past the delay the folder really is slow
+   * enough for the sentence to be read, which is the only case it is for. `data-phase`
+   * stays truthful from the first keystroke regardless; only the words wait.
+   */
+  const [readingHeld, setReadingHeld] = useState<string | null>(null);
+  useEffect(() => {
+    if (search.phase !== "reading") return;
+    const timer = window.setTimeout(() => setReadingHeld(needle), READING_TEXT_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [needle, search.phase]);
+  /*
+   * Derived, not reset: the state names **which query** waited long enough, so leaving the
+   * reading phase or typing another character makes this false without a second
+   * `setState` — the cascading-render shape `react-hooks/set-state-in-effect` rejects.
+   */
+  const readingShown = search.phase === "reading" && readingHeld === needle;
+  /*
+   * Path **or** text. The path match survives because it is the one that still works
+   * while the file is being read, and because a person who types part of a filename
+   * means the filename.
+   */
+  /*
+   * An unread row stays until its own read says otherwise: while the phase is `reading`, a file not
+   * yet read is neither a match nor a miss, so the list narrows as reads land.
+   */
+  /*
+   * **Memoised on what the list is actually made of.** Recomputed every render, the array was
+   * a new identity each time, so the effect below — the one that scrolls the list to the open
+   * file — re-fired on renders that had nothing to do with the list and dragged the column
+   * back under the person's own scrolling.
+   */
+  const visibleSources = useMemo(
+    () =>
+      needle
+        ? model.sources.filter(
+            (row) =>
+              row.path.toLowerCase().includes(needle) ||
+              search.hits.has(row.path) ||
+              (indexedPaths?.has(row.path) ?? false) ||
+              (search.phase === "reading" && !isIndexedSource(row.path) && !search.read.has(row.path)),
+          )
+        : model.sources,
+    [indexedPaths, model.sources, needle, search.hits, search.phase, search.read],
+  );
+  /* A state pressed in the band and a row picked on the home each narrow what the search left. */
+  const listedSources = useMemo(
+    () =>
+      stateFilter || groupFilter
+        ? visibleSources.filter((row) => (!stateFilter || row.state === stateFilter) && (!groupFilter || groupFilter.includes(row)))
+        : visibleSources,
+    [groupFilter, stateFilter, visibleSources],
+  );
+  const [sourceWindow, sourceListRef, scrollToSource] = useWindowedRows({ count: listedSources.length, estimate: SOURCE_ROW_ESTIMATE_PX });
+  const sourceRoving = useRovingRows({ count: listedSources.length, listRef: sourceListRef, scrollToRow: scrollToSource, rendered: sourceWindow });
+  const { onRowFocus: sourceRowFocus } = sourceRoving;
+  useEffect(() => {
+    if (!selectedSourcePath) return;
+    const index = listedSources.findIndex((row) => row.path === selectedSourcePath);
+    if (index < 0) return;
+    scrollToSource(index);
+    sourceRowFocus(index);
+  }, [listedSources, scrollToSource, selectedSourcePath, sourceRowFocus]);
+  /* Memoised for the same reason: the index rebuilds its matches from this array. */
+  const visiblePages = useMemo(
+    () =>
+      needle
+        ? model.wikiPages.filter(
+            (page) =>
+              page.title.toLowerCase().includes(needle) ||
+              (page.summary ?? "").toLowerCase().includes(needle) ||
+              (page.tags ?? []).some((tag) => tag.toLowerCase().includes(needle)) ||
+              (indexedPaths?.has(`${page.slug}.md`) ?? false),
+          )
+        : model.wikiPages,
+    [indexedPaths, model.wikiPages, needle],
+  );
+  const [newPageOpen, setNewPageOpen] = useState(false);
+  const [newPageTitle, setNewPageTitle] = useState("");
+  const [newPageCreating, setNewPageCreating] = useState(false);
+  const closeNewPage = () => {
+    setNewPageOpen(false);
+    setNewPageTitle("");
+  };
+  const createNewPage = async () => {
+    const title = newPageTitle.trim();
+    if (!title || !onNewPage || busy || newPageCreating) return;
+    setNewPageCreating(true);
+    try {
+      const created = await onNewPage(title);
+      if (created !== false) closeNewPage();
+    } finally {
+      setNewPageCreating(false);
+    }
+  };
+  const hasSources = model.sources.length > 0;
+  const locale = useLocale();
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), VIEW_CLOCK_TICK_MS);
+    return () => window.clearInterval(timer);
+  }, []);
+  const newPagePreviewIsExample = newPageTitle.trim() === "";
+  const newPagePreviewTitle = newPageTitle.trim() || t("wiki.newPageExampleTitle");
+  const newPagePreviewPath = humanPageSlug(newPagePreviewTitle) + ".md";
+
+  /*
+   * One field filters whichever list the switch shows, on path, title, page text and source text. The
+   * count is provisional while files arrive and the reading line replaces it. The cap (200 files, 20
+   * MB) is named where it binds.
+   */
+  const searchFieldWith = (trailing: ReactNode) =>
+    model.sources.length + model.wikiPages.length > 0 || trailing ? (
+      <div className={searchHost ? "flex min-w-0 flex-1 flex-col gap-1" : "flex flex-none flex-col gap-1 px-3 pb-2"}>
+        <div className="flex min-w-0 items-center gap-1.5">
+        {/* The field's words start on the column's text line: the box is drawn here with the chips' edge,
+           inset and slot, and the field inside is `bare`. The slot holds a filter mark since the magnifier
+           belongs to Find documents. A `div`, not a `label`. */}
+        <div data-testid="library-search-box" className="atlas-touch-floor flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 transition-colors focus-within:border-[color:var(--color-indigo-focus-ring)]">
+          <IndexGlyph>
+            <ListFilter size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+          </IndexGlyph>
+          <Input
+            data-testid="library-search"
+            frame="bare"
+            className="min-w-0 flex-1"
+            type="search"
+            aria-label={t("search.placeholder")}
+            placeholder={t("search.placeholder")}
+            value={query}
+            onChange={(event) => changeQuery(event.target.value)}
+          />
+        </div>
+        {trailing}
+        </div>
+        {/* The line is always present, even empty: appearing is a layout event that would push the list on
+           the first keystroke. One line is reserved through `--leading-caption`; hosted in the head, the
+           head drops its bottom padding so the reserve is the whole gap. */}
+        <p
+          data-testid="library-search-matches"
+          data-phase={search.phase}
+          data-reading-shown={readingShown ? "true" : "false"}
+          /* Polite, not assertive: the count settling as files land is progress a
+             screen reader should hear once it has, not on every published file. */
+          aria-live="polite"
+          className={`min-h-[var(--leading-caption)] text-caption text-[color:var(--color-text-quaternary)] ${INDEX_TEXT_LINE}`}
+        >
+          <IndexGlyph />
+          {!needle ? null : search.phase === "reading" ? (
+            /*
+             * ⚠️ **The reading sentence waits, and its counter is not announced.**
+             *
+             * At first-day size the whole read lands in 34 ms, so printing the state
+             * immediately is a one-frame flicker of a sentence nobody can read — a screen
+             * that flashes an explanation is worse than one that says nothing for a tenth
+             * of a second. And `{read}/{total}` changes once per file: left inside a live
+             * region on a capped folder it is **200 utterances** of a number, which buries
+             * the two sentences that are worth hearing. So the counter rides in an
+             * `aria-hidden` span while the live region carries the stable sentence.
+             */
+            readingShown ? (
+              t.rich("search.reading", {
+                read: search.readCount,
+                total: search.plannedCount,
+                count: (chunks) => <span aria-hidden>{chunks}</span>,
+              })
+            ) : null
+          ) : (
+            t("search.matches", {
+              sources: visibleSources.length,
+              passages: search.passageCount,
+              pages: visiblePages.length,
+            })
+          )}
+        </p>
+        {/*
+         * The cap on its own line, and a persistent one: appended to the line above it
+         * wrapped to a second line on one folder and not on the next, which moves the list
+         * by a line for a fact that has not changed.
+         */}
+        {needle && search.capped ? (
+          <p
+            data-testid="library-search-capped"
+            className={`text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all] ${INDEX_TEXT_LINE}`}
+          >
+            <IndexGlyph />
+            {t("search.capped", { count: search.plannedCount })}
+          </p>
+        ) : null}
+      </div>
+    ) : null;
+
+  if (segment === "sources") {
+    const searchField = searchFieldWith(null);
+    return (
+      /* No `min-h-0` and no overflow: the column above owns the one scroller, and a
+         section that could shrink is a section that can cut a row in half. */
+      <section data-testid="library-sources" className={cn("flex flex-col pb-1", searchHost ? "pt-1.5" : "pt-3")}>
+        {searchHost && searchField ? createPortal(searchField, searchHost) : searchField}
+        {/* One clear primary, then two quiet doors on the same text line, each at full width so no label is cut. */}
+        <div data-testid="library-source-actions" className="flex flex-col gap-0.5 px-3 pb-2">
+          <Tooltip content={t("sources.addTooltip")} {...INDEX_CHIP_TIP}>
+            <Chip
+              data-testid="library-add-files"
+              aria-busy={addFilesFeedback === 'working' || undefined}
+              onClick={onAddFiles}
+              disabled={busy}
+              tone="secondary"
+              className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
+            >
+              <IndexGlyph><ActionFeedbackGlyph state={addFilesFeedback} icon={<FilePlus2 size={ICON_SIZE.sm} aria-hidden />} size={ICON_SIZE.sm} /></IndexGlyph>
+              <span className="min-w-0 truncate">{t("sources.add")}</span>
+            </Chip>
+          </Tooltip>
+          <Tooltip content={t("sources.findTooltip")} {...INDEX_CHIP_TIP}>
+            <RowButton
+              data-testid="library-find-documents"
+              onClick={(event) => {
+                event.currentTarget.focus({ preventScroll: true });
+                onFindDocuments();
+              }}
+              disabled={busy}
+              size="sm"
+              tone="default"
+              hoverSurface="lift"
+              hoverInk="strong"
+              className={cn("w-full justify-start", INDEX_QUIET_INSET)}
+            >
+              <IndexGlyph><Search size={ICON_SIZE.sm} aria-hidden /></IndexGlyph>
+              <span className="min-w-0 truncate">{t("sources.find")}</span>
+            </RowButton>
+          </Tooltip>
+          <Tooltip content={t("sources.importTooltip")} {...INDEX_CHIP_TIP}>
+            <RowButton
+              data-testid="library-import-open"
+              onClick={(event) => {
+                event.currentTarget.focus({ preventScroll: true });
+                onImportFromService();
+              }}
+              disabled={busy}
+              size="sm"
+              tone="default"
+              hoverSurface="lift"
+              hoverInk="strong"
+              className={cn("w-full justify-start", INDEX_QUIET_INSET)}
+            >
+              <IndexGlyph><CloudDownload size={ICON_SIZE.sm} aria-hidden /></IndexGlyph>
+              <span className="min-w-0 truncate">{t("sources.import")}</span>
+            </RowButton>
+          </Tooltip>
+        </div>
+
+        {hasSources ? (
+          <>
+            {groupFilter ? (
+              <div data-testid="library-source-list-head" className={`flex h-7 items-center gap-2 ${INDEX_LIST_INSET}`}>
+                <Chip
+                  data-testid="library-source-group-chip"
+                  onClick={groupFilter.onClear}
+                  title={t("sourcesHome.panel.clear")}
+                  aria-label={`${groupFilter.label} · ${t("sourcesHome.panel.clear")}`}
+                  tone="muted"
+                  className="min-w-0 max-w-full gap-1 hover:text-[color:var(--color-text-primary)]"
+                >
+                  <span className="min-w-0 truncate">{groupFilter.label}</span>
+                  <X size={ICON_SIZE.sm} aria-hidden className="flex-none" />
+                </Chip>
+              </div>
+            ) : null}
+            <ul
+              ref={sourceListRef}
+              onKeyDown={sourceRoving.onKeyDown}
+              data-testid="library-source-list"
+              data-state-filter={stateFilter ?? undefined}
+              /* The list says which phase drew it, so a proof can assert that a finished
+                 answer and an unfinished read never share a frame. */
+              data-phase={search.phase}
+              data-window={`${sourceWindow.start}-${sourceWindow.end}`}
+              aria-label={t("sources.listAria")}
+              className={`flex flex-col gap-0.5 ${INDEX_LIST_INSET}`}
+              /* Only the rows in view are in the DOM (`useWindowedRows`); the pads stand in
+                 for the rest so the scroller's height is the whole list's. */
+              style={sourceWindow.before || sourceWindow.after ? { paddingTop: sourceWindow.before, paddingBottom: sourceWindow.after } : undefined}
+            >
+              {listedSources.slice(sourceWindow.start, sourceWindow.end).map((row, offset) => {
+                const rowIndex = sourceWindow.start + offset;
+                const active = row.path === selectedSourcePath;
+                const stateLabel = t(`sources.state.${row.state}.label`);
+                const hit = needle ? search.hits.get(row.path) : undefined;
+                /* The pane is open **at this unit** — not merely on this file. */
+                const hitOpen = Boolean(hit && active && selectedSourceAnchor === hit.anchor);
+                const folder = sourceFolderOf(row.path);
+                return (
+                  <li key={row.path}>
+                    <RowButton
+                      active={active}
+                      aria-current={active ? "true" : undefined}
+                      data-testid={`library-source-${row.path}`}
+                      data-row-index={rowIndex}
+                      tabIndex={sourceRoving.tabIndexOf(rowIndex)}
+                      onFocus={() => sourceRoving.onRowFocus(rowIndex)}
+                      onClick={() => onOpenSource(row)}
+                      // The full name first: a 280px column truncates, and the row's own
+                      // hover text is the only place the rest of the name exists.
+                      title={`${row.name} · ${formatSourceBytes(row.bytes)}\n${t(`sources.state.${row.state}.hint`, {
+                        pages: row.citedBy.join(", ") || t("sources.state.nobody"),
+                      })}`}
+                      hoverSurface="lift"
+                      hoverInk="strong"
+                      className={cn("group relative", INDEX_ROW_INSET, active && "bg-[color:var(--color-indigo-a16)]")}
+                    >
+                      {/* The same leading glyph the tree, pinned and recent rows carry, so
+                          the sidebar keeps one left edge from top to bottom. */}
+                      <IndexGlyph><FileText size={ICON_SIZE.sm} className="opacity-60" aria-hidden /></IndexGlyph>
+                      <span className="min-w-0 flex-1 truncate">{row.name}</span>
+                      {/* Copies keep their folders, so two rows may share a name; the folder tells them apart. */}
+                      {folder ? (
+                        <span data-testid="library-source-folder" className="max-w-[45%] truncate text-label text-[color:var(--color-text-tertiary)]">
+                          {folder}
+                        </span>
+                      ) : null}
+                      {/* Format is a fact the directory listing already holds. The tag is drawn only when the name does not
+                         already say it, since `row.format` is the name's extension; a name with no extension still gets
+                         the word. */}
+                      {row.format && row.name.toLowerCase().endsWith(`.${row.format.toLowerCase()}`) ? null : (
+                        <span
+                          data-testid="library-source-format"
+                          className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]"
+                        >
+                          {row.format ? row.format.toUpperCase() : t("sources.noFormat")}
+                        </span>
+                      )}
+                      {runningSources.has(row.path) ? (
+                        /* Named by the request in flight: it runs here, and its check draws when the page lands. */
+                        <span data-testid={`library-source-running-${row.state === "compiled" ? "done" : "running"}`} className="flex flex-none items-center">
+                          <WorkGlyph phase={row.state === "compiled" ? "done" : "running"} size={ICON_SIZE.sm} />
+                          <span className="sr-only">{stateLabel}</span>
+                        </span>
+                      ) : row.state === "compiled" ? (
+                        /* Done needs no mark: the eye is left to find the rows that wait. */
+                        <span data-testid="library-source-state-compiled" className="sr-only">
+                          {stateLabel}
+                        </span>
+                      ) : (
+                        /* One dot in the state's ink, the ink of its segment in the bars above; the word rides in `title`. */
+                        <span
+                          data-testid={`library-source-state-${row.state}`}
+                          title={stateLabel}
+                          className="flex size-4 flex-none items-center justify-center"
+                        >
+                          <span aria-hidden className="size-2 rounded-full" style={{ background: SOURCE_STATE_INK[row.state] }} />
+                          <span className="sr-only">{stateLabel}</span>
+                        </span>
+                      )}
+                    </RowButton>
+                    {hit ? (
+                      /*
+                       * The passage the search found is its own press under the row: the row opens the file, this opens it
+                       * at this unit through the same `{path, anchor}` a citation sends. `text-label`, not `text-caption`,
+                       * since these are the document's own words (`.claude/rules/design.md`).
+                       */
+                      <button
+                        type="button"
+                        data-testid={`library-source-hit-${row.path}`}
+                        /* The address this press opens, readable without pressing it —
+                           the marker a proof asserts the landing against. */
+                        data-anchor={hit.anchor}
+                        onClick={() => onOpenSource(row, hit.anchor)}
+                        title={hit.text}
+                        /*
+                         * ⚠️ **`location`, not `page`.** The pane is already the page; this
+                         * says where inside it the reader is standing, which is what
+                         * `aria-current="location"` is for — and it is the one state that
+                         * tells a returning reader which of several captions they followed.
+                         */
+                        aria-current={hitOpen ? "location" : undefined}
+                        className={controlClass({
+                          shape: "row",
+                          size: "xs",
+                          tone: "secondary",
+                          hoverInk: "strong",
+                          hoverSurface: "lift",
+                          active: hitOpen,
+                          /* The touch floor, because this control rests at 28px while the rows above it are 36. */
+                          className: `atlas-touch-floor w-full ${INDEX_ROW_INSET} pl-8`,
+                        })}
+                      >
+                        {/*
+                         * ⚠️ **The address is the accent link ink, the document's words are
+                         * not.** At rest this control was indistinguishable from a caption —
+                         * the same false negative this file already ruled on for the
+                         * other-half link, where a muted link read as more caption. One
+                         * element carries the affordance; tinting the quoted line as well
+                         * would dress the file's own words as a control.
+                         */}
+                        <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-indigo-accent)]">
+                          {passageLabelText(hit.label, hit.anchor, t)}
+                        </span>
+                        {/* One line, clipped, and windowed onto the phrase when the match
+                            sits past what one line shows (`caption-window.ts`). The full
+                            unit is the `title` and the pane. */}
+                        <span className="min-w-0 flex-1 truncate text-left">
+                          {captionWindow(hit.text, needle)}
+                        </span>
+                      </button>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+            {/* Not while reading is unfinished: this note is a finished answer and must not print under a line
+               saying `0/6`. */}
+            {needle && search.phase !== "reading" && visibleSources.length === 0 && visiblePages.length > 0 ? (
+              <ListNote testId="library-search-other-half-note">
+                <OtherHalf count={visiblePages.length} segment="wiki" t={t} />
+              </ListNote>
+            ) : null}
+            {/* A search that matches nowhere says so in a sentence. This covers both halves empty and waits for
+               reading to finish, like the other-half note. */}
+            {groupFilter && stateFilter && listedSources.length === 0 && visibleSources.length > 0 ? (
+              <div data-testid="library-source-list-none" className={`flex flex-col items-start gap-1.5 ${INDEX_LIST_INSET}`}>
+                <ListNote testId="library-source-list-none-note">{t("sourcesHome.listNone")}</ListNote>
+                <Chip data-testid="library-source-list-none-clear" onClick={groupFilter.onClear} tone="muted" className="ml-3">
+                  {t("sourcesHome.panel.clear")}
+                </Chip>
+              </div>
+            ) : null}
+            {needle && search.phase !== "reading" && visibleSources.length === 0 && visiblePages.length === 0 ? (
+              <ListNote testId="library-search-nothing-note">{t("search.nothing", { needle })}</ListNote>
+            ) : null}
+            {/* The waiting count is not repeated here: the home strip's pressable clause and the header strip
+               carry it, and a third copy would say the fact twice in one viewport. */}
+          </>
+        ) : (
+          <p
+            data-testid="library-sources-empty"
+            className="px-3 pb-1 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+          >
+            {needle && visiblePages.length > 0 ? (
+              <OtherHalf count={visiblePages.length} segment="wiki" t={t} />
+            ) : (
+              t("sources.empty")
+            )}
+          </p>
+        )}
+      </section>
+    );
+  }
+
+  /* "+" in the tool row starts a page a person writes, through the centred dialog. */
+  const newPageControl = onNewPage ? (
+    <>
+      <IconButton
+        data-testid="library-new-page"
+        label={t("wiki.newPage")}
+        onClick={() => setNewPageOpen(true)}
+        disabled={busy}
+        aria-expanded={newPageOpen}
+        aria-haspopup="dialog"
+        size="lg"
+        tone="muted"
+        hoverInk="strong"
+        hoverSurface="lift"
+        className="atlas-touch-floor border border-[color:var(--color-border-soft)]"
+      >
+        <Plus size={ICON_SIZE.sm} aria-hidden />
+      </IconButton>
+      <Dialog
+        open={newPageOpen}
+        onClose={closeNewPage}
+        labelledBy="library-new-page-title-heading"
+        testId="library-new-page-row"
+        size="md"
+        className="max-h-[calc(100vh-var(--chrome-inset)*2)] overflow-y-auto flex flex-col gap-4"
+      >
+        <h2
+          id="library-new-page-title-heading"
+          className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+        >
+          {t("wiki.newPageDialogTitle")}
+        </h2>
+        <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
+          {t("wiki.newPageDialogBody")}
+        </p>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            createNewPage();
+          }}
+        >
+          <Input
+            data-testid="library-new-page-title"
+            size="md"
+            label={t("wiki.newPageTitle")}
+            placeholder={t("wiki.newPageTitleExample")}
+            value={newPageTitle}
+            onChange={(event) => setNewPageTitle(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !isImeComposing(event)) {
+                event.preventDefault();
+                void createNewPage();
+              }
+            }}
+          />
+          <section
+            aria-label={t("wiki.newPagePreviewTitle")}
+            className="rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]"
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <h3 className="text-label font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+                {t("wiki.newPagePreviewTitle")}
+              </h3>
+              <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                {t("wiki.newPageFormat")}
+              </span>
+            </div>
+            <p className="mt-2 break-all font-mono text-label text-[color:var(--color-text-secondary)]">
+              {newPagePreviewPath}
+            </p>
+            {/* Held, not removed, once a title is typed: the dialog is centred, so a line leaving the preview
+               would move the field under the caret. `invisible` keeps the height. */}
+            <p
+              data-testid="library-new-page-example-note"
+              aria-hidden={!newPagePreviewIsExample || undefined}
+              className={cn(
+                "mt-1 text-caption text-[color:var(--color-text-quaternary)]",
+                !newPagePreviewIsExample && "invisible",
+              )}
+            >
+              {t("wiki.newPagePreviewExample")}
+            </p>
+            <p className="mt-2 text-caption text-[color:var(--color-text-tertiary)]">
+              {t("wiki.newPageMetadata")}
+            </p>
+            <p className="mt-3 border-t border-[color:var(--color-border-soft)] pt-3 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+              {t("wiki.newPageStructure")}
+            </p>
+            <ol className="mt-2 flex flex-col gap-1.5">
+              {WIKI_SECTION_ORDER.map((section) => (
+                <li
+                  key={section}
+                  className="flex flex-wrap items-baseline gap-x-2 text-label text-[color:var(--color-text-secondary)]"
+                >
+                  <span className="font-mono">## {section}</span>
+                  <span className="text-[color:var(--color-text-quaternary)]">
+                    {t("wiki.newPageSection." + WIKI_SECTION_PREVIEW_KEYS[section])}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
+          <div className="-mx-4 -mb-4 flex justify-end gap-2 border-t border-[color:var(--color-divider)] px-4 py-3">
+            <Button variant="ghost" className="atlas-touch-floor" onClick={closeNewPage}>
+              {t("wiki.newPageCancel")}
+            </Button>
+            <Button
+              data-testid="library-new-page-make"
+              type="submit"
+              className="atlas-touch-floor"
+              disabled={busy || newPageCreating || newPageTitle.trim() === ""}
+            >
+              {t("wiki.newPageCreate")}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+    </>
+  ) : null;
+
+  const searchField = searchFieldWith(newPageControl);
+  const lastLogMs = Math.max(
+    Date.parse(model.log.lastCompile?.at ?? "") || Number.NEGATIVE_INFINITY,
+    Date.parse(model.log.lastLint?.at ?? "") || Number.NEGATIVE_INFINITY,
+  );
+  const lastLintMs = Date.parse(model.log.lastLint?.at ?? "");
+  const reportCount = report?.count ?? 0;
+  const checkValue = reportCount > 0
+    ? reportCount.toLocaleString(locale)
+    : Number.isFinite(lastLintMs)
+      ? wikiDayText(lastLintMs, nowMs, locale, t) ?? ""
+      : t("wikiIndex.views.checkNever");
+  const logValue = Number.isFinite(lastLogMs)
+    ? wikiDayText(lastLogMs, nowMs, locale, t) ?? ""
+    : t("wikiIndex.views.logNone");
+
+  return (
+    /* `min-h-0 flex-1`: the index below owns its scroller, so the column above never scrolls this half. */
+    <section data-testid="library-wiki" className={cn("flex min-h-0 flex-1 flex-col", searchHost ? "pt-1.5" : "pt-3")}>
+      {searchHost && searchField ? createPortal(searchField, searchHost) : searchField}
+      <WikiViewRows
+        logLabel={t("wikiIndex.views.log")}
+        logValue={logValue}
+        checkLabel={t("report.title")}
+        checkValue={checkValue}
+        checkOpen={report?.open ?? false}
+        onOpenCheck={report?.onOpen ?? (() => {})}
+        checkRunning={report?.running ?? false}
+        checkUnseen={report?.unseen ?? false}
+        runningText={t("report.running")}
+        unseenText={t("report.unseen")}
+      />
+      <div aria-hidden className="mx-4 h-px flex-none bg-[color:var(--color-divider)]" />
+      <WikiIndex
+        model={model}
+        findings={findings}
+        vaultScope={vaultScope}
+        selectedSlug={selectedSlug}
+        onOpenPage={onSelect}
+        onOpenCheckResults={report?.onOpen ?? (() => {})}
+        onEmptyPress={hasSources ? () => writeLibraryIndexSegment("sources") : onAddFiles}
+        readingCount={readingCount}
+        matches={needle ? visiblePages : null}
+      />
+      {/* The same rule as the sources half: a count still being read is not an answer. */}
+      {needle && search.phase !== "reading" && visiblePages.length === 0 && visibleSources.length > 0 ? (
+        <ListNote testId="library-search-other-half-note">
+          <OtherHalf count={visibleSources.length} segment="sources" t={t} />
+        </ListNote>
+      ) : null}
+      {needle && search.phase !== "reading" && visiblePages.length === 0 && visibleSources.length === 0 && model.wikiPages.length > 0 ? (
+        <ListNote testId="library-search-nothing-note">{t("search.nothing", { needle })}</ListNote>
+      ) : null}
+    </section>
+  );
+}

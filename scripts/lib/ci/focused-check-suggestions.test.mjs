@@ -2068,6 +2068,17 @@ describe('security surfaces', () => {
     }
   });
 
+  it('keeps the Library screens and the model files behind them on the security contracts', () => {
+    for (const path of [
+      'src/views/library/ui/wiki/WikiCitationPopover.tsx',
+      'src/views/library/ui/questions/desk/DeskReport.tsx',
+      'src/views/library/model/turns/use-library-turns.ts',
+      'src/views/library/model/reader/reader-landing.ts',
+    ]) {
+      assert.ok(securityRow(path), path);
+    }
+  });
+
   it('stays silent outside every security surface', () => {
     for (const path of ['src/shared/lib/cn.ts', 'mcp/src/vault/vault.test.mjs', 'docs/README.md', 'cli/src/index.mjs']) {
       assert.equal(securityRow(path), undefined, path);

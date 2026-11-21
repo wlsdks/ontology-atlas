@@ -4,7 +4,7 @@ import {
   type LibraryUiModel,
   type RetainedAnswerHead,
 } from "@/features/library";
-import type { LibraryHomeStripDoor } from "../../ui/parts/LibraryHomeStrip";
+import type { LibraryHomeStripDoor } from "../../ui/home/LibraryHomeStrip";
 import type { Dispatch, SetStateAction } from "react";
 import type { LibrarySelection, LibraryHomeSurface } from "../library-selection";
 

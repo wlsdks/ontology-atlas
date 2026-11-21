@@ -1,7 +1,7 @@
 import { sourceNeedsCompile, type LibrarySourceRow } from "@/entities/docs-vault";
 import { PANEL_LIST_ROWS, type SourcesNextBatch } from "@/widgets/library-sources-overview";
 
-import type { ContinueBatch } from "../../ui/parts/progress/SourceProgressBand";
+import type { ContinueBatch } from "../../ui/progress/SourceProgressBand";
 
 /**
  * What the overview's panel lists: the files the request in flight still writes, top first, then the

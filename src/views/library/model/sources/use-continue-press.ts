@@ -5,7 +5,7 @@ import { useCallback, useMemo } from "react";
 import type { LibrarySourceRow } from "@/entities/docs-vault";
 
 import { useCompileBatch, type CompileBatchState } from "../../lib/compile/use-compile-batch";
-import type { ContinueBatch } from "../../ui/parts/progress/SourceProgressBand";
+import type { ContinueBatch } from "../../ui/progress/SourceProgressBand";
 
 /**
  * The one Compile press every door shares: `press` picks the next batch, `pressFor` takes the

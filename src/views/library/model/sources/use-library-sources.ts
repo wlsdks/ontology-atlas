@@ -27,7 +27,7 @@ import { revealTauriSourcesFolder, revealTauriVaultFile } from "@/shared/lib/vau
 import { useToast } from "@/shared/ui";
 import { hostFileManager } from "./file-manager";
 import type { CopyRequest } from "./source-drop";
-import type { FoundInFolderSummary } from "../../ui/parts/first-run/FoundInFolder";
+import type { FoundInFolderSummary } from "../../ui/first-run/FoundInFolder";
 
 /** Found files in the open folder lead; files only a bound code root holds stay a suggestion. */
 function splitByRoot(candidates: readonly SourceCandidate[], openRoot: string) {

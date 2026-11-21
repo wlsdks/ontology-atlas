@@ -88,7 +88,7 @@
     {
       "key": "frontend:runtime:exports:src/features/library/index.ts:retainedAnswerHeads",
       "reason": "The questions list test builds real answer heads through the reducer instead of hand-made ones; test files are not runtime entries, so the lane cannot see this consumer.",
-      "consumer": "src/views/library/ui/parts/questions/LibraryQuestions.test.tsx",
+      "consumer": "src/views/library/ui/questions/LibraryQuestions.test.tsx",
       "witness": "retainedAnswerHeads"
     },
     {

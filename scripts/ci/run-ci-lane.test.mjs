@@ -150,7 +150,7 @@ test('unmapped browser work runs the merge smoke set, not the whole suite', () =
 
 test('a mapped post-merge spec rides beside the smoke set before merge', () => {
   const plan = buildImpactPlan({ files: [
-    'src/views/library/ui/parts/questions/LibraryQuestionDesk.tsx',
+    'src/views/library/ui/questions/LibraryQuestionDesk.tsx',
     'src/views/guide/ui/GuidePage.tsx',
   ] });
   assert.equal(plan.lanes.e2e.mode, 'smoke');
@@ -159,14 +159,15 @@ test('a mapped post-merge spec rides beside the smoke set before merge', () => {
 });
 
 test('a change inside the question desk folder selects the desk spec', () => {
-  const plan = buildImpactPlan({ files: ['src/views/library/ui/parts/questions/desk/DeskReport.tsx'] });
+  const plan = buildImpactPlan({ files: ['src/views/library/ui/questions/desk/DeskReport.tsx'] });
   const [command] = commandsForLane({ lane: 'e2e', plan, shard: '1/8' });
   assert.match(command, / --only=library\/answers\/library-question-desk\.spec\.ts/);
 });
 
 test('a change inside the wiki reader folder or its passage read selects the reader spec', () => {
   for (const file of [
-    'src/views/library/ui/parts/wiki/WikiCitationPopover.tsx',
+    'src/views/library/ui/wiki/WikiCitationPopover.tsx',
+    'src/views/library/model/reader/reader-landing.ts',
     'src/views/library/lib/sources/use-cited-passage.ts',
     'src/shared/lib/library/source-passage.ts',
   ]) {

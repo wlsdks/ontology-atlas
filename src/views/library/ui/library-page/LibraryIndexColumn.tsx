@@ -15,7 +15,7 @@ import { Chip } from "@/shared/ui";
 import { useToast } from "@/shared/ui/toast/toast";
 import { libraryProviderDisclosure } from "../../lib/compile/compile-availability";
 import { useLibraryAgent } from "../../lib/agent/use-library-agent";
-import { LibrarySection, type SourceGroupFilter } from "../parts/index-column/LibrarySection";
+import { LibrarySection, type SourceGroupFilter } from "../index-column/LibrarySection";
 import type { LibraryUiModel } from "@/features/library";
 import type { LibrarySourceRow, VaultDoc } from "@/entities/docs-vault";
 import type { LibrarySelection } from "../../model/library-selection";

@@ -3,13 +3,13 @@ import { useTranslations } from "next-intl";
 
 import { copyNeedsConfirm, dismissSourceCopy, stopSourceCopy } from "@/features/library";
 
-import { AgentDoor } from "../parts/agent/AgentDoor";
-import { FoundInFolder } from "../parts/first-run/FoundInFolder";
-import { FoundSuggestion } from "../parts/first-run/FoundSuggestion";
-import { LibraryStartStage } from "../parts/first-run/LibraryStartStage";
-import { LargeCopyConfirm, SkippedFilesDialog } from "../parts/first-run/SourceCopyDialogs";
-import { SourceCopyLine } from "../parts/first-run/SourceCopyLine";
-import { SourceDropArea } from "../parts/first-run/SourceDropArea";
+import { AgentDoor } from "../agent/AgentDoor";
+import { FoundInFolder } from "../first-run/FoundInFolder";
+import { FoundSuggestion } from "../first-run/FoundSuggestion";
+import { LibraryStartStage } from "../first-run/LibraryStartStage";
+import { LargeCopyConfirm, SkippedFilesDialog } from "../first-run/SourceCopyDialogs";
+import { SourceCopyLine } from "../first-run/SourceCopyLine";
+import { SourceDropArea } from "../first-run/SourceDropArea";
 import type { CopyRequest } from "../../model/sources/source-drop";
 import { useSourceCopy, useSourceDrop } from "../../model/sources/use-source-drop";
 import type { useLibrarySources } from "../../model/sources/use-library-sources";
