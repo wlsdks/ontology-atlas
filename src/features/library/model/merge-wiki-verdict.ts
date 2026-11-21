@@ -21,8 +21,6 @@ export interface WikiVerdictLike {
  * findings one way.
  */
 export { isWikiFolderCode };
-/** Kept under its original name: every Library surface already imports this spelling. */
-export const isAdvisoryWikiCode = isWikiAdvisoryCode;
 
 /** Page problems first, folder problems after; `ok` ignores the advisory folder codes. */
 export function mergeWikiVerdict(
@@ -31,7 +29,7 @@ export function mergeWikiVerdict(
 ): WikiVerdictLike {
   const own = page.problems.filter((problem) => !isWikiFolderCode(problem.code));
   const problems = [...own, ...folderProblems];
-  const blocking = problems.filter((problem) => !isAdvisoryWikiCode(problem.code));
+  const blocking = problems.filter((problem) => !isWikiAdvisoryCode(problem.code));
   return {
     ok: blocking.length === 0,
     firstProblem: problems[0]?.code ?? null,
@@ -59,7 +57,7 @@ export function libraryDanglingLinkCount(
   let count = 0;
   for (const verdict of verdicts.values()) {
     count += verdict.problems.filter(
-      (problem) => isWikiFolderCode(problem.code) && !isAdvisoryWikiCode(problem.code),
+      (problem) => isWikiFolderCode(problem.code) && !isWikiAdvisoryCode(problem.code),
     ).length;
   }
   return count;

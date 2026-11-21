@@ -74,7 +74,6 @@ export type { LibraryUiModel } from "./model/use-library-model";
 export type { LibraryPageFacts } from "./model/library-page-facts";
 export { sectionSlices } from "./lib/wiki/section-slices";
 export {
-  isAdvisoryWikiCode,
   isWikiFolderCode,
   libraryDanglingLinkCount,
   libraryOffTemplateCount,
