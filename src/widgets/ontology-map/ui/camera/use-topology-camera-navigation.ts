@@ -262,22 +262,9 @@ export function useTopologyCameraNavigation({
   }, [beginCameraTween, cameraAngularFreqRef, cameraTargetRef, constellationCameraRef, constellationFocusId, dampingRef, dataSourceKey, lastActiveMsRef, previousConstellationFocusIdRef, userDrivenCameraRef]);
 
   /**
-   * Follow docking panel/window/split width transitions to recalculate the currently
-   * viewed semantic meaning into the new available area. `tracking` moves only the
-   * spring target in the same frame as the width, and `finalize-tracking` lands on
-   // the final target with velocity 0 to eliminate underdamped bounce. `settled` uses
-   // the standard camera tween for immediately finished resizes.
-   *
-   // The previous resize path only recreated canvas resolution and stardust, rescuing
-   // the camera only when 「everything is off-screen」. Thus, while INDEX collapsed
-   // and the right agent entered, if any nodes remained even slightly, the previous
-   // width's camera passed validation, pushing the entire graph left. The reason node
-   // selection worked normally was that the selection effect re-initialized the new
-   // width and inspector separately.
-   *
-   // Here we do not unconditionally revert to overview. We recalculate the camera meaning
-   // owned by each selection/area/path-full lens/3D, preserving screens panned/zoomed
-   // directly.
+   * Follows docking width transitions to recalculate the viewed meaning into the new area: `tracking` moves only the spring target
+   * in the width's frame, `finalize-tracking` lands on the final target at velocity 0 (no underdamped bounce), `settled` uses the tween.
+   * It re-derives each selection, area, lens and 3D meaning and keeps directly panned or zoomed screens, not an unconditional overview.
    */
   const viewportReframeImplementation = (motion: ViewportReframeMotion): boolean => {
     const rawTokens = readOntologyMapTokensOrNull();

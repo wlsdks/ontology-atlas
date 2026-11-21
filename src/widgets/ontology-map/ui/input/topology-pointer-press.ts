@@ -55,7 +55,7 @@ export function createPointerPressHandlers(
     canvasRectRef.current = { left: domRect.left, top: domRect.top };
     const rect = canvasRectRef.current;
     const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    // rank4 touch pinch zoom — register the touch pointer. The instant a second finger
+    // Touch pinch zoom: register the touch pointer. The instant a second finger
     // lands, any single-finger gesture in flight (press or pan) is cancelled without
     // committing a click and switches to pinch (putting two fingers down must not
     // select a node). A third or further finger is ignored — pinch reads only the first
@@ -96,13 +96,9 @@ export function createPointerPressHandlers(
       }
     }
     /*
-     * 3D — **whether this drag is a rotation or a move is decided once, here.**
-     *
-     * Deciding per move flips the gesture's identity the moment the hand grazes the
-     * dome's boundary (you are rotating and suddenly the map comes along). A
-     * gesture's identity is fixed at the start and unchanged until the end — the
-     * convention the pointer state machine already uses. The rule and its rationale:
-     * the `DOME_GRIP_MARGIN` doc-block in `model/dome-view/`.
+     * 3D: whether this drag rotates or moves is decided once, here. Deciding per move would flip the gesture's identity when the
+     * hand grazes the dome's boundary; the identity is fixed at the start (the pointer state machine's convention).
+     * The rule: `DOME_GRIP_MARGIN` in `model/dome-view/`.
      */
     {
       const dome = domeInteractive();
@@ -122,7 +118,7 @@ export function createPointerPressHandlers(
     dragHistoryRef.current = [{ x: point.x, y: point.y, t: performance.now() }];
   };
 
-  // W2-B — right-click reuses the SAME tier-aware hit test as pointerdown
+  // Right-click reuses the SAME tier-aware hit test as pointerdown
   // (`hitVisibleNode`), so the menu only opens over nodes actually hittable
   // at the current altitude/focus (never a semantic-zoom-hidden one). The
   // browser's own context menu is prevented ONLY on that hit path — an

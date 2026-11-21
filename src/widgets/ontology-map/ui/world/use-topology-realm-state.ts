@@ -44,11 +44,8 @@ export function useTopologyRealmState({
   const realmActiveHandedOffRef = useRef(false);
 
   /**
-   * Easing state for refitting the warding radius. Each frame measures the
-   * target radius from the **visible** members (excluding density-gate
-   * collapsed ones) and eases toward it over 240 ms — one ease per chip expand
-   * or collapse, never a continuous animation. Reset to null on every entry so
-   * the first frame seeds by snapping to the initial radius.
+   * Easing state for refitting the warding radius: each frame measures the target from the visible members (density-gate collapsed excluded) and eases toward it over 240 ms,
+   * one ease per chip expand or collapse. Reset to null on every entry so the first frame snaps to the initial radius.
    */
   const wardingFitRef = useRef<WardingFitState | null>(null);
 

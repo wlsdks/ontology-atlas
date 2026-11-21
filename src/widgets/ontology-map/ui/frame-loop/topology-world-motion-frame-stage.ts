@@ -316,13 +316,9 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
       }
 
       sim.tick(forceIterationsForDt(dt), restrictToIds);
-      // **The write-back is restricted too.** A restricted tick never
-      // touches coordinates outside the subgraph, so writing those values
-      // back is a pointless 3,000-element round trip. But it **must include
-      // the tug neighbours and the previous frame's separation-displaced
-      // nodes**: reverting their frame displacement to 0 is the existing
-      // contract, and omitting them accumulates the tug offset every frame
-      // until neighbours fly away.
+      // The write-back is restricted too: a restricted tick never touches coordinates outside the subgraph, so writing them back is a
+      // 3,000-element round trip. It must include the tug neighbours and the previous frame's separation-displaced nodes, whose frame
+      // displacement reverts to 0, or the tug offset accumulates every frame until neighbours fly away.
       const applyOnly =
         scoped && affected
           ? new Set<string>([
@@ -416,11 +412,9 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
                     }
                 }
                 /*
-                 * Grabbing a second node replaces `dragAffectedSetRef` while the first group's
-                 * offsets are still in flight. Nothing above iterates them any more, so those
-                 * nodes stopped being offset and jumped home in a single frame — up to 21 px on
-                 * the sample vault, on nodes the hand never touched. They keep their own spring
-                 * until they are at rest (`expressive/release-offsets.ts#orphanedOffsetIds`).
+                 * Grabbing a second node replaces `dragAffectedSetRef` while the first group's offsets are in flight; nothing else iterates
+                 * them, so those nodes would jump home in one frame (up to 21 px). They keep their spring until at rest
+                 * (`expressive/release-offsets.ts#orphanedOffsetIds`).
                  */
                 const stepped = new Set<string>(tugIds);
                 stepped.add(affected.draggedId);

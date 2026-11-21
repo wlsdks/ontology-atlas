@@ -1,11 +1,6 @@
 /**
- * The realm expansion runtime — at the moment a transition starts it
- * computes the subtree, the re-layout coordinates, the warding geometry and the
- * fling start coordinates in one pass and hands them to `use-topology-loop.ts`.
- * A thin adapter between the pure model (`model/realm/realm.ts`) and the live world
- * (`topology-world.ts`): all the loop does per frame (applying FLIP and fling
- * coordinates) is feed this data to the evaluate functions in
- * `model/realm/realm-transition.ts`.
+ * The realm expansion runtime: when a transition starts it computes the subtree, re-layout coordinates, warding geometry and fling start coordinates in one pass.
+ * A thin adapter between `model/realm/realm.ts` and the live world; per frame the loop only feeds this data to the evaluate functions in `model/realm/realm-transition.ts`.
  */
 
 import type { CameraTarget } from "../../engine/camera";
@@ -61,11 +56,8 @@ export interface RealmRuntimeData {
    */
   tierKindById: ReadonlyMap<string, "project" | "domain" | "capability" | "element">;
   /**
-   * Per-member depth from the root (root = 0). The runtime data the S5 depth
-   * treatment reads (FLIP staircase delay · parallax bands · sharpness gradation) —
-   * exposed the same way as `tierKindById`. (`tierKindById` flattens depth into four
-   * tiers and so cannot tell depth 5 from depth 3; sequencing delays and parallax
-   * factors are more accurate judged on the original depth.)
+   * Per-member depth from the root (root = 0), read by the depth treatment (FLIP staircase delay, parallax bands, sharpness), like `tierKindById`,
+   * which flattens depth into four tiers and so cannot tell depth 5 from depth 3.
    */
   depthById: ReadonlyMap<string, number>;
   /**
@@ -125,7 +117,7 @@ function collectVisibleMemberTargets(
 }
 
 /**
- * S9 defect 2 — the visible content bbox for the current expansion state. Framing is
+ * The visible content bbox for the current expansion state. Framing is
  * derived on **the same visible-member basis** as `buildRealmRuntimeData`, so the
  * deselect and entry camera fits do not count collapsed children and over-shrink the
  * view. With no visible member it falls back to `data.bounds`.
@@ -178,11 +170,8 @@ export function buildRealmRuntimeData(
   rootId: string,
   tokens: OntologyMapTokens,
   /**
-   * S9 defect 2 — the set of expanded parents at entry time (including the realm root
-   * is recommended). It bounds the warding radius and camera bbox to **visible
-   * members the density gate did not collapse**, stopping a collapsed child's
-   * phyllotaxis coordinates from inflating the circle and the framing. Omitted, every
-   * member counts as visible.
+   * The set of expanded parents at entry time (include the realm root): it bounds the warding radius and camera bbox to visible members the density gate did not
+   * collapse, so a collapsed child's phyllotaxis coordinates cannot inflate the circle and the framing. Omitted, every member counts as visible.
    */
   expandedParents: ReadonlySet<string> = EMPTY_EXPANDED,
   dialInput?: DialWorldInput,
@@ -233,7 +222,7 @@ export function buildRealmRuntimeData(
   const root = world.nodeById.get(rootId);
   const flingCenter = { x: root?.homeX ?? 0, y: root?.homeY ?? 0 };
 
-  // S9 defect 2 — the warding radius and camera bbox are measured over **visible
+  // The warding radius and camera bbox are measured over **visible
   // members** only (those the density gate did not collapse). Counting collapsed
   // children too (the phyllotaxis disc under a parent with >12 children) pushes the
   // circle off screen and over-shrinks the content frame into "small content, giant circle".
@@ -291,12 +280,8 @@ export function buildRealmRuntimeData(
 }
 
 /**
- * The camera fit target for a realm's content bbox — measured against the visible
- * area, safe insets included. It applies the same contract as
- * `computeOverviewCameraTarget` (centring on the visible area) to the realm bbox.
- * Pass `bounds` as `realmVisibleBounds` or `data.bounds` (both visible-member based),
- * so that under S9 defect 2 the warding circle and the framing share one
- * visible-member basis.
+ * The camera fit target for a realm's content bbox against the visible area (safe insets included), the same contract as `computeOverviewCameraTarget`.
+ * Pass `bounds` as `realmVisibleBounds` or `data.bounds` (both visible-member based) so the warding circle and the framing share one basis.
  */
 export function realmCameraTarget(
   bounds: RealmBounds,

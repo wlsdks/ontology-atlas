@@ -40,7 +40,7 @@ export function createPointerReleaseHandlers(
   const { hitTestClusterChip, buildEdgeCandidates } = hits;
 
   const handlePointerUp = (e?: ReactPointerEvent<HTMLCanvasElement>) => {
-    // rank4 touch pinch zoom — touch release bookkeeping. A pinch up (or the leftover
+    // Touch pinch zoom: touch release bookkeeping. A pinch up (or the leftover
     // finger of one) does not take the click/flick paths: entering a pinch already
     // cancelled the machine to idle, while an ordinary single tap is in phase
     // pressed/dragging at up time and does not hit this early return. (The internal
@@ -55,7 +55,7 @@ export function createPointerReleaseHandlers(
     const tokens = readOntologyMapTokensOrNull();
     if (!tokens)
       return;
-    // P3b — snapshot of the click point (outside a drag, downPoint *is* the click coordinate).
+    // Snapshot of the click point (outside a drag, downPoint *is* the click coordinate).
     const clickPoint = pointerMachineRef.current.downPoint;
     const wasDragging = pointerMachineRef.current.phase === "dragging";
     const { next, commitClick } = transitionPointerState(pointerMachineRef.current, { type: "pointerup" }, tokens.hysteresisPx);
@@ -85,11 +85,11 @@ export function createPointerReleaseHandlers(
       simRef.current?.clearPin();
       nodeDragRef.current = null;
       heatRef.current = Math.max(heatRef.current, tokens.nodeReleaseSettleMs);
-      // C1 B1: stop tracking Δ (drag ended) — `dragAffectedSetRef` stays set
-      // through the settle burst above (B2), cleared once heat reaches 0
+      // Stop tracking Δ (drag ended) — `dragAffectedSetRef` stays set
+      // through the settle burst above, cleared once heat reaches 0
       // (`use-topology-loop.ts`'s rAF loop).
       dragStartPosRef.current = null;
-      // rank4 — the drag has ended, so the "grabbing" cursor is cleared (the next
+      // The drag has ended, so the "grabbing" cursor is cleared (the next
       // pointermove sets grab/pointer/"" again depending on hover).
       if (canvasRef?.current)
         canvasRef.current.style.cursor = "";
@@ -236,7 +236,7 @@ export function createPointerReleaseHandlers(
       (onToggleCluster || onExpandEgoNeighbors || onExpandClusterBatch)) {
       const chipParent = hitTestClusterChip(clickPoint.x, clickPoint.y);
       if (chipParent === EGO_NEIGHBOR_CHIP_ID) {
-        // S2 part 3a — the `Neighbor +N` chip lights the next neighbour batch rather than toggling the URL.
+        // The `Neighbor +N` chip lights the next neighbour batch rather than toggling the URL.
         onExpandEgoNeighbors?.();
         clearClusterHover();
         return;
@@ -257,7 +257,7 @@ export function createPointerReleaseHandlers(
         return;
       }
     }
-    // P3b — an empty-space click near an edge selects that edge (edges are first-class
+    // An empty-space click near an edge selects that edge (edges are first-class
     // objects). Candidates are limited to edges whose endpoints are both hittable at
     // the current tier, preventing the contract violation of clicking an invisible edge.
     // Only on failure does the existing deselect run.
@@ -288,7 +288,7 @@ export function createPointerReleaseHandlers(
   };
 
   const handlePointerCancel = (e?: ReactPointerEvent<HTMLCanvasElement>) => {
-    // rank4 touch pinch zoom — bookkeeping for a cancelled touch pointer (a browser gesture hijack and the like).
+    // Touch pinch zoom: bookkeeping for a cancelled touch pointer (a browser gesture hijack and the like).
     if (e && activeTouchesRef && e.pointerType === "touch") {
       activeTouchesRef.current.delete(e.pointerId);
       if (pinchRef?.current && activeTouchesRef.current.size < 2)
@@ -320,7 +320,7 @@ export function createPointerReleaseHandlers(
       nodeDragRef.current = null;
       heatRef.current = Math.max(heatRef.current, tokens?.nodeReleaseSettleMs ?? 900);
       dragStartPosRef.current = null;
-      // rank4 — a cancel restores the "grabbing" cursor too.
+      // A cancel restores the "grabbing" cursor too.
       if (canvasRef?.current)
         canvasRef.current.style.cursor = "";
     }

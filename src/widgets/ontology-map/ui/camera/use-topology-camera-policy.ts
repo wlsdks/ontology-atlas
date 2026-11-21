@@ -119,11 +119,8 @@ export function useTopologyCameraPolicy({
     const panels = collectCanvasObstacles(canvasEl, canvasRect);
     const measured = measureCanvasInsets(canvasEl, canvasRect, panels);
     /*
-     * The same measurement the names need. The frame reads its tokens every
-     * frame, and the panels come from an element walk, so the draw cannot take
-     * it per frame — it reads this ref instead. Written here because the moments
-     * that move the camera are the moments a panel opens or closes: a selection
-     * reframes, and so does a resize. In 3D no name reads the chrome boxes.
+     * The draw reads this ref instead of walking the panels' elements per frame, so it is written where the camera moves
+     * (a selection reframes, a resize), which is when a panel opens or closes. In 3D no name reads the chrome boxes.
      */
     const flat = !view3dRef.current;
     panelInsetsRef.current = { left: measured.left, right: measured.right, nameObstacles: flat ? measureNameObstacles(canvasEl, { left: true, right: true }, panels) : [] };
@@ -200,11 +197,9 @@ export function useTopologyCameraPolicy({
         }
       }
       /*
-       * Strata's tier names stand beside their rims in the free map between the
-       * chrome (`model/dome-view/strata/tier-names.ts`), the chrome's columns excluded whether or not
-       * the drawing uses them, so the frame reads the box measured here rather than
-       * walking the DOM on every frame. No column is reserved for the names: one that
-       * finds no clear place beside its rim goes unnamed, and the drawing keeps the width.
+       * Strata's tier names stand beside their rims in the free map between the chrome (`tier-names.ts`), the chrome's columns
+       * excluded whether or not the drawing uses them, so the frame reads this measured box. No column is reserved: a name with
+       * no clear place beside its rim goes unnamed.
        */
       domeFitInsetsRef.current = chromed;
       if (model.arrangement !== "coupling") return target;
@@ -220,14 +215,9 @@ export function useTopologyCameraPolicy({
   );
 
   /**
-   * Begin a cubic ease-in-out camera transition from the live camera to
-   * `target` (van Wijk's principle: duration proportional to distance), driven
-   * each frame by the rAF loop via `easeCameraKeyframe`. Under
-   * `prefers-reduced-motion` it no-ops and clears any tween, so the
-   * physics-step reduced snap owns the jump. A selection that replaces a
-   * running one leaves from the drawn camera at the speed that one had. Its
-   * identity is stable (refs only), so listing it in the programmatic-move
-   * effects' deps never re-fires them.
+   * Begins a cubic ease-in-out transition from the live camera to `target` (duration proportional to distance), driven by the rAF
+   * loop via `easeCameraKeyframe`; under reduced motion it clears any tween so the physics-step snap owns the jump. A selection
+   * replacing a running one leaves at the speed that one had. Its identity is stable (refs only), so listing it in deps never re-fires.
    */
   const beginCameraTween = useCallback((target: CameraTarget, durationOverrideMs?: number, ease?: CameraTweenEase, altitude: CameraTweenAltitude = "follows-camera") => {
     if (reducedMotionRef.current) {

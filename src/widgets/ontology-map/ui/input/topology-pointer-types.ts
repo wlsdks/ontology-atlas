@@ -42,10 +42,10 @@ export interface PointerHandlerRefs {
   cameraRef: Ref<CameraAxes>;
   cameraTargetRef: Ref<CameraTarget>;
   /**
-   * S3 finishing polish — the live cubic camera transition (`model/camera/camera-easing.ts`).
+   * The live cubic camera transition (`model/camera/camera-easing.ts`).
    * Any interactive gesture (wheel zoom, pointer-down for pan/select) clears it
    * so the spring immediately regains control from wherever the ease left the
-   * camera. Optional — omitted keeps the pre-tween behavior.
+   * camera. Optional.
    */
   cameraTweenRef?: Ref<CameraTween | null>;
   dampingRef: Ref<number>;
@@ -70,7 +70,7 @@ export interface PointerHandlerRefs {
     top: number;
   } | null>;
   /**
-   * rank4 — the canvas element itself, so `pointerup`/`pointercancel` (which
+   * The canvas element itself, so `pointerup`/`pointercancel` (which
    * carry no event target of their own here) can restore the cursor after a
    * node pin-drag ends ("grabbing" → default). Optional; omitted keeps the
    * cursor unmanaged on release (the next `pointermove` still recomputes it).
@@ -81,13 +81,9 @@ export interface PointerHandlerRefs {
   rippleStartRef: Ref<Map<string, number>>;
   reducedMotionRef: Ref<boolean>;
   /**
-   * WCAG 2.2 §2.3.3 — "the camera's last mover was the user's hand."
-   * Every gesture that writes `cameraTargetRef` (wheel · pinch · pan · flick)
-   * flips this true; the programmatic setters in `use-topology-loop.ts` flip it
-   * back. `stepTopologyPhysics` reads it to scope the reduced-motion camera snap
-   * to **app-initiated** travel only — direct manipulation is the hand's
-   * extension, not vestibular motion, and the standard exempts it explicitly.
-   * Optional so existing test fixtures keep working.
+   * "The camera's last mover was the user's hand" (WCAG 2.2 §2.3.3): every gesture that writes `cameraTargetRef` (wheel, pinch,
+   * pan, flick) flips it true and the programmatic setters flip it back. `stepTopologyPhysics` scopes the reduced-motion camera
+   * snap to app-initiated travel only, as direct manipulation is exempt. Optional so test fixtures keep working.
    */
   userDrivenCameraRef?: Ref<boolean>;
   /** Monotonic camera-gesture revision. Programmatic fits never change it. */
@@ -99,16 +95,12 @@ export interface PointerHandlerRefs {
   /** Active node pin-drag, or null when the drag is a camera pan / no drag. */
   nodeDragRef: Ref<NodeDragState | null>;
   /**
-   * C1 B1/B2 — the dragged node's own 1-hop/2-hop neighbor sets, captured
-   * once at grab time (`interaction/drag-tug.ts#computeDragTugSets`). Consumed
-   * both to propagate the explicit neighbor tug (B1) and to restrict the
-   * release-settle FA2 tick to this local cluster (B2, `model/layout/force-layout.ts`
-   * `tick`'s `restrictToIds`). Persists through the post-release settle burst —
-   * only cleared once that burst's heat reaches 0 (`use-topology-loop.ts`) or a
-   * NEW drag starts.
+   * The dragged node's own 1-hop/2-hop neighbour sets, captured once at grab time (`drag-tug.ts#computeDragTugSets`): they propagate
+   * the neighbour tug and restrict the release-settle FA2 tick to this cluster (`force-layout.ts` `restrictToIds`). They persist
+   * through the settle burst, cleared once its heat reaches 0 or a NEW drag starts.
    */
   dragAffectedSetRef: Ref<{ draggedId: string; oneHop: DragTugSets["oneHop"]; twoHop: DragTugSets["twoHop"] } | null>;
-  /** C1 B1 — the dragged node's world position at grab time, for computing this drag's total displacement (Δ). Null once the drag ends (post-release tug decays toward 0, no more Δ to track). */
+  /** The dragged node's world position at grab time, for computing this drag's total displacement (Δ). Null once the drag ends (post-release tug decays toward 0, no more Δ to track). */
   dragStartPosRef: Ref<{
     x: number;
     y: number;
@@ -120,7 +112,7 @@ export interface PointerHandlerRefs {
    */
   activeTouchesRef?: Ref<Map<number, { x: number; y: number }>>;
   /**
-   * rank4 — the previous frame's state of an in-flight pinch (two-finger distance
+   * The previous frame's state of an in-flight pinch (two-finger distance
    * plus midpoint). null means no pinch. The zoom factor derives from the distance
    * ratio and the pan from the midpoint's movement.
    */
@@ -129,7 +121,7 @@ export interface PointerHandlerRefs {
   onSelect?: (slug: string, source: SelectionSource) => void;
   /** The flat map's zoom to a node: a double-click, as Enter on the canvas. */
   onFlyToNode?: (slug: string) => void;
-  /** P3b — a click at a point with no node hit that is close to an edge. */
+  /** A click at a point with no node hit that is close to an edge. */
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
   /**
    * Edge hover card: fires when an idle move lands near an edge (only on identity change) and null on
@@ -146,7 +138,7 @@ export interface PointerHandlerRefs {
   /** The last committed node tap, so the next one can be read as a double-click. */
   lastTapRef?: Ref<{ nodeId: string; at: number; x?: number; y?: number } | null>;
   /**
-   * S3 finishing polish (an S2 known gap) — the set of nodes not drawn this frame
+   * The set of nodes not drawn this frame
    * (density-gate collapsed plus optionally hidden ego neighbours). Node and edge hit
    * tests exclude this set so a hidden node cannot be clicked or hovered. Omitted
    * means everything is hittable.
@@ -156,7 +148,7 @@ export interface PointerHandlerRefs {
   hoveredClusterIdRef?: Ref<string | null>;
   /**
    * Mirror of the expand preference — the hit test builds its rectangle with **the
-   * same affordance as the draw**. Omitted defaults to `"pill"` (the previous behaviour).
+   * same affordance as the draw**. Omitted defaults to `"pill"`.
    */
   expandPrefRef?: Ref<ExpandPreference>;
   /**
@@ -167,7 +159,7 @@ export interface PointerHandlerRefs {
    */
   clusterBarLabelsRef?: Ref<ClusterBarLabels | null>;
   /**
-   * S5 depth parallax — the per-band render offsets plus depthById the rAF loop fills
+   * Depth parallax: the per-band render offsets plus depthById the rAF loop fills
    * while a realm is active. The hit test applies **the same** offsets to nodes to
    * avoid click misalignment. null (still, or no realm) means no offset.
    */
@@ -177,11 +169,8 @@ export interface PointerHandlerRefs {
     depth3: DepthParallaxOffset;
   } | null>;
   /**
-   * S10 defect 3 — this frame's depth-based **tier kind** override during realm
-   * expansion (`topology-realm-runtime.ts#tierKindById`). The draw computes tier alpha
-   * from this map, so the hit test must use the same map for depth-1 element children
-   * to be catchable. The loop fills it with **the same gate** as the draw every frame
-   * (null while no realm is active).
+   * This frame's depth-based tier kind override during realm expansion (`topology-realm-runtime.ts#tierKindById`). The draw computes
+   * tier alpha from this map, so the hit test must use the same one for depth-1 element children to be catchable; null while no realm is active.
    */
   realmTierKindsRef?: Ref<ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null>;
   /**
@@ -191,15 +180,12 @@ export interface PointerHandlerRefs {
   domeRuntimeRef?: Ref<DomeRuntime | null>;
   neuralRampRef?: Ref<number>;
   /**
-   * 3D — whether the empty-space drag in flight is **an orbit rotation** (true) or
-   * **a camera pan** (false). `pointerdown` decides once and it does not change until
-   * that gesture ends — deciding per move flips the gesture's identity whenever the
-   * hand grazes the dome's boundary. The rule is `DOME_GRIP_MARGIN` in
-   * `model/dome-view/`.
+   * 3D: whether the empty-space drag in flight is an orbit rotation (true) or a camera pan (false). `pointerdown` decides once and
+   * it holds until the gesture ends (rule: `DOME_GRIP_MARGIN` in `model/dome-view/`).
    */
   domeGripRef?: Ref<boolean>;
   /**
-   * Slice C (the dev/non-dev mode toggle) — a mirror of the tier gate config (it has
+   * A mirror of the tier gate config (it has
    * to be **the same** config as the draw for hit testing and pan clamping to stay in
    * lockstep with what was drawn). Omitted defaults to `DEFAULT_TIER_REVEAL`.
    */
@@ -213,7 +199,7 @@ export interface PointerHandlerRefs {
   /** Density gate — a cluster chip click toggles the parent's expansion (a URL round trip). */
   onToggleCluster?: (parentId: string) => void;
   /**
-   * S2 part 5C — the cluster chip hover tooltip. Fires only when the hover target
+   * The cluster chip hover tooltip. Fires only when the hover target
    * changes (an identity change) and null on leaving. HomePage builds the sentence
    * from the parent's title and count and renders it as a microcard (the same
    * contract as the edge hover card).
@@ -223,12 +209,12 @@ export interface PointerHandlerRefs {
       parentId: string;
       /** Direct gated children collapsed (hidden) at this tier — the chip's `+N`. */
       count: number;
-      /** Panel3-S6 number contract — the parent's total descendant count (the same source as the node badge). */
+      /** The parent's total descendant count (the same source as the node badge). */
       descendantTotal: number;
       expanded: boolean;
       position: { x: number; y: number };
     } | null) => void;
-  /** S2 part 3a — clicking the `Neighbor +N` chip lights the next batch of neighbours (separate from the URL toggle). */
+  /** Clicking the `Neighbor +N` chip lights the next batch of neighbours (separate from the URL toggle). */
   onExpandEgoNeighbors?: () => void;
   /**
    * High-fanout batch reveal (2026-07) — clicking an expanded cluster parent's
@@ -238,11 +224,8 @@ export interface PointerHandlerRefs {
    */
   onExpandClusterBatch?: (parentId: string) => void;
   /**
-   * W2-B node right-click context menu. Called with the hit node's id and the
-   * event's viewport-space coordinates (`clientX`/`clientY`, matching the
-   * cursor-anchored menu position contract). Omitted keeps `handleContextMenu`
-   * a no-op over nodes too (browser default menu still suppressed off-node
-   * only — see that handler's own doc).
+   * Node right-click context menu, called with the hit node's id and the event's viewport-space `clientX`/`clientY`. Omitted
+   * keeps `handleContextMenu` a no-op over nodes (the browser menu is still suppressed off-node only).
    */
   onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
   /**
@@ -259,7 +242,7 @@ export interface TopologyPointerHandlers {
   handlePointerDown: (e: ReactPointerEvent<HTMLCanvasElement>) => void;
   handlePointerMove: (e: ReactPointerEvent<HTMLCanvasElement>) => void;
   /**
-   * rank4 — the event is optional: the JSX wiring (onPointerUp) passes it so the
+   * The event is optional: the JSX wiring (onPointerUp) passes it so the
    * touch bookkeeping runs, while internal no-arg calls (the stuck-drag guard and the
    * like) skip that bookkeeping.
    */
@@ -271,25 +254,15 @@ export interface TopologyPointerHandlers {
    */
   handlePointerLeave: () => void;
   /**
-   * FIX (QA first-light pass — console error sweep): takes a native
-   * `WheelEvent`, not React's synthetic `WheelEvent<...>`. React attaches its
-   * delegated `wheel` listener as passive by default, so a JSX `onWheel`
-   * prop calling `e.preventDefault()` logs "Unable to preventDefault inside
-   * passive event listener invocation" on every scroll/pinch and silently
-   * fails to stop the page from also scrolling underneath the canvas
-   * (reproduced via chrome-devtools: 37 warnings from one zoom gesture).
-   * `use-topology-loop.ts` now attaches this via a native, explicitly
-   * `{ passive: false }` listener instead of the JSX prop.
+   * Takes a native `WheelEvent`, not React's synthetic one: React's delegated `wheel` listener is passive, so a JSX `onWheel`
+   * calling `e.preventDefault()` warns on every scroll and fails to stop the page scrolling under the canvas.
+   * `use-topology-loop.ts` attaches this natively with `{ passive: false }`.
    */
   handleWheel: (e: WheelEvent) => void;
   handleGesturePinch: (ratio: number, clientX: number, clientY: number) => void;
   /**
-   * W2-B — native browser context menu is suppressed ONLY when the
-   * right-click lands on a hittable node (design gate
-   * "Suppress canvas default browser context menu only over a node" — suppress the
-   * canvas default browser context menu only over a node). Off-node right-clicks fall through
-   * to the OS/browser menu unchanged — panning/empty-canvas right-click
-   * behavior is untouched.
+   * The native browser context menu is suppressed only when the right-click lands on a hittable node; off-node right-clicks
+   * fall through to the OS/browser menu unchanged.
    */
   handleContextMenu: (e: ReactMouseEvent<HTMLCanvasElement>) => void;
   /**

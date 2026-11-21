@@ -1,11 +1,6 @@
 /**
- * The density gate slice (fable's design) — a thin adapter that combines the world's
- * static cluster metadata (`childrenByParent` / `clusterMetaByParent` in
- * `topology-world.ts`) with the parent's *live* coordinates and calls the pure
- * `computeDensityGate`.
- *
- * Every decision (who collapses, which chips appear) lives in the pure model
- * (`density-gate.ts`); this file only injects coordinates.
+ * A thin adapter that combines the world's static cluster metadata (`childrenByParent`, `clusterMetaByParent` in `topology-world.ts`) with the parent's
+ * live coordinates and calls the pure `computeDensityGate`; every decision lives in `density-gate.ts`, this file only injects coordinates.
  */
 
 import {

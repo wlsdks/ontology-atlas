@@ -219,11 +219,8 @@ export function useTopologyMapInstrumentation({
             appear: appearRef.current.get(n.id) ?? 1,
             previewEndpoint: isPreviewEndpoint(preview, n.id),
             /**
-             * ★ For the graph-readability instrument: overlap cannot be counted
-             * without radii. Uses the **same formula** as the draw
-             * (`radiusForKind × magnitudeScale` in `frame-draw/nodes/paint-nodes.ts`, times
-             * the camera zoom for the screen radius). Diverging formulas measure
-             * the instrument's imagination, not the screen.
+             * Overlap cannot be counted without radii, so this uses the same formula as the draw (`radiusForKind × magnitudeScale` in
+             * `paint-nodes.ts`, times the camera zoom for the screen radius); diverging formulas would measure the instrument, not the screen.
              */
             radius: tokens
               ? radiusForKind(n.kind, tokens) *
@@ -276,11 +273,8 @@ export function useTopologyMapInstrumentation({
                         bx: toScreenX(e.bx + offB.dx),
                         by: toScreenY(e.by + offB.dy),
                         /**
-                         * ★ So the instrument measures **the curve that is drawn**, not its
-                         * chord. The draw path is `quadraticCurveTo(control, b)`
-                         * (`frame-draw/edges/paint-edges.ts`); joining endpoints instead counts
-                         * crossings that are not on screen and misses crossings that are —
-                         * measuring an approximation rather than the map.
+                         * Measures the curve that is drawn, not its chord: the draw path is `quadraticCurveTo(control, b)` (`paint-edges.ts`), and
+                         * joining endpoints counts crossings that are not on screen and misses those that are.
                          */
                         controlX: toScreenX(control.x),
                         controlY: toScreenY(control.y),
@@ -322,15 +316,8 @@ export function useTopologyMapInstrumentation({
                 return { x: camera.x.value, y: camera.y.value, scale: camera.scale.value, width, height };
             },
             /**
-             * **Where the map is heading**, as opposed to where it currently is.
-             *
-             * The destination is set in one step when something changes the available
-             * area; the position then interpolates toward it over several frames. A
-             * test that samples the position has to pick a wall-clock moment and
-             * therefore measures the machine as much as the product —
-             * `design-gates.md` says as much: gate by call count, not milliseconds.
-             * Reading the target instead makes "did the resize aim the camera at the
-             * new area" answerable without timing anything.
+             * Where the map is heading, as opposed to where it is: the destination is set in one step and the position interpolates over frames.
+             * Sampling the position measures the machine's wall clock, so gates read the target instead (`design-gates.md`: gate by call count, not milliseconds).
              */
             cameraTarget: () => {
                 const target = cameraTargetRef.current;
@@ -371,11 +358,8 @@ export function useTopologyMapInstrumentation({
                 });
             },
             /**
-             * Dome pose — where the dome is looking and whether it still spins by
-             * itself. Canvas pixels cannot distinguish yaw, pitch or the armed state
-             * from outside, so this is the window for verifying the auto-spin stop,
-             * the pitch range and the selection reframe. Null in 2D (dome off), which
-             * is distinguishable from the instrument being absent.
+             * Dome pose: where the dome is looking and whether it still auto-spins. Canvas pixels cannot distinguish yaw, pitch or the armed
+             * state, so this verifies the auto-spin stop, the pitch range and the selection reframe. Null in 2D, distinguishable from an absent instrument.
              */
             dome: () => {
                 const d = domeRuntimeRef.current;
@@ -394,12 +378,8 @@ export function useTopologyMapInstrumentation({
                     pitchVel: d.pitchVel,
                     orbiting: d.orbiting,
                     /*
-                     * Tier torsion (follow-through) — **from outside the canvas this is
-                     * the only thing that says whether the dome reacts to its own
-                     * motion.** Pixels cannot tell a ring that lagged from a ring simply
-                     * drawn that way. Requiring this to be non-zero during a
-                     * programmatic pose move is what makes "a click reframe does not turn
-                     * as a rigid block" verifiable from outside.
+                     * Tier torsion (follow-through): from outside the canvas, the only evidence that the dome reacts to its own motion, since pixels cannot
+                     * tell a lagged ring from one drawn that way. It must be non-zero during a programmatic pose move, so a click reframe is verifiably not a rigid block.
                      */
                     lag: { ...d.lag },
                     /*
@@ -412,12 +392,8 @@ export function useTopologyMapInstrumentation({
                     active: d.active,
                     ramp: d.rampClock / DOME_ASSEMBLE_TOTAL_MS,
                     /*
-                     * Is the entry sweep still putting the pose down? It has its **own**
-                     * clock, 1500 ms against the assembly's 1120 ms (`dome-view/`), so
-                     * `ramp >= 1` is not "the dome has arrived" — the last 380 ms of turning
-                     * happens after it. E2E had no way to see that and slept 4 seconds to
-                     * cover both, which asserts the machine's speed rather than the dome's
-                     * state; the idle gate already reads this flag for the same reason.
+                     * Is the entry sweep still putting the pose down? It has its own clock (1500 ms against assembly's 1120 ms), so `ramp >= 1` does not
+                     * mean the dome has arrived; E2E reads this flag instead of sleeping, and the idle gate reads it for the same reason.
                      */
                     entryArmed: d.entryArmed,
                     settling: domeModelBuildRef.current !== null,
@@ -469,11 +445,8 @@ export function useTopologyMapInstrumentation({
                 lastActiveMsRef.current = lastInputMsRef.current;
             },
             /**
-             * Density-gate chips — where "+24 really reveals 24" is verified. A chip
-             * once claimed 24 while exactly 1 was drawn, because the tier gate did
-             * not honour the chip expansion. Reporting the claim (`count`) beside the
-             * reality (`shownChildren`) is what makes that mismatch catchable from
-             * outside.
+             * Density-gate chips: reporting the claim (`count`) beside the reality (`shownChildren`) makes a mismatch ("+24" while 1 is drawn)
+             * catchable from outside.
              */
             /**
              * The label boxes the last frame drew, in CSS pixels: the only way to see label collision from

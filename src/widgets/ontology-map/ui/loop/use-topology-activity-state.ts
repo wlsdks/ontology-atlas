@@ -22,13 +22,8 @@ export function useTopologyActivityState() {
   const reducedMotionRef = useRef(false);
 
   /**
-   * The just-committed selection's one-shot
-   * commit-pulse anchor (which node, and when it was clicked). Set once per
-   * NEW selection by the "focused slug change" effect below, never mutated
-   * per-frame — `drawTopologyFrame` derives `now - startAtMs` itself every
-   * frame and lets `model/ambient/selection-pulse.ts#computeSelectionPulse` decide
-   * when the pulse has expired (no cleanup timer needed; an expired pulse
-   * just draws nothing).
+   * The just-committed selection's commit-pulse anchor (node and click time): set once per NEW selection by the "focused slug change"
+   * effect and never mutated per frame; `drawTopologyFrame` derives `now - startAtMs` and `computeSelectionPulse` decides expiry, so no cleanup timer is needed.
    */
   const selectionPulseRef = useRef<{ nodeId: string; startAtMs: number; } | null>(null);
 
@@ -61,17 +56,9 @@ export function useTopologyActivityState() {
   const [{ wakeFrameLoopRef, lastActiveMsRef }] = useState(createActivityClock);
 
   /**
-   * Ambient sleep — time of the last **user input**. Being different from
-   * `lastActiveMsRef` is the whole point: that one is refreshed every frame
-   * ambient motion is running, so it is permanently current and can never
-   * answer "has the person let go". This ref is touched by pointer and wheel
-   * only.
-   *
-   * Seeded at 0 rather than `performance.now()` because calling that during
-   * render is impure and lint blocks it — and 0 is also the semantically right
-   * value: `performance.now()`'s origin *is* the navigation, so "input happened
-   * at time 0" says "untouched since the page opened". Falling asleep 30 s
-   * later is the intended behaviour.
+   * Ambient sleep: time of the last user input (pointer and wheel only). Unlike `lastActiveMsRef`, which is refreshed every frame ambient
+   * motion runs, it can answer "has the person let go". Seeded at 0, not `performance.now()` (impure during render, blocked by lint): the
+   * time origin is the navigation, so 0 reads as untouched since the page opened and the map sleeps 30 s later.
    */
   const lastInputMsRef = useRef(0);
 
