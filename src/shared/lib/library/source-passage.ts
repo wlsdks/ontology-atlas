@@ -38,8 +38,6 @@ export interface SourceTextAnswer {
   note?: string;
 }
 
-// ── zip ─────────────────────────────────────────────────────────────────────────
-
 const EOCD_SIGNATURE = 0x06054b50;
 const CENTRAL_SIGNATURE = 0x02014b50;
 const LOCAL_SIGNATURE = 0x04034b50;
@@ -76,12 +74,7 @@ function decodeUtf8(bytes: Uint8Array, start?: number, end?: number): string {
   return utf8.decode(start === undefined ? bytes : bytes.subarray(start, end));
 }
 
-/**
- * Every entry of a zip, by name, decompressed on demand.
- *
- * The same walk as the MCP module's: end-of-central-directory at the tail, central
- * directory, local header, one raw inflate per entry.
- */
+/** The MCP module's walk: end-of-central-directory, central directory, local header, inflate. */
 function readZipEntries(bytes: Uint8Array): Map<string, () => Uint8Array> {
   if (bytes.length < 22) throw new Error('not a zip file: too short');
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -165,8 +158,6 @@ function readZipEntries(bytes: Uint8Array): Map<string, () => Uint8Array> {
   }
   return entries;
 }
-
-// ── xml, the little that Office text needs ───────────────────────────────────────
 
 const XML_ENTITIES: Record<string, string> = {
   lt: '<',
@@ -303,8 +294,6 @@ function headingSlug(title: string): string {
     .replace(/^-+|-+$/g, '')
     .slice(0, 64);
 }
-
-// ── formats ─────────────────────────────────────────────────────────────────────
 
 interface DocxParagraph {
   text: string;
@@ -538,8 +527,6 @@ function htmlUnits(html: string): SourceUnit[] {
   return lineUnits(text);
 }
 
-// ── the reader's answer ─────────────────────────────────────────────────────────
-
 const FORMAT_BY_EXTENSION: Record<string, SourceTextFormat> = {
   docx: 'docx',
   xlsx: 'xlsx',
@@ -621,11 +608,8 @@ function splitSourceText(
 }
 
 /**
- * Read one raw source into citable units, in the MCP tool's own windowed shape.
- *
- * This exists so `tests/contract/vault-format/source-passage-parity.contract.test.ts` can compare the
- * two readers answer for answer, including pagination and the character cap. The screen
- * uses `citedPassage` instead.
+ * The MCP tool's windowed shape, so `source-passage-parity.contract.test.ts` can compare the two
+ * readers answer for answer. The screen uses `citedPassage`.
  */
 export function readSourceUnits(
   bytes: Uint8Array,
@@ -654,17 +638,7 @@ export function readSourceUnits(
   return answer;
 }
 
-/**
- * **Every unit in the file, unwindowed — what a search over the text needs.**
- *
- * `readSourceUnits` exists to match the MCP tool answer for answer, window and all, and
- * that window is why it cannot serve a search: a phrase at unit 1,400 of a long file
- * would be reported as *no match*, which is a false negative wearing an answer's
- * clothes. The window is a bound on what crosses a tool's round trip; nothing crosses
- * anything here, so there is nothing to bound.
- *
- * Same reasoning as `citedPassage`, which calls the same splitter for the same reason.
- */
+/** Unwindowed: the MCP window would report a phrase past it as no match. */
 export function sourceUnits(
   bytes: Uint8Array,
   path: string,
@@ -680,12 +654,7 @@ export interface SourceOutline {
   format: SourceTextFormat;
   /** Every unit the reader found, so a count is never a guess at one. */
   unitCount: number;
-  /**
-   * Headings the extractor itself named, with the anchors it minted for them.
-   *
-   * DOCX uses its heading anchors. Markdown headings retain the original line
-   * anchors, so the outline and MCP citations address the same source bytes.
-   */
+  /** Markdown headings keep their line anchors, so the outline and MCP citations address the same bytes. */
   headings: Array<{ anchor: string; title: string }>;
   /** Worksheets and how many rows each holds, in the workbook's own sheet order. */
   sheets: Array<{ sheet: string; rows: number }>;
@@ -741,11 +710,7 @@ export function sourceOutline(bytes: Uint8Array, path: string): SourceOutline {
       }
     }
   }
-  /*
-   * Insertion order, which for a workbook is the sheet order `xlsxUnits` walked. A Map
-   * keyed by name also collapses the case a sheet's rows are not contiguous, which is
-   * not something this reader promises either way.
-   */
+  /* Insertion order is the sheet order `xlsxUnits` walked. */
   const rowsBySheet = new Map<string, number>();
   for (const unit of units) {
     if (unit.kind !== 'row' || !unit.sheet) continue;
@@ -761,16 +726,7 @@ export function sourceOutline(bytes: Uint8Array, path: string): SourceOutline {
   };
 }
 
-// ── the passage one citation names ──────────────────────────────────────────────
-
-/**
- * What the anchor turns out to be, as a fact rather than a sentence.
- *
- * The screen writes the words; the reader decides what kind of place this is, and it is
- * never allowed to be more precise than the extractor was. A DOCX heading anchor names a
- * heading, not a line — a person told "line 4" for `h:records` would go looking for a
- * line 4 that the extractor never counted.
- */
+/** Never more precise than the extractor: a DOCX heading anchor names a heading, not a line. */
 export type PassageLabel =
   | { kind: 'line'; number: number }
   | { kind: 'record'; number: number }
@@ -808,10 +764,8 @@ export interface CitedPassage {
 }
 
 /**
- * `l14` → line 14, `s1r3` → sheet 1 row 3, `h:records` → the heading it names.
- *
- * Exported because a search hit's caption names the same place as the passage section,
- * and two functions deciding what `s1r3` is called would eventually disagree about it.
+ * `l14` → line 14, `s1r3` → sheet 1 row 3, `h:records` → the heading it names. Shared so a search
+ * hit's caption and the passage section name a place the same way.
  */
 export function passageLabelFor(anchor: string, cited: readonly SourceUnit[]): PassageLabel {
   const first = cited[0];
@@ -835,13 +789,7 @@ export function passageLabelFor(anchor: string, cited: readonly SourceUnit[]): P
   return { kind: 'anchor' };
 }
 
-/**
- * The passage a citation names, with its neighbours for orientation.
- *
- * An unresolved anchor returns `state: 'unresolved'` and no text at all. That is the
- * whole point: the nearest paragraph to a renamed heading is not the cited one, and
- * showing it would let a page keep an address it lost while looking checked.
- */
+/** An unresolved anchor returns no text: the nearest paragraph to a renamed heading is not the cited one. */
 export function citedPassage(
   bytes: Uint8Array,
   path: string,
@@ -867,11 +815,8 @@ export function citedPassage(
   const firstIndex = units.findIndex((unit) => unit.anchor === anchor);
   if (firstIndex < 0) {
     /*
-     * Only the extractor's own ambiguity may offer an alternative, and only the
-     * occurrences of *this* heading. `h:scope` splitting into `h:scope-1` and
-     * `h:scope-3` is a fact the extractor reported in its note; `h:scope-2`, which
-     * belongs to a differently named heading ("Scope 2") that merely sorts nearby, is a
-     * guess — so the match is the heading's own slug, not a string prefix.
+     * Only the extractor's reported ambiguity offers alternatives, matched on this heading's own
+     * slug rather than a prefix: `h:scope-2` may belong to a heading named "Scope 2".
      */
     const wantedSlug = anchor.startsWith('h:') ? anchor.slice(2) : '';
     const candidates =

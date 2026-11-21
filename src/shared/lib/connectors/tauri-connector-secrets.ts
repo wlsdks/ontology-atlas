@@ -1,29 +1,8 @@
 /**
- * A connector's tokens in the OS keychain — the Tauri IPC bridge over
- * `src-tauri/src/connectors/secrets.rs`.
- *
- * ## The value goes down, and never comes back
- *
- * `connectorSecretSet` is the only direction a token travels through this file: the person types
- * it, it goes to Rust once, and the caller drops it from its own state. There is **no wrapper that
- * returns a stored value**, because there is no such command — a source-reflection test in the Rust
- * module pins that.
- *
- * The token still has to reach the agent, inside `session/new`'s `mcpServers`. That line is
- * composed here, so it is composed with a **reference**:
- *
- * ```json
- * { "name": "NOTION_TOKEN", "__atlasSecretRef": "connector:c1:NOTION_TOKEN" }
- * ```
- *
- * and Rust swaps it for the real value in `acp_send`, one line before it leaves the process. So the
- * WebView holds the shape of the token — its name and last four characters — and never the token.
- *
- * ## Web degradation contract
- *
- * A browser has no keychain. `isConnectorSecretBridgeAvailable()` is false there and every wrapper
- * returns `null` without invoking, so the screen renders no field to type a token into and says
- * why (`.claude/rules/surfaces.md`).
+ * Bridge over `src-tauri/src/connectors/secrets.rs`. A token only travels down: no command returns a
+ * stored value (a Rust source test pins it). The `session/new` line carries a reference that Rust
+ * swaps for the value in `acp_send`, so the WebView never holds the token. Without Tauri every
+ * wrapper returns `null`.
  */
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
@@ -38,12 +17,8 @@ function getInvoke(): TauriInvoke | null {
 }
 
 /**
- * The marker key that stands in for a value in an outgoing ACP line.
- *
- * The same literal exists in `src-tauri/src/connectors/secrets.rs` as `SECRET_REF_KEY`, and
- * `tests/contract/security/connector-secret-ref-parity.contract.test.ts` compares the two. If they drifted,
- * the marker would travel to the agent verbatim — a connector configured with the string
- * `connector:c1:NOTION_TOKEN` as its token, failing on every call for a reason nothing states.
+ * Must equal `SECRET_REF_KEY` in `src-tauri/src/connectors/secrets.rs` (a parity contract checks);
+ * a drift would send the reference itself to the agent as the token.
  */
 export const ACP_SECRET_REF_KEY = '__atlasSecretRef';
 
@@ -55,7 +30,6 @@ export interface ConnectorSecretStatus {
   last4: string | null;
 }
 
-/** Whether this machine has a keychain to reach — false in a browser. */
 export function isConnectorSecretBridgeAvailable(): boolean {
   return getInvoke() !== null;
 }
@@ -77,12 +51,7 @@ export async function connectorSecretSet(
   return status;
 }
 
-/**
- * Present or not, plus the last four characters.
- *
- * Read **before** a connector is switched on. A reference with nothing behind it would otherwise
- * surface as a session that refuses to open, at the moment somebody was trying to ask a question.
- */
+/** Read before a connector is switched on, or an empty reference surfaces as a session that will not open. */
 export async function connectorSecretStatus(
   secretRef: string,
 ): Promise<ConnectorSecretStatus | null> {
@@ -102,11 +71,7 @@ export async function connectorSecretDelete(
   return status;
 }
 
-/**
- * Announce that a token's presence changed, so a panel mounted elsewhere re-asks rather than
- * showing a stale "not stored" until the next reload. The keychain stays the source of truth; only
- * the moment to re-read is shared. Same pattern and same reason as `tauri-secrets.ts`.
- */
+/** Same pattern as `tauri-secrets.ts`: only the moment to re-read the keychain is shared. */
 const CONNECTOR_SECRET_CHANGE_EVENT = 'ontology-atlas:connector-secret-change';
 
 function notifyConnectorSecretChange(): void {

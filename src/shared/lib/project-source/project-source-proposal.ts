@@ -1,17 +1,7 @@
 /**
- * "Is this the right folder?" — the typed, browser-callable half of source
- * inference.
- *
- * The desktop app does not need to walk the filesystem to answer this. One
- * `inspect_project_source` call on the **vault root** already climbs to the
- * enclosing git repository (`project_source`), so its result *is* the
- * candidate. This module turns that result into the same proposal shape the
- * MCP tool returns, so a screen and an agent describe the same thing with the
- * same words.
- *
- * It deliberately never confirms. Binding a wrong root mints a receipt whose
- * `verified_current` would be a lie, and `finalize_project_meaning` trusts that
- * receipt — so the write stays an explicit act.
+ * `inspect_project_source` on the vault root already climbs to the enclosing repository; this gives
+ * its result the MCP tool's proposal shape. It never confirms: `finalize_project_meaning` trusts
+ * the receipt a binding mints, so binding stays an explicit act.
  */
 
 import { inferProjectSourceProposal } from "./project-source-inference.mjs";
@@ -61,13 +51,7 @@ function ancestorDepth(candidateRoot: string, vaultRoot: string): number {
   return vault.slice(candidate.length + 1).split("/").filter(Boolean).length;
 }
 
-/**
- * The screen's one call.
- *
- * @param inspection result of inspecting the **vault root** (not a picked
- *   folder). `null` means the probe was unavailable — treated as "no proposal",
- *   never as "no source".
- */
+/** `inspection` is of the vault root; `null` means the probe was unavailable, never "no source". */
 export function proposeProjectSourceFromInspection(input: {
   vaultRootPath: string;
   inspection: { rootPath: string; kind: "git" | "folder" } | null;
@@ -97,5 +81,3 @@ export function proposeProjectSourceFromInspection(input: {
     witnessSummary: input.witnessSummary ?? null,
   }) as ProjectSourceProposal;
 }
-
-/** Re-rate a proposal once the candidate has actually been measured. */

@@ -6,14 +6,7 @@
 /** The rim's width on a node large enough to want one, in px. */
 const STAR_RIM_PX = 1.8;
 
-/**
- * How many strokes build the halo.
- *
- * ⚠️ Six was chosen by arithmetic and measured wrong: on a 33 px node each band is 5.5 px wide
- * and the innermost step drops 0.17 of alpha at once, so the star wore six visible concentric
- * rings. The step a band can hide behind is roughly its own width in pixels — at 20 the largest
- * step is 0.05 over ~1.6 px, and the falloff reads as light rather than as contour lines.
- */
+/** A band hides an alpha step about its own width in px; six bands showed rings on a 33 px node. */
 const STAR_GLOW_LAYERS = 20;
 
 /** Accumulated light at `t` of the way out from the silhouette, 0 at full reach. */
@@ -22,21 +15,10 @@ function falloff(t: number): number {
   return STAR_GLOW_PEAK * u * u;
 }
 
-/**
- * How bright the halo is where it meets the silhouette.
- *
- * The rim stroke sits on top of this, so the two add: this is the light *around* the edge, not
- * the edge itself.
- */
+/** The rim stroke adds on top: this is the light around the edge, not the edge. */
 const STAR_GLOW_PEAK = 0.55;
 
-/**
- * How far the star's bloom reaches, in node radii.
- *
- * ⚠️ 3.2 with a gentle falloff measured as **fog** rather than as a star — a soft blob wide
- * enough to touch its neighbours, with the diffraction cross drowned inside it. A star is a
- * point of light: bright and tight at the core, gone quickly.
- */
+/** In node radii; a wider bloom reads as fog touching the neighbours, not a point of light. */
 const STAR_GLOW_REACH = 2.0;
 
 
@@ -51,27 +33,13 @@ export interface StarEmissionState {
   ink: string;
   /** 0–1. Below 0.01 nothing is painted. */
   lit: number;
-  /**
-   * Multiplier on the bloom's reach while the star is igniting.
-   *
-   * A star arriving has a size, not only a brightness — the light swells out and settles back.
-   * It returns to 1 once the ignition is over, so a settled constellation is dimensionally
-   * still and nothing on the canvas keeps breathing.
-   */
+  /** Bloom reach multiplier while igniting; back to 1 after, so a settled constellation stays still. */
   swell?: number;
 
   core?: number;
   /**
-   * The node's silhouette at `radius`, as a path this function can both stroke and subtract.
-   *
-   * A callback rather than a kind, because the two callers disagree about what a node looks
-   * like and neither is wrong: the map has hexagons, squares and circles that converge with
-   * altitude; the settings preview has one rounded rectangle standing for all of them. What
-   * they must agree on is the *light*, which is what this file owns.
-   *
-   * It returns a `Path2D` rather than drawing, because the halo needs the same outline twice —
-   * once to stroke and once to cut out of its own clip — and a shape that draws itself can only
-   * be used once.
+   * A callback because the map and the settings preview draw different silhouettes; a `Path2D`
+   * because the halo both strokes the outline and cuts it out of its own clip.
    */
   bodyPath: (radius: number) => Path2D;
 }
@@ -124,11 +92,7 @@ export function drawStarEmission(ctx: CanvasRenderingContext2D, state: StarEmiss
         ctx.stroke(body);
     }
     ctx.restore();
-    /*
-     * The core. Brightest at the centre and falling toward the rim, so it reads as a point of
-     * light rather than as a filled disc — a disc is a dot, and a dot is what the map draws when
-     * it means "a node is here", which is the near view's job and not this one's.
-     */
+    /* Falls off toward the rim so the core reads as light, not the near view's filled node dot. */
     if (core > 0.01) {
         const heart = ctx.createRadialGradient(x, y, 0, x, y, radius);
         heart.addColorStop(0, withAlpha(ink, 0.95 * k * core));

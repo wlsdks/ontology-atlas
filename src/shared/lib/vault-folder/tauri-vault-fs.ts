@@ -144,23 +144,11 @@ class TauriFileHandle {
 export interface NativeVaultStamp {
   relativePath: string;
   lastModified: number;
-  /**
-   * Byte length from the directory entry. Carried alongside the mtime because a raw
-   * source's size is the one fact the library list shows that the fingerprint does not
-   * already supply, and asking for it separately would walk the folder twice.
-   */
+  /** Bytes, carried with the mtime: the library list shows it, and asking separately walks twice. */
   size: number;
 }
 
-/**
- * The vault fingerprint — **paths, mtimes and sizes only**, fetched from the native side
- * in one call.
- *
- * The web has no equivalent (File System Access has no such batch API). Outside
- * `isTauri()` this returns `null` and the caller falls back to the existing path,
- * following the bridge convention in `.claude/rules/surfaces.md`: `getInvoke()`, else
- * `null`, else honest degradation on screen.
- */
+/** Paths, mtimes and sizes only, in one call; `null` outside Tauri, which has no batch API. */
 export async function nativeVaultFingerprint(
   rootPath: string,
 ): Promise<{ entries: NativeVaultStamp[]; truncated: boolean; prunedDirs: string[] } | null> {
@@ -169,14 +157,7 @@ export async function nativeVaultFingerprint(
   return invoke('vault_fingerprint', { rootPath });
 }
 
-/**
- * sha256 of vault files, computed natively.
- *
- * The web has no equivalent and returns `null`: a browser hashes the same bytes with
- * `crypto.subtle`, which is not a degradation, only a different place to do the work.
- * The bridge exists so a 20 MB scan is not carried across IPC to produce 64 characters.
- * Same reasoning as `vault_fingerprint`.
- */
+/** Native so a 20 MB scan never crosses IPC to produce 64 characters; the web uses `crypto.subtle`. */
 export async function nativeVaultFileHashes(
   rootPath: string,
   relativePaths: readonly string[],
@@ -453,15 +434,11 @@ export function createTauriVaultHandle(rootPath: string): FileSystemDirectoryHan
 }
 
 /**
- * Prefix Rust's `pick_vault_directory` uses when it refuses a location as a vault
- * root. Reason codes: `filesystem-root`, `home-directory`, `system-directory`.
- *
- * A **code** rather than a sentence: composing human-readable copy inside Rust traps
- * the translation there. The screen reads the code and picks its own language.
+ * `pick_vault_directory` refuses a root with a code (`filesystem-root`, `home-directory`,
+ * `system-directory`), not a sentence, so the screen picks its own language.
  */
 const VAULT_ROOT_REJECTED_PREFIX = 'vault-root-rejected:';
 
-/** Returns the reason code when this error is a rejected-location refusal, else null. */
 export function vaultRootRejectionReason(error: unknown): string | null {
   const text =
     typeof error === 'string'
@@ -538,11 +515,8 @@ export async function openTauriVaultInFinder(rootPath: string): Promise<void> {
 }
 
 /**
- * For the desktop first-run "just start" path: creates the `~/Documents/Ontology
- * Atlas` container folder if absent and returns its absolute path. JS cannot learn
- * the Documents path without an fs plugin, so the Rust command is the only source.
- * Returns null outside a Tauri runtime — the caller must already have passed a
- * desktop-only guard.
+ * Creates `~/Documents/Ontology Atlas` if absent and returns it: JS cannot learn the Documents
+ * path without an fs plugin. `null` outside Tauri.
  */
 export async function ensureDefaultVaultParentDir(): Promise<string | null> {
   const invoke = getInvoke();
@@ -551,13 +525,8 @@ export async function ensureDefaultVaultParentDir(): Promise<string | null> {
 }
 
 /**
- * Lists the entries (files and directories) at any relative path under `rootPath`.
- *
- * Unlike `listTauriDirectoryNames` it **keeps files and works at any depth**. The
- * manifest walker filters out dot directories and therefore never sees trees such as
- * `.claude/skills`, so anything that must read one uses this. A missing path makes
- * Rust throw and the caller catches it — most vaults have no `.claude/`, and that is
- * not a defect.
+ * Files and folders at any depth, including dot trees such as `.claude/skills` the manifest walker
+ * skips. A missing path throws; most vaults have no `.claude/`.
  */
 export async function listTauriVaultEntries(
   rootPath: string,
@@ -615,12 +584,7 @@ export async function readTauriVaultTextTail(
   return invoke<string>('read_vault_text_tail', { rootPath, relativePath, maxLines });
 }
 
-/**
- * Reads a text file *with* its modification time. `readTauriVaultText` drops the timestamp, which
- * is right for a caller that only wants content; the Harness screen needs to say when a guide last
- * changed on this disk, and re-reading the file to get it would be a second bridge round trip.
- * Returns `null` when the bridge is absent.
- */
+/** Keeps the mtime `readTauriVaultText` drops, without a second round trip; `null` without the bridge. */
 export async function readTauriVaultTextFile(
   rootPath: string,
   relativePath: string,
@@ -673,7 +637,6 @@ export async function writeTauriLibraryCollections(
   });
 }
 
-/** Lists only the names of directories directly under `rootPath`, excluding files. */
 export async function listTauriDirectoryNames(rootPath: string): Promise<string[]> {
   const invoke = getInvoke();
   if (!invoke) return [];

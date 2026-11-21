@@ -39,18 +39,9 @@ export function parseNativeError(err: unknown): NativeErrorParts {
 }
 
 /**
- * One line for the user.
- *
- * With **no lookup at all** the payload comes back untouched — byte for byte what
- * these three bridges returned before codes existed. That is not politeness: the
- * agent loop's `noticeFor` recognises a failed turn by `audit-blocked:` and
- * `timed-out:` prefixes, so a caller that has not been wired to a catalogue must
- * keep its code, or an unwritable folder silently becomes "check your network" —
- * the exact regression `tests/contract/agent-chat/agent-notice-codes.contract.test.ts` exists
- * to prevent.
- *
- * With a lookup, an **unknown** code still degrades to the English detail, so a
- * code minted in Rust and forgotten in `messages/*.json` says something true.
+ * Without a lookup the payload is untouched: the agent loop's `noticeFor` matches the
+ * `audit-blocked:` and `timed-out:` prefixes (`agent-notice-codes.contract.test.ts`). With one, an
+ * unknown code still degrades to the English detail.
  */
 export function nativeErrorMessage(err: unknown, lookup?: NativeErrorLookup): string {
   const { code, detail, raw } = parseNativeError(err);

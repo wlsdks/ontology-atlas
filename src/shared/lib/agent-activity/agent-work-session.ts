@@ -9,14 +9,8 @@ import { toSlugTarget, type AgentActivityEntry } from "./agent-activity-log";
 export const AGENT_TASK_IDLE_MS = 5 * 60 * 1000;
 
 /**
- * How long "last worked N minutes ago" stays on screen.
- *
- * The sentence is **true** whenever it is shown — unlike "connected" it cannot
- * go stale, because there is no connection. The cap exists for a different
- * reason: not truth but **newsworthiness**. A three-day-old record belongs in the
- * notification list, not in the chrome over the map. The value reuses the "today"
- * boundary this log already uses (the 24 hours in `countRecentEntries`) so that
- * one log does not end up with two definitions of "recent".
+ * How long "last worked N minutes ago" stays on screen: a day-old record belongs in the
+ * notification list. Shares the 24 hours of `countRecentEntries`, one definition of "recent".
  */
 export const AGENT_TASK_VISIBLE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -48,10 +42,8 @@ const WRITE_KIND_BY_TOOL: Readonly<Record<string, AgentWriteKind>> = {
 const BATCH_TOOLS = new Set(["add_concepts", "add_relations"]);
 
 /**
- * How many rows a batch line really covered. The summary text
- * (`add_concepts 46 lines successful`) is **owned by MCP**, so it is parsed here. If that
- * wording changes the count simply falls back to 1 rather than breaking the
- * screen — an undercount is preferable to a notification that never appears.
+ * Parses the MCP-owned summary text; if its wording changes the count falls back to 1, since an
+ * undercount beats a notification that never appears.
  */
 export function entryWeight(entry: AgentActivityEntry): number {
   if (!BATCH_TOOLS.has(entry.tool)) return 1;
@@ -62,11 +54,7 @@ export function entryWeight(entry: AgentActivityEntry): number {
 }
 
 export interface AgentWorkSession {
-  /**
-   * Keyed by **start time**, because the list is re-derived on every poll. Keying
-   * by array index would turn every notification into a new one the moment a
-   * single line arrives at the front.
-   */
+  /** Start time: the list is re-derived every poll, and an index key would renew every notification. */
   id: string;
   startAt: number;
   endAt: number;
@@ -78,11 +66,8 @@ export interface AgentWorkSession {
   lastTarget: string | null;
   lastTool: string | null;
   /**
-   * The last agent to identify itself in this session (from the heartbeat or the
-   * MCP handshake's clientInfo.name — `resolveAgentName` in
-   * `mcp/src/vault/activity-log.mjs`). An anonymous line does not erase the previous
-   * name, for the same reason as `lastTarget`: one batch line must not cost the
-   * screen something it could have said. Null if never heard.
+   * The last agent to identify itself (`resolveAgentName` in `mcp/src/vault/activity-log.mjs`);
+   * an anonymous line does not erase it. Null if never heard.
    */
   agent: string | null;
   /** Has it been quiet for `idleMs` — true only for finished sessions. */
@@ -98,12 +83,7 @@ export function hasWrites(counts: AgentWriteCounts): boolean {
   return counts.added > 0 || counts.edited > 0 || counts.removed > 0;
 }
 
-/**
- * Activity log → sessions, oldest first. Pure: reads neither files nor the clock.
- *
- * @param entries Parsed log tail, in any order — sorted by time here.
- * @param nowMs   Reference time, used only to decide whether the last session ended.
- */
+/** Oldest first. Pure: `nowMs` only decides whether the last session ended. */
 export function deriveAgentWorkSessions(
   entries: readonly AgentActivityEntry[],
   nowMs: number,
@@ -138,9 +118,7 @@ export function deriveAgentWorkSessions(
     const kind = WRITE_KIND_BY_TOOL[entry.tool];
     if (kind) current.counts[kind] += entryWeight(entry);
     current.lastTool = entry.tool.trim() || current.lastTool;
-    // Only update the last target **when it is a slug**. A trailing batch line
-    // must not erase the target already known, or the screen loses what it could
-    // have said.
+    // A trailing batch line carries no slug and must not erase the known target.
     current.lastTarget = toSlugTarget(entry.target) ?? current.lastTarget;
     current.agent = entry.agent?.trim() || current.agent;
   }

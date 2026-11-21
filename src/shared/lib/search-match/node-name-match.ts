@@ -1,25 +1,7 @@
 /**
- * The one rule for matching a node — however many search surfaces exist, the
- * contract "type what you see on screen and it is found" must be single. Names are
- * the subject of most of this file; {@link idSearchText} owns the id half.
- *
- * **Why it was needed:** the map, INDEX, popovers and the studio all draw
- * locale-specific display names (frontmatter `display_ko:` / `display_en:`)
- * while global search indexed only the canonical `title`. So reading
- * "Ontology Core" on a Korean screen and searching for it returned 0 results;
- * only the original "Ontology Core", which the user had never seen, worked. The
- * studio picker did look at display names, so the two search surfaces even
- * behaved differently.
- *
- * The contract (`AGENTS.md`): `title` is the single source of truth for search
- * and matching. Display names **add to it rather than replace it** — they only
- * widen the match, so anyone searching by the original still finds it. Every
- * locale the vault uses is included because an English name must be findable on
- * a Korean screen and vice versa.
- *
- * Normalisation: NFC → lowercase → trim → collapse runs of whitespace. NFC
- * matters because Hangul can arrive decomposed (NFD) from local vault filenames
- * and the macOS clipboard.
+ * The one rule for matching a node on every search surface: "type what you see and it is found".
+ * Every `display_<locale>` widens a match on `title` and never replaces it. NFC first: Hangul
+ * arrives decomposed from macOS file names and the clipboard.
  */
 
 import { chosungKey, hangulIncludes, hangulStartsWith, isChosungQuery } from "./hangul-match";
@@ -40,26 +22,13 @@ export interface NodeNameSource {
 }
 
 /**
- * Every name that refers to this node, already normalised, plus the initials of
- * each one — the canonical title first, then the display names, duplicates and
- * empties removed.
- *
- * Built once per node and kept, so a keystroke re-normalises no name; over 12,000
- * nodes a rebuild per query costs a palette hundreds of milliseconds per character.
- * `node-name-match.test.ts` counts the work a repeated query does: none.
- *
- * The cache is a `WeakMap` on the node object, so it costs nothing to hold and
- * disappears with the graph. It assumes nodes are **replaced** rather than mutated
- * in place when a vault reloads, which is how `entities/knowledge-graph` builds them.
+ * Cached per node in a `WeakMap` so a keystroke re-normalises no name (12,000 nodes cost hundreds
+ * of ms per character otherwise). Assumes a reload replaces nodes rather than mutating them.
  */
 interface NodeNameIndex {
   /** Normalised names, canonical title first. */
   readonly names: readonly string[];
-  /**
-   * The same names as written, index for index. A result row has to be able to
-   * **show** the name that carried the match, and the normalised form is
-   * lowercased, so the original is kept beside it.
-   */
+  /** As written, index for index: a result row shows the name that matched. */
   readonly raw: readonly string[];
   /** The same names reduced to syllable initials, spaces dropped — what a chosung query is compared against. */
   readonly chosung: readonly string[];
@@ -89,11 +58,7 @@ function nodeNameIndex(node: NodeNameSource): NodeNameIndex {
   return index;
 }
 
-/**
- * How strongly a name matched, strongest first. The ladder the palette scores on
- * is built from this, so the order is the contract: a name that really contains
- * what was typed beats one the Hangul rules had to reach for.
- */
+/** Strongest first; the palette's ladder follows this order. */
 const NAME_MATCH_TIERS = [
   "equals",
   "prefix",
