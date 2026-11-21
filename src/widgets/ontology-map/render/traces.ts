@@ -1,17 +1,7 @@
 /**
- * Edge (trace) geometry + paint.
- *
- * "Board-router feel" (design doc's phrase): every `contains`/`depends`
- * bow is precomputed once from real polar geometry, so it never re-routes —
- * only its rendered width/color/dash thins toward hairlines as `farT → 1`.
- * `depends` edges additionally carry a one-shot "signal pulse" on hover
- * (`model/visibility/focus-state.ts#scheduleRipple` triggers it) plus an ambient
- * "comet tail" that drifts along the curve continuously
- * (`updateParticles()`'s `e.t += dt*0.075`).
- *
- * Zero React imports — pure Canvas 2D drawing plus one extractable pure
- * geometry helper (`computeBowControlPoint`, unit-tested in `traces.test.ts`
- * without a canvas).
+ * Edge geometry and paint, pure canvas 2D. Every bow is precomputed once from polar geometry, so edges never
+ * re-route; only width, colour and dash thin toward hairlines as `farT → 1`. `depends` edges carry an ambient
+ * comet tail and a hover pulse. `computeBowControlPoint` is unit-tested in `traces.test.ts` without a canvas.
  */
 import { type EdgeReveal, partialQuadratic, type Point, revealSpan } from "../expressive/edge-reveal";
 import { isEdgeSignalled } from "../light/signal-plan";
@@ -25,23 +15,9 @@ function polarOf(p: Point): { r: number; angle: number;
 }
 
 /**
- * Quadratic-bezier control point for one edge, ported from `buildEdges()`.
- * The control point is pulled from the segment midpoint toward whichever
- * endpoint is closer to the shared origin (world center), at that
- * endpoint's angle, capped to `maxBow` and scaled by `blend`:
- *
- * ```
- * innerR    = min(|a|, |b|)                      // polar radius from origin
- * farAngle  = angle of whichever of a/b is farther from origin
- * cpFull    = (cos(farAngle)*innerR, sin(farAngle)*innerR)
- * mid       = (a+b)/2
- * v         = cpFull - mid
- * capped    = min(|v|, maxBow)
- * controlPt = mid + normalize(v) * capped * blend
- * ```
- *
- * @param maxBow `--map-edge-bow-contains` (70) or `-depends` (92)
- * @param blend `--map-edge-blend-contains` (0.46) or `-depends` (0.62)
+ * Quadratic control point for one edge: pulled from the segment midpoint toward the polar point
+ * `(cos(farAngle) * innerR, sin(farAngle) * innerR)` (`innerR` is the nearer endpoint's radius from the origin),
+ * capped to `maxBow` and scaled by `blend` (`--map-edge-bow-*`, `--map-edge-blend-*`).
  */
 export function computeBowControlPoint(a: Point, b: Point, maxBow: number, blend: number): Point {
   const pa = polarOf(a);
@@ -62,15 +38,8 @@ export function computeBowControlPoint(a: Point, b: Point, maxBow: number, blend
 }
 
 /**
- * `depends`-only bow: a perpendicular offset to the left of the travel direction.
- *
- * The polar bow (`computeBowControlPoint`) assumes the concentric-ring meaning
- * "bend toward the parent ring" — still true for containment, but meaningless
- * for peer `depends` edges after drag/force, where adjacent edges bowed in
- * opposite directions for no reason (Guardian measurement: some long edges
- * bowed, others stayed straight). A consistent left-perpendicular bow is a
- * function of direction, so a mutual A→B / B→A pair separates into two arcs on
- * its own — previously they overlapped exactly into one strand.
+ * `depends`-only bow, perpendicular to the left of the travel direction: the polar bow means nothing for peer
+ * edges after drag or force, and a direction-based bow separates a mutual A→B / B→A pair into two arcs.
  */
 export function computeDependsBowControlPoint(a: Point, b: Point, maxBow: number): Point {
   const mx = (a.x + b.x) / 2;
@@ -79,11 +48,9 @@ export function computeDependsBowControlPoint(a: Point, b: Point, maxBow: number
   const dy = b.y - a.y;
   const len = Math.hypot(dx, dy) || 1;
   const bow = Math.min(len * 0.12, maxBow);
-  // Left normal of the travel direction: (-dy, dx)/len
   return { x: mx + (-dy / len) * bow, y: my + (dx / len) * bow };
 }
 
-/** Point at parameter `t` (0..1) along the quadratic bezier `p0 -> p1(control) -> p2`. */
 export function bezierPoint(p0: Point, p1: Point, p2: Point, t: number): Point {
   const u = 1 - t;
   return {
@@ -99,86 +66,42 @@ export interface TraceDrawState {
   control: Point;
   relationType: "contains" | "depends";
   /**
-   * Whether this relation **has a direction**
-   * (`entities/knowledge-graph/lib/ontology-tree/relations#isDirectionalRelation`).
-   * `relationType === "depends"` is a two-way split that holds **everything**
-   * that is not containment, so symmetric relations (`related_to`) sit inside
-   * it too. The directional taper (thick at source → thin at target) is drawn
-   * only when a direction really exists; symmetric relations get **uniform
-   * width**, encoding the fact that both ends are equals.
-   *
-   * Defaults to `true`, so an unknown type is never silently demoted to
-   * symmetric.
+   * Whether this relation has a direction (`isDirectionalRelation`): `depends` holds everything but containment,
+   * symmetric relations (`related_to`) included. Only directional ones get the taper; symmetric ones draw uniform
+   * width. Defaults to `true`.
    */
   directional?: boolean;
   egoState: "ego" | "dim" | "normal";
   farT: number;
   /** 0..1 progress of the ambient comet-tail / pulse position along the curve, `depends` edges only. */
   t: number;
-  /**
-   * True for the single ego edge the user is hovering in the detail panel's
-   * "connected nodes" list — an extra "emphasis ripple" over the ego brightening so
-   * the panel row and this edge read as one (lead spec §4). Ignored unless
-   * `egoState === "ego"`.
-   */
+  /** The single ego edge hovered in the detail panel's "connected nodes" list: an emphasis ripple so the row and the edge read as one. Ignored unless `egoState === "ego"`. */
   emphasized?: boolean;
   /**
    * Hover lift 0..1: how far a `normal` edge touching the hovered node has risen toward the ego ink,
    * on the node's own emphasis ramp. Ignored unless `egoState === "normal"`.
    */
   hoverLift?: number;
-    /**
-     * Edge selection (pair focus) — drawn with the dedicated pale-indigo stroke.
-     * Same family as node selection (standard indigo) but a different value, so
-     * the two read apart at a glance without adding a second colour system.
-     */
+    /** Edge selection (pair focus): the pale-indigo stroke, the same family as node selection but a different value. */
     selected?: boolean;
-  /**
-   * Containment ink level (0 trunk · 1 middle · 2 twig). Consumed only by the
-   * non-ego `contains` render: stroke picks the per-level token, width the
-   * per-level factor. The depends/ego/dim paths are untouched — the type and
-   * attention channels stay orthogonal to this ramp.
-   */
+  /** Containment ink level (0 trunk, 1 middle, 2 twig): picks the stroke token and width factor of the non-ego `contains` render only. */
   level?: 0 | 1 | 2;
   /** 3D view — line-width multiplier (depth falloff). Defaults to 1, i.e. 2D. */
   widthScale?: number;
   /**
-   * 3D view — **the smallest stroke this line may be drawn at, in CSS px**, after
-   * the depth multiplier. The caller derives it from the ratio the canvas is
-   * rasterising at (`model/dome-view/ink.ts#domeEdgeMinWidthPx`), so what is really
-   * held is a width in *device* pixels: below one device pixel the rasteriser
-   * spreads the stroke's alpha over the two pixel rows it straddles and the peak
-   * contrast collapses, which is how the depth-ink floor's whole gain disappeared
-   * at DPR 1 while measuring intact at DPR 2.
-   *
-   * It floors the **base** width, before the directional taper and after the
-   * per-level factor, so source→target still reads from width and the near lines,
-   * already above it, are untouched. Far lines that were below it tie at the
-   * floor — the cartographic hairline minimum, and the reason depth keeps being
-   * carried by alpha, halo, node fog, size and draw order rather than by a stroke
-   * too thin to raster.
-   *
-   * Omitted/0 means 2D or an interaction-exempt line: no floor, byte-identical
-   * output.
+   * 3D view: the smallest stroke this line may draw at, in CSS px after the depth multiplier. It is derived from the
+   * raster ratio (`domeEdgeMinWidthPx`) so it holds a device-pixel width: below one device pixel the alpha spreads
+   * over two rows and contrast collapses. It floors the base width before the directional taper; omitted/0 means 2D.
    */
   minWidthPx?: number;
   /**
-   * 3D view — **depth halo**. Just before the ink, the same curve is stroked
-   * once in the canvas background colour slightly wider, cutting that much out
-   * of whatever was already drawn behind it. Rationale, values, and why this is
-   * not a glow: `domeHaloPx` in `model/dome-view/`
-   * (Everts et al. 2009, IEEE TVCG 15(6)).
-   *
-   * `px` is the **half-width in screen px**; `alpha` is the final opacity at
-   * that spot — the caller computes both from the depth and the line's own
-   * alpha. Omitted/`null` means 2D: zero extra strokes.
+   * 3D view depth halo: just before the ink the curve is stroked once wider in the canvas background colour, cutting
+   * that much out of what is already behind it (rationale in `domeHaloPx`, `model/dome-view/`). `px` is the
+   * half-width in screen px, `alpha` the final opacity; omitted or null means 2D, zero extra strokes.
    */
   halo?: { color: string; px: number; alpha: number;
     } | null;
-  /**
-   * The comet tail is the only moving mark this module paints; honouring `prefers-reduced-motion`
-   * here keeps the canvas fully static.
-   */
+  /** The comet tail is the only moving mark here; honouring `prefers-reduced-motion` keeps the canvas fully static. */
   reducedMotion?: boolean;
   /**
    * True only for `egoState === "ego"` contains edges passing the cap (`selectEgoContainsComets`,
@@ -186,12 +109,7 @@ export interface TraceDrawState {
    * draw no particles. `depends` edges ignore this.
    */
   containsCometEligible?: boolean;
-  /**
-   * Whether the always-on ambient `depends` comet passed the cap. Same grammar
-   * as its sibling `containsCometEligible`: false draws the dashed body only.
-   * Defaults to `true` — the pre-cap behaviour — so a caller that passes no cap
-   * does not regress.
-   */
+  /** Whether the ambient `depends` comet passed the cap, like `containsCometEligible`: false draws the dashed body only. Defaults to `true`. */
   dependsCometEligible?: boolean;
   cometOwner?: ParticleEdge;
   /**
@@ -228,11 +146,7 @@ export interface TraceTokens {
   indigoBright: string;
   /** Edge-selection stroke (`--map-edge-selected`); falls back to indigoBright. */
   edgeSelected?: string;
-  /**
-   * Stroke for a stepped-along relation — the **same** ink as the footprints
-   * (`--color-footprint-trail`). Used only where `trailWalked > 0`; absent means
-   * no trail emphasis and no behaviour change.
-   */
+  /** Stroke for a stepped-along relation, the same ink as the footprints (`--color-footprint-trail`); used only where `trailWalked > 0`. */
   edgeTrail?: string;
 }
 
@@ -240,12 +154,7 @@ function clamp01(v: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v;
 }
 
-/**
- * Linear interpolation between two hex colours — used only where the trail ramps
- * up from `dim` to the trail ink (hard cuts are banned). Same formula as
- * `lerpColorHex` in `render/grid.ts`, duplicated rather than imported because
- * this file is a pure renderer that knows nothing of the token layer.
- */
+/** Linear interpolation between two hex colours for the trail ramp from `dim`; duplicated from `lerpColorHex` because this renderer knows nothing of the token layer. */
 function mixHex(from: string, to: string, t: number): string {
   const parse = (hex: string): [number, number, number] | null => {
     const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -387,32 +296,17 @@ function strokeBody(ctx: CanvasRenderingContext2D, state: TraceDrawState, stroke
         ctx.stroke();
     }
 }
-/**
- * Draws one edge's curve plus (for `depends` edges not in the `"dim"` ego
- * state) its comet-tail. One-shot hover pulses are a separate transient list
- * — drawn by the caller looping active pulses through this same curve math,
- * not owned by this per-edge `draw()`.
- */
 const DEPENDS_DASH = [3, 4];
 /**
- * Directional taper for `depends` (non-containment) edges: width thins from
- * source (`a`) to target (`b`), so direction reads from width alone with no
- * arrowhead (keeping the "board-router" vocabulary). The factors are **ratios**
- * applied to the already-computed width, so they sit orthogonally on top of
- * every state (ego/selected/farT). The midpoint is ≈ base, so total ink is
- * roughly preserved (source 1.4×, target 0.6×). Containment (solid) gets no
- * taper — its direction is already obvious from the structure (parent→child).
- * Plain constants, not tokens: these are render factors, like the per-kind
- * ratios in node-shapes.
+ * Directional taper for `depends` edges: width thins from source (1.4×) to target (0.6×), so direction reads from
+ * width with no arrowhead. The factors are ratios on the computed width, so orthogonal to every state; containment gets none.
  */
 export const DEPENDS_TAPER_START = 1.4;
 export const DEPENDS_TAPER_END = 0.6;
-/** Taper factor at curve parameter u (0 = source, 1 = target); monotonically decreasing. */
 export function dependsTaperFactor(u: number): number {
     const t = u < 0 ? 0 : u > 1 ? 1 : u;
     return DEPENDS_TAPER_START + (DEPENDS_TAPER_END - DEPENDS_TAPER_START) * t;
 }
-/** Segment count for the tapered polyline — enough to approximate the bowed curve smoothly. */
 const DEPENDS_TAPER_SEGMENTS = 14;
 /**
  * Per-level width factors. Like a cartographic road hierarchy, one ink family
@@ -508,7 +402,6 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     const emphasized = egoState === "ego" && state.emphasized === true;
     let stroke: string;
     let width: number;
-    /** Strength of the travelling light; 0 everywhere except a walked relation. */
     let glint = 0;
     const trailWalked = clamp01(state.trailWalked ?? 0);
     if (trailWalked > 0.01 && tokens.edgeTrail) {
@@ -543,13 +436,8 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     const span = reveal ? revealSpan(reveal) : null;
     width = finishWidth(state, width);
     /*
-     * Depth halo — goes down **before** the ink. This one stroke is what creates
-     * front-to-back in 3D: edges are painted far-to-near this frame (painter order
-     * in the caller), so stroking the background colour slightly wider here erases
-     * that much of the far lines already drawn.
-     *
-     * The halo is never dashed — a dashed halo leaves gaps where it cuts, so it
-     * reads as a dotted shadow rather than as occlusion.
+     * The depth halo goes down before the ink: edges paint far-to-near, so a wider background-colour stroke erases
+     * that much of the far lines already drawn. Never dashed: a dashed halo leaves gaps and reads as a dotted shadow.
      */
     const halo = state.halo;
     if (halo && halo.px > 0.05 && halo.alpha > 0.01) {
@@ -589,19 +477,13 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     else {
         strokeBody(ctx, state, stroke, width, 0, 1);
     }
-    /*
-     * The travelling light runs only on a walked relation while the trail lens is open.
-     * `state.trailGlint` is `null` on relations the light is not crossing, so one light moves along
-     * the walk in walked order.
-     */
+    /* The travelling light runs only on a walked relation while the trail lens is open; `trailGlint` is null where the light is not crossing, so one light moves along the walk in order. */
     if (glint > 0.01 && tokens.edgeTrail && state.reducedMotion !== true && state.trailGlint != null) {
         const phase = clamp01(state.trailGlint);
-        // Direction is which end the walk left from; absent, the light runs a→b.
         const u = state.trailDirection === false ? 1 - phase : phase;
         const at = bezierPoint(a, control, b, u);
         const prevAlpha = ctx.globalAlpha;
-        // Brightest mid-flight and gone at both ends, so it reads as a light travelling the
-        // line rather than a dot that pops into existence at one node and dies at the other.
+        // Brightest mid-flight and gone at both ends, so it reads as light travelling, not a dot popping at one node.
         const travel = Math.sin(Math.PI * u);
         ctx.globalAlpha = prevAlpha * glint * travel * 0.9;
         ctx.fillStyle = tokens.edgeTrail;
@@ -610,11 +492,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
         ctx.fill();
         ctx.globalAlpha = prevAlpha;
     }
-    /*
-     * Still direction mark for a walked relation: reduced-motion readers get no direction from the
-     * travelling light, and endpoint ordinals are ambiguous on a revisited node. Offset from the
-     * midpoint to clear the relation caption.
-     */
+    /* A still direction mark for a walked relation: reduced motion gets no direction from the light and endpoint ordinals are ambiguous on a revisited node; offset from the midpoint to clear the caption. */
     if (glint > 0.01 && tokens.edgeTrail) {
         const forward = state.trailDirection !== false;
         const head = bezierPoint(a, control, b, forward ? TRAIL_CHEVRON_AT : 1 - TRAIL_CHEVRON_AT);
@@ -636,8 +514,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
             ctx.beginPath();
-            // Two arms swept back from the head — an open chevron, never a filled triangle, so it
-            // stays the same weight of mark as the line it rides on.
+            // An open chevron, never a filled triangle, so it stays the weight of the line it rides on.
             ctx.moveTo(head.x - (ux * 0.72 + uy * 0.62) * arm, head.y - (uy * 0.72 - ux * 0.62) * arm);
             ctx.lineTo(head.x, head.y);
             ctx.lineTo(head.x - (ux * 0.72 - uy * 0.62) * arm, head.y - (uy * 0.72 + ux * 0.62) * arm);
@@ -671,12 +548,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
         return;
     comet(ctx, state, COMET_TAIL_BASE_NORMAL, tokens.indigo, span);
 }
-/**
- * Where along a walked relation the direction chevron sits.
- *
- * Past the midpoint, so it clears the relation caption; short of the target, so it is not
- * mistaken for something belonging to the node it points at.
- */
+/** Past the midpoint to clear the relation caption, short of the target so it is not mistaken for the node's. */
 const TRAIL_CHEVRON_AT = 0.62;
 /** How far back along the curve the chevron takes its heading from. */
 const TRAIL_CHEVRON_SPAN = 0.08;

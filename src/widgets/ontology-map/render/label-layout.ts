@@ -1,20 +1,7 @@
 /**
- * Pure label-placement helpers (from a Design Guardian legibility rejection) — no canvas, no
- * tokens, unit-tested in `label-layout.test.ts`:
- *
- * - `isWithinSafeRect` — the anchor must sit inside the VISIBLE area (viewport
- *   minus the left ReaderLens panel + right popover rail + top/bottom chrome),
- *   so a label never leaks behind the panel or clips off the right edge.
- * - `greedyPlaceLabels` — priority greedy bbox suppression (project > domain >
- *   capability > element): a lower-priority label whose box overlaps an
- *   already-placed one is dropped, so same-kind constellation labels and long
- *   element titles stop colliding.
- * - `ellipsizeToWidth` — word-boundary ellipsis (NEVER mid-word except as an
- *   unavoidable last resort for a single unbreakable token — design.md AI-feel
- *   list forbids mid-word truncation).
- *
- * `frame-draw` supplies the pixel geometry (safe rect from `--map-safe-inset-*`,
- * measured bboxes) and consumes the placed list.
+ * Pure label-placement helpers, no canvas or tokens: `isWithinSafeRect` (the visible area minus panels and
+ * chrome), `greedyPlaceLabels` (priority bbox suppression: project > domain > capability > element) and
+ * `ellipsizeToWidth` (word-boundary ellipsis; mid-word only for one unbreakable token).
  */
 
 export interface SafeRect {
@@ -49,21 +36,14 @@ export function filterFadingLabelCollisions<T>(
   });
 }
 
-/** Inclusive point-in-rect test for a label's anchor. */
 export function isWithinSafeRect(x: number, y: number, rect: SafeRect): boolean {
   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 }
 
 /**
- * Clamp a label anchor INTO the safe rect instead of dropping it — for
- * ego-protected labels (selected/hovered/ego member) whose node sits under a
- * chrome inset. Guardian follow-up A (label-clarity): the safe-rect cull ran
- * BEFORE the selected/hovered alpha floor, so a focused domain's fan children
- * under the left panel lost their labels — recreating the "nameless shapes"
- * (nameless shapes) symptom the slice existed to fix. A clamped label sits at
- * the inset edge nearest its node, saying "this node is under this panel", which
- * beats silence.
- * `marginX`/`marginY` keep the text box itself inside the rect (width/2, font).
+ * Clamps a label anchor into the safe rect instead of dropping it, for ego-protected labels whose node sits
+ * under a chrome inset: a label at the inset edge says "this node is under this panel", which beats silence.
+ * `marginX`/`marginY` keep the text box itself inside the rect.
  */
 /**
  * A label whose slot below the node falls under the floor band takes the slot above instead, when
@@ -128,16 +108,10 @@ export interface LabelCandidate<T> {
   /** Stable tie-break within a priority — pass the node's draw index for determinism. */
   order: number;
   bbox: LabelBBox;
-  /**
-   * The id of this label's own node. Paired with `ReservedBox.ownerId` so a
-   * label never yields to **its own** node's reservation — once node discs are
-   * reserved, every label sits directly under its own node and would otherwise
-   * suppress itself.
-   */
+  /** This label's own node id: with node discs reserved every label sits under its own node and would suppress itself (`ReservedBox.ownerId`). */
   ownerId?: string;
   /** A second box to try when `bbox` is taken: the slot above the node. */
   altBbox?: LabelBBox;
-  /** Set by `greedyPlaceLabels` when it fell back to `altBbox`. */
   usedAlt?: boolean;
   payload: T;
 }
@@ -151,13 +125,7 @@ export interface LabelPriorityInput {
   isLensSubject?: boolean;
 }
 
-/**
- * Collision-culling priority ladder (label-clarity, 2026-07): selected >
- * hovered > project/hub > domain > capability > element. Lower number wins
- * `greedyPlaceLabels` — a domain name must survive over a capability's when
- * both compete for the same screen area, and the node the user is actively
- * attending to (selected or hovered) must never lose to a passive one.
- */
+/** Collision-culling ladder, lower wins `greedyPlaceLabels`: selected > hovered > project/hub > domain > capability > element. */
 export function resolveLabelPriority(input: LabelPriorityInput): number {
   if (input.isLensSubject) return 0;
   if (input.isSelected) return 0;
@@ -169,15 +137,9 @@ export function resolveLabelPriority(input: LabelPriorityInput): number {
 }
 
 /**
- * A non-label surface that already owns screen area and that labels must respect
- * (currently: density-gate cluster chips). `priority` places the box on the SAME
- * ladder as `resolveLabelPriority` — a candidate only yields to it when the
- * candidate's priority number is strictly larger (i.e. it ranks lower).
- *
- * Why a priority instead of an absolute block: a chip must not silence the label
- * of the node the user is actively attending to. Selected(0)/hovered(1) labels
- * outrank a chip and still draw; passive domain/capability/element labels (3/4/5)
- * yield. See `CLUSTER_CHIP_LABEL_PRIORITY`.
+ * A non-label surface that owns screen area (density-gate cluster chips), ranked on the same ladder as
+ * `resolveLabelPriority`; a candidate yields only when its number is strictly larger. A priority, not an
+ * absolute block, so a chip never silences the selected (0) or hovered (1) label (`CLUSTER_CHIP_LABEL_PRIORITY`).
  */
 export interface ReservedBox {
   bbox: LabelBBox;
@@ -187,31 +149,15 @@ export interface ReservedBox {
 }
 
 /**
- * Cluster chips sit at the project/hub tier (2) of the label ladder.
- *
- * rationale: a chip is an interactive affordance carrying a typed fact ("N are
- * collapsed here, click to open") — losing it to a passive element label costs the user a
- * control, while losing an element label costs one name that hover/ego restores.
- * Above 2 sit only selected/hovered labels, which the user is actively attending
- * to and which must never be silenced by a chip.
+ * Chips sit at the project/hub tier (2): losing a chip costs the user a control, losing an element label
+ * costs one name that hover restores. Only selected and hovered labels rank above.
  */
 export const CLUSTER_CHIP_LABEL_PRIORITY = 2;
 
 /**
- * Where a drawn node disc ranks in the label priority ladder.
- *
- * Measured during review: with ego focus on a product node, the child label
- * "product registration" cut **15px into** the selected node's box, and the label beside it
- * was swallowed by an expand badge down to a single character. Greedy
- * suppression only knew label ↔ label overlap, never label ↔ **node shape** —
- * and a name laid over a shape makes both unreadable (Tufte: graphical
- * integrity).
- *
- * Rank 1 means selected (0) and hovered (1) labels do not yield to a disc: the
- * name the user is looking at right now disappearing behind someone else's shape
- * is the worse outcome. Passive project/domain/capability/element labels (2–5)
- * step aside — first by flipping above the node, then dropping if that is
- * blocked too (the flip logic in `ui/frame-draw/labels/paint-labels.ts`).
+ * Where a drawn node disc ranks in the ladder. Rank 1 keeps the selected (0) and hovered (1) labels from
+ * yielding to a disc; passive labels (2-5) flip above the node, then drop if blocked
+ * (`ui/frame-draw/labels/paint-labels.ts`). Label-vs-label suppression alone let a name cut into a node.
  */
 export const NODE_DISC_LABEL_PRIORITY = 1;
 
@@ -331,21 +277,10 @@ export class ReservedBoxIndex {
 }
 
 /**
- * Greedy priority suppression: sort by priority (then stable `order`), place a
- * label only if its bbox doesn't overlap any already-placed one. Deterministic —
- * identical input → identical placed list.
- *
- * `reserved` (optional) lets non-label surfaces pre-own screen area — a candidate
- * that ranks below a reserved box and overlaps it is dropped. Omitted → identical
- * to the pre-reservation behavior.
- *
- * rank9 — optional `isPreferred` hysteresis: within the SAME priority tier, a
- * candidate the predicate marks (e.g. it was placed last frame) sorts ahead of a
- * non-preferred one, so an already-showing label keeps its slot instead of being
- * evicted by an equal-priority newcomer that merely has a lower `order`. Kind
- * priority still dominates (a domain never yields to a preferred element), so
- * this only breaks ties — enough to stop same-tier LOD churn without changing the
- * ladder. Omitted → identical to the pre-rank9 behavior (deterministic).
+ * Greedy priority suppression: sort by priority, then `order`; place a label only if its bbox overlaps no
+ * placed one. Deterministic. `reserved` lets non-label surfaces own screen area: a lower-ranked candidate
+ * overlapping one is dropped. `isPreferred` breaks ties within one priority tier (a label placed last frame
+ * keeps its slot); kind priority still dominates.
  */
 export function greedyPlaceLabels<T>(
   candidates: readonly LabelCandidate<T>[],
@@ -401,8 +336,6 @@ export function ellipsizeToWidth(
 ): string {
   if (measure(text) <= maxWidth) return text;
 
-  // Collect prefixes that end right before a boundary char (the whole word/segment
-  // before each separator), longest first.
   let best = "";
   for (let i = 1; i < text.length; i += 1) {
     if (!BOUNDARY.test(text[i])) continue;
@@ -411,7 +344,6 @@ export function ellipsizeToWidth(
   }
   if (best !== "") return best + ELLIPSIS;
 
-  // Last resort: no boundary fits — hard-truncate the single long token.
   for (let i = text.length - 1; i >= 1; i -= 1) {
     const prefix = text.slice(0, i);
     if (measure(prefix + ELLIPSIS) <= maxWidth) return prefix + ELLIPSIS;
