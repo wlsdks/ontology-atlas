@@ -1,13 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  buildCompileBrief,
-  COMPILE_BATCH_SIZE,
-  COMPILE_BRIEF_BYTE_LIMIT,
-  COMPILE_BRIEF_PAGE_CAP,
-  selectCompileBatch,
-  selectCompileTargets,
-} from "./compile-brief";
+import { COMPILE_BATCH_SIZE, selectCompileBatch, selectCompileTargets } from "./compile-batch";
+import { buildCompileBrief, COMPILE_BRIEF_BYTE_LIMIT } from "./compile-brief";
+import { COMPILE_BRIEF_PAGE_CAP } from "./compile-brief-pages";
 import type { LibrarySourceRow, LibraryWikiPage } from "@/entities/docs-vault";
 import {
   WIKI_PAGE_TEMPLATE,
