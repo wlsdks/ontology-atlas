@@ -319,3 +319,4 @@ one commit.
 
 - 2026-11-21: first draft, after the owner's comment on the Wiki tab's left panel and the
   request to fit the LLM wiki pattern.
+- 2026-11-21: I-1 landed ahead of its mount. Until I-2 mounts the column in `LibrarySection.tsx`, nothing at runtime imports `src/views/library/ui/parts/index-column/WikiIndex.tsx`, `src/views/library/ui/parts/index-column/IndexGroup.tsx` or `src/views/library/ui/parts/index-column/IndexRow.tsx`; their dead-code exceptions name this spec and go with I-2.
