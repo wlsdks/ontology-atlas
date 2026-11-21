@@ -38,6 +38,8 @@ pub(crate) trait Builtin: Embedder + Send + Sync {
     fn free_bytes(&self) -> Option<u64>;
     /// Every byte the model holds in the app's data folder, ready or not.
     fn model_bytes(&self) -> u64;
+    /// What a download of the pinned files has fetched, its parts included.
+    fn downloaded_bytes(&self) -> u64;
     /// The folder in the app's data folder that holds the model, made or not.
     fn dir(&self) -> PathBuf;
 }
@@ -159,6 +161,10 @@ impl Builtin for AppBuiltin {
 
     fn model_bytes(&self) -> u64 {
         self.0.store().bytes()
+    }
+
+    fn downloaded_bytes(&self) -> u64 {
+        self.0.store().downloaded_bytes()
     }
 
     fn dir(&self) -> PathBuf {

@@ -264,6 +264,23 @@ test('Resume on a folder whose model is gone downloads nothing and offers Downlo
   await expect(line(page)).toHaveAttribute('data-state', 'modelDownloading');
 });
 
+test('a download stopped part way says what it kept, and Continue the download asks in the dialog before it downloads', async ({ page }) => {
+  const harness = await openDesk(page, {}, { source: { kind: 'builtin' }, paused: false });
+  const downloads = async () => (await vectorCalls(harness, page, 'vault_vectors_prepare'))
+    .filter((call) => (call.params as { download?: boolean }).download === true);
+  await emit(harness, page, LIBRARY_VECTOR_SCRIPT.downloading, 'modelDownloading');
+  await page.getByTestId('meaning-desk-stop').last().click();
+  await expect(line(page)).toHaveAttribute('data-state', 'modelDownloadPaused');
+  await expect(page.getByTestId('meaning-desk-sentence')).toHaveText(/The model download stopped at 734 MB of 2\.3 GB\. What is downloaded is kept\./);
+
+  await page.getByTestId('meaning-desk-continueDownload').click();
+  await expect(page.getByTestId('meaning-setup-primary')).toBeVisible();
+  expect(await downloads()).toEqual([]);
+  await page.getByTestId('meaning-setup-primary').click();
+  await expect.poll(async () => (await downloads()).length).toBe(1);
+  await expect(line(page)).toHaveAttribute('data-state', 'modelDownloading');
+});
+
 test('says a stop before any file was prepared, with Resume', async ({ page }) => {
   await openDesk(page, { status: { ...LIBRARY_VECTOR_SCRIPT.stopped, filesDone: 0, passagesDone: 0 } }, { source: { kind: 'builtin' }, paused: false });
   await expect(line(page)).toHaveAttribute('data-state', 'stoppedEmpty');
@@ -579,5 +596,13 @@ test('a first preparation that finishes in view says what is ready, and Ask a qu
 test('a folder found ready is not celebrated', async ({ page }) => {
   await openDesk(page, { status: LIBRARY_VECTOR_SCRIPT.ready }, { source: { kind: 'builtin' }, paused: false });
   await expect(line(page)).toHaveAttribute('data-state', 'ready');
+  await expect(page.getByTestId('meaning-run-stage')).toHaveCount(0);
+});
+
+test('a resumed update that first reads as a preparation is not celebrated when it ends', async ({ page }) => {
+  const harness = await openDesk(page, {}, { source: { kind: 'builtin' }, paused: false });
+  await emit(harness, page, { ...LIBRARY_VECTOR_SCRIPT.updatingMany, updating: false }, 'preparing');
+  await emit(harness, page, LIBRARY_VECTOR_SCRIPT.updatingMany, 'updating');
+  await emit(harness, page, LIBRARY_VECTOR_SCRIPT.ready, 'ready');
   await expect(page.getByTestId('meaning-run-stage')).toHaveCount(0);
 });

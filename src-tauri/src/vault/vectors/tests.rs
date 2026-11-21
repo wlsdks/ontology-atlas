@@ -330,8 +330,10 @@ fn a_model_gone_says_what_a_cut_off_download_kept() {
     harness.vectors.delete_model().unwrap();
     assert_eq!(status(&harness, &entry).model, None);
 
-    // A quit in the middle of the download leaves its part on disk.
-    harness.model().on_disk.store(60_000, Ordering::SeqCst);
+    // A quit in the middle of the download leaves its part on disk; a half-made converted
+    // file beside it is not part of what the download kept.
+    harness.model().on_disk.store(900_000, Ordering::SeqCst);
+    harness.model().downloaded.store(60_000, Ordering::SeqCst);
     let gone = status(&harness, &entry);
     assert_eq!(gone.failure, Some(VectorFailure::ModelGone));
     let kept = gone.model.expect("the kept part of the download");
@@ -697,6 +699,33 @@ fn the_rate_counts_only_the_folder_pass_not_the_download_before_it() {
             );
         }
     }
+    cleanup(&root);
+}
+
+#[test]
+fn a_download_says_when_it_checks_what_it_kept_before_the_network() {
+    let harness = Harness::new();
+    harness.model().ready.store(false, Ordering::SeqCst);
+    let root = vault("download-checking", 3);
+    let entry = entry(&harness, &root);
+    // A second passes after each event, so no progress event waits behind the throttle.
+    let clock = harness.clock.clone();
+    let mut seconds = 0;
+    harness.events.on_event(move |_| {
+        seconds += 1;
+        clock.set(Duration::from_secs(seconds));
+        false
+    });
+    prepare_and_wait(&harness, &entry, VectorSource::Builtin);
+
+    let bytes: Vec<(u64, bool)> = harness
+        .events
+        .all()
+        .into_iter()
+        .filter_map(|(_, event)| event.model.map(|model| (model.done_bytes, model.checking)))
+        .filter(|(done, _)| *done > 0)
+        .collect();
+    assert_eq!(bytes, [(10, true), (60, false), (100, false)]);
     cleanup(&root);
 }
 

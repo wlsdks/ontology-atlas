@@ -91,8 +91,9 @@ delete. A switch the app refuses keeps the earlier model. Only the dialog's Down
 results stand under the field, a stage opens below the line: Moru at the work,
 the steps Download the model, Fit it to this computer and Record each passage's
 meaning (only the last for an Ollama model) with the running one lit, a bar for
-that step, the line's sentence and Stop, then the download speed or the last
-three files read, each with the passages it gave. The stage keeps one height
+that step, the line's sentence and Stop, then the download speed and minutes left
+(or that the kept part is being checked) or the last three files read beside the
+passages recorded so far. The stage keeps one height
 through every step; with results on screen the job stays one line with its ring.
 A first preparation that finishes in view says how many passages in how many
 files carry their meaning, with **Ask a question**, which puts focus in the

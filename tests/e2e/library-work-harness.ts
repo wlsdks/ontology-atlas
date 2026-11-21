@@ -64,8 +64,8 @@ const MODEL_DOWNLOAD_BYTES = 2_288_243_938;
 export const LIBRARY_VECTOR_SCRIPT = {
   notSetUp: vectorStatus({ phase: "notSetUp" }),
   waitingTurn: vectorStatus({ phase: "waitingTurn", filesTotal: 2000 }),
-  downloading: vectorStatus({ phase: "modelDownloading", model: { doneBytes: 734_003_200, totalBytes: MODEL_DOWNLOAD_BYTES } }),
-  downloaded: vectorStatus({ phase: "modelDownloading", model: { doneBytes: MODEL_DOWNLOAD_BYTES, totalBytes: MODEL_DOWNLOAD_BYTES } }),
+  downloading: vectorStatus({ phase: "modelDownloading", model: { doneBytes: 734_003_200, totalBytes: MODEL_DOWNLOAD_BYTES, checking: false } }),
+  downloaded: vectorStatus({ phase: "modelDownloading", model: { doneBytes: MODEL_DOWNLOAD_BYTES, totalBytes: MODEL_DOWNLOAD_BYTES, checking: false } }),
   converting: vectorStatus({ phase: "modelConverting" }),
   preparing: vectorStatus({ phase: "preparing", filesDone: 312, filesTotal: 2000, passagesDone: 1480, passagesTotal: 9800, currentPath: "wiki/architecture.md", vectorsBytes: 2_072_000 }),
   preparingMeasured: vectorStatus({ phase: "preparing", filesDone: 1240, filesTotal: 2000, passagesDone: 6020, passagesTotal: 9800, currentPath: "sources/field-notes/2026-04.md", passagesPerSecond: 11.9, vectorsBytes: 8_428_000 }),
@@ -85,7 +85,7 @@ const failedAfterWork = (failure: VectorFailure, failureDetail: string): VectorS
 
 /** One status per failure, each with the coded detail the app sends with it. */
 export const LIBRARY_VECTOR_FAILURES: Record<VectorFailure, VectorStatus> = {
-  download: { ...failedBeforeWork("download", "embed-request-failed"), model: { doneBytes: 734_003_200, totalBytes: MODEL_DOWNLOAD_BYTES } },
+  download: { ...failedBeforeWork("download", "embed-request-failed"), model: { doneBytes: 734_003_200, totalBytes: MODEL_DOWNLOAD_BYTES, checking: false } },
   modelCheck: failedBeforeWork("modelCheck", "embed-download-hash-mismatch"),
   needsDirect: failedBeforeWork("needsDirect", "embed-download-no-direct-connection"),
   diskShort: failedBeforeWork("diskShort", "embed-model-disk-space"),
@@ -547,7 +547,11 @@ export async function installLibraryWorkHarness(
         if (command === "vault_vectors_probe") return new Promise((resolve) => window.setTimeout(() => resolve(currentProbe), vectors.probeDelayMs));
         const stopRunning = () => {
           const running = ["waitingTurn", "modelDownloading", "modelConverting", "preparing"].includes(currentVectorStatus.phase);
-          if (running) currentVectorStatus = { ...currentVectorStatus, phase: "stopped", updating: false, currentPath: null, passagesPerSecond: null, model: null };
+          // As the app does, a download cut short leaves no model, and says what it kept.
+          if (currentVectorStatus.phase === "modelDownloading") {
+            modelReady = false;
+            currentVectorStatus = { ...currentVectorStatus, phase: "failed", failure: "modelGone", failureDetail: "embed-model-not-ready", updating: false, currentPath: null, passagesPerSecond: null };
+          } else if (running) currentVectorStatus = { ...currentVectorStatus, phase: "stopped", updating: false, currentPath: null, passagesPerSecond: null, model: null };
           return Promise.resolve(currentVectorStatus);
         };
         // `calls` records `paused` as sent; a paused folder is reported stopped, as the app does.
@@ -558,7 +562,7 @@ export async function installLibraryWorkHarness(
           if (source?.kind === "builtin" && !modelReady) {
             if (args.download === true) {
               modelReady = true;
-              currentVectorStatus = { ...currentVectorStatus, phase: "modelDownloading", failure: null, failureDetail: null, updating: false, currentPath: null, passagesPerSecond: null, model: { doneBytes: 0, totalBytes: currentProbe.builtin.downloadBytes } };
+              currentVectorStatus = { ...currentVectorStatus, phase: "modelDownloading", failure: null, failureDetail: null, updating: false, currentPath: null, passagesPerSecond: null, model: { doneBytes: 0, totalBytes: currentProbe.builtin.downloadBytes, checking: false } };
             } else {
               currentVectorStatus = { ...currentVectorStatus, phase: "failed", failure: "modelGone", failureDetail: "embed-model-not-ready", updating: false, currentPath: null, passagesPerSecond: null, model: null };
             }

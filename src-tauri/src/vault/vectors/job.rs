@@ -162,7 +162,12 @@ fn model_gone() -> Ended {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Stage {
     Starting,
-    Downloading { done: u64, total: u64 },
+    /// `checking` while the kept part of an earlier download is hashed, before the network.
+    Downloading {
+        done: u64,
+        total: u64,
+        checking: bool,
+    },
     Converting,
     Planning,
     Preparing,
@@ -615,17 +620,18 @@ impl Vectors {
         }
     }
 
-    /// Whether the built-in model is missing from this computer, a partial download included.
     /// What a cut-off download left of the built-in model, said beside `ModelGone` so the screen
     /// offers to continue it rather than to start again.
     fn kept_download(&self) -> Option<ModelBytes> {
-        let done = self.sources.builtin().ok()?.model_bytes();
+        let done = self.sources.builtin().ok()?.downloaded_bytes();
         (done > 0).then(|| ModelBytes {
             done_bytes: done,
-            total_bytes: ModelStore::download_bytes().max(done),
+            total_bytes: ModelStore::download_bytes(),
+            checking: false,
         })
     }
 
+    /// Whether the built-in model is missing from this computer, a partial download included.
     pub(super) fn builtin_absent(&self) -> bool {
         !self
             .sources
@@ -664,7 +670,11 @@ impl Vectors {
             }
             // A pass that must fetch the model says so once it holds the turn.
             let initial = if absent {
-                Stage::Downloading { done: 0, total: 0 }
+                Stage::Downloading {
+                    done: 0,
+                    total: 0,
+                    checking: false,
+                }
             } else {
                 Stage::Starting
             };
@@ -814,7 +824,11 @@ impl Vectors {
         }
         // The worker maps the weights; nothing may hold them while the files are replaced.
         builtin.release();
-        run.set_stage(Stage::Downloading { done: 0, total: 0 });
+        run.set_stage(Stage::Downloading {
+            done: 0,
+            total: 0,
+            checking: false,
+        });
         self.report_phase(entry);
         let step = Cell::new(ModelStage::Verify);
         let mut on_progress = |progress: &Progress| {
@@ -823,6 +837,7 @@ impl Vectors {
                 ModelStage::Verify | ModelStage::Download => Stage::Downloading {
                     done: progress.done,
                     total: progress.total,
+                    checking: progress.stage == ModelStage::Verify,
                 },
                 ModelStage::Convert | ModelStage::Check => Stage::Converting,
             };
@@ -1258,11 +1273,19 @@ impl Vectors {
             let reading = run.progress.reading();
             status.current_path = (!reading.is_empty()).then_some(reading);
         }
-        if let (VectorPhase::ModelDownloading, Stage::Downloading { done, total }) = (phase, stage)
+        if let (
+            VectorPhase::ModelDownloading,
+            Stage::Downloading {
+                done,
+                total,
+                checking,
+            },
+        ) = (phase, stage)
         {
             status.model = Some(ModelBytes {
                 done_bytes: done,
                 total_bytes: total,
+                checking,
             });
         }
         status.passages_per_second = lock(&run.rate).per_second(self.clock.now());

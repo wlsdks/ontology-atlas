@@ -12,7 +12,7 @@ import { MOTION } from '@/shared/motion';
 import { Button, Dialog } from '@/shared/ui';
 import { DialogBody } from '@/shared/ui/surfaces/dialog-sections';
 import { controlClass } from '@/shared/ui/control-class';
-import { formatSize } from '../lib/format-size';
+import { formatSize } from '@/shared/lib/format-size';
 import { BUILTIN_MODEL_NAME, choiceIdOf, modelChoices, recommendedChoiceId, type ModelChoice } from '../model/model-choices';
 import { prepare, removeModel, stop, useVectorStatus } from '../model/vector-store';
 

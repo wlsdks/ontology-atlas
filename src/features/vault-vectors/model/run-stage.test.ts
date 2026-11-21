@@ -9,7 +9,7 @@ const runner = { kind: 'runner', baseUrl: 'http://localhost:11434', model: 'bge-
 
 describe('the stage of a folder preparing for search by meaning', () => {
   it('walks the built-in model through download, fit and read, with what each has done', () => {
-    const downloading = runStage(status({ phase: 'modelDownloading', model: { doneBytes: 600, totalBytes: 2400 } }), builtin);
+    const downloading = runStage(status({ phase: 'modelDownloading', model: { doneBytes: 600, totalBytes: 2400, checking: false } }), builtin);
     expect(downloading?.steps.map((step) => step.state)).toEqual(['now', 'next', 'next']);
     expect(downloading?.fraction).toBe(0.25);
 
@@ -23,7 +23,7 @@ describe('the stage of a folder preparing for search by meaning', () => {
   });
 
   it('counts nothing before the download knows its size', () => {
-    expect(runStage(status({ phase: 'modelDownloading', model: { doneBytes: 0, totalBytes: 0 } }), builtin)?.fraction).toBeNull();
+    expect(runStage(status({ phase: 'modelDownloading', model: { doneBytes: 0, totalBytes: 0, checking: false } }), builtin)?.fraction).toBeNull();
   });
 
   it("shows only the reading for a runner's model, which Ollama already holds", () => {

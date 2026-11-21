@@ -95,7 +95,12 @@ const FAILURE_LINES: Record<VectorFailure, (status: VectorStatus, input: DeskLin
   needsDirect: () => line('modelNeedsDirect', { action: 'resume', tone: 'warning' }),
   // A quit cut the download off: what it kept is said, and the dialog continues from there.
   modelGone: (status) => status.model !== null && status.model.doneBytes > 0
-    ? line('modelDownloadPaused', { progress: progressOf('bytes', status.model.doneBytes, status.model.totalBytes), action: 'continueDownload', tone: 'warning' })
+    ? line('modelDownloadPaused', {
+      values: { done: status.model.doneBytes, total: status.model.totalBytes },
+      progress: progressOf('bytes', status.model.doneBytes, status.model.totalBytes),
+      action: 'continueDownload',
+      tone: 'warning',
+    })
     : line('modelGone', { action: 'downloadAgain', tone: 'warning' }),
   modelFailed: (status) => line('modelFailed', { values: { detail: status.failureDetail ?? '' }, action: 'resume', tone: 'warning' }),
   runnerDown: () => line('runnerDown', { action: 'resume', tone: 'warning' }),

@@ -12,7 +12,10 @@ describe('the download speed the stage shows', () => {
       return 1;
     });
   });
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
 
   const feed = (rerender: (value: number | null) => void, atMs: number, bytes: number | null) => {
     now = atMs;
@@ -20,7 +23,7 @@ describe('the download speed the stage shows', () => {
   };
 
   it('says nothing before three seconds were measured, then bytes per second over them', () => {
-    const { result, rerender } = renderHook(({ bytes }: { bytes: number | null }) => useByteRate(bytes), { initialProps: { bytes: 0 } });
+    const { result, rerender } = renderHook(({ bytes }: { bytes: number | null }) => useByteRate(bytes), { initialProps: { bytes: 0 as number | null } });
     const next = (bytes: number | null) => rerender({ bytes });
     feed(next, 1000, 4_000_000);
     expect(result.current).toBeNull();
@@ -29,11 +32,21 @@ describe('the download speed the stage shows', () => {
   });
 
   it('starts over when the count goes back, as a new download does', () => {
-    const { result, rerender } = renderHook(({ bytes }: { bytes: number | null }) => useByteRate(bytes), { initialProps: { bytes: 0 } });
+    const { result, rerender } = renderHook(({ bytes }: { bytes: number | null }) => useByteRate(bytes), { initialProps: { bytes: 0 as number | null } });
     const next = (bytes: number | null) => rerender({ bytes });
     feed(next, 4000, 16_000_000);
     expect(result.current).toBe(4_000_000);
     feed(next, 5000, 1_000);
+    expect(result.current).toBeNull();
+  });
+
+  it('says nothing once no byte came for five seconds', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const { result, rerender } = renderHook(({ bytes }: { bytes: number | null }) => useByteRate(bytes), { initialProps: { bytes: 0 as number | null } });
+    const next = (bytes: number | null) => rerender({ bytes });
+    feed(next, 4000, 16_000_000);
+    expect(result.current).toBe(4_000_000);
+    act(() => vi.advanceTimersByTime(5000));
     expect(result.current).toBeNull();
   });
 });

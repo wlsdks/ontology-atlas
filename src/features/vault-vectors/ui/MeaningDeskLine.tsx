@@ -12,7 +12,7 @@ import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source
 import type { VectorSource, VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
 import { MOTION } from '@/shared/motion';
 import { controlClass } from '@/shared/ui/control-class';
-import { formatSize } from '../lib/format-size';
+import { formatSize } from '@/shared/lib/format-size';
 import { usePacedValue } from '../lib/use-paced-value';
 import { modelFailedSentence } from '../model/model-failed-sentence';
 import { deskLine, type DeskLine, type DeskLineAction, type DeskProgress } from '../model/desk-line';
@@ -114,7 +114,8 @@ function useFinishedInView(running: RunStage | null, status: VectorStatus | null
   const [staged, setStaged] = useState<'first' | 'update' | null>(null);
   const [done, setDone] = useState<{ passages: number; files: number } | null>(null);
   const runKind = running ? (status?.updating ? 'update' : 'first') : null;
-  if (runKind !== null && staged !== 'first' && staged !== runKind) {
+  // A Resume of an update first reads as a preparation; its later `updating` says what it is.
+  if (runKind !== null && staged !== runKind) {
     setStaged(runKind);
     if (done) setDone(null);
   }
@@ -168,7 +169,8 @@ export function MeaningDeskLine({
   const ring = line?.progress === 'hold' ? heldRing : liveRing;
   const ringTrack = ring ? `${ring.measure}:${ring.total}` : 'none';
   const shownPath = usePacedValue(line?.readingPath ?? null, FILE_NAME_PACE_MS);
-  const running = isApp && roomForStage ? runStage(status, source) : null;
+  const staged = isApp && roomForStage ? runStage(status, source) : null;
+  const running = staged && { ...staged, readingPath: shownPath };
   const finished = useFinishedInView(running, status);
   const frame = useRef<HTMLDivElement>(null);
 
@@ -208,7 +210,7 @@ export function MeaningDeskLine({
         });
       }
       case 'modelDownloadPaused':
-        return t('modelDownloadPaused', { done: formatSize(progress?.done ?? 0, locale), total: formatSize(progress?.total ?? 0, locale) });
+        return t('modelDownloadPaused', { done: formatSize(current.values.done ?? 0, locale), total: formatSize(current.values.total ?? 0, locale) });
       case 'preparing':
         return t('preparing', { done: Math.floor(done), total: progress?.total ?? 0 });
       case 'modelFailed':

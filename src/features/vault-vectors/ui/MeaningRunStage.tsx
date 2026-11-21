@@ -10,7 +10,7 @@ import { MOTION } from '@/shared/motion';
 import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
 import { Button } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
-import { formatSize } from '../lib/format-size';
+import { formatSize } from '@/shared/lib/format-size';
 import { useByteRate } from '../lib/use-byte-rate';
 import { useReadFeed } from '../lib/use-read-feed';
 import type { RunStage, RunStep } from '../model/run-stage';
@@ -126,42 +126,54 @@ function StageBar({ fraction, measure, label, done }: { fraction: number | null;
   );
 }
 
+/**
+ * The files just read, sliding in as each lands, and the passages recorded so far. Passages are
+ * recorded in batches across files, so the count is the folder's, never one file's.
+ */
 function ReadFeed({ stage }: { stage: RunStage }) {
   const t = useTranslations('library.questionDesk.meaning');
   const reduced = usePrefersReducedMotion();
-  const feed = useReadFeed(stage.readingPath, stage.passagesDone);
+  const feed = useReadFeed(stage.readingPath);
   const entrance = reduced ? { duration: 0 } : MOTION.expressive;
   return (
-    <ul aria-label={t('feedLabel')} data-testid="meaning-stage-feed" className="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden">
-      <AnimatePresence initial={false} mode="popLayout">
-        {feed.map((item, index) => (
-          <motion.li
-            key={item.id}
-            layout={!reduced}
-            initial={reduced ? false : { opacity: 0, x: -12, scale: 0.92 }}
-            animate={{ opacity: index === 0 ? 1 : index === 1 ? 0.62 : 0.34, x: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.92 }}
-            transition={entrance}
-            title={item.path}
-            className="flex min-w-0 max-w-[14rem] flex-none items-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] px-2 py-0.5 text-label leading-label"
-          >
-            <span className="min-w-0 truncate text-[color:var(--color-text-secondary)]">{item.path.split('/').pop()}</span>
-            <span aria-hidden className="flex-none text-[color:var(--color-indigo-line-a54)]">→</span>
-            <span className="flex-none tabular-nums text-[color:var(--color-indigo-pale-a92)]">{t('feedPassages', { count: item.passages })}</span>
-          </motion.li>
-        ))}
-      </AnimatePresence>
-    </ul>
+    <div className="flex h-6 min-w-0 items-center gap-3">
+      <ul aria-label={t('feedLabel')} data-testid="meaning-stage-feed" className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+        <AnimatePresence initial={false} mode="popLayout">
+          {feed.map((item, index) => (
+            <motion.li
+              key={item.id}
+              layout={!reduced}
+              initial={reduced ? false : { opacity: 0, x: -12, scale: 0.92 }}
+              animate={{ opacity: index === 0 ? 1 : index === 1 ? 0.62 : 0.34, x: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.92 }}
+              transition={entrance}
+              title={item.path}
+              className="flex min-w-0 max-w-[12rem] flex-none items-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] px-2 py-0.5 text-label leading-label"
+            >
+              <Check aria-hidden className="size-3 flex-none text-[color:var(--color-indigo-pale-a82)]" strokeWidth={2.5} />
+              <span className="min-w-0 truncate text-[color:var(--color-text-secondary)]">{item.path.split('/').pop()}</span>
+            </motion.li>
+          ))}
+        </AnimatePresence>
+      </ul>
+      <span data-testid="meaning-stage-passages" className="flex-none text-label leading-label tabular-nums text-[color:var(--color-indigo-pale-a92)]">
+        {t('passagesRecorded', { count: stage.passagesDone })}
+      </span>
+    </div>
   );
 }
 
 const SECONDS_PER_MINUTE = 60;
 
 /** The download's speed, and the minutes left at that speed, once three seconds were measured. */
-function DownloadRate({ download }: { download: { doneBytes: number; totalBytes: number } | null }) {
+function DownloadRate({ download }: { download: { doneBytes: number; totalBytes: number; checking: boolean } | null }) {
   const t = useTranslations('library.questionDesk.meaning');
   const locale = useLocale();
-  const rate = useByteRate(download?.doneBytes ?? null);
+  // Hashing what an earlier download kept is the disk's speed, never the network's.
+  const rate = useByteRate(download && !download.checking ? download.doneBytes : null);
+  if (download?.checking) {
+    return <span data-testid="meaning-stage-rate" className="flex h-6 items-center text-label leading-label text-[color:var(--color-text-tertiary)]">{t('downloadChecking')}</span>;
+  }
   const measured = rate !== null && rate > 0 && download !== null && download.totalBytes > 0;
 
   return (
@@ -192,7 +204,7 @@ export function MeaningRunStage({
   stage: RunStage;
   /** The job finished while the stage was in view. */
   done: { passages: number; files: number } | null;
-  download: { doneBytes: number; totalBytes: number } | null;
+  download: { doneBytes: number; totalBytes: number; checking: boolean } | null;
   measure: 'bytes' | 'files' | null;
   /** The desk line's sentence, minutes, file and presses. */
   facts: ReactNode;
