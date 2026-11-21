@@ -54,6 +54,7 @@ export function AgentSetupTroubleshooting({
   copyActions,
 }: Props) {
   const t = useTranslations('docsVault');
+  const tSettings = useTranslations('nav.settingsMenu');
   const { copy, states } = copyActions;
   const agentDeeperChecks = [
     { key: 'gate', label: t('agentSetup.stepGate') },
@@ -295,6 +296,9 @@ export function AgentSetupTroubleshooting({
             </li>
           ))}
         </ol>
+        <p className="text-body leading-prose text-[color:var(--color-text-quaternary)]">
+          {tSettings('cliPlaceholderHint')}
+        </p>
         <div className="flex flex-wrap gap-1.5">
           <Chip
             size="md"
