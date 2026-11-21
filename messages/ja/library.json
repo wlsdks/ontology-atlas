@@ -90,7 +90,14 @@
       "showFolder": "保存フォルダを開く",
       "showFolderFailed": "フォルダを開けませんでした。",
       "modelButton": "モデル：{model}",
-      "modelButtonLabel": "意味検索のモデル：{model}。情報を見る、切り替える、削除する"
+      "modelButtonLabel": "モデル：{model}。情報を見る、切り替える、削除する",
+      "tagWorking": "準備中",
+      "workingNote": "このフォルダは今、意味検索を準備しています。モデルを切り替えるには先に停止してください。",
+      "workingNoteHere": "このフォルダは今このモデルで準備しています。進み具合は質問欄の下の行に出ます。切り替えや削除は先に停止してください。",
+      "factDeleteBuiltin": "この画面からワンクリックで削除できます。設定 › プライバシー・データからも削除できます。",
+      "factRunnerDeletePlain": "このモデルはOllamaが保持しています。Ollamaで削除します。",
+      "deleteEveryFolder": "このモデルを使う他のフォルダは、再ダウンロードするまで単語だけで検索します。",
+      "deleteEveryFolderToo": "このモデルを使う他のフォルダも同じです。"
     },
     "title": "質問して、出典をたどる。",
     "browse": "ページを見る",

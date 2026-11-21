@@ -68,12 +68,24 @@ place.
 passages that say the same thing in other words or in another language. It is
 off until the person sets it up for a folder: a line under the field's scope
 sentence says "Searching by words" with **Set up search by meaning**, which opens
-a dialog stating the model (bge-m3 by BAAI, MIT licence), the one-time download
-from the hosts the app downloads it from (huggingface.co, hf.co) and what stays on this computer, that nothing from the folder
-is sent (the download asks only for the model's files), the memory used, and that
-Settings › Privacy · data deletes the model and the prepared passages. Where
-Ollama answers on this computer with an embedding model, the dialog also offers
-that model without a download, saying under that press that each question is recorded in the folder's audit log; models the spec rules out are never offered. Only the dialog's Download and prepare downloads the model: Resume on a folder whose model is gone says so and offers Download again. The work runs in the background; the line shows
+the model dialog. Once a folder has a model, a **Model: <name>** chip at the end of
+that line opens the same dialog, so the model is always named where it is used.
+The dialog lists on the left every model the folder can use: the built-in bge-m3
+(BAAI, MIT licence) and, where Ollama answers on this computer, its embedding
+models that the spec does not rule out, each tagged In use, On this computer,
+Download to use, Download not finished or In Ollama. The right side states the
+chosen model's facts: before a download, its size from the hosts the app
+downloads it from (huggingface.co, hf.co) and what stays on this computer, that
+nothing from the folder is sent, the memory used, and that it can be deleted
+here in one press or in Settings › Privacy · data; once downloaded, its size on
+this computer and the folder that holds it, with **Open its folder**. **Delete
+the model** works in one press under a sentence naming the space freed and that
+every folder using it searches by words until it is downloaded again; the
+dialog stays open and says what it freed. Choosing another model says the
+folder's files are prepared again before its press; an Ollama model says each
+question is recorded in the folder's audit log and that Ollama removes it. While
+the folder prepares, the dialog says so and offers Stop instead of a switch or a
+delete. A switch the app refuses keeps the earlier model. Only the dialog's Download and prepare downloads the model: Resume on a folder whose model is gone says so and offers Download again. The work runs in the background; the line shows
 the download, then files prepared of the total with the file being read and
 Stop, and keeps one height in every state. An update of ten or more changed files
 is followed the same way; a smaller one is one quiet sentence. Away from the desk,

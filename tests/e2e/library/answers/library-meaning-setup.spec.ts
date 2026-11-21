@@ -96,6 +96,7 @@ test('states the probe figures in every dialog variant and keeps the box size wh
   await expect(page.getByTestId('meaning-setup-fact-download')).toContainText('2.3 GB from huggingface.co, hf.co, once. 1.2 GB stays on this computer.');
   await expect(page.getByTestId('meaning-setup-fact-memory')).toContainText('About 1.8 GB while preparing, in the background.');
   await expect(page.getByTestId('meaning-setup-fact-sent')).toBeVisible();
+  await expect(page.getByTestId('meaning-setup-fact-delete')).toContainText('Delete it here in one press');
   await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Download and prepare');
   await expect(page.getByTestId('meaning-setup-primary')).toBeEnabled();
   await expect(choices(page)).toHaveCount(1);
@@ -455,7 +456,7 @@ test('shows each value at its end under reduced motion', async ({ page }) => {
   expect(values.every((value) => value === 0 || events.some((event) => Math.abs(event - value) < 1e-4))).toBe(true);
 });
 
-test('names the folder model on the desk line and switches, deletes and shows its folder in the dialog', async ({ page }) => {
+test('names the folder model on the desk line, and its dialog offers a switch, deletes and shows its folder', async ({ page }) => {
   const harness = await openDesk(page, {
     status: LIBRARY_VECTOR_SCRIPT.ready,
     probe: { ...LIBRARY_VECTOR_PROBE, builtin: { ...LIBRARY_VECTOR_PROBE.builtin, onDisk: true, modelBytes: 1_133_454_928 } },
@@ -479,11 +480,49 @@ test('names the folder model on the desk line and switches, deletes and shows it
   await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Prepare 2,000 files');
 
   await builtin.click();
+  await expect(page.getByTestId('meaning-model-delete')).toBeVisible();
   await page.getByTestId('meaning-model-delete').click();
   await expect.poll(async () => (await vectorCalls(harness, page, 'vault_vectors_delete_model')).length).toBe(1);
   await expect(page.getByTestId('meaning-model-notice')).toHaveText('Deleted the model and freed 1.1 GB.');
-  await expect(builtin).toContainText('In use');
+  await expect(builtin).toContainText('Download to use');
+  await expect(page.getByTestId('meaning-model-in-use')).toHaveCount(0);
   await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Download and prepare');
   await expect(page.getByTestId('meaning-setup-dialog')).toBeVisible();
+  expect(await vectorCalls(harness, page, 'vault_vectors_prepare')).toEqual([]);
+});
+
+test('switches a ready folder to an Ollama model from the dialog and keeps the switch on the chip', async ({ page }) => {
+  const harness = await openDesk(page, {
+    status: LIBRARY_VECTOR_SCRIPT.ready,
+    probe: { ...LIBRARY_VECTOR_PROBE, builtin: { ...LIBRARY_VECTOR_PROBE.builtin, onDisk: true, modelBytes: 1_133_454_928 } },
+  }, { source: { kind: 'builtin' }, paused: false });
+  await page.getByTestId('meaning-desk-model').click();
+  await page.getByTestId('meaning-model-choice-runner:bge-m3:latest').click();
+  await page.getByTestId('meaning-setup-primary').click();
+  await expect(page.getByTestId('meaning-setup-dialog')).toHaveCount(0);
+  const runner = { kind: 'runner', baseUrl: 'http://localhost:11434', model: 'bge-m3:latest' };
+  expect((await vectorCalls(harness, page, 'vault_vectors_prepare')).map((call) => call.params)).toEqual([{ rootPath: VAULT_ROOT, enabled: true, source: runner, download: false }]);
+  await expect(page.getByTestId('meaning-desk-model')).toHaveText('Model: bge-m3:latest');
+});
+
+test('holds the switch and the delete while the folder prepares, until Stop', async ({ page }) => {
+  const harness = await openDesk(page, {
+    status: LIBRARY_VECTOR_SCRIPT.downloading,
+    probe: { ...LIBRARY_VECTOR_PROBE, builtin: { ...LIBRARY_VECTOR_PROBE.builtin, onDisk: false, modelBytes: 734_003_200 } },
+  }, { source: { kind: 'builtin' }, paused: false });
+  await page.getByTestId('meaning-desk-model').click();
+  await expect(page.getByTestId('meaning-model-choice-builtin')).toContainText('Preparing now');
+  await expect(page.getByTestId('meaning-model-working')).toContainText('Stop it to switch or delete');
+  await expect(page.getByTestId('meaning-setup-primary')).toHaveCount(0);
+  await expect(page.getByTestId('meaning-model-delete')).toHaveCount(0);
+  await page.getByTestId('meaning-model-choice-runner:bge-m3:latest').click();
+  await expect(page.getByTestId('meaning-setup-primary')).toHaveCount(0);
+
+  await page.getByTestId('meaning-model-stop').click();
+  await expect(page.getByTestId('meaning-model-working')).toHaveCount(0);
+  await expect(page.getByTestId('meaning-setup-primary')).toHaveText('Prepare 2,000 files');
+  await page.getByTestId('meaning-model-choice-builtin').click();
+  await expect(page.getByTestId('meaning-model-choice-builtin')).toContainText('Download not finished');
+  await expect(page.getByTestId('meaning-model-delete')).toHaveText('Delete the partial download');
   expect(await vectorCalls(harness, page, 'vault_vectors_prepare')).toEqual([]);
 });

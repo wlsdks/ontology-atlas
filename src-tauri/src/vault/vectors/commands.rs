@@ -347,3 +347,15 @@ fn reveal_model_dir(dir: &Path) -> Result<(), String> {
         crate::app_shell::reveal_in_file_manager(dir)
     }
 }
+
+#[cfg(test)]
+mod reveal_tests {
+    use super::reveal_model_dir;
+    use std::path::Path;
+
+    #[test]
+    fn refuses_a_model_folder_that_is_not_there() {
+        let error = reveal_model_dir(Path::new("/nonexistent/atlas/models/bge-m3")).unwrap_err();
+        assert!(error.starts_with("reveal-failed"), "{error}");
+    }
+}

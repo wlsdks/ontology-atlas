@@ -51,6 +51,18 @@ describe('the stored search-by-meaning choice', () => {
     expect(result.current?.phase).toBe('notSetUp');
   });
 
+  it('keeps the earlier choice and its status when the app refuses a switch to another model', async () => {
+    vaultVectorSource.write(rootPath, { kind: 'builtin' });
+    vi.mocked(vectorStatus).mockResolvedValue(ready);
+    vi.mocked(prepareVectors).mockRejectedValueOnce('embed-model-missing');
+    const { result } = renderHook(() => useVectorStatus(rootPath));
+    await act(async () => {
+      await expect(prepare(rootPath, { kind: 'runner', baseUrl: 'http://127.0.0.1:11434', model: 'bge-m3:latest' })).resolves.toBe(false);
+    });
+    expect(vaultVectorSource.read(rootPath)).toEqual({ source: { kind: 'builtin' }, paused: false });
+    expect(result.current?.phase).toBe('ready');
+  });
+
   it('is forgotten when the app refuses the status it was sent with', async () => {
     vaultVectorSource.write(rootPath, { kind: 'builtin' });
     vi.mocked(vectorStatus).mockRejectedValueOnce('embed-not-local');

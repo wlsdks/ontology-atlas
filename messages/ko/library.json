@@ -90,7 +90,14 @@
       "showFolder": "저장 폴더 열기",
       "showFolderFailed": "폴더를 열지 못했어요.",
       "modelButton": "모델: {model}",
-      "modelButtonLabel": "의미 검색 모델: {model}. 정보 보기, 바꾸기, 지우기"
+      "modelButtonLabel": "모델: {model}. 정보 보기, 바꾸기, 지우기",
+      "tagWorking": "준비 중",
+      "workingNote": "이 폴더는 지금 의미 검색을 준비하고 있어요. 모델을 바꾸려면 먼저 중지해 주세요.",
+      "workingNoteHere": "이 폴더는 지금 이 모델로 준비하고 있어요. 진행은 질문창 아래 줄에 보여요. 바꾸거나 지우려면 먼저 중지해 주세요.",
+      "factDeleteBuiltin": "이 창에서 한 번에 지울 수 있어요. 설정 › 개인정보·데이터에서도 지워요.",
+      "factRunnerDeletePlain": "이 모델은 Ollama가 갖고 있어요. Ollama에서 지워요.",
+      "deleteEveryFolder": "이 모델을 쓰는 다른 폴더는 다시 받을 때까지 단어로만 찾아요.",
+      "deleteEveryFolderToo": "이 모델을 쓰는 다른 폴더도 마찬가지예요."
     },
     "title": "질문하고, 원문에서 확인하세요.",
     "browse": "페이지 둘러보기",

@@ -273,7 +273,8 @@ process: the app starts its own executable with `--embed-worker` and speaks to
 it over a pipe. The app ends the worker two minutes after the last question,
 or when a job ends and no question came in that time; the worker also exits
 when its stdin closes, and after five idle minutes of its own. The WebView reaches it through `vault_vectors_probe`, `_status`,
-`_prepare`, `_stop`, `_warm`, `_search`, `_delete` and `_delete_model`
+`_prepare`, `_stop`, `_warm`, `_search`, `_delete`, `_delete_model` and
+`_reveal_model`
 (`src-tauri/src/vault/vectors/commands.rs`, bridged by
 `src/shared/lib/vault-folder/tauri-vault-vectors.ts`), and follows each folder's
 job through the `vault-vectors-status` event. The web playground has none.

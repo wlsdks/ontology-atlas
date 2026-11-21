@@ -6,19 +6,24 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/shared/lib/cn';
 import { readLocalEndpoint } from '@/shared/lib/llm-connection/local-endpoint';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { MODEL_DOWNLOAD_HOSTS, probeVectors, revealVectorModel, type VectorProbe } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import { MODEL_DOWNLOAD_HOSTS, probeVectors, revealVectorModel, type VectorPhase, type VectorProbe } from '@/shared/lib/vault-folder/tauri-vault-vectors';
 import { vaultVectorSource } from '@/shared/lib/vault-folder/vault-vector-source';
 import { MOTION } from '@/shared/motion';
 import { Button, Dialog } from '@/shared/ui';
+import { DialogBody } from '@/shared/ui/surfaces/dialog-sections';
 import { controlClass } from '@/shared/ui/control-class';
 import { formatSize } from '../lib/format-size';
 import { BUILTIN_MODEL_NAME, choiceIdOf, modelChoices, type ModelChoice } from '../model/model-choices';
-import { prepare, removeModel } from '../model/vector-store';
+import { prepare, removeModel, stop, useVectorStatus } from '../model/vector-store';
 
 type ProbeAnswer = { probe: VectorProbe } | { failed: true };
 type Notice = { kind: 'deleted'; freed: number } | { kind: 'deleteFailed' } | { kind: 'revealFailed' } | null;
 
 type Fact = { id: string; label: string; value: string };
+
+/** Ollama names shown as a copyable command; anything else is described without one. */
+const SHELL_SAFE_MODEL_NAME = /^[A-Za-z0-9._:/-]+$/;
+const RUNNING_PHASES: readonly VectorPhase[] = ['waitingTurn', 'modelDownloading', 'modelConverting', 'preparing'];
 
 function FactList({ facts }: { facts: Fact[] }) {
   return (
@@ -48,14 +53,22 @@ function Placeholder() {
   );
 }
 
-function ChoiceRow({ choice, selected, onSelect }: { choice: ModelChoice; selected: boolean; onSelect: () => void }) {
+/** The folder searches with this choice now: its model is here and answering. */
+function isLive(choice: ModelChoice): boolean {
+  return choice.inUse && (choice.kind === 'builtin' ? choice.holding === 'ready' : choice.reachable);
+}
+
+function ChoiceRow({ choice, selected, working, onSelect }: { choice: ModelChoice; selected: boolean; working: boolean; onSelect: () => void }) {
   const t = useTranslations('library.questionDesk.meaning');
   const name = choice.kind === 'builtin' ? BUILTIN_MODEL_NAME : choice.model;
-  const tag = choice.inUse
-    ? t('tagInUse')
-    : choice.kind === 'runner'
-      ? t(choice.reachable ? 'tagRunner' : 'tagRunnerOff')
-      : t(choice.holding === 'ready' ? 'tagReady' : choice.holding === 'partial' ? 'tagPartial' : 'tagNone');
+  const live = isLive(choice);
+  const tag = choice.inUse && working
+    ? t('tagWorking')
+    : live
+      ? t('tagInUse')
+      : choice.kind === 'runner'
+        ? t(choice.reachable ? 'tagRunner' : 'tagRunnerOff')
+        : t(choice.holding === 'ready' ? 'tagReady' : choice.holding === 'partial' ? 'tagPartial' : 'tagNone');
   return (
     <button
       type="button"
@@ -70,7 +83,7 @@ function ChoiceRow({ choice, selected, onSelect }: { choice: ModelChoice; select
       )}
     >
       <span className="w-full truncate text-body leading-body text-[color:var(--color-text-primary)]">{name}</span>
-      <span className={cn('text-label leading-label', choice.inUse ? 'text-[color:var(--color-indigo-accent)]' : 'text-[color:var(--color-text-tertiary)]')}>
+      <span className={cn('text-label leading-label', live || (choice.inUse && working) ? 'text-[color:var(--color-indigo-accent)]' : 'text-[color:var(--color-text-tertiary)]')}>
         {tag}
       </span>
     </button>
@@ -88,6 +101,9 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
   const titleId = useId();
   const reduced = usePrefersReducedMotion();
   const current = vaultVectorSource.use(rootPath)?.source ?? null;
+  const status = useVectorStatus(rootPath);
+  // A pass that runs holds the folder: switching or downloading again waits for its end or a Stop.
+  const working = status !== null && (status.busy || RUNNING_PHASES.includes(status.phase));
   const [answer, setAnswer] = useState<ProbeAnswer | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
@@ -129,16 +145,20 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
     const freed = probe.builtin.modelBytes;
     setDeleting(true);
     const removed = await removeModel();
-    setDeleting(false);
     setNotice(removed ? { kind: 'deleted', freed } : { kind: 'deleteFailed' });
-    readProbe();
+    try {
+      setAnswer({ probe: await probeVectors(rootPath, readLocalEndpoint().baseUrl) });
+    } catch {
+      setAnswer({ failed: true });
+    }
+    setDeleting(false);
   };
   const showFolder = () => {
     setNotice(null);
     revealVectorModel().catch(() => setNotice({ kind: 'revealFailed' }));
   };
 
-  const switching = current !== null && selected !== null && !selected.inUse;
+  const switching = current !== null && selected !== null && !selected.inUse && !working;
   const diskShort = probe !== null && probe.builtin.freeBytes < probe.builtin.neededFreeBytes;
 
   function builtinFacts(choice: Extract<ModelChoice, { kind: 'builtin' }>, builtin: VectorProbe['builtin']): Fact[] {
@@ -159,6 +179,7 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
       { id: 'sent', label: t('factSentLabel'), value: t('factSent') },
       { id: 'memory', label: t('factMemoryLabel'), value: t(builtin.accelerated ? 'factMemory' : 'factMemoryCpu', { memory: size(builtin.memoryBytes) }) },
     );
+    if (choice.holding === 'none') facts.push({ id: 'delete', label: t('factDeleteLabel'), value: t('factDeleteBuiltin') });
     return facts;
   }
 
@@ -166,7 +187,11 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
     return [
       { id: 'runner-where', label: t('factRunnerWhereLabel'), value: t('factRunnerWhere', { address: choice.baseUrl }) },
       { id: 'sent', label: t('factSentLabel'), value: t('factRunnerSent') },
-      { id: 'runner-delete', label: t('factDeleteLabel'), value: t('factRunnerDelete', { model: choice.model }) },
+      {
+        id: 'runner-delete',
+        label: t('factDeleteLabel'),
+        value: SHELL_SAFE_MODEL_NAME.test(choice.model) ? t('factRunnerDelete', { model: choice.model }) : t('factRunnerDeletePlain'),
+      },
     ];
   }
 
@@ -182,19 +207,27 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
     const name = choice.kind === 'builtin' ? BUILTIN_MODEL_NAME : choice.model;
     const maker = choice.kind === 'builtin' ? t('builtinMaker') : t('runnerMaker');
     const message = noticeText(notice);
-    const primary = choice.inUse && !(choice.kind === 'builtin' && choice.holding !== 'ready')
+    const live = isLive(choice);
+    const holdsModel = choice.kind === 'builtin' && choice.holding !== 'none';
+    const deletable = holdsModel && !(working && current?.kind === 'builtin');
+    const primary = working || live
       ? null
       : choice.kind === 'builtin'
         ? { label: choice.holding === 'ready' ? t('prepare', { files: probe.files }) : choice.holding === 'partial' ? t('resumeDownload') : t('downloadAndPrepare'), onPress: startBuiltin, disabled: diskShort }
         : { label: t('prepare', { files: probe.files }), onPress: () => startRunner(choice), disabled: !choice.reachable };
     return (
-      <div className="flex min-h-full flex-col gap-4" data-testid="meaning-model-detail" data-choice={choice.id}>
+      <div className="flex flex-1 flex-col gap-4" data-testid="meaning-model-detail" data-choice={choice.id}>
         <div>
           <h3 className="text-body-lg font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]">{name}</h3>
           <p className="text-label leading-label text-[color:var(--color-text-tertiary)]" data-testid="meaning-model-maker">{maker}</p>
         </div>
         <FactList facts={choice.kind === 'builtin' ? builtinFacts(choice, builtin) : runnerFacts(choice)} />
-        {choice.inUse ? <p className="text-body leading-body text-[color:var(--color-indigo-accent)]" data-testid="meaning-model-in-use">{t('inUseNote')}</p> : null}
+        {working ? (
+          <div className="flex flex-wrap items-center gap-3" data-testid="meaning-model-working">
+            <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{t(choice.inUse ? 'workingNoteHere' : 'workingNote')}</p>
+            <Button variant="outline" size="sm" onClick={() => void stop(rootPath)} data-testid="meaning-model-stop">{t('stop')}</Button>
+          </div>
+        ) : live ? <p className="text-body leading-body text-[color:var(--color-indigo-accent)]" data-testid="meaning-model-in-use">{t('inUseNote')}</p> : null}
         {switching ? <p className="text-body leading-body text-[color:var(--color-status-warning)]" data-testid="meaning-model-switch-note">{t('switchNote', { files: probe.files })}</p> : null}
         {choice.kind === 'runner' && !choice.reachable ? <p className="text-body leading-body text-[color:var(--color-status-warning)]">{t('runnerOff')}</p> : null}
         {choice.kind === 'builtin' && choice.holding !== 'ready' && diskShort ? (
@@ -204,7 +237,7 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
         ) : null}
         {message ? <p role="status" className="text-body leading-body text-[color:var(--color-text-secondary)]" data-testid="meaning-model-notice">{message}</p> : null}
         <div className="mt-auto flex flex-col gap-3 pt-2">
-          {choice.kind === 'builtin' && choice.holding !== 'none' ? (
+          {choice.kind === 'builtin' && deletable ? (
             <div className="flex flex-col gap-2 border-t border-[color:var(--color-divider)] pt-3">
               <p className="text-label leading-body text-[color:var(--color-text-tertiary)]">
                 {choice.holding === 'partial'
@@ -212,6 +245,7 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
                   : choice.inUse
                     ? t('deleteNoteInUse', { size: size(builtin.modelBytes) })
                     : t('deleteNote', { size: size(builtin.modelBytes), download: size(builtin.downloadBytes) })}
+                {choice.holding === 'ready' ? ` ${t(choice.inUse ? 'deleteEveryFolderToo' : 'deleteEveryFolder')}` : null}
               </p>
               <div className="flex flex-wrap items-center gap-3">
                 <Button variant="outline" size="sm" disabled={deleting} onClick={() => void deleteBuiltin()} data-testid="meaning-model-delete">
@@ -247,8 +281,8 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
       labelledBy={titleId}
       testId="meaning-setup-dialog"
     >
-      <div className="flex flex-col gap-4 p-2">
-        <div className="flex items-start justify-between gap-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 p-2">
+        <div className="flex shrink-0 items-start justify-between gap-4">
           <div className="min-w-0">
             <h2 id={titleId} className="text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]">{t('dialogTitle')}</h2>
             <p className="mt-1 max-w-[70ch] text-body leading-body text-[color:var(--color-text-secondary)]" data-testid="meaning-setup-lead">
@@ -257,20 +291,21 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} data-testid="meaning-setup-cancel">{t('close')}</Button>
         </div>
-        <div className="grid min-h-[22rem] gap-4 sm:grid-cols-[14rem_minmax(0,1fr)]">
-          <div role="group" aria-label={t('choicesLabel')} className="flex flex-col gap-1" data-testid="meaning-model-choices">
+        <DialogBody>
+        <div className="grid gap-4 sm:grid-cols-[14rem_minmax(0,1fr)] sm:items-start">
+          <div role="group" aria-label={t('choicesLabel')} className="atlas-scroll-quiet flex flex-col gap-1 sm:max-h-[26rem] sm:overflow-y-auto" data-testid="meaning-model-choices">
             {choices.map((choice) => (
-              <ChoiceRow key={choice.id} choice={choice} selected={choice.id === selected?.id} onSelect={() => select(choice.id)} />
+              <ChoiceRow key={choice.id} choice={choice} selected={choice.id === selected?.id} working={working} onSelect={() => select(choice.id)} />
             ))}
           </div>
-          <div className="min-w-0 rounded-card border border-[color:var(--color-divider)] p-4">
+          <div className="flex min-h-[22rem] min-w-0 flex-col rounded-card border border-[color:var(--color-divider)] p-4">
             <AnimatePresence initial={false} mode="wait">
               {answer === null ? (
                 <motion.div key="placeholder" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={fade}>
                   <Placeholder />
                 </motion.div>
               ) : probe && selected ? (
-                <motion.div key={selected.id} className="h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={fade} data-testid="meaning-setup-facts">
+                <motion.div key={selected.id} className="flex flex-1 flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={fade} data-testid="meaning-setup-facts">
                   {renderDetail(selected, probe)}
                 </motion.div>
               ) : (
@@ -281,6 +316,7 @@ export function MeaningModelDialog({ open, rootPath, onClose }: { open: boolean;
             </AnimatePresence>
           </div>
         </div>
+        </DialogBody>
       </div>
     </Dialog>
   );

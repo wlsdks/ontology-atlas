@@ -90,7 +90,14 @@
       "showFolder": "Open its folder",
       "showFolderFailed": "Could not open the folder.",
       "modelButton": "Model: {model}",
-      "modelButtonLabel": "Model for search by meaning: {model}. See, change or delete it"
+      "modelButtonLabel": "Model: {model}. See, change or delete it",
+      "tagWorking": "Preparing now",
+      "workingNote": "This folder is preparing search by meaning now. Stop it to switch models.",
+      "workingNoteHere": "This folder is preparing with this model now; the line under the question field shows how far. Stop it to switch or delete.",
+      "factDeleteBuiltin": "Delete it here in one press, or in Settings › Privacy · data.",
+      "factRunnerDeletePlain": "Ollama keeps this model. Remove it in Ollama.",
+      "deleteEveryFolder": "Other folders that use it search by words only until it is downloaded again.",
+      "deleteEveryFolderToo": "The same goes for other folders that use it."
     },
     "title": "Ask a question. Follow its sources.",
     "browse": "Browse pages",
