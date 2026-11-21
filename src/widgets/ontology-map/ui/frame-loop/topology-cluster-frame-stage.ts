@@ -11,7 +11,7 @@ import {
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeTopologyClusterState, placeClusterChips } from "../world/topology-cluster-state";
 import type { RealmRuntimeData } from "../world/topology-realm-runtime";
-import { radiusForKind } from "../world/framing/world-bounds";
+import { radiusForKind } from "../world/node-radius";
 import { type TopologyWorld } from "../world/topology-world";
 
 type SourceRef<T> = { current: T; };

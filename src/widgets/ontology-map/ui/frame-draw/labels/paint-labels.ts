@@ -35,7 +35,7 @@ import {
 } from "../../../render/label-layout";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../../render/preview-edge";
 import { rankedDiscChildren, rankedEgoNeighbors } from "../../frame-cache/structure";
-import { radiusForKind } from "../../world/framing/world-bounds";
+import { radiusForKind } from "../../world/node-radius";
 import { type WorldNode } from "../../world/topology-world";
 import { passState } from "../frame-state";
 import type { FrameInputs } from "../frame-begin";

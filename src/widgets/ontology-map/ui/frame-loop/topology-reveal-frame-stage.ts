@@ -2,7 +2,7 @@ import type { ClusterChip } from "../../model/layout/density-gate";
 import { stepEmphasis } from "../../model/visibility/focus-state";
 import { relaxNewlyVisible } from "../../model/layout/layout";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { recomputeWorldGeometry } from "../world/world-edge-geometry";
+import { recomputeWorldGeometry } from "../world/world-geometry";
 import { type TopologyWorld } from "../world/topology-world";
 
 type SourceRef<T> = { current: T; };

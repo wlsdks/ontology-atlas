@@ -16,7 +16,7 @@ import { buildDialWorld } from "./assembly/build-dial-world";
 import { resolveContainsParents } from "./assembly/contains-parents";
 import { computeRelaxScope } from "./framing/density-fold";
 import { computeFullBounds, computeSpineBounds, extentBounds } from "./framing/world-bounds";
-import { computeEdgeControlPoint } from "./world-edge-geometry";
+import { computeEdgeControlPoint } from "./world-geometry";
 
 export type WorldNodeKind = "project" | "domain" | "capability" | "element";
 

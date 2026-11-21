@@ -57,7 +57,7 @@ import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/
 import { computeDomeFocusCameraTarget } from "../camera/target/focus-fit";
 import { overviewBoundsFor } from "../camera/topology-overview-fit";
 import { dialOverviewFit } from "../world/framing/dial-world-framing";
-import { radiusForKind } from "../world/framing/world-bounds";
+import { radiusForKind } from "../world/node-radius";
 import { type TopologyWorld } from "../world/topology-world";
 
 type SourceRef<T> = { current: T; };

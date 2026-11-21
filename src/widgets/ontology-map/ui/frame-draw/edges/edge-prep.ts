@@ -1,7 +1,7 @@
 import { edgeTierAlpha } from "../../../model/visibility/tier-visibility";
 import type { RelationCaption } from "../../../render/relation-captions";
 import { selectAmbientDependsComets, selectEgoContainsComets } from "../../../render/edge-fireflies";
-import { isSpineNode } from "../../world/framing/world-bounds";
+import { isSpineNode } from "../../world/spine-node";
 import { type TopologyWorld, type WorldEdge } from "../../world/topology-world";
 import { edgeRevealProgress } from "../../../expressive/edge-reveal";
 import { passState } from "../frame-state";

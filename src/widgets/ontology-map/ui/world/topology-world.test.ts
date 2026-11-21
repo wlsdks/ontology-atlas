@@ -16,7 +16,7 @@ import { buildTopologyWorld, computeMagnitudeScale, type TopologyWorld, containm
 import { computeDrawnSpineBounds, computeRevealedBounds } from "./framing/world-bounds";
 import { computeFoldedIds } from "./framing/density-fold";
 import { dialOverviewFit, dialFocusFrame } from "./framing/dial-world-framing";
-import { recomputeWorldGeometry } from "./world-edge-geometry";
+import { recomputeWorldGeometry } from "./world-geometry";
 import type { OntologyMapEdge, OntologyMapNode } from "../OntologyMap";
 import { computeTopologyClusterState } from "./topology-cluster-state";
 

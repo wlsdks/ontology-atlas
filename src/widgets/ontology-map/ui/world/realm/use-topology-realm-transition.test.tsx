@@ -20,8 +20,8 @@ vi.mock("../../../dial/tokens", () => ({ readDialTokens: () => ({}) }));
 vi.mock("../../../dial/fit", async original => ({
   ...await original<typeof import("../../../dial/fit")>(), createMeasureText: () => (() => 1),
 }));
-vi.mock("../world-edge-geometry", async original => ({
-  ...await original<typeof import("../world-edge-geometry")>(), recomputeWorldGeometry: vi.fn(),
+vi.mock("../world-geometry", async original => ({
+  ...await original<typeof import("../world-geometry")>(), recomputeWorldGeometry: vi.fn(),
 }));
 vi.mock("../../camera/target/fit-targets", async original => ({
   ...await original<typeof import("../../camera/target/fit-targets")>(),

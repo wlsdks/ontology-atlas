@@ -16,7 +16,7 @@ import {
 } from "../../model/realm/realm";
 import type { LayoutRadii, LayoutRings } from "../../model/layout/layout";
 import { computeTopologyClusterState } from "./topology-cluster-state";
-import { radiusForKind } from "./framing/world-bounds";
+import { radiusForKind } from "./node-radius";
 import { type TopologyWorld } from "./topology-world";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { DialWorld, DialWorldInput, Pad } from "../../dial/types";

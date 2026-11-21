@@ -25,7 +25,8 @@ import { readOntologyMapTokensOrNull } from "../tokens/topology-read-tokens";
 import { buildTopologyWorld, type TopologyWorld, type WorldNodeKind } from "../ui/world/topology-world";
 import { computeFoldedIds } from "../ui/world/framing/density-fold";
 import { dialOverviewFit } from "../ui/world/framing/dial-world-framing";
-import { isSpineNode, radiusForKind } from "../ui/world/framing/world-bounds";
+import { isSpineNode } from "../ui/world/spine-node";
+import { radiusForKind } from "../ui/world/node-radius";
 import { predictHexMarks } from "./hex-marks";
 import type { MapLayoutTarget } from "./MapLayoutMorphOverlay";
 

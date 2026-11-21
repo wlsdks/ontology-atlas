@@ -26,7 +26,7 @@ import { orbitButtonRect } from "../../render/cluster-chips/control-placement";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { worldToScreen } from "../camera/topology-camera-math";
 import type { RealmRuntimeData } from "../world/topology-realm-runtime";
-import { radiusForKind } from "../world/framing/world-bounds";
+import { radiusForKind } from "../world/node-radius";
 import { type TopologyWorld } from "../world/topology-world";
 
 type SourceRef<T> = { current: T; };

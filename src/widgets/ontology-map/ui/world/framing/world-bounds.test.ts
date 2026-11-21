@@ -3,15 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
 import type { WorldNode } from "../topology-world";
 import { computeFoldedIds } from "./density-fold";
-import {
-  computeClusterDiscBounds,
-  computeDrawnSpineBounds,
-  computeEgoBounds,
-  computePathPickBounds,
-  computeRevealedBounds,
-  computeSpineBounds,
-  isSpineNode,
-} from "./world-bounds";
+import { computeClusterDiscBounds, computeDrawnSpineBounds, computeEgoBounds, computePathPickBounds, computeRevealedBounds, computeSpineBounds } from "./world-bounds";
 
 // Minimal token literal — only the radii matter for bounds math.
 const tokens = {
@@ -35,20 +27,6 @@ function node(partial: Partial<WorldNode> & Pick<WorldNode, "id" | "kind" | "x" 
     ...partial,
   };
 }
-
-describe("isSpineNode", () => {
-  it("is true for project, domain, and any hub node", () => {
-    expect(isSpineNode({ kind: "project", isHub: false })).toBe(true);
-    expect(isSpineNode({ kind: "domain", isHub: false })).toBe(true);
-    expect(isSpineNode({ kind: "capability", isHub: true })).toBe(true);
-    expect(isSpineNode({ kind: "element", isHub: true })).toBe(true);
-  });
-
-  it("is false for non-hub capability and element", () => {
-    expect(isSpineNode({ kind: "capability", isHub: false })).toBe(false);
-    expect(isSpineNode({ kind: "element", isHub: false })).toBe(false);
-  });
-});
 
 describe("computeSpineBounds", () => {
   it("fits only project+domain+hub, ignoring the wide capability/element sprawl", () => {

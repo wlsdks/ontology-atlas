@@ -1,6 +1,8 @@
 import type { DialWorld } from "../../../dial/types";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
-import type { Bounds, TopologyWorld, WorldNode, WorldNodeKind } from "../topology-world";
+import { radiusForKind } from "../node-radius";
+import { isSpineNode } from "../spine-node";
+import type { Bounds, TopologyWorld, WorldNode } from "../topology-world";
 import { computeFoldedIds } from "./density-fold";
 import type { DialBearing } from "./dial-world-framing";
 
@@ -8,22 +10,7 @@ export function extentBounds(dial: DialWorld): Bounds {
   return { ...dial.scene.extent };
 }
 
-export function radiusForKind(kind: WorldNodeKind, tokens: OntologyMapTokens): number {
-  if (kind === "project") return tokens.radiusProject;
-  if (kind === "domain") return tokens.radiusDomain;
-  if (kind === "capability") return tokens.radiusCapability;
-  return tokens.radiusElement;
-}
-
 const FALLBACK_BOUNDS: Bounds = { minX: -100, minY: -100, maxX: 100, maxY: 100 };
-
-/**
- * A "spine" node is one shown at the overview entry (tier alpha 1 at zoom ratio 1): the project root, every domain and any hub node. It MUST mirror `nodeTierAlpha`'s
- * always-visible branch in `tier-visibility.ts`, or the fit and the visible set drift apart. The density gate can still fold a hub behind a crowded parent's chip (`computeDrawnSpineBounds` accounts for it).
- */
-export function isSpineNode(node: Pick<WorldNode, "kind" | "isHub">): boolean {
-  return node.isHub || node.kind === "project" || node.kind === "domain";
-}
 
 /**
  * Radius-padded bbox of the nodes matching `include` (all nodes when omitted).

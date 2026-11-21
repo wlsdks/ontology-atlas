@@ -23,7 +23,7 @@ import { draw as tracesDraw } from "../../../render/traces";
 import { drawPreviewEdge } from "../../../render/preview-edge";
 import { drawPulses, edgePairMeta } from "../../../render/edge-fireflies";
 import { indexedPulseEdges } from "../../frame-cache/structure";
-import { radiusForKind } from "../../world/framing/world-bounds";
+import { radiusForKind } from "../../world/node-radius";
 import { beginEdgeGlow, endEdgeGlow } from "../../../expressive/ego-light";
 import {
   passState,

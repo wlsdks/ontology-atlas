@@ -2,7 +2,9 @@ import { dialOverviewBounds } from "../../dial/fit";
 import { measureEdgeFitObstacle } from "../../interaction/free-area";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeFoldedIds } from "../world/framing/density-fold";
-import { computeRevealedBounds, isSpineNode, radiusForKind } from "../world/framing/world-bounds";
+import { computeRevealedBounds } from "../world/framing/world-bounds";
+import { isSpineNode } from "../world/spine-node";
+import { radiusForKind } from "../world/node-radius";
 import { type TopologyWorld } from "../world/topology-world";
 
 export function overviewBoundsFor(
