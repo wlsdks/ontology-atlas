@@ -91,7 +91,8 @@ function applyRuntimeLaunchPin(id, launch) {
 
 /**
  * Display-name overrides, only for launchers whose registry name differs from what people call them.
- * It must stay empty: Anthropic's branding guidelines do not permit "Claude Code" for an agent a
+ * It must stay empty: Anthropic's branding guidelines
+ * (https://code.claude.com/docs/en/agent-sdk/overview) do not permit "Claude Code" for an agent a
  * product ships ("Claude Agent" is allowed in dropdown menus), and the registry already uses the
  * allowed name. Sentences about the product the user installed separately may still say "Claude Code".
  */
