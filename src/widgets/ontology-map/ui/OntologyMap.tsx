@@ -13,7 +13,7 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTopologyLoop } from "./loop/use-topology-loop";
 import type { TierRevealConfig } from "../model/visibility/tier-visibility";
 import type { TopologyMapLensKind } from "../model/visibility/path-lens";
-import type { ClusterBarLabels } from "../render/cluster-chips";
+import type { ClusterBarLabels } from "../render/cluster-chips/control-placement";
 import type { SelectionSource } from "../model/camera/flat-selection-camera";
 import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT, DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/preferences/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";

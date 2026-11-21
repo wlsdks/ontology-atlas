@@ -4,9 +4,9 @@ import { openedElements } from "../open";
 import { candidates, degreeOf, type Candidate } from "./candidates";
 import { leaderSegment, linePolylines, linesCross, segmentCrossesBox } from "./lit-lines";
 import { chooseSide, elementDotRadius, isStarMember, openDomainStar } from "./sides";
-import { CELL_PX, grown, Occupancy, StepOccupancy, stepScale, sweptBox, worldBox } from "./step-space";
+import { CELL_PX, grown, Occupancy, StepOccupancy, stepScale, sweptBox, worldBox } from "./zoom-step";
 import { blockAbove, domainBlock, domainReachLine, hubCaptionBox, orphanCaption, projectName, titleMayRise } from "./titles";
-import type { NameAdmission, NameInput, PlacedName } from "./types";
+import type { NameAdmission, NameInput, PlacedName } from "./placed-name";
 
 /** The axes a free map may cut an open star's rim along. */
 const AXES = ["x", "y"] as const;

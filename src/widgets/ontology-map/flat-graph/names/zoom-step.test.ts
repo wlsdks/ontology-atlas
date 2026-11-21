@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { Occupancy, StepOccupancy, sweptBox, worldBox } from "./step-space";
+import { Occupancy, StepOccupancy, stepScale, sweptBox, worldBox, zoomStep } from "./zoom-step";
 
 describe("worldBox and sweptBox", () => {
   const rel = { minX: -8, maxX: 8, minY: -4, maxY: 4 };
@@ -38,5 +38,21 @@ describe("StepOccupancy", () => {
     const other = { minX: -5, maxX: 30, minY: -5, maxY: 5 };
     expect(names.hitsAtCentre({ x: 50, y: 0 }, other)).toBe(false);
     expect(names.hits({ x: 50, y: 0 }, other)).toBe(true);
+  });
+});
+
+describe("zoomStep and stepScale", () => {
+  it("rounds to the nearest step, not down", () => {
+    expect(zoomStep(2 ** (1.6 / 3), 3)).toBe(2);
+    expect(zoomStep(2 ** (1.4 / 3), 3)).toBe(1);
+  });
+
+  it("clamps a scale of zero or below to a finite step", () => {
+    expect(zoomStep(0, 1)).toBe(-20);
+  });
+
+  it("inverts zoomStep at the step itself", () => {
+    expect(stepScale(3, 3)).toBe(2);
+    expect(zoomStep(stepScale(-5, 4), 4)).toBe(-5);
   });
 });

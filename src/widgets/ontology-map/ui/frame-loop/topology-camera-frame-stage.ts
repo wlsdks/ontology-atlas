@@ -23,7 +23,7 @@ import {
 import { updatePulses, type Pulse } from "../../render/edge-fireflies";
 import { lastDialFrame } from "../../dial/frame/frame";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import type { FocusLeashPx } from "../camera/topology-camera-math";
+import type { FocusLeashPx } from "../camera/target/pan-leash";
 import { stepTopologyPhysics } from "./topology-physics-step";
 import type { RealmRuntimeData } from "../world/topology-realm-runtime";
 import type { TopologyWorld } from "../world/topology-world";

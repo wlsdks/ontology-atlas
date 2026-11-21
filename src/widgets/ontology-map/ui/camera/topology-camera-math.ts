@@ -1,14 +1,9 @@
-/** Camera-space conversions and picking (`worldToScreen`, `screenToWorld`, `hitTestWorld`). `camera.x`/`camera.y` are the WORLD point the camera is centered on, `camera.scale` the world-to-screen zoom factor. The camera targets (fits, leashes, focus framing) live in `camera-target/` and are re-exported here. */
+/** Camera-space conversions and picking (`worldToScreen`, `screenToWorld`, `hitTestWorld`). `camera.x`/`camera.y` are the WORLD point the camera is centered on, `camera.scale` the world-to-screen zoom factor. The camera targets (fits, leashes, zoom range, focus framing) live in `target/`. */
 
 import type { CameraAxes } from "../../engine/camera";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { radiusForKind, type TopologyWorld } from "../world/topology-world";
 import type { WorldNode } from "../world/topology-world";
-
-export { computeDomeFitCameraTarget, computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale, domeFitFreeHalfSize, fitWorldTarget, overviewEntryArea } from "./camera-target/overview-fit";
-export { computeUnfocusedPanBounds, FOCUS_LEASH_EDGE_PAD_PX, focusLeashPx, focusLeashWorld, focusPanBounds, focusTargetLeashPx, type FocusLeashPx } from "./camera-target/pan-leash";
-export { centerForInsets, clampFitInsets, MAX_FIT_CHROME_SHARE } from "./camera-target/safe-insets";
-export { computeClusterFitTarget, computeDomeFocusCameraTarget, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeFocusCameraTarget, lastFocusFrame } from "./camera-target/focus-fit";
 
 interface Point {
   x: number;

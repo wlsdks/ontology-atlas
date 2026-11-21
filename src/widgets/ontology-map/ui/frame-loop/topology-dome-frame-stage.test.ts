@@ -11,7 +11,7 @@ import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../OntologyMap";
 import { createDomeFrameStage, type DomeFrameStageSources } from "./topology-dome-frame-stage";
 import { buildTopologyWorld, type TopologyWorld } from "../world/topology-world";
-import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/topology-camera-math";
+import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/target/fit-targets";
 import { overviewBoundsFor } from "../camera/topology-overview-fit";
 import { projectDomeCoord } from "../../model/dome-view/camera/projection";
 

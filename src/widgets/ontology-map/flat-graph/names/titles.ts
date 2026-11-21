@@ -3,7 +3,7 @@ import type { Box, DialLabels } from "../../dial/types";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { domainPartners } from "../../model/containment-tree";
 import type { FlatGraphTitle } from "../types";
-import type { NameInput, NamePiece, PlacedName } from "./types";
+import type { NameInput, NamePiece, PlacedName } from "./placed-name";
 
 export function font(weight: number, px: number, family: string): string {
   return `${weight} ${px}px ${family}`;

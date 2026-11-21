@@ -1,14 +1,8 @@
 import type { Box } from "../dial/types";
 import type { FlatGraphLayout, FlatGraphPaintTokens } from "./types";
 import { admit } from "./names/admit";
-import { zoomStep } from "./names/step-space";
-import type { NameAdmission, NameInput, PlacedName } from "./names/types";
-
-export type { NameAdmission, NameInput, PlacedName } from "./names/types";
-export { linePolylines, leaderSegment, segmentCrossesBox } from "./names/lit-lines";
-export { chooseSide, memberNameReachPx, nameReachBox, type NameReachInput } from "./names/sides";
-export { stepScale, zoomStep } from "./names/step-space";
-export { domainTitleBlocks, hubBlockReachPx, reachText } from "./names/titles";
+import { zoomStep } from "./names/zoom-step";
+import type { NameAdmission, NameInput, PlacedName } from "./names/placed-name";
 
 /** Whether a screen box overlaps any of `obstacles`. O(obstacles). */
 export function boxUnderAny(obstacles: readonly Box[], minX: number, maxX: number, minY: number, maxY: number): boolean {

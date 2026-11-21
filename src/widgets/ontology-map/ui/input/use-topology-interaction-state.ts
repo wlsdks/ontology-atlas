@@ -6,7 +6,7 @@ import {
 } from "react";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../../interaction/pointer-state-machine";
 import type { SelectionSource } from "../../model/camera/flat-selection-camera";
-import { type FocusLeashPx } from "../camera/topology-camera-math";
+import { type FocusLeashPx } from "../camera/target/pan-leash";
 
 interface Dependencies {
   focusedSlug: string | null;

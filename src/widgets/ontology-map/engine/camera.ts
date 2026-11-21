@@ -1,6 +1,6 @@
 /**
  * Springs the live camera toward its target, frame by frame: `spring.ts` per axis, `momentum.ts`
- * for the flick landing. Fit geometry lives in `ui/camera/camera-target/`.
+ * for the flick landing. Fit geometry lives in `ui/camera/target/`.
  */
 
 import { stepSpring, type SpringAxisState } from "./spring";

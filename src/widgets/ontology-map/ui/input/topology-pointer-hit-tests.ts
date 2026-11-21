@@ -9,7 +9,16 @@ import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { CameraAxes } from "../../engine/camera";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable } from "../../model/visibility/tier-visibility";
 import type { EdgeHitCandidate } from "./topology-edge-hit";
-import { clusterBadgeLabel, clusterBadgeRect, clusterBarLabel, clusterBarRect, clusterChipLabel, clusterChipRect, clusterChipScale, clusterControlForm } from "../../render/cluster-chips";
+import {
+  clusterBadgeLabel,
+  clusterBadgeRect,
+  clusterBarLabel,
+  clusterBarRect,
+  clusterChipLabel,
+  clusterChipRect,
+  clusterChipScale,
+  clusterControlForm,
+} from "../../render/cluster-chips/control-placement";
 import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../../model/realm/realm-depth-parallax";
 import type { DomeNodeFrame } from "../../model/dome-view/runtime";

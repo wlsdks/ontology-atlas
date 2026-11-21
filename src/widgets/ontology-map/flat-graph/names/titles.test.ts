@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { blockAbove, tabularPieces, titleMayRise } from "./titles";
-import type { NameInput, PlacedName } from "./types";
+import type { NameInput, PlacedName } from "./placed-name";
 
 describe("tabularPieces", () => {
   const measure = (text: string) => (text === "1" ? 3 : text.length * 6);

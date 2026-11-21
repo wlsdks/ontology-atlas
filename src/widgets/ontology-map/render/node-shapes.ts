@@ -20,9 +20,6 @@ import {
     type NodeKind,
 } from "./node-shapes/silhouette";
 
-export { bodyPoints, domainPinTicks, hexPoints, interpolateCornerRadius, projectPinTicks, squarePoints } from "./node-shapes/silhouette";
-
-
 /**
  * How far outside the disc the recent-changes ring is drawn; the label placer reserves it too
  * (`ui/frame-draw/nodes/paint-nodes.ts`), so a name is not laid across a neighbour's ring.

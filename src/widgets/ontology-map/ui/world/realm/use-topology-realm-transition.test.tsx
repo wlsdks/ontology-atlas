@@ -23,8 +23,8 @@ vi.mock("../../../dial/fit", async original => ({
 vi.mock("../topology-world", async original => ({
   ...await original<typeof import("../topology-world")>(), recomputeWorldGeometry: vi.fn(),
 }));
-vi.mock("../../camera/topology-camera-math", async original => ({
-  ...await original<typeof import("../../camera/topology-camera-math")>(),
+vi.mock("../../camera/target/fit-targets", async original => ({
+  ...await original<typeof import("../../camera/target/fit-targets")>(),
   computeOverviewFitScale: () => 1, computeOverviewCameraTarget: () => ({ tx: 0, ty: 0, tscale: 1 }),
 }));
 

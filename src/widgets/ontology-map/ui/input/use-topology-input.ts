@@ -37,8 +37,9 @@ import {
   type DepthParallaxOffset
 } from "../../model/realm/realm-depth-parallax";
 import { type TierRevealConfig } from "../../model/visibility/tier-visibility";
-import type { ClusterBarLabels } from "../../render/cluster-chips";
-import { centerForInsets, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "../camera/topology-camera-math";
+import type { ClusterBarLabels } from "../../render/cluster-chips/control-placement";
+import { centerForInsets } from "../camera/target/safe-insets";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "../camera/target/zoom-range";
 import { createTopologyPointerHandlers } from "./topology-pointer-handlers";
 import type { HoverAvoidRect, NodeDragState, TopologyPointerHandlers } from "./topology-pointer-types";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";

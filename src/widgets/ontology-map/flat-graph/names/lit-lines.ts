@@ -2,7 +2,7 @@ import type { Box } from "../../dial/types";
 import type { GraphLine } from "../attention";
 import { arcPathInto, emptyArcPath, litLineTrimsInto } from "../marks";
 import type { FlatGraphLayout, FlatGraphPaintTokens } from "../types";
-import type { PlacedName } from "./types";
+import type { PlacedName } from "./placed-name";
 
 /** Segments per lit line: the frame's bow strays under a pixel from a twelve-chord polyline at any lit length on screen. */
 export const LINE_SAMPLES = 12;

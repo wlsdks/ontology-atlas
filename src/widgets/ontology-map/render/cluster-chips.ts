@@ -2,7 +2,7 @@
  * Pure Canvas 2D drawing of the chip standing in for a collapsed parent's children: neutral surface
  * plus the single indigo (`docs/DESIGN-SYSTEM.md`). Hit-testing and drawing must use the same
  * rectangle, so `clusterChipRect`, `clusterChipLabel` and `clusterChipScale` are the single source;
- * they live in `cluster-chips/control-placement.ts` and are re-exported here.
+ * they live in `cluster-chips/control-placement.ts`.
  */
 
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
@@ -20,27 +20,6 @@ import {
   type ClusterBarLabels,
   type ClusterChipDrawInput,
 } from "./cluster-chips/control-placement";
-
-export {
-  CLUSTER_BADGE_HEIGHT,
-  CLUSTER_BAR_HEIGHT,
-  CLUSTER_CHIP_HEIGHT,
-  clusterBadgeCenter,
-  clusterBadgeLabel,
-  clusterBadgeRect,
-  clusterBarLabel,
-  clusterBarRect,
-  clusterChipLabel,
-  clusterChipOccupancyRect,
-  clusterChipRect,
-  clusterChipScale,
-  clusterChipTravelPoint,
-  clusterControlForm,
-  orbitButtonRect,
-  type ClusterBarLabels,
-  type ClusterChipRect,
-} from "./cluster-chips/control-placement";
-export { estimateCanvasTextWidth } from "./cluster-chips/text-width";
 
 const CHIP_FONT_SIZE = 13;
 /** The bar uses the body stack, not mono: mono has no Hangul and falls back, which makes the width estimator in `cluster-chips/text-width.ts` unknowable. */

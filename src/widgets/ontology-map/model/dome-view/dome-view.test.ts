@@ -4,7 +4,8 @@ import storefrontManifest from "@/entities/docs-vault/data/sample-storefront.man
 import { deriveOntologyFromVault } from "@/entities/docs-vault/lib/derive-ontology-from-vault";
 
 import type { CameraAxes } from "../../engine/camera";
-import { computeDomeFitCameraTarget, worldToScreen } from "../../ui/camera/topology-camera-math";
+import { worldToScreen } from "../../ui/camera/topology-camera-math";
+import { computeDomeFitCameraTarget } from "../../ui/camera/target/fit-targets";
 import { findCouplingGroups } from "./coupling/coupling-groups";
 import { DOME_PLANE } from "./cone-layout";
 import { CLOUD_ITERATIONS } from "./coupling/coupling-cloud";

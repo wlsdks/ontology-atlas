@@ -22,7 +22,7 @@ import {
 } from "../../model/realm/realm-transition";
 import type { WardingFitState } from "../../model/realm/realm-warding-fit";
 import { initHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
-import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/topology-camera-math";
+import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/target/fit-targets";
 import {
   overviewBoundsFor
 } from "../camera/topology-overview-fit";

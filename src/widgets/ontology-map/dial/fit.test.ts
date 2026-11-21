@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { scaledLabelFontSize } from "../render/labels";
-import { computeOverviewCameraTarget } from "../ui/camera/topology-camera-math";
+import { computeOverviewCameraTarget } from "../ui/camera/target/fit-targets";
 import { createMeasureText, dialOverviewBounds, dialOverviewPad } from "./fit";
 import type { DialCluster, DialLabels, DialModel, DialScene, DialTokens } from "./types";
 

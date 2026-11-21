@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { domainPinTicks, glyphStyleDescriptor, hexPoints, interpolateCornerRadius, projectPinTicks, squarePoints } from "./node-shapes";
+import { glyphStyleDescriptor } from "./node-shapes";
+import { domainPinTicks, hexPoints, interpolateCornerRadius, projectPinTicks, squarePoints } from "./node-shapes/silhouette";
 
 describe("glyphStyleDescriptor (#21 canvas gateway — render style only, silhouette invariant)", () => {
   it("defaults (undefined) to the fill set: no line-only, full-weight stroke", () => {

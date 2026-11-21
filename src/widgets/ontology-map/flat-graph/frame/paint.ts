@@ -1,5 +1,5 @@
 import { glowSprite, lightSprite, sunk, type ArcPath } from "../marks";
-import { leaderSegment } from "../names";
+import { leaderSegment } from "../names/lit-lines";
 import type { FlatGraphPaintTokens, FlatGraphTokens } from "../types";
 import { DRAWN_INK, type Disc, type Dot, type Segment, type Arc, LINE_KINDS, type Glow, type Light, type Name, FrameList, type FramePlan, F as frameState } from "./state";
 

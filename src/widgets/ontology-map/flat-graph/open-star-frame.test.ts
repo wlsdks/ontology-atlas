@@ -18,7 +18,7 @@ import {
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { cachedGraphAttention } from "./attention";
 import { paintFlatGraphFrame } from "./frame";
-import { segmentCrossesBox } from "./names";
+import { segmentCrossesBox } from "./names/lit-lines";
 import { domainStarIds } from "./open-star";
 import { buildFlatGraphScene } from "./scene";
 import { resolveFlatGraphTokens } from "./tokens";

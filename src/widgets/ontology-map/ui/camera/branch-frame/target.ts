@@ -8,7 +8,7 @@ import { readDialTokens } from "../../../dial/tokens";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
 import { SELECTION_NUDGE_MARGIN_PX } from "../../../model/camera/flat-selection-camera";
 import type { TopologyWorld } from "../../world/topology-world";
-import { focusTargetLeashPx } from "../topology-camera-math";
+import { focusTargetLeashPx } from "../target/pan-leash";
 
 type Insets = { obstacleInsetLeft?: number; obstacleInsetRight?: number };
 

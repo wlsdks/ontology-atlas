@@ -2,7 +2,7 @@ import type { Box, DialChordLight, DialEvidenceView, DialFrameInput, DialFrameRe
 import type { GraphAttention, GraphLineKind } from "../attention";
 import { emptyArcPath, type ArcPath } from "../marks";
 import type { GraphMotion } from "../motion";
-import type { PlacedName } from "../names";
+import type { PlacedName } from "../names/placed-name";
 import type { OpenedElements } from "../open";
 import type { StarRoom } from "../open-star";
 import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "../types";

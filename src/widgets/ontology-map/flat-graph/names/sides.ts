@@ -3,7 +3,7 @@ import type { Box, Point } from "../../dial/types";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import type { FlatGraphPaintTokens } from "../types";
 import { blockAbove, domainBlock, domainReachLine, font, reachText, tabularPieces, titleMayRise } from "./titles";
-import type { NameInput, PlacedName } from "./types";
+import type { NameInput, PlacedName } from "./placed-name";
 
 /**
  * The first try, in the tries' fixed order, that `free` accepts and no lit line crosses; failing

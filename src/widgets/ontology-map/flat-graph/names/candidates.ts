@@ -2,7 +2,7 @@ import type { DialModel } from "../../dial/types";
 import type { OpenedElements } from "../open";
 import { byId } from "../seed";
 import { fannedNames, sideNames } from "./sides";
-import type { NameInput, PlacedName } from "./types";
+import type { NameInput, PlacedName } from "./placed-name";
 
 export interface Candidate { id: string; element: boolean; tries: () => PlacedName[][] }
 

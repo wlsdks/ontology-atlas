@@ -2,18 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_TIER_REVEAL } from "../../model/visibility/tier-visibility";
 import { LABEL_OFFSET } from "../../render/labels";
-import {
-  computeEffectiveCameraScaleMax,
-  computeEffectiveCameraScaleMin,
-  computeFocusCameraTarget,
-  computeLensFitTarget,
-  computeOverviewCameraTarget,
-  computeOverviewFitScale,
-  computeUnfocusedPanBounds,
-  fitWorldTarget,
-  hitTestWorld,
-  worldToScreen, clampFitInsets, MAX_FIT_CHROME_SHARE,
-  focusLeashPx, focusLeashWorld, FOCUS_LEASH_EDGE_PAD_PX } from "./topology-camera-math";
+import { hitTestWorld, worldToScreen } from "./topology-camera-math";
+import { computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget } from "./target/fit-targets";
+import { computeFocusCameraTarget } from "./target/focus-fit";
+import { computeUnfocusedPanBounds, focusLeashPx, focusLeashWorld, FOCUS_LEASH_EDGE_PAD_PX } from "./target/pan-leash";
+import { clampFitInsets, MAX_FIT_CHROME_SHARE } from "./target/safe-insets";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "./target/zoom-range";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeEgoBounds, type TopologyWorld } from "../world/topology-world";
 
