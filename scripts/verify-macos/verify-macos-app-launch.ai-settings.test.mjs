@@ -430,7 +430,8 @@ test("AI settings web surface testids still exist in the shipped panel", () => {
   // The runner rows' markers are spelled out in the runner model (`rowTestId`), so both files make
   // up the panel.
   const panel = [
-    "src/widgets/app-settings-menu/ui/ModelConnectionsPanel.tsx",
+    "src/widgets/app-settings-menu/ui/model-connections/LocalRunnerRow.tsx",
+    "src/widgets/app-settings-menu/ui/model-connections/LocalCaption.tsx",
     "src/widgets/app-settings-menu/model/local-runners.ts",
   ]
     .map((file) => fs.readFileSync(file, "utf8"))
