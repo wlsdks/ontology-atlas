@@ -384,7 +384,7 @@ test.describe("the Library destination", () => {
     }
   });
 
-  test("ticking a candidate and confirming copies it into sources/", async ({ page }) => {
+  test("ticking a candidate and confirming copies it into sources/ under its folder", async ({ page }) => {
     await openLibrary(page, { ...VAULT,
       'inbox/Schedule.pdf': '%PDF-1.7 schedule\n%% discovery proposes only files of at least sixty-four bytes\n',
       'other/Notes.pdf': '%PDF-1.7 notes\n%% discovery proposes only files of at least sixty-four bytes\n',
@@ -406,12 +406,12 @@ test.describe("the Library destination", () => {
     await query.fill('schedule');
     await page.getByTestId("find-documents-add").click();
 
-    // The copy is the artifact: the row appears in the library because the walk found a
+    // The copy keeps its folder. The row appears because the walk found a
     // new file, not because anything recorded that an import happened.
     await expect(
-      page.getByTestId("library-source-sources/Requirements v3.pdf"),
+      page.getByTestId("library-source-sources/inbox/Requirements v3.pdf"),
     ).toBeVisible({ timeout: 25_000 });
-    await expect(page.getByTestId('library-source-sources/Schedule.pdf')).toBeVisible();
+    await expect(page.getByTestId("library-source-sources/inbox/Schedule.pdf")).toBeVisible();
     await expect(page.getByTestId("library-source-list")).toContainText("no wiki page");
     await page.getByTestId('library-find-documents').click();
     await expect(dialog.getByRole('searchbox')).toHaveValue('');
