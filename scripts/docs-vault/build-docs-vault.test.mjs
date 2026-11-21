@@ -24,6 +24,9 @@ import {
   scanVaultDir,
   usage,
 } from './build-docs-vault.mjs';
+import { addFrontmatterRelationBacklinks, groupBacklinksBySource } from './generator/backlinks.mjs';
+import { jsonOutputIssue } from './generator/freshness-check.mjs';
+import { ROOT } from './generator/output-paths.mjs';
 
 describe('build-docs-vault script helpers', () => {
   it('parses check/help flags and rejects accidental writes from unknown args', () => {
@@ -378,8 +381,11 @@ test('meaning findings ride the scan: codes for a node, no key for a plain docum
 test('a checkout with no mcp/ records null, not an empty list, and says why', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-no-mcp-'));
   try {
-    // The shape `prepare` materializes: this script and the libraries it imports, no `mcp/`.
+    // The shape `prepare` materializes: this script, its `generator/` parts and the libraries it imports, no `mcp/`.
     await mkdir(path.join(root, 'scripts', 'lib'), { recursive: true });
+    cpSync(path.join(SOURCE_ROOT, 'scripts/docs-vault/generator'), path.join(root, 'scripts/docs-vault/generator'), {
+      recursive: true,
+    });
     for (const relative of [
       'scripts/docs-vault/build-docs-vault.mjs',
       'scripts/lib/parse-frontmatter.mjs',
@@ -443,4 +449,96 @@ test('generated manifests retain eligible definitions without flattening boundar
     assert.match(manifest.docs.find(doc => doc.slug === 'intro').excerpt, /Persisting a report/);
     assert.match(content.intro, /## Excludes\nPersisting a report/);
   } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+describe('frontmatter relation backlinks', () => {
+  const doc = (slug, frontmatter = {}) => ({ slug, frontmatter });
+
+  it('resolves a reference by full slug or by the one slug with that tail', () => {
+    const map = new Map();
+    addFrontmatterRelationBacklinks(
+      [
+        doc('capabilities/pay'),
+        doc('domains/billing', { capabilities: ['capabilities/pay.md'], domain: 'checkout' }),
+        doc('checkout'),
+      ],
+      map,
+    );
+    assert.deepEqual(map.get('capabilities/pay'), [
+      { fromSlug: 'domains/billing', context: 'frontmatter · **[capabilities/pay.md]**', linkText: 'capabilities/pay.md' },
+    ]);
+    assert.equal(map.get('checkout')[0].fromSlug, 'domains/billing');
+  });
+
+  it('skips an ambiguous tail, a self reference and a repeated target', () => {
+    const map = new Map();
+    addFrontmatterRelationBacklinks(
+      [
+        doc('a/shared'),
+        doc('b/shared'),
+        doc('capabilities/pay', {
+          relates: ['shared', 'capabilities/pay', 'capabilities/pay', 'domains/x'],
+          contains: 'domains/x',
+        }),
+        doc('domains/x'),
+      ],
+      map,
+    );
+    assert.equal(map.has('a/shared'), false);
+    assert.equal(map.has('b/shared'), false);
+    assert.equal(map.has('capabilities/pay'), false);
+    assert.equal(map.get('domains/x').length, 1);
+  });
+
+  it('keeps each source once with its first context, sorted by source', () => {
+    const grouped = groupBacklinksBySource(
+      new Map([
+        [
+          'target',
+          [
+            { fromSlug: 'b', context: 'first from b', linkText: 'x' },
+            { fromSlug: 'a', context: 'only from a', linkText: 'x' },
+            { fromSlug: 'b', context: 'second from b', linkText: 'x' },
+          ],
+        ],
+      ]),
+    );
+    assert.deepEqual(
+      grouped.target.map((entry) => [entry.fromSlug, entry.context]),
+      [
+        ['a', 'only from a'],
+        ['b', 'first from b'],
+      ],
+    );
+  });
+});
+
+describe('generated output freshness', () => {
+  it('reports a missing file, a stale one and a current one', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-fresh-'));
+    try {
+      const file = path.join(dir, 'out.json');
+      const shown = path.relative(ROOT, file);
+      assert.equal(await jsonOutputIssue(file, { a: 1 }), `missing ${shown}`);
+      await writeFile(file, JSON.stringify({ a: 1 }, null, 2), 'utf8');
+      assert.equal(await jsonOutputIssue(file, { a: 1 }), null);
+      assert.equal(await jsonOutputIssue(file, { a: 2 }), `stale ${shown}`);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('ignores day stamps and revisions only through the normalizer it is given', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-fresh-'));
+    try {
+      const file = path.join(dir, 'manifest.json');
+      const onDisk = { generatedAt: '2026-01-01', docs: [{ slug: 'a', updatedAt: '2026-01-01', revision: 1 }] };
+      const rebuilt = { generatedAt: '2026-02-02', docs: [{ slug: 'a', updatedAt: '2026-02-02', revision: 2 }] };
+      await writeFile(file, JSON.stringify(onDisk, null, 2), 'utf8');
+      assert.equal(await jsonOutputIssue(file, rebuilt, comparableManifest), null);
+      assert.match(await jsonOutputIssue(file, rebuilt), /^stale /);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
 });

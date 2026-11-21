@@ -60,6 +60,7 @@ import {
   stderrWarningFailures,
   stderrWarningLines,
 } from "./gate-evaluator.mjs";
+import { printStrictRejectionSections } from "./strict-rejection-report.mjs";
 
 const DOGFOOD_TIMEOUT_MS_RAW = process.env.OATLAS_DOGFOOD_TIMEOUT_MS;
 
@@ -870,168 +871,31 @@ export async function runDogfoodWalk() {
     );
   }
 
-  header("strict arguments — unknown tool argument rejection");
-  const strictArgs = responses.find((response) => response.id === 46);
-  const strictArgsText = strictArgs?.result?.content?.[0]?.text || "";
-  console.log(`  rejected: ${strictArgs?.result?.isError === true}`);
-  console.log(`  repair: ${strictRepairSummary(strictArgs)}`);
-  if (strictArgsText) {
-    console.log(`  ${strictArgsText}`);
-  }
-
-  header("strict arguments — multiple unknown tool argument rejection");
-  const strictMultiArgs = responses.find((response) => response.id === 59);
-  const strictMultiArgsText = strictMultiArgs?.result?.content?.[0]?.text || "";
-  console.log(`  rejected: ${strictMultiArgs?.result?.isError === true}`);
-  console.log(`  repair: ${strictRepairSummary(strictMultiArgs)}`);
-  if (strictMultiArgsText) {
-    console.log(`  ${strictMultiArgsText}`);
-  }
-
-  header("strict enums — invalid query operation rejection");
-  const strictEnum = responses.find((response) => response.id === 47);
-  const strictEnumText = strictEnum?.result?.content?.[0]?.text || "";
-  console.log(`  rejected: ${strictEnum?.result?.isError === true}`);
-  console.log(`  repair: ${strictRepairSummary(strictEnum)}`);
-  if (strictEnumText) {
-    console.log(`  ${strictEnumText}`);
-  }
-
-  header("strict tool names — unknown tool rejection");
-  const strictUnknownTool = responses.find((response) => response.id === 84);
-  const strictUnknownToolText = strictUnknownTool?.result?.content?.[0]?.text || "";
-  console.log(`  rejected: ${strictUnknownTool?.result?.isError === true}`);
-  console.log(`  repair: ${strictRepairSummary(strictUnknownTool)}`);
-  if (strictUnknownToolText) {
-    console.log(`  ${strictUnknownToolText}`);
-  }
-
-  header("strict maintenance filters — invalid phase/severity/kind rejection");
-  const strictMaintenancePhaseFilter = responses.find((response) => response.id === 51);
-  const strictMaintenancePhaseFilterText = strictMaintenancePhaseFilter?.result?.content?.[0]?.text || "";
-  console.log(`  phase rejected: ${strictMaintenancePhaseFilter?.result?.isError === true}`);
-  if (strictMaintenancePhaseFilterText) {
-    console.log(`  ${strictMaintenancePhaseFilterText}`);
-  }
-  const strictMaintenanceSeverityFilter = responses.find((response) => response.id === 52);
-  const strictMaintenanceSeverityFilterText = strictMaintenanceSeverityFilter?.result?.content?.[0]?.text || "";
-  console.log(`  severity rejected: ${strictMaintenanceSeverityFilter?.result?.isError === true}`);
-  if (strictMaintenanceSeverityFilterText) {
-    console.log(`  ${strictMaintenanceSeverityFilterText}`);
-  }
-  const strictMaintenanceKindFilter = responses.find((response) => response.id === 53);
-  const strictMaintenanceKindFilterText = strictMaintenanceKindFilter?.result?.content?.[0]?.text || "";
-  console.log(`  kind rejected: ${strictMaintenanceKindFilter?.result?.isError === true}`);
-  if (strictMaintenanceKindFilterText) {
-    console.log(`  ${strictMaintenanceKindFilterText}`);
-  }
-
-  header("strict relation filters — invalid dependencyTypes rejection");
-  const strictRelationFilter = responses.find((response) => response.id === 61);
-  const strictRelationFilterText = strictRelationFilter?.result?.content?.[0]?.text || "";
-  console.log(`  dependencyTypes rejected: ${strictRelationFilter?.result?.isError === true}`);
-  if (strictRelationFilterText) {
-    console.log(`  ${strictRelationFilterText}`);
-  }
-  const strictFindNeighborsTypeFilter = responses.find((response) => response.id === 75);
-  const strictFindNeighborsTypeFilterText = strictFindNeighborsTypeFilter?.result?.content?.[0]?.text || "";
-  console.log(`  find_neighbors.types rejected: ${strictFindNeighborsTypeFilter?.result?.isError === true}`);
-  if (strictFindNeighborsTypeFilterText) {
-    console.log(`  ${strictFindNeighborsTypeFilterText}`);
-  }
-  const strictFindOrphansKindFilter = responses.find((response) => response.id === 76);
-  const strictFindOrphansKindFilterText = strictFindOrphansKindFilter?.result?.content?.[0]?.text || "";
-  console.log(`  find_orphans.kind rejected: ${strictFindOrphansKindFilter?.result?.isError === true}`);
-  if (strictFindOrphansKindFilterText) {
-    console.log(`  ${strictFindOrphansKindFilterText}`);
-  }
-  const strictFindOrphansExcludeKindFilter = responses.find((response) => response.id === 77);
-  const strictFindOrphansExcludeKindFilterText = strictFindOrphansExcludeKindFilter?.result?.content?.[0]?.text || "";
-  console.log(`  find_orphans.excludeKinds rejected: ${strictFindOrphansExcludeKindFilter?.result?.isError === true}`);
-  if (strictFindOrphansExcludeKindFilterText) {
-    console.log(`  ${strictFindOrphansExcludeKindFilterText}`);
-  }
-  const strictQueryConceptsKindFilter = responses.find((response) => response.id === 78);
-  const strictQueryConceptsKindFilterText = strictQueryConceptsKindFilter?.result?.content?.[0]?.text || "";
-  console.log(`  query_concepts.kind rejected: ${strictQueryConceptsKindFilter?.result?.isError === true}`);
-  if (strictQueryConceptsKindFilterText) {
-    console.log(`  ${strictQueryConceptsKindFilterText}`);
-  }
-  const strictQueryConceptsHasKeyFilter = responses.find((response) => response.id === 79);
-  const strictQueryConceptsHasKeyFilterText = strictQueryConceptsHasKeyFilter?.result?.content?.[0]?.text || "";
-  console.log(`  query_concepts.has-key rejected: ${strictQueryConceptsHasKeyFilter?.result?.isError === true}`);
-  if (strictQueryConceptsHasKeyFilterText) {
-    console.log(`  ${strictQueryConceptsHasKeyFilterText}`);
-  }
-  const strictListConceptsKindFilter = responses.find((response) => response.id === 80);
-  const strictListConceptsKindFilterText = strictListConceptsKindFilter?.result?.content?.[0]?.text || "";
-  console.log(`  list_concepts.kind rejected: ${strictListConceptsKindFilter?.result?.isError === true}`);
-  if (strictListConceptsKindFilterText) {
-    console.log(`  ${strictListConceptsKindFilterText}`);
-  }
-
-  header("strict relation_check — invalid type rejection");
-  const strictRelationCheck = responses.find((response) => response.id === 66);
-  const strictRelationCheckText = strictRelationCheck?.result?.content?.[0]?.text || "";
-  console.log(`  relation_check type rejected: ${strictRelationCheck?.result?.isError === true}`);
-  console.log(`  repair: ${strictRepairSummary(strictRelationCheck)}`);
-  if (strictRelationCheckText) {
-    console.log(`  ${strictRelationCheckText}`);
-  }
-
-  header("strict add_relation — invalid type rejection + no-write metadata");
-  const strictAddRelation = responses.find((response) => response.id === 70);
-  const strictAddRelationText = strictAddRelation?.result?.content?.[0]?.text || "";
-  console.log(`  add_relation type rejected: ${strictAddRelation?.result?.isError === true}`);
-  console.log(`  repair: ${strictRepairSummary(strictAddRelation)}`);
-  console.log(`  write metadata: ${writeMetadataAbsenceSummary(strictAddRelation)}`);
-  if (strictAddRelationText) {
-    console.log(`  ${strictAddRelationText}`);
-  }
-
-  header("strict graph filters — invalid match_nodes.kind/sort, match_edges.type, and recommend_relations.kind rejection");
-  const strictGraphKindFilter = responses.find((response) => response.id === 67);
-  const strictGraphKindFilterText = strictGraphKindFilter?.result?.content?.[0]?.text || "";
-  console.log(`  match_nodes.kind rejected: ${strictGraphKindFilter?.result?.isError === true}`);
-  if (strictGraphKindFilterText) {
-    console.log(`  ${strictGraphKindFilterText}`);
-  }
-  const strictRecommendRelationsKindFilter = responses.find((response) => response.id === 71);
-  const strictRecommendRelationsKindFilterText = strictRecommendRelationsKindFilter?.result?.content?.[0]?.text || "";
-  console.log(`  recommend_relations.kind typo rejected: ${strictRecommendRelationsKindFilter?.result?.isError === true}`);
-  if (strictRecommendRelationsKindFilterText) {
-    console.log(`  ${strictRecommendRelationsKindFilterText}`);
-  }
-  const strictRecommendRelationsUnsupportedKindFilter = responses.find((response) => response.id === 72);
-  const strictRecommendRelationsUnsupportedKindFilterText = strictRecommendRelationsUnsupportedKindFilter?.result?.content?.[0]?.text || "";
-  console.log(`  recommend_relations.kind unsupported rejected: ${strictRecommendRelationsUnsupportedKindFilter?.result?.isError === true}`);
-  if (strictRecommendRelationsUnsupportedKindFilterText) {
-    console.log(`  ${strictRecommendRelationsUnsupportedKindFilterText}`);
-  }
-  const strictMatchNodesSortFilter = responses.find((response) => response.id === 73);
-  const strictMatchNodesSortFilterText = strictMatchNodesSortFilter?.result?.content?.[0]?.text || "";
-  console.log(`  match_nodes.sort rejected: ${strictMatchNodesSortFilter?.result?.isError === true}`);
-  if (strictMatchNodesSortFilterText) {
-    console.log(`  ${strictMatchNodesSortFilterText}`);
-  }
-  const strictMatchEdgesTypeFilter = responses.find((response) => response.id === 74);
-  const strictMatchEdgesTypeFilterText = strictMatchEdgesTypeFilter?.result?.content?.[0]?.text || "";
-  console.log(`  match_edges.type rejected: ${strictMatchEdgesTypeFilter?.result?.isError === true}`);
-  if (strictMatchEdgesTypeFilterText) {
-    console.log(`  ${strictMatchEdgesTypeFilterText}`);
-  }
-  const strictGraphFromKindFilter = responses.find((response) => response.id === 68);
-  const strictGraphFromKindFilterText = strictGraphFromKindFilter?.result?.content?.[0]?.text || "";
-  console.log(`  match_edges.fromKind rejected: ${strictGraphFromKindFilter?.result?.isError === true}`);
-  if (strictGraphFromKindFilterText) {
-    console.log(`  ${strictGraphFromKindFilterText}`);
-  }
-  const strictGraphToKindFilter = responses.find((response) => response.id === 69);
-  const strictGraphToKindFilterText = strictGraphToKindFilter?.result?.content?.[0]?.text || "";
-  console.log(`  match_edges.toKind rejected: ${strictGraphToKindFilter?.result?.isError === true}`);
-  if (strictGraphToKindFilterText) {
-    console.log(`  ${strictGraphToKindFilterText}`);
-  }
+  const {
+    strictArgs,
+    strictMultiArgs,
+    strictEnum,
+    strictUnknownTool,
+    strictMaintenancePhaseFilter,
+    strictMaintenanceSeverityFilter,
+    strictMaintenanceKindFilter,
+    strictRelationFilter,
+    strictFindNeighborsTypeFilter,
+    strictFindOrphansKindFilter,
+    strictFindOrphansExcludeKindFilter,
+    strictQueryConceptsKindFilter,
+    strictQueryConceptsHasKeyFilter,
+    strictListConceptsKindFilter,
+    strictRelationCheck,
+    strictAddRelation,
+    strictGraphKindFilter,
+    strictRecommendRelationsKindFilter,
+    strictRecommendRelationsUnsupportedKindFilter,
+    strictMatchNodesSortFilter,
+    strictMatchEdgesTypeFilter,
+    strictGraphFromKindFilter,
+    strictGraphToKindFilter,
+  } = printStrictRejectionSections(responses, header);
 
   const graphStructuredContentRows = [
     ["workspace_brief", brief, briefStructured],

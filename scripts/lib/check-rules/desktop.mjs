@@ -29,6 +29,7 @@ export const rules = [
       /^scripts\/download\/check-macos-download-release\.mjs$/,
       /^scripts\/desktop-release\/build-updater-manifest\.(?:mjs|test\.mjs)$/,
       /^scripts\/download\/stage-macos-release-assets\.(?:mjs|test\.mjs)$/,
+      /^scripts\/download\/gateway-capture\/[^/]+\.mjs$/,
       /^\.github\/workflows\/deploy-pages\.yml$/,
     ],
   },
@@ -51,7 +52,7 @@ export const rules = [
     reason: 'bundled vault data or the desktop performance budget surface changed — re-measure the static budgets',
     matches: [
       /^src\/entities\/docs-vault\/data\//,
-      /^scripts\/docs-vault\/build-docs-vault\.mjs$/,
+      /^scripts\/docs-vault\/(?:build-docs-vault\.mjs|generator\/[^/]+\.mjs)$/,
       /^scripts\/desktop\/check-desktop-performance\.(?:mjs|test\.mjs)$/,
       /^src\/entities\/docs-vault\/lib\/bundled-vault\/static-(?:vault-source|headings)\.ts$/,
     ],
@@ -136,5 +137,11 @@ export const directTests = {
     ['scripts/lib/macos-artifact/macos-dmg-layout.test.mjs', 'scripts/lib/macos-artifact/macos-dmg-layout.test.mjs'],
     ['scripts/lib/desktop-release/redact-command.mjs', 'scripts/lib/desktop-release/redact-command.test.mjs'],
     ['scripts/lib/desktop-release/redact-command.test.mjs', 'scripts/lib/desktop-release/redact-command.test.mjs'],
+    ['scripts/download/gateway-capture/capture-context.mjs', 'scripts/download/gateway-capture/gateway-capture.test.mjs'],
+    ['scripts/download/gateway-capture/fake-filesystem.mjs', 'scripts/download/gateway-capture/gateway-capture.test.mjs'],
+    ['scripts/download/gateway-capture/native-bridge.mjs', 'scripts/download/gateway-capture/gateway-capture.test.mjs'],
+    ['scripts/download/gateway-capture/repo-history.mjs', 'scripts/download/gateway-capture/gateway-capture.test.mjs'],
+    ['scripts/download/gateway-capture/sample-library.mjs', 'scripts/download/gateway-capture/gateway-capture.test.mjs'],
+    ['scripts/download/gateway-capture/gateway-capture.test.mjs', 'scripts/download/gateway-capture/gateway-capture.test.mjs'],
   ],
 };

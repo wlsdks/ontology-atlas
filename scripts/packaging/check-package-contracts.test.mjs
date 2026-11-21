@@ -9,6 +9,8 @@ import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, it } from 'node:test';
 
+import './smoke-vault-fixtures.test.mjs';
+
 import { expectedToolsListAnnotationSummary } from '../../mcp/scripts/verify/tools-list/inventory.mjs';
 import {
   MAINTENANCE_KIND_VALUES,
