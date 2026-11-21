@@ -5,7 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../../messages/en.json";
 import type { LintFinding, LintNodeCandidate } from "@/features/library";
 import { aggregateWikiFindings } from "@/shared/lib/library/wiki-report.mjs";
-import { LibraryCheckReport, advisoryReportSlugs, findingKey, reportOutline } from "./LibraryCheckReport";
+import { advisoryReportSlugs, findingKey, reportOutline } from "../../model/check-report/check-report-outline";
+import { LibraryCheckReport } from "./LibraryCheckReport";
 
 const STRUCTURAL = aggregateWikiFindings({
   pages: [

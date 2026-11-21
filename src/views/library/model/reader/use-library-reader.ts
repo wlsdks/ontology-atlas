@@ -9,7 +9,7 @@ import { vaultImageUrl } from "@/shared/lib/library/open-vault-file";
 import { useCitedPassage } from "../../lib/sources/use-cited-passage";
 import { useSourceOutline } from "../../lib/sources/use-source-outline";
 import { useAnswerHistory } from "../../lib/questions/use-answer-history";
-import { advisoryReportSlugs } from "../../ui/wiki/LibraryCheckReport";
+import { advisoryReportSlugs } from "../check-report/check-report-outline";
 import { useWikiReaderFacts } from "./use-wiki-reader-facts";
 import type { LibrarySelection } from "../library-selection";
 

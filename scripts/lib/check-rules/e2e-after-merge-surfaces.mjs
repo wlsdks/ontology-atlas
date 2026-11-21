@@ -72,7 +72,7 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/library/wiki/library-wiki-reader.spec.ts',
     reason: 'the library wiki reader or the source passage it reads on a press changed',
     matches: [
-      /^src\/views\/library\/ui\/wiki\/[^/]+\.tsx?$/,
+      /^src\/views\/library\/ui\/(?:check-report|wiki)\/[^/]+\.tsx?$/,
       /^src\/views\/library\/model\/reader\/(?:reader-landing|wiki-reader-facts|use-wiki-reader-facts)[^/]*\.tsx?$/,
       /^src\/views\/library\/lib\/sources\/use-cited-passage\.ts$/,
       /^src\/shared\/lib\/library\/source-passage\.ts$/,

@@ -2071,6 +2071,7 @@ describe('security surfaces', () => {
   it('keeps the Library screens and the model files behind them on the security contracts', () => {
     for (const path of [
       'src/views/library/ui/wiki/WikiCitationPopover.tsx',
+      'src/views/library/ui/check-report/SemanticLedger.tsx',
       'src/views/library/ui/questions/desk/DeskReport.tsx',
       'src/views/library/model/turns/use-library-turns.ts',
       'src/views/library/model/reader/reader-landing.ts',

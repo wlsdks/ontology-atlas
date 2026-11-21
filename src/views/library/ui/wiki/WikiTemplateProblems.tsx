@@ -17,7 +17,7 @@ import {
   isWikiFolderCode,
 } from "@/features/library";
 
-import { CheckCodesButton } from "./CheckCodesDialog";
+import { CheckCodesButton } from "../check-report/CheckCodesDialog";
 
 export type { WikiTemplateProblem };
 

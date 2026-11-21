@@ -36,7 +36,7 @@ describe('security surfaces', () => {
 
   it('registers the library reader parts and the source read a citation press makes', () => {
     const readPath = tracked.filter((path) =>
-      /^src\/views\/library\/ui\/(?:wiki|questions\/desk)\/[^/]+\.tsx?$/.test(path),
+      /^src\/views\/library\/ui\/(?:check-report|wiki|questions\/desk)\/[^/]+\.tsx?$/.test(path),
     ).concat(['src/views/library/lib/sources/use-cited-passage.ts', 'src/shared/lib/library/source-passage.ts']);
     expect(readPath.length).toBeGreaterThan(10);
     expect(readPath.filter((path) => !covered(path))).toEqual([]);

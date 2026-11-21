@@ -14,7 +14,7 @@ import { cn } from "@/shared/lib/cn";
 import { workRuns } from "@/features/work-run";
 import { useLibraryAgent } from "../../lib/agent/use-library-agent";
 import { useAnswerRefresh } from "../../lib/questions/use-answer-refresh";
-import { LibraryCheckReport } from "../wiki/LibraryCheckReport";
+import { LibraryCheckReport } from "../check-report/LibraryCheckReport";
 import { SelectionAsk } from "../questions/SelectionAsk";
 import { SourceSummary } from "../sources/SourceSummary";
 import { WikiPageHeader } from "../wiki/WikiPageHeader";

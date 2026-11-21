@@ -50,7 +50,7 @@ import { isWikiFurnitureSlug } from "@/shared/lib/library/wiki-page-schema";
 import { libraryCompileBlockedReason, libraryTransferSentence } from "../../lib/compile/compile-availability";
 import { useLibraryAgent } from "../../lib/agent/use-library-agent";
 import { useAnswerRefresh } from "../../lib/questions/use-answer-refresh";
-import { findingKey, reportOutline } from "../../ui/wiki/LibraryCheckReport";
+import { findingKey, reportOutline } from "../check-report/check-report-outline";
 import type { LibraryAgentOpeningRequest } from "../../ui/agent/LibraryAgentDock";
 import type { QuestionDeskReportRequest } from "../../ui/questions/LibraryQuestionDesk";
 import type { LibrarySelection } from "../library-selection";
