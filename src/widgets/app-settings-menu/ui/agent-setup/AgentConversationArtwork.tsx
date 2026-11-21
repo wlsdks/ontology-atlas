@@ -15,7 +15,6 @@ const PANEL = { x: 168, y: 24, width: 136, height: 192 };
 const JOIN_Y = PANEL.y + PANEL.height / 2;
 const REPLY_WIDTHS = [96, 80, 56];
 
-/** Three coding tools on the left joining one conversation panel on the right: the tools the app finds, talked to in one place. */
 export function AgentConversationArtwork({ arriving, engaged, reduced, tools }: FeatureStageMotion & { tools: readonly AppCodingTool[] }) {
   const beat = MOTION.slow.duration;
   const after = (index: number, step: number) => reduced ? MOTION.fast : { ...MOTION.expressive, delay: beat * step + STAGGER * index };

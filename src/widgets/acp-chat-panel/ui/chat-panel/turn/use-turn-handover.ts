@@ -5,17 +5,13 @@ import type { AcpChatPanelProps, AcpTurnRequest } from '../types';
 
 interface TurnHandoverOptions {
   busy: boolean;
-  /** Thinking or waiting on a person: the turn a parked panel must keep alive. */
   held: boolean;
   readOnly: boolean;
   outlives: boolean;
   stopping: boolean;
-  /** The waiting request, in the card's words. */
   request: AcpTurnRequest | null;
-  /** What the turn is doing now, read only while it runs and someone listens. */
   activity: () => TurnActivity | null;
   asking: boolean;
-  /** The composer's own Stop, read at press time so it always sees the latest turn. */
   stop: () => void;
   onTurnWorkChange?: AcpChatPanelProps['onTurnWorkChange'];
   onTurnStopChange?: AcpChatPanelProps['onTurnStopChange'];

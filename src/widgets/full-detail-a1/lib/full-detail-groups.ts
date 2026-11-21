@@ -14,10 +14,7 @@ export interface FullDetailConnectionRow {
   id: string;
   title: string;
   kind: string;
-  /** How many containment-children the ROW's own node has — 0 when it's a
-   * leaf. Rendered as a compact engraved count only when > 0. */
   childCount: number;
-  /** Recently changed (mirrors the compact datasheet's "powered" concept). */
   fresh: boolean;
 }
 
@@ -33,15 +30,10 @@ export interface FullDetailDomainLink {
 }
 
 export interface FullDetailGroups {
-  /** Outgoing containment — what this node contains. */
   contains: FullDetailGroupView;
-  /** Incoming directed relations — places that use this node. */
   usedBy: FullDetailGroupView;
-  /** Outgoing directed relations — places this node leans on. */
   dependsOn: FullDetailGroupView;
-  /** Incoming containment — the (usually single) parent this node belongs to. */
   belongsTo: FullDetailGroupView;
-  /** Symmetric links either way; they name no direction. */
   related: FullDetailGroupView;
   domainLevel?: { usedBy: FullDetailDomainLink[]; needs: FullDetailDomainLink[] } | null;
 }

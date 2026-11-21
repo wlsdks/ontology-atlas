@@ -1,7 +1,6 @@
 
 import type { VaultTreeNode } from "@/entities/docs-vault";
 
-/** Walk the tree pre-order, appending only doc-type nodes. */
 export function flattenDocs(
   node: VaultTreeNode,
   out: VaultTreeNode[] = [],
@@ -11,7 +10,6 @@ export function flattenDocs(
   return out;
 }
 
-/** The slug of the first doc met in pre-order. null for an empty tree. */
 export function firstDocSlug(node: VaultTreeNode | null): string | null {
   if (!node) return null;
   if (node.type === "doc" && node.slug) return node.slug;
@@ -23,7 +21,6 @@ export function firstDocSlug(node: VaultTreeNode | null): string | null {
   return null;
 }
 
-/** Doc slugs alone, flattened in pre-order — the list keyboard nav walks. */
 export function flattenTreeSlugs(
   node: VaultTreeNode | null,
   out: string[] = [],

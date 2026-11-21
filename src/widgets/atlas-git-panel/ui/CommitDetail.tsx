@@ -17,10 +17,9 @@ import { ConceptEgoCard } from "./ConceptEgoCard";
 import { DocumentConfirmStep } from "./DocumentConfirmStep";
 
 /**
- * What one step changed: identity always on top, the rest in two lenses. Tabs fit here
- * because Concepts and Files are two views of one chosen step, hiding presentation, not a
- * fact; the history list has no tabs, since there a tab would hide repository state.
- * The file list is a chooser, so only the chosen file's document renders.
+ * What one step changed: identity on top, the rest in two lenses. Tabs fit because Concepts and
+ * Files are two views of one chosen step; the history list has none, since a tab there would
+ * hide repository state.
  */
 export interface CommitConcept {
   id: string;
@@ -28,7 +27,6 @@ export interface CommitConcept {
   kind: string;
 }
 
-/** Concept names the headline spells out before it counts the rest. */
 const HEADLINE_CONCEPTS = 2;
 
 /**
@@ -42,7 +40,6 @@ function fileCarriesNode(file: { slug: string; kind: string | null }, nodeId: st
   return nodeId === `${file.kind}:${tail}`;
 }
 
-/** One section — label (plus count or hint) above, content below. */
 function Section({
   label,
   note,
@@ -90,7 +87,6 @@ export function CommitDetail({
   kindLabel,
 }: {
   t: (key: string, values?: Record<string, string | number>) => string;
-  /** The connected vault scopes this commit's lazy `git show` request. */
   vaultPath: string | null;
   hash: string;
   isoTime: string;
@@ -103,9 +99,7 @@ export function CommitDetail({
   headline?: string | null;
   concepts: readonly CommitConcept[];
   files: readonly GitChangeEntry[];
-  /** Uncommitted +/- line counts per path, from the diff the person can already read. */
   pendingDelta: ReadonlyMap<string, { added: number; removed: number }>;
-  /** Restores one of this commit's files to this commit's content; resolves true when git did it. */
   onRestore: (path: string, others: number) => Promise<boolean>;
   restoreBusy: boolean;
   /**
@@ -113,11 +107,8 @@ export function CommitDetail({
    * document's own history keeps following that document.
    */
   onJumpToCommit: (hash: string, follow: DocumentFollow) => void;
-  /** The document this step was opened to follow — a jump from its history — or `null`. */
   follow?: DocumentFollow | null;
-  /** Relative-time wording in the reader's language. */
   whenOf: (isoTime: string) => string;
-  /** What another step changed, in words: its concepts, else its documents, else its author's sentence. */
   stepTitleOf: (commit: GitCommitInfo) => string;
   focusedConceptId: string | null;
   setFocusedConceptId: (id: string) => void;
@@ -185,7 +176,6 @@ export function CommitDetail({
     },
   });
 
-  // Concepts by default, files for a step without concepts, and a followed document's own lens.
   const [lens, setLens] = useState<Lens>(() =>
     arrivalLens({
       follow,
@@ -219,7 +209,6 @@ export function CommitDetail({
         setDiff(result?.diff ?? "");
         setDiffTooLarge(result?.tooLarge ?? false);
       })
-      // A failed read leaves that section saying "none".
       .catch(() => {
         if (!cancelled) setDiff("");
       });
@@ -396,7 +385,6 @@ export function CommitDetail({
         </p>
       </header>
 
-      {/* Each lens label carries its count, so the tab never hides a fact. */}
       <div
         role="tablist"
         aria-label={t("lensLabel")}
@@ -409,7 +397,6 @@ export function CommitDetail({
             type="button"
             data-testid={`atlas-git-lens-${id}`}
             aria-selected={lens === id}
-            /* An empty lens stays in the strip to say its zero, but cannot be chosen. */
             disabled={(id === "concepts" ? concepts.length : files.length) === 0}
             onClick={() => setLens(id)}
             className={controlClass({ shape: "segment", size: "md", tone: "muted", className: "-mb-px min-h-9 gap-1.5 text-body rounded-none border-b-2 border-transparent px-2.5 hover:text-[color:var(--color-text-primary)] aria-selected:border-[color:var(--color-indigo-brand)] aria-selected:font-[var(--font-weight-signature)] aria-selected:text-[color:var(--color-text-primary)]" })}
@@ -440,9 +427,8 @@ export function CommitDetail({
                         size: "md",
                         tone: "secondary",
                         active: focused === concept.id,
-                        // The pressed chip's indigo border comes from the ramp;
-                        // overriding it unconditionally here would silently
-                        // remove that signal (a before/after measurement caught it).
+                        // The pressed chip's indigo border comes from the ramp; overriding it unconditionally here
+                        // would remove that signal.
                         className: cn(
                           focused !== concept.id &&
                             "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
@@ -455,7 +441,6 @@ export function CommitDetail({
                   ))}
                 </div>
               </div>
-              {/* Card first, then the document's timeline with the restore door on its heading, as in the files lens. */}
               {focused ? (
                 <Section label={t("egoHeading")} note={t("egoHint")}>
                   <ConceptEgoCard
@@ -547,7 +532,6 @@ export function CommitDetail({
                 />
               </div>
             ) : null}
-            {/* The document first, then its history and door, in the same order as the concepts lens. */}
             {activeEntry ? (
               <div className="px-4 pb-4">
                 <DocumentHistory
@@ -600,7 +584,6 @@ function RestoreDock({
     >
       <DocumentConfirmStep
         testIdPrefix="atlas-git-restore"
-        /* The door names the one file it puts back before it is pressed. */
         doorLabel={t("restoreAction", { path })}
         confirmLabel={t("restoreButton")}
         busyLabel={t("restoreRunning")}
@@ -658,7 +641,6 @@ function DocumentHistory({
   whenOf: (isoTime: string) => string;
   stepTitleOf: (commit: GitCommitInfo) => string;
   onJump: (hash: string) => void;
-  /** The document's restore door, drawn on the heading beside the versions it chooses between. */
   action?: React.ReactNode;
 }) {
   const [rows, setRows] = useState<GitCommitInfo[] | null>(null);
@@ -750,7 +732,6 @@ function DocumentHistory({
                   tone: "secondary",
                   hoverInk: "strong",
                   hoverSurface: "lift",
-                  /* The list's own `--git-when-w` time column, for the same rhythm as the left. */
                   className: "grid w-full grid-cols-[var(--git-when-w)_minmax(0,1fr)] items-center gap-3 rounded-none px-0",
                 })}
               >

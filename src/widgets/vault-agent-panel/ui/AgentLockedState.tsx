@@ -6,49 +6,9 @@ import { controlClass } from '@/shared/ui';
 import { AgentFirstWords } from './AgentFirstWords';
 
 /**
- * **One face for the three states** where conversation is not yet possible —
- * browser (app only), no folder, no key.
- *
- * ## Why the chat shape is shown in advance
- *
- * The old empty state was one title line plus one sentence, with most of the panel
- * below it an empty black area. Two things fail at once: ① the fact that this is
- * **a place you converse in** is not on screen, so there is no telling what
- * entering a key gets you, and ② an empty slab reads as an "unfinished" signal. So
- * the composer's position is drawn in advance at the bottom — a dashed border
- * already means "a slot not yet filled" in this app (the studio's sockets).
- *
- * ## No traps are built
- *
- * An input field that only imitates one becomes a trap that does nothing when
- * pressed. So this position is **a single control**: the whole dashed row is a
- * button (or link), and the pill inside it names the destination. No disabled
- * button is drawn, and every visible control really works. The explanation block
- * carries no button, so the entrance to the same feature is not duplicated — there
- * is one way in, the composer's position.
- *
- * ## Empty space — the mass is not moved but **anchored at both ends**
- *
- * The old layout stood the block **centred** vertically. Measured at 1512×950, the
- * empty space split into 361px above and 361px below, and neither meant anything —
- * a position that is neither top nor bottom explains nothing.
- *
- * Pinning the whole thing to the bottom was not the answer either (measured: one
- * 656px mass above). The total whitespace does not shrink at this width and height —
- * all that can be decided is **where the whitespace is and what it means**.
- *
- * So one mass is split in two and anchored at both ends:
- *
- * - **Top** = this place's value — "here is what you can ask for" plus sentences
- *   drawn from this folder. The value arrives where reading begins.
- * - **Bottom** = what it costs to use that value, plus the door to it. Directly
- *   above where the hand goes (the composer strip).
- * - **The gap between** = where the conversation will appear. After sending, an
- *   answer really does sit there, so this whitespace is not emptiness but
- *   **anticipation**.
- *
- * The order (value → cost) is as before, and now that order is true of **position**
- * as well as of the sentences.
+ * One face for the states where conversation is not yet possible (browser, no folder, no key).
+ * The composer's position is drawn in advance as one working control, never a disabled input.
+ * Value anchors the top, cost and the door the bottom; the gap between is where the conversation appears.
  */
 export function AgentLockedState({
   title,
@@ -59,38 +19,18 @@ export function AgentLockedState({
 }: {
   title: string;
   body: string;
-  /**
-   * The write-consent promise — a sentence needed **at the moment of deciding
-   * whether to enter a key**.
-   *
-   * On the old screen this fact ("files change only after I confirm") was nowhere
-   * until a proposal card appeared. That is, at the point a person decides whether
-   * to entrust their API key and docs folder to this panel, there was no answer to
-   * their biggest concern, "does this edit my files behind my back". A safeguard in
-   * the code is not enough; it has to be **read where the decision is made** to be
-   * worth anything.
-   */
+  /** The write-consent promise, read where a person decides whether to enter a key: files change only after confirmation. */
   consent: string;
   examplesTitle: string;
-  /** Sentences from the first-words generator — drawn only as a plain list here. */
   chips: readonly FirstWordsChip[];
 }) {
   return (
     <div className="flex grow flex-col gap-4">
-      {/* Order: **what can I ask for** first, **what do I need** second. Value has to
-          be read before cost — the old screen stated only what was needed and never
-          said what this place is for.
-
-          The sentences come from the **same generator** as the first-words chips
-          shown once a key exists — hardcoded examples produce the first failure,
-          "our folder has no such concept". Here they are plain text, though: making
-          them pressable adds a control that can be pressed in a keyless state, and
-          that is a trap. */}
+      {/* Value before cost. The sentences come from the generator the first-words chips use, so they
+          never name a concept the folder lacks; here they are plain text, as a pressable one would be a trap. */}
       <AgentFirstWords chips={chips} title={examplesTitle} />
 
-      {/* Where the conversation will appear — after sending, an answer really does sit
-          here. So this whitespace is not a hole to fill but **anticipation** (it
-          shrinks to 0 on overflow). */}
+      {/* Where the conversation will appear; the gap shrinks to 0 on overflow. */}
       <div aria-hidden="true" className="min-h-0 shrink grow" />
 
       {/* Why it is locked sits directly above the door in the composer's position, so it is read just
@@ -150,10 +90,8 @@ export function AgentLockedComposer({
   });
 
   return (
-    // It uses the **same entry curve** as the real composer strip — this position
-    // becomes that composer, so if the two states' strips arrived differently it
-    // would read as "something else appeared" rather than "this opened". Zero new
-    // durations (the same class is reused).
+    // Same entry curve as the real composer strip, which this position becomes, so the swap reads as
+    // "this opened".
     <footer className="agent-panel-stage-swap shrink-0 border-t border-[color:var(--color-border-soft)] p-2.5">
       {actionHref ? (
         <a

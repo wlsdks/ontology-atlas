@@ -9,11 +9,9 @@ import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
 import type { LocalRunnerId } from '../../model/local-runners';
 import { SettingsGroupHeading } from '../settings-primitives';
 
-/** The quiet trailing control every row uses (check, replace, cancel, disconnect). */
 export const ROW_CHIP =
   'shrink-0 border-[color:var(--color-border-soft)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset';
 
-/** The indigo emphasis for the one control that commits (save, check an address). */
 export const COMMIT_CHIP =
   'shrink-0 border-[color:var(--color-indigo-line-a32)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset';
 
@@ -26,7 +24,6 @@ export type RowKey = `key:${SecretProvider}` | `local:${LocalRunnerId}` | 'jev:k
  */
 export type StatusTone = 'success' | 'saved' | 'warning' | 'danger' | 'idle';
 
-/** Announce one sentence through the panel's single polite live region. */
 export type Announce = (message: string) => void;
 
 /**
@@ -40,7 +37,6 @@ export function refocusIfLost(ref: RefObject<HTMLElement | null>) {
   }, 0);
 }
 
-/** A named group of rows: the eyebrow and its one-line hint above one bordered list. */
 export function ModelGroup({
   label,
   hint,
@@ -237,7 +233,6 @@ export function OpenChip({
   );
 }
 
-/** A saved key's status: the last four for the eye, a sentence for a screen reader. */
 export function StoredKey({ last4, checked }: { last4: string; checked: boolean }) {
   const t = useTranslations('agents.models');
   return (

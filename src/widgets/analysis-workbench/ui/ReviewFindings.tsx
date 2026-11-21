@@ -10,7 +10,6 @@ import { Button, Chip, OntologyMapKindGlyph, RowButton, Textarea, controlClass }
 import { cn } from '@/shared/lib/cn';
 
 export type FindingDisposition = 'retain' | 'dismiss';
-/** A concept the evidence slug resolves to on the current map, else only the slug. */
 export type EvidenceConcept = { slug: string; title: string | null; kind: string | null };
 
 const SECTION_LABEL = 'text-label leading-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]';
@@ -20,7 +19,6 @@ function DispositionBadge({ disposition }: { disposition: FindingDisposition }) 
   return <span className={badgeClass({ shape: 'tag', className: 'border border-[color:var(--color-border-soft)] text-[color:var(--color-text-secondary)]' })}>{t(`review.${disposition}`)}</span>;
 }
 
-/** One finding as one pressable card; every card in the list takes the tallest card's height. */
 export const FindingRow = forwardRef<HTMLButtonElement, {
   finding: AnalysisFinding;
   disposition: FindingDisposition | null;
@@ -39,7 +37,6 @@ export const FindingRow = forwardRef<HTMLButtonElement, {
   </button>;
 });
 
-/** Navigation inside the results tab: it replaces the list until the person goes back. */
 export function FindingDetail({ finding, disposition, evidence, reason, busy, onBack, onFix, onJudge, onReasonChange, onEvidence }: {
   finding: AnalysisFinding;
   disposition: FindingDisposition | null;

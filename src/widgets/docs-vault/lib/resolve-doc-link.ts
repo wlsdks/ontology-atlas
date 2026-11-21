@@ -12,9 +12,7 @@ export type ResolvedDocLink =
   | { kind: 'passthrough' };
 
 export interface ResolveDocLinkParams {
-  /** The markdown link's raw href. */
   href: string;
-  /** The vault slug of the document containing this link (e.g. `README`, `ontology/project`). */
   fromSlug: string;
   vaultSlugs: Set<string>;
   /**
@@ -29,7 +27,6 @@ export interface ResolveDocLinkParams {
   vaultRepoRoot?: string;
 }
 
-/** posix path normalisation — drop `.` and empty segments, pop the parent for `..` where possible. */
 function collapsePath(pathStr: string): string {
   const out: string[] = [];
   for (const seg of pathStr.split('/')) {
@@ -65,7 +62,6 @@ export function resolveDocLink({
   repoBlobBase,
   vaultRepoRoot,
 }: ResolveDocLinkParams): ResolvedDocLink {
-  // Absolute URLs, protocols and anchor-only links are not the resolver's business.
   if (!href || href.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(href)) {
     return { kind: 'passthrough' };
   }
@@ -110,8 +106,6 @@ export function resolveDocLink({
     }
   }
 
-  // Outside the vault or an unknown internal slug: external GitHub blob when the repo location is
-  // known, otherwise unresolved.
   if (repoBlobBase && vaultRepoRoot !== undefined) {
     const repoRel = collapsePath(`${vaultRepoRoot}/${joined}`);
     const base = repoBlobBase.replace(/\/+$/, '');
@@ -121,7 +115,6 @@ export function resolveDocLink({
   return { kind: 'unresolved' };
 }
 
-/** The blob base and vault root of the public repo the bundled docs vault (`docs/**`) belongs to. */
 export const ONTOLOGY_ATLAS_REPO_BLOB_BASE =
   'https://github.com/wlsdks/ontology-atlas/blob/main';
 export const DOCS_VAULT_REPO_ROOT = 'docs';

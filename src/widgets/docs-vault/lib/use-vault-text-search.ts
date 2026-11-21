@@ -11,7 +11,6 @@ import { buildBodyEntry, docBodyCacheKey, type DocsBodyEntry, type DocsBodyIndex
 /** As many as the palette lists; the hit files are read to show the matching line. */
 export const TEXT_SEARCH_HITS = 15;
 const READ_CONCURRENCY = 6;
-/** Hit bodies kept while typing, so narrowing a query does not re-read the same files. */
 const RETAINED_HIT_BODIES = 200;
 
 /**
@@ -26,7 +25,6 @@ export function hitEntry(fileText: string, key: string, query: string): DocsBody
 }
 
 interface Options {
-  /** The document query; empty for command and tag modes. */
   query: string;
   docs: VaultDoc[];
   getDocContent?: (slug: string) => Promise<string>;

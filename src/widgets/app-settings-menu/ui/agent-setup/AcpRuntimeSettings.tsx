@@ -33,12 +33,10 @@ import { APP_CODING_TOOLS } from '../../model/app-coding-tools';
 import { AgentConversationArtwork } from './AgentConversationArtwork';
 
 /**
- * The coding agents this machine can invoke. Each row says whether the tool can be used from
- * here and, if not, what to do on that row (a missing tool and missing Node need different
- * actions). What is confirmed on this computer comes first; `cli-unknown` (`src-tauri/src/acp/detection.rs`) keeps
- * unverified tools out of that group. Only the measured runners run isolated and ask before
- * touching files outside the vault; that fact needs a sentence, so it stands once above the
- * group and names the guarded tools from the data rather than as a per-row badge.
+ * The coding agents this machine can invoke: each row says whether the tool can be used here and
+ * what to do if not. Confirmed tools come first (`cli-unknown`, `src-tauri/src/acp/detection.rs`,
+ * keeps unverified ones out). Only measured runners run isolated and ask before touching files
+ * outside the vault; that is stated once above the group, naming the guarded tools from the data.
  */
 
 export function AcpRuntimeSettings({
@@ -64,15 +62,12 @@ export function AcpRuntimeSettings({
    * collapsing only keeps a long list from burying a short one.
    */
   const [othersOpen, setOthersOpen] = useState(false);
-  /** What the person is typing in the other-tools dialog. Set every time it opens. */
   const [othersQuery, setOthersQuery] = useState('');
-  /** The search chip opens it empty; a shelf tile opens it already searched to that tool. */
   const openOthers = (query: string) => {
     setOthersQuery(query);
     setOthersOpen(true);
   };
 
-  /** A pressed re-scan shows searching and checks through login, since the person chose to wait. */
   const refresh = useCallback(async () => {
     setChecking(true);
     try {
@@ -82,13 +77,9 @@ export function AcpRuntimeSettings({
     }
   }, [setRuntimes]);
 
-  // The first pass **does not use the button path**, for two reasons:
-  // ① changing state directly in an effect body costs another render
-  // ② a response arriving after this pane closes would touch a vanished screen's state
-  // "Searching" is already said by `runtimes === null`, so there is nothing to switch on.
+  // The first pass skips the button path: setting state in an effect body costs a render, and a
+  // response after this pane closes would touch a vanished screen. "Searching" is `runtimes === null`.
   useEffect(() => {
-    // Do not set out to call a capability that is not there. In a browser the answer
-    // is obvious.
     if (!isAcpBridgeAvailable()) return;
     let cancelled = false;
     /*
@@ -110,10 +101,6 @@ export function AcpRuntimeSettings({
   // A browser cannot spawn a process — impossible in principle, so the reason and
   // the place to go are stated together (`.claude/rules/surfaces.md`).
   if (!isAcpBridgeAvailable()) {
-    /*
-     * On the web the tab is one stage: what the app does with these tools, why a browser cannot,
-     * the app as the way on, and MCP as what already works from here.
-     */
     return (
       <div className="my-auto flex min-w-0 flex-col items-center">
         <FeatureStage
@@ -175,7 +162,6 @@ export function AcpRuntimeSettings({
 
   const ready = (runtimes ?? []).filter((r) => isRuntimeUsable(r.state));
   const others = (runtimes ?? []).filter((r) => !isRuntimeUsable(r.state));
-  /** What a person can make ready: a sign-in first (one terminal run), then the installs. */
   const nextUp = others
     .filter((r) => r.state !== 'cli-unknown')
     .sort((a, b) => nextStepRank(a.state) - nextStepRank(b.state));
@@ -201,7 +187,6 @@ export function AcpRuntimeSettings({
       : t(others.length > 0 ? 'noneReadyCaption' : 'noneReadyCaptionNoList');
   const hasShelf = runtimes !== null && others.length > 0;
 
-  // The setup window's door, on the first shelf group's heading; emphasised when nothing is confirmed.
   const searchChip = (
     <Chip
       size="lg"
@@ -237,7 +222,6 @@ export function AcpRuntimeSettings({
   const guardedNames = ready
     .filter((r) => isGuardedRuntime(r.id, r.isolated))
     .map((r) => r.label);
-  /** Whether any confirmed tool cannot open a chat — the one line this row still carries. */
   const showGuardNote =
     runtimes !== null && ready.some((r) => !isGuardedRuntime(r.id, r.isolated));
   /*
@@ -313,7 +297,6 @@ export function AcpRuntimeSettings({
             <SettingsRow label={t('checking')} control={null} testId="app-settings-runtimes-loading" />
           </SettingsGroup>
         ) : (
-          /* Name · hint · action, the order the MCP tab's own group heading uses. */
           <SettingsGroup
             label={t(embedded ? 'pageReadyHeading' : 'readyHeading', { count: ready.length })}
             trailing={
@@ -350,11 +333,9 @@ export function AcpRuntimeSettings({
 
       {hasShelf ? (
         /*
-         * The other tools: a shelf of marks sorted by next step (sign-in, then installs, then
-         * the undetectable group), each opening the searchable setup `Dialog` at its tool, the
-         * same primitive as the connector dialog. With nothing confirmed the door carries the
-         * indigo, since the install instructions live there. Falsifier: if people read the
-         * shelf instead of reaching the ready tools, it goes back behind the chip.
+         * The other tools: a shelf of marks sorted by next step (sign-in, installs, undetectable), each
+         * opening the searchable setup `Dialog` at its tool. Falsifier: if people read the shelf instead of
+         * reaching the ready tools, it goes back behind the chip.
          */
         <>
           {shelf.length > 0 ? (
@@ -467,7 +448,6 @@ function OtherRuntimesDialog({
         id="app-settings-runtimes-others-title"
         className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
       >
-        {/* The errand, not the shelf's name, which the page heading already says. */}
         {t('othersDialogTitle')}
       </h2>
       {/* What "could not check" means, once and before the list rather than on every row. */}
@@ -559,14 +539,12 @@ function ShelfTile({
 }: {
   runtime: AcpRuntimeStatus;
   onOpen: (query: string) => void;
-  /** The undetectable group: no state line (its heading says it once), no card. */
   quiet?: boolean;
 }) {
   const t = useTranslations('nav.settingsMenu.runtimes');
   const mark = runtimeMark(runtime);
   const label = t('othersTileLabel', { name: runtime.label, state: t(`state.${runtime.state}`) });
   if (quiet) {
-    /* A name, not a card, so the names share the heading's start line and read as an index. */
     return (
       <li className="min-w-0">
         <button
@@ -648,7 +626,6 @@ function RuntimeRow({
   onRuntimesChanged?: () => void;
   lead?: boolean;
   oneOfSeveralChats?: boolean;
-  /** The Agents page: the last slot holds the state until a chat can open, then the press. */
   page?: boolean;
 }) {
   const t = useTranslations('nav.settingsMenu.runtimes');
@@ -661,7 +638,6 @@ function RuntimeRow({
    * versioned, child-process only, and started by the person. No install command is copied here.
    */
   const website = isUsable ? null : runtime.website;
-  /* A tool that only needs a login gets no install link. */
   const showInstall = website !== null && runtime.state !== 'login-needed';
   const install = usePanelPresence(page && showInstall);
   const slot = isUsable && guarded ? 'chat' : runtime.state;
@@ -774,7 +750,6 @@ function RuntimeRow({
         monogram={runtime.label}
         control={control}
       />
-      {/* Through `Surface` for the ramp's enter/exit, and only when there is a result. */}
       {showDoctor ? (
         <Surface open={Boolean(doctor.result)} className="min-w-0 px-4 pb-3">
           {doctor.result}

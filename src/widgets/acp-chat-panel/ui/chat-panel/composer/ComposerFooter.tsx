@@ -28,7 +28,6 @@ const AUTO_APPROVE_ON_CLASS =
  */
 const TOOL_GIVES_WAY_FIRST_CLASS = 'shrink-[9999]';
 
-/** Plan mode runs nothing, so auto-approve moves to an offered mode that sends writes to the app. */
 function modeToLeavePlan(choices: SessionState['choices']): string | null {
   if (modeCopyKey(choices.currentModeId) !== 'plan') return null;
   const asking = choices.modes.find((mode) => {
@@ -129,7 +128,6 @@ interface ComposerFooterProps {
   busy: boolean;
   connecting: boolean;
   footerStatus: FooterStatus;
-  /** A first-run download is running, so "starting" reads as downloading. */
   downloading: boolean;
   displayStatus: FooterStatus;
   turnSilent: boolean;

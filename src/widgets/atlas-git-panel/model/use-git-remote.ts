@@ -45,7 +45,6 @@ export function useGitRemote({
     },
     [t],
   );
-  /** The remote input — opened only from the location line's button; it never sits there as a card. */
   const [remoteOpen, setRemoteOpen] = useState(false);
   const [remoteUrl, setRemoteUrl] = useState("");
   const [remoteRunning, setRemoteRunning] = useState(false);

@@ -42,14 +42,10 @@ interface Props {
   pinnedSlugs: string[];
   commands: VaultCommand[];
   tagCounts: Array<{ tag: string; count: number }>;
-  /** Document selection handler. The second argument, query, is for match highlighting. */
   onDocSelect: (slug: string, query?: string) => void;
-  /** Tag selection handler — applied to the tree filter immediately. */
   onTagSelect: (tag: string) => void;
-  /** The initial query — `> ` (commands) / `#` (tags) / '' (default). */
   initialQuery?: string;
   getDocHref?: (slug: string) => string;
-  /** Reads a hit document's text for its matching line; without it search covers titles only. */
   getDocContent?: (slug: string) => Promise<string>;
 }
 
@@ -59,7 +55,6 @@ const paletteOptionId = (idx: number) => `docs-vault-palette-option-${idx}`;
 
 type ResultKind = 'doc' | 'command' | 'tag';
 
-/** A command answers to its label or to any of its unshown keywords; `query` is lowercased. */
 function commandMatches(command: Pick<VaultCommand, 'label' | 'keywords'>, query: string): boolean {
   if (command.label.toLowerCase().includes(query)) return true;
   return command.keywords !== undefined && command.keywords.toLowerCase().includes(query);
@@ -70,9 +65,7 @@ interface PaletteRow {
   key: string;
   label: React.ReactNode;
   hint?: string;
-  /** Supporting text shown on the right — shortcut, slug or count. */
   meta?: string;
-  /** A second line below the label — a body hit snippet, for instance. */
   sub?: React.ReactNode;
   icon: React.ReactNode;
   onRun: () => void;
@@ -97,7 +90,6 @@ function Highlight({
   );
 }
 
-/** Says what search covers while the index builds, or why it covers titles only. */
 function IndexStatusLine({ status }: { status: VaultIndexStatus }) {
   const t = useTranslations('vaultWidgets.palette.indexStatus');
   const formatNumber = useFormatter().number;
@@ -189,7 +181,6 @@ export function DocsVaultUnifiedPalette({
     previousFocusRef.current = document.activeElement as HTMLElement | null;
     const handle = requestAnimationFrame(() => {
       inputRef.current?.focus();
-      // With a `> ` prefix injected, put the caret after it.
       const ql = initialQuery.length;
       inputRef.current?.setSelectionRange(ql, ql);
     });
@@ -199,7 +190,6 @@ export function DocsVaultUnifiedPalette({
     };
   }, [initialQuery]);
 
-  // Scroll the list to follow activeIdx.
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
@@ -270,7 +260,6 @@ export function DocsVaultUnifiedPalette({
         sections.push({ title: t('secRecent'), icon: <Clock size={ICON_SIZE.sm} aria-hidden />, size: recentRows.length });
         out.push(...recentRows);
       }
-      // Suggested commands (top 5 visible)
       const cmdRows: PaletteRow[] = commands
         .filter((c) => c.visible !== false)
         .slice(0, 5)
@@ -382,7 +371,6 @@ export function DocsVaultUnifiedPalette({
       kind: 'doc' as const,
       key: `doc:${m.doc.slug}`,
       label: sameAsTitle ? <Highlight text={m.doc.title} hit={m.titleHit} /> : displayTitle,
-      // Body hit snippet — not shown on a row whose title already shows the match.
       sub:
         m.bodyHit && !m.titleHit ? (
           <Highlight text={m.bodyHit.text} hit={m.bodyHit.hit} />
@@ -406,7 +394,6 @@ export function DocsVaultUnifiedPalette({
       });
       out.push(...docRows);
     }
-    // Commands with a partial match are shown after (up to 5).
     const qLc = trimmed.toLowerCase();
     const cmdMatches = commands
       .filter((c) => c.visible !== false)
@@ -456,7 +443,6 @@ export function DocsVaultUnifiedPalette({
     t,
   ]);
 
-    // Per-section start indices — where to insert headers at render time.
   const sectionOffsets = useMemo(() => {
     const offsets = new Map<number, { title: string; icon: React.ReactNode }>();
     let offset = 0;
@@ -509,7 +495,6 @@ export function DocsVaultUnifiedPalette({
       e.preventDefault();
       onClose();
     } else if (e.key === 'Tab') {
-      // Tab cycles the prefix — '' → '>' → '#' → ''
       e.preventDefault();
       const t = query.trim();
       if (t.startsWith('>')) setQuery('#');
@@ -544,7 +529,6 @@ export function DocsVaultUnifiedPalette({
         initial={{ opacity: 0, y: -8, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -8, scale: 0.98, transition: EXIT_TRANSITION }}
-      // The ramp's movement step.
         transition={MOTION.base}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -752,7 +736,6 @@ function ResultRow({
       ) : null}
     </>
   );
-  // Document rows render as Link — new-tab capable plus prefetch.
   if (row.kind === 'doc' && typeof row.meta === 'string') {
     return (
       <Link

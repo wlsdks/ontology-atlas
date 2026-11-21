@@ -26,7 +26,6 @@ interface OpeningRequestOptions {
   onOpeningRequestRejected?: (nonce: number) => void;
   heldRequest: HeldRequest | null;
   sendHeldRequest: (held: HeldRequest) => void;
-  /** The opening request takes the first turn; a held request goes back to the box instead of queueing behind it. */
   onOpeningTakesTurn: () => void;
 }
 

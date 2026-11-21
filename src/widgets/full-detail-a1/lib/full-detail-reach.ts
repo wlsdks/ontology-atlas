@@ -14,20 +14,15 @@ import {
 export type FullDetailReachDepth = 1 | 2 | 3;
 
 export interface FullDetailReachDomainRow {
-  /** Domain node id, or `null` when no domain ancestor resolves (e.g. a
-   * project/document node with no containing domain). */
   domainId: string | null;
-  /** Domain node title, or `null` matching `domainId === null`. */
   domainTitle: string | null;
   count: number;
-  /** Matches the start node's OWN domain — rendered as "inside domain". */
   isSelf: boolean;
 }
 
 export interface FullDetailReachAtDepth {
   depth: FullDetailReachDepth;
   reachableCount: number;
-  /** Sorted desc by count; ties broken by domainTitle. */
   domainRows: FullDetailReachDomainRow[];
 }
 

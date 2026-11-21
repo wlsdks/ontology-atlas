@@ -33,8 +33,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 /**
  * The connect flow: three steps, since a remote is optional and a local-only history is a
- * complete state. Each step has a name and a description on a hairline progress rail; done is
- * an indigo-outlined check, current a filled indigo mark, later neutral.
+ * complete state.
  */
 function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
   const steps = [t("stepApp"), t("stepFolder"), t("stepStart")];
@@ -51,7 +50,6 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
             aria-current={active ? "step" : undefined}
             className="relative flex min-w-0 flex-1 flex-col items-center gap-2 px-1"
           >
-            {/* The hairline back to the previous step; indigo once that step is done. */}
             {index > 0 ? (
               <span
                 aria-hidden
@@ -108,15 +106,11 @@ export function SetupFrame({
   children,
 }: {
   t: Translator;
-  /** `null` skips the connect flow (loading and error are events, not steps). */
   step: SetupStep | null;
   state: string;
-  /** This moment's task in one sentence — the screen's h1. */
   title: string;
   body?: React.ReactNode;
-  /** Stands in place of the history artwork where no history could be read. */
   figure?: React.ReactNode;
-  /** The promise on the last line, by default the recording-scope notice. */
   note?: string;
   children?: React.ReactNode;
 }) {
@@ -147,7 +141,6 @@ export function SessionChangeSummary({
 }: {
   t: Translator;
   changeset: OntologyChangeset | null;
-  /** Section title — web and desktop use different wording. */
   title: string;
 }) {
   const rows = changeset
@@ -203,7 +196,6 @@ export function WebSetup({
     >
       <GetAppLink data-testid="atlas-git-web-get-app" className="shrink-0">{t("webGetApp")}</GetAppLink>
 
-      {/* What changed this time — the **basis** for the action, so it sits below the primary action. */}
       <SessionChangeSummary t={t} changeset={sessionChangeset} title={t("webSummaryTitle")} />
 
       {/*

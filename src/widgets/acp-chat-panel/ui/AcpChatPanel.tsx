@@ -803,7 +803,6 @@ export function AcpChatPanelBody({
   );
 }
 
-/** A conversation that is not kept still waits while a kept turn holds its folder. */
 function UnkeptPanel(props: AcpChatPanelProps) {
   const folderBusy = useFolderBusy('', props.vaultRoot);
   return <AcpChatPanelBody {...(folderBusy ? { ...props, sessionEnabled: false, folderBusy } : props)} />;

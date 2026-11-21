@@ -36,13 +36,10 @@ export interface AcpOntologyRelationPreview {
   phase: 'draft' | 'committing';
 }
 
-/** What a waiting request asks to do, in the card's words. */
 export type AcpTurnRequestAction = 'edit' | 'delete' | 'execute' | 'read' | 'ontology' | 'unknown';
 
-/** The request a turn waits on: its action and the file, command or change it names. */
 export interface AcpTurnRequest {
   action: AcpTurnRequestAction;
-  /** Folder-relative when the path lies inside the folder; null when the request names nothing. */
   target: string | null;
 }
 
@@ -52,9 +49,7 @@ export interface AcpTurnWork {
   label: ToolLabel | null;
   target: string | null;
   asking: boolean;
-  /** The waiting request while `asking`. */
   request?: AcpTurnRequest | null;
-  /** Stop was pressed and the turn has not ended yet. */
   stopping?: boolean;
 }
 
@@ -90,7 +85,6 @@ export interface SeatedDetail {
 /** A request pressed while the agent starts; it goes out once, to the runtime and folder it was written for. */
 export interface HeldRequest {
   text: string;
-  /** What the person typed, put back in the box if they take it back. */
   lead: string;
   seatedDetail: SeatedDetail | null;
   runtimeId: string;
@@ -126,9 +120,7 @@ export interface AcpChatPanelProps {
   /** Only runtimes with a guard; with one entry there is nothing to choose. */
   runtimes?: ReadonlyArray<{ id: string; label: string }>;
   onRuntimeChange?: (runtimeId: string) => void;
-  /** Seats a sentence in the box for the person to edit; it is never sent. */
   prefillRequest?: { text: string; nonce: number } | null;
-  /** A first turn to send once the session is ready, on the person's behalf. */
   openingRequest?: OpeningRequest | null;
   requestScopeKey?: string;
   onOpeningRequestSent?: (nonce: number) => void;
@@ -149,16 +141,13 @@ export interface AcpChatPanelProps {
     toolName: string | null;
   }) => AcpAutoDecision | Promise<AcpAutoDecision>;
   suggestions?: readonly ChatSuggestion[];
-  /** App-owned prerequisites such as opening source connection instead of drafting a prompt. */
   onSuggestionAction?: (suggestion: ChatSuggestion) => boolean;
-  /** Only node names that exist are wired to the map. */
   knownSlugs?: ReadonlySet<string>;
   beforeComposer?: ReactNode;
   systemPromptAppendix?: string | null;
   noticeActions?: NoticeActions | null;
   /** Current graph relation keys (`from\0type\0to`) used to reject invented presentation edges. */
   knownRelations?: KnownRelations;
-  /** Collapses every agent message of the turn whose request text matches exactly. */
   answerFold?: AnswerFold | null;
   presentationIntent?: AcpPresentationIntent | null;
   presentationRequest?: string | null;
@@ -175,22 +164,17 @@ export interface AcpChatPanelProps {
   onTerminalToolObservation?: (event: Extract<AcpEvent, { kind: 'tool' }>) => void;
   /** The map move named by the exact input of an Atlas read tool, never by agent prose (`acp-session/model/map-presentation/map-intent.ts`). */
   onMapIntent?: (intent: AcpMapIntent) => void;
-  /** One relation change proposal: dashed before approval, solid until its ACP tool finishes. */
   onOntologyRelationPreviewChange?: (preview: AcpOntologyRelationPreview | null) => void;
   onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
   onTurnStarted?: (start: AcpTurnStart) => ((completion: AcpTurnCompletion) => void | Promise<void>) | null;
-  /** Stops the running turn as the composer's Stop does; reported while a turn runs, null otherwise. */
   onTurnStopChange?: (stop: (() => void) | null) => void;
-  /** Kept while the panel is away, so a screen elsewhere can show the turn's progress. */
   onTurnWorkChange?: (work: AcpTurnWork | null) => void;
   /**
    * Which running turns keep going once the screen leaves: `chosen` keeps a read-only turn and one
    * `turnOutlivesScreen` chose at its start; any other turn ends with the screen.
    */
   parksTurns?: 'any' | 'chosen';
-  /** Asked as a turn starts; the session keeps the answer for that turn (`useAcpSession`). */
   turnReadOnly?: (turn: AcpTurnStart) => boolean;
-  /** Asked as a turn starts: whether it keeps running once its screen is gone. */
   turnOutlivesScreen?: (turn: AcpTurnStart) => boolean;
   /**
    * Another conversation's turn holds this folder: this one starts no agent, resumes and sends

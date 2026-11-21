@@ -73,7 +73,6 @@ export function LocalRunnerRow({
   const nativeErrors = useNativeErrorLookup();
   const active = activeRunner === runner.id;
   const savedHere = runnerForBaseUrl(local.baseUrl) === runner.id;
-  /** The row's own address: the saved one when it is this row's, else the runner's default. */
   const address = runner.id === 'custom' ? (savedHere ? local.baseUrl : '') : runner.defaultBaseUrl;
   const [draftUrl, setDraftUrl] = useState(() => address || runner.defaultBaseUrl);
   const addressRef = useRef<HTMLInputElement | null>(null);

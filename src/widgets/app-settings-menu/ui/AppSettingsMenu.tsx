@@ -109,7 +109,6 @@ interface AppSettingsScreenControls {
 
 export interface AppSettingsMenuProps {
   mode: 'static' | 'local';
-  /** Controlled open state. Unset means self-managed. */
   open?: boolean;
   onOpenChange?: (next: boolean) => void;
   /** The map's INDEX default; the Map pane draws that row only where the map injects it. */

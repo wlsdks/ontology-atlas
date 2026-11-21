@@ -20,7 +20,6 @@ export function auditPurposeLabel(entry: LlmAuditEntry, t: AuditTranslate): stri
   }
 }
 
-/** What left, in the terms of that kind of send. */
 export function auditScopeLabel(entry: LlmAuditEntry, t: AuditTranslate): string {
   if (entry.embed) {
     const closed = entry.embed.phase === 'close';

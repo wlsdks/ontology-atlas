@@ -25,9 +25,7 @@ export interface FullDetailA1GroupsLabels {
   directLinks: (count: number) => string;
   domainCount: (count: number) => string;
   domainLinks: (count: number) => string;
-  /** The one sentence under the groups: incoming and outgoing are not all dependencies. */
   caption: string;
-  /** Shown alone when no group has a row. */
   empty: string;
 }
 

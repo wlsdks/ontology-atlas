@@ -14,7 +14,6 @@ export const WORK_PLAYLIST: Readonly<Record<TurnActivityKind, readonly WorkMotio
 
 const PLAY: readonly PlayMotion[] = ['flipper-groove', 'magic-fish', 'sing', 'hearts'];
 const KIND_ORDER = Object.keys(WORK_PLAYLIST) as TurnActivityKind[];
-/** Every third loop of one kind of work is play. */
 const PLAY_EVERY = 3;
 
 /** FNV-1a over the turn id, so a turn's order repeats on every render and every machine. */

@@ -21,7 +21,6 @@ async function textDigest(text: string): Promise<string> {
 /** What the archive has to say. Everything but `records` and `error` is quiet: nothing to pick. */
 export type MeaningTransitionArchiveState = 'no-folder' | 'unavailable' | 'pending' | 'empty' | 'records' | 'error';
 
-/** Draws nothing while quiet; the caller's own empty state speaks for a quiet archive. */
 export function MeaningTransitionHistory({ handle, open, onStateChange }: {
   handle: FileSystemDirectoryHandle | null;
   open: boolean;

@@ -16,7 +16,6 @@ export const DOCS_TREE_GROUPS = ['folders', 'docs'] as const;
 
 export type DocsTreeGroup = (typeof DOCS_TREE_GROUPS)[number];
 
-/** Folders first by default; "mixed" is not offered. */
 export const DEFAULT_DOCS_TREE_GROUP: DocsTreeGroup = 'folders';
 
 export function parseDocsTreeSort(raw: string | null | undefined): DocsTreeSort {
@@ -37,7 +36,6 @@ export function serializeDocsTreeGroup(group: DocsTreeGroup): string | null {
   return group === DEFAULT_DOCS_TREE_GROUP ? null : group;
 }
 
-/** Tree node path → last modified time (ms). A folder takes the newest of the documents it holds. */
 type DocsTreeRecencyIndex = ReadonlyMap<string, number>;
 
 function parseUpdatedAt(value: string | undefined): number {
@@ -82,7 +80,6 @@ function label(node: VaultTreeNode): string {
 export interface DocsTreeOrder {
   sort: DocsTreeSort;
   group: DocsTreeGroup;
-  /** Without it, a request for recency order falls back to name order (better than an empty list). */
   recency?: DocsTreeRecencyIndex;
 }
 

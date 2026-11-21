@@ -71,9 +71,7 @@ export function StartingState({ t, download, suggestions, seatedRequestWaiting, 
   download: SessionState['download'];
   suggestions: readonly ChatSuggestion[];
   seatedRequestWaiting: boolean;
-  /** The lead of an opening request a button started, while it waits for the session. */
   openingLead: string | null;
-  /** The lead of the request the person pressed while the agent was starting. */
   heldLead: string | null;
   onTakeBack: () => void;
 }) {
@@ -159,7 +157,6 @@ export function ConnectStoppedState({ t, onConnectAgain }: { t: ChatT; onConnect
   );
 }
 
-/** Another conversation's turn holds this folder; this one waits and offers that turn's Stop. */
 export function FolderBusyState({ t, onStop }: { t: ChatT; onStop: () => void }) {
   const tCard = useTranslations('workCard');
   return (

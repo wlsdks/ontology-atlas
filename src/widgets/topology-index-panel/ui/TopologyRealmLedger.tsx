@@ -26,55 +26,39 @@ import {
 import { TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
 import { fieldClass } from '@/shared/ui/control-class';
 
-/** One boundary relation row — display-ready, with i18n labels already assembled (HomePage builds it). */
 export interface RealmBoundaryRow {
   edgeId: string;
   fromTitle: string;
   toTitle: string;
-/** The relation type's plain label (e.g. "depends on") — assembled by HomePage's relationVocabulary. */
   relationLabel: string;
   outsideId: string;
   jumpRealmId: string;
 }
 
 interface TopologyRealmLedgerLabels {
-  /** The top eyebrow — 「Realm」 (realm). */
   label: string;
-  /** Labels for the realm census fragments. */
   elementsShort: string;
   capabilitiesShort: string;
   depthShort: string;
-  /** Placeholder for the realm tree's search field. */
   searchPlaceholder: string;
-  /** The 「Leave Realm」 (leave realm) text button. */
   exit: string;
   exitAria: string;
-  /** The one-line message when the tree is empty (zero search results and the like). */
   emptyHint: string;
-  /** "N relations touching the outside" (HomePage formats the count) — the collapsed-by-default summary line. */
   boundaryHeading: string;
   boundaryToggleAria: string;
-  /** The 「Go to this realm」 (go to this realm) hover action on a row. */
   boundaryJump: string;
   boundaryJumpAria: string;
-  /** The one-line message when a realm is completely isolated. */
   boundaryEmpty: string;
-  // Tree row labels forwarded to TopologyIndexTreeRow.
   freshTitle: string;
   domainCountTitle: string;
 }
 
 export interface TopologyRealmLedgerProps {
-  /** The realm's root node — the header glyph and title. */
   rootKind: string;
   rootTitle: string;
-  /** Realm census fragments (elements, capabilities, depth). Derived by HomePage. */
   census: { elementCount: number; capabilityCount: number; depth: number };
-  /** The realm subtree — the root's children become the tree's top-level rows. */
   subtree: OntologyTreeNode;
-  /** The boundary edge rows to display (the top few). */
   boundaryRows: RealmBoundaryRow[];
-  /** The total boundary edge count (the whole set, independent of the row slice). */
   boundaryTotal: number;
   selectedId: string | null;
   changedSlugs: ReadonlySet<string>;
@@ -88,10 +72,9 @@ export interface TopologyRealmLedgerProps {
 }
 
 /**
- * The realm ledger shown instead of the global INDEX while a realm is expanded (`?realm=slug`):
- * header, the realm tree with search, and boundary relations collapsed behind one summary line. No
- * box in a box, no chip soup, one-line empty states; it reuses INDEX's tokens, shell
- * and `TopologyIndexTreeRow`.
+ * The realm ledger shown instead of the global INDEX while a realm is expanded (`?realm=slug`): header,
+ * the realm tree with search, and boundary relations behind one summary line. It reuses INDEX's tokens,
+ * shell and `TopologyIndexTreeRow`.
  */
 export function TopologyRealmLedger({
   rootKind,
@@ -111,12 +94,10 @@ export function TopologyRealmLedger({
   className,
 }: TopologyRealmLedgerProps) {
   const [query, setQuery] = useState("");
-  // The realm tree's top level is the root's direct children (the header already names the root itself).
   const childRoots = subtree.children;
   const [openIds, setOpenIds] = useState<Set<string>>(
     () => new Set(childRoots.map((child) => child.node.id)),
   );
-  // Boundary relations are collapsed by default — the default screen stays tidy with just the header and tree.
   const [boundaryOpen, setBoundaryOpen] = useState(false);
   const trimmedQuery = query.trim();
   const isFiltering = trimmedQuery.length > 0;
@@ -185,10 +166,6 @@ export function TopologyRealmLedger({
           <span className="min-w-0 flex-1 truncate font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-tertiary)]">
             {labels.label}
           </span>
-          {/*
-           * Export this realm as a block: a self-contained module that renders null without a local
-           * vault.
-           */}
           <RealmBlockExportAction rootTitle={rootTitle} census={census} subtree={subtree} />
           <button
             type="button"
@@ -226,7 +203,6 @@ export function TopologyRealmLedger({
         </p>
       </header>
 
-      {/* Realm-scoped search — a filter belonging to the tree section, not a separate card. */}
       <div className="relative mb-2 shrink-0">
         <Search
           size={ICON_SIZE.sm}

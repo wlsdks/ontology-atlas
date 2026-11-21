@@ -6,7 +6,6 @@ import { useWindowedRows } from "@/shared/lib/list-rows/use-windowed-rows";
 
 /** A top-level row before it is measured: one step of the 36px control ladder. */
 const ROOT_ROW_ESTIMATE_PX = 36;
-/** Enough rows for a tall panel, so the first paint does not build hundreds that leave at once. */
 const FIRST_RENDER_ROOTS = 40;
 
 function renderedRow(list: HTMLElement | null, nodeId: string): HTMLElement | null {
@@ -17,11 +16,9 @@ function renderedRow(list: HTMLElement | null, nodeId: string): HTMLElement | nu
 }
 
 /**
- * Only the top-level rows in view are in the DOM (`useWindowedRows`): a folder with hundreds of
- * parentless concepts made the INDEX most of its page (492 top-level rows, 6,497 elements at
- * 12,000 concepts). A row outside the window is scrolled in before it is focused, and
- * the tab stop moves to a rendered row while its own is scrolled away. Open branches render whole.
- * A tuple, so the window stays a value and the ref a ref to the lint.
+ * Only the top-level rows in view are in the DOM (`useWindowedRows`): hundreds of parentless concepts
+ * made the INDEX most of its page (6,497 elements at 12,000 concepts). A row outside the window is
+ * scrolled in before it is focused; open branches render whole. A tuple, so the ref stays a ref to the lint.
  */
 export function useIndexRootWindow(roots: readonly OntologyTreeNode[]) {
   const [range, listRef, scrollToRoot] = useWindowedRows<HTMLDivElement>({
@@ -70,7 +67,6 @@ export function useIndexRootWindow(roots: readonly OntologyTreeNode[]) {
     row.focus();
   });
 
-  /** The row that carries the tab stop: the active one, or the first rendered while it is not. */
   const tabStopFor = useCallback(
     (activeRowId: string | null): string | null => {
       if (activeRowId === null) return null;

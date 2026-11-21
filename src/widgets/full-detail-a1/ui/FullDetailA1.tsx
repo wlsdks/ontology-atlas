@@ -43,24 +43,18 @@ import { FullDetailA1ReachPanel } from "./full-detail-a1-reach-panel";
 
 export interface FullDetailA1Node {
   id: string;
-  /** The short display title (the display field wins; otherwise the title's
-   *  parenthetical explanation is cut). The header heading draws this large. */
   title: string;
   /** The full original vault title — preserved as secondary text under the heading only
    *  when it differs from `title` (layering, not hiding). Identical, it is not rendered. */
   fullTitle?: string;
   kind: string;
-  /** The owner the compact panel names beside the kind: a capability's domain, an element's
-   *  capability. */
   ownerTitle?: string | null;
-  /** Vault slug / evidence path beneath the identity. */
   slug: string;
   /**
    * The name handed to an agent: the vault-relative slug, or the raw reference text for a concept
    * without a document (`resolveNodeAgentTarget`). Falls back to `slug`.
    */
   agentSlug?: string | null;
-  /** Does it have its own document? Without one, the handoff chain starts by creating it. */
   documented?: boolean;
   fresh: boolean;
   /**
@@ -73,7 +67,6 @@ export interface FullDetailA1Node {
    * hides the row.
    */
   lastEditSubject?: { kind: "agent" | "human"; ageLabel: string } | null;
-  /** expected_mtime conflict badge, true only on a real mismatch. */
   mtimeConflict?: boolean;
 }
 
@@ -92,10 +85,8 @@ export interface FullDetailA1Props {
   node: FullDetailA1Node;
   groups: FullDetailGroups;
   reach: FullDetailReachModel;
-  /** Id for the title heading, so the host dialog can name itself by it. */
   titleId?: string;
-  /** The node's own markdown body (the node IS a markdown doc — A1 must not
-   * drop it, per the design gate). `null` renders the empty-body message. */
+  /** The node's own markdown body, never dropped (design gate). `null` renders the empty-body message. */
   bodyMarkdown: string | null;
   /** Makes the body editable in place when the vault is writable; null keeps it read-only. */
   explanationEdit?: {
@@ -103,7 +94,6 @@ export interface FullDetailA1Props {
   } | null;
   onSelectNode: (id: string) => void;
   onClose: () => void;
-  /** **This node's own** document. null or omitted when it has no `.md` of its own. */
   documentHref?: string | null;
   /**
    * Another document that records this node when it has none of its own, relabelled to name its

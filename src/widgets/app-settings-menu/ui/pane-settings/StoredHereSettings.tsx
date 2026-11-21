@@ -27,7 +27,6 @@ function formatBytes(bytes: number, locale: string): string {
 
 type Outcome = 'deleted' | 'failed' | null;
 
-/** This folder's prepared numbers for search by meaning, with their size and a Delete. */
 function MeaningRow({ rootPath }: { rootPath: string }) {
   const t = useTranslations('settingsPrivacy.storedHere');
   const locale = useLocale();
