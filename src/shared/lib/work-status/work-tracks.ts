@@ -353,6 +353,40 @@ export function stageOf(track: Track): RoomStage {
  * Within a tier, rooms keep the order the tracks already have: stuck as Git lists them, sessions
  * by start, a session's worktrees by lock time.
  */
+/** Stage sizes that fill whole rows: one row of up to three, two rows of two or three. */
+const FULL_STAGES = [1, 2, 3, 4, 6];
+
+const twoTools = (room: RoomEntry) => room.state.kind === 'working' && room.state.tools.length > 1;
+
+/**
+ * Who stands on the front stage. Two tools in one folder first, then running work, one room per
+ * session before any session gets a second; rooms that are stuck or idle take a slot only to fill
+ * the last row, so the stage never shows a hole. The stage reads in session order, like the rail.
+ */
+function admitToStage(candidates: RoomEntry[], limit: number, sourceOrder: (room: RoomEntry) => number): RoomEntry[] {
+  const bySource = (a: RoomEntry, b: RoomEntry) => sourceOrder(a) - sourceOrder(b);
+  const running = candidates.filter(room => room.tier === 'working').sort(bySource);
+  const turn = new Map<string, number>();
+  const ranked = running.filter(room => !twoTools(room)).map(room => {
+    const session = room.session?.key ?? NO_SESSION_FLOOR;
+    const nth = turn.get(session) ?? 0;
+    turn.set(session, nth + 1);
+    return { room, nth };
+  });
+  const order = [
+    ...running.filter(twoTools),
+    ...ranked.sort((a, b) => a.nth - b.nth || bySource(a.room, b.room)).map(entry => entry.room),
+  ];
+  const chosen = order.slice(0, limit);
+  const spare = [
+    ...candidates.filter(room => room.tier === 'attention').sort(bySource),
+    ...candidates.filter(room => room.tier === 'held').sort(bySource),
+  ];
+  const reachable = Math.min(limit, chosen.length + spare.length);
+  const full = FULL_STAGES.filter(size => size >= chosen.length && size <= reachable).at(-1) ?? chosen.length;
+  return [...chosen, ...spare.slice(0, full - chosen.length)].sort(bySource);
+}
+
 export function planRooms(
   tracks: WorkTracks,
   nowMs: number,
@@ -372,10 +406,10 @@ export function planRooms(
   const order = new Map(all.map((room, index) => [room.key, index]));
   const sessionOrder = new Map(tracks.sessions.map((session, index) => [session.key, index]));
   const sourceOrder = (room: RoomEntry) =>
-    (room.session ? (sessionOrder.get(room.session.key) ?? 0) * 10_000 : -10_000) + (order.get(room.key) ?? 0);
+    (room.session ? (sessionOrder.get(room.session.key) ?? 0) : tracks.sessions.length) * 10_000 + (order.get(room.key) ?? 0);
   const byTier = (a: RoomEntry, b: RoomEntry) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier] || sourceOrder(a) - sourceOrder(b);
 
-  const stage = all.filter(room => room.tier !== 'unheld').sort(byTier).slice(0, Math.min(stageLimit, STAGE_ROOM_LIMIT));
+  const stage = admitToStage(all.filter(room => room.tier !== 'unheld'), Math.min(stageLimit, STAGE_ROOM_LIMIT), sourceOrder);
   const onStage = new Set(stage.map(room => room.key));
   const floorOf = (key: string, session: TrackSession | null, members: RoomEntry[]): RoomFloor => ({
     key,

@@ -165,7 +165,7 @@ function FloorPlate({ session, total, working, attention, copy, nowMs }: {
     t('session.worktrees', { count: total }),
   ].filter(Boolean).join(' · ');
   const summary = [
-    attention > 0 ? <span key="a" className="text-[color:var(--color-danger-text)]">{t('session.cleanup', { count: attention })}</span> : null,
+    attention > 0 ? <span key="a" className="text-[color:var(--color-status-warning)]">{t('session.cleanup', { count: attention })}</span> : null,
     working > 0 ? <span key="w" className="text-[color:var(--color-text-primary)]">{t('session.working', { count: working })}</span> : null,
   ].filter(Boolean);
   return (

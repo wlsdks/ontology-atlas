@@ -153,16 +153,25 @@ describe('planRooms', () => {
   const plan = (rows: WorktreeRow[], seen?: Map<string, number>) => planRooms(buildWorkTracks(snapshot(rows)), NOW_MS, seen);
   const keys = (rooms: { key: string }[]) => rooms.map(room => room.key);
 
-  it('fills the front stage with what needs a person, then what runs, then what a session holds idle', () => {
+  it('admits running work first and lets stuck or idle rooms only complete the last row', () => {
     const rooms = plan([
       row('idle', { lock: live(100, 1_000, NOW_MS - 60_000), lastCommitAt: recent }),
       row('runs', { lock: live(100, 1_000, NOW_MS - 50_000), ...working(100) }),
+      row('other', { lock: live(200, 2_000, NOW_MS - 40_000), ...working(200) }),
+      row('codex', { agentProcesses: [{ pid: 300, tool: 'codex', startedAt: 3_000 }] }),
       row('ended', { lock: { ...live(9, 9, 9), state: 'stale' } }),
       row('nobody', { lastCommitAt: recent }),
     ]);
-    expect(keys(rooms.stage)).toEqual(['ended', 'runs', 'idle']);
-    expect(rooms.stage.map(room => room.state.kind)).toEqual(['lockLeft', 'working', 'resting']);
-    expect(rooms.floors.map(floor => [floor.key, keys(floor.rooms)])).toEqual([[NO_SESSION_FLOOR, ['nobody']]]);
+    expect(keys(rooms.stage)).toEqual(['runs', 'other', 'codex', 'ended']);
+    expect(rooms.floors.map(floor => [floor.key, keys(floor.rooms)])).toEqual([[rooms.stage[0].session?.key, ['idle']], [NO_SESSION_FLOOR, ['nobody']]]);
+  });
+
+  it('gives each session one room before any session gets a second, and two tools in one folder go first', () => {
+    const busy = Array.from({ length: 5 }, (_, index) => row(`a${index}`, { lock: live(100, 1_000, index + 1), ...working(100) }));
+    const pair = row('pair', { lock: live(200, 2_000, 1), agentProcesses: [{ pid: 200, tool: 'claudeCode', startedAt: 2_000 }, { pid: 300, tool: 'codex', startedAt: 3_000 }] });
+    const rooms = planRooms(buildWorkTracks(snapshot([...busy, pair, row('b0', { lock: live(400, 4_000, 1), ...working(400) })])), NOW_MS, new Map(), 4);
+    expect(keys(rooms.stage)).toEqual(['a0', 'a1', 'pair', 'b0']);
+    expect(rooms.workingBelow).toBe(3);
   });
 
   it('keeps at most six rooms on the stage and counts the working rooms left on the floors', () => {
@@ -201,9 +210,9 @@ describe('planRooms', () => {
     expect(rooms.stage.map(room => [room.key, room.state.kind, room.stage])).toEqual([['held-merged', 'merged', 'main'], ['held-dusty', 'dozing', 'commits']]);
   });
 
-  it('puts a missing folder first even when a session holds it', () => {
+  it('shows a missing folder as missing even when a session holds it, after the running rooms', () => {
     const rooms = plan([row('runs', working(100)), row('gone', { missing: true, lock: live(100, 1_000, 1), ...working(100) })]);
-    expect(rooms.stage.map(room => [room.key, room.state.kind])).toEqual([['gone', 'missing'], ['runs', 'working']]);
+    expect(rooms.stage.map(room => [room.key, room.state.kind])).toEqual([['runs', 'working'], ['gone', 'missing']]);
   });
 });
 

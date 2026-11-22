@@ -8,7 +8,7 @@ const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
-export type StatusTone = 'ink' | 'danger' | 'success' | 'plain';
+export type StatusTone = 'ink' | 'warning' | 'success' | 'plain';
 
 /** One status line: the state in a few words, and the fact beside it. */
 export interface StatusLine {
@@ -70,9 +70,9 @@ export function useRoomCopy(baseBranch: string, nowMs: number) {
       case 'locked':
         return { lead: t('room.locked'), tone: 'plain', rest: commits(track) };
       case 'lockLeft':
-        return { lead: t('room.lockLeft'), tone: 'danger', rest: commits(track) };
+        return { lead: t('room.lockLeft'), tone: 'warning', rest: commits(track) };
       case 'missing':
-        return { lead: t('room.missing'), tone: 'danger', rest: t('room.onlyInGit') };
+        return { lead: t('room.missing'), tone: 'warning', rest: t('room.onlyInGit') };
       case 'unheld': {
         const days = state.lastCommitAt === null ? 0 : Math.floor((nowMs - state.lastCommitAt * 1000) / DAY_MS);
         return days >= 1

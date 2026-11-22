@@ -70,10 +70,13 @@ Every read goes through the hardened Git runner in `src-tauri/src/git/runner.rs`
 The page is a building of rooms, one per worktree, under the page title and
 **Choose repository folder**. There is no headline.
 
-The **front stage** holds at most six large rooms, in this order: rooms that
-need attention (a lock left by an ended session, a missing folder), then rooms
-where an agent or a command is running, then rooms a session holds while
-nothing runs. A large room shows its branch on the wall sign (the only mono
+The **front stage** holds at most six large rooms. A folder two tools work in
+goes first, then rooms where an agent or a command is running, one per session
+before any session gets a second. A lock left by an ended session, a missing
+folder, or a room a session holds while nothing runs takes a slot only to fill
+the last row, so the stage has no hole; otherwise it waits on its floor, a
+stuck one under **No session** in warning amber. The stage reads in session
+order. A large room shows its branch on the wall sign (the only mono
 text), the holding session's name tag over Moru, a floor lamp lit only while
 something runs, a monitor with one figure or the state in words, and a belt
 that carries the worktree's crate toward the `main` hatch. The belt knows only

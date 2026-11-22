@@ -12,7 +12,7 @@ type RoomCopy = ReturnType<typeof useRoomCopy>;
 
 const TONE: Record<StatusTone, string> = {
   ink: styles.inkText,
-  danger: 'text-[color:var(--color-danger-text)]',
+  warning: 'text-[color:var(--color-status-warning)]',
   success: 'text-[color:var(--color-success-text-a94)]',
   plain: 'text-[color:var(--color-text-secondary)]',
 };
