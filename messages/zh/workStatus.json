@@ -1,35 +1,14 @@
 {
   "title": "工作状态",
-  "summary": "由运行中会话占用 <runningCount>{running}</runningCount> · 受阻 <stuckCount>{stuck}</stuckCount>",
   "repoLine": "{repo} · 这台 Mac 上的 {count} 个工作树",
-  "headline": {
-    "running": "{count} 个工作树由运行中的会话占用",
-    "stuck": "{count} 个工作树受阻",
-    "idle": "{repo} 中没有被运行中会话锁定的工作树"
-  },
   "band": {
-    "mac": "这台 Mac",
-    "server": "服务器",
     "seam": "push"
   },
   "ruler": {
-    "working": "工作中",
-    "checks": "检查",
     "prePush": "pre-push",
     "pr": "PR",
     "ci": "CI",
-    "ready": "可合并",
     "main": "main"
-  },
-  "group": {
-    "stuck": "受阻",
-    "merged": "已合并 ({count})",
-    "unheld": "没有会话锁"
-  },
-  "session": {
-    "header": "{tool} · 会话 {number}",
-    "started": "{time} 开始",
-    "subagents": "{count} 个子代理"
   },
   "tool": {
     "acp": "Atlas 中的 Claude Agent",
@@ -37,43 +16,77 @@
     "codex": "Codex",
     "unknown": "代理"
   },
-  "holder": {
-    "locked": "{tool} 子代理 {id} · {time} 锁定",
-    "lockedUnnamed": "{time} 锁定",
-    "process": "{tool} 正在此文件夹中运行",
-    "noLock": "未锁定 · 最后一次提交 {ago}，{author}",
-    "noLockQuiet": "未锁定",
-    "subagent": "子代理 {id}",
-    "lastCommit": "{ago}，{author}",
-    "staleLock": "由已结束的 {tool} 会话锁定",
-    "ended": "会话已结束"
+  "session": {
+    "name": "{tool} {number}",
+    "none": "没有会话",
+    "ended": "会话已结束",
+    "started": "{time} 开始",
+    "worktrees": "{count} 个工作树",
+    "working": "{count} 个工作中",
+    "cleanup": "{count} 个待清理",
+    "quiet": "全部空闲"
   },
-  "row": {
-    "noCommits": "{branch} 之后没有提交",
-    "commits": "{branch} 之后有 {count} 个提交",
-    "missing": "文件夹 {folder} 不存在。运行 git worktree prune 会删除它的记录。",
-    "lockLeft": "锁定此工作树的 {tool} 会话已结束。{count, plural, =0 {{branch} 之后没有提交。} other {{branch} 之后有 # 个提交尚未合并。}}",
-    "unknown": "无法与 {branch} 比较"
+  "stage": {
+    "label": "工作中的工作树",
+    "moreBelow": "楼下还有 <lead>{count} 个工作中</lead>"
   },
-  "chip": {
+  "room": {
+    "working": "工作中",
+    "twoTools": "两个工具在工作",
+    "resting": "空闲",
+    "quietMinutes": "已安静 {count} 分钟",
+    "quietHours": "已安静 {count} 小时",
+    "quietDays": "已安静 {count} 天",
+    "merged": "已合并到 {branch}",
+    "locked": "已锁定",
+    "lockLeft": "只剩下锁",
     "missing": "文件夹不存在",
-    "lockLeft": "仅剩锁定"
+    "untouched": "{count} 天未动",
+    "lastCommit": "最后一次提交 {ago}",
+    "commits": "{count} 个提交",
+    "noCommits": "还没有提交",
+    "onlyInGit": "只留在 Git 中"
   },
-  "station": {
-    "mergedInto": "已合并到 {branch}"
+  "monitor": {
+    "running": "正在运行命令",
+    "twoTools": "两个工具在同一文件夹",
+    "twoToolsNote": "它们的更改可能混在一起",
+    "idle": "没有运行中的命令",
+    "lockedAt": "{time} 锁定",
+    "ended": "会话已结束",
+    "noSession": "没有会话",
+    "aheadNote": "尚未进入 {branch}",
+    "noCommitsNote": "{branch} 之后没有提交",
+    "notMeasured": "无法与 {branch} 比较",
+    "notMerged": "尚未合并到 {branch}",
+    "prune": "运行 <code>git worktree prune</code> 会删除它的记录",
+    "heldBy": "{session} 仍占用此文件夹",
+    "unreadableLock": "锁中没有 Atlas 能读取的会话名"
   },
-  "connect": {
-    "notConnected": "尚未连接 {host}。连接后显示 PR 和 CI。"
+  "belt": {
+    "commits": "提交",
+    "notRead": "之后的步骤还读不到"
   },
-  "noRemote": "没有远程仓库，因此没有可显示的 PR 和 CI。",
+  "shelf": {
+    "merged": "已合并到 {branch}",
+    "untouched": "7 天以上未动",
+    "mergedList": "{count} 个工作树已合并到 {branch}",
+    "untouchedList": "{count} 个工作树 7 天以上未动",
+    "lastCommit": "最后一次提交 {ago}",
+    "close": "关闭"
+  },
   "unreadable": "无法读取 {repo}。请重新选择仓库文件夹以授予访问权限。",
   "choose": {
     "title": "选择你的代理工作的 Git 仓库",
     "action": "选择仓库文件夹"
   },
   "empty": {
-    "title": "{repo} 只有主检出",
-    "body": "代理每创建一个工作树，工作状态中就多一行，并显示占用它的会话。"
+    "title": "现在只有 <code>{branch}</code>",
+    "body": "每建一个工作树，这里就开一个房间。Claude Code 或 Codex 开始工作时，会显示在这里。"
+  },
+  "quiet": {
+    "title": "{repo} 中没有正在工作的地方",
+    "body": "已合并或长期未动的工作树放在下方的架子上。"
   },
   "web": {
     "title": "工作状态在桌面应用中运行",

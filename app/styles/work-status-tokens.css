@@ -1,17 +1,12 @@
 /*
- * Work status (src/widgets/work-tracks). Two grounds tell which side a fact is from: this Mac is
- * the warm graphite of the workbench, the server a cool night blue, joined at the push seam. One
- * ink per agent session, so a session's trunk and every worktree it holds read as one line; each
- * ink clears 3:1 on both grounds, and none borrows a signal tone (warning, error, success).
+ * Work status (src/widgets/work-tracks). One ink per agent session, so a session's floor, name tags
+ * and the accents of its Moru read as one; each ink clears 3:1 on the room walls and none borrows a
+ * signal tone (warning, error, success). The server ground and seam stay for the web notice's art.
  */
 @layer base {
   :root {
-    --work-ground-mac: #161513;
     --work-ground-server: #0f1420;
-    --work-ground-stuck: rgba(229, 72, 77, 0.07);
     --work-seam: rgba(143, 176, 234, 0.34);
-    --work-rail: rgba(255, 255, 255, 0.12);
-    --work-rail-faint: rgba(255, 255, 255, 0.05);
 
     --work-session-1: #79b6ff;
     --work-session-2: #b9a4ff;
@@ -19,39 +14,47 @@
     --work-session-4: #62d2da;
     --work-session-5: #d9c69c;
     --work-unheld: #8d8b84;
-    /* The ink of the session holding a row; each session group and row sets its own. */
-    --work-held-ink: var(--work-unheld);
 
     /*
-     * Widths follow the board, the one container these resolve in. Until a host is connected the
-     * server ground is a strip wide enough for its two-line notice and the main rail.
+     * The building of rooms is drawn on Moru's pixel grid with flat fills: the building and its
+     * pits are near-black graphite, steel is the rails and lamp poles, and a room's walls take
+     * a little of its session's ink only while its lamp is lit. None of these is Moru's own
+     * raster ink; the crate is a warm neutral paper, outlined in the pit's black.
      */
-    --work-label-w: clamp(19rem, 31cqw, 27rem);
-    --work-server-w: clamp(15rem, 19cqw, 17rem);
-    --work-track-end: 1.5rem;
-    /* A row holds its title, holder and branch on three lines until the board is wide enough for two. */
-    --work-row-h: 4.25rem;
-    /* The room under a stuck row for the lines that say why it is stuck; the row keeps its height. */
-    --work-stuck-note-h: 1rem;
-    --work-session-h: 2.75rem;
-    --work-header-h: 2.5rem;
-    --work-ruler-h: 3.25rem;
-    --work-ruler-line-y: 2.5rem;
-    /* Where the pinned ruler stops under a page header; the page that has one sets it. */
-    --work-sticky-top: 0px;
-    --work-dot: 0.75rem;
-    --work-line: 3px;
-    --work-elbow: 0.875rem;
-  }
-
-  /*
-   * From this board width (Tailwind's `@7xl`) the holder and the branch share a line and a stuck
-   * row's reason fits one, in every locale.
-   */
-  @container (min-width: 80rem) {
-    [data-work-board] > * {
-      --work-row-h: 3.75rem;
-      --work-stuck-note-h: 0.75rem;
-    }
+    --work-room-building: #131312;
+    --work-room-pit: #0c0c0b;
+    --work-room-wall: #161514;
+    --work-room-wall-lit: #1a1918;
+    --work-room-wainscot: rgba(0, 0, 0, 0.2);
+    --work-room-floor: #0f0f0e;
+    --work-room-floor-edge: #24231f;
+    --work-room-steel: #2b2a27;
+    --work-room-steel-light: #3a3935;
+    --work-room-lamp-off: #383733;
+    --work-room-sign: #2d2c27;
+    --work-room-sign-edge: #201f1b;
+    --work-room-monitor-frame: #121318;
+    --work-room-monitor-bezel: #3b3d49;
+    --work-room-monitor-bezel-off: #26262b;
+    --work-room-monitor-badge: #565868;
+    --work-room-monitor-shadow: #0b0b0a;
+    --work-room-screen: #0b0e16;
+    --work-room-screen-off: #0a0a0b;
+    --work-room-screen-line: #3a4052;
+    --work-room-led-off: #5a2a2c;
+    --work-room-crate: #c9c5ba;
+    --work-room-crate-shade: #a9a59a;
+    --work-room-crate-taped: #77746b;
+    --work-room-crate-taped-shade: #5c5952;
+    --work-room-crate-dusty: #5f5d56;
+    --work-room-crate-dusty-shade: #4a4843;
+    --work-room-crate-ghost: #6b3a3c;
+    --work-room-outline: #0a0a0c;
+    --work-room-hatch-open: #0f3b29;
+    --work-room-dark: rgba(12, 12, 11, 0.58);
+    --work-shelf-crate: #8c897f;
+    --work-shelf-crate-shade: #6f6c63;
+    --work-shelf-crate-old: #4d4b46;
+    --work-shelf-crate-old-shade: #3c3a36;
   }
 }

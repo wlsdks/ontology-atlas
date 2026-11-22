@@ -9,9 +9,6 @@ export type TrackHolder =
   | { kind: 'ended'; tool: LockTool }
   | { kind: 'none'; lastCommitAt: number | null; author: string | null };
 
-/** Where the head dot sits on the shared ruler. Slice 1 knows only these three stations. */
-export type TrackStation = 'start' | 'working' | 'main';
-
 export type TrackPlace = 'stuck' | 'session' | 'unheld' | 'merged';
 
 export interface Track {
@@ -24,8 +21,15 @@ export interface Track {
   missing: boolean;
   holder: TrackHolder;
   place: TrackPlace;
-  station: TrackStation;
   sessionKey: string | null;
+  /** An agent program, a command it runs, or an Atlas agent session is at work in the folder now. */
+  running: boolean;
+  /** Every agent tool seen at work in the folder, the lock's first; two means their changes can mix. */
+  tools: SessionTool[];
+  /** Seconds since the epoch. */
+  lastCommitAt: number | null;
+  /** Milliseconds since the epoch: when a live or unreadable lock was taken. */
+  lockedAt: number | null;
 }
 
 export type SessionTool = LockTool | AgentTool | 'acp';
@@ -46,7 +50,6 @@ export interface WorkTracks {
   sessions: TrackSession[];
   unheld: Track[];
   merged: Track[];
-  counts: { running: number; stuck: number };
   worktreeCount: number;
 }
 
@@ -105,12 +108,12 @@ function placeOf(row: WorktreeRow, holder: TrackHolder, sessionKey: string | nul
   return 'unheld';
 }
 
-/** A missing folder has no working tree to place on the ruler, so its head stays at the start. */
-function stationOf(row: WorktreeRow): TrackStation {
-  if (row.missing) return 'start';
-  if (row.standing === 'merged') return 'main';
-  if (row.standing === 'ahead') return 'working';
-  return 'start';
+function toolsOf(row: WorktreeRow): SessionTool[] {
+  const tools: SessionTool[] = [];
+  if (row.lock?.state === 'live') tools.push(row.lock.tool);
+  if (row.acpPid !== null) tools.push('acp');
+  for (const process of row.agentProcesses) tools.push(process.tool);
+  return [...new Set(tools)];
 }
 
 function toTrack(row: WorktreeRow, lockKeysByPid: ReadonlyMap<number, string>): Track {
@@ -126,15 +129,18 @@ function toTrack(row: WorktreeRow, lockKeysByPid: ReadonlyMap<number, string>): 
     missing: row.missing,
     holder,
     place: placeOf(row, holder, sessionKey),
-    station: stationOf(row),
     sessionKey,
+    running: !row.missing && (row.acpPid !== null || row.agentProcesses.length > 0),
+    tools: toolsOf(row),
+    lastCommitAt: row.lastCommitAt,
+    lockedAt: row.lock && row.lock.state !== 'stale' ? row.lock.lockedAt : null,
   };
 }
 
 const byLockTime = (a: Track, b: Track) => lockTime(a) - lockTime(b) || a.key.localeCompare(b.key);
 const lockTime = (track: Track) => (track.holder.kind === 'subagent' ? track.holder.lockedAt ?? 0 : 0);
 const byRecentCommit = (a: Track, b: Track) => commitTime(b) - commitTime(a) || a.key.localeCompare(b.key);
-const commitTime = (track: Track) => (track.holder.kind === 'none' ? track.holder.lastCommitAt ?? 0 : 0);
+const commitTime = (track: Track) => track.lastCommitAt ?? 0;
 
 /**
  * Groups rows the way the board draws them: stuck first, then each session with the worktrees it
@@ -176,16 +182,11 @@ export function buildWorkTracks(snapshot: WorkStatusSnapshot): WorkTracks {
       sessionsPerTool.set(session.tool, ordinal);
       return { ...session, ordinal, ink: index % SESSION_INK_COUNT, tracks: [...session.tracks].sort(byLockTime) };
     });
-  const stuck = tracks.filter(track => track.place === 'stuck');
   return {
-    stuck,
+    stuck: tracks.filter(track => track.place === 'stuck'),
     sessions,
     unheld: tracks.filter(track => track.place === 'unheld').sort(byRecentCommit),
     merged: tracks.filter(track => track.place === 'merged'),
-    counts: {
-      running: sessions.reduce((sum, session) => sum + session.tracks.length, 0),
-      stuck: stuck.length,
-    },
     worktreeCount: snapshot.worktrees.length,
   };
 }
@@ -199,11 +200,157 @@ function sessionOrigin(row: WorktreeRow): { tool: SessionTool; startedAt: number
   return process ? { tool: process.tool, startedAt: process.startedAt } : { tool: 'acp', startedAt: null };
 }
 
-/** The sentence the page leads with: what needs the reader first. */
-export type WorkHeadline = { kind: 'stuck' | 'running'; count: number } | { kind: 'idle' };
+/**
+ * What a room shows for one worktree, from what Atlas reads today. A kind a later slice reads
+ * (an approval, a pre-push run, CI) joins this union, and every exhaustive switch over it fails to
+ * compile until it is drawn.
+ */
+export type RoomState =
+  | { kind: 'working'; tools: readonly SessionTool[] }
+  | { kind: 'resting'; quietSinceMs: number | null }
+  | { kind: 'dozing'; quietSinceMs: number }
+  | { kind: 'merged' }
+  | { kind: 'locked' }
+  | { kind: 'lockLeft'; tool: LockTool }
+  | { kind: 'missing' }
+  | { kind: 'unheld'; lastCommitAt: number | null };
 
-export function headlineOf(tracks: WorkTracks): WorkHeadline {
-  if (tracks.counts.stuck > 0) return { kind: 'stuck', count: tracks.counts.stuck };
-  if (tracks.counts.running > 0) return { kind: 'running', count: tracks.counts.running };
-  return { kind: 'idle' };
+export type RoomStateKind = RoomState['kind'];
+
+/** Front-stage priority: what needs a person, then what runs, then what a session holds idle. */
+export type RoomTier = 'attention' | 'working' | 'held' | 'unheld';
+
+/** How far a worktree's work has come, as far as Git says today. */
+export type RoomStage = 'worktree' | 'commits' | 'main';
+
+export interface RoomEntry {
+  key: string;
+  track: Track;
+  state: RoomState;
+  tier: RoomTier;
+  stage: RoomStage;
+  session: TrackSession | null;
+}
+
+export interface RoomFloor {
+  /** The session's key, or `none` for worktrees no live session holds. */
+  key: string;
+  session: TrackSession | null;
+  rooms: RoomEntry[];
+  /** Every worktree of the floor's session, its rooms on the front stage included. */
+  total: number;
+  working: number;
+  attention: number;
+}
+
+export interface RoomPlan {
+  stage: RoomEntry[];
+  floors: RoomFloor[];
+  /** Working rooms that did not fit on the front stage. */
+  workingBelow: number;
+  shelf: { merged: Track[]; untouched: Track[] };
+  worktreeCount: number;
+}
+
+export const STAGE_ROOM_LIMIT = 6;
+/** A held worktree with nothing seen at work for this long dozes. */
+export const DOZE_AFTER_MS = 5 * 60_000;
+/** A worktree no session holds and nobody committed to for this long goes onto the shelf. */
+export const UNTOUCHED_AFTER_MS = 7 * 24 * 60 * 60_000;
+export const NO_SESSION_FLOOR = 'none';
+
+const TIER_ORDER: Record<RoomTier, number> = { attention: 0, working: 1, held: 2, unheld: 3 };
+
+/**
+ * The last sign of work in a held worktree: its lock, its last commit, or the last read that saw
+ * something running in it.
+ */
+function quietSince(track: Track, seenRunningAt: ReadonlyMap<string, number>): number | null {
+  const signs = [track.lockedAt, track.lastCommitAt === null ? null : track.lastCommitAt * 1000, seenRunningAt.get(track.key) ?? null]
+    .filter((sign): sign is number => sign !== null);
+  return signs.length > 0 ? Math.max(...signs) : null;
+}
+
+export function roomStateOf(track: Track, nowMs: number, seenRunningAt: ReadonlyMap<string, number> = new Map()): RoomState {
+  if (track.missing) return { kind: 'missing' };
+  if (track.holder.kind === 'ended') return { kind: 'lockLeft', tool: track.holder.tool };
+  if (track.running) return { kind: 'working', tools: track.tools };
+  if (track.place !== 'session' && track.holder.kind !== 'locked') return { kind: 'unheld', lastCommitAt: track.lastCommitAt };
+  if (track.standing === 'merged') return { kind: 'merged' };
+  if (track.holder.kind === 'locked') return { kind: 'locked' };
+  const since = quietSince(track, seenRunningAt);
+  return since !== null && nowMs - since >= DOZE_AFTER_MS ? { kind: 'dozing', quietSinceMs: since } : { kind: 'resting', quietSinceMs: since };
+}
+
+export function tierOf(state: RoomState): RoomTier {
+  switch (state.kind) {
+    case 'missing':
+    case 'lockLeft':
+      return 'attention';
+    case 'working':
+      return 'working';
+    case 'resting':
+    case 'dozing':
+    case 'merged':
+    case 'locked':
+      return 'held';
+    case 'unheld':
+      return 'unheld';
+  }
+}
+
+export function stageOf(track: Track): RoomStage {
+  if (track.missing) return 'worktree';
+  if (track.standing === 'merged') return 'main';
+  return track.standing === 'ahead' ? 'commits' : 'worktree';
+}
+
+/**
+ * Sorts every worktree into the building: at most six rooms on the front stage (what needs a
+ * person, then what runs, then what a session holds idle), one floor per session for the rest
+ * plus one for worktrees no session holds, and the shelf for merged and long-untouched ones.
+ * Within a tier, rooms keep the order the tracks already have: stuck as Git lists them, sessions
+ * by start, a session's worktrees by lock time.
+ */
+export function planRooms(tracks: WorkTracks, nowMs: number, seenRunningAt: ReadonlyMap<string, number> = new Map()): RoomPlan {
+  const entry = (track: Track, session: TrackSession | null): RoomEntry => {
+    const state = roomStateOf(track, nowMs, seenRunningAt);
+    return { key: track.key, track, state, tier: tierOf(state), stage: stageOf(track), session };
+  };
+  const untouched = (track: Track) =>
+    track.lastCommitAt !== null && nowMs - track.lastCommitAt * 1000 >= UNTOUCHED_AFTER_MS && track.holder.kind === 'none';
+  const loose = [...tracks.stuck, ...tracks.unheld.filter(track => !untouched(track))].map(track => entry(track, null));
+  const held = tracks.sessions.flatMap(session => session.tracks.map(track => entry(track, session)));
+  const all = [...loose, ...held];
+  const order = new Map(all.map((room, index) => [room.key, index]));
+  const sessionOrder = new Map(tracks.sessions.map((session, index) => [session.key, index]));
+  const sourceOrder = (room: RoomEntry) =>
+    (room.session ? (sessionOrder.get(room.session.key) ?? 0) * 10_000 : -10_000) + (order.get(room.key) ?? 0);
+  const byTier = (a: RoomEntry, b: RoomEntry) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier] || sourceOrder(a) - sourceOrder(b);
+
+  const stage = all.filter(room => room.tier !== 'unheld').sort(byTier).slice(0, STAGE_ROOM_LIMIT);
+  const onStage = new Set(stage.map(room => room.key));
+  const floorOf = (key: string, session: TrackSession | null, members: RoomEntry[]): RoomFloor => ({
+    key,
+    session,
+    rooms: members.filter(room => !onStage.has(room.key)).sort(byTier),
+    total: members.length,
+    working: members.filter(room => room.tier === 'working').length,
+    attention: members.filter(room => room.tier === 'attention').length,
+  });
+  const floors = [
+    ...tracks.sessions.map(session => floorOf(session.key, session, held.filter(room => room.session === session))),
+    floorOf(NO_SESSION_FLOOR, null, loose),
+  ].filter(floor => floor.rooms.length > 0);
+
+  return {
+    stage,
+    floors,
+    workingBelow: floors.reduce((sum, floor) => sum + floor.rooms.filter(room => room.tier === 'working').length, 0),
+    shelf: {
+      merged: [...tracks.merged].sort((a, b) => (b.lastCommitAt ?? 0) - (a.lastCommitAt ?? 0)),
+      untouched: tracks.unheld.filter(untouched),
+    },
+    worktreeCount: tracks.worktreeCount,
+  };
 }

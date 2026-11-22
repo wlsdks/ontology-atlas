@@ -65,38 +65,38 @@ Every read goes through the hardened Git runner in `src-tauri/src/git/runner.rs`
   **Claude Agent in Atlas**; so does the main checkout while such a session
   works there.
 
-## The board
+## The building
 
-The headline states the situation: how many worktrees are stuck, else how many
-a live session holds, else that no live session has locked one. Under it, the
-counts held and stuck. The main checkout is a row only while an agent works
-in it.
+The page is a building of rooms, one per worktree, under the page title and
+**Choose repository folder**. There is no headline.
 
-The board is a route map across two grounds, **On this Mac** and **On the
-server**, split by the `push` seam, with one ruler of stations shared by every
-row. Rows group by holder:
+The **front stage** holds at most six large rooms, in this order: rooms that
+need attention (a lock left by an ended session, a missing folder), then rooms
+where an agent or a command is running, then rooms a session holds while
+nothing runs. A large room shows its branch on the wall sign (the only mono
+text), the holding session's name tag over Moru, a floor lamp lit only while
+something runs, a monitor with one figure or the state in words, and a belt
+that carries the worktree's crate toward the `main` hatch. The belt knows only
+the commit and `main`; pre-push, push, PR and CI are drawn dim as **not read
+yet**, and no value is invented for them. Two tools in one folder stand as two
+Moru with both names. A held room with nothing seen running for five minutes
+dozes; a lock left behind shows a taped crate and a dark monitor; a missing
+folder shows a dashed crate and the `git worktree prune` command as text.
 
-1. **Stuck**: a worktree whose folder is missing (with the `git worktree
-   prune` command as text), or whose lock was left by an ended session.
-2. One group per agent session, in the order the sessions started, each in its
-   own ink: a trunk from the session header, and one branch per worktree it
-   holds, titled from its branch name (`feat/library-first-run-stage` reads
-   "library first run stage") with the branch in mono underneath.
-3. **No session lock**: worktrees no live session has locked, most recent
-   commit first, with the time and author of that commit.
-4. **Merged**: rows whose line runs to the `main` rail.
+Rooms that do not fit the stage go to the **session floors** under it, one band
+per session in the order the sessions started, plus **No session**, each with
+its start time, worktree count and how many are working or need clean-up. Every
+mini room is the same size: half-size Moru, the branch and one status line.
+With six mini rooms or fewer they sit in one row without bands. When working
+rooms are on the floors, a line says how many.
 
-A session row at **Working** carries a chip; a worktree no session holds is a
-bare dot with its commit count. A stuck row's chip names why (**Folder
-missing**, **Lock left behind**) and one sentence under its line explains it,
-naming the folder, with the full path as its tooltip. Two sessions of one tool
-are told apart by number and start time (**Claude Code · session 2**).
+The **shelf** at the bottom counts worktrees merged into the base branch and
+worktrees no one has touched for seven days or more. A count opens a centred
+list of those branches with the time of their last commit.
 
-Until a host is connected the server ground is a narrow strip holding the
-`main` rail and one notice (**github.com is not connected. Connecting shows PRs
-and CI.**), so this Mac's stations take the width; no request leaves the
-machine. The ground names and the ruler stay pinned under the page header while
-the rows scroll.
+Each session takes one ink for its floor marker, its name tag and the accents
+of its Moru. Until a host is connected nothing comes from GitHub and no request
+leaves the machine.
 
 ## Live updates
 
@@ -108,13 +108,15 @@ merged into the base branch, or its session ended. A change shows within about
 two seconds: one interval plus one read. A hidden screen asks nothing and reads
 once when it shows again; relative ages move once a minute.
 
-Every change animates from where each element was last drawn, with transform
-and opacity only: a new row draws its line out of its session's trunk, a row
-that leaves fades while its line draws back, a lock clearing fades the session's
-ink off the row as it moves to its new group, and a row reaching Stuck or Merged
-glides there while the rows around it close the gap. An update that lands
-mid-motion continues from the current position. Reduced motion cross-fades to
-the same end state.
+Every change moves from where each room was last drawn, with transform and
+opacity only: a room that changes tier glides to its new place and size, a new
+room fades in rising, a room that leaves fades and sinks. A merge plays where
+the room stands: its crate rides into the `main` hatch, the hatch turns green,
+the lights go out, then the room folds away and a crate lands on the shelf. An
+update that lands mid-motion continues from the current position. Moru, the
+lamp, the monitor and the belt move only in a room where something runs, on
+screen, in a visible window. Reduced motion shows the end states without
+movement.
 
 ## States
 
@@ -125,11 +127,12 @@ the same end state.
 | Not a repository | the same choice |
 | Git missing | `atlasGit.install.*` |
 | Unreadable or not granted | `workStatus.unreadable` with the choice |
-| Only the main checkout | `workStatus.empty.*` |
-| Reading | the grounds and ruler at once; rows follow |
+| Only the main checkout | one room for the base branch, `workStatus.empty.*` |
+| Every worktree merged or untouched | `workStatus.quiet.*` with the shelf |
+| Reading | the page title; the building follows |
 
 ## Not yet
 
 Processes, hooks, load and disk (slice 2), fixes (slice 3), findings (slice 4)
-and anything from GitHub (slices 5 and 6) are not built. Moru does not appear
-on this screen yet.
+and anything from GitHub (slices 5 and 6) are not built. Waiting for an
+approval, thinking, pre-push, CI and a slow command have no room state yet.
