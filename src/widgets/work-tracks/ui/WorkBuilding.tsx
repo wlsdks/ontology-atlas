@@ -8,7 +8,7 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { MOTION } from '@/shared/motion';
 import { layoutBuilding, stageCapacity, type Box, type RoomBox, type RoomSize, type RoomUnit } from '../model/building-layout';
 import { clockTime } from '../model/format';
-import { retireeOf, roomLook, withRetirees, type Retiree } from '../model/room-look';
+import { retireeOf, roomAlertOf, roomLook, withRetirees, type Retiree } from '../model/room-look';
 import { exitRoom, fadeFace, translate, useRoomMotion } from '../model/use-room-motion';
 import { LargeRoom } from './LargeRoom';
 import { MiniRoom } from './MiniRoom';
@@ -120,6 +120,7 @@ function Room({ room, box, copy, retiring, showOwner, reduced, ghost }: {
       data-room-size={box.size}
       data-room-state={room.state.kind}
       data-room-running={look.running}
+      data-room-alert={ghost ? undefined : roomAlertOf(room.state) ?? undefined}
       aria-hidden={ghost ? true : undefined}
       inert={ghost ? true : undefined}
       className={cn(styles.room, ghost && 'pointer-events-none')}

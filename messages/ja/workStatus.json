@@ -90,6 +90,7 @@
   "notRepository": "{folder}フォルダはGitリポジトリではありません。リポジトリの最上位フォルダを選んでください。",
   "header": {
     "sameFolder": "同じフォルダ{count}",
-    "cleanup": "整理{count}"
+    "cleanup": "整理{count}",
+    "pointTo": "どのワークツリーか表示"
   }
 }

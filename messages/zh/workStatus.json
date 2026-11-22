@@ -90,6 +90,7 @@
   "notRepository": "文件夹 {folder} 不是 Git 仓库。请选择包含项目 .git 的文件夹。",
   "header": {
     "sameFolder": "同一文件夹 {count}",
-    "cleanup": "待清理 {count}"
+    "cleanup": "待清理 {count}",
+    "pointTo": "显示是哪些工作树"
   }
 }

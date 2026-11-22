@@ -32,6 +32,32 @@
   will-change: transform;
 }
 
+/* A header warning points here: the room is outlined in warning amber for a moment. */
+@keyframes roomPointedAt {
+  0%, 100% {
+    opacity: 0;
+  }
+  12%, 70% {
+    opacity: 1;
+  }
+}
+
+.room[data-flash='true']::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border: 3px solid var(--color-status-warning);
+  pointer-events: none;
+  animation: roomPointedAt calc(var(--motion-choreography) * 3) var(--motion-ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room[data-flash='true']::after {
+    animation-timing-function: steps(1, end);
+  }
+}
+
 .plate {
   position: absolute;
   inset: 0;

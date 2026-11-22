@@ -90,6 +90,7 @@
   "notRepository": "{folder} 폴더는 Git 저장소가 아니에요. 프로젝트의 .git이 있는 폴더를 고르세요.",
   "header": {
     "sameFolder": "같은 폴더 {count}",
-    "cleanup": "정리 {count}"
+    "cleanup": "정리 {count}",
+    "pointTo": "어느 워크트리인지 보기"
   }
 }

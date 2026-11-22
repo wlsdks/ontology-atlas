@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useSyncExternalStore } from 'react';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { useTranslations } from 'next-intl';
 import { FolderGit2 } from 'lucide-react';
 import { useLocalVault } from '@/entities/vault-session';
@@ -11,7 +12,7 @@ import { buildWorkTracks, folderName, planRooms } from '@/shared/lib/work-status
 import { Button, PageHeaderBar } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
-import { EmptyRoom, RoomShelf, WorkBuilding } from '@/widgets/work-tracks';
+import { EmptyRoom, RoomShelf, WorkBuilding, pointToRooms, type RoomAlert } from '@/widgets/work-tracks';
 import { useMinuteClock } from '../model/use-minute-clock';
 import { useRunningMemory } from '../model/use-running-memory';
 import { useSessionIdentity } from '../model/use-session-identity';
@@ -39,10 +40,11 @@ export function WorkStatusPage() {
   const plan = useMemo(() => (tracks ? planRooms(tracks, nowMs, seenRunningAt) : null), [tracks, nowMs, seenRunningAt]);
   const sameFolder = tracks ? [...tracks.sessions.flatMap(session => session.tracks), ...tracks.unheld].filter(track => track.running && track.tools.length > 1).length : 0;
   const cleanup = tracks?.stuck.length ?? 0;
+  const reduced = usePrefersReducedMotion();
   const alerts = [
-    sameFolder > 0 ? t('header.sameFolder', { count: sameFolder }) : null,
-    cleanup > 0 ? t('header.cleanup', { count: cleanup }) : null,
-  ].filter((alert): alert is string => alert !== null);
+    sameFolder > 0 ? { kind: 'sameFolder' as RoomAlert, label: t('header.sameFolder', { count: sameFolder }) } : null,
+    cleanup > 0 ? { kind: 'cleanup' as RoomAlert, label: t('header.cleanup', { count: cleanup }) } : null,
+  ].filter(alert => alert !== null);
 
   async function chooseRepository() {
     const picked = await pickTauriSourceDirectory(t('choose.title'));
@@ -87,11 +89,20 @@ export function WorkStatusPage() {
         meta={snapshot ? (
           <span className="truncate text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t('repoLine', { repo: snapshot.repository, count: snapshot.worktrees.length })}
-            {alerts.length > 0 ? (
-              <span className="font-[var(--font-weight-emphasis)] text-[color:var(--color-status-warning)]">
-                {' · '}{alerts.join(' · ')}
+            {alerts.map(alert => (
+              <span key={alert.kind}>
+                {' · '}
+                <button
+                  type="button"
+                  data-testid={`work-status-alert-${alert.kind}`}
+                  title={t('header.pointTo')}
+                  onClick={() => pointToRooms(alert.kind, reduced)}
+                  className="font-[var(--font-weight-emphasis)] text-[color:var(--color-status-warning)] underline-offset-4 hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
+                >
+                  {alert.label}
+                </button>
               </span>
-            ) : null}
+            ))}
           </span>
         ) : null}
         actions={chooseButton('sm')}

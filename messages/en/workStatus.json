@@ -90,6 +90,7 @@
   "notRepository": "{folder} is not a Git repository. Choose the folder that holds your project's .git.",
   "header": {
     "sameFolder": "{count} in one folder",
-    "cleanup": "{count} to clean up"
+    "cleanup": "{count} to clean up",
+    "pointTo": "Show which worktrees"
   }
 }

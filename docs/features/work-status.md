@@ -70,17 +70,18 @@ Every read goes through the hardened Git runner in `src-tauri/src/git/runner.rs`
 The page is a building of rooms, one per worktree, under the page title and
 **Choose repository folder**. There is no headline: beside the worktree count,
 warning amber counts only what needs a person (**1 in one folder · 3 to clean
-up**), and only the parts above zero. Mini rooms stand five to a row at most,
+up**), and only the parts above zero. Clicking a count scrolls to the rooms it
+counts and outlines them in amber for a moment. Mini rooms stand five to a row at most,
 never narrower than 300px; a branch name mutes its `feat/` or `fix/` and, when
 it does not fit, cuts in the middle so its ending survives. A window too short
 for two rows of large rooms keeps one row on the stage.
 
 The **front stage** holds at most six large rooms. A folder two tools work in
 goes first, then rooms where an agent or a command is running, one per session
-before any session gets a second. A lock left by an ended session, a missing
-folder, or a room a session holds while nothing runs takes a slot only to fill
-the last row, so the stage has no hole; otherwise it waits on its floor, a
-stuck one under **No session** in warning amber. The stage reads in session
+before any session gets a second. A room a session holds while nothing runs,
+then a missing folder, takes a slot only to fill the last row, so the stage has
+no hole; otherwise it waits on its floor. A lock left by an ended session is a
+clean-up chore and always waits as a mini room under **No session**. The stage reads in session
 order. A large room shows its branch on the wall sign (the only mono
 text), the holding session's name tag over Moru, a floor lamp lit only while
 something runs, a monitor whose headline is the commit count (or the state in words), and a
@@ -89,16 +90,20 @@ most and then `+n`, toward the `main` hatch. Past the commits the belt is
 dashed: Git does not tell pre-push, push, PR or CI yet, so no station or value
 is drawn for them. Two tools in one folder are the alarm:
 the room's light, lamp and monitor turn warning amber, the sign carries a `!`,
-and two Moru stand overlapped with both names. A held room with nothing seen running for five minutes
+and two Moru stand overlapped at the room's scale with both names. The second
+tool is a session of its own, numbered and inked (**Codex 1**), with a floor
+row even when the shared folder is its only one. A held room with nothing seen running for five minutes
 dozes; a lock left behind shows a taped crate and a dark monitor; a missing
 folder shows a dashed crate and the `git worktree prune` command as text.
 
 Rooms that do not fit the stage go to the **session floors** under it, one band
-per session in the order the sessions started, plus **No session**, each with
+per session in the order the sessions started, plus **No session**, and a
+session whose rooms are all on the stage keeps its row; each has
 its start time and worktree count, how many need clean-up, and how many of
 its rooms stand on the stage and on the floor (**2 on stage · 3 below**). Every
 mini room is the same size: half-size Moru, the branch and one status line;
-only a merged one shows its crate in `main`.
+only a merged one shows its crate in `main`. A floor that wraps spreads its
+rooms evenly over its rows, so none stands alone on a row.
 With six mini rooms or fewer they sit in one row without bands. When working
 rooms are on the floors, a line says how many.
 
@@ -106,8 +111,8 @@ The **shelf** at the bottom counts worktrees merged into the base branch and
 worktrees no one has touched for seven days or more. A count opens a centred
 list of those branches with the time of their last commit.
 
-Each session takes one ink for the top edge of its stage rooms and floor, the
-bar under its mini rooms, its name tag and the accents of its Moru. Until a
+Each session takes one ink for the top edge of its stage rooms, floor plate and
+mini rooms, its name tag and the accents of its Moru. Until a
 host is connected nothing comes from GitHub and no request leaves the machine.
 
 ## Live updates

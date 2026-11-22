@@ -49,6 +49,14 @@ export function moruPhase(key: string): number {
   return (hash % LOOP_POSES) / LOOP_POSES;
 }
 
+/** A warning the page header counts: two tools in one folder, or a worktree to clean up. */
+export type RoomAlert = 'sameFolder' | 'cleanup';
+
+export function roomAlertOf(state: RoomState): RoomAlert | null {
+  if (state.kind === 'working' && state.tools.length > 1) return 'sameFolder';
+  return state.kind === 'lockLeft' || state.kind === 'missing' ? 'cleanup' : null;
+}
+
 /** Where a stage puts the crate along the belt, as a fraction of its length. */
 export const STAGE_AT: Record<RoomStage, number> = { worktree: 0.04, commits: 0.2, main: 1 };
 

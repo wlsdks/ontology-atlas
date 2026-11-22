@@ -77,6 +77,9 @@ test.describe("work status rooms", () => {
     }
     await expect(room(page, "feat/harness-tab")).toHaveAttribute("data-room-size", "mini");
     await expect(room(page, "feat/harness-tab")).toHaveAttribute("data-room-state", "lockLeft");
+    await page.getByTestId("work-status-alert-cleanup").click();
+    await expect(room(page, "feat/harness-tab")).toHaveAttribute("data-flash", "true");
+    await expect(room(page, "feat/library-stage")).not.toHaveAttribute("data-flash", "true");
     await expect(room(page, "feat/library-stage")).toContainText("Claude Code 1");
     await expect(room(page, "feat/work-status-rooms")).toContainText("Claude Code 2");
     await expect(page.getByTestId("work-building").locator("details, summary")).toHaveCount(0);
