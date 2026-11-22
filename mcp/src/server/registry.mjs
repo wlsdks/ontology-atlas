@@ -8,6 +8,7 @@
  * watches it; a change here changes what every connected agent sees.
  */
 
+import { advertisedInputSchema } from './advertised-input-schema.mjs';
 import { hoistSharedSubschemas } from './shared-subschemas.mjs';
 import { parseConsentEnv } from './write-consent.mjs';
 import { ABSORB_DOCUMENT_TOOL } from './tool-definitions/absorb-document.mjs';
@@ -188,7 +189,7 @@ const TOOLS_FOR_LIST_ALL = TOOLS.map((tool) => ({
     openWorldHint: false,
   },
   inputSchema: {
-    ...tool.inputSchema,
+    ...advertisedInputSchema(tool.inputSchema),
     additionalProperties: false,
   },
   ...(tool.outputSchema ? { outputSchema: hoistSharedSubschemas(tool.outputSchema) } : {}),
@@ -198,6 +199,8 @@ const TOOLS_FOR_LIST = TOOLS_FOR_LIST_ALL.filter((tool) =>
   (TOOL_PROFILE === 'full' || CONSTRUCTION_TOOL_NAMES.has(tool.name)));
 // Stays complete so the unknown-tool hint and the read-only guard see every name.
 const TOOL_BY_NAME = new Map(TOOLS_FOR_LIST_ALL.map((tool) => [tool.name, tool]));
+// The full input contracts the server enforces behind the advertised schemas.
+const TOOL_INPUT_CONTRACT_BY_NAME = new Map(TOOLS.map((tool) => [tool.name, tool.inputSchema]));
 
 export {
   READ_TOOL_NAMES,
@@ -205,4 +208,5 @@ export {
   WRITE_CONSENT_MODE,
   TOOLS_FOR_LIST,
   TOOL_BY_NAME,
+  TOOL_INPUT_CONTRACT_BY_NAME,
 };

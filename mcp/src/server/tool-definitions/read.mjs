@@ -22,8 +22,7 @@ import {
 export const CONNECTION_INFO_TOOL = {
   name: 'connection_info',
   description:
-    'Return the exact active vault root and code-repository root used by this MCP process, including how each root was resolved. Call first when a client may have stale configuration or multiple workspaces. Root changes require restarting the MCP process. '
-    + 'Always returns `guide.card`, the construction card, plus `guide.topics`. Pass `guide` to also receive `guideText`, the full text of that topic, because a host may truncate the server `instructions` while tool results arrive whole.',
+    'Return the active vault root and code-repository root this MCP process uses and how each was resolved; call first when configuration may be stale or several workspaces exist. Root changes need an MCP restart. Always returns `guide.card`, the construction card, and `guide.topics`; pass `guide` to get that topic\'s full text in `guideText`, because a host may truncate the server instructions.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -31,7 +30,7 @@ export const CONNECTION_INFO_TOOL = {
         type: 'string',
         enum: [...CONSTRUCTION_GUIDE_TOPICS],
         description:
-          'Return the long-form rules for one topic in `guideText`: `meta_model` (the five authorable kinds and the is_a boundary), `construction` (naming, body, depends_on and element rules for building a map), `write_safety` (the dry-run/confirm and expected_mtime patterns), `workflows` (the shortest handoff for a known coding task), or `competency` (the five `answers` rows `finalize_project_meaning` takes, with an example call; the server writes the `## Competency answers` section from them).',
+          'Topic for `guideText`: `meta_model` (kinds, is_a boundary), `construction` (naming, body, depends_on and element rules), `write_safety` (dry-run/confirm, expected_mtime), `workflows` (handoff for a known coding task), `competency` (the five `answers` rows of finalize_project_meaning, with an example).',
       },
     },
   },
@@ -79,23 +78,23 @@ export const CONNECTION_INFO_TOOL = {
 export const GET_CONCEPT_TOOL = {
   name: 'get_concept',
   description:
-    'Fetch one node by exactly one selector: `slug` (canonical slug or unique alias) or immutable `uid`. Successful responses always carry both the permanent `uid` and current canonical `slug`; graph relations and graph-operation inputs remain slug-based. Returns frontmatter, body, direct graph neighbors, outgoingEdges (each `{to, via, rationale?}`, the rationale being the stored `relation_notes` sentence when one exists), and mtime. **By default you get `excerpt` — the first prose paragraph only. The node body is where the construction rules put definition, evidence, confidence, and in-scope/out-of-scope, so pass `body: "full"` whenever you are reading a node to answer a question rather than just to identify it.** `bodyInfo` always reports `totalChars` / `returnedChars` / `truncated`, so a partial read is never silent. **For K specific selectors in one call use `get_concepts({slugs: [...]})` or `get_concepts({uids: [...]})`.** When a slug does not resolve, structured growth guidance remains available.',
+    'Fetch one node to read what it says, by exactly one selector: `slug` (canonical slug or unique alias) or immutable `uid`. Returns frontmatter, body, neighbours, outgoingEdges and mtime, with permanent `uid` plus current canonical `slug`; graph-operation inputs remain slug-based. The default `excerpt` is the first paragraph: pass `body: "full"` to answer from the node, since its definition, Includes, Excludes and Uncertainty live there. For several nodes use `get_concepts`.',
   inputSchema: {
     type: 'object',
     properties: {
       slug: nonBlankStringSchema(
-        'Vault-relative slug (e.g. projects/auth-platform), unique tail slug, or frontmatter `slug` alias. Omit the .md extension.',
+        'Slug, unique tail slug or `slug` alias; omit the .md extension.',
       ),
       uid: {
         ...NON_BLANK_STRING_SCHEMA,
         pattern: NODE_UID_PATTERN,
-        description: 'Exact permanent node UID. Use instead of `slug`, never together with it.',
+        description: 'Exact permanent node UID; never together with `slug`.',
       },
       body: {
         type: 'string',
         enum: BODY_DELIVERY_MODES,
         description:
-          '`excerpt` (default) returns the first prose paragraph as `excerpt`. `full` returns the entire markdown body as `body` and omits `excerpt`. Use `full` when the answer depends on what the node actually says — evidence paths, confidence, scope boundaries.',
+          '`excerpt` (default): first prose paragraph. `full`: the whole body; use it when the answer depends on what the node says.',
       },
     },
     // A top-level `oneOf` makes Claude Code drop the tool; getConcept enforces exactly-one.
@@ -153,7 +152,7 @@ export const GET_CONCEPT_TOOL = {
 export const GET_CONCEPTS_TOOL = {
   name: 'get_concepts',
   description:
-    'Fetch multiple nodes by exactly one selector array: `slugs` (canonical slugs or unique aliases) or immutable `uids`. Same per-row shape as `get_concept`; successful rows always return permanent `uid` plus current canonical `slug`. Order matches the selected input array. Missing or invalid slug rows return partial `{slug, ok:false, error, ...repairFields}` rows, so later valid slugs still resolve; UID misses likewise return `{uid, ok:false, error, ...repairFields}` without aborting the batch. Graph relations and graph-operation inputs remain slug-based.',
+    'Fetch several nodes in one call by exactly one selector array: `slugs` or immutable `uids`. Rows match `get_concept` in input order, each with permanent `uid` plus current canonical `slug`; a bad row returns `{ok:false, error}` so later valid slugs still resolve. Graph-operation inputs remain slug-based.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -161,19 +160,19 @@ export const GET_CONCEPTS_TOOL = {
         type: 'array',
         maxItems: 50,
         items: NON_BLANK_STRING_SCHEMA,
-        description: 'Vault-relative slugs, unique tail slugs, or frontmatter `slug` aliases (e.g. ["capabilities/x", "elements/y"]). Omit the .md extension. Max 50 per call (max 20 when body is `full`).',
+        description: 'Slugs, unique tail slugs or frontmatter `slug` aliases; omit .md. Max 50 per call, 20 with body `full`.',
       },
       uids: {
         type: 'array',
         maxItems: 50,
         items: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
-        description: 'Exact permanent node UIDs. Use instead of `slugs`, never together with it. Max 50 (max 20 with body `full`).',
+        description: 'Permanent node UIDs; never together with `slugs`. Max 50, 20 with body `full`.',
       },
       body: {
         type: 'string',
         enum: BODY_DELIVERY_MODES,
         description:
-          'Applies to every row. `excerpt` (default) returns the first prose paragraph per row; `full` returns the entire markdown body per row and caps the batch at 20 slugs.',
+          '`excerpt` (default) or `full` for every row; `full` caps the batch at 20.',
       },
     },
     // Flat like get_concept; getConceptsBatch enforces exactly-one.
@@ -258,10 +257,7 @@ export const GET_CONCEPTS_TOOL = {
 export const FIND_BACKLINKS_TOOL = {
   name: 'find_backlinks',
   description:
-    'Return every node that points to the target slug. Scans both frontmatter ' +
-    'array keys (capabilities / elements / dependencies / relates / contains / ' +
-    'describes etc.) and the wikilinks / markdown links in the body. Used by ' +
-    'AI agents to walk the graph from a node to its dependents.',
+    'Return every node that points to the target slug; call it before a rename, merge or delete. Scans both frontmatter graph keys and wikilinks / markdown links in the body, to walk the graph from a node to its dependents.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -284,15 +280,12 @@ export const FIND_BACKLINKS_TOOL = {
 export const FIND_NEIGHBORS_TOOL = {
   name: 'find_neighbors',
   description:
-    'Return the one-hop graph neighborhood around a node. Unlike find_backlinks, ' +
-    'this is graph-frontmatter only and can include outgoing, incoming, or both ' +
-    'directions. Returns canonical edges plus neighbor node summaries so agents ' +
-    'can inspect a local subgraph in one call.',
+    'Return the one-hop graph neighborhood of a node, outgoing, incoming or both, from frontmatter relations only: canonical edges plus neighbour summaries in one call.',
   inputSchema: {
     type: 'object',
     properties: {
       slug: nonBlankStringSchema(
-        'Center node slug, unique tail slug, or frontmatter `slug` alias.',
+        'Slug, tail slug or alias.',
       ),
       direction: {
         type: 'string',
@@ -304,18 +297,18 @@ export const FIND_NEIGHBORS_TOOL = {
         maxItems: RELATION_TYPE_VALUES.length,
         items: { ...NON_BLANK_STRING_SCHEMA, enum: RELATION_TYPE_VALUES },
         description:
-          'Optional relation types/frontmatter keys to include, e.g. ["domain", "depends_on", "contains"]. Public add_relation types are normalized to stored graph keys.',
+          'Relation types or keys. Public add_relation types are normalized to stored graph keys.',
       },
       includeNodes: {
         type: 'boolean',
         description:
-          'When true (default), include neighbor node summaries for resolved edges.',
+          'Neighbour summaries, default true.',
       },
       limit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'Positive integer max edges to return. Defaults to 100, max 500.',
+        description: 'Edges, defaults to 100.',
       },
     },
     required: ['slug'],
@@ -380,13 +373,7 @@ export const FIND_NEIGHBORS_TOOL = {
 export const FIND_PATH_TOOL = {
   name: 'find_path',
   description:
-    'Shortest path between two nodes (undirected BFS). Returns ' +
-    '`{ from, to, hops: [slug...], nodes: [{uid, slug, kind, title, domain?}], edges: [{from, to, via, rationale?}] }` where each ' +
-    '`via` is the frontmatter key (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / ' +
-    '`relates` / `contains` / `describes`) that linked the two slugs and `rationale` is the one-line ' +
-    '`relation_notes` sentence the declaring document stores for that pair (present only when one is stored) — so the ' +
-    'agent sees not just *that* A and B are connected but by which key and, when someone wrote it down, *why*. ' +
-    'Returns `{ found: false }` when no path is found within maxHops, plus a `growthHint` — a concrete add_relation (both endpoints exist) or add_concept (an endpoint is missing) example so the unanswered question becomes a vault-growth signal instead of a dead end. maxHops defaults to 5 and is capped at 20.',
+    'Find the shortest path between two nodes, to see how A and B are related. Each edge\'s `via` names the frontmatter key that linked them and `rationale` the stored `relation_notes` sentence. No path returns `{found: false}` with a `growthHint`.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -396,7 +383,7 @@ export const FIND_PATH_TOOL = {
         type: 'integer',
         minimum: 0,
         maximum: 20,
-        description: 'Non-negative integer maximum hop count (default 5, max 20).',
+        description: 'Default 5.',
       },
     },
     required: ['from', 'to'],
@@ -456,9 +443,7 @@ export const FIND_PATH_TOOL = {
 export const LIST_KINDS_TOOL = {
   name: 'list_kinds',
   description:
-    "Vault kind distribution — { total, byKind: { capability: N, ... } }. " +
-    'A quick census so AI agents can size up the vault without paging through ' +
-    'list_concepts.',
+    'Vault kind distribution ({ total, byKind }): a quick census to size up the vault without paging through list_concepts.',
   inputSchema: {
     type: 'object',
     properties: {},
@@ -498,15 +483,12 @@ export const LIST_KINDS_TOOL = {
 export const FIND_ORPHANS_TOOL = {
   name: 'find_orphans',
   description:
-    'List orphan nodes — docs that no other node references via any frontmatter ' +
-    'array key. Useful as a cleanup starting point or to answer "which nodes ' +
-    'are unused?". Same matching policy as find_backlinks (full slug or final ' +
-    'segment). Root/sentinel kinds like project and vault-readme are excluded by default.',
+    'List orphan nodes, docs that no other node references via any frontmatter array key: a cleanup starting point. Matches like find_backlinks; root/sentinel kinds like project and vault-readme are excluded by default.',
   inputSchema: {
     type: 'object',
     properties: {
       kind: nonBlankStringSchema(
-        'Restrict to one kind (e.g. capability). Omit for all kinds.',
+        'Restrict to one kind. Omit for all kinds.',
         { enum: NODE_KIND_VALUES },
       ),
       excludeKinds: {
@@ -514,7 +496,7 @@ export const FIND_ORPHANS_TOOL = {
         maxItems: NODE_KIND_VALUES.length,
         items: { ...NON_BLANK_STRING_SCHEMA, enum: NODE_KIND_VALUES },
         description:
-          "Kinds to exclude from results. Defaults to ['project', 'vault-readme']. Pass [] to include every kind. Typos fail with nearest-value hints.",
+          'Kinds to exclude, default [\'project\', \'vault-readme\']; [] includes every kind.',
       },
     },
   },
@@ -547,30 +529,20 @@ export const FIND_ORPHANS_TOOL = {
 export const QUERY_CONCEPTS_TOOL = {
   name: 'query_concepts',
   description:
-    'Typed filter DSL — search vault nodes by predicate. Built for saved-filter / ' +
-    'smart-list cases that find_path (BFS) cannot answer, such as "which ' +
-    'capabilities have zero elements?", "stub-only nodes in domain=auth", or ' +
-    '"has(depends_on) excluding vault-readme".\n\n' +
-    'Grammar (case-insensitive keywords, whitespace-tolerant):\n' +
-    '  filter    := atom (AND|OR atom)*\n' +
-    '  atom      := NOT? predicate\n' +
-    '  predicate := key=value | key!=value | has(key)\n\n' +
-    'Keys: kind / domain / slug / title for equality, plus any graph frontmatter array key for has(...). kind and has(...) keys are enum-validated with nearest-value hints.\n' +
-    'Example: `kind=capability AND domain=auth AND NOT has(elements)` — ' +
-    'capabilities under domain auth that have zero elements (= unfinished caps). ' +
-    'When total=0, the response includes a `growthHint` — it names any referenced kind/domain that has 0 nodes in this vault, or nudges you to loosen the filter.',
+    'Typed filter DSL: find vault nodes by predicate, for questions a path search cannot answer, such as capabilities with zero elements.\n' +
+    'Grammar (case-insensitive): filter := atom (AND|OR atom)* ; atom := NOT? predicate ; predicate := key=value | key!=value | has(key)\n' +
+    'Keys: kind, domain, slug, title for equality; any graph frontmatter array key for has(...). Example: `kind=capability AND domain=auth AND NOT has(elements)`. No match returns a `growthHint`.',
   inputSchema: {
     type: 'object',
     properties: {
       filter: nonBlankStringSchema(
-        'Filter expression. Example: kind=capability AND has(elements). Supports NOT / AND / OR. ' +
-          "Wrap values containing whitespace or special characters with \"...\" or '...'.",
+        'e.g. kind=capability AND has(elements). Supports NOT / AND / OR. Wrap values containing whitespace or special characters in quotes.',
       ),
       limit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'Positive integer max rows to return. Defaults to 100, max 500.',
+        description: 'Default 100.',
       },
     },
     required: ['filter'],
@@ -619,31 +591,19 @@ export const QUERY_CONCEPTS_TOOL = {
 export const READ_SOURCE_TOOL = {
   name: 'read_source',
   description:
-    'Vault source documents only; repository code is read through analyze_repo_structure `sourceReads`. ' +
-    'Read the text of one raw source under `sources/`, cut into the units a wiki citation names ' +
-    '(`docs/ONTOLOGY-ATLAS-SPEC.md` §11): a DOCX by heading (`h:<slug>`; paragraphs before the first ' +
-    'heading are `p1`), an XLSX by sheet and row (`s<n>r<m>`), a CSV by row (`r<n>`), a text or HTML file by ' +
-    'line (`l<n>`). Each unit carries the exact anchor to write into `[[src:sources/<file>#<anchor>]]`, so a ' +
-    'page cites what it quotes. A PDF returns no text: the agent runtime reads PDFs natively, page by page, ' +
-    'and cites `#p<n>`. Nothing is converted and kept — the file is read on request and the text returned ' +
-    'once. Paging: `from` (1-based unit index) and `limit` (default ' +
-    `${READ_SOURCE_DEFAULT_LIMIT}, max ${READ_SOURCE_MAX_LIMIT}` +
-    '); when `truncated` is true, `next` is the `from` to continue with. `sheet` narrows a workbook to one ' +
-    'sheet number. Returns `{ path, format, unitCount, from, units: [{anchor, text, kind, heading?, sheet?}], ' +
-    'truncated, next?, sha256, note? }`. side effect 0. Use it in place of a shell command when a Compile, ' +
-    'Check or ask turn needs what a DOCX or XLSX says.',
+    'Read one raw vault source under `sources/` (DOCX, XLSX, CSV, text, HTML) as citable units, each with the anchor for `[[src:sources/<file>#<anchor>]]`; repository code is read through analyze_repo_structure `sourceReads`. A PDF returns no text: read it natively and cite `#p<n>`. Follow `next` while `truncated`. side effect 0.',
   inputSchema: {
     type: 'object',
     properties: {
-      path: nonBlankStringSchema('Vault-relative path under `sources/` (`sources/plan.docx`).'),
-      from: { type: 'integer', minimum: 1, description: '1-based index of the first unit to return. Default 1.' },
+      path: nonBlankStringSchema('Path under `sources/` (`sources/plan.docx`).'),
+      from: { type: 'integer', minimum: 1, description: 'First unit, 1-based.' },
       limit: {
         type: 'integer',
         minimum: 1,
         maximum: READ_SOURCE_MAX_LIMIT,
         description: `Units to return at most. Default ${READ_SOURCE_DEFAULT_LIMIT}.`,
       },
-      sheet: { type: 'integer', minimum: 1, description: 'XLSX only: return one sheet, by its number in workbook order.' },
+      sheet: { type: 'integer', minimum: 1, description: 'XLSX: one sheet by number.' },
     },
     required: ['path'],
     additionalProperties: false,
