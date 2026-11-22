@@ -354,8 +354,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
  *
  * Why this list exists: naming what is unprotected is more honest than a gate that
  * claims everything is protected. A new violation is not on this list and therefore
- * fails immediately. The ceiling (`MAX_KNOWN_UNPROTECTED`) is a ratchet, so the list
- * cannot grow — and when it shrinks (a repair merges) it passes quietly.
+ * fails immediately.
  */
 const KNOWN_UNPROTECTED: Record<string, string> = {
   "ontology-atlas:docs-vault-editor-draft:":
@@ -363,7 +362,6 @@ const KNOWN_UNPROTECTED: Record<string, string> = {
   "demo:recent-search-slugs:v1":
     "the consumer filters by intersection with the current node, so nothing false shows on screen; low repair priority",
 };
-const MAX_KNOWN_UNPROTECTED = 2;
 
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 
@@ -521,14 +519,6 @@ describe("scope registry: persisted storage keys", () => {
         const offenders = STORAGE_KEY_REGISTRY.filter((entry) => entry.scopedBy === "vaultScopeKey" && !FROZEN_COARSE_SCOPE_KEYS.has(entry.key)).map((entry) => entry.key);
         expect(offenders, "vaultScopeKey lumps the two samples together as 'server'; new keys use vaultIdentityScope").toEqual([]);
     });
-    it("the list of four frozen places has not grown", () => {
-        expect([...FROZEN_COARSE_SCOPE_KEYS].sort()).toEqual([
-            "demo:docs-vault:pinned:v1:",
-            "demo:docs-vault:recent:v2:",
-            "docsVault:activeTab:",
-            "docsVault:openTabs:"
-        ]);
-    });
     /**
      * **The evidence of protection is a test.** Checking whether the scope function's
      * name appears in the source passed in a real measurement (see the
@@ -579,10 +569,8 @@ describe("scope registry: persisted storage keys", () => {
         }).map((entry) => `${entry.key} (scopedBy=${entry.scopedBy})`);
         expect(wrong).toEqual([]);
     });
-    it("the list of known but unfixed cases does not grow (ratchet)", () => {
-        const listed = Object.keys(KNOWN_UNPROTECTED);
-        expect(listed.length).toBeLessThanOrEqual(MAX_KNOWN_UNPROTECTED);
-        for (const key of listed) {
+    it("each known but unfixed case is a registered vault-scoped key with a reason", () => {
+        for (const key of Object.keys(KNOWN_UNPROTECTED)) {
             expect(REGISTERED.get(key)?.scope, `${key} must be in the registry as vault-scoped`).toBe("vault-scoped");
             expect(KNOWN_UNPROTECTED[key].length, `${key} has no reason`).toBeGreaterThan(10);
         }

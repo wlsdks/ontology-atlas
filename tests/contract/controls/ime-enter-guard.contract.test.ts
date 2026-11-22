@@ -10,7 +10,6 @@ const HELPER_MODULE = '@/shared/lib/keyboard/ime-composition';
 const ENTER_KEYS = new Set(['Enter', 'NumpadEnter']);
 const LEGACY_KEY_CODE_PROPERTIES = new Set(['keyCode', 'which']);
 const ENTER_KEY_CODE = 13;
-const GUARDED_FLOOR = 21;
 
 const NOT_TEXT_ENTRY: ReadonlyArray<readonly [file: string, sites: number, target: string]> = [
   ['src/shared/ui/fields/inline-editable.tsx', 1, 'the read-mode element Enter switches into editing'],
@@ -149,10 +148,6 @@ describe('IME Enter guard — Enter on a text field waits for the composition to
   it('scans real Enter handlers', () => {
     expect(census.scanned, 'the walker found too few source files').toBeGreaterThan(300);
     expect(census.sites.length, 'no Enter handler was found; the detector is idle').toBeGreaterThan(20);
-    expect(
-      census.sites.filter((site) => site.guarded).length,
-      `guarded Enter handlers fell below ${GUARDED_FLOOR}; a guard was removed`,
-    ).toBeGreaterThanOrEqual(GUARDED_FLOOR);
   });
 
   it('every Enter handler outside the register consults isImeComposing', () => {

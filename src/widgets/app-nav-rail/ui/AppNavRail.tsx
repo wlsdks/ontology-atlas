@@ -179,10 +179,7 @@ export function AppNavRail({
         className,
       )}
     >
-      {/*
-       * Only the destinations pane scrolls; the utility tier never shrinks
-       * (cap: `destination-shortcuts.contract.test.ts`).
-       */}
+      {/* Only the destinations pane scrolls; the utility tier never shrinks. */}
       {/*
        * The vault tile sits outside the scrolling pane so it never scrolls away at the 1040x720
        * floor.
@@ -249,8 +246,8 @@ export function AppNavRail({
                    * the box size.
                    */
                   /*
-                   * `py-1`: nine tiles fit the 616px pane at the 1040x720 window floor
-                   * (`destination-shortcuts.contract.test.ts`).
+                   * `py-1`: the compact pitch the rail was measured with at the 1040x720 window
+                   * floor (`destination-shortcuts.contract.test.ts` holds the padding).
                    */
                   /*
                    * `border-0`: this borrows `card` only for the focus ring geometry, not its
