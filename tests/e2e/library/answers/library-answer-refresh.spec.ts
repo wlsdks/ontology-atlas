@@ -4,6 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { parseFrontmatter } from '../../../../src/shared/lib/vault-document/parse-frontmatter';
 import { installLibraryWorkHarness, type LibraryWorkHarness } from '../../library-work-harness';
 import { seedFirstRunSeen } from '../../first-run-seed';
+import { waitFrames } from '../../settle';
 import enMessages from '../../../../messages/en.json';
 
 const SOURCE = 'sources/storage.md';
@@ -88,9 +89,11 @@ async function generateDraft(page: Page, harness: LibraryWorkHarness) {
   await expect(page.getByTestId('answer-comparison')).toBeVisible();
 }
 
+/* A person presses Tab slower than a frame, so each press lets the frames that react to focus run first. */
 async function tabTo(page: Page, testId: string) {
   for (let step = 0; step < 120; step += 1) {
     await page.keyboard.press('Tab');
+    await waitFrames(page);
     if (await page.evaluate((id) => document.activeElement?.getAttribute('data-testid') === id, testId)) {
       expect(await page.evaluate(() => document.activeElement?.matches(':focus-visible'))).toBe(true);
       return;
