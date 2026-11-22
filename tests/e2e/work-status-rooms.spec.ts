@@ -102,6 +102,41 @@ test.describe("work status rooms", () => {
     await expect(room(page, "feat/work-status-rooms")).toContainText("Claude Code 2");
   });
 
+  test("paints every room in every frame while a merge and a mini rising to the stage move the rooms", async ({ page }) => {
+    await openWorkStatus(page, SIX);
+    await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-size", "large");
+    // Each frame: how much of each room its faces cover, and whether a room on its way out is still dark.
+    await page.evaluate(() => {
+      const frames: { cover: number; litGhost: boolean }[] = [];
+      (window as unknown as { __paint: typeof frames }).__paint = frames;
+      const sample = () => {
+        let cover = 1;
+        for (const element of document.querySelectorAll("[data-room-key]")) {
+          let through = 1;
+          for (const face of element.querySelectorAll(":scope > [data-room-face]")) through *= 1 - Number(getComputedStyle(face).opacity);
+          cover = Math.min(cover, 1 - through);
+        }
+        const litGhost = [...document.querySelectorAll("[data-testid=work-building] [inert] [data-dark]")].some(scene => scene.getAttribute("data-dark") !== "true");
+        frames.push({ cover, litGhost });
+        if (frames.length < 600) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await page.evaluate((next) => (window as unknown as { __workStatusRows: (rows: unknown[]) => void }).__workStatusRows(next), [
+      ...SIX.filter((entry) => entry.branch !== "feat/library-stage" && entry.branch !== "feat/harness-tab"),
+      row("feat/library-stage", { standing: "merged", ahead: 0 }),
+      working("feat/harness-tab", CLAUDE),
+    ]);
+    await expect(room(page, "feat/library-stage")).toHaveCount(0, { timeout: 10_000 });
+    await expect(room(page, "feat/harness-tab")).toHaveAttribute("data-room-size", "large");
+    await page.waitForTimeout(1_500);
+
+    const frames = await page.evaluate(() => (window as unknown as { __paint: { cover: number; litGhost: boolean }[] }).__paint);
+    expect(frames.length).toBeGreaterThan(60);
+    expect(Math.min(...frames.map(frame => frame.cover))).toBeGreaterThanOrEqual(0.95);
+    expect(frames.filter(frame => frame.litGhost)).toHaveLength(0);
+  });
+
   test("shows one room for the base branch when no worktree exists", async ({ page }) => {
     await openWorkStatus(page, [main]);
     await expect(page.getByTestId("work-empty-room")).toContainText("Only main for now");
