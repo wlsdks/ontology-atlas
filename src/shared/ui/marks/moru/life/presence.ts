@@ -70,13 +70,16 @@ export function setCrew(presence: Presence, crew: number) {
 const onFloor = (world: World) => world.morus.filter(m => m.door !== 'out');
 const atDoor = (world: World) => world.morus.some(m => m.door);
 
-/** One step of the comings and goings, after each tick. */
-export function tend(world: World, presence: Presence): Moru | null {
+/**
+ * One step of the comings and goings, after each tick. `due`: somebody comes or goes now if anybody can, even with
+ * the floor at its count: one leaves a floor above the fewest, else one comes in.
+ */
+export function tend(world: World, presence: Presence, due = false): Moru | null {
   if (world.now >= presence.nextTarget) drawTarget(world, presence);
   const most = Math.min(MOST_ON_FLOOR, presence.crew, roomFor(world));
-  const target = Math.min(presence.target, most);
-  if (atDoor(world) || world.now < presence.quietUntil) return null;
   const here = onFloor(world).length;
+  const target = due && here === Math.min(presence.target, most) ? (here > Math.min(FEWEST_ON_FLOOR, most) ? here - 1 : here + 1) : Math.min(presence.target, most);
+  if (atDoor(world) || (!due && world.now < presence.quietUntil)) return null;
   if (here > target || here > most) {
     if (leave(world)) presence.quietUntil = world.now + 4000 + world.rand() * 4000;
     return null;

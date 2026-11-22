@@ -55,7 +55,7 @@ describe('pixel stage', () => {
     expect(stage.may('b', 50_000 + LIVELY_MS - 1)).toBe(true);
   });
 
-  it('grants a turn to the longest in line, lets the next join it at once, and rests about three times what moved', () => {
+  it('grants a turn to the longest in line, lets the next join it at once, and rests about three times what moved, or until the rotation comes round', () => {
     const stage = createPixelStage();
     for (const actor of ['a', 'b', 'c']) stage.join(actor, 0);
     const now = LIVELY_MS + 10_000;
@@ -74,20 +74,21 @@ describe('pixel stage', () => {
     stage.release('b', end);
     stage.breathe('c', end + REST_MIN_MS);
     expect(stage.ask('c', end + REST_MIN_MS)).toBe(false);
-    // 5.4 s moved since the turn began: the next comes once 21.6 s have passed since then.
+    // 5.4 s moved since the turn began would rest until 21.6 s after it; three actors, two to a turn, come
+    // round in two turns, so the rotation brings the next sooner, 22 s after the turn began.
     stage.breathe('c', end + 16_000);
     expect(stage.ask('c', end + 16_000)).toBe(false);
-    expect(stage.ask('c', end + 17_000)).toBe(true);
+    expect(stage.ask('c', end + 17_300)).toBe(true);
   });
 
-  it('gives every room and the lobby a turn each minute, keeps about a quarter moving, and never stands still past eight seconds', () => {
+  it('gives every room and the lobby a turn within 45 s, keeps about a quarter moving, and never stands still past eight seconds', () => {
     const ms = 10 * 60_000;
     const { moved, turns } = play({ ms });
     const from = LIVELY_MS + 6000;
     for (const [actor, at] of turns) {
       const marks = [from, ...at, ms];
       const waits = marks.slice(1).map((t, i) => t - marks[i]);
-      expect(Math.max(...waits), `${actor}'s longest wait`).toBeLessThanOrEqual(60_000);
+      expect(Math.max(...waits), `${actor}'s longest wait`).toBeLessThanOrEqual(45_000);
     }
     expect(longestStill(moved, from)).toBeLessThanOrEqual(8000);
     const steady = shareOf(moved, 60_000, ms);

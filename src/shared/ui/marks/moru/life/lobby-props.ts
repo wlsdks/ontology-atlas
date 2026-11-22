@@ -31,6 +31,9 @@ export type Reach = { left: number; right: number; up: number };
 
 /** The fixtures a Moru never stands in front of or behind, only on, at its spot. */
 const IN_THE_WAY: LobbyPropName[] = ['bench', 'crate', 'mat', 'plant', 'window', 'board'];
+/** What hangs on the wall, and the room it keeps over a head, so nothing seems to sit on a hat or an ear. */
+const ON_THE_WALL: LobbyPropName[] = ['window', 'board'];
+export const HEADROOM = 16;
 
 /** Where the middle of each fixture stands on a floor `width` wide, between the two doorways. */
 export function lobbyFixtures(width: number) {
@@ -70,11 +73,11 @@ function placements(width: number, backFeet: number, frontFeet: number) {
   ] satisfies { name: LobbyPropName; x: number; y: number }[];
 }
 
-/** The boxes of the fixtures a standing Moru keeps clear of. */
+/** The boxes a standing Moru keeps clear of: each fixture's, and under what hangs on the wall, room for a head. */
 export function fixtureBoxes(width: number, backFeet: number, frontFeet: number, props: LifeAtlas['props']): (FloorBox & { name: LobbyPropName })[] {
   return placements(width, backFeet, frontFeet).filter(p => IN_THE_WAY.includes(p.name)).map(({ name, x, y }) => {
-    const p = props[name];
-    return { name, x0: x - p.fx, y0: y - p.fy, x1: x - p.fx + p.w, y1: y - p.fy + p.h };
+    const p = props[name], below = ON_THE_WALL.includes(name) ? HEADROOM : 0;
+    return { name, x0: x - p.fx, y0: y - p.fy, x1: x - p.fx + p.w, y1: y - p.fy + p.h + below };
   });
 }
 

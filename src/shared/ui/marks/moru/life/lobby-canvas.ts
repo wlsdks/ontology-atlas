@@ -13,7 +13,7 @@
 import { PIXEL_BEAT_MS, onPixelBeat } from '@/shared/motion/pixel-beat';
 import { pixelStage, type PixelStage } from '@/shared/motion/pixel-stage';
 import { facingClip, type LifeAtlas, type LifeClip, type LifePose, type PiecePart } from './atlas';
-import { centre, createWorld, standing, tick, type Moru, type World } from './behaviour';
+import { centre, createWorld, fidget, standing, tick, type Moru, type World } from './behaviour';
 import { crewSize, nearestGap, openLobby, setCrew, tend, type Presence } from './presence';
 import { NAPPING_REACH, STANDING_REACH, drawFixtures, lobbyClearance, lobbySpots } from './lobby-props';
 import { freshWorn, placeWear, type Placed, type Worn } from './wardrobe';
@@ -54,6 +54,10 @@ export const LOBBY_SEP = 150;
 const LOBBY_BUSY = 2;
 /** The lobby's name on the page's stage (`pixel-stage.ts`). */
 const ACTOR = 'lobby';
+/** Somebody comes in or goes out at least this often: the lobby's turn brings a doorway walk when one is due. */
+const DOOR_EVERY_MS = 36_000;
+/** The small things a resting floor does to break a long stillness, one Moru at a time in turn. */
+const FIDGETS = ['blink', 'look-ahead', 'blink', 'look-back', 'sway'];
 
 /** The pad a layer is composed on: the 128px cell with room round it for pieces that reach outside. */
 const OX = 40, OY = 24, CW = 208, CH = 152;
@@ -424,6 +428,17 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
   };
 
   let leave: (() => void) | null = null, slow = 0, running = false, painted = 0, onStage = false, turnTicks = 0;
+  /** When the last doorway walk began, by the floor's clock, and how many there had been then. */
+  let doorAt = 0, doors = 0, fidgets = 0, lastFidget = '';
+  const doorWalks = () => world.stats.entered + world.stats.left;
+  /** The next Moru in turn, standing free, does one small thing, never the same thing twice running. */
+  const fidgetNext = () => {
+    const free = world.morus.filter(m => m.clip === 'rest' && !m.door && !m.plan.length);
+    if (!free.length) return;
+    const m = free[fidgets++ % free.length], choices = FIDGETS.filter(clip => clip !== lastFidget);
+    const clip = choices[Math.floor(world.rand() * choices.length)];
+    if (fidget(world, m, clip)) lastFidget = clip;
+  };
   /** Every Moru standing on the floor, none on a doorway walk: the lobby is at rest. */
   const settled = () => world.morus.every(m => standing(m) && !m.door);
   /**
@@ -438,8 +453,10 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
     world.busyMax = lively ? LOBBY_BUSY : may ? 1 : 0;
     world.extra = lively ? 1 : 0;
     tick(world, elapsedMs || PIXEL_BEAT_MS);
-    // Moru come and go while the screen is lively; a turn is one short thing on the floor.
+    // Moru come and go while the screen is lively; a turn is one short thing on the floor, or a doorway walk when one is due.
     if (lively) tend(world, presence);
+    else if (stage.holds(ACTOR) && turnTicks === 0 && world.now - doorAt >= DOOR_EVERY_MS) tend(world, presence, true);
+    if (doorWalks() !== doors) { doors = doorWalks(); doorAt = world.now; }
     paint();
     if (moved) painted++;
     // Composes, while the page is idle, the poses the Moru on the floor will show next.
@@ -452,8 +469,8 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, 
       if (settled() && (turnTicks > 3 || moved)) { stage.release(ACTOR, now); turnTicks = 0; }
     } else if (!lively && settled()) {
       granted = stage.ask(ACTOR, now);
-      // Still too long: one Moru blinks.
-      if (!granted && stage.breathe(ACTOR, now)) world.breathe = true;
+      // Still too long: the next Moru in turn does one small thing.
+      if (!granted && stage.breathe(ACTOR, now)) fidgetNext();
     }
     slow = moved ? 0 : Math.min(slow + 1, SLOWEST);
     const beats = Math.round(lobbyTickMs(world) / PIXEL_BEAT_MS) * (1 + slow);

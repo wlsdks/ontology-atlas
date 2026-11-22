@@ -201,19 +201,25 @@ function play(world: World, m: Moru, clip: string, cur: Current = {}) {
 }
 function rest(m: Moru) { m.clip = 'rest'; m.i = 0; m.frame = 0; m.t = 0; m.cur = {}; m.changed = true; }
 /** On a resting floor a walk ends with the stride under way; a walk through a doorway still finishes. */
-/** Turning carries the body this far: one that turned where it uses a fixture is still on it. */
-const TURN_CARRY = 12;
-/**
- * A Moru may stop here: clear of every fixture, or on one at the spot it uses it from, where it is drawn on it.
- * One already there may have turned on it since (`turned`).
- */
-export const mayStop = (world: World, at: number, lane: number, napping = false, turned = false) =>
-  world.standsClear(at, lane, napping) || world.spots.some(s => Math.abs(s.x - at) <= (turned ? TURN_CARRY + 2 : 2) && Math.abs(s.lane - lane) < 0.1);
-/** Where a Moru stands now is a place it may stay. */
-const mayStay = (world: World, m: Moru) => mayStop(world, centre(m), m.lane, false, true);
+/** At the spot it uses a fixture from, facing the way the spot asks: drawn on the fixture, not off its end. */
+const atSpot = (world: World, at: number, lane: number, facing: number | null) =>
+  world.spots.some(s => Math.abs(s.x - at) <= 2 && Math.abs(s.lane - lane) < 0.1 && (facing === null || facing === s.dir));
+/** A Moru may stop here: clear of every fixture, or on one at the spot it uses it from, where it is drawn on it. */
+export const mayStop = (world: World, at: number, lane: number, napping = false) => world.standsClear(at, lane, napping) || atSpot(world, at, lane, null);
+/** Where a Moru stands now is a place it may stay: one turned on a fixture hangs off it and walks on. */
+const mayStay = (world: World, m: Moru) => world.standsClear(centre(m), m.lane, false) || atSpot(world, centre(m), m.lane, m.facing);
+/** One at a spot is busy with its fixture: nobody walks up to it, so it never turns there to greet them. */
+const onASpot = (world: World, m: Moru) => atSpot(world, centre(m), m.lane, null);
 /** Resting between turns, a walk stops at the end of its stride, unless that would leave it standing on a fixture. */
 const stopWalking = (world: World, m: Moru) => { if (world.calm && !m.door && m.plan[0]?.go && mayStay(world, m)) drop(m); };
 const drop = (m: Moru) => { m.plan = []; m.steps = 0; };
+
+/** One small thing on the spot for a Moru standing free: a blink, a glance or a sway. Returns whether it started. */
+export function fidget(world: World, m: Moru, clip: string): boolean {
+  if (m.clip !== 'rest' || m.door || m.plan.length || m.waiting || m.hold || !world.atlas.clips[clip]) return false;
+  play(world, m, clip);
+  return true;
+}
 
 /** Set while a Moru left on a fixture chooses where to walk off to, so a walk blocked at once does not choose again. */
 let walkingOff = false;
@@ -509,7 +515,7 @@ function decide(world: World, m: Moru, only: string | null = null): boolean {
         // Up the ladder, a look round and a wave from the shelf, and down the way it came.
         ...(spot.clip === 'climb' ? [{ clip: 'look-back' }, { clip: 'wave' }, { pause: 900 }, { clip: 'look-ahead' }, { clip: 'climb', reverse: true }] : [])];
     });
-  const friends = world.morus.filter(o => o !== m && !o.door && (!m.room || o.lane === m.lane) && !o.height && !o.claimed && !o.event
+  const friends = world.morus.filter(o => o !== m && !o.door && !onASpot(world, o) && (!m.room || o.lane === m.lane) && !o.height && !o.claimed && !o.event
     && !(crowded ? m.pairs.includes(o.id) : m.pairs[0] === o.id) && Math.abs(centre(o) - here) < 420 && quiet(o) && o.still < (crowded ? 4000 : 12000) && !['nap', 'yawn'].includes(o.clip)
     // Only a friend it can walk straight up to, with nobody between or headed between.
     && !(m.room && o.lane !== m.lane) && (!(m.room || !crowded) || openWay(world, m, here, centre(o), o)))
@@ -587,7 +593,7 @@ export function enter(world: World, moru: { id: string; palette?: string; wear?:
   const facing = side < 0 ? 1 : -1;
   const m = addMoru(world, { ...moru, x: edgeCentre - (facing > 0 ? 74 : 62), lane });
   // The first place in from the edge that stands clear of the fixtures; with none, nobody comes in.
-  const from = side < 0 ? 140 + world.rand() * 120 : world.width - 140 - world.rand() * 120;
+  const from = side < 0 ? 100 + world.rand() * 80 : world.width - 100 - world.rand() * 80;
   let goal: number | null = null;
   for (let far = 0; far <= world.width / 2 && goal === null; far += 8) {
     const at = from - side * far;

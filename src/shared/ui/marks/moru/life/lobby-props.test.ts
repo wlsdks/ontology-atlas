@@ -18,8 +18,8 @@ function drawnBox(m: Moru): FloorBox {
   return m.facing > 0 ? { x0: X + bx, y0: Y + by, x1: X + bx + bw, y1: Y + by + bh } : { x0: X + 137 - bx - bw, y0: Y + by, x1: X + 137 - bx, y1: Y + by + bh };
 }
 
-/** On the fixture it uses: at its spot, or turned there, which carries the body 12px. */
-const atItsSpot = (world: World, m: Moru) => world.spots.some(s => Math.abs(s.x - centre(m)) <= 14 && Math.abs(s.lane - m.depth) < 0.1);
+/** On the fixture it uses: at its spot, facing the way the spot faces. */
+const atItsSpot = (world: World, m: Moru) => world.spots.some(s => Math.abs(s.x - centre(m)) <= 2 && Math.abs(s.lane - m.depth) < 0.1 && m.facing === s.dir);
 
 /**
  * Runs a lobby the way its canvas does on the rooms' stage: lively for 8 s, then turns of 3 s between rests of 9 s,
@@ -63,7 +63,7 @@ describe('lobby fixtures', () => {
     }
   });
 
-  it('hangs the window and the board between the fixtures, clear of every Moru at its spot', () => {
+  it('hangs the window and the board between the fixtures, with room over the head of every Moru at its spot', () => {
     for (const width of FLOORS) {
       const boxes = fixtureBoxes(width, BACK_FEET, FRONT_FEET, atlas.props);
       const { bench, mat, crate } = lobbyFixtures(width);

@@ -9,7 +9,7 @@ import { PIXEL_BEAT_MS } from './pixel-beat';
  * short thing, and the screen rests until the time since the turn began holds about four times what
  * moved in it, so about a quarter of the time moves (less in a window that is not key); a rest is
  * cut short when every actor would otherwise wait past `ROTATION_MS`. A rest never stands still for
- * long in the key window: past `BREATH_MS` with nothing changing, one lobby Moru blinks, and with no
+ * long in the key window: past `BREATH_MS` with nothing changing, a lobby Moru does a small thing, and with no
  * lobby on the stage the next turn comes then. What an observed event plays (a commit, a state change) cuts in
  * at once and takes no turn. Motion is counted as a viewer sees it: a pose shows from its change
  * until the next, up to `HELD_MS`.
@@ -32,11 +32,12 @@ export const REST_MIN_MS = 3_000;
 export const REST_MAX_MS = 20_000;
 const REST_MAX_AWAY_MS = 30_000;
 /** In the key window every actor's turn comes round within this long. */
-export const ROTATION_MS = 55_000;
+export const ROTATION_MS = 44_000;
 /** The rest after the lively stretch, before the first turn. */
 const REST_AFTER_LIVELY_MS = 5_000;
-/** Nothing has changed this long: one lobby Moru blinks, or, with no lobby, the next turn comes. */
+/** Nothing has changed this long, a little longer each time at random: one lobby Moru does a small thing, or, with no lobby, the next turn comes. */
 export const BREATH_MS = 5_000;
+const BREATH_SPREAD_MS = 1_500;
 /** A pose held longer than this after a change reads as still. */
 const HELD_MS = 4 * PIXEL_BEAT_MS;
 /** An asker that has not asked again this long has stopped wanting a turn (a resting lobby asks every 1.2 s, 2.4 s in a window that is not key). */
@@ -69,9 +70,11 @@ export interface PixelStage {
   share(now: number): number;
 }
 
-export function createPixelStage({ share = () => MOTION_SHARE, onFirstJoin, onLastLeave }: {
+export function createPixelStage({ share = () => MOTION_SHARE, random = Math.random, onFirstJoin, onLastLeave }: {
   /** The share of the time the cast aims to move now. */
   share?: () => number;
+  /** Where the breath's spread comes from. */
+  random?: () => number;
   onFirstJoin?: () => void;
   onLastLeave?: () => void;
 } = {}): PixelStage {
@@ -83,7 +86,7 @@ export function createPixelStage({ share = () => MOTION_SHARE, onFirstJoin, onLa
   const holders = new Set<string>();
   const breathers = new Map<string, number>();
   let livelyUntil = Number.NEGATIVE_INFINITY, lastMoved = Number.NEGATIVE_INFINITY;
-  let grantedAt = 0, restFrom = Number.NEGATIVE_INFINITY, restFor = 0;
+  let grantedAt = 0, restFrom = Number.NEGATIVE_INFINITY, restFor = 0, breathAfter = BREATH_MS;
 
   const movedWithin = (now: number) => {
     while (beats.length && beats[0].at <= now - SHARE_WINDOW_MS) beats.shift();
@@ -165,9 +168,10 @@ export function createPixelStage({ share = () => MOTION_SHARE, onFirstJoin, onLa
     breathe(actor, now) {
       breathers.set(actor, now);
       // Nobody looks at a window that is not key: it rests without blinking.
-      if (awayNow() || now < livelyUntil || holders.size > 0 || now - lastMoved < BREATH_MS) return false;
-      // Counted as moving now, so the next breath waits its own while.
+      if (awayNow() || now < livelyUntil || holders.size > 0 || now - lastMoved < breathAfter) return false;
+      // Counted as moving now, so the next breath waits its own while, and not the same while as the last.
       lastMoved = now;
+      breathAfter = BREATH_MS + random() * BREATH_SPREAD_MS;
       return true;
     },
     moved(now) {
