@@ -4,6 +4,12 @@ import http from "node:http";
 import https from "node:https";
 
 import { LAST_INTEL_VERSION, isAfterLastIntel } from "../lib/last-intel-release.mjs";
+import {
+  UPDATER_COMMIT_LENGTH,
+  isReleaseTag,
+  parseReleaseTag,
+  splitUpdaterManifestVersion,
+} from "../lib/release-tag.mjs";
 import { updaterArchiveName } from "./stage-macos-release-assets.mjs";
 
 const DEFAULT_REPO = "wlsdks/ontology-atlas";
@@ -16,17 +22,24 @@ const REQUIRED_UPDATER_PLATFORMS = ["darwin-aarch64"];
 const MAX_DOWNLOAD_HASH_BYTES = 2 * 1024 * 1024 * 1024;
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-download [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--allow-draft] [--require-updater]
+  console.log(`Usage: pnpm desktop:verify-download [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--allow-draft] [--require-updater [--commit=SHA]]
+       pnpm desktop:verify-download -- --tag=vX.Y.Z-beta.N --beta [--allow-draft]
 
 Verifies that a public GitHub Release exposes a reachable Apple Silicon
 (aarch64) macOS DMG, exactly one per architecture, and
 one Windows x64 setup executable, all with matching .sha256 checksums. With
 --require-updater it also opens latest.json and
 checks that every platform URL points at an archive (and .sig) that actually
-exists in this release. Draft releases are never accepted because the
+exists in this release, and that its version is the release's X.Y.Z, with
+--commit also that it ends +<the commit's first ${UPDATER_COMMIT_LENGTH} hex digits>. Draft releases are never accepted because the
 hosted landing page cannot serve them as a real user download unless
 --allow-draft is explicitly passed for the pre-publish CI gate.
 A release GitHub marks as a pre-release is always refused.
+
+--beta verifies a beta release instead, and is the only way to name a
+vX.Y.Z-beta.N tag: the release must be a GitHub pre-release, its assets carry
+the plain X.Y.Z version, and it must not carry latest.json, so no installed app
+is ever offered it. --beta cannot be combined with --require-updater.
 `);
 }
 
@@ -36,6 +49,8 @@ function parseArgs(argv) {
     tag: null,
     allowDraft: false,
     requireUpdater: false,
+    beta: false,
+    commit: null,
   };
 
   for (const arg of argv) {
@@ -54,12 +69,20 @@ function parseArgs(argv) {
       options.requireUpdater = true;
       continue;
     }
+    if (arg === "--beta") {
+      options.beta = true;
+      continue;
+    }
     if (arg.startsWith("--repo=")) {
       options.repo = arg.slice("--repo=".length).trim();
       continue;
     }
     if (arg.startsWith("--tag=")) {
       options.tag = arg.slice("--tag=".length).trim();
+      continue;
+    }
+    if (arg.startsWith("--commit=")) {
+      options.commit = arg.slice("--commit=".length).trim();
       continue;
     }
     fail(`unknown argument: ${arg}`);
@@ -70,6 +93,18 @@ function parseArgs(argv) {
   }
   if (options.tag !== null && options.tag.length === 0) {
     fail("--tag must not be empty.");
+  }
+  if (options.commit !== null) {
+    if (!options.requireUpdater) fail("--commit checks latest.json, so it needs --require-updater.");
+    if (!/^[0-9a-f]{40}$/.test(options.commit)) fail(`--commit must be a full lowercase 40-hex commit, got ${options.commit}.`);
+  }
+  if (options.beta) {
+    if (options.requireUpdater) {
+      fail("--beta and --require-updater ask for opposite things: a beta release carries no latest.json.");
+    }
+    if (!isReleaseTag(options.tag) || parseReleaseTag(options.tag).channel !== "beta") {
+      fail(`--beta needs --tag=vX.Y.Z-beta.N, got ${options.tag ?? "(none)"}.`);
+    }
   }
   return options;
 }
@@ -285,8 +320,10 @@ function parseWindowsInstallerName(name) {
   return { version: match[1], arch: match[2] };
 }
 
+/** A beta tag's assets carry the plain X.Y.Z, because the promoted release reuses the same bytes. */
 function releaseVersionFromTag(tagName) {
   if (typeof tagName !== "string") return null;
+  if (isReleaseTag(tagName)) return parseReleaseTag(tagName).version;
   const match = tagName.match(/^v(.+)$/);
   return match ? match[1] : null;
 }
@@ -443,13 +480,33 @@ if (!release) {
 if (release.draft && !options.allowDraft) {
   fail(`release ${release.tag_name ?? "(unknown tag)"} is a draft and is not downloadable from the hosted landing page.`);
 }
-if (release.prerelease) {
-  fail(
-    `release ${release.tag_name ?? "(unknown tag)"} is marked as a pre-release on GitHub. Atlas publishes only plain releases, which the updater and the download page serve; clear the flag or publish a plain tag.`,
-  );
-}
-
 const assets = Array.isArray(release.assets) ? release.assets : [];
+const releaseChannel = isReleaseTag(release.tag_name) ? parseReleaseTag(release.tag_name).channel : null;
+
+if (options.beta) {
+  if (release.tag_name !== options.tag || releaseChannel !== "beta") {
+    fail(`release ${release.tag_name ?? "(unknown tag)"} is not the beta release ${options.tag}.`);
+  }
+  if (release.prerelease !== true) {
+    fail(
+      `release ${release.tag_name} is not marked as a pre-release on GitHub. A beta release must be one: the hosted updater and the download page skip only pre-releases.`,
+    );
+  }
+  if (assets.some((asset) => asset?.name === "latest.json")) {
+    fail(
+      `release ${release.tag_name} carries latest.json. A beta release never carries the updater manifest, so no installed app can be offered it; delete the asset and fix the stage that uploaded it.`,
+    );
+  }
+} else {
+  if (release.prerelease) {
+    fail(
+      `release ${release.tag_name ?? "(unknown tag)"} is marked as a pre-release on GitHub. The updater and the download page serve stable releases only; verify a beta release with --beta.`,
+    );
+  }
+  if (releaseChannel === "beta") {
+    fail(`release ${release.tag_name} is a beta release; verify it with --beta.`);
+  }
+}
 const unsupportedDmgs = assets
   .filter(isAnyDmgAsset)
   .filter((asset) => !isDmgAsset(asset))
@@ -565,6 +622,24 @@ async function verifyUpdaterManifest() {
     fail(`latest.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`);
   }
 
+  let manifestVersion;
+  try {
+    manifestVersion = splitUpdaterManifestVersion(manifest?.version);
+  } catch (error) {
+    fail(`latest.json ${error instanceof Error ? error.message : String(error)}`);
+  }
+  if (manifestVersion.version !== releaseVersion) {
+    fail(`latest.json says version ${manifest.version}, not ${release.tag_name}'s ${releaseVersion}.`);
+  }
+  if (options.commit !== null) {
+    const expected = `${releaseVersion}+${options.commit.slice(0, UPDATER_COMMIT_LENGTH)}`;
+    if (manifest.version !== expected) {
+      fail(
+        `latest.json says version ${manifest.version}, not ${expected}: without the release commit an app built from another commit of ${releaseVersion}, such as an earlier beta, is never offered this release.`,
+      );
+    }
+  }
+
   const assetNames = new Set(assets.map((asset) => asset?.name).filter(Boolean));
   const platformKeys = Object.keys(manifest?.platforms ?? {}).sort();
   if (platformKeys.join(",") !== [...REQUIRED_UPDATER_PLATFORMS].sort().join(",")) {
@@ -607,7 +682,8 @@ if (options.requireUpdater) {
 
 console.log(
   [
-    `[desktop-download-verify] ${options.repo} ${release.tag_name} exposes reachable ${release.draft ? "draft" : "public"} macOS download assets and Windows installer`,
+    `[desktop-download-verify] ${options.repo} ${release.tag_name} exposes reachable ${release.draft ? "draft" : "public"} ${options.beta ? "beta " : ""}macOS download assets and Windows installer`,
+    ...(options.beta ? ["Beta: GitHub pre-release with no latest.json"] : []),
     `DMGs: ${dmgs.map((dmg) => dmg.browser_download_url).join(", ")}`,
     `Windows: ${windowsInstaller.browser_download_url}`,
     ...(options.requireUpdater ? [`Updater: latest.json → ${updaterArchives.join(", ")}`] : []),

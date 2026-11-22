@@ -97,6 +97,7 @@ function QuickEditDrawerFrame({
       />
       <section
         ref={dialogRef}
+        // eslint-disable-next-line no-restricted-syntax -- an edge drawer; Dialog has no edge variant yet
         role="dialog"
         aria-modal="true"
         aria-label={ariaDialog}

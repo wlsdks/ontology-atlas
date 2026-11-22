@@ -139,6 +139,18 @@ so first-paint chunks of local-first routes don't pull them in. See
 [`.claude/rules/architecture.md`](.claude/rules/architecture.md) for the
 full rule.
 
+### Releases
+
+Maintainers cut desktop releases; the commands are in
+[`docs/engineering/deployment.md`](docs/engineering/deployment.md#desktop-release-paths).
+
+- **Beta, then promotion**: cut `vX.Y.Z-beta.N`, install it by hand, then
+  promote the same bytes to `vX.Y.Z`. No waiting period is required; promotion
+  needs only a green browser-suite run on that commit.
+- **Direct stable cut**: cut `vX.Y.Z` with no beta, for example a same-day fix.
+- **Hard rule**: a beta never writes the updater feed (`latest.json`) or the
+  download page, so no installed app is offered it.
+
 ## Mission v3 alignment
 
 If a feature/route/widget would conflict with mission v3 — **"one

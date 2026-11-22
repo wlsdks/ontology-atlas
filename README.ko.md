@@ -46,7 +46,7 @@ diff로 보고 그대로 두거나, 고치거나, 거절해요.
 2. **폴더 열기**: Atlas는 폴더 안의 마크다운을 그 자리에서 읽거나 저장소에 `atlas/` 폴더를 새로 만들고, 무엇이든 쓰기 전에 경로를 먼저 보여 줘요.
 3. **에이전트 연결**: **에이전트 › MCP**에서 쓰는 도구의 **연결**을 누르고, 에이전트를 다시 시작한 뒤 다음 작업에 대해 물어보세요.
 
-macOS(Apple Silicon)용 앱은 서명과 공증을 거쳤고, 앱 안에 MCP 서버가 들어 있어요. Windows x64는 서명하지 않은 베타예요. Linux에서는 브라우저 버전을 쓰거나, [소스 체크아웃에서 MCP 서버를 실행](mcp/README.md#1-register-with-an-agent)하세요. [릴리스](https://github.com/wlsdks/ontology-atlas/releases)에 버전마다 파일과 체크섬이 있어요.
+macOS(Apple Silicon)용 앱은 서명과 공증을 거쳤고, 앱 안에 MCP 서버가 들어 있어요. Windows x64는 서명하지 않은 베타예요. Linux에서는 브라우저 버전을 쓰거나, [소스 체크아웃에서 MCP 서버를 실행](mcp/README.md#1-register-with-an-agent)하세요. [릴리스](https://github.com/wlsdks/ontology-atlas/releases)에 버전마다 파일과 체크섬이 있어요. GitHub에서 **Pre-release** 표시가 붙은 릴리스는 베타예요. 설치된 앱은 정식 릴리스로만 업데이트되기 때문에, 베타는 직접 내려받아 설치한 사람만 쓰게 돼요.
 
 ## 화면 둘러보기
 

@@ -202,6 +202,7 @@ export function DocsVaultAuditModal({
           <div
             id="docs-source-contract"
             ref={dialogRef}
+            // eslint-disable-next-line no-restricted-syntax -- a hand-built modal not yet moved to Dialog
             role="dialog"
             aria-modal="true"
             aria-labelledby="docs-audit-modal-title"

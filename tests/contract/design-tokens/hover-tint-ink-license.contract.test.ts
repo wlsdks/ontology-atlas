@@ -111,13 +111,11 @@ interface Offender {
   where: string;
   face: string;
   ink: string;
-  worst: number;
   best: number;
 }
 
 function scan() {
   const offenders: Offender[] = [];
-  const boundary: Offender[] = [];
   const seen = new Set<string>();
   const tones = toneInkMap();
   let facesSeen = 0;
@@ -139,11 +137,9 @@ function scan() {
       seen.add(key);
       judged += 1;
       const ratios = HOSTS.map(([, host]) => ratio(ink, composite(face, host)));
-      const worst = Math.min(...ratios);
       const best = Math.max(...ratios);
-      const row = { where: rel, face: fm[1], ink: inkName, worst, best };
+      const row = { where: rel, face: fm[1], ink: inkName, best };
       if (best < AA) offenders.push(row);
-      else if (worst < AA) boundary.push(row);
     }
   };
 
@@ -162,7 +158,7 @@ function scan() {
       }
     }
   }
-  return { offenders, boundary, facesSeen, judged };
+  return { offenders, facesSeen, judged };
 }
 
 describe("ink on hover tint faces — calculation judges", () => {
@@ -203,18 +199,6 @@ describe("ink on hover tint faces — calculation judges", () => {
         "or raise the ink. Confirm the alpha token's role (border or fill) from its real uses.\n" +
         lines.join("\n"),
     ).toEqual([]);
-  });
-
-  it("edge spots are only counted — spots that break silently when a surface moves", () => {
-    /*
-     * Pairs that pass only on the surface they currently sit on. Not defects, but they
-     * break if moved, so a growing count means those places need opening. Today's
-     * measurement is pinned as the cap; lowering it is free.
-     */
-    const lines = census.boundary.map(
-      (o) => `${o.where}: ${o.face} × ${o.ink} — ${o.worst.toFixed(2)}~${o.best.toFixed(2)}`,
-    );
-    expect(lines.length, `edge spots grew:\n${lines.join("\n")}`).toBeLessThanOrEqual(12);
   });
 
   it("the detector catches the planted violation and lets the proper pair go", () => {

@@ -347,6 +347,7 @@ export function AppSettingsMenu({
             >
               <div
                 ref={panelRef}
+                // eslint-disable-next-line no-restricted-syntax -- a hand-built modal not yet moved to Dialog
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby={titleId}

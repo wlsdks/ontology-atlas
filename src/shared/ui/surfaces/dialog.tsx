@@ -68,8 +68,8 @@ const DialogScrim = forwardRef<HTMLDivElement, ComponentProps<typeof motion.div>
  * The centred modal dialog. Focus trap, Escape, focus return, scroll lock, `aria-modal` and
  * scrim-click close are one package with no opt-out (WAI-ARIA APG, `.claude/rules/design.md`);
  * non-modal surfaces use `Surface` with `transientSurface("anchored")`. Tokens as ratified
- * in `docs/DECISIONS.md`; `role="dialog"` elsewhere is held
- * by `tests/contract/dialog-adoption-ratchet`.
+ * in `docs/DECISIONS.md`; a literal `role="dialog"` elsewhere is refused by lint
+ * (`handAssembledRoleSelectors` in `eslint.config.mjs`).
  */
 export function Dialog({
   open,

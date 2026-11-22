@@ -5,6 +5,7 @@ import https from "node:https";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { evaluateLocaleCluster, parseHead, parseSitemap } from "../web/check-seo-surface.mjs";
+import { splitUpdaterManifestVersion } from "../lib/release-tag.mjs";
 import { validateHostedUpdaterManifest } from "./stage-hosted-updater-manifest.mjs";
 
 // The expected copy is read from the shipped message catalog, not duplicated: a hand-copied string
@@ -170,7 +171,12 @@ function assertOkJson(page, path) {
   } catch (error) {
     throw new Error(`${path} is not valid JSON: ${error instanceof Error ? error.message : String(error)}`);
   }
-  const version = typeof value?.version === "string" ? value.version : "";
+  let version = "";
+  try {
+    version = splitUpdaterManifestVersion(value?.version).version;
+  } catch (error) {
+    throw new Error(`${path} ${error instanceof Error ? error.message : String(error)}`);
+  }
   validateHostedUpdaterManifest(value, `v${version}`);
   return value;
 }

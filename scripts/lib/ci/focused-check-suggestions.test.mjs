@@ -38,7 +38,7 @@ const SECURITY_COMMAND = SECURITY_RULES[0].command;
 const TEST_HYGIENE_COMMAND = 'pnpm exec vitest run tests/contract/ci-gates/test-title-language.contract.test.ts';
 const IME_ENTER_GUARD_COMMAND = 'pnpm exec vitest run tests/contract/controls/ime-enter-guard.contract.test.ts';
 const TOKEN_GATES_COMMAND =
-  'pnpm exec vitest run tests/contract/design-tokens/undeclared-token-ref.contract.test.ts tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts';
+  'pnpm exec vitest run tests/contract/design-tokens/undeclared-token-ref.contract.test.ts tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts tests/contract/design-tokens/quaternary-ink-surface.contract.test.ts';
 
 // Import-graph rows are facts about this repository's imports; one test below owns them.
 function ruleCommands(result) {
