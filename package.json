@@ -74,6 +74,7 @@
     "mcp:catalogue": "node scripts/registry-snapshots/build-mcp-catalogue.mjs",
     "mcp:catalogue:check": "node scripts/registry-snapshots/build-mcp-catalogue.mjs --check && node --test scripts/registry-snapshots/build-mcp-catalogue.test.mjs",
     "acp:registry:check": "node scripts/registry-snapshots/build-acp-registry.mjs --check",
+    "mcp:tools-list-bytes": "node mcp/scripts/tools-list-bytes.mjs",
     "mcp:verify-binary": "node scripts/packaging/verify-mcp-binary.mjs",
     "desktop:build:app": "node scripts/desktop/clean-tauri-macos-apps.mjs && pnpm mcp:build-binary && pnpm tauri build --bundles app",
     "desktop:build:app:prebuilt": "node scripts/desktop/clean-tauri-macos-apps.mjs && pnpm mcp:build-binary && pnpm tauri build --bundles app --config '{\"build\":{\"beforeBuildCommand\":\"node scripts/desktop/stage-desktop-frontend.mjs\"}}'",

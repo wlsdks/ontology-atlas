@@ -181,6 +181,7 @@ What each contributor command answers, sorted by command.
 | `pnpm integration:start <topic>` | Create `integration/<topic>-<yyyy-mm-dd>` from `origin/main` in `.claude/worktrees/integration-<topic>`, push it, and install that worktree offline; no CI runs |
 | `pnpm knip` | Dead files, exports and types |
 | `pnpm licenses:check` · `pnpm notice:build` · `pnpm notice:check` | Shipped packages are on the license allow-list, and `NOTICE.md` is current ([rules](engineering/third-party-code.md)) |
+| `pnpm mcp:tools-list-bytes` | What `tools/list` costs a connected agent, read from the booted stdio server for the full and the construction profile: per tool, the model-read bytes (name, description and input schema), the output schema and the whole entry, then the totals; `-- --json` prints the same as JSON |
 | `pnpm messages:build` · `pnpm messages:check` · `pnpm messages:adopt` | Compose `messages/<locale>.json` from one file per namespace, prove it current, and carry an old branch's edits |
 | `pnpm messages:coverage -- --locale <code>` | Checks one locale's strings against `en`: arguments, plurals, script, keep-terms and typography |
 | `pnpm og:build` | Re-render the 1200×630 link-preview card for each locale into `public/og/` and `public/og-image.png` from the download headline; macOS for the Japanese and Chinese faces |
