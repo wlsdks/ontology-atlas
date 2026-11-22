@@ -10,7 +10,7 @@ import { WARDROBE } from './wardrobe.mjs';
 const ANCHOR = { crown: c => c.shift(80, 45), face: c => c.faceShift(), chest: c => c.shift(84, 84), back: c => c.shift(46, 58) };
 export const layersOf = piece => piece.parts.map(p0 => ({ layer: p0.layer, draw: ctx => {
   const sh = ctx.shapes, po = ctx.pose, droop = sh.brow === 'worry' || sh.mouth === 'frown' || (sh.eyes === 'closed' && (po.sq ?? 0) >= 4), a = p0.alts;
-  const between = sh.between, p = !a ? p0 : a.droop ? (droop ? (between ? a.bent : a.droop) : p0) : (po.lift ?? 0) > 0 ? ((po.lift >> 1) % 2 ? (between ? a.halfUp : a.up) : (between ? a.halfDown : a.down)) : (po.sq ?? 0) >= 3 ? (between ? a.halfDown : a.down) : (po.sq ?? 0) <= -2 ? (between ? a.halfUp : a.up) : p0;
+  const between = sh.between, p = !a ? p0 : sh.angle && a.turned ? a.turned : a.droop ? (droop ? (between ? a.bent : a.droop) : p0) : (po.lift ?? 0) > 0 ? ((po.lift >> 1) % 2 ? (between ? a.halfUp : a.up) : (between ? a.halfDown : a.down)) : (po.sq ?? 0) >= 3 ? (between ? a.halfDown : a.down) : (po.sq ?? 0) <= -2 ? (between ? a.halfUp : a.up) : p0;
   const [dx, dy] = ANCHOR[p0.anchor](ctx); ctx.put(p.s, p.x + Math.round(dx), p.y + Math.round(dy), p0.layer === 'skin' ? (x, y) => { const c = ctx.canvas[ctx.L(x, y)]; return c === STONE || c === IVORY; } : undefined); } }));
 const rig = await makeRig(), cell = (pose, shapes, layers) => { const c = new Uint8Array(N * N), d = drawMoru(rig, pose, shapes, layers); blitMoru(c, N, d, 0, { flip: !!shapes.flip }); return { c, d }; };
 const blue = c => c === MUTED || c === INDIGO || c === LIGHT, ink = c => c === INK || c === MARK;

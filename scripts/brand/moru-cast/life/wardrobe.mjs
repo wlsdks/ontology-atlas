@@ -23,7 +23,7 @@ export const WARDROBE = [
   { id: 'horns', slot: 'head', title: 'Horns', parts: from('horn', o => o.map(crown)) },
   { id: 'unicorn-horn', slot: 'head', title: 'Horn and mane', parts: from('unicorn', o => o.map((p, i) => soft(crown(p), i === 0 ? 2 : 0))) },
   { id: 'dragon-horns', slot: 'head', title: 'Small horns', parts: from('dragon', o => o.filter(p => p.layer === 'front' && p.y < 40).map(crown)) },
-  // The ears fall in three pictures (up, bent, down) and the wing beats in five; the runtime steps one picture a pose.
+  // The ears fall in three pictures (up, bent, down) and the wing beats in five; the runtime steps one picture a pose On a turned pose the wing is its full leaf.
   { id: 'ears', slot: 'head', title: 'Long ears', parts: (() => { const at = level => from('rabbit', o => o.map(p => ({ ...crown(p), tint: true })), { earLevel: level }), bent = at(1), down = at(2); return at(0).map((p, i) => soft(p, 2, { bent: bent[i], droop: down[i] })); })() },
   { id: 'hard-hat', slot: 'head', title: 'Hard hat', parts: from('builder', o => o.filter(p => p.layer !== 'skin').map(crown)) },
   { id: 'beanie', slot: 'head', title: 'Beanie', parts: [part(u2(['    ..    ', '   ....   ', '  llllll  ', ' iiiiiiii ', 'iiiiiiiiii', 'iiiiiiiiii', 'mlmlmlmlml']), 68, 31, 'crown')] },
@@ -37,7 +37,7 @@ export const WARDROBE = [
   { id: 'cape', slot: 'body', title: 'Cape', parts: [part(flat(CAPE), 34, 50, 'back', 'skin'), part(u2(['ii ', 'imi', ' ii', '  i']), 28, 84, 'back', 'behind'), part(flat(['...', '.l.', '...']), 62, 50, 'back', 'skin')] },
   { id: 'apron', slot: 'body', title: 'Apron', parts: [part(flat(['  llllllllllll  ', ' llllllllllllll ', 'llllllllllllllll', 'llll......llllll', 'llll......llllll', 'llll......llllll', 'llllllllllllllll', 'llllllllllllllll']), 66, 78, 'chest', 'skin')] },
   { id: 'neckerchief', slot: 'body', title: 'Neckerchief', parts: [part(flat(['ppppppppppp', ' ppppppppp ', '  ppppppp  ', '   ppppp   ', '    ppp    ', '     p     ']), 72, 76, 'chest', 'skin')] },
-  { id: 'wing', slot: 'body', title: 'Small wing', parts: (() => { const wing = level => from('dragon', o => o.filter(p => p.layer === 'behind').map(p => part(p.s, p.x, p.y, 'back', 'behind')), { wingLevel: level })[0]; return [soft(wing(0), 0, { up: wing(2), halfUp: wing(1), halfDown: wing(-1), down: wing(-2) })]; })() },
+  { id: 'wing', slot: 'body', title: 'Small wing', parts: (() => { const wing = level => from('dragon', o => o.filter(p => p.layer === 'behind').map(p => part(p.s, p.x, p.y, 'back', 'behind')), { wingLevel: level })[0]; return [soft(wing(0), 0, { up: wing(2), halfUp: wing(1), halfDown: wing(-1), down: wing(-2), turned: from('dragon', o => o.filter(p => p.layer === 'behind').map(p => part(p.s, p.x, p.y, 'back', 'behind')), { angle: 90 })[0] })]; })() },
   { id: 'back-plates', slot: 'body', title: 'Back plates', parts: from('dragon', o => o.filter(p => p.layer === 'front' && p.y >= 40).map(p => part(p.s, p.x + 6, p.y - 6, 'back'))) },
   // ---- accessory ----
   { id: 'glasses', slot: 'accessory', title: 'Square glasses', parts: [part(GLASSES, 62, 58, 'face')] },

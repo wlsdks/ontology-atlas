@@ -128,6 +128,8 @@ const WING_MID = c1(['            ', '            ', '            ', ' ll       
 const WING_DOWN = c1(['            ', '            ', '            ', '            ', '            ', 'llllll      ', 'liliiillll  ', 'liliiiiilll ', 'l l il iiill', '     l     l']);
 const WING_HALF_UP = c1(['            ', '  ll        ', ' llll       ', ' lilill     ', 'lliilill    ', 'liiiliill   ', 'liiiiliilll ', 'li iiliiiill', 'l   iil  ill', '      l    l']);
 const WING_HALF_DOWN = c1(['            ', '            ', '            ', '            ', ' ll         ', 'llllll      ', 'liliiillll  ', 'liiiliiilll ', 'l i il iiill', '     l     l']);
+// On a turned pose (the roll) the fingers of the wing break up, so it is worn as one broad wing with a single notch: a rim and a core, each wide enough to turn whole.
+const WING_TURNED = c1(['   lll      ', '  lllll     ', ' lliilll    ', 'lliiiilll   ', 'lliiiiiilll ', 'lliiiiiiilll', 'lliiilliiill', ' llill lliil', '  ll    lll ', '            ']);
 /** Wing shapes from pressed down (-2) through level (0) to raised (2). */
 const WINGS = { '-2': WING_DOWN, '-1': WING_HALF_DOWN, 0: WING_MID, 1: WING_HALF_UP, 2: WING_UP };
 /** Where a pose wants the wing: up on a stretch or a rise, pressed down by a squash, beating in the air. */
@@ -149,23 +151,25 @@ const BENT = ['         ', '         ', '         ', '    sssss', '  sspppps', '
 const EAR_R_BENT = c1(BENT), EAR_L_BENT = c1(BENT.map(r => [...r].reverse().join('')));
 /** Where a pose wants the ears: 0 up, 2 fallen to the sides. */
 export const earTarget = (p, shapes) => shapes.brow === 'worry' || shapes.mouth === 'frown' || (shapes.eyes === 'closed' && (p.sq ?? 0) >= 4) ? 2 : 0;
+/** How far a loosely worn piece hangs behind the body on this pose: `near` a pose late, `far` two poses late. A clip sets it; a still pose has none. */
+const trailOf = (ctx, which) => ctx.shapes.trail?.[which] ?? [0, 0];
 const crownLayer = (sprite, x, y, layer = 'front') => ({ layer, draw: ctx => { const [dx, dy] = ctx.shift(80, 45); ctx.put(typeof sprite === 'function' ? sprite(ctx) : sprite, x + dx, y + dy); } });
 export const COSTUMES = {
   base: { title: 'Moru', line: 'The original: calm, curious, first to look.', layers: [] },
   horn: { title: 'Horn Moru', line: 'Headstrong: lowers the horns and pushes the hardest task first.', layers: [crownLayer(HORN_L, 62, 36), crownLayer(HORN_R, 86, 36)] },
   unicorn: { title: 'Unicorn Moru', line: 'Dreamer: sure every branch ends well, and a little vain about the mane.', layers: [
     // The mane is hair: it hangs back from a lean, lifts off the neck on the way down and lies flat under a squash.
-    { layer: 'front', draw: ctx => { const [dx, dy] = ctx.shift(80, 45), p = ctx.pose, trail = -Math.max(-3, Math.min(3, Math.round((p.fx ?? 0) / 3))) - ((p.lift ?? 0) > 0 ? 2 : 0), hang = (p.lift ?? 0) > 0 ? 2 : (p.sq ?? 0) >= 3 ? 1 : (p.sq ?? 0) <= -3 ? -1 : 0; ctx.put(MANE, 54 + dx + trail, 38 + dy + hang); } },
+    { layer: 'front', draw: ctx => { const [dx, dy] = ctx.shift(80, 45), p = ctx.pose, trail = -Math.max(-3, Math.min(3, Math.round((p.fx ?? 0) / 3))) - ((p.lift ?? 0) > 0 ? 2 : 0), hang = (p.lift ?? 0) > 0 ? 2 : (p.sq ?? 0) >= 3 ? 1 : (p.sq ?? 0) <= -3 ? -1 : 0; ctx.put(MANE, 54 + dx + trail + trailOf(ctx, 'near')[0], 38 + dy + hang); } },
     crownLayer(UNI_HORN, 76, 30)] },
   dragon: { title: 'Dragon Moru', line: 'Tiny and fierce: guards the crates and flutters when excited.', layers: [
     // The wing flexes with the body unless a clip poses it: up on a stretch or a rise, pressed down by a squash, beating in the air.
-    { layer: 'behind', draw: ctx => { const [dx, dy] = ctx.shift(52, 58), level = ctx.shapes.wingLevel ?? wingTarget(ctx.pose, ctx.shapes); ctx.put(WINGS[level], 32 + dx, 30 + dy); } },
+    { layer: 'behind', draw: ctx => { const [sx, sy] = ctx.shift(52, 58), [tx, ty] = trailOf(ctx, 'near'), dx = sx + tx, dy = sy + ty, level = ctx.shapes.wingLevel ?? wingTarget(ctx.pose, ctx.shapes); ctx.put(ctx.shapes.angle ? WING_TURNED : WINGS[level], 32 + dx, 30 + dy); } },
     crownLayer(DRAGON_HORN, 62, 36), crownLayer(DRAGON_HORN, 78, 34),
     { layer: 'front', draw: ctx => { for (const [x, y] of [[42, 52], [36, 61]]) { const [dx, dy] = ctx.shift(x + 8, y + 10); ctx.put(PLATE, x + dx, y + dy); } } },
   ] },
   rabbit: { title: 'Rabbit Moru', line: 'Quick and jumpy: hears a merge before anyone and bounds over.', layers: [{ layer: 'front', draw: ctx => {
     // Ears fall over two poses: upright, bent at the middle, lying to the sides.
-    const [dx, dy] = ctx.shift(80, 45), level = ctx.shapes.earLevel ?? earTarget(ctx.pose, ctx.shapes), down = level === 2, bent = level === 1;
+    const [sx, sy] = ctx.shift(80, 45), [tx, ty] = trailOf(ctx, 'near'), dx = sx + tx, dy = sy + ty, level = ctx.shapes.earLevel ?? earTarget(ctx.pose, ctx.shapes), down = level === 2, bent = level === 1;
     ctx.put(down ? EAR_R_DROOP : bent ? EAR_R_BENT : ctx.shapes.earFlop ? EAR_R_FLOP : EAR_R, 80 + dx + (down ? 6 : bent ? 2 : 0), 26 + dy + (down ? 5 : bent ? 1 : 0));
     ctx.put(down ? EAR_L_DROOP : bent ? EAR_L_BENT : EAR_L, 62 + dx - (down ? EAR_L_DROOP.w - EAR_L.w + 6 : bent ? EAR_L_BENT.w - EAR_L.w + 2 : 0), 26 + dy + (down ? 5 : bent ? 1 : 0)); } }] },
   builder: { title: 'Builder Moru', line: 'Practical: hard hat on, checks the hooks twice, trusts the wrench.', layers: [
@@ -174,7 +178,7 @@ export const COSTUMES = {
   ] },
   scholar: { title: 'Scholar Moru', line: 'Bookish: files every card, and looks over the glasses when unsure.', layers: [
     { layer: 'skin', draw: ctx => { const [dx, dy] = ctx.shift(80, 82); for (let y = 79; y <= 86; y++) for (let x = 52; x <= 112; x++) if (ctx.onBody(x + dx, y + dy)) ctx.canvas[ctx.L(x + dx, y + dy)] = (y === 79) ? INK : (y >= 85) ? MUTED : INDIGO; } },
-    { layer: 'top', draw: ctx => { const [dx, dy] = ctx.shift(60, 86); ctx.put(SCARF_END, 56 + dx, 80 + dy); } },
+    { layer: 'top', draw: ctx => { const [dx, dy] = ctx.shift(60, 86), [tx, ty] = trailOf(ctx, 'far'); ctx.put(SCARF_END, 56 + dx + tx, 80 + dy + ty); } },
     { layer: 'front', draw: ctx => { const [fx, fy] = ctx.faceShift(), dx = even(fx), dy = even(fy); ctx.put(RIM, 62 + dx, 58 + dy); ctx.put(RIM, 86 + dx, 58 + dy); for (let x = 78; x < 86; x++) for (const yy of [62, 63]) ctx.canvas[ctx.L(x + dx, yy + dy)] = INDIGO; } },
   ] },
 };

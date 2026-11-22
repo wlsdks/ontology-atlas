@@ -95,15 +95,21 @@ export async function renderClip(clip) {
     for (let f = level.length - 2; f >= 0; f--) if (level[f] !== null && level[f + 1] !== null) level[f] = Math.max(level[f + 1] - 1, Math.min(level[f + 1] + 1, level[f]));
     level.forEach((v, f) => { if (v !== null) track[f] = { pose: track[f].pose, shapes: { ...track[f].shapes, [want[0]]: v } }; });
   }
-  const restAnchor = {};
+  const restAnchor = {}, trails = {};
   for (const actor of clip.actors) { const s = new Uint8Array(W * H); restAnchor[actor.name] = blitMoru(s, W, drawMoru(r), actor.ox, { flip: !!actor.flip }); }
   for (let f = 0; f < clip.frames; f++) {
     const scene = new Uint8Array(W * H), drawn = {}, anchors = {};
     for (const actor of clip.actors) {
       const { pose, shapes } = tracks[actor.name][f];
-      drawn[actor.name] = { actor, pose, shapes, flip: !!actor.flip !== !!shapes.flip, full: tinted(drawMoru(r, pose, shapes, costumeLayers(actor.costume)), actor.palette ?? actor.costume), bare: drawMoru(r, pose, shapes) };
-      const probe = new Uint8Array(W * H); anchors[actor.name] = blitMoru(probe, W, drawn[actor.name].bare, actor.ox, { flip: drawn[actor.name].flip });
+      const flip = !!actor.flip !== !!shapes.flip, bare = drawMoru(r, pose, shapes), probe = new Uint8Array(W * H); anchors[actor.name] = blitMoru(probe, W, bare, actor.ox, { flip });
       solo[actor.name].push(probe);
+      // What is worn loosely follows the body late: the ears and the wing are where the head was a pose ago, the scarf's end where the back was two
+      // poses ago, each by 2px at most. Nothing trails on the first and last pose (the shared neutral), through a turn, or on a turned body.
+      const seen = (trails[actor.name] ??= []), now = { flip, turned: !!shapes.angle, crown: anchors[actor.name].crown, back: anchors[actor.name].back }; seen.push(now);
+      const behind = (ago, key) => { const was = seen[f - ago] ?? seen[0]; if (f === 0 || f === clip.frames - 1 || now.turned || seen.slice(Math.max(0, f - ago), f).some(t => t.flip !== flip || t.turned)) return [0, 0];
+        return [Math.max(-2, Math.min(2, (was[key][0] - now[key][0]) * (flip ? -1 : 1))), Math.max(-1, Math.min(2, was[key][1] - now[key][1]))]; };
+      const trail = actor.costume ? { near: behind(1, 'crown'), far: behind(2, 'back') } : null;
+      drawn[actor.name] = { actor, pose, shapes, flip, full: tinted(drawMoru(r, pose, trail ? { ...shapes, trail } : shapes, costumeLayers(actor.costume)), actor.palette ?? actor.costume), bare };
     }
     const api = { f, a: anchors, rest: restAnchor, W, scene, pose: n => drawn[n].pose,
       put: (s, x, y, opt = {}) => stamp(scene, W, opt.flip ? flipSprite(s) : s, opt.free ? Math.round(x) : even(x), opt.free ? Math.round(y) : even(y), opt.clipY ? (xx, yy) => yy < opt.clipY : undefined),
