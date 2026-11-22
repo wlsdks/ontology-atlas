@@ -6,8 +6,6 @@
   },
   "ruler": {
     "prePush": "pre-push",
-    "pr": "PR",
-    "ci": "CI",
     "main": "main"
   },
   "tool": {
@@ -62,7 +60,6 @@
     "unreadableLock": "Atlas가 읽을 수 있는 세션 이름이 잠금에 없어요"
   },
   "belt": {
-    "commits": "커밋",
     "notRead": "이후 단계는 아직 읽지 못해요"
   },
   "shelf": {

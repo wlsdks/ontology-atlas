@@ -6,8 +6,6 @@
   },
   "ruler": {
     "prePush": "pre-push",
-    "pr": "PR",
-    "ci": "CI",
     "main": "main"
   },
   "tool": {
@@ -62,7 +60,6 @@
     "unreadableLock": "The lock names no session Atlas can read"
   },
   "belt": {
-    "commits": "commits",
     "notRead": "Later steps are not read yet"
   },
   "shelf": {

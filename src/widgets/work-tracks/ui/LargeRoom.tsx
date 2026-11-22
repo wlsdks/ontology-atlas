@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
-import { KNOWN_UNTIL, STAGE_AT, UNREAD_STATIONS, roomLook } from '../model/room-look';
+import { KNOWN_UNTIL, STAGE_AT, cartLoad, roomLook } from '../model/room-look';
 import { BELT_H, pairFit, type RoomUnit } from '../model/building-layout';
 import { RoomMoru } from './RoomMoru';
 import { SwapText } from './SwapText';
@@ -13,7 +13,7 @@ import styles from './rooms.module.css';
 type RoomCopy = ReturnType<typeof useRoomCopy>;
 
 /** Rows of a terminal, as widths of its three runs; drawn twice so the scroll wraps unseen. */
-const TERMINAL_LINES = [[18, 34], [8, 22, 30], [30, 12], [12, 40, 14], [22, 18], [8, 30, 26], [36, 10], [14, 24, 18]];
+const TERMINAL_LINES = [[18, 34], [8, 22, 30], [30, 12], [12, 40, 14], [22, 18], [8, 30, 26]];
 
 const LABEL = 'text-label leading-label';
 const BODY = 'text-body leading-body';
@@ -60,6 +60,7 @@ function Belt({ room }: { room: RoomEntry }) {
   const at = STAGE_AT[room.stage];
   const look = roomLook(room.state);
   const arrived = room.stage === 'main';
+  const load = room.track.missing ? { crates: 1, more: 0 } : cartLoad(room.track.ahead, arrived);
   return (
     <div className={styles.belt}>
       <div className={styles.track} data-arrived={arrived}>
@@ -77,14 +78,6 @@ function Belt({ room }: { room: RoomEntry }) {
             </span>
           ) : null}
         </div>
-        <span className={cn(styles.station, LABEL)} data-done={at >= STAGE_AT.commits} data-now={room.stage === 'commits'} style={{ left: `${STAGE_AT.commits * 100}%` }}>
-          {t('belt.commits')}
-        </span>
-        {UNREAD_STATIONS.map(station => (
-          <span key={station.id} className={cn(styles.station, LABEL)} data-done={arrived} data-unknown={!arrived} style={{ left: `${station.at * 100}%` }}>
-            {t(station.id === 'push' ? 'band.seam' : `ruler.${station.id}`)}
-          </span>
-        ))}
         <span className={cn(styles.station, styles.stationMain, LABEL, 'font-mono font-[var(--font-weight-strong)]')} style={{ left: '100%' }}>
           {t('ruler.main')}
         </span>
@@ -93,7 +86,10 @@ function Belt({ room }: { room: RoomEntry }) {
           <i className={styles.hatchLight} />
         </i>
         <div className={styles.carriage} style={{ transform: `translateX(${at * 100}%)` }}>
-          <i className={styles.crate} data-kind={look.crate} />
+          <span className={styles.cart} data-testid="work-room-cart" data-crates={load.crates + load.more}>
+            {Array.from({ length: load.crates }, (_, index) => <i key={index} className={styles.crate} data-kind={look.crate} />)}
+            {load.more > 0 ? <span className={cn(styles.cartMore, LABEL, 'font-[var(--font-weight-strong)] tabular-nums')}>+{load.more}</span> : null}
+          </span>
         </div>
       </div>
     </div>

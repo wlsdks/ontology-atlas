@@ -2,7 +2,7 @@
 
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
-import { STAGE_AT, roomLook } from '../model/room-look';
+import { roomLook } from '../model/room-look';
 import { RoomMoru } from './RoomMoru';
 import { SwapText } from './SwapText';
 import type { StatusTone, useRoomCopy } from './use-room-copy';
@@ -17,11 +17,10 @@ const TONE: Record<StatusTone, string> = {
   plain: 'text-[color:var(--color-text-secondary)]',
 };
 
-/** A worktree on a session's floor: a small Moru, the branch, one status line and its belt. */
+/** A worktree on a session's floor: a small Moru, the branch and one status line; a merged one shows its crate in main. */
 export function MiniRoom({ room, copy, tint, showOwner }: { room: RoomEntry; copy: RoomCopy; tint: string | null; showOwner: boolean }) {
   const look = roomLook(room.state);
   const status = copy.status(room);
-  const at = STAGE_AT[room.stage];
   return (
     <div className={styles.mini} data-lit={look.running}>
       <i className={styles.miniLamp} />
@@ -45,13 +44,13 @@ export function MiniRoom({ room, copy, tint, showOwner }: { room: RoomEntry; cop
           <span className={cn(styles.ownerText, 'text-label leading-label')}>{copy.owner(room)}</span>
         ) : null}
       </div>
-      <div className={styles.miniFloor} data-arrived={room.stage === 'main'}>
-        <i className={styles.miniRail}><i style={{ transform: `scaleX(${look.cast === 'none' ? 0 : at})` }} /></i>
-        {look.cast === 'none' ? null : (
-          <span className={styles.miniCarriage} style={{ transform: `translateX(${at * 100}%)` }}><i className={styles.miniCrate} /></span>
-        )}
-        <i className={styles.miniHatch}><i /></i>
-      </div>
+      {room.stage === 'main' ? (
+        <div className={styles.miniFloor} data-arrived>
+          <i className={styles.miniRail}><i style={{ transform: 'scaleX(1)' }} /></i>
+          <span className={styles.miniCarriage} style={{ transform: 'translateX(100%)' }}><i className={styles.miniCrate} /></span>
+          <i className={styles.miniHatch}><i /></i>
+        </div>
+      ) : null}
     </div>
   );
 }

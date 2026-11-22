@@ -6,8 +6,6 @@
   },
   "ruler": {
     "prePush": "pre-push",
-    "pr": "PR",
-    "ci": "CI",
     "main": "main"
   },
   "tool": {
@@ -62,7 +60,6 @@
     "unreadableLock": "Atlasが読めるセッション名がロックにありません"
   },
   "belt": {
-    "commits": "コミット",
     "notRead": "以降の段階はまだ読めません"
   },
   "shelf": {

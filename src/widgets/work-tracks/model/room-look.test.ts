@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkStatusSnapshot, WorktreeRow } from '@/shared/lib/work-status/tauri-work-status';
 import { buildWorkTracks, planRooms, type RoomPlan } from '@/shared/lib/work-status/work-tracks';
-import { retireeOf, roomLook, withRetirees } from './room-look';
+import { cartLoad, retireeOf, roomLook, withRetirees } from './room-look';
 
 const NOW_MS = 1_795_260_000_000;
 
@@ -56,5 +56,14 @@ describe('withRetirees', () => {
   it('returns the plan untouched when nothing retires', () => {
     const current = plan([working('a')]);
     expect(withRetirees(current, [], 6)).toBe(current);
+  });
+});
+
+describe('cartLoad', () => {
+  it('carries one crate per commit up to six and counts the rest', () => {
+    expect(cartLoad(4, false)).toEqual({ crates: 4, more: 0 });
+    expect(cartLoad(9, false)).toEqual({ crates: 6, more: 3 });
+    expect(cartLoad(0, false)).toEqual({ crates: 0, more: 0 });
+    expect(cartLoad(0, true)).toEqual({ crates: 1, more: 0 });
   });
 });

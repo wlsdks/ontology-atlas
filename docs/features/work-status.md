@@ -78,10 +78,11 @@ the last row, so the stage has no hole; otherwise it waits on its floor, a
 stuck one under **No session** in warning amber. The stage reads in session
 order. A large room shows its branch on the wall sign (the only mono
 text), the holding session's name tag over Moru, a floor lamp lit only while
-something runs, a monitor with one figure or the state in words, and a belt
-that carries the worktree's crate toward the `main` hatch. The belt knows only
-the commit and `main`; pre-push, push, PR and CI are drawn dim as **not read
-yet**, and no value is invented for them. Two tools in one folder are the alarm:
+something runs, a monitor whose headline is the commit count (or the state in words), and a
+belt whose cart carries one crate per commit beyond the base branch, six at
+most and then `+n`, toward the `main` hatch. Past the commits the belt is
+dashed: Git does not tell pre-push, push, PR or CI yet, so no station or value
+is drawn for them. Two tools in one folder are the alarm:
 the room's light, lamp and monitor turn warning amber, the sign carries a `!`,
 and two Moru stand overlapped with both names. A held room with nothing seen running for five minutes
 dozes; a lock left behind shows a taped crate and a dark monitor; a missing
@@ -90,7 +91,8 @@ folder shows a dashed crate and the `git worktree prune` command as text.
 Rooms that do not fit the stage go to the **session floors** under it, one band
 per session in the order the sessions started, plus **No session**, each with
 its start time, worktree count and how many are working or need clean-up. Every
-mini room is the same size: half-size Moru, the branch and one status line.
+mini room is the same size: half-size Moru, the branch and one status line;
+only a merged one shows its crate in `main`.
 With six mini rooms or fewer they sit in one row without bands. When working
 rooms are on the floors, a line says how many.
 

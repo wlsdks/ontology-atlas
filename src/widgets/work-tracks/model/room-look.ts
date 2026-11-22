@@ -42,13 +42,17 @@ export function roomLook(state: RoomState): RoomLook {
 /** Where a stage puts the crate along the belt, as a fraction of its length. */
 export const STAGE_AT: Record<RoomStage, number> = { worktree: 0.04, commits: 0.2, main: 1 };
 
-/** The stations Git cannot tell yet; drawn dim, never with a value. */
-export const UNREAD_STATIONS = [
-  { id: 'prePush', at: 0.38 },
-  { id: 'push', at: 0.54 },
-  { id: 'pr', at: 0.68 },
-  { id: 'ci', at: 0.84 },
-] as const;
+/** The most crates a cart carries before the rest are counted as `+n`. */
+export const CART_CRATES = 6;
+
+/**
+ * The cart's load: one crate per commit beyond the base branch, at most six, and how many more.
+ * A merged worktree's cart still carries what it delivered, at least one crate.
+ */
+export function cartLoad(ahead: number | null, merged: boolean): { crates: number; more: number } {
+  const count = Math.max(ahead ?? 0, merged ? 1 : 0);
+  return { crates: Math.min(count, CART_CRATES), more: Math.max(0, count - CART_CRATES) };
+}
 
 /** Where the known part of the belt ends: the commits station, plus a step of rail. */
 export const KNOWN_UNTIL = 0.27;

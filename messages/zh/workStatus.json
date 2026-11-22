@@ -6,8 +6,6 @@
   },
   "ruler": {
     "prePush": "pre-push",
-    "pr": "PR",
-    "ci": "CI",
     "main": "main"
   },
   "tool": {
@@ -62,7 +60,6 @@
     "unreadableLock": "锁中没有 Atlas 能读取的会话名"
   },
   "belt": {
-    "commits": "提交",
     "notRead": "之后的步骤还读不到"
   },
   "shelf": {

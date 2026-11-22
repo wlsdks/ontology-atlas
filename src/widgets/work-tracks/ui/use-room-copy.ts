@@ -97,7 +97,7 @@ export function useRoomCopy(baseBranch: string, nowMs: number) {
             note: t('monitor.twoToolsNote'),
             terminal: false,
           }
-          : { ...quiet, label: t('monitor.running'), labelInk: true, aside: commits(track), figure: null, note: null, terminal: true };
+          : { ...quiet, label: t('monitor.running'), labelInk: true, aside: lastCommit(track), figure: commits(track), note: null, terminal: true };
       case 'resting':
         return { ...quiet, label: t('monitor.idle'), aside: lockedAt(track), figure: commits(track) ?? t('room.resting'), note: sinceBase(track) };
       case 'dozing':
@@ -127,5 +127,5 @@ export function useRoomCopy(baseBranch: string, nowMs: number) {
     }
   }
 
-  return { toolName, sessionName, owner, status, monitor, commitsLabel: t('belt.commits') };
+  return { toolName, sessionName, owner, status, monitor };
 }
