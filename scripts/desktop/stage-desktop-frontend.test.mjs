@@ -19,16 +19,16 @@ function makeExport(files) {
   return root;
 }
 
-function listFiles(dir) {
+function listFiles(directory) {
   return fs
-    .readdirSync(dir, { withFileTypes: true, recursive: true })
+    .readdirSync(directory, { withFileTypes: true, recursive: true })
     .filter((entry) => entry.isFile())
-    .map((entry) => path.relative(dir, path.join(entry.parentPath, entry.name)).split(path.sep).join("/"))
+    .map((entry) => path.relative(directory, path.join(entry.parentPath, entry.name)).split(path.sep).join("/"))
     .sort();
 }
 
 afterEach(() => {
-  for (const dir of tempDirs.splice(0)) fs.rmSync(dir, { recursive: true, force: true });
+  for (const directory of tempDirs.splice(0)) fs.rmSync(directory, { recursive: true, force: true });
 });
 
 describe("isDesktopFrontendPath", () => {

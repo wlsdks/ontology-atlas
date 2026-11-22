@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
@@ -9,42 +9,57 @@ import { MOTION } from '@/shared/motion';
 import { KeptPanelSeat, useFolderBusy } from './KeptPanelSeat';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { badgeClass } from '@/shared/ui/badge-class';
-import { RowButton, Surface } from '@/shared/ui';
+import { Surface } from '@/shared/ui';
 
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
 import { useTranscriptFollow } from '../model/use-transcript-follow';
 import { turnRequestOf } from '../model/turn-request';
 import { splitAppRequest } from './request-parts';
-import { TEXT_ARRIVING_MS, turnActivity } from './turn-activity';
-import { ComposerInput } from './chat-panel/ComposerInput';
-import { ChoicesRow, ComposerFooter } from './chat-panel/ComposerFooter';
-import { ReportedPlanNote, SeatedDetailDisclosure, TurnSilentNotice } from './chat-panel/ComposerNotices';
+import { turnActivity } from './turn-activity';
+import { ComposerInput } from './chat-panel/composer/ComposerInput';
+import { ChoicesRow, ComposerFooter } from './chat-panel/composer/ComposerFooter';
+import { ReportedPlanNote, SeatedDetailDisclosure, TurnSilentNotice } from './chat-panel/composer/composer-notices';
+import { SlashMenu } from './chat-panel/composer/SlashMenu';
 import { ErrorCard } from './chat-panel/ErrorCard';
 import { HistoryPopover } from './chat-panel/HistoryPopover';
-import { PermissionSlot } from './chat-panel/PermissionSlot';
+import { PermissionSlot } from './chat-panel/permission/PermissionSlot';
 import { PresentationSurface } from './chat-panel/PresentationSurface';
-import { TranscriptOffers } from './chat-panel/TranscriptOffers';
-import { TranscriptPane } from './chat-panel/TranscriptPane';
-import { TranscriptRows } from './chat-panel/TranscriptRows';
-import { TurnWorkStage, type TurnWork } from './chat-panel/TurnWorkStage';
-import { ConnectStoppedState, EmptyState, FolderBusyState, StartingState } from './chat-panel/TranscriptStates';
-import type { AcpChatPanelProps, HeldRequest } from './chat-panel/types';
-import { useHistoryEscape, useHistoryMenu, useSlashMenu } from './chat-panel/use-composer-menus';
-import { useComposerSizing } from './chat-panel/use-composer-sizing';
-import { useOpeningRequest } from './chat-panel/use-opening-request';
-import { usePermissionReview } from './chat-panel/use-permission-review';
-import { usePrefillSeating } from './chat-panel/use-prefill-seating';
+import { TranscriptOffers } from './chat-panel/transcript-pane/TranscriptOffers';
+import { TranscriptPane } from './chat-panel/transcript-pane/TranscriptPane';
+import { TranscriptRows } from './chat-panel/transcript-pane/TranscriptRows';
+import { TurnWorkStage, type TurnWork } from './chat-panel/turn/TurnWorkStage';
+import { ConnectStoppedState, EmptyState, FolderBusyState, StartingState } from './chat-panel/transcript-pane/transcript-states';
+import type { AcpChatPanelProps } from './chat-panel/chat-panel-props';
+import { useHistoryEscape, useHistoryMenu, useSlashMenu } from './chat-panel/composer/use-composer-menus';
+import { useComposerSizing } from './chat-panel/composer/use-composer-sizing';
+import { planSubmit } from './chat-panel/composer/outgoing-request';
+import { toolPickerOptions, toolPickerValueOf } from './chat-panel/composer/tool-picker';
+import { useHeldRequest } from './chat-panel/composer/use-held-request';
+import { useOpeningRequest } from './chat-panel/composer/use-opening-request';
+import { usePermissionReview } from './chat-panel/permission/use-permission-review';
+import { usePrefillSeating } from './chat-panel/composer/use-prefill-seating';
 import { usePresentation } from './chat-panel/use-presentation';
-import { useRelationPreview } from './chat-panel/use-relation-preview';
-import { useTranscriptModel } from './chat-panel/use-transcript-model';
-import { useTranscriptSignals } from './chat-panel/use-transcript-signals';
-import { useTurnCapture } from './chat-panel/use-turn-capture';
-import { useTurnReports } from './chat-panel/use-turn-reports';
-import { useTurnHandover } from './chat-panel/use-turn-handover';
-import { useTurnClock, useTurnSilence } from './chat-panel/use-turn-timing';
+import { useRelationPreview } from './chat-panel/permission/use-relation-preview';
+import { useTranscriptModel } from './chat-panel/transcript-pane/use-transcript-model';
+import { useTranscriptSignals } from './chat-panel/transcript-pane/use-transcript-signals';
+import { useTurnCapture } from './chat-panel/turn/use-turn-capture';
+import { useTurnReports } from './chat-panel/turn/use-turn-reports';
+import { useTurnHandover } from './chat-panel/turn/use-turn-handover';
+import { usePersonTurns } from './chat-panel/turn/use-person-turns';
+import {
+  displayStatusOf,
+  isAwaitingAnswer,
+  isTextArriving,
+  isTurnStillWanted,
+  stoppedWithoutAnswer as hasStoppedWithoutAnswer,
+  turnClockPhaseOf,
+  turnWorkPhaseOf,
+} from './chat-panel/turn/turn-state';
+import { troubleHintKeyOf } from './chat-panel/trouble-hint-key';
+import { useTurnClock, useTurnSilence } from './chat-panel/turn/use-turn-timing';
 
 export type { AcpMapIntent } from '@/features/acp-session';
-export type { AcpOntologyRelationPreview } from './chat-panel/types';
+export type { AcpOntologyRelationPreview } from './chat-panel/chat-panel-props';
 
 export function AcpChatPanelBody({
   runtimeId,
@@ -196,9 +211,7 @@ export function AcpChatPanelBody({
 
   const trouble = error ? readAcpTrouble(error, diagnostics) : null;
   const canChooseAnotherTool = runtimes.length > 1 && Boolean(onRuntimeChange);
-  const troubleHintKey = trouble?.kind === 'limit' && !canChooseAnotherTool
-    ? 'trouble.limit.hintOnlyTool'
-    : `trouble.${trouble?.kind ?? 'unknown'}.hint`;
+  const troubleHintKey = troubleHintKeyOf(trouble, canChooseAnotherTool);
   const doctor = useAgentDoctor(runtimeId);
   const showDoctor = Boolean(runtimeId) && isAgentDoctorAvailable();
 
@@ -259,52 +272,32 @@ export function AcpChatPanelBody({
     setSlashDismissed(true);
     inputRef.current?.focus();
   };
-  const latestUserEventId = useMemo(() => {
-    for (let index = events.length - 1; index >= 0; index -= 1) {
-      if (events[index].kind === 'user') return events[index].id;
-    }
-    return null;
-  }, [events]);
-  // Next steps follow only a turn the person started, typed or pressed; an app-composed request
-  // (an opening door, an investigation) and a reopened conversation get none.
-  const [personSendFrom, setPersonSendFrom] = useState<{ after: string | null } | null>(null);
-  const [personTurnIds, setPersonTurnIds] = useState<ReadonlySet<string>>(() => new Set());
-  if (personSendFrom && latestUserEventId !== null && latestUserEventId !== personSendFrom.after) {
-    setPersonTurnIds((previous) => new Set(previous).add(latestUserEventId));
-    setPersonSendFrom(null);
-  }
-  // Done for now holds until the person's next typed turn.
-  const [nextStepsDismissed, setNextStepsDismissed] = useState(false);
-  const [cancelledWaitTurnId, setCancelledWaitTurnId] = useState<string | null>(null);
-  const sendAsPerson = useCallback((text: string) => {
-    setPersonSendFrom({ after: latestUserEventId });
-    setPresentationOpen(false);
-    onPresentationVisibilityChange?.(false);
-    void send(text);
-  }, [latestUserEventId, onPresentationVisibilityChange, send]);
+  const {
+    nextSteps,
+    postTurnNextSteps,
+    setNextStepsDismissed,
+    cancelledWaitTurnId,
+    setCancelledWaitTurnId,
+    sendAsPerson,
+  } = usePersonTurns({
+    events,
+    suggestions,
+    send,
+    setPresentationOpen,
+    onPresentationVisibilityChange,
+  });
 
   const connecting = status === 'starting' && !connectStopped;
-  const [heldRequest, setHeldRequest] = useState<HeldRequest | null>(null);
-  const returnHeldToComposer = useCallback((held: HeldRequest) => {
-    setHeldRequest(null);
-    setDraft((current) => (current.trim() ? `${held.lead}\n\n${current}` : held.lead));
-    setSeatedDetail((current) => current ?? held.seatedDetail);
-  }, [setSeatedDetail]);
-  // Held only for the agent and folder it was written to, and only while that agent is on its way.
-  const heldStillMeant = heldRequest !== null
-    && heldRequest.runtimeId === runtimeId
-    && heldRequest.vaultRoot === vaultRoot
-    && !connectStopped
-    && (status === 'starting' || status === 'idle' || status === 'ready');
-  if (heldRequest && !heldStillMeant) returnHeldToComposer(heldRequest);
-  const sendHeldRequest = useCallback((held: HeldRequest) => {
-    setHeldRequest(null);
-    setNextStepsDismissed(false);
-    sendAsPerson(held.text);
-  }, [sendAsPerson]);
-  const returnHeld = useCallback(() => {
-    if (heldRequest) returnHeldToComposer(heldRequest);
-  }, [heldRequest, returnHeldToComposer]);
+  const { heldRequest, setHeldRequest, sendHeldRequest, returnHeld } = useHeldRequest({
+    runtimeId,
+    vaultRoot,
+    status,
+    connectStopped,
+    setDraft,
+    setSeatedDetail,
+    sendAsPerson,
+    setNextStepsDismissed,
+  });
 
   const { restartedOpeningNonceRef, openingNonce, openingWaiting } = useOpeningRequest({
     openingRequest,
@@ -339,14 +332,6 @@ export function AcpChatPanelBody({
     if (status !== 'ready') return;
     sendAsPerson(request);
   };
-  const nextSteps = nextStepsDismissed ? [] : suggestions;
-  const postTurnNextSteps =
-    latestUserEventId !== null
-    && personTurnIds.has(latestUserEventId)
-    && latestUserEventId !== cancelledWaitTurnId
-      ? nextSteps
-      : [];
-
   useEffect(() => {
     if (!sessionEnabled || connectStoppedRef.current) return;
     void start();
@@ -370,31 +355,23 @@ export function AcpChatPanelBody({
   useComposerSizing({ draft, inputRef, mirrorRef, panelRef, composerFocusRequest });
 
   const submit = useCallback(() => {
-    const lead = draft.trim();
-    if (!lead || (status !== 'ready' && !connecting)) return;
-    const text = seatedDetail
-      ? (lead === seatedDetail.lead ? seatedDetail.full : `${lead}\n\n${seatedDetail.detail}`)
-      : lead;
+    const plan = planSubmit({ draft, status, connecting, seatedDetail });
+    if (!plan) return;
     setDraft('');
     setSeatedDetail(null);
-    if (status !== 'ready') {
-      setHeldRequest({ text, lead, seatedDetail, runtimeId, vaultRoot });
+    if (plan.hold) {
+      setHeldRequest({ text: plan.text, lead: plan.lead, seatedDetail, runtimeId, vaultRoot });
       return;
     }
     setNextStepsDismissed(false);
-    sendAsPerson(text);
-  }, [connecting, draft, runtimeId, seatedDetail, sendAsPerson, setSeatedDetail, status, vaultRoot]);
+    sendAsPerson(plan.text);
+  }, [connecting, draft, runtimeId, seatedDetail, sendAsPerson, setHeldRequest, setNextStepsDismissed, setSeatedDetail, status, vaultRoot]);
 
-  const toolPicker = (runtimes.length > 0 ? runtimes : [{ id: runtimeId, label: runtimeLabel }]).flatMap((r) =>
-    r.id === runtimeId && choices.models.length > 0
-      ? choices.models.map((model) => ({ value: `model:${model.id}`, label: `${r.label} · ${model.name}` }))
-      : [{ value: `runtime:${r.id}`, label: r.label }],
-  );
+  const toolPicker = toolPickerOptions({ runtimes, runtimeId, runtimeLabel, models: choices.models });
   const toolIsPicker = canChooseAnotherTool || toolPicker.length > 1;
   const busy = status === 'thinking';
   const sessionButtonStandDown = busy || connecting ? 'hidden @min-[296px]/composer:inline-flex' : undefined;
-  const toolPickerValue =
-    choices.models.length > 0 ? (choices.currentModelId ? `model:${choices.currentModelId}` : '') : `runtime:${runtimeId}`;
+  const toolPickerValue = toolPickerValueOf({ runtimeId, models: choices.models, currentModelId: choices.currentModelId });
   const choicesRow = (
     <ChoicesRow
       t={t}
@@ -407,8 +384,8 @@ export function AcpChatPanelBody({
     />
   );
 
-  const awaitingAnswer = busy && pending !== null;
-  const clockPhase = !busy ? null : awaitingAnswer ? 'awaiting' : 'thinking';
+  const awaitingAnswer = isAwaitingAnswer(busy, pending !== null);
+  const clockPhase = turnClockPhaseOf(busy, awaitingAnswer);
   const { turnElapsedLabel, turnNowMs } = useTurnClock({ clockPhase, t });
 
   const canType = status === 'ready' || status === 'thinking' || status === 'idle' || status === 'starting';
@@ -416,24 +393,29 @@ export function AcpChatPanelBody({
 
   const { turnSilent, silentMinutes } = useTurnSilence({ busy, lastTurnUpdateAt, pending, status });
 
-  const stoppedWithoutAnswer =
-    !busy
-    && lastUserEventIndex >= 0
-    && cancelledWaitTurnId !== null
-    && events[lastUserEventIndex]?.id === cancelledWaitTurnId
-    && !hasCompletedAgentAnswer
-    && !events.some((event, index) => index > lastUserEventIndex && event.kind === 'tool');
+  const stoppedWithoutAnswer = hasStoppedWithoutAnswer({
+    busy,
+    events,
+    lastUserEventIndex,
+    cancelledWaitTurnId,
+    hasCompletedAgentAnswer,
+  });
   const lastUserEventId = lastUserEventIndex >= 0 ? (events[lastUserEventIndex]?.id ?? null) : null;
   // A finished turn dances only when this panel watched it run, never over a reopened conversation.
   const [watchedTurnId, setWatchedTurnId] = useState<string | null>(null);
   if (busy && lastUserEventId !== null && watchedTurnId !== lastUserEventId) setWatchedTurnId(lastUserEventId);
-  const turnStillWanted = lastUserEventId !== null && lastUserEventId !== cancelledWaitTurnId && error === null;
-  const turnWorkPhase = !turnStillWanted
-    ? null
-    : busy
-      ? pending === null && !turnSilent ? 'working' : null
-      : status === 'ready' && watchedTurnId === lastUserEventId && hasCompletedAgentAnswer ? 'done' : null;
-  const textArriving = lastTurnUpdateAt !== null && (turnNowMs === null || turnNowMs - lastTurnUpdateAt < TEXT_ARRIVING_MS);
+  const turnStillWanted = isTurnStillWanted(lastUserEventId, cancelledWaitTurnId, error);
+  const turnWorkPhase = turnWorkPhaseOf({
+    turnStillWanted,
+    busy,
+    hasPendingPermission: pending !== null,
+    turnSilent,
+    status,
+    watchedTurnId,
+    lastUserEventId,
+    hasCompletedAgentAnswer,
+  });
+  const textArriving = isTextArriving(lastTurnUpdateAt, turnNowMs);
   const turnWork: TurnWork | null = turnWorkPhase && lastUserEventId !== null
     ? {
         turnId: lastUserEventId,
@@ -460,7 +442,7 @@ export function AcpChatPanelBody({
     onTurnWorkChange, onTurnStopChange, onBusyChange,
   });
 
-  const displayStatus = connectStopped ? 'stopped' : status === 'idle' ? 'starting' : status;
+  const displayStatus = displayStatusOf(connectStopped, status);
   const footerStatus = awaitingAnswer ? 'awaiting' : displayStatus;
 
   const presentation = usePresentation({
@@ -659,36 +641,14 @@ export function AcpChatPanelBody({
         ) : null}
 
         {slashOpen ? (
-          <ul
-            ref={slashMenuRef}
-            data-testid="acp-chat-slash-menu"
-            role="listbox"
-            aria-label={t('composerLabel')}
-            className="atlas-scroll-quiet max-h-56 shrink-0 overflow-y-auto rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] p-1"
-          >
-            {slashMatches.map((command, index) => {
-              const active = index === slashActiveIndex;
-              return (
-                <li key={command.name} role="option" aria-selected={active}>
-                  <RowButton
-                    active={active}
-                    hoverSurface="lift"
-                    hoverInk="strong"
-                    onMouseEnter={() => setSlashActive(index)}
-                    onClick={() => chooseSlashCommand(command.name)}
-                    className="w-full gap-2"
-                  >
-                    <span className="shrink-0 font-mono text-label">/{command.name}</span>
-                    {command.description ? (
-                      <span className="min-w-0 flex-1 truncate text-left text-label text-[color:var(--color-text-quaternary)]">
-                        {command.description}
-                      </span>
-                    ) : null}
-                  </RowButton>
-                </li>
-              );
-            })}
-          </ul>
+          <SlashMenu
+            menuRef={slashMenuRef}
+            label={t('composerLabel')}
+            matches={slashMatches}
+            activeIndex={slashActiveIndex}
+            onActivate={setSlashActive}
+            onChoose={chooseSlashCommand}
+          />
         ) : null}
 
         {seatedDetail ? <SeatedDetailDisclosure t={t} detail={seatedDetail} /> : null}
@@ -803,7 +763,6 @@ export function AcpChatPanelBody({
   );
 }
 
-/** A conversation that is not kept still waits while a kept turn holds its folder. */
 function UnkeptPanel(props: AcpChatPanelProps) {
   const folderBusy = useFolderBusy('', props.vaultRoot);
   return <AcpChatPanelBody {...(folderBusy ? { ...props, sessionEnabled: false, folderBusy } : props)} />;

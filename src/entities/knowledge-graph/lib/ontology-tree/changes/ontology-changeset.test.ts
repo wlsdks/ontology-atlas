@@ -1,0 +1,306 @@
+import { describe, expect, it } from "vitest";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../../model";
+import {
+  acknowledgeNodeChange,
+  computeOntologyChangeset,
+  hashNodeSignature,
+  joinEdgeKey,
+  prepareGraphSignatures,
+  snapshotOntology,
+  type OntologyChangeset,
+  type OntologySnapshot,
+} from "./ontology-changeset";
+
+function node(id: string, kind: string, title = id, summary?: string): KnowledgeGraphNode {
+  return {
+    id, title, kind, summary,
+    projectIds: [], evidenceIds: [],
+    lastApprovedAt: new Date(0), lastApprovedBy: "t",
+  };
+}
+function edge(from: string, to: string, type = "contains"): KnowledgeGraphEdge {
+  return {
+    id: `${from}-${to}`, from, to, type,
+    projectIds: [], evidenceIds: [], lastApprovedAt: new Date(0), lastApprovedBy: "t",
+  };
+}
+
+const baseNodes = [node("a", "domain"), node("b", "capability"), node("c", "element")];
+const baseEdges = [edge("a", "b"), edge("b", "c")];
+
+describe("ontology-changeset", () => {
+  it("returns an empty changeset for a null baseline", () => {
+    const cs = computeOntologyChangeset(null, baseNodes, baseEdges);
+    expect(cs.total).toBe(0);
+    expect(cs.touchedNodeIds.size).toBe(0);
+  });
+
+  it("reports no change for an identical graph", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    const cs = computeOntologyChangeset(snap, baseNodes, baseEdges);
+    expect(cs.total).toBe(0);
+  });
+
+  it("reports an added node as added and touched", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    const cs = computeOntologyChangeset(snap, [...baseNodes, node("d", "element")], baseEdges);
+    expect(cs.addedNodes).toEqual(["d"]);
+    expect(cs.touchedNodeIds.has("d")).toBe(true);
+    expect(cs.removedNodes).toEqual([]);
+  });
+
+  it("reports a removed node as removed, not touched", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    const cs = computeOntologyChangeset(snap, [node("a", "domain"), node("b", "capability")], baseEdges);
+    expect(cs.removedNodes).toEqual(["c"]);
+    expect(cs.touchedNodeIds.has("c")).toBe(false);
+  });
+
+  it("keeps the baseline kind of a removed node", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    // A removed node keeps its baseline kind, so "an agent deleted a domain" is triageable.
+    const cs = computeOntologyChangeset(snap, [node("a", "domain"), node("b", "capability")], baseEdges);
+    expect(cs.removedNodeKinds.get("c")).toBe("element");
+  });
+
+  it("returns empty removedNodeKinds without removals", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    const cs = computeOntologyChangeset(snap, [...baseNodes, node("d", "element")], baseEdges);
+    expect(cs.removedNodeKinds.size).toBe(0);
+  });
+
+  it("returns empty removedNodeKinds for a null baseline", () => {
+    const cs = computeOntologyChangeset(null, baseNodes, baseEdges);
+    expect(cs.removedNodeKinds.size).toBe(0);
+  });
+
+  it("reports a title or summary change as changed", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    const changed = [node("a", "domain"), node("b", "capability", "B renamed"), node("c", "element")];
+    const cs = computeOntologyChangeset(snap, changed, baseEdges);
+    expect(cs.changedNodes).toEqual(["b"]);
+    expect(cs.touchedNodeIds.has("b")).toBe(true);
+  });
+
+  it("reports added and removed edges and their endpoints", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    // a→c added, b→c removed.
+    const newEdges = [edge("a", "b"), edge("a", "c")];
+    const cs = computeOntologyChangeset(snap, baseNodes, newEdges);
+    expect(cs.addedEdges.some((k) => k.includes("a") && k.includes("c"))).toBe(true);
+    expect(cs.removedEdges.some((k) => k.includes("b") && k.includes("c"))).toBe(true);
+    // `a`'s outgoing edges changed, so `a` is changed; `b` lost b→c, so `b` is too.
+    expect(cs.changedNodes).toContain("a");
+    expect(cs.changedNodes).toContain("b");
+  });
+
+  it("ignores coordinate and timestamp changes", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    // Identical content, only `lastApprovedAt` differs.
+    const sameContent = baseNodes.map((n) => ({ ...n, lastApprovedAt: new Date(999) }));
+    const cs = computeOntologyChangeset(snap, sameContent, baseEdges);
+    expect(cs.total).toBe(0);
+  });
+
+  // Joined fields need a separator, or a moved field boundary collides and a change is missed.
+  it("distinguishes edge swaps whose concatenations collide", () => {
+    const nodes = [
+      node("a", "domain"),
+      node("ab", "domain"),
+      node("bc", "element"),
+      node("c", "element"),
+    ];
+    // With an empty separator both keys become "abcd".
+    const baseline = snapshotOntology(nodes, [edge("a", "bc", "d")], 1);
+    const cs = computeOntologyChangeset(baseline, nodes, [edge("ab", "c", "d")]);
+    expect(cs.removedEdges).toHaveLength(1); // Remove a→bc
+    expect(cs.addedEdges).toHaveLength(1); // Add ab→c
+  });
+
+  it("detects a shifted kind and title boundary", () => {
+    // With an empty separator both signatures are "ab".
+    const baseline = snapshotOntology([node("x", "a", "b")], [], 1);
+    const cs = computeOntologyChangeset(baseline, [node("x", "ab", "")], []);
+    expect(cs.changedNodes).toContain("x");
+  });
+});
+
+// Acknowledging advances the baseline for one node in memory; a later edit flags it again.
+describe("acknowledgeNodeChange", () => {
+  it("drops an approved changed node and keeps other changes", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    const current = [node("a", "domain", "A renamed"), node("b", "capability", "B renamed"), node("c", "element")];
+    // Both `a` and `b` are changed.
+    expect(computeOntologyChangeset(snap, current, baseEdges).changedNodes.sort()).toEqual(["a", "b"]);
+    const acked = acknowledgeNodeChange(snap, "a", current, baseEdges);
+    const cs = computeOntologyChangeset(acked, current, baseEdges);
+    expect(cs.changedNodes).toEqual(["b"]); // a is reviewed and omitted; b remains.
+  });
+
+  it("flags a node again when it is edited after approval", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    const v1 = [node("a", "domain", "A v1"), node("b", "capability"), node("c", "element")];
+    const acked = acknowledgeNodeChange(snap, "a", v1, baseEdges);
+    expect(computeOntologyChangeset(acked, v1, baseEdges).changedNodes).toEqual([]); // Clean immediately after approval
+    const v2 = [node("a", "domain", "A v2 edited again"), node("b", "capability"), node("c", "element")];
+    expect(computeOntologyChangeset(acked, v2, baseEdges).changedNodes).toEqual(["a"]); // Re-edit → re-flag
+  });
+
+  it("stops reporting an approved added node", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    const current = [...baseNodes, node("d", "element")];
+    expect(computeOntologyChangeset(snap, current, baseEdges).addedNodes).toEqual(["d"]);
+    const acked = acknowledgeNodeChange(snap, "d", current, baseEdges);
+    expect(computeOntologyChangeset(acked, current, baseEdges).addedNodes).toEqual([]);
+  });
+
+  it("stops reporting an approved removed node", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    const current = [node("a", "domain"), node("b", "capability")]; // c deleted
+    expect(computeOntologyChangeset(snap, current, baseEdges).removedNodes).toEqual(["c"]);
+    const acked = acknowledgeNodeChange(snap, "c", current, baseEdges);
+    expect(computeOntologyChangeset(acked, current, baseEdges).removedNodes).toEqual([]);
+  });
+
+  it("syncs an approved node's outgoing edges", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    // The a→c edge changes `a`'s outgoing set.
+    const newEdges = [edge("a", "b"), edge("b", "c"), edge("a", "c")];
+    const before = computeOntologyChangeset(snap, baseNodes, newEdges);
+    expect(before.addedEdges.length).toBe(1);
+    const acked = acknowledgeNodeChange(snap, "a", baseNodes, newEdges);
+    const cs = computeOntologyChangeset(acked, baseNodes, newEdges);
+    expect(cs.addedEdges).toEqual([]); // a's new outgoing edge is in the baseline.
+    expect(cs.changedNodes).toEqual([]);
+  });
+
+  it("returns a new snapshot and leaves the original unchanged", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    const current = [node("a", "domain", "A renamed"), node("b", "capability"), node("c", "element")];
+    const acked = acknowledgeNodeChange(snap, "a", current, baseEdges);
+    expect(acked).not.toBe(snap);
+    expect(acked?.nodeSigs).not.toBe(snap.nodeSigs);
+    // The original snapshot is not mutated.
+    expect(snap.nodeSigs.get("a")).toBe(snapshotOntology(baseNodes, baseEdges, 1).nodeSigs.get("a"));
+  });
+
+  it("baseline null → null no-op", () => {
+    expect(acknowledgeNodeChange(null, "a", baseNodes, baseEdges)).toBeNull();
+  });
+
+  it("does not touch 'ab' edges when approving 'a'", () => {
+    const nodes = [node("a", "domain"), node("ab", "domain"), node("c", "element")];
+    const snap = snapshotOntology(nodes, [edge("a", "c"), edge("ab", "c")], 1);
+    const acked = acknowledgeNodeChange(snap, "a", nodes, [edge("a", "c"), edge("ab", "c")]);
+    // Acknowledging `a` must not touch the ab→c edge.
+    const cs = computeOntologyChangeset(acked, nodes, [edge("a", "c"), edge("ab", "c")]);
+    expect(cs.removedEdges).toEqual([]);
+  });
+});
+
+/** Counts reads of `title`, which every signature pass reads once per node. */
+function countingNodes(nodes: KnowledgeGraphNode[]): { nodes: KnowledgeGraphNode[]; titleReads: () => number } {
+  let reads = 0;
+  const wrapped = nodes.map((plain) => {
+    const copy = { ...plain };
+    Object.defineProperty(copy, "title", {
+      get: () => {
+        reads += 1;
+        return plain.title;
+      },
+    });
+    return copy;
+  });
+  return { nodes: wrapped, titleReads: () => reads };
+}
+
+describe("ontology-changeset signature reuse", () => {
+  it("hashes a graph once across its snapshot and every diff of it", () => {
+    const { nodes, titleReads } = countingNodes([node("a", "domain"), node("b", "capability"), node("c", "element")]);
+    const snap = snapshotOntology(nodes, baseEdges, 1);
+    computeOntologyChangeset(snap, nodes, baseEdges);
+    computeOntologyChangeset(snap, nodes, baseEdges);
+    expect(titleReads()).toBe(nodes.length);
+  });
+
+  it("lets a sliced preparation stand in for the first pass", async () => {
+    const { nodes, titleReads } = countingNodes([node("a", "domain"), node("b", "capability")]);
+    await prepareGraphSignatures(nodes, baseEdges, { yieldNow: async () => undefined });
+    const snap = snapshotOntology(nodes, baseEdges, 1);
+    expect(computeOntologyChangeset(snap, nodes, baseEdges).total).toBe(0);
+    expect(titleReads()).toBe(nodes.length);
+  });
+});
+
+// The diff as written before signatures were cached: every caller rehashed every node.
+function referenceSnapshot(nodes: KnowledgeGraphNode[], edges: KnowledgeGraphEdge[]): OntologySnapshot {
+  const outgoing = referenceOutgoing(edges);
+  return {
+    nodeSigs: new Map(nodes.map((n) => [n.id, referenceSig(n, outgoing)])),
+    nodeKinds: new Map(nodes.map((n) => [n.id, n.kind])),
+    edgeKeys: new Set(edges.map((e) => joinEdgeKey(e.from, e.to, e.type))),
+    takenAt: 1,
+  };
+}
+function referenceOutgoing(edges: KnowledgeGraphEdge[]): Map<string, string[]> {
+  const map = new Map<string, string[]>();
+  for (const e of edges) map.set(e.from, [...(map.get(e.from) ?? []), `${e.to}:${e.type}`]);
+  return map;
+}
+function referenceSig(n: KnowledgeGraphNode, outgoing: Map<string, string[]>): number {
+  const sep = "\u0001";
+  return hashNodeSignature([n.kind, n.title, n.summary ?? "", (outgoing.get(n.id) ?? []).slice().sort().join(",")].join(sep));
+}
+function referenceChangeset(base: OntologySnapshot, nodes: KnowledgeGraphNode[], edges: KnowledgeGraphEdge[]) {
+  const outgoing = referenceOutgoing(edges);
+  const ids = new Set(nodes.map((n) => n.id));
+  const keys = new Set(edges.map((e) => joinEdgeKey(e.from, e.to, e.type)));
+  const removedNodes = [...base.nodeSigs.keys()].filter((id) => !ids.has(id));
+  return {
+    addedNodes: nodes.filter((n) => !base.nodeSigs.has(n.id)).map((n) => n.id),
+    changedNodes: nodes
+      .filter((n) => base.nodeSigs.has(n.id) && base.nodeSigs.get(n.id) !== referenceSig(n, outgoing))
+      .map((n) => n.id),
+    removedNodes,
+    addedEdges: [...keys].filter((k) => !base.edgeKeys.has(k)),
+    removedEdges: [...base.edgeKeys].filter((k) => !keys.has(k)),
+    removedNodeKinds: new Map(removedNodes.flatMap((id) => (base.nodeKinds.has(id) ? [[id, base.nodeKinds.get(id)!]] : []))),
+  };
+}
+function comparable(cs: OntologyChangeset) {
+  const { total, touchedNodeIds, ...rest } = cs;
+  return { ...rest, total, touched: [...touchedNodeIds] };
+}
+
+describe("ontology-changeset equals the uncached diff", () => {
+  // A seeded generator, so a failure names a reproducible graph.
+  function graph(seed: number, size: number) {
+    let state = seed;
+    const next = () => (state = (state * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const kinds = ["domain", "capability", "element"];
+    const nodes = Array.from({ length: size }, (_, i) =>
+      node(`n${Math.floor(next() * size * 1.5)}-${i % 3 === 0 ? i : 0}`, kinds[i % 3], next() < 0.2 ? `t${i}` : undefined),
+    );
+    const edges = Array.from({ length: size * 2 }, () =>
+      edge(nodes[Math.floor(next() * size)].id, nodes[Math.floor(next() * size)].id, next() < 0.5 ? "contains" : "depends_on"),
+    );
+    return { nodes, edges };
+  }
+
+  it("on random edits, duplicate ids included, against both baseline kinds", () => {
+    for (let seed = 1; seed <= 40; seed += 1) {
+      const before = graph(seed, 30);
+      const after = graph(seed + 1000, 30);
+      for (const [nodes, edges] of [[after.nodes, after.edges], [before.nodes, before.edges]] as const) {
+        const expected = referenceChangeset(referenceSnapshot(before.nodes, before.edges), nodes, edges);
+        const fromSnapshot = computeOntologyChangeset(snapshotOntology(before.nodes, before.edges, 1), nodes, edges);
+        const fromRestored = computeOntologyChangeset(referenceSnapshot(before.nodes, before.edges), nodes, edges);
+        const touched = [...new Set([...expected.addedNodes, ...expected.changedNodes])];
+        const total = expected.addedNodes.length + expected.changedNodes.length + expected.removedNodes.length +
+          expected.addedEdges.length + expected.removedEdges.length;
+        expect(comparable(fromSnapshot)).toEqual({ ...expected, total, touched });
+        expect(comparable(fromRestored)).toEqual({ ...expected, total, touched });
+      }
+    }
+  });
+});

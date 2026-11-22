@@ -21,12 +21,12 @@ import {
   DOME_NODE_FIT_ALLOWANCE_PX,
   domeReachesRect,
   domeWorldBounds,
-} from "../../model/dome-view/projection";
+} from "../../model/dome-view/camera/projection";
 import type { DomeFitTarget } from "../../model/dome-view/runtime";
-import { domeTurnReach } from "../../model/dome-view/turn-follow";
-import type { DomeModel } from "../../model/dome-view/types";
+import { domeTurnReach } from "../../model/dome-view/camera/turn-follow";
+import type { DomeModel } from "../../model/dome-view/dome-shapes";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { computeDomeFitCameraTarget, domeFitFreeHalfSize } from "./topology-camera-math";
+import { computeDomeFitCameraTarget, domeFitFreeHalfSize } from "./target/fit-targets";
 
 interface Dependencies {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -68,7 +68,7 @@ export function useTopologyCameraPolicy({
    * once, in the next frame, and asks for that frame: the name boxes in Flat, the side insets a
    * 3D title stands between otherwise. At rest nothing runs.
    */
-  const watchChrome = useCallback((canvasEl: HTMLCanvasElement) => {
+  const watchChrome = useCallback((canvasElement: HTMLCanvasElement) => {
     if (typeof ResizeObserver === "undefined") return;
     let watch = chromeWatchRef.current;
     if (!watch) {
@@ -92,9 +92,9 @@ export function useTopologyCameraPolicy({
       }), watched: new Set(), frame: 0 };
       watch = chromeWatchRef.current = fresh;
     }
-    const present = new Set(canvasEl.ownerDocument.querySelectorAll(NAME_CHROME_SELECTOR));
-    for (const el of watch.watched) if (!present.has(el)) watch.observer.unobserve(el);
-    for (const el of present) if (!watch.watched.has(el)) watch.observer.observe(el);
+    const present = new Set(canvasElement.ownerDocument.querySelectorAll(NAME_CHROME_SELECTOR));
+    for (const domElement of watch.watched) if (!present.has(domElement)) watch.observer.unobserve(domElement);
+    for (const domElement of present) if (!watch.watched.has(domElement)) watch.observer.observe(domElement);
     watch.watched = present;
   }, [canvasRef, lastActiveMsRef, panelInsetsRef, view3dRef]);
 
@@ -111,23 +111,20 @@ export function useTopologyCameraPolicy({
    * (layout promises also read by label culling). Takes the larger of token and measurement.
    */
   const cameraTokens = useCallback(<T extends { safeInsetLeft: number; safeInsetRight: number; }>(tokens: T): T => {
-    const canvasEl = canvasRef.current;
-    if (!canvasEl) return tokens;
-    const box = canvasEl.getBoundingClientRect();
+    const canvasElement = canvasRef.current;
+    if (!canvasElement) return tokens;
+    const box = canvasElement.getBoundingClientRect();
     if (box.width <= 0 || box.height <= 0) return tokens;
     const canvasRect = { x: box.x, y: box.y, width: box.width, height: box.height };
-    const panels = collectCanvasObstacles(canvasEl, canvasRect);
-    const measured = measureCanvasInsets(canvasEl, canvasRect, panels);
+    const panels = collectCanvasObstacles(canvasElement, canvasRect);
+    const measured = measureCanvasInsets(canvasElement, canvasRect, panels);
     /*
-     * The same measurement the names need. The frame reads its tokens every
-     * frame, and the panels come from an element walk, so the draw cannot take
-     * it per frame — it reads this ref instead. Written here because the moments
-     * that move the camera are the moments a panel opens or closes: a selection
-     * reframes, and so does a resize. In 3D no name reads the chrome boxes.
+     * The draw reads this ref instead of walking the panels' elements per frame, so it is written where the camera moves
+     * (a selection reframes, a resize), which is when a panel opens or closes. In 3D no name reads the chrome boxes.
      */
     const flat = !view3dRef.current;
-    panelInsetsRef.current = { left: measured.left, right: measured.right, nameObstacles: flat ? measureNameObstacles(canvasEl, { left: true, right: true }, panels) : [] };
-    watchChrome(canvasEl);
+    panelInsetsRef.current = { left: measured.left, right: measured.right, nameObstacles: flat ? measureNameObstacles(canvasElement, { left: true, right: true }, panels) : [] };
+    watchChrome(canvasElement);
     return {
       ...tokens,
       safeInsetLeft: Math.max(tokens.safeInsetLeft, measured.left),
@@ -135,8 +132,8 @@ export function useTopologyCameraPolicy({
       // What the chrome really covers — a panel, the folded INDEX tab, the utility
       // rail's column — so a narrow window may shrink the reservation without
       // sliding the graph under it (`clampFitInsets`).
-      obstacleInsetLeft: Math.max(measured.left, measureEdgeFitObstacle(canvasEl, "left")?.reach ?? 0),
-      obstacleInsetRight: Math.max(measured.right, measureEdgeFitObstacle(canvasEl, "right")?.reach ?? 0),
+      obstacleInsetLeft: Math.max(measured.left, measureEdgeFitObstacle(canvasElement, "left")?.reach ?? 0),
+      obstacleInsetRight: Math.max(measured.right, measureEdgeFitObstacle(canvasElement, "right")?.reach ?? 0),
     };
   }, [canvasRef, panelInsetsRef, view3dRef, watchChrome]);
 
@@ -156,24 +153,24 @@ export function useTopologyCameraPolicy({
     ): DomeFitTarget | null => {
       const bounds = domeWorldBounds(model, yaw, pitch);
       if (bounds === null) return null;
-      const canvasEl = canvasRef.current;
+      const canvasElement = canvasRef.current;
       let left = tokens.safeInsetLeft;
       let right = tokens.safeInsetRight;
       let edges: { left: EdgeFitObstacle | null; right: EdgeFitObstacle | null } = { left: null, right: null };
-      if (canvasEl) {
-        const box = canvasEl.getBoundingClientRect();
+      if (canvasElement) {
+        const box = canvasElement.getBoundingClientRect();
         if (box.width > 0 && box.height > 0) {
-          const measured = measureCanvasInsets(canvasEl, { x: box.x, y: box.y, width: box.width, height: box.height });
+          const measured = measureCanvasInsets(canvasElement, { x: box.x, y: box.y, width: box.width, height: box.height });
           left = measured.left;
           right = measured.right;
-          edges = { left: measureEdgeFitObstacle(canvasEl, "left"), right: measureEdgeFitObstacle(canvasEl, "right") };
+          edges = { left: measureEdgeFitObstacle(canvasElement, "left"), right: measureEdgeFitObstacle(canvasElement, "right") };
         }
       }
       const panels = {
         left,
         right,
         top: tokens.domeFitInsetTop,
-        bottom: Math.max(tokens.domeFitInsetBottom, canvasEl ? measureBottomFitObstacle(canvasEl) : 0),
+        bottom: Math.max(tokens.domeFitInsetBottom, canvasElement ? measureBottomFitObstacle(canvasElement) : 0),
       };
       /*
        * The edge chrome's columns (utility rail, folded INDEX tab) are not panels, but drawings are centred
@@ -200,11 +197,9 @@ export function useTopologyCameraPolicy({
         }
       }
       /*
-       * Strata's tier names stand beside their rims in the free map between the
-       * chrome (`model/dome-view/tier-names.ts`), the chrome's columns excluded whether or not
-       * the drawing uses them, so the frame reads the box measured here rather than
-       * walking the DOM on every frame. No column is reserved for the names: one that
-       * finds no clear place beside its rim goes unnamed, and the drawing keeps the width.
+       * Strata's tier names stand beside their rims in the free map between the chrome (`tier-names.ts`), the chrome's columns
+       * excluded whether or not the drawing uses them, so the frame reads this measured box. No column is reserved: a name with
+       * no clear place beside its rim goes unnamed.
        */
       domeFitInsetsRef.current = chromed;
       if (model.arrangement !== "coupling") return target;
@@ -220,14 +215,9 @@ export function useTopologyCameraPolicy({
   );
 
   /**
-   * Begin a cubic ease-in-out camera transition from the live camera to
-   * `target` (van Wijk's principle: duration proportional to distance), driven
-   * each frame by the rAF loop via `easeCameraKeyframe`. Under
-   * `prefers-reduced-motion` it no-ops and clears any tween, so the
-   * physics-step reduced snap owns the jump. A selection that replaces a
-   * running one leaves from the drawn camera at the speed that one had. Its
-   * identity is stable (refs only), so listing it in the programmatic-move
-   * effects' deps never re-fires them.
+   * Begins a cubic ease-in-out transition from the live camera to `target` (duration proportional to distance), driven by the rAF
+   * loop via `easeCameraKeyframe`; under reduced motion it clears any tween so the physics-step snap owns the jump. A selection
+   * replacing a running one leaves at the speed that one had. Its identity is stable (refs only), so listing it in deps never re-fires.
    */
   const beginCameraTween = useCallback((target: CameraTarget, durationOverrideMs?: number, ease?: CameraTweenEase, altitude: CameraTweenAltitude = "follows-camera") => {
     if (reducedMotionRef.current) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AcpSessionChoices } from '../acp-client';
+import type { AcpSessionChoices } from '../session-choices/acp-session-choices';
 import { investigationPermissionVerified } from './guard';
 
 const choices = (id: string | null, metaKind?: string): AcpSessionChoices => ({

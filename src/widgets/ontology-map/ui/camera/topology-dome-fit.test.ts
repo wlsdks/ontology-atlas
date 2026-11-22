@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { computeDomeFitCameraTarget, worldToScreen } from "./topology-camera-math";
+import { worldToScreen } from "./topology-camera-math";
+import { computeDomeFitCameraTarget } from "./target/fit-targets";
 
 describe("computeDomeFitCameraTarget", () => {
   it("keeps a large dome inside the free canvas below the flat map's minimum zoom", () => {

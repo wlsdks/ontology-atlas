@@ -1,5 +1,5 @@
 use super::*;
-use crate::vault_grants::{grant_source_root, EnforcedScope};
+use crate::vault::grants::{grant_source_root, EnforcedScope};
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};

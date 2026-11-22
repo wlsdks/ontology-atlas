@@ -67,23 +67,23 @@ export function formatErrorValue(value) {
 }
 
 function levenshteinDistance(a, b) {
-  const prev = Array.from({ length: b.length + 1 }, (_, index) => index);
-  const curr = Array.from({ length: b.length + 1 }, () => 0);
+  const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+  const current = Array.from({ length: b.length + 1 }, () => 0);
   for (let i = 1; i <= a.length; i += 1) {
-    curr[0] = i;
+    current[0] = i;
     for (let j = 1; j <= b.length; j += 1) {
       const substitutionCost = a[i - 1] === b[j - 1] ? 0 : 1;
-      curr[j] = Math.min(
-        prev[j] + 1,
-        curr[j - 1] + 1,
-        prev[j - 1] + substitutionCost,
+      current[j] = Math.min(
+        previous[j] + 1,
+        current[j - 1] + 1,
+        previous[j - 1] + substitutionCost,
       );
     }
     for (let j = 0; j <= b.length; j += 1) {
-      prev[j] = curr[j];
+      previous[j] = current[j];
     }
   }
-  return prev[b.length];
+  return previous[b.length];
 }
 
 // Exact within the cutoff; larger distances cannot change the selected result.

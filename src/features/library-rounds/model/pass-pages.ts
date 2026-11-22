@@ -1,8 +1,6 @@
 import type { RoundUndoReason, RoundUndone } from '@/entities/library-round';
-import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
-import { isNotFoundError } from '@/shared/lib/vault-folder/vault-sidecar';
 
-export type RoundDraftProblem = Pick<RoundUndone, 'reason' | 'key'>;
+import { declaresKind, roundDraftProblem } from './round-draft-problem';
 
 export interface PassPages {
   current(path: string): string | null;
@@ -23,13 +21,6 @@ export interface PassScan {
   links?: Iterable<string>;
 }
 
-const FORBIDDEN_KEYS = new Set(['kind']);
-/**
- * A page's links to concepts. Its writer adds them; a round only carries them as it found them
- * (`docs/records/decisions/2026-11-19-wiki-page-describes-at-any-status-afd11e09-c68a-465a-83fa-d8abd8cabdfc.md`).
- */
-const LINK_KEYS = ['describes', 'relation_notes'] as const;
-
 const REASON_KEYS = {
   'not-draft': 'notDraft',
   'duplicate-key': 'duplicateKey',
@@ -43,57 +34,6 @@ export const undoneReasonKey = (reason: RoundUndoReason) => REASON_KEYS[reason];
 export function pageIdentity(path: string): string {
   return path.normalize('NFC').toLowerCase().toUpperCase().toLowerCase().normalize('NFC');
 }
-
-const normalized = (text: string) => text.replace(/^﻿/, '').replace(/\r\n/g, '\n');
-
-function frontmatterKeys(text: string): { key: string; line: string }[] | null {
-  const raw = normalized(text);
-  const end = raw.startsWith('---') ? raw.indexOf('\n---', 3) : -1;
-  if (end === -1) return null;
-  const keys: { key: string; line: string }[] = [];
-  for (const line of raw.slice(4, end).split('\n')) {
-    if (/^\s*(-(\s|$)|#)/.test(line)) continue;
-    const at = line.indexOf(':');
-    const key = at < 0 ? '' : line.slice(0, at).trim().normalize('NFC').toLowerCase();
-    if (key) keys.push({ key, line });
-  }
-  return keys;
-}
-
-/**
- * The link key a round added, changed or dropped against `before`, the page as the round found it
- * (`null` for a new page). Values are compared as parsed, so re-serialising the same links is not a
- * change; a link key spelled any other way is, since no reader would see it as the same key.
- */
-function changedLinkKey(keys: { key: string; line: string }[], text: string, before: string | null): string | null {
-  for (const { key, line } of keys) {
-    if ((LINK_KEYS as readonly string[]).includes(key) && line.slice(0, line.indexOf(':')) !== key) return key;
-  }
-  const now = parseFrontmatter(normalized(text)).frontmatter;
-  const was = before === null ? {} : parseFrontmatter(normalized(before)).frontmatter;
-  for (const key of LINK_KEYS) {
-    if (JSON.stringify(now[key]) !== JSON.stringify(was[key])) return key;
-  }
-  return null;
-}
-
-export function roundDraftProblem(text: string, before: string | null = null): RoundDraftProblem | null {
-  const keys = frontmatterKeys(text);
-  if (!keys) return { reason: 'no-frontmatter' };
-  const seen = new Set<string>();
-  let status: string | null = null;
-  for (const { key, line } of keys) {
-    if (seen.has(key)) return { reason: 'duplicate-key', key };
-    seen.add(key);
-    if (FORBIDDEN_KEYS.has(key)) return { reason: 'forbidden-key', key };
-    if (key === 'status') status = line.trimEnd();
-  }
-  const link = changedLinkKey(keys, text, before);
-  if (link) return { reason: 'forbidden-key', key: link };
-  return status === 'status: draft' && parseFrontmatter(normalized(text)).frontmatter.status === 'draft' ? null : { reason: 'not-draft' };
-}
-
-const carriesKind = (text: string) => frontmatterKeys(text)?.some(({ key }) => key === 'kind') ?? false;
 
 interface KnownPage {
   path: string;
@@ -118,7 +58,7 @@ export function createPassPages(scan: PassScan | Iterable<{ path: string; text: 
   for (const page of input.pages) {
     const id = pageIdentity(page.path);
     scanned.push(page.path);
-    if (page.text !== null && carriesKind(page.text)) nodes.add(id);
+    if (page.text !== null && declaresKind(page.text)) nodes.add(id);
     if (known.has(id) || page.text === null) blocked.add(id);
     if (!known.has(id)) known.set(id, { path: page.path, start: page.text, text: page.text, landed: null, sequence: 0 });
   }
@@ -180,67 +120,6 @@ export function createLandings(pages: PassPages, read: (path: string) => Promise
       while (pending.size > 0) await Promise.all([...pending]);
     },
   };
-}
-
-async function isMissing(vault: FileSystemDirectoryHandle, path: string): Promise<boolean> {
-  try {
-    const parts = path.split('/');
-    const name = parts.pop() ?? '';
-    let directory = vault;
-    for (const part of parts) directory = await directory.getDirectoryHandle(part);
-    await directory.getFileHandle(name);
-    return false;
-  } catch (error) {
-    return isNotFoundError(error);
-  }
-}
-
-export function readOrMissing(vault: FileSystemDirectoryHandle, read: (path: string) => Promise<string | null>) {
-  return async (path: string): Promise<string | null> => {
-    try {
-      return await read(path);
-    } catch (error) {
-      if (await isMissing(vault, path)) return null;
-      throw error;
-    }
-  };
-}
-
-export async function scanPassFolders(
-  vault: FileSystemDirectoryHandle,
-  linksIn: (directory: string) => Promise<string[]>,
-): Promise<Required<Pick<PassScan, 'dirs' | 'links'>> & { pages: { path: string; text: string | null }[] }> {
-  const pages: { path: string; text: string | null }[] = [];
-  const dirs: string[] = [];
-  const links: string[] = [];
-  const walk = async (directory: FileSystemDirectoryHandle, prefix: string, readPages: boolean) => {
-    dirs.push(prefix);
-    for (const name of await linksIn(prefix)) links.push(`${prefix}/${name}`);
-    for await (const [name, entry] of (directory as unknown as { entries(): AsyncIterable<[string, FileSystemHandle]> }).entries()) {
-      if (name.startsWith('.')) continue;
-      const path = `${prefix}/${name}`;
-      if (entry.kind === 'directory') await walk(entry as FileSystemDirectoryHandle, path, readPages);
-      else if (readPages && name.toLowerCase().endsWith('.md')) {
-        pages.push({ path, text: await (entry as FileSystemFileHandle).getFile().then((file) => file.text(), () => null) });
-      }
-    }
-  };
-  const rootLinks = new Set((await linksIn('')).map(pageIdentity));
-  for (const [folder, readPages] of [['wiki', true], ['sources', false]] as const) {
-    if (rootLinks.has(pageIdentity(folder))) {
-      links.push(folder);
-      continue;
-    }
-    let directory: FileSystemDirectoryHandle;
-    try {
-      directory = await vault.getDirectoryHandle(folder);
-    } catch (error) {
-      if (isNotFoundError(error)) continue;
-      throw error;
-    }
-    await walk(directory, folder, readPages);
-  }
-  return { pages, dirs, links };
 }
 
 export interface SettleInput {

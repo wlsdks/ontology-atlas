@@ -1,4 +1,4 @@
-import type { AnswerGrounding, CitedParagraph } from './types';
+import type { AnswerGrounding, CitedParagraph } from './agent-turn';
 
 /**
  * Citation enforcement before rendering: only slugs read this turn count, and model markdown
@@ -11,7 +11,6 @@ const CITATION_PATTERN = /\[\[([^[\]]+)\]\]/g;
 export interface CitationResult {
   paragraphs: CitedParagraph[];
   grounding: AnswerGrounding;
-  /** Names invalidated because they were never read. The screen says so rather than deleting them quietly. */
   droppedCitations: string[];
 }
 

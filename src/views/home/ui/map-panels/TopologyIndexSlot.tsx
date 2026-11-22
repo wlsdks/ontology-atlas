@@ -1,0 +1,310 @@
+import type { useAcpRuntimeController } from "../../model/agent/use-acp-runtime-controller";
+import type { useTopologyAgentOrchestration } from "../../model/agent/use-topology-agent-orchestration";
+import type { useTopologyAuthoring } from "../../model/authoring/use-topology-authoring";
+import type { useTopologyCanvasFocus } from "../../model/use-topology-canvas-focus";
+import type { useTopologyCreateIntent } from "../../model/authoring/use-topology-create-intent";
+import type { useTopologyGraphProjection } from "../../model/map-canvas/use-topology-graph-projection";
+import type { useTopologyInspectorState } from "../../model/inspector/use-topology-inspector-state";
+import type { useTopologyNavigationActions } from "../../model/use-topology-navigation-actions";
+import type { useTopologyPreferences } from "../../model/use-topology-preferences";
+import type { useTopologyRouteControls } from "../../model/route-state/use-topology-route-controls";
+import type { useTopologySceneControls } from "../../model/map-canvas/use-topology-scene-controls";
+import type { useTopologySourceReadiness } from "../../model/project-source/use-topology-source-readiness";
+import type { useTopologyVaultReadModel } from "../../model/use-topology-vault-read-model";
+
+import { useEffect, useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
+import { filterTreeExcludeKind } from "@/entities/knowledge-graph";
+import { useVaultLoadProgress } from "@/entities/vault-session";
+import { useMapReadingContext } from "@/shared/lib/navigation/map-reading-context";
+import { focusWhenReady } from "../../lib/keyboard/topology-focus-return";
+import { TopologyIndexPanel, TopologyIndexTab, TopologyRealmLedger } from "@/widgets/topology-index-panel";
+
+
+interface TopologyIndexSlotProps {
+  indexSlotFrames: readonly { state: import("@/widgets/topology-index-panel/lib/index-panel-state").IndexPanelState; exiting: boolean; }[];
+  setRouteState: (updater: Partial<import("@/views/home/model/route-state/url-state").HomeRouteState> | ((current: import("@/views/home/model/route-state/url-state").HomeRouteState) => import("@/views/home/model/route-state/url-state").HomeRouteState), options?: import("@/views/home/model/route-state/use-home-route-state").HomeRouteStateUpdateOptions | undefined) => void;
+  recentWindow: import("../../model/route-state/url-state").HomeRouteState["recentWindow"];
+  topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "handleIndexTabExpandFromAgent">;
+  acpRuntimeController: Pick<ReturnType<typeof useAcpRuntimeController>, "acpRuntimes">;
+  topologySourceReadiness: Pick<ReturnType<typeof useTopologySourceReadiness>, "unboundProjectSource" | "projectSourceReadiness">;
+  topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "canCreateNode" | "agentAttributedRecentNodeId" | "bootstrapPlan" | "setBootstrapOpen" | "addConceptInGroup">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "setAudiencePlain" | "kindCountsTitle">;
+  topologyRouteControls: Pick<ReturnType<typeof useTopologyRouteControls>, "handleExitRealm" | "handleEnterRealm" | "handleIndexCollapse">;
+  topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleSelect">;
+  topologyVaultReadModel: Pick<
+    ReturnType<typeof useTopologyVaultReadModel>,
+    | "changedSlugs"
+    | "recentChanges"
+    | "spotlightOn"
+    | "brokenDocCount"
+    | "vault"
+  >;
+  topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "canvasSelectedSlug">;
+  topologySceneControls: Pick<
+    ReturnType<typeof useTopologySceneControls>,
+    | "indexTreeResult"
+    | "starterRecoveryActive"
+    | "realmActive"
+    | "realmLedgerModel"
+    | "indexMaxDomainDescendantCount"
+    | "indexDomainCensus"
+    | "topologyTotalNodes"
+    | "topologyTotalRelations"
+    | "indexDomainCount"
+  >;
+  topologyInspectorState: Pick<ReturnType<typeof useTopologyInspectorState>, "indexDemotedByNodeSheet">;
+  topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "selectedRelationActive">;
+  topologyCreateIntent: Pick<ReturnType<typeof useTopologyCreateIntent>, "topologyCreateNodeBlockingActive">;
+}
+
+export function TopologyIndexSlot({
+  indexSlotFrames, setRouteState, recentWindow, topologyCanvasFocus, topologyInspectorState,
+  topologySceneControls, topologyGraphProjection, topologyVaultReadModel, topologyNavigationActions,
+  topologyRouteControls, topologyPreferences, topologyAuthoring,
+  topologySourceReadiness, acpRuntimeController, topologyAgentOrchestration, topologyCreateIntent
+}: TopologyIndexSlotProps) {
+  const { topologyCreateNodeBlockingActive } = topologyCreateIntent;
+
+  const { selectedRelationActive } = topologyCanvasFocus;
+  const { indexDemotedByNodeSheet } = topologyInspectorState;
+  const {
+    indexTreeResult, starterRecoveryActive, realmActive, realmLedgerModel, indexMaxDomainDescendantCount, indexDomainCensus,
+    topologyTotalNodes, topologyTotalRelations, indexDomainCount
+  } = topologySceneControls;
+  const { canvasSelectedSlug } = topologyGraphProjection;
+  const { changedSlugs, recentChanges, spotlightOn, brokenDocCount, vault } = topologyVaultReadModel;
+  const { handleSelect } = topologyNavigationActions;
+  const { handleExitRealm, handleEnterRealm, handleIndexCollapse } = topologyRouteControls;
+  const { t, audiencePlain, setAudiencePlain, kindCountsTitle } = topologyPreferences;
+  const { canCreateNode, agentAttributedRecentNodeId, bootstrapPlan, setBootstrapOpen, addConceptInGroup } = topologyAuthoring;
+  const { unboundProjectSource, projectSourceReadiness } = topologySourceReadiness;
+  const { acpRuntimes } = acpRuntimeController;
+  const { handleIndexTabExpandFromAgent } = topologyAgentOrchestration;
+  const loadProgress = useVaultLoadProgress();
+  const tConceptIndex = useTranslations("conceptIndex");
+  const { query, search, select } = useMapReadingContext(vault.handle);
+  useEffect(() => { select(canvasSelectedSlug); }, [canvasSelectedSlug, select]);
+
+  return (<>
+    {topologyTotalNodes > 0 && !selectedRelationActive && !topologyCreateNodeBlockingActive && !starterRecoveryActive
+      ? indexSlotFrames.map((frame) => (
+        <div
+          // Keyed so collapse and expand take turns in the slot with the shared `.map-overlay-in`
+          // fade, on the same clock as other map overlays.
+          key={`${frame.state}-${frame.exiting ? "out" : "in"}`}
+          // `topology-ui-scale` gives INDEX the same wide-screen zoom as the toolbar and inspector.
+          // The slot ignores pointer input, since INDEX ends under its last row; only the held
+          // surface is live.
+          className={`${frame.exiting ? "map-overlay-out" : "map-overlay-in"} pointer-events-none topology-ui-scale absolute z-20 ${
+            // Below `lg` the node sheet paints over this stack, so it recedes
+            // (see `indexDemotedByNodeSheet`).
+            frame.exiting || indexDemotedByNodeSheet ? "" : "[&>button]:pointer-events-auto [&_aside]:pointer-events-auto"
+            }`}
+          data-index-demoted-by-node-sheet={indexDemotedByNodeSheet || undefined}
+          data-toast-wall={frame.exiting ? undefined : "left"}
+          aria-hidden={frame.exiting || undefined}
+          inert={frame.exiting || indexDemotedByNodeSheet || undefined}
+          style={{
+            left: frame.state === "expanded" ? "var(--topology-index-inset)" : 0,
+            // Expanded rises to the chrome inset (24px); collapsed keeps `--topology-index-top`.
+            top:
+              frame.state === "expanded"
+                ? "var(--topology-index-inset)"
+                : "var(--topology-index-top)",
+            // Equals the chrome inset on desktop; below `md` it clears the `BottomTabBar` reserve.
+            bottom:
+              frame.state === "expanded"
+                ? "var(--topology-index-bottom-inset)"
+                : undefined,
+          }}
+        >
+          {frame.state === "expanded" && indexTreeResult ? (
+            <IndexRealmSwap realmActive={realmActive}>
+              {realmActive && realmLedgerModel ? (
+                <TopologyRealmLedger
+                  rootKind={realmLedgerModel.rootKind}
+                  rootTitle={realmLedgerModel.rootTitle}
+                  census={realmLedgerModel.census}
+                  subtree={realmLedgerModel.subtree}
+                  boundaryRows={realmLedgerModel.boundaryRows}
+                  boundaryTotal={realmLedgerModel.boundaryTotal}
+                  selectedId={canvasSelectedSlug}
+                  changedSlugs={changedSlugs}
+                  onSelect={(id) => handleSelect(id)}
+                  onExit={handleExitRealm}
+                  onJumpRealm={handleEnterRealm}
+                  maxDomainDescendantCount={indexMaxDomainDescendantCount}
+                  domainCensus={indexDomainCensus}
+                  labels={{
+                    label: t("realm.ledger.heading"),
+                    elementsShort: t("index.elementsShort"),
+                    capabilitiesShort: t("index.capabilitiesShort"),
+                    depthShort: t("realm.ledger.depthShort"),
+                    searchPlaceholder: t("realm.ledger.searchPlaceholder"),
+                    exit: t("realm.ledger.exit"),
+                    exitAria: t("realm.chipClear"),
+                    emptyHint: t("index.emptyHint"),
+                    boundaryHeading: t("realm.ledger.boundaryHeading", {
+                      count: realmLedgerModel.boundaryTotal,
+                    }),
+                    boundaryToggleAria: t("realm.ledger.boundaryToggleAria"),
+                    boundaryJump: t("realm.ledger.boundaryJump"),
+                    boundaryJumpAria: t("realm.ledger.boundaryJumpAria"),
+                    boundaryEmpty: t("realm.ledger.boundaryEmpty"),
+                    freshTitle: t("index.freshTitle"),
+                    domainCountTitle: t("index.domainCountTitle"),
+                  }}
+                />
+              ) : (
+                <TopologyIndexPanel
+                  searchQuery={query}
+                  onSearchQueryChange={search}
+                  // Plain mode drops element rows for display only; ledger and counts
+                  // use `indexTreeResult`.
+                  treeResult={
+                    audiencePlain
+                      ? { ...indexTreeResult, roots: filterTreeExcludeKind(indexTreeResult.roots, "element") }
+                      : indexTreeResult
+                  }
+                  totalConcepts={topologyTotalNodes}
+                  totalRelations={topologyTotalRelations}
+                  domainCount={indexDomainCount}
+                  changedSlugs={changedSlugs}
+                  selectedId={canvasSelectedSlug}
+                  onSelect={(id) => handleSelect(id, { keepIndexOpen: true })}
+                  onCollapse={() => {
+                    const leaving = document.activeElement;
+                    handleIndexCollapse();
+                    focusWhenReady(["topology-index-tab"], { leaving });
+                  }}
+                  onEnablePlainMode={() => setAudiencePlain(true)}
+                  plainMode={audiencePlain}
+                  vaultLoaded={canCreateNode}
+                  onCreateConcept={canCreateNode ? () => setRouteState((current) => ({ ...current, createNodeIntent: true })) : undefined}
+                  onAddInGroup={canCreateNode ? addConceptInGroup : undefined}
+                  domainCensus={indexDomainCensus}
+                  recentChanges={{
+                    ids: recentChanges.recentNodeIds,
+                    agentAttributedNodeId: agentAttributedRecentNodeId,
+                  }}
+                  lens={spotlightOn ? "recent" : "all"}
+                  onLensChange={(next) =>
+                    setRouteState((current) => ({
+                      ...current,
+                      recentWindow: next === "recent" ? (current.recentWindow ?? "auto") : null,
+                    }))
+                  }
+                  recentWindow={recentWindow ?? "auto"}
+                  onWindowChange={(next) =>
+                    setRouteState((current) => ({ ...current, recentWindow: next }))
+                  }
+                  // `bootstrapPlan` exists once a vault loads, so this row opens the bootstrap
+                  // dialog on a populated map too.
+                  uncatalogedDocCount={bootstrapPlan?.elements.length ?? 0}
+                  brokenDocCount={brokenDocCount}
+                  unboundProjectNodeId={unboundProjectSource?.nodeId ?? null}
+                  noProjectsYet={projectSourceReadiness.state === "no-projects"}
+                  // `handle.name`: the browser has no absolute path, so neither surface claims one.
+                  sourceName={vault.handle?.name ?? null}
+                  sourceLoadProgress={vault.partialTotal > 0 ? loadProgress : null}
+                  agentAvailable={acpRuntimes.length > 0}
+                  openedInsidePickedFolder={vault.openedInsidePickedFolder ?? null}
+                  onDismissOpenedInside={vault.dismissOpenedInsideNotice}
+                  onPromoteUncatalogedDocs={
+                    bootstrapPlan && bootstrapPlan.elements.length > 0
+                      ? () => setBootstrapOpen(true)
+                      : undefined
+                  }
+                  labels={{
+                    label: t("index.label"),
+                    fold: t("index.fold"),
+                    foldAria: t("index.foldAria"),
+                    searchPlaceholder: t("index.searchPlaceholder"),
+                    searchMatches: t("index.searchMatches"),
+                    censusConcepts: t("index.censusConcepts"),
+                    sourceDocumentsReading: loadProgress
+                      ? t("index.sourceDocumentsReading", { read: loadProgress.read, total: loadProgress.total })
+                      : undefined,
+                    censusRelations: t("index.censusRelations"),
+                    censusDomains: t("index.censusDomains"),
+                    capabilitiesShort: t("index.capabilitiesShort"),
+                    elementsShort: t("index.elementsShort"),
+                    subcountsTitle: kindCountsTitle,
+                    freshTitle: t("index.freshTitle"),
+                    domainCountTitle: t("index.domainCountTitle"),
+                    subtotalTitle: t("index.subtotalTitle"),
+                    emptyHint: t("index.emptyHint"),
+                    segmentAll: t("index.segmentAll"),
+                    // Shows the adaptive window's span; while Git is dating documents it names
+                    // itself and claims nothing.
+                    segmentRecent: recentChanges.reading
+                      ? t("controls.spotlightLabel")
+                      : t("index.segmentRecent", {
+                          count: recentChanges.recentNodeIds.size,
+                          days: recentChanges.windowDays,
+                        }),
+                    segmentRecentAria: t("index.segmentRecentAria"),
+                    recentEmptyHint: recentChanges.reading
+                      ? ""
+                      : t("index.recentEmptyHint", { days: recentChanges.windowDays }),
+                    windowChipAuto: t("index.windowChipAuto"),
+                    windowChip1: t("index.windowChipDays", { days: 1 }),
+                    windowChip7: t("index.windowChipDays", { days: 7 }),
+                    windowChip30: t("index.windowChipDays", { days: 30 }),
+                    windowChipsAria: t("index.windowChipsAria"),
+                    agentBadge: t("index.agentBadge"),
+                    uncatalogedDocsLabel: t("index.uncatalogedDocsLabel", {
+                      count: bootstrapPlan?.elements.length ?? 0,
+                    }),
+                    uncatalogedDocsAction: t("index.uncatalogedDocsAction"),
+                    brokenDocsLabel: t("index.brokenDocsLabel", { count: brokenDocCount }),
+                    brokenDocsAction: t("index.brokenDocsAction"),
+                    holdsSelection: tConceptIndex("holdsSelection"),
+                    tidyHeading: t("index.tidyHeading"),
+                    openedInsideLabel: t("index.openedInsideLabel"),
+                    openedInsideDismiss: t("index.openedInsideDismiss"),
+                    plainHint: t("index.plainHint"),
+                    createConcept: t("index.createConcept"),
+                    add: {
+                      domain: { action: t("index.addDomain"), field: t("index.addDomainField") },
+                      capability: { action: t("index.addCapability"), field: t("index.addCapabilityField") },
+                      element: { action: t("index.addElement"), field: t("index.addElementField") },
+                    },
+                  }}
+                />
+              )}
+            </IndexRealmSwap>
+          ) : (
+            <TopologyIndexTab
+              onExpand={() => {
+                const leaving = document.activeElement;
+                handleIndexTabExpandFromAgent();
+                focusWhenReady(["topology-index-fold"], { leaving });
+              }}
+              labels={{
+                label: t("index.label"),
+                expandAria: t("index.expandAria"),
+                agentSyncTitle: t("index.agentSync"),
+              }}
+            />
+          )}
+        </div>
+      ))
+      : null}
+  </>);
+}
+
+function IndexRealmSwap({ realmActive, children }: { realmActive: boolean; children: ReactNode }) {
+  const [shownRealm, setShownRealm] = useState(realmActive);
+  const [swapped, setSwapped] = useState(false);
+  if (shownRealm !== realmActive) {
+    setShownRealm(realmActive);
+    setSwapped(true);
+  }
+  return (
+    <div key={realmActive ? "realm" : "index"} className={swapped ? "map-overlay-in h-full" : "h-full"}>
+      {children}
+    </div>
+  );
+}

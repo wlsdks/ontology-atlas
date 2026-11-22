@@ -5,13 +5,13 @@ import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
 import { inflateRaw } from '@/shared/lib/library/inflate-raw';
+import { citedPassage } from '@/shared/lib/library/source-passage';
 import {
-  citedPassage,
   readSourceUnits,
   READ_SOURCE_DEFAULT_LIMIT,
   READ_SOURCE_MAX_CHARS,
   READ_SOURCE_MAX_LIMIT,
-} from '@/shared/lib/library/source-passage';
+} from '@/shared/lib/library/source-units';
 import {
   CITED_PASSAGE_CASES,
   SOURCE_PASSAGE_CASES,

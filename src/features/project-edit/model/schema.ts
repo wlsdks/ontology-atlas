@@ -75,7 +75,6 @@ export function parseLinksText(
     .map((parsed) => parsed.value);
 }
 
-// Messages are `validation.<key>` codes; ProjectForm translates them.
 export const projectFormSchema = z
   .object({
     slug: z
@@ -209,9 +208,6 @@ export function duplicateProjectToFormValues(
   };
 }
 
-/**
- * Converts form values into a `ProjectInput` — `position` must be injected by the caller.
- */
 export function formValuesToProjectInput(
   values: ProjectFormValues,
   position?: { x: number; y: number },

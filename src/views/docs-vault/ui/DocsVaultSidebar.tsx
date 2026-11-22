@@ -25,8 +25,6 @@ export function DocsVaultSidebar({
   const t = useTranslations('docsVault');
   return (
     <>
-      {/* Tree navigation is opt-in so the document surface stays primary. */}
-      {/* Full-screen surface: opacity-only motion. */}
       <Surface
         open={sourceTreeOpen}
         motion="overlay"

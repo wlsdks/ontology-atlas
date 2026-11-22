@@ -2,7 +2,6 @@ import { pendingSourceCopyPaths } from "../library/source-copy-publication";
 
 export interface WalkEntry {
   handle: FileSystemFileHandle;
-  /** Path relative to the top-level handle — e.g. 'specs/hello.md'. */
   relativePath: string;
   kind: 'md' | 'image' | 'source';
 }
@@ -44,11 +43,8 @@ export const VAULT_WALK_MAX_DEPTH = 12;
 
 export interface WalkResult {
   entries: WalkEntry[];
-  /** A limit was hit, so the walk saw only part of the tree. */
   truncated: boolean;
-  /** Relative paths of directories skipped whole as cache or dependencies. */
   prunedDirs: string[];
-  /** Source files passed over: counted, never read or stored. */
   sourceFileCount: number;
 }
 

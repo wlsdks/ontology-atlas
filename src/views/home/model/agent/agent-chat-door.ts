@@ -12,18 +12,15 @@ export interface VaultAgentPrefill {
 }
 
 export interface AgentChatDoorInput {
-  /** A gated coding agent was detected and there is a folder to give it. */
   hasRuntime: boolean;
   runtimeOpen: boolean;
   keyOpen: boolean;
-  /** The URL carries an "ask about this concept" intent. */
   hasAskIntent: boolean;
 }
 
 export interface AgentChatDoor {
   runtime: boolean;
   key: boolean;
-  /** The chip's pressed state reads this. */
   open: boolean;
 }
 
@@ -34,7 +31,6 @@ export function agentChatDoor({
   hasAskIntent,
 }: AgentChatDoorInput): AgentChatDoor {
   const runtime = hasRuntime && (runtimeOpen || hasAskIntent);
-  // `!runtime` makes both being true unrepresentable.
   const key = !runtime && (keyOpen || hasAskIntent);
   return { runtime, key, open: runtime || key };
 }

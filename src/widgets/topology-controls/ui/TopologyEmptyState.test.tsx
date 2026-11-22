@@ -173,10 +173,10 @@ describe("TopologyEmptyState", () => {
         <TopologyEmptyState conceptCount={0} canCreateNode onCreateNode={onCreateNode} />
       </NextIntlClientProvider>,
     );
-    const btn = screen.getByTestId("empty-create-node");
-    expect(btn).toHaveTextContent(EMPTY.ctaCreateNode);
+    const button = screen.getByTestId("empty-create-node");
+    expect(button).toHaveTextContent(EMPTY.ctaCreateNode);
     expect(document.querySelectorAll('a[href*="workbench=create"]')).toHaveLength(0);
-    btn.click();
+    button.click();
     expect(onCreateNode).toHaveBeenCalledTimes(1);
   });
 
@@ -187,13 +187,13 @@ describe("TopologyEmptyState", () => {
         <TopologyEmptyState conceptCount={0} docsFoundCount={4} onStartFromDocs={onStartFromDocs} />
       </NextIntlClientProvider>,
     );
-    const btn = screen.getByTestId("empty-start-from-docs");
-    expect(btn).toHaveTextContent("내 문서로 지도 만들기");
+    const button = screen.getByTestId("empty-start-from-docs");
+    expect(button).toHaveTextContent("내 문서로 지도 만들기");
     // The misdirection that offered an app install to someone who just opened a vault disappears on this branch.
     expect(screen.queryByText(/macOS/)).not.toBeInTheDocument();
     // The user's documents are acknowledged first (both the kicker and the body).
     expect(screen.getAllByText(/4개/).length).toBeGreaterThanOrEqual(1);
-    btn.click();
+    button.click();
     expect(onStartFromDocs).toHaveBeenCalledTimes(1);
   });
 

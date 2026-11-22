@@ -8,7 +8,6 @@ export interface WorkRunToolLabel {
   text: string;
 }
 
-/** What the turn reported it is doing now, in the conversation's own words. */
 export interface WorkRunActivity {
   kind: string;
   label: WorkRunToolLabel | null;
@@ -31,7 +30,6 @@ export interface WorkRunReport {
   pageCount: number;
   /** The parsed report, owned by the screen that reads it; the seat needs only the counts. */
   payload: unknown;
-  /** Keys of items the person has had fixed since this report arrived. */
   handled: ReadonlySet<string>;
 }
 
@@ -52,7 +50,6 @@ export interface WorkRun {
   report: WorkRunReport | null;
   /** The last readable report before this run, which a run that reports nothing leaves standing. */
   previousReport: WorkRunReport | null;
-  /** A finished report the person has not opened yet. */
   unseen: boolean;
   card: WorkRunCardState;
 }
@@ -67,7 +64,6 @@ export function isRunActive(run: WorkRun | null): boolean {
   return run !== null && (run.phase === 'running' || run.phase === 'asking');
 }
 
-/** The report the folder's results show: this run's, or the one before it while it has none. */
 export function latestReport(run: WorkRun | null): WorkRunReport | null {
   return run ? run.report ?? run.previousReport : null;
 }
@@ -148,20 +144,17 @@ export function closeCard(run: WorkRun): WorkRun {
   return run.card === 'closed' ? run : { ...run, card: 'closed' };
 }
 
-/** Opening the results reads them: the badge goes and a finished card has nothing left to say. */
 export function markSeen(run: WorkRun): WorkRun {
   if (isRunActive(run)) return run;
   if (!run.unseen && run.card === 'closed') return run;
   return { ...run, unseen: false, card: 'closed' };
 }
 
-/** The folder it was reading is gone, so the check ends there and says so once. */
 export function abandonRun(run: WorkRun, at: number): WorkRun {
   if (!isRunActive(run)) return run;
   return { ...run, phase: 'failed', endedAt: at, report: null, unseen: false, card: 'open' };
 }
 
-/** A finding the person had fixed stays fixed on this report, wherever they went meanwhile. */
 export function markHandled(run: WorkRun, key: string): WorkRun {
   const report = latestReport(run);
   if (!report || report.handled.has(key)) return run;

@@ -17,7 +17,6 @@ export interface DocReadingOutlineRailProps {
   headings: OutlineHeading[];
   activeHeadingSlug: string | null;
   onHeadingClick: (slug: string) => void;
-  /** Which width the pane can spare; defaults to narrow, the safe answer before measurement. */
   fit?: Exclude<OutlineRailFit, "hidden">;
 }
 

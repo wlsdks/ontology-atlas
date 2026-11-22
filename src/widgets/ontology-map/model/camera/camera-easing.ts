@@ -98,7 +98,6 @@ function hermiteShare(t: number, slope: number): number {
   return slope * (t * t * t - 2 * t * t + t) + t * t * (3 - 2 * t);
 }
 
-/** `hermiteShare`'s rate at `t`, per unit of `t`. */
 function hermiteRate(t: number, slope: number): number {
   return slope * (3 * t * t - 4 * t + 1) + 6 * t * (1 - t);
 }

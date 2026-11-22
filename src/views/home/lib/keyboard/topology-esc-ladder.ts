@@ -1,4 +1,3 @@
-/** One Escape dismisses one surface, including a review still acquiring focus. */
 export interface TopologyEscLadderInput {
   /** The review may be open before its animated surface can take keyboard focus. */
   workbenchOpen?: boolean;
@@ -68,7 +67,6 @@ export function resolveTopologyEscLadderAction(
   if (input.contextMenuOpen) return "close-context-menu";
   if (input.createNodeOpen) return "close-create-node";
   if (input.bootstrapOpen) return "close-bootstrap";
-  // The palette handles this keypress itself.
   if (input.searchOpen) return "none";
   if (input.fullDetailOpen) return "close-full-detail";
   if (input.selectedRelationActive) return "close-relation-lens";

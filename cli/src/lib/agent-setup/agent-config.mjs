@@ -73,9 +73,6 @@ export function repairCodexConfigText(text, expectedText) {
   };
 }
 
-/**
- * Writes a config file without a torn window, through the one implementation in `atomic-write.mjs`.
- */
 export function writeTextAtomically(path, text) {
   writeFileAtomically(path, text);
 }

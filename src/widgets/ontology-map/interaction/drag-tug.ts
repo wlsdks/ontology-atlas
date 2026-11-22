@@ -5,16 +5,12 @@
  */
 
 export interface DragTugSets {
-  /** Direct neighbors of the dragged node. */
   oneHop: ReadonlySet<string>;
   /** Neighbors-of-neighbors, excluding the dragged node itself and anything already in `oneHop`. */
   twoHop: ReadonlySet<string>;
 }
 
-/**
- * BFS out two hops from `draggedNodeId`. Pure — derived from `neighborMap`
- * only (same shape as `topology-world.ts#TopologyWorld.neighborMap`).
- */
+/** BFS out two hops from `draggedNodeId` over `neighborMap` (the shape of `TopologyWorld.neighborMap`). */
 export function computeDragTugSets(
   neighborMap: ReadonlyMap<string, ReadonlySet<string>>,
   draggedNodeId: string,
@@ -31,18 +27,11 @@ export function computeDragTugSets(
 }
 
 export interface DragTugFactors {
-  /** `--map-drag-tug-1hop` (0.45). */
   oneHop: number;
-  /** `--map-drag-tug-2hop` (0.15). */
   twoHop: number;
 }
 
-/**
- * The displacement-propagation factor for a node `hopDistance` hops from the
- * dragged node: `0` = the dragged node itself (moves 1:1, handled by the
- * existing pin-drag path, not this module), `1` = direct neighbor, `2` =
- * neighbor-of-neighbor, anything farther = 0 (untouched — "far nodes byte-still").
- */
+/** Displacement factor for a node `hopDistance` hops from the dragged node: 0 is the dragged node itself (1:1, the pin-drag path), 1 and 2 are neighbours, farther is 0 (far nodes stay still). */
 export function tugFactorForHop(hopDistance: 0 | 1 | 2 | number, factors: DragTugFactors): number {
   if (hopDistance === 0) return 1;
   if (hopDistance === 1) return factors.oneHop;
@@ -51,21 +40,13 @@ export function tugFactorForHop(hopDistance: 0 | 1 | 2 | number, factors: DragTu
 }
 
 /**
- * How much of the hop factor survives at world-space `distance` from the grab
- * point, given a `radius` of influence (`--map-drag-tug-radius`).
- *
- * AUDIT FINDING this fixes: hop count alone is a poor stand-in for "nearby".
- * A hub-and-spoke vault puts every node within 2 hops of every other, so the
- * hop-only rule tugged the whole map — a node ~900 world units away still
- * moved ~58px on a 430px drag, which reads as the layout being mushy rather
- * than elastic. Smoothstep falloff with COMPACT SUPPORT: nodes at or past the
- * radius are exactly 0 (genuinely still, not just slightly moved), and the
- * approach to 0 is eased so nothing pops as a neighbor crosses the boundary.
+ * How much of the hop factor survives at world-space `distance` from the grab point within `radius` (`--map-drag-tug-radius`):
+ * hop count alone tugs the whole map on a hub-and-spoke vault, so a smoothstep falloff with compact support leaves
+ * nodes at or past the radius exactly still and nothing pops at the boundary.
  */
 export function tugFalloffForDistance(distance: number, radius: number): number {
   if (radius <= 0) return 0;
   const t = Math.min(1, Math.max(0, distance / radius));
-  // 1 - smoothstep(0,1,t) — flat near the grab point, zero slope at the edge.
   return 1 - t * t * (3 - 2 * t);
 }
 

@@ -9,11 +9,6 @@ import {
   type ExecuteBootstrapResult,
 } from "@/features/docs-vault-local";
 
-/**
- * The "start an ontology from my documents" flow: plan derivation, dialog state and execution
- * through the features-level batch write. The caller handles completion through `onCompleted`; this
- * hook knows no map or toast.
- */
 export interface UseBootstrapFlowArgs {
   vault: BootstrapVaultWriter & { handle?: { name: string } | null };
   onCompleted: (result: ExecuteBootstrapResult) => void;

@@ -4,22 +4,18 @@ import type { VaultShape } from '@/shared/lib/vault-folder/vault-shape';
 import { CURRENT_LOCAL_FS_HANDLE_ID, type LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import type { VaultOpenOptions, VaultOpenResult } from '@/entities/vault-session';
 import {
-  createTauriVaultHandle,
-  ensureDefaultVaultParentDir,
   ensureTauriChildDirectory,
   listTauriDirectoryNames,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import { createTauriVaultHandle } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
+import { ensureDefaultVaultParentDir } from '@/shared/lib/vault-folder/native-vault/tauri-vault-location';
 import { buildDefaultVaultDisplayPath, resolveUniqueVaultDirName } from '../lib/default-vault-naming';
 import type { CreationReport } from './use-vault-create-flow';
 
 export interface JustStartReport extends CreationReport {
-  /** Receives how the screen names the new folder. */
   created?: (displayPath: string) => void;
 }
 
-/**
- * The narrow part of `useLocalVault()` this hook needs, so a test double satisfies it.
- */
 export interface JustStartVaultVault {
   openRecent: (record: LocalFsHandleRecord, options?: VaultOpenOptions) => Promise<VaultOpenResult>;
 }
@@ -40,7 +36,6 @@ export function useJustStartVault(
   const [actionError, setActionError] = useState<string | null>(null);
   const { created, starterFailed } = report;
 
-  /** `null` keeps the full starter. */
   const justStart = useCallback(async (chosen: VaultShape | null = null) => {
     setActionError(null);
     setBusy(true);
@@ -72,12 +67,12 @@ export function useJustStartVault(
         return;
       }
       created?.(buildDefaultVaultDisplayPath(dirName));
-    } catch (err) {
+    } catch (error) {
       /**
        * A failure code, not a sentence: `''` means nothing more specific; otherwise the screen looks
        * it up in `failures`, because a throwing module cannot know the reader's language.
        */
-      setActionError(failureCodeOf(err) ?? '');
+      setActionError(failureCodeOf(error) ?? '');
     } finally {
       setBusy(false);
     }

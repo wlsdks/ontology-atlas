@@ -1,18 +1,11 @@
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
-/**
- * Bridge to the two commands in `src-tauri/src/acp_doctor.rs`; Rust is the source of truth.
- * `acp_diagnose` fixes nothing; `acp_repair` returns the checks re-measured after fixing.
- * Rust returns ids and measured facts only; copy comes from i18n, or the English screen lies.
- * App-only: a browser cannot spawn processes or read the keychain (`.claude/rules/surfaces.md`).
- */
+/** Bridge to `src-tauri/src/acp/doctor.rs`, the source of truth: it returns ids and measured facts only, and copy comes from i18n. App-only: a browser cannot spawn processes or read the keychain (`.claude/rules/surfaces.md`). */
 
 /** 1:1 with Rust's `AcpCheck`. A new field turns the contract test red first. */
 export interface AcpCheck {
   id: string;
-  /** `unknown` is not `ok`. */
   state: 'ok' | 'problem' | 'unknown';
-  /** Can the app fix it itself? Meaningful only when `problem`. */
   fixable: boolean;
   /** An earlier step is blocked, so no action is recommended for this one; its state still shows. */
   blocked: boolean;
@@ -30,7 +23,6 @@ function getInvoke(): TauriInvoke | null {
   }
 }
 
-/** The check is possible only in the app. Callers decide whether to draw from this. */
 export function isAgentDoctorAvailable(): boolean {
   return getInvoke() !== null;
 }
@@ -47,56 +39,42 @@ export async function repairAgentCheck(runtimeId: string, checkId: string): Prom
   return invoke<AcpCheck[]>('acp_repair', { runtimeId, checkId });
 }
 
-/**
- * Rebuilds the connection, deleting and recreating only what the app created.
- * Not a logout: the app reuses the terminal login, so logging out would erase someone else's
- * login or do nothing. Rationale in the Rust doc block.
- */
+/** Not a logout: the app reuses the terminal login, so logging out would erase someone else's login or do nothing. */
 export async function resetAgentConnection(runtimeId: string): Promise<AcpCheck[]> {
   const invoke = getInvoke();
   if (!invoke) return [];
   return invoke<AcpCheck[]>('acp_reset_connection', { runtimeId });
 }
 
-/** The install command for this tool, or null; the screen shows it before anything is pressed. */
 export async function agentInstallPlan(runtimeId: string): Promise<string | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
   return invoke<string | null>('acp_install_plan', { runtimeId });
 }
 
-/**
- * Installs the tool into an app-only location and returns the re-measured checks.
- * Touches neither global npm nor the system PATH; the version is pinned.
- */
+/** Touches neither global npm nor the system PATH; the version is pinned. */
 export async function installAgentCli(runtimeId: string): Promise<AcpCheck[]> {
   const invoke = getInvoke();
   if (!invoke) return [];
   return invoke<AcpCheck[]>('acp_install_cli', { runtimeId });
 }
 
-/** The Node download address and hash prefix, or null; shown before anything is pressed. */
 export async function nodeInstallPlan(): Promise<string | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
   return invoke<string | null>('acp_node_plan');
 }
 
-/** Fetches Node into an app-only location and checks the hash. Returns the re-measured values. */
 export async function installManagedNode(runtimeId: string): Promise<AcpCheck[]> {
   const invoke = getInvoke();
   if (!invoke) return [];
   return invoke<AcpCheck[]>('acp_install_node', { runtimeId });
 }
 
-/**
- * Install progress, 1:1 with Rust's `AcpInstallProgress`. The install commands return only when
- * finished, so without this event the screen could only wait silently.
- */
+/** 1:1 with Rust's `AcpInstallProgress`. */
 export interface AcpInstallProgress {
   runtimeId: string;
   job: 'node' | 'cli';
-  /** No copy here; the screen builds it through i18n. */
   stage:
     | 'downloading'
     | 'verifying'
@@ -108,7 +86,6 @@ export interface AcpInstallProgress {
   /** Null when unknown, and then the screen draws no percentage. */
   received: number | null;
   total: number | null;
-  /** The line the tool actually emitted, not an invented sentence. */
   note: string | null;
   /** Epoch ms when this state arose, so stale state is not drawn. */
   at: number;
@@ -120,7 +97,6 @@ export interface AcpInstallProgress {
  */
 export const INSTALL_PROGRESS_FRESH_MS = 5 * 60 * 1000;
 
-/** `now` is a parameter so tests can pin the clock. */
 export function isInstallProgressFresh(
   progress: Pick<AcpInstallProgress, 'at'>,
   now: number = Date.now(),
@@ -130,7 +106,6 @@ export function isInstallProgressFresh(
   return elapsed < 0 || elapsed <= INSTALL_PROGRESS_FRESH_MS;
 }
 
-/** Listens to install progress and returns the detach function; does not attach on the web. */
 /**
  * @param runtimeId Receives only this tool's progress; `null` receives every tool, for the rail badge.
  */

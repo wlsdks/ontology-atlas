@@ -24,21 +24,16 @@ interface TopologyNodeFocusConnection {
 export interface TopologyNodeFocusModel {
   id: string;
   title: string;
-  /** The full `title` shows only on the full-detail surface. */
   displayTitle: string;
   kind: string;
   summary: string | null;
   sourceSlug: string | null;
   ownDocumentSlug: string | null;
-  /** Without its own document, the document that mentions it. */
   mentionedInSlug: string | null;
   usedByCount: number;
   dependsOnCount: number;
-  /** Up to the drawer's `previewLimit`. */
   connections: TopologyNodeFocusConnection[];
-  /** Edge evidence and approval state, not a similarity score. */
   relationQuality: TopologyRelationQualityBreakdown;
-  /** Shown as "+N". */
   hiddenConnectionCount: number;
 }
 

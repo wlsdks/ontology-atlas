@@ -4,8 +4,8 @@ type WebglContext = WebGLRenderingContext | WebGL2RenderingContext;
 
 export function isSoftwareRenderer(gl: WebglContext): boolean {
   try {
-    const info = gl.getExtension("WEBGL_debug_renderer_info");
-    const renderer = String(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+    const debugRendererInfo = gl.getExtension("WEBGL_debug_renderer_info");
+    const renderer = String(debugRendererInfo ? gl.getParameter(debugRendererInfo.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
     return SOFTWARE_RENDERER.test(renderer);
   } catch {
     return true;
@@ -18,7 +18,6 @@ export interface WebglVerdict {
   accelerated: boolean;
 }
 
-/** Opens one throwaway context, WebGL2 first, and releases it. */
 export function probeWebgl(): WebglVerdict {
   try {
     const canvas = document.createElement("canvas");

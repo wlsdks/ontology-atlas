@@ -8,9 +8,7 @@ export type LocalRunnerId = 'ollama' | 'lmstudio' | 'llamacpp' | 'custom';
 
 export interface LocalRunner {
   id: LocalRunnerId;
-  /** Key under `agents.models`. */
   labelKey: 'runnerOllama' | 'runnerLmStudio' | 'runnerLlamaCpp' | 'runnerCustom';
-  /** The runner's documented default address; empty for the typed one. */
   defaultBaseUrl: string;
   /**
    * The row's marker, spelled out rather than assembled: the installed-app probe
@@ -42,7 +40,6 @@ export function normalizeRunnerBaseUrl(raw: string): string {
   return head.toLowerCase() + tail;
 }
 
-/** Which row a saved address belongs to. An address that is none of the defaults is the typed row. */
 export function runnerForBaseUrl(baseUrl: string): LocalRunnerId {
   const normalized = normalizeRunnerBaseUrl(baseUrl);
   if (!normalized) return 'custom';

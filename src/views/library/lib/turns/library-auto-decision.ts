@@ -2,7 +2,8 @@ import type { VaultDoc } from "@/entities/docs-vault";
 import { automaticWikiWriteAllowed, judgePageWrite, wikiNodeIndexOfDocs, wikiPagePathOf } from "@/features/library";
 import { WIKI_CITATION_PATTERN } from "@/shared/lib/library/wiki-page-schema";
 import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
-import { nativeVaultFileHashResults, readTauriVaultText } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { readTauriVaultText } from "@/shared/lib/vault-folder/native-vault/tauri-vault-files";
+import { nativeVaultFileHashResults } from "@/shared/lib/vault-folder/native-vault/tauri-vault-fingerprint";
 
 import type { LiveLibraryFolder } from "./library-folder-mirror";
 

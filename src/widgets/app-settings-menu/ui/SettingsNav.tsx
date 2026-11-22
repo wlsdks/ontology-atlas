@@ -18,7 +18,7 @@ import { useTranslations } from 'next-intl';
 import { controlClass } from '@/shared/ui/control-class';
 
 import { settingsCatalogFor } from '../model/catalog';
-import { SETTINGS_SECTION_SCOPE, type SettingsSectionId } from '../model/catalog/types';
+import { SETTINGS_SECTION_SCOPE, type SettingsSectionId } from '../model/catalog/settings-catalog-entry';
 import { SETTINGS_NAV_GROUPS } from '../model/settings-sections';
 import type { SettingsSearchItem } from '../model/settings-search';
 

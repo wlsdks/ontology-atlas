@@ -37,7 +37,6 @@ export function useClientAnswered(): boolean {
   return useSyncExternalStore<boolean>(subscribeStatic, () => true, () => false);
 }
 
-/** Picked by a server component: the root layout for the error boundary, the root 404 for itself. */
 const StandaloneMessagesContext = createContext<StandaloneMessages | null>(null);
 
 export function StandaloneMessagesProvider({

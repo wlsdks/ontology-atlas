@@ -25,22 +25,13 @@ export interface SearchMatchEvidence {
   text: string;
 }
 
-/**
- * One page of results plus the found count, so the screen shows the answer rather than the limit.
- */
 export interface OntologySearchPage {
-  /** The results to draw, already cut to the limit. */
   results: OntologySearchResult[];
-  /** How many matched in all, before the cut. */
   total: number;
 }
 
-/**
- * One search result — an ontology approved node source.
- */
 export interface OntologySearchResult {
   node: KnowledgeGraphNode;
-  /** The match score the caller sorts on. Higher wins. */
   score: number;
   /**
    * Which field carried the match. Absent for an empty query, where nothing was
@@ -49,14 +40,7 @@ export interface OntologySearchResult {
   matched?: SearchMatchEvidence;
 }
 
-/**
- * Optional filters; empty or unset sets are inactive, and non-empty kind and project sets are
- * ANDed.
- */
 export interface MatchOntologyOptions {
-  /**
-   * The result node's kind must be in this set. Empty allows every kind.
-   */
   kinds?: ReadonlySet<string>;
   /**
    * At least one of the result node's projectIds must be in this set. Empty allows
@@ -132,27 +116,20 @@ export function matchOntologyNodes(
 
   matches.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
-    // Within an equal score, most recent first (lastApprovedAt desc) — unified with the documents matcher.
     return b.node.lastApprovedAt.getTime() - a.node.lastApprovedAt.getTime();
   });
 
   return { results: matches.slice(0, limit), total: matches.length };
 }
 
-/** One page of project results plus how many matched in all. */
 export interface ProjectSearchPage {
   results: ProjectSearchResult[];
   total: number;
 }
 
-/**
- * One search result — a project source.
- */
 export interface ProjectSearchResult {
   project: Project;
-  /** The match score. Higher wins. */
   score: number;
-  /** Which field carried the match; absent for an empty query. */
   matched?: SearchMatchEvidence;
 }
 

@@ -1,5 +1,5 @@
 import { MOTION } from "@/shared/motion/tokens";
-import type { DialRowAction, DialScene } from "../types";
+import type { DialRowAction, DialScene } from "../dial-shapes";
 import { branchPreviewRows } from "./layout";
 
 interface Disclosure { target: number; from: readonly number[]; started: number }

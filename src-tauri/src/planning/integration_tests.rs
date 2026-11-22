@@ -1,13 +1,15 @@
 use super::{confined::open_root, session::PlanningSession};
 use crate::{
     git::briefing::git_source_briefing,
-    library::{discover_source_candidates, SourceDiscoveryRoot},
+    library::source_discovery::{discover_source_candidates, SourceDiscoveryRoot},
     project_source::inspect_project_source,
     vault::{
-        read::read_vault_text_file, scope::canonical_root, walk::list_vault_directory,
+        grants::{self, EnforcedScope},
+        read::read_vault_text_file,
+        scope::canonical_root,
+        walk::list_vault_directory,
         write::write_vault_text_file_blocking as write_vault_text_file,
     },
-    vault_grants::{self, EnforcedScope},
 };
 use std::{
     fs,
@@ -94,7 +96,7 @@ fn wrong_shared_source_grant_changes_existing_source_access_positive_control() {
     let f = Fixture::new();
     let _scope = EnforcedScope::granting(&[]);
     assert!(inspect_project_source(f.path(), None).is_err());
-    vault_grants::grant_source_root(&f.root);
+    grants::grant_source_root(&f.root);
     assert!(inspect_project_source(f.path(), None).is_ok());
     assert!(read_vault_text_file(f.path(), "plan.md".into()).is_err());
 }
@@ -114,7 +116,7 @@ fn separately_granted_vault_retains_but_does_not_expand_its_authority() {
 fn separately_granted_source_survives_planning_revocation_without_parent_or_vault_access() {
     let f = Fixture::new();
     let _scope = EnforcedScope::granting(&[]);
-    vault_grants::grant_source_root(&f.root);
+    grants::grant_source_root(&f.root);
     assert!(inspect_project_source(f.path(), None).is_ok());
     let session = PlanningSession::default();
     f.grant(&session);

@@ -1,14 +1,6 @@
 #!/usr/bin/env node
-// R13 #60 — vault size scaling measurement.
-//
-// Question: does the MCP effect measured on the 23-node dogfood vault (Cat A
-// hallucinations 9→0, tool calls 7→1.67) hold on a *larger vault*, or does it
-// saturate or weaken?
-//
-// Method: generate a 100-node tmp vault (the perf-vault.mjs pattern) + 1 high-MCP-advantage
-// task (find_backlinks of a known popular slug) × 2 mode × Codex.
-//
-// 4 cells × ~30s = ~2 min. Scope is deliberately minimal; a larger measurement waits on D's results.
+// Vault size scaling: does the MCP effect measured on the dogfood vault hold on a 100-node tmp
+// vault? One high-advantage task (find_backlinks of a popular slug) x 2 modes x Codex.
 //
 // Usage:
 //   node scripts/benchmark/benchmark-scale.mjs --bypass
@@ -49,8 +41,6 @@ if (dryRun) {
   process.exit(0);
 }
 
-// Generate scale vault — N nodes with a "popular" hub that everyone references
-// (gives find_backlinks something interesting to find).
 const root = mkdtempSync(join(tmpdir(), `ontology-atlas-scale-${N}-`));
 console.log(`[benchmark-scale] tmp vault: ${root} (N=${N})`);
 
@@ -58,13 +48,11 @@ mkdirSync(join(root, "domains"), { recursive: true });
 mkdirSync(join(root, "capabilities"), { recursive: true });
 mkdirSync(join(root, "elements"), { recursive: true });
 
-// 1 hub element that 30%+ of capabilities reference
 writeFileSync(
   join(root, "elements/hub.md"),
   `---\nuid: ${randomUUID()}\nslug: elements/hub\nkind: element\ntitle: Hub element\ndomain: domains/dom-0\n---\n\n# Hub\n`,
 );
 
-// Domain stubs
 const numDomains = 5;
 for (let d = 0; d < numDomains; d += 1) {
   writeFileSync(
@@ -73,7 +61,6 @@ for (let d = 0; d < numDomains; d += 1) {
   );
 }
 
-// Capability nodes — 30% reference elements/hub via relates
 let hubReferers = 0;
 for (let i = 0; i < N - numDomains - 1; i += 1) {
   const refsHub = i % 3 === 0;
@@ -149,10 +136,8 @@ try {
   ensureMcp(true, root);
   const on = runOnce("on", root);
 
-  // Restore dogfood MCP after measurement
   ensureMcp(true, resolve(REPO, "docs/ontology"));
 
-  // Summary
   let md = `# Benchmark scale — ${today} — Codex (N=${N})\n\n`;
   md += `Tmp vault: \`${root}\` (N=${N} nodes, ${hubReferers} reference \`elements/hub\`).\n\n`;
   md += `Single high-MCP-advantage task (\`find_backlinks(elements/hub)\`).\n\n`;

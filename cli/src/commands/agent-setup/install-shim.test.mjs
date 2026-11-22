@@ -43,15 +43,15 @@ describe('install-shim puts atlas on PATH without touching foreign files', () =>
    * wrote, never by the filename.
    */
   it('tells its own shim from a foreign file by the signature', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'shim-'));
-    const ours = join(dir, 'ours');
-    const theirs = join(dir, 'theirs');
+    const directory = mkdtempSync(join(tmpdir(), 'shim-'));
+    const ours = join(directory, 'ours');
+    const theirs = join(directory, 'theirs');
     writeFileSync(ours, shimBody('/checkout/cli/src/index.mjs'));
     writeFileSync(theirs, '#!/bin/sh\necho "my own script"\n');
 
     assert.equal(inspectTarget(ours).state, 'ours');
     assert.equal(inspectTarget(theirs).state, 'foreign');
-    assert.equal(inspectTarget(join(dir, 'nothing-here')).state, 'free');
+    assert.equal(inspectTarget(join(directory, 'nothing-here')).state, 'free');
   });
 
   it('matches PATH entries exactly, not by shared prefix', () => {

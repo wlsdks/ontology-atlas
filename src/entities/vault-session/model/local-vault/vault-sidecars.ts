@@ -2,8 +2,9 @@ import {
   buildCodexConfigToml,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
-} from '../../lib/ontology-starter';
-import { getTauriVaultRootPath, readTauriVaultTextTail } from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '../../lib/agent-mcp-config';
+import { readTauriVaultTextTail } from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity/agent-activity-log';
 import {
   ACP_WORK_RECEIPT_FILE,
@@ -11,7 +12,7 @@ import {
   type AcpWorkReceipt,
 } from '@/shared/lib/meaning-transition/acp-work-receipt';
 import { bundledServerLaunch, inspectMcpServerLaunch, type McpServerLaunch } from '@/shared/config';
-import { readBundledMcpServer } from '@/shared/lib/desktop-shell/tauri-agent-setup';
+import { readBundledMcpServer } from '@/shared/lib/desktop-shell/tauri-bundled-mcp-server';
 import {
   emptyAgentActivityStatus,
   parseAgentActivityStatus,
@@ -118,7 +119,6 @@ function configTomlStringArray(section: string | null, key: string): string[] | 
   }
 }
 
-/** The command string registered by `.codex/config.toml`, or `null`. */
 export function readOmotCodexCommand(raw: string | null): string | null {
   if (!raw) return null;
   return configTomlString(configTomlSection(raw, 'mcp_servers.ontology-atlas'), 'command');
@@ -223,7 +223,6 @@ export async function readVaultSidecarStatuses(handle: FileSystemDirectoryHandle
 
 const ACTIVITY_LOG_SHOWN_ENTRIES = 50;
 
-/** Tail of the local audit log (read-only; empty array when absent). */
 async function readAgentActivityLog(handle: FileSystemDirectoryHandle): Promise<AgentActivityEntry[]> {
   try {
     const rootPath = getTauriVaultRootPath(handle);
@@ -238,8 +237,8 @@ async function readAgentActivityLog(handle: FileSystemDirectoryHandle): Promise<
 
 async function readAcpWorkReceipts(handle: FileSystemDirectoryHandle): Promise<AcpWorkReceipt[]> {
   try {
-    const dir = await handle.getDirectoryHandle('.ontology-atlas');
-    const raw = await readTextFileIfPresent(dir, ACP_WORK_RECEIPT_FILE);
+    const directory = await handle.getDirectoryHandle('.ontology-atlas');
+    const raw = await readTextFileIfPresent(directory, ACP_WORK_RECEIPT_FILE);
     return raw ? parseAcpWorkReceipts(raw) : [];
   } catch {
     return [];

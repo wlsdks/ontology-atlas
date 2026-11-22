@@ -13,7 +13,6 @@ export function useDocOutline({
   docHeadings = NO_HEADINGS,
   setActiveHeadingSlug,
 }: {
-  /** The open document's headings; absent while its detail is read, so no rail shows yet. */
   docHeadings: VaultHeading[] | undefined;
   setActiveHeadingSlug: (slug: string | null) => void;
 }) {

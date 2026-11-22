@@ -12,7 +12,7 @@ export interface HomeSpringState {
 }
 
 /** Seeded at the current, possibly displaced, position with zero velocity. */
-export function initHomeSpring(currentX: number, currentY: number): HomeSpringState {
+export function createHomeSpring(currentX: number, currentY: number): HomeSpringState {
   return { x: { value: currentX, velocity: 0 }, y: { value: currentY, velocity: 0 } };
 }
 

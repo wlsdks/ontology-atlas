@@ -15,24 +15,24 @@ import {
   existsSync,
   withConfinedSourceReads,
   confinedSourceReadsEnabled,
-} from './infer-imports/confined-source-fs.mjs';
+} from './infer-imports/confinement/confined-source-fs.mjs';
 import { join, dirname, relative, extname } from 'node:path';
-import { detectAutotoolsC } from './infer-imports/autotools-c.mjs';
-import { GO_SOURCE_EXTENSION, inferGoPackageImports } from './infer-imports/go-imports.mjs';
-import { classifyJvmImports, parseJvmSource } from './infer-imports/java-imports.mjs';
+import { detectAutotoolsC } from './infer-imports/languages/autotools-c.mjs';
+import { GO_SOURCE_EXTENSION, inferGoPackageImports } from './infer-imports/languages/go-imports.mjs';
+import { classifyJvmImports, parseJvmSource } from './infer-imports/languages/java-imports.mjs';
 import { moduleOf } from './infer-imports/module-grouping.mjs';
-import { createPathFacts, isDirectoryInsideRoot } from './infer-imports/path-confinement.mjs';
+import { createPathFacts, isDirectoryInsideRoot } from './infer-imports/confinement/path-confinement.mjs';
 import {
   discoverRootPythonPackages,
   parsePythonImports,
   classifyPythonImport,
   createPythonModuleResolver,
-} from './infer-imports/python-imports.mjs';
+} from './infer-imports/languages/python-imports.mjs';
 import {
   RUST_IMPORT_TEXT_MAX_BYTES,
   classifyRustDependencies,
   readRootRustPackageName,
-} from './infer-imports/rust-imports.mjs';
+} from './infer-imports/languages/rust-imports.mjs';
 import {
   DEFAULT_IGNORE,
   IMPORT_SCAN_EXTENSIONS,
@@ -49,7 +49,7 @@ import {
   classify,
   createTypeScriptResolver,
   readTsconfigPathAliases,
-} from './infer-imports/typescript-imports.mjs';
+} from './infer-imports/languages/typescript-imports.mjs';
 import { discoverDeclaredWorkspacePackages } from './infer-imports/workspace-packages.mjs';
 import { zeroCounts } from './infer-imports/zero-counts.mjs';
 
@@ -206,7 +206,7 @@ function inferImportsWithinRoot(rootPath, options = {}) {
     } catch {
       continue;
     }
-    const dir = dirname(file);
+    const directory = dirname(file);
 
     if (extname(file) === RUST_SOURCE_EXTENSION) {
       classifyRustDependencies(
@@ -249,7 +249,7 @@ function inferImportsWithinRoot(rootPath, options = {}) {
       classify(
         spec,
         file,
-        dir,
+        directory,
         rootPath,
         edges,
         externalImports,
@@ -268,7 +268,7 @@ function inferImportsWithinRoot(rootPath, options = {}) {
       classify(
         spec,
         file,
-        dir,
+        directory,
         rootPath,
         edges,
         externalImports,

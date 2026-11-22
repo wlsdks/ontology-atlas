@@ -94,8 +94,8 @@ export function reconcileImportEdges({
     const to = norm(e.to);
     if (!from || !to || from === to) continue;
     const k = key(from, to);
-    const prev = codeMap.get(k);
-    const evidence = [...(prev?.evidence ?? [])];
+    const previous = codeMap.get(k);
+    const evidence = [...(previous?.evidence ?? [])];
     for (const row of e.evidence ?? []) {
       if (evidence.length >= 5) break;
       evidence.push(row);
@@ -103,19 +103,19 @@ export function reconcileImportEdges({
     codeMap.set(k, {
       from,
       to,
-      count: (e.count ?? 0) + (prev?.count ?? 0),
+      count: (e.count ?? 0) + (previous?.count ?? 0),
       sourceRoleCounts: addCounts(
-        prev?.sourceRoleCounts,
+        previous?.sourceRoleCounts,
         normalizedCounts(e.sourceRoleCounts, SOURCE_ROLE_VALUES, e.count ?? 0),
         SOURCE_ROLE_VALUES,
       ),
       importUsageCounts: addCounts(
-        prev?.importUsageCounts,
+        previous?.importUsageCounts,
         normalizedCounts(e.importUsageCounts, IMPORT_USAGE_VALUES, e.count ?? 0),
         IMPORT_USAGE_VALUES,
       ),
       productValueCount:
-        (prev?.productValueCount ?? 0) +
+        (previous?.productValueCount ?? 0) +
         (Number.isInteger(e.productValueCount)
           ? e.productValueCount
           : (e.evidence ?? []).filter(
@@ -124,9 +124,9 @@ export function reconcileImportEdges({
             ).length),
       evidence,
       evidenceLimited:
-        Boolean(prev?.evidenceLimited) ||
+        Boolean(previous?.evidenceLimited) ||
         Boolean(e.evidenceLimited) ||
-        (e.count ?? 0) + (prev?.count ?? 0) > evidence.length,
+        (e.count ?? 0) + (previous?.count ?? 0) > evidence.length,
     });
   }
 

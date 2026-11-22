@@ -16,13 +16,7 @@ export interface WalkNode {
 /** The penalty applied to orthogonal distance. At 1 it ties with straight ahead at 45°. */
 export const ORTHOGONAL_PENALTY = 2;
 
-/**
- * The tangent of the cone's half angle — ±60° (`Math.tan(Math.PI / 3)`).
- *
- * Frozen as a constant because computing the angle per call adds cost wherever this
- * function lands on a per-frame path, and because this value is the specification
- * and so has to be decided in one place.
- */
+/** The tangent of the cone's half angle, ±60°. A constant: computing the angle per call costs on a per-frame path, and the value is the specification, decided once. */
 export const CONE_HALF_TANGENT = Math.tan(Math.PI / 3);
 
 const AXIS: Record<WalkDirection, { readonly dx: number; readonly dy: number }> = {
@@ -32,11 +26,7 @@ const AXIS: Record<WalkDirection, { readonly dx: number; readonly dy: number }> 
   right: { dx: 1, dy: 0 },
 };
 
-/**
- * The most «natural» neighbour in that direction, or `null` if there is none.
- *
- * `neighbors` may contain `from` itself — its projection is 0, so it is filtered out.
- */
+/** The most natural neighbour in that direction, or null; `neighbors` may contain `from` (projection 0, filtered out). */
 export function pickNeighborInDirection(
   from: WalkNode,
   neighbors: readonly WalkNode[],
@@ -51,16 +41,13 @@ export function pickNeighborInDirection(
     const dx = node.x - from.x;
     const dy = node.y - from.y;
 
-    // How far along the pressed direction, and how far off it at a right angle.
     const along = dx * axis.dx + dy * axis.dy;
-    if (along <= 0) continue; // Behind, or exactly to the side.
+    if (along <= 0) continue;
     const across = Math.abs(dx * axis.dy - dy * axis.dx);
-    if (across > along * CONE_HALF_TANGENT) continue; // Outside the cone.
+    if (across > along * CONE_HALF_TANGENT) continue;
 
     const cost = along + across * ORTHOGONAL_PENALTY;
-    // On a tie, take **the lower id** — the same input has to give the same result
-    // every time, and relying on array order makes the result shift whenever the
-    // layout does.
+    // On a tie take the lower id: array order shifts whenever the layout does, and the same input must give the same result.
     if (cost < bestCost || (cost === bestCost && bestId !== null && node.id < bestId)) {
       bestCost = cost;
       bestId = node.id;
@@ -70,14 +57,7 @@ export function pickNeighborInDirection(
   return bestId;
 }
 
-/**
- * The node to grab first when there is no focus — **the one nearest the screen
- * centre**.
- *
- * Picking «the first node» by array order can land off screen, and then pressing an
- * arrow key shows no visible change (the camera does follow, but the user cannot
- * tell what happened). Starting from what they are looking at is always right.
- */
+/** The node to grab first when there is no focus: the one nearest the screen centre, since the first by array order can be off screen and an arrow key would show no visible change. */
 export function pickInitialFocus(
   nodes: readonly WalkNode[],
   viewportCenter: { readonly x: number; readonly y: number },
@@ -102,7 +82,6 @@ export function pickInitialFocus(
  */
 export const DEAD_END_NOTICE_COOLDOWN_MS = 1200;
 
-/** May the dead end be announced now? A `null` `lastAtMs` means it has never been said. */
 export function shouldAnnounceDeadEnd(lastAtMs: number | null, nowMs: number): boolean {
   if (lastAtMs === null) return true;
   return nowMs - lastAtMs >= DEAD_END_NOTICE_COOLDOWN_MS;

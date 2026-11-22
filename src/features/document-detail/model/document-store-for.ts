@@ -6,12 +6,14 @@ import {
 } from '@/entities/docs-vault';
 import type { GrantedVaultFiles } from '@/entities/vault-session';
 import { bundledDocsBySlug, createBundledDetailReader } from './bundled-detail-reader';
-import { getTauriVaultRootPath, isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import {
+  getTauriVaultRootPath,
+  isTauriVaultRuntime,
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { createVaultTextReader } from '@/shared/lib/vault-folder/vault-text-reader';
 
 export interface ResolvedDocumentStore {
   store: DocumentStore;
-  /** The folder handle or the bundled sample; a different origin never shows another's detail. */
   origin: object;
 }
 
@@ -51,10 +53,7 @@ function sampleHolding(doc: DocumentRef, samples: readonly (StaticVaultSource | 
   );
 }
 
-/**
- * A local document carries the stamp it was read at; a bundled one has none. `null`: no source can
- * read this document now.
- */
+/** `null`: no source can read this document now. */
 export function documentStoreFor(
   doc: DocumentRef,
   local: GrantedVaultFiles | null,

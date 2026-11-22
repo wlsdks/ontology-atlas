@@ -31,23 +31,14 @@ interface Props {
   selectedSlug: string | null;
   onSelect: (slug: string) => void;
   query?: string;
-  /** Order within a group. Name order by default. The contract is `lib/tree-order.ts`. */
   sort?: DocsTreeSort;
-  /** Which to draw first, folders or documents. Folders first by default. */
   group?: DocsTreeGroup;
-  /** The active tag filter. null clears it. */
   activeTag?: string | null;
-  /** The slugs the active tag matches. Used only while activeTag is set. */
   activeTagSlugs?: Set<string>;
-  /** The slugs within the current document scope. Without it, the whole tree renders. */
   visibleDocSlugs?: Set<string>;
-  /**
-   * slug to VaultDoc; `frontmatter.kind` picks the kind glyph, otherwise the generic FileText icon.
-   */
   docsBySlug?: Map<string, VaultDoc>;
 }
 
-/** How many actual documents (leaves) sit under a directory node — shown as an engraved count. */
 function countDocs(node: VaultTreeNode, visibleDocSlugs?: Set<string>): number {
   if (node.type === 'doc') {
     if (!node.slug) return 0;
@@ -67,9 +58,9 @@ function DocKindGlyph({
   docsBySlug?: Map<string, VaultDoc>;
 }) {
   const kind = docsBySlug?.get(slug)?.frontmatter?.kind;
-  const kindStr = typeof kind === 'string' ? kind : '';
-  if (kindStr && isOntologyMapRenderableKind(kindStr)) {
-    return <OntologyMapKindGlyph kind={kindStr} size={12} className="shrink-0" />;
+  const kindText = typeof kind === 'string' ? kind : '';
+  if (kindText && isOntologyMapRenderableKind(kindText)) {
+    return <OntologyMapKindGlyph kind={kindText} size={12} className="shrink-0" />;
   }
   return (
     <FileText
@@ -238,10 +229,6 @@ function TreeNode({
   );
 }
 
-/**
- * The source vault tree. Directories collapse and expand; a source record calls
- * onSelect on click.
- */
 export function DocsVaultTree({
   tree,
   selectedSlug,

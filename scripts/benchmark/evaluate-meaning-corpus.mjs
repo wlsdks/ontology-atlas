@@ -6,7 +6,7 @@ import {
   candidateProposalFromAnalysis,
   evaluateMeaningProposal,
   proposalFromGolden,
-} from '../../mcp/src/meaning/meaning-evaluation.mjs';
+} from '../../mcp/src/meaning/golden-corpus-scoring.mjs';
 
 const corpusRoot = join(process.cwd(), 'tests/fixtures/meaning-corpus');
 const RELAXED_MINIMUM_COVERAGE = Object.freeze([

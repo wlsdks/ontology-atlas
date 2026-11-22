@@ -3,15 +3,9 @@
 import type { ToolCallRecord } from '@/features/vault-agent';
 
 /**
- * One line per tool round trip — **this row is the progress indicator.**
- *
- * No fake progress bar, no decorative spinner. Only round trips that really
- * happened are appended, one row each, and each row states from measurement what
- * was read and how many characters went out. Rows appearing is the progress; no row
- * means nothing has happened yet.
- *
- * The height is fixed at one row — an arriving answer does not push the content
- * above it (dimension regularity).
+ * One line per tool round trip: this row is the progress indicator. Only round trips that really
+ * happened are appended, each stating from measurement what was read and how many characters went
+ * out. The height is fixed at one row, so an arriving answer does not push the content above it.
  */
 export function AgentToolLine({
   call,

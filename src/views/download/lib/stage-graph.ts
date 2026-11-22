@@ -50,7 +50,6 @@ export function buildStageGraph(
   );
   const descendantCountOf = (id: string) => censusById.get(id)?.total ?? 0;
 
-  /** At most one hub; ties break by ascending id so every build picks the same node. */
   let hubId: string | null = null;
   let hubIncoming = 0;
   for (const node of included) {

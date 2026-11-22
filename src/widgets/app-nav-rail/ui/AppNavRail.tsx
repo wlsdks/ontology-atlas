@@ -34,7 +34,7 @@ import {
 } from "@/shared/ui/routing/route-focus-manager";
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
 import { shouldShowGetAppTile } from "@/shared/lib/navigation/show-get-app-tile";
-import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 
 /** The runtime never changes after load, so subscribing is a formality — a no-op. */
 const subscribeToRuntime = () => () => {};
@@ -49,22 +49,16 @@ export interface AppNavRailProps {
    * route changes.
    */
   vaultSlot?: ReactNode;
-  /** The settings trigger in the rail's bottom slot; AppShell supplies the default. */
   settingsSlot?: ReactNode;
-  /** Hides the rail with CSS instead of unmounting, to keep its DOM identity across routes. */
   hidden?: boolean;
-  /** Context targets override a destination; other items keep their static href. */
   contextHrefs?: NavRailContextHrefs | null;
-  /** Uncommitted change count for the Git destination; the badge disappears at zero. */
   gitDirtyCount?: number;
-  /** Tools that finished installing while the user was elsewhere; terminal states only. */
   agentsNoticeCount?: number;
   /**
    * Runs that belong to a destination, at most one entry per destination: a ring while one runs,
    * a count once they finished and nobody has read them.
    */
   workRuns?: readonly RailWorkRun[];
-  /** Destinations this folder earns (`destinationsForVaultShape`); `null` draws all. */
   visibleDestinations?: ReadonlySet<AppNavRailItemId> | null;
   className?: string;
 }
@@ -82,7 +76,6 @@ interface RailDestination {
   href: string;
   label: string;
   Icon: ComponentType<{ size?: number; className?: string; "aria-hidden"?: boolean }>;
-  /** Count badge at the top right; disappears at 0 instead of greying out. */
   badgeCount?: number;
 }
 
@@ -107,10 +100,6 @@ function rememberRailRouteFocus(
   return true;
 }
 
-/**
- * The 64px left nav rail: global destinations plus
- * the settings tile, shown from `lg`; below it `BottomTabBar` takes over.
- */
 export function AppNavRail({
   contextHrefs,
   vaultSlot,
@@ -163,7 +152,6 @@ export function AppNavRail({
       href: DESTINATION_HREF.agents,
       label: t("agents"),
       Icon: Bot,
-      // Badge only for terminal install states; peripheral chrome shows no progress.
       badgeCount: agentsNoticeCount,
     },
     { id: "changes", href: DESTINATION_HREF.changes, label: t("changes"), Icon: Newspaper },
@@ -244,7 +232,7 @@ export function AppNavRail({
                       beginMapNavigation(() => router.push(target), pathname + window.location.search);
                     } else {
                       cancelMapNavigation();
-                      navigateWithViewTransition(() => router.push(target));
+                      navigateWithViewTransition(target, () => router.push(target));
                     }
                   }}
                   /*

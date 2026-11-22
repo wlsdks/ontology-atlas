@@ -1,7 +1,4 @@
-/**
- * States only what the adapter declared in `_meta.permission.changes[].targets[]`, which is
- * a tool, not a folder. Never compute a folder from the path; mixed types are unknown.
- */
+/** States only what the adapter declared in `_meta.permission.changes[].targets[]`, a tool not a folder; never compute a folder from the path, and mixed types are unknown. */
 
 export type PermissionScope =
   | { kind: 'tool'; names: string[] }
@@ -14,11 +11,7 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
 }
 
-/**
- * @param options The `options` array of `session/request_permission`, verbatim.
- *   **Only the `_meta` of the "always allow" option is read** — reading another option's would
- *   describe the scope of a button that was not pressed.
- */
+/** Only the `_meta` of the "always allow" option is read: another option's would describe the scope of a button that was not pressed. */
 export function permissionScope(options: readonly unknown[]): PermissionScope {
   if (!Array.isArray(options)) return UNKNOWN;
   const always = options.find((o) => asRecord(o).kind === 'allow_always');

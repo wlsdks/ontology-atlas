@@ -16,7 +16,6 @@ export type UndoStep =
   | { action: "create"; content: string }
   | { action: "save"; content: string };
 
-/** The step that restores `write`, or `"changed"` when the file moved on since that write. */
 export function planUndo(write: ManualWrite, currentText: string | null): UndoStep | "changed" {
   if (currentText !== write.after) return "changed";
   if (write.before === null) return { action: "delete" };

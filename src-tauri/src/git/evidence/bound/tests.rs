@@ -106,9 +106,9 @@ fn commit(root: &Path, date: &str) {
 #[test]
 fn separate_roots_keep_identical_keys_and_source_read_grants() {
     let f = Fixture::new("separate", false);
-    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&f.vault));
+    let _scope = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&f.vault));
     assert_eq!(f.measure().status, "ungranted");
-    crate::vault_grants::grant_source_root(&f.source);
+    crate::vault::grants::grant_source_root(&f.source);
     let result = f.measure();
     assert_eq!(result.status, "measured");
     assert_eq!(
@@ -139,8 +139,8 @@ fn separate_roots_keep_identical_keys_and_source_read_grants() {
 #[test]
 fn nested_vault_keeps_coordinates_and_existing_containing_repo_authority() {
     let f = Fixture::new("nested", true);
-    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&f.vault));
-    crate::vault_grants::grant_source_root(&f.source);
+    let _scope = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&f.vault));
+    crate::vault::grants::grant_source_root(&f.source);
     let result = f.measure();
     assert_eq!(result.status, "measured");
     assert_ne!(
@@ -507,8 +507,8 @@ fn missing_promisor_objects_cannot_execute_a_repository_transport() {
             .join(&tree[2..]),
     )
     .unwrap();
-    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&f.vault));
-    crate::vault_grants::grant_source_root(&f.source);
+    let _scope = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&f.vault));
+    crate::vault::grants::grant_source_root(&f.source);
     let result = git_bound_evidence_dates(
         f.vault.to_string_lossy().into_owned(),
         "fixture".into(),
@@ -552,10 +552,10 @@ fn a_replaced_source_root_invalidates_dates_even_at_the_same_commit() {
 #[test]
 fn unavailable_confined_reads_never_publish_bound_dates() {
     let f = Fixture::new("unsupported-reader", false);
-    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&f.vault));
-    crate::vault_grants::grant_source_root(&f.source);
+    let _scope = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&f.vault));
+    crate::vault::grants::grant_source_root(&f.source);
     assert_eq!(
-        crate::gray_area_scope::read_text(
+        crate::gray_area::scope::read_text(
             &f.vault,
             Path::new(".ontology-atlas/project-sources.json"),
         )

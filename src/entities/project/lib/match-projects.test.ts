@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Project } from "../model/types";
+import type { Project } from "../model/project";
 import { rankProjectMatches } from "./match-projects";
 
 function project(input: Partial<Project> & { slug: string; name: string }): Project {

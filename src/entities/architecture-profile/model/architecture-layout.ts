@@ -26,7 +26,6 @@ export interface ArchitectureLayout {
   policy: 'explicit' | 'lower-only';
   nodes: ArchitectureLayoutNode[];
   edges: ArchitectureLayoutEdge[];
-  /** Deepest last. */
   rows: string[][];
 }
 

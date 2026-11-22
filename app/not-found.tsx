@@ -3,13 +3,9 @@ import { NotFoundScreen } from "@/views/terminal-state";
 import { NOT_FOUND_PICK, pickStandaloneMessages } from "@/i18n/standalone-messages";
 
 /**
- * The 404 for every unresolved path. Under `output: 'export'` the static host serves this root
- * file even for `/ko/…`, and the root layout mounts no intl provider, so the screen brings its
- * own: locale from the URL's first segment, `<html lang>` set to match.
- *
- * This file stays a **server component** so it can pick the few namespaces the screen reads
- * and pass them as props; a client import of the message files would ship both whole.
- * `app/[locale]/not-found.tsx` renders the same component, so the twins cannot drift.
+ * Under `output: 'export'` the static host serves this root file even for `/ko/…`, and the root
+ * layout mounts no intl provider. It stays a server component so it picks the few namespaces the
+ * screen reads; a client import of the message files would ship both whole.
  */
 /** Next adds `noindex` to a 404 but keeps the root layout's `index, follow` beside it; say it once. */
 export const metadata: Metadata = { robots: { index: false, follow: true } };

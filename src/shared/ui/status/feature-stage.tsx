@@ -8,7 +8,6 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { MOTION, OVERLAY_RISE, OVERLAY_SETTLED } from '@/shared/motion';
 
 const ARRIVAL_MS = MOTION.choreography.duration * 1000;
-/** The pulse's length as a fraction of its line. */
 const PULSE_LENGTH = 0.16;
 
 /** What the stage tells its artwork: `arriving` for one choreography after mount, `engaged` while the action is hovered or focused. */

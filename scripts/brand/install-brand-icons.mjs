@@ -1,21 +1,8 @@
 /**
- * Installs the raster-first mascot family into every committed identity consumer.
- *
- * `build-brand-assets.mjs` validates the authored 64/32/16 PNG masters and
- * `build-brand-raster.mjs` bakes every physical size. This file is the final,
- * explicit fan-out so an old logo cannot survive in one platform tree.
- *
- * Usage: run the source validator, open the raster baker once, then run this file.
- *
- * **icns goes through iconutil; ico is written by hand.** On macOS `iconutil` is
- * the standard tool, so filling the `.iconset` directory correctly is enough.
- * Windows ICO is different — PIL's `append_images` is **ignored for ICO and only
- * one frame lands** (measured). The container is simple, so it is written here.
- *
- * **@2x is not a different drawing.** `icon_16x16@2x` is 16pt drawn for retina,
- * so it must be **the same artwork as 16pt**. Putting a simplified variant there
- * makes the drawing change with the display at one logical size. That is why the
- * pairs below share their art.
+ * Fans the raster-first mascot family out to every committed identity consumer, so no old logo
+ * survives in one platform tree. Run the source validator and the raster baker first.
+ * icns goes through `iconutil`; ICO is written by hand because PIL's `append_images` lands one frame.
+ * `@2x` shares the art of its 1x partner: one logical size must not change drawing with the display.
  */
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -132,24 +119,24 @@ const COPY_PLAN = [
  * Width/height 256 is written as 0 (the field is one byte, so 256 does not fit).
  */
 function buildIco(frames) {
-  const dir = Buffer.alloc(6 + frames.length * 16);
-  dir.writeUInt16LE(0, 0);
-  dir.writeUInt16LE(1, 2); // type 1 = icon
-  dir.writeUInt16LE(frames.length, 4);
-  let offset = dir.length;
+  const directory = Buffer.alloc(6 + frames.length * 16);
+  directory.writeUInt16LE(0, 0);
+  directory.writeUInt16LE(1, 2); // type 1 = icon
+  directory.writeUInt16LE(frames.length, 4);
+  let offset = directory.length;
   frames.forEach(([size, buf], i) => {
     const e = 6 + i * 16;
-    dir.writeUInt8(size >= 256 ? 0 : size, e);
-    dir.writeUInt8(size >= 256 ? 0 : size, e + 1);
-    dir.writeUInt8(0, e + 2); // No palette
-    dir.writeUInt8(0, e + 3);
-    dir.writeUInt16LE(1, e + 4); // color planes
-    dir.writeUInt16LE(32, e + 6); // bpp
-    dir.writeUInt32LE(buf.length, e + 8);
-    dir.writeUInt32LE(offset, e + 12);
+    directory.writeUInt8(size >= 256 ? 0 : size, e);
+    directory.writeUInt8(size >= 256 ? 0 : size, e + 1);
+    directory.writeUInt8(0, e + 2); // No palette
+    directory.writeUInt8(0, e + 3);
+    directory.writeUInt16LE(1, e + 4); // color planes
+    directory.writeUInt16LE(32, e + 6); // bpp
+    directory.writeUInt32LE(buf.length, e + 8);
+    directory.writeUInt32LE(offset, e + 12);
     offset += buf.length;
   });
-  return Buffer.concat([dir, ...frames.map(([, b]) => b)]);
+  return Buffer.concat([directory, ...frames.map(([, b]) => b)]);
 }
 
 const written = [];

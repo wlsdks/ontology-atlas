@@ -9,7 +9,7 @@ import {
   requireOptionalNonNegativeInteger,
   requireOptionalPositiveInteger,
 } from '../server/validate.mjs';
-import { loadVaultDocs } from '../vault/documents.mjs';
+import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
 
 function listConstellationsTool({ offset = 0, limit = 50 } = {}) {
   requireOptionalNonNegativeInteger(offset, 'offset');

@@ -5,7 +5,6 @@
  */
 export const GATEWAY_SCREEN_LOCALES = ['ko', 'en'] as const;
 
-/** Stems in `public/gateway/`. */
 export const GATEWAY_SCREEN_FILES = [
   'harness',
   'library',
@@ -17,10 +16,8 @@ export const GATEWAY_SCREEN_FILES = [
 ] as const;
 export type GatewayScreenFile = (typeof GATEWAY_SCREEN_FILES)[number];
 
-/** 1336×860 CSS pixels at device scale 2. */
 export const GATEWAY_SCREEN_PIXELS = { width: 2672, height: 1720 } as const;
 
-/** A locale with no capture set reads the English one. */
 export function gatewayScreenSrc(file: GatewayScreenFile, locale: string): string {
   const shot = (GATEWAY_SCREEN_LOCALES as readonly string[]).includes(locale) ? locale : 'en';
   return `/gateway/${file}.${shot}.webp`;

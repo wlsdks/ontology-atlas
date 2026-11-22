@@ -21,7 +21,7 @@ import { ACP_SECRET_REF_KEY } from '@/shared/lib/connectors/tauri-connector-secr
  */
 
 const rust = readFileSync(
-  join(process.cwd(), 'src-tauri/src/connector_secrets.rs'),
+  join(process.cwd(), 'src-tauri/src/connectors/secrets.rs'),
   'utf-8',
 );
 

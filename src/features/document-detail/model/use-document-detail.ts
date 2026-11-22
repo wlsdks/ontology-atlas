@@ -6,7 +6,6 @@ import { useGrantedVaultFiles } from '@/entities/vault-session';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { documentStoreFor, type ResolvedDocumentStore } from './document-store-for';
 
-/** `null`: the document cannot be read. */
 export type DocumentDetailAnswer = VaultDocDetail | null;
 /** For a surface that shows no outline: a bundled sample then never fetches its headings chunk. */
 export type DocumentSummaryAnswer = Omit<VaultDocDetail, 'headings'> | null;
@@ -15,7 +14,6 @@ interface DetailOptions {
   headings?: boolean;
 }
 
-/** The answer last shown: data and the source's identity only, never a store or its handles. */
 interface Shown {
   origin: object;
   paths: string;
@@ -43,11 +41,7 @@ function stampedKey(docs: readonly DocumentRef[]): string {
   return docs.map((doc) => `${doc.mtime ?? ''}\u0000${doc.path}`).join('\n');
 }
 
-/**
- * Detail for the documents a surface shows, all from one source: `undefined` until every answer
- * is known. While a newer version of the same documents is read, the answer for the version
- * already shown stays, so a save never empties a surface.
- */
+/** `undefined` until every answer is known; a save never empties a surface because the answer for the version already shown stays. */
 export function useDocumentDetails(docs: readonly DocumentRef[] | null | undefined): DocumentDetailAnswer[] | undefined;
 export function useDocumentDetails(
   docs: readonly DocumentRef[] | null | undefined,
@@ -72,7 +66,6 @@ function useDetailsFrom(docs: readonly DocumentRef[] | null | undefined, heading
   const allCached = cached !== undefined && cached.every((detail) => detail !== undefined);
   const current = allCached ? (cached as VaultDocDetail[]) : kept?.key === key ? kept.value : undefined;
   const readNeeded = Boolean(docs && docs.length > 0 && resolved && current === undefined);
-  // `key` stands for the documents: the same documents at the same stamps need no new read.
   const latestDocs = useLatestRef(docs);
 
   useEffect(() => {
@@ -117,10 +110,7 @@ export function useDocumentDetail(
   return useDetailsFrom(docs, headings)?.[0];
 }
 
-/**
- * For a surface that reads a document's text itself (the open document): hand that read over, and
- * its detail derives from the same text, arriving with the body instead of after it.
- */
+/** Its detail derives from the same text, arriving with the body instead of after it. */
 export function useAdoptDocumentText(): (doc: DocumentRef, text: Promise<string>) => void {
   const local = useGrantedVaultFiles();
   return useCallback(

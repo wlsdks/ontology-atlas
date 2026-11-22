@@ -54,12 +54,7 @@ export function isEdgeCulled(
   return maxY < 0;
 }
 
-/**
- * True when NEITHER endpoint's disc is on screen while the curve still crosses
- * the viewport (the hull test kept it). Such a pass-through edge shows a line
- * but can't show a relation — B2 residual: demote its ink instead of culling
- * (culling would pop real geometry; demotion keeps continuity, kills the yarn).
- */
+/** True when neither endpoint's disc is on screen though the curve crosses the viewport: its ink is demoted rather than culled, which would pop real geometry. */
 export function isPassthroughEdge(
   a: ScreenPoint,
   b: ScreenPoint,

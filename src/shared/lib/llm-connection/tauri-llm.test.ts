@@ -85,7 +85,7 @@ describe('tauri-llm web downgrade', () => {
   });
 
   it('folds a Rust Err(String) into one user-facing line', () => {
-    // Rust now sends only the code (`src-tauri/src/errors.rs`). The sentence is chosen
+    // Rust now sends only the code (`src-tauri/src/coded_error.rs`). The sentence is chosen
     // here, the one side that knows the reader's language.
     const lookup = (code: string) => (code === 'no-response' ? '답을 받지 못했어요.' : undefined);
     expect(llmChatErrorMessage('no-response', lookup)).toBe('답을 받지 못했어요.');

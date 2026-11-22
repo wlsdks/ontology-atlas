@@ -14,7 +14,6 @@ import { MeaningRunStage } from './MeaningRunStage';
 const noop = () => undefined;
 const STILL = { duration: 0 };
 
-/** The sample stage's own sentence, written with the desk's real copy and the sample's numbers. */
 function SampleFacts({ frame }: { frame: GuideFrame }) {
   const t = useTranslations('library.questionDesk.meaning');
   const locale = useLocale();
@@ -32,7 +31,6 @@ function SampleFacts({ frame }: { frame: GuideFrame }) {
   </div>;
 }
 
-/** The question desk in miniature: the sample question typing itself, then passages it found by meaning. */
 function SampleAnswer({ frame, reduced }: { frame: GuideFrame; reduced: boolean }) {
   const t = useTranslations('library.questionDesk');
   const question = t('meaning.guide.question');
@@ -75,11 +73,7 @@ function SampleAnswer({ frame, reduced }: { frame: GuideFrame; reduced: boolean 
   );
 }
 
-/**
- * The first-use guide's sample run, playing by itself: the real stage with made-up numbers, then
- * a question in other words finding its passages. It reads nothing from the folder, takes no input,
- * and holds still on the answered question under reduced motion.
- */
+/** Reads nothing from the folder, takes no input, and holds still on the answered question under reduced motion. */
 export function MeaningGuidePreview({ playing }: { playing: boolean }) {
   const t = useTranslations('library.questionDesk.meaning.guide');
   const reduced = usePrefersReducedMotion();

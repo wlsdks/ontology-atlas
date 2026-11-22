@@ -6,7 +6,7 @@ import { MAP_CATALOG } from './map';
 import { NOTIFY_CATALOG } from './notify';
 import { PRIVACY_CATALOG } from './privacy';
 import { SCREEN_CATALOG } from './screen';
-import type { SettingsCatalogEntry } from './types';
+import type { SettingsCatalogEntry } from './settings-catalog-entry';
 import { WORKSPACE_CATALOG } from './workspace';
 
 export const SETTINGS_CATALOG: readonly SettingsCatalogEntry[] = [

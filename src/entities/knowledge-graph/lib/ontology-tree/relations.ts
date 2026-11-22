@@ -37,7 +37,6 @@ export function countCrossProjectEdges(
   return count;
 }
 
-/** The domain hierarchy's edge types. */
 const CONTAINMENT_RELATION_TYPES = new Set(["contains", "belongs_to"]);
 
 /** The single containment test for coupling, projectIds BFS, edge kinds and filters. */

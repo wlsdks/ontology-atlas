@@ -1,4 +1,4 @@
-import type { SettingsCatalogEntry } from './types';
+import type { SettingsCatalogEntry } from './settings-catalog-entry';
 
 export const FOOTPRINT_CATALOG: readonly SettingsCatalogEntry[] = [
   { id: 'footprint-strength', section: 'footprint', labelKey: 'nav.settingsMenu.footprint.presetLabel', surface: 'both' },

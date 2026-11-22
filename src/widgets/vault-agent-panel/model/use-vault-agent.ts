@@ -31,30 +31,21 @@ import { copyText } from '@/shared/lib/clipboard/copy-text';
 import type { ConnectionProvider } from '@/shared/lib/llm-connection/tauri-secrets';
 
 /**
- * The panel's state — the turn list, the in-flight request, and one pending
- * proposal.
- *
- * **There is always at most one live proposal.** Sending a new turn automatically
- * marks the previous pending proposal `cancelled` (a pile of cards neither applied
- * nor cancelled blurs 「what actually landed」). No inbox or queue is built for
- * unapplied proposals — that would be a second source of truth outside the vault.
+ * At most one proposal is live: sending a new turn marks the previous pending one `cancelled`.
+ * No queue of unapplied proposals exists; it would be a second source of truth outside the vault.
  */
 
 /**
- * **This conversation's progress**, seated in the header's subtitle slot. The two
- * numbers are always stated together so position and size never change — only the
- * digits are substituted, so the layout does not jump.
+ * This conversation's progress in the header's subtitle slot. Both numbers are always shown, so
+ * only the digits change and the layout does not jump.
  */
 export interface AgentSessionSummary {
-  /** Concepts created or edited. */
   concepts: number;
-  /** Connections made. */
   relations: number;
 }
 
 interface VaultAgentNotices {
   roundCap: string;
-  /** A turn that stopped without calling a tool once — the line symmetric with hitting the cap. */
   noToolCall: (args: { round: number; cap: number }) => string;
   aborted: string;
   networkFailed: string;
@@ -83,11 +74,7 @@ interface ConstructionProof {
 
 export interface UseVaultAgentArgs {
   provider: ConnectionProvider | null;
-  /**
-   * Only set on the "Connect by address" (connect by address) path — the runner address the
-   * user typed and the model chosen from the list. Both are null for a named vendor,
-   * and the model is then the adapter's default.
-   */
+  /** Set only on the connect-by-address path: the typed runner address and the chosen model. Null for a named vendor. */
   localEndpoint: { baseUrl: string; model: string } | null;
   vaultPath: string | null;
   insight: KnowledgeProjectInsight | null;
@@ -132,12 +119,7 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
   useLayoutEffect(() => { resourceRef.current = resourceKey; }, [resourceKey]);
   /** The session's first apply defaults to an expanded diff — it prevents rubber-stamping. */
   const [hasAppliedOnce, setHasAppliedOnce] = useState(false);
-  /**
-   * What this conversation actually landed — **a local count**. Only successful
-   * applies are counted (cancels and conflicts changed no file at all, so they are
-   * not progress). Even if the conversation disappears, the fact this number points
-   * at survives in frontmatter and git.
-   */
+  /** What this conversation landed, counted locally from successful applies only (cancels and conflicts change no file). */
   const [sessionSummary, setSessionSummary] = useState<AgentSessionSummary>({
     concepts: 0,
     relations: 0,
@@ -184,12 +166,8 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
   );
 
   /**
-   * Elapsed seconds — the screen states a number only once the silence passes 5
-   * seconds. Not fake progress but **how long you have actually waited**.
-   *
-   * The start time is set in the [Send] (send) handler — from the event, not from an
-   * effect. The effect only subscribes to the timer as an external system, so it
-   * does not cost another render.
+   * Elapsed seconds, stated only after 5 s of silence: how long the person has actually waited, not
+   * fake progress. The start time is set in the send handler; the effect only subscribes to the timer.
    */
   useEffect(() => {
     if (runStartedAt === null) return;
@@ -232,9 +210,8 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
       const provider = args.provider;
       const vaultPath = args.vaultPath;
       const adapter = provider ? resolveProviderAdapter(provider) : null;
-      // A frame with only the path restored is not a state that has a vault to send
-      // to. Even if the UI gate is out of step, the execution path under the button
-      // closes it again.
+      // A restored path alone has no vault to send to; the execution path re-checks what the UI gate
+      // already shows.
       if (!provider || !vaultPath || !adapter || !args.manifest || abortRef.current || applyLockRef.current) return;
       if (sourcePreview && (provider !== 'local' || !args.localEndpoint?.model || !isLocalConstructionEndpoint(args.localEndpoint.baseUrl) || sourcePreview.destinationPath !== vaultPath || sourcePreview.files.length === 0)) return;
       const capturedResource = resourceKey;
@@ -242,7 +219,6 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
       sourceProofRef.current = null;
       setConstruction(sourcePreview ? { preview: sourcePreview, reads: [], sourceBytes: 0, issues: [], status: 'running' } : null);
 
-      // Sending a new turn makes any live proposal a past one.
       setProposal((current) =>
         current && current.status === 'pending'
           ? { ...current, status: 'cancelled' }
@@ -274,11 +250,8 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
         return result;
       } : createToolExecutor(port);
 
-      // ⚠️ **Everything from here down runs inside try/finally.** `runTurn` reaches the
-      // network, the Tauri bridge and the tool executor; any of the three can reject.
-      // Without this the reset below was simply skipped and the panel stayed
-      // "running" forever — the send button dead, the elapsed clock counting up, and
-      // the only escape a reload. A failed turn is a turn that ended.
+      // Everything below runs in try/finally: `runTurn` reaches the network, the Tauri bridge and the
+      // tool executor, any of which can reject, and a skipped reset would leave the panel "running" forever.
       try {
         if (sourcePreview && !await sourceCurrent(sourcePreview)) throw new Error('source_changed');
         if (!active()) return;
@@ -419,7 +392,6 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
   }, []);
 
   const cancelProposal = useCallback(() => {
-    // Cancel = 0 files changed. Only the state changes here.
     setProposal((current) => (current ? { ...current, status: 'cancelled' } : current));
   }, []);
 
@@ -462,9 +434,7 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
       );
       setHasAppliedOnce(true);
       if (outcome.status === 'applied') {
-        // What landed and how many — only the selected changes, counted by tool kind.
-        // Counted in **concepts and connections** rather than files, because that is
-        // the unit the user counts in.
+        // Only the selected changes, counted by tool kind, in concepts and connections: the unit the user counts in.
         const applied = proposal.changes.filter((change) => change.selected);
         const concepts = applied.filter((change) => change.tool !== 'add_relation' && change.tool !== 'add_relations').length;
         const relations = applied.length - concepts;

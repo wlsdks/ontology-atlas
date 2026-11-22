@@ -3,7 +3,7 @@ import type { ComponentProps } from 'react';
 import { Surface } from '@/shared/ui';
 
 import { AcpPresentationPanel } from '../AcpPresentationPanel';
-import type { ChatT } from './types';
+import type { ChatT } from './chat-panel-props';
 
 type PanelProps = ComponentProps<typeof AcpPresentationPanel>;
 

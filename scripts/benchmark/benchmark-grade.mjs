@@ -1,19 +1,8 @@
 #!/usr/bin/env node
 
-// Runs an independent grader over a saved grading packet.
-//
-// The first reading of a benchmark's answers was done by the same assistant that
-// built the scoring, which is the weakest possible arrangement: it had seen the
-// earlier numbers and knew what it expected to find. This gives the same packet
-// to a separate process — a fresh agent, a different model, no memory of this
-// repository's conversation — and records its grades in the same shape, so the
-// two readings can be compared cell by cell.
-//
-// Where two graders agree, the grade is probably about the answer. Where they
-// disagree, the criteria are unclear, and that is the more useful output.
-//
-// This still is not a person. It removes one specific bias — a grader scoring
-// its own earlier conclusion — and leaves the rest.
+// Runs an independent grader (a separate process with no shared conversation) over a saved
+// grading packet and records grades in the same shape, so two readings compare cell by cell.
+// It removes one bias, a grader scoring its own earlier conclusion; it is not a person.
 
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -62,9 +51,8 @@ export const AXES = Object.freeze([
   { key: 'nextStep', max: 2, label: 'Next step' },
 ]);
 
-// The grader needs the same material a person would open: the answers, the
-// criteria, the source each answer was written about, and the vault the Atlas
-// side could read. Withholding the vault would make its citations ungradeable.
+// The grader needs what a person would open, including the vault: withholding it makes the
+// Atlas side's citations ungradeable.
 export function prepareGradingWorkspace({ packetPath, rubricPath, scratchRoot }) {
   mkdirSync(scratchRoot, { recursive: true });
   cpSync(packetPath, join(scratchRoot, 'answers.md'));
@@ -128,10 +116,8 @@ export function gradingPrompt(cellCount) {
   ].join('\n');
 }
 
-// A grader that reads the same answers twice does not return the same scores.
-// Until that spread is measured, a difference between two sides cannot be told
-// apart from the grader changing its mind, so repeats are the default and the
-// spread is reported next to every average.
+// A grader reading the same answers twice returns different scores, so repeats are the
+// default and the spread is reported next to every average.
 export function summarizeRepeats(runs) {
   const ids = Object.keys(runs[0] ?? {}).filter((id) => runs.every((run) => id in run)).sort();
   const perAxis = AXES.map(({ key, max, label }) => {

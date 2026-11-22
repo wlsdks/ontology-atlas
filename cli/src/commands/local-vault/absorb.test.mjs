@@ -20,15 +20,15 @@ import { readTelemetry, TELEMETRY_RELATIVE_PATH } from '../../lib/telemetry.mjs'
 
 // `ontology-atlas absorb`.
 
-let tmp;
+let temporaryDirectory;
 let vault;
 let stdout;
 let stderr;
 let restoreWrite;
 
 beforeEach(() => {
-  tmp = realpathSync(mkdtempSync(join(tmpdir(), 'ontology-atlas-absorb-test-')));
-  vault = join(tmp, 'vault');
+  temporaryDirectory = realpathSync(mkdtempSync(join(tmpdir(), 'ontology-atlas-absorb-test-')));
+  vault = join(temporaryDirectory, 'vault');
   mkdirSync(vault, { recursive: true });
   stdout = [];
   stderr = [];
@@ -50,11 +50,11 @@ beforeEach(() => {
 
 afterEach(() => {
   restoreWrite();
-  rmSync(tmp, { recursive: true, force: true });
+  rmSync(temporaryDirectory, { recursive: true, force: true });
 });
 
 function writeSource(name, content) {
-  const p = join(tmp, name);
+  const p = join(temporaryDirectory, name);
   writeFileSync(p, content, 'utf-8');
   return p;
 }
@@ -110,7 +110,7 @@ describe('runAbsorb — dry-run (default)', () => {
   });
 
   it('exits 1 and errors when the source file does not exist', () => {
-    const code = runAbsorb([join(tmp, 'nope.md'), '--vault', vault]);
+    const code = runAbsorb([join(temporaryDirectory, 'nope.md'), '--vault', vault]);
     assert.equal(code, 1);
     assert.match(stderr.join(''), /does not exist/);
   });
@@ -133,7 +133,7 @@ describe('runAbsorb --write', () => {
   it('rejects a symlink source instead of rewriting its external target', () => {
     const externalRoot = realpathSync(mkdtempSync(join(tmpdir(), 'ontology-atlas-absorb-external-')));
     const external = join(externalRoot, 'AGENTS.md');
-    const linked = join(tmp, 'AGENTS.md');
+    const linked = join(temporaryDirectory, 'AGENTS.md');
     writeFileSync(external, SAMPLE, 'utf-8');
     symlinkSync(external, linked);
     try {
@@ -270,7 +270,7 @@ describe('runAbsorb --write', () => {
   });
 });
 
-function readdirRecursive(dir) {
+function readdirRecursive(directory) {
   const out = [];
   const walk = (d) => {
     for (const entry of readdirSync(d)) {
@@ -280,7 +280,7 @@ function readdirRecursive(dir) {
     }
   };
   try {
-    walk(dir);
+    walk(directory);
   } catch {
     // ignore
   }

@@ -1,9 +1,5 @@
-// The pure part of the broken-link check.
-//
-// This is decay the repository actually suffered: regenerating the vault removes
-// node files, but the prose citing them stays. A 3,419-line suite of 2,126 prose
-// pin assertions caught none of it (the sentences had not changed). Links are the
-// opposite — **whether the target exists is machine-decidable.**
+// The pure part of the broken-link check: whether a link target exists is machine-decidable, unlike
+// the prose pins it replaces.
 
 /** Link syntax also appears as examples inside code fences — checking examples yields false positives. */
 export function stripFencedBlocks(markdown) {
@@ -53,15 +49,9 @@ export function collectHtmlAssetRefs(markdown) {
 }
 
 /**
- * GitHub's heading anchors, computed the way GitHub computes them: strip
- * formatting, lowercase, drop everything that is not a letter, digit, `_`,
- * space or `-`, then spaces to `-`. A repeated heading gets `-1`, `-2`, ...
- *
- * Why this belongs in the link gate: the file-existence half was already
- * machine-decidable, but a link was only ever checked up to the `#`. A section
- * rename left it green and the reader stranded — measured once in this
- * repository, where a citation pointed at a heading in the root agent guide that
- * had not existed for months.
+ * GitHub's heading anchors, computed the way GitHub computes them: strip formatting, lowercase, drop
+ * everything but letters, digits, `_`, space and `-`, then spaces to `-`; a repeated heading gets
+ * `-1`, `-2`. The gate checks the part after `#`, so a section rename cannot strand a reader.
  */
 export function headingAnchorSlug(heading) {
   return heading
@@ -124,15 +114,7 @@ export function isExternalTarget(target) {
   return /^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('//');
 }
 
-/**
- * Repository-path citations inside backticks. This reads **path tokens**, not
- * sentences.
- *
- * The narrow scope comes from measurement: matching any backticked path yields
- * 168 hits, mostly vault-relative examples like `domains/foo.md` or build output.
- * Narrowing to `.md` paths anchored at the repository root yields 3 hits out of
- * 232, and **all three were real**.
- */
+/** Repository-path citations inside backticks: path tokens, not sentences. Matching any backticked path hits mostly vault-relative examples; `.md` paths anchored at the repository root are almost all real. */
 const REPO_TOP_LEVEL = new Set([
   'src',
   'app',
@@ -191,16 +173,7 @@ export function collectProseDocRefs(markdown) {
   return refs;
 }
 
-/**
- * Naming deleted files **is the job** of a historical document — a changelog
- * writing "deleted `docs/GUIDE.md`" is a record, not decay. So the prose
- * path-citation check is skipped here. Links are not skipped: a link is a promise
- * that it opens when clicked, in a historical document too.
- *
- * Measured: without this exclusion, historical documents alone produce 24 hits,
- * burying the 3 in current documents. Record fragments are immutable, so a
- * dated document they cite can leave the tree without editing them.
- */
+/** Naming deleted files is the job of a historical document, so the prose path-citation check is skipped here; links are not skipped, since a link must open when clicked. Record fragments are immutable, so a dated document they cite can leave the tree. */
 export function isHistoricalDoc(relativePath) {
   const normalized = relativePath.split('\\').join('/');
   return (

@@ -1,31 +1,9 @@
 /**
- * Pointer state machine skeleton — the click-safe contract
- * (`.claude/rules/design.md` "Click = Safe Contract";
- * `docs/design/interaction.md` §1,
- * `docs/design/ontology-map.md` §3.6) for the
- * `pointerdown`/`pointermove`/`releaseDrag()` handlers.
- *
- * Contract (this is the part that must never regress):
- * - `pointerdown` records `downPoint` and hit-tests a `pressedNodeId` —
- *   this is **not** a commit. Nothing durable (focus/camera) changes yet.
- * - `pointermove` while `phase === "pressed"`: once
- *   `engine/hysteresis.ts#exceedsHysteresisThreshold` trips, transition to
- *   `"dragging"` and **clear `pressedNodeId`** (prototype: "Cancel when drag leaves threshold (`HYSTERESIS=7px`)" — a
- *   drag can never commit a click, even if
- *   the pointer later returns near the down-point).
- * - `pointerup` while still `"pressed"` (never exceeded hysteresis) emits a
- *   `commitClick` — the ONLY place a click fires. `pointerup` while
- *   `"dragging"` emits no click, only ends the drag (camera keeps whatever
- *   momentum `engine/momentum.ts` projected).
- * - `pointercancel` always returns to `"idle"` with no commit, matching
- *   `pointerup`'s drag-cancel path in the prototype (`releaseDrag` is
- *   registered for both events).
- * - Hover state is **not** part of this state machine — the prototype only
- *   computes `hoveredNode` in `pointermove` while `pointer.down` is false at
- *   all (i.e., phase `"idle"`), and only when `focusedNode` is null
- *   (`model/visibility/focus-state.ts` owns the suppression rule). This module only
- *   answers "is the pointer idle/pressed/dragging", not "what is hovered".
- *
+ * Pointer state machine, the click-safe contract (`docs/design/interaction.md` §1). `pointerdown` records `downPoint`
+ * and hit-tests a `pressedNodeId` without committing anything. Once `exceedsHysteresisThreshold` trips during
+ * `"pressed"` the phase becomes `"dragging"` and `pressedNodeId` clears, so a drag never commits a click even if the
+ * pointer returns. `pointerup` while still `"pressed"` emits `commitClick`, the only place a click fires;
+ * `pointercancel` always returns to `"idle"`. Hover is not part of this machine (`model/visibility/focus-state.ts`).
  */
 
 import { exceedsHysteresisThreshold } from "../engine/hysteresis";
@@ -53,13 +31,7 @@ export type PointerMachineEvent =
 
 export interface PointerMachineTransition {
   next: PointerMachineState;
-  /**
-   * Non-null exactly once: on a genuine click commit (pointerup while phase
-   * was `"pressed"`, never `"dragging"`). `nodeId: null` means "clicked empty
-   * canvas" — the caller (`ui/OntologyMap.tsx`) maps that to `clearFocus()`
-   * (or a no-op if nothing was focused), and a non-null id to `setFocus(id)`
-   * or `clearFocus()` if it matches the already-focused node (toggle).
-   */
+  /** Non-null exactly once, on a genuine click commit; `nodeId: null` is a click on empty canvas. */
   commitClick: { nodeId: string | null } | null;
 }
 
@@ -69,12 +41,7 @@ export const INITIAL_POINTER_MACHINE_STATE: PointerMachineState = {
   pressedNodeId: null,
 };
 
-/**
- * Pure transition function — one event in, one `{next, commitClick}` out.
- * The caller owns hit-testing (`hitNodeId` is provided by the caller on
- * `pointerdown`, not computed here) and owns feeding the result's
- * `commitClick` into `model/visibility/focus-state.ts`'s focus transitions.
- */
+/** One event in, one `{next, commitClick}` out. The caller owns hit-testing (`hitNodeId` arrives with `pointerdown`) and feeds `commitClick` into `focus-state.ts`. */
 export function transitionPointerState(
   current: PointerMachineState,
   event: PointerMachineEvent,
@@ -112,30 +79,16 @@ export function transitionPointerState(
   }
 }
 
-/** The one user-visible effect a `commitClick` outcome should trigger. */
 export type ClickAction =
   | { type: "select"; nodeId: string }
   | { type: "deselect" }
   | { type: "none" };
 
 /**
- * Routes a `commitClick` outcome (this module's `pointerup` result) into
- * exactly one `ClickAction` — pure extraction of
- * `topology-pointer-release.ts#handlePointerUp`'s commitClick routing so
- * the "click a revealed child = select it, click empty canvas = deselect"
- * contract has its own regression test, independent of canvas/pointer-event
- * plumbing (label-clarity persona eval — "child click ejects to overview
- * instead of selecting").
- *
- * - No commit at all → `"none"`.
- * - Empty-canvas click (`nodeId: null`) → `"deselect"` if something was
- *   focused, `"none"` otherwise (nothing to clear).
- * - Clicking the ALREADY-focused node → `"select"` it again: a repeated click is never an undo, so
- *   the first tap of a double-click on a selected node keeps it and the second zooms. It also
- *   reopens a panel the reader closed. Deselect is a background click or Escape.
- * - Clicking any OTHER node id → `"select"` that node. This is the branch
- *   that must fire for an ego-revealed child — it never falls through to
- *   deselect just because a DIFFERENT node was focused a moment ago.
+ * Routes a `commitClick` outcome into one `ClickAction`: no commit → `"none"`; empty canvas → `"deselect"` if something
+ * was focused, else `"none"`; any node id, the already-focused one included → `"select"` (a repeated click is never an
+ * undo: the first tap of a double-click keeps the selection and the second zooms, and a closed panel reopens). It must
+ * fire for an ego-revealed child rather than fall through to deselect because a different node was focused a moment ago.
  */
 export function resolveClickAction(
   commitClick: { nodeId: string | null } | null,

@@ -11,10 +11,8 @@ import { parseUnifiedDiff, type AtlasGitDiffFile } from "@/shared/lib/git/atlas-
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
 
-/** One changed document as the pane names it: the git entry plus the concept it carries. */
 export interface ChangedDocument {
   entry: GitChangeEntry;
-  /** The concept's display name, or the document's file name when no concept matches. */
   label: string;
   kind: string | null;
 }
@@ -42,15 +40,12 @@ export function PendingDocumentPane({
   documents: readonly ChangedDocument[];
   /** Files that carry no concept (`.gitignore`, config): committed too, listed after the documents. */
   others: readonly GitChangeEntry[];
-  /** "1 added · 2 edited" — the one line of totals. */
   summary: string;
-  /** The hunk diff already read for the whole vault; the reader's fallback when the whole document cannot be read. */
   hunks: readonly AtlasGitDiffFile[];
   hunksTooLarge: boolean;
   selectedPath: string | null;
   setSelectedPath: (path: string | null) => void;
   stagedOutsideCount: number;
-  /** The discard door for the shown document, or `null` when that door must not exist. */
   discard: (document: ChangedDocument) => React.ReactNode;
 }) {
   const all = useMemo<ChangedDocument[]>(
@@ -147,7 +142,7 @@ export function PendingDocumentPane({
   );
 }
 
-/** `+` new · `~` edited · `−` deleted · `→` renamed, the same marks the list has always used. */
+/** `+` new · `~` edited · `−` deleted · `→` renamed. */
 function StatusGlyph({ status }: { status: string }) {
   const glyph = status === "added" ? "+" : status === "deleted" ? "−" : status === "renamed" ? "→" : "~";
   return (
@@ -182,17 +177,13 @@ export function DocumentChangeReader({
   document: ChangedDocument;
   fallback: AtlasGitDiffFile | null;
   fallbackTooLarge?: boolean;
-  /** A commit hash to read that commit's change of the document; absent = uncommitted. */
   source?: string;
-  /** This document's own door, drawn in the header beside its path and counts. */
   action?: React.ReactNode;
-  /** A section label drawn instead of the document's name when a card above already names it. */
   heading?: string | null;
 }) {
   const { entry, label, kind } = document;
   // `undefined` = not read yet, `null` = unavailable (no folder, no bridge, a refused read).
   const [whole, setWhole] = useState<AtlasGitDiffFile | null | undefined>(undefined);
-  /** The document is past the command's ceiling, so its hunks are what there is to draw. */
   const [tooLarge, setTooLarge] = useState(false);
   useEffect(() => {
     if (!vaultPath) return;
@@ -278,7 +269,6 @@ export function DocumentChangeReader({
           </span>
 
         </p>
-        {/* Under the metadata it acts on, in the same slot and card as the restore confirm. */}
         {action ? <div className="mt-1 flex w-full flex-none flex-col">{action}</div> : null}
       </header>
 
@@ -345,7 +335,6 @@ export function DocumentChangeReader({
 
 type Line = { kind: "added" | "removed" | "context" | "skip"; text: string };
 
-/** What the reader is looking at, in the noun it deserves: a concept document, or a file. */
 function statusKey(status: string, isDocument: boolean): string {
   const noun = isDocument ? "" : "File";
   if (status === "added") return `docReader${noun}New`;
@@ -354,7 +343,6 @@ function statusKey(status: string, isDocument: boolean): string {
   return `docReader${noun}Changed`;
 }
 
-/** The leading `---` block, when the document has one, kept apart as the information box. */
 function splitFrontmatter(lines: readonly Line[]): { frontmatter: Line[]; body: Line[] } {
   if (lines.length === 0 || lines[0].text.trim() !== "---") return { frontmatter: [], body: [...lines] };
   const close = lines.findIndex((line, index) => index > 0 && line.text.trim() === "---");
@@ -434,7 +422,6 @@ function SkipRule({ t }: { t: Translator }) {
   );
 }
 
-/** One line of a file that is not a document: its own characters, in the file face. */
 function FileLine({ t, line }: { t: Translator; line: Line }) {
   if (line.kind === "skip") return <SkipRule t={t} />;
   return (
@@ -450,7 +437,6 @@ function FileLine({ t, line }: { t: Translator; line: Line }) {
   );
 }
 
-/** One source line as the block Markdown would make of it. */
 function ProseLine({
   t,
   line,
@@ -458,7 +444,6 @@ function ProseLine({
 }: {
   t: Translator;
   line: Line;
-  /** When this line is a heading whose text equals this, it is the header's name again and is not drawn. */
   hideHeadingText?: string | null;
 }) {
   const mark = markClass(line.kind);

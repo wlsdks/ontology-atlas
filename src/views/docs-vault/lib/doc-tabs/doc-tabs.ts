@@ -1,21 +1,14 @@
-/**
- * Open document tabs: pure state plus localStorage. A working set, not a mode; the URL `?slug=` is
- * the active source of truth.
- */
-
 export interface DocTab {
   slug: string;
   title: string;
   lastActivatedAt: number;
 }
 
-/** A proliferation guard; past it, LRU evicts. */
 export const DOC_TABS_MAX = 8;
 
 const DOC_TABS_KEY_PREFIX = "docsVault:openTabs:";
 const DOC_ACTIVE_TAB_KEY_PREFIX = "docsVault:activeTab:";
 
-/** One key per vault, so sample tabs never leak into a local vault. */
 export function docTabsStorageKey(sourceKey: string): string {
   return `${DOC_TABS_KEY_PREFIX}${sourceKey}`;
 }
@@ -34,7 +27,6 @@ function isDocTab(value: unknown): value is DocTab {
   );
 }
 
-/** Corrupt or absent yields []. */
 export function readStoredDocTabs(sourceKey: string): DocTab[] {
   if (typeof window === "undefined") return [];
   try {
@@ -76,7 +68,6 @@ export function storeActiveDocSlug(sourceKey: string, slug: string): void {
   }
 }
 
-/** Returns the same reference when nothing is removed, avoiding a re-render. */
 export function pruneMissingDocTabs(
   tabs: DocTab[],
   validSlugs: ReadonlySet<string>,
@@ -85,10 +76,6 @@ export function pruneMissingDocTabs(
   return next.length === tabs.length ? tabs : next;
 }
 
-/**
- * Only without a URL deeplink. The explicitly selected active slug wins; otherwise the
- * tabs' `lastActivatedAt` is the fallback.
- */
 export function resolveRestoredActiveDocSlug({
   tabs,
   validSlugs,
@@ -127,16 +114,15 @@ function evictLru(tabs: DocTab[], max: number): DocTab[] {
   return next;
 }
 
-/** A newly opened or activated tab carries the newest timestamp, so the same call never evicts it. */
 export function openOrActivateDocTab(
   tabs: DocTab[],
   next: { slug: string; title: string },
   now: number = Date.now(),
 ): DocTab[] {
-  const idx = tabs.findIndex((tab) => tab.slug === next.slug);
-  if (idx >= 0) {
+  const index = tabs.findIndex((tab) => tab.slug === next.slug);
+  if (index >= 0) {
     const updated = tabs.slice();
-    updated[idx] = { ...updated[idx], title: next.title, lastActivatedAt: now };
+    updated[index] = { ...updated[index], title: next.title, lastActivatedAt: now };
     return updated;
   }
   const added = [...tabs, { slug: next.slug, title: next.title, lastActivatedAt: now }];
@@ -145,23 +131,18 @@ export function openOrActivateDocTab(
 
 export interface CloseDocTabResult {
   tabs: DocTab[];
-  /** Null when no tabs remain; the caller falls back to the first document or README. */
   nextActiveSlug: string | null;
 }
 
-/**
- * Closing the active tab moves left first, then right; closing the last yields null and the
- * caller falls back.
- */
 export function closeDocTab(
   tabs: DocTab[],
   slug: string,
   activeSlug: string | null,
 ): CloseDocTabResult {
-  const idx = tabs.findIndex((tab) => tab.slug === slug);
-  if (idx === -1) return { tabs, nextActiveSlug: activeSlug };
+  const index = tabs.findIndex((tab) => tab.slug === slug);
+  if (index === -1) return { tabs, nextActiveSlug: activeSlug };
 
-  const nextTabs = [...tabs.slice(0, idx), ...tabs.slice(idx + 1)];
+  const nextTabs = [...tabs.slice(0, index), ...tabs.slice(index + 1)];
 
   if (activeSlug !== slug) {
     return { tabs: nextTabs, nextActiveSlug: activeSlug };
@@ -169,8 +150,8 @@ export function closeDocTab(
   if (nextTabs.length === 0) {
     return { tabs: nextTabs, nextActiveSlug: null };
   }
-  const leftNeighbor = idx > 0 ? tabs[idx - 1] : null;
-  const rightNeighbor = idx < tabs.length - 1 ? tabs[idx + 1] : null;
+  const leftNeighbor = index > 0 ? tabs[index - 1] : null;
+  const rightNeighbor = index < tabs.length - 1 ? tabs[index + 1] : null;
   const neighbor = leftNeighbor ?? rightNeighbor;
   return { tabs: nextTabs, nextActiveSlug: neighbor?.slug ?? null };
 }

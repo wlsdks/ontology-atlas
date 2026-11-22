@@ -29,14 +29,14 @@ const SCRIPTS = { lint: 'eslint', backlog: 'x', 'backlog:check': 'x', knip: 'kni
 const recorder = () => ({ logs: [], errors: [], log(l) { this.logs.push(l); }, error(l) { this.errors.push(l); } });
 
 function withRepo(files, run) {
-  const dir = mkdtempSync(join(tmpdir(), 'dev-checks-'));
+  const directory = mkdtempSync(join(tmpdir(), 'dev-checks-'));
   try {
-    mkdirSync(join(dir, 'docs'));
-    writeFileSync(join(dir, 'package.json'), JSON.stringify({ scripts: SCRIPTS }));
-    writeFileSync(join(dir, 'docs', 'DEVELOPMENT-CHECKS.md'), files.doc ?? TABLE);
-    run(dir);
+    mkdirSync(join(directory, 'docs'));
+    writeFileSync(join(directory, 'package.json'), JSON.stringify({ scripts: SCRIPTS }));
+    writeFileSync(join(directory, 'docs', 'DEVELOPMENT-CHECKS.md'), files.doc ?? TABLE);
+    run(directory);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 }
 
@@ -79,17 +79,17 @@ describe('order-keyed command table', () => {
 
 describe('dev-checks gate', () => {
   it('passes a sorted table whose commands all exist', () => {
-    withRepo({}, (dir) => {
+    withRepo({}, (directory) => {
       const io = recorder();
-      assert.equal(runDevChecksCheck([], io, { cwd: dir }), 0);
+      assert.equal(runDevChecksCheck([], io, { cwd: directory }), 0);
       assert.match(io.logs.join('\n'), /3 rows/);
     });
   });
 
   it('fails a missing script in a table row or the prose, naming file and line', () => {
-    withRepo({ doc: `${TABLE.replace('`pnpm knip`', '`pnpm knop`')}\n\`pnpm ghost\`\n` }, (dir) => {
+    withRepo({ doc: `${TABLE.replace('`pnpm knip`', '`pnpm knop`')}\n\`pnpm ghost\`\n` }, (directory) => {
       const io = recorder();
-      assert.equal(runDevChecksCheck([], io, { cwd: dir }), 1);
+      assert.equal(runDevChecksCheck([], io, { cwd: directory }), 1);
       const errors = io.errors.join('\n');
       assert.match(errors, /docs\/DEVELOPMENT-CHECKS\.md:6 {2}`pnpm knop` is not a package\.json script/);
       assert.match(errors, /docs\/DEVELOPMENT-CHECKS\.md:11 {2}`pnpm ghost` is not a package\.json script/);
@@ -97,19 +97,19 @@ describe('dev-checks gate', () => {
   });
 
   it('fails an out-of-order row with the line to move, and --fix sorts it', () => {
-    withRepo({ doc: TABLE.replace('| `pnpm pr:land <n>` | Landing |', '| `pnpm pr:land <n>` | Landing |\n| `pnpm agents:check` | Instructions |') }, (dir) => {
+    withRepo({ doc: TABLE.replace('| `pnpm pr:land <n>` | Landing |', '| `pnpm pr:land <n>` | Landing |\n| `pnpm agents:check` | Instructions |') }, (directory) => {
       const io = recorder();
-      assert.equal(runDevChecksCheck([], io, { cwd: dir }), 1);
+      assert.equal(runDevChecksCheck([], io, { cwd: directory }), 1);
       assert.match(io.errors.join('\n'), /docs\/DEVELOPMENT-CHECKS\.md:8 {2}"pnpm agents:check" is out of command order; move it above line 5 \("pnpm backlog"\)/);
-      assert.equal(runDevChecksCheck(['--fix'], io, { cwd: dir }), 0);
-      assert.match(readFileSync(join(dir, 'docs', 'DEVELOPMENT-CHECKS.md'), 'utf8'), /\|---\|---\|\n\| `pnpm agents:check`/);
+      assert.equal(runDevChecksCheck(['--fix'], io, { cwd: directory }), 0);
+      assert.match(readFileSync(join(directory, 'docs', 'DEVELOPMENT-CHECKS.md'), 'utf8'), /\|---\|---\|\n\| `pnpm agents:check`/);
     });
   });
 
   it('fails a document without the command table', () => {
-    withRepo({ doc: '# no table\n' }, (dir) => {
+    withRepo({ doc: '# no table\n' }, (directory) => {
       const io = recorder();
-      assert.equal(runDevChecksCheck([], io, { cwd: dir }), 1);
+      assert.equal(runDevChecksCheck([], io, { cwd: directory }), 1);
       assert.match(io.errors.join('\n'), /has no "\| Command \| What it answers \|" table/);
     });
   });

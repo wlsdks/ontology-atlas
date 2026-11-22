@@ -23,9 +23,7 @@ const CASES = [
 ];
 
 /** Fixed viewport — crossings are counted in screen coordinates, so the window size is part of the measurement condition. */
-const VIEWPORT = { width: 1512, height: 900 }; // 14" MacBook logical resolution
 
-/** Pulls coordinates out of the page. Makes no judgement. */
 function collectInPage() {
   const api = window.__atlasMap;
   if (!api) return { error: "__atlasMap missing — ?e2e=1 was dropped, or the build is older than this instrument" };

@@ -50,7 +50,6 @@ export function computeRenameRefContext(
   return { canRewriteTail: tailMatches.length === 1 && tailMatches[0] === oldSlug };
 }
 
-/** Mirrors the MCP rewrite rule for one ref. */
 function rewriteRefValue(
   value: string,
   oldSlug: string,
@@ -67,7 +66,6 @@ function rewriteRefValue(
   return value;
 }
 
-/** Whether a ref names `oldSlug` by the rules `rewriteRefValue` uses. */
 function refNamesSlug(value: string, oldSlug: string, canRewriteTail: boolean): boolean {
   if (value === oldSlug) return true;
   if (!canRewriteTail) return false;
@@ -75,9 +73,7 @@ function refNamesSlug(value: string, oldSlug: string, canRewriteTail: boolean): 
   return value === oldTail || value.endsWith(`/${oldTail}`);
 }
 
-/** An entry a kind change moved from the list for the old kind to the list for the new one. */
 export interface ReferrerListMove {
-  /** The entry after the move, in the referrer's spelling. */
   ref: string;
   from: ContainmentKey;
   to: ContainmentKey;
@@ -149,7 +145,6 @@ function planKindLists(
   return { lists, moved, kept };
 }
 
-/** Relative markdown target from the referrer's directory to `toSlug`. */
 function relativeMdTarget(referrerSlug: string, toSlug: string): string {
   const fromDir = dirOf(referrerSlug).split('/').filter(Boolean);
   const toParts = toSlug.split('/');
@@ -165,7 +160,6 @@ function relativeMdTarget(referrerSlug: string, toSlug: string): string {
   return [...Array<string>(ups).fill('..'), ...toParts.slice(common)].join('/') + '.md';
 }
 
-/** Resolve one markdown-link target the way `extractOutLinkTargets` does. */
 function resolveMdTarget(target: string, referrerSlug: string): string {
   const rel = target.replace(/^\.\//, '');
   const fromDir = dirOf(referrerSlug);
@@ -205,29 +199,22 @@ export interface ReferrerRewriteArgs {
   oldSlug: string;
   /** Equal to `oldSlug` for a kind change without a move. */
   newSlug: string;
-  /** Links resolve relative to the referrer's directory. */
   referrerSlug: string;
   canRewriteTail: boolean;
-  /** Set only when the kind changes; entries then follow into the new kind's list. */
   newKind?: string;
 }
 
 export interface ReferrerRewritePlan {
-  /** Unchanged when nothing names the document. */
   text: string;
   moved: ReferrerListMove[];
   kept: ReferrerListKept[];
 }
 
-/** One referrer's rewrite — the bytes only. */
 export function rewriteRenamedDocRefs(raw: string, args: ReferrerRewriteArgs): string {
   return planReferrerRewrite(raw, args).text;
 }
 
-/**
- * One referrer's rewrite, with what a kind change did to its lists — the fact the confirmation
- * names ("Human workbench now lists it among its elements").
- */
+/** Also reports what a kind change did to its lists, the fact the confirmation names ("Human workbench now lists it among its elements"). */
 export function planReferrerRewrite(raw: string, args: ReferrerRewriteArgs): ReferrerRewritePlan {
   const { oldSlug, newSlug, referrerSlug, canRewriteTail, newKind } = args;
   const oldTail = tailOf(oldSlug);
@@ -326,14 +313,12 @@ export function planReferrerRewrite(raw: string, args: ReferrerRewriteArgs): Ref
   return plan(next);
 }
 
-/** A kind change's effect on one referrer's lists, previewed before Save. */
 export interface KindChangeReferrer {
   slug: string;
   moved: ReferrerListMove[];
   kept: ReferrerListKept[];
 }
 
-/** Referrers whose lists a kind change moves or leaves, in folder order; address-only ones are omitted. */
 export function planKindChangeReferrers(
   docs: ReadonlyArray<{ slug: string; frontmatter?: Record<string, unknown> }>,
   args: { oldSlug: string; newSlug: string; newKind: string },

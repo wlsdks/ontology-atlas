@@ -1,6 +1,22 @@
 
 import { useRelationVocabulary } from "@/entities/knowledge-graph";
-import { useCanvasBackground, useExpand, useFootprint, useDomainStructure, useGlyphSet, useHexBoard, useMapDragSpeed, useMapView, useMapZoomSpeed, useView3d, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import {
+  useCanvasBackground,
+  useGlyphSet,
+} from "@/shared/lib/preferences/canvas-appearance-preferences";
+import { useExpand } from "@/shared/lib/preferences/expand-preferences";
+import { useFootprint } from "@/shared/lib/preferences/footprint-preferences";
+import {
+  useMapDragSpeed,
+  useMapZoomSpeed,
+  type MapNavigationSpeed,
+} from "@/shared/lib/preferences/map-navigation-speed-preferences";
+import {
+  useDomainStructure,
+  useHexBoard,
+  useMapView,
+  useView3d,
+} from "@/shared/lib/preferences/map-view-preferences";
 import { useAudiencePlain } from "@/shared/lib/preferences/audience-preference";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { useLocale, useTranslations } from "next-intl";
@@ -13,10 +29,8 @@ export function useTopologyPreferences() {
   const reducedMotion = usePrefersReducedMotion();
   const siteT = useTranslations('metadata');
   const businessFlowRequestText = useTranslations('topology')('businessFlowRequest');
-  // For the create composer's per-locale name inputs.
   const activeLocale = useLocale();
   const tKinds = useTranslations('kinds');
-  // The help glossary owns these definitions (see `TopologyIndexTreeRowLabels.subcountsTitle`).
   const tGlossary = useTranslations('searchWidgets.shortcuts.glossary');
   const kindCountsTitle = useMemo(
     () =>
@@ -36,11 +50,9 @@ export function useTopologyPreferences() {
   const [audiencePlain, setAudiencePlain] = useAudiencePlain();
   // App-wide stores the DOM glyphs also subscribe to, so canvas and DOM swap in lockstep.
   const canvasBackground = useCanvasBackground();
-  /** On for the 3D tree and for Neural alike; `neural` tells them apart. */
   const view3d = useView3d();
   const neural = useMapView() === "neural";
   const structure = useDomainStructure();
-  /** `OntologyHexBoardMap`. */
   const hexBoard = useHexBoard();
   const footprint = useFootprint();
   const glyphSet = useGlyphSet();
@@ -48,12 +60,7 @@ export function useTopologyPreferences() {
   const dragSpeed = useMapDragSpeed();
   const zoomSpeed = useMapZoomSpeed();
   const navigationSpeed = useMemo<MapNavigationSpeed>(() => ({ drag: dragSpeed, zoom: zoomSpeed }), [dragSpeed, zoomSpeed]);
-  // Plain mode uses the datasheet's register.
   const relationRegister: "formal" | "plain" = audiencePlain ? "plain" : "formal";
-  /**
-   * For trail step captions. Unstable, since `relationVocabulary` is a new closure every render;
-   * the trail memoises its edge scan separately.
-   */
   const relationLabelInRegister = useCallback(
     (type: string) => relationVocabulary(type, relationRegister),
     [relationVocabulary, relationRegister],

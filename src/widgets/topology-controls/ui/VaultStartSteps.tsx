@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { VendorMark } from "@/shared/ui/marks/vendor-mark";
+import { VendorMark } from "@/shared/ui/marks/service-marks/vendor-mark";
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {
@@ -27,39 +27,22 @@ import { MapStartStage } from "./MapStartStage";
 export type StartStepId = "docs" | "agent" | "analyze" | "starter" | "manual";
 
 export interface VaultStartStepsProps {
-  /** Whether an agent heartbeat is connected (HomePage's `useAgentConnectLauncher` state). */
   agentConnected?: boolean;
-  /** A runner usable on this machine now, or null; shown here rather than only in settings. */
   acpRuntimeLabel?: string | null;
-  /** Bundled mark for that tool (`/acp-icons/<id>.svg`), so the step shows it rather than only naming it. */
   acpRuntimeIcon?: string | null;
-  /** The vendor's published brand colour for that mark, when there is one. */
   acpRuntimeInk?: string | null;
-  /** The door that opens a conversation (when a runner exists), or the screen for picking a tool (when none does). */
   onOpenAgentConnect?: (() => void) | null;
-  /**
-   * Drops the analysis instruction into the agent's compose field, supplied only when a runner
-   * exists.
-   */
   onSendAnalyzeToAgent?: (() => void) | null;
-  /** The instruction text — a copy for people whose paste target is outside. */
   analyzePrompt: string;
   /** Create skeleton documents plus the connection config in an empty folder. null when documents already exist. */
   onScaffoldStarter?: (() => Promise<boolean>) | null;
   scaffolding?: boolean;
   scaffoldFailed?: boolean;
-  /** The alternative — create the first node by hand. */
   onCreateNode: (kind: "project" | "domain") => void;
-  /** How many documents were found in this folder that are not yet on the map. Above 0, a step is added. */
   docsFoundCount?: number;
-  /** Source files the folder walk passed over; decides which step opens. */
   sourceFileCount?: number;
   onStartFromDocs?: (() => void) | null;
-  /** The last step has been passed — dismiss the card. */
   onFinish?: () => void;
-  /**
-   * Whether INDEX is expanded. It floats over the map column, so it is left out of the centring.
-   */
   indexExpanded?: boolean;
 }
 
@@ -85,7 +68,6 @@ export function VaultStartSteps({
   const kindLabel = useOntologyKindLabel();
   const { state: copyState, copy: copyPrompt } = useCopyFeedback();
   const [index, setIndex] = useState(0);
-  /** Steps the user actually took; a press counts without waiting for the world to change. */
   const [acted, setActed] = useState<ReadonlySet<StartStepId>>(new Set());
 
   const agentReady = agentConnected || acpRuntimeLabel !== null;
@@ -123,7 +105,6 @@ export function VaultStartSteps({
   const current = scaffoldActive ? "starter" : steps[Math.min(index, steps.length - 1)];
   const isLast = index >= steps.length - 1;
 
-  /** Move on. Passing the last one means this card has done its job. */
   const advance = () => {
     if (isLast) {
       onFinish?.();
@@ -132,7 +113,6 @@ export function VaultStartSteps({
     setIndex((i) => i + 1);
   };
 
-  /** A done step's secondary button says Next, not Skip. */
   const currentDone = current === "agent" ? agentReady : acted.has(current);
 
   const body = scaffoldFailed ? t("starter.failedBody") :
@@ -161,7 +141,6 @@ export function VaultStartSteps({
             ? t("starter.title")
             : t("manual.title");
 
-  /** The primary action names what it does. */
   const primary = (() => {
     if (current === "docs") {
       return {
@@ -226,7 +205,7 @@ export function VaultStartSteps({
          */
         run: () => {
           void copyPrompt(analyzePrompt).then((ok) => {
-            if (ok) setActed((prev) => new Set(prev).add("analyze"));
+            if (ok) setActed((previous) => new Set(previous).add("analyze"));
           });
         },
       };
@@ -271,7 +250,6 @@ export function VaultStartSteps({
         aria-live="polite"
         className="pointer-events-auto w-[min(480px,calc(100vw-2rem))] rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[var(--shadow-elevation-1)]"
       >
-        {/* The title is the step's title; progress sits beside it. */}
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="min-w-0 break-keep text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {title}
@@ -290,13 +268,6 @@ export function VaultStartSteps({
         >
           {body}
         </p>
-        {/*
-         * The found tool gets its own row with the same `VendorMark` as the agent settings list.
-         */}
-        {/*
-         * Shows the four kind marks the map will draw (`OntologyMapKindGlyph`) instead of
-         * describing the prompt.
-         */}
         {current === "analyze" ? (
           <ul
             data-testid="start-step-kind-preview"
@@ -315,7 +286,6 @@ export function VaultStartSteps({
         {current === "agent" && acpRuntimeLabel ? (
           <div
             data-testid="start-step-runtime"
-            /* No box: the mark carries its own plate. */
             className="mt-3 flex items-center gap-2.5"
           >
             <VendorMark src={acpRuntimeIcon} ink={acpRuntimeInk} />
@@ -346,7 +316,6 @@ export function VaultStartSteps({
             <span />
           )}
           <span className="flex shrink-0 items-center gap-2">
-            {/* Every step has a skip; the card blocks nothing. */}
             <Chip
               size="md"
               tone="secondary"

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { HoverAvoidRect } from "./input/topology-pointer-types";
 import type { FlatDialState, FlatRingMemoryStore } from "./loop/topology-loop-contract";
-import type { DialEvidence, DialLabels } from "../dial/types";
+import type { DialEvidence, DialLabels } from "../dial/dial-shapes";
 import { Orbit } from "lucide-react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
 import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-canvas/map-layout-morph-store";
@@ -13,25 +13,29 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTopologyLoop } from "./loop/use-topology-loop";
 import type { TierRevealConfig } from "../model/visibility/tier-visibility";
 import type { TopologyMapLensKind } from "../model/visibility/path-lens";
-import type { ClusterBarLabels } from "../render/cluster-chips";
+import type { ClusterBarLabels } from "../render/cluster-chips/control-placement";
 import type { SelectionSource } from "../model/camera/flat-selection-camera";
-import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT, DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/preferences/appearance-preferences";
-import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/expand-preferences";
+import {
+  DEFAULT_MAP_NAVIGATION_SPEED,
+} from "@/shared/lib/preferences/map-navigation-speed-preferences";
+import { DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/preferences/map-view-preferences";
+import type {
+  CanvasBackground,
+  GlyphSet,
+} from "@/shared/lib/preferences/canvas-appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
+import type { FootprintPreference } from "@/shared/lib/preferences/footprint-preferences";
+import type { MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation-speed-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import { controlClass } from '@/shared/ui/control-class';
 import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { measureCanvasInsets } from "../interaction/free-area";
-import type { NeuralLabels } from "./frame-draw/paint-neural";
+import type { NeuralLabels } from "./frame-draw/neural/paint-neural";
 
 /**
- * How long the notice stays on screen.
- *
- * ⚠️ It was set to 1100ms at first and **the test caught it** — across eight
- * presses it had already vanished, so the notice was never once seen. A person is
- * in the same position: reading one line takes longer than that. 1900ms is enough
- * to read and press the next direction, and it still disappears on its own.
- *
- * It may exceed the cooldown (`DEAD_END_NOTICE_COOLDOWN_MS`, 1200ms) — hitting
- * another dead end restarts the timer and moves the notice **beside the new node**.
+ * How long the notice stays on screen: 1900 ms is enough to read one line and press the next direction, and it still disappears on its own.
+ * It may exceed the cooldown (`DEAD_END_NOTICE_COOLDOWN_MS`, 1200 ms): another dead end restarts the timer and moves the notice beside the new node.
  */
 const WALK_NOTICE_HOLD_MS = 1900;
 
@@ -60,7 +64,7 @@ export interface OntologyMapNode {
    *  channel (dash plus the opaque stale token). Omitted means fresh. */
   stale?: boolean;
   fullDegree: number;
-  /** Transitive contained-descendant count — the engraved numeral shown on project/domain chips in circuit range (prototype `n.count`). */
+  /** Transitive contained-descendant count — the engraved numeral shown on project/domain chips in circuit range. */
   descendantCount: number;
 }
 
@@ -73,7 +77,7 @@ export interface OntologyMapEdge {
   relationQuality: "strong" | "weak" | null;
   evidenceCount: number;
   kind: "contains" | "depends";
-  /** P3b — the vault document slug that declared this relation (frontmatter *is* the graph, so showing provenance costs nothing). */
+  /** The vault document slug that declared this relation (frontmatter *is* the graph, so showing provenance costs nothing). */
   declaredBySlug: string | null;
 }
 
@@ -106,13 +110,8 @@ export interface OntologyMapProps {
   reviewQuestionIds?: ReadonlySet<string> | null;
   focus: OntologyMapFocus;
   /**
-   * **Which vault this graph came from** — a changed value re-fits the overview.
-   *
-   * The single source of the identity string is `useVaultIdentityScope()`
-   * (`features/vault-scope`). What triggers here is **the source, not the node
-   * count**: hijacking the camera when the user adds one node mid-work is worse
-   * than the original defect, so it only re-fits on a sample↔local or sample↔sample
-   * switch. Omitted, it fits once at first as before.
+   * Which vault this graph came from; a changed value re-fits the overview. The source is the trigger (`useVaultIdentityScope()` in `features/vault-scope`),
+   * not the node count: re-fitting when the user adds a node mid-work is worse, so only a sample↔local or sample↔sample switch does. Omitted, it fits once at first.
    */
   dataSourceKey?: string | null;
   assembleOnOpen?: boolean;
@@ -132,9 +131,9 @@ export interface OntologyMapProps {
   constellationFocusId?: string | null;
   /** Increment to force a full relayout. */
   relayoutToken: number;
-  /** P3d(E1) — the first-map reveal trigger (incremented when bootstrap completes). */
+  /** The first-map reveal trigger (incremented when bootstrap completes). */
   revealToken?: number;
-  /** P3b — an edge click (at a point that missed every node). */
+  /** An edge click (at a point that missed every node). */
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null;
     }) => void;
   /** Edge selection = pair focus — only the two ends stay lit, everything else dims, and the selected edge is pale indigo. */
@@ -142,18 +141,15 @@ export interface OntologyMapProps {
     } | null;
   /** Pre-write relation overlay. It never enters the force/layout graph. */
   previewEdge?: OntologyMapPreviewEdge | null;
-  /** P3c — the edge hover microcard (fires on an identity change; null clears it). */
+  /** The edge hover microcard (fires on an identity change; null clears it). */
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null;
     } | null,
     position: { x: number; y: number; avoid: readonly HoverAvoidRect[];
     } | null) => void;
   /**
-   * The connected-node slug the user is hovering in the detail panel's
-   * "connected nodes" (connected nodes) list. Under focus, that node and its connecting
-   * edge light up on the canvas so panel and map read as one (lead spec §4).
-   * Optional — the panel-hover wiring is a follow-up; omitting it keeps the map
-   * behavior identical.
+   * The connected-node slug hovered in the detail panel's "connected nodes" list: under focus that node and its edge light up on the canvas
+   * so panel and map read as one. Optional.
    */
   emphasizedNeighborSlug?: string | null;
   onSelect?: (slug: string, source: SelectionSource) => void;
@@ -174,9 +170,8 @@ export interface OntologyMapProps {
    */
   onZoomTierChange?: (tier: "spine" | "circuit" | "element") => void;
   /**
-   * W2-B node right-click context menu — called with the hit node's id and
-   * viewport-space cursor position. Omitted keeps right-click behavior
-   * unchanged (browser default menu everywhere, same as before this slice).
+   * Node right-click context menu — called with the hit node's id and
+   * viewport-space cursor position. Omitted keeps the browser default menu everywhere.
    */
   onContextMenuNode?: (slug: string, position: { x: number; y: number;
     }) => void;
@@ -194,13 +189,13 @@ export interface OntologyMapProps {
   expandedParents?: ReadonlySet<string>;
   /** Density gate — a cluster chip click toggles that parent's expansion (HomePage does the URL round trip). */
   onToggleCluster?: (parentId: string) => void;
-  /** S2 part 5C — the cluster chip hover tooltip (fires on an identity change; null clears it). */
+  /** The cluster chip hover tooltip (fires on an identity change; null clears it). */
   onHoverCluster?: (
-    info: {
+    cluster: {
       parentId: string;
   /** Direct gated children collapsed at this tier (the chip's `+N`). */
       count: number;
-  /** Panel3-S6 — the parent's total descendant count (the node badge = descendantCount). */
+  /** The parent's total descendant count (the node badge = descendantCount). */
       descendantTotal: number;
       expanded: boolean;
       position: { x: number; y: number;
@@ -216,7 +211,7 @@ export interface OntologyMapProps {
   /** Embed mode (project detail neighbor map) — reduced physics/chrome. */
   minimal?: boolean;
   /**
-   * W6 agent visibility — the graph node id matching the agent heartbeat's
+   * The graph node id matching the agent heartbeat's
    * current focus (already resolved to `kind:slug` form by `HomePage`), or
    * `null`/omitted when there's no fresh heartbeat focus. Draws a static
    * amber ring + label activity mark on that one node; never fabricated.
@@ -232,16 +227,16 @@ export interface OntologyMapProps {
   /** Only authored edge ids actually included in the shortest path. */
   pathEdgeIds?: ReadonlySet<string> | null;
   /**
-   * S4 realm expansion — the map has switched to this node's world (`?realm=slug`);
+   * Realm expansion — the map has switched to this node's world (`?realm=slug`);
    * without it, the full map. HomePage derives it from the URL.
    */
   realmRootId?: string | null;
-  /** S4 — clicking the orbit "expand" button enters the realm at this slug (HomePage does the URL round trip). */
+  /** Clicking the orbit "expand" button enters the realm at this slug (HomePage does the URL round trip). */
   onEnterRealm?: (slug: string) => void;
   /** Expanded INDEX covers the map on phones, so its floating controls yield. */
   indexExpanded?: boolean;
   realmEnterLabel?: string;
-  /** S4 — the orbit button's hover microtooltip copy ("look only inside this node" — look only inside this node). */
+  /** The orbit button's hover microtooltip copy ("look only inside this node" — look only inside this node). */
   realmEnterTooltip?: string;
   /**
    * The inventory engraving at the warding circle's base — "○○ · N elements" (i18n,
@@ -251,19 +246,13 @@ export interface OntologyMapProps {
    */
   realmCaption?: string | null;
   /**
-   * The copy for "the bar above the head" (the bar above the head) — "expand all" /
-   * "expand N" / "collapse" (expand all / expand N / collapse), i18n, injected by
-   * HomePage. The canvas renderer never composes strings (the same convention as
-   * the warding caption). Omitted draws an English fallback, so a contract test
-   * catches a broken wiring.
+   * The copy for the bar above the head: "expand all", "expand N", "collapse" (i18n, injected by HomePage; the canvas renderer never composes strings).
+   * Omitted draws an English fallback, so a contract test catches broken wiring.
    */
   clusterBarLabels?: ClusterBarLabels | null;
   /**
-   * H3 P2 — the canvas accessibility label (i18n, injected by HomePage). A canvas
-   * is painted pixels and reads to a screen reader as an empty graphic, so
-   * `role="img"` plus this label states what it is and what the keyboard
-   * alternative is (the INDEX panel) in one sentence. Omitted, neither role nor
-   * label is set (zero regression).
+   * The canvas accessibility label (i18n, injected by HomePage): a canvas reads as an empty graphic to a screen reader, so `role="img"` plus this
+   * label states what it is and the keyboard alternative (the INDEX panel). Omitted, neither role nor label is set.
    */
   canvasLabel?: string;
   /**
@@ -281,28 +270,21 @@ export interface OntologyMapProps {
    */
   visitedTrail?: readonly string[];
   /**
-   * A ref holding whether the trail lens is on — true while the trail popover is
-   * open. The map briefly sets aside reading relations and yields to reading the
-   * path: only the `visitedTrail` nodes keep their values and labels, and every
-   * other node, cluster chip, label and edge recedes to the existing dim values.
-   * It is not a new mode or URL state but is equivalent to the popover being open
-   * (a transient surface). It is a ref for the same reason as the brushing below —
-   * so a toggle does not re-render the page tree.
+   * A ref: whether the trail lens is on, true while the trail popover is open. Only the `visitedTrail` nodes keep their values and labels; every other
+   * node, chip, label and edge recedes to the dim values. It equals the popover being open (a transient surface, no mode or URL state), and a ref so a
+   * toggle does not re-render the page tree.
    */
   trailLensActiveRef?: RefObject<boolean>;
   /**
-   * Trail brushing — a ref holding the node id of the row being hovered in the
-   * popover (valid only during the lens). A ref rather than a value because lifting
-   * a signal that changes continuously while scanning rows into state re-renders the
-   * whole page tree on every hover (measured ~100ms). The frame loop reads it every
-   * frame, so the same result costs zero renders.
+   * Trail brushing: a ref holding the node id of the popover row being hovered (valid only during the lens). A ref because state re-renders the whole
+   * page tree on every hover (~100 ms measured); the frame loop reads it every frame.
    */
   trailHoverNodeIdRef?: RefObject<string | null>;
   /** Set when the pointer is over a node's name in a side panel (the conversation
    *  panel or the datasheet) — see `use-topology-loop`. */
   panelHoverNodeIdRef?: RefObject<string | null>;
   /**
-   * Slice C (the dev/non-dev mode toggle) — the display-lens tier gate config.
+   * The display-lens tier gate config.
    * Omitted defaults to `DEFAULT_TIER_REVEAL` (dev mode). In non-dev (plain) mode
    * HomePage passes `PLAIN_TIER_REVEAL` (element always hidden).
    */
@@ -319,7 +301,7 @@ export interface OntologyMapProps {
    */
   overlayOpen?: boolean;
   /**
-   * The icon set (Phase 5 #21) — the node body's render style. HomePage reads it
+   * The icon set — the node body's render style. HomePage reads it
    * with `useGlyphSet()` and passes it down. The DOM glyph
    * (`OntologyMapKindGlyph`) reads the same store itself, so canvas and DOM swap in
    * lockstep. Omitted defaults to `"geometric"`.
@@ -370,11 +352,8 @@ export interface OntologyMapProps {
   /** The footprint appearance setting — read with `useFootprint()` and passed down. Omitted means no footprints. */
   footprint?: FootprintPreference | null;
   /**
-   * The expand settings — the expand affordance (pill/bar/badge), the child layout,
-   * how many open at once, how many to attempt naming, and how many parents stay
-   * expanded together. HomePage reads them with `useExpand()` and passes them down.
-   * Omitted defaults to `DEFAULT_EXPAND` (identical to a screen that never touched
-   * settings).
+   * The expand settings (affordance, child layout, how many open at once, how many to name, how many parents stay expanded), read by HomePage with
+   * `useExpand()`. Omitted defaults to `DEFAULT_EXPAND`.
    */
   expand?: ExpandPreference;
   /**
@@ -583,7 +562,7 @@ export function OntologyMap(props: OntologyMapProps) {
     return (<div ref={containerRef} data-testid="ontology-map" data-map-engine="v2" data-minimal={minimal ? "true" : "false"} data-source-node-count={nodes.length} data-map-lens={spotlightIds ? mapLensKind : undefined} data-path-node-count={mapLensKind === "path" ? spotlightIds?.size : undefined} data-path-edge-count={mapLensKind === "path" ? pathEdgeIds?.size ?? 0 : undefined} data-preview-edge={previewEdge
             ? `${previewEdge.sourceId}>${previewEdge.targetId}:${previewEdge.relationType}`
             : undefined} data-preview-phase={previewEdge?.phase}
-    // rank18 — while an overlay is open the canvas is excluded from the aria tree
+    // While an overlay is open the canvas is excluded from the aria tree
     // and Tab traversal (inert blocks the pointer too). INDEX and the datasheet
     // are the alternative list.
     aria-hidden={overlayOpen} inert={overlayOpen} style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -616,7 +595,7 @@ export function OntologyMap(props: OntologyMapProps) {
     onFocus={(event) => { if (event.currentTarget.matches(":focus-visible")) event.currentTarget.dataset.keyboardFocus = "true"; }}
     onBlur={(event) => { delete event.currentTarget.dataset.keyboardFocus; }} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerCancel} onPointerLeave={handlePointerLeave} onContextMenu={handleContextMenu}
     onKeyDown={handleKeyDown}/>
-      {/* The S4 orbit "expand" button — anchored to canvas coordinates (the loop
+      {/* The orbit "expand" button — anchored to canvas coordinates (the loop
                   refreshes the transform every frame). Hidden by default; shown only when the
                   focused node has children and sits outside a realm. No radial menu — one
                   button. A microtooltip on hover (one plain line). */}

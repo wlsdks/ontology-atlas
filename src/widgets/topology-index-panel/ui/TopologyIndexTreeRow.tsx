@@ -13,14 +13,12 @@ import {
 } from "../lib/domain-subcounts";
 import { ADD_KINDS_BY_GROUP, type IndexAddConcept, type IndexAddKind, TopologyIndexAddRow } from "./TopologyIndexAddRow";
 
-/** The add row's two words per kind: the quiet action and the name field it turns into. */
 export type IndexAddLabels = Record<IndexAddKind, { action: string; field: string }>;
 
 interface TopologyIndexTreeRowLabels {
   capabilitiesShort: string;
   elementsShort: string;
   freshTitle: string;
-  /** Hover explanation for the domain badge (multi-membership is counted more than once). */
   domainCountTitle: string;
   /**
    * What capability and element mean, where their counts are read. The kind names are fixed
@@ -28,14 +26,8 @@ interface TopologyIndexTreeRowLabels {
    * second teaching screen, so the definition is composed from the existing glossary strings.
    */
   subcountsTitle?: string;
-  /**
-   * The scope word for a domain's large number ("everything below"), making clear it is the subtree
-   * total.
-   */
   subtotalTitle?: string;
-  /** The "an agent just now" attribution badge. */
   agentBadge?: string;
-  /** Hidden text on the closed row that holds the selection. */
   holdsSelection?: string;
 }
 
@@ -54,10 +46,8 @@ export interface TopologyIndexTreeRowProps {
   selectedId: string | null;
   /** The closed row the selection sits inside; the tree never opens itself to show it. */
   selectionHolderId?: string | null;
-  /** The roving tabindex entry point; only this row is tabIndex=0. */
   activeRowId: string | null;
   changedSlugs: ReadonlySet<string>;
-  /** The one node (if any) matching a fresh heartbeat's focus. */
   agentAttributedNodeId?: string | null;
   maxDomainDescendantCount: number;
   /**
@@ -67,18 +57,11 @@ export interface TopologyIndexTreeRowProps {
   domainCensus?: ReadonlyMap<string, DomainCensusRow> | null;
   labels: TopologyIndexTreeRowLabels & { censusConcepts?: string };
   projectCount?: number | null;
-  /** The panel's search text, so the row can mark where the query landed. */
   query?: string;
-  /** Present while the open folder is writable and the tree is not narrowed. */
   onAddInGroup?: IndexAddConcept;
   addLabels?: IndexAddLabels;
 }
 
-/**
- * One INDEX tree row and its children, recursive by depth. Row click selects;
- * the caret is a separate target. Four-column grid
- * (caret, glyph, label, count). Selection and disclosure remain separate actions.
- */
 export function TopologyIndexTreeRow({
   entry,
   depth,
@@ -109,7 +92,6 @@ export function TopologyIndexTreeRow({
   const agentAttributed = agentAttributedNodeId !== null && agentAttributedNodeId === node.id;
   const eyebrow = useLatinEyebrow("tracking-[var(--tracking-caps-08)]");
   const isDomain = node.kind === "domain";
-  // Every kind reads its own census row: the badge is the mark the map draws inside the node.
   const censusRow = domainCensus?.get(node.id) ?? null;
   const subcounts = isDomain
     ? censusRow
@@ -122,7 +104,6 @@ export function TopologyIndexTreeRow({
     : null;
   const projectCensus = node.kind === "project" && projectCount !== null;
   const count = projectCensus ? projectCount : censusRow ? censusRow.total : isDomain && subcounts ? subcounts.descendantCount : hasChildren ? children.length : null;
-  // The expansion lifetime uses the shared list-row disclosure hook.
   const {
     mounted: branchMounted,
     open: branchOpen,
@@ -162,7 +143,6 @@ export function TopologyIndexTreeRow({
         data-index-row={node.id}
         data-holds-selection={holdsSelection || undefined}
         data-testid="topology-index-row"
-        // Selection preserves the tree; the caret and arrow keys control disclosure.
         onClick={() => onSelect(node.id)}
         onKeyDown={handleRowKeyDown}
         style={{ marginLeft: depth * 16 }}
@@ -185,7 +165,6 @@ export function TopologyIndexTreeRow({
           // ArrowRight/Left, and it is out of the focus order.
           aria-hidden="true"
           tabIndex={-1}
-          // The hit area is the full row height by a 24px column; the icon stays 11px.
           className={`-my-1 flex w-full items-center justify-center self-stretch text-[color:var(--map-panel-text-quaternary)] transition-transform ${
             hasChildren ? "" : "invisible"
           } ${open ? "rotate-90" : ""}`}
@@ -265,10 +244,6 @@ export function TopologyIndexTreeRow({
           </span>
         ) : null}
       </div>
-      {/*
-       * Children use the list-row disclosure grammar (`.ai-row-disclosure`) instead of a hard cut,
-       * leaving the same way.
-       */}
       {hasChildren ? (
         // The box is always drawn so the transition has a starting height; only the content drops
         // out when collapsed, leaving the accessibility tree and tab order.

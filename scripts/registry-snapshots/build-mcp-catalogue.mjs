@@ -10,7 +10,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
-const OUT = join(ROOT, 'src', 'shared', 'config', 'mcp-catalogue.generated.ts');
+const OUT = join(ROOT, 'src', 'shared', 'config', 'mcp', 'mcp-catalogue.generated.ts');
 const REGISTRY_SNAPSHOT = join(ROOT, 'scripts', 'data', 'mcp-registry-snapshot.json');
 const REGISTRY = 'https://registry.modelcontextprotocol.io/v0/servers';
 const REGISTRY_TIMEOUT_MS = 15_000;
@@ -140,14 +140,10 @@ const CURATION = [
 ];
 
 /**
- * Which curated facts the registry may correct.
- *
- * `packageId`, `args` and `env` on a **local** variant, because those are the publisher's own
- * launch instructions and go stale in a way a person cannot notice. Nothing on a **remote**
- * variant except confirming that the URL is listed: the registry's `headers[]` for a hosted
- * server describe an alternative token path, and folding that in would put an optional
- * credential box in front of somebody whose whole reason for choosing the hosted address was
- * that there is nothing to type.
+ * Which curated facts the registry may correct: `packageId`, `args` and `env` on a local variant (the
+ * publisher's own launch instructions go stale unnoticed). Nothing on a remote variant except confirming
+ * the URL is listed: its `headers[]` describe an alternative token path that would put an optional
+ * credential box in front of someone who chose the hosted address to have nothing to type.
  */
 const REGISTRY_FIELDS = ['packageId', 'args', 'env'];
 

@@ -29,9 +29,9 @@ export async function runDisconnectSource(args) {
       projectSlug,
       ...(confirm ? { confirm: true } : {}),
     });
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }

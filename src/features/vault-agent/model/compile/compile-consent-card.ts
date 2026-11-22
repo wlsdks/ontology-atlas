@@ -1,22 +1,18 @@
-import type { AgentProposal, ProposalChange } from '../types';
+import type { AgentProposal, ProposalChange } from '../agent-turn';
 import type { CompileSourceRefusal, WikiPageProposal } from './wiki-proposal';
 
 export interface CompileCardRow {
-  /** `wiki/quarter-plan.md`. */
   path: string;
   title: string;
   ok: boolean;
-  /** True when a page of this name is already in the folder and would be replaced. */
   replaces: boolean;
   /** Exact previously read bytes, so a replacement can be judged before approval. */
   before: string | null;
   sections: Array<{ name: string; entries: number }>;
   citationCount: number;
-  /** Sources this page was written from. */
   sourcesRead: string[];
   /** Sources read only up to the cap — the page says so too, but the card says it first. */
   sourcesTruncated: string[];
-  /** Sources this turn could not open, and why. */
   sourcesUnreadable: Array<{ path: string; refusal: CompileSourceRefusal }>;
   /** Exactly what is wrong, when something is. Empty when `ok`. */
   problems: Array<{ code: string; message: string }>;
@@ -26,9 +22,7 @@ export interface CompileCardRow {
 
 export interface CompileConsentCard {
   rows: CompileCardRow[];
-  /** How many pages would be written if the person allows. */
   writableCount: number;
-  /** How many were refused before the person saw them. */
   refusedCount: number;
   /** Null when nothing may be written, so "Allow" has nothing to call. */
   proposal: AgentProposal | null;

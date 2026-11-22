@@ -17,7 +17,6 @@ import type { AgentWorkProjection } from './agent-work-projection';
 export const BELL_TABS = ['todo', 'results', 'history'] as const;
 export type BellTab = (typeof BELL_TABS)[number];
 
-/** One thing waiting on a person. */
 export type BellTodo =
   | {
       kind: 'permission-ask';
@@ -35,7 +34,6 @@ export type BellTodo =
       problems: VaultProblemCounts;
     };
 
-/** One finished piece of work. */
 export type BellResult =
   | {
       kind: 'task';
@@ -48,7 +46,6 @@ export type BellResult =
       counts: AgentWriteCounts;
       durationMs: number;
       node: VaultShapeNode | null;
-      /** Human decisions made inside this task's window. */
       allowed: number;
       rejected: number;
       /** Writes the conversation's auto-approve choice passed; nobody pressed for these. */
@@ -61,7 +58,6 @@ export type BellResult =
       agent: string | null;
       unread: boolean;
       repeat: number;
-      /** The bounded request summary from the receipt — the person's words. */
       request: string;
       tool: string;
       decision: AcpWorkDecision;
@@ -87,20 +83,16 @@ export interface BellHistoryRow {
   childCount: number | null;
   /** Set only for a folded task that both started and ended. */
   durationMs: number | null;
-  /** True when the task is still running — it has a start and no end. */
   running: boolean;
   /** `human-decision` only: what the person answered, and what came of it. */
   decision: AcpWorkDecision | null;
-  /** `human-decision` only: the auto-approve choice answered instead of the person. */
   autoApproved: boolean;
   result: AcpWorkResult | null;
 }
 
 /** A day's worth of timeline rows. Not exported: the panel reads it through `BellInbox`. */
 interface BellHistoryGroup {
-  /** Stable day key (`YYYY-MM-DD` in the reader's own timezone). */
   key: string;
-  /** `today` and `yesterday` are named; anything older prints its date. */
   label: 'today' | 'yesterday' | 'date';
   at: number;
   rows: BellHistoryRow[];
@@ -143,15 +135,7 @@ function dayLabel(at: number, nowMs: number): BellHistoryGroup['label'] {
   return 'date';
 }
 
-/**
- * Whose agent it was, coarse enough to survive two names for one program.
- *
- * The same agent reaches the two records under two ids — a decision receipt carries the
- * ACP runtime (`claude-acp`, `codex-acp`) while a write row carries the MCP client that
- * wrote it (`claude-code`, `codex-mcp-client`) — so comparing the ids, or even their
- * product names, would reject the true attribution. The leading token is what both spell
- * the same way.
- */
+/** The leading token of the agent id: a decision receipt carries the ACP runtime (`claude-acp`) while a write row carries the MCP client (`claude-code`), so comparing whole ids or product names would reject the true attribution. */
 function agentFamily(raw: string | null | undefined): string | null {
   const trimmed = raw?.trim().toLowerCase();
   if (!trimmed) return null;
@@ -193,7 +177,6 @@ function emptyCounts(): AgentWriteCounts {
   return { added: 0, edited: 0, removed: 0 };
 }
 
-/** Which write kind leads a task row's sentence — the same rule the panel's copy uses. */
 function leadingWrite(counts: AgentWriteCounts): string {
   const ordered = [
     ['added', counts.added],
@@ -215,12 +198,7 @@ function resultSubject(row: BellResult): string {
     : `decision|${row.decision}|${row.autoApproved}|${row.request}|${row.agent ?? ''}`;
 }
 
-/**
- * Consecutive rows naming the same thing become one row with `repeat`.
- *
- * Two identical titles in a row is the defect this fixes; folding non-adjacent duplicates
- * instead would hide the order in which work actually happened.
- */
+/** Consecutive rows naming the same thing fold into one with `repeat`; non-adjacent duplicates stay apart to keep the order work happened in. */
 function foldRepeats(rows: readonly BellResult[]): BellResult[] {
   const out: BellResult[] = [];
   for (const row of rows) {

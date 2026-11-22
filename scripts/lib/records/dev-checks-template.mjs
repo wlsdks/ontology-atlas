@@ -42,12 +42,12 @@ const byKey = (a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
 export function orderProblems(items) {
   const n = items.length;
   const length = new Array(n).fill(1);
-  const prev = new Array(n).fill(-1);
+  const previous = new Array(n).fill(-1);
   for (let i = 0; i < n; i += 1) {
     for (let j = 0; j < i; j += 1) {
       if (byKey(items[j], items[i]) <= 0 && length[j] + 1 > length[i]) {
         length[i] = length[j] + 1;
-        prev[i] = j;
+        previous[i] = j;
       }
     }
   }
@@ -55,7 +55,7 @@ export function orderProblems(items) {
   let at = n === 0 ? -1 : length.indexOf(Math.max(...length));
   while (at >= 0) {
     kept.add(at);
-    at = prev[at];
+    at = previous[at];
   }
   const sorted = items.filter((_, i) => kept.has(i));
   return items

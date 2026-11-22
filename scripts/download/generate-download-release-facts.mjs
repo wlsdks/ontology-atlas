@@ -81,16 +81,7 @@ function defaultTag() {
   return `v${pkg.version}`;
 }
 
-/**
- * The newest release a visitor can actually download.
- *
- * `--check` cannot default to the package version the way writing does: between
- * the version bump and the release that follows it, the repository is ahead of
- * every published build, and comparing against a tag nobody has published yet
- * would fail for the one reason that is not a mistake. What the page owes its
- * reader is the newest **published** release, draft or not-yet-run releases
- * excluded, so that is what the check regenerates from.
- */
+/** The newest published release (drafts and not-yet-run releases excluded): `--check` cannot default to the package version, because between a version bump and its release the repository is ahead of every published build. */
 function latestPublishedTag() {
   const tagName = gh([
     "api",
@@ -313,14 +304,7 @@ if (check && unpublished) {
 
 const tag = tagArg || (check ? latestPublishedTag() : defaultTag());
 
-/**
- * `--check` does not re-litigate the prerelease decision.
- *
- * Blocking a prerelease is an editorial guard on the *write* — nobody should
- * advertise an RC by accident. Whether this page features one has already been
- * decided by whoever ran the write with `--allow-prerelease`; the check's only
- * question is whether the committed facts still describe what is published.
- */
+/** `--check` does not re-litigate the prerelease decision: blocking a prerelease is an editorial guard on the write; the check only asks whether the committed facts still describe what is published. */
 const emit = check ? compareModule : writeModule;
 const prereleaseAllowed = allowPrerelease || check;
 
@@ -356,18 +340,7 @@ if (release.draft && !allowDraft) {
   );
 }
 
-/**
- * A prerelease is not what this page advertises.
- *
- * This script queried `prerelease` but never used it. In that state, running it
- * after publishing an RC stamped `published: true` and **the download page
- * presented a release candidate as the official build.** That is why GitHub
- * excludes prereleases from `releases/latest` — an RC is for people who came
- * looking for it, not something to push at a first-time visitor.
- *
- * Blocked, but with a door: deliberately featuring an RC has to be said with a
- * flag.
- */
+/** A prerelease is not what this page advertises: a release candidate must not be presented as the official build, so it is blocked unless featuring it is said with `--allow-prerelease`. */
 if (release.prerelease && !prereleaseAllowed) {
   fail(
     `release ${tag} is a prerelease — the download page advertises the stable build.\n` +

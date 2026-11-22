@@ -14,7 +14,6 @@ export type DocumentStoreSource = { readTexts: ReadDocumentTexts } | { readDetai
 export interface DocumentStore {
   /** The cached answer, without reading or touching recency; `undefined` when not cached. */
   peek(doc: DocumentRef): VaultDocDetail | undefined;
-  /** `null` when the document cannot be read. */
   detail(doc: DocumentRef): Promise<VaultDocDetail | null>;
   /** One answer per document, in order; reads only the uncached, at most `DETAIL_READ_BATCH` per call. */
   details(docs: readonly DocumentRef[]): Promise<(VaultDocDetail | null)[]>;

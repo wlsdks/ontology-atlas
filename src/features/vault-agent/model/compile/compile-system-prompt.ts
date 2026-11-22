@@ -8,9 +8,7 @@ import { SOURCE_TEXT_CHAR_CAP } from './source-text';
  * tool boundary and limits, never a third paraphrase of the page shape.
  */
 export function buildCompileSystemPrompt(options: {
-  /** The runner's model name, so the page's `created_by` is not a surprise to it. */
   model: string;
-  /** Files this turn is being asked to write up. */
   targets: readonly string[];
   /** Existing pages whose original versions are behind; these are explicit revision work. */
   reviewPages?: readonly string[];

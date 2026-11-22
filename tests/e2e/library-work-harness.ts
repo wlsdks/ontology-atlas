@@ -1,14 +1,14 @@
 import type { Page } from "@playwright/test";
 
-import { buildCodexConfigToml } from "../../src/entities/vault-session/lib/ontology-starter";
-import { bundledServerLaunch } from "../../src/shared/config/mcp-server-launch";
+import { buildCodexConfigToml } from "../../src/entities/vault-session/lib/agent-mcp-config";
+import { bundledServerLaunch } from "../../src/shared/config/mcp/mcp-server-launch";
 import {
   OFF_VECTOR_STATUS,
   type VectorFailure,
   type VectorFound,
   type VectorProbe,
   type VectorStatus,
-} from "../../src/shared/lib/vault-folder/tauri-vault-vectors";
+} from "../../src/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 const VAULT_ROOT = "/Users/probe/Ontology Atlas/launch";

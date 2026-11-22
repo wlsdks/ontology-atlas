@@ -12,7 +12,6 @@ import {
  * A chip is a prefill, and one generator feeds every entrance.
  */
 
-/** Where a chip sits — a fixed priority: screen → queue → standing. */
 type FirstWordsSlot = 'screen' | 'queue' | 'standing';
 
 /** What the sentence means, kept apart from the locale; only this travels through a URL. */
@@ -41,15 +40,12 @@ export function parseNodeIntentKind(raw: string | null): FirstWordsNodeIntentKin
 }
 
 export interface FirstWordsChip {
-  /** React key plus test identity — the same state gives the same value. */
   id: string;
   slot: FirstWordsSlot;
   intent: FirstWordsIntent;
-  /** The sentence seated verbatim in the input box. */
   text: string;
 }
 
-  /** The screen's language. The app writes the sentences; the model does not. */
 export interface FirstWordsLabels {
   missingDefinition: (title: string) => string;
   missingDomain: (title: string) => string;
@@ -109,7 +105,6 @@ export interface BuildFirstWordsInput {
   focusedRef: string | null;
 }
 
-/** One chip per slot. */
 const FIRST_WORDS_MAX_CHIPS = 3;
 
 /** Candidates in fixed slot priority; a slot that cannot be filled is not created. */
@@ -133,7 +128,6 @@ export function buildFirstWords(
 
   const chips: FirstWordsChip[] = [];
 
-  // Screen slot, omitted without a focus.
   const focused = input.focusedRef
     ? concepts.find((concept) => concept.ref === input.focusedRef)
     : undefined;
@@ -159,7 +153,6 @@ export function buildFirstWords(
   return chips.slice(0, FIRST_WORDS_MAX_CHIPS);
 }
 
-/** One node's intent for a queue row or node detail, through the same generator as the chips. */
 export function nodeIntent(
   node: FirstWordsNode | null | undefined,
   kind: FirstWordsNodeIntentKind,
@@ -176,7 +169,6 @@ interface ConceptFact {
   gaps: ReturnType<typeof detectMeaningGaps>;
 }
 
-/** Concepts with their own `.md`, judged by `resolveNodeDocument` alone. */
 function collectConcepts(
   nodes: readonly FirstWordsNode[],
   docFacts: ReadonlyMap<string, ConceptDocFacts>,

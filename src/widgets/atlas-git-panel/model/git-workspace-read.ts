@@ -13,7 +13,6 @@ export type GitWorkspaceRead = {
   diffText: string;
   diffTooLarge: boolean;
   history: GitCommitInfo[];
-  /** Whether git holds steps older than the ones read — the list says so instead of just stopping. */
   historyHasMore: boolean;
 };
 

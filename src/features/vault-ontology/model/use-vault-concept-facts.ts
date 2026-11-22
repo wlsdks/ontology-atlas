@@ -7,10 +7,7 @@ import { useStaticVaultSource } from '@/entities/vault-session';
 import type { VaultManifest } from '@/entities/docs-vault';
 
 export interface VaultConceptFacts {
-  /**
-   * The meaning findings the manifest recorded for this document, as portable
-   * codes. Empty means the validator asked and found nothing.
-   */
+  /** Empty means the validator asked and found nothing. */
   findings: readonly string[];
   domainRef: string | null;
   mtime: number | null;
@@ -18,10 +15,7 @@ export interface VaultConceptFacts {
 
 const NO_FINDINGS: readonly string[] = [];
 
-/**
- * Manifest to per-slug facts, carrying `VaultDoc.meaningFindings` unchanged. Uncomputed
- * findings read as an empty list: silence means "nothing reported", never "checked and clean".
- */
+/** Uncomputed findings read as an empty list: silence means "nothing reported", never "checked and clean". */
 export function manifestToConceptFacts(
   manifest: VaultManifest,
 ): Map<string, VaultConceptFacts> {
@@ -30,7 +24,6 @@ export function manifestToConceptFacts(
     const fm = doc.frontmatter ?? {};
     const domainRaw = typeof fm.domain === 'string' ? fm.domain.trim() : '';
     facts.set(doc.slug, {
-      // `null` (not computed) lands here with the absent case on purpose — see above.
       findings: Array.isArray(doc.meaningFindings) ? doc.meaningFindings : NO_FINDINGS,
       domainRef: domainRaw || null,
       mtime: typeof doc.mtime === 'number' ? doc.mtime : null,
@@ -50,7 +43,6 @@ function cachedFacts(manifest: VaultManifest): Map<string, VaultConceptFacts> {
   return built;
 }
 
-/** Mode-aware adapter; the user's folder always wins. */
 export function useVaultConceptFacts(): ReadonlyMap<string, VaultConceptFacts> {
   const mode = useDataSourceMode();
   const vault = useLocalVault();

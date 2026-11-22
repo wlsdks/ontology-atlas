@@ -5,7 +5,7 @@
  */
 
 import { closestAllowedValue } from '../suggestions.mjs';
-import { VaultConflictError } from '../vault/atomic-writes.mjs';
+import { VaultConflictError } from '../vault/writes/atomic-writes.mjs';
 import { TOOL_BY_NAME } from './registry.mjs';
 
 function formatUnknownToolError(name) {
@@ -217,9 +217,9 @@ function structuredErrorDetails(message) {
   return {};
 }
 
-function structuredRowErrorDetails(err, message) {
+function structuredRowErrorDetails(error, message) {
   return {
-    errorCode: classifyErrorCode(err, message),
+    errorCode: classifyErrorCode(error, message),
     ...structuredErrorDetails(message),
   };
 }
@@ -253,8 +253,8 @@ function omitUndefined(value) {
   return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined));
 }
 
-function classifyErrorCode(err, message) {
-  if (err instanceof VaultConflictError || err?.code === 'VAULT_CONFLICT') {
+function classifyErrorCode(error, message) {
+  if (error instanceof VaultConflictError || error?.code === 'VAULT_CONFLICT') {
     return 'vault_conflict';
   }
   if (/^Unknown tool:/i.test(message)) return 'unknown_tool';

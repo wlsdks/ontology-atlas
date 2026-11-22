@@ -16,9 +16,7 @@ import {
  * folders.
  */
 export interface UnboundProjectSource {
-  /** Clicking the row opens that node. */
   nodeId: string;
-  /** The row picks singular or plural from it. */
   count: number;
 }
 
@@ -69,9 +67,7 @@ export function buildProjectSourceReadinessRefreshToken(input: {
 export function useProjectSourceReadiness(input: {
   vaultHandle: FileSystemDirectoryHandle | null;
   nodes: readonly KnowledgeGraphNode[];
-  /** Test injection point; unset, it reads the vault sidecar. */
   createStore?: (handle: FileSystemDirectoryHandle) => ProjectSourceStore;
-  /** A completed bind or measure invalidates the sidecar read. */
   refreshToken?: string | number | null;
 }): ProjectSourceReadiness {
   const projects = useMemo(
@@ -134,7 +130,6 @@ export function useProjectSourceReadiness(input: {
     : { state: "loading", unbound: null };
 }
 
-/** Only the actionable missing-project summary. */
 export function useUnboundProjectSource(input: {
   vaultHandle: FileSystemDirectoryHandle | null;
   nodes: readonly KnowledgeGraphNode[];

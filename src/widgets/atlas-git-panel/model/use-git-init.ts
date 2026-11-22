@@ -3,7 +3,6 @@ import type { NativeErrorLookup } from "@/shared/lib/desktop-shell/native-error"
 import { gitErrorMessage, gitInit } from "@/shared/lib/git/tauri-git";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 
-/** The setup's terminal escape; git vocabulary appears only here. */
 const INIT_CLI_COMMAND = "git init";
 
 export function useGitInit({
@@ -36,8 +35,8 @@ export function useGitInit({
     try {
       await gitInit(vaultPath);
       await refresh();
-    } catch (err) {
-      setInitError(gitErrorMessage(err, nativeErrors));
+    } catch (error) {
+      setInitError(gitErrorMessage(error, nativeErrors));
     } finally {
       setInitRunning(false);
     }

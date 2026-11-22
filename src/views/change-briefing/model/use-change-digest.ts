@@ -6,7 +6,6 @@ import type { ChangeBriefing } from '@/shared/lib/git/tauri-change-briefing';
 import { groupBriefing } from './briefing-model';
 import { buildChangeDigest } from './change-digest';
 
-/** Capability groups for the file reader and the digest built on them; nothing is computed for a hidden surface. */
 export function useChangeDigest(data: ChangeBriefing | null, docs: readonly VaultDoc[], locale: string, project: string, show: { digest: boolean; files: boolean }) {
   const needsGroups = show.digest || show.files;
   const capabilityGroups = useMemo(() => data && needsGroups ? groupBriefing(data.commits, docs, locale, project) : null, [data, needsGroups, docs, locale, project]);

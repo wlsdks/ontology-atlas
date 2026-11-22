@@ -126,6 +126,15 @@ describe("DocsVaultViewer", () => {
       "https://github.com/wlsdks/ontology-atlas/blob/main/mcp/README.md",
     );
     expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noreferrer noopener");
+  });
+
+  it("opens a direct https link in a new tab without handing it the opener", async () => {
+    renderViewer("Read [the site](https://example.com) first.");
+    const link = await screen.findByRole("link", { name: /the site/ });
+    expect(link).toHaveProperty("href", "https://example.com/");
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noreferrer noopener");
   });
 
   it("renders a vault-external link as non-routing text when repo location is unknown (local vault)", async () => {

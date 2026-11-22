@@ -15,7 +15,6 @@ export interface NeuralGlProbe {
   counts(): { cells: number; axons: number };
   /** RGBA (0..255) of the WebGL canvas at each point, read inside the next painted frame; null off WebGL. */
   sample(points: readonly NeuralGlPoint[]): Promise<number[][] | null>;
-  /** Forces the WebGL context's loss. */
   lose(): void;
 }
 

@@ -10,11 +10,9 @@ import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 const HISTORY_X = 52;
 const BAR_X = 132;
 const COMMIT_YS = [64, 96, 128, 160, 192, 224, 256];
-/** Which bar each commit joins; bar length is its commit count, so the largest group leads. */
 const COMMIT_GROUP = [0, 0, 0, 0, 1, 1, 2];
 const BARS = [{ y: 112, width: 168 }, { y: 184, width: 84 }, { y: 248, width: 42 }];
 
-/** History on the left, each change drawn into the group it joins, the groups measured as bars: what Changes does with merged work. */
 function DigestArtwork({ arriving, engaged, reduced }: FeatureStageMotion) {
   const draw = reduced ? MOTION.fast : MOTION.choreography;
   return <div className="relative aspect-square">

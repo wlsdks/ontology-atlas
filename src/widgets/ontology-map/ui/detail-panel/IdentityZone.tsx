@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import { morphName, morphTargetProps } from "@/shared/motion/shared-element";
 import { CloseButton } from "@/shared/ui";
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
-import type { ConceptReview, OntologyMapDetailPanelLabels, OntologyMapDetailPanelProps } from "./types";
+import type { ConceptReview, OntologyMapDetailPanelLabels, OntologyMapDetailPanelProps } from "./detail-panel-props";
 
 function MetaSeparator() {
   return <span aria-hidden className="shrink-0 text-[color:var(--map-panel-text-quaternary)]">·</span>;

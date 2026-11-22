@@ -1,34 +1,10 @@
-import { openTauriAuditSource } from '../vault-folder/tauri-vault-fs';
+import { openTauriAuditSource } from '../vault-folder/native-vault/tauri-audit-source';
 
 /**
- * Parser for the LLM call audit log (`.ontology-atlas/llm-audit.jsonl`) —
- * **read-only**.
- *
- * Writing is owned by the Rust side that holds the key
- * (`src-tauri/src/llm_audit.rs`). The web does not write for the same reason as
- * `activity.jsonl`: when whoever owns the record is whoever owns the
- * transmission, "a transmission with no record" becomes structurally impossible.
- *
- * Line schema v1:
- * `{"v":1,"at","provider","host","model","purpose","question","scope":{"nodes","promptChars","vaultChars"},"payloadSha256","outcome","httpStatus","responseChars","durationMs"}`,
- * plus `embed` or `download` (`run`, `phase`, counts) on the two lines of a long run.
- *
- * - `host` was **added later**, which is why `v` is still 1. Older lines without
- *   it already sit on user disks, so they read as `null` — stating plainly that
- *   the destination is unknown rather than guessing it from the provider name.
- *   Charter clause ⑤ is that records are never rewritten after the fact, and a
- *   parser absorbing the absence is that promise's code-side face.
- * - A reserved line is written to disk **just before** transmission, without the
- *   outcome fields. If the process dies before the response that line stays, so a
- *   line with no outcome fields reads as `outcome: 'unknown'` — a missing fact is
- *   not invented as a success or a failure.
- * - Broken lines are skipped (a parser dying and showing nothing is worse).
- * - Response bodies are never recorded, only their length — this is not a
- *   conversation store.
- *
- * Drift between the Rust writer and this reader is caught by a contract test
- * that runs both against the shared fixture
- * `tests/fixtures/llm-audit-log.sample.jsonl`.
+ * Read-only: Rust writes the log (`src-tauri/src/llm_audit.rs`) because whoever owns a
+ * transmission must own its record. A line written just before sending with no outcome reads
+ * `unknown`; broken lines are skipped. `tests/fixtures/llm-audit-log.sample.jsonl` keeps the
+ * writer and this reader in step.
  */
 
 /**
@@ -62,7 +38,6 @@ export interface LlmAuditDownload extends LlmAuditRun {
 }
 
 interface LlmAuditScope {
-  /** Slugs of the nodes whose excerpts were sent; empty for a connection check. */
   nodes: string[];
   promptChars: number;
   vaultChars: number;
@@ -78,10 +53,7 @@ export interface LlmAuditEntry {
   v: 1;
   at: string;
   provider: string;
-  /**
-   * The host the request actually went to. Lines from before `host` existed read
-   * as `null` — a missing fact is not invented from the provider name.
-   */
+  /** `null` on lines older than the field; never guessed from the provider name. */
   host: string | null;
   model: string | null;
   /**
@@ -89,7 +61,6 @@ export interface LlmAuditEntry {
    * the parser passes future values through unchanged.
    */
   purpose: string;
-  /** The user's own words; `null` for a connection check. */
   question: string | null;
   scope: LlmAuditScope;
   /**
@@ -104,9 +75,7 @@ export interface LlmAuditEntry {
   httpStatus: number | null;
   responseChars: number | null;
   durationMs: number | null;
-  /** Present only on the two lines of a search-by-meaning preparation. */
   embed: LlmAuditEmbedRun | null;
-  /** Present only on the two lines of a model download. */
   download: LlmAuditDownload | null;
 }
 
@@ -340,9 +309,9 @@ export async function readLlmAuditSummary(
     if (native?.missing) return empty();
     let file: File | null = null;
     if (!native) {
-      const dir = await handle.getDirectoryHandle('.ontology-atlas');
+      const directory = await handle.getDirectoryHandle('.ontology-atlas');
       if (signal?.aborted) return empty();
-      const fileHandle = await dir.getFileHandle('llm-audit.jsonl');
+      const fileHandle = await directory.getFileHandle('llm-audit.jsonl');
       if (signal?.aborted) return empty();
       file = await fileHandle.getFile();
     }

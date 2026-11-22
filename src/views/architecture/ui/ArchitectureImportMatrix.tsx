@@ -12,7 +12,6 @@ const CELL_MIN_PX = 34;
 /** Cells widen to fill the figure, but past this a count floats in an empty slab. */
 const CELL_WIDTH_MAX_PX = 176;
 const CELL_HEIGHT_MAX_PX = 96;
-/** Unmeasured (first paint, a test renderer), cells take this size. */
 const CELL_FALLBACK_PX = 48;
 /** Below this width a count of four digits or more abbreviates (`1.2k`). */
 const COMPACT_BELOW_PX = 52;
@@ -23,7 +22,6 @@ const ROW_HEADER_DETAIL_MIN_PX = 480;
 const GRID_GAP_PX = 1;
 /* Two `text-label` lines, so a two-word name such as "Shared foundation" wraps instead of cutting. */
 const COLUMN_HEADER_PX = 34;
-/** Room the row header column takes before it is measured. */
 const ROW_HEADER_FALLBACK_PX = 200;
 
 /* Written out because runtime-assembled class names are invisible to the CSS compiler. */
@@ -78,7 +76,6 @@ interface CellSize {
   heightPx: number;
 }
 
-/** Width fills the figure; height follows the width until the window or the cap stops it. */
 function cellSize(roles: number, size: FigureSize, rowHeaderPx: number): CellSize {
   if (size.width === 0 || roles === 0) return { widthPx: CELL_FALLBACK_PX, heightPx: CELL_FALLBACK_PX };
   const gaps = roles * GRID_GAP_PX;
@@ -89,7 +86,6 @@ function cellSize(roles: number, size: FigureSize, rowHeaderPx: number): CellSiz
   return { widthPx, heightPx };
 }
 
-/** The row header column's width, read again whenever its content or detail line changes. */
 function useRowHeaderWidth(): [number, (header: HTMLElement | null) => void] {
   const [widthPx, setWidthPx] = useState(ROW_HEADER_FALLBACK_PX);
   const observer = useRef<ResizeObserver | null>(null);

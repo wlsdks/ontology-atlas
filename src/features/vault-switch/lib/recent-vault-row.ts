@@ -1,9 +1,6 @@
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
-/**
- * Whether a stored folder can be opened now, probed before the row is pressed. `unknown` is
- * distinct from `ready`: claiming reachability because nothing said otherwise is the failure.
- */
+/** `unknown` is distinct from `ready`: claiming reachability because nothing said otherwise is the failure. */
 export type RecentVaultReachability =
   | 'ready'
   | 'needs-permission'
@@ -11,23 +8,19 @@ export type RecentVaultReachability =
   | 'blocked'
   | 'unknown';
 
-/** Whether pressing the row can lead to an opened folder. */
 export function canOpenReachability(state: RecentVaultReachability): boolean {
   return state === 'ready' || state === 'needs-permission' || state === 'unknown';
 }
 
-/** One row's facts; null `counts` renders "not counted yet", never `0 documents`. */
+/** Null `counts` renders "not counted yet", never `0 documents`. */
 export interface RecentVaultRow {
   record: LocalFsHandleRecord;
-  /** Stable key: the absolute path when there is one, else the web identity. */
   key: string;
   name: string;
-  /** Absolute path on desktop; null in a browser session, which has no path to show. */
   path: string | null;
   counts: { docCount: number; conceptCount: number; countedAt: number } | null;
   lastAccessedAt: number;
   reachability: RecentVaultReachability;
-  /** Whether this row is the folder the last session had open. */
   isCurrent: boolean;
 }
 
@@ -39,7 +32,6 @@ export function recentVaultRowKey(record: LocalFsHandleRecord): string {
   return folderName ? `fsa:${folderName}` : record.id;
 }
 
-/** Actionable rows in recency order, then the `missing` ones gathered for one line at the end. */
 export function partitionRecentVaultRows(rows: readonly RecentVaultRow[]): {
   listed: RecentVaultRow[];
   missing: RecentVaultRow[];

@@ -1,6 +1,8 @@
 //! Where vectors come from: the built-in model in its worker, or a runner on this computer. The
 //! job and the search see them through these traits, so tests pass fakes and no model file.
 
+use super::failure::During;
+use super::lock;
 use super::types::VectorSource;
 use crate::llm::embed::builtin::client::BuiltinModel;
 use crate::llm::embed::builtin::infer::Runtime;
@@ -58,6 +60,28 @@ pub(crate) trait Sources: Send + Sync {
     fn runner(&self, base_url: &str, model: &str) -> Result<Arc<dyn Runner>, EmbedError>;
     /// The folder's Markdown files, relative and `/`-separated, as the search index lists them.
     fn markdown_files(&self, root: &Path) -> Result<Vec<String>, String>;
+}
+
+/// A folder's source made ready to answer: the built-in model or a runner.
+pub(super) enum SourceModel {
+    Builtin(Arc<dyn Builtin>),
+    Runner(Arc<dyn Runner>),
+}
+
+impl SourceModel {
+    pub(super) fn embedder(&self) -> &dyn Embedder {
+        match self {
+            SourceModel::Builtin(builtin) => builtin.as_ref(),
+            SourceModel::Runner(runner) => runner.as_ref(),
+        }
+    }
+
+    /// Where an error embedding with this source happens, for the failure it shows.
+    pub(super) fn during(&self) -> During {
+        During::Embedding {
+            runner: matches!(self, SourceModel::Runner(_)),
+        }
+    }
 }
 
 /// The store's model name for a source; the width is the built-in model's or the store's own.
@@ -224,9 +248,7 @@ impl AppSources {
 
     /// The runners kept, the least recently used first.
     pub(super) fn runner_addresses(&self) -> Vec<String> {
-        self.runners
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+        lock(&self.runners)
             .iter()
             .map(|((address, _), _)| address.clone())
             .collect()
@@ -254,10 +276,7 @@ impl Sources for AppSources {
 
     fn runner(&self, base_url: &str, model: &str) -> Result<Arc<dyn Runner>, EmbedError> {
         let key = (base_url.trim().to_string(), model.trim().to_string());
-        let mut runners = self
-            .runners
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut runners = lock(&self.runners);
         if let Some(at) = runners.iter().position(|(known, _)| known == &key) {
             let used = runners.remove(at);
             let runner = used.1.clone();

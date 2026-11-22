@@ -1,8 +1,8 @@
 import { layoutCone } from './cone-layout';
-import { createCouplingCloudRelaxer } from './coupling-cloud';
-import { DOME_FIT_RADIUS } from './projection';
-import { buildStrataTargets } from './strata';
-import type { DomeArrangement, DomeInputNode, DomeModel, DomeSector } from './types';
+import { createCouplingCloudRelaxer } from './coupling/coupling-cloud';
+import { DOME_FIT_RADIUS } from './camera/projection';
+import { buildStrataTargets } from './strata/strata';
+import type { DomeArrangement, DomeInputNode, DomeModel, DomeSector } from './dome-shapes';
 
 export const DOME_BUILD_SLICE_MS = 4;
 

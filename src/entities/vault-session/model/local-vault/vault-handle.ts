@@ -1,11 +1,13 @@
 import { verifyHandlePermission, type LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import {
-  createTauriVaultHandle,
-  getTauriVaultRootPath,
-  isTauriVaultRuntime,
   listTauriDirectoryNames,
   tauriVaultPathExists,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import { createTauriVaultHandle } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
+import {
+  getTauriVaultRootPath,
+  isTauriVaultRuntime,
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { resolvePickedVaultFolder } from './resolve-picked-vault-folder';
 
 /**
@@ -33,11 +35,9 @@ export async function tauriVaultRecordResolves(
 
 interface ResolvedVaultHandle {
   handle: FileSystemDirectoryHandle;
-  /** The project root the person chose or previously stored, when its `atlas/` child won. */
   redirectedFrom: string | null;
 }
 
-/** Applies the project → `atlas/` rule to every desktop ingress, not only the picker. */
 export async function resolveVaultHandle(handle: FileSystemDirectoryHandle): Promise<ResolvedVaultHandle> {
   const pickedPath = getTauriVaultRootPath(handle);
   if (!pickedPath) return { handle, redirectedFrom: null };

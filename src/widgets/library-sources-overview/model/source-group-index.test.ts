@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { deriveSourceProgress, type LibrarySourceRow } from "@/entities/docs-vault";
 
-import { SourceGroupIndex, sourceGroupKey } from "./source-group-index";
+import { SourceGroupIndex, automaticGrouping, sourceGroupKey } from "./source-group-index";
 import { SOURCE_STATE_ORDER } from "./source-states";
 
 function row(path: string, state: LibrarySourceRow["state"] = "not-compiled", compiledDay = -1): LibrarySourceRow {
@@ -110,5 +110,21 @@ describe("SourceGroupIndex", () => {
     const group = index.get("folder:a")!;
     expect(index.latestDay(group, 200)).toBe(140);
     expect(index.latestDay(group, 50)).toBe(-1);
+  });
+});
+
+describe("automaticGrouping", () => {
+  it("reads by folder when two or more first-level folders exist", () => {
+    expect(automaticGrouping({ firstLevel: 2, types: 5 }, null)).toBe("folder");
+  });
+
+  it("reads by file type when the folders do not tell the sources apart but the types do", () => {
+    expect(automaticGrouping({ firstLevel: 1, types: 2 }, null)).toBe("type");
+    expect(automaticGrouping({ firstLevel: 0, types: 3 }, null)).toBe("type");
+    expect(automaticGrouping({ firstLevel: 1, types: 1 }, null)).toBe("folder");
+  });
+
+  it("does not judge the shape while the folder is still being read", () => {
+    expect(automaticGrouping({ firstLevel: 1, types: 4 }, 120)).toBe("folder");
   });
 });

@@ -1,14 +1,13 @@
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import { isWikiFurnitureSlug } from '@/shared/lib/library/wiki-page-schema';
 
-import type { VaultDoc } from '../../model/types';
-import { isWikiPage } from './vault-library';
+import type { VaultDoc } from '../../model/vault-manifest';
+import { isWikiPage } from './wiki-page-facts';
 
 export interface WikiRetrievalResult {
   /** Suggestions only: no currentness, entailment, or complete-read claim. */
   candidates: { slug: string; title: string; sameSource: boolean; matchedTerms: string[] }[];
   searchedPages: number;
-  /** Pages with bodies in the Library cache; the rest match on metadata. */
   fullTextPages: number;
   limit: number;
   omittedMatches: number;
@@ -24,7 +23,6 @@ export interface WikiRetrievalPage {
   readonly grams: readonly string[];
 }
 
-/** Hands back one copy of each term, cut loose from the text it was matched in. */
 export type WikiTermIntern = (terms: readonly string[]) => readonly string[];
 
 const LIMIT = 3;

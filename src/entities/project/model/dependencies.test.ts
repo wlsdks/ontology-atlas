@@ -8,7 +8,7 @@ import {
   findMissingDependencySlugs,
   findProjectsReferencingSlug,
 } from "./dependencies";
-import type { Project } from "./types";
+import type { Project } from "./project";
 
 function project(
   slug: string,

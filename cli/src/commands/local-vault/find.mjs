@@ -19,17 +19,17 @@ const NODE_UID_RE =
 
 /** Case-insensitive substring match of the query against node slugs and titles; same table as `list`. */
 export function runFind(args) {
-  const opts = parseArgs(args);
-  if (opts.help) {
+  const options = parseArgs(args);
+  if (options.help) {
     printUsage(process.stdout);
     return 0;
   }
-  if (opts.error) {
-    process.stderr.write(`error  ${opts.error}\n`);
+  if (options.error) {
+    process.stderr.write(`error  ${options.error}\n`);
     return 1;
   }
 
-  const { query, vaultPath, kindFilter, asJson } = opts;
+  const { query, vaultPath, kindFilter, asJson } = options;
   const needle = query.toLowerCase();
   const exactUidQuery = NODE_UID_RE.test(query);
   const files = walkMd(vaultPath);
@@ -110,11 +110,11 @@ export function runFind(args) {
 function highlight(text, needle) {
   if (!needle) return text;
   const lower = text.toLowerCase();
-  const idx = lower.indexOf(needle);
-  if (idx === -1) return text;
-  const before = text.slice(0, idx);
-  const match = text.slice(idx, idx + needle.length);
-  const after = text.slice(idx + needle.length);
+  const index = lower.indexOf(needle);
+  if (index === -1) return text;
+  const before = text.slice(0, index);
+  const match = text.slice(index, index + needle.length);
+  const after = text.slice(index + needle.length);
   return `${before}${COLORS.yellow}${match}${COLORS.reset}${after}`;
 }
 
