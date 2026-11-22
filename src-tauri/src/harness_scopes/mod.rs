@@ -10,7 +10,7 @@ mod picked;
 #[cfg(test)]
 mod tests;
 
-use crate::gray_area_scope::resolve_binding_metadata;
+use crate::harness_source::authorized_source_root;
 use open::{read_settings_below, OpenFailure};
 use parse::{
     inline_hook_events, parse_claude_settings, parse_codex_hooks, PermissionCounts, ScopeHook,
@@ -21,7 +21,6 @@ use picked::{held_files, hold_picked, picked_id, PickOutcome, PickedFile};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 
-const PROJECT_SLUG_MAX_BYTES: usize = 256;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -303,29 +302,6 @@ pub(super) fn read_scopes(host: &Host, repository: &Path, picked: &[PickedFile])
         },
         local_file_git: git::local_file_git(local_base),
     }
-}
-
-fn authorized_source_root(vault_path: &str, project_slug: &str) -> Result<PathBuf, String> {
-    let vault = crate::canonical_root(vault_path)?;
-    if project_slug.is_empty()
-        || project_slug.len() > PROJECT_SLUG_MAX_BYTES
-        || project_slug.contains('\0')
-    {
-        return Err("harness-binding-invalid".into());
-    }
-    let binding =
-        resolve_binding_metadata(&vault, project_slug).map_err(|code| match code.as_str() {
-            "binding_invalid" | "unsafe_path" => "harness-binding-invalid",
-            "binding_ambiguous" => "harness-binding-ambiguous",
-            "binding_identity_changed" => "harness-binding-changed",
-            "source_unavailable" => "harness-source-missing",
-            "unsupported_platform" => "harness-unsupported-platform",
-            _ => "harness-binding-unreadable",
-        })?;
-    if let Some(reason) = crate::vault_root_rejection(&binding.root) {
-        return Err(format!("source-root-rejected: {reason}"));
-    }
-    crate::canonical_source_root(&binding.root.to_string_lossy())
 }
 
 #[tauri::command(async)]

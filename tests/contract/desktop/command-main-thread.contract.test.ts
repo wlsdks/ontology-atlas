@@ -21,6 +21,7 @@ const MUST_NOT_BLOCK_THE_MAIN_THREAD: { file: string; fn: string; because: strin
   { file: 'harness_source/mod.rs', fn: 'list_harness_source_directory', because: 'lists a folder of any size' },
   { file: 'harness_source/mod.rs', fn: 'read_harness_source_text', because: 'reads a file up to 4 MiB' },
   { file: 'harness_source/mod.rs', fn: 'harness_source_path_exists', because: 'resolves a path on disk' },
+  { file: 'harness_scopes/mod.rs', fn: 'read_harness_scopes', because: 'reads up to 11 settings files and runs git' },
   { file: 'project_source/mod.rs', fn: 'inspect_project_source', because: 'walks and hashes up to 4000 files / 32 MiB' },
   { file: 'llm/chat.rs', fn: 'llm_chat', because: 'waits on curl for a model round trip' },
   { file: 'llm/verify.rs', fn: 'secret_verify', because: 'waits on curl to test a key' },
@@ -87,6 +88,11 @@ const MUST_STAY_ON_THE_MAIN_THREAD: { file: string; fn: string; because: string 
   {
     file: 'library.rs',
     fn: 'pick_source_files',
+    because: 'NSOpenPanel must open on the main thread and runs its own modal event loop',
+  },
+  {
+    file: 'harness_scopes/mod.rs',
+    fn: 'pick_harness_scope_file',
     because: 'NSOpenPanel must open on the main thread and runs its own modal event loop',
   },
 ];
