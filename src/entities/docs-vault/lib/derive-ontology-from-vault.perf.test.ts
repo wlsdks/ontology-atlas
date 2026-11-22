@@ -3,9 +3,28 @@ import { deriveOntologyFromVault } from './derive-ontology-from-vault';
 import type { VaultDoc, VaultManifest } from '../model/vault-manifest';
 
 /**
- * Guards the full-derive cost on the live-update path (every vault change reruns it). jsdom
- * numbers differ from a browser, so the threshold is lenient.
+ * Guards the derive cost on the live-update path (every vault change reruns it) by counting the
+ * document fields it reads: a pass that rescans the documents multiplies that count, while a wall
+ * clock also moves with machine load.
  */
+
+const reads = { count: 0 };
+
+/** The document, with every field read counted in `reads`. */
+function counted(doc: VaultDoc): VaultDoc {
+  return new Proxy(doc, {
+    get(target, key, receiver) {
+      reads.count += 1;
+      return Reflect.get(target, key, receiver);
+    },
+  });
+}
+
+function readsOf(run: () => void): number {
+  reads.count = 0;
+  run();
+  return reads.count;
+}
 
 function makeDoc(slug: string, frontmatter: Record<string, unknown>): VaultDoc {
   return {
@@ -56,7 +75,7 @@ function buildLargeManifest(domainCount: number, capPerDomain: number, elemPerCa
     manifest: {
       version: '2026-04-23',
       generatedAt: new Date('2026-04-01T00:00:00.000Z').toISOString(),
-      docs,
+      docs: docs.map(counted),
       backlinkSources: {},
       tags: {},
       tree: { name: 'root', path: '', type: 'dir' },
@@ -65,53 +84,41 @@ function buildLargeManifest(domainCount: number, capPerDomain: number, elemPerCa
   };
 }
 
-describe('deriveOntologyFromVault — live-update perf baseline', () => {
-  it('derives a ~600-node vault within 2500ms', () => {
-    const { manifest, docCount } = buildLargeManifest(10, 10, 5);
-    expect(docCount).toBeGreaterThan(600);
+describe('deriveOntologyFromVault — document reads', () => {
+  it('reads each document a bounded number of times, so twice the vault costs at most 2.2 times the reads', () => {
+    const small = buildLargeManifest(10, 10, 5);
+    const large = buildLargeManifest(20, 10, 5);
+    expect(large.docCount).toBeGreaterThan(small.docCount * 1.9);
 
-    const t0 = performance.now();
-    const result = deriveOntologyFromVault(manifest);
-    const elapsed = performance.now() - t0;
+    const smallReads = readsOf(() => deriveOntologyFromVault(small.manifest));
+    let result: ReturnType<typeof deriveOntologyFromVault> | undefined;
+    const largeReads = readsOf(() => { result = deriveOntologyFromVault(large.manifest); });
 
     // Every ref resolves, so nodes ≥ docs; a missing ref only adds stubs.
-    expect(result.nodes.length).toBeGreaterThanOrEqual(docCount);
-    expect(result.edges.length).toBeGreaterThan(0);
-
-    console.log(
-      `[perf] deriveOntologyFromVault — ${docCount} docs → ${result.nodes.length} nodes / ${result.edges.length} edges in ${elapsed.toFixed(1)}ms`,
-    );
-
-    /*
-     * 2,500 ms is generous headroom over the real run time; only a quadratic regression reaches it
-     * (`.claude/rules/testing.md`, "The timing rule").
-     */
-    expect(elapsed).toBeLessThan(2500);
+    expect(result?.nodes.length).toBeGreaterThanOrEqual(large.docCount);
+    expect(result?.edges.length).toBeGreaterThan(0);
+    // Measured 2026-11-23: about 12 reads a document, 7,410 at 611 documents and 14,810 at 1,221.
+    expect(largeReads).toBeLessThanOrEqual(1.1 * smallReads * (large.docCount / small.docCount));
   });
 });
 
 describe('deriveOntologyFromVault — one edited document at 50,000', () => {
-  it('re-derives an edited body or title at under a twentieth of a full derivation', () => {
+  it('re-derives an edited body or title without reading the unchanged documents', () => {
     const { manifest, docCount } = buildLargeManifest(50, 100, 9);
     expect(docCount).toBeGreaterThan(50_000);
 
-    let start = performance.now();
-    deriveOntologyFromVault(manifest);
-    const fullMs = performance.now() - start;
+    const fullReads = readsOf(() => deriveOntologyFromVault(manifest));
 
     // An editor save: same relations, new title and summary, so a new VaultDoc in the same place.
     const at = 1234;
     const docs = manifest.docs.slice();
     docs[at] = { ...docs[at], title: 'Edited title', definitionPreview: 'Edited summary.' };
-    start = performance.now();
-    const edited = deriveOntologyFromVault({ ...manifest, docs });
-    const editMs = performance.now() - start;
+    let edited: ReturnType<typeof deriveOntologyFromVault> | undefined;
+    const editReads = readsOf(() => { edited = deriveOntologyFromVault({ ...manifest, docs }); });
 
-    expect(edited.nodes.find((node) => node.sourceSlug === docs[at].slug)?.title).toBe('Edited title');
-    console.log(
-      `[perf] deriveOntologyFromVault — ${docCount} docs: full ${fullMs.toFixed(1)} ms, one edited document ${editMs.toFixed(2)} ms`,
-    );
-    // Measured 2026-11-19: full ~550 ms, edit ~0.3 ms; a ratio holds across machines.
-    expect(editMs * 20).toBeLessThan(fullMs);
+    expect(edited?.nodes.find((node) => node.sourceSlug === docs[at].slug)?.title).toBe('Edited title');
+    expect(fullReads).toBeGreaterThan(docCount);
+    // Measured 2026-11-23: 2 reads, both on the replaced document; a full pass reads 605,510.
+    expect(editReads).toBeLessThanOrEqual(8);
   });
 });
