@@ -723,7 +723,7 @@ fn a_flood_of_inline_headers_is_read_in_one_pass_and_only_counted() {
 fn a_binding_failure_carries_no_path_or_file_content() {
     let scratch = Scratch::new();
     let vault = scratch.folder(&format!("vault-{SECRET}-{IDENT}"));
-    let _grant = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault));
+    let _grant = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&vault));
     let sources = format!("vault-{SECRET}-{IDENT}/.ontology-atlas/project-sources.json");
     let missing_root = format!("/nonexistent/{SECRET}/{IDENT}");
     let bindings = [
