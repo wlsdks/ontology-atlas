@@ -118,6 +118,20 @@ export function pairFit(width: number, sceneHeight: number, unit: RoomUnit): Pai
   }
 }
 
+/**
+ * Where the index-th of a floor's rooms sits when the floor wraps: its rooms spread evenly over as
+ * few rows as fit, the first rows taking one more (seven at three a row is three, two, two), so no
+ * room hangs alone on a row of its own. The columns stay the building's.
+ */
+export function spreadOver(count: number, perRow: number, index: number): { row: number; column: number } {
+  const rows = Math.ceil(count / perRow);
+  const base = Math.floor(count / rows);
+  const longer = count % rows;
+  const inLonger = longer * (base + 1);
+  if (index < inLonger) return { row: Math.floor(index / (base + 1)), column: index % (base + 1) };
+  return { row: longer + Math.floor((index - inLonger) / base), column: (index - inLonger) % base };
+}
+
 export function layoutBuilding(input: LayoutInput): BuildingLayout {
   const { width, height, stage } = input;
   const rooms = new Map<string, RoomBox>();
@@ -177,9 +191,10 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
     const groupH = groupHeight(group.rooms.length);
     if (banded) floorPlates.set(group.key, { x: 0, y: floorTop, w: labelW - MINI_GAP, h: groupH });
     group.rooms.forEach((key, index) => {
+      const { row, column } = spreadOver(group.rooms.length, perRow, index);
       rooms.set(key, {
-        x: labelW + (index % perRow) * (miniW + MINI_GAP),
-        y: floorTop + Math.floor(index / perRow) * (miniH + MINI_GAP),
+        x: labelW + column * (miniW + MINI_GAP),
+        y: floorTop + row * (miniH + MINI_GAP),
         w: miniW,
         h: miniH,
         size: 'mini',

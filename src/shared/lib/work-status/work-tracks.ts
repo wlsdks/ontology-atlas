@@ -347,8 +347,8 @@ export function stageOf(track: Track): RoomStage {
 }
 
 /**
- * Sorts every worktree into the building: at most six rooms on the front stage (what needs a
- * person, then what runs, then what a session holds idle), one floor per session for the rest
+ * Sorts every worktree into the building: at most six rooms on the front stage (what runs, then
+ * what a session holds idle), one floor per session for the rest
  * plus one for worktrees no session holds, and the shelf for merged and long-untouched ones.
  * Within a tier, rooms keep the order the tracks already have: stuck as Git lists them, sessions
  * by start, a session's worktrees by lock time.
@@ -360,8 +360,9 @@ const twoTools = (room: RoomEntry) => room.state.kind === 'working' && room.stat
 
 /**
  * Who stands on the front stage. Two tools in one folder first, then running work, one room per
- * session before any session gets a second; rooms that are stuck or idle take a slot only to fill
- * the last row, so the stage never shows a hole. The stage reads in session order, like the rail.
+ * session before any session gets a second; a session's idle room, then a missing folder, takes a
+ * slot only to fill the last row, so the stage never shows a hole. The stage reads in session
+ * order, like the rail.
  */
 function admitToStage(candidates: RoomEntry[], limit: number, sourceOrder: (room: RoomEntry) => number): RoomEntry[] {
   const bySource = (a: RoomEntry, b: RoomEntry) => sourceOrder(a) - sourceOrder(b);
@@ -383,9 +384,11 @@ function admitToStage(candidates: RoomEntry[], limit: number, sourceOrder: (room
     ...ranked.sort((a, b) => a.nth - b.nth || bySource(a.room, b.room)).map(entry => entry.room),
   ];
   const chosen = order.slice(0, limit);
+  // A session's idle room fills the row before a missing folder; a lock a finished session left
+  // behind is a cleanup chore, never a stage room, so it stays a mini on its floor.
   const spare = [
-    ...candidates.filter(room => room.tier === 'attention').sort(bySource),
-    ...candidates.filter(room => room.tier === 'held').sort(bySource),
+    ...candidates.filter(room => room.tier === 'held' && room.session !== null).sort(bySource),
+    ...candidates.filter(room => room.tier === 'attention' && room.state.kind !== 'lockLeft').sort(bySource),
   ];
   const reachable = Math.min(limit, chosen.length + spare.length);
   const full = FULL_STAGES.filter(size => size >= chosen.length && size <= reachable).at(-1) ?? chosen.length;

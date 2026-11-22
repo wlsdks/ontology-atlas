@@ -68,13 +68,14 @@ async function openWorkStatus(page: Page, rows: Row[]) {
 const room = (page: Page, branch: string) => page.getByTestId("work-room").filter({ hasText: branch });
 
 test.describe("work status rooms", () => {
-  test("puts attention and work on the stage and counts the rest on the shelf", async ({ page }) => {
+  test("puts work on the stage, keeps a left lock as a mini and counts the rest on the shelf", async ({ page }) => {
     await openWorkStatus(page, SIX);
 
     await expect(page.getByTestId("work-room")).toHaveCount(4);
-    for (const branch of ["feat/harness-tab", "feat/library-stage", "feat/work-status-rooms", "feat/map-light"]) {
+    for (const branch of ["feat/library-stage", "feat/work-status-rooms", "feat/map-light"]) {
       await expect(room(page, branch)).toHaveAttribute("data-room-size", "large");
     }
+    await expect(room(page, "feat/harness-tab")).toHaveAttribute("data-room-size", "mini");
     await expect(room(page, "feat/harness-tab")).toHaveAttribute("data-room-state", "lockLeft");
     await expect(room(page, "feat/library-stage")).toContainText("Claude Code 1");
     await expect(room(page, "feat/work-status-rooms")).toContainText("Claude Code 2");

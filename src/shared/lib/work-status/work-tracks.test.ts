@@ -153,7 +153,7 @@ describe('planRooms', () => {
   const plan = (rows: WorktreeRow[], seen?: Map<string, number>) => planRooms(buildWorkTracks(snapshot(rows)), NOW_MS, seen);
   const keys = (rooms: { key: string }[]) => rooms.map(room => room.key);
 
-  it('admits running work first and lets stuck or idle rooms only complete the last row', () => {
+  it('admits running work first and lets an idle session room complete the last row, never a left lock', () => {
     const rooms = plan([
       row('idle', { lock: live(100, 1_000, NOW_MS - 60_000), lastCommitAt: recent }),
       row('runs', { lock: live(100, 1_000, NOW_MS - 50_000), ...working(100) }),
@@ -162,8 +162,8 @@ describe('planRooms', () => {
       row('ended', { lock: { ...live(9, 9, 9), state: 'stale' } }),
       row('nobody', { lastCommitAt: recent }),
     ]);
-    expect(keys(rooms.stage)).toEqual(['runs', 'other', 'codex', 'ended']);
-    expect(rooms.floors.map(floor => [floor.key, keys(floor.rooms)])).toEqual([[rooms.stage[0].session?.key, ['idle']], [NO_SESSION_FLOOR, ['nobody']]]);
+    expect(keys(rooms.stage)).toEqual(['idle', 'runs', 'other', 'codex']);
+    expect(rooms.floors.map(floor => [floor.key, keys(floor.rooms)])).toEqual([[NO_SESSION_FLOOR, ['ended', 'nobody']]]);
   });
 
   it('gives each session one room before any session gets a second, and two tools in one folder go first', () => {

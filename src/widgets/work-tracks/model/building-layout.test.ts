@@ -101,4 +101,17 @@ describe('pairFit', () => {
       expect(221 * fit.unit + 24 + reach).toBeLessThanOrEqual(width);
     }
   });
+
+  it('spreads a wrapping floor evenly over its rows instead of leaving one room alone', () => {
+    const keys = (n: number, prefix: string) => Array.from({ length: n }, (_, index) => `${prefix}${index}`);
+    const floors = [{ key: 'a', rooms: keys(4, 'a') }, { key: 'b', rooms: keys(7, 'b') }, { key: 'c', rooms: keys(3, 'c') }];
+    const layout = layoutBuilding({ width: 1296, height: 900, stage: [], floors, hasShelf: false, workingBelow: 0 });
+    const rows = (prefix: string, n: number) => {
+      const ys = keys(n, prefix).map(key => layout.rooms.get(key)!.y);
+      return [...new Set(ys)].map(y => ys.filter(other => other === y).length);
+    };
+    expect(rows('a', 4)).toEqual([2, 2]);
+    expect(rows('b', 7)).toEqual([3, 2, 2]);
+    expect(rows('c', 3)).toEqual([3]);
+  });
 });
