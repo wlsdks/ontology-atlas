@@ -78,9 +78,9 @@ const HOOK_WRENCH = tool('hook-wrench', 'Harness', 32, 'Tightens the bolt on a h
   [b(1, 'antic'), b(3, LOOK), b(5, LOOK, GRIP, { rx: 20, ry: -4 }), ...turn(6), ...turn(10), ...turn(14), b(18, LOOK, STRAIN, { rx: 20, ry: -11, fy: 2 }), b(19, LOOK + '+perk', { eyes: 'wide', right: 'paw' }, { rx: 20, ry: -11 }), b(21, LOOK, 'rest', { rx: 8, ry: -4 }),
     b(23, 'lookR+tall', 'proud', { fy: -5, tail: 4 }), b(25, 'lookR+perk', 'happy', { tail: 2 }), b(28, 'antic', 'glad'), b(30, 'rest', 'blink')],
   (f, api) => {
-    stand(api, pipe(f < 10 ? 0 : f < 18 ? 1 : 2), 138, 2, 27);
-    if (within(f, 5, 20)) { const ry = api.pose('m').ry, [ax, ay] = api.a.m.pawR, [s, hx, hy] = WRENCH[ry > -4 ? 'down' : ry > -9 ? 'flat' : 'up']; api.put(s, ax - 5 - 2 * hx + NEAR + 2, ay - 5 - 2 * hy + 2); api.paw('m', 'R'); }
-    if (within(f, 18, 20)) api.put(f === 19 ? FX.sparkBig : FX.spark, 174, 42);
+    stand(api, pipe(f < 10 ? 0 : f < 18 ? 1 : 2), 132, 2, 27);
+    if (within(f, 5, 20)) { const ry = api.pose('m').ry, [ax, ay] = api.a.m.pawR, which = ry > -4 ? 'down' : ry > -9 ? 'flat' : 'up', [s, hx, hy] = WRENCH[which]; api.put(s, ax - 5 - 2 * hx + NEAR - 4, ay - 5 - 2 * hy + (which === 'up' ? 0 : 2)); api.paw('m', 'R'); }
+    if (within(f, 18, 20)) api.put(f === 19 ? FX.sparkBig : FX.spark, 168, 42);
   });
 
 const sw = on => on ? 'mmlllll...mm' : 'mmsssgggggmm', RAIL = 'mmmmmmmmmmmm';
