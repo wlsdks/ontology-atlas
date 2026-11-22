@@ -29,6 +29,12 @@ import {
 } from '../lib/harness-view-state';
 import { useHarnessReport } from '@/features/harness-report';
 import { HarnessScanProgressPanel, HarnessSetupView } from '@/widgets/harness-setup';
+import {
+  useHarnessScopes,
+  WhereSettingsButton,
+  WhereSettingsDialog,
+  type WhereSettingsRequest,
+} from '@/widgets/harness-scopes';
 import { ArchitecturePage } from './ArchitecturePage';
 import { HarnessConnectSource } from './HarnessConnectSource';
 import { HarnessUnreadStage } from './HarnessUnreadStage';
@@ -124,6 +130,14 @@ function HarnessPageInner() {
     surfaceHasBridge,
     reloadNonce,
   );
+  const scopesRead = useHarnessScopes(
+    mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
+    projectSlugs,
+    surfaceHasBridge,
+    reloadNonce,
+  );
+  const scopes = scopesRead.state.status === 'ready' ? scopesRead.state.scopes : null;
+  const [whereRequest, setWhereRequest] = useState<WhereSettingsRequest | null>(null);
   const draftSource = useMemo(() => {
     if (reportState.status !== 'ready' || reportState.report.topLevelFolders.length === 0) return null;
     const name = reportState.sourceRoot.split(/[\\/]+/).filter(Boolean).pop();
@@ -192,7 +206,9 @@ function HarnessPageInner() {
         tabsTestId="harness-views"
         tabs={switcher}
         actions={
-          overviewFills ? (
+          <>
+          {view !== 'architecture' ? <WhereSettingsButton onClick={() => setWhereRequest({})} /> : null}
+          {overviewFills ? (
             <Button
               variant="ghost"
               size="sm"
@@ -203,7 +219,8 @@ function HarnessPageInner() {
               <RefreshCw size={ICON_SIZE.sm} aria-hidden />
               <span className="max-sm:sr-only">{t('reread')}</span>
             </Button>
-          ) : null
+          ) : null}
+          </>
         }
       />
 
@@ -239,7 +256,14 @@ function HarnessPageInner() {
           <div className={cn('w-full', (overviewFills || staged || loading) && 'flex min-h-0 flex-1 flex-col')}>
             {reportState.status === 'ready' ? (
               <div className="architecture-result-arrive flex min-h-0 flex-1 flex-col">
-                <HarnessSetupView key={reloadNonce} report={reportState.report} sourceRoot={reportState.sourceRoot} />
+                <HarnessSetupView
+                  key={reloadNonce}
+                  report={reportState.report}
+                  sourceRoot={reportState.sourceRoot}
+                  scopes={scopes}
+                  scopesReading={scopesRead.state.status === 'reading'}
+                  onExplainScope={(tool, row) => setWhereRequest({ tool, kind: 'hooks', row })}
+                />
               </div>
             ) : reportState.status === 'loading' ? (
               /*
@@ -282,13 +306,28 @@ function HarnessPageInner() {
                 state="browser"
                 title={t('browserOnly')}
                 body={t('browserOnlyBody')}
-                action={<GetAppLink>{t('browserAction')}</GetAppLink>}
+                action={
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <GetAppLink data-testid="harness-get-app">{t('browserAction')}</GetAppLink>
+                    <WhereSettingsButton variant="stage" onClick={() => setWhereRequest({})} />
+                  </div>
+                }
+                note={t('scopes.webStageNote')}
               />
             )}
           </div>
         </div>
         </main>
       )}
+      <WhereSettingsDialog
+        request={whereRequest}
+        onClose={() => setWhereRequest(null)}
+        scopes={scopes}
+        inApp={surfaceHasBridge}
+        report={reportState.status === 'ready' ? reportState.report : null}
+        pickOutcome={scopesRead.lastPick}
+        onPick={surfaceHasBridge ? (title) => void scopesRead.pick(title) : undefined}
+      />
     </div>
   );
 }
