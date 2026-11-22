@@ -3,11 +3,11 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ROOT = process.cwd();
-const CLI_SOURCES = ["cli/src/index.mjs", "cli/src/lib/init/run-init.mjs", "cli/src/lib/help/top-level-help.mjs"];
+const CLI_SOURCES = ["cli/src/lib/init/run-init.mjs", "cli/src/lib/init/next-steps.mjs"];
 const TEMPLATE_SKILLS = join(ROOT, "cli/templates/vault/.claude/skills");
 
 /**
- * **`agent-setup` advertises three clients, so `init` owes three clients.**
+ * **`init` wires three clients, so it owes three clients skills.**
  *
  * Claude Code discovers skills from `.claude/skills/`. Codex and Cursor read
  * `.agents/skills/` and never look inside `.claude/` — this repository's own

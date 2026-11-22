@@ -474,8 +474,8 @@ export function indexProjectFailure(parsed) {
   if (!parsed.next || typeof parsed.next !== 'object' || Array.isArray(parsed.next)) {
     return 'index_project response missing next actions';
   }
-  if (typeof parsed.next.cliApply !== 'string' || !/ontology-atlas index/.test(parsed.next.cliApply)) {
-    return 'index_project response missing CLI apply guidance';
+  if (typeof parsed.next.applyTool !== 'string' || !/add_concepts/.test(parsed.next.applyTool)) {
+    return 'index_project response missing add_concepts apply guidance';
   }
   return null;
 }

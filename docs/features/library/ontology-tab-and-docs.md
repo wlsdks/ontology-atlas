@@ -32,7 +32,7 @@ survive the compatibility hop; the return removes the incompatible slug, view, a
 - **Palette button** (`⌘K`)
 - **Inspector button**: opens the document outline, share/print actions, file actions, and backlinks only when requested, keeping the reading canvas quiet by default
 - **App settings entry**: the Ontology folder pane owns open/change/refresh/permission recovery
-  and starter setup; Agent owns MCP/CLI connection guidance. New doc stays a
+  and starter setup; Agent owns MCP connection guidance. New doc stays a
   document action rather than a settings action. The old docs-header vault
   tools dropdown and folder-topology toggle are retired.
 

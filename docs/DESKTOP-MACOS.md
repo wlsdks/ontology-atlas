@@ -40,7 +40,7 @@ pnpm desktop:build                        # unsigned local .app and .dmg
 pnpm desktop:verify-app
 pnpm desktop:verify-dmg
 pnpm desktop:verify-install
-pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
+pnpm dogfood:verify
 pnpm desktop:release-preflight            # local pre-tag gate; its steps are the package.json script
 ```
 

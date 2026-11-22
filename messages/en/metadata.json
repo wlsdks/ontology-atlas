@@ -44,7 +44,6 @@
     "fromYourRepo": "Build a first codebase ontology from your repository: a coding agent reads the code over MCP, proposes concepts and relations, and you approve before saving.",
     "connectAgent": "Connect Claude Code, Codex, Cursor or Antigravity to your codebase ontology over MCP, check the connection, and see what the agent can read and write.",
     "growingVault": "Keep your codebase ontology current as code changes: sync after edits, rename with backlinks, catch stale evidence, avoid duplicates, and commit with Git.",
-    "cli": "The Ontology Atlas CLI: run it from source, look up and edit concepts, check health, and see how it shares one engine with the MCP server agents use.",
     "trust": "Data, privacy and safety in Ontology Atlas: what stays on your disk, what can leave it and when, MCP agents, and signed macOS and unsigned Windows builds."
   }
 }

@@ -155,7 +155,7 @@ connectors dialog. The rail has no MCP tile; `g c` lands here.
   know on its own — did you restart it, did it attach — opens from the group heading as one
   dialog holding the restart step, the connection status those files add up to, the
   first-contact proof packet an agent pastes to prove it attached, and the former
-  "Not working?" fold (file status, CLI verification, connecting from another code folder).
+  "Not working?" fold (file status, connecting from another code folder).
   The server-lifetime sentence and the folder-root note wait in a hint beside the heading.
   Connection checks follow each tool independently: prepared files show that tool's check
   command; missing or invalid files show that tool's setup state. Other tools remain

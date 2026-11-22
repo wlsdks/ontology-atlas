@@ -80,16 +80,12 @@ changed.
 
 Atlas works with these files in three ways. An ontology folder that Atlas
 creates carries its own `AGENTS.md` and a `CLAUDE.md` that imports it, telling
-agents to ask the Atlas MCP server before they scan files. The CLI command
-`absorb` turns sections of your existing files into concepts ([Build the first
-map from your code](/guide/from-your-repo)). And the app's **Harness** tab, like
-the command below, reads these files without changing them and flags problems,
+agents to ask the Atlas MCP server before they scan files. An agent's
+`absorb_document` tool turns sections of your existing files into concepts
+([Build the first map from your code](/guide/from-your-repo)). And the app's
+**Harness** tab reads these files without changing them and flags problems,
 such as a `CLAUDE.md` that does not import `AGENTS.md`, or an `AGENTS.md` over
-Codex's default 32 KiB limit:
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs agent-files --root .
-```
+Codex's default 32 KiB limit.
 
 Keep rules in the instruction files and the meaning in the ontology folder.
 

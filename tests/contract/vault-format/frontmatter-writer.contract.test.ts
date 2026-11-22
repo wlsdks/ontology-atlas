@@ -7,29 +7,20 @@ import {
   parseFrontmatter as parseMcpFrontmatter,
   serializeFrontmatter as serializeMcpFrontmatter,
 } from "../../../mcp/src/parser.mjs";
-import {
-  buildMarkdown as buildCliMarkdown,
-  parseFrontmatter as parseCliFrontmatter,
-} from "../../../cli/src/lib/mcp-bridge/parse-frontmatter.mjs";
-
 /**
- * The CLI arm proves the CLI's writer reaches the canonical one (`mcp/src/parser.mjs`), not that two
- * files agree. `serializeFrontmatter` is not imported from the CLI because its runtime never calls it.
- * Parser parity is covered by `parse-frontmatter.contract.test.ts`.
+ * The canonical writer (`mcp/src/parser.mjs`) against fixed cases. Parser parity is covered by
+ * `parse-frontmatter.contract.test.ts`.
  */
 
-describe("frontmatter writer contract — MCP and CLI agree", () => {
+describe("frontmatter writer contract", () => {
   for (const c of WRITER_CASES) {
     it(c.name, () => {
       expect(buildMcpMarkdown(c.input)).toBe(c.expected);
-      expect(buildCliMarkdown(c.input)).toBe(c.expected);
 
-      // The serializer is what buildMarkdown embeds, so the shared frontmatter block
-      // must appear verbatim inside both surfaces' output.
+      // The serializer is what buildMarkdown embeds, so the frontmatter block
+      // must appear verbatim inside its output.
       const serialized = serializeMcpFrontmatter(c.input.frontmatter);
       expect(buildMcpMarkdown(c.input)).toContain(serialized);
-      expect(buildCliMarkdown(c.input)).toContain(serialized);
-      expect(parseMcpFrontmatter(c.expected)).toEqual(parseCliFrontmatter(c.expected));
     });
   }
 });
@@ -54,7 +45,6 @@ describe("round trip contract: what is written reads back the same (blocks accum
     it(c.name, () => {
       for (const [label, build, parse] of [
         ["mcp", buildMcpMarkdown, parseMcpFrontmatter],
-        ["cli", buildCliMarkdown, parseCliFrontmatter],
       ] as const) {
         let current = c.frontmatter;
         // Three passes — catches the kind that passes once while accumulating.

@@ -204,7 +204,7 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     const rows = screen.getAllByTestId("library-structural-finding");
     expect(rows).toHaveLength(8);
     const head = screen.getByTestId("library-check-structural-head").textContent ?? "";
-    // Both totals, each saying what it counts: `wiki-validate` calls all six pages
+    // Both totals, each saying what it counts: `validate_wiki` calls all six pages
     // off-template because it counts advisory findings too, and a frame that showed two
     // bare numbers for one folder is what the licensing record's falsifier describes.
     expect(head).toContain("6 pages");
@@ -288,8 +288,8 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     // The heading a person reads is a sentence, not the validator's token.
     expect(uncited.querySelector("h4")!.textContent).toContain("No source backs this up");
     expect(uncited.querySelector("h4")!.textContent).not.toContain("uncited-fact");
-    // Nothing is taken away: the code, its line anchor and the English message the CLI
-    // prints open in the same check codes dialog the wiki page beside it uses.
+    // Nothing is taken away: the code, its line anchor and the English message MCP
+    // returns open in the same check codes dialog the wiki page beside it uses.
     expect(uncited.querySelector('[data-testid="library-structural-code"]')).toBeNull();
     fireEvent.click(screen.getByTestId("library-structural-technical-uncited-fact"));
     const dialog = screen.getByTestId("library-structural-technical-uncited-fact-dialog");

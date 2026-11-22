@@ -1,6 +1,6 @@
 /**
- * Project source inference, the pure half shared by the MCP server, the CLI and
- * the browser bridge (`src/shared/lib/project-source/project-source-inference.mjs`). Callers
+ * Project source inference, the pure half shared by the MCP server and the
+ * browser bridge (`src/shared/lib/project-source/project-source-inference.mjs`). Callers
  * collect candidates (`project-source-discovery.mjs`, or the
  * app's `inspect_project_source`); this ranks them. An enclosing git repository wins
  * (a boundary the person drew, and the probe normalizes to it anyway); else the
@@ -62,8 +62,8 @@ function normalizeCandidate(value) {
 }
 
 /**
- * Marker rank, then nearest to the vault, then path; exported so the CLI and UI
- * list alternatives in the chooser's order.
+ * Marker rank, then nearest to the vault, then path; exported so the UI lists
+ * alternatives in the chooser's order.
  */
 export function rankProjectSourceCandidates(candidates) {
   return (Array.isArray(candidates) ? candidates : [])

@@ -95,8 +95,8 @@ in the brief; a missing capture is itself a finding.
   including 200% text zoom on a new or restructured surface.
 - `installed-app` — the touched state was proven in the installed app's window,
   not only in a browser.
-- `agent-action` — the visible state offers a real next MCP or CLI action bound
-  to the fact on screen, with a CLI fallback.
+- `agent-action` — the visible state offers a real next MCP action bound to the
+  fact on screen.
 
 Source lenses for hygiene, refactor, and structural slices:
 

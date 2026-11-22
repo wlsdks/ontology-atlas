@@ -4,7 +4,7 @@ import test from 'node:test';
 import { parseInitArgs } from './parse-args.mjs';
 
 test('no arguments scaffold the default folder in English', () => {
-  assert.deepEqual(parseInitArgs([]), { target: undefined, quickStart: false, locale: 'en', documents: false });
+  assert.deepEqual(parseInitArgs([]), { target: undefined, locale: 'en', documents: false });
 });
 
 test('--help and -h win over every other argument', () => {
@@ -12,10 +12,9 @@ test('--help and -h win over every other argument', () => {
   assert.deepEqual(parseInitArgs(['-h']), { help: true });
 });
 
-test('a folder, --quick-start and a locale in either spelling are read', () => {
-  assert.deepEqual(parseInitArgs(['v', '--quick-start', '--locale', 'ko']), {
+test('a folder and a locale in either spelling are read', () => {
+  assert.deepEqual(parseInitArgs(['v', '--locale', 'ko']), {
     target: 'v',
-    quickStart: true,
     locale: 'ko',
     documents: false,
   });
@@ -25,14 +24,11 @@ test('a folder, --quick-start and a locale in either spelling are read', () => {
 
 test('--locale without a value, or followed by a flag, is an error', () => {
   assert.match(parseInitArgs(['--locale']).error, /--locale requires a value/);
-  assert.match(parseInitArgs(['--locale', '--quick-start']).error, /--locale requires a value/);
+  assert.match(parseInitArgs(['--locale', '--documents']).error, /--locale requires a value/);
 });
 
-test('an unknown flag and a second folder are errors', () => {
+test('an unknown flag, the removed --quick-start, and a second folder are errors', () => {
   assert.match(parseInitArgs(['--bogus']).error, /--bogus/);
+  assert.match(parseInitArgs(['--quick-start']).error, /--quick-start/);
   assert.equal(parseInitArgs(['a', 'b']).error, 'too many arguments: b');
-});
-
-test('a documents folder has no code to bootstrap from, so the two flags do not combine', () => {
-  assert.match(parseInitArgs(['--documents', '--quick-start']).error, /do not combine/);
 });

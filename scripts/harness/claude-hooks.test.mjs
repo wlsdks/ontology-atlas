@@ -341,7 +341,7 @@ describe('inject-ontology-summary health awareness', () => {
         assert.match(result.stdout, /unresolved edge/, `${hook}: names the unresolved edge`);
         assert.match(
           result.stdout,
-          /(?:ontology-atlas|index\.mjs) health/,
+          /call-tool\.mjs .* query_ontology '\{"operation":"health"\}'/,
           `${hook}: points to a fix command`,
         );
       }
@@ -368,7 +368,7 @@ describe('inject-ontology-summary health awareness', () => {
         assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
         assert.match(result.stdout, /will not compile/, `${hook}: does not stay silent`);
         assert.match(result.stdout, /missing-uid/, `${hook}: names what is broken`);
-        assert.match(result.stdout, /(?:ontology-atlas|index\.mjs) health/, `${hook}: names the command that fixes it`);
+        assert.match(result.stdout, /call-tool\.mjs .* query_ontology '\{"operation":"health"\}'/, `${hook}: names the command that fixes it`);
         assert.ok(result.stdout.length < 700, `${hook}: session context stays short`);
       }
     } finally {
@@ -785,15 +785,14 @@ describe('Codex apply_patch payload parity', () => {
   });
 });
 
-// Execute the printed repair command with no globally installed Atlas CLI.
-// Spaces and shell metacharacters must reach the CLI as one unchanged path.
-describe('inject-ontology-summary CLI resolution', () => {
-  it('runs the checkout CLI before any ontology-atlas found on PATH, from any folder of the checkout', async (t) => {
+// The census comes from the checkout's own MCP server, never from a command found on PATH.
+describe('inject-ontology-summary server resolution', () => {
+  it('asks the checkout server, not an ontology-atlas found on PATH, from any folder of the checkout', async (t) => {
     if (!hasPython) {
       t.skip('python3 unavailable — hook is silent by design');
       return;
     }
-    const root = await mkdtemp(join(tmpdir(), 'atlas-hook-cli-order-'));
+    const root = await mkdtemp(join(tmpdir(), 'atlas-hook-server-order-'));
     const checkout = join(root, 'checkout');
     const nested = join(checkout, 'docs', 'notes');
     const bin = join(root, 'bin');
@@ -805,7 +804,7 @@ describe('inject-ontology-summary CLI resolution', () => {
       env: { ...process.env, PATH: bin, CLAUDE_PROJECT_DIR: projectDir, OATLAS_VAULT: join(checkout, 'vault') },
     });
     try {
-      await mkdir(join(checkout, 'cli', 'src'), { recursive: true });
+      await mkdir(join(checkout, 'mcp', 'scripts'), { recursive: true });
       await mkdir(join(checkout, 'vault'));
       await mkdir(nested, { recursive: true });
       await mkdir(bin);
@@ -816,7 +815,7 @@ describe('inject-ontology-summary CLI resolution', () => {
       }
       assert.equal(spawnSync('git', ['init', '-q', checkout]).status, 0, 'fixture requires git init');
       await symlink(process.execPath, join(bin, 'node'));
-      await writeFile(join(checkout, 'cli', 'src', 'index.mjs'), `console.log(${JSON.stringify(census(2))});\n`);
+      await writeFile(join(checkout, 'mcp', 'scripts', 'call-tool.mjs'), `console.log(${JSON.stringify(census(2))});\n`);
       await writeFile(join(bin, 'ontology-atlas'), `#!/bin/sh\n/usr/bin/touch '${marker}'\necho '${census(9)}'\n`, { mode: 0o755 });
       const [claudeHook] = INJECT_HOOKS;
       const outsideAnyWorkTree = root;
@@ -844,7 +843,7 @@ describe('inject-ontology-summary executable recovery', () => {
       const vault = join(checkout, 'vault with spaces');
       const bin = join(root, 'bin');
       try {
-        await mkdir(join(checkout, 'cli', 'src'), { recursive: true });
+        await mkdir(join(checkout, 'mcp', 'scripts'), { recursive: true });
         await mkdir(join(checkout, 'mcp', 'node_modules'), { recursive: true });
         await mkdir(vault);
         await mkdir(bin);
@@ -858,8 +857,8 @@ describe('inject-ontology-summary executable recovery', () => {
         await writeFile(join(bin, 'pnpm'), '#!/usr/bin/env node\n' +
           'require("fs").writeFileSync(process.env.INSTALL_LOG, JSON.stringify(process.argv.slice(2)));',
           { mode: 0o755 });
-        await writeFile(join(checkout, 'cli', 'src', 'index.mjs'), `
-          if (process.argv[2] === 'health') {
+        await writeFile(join(checkout, 'mcp', 'scripts', 'call-tool.mjs'), `
+          if (process.argv[4] === '{"operation":"health"}') {
             console.log(JSON.stringify(process.argv.slice(2)));
           } else if (process.env.SCENARIO === 'drift') {
             console.log(JSON.stringify({ byKind: { capability: 1 }, graph: { nodes: 1, unresolvedEdges: 1 } }));
@@ -885,7 +884,7 @@ describe('inject-ontology-summary executable recovery', () => {
             cwd: checkout, env, encoding: 'utf8',
           });
           assert.equal(repair.status, 0, `${hook}: ${repair.stderr}`);
-          assert.deepEqual(JSON.parse(repair.stdout), ['health', vault]);
+          assert.deepEqual(JSON.parse(repair.stdout), [vault, 'query_ontology', '{"operation":"health"}']);
           if (scenario.startsWith('missing')) {
             assert.deepEqual(JSON.parse(await readFile(installLog, 'utf8')),
               ['--dir', 'mcp', 'install', '--frozen-lockfile']);

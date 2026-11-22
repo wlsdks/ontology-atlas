@@ -25,18 +25,6 @@ import {
   containmentKeyFor as containmentKeyForApp,
   kindForContainmentKey as kindForContainmentKeyApp,
 } from "@/shared/lib/vault-document/containment-keys";
-/*
- * Only the names the CLI runtime re-exports are imported here, since `cli/src/lib/mcp-bridge/schema.mjs`
- * re-exports `mcp/src/schema.mjs`; a cli === mcp assertion on other names would compare an object to
- * itself. `schema-copy-sync.contract.test.ts` keeps the re-export from growing a body.
- */
-import {
-  buildFrontmatter as buildCli,
-  missingExpectedFields as missingCli,
-  folderForKind as folderCli,
-  flatSlugIssue as flatSlugCli,
-  nodeUidIssue as uidIssueCli,
-} from "../../../cli/src/lib/mcp-bridge/schema.mjs";
 import { KIND_EXPECTED_EXTRAS } from "@/shared/lib/vault-document/validate-vault-document";
 import { PRODUCT_DISCIPLINE } from "@/features/vault-agent/model/system-prompt";
 import {
@@ -47,27 +35,19 @@ import {
 import { KNOWN_VAULT_KINDS } from "../../../mcp/src/validate.mjs";
 
 /**
- * 2-way + 1 cross-check vault schema contract:
- *
- *   - mcp/src/schema.mjs (AI agent surface — `add_concept`)
- *   - cli/src/lib/mcp-bridge/schema.mjs (developer CLI — `node $ATLAS/cli/src/index.mjs add`)
- *   - KIND_EXPECTED_EXTRAS in src/shared/lib/vault-document/validate-vault-document.ts
- *     (web/UI advisory)
- *
- * Both schemas must produce the same frontmatter shape and the same missing-field
- * decision; drift on either side fails this test immediately. The UI dictionary is
- * cross-checked for the same requiredExtras.
+ * Vault schema contract: `mcp/src/schema.mjs` (the one schema `add_concept` writes with)
+ * against fixed cases, cross-checked with KIND_EXPECTED_EXTRAS in
+ * src/shared/lib/vault-document/validate-vault-document.ts (the app's advisory).
  */
 
-describe("vault kind schema contract — mcp & cli agree", () => {
+describe("vault kind schema contract", () => {
   describe("node UID — immutable identity format", () => {
     it("the generator locally issues a new lowercase UUIDv4 on every call", () => {
       const first = generateUidMcp();
       const second = generateUidMcp();
 
       expect(uidIssueMcp(first)).toBeNull();
-      // The CLI write path judges identity through its own import of this rule.
-      expect(uidIssueCli(second)).toBeNull();
+      expect(uidIssueMcp(second)).toBeNull();
       // Minted locally per call — never one shared constant.
       expect(first).not.toBe(second);
     });
@@ -78,15 +58,13 @@ describe("vault kind schema contract — mcp & cli agree", () => {
       ["uppercase", "01890F3E-7B5D-4C0A-8F14-123456789ABC"],
       ["not v4", "01890f3e-7b5d-7c0a-8f14-123456789abc"],
       ["not uuid", "node-12"],
-    ])("%s UID is judged the same invalid on both sides", (_name, uid) => {
+    ])("%s UID is judged invalid", (_name, uid) => {
       expect(uidIssueMcp(uid)).toBeTruthy();
-      expect(uidIssueCli(uid)).toBe(uidIssueMcp(uid));
     });
 
-    it("a valid lowercase UUIDv4 passes on both sides", () => {
+    it("a valid lowercase UUIDv4 passes", () => {
       const uid = "01890f3e-7b5d-4c0a-8f14-123456789abc";
       expect(uidIssueMcp(uid)).toBeNull();
-      expect(uidIssueCli(uid)).toBeNull();
     });
 
     it("merge preserves the survivor UID and absorbs the source identity history", () => {
@@ -153,9 +131,6 @@ describe("vault kind schema contract — mcp & cli agree", () => {
       it(`${c.name} (mcp)`, () => {
         expect(buildMcp(c.input)).toEqual(c.expected);
       });
-      it(`${c.name} (cli)`, () => {
-        expect(buildCli(c.input)).toEqual(c.expected);
-      });
     }
   });
 
@@ -163,9 +138,6 @@ describe("vault kind schema contract — mcp & cli agree", () => {
     for (const c of MISSING_FIELDS_CASES) {
       it(`${c.name} (mcp)`, () => {
         expect(missingMcp(c.kind, c.frontmatter)).toEqual(c.expected);
-      });
-      it(`${c.name} (cli)`, () => {
-        expect(missingCli(c.kind, c.frontmatter)).toEqual(c.expected);
       });
     }
   });
@@ -175,32 +147,20 @@ describe("vault kind schema contract — mcp & cli agree", () => {
       it(`${c.kind} (mcp)`, () => {
         expect(folderMcp(c.kind)).toBe(c.expected);
       });
-      it(`${c.kind} (cli)`, () => {
-        expect(folderCli(c.kind)).toBe(c.expected);
-      });
     }
   });
 
   describe("flatSlugIssue: a slug is a flat identifier (decided 2026-08-01)", () => {
-    // The two packages must agree, or `add_concept` and the CLI's `add` become different doors.
     for (const c of FLAT_SLUG_CASES) {
       it(`${c.name} (mcp)`, () => {
         const issue = flatSlugMcp(c.kind, c.slug);
         if (c.expected === null) expect(issue).toBeNull();
         else expect(issue).toBeTruthy();
       });
-      it(`${c.name} (cli)`, () => {
-        const issue = flatSlugCli(c.kind, c.slug);
-        if (c.expected === null) expect(issue).toBeNull();
-        else expect(issue).toBeTruthy();
-      });
-      it(`${c.name} (mcp == cli)`, () => {
-        expect(flatSlugMcp(c.kind, c.slug)).toBe(flatSlugCli(c.kind, c.slug));
-      });
     }
   });
 
-  describe("UI KIND_EXPECTED_EXTRAS aligns with mcp/cli requiredExtras", () => {
+  describe("UI KIND_EXPECTED_EXTRAS aligns with mcp requiredExtras", () => {
     // The UI dictionary must produce the same missing-fields decision as mcp.
     // Both capability and element expect ['domain'].
     it("capability requires domain", () => {
@@ -223,10 +183,9 @@ describe("vault kind schema contract — mcp & cli agree", () => {
   });
 });
 
-// Per-locale display names: MCP and the CLI must normalise identically or the vault ends up with
-// different keys.
-describe("display_<locale> normalization 2-way contract", () => {
-  it("emits display_<locale> in both builders identically", () => {
+// Per-locale display names land as display_<locale> keys.
+describe("display_<locale> normalization", () => {
+  it("emits display_<locale> keys", () => {
     const args = {
       uid: "31890f3e-7b5d-4c0a-8f14-123456789abc",
       slug: "domains/payment",
@@ -234,14 +193,13 @@ describe("display_<locale> normalization 2-way contract", () => {
       title: "결제",
       ...localeMcp({ ko: "결제", en: "Payments" }),
     };
-    expect(buildMcp(args)).toEqual(buildCli(args));
     expect(buildMcp(args)).toMatchObject({ display_ko: "결제", display_en: "Payments" });
   });
 });
 
 /**
  * Value authority for the node qualification gate. The logic lives in `commitDoc` (`mcp/src/vault/`)
- * and the text in `mcp/src/construction/construction-rules.mjs`; the CLI imports the same module.
+ * and the text in `mcp/src/construction/construction-rules.mjs`.
  */
 describe("node qualification gate constants: the value source", () => {
   it("locked values", () => {

@@ -1,12 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
 import {
-  buildAgentPostChangeSyncCliCommands,
-  buildAgentReadinessCliCommands,
   buildAgentReadinessPrompt,
   buildAgentReadinessSummary,
   formatAgentPostChangeSyncPacket,
-  formatAgentReadinessCliCommands,
   validateAgentReadinessToolCall,
 } from "./agent-readiness";
 
@@ -109,76 +106,15 @@ describe("buildAgentReadinessSummary", () => {
     expect(prompt).toContain('"tool": "find_orphans"');
     expect(prompt).toContain('"excludeKinds"');
     expect(prompt).not.toContain('"kinds"');
-    expect(prompt).toContain("If the MCP connector is unavailable");
-    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs agent-brief [vault]");
-    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs agent-brief [vault] --graph-db-pack");
-    expect(prompt).toContain(
-      "node $ATLAS/cli/src/index.mjs agent-brief [vault] --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
-    );
-    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs match-nodes [vault] --kind unknown --limit 20");
-    expect(prompt).toContain("node $ATLAS/cli/src/index.mjs infer-imports [repo] --vault [vault] --max-files 5000");
+    expect(prompt).toContain("connect this agent in the Ontology Atlas app (Agents > MCP)");
+    expect(prompt).not.toMatch(/\$ATLAS|cli\/src\/index\.mjs|dogfood/);
     expect(prompt).toContain("Only write after confirming");
   });
 
-  it("builds de-duplicated terminal fallbacks for connector-less sessions", () => {
-    const readySummary = buildAgentReadinessSummary(
-      [
-        node("project:app", "project"),
-        node("domain:core", "domain"),
-        node("capability:mcp", "capability"),
-        node("element:sdk", "element"),
-      ],
-      [
-        edge("e1", "project:app", "domain:core"),
-        edge("e2", "domain:core", "capability:mcp"),
-        edge("e3", "capability:mcp", "element:sdk"),
-      ],
-      { orphans: [] },
-    );
-
-    const commands = buildAgentReadinessCliCommands(readySummary);
-    const formatted = formatAgentReadinessCliCommands(readySummary);
-
-    expect(commands.map((item) => item.command)).toEqual([
-      "node $ATLAS/cli/src/index.mjs agent-brief [vault]",
-      "node $ATLAS/cli/src/index.mjs agent-brief [vault] --graph-db-pack",
-      "node $ATLAS/cli/src/index.mjs agent-brief [vault] --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
-      "node $ATLAS/cli/src/index.mjs workspace-brief [vault]",
-      "node $ATLAS/cli/src/index.mjs health [vault]",
-      "node $ATLAS/cli/src/index.mjs cycles [vault] --max-hops 8",
-      "node $ATLAS/cli/src/index.mjs growth [vault] --limit 20",
-      "node $ATLAS/cli/src/index.mjs maintenance [vault] --limit 20",
-      "node $ATLAS/cli/src/index.mjs node <hub-slug> [vault] --limit 12",
-      "node $ATLAS/cli/src/index.mjs blast-radius <hub-slug> [vault] --depth 2 --direction incoming",
-      "pnpm dogfood:graph-db # 14 runtime graph DB checks",
-      "node $ATLAS/cli/src/index.mjs validate [vault]",
-    ]);
-    expect(new Set(commands.map((item) => item.command)).size).toBe(commands.length);
-    expect(formatted).toContain("1. node $ATLAS/cli/src/index.mjs agent-brief [vault]");
-    expect(formatted).toContain("2. node $ATLAS/cli/src/index.mjs agent-brief [vault] --graph-db-pack");
-    expect(formatted).toContain(
-      "3. node $ATLAS/cli/src/index.mjs agent-brief [vault] --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
-    );
-    expect(formatted).toContain("8. node $ATLAS/cli/src/index.mjs maintenance [vault] --limit 20");
-    expect(formatted).toContain("11. pnpm dogfood:graph-db # 14 runtime graph DB checks");
-    expect(formatted).toContain("12. node $ATLAS/cli/src/index.mjs validate [vault]");
-  });
-
-  it("builds a focused post-change sync gate for MCP and CLI sessions", () => {
-    const commands = buildAgentPostChangeSyncCliCommands();
+  it("builds a focused post-change sync gate made of MCP calls", () => {
     const packet = formatAgentPostChangeSyncPacket();
 
-    expect(commands.map((item) => item.command)).toEqual([
-      "node $ATLAS/cli/src/index.mjs health [vault]",
-      "node $ATLAS/cli/src/index.mjs cycles [vault] --max-hops 8",
-      "node $ATLAS/cli/src/index.mjs growth [vault] --limit 20",
-      "node $ATLAS/cli/src/index.mjs maintenance [vault] --limit 20",
-      "pnpm dogfood:graph-db # 14 runtime graph DB checks",
-      "node $ATLAS/cli/src/index.mjs validate [vault]",
-    ]);
     expect(packet).toContain("# Post-change ontology sync gate");
-    expect(packet).toContain("## Runtime graph DB gate");
-    expect(packet).toContain("14 checks · pnpm dogfood:graph-db");
     expect(packet).toContain("## Run when");
     expect(packet).toContain(
       "a domain, capability, element, or relation was introduced, renamed, split, merged, or made more explicit",
@@ -191,10 +127,7 @@ describe("buildAgentReadinessSummary", () => {
     expect(packet).toContain('"operation": "growth_plan"');
     expect(packet).toContain('"operation": "maintenance_plan"');
     expect(packet).toContain('"tool": "validate_vault"');
-    expect(packet).toContain("## CLI fallback");
-    expect(packet).toContain("1. node $ATLAS/cli/src/index.mjs health [vault]");
-    expect(packet).toContain("5. pnpm dogfood:graph-db # 14 runtime graph DB checks");
-    expect(packet).toContain("6. node $ATLAS/cli/src/index.mjs validate [vault]");
+    expect(packet).not.toMatch(/\$ATLAS|cli\/src\/index\.mjs|dogfood/);
     expect(packet).toContain("typo-only, comment-only");
   });
 

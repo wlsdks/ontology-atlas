@@ -11,7 +11,6 @@ import {
   type KnowledgeGraphNode,
   type OntologyHealthActionTarget,
 } from "@/entities/knowledge-graph";
-import { ATLAS_CLI } from "@/shared/config/agent/cli-invocation";
 
 export interface TopologyAnalysisSummaryInput {
   mode: TopologyAnalysisMode;
@@ -68,11 +67,8 @@ export interface TopologyHealthBriefLabels {
   ontologyUrl: string;
   repairUrl: string;
   nextAction: string;
-  agentCheck: string;
   mcpCheck: string;
-  relationPreflight: string;
   mcpRelationPreflight: string;
-  impactCheck: string;
   mcpImpactCheck: string;
   syncGate: string;
   actionKindStale: string;
@@ -109,10 +105,8 @@ export interface TopologyOverviewBriefLabels {
   promotion: string;
   url: string;
   healthUrl: string;
-  agentCheck: string;
   mcpCheck: string;
   mcpQueryPlan: string;
-  workspaceCheck: string;
   mcpWorkspaceCheck: string;
 }
 
@@ -220,17 +214,14 @@ export function formatTopologyHealthBrief({
       `- ${labels.ontologyUrl}: ${buildOntologyNodeHref(actionTarget.slug)}`,
       `- ${labels.repairUrl}: ${buildTopologyHealthRepairHref(actionTarget.slug)}`,
       `- ${labels.nextAction}: ${getTopologyHealthNextAction(actionTarget.kind, labels)}`,
-      `- ${labels.agentCheck}: ${ATLAS_CLI} node ${actionTarget.slug} [vault] --limit 12`,
       `- ${labels.mcpCheck}: ${formatTopologyHealthMcpCheck(actionTarget.slug)}`,
       ...(actionTarget.kind === "orphan"
         ? [
-            `- ${labels.relationPreflight}: ${ATLAS_CLI} relation-check <owner-slug> ${actionTarget.slug} contains [vault]`,
             `- ${labels.mcpRelationPreflight}: ${formatTopologyHealthOwnerRelationMcpCheck(
               actionTarget.slug,
             )}`,
           ]
         : []),
-      `- ${labels.impactCheck}: ${formatTopologyHealthImpactCliCheck(actionTarget.slug)}`,
       `- ${labels.mcpImpactCheck}: ${formatTopologyHealthImpactMcpCheck(actionTarget.slug)}`,
       ...formatTopologyAnalysisSyncGate(
         labels.syncGate,
@@ -297,10 +288,8 @@ export function formatTopologyOverviewBrief({
 
   lines.push(
     `- ${labels.healthUrl}: ${healthUrl}`,
-    `- ${labels.agentCheck}: ${ATLAS_CLI} overview [vault] --limit 5`,
     `- ${labels.mcpCheck}: ${formatTopologyOverviewMcpCheck()}`,
     `- ${labels.mcpQueryPlan}: ${formatTopologyOverviewMcpQueryPlan()}`,
-    `- ${labels.workspaceCheck}: ${ATLAS_CLI} workspace-brief [vault]`,
     `- ${labels.mcpWorkspaceCheck}: ${formatTopologyOverviewMcpWorkspaceCheck()}`,
   );
 
@@ -410,10 +399,6 @@ function formatTopologyOverviewMcpWorkspaceCheck(): string {
   return formatQueryOntologyCall({
     operation: "workspace_brief",
   });
-}
-
-function formatTopologyHealthImpactCliCheck(slug: string): string {
-  return `${ATLAS_CLI} blast-radius ${slug} [vault] --depth 2 --direction incoming`;
 }
 
 function formatTopologyHealthImpactMcpCheck(slug: string): string {

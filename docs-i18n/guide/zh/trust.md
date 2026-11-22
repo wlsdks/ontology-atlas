@@ -58,7 +58,7 @@ Atlas MCP 服务器不是一个常驻运行的服务。你的编码智能体在�
 
 - **macOS**：应用使用 Apple Developer ID 签名，并经过 Apple 公证。每个构建在发布之前，发布流程都会验证已签名的磁盘映像和安装后的应用；没有通过验证的构建不会发布。应用内更新同样经过签名。
 - **Windows x64 测试版**：安装程序未签名，因此 SmartScreen 可能会显示“未知发布者”警告，受管理的电脑也可能会阻止它。发布之前，每个构建都要经过 Microsoft Defender 扫描，并实际做一次静默安装和启动。
-- **Linux**：目前还没有应用。请使用浏览器版，或者从源码运行 CLI 和 MCP 服务器（[CLI](/guide/cli)）。
+- **Linux**：目前还没有应用。请使用浏览器版，或者从源码运行 MCP 服务器（[连接编码智能体](/guide/connect-agent)）。
 
 [发布页面](https://github.com/wlsdks/ontology-atlas/releases) 上的安装包（`.dmg`、`.exe`）和 MCP 包（`.mcpb`）旁边都有一个 `.sha256` 文件。把其中的值和你下载的文件算出的校验和对比一下。
 
@@ -76,4 +76,4 @@ Get-FileHash <file> -Algorithm SHA256
 
 ## 开源
 
-应用、MCP 服务器和 CLI 都位于同一个采用 MIT 许可证的公开仓库中：[github.com/wlsdks/ontology-atlas](https://github.com/wlsdks/ontology-atlas)。上面列出的外发途径来自源码中的同一个文件：[outbound-paths.ts](https://github.com/wlsdks/ontology-atlas/blob/main/src/widgets/app-settings-menu/model/outbound-paths.ts)。如需报告安全问题，请按照 [SECURITY.md](https://github.com/wlsdks/ontology-atlas/blob/main/SECURITY.md) 操作。
+应用和 MCP 服务器都位于同一个采用 MIT 许可证的公开仓库中：[github.com/wlsdks/ontology-atlas](https://github.com/wlsdks/ontology-atlas)。上面列出的外发途径来自源码中的同一个文件：[outbound-paths.ts](https://github.com/wlsdks/ontology-atlas/blob/main/src/widgets/app-settings-menu/model/outbound-paths.ts)。如需报告安全问题，请按照 [SECURITY.md](https://github.com/wlsdks/ontology-atlas/blob/main/SECURITY.md) 操作。

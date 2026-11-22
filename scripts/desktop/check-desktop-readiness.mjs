@@ -1,10 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
-import {
-  evaluateAgentSetupGate,
-  evaluateDesktopReleasePreflight,
-} from "../lib/desktop/release-script-contract.mjs";
+import { evaluateDesktopReleasePreflight } from "../lib/desktop/release-script-contract.mjs";
 import { inspectCodexRunContract } from "../lib/desktop/codex-run-contract.mjs";
 import { connectSrcIsExact, DESKTOP_CONNECT_SRC_TOKENS } from "../lib/desktop/desktop-csp.mjs";
 import { matches, matchesAll } from "../lib/i18n/locale-vocabulary.mjs";
@@ -270,16 +267,10 @@ if (firebaseDependencyMatches.length === 0) {
   );
 }
 
-const agentSetupGateContract = evaluateAgentSetupGate(
-  pkg.scripts?.["dogfood:agent-setup-gate"],
-);
-if (pkg.scripts?.["cli:mcp-verify"] && agentSetupGateContract.ok) {
-  pass("CLI/MCP setup gate executes fallbacks while keeping advisory readiness in JSON");
+if (pkg.scripts?.["dogfood:verify"]?.startsWith("node mcp/scripts/verify.mjs ")) {
+  pass("MCP verify gate runs the server's own verifier over the dogfood vault");
 } else {
-  fail(
-    "package.json must expose cli:mcp-verify and an automation-safe dogfood:agent-setup-gate: " +
-      agentSetupGateContract.errors.join("; "),
-  );
+  fail("package.json must expose dogfood:verify as node mcp/scripts/verify.mjs over docs/ontology");
 }
 
 if (pkg.scripts?.["desktop:doctor"] === "node scripts/desktop/desktop-doctor.mjs") {
@@ -301,13 +292,13 @@ if (
   desktopPerformanceScript.includes("nextStaticBytes") &&
   desktopPerformanceScript.includes("DESKTOP_PERFORMANCE_EVIDENCE_BOUNDARY") &&
   desktopPerformanceScript.includes("desktop:verify-app") &&
-  desktopPerformanceScript.includes("cli:mcp-verify") &&
+  desktopPerformanceScript.includes("dogfood:verify") &&
   pkg.scripts?.["desktop:release-preflight"]?.includes("pnpm desktop:perf -- --require-app")
 ) {
   pass("desktop performance gate keeps static asset hard limits, report-only artifact totals, and explicit runtime/MCP evidence boundaries");
 } else {
   fail(
-    "package.json must expose desktop:perf and include `pnpm desktop:perf -- --require-app` in desktop:release-preflight; the script must hard-gate Next static/chunk sizes while reporting total artifact sizes and naming desktop:verify-app plus cli:mcp-verify as separate startup evidence",
+    "package.json must expose desktop:perf and include `pnpm desktop:perf -- --require-app` in desktop:release-preflight; the script must hard-gate Next static/chunk sizes while reporting total artifact sizes and naming desktop:verify-app plus dogfood:verify as separate startup evidence",
   );
 }
 
@@ -1664,36 +1655,28 @@ if (
 }
 
 if (
-  ontologyStarterCta.includes("buildOntologyStarterCliVerifyCommands") &&
-  ontologyStarterCta.includes("buildOntologyStarterJsonGateCommand") &&
-  ontologyStarterCta.includes("shellQuotePath") &&
   ontologyStarterCta.includes("vaultPath") &&
   docsVaultPage.includes("vaultPath={") &&
   docsVaultPage.includes("getTauriVaultRootPath(localVault.handle)") &&
   vaultAgentSetupPanel.includes("getTauriVaultRootPath(localVault.handle)")
 ) {
-  pass("desktop ontology starter copies path-aware CLI and JSON agent gates");
+  pass("desktop ontology starter passes the selected Tauri vault path to the agent verification prompt");
 } else {
   fail(
-    "OntologyStarterCta must copy CLI proof and JSON agent gate commands against the selected Tauri vault path when the installed app knows it",
+    "OntologyStarterCta must build its agent verification prompt against the selected Tauri vault path when the installed app knows it",
   );
 }
 
 if (
   vaultAgentSetupPanel.includes("useAgentSetupCopy(vaultNameForConfig, vaultRootPath)") &&
-  vaultAgentSetupCopySources.includes("buildAgentVerifyCliCommand") &&
-  vaultAgentSetupCopySources.includes("buildAgentSetupCliCommand") &&
   vaultAgentSetupCopySources.includes("buildAgentSetupPacket(vaultName, vaultRootPath)") &&
   vaultAgentSetupCopySources.includes("buildAgentFirstContactProofPacket(vaultName, vaultRootPath)") &&
-  vaultAgentSetupCopySources.includes("buildOntologyStarterAgentVerifyPrompt(vaultRootPath)") &&
-  vaultAgentSetupCopySources.includes("buildOntologyStarterJsonGateCommand(vaultRootPath)") &&
-  vaultAgentSetupCopySources.includes("agentJsonGatePreview") &&
-  vaultAgentSetupCopySources.includes("hubs ${target} --plan")
+  vaultAgentSetupCopySources.includes("buildOntologyStarterAgentVerifyPrompt(vaultRootPath)")
 ) {
-  pass("desktop agent setup panel copies path-aware setup packets, CLI runbooks, and JSON gates");
+  pass("desktop agent setup panel copies path-aware setup and first-contact packets and the verification prompt");
 } else {
   fail(
-    "VaultAgentSetupPanel must copy setup packets, first-contact proof, CLI runbooks, verification prompts, and JSON gates against the selected Tauri vault path when available",
+    "VaultAgentSetupPanel must copy setup packets, first-contact proof, and verification prompts against the selected Tauri vault path when available",
   );
 }
 

@@ -100,7 +100,6 @@ function makeVault(): MockVault {
 }
 
 const openWords = () => fireEvent.click(screen.getByTestId('first-run-starter-glossary-open'));
-const CLI_COMMAND = 'node cli/src/index.mjs init && node cli/src/index.mjs bootstrap';
 
 describe('FirstRunStarterModule', () => {
   beforeEach(() => {
@@ -357,25 +356,14 @@ describe('FirstRunStarterModule', () => {
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
   });
 
-  it('keeps the CLI bootstrap command off the card and closes the folder guide with it', () => {
+  // A person with only the app cannot run a source-checkout command, so neither the card nor the
+  // folder guide offers one.
+  it('offers no terminal command on the card or in the folder guide', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
-    expect(screen.queryByText(CLI_COMMAND)).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId('first-run-starter-create'));
-    const last = screen.getByTestId('vault-guide-last-section');
-    expect(screen.getByTestId('vault-guide-sheet')).toContainElement(last);
-    expect(last).toContainElement(screen.getByTestId('first-run-starter-cli-bridge'));
-    expect(screen.getByTestId('first-run-starter-cli-source-only')).toHaveTextContent('cliBridgeSourceOnly');
-  });
-
-  it('renders the command as a full-width wrapping code line — never mid-word ellipsis', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
-    fireEvent.click(screen.getByTestId('first-run-starter-open'));
-
-    const code = screen.getByText(CLI_COMMAND);
-    expect(code.tagName).toBe('CODE');
-    expect(code.className).not.toContain('truncate');
-    expect(code.className).toContain('whitespace-pre-wrap');
-    expect(code.className).toContain('break-words');
+    expect(screen.getByTestId('vault-guide-sheet')).toBeInTheDocument();
+    expect(screen.queryByTestId('vault-guide-last-section')).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/cli\/src\/index\.mjs/);
   });
 
   it('demotes both FSA CTAs to an honest notice + download link when the browser is unsupported', () => {
@@ -391,8 +379,7 @@ describe('FirstRunStarterModule', () => {
     );
     expect(screen.getByTestId('first-run-starter-context')).toHaveTextContent('bodyNoFolderAccess');
     expect(screen.getByTestId('first-run-starter-dismiss')).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('first-run-starter-cli-open'));
-    expect(screen.getByRole('dialog')).toContainElement(screen.getByTestId('first-run-starter-cli-bridge'));
+    expect(screen.getByTestId('first-run-starter-glossary-open')).toBeInTheDocument();
   });
 
   it('falls back to the plain-mode gear hint in the glossary without a callback', () => {
@@ -478,19 +465,6 @@ describe('FirstRunStarterModule', () => {
     expect(screen.getByTestId('first-run-starter-sample-source-storefront')).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('first-run-starter-sample-line')).toHaveTextContent('sampleSourceStorefront');
     expect(screen.getByTestId('first-run-starter-sample-line')).not.toHaveTextContent('sampleSourceDogfood');
-  });
-
-  it('copies the CLI bootstrap command to the clipboard from the folder guide', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, { clipboard: { writeText } });
-
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
-    fireEvent.click(screen.getByTestId('first-run-starter-open'));
-    fireEvent.click(screen.getByTestId('first-run-starter-cli-bridge-copy'));
-
-    await waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith(CLI_COMMAND);
-    });
   });
 });
 
