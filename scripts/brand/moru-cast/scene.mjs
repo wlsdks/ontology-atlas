@@ -74,7 +74,10 @@ export async function renderClip(clip) {
   if (clip.limits) for (const actor of clip.actors) {
     if (actor.poses) continue;
     const track = tracks[actor.name], n = track.length, seen = new Map(), centre = i => { const key = JSON.stringify(track[i]); if (seen.has(key)) return seen.get(key); const sc = new Uint8Array(W * H); blitMoru(sc, W, drawMoru(r, track[i].pose, track[i].shapes), actor.ox, { flip: !!actor.flip !== !!track[i].shapes.flip }); const c = bodyCentre(toRGBA(sc), W, H); seen.set(key, c); return c; };
-    const toward = (i, j) => { let changed = false; const a = { ...REST, ...track[i].pose }, z = { ...REST, ...track[j].pose }; for (const k of Object.keys(REST)) { if (a[k] === z[k]) continue; const mid = (a[k] + z[k]) / 2, v = a[k] > z[k] ? Math.floor(mid) : Math.ceil(mid); if (v !== a[k]) { a[k] = v; changed = true; } } track[i] = { pose: a, shapes: track[i].shapes }; return changed; };
+    // The body gives way first: a flipper hardly moves the body's centre, so a keyed reach is kept as drawn until nothing else is left to ease.
+    const PAWS = ['lx', 'ly', 'rx', 'ry'], toward = (i, j) => { let changed = false; const a = { ...REST, ...track[i].pose }, z = { ...REST, ...track[j].pose };
+      for (const keys of [Object.keys(REST).filter(k => !PAWS.includes(k)), PAWS]) { for (const k of keys) { if (a[k] === z[k]) continue; const mid = (a[k] + z[k]) / 2, v = a[k] > z[k] ? Math.floor(mid) : Math.ceil(mid); if (v !== a[k]) { a[k] = v; changed = true; } } if (changed) break; }
+      track[i] = { pose: a, shapes: track[i].shapes }; return changed; };
     for (let pass = 0; pass < 1500; pass++) {
       const c = track.map((_, i) => centre(i)); let bad = -1;
       for (let f = 1; f < n; f++) { const air = (track[f].pose.lift ?? 0) > 0 || (track[f - 1].pose.lift ?? 0) > 0 || clip.bounding; if (Math.hypot(c[f].x - c[f - 1].x, c[f].y - c[f - 1].y) > (air ? clip.limits.air : clip.limits.ground)) { bad = f; break; } }

@@ -23,6 +23,8 @@ export function createWorld({ atlas, width, lanes = 3, seed = 1, spots = [], bus
     stats: { actions: {}, declines: 0, missed: 0, interactions: 0, pranks: 0, swaps: 0, eventLatency: [] } };
 }
 export function addMoru(world, { id, x, lane = 0, palette = 'original', wear = {}, room = false }) {
+  // A room's Moru is the one the room is read by, so it lives in the front lane: whoever walks past it passes behind, and nobody is ever drawn over it.
+  if (room) lane = world.lanes - 1;
   const r = world.rand, m = { id, x, lane, depth: lane, facing: r() < 0.5 ? 1 : -1, palette, wear: { head: null, body: null, accessory: null, ...wear }, room,
     mood: { curiosity: r(), energy: 0.5 + r() * 0.5, sociability: 0.4 + r() * 0.6 }, clip: 'rest', frame: 0, i: 0, t: 0, cur: {}, plan: [], memory: [], pairs: [],
     think: 300 + r() * 2500, idleIn: 400 + r() * 1500, hold: 0, waiting: null, event: null, claimed: 0, hail: 0, steps: 0, height: 0, still: 0, rooted: 0, home: null, goal: null, changed: true };
@@ -31,6 +33,8 @@ export function addMoru(world, { id, x, lane = 0, palette = 'original', wear = {
 /** Where the body's centre stands at rest. The cell is mirrored about x = 68 when the Moru faces left. */
 const stand = (m, dir = m.facing) => m.x + (dir > 0 ? 74 : 62);
 export const centre = m => stand(m);
+/** The middle of the silhouette, tail included: `centre` is where a Moru stands, 11px toward the way it faces from the middle of its body. */
+const body = (at, facing) => at - 11 * facing, middle = m => body(centre(m), m.facing);
 const quiet = m => !m.plan.length && !m.waiting && !m.event && !m.claimed && !m.hold;
 const free = m => m.clip === 'rest' && quiet(m);
 const idle = m => quiet(m) && IDLE.has(m.clip) && !m.height;
@@ -39,7 +43,11 @@ const standing = m => !m.plan.length && !m.waiting && (IDLE.has(m.clip) || m.cli
 /** Another Moru standing in front of or behind this one, in a different lane. */
 /** Staying where it is: standing, or doing something on the spot (talking, working, napping) with no walk still to come. */
 const staying = o => standing(o) || (!o.height && !['step', 'turn'].includes(o.clip) && !TRAVEL.has(o.clip) && !o.plan.some(i => i.go || TRAVEL.has(i.clip)));
-export const coveredBy = (world, m) => world.morus.find(o => o !== m && staying(o) && Math.abs(o.depth - m.depth) >= 0.5 && Math.abs(centre(o) - centre(m)) < SEP - 2);
+/** Nobody's body, in any lane, would overlap one standing at `at` facing `facing` (a room's Moru is given 6px more).
+ * A floor too full for everyone to stand clear (`packed`: twenty in one strip) keeps only the room's Moru clear. */
+const packed = world => world.morus.length * SEP > world.width - 140;
+const clearSpot = (world, m, at, facing, but = null) => world.morus.every(o => o === m || o === but || (packed(world) && !o.room && !m.room) || Math.abs(middle(o) - body(at, facing)) >= SEP + (o.room || m.room ? 6 : 0));
+export const coveredBy = (world, m) => world.morus.find(o => o !== m && staying(o) && Math.abs(o.depth - m.depth) >= 0.5 && Math.abs(middle(o) - middle(m)) < SEP);
 const remember = (list, what, keep) => { list.unshift(what); list.length = Math.min(list.length, keep); };
 const fits = (world, m, clip) => !m.room || world.atlas.clips[clip].maxWaitMs <= QUICK_MS;
 /** A room's Moru only plays what a real event can cut short in time; anything longer becomes a glance. */
@@ -66,6 +74,9 @@ function next(world, m) {
       // Whoever is being walked up to notices and stays put while the walker is on the way.
       // The one walked up to waits only once the walker is close: a far walker does not freeze it.
       if (item.toward && quiet(item.toward) && Math.abs(centre(item.toward) - centre(m)) < 130) item.toward.hail = 1500;
+      // The one walked up to may have moved on: if the place beside it is now in front of somebody, the walk is not ended there.
+      // Nor is it dropped on the spot, which may itself be in front of somebody: it turns into a walk to the nearest free place.
+      if (item.toward && !clearSpot(world, m, item.go(), Math.sign(centre(item.toward) - item.go()) || m.facing, item.toward)) { m.plan = []; m.steps = 0; world.stats.missed++; if (clearSpot(world, m, centre(m), m.facing) || !decide(world, m, 'wander')) continue; return; }
       const near = Math.abs(d) < 2, wrongWay = !near && dir !== m.facing;
       if ((near && lane === m.lane) || item.left < 0) { m.plan.shift(); m.steps = 0; continue; }
       // Turning carries the body 12px the new way: never into a neighbour, and never past the target.
@@ -191,7 +202,10 @@ function decide(world, m, only = null) {
   // A crowd thins itself: with more company on one side than the other, the emptier side is the way to wander.
   const beside = d => world.morus.filter(o => o !== m && (centre(o) - here) * d > 0 && Math.abs(centre(o) - here) < 320).length, crowd = beside(1) - beside(-1);
   const want = crowd > 1 ? -1 : crowd < -1 ? 1 : r() < 0.7 ? m.facing : -m.facing, open = d => roomAhead(world, m, d, 30) && (d === m.facing || roomToTurn(world, m)), dir = open(want) ? want : open(-want) ? -want : 0;
-  const side = r() < 0.5 ? -1 : 1, lane = m.room ? m.lane : !dir || r() < 0.3 ? clamp(m.lane + side, 0, world.lanes - 1) === m.lane ? m.lane - side : m.lane + side : m.lane, apart = (at, but = null, sep = SEP) => world.morus.every(o => o === m || o === but || (Math.abs(centre(o) - at) >= sep && (o.goal == null || Math.abs(o.goal - at) >= sep)));
+  const crowded = packed(world), side = r() < 0.5 ? -1 : 1, lane = m.room ? m.lane : !dir || r() < 0.3 ? clamp(m.lane + side, 0, world.lanes - 1) === m.lane ? m.lane - side : m.lane + side : m.lane, apart = (at, but = null, sep = SEP, facing = Math.sign(at - here) || m.facing) => world.morus.every(o => { if (o === m || o === but) return true; const mine = body(at, facing), wide = sep + (o.room || m.room ? 6 : 0);
+    if (o.goal == null) return Math.abs(middle(o) - mine) >= wide; const ends = [middle(o), body(o.goal, Math.sign(o.goal - centre(o)) || o.facing)];
+    // A room's Moru on a walk can be called to work at any step of it, so the whole of its way is kept clear, not only the two ends.
+    return o.room && !crowded ? mine <= Math.min(...ends) - wide || mine >= Math.max(...ends) + wide : ends.every(x => Math.abs(x - mine) >= wide); });
   // A lane to walk in: its own if nobody stands on the way, else the nearest lane that is open all the way (a room's Moru keeps its lane).
   const wayIn = (at, L) => world.morus.every(o => o === m || (Math.abs(o.depth - L) >= 0.9 && o.cur.laneTo !== L) || (centre(o) - here) * Math.sign(at - here) < 0 || (centre(o) - here) * Math.sign(at - here) > Math.abs(at - here) + GAP);
   const laneFor = at => [m.lane, ...(m.room ? [] : [m.lane - 1, m.lane + 1, m.lane - 2, m.lane + 2])].find(L => L >= 0 && L < world.lanes && wayIn(at, L));
@@ -200,33 +214,38 @@ function decide(world, m, only = null) {
   // One that has stood long on its spot, or stands in front of another, looks further and on both sides.
   // Open: nobody stands, or is headed, anywhere ahead up to 80px past the end, in any lane. One behind does not count: walking on only parts them.
   const openWay = (at, but = null) => world.morus.every(o => o === m || o === but || [centre(o), o.goal ?? centre(o)].every(x => { const ahead = (x - here) * Math.sign(at - here); return ahead <= 0 || ahead > Math.abs(at - here) + 80; }));
-  const crowded = world.morus.length * SEP > world.width - 140, stuck = !apart(here) || m.rooted > 12000;
-  let to = here, toLane = m.lane; const tryAt = (at, sep = SEP) => { if (to !== here || at < 70 || at > world.width - 70 || !apart(at, null, sep)) return; const L = laneFor(at) ?? (sep < SEP ? lane : undefined);
+  const stuck = !apart(here) || m.rooted > 12000;
+  let to = here, toLane = m.lane; const tryAt = (at, sep = SEP) => { if (to !== here || at < 70 || at > world.width - 70 || !apart(at, null, sep)) return; const L = laneFor(at) ?? (sep < SEP ? lane : !apart(here) ? m.lane : undefined);
     // A room's Moru can be called to work at any step, and works where it stands: so it only walks where nobody stands along the whole way, in any lane.
     if (m.room && !openWay(at)) return;
+    // Nor does anyone set off beside one already walking the same way: at one pace, the two would stay one over the other the whole walk.
+    if (world.morus.some(o => o !== m && o.goal != null && Math.sign(o.goal - centre(o)) === Math.sign(at - here) && Math.abs(middle(o) - middle(m)) < SEP + 40)) return;
     if (L === undefined || (Math.sign(at - here) !== m.facing && !roomToTurn(world, m))) return; to = at; toLane = L; };
   for (let k = 0; k < 8 && dir; k++) tryAt(here + dir * (60 + r() * 150));
   // A floor too full for everyone to stand clear (twenty in one strip) falls back to the nearest place that is at least mostly clear.
-  if (stuck) { const first = r() < 0.5 ? 1 : -1; for (const sep of crowded || !apart(here, null, 76) ? [SEP, 76] : [SEP]) for (let far = sep < SEP ? 60 : 110; far <= 700 && to === here; far += 30) for (const d of [first, -first]) tryAt(here + d * (far + r() * 20), sep); }
+  if (stuck) { const first = r() < 0.5 ? 1 : -1; for (const sep of crowded || !apart(here, null, 76) ? [SEP, 76] : [SEP]) for (let far = !apart(here) && !crowded ? 24 : sep < SEP ? 60 : 110; far <= 700 && to === here; far += far < 110 ? 12 : 30) for (const d of [first, -first]) tryAt(here + d * (far + (far < 110 ? 0 : r() * 20)), sep); }
   add('wander', (to === here ? 0.05 : 0.5 + curiosity + 0.5 * Math.max(0, beside(1) + beside(-1) - 3)) * (apart(here) ? 1 : 6) * (1 + Math.min(5, m.rooted / 5000)), () => { m.goal = to; return [{ go: () => to, lane: () => toLane }]; });
-  if (!m.room) for (const spot of world.spots) if (clear(world, m, spot.lane, spot.x, GAP) && apart(spot.x)) add('spot:' + spot.clip, (spot.clip === 'nap' ? 1.3 * (1 - energy) : 0.3 + 0.8 * curiosity), () => [{ go: () => spot.x, lane: () => spot.lane, left: 70 }, { face: () => spot.dir }, { clip: spot.clip === 'nap' ? 'yawn' : spot.clip }, ...(spot.clip === 'nap' ? [{ clip: 'nap' }] : []),
+  // The place is spoken for from the moment it is chosen (`goal`), so nobody comes to stand in front of the ladder while it is climbed.
+  if (!m.room) for (const spot of world.spots) if (clear(world, m, spot.lane, spot.x, GAP) && apart(spot.x)) add('spot:' + spot.clip, (spot.clip === 'nap' ? 1.3 * (1 - energy) : 0.3 + 0.8 * curiosity), () => { m.goal = spot.x; return [{ go: () => spot.x, lane: () => spot.lane, left: 70 }, { face: () => spot.dir }, { clip: spot.clip === 'nap' ? 'yawn' : spot.clip }, ...(spot.clip === 'nap' ? [{ clip: 'nap' }] : []),
     // Up the ladder, a look round and a wave from the shelf, and down the way it came.
-    ...(spot.clip === 'climb' ? [{ clip: 'look-back' }, { clip: 'wave' }, { pause: 900 }, { clip: 'look-ahead' }, { clip: 'climb', reverse: true }] : [])]);
+    ...(spot.clip === 'climb' ? [{ clip: 'look-back' }, { clip: 'wave' }, { pause: 900 }, { clip: 'look-ahead' }, { clip: 'climb', reverse: true }] : [])]; });
   const friends = world.morus.filter(o => o !== m && (!m.room || o.lane === m.lane) && !o.height && !o.claimed && !o.event && !m.pairs.includes(o.id) && Math.abs(centre(o) - here) < 420 && quiet(o) && o.still < 4000 && !['nap', 'yawn'].includes(o.clip)).sort((p, q) => Math.abs(centre(p) - here) - Math.abs(centre(q) - here)).slice(0, 5);
   if (friends.length) {
     // Every near friend with a free place beside it is a candidate and the weight is shared, so a full floor still finds someone to play with.
     // A floor too full for all to stand clear (twenty in one strip) takes the near side whatever stands behind it.
     const full = crowded, share = 1.6 / friends.length;
-    for (const b of friends) { if (m.room && (b.lane !== m.lane || !openWay(centre(b), b))) continue; const near = here < centre(b) ? -1 : 1, side = [near, -near].find(sd => apart(stand(b, sd) + sd * REACH, b)) ?? (full ? [near, -near].find(sd => apart(stand(b, sd) + sd * REACH, b, 76)) ?? near : undefined); if (side === undefined) continue;
+    // A room's Moru never leaves the front lane, even when the friend it walks up to changes lane on the way.
+    const friendLane = b => m.room ? world.lanes - 1 : b.lane;
+    for (const b of friends) { if (m.room && (b.lane !== m.lane || !openWay(centre(b), b))) continue; const near = here < centre(b) ? -1 : 1, side = [near, -near].find(sd => apart(stand(b, sd) + sd * REACH, b, SEP, -sd)) ?? (full ? [near, -near].find(sd => apart(stand(b, sd) + sd * REACH, b, 76, -sd)) ?? near : undefined); if (side === undefined) continue;
     const behind = centre(b) - b.facing * (REACH + 24), kinds = m.room || b.room ? [['ask', 1.2]] : [['greet', 1], ['highfive', 1], ['ask', 1.3], ...(m.wear.head !== b.wear.head ? [['swap', 1.5]] : []), ...(apart(behind, b) ? [['prank', 0.6 + curiosity]] : []), ['nap', (1 - energy) * 1.2]];
     for (const [kind, w] of kinds) add(kind, w * share * (0.3 + sociability), () => { if (idle(b) && Math.abs(centre(b) - here) < 130) b.hail = 2500; m.goal = kind === 'prank' ? behind : stand(b, side) + side * REACH; return kind === 'prank'
-      ? [{ go: () => centre(b) - b.facing * (REACH + 24), lane: () => b.lane, left: 60, toward: b }, { face: () => b.facing }, { clip: 'tiptoe' }, { call: (w2, a) => prank(w2, a, b) }]
-      : [{ go: () => stand(b, side) + side * REACH, lane: () => b.lane, left: 60, toward: b }, { face: () => -side }, { call: (w2, a) => propose(w2, a, b, kind) }]; });
+      ? [{ go: () => centre(b) - b.facing * (REACH + 24), lane: () => friendLane(b), left: 60, toward: b }, { face: () => b.facing }, { clip: 'tiptoe' }, { call: (w2, a) => prank(w2, a, b) }]
+      : [{ go: () => stand(b, side) + side * REACH, lane: () => friendLane(b), left: 60, toward: b }, { face: () => -side }, { call: (w2, a) => propose(w2, a, b, kind) }]; });
   } }
   if (!m.room) {
     add('nap-alone', (1 - energy) * 0.5, () => [{ clip: 'yawn' }, { clip: 'nap' }]);
     for (const move of ['bound', 'belly-slide', 'run', 'roll']) {
-      const far = world.atlas.clips[move].travel.at(-1), ok = d => here + d * (far + 60) > 60 && here + d * (far + 60) < world.width - 60 && world.morus.every(o => o === m || (Math.abs(o.depth - m.lane) >= 0.9 ? ((centre(o) - here) * d < -56 || (centre(o) - here) * d > far + 76) && (o.goal == null || (o.goal - here) * d < -56 || (o.goal - here) * d > far + 76) : (centre(o) - here) * d < 0 || (centre(o) - here) * d > far + GAP));
+      const far = world.atlas.clips[move].travel.at(-1), ok = d => here + d * (far + 60) > 60 && here + d * (far + 60) < world.width - 60 && world.morus.every(o => o === m || (Math.abs(o.depth - m.lane) >= 0.9 ? ((centre(o) - here) * d < -56 || (centre(o) - here) * d > far + 76) && (o.goal == null || (o.goal - here) * d < -56 || (o.goal - here) * d > far + 76) : [centre(o), o.goal ?? centre(o)].every(x => (x - here) * d < 0 || (x - here) * d > far + GAP + 22)));
       // One travelling move at a time in a neighbourhood: two that set off toward each other in different lanes would cross.
       const alone = world.morus.every(o => o === m || !(TRAVEL.has(o.clip) || o.plan.some(i => TRAVEL.has(i.clip))) || Math.abs(centre(o) - here) > 2 * far + 240);
       const d = !alone ? 0 : ok(m.facing) ? m.facing : ok(-m.facing) ? -m.facing : 0;
@@ -257,12 +276,13 @@ export function tick(world, dt) {
     if (m.home === null || Math.abs(centre(m) - m.home) > 60) { m.home = centre(m); m.rooted = 0; } else m.rooted += dt; }
   if (world.sinceDecide >= 100) { world.sinceDecide = 0; let doing = world.morus.filter(o => !IDLE.has(o.clip) || o.plan.length || o.waiting).length;
     // One that stands in front of another steps aside before anything else: the one without a room for preference, and only one of the pair.
-    for (const m of [...world.morus].sort((a, b) => a.room - b.room)) if (free(m) && m.hail <= 0 && doing < world.busyMax + 2 && (m.aside ?? 0) <= world.now) { const o = coveredBy(world, m); if (o && !(m.room && free(o) && !o.room && (o.aside ?? 0) <= world.now)) { if (decide(world, m, 'wander')) { doing++; m.aside = world.now + 1500; } else m.aside = world.now + 375; } }
+    // In front of a room's Moru it does so whatever the budget and whoever hails it (it is rare, and one walk).
+    for (const m of [...world.morus].sort((a, b) => a.room - b.room)) if (free(m) && (m.aside ?? 0) <= world.now) { const o = coveredBy(world, m); if (o && (o.room || m.room || (m.hail <= 0 && doing < world.busyMax + 2)) && !(m.room && free(o) && !o.room && (o.aside ?? 0) <= world.now)) { if (decide(world, m, 'wander')) { doing++; m.aside = world.now + 1500; } else m.aside = world.now + 375; } }
     // Then the one longest on its spot, then the longest still; after eight seconds of standing a Moru no longer waits to think.
     for (const m of [...world.morus].sort((a, b) => (b.still + b.rooted / 2) - (a.still + a.rooted / 2))) if (free(m) && m.hail <= 0) {
       if (doing < world.busyMax && (m.think <= 0 || m.still > 8000)) { if (decide(world, m, m.rooted > 25000 ? 'wander' : null) || decide(world, m)) doing++; }
       // No room in the budget, and it has stood eight seconds: a short thing on the spot (a turn, a wave, a yawn), so nobody is a statue.
-      else if (m.still > 8000 && !m.room && doing < world.busyMax + 2) { doing++; const tired = m.mood.energy < 0.4, pick = world.rand(); m.plan = pick < 0.4 && world.morus.every(o => o === m || Math.abs(centre(o) - centre(m)) > 130 || Math.abs(o.depth - m.lane) >= 0.9) ? [{ face: () => -m.facing }] : [{ clip: tired ? 'yawn' : pick < 0.7 ? 'wave' : 'laugh' }]; next(world, m); } } }
+      else if (m.still > 8000 && !m.room && doing < world.busyMax + 2) { doing++; const tired = m.mood.energy < 0.4, pick = world.rand(); m.plan = pick < 0.4 && world.morus.every(o => o === m || (Math.abs(middle(o) - middle(m)) > SEP + 30 && (Math.abs(centre(o) - centre(m)) > 130 || Math.abs(o.depth - m.lane) >= 0.9))) ? [{ face: () => -m.facing }] : [{ clip: tired ? 'yawn' : pick < 0.7 ? 'wave' : 'laugh' }]; next(world, m); } } }
 }
 /** Milliseconds until anything can change: the host sleeps that long. */
 export function due(world) {

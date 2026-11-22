@@ -116,26 +116,53 @@ export async function makeRig() {
 /** A flipper is drawn lifted once it is well clear of where it rests; nearer than that it is still the resting flipper, moved. */
 const offFloor = (dx, dy) => dy < -5 || (dy < -2 && Math.abs(dx) > 6);
 
-/** A lifted flipper from shoulder (sx, sy) to paw (tx, ty): a tapered paddle with a rounded paw, shaded on its lower left, ringed in ink. */
-// Raised flippers are typed by hand, three pixels to a letter like the resting mound's steps: `i` indigo, `m` the shaded rim the mound has.
-// Each is drawn reaching to the right; a reach to the left is its mirror. `head` is the middle of the paddle's broad end, in letters: it sits on the paw.
+// Raised flippers are typed by hand, a pixel to a letter, in the body's own stair rhythm (two rows to a step on a curve): `i` indigo,
+// `m` the shaded rim the resting mound has on its upper left. Each is drawn reaching to the right; a reach to the left is its mirror.
+// `head` is the middle of the paddle's broad end: it sits on the paw. The short ones are a paw lifted just off its seat; the long ones
+// carry an arm back to the body, so a high reach is joined to it and never floats beside the head.
 const PADDLES = {
-  up: { rows: [' mi ', 'miii', 'iiii', 'iiii', ' iii', ' ii '], head: [2, 1.5] },
-  diag: { rows: ['   mi ', '  miii', ' miiii', ' iiii ', 'iiii  ', 'iii   '], head: [4, 1.5] },
-  side: { rows: [' mmmi ', 'iiiiii', 'iiiiii', ' iiii '], head: [4.5, 2] },
-  low: { rows: ['mi    ', 'iiii  ', ' iiiii', '  iiii', '   ii '], head: [4.5, 3.5] },
+  up: { head: [6, 6], rows: [
+    '    miiii   ', '  mmiiiiii  ', ' mmiiiiiiii ', ' miiiiiiiii ', 'mmiiiiiiiiii', 'miiiiiiiiiii', 'miiiiiiiiiii',
+    'miiiiiiiiiii', 'miiiiiiiiiii', ' iiiiiiiiii ', ' iiiiiiiiii ', '  iiiiiiii  ', '  iiiiiiii  ', '    iiii    '] },
+  diag: { head: [8, 5], rows: [
+    '      miiii  ', '    mmiiiiii ', '   miiiiiiiii', '  mmiiiiiiiii', '  miiiiiiiiii', ' miiiiiiiiii ', ' miiiiiiiiii ',
+    'miiiiiiiii   ', 'miiiiiiiii   ', 'iiiiiiii     ', ' iiiiii      ', '  iiii       '] },
+  side: { head: [9, 4], rows: [
+    '    mmmiiiii   ', '  mmiiiiiiiii  ', ' miiiiiiiiiiii ', 'miiiiiiiiiiiiii', 'miiiiiiiiiiiiii', 'iiiiiiiiiiiiiii',
+    ' iiiiiiiiiiiii ', '  iiiiiiiiiii  ', '    iiiiiii    '] },
+  armUp: { head: [16, 6], rows: [
+    '             miiii    ', '           mmiiiiiii  ', '          mmiiiiiiiii ', '          miiiiiiiiii ', '         mmiiiiiiiiiii', '         miiiiiiiiiiii',
+    '         miiiiiiiiiiii', '         miiiiiiiiiiii', '         miiiiiiiiiii ', '         miiiiiiiiiii ', '          miiiiiiiii  ', '          miiiiiiiii  ',
+    '         miiiiiiiii   ', '         miiiiiiiii   ', '        mmiiiiiiii    ', '        miiiiiiiii    ', '        miiiiiiii     ', '       mmiiiiiii      ',
+    '       miiiiiiii      ', '       miiiiiii       ', '      mmiiiiiii       ', '      miiiiiii        ', '     mmiiiiiii        ', '     miiiiiii         ',
+    '    mmiiiiii          ', '    miiiiiii          ', '  mmmiiiiii           ', '  miiiiiii            ', 'mmmiiiiii             ', 'miiiiiii              '] },
+  armDiag: { head: [23, 6], rows: [
+    '                     miiii    ', '                   mmiiiiiii  ', '                  mmiiiiiiiii ', '                  miiiiiiiiiii',
+    '                 mmiiiiiiiiiii', '                 miiiiiiiiiiii', '                mmiiiiiiiiiiii', '               mmiiiiiiiiiiii ',
+    '              mmiiiiiiiiiiiii ', '             mmiiiiiiiiiiii   ', '            mmiiiiiiiiiii     ', '           mmiiiiiiiiii       ',
+    '          mmiiiiiiiii         ', '         mmiiiiiiii           ', '        mmiiiiiiii            ', '       mmiiiiiii              ',
+    '      mmiiiiiii               ', '     mmiiiiiii                ', '    mmiiiiiii                 ', '   mmiiiiiii                  ',
+    '  mmiiiiiii                   ', ' mmiiiiiii                    ', 'mmiiiiiii                     ', 'miiiiii                       '] },
+  armSide: { head: [19, 5], rows: [
+    '              mmmiiiii    ', '            mmiiiiiiiii   ', '      mmmmmmiiiiiiiiiiii  ', 'mmmmmmiiiiiiiiiiiiiiiiiii ',
+    'miiiiiiiiiiiiiiiiiiiiiiiii', 'iiiiiiiiiiiiiiiiiiiiiiiiii', 'iiiiiiiiiiiiiiiiiiiiiiiiii', 'iiiiiiiiiiiiiiiiiiiiiiiii ',
+    'iiiiiiiiiiiiiiiiiiiiiiii  ', '      iiiiiiiiiiiiiiii    ', '            iiiiiiii      '] },
 };
-/** The hand-drawn paddle for a flipper lifted to (tx, ty), `dx`, `dy` from where it rests; `side` 0 the left flipper, 1 the right. */
+/**
+ * The hand-drawn paddle for a flipper lifted to (tx, ty), `dx`, `dy` from where it rests; `side` 0 the left flipper, 1 the right.
+ * A reach of more than 15px by the right flipper (the one at the body's edge) takes an arm, whose root comes down on the flipper's seat: it covers what the resting mound covered, so lifting
+ * a flipper hardly moves the body's measured centre.
+ */
 function liftedFlipper(tx, ty, dx, dy, side, floor = Infinity) {
-  const way = Math.abs(dx) < 3 ? (side ? 1 : -1) : Math.sign(dx), rise = Math.atan2(-dy, Math.abs(dx)) * 180 / Math.PI;
-  const art = PADDLES[rise >= 52 ? 'up' : rise >= 20 ? 'diag' : rise >= -10 ? 'side' : 'low'], U = 3, PAD = 3, cols = art.rows[0].length, w = cols * U + 2 * PAD, h = art.rows.length * U + 2 * PAD;
+  const way = Math.abs(dx) < 3 ? (side ? 1 : -1) : Math.sign(dx), rise = Math.atan2(-dy, Math.abs(dx)) * 180 / Math.PI, long = side === 1 && Math.hypot(dx, dy) > 15;
+  const art = PADDLES[long ? (rise >= 58 ? 'armUp' : rise >= 22 ? 'armDiag' : 'armSide') : rise >= 52 ? 'up' : rise >= 18 ? 'diag' : 'side'], PAD = 3, cols = art.rows[0].length, w = cols + 2 * PAD, h = art.rows.length + 2 * PAD;
   const mask = new Uint8Array(w * h), data = new Uint8Array(w * h);
-  art.rows.forEach((row, r) => [...row].forEach((ch, c) => { if (ch === ' ') return; const col = way > 0 ? c : cols - 1 - c; for (let y = 0; y < U; y++) for (let x = 0; x < U; x++) { const p = (PAD + r * U + y) * w + PAD + col * U + x; mask[p] = 1; data[p] = ch === 'm' ? MUTED : INDIGO; } }));
+  art.rows.forEach((row, r) => [...row].forEach((ch, c) => { if (ch === ' ') return; const p = (PAD + r) * w + PAD + (way > 0 ? c : cols - 1 - c); mask[p] = 1; data[p] = ch === 'm' ? MUTED : INDIGO; }));
   const near = grown(mask, w, 3); for (let p = 0; p < w * h; p++) if (!mask[p] && near[p]) data[p] = INK;
-  const hx = way > 0 ? art.head[0] : cols - art.head[0], y0 = Math.round(ty - art.head[1] * U) - PAD;
+  const hx = way > 0 ? art.head[0] : cols - 1 - art.head[0], y0 = Math.round(ty - art.head[1]) - PAD;
   // A paddle only just off the floor still stands on it: what would hang below the floor row is cut, and the cut is closed with the mound's own base of ink.
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const p = y * w + x; if (y + y0 > floor) data[p] = 0; else if (y + y0 > floor - 3 && data[p]) data[p] = INK; }
-  return { data, w, h, x: Math.round(tx - hx * U) - PAD, y: y0 };
+  return { data, w, h, x: Math.round(tx - hx) - PAD, y: y0 };
 }
 
 /** A list of source indices with `k` seams removed (k > 0) or repeated (k < 0). */
@@ -228,7 +255,7 @@ export function drawMoru(rig, poseIn = {}, shapesIn = {}, costume = []) {
     return { ...s, x: s.x + MX, y: s.y + MY };
   });
   const whiskerHidden = (s, x, y) => limbs.some(l => l && !l.rest && x + s.w / 2 + 2 > l.x - MX && x - s.w / 2 - 2 < l.x - MX + l.w && y + s.h / 2 + 2 > l.y - MY && y - s.h / 2 - 2 < l.y - MY + l.h && (() => { for (let yy = Math.floor(y - s.h / 2) - 1; yy <= y + s.h / 2 + 1; yy++) for (let xx = Math.floor(x - s.w / 2) - 1; xx <= x + s.w / 2 + 1; xx++) { const lx = xx + MX - l.x, ly = yy + MY - l.y; if (lx >= 0 && ly >= 0 && lx < l.w && ly < l.h && l.data[ly * l.w + lx]) return true; } return false; })());
-  // On a turned pose the whiskers go with the face: each is kept whole and set down by quarter turns, so the face never empties and refills.
+  // On a turned pose the whiskers go with the face: each is kept whole and turned by the body's angle, so the face never empties and refills.
   for (const w of rig.whiskers) { const [x, y] = place(w); if (turnedPose) faceMarks.push({ s: w, x: x + w.w / 2, y: y + w.h / 2, whisker: true }); else if (!whiskerHidden(w, x + w.w / 2, y + w.h / 2)) markAt(w, x, y); }
   layers('front');
   // Facing front in a vest or an apron, the strip of belly left between the flank and the cloth is too thin to read as belly: it takes the flank's stone.
@@ -285,10 +312,17 @@ export function blitMoru(scene, W, drawn, ox, { flip = false, oy = 0, only, pivo
     // into the body, keeping one pixel of ink where it meets the fill, so it turns as part of the Moru.
     { const worn = new Set(pts.filter(q => q[3] && flat.has(at(q[0], q[1])) && flat.get(at(q[0], q[1])) !== INK).map(q => at(q[0], q[1]))), seen = new Set(), parts = [];
       for (const k0 of worn) { if (seen.has(k0)) continue; const part = [k0]; seen.add(k0); for (let i = 0; i < part.length; i++) { const k = part[i]; for (const n of [k - 1, k + 1, k - 2048, k + 2048]) if (!seen.has(n) && worn.has(n)) { seen.add(n); part.push(n); } } parts.push(part); }
-      for (const part of parts) { if (part.length > 260 || part.length < 12) continue; let cx = 0, cy = 0; for (const k of part) { cx += k % 2048 - 512; cy += Math.floor(k / 2048) - 512; } cx /= part.length; cy /= part.length;
+      for (const part of parts) { if (part.length > 260 || part.length < 12) continue;
+        // Its fine detail (the ribs of a wing, the tip of a plate) breaks into specks when turned: a colour holding less than 45% of the piece takes the piece's main colour.
+        { const count = new Map(); for (const k of part) count.set(flat.get(k), (count.get(flat.get(k)) ?? 0) + 1); const main = [...count].sort((a, b) => b[1] - a[1])[0][0]; for (const k of part) if (count.get(flat.get(k)) < part.length * 0.45) flat.set(k, main); }
+        // A very small piece (a back plate) has a base as broad as itself and would be swallowed: it stays where it is.
+        if (part.length < 60) continue;
+        let cx = 0, cy = 0; for (const k of part) { cx += k % 2048 - 512; cy += Math.floor(k / 2048) - 512; } cx /= part.length; cy /= part.length;
         const d = Math.hypot(ax - cx, ay - cy) || 1, mx = Math.round(3 * (ax - cx) / d), my = Math.round(3 * (ay - cy) / d), moved = part.map(k => [k % 2048 - 512 + mx, Math.floor(k / 2048) - 512 + my, flat.get(k)]);
         // Only a piece that sits out on the rim: one whose far side is open air.
         if (!part.some(k => !src.has(at(k % 2048 - 512 - 2 * mx, Math.floor(k / 2048) - 512 - 2 * my)))) continue;
+        // And one that stands out of the silhouette: a piece worn on the skin near the edge (glasses) stays where it is, in its own colours.
+        if (part.filter(k => [[5, 0], [-5, 0], [0, 5], [0, -5]].some(([dx, dy]) => !src.has(k + dy * 2048 + dx))).length < part.length * 0.3) continue;
         for (const k of part) { flat.delete(k); for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) { const n = k + dy * 2048 + dx; if (flat.get(n) === INK) flat.delete(n); } }
         const body = k => flat.has(k) && flat.get(k) !== INK && !worn.has(k);
         const put = moved.filter(([x, y]) => !body(at(x, y))).map(([x, y, c]) => { const k = at(x, y); return [k, [k - 1, k + 1, k - 2048, k + 2048].some(body) ? INK : c]; }); for (const [k, c] of put) flat.set(k, c); } }
@@ -303,11 +337,16 @@ export function blitMoru(scene, W, drawn, ox, { flip = false, oy = 0, only, pivo
     }
     // A lone pixel standing out of an edge, or a lone gap in it, is taken off: the turned outline runs in steps, not specks.
     for (let pass = 0; pass < 2; pass++) for (let y = 1; y < side - 1; y++) for (let x = 1; x < side - 1; x++) { const p = y * side + x, n = [grid[p - 1], grid[p + 1], grid[p - side], grid[p + side]], filled = n.filter(Boolean).length; if (grid[p] && filled <= 1) grid[p] = 0; else if (!grid[p] && filled >= 3) grid[p] = n.find(Boolean); }
+    // The same for colour: a pixel with no neighbour of its own colour (the rib of a wing, the shade of a plate, broken by the turn) takes the colour around it, so a worn piece turns as flat shapes.
+    for (let y = 1; y < side - 1; y++) for (let x = 1; x < side - 1; x++) { const p = y * side + x, c = grid[p]; if (!c) continue; const n = [grid[p - 1], grid[p + 1], grid[p - side], grid[p + side]].filter(Boolean); if (n.length < 3 || n.includes(c)) continue; grid[p] = n.sort((a, b) => n.filter(v => v === b).length - n.filter(v => v === a).length)[0]; }
     const mask = grid.map(c => c ? 1 : 0), near = grown(mask, side, 3), turned = [];
     for (let p = 0; p < side * side; p++) if (grid[p] || near[p]) turned.push([p % side + X0, Math.floor(p / side) + Y0, grid[p] || INK]);
     // The face is not turned as pixels: round eyes and the nose are set down whole where the turn carries them.
     const fwd = Math.cos(angle * Math.PI / 180), fws = Math.sin(angle * Math.PI / 180);
-    const quarter = ((Math.round(angle / 90) % 4) + 4) % 4, spun = sp => { let o = sp; for (let q = 0; q < quarter; q++) { const n = { w: o.h, h: o.w, data: new Uint8Array(o.w * o.h) }; for (let y = 0; y < o.h; y++) for (let x = 0; x < o.w; x++) n.data[x * n.w + (o.h - 1 - y)] = o.data[y * o.w + x]; o = n; } return o; };
+    // A whisker or the mouth is a short bar: it turns by the body's own angle, read back pixel by pixel, so it steps round with the body instead of snapping a quarter turn at a time.
+    const spun = sp => { const r = Math.ceil(Math.hypot(sp.w, sp.h) / 2), n = 2 * r + 1, o = { w: n, h: n, data: new Uint8Array(n * n) };
+      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const dx = x - r, dy = y - r, sx = Math.floor(dx * fwd + dy * fws + sp.w / 2), sy = Math.floor(-dx * fws + dy * fwd + sp.h / 2); if (sx >= 0 && sy >= 0 && sx < sp.w && sy < sp.h) o.data[y * n + x] = sp.data[sy * sp.w + sx]; }
+      return o; };
     for (const m of drawn.faceMarks ?? []) {
       const sp = m.whisker ? spun(flip ? { w: m.s.w, h: m.s.h, data: Uint8Array.from(m.s.data, (_, i) => m.s.data[i - i % m.s.w + m.s.w - 1 - i % m.s.w]) } : m.s) : m.s;
       const mx = tx(m.x + MX) + drawn.pose.x - ax, my = m.y - lift + oy - ay, cx = ax + mx * fwd - my * fws, cy = ay + mx * fws + my * fwd, left = Math.round(cx - sp.w / 2), topY = Math.round(cy - sp.h / 2);
