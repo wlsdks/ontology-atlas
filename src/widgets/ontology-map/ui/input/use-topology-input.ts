@@ -1,6 +1,7 @@
 "use client";
 
-import type { ExpandPreference, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
+import type { MapNavigationSpeed } from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import {
   useCallback,
   useEffect,
@@ -37,8 +38,9 @@ import {
   type DepthParallaxOffset
 } from "../../model/realm/realm-depth-parallax";
 import { type TierRevealConfig } from "../../model/visibility/tier-visibility";
-import type { ClusterBarLabels } from "../../render/cluster-chips";
-import { centerForInsets, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "../camera/topology-camera-math";
+import type { ClusterBarLabels } from "../../render/cluster-chips/control-placement";
+import { centerForInsets } from "../camera/target/safe-insets";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "../camera/target/zoom-range";
 import { createTopologyPointerHandlers } from "./topology-pointer-handlers";
 import type { HoverAvoidRect, NodeDragState, TopologyPointerHandlers } from "./topology-pointer-types";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
@@ -97,7 +99,7 @@ interface Dependencies {
   onContextMenuNode: ((slug: string, position: { x: number; y: number; }) => void) | undefined;
   onContextMenuPane: ((position: { x: number; y: number; }) => void) | undefined;
   onToggleCluster: ((parentId: string) => void) | undefined;
-  onHoverCluster: ((info: { parentId: string; count: number; descendantTotal: number; expanded: boolean; position: { x: number; y: number; }; } | null) => void) | undefined;
+  onHoverCluster: ((cluster: { parentId: string; count: number; descendantTotal: number; expanded: boolean; position: { x: number; y: number; }; } | null) => void) | undefined;
   egoRevealBatchesRef: RefObject<number>;
   clusterRevealBatchesRef: RefObject<Map<string, number>>;
   realmEnterButtonRef: RefObject<HTMLButtonElement | null> | undefined;
@@ -270,15 +272,9 @@ export function useTopologyInput({
     navigationSpeedRef.current = navigationSpeed;
   });
 
-  // A JSX `onWheel` prop
-  // binds to React's delegated listener, which is registered `passive` by
-  // default — calling `preventDefault()` inside it throws "Unable to
-  // preventDefault inside passive event listener invocation" on every wheel
-  // tick and doesn't actually stop the page from scrolling under the canvas.
-  // Attaching the SAME handler natively with `{ passive: false }` fixes both.
-  // `handleWheelRef` always points at the latest closure (refreshed every
-  // render) so the effect below can stay mount-only (`[]`) without going
-  // stale — `handlers` itself isn't memoized, so it isn't a safe effect dep.
+  // A JSX `onWheel` prop binds to React's passive delegated listener, where `preventDefault()` throws on every tick and does not
+  // stop the page scrolling; the SAME handler is attached natively with `{ passive: false }`. `handleWheelRef` always points at the
+  // latest closure so the effect stays mount-only (`handlers` is not memoized, so it is no safe dep).
   const handleWheelRef = useRef(handlers.handleWheel);
 
   // `noteInput` is declared further down; the mount-only listener reaches it
@@ -313,24 +309,20 @@ export function useTopologyInput({
   // targeted. rAF updates the button's position every frame; the target slug is
   // shared through `realmEnterTargetRef`.
   useEffect(() => {
-    const btn = realmEnterButtonRef?.current;
-    if (!btn) return;
+    const button = realmEnterButtonRef?.current;
+    if (!button) return;
     const listener = (e: MouseEvent) => {
       e.stopPropagation();
       const slug = realmEnterTargetRef.current;
       if (slug) onEnterRealmRef.current?.(slug);
     };
-    btn.addEventListener("click", listener);
-    return () => btn.removeEventListener("click", listener);
+    button.addEventListener("click", listener);
+    return () => button.removeEventListener("click", listener);
   }, [onEnterRealmRef, realmEnterButtonRef, realmEnterTargetRef]);
 
   /**
-   * The ambient-sleep wake signal: records when pointer or wheel input arrived.
-   *
-   * It wraps the returned handlers thinly because the input sites are scattered
-   * through `createTopologyPointerHandlers`, and planting the call at each one
-   * means a new handler silently omits it. **There is one boundary** — the
-   * surface this hook hands outward.
+   * The ambient-sleep wake signal: records when pointer or wheel input arrived. It wraps the returned handlers at one boundary,
+   * the surface this hook hands outward, because planting the call at each site in `createTopologyPointerHandlers` lets a new handler omit it.
    */
   const noteInput = useCallback(() => {
     lastInputMsRef.current = performance.now();
@@ -520,17 +512,17 @@ export function useTopologyInput({
      * every step would keep the map sliding. Test and target both use the free area.
      */
     const { width, height } = viewportRef.current;
-    const canvasEl = canvasRef.current;
-    if (width > 0 && height > 0 && canvasEl) {
+    const canvasElement = canvasRef.current;
+    if (width > 0 && height > 0 && canvasElement) {
       const scale = camera.scale.value;
-      const canvasBox = canvasEl.getBoundingClientRect();
+      const canvasBox = canvasElement.getBoundingClientRect();
       const canvasRect: Rect = {
         x: canvasBox.x,
         y: canvasBox.y,
         width: canvasBox.width,
         height: canvasBox.height,
       };
-      const obstacles = collectCanvasObstacles(canvasEl, canvasRect);
+      const obstacles = collectCanvasObstacles(canvasElement, canvasRect);
       const free = computeFreeArea(canvasRect, obstacles);
 
       // Is the focus comfortably inside the free area (compared in document
@@ -545,24 +537,14 @@ export function useTopologyInput({
         sy > free.y + free.height - margin;
       if (outside) {
         /*
-         * The target comes from the camera-math formula (`centerForInsets`).
-         * Writing it out here would make two copies, and with several copies
-         * the default outcome is that one is missed — the focus dive was
-         * exactly that missed copy.
-         *
-         * The free area stays only in the **"has it gone outside" test**:
-         * insets give a push distance but not a containing rectangle, so that
-         * test asks a question the insets cannot express.
+         * The target comes from the camera-math formula (`centerForInsets`); a local copy would be the one that goes missing (the focus dive
+         * was). The free area stays only in the "has it gone outside" test, which needs a containing rectangle that insets cannot express.
          */
-        const centered = centerForInsets(target.x, target.y, { ...measureCanvasInsets(canvasEl, canvasRect), top: 0, bottom: 0 }, scale);
+        const centered = centerForInsets(target.x, target.y, { ...measureCanvasInsets(canvasElement, canvasRect), top: 0, bottom: 0 }, scale);
         const cameraTarget = { tx: centered.tx, ty: centered.ty, tscale: scale };
         /*
-         * ★ **Starting the tween alone is not enough** (the gate caught this).
-         * When the tween ends the spring takes over from `cameraTargetRef`, so
-         * leaving that stale **pulls the camera back to the old target** —
-         * measured: the node ended up 188 px off the free area's centre, sitting
-         * at the screen centre instead. This is why every other programmatic
-         * path (focus dive, chip expand, fit-view) sets both.
+         * Starting the tween alone is not enough: when it ends the spring takes over from `cameraTargetRef`, and a stale one pulls the
+         * camera back to the old target (measured: the node 188 px off the free area's centre). Every programmatic path sets both.
          */
         cameraTargetRef.current = cameraTarget;
         userDrivenCameraRef.current = false;

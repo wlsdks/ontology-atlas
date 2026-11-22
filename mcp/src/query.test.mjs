@@ -11,14 +11,14 @@ const docs = [
 
 let pass = 0;
 let fail = 0;
-function test(name, fn) {
+function test(name, body) {
   try {
-    fn();
+    body();
     pass += 1;
     console.log(`  ✓ ${name}`);
-  } catch (err) {
+  } catch (error) {
     fail += 1;
-    console.error(`  ✗ ${name}: ${err.message}`);
+    console.error(`  ✗ ${name}: ${error.message}`);
   }
 }
 
@@ -130,8 +130,8 @@ test('unclosed paren throws', () => {
   try {
     parseFilter('(kind=domain');
     throw new Error('should have thrown');
-  } catch (err) {
-    if (!err.message.includes('expected `)`')) throw err;
+  } catch (error) {
+    if (!error.message.includes('expected `)`')) throw error;
   }
 });
 
@@ -149,8 +149,8 @@ test('empty filter throws', () => {
   try {
     parseFilter('');
     throw new Error('should have thrown');
-  } catch (err) {
-    if (!err.message.includes('empty')) throw err;
+  } catch (error) {
+    if (!error.message.includes('empty')) throw error;
   }
 });
 
@@ -158,8 +158,8 @@ test('invalid key throws', () => {
   try {
     parseFilter('1bad=value');
     throw new Error('should have thrown');
-  } catch (err) {
-    if (!err.message.includes('invalid key')) throw err;
+  } catch (error) {
+    if (!error.message.includes('invalid key')) throw error;
   }
 });
 
@@ -167,8 +167,8 @@ test('unterminated string throws', () => {
   try {
     parseFilter('title="Auth');
     throw new Error('should have thrown');
-  } catch (err) {
-    if (!err.message.includes('unterminated')) throw err;
+  } catch (error) {
+    if (!error.message.includes('unterminated')) throw error;
   }
 });
 
@@ -176,10 +176,10 @@ test('kind value typo throws with closest-value hint', () => {
   try {
     parseFilter('kind=capabilty');
     throw new Error('should have thrown');
-  } catch (err) {
-    if (!err.message.includes('kind must be one of')) throw err;
-    if (!err.message.includes('Received: "capabilty"')) throw err;
-    if (!err.message.includes('Did you mean "capability"?')) throw err;
+  } catch (error) {
+    if (!error.message.includes('kind must be one of')) throw error;
+    if (!error.message.includes('Received: "capabilty"')) throw error;
+    if (!error.message.includes('Did you mean "capability"?')) throw error;
   }
 });
 
@@ -187,10 +187,10 @@ test('unknown equality key throws with closest-value hint', () => {
   try {
     parseFilter('knd=capability');
     throw new Error('should have thrown');
-  } catch (err) {
-    if (!err.message.includes('key must be one of')) throw err;
-    if (!err.message.includes('Received: "knd"')) throw err;
-    if (!err.message.includes('Did you mean "kind"?')) throw err;
+  } catch (error) {
+    if (!error.message.includes('key must be one of')) throw error;
+    if (!error.message.includes('Received: "knd"')) throw error;
+    if (!error.message.includes('Did you mean "kind"?')) throw error;
   }
 });
 
@@ -198,10 +198,10 @@ test('has key typo throws with closest-value hint', () => {
   try {
     parseFilter('has(capabilties)');
     throw new Error('should have thrown');
-  } catch (err) {
-    if (!err.message.includes('has key must be one of')) throw err;
-    if (!err.message.includes('Received: "capabilties"')) throw err;
-    if (!err.message.includes('Did you mean "capabilities"?')) throw err;
+  } catch (error) {
+    if (!error.message.includes('has key must be one of')) throw error;
+    if (!error.message.includes('Received: "capabilties"')) throw error;
+    if (!error.message.includes('Did you mean "capabilities"?')) throw error;
   }
 });
 

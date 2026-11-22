@@ -114,7 +114,7 @@ describe('tauri secrets bridge', () => {
   });
 
   it('turns a Rust Err(String) rejection into a single user line', () => {
-    // Rust answers with a code now (`src-tauri/src/errors.rs`); the sentence is
+    // Rust answers with a code now (`src-tauri/src/coded_error.rs`); the sentence is
     // chosen here, where the reader's locale is known.
     const lookup = (code: string) =>
       code === 'secret-empty' ? 'Paste the key first.' : undefined;

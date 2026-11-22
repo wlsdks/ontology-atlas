@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import { generatedWikiFolder, writeWikiFolderVault } from '../../../tests/fixtures/wiki-page-cases.mjs';
-import { createVaultDocCache } from '../vault/documents.mjs';
+import { createVaultDocCache } from '../vault/documents/document-cache.mjs';
 import { judgeLoadedWikiPages, wikiFolderBuildCount } from './wiki-judgement.mjs';
 
 /** The generated folder on disk; `tests/contract/library/wiki-page-schema.contract.test.ts` holds its verdicts to the text validators. */

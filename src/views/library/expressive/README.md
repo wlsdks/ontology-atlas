@@ -2,7 +2,7 @@
 
 Self-contained pieces that give the Library a ground. Each is a pure module with its own
 tests: plain data in, plain numbers out, no three.js, no canvas, no React, no DOM, no
-clock. The hosts (`ui/parts/first-run/LibraryConstellation.tsx`,
+clock. The hosts (`ui/first-run/LibraryConstellation.tsx`,
 `ui/parts/first-run/LibrarySynapseField.tsx`) own the frame, the device pixel ratio, the ink and the
 sleep, and each is one call from a start stage in `ui/library-page/`. Delete this folder and those two
 hosts and the Library is back to a flat panel on a black field; copy the folder, the two
@@ -51,8 +51,8 @@ Ink comes from the existing ramps and is read at mount:
 ## Contracts the pieces keep
 
 - **Reduced motion stops them dead.** Neither host registers a loop; each draws one still
-  frame of a deterministic field. Measured in the browser 2026-09-09: **0 rAF callbacks
-  per second** under `prefers-reduced-motion: reduce`, against 120 with it off.
+  frame of a deterministic field: **0 rAF callbacks per second** under
+  `prefers-reduced-motion: reduce`.
 - **They sleep.** Both use `ambientSleepFactor` from the map — full speed until 30s after
   the last input, a 2s deceleration to a complete stop, and any input restores them on the
   next frame. Both release their frame callbacks while asleep, hidden or outside the

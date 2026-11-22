@@ -14,14 +14,14 @@ import { useCodeProjectHandoff } from "../model/use-code-project-handoff";
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
 import { deniedFolderName } from "@/entities/vault-session";
-import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
-import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
+import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { useToast } from "@/shared/ui/toast/toast";
 import { controlClass } from '@/shared/ui/control-class';
 import { FirstRunFolderActions } from "./FirstRunFolderActions";
 import { Chip } from '@/shared/ui/controls/controls';
 import { Button, Dialog, IconButton } from '@/shared/ui';
-import { BrandPortrait } from '@/shared/ui/marks/brand-portrait';
+import { BrandPortrait } from '@/shared/ui/marks/moru/brand-portrait';
 import styles from './first-run-chooser.module.css';
 
 /**
@@ -34,12 +34,10 @@ export function FirstRunPage() {
   const moru = useTranslations('moru');
   const t = useTranslations("firstRun");
   const tBriefing = useTranslations("gitBriefing");
-  // Shared with the `/docs` chooser.
   const tSwitch = useTranslations("vaultSwitch");
   const toast = useToast();
   const vault = useLocalVault();
   const failureSentence = useFailureSentence();
-  // Both creation paths seed a starter in the screen's language.
   const locale = useLocale();
   /* After a folder opens this screen is already gone, so later words go through a toast. */
   const showToast = toast.show;
@@ -79,7 +77,6 @@ export function FirstRunPage() {
     setActionError(null);
     await vault.open();
   }, [vault, setActionError]);
-  /* The folder-shape question is asked once, at creation, and answered as files. */
   const createTrigger = useRef<HTMLButtonElement>(null);
   const shapePanel = useRef<HTMLDivElement>(null);
   const previousChoice = useRef<string | null>(null);
@@ -104,7 +101,6 @@ export function FirstRunPage() {
    * the data-failure-detail attribute.
    */
   const failure: FailureCopy | null =
-    /* Before a project is chosen there is no dialog to say it in. */
     codeProject.location === null && codeProject.errorText !== null
       ? failureSentence(codeProject.errorText, t("codeFailed"))
       : justStartError !== null
@@ -191,7 +187,6 @@ export function FirstRunPage() {
             {!choosingFolderHome ? <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
               {choosingFolder ? tSwitch("choose.eyebrow") : t("eyebrow")}
             </p> : null}
-            {/* Centred with the other lines when the screen is centred. */}
             <div className={`${styles.titleRow} flex items-center gap-3 ${choosingFolderHome ? "justify-start" : "justify-center"}`}><h1 className={`${styles.title} min-w-0 break-keep font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] ${choosingFolderHome ? "text-hero" : "text-display"}`}>
               {choosingFor ? t("shapeEyebrow") : choosingFolder ? tSwitch("choose.title") : t("title")}
             </h1>{choosingFolderHome ? <div className={styles.help}><IconButton label={tSwitch('choose.helpLabel')} size="lg" className="atlas-touch-floor atlas-touch-floor-wide" onClick={()=>setChooserHelpOpen(true)}><CircleHelp size={ICON_SIZE.md} aria-hidden /></IconButton></div> : null}</div>
@@ -255,7 +250,6 @@ export function FirstRunPage() {
           </div>
         ) : (
           <>
-            {/* Known folders lead as the launch chooser's answer; named by their visible caption. */}
             {knownFolders.length > 0 ? (
               <section className={choosingFolderHome ? `${styles.listRegion} grid min-h-0 shrink grid-rows-[auto_minmax(0,1fr)_auto] gap-2` : styles.startRecents} aria-labelledby="known-folders-heading">
                 <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
@@ -280,7 +274,6 @@ export function FirstRunPage() {
                   onForget={(record) => void vault.forgetRecent(record)}
                   onForgetAll={(records) => void vault.forgetRecent(records)}
                   onLocate={() => void handleOpen()}
-                  /* Under the list it acts on, arriving with it. */
                   footnote={choosingFolder ? (
                     <p className={`${styles.release} px-1 text-label text-[color:var(--color-text-tertiary)]`}>
                       {tSwitch("choose.releaseValve")}

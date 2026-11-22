@@ -27,8 +27,8 @@ fn private(file: &File, directory: bool) -> Result<(), String> {
 }
 impl Store {
     pub(super) fn open(root: &Path) -> Result<Self, String> {
-        let root = crate::agent_setup::open_absolute_directory_no_follow(root)?;
-        let directory = crate::agent_setup::open_or_create_relative_directory(
+        let root = crate::confined_files::open_absolute_directory_no_follow(root)?;
+        let directory = crate::confined_files::open_or_create_relative_directory(
             &root,
             Path::new("public-pr-copies"),
             0o700,
@@ -188,7 +188,7 @@ impl Store {
         if bytes.len() > STORE_BYTES {
             return Err("unavailable".into());
         }
-        crate::agent_setup::write_entry_atomically_with_guard(
+        crate::confined_files::write_entry_atomically_with_guard(
             &self.directory,
             c"copies.json",
             0o600,

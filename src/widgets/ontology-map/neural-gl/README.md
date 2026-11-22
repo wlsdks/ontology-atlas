@@ -1,7 +1,7 @@
 # Neural's WebGL painter
 
 Neural (the map's 3D view, arrangement `coupling`) is described once per drawn
-frame by a `NeuralFrame` (`ui/frame-draw/neural-frame.ts`). This folder paints
+frame by a `NeuralFrame` (`ui/frame-draw/neural/neural-frame.ts`). This folder paints
 that frame with three.js on a canvas beside the map canvas. Picking, turning,
 the map probe and the names stay where they are; the painter only draws the
 frame's screen coordinates, so a click selects the painted cell.

@@ -1,2 +1,2 @@
-export type { Status } from './types';
-export { DEFAULT_STATUSES } from './defaults';
+export type { Status } from './status';
+export { DEFAULT_STATUSES } from './default-statuses';

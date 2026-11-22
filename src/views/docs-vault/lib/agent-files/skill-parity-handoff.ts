@@ -1,11 +1,9 @@
 import type { SkillParityRow } from './skill-parity';
 
 /**
- * A sentence handing diverged copies to an agent, not a shell command: the CLI's location on
- * this machine is unknown (`.claude/rules/surfaces.md` forbids dead guidance), and which copy is
- * newer takes reading, so the agent fixes and no automatic merge runs. It names each diverged
- * skill, with absolute paths, because the receiving session's cwd may be another folder and a
- * relative path could edit a different file with the same name.
+ * A sentence, not a shell command: the CLI's location is unknown (`.claude/rules/surfaces.md`),
+ * and which copy is newer takes reading. Paths are absolute because the receiving session's cwd
+ * may be another folder.
  */
 export function buildSkillParityHandoff(
   rows: SkillParityRow[],

@@ -10,7 +10,7 @@ vi.mock('@/views/library', () => ({
 vi.mock('@/entities/vault-session', () => ({ useLocalVault: () => ({ status: 'loaded', handle: null, manifest: { docs: [] } }) }));
 vi.mock('@/entities/docs-vault', () => ({ selectWikiPages: () => [] }));
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
-vi.mock('@/shared/lib/preferences/appearance-preferences', () => ({ useLibraryIndexSegment: () => 'wiki', writeLibraryIndexSegment: vi.fn() }));
+vi.mock('@/shared/lib/preferences/library-preferences', () => ({ useLibraryIndexSegment: () => 'wiki', writeLibraryIndexSegment: vi.fn() }));
 vi.mock('@/shared/lib/vault-folder/select-open-vault-handle', () => ({ selectOpenVaultHandle: () => null }));
 vi.mock('@/shared/ui', () => ({
   PageHeaderBar: ({ tabs, actions }: { tabs: React.ReactNode; actions: React.ReactNode }) => <div data-page-header-row style={{ padding: 0, columnGap: 0 }}><div>{tabs}</div>{actions}</div>,

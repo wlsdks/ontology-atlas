@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { KNOWLEDGE_EDGE_TYPES, type KnowledgeEdgeType } from './types';
+import { KNOWLEDGE_EDGE_TYPES, type KnowledgeEdgeType } from './knowledge-graph';
 
 /**
  * The one dictionary every surface reads relation wording from, in two registers: `formal` nouns

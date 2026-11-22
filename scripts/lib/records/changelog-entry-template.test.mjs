@@ -76,37 +76,37 @@ describe('changelog entry template', () => {
     assert.equal(parseChangelog(crlf)[0].title, parseChangelog(`# CHANGELOG\n\n${GOOD}`)[0].title);
     assert.deepEqual(checkEntryTemplate(parseChangelog(crlf)[0]), []);
 
-    const dir = mkdtempSync(join(tmpdir(), 'changelog-crlf-'));
+    const directory = mkdtempSync(join(tmpdir(), 'changelog-crlf-'));
     const io = { logs: [], errors: [], log(l) { this.logs.push(l); }, error(l) { this.errors.push(l); } };
     try {
-      mkdirSync(join(dir, 'docs'));
-      writeFileSync(join(dir, 'docs', 'CHANGELOG.md'), crlf);
-      assert.equal(runChangelogCheck([], io, { cwd: dir }), 0);
+      mkdirSync(join(directory, 'docs'));
+      writeFileSync(join(directory, 'docs', 'CHANGELOG.md'), crlf);
+      assert.equal(runChangelogCheck([], io, { cwd: directory }), 0);
       assert.match(io.logs.join('\n'), /1 frozen entries/);
       // A ledger the parse lost looks exactly like a clean one without this floor.
-      writeFileSync(join(dir, 'docs', 'CHANGELOG.md'), '# CHANGELOG\n\nno dated entry here\n');
-      assert.equal(runChangelogCheck([], io, { cwd: dir }), 2);
+      writeFileSync(join(directory, 'docs', 'CHANGELOG.md'), '# CHANGELOG\n\nno dated entry here\n');
+      assert.equal(runChangelogCheck([], io, { cwd: directory }), 2);
       assert.match(io.errors.join('\n'), /parsed 0 entries/);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 
   it('the gate passes a conforming file and names the broken entry in a failing one', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'changelog-check-'));
+    const directory = mkdtempSync(join(tmpdir(), 'changelog-check-'));
     const io = { logs: [], errors: [], log(l) { this.logs.push(l); }, error(l) { this.errors.push(l); } };
     try {
-      mkdirSync(join(dir, 'docs'));
-      writeFileSync(join(dir, 'docs', 'CHANGELOG.md'), `# CHANGELOG\n\n${GOOD}`);
-      assert.equal(runChangelogCheck([], io, { cwd: dir }), 0);
+      mkdirSync(join(directory, 'docs'));
+      writeFileSync(join(directory, 'docs', 'CHANGELOG.md'), `# CHANGELOG\n\n${GOOD}`);
+      assert.equal(runChangelogCheck([], io, { cwd: directory }), 0);
       assert.match(io.logs.join('\n'), /1 frozen entries \+ 0 change facts \+ 0 release markers fit their templates/);
-      writeFileSync(join(dir, 'docs', 'CHANGELOG.md'), `# CHANGELOG\n\n${GOOD}\n## 2026-09-04 · Unreleased: late\n\n- an old-shape bullet\n`);
-      assert.equal(runChangelogCheck([], io, { cwd: dir }), 1);
+      writeFileSync(join(directory, 'docs', 'CHANGELOG.md'), `# CHANGELOG\n\n${GOOD}\n## 2026-09-04 · Unreleased: late\n\n- an old-shape bullet\n`);
+      assert.equal(runChangelogCheck([], io, { cwd: directory }), 1);
       assert.match(io.errors.join('\n'), /belongs at the top/);
       assert.match(io.errors.join('\n'), /line outside the template/);
-      assert.equal(runChangelogCheck(['--template'], io, { cwd: dir }), 0);
+      assert.equal(runChangelogCheck(['--template'], io, { cwd: directory }), 0);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 });

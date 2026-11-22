@@ -1,6 +1,9 @@
-import type { DialWorld } from '../../dial/types';
+import type { DialWorld } from '../../dial/dial-shapes';
 import type { PanelInsets } from "../../interaction/free-area";
-import type { CanvasBackground, ExpandPreference, FootprintPreference, MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
+import type { CanvasBackground } from "@/shared/lib/preferences/canvas-appearance-preferences";
+import type { ExpandPreference } from "@/shared/lib/preferences/expand-preferences";
+import type { FootprintPreference } from "@/shared/lib/preferences/footprint-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import type { FootprintInk } from "@/shared/lib/map-canvas/footprint-glyph";
 import {
   type RefObject
@@ -11,9 +14,9 @@ import type { ClusterChip } from "../../model/layout/density-gate";
 import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
 import { domeRingAlphaFor } from "../../model/dome-view/ink";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
-import type { DomeViewKind } from "../../model/dome-view/types";
+import type { DomeViewKind } from "../../model/dome-view/dome-shapes";
 import { stepFocusRamp } from "../../model/visibility/focus-state";
-import { fadeStrataLodOut, restStrataLod, stepStrataLod, type StrataLodState } from "../../model/dome-view/strata-lod";
+import { fadeStrataLodOut, restStrataLod, stepStrataLod, type StrataLodState } from "../../model/dome-view/strata/strata-lod";
 import { hexToRgb, parseRgbTriple, type DomeLightFrame, type EvidenceLight, type Rgb } from "../../render/dome-view/dome-light";
 import {
   buildFootprintSteps,
@@ -27,17 +30,17 @@ import {
   type DepthParallaxOffset
 } from "../../model/realm/realm-depth-parallax";
 import { stepSpotlightPhase } from "../../model/ambient/spotlight-motion";
-import { placeTierNames, sameTierNames, type TierNameAnchor, type TierPlane } from "../../model/dome-view/tier-names";
+import { placeTierNames, sameTierNames, type TierNameAnchor, type TierPlane } from "../../model/dome-view/strata/tier-names";
 import { type TierRevealConfig } from "../../model/visibility/tier-visibility";
 import { type AnimatedBackground } from "../../render/animated-background";
-import type { ClusterBarLabels } from "../../render/cluster-chips";
+import type { ClusterBarLabels } from "../../render/cluster-chips/control-placement";
 import type { Pulse } from "../../render/edge-fireflies";
 import type { DustPoint } from "../../render/starfield";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { OntologyMapProps } from "../OntologyMap";
 import { worldToScreen } from "../camera/topology-camera-math";
-import type { NeuralLabels } from "../frame-draw/paint-neural";
-import type { NeuralSurface } from "../frame-draw/neural-frame";
+import type { NeuralLabels } from "../frame-draw/neural/paint-neural";
+import type { NeuralSurface } from "../frame-draw/neural/neural-frame";
 import { drawTopologyFrame, lastDrawnNodeCount, lastHiddenDependencies } from "../frame-draw/topology-frame-draw";
 import { reportFlatDial, type FlatDialFrameProps } from "../loop/topology-loop-contract";
 import { dialFrameSummary } from "../../dial/frame/frame";
@@ -62,7 +65,7 @@ interface Dependencies {
   clusteredIdsRef: RefObject<ReadonlySet<string>>;
   realmTierKindsRef: RefObject<ReadonlyMap<string, "capability" | "domain" | "element" | "project"> | null>;
   visitedTrailRef: RefObject<readonly string[]>;
-  footprintTrailLenRef: RefObject<number>;
+  footprintTrailLengthRef: RefObject<number>;
   footprintAppearAtRef: RefObject<number>;
   reducedMotionRef: RefObject<boolean>;
   spotlightRampRef: RefObject<number>;
@@ -144,7 +147,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
   clusteredIdsRef,
   realmTierKindsRef,
   visitedTrailRef,
-  footprintTrailLenRef,
+  footprintTrailLengthRef,
   footprintAppearAtRef,
   reducedMotionRef,
   spotlightRampRef,
@@ -294,11 +297,11 @@ export function createPresentationFrameStage({ domeRuntimeRef,
         const footprintStepsById = buildFootprintSteps(visitedTrailRef.current);
         // A longer trail stamps the arrival motion's start time; a shorter one
         // (cleared) drops the ramp.
-        const trailLen = visitedTrailRef.current.length;
-        if (trailLen > footprintTrailLenRef.current)
+        const trailLength = visitedTrailRef.current.length;
+        if (trailLength > footprintTrailLengthRef.current)
             footprintAppearAtRef.current = now;
-        footprintTrailLenRef.current = trailLen;
-        const footprintNewestId = trailLen > 0 ? visitedTrailRef.current[trailLen - 1] : null;
+        footprintTrailLengthRef.current = trailLength;
+        const footprintNewestId = trailLength > 0 ? visitedTrailRef.current[trailLength - 1] : null;
         // Same step as the movement ramp (`--motion-base`, 180 ms): a surface
         // taking its place.
         const footprintAppear = reducedMotionRef.current
@@ -493,7 +496,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
             clusterBarLabels: getClusterBarLabels(),
             domeRingAlpha: domeRingAlphaFor(mapArrangementRef.current),
             domeTierRaisedKind: domeTierRaisedKindRef.current,
-            // Concept names give way to the tier names placed last frame (`model/dome-view/tier-names.ts`).
+            // Concept names give way to the tier names placed last frame (`model/dome-view/strata/tier-names.ts`).
             tierNameBoxes: domeTierAnchorsSentRef.current,
             dial: flatDialRef.current,
         });
@@ -515,11 +518,8 @@ export function createPresentationFrameStage({ domeRuntimeRef,
             onHiddenDependenciesChangeRef.current?.(hiddenDependencies);
         }
         /*
-         * **Where each Strata tier name stands this frame** (`model/dome-view/tier-names.ts`). The
-         * planes are the rings the frame just drew, not the model: during an orbit or a
-         * morph the two are different numbers. The room is the fit's own free box — the
-         * canvas minus the chrome it measured on each side — so a name never lands where
-         * the drawing was kept from.
+         * Where each Strata tier name stands this frame (`tier-names.ts`). The planes are the rings the frame just drew, not the
+         * model (they differ during an orbit or morph); the room is the fit's free box, the canvas minus the measured chrome.
          */
         {
             const runtime = domeRuntimeRef.current;

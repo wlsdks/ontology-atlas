@@ -22,7 +22,7 @@ import type {
   GlyphMark,
   Point,
   TextMark,
-} from "../types";
+} from "../dial-shapes";
 
 import { buildBranchMarks, type BranchBlock, type BranchStem } from "../branches/marks";
 
@@ -552,16 +552,16 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
         const half = clamp(it.elementPitch * s * ELEMENT_HALF_SHARE, ELEMENT_HALF_PX[0], ELEMENT_HALF_PX[1]);
         const fillI = ink(mixOver(map.nodeFillElement, inks.bg, step));
         const rimI = ink(mixOver(inks.element, inks.bg, step));
-        for (const el of it.elementIds) {
-          const p = scene.positions.get(el);
+        for (const elementId of it.elementIds) {
+          const p = scene.positions.get(elementId);
           if (!p) continue;
-          const sp = input.nodeScreen(el) ?? input.toScreen(p.x, p.y);
+          const sp = input.nodeScreen(elementId) ?? input.toScreen(p.x, p.y);
           if (!visible(sp, half, ELEMENT_CULL_PX)) continue;
-          out.squares.push({ id: el, x: sp.x, y: sp.y, half, fill: fillI, rim: rimI });
+          out.squares.push({ id: elementId, x: sp.x, y: sp.y, half, fill: fillI, rim: rimI });
           elementSquares += 1;
-          alphas.set(el, step > DRAWN_ALPHA ? 1 : 0);
+          alphas.set(elementId, step > DRAWN_ALPHA ? 1 : 0);
           if (step > DRAWN_ALPHA) {
-            picks.push({ id: el, x: sp.x, y: sp.y, r: half + 1 });
+            picks.push({ id: elementId, x: sp.x, y: sp.y, r: half + 1 });
             drawnElements += 1;
           }
         }

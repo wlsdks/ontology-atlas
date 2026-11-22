@@ -4,7 +4,7 @@ import "../../atlas-map-probe";
 import { seedFirstRunSeen } from "../../first-run-seed";
 import { useDogfoodSample } from "../../sample-source";
 import { waitForMapSettled, waitForMapStill } from "../../settle";
-import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
+import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 import { HIT_TOUCH_SLACK_PX } from "../../../../src/widgets/ontology-map/ui/camera/topology-camera-math";
 
 const VIEWPORT = { width: 1920, height: 1080 };

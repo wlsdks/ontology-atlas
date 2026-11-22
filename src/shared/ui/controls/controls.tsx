@@ -28,7 +28,6 @@ type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'ty
   hoverInk?: ControlHoverInk;
   hoverSurface?: ControlHoverSurface;
   hoverBorder?: ControlHoverBorder;
-  /** Only what is true of this one site (placement, width, order). */
   className?: string;
 };
 
@@ -91,7 +90,6 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
 );
 IconButton.displayName = 'IconButton';
 
-/** A pressable list row as a real `<button>`, reachable by keyboard and announced. */
 export const RowButton = forwardRef<HTMLButtonElement, BaseProps>(
   ({ size, tone, active, hoverInk, hoverSurface, hoverBorder, className, ...rest }, ref) => (
     <button

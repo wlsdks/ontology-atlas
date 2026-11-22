@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
-import { RACY_WINDOW_MS } from '../vault/documents.mjs';
+import { RACY_WINDOW_MS } from '../vault/documents/document-cache.mjs';
 
 /** The server entry, by path: a module URL here would make the dead-code check follow it. */
 const SERVER = join(dirname(fileURLToPath(import.meta.url)), '..', 'index.js');
@@ -172,7 +172,7 @@ test('write-side maintenance and project-source tools read each vault document o
         .map(([key, value]) => `${key}: ${JSON.stringify(value)}`), '---', 'Recorded meaning.',
       ].join('\n'));
     }
-    const maintenanceModule = new URL('./maintenance.mjs', import.meta.url).href;
+    const maintenanceModule = new URL('./result-attachments.mjs', import.meta.url).href;
     const projectSourceModule = new URL('./project-source.mjs', import.meta.url).href;
     const script = `
       import fs from 'node:fs';

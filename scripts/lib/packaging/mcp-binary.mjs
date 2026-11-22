@@ -1,23 +1,15 @@
 /**
- * The name, path, and compile-argument contract for the bundled MCP binary.
- *
- * The app **carries the MCP server inside its own bundle** — a user must be able to
- * attach an agent with no node, no npx, and no source checkout. Tauri's `externalBin`
- * looks for a `<name>-<rust-target-triple>` file and bakes it to
- * `Contents/MacOS/<name>`. That name contract is defined here and nowhere else.
- *
- * Why `Contents/MacOS`: Apple requires executables to live in the executable
- * directory rather than `Contents/Resources` (an executable inside Resources is
- * flagged during notarisation). `externalBin` writes to that location.
+ * The name, path and compile-argument contract for the bundled MCP binary. The app carries the MCP
+ * server inside its bundle so a user attaches an agent with no node, npx or source checkout; Tauri's
+ * `externalBin` bakes a `<name>-<rust-target-triple>` file to `Contents/MacOS/<name>`, because Apple
+ * flags an executable inside Resources during notarisation. The name contract is defined here only.
  */
 
-/** The binary name used inside the bundle and in config files. */
 export const MCP_BINARY_NAME = 'ontology-atlas-mcp';
 
 /** Where compile output lands (gitignored — build output). */
 export const MCP_BINARY_OUTPUT_DIR = 'src-tauri/binaries';
 
-/** The MCP server entry — the compile input. */
 export const MCP_SERVER_ENTRY = 'mcp/src/index.js';
 
 /** CI installs bun from this file too; the sidecar embeds that runtime. */

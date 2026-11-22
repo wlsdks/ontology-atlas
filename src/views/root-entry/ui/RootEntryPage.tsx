@@ -34,9 +34,6 @@ const GatewayLandingPage = lazy(
 );
 
 /**
- * A chosen or restored vault goes straight to the map; the installed app without one gets
- * `FirstRunPage`; the web gets the gateway by the same rule as the shell's `isGatewaySurface`.
- *
  * The map, first-run and the whole catalog are fetched only once a folder is on its way or this is
  * the app (`root-workbench.ts`). Until they arrive the screen already showing stays: the gateway on
  * the web, the neutral frame in the app, and the shell keeps its rail hidden on the same signal.
@@ -54,7 +51,6 @@ export function RootEntryPage() {
   );
   const desktop = clientReady && isDesktopShell();
   const vaultOpen = Boolean(vault.manifest || vault.partialTotal);
-  /* A remembered folder being restored, one being opened, or the chooser: the map is likely next. */
   const workbenchLikely =
     desktop ||
     vaultOpen ||
@@ -74,7 +70,6 @@ export function RootEntryPage() {
     // With the catalog here the shell already shows the rail, so the gateway would flash beside it.
     if (catalogReady) return <RouteLoadingFallback />;
   }
-  /* A person choosing between their folders gets the chooser, not the web gateway. */
   else if (desktop || vault.awaitingVaultChoice) {
     // A neutral frame until the restore is attempted, or FirstRun flashes.
     return vault.restoreAttempted && views ? <views.FirstRunPage /> : <DesktopVaultRedirect />;
@@ -101,7 +96,6 @@ export function RootEntryPage() {
   );
 }
 
-/** Names the folder when known; a neutral tone, since the person did nothing wrong. */
 function LostVaultNotice({
   folderName,
   missing,

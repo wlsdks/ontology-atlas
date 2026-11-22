@@ -22,13 +22,13 @@ function run(args, options = {}) {
  * No git needed: `--changed-files` takes a file list directly.
  */
 function makeVaultFixture() {
-  const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-freshness-args-"));
-  mkdirSync(join(dir, "docs/ontology/capabilities"), { recursive: true });
+  const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-freshness-args-"));
+  mkdirSync(join(directory, "docs/ontology/capabilities"), { recursive: true });
   writeFileSync(
-    join(dir, "docs/ontology/capabilities/auth.md"),
+    join(directory, "docs/ontology/capabilities/auth.md"),
     "---\nslug: capabilities/auth\nkind: capability\ntitle: Auth\nelements: [src/features/auth/]\n---\n\n# Auth\n",
   );
-  return dir;
+  return directory;
 }
 
 describe("vault-freshness-drift script arguments", () => {
@@ -53,9 +53,9 @@ describe("vault-freshness-drift script arguments", () => {
 
   // Asserts against a fixture, not the live vault, so adding a node there cannot flip the result.
   it("--changed-files dry-run mode reports 0 drift with no vault matches", () => {
-    const dir = makeVaultFixture();
+    const directory = makeVaultFixture();
     try {
-      const result = run(["--changed-files", "README.md", "--repo", dir, "--json"], {
+      const result = run(["--changed-files", "README.md", "--repo", directory, "--json"], {
         cwd: ROOT,
       });
       assert.equal(result.status, 0, result.stderr);
@@ -63,15 +63,15 @@ describe("vault-freshness-drift script arguments", () => {
       assert.equal(payload.hasDrift, false);
       assert.equal(payload.commentMarkdown, null);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 
   it("flags the files it should on the same fixture, so the detector does not always report 0", () => {
-    const dir = makeVaultFixture();
+    const directory = makeVaultFixture();
     try {
       const result = run(
-        ["--changed-files", "src/features/auth/token.ts", "--repo", dir, "--json"],
+        ["--changed-files", "src/features/auth/token.ts", "--repo", directory, "--json"],
         { cwd: ROOT },
       );
       assert.equal(result.status, 0, result.stderr);
@@ -82,7 +82,7 @@ describe("vault-freshness-drift script arguments", () => {
         ["capabilities/auth"],
       );
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 
@@ -106,31 +106,31 @@ describe("vault-freshness-drift script arguments", () => {
 
 describe("vault-freshness-drift end-to-end (real git repo + vault fixture)", () => {
   it("flags a capability whose source changed without its .md, then clears after the .md is also staged", () => {
-    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-freshness-e2e-"));
+    const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-freshness-e2e-"));
     try {
-      const git = (args) => execFileSync("git", args, { cwd: dir, encoding: "utf8" });
+      const git = (args) => execFileSync("git", args, { cwd: directory, encoding: "utf8" });
       git(["init", "-q"]);
       git(["config", "user.email", "test@example.com"]);
       git(["config", "user.name", "Test"]);
 
-      mkdirSync(join(dir, "docs/ontology/capabilities"), { recursive: true });
-      mkdirSync(join(dir, "src/features/auth"), { recursive: true });
+      mkdirSync(join(directory, "docs/ontology/capabilities"), { recursive: true });
+      mkdirSync(join(directory, "src/features/auth"), { recursive: true });
       writeFileSync(
-        join(dir, "docs/ontology/capabilities/auth.md"),
+        join(directory, "docs/ontology/capabilities/auth.md"),
         "---\nslug: capabilities/auth\nkind: capability\ntitle: Auth\nelements: [src/features/auth/]\n---\n\n# Auth\n",
       );
-      writeFileSync(join(dir, "src/features/auth/token.ts"), "export const token = 1;\n");
+      writeFileSync(join(directory, "src/features/auth/token.ts"), "export const token = 1;\n");
       git(["add", "."]);
       git(["commit", "-q", "-m", "base"]);
       const base = git(["rev-parse", "HEAD"]).trim();
 
       // Change the source file only — the vault .md is untouched.
-      writeFileSync(join(dir, "src/features/auth/token.ts"), "export const token = 2;\n");
+      writeFileSync(join(directory, "src/features/auth/token.ts"), "export const token = 2;\n");
       git(["add", "."]);
       git(["commit", "-q", "-m", "change token only"]);
       const headDriftOnly = git(["rev-parse", "HEAD"]).trim();
 
-      const drifted = run(["--base", base, "--head", headDriftOnly, "--json"], { cwd: dir });
+      const drifted = run(["--base", base, "--head", headDriftOnly, "--json"], { cwd: directory });
       assert.equal(drifted.status, 0, drifted.stderr);
       const driftedPayload = JSON.parse(drifted.stdout);
       assert.equal(driftedPayload.hasDrift, true);
@@ -139,20 +139,20 @@ describe("vault-freshness-drift end-to-end (real git repo + vault fixture)", () 
       assert.match(driftedPayload.commentMarkdown, /capabilities\/auth/);
 
       writeFileSync(
-        join(dir, "docs/ontology/capabilities/auth.md"),
+        join(directory, "docs/ontology/capabilities/auth.md"),
         "---\nslug: capabilities/auth\nkind: capability\ntitle: Auth\nelements: [src/features/auth/]\n---\n\n# Auth\n\nUpdated.\n",
       );
       git(["add", "."]);
       git(["commit", "-q", "-m", "update token + vault doc"]);
       const headBothUpdated = git(["rev-parse", "HEAD"]).trim();
 
-      const fresh = run(["--base", base, "--head", headBothUpdated, "--json"], { cwd: dir });
+      const fresh = run(["--base", base, "--head", headBothUpdated, "--json"], { cwd: directory });
       assert.equal(fresh.status, 0, fresh.stderr);
       const freshPayload = JSON.parse(fresh.stdout);
       assert.equal(freshPayload.hasDrift, false);
       assert.equal(freshPayload.commentMarkdown, null);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 });

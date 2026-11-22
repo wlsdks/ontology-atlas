@@ -12,13 +12,9 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
-import {
-  getSavedConstellation,
-  listSavedConstellations,
-  loadLibraryCollections,
-  parseLibraryCollections,
-} from './constellations.mjs';
-import { loadVaultDocs } from '../vault/documents.mjs';
+import { getSavedConstellation, listSavedConstellations } from './constellations.mjs';
+import { parseLibraryCollections, readLibraryCollections } from './library-collections.mjs';
+import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
 import { runJsonRpcProcess } from '../../../scripts/lib/mcp-test-rpc.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -240,14 +236,14 @@ describe('saved constellation reads', () => {
       assert.equal(readFileSync(path, 'utf8'), '{oops');
 
       writeFileSync(path, '{"schema":"ontology-atlas/library-collections/v2"}', 'utf8');
-      assert.equal(loadLibraryCollections(vault).source.status, 'unsupported');
+      assert.equal(readLibraryCollections(vault).source.status, 'unsupported');
 
       rmSync(join(vault, '.ontology-atlas'), { recursive: true, force: true });
       const outside = mkdtempSync(join(tmpdir(), 'ontology-atlas-constellations-outside-'));
       mkdirSync(join(outside, '.ontology-atlas'));
       writeFileSync(join(outside, '.ontology-atlas/library-collections.json'), FIXTURE_RAW, 'utf8');
       symlinkSync(join(outside, '.ontology-atlas'), join(vault, '.ontology-atlas'), 'dir');
-      assert.equal(loadLibraryCollections(vault).source.availability, 'unavailable');
+      assert.equal(readLibraryCollections(vault).source.availability, 'unavailable');
       rmSync(outside, { recursive: true, force: true });
     } finally {
       rmSync(vault, { recursive: true, force: true });

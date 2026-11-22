@@ -4,7 +4,6 @@
  * bulk ingestion, snapshots and omnibus queries are deliberately not handed out.
  */
 
-/** The JSON Schema subset we use. Per-vendor conversion belongs to the adapter. */
 export interface AgentJsonSchema {
   type: 'object' | 'array' | 'string' | 'integer' | 'number' | 'boolean';
   description?: string;
@@ -120,7 +119,6 @@ const RELATION_SPEC_SCHEMA: AgentJsonSchema = {
   additionalProperties: false,
 };
 
-/** The ten read tools. */
 export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
   {
     name: 'get_concept',
@@ -358,7 +356,6 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
   },
 ];
 
-/** The five additive write tools; never executed, only turned into proposal cards. */
 export const AGENT_WRITE_TOOLS: readonly AgentToolDefinition[] = [
   {
     name: 'add_concept',

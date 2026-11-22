@@ -1,9 +1,12 @@
+pub(crate) mod npx_cache;
+pub(crate) mod runtime_environment;
+
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
-use super::command_lookup::{candidate_bin_dirs, resolve_command, FsProbe};
+use super::detection::command_lookup::{candidate_bin_dirs, resolve_command, FsProbe};
 use super::registry::{registry_agent, RegistryLaunch};
-use super::runtime_environment::npx_hardening_flags;
+use runtime_environment::npx_hardening_flags;
 
 /// Returns a reason code when it cannot launch.
 pub(crate) fn resolve_launch(

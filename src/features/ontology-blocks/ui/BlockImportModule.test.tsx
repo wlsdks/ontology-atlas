@@ -20,12 +20,13 @@ const UIDS = {
   blockSession: '33333333-3333-4333-8333-333333333333',
 };
 
-vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
+vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-provider/LocalVaultProvider')>()),
   useLocalVault: () => mocks.vault,
 }));
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => tauriMocks);
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => tauriMocks);
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => tauriMocks);
 
 vi.mock('next-intl', () => ({
   useLocale: () => 'en',

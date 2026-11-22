@@ -38,7 +38,6 @@ export function axialToUnit(q: number, r: number): { x: number; y: number } {
   return { x: 1.5 * q, y: SQRT3 * (r + q / 2) };
 }
 
-/** Cube rounding. */
 export function axialRound(q: number, r: number): [number, number] {
   const x = q;
   const z = r;

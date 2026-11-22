@@ -11,7 +11,7 @@ export function useCheckDoor() {
   const router = useRouter();
   return (kind: WorkRunDoor) => {
     workRuns.openDoor(kind);
-    navigateWithViewTransition(() => router.push(DESTINATION_HREF.library));
+    navigateWithViewTransition(DESTINATION_HREF.library, () => router.push(DESTINATION_HREF.library));
   };
 }
 
@@ -20,7 +20,7 @@ export function useTurnDoor() {
   const router = useRouter();
   return (door: TurnDoor) => {
     workRuns.openTurnDoor(door);
-    navigateWithViewTransition(() => router.push(DESTINATION_HREF.library));
+    navigateWithViewTransition(DESTINATION_HREF.library, () => router.push(DESTINATION_HREF.library));
   };
 }
 
@@ -33,7 +33,8 @@ export function useOpenScheduledRun() {
   const router = useRouter();
   return (run: ScheduledRun) => {
     workRuns.closeRun(`scheduled:${run.id}`);
-    navigateWithViewTransition(() => router.push(scheduledRunHref(run)));
+    const href = scheduledRunHref(run);
+    navigateWithViewTransition(href, () => router.push(href));
   };
 }
 

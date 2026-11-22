@@ -1,12 +1,14 @@
+mod credential_mirror;
+
 use std::path::{Path, PathBuf};
 
 #[cfg(target_os = "macos")]
 use super::bounded_command::KEYCHAIN_PROBE_TIMEOUT;
 use super::bounded_command::{bounded_output, LOGIN_PROBE_TIMEOUT};
-#[cfg(target_os = "macos")]
-use super::credential_mirror::claude_credentials_service;
-use super::credential_mirror::mirror_terminal_login;
 use super::registry::chat_eligible;
+#[cfg(target_os = "macos")]
+use credential_mirror::claude_credentials_service;
+use credential_mirror::mirror_terminal_login;
 
 /// Only measured executors: guessed env vars or credential files silently break login.
 #[derive(Debug, Clone, Copy)]
@@ -133,7 +135,7 @@ fn clear_shadowing_credentials(config_dir: &Path, cli: Option<&Path>, path_env: 
             return;
         };
         let mut probe = std::process::Command::new(cli);
-        crate::no_console::hide_console(&mut probe);
+        crate::child_process::no_console::hide_console(&mut probe);
         probe
             .args(["auth", "status"])
             .env("PATH", path_env)
@@ -185,7 +187,7 @@ pub(crate) fn probe_isolated_logged_out(
     path_env: &str,
 ) -> Option<bool> {
     let mut command = std::process::Command::new(cli);
-    crate::no_console::hide_console(&mut command);
+    crate::child_process::no_console::hide_console(&mut command);
     command
         .args(["auth", "status"])
         .env("PATH", path_env)

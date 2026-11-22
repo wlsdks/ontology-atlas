@@ -27,14 +27,13 @@ export interface BootstrapVaultWriter {
   updateFrontmatter(
     slug: string,
     updates: Record<string, string | string[]>,
-    opts?: { skipRefresh?: boolean },
+    options?: { skipRefresh?: boolean },
   ): Promise<void>;
-  createDoc(slug: string, content: string, opts?: { skipRefresh?: boolean }): Promise<void>;
+  createDoc(slug: string, content: string, options?: { skipRefresh?: boolean }): Promise<void>;
   refresh(): Promise<void>;
 }
 
 export interface ExecuteBootstrapResult {
-  /** Branches the toast. */
   addedToExisting: boolean;
   elementCount: number;
 }
@@ -48,18 +47,18 @@ export async function executeBootstrapPlan(
   const plan = { ...basePlan, projectTitle: input.projectTitle };
   const elements = selectedElements(plan, input.acceptedDomains);
 
-  for (const el of elements) {
-    const existing = vault.manifest.docs.find((doc) => doc.slug === el.slug);
+  for (const element of elements) {
+    const existing = vault.manifest.docs.find((doc) => doc.slug === element.slug);
     const uid = generateNodeUid(
       existing?.frontmatter.uid === undefined || existing.frontmatter.uid === null || existing.frontmatter.uid === ''
         ? undefined
         : String(existing.frontmatter.uid),
     );
     await vault.updateFrontmatter(
-      el.slug,
-      el.domain
-        ? { uid, kind: 'element', title: el.title, domain: el.domain }
-        : { uid, kind: 'element', title: el.title },
+      element.slug,
+      element.domain
+        ? { uid, kind: 'element', title: element.title, domain: element.domain }
+        : { uid, kind: 'element', title: element.title },
       { skipRefresh: true },
     );
   }

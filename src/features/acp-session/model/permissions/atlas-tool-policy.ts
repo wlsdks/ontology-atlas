@@ -1,9 +1,4 @@
-/**
- * ACP permission requests only carry the MCP tool name. The server's generated
- * surface is the authority for whether a registered tool reads or writes; the
- * sibling contract test compares every entry so this fail-closed list cannot
- * silently drift when the server inventory changes.
- */
+/** ACP permission requests carry only the MCP tool name; the server's generated surface decides read vs write, and the sibling contract test compares every entry so this fail-closed list cannot drift. */
 const ATLAS_READ_TOOLS = new Set([
   'connection_info',
   'git_status',
@@ -33,11 +28,7 @@ const ATLAS_READ_TOOLS = new Set([
 
 export type AtlasToolMode = 'read' | 'write';
 
-/**
- * Returns null for another server. Unknown tools on our server are writes:
- * adding a read tool without updating the generated-surface contract must add
- * friction, never grant a new write path by accident.
- */
+/** Null for another server. An unknown tool on our server is a write: a read tool added without updating the contract adds friction, never a new write path. */
 export function atlasToolMode(
   permissionToolName: string | null,
   serverName: string,

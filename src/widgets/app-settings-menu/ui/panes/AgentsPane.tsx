@@ -5,7 +5,7 @@ import { Bot, KeyRound, Plug } from 'lucide-react';
 import { AGENTS_MODELS_HREF, DESTINATION_HREF } from '@/shared/config/destinations';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { useAiConnection } from '../../model/use-ai-connection';
-import { WikiWriteModeSettings } from '../WikiWriteModeSettings';
+import { WikiWriteModeSettings } from '../pane-settings/WikiWriteModeSettings';
 import { SettingsDoorRow, SettingsGroup } from '../settings-primitives';
 
 function ModelsDoor({ desktop, onLeave }: { desktop: boolean; onLeave: () => void }) {

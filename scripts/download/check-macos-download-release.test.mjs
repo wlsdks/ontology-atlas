@@ -89,91 +89,91 @@ function makeHandler({
   extraAssets = [],
   includeWindows = true,
 } = {}) {
-  return (req, res) => {
-    if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20") {
-      if (requireAuth && req.headers.authorization !== "Bearer test-token") {
-        res.writeHead(403, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ message: "API rate limit exceeded" }));
+  return (request, response) => {
+    if (request.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20") {
+      if (requireAuth && request.headers.authorization !== "Bearer test-token") {
+        response.writeHead(403, { "Content-Type": "application/json" });
+        response.end(JSON.stringify({ message: "API rate limit exceeded" }));
         return;
       }
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(releasePayload(`http://${req.headers.host}`, checksumTextFor, names, tagName, extraAssets, includeWindows)));
+      response.writeHead(200, { "Content-Type": "application/json" });
+      response.end(JSON.stringify(releasePayload(`http://${request.headers.host}`, checksumTextFor, names, tagName, extraAssets, includeWindows)));
       return;
     }
-    if (req.url === `/repos/wlsdks/ontology-atlas/releases/tags/${tagName}`) {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(releasePayload(`http://${req.headers.host}`, checksumTextFor, names, tagName, extraAssets, includeWindows)[0]));
+    if (request.url === `/repos/wlsdks/ontology-atlas/releases/tags/${tagName}`) {
+      response.writeHead(200, { "Content-Type": "application/json" });
+      response.end(JSON.stringify(releasePayload(`http://${request.headers.host}`, checksumTextFor, names, tagName, extraAssets, includeWindows)[0]));
       return;
     }
     const extra = releaseExtraAssets(extraAssets, includeWindows, tagName).find(
-      (asset) => req.url === `/download/${asset.name}` || req.url === `/asset-api/${asset.name}`,
+      (asset) => request.url === `/download/${asset.name}` || request.url === `/asset-api/${asset.name}`,
     );
     if (extra) {
-      res.writeHead(200, { "Content-Type": "application/octet-stream" });
-      res.end(extra.body ?? "");
+      response.writeHead(200, { "Content-Type": "application/octet-stream" });
+      response.end(extra.body ?? "");
       return;
     }
-    const dmgName = names.find((name) => req.url === `/download/${name}`);
-    if (dmgName && req.method === "HEAD") {
-      res.writeHead(200, {
+    const dmgName = names.find((name) => request.url === `/download/${name}`);
+    if (dmgName && request.method === "HEAD") {
+      response.writeHead(200, {
         "Content-Type": dmgContentType,
         "Content-Length": dmgContentLength,
       });
-      res.end();
+      response.end();
       return;
     }
-    if (dmgName && req.method === "GET") {
+    if (dmgName && request.method === "GET") {
       const body = dmgBody(dmgName);
-      res.writeHead(200, {
+      response.writeHead(200, {
         "Content-Type": dmgContentType,
         "Content-Length": String(body.length),
       });
-      res.end(body);
+      response.end(body);
       return;
     }
-    const apiDmgName = names.find((name) => req.url === `/asset-api/${name}`);
-    if (apiDmgName && req.method === "GET") {
-      if (req.headers.accept !== "application/octet-stream") {
-        res.writeHead(406);
-        res.end("not acceptable");
+    const apiDmgName = names.find((name) => request.url === `/asset-api/${name}`);
+    if (apiDmgName && request.method === "GET") {
+      if (request.headers.accept !== "application/octet-stream") {
+        response.writeHead(406);
+        response.end("not acceptable");
         return;
       }
       const body = dmgBody(apiDmgName);
-      res.writeHead(200, {
+      response.writeHead(200, {
         "Content-Type": "application/octet-stream",
         "Content-Length": String(body.length),
       });
-      res.end(body);
+      response.end(body);
       return;
     }
-    const checksumName = names.find((name) => req.url === `/download/${name}.sha256`);
-    if (checksumName && req.method === "HEAD") {
+    const checksumName = names.find((name) => request.url === `/download/${name}.sha256`);
+    if (checksumName && request.method === "HEAD") {
       const checksumText = checksumTextFor(checksumName);
-      res.writeHead(200, {
+      response.writeHead(200, {
         "Content-Type": "text/plain",
         "Content-Length": String(Buffer.byteLength(checksumText)),
       });
-      res.end();
+      response.end();
       return;
     }
-    if (checksumName && req.method === "GET") {
-      res.writeHead(200, { "Content-Type": "text/plain" });
-      res.end(checksumTextFor(checksumName));
+    if (checksumName && request.method === "GET") {
+      response.writeHead(200, { "Content-Type": "text/plain" });
+      response.end(checksumTextFor(checksumName));
       return;
     }
-    const apiChecksumName = names.find((name) => req.url === `/asset-api/${name}.sha256`);
-    if (apiChecksumName && req.method === "GET") {
-      if (req.headers.accept !== "application/octet-stream") {
-        res.writeHead(406);
-        res.end("not acceptable");
+    const apiChecksumName = names.find((name) => request.url === `/asset-api/${name}.sha256`);
+    if (apiChecksumName && request.method === "GET") {
+      if (request.headers.accept !== "application/octet-stream") {
+        response.writeHead(406);
+        response.end("not acceptable");
         return;
       }
-      res.writeHead(200, { "Content-Type": "application/octet-stream" });
-      res.end(checksumTextFor(apiChecksumName));
+      response.writeHead(200, { "Content-Type": "application/octet-stream" });
+      response.end(checksumTextFor(apiChecksumName));
       return;
     }
-    res.writeHead(404);
-    res.end("not found");
+    response.writeHead(404);
+    response.end("not found");
   };
 }
 
@@ -510,30 +510,30 @@ test("download release verifier accepts GH_TOKEN for authenticated GitHub API re
 
 test("download release verifier strips authorization on cross-origin asset redirects", async () => {
   const storageAuthorization = [];
-  await withServer((req, res) => {
-    storageAuthorization.push(req.headers.authorization);
-    makeHandler()(req, res);
+  await withServer((request, response) => {
+    storageAuthorization.push(request.headers.authorization);
+    makeHandler()(request, response);
   }, async (storageBaseUrl) => {
-    await withServer((req, res) => {
+    await withServer((request, response) => {
       if (
-        req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20" ||
-        req.url === "/repos/wlsdks/ontology-atlas/releases/tags/v0.1.0"
+        request.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20" ||
+        request.url === "/repos/wlsdks/ontology-atlas/releases/tags/v0.1.0"
       ) {
-        const payload = releasePayload(`http://${req.headers.host}`);
+        const payload = releasePayload(`http://${request.headers.host}`);
         payload[0].draft = true;
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(req.url.includes("/tags/") ? payload[0] : payload));
+        response.writeHead(200, { "Content-Type": "application/json" });
+        response.end(JSON.stringify(request.url.includes("/tags/") ? payload[0] : payload));
         return;
       }
-      if (req.url?.startsWith("/asset-api/")) {
-        res.writeHead(302, {
-          Location: `${storageBaseUrl}${req.url.replace("/asset-api/", "/download/")}`,
+      if (request.url?.startsWith("/asset-api/")) {
+        response.writeHead(302, {
+          Location: `${storageBaseUrl}${request.url.replace("/asset-api/", "/download/")}`,
         });
-        res.end();
+        response.end();
         return;
       }
-      res.writeHead(404);
-      res.end("not found");
+      response.writeHead(404);
+      response.end("not found");
     }, async (apiBaseUrl) => {
       const { stdout } = await runVerifierWithArgs(
         apiBaseUrl,
@@ -552,13 +552,13 @@ test("download release verifier can validate draft assets before publishing", as
   await withServer(makeHandler(), async (baseUrl) => {
     const payload = releasePayload(baseUrl);
     payload[0].draft = true;
-    await withServer((req, res) => {
-      if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20") {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(payload));
+    await withServer((request, response) => {
+      if (request.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20") {
+        response.writeHead(200, { "Content-Type": "application/json" });
+        response.end(JSON.stringify(payload));
         return;
       }
-      makeHandler()(req, res);
+      makeHandler()(request, response);
     }, async (draftBaseUrl) => {
       const { stdout } = await execFileAsync(
         process.execPath,
@@ -583,25 +583,25 @@ test("download release verifier finds a tagged draft on a later bounded release 
   await withServer(makeHandler(), async (baseUrl) => {
     const payload = releasePayload(baseUrl);
     payload[0].draft = true;
-    await withServer((req, res) => {
-      if (req.url === "/repos/wlsdks/ontology-atlas/releases/tags/v0.1.0") {
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ message: "Not Found" }));
+    await withServer((request, response) => {
+      if (request.url === "/repos/wlsdks/ontology-atlas/releases/tags/v0.1.0") {
+        response.writeHead(404, { "Content-Type": "application/json" });
+        response.end(JSON.stringify({ message: "Not Found" }));
         return;
       }
-      if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20&page=1") {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(Array.from({ length: 20 }, (_, index) => ({
+      if (request.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20&page=1") {
+        response.writeHead(200, { "Content-Type": "application/json" });
+        response.end(JSON.stringify(Array.from({ length: 20 }, (_, index) => ({
           ...payload[0], tag_name: `v0.0.${index}`, body: "x".repeat(20_000),
         }))));
         return;
       }
-      if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20&page=2") {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(payload));
+      if (request.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20&page=2") {
+        response.writeHead(200, { "Content-Type": "application/json" });
+        response.end(JSON.stringify(payload));
         return;
       }
-      makeHandler()(req, res);
+      makeHandler()(request, response);
     }, async (draftBaseUrl) => {
       const { stdout } = await execFileAsync(
         process.execPath,
@@ -624,16 +624,16 @@ test("download release verifier finds a tagged draft on a later bounded release 
 
 test("tagged draft lookup stops after 100 releases when the tag is absent", async () => {
   const pages = [];
-  await withServer((req, res) => {
-    const url = new URL(req.url, "http://localhost");
-    res.setHeader("Content-Type", "application/json");
+  await withServer((request, response) => {
+    const url = new URL(request.url, "http://localhost");
+    response.setHeader("Content-Type", "application/json");
     if (url.pathname.endsWith("/releases") && url.searchParams.get("per_page") === "20") {
       pages.push(Number(url.searchParams.get("page")));
-      res.end(JSON.stringify(Array.from({ length: 20 }, () => ({ tag_name: "v0.0.1", draft: true }))));
+      response.end(JSON.stringify(Array.from({ length: 20 }, () => ({ tag_name: "v0.0.1", draft: true }))));
       return;
     }
-    res.writeHead(404);
-    res.end(JSON.stringify({ message: "Not Found" }));
+    response.writeHead(404);
+    response.end(JSON.stringify({ message: "Not Found" }));
   }, async (baseUrl) => {
     await assert.rejects(runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--allow-draft"]));
   });
@@ -661,18 +661,18 @@ test("download release verifier refuses a release GitHub marks as a pre-release,
     const payload = releasePayload(baseUrl);
     payload[0].draft = true;
     payload[0].prerelease = true;
-    await withServer((req, res) => {
-      if (req.url === "/repos/wlsdks/ontology-atlas/releases/tags/v0.1.0") {
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ message: "Not Found" }));
+    await withServer((request, response) => {
+      if (request.url === "/repos/wlsdks/ontology-atlas/releases/tags/v0.1.0") {
+        response.writeHead(404, { "Content-Type": "application/json" });
+        response.end(JSON.stringify({ message: "Not Found" }));
         return;
       }
-      if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20&page=1") {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(payload));
+      if (request.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20&page=1") {
+        response.writeHead(200, { "Content-Type": "application/json" });
+        response.end(JSON.stringify(payload));
         return;
       }
-      makeHandler()(req, res);
+      makeHandler()(request, response);
     }, async (draftBaseUrl) => {
       await assert.rejects(
         execFileAsync(
@@ -701,13 +701,13 @@ test("download release verifier skips a newer pre-release when it picks the curr
   await withServer(makeHandler(), async (baseUrl) => {
     const stable = releasePayload(baseUrl)[0];
     const newer = { ...stable, tag_name: "v0.2.0", prerelease: true, assets: [] };
-    await withServer((req, res) => {
-      if (req.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20") {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify([newer, stable]));
+    await withServer((request, response) => {
+      if (request.url === "/repos/wlsdks/ontology-atlas/releases?per_page=20") {
+        response.writeHead(200, { "Content-Type": "application/json" });
+        response.end(JSON.stringify([newer, stable]));
         return;
       }
-      makeHandler()(req, res);
+      makeHandler()(request, response);
     }, async (listBaseUrl) => {
       const { stdout } = await runVerifier(listBaseUrl);
 

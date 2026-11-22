@@ -31,11 +31,8 @@ export async function generateMetadata({
 }
 
 /**
- * The workbench: every route under `app/[locale]` wears the app shell and reads the whole catalog,
- * because the shell's rail, settings and agent dock read most of it. This segment is shared by all
- * of them, `/` included, so it serialises only `/`'s subset; the catalog arrives as a per-locale
- * chunk (`WorkbenchMessagesProvider`). The gateway pages live in `app/(gateway)/[locale]` with a
- * picked subset (`src/i18n/gateway-messages.ts`).
+ * This segment is shared by every workbench route, `/` included, so it serialises only `/`'s
+ * message subset; the whole catalog arrives as a per-locale chunk (`WorkbenchMessagesProvider`).
  */
 export default async function LocaleLayout({
   children,
@@ -54,16 +51,9 @@ export default async function LocaleLayout({
       <LocaleDocumentChrome locale={locale} />
       <MotionProvider>
         <TaxonomyProvider>
-          {/* `LocalVaultProvider` is the single source of truth. Consumers share one instance through
-              `useLocalVault()` — this fixed the eight independent call sites producing two or three
-              duplicate instances. */}
           <LocalVaultProvider>
-            {/* The notification region's name is supplied by the app so the primitive does not read
-               translations itself. */}
             <ToastProvider notificationsLabel={tNav('notificationsAriaLabel')}>
               <TooltipProvider delayDuration={300}>
-                {/* Sets the change baseline once when a local vault loads, so agent edits pulse on
-                    the topology without a click. Headless. */}
                 <OntologyLiveBaselineInit />
                 <RouteMemory />
                 <AcpChatPanelKeeper />

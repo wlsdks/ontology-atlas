@@ -76,9 +76,9 @@ describe("toast box", () => {
 
 const WALLS = [
     ["src/widgets/app-nav-rail/ui/AppNavRail.tsx", 'data-toast-wall="left"'],
-    ["src/views/home/ui/TopologyIndexSlot.tsx", 'data-toast-wall={frame.exiting ? undefined : "left"}'],
-    ["src/views/home/ui/TopologyAgentDock.tsx", 'data-toast-wall="right"'],
-    ["src/views/home/ui/TopologyCanvasSurface.tsx", 'data-toast-wall="bottom"'],
+    ["src/views/home/ui/map-panels/TopologyIndexSlot.tsx", 'data-toast-wall={frame.exiting ? undefined : "left"}'],
+    ["src/views/home/ui/map-overlays/TopologyAgentDock.tsx", 'data-toast-wall="right"'],
+    ["src/views/home/ui/map-surfaces/TopologyCanvasSurface.tsx", 'data-toast-wall="bottom"'],
 ] as const;
 
 describe("toast walls", () => {

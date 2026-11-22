@@ -1,4 +1,4 @@
-import type { FlatGraphInks, FlatGraphLayoutTokens, FlatGraphPaintTokens, FlatGraphTokens } from "./types";
+import type { FlatGraphInks, FlatGraphLayoutTokens, FlatGraphPaintTokens, FlatGraphTokens } from "./flat-graph-shapes";
 
 const kebab = (key: string) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 

@@ -3,7 +3,7 @@ export type {
   ProjectCategory,
   ProjectPosition,
   ProjectInput,
-} from './types';
+} from './project';
 export { computeHubSlugs, isSharedNode } from './hub';
 export {
   getProjectRelationshipMeta,

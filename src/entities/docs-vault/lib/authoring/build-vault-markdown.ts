@@ -38,7 +38,6 @@ export const VAULT_CREATED_BY_HUMAN = "human";
 const VAULT_CREATED_BY_AGENT_PREFIX = "agent:";
 const VAULT_CREATED_BY_AGENT_UNKNOWN = `${VAULT_CREATED_BY_AGENT_PREFIX}unknown`;
 
-/** An unknown name becomes `agent:unknown`, still not a person. */
 export function vaultAgentCreatedBy(agentName: string | null | undefined): string {
   const name = typeof agentName === "string" ? agentName.trim() : "";
   return name ? `${VAULT_CREATED_BY_AGENT_PREFIX}${name}` : VAULT_CREATED_BY_AGENT_UNKNOWN;
@@ -50,18 +49,15 @@ export function buildVaultMarkdown(args: {
   kind: string;
   title: string;
   slug: string;
-  /** Omitted when absent. */
   domain?: string;
   /** `{ ko, en }` → `display_ko` / `display_en`; `title` stays the search truth. */
   localeLabels?: Record<string, string>;
-  /** Only the actor the writing path proves; omit when unknown. */
   createdBy?: string;
 }): string {
   const lines = ["---"];
   lines.push(`uid: ${generateNodeUid(args.uid)}`);
   lines.push(`slug: ${args.slug}`);
   lines.push(`kind: ${args.kind}`);
-  // One canonical `domains/<name>` spelling so every writer agrees.
   const domain = canonicalizeDomainRef(args.domain);
   if (domain) lines.push(`domain: ${quoteYamlScalar(domain)}`);
   lines.push(`title: ${quoteYamlScalar(args.title)}`);
@@ -81,7 +77,6 @@ export function buildVaultMarkdown(args: {
   return lines.join("\n");
 }
 
-/** Plural vault folder for a kind; `${kind}s` for anything unlisted. */
 export function vaultFolderForKind(kind: string): string {
   switch (kind) {
     case "capability":
@@ -97,7 +92,6 @@ export function vaultFolderForKind(kind: string): string {
   }
 }
 
-/** New node document: slug `${folder}/${slugify(title)}`; throws when no slug can be made. */
 export function buildNewNodeDoc(args: {
   uid?: string;
   title: string;

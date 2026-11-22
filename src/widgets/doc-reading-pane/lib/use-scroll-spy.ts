@@ -39,7 +39,6 @@ export function useDocReadingScrollSpy(
     const recompute = () => {
       rafPending = 0;
       if (headings.length === 0) return;
-      // Coordinates are relative to the scroll container, which starts mid-screen.
       const rootTop = root.getBoundingClientRect().top;
       let pick: string | null = null;
       for (const h of headings) {
@@ -60,7 +59,6 @@ export function useDocReadingScrollSpy(
     const onScroll = () => scheduleRecompute();
     root.addEventListener("scroll", onScroll, { passive: true });
 
-    // Re-collect when the heading set is empty or detached (async markdown, React replacing nodes).
     const domObserver = new MutationObserver(() => {
       if (headings.length === 0 || headings.some((h) => !h.isConnected)) {
         if (collectHeadings()) scheduleRecompute();

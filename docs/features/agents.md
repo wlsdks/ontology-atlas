@@ -231,7 +231,7 @@ and Escape. The record is in `docs/DECISIONS.md` (one list).
   verbatim and wrapped, never truncated, before that press: the catalogue row, the row found
   on this computer (a program by its command, even when its entry also names an address),
   the by-hand form's *What runs*, and an attached row beside its switch.
-- **The catalogue is a committed file**, `src/shared/config/mcp-catalogue.generated.ts`,
+- **The catalogue is a committed file**, `src/shared/config/mcp/mcp-catalogue.generated.ts`,
   written by `pnpm mcp:catalogue` from the official MCP Registry (whose metadata is
   CC0-1.0) plus vendor pages a person read on a stated date. **Nothing is fetched while
   the app runs** — the same rule `scripts/registry-snapshots/build-acp-registry.mjs` already follows. It

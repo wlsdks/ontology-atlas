@@ -316,12 +316,12 @@ describe("useDestinationShortcuts", () => {
 describe("blockingSurfaceOpen", () => {
   /** An `aria-modal` surface that jsdom reports as laid out, like the ones the tests above fake. */
   function modal(parent: HTMLElement = document.body): HTMLElement {
-    const el = document.createElement("div");
-    el.setAttribute("role", "dialog");
-    el.setAttribute("aria-modal", "true");
-    el.getClientRects = (() => [{}] as unknown as DOMRectList) as typeof el.getClientRects;
-    parent.append(el);
-    return el;
+    const element = document.createElement("div");
+    element.setAttribute("role", "dialog");
+    element.setAttribute("aria-modal", "true");
+    element.getClientRects = (() => [{}] as unknown as DOMRectList) as typeof element.getClientRects;
+    parent.append(element);
+    return element;
   }
 
   afterEach(() => {

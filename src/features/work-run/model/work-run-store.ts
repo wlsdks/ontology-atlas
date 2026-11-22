@@ -56,32 +56,24 @@ import {
   type TurnWorkReport,
 } from './turn-run';
 
-/** A door the seat asks the owning screen to open once it is mounted for the run's folder. */
 export type WorkRunDoor = 'results' | 'conversation';
 
-/** The meaning card's doors: the Wiki desk with its question field, or the desk to fix a failure. */
 export type MeaningDoor = 'ask' | 'library';
 
 /** The meaning run's figures reach the card and the rail at most this often (four a second). */
 export const MEANING_PROGRESS_INTERVAL_MS = 250;
 
-/**
- * One run the session holds: the person's wiki check, a scheduled check, a Library turn that may
- * write, or a folder's meaning preparation.
- */
 export type SeatRun =
   | { kind: 'check'; key: string; run: WorkRun }
   | { kind: 'scheduled'; key: string; run: ScheduledRun }
   | { kind: 'turn'; key: string; run: TurnRun }
   | { kind: 'meaning'; key: string; run: MeaningRun };
 
-/** Where a turn's card door leads: its conversation, or the one page it wrote. */
 export type TurnDoor = { turnId: number; kind: 'conversation' } | { turnId: number; kind: 'page'; page: string };
 
 export interface WorkRunSnapshot {
   /** Every run the session holds, keyed by `check:<id>` or `scheduled:<ledger id>`, in start order. */
   runs: ReadonlyMap<string, SeatRun>;
-  /** The wiki check, which the Library reads as its own; at most one exists. */
   run: WorkRun | null;
   /** The open folder; a scheduled run of another folder is never shown. */
   folder: string | null;
@@ -91,7 +83,6 @@ export interface WorkRunSnapshot {
   automationsShown: boolean;
   /** The open folder's meaning stage (the Wiki desk's meaning line) is on screen. */
   meaningStage: boolean;
-  /** The conversation on screen, the stage of the turn it runs. */
   turnStage: string | null;
   door: { runId: number; kind: WorkRunDoor } | null;
   turnDoor: TurnDoor | null;
@@ -162,7 +153,6 @@ function changeScheduled(key: string, update: (run: ScheduledRun) => ScheduledRu
   if (next !== entry.run) publish({ runs: withEntry({ kind: 'scheduled', key, run: next }) });
 }
 
-/** Every scheduled run, through one update; a single new map however many changed. */
 function changeEveryScheduled(update: (run: ScheduledRun) => ScheduledRun) {
   let runs: Map<string, SeatRun> | null = null;
   for (const entry of snapshot.runs.values()) {
@@ -216,7 +206,6 @@ function changeTurn(id: number, update: (run: TurnRun) => TurnRun) {
   if (next !== entry.run) publish({ runs: withEntry({ kind: 'turn', key: entry.key, run: next }) });
 }
 
-/** Every turn, through one update; a single new map however many changed. */
 function changeEveryTurn(update: (run: TurnRun) => TurnRun) {
   let runs: Map<string, SeatRun> | null = null;
   for (const entry of snapshot.runs.values()) {
@@ -229,7 +218,6 @@ function changeEveryTurn(update: (run: TurnRun) => TurnRun) {
   if (runs) publish({ runs });
 }
 
-/** A scheduled run or a turn that ended and has nothing left to say leaves the session. */
 function settledScheduled(entry: SeatRun): boolean {
   if (entry.kind === 'turn') return !isTurnActive(entry.run) && entry.run.card === 'closed' && !entry.run.unseen;
   return entry.kind === 'scheduled' && !isScheduledActive(entry.run) && entry.run.card === 'closed' && !entry.run.unseen;
@@ -262,7 +250,6 @@ export const workRuns = {
     publish({ runs, door: null });
     return nextId;
   },
-  /** The run this conversation is running, so its reports reach that run and no other. */
   runOwnedBy(owner: string): number | null {
     return snapshot.run?.owner === owner ? snapshot.run.id : null;
   },
@@ -298,7 +285,6 @@ export const workRuns = {
   markSeen(folder: string) {
     changeCheck(null, (run) => (run.folder === folder ? markSeen(run) : run));
   },
-  /** A folder switch ends the check with the folder it was reading. */
   leaveFolder(folder: string, at: number) {
     publish({ folder });
     for (const entry of [...snapshot.runs.values()]) {
@@ -330,7 +316,6 @@ export const workRuns = {
     if (snapshot.door?.runId === runId) publish({ door: null });
   },
 
-  /** A scheduled pass the runner started, under the id its ledger entry will carry. */
   beginScheduled(input: { id: string; roundId: string; name: string; lane: ScheduledRunLane; folder: string | null; startedAt: number }): string {
     const key = scheduledKey(input.id);
     const runs = new Map([...snapshot.runs].filter(([, entry]) => !settledScheduled(entry)));
@@ -353,7 +338,6 @@ export const workRuns = {
     else scheduledStops.delete(key);
   },
 
-  /** Ends one run, whichever kind; a scheduled run's schedule is left exactly as it was. */
   stopRun(key: string) {
     const entry = snapshot.runs.get(key);
     if (entry?.kind === 'check') {
@@ -376,7 +360,6 @@ export const workRuns = {
     changeScheduled(key, closeScheduledCard);
     scheduledStops.get(key)?.();
   },
-  /** The card's Hide: every run still working leaves the card and keeps its ring. */
   hideActive() {
     changeCheck(null, hideCard);
     changeEveryScheduled(hideScheduledCard);
@@ -390,7 +373,6 @@ export const workRuns = {
     else if (entry?.kind === 'turn') changeTurn(entry.run.id, closeTurnCard);
     else if (entry) changeScheduled(key, closeScheduledCard);
   },
-  /** Opening Automations reads every finished scheduled run: its card closes and its badge goes. */
   enterAutomations() {
     publish({ automationsShown: true });
     changeEveryScheduled(markScheduledSeen);
@@ -429,11 +411,9 @@ export const workRuns = {
       progressListeners.delete(listener);
     };
   },
-  /** The open folder's meaning Stop, registered by the app layer. */
   setMeaningStop(stop: (() => void) | null) {
     meaningStop = stop;
   },
-  /** Where the meaning card's doors lead, registered by the app layer that knows the screens. */
   setMeaningDoor(open: ((kind: MeaningDoor) => void) | null) {
     meaningDoor = open;
   },
@@ -441,7 +421,6 @@ export const workRuns = {
     changeMeaning(key, closeMeaningCard);
     meaningDoor?.(kind);
   },
-  /** A Library turn that may write, started from a door or a typed request. */
   beginTurn(input: { folder: string; folderName: string; owner: string; runtimeId: string; agent: string; door: TurnRunDoor; request: string; startedAt: number }): number {
     nextId += 1;
     const runs = new Map([...snapshot.runs].filter(([, entry]) => !settledScheduled(entry)));
@@ -450,14 +429,12 @@ export const workRuns = {
     publish({ runs });
     return run.id;
   },
-  /** The active turn this conversation runs, so its reports reach that turn and no other. */
   turnOwnedBy(owner: string): number | null {
     for (const entry of snapshot.runs.values()) {
       if (entry.kind === 'turn' && entry.run.owner === owner && isTurnActive(entry.run)) return entry.run.id;
     }
     return null;
   },
-  /** This folder's turn still running, wherever its conversation is. */
   activeTurn(folder: string): TurnRun | null {
     for (const entry of snapshot.runs.values()) {
       if (entry.kind === 'turn' && entry.run.folder === folder && isTurnActive(entry.run)) return entry.run;
@@ -485,7 +462,6 @@ export const workRuns = {
   leaveTurnStage(owner: string) {
     if (snapshot.turnStage === owner) publish({ turnStage: null });
   },
-  /** Opening the Library reads every finished turn of its folder: the badge goes. */
   seeTurns(folder: string) {
     changeEveryTurn((run) => (run.folder === folder && !isTurnActive(run) && run.unseen ? { ...run, unseen: false } : run));
   },

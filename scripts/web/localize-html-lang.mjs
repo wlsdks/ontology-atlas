@@ -22,10 +22,10 @@ export function localizeHtml(html, htmlLang) {
   return html.replace(ROOT_TAG, `<html lang="${htmlLang}"`);
 }
 
-function htmlFiles(dir) {
+function htmlFiles(directory) {
   const files = [];
-  for (const name of readdirSync(dir)) {
-    const path = join(dir, name);
+  for (const name of readdirSync(directory)) {
+    const path = join(directory, name);
     if (statSync(path).isDirectory()) files.push(...htmlFiles(path));
     else if (name.endsWith('.html')) files.push(path);
   }
@@ -36,14 +36,14 @@ export function localizeExport(outDir, langs) {
   let changed = 0;
   for (const [locale, htmlLang] of Object.entries(langs)) {
     if (htmlLang === 'en') continue;
-    let dir;
+    let directory;
     try {
       if (!statSync(join(outDir, locale)).isDirectory()) continue;
-      dir = join(outDir, locale);
+      directory = join(outDir, locale);
     } catch {
       continue;
     }
-    for (const file of htmlFiles(dir)) {
+    for (const file of htmlFiles(directory)) {
       const html = readFileSync(file, 'utf8');
       const next = localizeHtml(html, htmlLang);
       if (next !== html) {

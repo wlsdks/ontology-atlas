@@ -2,6 +2,8 @@
 //! passed in, and a search that never creates an index. The WebView holds the on/off choice and
 //! sends it with every command; off means no index files exist.
 
+pub(crate) mod rows;
+
 use super::scope::resolve_existing_inside;
 use super::walk::vault_fingerprint;
 use crate::blocking::run_blocking;
@@ -473,7 +475,7 @@ pub(crate) async fn vault_index_clear(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::vault_grants::EnforcedScope;
+    use crate::vault::grants::EnforcedScope;
 
     fn temp_vault(label: &str) -> PathBuf {
         static INDEX_DIR: Once = Once::new();

@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use crate::errors::coded;
+use crate::coded_error::coded;
 
 #[cfg(test)]
 mod tests;
@@ -22,7 +22,7 @@ pub(crate) fn validate_vault_dir(vault_path: &str) -> Result<PathBuf, String> {
     }
     let canonical = fs::canonicalize(&path).map_err(|err| coded("vault-path-unresolvable", err))?;
     // Git runs in the vault's directory; only a root the user granted may be one.
-    if !crate::vault_grants::is_vault_granted(&canonical) {
+    if !crate::vault::grants::is_vault_granted(&canonical) {
         return Err(coded("vault-root-not-granted", ""));
     }
     Ok(canonical)
@@ -68,7 +68,7 @@ fn read_pathspecs_literally(command: &mut Command) {
 /// The root of every runner: base hardening, literal paths, no credential prompt.
 fn git_command() -> Command {
     let mut command = Command::new("git");
-    crate::no_console::hide_console(&mut command);
+    crate::child_process::no_console::hide_console(&mut command);
     command.args(BASE_HARDENING);
     read_pathspecs_literally(&mut command);
     silence_git_credential_prompts(&mut command);

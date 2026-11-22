@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 
 import { zipFile } from '../../../tests/fixtures/source-passage-cases.mjs';
-import { authoredMarkdownLines } from '../analyze/authored-markdown.mjs';
+import { authoredMarkdownLines } from '../analyze/candidates/authored-markdown.mjs';
 import { inferImports } from '../infer-imports.mjs';
 import { dependencyWitnessFinding } from '../meaning/meaning-findings.mjs';
 import { OUTLINE_LINE_CHARS, outlineSource } from './source-outline.mjs';
@@ -50,12 +50,19 @@ function linesOf(line) {
   return Array.from({ length: Math.floor(FILE_BYTES / (line.length + 1)) }, () => line).join('\n');
 }
 
+/**
+ * The scan's own time is at most both the wall clock (inflated by other processes) and this
+ * process's CPU time (inflated by collector threads), so the smaller of the two bounds it.
+ */
 function fastestRunMs(run, budgetMs) {
   let fastest = Infinity;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const started = performance.now();
+    const startedCpu = process.cpuUsage();
+    const startedWall = performance.now();
     run();
-    fastest = Math.min(fastest, performance.now() - started);
+    const wallMs = performance.now() - startedWall;
+    const spent = process.cpuUsage(startedCpu);
+    fastest = Math.min(fastest, wallMs, (spent.user + spent.system) / 1000);
     if (fastest < budgetMs || fastest > budgetMs * 10) break;
   }
   return fastest;

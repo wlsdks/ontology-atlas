@@ -208,7 +208,7 @@ test("vault-backed accessibility and contrast ratchet: measures states that exis
   test.setTimeout(480_000);
   await page.setViewportSize({ width: 1512, height: 900 });
 
-  // ── ① Attach the vault ───────────────────────────────────────────────
+  // ① Attach the vault
   await stubDirectoryPicker(page, ANALYSIS_VAULT);
   await seedFirstRunSeen(page);
   await page.goto("/ko/topology/?guides=off");
@@ -317,7 +317,7 @@ test("vault-backed accessibility and contrast ratchet: measures states that exis
     }
   }
 
-  // ── ② Separate "0 violations" from "nothing was measured" ────────────
+  // ② Separate "0 violations" from "nothing was measured"
   expect(
     notRendered,
     `These states did not open. That is not the absence of violations but **unmeasured**: the fixture vault ` +
@@ -342,7 +342,7 @@ test("vault-backed accessibility and contrast ratchet: measures states that exis
   //   runs dry means collection is broken. Measured total: around 250 combinations.
   expect(totalCombinations, "the contrast combination total is below the floor, so collection is broken").toBeGreaterThan(120);
 
-  // ── ③ The ratchet ───────────────────────────────────────────────────
+  // ③ The ratchet
   const unknown = [...axeCounts.keys()].filter((id) => !(id in AXE_BASELINE)).sort();
   expect(
     unknown,

@@ -1,27 +1,13 @@
 /**
- * The first turn the 「make a map from my code」 door sends. A sentence, not a call: the app never
- * calls MCP, and analysing the repository here would be a second `analyze_repo_structure`, which
- * `AGENTS.md` forbids.
- * - Breadth comes before depth, in one run. The agent lists every ability from the outlines and
- *   docs, and the survey's list is a floor under it, not the inventory: when the prompt said only
- *   "every ability it lists", a go build kept the 14 listed and dropped every operator feature
- *   (trial 2, stage D). Each is placed (its own
- *   capability, named in the node that covers it, or excluded with a reason); then each capability
- *   is read by symbol. Asking agents to follow callees did not work (2 of 62 reads did), so the
- *   symbol read returns the callers' guards, constructor defaults and deciding callees itself, and
- *   the prompt asks for the rule with the cite of the lines that hold it. The tools report what is
- *   unplaced, unread or uncited, so no count target.
- * - The agent says the outline and writes it in the same run; a question it asks carries the
- *   default it takes (decision 0f78a22b). Each write still meets the app's permission card
- *   unless the person turned on auto-approve; binding the folder and finalizing always do.
- * - Titles are the words a teammate says aloud, never an identifier.
+ * The first turn the 「make a map from my code」 door sends. A sentence, not a call: the app never calls MCP, and analysing the repository here would be a second `analyze_repo_structure`, which `AGENTS.md` forbids.
+ * Breadth before depth, in one run: the agent lists every ability from the outlines and docs (the survey's list is a floor, not the inventory) and places each; then each capability is read by symbol, and the prompt asks for the rule with the cite of the lines that hold it.
+ * The agent says the outline and writes it in the same run; each write still meets the app's permission card unless the person turned on auto-approve, and binding the folder and finalizing always do. Titles are the words a teammate says aloud.
  * English, in the person's voice, because it lands in the transcript as their turn.
  */
 export function buildFromCodePrompt(
   rootPath: string | null,
   folderName: string | null,
 ): string {
-  // The absolute path, else the folder's name, else "this folder"; never an invented path.
   const target = rootPath ?? (folderName ? `the folder named "${folderName}"` : 'this folder');
   // The vault lives inside the project (`<project>/atlas`), so the survey target is its parent,
   // or an agent surveys only the files Atlas just seeded.

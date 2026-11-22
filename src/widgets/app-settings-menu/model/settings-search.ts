@@ -1,6 +1,6 @@
 import { hangulIncludes, hangulStartsWith } from '@/shared/lib/search-match/hangul-match';
 
-import type { SettingId, SettingsSectionId } from './catalog/types';
+import type { SettingId, SettingsSectionId } from './catalog/settings-catalog-entry';
 
 export const SETTINGS_SEARCH_LIMIT = 30;
 

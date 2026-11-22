@@ -19,7 +19,6 @@ const subscribe = (listener: () => void) => {
   };
 };
 
-/** Whether a mounted screen answers this key itself. */
 export function readShellKeyClaimed(key: ShellKey): boolean {
   return claims[key] > 0;
 }
@@ -40,7 +39,6 @@ export function useClaimShellKey(key: ShellKey, active = true): void {
   }, [active, key]);
 }
 
-/** The shell's side: stand aside while any mounted screen answers `key` itself. */
 export function useShellKeyClaimed(key: ShellKey): boolean {
   return useSyncExternalStore(
     subscribe,

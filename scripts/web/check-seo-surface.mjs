@@ -251,10 +251,10 @@ export function evaluateSeoSurface({ sitemapXml, pages, messages }) {
 
 function collectPages(outDir) {
   const pages = new Map();
-  const walk = (dir) => {
-    for (const dirent of fs.readdirSync(dir, { withFileTypes: true })) {
+  const walk = (directory) => {
+    for (const dirent of fs.readdirSync(directory, { withFileTypes: true })) {
       if (dirent.name.startsWith('_next')) continue;
-      const full = path.join(dir, dirent.name);
+      const full = path.join(directory, dirent.name);
       if (dirent.isDirectory()) walk(full);
       else if (dirent.name === 'index.html') {
         const rel = path.relative(outDir, path.dirname(full)).split(path.sep).join('/');
@@ -267,12 +267,12 @@ function collectPages(outDir) {
 }
 
 function readMessages() {
-  const dir = path.join(REPO_ROOT, 'messages');
+  const directory = path.join(REPO_ROOT, 'messages');
   return Object.fromEntries(
     fs
-      .readdirSync(dir)
+      .readdirSync(directory)
       .filter((name) => name.endsWith('.json') && !name.startsWith('.'))
-      .map((name) => [name.slice(0, -'.json'.length), JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8'))]),
+      .map((name) => [name.slice(0, -'.json'.length), JSON.parse(fs.readFileSync(path.join(directory, name), 'utf8'))]),
   );
 }
 

@@ -1,6 +1,6 @@
 import { localRelationControl } from "../flow/local-control";
 import type { DialFrameMarks } from "../frame/marks";
-import type { Box, DialFrameResult, Point } from "../types";
+import type { Box, DialFrameResult, Point } from "../dial-shapes";
 
 interface Curve { a: Point; b: Point; control: Point }
 

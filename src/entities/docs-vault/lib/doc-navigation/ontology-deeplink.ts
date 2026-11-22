@@ -1,5 +1,5 @@
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
-import type { VaultDoc } from "../../model/types";
+import type { VaultDoc } from "../../model/vault-manifest";
 
 /**
  * Owns the node id rule `${kind}:${last slug segment}` so other surfaces can link into the ontology

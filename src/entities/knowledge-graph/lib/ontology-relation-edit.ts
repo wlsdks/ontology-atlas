@@ -17,7 +17,7 @@ const RELATION_FRONTMATTER_KEY: Record<MeaningEditRelation, string> = {
   relates: 'relates',
 };
 
-/** Spellings the read layer folds into a key (`NEIGHBOR_KEY_ALIASES` in `mcp/src/vault/relation-refs.mjs`). */
+/** Spellings the read layer folds into a key (`NEIGHBOR_KEY_ALIASES` in `mcp/src/vault/graph/relation-refs.mjs`). */
 const KEY_ALIASES: Readonly<Record<string, readonly string[]>> = {
   dependencies: ['depends_on'],
 };
@@ -40,7 +40,6 @@ export const IMPACT_EDIT_RELATIONS: readonly MeaningEditRelation[] = (
   Object.keys(RELATION_EDGE_TYPE) as MeaningEditRelation[]
 ).filter((relation) => IMPACT_RELATION_TYPES.includes(RELATION_EDGE_TYPE[relation]));
 
-/** The frontmatter key a relation from a `sourceKind` concept to a `targetKind` concept is written under. */
 export function relationFrontmatterKey(
   relation: MeaningEditRelation,
   sourceKind?: string | null,

@@ -5,11 +5,7 @@
  */
 
 export interface DustPoint {
-  /**
-   * Parallax depth in [dustParallaxMin, dustParallaxMax]. A purely geometric
-   * depth cue that drifts slower than the grid's 1:1 — a second layer of "moving
-   * over a world", with no glow or blur.
-   */
+  /** Parallax depth in [dustParallaxMin, dustParallaxMax]: drifts slower than the grid's 1:1, a purely geometric depth cue. */
   depth: number;
   x: number;
   y: number;
@@ -17,13 +13,7 @@ export interface DustPoint {
   alpha: number;
 }
 
-/**
- * `Math.round(viewportWidth * viewportHeight / areaPerPoint)` — the dust
- * point count target. `areaPerPoint` = `--map-dust-area-per-point`
- * (5200 px²). Actual point placement is seeded (`mulberry32(7)` in the
- * prototype) and therefore NOT pure with respect to this function alone —
- * placement lives in `buildDustPoints()` below, this helper only pins the count.
- */
+/** The dust point count target, `round(width * height / areaPerPoint)` (`--map-dust-area-per-point`); placement is seeded and lives in `buildDustPoints()`. */
 export function computeStarDustCount(
   viewportWidth: number,
   viewportHeight: number,
@@ -32,7 +22,7 @@ export function computeStarDustCount(
   return Math.round((viewportWidth * viewportHeight) / areaPerPoint);
 }
 
-/** Prototype `mulberry32()` — a tiny deterministic PRNG, used only to place dust points (never node positions). */
+/** A tiny deterministic PRNG, used only to place dust points (never node positions). */
 function mulberry32(seed: number): () => number {
   let s = seed;
   return () => {
@@ -44,7 +34,7 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-/** `--map-dust-area-per-point`-seeded (`seed=7` in the prototype, fixed and never re-seeded) point placement — ported from `buildStarDust()`. */
+/** Seeded (`seed=7`, never re-seeded) dust point placement. */
 export function buildDustPoints(
   viewportWidth: number,
   viewportHeight: number,
@@ -80,9 +70,8 @@ export function buildRealmStarPoints(
       x: rng() * viewportWidth,
       y: rng() * viewportHeight,
       r: 0.4 + rng() * 0.7,
-      // Alpha ceiling 0.12 — the charter's "never busy". Range [0.04, 0.12).
+      // Alpha ceiling 0.12 ("never busy"), range [0.04, 0.12).
       alpha: 0.04 + rng() * 0.08,
-      // Two depth layers (0.3 / 0.6) — two parallax planes.
       depth: i % 2 === 0 ? 0.3 : 0.6,
     });
   }
@@ -91,7 +80,6 @@ export function buildRealmStarPoints(
 
 export interface RealmStarDrawState {
   points: readonly DustPoint[];
-  /** Screen coordinates of the camera origin — the same parallax source the dust uses. */
   originX: number;
   originY: number;
   /** The ward circle in screen space. Dots are drawn **inside** it only. */
@@ -99,7 +87,7 @@ export interface RealmStarDrawState {
   devicePixelRatio: number;
   /** Radial parallax fall at the moment of expansion, 0..1; 0 at rest. */
   radialParallax?: number;
-  /** reduced-motion: zero parallax (no origin or radial offset) — static density only. */
+  /** Reduced motion: zero parallax, static density only. */
   reducedMotion?: boolean;
 }
 
@@ -139,20 +127,13 @@ export function drawRealmStars(ctx: CanvasRenderingContext2D, state: RealmStarDr
 
 export interface StarDustDrawState {
   points: readonly DustPoint[];
-  /** Screen coordinates of the camera origin — the parallax reference, same source as the grid. */
   originX?: number;
   originY?: number;
   farT: number;
   devicePixelRatio: number;
   /** View-bounded visibility lift; defaults to the established far-field level. */
   opacityScale?: number;
-  /**
-   * Radial parallax fall at the moment of realm expansion, 0..1 — each point is
-   * pushed outward from screen centre in proportion to its depth, reading as
-   * movement through space. Displacement stays within 3% of the screen (the
-   * charter's "never busy") and returns to 0 after the transition; it never
-   * persists.
-   */
+  /** Radial parallax fall at realm expansion, 0..1: points push outward from screen centre in proportion to depth, within 3% of the screen, and return to 0 after the transition. */
   radialParallax?: number;
 }
 
@@ -162,16 +143,13 @@ let dustStyleFarT = -1;
 let dustStyleOpacityScale = -1;
 let dustStyles: string[] = [];
 
-/** Draws the static dust texture, fading in with `farT` (never fully at circuit altitude). */
 export function drawStarDust(ctx: CanvasRenderingContext2D, state: StarDustDrawState): void {
   if (state.farT <= 0.02) return;
   const { points, farT, devicePixelRatio } = state;
   const opacityScale = Math.max(0, state.opacityScale ?? 1);
   const ox = state.originX ?? 0;
   const oy = state.originY ?? 0;
-  // Parallax: each point follows the camera in proportion to its depth, slower
-  // than the grid's 1.0. Viewport wrapping keeps coverage, so the dust survives a
-  // long pan.
+  // Each point follows the camera in proportion to its depth, slower than the grid; viewport wrapping keeps coverage over a long pan.
   const w = ctx.canvas.width / devicePixelRatio;
   const h = ctx.canvas.height / devicePixelRatio;
   const rp = state.radialParallax ?? 0;

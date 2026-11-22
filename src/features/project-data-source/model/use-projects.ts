@@ -7,7 +7,6 @@ import { useStaticVaultSource, useStaticVaultStatus } from '@/entities/vault-ses
 import { deriveProjectsFromVault } from '@/entities/docs-vault';
 import type { Project } from '@/entities/project';
 
-/** Mode-aware projects: the vault manifest locally, the chosen bundled sample otherwise. */
 export interface UseProjectsState {
   projects: Project[];
   loaded: boolean;
@@ -19,7 +18,6 @@ export interface UseProjectsState {
 export function useProjects(options?: { demand?: boolean }): UseProjectsState {
   const mode = useDataSourceMode();
   const vault = useLocalVault();
-  // Stable between renders, so it is safe in dependency arrays.
   const staticSource = useStaticVaultSource(undefined, options);
   const staticStatus = useStaticVaultStatus(undefined, options);
 

@@ -1,10 +1,8 @@
 import type { RoundPassEntry } from "@/entities/library-round";
 
 export interface LedgerDay {
-  /** Local midnight of the day, as a stable key. */
   key: string;
   date: Date;
-  /** Newest first. */
   entries: RoundPassEntry[];
 }
 

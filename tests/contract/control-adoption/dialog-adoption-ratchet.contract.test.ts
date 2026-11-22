@@ -58,7 +58,7 @@ function scanProduction(): Map<string, number> {
  */
 const REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: string]> = [
   [
-    "src/views/home/ui/TopologyBlockingOverlays.tsx",
+    "src/views/home/ui/map-overlays/TopologyBlockingOverlays.tsx",
     3,
     "map composer — lives inside the --z-map-scrim(25) layer and the map coordinate system. Lifting it to a body portal (--z-dialog 60) breaks the layer contract with the other chrome on the map.",
   ],
@@ -92,7 +92,7 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx", 1],
   ["src/features/ontology-blocks/ui/BlockImportModule.tsx", 1],
   ["src/features/vault-ontology/ui/RecentChangesNeedsVaultDialog.tsx", 1],
-  ["src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx", 1],
+  ["src/views/docs-vault/ui/DocsVaultAuditModal.tsx", 1],
   ["src/widgets/ontology-map/ui/OntologyMapEdgePanel.tsx", 1],
   ["src/widgets/docs-quick-drawer/ui/DocsQuickDrawer.tsx", 1],
   // Rows for files that no longer exist are deleted: holding them lets a decrease be achieved by a

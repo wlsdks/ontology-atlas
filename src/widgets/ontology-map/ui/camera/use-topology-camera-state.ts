@@ -34,13 +34,8 @@ export function useTopologyCameraState({
   const previousConstellationFocusIdRef = useRef<string | null>(constellationFocusId);
 
   /**
-   * WCAG 2.2 §2.3.3 — "who moved the camera last". Pointer-handler gestures
-   * (wheel, pinch, pan, flick) set it true; every **programmatic** move in this
-   * file (ego dive, fit, realm, initial snap) resets it to false.
-   * `stepTopologyPhysics` uses it to confine the reduced-motion camera snap to
-   * app-initiated moves: user-initiated zoom and pan are an explicit exception
-   * in the standard, and cutting them teleports the whole viewport in one
-   * frame, which is worse than the motion being removed.
+   * "Who moved the camera last" (WCAG 2.2 §2.3.3): pointer gestures set it true, every programmatic move resets it.
+   * `stepTopologyPhysics` confines the reduced-motion snap to programmatic moves, since cutting a user zoom or pan teleports the viewport.
    */
   const userDrivenCameraRef = useRef(false);
 
@@ -48,11 +43,8 @@ export function useTopologyCameraState({
   const cameraGestureRevisionRef = useRef(0);
 
   /**
-   * The live cubic camera transition, or null.
-   * Set by `beginCameraTween` on every programmatic move (focus dive, cluster
-   * dive, fit/relayout); driven each frame in the rAF loop; cleared the instant
-   * an interactive gesture (wheel/drag) takes over. Never set under
-   * `prefers-reduced-motion` (the spring path snaps instead).
+   * The live cubic camera transition, or null: set by `beginCameraTween` on every programmatic move, driven each frame in the
+   * rAF loop, cleared when a gesture takes over, never set under reduced motion (the spring path snaps).
    */
   const cameraTweenRef = useRef<CameraTween | null>(null);
 
@@ -105,7 +97,7 @@ export function useTopologyCameraState({
   /** Has the camera already followed the new available area during the direction change? */
   const viewportCameraTrackedRef = useRef(false);
 
-  // C1 B3 — same mount-skip pattern, but for the DEDICATED relayout-only
+  // Same mount-skip pattern, but for the DEDICATED relayout-only
   // effect below (node-position homing), which must not fire on mount either.
   const initialRelayoutTokenRef = useRef(relayoutToken);
 

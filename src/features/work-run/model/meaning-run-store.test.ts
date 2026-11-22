@@ -23,7 +23,7 @@ const preparing = (filesDone: number, fields: Partial<MeaningRunObservation> = {
 });
 const ready: MeaningRunObservation = { ...preparing(2000), phase: 'ready', reading: null };
 const failed: MeaningRunObservation = {
-  ...preparing(1240), phase: 'failed', reading: null, failure: { message: 'runnerDown', values: {} },
+  ...preparing(1240), phase: 'failed', reading: null, failure: 'Ollama stopped answering.',
 };
 
 let now = 0;
@@ -60,7 +60,7 @@ describe('when the meaning card rises', () => {
     expect(named()).toBeNull();
     expect(ring()).toBe('meaning');
     observe(failed);
-    expect(meaning()).toMatchObject({ phase: 'failed', card: 'open', failure: { message: 'runnerDown' } });
+    expect(meaning()).toMatchObject({ phase: 'failed', card: 'open', failure: 'Ollama stopped answering.' });
     expect(ring()).toBeNull();
   });
 

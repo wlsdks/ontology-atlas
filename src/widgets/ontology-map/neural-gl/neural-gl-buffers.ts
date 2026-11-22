@@ -1,7 +1,7 @@
-import { at } from "../ui/frame-draw/neural-axons";
-import type { NeuralFrame } from "../ui/frame-draw/neural-frame";
-import { AXON_DOT_GAIN, AXON_DOT_T, IMPACT_WIDTH_FLOOR, LIT_DOT_T, NEURAL_CELL, RING_ALPHA, SIGNAL_GLOW_ALPHA } from "../ui/frame-draw/paint-neural";
-import { IMPACT_STEP_DISTANCES, impactStepOf, impactStrength } from "../ui/frame-draw/neural-spread";
+import { at } from "../ui/frame-draw/neural/neural-axons";
+import type { NeuralFrame } from "../ui/frame-draw/neural/neural-frame";
+import { AXON_DOT_GAIN, AXON_DOT_T, IMPACT_WIDTH_FLOOR, LIT_DOT_T, NEURAL_CELL, RING_ALPHA, SIGNAL_GLOW_ALPHA } from "../ui/frame-draw/neural/paint-neural";
+import { IMPACT_STEP_DISTANCES, impactStepOf, impactStrength } from "../ui/frame-draw/neural/neural-spread";
 
 /**
  * A spot: one disc with an optional soft glow under it, a nucleus inside it and a ring around it.
@@ -33,7 +33,6 @@ export const DEPTH_FLOOR = 0.8;
  */
 const OCCLUDING_SHARE = 0.5;
 
-/** A cell's brightness at depth `u` (0 near, 1 far). */
 export const depthShade = (u: number) => 1 - (1 - DEPTH_FLOOR) * Math.min(1, Math.max(0, u));
 
 /** One instanced draw: `count` records of its stride in `data`; `data` is replaced only to grow. */
@@ -56,7 +55,6 @@ export interface NeuralGlBuffers {
   restDots: NeuralGlBatch;
   litAxons: NeuralGlBatch;
   litSpots: NeuralGlBatch;
-  /** What the last fill drew. */
   cellCount: number;
   axonCount: number;
 }

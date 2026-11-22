@@ -43,10 +43,12 @@ vi.mock('@/shared/lib/project-source/project-source-store', () => ({
   createVaultFileProjectSourceStore: () => ({ read: env.sourcesRead }),
 }));
 vi.mock('@/shared/lib/git/tauri-git', () => ({ gitStatus: env.gitStatus }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => ({
+  openTauriVaultInFinder: vi.fn(),
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
   getTauriVaultRootPath: () => (env.desktop ? '/Users/probe/atlas-vault' : null),
   isTauriVaultRuntime: () => env.desktop,
-  openTauriVaultInFinder: vi.fn(),
 }));
 vi.mock('@/i18n/navigation', () => ({
   Link: ({ children, href, ...rest }: { children: React.ReactNode; href: string }) => (

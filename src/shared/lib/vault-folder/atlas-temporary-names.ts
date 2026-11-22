@@ -1,6 +1,6 @@
 /**
  * The names Atlas's writers give a file while it is being written, recognised as
- * `src-tauri/src/temporary_names.rs` recognises them: only a whole name in one of the writers'
+ * `src-tauri/src/vault/temporary_files/names.rs` recognises them: only a whole name in one of the writers'
  * exact shapes, never a person's file that mentions the marker. Both read
  * `tests/fixtures/atlas-temporary-names.json` in their tests.
  */

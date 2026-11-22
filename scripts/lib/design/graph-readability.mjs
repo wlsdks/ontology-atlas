@@ -4,7 +4,6 @@
  * crossings matter most, while angular resolution and grid snapping were not significant.
  */
 
-/** How many segments approximate one curve. */
 const SAMPLES = 8;
 
 const orient = (ax, ay, bx, by, cx, cy) => {
@@ -16,14 +15,7 @@ const segmentsCross = (p, q, r, s) =>
   orient(p[0], p[1], q[0], q[1], r[0], r[1]) !== orient(p[0], p[1], q[0], q[1], s[0], s[1]) &&
   orient(r[0], r[1], s[0], s[1], p[0], p[1]) !== orient(r[0], r[1], s[0], s[1], q[0], q[1]);
 
-/**
- * Quadratic Bézier to polyline.
- *
- * **So that the drawn curve is measured, not its chord.** This map's edges are drawn
- * with `quadraticCurveTo`; joining only the endpoints counts crossings that are not
- * on screen and misses crossings that are. With no control point it is treated as a
- * straight line.
- */
+/** Quadratic Bézier to polyline, so the drawn curve is measured, not its chord (edges use `quadraticCurveTo`). Without a control point it is a straight line. */
 function polyline(e) {
   const cx = e.controlX ?? (e.ax + e.bx) / 2;
   const cy = e.controlY ?? (e.ay + e.by) / 2;
@@ -56,7 +48,6 @@ export function measureReadability({ nodes, edges, width, height }) {
   /** Off-screen geometry is invisible to the user; counting crossings there contaminates the result. */
   const onScreen = (x, y, pad = 0) => x >= -pad && y >= -pad && x <= width + pad && y <= height + pad;
 
-  // ── 1. Edge crossings ──────────────────────────────────────────────────
   const visible = edges.filter(
     (e) =>
       onScreen(e.ax, e.ay) ||
@@ -112,7 +103,6 @@ export function measureReadability({ nodes, edges, width, height }) {
   for (const d of degree.values()) impossiblePairs += (d * (d - 1)) / 2;
   const maxCrossings = Math.max(0, (m * (m - 1)) / 2 - impossiblePairs);
 
-  // ── 2. Node overlap ────────────────────────────────────────────────────
   const vis = nodes.filter((n) => n.radius > 0 && onScreen(n.x, n.y, n.radius));
   const sorted = [...vis].sort((a, b) => a.x - b.x); // x sweep — avoids O(n²)
   let overlaps = 0;
@@ -136,16 +126,7 @@ export function measureReadability({ nodes, edges, width, height }) {
     visibleEdges: m,
     crossings,
     maxCrossings,
-    /**
-     * ★ **The field that stops a vacuous perfect score reading as a perfect score.**
-     *
-     * Measured, a synthetic 3000-node case produced `crossings 0 / possible 0 →
-     * quality 1`. Not because the layout was perfect but **because the density gate had
-     * folded the subtrees away, leaving 18 edges in a star on screen** — every edge pair
-     * shares an endpoint, so crossings are impossible in principle and the score is
-     * perfect. Without this field the instrument reaches the opposite conclusion, "the
-     * largest vault is the best".
-     */
+    /** Stops a vacuous perfect score reading as a perfect score: when the density gate folds subtrees away and leaves a star on screen, every edge pair shares an endpoint, crossings are impossible and quality is 1. */
     crossingMeasurable: maxCrossings > 0,
     crossingQuality: maxCrossings > 0 ? +(1 - crossings / maxCrossings).toFixed(4) : null,
     overlaps,

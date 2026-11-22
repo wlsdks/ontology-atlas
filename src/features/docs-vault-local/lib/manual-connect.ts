@@ -11,18 +11,15 @@ import { sourceCheckoutLaunch, type McpServerLaunch } from '@/shared/config';
 import { type AgentClientId, filesForClient } from '@/entities/vault-session';
 import { buildCodexConfigTomlTemplate, buildMcpConfigJson } from '@/entities/vault-session';
 
-/** `null` means the shape passed. */
 export type ManualPathIssue = 'empty' | 'relative' | 'tilde' | 'multiline';
 
 export interface ManualPathResult {
-  /** Absolute shape only, not existence. */
   ok: boolean;
   /** After stripping quotes, escapes and a trailing slash. */
   value: string;
   issue: ManualPathIssue | null;
 }
 
-/** Strips the wrappers a pasted path actually arrives in. */
 function unwrap(raw: string): string {
   let value = raw.trim();
 
@@ -74,18 +71,15 @@ export function normalizeManualPath(raw: string): ManualPathResult {
 
 export interface ManualConnectInput {
   vaultAbsolute: string;
-  /** The server launch command lives in this checkout. */
   checkoutAbsolute: string;
 }
 
 export interface ManualConnectConfig {
   client: AgentClientId;
-  /** Relative to the folder the agent is opened in. */
   file: string;
   body: string;
 }
 
-/** The source-checkout launch contract, used where there is no app bundle. */
 function manualLaunch({ checkoutAbsolute }: Pick<ManualConnectInput, 'checkoutAbsolute'>): McpServerLaunch {
   return sourceCheckoutLaunch(checkoutAbsolute);
 }
@@ -127,7 +121,6 @@ export function manualSetupCommand({ vaultAbsolute, checkoutAbsolute }: ManualCo
   ].join(' ');
 }
 
-/** Lets the user confirm the config really connects. */
 export function manualVerifyCommand({ vaultAbsolute, checkoutAbsolute }: ManualConnectInput): string {
   return [
     'node',

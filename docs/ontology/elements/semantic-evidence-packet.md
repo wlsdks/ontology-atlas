@@ -6,7 +6,7 @@ title: Semantic evidence packet
 display_en: Semantic evidence packet
 display_ko: 의미 근거 묶음
 domain: domains/code-evidence
-path: mcp/src/analyze/semantic-evidence.mjs
+path: mcp/src/analyze/candidates/semantic-evidence.mjs
 created_by: "agent:claude-code"
 ---
 

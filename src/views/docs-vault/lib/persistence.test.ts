@@ -362,10 +362,10 @@ describe("capability-gated local vault source", () => {
 
 describe("scheduleStateSync", () => {
   it("runs in a microtask rather than immediately", async () => {
-    const fn = vi.fn();
-    scheduleStateSync(fn);
-    expect(fn).not.toHaveBeenCalled();
+    const syncCallback = vi.fn();
+    scheduleStateSync(syncCallback);
+    expect(syncCallback).not.toHaveBeenCalled();
     await Promise.resolve();
-    expect(fn).toHaveBeenCalledOnce();
+    expect(syncCallback).toHaveBeenCalledOnce();
   });
 });

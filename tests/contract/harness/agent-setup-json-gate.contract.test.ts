@@ -4,9 +4,6 @@ import { describe, expect, it } from "vitest";
 
 const ROOT = process.cwd();
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".mjs", ".md", ".json"]);
-const EXCLUDED_FILES = new Set([
-  "cli/src/commands/diagnosis/agent-brief.mjs",
-]);
 const EXPLICIT_FILES = [
   "package.json",
   "cli/README.md",
@@ -42,7 +39,7 @@ describe("agent setup automation JSON gate", () => {
       ...activeFiles("cli/src"),
       ...activeFiles("cli/templates"),
       ...EXPLICIT_FILES.map((file) => join(ROOT, file)),
-    ].filter((file) => !EXCLUDED_FILES.has(relative(ROOT, file)));
+    ];
     const subjects = new Set<string>();
     const offenders: string[] = [];
 

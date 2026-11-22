@@ -1,4 +1,4 @@
-import type { DialModel, DialScene, Point } from "../types";
+import type { DialModel, DialScene, Point } from "../dial-shapes";
 
 const COLUMN_PITCH = 20;
 const MEMBER_REACH = 8;

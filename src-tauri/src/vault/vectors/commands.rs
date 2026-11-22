@@ -321,7 +321,7 @@ pub(crate) async fn vault_vectors_reveal_model() -> Result<(), String> {
 
 fn reveal_model_dir(dir: &Path) -> Result<(), String> {
     if !dir.is_dir() {
-        return Err(crate::errors::coded(
+        return Err(crate::coded_error::coded(
             "reveal-failed",
             "the model folder is not there",
         ));
@@ -332,11 +332,11 @@ fn reveal_model_dir(dir: &Path) -> Result<(), String> {
             .arg("-R")
             .arg(dir)
             .status()
-            .map_err(|err| crate::errors::coded("reveal-failed", err))?;
+            .map_err(|err| crate::coded_error::coded("reveal-failed", err))?;
         if status.success() {
             Ok(())
         } else {
-            Err(crate::errors::coded(
+            Err(crate::coded_error::coded(
                 "reveal-failed",
                 format!("open exited with status {status}"),
             ))

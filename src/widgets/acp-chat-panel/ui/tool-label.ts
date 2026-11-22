@@ -11,7 +11,6 @@ const VAULT_TOOL_KEYS: Readonly<Record<string, string>> = {
   connection_info: 'connect',
   startup: 'connect',
 
-  // Reads of the graph itself.
   list_concepts: 'read',
   list_kinds: 'read',
   get_concept: 'read',
@@ -36,11 +35,9 @@ const VAULT_TOOL_KEYS: Readonly<Record<string, string>> = {
   analyze_repo_structure: 'readCode',
   inspect_architecture: 'readCode',
 
-  // Checks.
   validate_vault: 'check',
   validate_wiki: 'checkPages',
 
-  // Writes.
   add_concept: 'addNode',
   add_concepts: 'addNode',
   patch_concept: 'editNode',
@@ -64,7 +61,6 @@ export const VAULT_TOOL_LABEL_KEYS: readonly string[] = [
   ...new Set(Object.values(VAULT_TOOL_KEYS)),
 ];
 
-/** The tool names this table knows, for the same contract. */
 export const LABELLED_VAULT_TOOLS: readonly string[] = Object.keys(VAULT_TOOL_KEYS);
 
 export interface ToolLabel {
@@ -80,7 +76,6 @@ export interface ToolLabel {
   kind: 'known' | 'kind' | 'raw';
 }
 
-/** The ACP `ToolKind`s that name an action a person can read, in `acpChat.toolKind`. */
 const ACP_TOOL_KIND_WORDS = ['read', 'edit', 'delete', 'move', 'search', 'execute', 'fetch'] as const;
 
 /**
@@ -118,12 +113,8 @@ export function canonicalToolTitle(title: string, rawInput: unknown): string {
  * `Terminal`                      → `{ kind: 'raw',   text: 'Terminal' }`
  */
 /**
- * Did this call go to the vault server we wired in?
- *
- * It exists beside `toolLabel` because both answers turn on the same prefix, and a second
- * copy of that string is how they come to disagree. `tool-outcome.ts` needs it to decide
- * whether `total` in the answer is a result count or somebody else's field with the same
- * name.
+ * Whether this call went to the vault server we wired in. It sits beside `toolLabel` because both
+ * turn on the same prefix; `tool-outcome.ts` uses it to tell a result count `total` from another field.
  */
 export function isVaultTool(title: string, vaultServerName: string): boolean {
   return title.trim().startsWith(`mcp__${vaultServerName}__`);

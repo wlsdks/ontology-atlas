@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { LangBootScript, JsonLd, WebviewErrorReporter } from '@/shared/ui';
 import { SITE_URL } from '@/shared/config';
-import { SITE_NAME, siteEntityGraph } from '@/shared/config/site-entity';
-import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/web-content-security-policy';
+import { SITE_NAME, siteEntityGraph } from '@/shared/config/site/site-entity';
+import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/site/web-content-security-policy';
 import { jetbrainsMono, pretendard, pretendardLatinStack } from '@/shared/config/fonts';
 import { LOCALE_META } from '@/i18n/locales';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
@@ -17,24 +17,13 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   // Metadata fields are not auto-prefixed by an optional next.config basePath.
   manifest: withBasePath('/manifest.webmanifest'),
-  // Title template is owned by app/[locale]/layout.tsx so the locale-aware
-  // string ends up in <title>. We only set a fallback default here for the
-  // root `/` redirect page (which the user sees for ~50ms before redirect).
+  // Only the fallback: `app/[locale]/layout.tsx` owns the locale-aware title template.
   title: 'Ontology Atlas',
   description: 'Understand what your codebase builds, why it is structured that way, and what a change will affect.',
   keywords: ['Ontology Atlas', 'ontology-atlas', 'codebase ontology', 'ontology', 'knowledge graph', 'markdown', 'frontmatter', 'AI agent', 'MCP', 'topology'],
   authors: [{ name: SITE_NAME, url: `${SITE_URL}/` }],
-  /**
-   * Search Console ownership verification — **the value comes from an environment variable.**
-   *
-   * A GitHub Pages project site (`user.github.io/repo/`) cannot use DNS verification (that domain
-   * is not ours). Of the two remaining methods, this meta tag is the one that does not require
-   * committing a file to the repository.
-   *
-   * The code is **not a secret, but it is not a fact about this repository either** — a fork
-   * shipping our verification code on their site blocks their own Console registration. So it is
-   * injected by the build environment rather than hardcoded. Unset, the tag is not emitted at all.
-   */
+  // Not hardcoded: a fork shipping this site's verification code would block its own Console
+  // registration. Unset, the tag is not emitted.
   verification: {
     ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
       ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
@@ -100,14 +89,9 @@ export default function RootLayout({
          by body; padding here would add dead document scroll. */}
       <body className="flex min-h-full flex-col overflow-x-hidden">
         <LangBootScript />
-        {/* Forwards a WebView script error or unhandled rejection to the app log. Inside the
-            installed app nobody is watching a console, so without this a panel that dies in an
-            async callback leaves no trace at all. No-op in a browser. */}
         <WebviewErrorReporter />
         <JsonLd data={siteEntityGraph(Object.values(LOCALE_META).map((meta) => meta.htmlLang))} />
-        {/* The root error boundary replaces the locale layout, so its copy (about 0.6 KB, both
-            locales) is handed down from here as props. A client import of the message files
-            shipped all 836 KB of them in every page's JavaScript. */}
+        {/* The root error boundary replaces the locale layout, so its copy is handed down as props; a client import of the message files would ship them all in every page. */}
         <StandaloneMessagesProvider messages={pickStandaloneMessages(ROUTE_ERROR_PICK)}>
           {children}
         </StandaloneMessagesProvider>

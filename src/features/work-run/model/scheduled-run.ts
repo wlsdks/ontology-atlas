@@ -9,12 +9,10 @@ import type { WorkRunCardState } from './work-run';
 
 export type ScheduledRunLane = 'ontology' | 'documents';
 
-/** What the runner is doing when no document is open: reading the folder or waiting on the agent. */
 export type ScheduledRunStep = 'checking' | 'agent';
 
 export type ScheduledRunPhase = 'running' | 'ended' | 'stopped';
 
-/** The ledger's facts about a finished run, which the card and the stage say in a sentence. */
 export interface ScheduledRunResult {
   outcome: Exclude<RoundPassOutcome, 'asleep'>;
   checked: number;
@@ -24,7 +22,6 @@ export interface ScheduledRunResult {
 }
 
 export interface ScheduledRun {
-  /** The ledger entry this run writes; the door lands on it. */
   id: string;
   roundId: string;
   name: string;
@@ -34,13 +31,11 @@ export interface ScheduledRun {
   endedAt: number | null;
   phase: ScheduledRunPhase;
   step: ScheduledRunStep;
-  /** The document the run opened last; null before its first. */
   document: string | null;
   /** Append-only and shared by every snapshot of this run; `checkedCount` is what changes. */
   counted: ReadonlySet<string>;
   checkedCount: number;
   result: ScheduledRunResult | null;
-  /** A result nobody has seen on Automations yet. */
   unseen: boolean;
   card: WorkRunCardState;
 }

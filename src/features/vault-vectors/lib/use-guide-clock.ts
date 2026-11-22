@@ -2,10 +2,7 @@ import { useEffect, useState, type RefObject } from 'react';
 
 const TICK_MS = 100;
 
-/**
- * Milliseconds into a loop of `loopMs`, advancing only while `playing`, the element is on screen
- * and the window is shown; a paused clock keeps its place. One state update per tick.
- */
+/** A paused clock keeps its place; one state update per tick. */
 export function useGuideClock(element: RefObject<HTMLElement | null>, playing: boolean, loopMs: number): number {
   const [elapsed, setElapsed] = useState(0);
   const [onScreen, setOnScreen] = useState(false);

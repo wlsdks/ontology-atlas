@@ -6,7 +6,6 @@
 const STORAGE_KEY = 'ontology-atlas:agent-choices';
 const VERSION = 1;
 
-/** `[absolute folder, tool id]` and `[absolute folder, tool id, model id]`. */
 type ToolEntry = readonly [string, string];
 type ModelEntry = readonly [string, string, string];
 

@@ -1,9 +1,9 @@
 'use client';
 
-import { useId, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 
-import { formatSize } from '@/shared/lib/format-size';
+import { MiddleCutName } from '@/shared/ui/middle-cut-name/middle-cut-name';
 import type { MeaningProgress, MeaningRun } from '../model/meaning-run';
 
 const PLACEHOLDER = '\u0000';
@@ -34,52 +34,11 @@ function withFigure(sentence: string, figure: ReactNode): ReactNode {
   return <>{before}{figure}{after}</>;
 }
 
-/** The file's name alone, its middle giving way first; the full path is its title. */
-export function MiddleCutName({ path }: { path: string }) {
-  const pathId = useId();
-  const name = path.split('/').pop() || path;
-  // A short name is written whole: cutting it would leave a stub that reads as another name.
-  const cut = name.length > KEPT_NAME_END * 2 ? name.length - KEPT_NAME_END : 0;
-  return (
-    <>
-      <span
-        className="flex min-w-0 overflow-hidden font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
-        title={path}
-        aria-describedby={pathId}
-        data-testid="work-run-file"
-      >
-        {cut > 0 ? <span className="min-w-0 truncate">{name.slice(0, cut)}</span> : null}
-        <span className={cut > 0 ? 'flex-none whitespace-pre' : 'min-w-0 truncate'}>{name.slice(cut)}</span>
-      </span>
-      <span id={pathId} hidden>{path}</span>
-    </>
-  );
-}
-
-/** The desk line's sentence for a failure, with the coded detail in words as the desk says it. */
-function useFailureSentence(run: MeaningRun): string {
-  const tDesk = useTranslations('library.questionDesk.meaning');
-  const locale = useLocale();
-  const failure = run.failure;
-  if (!failure) return '';
-  const message = failure.message as Parameters<typeof tDesk>[0];
-  const raw = typeof failure.values.detail === 'string' ? failure.values.detail : '';
-  if (failure.message === 'modelDownloadPaused') {
-    const bytes = (value: unknown) => formatSize(typeof value === 'number' ? value : 0, locale);
-    return tDesk(message, { done: bytes(failure.values.done), total: bytes(failure.values.total) });
-  }
-  if (failure.message === 'modelDownloadFailed' || failure.message === 'modelFailed' || failure.message === 'writeFailed') {
-    return tDesk(message, { detail: tDesk('failureDetail', { code: raw.replaceAll('-', '_'), raw }) });
-  }
-  return tDesk(message, failure.values as Record<string, string | number>);
-}
-
 /** The words of a meaning run in the seat: the counts it has, and the desk's own sentences. */
 export function useMeaningRunCopy(run: MeaningRun, progress: MeaningProgress | null, figure: MeaningFigure = PLAIN_FIGURE): MeaningCopy {
   const t = useTranslations('workCard.meaning');
   const tDesk = useTranslations('library.questionDesk.meaning');
   const locale = useLocale();
-  const failure = useFailureSentence(run);
   const whole = (value: number) => new Intl.NumberFormat(locale).format(value);
   const tenths = (value: number) => new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
   const filesDone = progress?.filesDone ?? 0;
@@ -115,7 +74,13 @@ export function useMeaningRunCopy(run: MeaningRun, progress: MeaningProgress | n
         line: reading ? (
           <span className="flex min-w-0 items-center whitespace-pre">
             <span className="flex-none">{readingBefore}</span>
-            <MiddleCutName path={reading} />
+            <MiddleCutName
+              path={reading}
+              keepEnd={KEPT_NAME_END}
+              wholeUpTo={KEPT_NAME_END * 2}
+              testId="work-run-file"
+              className="overflow-hidden font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+            />
             <span className="flex-none">{readingAfter}</span>
           </span>
         ) : null,
@@ -134,6 +99,6 @@ export function useMeaningRunCopy(run: MeaningRun, progress: MeaningProgress | n
     }
     case 'failed':
     case 'stopped':
-      return { title, remaining, lead: null, line: failure, bar: null };
+      return { title, remaining, lead: null, line: run.failure ?? '', bar: null };
   }
 }

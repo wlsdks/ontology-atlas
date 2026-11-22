@@ -18,10 +18,8 @@ export function useAgentDockDefaultOpen(): boolean | null {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      // With no bridge (web), `secretStatus` returns `null` immediately without any IPC, so
-      // this loop ends in three instant returns and settles on `false`. **The point is that
-      // there is no synchronous branch** — calling setState directly in the effect body
-      // causes a cascading render, which lint already flags.
+      // Without a bridge `secretStatus` returns null with no IPC, so this settles on `false`. No synchronous
+      // branch: calling setState directly in the effect body causes a cascading render.
       for (const provider of SECRET_PROVIDERS) {
         const status = await secretStatus(provider);
         if (cancelled) return;

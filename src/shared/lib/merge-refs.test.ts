@@ -22,24 +22,24 @@ describe('mergeRefs', () => {
   });
 
   it('mixes function and object refs', () => {
-    const fn = vi.fn();
-    const obj = { current: null as HTMLDivElement | null };
+    const refCallback = vi.fn();
+    const refObject = { current: null as HTMLDivElement | null };
     const node = document.createElement('div');
-    mergeRefs(fn, obj)(node);
-    expect(fn).toHaveBeenCalledWith(node);
-    expect(obj.current).toBe(node);
+    mergeRefs(refCallback, refObject)(node);
+    expect(refCallback).toHaveBeenCalledWith(node);
+    expect(refObject.current).toBe(node);
   });
 
   it('skips null/undefined refs without throwing', () => {
-    const obj = { current: null as HTMLDivElement | null };
+    const refObject = { current: null as HTMLDivElement | null };
     const node = document.createElement('div');
-    expect(() => mergeRefs(null, undefined, obj)(node)).not.toThrow();
-    expect(obj.current).toBe(node);
+    expect(() => mergeRefs(null, undefined, refObject)(node)).not.toThrow();
+    expect(refObject.current).toBe(node);
   });
 
   it('propagates null on unmount to every ref', () => {
-    const obj = { current: document.createElement('div') as HTMLDivElement | null };
-    mergeRefs(obj)(null);
-    expect(obj.current).toBeNull();
+    const refObject = { current: document.createElement('div') as HTMLDivElement | null };
+    mergeRefs(refObject)(null);
+    expect(refObject.current).toBeNull();
   });
 });

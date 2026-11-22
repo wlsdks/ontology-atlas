@@ -1,4 +1,4 @@
-import type { KnowledgeGraphNode } from "../model/types";
+import type { KnowledgeGraphNode } from "../model/knowledge-graph";
 
 /**
  * `ownSlug` is the node's own `.md` (null: show no document); `mentionedInSlug` is a document

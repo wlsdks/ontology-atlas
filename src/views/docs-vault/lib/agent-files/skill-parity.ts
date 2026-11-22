@@ -7,19 +7,15 @@ import type { AgentFilesAnalysis } from '@/entities/agent-files';
  * desktop bridge. This module only judges; which copy is right is the person's call.
  */
 
-/** Three values only, so the reader need not memorize a table. */
 type SkillParityVerdict =
   | 'agreed'
   | 'diverged'
-  /** Present in one tree only (the whole skill, or some files inside it). */
   | 'one-sided';
 
 export interface SkillParityRow {
-  /** The `<name>` of `.claude/skills/<name>/…`. */
   name: string;
   verdict: SkillParityVerdict;
   presentIn: Array<'.claude/skills' | '.agents/skills'>;
-  /** Which files diverged, so the agent receiving the handoff knows what to open. */
   files: string[];
 }
 
@@ -61,7 +57,6 @@ export function buildSkillParityModel(analysis: AgentFilesAnalysis): SkillParity
   const oneSided = new Map<string, Set<string>>();
   for (const finding of analysis.drift) {
     if (finding.check !== 'skill-copy') continue;
-    // Paths are relative to the skill tree (`<skill>/SKILL.md`).
     const name = finding.path.split('/')[0];
     if (!name) continue;
     const bucket = finding.code === 'skill-copy-diverged' ? diverged : oneSided;
@@ -78,7 +73,6 @@ export function buildSkillParityModel(analysis: AgentFilesAnalysis): SkillParity
 
   const rows: SkillParityRow[] = [...present.keys()].sort().map((name) => {
     const trees = [...(present.get(name) ?? [])].sort();
-    // A skill folder missing from one tree has no per-file finding, so it is decided here.
     const wholeTreeMissing = trees.length < 2;
     const divergedFiles = [...(diverged.get(name) ?? [])].sort();
     const oneSidedFiles = [...(oneSided.get(name) ?? [])].sort();

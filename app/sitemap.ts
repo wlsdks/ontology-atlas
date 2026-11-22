@@ -12,7 +12,6 @@ import {
   guideSourcePath,
 } from '@/views/gateway-doc';
 
-// Static export — must resolve at build time.
 export const dynamic = 'force-static';
 
 // Canonical surfaces a user can reach directly. Compatibility redirects, vault-mode-only entry
@@ -30,13 +29,10 @@ const STATIC_ROUTES = [
   // the sitemap makes two signals say different things.
 ];
 
-/** Where each route's words live, so its `lastmod` is the last commit that changed them. */
 function sourcesOf(route: string, locale: string): string[] {
   if (route === 'download') return ['src/views/download', 'messages/en/download.json'];
   if (route === 'changelog') return ['docs/records/changes', 'docs/records/releases'];
   if (route === 'topology') return ['app/[locale]/topology', 'messages/en/topology.json'];
-  // A guide chapter in one language changes with its own body, title and description, not with
-  // another language's.
   const page = route === 'guide' ? GUIDE_ENTRY_PAGE : GUIDE_PAGES.find((guide) => guideCanonicalPath(guide) === route);
   if (!page) return ['src/views/gateway-doc', `messages/${locale}`];
   return [
@@ -47,7 +43,6 @@ function sourcesOf(route: string, locale: string): string[] {
   ];
 }
 
-/** Locales whose copy of a route is a page of record; the rest canonicalize elsewhere (`buildPageMetadata`). */
 const localesOf = (route: string): readonly string[] =>
   route === 'changelog' ? CHANGELOG_CONTENT_LOCALES : routing.locales;
 
@@ -67,9 +62,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ),
   );
 
-  // Per-locale entries for the static set + per-locale per-project entries.
-  // Each entry advertises its hreflang siblings via `alternates.languages`,
-  // which Google uses to pick the right localized URL for a user.
   for (const locale of routing.locales) {
     for (const route of STATIC_ROUTES) {
       const ownLocales = localesOf(route);
@@ -80,10 +72,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         url: `${SITE_URL}${path}`,
         ...(lastModified ? { lastModified } : {}),
         alternates: {
-          // `x-default` is where we decide what to give a user in neither language (a French
-          // browser, say). Without it the search engine picks for itself. It must say the same
-          // thing as the page `<head>`'s hreflang (`buildPageMetadata`) — if the two diverge, both
-          // are ignored.
+          // `x-default` must say the same as the page `<head>`'s hreflang (`buildPageMetadata`), or both
+                  // are ignored.
           languages: {
             ...Object.fromEntries(
               ownLocales.map((l) => [
@@ -102,8 +92,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         url: `${SITE_URL}/${locale}/project/${project.slug}/`,
         ...(project.updatedAt ? { lastModified: project.updatedAt } : {}),
         alternates: {
-          // Same rule as the static routes — omitting `x-default` leaves the search engine choosing
-          // a default language for this entry alone.
           languages: {
             ...Object.fromEntries(
               routing.locales.map((l) => [

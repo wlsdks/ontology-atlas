@@ -1,17 +1,10 @@
 #!/usr/bin/env node
-// Living-document metadata gate.
-//
-// Every living document under docs/ carries `title`, `doc_type`, `status` and
-// `area` in frontmatter, and every path it points at exists. The gate checks
-// only facts a machine can derive: keys, enums, the folder a kind may live in,
-// and pointers (`enforced_by`, `routes`, `decisions`, `superseded_by`, the
-// guide registry). It never reads section headings or prose; those belong to
-// their authors (`.claude/rules/documentation.md`).
-//
-// Versions are not written here. `updated` and `revision` come from Git at build
-// time (`scripts/docs-vault/build-docs-vault.mjs`), so a hand-written counter is rejected.
-// The one enforced bump: a changed `contract_version` must arrive with a new
-// decision record that cites the document.
+// Living-document metadata gate: every living document under docs/ carries `title`, `doc_type`,
+// `status` and `area` in frontmatter and every path it points at exists. It checks only facts a
+// machine can derive (keys, enums, folder per kind, pointers) and never reads headings or prose
+// (`.claude/rules/documentation.md`). `updated` and `revision` come from Git at build time
+// (`scripts/docs-vault/build-docs-vault.mjs`), so a hand-written counter is rejected; a changed
+// `contract_version` must arrive with a new decision record that cites the document.
 //
 //   pnpm docs:meta
 
@@ -40,10 +33,10 @@ export const MIN_CHECKED = 40;
 
 export function listLivingDocs(root = ROOT) {
   const found = [];
-  const walk = (dir) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+  const walk = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
       if (entry.name.startsWith('.')) continue;
-      const full = path.join(dir, entry.name);
+      const full = path.join(directory, entry.name);
       if (entry.isDirectory()) walk(full);
       else if (entry.name.endsWith('.md')) {
         const repoPath = path.relative(root, full).split(path.sep).join('/');
@@ -76,25 +69,25 @@ export function routeExists(route, root = ROOT) {
 }
 
 function routeExistsUnder(localeRoot, segments) {
-  let dir = localeRoot;
+  let directory = localeRoot;
   for (const segment of segments) {
-    const exact = path.join(dir, segment);
+    const exact = path.join(directory, segment);
     if (existsSync(exact)) {
-      dir = exact;
+      directory = exact;
       continue;
     }
-    const dynamic = existsSync(dir)
-      ? readdirSync(dir, { withFileTypes: true }).find((entry) => entry.isDirectory() && /^\[.+\]$/.test(entry.name))
+    const dynamic = existsSync(directory)
+      ? readdirSync(directory, { withFileTypes: true }).find((entry) => entry.isDirectory() && /^\[.+\]$/.test(entry.name))
       : null;
     if (!dynamic) return false;
-    dir = path.join(dir, dynamic.name);
+    directory = path.join(directory, dynamic.name);
   }
-  return existsSync(path.join(dir, 'page.tsx'));
+  return existsSync(path.join(directory, 'page.tsx'));
 }
 
 function decisionIds(root) {
-  const dir = path.join(root, 'docs', 'records', 'decisions');
-  return existsSync(dir) ? readdirSync(dir).filter((name) => name.endsWith('.md')) : [];
+  const directory = path.join(root, 'docs', 'records', 'decisions');
+  return existsSync(directory) ? readdirSync(directory).filter((name) => name.endsWith('.md')) : [];
 }
 
 function asList(value) {
@@ -108,7 +101,6 @@ function hasRevisionLog(raw) {
   return section !== undefined && /^- \d{4}-\d{2}-\d{2}: \S/m.test(section.split(/^## /m)[0]);
 }
 
-/** Problems in one document's frontmatter, as `{ file, key, message }`. */
 export function checkDoc(repoPath, raw, { root = ROOT, decisions = decisionIds(root), guideRegistry = '' } = {}) {
   const problems = [];
   const report = (key, message) => problems.push({ file: repoPath, key, message });
@@ -255,26 +247,25 @@ export function isInstructionPath(repoPath) {
   );
 }
 
-function walkMarkdown(root, dir, out) {
-  const full = path.join(root, dir);
+function walkMarkdown(root, directory, out) {
+  const full = path.join(root, directory);
   if (!existsSync(full)) return out;
   for (const entry of readdirSync(full, { withFileTypes: true })) {
     if (entry.name === 'node_modules') continue;
-    const child = dir ? `${dir}/${entry.name}` : entry.name;
+    const child = directory ? `${directory}/${entry.name}` : entry.name;
     if (entry.isDirectory()) walkMarkdown(root, child, out);
     else if (entry.name.endsWith('.md')) out.push(child);
   }
   return out;
 }
 
-/** Repository paths a document cites, by link or by backticked path, without fragments. */
 export function citedPaths(repoPath, raw) {
-  const dir = path.posix.dirname(repoPath);
+  const directory = path.posix.dirname(repoPath);
   const cited = new Set();
   const add = (target, relative) => {
     const clean = target.split('#')[0].split('?')[0];
     if (!clean || isExternalTarget(clean) || clean.startsWith('/')) return;
-    const resolved = relative ? path.posix.normalize(path.posix.join(dir, clean)) : path.posix.normalize(clean);
+    const resolved = relative ? path.posix.normalize(path.posix.join(directory, clean)) : path.posix.normalize(clean);
     if (!resolved.startsWith('..')) cited.add(resolved);
   };
   for (const { target } of collectMarkdownLinks(raw)) add(target, true);
@@ -306,7 +297,7 @@ export function citationProblems(root = ROOT) {
   const sources = [
     ...['AGENTS.md'].filter((file) => existsSync(path.join(root, file))),
     ...walkMarkdown(root, 'docs', []),
-    ...['.claude/rules', '.claude/skills', '.claude/agents', '.agents', '.codex'].flatMap((dir) => walkMarkdown(root, dir, [])),
+    ...['.claude/rules', '.claude/skills', '.claude/agents', '.agents', '.codex'].flatMap((directory) => walkMarkdown(root, directory, [])),
   ];
   const problems = [];
   for (const repoPath of [...new Set(sources)].sort()) {

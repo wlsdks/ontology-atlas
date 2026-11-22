@@ -1,4 +1,4 @@
-import { definePreference } from "./define-preference";
+import { definePreference } from "./preference-storage/define-preference";
 
 export const TEXT_SIZES = ["default", "large", "larger"] as const;
 

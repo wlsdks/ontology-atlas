@@ -35,8 +35,8 @@ describe('settings primitives', () => {
         <SettingsDoorRow settingId="door-models" label="Models" href="/agents" onLeave={() => {}} />
       </>,
     );
-    const ids = [...container.querySelectorAll('[data-setting-id]')].map((el) =>
-      el.getAttribute('data-setting-id'),
+    const ids = [...container.querySelectorAll('[data-setting-id]')].map((element) =>
+      element.getAttribute('data-setting-id'),
     );
     expect(ids).toEqual(['screen-guides', 'pan-zoom-speed', 'view-mode', 'door-models']);
   });

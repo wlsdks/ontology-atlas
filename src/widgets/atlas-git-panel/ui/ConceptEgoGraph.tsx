@@ -11,12 +11,11 @@ import {
   type EgoView,
 } from "../lib/ego-layout";
 
-/** The geometry comes from the `--git-ego-*` tokens. */
-function readGeometry(el: Element | null): EgoGeometry {
+function readGeometry(element: Element | null): EgoGeometry {
   const fallback = DEFAULT_EGO_GEOMETRY;
   const read = (name: string, value: number) => {
-    if (!el) return value;
-    const raw = getComputedStyle(el).getPropertyValue(name).trim();
+    if (!element) return value;
+    const raw = getComputedStyle(element).getPropertyValue(name).trim();
     const parsed = Number.parseFloat(raw);
     return Number.isFinite(parsed) ? parsed : value;
   };
@@ -97,7 +96,6 @@ const LABEL_HALO = {
   strokeLinejoin: "round",
 } as const;
 
-/** The point `inset` units from `(x2, y2)` back toward `(x1, y1)`. */
 function pullBack(x1: number, y1: number, x2: number, y2: number, inset: number): [number, number] {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -122,11 +120,9 @@ export function ConceptEgoGraph({
   className,
 }: {
   ego: ConceptEgo;
-  /** Bearing names — i18n belongs to the caller; the widget never composes copy. */
   bearingLabel: (bearing: EgoBearing) => string;
   moreLabel: (count: number) => string;
   onSelect?: (nodeId: string) => void;
-  /** The neighbour pointed at or focused, here or in the relation table; its name is drawn. */
   activeId?: string | null;
   onActive?: (nodeId: string | null) => void;
   className?: string;
@@ -137,17 +133,17 @@ export function ConceptEgoGraph({
   const boxRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<EgoView | null>(null);
   useLayoutEffect(() => {
-    const el = boxRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
+    const element = boxRef.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
     const read = () => {
-      const { width, height } = el.getBoundingClientRect();
+      const { width, height } = element.getBoundingClientRect();
       if (width < 1 || height < 1) return;
       const next = { w: Math.round(width), h: Math.round(height) };
-      setView((prev) => (prev && prev.w === next.w && prev.h === next.h ? prev : next));
+      setView((previous) => (previous && previous.w === next.w && previous.h === next.h ? previous : next));
     };
     read();
     const observer = new ResizeObserver(read);
-    observer.observe(el);
+    observer.observe(element);
     return () => observer.disconnect();
   }, []);
   const box = view ?? DEFAULT_EGO_VIEW;
@@ -183,7 +179,6 @@ export function ConceptEgoGraph({
           // A spoke stops at both shapes' edges so it crosses neither the selection ring nor a
           // pill's words.
           const [x1, y1] = pullBack(slot.x, slot.y, cx, cy, selfRadius + 6);
-          // A pill is a rect: the spoke stops where its direction meets the pill's edge.
           const angle = Math.atan2(slot.y - cy, slot.x - cx);
           const pillInset =
             slot.type === "more"
@@ -210,7 +205,7 @@ export function ConceptEgoGraph({
         {slots.map((slot) =>
           slot.type === "more" ? (
             <g key={`more-${slot.bearing}`}>
-              {/* Opaque backing: the overlay tint alone let the canvas lines show through. */}
+              {/* Opaque backing: the overlay tint alone lets the canvas lines show through. */}
               <rect
                 x={slot.x - slot.width / 2}
                 y={slot.y - 9}

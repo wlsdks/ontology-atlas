@@ -6,7 +6,7 @@ import {
   parseLibraryCollections as parseFrontend,
   resolveCollectionMembers,
 } from '@/entities/library-collection';
-import { parseLibraryCollections as parseMcp } from '../../../mcp/src/library/constellations.mjs';
+import { parseLibraryCollections as parseMcp } from '../../../mcp/src/library/library-collections.mjs';
 
 const fixture = readFileSync(
   resolve(process.cwd(), 'tests/contract/fixtures/library-collections/constellations-v1.json'),

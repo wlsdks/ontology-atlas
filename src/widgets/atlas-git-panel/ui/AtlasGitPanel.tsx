@@ -23,8 +23,8 @@ import { useGitWorkspace } from "../model/use-git-workspace";
 import { useWorkbenchSelection } from "../model/use-workbench-selection";
 import type { ChangedDocument } from "./PendingDocumentPane";
 import { DesktopBody, type GitStage } from "./DesktopBody";
-import { LocationLine } from "./RemoteControls";
-import { NoVaultSetup, WebSetup } from "./SetupMode";
+import { LocationLine } from "./remote-controls";
+import { NoVaultSetup, WebSetup } from "./setup-panels";
 import { cn } from "@/shared/lib/cn";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { PageHeaderBar, WaitStage } from "@/shared/ui";
@@ -38,13 +38,8 @@ import { PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
  */
 
 export interface AtlasGitPanelProps {
-  /**
-   * Absolute path of the Tauri desktop vault, from
-   * `getTauriVaultRootPath(vault.handle)`. null/undefined renders the web
-   * degradation.
-   */
+  /** Absolute path of the Tauri desktop vault; null or undefined renders the web degradation. */
   vaultPath?: string | null;
-  /** Session changeset for the web degradation summary — HomePage's `ontologyChangeset`. */
   sessionChangeset?: OntologyChangeset | null;
   /**
    * The vault graph, used to map a step's files onto concepts. Passed in rather than read through

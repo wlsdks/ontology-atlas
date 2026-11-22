@@ -40,12 +40,12 @@ describe("parallaxFollow", () => {
   it("detects the defect it replaced, so the fix cannot be quietly reverted", () => {
     const at120 = remainingAfterFixedFraction(280, HZ_120);
     const at30 = remainingAfterFixedFraction(280, HZ_30);
-    // Four times the frames means four times the progress: the old code was not one motion.
+    // A fixed per-frame fraction would make four times the frames four times the progress.
     expect(at30 / at120).toBeGreaterThan(3);
   });
 
   it("keeps the 60Hz feel the screen was tuned at", () => {
-    // The tau is derived from the retired fraction, so one 60Hz frame moves the same 6%.
+    // One 60Hz frame moves about 6%.
     expect(parallaxFollow(HZ_60)).toBeCloseTo(0.06, 3);
   });
 
@@ -71,13 +71,8 @@ describe("pageScaleFor", () => {
 });
 
 /*
- * ⚠️ The ordering above is a claim about the *world*, and it was true the whole time the
- * encoding was broken: under a perspective camera the size a reader sees is that ordering
- * divided by depth, and the object's marks span 2.38-3.39 in depth. Measured over the
- * anonymous object at 440px, perspective drew 3 of 28 weight-ordered pairs backwards and
- * rendered three pages of identical weight at 9.05, 9.05 and 12.89px; orthographic drew 0
- * of 28 backwards. So the projection is part of the encoding, and this is the line that
- * decides it — a GPU is needed to run the scene, but not to read which camera it builds.
+ * The projection is part of the weight encoding: a perspective camera divides the drawn size by
+ * depth and reorders it. Reading which camera the scene builds needs no GPU.
  */
 describe("the projection the weight channel depends on", () => {
   // Repo-relative: this suite runs under jsdom, where `import.meta.url` is not a file URL.

@@ -4,8 +4,8 @@
 
 import { loadMcpModule } from './mcp-module.mjs';
 
-/** @returns {Promise<Record<string, Function>>} mcp's activity-log module. */
-const loadActivityLogModule = () => loadMcpModule('vault/activity-log.mjs');
+/** @returns {Promise<Record<string, Function>>} */
+const loadActivityLogModule = () => loadMcpModule('vault/sidecar/activity-log.mjs');
 
 /**
  * Reads the agent name from the heartbeat file, best-effort (null when absent), so `created_by` uses

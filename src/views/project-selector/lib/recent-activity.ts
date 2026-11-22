@@ -6,7 +6,6 @@ import { resolveAuthoredDescription } from "./authored-description";
 export interface RecentActivityRow {
   slug: string;
   kind: string;
-  /** Null for a dangling doc, whose row renders without a link. */
   nodeId: string | null;
   title: string;
   domainTitle: string | null;
@@ -19,7 +18,6 @@ export type RecentActivityAgo =
   | { unit: "yesterday" }
   | { unit: "daysAgo"; days: number };
 
-/** Translated at the UI layer. */
 export function resolveRecentActivityAgo(updatedAt: Date, now: Date): RecentActivityAgo {
   const ageMs = Math.max(0, now.getTime() - updatedAt.getTime());
   const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));

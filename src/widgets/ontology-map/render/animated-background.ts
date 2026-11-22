@@ -40,7 +40,6 @@ interface AnimatedBackgroundStepArgs {
   /** Cursor position in screen coordinates; null when outside the canvas. */
   pointerX: number | null;
   pointerY: number | null;
-  /** Elapsed since the last frame, ms. */
   dtMs: number;
   reducedMotion: boolean;
 }
@@ -52,10 +51,7 @@ interface Seed {
   vy: number;
 }
 
-/**
- * Cursor proximity [0,1] — 0 outside the radius, 1 at the centre, quadratic in
- * between.
- */
+/** Cursor proximity 0..1: 0 outside the radius, 1 at the centre, quadratic between. */
 function cursorFalloff(
   x: number,
   y: number,
@@ -78,19 +74,13 @@ function populationFor(width: number, height: number, areaPer: number, cap: numb
 
 export interface AnimatedBackground {
   readonly variant: AnimatedBackgroundVariant;
-  /** Advance one frame and draw into the owned buffer. */
   step(args: AnimatedBackgroundStepArgs): void;
   /** Composite the buffer onto the target context, in CSS pixel coordinates. */
   paint(ctx: CanvasRenderingContext2D, width: number, height: number): void;
-  /** Release the offscreen canvas; called on unmount. */
   dispose(): void;
 }
 
-/**
- * Builds the constellation state plus its offscreen buffer. It creates a canvas
- * itself, so tests under jsdom inject `createCanvas`; the pure helpers above are
- * verified separately.
- */
+/** Builds the constellation state and its offscreen buffer; tests under jsdom inject `createCanvas`. */
 export function createAnimatedBackground(
   variant: AnimatedBackgroundVariant,
   tokens: AnimatedBackgroundTokens,
@@ -102,8 +92,8 @@ export function createAnimatedBackground(
   let bh = 0;
   let bdpr = 1;
   let seeds: Seed[] = [];
-  let prevOriginX: number | null = null;
-  let prevOriginY: number | null = null;
+  let previousOriginX: number | null = null;
+  let previousOriginY: number | null = null;
   let settled = false;
 
   const baseAlpha = Math.min(tokens.inkMax * 0.7, 0.055);
@@ -131,14 +121,7 @@ export function createAnimatedBackground(
     reseed();
   };
 
-  /**
-   * Shifts the seeds by the camera delta so the background follows the world.
-   *
-   * The trail buffer is deliberately not blitted along with them — a lesson from
-   * the discarded flow field, where a large camera move pushed half the buffer
-   * out and left a **hard edge around the empty region**. The constellation
-   * clears and redraws every frame, so it never has that problem.
-   */
+  /** Shifts the seeds by the camera delta. The trail buffer is not blitted along: it clears every frame, so no hard edge follows a large move. */
   const shift = (dx: number, dy: number): void => {
     if (dx === 0 && dy === 0) return;
     for (const s of seeds) {
@@ -148,7 +131,6 @@ export function createAnimatedBackground(
   };
 
   const stepWeb = (ctx: CanvasRenderingContext2D, a: AnimatedBackgroundStepArgs, speed: number): void => {
-    // No trail — redrawn each frame. Without afterimages the links read as links.
     ctx.clearRect(0, 0, bw, bh);
     for (const s of seeds) {
       s.x += s.vx * speed;
@@ -192,14 +174,13 @@ export function createAnimatedBackground(
       const ctx = bctx;
       if (!ctx || bw <= 0 || bh <= 0) return;
 
-      const dx = prevOriginX === null ? 0 : a.originX - prevOriginX;
-      const dy = prevOriginY === null ? 0 : a.originY - prevOriginY;
-      prevOriginX = a.originX;
-      prevOriginY = a.originY;
+      const dx = previousOriginX === null ? 0 : a.originX - previousOriginX;
+      const dy = previousOriginY === null ? 0 : a.originY - previousOriginY;
+      previousOriginX = a.originX;
+      previousOriginY = a.originY;
       shift(dx, dy);
 
       if (a.reducedMotion) {
-        // Build the settled image once and then stop: zero motion, screen intact.
         if (settled) return;
         for (let i = 0; i < SETTLE_STEPS; i += 1) {
           stepWeb(ctx, { ...a, pointerX: null, pointerY: null }, 1);
@@ -208,7 +189,6 @@ export function createAnimatedBackground(
         return;
       }
 
-      // At sleep factor 0, **not one frame is stepped** — the last image stays.
       if (a.ambientFactor <= 0) return;
       const dt = Math.min(MAX_STEP_MS, Math.max(0, a.dtMs)) / 16.667;
       stepWeb(ctx, a, a.ambientFactor * dt);

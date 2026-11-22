@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 
-import { useAgentClientControls, type AgentClientControlsProps } from './AgentClientButtons';
+import { useAgentClientControls, type AgentClientControlsProps } from './use-agent-client-controls';
 
 // The smallest host for the hook: with no launchable server it returns the degradation card
 // plus the by-hand panel.

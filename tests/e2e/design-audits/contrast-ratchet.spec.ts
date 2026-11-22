@@ -50,9 +50,8 @@ const COLLECT = `(() => {
     /*
      * **The ink is what the eye receives, not what \`color\` says.** \`opacity\` composites
      * the whole element against what is behind it, and it never touches the computed
-     * \`color\`, so an \`opacity-80\` on a word was invisible to this collector — the
-     * first-run card's ⌘O keycap read 4.70:1 here while measuring 3.63:1 on screen
-     * (2026-09-05). Opacity multiplies down the tree, so the effective alpha is the
+     * \`color\`, so an \`opacity-80\` on a word would be invisible to this collector.
+     * Opacity multiplies down the tree, so the effective alpha is the
      * product from the element up to the root, and \`resolveBackground\` has already
      * flattened what sits behind it.
      */

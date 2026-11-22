@@ -9,7 +9,6 @@ const AGENT_CHAT_INTENT_EVENT = 'ontology-atlas:agent-chat-intent';
 const AGENT_CHAT_INTENT_QUEUE_KEY = 'ontology-atlas:agent-chat-intent:pending';
 
 interface AgentChatIntentDetail {
-  /** Which runtime to open with; unset means whichever is currently selected. */
   runtimeId: string | null;
   /**
    * A first turn to open with, or `null` for an empty conversation. It arrives as the person's own
@@ -27,10 +26,8 @@ export function requestAgentChat(runtimeId:string|null=null,prompt:string|null=n
 }
 
 /**
- * Queue a destination-to-map request before navigation. A window event alone is
- * lost while `/agents` is mounted because the map subscriber does not exist on
- * that route. Session storage carries exactly one one-shot runtime id across the
- * route change; the map consumes and removes it before opening the dock.
+ * A window event is lost while `/agents` is mounted, which has no map subscriber, so session
+ * storage carries one one-shot request across the route change.
  */
 export function queueAgentChatIntent(
   /*
@@ -52,9 +49,7 @@ export function queueAgentChatIntent(
 }
 
 export interface QueuedAgentChatIntent {
-  /** `null` when the caller named a task but not a runner; the map falls back to the connected one. */
   runtimeId: string | null;
-  /** The first turn to open with, or `null` for an empty conversation. */
   prompt: string | null;
 }
 
@@ -75,11 +70,7 @@ export function consumeQueuedAgentChatIntent(): QueuedAgentChatIntent | undefine
       typeof parsed.runtimeId === 'string' && parsed.runtimeId.length > 0 ? parsed.runtimeId : null;
     const prompt =
       typeof parsed.prompt === 'string' && parsed.prompt.trim() ? parsed.prompt : null;
-    /*
-     * An entry that names neither a runner nor a task is malformed — there is nothing to act on.
-     * One of the two is enough: a runner alone opens the dock, a task alone opens it on whatever is
-     * connected.
-     */
+    /* One is enough: a runner alone opens the dock, a task alone opens it on whatever is connected. */
     if (!runtimeId && !prompt) return undefined;
     return {
       runtimeId,
@@ -92,7 +83,6 @@ export function consumeQueuedAgentChatIntent(): QueuedAgentChatIntent | undefine
   }
 }
 
-/** Subscribes to the request. Returns the unsubscribe function, for use as effect cleanup. */
 export function subscribeAgentChatIntent(
   handler: (runtimeId: string | null, prompt: string | null) => void | boolean,
 ): () => void {

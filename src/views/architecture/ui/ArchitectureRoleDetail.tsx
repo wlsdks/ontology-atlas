@@ -12,10 +12,6 @@ import type { RoleMembers } from '../model/role-members';
 const SECTION_LABEL =
   'text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]';
 
-/**
- * Everything one role carries beside the table: what it may import, what it imports, who imports
- * it, and what is inside it. Props only: it reads no profile or record.
- */
 export function ArchitectureRoleDetail({
   roleId,
   index,
@@ -37,24 +33,18 @@ export function ArchitectureRoleDetail({
   /** 1-based position in profile order: the number the table prints. */
   index: number;
   label: string;
-  /** One sentence for what the role is for; `null` for a role written before the field existed. */
   summary: string | null;
   paths: readonly string[];
-  /** Role ids the rules let this role import, in profile order. */
   mayImport: readonly string[];
-  /** Pairs out of this role with imports or violations, busiest first. */
   imports: readonly ImportCell[];
-  /** Pairs into this role, the same way. */
   importedBy: readonly ImportCell[];
   /** Whether a record exists; without one the observed lists wait for a check. */
   measured: boolean;
   maxCount: number;
-  /** The other end of the cell last chosen in the table, marked in both lists. */
   markedRole: string | null;
   members: RoleMembers;
   concepts: readonly RoleConcept[];
   roleLabel: (id: string) => string;
-  /** Why modules are missing or come from concepts, where this surface cannot list source. */
   sourceNote: ReactNode;
 }) {
   const t = useTranslations('architecture');

@@ -11,15 +11,15 @@ import {
 } from '../migrations/2026-08-02-add-node-uids.mjs';
 
 function walkMarkdown(target) {
-  const info = statSync(target);
-  if (info.isFile()) return target.endsWith('.md') ? [target] : [];
+  const stats = statSync(target);
+  if (stats.isFile()) return target.endsWith('.md') ? [target] : [];
   const files = [];
   const stack = [target];
   while (stack.length > 0) {
-    const dir = stack.pop();
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const directory = stack.pop();
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
       if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
-      const full = join(dir, entry.name);
+      const full = join(directory, entry.name);
       if (entry.isDirectory()) stack.push(full);
       else if (entry.isFile() && entry.name.endsWith('.md')) files.push(full);
     }

@@ -22,7 +22,7 @@ import {
   writeArchitectureRecord,
 } from './architecture-record.mjs';
 import { inspectProjectSource } from '../project-source/project-source-inspection.mjs';
-import { SidecarPathError } from '../vault/vault-sidecar.mjs';
+import { SidecarPathError } from '../vault/sidecar/vault-sidecar.mjs';
 
 const SHORT_SHA_RE = /\b[0-9a-f]{7,12}\b/;
 const CONTENT_HASH = `sha256:${'ab'.repeat(32)}`;

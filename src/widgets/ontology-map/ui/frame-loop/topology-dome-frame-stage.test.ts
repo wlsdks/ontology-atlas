@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import type { PointerMachineState } from "../../interaction/pointer-state-machine";
 import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
@@ -11,9 +11,9 @@ import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../OntologyMap";
 import { createDomeFrameStage, type DomeFrameStageSources } from "./topology-dome-frame-stage";
 import { buildTopologyWorld, type TopologyWorld } from "../world/topology-world";
-import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/topology-camera-math";
+import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/target/fit-targets";
 import { overviewBoundsFor } from "../camera/topology-overview-fit";
-import { projectDomeCoord } from "../../model/dome-view/projection";
+import { projectDomeCoord } from "../../model/dome-view/camera/projection";
 
 const tokens = {
   radiusProject: 20,

@@ -54,8 +54,8 @@ describe("audit-vault-paths script arguments", () => {
   });
 
   it("rejects non-directory vault and repo paths before scanning", () => {
-    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-audit-vault-"));
-    const file = join(dir, "not-a-dir.md");
+    const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-audit-vault-"));
+    const file = join(directory, "not-a-dir.md");
 
     try {
       writeFileSync(file, "not a directory\n");
@@ -78,23 +78,23 @@ describe("audit-vault-paths script arguments", () => {
       assert.match(repoFile.stderr, /Repo path is not a directory:/);
       assert.doesNotMatch(repoFile.stderr, /at async|at Object|drift/);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 
   it("does not audit a capability filed under sources/, which is a raw source", () => {
-    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-audit-vault-sources-"));
+    const directory = mkdtempSync(join(tmpdir(), "ontology-atlas-audit-vault-sources-"));
     try {
-      mkdirSync(join(dir, "sources"));
+      mkdirSync(join(directory, "sources"));
       writeFileSync(
-        join(dir, "sources", "capability.md"),
+        join(directory, "sources", "capability.md"),
         "---\nkind: capability\ntitle: Filed as a source\npath: src/missing.ts\n---\n",
       );
-      const result = spawnSync(process.execPath, [SCRIPT, dir, dir], { cwd: ROOT, encoding: "utf8" });
+      const result = spawnSync(process.execPath, [SCRIPT, directory, directory], { cwd: ROOT, encoding: "utf8" });
       assert.equal(result.status, 0, result.stdout);
       assert.match(result.stdout, /0 nodes/);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 });

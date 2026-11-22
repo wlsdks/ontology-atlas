@@ -15,41 +15,27 @@ export type MeaningRunPhase =
   | 'failed'
   | 'stopped';
 
-/** A sentence the owning screen already says, named by its message key and values. */
-export interface MeaningRunSentence {
-  message: string;
-  values: Readonly<Record<string, string | number | undefined>>;
-}
-
-/** One status of the job as the app layer read it; `null` when the folder has nothing to tell. */
 export interface MeaningRunObservation {
-  /** A stop that followed a failure is reported `failed`. */
   phase: MeaningRunPhase;
-  /** Preparing only files that changed after the folder was ready once. */
   updating: boolean;
-  /** An update too small to draw anywhere outside the folder's own stage. */
   quiet: boolean;
   filesDone: number;
   filesTotal: number;
-  /** While the model downloads. */
   bytes: { done: number; total: number } | null;
-  /** The file being read, vault-relative. */
   reading: string | null;
   minutesLeft: number | null;
-  failure: MeaningRunSentence | null;
+  failure: string | null;
   /** The press that started or resumed the job in this launch; `null` when it continues by itself. */
   pressed: number | null;
 }
 
-/** What the card and the ring choose and word by; it changes only when the job changes phase. */
 export interface MeaningRun {
   id: number;
   folder: string;
   phase: MeaningRunPhase;
   updating: boolean;
-  failure: MeaningRunSentence | null;
+  failure: string | null;
   pressed: number | null;
-  /** When the person started it, or when it was first seen running by itself. */
   startedAt: number;
   card: WorkRunCardState;
 }
@@ -70,22 +56,13 @@ const ACTIVE: ReadonlySet<MeaningRunPhase> = new Set(['modelDownloading', 'model
 
 export const isMeaningActive = (run: MeaningRun): boolean => ACTIVE.has(run.phase);
 
-function sameSentence(a: MeaningRunSentence | null, b: MeaningRunSentence | null): boolean {
-  if (a === null || b === null) return a === b;
-  if (a.message !== b.message) return false;
-  const keys = new Set([...Object.keys(a.values), ...Object.keys(b.values)]);
-  return [...keys].every((key) => a.values[key] === b.values[key]);
-}
-
 export interface MeaningRunContext {
   folder: string;
   at: number;
-  /** The folder's own stage (the Wiki desk's meaning line) is on screen. */
   stageShown: boolean;
   nextId: () => number;
 }
 
-/** A run begun now: open when the person pressed for it, else the ring alone. */
 function begin(observation: MeaningRunObservation, context: MeaningRunContext, card: WorkRunCardState): MeaningRun {
   return {
     id: context.nextId(),
@@ -138,7 +115,7 @@ export function observeMeaning(
     run.phase === observation.phase
     && run.updating === observation.updating
     && run.card === card
-    && sameSentence(run.failure, observation.failure)
+    && run.failure === observation.failure
   ) {
     return run;
   }

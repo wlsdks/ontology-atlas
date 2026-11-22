@@ -4,7 +4,6 @@
  * `OntologyMapTokenError` rather than falling back to a default.
  */
 export interface OntologyMapTokens {
-  // 2.1 Node surfaces (per-kind fill/stroke tier)
   nodeFillProject: string;
   nodeFillDomain: string;
   nodeFillCapability: string;
@@ -15,10 +14,7 @@ export interface OntologyMapTokens {
   nodeStrokeElement: string;
   nodeFillDim: string;
   nodeStrokeDim: string;
-  /**
-   * `--map-ego-rest-alpha`: the one alpha that ego-dimmed nodes, lines, chips and names sink to. A
-   * colour ramp alone left dimmed siblings reading as ego members without names.
-   */
+  /** `--map-ego-rest-alpha`: the one alpha ego-dimmed nodes, lines, chips and names sink to; a colour ramp alone left dimmed siblings reading as ego members without names. */
   egoRestAlpha: number;
   nodeFillStale: string;
   nodeStrokeStale: string;
@@ -46,32 +42,27 @@ export interface OntologyMapTokens {
   clusterChipInkRest: string;
   nodeSheenTint: string;
   nodeSheenBlend: number;
-  /** Canvas-emphasis slice — project hexagon's inner offset hairline (double-hairline "machined bezel", spec §A1). */
+  /** The project hexagon's inner offset hairline (double-hairline bezel). */
   projectHairlineInner: string;
-  /** Canvas-emphasis slice — project hexagon's 4-direction chassis-leg pin ticks (spec §A2). */
+  /** The project hexagon's 4-direction pin ticks. */
   projectPinTick: string;
-  /** Canvas-emphasis slice — the selected node's static 2px ring color (spec §B1). */
+  /** The selected node's static 2px ring colour. */
   selectionRingIndigo: string;
-  /** Canvas-emphasis slice — the selected node's outer 6px hairline ring color (spec §B1). */
+  /** The selected node's outer 6px hairline ring colour. */
   selectionRingHairline: string;
-  /** Canvas-emphasis slice — the hovered node's static 1px preview ring color (spec §C). */
+  /** The hovered node's static 1px preview ring colour. */
   hoverRing: string;
-  /** Design Guardian prescription L — hover shimmer arc length (a fraction of the circumference, `--map-hover-shimmer-seg`). */
+  /** Hover shimmer arc length, a fraction of the circumference (`--map-hover-shimmer-seg`). */
   hoverShimmerSeg: number;
-  /** Design Guardian prescription L — hover shimmer period for one revolution (ms, `--map-hover-shimmer-period-ms`). */
+  /** Hover shimmer period for one revolution, ms (`--map-hover-shimmer-period-ms`). */
   hoverShimmerPeriodMs: number;
 
-  // 2.2 Edges · labels · background
   edgeContains: string;
   edgeDepends: string;
   edgeDim: string;
-  /** Edge selection (pair focus) stroke — the pale indigo ramp (separated by value from the standard node-selection indigo). */
+  /** Edge selection (pair focus) stroke: the pale indigo ramp, told from node-selection indigo by value. */
   edgeSelected: string;
-  /**
-   * S11 expansion-cohort membership ring ink — the third step of the indigo ramp
-   * (desaturated). It separates from the node selection's solid indigo and the edge
-   * selection's pale indigo by saturation and geometry (zero new hues).
-   */
+  /** Expansion-cohort membership ring ink: the third, desaturated step of the indigo ramp, told from node selection's solid indigo and edge selection's pale indigo by saturation and geometry (zero new hues). */
   expandedCohort: string;
   hullStroke: string;
   labelProject: string;
@@ -82,12 +73,7 @@ export interface OntologyMapTokens {
   canvasBgNear: string;
   /** 3D dome latitude ring ink — consumed only in 3D. The rationale for the value is the doc-comment in `globals.css`. */
   domeRing: string;
-  /**
-   * The ink one Strata plane ring rises to while its legend row is hovered. It is
-   * the application's existing tertiary text step rather than a new colour: the
-   * ring is briefly promoted to the rank of something you are reading, and drops
-   * straight back to `domeRing` when the pointer leaves.
-   */
+  /** The ink a Strata plane ring rises to while its legend row is hovered: the existing tertiary text step, dropping back to `domeRing` when the pointer leaves. */
   domeRingRaised: string;
   canvasBgFar: string;
   gridMinor: string;
@@ -95,7 +81,6 @@ export interface OntologyMapTokens {
   vignetteBaseAlpha: number;
   vignetteFarAlpha: number;
 
-  // 2.3 Geometry (radii · layout · corners)
   radiusProject: number;
   radiusDomain: number;
   radiusCapability: number;
@@ -103,7 +88,7 @@ export interface OntologyMapTokens {
   layoutRingDomain: number;
   layoutRingCapability: number;
   layoutRingElement: number;
-  /** `--map-realm-fill-radius-1` — the domain ring for a maxDepth=1 realm-expansion subtree (world units, `model/realm/realm.ts#realmRingsForDepth`). */
+  /** `--map-realm-fill-radius-1`: the domain ring for a maxDepth=1 realm-expansion subtree, world units (`model/realm/realm.ts#realmRingsForDepth`). */
   realmFillRadius1: number;
   /** `--map-realm-fill-radius-2` — the domain ring for a maxDepth=2 realm-expansion subtree. */
   realmFillRadius2: number;
@@ -116,18 +101,12 @@ export interface OntologyMapTokens {
   starCount: number;
   dustAreaPerPoint: number;
 
-  // 2.4 Motion · camera
   /**
    * `--map-camera-spring-angfreq-interactive`: drives the scale axis (and pan while wheel-zooming)
    * during a live wheel gesture; crisp, about 0.40s settle, unlike the cinematic transition spring.
    */
   cameraSpringAngFreqInteractive: number;
-  /**
-   * `--map-camera-spring-angfreq-transition` — the same dive-zoom fix's
-   * other half. Drives PROGRAMMATIC camera moves (focus dive, deselect return,
-   * Auto-arrange, fit-view) — still cinematic, ~1.0s settle, but snappier than
-   * the old shared value.
-   */
+  /** `--map-camera-spring-angfreq-transition`: drives programmatic camera moves (focus dive, deselect, Auto-arrange, fit-view); cinematic, ~1.0 s settle. */
   cameraSpringAngFreqTransition: number;
   cameraDampingDefault: number;
   cameraReleaseVelocityWindowMs: number;
@@ -135,29 +114,19 @@ export interface OntologyMapTokens {
   cameraScaleMin: number;
   cameraScaleMax: number;
   /**
-   * `--map-camera-small-graph-scale-max` — #11: overview fit ceiling
-   * for a very small graph (≤5 nodes). A tiny vault (just-onboarded, one or
-   * two created nodes) has a minuscule spine bbox, so the plain fit zooms a
-   * single hexagon up to `cameraScaleMax` and it fills half the screen. This
-   * lower cap keeps a lone node at a sane size with breathing room. Only bites
-   * when the graph is small; larger vaults have big enough bounds that the fit
-   * scale never reaches this.
+   * `--map-camera-small-graph-scale-max`: overview fit ceiling for a very small graph (≤5 nodes), whose tiny spine bbox
+   * would otherwise zoom a lone hexagon up to `cameraScaleMax` and fill half the screen.
    */
   cameraSmallGraphScaleMax: number;
-  /** `--map-camera-max-zoom-ratio` — the viewport-relative ceiling `computeEffectiveCameraScaleMax` derives the real zoom-in bound from (see that function's JSDoc for the audit finding this fixes). */
+  /** `--map-camera-max-zoom-ratio`: the viewport-relative ceiling `computeEffectiveCameraScaleMax` derives the zoom-in bound from. */
   cameraMaxZoomRatio: number;
   /** `--map-camera-min-zoom-ratio` — the viewport-relative floor `computeEffectiveCameraScaleMin` derives the real zoom-out bound from. */
   cameraMinZoomRatio: number;
   cameraFocusPanMargin: number;
   /**
-   * `--map-camera-pan-leash` — the world radius the camera may stray **from
-   * the fit** while nothing is focused. `0` (the default) means no leash, i.e. the
-   * previous envelope (world bbox ± 320).
-   *
-   * A surface with no "fit the map" chrome — the gateway `/download` —
-   * switches this on: allowing an irreversible pan on a screen with no way back
-   * leaves the stage empty. The decision logic is
-   * `topology-camera-math.ts#computeUnfocusedPanBounds`.
+   * `--map-camera-pan-leash`: the world radius the camera may stray from the fit while nothing is focused; 0 (default) means
+   * no leash. A surface with no "fit the map" chrome (the gateway `/download`) switches it on, since an irreversible pan
+   * there leaves the stage empty (`target/pan-leash.ts#computeUnfocusedPanBounds`).
    */
   cameraPanLeash: number;
   altitudeFarHighRatio: number;
@@ -179,24 +148,14 @@ export interface OntologyMapTokens {
   hysteresisPx: number;
   emphasisRiseTau: number;
   emphasisDecayTau: number;
-  /**
-   * `--map-focus-dim-tau` — the click-focus color-ramp time constant
-   * (`model/visibility/focus-state.ts#stepFocusRamp`). One symmetric τ for the normal↔dim/
-   * ego color transition so a click's dim/ego swap eases in on the camera-dive
-   * time axis instead of hard-cutting, and a deselect eases it back out.
-   */
+  /** `--map-focus-dim-tau`: one symmetric τ for the click-focus normal↔dim/ego colour ramp (`focus-state.ts#stepFocusRamp`), easing on the camera-dive time axis instead of hard-cutting. */
   focusDimTau: number;
   /**
    * Trail lens fade time in ms under reduced motion: an opacity crossfade carries no travel, so the
    * lens fades instead of snapping in one frame.
    */
   trailReducedFadeMs: number;
-  /**
-   * `--map-cluster-reveal-tau` — the cluster expand/collapse reveal ramp
-   * time constant (rank7). One symmetric τ so a collapsed parent's child subtree
-   * fades IN (0→1) on expand and OUT (1→0) on collapse instead of hard-cutting,
-   * consistent across zoom. Reuses `stepEmphasis` (`model/visibility/focus-state.ts`).
-   */
+  /** `--map-cluster-reveal-tau`: one symmetric τ so a collapsed parent's children fade in on expand and out on collapse, consistent across zoom (`stepEmphasis`). */
   clusterRevealTau: number;
   /**
    * `--map-spotlight-rest-alpha`: alpha nodes and edges outside the window sink to while the
@@ -212,10 +171,7 @@ export interface OntologyMapTokens {
   breatheAmplitude: number;
   breatheFreqRad: number;
   pulseDurationMs: number;
-  /**
-   * Duration of the just-selected node's one-shot commit pulse (`computeSelectionPulse`); separate
-   * from `pulseDurationMs`. Ceiling is 200ms; 180 leaves margin.
-   */
+  /** Duration of the just-selected node's one-shot commit pulse (`computeSelectionPulse`), separate from `pulseDurationMs`; the ceiling is 200 ms. */
   selectPulseDurationMs: number;
   tipFadeMs: number;
   edgePulseSpeed: number;
@@ -259,35 +215,34 @@ export interface OntologyMapTokens {
   lightHaloPx: number;
   lightIntensity: number;
   lightBloomTau: number;
-  /** `--map-select-pulse-scale-delta` — commit-pulse max ring growth as a fraction of the ring radius (A3: 0.15 was sub-perceptual on element nodes). */
+  /** `--map-select-pulse-scale-delta`: commit-pulse max ring growth as a fraction of the ring radius. */
   selectPulseScaleDelta: number;
-  /** `--map-node-release-settle-ms` — drag-release settle budget in ms, replacing the refresh-rate-dependent 90-frame countdown (A4). */
+  /** `--map-node-release-settle-ms`: drag-release settle budget in ms, independent of refresh rate. */
   nodeReleaseSettleMs: number;
-  /** `--map-node-home-spring-angfreq` — auto-arrange homing spring ω, decoupled from the camera transition spring (A5). */
+  /** `--map-node-home-spring-angfreq`: auto-arrange homing spring ω, decoupled from the camera transition spring. */
   nodeHomeSpringAngFreq: number;
-  /** `--map-ego-reveal-rise-tau` — focus ego-reveal rise τ, slower than hover so children resolve as the camera dive lands (A6). */
+  /** `--map-ego-reveal-rise-tau`: focus ego-reveal rise τ, slower than hover so children resolve as the camera dive lands. */
   egoRevealRiseTau: number;
-  /** `--map-ego-reveal-decay-tau` — focus ego-reveal decay τ; exits don't earn time (A6). */
+  /** `--map-ego-reveal-decay-tau`: focus ego-reveal decay τ; exits do not earn time. */
   egoRevealDecayTau: number;
-  /** `--map-ripple-stagger-max-ms` — total hover-ripple stagger budget, so hub degree can't stretch the ripple into an enumeration (A7). */
+  /** `--map-ripple-stagger-max-ms`: total hover-ripple stagger budget, so hub degree cannot stretch the ripple into an enumeration. */
   rippleStaggerMaxMs: number;
-  /** `--map-edge-contains-l0` — project-tier containment ink (P3a hierarchy ladder: value+width, never hue). */
+  /** `--map-edge-contains-l0`: project-tier containment ink (a hierarchy ladder of value and width, never hue). */
   edgeContainsL0: string;
-  /** `--map-edge-contains-l2` — capability/element-tier containment ink (P3a; must stay darker than the pre-B1 1.32:1 floor). */
+  /** `--map-edge-contains-l2`: capability/element-tier containment ink. */
   edgeContainsL2: string;
-  /** `--map-edge-passthrough-alpha` — ink demotion for edges crossing the viewport with BOTH endpoints off-screen (B2 residual). */
+  /** `--map-edge-passthrough-alpha`: ink demotion for edges crossing the viewport with both endpoints off-screen. */
   edgePassthroughAlpha: number;
-  /** `--map-node-min-separation-ratio` — overlap relaxation threshold, sim-active frames only (B7). */
+  /** `--map-node-min-separation-ratio`: overlap relaxation threshold, sim-active frames only. */
   nodeMinSeparationRatio: number;
-  /** `--map-radius-magnitude-k` — √childCount magnitude encoding strength for domain/capability radii (S2 part 2; +40% ceiling). */
+  /** `--map-radius-magnitude-k`: √childCount magnitude encoding strength for domain/capability radii (+40% ceiling). */
   radiusMagnitudeK: number;
-  /** `--map-dust-parallax-min/max` — the dust parallax depth range (B3 leftover). */
+  /** `--map-dust-parallax-min/max`: the dust parallax depth range. */
   dustParallaxMin: number;
   dustParallaxMax: number;
   /** Constellation background parallax factor — 1 = welded to the world, <1 = a distant layer. See `model/camera/background-parallax.ts`. */
   canvasBgParallax: number;
 
-  // 2.5 Safe area (fixed chrome insets, px — label culling plus camera fit)
   safeInsetLeft: number;
   safeInsetRight: number;
   safeInsetTop: number;
@@ -461,7 +416,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "safeInsetBottom", cssVar: "--map-safe-inset-bottom", kind: "number" }
 ];
 
-/** The token-count contract — this value, not a number in a comment, is the source of truth (the test pins fixture coverage to it). */
+/** The token-count contract: the test pins fixture coverage to this value. */
 export const ONTOLOGY_MAP_TOKEN_COUNT = TOKEN_SPECS.length;
 
 export class OntologyMapTokenError extends Error {
@@ -475,12 +430,7 @@ export class OntologyMapTokenError extends Error {
         this.name = "OntologyMapTokenError";
     }
 }
-/**
- * Resolve every token in TOKEN_SPECS from a `getComputedStyle` result (or a test
- * substitute). Any one of them resolving to an empty string throws a
- * `OntologyMapTokenError` — that is the §2.3 "fail explicitly on a missing token"
- * contract.
- */
+/** Resolves every token in TOKEN_SPECS from a `getComputedStyle` result (or a test substitute); one resolving to an empty string throws `OntologyMapTokenError`, so a missing token fails explicitly. */
 export function resolveOntologyMapTokens(getPropertyValue: (name: string) => string): OntologyMapTokens {
     const missing: string[] = [];
     const result = {} as Record<string, string | number>;
@@ -507,7 +457,6 @@ export function resolveOntologyMapTokens(getPropertyValue: (name: string) => str
     }
     return result as unknown as OntologyMapTokens;
 }
-/** Wraps `document.documentElement`'s computed style as an adapter. */
 function readFromElement(element: Element): OntologyMapTokens {
     const styles = getComputedStyle(element);
     return resolveOntologyMapTokens((name) => styles.getPropertyValue(name));
@@ -518,31 +467,18 @@ let cached: OntologyMapTokens | null = null;
  * returned thereafter. Call `clearOntologyMapTokensCache()` first at any point where
  * the token values can change, such as a dark/light theme switch.
  */
-export function getOntologyMapTokens(element?: Element): OntologyMapTokens {
+export function readOntologyMapTokens(element?: Element): OntologyMapTokens {
     if (cached)
         return cached;
     cached = readFromElement(element ?? document.documentElement);
     return cached;
 }
-/** Cache invalidation for theme switches and test isolation. */
 export function clearOntologyMapTokensCache(): void {
     cached = null;
 }
-/**
- * The tokens `html[data-topology-index]` actually changes — **this list is the
- * contract**.
- *
- * It holds only what the `html[data-topology-index="collapsed"]` block in
- * `app/globals.css` redefines. Writing one more token into that block means adding
- * one line here; skipping it leaves that value stale alone — a quieter failure than
- * a full invalidation, which is why it is pinned in a comment.
- */
-// The top and bottom lanes follow the viewport height (`@media (max-height)`
-// in globals.css), and the right lane follows the utility rail, which the agent
-// dock pulls to half an inset (`:root:has(main[data-agent-panel-open="true"])`).
-// Both change the canvas size, so they are refreshed with the INDEX-dependent
-// left lane on every viewport commit — four reads, not the 115 of a blanket
-// refresh.
+/** The tokens `html[data-topology-index]` changes: exactly what the `collapsed` block in `app/globals.css` redefines. A token added there needs a line here, or that value goes stale alone. */
+// The top and bottom lanes follow the viewport height and the right lane the utility rail (half an inset under the agent
+// dock); all change the canvas size, so they refresh with the INDEX-dependent left lane on every viewport commit (four reads, not 115).
 const INDEX_DEPENDENT_TOKEN_KEYS = ["safeInsetLeft", "safeInsetRight", "safeInsetTop", "safeInsetBottom"] as const;
 /**
  * Re-reads only the tokens that depend on `data-topology-index` after an INDEX state transition. A

@@ -20,8 +20,8 @@ const VERB = KOREAN.verbs;
 const MIX = KOREAN.mixed;
 
 /** Writes the vault and returns what it wrote. */
-export function generateScaleVault(dir, fileCount, shape) {
-  if (shape === 'library' || shape === 'linked') return generateLibraryVault(dir, fileCount, shape === 'linked');
+export function generateScaleVault(directory, fileCount, shape) {
+  if (shape === 'library' || shape === 'linked') return generateLibraryVault(directory, fileCount, shape === 'linked');
   let seed = 987654321;
   const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
   const pick = (list) => list[Math.floor(rnd() * list.length)];
@@ -66,7 +66,7 @@ export function generateScaleVault(dir, fileCount, shape) {
   const sections = (lang) =>
     `${para(2, lang)}\n\n## Includes\n- ${sentence(lang)}\n- ${sentence(lang)}\n\n## Excludes\n- ${sentence(lang)}\n\n## Uncertainty\n- ${sentence(lang)}\n`;
 
-  for (const folder of ['domains', 'capabilities', 'elements', 'wiki']) mkdirSync(join(dir, folder), { recursive: true });
+  for (const folder of ['domains', 'capabilities', 'elements', 'wiki']) mkdirSync(join(directory, folder), { recursive: true });
   const key = shape === 'key';
   const domainCount = key ? Math.max(6, Math.round(fileCount / 2500)) : Math.max(6, Math.round(fileCount / 250));
   const capabilityCount = Math.round(fileCount * (key ? 0.025 : 0.25));
@@ -81,7 +81,7 @@ export function generateScaleVault(dir, fileCount, shape) {
 
   let bytes = 0;
   const put = (relative, text) => {
-    writeFileSync(join(dir, relative), text);
+    writeFileSync(join(directory, relative), text);
     bytes += Buffer.byteLength(text);
   };
   put('atlas.md', frontmatter({
@@ -144,7 +144,7 @@ const DAY_MS = 86_400_000;
  * are covered. One source in 25 has a Hangul name: odd ones are cited in NFD, even ones are
  * written to disk in NFD. Dates lean recent over 400 days.
  */
-function generateLibraryVault(dir, count, linked = false) {
+function generateLibraryVault(directory, count, linked = false) {
   let seed = 123456789;
   const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
   const pick = (list) => list[Math.floor(rnd() * list.length)];
@@ -154,17 +154,17 @@ function generateLibraryVault(dir, count, linked = false) {
   };
   const sha256 = (text) => createHash('sha256').update(text).digest('hex');
   const formats = ['md', 'txt', 'csv'];
-  mkdirSync(join(dir, 'wiki'), { recursive: true });
+  mkdirSync(join(directory, 'wiki'), { recursive: true });
 
   let bytes = 0;
   const put = (relative, text) => {
-    writeFileSync(join(dir, relative), text);
+    writeFileSync(join(directory, relative), text);
     bytes += Buffer.byteLength(text);
   };
   const sources = [];
   for (let i = 0; i < count; i++) {
     const folder = `sources/batch-${Math.floor(i / 500)}`;
-    if (i % 500 === 0) mkdirSync(join(dir, folder), { recursive: true });
+    if (i % 500 === 0) mkdirSync(join(directory, folder), { recursive: true });
     const hangul = i % 25 === 24;
     const name = hangul ? `${KO[i % KO.length]}-${i}.md` : `doc-${i}.${formats[i % formats.length]}`;
     const text = `# Source ${i}
@@ -178,7 +178,7 @@ ${Array.from({ length: 3 + (i % 5) }, sentence).join(' ')}
   }
 
   const quote = (value) => JSON.stringify(value);
-  const concepts = linked ? writeConcepts(dir, Math.max(1, Math.round(count / 10)), put) : [];
+  const concepts = linked ? writeConcepts(directory, Math.max(1, Math.round(count / 10)), put) : [];
   let pages = 0;
   for (let i = 0; i < count; i++) {
     const slot = i % 20;
@@ -218,8 +218,8 @@ ${Array.from({ length: 3 + (i % 5) }, sentence).join(' ')}
  * Hangul name: even ones are written to disk in NFD. One in 50 is filed under another name and
  * reached by its `slug:`. Returns, per concept, the references a page may write for it.
  */
-function writeConcepts(dir, count, put) {
-  mkdirSync(join(dir, 'capabilities'), { recursive: true });
+function writeConcepts(directory, count, put) {
+  mkdirSync(join(directory, 'capabilities'), { recursive: true });
   const out = [];
   for (let i = 0; i < count; i++) {
     const hangul = i % 25 === 24;
@@ -268,10 +268,10 @@ function describesLines(i, concepts, quote) {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const [dir, files, shape = 'all'] = process.argv.slice(2);
-  if (!dir || !Number.isInteger(Number(files)) || !['all', 'key', 'library', 'linked'].includes(shape)) {
+  const [directory, files, shape = 'all'] = process.argv.slice(2);
+  if (!directory || !Number.isInteger(Number(files)) || !['all', 'key', 'library', 'linked'].includes(shape)) {
     console.error('usage: node scripts/perf/gen-scale-vault.mjs <dir> <files> <all|key|library|linked>');
     process.exit(2);
   }
-  console.log(JSON.stringify({ dir, shape, ...generateScaleVault(dir, Number(files), shape) }));
+  console.log(JSON.stringify({ dir: directory, shape, ...generateScaleVault(directory, Number(files), shape) }));
 }

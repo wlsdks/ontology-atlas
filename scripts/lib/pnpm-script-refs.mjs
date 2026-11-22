@@ -57,7 +57,7 @@ function normalizePackageSelector(value) {
 function scriptRefFromPnpmArgs(argsText) {
   const args = String(argsText).trim().split(/\s+/).filter(Boolean);
   let filter = null;
-  let dir = null;
+  let directory = null;
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === '--filter' || arg === '-F') {
@@ -66,13 +66,13 @@ function scriptRefFromPnpmArgs(argsText) {
     } else if (arg.startsWith('--filter=')) {
       filter = stripMatchingQuotes(arg.slice('--filter='.length));
     } else if (arg === '--dir' || arg === '-C') {
-      dir = normalizePackageSelector(args[index + 1] ?? '');
+      directory = normalizePackageSelector(args[index + 1] ?? '');
       index += 1;
     } else if (arg.startsWith('--dir=')) {
-      dir = normalizePackageSelector(arg.slice('--dir='.length));
+      directory = normalizePackageSelector(arg.slice('--dir='.length));
     }
   }
-  const packageSelector = filter || dir;
+  const packageSelector = filter || directory;
   const commandIndex = nextCommandIndex(args);
   if (commandIndex < 0) {
     return null;

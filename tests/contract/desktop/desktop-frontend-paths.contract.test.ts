@@ -8,7 +8,7 @@ import {
   isDesktopFrontendPath,
 } from "../../../scripts/desktop/stage-desktop-frontend.mjs";
 import { listLocales } from "../../../scripts/i18n/build-messages.mjs";
-import { getProjectEditHref, getProjectRuntimeDetailHref } from "@/entities/project";
+import { buildProjectEditHref, buildProjectRuntimeDetailHref } from "@/entities/project";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { SETTINGS_CATALOG } from "@/widgets/app-settings-menu/model/catalog";
 
@@ -121,33 +121,34 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
     const reviewed = new Set([
       "src/shared/ui/controls/get-app-link.tsx",
       "src/shared/lib/navigation/nav-destination.ts",
-      "src/features/docs-vault-local/ui/AgentClientButtons.tsx",
+      "src/features/docs-vault-local/ui/use-agent-client-controls.tsx",
       "src/features/docs-vault-local/ui/OpenVaultCta.tsx",
       "src/features/docs-vault-local/ui/VaultOpenGuideSheet.tsx",
       "src/features/first-run-starter/ui/FirstRunStarterModule.tsx",
       "src/features/gray-area/ui/GrayAreaInspector.tsx",
       "src/features/library/ui/FindDocumentsDialog.tsx",
-      "src/features/mcp-connectors/ui/AddConnectorDialog.tsx",
+      "src/features/mcp-connectors/ui/add-connector/FoundSection.tsx",
       "src/views/architecture/ui/ArchitectureWorkbench.tsx",
       "src/views/architecture/ui/HarnessPage.tsx",
       "src/views/automations/ui/AutomationsPage.tsx",
       "src/views/change-briefing/ui/BriefingRepositoryStage.tsx",
       "src/views/home/model/project-source/use-topology-source-actions.tsx",
-      "src/views/library/ui/parts/compile/LibraryStage.tsx",
-      "src/views/library/ui/parts/progress/SourceProgressBand.tsx",
+      "src/views/library/ui/compile/LibraryStage.tsx",
+      "src/views/library/ui/progress/ProgressAction.tsx",
       "src/views/planning/ui/PlanningFolderStage.tsx",
       "src/views/terminal-state/ui/NotFoundScreen.tsx",
       "src/views/work-status/ui/WorkStatusStage.tsx",
       "src/widgets/app-nav-rail/ui/AppNavRail.tsx",
-      "src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx",
-      "src/widgets/app-settings-menu/ui/AgentSetupSection.tsx",
+      "src/widgets/app-settings-menu/ui/agent-setup/AcpRuntimeSettings.tsx",
+      "src/widgets/app-settings-menu/ui/agent-setup/AgentSetupSection.tsx",
       "src/widgets/app-settings-menu/ui/ModelConnectionsPanel.tsx",
       "src/widgets/app-settings-menu/ui/panes/WorkspacePane.tsx",
-      "src/widgets/atlas-git-panel/ui/SetupMode.tsx",
+      "src/widgets/atlas-git-panel/ui/setup-panels.tsx",
       "src/widgets/bottom-tab-bar/lib/is-tab-active.ts",
       "src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx",
       "src/widgets/gateway-chrome/ui/GatewayNav.tsx",
-      "src/widgets/library-import/ui/LibraryImportDialog.tsx",
+      "src/widgets/library-import/ui/ImportChooseStep.tsx",
+      "src/widgets/library-import/ui/ImportConnectStep.tsx",
       "src/widgets/topology-controls/ui/TopologyEmptyState.tsx",
     ]);
     const linksDownload = /["']\/download\/?["'?#]|<GetAppLink\b/;
@@ -161,7 +162,7 @@ describe("what the desktop bundle leaves out has no way in from the app", () => 
   });
 
   it("/project/<slug>: the app opens every project, to read or to edit, through the query-addressed pages", () => {
-    for (const href of [getProjectRuntimeDetailHref("a b/c"), getProjectEditHref("a b/c", { returnTo: "/topology" })]) {
+    for (const href of [buildProjectRuntimeDetailHref("a b/c"), buildProjectEditHref("a b/c", { returnTo: "/topology" })]) {
       const page = new URL(href, "https://atlas.invalid").pathname.split("/")[2];
       expect(APP_PROJECT_PAGES).toContain(page);
     }

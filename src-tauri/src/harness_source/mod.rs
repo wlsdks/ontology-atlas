@@ -7,7 +7,7 @@ mod scope;
 #[cfg(test)]
 mod tests;
 
-use crate::gray_area_scope::resolve_binding_metadata;
+use crate::gray_area::scope::resolve_binding_metadata;
 use crate::vault::scope::normalize_relative_path;
 use scope::{is_denied_name, list_class, read_class, ListClass, ReadClass};
 use serde::Serialize;

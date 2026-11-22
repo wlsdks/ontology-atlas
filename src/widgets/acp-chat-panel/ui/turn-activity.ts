@@ -10,11 +10,8 @@ export type TurnActivityKind = 'thinking' | 'reading' | 'searching' | 'writing' 
 
 export interface TurnActivity {
   kind: TurnActivityKind;
-  /** The open call's name, in the same words its transcript row uses; absent without an open call. */
   label: ToolLabel | null;
-  /** The file, concept or query the open call names. */
   target: string | null;
-  /** Tool calls this turn has opened so far. */
   steps: number;
   /** Distinct concepts and relations this turn's finished vault writes report as written. */
   written: TurnWrites;
@@ -55,7 +52,6 @@ const PROTOCOL_KIND: Readonly<Record<string, TurnActivityKind>> = {
 
 type ToolEvent = Extract<AcpEvent, { kind: 'tool' }>;
 
-/** Vault tools that create or change a concept; deletions and removals are not writes here. */
 const CONCEPT_WRITE_TOOLS = new Set(['add_concept', 'add_concepts', 'patch_concept', 'rename_concept', 'reclassify_concept', 'merge_concepts', 'absorb_document']);
 const RELATION_WRITE_TOOLS = new Set(['add_relation', 'add_relations', 'replace_relation']);
 /** How deep a result may sit inside the adapter's envelope (`result` → `content` → text block → JSON). */
@@ -65,7 +61,6 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
 
-/** The vault server's own answer object, found through the MCP and adapter envelopes around it. */
 function vaultWriteResult(raw: unknown, depth = 0): Record<string, unknown> | null {
   if (depth > RESULT_DEPTH) return null;
   if (typeof raw === 'string') {
@@ -101,7 +96,6 @@ function rowIdentity(row: Record<string, unknown>, fallback: string): string {
   return fallback;
 }
 
-/** Identities of the rows a finished write reports as written: a batch's written rows, or the single call. */
 function writtenIdentities(result: Record<string, unknown>, callId: string): string[] {
   const rows = Array.isArray(result.concepts) ? result.concepts : Array.isArray(result.relations) ? result.relations : [result];
   return rows.flatMap((row, index) => {

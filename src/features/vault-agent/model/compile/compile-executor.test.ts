@@ -6,7 +6,7 @@ import { createCompileExecutor } from './compile-executor';
 import type { NormalizedToolCall } from '../providers/provider-adapter';
 import type { SourceReadEntry, SourceReadPort } from './source-read-port';
 import { SOURCE_TEXT_CHAR_CAP } from './source-text';
-import { AGENT_TURN_VAULT_CHAR_CAP } from '../types';
+import { AGENT_TURN_VAULT_CHAR_CAP } from '../agent-turn';
 
 const PLAN = '# Quarter plan\n\nWe ship the Library in Q3.\n\nSources stay verbatim.';
 

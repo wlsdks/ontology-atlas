@@ -59,7 +59,6 @@ export function useTopologyAgentActivity({ topologyVaultReadModel, acpRuntimeCon
     vaultConnectors.connectors,
   ]);
 
-  // Registers the runtime's name for `created_by`; see `lib/agent/acp-agent-heartbeat.ts`.
   const acpHeartbeatStore = useMemo<AcpHeartbeatStore | null>(
     () =>
       vault.status === "loaded" && vault.handle
@@ -107,7 +106,6 @@ export function useTopologyAgentActivity({ topologyVaultReadModel, acpRuntimeCon
       const store = acpHeartbeatStore;
       if (!store) return;
       const agent = acpHeartbeatAgentName(acpRuntimeId);
-      // With no name, register nothing.
       if (!activity || !agent) {
         void store.clear().catch(() => { });
         return;

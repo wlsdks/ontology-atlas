@@ -61,7 +61,7 @@ describe('the two-clock row', () => {
   });
 
   it('renders both clocks on one row, and the meaning clock only when it exists', () => {
-    const source = read('src/views/docs-vault/ui/parts/DocMetaBar.tsx');
+    const source = read('src/views/docs-vault/ui/DocMetaBar.tsx');
     expect(source).toContain('data-testid="doc-meaning-time"');
     expect(source).toContain('data-testid="doc-record-time"');
     // The meaning clock is guarded — a document nobody reviewed shows one clock

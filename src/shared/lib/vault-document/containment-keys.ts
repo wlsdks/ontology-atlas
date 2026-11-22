@@ -1,14 +1,8 @@
 /**
- * The lists named for a kind, and which kinds may keep each — the app's copy of
- * `CONTAINMENT_KEY_FOR_KIND` / `CONTAINMENT_HOLDER_KINDS` in `mcp/src/schema.mjs` (spec §5).
- *
- * `src/`, `mcp/` and `cli/` do not import one another, so the rule is copied and
- * `tests/contract/vault-format/vault-schema.contract.test.ts` compares the two answers over every kind pair —
- * the same arrangement that keeps `KIND_EXPECTED_EXTRAS` in step with the schema.
- *
- * A list's name says what its entries are: `capabilities: [...]` holds capabilities. When a
- * document changes kind, an entry naming it belongs in the list for its new kind, and only when
- * the referrer's kind may keep that list (`containmentKeyFor`); otherwise nothing is guessed.
+ * The app's copy of `CONTAINMENT_KEY_FOR_KIND` / `CONTAINMENT_HOLDER_KINDS` in `mcp/src/schema.mjs`
+ * (spec §5): the list named for a kind, and which kinds may keep it. `vault-schema.contract.test.ts`
+ * compares both answers over every kind pair. When a document changes kind, an entry naming it moves
+ * to the list for its new kind only if the referrer's kind may keep that list; nothing is guessed.
  */
 export type ContainmentKey = "domains" | "capabilities" | "elements";
 

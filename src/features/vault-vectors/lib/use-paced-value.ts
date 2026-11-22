@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-/** Shows the latest `value` at most once per `intervalMs`, so a fast stream reads as steady text. */
 export function usePacedValue<T>(value: T, intervalMs: number): T {
   const [shown, setShown] = useState(value);
   const shownAt = useRef<number | null>(null);

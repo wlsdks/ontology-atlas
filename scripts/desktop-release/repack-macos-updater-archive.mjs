@@ -7,10 +7,10 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { loadMacosReleaseNames } from "../lib/macos-release-names.mjs";
+import { readMacosReleaseNames } from "../lib/macos-release-names.mjs";
 
 const root = process.cwd();
-const names = loadMacosReleaseNames(root);
+const names = readMacosReleaseNames(root);
 const { appBundleName } = names;
 
 const macosDir = path.join(root, "src-tauri", "target", "release", "bundle", "macos");

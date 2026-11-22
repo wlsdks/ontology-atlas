@@ -4,22 +4,9 @@
  * filesystem.
  */
 
-/**
- * Words of real prose before the first `##` below which a body is a label.
- *
- * Eight, because that is roughly the shortest English sentence that can carry
- * both halves of a definition ("X turns a vault folder into a graph").
- */
 const DEFINITION_MIN_WORDS = 8;
 
-/**
- * Words a definition must carry that the title does not already say.
- *
- * "Mobile/web bottom tab navigation widget for the app" is eight words and
- * clears the length bar while telling a reader nothing the title `Bottom Tab
- * Bar` did not. Length alone cannot tell circular from terse; six is where a
- * paraphrase stops and a sentence begins.
- */
+/** Length alone cannot tell circular from terse; six new words is where a paraphrase stops. */
 const DEFINITION_MIN_NOVEL_WORDS = 6;
 
 /**
@@ -42,7 +29,6 @@ const DEFINITION_STOP_WORDS: ReadonlySet<string> = new Set([
   "are",
 ]);
 
-/** Heading names a body section may use to carry the node's definition. */
 export const BODY_DEFINITION_SECTIONS: readonly string[] = [
   "definition",
   "summary",
@@ -51,12 +37,7 @@ export const BODY_DEFINITION_SECTIONS: readonly string[] = [
   "overview",
 ];
 
-/**
- * Heading names for each side of a concept's boundary.
- *
- * ⚠️ Order matters to the reader of this list: "out of scope" contains "scope",
- * so a caller tests the negative side first and only then the positive one.
- */
+/** Test the negative side first: "out of scope" contains "scope". */
 export const BODY_BOUNDARY_SECTIONS: Readonly<{
   includes: readonly string[];
   excludes: readonly string[];
@@ -65,7 +46,6 @@ export const BODY_BOUNDARY_SECTIONS: Readonly<{
   excludes: ["excludes", "exclusions", "out of scope", "not this"],
 };
 
-/** Heading names a body section may use to record what the writer did not check. */
 export const BODY_UNCERTAINTY_SECTIONS: readonly string[] = [
   "uncertainty",
   "open questions",
@@ -74,13 +54,7 @@ export const BODY_UNCERTAINTY_SECTIONS: readonly string[] = [
   "confidence",
 ];
 
-/**
- * What an evidence limit actually sounds like, measured rather than guessed.
- *
- * Every clause stays tied to a reading verb ("inspect", "read", "trace",
- * "carried as a node") so an ordinary product boundary — "flags, which are
- * options rather than positional arguments" — does not match.
- */
+/** Every clause stays tied to a reading verb so an ordinary product boundary does not match. */
 const EPISTEMIC_EXCLUSION_PATTERNS: readonly RegExp[] = [
   /\bnot\s+(?:established|asserted|proven|verified|measured|observed|known|confirmed)\b/,
   /\bremain(?:s|ed)?\s+outside\s+(?:this|the)\s+(?:bounded\s+)?(?:scan|evidence)\b/,
@@ -95,13 +69,8 @@ const EPISTEMIC_EXCLUSION_PATTERNS: readonly RegExp[] = [
 ];
 
 /**
- * Does this exclusion state an **evidence limit** rather than a product
- * boundary?
- *
- * "Remote vaults are not mentioned in this scan" says what the writer did not
- * see. "Atlas does not sync folders between machines" says what the product does
- * not do. A reader handed the vault without the source cannot tell those apart
- * and repeats the first as the second.
+ * An evidence limit says what the writer did not see; a product boundary says what the product
+ * does not do. A reader without the source cannot tell them apart.
  */
 export function isEpistemicExclusionBoundary(value: string): boolean {
   const normalized = String(value).replace(/\s+/g, " ").trim().toLowerCase();
@@ -121,14 +90,8 @@ function metaModelStarterLine(): string {
 }
 
 /**
- * The starter body each kind ships, mirrored from `VAULT_KIND_SCHEMA` in
- * `mcp/src/schema.mjs`.
- *
- * It is here, rather than being derived, for one reason: the placeholder check
- * asks "is this line still the slot the template wrote?", so it has to know what
- * the template wrote. The parity contract asserts each of these equals
- * `defaultBody(kind, title)` from the canonical schema, so changing a
- * placeholder's wording in one place and not the other fails in that commit.
+ * Mirrored from `VAULT_KIND_SCHEMA` (`mcp/src/schema.mjs`) because the placeholder check must know
+ * what the template wrote; the parity contract asserts each equals `defaultBody(kind, title)`.
  */
 export const KIND_BODY_TEMPLATES: Readonly<Record<string, (title: string) => string>> = {
   project: (title) =>
@@ -185,9 +148,8 @@ export const KIND_BODY_TEMPLATES: Readonly<Record<string, (title: string) => str
 };
 
 /**
- * The folder each kind's slug lives under — `folderForKind` in the canonical
- * schema. `project` and `document` stay at the vault root by design, so their
- * empty prefix is what keeps `slug-outside-kind-folder` quiet about them.
+ * `folderForKind` in the canonical schema. `project` and `document` stay at the vault root, so
+ * their empty prefix keeps `slug-outside-kind-folder` quiet about them.
  */
 const KIND_SLUG_FOLDERS: Readonly<Record<string, string>> = {
   project: "",
@@ -220,9 +182,7 @@ type MeaningFindingCode =
 
 export interface MeaningFinding {
   code: MeaningFindingCode;
-  /** Which part of the document the finding is about — `body`, a boundary side, `slug`. */
   key: string;
-  /** The offending lines, when there are any to quote. */
   refs: string[];
 }
 
@@ -232,7 +192,6 @@ interface BodySection {
 }
 
 export interface ParsedBody {
-  /** Prose before the first `##`. */
   lead: string[];
   sections: BodySection[];
 }
@@ -244,14 +203,12 @@ function fold(text: unknown): string {
     .toLowerCase();
 }
 
-/** Strips a list marker (`-`, `*`, `1.`) or a blockquote caret from one line. */
 function stripMarker(line: unknown): string {
   return String(line ?? "")
     .replace(/^\s*(?:[-*+]|\d+[.)]|>)\s*/, "")
     .trim();
 }
 
-/** Lowercased word tokens, punctuation and markup dropped. */
 function wordTokens(text: unknown): string[] {
   return fold(text)
     .split(/[^\p{L}\p{N}]+/u)
@@ -282,12 +239,8 @@ function isSchemaFurniture(line: unknown): boolean {
 }
 
 /**
- * Split a body into the prose before the first `##` and the sections after it.
- *
- * The `#` title is neither: it repeats the frontmatter `title`, so treating it
- * as a definition would mean every node defines itself by its own name. Fenced
- * code is skipped so a `##` comment inside a snippet cannot invent a section
- * that is not there.
+ * The `#` title repeats the frontmatter `title`, so it is not a definition. Fenced code is skipped
+ * so a `##` inside a snippet invents no section.
  */
 export function parseBodySections(body: string | null | undefined): ParsedBody {
   const lead: string[] = [];
@@ -337,13 +290,7 @@ function headingNames(heading: string, synonyms: readonly string[]): boolean {
   );
 }
 
-/**
- * Which section states this side of the boundary, if any.
- *
- * The negative side is tested first on purpose: "out of scope" contains "scope",
- * so testing the positive list first would read every `## Out of scope` as an
- * `Includes` and then report the exclusions as missing.
- */
+/** Negative side first: otherwise every `## Out of scope` reads as an `Includes`. */
 function findBoundarySection(
   sections: readonly BodySection[],
   side: "includes" | "excludes",
@@ -364,19 +311,13 @@ function findDefinitionSection(sections: readonly BodySection[]): BodySection | 
   return sections.find((section) => headingNames(section.heading, BODY_DEFINITION_SECTIONS)) ?? null;
 }
 
-/** The starter scaffold for this kind, parsed once per call site. */
 function starterShape(kind: string, title: string): ParsedBody | null {
   const template = KIND_BODY_TEMPLATES[kind];
   if (!template) return null;
   return parseBodySections(template(title ?? ""));
 }
 
-/**
- * Every placeholder line the starter template ships, folded for comparison.
- *
- * Derived from the template rather than listed here, so the scaffold and the
- * check cannot drift.
- */
+/** Derived from the template so the scaffold and the check cannot drift. */
 function starterPlaceholders(starter: ParsedBody | null): Set<string> {
   const placeholders = new Set<string>();
   if (!starter) return placeholders;
@@ -387,13 +328,7 @@ function starterPlaceholders(starter: ParsedBody | null): Set<string> {
   return placeholders;
 }
 
-/**
- * Is this line still a slot rather than a statement?
- *
- * Two tests, because an author edits a scaffold in two ways. Either the line is
- * untouched, or the wording moved while the `<…>` slot stayed — the shape that
- * reads as filled to a counter and says nothing to a reader.
- */
+/** A slot is either untouched or reworded around a surviving `<…>`. */
 function isPlaceholderLine(line: string, placeholders: ReadonlySet<string>): boolean {
   const text = stripMarker(line);
   const folded = fold(text);
@@ -413,18 +348,14 @@ function contentLines(
 
 export interface MeaningFindingInput {
   kind: string;
-  /** The document's vault-relative slug, when the caller knows where the file sits. */
   slug?: string;
   title?: string;
   body?: string;
 }
 
 /**
- * Does the body say what this node is?
- *
- * Two failures, one code. A body that still carries the template's definition
- * line has not been written; a body with fewer than eight words of prose before
- * its first `##` (and none under `## Definition`) was written as headings.
+ * Two failures, one code: the template's definition line is still there, or the body was written
+ * as headings (too little prose before its first `##` and none under `## Definition`).
  */
 export function definitionFinding({ kind, title, body }: MeaningFindingInput): MeaningFinding | null {
   if (!DEFINITION_KINDS.has(kind)) return null;
@@ -449,13 +380,7 @@ export function definitionFinding({ kind, title, body }: MeaningFindingInput): M
   return { code: "definition-missing", key: "body", refs: [] };
 }
 
-/**
- * Does the body draw both sides of the boundary?
- *
- * One finding per missing side, named in `key`, because the two are different
- * work: an author who listed what a capability covers has not yet answered what
- * it is confused with.
- */
+/** One finding per missing side, named in `key`: the two sides are different work. */
 export function boundaryFindings({ kind, title, body }: MeaningFindingInput): MeaningFinding[] {
   if (!BOUNDARY_KINDS.has(kind)) return [];
   const { sections } = parseBodySections(body);
@@ -470,12 +395,8 @@ export function boundaryFindings({ kind, title, body }: MeaningFindingInput): Me
 }
 
 /**
- * Does the body say what the writer did not check?
- *
- * A node that records no unknown claims completeness, and the claim is always
- * false — the builder read some files and not others. A placeholder bullet does
- * not count: letting the scaffold satisfy the check would mean the default write
- * silences the one question the default write cannot have answered.
+ * A node recording no unknown claims a completeness that is always false. A placeholder bullet
+ * does not count, or the default write would silence the question it cannot have answered.
  */
 export function uncertaintyFinding({
   kind,
@@ -513,12 +434,8 @@ export function epistemicExclusionFinding({
 }
 
 /**
- * A node written at the vault root instead of inside its kind folder.
- *
- * Silent when the slug is unknown, because the question is literally "where does
- * this file sit", and a caller holding only bytes cannot be told. Valid, never
- * blocked: a flat slug simply groups with nothing in any reader that shows a
- * vault by kind.
+ * Silent when the slug is unknown: a caller holding only bytes cannot say where the file sits.
+ * Valid, never blocked.
  */
 export function slugOutsideKindFolderFinding({
   kind,
@@ -535,11 +452,6 @@ export function slugOutsideKindFolderFinding({
   };
 }
 
-/**
- * Every meaning finding for one document, in the order the canonical module
- * pushes them: definition, both boundary sides, uncertainty, epistemic
- * exclusions, then position.
- */
 export function meaningFindings(input: MeaningFindingInput): MeaningFinding[] {
   const findings: MeaningFinding[] = [];
   if (typeof input.kind !== "string" || !input.kind.trim()) return findings;

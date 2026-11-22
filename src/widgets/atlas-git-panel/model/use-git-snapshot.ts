@@ -34,7 +34,6 @@ export function useGitSnapshot({
   const [snapshotting, setSnapshotting] = useState(false);
   const [snapshotResult, setSnapshotResult] = useState<GitSnapshotResult | null>(null);
   const [snapshotError, setSnapshotError] = useState<string | null>(null);
-  /** A save that was asked to send and did not: git's reason, in the reader's language. */
   const snapshotPushFailure = useMemo(() => {
     const push = snapshotResult?.push;
     if (!push || push.pushed) return null;
@@ -63,16 +62,12 @@ export function useGitSnapshot({
       setSnapshotResult(result);
       setConfirming(false);
       setSnapshotMessage("");
-      /*
-       * After a commit the default selection shows its result: the remaining changes, else the
-       * new commit.
-       */
       setSelectionChoice(null);
       setSelectedPath(null);
       setFollowed(null);
       await refresh();
-    } catch (err) {
-      setSnapshotError(gitErrorMessage(err, nativeErrors));
+    } catch (error) {
+      setSnapshotError(gitErrorMessage(error, nativeErrors));
     } finally {
       setSnapshotting(false);
     }

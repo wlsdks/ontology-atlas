@@ -6,8 +6,8 @@ import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls/controls';
 import { buildRouteFocusHref } from '@/shared/ui/routing/route-focus-manager';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
-import { VendorMark } from '@/shared/ui/marks/vendor-mark';
-import type { SettingId } from '../model/catalog/types';
+import { VendorMark } from '@/shared/ui/marks/service-marks/vendor-mark';
+import type { SettingId } from '../model/catalog/settings-catalog-entry';
 
 
 export const DETAIL_TOGGLE_CHIP =

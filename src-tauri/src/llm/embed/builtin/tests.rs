@@ -1,5 +1,8 @@
 use super::*;
 use crate::llm::embed::{BuildPlan, Embedder, RunEnd};
+use candle_core::{DType, Device};
+use sha2::{Digest, Sha256};
+use std::io::Read;
 use std::sync::Arc;
 use std::time::Instant;
 

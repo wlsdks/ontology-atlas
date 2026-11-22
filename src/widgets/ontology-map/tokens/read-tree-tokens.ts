@@ -1,5 +1,5 @@
 import { cssOf, mix, rgbOf, type RGB } from "../board/board-tones";
-import { TREE_TONE_STEPS, type TreeMarkSizes, type TreeNameSizes } from "../model/tree-view/types";
+import { TREE_TONE_STEPS, type TreeMarkSizes, type TreeNameSizes } from "../model/tree-view/tree-shapes";
 
 export interface TreeDetailTokens { openPitchPx: number; leafPitchPx: number; elementNamePitchPx: number; pickSlopPx: number }
 

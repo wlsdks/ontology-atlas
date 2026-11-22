@@ -64,11 +64,12 @@ vi.mock('@/shared/lib/connectors/tauri-connector-secrets', async () => {
   };
 });
 
-import { MCP_CATALOGUE } from '@/shared/config/mcp-catalogue';
+import { MCP_CATALOGUE } from '@/shared/config/mcp/mcp-catalogue';
 import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
 
-import { ConnectorsPanel, connectorDestination, whatRuns } from './ConnectorsPanel';
-import { groupDiscovered, shortSourceKey } from './discovered-groups';
+import { ConnectorsPanel } from './ConnectorsPanel';
+import { connectorDestination, whatRuns } from '../model/connector-summary';
+import { groupDiscovered, shortSourceKey } from '../model/discovered-groups';
 import { useVaultConnectors } from '../model/use-vault-connectors';
 
 /**
@@ -583,6 +584,13 @@ describe('connectors panel explains what runs before enabling', () => {
     fireEvent.change(screen.getByTestId('connectors-custom-command'), {
       target: { value: '/usr/local/bin/github-mcp' },
     });
+    fireEvent.click(screen.getByTestId('connectors-custom-variable-add'));
+    fireEvent.change(screen.getByTestId('connectors-custom-variable-name'), {
+      target: { value: 'GITHUB_TOKEN' },
+    });
+    fireEvent.change(screen.getByTestId('connectors-custom-variable-value'), {
+      target: { value: 'ghp_typed_value' },
+    });
     fireEvent.click(screen.getByTestId('connectors-custom-add'));
 
     const alert = await screen.findByTestId('connectors-add-failed');
@@ -590,6 +598,8 @@ describe('connectors panel explains what runs before enabling', () => {
     // The errand did not finish, so the dialog does not close.
     expect(screen.getByTestId('connectors-add-dialog')).toBeInTheDocument();
     expect(vault.files.get('.ontology-atlas/connectors.json')).toBe('{ not json');
+    // A token is stored only for a row that was saved, so nothing reaches the keychain.
+    expect(bridge.secretSets).toEqual([]);
   });
 
   it('explains in the browser what is unavailable and what still works', async () => {
@@ -728,7 +738,7 @@ describe('connectors panel explains what runs before enabling', () => {
       'claude-user codex-user',
     );
     // Both tools are named, once each.
-    expect(screen.getAllByTestId('connectors-found-source').map((el) => el.textContent)).toEqual([
+    expect(screen.getAllByTestId('connectors-found-source').map((element) => element.textContent)).toEqual([
       'claude',
       'codex',
     ]);

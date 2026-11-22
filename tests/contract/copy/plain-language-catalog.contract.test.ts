@@ -28,9 +28,7 @@ export function flatten(node: Json, path = ''): Array<{ key: string; text: strin
 
 const CATALOG = ko as unknown as Json;
 
-/* ------------------------------------------------------------------------- *
- * Gate 1 — internal vocabulary anywhere in the catalogue
- * ------------------------------------------------------------------------- */
+// Gate 1 — internal vocabulary anywhere in the catalogue
 
 /**
  * The word, and the shape that is **not** it.
@@ -103,9 +101,7 @@ describe('whole catalog — internally coined words never reach the screen', () 
   });
 });
 
-/* ------------------------------------------------------------------------- *
- * Gate 2 — English left untranslated in the Korean catalogue
- * ------------------------------------------------------------------------- */
+// Gate 2 — English left untranslated in the Korean catalogue
 
 const HANGUL: RegExp = column('ownScript', 'ko').pattern;
 
@@ -205,9 +201,7 @@ describe('Korean catalog — untranslated English sentences', () => {
   });
 });
 
-/* ------------------------------------------------------------------------- *
- * Gate 3 — a technical term with no explanation a reader can open
- * ------------------------------------------------------------------------- */
+// Gate 3 — a technical term with no explanation a reader can open
 
 /**
  * Terms developers say in English stay as written, explained by a `TermHint` tooltip: each term needs

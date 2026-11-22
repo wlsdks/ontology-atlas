@@ -2,7 +2,7 @@ import { flowHeadSize } from "./arrow-size";
 import type { FlowMarksInput } from "../flow-marks";
 import { stubText } from "../far-counts";
 import type { DialLink } from "../links";
-import type { Box, DialTokens, Point } from "../types";
+import type { Box, DialTokens, Point } from "../dial-shapes";
 
 const STUB_SHORT = 0.74;
 export interface Stub {
