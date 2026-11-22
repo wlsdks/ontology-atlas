@@ -92,6 +92,11 @@
   background: var(--ink);
 }
 
+/* Two tools in one folder: the edge splits between their hues, each over its own Moru. */
+.large[data-pair='true']::before {
+  background: linear-gradient(90deg, var(--ink) 50%, var(--guest-ink) 50%);
+}
+
 .scene {
   /* Where Moru stands: the middle of a narrow room, left of the monitor in a wide one. */
   --ax-room: 50%;
@@ -310,22 +315,24 @@
 }
 
 /*
- * Two tools in one folder: two Moru at the room's scale, the second a step behind and up to 77
- * drawn pixels to the left, closer where the room is narrow, so they overlap rather than shrink.
- * The lamp stands behind the first, short enough that its shade stays under the name tags.
+ * Two tools in one folder: two Moru at the room's scale, the second a step behind and 60 to 100
+ * drawn pixels to the left, so the first one's face shows beside the second's head. The lamp
+ * stands at the far right, under the monitor of a wide room, clear of both Moru and their tags.
  */
 .scene[data-cast='two'] {
-  --pair-step: clamp(calc(20 * var(--s)), calc(100% - 16px - var(--monitor-reach, 0px) - 114 * var(--s)), calc(77 * var(--s)));
+  --lamp-room: calc(20 * var(--s));
+  --pair-step: clamp(calc(60 * var(--s)), calc(100% - 16px - var(--monitor-reach, var(--lamp-room)) - 114 * var(--s)), calc(100 * var(--s)));
   --ax: clamp(
     calc(8px + var(--pair-step) / 2 + 57 * var(--s)),
     var(--ax-room),
-    calc(100% - 8px - var(--monitor-reach, 0px) - var(--pair-step) / 2 - 57 * var(--s))
+    calc(100% - 8px - var(--monitor-reach, var(--lamp-room)) - var(--pair-step) / 2 - 57 * var(--s))
   );
 }
 
 .scene[data-cast='two'] .lamp {
-  left: calc(var(--ax) - var(--pair-step) / 2 - 50 * var(--s));
-  height: calc(56 * var(--s));
+  left: auto;
+  right: 16px;
+  height: calc(44 * var(--s));
 }
 
 .actorBack {

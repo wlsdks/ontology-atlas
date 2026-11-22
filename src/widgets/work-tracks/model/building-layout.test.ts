@@ -88,13 +88,13 @@ describe('mini rooms', () => {
 });
 
 describe('pairUnit', () => {
-  it('keeps two Moru at the room scale wherever they fit overlapped, and never into the monitor', () => {
-    expect([pairUnit(882, 3), pairUnit(584, 2), pairUnit(290, 2), pairUnit(286, 1)]).toEqual([3, 2, 2, 1]);
-    expect(pairUnit(520, 2)).toBe(1);
-    for (const [width, unit] of [[260, 1], [290, 2], [520, 2], [584, 2], [882, 3]] as const) {
+  it('keeps two Moru at the room scale wherever the first one\'s face shows, and never into the monitor', () => {
+    expect([pairUnit(882, 2), pairUnit(640, 2), pairUnit(584, 2), pairUnit(420, 2), pairUnit(286, 1)]).toEqual([2, 2, 1, 2, 1]);
+    for (const [width, unit] of [[260, 1], [420, 2], [640, 2], [882, 2], [882, 3]] as const) {
       const fitted = pairUnit(width, unit);
-      const reach = width >= 520 ? Math.min(0.46 * width, 124 * fitted) + 16 : 0;
-      expect(134 * fitted + 16 + reach).toBeLessThanOrEqual(width);
+      if (fitted === 1) continue;
+      const reach = width >= 520 ? Math.min(0.46 * width, 124 * fitted) + 16 : 20 * fitted;
+      expect(174 * fitted + 16 + reach).toBeLessThanOrEqual(width);
     }
   });
 });

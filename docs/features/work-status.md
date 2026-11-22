@@ -90,9 +90,12 @@ most and then `+n`, toward the `main` hatch. Past the commits the belt is
 dashed: Git does not tell pre-push, push, PR or CI yet, so no station or value
 is drawn for them. Two tools in one folder are the alarm:
 the room's light, lamp and monitor turn warning amber, the sign carries a `!`,
-and two Moru stand overlapped at the room's scale with both names. The second
-tool is a session of its own, numbered and inked (**Codex 1**), with a floor
-row even when the shared folder is its only one. A held room with nothing seen running for five minutes
+and two Moru stand overlapped at the room's scale with both names, the first
+one's face showing beside the second's head; where the room is too narrow for
+that, the pair is drawn a scale smaller. The room's top edge splits between the
+two sessions' inks. The second tool is a session of its own, numbered and inked
+(**Codex 1**), with a floor row even when the shared folder is its only one. An
+idle room's monitor names its last commit when nothing else needs saying. A held room with nothing seen running for five minutes
 dozes; a lock left behind shows a taped crate and a dark monitor; a missing
 folder shows a dashed crate and the `git worktree prune` command as text.
 

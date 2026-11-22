@@ -16,6 +16,13 @@ type RoomCopy = ReturnType<typeof useRoomCopy>;
 /** Rows of a terminal, as widths of its three runs; drawn twice so the scroll wraps unseen. */
 const TERMINAL_LINES = [[18, 34], [8, 22, 30], [30, 12], [12, 40, 14], [22, 18], [8, 30, 26]];
 
+/** The terminal's rows from a room's own starting row, so no two monitors scroll the same picture. */
+const terminalFrom = (phase: number) => {
+  const start = phase % TERMINAL_LINES.length;
+  const rows = [...TERMINAL_LINES.slice(start), ...TERMINAL_LINES.slice(0, start)];
+  return [...rows, ...rows];
+};
+
 const LABEL = 'text-label leading-label';
 const BODY = 'text-body leading-body';
 
@@ -42,7 +49,7 @@ function Monitor({ room, copy }: { room: RoomEntry; copy: RoomCopy }) {
         {screen.terminal ? (
           <div className={styles.terminal} aria-hidden>
             <div className={styles.screenLines}>
-              {[...TERMINAL_LINES, ...TERMINAL_LINES].map((line, index) => (
+              {terminalFrom(moruPhase(room.key)).map((line, index) => (
                 <div key={index}>{line.map((width, part) => <i key={part} style={{ width: `${width}%` }} />)}</div>
               ))}
             </div>
@@ -121,8 +128,9 @@ export function LargeRoom({ room, unit, width, copy, tint, guestTint, retiring }
   const pair = look.cast === 'two' && second !== undefined;
   const guest = room.guests[0] ?? null;
   const sceneUnit = pair ? pairUnit(width, unit) : unit;
+  const guestInk = guest ? `var(--work-session-${guest.ink + 1})` : 'var(--work-unheld)';
   return (
-    <div className={cn(styles.large, 'h-full w-full')}>
+    <div className={cn(styles.large, 'h-full w-full')} data-pair={pair || undefined} style={pair ? { ['--guest-ink' as string]: guestInk } : undefined}>
       <div className={styles.scene} style={{ ['--u' as string]: sceneUnit }} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast} data-alarm={pair}>
         <i className={styles.glow}><i className={styles.glowLight} /></i>
         <i className={styles.wainscot} />
@@ -145,7 +153,7 @@ export function LargeRoom({ room, unit, width, copy, tint, guestTint, retiring }
             </span>
             <i className={cn(styles.shadow, styles.actorFront)} />
             <span className={cn(styles.actor, styles.actorFront)}><RoomMoru clip="code" still={false} zoom={sceneUnit} tint={guestTint} phase={moruPhase(room.key)} /></span>
-            <span className={cn(styles.tag, styles.tagFront, LABEL, 'font-[var(--font-weight-emphasis)]')} style={{ ['--ink' as string]: guest ? `var(--work-session-${guest.ink + 1})` : 'var(--work-unheld)' }}>
+            <span className={cn(styles.tag, styles.tagFront, LABEL, 'font-[var(--font-weight-emphasis)]')} style={{ ['--ink' as string]: guestInk }}>
               <span className="truncate">{copy.sessionName(guest) ?? copy.toolName(second)}</span>
             </span>
           </>
