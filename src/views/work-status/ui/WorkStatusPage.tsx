@@ -14,6 +14,7 @@ import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame'
 import { EmptyRoom, RoomShelf, WorkBuilding } from '@/widgets/work-tracks';
 import { useMinuteClock } from '../model/use-minute-clock';
 import { useRunningMemory } from '../model/use-running-memory';
+import { useSessionIdentity } from '../model/use-session-identity';
 import { useWorkStatus } from '../model/use-work-status';
 import { WorkStatusStage } from './WorkStatusStage';
 
@@ -32,7 +33,8 @@ export function WorkStatusPage() {
   const root = native ? chosen ?? vaultRoot : null;
   const { snapshot, failed, readAtMs } = useWorkStatus(root);
   const nowMs = useMinuteClock(readAtMs);
-  const tracks = useMemo(() => (snapshot?.status === 'ready' ? buildWorkTracks(snapshot) : null), [snapshot]);
+  const read = useMemo(() => (snapshot?.status === 'ready' ? buildWorkTracks(snapshot) : null), [snapshot]);
+  const tracks = useSessionIdentity(read);
   const seenRunningAt = useRunningMemory(tracks, readAtMs);
   const plan = useMemo(() => (tracks ? planRooms(tracks, nowMs, seenRunningAt) : null), [tracks, nowMs, seenRunningAt]);
 

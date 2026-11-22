@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkStatusSnapshot, WorktreeRow } from './tauri-work-status';
-import { DOZE_AFTER_MS, NO_SESSION_FLOOR, UNTOUCHED_AFTER_MS, branchTitle, buildWorkTracks, planRooms, stageOf } from './work-tracks';
+import { DOZE_AFTER_MS, NO_SESSION_FLOOR, UNTOUCHED_AFTER_MS, branchTitle, buildWorkTracks, keepSessionIdentity, planRooms, stageOf } from './work-tracks';
 
 function row(id: string, patch: Partial<WorktreeRow> = {}): WorktreeRow {
   return {
@@ -204,5 +204,24 @@ describe('planRooms', () => {
   it('puts a missing folder first even when a session holds it', () => {
     const rooms = plan([row('runs', working(100)), row('gone', { missing: true, lock: live(100, 1_000, 1), ...working(100) })]);
     expect(rooms.stage.map(room => [room.key, room.state.kind])).toEqual([['gone', 'missing'], ['runs', 'working']]);
+  });
+});
+
+describe('keepSessionIdentity', () => {
+  it('keeps a session its ink and number when an earlier session ends', () => {
+    const first = buildWorkTracks(snapshot([
+      row('a', { lock: live(1, 100, 1) }),
+      row('b', { lock: live(2, 200, 2) }),
+      row('c', { lock: live(3, 300, 3) }),
+    ]));
+    const before = keepSessionIdentity(first, new Map());
+    expect(before.tracks.sessions.map(session => [session.ink, session.ordinal])).toEqual([[0, 1], [1, 2], [2, 3]]);
+    const second = buildWorkTracks(snapshot([row('b', { lock: live(2, 200, 2) }), row('c', { lock: live(3, 300, 3) })]));
+    const after = keepSessionIdentity(second, before.identities);
+    expect(after.tracks.sessions.map(session => [session.ink, session.ordinal])).toEqual([[1, 2], [2, 3]]);
+    const third = buildWorkTracks(snapshot([
+      row('b', { lock: live(2, 200, 2) }), row('c', { lock: live(3, 300, 3) }), row('d', { lock: live(4, 400, 4) }),
+    ]));
+    expect(keepSessionIdentity(third, after.identities).tracks.sessions.at(-1)).toMatchObject({ ink: 0, ordinal: 1 });
   });
 });

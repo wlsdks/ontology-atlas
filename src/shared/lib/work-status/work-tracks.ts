@@ -40,7 +40,7 @@ export interface TrackSession {
   startedAt: number | null;
   /** 1 for the tool's oldest live session, 2 for its next: what tells two sessions of one tool apart. */
   ordinal: number;
-  /** Index into the session ink ramp, stable while the session lives. */
+  /** Index into the session ink ramp, by start order; `keepSessionIdentity` keeps it while the session lives. */
   ink: number;
   tracks: Track[];
 }
@@ -189,6 +189,47 @@ export function buildWorkTracks(snapshot: WorkStatusSnapshot): WorkTracks {
     merged: tracks.filter(track => track.place === 'merged'),
     worktreeCount: snapshot.worktrees.length,
   };
+}
+
+/** What a session is called and drawn in on this screen: its ink and its number among its tool's sessions. */
+export interface SessionIdentity {
+  ink: number;
+  ordinal: number;
+}
+
+/**
+ * Keeps each live session's ink and number from the previous read, so a session never changes
+ * colour or name because another one ended. A new session takes the lowest ink and the lowest
+ * number of its tool that no live session uses.
+ */
+export function keepSessionIdentity(
+  tracks: WorkTracks,
+  previous: ReadonlyMap<string, SessionIdentity>,
+): { tracks: WorkTracks; identities: Map<string, SessionIdentity> } {
+  const identities = new Map<string, SessionIdentity>();
+  for (const session of tracks.sessions) {
+    const kept = previous.get(session.key);
+    if (kept) identities.set(session.key, kept);
+  }
+  const lowestFree = (used: number[], from: number) => {
+    let value = from;
+    while (used.includes(value)) value += 1;
+    return value;
+  };
+  for (const session of tracks.sessions) {
+    if (identities.has(session.key)) continue;
+    const taken = [...identities.values()];
+    const inks = taken.map(identity => identity.ink);
+    const ink = inks.length >= SESSION_INK_COUNT ? identities.size % SESSION_INK_COUNT : lowestFree(inks, 0);
+    const sameTool = tracks.sessions.flatMap(other => {
+      const identity = other.tool === session.tool ? identities.get(other.key) : undefined;
+      return identity ? [identity.ordinal] : [];
+    });
+    const ordinal = lowestFree(sameTool, 1);
+    identities.set(session.key, { ink, ordinal });
+  }
+  const sessions = tracks.sessions.map(session => ({ ...session, ...identities.get(session.key) }));
+  return { tracks: { ...tracks, sessions }, identities };
 }
 
 const isProcessOnly = (session: TrackSession) => session.key.startsWith(PROCESS_SESSION_PREFIX);
