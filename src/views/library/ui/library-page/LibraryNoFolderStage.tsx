@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { MOTION } from "@/shared/motion";
 import { FeatureStage } from "@/shared/ui";
-import { LibraryConstellation } from "../parts/first-run/LibraryConstellation";
+import { LibraryConstellation } from "../first-run/LibraryConstellation";
 
 export function LibraryNoFolderStage({ t }: { t: ReturnType<typeof useTranslations<"library">> }) {
   return (

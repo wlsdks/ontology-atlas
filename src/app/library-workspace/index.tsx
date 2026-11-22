@@ -11,7 +11,10 @@ import { startPreferredSampleDownload, useLocalVault } from '@/entities/vault-se
 import { selectWikiPages } from '@/entities/docs-vault';
 import { useRouter } from '@/i18n/navigation';
 import { DESTINATION_HREF, withQuery } from '@/shared/config/destinations';
-import { useLibraryIndexSegment, writeLibraryIndexSegment } from '@/shared/lib/preferences/appearance-preferences';
+import {
+  useLibraryIndexSegment,
+  writeLibraryIndexSegment,
+} from '@/shared/lib/preferences/library-preferences';
 import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
 import { PageHeaderBar, RouteLoadingFallback, TabBar } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';

@@ -236,8 +236,8 @@ function normalizePath(path: string): string | null {
 }
 
 function dirnamePath(path: string): string {
-  const idx = path.lastIndexOf('/');
-  return idx === -1 ? '' : path.slice(0, idx);
+  const index = path.lastIndexOf('/');
+  return index === -1 ? '' : path.slice(0, index);
 }
 
 function hasClaudeAgentsImport(content: string | null | undefined): boolean {
@@ -439,9 +439,9 @@ function checkAtRefs(
     for (const { ref } of extractAtRefs(record.entry.content)) {
       if (ref.includes('*')) continue;
       refsChecked += 1;
-      const dir = dirnamePath(record.path);
+      const directory = dirnamePath(record.path);
       const candidates: string[] = [];
-      const fileRelative = normalizePath(dir ? `${dir}/${ref}` : ref);
+      const fileRelative = normalizePath(directory ? `${directory}/${ref}` : ref);
       if (fileRelative) candidates.push(fileRelative);
       const rootRelative = normalizePath(ref);
       if (rootRelative && !candidates.includes(rootRelative)) candidates.push(rootRelative);
@@ -768,7 +768,6 @@ export interface AgentFilesUiModel {
   driftCount: number;
 }
 
-/** Joins analysis records back to manifest docs by slug. */
 export function buildAgentFilesUiModel(
   analysis: AgentFilesAnalysis,
   docs: Array<Pick<VaultDocRef, 'path' | 'slug'>>,

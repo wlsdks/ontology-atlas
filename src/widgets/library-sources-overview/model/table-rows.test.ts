@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { LibrarySourceRow } from "@/entities/docs-vault";
 
 import { SourceGroupIndex } from "./source-group-index";
-import { AlikeFolds, DEFAULT_SOURCE_SORT, nextSourceSort, sortTableRows } from "./table-rows";
+import { AlikeFolds, DEFAULT_SOURCE_SORT, nextSourceSort, rowLatestDay, sortTableRows } from "./table-rows";
 
 function rows(folder: string, compiled: number, waiting: number): LibrarySourceRow[] {
   return Array.from({ length: compiled + waiting }, (_, i) => ({
@@ -104,5 +104,21 @@ describe("sortTableRows", () => {
     const reversed = nextSourceSort(byShare, "withPage");
     expect(sortTableRows(all, reversed, noDay).map((row) => row.group.name)).toEqual(["a", "c", "b"]);
     expect(nextSourceSort(DEFAULT_SOURCE_SORT, "name")).toEqual({ column: "name", direction: "ascending" });
+  });
+});
+
+describe("rowLatestDay", () => {
+  it("is the newest day among the members of an alike row, and -1 when none is dated", () => {
+    const index = indexOf(...["a", "b", "c", "d", "e"].map((name) => rows(name, 1, 1)));
+    const alike = new AlikeFolds().fold(index.list("folder"), new Set()).find((row) => row.members)!;
+    const dayByFolder = new Map(alike.members!.map((member, position) => [member, position === 3 ? 40 : position]));
+    expect(rowLatestDay(alike, (group) => dayByFolder.get(group) ?? -1)).toBe(40);
+    expect(rowLatestDay(alike, () => -1)).toBe(-1);
+  });
+
+  it("asks for the row's own group when it is not an alike row", () => {
+    const index = indexOf(rows("solo", 1, 1));
+    const [only] = new AlikeFolds().fold(index.list("folder"), new Set());
+    expect(rowLatestDay(only!, (group) => (group === only!.group ? 7 : -1))).toBe(7);
   });
 });

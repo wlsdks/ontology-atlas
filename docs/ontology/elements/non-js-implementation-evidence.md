@@ -6,7 +6,7 @@ title: Non-JavaScript implementation evidence
 display_en: Non-JavaScript implementation evidence
 display_ko: 비 JavaScript 구현 근거
 domain: domains/code-evidence
-path: mcp/src/analyze/native-evidence.mjs
+path: mcp/src/analyze/candidates/native-evidence.mjs
 created_by: "agent:claude-code"
 ---
 

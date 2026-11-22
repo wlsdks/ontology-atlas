@@ -10,10 +10,8 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 export type IndexAddKind = "domain" | "capability" | "element";
 
-/** Creates a concept inside `parent`; resolves whether it was written. */
 export type IndexAddConcept = (parent: KnowledgeGraphNode, kind: IndexAddKind, title: string) => Promise<boolean>;
 
-/** What each open group can hold, in the order its add rows stand. */
 export const ADD_KINDS_BY_GROUP: Readonly<Record<string, readonly IndexAddKind[]>> = {
   project: ["domain"],
   domain: ["capability", "element"],

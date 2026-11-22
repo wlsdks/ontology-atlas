@@ -9,8 +9,8 @@ describe('InfoHint', () => {
         <p>검수 큐는 추출 후보를 검토하는 곳입니다.</p>
       </InfoHint>,
     );
-    const btn = screen.getByRole('button', { name: '검수 큐 설명' });
-    expect(btn).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: '검수 큐 설명' });
+    expect(button).toBeInTheDocument();
   });
 
   it('renders panel with role=tooltip and children', () => {

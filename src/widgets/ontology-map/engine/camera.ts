@@ -1,13 +1,6 @@
 /**
- * Camera composition, wiring together
- * `spring.ts` (per-axis critically-damped integration), `momentum.ts`
- * (flick-release landing projection) and `hysteresis.ts` (click-vs-drag
- * gate, consumed by `interaction/pointer-state-machine.ts`, not here).
- *
- * Fit geometry lives in `ui/camera/topology-camera-math.ts`; this module springs
- * the live camera toward the target it computes, frame by frame. Scale bounds
- * are the prototype's `0.24–2.6` (`--map-camera-scale-*`), passed in as
- * explicit parameters.
+ * Springs the live camera toward its target, frame by frame: `spring.ts` per axis, `momentum.ts`
+ * for the flick landing. Fit geometry lives in `ui/camera/target/`.
  */
 
 import { stepSpring, type SpringAxisState } from "./spring";
@@ -15,7 +8,6 @@ import { stepSpring, type SpringAxisState } from "./spring";
 export interface CameraAxes {
   x: SpringAxisState;
   y: SpringAxisState;
-  /** Camera scale, modeled as its own spring axis (prototype `camera.scale`/`vscale`). */
   scale: SpringAxisState;
 }
 
@@ -35,59 +27,39 @@ export interface PanBounds {
 export interface CameraStepInput {
   camera: CameraAxes;
   target: CameraTarget;
-  /** Elapsed seconds since the last frame, already clamped by the caller (≤ 0.05s in the prototype). */
+  /** Seconds since the last frame, already clamped by the caller. */
   dt: number;
   damping: number;
-  /**
-   * ω, rad/s. Dive-zoom fix split the one shared token into
-   * `--map-camera-spring-angfreq-interactive` (live wheel gesture —
-   * scale axis + pan while wheel-zooming) and `-transition` (programmatic
-   * camera moves — focus dive, deselect, Auto-arrange, fit-view); the caller
-   * (`topology-physics-step.ts`) picks which one this frame passes in.
-   */
+  /** ω, rad/s; the caller passes the interactive token during a live wheel gesture, else the transition token. */
   angularFrequency: number;
-  /** `--map-camera-scale-min` (0.24 in the prototype). */
   scaleMin: number;
-  /** `--map-camera-scale-max` (2.6 in the prototype). */
   scaleMax: number;
-  /** World-space soft pan limits (world bounds + margin) — omit to skip the elastic clamp entirely (e.g. before the world is built). */
+  /** World-space soft pan limits; omit to skip the elastic clamp. */
   panBounds?: PanBounds;
-  /** True while the pointer is actively dragging — the prototype's `updateCamera()` returns before ever reaching the clamp during a live drag, so the 1:1 tracking contract (`topology-pointer-move.ts`) never fights it. */
+  /** True while the pointer drags; the elastic clamp is skipped so 1:1 tracking is never fought. */
   isDragging?: boolean;
 }
 
 /**
- * Advances the full camera (x, y, scale) by one frame. Scale is always
- * critically damped (ζ=1.0 in the prototype, independent of the x/y
- * `damping` passed in — see `updateCamera()`: `stepSpring(camera.scale, ...,
- * 1.0)` is hardcoded even during a flick). The result's `scale` is clamped to
- * `[scaleMin, scaleMax]` after the spring step, and — when `panBounds` is
- * given and the pointer isn't actively dragging — x/y are elastically pulled
- * back toward `panBounds` (prototype: 14%/frame pull, 15% velocity bleed).
+ * Scale is always critically damped (ζ = 1) whatever `damping` says, and clamped to
+ * `[scaleMin, scaleMax]`; x/y are pulled back toward `panBounds` unless dragging.
  */
 const SCALE_CRITICAL_DAMPING = 1.0;
 /**
- * The rubber-band return is proportional to time, so the feel is the same at any refresh rate.
- * `tau` is back-computed from the 60Hz values (14% pull, 15% velocity bleed), not a rounded decimal.
+ * The rubber-band return is proportional to time, so the feel is the same at any refresh rate;
+ * `tau` is back-computed from 14% pull and 15% velocity bleed per 60 Hz frame.
  */
 const REFERENCE_FRAME_SECONDS = 1 / 60;
-/** Prototype `updateCamera()` — 14% return per frame at 60Hz. */
 const PAN_BOUNDS_PULL_PER_REFERENCE_FRAME = 0.14;
-/** Prototype `updateCamera()` — 15% velocity decay per frame at 60Hz. */
 const PAN_BOUNDS_VELOCITY_RETENTION_PER_REFERENCE_FRAME = 0.85;
 const PAN_BOUNDS_PULL_TAU_SECONDS =
   -REFERENCE_FRAME_SECONDS / Math.log(1 - PAN_BOUNDS_PULL_PER_REFERENCE_FRAME);
 const PAN_BOUNDS_VELOCITY_TAU_SECONDS =
   -REFERENCE_FRAME_SECONDS / Math.log(PAN_BOUNDS_VELOCITY_RETENTION_PER_REFERENCE_FRAME);
 
-/**
- * `panBounds = bbox(allNodes, 320)` — generous slack past the world's own node bbox.
- * No assigned `--map-*` token yet (same "no token" precedent as
- * `topology-pointer-move.ts`'s `RIPPLE_PER_NEIGHBOR_DELAY_MS`).
- */
+/** Slack past the world's node bounding box. */
 const DEFAULT_PAN_BOUNDS_MARGIN = 320;
 
-/** Expands a world-space bounding box by `margin` on every side — the soft pan-bounds envelope. */
 export function computePanBounds(
   worldBounds: PanBounds,
   margin: number = DEFAULT_PAN_BOUNDS_MARGIN,
@@ -100,10 +72,7 @@ export function computePanBounds(
   };
 }
 
-/**
- * Hard-clamps one world-space point into `panBounds`, capping a flick's projected landing target
- * (`topology-pointer-release.ts`); the per-frame `clampAxisToPanBounds` is the elastic live clamp.
- */
+/** Hard clamp for a flick's projected landing target; `clampAxisToPanBounds` is the per-frame elastic one. */
 export function clampPointToPanBounds(
   x: number,
   y: number,

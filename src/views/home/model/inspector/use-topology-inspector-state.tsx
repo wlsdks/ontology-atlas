@@ -13,7 +13,7 @@ import type { OntologyMapGraph } from "../../lib/map-canvas/map-adapter";
 import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import { isSearchLaneCrowded, SEARCH_LANE_CROWDED_BELOW_PX } from "./search-lane-density";
 import { selectTopologyPathRouteState } from "../route-state/url-state";
-import { useFullDetailA1Model } from "./use-full-detail-a1-model";
+import { useFullDetailModel } from "./use-full-detail-model";
 import { useRetainedDatasheetModel } from "./use-retained-datasheet-model";
 import type { NodeDatasheetDerivation } from "./use-node-datasheet-model";
 
@@ -91,7 +91,6 @@ export function useTopologyInspectorState({
     const sourceSlug = node.evidenceIds[0] ?? null;
     // Without an evidence list the label changes instead of dropping the link.
     const { ownSlug, mentionedInSlug } = resolveNodeDocument(node);
-    // The document slug, or the reference as written.
     const agentTarget = resolveNodeAgentTarget(node);
     const slug = agentTarget.ref ?? sourceSlug ?? node.id;
     const connections = buildV2Connections(node.id, ontologyInsight.nodes, ontologyInsight.edges);
@@ -120,7 +119,6 @@ export function useTopologyInspectorState({
       nodeId: node.id,
       title: node.display ?? node.title,
       slug,
-      // A document opened from the map keeps a crumb back to its node.
       documentHref: ownSlug
         ? buildDocsVaultHref({ slug: ownSlug, via: buildTopologyReturnMarker(node.id) })
         : null,
@@ -145,8 +143,7 @@ export function useTopologyInspectorState({
     contextMenuKey,
   );
 
-  // Same source as the compact datasheet, so the two surfaces' numbers cannot drift.
-  const fullDetailA1Model = useFullDetailA1Model({
+  const fullDetailModel = useFullDetailModel({
     open: fullDetailOpen,
     nodeFocus,
     selectedOntologyNode,
@@ -160,7 +157,7 @@ export function useTopologyInspectorState({
   });
   // The model turns null on close, so the exit window holds it. Keyed by slug: an unkeyed
   // per-render `useMemo` value crashes the map with React #301.
-  const heldFullDetailA1Model = useHeldValue(fullDetailA1Model, fullDetailSlug);
+  const heldFullDetailModel = useHeldValue(fullDetailModel, fullDetailSlug);
   // Full detail is a dialog over the dimmed map, so the selection and its panel stay beneath it and
   // its opener is still there to take focus back.
   const selectedNodeFocusActive =
@@ -179,7 +176,6 @@ export function useTopologyInspectorState({
     !createNodeOpen &&
     !nodePopoverDismissed,
   );
-  // Drives both the Esc ladder's `nodePopoverOpen` and the popover's render guard, so they agree.
   const nodePopoverVisible =
     selectedNodeFocusActive &&
     !meaningWorkbenchOpen &&
@@ -222,7 +218,6 @@ export function useTopologyInspectorState({
         ? "compact-focus"
         : "visible";
   const topologyUtilityChromeCompact = reviewUsesSheet || agentDockRequestedOpen;
-  // See `search-lane-density.ts` for the measured band.
   const searchLaneCrowded = isSearchLaneCrowded({
     viewportBelowCrowdedWidth: useViewportBelow(SEARCH_LANE_CROWDED_BELOW_PX),
     indexExpanded: renderedIndexState === "expanded",
@@ -245,6 +240,6 @@ export function useTopologyInspectorState({
     topologyUtilityLaneSuppressionContract, searchLaneCrowded, selectedNodeFocusActive, nodePanelMounted,
     inspectorOwnsRightRail, activityInboxOpen, selectedEdgeOwnsRightRail, setActivityInboxOpen,
     indexDemotedByNodeSheet, panelOpen, meaningEditorOpen, setNodePanelMounted, heldContextMenu,
-    contextMenuModel, handleSetPathSource, heldFullDetailA1Model, fullDetailA1Model
+    contextMenuModel, handleSetPathSource, heldFullDetailModel, fullDetailModel
   } as const;
 }

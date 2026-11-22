@@ -16,12 +16,10 @@ export interface DigestChange {
   number: number | null;
   files: number;
   concepts: string[];
-  /** The conventional-commit type exactly as its author typed it (`feat`, `fix`); null without one. */
   type: string | null;
 }
 
 export interface WorkKind { type: string; count: number }
-/** The five most used commit types, most first, and how many changes carry another type or none. */
 export interface WorkKinds { kinds: WorkKind[]; other: number }
 
 export type DigestGroupKind = 'label' | 'directory' | 'other';
@@ -31,7 +29,6 @@ export interface DigestGroup {
   /** The label or top-level directory as written; '' for the other group, '.' for repository root files. */
   name: string;
   changes: DigestChange[];
-  /** Recorded concepts the group's files touch, most changes first. */
   concepts: string[];
 }
 
@@ -44,7 +41,6 @@ export interface ChangeDigest {
   grouping: 'label' | 'directory';
   groups: DigestGroup[];
   notable: NotableChange[];
-  /** Null when under half the titles carry a commit type. */
   kinds: WorkKinds | null;
 }
 
@@ -60,12 +56,10 @@ function ownTitle(subject: string, message?: string) {
   return subject.replace(MERGE_PREFIX, '');
 }
 
-/** The title as its author wrote it, with the pull request number shown beside it instead. */
 export function changeTitle(subject: string, message?: string) {
   return ownTitle(subject, message).replace(TRAILING_PR, '').trim() || subject;
 }
 
-/** The title without its `type(label):` head, for a list that already names the label. */
 export function titleWithoutHead(subject: string, message?: string) {
   const title = changeTitle(subject, message);
   return title.replace(CONVENTIONAL_HEAD, '').trim() || title;
@@ -230,7 +224,6 @@ export function buildChangeDigest(commits: readonly BriefingCommit[], conceptsBy
   };
 }
 
-/** The local day of the newest change, or null when none has a readable time. */
 export function latestChangeDay(commits: readonly BriefingCommit[]): string | null {
   let newest = Number.NEGATIVE_INFINITY;
   for (const commit of commits) newest = Math.max(newest, Date.parse(commit.committedAt) || Number.NEGATIVE_INFINITY);

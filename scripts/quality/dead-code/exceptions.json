@@ -38,12 +38,6 @@
       "witness": "codex"
     },
     {
-      "key": "frontend:runtime:binaries:scripts/benchmark/benchmark-lifecycle.mjs:codex",
-      "reason": "Root package scripts expose the lifecycle benchmark executable.",
-      "consumer": "scripts/benchmark/benchmark-lifecycle.mjs",
-      "witness": "codex"
-    },
-    {
       "key": "frontend:runtime:binaries:scripts/benchmark/benchmark-scale.mjs:codex",
       "reason": "Root package scripts expose the external benchmark executable.",
       "consumer": "scripts/benchmark/benchmark-scale.mjs",
@@ -94,7 +88,7 @@
     {
       "key": "frontend:runtime:exports:src/features/library/index.ts:retainedAnswerHeads",
       "reason": "The questions list test builds real answer heads through the reducer instead of hand-made ones; test files are not runtime entries, so the lane cannot see this consumer.",
-      "consumer": "src/views/library/ui/parts/questions/LibraryQuestions.test.tsx",
+      "consumer": "src/views/library/ui/questions/LibraryQuestions.test.tsx",
       "witness": "retainedAnswerHeads"
     },
     {
@@ -125,12 +119,6 @@
       "key": "frontend:verification:binaries:scripts/benchmark/benchmark-grade.mjs:codex",
       "reason": "The independent grader invokes the external Codex executable intentionally, so a second reader with no memory of this repository's conversation can score a saved packet.",
       "consumer": "scripts/benchmark/benchmark-grade.mjs",
-      "witness": "codex"
-    },
-    {
-      "key": "frontend:verification:binaries:scripts/benchmark/benchmark-lifecycle.mjs:codex",
-      "reason": "Knip follows root script declarations while the verification lane isolates test symbols.",
-      "consumer": "scripts/benchmark/benchmark-lifecycle.mjs",
       "witness": "codex"
     },
     {
@@ -182,7 +170,7 @@
       "witness": "normalizeMeaningStructureStatus"
     },
     {
-      "key": "mcp:runtime:exports:src/meaning/meaning-evaluation.mjs:candidateProposalFromAnalysis",
+      "key": "mcp:runtime:exports:src/meaning/golden-corpus-scoring.mjs:candidateProposalFromAnalysis",
       "reason": "The meaning-corpus evaluator script builds candidate proposals with it; the export is consumed outside its Knip scope, where the lane cannot see it.",
       "consumer": "scripts/benchmark/evaluate-meaning-corpus.mjs",
       "witness": "candidateProposalFromAnalysis"
@@ -278,9 +266,9 @@
       "witness": "codex"
     },
     {
-      "key": "scripts:runtime:binaries:scripts/benchmark/benchmark-lifecycle.mjs:codex",
+      "key": "scripts:runtime:binaries:scripts/benchmark/lifecycle/codex-run.mjs:codex",
       "reason": "Lifecycle benchmark invokes the external Codex executable intentionally.",
-      "consumer": "scripts/benchmark/benchmark-lifecycle.mjs",
+      "consumer": "scripts/benchmark/lifecycle/codex-run.mjs",
       "witness": "codex"
     },
     {
@@ -429,12 +417,6 @@
       "key": "scripts:verification:binaries:scripts/benchmark/benchmark-grade.mjs:codex",
       "reason": "The independent grader invokes the external Codex executable intentionally, so a second reader with no memory of this repository's conversation can score a saved packet.",
       "consumer": "scripts/benchmark/benchmark-grade.mjs",
-      "witness": "codex"
-    },
-    {
-      "key": "scripts:verification:binaries:scripts/benchmark/benchmark-lifecycle.mjs:codex",
-      "reason": "Knip follows root script declarations while the verification lane isolates test symbols.",
-      "consumer": "scripts/benchmark/benchmark-lifecycle.mjs",
       "witness": "codex"
     },
     {

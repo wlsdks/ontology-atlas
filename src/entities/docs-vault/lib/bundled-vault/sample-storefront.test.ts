@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { deriveOntologyFromVault } from '../derive-ontology-from-vault';
 import sampleStorefrontManifestRaw from '../../data/sample-storefront.manifest.json';
-import type { VaultDoc } from '../../model/types';
+import type { VaultDoc } from '../../model/vault-manifest';
 import { bundledVaultManifest } from './bundled-manifest';
 
 // The default sample (`samples/storefront/`) is what every visitor without a vault sees.
@@ -70,8 +70,8 @@ describe('sample storefront vault — connected business graph', () => {
     const queue = [projectNode!.id];
     let head = 0;
     while (head < queue.length) {
-      const cur = queue[head++];
-      for (const next of adjacency.get(cur) ?? []) {
+      const current = queue[head++];
+      for (const next of adjacency.get(current) ?? []) {
         if (visited.has(next)) continue;
         visited.add(next);
         queue.push(next);

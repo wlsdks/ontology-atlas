@@ -145,19 +145,19 @@ export function parseFrontmatter(input) {
         continue;
       }
       if (lookahead === "object") {
-        const obj = {};
+        const mapping = {};
         let j = i + 1;
         while (j < lines.length) {
           if (!/^\s+/.test(lines[j]) || !lines[j].trim()) break;
           const child = readMappingMember(lines[j], diagnostics, j + 2);
           if (child) {
             pushQuotedScalarDiagnostic(diagnostics, child.key, j + 2, child.value);
-            assignParsedKey(obj, child.key, parseScalar(child.value), diagnostics, j + 2);
+            assignParsedKey(mapping, child.key, parseScalar(child.value), diagnostics, j + 2);
           }
           j += 1;
         }
-        assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
-        pushGraphArrayDiagnostic(diagnostics, key, i + 2, obj);
+        assignParsedKey(frontmatter, key, mapping, diagnostics, i + 2);
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, mapping);
         i = j - 1;
         continue;
       }
@@ -174,17 +174,17 @@ export function parseFrontmatter(input) {
     }
     if (value.startsWith("{") && value.endsWith("}")) {
       const inner = value.slice(1, -1).trim();
-      const obj = {};
+      const mapping = {};
       if (inner) {
         for (const part of splitTopLevel(inner, ',', true)) {
           const member = readMappingMember(part, diagnostics, i + 2);
           if (!member) continue;
           pushQuotedScalarDiagnostic(diagnostics, member.key, i + 2, member.value);
-          assignParsedKey(obj, member.key, parseScalar(member.value), diagnostics, i + 2);
+          assignParsedKey(mapping, member.key, parseScalar(member.value), diagnostics, i + 2);
         }
       }
-      assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
-      pushGraphArrayDiagnostic(diagnostics, key, i + 2, obj);
+      assignParsedKey(frontmatter, key, mapping, diagnostics, i + 2);
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, mapping);
       continue;
     }
     pushQuotedScalarDiagnostic(diagnostics, key, i + 2, value);
@@ -198,20 +198,12 @@ export function parseFrontmatter(input) {
 }
 
 /**
- * Reports a scalar that **opens a quote the value never closes as its last
- * character** — `display_ko: "Agents" destination`, found in this repository's own
- * vault on 2026-08-31.
- *
- * `unquote` strips a wrapping pair only when the first and last characters are
- * the same quote, so a value that opens a quote it never closes falls through to
- * its lenient tail, which
- * removes the opening quote and keeps the rest verbatim, so every reader renders
- * `Agents" destination`. Nothing else noticed: the key parses, the node loads, and
- * `validate` answered `0 issues` while the map, the lists and the app title all
- * showed the broken text.
- *
- * Top-level scalars only. Inline list and object members reach `unquote` through
- * the quote-aware `splitTopLevel`, and a block scalar carries no quoting at all.
+ * Reports a scalar that opens a quote the value never closes as its last character
+ * (`display_ko: "Agents" destination`). `unquote` strips a wrapping pair only when the first and last
+ * characters match, so such a value falls through to a lenient tail that keeps `Agents" destination`:
+ * the key parses and the node loads, yet `validate` would answer `0 issues` while every surface shows
+ * the broken text. Top-level scalars only: inline list and object members reach `unquote` through the
+ * quote-aware `splitTopLevel`, and a block scalar carries no quoting.
  *
  * @param {string} value raw text after `key:`
  * @returns {"trailing" | "unterminated" | null}
@@ -281,10 +273,8 @@ function parseScalar(value) {
 
 function unquote(value) {
   const trimmed = value.trim();
-  // Unescape **only** when stripping wrapping quotes. The serializer writes `"`
-  // escaped, and not reversing it here adds a backslash layer on every save
-  // (measured over 3 round trips: 1 → 2 → 4). An unquoted value is literal text
-  // rather than escape syntax, so it is left alone.
+  // Unescape only when stripping wrapping quotes: the serializer writes `"` escaped, and reversing it
+  // elsewhere adds a backslash layer on every save. An unquoted value is literal text, so it is left alone.
   const quote = trimmed.length >= 2 ? trimmed[0] : "";
   if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
     const inner = trimmed.slice(1, -1);
@@ -361,11 +351,11 @@ function readBlockScalar(lines, start, indicator) {
   if (fold) {
     // Folded scalar: a blank line becomes a newline, consecutive lines join with one space.
     text = collected
-      .reduce((acc, cur) => {
-        if (cur === '') return acc.concat('');
+      .reduce((acc, current) => {
+        if (current === '') return acc.concat('');
         const last = acc[acc.length - 1];
-        if (acc.length === 0 || last === '') return acc.concat(cur);
-        acc[acc.length - 1] = `${last} ${cur}`;
+        if (acc.length === 0 || last === '') return acc.concat(current);
+        acc[acc.length - 1] = `${last} ${current}`;
         return acc;
       }, [])
       .join('\n');

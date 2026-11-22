@@ -8,11 +8,8 @@ import {
 import { escapeHtml } from "../persistence";
 
 /**
- * A self-contained dark HTML page for popout or print. Standalone, so `var(--color-*)` tokens
- * do not resolve: colours are the tokens' literal values, kept equal to `docs/DESIGN-SYSTEM.md`
- * and `app/globals.css`. The column uses `PROSE_MEASURE_REM` and `DOC_COLUMN_GUTTER_PX` from the
- * file `src/shared/ui/tokens/reading-measure.ts`. Sizes are `rem` so the page follows the reader's zoom;
- * they are not the app's ramp.
+ * The page is standalone, so `var(--color-*)` tokens do not resolve: colours are the tokens' literal
+ * values, kept equal to `docs/DESIGN-SYSTEM.md`. Sizes are `rem` so it follows the reader's zoom.
  */
 const POPOUT_TOKENS = {
   canvas: "#0b0b0a",

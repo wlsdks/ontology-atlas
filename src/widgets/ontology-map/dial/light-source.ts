@@ -12,7 +12,7 @@ import {
   stepPlan,
 } from "../light/signal-plan";
 import type { TopologyWorld } from "../ui/world/topology-world";
-import type { DialChordLight, DialLightFrame, Point } from "./types";
+import type { DialChordLight, DialLightFrame, Point } from "./dial-shapes";
 
 const HEAD_HALO_WEIGHT = 0.35;
 const HEAD_HALO_SHARE = 0.5;

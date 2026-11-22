@@ -1,6 +1,3 @@
-// `ontology-atlas growth [vault]` — graph growth candidate dashboard.
-// MCP `query_ontology({operation: 'growth_plan'})` thin wrapper.
-
 import { COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import { assertGrowthPlanShape } from '../../lib/query-result-contract/maintenance-growth.mjs';
@@ -48,9 +45,9 @@ export async function runGrowth(args) {
       limit: parsed.limit,
     });
     assertGrowthPlanShape(result);
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }

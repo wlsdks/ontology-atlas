@@ -5,12 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/shared/ui';
 import { MeaningGuidePreview } from './MeaningGuidePreview';
 
-/**
- * The question desk's first-use guide: what search by meaning does, a sample of it getting ready
- * and answering, and the press that sets it up together. It stands where the real stage will run.
- */
 export function MeaningGuideCard({ playing, onStart, onLater }: {
-  /** False while the setup dialog covers the card, so the sample does not play unseen. */
   playing: boolean;
   onStart: (event: MouseEvent<HTMLButtonElement>) => void;
   onLater: () => void;

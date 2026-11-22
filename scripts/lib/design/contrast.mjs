@@ -1,19 +1,10 @@
 /**
- * Contrast calculation — **pure functions**. It knows nothing of the DOM or the
- * browser.
- *
- * **Basis:** WCAG 2.2's relative luminance and contrast ratio definitions
- * (§ Relative luminance · Contrast ratio). Thresholds are 1.4.3 Contrast (Minimum)
- * — body text 4.5:1, large text (18.66px+bold or 24px+) 3:1 — and 1.4.11 Non-text
- * Contrast 3:1.
- *
- * ⚠️ **Without compositing alpha this calculation lies.** This app uses alpha tokens
- * for text and borders (`--color-overlay-*`, `--color-border-soft`). Measuring the
- * pre-composite colour reports better than reality — which is why compositing lives
- * here.
+ * Contrast calculation: pure functions that know nothing of the DOM. Basis: WCAG 2.2 relative
+ * luminance and contrast ratio; thresholds are 1.4.3 (body text 4.5:1, large text 3:1) and 1.4.11
+ * non-text 3:1. Alpha must be composited first: this app uses alpha tokens for text and borders
+ * (`--color-overlay-*`, `--color-border-soft`), and the pre-composite colour reports better than reality.
  */
 
-/** `rgb(r, g, b)` · `rgba(r, g, b, a)` · `#rgb` · `#rrggbb` → `[r, g, b, a]`. */
 export function parseColor(input) {
   if (!input) return null;
   const s = String(input).trim();
@@ -25,22 +16,16 @@ export function parseColor(input) {
     const n = (i) => parseInt(wide.slice(i * 2, i * 2 + 2), 16);
     return [n(0), n(1), n(2), wide.length >= 8 ? n(3) / 255 : 1];
   }
-  const fn = /^rgba?\(([^)]+)\)$/i.exec(s);
-  if (fn) {
-    const parts = fn[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+  const functionMatch = /^rgba?\(([^)]+)\)$/i.exec(s);
+  if (functionMatch) {
+    const parts = functionMatch[1].split(/[\s,/]+/).filter(Boolean).map(Number);
     if (parts.length < 3 || parts.slice(0, 3).some(Number.isNaN)) return null;
     return [parts[0], parts[1], parts[2], parts.length > 3 && !Number.isNaN(parts[3]) ? parts[3] : 1];
   }
   return null;
 }
 
-/**
- * **Composites** a translucent foreground over an opaque background (source-over).
- *
- * This app's text and borders are alpha tokens. Measuring without compositing
- * reports better than reality, and that optimism is silent because a number still
- * comes out.
- */
+/** Composites a translucent foreground over an opaque background (source-over). */
 export function composite(fg, bg) {
   const a = fg[3];
   if (a >= 1) return [fg[0], fg[1], fg[2], 1];
@@ -52,7 +37,6 @@ export function composite(fg, bg) {
   ];
 }
 
-/** WCAG 2.2 relative luminance. */
 export function relativeLuminance([r, g, b]) {
   const lin = (v) => {
     const c = v / 255;
@@ -115,8 +99,8 @@ export function judgeAdjacentMarks({ a, b, over }) {
    */
   if (!ma || !mb) return null;
   const ca = composite(ma, solidBase);
-  const cb = composite(mb, solidBase);
-  const ratio = contrastRatio(ca, cb);
+  const callback = composite(mb, solidBase);
+  const ratio = contrastRatio(ca, callback);
   return {
     ratio: +ratio.toFixed(2),
     passes: ratio >= 3,

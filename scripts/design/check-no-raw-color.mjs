@@ -70,7 +70,6 @@ const FAMILY_BY_TUPLE = new Map(
   HUE_FAMILIES.flatMap(({ name, rgbs }) => rgbs.map((rgb) => [rgb.join(","), name])),
 );
 
-/** Only pure achromatics (r=g=b) pass this gate — the share belonging to shadows and overlays. */
 function isAchromatic(r, g, b) {
   return r === g && g === b;
 }
@@ -93,9 +92,8 @@ export const ALLOWLIST = new Set([
 ]);
 
 /**
- * Exemption is one file plus a reason comment in `ALLOWLIST`, never a whole directory: skipping
- * `ontology-map` made a 0 mean either clean or not looked at. A canvas file that needs a raw
- * literal registers there; `starfield.ts` and `grid.ts` are the precedent.
+ * Exemption is one file plus a reason comment in `ALLOWLIST`, never a whole directory: skipping one
+ * made a 0 mean either clean or not looked at. `starfield.ts` and `grid.ts` are the precedent.
  */
 function shouldSkipDir(name) {
   return name === "node_modules";
@@ -112,9 +110,9 @@ function isTargetFile(name) {
   return !name.includes(".test.");
 }
 
-function walk(dir, out = []) {
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
+function walk(directory, out = []) {
+  for (const entry of readdirSync(directory)) {
+    const full = join(directory, entry);
     const stat = statSync(full);
     if (stat.isDirectory()) {
       if (shouldSkipDir(entry)) continue;
@@ -149,33 +147,25 @@ export function findRawColorLiterals(roots = SCAN_ROOTS) {
       .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
       .replace(/(^|[^:])\/\/.*$/gm, "$1")
       /*
-       * **The value of a custom-property declaration is the legitimate home for a
-       * literal** — blocking that too would leave nowhere to write the value. But a
-       * declaration **spans lines** (`--x: linear-gradient(\n  rgba(...),\n  ...\n);`),
-       * so a line-prefix test misses everything from the second line on. Blank out from
-       * the declaration start (`--name:`) through the `;`, preserving line numbers.
+       * A custom-property declaration is the legitimate home for a literal, and it spans lines, so a
+       * line-prefix test misses all but the first. Blank from `--name:` through `;`, keeping line numbers.
        */
       .replace(/--[a-zA-Z0-9-]+\s*:[^;]*;/g, (m) => m.replace(/[^\n]/g, " "));
     const lines = scanned.split("\n");
     /*
-     * Reported paths are **repo-relative**. Prefixing `src/` by hand was correct while
-     * only `src/` was walked, but now that `app/` is walked too the root has to be
-     * visible. Outside the repository (a unit test's temp directory) the root-relative
-     * path is used as is, so nothing prints starting with `../../..`.
+     * Reported paths are repo-relative; outside the repository (a unit test's temp directory) the
+     * root-relative path is used, so nothing prints starting with `../../..`.
      */
     const repoRel = relative(ROOT, file);
     const label = repoRel.startsWith("..") ? rel : repoRel;
     lines.forEach((line, i) => {
       /*
-       * The line-prefix test is kept **in addition to** block removal — added, not
-       * replaced. A JSDoc continuation line carrying only ` * ` with no opening `/*` in
-       * the slice escapes the block regex, and this repository's comments really are
-       * written that way.
+       * Kept in addition to block removal: a JSDoc continuation line carrying only ` * ` has no opening
+       * `/*` in the slice and escapes the block regex.
        */
       if (/^\s*(\/\/|\*|\/\*)/.test(line)) return;
-      // In a stylesheet the **only legitimate home for a literal is a token
-      // declaration**: `--color-indigo-a40: rgba(94,106,210,0.4);` is where the value
-      // lives, and everywhere else must call that name through `var()`.
+      // In a stylesheet the only legitimate home for a literal is a token declaration; everywhere else
+      // calls that name through `var()`.
       if (/^\s*--[a-zA-Z0-9-]+\s*:/.test(line)) return;
       for (const m of line.matchAll(RGBA_LITERAL)) {
         const [r, g, b] = [Number(m[1]), Number(m[2]), Number(m[3])];

@@ -182,7 +182,7 @@ describe('connector record', () => {
   });
 
   it('flags a bare command, because the agent it is spawned from has no PATH', () => {
-    // `SHARED_RUNTIME_ENV` in `src-tauri/src/acp/runtime_environment.rs` hands the agent a sanitized environment
+    // `SHARED_RUNTIME_ENV` in `src-tauri/src/acp/launch/runtime_environment.rs` hands the agent a sanitized environment
     // with no PATH, and the connector inherits it. A bare `npx` resolves to nothing and the
     // session comes up with that server's tools silently absent.
     expect(connectorProblems(stdio({ command: 'npx' }))).toContain('command-not-absolute');

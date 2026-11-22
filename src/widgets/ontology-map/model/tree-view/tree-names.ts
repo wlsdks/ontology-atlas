@@ -11,8 +11,8 @@ import type {
   TreeProjector,
   TreeRect,
   TreeScreenPoint,
-} from "./types";
-import { TREE_ARC_BUDGET } from "./types";
+} from "./tree-shapes";
+import { TREE_ARC_BUDGET } from "./tree-shapes";
 
 /** Side length of the overlap grid's cells, CSS pixels: a few name heights. */
 const PLACE_CELL_PX = 48;

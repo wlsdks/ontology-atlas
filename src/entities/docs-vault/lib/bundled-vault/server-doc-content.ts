@@ -55,9 +55,9 @@ export async function fetchServerDocContent(
       const response = await fetchImpl(candidate, { cache: 'no-cache' });
       if (response.ok) return response.text();
       failures.push(`${candidate}: HTTP ${response.status}`);
-    } catch (err) {
+    } catch (error) {
       failures.push(
-        `${candidate}: ${err instanceof Error ? err.message : String(err)}`,
+        `${candidate}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }

@@ -29,10 +29,10 @@ export function messagesDir(root = ROOT) {
 
 /** Locales are the directories under `messages/`; each holds that locale's namespaces. */
 export function listLocales(root = ROOT) {
-  const dir = messagesDir(root);
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir)
-    .filter((name) => !name.startsWith('.') && statSync(path.join(dir, name)).isDirectory())
+  const directory = messagesDir(root);
+  if (!existsSync(directory)) return [];
+  return readdirSync(directory)
+    .filter((name) => !name.startsWith('.') && statSync(path.join(directory, name)).isDirectory())
     .sort(codeUnitCompare);
 }
 
@@ -51,15 +51,15 @@ function parseObject(text, label) {
 
 /** One locale's parts, sorted by namespace name, validated and LF-normalized. */
 export function readLocaleParts(locale, root = ROOT) {
-  const dir = path.join(messagesDir(root), locale);
+  const directory = path.join(messagesDir(root), locale);
   const parts = [];
-  for (const file of readdirSync(dir).sort(codeUnitCompare)) {
+  for (const file of readdirSync(directory).sort(codeUnitCompare)) {
     if (file.startsWith('.')) continue;
     const label = `messages/${locale}/${file}`;
     if (!NAMESPACE_FILE.test(file)) {
       throw new MessagesError(`${label}: a namespace file is named <Namespace>.json (letters, digits, _ or -)`);
     }
-    const text = normalizeLf(readFileSync(path.join(dir, file), 'utf8'));
+    const text = normalizeLf(readFileSync(path.join(directory, file), 'utf8'));
     parseObject(text, label);
     parts.push({ namespace: file.slice(0, -'.json'.length), text });
   }
@@ -175,14 +175,14 @@ function carryHandEdit({ root, locale, onDisk, composed, recorded, log }) {
       `${label} differs from its last composition and its parts changed too. Move the edit into messages/${locale}/<Namespace>.json and delete ${label}; while merging a pre-split branch, run pnpm messages:adopt instead.`,
     );
   }
-  const dir = path.join(messagesDir(root), locale);
+  const directory = path.join(messagesDir(root), locale);
   const edited = splitComposite(onDisk, `${label} (hand edit)`);
   const keep = new Set(edited.map((part) => part.namespace));
   for (const part of readLocaleParts(locale, root)) {
-    if (!keep.has(part.namespace)) rmSync(path.join(dir, `${part.namespace}.json`));
+    if (!keep.has(part.namespace)) rmSync(path.join(directory, `${part.namespace}.json`));
   }
   for (const part of edited) {
-    const file = path.join(dir, `${part.namespace}.json`);
+    const file = path.join(directory, `${part.namespace}.json`);
     if (!existsSync(file) || normalizeLf(readFileSync(file, 'utf8')) !== part.text) {
       writeFileSync(file, part.text, 'utf8');
       log(`[messages] carried a hand edit of ${label} into messages/${locale}/${part.namespace}.json`);
@@ -262,12 +262,12 @@ export function adoptBranchCatalogue({ root = ROOT, ours = 'HEAD', base, log = c
     if (ourText === null || baseText === null) continue;
     const ourParts = new Map(splitComposite(ourText, `${ours}:${file}`).map((part) => [part.namespace, part.text]));
     const baseParts = new Map(splitComposite(baseText, `${mergeBase}:${file}`).map((part) => [part.namespace, part.text]));
-    const dir = path.join(messagesDir(root), locale);
+    const directory = path.join(messagesDir(root), locale);
     for (const namespace of new Set([...ourParts.keys(), ...baseParts.keys()])) {
       const mine = ourParts.get(namespace);
       const old = baseParts.get(namespace);
       if (mine === old) continue;
-      const partFile = path.join(dir, `${namespace}.json`);
+      const partFile = path.join(directory, `${namespace}.json`);
       const theirs = existsSync(partFile) ? normalizeLf(readFileSync(partFile, 'utf8')) : undefined;
       if (theirs === old || theirs === mine) {
         if (mine === undefined) {
@@ -282,7 +282,7 @@ export function adoptBranchCatalogue({ root = ROOT, ours = 'HEAD', base, log = c
         conflicts.push(`messages/${locale}/${namespace}.json (added or removed on one side, edited on the other)`);
         continue;
       }
-      const scratch = path.join(dir, `.${namespace}.adopt`);
+      const scratch = path.join(directory, `.${namespace}.adopt`);
       writeFileSync(`${scratch}.mine`, mine);
       writeFileSync(`${scratch}.base`, old);
       writeFileSync(partFile, theirs);

@@ -41,7 +41,6 @@ const EMPTY_EDGES: ArchitectureRecord['brief']['conformance']['violations'] = []
 /** The width from which the table, verdict and pane share one window-high row (`xl`). */
 const WORKBENCH_MIN_PX = 1280;
 
-/** The same document with another role selected; obsolete stage parameters are dropped. */
 function buildArchitectureHref(role: string | null, pathname: string): string {
   /* Preserve orthogonal route flags (`guides=off`, fixtures, view options). */
   const query = new URLSearchParams(typeof window === 'undefined' ? undefined : window.location.search);
@@ -90,22 +89,15 @@ export function ArchitectureWorkbench({
   profiles: ArchitectureProfile[];
   /** Embedded in the Harness destination: the identity below replaces this view's own header. */
   embedded?: boolean;
-  /** Architecture documents this surface could not read, named rather than silently dropped. */
   profileProblems?: ReadonlyArray<ArchitectureProfileProblem>;
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
-  /** The one unambiguous project source available before any profile exists. */
   draftHandoffContext?: ArchitectureHandoffContext | null;
   draftSource?: DraftPreviewSource | null;
-  /** Per profile slug, the read-only source-directory walk the page performed (installed app). */
   sourceModulesByProfile?: Readonly<Record<string, Record<string, RoleSourceModule[]>>>;
-  /** Whether this surface can list a source folder at all — false in a browser, by nature. */
   sourceListingCapable?: boolean;
-  /** Which absence the pane names when it cannot list source modules. */
   sourceUnavailableReason?: 'browser' | 'unbound' | null;
-  /** Per profile slug, the persisted conformance receipt read from the vault sidecar. */
   recordsByProfile?: Readonly<Record<string, ArchitectureRecord | undefined>>;
   recordsLoaded?: boolean;
-  /** Per profile slug, the recorded concepts joined into each role. */
   conceptsByProfile?: Readonly<Record<string, Record<string, RoleConcept[]>>>;
   agentRoute?: ArchitectureAgentRoute;
   agentLabel?: string | null;
@@ -113,7 +105,6 @@ export function ArchitectureWorkbench({
   onOpenReview?: (profileSlug: string, roleId: string | null) => void;
   contextDockOpen?: boolean;
   agentActivity?: AcpTurnActivity | null;
-  /** How long a copy confirmation stays before the button returns to rest. Tests shorten it. */
   copyFeedbackMs?: number;
   /** Whether this runtime may point at the installed app. False inside the app itself. */
   offersInstalledApp?: boolean;
@@ -135,7 +126,6 @@ export function ArchitectureWorkbench({
   const [chosenRole, setChosenRole] = useState<string | null>(() => readArchitectureRole());
   /* The other end of the cell last chosen; it marks a column and a row of the pane. */
   const [markedRole, setMarkedRole] = useState<string | null>(null);
-  /* Back and forward move the selected role, since the address is screen state. */
   useEffect(() => {
     const syncFromHistory = () => {
       setChosenRole(readArchitectureRole());
@@ -146,11 +136,9 @@ export function ArchitectureWorkbench({
   }, []);
 
   const [copyState, setCopyState] = useState<CopyState>('idle');
-  /* Which task the last copy carried, so the confirmation names it. */
   const [copiedTaskLabel, setCopiedTaskLabel] = useState<string | null>(null);
   /* The last request wins, so a pending first copy cannot name the second one's task. */
   const copyRequest = useRef(0);
-  /* The confirmation leaves after the feedback window, so the button stays usable (`useCopyFeedback` convention). */
   useEffect(() => {
     if (copyState !== 'copied' && copyState !== 'error') return undefined;
     const timer = window.setTimeout(() => {
@@ -182,19 +170,15 @@ export function ArchitectureWorkbench({
     for (const edge of buildArchitectureLayout(selected).edges) {
       reach.set(edge.from, [...(reach.get(edge.from) ?? []), edge.to]);
     }
-    /* In profile order, the order of the table's columns. */
     const rank = new Map(selected.roles.map((role, index) => [role.id, index]));
     for (const targets of reach.values()) targets.sort((a, b) => (rank.get(a) ?? 0) - (rank.get(b) ?? 0));
     return reach;
   }, [selected]);
 
-  /* A role the profile does not have is not honoured; the pane says so and shows the arrival role. */
   const chosenInProfile = chosenRole !== null && (matrix?.order.includes(chosenRole) ?? false);
   const activeRole = matrix ? (chosenInProfile ? chosenRole : arrivalRole(matrix, violations)) : null;
 
-  /* One button with a derived default task, and a chooser offering the other two with a line each. */
   const primaryAgentKind: ArchitectureAgentTaskKind = conformance?.status === 'conforms' ? 'change' : 'verify';
-  /* A task chosen from the menu stays on the button until another is picked. */
   const [chosenAgent, setChosenAgent] = useState<{ slug: string; kind: ArchitectureAgentTaskKind } | null>(null);
   /* Derived, not reset: a choice for one profile must not follow the person to another. */
   const chosenAgentKind = chosenAgent && chosenAgent.slug === selected?.slug ? chosenAgent.kind : null;
@@ -343,7 +327,6 @@ export function ArchitectureWorkbench({
     { kind: 'improve', label: t('findImprovementsAction'), hint: t('agentTaskHints.improve') },
   ];
   const requestedAgentLabel = agentTasks.find((task) => task.kind === requestedAgentKind)?.label;
-  /* The resting label, whose width the button keeps through every copy state. */
   const idleAgentLabel =
     agentRoute === 'clipboard'
       ? t('copyTaskSentence', { task: requestedAgentLabel ?? '' })
@@ -373,7 +356,6 @@ export function ArchitectureWorkbench({
     setCopyState(ok ? 'copied' : 'error');
   }
 
-  /* One path for every task: a verified agent takes it as the opening turn, anything else copies the same sentence. */
   function runAgentTask(kind: ArchitectureAgentTaskKind, taskLabel: string | null = null) {
     if (!selected) return;
     setTaskMenuOpen(false);
@@ -506,7 +488,6 @@ export function ArchitectureWorkbench({
               </span>
             ) : null}
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              {/* The history of findings and records this verdict summarises. */}
               {recordsLoaded && onOpenReview ? (
                 <Button
                   variant="ghost"
@@ -528,7 +509,6 @@ export function ArchitectureWorkbench({
                   const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')];
                   if (items.length === 0) return;
                   const at = items.indexOf(document.activeElement as HTMLButtonElement);
-                  /* From the trigger, ArrowDown enters at the top and ArrowUp at the bottom, like a native menu. */
                   const next =
                     at === -1
                       ? event.key === 'ArrowDown'
@@ -729,7 +709,6 @@ export function ArchitectureWorkbench({
   );
 }
 
-/** Profiles in one repository differ by where they apply; the chip names that scope after the title. */
 function ProfileScope({ profile }: { profile: ArchitectureProfile }) {
   if (profile.scopePaths.length === 0) return null;
   // Tertiary, not quaternary: a pressed chip's surface composites where quaternary fails AA.

@@ -55,7 +55,6 @@ const ENTER = "motion-safe:animate-[atlasStatusIn_var(--motion-settle)_var(--mot
 
 const LEDGER_ROW = "grid grid-cols-[3.5rem_1rem_minmax(0,1fr)] items-start gap-x-3";
 
-/** The run a door landed on keeps a quiet tint, so the eye finds it after the scroll. */
 export const LANDED = "rounded-card bg-[color:var(--color-overlay-2)] outline-hidden";
 
 /**
@@ -97,14 +96,12 @@ function PageChip({ label, ariaLabel, onClick }: { label: string; ariaLabel: str
 }
 
 const pagesWritten = (entry: RoundPassEntry) => entry.written.filter((path) => path.startsWith("wiki/"));
-/** A page that went stale and was redrafted in the same pass is one chip, the redraft. */
 const staleNotRedrafted = (entry: RoundPassEntry) => {
   const redrafted = new Set(pagesWritten(entry).map((path) => path.replace(/\.md$/, "")));
   return entry.stale.filter((slug) => !redrafted.has(slug));
 };
 const sourcesWritten = (entry: RoundPassEntry) => entry.written.filter((path) => !path.startsWith("wiki/"));
 
-/** The pass in flight, as the runner reports it. */
 export interface RunningPass {
   roundId: string;
   roundName: string;
@@ -112,7 +109,6 @@ export interface RunningPass {
   phase: "checking" | "agent";
 }
 
-/** A pass in flight stands on the axis while it runs. */
 function LiveRow({ running, locale }: { running: RunningPass; locale: string }) {
   const t = useTranslations("library.rounds");
   // The caller keys this component on `startedAt`, so a new pass is a new mount and the
@@ -167,16 +163,12 @@ export function RoundsLedger({
   locale: string;
   onOpenPage: (slug: string) => void;
   /**
-   * The title a person knows a page by. A chip reading `meeting-notes-summary` names a file;
-   * the person named the page "Release readiness sync notes", and that is what they look for.
-   * A page that is gone from the folder keeps its slug, which is still true.
+   * The title a person knows a page by: a chip reading `meeting-notes-summary` names a file, not the
+   * page. A page gone from the folder keeps its slug, which is still true.
    */
   titleFor?: (slug: string) => string;
-  /** The pass in flight, drawn at the top of the axis while it runs. */
   running?: RunningPass | null;
-  /** The caller's title, on the row the sleep toggle shares. */
   heading?: ReactNode;
-  /** The run a door led here for: it is scrolled to, focused and marked. */
   landedRunId?: string | null;
 }) {
   const t = useTranslations("library.rounds");
@@ -190,7 +182,6 @@ export function RoundsLedger({
   const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
   const dayFormat = new Intl.DateTimeFormat(locale, { weekday: "short", month: "short", day: "numeric" });
 
-  /* Ids present at mount stay still; ids that arrive later enter with motion. */
   const knownRef = useRef<Set<string> | null>(null);
   const [arrived, setArrived] = useState<Set<string>>(() => new Set());
   useEffect(() => {
@@ -235,7 +226,6 @@ export function RoundsLedger({
               {dayLabel(day.date)}
             </h3>
             <ol className="relative">
-              {/* The axis: one hairline behind every dot of this day. */}
               <span aria-hidden className="absolute bottom-0 left-[calc(3.5rem+0.75rem+0.25rem-0.5px)] top-0 w-px bg-[color:var(--color-divider)]" />
               {day.entries.map((entry) => (
                 <li

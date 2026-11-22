@@ -45,7 +45,6 @@ export function useGitRemote({
     },
     [t],
   );
-  /** The remote input — opened only from the location line's button; it never sits there as a card. */
   const [remoteOpen, setRemoteOpen] = useState(false);
   const [remoteUrl, setRemoteUrl] = useState("");
   const [remoteRunning, setRemoteRunning] = useState(false);
@@ -97,8 +96,8 @@ export function useGitRemote({
         }
         /* Announced after the re-read, so the notice never stands beside stale counts. */
         await refresh();
-      } catch (err) {
-        failure = gitErrorMessage(err, nativeErrors);
+      } catch (error) {
+        failure = gitErrorMessage(error, nativeErrors);
         // A stale branch or folder is actionable only after its status is read again.
         await refresh();
       } finally {
@@ -134,8 +133,8 @@ export function useGitRemote({
         setOriginJustSaved(true);
         saved = true;
       }
-    } catch (err) {
-      setRemoteError(gitErrorMessage(err, nativeErrors));
+    } catch (error) {
+      setRemoteError(gitErrorMessage(error, nativeErrors));
     } finally {
       // The press ends when git answers, not after the re-read below.
       setRemoteRunning(false);

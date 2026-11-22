@@ -1,5 +1,5 @@
-import { loadMacosReleaseNames } from "../macos-release-names.mjs";
+import { readMacosReleaseNames } from "../macos-release-names.mjs";
 
 export const root = process.cwd();
-export const names = loadMacosReleaseNames(root);
+export const names = readMacosReleaseNames(root);
 export const { appBundleName } = names;

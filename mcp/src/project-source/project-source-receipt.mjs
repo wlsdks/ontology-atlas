@@ -7,7 +7,7 @@ import {
   createVaultSidecarTextExclusive,
   readVaultSidecarText,
   replaceVaultSidecarText,
-} from '../vault/vault-sidecar.mjs';
+} from '../vault/sidecar/vault-sidecar.mjs';
 // One vocabulary, shared with `project-meaning-inventory.mjs`, so neither side
 // rejects what the other accepts.
 import {

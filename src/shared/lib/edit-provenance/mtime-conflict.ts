@@ -1,19 +1,12 @@
 /**
- * The single decision behind the expected_mtime conflict badge. It asks, quietly and
- * *before* a save, the same question as the expected_mtime contract already used by
- * `patch_concept` / `updateFrontmatter` / `saveDoc` (`assertExpectedMtime`): does the
- * baseline from when I opened this document differ from what is known now, and is that
- * difference explained by my own recent write?
- * True only when the two differ *and* the difference is not explained by a self
- * write. With no real mismatch — time merely passing, say — it never turns on. No
- * signal inflation. Callers that can snapshot the self-write record at open time
- * pass `baselineSelfEditAtMs`; older callers may still compare against a real
- * capture instant.
- *
- * `baseline`/`current` accept either a `doc.mtime` number or a vault-doc freshness
- * ISO string (`docFreshnessIndex`): the two surfaces (docs vs the topology panel) use
- * different representations, but "was the same / has changed" means the same thing in
- * both, so they share one decision function.
+ * The single decision behind the expected_mtime conflict badge, asked quietly before a save: does the
+ * baseline from when this document was opened differ from what is known now, and is the difference
+ * explained by my own recent write (`assertExpectedMtime` asks the same of `patch_concept`,
+ * `updateFrontmatter` and `saveDoc`)? True only when they differ and a self write does not explain it,
+ * so time merely passing never turns it on. Callers that snapshot the self-write record at open time
+ * pass `baselineSelfEditAtMs`.
+ * `baseline`/`current` accept a `doc.mtime` number or a vault-doc freshness ISO string
+ * (`docFreshnessIndex`): docs and the topology panel use different representations of one fact.
  */
 export function hasUnaccountedMtimeChange(params: {
   baseline: number | string | null | undefined;

@@ -8,10 +8,10 @@ import { dirname, join } from 'node:path';
 
 import { readDocFrontmatter, writeDoc, writeFrontmatterKeys } from './write-vault.mjs';
 
-function withVault(fn) {
+function withVault(callback) {
   const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-write-vault-test-'));
   try {
-    fn(root);
+    callback(root);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

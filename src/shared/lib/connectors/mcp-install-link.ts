@@ -9,7 +9,6 @@ import {
   type ConnectorValueEntry,
 } from './connector-record';
 
-/** The keys a payload may carry. Anything else refuses the whole link — rule 2. */
 const ALLOWED_KEYS = new Set([
   'name',
   'type',
@@ -33,11 +32,9 @@ export type McpInstallLinkProblem =
 
 export interface McpInstallLinkResult {
   ok: boolean;
-  /** The draft to pre-fill, present only when `ok`. Always `enabled: false`. */
   draft?: ConnectorRecord;
   /** Variable names the link tried to hand a value for. The values are gone; the names are shown. */
   droppedValues: string[];
-  /** Why the link was refused, or the field that refused it. */
   problem?: McpInstallLinkProblem;
   /** The offending key, for `unknown-field`. Shown so a person can read what was refused. */
   offendingKey?: string;
@@ -51,12 +48,8 @@ const REFUSED = (problem: McpInstallLinkProblem, offendingKey?: string): McpInst
 });
 
 /**
- * The `config` parameter → its JSON object.
- *
- * Accepts standard base64 and the url-safe alphabet, because a link travels through address bars
- * and chat clients that rewrite `+` and `/`. Padding is optional for the same reason. A payload
- * that is not base64 at all is tried as plain JSON, which is what a hand-written test link and
- * VS Code's url-encoded shape both look like after the query parser has run.
+ * Both base64 alphabets, padding optional, since address bars and chat clients rewrite `+` and
+ * `/`. Anything else is tried as plain JSON, the shape of a hand-written or VS Code link.
  */
 export function decodeInstallConfig(raw: string): unknown {
   const trimmed = raw.trim();
@@ -91,12 +84,8 @@ export function decodeInstallConfig(raw: string): unknown {
 }
 
 /**
- * Variable names out of an `env`/`headers` block, with every value discarded.
- *
- * Both shapes are accepted because both are in the wild: Cursor writes an object of
- * name → value, the ACP handshake and this repository's own record write an array of entries.
- * Either way only the name survives, and a name that reads like a credential is pointed at the
- * keychain rather than at a box in the folder's file.
+ * Every value is discarded. Cursor writes a name → value object, the ACP handshake an array of
+ * entries; a credential-shaped name is pointed at the keychain.
  */
 export function linkVariableNames(raw: unknown): { names: string[]; hadValues: string[] } {
   const names: string[] = [];
@@ -122,11 +111,8 @@ export function linkVariableNames(raw: unknown): { names: string[]; hadValues: s
 }
 
 /**
- * One install link → a draft, or a reason it was refused.
- *
- * `secretRef` is passed in rather than imported so this stays testable without a keychain and so
- * the id it mints is the caller's — the record's id has to be the one the connector is saved
- * under, or the keychain reference points at nothing.
+ * `secretRef` is injected so tests need no keychain and the minted reference uses the id the
+ * connector is saved under.
  */
 export function parseMcpInstallLink(
   input: string,
@@ -222,14 +208,8 @@ export function parseMcpInstallLink(
 }
 
 /**
- * The link a page would publish for a connector — the address the installed app is actually
- * registered for, so what this mints is what the OS opens. Used by the tests to prove the round
- * trip, and available for a "copy an Add-to-Atlas link" affordance if one is ever asked for.
- *
- * The parameter is `install`, not `config`: it is the **route** parameter, because all the deep
- * link does is put the payload on `/mcp/?tab=connectors&install=…`. `parseMcpInstallLink` reads
- * `config`, and the one line that translates between them lives in the caller — the panel does it
- * from the address bar, `deep_link.rs` does it from the URL.
+ * The address the installed app is registered for. The parameter is the route's `install`; the
+ * caller translates it to the `config` that `parseMcpInstallLink` reads.
  */
 export function buildMcpInstallLink(connector: ConnectorRecord): string {
   const config =

@@ -47,9 +47,8 @@ const WEBVIEW_AGENTS_WORKBENCH_MARKERS = [
 ];
 
 /*
- * MCP became its own destination on 2026-09-05, and `--require-webview-content` went red on the
- * packaged bundle because the generic markers are the map's. Two route-owned, user-visible
- * strings: the destination's own title, and either tab name in either locale.
+ * The generic markers are the map's, so MCP gets two route-owned, user-visible strings: the
+ * destination's own title, and either tab name in either locale.
  */
 const WEBVIEW_MCP_WORKBENCH_MARKERS = [
   /MCP/,
@@ -60,10 +59,9 @@ const WEBVIEW_MCP_WORKBENCH_MARKERS = [
 ];
 
 /*
- * The Library became its own destination on 2026-09-06 and needs its own pair for the same
- * reason MCP did: the generic markers are the map's, and a new route must not repeat map copy
- * to satisfy a launch gate. Both markers are route-owned and user-visible in either locale —
- * the destination's name, and the eyebrow or one of the two section headers it always draws.
+ * The Library needs its own pair for the same reason: a new route must not repeat map copy to satisfy
+ * a launch gate. Both are route-owned and user-visible in either locale: the destination's name, and
+ * the eyebrow or one of the two section headers it always draws.
  */
 const WEBVIEW_LIBRARY_WORKBENCH_MARKERS = [
   /Library|자료실/,

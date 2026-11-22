@@ -24,7 +24,6 @@ type SegmentedName =
 interface SegmentedOption<T extends string | number | boolean> {
   value: T;
   label: ReactNode;
-  /** Full name for screen readers when the visible label is an abbreviation (EN, KO). */
   ariaLabel?: string;
   /**
    * Native tooltip. A per-option `className` stays closed so spec values cannot enter through a
@@ -40,14 +39,11 @@ export type SegmentedControlProps<T extends string | number | boolean> = Segment
   onChange: (next: T) => void;
   /** Defaults to lg (a 32px well, 44px under coarse pointers). */
   size?: Extract<ControlSize, "md" | "lg">;
-  /** `well` is a joined well; `chips` is a wrapping row of detached chips. */
   variant?: "well" | "chips";
-  /** Items divide the width equally. */
   fill?: boolean;
   /** Locks re-selection while a transition is in flight; focus stays reachable. */
   busy?: boolean;
   testId?: string;
-  /** Placement only; spec values do not go here. */
   className?: string;
 };
 
@@ -107,9 +103,9 @@ export function SegmentedControl<T extends string | number | boolean>({
           <button
             key={key}
             {...item}
-            ref={(el) => {
-              item.ref(el);
-              itemRef(key)(el);
+            ref={(element) => {
+              item.ref(element);
+              itemRef(key)(element);
             }}
             type="button"
             aria-label={option.ariaLabel}

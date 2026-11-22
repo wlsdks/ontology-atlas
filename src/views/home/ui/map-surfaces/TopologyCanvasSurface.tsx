@@ -1,0 +1,505 @@
+import type { useRouter } from "@/i18n/navigation";
+import type { useAcpRuntimeController } from "../../model/agent/use-acp-runtime-controller";
+import type { useTopologyAgentOrchestration } from "../../model/agent/use-topology-agent-orchestration";
+import type { useTopologyAuthoring } from "../../model/authoring/use-topology-authoring";
+import type { useTopologyCanvasFocus } from "../../model/use-topology-canvas-focus";
+import type { useTopologyCreateIntent } from "../../model/authoring/use-topology-create-intent";
+import type { useTopologyGraphProjection } from "../../model/map-canvas/use-topology-graph-projection";
+import type { useTopologyIndexPresentation } from "../../model/index-panel/use-topology-index-presentation";
+import type { useTopologyInspectorState } from "../../model/inspector/use-topology-inspector-state";
+import type { useTopologyNavigationActions } from "../../model/use-topology-navigation-actions";
+import type { useTopologyPreferences } from "../../model/use-topology-preferences";
+import type { useTopologySceneControls } from "../../model/map-canvas/use-topology-scene-controls";
+import type { useTopologyVaultReadModel } from "../../model/use-topology-vault-read-model";
+
+import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
+import { useLiftClearOfWorkCard } from "@/features/work-run";
+import { RecentChangesNeedsVaultDialog } from "@/features/vault-ontology";
+import { DESTINATION_HREF } from "@/shared/config/destinations";
+import { cn } from "@/shared/lib/cn";
+import { ChromeTile, Surface, Tooltip, controlClass } from "@/shared/ui";
+import { FrameMeter } from "@/shared/ui/status/frame-meter";
+import { HelpCircle, Play } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { TopologyChangeAnnouncement } from "../map-readouts/TopologyChangeAnnouncement";
+import { TopologyScopeReadout } from "../map-readouts/TopologyScopeReadout";
+import { resolveMapScopeCount } from "../../lib/map-scope/resolve-count";
+import { TopologyMapRenderer, type TopologyMapRendererProps } from "./TopologyMapRenderer";
+import { TopologyNoMatchesState } from "../map-overlays/TopologyNoMatchesState";
+const VaultStartSteps = dynamic(
+  () => import("@/widgets/topology-controls").then((m) => m.VaultStartSteps),
+  { ssr: false },
+);
+const TopologyEmptyState = dynamic(
+  () => import("@/widgets/topology-controls").then((m) => m.TopologyEmptyState),
+  { ssr: false },
+);
+const TopologyFitControl = dynamic(
+  () => import("@/widgets/topology-controls").then((m) => m.TopologyFitControl),
+  { ssr: false },
+);
+const HubRail = dynamic(
+  () => import("@/widgets/topology-controls").then((m) => m.HubRail),
+  { ssr: false },
+);
+
+type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
+  acpRuntimeLabel: string | null;
+  router: ReturnType<typeof useRouter>;
+  setFitViewToken: React.Dispatch<React.SetStateAction<number>>;
+  setShortcutsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  analysisMode: import("@/views/home/model/route-state/url-state").TopologyAnalysisMode;
+  growthReplaying: boolean;
+  setGrowthReplayToken: React.Dispatch<React.SetStateAction<number>>;
+  renderProjects: import("@/entities/project/model/project").Project[];
+  leftPanelCollapsed: boolean;
+  localGraphStack: string[];
+  setLocalGraphStack: React.Dispatch<React.SetStateAction<string[]>>;
+  heldLocalGraphStack: string[];
+  topologyVisibleCount: number | null;
+  readoutStepsAside: boolean;
+  unsupportedGuideOpen: boolean;
+  setUnsupportedGuideOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  requestVaultOpen: () => void;
+  topologyInspectorState: Pick<
+    ReturnType<typeof useTopologyInspectorState>,
+    "selectedEdgeOwnsRightRail" | "selectedNodeFocusActive" | "topologyUtilityChromeCompact"
+  >;
+  topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect">;
+  topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "canvasSelectedSlug" | "localGraphProjects" | "resolvedSelectionSlug" | "isSynthetic">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "neural" | "structure" | "hexBoard">;
+  topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "analyzePrompt" | "agentChatUsesRuntime" | "sendAnalyzeToAgent">;
+  topologyVaultReadModel: Pick<
+    ReturnType<typeof useTopologyVaultReadModel>,
+    "vault" | "changedSlugs" | "recentNeedsVaultOpen" | "setRecentNeedsVaultOpen" | "needsVaultReason" | "setNeedsVaultReason"
+  >;
+  acpRuntimeController: Pick<ReturnType<typeof useAcpRuntimeController>, "acpRuntime">;
+  topologyAuthoring: Pick<
+    ReturnType<typeof useTopologyAuthoring>,
+    "createNodeOpen" | "agentConnect" | "bootstrapPlan" | "setBootstrapOpen" | "canCreateNode"
+  >;
+  topologySceneControls: Pick<
+    ReturnType<typeof useTopologySceneControls>,
+    | "topologyOverlayState"
+    | "handleScaffoldStarter"
+    | "starterScaffolding"
+    | "starterRecoveryActive"
+    | "starterScaffoldFailed"
+    | "dismissStarterRecovery"
+    | "emptyTopologyNodeCount"
+    | "clearTopologyFilters"
+    | "topologyRenderState"
+    | "mapMountTaskReady"
+    | "drawerOpen"
+    | "realmActive"
+  >;
+  topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "handleCanvasPointerDownCapture" | "nodePopoverDismissed">;
+  topologyIndexPresentation: Pick<ReturnType<typeof useTopologyIndexPresentation>, "startStepsVisible" | "renderedIndexState" | "dismissStartSteps" | "readoutStackRef">;
+  topologyCreateIntent: Pick<
+    ReturnType<typeof useTopologyCreateIntent>,
+    | "topologyCreateNodeBlockingActive"
+    | "openCreateNodeWithKind"
+    | "openCreateNode"
+    | "topologyBlockingOverlayActive"
+    | "topologyShortcutHelpPhoneVisible"
+  >;
+};
+
+export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
+  const {
+    localGraphRoot, acpRuntimeLabel, router, setFitViewToken, setShortcutsOpen, analysisMode, growthReplaying,
+    setGrowthReplayToken, renderProjects, leftPanelCollapsed, localGraphStack, setLocalGraphStack,
+    heldLocalGraphStack, topologyVisibleCount, readoutStepsAside, unsupportedGuideOpen,
+    setUnsupportedGuideOpen, requestVaultOpen, topologyCanvasFocus, topologySceneControls, topologyAuthoring,
+    acpRuntimeController, topologyVaultReadModel, topologyAgentOrchestration, topologyPreferences,
+    topologyGraphProjection, topologyNavigationActions, topologyInspectorState,
+    topologyCreateIntent, topologyIndexPresentation,
+  } = props;
+  const {
+    topologyCreateNodeBlockingActive, openCreateNodeWithKind, openCreateNode, topologyBlockingOverlayActive,
+    topologyShortcutHelpPhoneVisible
+  } = topologyCreateIntent;
+  const { startStepsVisible, renderedIndexState, dismissStartSteps, readoutStackRef } = topologyIndexPresentation;
+  const { handleCanvasPointerDownCapture, nodePopoverDismissed } = topologyCanvasFocus;
+  const {
+    topologyOverlayState, handleScaffoldStarter, starterScaffolding, starterRecoveryActive, starterScaffoldFailed, dismissStarterRecovery, emptyTopologyNodeCount,
+    clearTopologyFilters, topologyRenderState, mapMountTaskReady, drawerOpen, realmActive
+  } = topologySceneControls;
+  const { createNodeOpen, agentConnect, bootstrapPlan, setBootstrapOpen, canCreateNode } = topologyAuthoring;
+  const { acpRuntime } = acpRuntimeController;
+  const {
+    vault, changedSlugs, recentNeedsVaultOpen, setRecentNeedsVaultOpen, needsVaultReason, setNeedsVaultReason
+  } = topologyVaultReadModel;
+  const { analyzePrompt, agentChatUsesRuntime, sendAnalyzeToAgent } = topologyAgentOrchestration;
+  const { t, neural, structure, hexBoard } = topologyPreferences;
+  const { canvasSelectedSlug, localGraphProjects, isSynthetic, ontologyMapGraph, resolvedRealmSlug } = topologyGraphProjection;
+  const { handleClose, handleSelect } = topologyNavigationActions;
+  const { selectedEdgeOwnsRightRail, selectedNodeFocusActive, topologyUtilityChromeCompact } = topologyInspectorState;
+  const railRecedes = !neural && selectedNodeFocusActive;
+  const [railReceded, setRailReceded] = useState(false);
+  if (railRecedes && !railReceded) setRailReceded(true);
+  const railMotion = railRecedes ? "map-chrome-recede-out pointer-events-none" : `${railReceded ? "map-overlay-in " : ""}pointer-events-auto`;
+
+  const scopeConceptCount = useMemo(() => {
+    if (isSynthetic) return ontologyMapGraph.nodes.length;
+    if (realmActive) return resolveMapScopeCount(ontologyMapGraph.nodes, ontologyMapGraph.edges, resolvedRealmSlug);
+    return localGraphRoot === null ? ontologyMapGraph.nodes.length : null;
+  }, [isSynthetic, localGraphRoot, ontologyMapGraph.nodes, ontologyMapGraph.edges, realmActive, resolvedRealmSlug]);
+
+  return (<>
+    <div
+      data-testid="topology-map-surface"
+      onPointerDownCapture={handleCanvasPointerDownCapture}
+      data-blocking-edit={topologyCreateNodeBlockingActive ? "true" : "false"}
+      data-map-demoted={topologyCreateNodeBlockingActive ? "true" : "false"}
+      data-map-dim-opacity={topologyCreateNodeBlockingActive ? "0.24" : "1"}
+      data-map-dim-opacity-token={
+        topologyCreateNodeBlockingActive ? "--topology-blocking-map-opacity" : undefined
+      }
+      data-map-filter-token={
+        topologyCreateNodeBlockingActive ? "--topology-blocking-map-filter" : undefined
+      }
+      data-map-interaction-contract={
+        topologyCreateNodeBlockingActive ? "suppressed-while-blocking-composer" : "interactive"
+      }
+      aria-hidden={topologyCreateNodeBlockingActive ? "true" : undefined}
+      style={{
+        opacity: topologyCreateNodeBlockingActive ? "var(--topology-blocking-map-opacity)" : 1,
+        filter: topologyCreateNodeBlockingActive ? "var(--topology-blocking-map-filter)" : undefined,
+      }}
+      className={`absolute inset-0 transition-[opacity,filter] duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none ${topologyCreateNodeBlockingActive
+        ? "pointer-events-none"
+        : ""
+        }`}
+    >
+      <>
+        <div
+          key={localGraphRoot ?? '__root__'}
+          className="absolute inset-0 animate-[topologyFade_var(--motion-base)_var(--motion-ease)]"
+        >
+          {/* With 0-1 visible nodes a lone dot reads as broken; an empty vault never mounts the
+             engine at all. */}
+          {(topologyOverlayState.kind === "structural-empty" || starterRecoveryActive) && !createNodeOpen ? (
+            <StartStackClearOfWorkCard>
+            {/* A writable vault gets the progressive start checklist, its first step bootstrap when
+               documents exist. Hidden while a conversation is open; closing the panel brings it back. */}
+            {startStepsVisible ? (
+              <VaultStartSteps
+                agentConnected={agentConnect.status.kind === "connected"}
+                acpRuntimeLabel={acpRuntimeLabel}
+                acpRuntimeIcon={acpRuntime?.icon ?? null}
+                acpRuntimeInk={acpRuntime?.brandInk ?? null}
+                onCreateNode={openCreateNodeWithKind}
+                // The same starter as "start fresh in an empty folder"; not passed when documents
+                // exist.
+                onScaffoldStarter={
+                  (starterRecoveryActive || (vault.manifest?.docs.length ?? 0) === 0)
+                    ? handleScaffoldStarter
+                    : null
+                }
+                scaffolding={starterScaffolding}
+                scaffoldFailed={starterScaffoldFailed}
+                docsFoundCount={bootstrapPlan?.elements.length ?? 0}
+                sourceFileCount={vault.manifest?.sourceFileCount ?? 0}
+                onStartFromDocs={
+                  bootstrapPlan && bootstrapPlan.elements.length > 0
+                    ? () => setBootstrapOpen(true)
+                    : undefined
+                }
+                analyzePrompt={analyzePrompt}
+                // Seats the instruction in the chat composer instead of making the user copy; a
+                // person still sends it.
+                onSendAnalyzeToAgent={
+                  agentChatUsesRuntime ? sendAnalyzeToAgent : null
+                }
+                // INDEX floats over the map column instead of narrowing it, so the card needs its
+                // width to centre.
+                indexExpanded={renderedIndexState === "expanded"}
+                onFinish={() => { dismissStarterRecovery(); dismissStartSteps(); }}
+                // "Connect" lives at the agents destination, so it navigates there
+                // (`docs/DECISIONS.md`, entry 90);
+                // chat has its own doors.
+                onOpenAgentConnect={() => router.push(DESTINATION_HREF.agents)}
+              />
+            ) : topologyOverlayState.kind === "structural-empty" ? (
+              <TopologyEmptyState
+                conceptCount={emptyTopologyNodeCount}
+                reason={topologyOverlayState.emptyReason}
+                canCreateNode={canCreateNode}
+                onCreateNode={openCreateNode}
+                // Decided by capability, from the same source as `OpenVaultCta`: a web browser
+                // with File System Access can pick a folder too.
+                canPickFolder={vault.status !== 'unsupported'}
+                docsFoundCount={bootstrapPlan?.elements.length ?? 0}
+                onStartFromDocs={
+                  bootstrapPlan && bootstrapPlan.elements.length > 0
+                    ? () => setBootstrapOpen(true)
+                    : undefined
+                }
+              />
+            ) : null}
+            </StartStackClearOfWorkCard>
+          ) : topologyOverlayState.kind === "filter-sparse" ? (
+            <TopologyNoMatchesState
+              onClearFilters={clearTopologyFilters}
+              variant="sparse"
+            />
+          ) : null}
+          {topologyRenderState.renderCanvas && mapMountTaskReady ? <TopologyMapRenderer {...props} /> : null}
+          {topologyRenderState.renderCanvas ? (
+            <TopologyChangeAnnouncement
+              touchedCount={changedSlugs.size}
+              message={(count) => t('controls.changeAnnouncement', { count })}
+            />
+          ) : null}
+        </div>
+        <style jsx>{`
+                @keyframes topologyFade {
+                  from { opacity: 0.5; transform: scale(0.995); }
+                  to { opacity: 1; transform: scale(1); }
+                }
+              `}</style>
+        {/* Fixed square tiles whose tooltip carries the name. They step aside
+           on `selectedEdgeOwnsRightRail`, like the other right-rail tiles, or they stay
+           visible under the relation card and cannot be pressed. */}
+        <div className="contents" data-testid="topology-utility-rail">
+          {structure || createNodeOpen ||
+            topologyBlockingOverlayActive ||
+            selectedEdgeOwnsRightRail ||
+            (neural && selectedNodeFocusActive && !nodePopoverDismissed) ? null : (
+            <TopologyFitControl
+              className={railMotion}
+              inert={railRecedes}
+              mobileObscured={renderedIndexState === "expanded"}
+              density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
+              onFitView={() => {
+                if (neural) handleClose();
+                setFitViewToken((t) => t + 1);
+              }}
+            />
+          )}
+          {/* One slot below the fit tile; on phones only in overview and focus, clear of the
+             path/health rail. */}
+          {structure || createNodeOpen ||
+            selectedEdgeOwnsRightRail ||
+            topologyBlockingOverlayActive ||
+            (neural && selectedNodeFocusActive) ? null : (
+            <Tooltip content={t('controls.shortcutsTooltip')} side="left">
+              <ChromeTile
+                inert={railRecedes}
+                icon={<HelpCircle />}
+                title=""
+                aria-label={t('controls.shortcutsTooltip')}
+                onClick={() => setShortcutsOpen(true)}
+                data-testid="topology-shortcuts-help-button"
+                data-agent-dock-adjacent-rail="true"
+                data-map-fit-obstacle="right"
+                data-controls-density={
+                  topologyUtilityChromeCompact ? "compact-focus" : "default"
+                }
+                data-controls-contract={
+                  topologyUtilityChromeCompact
+                    ? "focus-support-help-entry"
+                    : "map-help-entry"
+                }
+                data-phone-help-entry-contract={
+                  topologyShortcutHelpPhoneVisible
+                    ? "visible-outside-path-panel"
+                    : analysisMode === "health"
+                      ? "hidden-during-health-panel"
+                      : "hidden-during-path-panel"
+                }
+                data-phone-help-position-contract={
+                  topologyShortcutHelpPhoneVisible ? "map-card-clearance" : undefined
+                }
+                data-phone-help-top-token={
+                  topologyShortcutHelpPhoneVisible
+                    ? selectedNodeFocusActive
+                      ? "--topology-shortcuts-help-focus-phone-top"
+                      : "--topology-shortcuts-help-phone-top"
+                    : undefined
+                }
+                className={`${railMotion} topology-ui-scale absolute right-4 ${selectedNodeFocusActive
+                  ? "top-[var(--topology-shortcuts-help-focus-phone-top)]"
+                  : "top-[var(--topology-shortcuts-help-phone-top)]"
+                  } z-20 md:right-[var(--chrome-inset)] md:top-[var(--topology-shortcuts-help-desktop-top)] md:inline-flex ${
+                  // Below `md` the expanded INDEX sheet is the primary surface, so the tile
+                  // demotes.
+                  topologyShortcutHelpPhoneVisible && renderedIndexState !== "expanded"
+                    ? "inline-flex"
+                    : "hidden"
+                  }`}
+              />
+            </Tooltip>
+          )}
+          {/* Replays the ontology appearing in containment order
+             (`ontology-map/model/ambient/growth-replay.ts`); desktop only, and only on the
+             Flat map and the 3D tree, the two views that draw a concept's appear ramp. */}
+          {structure || neural || hexBoard || createNodeOpen ||
+            selectedEdgeOwnsRightRail ||
+            topologyBlockingOverlayActive ? null : (
+            <div
+              inert={railRecedes}
+              className={`${railMotion} topology-ui-scale absolute right-4 z-20 hidden md:right-[var(--chrome-inset)] md:top-[var(--topology-growth-replay-desktop-top)] md:block`}
+              data-agent-dock-adjacent-rail="true"
+              data-map-fit-obstacle="right"
+            >
+              {/* A toggle: one token bump starts the replay and the next stops it, and the
+                 loop reports the live state back (`use-topology-loop.ts`). The indigo border
+                 is the state; the glyph stays play. */}
+              <Tooltip content={t('controls.replayGrowthTooltip')} side="left">
+                <ChromeTile
+                  icon={<Play />}
+                  title=""
+                  aria-label={t('controls.replayGrowthTooltip')}
+                  data-testid="topology-replay-growth"
+                  active={growthReplaying}
+                  aria-pressed={growthReplaying}
+                  onClick={() => setGrowthReplayToken((t) => t + 1)}
+                />
+              </Tooltip>
+            </div>
+          )}
+        </div>
+        <HubRail
+          projects={renderProjects}
+          selectedSlug={canvasSelectedSlug}
+          onSelect={(slug) => handleSelect(slug)}
+          suppressed={!leftPanelCollapsed && !drawerOpen}
+        />
+        <Surface
+          open={localGraphStack.length > 0}
+          origin="top center"
+          className="pointer-events-auto absolute left-1/2 top-[96px] z-30 flex max-w-[70vw] -translate-x-1/2 items-center gap-2 rounded-full border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 shadow-[var(--shadow-elevation-1)]"
+        >
+          <span className="font-mono text-label uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
+            Local
+          </span>
+          <button
+            type="button"
+            onClick={() => setLocalGraphStack([])}
+            className={controlClass({
+              shape: "link",
+              size: "md",
+              className:
+                "touch-hit-expand font-mono uppercase tracking-[var(--tracking-caps-12)] hover:text-[color:var(--color-text-primary)]",
+            })}
+          >
+            Root
+          </button>
+          {heldLocalGraphStack.map((slug, index) => (
+            <span key={slug} className="flex items-center gap-2">
+              <span className="text-[color:var(--color-text-quaternary)]">▸</span>
+              <button
+                type="button"
+                onClick={() =>
+                  setLocalGraphStack((stack) => stack.slice(0, index + 1))
+                }
+                className={controlClass({
+                  shape: "link",
+                  size: "lg",
+                  truncate: true,
+                  active: index === heldLocalGraphStack.length - 1,
+                  className: "touch-hit-expand hover:text-[color:var(--color-text-primary)]",
+                })}
+                title={slug}
+              >
+                {slug}
+              </button>
+            </span>
+          ))}
+          <button
+            type="button"
+            onClick={() => setLocalGraphStack((stack) => stack.slice(0, -1))}
+            className={controlClass({
+              shape: "pill",
+              size: "sm",
+              className:
+                "ml-2 font-mono uppercase tracking-[var(--tracking-caps-14)] hover:bg-[color:var(--color-overlay-2)]",
+            })}
+          >
+            Esc
+          </button>
+        </Surface>
+
+        {topologyVisibleCount !== null && topologyVisibleCount < localGraphProjects.length ? (
+          <div data-toast-wall="bottom" className="pointer-events-none absolute bottom-6 left-[220px] z-10 rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-line-a90)] md:left-[228px] xl:left-[236px]">
+            filter · {topologyVisibleCount} / {localGraphProjects.length}
+          </div>
+        ) : null}
+
+        {topologyOverlayState.kind === "filter-empty" ? (
+          <TopologyNoMatchesState onClearFilters={clearTopologyFilters} />
+        ) : null}
+
+        {/* The corner stack uses `--topology-relation-legend-inset` so its right edge lines up with
+           the utility rail. */}
+        {/* Ambient, so it steps aside while the datasheet or a right dock is open instead of
+           sharing a baseline. */}
+        {!structure && <div
+          ref={readoutStackRef}
+          data-testid="topology-readout-stack"
+          // A toast stands above this reading (`src/shared/ui/toast/toast-walls.ts`).
+          data-toast-wall="bottom"
+          className={cn(
+            "pointer-events-none absolute bottom-[var(--topology-relation-legend-bottom-inset)] right-[var(--topology-relation-legend-inset)] z-20 flex flex-col items-end gap-3 whitespace-nowrap transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none",
+            readoutStepsAside ? "opacity-0" : "opacity-100",
+          )}
+          aria-hidden={readoutStepsAside ? true : undefined}
+        >
+          <TopologyScopeReadout
+            total={topologyRenderState.renderCanvas && mapMountTaskReady && vault.restoreAttempted && !vault.partialTotal ? ontologyMapGraph.nodes.length : null}
+            members={scopeConceptCount}
+            synthetic={isSynthetic}
+          />
+          <FrameMeter />
+        </div>}
+
+        {/* Only on an unsupported browser, so the direct tile-to-picker path is unchanged
+           elsewhere. */}
+        <VaultOpenGuideSheet
+          open={unsupportedGuideOpen}
+          unsupported
+          onClose={() => setUnsupportedGuideOpen(false)}
+        />
+
+        <RecentChangesNeedsVaultDialog
+          open={recentNeedsVaultOpen}
+          onClose={() => setRecentNeedsVaultOpen(false)}
+          onOpenVault={requestVaultOpen}
+        />
+
+        <RecentChangesNeedsVaultDialog
+          open={needsVaultReason !== null}
+          copyKey={needsVaultReason ?? "createNeedsVault"}
+          onClose={() => setNeedsVaultReason(null)}
+          onOpenVault={requestVaultOpen}
+        />
+
+      </>
+    </div>
+  </>);
+}
+
+function StartStackClearOfWorkCard({ children }: { children: React.ReactNode }) {
+  const layerRef = useRef<HTMLDivElement>(null);
+  const stackOf = useCallback(() => layerRef.current?.querySelector<HTMLElement>('[role="status"]') ?? null, []);
+  const liftPx = useLiftClearOfWorkCard(stackOf);
+  return (
+    <div
+      ref={layerRef}
+      data-testid="map-start-stack-layer"
+      data-lift-px={liftPx}
+      className={cn(
+        "pointer-events-none absolute inset-0 z-20 transition-[translate] duration-[var(--motion-slow)] ease-[var(--motion-ease)]",
+        "[&_[data-map-start-art]]:transition-opacity [&_[data-map-start-art]]:duration-[var(--motion-slow)] [&_[data-map-start-art]]:ease-[var(--motion-ease)]",
+        // Risen, the art would run under the map's toolbar; the card it sits above keeps the meaning.
+        liftPx > 0 && "[&_[data-map-start-art]]:opacity-0",
+      )}
+      style={liftPx > 0 ? { translate: `0 ${-liftPx}px` } : undefined}
+    >
+      {children}
+    </div>
+  );
+}

@@ -1,9 +1,9 @@
 import { circularDomainOrder } from "../dial/order";
 import type { DialPlacementState } from "../dial/placement";
-import type { DialCluster, DialItem, DialModel, DialScene, Point } from "../dial/types";
+import type { DialCluster, DialItem, DialModel, DialScene, Point } from "../dial/dial-shapes";
 import { directItemId, drainSteps, fittedScalesOf, layoutFlatGraphSteps, type FittedScales, type LayoutSteps, type RememberedPins } from "./layout";
 import { byId } from "./seed";
-import type { FlatGraphFrame, FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphMemory } from "./types";
+import type { FlatGraphFrame, FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphMemory } from "./flat-graph-shapes";
 
 let remembered: (FlatGraphMemory & { fittedAt: FittedScales | null; orphans: string }) | null = null;
 let rememberedFolder: string | null = null;

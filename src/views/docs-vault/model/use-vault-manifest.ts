@@ -27,7 +27,6 @@ export function useVaultManifest({
   documentScope: 'all' | 'ontology';
 }) {
   const localVault = useLocalVault();
-  // The static fallback follows the sample the user chose, matching the map; an override pins one.
   const staticVault = useStaticVaultSource(staticSampleOverride ?? undefined);
   // A pinned sample still downloading holds every redirect: its documents are not "missing" yet.
   const staticPending =

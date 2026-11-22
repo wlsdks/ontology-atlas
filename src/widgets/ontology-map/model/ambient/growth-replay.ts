@@ -103,7 +103,6 @@ function clamp01(t: number): number {
   return t <= 0 ? 0 : t >= 1 ? 1 : t;
 }
 
-/** The same curve the assembly ramps use. */
 function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - clamp01(t), 3);
 }

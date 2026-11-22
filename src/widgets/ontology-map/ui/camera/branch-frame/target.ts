@@ -1,5 +1,5 @@
 import type { CameraTarget } from "../../../engine/camera";
-import type { Box, DialWorld, Point } from "../../../dial/types";
+import type { Box, DialWorld, Point } from "../../../dial/dial-shapes";
 import { branchMemberCount } from "../../../dial/branches/member-disclosure";
 import { branchNameLines, branchTextStyle } from "../../../dial/branches/text";
 import { BRANCH_ROW_PITCH } from "../../../dial/branches/layout";
@@ -8,7 +8,7 @@ import { readDialTokens } from "../../../dial/tokens";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
 import { SELECTION_NUDGE_MARGIN_PX } from "../../../model/camera/flat-selection-camera";
 import type { TopologyWorld } from "../../world/topology-world";
-import { focusTargetLeashPx } from "../topology-camera-math";
+import { focusTargetLeashPx } from "../target/pan-leash";
 
 type Insets = { obstacleInsetLeft?: number; obstacleInsetRight?: number };
 

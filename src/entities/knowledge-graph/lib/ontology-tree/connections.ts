@@ -9,11 +9,9 @@ export interface DatasheetConnection {
   relationType: string;
   relationTypes?: readonly string[];
   direction: "incoming" | "outgoing";
-  /** The relation's recorded reason (`relation_notes`); null or absent when none was written. */
   reason?: string | null;
 }
 
-/** Connections by role, with containment split out, so popover and full detail count alike. */
 export interface RoleGroupedConnections {
   /** Outgoing containment. */
   contains: DatasheetConnection[];
@@ -89,12 +87,10 @@ export function groupConnectionsByRole(
   return groups;
 }
 
-/** Structural shapes compatible with the KnowledgeGraph types. */
 export interface ConnectionSourceNode {
   id: string;
   title: string;
   display?: string;
-  /** Every `display_<locale>`, so a neighbor matches by name in any locale. */
   displayLocales?: Readonly<Record<string, string>>;
   kind: string;
 }
@@ -102,7 +98,6 @@ export interface ConnectionSourceEdge {
   from: string;
   to: string;
   type: string;
-  /** The recorded reason; blank reads as none. */
   label?: string;
 }
 

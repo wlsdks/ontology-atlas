@@ -814,7 +814,7 @@ describe("TopologyIndexPanel", () => {
     expect(section.querySelector('[data-testid="topology-index-uncataloged-docs"]')).not.toBeNull();
     expect(section.querySelector('[data-testid="topology-index-broken-docs"]')).not.toBeNull();
     // One row grammar: every row wears the same classes.
-    const classes = new Set([...section.querySelectorAll("a, button")].map((el) => el.className));
+    const classes = new Set([...section.querySelectorAll("a, button")].map((domElement) => domElement.className));
     expect(classes.size).toBe(1);
   });
 

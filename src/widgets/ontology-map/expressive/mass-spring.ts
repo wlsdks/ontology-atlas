@@ -14,14 +14,7 @@ export interface SpringResponse {
 export interface MassTokens {
   /** Degree at which a node is fully heavy (`--map-mass-heavy-degree`). */
   heavyDegree: number;
-  /**
-   * ω for every release spring (`--map-mass-angfreq`).
-   *
-   * One value, not a light/heavy pair: the stability bound proven in
-   * `spring-stability.contract.test.ts` is 16 at the 50 ms frame clamp, so both ends
-   * of a ramp would have to be 16 anyway and a pair of tokens holding one number
-   * would say mass lives in ω when it lives in ζ.
-   */
+  /** ω for every release spring (`--map-mass-angfreq`): 16 is the integrator's stability bound at the 50 ms frame clamp, so mass lives in ζ alone. */
   angFreq: number;
   /** ζ for a fully heavy node (`--map-mass-heavy-zeta`); light nodes are always critical. */
   heavyZeta: number;
@@ -68,7 +61,6 @@ export function stepDampedSpring(
   return { value: x, velocity: v };
 }
 
-/** True once a spring is close enough to rest that drawing it is wasted work. */
 export function springAtRest(value: number, velocity: number, target: number, epsilon = 0.05): boolean {
   return Math.abs(value - target) < epsilon && Math.abs(velocity) < epsilon * 10;
 }

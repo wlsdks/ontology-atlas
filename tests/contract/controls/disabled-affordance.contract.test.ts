@@ -83,7 +83,7 @@ describe('disabled affordance — value layer', () => {
 });
 
 describe('recent-changes chip — states the reason it cannot be used per mode', () => {
-  const HOME = read('src/views/home/ui/TopologyCommandChrome.tsx');
+  const HOME = read('src/views/home/ui/map-readouts/TopologyCommandChrome.tsx');
 
   it('emits different sentences for the sample reason and the my-folder reason', () => {
     // Telling someone viewing the sample to "edit a document" **presumes they have a

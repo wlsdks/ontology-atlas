@@ -1,4 +1,4 @@
-import type { ExpandStructure } from "@/shared/lib/preferences/appearance-preferences";
+import type { ExpandStructure } from "@/shared/lib/preferences/expand-preferences";
 import type { MapLayoutMark, MapLayoutMarkShape, MapLayoutView } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { lastDialFrame } from "../dial/frame/frame";
 import { smoothstep } from "../dial/frame/disclosure";
@@ -6,10 +6,10 @@ import { dialHubRadiusPx } from "../dial/frame/marks";
 import { dialChipRadiusPx, dialDiscRadiusPx } from "../dial/tokens";
 import { createMeasureText } from "../dial/fit";
 import { readDialTokens } from "../dial/tokens";
-import type { DialLabels, DialMemory, DialTokens, DialWorld } from "../dial/types";
+import type { DialLabels, DialMemory, DialTokens, DialWorld } from "../dial/dial-shapes";
 import { capabilityDiscRadiusPx, graphDiscRadiusPx } from "../flat-graph/marks";
 import { readFlatGraphTokens } from "../flat-graph/tokens";
-import type { FlatGraphTokens } from "../flat-graph/types";
+import type { FlatGraphTokens } from "../flat-graph/flat-graph-shapes";
 import type { CameraAxes } from "../engine/camera";
 import { measureCanvasInsets, measureEdgeFitObstacle } from "../interaction/free-area";
 import type { DomeNodeFrame, DomeRuntime } from "../model/dome-view/runtime";
@@ -18,19 +18,15 @@ import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
 import { readHexBoardTokensOrNull } from "../tokens/read-hex-board-tokens";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../ui/OntologyMap";
-import { computeOverviewCameraTarget, overviewEntryArea } from "../ui/camera/topology-camera-math";
+import { computeOverviewCameraTarget, overviewEntryArea } from "../ui/camera/target/fit-targets";
 import { lastDrawnNodeAlphas } from "../ui/frame-draw/topology-frame-draw";
 import { overviewBoundsFor, overviewFitTokens } from "../ui/camera/topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "../tokens/topology-read-tokens";
-import {
-  buildTopologyWorld,
-  computeFoldedIds,
-  dialOverviewFit,
-  isSpineNode,
-  radiusForKind,
-  type TopologyWorld,
-  type WorldNodeKind,
-} from "../ui/world/topology-world";
+import { buildTopologyWorld, type TopologyWorld, type WorldNodeKind } from "../ui/world/topology-world";
+import { computeFoldedIds } from "../ui/world/framing/density-fold";
+import { dialOverviewFit } from "../ui/world/framing/dial-world-framing";
+import { isSpineNode } from "../ui/world/geometry/spine-node";
+import { radiusForKind } from "../ui/world/geometry/node-radius";
 import { predictHexMarks } from "./hex-marks";
 import type { MapLayoutTarget } from "./MapLayoutMorphOverlay";
 

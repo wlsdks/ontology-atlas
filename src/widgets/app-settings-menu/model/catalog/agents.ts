@@ -1,5 +1,5 @@
 import { AGENTS_MODELS_HREF, DESTINATION_HREF } from '@/shared/config/destinations';
-import type { SettingsCatalogEntry } from './types';
+import type { SettingsCatalogEntry } from './settings-catalog-entry';
 
 export const AGENTS_CATALOG: readonly SettingsCatalogEntry[] = [
   {

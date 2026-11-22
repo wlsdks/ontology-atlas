@@ -17,7 +17,7 @@ import { OntologyMapEdgeHoverCard } from "../OntologyMapEdgeHoverCard";
 import { ConnectionGroup, type ReachListRow, type ReachRowHandlers } from "./ConnectionGroup";
 import { reasonsByRelation, type V2ConnectionGroupsView } from "./map-datasheet";
 import { RelationGroupShell } from "./RelationGroupShell";
-import type { OntologyMapDetailPanelLabels, OntologyMapDetailPanelProps } from "./types";
+import type { OntologyMapDetailPanelLabels, OntologyMapDetailPanelProps } from "./detail-panel-props";
 
 /** How long the pointer rests on a row before its reason shows, so a pass over the list stays quiet. */
 const REASON_REST_MS = 150;

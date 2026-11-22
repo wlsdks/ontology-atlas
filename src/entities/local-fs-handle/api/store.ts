@@ -1,12 +1,12 @@
 /** IndexedDB store for `LocalFsHandleRecord`; the legacy raw-handle key migrates on first read. */
 
 import { idbDel, idbGet, idbSet } from '@/shared/lib/vault-folder/idb-kv';
+import { createTauriVaultHandle } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
 import {
-  createTauriVaultHandle,
   getTauriVaultRootPath,
   isTauriVaultRuntime,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
-import type { LocalFsHandleRecord } from '../model/types';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
+import type { LocalFsHandleRecord } from '../model/local-fs-handle-record';
 
 export const CURRENT_LOCAL_FS_HANDLE_ID = 'current';
 
@@ -124,7 +124,6 @@ export async function deleteLocalFsHandle(
   return queueHandleWrite(() => idbDel(recordKey(id)));
 }
 
-/** The open vault's record is untouched. */
 export async function forgetRecentLocalFsHandle(
   record: LocalFsHandleRecord,
 ): Promise<void> {
@@ -139,7 +138,6 @@ export async function forgetRecentLocalFsHandle(
   });
 }
 
-/** No-op without a record. */
 export async function touchLocalFsHandle(
   id: string = CURRENT_LOCAL_FS_HANDLE_ID,
 ): Promise<void> {
@@ -171,7 +169,6 @@ export async function recordLocalFsHandleContents(
   });
 }
 
-/** On Tauri the handle shim is rebuilt from the stored path. */
 export async function listRecentLocalFsHandles(): Promise<LocalFsHandleRecord[]> {
   const records = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];
   return records

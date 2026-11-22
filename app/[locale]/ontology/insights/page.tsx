@@ -12,17 +12,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'metadata' });
-  // Canonical is the map so search engines see one page.
   return { title: t('pages.ontology'), alternates: { canonical: absoluteUrl(`/${locale}/topology/`) } };
 }
 
 /**
- * `/ontology/insights` — the retired Analysis address, kept so saved links and the installed
- * app's remembered route still land: `tab=harness` on Harness, `tab=library` on the Wiki, a named
- * concept selected on the map, anything else on the map.
- *
- * The `Suspense` boundary is required: the view reads the query through `useSearchParams`, and
- * with `output: 'export'` a prerendered page without one fails the build.
+ * Kept so saved links and the installed app's remembered route still land. The `Suspense` boundary
+ * is required: with `output: 'export'`, a prerendered page calling `useSearchParams` without one
+ * fails the build.
  */
 export default function Page() {
   return (

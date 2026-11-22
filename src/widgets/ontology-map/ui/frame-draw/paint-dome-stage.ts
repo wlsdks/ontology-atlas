@@ -4,7 +4,7 @@ import {
   domeFogAlpha,
   domeLineWidthFactor,
 } from "../../model/dome-view/ink";
-import type { DomeViewKind } from "../../model/dome-view/types";
+import type { DomeViewKind } from "../../model/dome-view/dome-shapes";
 import { draw as domeRingsDraw } from "../../render/dome-view/dome-rings";
 import { hexToRgb } from "../../render/dome-view/dome-light";
 import {
@@ -12,7 +12,7 @@ import {
   drawStrataLodSheets,
   type StrataLodChordDraw,
 } from "../../render/dome-view/strata-lod";
-import { rollUpStrataDependencies } from "../../model/dome-view/strata-lod";
+import { rollUpStrataDependencies } from "../../model/dome-view/strata/strata-lod";
 import { lerpColorHex } from "../../render/grid";
 import type { WorldEdge } from "../world/topology-world";
 import {
@@ -27,7 +27,7 @@ import {
 } from "./frame-state";
 import type { FrameInputs } from "./frame-begin";
 import type { FrameFocus } from "./frame-focus";
-import type { EdgePrep } from "./edge-prep";
+import type { EdgePrep } from "./edges/edge-prep";
 
 const domeEdgeOrderReused: WorldEdge[] = [];
 const domeEdgeDepthReused: number[] = [];

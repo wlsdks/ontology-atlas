@@ -4,7 +4,7 @@ import { formatDate } from '@/shared/lib/locale-text/format-date';
 import { RowButton, Surface } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
 
-import type { ChatT, SessionState } from './types';
+import type { ChatT, SessionState } from './chat-panel-props';
 
 interface HistoryPopoverProps {
   t: ChatT;

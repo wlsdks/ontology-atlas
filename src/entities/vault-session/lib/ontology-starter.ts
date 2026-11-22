@@ -1,15 +1,8 @@
-/**
- * mission v2 ontology starter — 5 .md files + agent MCP configs scaffolded into an empty folder.
- *
- * Mirrors cli/templates/vault/. Keep both in sync so the CLI and the web
- * workbench produce the same starter files.
- */
+/** The ontology starter: 5 .md files, the agent guide and the agent skills scaffolded into an empty folder. Mirrors `cli/templates/vault/`; keep both in sync. */
 
-import type { McpServerLaunch } from '@/shared/config';
-import { ATLAS_CLI } from '@/shared/config/cli-invocation';
+import { ATLAS_CLI } from '@/shared/config/agent/cli-invocation';
 
 interface StarterFile {
-  /** Relative path inside the vault (e.g. README.md, domains/example-domain.md). */
   relPath: string;
   content: string;
 }
@@ -339,11 +332,8 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
   - \`relates: [...]\` — loose related-to references (optional)
 `;
 
-// ── Korean starter bodies ───────────────────────────────────────────────────
-// Must be **byte-identical** to `cli/templates/vault-ko/` — a contract test enforces it.
-// The file set and the frontmatter (slug/kind/title/display_*) match the English version and only
-// the prose differs, so any creation language yields the same graph and the canonical `title`,
-// the single source of truth for search, is unchanged.
+// Byte-identical to `cli/templates/vault-ko/` (a contract test enforces it); only the prose differs from the English set,
+// so the graph and the canonical `title` are unchanged.
 const README_MD_KO = `---
 slug: README
 kind: vault-readme
@@ -659,16 +649,11 @@ const STARTER_FILES_KO: ReadonlyArray<StarterFile> = [
   { relPath: 'elements/example-element.md', content: ELEMENT_MD_KO },
 ];
 
-/** The starter files for this locale. An unknown locale falls back to English. */
 export function starterFilesForLocale(locale: string): ReadonlyArray<StarterFile> {
   return locale === "ko" ? STARTER_FILES_KO : STARTER_FILES_EN;
 }
 
-/**
- * Static starters carry no permanent identity. Every actual vault scaffold mints a distinct
- * UUIDv4 for each `kind` document (including vault-readme). Tests inject a factory to verify the
- * output deterministically.
- */
+/** Static starters carry no identity: every actual scaffold mints a distinct UUIDv4 per `kind` document; tests inject a factory. */
 export function materializeStarterFiles(
   locale: string,
   uidFactory: StarterUidFactory = () => globalThis.crypto.randomUUID(),
@@ -778,7 +763,6 @@ const AGENT_GUIDE_KO = `# 이 폴더는 Ontology Atlas 볼트입니다
 안 보입니다.
 `;
 
-/** The guide for this locale. An unknown locale falls back to English — same rule as the starters. */
 export function vaultAgentGuideForLocale(locale: string): StarterFile {
   return {
     relPath: VAULT_AGENT_GUIDE_PATH,
@@ -787,17 +771,8 @@ export function vaultAgentGuideForLocale(locale: string): StarterFile {
 }
 
 /**
- * The **bridge file** for Claude Code. Its content is a single line pointing at `AGENTS.md`.
- *
- * With the guide living only in `AGENTS.md`, **a Claude Code session receives nothing** — this
- * repository's own tool table records why: Codex reads `AGENTS.md` directly, while Claude Code
- * reaches it through `CLAUDE.md`'s `@AGENTS.md` import. The vault uses the same arrangement this
- * repository uses at its own root.
- *
- * The product already has a check for this — `claude-agents-bridge` in
- * `cli/src/lib/agent-setup/agent-files.mjs`. But with no `CLAUDE.md` at all it **silently reports "not
- * applicable"**, so nobody saw that the guidance was reaching only half its audience. Placing the
- * file is what puts that check to work.
+ * A one-line bridge file: Codex reads `AGENTS.md` directly, but Claude Code reaches it through `CLAUDE.md`'s `@AGENTS.md` import.
+ * Without it the `claude-agents-bridge` check (`cli/src/lib/agent-setup/agent-files.mjs`) silently reports "not applicable".
  */
 export const VAULT_CLAUDE_BRIDGE_PATH = "CLAUDE.md";
 
@@ -819,7 +794,6 @@ Codex · Cursor · Gemini CLI 는 \`AGENTS.md\` 를 직접 읽습니다. 안내�
 두려고 이 파일은 가리키기만 합니다 — 고칠 때는 \`AGENTS.md\` 를 고치세요.
 `;
 
-/** The bridge file for this locale. An unknown locale falls back to English. */
 export function vaultClaudeBridgeForLocale(locale: string): StarterFile {
   return {
     relPath: VAULT_CLAUDE_BRIDGE_PATH,
@@ -835,7 +809,6 @@ export function vaultClaudeBridgeForLocale(locale: string): StarterFile {
  */
 export const VAULT_SKILL_NAMES = ["atlas-review", "atlas-grow", "atlas-absorb"] as const;
 
-/** Where a skill file lives inside the vault. Claude Code reads this folder. */
 export function vaultSkillPath(name: string): string {
   return `.claude/skills/${name}/SKILL.md`;
 }
@@ -1173,7 +1146,6 @@ description: 글에서 개념 뽑기. 회의록·기획서·PR 설명에서 개�
 - \`title\` 언어를 볼트와 다르게 넣어 검색이 갈린다
 `;
 
-/** The procedural skills for this locale. An unknown locale falls back to English. */
 export function vaultSkillFilesForLocale(locale: string): ReadonlyArray<StarterFile> {
   const ko = locale === "ko";
   return [
@@ -1181,151 +1153,4 @@ export function vaultSkillFilesForLocale(locale: string): ReadonlyArray<StarterF
     { relPath: vaultSkillPath("atlas-grow"), content: ko ? SKILL_GROW_KO : SKILL_GROW_EN },
     { relPath: vaultSkillPath("atlas-absorb"), content: ko ? SKILL_ABSORB_KO : SKILL_ABSORB_EN },
   ];
-}
-
-/** The installed app passes its bundled binary path; the web uses a source-checkout placeholder. */
-const SOURCE_CHECKOUT_PLACEHOLDER: McpServerLaunch = {
-  kind: 'source-checkout',
-  command: 'node',
-  args: [`<absolute path to your ontology-atlas checkout>/mcp/src/index.js`],
-};
-
-function resolveLaunch(launch?: McpServerLaunch | null): McpServerLaunch {
-  return launch ?? SOURCE_CHECKOUT_PLACEHOLDER;
-}
-
-/**
- * MCP config template to register an AI agent (Claude Code, Cursor, …) from
- * a different working directory. `OATLAS_VAULT` must be the absolute path to
- * the vault folder — the browser cannot know it.
- */
-export function buildMcpConfigJson(
-  vaultName: string,
-  vaultPath?: string | null,
-  launch?: McpServerLaunch | null,
-): string {
-  return buildMcpConfigJsonForVault(
-    vaultPath ?? `<absolute path to your ${vaultName} folder>`,
-    launch,
-  );
-}
-
-/**
- * Ready-to-use MCP config for opening the vault folder itself in Claude Code
- * or Cursor. `OATLAS_VAULT=.` keeps the config portable inside the folder.
- */
-export function buildVaultMcpConfigJson(launch?: McpServerLaunch | null): string {
-  return buildMcpConfigJsonForVault('.', launch);
-}
-
-function buildMcpConfigJsonForVault(
-  omotVault: string,
-  launch?: McpServerLaunch | null,
-): string {
-  const resolved = resolveLaunch(launch);
-  return (
-    JSON.stringify(
-      {
-        mcpServers: {
-          'ontology-atlas': {
-            command: resolved.command,
-            args: resolved.args,
-            env: {
-              OATLAS_VAULT: omotVault,
-            },
-          },
-        },
-      },
-      null,
-      2,
-    ) + '\n'
-  );
-}
-
-/**
- * Codex MCP config. Defaults to the vault folder itself, but can also render
- * the codebase-root template where `OATLAS_VAULT` must be an absolute path.
- */
-export function buildCodexConfigToml(
-  omotVault = '.',
-  launch?: McpServerLaunch | null,
-): string {
-  const resolved = resolveLaunch(launch);
-  return [
-    '[mcp_servers.ontology-atlas]',
-    `command = ${JSON.stringify(resolved.command)}`,
-    `args = ${JSON.stringify(resolved.args)}`,
-    '',
-    '[mcp_servers.ontology-atlas.env]',
-    `OATLAS_VAULT = ${JSON.stringify(omotVault)}`,
-    '',
-  ].join('\n');
-}
-
-export function buildCodexConfigTomlTemplate(
-  vaultName: string,
-  vaultPath?: string | null,
-  launch?: McpServerLaunch | null,
-): string {
-  return buildCodexConfigToml(
-    vaultPath ?? `<absolute path to your ${vaultName} folder>`,
-    launch,
-  );
-}
-
-/**
- * One-line Codex CLI registration for users who prefer mutating their Codex
- * MCP config through the CLI instead of editing `.codex/config.toml`.
- */
-export function buildCodexMcpAddCommandTemplate(
-  vaultName: string,
-  vaultPath?: string | null,
-  launch?: McpServerLaunch | null,
-): string {
-  const resolvedVaultPath = vaultPath ?? `<absolute path to your ${vaultName} folder>`;
-  const resolved = resolveLaunch(launch);
-  return [
-    'codex',
-    'mcp',
-    'add',
-    'ontology-atlas',
-    '--env',
-    `OATLAS_VAULT=${shellQuote(resolvedVaultPath)}`,
-    '--',
-    shellQuote(resolved.command),
-    ...resolved.args.map(shellQuote),
-  ].join(' ');
-}
-
-/**
- * Safer existing-vault repair command for agents opened at a codebase root.
- * It creates missing config files, atomically rebinds one parseable Atlas
- * entry, and leaves ambiguous config untouched with a merge template.
- */
-export function buildAgentSetupCliCommandTemplate(vaultName: string): string {
-  const vaultPath = `<absolute path to your ${vaultName} folder>`;
-  return [
-    ATLAS_CLI,
-    'agent-setup',
-    shellQuote(vaultPath),
-    '--root',
-    shellQuote('<absolute path to your codebase root>'),
-    '--write',
-  ].join(' ');
-}
-
-export function buildAgentSetupCheckCliCommandTemplate(vaultName: string): string {
-  const vaultPath = `<absolute path to your ${vaultName} folder>`;
-  return [
-    ATLAS_CLI,
-    'agent-setup',
-    shellQuote(vaultPath),
-    '--root',
-    shellQuote('<absolute path to your codebase root>'),
-    '--json',
-  ].join(' ');
-}
-
-function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, "'\\''")}'`;
 }

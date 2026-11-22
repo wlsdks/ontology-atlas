@@ -5,7 +5,7 @@ import type { LightEmitter, LightHead, LightSourceInput } from "../light/light-s
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import type { TopologyWorld } from "../ui/world/topology-world";
 import { createDialLightSource } from "./light-source";
-import type { DialChordLight, DialLightFrame } from "./types";
+import type { DialChordLight, DialLightFrame } from "./dial-shapes";
 
 const WORLD = {} as TopologyWorld;
 const CAMERA: CameraAxes = { x: { value: 0, velocity: 0 }, y: { value: 0, velocity: 0 }, scale: { value: 1, velocity: 0 } };

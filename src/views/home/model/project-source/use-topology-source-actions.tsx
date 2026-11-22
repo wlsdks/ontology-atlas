@@ -15,7 +15,6 @@ interface Options {
   topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "setFullDetailSlug">;
   topologySourceReadiness: Pick<ReturnType<typeof useTopologySourceReadiness>, "projectSource" | "projectSourceMeasuredAtLabel">;
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t">;
-  /** Seats a request in the agent chat; `null` where this surface has no chat to open. */
   askAgent: ((request: string) => void) | null;
 }
 export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPreferences, topologySourceReadiness, topologyCanvasFocus, askAgent }: Options) {
@@ -124,10 +123,6 @@ export function useTopologySourceActions({ toast, v2DatasheetModel, topologyPref
     askAgent,
     t,
   ]);
-  /**
-   * Only where this surface cannot act: the folder actions need an absolute path a browser cannot
-   * know (`.claude/rules/surfaces.md`). It says why, where, and what still works here.
-   */
   const projectSourceDegraded = useMemo(
     () => !projectSource.runtimeAvailable && projectSourceNeedsNativeRuntime
       ? {

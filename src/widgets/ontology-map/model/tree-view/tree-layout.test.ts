@@ -3,7 +3,7 @@ import type { TreeInputEdge, TreeInputNode } from "../containment-tree";
 import { aimTreeProjector, createTreeProjector, TREE_POSE_REST } from "./tree-camera";
 import { layoutTree } from "./tree-layout";
 import { buildTreeModel } from "./tree-model";
-import type { TreeLayout, TreeScreenPoint } from "./types";
+import type { TreeLayout, TreeScreenPoint } from "./tree-shapes";
 
 const concept = (id: string, kind: TreeInputNode["kind"]): TreeInputNode => ({ id, label: id, kind });
 const contains = (parent: string, child: string): TreeInputEdge => ({ source: parent, target: child, kind: "contains", relationType: "contains" });

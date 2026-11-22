@@ -49,7 +49,7 @@ The current mechanism is: **click → durable ego focus, compact
 the reader put it.** Zooming to a node is its own gesture (double-click, Enter,
 wheel). The default map is a
 semantic-zoom overview, not the full graph. Full detail is an explicit
-`FullDetailA1` drill-down.
+`FullDetail` drill-down.
 
 This is the convergent pattern across Obsidian (local graph + hover preview),
 Neo4j Bloom / Linkurious (click-to-inspect + incremental ego expand), and
@@ -65,7 +65,7 @@ demand). See [References](#references).
 | **Overview (default)** | Project/domain/hub spine is visible first; semantic-zoom tier and density gates reveal more only when useful. |
 | **Hover** | Hover emphasis/ripple lights the hovered ego set, and since 2026-09-02 the hovered node's own lines rise toward the ego ink while every other line recedes a step, both on the same 90 ms ramp — without changing durable focus or camera. |
 | **Focus (click)** | `focus-state` keeps the node and bounded direct-neighbor ego readable and dims unrelated nodes/edges. On the flat map every selection source frames the selection and its lit reach between the panels, zooming in only while the far ends it showed stay in view; a domain frames its own star instead (its disc, its member capabilities and their elements) and zooms in until that star fills the free map, its marks growing with the room they get, so its partner domains may leave the view. |
-| **Detail (opt-in)** | `OntologyMapDetailPanel` is the compact current datasheet; its explicit action opens `FullDetailA1` for deeper detail. |
+| **Detail (opt-in)** | `OntologyMapDetailPanel` is the compact current datasheet; its explicit action opens `FullDetail` for deeper detail. |
 | **Clear** | An empty-canvas click or Escape clears focus; a click on the selected node keeps it. On the flat map one Escape clears the selection and returns the camera the selection moved from unless the reader moved the view since; other views close the popover first. |
 
 ### Current compact detail panel
@@ -99,7 +99,7 @@ not a claim about a Sigma-era `NodeDetailPanel` API:
   `topology-physics-step.ts` and the canvas draw layer apply the focus/dim and
   tier-reveal result without changing the graph data model.
 - `engine/camera.ts` springs camera movement within scale and pan bounds.
-- The current detail panel and `FullDetailA1` consume the selected node's
+- The current detail panel and `FullDetail` consume the selected node's
   current relation/evidence view; they are not the retired `NodeDetailPanel`.
 
 ### Current overview-first default

@@ -8,7 +8,7 @@ import { WorkRunCard } from './WorkRunCard';
 
 const push = vi.fn();
 vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push }) }));
-vi.mock('@/shared/lib/navigation/route-view-transition', () => ({ navigateWithViewTransition: (go: () => void) => go() }));
+vi.mock('@/shared/lib/navigation/route-view-transition', () => ({ navigateWithViewTransition: (_href: string, go: () => void) => go() }));
 
 const FOLDER = 'local:launch';
 

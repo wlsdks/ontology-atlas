@@ -5,13 +5,15 @@ import { useCallback, useState } from 'react';
 import { CURRENT_LOCAL_FS_HANDLE_ID, type LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import { failureCodeOf } from '@/shared/lib/failures/failure-code';
 import {
-  createTauriVaultHandle,
-  isTauriVaultRuntime,
   listTauriDirectoryNames,
   ensureTauriChildDirectory,
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
+import { createTauriVaultHandle } from '@/shared/lib/vault-folder/native-vault/tauri-vault-handle';
+import { pickTauriVaultDirectory } from '@/shared/lib/vault-folder/native-vault/tauri-vault-location';
+import {
+  isTauriVaultRuntime,
   getTauriVaultRootPath,
-  pickTauriVaultDirectory,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+} from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 import {
   PROJECT_VAULT_DIR,
@@ -21,15 +23,8 @@ import {
   type ProjectVaultLocation,
 } from './project-vault-location';
 
-/**
- * The 「make a map from my code」 flow: choose a project, see the path, then create. The folder
- * goes into the person's repository, so nothing is created until `confirm` runs from a screen
- * that showed `location.displayPath` (`local-first.md`). An existing `atlas` folder is reused
- * and reported, never overwritten.
- */
-/**
- * English because it is an OS dialog title and the surrounding native chrome is not localised.
- */
+/** Nothing is created until `confirm` runs from a screen that showed `location.displayPath` (`local-first.md`). An existing `atlas` folder is reused and reported, never overwritten. */
+/** English: it is an OS dialog title and the surrounding native chrome is not localised. */
 const PROJECT_PICKER_TITLE = 'Choose your project folder';
 
 type BuildFromCodeStage = 'idle' | 'choosing' | 'confirm' | 'creating';
@@ -38,15 +33,12 @@ export interface BuildFromCodeState {
   stage: BuildFromCodeStage;
   /** The screen must render `displayPath` before offering `confirm`. */
   location: ProjectVaultLocation | null;
-  /** So the copy says "use" rather than "create". */
   reusesExisting: boolean;
-  /** The map folder itself was picked; the flow names it and proposes the parent. */
   pickedMapFolder: boolean;
   errorText: string | null;
 }
 
 export interface BuildFromCodeDeps {
-  /** Registers and loads a vault without reopening a picker. */
   openRecord: (record: LocalFsHandleRecord) => Promise<unknown>;
   /** Called with the project root, never the vault. */
   handoff: (location: ProjectVaultLocation) => void;
@@ -65,23 +57,17 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
 
   const reset = useCallback(() => setState(IDLE), []);
 
-  /**
-   * Picks the project, not a vault. A cancelled picker returns to idle without an error.
-   */
   const chooseProject = useCallback(async () => {
     if (!isTauriVaultRuntime()) return;
     setState({ ...IDLE, stage: 'choosing' });
     try {
-      /*
-       * The default title asks for a vault, which the person does not have in this flow.
-       */
+      /* The default title asks for a vault, which the person does not have in this flow. */
       const handle = await pickTauriVaultDirectory(PROJECT_PICKER_TITLE);
       if (!handle) {
         setState(IDLE);
         return;
       }
       const picked = getTauriVaultRootPath(handle) ?? null;
-      // Handed the map instead of the project: step up one and say so.
       const pickedMapFolder = pickedTheMapFolder(picked);
       const location = projectVaultLocation(
         pickedMapFolder ? (picked ?? '').replace(/[/\\]+[^/\\]+$/, '') : picked,
@@ -99,14 +85,12 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
         // surfaces a permission problem.
       }
       setState({ stage: 'confirm', location, reusesExisting, pickedMapFolder, errorText: null });
-    } catch (err) {
-      setState({ ...IDLE, errorText: failureCodeOrEmpty(err) });
+    } catch (error) {
+      setState({ ...IDLE, errorText: failureCodeOrEmpty(error) });
     }
   }, []);
 
-  /**
-   * Creates `<project>/atlas`, opens it and hands off to the agent. Reachable only from `confirm`.
-   */
+  /** Reachable only from `confirm`. */
   const confirm = useCallback(async () => {
     const location = state.location;
     if (!location || state.stage !== 'confirm') return;
@@ -124,9 +108,9 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
       });
       handoff(location);
       setState(IDLE);
-    } catch (err) {
+    } catch (error) {
       // Staying on `confirm` keeps the path and button, so a fixable failure is one press from retry.
-      setState((s) => ({ ...s, stage: 'confirm', errorText: failureCodeOrEmpty(err) }));
+      setState((s) => ({ ...s, stage: 'confirm', errorText: failureCodeOrEmpty(error) }));
     }
   }, [state.location, state.stage, openRecord, handoff]);
 
@@ -134,6 +118,6 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
 }
 
 /** Never the thrown English, which cannot know the reader's language. */
-function failureCodeOrEmpty(err: unknown): string {
-  return failureCodeOf(err) ?? '';
+function failureCodeOrEmpty(error: unknown): string {
+  return failureCodeOf(error) ?? '';
 }

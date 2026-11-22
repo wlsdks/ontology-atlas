@@ -9,7 +9,7 @@ import { buildDialModel } from "@/widgets/ontology-map/dial/dial-model";
 import { layoutDial } from "@/widgets/ontology-map/dial/layout";
 import { circularDomainOrder } from "@/widgets/ontology-map/dial/order";
 import { capabilityTierRead, createDialPlacement } from "@/widgets/ontology-map/dial/placement";
-import type { DialMemory, DialModel, DialScene } from "@/widgets/ontology-map/dial/types";
+import type { DialMemory, DialModel, DialScene } from "@/widgets/ontology-map/dial/dial-shapes";
 import {
   readContainmentTree,
   rollDirectedDomainFlows,

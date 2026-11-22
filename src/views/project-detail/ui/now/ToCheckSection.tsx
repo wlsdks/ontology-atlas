@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
-import { getTopologyFocusHref } from "@/entities/project";
+import { buildTopologyFocusHref } from "@/entities/project";
 import type { MapEvidenceAvailability } from "@/features/vault-ontology";
 import { Button, Dialog, DialogBody, DialogFooter, OntologyMapKindGlyph } from "@/shared/ui";
 import { EXIT_TRANSITION, MOTION } from "@/shared/motion";
@@ -14,7 +14,6 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { groupRowsByReason, type ProjectToCheck, type ToCheckReason, type ToCheckRow } from "../../model/project-to-check";
 import { CrossFadeText, SECTION_HEADING_CLASS, STALE_DOT_CLASS, SectionHeadingLine, rowMotion, useArrival } from "./now-parts";
 
-/** A group in the dialog lists this many rows; the rest are named by count and live on the map. */
 const DIALOG_ROWS_PER_REASON = 100;
 const REVIEW_REASONS: ReadonlySet<ToCheckReason> = new Set(["raised", "changed-since-review", "unverifiable"]);
 
@@ -42,9 +41,7 @@ export function ToCheckSection({
   toCheck: ProjectToCheck;
   availability: MapEvidenceAvailability;
   staleCount: number;
-  /** The project's capabilities the walk compared: the sentence's denominator. */
   comparedCount: number;
-  /** The review queue has not been read yet, so its absence says nothing. */
   reviewReading: boolean;
   reducedMotion: boolean;
   arrivalOffset?: number;
@@ -160,7 +157,7 @@ function ToCheckRowLink({ row }: { row: ToCheckRow }) {
   const t = useTranslations("projectPages.detail");
   const sentenceOf = useReasonSentence();
   const opensDocument = REVIEW_REASONS.has(row.reason) && row.docSlug !== null;
-  const href = opensDocument ? buildDocsVaultHref({ slug: row.docSlug! }) : getTopologyFocusHref(row.nodeId);
+  const href = opensDocument ? buildDocsVaultHref({ slug: row.docSlug! }) : buildTopologyFocusHref(row.nodeId);
   const sentence = sentenceOf(row);
   const id = useId();
   const labelledBy = [`${id}-name`, row.domainName ? `${id}-domain` : null, `${id}-reason`].filter(Boolean).join(" ");
@@ -233,7 +230,6 @@ function ToCheckDialog({
   );
 }
 
-/** Rendered only inside the open dialog, so a closed dialog groups nothing. */
 function ToCheckDialogGroups({ rows }: { rows: readonly ToCheckRow[] }) {
   const t = useTranslations("projectPages.detail");
   const tReview = useTranslations("vaultWidgets.parts.sidebar.review");

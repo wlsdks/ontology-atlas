@@ -18,7 +18,7 @@ import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { PAGE_COLUMN_FORM, PAGE_FRAME_FORM, PAGE_LEDE, PAGE_TITLE } from '@/shared/ui/tokens/page-frame';
 import { Button, EmptyState, RowButton, Surface } from '@/shared/ui';
 import { libraryEyebrowClass } from '../lib/page-eyebrow';
-import { ConstellationsStartingPoint } from './parts/first-run/ConstellationsStartingPoint';
+import { ConstellationsStartingPoint } from './first-run/ConstellationsStartingPoint';
 
 type MemberRow =
   | { kind: 'ontology'; resolution: ResolvedCollectionMember }

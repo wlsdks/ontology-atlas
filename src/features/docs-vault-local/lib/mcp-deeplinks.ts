@@ -15,7 +15,6 @@ export interface McpStdioConfig {
   env: { OATLAS_VAULT: string };
 }
 
-/** Null when the absolute path or the launch method is unknown. */
 export function buildMcpDeeplinkConfig(
   vaultPath: string | null | undefined,
   launch: McpServerLaunch | null | undefined,
@@ -41,7 +40,6 @@ export function utf8ToBase64(input: string): string {
   return btoa(binary);
 }
 
-/** `cursor://anysphere.cursor-deeplink/mcp/install?name=…&config=<base64>`; null on the web. */
 export function buildCursorMcpDeeplink(
   vaultPath: string | null | undefined,
   launch: McpServerLaunch | null | undefined,
@@ -53,10 +51,6 @@ export function buildCursorMcpDeeplink(
   return `cursor://anysphere.cursor-deeplink/mcp/install?${params.toString()}`;
 }
 
-/**
- * `vscode:mcp/install?<url-encoded JSON>`, with the name as a config field. Null when the absolute
- * path is unknown.
- */
 export function buildVsCodeMcpDeeplink(
   vaultPath: string | null | undefined,
   launch: McpServerLaunch | null | undefined,

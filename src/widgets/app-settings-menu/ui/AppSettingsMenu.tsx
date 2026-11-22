@@ -16,16 +16,16 @@ import { buildRouteFocusHref } from '@/shared/ui/routing/route-focus-manager';
 import { transientSurface } from '@/shared/ui/surfaces/transient-surface';
 
 import { SETTINGS_CATALOG } from '../model/catalog';
-import type { SettingsSectionId } from '../model/catalog/types';
+import type { SettingsSectionId } from '../model/catalog/settings-catalog-entry';
 import { resolveSettingsSection } from '../model/settings-sections';
 import {
   groupSettingsResults,
   searchSettings,
   type SettingsSearchItem,
 } from '../model/settings-search';
-import { AgentActivitySettings } from './AgentActivitySettings';
-import { ExpandSettings } from './ExpandSettings';
-import { FootprintSettings } from './FootprintSettings';
+import { AgentActivitySettings } from './agent-setup/AgentActivitySettings';
+import { ExpandSettings } from './pane-settings/ExpandSettings';
+import { FootprintSettings } from './pane-settings/FootprintSettings';
 import { AboutPane } from './panes/AboutPane';
 import { AgentsPane } from './panes/AgentsPane';
 import { MapPane } from './panes/MapPane';
@@ -38,7 +38,7 @@ import {
   SettingsSearchField,
   SettingsSearchResults,
   useSettingsSearchCursor,
-} from './SettingsSearch';
+} from './settings-search-controls';
 import { SettingsPaneHead } from './settings-primitives';
 import { useSettingsTriggerLabel } from './use-settings-trigger-label';
 
@@ -109,7 +109,6 @@ interface AppSettingsScreenControls {
 
 export interface AppSettingsMenuProps {
   mode: 'static' | 'local';
-  /** Controlled open state. Unset means self-managed. */
   open?: boolean;
   onOpenChange?: (next: boolean) => void;
   /** The map's INDEX default; the Map pane draws that row only where the map injects it. */

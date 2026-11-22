@@ -1,6 +1,4 @@
-// `ontology-atlas blast-radius <slug> [vault] [--depth N] [--direction]`
 // What breaks if this node changes — declared depends_on only, structure excluded.
-// Thin wrapper over MCP `query_ontology({operation: 'blast_radius'})`.
 
 import { COLORS, KIND_COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
@@ -75,9 +73,9 @@ export async function runBlastRadius(args) {
     }
     result = await callMcpTool(vaultRoot, 'query_ontology', query);
     assertBlastRadiusShape(result);
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }

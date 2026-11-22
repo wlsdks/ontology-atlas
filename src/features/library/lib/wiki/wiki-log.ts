@@ -103,8 +103,8 @@ export async function appendWikiLog(
   vault: FileSystemDirectoryHandle,
   entry: WikiLogEntry,
 ): Promise<void> {
-  const dir = await vault.getDirectoryHandle(WIKI_DIR, { create: true });
-  const file = await dir.getFileHandle(WIKI_LOG_FILENAME, { create: true });
+  const directory = await vault.getDirectoryHandle(WIKI_DIR, { create: true });
+  const file = await directory.getFileHandle(WIKI_LOG_FILENAME, { create: true });
   let current = "";
   try {
     current = await (await file.getFile()).text();

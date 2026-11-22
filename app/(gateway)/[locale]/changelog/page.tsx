@@ -19,17 +19,7 @@ export async function generateMetadata({
   });
 }
 
-/**
- * How many sections to render.
- *
- * The CHANGELOG is **318 KB** today and keeps growing. Unrolling all of it on one page makes the
- * gateway's reading material the heaviest screen in the product. What someone opening this document
- * wants is **what changed recently**, not the whole history — anyone who needs all of it is sent to
- * the repository, and the screen says up front how many it folded.
- *
- * 12 is roughly **two to three weeks** at this repository's recent pace. If the value needs to
- * change, decide it as "how many weeks to show", not "how many entries".
- */
+/** The whole CHANGELOG would be the heaviest screen; 12 sections is two to three weeks, so tune it in weeks. */
 const RECENT_SECTIONS = 12;
 
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {

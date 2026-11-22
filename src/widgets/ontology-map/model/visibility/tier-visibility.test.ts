@@ -109,17 +109,17 @@ describe("nodeTierAlpha", () => {
   it("reveals capabilities before elements as you zoom in (staged semantic zoom)", () => {
     const ratio = DEFAULT_TIER_REVEAL.capability.fullRatio;
     const cap = nodeTierAlpha("capability", false, ratio, DEFAULT_TIER_REVEAL);
-    const el = nodeTierAlpha("element", false, ratio, DEFAULT_TIER_REVEAL);
-    expect(cap).toBeGreaterThan(el);
-    expect(el).toBe(0);
+    const elementAlpha = nodeTierAlpha("element", false, ratio, DEFAULT_TIER_REVEAL);
+    expect(cap).toBeGreaterThan(elementAlpha);
+    expect(elementAlpha).toBe(0);
   });
 
   it("is monotonic non-decreasing in zoom ratio for capabilities (no discrete flip)", () => {
-    let prev = -Infinity;
+    let previous = -Infinity;
     for (let ratio = 0.4; ratio <= 4.0001; ratio += 0.05) {
       const a = nodeTierAlpha("capability", false, ratio, DEFAULT_TIER_REVEAL);
-      expect(a).toBeGreaterThanOrEqual(prev - 1e-9);
-      prev = a;
+      expect(a).toBeGreaterThanOrEqual(previous - 1e-9);
+      previous = a;
     }
   });
 });

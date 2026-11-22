@@ -7,11 +7,11 @@ import os from "node:os";
 import { pathToFileURL } from "node:url";
 import { parseSha256Checksum } from "../lib/macos-artifact/macos-checksum.mjs";
 import { parseHdiutilMountDir, verifyApplicationsSymlink } from "../lib/macos-artifact/macos-dmg-layout.mjs";
-import { loadMacosReleaseNames } from "../lib/macos-release-names.mjs";
+import { readMacosReleaseNames } from "../lib/macos-release-names.mjs";
 import { verifyMcpBinary } from "../packaging/verify-mcp-binary.mjs";
 
 const root = process.cwd();
-const names = loadMacosReleaseNames(root);
+const names = readMacosReleaseNames(root);
 const { appBundleName, releaseAssetName, version, arch } = names;
 const defaultDmgPath = path.join(
   root,

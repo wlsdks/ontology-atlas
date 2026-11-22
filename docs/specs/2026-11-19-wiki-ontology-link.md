@@ -23,13 +23,13 @@ Nobody has captured this moment on a real folder, so acceptance criterion 1 capt
 - **Linking a page to concepts is gated on review.**
   - A wiki page may list ontology slugs in `describes:`, but this is "allowed only on a `reviewed` page" (`ONTOLOGY-ATLAS-SPEC.md:802`).
   - On a draft page the validators report `describes-needs-approval`, and "a compiler does not" raise the status (`:817-819`, `:874`).
-  - Both validators carry this code (`mcp/src/library/wiki-schema.mjs:298-311`; `src/shared/lib/library/wiki-page-schema.ts:333-344`). It is blocking: only `orphan-page` and `shared-source-unlinked` are advisory (`wiki-schema.mjs:32`).
+  - Both validators carry this code (`mcp/src/library/wiki-schema.mjs:295-308`; `src/shared/lib/library/wiki-page-schema.ts:311-322`). It is blocking: only `orphan-page` and `shared-source-unlinked` are advisory (`wiki-schema.mjs:32`).
 - **The gate has no decision record of its own.** It shipped in #1452 (commit `cf6361a7b`, 2026-09-06) under the 2026-09-05 record.
   - The Propose turn "is not" to set `describes:` (`docs/DECISIONS.md:716-723`).
-  - Record `5e2f4838` lets a round write no `describes:`; `FORBIDDEN_KEYS` enforces it (`src/features/library-rounds/model/pass-pages.ts:26`).
-- **Nothing opens the gate.** No screen raises a page to `reviewed`; the app only displays the status (`src/views/library/lib/wiki/writer-label.ts:30`). The Compile brief never mentions `describes` (`src/features/library/lib/wiki/compile-brief.ts`).
+  - Record `5e2f4838` lets a round write no `describes:`; `FORBIDDEN_KEYS` enforces it (`src/features/library-rounds/model/round-draft-problem.ts:6`).
+- **Nothing opens the gate.** No screen raises a page to `reviewed`; the app only displays the status (`src/views/library/lib/wiki/writer-label.ts:30`). The Compile brief never mentions `describes` (`src/features/library/lib/wiki/compile/compile-brief.ts`).
 - **The Library graph draws two kinds of line, and neither is `describes:`.** It draws `cites` from `sources:`, and `mentions` from page-body `[[slug]]` links and concept-body `[[wiki/…]]` links (`src/widgets/library-graph/model/build-library-graph.ts:9-19, 181-222`). It never reads `describes:`.
-  - `LibraryWikiPage` has no concept field (`src/entities/docs-vault/lib/library/vault-library.ts:33-42`).
+  - `LibraryWikiPage` has no concept field (`src/entities/docs-vault/lib/library/vault-library.ts`).
   - The map's panels name no wiki page.
 - **Addressing.**
   - Markdown relations address nodes by slug (`ONTOLOGY-ATLAS-SPEC.md:358-361`).
@@ -37,15 +37,15 @@ Nobody has captured this moment on a real folder, so acceptance criterion 1 capt
   - `uid` is the permanent identity (`:351-357`).
   - `describes` is a graph array key (`mcp/src/schema.mjs:448`), and its reverse is a backlink only (`ONTOLOGY-ATLAS-SPEC.md:414`).
 - **Rename and merge already reach wiki pages.**
-  - The MCP walks every `.md` file outside `sources/` (`mcp/src/vault/slug-paths.mjs:36`).
-  - `redirectBacklinks` rewrites every array key and every `relation_notes` key on every document (`mcp/src/vault/backlink-rewrite.mjs:59-140`).
+  - The MCP walks every `.md` file outside `sources/` (`mcp/src/vault/documents/slug-paths.mjs:36`).
+  - `redirectBacklinks` rewrites every array key and every `relation_notes` key on every document (`mcp/src/vault/writes/backlink-rewrite.mjs:59-140`).
   - Merge uses that rewrite (`mcp/src/server/tool-definitions/lifecycle.mjs:125`).
   - The app's rename rewrites `describes` (`src/entities/docs-vault/lib/authoring/rename-ref-rewrites.ts:17-28`).
-  - `findBacklinks` returns non-node referrers with `isNode: false` (`mcp/src/vault/graph-queries.mjs:179-215`).
+  - `findBacklinks` returns non-node referrers with `isNode: false` (`mcp/src/vault/graph/graph-queries.mjs:179-215`).
   - `delete_concept` previews backlinks before it deletes (`lifecycle.mjs:189-199`).
   - None of this has been exercised on a wiki fixture yet.
 - **No MCP tool writes a wiki page.**
-  - `add_relation` refuses an endpoint that is not a node (`mcp/src/tools/write-relations.mjs:115-118`).
+  - `add_relation` refuses an endpoint that is not a node (`mcp/src/tools/writes/write-relations.mjs:117-120`).
   - Pages are written as files, and the app judges each write with `judgePageWrite` → `validateWikiPage` (`src/features/library/lib/wiki/judge-page-write.ts:69-81`).
 - **Standing rules.**
   - Record `0f78a22b` (2026-11-18): agents write meaning in one run, without waiting for a yes.
@@ -351,3 +351,5 @@ All slices are Opus. Their files are disjoint.
 ## Revisions
 
 - 2026-11-19: first draft. The anchor is `describes:` slugs on the wiki page, written by the agent without approval and checked by the MCP's wiki schema. Vectors only rank candidates. The "only on a reviewed page" gate is overturned.
+- 2026-11-22: cites of `mcp/src/vault/` modules now name the subfolders the vault code was grouped into (`documents/`, `writes/`, `graph/`); no plan changed.
+- 2026-11-22: source line cites follow the code into the files and lines that hold it after the structure cleanup; a cite whose code changed keeps its file and drops the line; no plan changed.

@@ -1,4 +1,4 @@
 export type {
   Category,
-} from './types';
-export { DEFAULT_CATEGORIES } from './defaults';
+} from './category';
+export { DEFAULT_CATEGORIES } from './default-categories';

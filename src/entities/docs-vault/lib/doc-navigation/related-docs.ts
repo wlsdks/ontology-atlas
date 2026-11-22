@@ -1,4 +1,4 @@
-import type { VaultDoc } from '../../model/types';
+import type { VaultDoc } from '../../model/vault-manifest';
 
 export interface RelatedDocMatch {
   doc: VaultDoc;
@@ -8,9 +8,7 @@ export interface RelatedDocMatch {
 
 interface MatchInput {
   projectSlug: string;
-  /** e.g. "Demo Reactor", for title and body matching. */
   projectName?: string;
-  /** Hub or container ids when they differ from projectSlug. */
   aliases?: string[];
 }
 
@@ -33,7 +31,6 @@ export function findRelatedDocs(
     const summary = d.description || d.definitionPreview || '';
     const reasons: string[] = [];
     let score = 0;
-    // 1. frontmatter `projects` — a string or a string array.
     const fmProjects = extractProjectList(d.frontmatter);
     for (const p of fmProjects) {
       if (aliasesLc.includes(p.toLowerCase())) {

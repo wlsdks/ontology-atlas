@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { VaultManifest } from '../../model/types';
+import type { VaultManifest } from '../../model/vault-manifest';
 
 /**
  * The pooled read finishes files out of order; the manifest must still equal a serial read's,
@@ -8,10 +8,12 @@ import type { VaultManifest } from '../../model/types';
  */
 
 const nativeVaultFingerprint = vi.fn();
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
-  nativeVaultFingerprint: (rootPath: string) => nativeVaultFingerprint(rootPath),
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   readTauriVaultTextFile: async () => null,
   readTauriVaultTextFiles: async () => null,
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-fingerprint', () => ({
+  nativeVaultFingerprint: (rootPath: string) => nativeVaultFingerprint(rootPath),
 }));
 
 const { buildLocalManifest, buildLocalManifestWithEntries, rebuildLocalManifestIncremental } =

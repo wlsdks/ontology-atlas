@@ -4,6 +4,14 @@ import { SOURCE_STATE_COUNT, sourceStateIndex } from "./source-states";
 
 export type SourceGrouping = "folder" | "type";
 
+/**
+ * Two or more first-level folders read by folder; otherwise by file type when there are two or more.
+ * A folder walk publishes one folder first, so the shape is judged only once the read is complete.
+ */
+export function automaticGrouping(shape: { firstLevel: number; types: number }, readingCount: number | null): SourceGrouping {
+  return readingCount === null && shape.firstLevel < 2 && shape.types >= 2 ? "type" : "folder";
+}
+
 /** `root` holds the files directly in `sources/`; a folder row counts everything beneath it. */
 export type SourceGroupKind = "folder" | "root" | "type";
 

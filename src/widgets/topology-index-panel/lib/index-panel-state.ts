@@ -8,9 +8,6 @@ export type IndexPanelState = "expanded" | "collapsed";
 
 const VALID_STATES: readonly IndexPanelState[] = ["expanded", "collapsed"];
 
-/**
- * Parses `?index=`; anything but the two literals is null so bad links fall back to the default.
- */
 export function parseIndexPanelStateParam(
   raw: string | null | undefined,
 ): IndexPanelState | null {
@@ -20,7 +17,6 @@ export function parseIndexPanelStateParam(
     : null;
 }
 
-/** Resolves the effective state from the two optional sources + default. */
 export function resolveIndexPanelState(
   urlState: IndexPanelState | null,
   storedState: IndexPanelState | null,

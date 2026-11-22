@@ -1,25 +1,14 @@
-/**
- * The `/` command list the agent reports mid-session as `available_commands_update`, i.e.
- * what the agent found in the vault folder. Only what arrived is drawn; with nothing
- * arriving, `/` does nothing.
- */
+/** The `/` command list from `available_commands_update`, i.e. what the agent found in the vault folder; only what arrived is drawn. */
 
 export interface AcpSlashCommand {
-  /** The name typed after `/`. */
   name: string;
-  /** A one-line description, exactly as the adapter gave it. Empty string when absent. */
   description: string;
 }
 
 const cleanString = (value: unknown): string =>
   typeof value === 'string' ? value.trim() : '';
 
-/**
- * Reads the command list out of one `available_commands_update`.
- *
- * A malformed entry is **discarded silently** — with no name there is nothing to type, and throwing
- * away the whole list because one entry is odd would be worse.
- */
+/** A malformed entry is discarded silently: with no name there is nothing to type, and dropping the whole list for one odd entry would be worse. */
 export function readSlashCommands(update: unknown): AcpSlashCommand[] {
   const raw = (update as { availableCommands?: unknown } | null)?.availableCommands;
   if (!Array.isArray(raw)) return [];
@@ -37,12 +26,7 @@ export function readSlashCommands(update: unknown): AcpSlashCommand[] {
   return out;
 }
 
-/**
- * Is what is currently typed in the composer **choosing a command**, and if so, filtered by what?
- *
- * Only while the first character is `/` and there is no space yet — with arguments already being
- * typed (`/skill arg`), the choosing stage has passed.
- */
+/** Only while the first character is `/` and there is no space yet; with arguments being typed the choosing stage has passed. */
 export function slashQuery(draft: string): string | null {
   if (!draft.startsWith('/')) return null;
   const rest = draft.slice(1);
@@ -50,7 +34,6 @@ export function slashQuery(draft: string): string | null {
   return rest;
 }
 
-/** The commands matching this query. Everything when the query is empty. */
 export function matchSlashCommands(
   commands: readonly AcpSlashCommand[],
   query: string,

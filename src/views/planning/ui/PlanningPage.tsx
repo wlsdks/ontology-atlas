@@ -18,7 +18,7 @@ import { beginPlanningReturn, clearPlanningReturn } from '@/shared/lib/planning/
 import { readPlanningMemory, writePlanningMemory } from '@/shared/lib/planning/memory';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { MOTION } from '@/shared/motion';
 import { PlanningMarkdown, PlanningStandaloneImage } from './PlanningMarkdown';
 import { Button, CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip, ChromeTile, PageHeaderBar, useToast, WaitStage } from '@/shared/ui';
@@ -39,14 +39,12 @@ import { planningAddSummary } from '../model/add-summary';
 const ICON_ONLY_BELOW_XL = `${CHROME_CHIP_COMPACT_BELOW_XL} max-xl:[&_[data-chip-label]]:hidden`;
 
 const QUIET_TEXT = 'text-label leading-label text-[color:var(--color-text-tertiary)]';
-/** The title field of an empty home folder's stage. */
 const FIRST_TITLE = '[data-planning-first-title]';
 
 type HomeProbe = { root: FileSystemDirectoryHandle; directory: FileSystemDirectoryHandle | null };
 /** `original` is null when the editor reopened kept text over a file it could not read back. */
 type Editing = { path: string; text: string; original: string | null; identity: string; lineEnding: PlanningEditableText['lineEnding']; notice: 'refused' | 'failed' | null };
 
-/** The vault session names a Markdown file by its folder-relative path without `.md`. */
 function homeDocumentSlug(path: string): string {
   return `${PLANNING_HOME_FOLDER}/${path.replace(/\.md$/, '')}`;
 }
@@ -120,7 +118,6 @@ export function PlanningPage() {
   const workbench = arrival === 'workbench' && activeSelection !== null ? activeSelection : null;
   const isHome = workbench?.kind === 'home';
   const emptyHome = isHome && inventory !== null && inventory.files.length === 0 && status !== 'unavailable';
-  // The home folder's first answer decides between its stage and the panes, so neither is drawn before it.
   const homePending = isHome && inventory === null && status !== 'unavailable';
   const firstDocumentStage = emptyHome && editing === null;
   const panes = workbench !== null && !homePending && !firstDocumentStage;
@@ -317,7 +314,6 @@ export function PlanningPage() {
     return () => window.removeEventListener('beforeunload', warn);
   }, [unsaved]);
   const closeEditor = () => { setEditing(null); writePlanningMemory({ draft: null }); };
-  /** Runs `action` at once, or after the person agrees to drop unsaved editor text. */
   const leaveEditor = (action: () => void) => {
     if (unsaved) { setPendingLeave(() => action); return; }
     closeEditor();
@@ -347,7 +343,6 @@ export function PlanningPage() {
       enterSelection(homeSelection(vaultRoot, directory), fromStage);
     } catch { setCreateFailed(true); } finally { setCreatingHome(false); }
   };
-  /** From a picked folder: the home folder when it exists, otherwise the stage that offers to create it. */
   const returnHome = () => {
     if (home?.root === vaultRoot && home.directory) { void openHome(false); return; }
     dropSelection();
@@ -388,7 +383,6 @@ export function PlanningPage() {
       setDraftFailed(true);
     } finally { setCreatingDocument(false); }
   };
-  /** Copies picked files into the home folder, then opens the first one unless unsaved text is open. */
   const addFiles = async () => {
     if (activeSelection?.kind !== 'home' || adding) return;
     const scope = activeSelection;
@@ -446,8 +440,7 @@ export function PlanningPage() {
     } finally { setSaving(false); }
   };
   const go = (path: string, focus: 'history' | 'map') => { writePlanningMemory({ ...readPlanningMemory(), returnFocus: focus }); beginPlanningReturn(); router.push(path); };
-  /** The Library owns the service import and its agent turn; unsaved editor text stays in memory. */
-  const importFromService = () => { requestLibraryImport('planning'); navigateWithViewTransition(() => router.push('/library/')); };
+  const importFromService = () => { requestLibraryImport('planning'); navigateWithViewTransition('/library/', () => router.push('/library/')); };
   const observation = { revision: imageRevision, status: status === 'idle' ? 'checking' as const : status, checking: t('imageChecking'), unconfirmed: t('imageUnconfirmed'), checked: t('imageChecked'), attention: (name: string) => t('imageAttention', { image: name }), recovered: (name: string) => t('imageRecovered', { image: name }), blocked: (name: string, reason: string) => t('imageBlocked', { image: name, reason }), unnamed: (line: number, column: number) => t('imageUnnamed', { line, column }) };
   const files = inventory?.files.filter((file) => file.path.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map((file) => file.path) ?? [];
   const evidenceOpenable = status === 'ready' && !fileFailed && !fileChanged && Boolean(readPlanningMemory().identity);

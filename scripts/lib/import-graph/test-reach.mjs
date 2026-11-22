@@ -178,7 +178,7 @@ export function importClosure(files, root = process.cwd()) {
 
 const reachByRoot = new Map();
 
-export function loadTestReach(root = process.cwd()) {
+export function readTestReach(root = process.cwd()) {
   if (!reachByRoot.has(root)) reachByRoot.set(root, createTestReach(root));
   return reachByRoot.get(root);
 }

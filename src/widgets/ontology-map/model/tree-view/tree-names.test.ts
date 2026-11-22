@@ -12,8 +12,8 @@ import type {
   TreeNameSizes,
   TreeNodeKind,
   TreeRect,
-} from "./types";
-import { TREE_ARC_BUDGET } from "./types";
+} from "./tree-shapes";
+import { TREE_ARC_BUDGET } from "./tree-shapes";
 
 const SIZES: TreeNameSizes = {
   project: 24,

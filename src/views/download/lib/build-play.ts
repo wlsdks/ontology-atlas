@@ -18,15 +18,10 @@ export const MEASURE_BEAT = 8;
 
 export interface BuildState {
   phase: BuildPhase;
-  /** How far the agent's first map has come, 0 to `AGENT_BEATS`. */
   built: number;
-  /** The word the person chose for each concept named like code. */
   renamed: Partial<Record<CodeNamedId, number>>;
-  /** The concept being renamed. */
   renaming: CodeNamedId | null;
-  /** Indexes into `PERSON_RELATIONS` of the relations the person has drawn, in order. */
   links: readonly number[];
-  /** The concept pressed first while linking. */
   pick: BuildConceptId | null;
   /** Counts taps that did not fit; the line keys on it, so a second miss in a row replays. */
   misses: number;
@@ -45,18 +40,14 @@ export const INITIAL_BUILD: BuildState = { phase: 'closed', built: 0, renamed: {
 
 const past = (state: BuildState, beat: number) => state.phase !== 'closed' && (state.phase !== 'building' || state.built >= beat);
 
-/** Whether the agent has written this concept onto the map yet. */
 export const isWritten = (state: BuildState, concept: BuildConcept) => past(state, concept.beat);
-/** Whether the agent's own relations are on the map. */
 export const agentRelationsDrawn = (state: BuildState) => past(state, RELATIONS_BEAT);
-/** Whether Atlas has counted what to fix, so the code-like names and lone concepts are marked. */
 export const isMeasured = (state: BuildState) => past(state, MEASURE_BEAT);
 
 export const codeNamedLeft = (state: BuildState) => CODE_NAMED.filter((entry) => state.renamed[entry.concept] === undefined);
 export const relationsLeft = (state: BuildState) => PERSON_RELATIONS.filter((_, index) => !state.links.includes(index));
 export const isLinked = (state: BuildState, relation: (typeof PERSON_RELATIONS)[number]) => state.links.includes(PERSON_RELATIONS.indexOf(relation));
 
-/** The other end of the picked concept's relation, while linking. */
 export function partnerOf(state: BuildState): BuildConceptId | null {
   if (state.pick === null) return null;
   const relation = relationsLeft(state).find((rel) => rel.from === state.pick || rel.to === state.pick);
@@ -64,7 +55,6 @@ export function partnerOf(state: BuildState): BuildConceptId | null {
   return relation.from === state.pick ? relation.to : relation.from;
 }
 
-/** The concepts that glow for the next tap; the first is the one a hint points at. */
 export function targetConcepts(state: BuildState): BuildConceptId[] {
   switch (state.phase) {
     case 'rename':
@@ -80,14 +70,12 @@ export function targetConcepts(state: BuildState): BuildConceptId[] {
   }
 }
 
-/** Concepts a linking press may start from: either end of a relation still to draw. */
 export const linkEnds = (state: BuildState): BuildConceptId[] =>
   state.phase === 'linking' && state.pick === null ? relationsLeft(state).flatMap((rel) => [rel.to, rel.from]) : [];
 
 export const BUILD_STEPS = ['open', 'build', 'rename', 'link', 'change', 'done'] as const;
 export type BuildStep = (typeof BUILD_STEPS)[number];
 
-/** The step the progress row marks as now. */
 export function stepOf(phase: BuildPhase): number {
   const step: Record<BuildPhase, BuildStep> = {
     closed: 'open',
@@ -143,6 +131,5 @@ function tap(state: BuildState, concept: BuildConceptId): BuildState {
   return { ...state, links, pick: null, phase: links.length === PERSON_RELATIONS.length ? 'commit' : 'linking' };
 }
 
-/** Whether a relation is on the map: the agent's once drawn, the person's once linked. */
 export const isRelationDrawn = (state: BuildState, relation: (typeof BUILD_RELATIONS)[number]) =>
   relation.by === 'agent' ? agentRelationsDrawn(state) : isLinked(state, relation);

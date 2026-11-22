@@ -61,7 +61,7 @@ describe("ConceptEgoGraph drawn neighbour count", () => {
       <ConceptEgoGraph ego={ego(4)} bearingLabel={() => "담고 있는 것"} moreLabel={(n) => `외 ${n}`} activeId="n2" />,
     );
     const labels = screen.getAllByTestId("atlas-git-ego-label");
-    expect(labels.map((el) => el.textContent)).toEqual(["이웃 2"]);
+    expect(labels.map((element) => element.textContent)).toEqual(["이웃 2"]);
     expect(labels[0].style.paintOrder).toBe("stroke");
   });
 

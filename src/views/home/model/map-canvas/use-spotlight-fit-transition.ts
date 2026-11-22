@@ -10,7 +10,6 @@ export interface SpotlightFitSignatureInput {
   expandAllActive: boolean;
 }
 
-/** Encoded, not concatenated, so a user slug cannot collide through a delimiter. */
 export function buildSpotlightFitSignature({
   recentWindow,
   spotlightOn,

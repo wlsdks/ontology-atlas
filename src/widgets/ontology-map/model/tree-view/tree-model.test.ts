@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { TreeInputEdge, TreeInputNode } from "../containment-tree";
 import { buildTreeModel, readTreeFocus } from "./tree-model";
-import type { TreeModel } from "./types";
+import type { TreeModel } from "./tree-shapes";
 
 const concept = (id: string, kind: TreeInputNode["kind"], label = id): TreeInputNode => ({ id, label, kind });
 const contains = (parent: string, child: string): TreeInputEdge => ({ source: parent, target: child, kind: "contains", relationType: "contains" });

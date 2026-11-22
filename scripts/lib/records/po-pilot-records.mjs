@@ -62,7 +62,7 @@ function appendRows(source, heading, rows) {
   return `${source.slice(0, at).replace(/\s*$/, '')}\n${rows.join('\n')}\n${source.slice(at)}`;
 }
 
-export function loadPoPilotRecords({ root = process.cwd(), relativePath = 'docs/PO-PILOT.md' } = {}) {
+export function readPoPilotRecords({ root = process.cwd(), relativePath = 'docs/PO-PILOT.md' } = {}) {
   const legacy = readFrozenDocument(relativePath, { root });
   const runs = fragments(root, RUN_DIR, 'po-pilot-run/v1');
   const updates = fragments(root, UPDATE_DIR, 'po-pilot-update/v1');
@@ -107,6 +107,6 @@ export function loadPoPilotRecords({ root = process.cwd(), relativePath = 'docs/
 
 export function readPoPilotSource(relativePath, { root = process.cwd() } = {}) {
   if (relativePath !== 'docs/PO-PILOT.md') return null;
-  const loaded = loadPoPilotRecords({ root, relativePath });
+  const loaded = readPoPilotRecords({ root, relativePath });
   return { content: loaded.content, inputs: loaded.inputs };
 }

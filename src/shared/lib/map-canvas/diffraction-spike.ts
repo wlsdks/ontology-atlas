@@ -1,15 +1,12 @@
 /**
- * **The four-point diffraction spike** — the cross a bright point of light wears.
- *
- * Pulled out of `widgets/ontology-map/render/starfield.ts` so the walked-path star
- * (`shared/lib/map-canvas/star-emission.ts`) can wear it in the settings preview as well as on the map.
- * Solid tapering slivers, no gradient, blur or glow: the shape is the signature.
+ * The four-point diffraction spike, the cross a bright point of light wears. Shared with the walked-path
+ * star (`star-emission.ts`) so the settings preview draws it too. Solid tapering slivers, no gradient,
+ * blur or glow: the shape is the signature.
  */
 
 export interface DiffractionSpikeDrawState {
   screenX: number;
   screenY: number;
-  /** Node's own screen-space draw radius — spike arm lengths scale off this (`r*2.6`/`r*1.5`). */
   screenRadius: number;
   color: string;
   /** farT-gated — spike is invisible at farT<=0.02, fully present by farT=1 (prototype: `alpha = farT`). */
@@ -26,7 +23,6 @@ export interface DiffractionSpikeDrawState {
   maxLong?: number;
 }
 
-/** Draws one crisp 4-point diffraction spike — solid tapering slivers, no gradient/blur/glow. */
 export function drawDiffractionSpike(ctx: CanvasRenderingContext2D, state: DiffractionSpikeDrawState): void {
   if (state.alpha <= 0.01) return;
   const { screenX: cx0, screenY: cy0, screenRadius: r, color, alpha, rotation, maxLong } = state;

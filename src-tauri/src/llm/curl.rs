@@ -1,5 +1,5 @@
 use super::http_output;
-use crate::errors::coded;
+use crate::coded_error::coded;
 use std::process::Command;
 
 /// No secret on argv; URL, headers and body go via stdin.
@@ -84,7 +84,7 @@ pub(crate) fn run_curl_until(
     deadline: Option<std::time::Instant>,
 ) -> Result<(u16, String), String> {
     let mut command = Command::new("curl");
-    crate::no_console::hide_console(&mut command);
+    crate::child_process::no_console::hide_console(&mut command);
     command.args(argv);
     let ends = http_output::Ends { cancel, deadline };
     let captured = http_output::capture_until(command, config.as_bytes(), ends);

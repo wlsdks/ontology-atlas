@@ -15,19 +15,16 @@ import {
   type Point,
   type Route,
 } from '../lib/closing-map';
-import { buildFilmScene, labelBox, placeLabels, type FilmScene } from '../lib/film-scene';
-import { easeInOut, easeOut, lerp } from '../lib/film-kit';
-import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
+import { buildFilmScene, labelBox, placeLabels, type FilmScene } from '../lib/film/film-scene';
+import { easeInOut, easeOut, lerp } from '../lib/film/timeline/film-easing';
+import { registerGatedFrameClient } from '../lib/page-motion/gateway-frame-loop';
 import type { StageGraph } from '../lib/stage-graph';
 
-/** The draw-in, from the core's first light to the last strand. */
 const DRAW_MS = 1800;
-/** After the draw-in, signals travel the bundled relations: this many at once, each on its own beat. */
 const PULSES = 7;
 const PULSE_PERIOD_MS = 4200;
 const PULSE_TRAVEL_MS = 2800;
 const PULSE_TRAIL = 0.14;
-/** The hubs' slow breath, and how long the ambient layer takes to come in or return. */
 const BREATH_MS = 5200;
 const PRESENCE_MS = 900;
 const SPRITE = 256;
@@ -67,7 +64,6 @@ function readPalette(): Palette {
   };
 }
 
-/** A soft light: three nested falloffs stamped once, so its edge fades like light, not a cone. */
 function softSprite(color: string): HTMLCanvasElement {
   const sprite = document.createElement('canvas');
   sprite.width = SPRITE;
@@ -111,12 +107,10 @@ interface Layout {
   wide: boolean;
   root: number;
   hub: Point;
-  /** The domains' mean distance from the core (vertical radius) and the map's x/y stretch. */
   orbit: number;
   squash: number;
   at: Point[];
   mark: number[];
-  /** 0..1 of the draw-in: when each mark lands, its branch having grown from its container. */
   land: number[];
   branches: { route: Route; tier: 1 | 2 | 3; from: number }[];
   bundles: { route: Route; begin: number; crosses: boolean }[];
@@ -175,7 +169,6 @@ function layoutMap(ctx: CanvasRenderingContext2D, scene: FilmScene, palette: Pal
     return { i: d, r: Math.max(40, reach * 1.35) };
   });
 
-  /* Names: the project and its domains, placed clear of each other and their marks. */
   const nameSize = wide ? palette.title : palette.bodyLg;
   const strong = `${FONT_WEIGHT.strong} ${nameSize}px ${palette.sans}`;
   const quiet = `${FONT_WEIGHT.signature} ${palette.body}px ${palette.sans}`;
@@ -250,12 +243,10 @@ function layoutMap(ctx: CanvasRenderingContext2D, scene: FilmScene, palette: Pal
   return { wide, root: rootIndex, hub, orbit, squash: sx / sy, at, mark, land, branches, bundles, pools, labels };
 }
 
-/** One draw-in frame at progress `u` (0..1); at 1 it is the resting map. */
 function drawMap(ctx: CanvasRenderingContext2D, scene: FilmScene, L: Layout, P: Palette, S: Sprites, scratch: Point, w: number, h: number, u: number) {
   ctx.clearRect(0, 0, w, h);
   const root = L.root;
 
-  /* Light pools first: the core's warmth and each domain's region, added as light. */
   ctx.globalCompositeOperation = 'lighter';
   const core = easeOut(u / 0.3);
   if (core > 0) {
@@ -271,7 +262,6 @@ function drawMap(ctx: CanvasRenderingContext2D, scene: FilmScene, L: Layout, P: 
     ctx.drawImage(S.bright, L.at[i]!.x - r, L.at[i]!.y - r, r * 2, r * 2);
   }
 
-  /* Bundled relations, each stroked alone so where they gather their light adds up. */
   ctx.lineWidth = 1;
   ctx.strokeStyle = P.bright;
   for (let k = 0; k < L.bundles.length; k += 1) {
@@ -285,7 +275,6 @@ function drawMap(ctx: CanvasRenderingContext2D, scene: FilmScene, L: Layout, P: 
   }
   ctx.globalCompositeOperation = 'source-over';
 
-  /* The domains' orbit, a faint ring that gives the map its depth and the core its centre. */
   const orbit = easeInOut((u - 0.1) / 0.5);
   if (orbit > 0 && L.orbit > 0) {
     ctx.globalAlpha = 0.09;
@@ -296,10 +285,6 @@ function drawMap(ctx: CanvasRenderingContext2D, scene: FilmScene, L: Layout, P: 
     ctx.stroke();
   }
 
-  /*
-   * The tree: trunks in the core's amber, branches in indigo, twigs as faint ink. Trunks and
-   * branches carry a wide faint pass under the line, so they read as lit rather than ruled.
-   */
   for (let pass = 0; pass < 5; pass += 1) {
     const tier = pass < 2 ? 1 : pass < 4 ? 2 : 3;
     const under = pass === 0 || pass === 2;
@@ -317,7 +302,6 @@ function drawMap(ctx: CanvasRenderingContext2D, scene: FilmScene, L: Layout, P: 
     ctx.stroke();
   }
 
-  /* Marks, deepest first so the hubs sit on top. */
   for (let depth = 3; depth >= 0; depth -= 1) {
     for (let i = 0; i < scene.nodes.length; i += 1) {
       const node = scene.nodes[i]!;
@@ -363,7 +347,6 @@ function drawMap(ctx: CanvasRenderingContext2D, scene: FilmScene, L: Layout, P: 
     }
   }
 
-  /* Names on a soft pool of the page's ground, so they read without an outline. */
   ctx.textBaseline = 'middle';
   for (let k = 0; k < L.labels.length; k += 1) {
     const label = L.labels[k]!;
@@ -383,10 +366,6 @@ function drawMap(ctx: CanvasRenderingContext2D, scene: FilmScene, L: Layout, P: 
   ctx.globalAlpha = 1;
 }
 
-/**
- * The living layer over the rested map: signals travel the bundled relations in their declared
- * direction, and the hubs breathe. `presence` (0..1) fades the whole layer in and out.
- */
 function drawSignals(ctx: CanvasRenderingContext2D, scene: FilmScene, L: Layout, P: Palette, S: Sprites, scratch: Point, w: number, h: number, clock: number, presence: number) {
   ctx.clearRect(0, 0, w, h);
   if (presence <= 0.002 || L.bundles.length === 0) return;
@@ -444,11 +423,11 @@ export function ClosingMap({ graph, className }: { graph: StageGraph; className?
   const signalCanvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const el = mapCanvas.current;
-    const glowEl = signalCanvas.current;
-    const ctx = el?.getContext('2d');
-    const glow = glowEl?.getContext('2d');
-    if (!el || !glowEl || !ctx || !glow || scene.nodes.length === 0) return;
+    const canvasElement = mapCanvas.current;
+    const glowElement = signalCanvas.current;
+    const ctx = canvasElement?.getContext('2d');
+    const glow = glowElement?.getContext('2d');
+    if (!canvasElement || !glowElement || !ctx || !glow || scene.nodes.length === 0) return;
     const palette = readPalette();
     const sprites: Sprites = { amber: softSprite(palette.amber), bright: softSprite(palette.bright), ground: softSprite(palette.ground) };
     const scratch: Point = { x: 0, y: 0 };
@@ -470,20 +449,20 @@ export function ClosingMap({ graph, className }: { graph: StageGraph; className?
     };
     const resize = () => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
-      w = el.clientWidth;
-      h = el.clientHeight;
-      el.width = Math.round(w * dpr);
-      el.height = Math.round(h * dpr);
+      w = canvasElement.clientWidth;
+      h = canvasElement.clientHeight;
+      canvasElement.width = Math.round(w * dpr);
+      canvasElement.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       /* Soft light only, so one device pixel per CSS pixel is enough and costs a quarter. */
-      glowEl.width = Math.round(w);
-      glowEl.height = Math.round(h);
+      glowElement.width = Math.round(w);
+      glowElement.height = Math.round(h);
       layout = layoutMap(ctx, scene, palette, w, h);
       paintMap();
       paintSignals();
     };
     const observer = new ResizeObserver(resize);
-    observer.observe(el);
+    observer.observe(canvasElement);
     resize();
     if (still) {
       paintMap();
@@ -498,7 +477,7 @@ export function ClosingMap({ graph, className }: { graph: StageGraph; className?
     };
     if (elapsed < DRAW_MS) {
       stopDraw = registerGatedFrameClient(
-        el,
+        canvasElement,
         ({ dtMs }) => {
           elapsed = Math.min(DRAW_MS, elapsed + dtMs);
           paintMap();
@@ -509,9 +488,8 @@ export function ClosingMap({ graph, className }: { graph: StageGraph; className?
         { keepAwake: true },
       );
     }
-    /* Ambient: sleeps with the page's other loops, its light fading as the sleep factor falls. */
     const stopSignals = registerGatedFrameClient(
-      glowEl,
+      glowElement,
       ({ dtMs, factor }) => {
         if (elapsed < DRAW_MS) return;
         clock += dtMs * factor;

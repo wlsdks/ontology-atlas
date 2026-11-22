@@ -91,8 +91,8 @@ function imageResources(read: ReadImage) {
         void (async (): Promise<ImageResult> => {
           const bytes = await read(path);
           if (!current()) return { url: null, limited: false };
-          const info = planningImageInfo(path, bytes);
-          if (!info) { removePrevious(); return { url: null, limited: false }; }
+          const imageDetails = planningImageInfo(path, bytes);
+          if (!imageDetails) { removePrevious(); return { url: null, limited: false }; }
           const previous = entry.value;
           if (previous && previous.blob.size === bytes.length && typeof previous.blob.arrayBuffer === 'function') {
             const oldBytes = new Uint8Array(await previous.blob.arrayBuffer());
@@ -100,12 +100,12 @@ function imageResources(read: ReadImage) {
             if (oldBytes.every((byte, index) => byte === bytes[index])) return { url: previous.url, limited: false };
           }
           const byteReservation = Math.max(0, bytes.length - (previous?.blob.size ?? 0));
-          const pixelReservation = Math.max(0, info.pixels - (previous?.pixels ?? 0));
+          const pixelReservation = Math.max(0, imageDetails.pixels - (previous?.pixels ?? 0));
           if (total + reservedBytes + byteReservation > MAX_IMAGE_BYTES || pixels + reservedPixels + pixelReservation > MAX_IMAGE_PIXELS) {
             removePrevious();
             return { url: null, limited: true };
           }
-          const blob = new Blob([new Uint8Array(bytes)], { type: info.mime });
+          const blob = new Blob([new Uint8Array(bytes)], { type: imageDetails.mime });
           const url = URL.createObjectURL(blob);
           urls.add(url);
           reservedBytes += byteReservation;
@@ -119,15 +119,15 @@ function imageResources(read: ReadImage) {
             if (current()) removePrevious();
             return { url: null, limited: false };
           }
-          if (total - (previous?.blob.size ?? 0) + blob.size > MAX_IMAGE_BYTES || pixels - (previous?.pixels ?? 0) + info.pixels > MAX_IMAGE_PIXELS) {
+          if (total - (previous?.blob.size ?? 0) + blob.size > MAX_IMAGE_BYTES || pixels - (previous?.pixels ?? 0) + imageDetails.pixels > MAX_IMAGE_PIXELS) {
             if (urls.delete(url)) URL.revokeObjectURL(url);
             removePrevious();
             return { url: null, limited: true };
           }
           removePrevious();
           total += blob.size;
-          pixels += info.pixels;
-          entry.value = { url, blob, pixels: info.pixels };
+          pixels += imageDetails.pixels;
+          entry.value = { url, blob, pixels: imageDetails.pixels };
           return { url, limited: false };
         })().catch(() => { if (current()) removePrevious(); return { url: null, limited: false }; })
           .then(resolve).finally(() => { running--; pump(); });

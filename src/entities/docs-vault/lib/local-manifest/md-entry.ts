@@ -8,7 +8,7 @@ import { citesReadLines } from '@/shared/lib/vault-document/line-cite';
 import { meaningFindings } from '@/shared/lib/vault-document/meaning-findings';
 import { extractProjectMeaningEvidencePaths } from '@/shared/lib/project-source/project-meaning-evidence';
 import type { WalkEntry } from './walk-vault';
-import type { VaultDoc } from '../../model/types';
+import type { VaultDoc } from '../../model/vault-manifest';
 
 /**
  * Frontmatter keys whose refs count as backlinks: the same set as `mcp/src/vault/`
@@ -51,7 +51,6 @@ export function slugTail(slug: string): string {
   return slug.split('/').pop() ?? slug;
 }
 
-/** Resolves a frontmatter ref by exact slug or unique tail; null for no match or an ambiguous tail. */
 export type RefResolver = (ref: string) => string | null;
 
 /**
@@ -90,15 +89,12 @@ export function backlinkTargets(doc: VaultDoc, resolve: RefResolver): Set<string
   return targets;
 }
 
-/** One built file; `handle` and `lastModified` let an incremental rebuild reuse it unchanged. */
 export interface BuiltVaultEntry {
   relativePath: string;
   lastModified: number;
   handle: FileSystemFileHandle;
   kind: 'md' | 'image' | 'source';
-  /** Raw sources only — byte length, so the list can state a size without a read. */
   bytes?: number;
-  /** Markdown only — the document's spine. */
   doc?: VaultDoc;
 }
 
@@ -122,7 +118,6 @@ function internDoc(doc: VaultDoc, internMetadata: (value: string) => string): Va
   return doc;
 }
 
-/** Pure: one `.md` body to a BuiltVaultEntry holding its spine. */
 export function buildMdEntry(
   entry: WalkEntry,
   raw: string,
@@ -198,7 +193,6 @@ function survivesJson(value: unknown): boolean {
 /** A detail field or row key only an older producer wrote; such a row is never read. */
 const NOT_SPINE_DOC_KEYS = ['headings', 'excerpt', 'wordCount'];
 
-/** A stored value back to the entry `buildMdEntry` made from the same file version. */
 export function storedMdEntry(
   entry: WalkEntry,
   value: unknown,

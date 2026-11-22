@@ -96,12 +96,12 @@ fn a_leftover_transition_temporary_is_removed_by_the_vault_open_sweep() {
     fs::write(&leftover, "partial").unwrap();
     let root = fs::canonicalize(root).unwrap();
     let later = std::time::SystemTime::now()
-        + crate::vault::temp_sweep::STALE_AFTER
+        + crate::vault::temporary_files::sweep::STALE_AFTER
         + std::time::Duration::from_secs(1);
-    let removed = crate::vault::temp_sweep::sweep_stale_temporaries(
+    let removed = crate::vault::temporary_files::sweep::sweep_stale_temporaries(
         &root,
         later,
-        crate::vault::temp_sweep::STALE_AFTER,
+        crate::vault::temporary_files::sweep::STALE_AFTER,
     );
     assert_eq!(removed, 1);
     fs::remove_dir_all(root).ok();

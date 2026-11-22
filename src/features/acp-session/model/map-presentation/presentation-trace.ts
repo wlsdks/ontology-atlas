@@ -52,7 +52,6 @@ export type KnownRelations = Pick<ReadonlySet<string>, "has">;
 
 interface BuildAcpPresentationTraceInput {
   intent: AcpPresentationIntent | null;
-  /** Exact app-authored request that activates this projection for one turn. */
   expectedUserText: string | null;
   sessionStatus: AcpSessionStatus;
   events: readonly AcpEvent[];
@@ -64,11 +63,7 @@ const MIN_SCENES = 3;
 const MAX_SCENES = 7;
 const FULL_BODY_CONCEPT_LIMIT = 12;
 
-/**
- * A presentation may use only Atlas reads whose results describe the vault. A
- * general filesystem/source tool would make "ontology only" a prompt request,
- * not an observed property of the turn.
- */
+/** A general filesystem/source tool would make "ontology only" a prompt request, not an observed property of the turn. */
 const PRESENTATION_READ_TOOLS = new Set([
   'connection_info',
   'list_concepts',
@@ -94,13 +89,7 @@ export function presentationRelationKey(from: string, to: string, type: string):
   return `${from}\0${type}\0${to}`;
 }
 
-/**
- * The rendered graph intentionally folds the authoring fields `capabilities:`
- * and `elements:` into one containment edge. Preserve those exact authoring
- * names for presentation verification only when the contained node kind proves
- * which alias it is; a project→domain `contains` edge must never pass as a
- * capability or element relation.
- */
+/** The rendered graph folds `capabilities:`/`elements:` into one containment edge; restore the authoring name only when the contained node kind proves which alias it is, so a project→domain `contains` never passes as a capability or element relation. */
 export function presentationRelationKeysForGraphEdge({
   from,
   to,
@@ -160,10 +149,7 @@ function narrativeSections(text: string): NarrativeSection[] {
   for (const line of normalized.split('\n')) {
     const heading = HEADING_PATTERN.exec(line.trim());
     if (heading) {
-      // ACP may precede the requested deck with one conversational sentence.
-      // It remains visible in chat, but only explicitly headed sections become
-      // presentation scenes; silently promoting that preamble would create an
-      // unrequested, usually uncited seventh scene.
+      // ACP may precede the deck with a conversational sentence; promoting it would create an unrequested, usually uncited extra scene.
       if (sawHeading) flush();
       else body = [];
       sawHeading = true;
@@ -203,12 +189,7 @@ function firstUnknownRelation(
   return null;
 }
 
-/**
- * Turns the latest completed, source-hidden ACP answer into an ephemeral guided
- * trace. This does not judge prose as true: it only proves that every scene is
- * anchored to a full body read from this turn and that any typed relation it
- * spells out exists in the current graph.
- */
+/** Proves every scene is anchored to a full body read from this turn and that any typed relation it spells out exists in the graph; it does not judge prose as true. */
 export function buildAcpPresentationTrace({
   intent,
   expectedUserText,
@@ -300,9 +281,7 @@ export function buildAcpPresentationTrace({
     if (mentionedSlugs.length === 0) {
       return { status: 'blocked', reason: 'scene_uncited', target: section.title ?? `${index + 1}` };
     }
-    // A scene needs at least one full-body anchor. Other known slugs may be
-    // discussed as neighbours or dependency endpoints exposed by that anchor;
-    // they are not promoted to citation chips unless their own body was read.
+    // Other known slugs may be discussed as neighbours; they become citation chips only when their own body was read.
     const citations = mentionedSlugs.filter((slug) => readBySlug.has(slug));
     if (citations.length === 0) {
       return {

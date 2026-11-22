@@ -70,8 +70,8 @@ describe("useOpenDocTabs", () => {
     // previous session's tabs.
     seed(["a", "b", "c"]);
     const deferred: Array<() => void> = [];
-    vi.spyOn(globalThis, "queueMicrotask").mockImplementation((fn) => {
-      deferred.push(fn as () => void);
+    vi.spyOn(globalThis, "queueMicrotask").mockImplementation((callback) => {
+      deferred.push(callback as () => void);
     });
 
     const { result } = renderHook(() =>
@@ -94,7 +94,7 @@ describe("useOpenDocTabs", () => {
     ]);
 
     act(() => {
-      deferred.forEach((fn) => fn());
+      deferred.forEach((callback) => callback());
     });
 
     expect(result.current.tabs.map((tab) => tab.slug)).toEqual([

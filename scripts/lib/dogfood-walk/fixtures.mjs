@@ -1,7 +1,6 @@
 // Shared test fixtures for the dogfood MCP walk test suite: mock MCP
 // responses (initialize, tools/list, per-tool "ok" shapes) used across the
 // split test modules in this directory.
-// Split out of scripts/dogfood/dogfood-mcp-walk.test.mjs (structural decomposition, logic unchanged).
 import { readFileSync } from "node:fs";
 
 import { EXPECTED_TOOLS } from "../../../mcp/scripts/verify/tools-list/inventory.mjs";
@@ -10,7 +9,7 @@ import {
   QUERY_ONTOLOGY_OPERATIONS,
   WRITE_RELATION_TYPE_VALUES,
 } from "../../../mcp/src/ontology-engine.mjs";
-import { GRAPH_ARRAY_KEYS } from "../../../mcp/src/vault/relation-refs.mjs";
+import { GRAPH_ARRAY_KEYS } from "../../../mcp/src/vault/graph/relation-refs.mjs";
 import { TOOLS_FOR_LIST } from "../../../mcp/src/server/registry.mjs";
 export const ROOT_PKG = JSON.parse(readFileSync("package.json", "utf-8"));
 const DOGFOOD_UID = "11111111-1111-4111-8111-111111111111";

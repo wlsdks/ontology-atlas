@@ -31,8 +31,8 @@ export function partialQuadratic(
     return { a, control: ac, b: lerp(ac, lerp(c, b, k), k) };
   }
   const s = 1 - k;
-  const cb = lerp(c, b, s);
-  return { a: lerp(lerp(a, c, s), cb, s), control: cb, b };
+  const controlTowardB = lerp(c, b, s);
+  return { a: lerp(lerp(a, c, s), controlTowardB, s), control: controlTowardB, b };
 }
 
 export function revealEnd(directional: boolean, sourceId: string, attendedId: string | null): RevealEnd {

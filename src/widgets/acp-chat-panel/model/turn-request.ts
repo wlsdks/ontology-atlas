@@ -1,4 +1,4 @@
-import type { AcpTurnRequest, AcpTurnRequestAction } from '../ui/chat-panel/types';
+import type { AcpTurnRequest, AcpTurnRequestAction } from '../ui/chat-panel/chat-panel-props';
 
 interface RequestFacts {
   title: string | null;
@@ -17,14 +17,12 @@ const ACTION_BY_KIND: Readonly<Record<string, AcpTurnRequestAction>> = {
   fetch: 'read',
 };
 
-/** A path inside the folder by its folder-relative name; any other path whole. */
 function folderRelative(path: string, vaultRoot: string | null): string {
   const normalized = path.replaceAll('\\', '/');
   const root = vaultRoot?.replaceAll('\\', '/').replace(/\/+$/, '') ?? null;
   return root && normalized.startsWith(`${root}/`) ? normalized.slice(root.length + 1) : path;
 }
 
-/** Who wants what, as the work card names a waiting request away from its conversation. */
 export function turnRequestOf(request: RequestFacts, vaultRoot: string | null): AcpTurnRequest {
   const title = request.title?.trim() || null;
   if (request.reviewKind === 'ontology-write') return { action: 'ontology', target: title };

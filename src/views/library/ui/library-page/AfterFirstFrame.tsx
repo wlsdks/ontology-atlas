@@ -3,10 +3,9 @@
 import { startTransition, useEffect, useState, type ReactNode } from "react";
 
 /**
- * Mounts `children` after the frame that drew this box, holding their flex room with an empty box
- * meanwhile. A settled folder renders them as a transition, so React slices the work across frames.
- * While the folder is still being read, every arriving part would restart that transition and hold
- * the first rows back until the read ends, so the mount is a plain update one frame later instead.
+ * Mounts `children` one frame after this box is drawn, holding their flex room meanwhile. While the
+ * folder is still being read every arriving part would restart a transition and hold the first rows
+ * back, so the mount is a plain update instead.
  */
 export function AfterFirstFrame({ children, reading }: { children: ReactNode; reading: boolean }) {
   const [ready, setReady] = useState(false);

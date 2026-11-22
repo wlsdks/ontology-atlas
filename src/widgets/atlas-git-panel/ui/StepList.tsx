@@ -12,7 +12,6 @@ import { cn } from "@/shared/lib/cn";
 import type { Translator } from "../lib/translator";
 import type { WorkbenchSelection } from "../model/use-workbench-selection";
 
-/** Stagger cap — the first 8 rows arrive in order and everything after shares one frame. */
 const MAX_STAGGER_INDEX = 8;
 
 function staggerStyle(index: number): React.CSSProperties {
@@ -103,26 +102,26 @@ export function StepListScroller({
    */
   const [edge, setEdge] = useState({ top: false, bottom: false });
   const readEdge = useCallback(() => {
-    const el = ref.current;
-    if (!el || el.clientHeight < 1) return;
-    const top = el.scrollTop > 1;
-    const bottom = el.scrollHeight - el.clientHeight - el.scrollTop > 1;
-    setEdge((prev) => (prev.top === top && prev.bottom === bottom ? prev : { top, bottom }));
+    const element = ref.current;
+    if (!element || element.clientHeight < 1) return;
+    const top = element.scrollTop > 1;
+    const bottom = element.scrollHeight - element.clientHeight - element.scrollTop > 1;
+    setEdge((previous) => (previous.top === top && previous.bottom === bottom ? previous : { top, bottom }));
   }, []);
   useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
     const read = () => {
       readEdge();
       // An unmeasured box (a test DOM, a hidden panel) has no room to fill.
-      if (el.clientHeight < 1) return setRoomy(false);
-      const rowHeightPx = Number.parseFloat(getComputedStyle(el).getPropertyValue("--git-row-h")) || 40;
-      setRoomy(el.scrollHeight - el.clientHeight < rowHeightPx);
+      if (element.clientHeight < 1) return setRoomy(false);
+      const rowHeightPx = Number.parseFloat(getComputedStyle(element).getPropertyValue("--git-row-h")) || 40;
+      setRoomy(element.scrollHeight - element.clientHeight < rowHeightPx);
     };
     read();
     const observer = new ResizeObserver(read);
-    observer.observe(el);
-    const list = el.firstElementChild;
+    observer.observe(element);
+    const list = element.firstElementChild;
     if (list) observer.observe(list);
     return () => observer.disconnect();
   }, [readEdge]);
@@ -177,19 +176,14 @@ export function StepList({
 }: {
   t: Translator;
   history: GitCommitInfo[];
-  /** Older steps exist beyond the list — the list ends with a row that fetches them, never silently. */
   hasMore: boolean;
   moreBusy: boolean;
   onMore: () => void;
-  /** Step hash → the vault concepts it changed, from per-commit kind and slug matched to the graph. */
   concepts: ReadonlyMap<string, readonly { id: string; label: string; kind: string }[]>;
-  /** Hash of the commit just recorded — only that one row gets the settle ramp. */
   settledHash?: string | null;
-  /** Number of uncommitted changes; at 0 the row is not drawn. */
   pendingCount: number;
   selection: WorkbenchSelection;
   setSelection: (v: WorkbenchSelection) => void;
-  /** Number of steps not yet pushed — they are the top N of the list. */
   ahead: number | null;
   /** Steps that exist only on the remote. They are not in local history, so this is **guidance, not a row**. */
   behind: number | null;
@@ -261,7 +255,6 @@ export function StepList({
           </button>
         </li>
       ) : null}
-      {/* Uncommitted changes use the commit row grammar, marked by a dashed line and "now". */}
       {pendingCount > 0 ? (
         <li>
           <button
@@ -293,10 +286,6 @@ export function StepList({
         const summary = describeSnapshotSubject(commit.subject);
         const human = humanizeStepSubject(t, commit.subject);
         const headline = human ?? stripConventionalPrefix(commit.subject);
-        /*
-         * The why column: a person's subject, or for an automatic subject its counts in the
-         * reader's language instead of the raw snapshot string.
-         */
         const why = human ? t("stepAutoSubject", { summary: human }) : stripConventionalPrefix(commit.subject);
         const stepConcepts = concepts.get(commit.hash) ?? [];
         const names = summary.slugs.join(", ");
@@ -338,7 +327,6 @@ export function StepList({
               <span className="truncate text-label tabular-nums text-[color:var(--color-text-tertiary)]">
                 {commit.relativeTime}
               </span>
-              {/* The subject is the concept; a step without one falls back to the summary or raw subject. */}
               <span className="flex min-w-0 items-center gap-2.5 truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                 {stepConcepts.length > 0 ? (
                   <>
@@ -369,10 +357,6 @@ export function StepList({
           </Fragment>
         );
       })}
-      {/*
-        The list ends with a fact: a row that fetches older steps in place, or the folder's first
-        step.
-      */}
       {hasMore ? (
         <li className="grid grid-cols-[var(--git-when-w)_minmax(0,1fr)] items-center gap-3 border-b border-[color:var(--color-divider)] px-4 py-1.5">
           <span aria-hidden />

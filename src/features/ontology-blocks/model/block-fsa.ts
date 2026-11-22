@@ -1,8 +1,6 @@
 import { BLOCK_MANIFEST_FILENAME } from './block-manifest';
 import type { BlockImportFile } from './merge-plan';
 
-/** Block folder IO over the structural minimum of the File System Access API, so tests can use a fake. */
-
 interface BlockFileLike {
   text(): Promise<string>;
 }
@@ -25,20 +23,19 @@ export interface BlockDirectoryHandleLike {
   values(): AsyncIterableIterator<BlockDirEntryLike> | AsyncIterable<BlockDirEntryLike>;
   getDirectoryHandle(
     name: string,
-    opts?: { create?: boolean },
+    options?: { create?: boolean },
   ): Promise<BlockDirectoryHandleLike>;
-  getFileHandle(name: string, opts?: { create?: boolean }): Promise<BlockFileHandleLike>;
+  getFileHandle(name: string, options?: { create?: boolean }): Promise<BlockFileHandleLike>;
 }
 
 export interface BlockDirectoryReadResult {
   files: BlockImportFile[];
-  /** The root's raw block-manifest.json, or null — the manifest is a calling card, not a requirement. */
   manifestRaw: string | null;
 }
 
 /** Recursive walk. Dotfile directories and files, and node_modules, are skipped exactly as in the CLI import. */
 export async function readBlockDirectory(
-  dir: BlockDirectoryHandleLike,
+  directory: BlockDirectoryHandleLike,
 ): Promise<BlockDirectoryReadResult> {
   const files: BlockImportFile[] = [];
   let manifestRaw: string | null = null;
@@ -59,7 +56,7 @@ export async function readBlockDirectory(
     }
   }
 
-  await walk(dir, '');
+  await walk(directory, '');
   files.sort((a, b) => a.path.localeCompare(b.path));
   return { files, manifestRaw };
 }
@@ -83,7 +80,6 @@ async function writeFileAtPath(
   await writable.close();
 }
 
-/** Export — copies the original `.md` at its slug path and writes the manifest JSON. */
 export async function writeBlockToDirectory(
   target: BlockDirectoryHandleLike,
   docs: readonly { slug: string; content: string }[],

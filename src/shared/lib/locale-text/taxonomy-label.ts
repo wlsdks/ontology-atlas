@@ -4,7 +4,6 @@
  * verbatim (`?? id` in `TaxonomyProvider`).
  */
 export interface LocalizedTaxonomyLabel {
-  /** The Korean label — the one required value. */
   label: string;
   /** The English label; falls back to `label` when absent, since showing the original beats inventing a translation. */
   labelEn?: string;

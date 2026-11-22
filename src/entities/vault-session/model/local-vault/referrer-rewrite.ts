@@ -11,16 +11,13 @@ import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter'
 /** What a move or a kind change did to one document that names the moved one. */
 interface ReferrerRewriteOutcome {
   slug: string;
-  /** Entries that followed the document into the list for its new kind. */
   moved: ReferrerListMove[];
-  /** Entries left in their list: this referrer's kind keeps no list for the new kind. */
   kept: ReferrerListKept[];
   /** Its rewrite was refused or failed to write; the file on disk is unchanged. */
   failed: boolean;
 }
 
 export interface ReferrerRewriteReport {
-  /** Referrers that were rewritten, kept an entry, or could not be written. In folder order. */
   referrers: ReferrerRewriteOutcome[];
 }
 
@@ -36,7 +33,6 @@ export async function rewriteReferrerFiles(args: {
   fileHandles: ReadonlyMap<string, FileSystemFileHandle>;
   oldSlug: string;
   newSlug: string;
-  /** Only when the change moves the document to another kind. */
   newKind?: string;
   markSelfWrite: (slug: string) => void;
 }): Promise<ReferrerRewriteReport> {
@@ -89,7 +85,6 @@ export async function rewriteReferrerFiles(args: {
   return { referrers };
 }
 
-/** The `kind:` a patch gives a document that already had another one — null when it does not. */
 export function kindChangeOf(raw: string, updates: Record<string, FrontmatterUpdateValue> | undefined): string | null {
   const nextKind = typeof updates?.kind === 'string' ? updates.kind.trim() : '';
   if (!nextKind) return null;

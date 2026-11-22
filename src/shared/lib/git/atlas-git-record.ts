@@ -1,31 +1,11 @@
 /**
- * Pure reading-hierarchy logic for the vault git record screen (no I/O, no React).
- *
- * **Why this is separate from `atlas-git-changes.ts`.** That file decides *what
- * gets recorded* — the commit arithmetic, a contract shared with the CLI and the
- * Rust side, so it cannot move. This file decides how a person reads it, and
- * screen copy has to be free to change.
- *
- * Everything here reduces to "keep only what the reader needs to judge":
- *
- * 1. **Concepts apart from other files.** The judgement on this screen is "what
- *    changed in my concepts", not a file list, so `.gitignore` and `package.json`
- *    still appear but fold away.
- * 2. **Path split into name and place.** Drawing
- *    `capabilities/map-label-budget` whole in mono gives 15 rows identical
- *    weight; the name takes the body ramp and the place drops to the label ramp.
- * 3. **Git plumbing stripped.** `diff --git`, `index 4a1c0de..8b71f92` and
- *    `@@ -12,6 +12,9 @@` are tools talking to tools; the reader judges on added
- *    and removed lines.
- * 4. **Our own commit subjects are read back into plain language.** Leaving
- *    `ontology snapshot: +3 concepts, ~2 updated (...)` on a Korean screen means
- *    we failed to translate a string we wrote ourselves. Commits not in our
- *    format — hand-written, or from another tool — are shown verbatim.
+ * How a person reads the vault git record; `atlas-git-changes.ts` owns what gets recorded, a
+ * contract shared with the CLI and Rust, so screen copy stays free to change here. Concepts fold
+ * apart from other files, paths split into name and place, git plumbing is stripped, and our own
+ * commit subjects are read back into plain language.
  */
 
 import type { AtlasGitChangeLike } from "./atlas-git-changes";
-
-/** Minimal shape a record row needs — Rust's `ChangeEntry` satisfies it. */
 
 /** A `kind` means the file is a vault node (Rust reads its frontmatter and attaches it). */
 export function splitConceptChanges<T extends AtlasGitChangeLike>(
@@ -94,10 +74,8 @@ export function parseUnifiedDiff(diffText: string): AtlasGitDiffFile[] {
     if (DIFF_PLUMBING.test(line)) continue;
 
     if (line.startsWith("@@")) {
-      // `@@` becomes a `skip` line rather than being dropped: that lines were
-      // omitted is something the reader must know (hiding it makes the diff
-      // lie), while the coordinates are not. No marker before the first hunk —
-      // that just means the file starts here.
+      // `@@` becomes a `skip` line: that lines were omitted must show, their coordinates need not.
+      // No marker before the first hunk, where the file simply starts.
       if (current.lines.length > 0) current.lines.push({ kind: "skip", text: "" });
       continue;
     }

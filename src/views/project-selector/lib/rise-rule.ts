@@ -3,7 +3,6 @@ export interface ShownProjects {
   slugs: ReadonlySet<string>;
 }
 
-/** What counts as already shown: this session's last list for the same folder, else the current one. */
 export function resolveRiseBaseline(
   last: ShownProjects | null,
   scope: string,
