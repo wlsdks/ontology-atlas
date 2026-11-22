@@ -29,7 +29,7 @@ import {
   scopeOptionKey,
   type ScopeHookGroup,
 } from '../model/scope-hook-groups';
-import { ScopeHookDetail, ScopeHookList, type ExplainScope } from './ScopeHooks';
+import { ScopeHookDetail, ScopeHookList, type ExplainScope } from './scope-hooks';
 import { SetupItemDetail, type TranslateFn } from './harness-setup-item';
 import {
   categorySize,
