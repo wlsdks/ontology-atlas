@@ -57,7 +57,10 @@
     "notMeasured": "{branch} 기준으로 비교하지 못했어요",
     "prune": "<code>git worktree prune</code>을 실행하면 기록이 지워져요",
     "heldBy": "{session}가 아직 이 폴더를 잡고 있어요",
-    "unreadableLock": "Atlas가 읽을 수 있는 세션 이름이 잠금에 없어요"
+    "unreadableLock": "Atlas가 읽을 수 있는 세션 이름이 잠금에 없어요",
+    "workingMinutes": "{count}분째 작업 중",
+    "workingWholeHours": "{count}시간째 작업 중",
+    "workingHours": "{hours}시간 {minutes}분째 작업 중"
   },
   "belt": {
     "notRead": "이후 단계는 아직 읽지 못해요"

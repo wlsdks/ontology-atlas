@@ -57,7 +57,10 @@
     "notMeasured": "Not measured against {branch}",
     "prune": "<code>git worktree prune</code> removes its record",
     "heldBy": "{session} still holds this folder",
-    "unreadableLock": "The lock names no session Atlas can read"
+    "unreadableLock": "The lock names no session Atlas can read",
+    "workingMinutes": "{count, plural, one {Working for # minute} other {Working for # minutes}}",
+    "workingWholeHours": "{count, plural, one {Working for # hour} other {Working for # hours}}",
+    "workingHours": "Working for {hours} h {minutes} min"
   },
   "belt": {
     "notRead": "Later steps are not read yet"

@@ -24,7 +24,10 @@ export interface MonitorCopy {
   figure: string | null;
   figureTone: 'plain' | 'success';
   note: string | null;
-  terminal: boolean;
+  /** The screen's terminal rows: real facts of this worktree, so no two monitors read alike. */
+  rows: string[];
+  /** A cursor blinks after the last row while the room's work runs. */
+  live: boolean;
 }
 
 /** Every sentence a room says, from its entry and the clock; the only place room copy is chosen. */
@@ -50,6 +53,16 @@ export function useRoomCopy(baseBranch: string, nowMs: number) {
     track.standing === 'unknown' || track.ahead === null
       ? t('monitor.notMeasured', { branch: baseBranch })
       : track.ahead > 0 ? null : t('monitor.noCommitsNote', { branch: baseBranch });
+  /** How long the session has worked, in hours and minutes: what tells two running rooms apart at a glance. */
+  const workingFor = (session: TrackSession | null) => {
+    if (!session?.startedAt) return null;
+    const minutes = Math.max(1, Math.floor((nowMs - session.startedAt * 1000) / MINUTE_MS));
+    return minutes < 60
+      ? t('monitor.workingMinutes', { count: minutes })
+      : minutes % 60 === 0
+        ? t('monitor.workingWholeHours', { count: minutes / 60 })
+        : t('monitor.workingHours', { hours: Math.floor(minutes / 60), minutes: minutes % 60 });
+  };
   const lastCommit = (track: Track) => (track.lastCommitAt === null ? null : t('room.lastCommit', { ago: timeAgo(track.lastCommitAt, nowMs, locale) }));
 
   /** Who a room belongs to, under a mini room's status when there is room for it. */
@@ -84,7 +97,8 @@ export function useRoomCopy(baseBranch: string, nowMs: number) {
 
   function monitor(room: RoomEntry): MonitorCopy {
     const { state, track } = room;
-    const quiet = { labelInk: false, aside: null, figureTone: 'plain', terminal: false } as const;
+    const quiet = { labelInk: false, aside: null, figureTone: 'plain', rows: [] as string[], live: false } as const;
+    const rows = (...facts: (string | null)[]) => facts.filter((fact): fact is string => fact !== null);
     switch (state.kind) {
       case 'working':
         return state.tools.length > 1
@@ -95,11 +109,10 @@ export function useRoomCopy(baseBranch: string, nowMs: number) {
             aside: commits(track),
             figure: t('monitor.twoTools'),
             note: t('monitor.twoToolsNote'),
-            terminal: false,
           }
-          : { ...quiet, label: t('monitor.running'), labelInk: true, aside: lastCommit(track), figure: commits(track), note: null, terminal: true };
+          : { ...quiet, label: t('monitor.running'), labelInk: true, figure: commits(track), note: null, rows: rows(workingFor(room.session), lastCommit(track)), live: true };
       case 'resting':
-        return { ...quiet, label: t('monitor.idle'), aside: lockedAt(track), figure: commits(track) ?? t('room.resting'), note: sinceBase(track) ?? lastCommit(track) };
+        return { ...quiet, label: t('monitor.idle'), figure: commits(track) ?? t('room.resting'), note: sinceBase(track), rows: rows(lastCommit(track), lockedAt(track)) };
       case 'dozing':
         return { ...quiet, label: t('monitor.idle'), aside: lockedAt(track), figure: quietFor(state.quietSinceMs), note: sinceBase(track) };
       case 'merged':

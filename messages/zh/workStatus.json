@@ -57,7 +57,10 @@
     "notMeasured": "无法与 {branch} 比较",
     "prune": "运行 <code>git worktree prune</code> 会删除它的记录",
     "heldBy": "{session} 仍占用此文件夹",
-    "unreadableLock": "锁中没有 Atlas 能读取的会话名"
+    "unreadableLock": "锁中没有 Atlas 能读取的会话名",
+    "workingMinutes": "已工作 {count} 分钟",
+    "workingWholeHours": "已工作 {count} 小时",
+    "workingHours": "已工作 {hours} 小时 {minutes} 分钟"
   },
   "belt": {
     "notRead": "之后的步骤还读不到"

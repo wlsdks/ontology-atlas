@@ -2,7 +2,7 @@
  * The building of rooms. Every prop is flat pixel geometry on one grid: `--u` is the room's pixel
  * unit (Moru is 128 × u pixels), `--s` one drawn pixel and `--p` two. A room sets `--ink` to its
  * session's ink. Light exists only where something runs: the lamp, the glow behind Moru and the
- * monitor's scrolling lines move only under `[data-room-motion='running']`, which the board sets
+ * monitor's cursor move only under `[data-room-motion='running']`, which the board sets
  * while the room's work runs and the room is on screen in a visible window.
  */
 
@@ -293,7 +293,7 @@
 
 [data-room-motion='running'] .lampFlicker,
 [data-room-motion='running'] .glowLight,
-[data-room-motion='running'] .screenLines,
+[data-room-motion='running'] .cursor,
 [data-room-motion='running'] .beltLive {
   animation-play-state: running;
 }
@@ -427,7 +427,7 @@
   right: 12px;
   top: 52px;
   /* Above Moru in a narrow room, its shadow stops 8px short of the name tag over his head. */
-  height: clamp(48px, calc(100% - 52px - 70 * var(--s) - 28px - var(--p)), 112px);
+  height: clamp(48px, calc(100% - 52px - 70 * var(--s) - 28px - var(--p)), 128px);
   z-index: 1;
 }
 
@@ -533,46 +533,48 @@
   color: var(--color-text-tertiary);
 }
 
-/* Three lines of a terminal under the commit count: enough to say something runs. */
+/*
+ * The terminal under the commit count: one row per real fact of the worktree. A row that does not
+ * fit wraps into a second column, which the screen clips, so a short monitor drops whole rows.
+ */
 .terminal {
-  position: relative;
-  flex: none;
-  height: calc(5 * var(--p));
+  display: flex;
+  flex: 1 1 0;
+  flex-flow: column wrap;
+  align-content: flex-start;
+  min-height: 0;
   overflow: hidden;
   margin-top: var(--p);
+  color: var(--color-text-secondary);
 }
 
-@keyframes roomScreenScroll {
-  to {
-    transform: translateY(calc(-12 * var(--p)));
+.terminalRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.prompt {
+  flex: none;
+  color: color-mix(in srgb, var(--ink) 70%, var(--color-text-primary));
+}
+
+@keyframes roomCursorBlink {
+  50% {
+    opacity: 0;
   }
 }
 
-.screenLines {
-  position: absolute;
-  inset-inline: 0;
-  top: 0;
-  animation: roomScreenScroll calc(var(--motion-base) * 40) linear infinite;
+.cursor {
+  flex: none;
+  width: calc(3 * var(--s));
+  height: 1em;
+  background: color-mix(in srgb, var(--ink) 70%, var(--color-text-primary));
+  animation: roomCursorBlink calc(var(--motion-base) * 8) steps(1) infinite;
   animation-play-state: paused;
-}
-
-.screenLines > div {
-  display: flex;
-  gap: var(--p);
-  height: var(--p);
-  margin-bottom: var(--p);
-}
-
-.screenLines i {
-  background: color-mix(in srgb, var(--ink) 62%, var(--work-room-screen));
-}
-
-.screenLines i:nth-child(2) {
-  background: var(--work-room-screen-line);
-}
-
-.screenLines i:nth-child(3) {
-  background: color-mix(in srgb, var(--ink) 34%, var(--work-room-screen));
 }
 
 @container (min-width: 520px) {

@@ -13,16 +13,6 @@ import styles from './rooms.module.css';
 
 type RoomCopy = ReturnType<typeof useRoomCopy>;
 
-/** Rows of a terminal, as widths of its three runs; drawn twice so the scroll wraps unseen. */
-const TERMINAL_LINES = [[18, 34], [8, 22, 30], [30, 12], [12, 40, 14], [22, 18], [8, 30, 26]];
-
-/** The terminal's rows from a room's own starting row, so no two monitors scroll the same picture. */
-const terminalFrom = (phase: number) => {
-  const start = phase % TERMINAL_LINES.length;
-  const rows = [...TERMINAL_LINES.slice(start), ...TERMINAL_LINES.slice(0, start)];
-  return [...rows, ...rows];
-};
-
 const LABEL = 'text-label leading-label';
 const BODY = 'text-body leading-body';
 
@@ -46,13 +36,15 @@ function Monitor({ room, copy }: { room: RoomEntry; copy: RoomCopy }) {
             <SwapText value={screen.figure} />
           </div>
         ) : null}
-        {screen.terminal ? (
-          <div className={styles.terminal} aria-hidden>
-            <div className={styles.screenLines}>
-              {terminalFrom(moruPhase(room.key)).map((line, index) => (
-                <div key={index}>{line.map((width, part) => <i key={part} style={{ width: `${width}%` }} />)}</div>
-              ))}
-            </div>
+        {screen.rows.length > 0 ? (
+          <div className={cn(styles.terminal, LABEL)}>
+            {screen.rows.map((row, index) => (
+              <div key={index} className={styles.terminalRow}>
+                <span aria-hidden className={styles.prompt}>›</span>
+                <span className="truncate"><SwapText value={row} /></span>
+                {screen.live && index === screen.rows.length - 1 ? <i aria-hidden className={styles.cursor} /> : null}
+              </div>
+            ))}
           </div>
         ) : null}
         {screen.note ? <div className={cn(styles.screenNote, LABEL)}><SwapText value={screen.note} /></div> : null}
