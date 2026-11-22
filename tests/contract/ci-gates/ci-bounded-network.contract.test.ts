@@ -37,7 +37,7 @@ function runBlocks(source: string): string[] {
 
 const blocks = runBlocks(action);
 const playwrightInstalls = blocks.filter((block) => /playwright\s+install/.test(block));
-const PLAYWRIGHT_JOB_IDS = ['static-export', 'web-smoke', 'suite'];
+const PLAYWRIGHT_JOB_IDS = ['surfaces', 'suite', 'quarantined'];
 
 function jobBlock(source: string, id: string): string {
   const lines = source.split('\n');
@@ -67,6 +67,14 @@ describe('CI setup steps do not wait without bound', () => {
     expect(action).toMatch(/Acquire::http::Timeout\s+"\d+"/);
     expect(action).toMatch(/Acquire::https::Timeout\s+"\d+"/);
     expect(action).toMatch(/Acquire::Retries\s+"\d+"/);
+  });
+
+  it('runs apt only on Linux and caches the browser where this system keeps it', () => {
+    // The suite runs on macOS, which has no apt; an unguarded step would fail every browser job.
+    const aptSteps = action.split(/\n(?= {4}- name: )/).filter((step) => /- name: (?:Bound apt|Install Playwright system deps)/.test(step));
+    expect(aptSteps.length, 'could not find the apt steps').toBe(2);
+    for (const step of aptSteps) expect(step).toContain("if: runner.os == 'Linux'");
+    expect(action).toContain("path: ${{ runner.os == 'macOS' && '~/Library/Caches/ms-playwright' || '~/.cache/ms-playwright' }}");
   });
 
   it('even if setup goes worst-case, time is left for the tests to run', () => {

@@ -68,18 +68,28 @@ history stay exhaustive. Unit and performance reach excludes explicit type-only
 imports; source-reading contracts retain them. Exact default Node test files run
 once across command aliases; flags and lifecycle hooks keep their semantics.
 
-The browser suite is split by time. Before merge, a pull request runs the specs its
-change maps plus the merge smoke set in `scripts/ci/merge-smoke-specs.mjs`
-(first run, opening a folder, the map and node selection, the agent panel
-sending, the gateway and download pages), balanced over eight shards. Any
-non-test file under `src/` or `app/` reaches the browser, so one no mapping
-names runs the smoke set alone; only a planner, browser-executor or root
-dependency change (`package.json`, the lockfile, `patches/`) runs the whole
-suite. After merge, every push to `main` runs the whole suite, measurements
-and both surfaces included, even when the push reuses the pull request's reviewed
-result for every other lane. Each push has a concurrency group of its own, so
-no later merge cancels or replaces it. A defect outside the smoke set is
-therefore found on `main`, not on the pull request.
+Merging waits for one context, `Required checks` in `checks.yml`, which passes
+only when the impact plan, Types · Lint · Docs, Unit · Contract and MCP each
+succeeded. No browser spec runs before merge. The browser suite (`e2e.yml`)
+runs after merge on `macos-15`: every night at 19:17 UTC on `main`, on a release
+tag when `pnpm desktop:release-run` dispatches it, and on any branch dispatched
+by hand. A whole run (the schedule, or a dispatch with an empty `plan_from`) is
+titled `Browser suite: whole run` and runs every spec on three shards, the
+static-export and web-surface specs on one more runner, and the quarantined
+specs on a fifth, which never turns the run red. A stable release publishes
+only over a green whole run on its own commit. The author proves screens before
+merge: `pnpm checks:changed` names the mapped specs, and they run locally on
+macOS, the nightly's system. To run the mapped specs plus the merge smoke set
+(`scripts/ci/merge-smoke-specs.mjs`) in CI, dispatch
+`gh workflow run e2e.yml --ref <branch> -f plan_from=<main sha>`.
+
+A flaky test goes into `tests/quarantine.json` (whole files, at most 10, each for
+at most 14 days, with the run where it failed and then passed on a rerun of the
+same commit). Every CI lane leaves a listed file out; the nightly runs it and
+prints its verdict, and an entry past `expires` turns the nightly red, which
+stops stable releases. The pull request that fixes the test deletes the entry
+and pastes `node scripts/ci/quarantine.mjs prove <file>`: 65 of 65 green
+repeats. Local runs still execute every file.
 
 CI rejects focused `.only` tests on every execution path. It records a trace on
 the first retry, preserves that trace even when the retry passes, and uploads
@@ -91,10 +101,11 @@ intermittent failure, not evidence that its cause was fixed.
 
 `pnpm pr:land <number>` merges a reviewed pull request and keeps its original
 commits; `.claude/rules/git.md` owns the rest of the merge workflow. While
-`main`'s latest full browser run is red, it prints one line naming that run
-and its failing spec files, and the pull request body carries the
-same line. It still merges: the line tells someone to fix `main`, it does not
-stop the queue.
+`main`'s latest nightly browser run is red, or older than 48 hours, it prints
+one line naming that run and its failing spec files, and the pull request body
+carries the same line. It still merges: whoever cuts the next stable release
+owns the red, because the release browser gate refuses it until the spec is
+fixed or quarantined with that run as evidence.
 
 ## Lane budgets
 
@@ -118,8 +129,9 @@ before relying on it.
 | Checks · Types · Lint · Docs | 260 s | 150 s avg / 238 s max | type, lint and documentation gates |
 | Checks · Unit · Contract (x3) | 310 s | 2026-11-18, 22 trains: shards 79-340 s, 4-201 s, 4-285 s; full sweep 271 / 222 / 186 s by file count | affected unit tests and reached plus core contracts; the full sweep after merge |
 | Checks · MCP | 390 s | 146 s avg / 382 s max | the MCP and CLI boundary |
-| E2E · Playwright static / web | 150 s · 160 s | 73 s · 125 s avg | static-export-only behaviour, the unattended gateway |
-| E2E · Playwright chromium (x8) | 600 s | full suite 6.0-7.9 min per shard, 9.4 min end to end (2026-11-18; five shards took 13.8) | rendered journeys; before merge only the mapped specs and the merge smoke set |
+| Checks · Required checks | 10 s | not yet measured | the one context `main` requires: plan, gates, unit and MCP each `success` |
+| Browser surfaces (macOS) | 180 s | 159 s (run 45020130503, 2026-11-22: setup 46 s, static 27 s, web 49 s) | static-export-only behaviour, the unattended gateway; nightly and before a stable release |
+| Browser suite (macOS x3) | 1400 s | 16.3, 21.3 and 23.3 min per shard before rebalancing, 25 min end to end, no queue; 6,605 test-seconds against 4,071 on Linux (run 45020130503, 2026-11-22) | rendered journeys and measurements; nightly and before a stable release, never before merge |
 | Vault freshness | 30 s | 24 s avg | frontmatter integrity and node drift (FYI, never fails the PR) |
 | Windows beta · verify | 700 s | 582 s avg | Windows-only bundle facts |
 | Windows beta · Rust audit (also in the release) | 40 s | not yet measured alone; its steps took 10 s inside the Windows job | Rust advisories and unsoundness, from a lockfile-only checkout |
@@ -153,6 +165,7 @@ What each contributor command answers, sorted by command.
 
 | Command | What it answers |
 |---|---|
+| `node scripts/ci/quarantine.mjs run-browser` · `run-unit` · `check-expiry [--today=YYYY-MM-DD]` · `prove <file>` | Run the quarantined Playwright specs or Vitest files and print passed or failed per file; fail when an entry in `tests/quarantine.json` is past its `expires` day; repeat one file 65 times in batches of 5, 10 and 50, stopping at the first failure, as the evidence that a fix holds |
 | `node scripts/ci/run-playwright-ci.mjs --help` | Browser shard options, including `--only` for a named set of spec files, without discovering or running tests; unknown options fail before execution |
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
 | `pnpm brand:sprites` | Rebuild Moru sprites, 85 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
@@ -165,6 +178,8 @@ What each contributor command answers, sorted by command.
 | `pnpm conflicts:scan` | Which open pull requests change the same files as this branch, and whether a trial merge conflicts |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision to cite or overturn, and whether this change owes one |
 | `pnpm design:tokens -- [--prefix=<name>]` | The current token ramps, resolved from app/styles |
+| `pnpm desktop:release-browser-gate -- --sha=<commit> [--tag=vX.Y.Z]` | Whether a stable release of that commit may publish: only when the newest finished `e2e.yml` run on it is a green whole run; a running, red, partial, expired or absent run refuses and prints the dispatch command for one |
+| `pnpm desktop:release-promote -- --from=vX.Y.Z-beta.N --mode=<admit, stage or verify>` | Promote a published beta to `vX.Y.Z` with the same bytes: admit checks the two tags, the beta release and the browser gate; stage copies the beta's assets after checking each against its `.sha256` and writes `latest.json`; verify checks the public result |
 | `pnpm dev:clean` | Delete the Turbopack dev cache in `.next/dev`; `pnpm dev` reuses it, so a warm start reaches the first route in about 3 s instead of 7 s |
 | `pnpm doc:new -- --type=<kind> --area=<area> --slug=<slug>` | A new living document from its template in `docs/.templates/` |
 | `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check`, `pnpm docs:meta` |
@@ -196,7 +211,7 @@ What each contributor command answers, sorted by command.
 | `pnpm perf:web-open -- --files=2000 --files=20000 --shape=key --shape=all --walk=map --profile --check` | Opens each generated vault in the static export with GPU Chromium and prints every row of `scripts/perf/budgets.json`: heap steady after a forced collection and at peak, what the heap is made of, the time to first concepts and to loaded, the longest Chromium `longtask`, and frame p95 and island open per `--walk`. `--profile` records a CPU profile and names the five largest functions in each long task. It builds `out/` with `next build --no-mangling`, so profiles keep source names. Above 20,000 files the figures are reported, not checked |
 | `pnpm pr:ci <n>` | Mark a finished draft ready so its CI runs before `pnpm pr:land` |
 | `pnpm pr:land --plan <n...>` | Dry-run a merge |
-| `pnpm pr:land <n>` | Merge a pull request on its own CI run; a head behind `main` falls back to the dormant train code, so merge `origin/main` first. While `main`'s full browser run is red it names the failing specs and still merges |
+| `pnpm pr:land <n>` | Merge a pull request on its own CI run; a head behind `main` falls back to the dormant train code, so merge `origin/main` first. While `main`'s nightly browser run is red it names the failing specs and still merges |
 | `pnpm review:facts -- --base=<ref>` | The mechanical facts a reviewer would otherwise count by hand: line growth, 800-line files, export and dependency changes, untouched sibling tests, security paths |
 | `pnpm seo:check` | After `pnpm build`: every sitemap URL in `out/` canonicalizes to itself, every other indexable page consolidates into a sitemap URL, `/` and each locale root point at `/{locale}/download/`, and titles and descriptions are unique per locale |
 | `pnpm typecheck` | Types across every file, with Next's generated route and page types |

@@ -3,7 +3,8 @@
 /**
  * The landing train, driven by recorded `gh` output and a fake GitHub; no network. The recorded
  * rollup has eleven contexts, eight required, one required context red: a lander counting "ten of
- * eleven green" would merge it.
+ * eleven green" would merge it. It is a recording of `main`'s protection before `Required checks`;
+ * the lander reads the required list from the API, so the names here are data, not today's gate.
  */
 export const REQUIRED_CONTEXTS = [
   'Types · Lint · Docs',

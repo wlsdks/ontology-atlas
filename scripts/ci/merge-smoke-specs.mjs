@@ -1,8 +1,9 @@
 /**
- * The browser specs a train or ready pull request runs beside the specs its impact plan maps,
- * whenever the change reaches the browser (a non-test file under `src/` or `app/`, messages, public
- * assets or Playwright inputs): the core journeys a merge must never break. Everything else runs
- * after merge in the full suite, and `pnpm pr:land` names that run's failing specs while it is red.
+ * The browser specs a planned dispatch of `e2e.yml` (`-f plan_from=<main sha>`) runs beside the specs
+ * its impact plan maps, whenever the change reaches the browser (a non-test file under `src/` or
+ * `app/`, messages, public assets or Playwright inputs): the core journeys a merge must never break.
+ * No browser spec runs before merge; the nightly whole run covers everything, and `pnpm pr:land`
+ * names its failing specs while it is red. A file listed here cannot be quarantined.
  * Paths are relative to `tests/e2e/`; a name discovery cannot find fails the shard, so a renamed
  * spec cannot silently shrink the set.
  */
