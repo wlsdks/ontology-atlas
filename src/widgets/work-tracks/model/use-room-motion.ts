@@ -74,8 +74,8 @@ interface Drawn {
  * a stage room that stays one keeps its Moru, tag, plaque and hue edge and fades only its monitor and
  * belt while its box and scale glide; a room that changes tier travels as its wall with its hue edge
  * and plaque. Only one copy of a room is ever drawn. Fades out are linear, so no frame cuts. An update
- * that lands mid-sequence starts the next from what each room shows. A window resize places rooms at
- * once; reduced motion moves nothing.
+ * that lands mid-sequence starts the next from what each room shows. The first drawing fades up; a
+ * window resize places rooms at once; reduced motion moves nothing.
  */
 export function useRoomMotion(
   boardRef: RefObject<HTMLElement | null>,
@@ -96,6 +96,8 @@ export function useRoomMotion(
     for (const element of board.querySelectorAll<HTMLElement>('[data-room-key]')) elements.set(element.dataset.roomKey!, element);
     const arriving = placed.current.size === 0;
     const instant = lastSize.current !== null && lastSize.current !== sizeKey;
+    // A render that lays every room out where it already goes changes nothing: the sequence playing carries on.
+    if (!arriving && !instant && sameLayout(placed.current, boxes)) return;
     lastSize.current = sizeKey;
 
     const previous = playing.current;
@@ -131,6 +133,10 @@ export function useRoomMotion(
     placed.current = new Map(boxes);
     if (removed.size > 0) onRemovedRef.current(removed);
 
+    if (arriving && !reduced) {
+      // The building's first drawing fades up from the bare page behind it instead of cutting in.
+      board.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms(MOTION.slow.duration), easing: EASE_CSS });
+    }
     if (arriving || instant || reduced) {
       for (const [key, element] of elements) {
         if (reduced && !arriving && !instant && !drawn.has(key)) {
@@ -201,6 +207,15 @@ export function useRoomMotion(
   }, [boardRef, boxes, reduced, sizeKey, onRemovedRef]);
 }
 
+function sameLayout(a: ReadonlyMap<string, RoomBox>, b: ReadonlyMap<string, RoomBox>): boolean {
+  if (a.size !== b.size) return false;
+  for (const [key, box] of a) {
+    const other = b.get(key);
+    if (!other || other.x !== box.x || other.y !== box.y || other.w !== box.w || other.h !== box.h || other.size !== box.size || other.unit !== box.unit) return false;
+  }
+  return true;
+}
+
 interface MoveTiming {
   sequence: RoomSequence;
   total: number;
@@ -227,7 +242,7 @@ function pathFrames(move: RoomMove, { sequence, at }: MoveTiming, frame: (box: B
   const frames: Keyframe[] = [{ ...frame(move.from), offset: 0, easing: 'linear' }];
   for (let index = 0; index <= PATH_SAMPLES; index += 1) {
     const progress = index / PATH_SAMPLES;
-    frames.push({ ...frame(boxOnPath(move, sequence.waves, sequence.path, progress)), offset: at(sequence.moveAtMs + progress * sequence.moveMs), easing: 'linear' });
+    frames.push({ ...frame(boxOnPath(move, sequence.waves, sequence.path, progress, sequence.corner)), offset: at(sequence.moveAtMs + progress * sequence.moveMs), easing: 'linear' });
   }
   frames.push({ ...frame(move.to), offset: 1 });
   return frames;
@@ -260,12 +275,10 @@ function playResized(element: HTMLElement, move: RoomMove, timing: MoveTiming, u
   const scene = shownFace(element)?.querySelector<HTMLElement>('[data-scene]');
   const from = timing.shows.unit;
   if (scene && from !== unit) {
-    played.push(scene.animate([
-      { ['--u' as string]: from, offset: 0 },
-      { ['--u' as string]: from, offset: timing.at(timing.sequence.moveAtMs), easing: EASE_CSS },
-      { ['--u' as string]: unit, offset: timing.at(timing.sequence.moveAtMs + timing.sequence.moveMs) },
-      { ['--u' as string]: unit, offset: 1 },
-    ], { duration: timing.total }));
+    // The scale keeps pace with the box along its own path, so Moru never outgrows the room he stands in.
+    const [start, end] = move.from.w !== move.to.w ? [move.from.w, move.to.w] : [move.from.h, move.to.h];
+    const share = (box: Box) => (end === start ? 1 : ((move.from.w !== move.to.w ? box.w : box.h) - start) / (end - start));
+    played.push(scene.animate(pathFrames(move, timing, box => ({ ['--u' as string]: from + (unit - from) * share(box) })), { duration: timing.total }));
   }
   return played;
 }

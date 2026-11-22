@@ -1,4 +1,3 @@
-import { easeMotion } from '@/shared/motion/ease';
 import type { Box } from './building-layout';
 
 /**
@@ -35,9 +34,11 @@ export interface RoomMove {
 
 /**
  * How rooms travel: all along straight lines, or every room along one axis and then the other, so
- * rooms that trade rows and columns slide past each other instead of across.
+ * rooms that trade rows and columns slide past each other instead of across. A `Paced` path turns
+ * each room's corner at the share of its own travel the first leg covers, so it keeps one pace; the
+ * others turn every corner at the middle of the move, so rooms that pass close stay in step.
  */
-export type RoomPath = 'straight' | 'acrossFirst' | 'downFirst';
+export type RoomPath = 'straight' | 'acrossFirstPaced' | 'downFirstPaced' | 'acrossFirst' | 'downFirst';
 
 export interface RoomSequence {
   /** Each moving room's fade step; 0 when no room needs one. */
@@ -54,6 +55,8 @@ export interface RoomSequence {
   /** How many waves the rooms move in: 1 for all at once, more when some must wait for others. */
   waves: number;
   path: RoomPath;
+  /** Where every room of a two-leg path that is not `Paced` turns its corner, as a share of the move. */
+  corner: number;
 }
 
 const NEAR_PX = 1;
@@ -82,84 +85,184 @@ export function moveWindow(wave: number, waves: number): [number, number] {
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
-/** How fast a leg runs where the two legs meet, against its average: moving, so the corner is no stop. */
-const CORNER_SPEED = 2;
+/** Half of the stretch of the move where one leg hands over to the other, both moving, on a paced path. */
+const HANDOVER = 0.045;
+/** The stretch at each end of the move where a room eases in or out. */
+const EASE_END = 0.22;
+/** On a shared corner, the stretch each leg takes to ease into the corner and out of it. */
+const CORNER_EASE = 0.1;
+/** The earliest and latest a room turns its corner, so neither leg is rushed into a sliver of the move. */
+const CORNER_RANGE: [number, number] = [0.25, 0.75];
+const LEG_SAMPLES = 240;
+const legTables = new Map<string, [number[], number[]]>();
 
 /**
- * How far through each leg of a two-leg path every room is at time `t` of the move: the first leg
- * eases in and reaches the corner at half the move still moving, the second leaves it at that speed
- * and eases out. Every room shares the curve, so rooms that slide past each other stay in step.
+ * Each leg's progress over the move, tabulated from its speed. On a paced path the first leg cruises
+ * and slows to rest across a short hand-over while the second picks up across it, so the room bends
+ * through its corner on one curve. On a shared corner, rooms pass a row or column apart, so the first
+ * leg eases into the corner and the second eases out of it without overlapping: no side ever stops
+ * dead, and no two rooms meet. A room with one leg only eases in and out over the whole move.
  */
-function legsAt(t: number): [number, number] {
-  const u = t <= 0.5 ? t / 0.5 : (t - 0.5) / 0.5;
-  const u2 = u * u, u3 = u2 * u;
-  if (t <= 0.5) return [(-2 * u3 + 3 * u2) + (u3 - u2) * CORNER_SPEED, 0];
-  return [1, (u3 - 2 * u2 + u) * CORNER_SPEED + (-2 * u3 + 3 * u2)];
+function legTable(corner: number, handover: boolean): [number[], number[]] {
+  const key = `${corner}:${handover}`;
+  const cached = legTables.get(key);
+  if (cached) return cached;
+  const raised = (share: number) => 0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, Math.max(0, share)));
+  const speeds = (t: number): [number, number] => {
+    const ends = raised(t / EASE_END) * raised((1 - t) / EASE_END);
+    if (corner <= 0) return [0, ends];
+    if (corner >= 1) return [ends, 0];
+    if (!handover) {
+      return t < corner
+        ? [raised(t / EASE_END) * raised((corner - t) / CORNER_EASE), 0]
+        : [0, raised((t - corner) / CORNER_EASE) * raised((1 - t) / EASE_END)];
+    }
+    const handing = raised((t - (corner - HANDOVER)) / (2 * HANDOVER));
+    return [raised(t / EASE_END) * (1 - handing), raised((1 - t) / EASE_END) * handing];
+  };
+  const one = [0], two = [0];
+  for (let index = 1; index <= LEG_SAMPLES; index += 1) {
+    const [a, b] = speeds((index - 0.5) / LEG_SAMPLES);
+    one.push(one[index - 1] + a);
+    two.push(two[index - 1] + b);
+  }
+  const table: [number[], number[]] = [one.map(value => value / (one[LEG_SAMPLES] || 1)), two.map(value => value / (two[LEG_SAMPLES] || 1))];
+  legTables.set(key, table);
+  return table;
 }
 
 /**
+ * Where a room turns its corner: at the share of its travel the first leg covers, so it keeps one
+ * pace from start to end instead of creeping one way and darting the other.
+ */
+function cornerOf(first: number, second: number): number {
+  if (first <= NEAR_PX) return 0;
+  if (second <= NEAR_PX) return 1;
+  return Math.round(Math.min(CORNER_RANGE[1], Math.max(CORNER_RANGE[0], first / (first + second))) * 100) / 100;
+}
+
+/** How far a room travels along each axis: the farther of its two sides. */
+function legsOf({ from, to }: RoomMove): { sideways: number; upright: number } {
+  return {
+    sideways: Math.max(Math.abs(to.x - from.x), Math.abs(to.x + to.w - from.x - from.w)),
+    upright: Math.max(Math.abs(to.y - from.y), Math.abs(to.y + to.h - from.y - from.h)),
+  };
+}
+
+/** How much faster a room runs one leg than the other when every corner is turned at `corner`. */
+function unevenness(moves: readonly RoomMove[], acrossFirst: boolean, corner: number): number {
+  let worst = 1;
+  for (const move of moves) {
+    if (move.mode === 'wall') continue;
+    const { sideways, upright } = legsOf(move);
+    const [first, second] = acrossFirst ? [sideways, upright] : [upright, sideways];
+    if (first <= NEAR_PX || second <= NEAR_PX) continue;
+    const ratio = (first / corner) / (second / (1 - corner));
+    worst = Math.max(worst, ratio, 1 / ratio);
+  }
+  return worst;
+}
+
+/** A move's progress along one curve: it eases in, cruises and eases out, as one leg of a two-leg path does. */
+const glide = (t: number) => legsAt(t, 1)[0];
+
+/** The size of a wall's side at a share of its own window: eased in and out on a cosine, no long tail. */
+const sizeGlide = (share: number) => 0.5 - 0.5 * Math.cos(Math.PI * clamp01(share));
+
+function legsAt(t: number, corner: number, handover = true): [number, number] {
+  const [one, two] = legTable(corner, handover);
+  const at = clamp01(t) * LEG_SAMPLES;
+  const index = Math.min(LEG_SAMPLES - 1, Math.floor(at));
+  const share = at - index;
+  const read = (table: number[]) => table[index] + (table[index + 1] - table[index]) * share;
+  return [read(one), read(two)];
+}
+
+/** Where a wall's shrinking sides finish, and its growing sides start, as shares of its travel. */
+const WALL_SHRUNK = 0.4;
+const WALL_GROWS = 0.5;
+
+/**
  * A wall changes size away from its neighbours: it shrinks in the first part of its travel and grows
- * in the last, so a small card is what passes other rooms. Each side follows its own direction.
+ * in the rest, so a small card is what passes other rooms. Each side follows its own direction, and
+ * growing starts while the wall still travels, so it never comes to rest before it grows.
  */
 function wallSide(from: number, to: number, t: number): number {
-  if (to < from) return lerp(from, to, easeMotion(clamp01(t / 0.4)));
-  return lerp(from, to, easeMotion(clamp01((t - 0.6) / 0.4)));
+  if (to < from) return lerp(from, to, sizeGlide(t / WALL_SHRUNK));
+  return lerp(from, to, sizeGlide((t - WALL_GROWS) / (1 - WALL_GROWS)));
 }
 
 /**
  * Where a moving room is drawn at a share of the shared move step, eased: within its wave's window
  * on a straight line, or through one corner when every room slides along one axis and then the other.
  */
-export function boxOnPath(move: RoomMove, waves: number, path: RoomPath, progress: number): Box {
+export function boxOnPath(move: RoomMove, waves: number, path: RoomPath, progress: number, corner = 0.5): Box {
   const { from, to } = move;
   const [start, end] = path === 'straight' ? moveWindow(move.wave, waves) : [0, 1];
   const t = clamp01((progress - start) / (end - start));
-  let across = easeMotion(t), down = across;
-  if (path !== 'straight') {
-    const [legOne, legTwo] = legsAt(t);
-    [across, down] = path === 'acrossFirst' ? [legOne, legTwo] : [legTwo, legOne];
+  let across = glide(t), down = across;
+  // A wall travels on the move's one curve: it shrinks and grows on its own windows, so legs would leave it resting between them.
+  if (path !== 'straight' && move.mode !== 'wall') {
+    const acrossFirst = path.startsWith('across');
+    const { sideways, upright } = legsOf(move);
+    const [first, second] = acrossFirst ? [sideways, upright] : [upright, sideways];
+    const paced = path.endsWith('Paced');
+    const [legOne, legTwo] = legsAt(t, paced ? cornerOf(first, second) : corner, paced);
+    [across, down] = acrossFirst ? [legOne, legTwo] : [legTwo, legOne];
   }
   const box = { x: lerp(from.x, to.x, across), y: lerp(from.y, to.y, down), w: lerp(from.w, to.w, across), h: lerp(from.h, to.h, down) };
   if (move.mode !== 'wall') return box;
   return { ...box, w: wallSide(from.w, to.w, t), h: wallSide(from.h, to.h, t) };
 }
 
-type Timing = Pick<RoomSequence, 'moveAtMs' | 'moveMs' | 'waves' | 'path'>;
+type Timing = Pick<RoomSequence, 'moveAtMs' | 'moveMs' | 'waves' | 'path' | 'corner'>;
 
 /** Where a moving room is drawn at a time after the sequence's start. */
 export function boxAt(move: RoomMove, timing: Timing, timeMs: number): Box {
   const progress = timing.moveMs === 0 ? 1 : clamp01((timeMs - timing.moveAtMs) / timing.moveMs);
-  return boxOnPath(move, timing.waves, timing.path, progress);
+  return boxOnPath(move, timing.waves, timing.path, progress, timing.corner);
 }
 
 /** Frames of the move each candidate plan is checked at: enough to see two rooms meet, few enough to plan within a frame. */
-const SAMPLES = 16;
+const SAMPLES = 64;
+/** Frames each candidate is ranked at; only the best few are checked at `SAMPLES`. */
+const RANK_SAMPLES = 16;
+/** How many of the best-ranked plans are checked closely before one is taken. */
+const CONFIRMED_PLANS = 3;
 /** Up to this many moving rooms every order of three waves is tried; up to `SEARCHED_MOVES`, of two. */
 const THREE_WAVE_MOVES = 4;
 const SEARCHED_MOVES = 6;
 /** A frame where a box one room hands to another shows bare background, for the largest box. */
-const BARE_COST = 3;
+const BARE_COST = 6;
 /** A room arriving over one that waits to give up its box hides it rather than crossing it. */
 const COVERING_COST = 0.25;
 /** A room that could keep its content but crosses another on the way, and so moves as its wall. */
-const WALL_COST = 24;
+const WALL_COST = 48;
 
 type Moves = [string, RoomMove][];
 
 interface Plan {
   waves: number;
   path: RoomPath;
+  corner: number;
 }
 
+/** Shared corners a two-leg plan may turn at, the middle first. */
+const SHARED_CORNERS = [0.5, 0.6, 0.4, 0.7, 0.3];
+
 /** Which rooms cross a still room or another moving room on their way, and what the crossings and bare frames cost. */
-function crossings(moves: Moves, still: readonly Box[], timing: Timing): { touched: boolean[]; cost: number } {
+function crossings(moves: Moves, still: readonly Box[], timing: Timing, samples = SAMPLES): { touched: boolean[]; cost: number } {
   const touched = moves.map(() => false);
   if (moves.length === 0) return { touched, cost: 0 };
   const largest = Math.max(...moves.map(([, move]) => area(move.from)), 1);
   const span = timing.moveAtMs + timing.moveMs;
+  // Handed over: another room takes this very box, as when a room rising to the stage takes a stopped room's slot.
+  const handed = moves.flatMap(([, move]) => moves.some(([, other]) => other !== move && sameBox(other.to, move.from))
+    ? [{ centre: { x: move.from.x + move.from.w / 2 - 1, y: move.from.y + move.from.h / 2 - 1, w: 2, h: 2 }, cost: (BARE_COST * area(move.from)) / largest }]
+    : []);
   let cost = 0;
-  for (let sample = 0; sample <= SAMPLES; sample += 1) {
-    const time = (sample / SAMPLES) * span;
+  for (let sample = 0; sample <= samples; sample += 1) {
+    const time = (sample / samples) * span;
     const boxes = moves.map(([, move]) => boxAt(move, timing, time));
     const waiting = moves.map(([, move]) => timing.waves > 1 && time - timing.moveAtMs <= moveWindow(move.wave, timing.waves)[0] * timing.moveMs);
     for (let i = 0; i < boxes.length; i += 1) {
@@ -176,20 +279,15 @@ function crossings(moves: Moves, still: readonly Box[], timing: Timing): { touch
         if (!(mi.wave > mj.wave && mi.mode === 'wall')) touched[j] = true;
       }
     }
-    for (const [, move] of moves) {
-      // Handed over: another room takes this very box, as when a room rising to the stage takes a stopped room's slot.
-      const handed = moves.some(([, other]) => other !== move && sameBox(other.to, move.from));
-      const centre = { x: move.from.x + move.from.w / 2 - 1, y: move.from.y + move.from.h / 2 - 1, w: 2, h: 2 };
-      if (handed && !boxes.some(box => covers(box, centre))) cost += (BARE_COST * area(move.from)) / largest;
-    }
+    for (const slot of handed) if (!boxes.some(box => covers(box, slot.centre))) cost += slot.cost;
   }
   return { touched, cost };
 }
 
 /** Crossings and bare frames, plus each room that could keep its content but loses it to a crossing. */
-function planCost(moves: Moves, still: readonly Box[], timing: Timing): number {
-  const { touched, cost } = crossings(moves, still, timing);
-  return cost + WALL_COST * moves.filter(([, move], index) => touched[index] && move.mode !== 'wall').length;
+function planCost(moves: Moves, still: readonly Box[], timing: Timing, samples = SAMPLES): number {
+  const { touched, cost } = crossings(moves, still, timing, samples);
+  return (cost * SAMPLES) / samples + WALL_COST * moves.filter(([, move], index) => touched[index] && move.mode !== 'wall').length;
 }
 
 /** Every way to put `count` rooms in two up to `most` waves, numbered from 0 with none skipped, fewer waves first. */
@@ -217,25 +315,44 @@ function stagger(moves: Moves) {
  * all together along straight lines, then one axis at a time, then fewer waves.
  */
 function orderMoves(moves: Moves, still: readonly Box[]): Plan {
-  if (moves.length === 0) return { waves: 1, path: 'straight' };
+  if (moves.length === 0) return { waves: 1, path: 'straight', corner: 0.5 };
   const timing = (plan: Plan): Timing => ({ ...plan, moveAtMs: 0, moveMs: MOVE_MS });
   const setOrder = (order: readonly number[]) => moves.forEach(([, move], index) => { move.wave = order[index] ?? 0; });
-  let best: Plan & { cost: number; order: number[] } = { waves: 1, path: 'straight', cost: Number.POSITIVE_INFINITY, order: [] };
-  for (const path of ['straight', 'acrossFirst', 'downFirst'] as const) {
-    const cost = planCost(moves, still, timing({ waves: 1, path }));
-    if (cost < best.cost) best = { waves: 1, path, cost, order: [] };
-  }
-  if (moves.length >= 2 && moves.length <= SEARCHED_MOVES) {
-    for (const order of waveOrders(moves.length, moves.length <= THREE_WAVE_MOVES ? 3 : 2)) {
-      if (best.cost === 0) break;
-      setOrder(order);
-      const plan: Plan = { waves: new Set(order).size, path: 'straight' };
-      const cost = planCost(moves, still, timing(plan));
-      if (cost < best.cost) best = { ...plan, cost, order: [...order] };
+  type Ranked = Plan & { cost: number; uneven: number; order: number[] };
+  // Fewer crossings first; between plans that cross alike, the one whose rooms keep the steadier pace.
+  const better = (a: Ranked, b: Ranked) => a.cost - b.cost || a.uneven - b.uneven;
+  const ranked = (plan: Plan, uneven: number, order: number[] = []): Ranked => {
+    setOrder(order);
+    return { ...plan, cost: planCost(moves, still, timing(plan), RANK_SAMPLES), uneven, order };
+  };
+  let best: Ranked | null = null;
+  /**
+   * Ranks a group of plans coarsely and checks its best few closely, since a brief crossing can hide
+   * between coarse frames. Groups come in order of preference, so the first plan that is clear ends it.
+   */
+  const tryGroup = (group: Ranked[]): boolean => {
+    for (const plan of group.sort(better).slice(0, CONFIRMED_PLANS)) {
+      setOrder(plan.order);
+      const confirmed = { ...plan, cost: planCost(moves, still, timing(plan)) };
+      if (!best || better(confirmed, best) < 0) best = confirmed;
+      if (confirmed.cost === 0) return true;
     }
-  }
-  setOrder(best.order);
-  return { waves: best.waves, path: best.path };
+    return false;
+  };
+  const evenness = (path: 'acrossFirst' | 'downFirst', corner: number) => unevenness(moves.map(([, move]) => move), path === 'acrossFirst', corner);
+  const groups: (() => Ranked[])[] = [
+    () => [ranked({ waves: 1, path: 'straight', corner: 0.5 }, 1)],
+    () => (['acrossFirstPaced', 'downFirstPaced'] as const).map(path => ranked({ waves: 1, path, corner: 0.5 }, 1)),
+    () => (['acrossFirst', 'downFirst'] as const).flatMap(path => SHARED_CORNERS.map(corner => ranked({ waves: 1, path, corner }, evenness(path, corner)))),
+    () => moves.length >= 2 && moves.length <= SEARCHED_MOVES
+      // Each order is ranked as it is yielded: the generator reuses one array for every order.
+      ? Array.from(waveOrders(moves.length, moves.length <= THREE_WAVE_MOVES ? 3 : 2), order => ranked({ waves: new Set(order).size, path: 'straight', corner: 0.5 }, 1, [...order]))
+      : [],
+  ];
+  for (const group of groups) if (tryGroup(group())) break;
+  const chosen = best as Ranked | null ?? { waves: 1, path: 'straight' as const, corner: 0.5, order: [] };
+  setOrder(chosen.order);
+  return { waves: chosen.waves, path: chosen.path, corner: chosen.corner };
 }
 
 export function planSequence({ from, to, leaving, entering, keepsContent }: {
