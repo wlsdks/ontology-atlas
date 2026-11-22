@@ -510,7 +510,7 @@
     "fixMyselfTooltip": "このページのファイルをFinderで選択します。どのエディタで直しても一覧に反映されます。",
     "technical": "技術的な詳細 · チェックコードと行番号",
     "technicalOpen": "チェックコードを表示",
-    "technicalNote": "wiki-validateコマンドとvalidate_wikiツールも、これと同じコードを報告します。",
+    "technicalNote": "validate_wikiツールも、これと同じコードを報告します。",
     "technicalFile": "ファイル：{path}",
     "goToPlace": "{place}へ移動",
     "openPage": "{name}を開く",

@@ -429,7 +429,7 @@ export function containmentKeyFor(holderKind, childKind) {
  * An emptied relation list is `[]` when add_concept writes that key empty for
  * this kind (`arrayDefaults`), else `null` (the key is deleted), so a removal
  * leaves the shape creation would have. The app's `ontology-relation-edit.ts`
- * and the CLI's `remove-relation` follow the same rule.
+ * follows the same rule.
  */
 export function emptiedRelationListValue(kind, key) {
   const name = typeof kind === 'string' ? kind.trim() : '';

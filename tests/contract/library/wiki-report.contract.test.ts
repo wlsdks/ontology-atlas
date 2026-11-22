@@ -77,7 +77,7 @@ describe('the structural check — the MCP validators and the app enumerate one 
     }))).toEqual([...WIKI_REPORT_EXPECTED_GROUPS]);
     expect(report.findingCount).toBe(WIKI_REPORT_EXPECTED.length);
     expect(report.pageCount).toBe(WIKI_REPORT_FOLDER.length);
-    // `wiki-validate` calls every page with any finding off-template, but a page whose only findings are
+    // `validate_wiki` calls every page with any finding off-template, but a page whose only findings are
     // advisory fits; only one of the two may be called off-template on a screen.
     expect(report.blockingPageCount).toBe(WIKI_REPORT_EXPECTED_BLOCKING_PAGES);
     expect(report.fitPageCount).toBe(WIKI_REPORT_EXPECTED_FIT_PAGES);

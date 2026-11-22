@@ -274,7 +274,7 @@ export function compileOntology(loadedDocs, options = {}) {
   let maxMtime = 0;
   for (const node of nodes) maxMtime = Math.max(maxMtime, Number(node.mtime) || 0);
   // Concepts named only in relations, with no document. The map and insights draw
-  // them, so without this number the screen and the CLI disagree unexplained.
+  // them, so without this number the screen and the compiled counts disagree unexplained.
   // They are not nodes: inventory, centrality and health ignore them.
   const referencedOnlyCount = referencedOnly.size;
 

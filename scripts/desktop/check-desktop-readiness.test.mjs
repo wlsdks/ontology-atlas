@@ -78,7 +78,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ CLI\/MCP setup gate executes fallbacks while keeping advisory readiness in JSON/,
+    /✓ MCP verify gate runs the server's own verifier over the dogfood vault/,
   );
   assert.match(result.stdout, /✓ desktop runtime doctor is available/);
   assert.match(result.stdout, /✓ desktop packaged-route smoke is available/);

@@ -3794,7 +3794,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.match(result.meaningGate.reviewQuestions[0], /business\/product/);
     assert.equal(result.validation.problemFiles, 0);
     assert.equal(result.next.applyTool, "add_concepts; add_relation only after semantic rationale + human approval");
-    assert.match(result.next.review, /CLI apply never promotes inferred imports to depends_on/);
+    assert.match(result.next.review, /Nothing promotes inferred imports to depends_on/);
     assert.deepEqual(result.next.reviewCalls, [
       {
         tool: "analyze_repo_structure",

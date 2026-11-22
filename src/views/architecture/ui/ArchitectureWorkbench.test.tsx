@@ -581,7 +581,7 @@ describe('the source-listing note', () => {
 
 /*
  * `summary_<role>_<locale>` restates the canonical sentence for the screen; `summary_<role>` stays
- * the fact that briefs, prompts and CLI lines print.
+ * the fact that briefs and prompts print.
  */
 describe("the role sentence in the reader's language", () => {
   const KOREAN_VIEWS = '라우트가 열 수 있는 화면 하나마다 모듈 하나입니다.';

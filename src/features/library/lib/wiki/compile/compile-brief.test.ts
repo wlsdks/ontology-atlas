@@ -80,7 +80,7 @@ describe("the brief carries the template rather than describing it", () => {
   });
 
   it("names the acceptance test and what a failure looks like, without claiming a gate the app does not have", () => {
-    expect(brief).toContain("wiki-validate");
+    expect(brief).toContain("validate_wiki");
     expect(brief).toContain("first problem code");
     expect(brief).not.toContain("will be rejected");
   });
