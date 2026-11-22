@@ -2,7 +2,7 @@ import { Bot, Check, Clipboard, FilePlus, FolderOpen, HardDrive, Network, Termin
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTranslations } from "next-intl";
 import type { LocalFsHandleRecord } from "@/entities/local-fs-handle";
-import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from "@/entities/knowledge-graph";
+import { DOGFOOD_MCP_WALK_CHECK_COUNT } from "@/entities/knowledge-graph";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { Chip, StaggeredFadeIn } from "@/shared/ui";
 import { RecentVaultList } from "@/features/vault-switch";
@@ -12,8 +12,7 @@ import { controlClass } from '@/shared/ui/control-class';
 const DOGFOOD_VERIFICATION_LOOP = [
   "# Ontology Atlas dogfood verification loop",
   "pnpm dogfood:status",
-  "pnpm dogfood:agent-setup-gate",
-  "pnpm dogfood:graph-db",
+  "pnpm dogfood:walk",
   "pnpm dogfood:verify",
 ].join("\n");
 
@@ -91,7 +90,7 @@ export function DesktopVaultWelcome({
       icon: Bot,
       label: t("desktopWelcome.contractAgentLabel"),
       value: t("desktopWelcome.contractAgentValue", {
-        count: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+        count: DOGFOOD_MCP_WALK_CHECK_COUNT,
       }),
       body: t("desktopWelcome.contractAgentBody"),
     },

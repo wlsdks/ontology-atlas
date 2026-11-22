@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { standingApproval } from "@/features/acp-session/model/permissions/standing-approval";
-import { AGENT_FILE_RULES } from "../../../cli/src/lib/agent-setup/agent-files.mjs";
+import { AGENT_FILE_RULES } from "@/entities/agent-files";
 import { unwritableSlugIssue } from "../../../mcp/src/schema.mjs";
 import { CASES } from "../../fixtures/agent-files-cases.mjs";
 

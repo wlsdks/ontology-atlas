@@ -9,7 +9,7 @@ import {
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
 } from '@/features/docs-vault-local';
 import { formatAgentPostChangeSyncPacket } from '@/entities/knowledge-graph';
-import { vaultPathForPacket } from '@/shared/config/agent/cli-invocation';
+import { vaultPathForPacket } from '@/shared/config/agent/vault-path-for-packet';
 
 /**
  * The button the packets point a person to. Connecting is the app's work, so a packet names

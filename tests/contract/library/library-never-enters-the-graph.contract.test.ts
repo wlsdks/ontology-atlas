@@ -5,7 +5,6 @@ import { afterAll, describe, expect, it } from 'vitest';
 
 import { buildLocalManifest } from '@/entities/docs-vault/lib/local-manifest/build-local-manifest';
 import { deriveOntologyFromVault } from '@/entities/docs-vault/lib/derive-ontology-from-vault';
-import { walkMd as walkCliVault } from '../../../cli/src/lib/vault-files/walk-vault.mjs';
 import { walkMd } from '../../../mcp/src/vault/documents/slug-paths.mjs';
 import { loadVaultDocs } from '../../../mcp/src/vault/documents/document-cache.mjs';
 
@@ -138,11 +137,9 @@ describe('the library never enters the graph', () => {
       .nodes.filter((node) => node.sourceSlug)
       .map((node) => node.sourceSlug);
     const mcpDocs = loadVaultDocs(fixtureRoot).filter((doc: { frontmatter: { kind?: string } }) => doc.frontmatter.kind);
-    const cliFiles = walkCliVault(fixtureRoot).map((file: string) => file.slice(resolve(fixtureRoot).length + 1));
 
     expect(appNodes).toEqual(['capabilities/mcp-server']);
     expect(mcpDocs.map((doc: { slug: string }) => doc.slug)).toEqual(appNodes);
-    expect(cliFiles).not.toContain('sources/Planning/roadmap.md');
   });
 
   it('a wiki page contributes no node, however much frontmatter it carries', async () => {

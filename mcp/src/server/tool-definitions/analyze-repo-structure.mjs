@@ -86,7 +86,7 @@ export const ANALYZE_REPO_STRUCTURE_TOOL = {
       view: {
         type: 'string',
         enum: ['breadth', 'analysis'],
-        description: 'What a call with no proposal and no sourceReads returns: "breadth" (the default) is the breadth map; "analysis" is the structural analysis with its project, framework and node candidates, the shape the CLI `analyze`, `bootstrap` and `index` commands read. Ignored with sourceReads or a proposal.',
+        description: 'What a call with no proposal and no sourceReads returns: "breadth" (the default) is the breadth map; "analysis" is the structural analysis with its project, framework and node candidates. Ignored with sourceReads or a proposal.',
       },
       sourceOnly: {
         type: 'boolean',

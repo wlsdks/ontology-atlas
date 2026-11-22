@@ -1,35 +1,51 @@
 import { describe, expect, it } from "vitest";
 import {
   classifyPorcelainChange,
-  formatSnapshotSummary as formatTs,
+  formatSnapshotSummary,
   parsePorcelainStatus,
 } from "@/shared/lib/git/atlas-git-changes";
-import {
-  classifyChange as classifyCli,
-  formatSnapshotSummary as formatCli,
-  getPorcelainStatus as getPorcelainCli,
-} from "../../../cli/src/lib/git/git-snapshot.mjs";
 
 /**
- * Atlas Git summary arithmetic, 2-way contract — the same logic lives in two places:
- *   - cli/src/lib/git/git-snapshot.mjs (developer CLI `node $ATLAS/cli/src/index.mjs snapshot`)
- *   - src/shared/lib/git/atlas-git-changes.ts (the web Atlas Git panel)
- * (Rust `src-tauri/src/git/changes.rs` is a third mirror — its Rust unit tests verify
- * the same fixtures.)
- *
- * If the web panel reports different commit messages or counts than the CLI, the
- * user sees two different histories on the two surfaces. This test blocks that
- * drift.
+ * Atlas Git summary arithmetic of the web Atlas Git panel (`src/shared/lib/git/atlas-git-changes.ts`),
+ * pinned to fixed outputs. `src-tauri/src/git/changes.rs` is the Rust mirror; its unit tests verify the
+ * same fixtures, so the two surfaces report the same history.
  */
 
 // `-z` record form, as both parsers read it: git's default quotePath C-quotes non-ASCII paths.
 // A rename record is `XY new\0orig\0`, new path first.
+const row = (index: string, worktree: string, path: string, renamedFrom: string | null = null) => ({
+  index,
+  worktree,
+  path,
+  renamedFrom,
+});
+
 const PORCELAIN_FIXTURES = [
-  { name: "mixed add/modify/delete", input: "?? docs/new.md\0 M docs/edit.md\0D  docs/gone.md\0" },
-  { name: "rename with arrow", input: "R  docs/new.md\0docs/old.md\0" },
-  { name: "staged add + worktree modify", input: "A  docs/a.md\0MM docs/b.md\0" },
-  { name: "korean filename stays raw", input: "?? docs/\ud55c\uae00.md\0" },
-  { name: "empty output", input: "" },
+  {
+    name: "mixed add/modify/delete",
+    input: "?? docs/new.md\0 M docs/edit.md\0D  docs/gone.md\0",
+    rows: [row("?", "?", "docs/new.md"), row(" ", "M", "docs/edit.md"), row("D", " ", "docs/gone.md")],
+    statuses: ["added", "modified", "deleted"],
+  },
+  {
+    name: "rename with arrow",
+    input: "R  docs/new.md\0docs/old.md\0",
+    rows: [row("R", " ", "docs/new.md", "docs/old.md")],
+    statuses: ["renamed"],
+  },
+  {
+    name: "staged add + worktree modify",
+    input: "A  docs/a.md\0MM docs/b.md\0",
+    rows: [row("A", " ", "docs/a.md"), row("M", "M", "docs/b.md")],
+    statuses: ["added", "modified"],
+  },
+  {
+    name: "korean filename stays raw",
+    input: "?? docs/\ud55c\uae00.md\0",
+    rows: [row("?", "?", "docs/\ud55c\uae00.md")],
+    statuses: ["added"],
+  },
+  { name: "empty output", input: "", rows: [], statuses: [] },
 ];
 
 const CHANGE_FIXTURES = [
@@ -39,6 +55,7 @@ const CHANGE_FIXTURES = [
       { status: "added", kind: "capability", slug: "capabilities/foo" },
       { status: "modified", kind: "element", slug: "elements/bar" },
     ],
+    summary: "ontology snapshot: +1 concept, ~1 updated (capabilities/foo, elements/bar)",
   },
   {
     name: "five added (slug truncation)",
@@ -47,6 +64,7 @@ const CHANGE_FIXTURES = [
       kind: null,
       slug: `n${i}`,
     })),
+    summary: "ontology snapshot: +5 concepts (n0, n1, n2, +2)",
   },
   {
     name: "rename + delete",
@@ -54,32 +72,23 @@ const CHANGE_FIXTURES = [
       { status: "renamed", kind: null, slug: "moved" },
       { status: "deleted", kind: null, slug: "gone" },
     ],
+    summary: "ontology snapshot: \u21921 renamed, -1 removed (moved, gone)",
   },
-  { name: "no changes", changes: [] },
+  { name: "no changes", changes: [], summary: "ontology snapshot: no concept changes" },
 ];
 
-describe("atlas-git summary contract — web mirror agrees with the CLI", () => {
+describe("atlas-git summary contract", () => {
   for (const fixture of PORCELAIN_FIXTURES) {
     it(`porcelain parsing + classification: ${fixture.name}`, () => {
-      // The CLI's parser sits behind an injectable run, so it is driven by a fake run
-      // that returns the fixture text (zero real git processes).
-      const cliRows = getPorcelainCli({
-        repoRoot: "/repo",
-        pathspec: ".",
-        run: () => fixture.input,
-      });
-      if (cliRows === null) throw new Error("CLI parser unexpectedly returned null");
-      const tsRows = parsePorcelainStatus(fixture.input);
-      expect(tsRows).toEqual(cliRows);
-      for (let i = 0; i < tsRows.length; i += 1) {
-        expect(classifyPorcelainChange(tsRows[i])).toBe(classifyCli(cliRows[i]));
-      }
+      const rows = parsePorcelainStatus(fixture.input);
+      expect(rows).toEqual(fixture.rows);
+      expect(rows.map(classifyPorcelainChange)).toEqual(fixture.statuses);
     });
   }
 
   for (const fixture of CHANGE_FIXTURES) {
     it(`snapshot summary line: ${fixture.name}`, () => {
-      expect(formatTs(fixture.changes)).toBe(formatCli(fixture.changes));
+      expect(formatSnapshotSummary(fixture.changes)).toBe(fixture.summary);
     });
   }
 });

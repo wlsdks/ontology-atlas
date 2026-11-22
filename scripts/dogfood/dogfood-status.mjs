@@ -6,10 +6,10 @@ import { fileURLToPath } from 'node:url';
 import { closestDogfoodOption, stripLeadingPnpmSeparator } from '../lib/dogfood-walk/dogfood-args.mjs';
 
 const STATUS_COMMANDS = [
-  { label: 'health', args: ['cli/src/index.mjs', 'health', 'docs/ontology'] },
-  { label: 'workspace-brief', args: ['cli/src/index.mjs', 'workspace-brief', 'docs/ontology'] },
-  { label: 'agent-brief', args: ['cli/src/index.mjs', 'agent-brief', 'docs/ontology'] },
-  { label: 'maintenance', args: ['cli/src/index.mjs', 'maintenance', 'docs/ontology'] },
+  { label: 'health', args: ['scripts/dogfood/dogfood-query.mjs', 'health'] },
+  { label: 'workspace-brief', args: ['scripts/dogfood/dogfood-query.mjs', 'workspace-brief'] },
+  { label: 'agent-brief', args: ['scripts/dogfood/dogfood-query.mjs', 'agent-brief'] },
+  { label: 'maintenance', args: ['scripts/dogfood/dogfood-query.mjs', 'maintenance'] },
 ];
 export function runDogfoodStatus({
   spawn = spawnSync,

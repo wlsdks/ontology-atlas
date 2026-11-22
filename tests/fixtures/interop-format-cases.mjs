@@ -1,14 +1,12 @@
 /**
- * Interop-format contract fixtures — single source of truth for the
- * web-builder serializer (`src/shared/lib/ontology-graph/interop-format.ts`) ↔ CLI serializer
- * (`cli/src/lib/export-format/interop-format.mjs`) drift guard.
+ * Interop-format contract fixtures for the app serializer
+ * (`src/shared/lib/ontology-graph/interop-format.ts`).
  *
  * Each case is a compile-artifact-shaped graph:
  *   { nodes: [{ uid, slug, kind, title, domain? }], edges: [{ from, to, via }] }
  *
- * The contract test feeds every case to both serializers and asserts
- * byte-identical JSON-LD and GraphML. Add a case here (never inline in the
- * test) and both copies are exercised.
+ * The contract test feeds every case to the serializer. Add a case here (never
+ * inline in the test).
  */
 
 export const INTEROP_CASES = [

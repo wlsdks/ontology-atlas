@@ -21,7 +21,7 @@ import {
 } from '../../mcp/src/ontology-engine.mjs';
 import { RELATION_TYPE_VALUES as CLI_RELATION_TYPE_VALUES } from '../../cli/src/lib/relation-types.mjs';
 import { SERVER_VERSION } from '../../mcp/src/server-version.mjs';
-import { parseMcpToolMetadataFromDescription } from '../../cli/src/lib/mcp-bridge/mcp-metadata.mjs';
+import { parseMcpToolMetadataFromDescription } from '../../mcp/scripts/package-metadata.mjs';
 import {
   checkPackage,
   checkMcpLeanTarballFiles,

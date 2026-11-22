@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 
 /**
- * Vault kind schema: the per-kind frontmatter shape add_concept and the CLI both
- * apply (`cli/src/lib/mcp-bridge/schema.mjs` loads this file). `arrayDefaults` are always
+ * Vault kind schema: the per-kind frontmatter shape add_concept applies.
+ * `arrayDefaults` are always
  * emitted, as empty arrays when unsupplied; `optional` keys are never
  * auto-emitted. `relation_notes` (`{ <ref>: "one sentence" }` on the source
  * document, keyed as the relation array spells the ref) is optional on every

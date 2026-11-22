@@ -47,7 +47,7 @@ const ROUTE_PATTERN = /^app\/\[locale\]\/.*\/page\.tsx$/;
  * listed because it still decides the dispatch and the read-only guard.
  */
 const CONTRACT_FILES = [
-  "cli/src/lib/cli-commands.mjs",
+  "cli/src/commands.mjs",
   "mcp/src/index.js",
   "mcp/src/server/registry.mjs",
 ];

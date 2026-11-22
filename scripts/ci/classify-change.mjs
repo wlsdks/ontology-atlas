@@ -69,9 +69,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm test:vault:freshness',
     'pnpm test:dogfood:args',
     'pnpm test:dogfood:status',
-    'pnpm test:dogfood:graph-db',
     'pnpm test:dogfood:script-refs',
-    'pnpm test:dogfood:compile-fix',
     'pnpm dogfood:test',
     'pnpm test:desktop:check',
     'pnpm docs-vault:check',
@@ -530,7 +528,7 @@ function gatesPlan({ suggestions, full }) {
   const commandFiles = commands.flatMap((command) => command.split(/\s+/).filter((token) => /^(?:scripts|cli|tests)\/.+\.[cm]?js$/.test(token)));
   const needsMcp =
     commands.some((command) =>
-      /^pnpm (?:licenses:check|notice:check|test:(?:architecture|claude:hooks|cli:commands)|dogfood:(?:agent|brief|graph-db|health|maintenance|status|verify|walk)|smoke:(?:onboarding|memory-loop))\b/.test(
+      /^pnpm (?:licenses:check|notice:check|test:(?:architecture|claude:hooks|cli:commands)|dogfood:(?:agent|brief|compile|growth|health|maintenance|status|verify|walk)|smoke:(?:onboarding|memory-loop))\b/.test(
         command,
       ),
     ) || [...importClosure(commandFiles)].some((path) => path.startsWith('mcp/'));

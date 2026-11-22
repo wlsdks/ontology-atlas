@@ -3,9 +3,8 @@ import { slugify } from '@/shared/lib/vault-document/slugify';
 import type { BlockManifest } from './block-manifest';
 
 /**
- * The block import merge plan, a pure dry run matching the CLI's `import`
- * (`cli/src/commands/local-vault/import.mjs`) on kind, slug, conflicts and suffixes. The one difference:
- * prefix resolution rewrites references inside the block, as `renameDoc(rewriteBacklinks)` does.
+ * The block import merge plan, a pure dry run on kind, slug, conflicts and suffixes. Prefix
+ * resolution rewrites references inside the block, as `renameDoc(rewriteBacklinks)` does.
  */
 
 export type BlockConflictResolution = 'skip' | 'prefix';

@@ -93,7 +93,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
         kind: 'capability',
         title: 'Fresh',
         domain: 'domains/cli',
-        elements: ['cli/src/commands/local-vault/absorb.mjs'],
+        elements: ['tools/src/commands/local-vault/absorb.mjs'],
       },
       body: WRITTEN_BODY,
     });
@@ -104,14 +104,14 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
     ]);
     const [finding] = findings.filter((f) => f.code === 'path-shaped-reference');
     assert.equal(finding.key, 'elements');
-    assert.deepEqual(finding.refs, ['cli/src/commands/local-vault/absorb.mjs']);
+    assert.deepEqual(finding.refs, ['tools/src/commands/local-vault/absorb.mjs']);
     assert.match(finding.message, /evidence/i);
   });
 
   it('updateDoc (patch_concept) reports the same defect — the door the 92 actually grew through', () => {
     updateDoc(root, 'capabilities/entry', {
       frontmatter: {
-        elements: ['cli/src/commands/local-vault/absorb.mjs', 'cli/src/commands/graph-write/relate.mjs'],
+        elements: ['tools/src/commands/local-vault/absorb.mjs', 'tools/src/commands/graph-write/relate.mjs'],
       },
     });
     const findings = drainNodeEligibilityFindings();
@@ -147,9 +147,9 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       frontmatter: {
         slug: 'capabilities/kept',
         kind: 'capability',
-        title: 'cli/src/commands/local-vault/absorb.mjs',
+        title: 'tools/src/commands/local-vault/absorb.mjs',
         domain: 'domains/cli',
-        elements: ['cli/src/commands/local-vault/absorb.mjs'],
+        elements: ['tools/src/commands/local-vault/absorb.mjs'],
       },
       body: '',
     });
@@ -205,7 +205,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
           kind: 'capability',
           title: 'Path Evidence',
           domain: 'domains/cli',
-          path: 'cli/src/commands/local-vault/absorb.mjs',
+          path: 'tools/src/commands/local-vault/absorb.mjs',
         },
         body: '',
       });
@@ -245,7 +245,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
           );
           refs.push(`elements/e${i}`);
         } else {
-          refs.push(`cli/src/commands/cmd${i}.mjs`);
+          refs.push(`tools/src/commands/cmd${i}.mjs`);
         }
       }
       return refs;
@@ -375,7 +375,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
           kind: 'capability',
           title: 'Option Declaration',
           domain: 'domains/cli',
-          path: 'cli/src/index.mjs',
+          path: 'tools/src/index.mjs',
         },
         body: WRITTEN_BODY,
       });
@@ -407,7 +407,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
           kind: 'capability',
           title: 'Option Declaration',
           domain: 'domains/cli',
-          path: 'cli/src/index.mjs',
+          path: 'tools/src/index.mjs',
         },
         body: WRITTEN_BODY,
       });
@@ -440,7 +440,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
           kind: 'capability',
           title: 'Option Declaration',
           domain: 'domains/cli',
-          path: 'cli/src/index.mjs',
+          path: 'tools/src/index.mjs',
         },
         body: WRITTEN_BODY,
       });
@@ -464,7 +464,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
         kind: 'capability',
         title: 'Labelled',
         domain: 'domains/cli',
-        path: 'cli/src/commands/local-vault/absorb.mjs',
+        path: 'tools/src/commands/local-vault/absorb.mjs',
       },
       body: defaultBody('capability', 'Labelled'),
     });
@@ -605,7 +605,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
         kind: 'capability',
         title: 'Charge a card',
         domain: 'domains/cli',
-        path: 'cli/src/index.mjs',
+        path: 'tools/src/index.mjs',
       },
       body: WRITTEN_BODY,
     });

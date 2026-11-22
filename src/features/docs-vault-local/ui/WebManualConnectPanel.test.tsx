@@ -72,7 +72,6 @@ describe('WebManualConnectPanel manual path entry', () => {
   it('does not copy an incomplete config', () => {
     renderPanel();
     expect(screen.getByTestId('web-manual-connect-copy-config')).toBeDisabled();
-    expect(screen.getByTestId('web-manual-connect-copy-cli')).toBeDisabled();
 
     fill('web-manual-connect-vault-input', '/Users/me/notes');
     expect(screen.getByTestId('web-manual-connect-copy-config')).toBeDisabled();
@@ -81,7 +80,6 @@ describe('WebManualConnectPanel manual path entry', () => {
     expect(screen.getByTestId('web-manual-connect-copy-config')).toBeDisabled();
     fireEvent.click(screen.getByTestId('web-manual-connect-path-confirmation'));
     expect(screen.getByTestId('web-manual-connect-copy-config')).toBeEnabled();
-    expect(screen.getByTestId('web-manual-connect-copy-verify')).toBeEnabled();
   });
 
   it('produces a runnable config without placeholders once both paths are filled', () => {

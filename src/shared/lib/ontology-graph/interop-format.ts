@@ -1,8 +1,7 @@
 /**
- * Node identity is `urn:uuid:<uid>`, so renaming a slug mints no new identity. Mirror of
- * `cli/src/lib/export-format/interop-format.mjs`: `interop-format.contract.test.ts` requires
- * byte-identical output, so change both. Edges are sorted, and an edge whose ends were not both
- * emitted is dropped rather than inventing nodes.
+ * Node identity is `urn:uuid:<uid>`, so renaming a slug mints no new identity. Edges are sorted, and
+ * an edge whose ends were not both emitted is dropped rather than inventing nodes
+ * (`interop-format.contract.test.ts`).
  */
 
 const INTEROP_URN_BASE = 'urn:uuid';

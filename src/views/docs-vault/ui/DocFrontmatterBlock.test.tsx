@@ -595,7 +595,6 @@ describe("DocFrontmatterBlock — last-edit provenance", () => {
         previousOntologySlug: null,
         previousFiles: [],
         previousAgeMs: null,
-        command: null,
         message: null,
       },
       errorMessage: null,
