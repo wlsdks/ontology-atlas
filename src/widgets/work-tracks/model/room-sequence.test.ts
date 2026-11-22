@@ -66,6 +66,27 @@ describe('planSequence', () => {
     expect(sequence.totalMs).toBeLessThanOrEqual(FADE_MS + MOVE_MS + SHOW_MS + 2 * 160);
   });
 
+  it('passes the corner of a two-leg move still moving, in one beat', () => {
+    const from: Rooms = [['a', box(104, 94, 882, 416)], ['b', box(104, 522, 882, 416)], ['c', box(998, 522, 882, 416)]];
+    const to: Rooms = [['a', box(104, 266, 584, 500)], ['b', box(700, 266, 584, 500)], ['c', box(1296, 266, 584, 500)]];
+    const sequence = plan(from, to, { keeps: ['a', 'b', 'c'] });
+    expect(sequence.path).not.toBe('straight');
+    for (const move of sequence.moves.values()) {
+      const steps: number[] = [];
+      for (let time = 0; time < sequence.moveMs; time += 10) {
+        const [a, b] = [boxAt(move, sequence, sequence.moveAtMs + time), boxAt(move, sequence, sequence.moveAtMs + time + 10)];
+        steps.push(Math.max(Math.abs(b.x - a.x), Math.abs(b.y - a.y), Math.abs(b.x + b.w - a.x - a.w), Math.abs(b.y + b.h - a.y - a.h)));
+      }
+      // Between easing in and easing out, a step never falls under a third of the fastest before it and then speeds up again.
+      const middle = steps.slice(8, -8);
+      middle.forEach((step, index) => {
+        const peakBefore = Math.max(...middle.slice(0, index + 1));
+        const later = Math.max(...middle.slice(index));
+        expect(step >= peakBefore / 3 || later <= step * 1.05).toBe(true);
+      });
+    }
+  });
+
   it('lets a floor shift with its content while a room rises to the stage and the stopped one drops after it', () => {
     // At 1920 px: a floor room rises into a stopped room's stage slot, two floor rooms shift left, the stopped room drops to the end.
     const sequence = plan(

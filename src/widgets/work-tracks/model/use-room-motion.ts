@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { MOTION, MOTION_EASE } from '@/shared/motion';
 import { WIDE_ROOM_W, type Box, type RoomBox } from './building-layout';
-import { FADE_MS, SHOW_MS, boxAt, planSequence, waypointsOf, type RoomMove, type RoomSequence } from './room-sequence';
+import { FADE_MS, SHOW_MS, boxAt, boxOnPath, planSequence, type RoomMove, type RoomSequence } from './room-sequence';
 
 const ms = (seconds: number) => seconds * 1000;
 const EASE_CSS = `cubic-bezier(${MOTION_EASE.join(', ')})`;
@@ -181,15 +181,18 @@ function stepsOf(move: RoomMove, { sequence, at }: MoveTiming) {
   };
 }
 
-/** Keyframes along a room's path: held until its move step, through its waypoints, held after. */
+/** Keyframes per drawn frame of the move step, so the path's own curve plays without a stop between legs. */
+const PATH_SAMPLES = 30;
+
+/** Keyframes along a room's path: held until the move step, sampled through it, held after. */
 function pathFrames(move: RoomMove, { sequence, at }: MoveTiming, frame: (box: Box) => Keyframe): Keyframe[] {
-  const begin = sequence.moveAtMs;
-  const points = waypointsOf(move, sequence.waves, sequence.path);
-  return [
-    { ...frame(move.from), offset: 0, easing: 'linear' },
-    ...points.map(point => ({ ...frame(point.box), offset: at(begin + point.at * sequence.moveMs), easing: EASE_CSS })),
-    { ...frame(move.to), offset: 1 },
-  ];
+  const frames: Keyframe[] = [{ ...frame(move.from), offset: 0, easing: 'linear' }];
+  for (let index = 0; index <= PATH_SAMPLES; index += 1) {
+    const progress = index / PATH_SAMPLES;
+    frames.push({ ...frame(boxOnPath(move, sequence.waves, sequence.path, progress)), offset: at(sequence.moveAtMs + progress * sequence.moveMs), easing: 'linear' });
+  }
+  frames.push({ ...frame(move.to), offset: 1 });
+  return frames;
 }
 
 /** An opacity that fades out linearly in a room's fade step, waits while it travels and returns after. */
@@ -236,9 +239,12 @@ function playResized(element: HTMLElement, move: RoomMove, timing: MoveTiming, u
 function playMove(element: HTMLElement, move: RoomMove, timing: MoveTiming): Animation[] {
   const played = [element.animate(pathFrames(move, timing, box => ({ transform: translate(box), zIndex: layerOf(move) })), { duration: timing.total })];
   const plate = element.querySelector<HTMLElement>(':scope > [data-room-plate]');
+  const edge = element.querySelector<HTMLElement>(':scope > [data-room-edge]');
   const { w, h } = move.to;
   if (plate && w > 0 && h > 0 && (move.from.w !== w || move.from.h !== h)) {
     played.push(plate.animate(pathFrames(move, timing, box => ({ transform: `scale(${box.w / w}, ${box.h / h})` })), { duration: timing.total }));
+    // The hue edge follows the wall's width only, so it stays as thick as it is drawn.
+    if (edge) played.push(edge.animate(pathFrames(move, timing, box => ({ transform: `scaleX(${box.w / w})` })), { duration: timing.total }));
   }
   return played;
 }

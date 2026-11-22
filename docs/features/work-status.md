@@ -90,9 +90,11 @@ most and then `+n`, toward the `main` hatch. Past the commits the belt is
 dashed: Git does not tell pre-push, push, PR or CI yet, so no station or value
 is drawn for them. Two tools in one folder are the alarm:
 the room's light, lamp and monitor turn warning amber, the sign carries a `!`,
-and two Moru stand overlapped at the room's own scale with both names, closer
-where the room is narrow and never smaller, the lamp left of them. The room's top edge splits between the
-two sessions' inks. The second tool is a session of its own, numbered and inked
+and two Moru stand at the room's own scale with both names, the second a step
+behind, up and to the right, closer where the room is narrow but never so close
+that his face is hidden, and never smaller. The lamp stands left of the first
+Moru's tail, or out of view where the room has no width for it. The room's top
+edge splits between the two sessions' inks. The second tool is a session of its own, numbered and inked
 (**Codex 1**), with a floor row even when the shared folder is its only one. An
 idle room's monitor names its last commit when nothing else needs saying. A held room with nothing seen running for five minutes
 dozes; a lock left behind shows a taped crate and a dark monitor; a missing
@@ -134,7 +136,9 @@ what must not show while it travels: a stage room that stays a stage room
 fades only its monitor and belt, and keeps its Moru, name tag, branch sign and
 hue edge while its box and scale glide to the new size; a room that changes
 tier, or crosses another, fades its content to its wall, which keeps its hue
-edge and carries its branch plaque so it is clear which room moved. Then every
+edge at its drawn thickness, carries its branch plaque so it is clear which room
+moved, shrinks early and grows late so a small card is what passes the others.
+A move that turns a corner runs as one curve, still moving at the corner. Then every
 room goes to its new box at once; a room taking another's box arrives before
 that room leaves it. Then content fades back in, room by room, and new rooms
 rise into place. Fades out are linear, so nothing cuts. A merge plays first

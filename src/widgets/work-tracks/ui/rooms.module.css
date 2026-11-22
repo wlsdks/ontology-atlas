@@ -65,14 +65,15 @@
   background: color-mix(in srgb, var(--ink) 6%, var(--work-room-wall));
 }
 
-/* The wall keeps its session's hue along its top while it travels without its content. */
-.plate::before {
-  content: "";
+/* The wall keeps its session's hue along its top while it travels without its content, unscaled. */
+.edge {
   position: absolute;
   inset-inline: 0;
   top: 0;
   height: 3px;
+  transform-origin: 0 0;
   background: var(--ink);
+  pointer-events: none;
 }
 
 .face {
@@ -339,38 +340,37 @@
 }
 
 /*
- * Two tools in one folder: two Moru at the room's own scale, the first a step behind and up to 100
- * drawn pixels to the left, closer where the room is narrow, so they overlap rather than shrink. The
- * lamp stands left of the first, clear of his tail where the room has the width, and short enough
- * that its shade stays under the name tags.
+ * Two tools in one folder: two Moru at the room's own scale, never smaller. The second stands a step
+ * behind and up, to the right of the first, at least far enough that his face clears the first's
+ * outline and up to 100 drawn pixels where the room has width. The lamp stands left of the first
+ * Moru's tail; where the room is too narrow it stands out of view rather than on him.
  */
 .scene[data-cast='two'] {
-  --lamp-room: clamp(0px, calc(100% - 16px - var(--monitor-reach, 0px) - 138 * var(--s)), calc(20 * var(--s)));
-  --pair-step: clamp(calc(24 * var(--s)), calc(100% - 16px - var(--monitor-reach, 0px) - var(--lamp-room) - 114 * var(--s)), calc(100 * var(--s)));
-  --ax: clamp(
-    calc(8px + var(--lamp-room) + var(--pair-step) / 2 + 57 * var(--s)),
-    var(--ax-room),
-    calc(100% - 8px - var(--monitor-reach, 0px) - var(--pair-step) / 2 - 57 * var(--s))
+  --rise: calc(12 * var(--s));
+  --pair-step: clamp(calc(44 * var(--s)), calc(100% - 16px - var(--monitor-reach, 0px) - 102 * var(--s)), calc(100 * var(--s)));
+  --ax: min(
+    calc(100% - 8px - var(--monitor-reach, 0px) - var(--pair-step) / 2 - 47 * var(--s)),
+    max(calc(8px + var(--pair-step) / 2 + 75 * var(--s)), var(--ax-room))
   );
 }
 
 .scene[data-cast='two'] .lamp {
-  left: calc(var(--ax) - var(--pair-step) / 2 - 57 * var(--s) - var(--lamp-room));
+  left: calc(var(--ax) - var(--pair-step) / 2 - 75 * var(--s));
   height: calc(56 * var(--s));
 }
 
 .actorBack {
-  --dx: calc(var(--pair-step) / -2);
+  --dx: calc(var(--pair-step) / 2);
   z-index: 1;
-  bottom: calc(var(--floor) * 0.4 - 28 * var(--s) + 3 * var(--p));
+  bottom: calc(var(--floor) * 0.4 - 28 * var(--s) + var(--rise));
 }
 
 .shadow.actorBack {
-  bottom: calc(var(--floor) * 0.4 - 2 * var(--s) + 3 * var(--p));
+  bottom: calc(var(--floor) * 0.4 - 2 * var(--s) + var(--rise));
 }
 
 .actorFront {
-  --dx: calc(var(--pair-step) / 2);
+  --dx: calc(var(--pair-step) / -2);
 }
 
 .tag {
@@ -404,23 +404,24 @@
   align-items: center;
 }
 
-.tagBack {
+.tagFront {
   --dx: calc(var(--pair-step) / -2);
   max-width: calc(var(--ax) - var(--pair-step) / 2 + 4px);
   transform: translateX(calc(-100% + 12px));
 }
 
-.tagBack::after {
+.tagFront::after {
   left: calc(100% - 12px);
 }
 
-.tagFront {
+.tagBack {
   --dx: calc(var(--pair-step) / 2);
+  bottom: calc(var(--floor) * 0.4 + 62 * var(--s) + var(--rise));
   max-width: calc(100% - var(--ax) - var(--pair-step) / 2 + 4px - var(--monitor-reach, 0px));
   transform: translateX(-12px);
 }
 
-.tagFront::after {
+.tagBack::after {
   left: 12px;
 }
 

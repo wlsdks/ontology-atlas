@@ -96,6 +96,8 @@ interface PaintFrame {
   content: Record<string, number>;
   /** How wide each room's showing Moru is drawn, so a scale change can be checked for a jump. */
   moru: Record<string, number>;
+  /** The thickest and thinnest hue edge any room draws: it stays 3 px however its wall scales. */
+  edges: [number, number];
 }
 
 /**
@@ -163,7 +165,9 @@ async function startPaintSampler(page: Page) {
           if (seen(figure) > 0.5) moru[`${keyOf(element)}:${index}`] = figure.getBoundingClientRect().width;
         });
       }
-      frames.push({ copies: Math.max(0, ...copies.values()), overlaps, covered, litGhost, time: frameTime, tags, content: visible, moru });
+      const thickness = all.flatMap((element) => [...element.querySelectorAll(":scope > [data-room-edge]")].map((edge) => edge.getBoundingClientRect().height));
+      const edges: [number, number] = [Math.max(3, ...thickness), Math.min(3, ...thickness)];
+      frames.push({ copies: Math.max(0, ...copies.values()), overlaps, covered, litGhost, time: frameTime, tags, content: visible, moru, edges });
       if (frames.length < 900) requestAnimationFrame(sample);
     };
     requestAnimationFrame(sample);
@@ -213,6 +217,7 @@ async function expectCleanPaint(page: Page, { slots: handed = 0 } = {}) {
     }
   });
   expect.soft([...new Set(jumps)].slice(0, 6), "Moru that jumped to a new scale").toEqual([]);
+  expect.soft(frames.filter((frame) => frame.edges[0] > 3.5 || frame.edges[1] < 2.5).length, "frames where a hue edge scaled with its wall").toBe(0);
 }
 
 test.describe("work status rooms", () => {

@@ -1,3 +1,4 @@
+import { easeMotion } from '@/shared/motion/ease';
 import type { Box } from './building-layout';
 
 /**
@@ -55,12 +56,6 @@ export interface RoomSequence {
   path: RoomPath;
 }
 
-/** A point a room passes during its move step: where it is drawn at that share of the step. */
-export interface Waypoint {
-  at: number;
-  box: Box;
-}
-
 const NEAR_PX = 1;
 const near = (a: number, b: number) => Math.abs(a - b) <= NEAR_PX;
 const sameBox = (a: Box, b: Box) => near(a.x, b.x) && near(a.y, b.y) && near(a.w, b.w) && near(a.h, b.h);
@@ -85,29 +80,56 @@ export function moveWindow(wave: number, waves: number): [number, number] {
   return [[0, 0.4], [0.3, 0.7], [0.6, 1]][Math.min(wave, 2)] as [number, number];
 }
 
-/** The points a moving room passes, from the start of its move step (0) to its end (1). */
-export function waypointsOf(move: RoomMove, waves: number, path: RoomPath = 'straight'): Waypoint[] {
-  const { from, to } = move;
-  if (path === 'acrossFirst') return [{ at: 0, box: from }, { at: 0.5, box: { x: to.x, w: to.w, y: from.y, h: from.h } }, { at: 1, box: to }];
-  if (path === 'downFirst') return [{ at: 0, box: from }, { at: 0.5, box: { x: from.x, w: from.w, y: to.y, h: to.h } }, { at: 1, box: to }];
-  const [start, end] = moveWindow(move.wave, waves);
-  return [{ at: 0, box: from }, { at: start, box: from }, { at: end, box: to }, { at: 1, box: to }];
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
+/** How fast a leg runs where the two legs meet, against its average: moving, so the corner is no stop. */
+const CORNER_SPEED = 2;
+
+/**
+ * How far through each leg of a two-leg path every room is at time `t` of the move: the first leg
+ * eases in and reaches the corner at half the move still moving, the second leaves it at that speed
+ * and eases out. Every room shares the curve, so rooms that slide past each other stay in step.
+ */
+function legsAt(t: number): [number, number] {
+  const u = t <= 0.5 ? t / 0.5 : (t - 0.5) / 0.5;
+  const u2 = u * u, u3 = u2 * u;
+  if (t <= 0.5) return [(-2 * u3 + 3 * u2) + (u3 - u2) * CORNER_SPEED, 0];
+  return [1, (u3 - 2 * u2 + u) * CORNER_SPEED + (-2 * u3 + 3 * u2)];
 }
 
-function boxAtProgress(points: readonly Waypoint[], progress: number): Box {
-  const next = points.findIndex(point => point.at >= progress);
-  if (next <= 0) return points[Math.max(0, next)].box;
-  const a = points[next - 1], b = points[next];
-  const local = b.at === a.at ? 1 : (progress - a.at) / (b.at - a.at);
-  return { x: lerp(a.box.x, b.box.x, local), y: lerp(a.box.y, b.box.y, local), w: lerp(a.box.w, b.box.w, local), h: lerp(a.box.h, b.box.h, local) };
+/**
+ * A wall changes size away from its neighbours: it shrinks in the first part of its travel and grows
+ * in the last, so a small card is what passes other rooms. Each side follows its own direction.
+ */
+function wallSide(from: number, to: number, t: number): number {
+  if (to < from) return lerp(from, to, easeMotion(clamp01(t / 0.4)));
+  return lerp(from, to, easeMotion(clamp01((t - 0.6) / 0.4)));
+}
+
+/**
+ * Where a moving room is drawn at a share of the shared move step, eased: within its wave's window
+ * on a straight line, or through one corner when every room slides along one axis and then the other.
+ */
+export function boxOnPath(move: RoomMove, waves: number, path: RoomPath, progress: number): Box {
+  const { from, to } = move;
+  const [start, end] = path === 'straight' ? moveWindow(move.wave, waves) : [0, 1];
+  const t = clamp01((progress - start) / (end - start));
+  let across = easeMotion(t), down = across;
+  if (path !== 'straight') {
+    const [legOne, legTwo] = legsAt(t);
+    [across, down] = path === 'acrossFirst' ? [legOne, legTwo] : [legTwo, legOne];
+  }
+  const box = { x: lerp(from.x, to.x, across), y: lerp(from.y, to.y, down), w: lerp(from.w, to.w, across), h: lerp(from.h, to.h, down) };
+  if (move.mode !== 'wall') return box;
+  return { ...box, w: wallSide(from.w, to.w, t), h: wallSide(from.h, to.h, t) };
 }
 
 type Timing = Pick<RoomSequence, 'moveAtMs' | 'moveMs' | 'waves' | 'path'>;
 
-/** Where a moving room is drawn at a time after the sequence's start, before easing. */
+/** Where a moving room is drawn at a time after the sequence's start. */
 export function boxAt(move: RoomMove, timing: Timing, timeMs: number): Box {
-  const progress = timing.moveMs === 0 ? 1 : Math.min(1, Math.max(0, (timeMs - timing.moveAtMs) / timing.moveMs));
-  return boxAtProgress(waypointsOf(move, timing.waves, timing.path), progress);
+  const progress = timing.moveMs === 0 ? 1 : clamp01((timeMs - timing.moveAtMs) / timing.moveMs);
+  return boxOnPath(move, timing.waves, timing.path, progress);
 }
 
 const SAMPLES = 24;

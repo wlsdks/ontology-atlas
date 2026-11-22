@@ -147,6 +147,7 @@ function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost 
       style={style}
     >
       <div data-room-plate className={cn(styles.plate, styles.notched)} />
+      <div data-room-edge className={styles.edge} />
       {/* The branch plaque a room carries while it travels as its wall, so it is clear which room moved. */}
       <div data-room-plaque aria-hidden className={cn(styles.sign, styles.notched, styles.plaque, 'text-body leading-body font-mono font-[var(--font-weight-strong)]')}>
         <BranchName branch={room.track.branch ?? room.track.title} />
