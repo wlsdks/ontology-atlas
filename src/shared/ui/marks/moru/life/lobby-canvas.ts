@@ -122,6 +122,9 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, resting, r
   const clips = atlas.clips;
   const STONE = colourIndex.get(hex32(atlas.tones.body))!, IVORY = colourIndex.get(hex32(atlas.tones.belly))!;
   const plain = Uint32Array.from(colours);
+  /** The outline ink, the darkest colour on the sheet, as CSS. */
+  const darkest = colours.slice(1).reduce((a, b) => ((a & 0xff) + ((a >> 8) & 0xff) + ((a >> 16) & 0xff) <= (b & 0xff) + ((b >> 8) & 0xff) + ((b >> 16) & 0xff) ? a : b));
+  const shadowInk = `#${[darkest & 0xff, (darkest >> 8) & 0xff, (darkest >> 16) & 0xff].map(v => v.toString(16).padStart(2, '0')).join('')}`;
   const luts = new Map<string, Uint32Array>();
   const lutOf = (name: string) => {
     let lut = luts.get(name);
@@ -285,10 +288,12 @@ export async function createLobby(canvas: HTMLCanvasElement, { width, resting, r
   const stamp = (s: Drawn) => {
     const f = s.f!, sheet = clothesOf(s.lut), plainClothes = clothesOf(plain);
     ctx.setTransform(s.left ? -scale : scale, 0, 0, scale, (s.left ? s.X + 137 : s.X) * scale, s.Y * scale);
-    // eslint-disable-next-line no-restricted-syntax -- a canvas fill cannot read a CSS variable; this is the sprites' own contact shadow, Moru's outline ink at 27 %
-    ctx.fillStyle = 'rgba(23,25,45,0.2745)';
+    // The contact shadow is Moru's own outline ink from the sheet, at the sprites' shadow strength.
+    ctx.fillStyle = shadowInk;
+    ctx.globalAlpha = 0.2745;
     ctx.fillRect(s.cx - s.reach + 1, 100, 2 * s.reach - 1, 1);
     ctx.fillRect(s.cx - s.reach + 7, 101, 2 * s.reach - 13, 1);
+    ctx.globalAlpha = 1;
     const wear = (at: PiecePart['layer']) => {
       for (const { part: p, x: x0, y: y0 } of s.layered) {
         if (p.layer !== at) continue;
