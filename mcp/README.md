@@ -1407,10 +1407,11 @@ basename.
 `describes`), so clients can catch typos like `depend_on` before the call.
 Scalar string options follow the same boundary across read and write tools:
 slugs, repo paths, filters, titles, relation types, query targets, and cursor
-ids reject blank, whitespace-padded, or null-byte values before graph
-resolution, repo walking, or disk writes. `tools/list` exposes the same
-`minLength` and pattern hints for those scalar strings and strict string-array
-items so MCP clients can catch bad calls before sending them.
+ids reject blank, whitespace-padded, multi-line or null-byte values before
+graph resolution, repo walking, or disk writes. `tools/list` shows the
+`minLength` and pattern hints on strict string-array items and object fields;
+a top-level scalar string drops them there, and the server checks the same
+pattern before the handler runs.
 For `query_ontology({ operation: "relation_check" })`, relation `type` is
 validated before endpoint slug resolution, so typoed values such as
 `depend_on` still return the nearest-value hint even in empty or project-less
@@ -1560,8 +1561,10 @@ qualification and exact human acceptance still apply; unsupported assignments
 stay outside the proposal. These are investigation instructions, not a new
 admission rule or a guarantee of construction quality.
 
-The qualification schema advertises the same nonempty purpose-authority
-`decisions`, `nonGoals`, and `sourceRefs` arrays required by runtime validation.
+`tools/list` advertises only the shallow shape of `qualification` and
+`proposal`; the server checks the full schemas, including the nonempty
+purpose-authority `decisions`, `nonGoals`, and `sourceRefs` arrays, and refuses
+a malformed field with its path, expected shape and one valid example.
 Bound ontology-qualification non-goals to the stated review scope; they must not
 be invented as upstream product exclusions. In the source-checkout handoff
 helper, auditors independently accept or reject sealed quantifier classifications.
