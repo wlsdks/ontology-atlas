@@ -11,15 +11,15 @@ export const rules = [
 
 export const directTests = {
   cli: [
-    ['cli/src/index.mjs', 'cli/src/index.test.mjs'],
+    ['cli/src/main.mjs', 'cli/src/main.test.mjs'],
     ['cli/src/lib/cli-args.mjs', 'cli/src/lib/cli-args.test.mjs'],
     ['cli/src/lib/colors.mjs', 'cli/src/lib/colors.test.mjs'],
     ['cli/src/lib/init/client-config.mjs', 'cli/src/lib/init/client-config.test.mjs'],
     ['cli/src/lib/init/mcp-server-command.mjs', 'cli/src/lib/init/mcp-server-command.test.mjs'],
     ['cli/src/lib/init/parse-args.mjs', 'cli/src/lib/init/parse-args.test.mjs'],
     ['cli/src/lib/init/template-copy.mjs', 'cli/src/lib/init/template-copy.test.mjs'],
-    ['cli/src/lib/init/run-init.mjs', 'cli/src/index.test.mjs'],
-    ['cli/src/lib/init/next-steps.mjs', 'cli/src/index.test.mjs'],
+    ['cli/src/lib/init/run-init.mjs', 'cli/src/main.test.mjs'],
+    ['cli/src/lib/init/next-steps.mjs', 'cli/src/main.test.mjs'],
     ['cli/src/lib/agent-setup/agent-config.mjs', 'cli/src/lib/agent-setup/agent-config.test.mjs'],
     ['cli/src/lib/agent-setup/cwd-binding-scope.mjs', 'cli/src/lib/agent-setup/cwd-binding-scope.test.mjs'],
     ['cli/src/lib/vault-files/atomic-write.mjs', 'cli/src/lib/vault-files/atomic-write.test.mjs'],

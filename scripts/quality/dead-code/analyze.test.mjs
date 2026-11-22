@@ -19,7 +19,7 @@ test('parses scopes and refuses a scoped baseline update', () => {
 });
 
 test('a package entry leaves an orphan module detectable in project', () => {
-  assert.deepEqual(matchedEntries(process.cwd(), 'cli', ['src/index.mjs'], ['cli/src/index.mjs', 'cli/src/commands/orphan.mjs']), ['src/index.mjs']);
+  assert.deepEqual(matchedEntries(process.cwd(), 'cli', ['src/main.mjs'], ['cli/src/main.mjs', 'cli/src/lib/orphan.mjs']), ['src/main.mjs']);
 });
 
 test('reporter preserves parent identity, counters, and a stable config path', () => {

@@ -96,8 +96,8 @@ MCP design contracts this package treats as release-critical:
 - Tool results must include `structuredContent`; when text JSON is also present,
   the verify helpers compare both payloads for parity. Compact agent brief v3 is
   the versioned exception: `structuredContent` carries the typed facts without
-  `handoffPrompt`, `content[0].text` is a self-sufficient handoff, and the CLI
-  checks the text against the structure.
+  `handoffPrompt`, `content[0].text` is a self-sufficient handoff, and the
+  verifier checks the text against the structure.
 - Read tools must stay side-effect free. Write tools must keep explicit
   `expected_mtime`, dry-run, `confirm`, `overwrite`, and `force` safety gates.
 - Every destructive dry-run exposes the same machine decision fields:
@@ -473,24 +473,16 @@ pnpm test:mcp:suggestions
 pnpm test:mcp:verify
 pnpm test:mcp:verify:first-contact
 pnpm test:mcp:verify:timeout
-pnpm integration:cli:compile
 pnpm dogfood:compile
-pnpm dogfood:compile-fix
 pnpm test:dogfood:args
 pnpm test:dogfood:script-refs
-pnpm test:dogfood:compile-fix
 pnpm dogfood:health
 pnpm dogfood:agent
-pnpm dogfood:agent-graph-db-pack
-pnpm dogfood:graph-db
-pnpm dogfood:agent-setup-gate
-pnpm dogfood:agent-fallbacks
 pnpm dogfood:brief
 pnpm dogfood:growth
 pnpm dogfood:maintenance
 pnpm dogfood:status
 pnpm test:dogfood:status
-pnpm test:dogfood:graph-db
 pnpm dogfood:verify
 pnpm dogfood:test
 ```
@@ -525,7 +517,7 @@ timeout parsing, missing response labels, and retry help.
 `test:mcp:maintenance` narrows maintenance_plan filter enums, ready/missing
 cursor handling, resume-cursor behavior, dogfood work-queue shape gates, and
 bucket / next-action formatter checks.
-`test:mcp:package` checks package-script, CLI entrypoint, dependency, and
+`test:mcp:package` checks package-script, init entrypoint, and
 tarball contract drift without running unrelated UI or E2E gates.
 `test:mcp:suggestions` covers strict enum / argument suggestion behavior.
 Near-name matching stops edit-distance work outside the existing acceptance
@@ -541,17 +533,10 @@ vault warning / `validate_vault`, first-contact health summary / advisory / next
 `workspace_brief.nextActions[].sample` shape drift.
 `test:mcp:verify:timeout` narrows verify timeout parsing, startup failure
 retry guidance, usage, empty-vault fail-fast, and retry diagnostics.
-`integration:cli:compile` narrows CLI compile / `--fix` canonicalization
-contracts without running unrelated CLI routes.
 `dogfood:compile` prints the dogfood vault `compile_ontology` summary JSON
 snapshot without running the full installed-style MCP verify walk.
 `dogfood:health` prints the dogfood vault fail-closed `health` JSON gate
 without running the full installed-style MCP verify walk.
-`dogfood:agent-graph-db-pack` prints the dogfood vault shell-pasteable graph DB pack
-without running the full installed-style MCP verify walk.
-`dogfood:graph-db` runs the dogfood vault graph DB pack runtime gate without
-running the full installed-style MCP verify walk.
-`dogfood:agent-setup-gate` prints the dogfood vault machine-readable agent setup gate with `ok` and `performanceOk` so agent automation can separate broken setup from slow local fallback latency.
 `dogfood:brief` prints the dogfood vault `workspace_brief` JSON snapshot
 without running the full installed-style MCP verify walk.
 `dogfood:growth` prints the dogfood vault `growth_plan` JSON snapshot
@@ -584,7 +569,6 @@ repository's own vault answers 107 next reads against 0 write actions.
 without running the full installed-style MCP verify walk.
 `dogfood:status` always runs health + workspace-brief + agent-brief + maintenance, prints `[dogfood:status] health:N · workspace-brief:N · agent-brief:N · maintenance:N`, preserves the first failing exit before escalating, and prints failed-child focused follow-ups (`pnpm dogfood:health`, `pnpm dogfood:brief`, `pnpm dogfood:agent`, or `pnpm dogfood:maintenance` + `pnpm test:mcp:maintenance`) before the `pnpm dogfood:verify` follow-up hint on failure.
 `test:dogfood:status` checks that always-run shortcut contract without the full dogfood suite.
-`test:dogfood:graph-db` checks the graph DB pack runner contract without invoking the live CLI pack.
 Use `OATLAS_TEST_NAME_PATTERN` with `pnpm integration:mcp` when the touched MCP
 integration case has a different name. For Node's `--test-name-pattern`, use
 `pnpm exec node --test --test-name-pattern "..." mcp/src/integration.test.mjs`
@@ -602,14 +586,9 @@ matched test fails, so the exact scoped test count is visible without
 subtracting skipped tests. File setup/import failures are reported separately as
 `setupFailures=N` instead of inflating the matched-test count.
 `pnpm dogfood:compile` is the shortest dogfood vault compiler snapshot.
-`pnpm dogfood:compile-fix` runs dogfood `compile --fix`, fails if canonicalization leaves a docs/ontology diff, tells you to run `pnpm docs-vault:build`, and ends successful runs with `[dogfood:compile-fix] docs/ontology unchanged`.
 `pnpm test:dogfood:args` checks shared dogfood shortcut argument helpers without invoking any gate.
 `pnpm test:dogfood:script-refs` checks help text and package script body `pnpm ...` references against root package scripts, source-checkout dependency availability and exact-pin parity, plus focused filter parsing and wrapper summaries.
-`pnpm test:dogfood:compile-fix` checks that idempotence guard without the full dogfood suite.
 `pnpm dogfood:health` is the shortest dogfood vault health gate.
-`pnpm dogfood:agent-graph-db-pack` is the shortest dogfood vault graph DB pack snapshot.
-`pnpm dogfood:graph-db` is the shortest dogfood vault graph DB pack runtime gate.
-`pnpm dogfood:agent-setup-gate` is the shortest dogfood vault machine-readable setup gate with `ok` and `performanceOk`.
 `pnpm dogfood:brief` is the shortest dogfood vault first-contact snapshot.
 `pnpm dogfood:growth` is the shortest dogfood vault growth candidate snapshot.
 `pnpm dogfood:maintenance` is the shortest dogfood vault maintenance queue snapshot. Use
@@ -617,7 +596,7 @@ subtracting skipped tests. File setup/import failures are reported separately as
 it still prints the brief, agent handoff, and maintenance after health fails, preserves the first failing exit,
 and prints failed-child focused follow-ups before the `pnpm dogfood:verify`
 follow-up hint on failure. Use
-`pnpm dogfood:compile-fix -- --help` / `pnpm dogfood:status -- --help`
+`pnpm dogfood:status -- --help`
 for shortcut usage without running those gates; unsupported shortcut arguments fail
 with exit 2 before starting the underlying checks, and close `--help` typos include
 a `Did you mean --help?` hint. Use
@@ -653,7 +632,7 @@ is spelled `sources/`, a spelling a case-folding disk opens as `sources/`
 `Sources/` stays a folder of nodes. `read_source` still reads a source for a
 wiki citation.
 
-A vault that kept a node under `sources/` loses it from MCP and the CLI; the
+A vault that kept a node under `sources/` loses it from MCP; the
 app never drew it. `validate_vault` names each such file as
 `kind-under-sources`. To keep it as a node, move the file into its kind folder
 (`domains/` for a domain, the vault root for a project or document), then
@@ -808,7 +787,7 @@ body recovery requires each row's `ok:true` and `bodyInfo.truncated:false`.
 The existing 40,000-character body cap and missing-row errors can leave recovery
 incomplete; the reader must retain that unknown. Missing Uncertainty sections
 also mean unknown, never absence of risk. Legacy valid v2 payloads without the
-additive field remain readable by the CLI. If mandatory data cannot fit after
+additive field remain readable. If mandatory data cannot fit after
 whole qualifier omissions, the operation fails instead of downgrading
 currentness, meaning repair, system warnings, coverage or recovery.
 
@@ -1050,7 +1029,7 @@ rows, and target mtimes. Callers echo expected graph/source/revision on the firs
 call, then follow the revision-bound `nextCall` until `hasMore:false`, execute
 each full-body read, and compare
 returned mtimes before requesting human approval. Stale provenance returns a
-blocked page; malformed/foreign cursors fail closed. CLI/MCP verification rejects
+blocked page; malformed/foreign cursors fail closed. MCP verification rejects
 missing, duplicate, reordered, oversized, stale, or mismatched page chains.
 
 Compact agent_brief carries `meaningRepairCompact:v2` instead: the same status, questions,
@@ -1193,11 +1172,10 @@ file like every other code, so a first-contact call now states how much of the
 vault says nothing.
 
 Five build-depth warnings sit beside them (`src/construction/build-depth.mjs`;
-the CLI `validate` command runs the same module, the path checks and the cited
-lines when `OATLAS_REPO_ROOT` is set). `relation-note-on-unread` flags a
-relation note that describes a node never read: in `validate_vault`, a node
-whose `path:` file this server process never served; in the CLI, which holds no
-session, a node whose own `## Uncertainty` says it was not read. It names the
+the path checks and the cited lines run when `OATLAS_REPO_ROOT` is set).
+`relation-note-on-unread` flags a relation note that describes a node never
+read: in `validate_vault`, a node whose `path:` file this server process never
+served. It names the
 two repair calls: the read of that node's entry, and the `replace_relation`
 with the same target and type that rewrites the note.
 `rule-without-read-lines` flags a capability that states a rule but cites no
@@ -1591,7 +1569,7 @@ rewriting the reasoning requires rejection and resealing.
 ## Frontmatter shape per kind (R14)
 
 When `add_concept` writes a new `.md`, the frontmatter is normalized by
-`mcp/src/schema.mjs` so the AI agent and the CLI always emit the same shape.
+`mcp/src/schema.mjs` so every write tool emits the same shape.
 Empty arrays are kept (not stripped) so a human can see the slot and fill it
 later.
 
@@ -1611,8 +1589,8 @@ without breaking pre-existing vaults.
 `relation_notes` is the relation rationale field, and it is optional on every
 kind: an object map `{ <relation target ref>: "one sentence" }` on the
 **source** document, keyed by the ref exactly as the relation array spells it
-(`relation_notes: { capabilities/mcp-server: "The CLI delegates its reads and
-writes to the same MCP contracts." }`). `add_relation(why)` and
+(`relation_notes: { capabilities/mcp-server: "The app reads the frontmatter the
+MCP server writes." }`). `add_relation(why)` and
 `add_relations` write it in the same frontmatter write as the edge and require
 it for every new `depends_on`; the compiler promotes it to `edge.rationale`;
 `find_path`, `get_concept`, and `query_ontology` return it; `rename_concept`,
@@ -1656,7 +1634,6 @@ Where the stamp comes from, per path:
 | `add_concept` · `add_concepts` · `absorb_document` | `agent:<heartbeat agent>`, or `agent:unknown` when no heartbeat names it |
 | The web workbench composer (the map's contextual meaning editor at `/topology/?workbench=edit`, direct save) | `human` |
 | The in-app agent panel's **Apply** | `agent:<provider>` — the draft's author is the model; a person's approval click is not authorship |
-| `ontology-atlas add` / `import` (CLI) | *nothing* — the CLI cannot prove who is at the keyboard |
 
 `patch_concept` **preserves** an existing `created_by` and refuses to set one:
 editing a node is not authoring it, and a field an agent could rewrite would be
@@ -1678,8 +1655,8 @@ colons. Nodes with no stamp match neither side; that is what unknown means.
 
 Every kind also accepts an optional `display` field, right after `title` in
 `preferredOrder`. It exists for nodes whose real `title` carries a long
-parenthetical qualifier — e.g. `title: CLI Developer Entry (57 commands —
-vault + MCP verify + ...)`. The topology canvas label, INDEX panel row, node
+parenthetical qualifier — e.g. `title: MCP Tool Server (40 tools —
+read + write + ...)`. The topology canvas label, INDEX panel row, node
 popover header, and full-detail header all render the *display name*, not
 the raw `title`:
 
@@ -1730,7 +1707,7 @@ A slug is the node's **name**, flat under its kind folder: `elements/<role-name>
 (`elements/jwt-token`, `elements/ontology-map`). The file's location lives in
 `path:`, never in the slug. Path-style slugs (`elements/src/features/auth`) are
 **rejected at every write door** (`add_concept` / `add_concepts` /
-`rename_concept` / `reclassify_concept` / CLI `add`) by `flatSlugIssue()` in
+`rename_concept` / `reclassify_concept`) by `flatSlugIssue()` in
 `schema.mjs`.
 
 Why the R15 stance ("pick flat or path-style per what the element is") was
@@ -1750,12 +1727,8 @@ A vault's **own** folder nesting outside the schema kind folders
 local-first means the user's disk layout is respected; real tail collisions
 there surface as the compiler's `ambiguous-alias` warning.
 
-`cli/src/lib/mcp-bridge/schema.mjs` is **not a second copy of this schema** — since
-2026-08-30 it re-exports this module, resolved at runtime from the source
-checkout or from the installed `ontology-atlas-mcp` package. Change it here and
-the CLI has changed with it; there is nothing to mirror.
-`tests/contract/architecture/schema-copy-sync.contract.test.ts` blocks a copy from coming
-back, and `tests/contract/vault-format/vault-schema.contract.test.ts` still holds the UI
+This module is the only copy of the schema.
+`tests/contract/vault-format/vault-schema.contract.test.ts` holds the UI
 dictionary to the same required fields.
 
 ## Local verification (UX-3)
@@ -1766,20 +1739,13 @@ dictionary to the same required fields.
 cd mcp && npm install
 # From the repo root, the dogfood vault gates:
 pnpm dogfood:compile
-pnpm dogfood:compile-fix
 pnpm test:dogfood:script-refs
-pnpm test:dogfood:compile-fix
 pnpm dogfood:health
 pnpm dogfood:agent
-pnpm dogfood:agent-graph-db-pack
-pnpm dogfood:graph-db
-pnpm dogfood:agent-setup-gate
-pnpm dogfood:agent-fallbacks
 pnpm dogfood:brief
 pnpm dogfood:growth
 pnpm dogfood:maintenance
 pnpm dogfood:status
-pnpm test:dogfood:graph-db
 pnpm dogfood:verify
 # Inside mcp/, the package-local verifier has the same smoke scope:
 OATLAS_VAULT=../docs/ontology npm run verify
@@ -1933,7 +1899,7 @@ It also requires every exercised direct read, write row-isolation smoke,
 destructive dry-run smoke, maintenance cursor, and
 `query_ontology` graph-query response to include `structuredContent`, and
 compares that payload with text JSON when both carry JSON. Compact agent brief
-v3 sends a handoff text instead of JSON text; the CLI checks that text against
+v3 sends a handoff text instead of JSON text; the verifier checks that text against
 `structuredContent`, so typed facts are not serialized twice. Agents can consume MCP results without reparsing
 human text. Successful verify output summarizes the
 direct-read, write, maintenance-cursor, and graph-query `structuredContent` coverage
@@ -2201,7 +2167,7 @@ transport. Everything a change would actually touch lives beside it.
 | `src/ontology-engine/traversal/traversal-queries.mjs` | neighbor enumeration, shortest paths, and bounded all-path searches |
 | `src/ontology-engine/query-operation/query-values.mjs` | shared node/relation vocabulary and default limits |
 | `src/ontology-engine/query-operation/query-primitives.mjs` | shared input normalization and node/edge result shaping |
-| `src/ontology-engine/briefs/agent-responses.mjs` | agent handoff prompts and CLI follow-up formatting |
+| `src/ontology-engine/briefs/agent-responses.mjs` | agent handoff prompts and follow-up formatting |
 
 Adding a module means adding it to `files` in `mcp/package.json` — the bundle and
 the MCPB artifact copy that list, so an undeclared import ships a server that
@@ -2213,7 +2179,7 @@ cannot boot.
 - **Synchronous fs** — MCP call frequency is low enough that async overhead isn't worth it.
 - **Frontmatter preservation** — `add_relation` keeps the existing frontmatter intact and only patches the relevant array key (idempotent — duplicates respond with `alreadyExists: true`).
 - **Vault-node sandbox** — every ontology `slug` write is vault-relative, and no
-  write tool (nor the CLI's `add`, `import` and `relate`) names a slug with a
+  write tool names a slug with a
   segment starting with `.` (`.claude`, `.git`, `.github`) or ending like a
   Windows short name (`~1`), a control or invisible formatting character, an
   agent instruction file (`AGENTS`, `AGENTS.override`, `CLAUDE`, `CLAUDE.local`
@@ -2261,7 +2227,7 @@ immutable source snapshot over an inherited read-only descriptor. The import
 scanner's six filesystem operations use that input only; absent, excluded,
 symlinked or unavailable inputs cannot silently become successful fallback
 observations. The child has an empty private source namespace, including when
-an older bundled server lacks this mode. Ordinary MCP and CLI import requests
+an older bundled server lacks this mode. Ordinary MCP import requests
 keep their existing filesystem path and argument contracts.
 
 No public tool accepts a caller-supplied snapshot or gains write authority.

@@ -201,7 +201,7 @@ const SOURCE_FILES: Record<string, string> = {
       "test:run": "vitest run",
       // A check script whose command names one path, shown as its declaration.
       "test:cart": "vitest run src/features/cart",
-      "agents:check": "node cli/src/index.mjs agent-files",
+      "agents:check": "node .agents/check-instructions.mjs",
     },
   }),
   "AGENTS.md": "# Storefront\n\nCanonical contributor guide. Checkout rules live in docs/checkout.md.\n",

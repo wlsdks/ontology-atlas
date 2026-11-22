@@ -45,7 +45,7 @@ picker could perform it.
 | **`mcp__ontology-atlas__*` `instructions` field** | Server's initialize response carries kind hierarchy, first-time workflow, write safety patterns — every connecting agent gets the discipline without trial-and-error | `mcp/src/index.js` |
 | **`.ontology-atlasignore`** | Vault-root gitignore-style file. **It does not exclude any file from the vault** — the name invites that reading, but nothing is hidden from `validate`, the graph, or search. Patterns match `materialize_external_element` refs in `growth_plan` / `maintenance_plan` and skip *those suggestions*. Intentional external code (e.g. `src/**`, `cli/**`) stops surfacing as noise. `externalElementRefsIgnored` count exposed for transparency | `mcp/src/vault/sidecar/ontology-atlas-ignore.mjs` (this vault has no ignore file — it needs none) |
 
-`add_concept` / CLI `add` / CLI `import` share a single per-kind frontmatter schema (`mcp/src/schema.mjs` ↔ `cli/src/lib/mcp-bridge/schema.mjs`) — three entry points, one shape.
+`add_concept` / `add_concepts` write through a single per-kind frontmatter schema (`mcp/src/schema.mjs`) — one shape.
 
 #### Prose / wiki absorption
 

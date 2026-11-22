@@ -165,7 +165,7 @@ describe('package contract helpers', () => {
   });
 
   it('keeps the init entrypoint on natural exit so large stdout can flush', () => {
-    const entry = join('cli', 'src', 'index.mjs');
+    const entry = join('cli', 'src', 'main.mjs');
     const source = readFileSync(entry, 'utf-8');
     // The entry delegates init and its status lines to these modules; any of them could end the process.
     const delegated = readdirSync(join('cli', 'src', 'lib', 'init'))
@@ -323,7 +323,7 @@ describe('package contract helpers', () => {
       assert.equal(existsSync(join('cli/src/lib', testFile)), true, `${testFile} must still exist`);
       assert.equal(isCoveredByFiles(`src/lib/${testFile}`, pkg.files), true, `${testFile} must ship for CLI npm test`);
     }
-    assert.equal(isCoveredByFiles('src/index.mjs', pkg.files), true);
+    assert.equal(isCoveredByFiles('src/main.mjs', pkg.files), true);
     assert.equal(isCoveredByFiles('templates/vault/project.md', pkg.files), true);
   });
 

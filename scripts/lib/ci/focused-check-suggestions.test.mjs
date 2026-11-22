@@ -241,7 +241,7 @@ describe('focused check suggestions', () => {
       'tests/contract/ci-gates/test-title-language.contract.test.ts',
       'scripts/desktop/desktop-smoke.test.mjs',
       'mcp/src/analyze.test.mjs',
-      'cli/src/index.test.mjs',
+      'cli/src/main.test.mjs',
     ];
     assert.equal(
       commandNames(suggestFocusedChecks(tests)).filter((command) => command === TEST_HYGIENE_COMMAND).length,
@@ -727,11 +727,11 @@ describe('focused check suggestions', () => {
   });
 
   it('runs the init entry test for dispatch and command list changes', () => {
-    const result = suggestFocusedChecks(['cli/src/index.mjs', 'cli/src/commands.mjs']);
+    const result = suggestFocusedChecks(['cli/src/main.mjs', 'cli/src/commands.mjs']);
 
     assert.deepEqual(domainCommands(result), [
       'pnpm docs:surface:check',
-      'pnpm exec node --test cli/src/index.test.mjs',
+      'pnpm exec node --test cli/src/main.test.mjs',
       'pnpm test:cli',
       'pnpm vault:validate',
     ]);
@@ -1923,7 +1923,7 @@ describe('security surfaces', () => {
   });
 
   it('stays silent outside every security surface', () => {
-    for (const path of ['src/shared/lib/cn.ts', 'mcp/src/vault/vault.test.mjs', 'docs/README.md', 'cli/src/index.mjs']) {
+    for (const path of ['src/shared/lib/cn.ts', 'mcp/src/vault/vault.test.mjs', 'docs/README.md', 'cli/src/main.mjs']) {
       assert.equal(securityRow(path), undefined, path);
     }
   });

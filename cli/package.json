@@ -5,9 +5,9 @@
   "private": true,
   "description": "Scaffold an Ontology Atlas vault and wire the checkout MCP server into the agents that will read it.",
   "type": "module",
-  "main": "src/index.mjs",
+  "main": "src/main.mjs",
   "bin": {
-    "ontology-atlas": "src/index.mjs"
+    "ontology-atlas": "src/main.mjs"
   },
   "scripts": {
     "test": "node --test src/*.test.mjs src/lib/*.test.mjs src/lib/*/*.test.mjs"

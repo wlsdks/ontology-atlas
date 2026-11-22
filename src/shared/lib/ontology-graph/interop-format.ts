@@ -109,8 +109,7 @@ function normalizeGraph(graph: InteropGraph): {
     const via = typeof e?.via === 'string' && e.via.trim() ? e.via.trim() : '';
     if (!from || !to || !via) continue;
     if (!nodeBySlug.has(from) || !nodeBySlug.has(to)) continue;
-    // No separator: this file and `cli/src/lib/export-format/interop-format.mjs` must produce the same output for the
-    // same input, and a space separator is ambiguous. `JSON.stringify` avoids both problems.
+    // A space separator is ambiguous when a slug or relation contains one; `JSON.stringify` is not.
     const key = JSON.stringify([from, via, to]);
     if (seenEdge.has(key)) continue;
     seenEdge.add(key);

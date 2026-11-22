@@ -529,8 +529,7 @@ desktop:verify-hosted` when the public `/ko/download/` route is expected to be
 live.
 `pnpm desktop:release-preflight`
 is the local pre-tag command for readiness, docs-vault freshness, desktop
-checker tests, runtime split tests, native bridge tests, runtime doctor, CLI/MCP
-handoff against `docs/ontology`, the agent JSON setup/performance gate, build,
+checker tests, runtime split tests, native bridge tests, runtime doctor, build,
 route smoke, LaunchServices app content proof (`--open-app --require-window
 --require-owner-name="Ontology Atlas" --min-window-size=1040x720
 --require-accessibility-text="Ontology Atlas"`), DMG verification, and temporary
@@ -726,7 +725,7 @@ However, using it to mean "the product's entire user base is only developers" is
 
 ### ⏳ Phase 4 execution — Wedge + shared surface
 
-1. ✅ CLI command expansion — 54 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight + write, agent handoff, live agent activity heartbeat, growth/maintenance queue, graph CRUD, and graph deep dive
+1. ✅ CLI command expansion (retired 2026-11-22; only `init` remains, every other read and write is MCP) — 54 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight + write, agent handoff, live agent activity heartbeat, growth/maintenance queue, graph CRUD, and graph deep dive
 2. ✅ AI agent dogfood cycle — Claude Code verifies codebase analysis + add_concept workflow via mcp (R12 + R14 meta-verification)
 3. ⏳ 10-minute shared understanding loop proof — Verify if core grasp via `init → bootstrap → topology/ontology` → MCP answer quality improvement → agent sync proposal → git diff review → improved next planning/development work is visible within 10 minutes in a new repository. If this doesn't happen, it's still just well-made components, not a product.
 4. ⏳ Stakeholder-readable topology proof — Verify if non-developers can explain "what the core domain/capability is, what proves its implementation, and where changes have impact" by looking at `/topology` (with its current map/detail surfaces).
@@ -748,14 +747,14 @@ and identity live in `AGENTS.md`; neither statement below is current authority.
 > **A repo-native memory layer for AI coding agents, backed by an ontology of one codebase.**
 >
 > - Humans: review and refine the repo-local memory as normal markdown/git diffs.
-> - AI agents (Claude Code, Cursor, Codex): read, query, and propose updates via MCP or CLI.
+> - AI agents (Claude Code, Cursor, Codex): read, query, and propose updates via MCP.
 > - Bootstrap and sync reduce manual ontology authoring; the graph is maintained as a side effect of real code work.
 > - All inputs share one vault graph. The current read/inspect workbench is the
 >   Topology map with its INDEX and detail surfaces; retired tree and ERD
 >   descriptions are historical records, not current product surfaces.
-> - Distributed as an installed workbench plus source-checkout CLI/MCP entry
->   points for terminal and AI-agent workflows; npm is not a distribution
->   channel.
+> - Distributed as an installed workbench plus a source-checkout MCP server and
+>   `init` command for terminal and AI-agent workflows; npm is not a
+>   distribution channel.
 
 What changed:
 

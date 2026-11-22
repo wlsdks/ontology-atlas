@@ -5,7 +5,7 @@ status: current
 area: analysis
 stores: ".ontology-atlas/analyses/"
 contract_version: 1
-enforced_by: [src/entities/analysis-record/lib/analysis-store.ts, cli/src/commands/repo-analysis/analysis.mjs]
+enforced_by: [src/entities/analysis-record/lib/analysis-store.ts, mcp/src/analysis-history/analysis-records.mjs]
 ---
 
 # Analysis records
@@ -15,11 +15,11 @@ Atlas keeps each in-app ACP analysis as a separate Markdown file under
 Two requests are recorded: a review that asks for the findings block, and the
 map's code-check investigation packet. An ordinary chat turn stays in the
 conversation and writes no record. Runs that earlier versions recorded for
-ordinary turns stay on disk and remain readable through MCP and the CLI; the
+ordinary turns stay on disk and remain readable through MCP; the
 app's Review results list and the Architecture page leave them out unless they
 carry a finding.
 Map, Analysis, and Architecture use the same format. An analysis can be
-reopened after a session closes, exported, inspected through MCP or CLI, or
+reopened after a session closes, exported, inspected through MCP, or
 used as the parent of another analysis.
 
 These are diagnostic records. They have no ontology `kind`, do not enter the
@@ -80,15 +80,16 @@ Atlas does not turn these counts into an uncalibrated maintainability score.
 Browsers can read records through an opened folder. Automatic archival and
 review writes require the installed app and a writable captured folder.
 Records remain local; this feature does not push, publish, or change a
-repository's ignore rules. Existing legacy `analysis` CLI findings beside the
-vault and replaceable Architecture JSON receipts remain separate formats.
+repository's ignore rules. Findings files a retired `analysis` command left
+beside the vault, and replaceable Architecture JSON receipts, remain separate
+formats.
 
 ## Format and ownership
 
 The shared, framework-free validator and codec are
 `mcp/src/analysis-history/analysis-record.mts`; the app reads them through
 `src/entities/analysis-record/model/analysis-record.mts`. App code and the
-Node 24 MCP/CLI readers consume that same contract. A filename is an exact UTC
+Node 24 MCP reader both consume that contract. A filename is an exact UTC
 timestamp followed by a writer-minted UUIDv4, for example:
 
 ```text
