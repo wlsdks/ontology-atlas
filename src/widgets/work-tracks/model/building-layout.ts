@@ -122,14 +122,33 @@ export function screenRows(box: Pick<RoomBox, 'w' | 'h' | 'unit'>): number {
 /** What a pair of Moru spends beside a console screen per unit: two cells side by side, 254, and the side wall, 18. */
 const PAIR_PER_UNIT = 272;
 
+/** Two Moru side by side, from the tail of the one behind to the face of the one in front, per unit. */
+const PAIR_BODIES = 218;
+/** A tool a Moru works with reaches this far past the face of the one in front, per unit. */
+const PAIR_TOOL_REACH = 64;
+/** What a narrow room keeps beside the pair: its side wall, per unit, and a margin at each end. */
+const SIDE_WALL = 16;
+const PAIR_MARGIN = 8;
+
 /**
  * The scale two Moru share in one room, in half steps so each drawn pixel stays whole: beside a
- * console as large as leaves the screen its width, at least 1; under a hanging screen half the
- * room's unit, so both stand apart.
+ * console as large as leaves the screen its width, at least 1; under a hanging screen as large as
+ * both fit apart on the floor, up to the room's own.
  */
 export function pairUnit(width: number, unit: RoomUnit): number {
-  if (width < WIDE_ROOM_W) return Math.max(0.5, Math.floor(unit) / 2);
+  if (width < WIDE_ROOM_W) return Math.max(0.5, Math.min(unit, Math.floor((2 * (width - SIDE_WALL * unit - 2 * PAIR_MARGIN)) / PAIR_BODIES) / 2));
   return Math.max(1, Math.min(unit, Math.floor((2 * (width - MORU_LEFT - SCREEN_MIN_W)) / PAIR_PER_UNIT) / 2));
+}
+
+/**
+ * The one in front of a pair works with his tools only where they stay in the room: beside a
+ * console, or under a hanging screen when the floor leaves room past his face for them. Elsewhere
+ * the pair talk and type.
+ */
+export function pairTools(width: number, unit: RoomUnit): boolean {
+  if (width >= WIDE_ROOM_W) return true;
+  const pair = pairUnit(width, unit), floor = width - SIDE_WALL * unit;
+  return floor / 2 + ((PAIR_BODIES / 2) + PAIR_TOOL_REACH) * pair <= floor;
 }
 
 /**

@@ -112,7 +112,8 @@ function Monitor({ room, copy, rows }: { room: RoomEntry; copy: RoomCopy; rows: 
       <div data-room-tag className={cn(styles.bezel, LABEL, 'font-[var(--font-weight-emphasis)]')} data-held={screen.who !== null}>
         {screen.who ? <span className={cn(styles.bezelWho, 'truncate')}>{screen.who}</span> : null}
         <span className={styles.bezelState}>
-          <SwapText value={screen.state.lead} ink={STATE_TONE[screen.state.tone]} />
+          {/* How long gives way before what the state is. */}
+          <span className="flex-none"><SwapText value={screen.state.lead} ink={STATE_TONE[screen.state.tone]} /></span>
           {screen.state.rest ? <span className="flex min-w-0 font-normal">&nbsp;·&nbsp;<SwapText value={screen.state.rest} /></span> : null}
         </span>
         <i className={styles.bezelLed} />
@@ -170,7 +171,7 @@ function Cart({ room, landing }: { room: RoomEntry; landing: number }) {
  * hatch in the side wall, and the belt is a track in the floor that leaves through it. Two tools in
  * one folder: the second Moru stands behind the first on his tail side, both facing the screen.
  */
-export function LargeRoom({ room, unit, rows, pairScale, copy, tint, guestTint, retiring, entered, faceId, character }: {
+export function LargeRoom({ room, unit, rows, pairScale, pairTools, copy, tint, guestTint, retiring, entered, faceId, character }: {
   room: RoomEntry;
   /** The room's Moru, cast across the building. */
   character: MoruCharacter;
@@ -179,6 +180,8 @@ export function LargeRoom({ room, unit, rows, pairScale, copy, tint, guestTint, 
   rows: number;
   /** The share of `unit` two Moru take when two tools share the folder (`pairUnit`). */
   pairScale: number;
+  /** The one in front of a pair has room past his face for his tools (`pairTools`). */
+  pairTools: boolean;
   /** The room is new to the building, or newly on the stage: Moru settles in once. */
   entered: boolean;
   /** Which drawn face this is, so each new entry settles in once. */
@@ -200,7 +203,7 @@ export function LargeRoom({ room, unit, rows, pairScale, copy, tint, guestTint, 
   const after = once === 'crate-send' ? `@${commit.serial}` : null;
   const frontOnce = request && after ? `${request} ${AFTER_CRATE.front}${after}` : request;
   const backOnce = after ? `${AFTER_CRATE.back}${after}` : null;
-  const loops = room.state.kind === 'working' ? workLoops(room.key) : null;
+  const loops = room.state.kind === 'working' && (!pair || pairTools) ? workLoops(room.key) : null;
   const identity = roomIdentity(room.track.branch ?? room.key);
   const tone = pair || room.state.kind === 'lockLeft' ? 'warning' : undefined;
   // Two Moru share a smaller scale, as a share of the room's unit so it eases with the room.

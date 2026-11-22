@@ -418,6 +418,16 @@
   left: calc(var(--ax) - 174 * var(--ps));
 }
 
+/* Under a hanging screen the pair stand in the middle of the floor. */
+:where(.face:not([data-wide='true'])) .scene[data-cast='two'] {
+  --ax: calc((100% - 16 * var(--s)) / 2 + 61 * var(--ps));
+}
+
+/* The cart waits at the front one's feet, as it does at a single Moru's. */
+.scene[data-cast='two'] .way {
+  left: calc(var(--ax) + 38 * var(--ps));
+}
+
 :where(.face[data-wide='true']) .scene[data-cast='two'] .monitor {
   left: calc(var(--ax) + 70 * var(--ps));
 }
@@ -552,6 +562,10 @@
 .screenHead {
   display: flex;
   flex: none;
+  /* The branch reads in full first: an alert that does not fit beside it wraps onto a line that is not shown, and the bezel still says it. */
+  flex-wrap: wrap;
+  height: calc(var(--text-body--line-height) + 2 * var(--s) + 1px);
+  overflow: hidden;
   min-width: 0;
   padding-bottom: calc(2 * var(--s));
   margin-bottom: calc(2 * var(--s));
@@ -574,6 +588,10 @@
   text-overflow: ellipsis;
   font-size: var(--text-body);
   line-height: var(--text-body--line-height);
+}
+
+.face[data-unit='3'] .screenHead {
+  height: calc(var(--text-body-lg--line-height) + 2 * var(--s) + 1px);
 }
 
 .face[data-unit='3'] .screenBranch {
@@ -678,17 +696,16 @@
   background: var(--ink);
 }
 
-/* The state keeps its words; the session names give way first. */
+/* The session names read in full; the state's lead and then how long give way first. */
 .bezelWho {
-  min-width: 2.5em;
-  flex: 0 1 auto;
+  flex: none;
 }
 
 .bezelState {
   display: flex;
   min-width: 0;
-  max-width: 72%;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  overflow: hidden;
   margin-left: auto;
   color: var(--color-text-tertiary);
 }
