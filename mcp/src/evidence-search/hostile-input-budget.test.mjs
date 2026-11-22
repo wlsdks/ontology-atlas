@@ -50,13 +50,19 @@ function linesOf(line) {
   return Array.from({ length: Math.floor(FILE_BYTES / (line.length + 1)) }, () => line).join('\n');
 }
 
+/**
+ * The scan's own time is at most both the wall clock (inflated by other processes) and this
+ * process's CPU time (inflated by collector threads), so the smaller of the two bounds it.
+ */
 function fastestRunMs(run, budgetMs) {
   let fastest = Infinity;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const started = process.cpuUsage();
+    const startedCpu = process.cpuUsage();
+    const startedWall = performance.now();
     run();
-    const spent = process.cpuUsage(started);
-    fastest = Math.min(fastest, (spent.user + spent.system) / 1000);
+    const wallMs = performance.now() - startedWall;
+    const spent = process.cpuUsage(startedCpu);
+    fastest = Math.min(fastest, wallMs, (spent.user + spent.system) / 1000);
     if (fastest < budgetMs || fastest > budgetMs * 10) break;
   }
   return fastest;
