@@ -57,3 +57,22 @@ test('an enum string drops only the keywords every listed value satisfies', () =
   assert.equal(kind.pattern, undefined);
   assert.equal(kind.minLength, undefined);
 });
+
+/** Paths of advertised array schemas that do not say what their items are. */
+function arraysWithoutItems(schema, path, found) {
+  if (!schema || typeof schema !== 'object') return found;
+  if (Array.isArray(schema)) {
+    schema.forEach((child, index) => arraysWithoutItems(child, `${path}[${index}]`, found));
+    return found;
+  }
+  const types = Array.isArray(schema.type) ? schema.type : [schema.type];
+  if (types.includes('array') && schema.items === undefined) found.push(path);
+  for (const [key, child] of Object.entries(schema)) arraysWithoutItems(child, `${path}.${key}`, found);
+  return found;
+}
+
+test('every advertised array says what its items are, as some hosts require', () => {
+  const missing = [];
+  for (const [name, tool] of TOOL_BY_NAME) arraysWithoutItems(tool.inputSchema, name, missing);
+  assert.deepEqual(missing, []);
+});
