@@ -70,16 +70,18 @@ the shared agent config writer, in six slices with their own acceptance criteria
 - **The agent config writer is specified, not built.** The revision of
   `docs/specs/2026-11-21-work-status-destination.md` in the `docs/work-status-rooms` worktree
   (uncommitted, as of 13:46 on 2026-11-22) gives it seven rules under "Agent state from the
-  agent's own hooks", builds it in that spec's slice 5 and records it as Record 3. Its rule 4
+  agent's own hooks" (since its revision of the same day: "The hook entries" under "Waiting for
+  you: the agent's own state"), builds it in that spec's slice 9, "Hook entries", and records it
+  as Record 3, whose text is in `docs/specs/2026-11-22-work-status-criteria.md`. Its rule 4
   saves a version of the affected hook set before every write and keeps no separate backup. That
   file still leaves the history's folders to this spec; the lead decided on 2026-11-22 that the
   version store (app data, the `hooks` key only, retention, mode 0600) is defined there with the
-  writer and built in its slice 5, a text this draft has not read. The copy of that spec on this
+  writer and built in its slice 9, a text this draft has not read. The copy of that spec on this
   branch still says Atlas never "edits an agent's configuration" (`:818-819`).
 - **Nothing keeps an earlier hook outside Git.** In this repository 23 commits changed
   `.claude/settings.json` and 12 changed `.codex/hooks.json` (`git log`, 2026-11-22); the User and
   Local files are in no repository. `git worktree remove` deletes ignored files
-  (`docs/specs/2026-11-21-work-status-destination.md:70`). IndexedDB and the app's derived index
+  (`docs/specs/2026-11-21-work-status-destination.md:147`). IndexedDB and the app's derived index
   may hold no user state (`.claude/rules/local-first.md:36-39`).
 - **Vendor facts in Scope model were read 2026-11-22** on code.claude.com/docs/en (settings, hooks,
   permissions, skills, sub-agents, memory, mcp, managed-settings) and learn.chatgpt.com/docs.
@@ -288,7 +290,7 @@ not valid JSON, and `finding.managedOnly` while the person's files hold hooks.
 
 A **version** is the hooks of one settings file at one moment: the file's `hooks` value and
 nothing else from the file. Versions are kept in the hook version store, which the Work status
-spec defines with the agent config writer and builds in its slice 5: where it sits in the app's
+spec defines with the agent config writer and builds in its slice 9: where it sits in the app's
 data, what a version file holds, how many are kept and who can read them are that spec's. This
 spec adds what a person does with it: versions recorded when Atlas was not the one writing, named
 saves, the History popup, search, restore, and the Git history of the two Project files. The
@@ -580,8 +582,9 @@ in `docs/` fails `pnpm docs:language`. Namespace `harness`. `{file}` is a path a
 
 Ordered; file areas are disjoint between slices, except that each slice adds its own key group to
 `messages/*/harness.json`. Slices 2 to 6 start once the writer and its version store
-(`src-tauri/src/agent_config/`, slice 5 of the Work status spec) are on `main`; slice 1 needs
-neither. Slice 2 calls the store and never the writer. Slice 3 also waits for the Codex removal
+(`src-tauri/src/agent_config/`, slice 9 of the Work status spec) are on `main`; slice 1 needs
+neither. Hook entries are optional in Work status since its revision of 2026-11-22, so when this
+spec's slice 2 is ready first, the writer and the store are built here under the same Record 3. Slice 2 calls the store and never the writer. Slice 3 also waits for the Codex removal
 probe.
 
 1. **Every scope, read and explained:** the reader, pane 2 file headings, tags and findings, the
@@ -683,7 +686,7 @@ probe.
     then the saved version is still listed under its name. Given a file with a planted string in
     `env`, a permission rule and `apiKeyHelper`, then no version this slice records holds it.
     Given Delete all history of one file, then the other files' versions remain. The store's own
-    place, mode and limit are checked by the Work status spec's criteria. Checked:
+    place, mode and limit are checked in `docs/specs/2026-11-22-work-status-criteria.md`. Checked:
     `src-tauri/src/harness_scopes/history/tests.rs`.
 14. **Slice 2, a deleted hook is found.** Given the installed app open on the owner's Mac, when he
     adds a hook to a settings file in an editor, deletes it there a minute later, opens History,
@@ -758,7 +761,7 @@ project files hold 22 hook entries and the two User files 25 more that Harness d
 other settings folders his sessions use hold 16 each.
 **Prior**: Extends `e35a25fe` (Harness reads only the connected repository's harness files) with
 fixed files outside that repository, as a fourth exception in `.claude/rules/surfaces.md`. Extends
-Record 3 of `docs/specs/2026-11-21-work-status-destination.md`, which narrowly overturns "Atlas
+Record 3 in `docs/specs/2026-11-22-work-status-criteria.md`, which narrowly overturns "Atlas
 never edits an agent's configuration", from Atlas's own status entries to hook entries a person
 manages in Harness. Its writer gains two abilities under its seven rules: an entry already in one
 of the files, or in a saved version of it, as a command source, copied in Rust and never sent by
@@ -841,3 +844,6 @@ words that a hook ran.
   comparison of places to keep versions; it keeps the recording of outside changes, named saves,
   the History popup, search, restore and the Git rows. History is one per settings file, a picked
   file included. Slice 2 now waits for Work status slice 5; criterion 13 is rewritten.
+- 2026-11-22: the Work status spec renumbered its slices: the agent config writer and its version
+  store are its slice 9, "Hook entries", optional there because Claude Code's own session list now
+  carries the waiting state. References updated; this spec may build the writer first.
