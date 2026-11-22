@@ -1,9 +1,12 @@
+import { readFileSync } from 'node:fs';
+
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Profiler, useState } from 'react';
 import { renderToString } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BrandWaitingMark } from './brand-waiting-mark';
+import { ROOM_ROW_FRAMES, type RoomMotion } from './moru-rows';
 
 let reduced = false;
 let hidden = false;
@@ -138,6 +141,19 @@ it('responds to a changed motion preference without a second animation clock', (
   });
   expect(screen.getByTestId('brand-waiting-mark')).toHaveAttribute('data-waiting-motion', 'still');
   expect(observers[0].disconnect).toHaveBeenCalledOnce();
+});
+
+it('plays each room row at the slow pace over as many cells as its catalogue clip holds', () => {
+  const { clips } = JSON.parse(readFileSync('assets/brand/moru/moru.json', 'utf8')) as { clips: Record<string, { frames: number }> };
+  for (const [motion, frames] of Object.entries(ROOM_ROW_FRAMES)) {
+    expect(clips[motion]?.frames, motion).toBe(frames);
+    const { unmount } = render(<BrandWaitingMark active scale={2} motion={motion as RoomMotion} held />);
+    const mark = screen.getByTestId('brand-waiting-mark');
+    expect(mark).toHaveAttribute('data-moru-pace', 'play');
+    expect(mark.getAttribute('data-moru-frames')).toBe(frames === 24 ? null : String(frames));
+    expect(mark.style.backgroundImage).toContain(`mascot-${motion}-row-128.png`);
+    unmount();
+  }
 });
 
 describe('pending lifecycle and scheduling budget', () => {
