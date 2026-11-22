@@ -6,7 +6,7 @@ import enMessages from "../../../../../messages/en.json";
 import type { ConceptReach, ReachRow } from "../../model/concept-reach";
 import { buildV2ConnectionGroups, type V2DatasheetConnection } from "./map-datasheet";
 import { RelationsZone } from "./RelationsZone";
-import type { OntologyMapDetailPanelLabels } from "./types";
+import type { OntologyMapDetailPanelLabels } from "./detail-panel-props";
 
 const labels = {
   noConnections: "no relations recorded yet · relations are declared in frontmatter",

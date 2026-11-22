@@ -1,9 +1,8 @@
-import type { Project } from "./types";
+import type { Project } from "./project";
 
 export interface SuggestedDependency {
   slug: string;
   name: string;
-  /** Why the match fired. */
   excerpt: string;
 }
 

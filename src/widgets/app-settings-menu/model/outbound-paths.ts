@@ -1,4 +1,4 @@
-import { MODEL_DOWNLOAD_HOSTS } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import { MODEL_DOWNLOAD_HOSTS } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 
 type OutboundTrigger = 'automatic' | 'press' | 'agent-use';
 

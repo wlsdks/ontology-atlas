@@ -6,7 +6,6 @@
 
 export interface TrimmedDoc {
   body: string;
-  /** How many sections were cut. Zero means the full text. */
   omittedSections: number;
 }
 
@@ -57,13 +56,9 @@ export function separateCategoryLines(markdown: string): string {
 }
 
 export interface DocEntry {
-  /** Anchor id — shared by the sidebar link and the body heading. */
   id: string;
-  /** The full original text after `## `, matched against the sidebar label. */
   heading: string;
-  /** A leading `YYYY-MM-DD`, or `null`. */
   date: string | null;
-  /** The remainder with the date and separator stripped; the heading verbatim when absent. */
   title: string;
   version: string | null;
   subject: string;

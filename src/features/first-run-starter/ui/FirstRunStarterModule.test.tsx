@@ -25,30 +25,34 @@ const mocks = vi.hoisted(() => ({
   ensureChildDir: vi.fn(async (_root: string, _name: string) => undefined),
 }));
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', async () => {
-  const actual = await vi.importActual<typeof import('@/shared/lib/vault-folder/tauri-vault-fs')>(
-    '@/shared/lib/vault-folder/tauri-vault-fs',
-  );
-  return {
-    ...actual,
-    isTauriVaultRuntime: () => true,
-    getTauriVaultRootPath: () => mocks.pickedProject,
-    createTauriVaultHandle: (rootPath: string) => ({ name: rootPath }),
-    pickTauriVaultDirectory: async () => {
-      if (mocks.pickerThrows) throw new Error('picker exploded');
-      return mocks.pickedProject === null ? null : { name: 'picked' };
-    },
-    listTauriDirectoryNames: async () => ['src', 'package.json'],
-    ensureTauriChildDirectory: (root: string, name: string) => mocks.ensureChildDir(root, name),
-  };
-});
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-files')>()),
+  listTauriDirectoryNames: async () => ['src', 'package.json'],
+  ensureTauriChildDirectory: (root: string, name: string) => mocks.ensureChildDir(root, name),
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-handle', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-handle')>()),
+  createTauriVaultHandle: (rootPath: string) => ({ name: rootPath }),
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-location')>()),
+  pickTauriVaultDirectory: async () => {
+    if (mocks.pickerThrows) throw new Error('picker exploded');
+    return mocks.pickedProject === null ? null : { name: 'picked' };
+  },
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime')>()),
+  isTauriVaultRuntime: () => true,
+  getTauriVaultRootPath: () => mocks.pickedProject,
+}));
 
-vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
+vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-provider/LocalVaultProvider')>()),
   useLocalVault: () => mocks.vault,
 }));
-vi.mock('@/entities/vault-session/model/use-data-source-mode', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/use-data-source-mode')>()),
+vi.mock('@/entities/vault-session/model/vault-source/use-data-source-mode', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-source/use-data-source-mode')>()),
   useDataSourceMode: () => mocks.mode,
 }));
 
@@ -130,7 +134,7 @@ describe('FirstRunStarterModule', () => {
     expect(screen.getByTestId('first-run-starter-context')).toHaveTextContent('body');
     const card = screen.getByTestId('first-run-starter');
     const order = ['first-run-starter-sample-line', 'first-run-starter-headline', 'first-run-starter-context', 'first-run-starter-open'];
-    const positions = order.map((id) => [...card.querySelectorAll('[data-testid]')].findIndex((el) => el.getAttribute('data-testid') === id));
+    const positions = order.map((id) => [...card.querySelectorAll('[data-testid]')].findIndex((element) => element.getAttribute('data-testid') === id));
     expect(positions.every((position) => position >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
   });

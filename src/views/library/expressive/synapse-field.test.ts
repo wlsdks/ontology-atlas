@@ -44,11 +44,7 @@ describe("createSynapseField", () => {
     expect(createSynapseField({ ...FIELD, count: 0 })).toEqual([]);
   });
 
-  /*
-   * ⚠️ Independent random picks clump. The first rendered field left the top-left quarter
-   * of the pane nearly bare while the bottom-right carried a knot, and an uneven
-   * background reads as a rendering fault rather than as texture.
-   */
+  // Independent random picks clump; an uneven background reads as a rendering fault.
   it("covers the field evenly instead of clumping", () => {
     const nodes = createSynapseField({ ...FIELD, count: 40 });
     const quadrant = (node: { x: number; y: number }) =>

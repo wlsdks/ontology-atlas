@@ -6,8 +6,8 @@
 // stamp's git and folder fields are never conflated, no absolute `rootPath`
 // leaves the sidecar, and profile-shaped input is rejected outright.
 
-import { appendActivityEntry, buildActivityEntry } from '../vault/activity-log.mjs';
-import { replaceVaultSidecarText } from '../vault/vault-sidecar.mjs';
+import { appendActivityEntry, buildActivityEntry } from '../vault/sidecar/activity-log.mjs';
+import { replaceVaultSidecarText } from '../vault/sidecar/vault-sidecar.mjs';
 
 const ARCHITECTURE_RECORD_CONTRACT = 'architectureRecord:v1';
 const ARCHITECTURE_RECORD_SUBDIRECTORY = 'architecture';

@@ -18,7 +18,7 @@ const UUID_B = '30000000-0000-4000-8000-000000000002';
 const git = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
 const node = (cwd, ...args) => execFileSync(process.execPath, args, { cwd, encoding: 'utf8' }).trim();
 const put = (root, path, body) => { mkdirSync(dirname(join(root, path)), { recursive: true }); writeFileSync(join(root, path), body); };
-const copy = (root, path) => { mkdirSync(dirname(join(root, path)), { recursive: true }); cpSync(join(SOURCE, path), join(root, path)); };
+const copy = (root, path) => { mkdirSync(dirname(join(root, path)), { recursive: true }); cpSync(join(SOURCE, path), join(root, path), { recursive: true }); };
 const hash = (body) => createHash('sha256').update(body).digest('hex');
 
 const DECISIONS = `# Decisions\n\n## 2026-09-01 — Frozen base\n\n**Why**: base\n**Prior**: none\n**Decision**: base\n**Dissent**: none\n**Falsifier**: none\n**Owner**: test\n`;
@@ -27,7 +27,7 @@ const PILOT = `---\nstarted: 2026-09-01\ndecision_target: 20\ndecision_deadline:
 
 function seed(root) {
   for (const path of [
-    'scripts/docs-vault/build-docs-vault.mjs', 'scripts/i18n/build-messages.mjs', 'scripts/records/new-record.mjs', 'scripts/prepare-worktree.mjs',
+    'scripts/docs-vault/build-docs-vault.mjs', 'scripts/docs-vault/generator', 'scripts/i18n/build-messages.mjs', 'scripts/records/new-record.mjs', 'scripts/prepare-worktree.mjs',
     'scripts/lib/parse-frontmatter.mjs', 'scripts/lib/records/record-ledgers.mjs',
     'scripts/lib/records/po-pilot-records.mjs', 'scripts/lib/records/po-pilot.mjs',
     'scripts/lib/records/po-risk-router.mjs', 'scripts/lib/records/decision-record-template.mjs',

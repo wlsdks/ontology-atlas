@@ -1,21 +1,9 @@
-/**
- * Turns an element node's title into a human-readable name when that title is a
- * raw code path (`src/widgets/foo/bar-baz.ts`). Display layer only.
- *
- * Same contract as `derive-display-title.ts`: pure, deterministic, render
- * surfaces only. **Never used for search or matching** — the vault's
- * frontmatter, title and slug stay verbatim, and this result feeds display
- * values alone.
- */
+/** Display only, like `derive-display-title.ts`: never used for search or matching. */
 
 const KNOWN_CODE_EXT =
   /\.(ts|tsx|js|jsx|mjs|cjs|mts|cts|md|mdx|css|scss|json|ya?ml|py|rs|go|java|rb|swift|kt|vue|svelte|html|sql|sh)$/i;
 const CODE_PATH_PREFIX =
   /^(src|app|cli|mcp|tests?|scripts?|docs|packages?|lib|apps?|internal|pkg)\//;
-// A usability review found one-word leftovers like "Src", "SKILL" and "Verify"
-// leaking straight through to the display. A segment counts as a leftover if it
-// is a known generic word, or (even off the list) is 3 characters or fewer, and
-// is promoted to its parent segment.
 const GENERIC_LEAF = new Set([
   "index",
   "mod",
@@ -72,51 +60,33 @@ const ACRONYMS = new Set([
   "jsx",
 ]);
 
-/** Does this title look like a code path — no whitespace, contains '/', and either a known extension or a known root-folder prefix. */
 export function looksLikeCodePath(title: string): boolean {
   const t = title.trim();
   if (!t.includes("/") || /\s/.test(t)) return false;
   return KNOWN_CODE_EXT.test(t) || CODE_PATH_PREFIX.test(t);
 }
 
-/** Is this segment a leftover — on the GENERIC_LEAF list, or short enough
- * (3 characters or fewer) that showing it would carry no meaning. */
 function isGenericSegment(segment: string): boolean {
   const lower = segment.toLowerCase();
   return GENERIC_LEAF.has(lower) || lower.length <= 3;
 }
 
 /**
- * Path → human name; null when it is not a code path, in which case the caller
- * keeps the existing display value.
+ * Null when not a code path. A generic last segment is promoted to its parent, at most twice:
  *
- * The rule: take the last segment → strip the extension → if it is a leftover,
- * promote to the parent segment (repeat once more if that is also a leftover,
- * at most twice) → split on kebab/snake/camel boundaries → title-case each word,
- * with acronyms fully uppercase.
- *
- *     "src/widgets/ontology-map/ui/world/topology-world.ts" → "Topology World"
- *     "cli/src/commands/agent-brief.mjs"                       → "Agent Brief"
- *     "src/features/user-auth/index.ts"                        → "User Auth"
- *     ".claude/skills/ontology-sync/SKILL.md"                  → "Ontology Sync"
- *     "src/lib/index.ts"                                       → "Src"
- *
- * The last one promotes twice (`lib` is generic too) and then stops, because
- * there is nothing left to promote to.
- *
- * Pure and deterministic, render only — the same never-for-matching contract as
- * `derive-display-title.ts`.
+ *     "src/features/user-auth/index.ts"       → "User Auth"
+ *     ".claude/skills/ontology-sync/SKILL.md" → "Ontology Sync"
  */
 export function humanizeCodePathTitle(title: string): string | null {
   if (!looksLikeCodePath(title)) return null;
   const segs = title.trim().split("/").filter(Boolean);
   if (segs.length === 0) return null;
-  let idx = segs.length - 1;
-  let leaf = segs[idx].replace(KNOWN_CODE_EXT, "");
+  let index = segs.length - 1;
+  let leaf = segs[index].replace(KNOWN_CODE_EXT, "");
   let promotions = 0;
-  while (isGenericSegment(leaf) && idx > 0 && promotions < MAX_PROMOTIONS) {
-    idx -= 1;
-    leaf = segs[idx];
+  while (isGenericSegment(leaf) && index > 0 && promotions < MAX_PROMOTIONS) {
+    index -= 1;
+    leaf = segs[index];
     promotions += 1;
   }
   const words = leaf
@@ -127,7 +97,6 @@ export function humanizeCodePathTitle(title: string): string | null {
   return words.map(capitalizeWord).join(" ");
 }
 
-/** Acronyms fully uppercase, everything else title-cased. */
 function capitalizeWord(word: string): string {
   const lower = word.toLowerCase();
   if (ACRONYMS.has(lower)) return lower.toUpperCase();

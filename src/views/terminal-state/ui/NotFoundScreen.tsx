@@ -9,7 +9,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { Button, buttonVariants } from '@/shared/ui/controls/button';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { cn } from '@/shared/lib/cn';
-import { BrandPortrait } from '@/shared/ui/marks/brand-portrait';
+import { BrandPortrait } from '@/shared/ui/marks/moru/brand-portrait';
 import { TerminalState, TerminalStatePending } from './TerminalState';
 import {
   StandaloneLocaleProvider,
@@ -18,14 +18,9 @@ import {
 } from './standalone-locale';
 import type { StandaloneMessages } from '@/i18n/standalone-messages';
 
-/**
- * The one 404 for both not-found files. The primary depends on the surface: home on the web, where
- * a lost visitor has no folder to search, and project search in the app, which draws no gateway chrome.
- */
 export function NotFoundScreen({
   standaloneMessages,
 }: {
-  /** From the root `not-found.tsx`, which has no locale layout. */
   standaloneMessages?: StandaloneMessages;
 }) {
   return standaloneMessages ? (
@@ -55,7 +50,6 @@ function NotFoundBody() {
     try {
       window.sessionStorage.setItem('demo:open-search', '1');
     } catch {
-      /* private mode */
     }
     router.push('/');
   };
@@ -65,7 +59,6 @@ function NotFoundBody() {
     else router.push('/');
   };
 
-  // Outlined on the web, where it is the only secondary; ghost in the app behind "home".
   const previous = (
     <Button type="button" variant={desktop ? 'ghost' : 'outline'} onClick={goBack}>
       <ArrowLeft size={ICON_SIZE.md} aria-hidden />

@@ -1,6 +1,6 @@
 import { TREE_POSE_REST } from "./tree-camera";
 import type { TreeWork } from "./tree-model";
-import type { TreeLayout, TreeModel } from "./types";
+import type { TreeLayout, TreeModel } from "./tree-shapes";
 
 /** Lengths are world units; the trunk base is the origin and y is up. */
 /** The trunk's two inner control points as fractions of its height, a slight S-bend. */
@@ -238,18 +238,18 @@ export function layoutTree(model: TreeModel, work?: TreeWork): TreeLayout {
   const b1 = [0, 0, 0];
   const b2 = [0, 0, 0];
 
-  const setVec = (arr: Float64Array, i: number, x: number, y: number, z: number) => {
+  const setVec = (vectors: Float64Array, i: number, x: number, y: number, z: number) => {
     const length = Math.hypot(x, y, z) || 1;
-    arr[i * 3] = x / length;
-    arr[i * 3 + 1] = y / length;
-    arr[i * 3 + 2] = z / length;
+    vectors[i * 3] = x / length;
+    vectors[i * 3 + 1] = y / length;
+    vectors[i * 3 + 2] = z / length;
   };
-  const copyVec = (arr: Float64Array, i: number, from: number) => {
-    for (let c = 0; c < 3; c += 1) arr[i * 3 + c] = arr[from * 3 + c]!;
+  const copyVec = (vectors: Float64Array, i: number, from: number) => {
+    for (let c = 0; c < 3; c += 1) vectors[i * 3 + c] = vectors[from * 3 + c]!;
   };
-  /** b1, b2 span the plane across `arr[i]` (unit); both turn with anchor `a`'s azimuth. */
-  const frameAcross = (arr: Float64Array, i: number, a: number) => {
-    const ax = arr[i * 3]!, ay = arr[i * 3 + 1]!, az = arr[i * 3 + 2]!;
+  /** b1, b2 span the plane across `vectors[i]` (unit); both turn with anchor `a`'s azimuth. */
+  const frameAcross = (vectors: Float64Array, i: number, a: number) => {
+    const ax = vectors[i * 3]!, ay = vectors[i * 3 + 1]!, az = vectors[i * 3 + 2]!;
     const sx = -out[a * 2 + 1]!, sz = out[a * 2]!;
     let x = ay * sz, y = az * sx - ax * sz, z = -ay * sx;
     const length = Math.hypot(x, y, z) || 1;
@@ -301,8 +301,8 @@ export function layoutTree(model: TreeModel, work?: TreeWork): TreeLayout {
     pos[i * 3 + 1] = y;
     pos[i * 3 + 2] = z;
   };
-  const placeAlong = (i: number, from: number, arr: Float64Array, at: number, length: number) => {
-    place(i, pos[from * 3]! + arr[at * 3]! * length, pos[from * 3 + 1]! + arr[at * 3 + 1]! * length, pos[from * 3 + 2]! + arr[at * 3 + 2]! * length);
+  const placeAlong = (i: number, from: number, vectors: Float64Array, at: number, length: number) => {
+    place(i, pos[from * 3]! + vectors[at * 3]! * length, pos[from * 3 + 1]! + vectors[at * 3 + 1]! * length, pos[from * 3 + 2]! + vectors[at * 3 + 2]! * length);
   };
   const domains = branchTotal[0]!;
   const dome = domeRadius(domains);

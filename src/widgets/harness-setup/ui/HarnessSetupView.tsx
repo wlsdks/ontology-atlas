@@ -18,7 +18,7 @@ import {
   type SetupProblem,
   type ToolFilter,
 } from '../model/harness-setup';
-import { SetupItemDetail, type TranslateFn } from './HarnessGuideDetail';
+import { SetupItemDetail, type TranslateFn } from './harness-setup-item';
 import {
   HarnessItemList,
   HarnessSetupSection,

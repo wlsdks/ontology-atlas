@@ -1,5 +1,5 @@
 import { labelFontAt, scaledLabelFontSize } from "../../render/labels";
-import type { DialKind, TextMark } from "../types";
+import type { DialKind, TextMark } from "../dial-shapes";
 
 const BODY_LG_PX = 14;
 const wrapped = new Map<string, readonly string[]>();

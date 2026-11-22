@@ -11,8 +11,8 @@ import { readFileRevision, writeFileAtomically } from './atomic-write.mjs';
  * original disappears.
  */
 test('never leaves the original at zero bytes during a write', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'oatlas-atomic-'));
-  const target = join(dir, 'note.md');
+  const directory = mkdtempSync(join(tmpdir(), 'oatlas-atomic-'));
+  const target = join(directory, 'note.md');
   const original = 'x'.repeat(200_000);
   writeFileSync(target, original, 'utf-8');
 
@@ -29,26 +29,26 @@ test('never leaves the original at zero bytes during a write', () => {
   assert.equal(statSync(target).size, 300_000);
   // A leftover temp file makes the next write fail at `wx`.
   assert.deepEqual(
-    readdirSync(dir).filter((n) => n.includes('oatlas-tmp')),
+    readdirSync(directory).filter((n) => n.includes('oatlas-tmp')),
     [],
   );
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(directory, { recursive: true, force: true });
 });
 
 test('keeps the original when the write fails', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'oatlas-atomic-fail-'));
+  const directory = mkdtempSync(join(tmpdir(), 'oatlas-atomic-fail-'));
   // Targeting a directory makes the rename fail.
-  const target = join(dir, 'as-dir');
+  const target = join(directory, 'as-dir');
   mkdirSync(target);
 
   assert.throws(() => writeFileAtomically(target, 'new'));
   assert.ok(statSync(target).isDirectory(), 'the target turned into a file');
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(directory, { recursive: true, force: true });
 });
 
 test('does not rename over newer bytes with a stale revision', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'oatlas-atomic-conflict-'));
-  const target = join(dir, 'note.md');
+  const directory = mkdtempSync(join(tmpdir(), 'oatlas-atomic-conflict-'));
+  const target = join(directory, 'note.md');
   writeFileSync(target, 'agent-before', 'utf-8');
   const expectedRevision = readFileRevision(target);
   writeFileSync(target, 'human-current', 'utf-8');
@@ -59,9 +59,9 @@ test('does not rename over newer bytes with a stale revision', () => {
   );
   assert.equal(readFileSync(target, 'utf-8'), 'human-current');
   assert.deepEqual(
-    readdirSync(dir).filter((name) => name.includes('oatlas-tmp')),
+    readdirSync(directory).filter((name) => name.includes('oatlas-tmp')),
     [],
     'a temp file remained after the conflict',
   );
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(directory, { recursive: true, force: true });
 });

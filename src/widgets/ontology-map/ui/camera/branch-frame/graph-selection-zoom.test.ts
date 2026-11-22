@@ -9,10 +9,12 @@ import { deriveOntologyFromVault } from "@/entities/docs-vault/lib/derive-ontolo
 import { isContainmentRelation } from "@/entities/knowledge-graph";
 import type { CameraTarget } from "../../../engine/camera";
 import { buildDialModel } from "../../../dial/dial-model";
-import type { DialLabels, DialModel, DialWorld } from "../../../dial/types";
+import type { DialLabels, DialModel, DialWorld } from "../../../dial/dial-shapes";
 import { cachedGraphAttention } from "../../../flat-graph/attention";
 import { graphDiscRadiusPx, zoomGrowth } from "../../../flat-graph/marks";
-import { admitNamesAt, domainTitleBlocks, hubBlockReachPx, stepScale, zoomStep } from "../../../flat-graph/names";
+import { admitNamesAt } from "../../../flat-graph/names";
+import { domainTitleBlocks, hubBlockReachPx } from "../../../flat-graph/names/titles";
+import { stepScale, zoomStep } from "../../../flat-graph/names/zoom-step";
 import { domainStarIds, domainStarRooms, openRadiusPx } from "../../../flat-graph/open-star";
 import { buildFlatGraphScene } from "../../../flat-graph/scene";
 import { resolveFlatGraphTokens } from "../../../flat-graph/tokens";
@@ -21,7 +23,8 @@ import {
   rollRelatesDomainPairs, type TreeInputEdge, type TreeInputNode,
 } from "../../../model/containment-tree";
 import type { TopologyWorld } from "../../world/topology-world";
-import { computeEffectiveCameraScaleMax, computeOverviewCameraTarget, computeOverviewFitScale, overviewEntryArea } from "../topology-camera-math";
+import { computeOverviewCameraTarget, computeOverviewFitScale, overviewEntryArea } from "../target/fit-targets";
+import { computeEffectiveCameraScaleMax } from "../target/zoom-range";
 
 const TOKENS = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock("../../../flat-graph/tokens", async (actual) => ({ ...(await actual<object>()), readFlatGraphTokens: () => TOKENS.current }));

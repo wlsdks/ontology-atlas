@@ -240,7 +240,7 @@ describe('searchDocs body tier ranks lowest', () => {
 
   it('keeps the largest exact-phrase boost below the lowest title score', () => {
     const docs = [
-    // Worst case: a title match clipped past idx 80, scoring only the title minimum (20).
+    // Worst case: a title match clipped past index 80, scoring only the title minimum (20).
       doc('title-hit', `${'x'.repeat(90)}needle phrase`),
       doc('body-exact', 'zzz'),
     ];
@@ -283,8 +283,8 @@ describe('extractBodySnippet returns 60 characters of context and a highlight ra
 
   it('collapses newlines and tabs into a one-line snippet', () => {
     const body = 'line one\nline two needle line\tthree';
-    const idx = body.indexOf('needle');
-    const s = extractBodySnippet(body, idx, 6);
+    const needleIndex = body.indexOf('needle');
+    const s = extractBodySnippet(body, needleIndex, 6);
     expect(s.text).not.toMatch(/[\n\t]/);
     expect(s.text.slice(s.hit.start, s.hit.end)).toBe('needle');
   });

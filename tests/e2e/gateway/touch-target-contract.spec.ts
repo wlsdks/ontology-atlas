@@ -15,10 +15,9 @@ interface Audit258Result {
 const AUDIT_258 = `(() => {
   const MIN = 24;
   /*
-   * The selector **must include form controls**. Until 2026-08-05 all four places
-   * were \`button, a[href]\`, so \`<input>\`, \`<select>\`, and \`<textarea>\`
-   * **did not exist for this audit in principle**. In that blind spot all 5 native
-   * checkboxes were under 24px and the gate stayed green throughout.
+   * The selector **must include form controls**: with only \`button, a[href]\`, \`<input>\`,
+   * \`<select>\` and \`<textarea>\` do not exist for this audit, and undersized native checkboxes
+   * would pass.
    */
   const RAW = 'button:not([disabled]), a[href], input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])';
   /*

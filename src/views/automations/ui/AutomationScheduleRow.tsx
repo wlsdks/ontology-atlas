@@ -13,11 +13,10 @@ import { AutomationRemoveConfirm, AutomationScheduleActions, useScheduleChange }
 import { useRunLead, useUnrecordedText, WARNING_INK } from './AutomationRunHistory';
 import { runsNewestFirst } from '../model/run-order';
 import { automationDate } from './automation-date';
-import { AUTOMATION_CELL, AUTOMATION_ROW_GRID } from './AutomationListFrame';
+import { AUTOMATION_CELL, AUTOMATION_ROW_GRID } from './automation-list-layout';
 
 const ROW_SELECTOR = '[data-schedule-row]';
 
-/** Up and Down walk the schedule rows; Enter and Space select the focused one. */
 function onRowKeyDown(event: KeyboardEvent<HTMLDivElement>, select: () => void) {
   if (event.target !== event.currentTarget || isImeComposing(event)) return;
   if (event.key === 'Enter' || event.key === ' ') {
@@ -33,7 +32,6 @@ function onRowKeyDown(event: KeyboardEvent<HTMLDivElement>, select: () => void) 
   next.focus();
 }
 
-/** A full-width line under the schedule's row: never folded, there while its state holds. */
 function RowStrip({ children, testId }: { children: ReactNode; testId?: string }) {
   return <div role="row" data-testid={testId} className="bg-[color:var(--color-overlay-1)]">
     <div role="gridcell" aria-colspan={4} className="px-[var(--card-pad)] py-3">{children}</div>
@@ -44,7 +42,6 @@ export function AutomationScheduleRow({ round, runner, selected, tabbable, onSel
   round: RoundRecord;
   runner: RoundsRunnerValue;
   selected: boolean;
-  /** The one row the Tab key lands on; the arrows reach the rest. */
   tabbable: boolean;
   onSelect: () => void;
   onEdit: () => void;
@@ -119,7 +116,6 @@ export function AutomationScheduleRow({ round, runner, selected, tabbable, onSel
             {lastIsUnrecorded ? <span className={WARNING_INK}> · {t('unrecorded.short')}</span> : null}
           </span>
         </div>
-        {/* The actions answer their own presses; none of them selects the row. */}
         <div role="gridcell" className={AUTOMATION_CELL.actions} onClick={(event) => event.stopPropagation()}
           onKeyDown={(event) => event.stopPropagation()}>
           <AutomationScheduleActions ref={menuTrigger} round={round} runner={runner} change={change}

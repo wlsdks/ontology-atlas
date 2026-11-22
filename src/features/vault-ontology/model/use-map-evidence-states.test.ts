@@ -25,7 +25,7 @@ vi.mock("@/entities/vault-session", () => ({
 vi.mock("@/shared/lib/vault-folder/select-open-vault-handle", () => ({
   selectOpenVaultHandle: (_status: string, handle: unknown) => handle,
 }));
-vi.mock("@/shared/lib/vault-folder/tauri-vault-fs", () => ({
+vi.mock("@/shared/lib/vault-folder/native-vault/tauri-vault-runtime", () => ({
   getTauriVaultRootPath: () => git.root,
 }));
 vi.mock("@/shared/lib/git/evidence-states", async (importOriginal) => {

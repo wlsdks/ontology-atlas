@@ -4,7 +4,7 @@ import "../../atlas-map-probe";
 import { seedFirstRunSeen } from "../../first-run-seed";
 import { waitForMapStill } from "../../settle";
 import { stubDirectoryPicker } from "../../vault-picker-stub";
-import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
+import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 
 const SIDE = 20;
 const LONG_REASON = Array.from({ length: 12 }, () => "The hub cannot settle an order until this answers, and a late answer holds the shopper at the last step.").join(" ");

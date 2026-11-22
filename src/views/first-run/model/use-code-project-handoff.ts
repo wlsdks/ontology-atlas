@@ -14,7 +14,6 @@ import { detectAcpRuntimes, isAcpBridgeAvailable } from '@/shared/lib/agent-chat
 export function useCodeProjectHandoff() {
   const agentReady = useRef<Promise<boolean> | null>(null);
 
-  /** Starts the lookup at the press, so the answer is settled before the folder opens. */
   const prepare = useCallback(() => {
     agentReady.current = isAcpBridgeAvailable()
       ? detectAcpRuntimes()

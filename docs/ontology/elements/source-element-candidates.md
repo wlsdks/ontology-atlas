@@ -6,10 +6,10 @@ title: Source element candidates
 display_en: Source element candidates
 display_ko: 소스 요소 후보
 domain: domains/code-evidence
-path: mcp/src/analyze/source-elements.mjs
+path: mcp/src/analyze/candidates/source-elements.mjs
 created_by: "agent:claude-code"
 dependencies: [capabilities/import-dependency-inference]
-relation_notes: { capabilities/import-dependency-inference: "You asked me to turn imports I actually witnessed into dependencies: the scan shows analyze/source-elements.mjs importing infer-imports.mjs to derive package boundaries." }
+relation_notes: { capabilities/import-dependency-inference: "You asked me to turn imports I actually witnessed into dependencies: the scan shows analyze/candidates/source-elements.mjs importing infer-imports.mjs to derive package boundaries." }
 ---
 
 Materializes candidate implementation roles from source layout and observed imports: Go packages and their edges, Python packages and their import boundaries, root packages, and workspace members.

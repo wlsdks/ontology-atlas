@@ -57,9 +57,9 @@ export async function runInferImports(args) {
     }
     result = await callMcpTool(vaultRoot, 'infer_imports', importArgs, { repoRoot: target });
     assertInferImportsResult(result);
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  infer_imports: ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  infer_imports: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }

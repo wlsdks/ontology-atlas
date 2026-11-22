@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import { AgentProposalCard } from "./AgentProposalCard";
-import type { AgentProposal } from "@/features/vault-agent/model/types";
+import type { AgentProposal } from "@/features/vault-agent/model/agent-turn";
 
 /**
  * Locks while the write runs: the status stayed `pending` through `await applyProposal`, so a second

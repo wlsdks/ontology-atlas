@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { VaultDoc } from '../../model/types';
+import type { VaultDoc } from '../../model/vault-manifest';
 import { buildWikiRetrievalIndex, wikiRetrievalPage } from './wiki-retrieval';
 
 function doc(slug: string, title = slug, frontmatter = {}): VaultDoc {

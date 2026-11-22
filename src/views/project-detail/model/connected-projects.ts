@@ -1,7 +1,6 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
 
-/** Projects joined by a `related_to` edge; empty when this project has no node in the graph. */
 export function findRelatesGraphProjectSlugs(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
@@ -29,7 +28,6 @@ export function findRelatesGraphProjectSlugs(
   return out;
 }
 
-/** Dependencies both ways plus `relates:` edges, without self, deduplicated by slug. */
 export function buildConnectedProjects(
   project: Project,
   related: readonly Project[],

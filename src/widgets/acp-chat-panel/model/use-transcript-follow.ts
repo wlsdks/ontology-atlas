@@ -40,7 +40,6 @@ export function useTranscriptFollow({
   reducedMotion: boolean;
 }): { jumpVisible: boolean; follow: () => void; restore: () => void } {
   const stateRef = useRef<FollowState>(FOLLOWING);
-  /** Mount, being shown again, or another conversation: the next follow lands at once. */
   const restoreRef = useRef(true);
   const reducedMotionRef = useRef(reducedMotion);
   useLayoutEffect(() => {

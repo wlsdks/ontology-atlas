@@ -20,16 +20,16 @@ describe("computeSelectionPulse", () => {
   });
 
   it("scale rises monotonically toward 1+delta and alpha falls monotonically toward 0", () => {
-    let prevScale = -Infinity;
-    let prevAlpha = Infinity;
+    let previousScale = -Infinity;
+    let previousAlpha = Infinity;
     for (let ms = 0; ms < 200; ms += 10) {
       const pulse = computeSelectionPulse(ms, 200);
       expect(pulse).not.toBeNull();
       if (!pulse) continue;
-      expect(pulse.scaleFactor).toBeGreaterThanOrEqual(prevScale - 1e-9);
-      expect(pulse.alpha).toBeLessThanOrEqual(prevAlpha + 1e-9);
-      prevScale = pulse.scaleFactor;
-      prevAlpha = pulse.alpha;
+      expect(pulse.scaleFactor).toBeGreaterThanOrEqual(previousScale - 1e-9);
+      expect(pulse.alpha).toBeLessThanOrEqual(previousAlpha + 1e-9);
+      previousScale = pulse.scaleFactor;
+      previousAlpha = pulse.alpha;
     }
   });
 

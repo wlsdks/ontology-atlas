@@ -4,7 +4,7 @@
  * `shadowBlur`). Unknown is never drawn as current. Token-free: colours arrive as `rgb` triples.
  */
 
-import type { StrataLodState } from "../../model/dome-view/strata-lod";
+import type { StrataLodState } from "../../model/dome-view/strata/strata-lod";
 
 export type Rgb = readonly [number, number, number];
 
@@ -26,7 +26,6 @@ export function parseRgbTriple(raw: string): Rgb | null {
   return [parts[0], parts[1], parts[2]];
 }
 
-/** `#rrggbb` / `#rgb` → a triple; null for anything else. */
 export function hexToRgb(hex: string): Rgb | null {
   const h = hex.trim();
   const full = /^#[0-9a-f]{3}$/i.test(h) ? `#${h[1]}${h[1]}${h[2]}${h[2]}${h[3]}${h[3]}` : h;
@@ -34,7 +33,6 @@ export function hexToRgb(hex: string): Rgb | null {
   return [parseInt(full.slice(1, 3), 16), parseInt(full.slice(3, 5), 16), parseInt(full.slice(5, 7), 16)];
 }
 
-/** Mix two triples, `t` of the way from `a` to `b`, as `#rrggbb`. */
 export function mixRgbHex(a: Rgb, b: Rgb, t: number): string {
   const k = t <= 0 ? 0 : t >= 1 ? 1 : t;
   const c = (i: number) => Math.round(a[i] + (b[i] - a[i]) * k).toString(16).padStart(2, "0");
@@ -56,11 +54,7 @@ export interface DomeLightFrame {
   lod: StrataLodState | null;
 }
 
-/**
- * **Focus deepens the fog.** While a focus exists, everything outside the lit line takes an
- * extra depth factor from 1 at the front to 0.28 at the back, scaled by the focus ramp so it
- * arrives and leaves with the focus. The resting fog is untouched: with no focus this is 1.
- */
+/** While a focus exists, everything outside the lit line gains a depth factor from 1 (front) to 0.28 (back), scaled by the focus ramp; with no focus it is 1. */
 const FOCUS_FOG_FAR = 0.28;
 export function focusFogFactor(u: number, focusRamp: number): number {
   if (focusRamp <= 0.001) return 1;
@@ -85,7 +79,6 @@ function haloSprite(rgb: Rgb): HTMLCanvasElement | null {
     return null;
   }
   const c = HALO_SPRITE_PX / 2;
-  // The gradient starts at the disc edge (1 / reach of the sprite radius) and falls to 0.
   const inner = c / EMISSIVE_HALO_REACH;
   const gradient = g.createRadialGradient(c, c, 0, c, c, c);
   const edge = inner / c;
@@ -100,10 +93,7 @@ function haloSprite(rgb: Rgb): HTMLCanvasElement | null {
   return canvas;
 }
 
-/**
- * Adds one node's light around a disc of screen radius `r`. `strength` is 0..1 of the full
- * halo; the composite and alpha are restored before returning.
- */
+/** One node's light around a disc of screen radius `r`; `strength` is 0..1 of the full halo. Restores the composite and alpha. */
 export function drawEmissiveHalo(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -116,16 +106,14 @@ export function drawEmissiveHalo(
   const sprite = haloSprite(rgb);
   if (!sprite) return;
   const half = r * EMISSIVE_HALO_REACH;
-  const prevAlpha = ctx.globalAlpha;
-  const prevOp = ctx.globalCompositeOperation;
+  const previousAlpha = ctx.globalAlpha;
+  const previousOp = ctx.globalCompositeOperation;
   ctx.globalCompositeOperation = "lighter";
-  ctx.globalAlpha = prevAlpha * Math.min(1, strength);
+  ctx.globalAlpha = previousAlpha * Math.min(1, strength);
   ctx.drawImage(sprite, x - half, y - half, half * 2, half * 2);
-  ctx.globalAlpha = prevAlpha;
-  ctx.globalCompositeOperation = prevOp;
+  ctx.globalAlpha = previousAlpha;
+  ctx.globalCompositeOperation = previousOp;
 }
-
-/* ── Evidence ──────────────────────────────────────────────────────────── */
 
 /** How much light each evidence state emits, as a share of a current node's. */
 export const EVIDENCE_EMISSION: Readonly<Record<EvidenceLight, number>> = {
@@ -154,7 +142,7 @@ export function drawEvidenceRing(
   alpha: number,
 ): void {
   if (state === "current" || alpha <= 0.01) return;
-  const prevAlpha = ctx.globalAlpha;
+  const previousAlpha = ctx.globalAlpha;
   ctx.globalAlpha = 1;
   ctx.beginPath();
   ctx.arc(x, y, r + EVIDENCE_RING_GAP_PX, 0, Math.PI * 2);
@@ -169,5 +157,5 @@ export function drawEvidenceRing(
   }
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.globalAlpha = prevAlpha;
+  ctx.globalAlpha = previousAlpha;
 }

@@ -46,9 +46,7 @@ export function AgentMascotPresence({ feed }: { feed: Pick<AgentActivityFeed, 's
     [],
   );
 
-  /* The effect is an adapter from an external, polled heartbeat projection into
-     a finite visual state machine. Rendering derived state alone cannot preserve
-     the WALK hold or the one-time SUCCESS receipt across feed snapshots. */
+  /* An adapter from a polled heartbeat projection into a finite visual state machine; derived state alone cannot hold the WALK pose or the one-time SUCCESS receipt across snapshots. */
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!feed.showStatus) {

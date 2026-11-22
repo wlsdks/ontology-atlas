@@ -9,13 +9,11 @@ import { EGO_BEARINGS, type ConceptEgo, type EgoBearing } from "../model/build-c
 export const EGO_VIEW_W = 660;
 export const EGO_VIEW_H = 345;
 
-/** The box the drawing is laid out in, in CSS pixels; the default is the pre-measure view. */
 export type EgoView = { w: number; h: number };
 export const DEFAULT_EGO_VIEW: EgoView = { w: EGO_VIEW_W, h: EGO_VIEW_H };
 
 /** Room kept outside the outermost ring for a side label (about 12 Latin characters at 11px). */
 const EGO_LABEL_ROOM_X = 84;
-/** Room kept above and below the outermost ring for a label drawn over or under its node. */
 const EGO_LABEL_ROOM_Y = 30;
 /** How far the rings may stretch or shrink to meet the box, per axis. */
 const EGO_FILL_MAX = 1.9;
@@ -91,7 +89,6 @@ const DASHED: readonly EgoBearing[] = ["dependsOn", "usedBy"];
 
 /** Label line box at the `text-label` step (11px) in view units. */
 const LABEL_H = 14;
-/** Air between a node's edge and its label. */
 const LABEL_GAP = 6;
 
 function radiusOf(map: Record<string, number>, kind: string): number {
@@ -179,7 +176,6 @@ export function layoutConceptEgo(
   ego: ConceptEgo,
   geometry: EgoGeometry = DEFAULT_EGO_GEOMETRY,
   view: EgoView = DEFAULT_EGO_VIEW,
-  /** The words an "and N more" pill carries; the pill is sized to them. */
   moreText?: (rest: number) => string,
 ): EgoLayout | null {
   const groups = EGO_BEARINGS.map((bearing) => {

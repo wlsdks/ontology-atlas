@@ -85,9 +85,10 @@ impl Fixture {
             || {},
         )
     }
-    fn grant(&self) -> crate::vault_grants::EnforcedScope {
-        let scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&self.vault));
-        crate::vault_grants::grant_source_root(&self.source);
+    fn grant(&self) -> crate::vault::grants::EnforcedScope {
+        let scope =
+            crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&self.vault));
+        crate::vault::grants::grant_source_root(&self.source);
         scope
     }
 }
@@ -219,7 +220,7 @@ fn merge_integration_includes_paths_but_does_not_double_count_branch_commits() {
 #[test]
 fn denies_ungranted_sources_and_missing_bindings_without_using_vault_git() {
     let f = Fixture::new();
-    let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&f.vault));
+    let _scope = crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&f.vault));
     f.write("file.ts", "body");
     f.commit(START, "first");
     assert_eq!(
@@ -530,7 +531,7 @@ fn source_root_replacement_invalidates_a_read_even_with_an_identical_head() {
 #[test]
 fn picked_repository_reads_full_messages_without_a_vault_or_write_grant() {
     let f = Fixture::new();
-    let _scope = crate::vault_grants::EnforcedScope::granting(&[]);
+    let _scope = crate::vault::grants::EnforcedScope::granting(&[]);
     f.write("src/한글.ts", "before");
     f.commit(START - 10, "base");
     f.write("src/한글.ts", "after");
@@ -541,7 +542,7 @@ fn picked_repository_reads_full_messages_without_a_vault_or_write_grant() {
             .status,
         "ungranted"
     );
-    crate::vault_grants::grant_source_root(&f.source);
+    crate::vault::grants::grant_source_root(&f.source);
     let result = git_source_briefing(f.source.to_string_lossy().into(), START, START + 10).unwrap();
     assert_eq!(result.status, "measured");
     assert_eq!(result.commits[0].subject, "fix: retain original intent");
@@ -581,11 +582,11 @@ fn picked_repository_reads_full_messages_without_a_vault_or_write_grant() {
 #[test]
 fn a_picked_child_cannot_read_a_repository_above_its_grant() {
     let f = Fixture::new();
-    let _scope = crate::vault_grants::EnforcedScope::granting(&[]);
+    let _scope = crate::vault::grants::EnforcedScope::granting(&[]);
     f.write("child/file.ts", "child");
     f.commit(START, "root");
     let child = f.source.join("child");
-    crate::vault_grants::grant_source_root(&child);
+    crate::vault::grants::grant_source_root(&child);
     let result = git_source_briefing(child.to_string_lossy().into(), START, START + 10).unwrap();
     assert_eq!(result.status, "no-history");
 }

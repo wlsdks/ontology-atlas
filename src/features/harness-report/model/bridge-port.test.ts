@@ -12,7 +12,7 @@ vi.mock('@tauri-apps/api/core', () => ({
   isTauri: () => native.tauri,
 }));
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   listTauriVaultEntries: native.list,
   readTauriVaultTextFile: native.read,
 }));

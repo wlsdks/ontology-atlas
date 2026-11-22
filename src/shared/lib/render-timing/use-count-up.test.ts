@@ -82,8 +82,8 @@ describe("useCountUp — insights count-up (#3)", () => {
   it("if the target changes mid-intro it ends at the new target, since a sample must not overwrite the user folder", () => {
     mockReducedMotion(false);
     const frames: FrameRequestCallback[] = [];
-    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
-      frames.push(cb);
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.push(callback);
       return frames.length;
     });
     vi.stubGlobal("cancelAnimationFrame", () => {});
@@ -116,8 +116,8 @@ describe("useCountUp — insights count-up (#3)", () => {
   it("animates a later change only when asked, and snaps otherwise", () => {
     mockReducedMotion(false);
     const frames: FrameRequestCallback[] = [];
-    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
-      frames.push(cb);
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.push(callback);
       return frames.length;
     });
     vi.stubGlobal("cancelAnimationFrame", () => {});
@@ -155,8 +155,8 @@ describe("useCountUp on the settle clock", () => {
   it("reaches the target exactly at MOTION.settle and not a frame before", () => {
     mockReducedMotion(false);
     const frames: FrameRequestCallback[] = [];
-    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
-      frames.push(cb);
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.push(callback);
       return frames.length;
     });
     vi.stubGlobal("cancelAnimationFrame", () => {});

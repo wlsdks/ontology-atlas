@@ -44,7 +44,7 @@ const CODES = ['TW-ALRM-08', 'TW-ALRM-11', 'TW-ALRM-29', 'TW-ALRM-31', 'TW-SYNC-
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October'];
 const date = () => `2026-${pad(int(1, 10))}-${pad(int(1, 28))}`;
 
-// ── wiki page writer ──────────────────────────────────────────────────────────────
+// wiki page writer
 
 function sourceLineFor(sourcePath, text) {
   const lines = (sources.get(sourcePath) ?? '').split('\n');
@@ -98,7 +98,7 @@ function wikiPage(slug, { title, summary, facts, decisions, cites, open = [], co
   files.set(`wiki/${slug}.md`, body);
 }
 
-// ── distractor sources ───────────────────────────────────────────────────────────
+// distractor sources
 
 const OPS_UPDATES_EN = [
   (d) => `${d} is short two drivers on Saturdays until the new hires finish training.`,
@@ -205,11 +205,11 @@ for (let i = 0; i < 30; i++) incident(i);
 for (let i = 0; i < 20; i++) interview(i);
 for (let i = 0; i < 14; i++) inspection(i);
 
-// ── answer pages ───────────────────────────────────────────────────────────────────
+// answer pages
 
 for (const page of [...PAGES, ...NEAR_MISSES]) wikiPage(page.slug, { ...page, cites: page.cites ?? pick(opsPaths) });
 
-// ── distractor wiki pages ─────────────────────────────────────────────────────────
+// distractor wiki pages
 
 const allDepots = [...DEPOTS_EN.map((d) => [d, 'en']), ...DEPOTS_KO.map((d) => [d, 'ko'])];
 allDepots.forEach(([depot, lang], index) => {
@@ -312,7 +312,7 @@ for (let i = 0; i < 10; i++) {
 
 for (const [path, text] of sources) files.set(path, text);
 
-// ── write ────────────────────────────────────────────────────────────────────────
+// write
 
 const sorted = Object.fromEntries([...files].sort(([a], [b]) => a.localeCompare(b)));
 const counters = { ko: 0, en: 0, cross: 0 };

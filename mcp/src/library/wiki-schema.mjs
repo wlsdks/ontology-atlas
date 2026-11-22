@@ -12,7 +12,6 @@ import { parseFrontmatter } from '../parser.mjs';
  * codes; tests/contract/library/wiki-page-schema.contract.test.ts runs both on one table.
  */
 
-/** Vault folder holding wiki pages. */
 export const WIKI_DIR = 'wiki';
 
 /**
@@ -31,7 +30,6 @@ export function isWikiFurnitureSlug(slug) {
  */
 export const WIKI_ADVISORY_CODES = Object.freeze(['orphan-page', 'shared-source-unlinked']);
 
-/** Vault folder holding the raw sources a page cites. */
 const WIKI_SOURCES_DIR = 'sources';
 
 /**
@@ -147,7 +145,6 @@ function citationCandidateRegex() {
   return /\[\[src:([^\][]*)\]\]/g;
 }
 
-/** Every well-formed citation in `text`, in order. */
 export function extractWikiCitations(text) {
   const out = [];
   const regex = wikiCitationRegex();
@@ -330,7 +327,6 @@ function readSections(lines, offset) {
   return out;
 }
 
-/** Bullet lines belonging to one section. */
 function sectionBullets(lines, offset, sections, title) {
   const at = sections.findIndex((section) => section.title === title);
   if (at < 0) return [];

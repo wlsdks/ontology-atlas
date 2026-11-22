@@ -33,7 +33,6 @@ export function bundledProjectSlugs(): string[] {
   return slugs.length > 0 ? slugs : ['iam'];
 }
 
-/** The bundled projects that describe a real product: the sitemap's project set, each indexable. */
 export function deriveIndexedProjects(): Project[] {
   const real = new Set(
     BUNDLED_SOURCES.filter((source) => !DEMO_SOURCES.has(source)).flatMap((source) =>

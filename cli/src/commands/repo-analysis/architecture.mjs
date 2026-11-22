@@ -45,9 +45,9 @@ export async function runArchitecture(args) {
       { repoRoot: rootPath },
     );
     assertArchitectureBriefResult(result);
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  inspect_architecture: ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  inspect_architecture: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }
@@ -140,9 +140,9 @@ function recordArchitectureBrief(result, vaultRoot, { json }) {
   let profileDocument;
   try {
     profileDocument = findProfileDocument(vaultRoot, result.profile.slug);
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  --record: ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  --record: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }
@@ -159,9 +159,9 @@ function recordArchitectureBrief(result, vaultRoot, { json }) {
         `${COLORS.dim}(profile ${relative(vaultRoot, profileDocument.path)} · ${profileDocument.contentHash.slice(0, 19)}…)${COLORS.reset}`,
     );
     return 0;
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  --record: ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  --record: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }

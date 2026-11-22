@@ -25,18 +25,12 @@ export interface AcpRuntimeStatus {
   description: string;
   website: string | null;
   license: string | null;
-  /**
-   * Have we **actually tested** this runtime. Present so the screen cannot claim
-   * something was verified when it never was.
-   */
+  /** So the screen never claims an untested runtime was verified. */
   verified: boolean;
-  /** Path to the bundled icon (`/acp-icons/<id>.svg`), or null. */
   icon: string | null;
   /**
-   * The vendor's brand colour (`#RRGGBB`). Registry icons are all monochrome by
-   * registration rule, so colour is attached separately at build time. Only pairs a
-   * **human confirmed** carry a value — auto-matching by name puts the wrong colour on
-   * someone else's brand, which is worse than no colour. Null renders greyscale.
+   * `#RRGGBB`, only for pairs a person confirmed: registry icons are monochrome, and a colour
+   * guessed from the name is worse than greyscale (`null`).
    */
   brandInk: string | null;
   launchKind: 'npx' | 'uvx' | 'binary';
@@ -57,11 +51,8 @@ export interface AcpRuntimeStatus {
   adapterPath: string | null;
   adapterPackage: string | null;
   /**
-   * Can the app isolate this runtime's configuration.
-   *
-   * **False means there is no app-owned permission checkpoint.** The tool's own configuration is
-   * used as-is, and a session mode is not enough to guard MCP writes. The summary before the list
-   * must state that only guarded runtimes can open in-app chat.
+   * False means no app-owned permission checkpoint: the tool's own configuration applies and a
+   * session mode cannot guard MCP writes, so only isolated runtimes open in-app chat.
    */
   isolated: boolean;
 }
@@ -71,14 +62,9 @@ const LOGIN_CHECK_REUSE_MS = 60_000;
 let lastLoginCheck: { startedAt: number; answer: Promise<AcpRuntimeStatus[]> } | null = null;
 
 /**
- * Runtime status on this machine.
- *
- * With `probeLogin` on, each CLI is actually launched to check login state. That is the
- * only slow part of this call (measured: claude 300ms, codex 45ms), so it is off by
- * default — the screen **paints first and corrects later**.
- *
- * Login checks are shared: one in flight, reused for `LOGIN_CHECK_REUSE_MS`; `force` re-asks.
- * An answer asking for a sign-in is not reused.
+ * `probeLogin` launches each CLI (claude about 300ms), so it is off by default and the screen
+ * corrects later. Login checks share one flight and are reused for `LOGIN_CHECK_REUSE_MS` unless
+ * `force`; an answer asking for sign-in is not reused.
  */
 export async function detectAcpRuntimes(
   options?: { probeLogin?: boolean; force?: boolean },

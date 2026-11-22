@@ -1,4 +1,4 @@
-import type { SettingsCatalogEntry } from './types';
+import type { SettingsCatalogEntry } from './settings-catalog-entry';
 
 export const PRIVACY_CATALOG: readonly SettingsCatalogEntry[] = [
   {

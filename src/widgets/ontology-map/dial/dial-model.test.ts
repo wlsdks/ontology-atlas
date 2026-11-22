@@ -10,7 +10,7 @@ import {
   type TreeInputNode,
 } from "../model/containment-tree";
 import { buildDialModel, dialConceptTotal, dialEvidenceView, resolveDialAttention } from "./dial-model";
-import type { DialEvidence } from "./types";
+import type { DialEvidence } from "./dial-shapes";
 
 const node = (id: string, kind: TreeInputNode["kind"]): TreeInputNode => ({ id, label: id.toUpperCase(), kind });
 const contains = (source: string, target: string): TreeInputEdge => ({ source, target, kind: "contains", relationType: "contains" });

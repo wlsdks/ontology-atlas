@@ -44,7 +44,7 @@ import {
   wikiPageFacts,
 } from '../../../mcp/src/library/wiki-folder.mjs';
 import { judgeLoadedWikiPages } from '../../../mcp/src/library/wiki-judgement.mjs';
-import { createVaultDocCache } from '../../../mcp/src/vault/documents.mjs';
+import { createVaultDocCache } from '../../../mcp/src/vault/documents/document-cache.mjs';
 
 /**
  * One format however many things write a page: the TS and MCP validators must share the same codes

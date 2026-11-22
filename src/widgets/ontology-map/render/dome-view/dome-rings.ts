@@ -1,19 +1,7 @@
 /**
- * Renderer for the 3D dome's **latitude rings**. Why the rings must exist at all
- * is in the `DOME_RING_KINDS` doc-block of `model/dome-view/` — in short,
- * without them the arrangement reads as a tent rather than a dome, and rotation
- * has no reference.
- *
- * **Why a polyline and not one ellipse.** Drawing it in a single `ctx.ellipse`
- * call gives **one alpha per stroke**, so the whole ring is equally bright, front
- * and back are indistinguishable, and the ring stops being a depth cue and
- * becomes a border. All this file does is split that circle into segments so each
- * arc gets **the ink of its own depth** — the rear half sinks into fog while the
- * near half stays, and that asymmetry *is* which way is front.
- *
- * **This file knows nothing of tokens.** Per the `render/*` convention (set by
- * `node-shapes.ts`) every colour arrives as an argument; the values live in
- * `model/dome-view/` for the physics and in the token reader for the colours.
+ * The 3D dome's latitude rings as a polyline, not one `ctx.ellipse`: a single stroke has one alpha, so front
+ * and back would look alike. Each segment takes the ink of its own depth, and that asymmetry is which way is
+ * front. Colours arrive as arguments (the `render/*` convention).
  */
 
 interface DomeRingScreenSample {
@@ -41,35 +29,23 @@ export interface DomeRingsDrawState {
   fog: (u: number) => number;
   /** Depth → width multiplier. The caller passes the **same function** nodes and edges use. */
   widthFactor: (u: number) => number;
-  /**
-   * The tier whose ring is currently raised — the legend row under the pointer.
-   * That ring strokes in `tokens.strokeRaised` at full base alpha while every
-   * other ring is untouched, so "which plane is this" is answered by the picture
-   * rather than by the reader counting rings. Null raises nothing.
-   */
+  /** The tier whose ring is raised (the legend row under the pointer): it strokes in `tokens.strokeRaised` at full base alpha; null raises nothing. */
   raisedKind?: string | null;
 }
 
 export interface DomeRingsTokens {
   /** Ring ink — the lowest ink rank, that of a coordinate system. */
   stroke: string;
-  /** The ink a raised ring takes — see `DomeRingsDrawState.raisedKind`. */
   strokeRaised?: string;
 }
 
-/**
- * Draws every ring for one frame. The caller invokes this **before the edges** —
- * the rings are the stage, not the actors, so relations and nodes must sit on
- * top of them.
- *
- * This function overwrites `ctx.globalAlpha` and restores it on exit.
- */
+/** Draws every ring for one frame, before the edges: the rings are the stage, so relations and nodes sit on top. Overwrites `ctx.globalAlpha` and restores it. */
 export function draw(ctx: CanvasRenderingContext2D, state: DomeRingsDrawState, tokens: DomeRingsTokens): void {
   const { rings, baseAlpha, baseWidthPx, fog, widthFactor } = state;
   if (rings.length === 0) return;
 
-  const prevAlpha = ctx.globalAlpha;
-  const prevCap = ctx.lineCap;
+  const previousAlpha = ctx.globalAlpha;
+  const previousCap = ctx.lineCap;
   ctx.strokeStyle = tokens.stroke;
   ctx.lineCap = "butt";
   ctx.setLineDash([]);
@@ -78,7 +54,6 @@ export function draw(ctx: CanvasRenderingContext2D, state: DomeRingsDrawState, t
 
   for (const ring of rings) {
     if (ring.a <= 0.01) continue;
-    // One ring at a time, and only while a legend row is hovered.
     const raised = raisedKind !== null && ring.kind === raisedKind;
     ctx.strokeStyle = raised ? raisedStroke : tokens.stroke;
     const ringAlpha = raised ? 1 : baseAlpha;
@@ -88,9 +63,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: DomeRingsDrawState, t
     for (let i = 0; i < count; i++) {
       const from = points[i];
       const to = points[(i + 1) % count];
-      // A segment's depth is the mean of its two ends. Using an endpoint value
-      // directly makes neighbouring segments claim different brightness at the
-      // same point, showing a stair-step at every joint.
+      // Mean of the two ends, or neighbouring segments claim different brightness at a joint (a stair-step).
       const u = (from.u + to.u) / 2;
       const alpha = ringAlpha * fog(u) * ring.a;
       if (alpha <= 0.004) continue;
@@ -103,6 +76,6 @@ export function draw(ctx: CanvasRenderingContext2D, state: DomeRingsDrawState, t
     }
   }
 
-  ctx.globalAlpha = prevAlpha;
-  ctx.lineCap = prevCap;
+  ctx.globalAlpha = previousAlpha;
+  ctx.lineCap = previousCap;
 }

@@ -34,12 +34,7 @@ export async function generateMetadata({
   };
 }
 
-/**
- * `/guide` — **renders the first chapter in place rather than redirecting.**
- *
- * `/guide` is a shared address, and a redirect that changes the URL leaves whoever received the link
- * unsure what they clicked. The table of contents on the left already says which chapter this is.
- */
+/** Renders the first chapter in place: a redirect would change the shared address. */
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'gatewayNav' });

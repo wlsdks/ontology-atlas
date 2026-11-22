@@ -5,12 +5,7 @@ type AcpWorkEvent = Extract<AcpEvent, { kind: 'thought' }>;
 
 type AcpToolEvent = Extract<AcpEvent, { kind: 'tool' }>;
 
-/**
- * One drawn line of a tool run.
- *
- * `repeat` is how many calls that line stands for — always `1` unless a run of identical
- * calls was folded onto it (see `REPEAT_THRESHOLD`).
- */
+/** One drawn line of a tool run; `repeat` is how many identical calls were folded onto it (`REPEAT_THRESHOLD`). */
 interface TranscriptToolRow {
   event: AcpToolEvent;
   repeat: number;
@@ -20,20 +15,15 @@ export type TranscriptItem =
   | { kind: 'event'; event: Exclude<AcpEvent, AcpWorkEvent | AcpToolEvent> }
   | { kind: 'workGroup'; id: string; events: AcpWorkEvent[] }
   /**
-   * Consecutive tool calls, drawn as one block. Nothing is hidden: `count` is how many calls
-   * happened and `rows` is how many lines draw them, and the two differ only where a run of
-   * identical calls folded onto one row that says `×N`.
+   * Consecutive tool calls, drawn as one block. Nothing is hidden: `count` is the calls that happened,
+   * `rows` the lines that draw them; they differ only where identical calls folded onto a `×N` row.
    */
   | { kind: 'toolRun'; id: string; rows: TranscriptToolRow[]; count: number };
 
 /**
- * **Three is where a repeat stops being a step and becomes a texture.**
- *
- * Two identical rows still read as two things that happened, and a reader counts them without
- * effort. From the third the column stops carrying information and starts carrying rhythm: the
- * eye reports "a lot of the same" and the *next*, different call — the one that might explain a
- * wrong answer — loses its place in the run. Below this number nothing is folded, because folding
- * a pair would cost a `×2` badge to save one line.
+ * Three is where a repeat stops being a step and becomes texture: two identical rows still read as
+ * two events, while a third buries the next, different call. Folding a pair would cost a `×2` badge
+ * to save one line.
  */
 const REPEAT_THRESHOLD = 3;
 
@@ -53,16 +43,9 @@ function fingerprint(value: unknown): string {
 const repeatKeys = new WeakMap<AcpToolEvent, string>();
 
 /**
- * **Two calls are the same call only when nothing a reader could act on differs.**
- *
- * The name is the label, the input is the target, and the answer is the outcome — the three
- * things the row actually draws. Comparing the name alone would fold four reads of four different
- * concepts into "read a concept ×4", which deletes exactly the evidence the standing tool row was
- * kept for. Comparing the answer too is what keeps `nothing found` from being absorbed by three
- * neighbours that found something: a distinct outcome never merges.
- *
- * `id` is deliberately absent — every call has its own, so including it would make the key unique
- * and the fold unreachable.
+ * Two calls are the same only when nothing a reader could act on differs: name (label), input
+ * (target) and answer (outcome), so `nothing found` is never absorbed by neighbours that found
+ * something. `id` is absent on purpose: it is unique per call and would make the fold unreachable.
  */
 function repeatKey(event: AcpToolEvent): string {
   const cached = repeatKeys.get(event);
@@ -108,7 +91,6 @@ function foldRepeats(events: readonly AcpToolEvent[]): TranscriptToolRow[] {
 export function groupEvents(events: readonly AcpEvent[]): TranscriptItem[] {
   const out: TranscriptItem[] = [];
   let workGroup: Extract<TranscriptItem, { kind: 'workGroup' }> | null = null;
-  /** Collected raw calls for the open run; folded into rows when the run closes. */
   let toolRun: { item: Extract<TranscriptItem, { kind: 'toolRun' }>; events: AcpToolEvent[] } | null =
     null;
   const closeRun = () => {

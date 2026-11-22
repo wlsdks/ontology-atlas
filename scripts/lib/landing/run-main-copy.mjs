@@ -63,19 +63,19 @@ export function runMainCopyIfStale({ entry, argv, cwd = process.cwd(), env = pro
   log(`[${posix.basename(entry, '.mjs')}] this checkout's ${stale.join(', ')} differ from origin/main; running main's copy. ATLAS_PR_LAND_LOCAL=1 runs this checkout's copy instead.`);
   // Real path: on macOS the temp dir is a symlink, and an entry guard comparing
   // import.meta.url with argv[1] would otherwise never fire.
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-main-copy-')));
+  const directory = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-main-copy-')));
   try {
     for (const file of files) {
-      mkdirSync(dirname(join(dir, file)), { recursive: true });
-      writeFileSync(join(dir, file), readMain(file));
+      mkdirSync(dirname(join(directory, file)), { recursive: true });
+      writeFileSync(join(directory, file), readMain(file));
     }
-    const result = spawnSync(process.execPath, [join(dir, entry), ...argv], {
+    const result = spawnSync(process.execPath, [join(directory, entry), ...argv], {
       cwd: root,
       stdio: 'inherit',
       env: { ...env, ATLAS_MAIN_COPY_RUNNING: '1' },
     });
     return result.status ?? 1;
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 }

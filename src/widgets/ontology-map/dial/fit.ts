@@ -1,6 +1,6 @@
 import { LABEL_OFFSET, scaledLabelFont, scaledLabelFontSize } from "../render/labels";
 import { domainLabelBlock, sideOf, type MeasureText } from "./label-marks";
-import type { Box, DialLabels, DialModel, DialScene, DialTokens, Pad } from "./types";
+import type { Box, DialLabels, DialModel, DialScene, DialTokens, Pad } from "./dial-shapes";
 import { branchTextStyle } from "./branches/text";
 import { branchPreviewRows } from "./branches/layout";
 

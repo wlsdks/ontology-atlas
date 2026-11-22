@@ -23,15 +23,19 @@ import { isPathTargetPick, type TopologyMapLensKind } from "../../model/visibili
 import {
   type RealmTransitionState
 } from "../../model/realm/realm-transition";
-import { computeFocusCameraTarget, computeOverviewCameraTarget, focusPanBounds, focusTargetLeashPx, type FocusLeashPx } from "./topology-camera-math";
+import { computeOverviewCameraTarget } from "./target/fit-targets";
+import { computeFocusCameraTarget } from "./target/focus-fit";
+import { focusPanBounds, focusTargetLeashPx, type FocusLeashPx } from "./target/pan-leash";
 import {
   foldedPanelTokens,
   overviewBoundsFor
 } from "./topology-overview-fit";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
-import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "../world/topology-realm-runtime";
-import { computePathPickBounds, dialFocusFrame, type DialFocusFrame, type TopologyWorld } from "../world/topology-world";
+import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "../world/realm/topology-realm-runtime";
+import { computePathPickBounds } from "../world/framing/world-bounds";
+import { dialFocusFrame, type DialFocusFrame } from "../world/framing/dial-world-framing";
+import { type TopologyWorld } from "../world/topology-world";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { readDialTokens } from "../../dial/tokens";
 import { selectionSlideTarget } from "./branch-frame/selection-margin";

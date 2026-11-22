@@ -32,17 +32,17 @@ function usage() {
   ].join("\n");
 }
 
-function walkMd(dir, out = []) {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+function walkMd(directory, out = []) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
     if (entry.name.startsWith(".")) continue;
-    const full = join(dir, entry.name);
+    const full = join(directory, entry.name);
     if (entry.isDirectory()) walkMd(full, out);
     else if (entry.isFile() && entry.name.endsWith(".md")) out.push(full);
   }
   return out;
 }
 
-function loadVaultDocs(vaultDir) {
+function readVaultDocs(vaultDir) {
   return walkMd(vaultDir).map((filePath) => {
     const { frontmatter } = parseFrontmatter(readFileSync(filePath, "utf-8"));
     return { slug: String(frontmatter.slug ?? "").trim() || filePath, frontmatter };
@@ -105,7 +105,7 @@ if (!existsSync(repoRoot) || !statSync(repoRoot).isDirectory()) {
 // same "no vault → no noise" principle as the pre-commit preflight command.
 let docs = [];
 if (existsSync(vaultDir) && statSync(vaultDir).isDirectory()) {
-  docs = loadVaultDocs(vaultDir);
+  docs = readVaultDocs(vaultDir);
 }
 
 let changedFiles;
@@ -114,8 +114,8 @@ if (parsed.changedFiles !== null) {
 } else {
   try {
     changedFiles = getChangedFiles({ repoRoot, base: parsed.base, head: parsed.head });
-  } catch (err) {
-    process.stderr.write(`git diff failed: ${err instanceof Error ? err.message : String(err)}\n`);
+  } catch (error) {
+    process.stderr.write(`git diff failed: ${error instanceof Error ? error.message : String(error)}\n`);
     process.exit(2);
   }
 }

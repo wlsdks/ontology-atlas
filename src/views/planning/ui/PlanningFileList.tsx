@@ -16,7 +16,6 @@ export function PlanningFileList({ paths, selected, search, onSearch, onOpen, li
   onOpen: (path: string) => void;
   listRef: RefObject<HTMLDivElement | null>;
   emptyMessage: string | null;
-  /** The new-document title row, drawn above the files. */
   draft?: ReactNode;
 }) {
   const t = useTranslations('planning');

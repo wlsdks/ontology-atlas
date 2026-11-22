@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { domainPinTicks, glyphStyleDescriptor, hexPoints, interpolateCornerRadius, projectPinTicks, squarePoints } from "./node-shapes";
+import { glyphStyleDescriptor } from "./node-shapes";
+import { domainPinTicks, hexPoints, interpolateCornerRadius, projectPinTicks, squarePoints } from "./node-shapes/silhouette";
 
 describe("glyphStyleDescriptor (#21 canvas gateway — render style only, silhouette invariant)", () => {
   it("defaults (undefined) to the fill set: no line-only, full-weight stroke", () => {
@@ -97,8 +98,8 @@ describe("projectPinTicks", () => {
     const cy = 50;
     const ticks = projectPinTicks(cx, cy, r);
     for (const t of ticks) {
-      const len = Math.hypot(t.x2 - t.x1, t.y2 - t.y1);
-      expect(len).toBeCloseTo(6, 6);
+      const length = Math.hypot(t.x2 - t.x1, t.y2 - t.y1);
+      expect(length).toBeCloseTo(6, 6);
       const startDist = Math.hypot(t.x1 - cx, t.y1 - cy);
       expect(startDist).toBeCloseTo(r, 6);
     }

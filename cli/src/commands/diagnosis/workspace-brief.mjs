@@ -1,5 +1,4 @@
 // `ontology-atlas workspace-brief [vault]` — first-contact + next actions.
-// MCP `query_ontology({operation: 'workspace_brief'})` thin wrapper.
 
 import { COLORS, KIND_COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
@@ -40,9 +39,9 @@ export async function runWorkspaceBrief(args) {
   try {
     result = await callMcpTool(vaultRoot, 'query_ontology', { operation: 'workspace_brief', ...options });
     assertWorkspaceBriefShape(result);
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }

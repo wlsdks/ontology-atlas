@@ -1,56 +1,19 @@
 /**
- * Semi-implicit (symplectic) Euler critically-damped spring integrator.
- *
- * Contract (`docs/design/ontology-map.md` §2.4, §4 P2):
- * ```
- *   f  = -ω² · (value - target) - 2 · ζ · ω · velocity
- *   v' = velocity + f · dt
- *   x' = value + v' · dt
- * ```
- * (velocity is updated BEFORE position, both using the same `dt` — semi-implicit
- * Euler, not the naive explicit form. Getting this order wrong is the most
- * common way to reintroduce numerical instability at large `dt`.)
- *
- * - `angularFrequency` (ω, rad/s) is `--map-camera-spring-angfreq`
- *   = 1/0.34 ≈ 2.941 rad/s (see `tokens/read-map-tokens.ts`).
- * - `damping` (ζ) = 1.0 is the critically-damped default (monotonic approach,
- *   no overshoot) — `--map-camera-damping-default`.
- *
- * This module is pure physics — no camera/DOM/token knowledge. `engine/camera.ts`
- * composes three independent instances of this (x, y, scale axes) per frame.
- *
- * STUB: the lead implements the body. Exact expected values are pinned in
- * `spring.test.ts` (hand-derived from the formula above, not from running
- * any implementation) so the test is the spec, not a regression snapshot.
+ * Semi-implicit Euler spring step: velocity updates before position, both with the same `dt`
+ * (the explicit form goes unstable at large `dt`). Pure; the camera runs one per axis.
  */
 
 /**
- * The cap on a frame delta (seconds) — it stops the dt blowing up when a tab comes
- * back from the background. The rAF loop (`use-topology-loop.ts`) clamps with
- * this value.
- *
- * **This value is paired with the spring's stability condition.** Semi-implicit
- * Euler diverges as `ω·dt` grows, and the measured boundary is **1.0**
- * (ω·dt = 0.75 converges, 1.00 diverges — `spring.test.ts` carries that boundary as
- * a case). Divergence means NaN, and a NaN camera propagates through every
- * projection and kills the whole canvas.
- *
- * So the constant lives here and a contract test measures **the tokens' maximum ω ×
- * this value**. Scattered across two files, raising only one of them would silently
- * cross the boundary.
+ * Frame delta cap (seconds) against a tab returning from the background. Semi-implicit Euler
+ * diverges at `ω·dt` ≥ 1.0 (0.75 converges) and a NaN camera kills the canvas, so a contract
+ * test bounds the tokens' largest ω times this value.
  */
 export const MAX_FRAME_DELTA_SECONDS = 0.05;
 
-/**
- * The `ω·dt` stability boundary — at or above this it diverges (measured).
- *
- * The contract test measures headroom against it. The number is written here once
- * and the test references it — written in two places, they diverge.
- */
+/** `ω·dt` at or above this diverges (measured); the contract test measures headroom against it. */
 export const SPRING_STABILITY_LIMIT = 1.0;
 
 export interface SpringAxisState {
-  /** Current value — world x/y, or camera scale (unit-agnostic). */
   value: number;
   /** Current velocity, in value-units per second. */
   velocity: number;
@@ -58,20 +21,7 @@ export interface SpringAxisState {
 
 export type SpringStepResult = SpringAxisState;
 
-/**
- * Advances one axis of a critically-damped spring by `dt` seconds toward
- * `target`. Pure function — must not mutate `state`.
- *
- * @param state current `{value, velocity}`
- * @param target the spring's current target value (`camera.tx`/`ty`/`tscale`
- *   in the prototype — set by `setCameraTarget`/wheel/drag-release, never by
- *   this function)
- * @param dt elapsed seconds since the last step. Caller clamps this — the
- *   prototype uses `Math.min((now - lastT) / 1000, 0.05)` to guard against
- *   tab-backgrounding spikes; this function assumes the clamp already happened.
- * @param angularFrequency ω in rad/s — see `--map-camera-spring-angfreq`
- * @param damping ζ — 1.0 default (critically damped)
- */
+/** One step toward `target`. Pure; the caller clamps `dt`. */
 export function stepSpring(
   state: SpringAxisState,
   target: number,

@@ -262,7 +262,7 @@ mod vault_text_batch_tests {
     };
     use tauri::ipc::{InvokeResponseBody, IpcResponse};
 
-    /// The shape `vault-text-frames.ts` decodes into, which is what the JSON answer used to be.
+    /// The shape `vault-text-frames.ts` decodes into.
     #[derive(Debug, PartialEq, serde::Deserialize)]
     #[serde(rename_all = "camelCase")]
     struct DecodedRead {
@@ -543,7 +543,7 @@ mod vault_text_batch_tests {
             .is_empty());
 
         let granted = std::fs::canonicalize(base.join("vault/domains")).unwrap();
-        let scope = crate::vault_grants::EnforcedScope::granting(&[granted]);
+        let scope = crate::vault::grants::EnforcedScope::granting(&[granted]);
         let err = read_vault_text_files(root, vec!["project.md".into()]).unwrap_err();
         assert!(err.contains("not-granted"), "{err}");
         drop(scope);

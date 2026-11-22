@@ -8,8 +8,7 @@ use super::super::job::Entry;
 use super::super::models::{builtin_model, AppSources};
 use super::super::report::MonotonicClock;
 use super::super::types::{VectorPhase, VectorSource, VectorStatus};
-use super::super::{Emit, Vectors};
-use super::fakes::lock;
+use super::super::{lock, Emit, Vectors};
 use crate::llm::embed::builtin::client::{spawn_piped, BuiltinModel, Launch, Spawned, LIMITS};
 use crate::llm::embed::builtin::worker::{serve, StoreModels, WORKER_IDLE};
 use crate::llm::embed::builtin::{pins, ModelStore};
@@ -71,7 +70,7 @@ impl Launch for MeasuredWorker {
     fn launch(&self) -> Result<Spawned, EmbedError> {
         let mut command =
             Command::new(std::env::current_exe().map_err(|_| EmbedError::WorkerExited)?);
-        crate::no_console::hide_console(&mut command)
+        crate::child_process::no_console::hide_console(&mut command)
             .args([
                 "--exact",
                 CHILD_TEST,

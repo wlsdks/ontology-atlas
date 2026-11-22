@@ -1,6 +1,3 @@
-// `ontology-atlas maintenance [vault]` — graph maintenance work queue.
-// MCP `query_ontology({operation: 'maintenance_plan'})` thin wrapper.
-
 import { COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import { assertMaintenancePlanShape } from '../../lib/query-result-contract/maintenance-growth.mjs';
@@ -50,9 +47,9 @@ export async function runMaintenance(args) {
   try {
     result = await callMcpTool(vaultRoot, 'query_ontology', parsed.toolArgs);
     assertMaintenancePlanShape(result);
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }

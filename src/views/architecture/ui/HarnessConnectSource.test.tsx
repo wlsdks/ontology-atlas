@@ -6,7 +6,7 @@ import koMessages from '../../../../messages/ko.json';
 import type { VaultDoc } from '@/entities/docs-vault';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import type { ProjectSourceRuntime } from '@/features/project-source-binding';
-import type { ProjectSourceInspection } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import type { ProjectSourceInspection } from '@/shared/lib/vault-folder/native-vault/tauri-project-source';
 
 import { HarnessConnectSource } from './HarnessConnectSource';
 

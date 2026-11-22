@@ -1,71 +1,37 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
 import { buildFirstWords, type ScreenContextSnapshot } from '@/features/vault-agent';
 import { useVaultConceptFacts } from '@/features/vault-ontology';
-import {
-  COMPOSER_MIN_ROWS,
-  composerGrowth,
-  composerTopIsHidden,
-  snapScrollTop,
-} from '@/shared/lib/agent-chat/composer-growth';
-import {
-  hostOfBaseUrl,
-  isLocalEndpointReady,
-  readLocalEndpoint,
-  subscribeLocalEndpointChange,
-  type LocalEndpointSettings,
-} from '@/shared/lib/llm-connection/local-endpoint';
 import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
-import { AGENT_DOCK_INSET_SURFACE_CLASS, Chip, CloseButton, Surface } from '@/shared/ui';
-import { controlClass, fieldClass } from '@/shared/ui/control-class';
-import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-connection/llm-audit-log';
-import { useRouter } from '@/i18n/navigation';
-import { AGENTS_MODELS_HREF } from '@/shared/config/destinations';
-import { gitHistory, isGitBridgeAvailable } from '@/shared/lib/git/tauri-git';
+import { AGENT_DOCK_INSET_SURFACE_CLASS, CloseButton } from '@/shared/ui';
 import { isLlmChatBridgeAvailable } from '@/shared/lib/llm-connection/tauri-llm';
-import { pickTauriSourceDirectory } from '@/shared/lib/vault-folder/tauri-vault-fs';
-import { previewConstructionSource, type ConstructionSourcePreview } from '@/shared/lib/llm-connection/tauri-local-construction';
-import {
-  SECRET_PROVIDER_HOSTS,
-  LOCAL_PROVIDER,
-  SECRET_PROVIDERS,
-  secretStatus,
-  subscribeSecretChange,
-  type ConnectionProvider,
-} from '@/shared/lib/llm-connection/tauri-secrets';
+import { VAULT_AGENT_PANEL_ID } from '@/shared/config/agent/agent-panel';
 
-import { isLocalConstructionEndpoint, useVaultAgent } from '../model/use-vault-agent';
-import { AgentFirstWords } from './AgentFirstWords';
-import { AgentHandoffPacket } from './AgentHandoffCard';
-import { AgentLockedComposer, AgentLockedState } from './AgentLockedState';
-import { AgentProposalCard } from './AgentProposalCard';
-import { AgentPromptText } from './AgentPromptDisclosure';
-import { AgentScopeSheet } from './AgentScopeSheet';
-import { AgentTranscript } from './AgentTranscript';
-import { josa } from '@/shared/lib/locale-text/ko-josa';
-import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
-import { VAULT_AGENT_PANEL_ID } from '@/shared/config/agent-panel';
+import { connectionHost } from '../model/connection-host';
+import { agentPanelStage, canSendDraft } from '../model/panel-stage';
+import { useComposerGrowth } from '../model/use-composer-growth';
+import { useConnectionProvider } from '../model/use-connection-provider';
+import { useConstructionSource } from '../model/use-construction-source';
+import { useDraftSeating } from '../model/use-draft-seating';
+import { usePanelDismissal } from '../model/use-panel-dismissal';
+import { useRecentChanges } from '../model/use-recent-changes';
+import { useVaultAgent } from '../model/use-vault-agent';
+import { AgentStageBody } from './AgentStageBody';
+import { AgentStageFloor } from './AgentStageFloor';
+import { AgentComposer } from './composer/AgentComposer';
+import { AgentMetaDisclosure, type AgentMetaBranch } from './composer/AgentMetaDisclosure';
+import { AgentConstructionEvidence } from './construction/AgentConstructionEvidence';
+import { AgentConstructionSource } from './construction/AgentConstructionSource';
 
 /**
- * The agent panel — a vertical dock the map yields space to on the right.
- *
- * ## Why the reflow is built this way
- *
- * The panel animates **width only**, inside `<main>`'s flex row. That one width
- * animation moves both columns (map `flex-1`, panel fixed width) in the same frame,
- * so the map's shrink and the panel's entry share **the same start and the same
- * curve** — not two animations tuned to match but physically one. That is what makes
- * it read as "it yielded space" rather than "the map was taken away".
- *
- * ## Closing = stopping
- *
- * Closing the panel cuts any in-flight call through the same path. There is no
- * continuing in the background.
+ * The agent panel: a dock the map yields space to on the right. It animates width only inside
+ * `<main>`'s flex row, so the map's shrink and the panel's entry share one start and one curve.
+ * Closing the panel cuts any in-flight call; nothing continues in the background.
  */
 export function VaultAgentPanel({
   open,
@@ -90,178 +56,35 @@ export function VaultAgentPanel({
   vaultIsGit: boolean;
   canWrite: boolean;
   onFocusNode: (slug: string) => void;
-  /** The route this panel can open itself when there is no folder — without it, that state has no door. */
   onOpenFolder?: () => void;
   downloadHref: string;
   /**
-   * A first message handed over from outside (S7) — pressing "Ask the agent" (ask the agent)
-   * on a queue row or a node's detail brings a sentence
-   * carrying that row's context here. **It is a prefill, not a send.** `nonce` is the
-   * value that lets the same sentence be seated again on a repeat.
+   * A first message handed over from outside, such as "Ask the agent" on a queue row: a prefill, not
+   * a send. `nonce` lets the same sentence be seated again.
    */
   prefillRequest?: { text: string; nonce: number } | null;
 }) {
   const t = useTranslations('vaultAgentPanel');
-  const router = useRouter();
   const locale = useLocale();
   const [draft, setDraft] = useState('');
   const [scopeAccepted, setScopeAccepted] = useState(false);
-  const [sourceSelection, setSourceSelection] = useState<{
-    nonce: number;
-    status: 'preparing' | 'preview' | 'localRequired' | 'sourceChanged';
-    preview?: ConstructionSourcePreview;
-  } | null>(null);
-  const sourceSelectionNonce = useRef(0);
-  const heldSourceSelection = useHeldValue(sourceSelection, sourceSelection ? `${sourceSelection.nonce}:${sourceSelection.status}` : null);
   /**
-   * The two side branches below the composer — "View instructions" (view instructions) and
-   * "Continue in the terminal" (continue in the terminal). **Only one opens at a time.**
-   *
-   * Why one: the old layout, with both sitting permanently as bordered strips,
-   * stacked four strips at the panel's floor (instructions · composer · boundary
-   * sentence · handoff card), with the protagonist (the composer) on the second row.
-   * Side branches are needed **only when leaving or when in doubt**, so they have no
-   * reason to sit permanently — the opening and closing folds into one row, and the
-   * area that opens is limited to one (zero overlapping transient surfaces).
+   * The two side branches below the composer open one at a time. A side branch collapses through
+   * `useHeldValue` instead of vanishing. `meta` is a primitive, so no key is needed (a keyless object
+   * changes identity every render and produces React #301).
    */
-  const [meta, setMeta] = useState<'prompt' | 'handoff' | null>(null);
-  /**
-   * A side branch collapses through `useHeldValue` instead of vanishing. `meta` is a primitive, so no
-   * key is needed (a keyless object changes identity every render and produces React #301).
-   */
+  const [meta, setMeta] = useState<AgentMetaBranch | null>(null);
   const heldMeta = useHeldValue(meta);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  /**
-   * An **off-screen mirror** for measuring growth. The common pattern of resetting
-   * the visible composer's height to `''` and reading `scrollHeight` collapses the box
-   * to 0 and reopens it every frame, turning growth into a staircase rather than a
-   * transition. The mirror has the same typography and width so it gives the same
-   * value, and the visible box is never reset.
-   */
   const mirrorRef = useRef<HTMLTextAreaElement>(null);
-  /** Has the cap (6 rows) been hit so the top is **actually clipped**? Only then the top fade. */
-  const [composerHidesTop, setComposerHidesTop] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const bridgeAvailable = isLlmChatBridgeAvailable();
-  /** The basis for the blanks the first words point at — the same fact map the "To-do" queue reads. */
   const conceptFacts = useVaultConceptFacts();
-  /**
-   * Which vendor's key is on this computer. The first in registration order (=
-   * `secrets.rs`'s allowlist order) is used — no model picker and no vendor picker is
-   * built. The full key never arrives by any route, so all that is known here is
-   * "there is one".
-   */
-  const [provider, setProvider] = useState<ConnectionProvider | null>(null);
-  /**
-   * The "Connect by address" (connect by address) path's settings — the address and the
-   * chosen model. It lives in localStorage rather than the keychain (it is not a
-   * secret), and a signal arrives when the settings sheet changes it.
-   */
-  const [localEndpoint, setLocalEndpoint] = useState<LocalEndpointSettings | null>(null);
-  /**
-   * The **way back** after entering a key. When a key is saved in the settings sheet
-   * a signal arrives at that moment and it is re-queried here — no reload is demanded
-   * (demanding one would be a defect). The query itself is owned by the single effect
-   * below, and this value is only the trigger that re-runs that effect.
-   */
-  const [secretNonce, setSecretNonce] = useState(0);
 
-  /*
-   * Escape counts only from inside the panel and not while an IME is composing; a nested surface that
-   * used the key marks it with `preventDefault`. Every close returns focus to the opener.
-   */
-  const panelRef = useRef<HTMLElement>(null);
-  const openerRef = useRef<HTMLElement | null>(null);
-  const onCloseRef = useRef(onClose);
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-  useEffect(() => {
-    if (!open) return undefined;
-    // The aside is always rendered (a closed panel is 0 wide), so this node is the one
-    // the cleanup below will see.
-    const panel = panelRef.current;
-    const active = document.activeElement;
-    openerRef.current =
-      active instanceof HTMLElement && active !== document.body && !panel?.contains(active) ? active : null;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.isComposing || event.defaultPrevented) return;
-      if (!panel || !(event.target instanceof Node) || !panel.contains(event.target)) return;
-      event.preventDefault();
-      event.stopPropagation();
-      onCloseRef.current();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      const focused = document.activeElement;
-      // Only when focus was in the panel (or already lost): a close pressed on the
-      // toolbar toggle leaves focus on that toggle, where it belongs.
-      if (focused && focused !== document.body && !panel?.contains(focused)) return;
-      // The control that opened it; WebKit does not focus a pressed button, so the
-      // toggle that names this panel in `aria-controls` stands in for it.
-      const opener =
-        openerRef.current?.isConnected
-          ? openerRef.current
-          : document.querySelector<HTMLElement>(`[aria-controls="${VAULT_AGENT_PANEL_ID}"]`);
-      opener?.focus({ preventScroll: true });
-    };
-  }, [open]);
+  const panelRef = usePanelDismissal({ open, onClose });
+  const { provider, localEndpoint } = useConnectionProvider({ open, bridgeAvailable });
 
-  useEffect(() => {
-    if (!open || !bridgeAvailable) return undefined;
-    const bump = () => setSecretNonce((value) => value + 1);
-    const offSecret = subscribeSecretChange(bump);
-    const offLocal = subscribeLocalEndpointChange(bump);
-    return () => {
-      offSecret();
-      offLocal();
-    };
-  }, [open, bridgeAvailable]);
-  useEffect(() => {
-    if (!open || !bridgeAvailable) return;
-    let cancelled = false;
-    void (async () => {
-      /**
-       * **The address path comes first.** Why the order is this way: that path is
-       * reached only by someone who typed an address, verified the connection and
-       * chose a model from the list (one step more explicit than pasting a key), so if
-       * an old key kept being used after all that, what the user just did would count
-       * for nothing. Which one is live is stated continuously by the panel footer,
-       * through the provider name and host.
-       */
-      const local = readLocalEndpoint();
-      if (isLocalEndpointReady(local)) {
-        if (!cancelled) {
-          setLocalEndpoint(local);
-          setProvider(LOCAL_PROVIDER);
-        }
-        return;
-      }
-      if (!cancelled) setLocalEndpoint(null);
-      for (const candidate of SECRET_PROVIDERS) {
-        const status = await secretStatus(candidate);
-        if (cancelled) return;
-        if (status?.stored) {
-          setProvider(candidate);
-          return;
-        }
-      }
-      if (!cancelled) setProvider(null);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, bridgeAvailable, secretNonce]);
-
-  /**
-   * Continuity between sessions — this folder's recent commit subjects. It is the
-   * basis on which a new conversation inherits past work **without storing the
-   * conversation** (every write landed in frontmatter and git). It is read only when
-   * the panel opens and when an apply finishes: background polling is something the
-   * user did not ask for, and without git the bridge honestly returns empty.
-   */
   const [recentChanges, setRecentChanges] = useState<readonly string[]>([]);
 
   const screenContextWithHistory = useMemo<ScreenContextSnapshot>(
@@ -269,26 +92,12 @@ export function VaultAgentPanel({
     [screenContext, recentChanges],
   );
 
-  /**
-   * Where this conversation actually goes. A named vendor is the official host
-   * hard-coded here, and the address path is the host of the address the user typed —
-   * **the same grammar** as the value recorded in the audit row, so the screen and the
-   * record state the same thing.
-   */
-  const providerHost =
-    provider === LOCAL_PROVIDER
-      ? hostOfBaseUrl(localEndpoint?.baseUrl ?? '')
-      : provider
-        ? SECRET_PROVIDER_HOSTS[provider]
-        : '';
+  const providerHost = connectionHost(provider, localEndpoint);
 
   /**
-   * An absolute path alone does not make it ready to send. During a desktop restore
-   * the handle and absolute path can come back before the manifest. The screen in that
-   * frame is the bundled sample, and using the path straight away makes the agent
-   * write its audit log into a hidden local folder, splitting the vault of the screen,
-   * the grounding and the record. With no manifest there is no vault to read, so it
-   * honestly falls back to the existing no-folder state.
+   * An absolute path alone is not ready to send: a desktop restore can return the handle and path
+   * before the manifest, while the screen shows the bundled sample, and the audit log would land in a
+   * hidden folder. With no manifest it falls back to the no-folder state.
    */
   const readableVaultPath = manifest ? vaultPath : null;
 
@@ -324,44 +133,17 @@ export function VaultAgentPanel({
     },
   });
 
-  const constructionResource = JSON.stringify([readableVaultPath, provider, localEndpoint?.model, localEndpoint?.baseUrl, open]);
-  const constructionResourceRef = useRef(constructionResource);
-  useLayoutEffect(() => { constructionResourceRef.current = constructionResource; }, [constructionResource]);
-  useEffect(() => () => { sourceSelectionNonce.current += 1; setSourceSelection(null); }, [constructionResource]);
+  const construction = useConstructionSource({
+    open,
+    bridgeAvailable,
+    vaultPath: readableVaultPath,
+    provider,
+    localEndpoint,
+    agent,
+    draft,
+    onRun: () => setScopeAccepted(true),
+  });
 
-  const cancelSourceSelection = () => { sourceSelectionNonce.current += 1; setSourceSelection(null); };
-  const chooseConstructionSource = async () => {
-    if (!bridgeAvailable || !readableVaultPath || agent.running || agent.proposal?.status === 'applying') return;
-    agent.stop();
-    const nonce = ++sourceSelectionNonce.current;
-    const resource = constructionResource;
-    if (provider !== LOCAL_PROVIDER || !localEndpoint?.model || !isLocalConstructionEndpoint(localEndpoint.baseUrl)) {
-      setSourceSelection({ nonce, status: 'localRequired' });
-      return;
-    }
-    setSourceSelection({ nonce, status: 'preparing' });
-    const active = () => sourceSelectionNonce.current === nonce && constructionResourceRef.current === resource;
-    try {
-      const sourcePath = await pickTauriSourceDirectory(t('construction.pickerTitle'));
-      if (!active()) return;
-      if (!sourcePath) { setSourceSelection(null); return; }
-      const preview = await previewConstructionSource(sourcePath, readableVaultPath);
-      if (!active()) return;
-      if (preview.destinationPath !== readableVaultPath || preview.sourcePath !== sourcePath) throw new Error('source_changed');
-      setSourceSelection({ nonce, status: 'preview', preview });
-    } catch {
-      if (active()) setSourceSelection({ nonce, status: 'sourceChanged' });
-    }
-  };
-  const runConstruction = () => {
-    if (sourceSelection?.status !== 'preview' || !sourceSelection.preview?.files.length || agent.running) return;
-    const preview = sourceSelection.preview;
-    cancelSourceSelection();
-    setScopeAccepted(true);
-    void agent.sendConstruction(preview, draft.trim() || t('construction.action'));
-  };
-
-  // Closing = stopping. Not open means anything in flight ends with it.
   const { stop } = agent;
   useEffect(() => {
     if (!open) stop();
@@ -371,147 +153,19 @@ export function VaultAgentPanel({
     if (open) inputRef.current?.focus();
   }, [open]);
 
-  /**
-   * There are only two moments history is read: when the panel opens, and **after an
-   * apply lands** (the next conversation has to know what was just done for
-   * "continues" to be true). Background polling is not done, because the user did not
-   * ask for it.
-   */
   const appliedTally = agent.sessionSummary.concepts + agent.sessionSummary.relations;
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      // A state that cannot be read (closed, no folder, not git) is **empty history**,
-      // not an error. That block simply drops out of the context.
-      if (!open || !readableVaultPath || !isGitBridgeAvailable()) {
-        if (!cancelled) setRecentChanges((current) => (current.length === 0 ? current : []));
-        return;
-      }
-      try {
-        const commits = await gitHistory(readableVaultPath, 5);
-        if (cancelled) return;
-        setRecentChanges(
-          (commits ?? []).map((commit) => `${commit.subject} (${commit.relativeTime})`),
-        );
-      } catch {
-    // Failing to read git history is not a failure of the conversation either — it goes on without that row.
-        if (!cancelled) setRecentChanges([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, readableVaultPath, appliedTally]);
+  useRecentChanges({ open, vaultPath: readableVaultPath, appliedTally, setRecentChanges });
 
-  /**
-   * Seat a prefilled sentence so it **reads from the beginning** — the caret at the
-   * end of the sentence (where you continue writing), the view on the first line.
-   *
-   * The old implementation was `input.select()`. Selecting everything means "the next
-   * keystroke erases this sentence", while the user just pressed it **to choose** that
-   * sentence — the opposite of the intent. And select scrolls to the end of the
-   * selection (the last line), so the moment 3 lines arrived in a 2-line fixed box it
-   * pushed `scrollTop` to 9px in one frame. The line height is 20px, 9 is not a
-   * multiple of it, and so a row with glyphs cut in half caught on the top edge
-   * (measured: frame f231 of 420, 16.7ms).
-   *
-   * `scrollTop` is always snapped to the line grid. This is **alignment**, not motion,
-   * so it survives under reduced-motion too.
-   */
-  const seatDraft = useCallback((input: HTMLTextAreaElement) => {
-    input.focus();
-    const end = input.value.length;
-    // APIs that may be missing in jsdom and older WebViews are called only when present.
-    if (typeof input.setSelectionRange === 'function') input.setSelectionRange(end, end);
-    const lineHeight = Number.parseFloat(window.getComputedStyle(input).lineHeight);
-    input.scrollTop = snapScrollTop(0, lineHeight);
-  }, []);
+  const prefill = useDraftSeating({ inputRef, setDraft, prefillRequest });
 
-  /**
-   * Chip → prefill. The sentence is seated **in the frame it was pressed**. Sending is
-   * always [Send].
-   *
-   * Seating is deferred behind `requestAnimationFrame` — immediately after `setDraft`
-   * React has not written the value yet, so the caret is computed against the old
-   * (empty) value.
-   */
-  const prefill = useCallback(
-    (text: string) => {
-      setDraft(text);
-      const input = inputRef.current;
-      if (!input) return;
-      input.focus();
-      window.requestAnimationFrame(() => {
-        const current = inputRef.current;
-        if (current) seatDraft(current);
-      });
-    },
-    [seatDraft],
-  );
-
-  /**
-   * A first message handed over from outside (S7).
-   *
-   * Taken as **an adjustment during render** rather than an effect (React's "adjust
-   * state when a prop changes" pattern): in an effect the screen paints once with the
-   * stale value and then repaints, and that single frame looks exactly like "I pressed
-   * it and it responded late". It seats only when `nonce` changes, so pressing the same
-   * sentence again seats it again, and a draft the user was editing is not overwritten
-   * every render.
-   */
-  const prefillNonce = prefillRequest?.nonce ?? null;
-  const prefillText = prefillRequest?.text ?? null;
-  const [seenPrefillNonce, setSeenPrefillNonce] = useState<number | null>(null);
-  if (prefillNonce !== null && prefillText && prefillNonce !== seenPrefillNonce) {
-    setSeenPrefillNonce(prefillNonce);
-    setDraft(prefillText);
-  }
-  // Focus and caret are DOM operations, so they happen after render — the value is already in by then.
-  useEffect(() => {
-    if (seenPrefillNonce === null) return;
-    const input = inputRef.current;
-    if (!input) return;
-    seatDraft(input);
-  }, [seenPrefillNonce, seatDraft]);
-
-  /**
-   * Composer growth — it starts at 2 rows and grows **with the content** to 6.
-   *
-   * The old implementation was a fixed `rows={2}`, so the box stayed the same even
-   * with a three-line sentence (height fixed at 58px across all 420 frames, mean
-   * inter-frame pixel diff 0.013) and the user could see only a third of the sentence
-   * they had just chosen.
-   *
-   * Height goes through **real `height`**, not `transform` — the siblings (send button,
-   * side-branch row) have to yield space along with it for it to read as "this box
-   * grew", and transform makes no space. The curve is the single surface-movement ramp
-   * (`--motion-base`) with no spring: with no retargeting, overshooting the baseline
-   * shakes the text while it is being read.
-   */
-  useLayoutEffect(() => {
-    const input = inputRef.current;
-    const mirror = mirrorRef.current;
-    if (!input || !mirror) return;
-    mirror.value = draft;
-    const style = window.getComputedStyle(input);
-    const lineHeight = Number.parseFloat(style.lineHeight);
-    const growth = composerGrowth({
-      lineHeight,
-      paddingBlock:
-        Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom),
-      borderBlock:
-        Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth),
-      contentHeight: mirror.scrollHeight,
-    });
-    // Leave it alone in states that cannot be measured (SSR, jsdom, before fonts
-    // load) — the default `rows` always beats collapsing to 0px.
-    if (!growth) return;
-    input.style.height = `${growth.height}px`;
-    input.scrollTop = snapScrollTop(input.scrollTop, lineHeight);
-    setComposerHidesTop(composerTopIsHidden(growth.overflowing, input.scrollTop));
-    // `scopeAccepted`/`provider` are the moment the composer **mounts** — measuring
-    // once then is what makes it stand at the right height from the first paint.
-  }, [draft, open, scopeAccepted, provider]);
+  const { composerHidesTop, setComposerHidesTop } = useComposerGrowth({
+    inputRef,
+    mirrorRef,
+    draft,
+    open,
+    scopeAccepted,
+    provider,
+  });
 
   // New content grows downward only — the scroll anchor is pinned to the bottom.
   useEffect(() => {
@@ -521,22 +175,24 @@ export function VaultAgentPanel({
     node.scrollTo({ top: node.scrollHeight });
   }, [agent.turns, agent.proposal]);
 
-  const ready = bridgeAvailable && Boolean(provider) && Boolean(readableVaultPath);
-  const canSend = ready && scopeAccepted && !agent.running && sourceSelection === null && agent.proposal?.status !== 'applying' && draft.trim().length > 0;
-
+  const applying = agent.proposal?.status === 'applying';
   /**
-   * Which state this panel is in — folded into one value. The same box is becoming a
-   * different state, so the cross-fade runs once, only when this value changes.
+   * The same box is becoming a different state, so the cross-fade runs once, only when the stage
+   * changes.
    */
-  const stage = !bridgeAvailable
-    ? 'web'
-    : !readableVaultPath
-      ? 'no-folder'
-      : !provider
-        ? 'no-key'
-        : !scopeAccepted
-          ? 'scope'
-          : 'chat';
+  const stage = agentPanelStage({
+    bridgeAvailable,
+    vaultPath: readableVaultPath,
+    provider,
+    scopeAccepted,
+  });
+  const canSend = canSendDraft({
+    stage,
+    running: agent.running,
+    choosingSource: construction.selection !== null,
+    applying,
+    draft,
+  });
   /**
    * The first words are computed locally; no model is called. They use the same judgement as the To-do
    * queue, so only running them is opt-in.
@@ -575,11 +231,7 @@ export function VaultAgentPanel({
       ref={panelRef}
       id={VAULT_AGENT_PANEL_ID}
       data-testid="vault-agent-panel"
-      /*
-       * What stands at the screen's right — notifications (toasts) step aside by this
-       * width. Marked only while open: a closed panel is 0 wide and has nothing to
-       * reserve.
-       */
+      // What stands at the screen's right, so toasts step aside by this width; set only while open.
       data-right-dock={open ? 'key-agent' : undefined}
       data-agent-panel-state={open ? 'open' : 'closed'}
       data-agent-panel-reflow-token="--agent-panel-reflow-duration"
@@ -607,10 +259,7 @@ export function VaultAgentPanel({
             <p className="truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t('title')}
             </p>
-            {/* There is one subtitle slot — when progress happens, only the **text** on
-                that row changes. Position and size stay, so the layout does not jump,
-                and no decoration such as rolling numbers is attached (progress is a
-                fact, not a notification). */}
+            {/* One subtitle slot: when progress happens only the text changes, so the layout does not jump. */}
             <p
               data-testid="vault-agent-panel-subtitle"
               className="truncate text-label tracking-label text-[color:var(--color-text-quaternary)]"
@@ -628,451 +277,86 @@ export function VaultAgentPanel({
 
         <div
           ref={scrollRef}
-          data-agent-panel-stage={stage}
+          data-agent-panel-stage={stage.kind}
           // This scroller is itself a vertical flex — for the locked state's composer
           // position to stand in **the same place** as the real composer (the panel
           // floor), the wrapper below has to receive the remaining height, and
           // `min-h-full` is not reliable inside a scroll container.
           className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-3"
         >
-          {/* The same box becomes a different state — the state name is the key so a
-              short cross-fade (--motion-base) runs exactly once. Looking like a new
-              screen appeared reads as "I went elsewhere" rather than "this opened". */}
-          <div key={stage} className="agent-panel-stage-swap flex grow flex-col">
+          {/* The state name is the key, so one short cross-fade runs exactly once per state change. */}
+          <div key={stage.kind} className="agent-panel-stage-swap flex grow flex-col">
           <div className="mb-3 space-y-2">
-            {!bridgeAvailable ? <p className="text-label text-[color:var(--color-text-secondary)]">{t('construction.webUnavailable')}</p> : readableVaultPath ? (
-              <>
-                <Chip data-testid="construction-action" disabled={agent.running || agent.proposal?.status === 'applying'}
-                  title={agent.running ? t('stop') : t('construction.action')} onClick={() => void chooseConstructionSource()}>
-                  {t('construction.action')}
-                </Chip>
-                <p className="text-label text-[color:var(--color-text-secondary)]">{t('construction.boundary')}</p>
-              </>
+            <AgentConstructionSource
+              bridgeAvailable={bridgeAvailable}
+              hasVault={Boolean(readableVaultPath)}
+              busy={agent.running || applying}
+              running={agent.running}
+              selection={construction.selection}
+              held={construction.heldSelection}
+              localEndpoint={localEndpoint}
+              providerHost={providerHost}
+              onChoose={() => void construction.choose()}
+              onCancel={construction.cancel}
+              onRun={construction.run}
+            />
+            {agent.construction ? (
+              <AgentConstructionEvidence
+                construction={agent.construction}
+                onRunAgain={() => void construction.choose()}
+              />
             ) : null}
-            <Surface open={sourceSelection !== null} origin="top left" className={`${AGENT_DOCK_INSET_SURFACE_CLASS} space-y-3`} data-testid="construction-preview">
-              {heldSourceSelection?.status === 'preparing' ? <p role="status" className="text-label">{t('construction.preparing')}</p> : null}
-              {heldSourceSelection?.status === 'localRequired' ? <>
-                <p role="status" className="text-label">{t('construction.localRequired')}</p>
-                <Chip onClick={() => router.push(AGENTS_MODELS_HREF)}>{t('construction.modelsAction')}</Chip>
-              </> : null}
-              {heldSourceSelection?.status === 'sourceChanged' ? <p role="alert" className="text-label">{t('construction.sourceChanged')}</p> : null}
-              {heldSourceSelection?.status === 'preview' && heldSourceSelection.preview ? <>
-                <h3 className="text-label font-[var(--font-weight-strong)]">{t('construction.previewTitle')}</h3>
-                <p className="whitespace-pre-wrap break-all text-label">{t('construction.previewBody', {
-                  sourcePath: heldSourceSelection.preview.sourcePath, destinationPath: heldSourceSelection.preview.destinationPath,
-                  model: localEndpoint?.model ?? '', endpoint: localEndpoint?.baseUrl ?? '', count: heldSourceSelection.preview.files.length,
-                })}</p>
-                <p className="text-label">{t('construction.scope')}</p>
-                <p className="text-label">{t('scope.body', { provider: t('provider.local'), host: providerHost })}</p>
-                <p className="text-label">{t('scope.consent')}</p>
-                {heldSourceSelection.preview.limited ? <p className="text-label">{t('construction.inventoryLimited')}</p> : null}
-                {heldSourceSelection.preview.excluded.length ? <ul className="space-y-1 text-label">{heldSourceSelection.preview.excluded.map((reason, index) => <li key={`${index}:${reason}`} className="break-all">{reason}</li>)}</ul> : null}
-                {!heldSourceSelection.preview.files.length ? <p id="construction-empty" className="text-label">{t('construction.empty')}</p> : null}
-                <Chip data-testid="construction-run" tone="onAccent" disabled={!heldSourceSelection.preview.files.length}
-                  aria-describedby={!heldSourceSelection.preview.files.length ? 'construction-empty' : undefined}
-                  title={!heldSourceSelection.preview.files.length ? t('construction.empty') : t('construction.run')} onClick={runConstruction}>{t('construction.run')}</Chip>
-              </> : null}
-              <div className="flex flex-wrap gap-2">
-                {heldSourceSelection?.status !== 'preparing' && heldSourceSelection?.status !== 'localRequired' ? <Chip data-testid="construction-choose-again" onClick={() => void chooseConstructionSource()}>{t('construction.chooseAgain')}</Chip> : null}
-                <Chip data-testid="construction-cancel" onClick={cancelSourceSelection}>{t('proposal.cancel')}</Chip>
-              </div>
-            </Surface>
-            {agent.construction ? <div data-testid="construction-evidence" className={`${AGENT_DOCK_INSET_SURFACE_CLASS} space-y-2`}>
-              <p className="text-label">{agent.construction.status === 'running' ? t('thinking') : agent.construction.status === 'stopped' ? t('notice.aborted') : t(`construction.${agent.construction.status}`)}</p>
-              <p className="break-all text-label">{agent.construction.preview.sourcePath} · {agent.construction.sourceBytes} B</p>
-              {agent.construction.reads.map((read, index) => <p key={`${index}:${read.path}:${read.startLine}`} className="break-all text-caption">{read.path}:{read.startLine}-{read.endLine} · {read.bytes} B · {read.fullFileSha256}{!read.fileComplete ? ' …' : ''}</p>)}
-              {agent.construction.issues.map((issue, index) => <p key={`${index}:${issue.code}:${issue.target}`} className="break-all text-caption">{issue.target} · {issue.code}</p>)}
-              {agent.construction.preview.excluded.map((reason, index) => <p key={`${index}:${reason}`} className="break-all text-caption">{reason}</p>)}
-              {agent.construction.status === 'sourceChanged' || agent.construction.status === 'failed' || agent.construction.status === 'incomplete' ? <Chip onClick={() => void chooseConstructionSource()}>{t('construction.runAgain')}</Chip> : null}
-            </div> : null}
           </div>
-          {!bridgeAvailable ? (
-            // A browser has nowhere to keep a key and no route to send — it sends you to
-            // the app, not to settings (honest degradation).
-            <AgentLockedState
-              title={t('degraded.webTitle')}
-              body={t('degraded.webBody')}
-              consent={t('locked.consentPromise')}
-              examplesTitle={t('locked.examplesTitle')}
-              chips={firstWordsChips}
-            />
-          ) : !readableVaultPath ? (
-            <AgentLockedState
-              title={t('degraded.noVaultTitle')}
-              body={t('degraded.noVaultBody')}
-              consent={t('locked.consentPromise')}
-              examplesTitle={t('locked.examplesTitle')}
-              chips={firstWordsChips}
-            />
-          ) : !provider ? (
-            <AgentLockedState
-              title={t('degraded.noKeyTitle')}
-              body={t('degraded.noKeyBody')}
-              consent={t('locked.consentPromise')}
-              examplesTitle={t('locked.examplesTitle')}
-              chips={firstWordsChips}
-            />
-          ) : !scopeAccepted ? (
-            <>
-              {/* The consent card also stands at the floor — [Got it] is where
-                  [Send] will stand. The next control opening in the same place
-                  reads as "this opened"; floating above and then producing a composer
-                  below reads as "something else appeared". */}
-              <div aria-hidden="true" className="min-h-0 shrink grow" />
-              <AgentScopeSheet
-              provider={t(`provider.${provider}`)}
-              host={providerHost}
-              auditPath={LLM_AUDIT_LOG_RELATIVE_PATH}
-              labels={{
-                title: t('scope.title'),
-                body: ({ provider: name, host }) => t('scope.body', { provider: name, host }),
-                liveRows: t('scope.liveRows'),
-                consent: t('scope.consent'),
-                recorded: (path) => t('scope.recorded', { path }),
-                accept: t('scope.accept'),
-                cancel: t('scope.cancel'),
-              }}
-                onAccept={() => setScopeAccepted(true)}
-                onCancel={onClose}
-              />
-            </>
-          ) : (
-            <>
-              {/* The conversation **grows from the bottom** — the leftover height while it
-                  is short is pushed up. The old layout pinned the first turn to the top,
-                  leaving 400–640px empty down to the composer, and that whitespace only
-                  separated the answer from the hand. Why a spacer rather than
-                  `justify-end`: on overflow, `justify-end` eats the scroll container's top
-                  (the first turn disappears above the scroll). A spacer shrinks, so it
-                  quietly becomes 0 on overflow. */}
-              <div aria-hidden="true" className="min-h-0 shrink grow" />
-              <AgentTranscript
-                turns={agent.turns}
-                providerLabel={t(`provider.${provider}`)}
-                elapsedSeconds={agent.elapsedSeconds}
-                onFocusNode={onFocusNode}
-                onPrefill={prefill}
-                labels={{
-                  nextStepTitle: t('nextStep.title'),
-                  retryTitle: t('retry.title'),
-                  regroundTitle: ({ round, cap }) => t('reground.title', { round, cap }),
-                  you: t('you'),
-                  lookingAt: (title) => t('screenContext.lookingAt', { title, josa: josa(title, 'object') }),
-                  wholeMap: t('screenContext.wholeMap'),
-                  unsupported: t('unsupported'),
-                  uncited: t('uncited'),
-                  charsLabel: (chars) => t('charsLabel', { chars }),
-                  thinking: t('thinking'),
-                  thinkingSeconds: (seconds) => t('thinkingSeconds', { seconds }),
-                  footer: ({ provider: name, rounds }) => t('footer', { provider: name, rounds }),
-                  footerDetail: ({ chars }) => t('footerDetail', { chars }),
-                }}
-                renderProposal={() => null}
-              />
-              {agent.proposal ? (
-                <AgentProposalCard
-                  proposal={agent.proposal}
-                  canWrite={canWrite}
-                  vaultIsGit={vaultIsGit}
-                  expandedByDefault={!agent.hasAppliedOnce}
-                  onApply={() => void agent.apply()}
-                  onCancel={agent.cancelProposal}
-                  onCopy={agent.copyProposal}
-                  onToggleChange={agent.toggleChange}
-                  onToggleSnapshot={agent.toggleSnapshot}
-                  onFocusNode={onFocusNode}
-                  labels={{
-                    title: (count) => t('proposal.title', { count }),
-                    readOnlyTitle: t('proposal.readOnlyTitle'),
-                    volume: ({ files, added, removed }) =>
-                      t('proposal.volume', { files, added, removed }),
-                    apply: (count) => t('proposal.apply', { count }),
-                    applying: t('proposal.applying'),
-                    cancel: t('proposal.cancel'),
-                    copy: t('proposal.copy'),
-                    copied: t('proposal.copied'),
-                    copying: t('proposal.copying'),
-                    copyFailed: t('proposal.copyFailed'),
-                    selectionConflict: (path) => t('proposal.selectionConflict', { path }),
-                    snapshot: t('proposal.snapshot'),
-                    snapshotUnavailable: t('proposal.snapshotUnavailable'),
-                    applied: (sha) => t('proposal.applied', { sha }),
-                    appliedNoSnapshot: t('proposal.appliedNoSnapshot'),
-                    cancelled: t('proposal.cancelled'),
-                    conflict: t(agent.construction?.status === 'sourceChanged' ? 'construction.sourceChanged' : 'proposal.conflict'),
-                    failed: (message) => t('proposal.failed', { message }),
-                    partialWrites: (paths) => t('proposal.partialWrites', { paths }),
-                    refreshFailed: (message) => t('proposal.refreshFailed', { message }),
-                    unreadWarning: t('proposal.unreadWarning'),
-                    showOnMap: t('proposal.showOnMap'),
-                    expandHint: t('proposal.expandHint'),
-                  }}
-                />
-              ) : null}
-              {/* An empty conversation — a blank page is not offered. Three sentences drawn
-                  from this folder's real state are already seated, and pressing one brings
-                  it down to the composer. It is computed locally with no wait, so it
-                  arrives in **the same frame** as the skeleton. */}
-              {agent.turns.length === 0 ? (
-                <AgentFirstWords
-                  chips={firstWordsChips}
-                  title={t('firstWords.title')}
-                  hint={t('firstWords.hint')}
-                  onPrefill={prefill}
-                />
-              ) : null}
-            </>
-          )}
+          <AgentStageBody
+            stage={stage}
+            agent={agent}
+            canWrite={canWrite}
+            vaultIsGit={vaultIsGit}
+            providerHost={providerHost}
+            firstWordsChips={firstWordsChips}
+            onFocusNode={onFocusNode}
+            onPrefill={prefill}
+            onAcceptScope={() => setScopeAccepted(true)}
+            onClose={onClose}
+          />
           </div>
         </div>
 
-        {/* The locked state's composer position — it stands on **the same strip** as the
-            real composer (panel floor, same divider). Both states use the same place, so
-            the moment a key arrives reads as "this opened". Only the guidance and the
-            destination differ per state. */}
-        {stage === 'web' ? (
-          <AgentLockedComposer
-            testId="vault-agent-download-link"
-            hint={t('placeholderFirst')}
-            actionLabel={t('degraded.download')}
-            actionHref={downloadHref}
-          />
-        ) : stage === 'no-folder' ? (
-          <AgentLockedComposer
-            testId="vault-agent-open-folder"
-            hint={t('placeholderFirst')}
-            actionLabel={t('degraded.noVaultAction')}
-            onAction={onOpenFolder}
-          />
-        ) : stage === 'no-key' ? (
-          <AgentLockedComposer
-            testId="vault-agent-open-settings"
-            hint={t('placeholderFirst')}
-            actionLabel={t('degraded.noKeyAction')}
-            onAction={() => router.push(AGENTS_MODELS_HREF)}
-          />
-        ) : null}
+        {/* The locked state's composer position stands on the same strip as the real composer. */}
+        <AgentStageFloor stage={stage} downloadHref={downloadHref} onOpenFolder={onOpenFolder} />
 
-        {ready && scopeAccepted ? (
-          // One state change arrives as **one curve**. The stage (the content) and this
-          // strip (the composer) are two parts of the same event, but the old
-          // implementation cross-faded only the stage and hard-cut this strip — the same
-          // input arriving on different curves reads as two events. Zero new durations
-          // (the same class is reused), zero start offset (the same render).
+        {stage.kind === 'chat' ? (
+          // The stage and this strip arrive on one curve, with no new duration, or the same input would read
+          // as two events.
           <footer
-            key={stage}
+            key={stage.kind}
             className="agent-panel-stage-swap shrink-0 border-t border-[color:var(--color-border-soft)] p-2.5"
           >
-            {/* The button is `items-end` — a text input's primary action is pinned at the
-                bottom (Apple HIG: the destination of direct manipulation does not move).
-                As the box grows the button follows its bottom edge, so vertical alignment
-                stays correct too. */}
-            <div className="flex items-end gap-2">
-              <div className="relative min-w-0 flex-1">
-              <textarea
-                ref={inputRef}
-                data-testid="vault-agent-input"
-                data-composer-hides-top={composerHidesTop ? 'true' : 'false'}
-                value={draft}
-                rows={COMPOSER_MIN_ROWS}
-                disabled={agent.running}
-                onScroll={(event) => {
-                  const input = event.currentTarget;
-                  setComposerHidesTop(
-                    input.scrollHeight > input.clientHeight && input.scrollTop > 0,
-                  );
-                }}
-                style={{
-                  // Growth is **surface movement** — it rides the app's shared ramp.
-                  // Zero new tokens, zero new durations.
-                  transitionProperty: 'height',
-                  transitionDuration: 'var(--motion-base)',
-                  transitionTimingFunction: 'var(--motion-ease)',
-                  // The overflow signal appears only when the cap is hit and the top is
-                  // **actually clipped**. While growing, an overflow that is not there is
-                  // not advertised.
-                  maskImage: composerHidesTop
-                    ? 'linear-gradient(to bottom, transparent 0, #000 var(--leading-body))'
-                    : undefined,
-                }}
-                // "Continue talking" is a sentence with nothing to continue for someone
-                // who has said nothing yet. The first-message placeholder uses **the same
-                // key** as the locked strip's copy, so the moment a key arrives the same
-                // text stays in the same place ("this opened").
-                placeholder={
-                  agent.turns.length === 0 ? t('placeholderFirst') : t('placeholder')
-                }
-                onChange={(event) => setDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' && !event.shiftKey && !isImeComposing(event)) {
-                    event.preventDefault();
-                    submit();
-                  }
-                }}
-                className={`${COMPOSER_BOX_CLASS} block w-full text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]`}
-              />
-              {/* The mirror that measures growth. **Same class = same typography and same
-                  width**, so it wraps identically. Why it is not moved off screen but kept
-                  in the same place: the width (padding and border included) has to match
-                  the real box for the row count to match.
-
-                  `invisible` (visibility: hidden), not `opacity-0` — a transparent element
-                  is still a painted element, so it shows up in overlap audits and can
-                  still take a caret or a selection. Layout still runs, so `scrollHeight`
-                  comes out the same. */}
-              <textarea
-                ref={mirrorRef}
-                aria-hidden="true"
-                tabIndex={-1}
-                readOnly
-                data-testid="vault-agent-input-mirror"
-                className={`${COMPOSER_BOX_CLASS} pointer-events-none invisible absolute left-0 top-0 h-0 w-full overflow-hidden`}
-              />
-              </div>
-              {agent.running ? (
-                <button
-                  type="button"
-                  data-testid="vault-agent-stop"
-                  onClick={agent.stop}
-                  /* Stop and send replace each other in **one position**, so they take the
-                     same step. `px-3` is `lg`'s inset on the ramp and `lg`'s pair is
-                     `text-body` — the hand-written `px-3` plus `text-label` was a
-                     combination straddling two steps. */
-                  className={controlClass({
-                    shape: 'chip',
-                    size: 'lg',
-                    tone: 'strong',
-                    className:
-                      'shrink-0 justify-center font-[var(--font-weight-emphasis)] tracking-body hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
-                  })}
-                >
-                  {t('stop')}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  data-testid="vault-agent-send"
-                  disabled={!canSend}
-                  onClick={submit}
-                  className={controlClass({
-                    shape: 'chip',
-                    size: 'lg',
-                    tone: 'onAccent',
-                    className:
-                      'shrink-0 justify-center tracking-body',
-                  })}
-                >
-                  {t('send')}
-                </button>
-              )}
-            </div>
-
-            {/* One row of side branches — only the open/close control sits permanently, and
-                the content arrives only when opened. The two buttons close each other: no
-                overlapping transient surface is created. */}
-            <div className="mt-2 flex items-center gap-2">
-              <MetaToggle
-                testId="agent-meta-prompt"
-                open={meta === 'prompt'}
-                label={t('promptDisclosure.summary')}
-                onToggle={() => setMeta((current) => (current === 'prompt' ? null : 'prompt'))}
-              />
-              {readableVaultPath ? (
-                <>
-                  <span
-                    aria-hidden="true"
-                    className="text-label text-[color:var(--color-text-quaternary)]"
-                  >
-                    ·
-                  </span>
-                  <MetaToggle
-                    testId="agent-meta-handoff"
-                    open={meta === 'handoff'}
-                    label={t('handoffSummary')}
-                    onToggle={() =>
-                      setMeta((current) => (current === 'handoff' ? null : 'handoff'))
-                    }
-                  />
-                </>
-              ) : null}
-            </div>
-
-            {/* `origin` is the trigger's direction — the toggle that opens this box is
-                directly above and to the left, and the box grows below it. Born at the
-                centre, where it was pressed and where it was born would not match (the
-                motion seat's rejection rationale). The content is held with `heldMeta`:
-                the moment `meta` becomes null the child empties and the box would collapse
-                «while empty». */}
-            <Surface
-              open={meta !== null}
-              origin="top left"
-              data-testid="agent-meta-disclosure"
-              className="mt-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5"
-            >
-              {heldMeta === 'prompt' ? (
-                <AgentPromptText
-                  systemPrompt={agent.systemPrompt}
-                  note={t('promptDisclosure.note')}
-                />
-              ) : readableVaultPath ? (
-                <AgentHandoffPacket
-                  vaultPath={readableVaultPath}
-                  focusedSlug={screenContext.focusedSlug}
-                  labels={{
-                    boundary: t(agent.construction || sourceSelection ? 'construction.boundary' : 'boundary'),
-                    note: t('handoffNote'),
-                    copy: t('handoffCopy'),
-                    copied: t('handoffCopied'),
-                  }}
-                />
-              ) : null}
-            </Surface>
+            <AgentComposer
+              inputRef={inputRef}
+              mirrorRef={mirrorRef}
+              draft={draft}
+              onDraftChange={setDraft}
+              hidesTop={composerHidesTop}
+              onHidesTopChange={setComposerHidesTop}
+              hasTurns={agent.turns.length > 0}
+              running={agent.running}
+              canSend={canSend}
+              onSubmit={submit}
+              onStop={agent.stop}
+            />
+            <AgentMetaDisclosure
+              meta={meta}
+              heldMeta={heldMeta}
+              onToggle={(branch) => setMeta((current) => (current === branch ? null : branch))}
+              vaultPath={readableVaultPath}
+              focusedSlug={screenContext.focusedSlug}
+              systemPrompt={agent.systemPrompt}
+              constructionBoundary={Boolean(agent.construction || construction.selection)}
+            />
           </footer>
         ) : null}
       </div>
     </aside>
-  );
-}
-
-/**
- * The box specification the composer and the mirror use **together**. It is one
- * string, so there is nowhere for their typography to diverge — and diverging would
- * make the mirror measure a different row count and the box stand at the wrong height
- * (a value written in two places has already begun drifting).
- */
-const COMPOSER_BOX_CLASS = fieldClass({ multiline: true, size: 'md' });
-
-/**
- * The one-row control that opens a side branch. No border, no background — if this
- * row looked as heavy as the composer, the floor would become "several strips" again.
- */
-function MetaToggle({
-  testId,
-  open,
-  label,
-  onToggle,
-}: {
-  testId: string;
-  open: boolean;
-  label: string;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      data-testid={testId}
-      aria-expanded={open}
-      onClick={onToggle}
-      className={controlClass({
-        shape: 'link',
-        tone: open ? 'default' : 'muted',
-        className: [
-          'rounded-chip tracking-label',
-          open ? '' : 'hover:text-[color:var(--color-text-secondary)]',
-        ].join(' '),
-      })}
-    >
-      {label}
-    </button>
   );
 }

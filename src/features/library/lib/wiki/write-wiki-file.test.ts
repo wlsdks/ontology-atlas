@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createWikiFile, writeWikiFile } from './write-wiki-file';
 
 const native = vi.hoisted(() => ({ root: '/vault' as string | undefined, create: vi.fn() }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
-  getTauriVaultRootPath: () => native.root,
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => ({
   createTauriVaultTextFile: native.create,
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
+  getTauriVaultRootPath: () => native.root,
 }));
 
 function vault() {

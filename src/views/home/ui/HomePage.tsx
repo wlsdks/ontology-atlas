@@ -21,12 +21,12 @@ import { useTopologySourceActions } from "../model/project-source/use-topology-s
 import { useTopologySourceReadiness } from "../model/project-source/use-topology-source-readiness";
 import { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
 import { useMapWaitsForFolder } from "../model/use-map-waits-for-folder";
-import { TopologyAgentDock } from "./TopologyAgentDock";
-import { TopologyCanvasSurface } from "./TopologyCanvasSurface";
-import { TopologyCommandChrome } from "./TopologyCommandChrome";
-import { TopologyIndexSlot } from "./TopologyIndexSlot";
-import { TopologyInspectorSurfaces } from "./TopologyInspectorSurfaces";
-import { TopologyUtilityOverlays } from "./TopologyUtilityOverlays";
+import { TopologyAgentDock } from "./map-overlays/TopologyAgentDock";
+import { TopologyCanvasSurface } from "./map-surfaces/TopologyCanvasSurface";
+import { TopologyCommandChrome } from "./map-readouts/TopologyCommandChrome";
+import { TopologyIndexSlot } from "./map-panels/TopologyIndexSlot";
+import { TopologyInspectorSurfaces } from "./map-panels/TopologyInspectorSurfaces";
+import { TopologyUtilityOverlays } from "./map-overlays/TopologyUtilityOverlays";
 
 import { VaultSourceHydrationBoundary } from "@/entities/vault-session";
 import { useChatSuggestions } from "@/features/acp-session";
@@ -37,7 +37,7 @@ import { cancelMapNavigation, readMapNavigationPending } from "@/shared/lib/navi
 import { useArrivalMemory } from "@/shared/lib/navigation/route-arrival-memory";
 import { useAgentDockDefaultOpen } from "@/shared/lib/llm-connection/use-agent-dock-default";
 import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
-import { useLocalStorageBoolean } from "@/shared/lib/preferences/use-local-storage-boolean";
+import { useLocalStorageBoolean } from "@/shared/lib/preferences/preference-storage/use-local-storage-boolean";
 import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import { LiveAnnouncer, WidgetErrorFallback, useToast } from "@/shared/ui";
@@ -63,7 +63,7 @@ import { type IndexPanelState } from "@/widgets/topology-index-panel";
 import { buildNavRailContextHrefs } from "../lib/selection/nav-rail-context-hrefs";
 import { useFootprintTrail } from "../model/trail/use-footprint-trail";
 import { usePastTrails } from "../model/trail/use-past-trails";
-import { TopologyBlockingOverlays } from "./TopologyBlockingOverlays";
+import { TopologyBlockingOverlays } from "./map-overlays/TopologyBlockingOverlays";
 
 
 
@@ -127,10 +127,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     localGraphStack.length > 0 ? localGraphStack[localGraphStack.length - 1] : null;
   const [fitViewToken, setFitViewToken] = useState(0);
   const [growthReplayToken, setGrowthReplayToken] = useState(0);
-  /**
-   * Reported by the map loop, so the control's active tone and `aria-pressed` last exactly as long
-   * as the motion.
-   */
   const [growthReplaying, setGrowthReplaying] = useState(false);
   const [topologyVisibleCount, setTopologyVisibleCount] = useState<number | null>(null);
   const [topologyGraphStats, setTopologyGraphStats] = useState<{
@@ -139,18 +135,12 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     relations: number;
   } | null>(null);
   const router = useRouter();
-  // Local mode syncs from the vault manifest, static mode from the build-time manifest.
   const projectsQuery = useProjects();
   const projects = projectsQuery.projects;
   const projectsError = projectsQuery.error;
-  // Held across its exit window; a primitive needs no key.
   const heldProjectsError = useHeldValue(projectsError);
   const [routeState, setRouteState] = useHomeRouteState();
   useMapViewSync(routeState.mapView, setRouteState);
-  /**
-   * One attention surface at a time: opening the agent dock retires the search palette and the
-   * composer.
-   */
   const homeWorkbenchController = useHomeWorkbenchController();
   const { setAcpChatOpen, acpDockFrameOpen, meaningWorkbenchOpen, reviewUsesSheet } = homeWorkbenchController;
   /**
@@ -208,7 +198,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
    * new surface. The widget filters repeats (`shouldAnnounceDeadEnd`).
    */
   const toast = useToast();
-  /** Scaffold failures reach a person as a sentence, not a thrown string. */
 
   const prefetchedProjectHrefsRef = useRef(new Set<string>());
   const preloadedImageUrlsRef = useRef(new Set<string>());
@@ -227,7 +216,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     realmSlug,
     recentWindow,
   } = routeState;
-  /** A session view that does not persist to URL or settings. */
   const [expandAllActive, setExpandAllActive] = useState(false);
   const renderProjects = projects;
   const topologyRouteControls = useTopologyRouteControls({
@@ -281,7 +269,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     }
     void openVault();
   }, [fsaUnsupported, openVault, setUnsupportedGuideOpen]);
-  // Accepts both the sample and a real folder settling (`use-auto-start-ready.ts`).
   const topologyAuthoring = useTopologyAuthoring({ setRouteState, meaningEditorIntent, meaningEditParam, toast, topologyVaultReadModel, topologyPreferences });
   const {
     bootstrapOpen, nodeEditTarget, agentActivityStatus, agentFocusNodeId,
@@ -301,7 +288,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       ),
     ).join(" · ") || null,
   );
-  // Captured once so relative times do not shift on re-render.
   const [mountNowMs] = useState<number>(() => Date.now());
   const topologyGraphProjection = useTopologyGraphProjection({
     projects: renderProjects,
@@ -342,7 +328,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     graphNodes: ontologyMapGraph.nodes,
     insightNodes: ontologyInsight?.nodes,
     dustySlugs,
-    // Read so the trail can say why one step follows another.
     insightEdges: ontologyInsight?.edges,
     relationLabelOf: relationLabelInRegister,
   });
@@ -377,7 +362,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     (key: string, count: number) => t(`nodeDatasheet.updated_${key}`, { count }),
     [t],
   );
-  // Same `editProvenance` namespace as `DocFrontmatterBlock`, so the two cannot drift.
   const tEditProvenance = useTranslations("editProvenance");
   const tSummaryFreshness = useTranslations("summaryFreshness");
   const formatEditAgeLabel = useCallback(
@@ -423,7 +407,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   // `isGuardedRuntime` is the one decision, shared with the Agents destination.
   const acpRuntimeController = useAcpRuntimeController(setAcpChatOpen, topologyVaultReadModel.gitVaultPath);
   const { chatWidth, acpRuntime } = acpRuntimeController;
-  // Derived from this folder's state here, so the chat panel needs no `LocalVaultProvider`.
   const changedSourceConcepts = useChangedSourceConcepts(topologyVaultReadModel.ontologyInsight?.nodes);
   const chatSuggestions = useChatSuggestions(projectSourceReadiness.state, changedSourceConcepts);
   const acpRuntimeLabel = acpRuntime?.label ?? null;
@@ -548,7 +531,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
         className="relative flex h-full w-full overflow-hidden bg-[color:var(--color-canvas)]"
       >
         <div className="relative h-full flex-1 overflow-hidden" inert={reviewUsesSheet && (meaningWorkbenchOpen || acpDockFrameOpen)}>
-          {/* Landmark and SEO h1; the canvas-first design has nowhere to show one. */}
           <h1 className="sr-only">
             {t('srHeading')}
           </h1>
@@ -559,7 +541,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             message={(() => {
               if (!selectedProject) return "";
               const deps = selectedProject.dependencies.length;
-              // `reverseDeps` is memoised, so this is an O(1) lookup.
               const referenced = reverseDeps.get(selectedProject.slug)?.length ?? 0;
               return t('selectionAnnouncement', {
                 name: selectedProject.name,
@@ -616,7 +597,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               closeCreateNode={closeCreateNode}
               createNodePending={Boolean(createNodePending)} openDocsDrawer={() => setDocsDrawerOpen(true)}
             />
-            {/* INDEX stays beside the selected-node datasheet, as the approved spec shows. */}
             {!topologyGraphProjection.isSynthetic && <TopologyIndexSlot
               indexSlotFrames={indexSlotFrames}
               setRouteState={setRouteState}
@@ -684,7 +664,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             topologyExplorationLenses={topologyExplorationLenses}
             impactLensActive={impactMode !== "none" && selectedSlug !== null}
           />
-          {/* The alert text is held through the exit window. */}
           <TopologyInspectorSurfaces
             topologyKeyboard={topologyKeyboard}
             grayAreaOpen={grayArea.open}
@@ -726,7 +705,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             topologyRouteControls={topologyRouteControls}
           />
         </div>
-        {/* In the same flex row as the map column, so one width animation moves both. */}
         {grayArea.inspector}
         <TopologyAgentDock
           vaultAgentPrefill={vaultAgentPrefill}

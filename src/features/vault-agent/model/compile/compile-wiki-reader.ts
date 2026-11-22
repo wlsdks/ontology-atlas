@@ -3,7 +3,7 @@ import { isWikiFurnitureSlug, WIKI_DIR } from '@/shared/lib/library/wiki-page-sc
 
 import { wrapUntrusted } from '../agent-tools/concept-evidence-pack';
 import type { ToolExecution } from '../agent-tools/tool-executor';
-import { AGENT_TURN_VAULT_CHAR_CAP } from '../types';
+import { AGENT_TURN_VAULT_CHAR_CAP } from '../agent-turn';
 
 const WIKI_CHUNK_CHAR_CAP = 4_000;
 const WIKI_BASENAME_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -25,15 +25,11 @@ export interface CompileWikiReadState {
 }
 
 export interface CompileWikiReaderOptions {
-  /** Counts only the untrusted page text that will cross the next model boundary. */
   reserveVaultChars?: (chars: number) => boolean;
-  /** Reports the cumulative amount already transferred when a chunk is refused. */
   vaultCharsUsed?: () => number;
-  /** Lets the executor revoke an already-ready proposal after a later read failure. */
   onFailure?: (slug: string, code: string, message: string) => void;
 }
 
-/** A reserved retained-answer path that Compile may never inspect or replace. */
 function isReservedAnswerSlug(slug: string): boolean {
   return slug === `${WIKI_DIR}/answers` || slug.startsWith(`${WIKI_DIR}/answers/`);
 }
@@ -60,7 +56,6 @@ export function isCompileWikiPath(value: string): boolean {
   return value.endsWith('.md') && wikiAddress(value) === value.slice(0, -'.md'.length);
 }
 
-/** New pages remain root pages with the strict, portable basename contract. */
 function newWikiTarget(value: unknown): CompileWikiTarget | null {
   if (typeof value !== 'string') return null;
   const raw = value.trim();

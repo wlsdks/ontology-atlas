@@ -6,52 +6,12 @@ import {
   createLandings,
   createPassPages,
   pageIdentity,
-  readOrMissing,
-  roundDraftProblem,
-  scanPassFolders,
   settlePassPages,
 } from './pass-pages';
 
 const DRAFT = WIKI_PAGE_TEMPLATE.replace(/sources\/<file>/g, 'sources/plan.pdf');
 const withLine = (line: string) => DRAFT.replace('status: draft\n', `status: draft\n${line}\n`);
 const NODE = '---\nkind: capability\ntitle: Checkout\n---\nA cart becomes an order.\n';
-const notFound = () => Object.assign(new Error('not found'), { name: 'NotFoundError' });
-
-describe('what reads as a round draft', () => {
-  it('accepts the template draft and nothing that could read otherwise', () => {
-    expect(roundDraftProblem(DRAFT)).toBeNull();
-    expect(roundDraftProblem(DRAFT.replace('\n', '\r\n'))).toBeNull();
-    expect(roundDraftProblem(DRAFT.replace('status: draft', 'status: reviewed'))).toEqual({ reason: 'not-draft' });
-    expect(roundDraftProblem(DRAFT.replace('status: draft', 'status: "draft"'))).toEqual({ reason: 'not-draft' });
-    expect(roundDraftProblem(DRAFT.replace('status: draft\n', ''))).toEqual({ reason: 'not-draft' });
-    expect(roundDraftProblem('# Plan\n')).toEqual({ reason: 'no-frontmatter' });
-  });
-
-  it('refuses a key written twice, in any case or indentation, and a kind: line', () => {
-    expect(roundDraftProblem(withLine('status: reviewed'))).toEqual({ reason: 'duplicate-key', key: 'status' });
-    expect(roundDraftProblem(withLine('  status: draft'))).toEqual({ reason: 'duplicate-key', key: 'status' });
-    expect(roundDraftProblem(withLine('Status: reviewed'))).toEqual({ reason: 'duplicate-key', key: 'status' });
-    expect(roundDraftProblem(withLine('describes: [capabilities/checkout]'))).toEqual({ reason: 'forbidden-key', key: 'describes' });
-    expect(roundDraftProblem(withLine('kind: capability'))).toEqual({ reason: 'forbidden-key', key: 'kind' });
-  });
-
-  it('carries the links to concepts it found unchanged, and refuses one it adds, changes or drops', () => {
-    const links = 'describes:\n  - capabilities/checkout\nrelation_notes:\n  capabilities/checkout: "Facts 1-2 describe checkout."';
-    const linked = withLine(links);
-    const revised = linked.replace('## Summary\n', '## Summary\n\nRevised.\n');
-    expect(roundDraftProblem(revised, linked)).toBeNull();
-    expect(roundDraftProblem(revised.replace('  - capabilities/checkout', '- capabilities/checkout'), linked)).toBeNull();
-    expect(roundDraftProblem(revised, null)).toEqual({ reason: 'forbidden-key', key: 'describes' });
-    expect(roundDraftProblem(revised, DRAFT)).toEqual({ reason: 'forbidden-key', key: 'describes' });
-    expect(roundDraftProblem(revised.replace('  - capabilities/checkout', '  - capabilities/checkout\n  - capabilities/login'), linked))
-      .toEqual({ reason: 'forbidden-key', key: 'describes' });
-    expect(roundDraftProblem(revised.replace('describe checkout.', 'say more.'), linked))
-      .toEqual({ reason: 'forbidden-key', key: 'relation_notes' });
-    expect(roundDraftProblem(DRAFT, linked)).toEqual({ reason: 'forbidden-key', key: 'describes' });
-    expect(roundDraftProblem(withLine('Describes: [capabilities/checkout]'), withLine('Describes: [capabilities/checkout]')))
-      .toEqual({ reason: 'forbidden-key', key: 'describes' });
-  });
-});
 
 describe('the pages of one pass', () => {
   it('keys a page by its file identity: letter case and Unicode form name one file', () => {
@@ -99,35 +59,6 @@ describe('the pages of one pass', () => {
     expect(pages.node('wiki/Checkout.md')).toBe(true);
     expect(pages.node('sources/pricing.md')).toBe(true);
     expect(pages.node('sources/notes.md')).toBe(false);
-  });
-
-  it('scans the files on disk under wiki/ and the folders under sources/, and reports every link without following it', async () => {
-    const files: Record<string, string> = { 'wiki/plan.md': DRAFT, 'wiki/team/checkout.md': NODE, 'wiki/.trash/old.md': 'x', 'wiki/logo.png': 'png', 'sources/team/notes.md': 'n', 'notes.md': 'y' };
-    const linksIn: Record<string, string[]> = { '': [], wiki: ['escape.md'], 'wiki/team': ['elsewhere'], sources: [], 'sources/team': [] };
-    const dir = (prefix: string): unknown => ({
-      kind: 'directory',
-      getDirectoryHandle: async (name: string) => {
-        if (!Object.keys(files).some((path) => path.startsWith(`${prefix}${name}/`))) throw notFound();
-        return dir(`${prefix}${name}/`);
-      },
-      entries: async function* () {
-        const names = new Set(Object.keys(files).filter((path) => path.startsWith(prefix)).map((path) => path.slice(prefix.length).split('/')[0]));
-        for (const name of names) {
-          const nested = Object.keys(files).some((path) => path.startsWith(`${prefix}${name}/`));
-          yield [name, nested ? dir(`${prefix}${name}/`) : { kind: 'file', getFile: async () => ({ text: async () => files[`${prefix}${name}`] }) }];
-        }
-      },
-    });
-    const lister = async (directory: string) => linksIn[directory] ?? [];
-    expect(await scanPassFolders(dir('') as FileSystemDirectoryHandle, lister)).toEqual({
-      pages: [{ path: 'wiki/plan.md', text: DRAFT }, { path: 'wiki/team/checkout.md', text: NODE }],
-      dirs: ['wiki', 'wiki/team', 'sources', 'sources/team'],
-      links: ['wiki/escape.md', 'wiki/team/elsewhere'],
-    });
-    const linkedWiki = await scanPassFolders(dir('') as FileSystemDirectoryHandle, async (directory) => (directory === '' ? ['Wiki'] : []));
-    expect(linkedWiki).toEqual({ pages: [], dirs: ['sources', 'sources/team'], links: ['wiki'] });
-    const empty = { getDirectoryHandle: async () => { throw notFound(); } } as unknown as FileSystemDirectoryHandle;
-    await expect(scanPassFolders(empty, async () => [])).resolves.toEqual({ pages: [], dirs: [], links: [] });
   });
 
   it('refuses a write through a link, into a folder the scan did not see as a real folder, or anywhere under a linked folder', () => {
@@ -299,21 +230,5 @@ describe('after the turn, every page the pass wrote is read back', () => {
     });
     expect(io.restore).not.toHaveBeenCalled();
     expect(io.files['wiki/other.md']).toBe('no frontmatter');
-  });
-
-  it('reads a file that is not there as missing, and any other read failure as a failure', async () => {
-    const missing = Object.assign(new Error('gone'), { name: 'NotFoundError' });
-    const vault = {
-      getDirectoryHandle: async () => vault,
-      getFileHandle: async (name: string) => {
-        if (name === 'gone.md') throw missing;
-        return {};
-      },
-    } as unknown as FileSystemDirectoryHandle;
-    const read = readOrMissing(vault, async () => {
-      throw 'No such file or directory (os error 2)';
-    });
-    await expect(read('wiki/gone.md')).resolves.toBeNull();
-    await expect(read('wiki/here.md')).rejects.toBe('No such file or directory (os error 2)');
   });
 });

@@ -1,12 +1,12 @@
 "use client";
 
-import type { GlyphSet } from "@/shared/lib/preferences/appearance-preferences";
+import type { GlyphSet } from "@/shared/lib/preferences/canvas-appearance-preferences";
 import {
   useEffect,
   type RefObject
 } from "react";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
-import { type TierNameAnchor } from "../../model/dome-view/tier-names";
+import { type TierNameAnchor } from "../../model/dome-view/strata/tier-names";
 import { type ZoomTier } from "../../model/visibility/tier-visibility";
 import type { HoverAvoidRect } from "../input/topology-pointer-types";
 
@@ -23,7 +23,7 @@ interface Dependencies {
   onHoverEdge: ((edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null; } | null, position: { x: number; y: number; avoid: readonly HoverAvoidRect[]; } | null) => void) | undefined;
   onEnterRealmRef: RefObject<((slug: string) => void) | undefined>;
   onEnterRealm: ((slug: string) => void) | undefined;
-  realmEnterButtonElRef: RefObject<HTMLButtonElement | null>;
+  realmEnterButtonElementRef: RefObject<HTMLButtonElement | null>;
   realmEnterButtonRef: RefObject<HTMLButtonElement | null> | undefined;
   trailLensPropRef: RefObject<RefObject<boolean> | null>;
   trailLensActiveRef: RefObject<boolean> | undefined;
@@ -61,7 +61,7 @@ export function useTopologyObserverBindings({ onGrowthReplayingChangeRef,
   onHoverEdge,
   onEnterRealmRef,
   onEnterRealm,
-  realmEnterButtonElRef,
+  realmEnterButtonElementRef,
   realmEnterButtonRef,
   trailLensPropRef,
   trailLensActiveRef,
@@ -108,7 +108,7 @@ export function useTopologyObserverBindings({ onGrowthReplayingChangeRef,
   });
 
   useEffect(() => {
-    realmEnterButtonElRef.current = realmEnterButtonRef?.current ?? null;
+    realmEnterButtonElementRef.current = realmEnterButtonRef?.current ?? null;
   });
 
   useEffect(() => {
@@ -150,7 +150,7 @@ export function useTopologyObserverBindings({ onGrowthReplayingChangeRef,
     pathEdgeIdsRef.current = pathEdgeIds;
   }, [mapLensKind, mapLensKindRef, pathEdgeIds, pathEdgeIdsRef]);
 
-  // Phase 5 #21 — Apply new render style from the next frame when icon set changes.
+  // Apply new render style from the next frame when icon set changes.
   useEffect(() => {
     glyphStyleRef.current = glyphSet === "line" ? "line" : "fill";
   }, [glyphSet, glyphStyleRef]);

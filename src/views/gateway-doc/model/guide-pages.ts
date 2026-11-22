@@ -4,11 +4,8 @@
  * so the sidebar needs no bodies; a contract test keeps list and keys in step.
  */
 export interface GuidePage {
-  /** The vault slug (`guide/…`) — where the body lives. */
   readonly slug: string;
-  /** The URL segment, `/guide/<segment>`: the slug without `guide/`. */
   readonly segment: string;
-  /** The `gatewayNav.guidePages.<key>` message key. */
   readonly titleKey: string;
 }
 
@@ -43,9 +40,7 @@ export function guideCanonicalPath(page: GuidePage): string {
  * `app/(gateway)/[locale]/guide/[segment]/page.tsx` shows a substitution banner instead of misdelivering.
  */
 export interface GuidePageResolution {
-  /** The chapter actually drawn. The first chapter when the request does not exist. */
   readonly page: GuidePage;
-  /** Whether the requested segment was a real chapter; when false the screen must announce the substitution. */
   readonly matched: boolean;
 }
 

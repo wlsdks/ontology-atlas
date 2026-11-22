@@ -5,7 +5,6 @@ import type { WorkRunCardState, WorkRunToolLabel } from './work-run';
  * facts are what the agent reported: files are counted from completed tool calls, not the disk.
  */
 
-/** The Library door that started the turn, or a request the person typed. */
 export type TurnRunDoor = 'compile' | 'fix' | 'import' | 'propose' | 'typed';
 
 export type TurnRunPhase = 'running' | 'asking' | 'stopping' | 'written' | 'answered' | 'stopped' | 'ended' | 'switched';
@@ -28,14 +27,11 @@ export interface TurnRunAsk {
 export interface TurnRun {
   id: number;
   folder: string;
-  /** The folder's own name, for the card that says which folder a switch ended the turn in. */
   folderName: string;
-  /** The conversation running the turn; only it reports the turn's facts and Stop. */
   owner: string;
   runtimeId: string;
   agent: string;
   door: TurnRunDoor;
-  /** A typed request's first line; empty for a door. */
   request: string;
   startedAt: number;
   endedAt: number | null;
@@ -46,14 +42,12 @@ export interface TurnRun {
   written: readonly string[];
   /** It ran a tool or wrote outside the folder: what changed is not known. */
   beyond: boolean;
-  /** Writes that were open when the turn was stopped or ended. */
   partial: readonly string[];
   switched: boolean;
   unseen: boolean;
   card: WorkRunCardState;
 }
 
-/** What the turn's conversation reports it is doing; the shape `AcpTurnWork` carries. */
 export interface TurnWorkReport {
   kind: string;
   label: WorkRunToolLabel | null;
@@ -63,7 +57,6 @@ export interface TurnWorkReport {
   stopping?: boolean;
 }
 
-/** One tool call as the turn's transcript holds it. */
 export interface TurnToolEvent {
   id: string;
   toolKind: string;
@@ -91,7 +84,6 @@ function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
 }
 
-/** The tool's own arguments, inside an MCP call's `server`/`tool`/`arguments` envelope or bare. */
 function toolInput(rawInput: unknown): { input: Record<string, unknown> | null; mcpTool: string | null } {
   const envelope = record(rawInput);
   if (envelope && typeof envelope.server === 'string' && typeof envelope.tool === 'string') {
@@ -111,7 +103,6 @@ export function insideFolder(path: string, vaultRoot: string): string | null {
   return relative.normalize('NFC');
 }
 
-/** What a finished tool call left: a file or concept written inside the folder, or something beyond it. */
 export function turnToolFact(event: TurnToolEvent, vaultRoot: string): TurnToolFact {
   const kind = event.toolKind.trim().toLowerCase();
   if (event.status !== 'completed') return null;
@@ -235,12 +226,10 @@ export function closeTurnCard(run: TurnRun): TurnRun {
   return run.card === 'closed' && !run.unseen ? run : { ...run, card: 'closed', unseen: false };
 }
 
-/** Its conversation is on screen again: a finished turn has nothing left to announce. */
 export function seeTurn(run: TurnRun): TurnRun {
   return isTurnActive(run) ? run : closeTurnCard(run);
 }
 
-/** The door a finished turn offers: the page when it wrote exactly one wiki page. */
 export function turnPageDoor(run: TurnRun): string | null {
   if (run.phase !== 'written' || run.written.length !== 1 || run.beyond) return null;
   const [only] = run.written;

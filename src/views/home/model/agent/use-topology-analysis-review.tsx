@@ -17,7 +17,6 @@ import { useCallback, useMemo, useState } from "react";
 import { selectTopologyPathRouteState } from "../route-state/url-state";
 import { useTaskReviewBaseline } from "./use-task-review-baseline";
 
-/** `onTurnStarted` below hands the investigation capture only the exact investigation request. */
 const everyRequestItReceives = () => true;
 
 interface Options {
@@ -115,7 +114,6 @@ export function useTopologyAnalysisReview({
     setMeaningEditorState(null);
     setFullDetailSlug(null);
     setSelectedRelationActive(false);
-    // The path lens reveals both ancestor chains and frames the endpoints.
     setRouteState((current) => selectTopologyPathRouteState({ ...current, realmSlug: null }, {
       sourceSlug: edge.sourceId, targetSlug: edge.targetId,
     }));

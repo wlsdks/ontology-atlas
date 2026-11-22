@@ -15,9 +15,9 @@ permission card (below).
 
 ### Creating concepts
 
-- The create card (`src/views/home/ui/CreateNodeForm.tsx`) sits at the map's
-  right inset, where the concept panel sits, with no scrim: the map and the
-  concept list stay usable. It opens from `N` (when no field has focus), a
+- The create card (`src/views/home/ui/create/CreateNodeForm.tsx`) sits at the
+  map's right inset, where the concept panel sits, with no scrim: the map and
+  the concept list stay usable. It opens from `N` (when no field has focus), a
   right-click on empty canvas, the **+** in the concept list's header, the
   empty state's one create door, the panel's **Add a concept inside** and
   `?workbench=create`.

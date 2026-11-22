@@ -28,8 +28,6 @@ export async function generateMetadata({
 }
 
 /**
- * The gateway pages (`/download`, `/guide`, `/changelog`): the public, indexed face of each locale.
- *
  * A sibling of `app/[locale]` rather than a child, so the workbench's providers and whole catalog
  * stay out of these pages' HTML; the URLs are the same, since a route group adds no segment. The
  * client receives only the message paths its tree reads (`src/i18n/gateway-messages.ts`).

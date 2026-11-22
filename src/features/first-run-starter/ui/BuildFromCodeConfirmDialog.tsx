@@ -9,11 +9,7 @@ import { controlClass } from '@/shared/ui/control-class';
 
 import type { useBuildFromCode } from '../model/use-build-from-code';
 
-/**
- * Shows the folder about to be created and asks for a yes. A centred modal, because the path,
- * warning and two controls do not fit the ~240px INDEX column and a confirmation blocks by
- * definition. Nothing is created until the button is pressed, with the exact path on screen.
- */
+/** A centred modal: the path, warning and two controls do not fit the ~240px INDEX column. Nothing is created until the button is pressed, with the exact path on screen. */
 export function BuildFromCodeConfirmDialog({
   build,
 }: {
@@ -23,7 +19,6 @@ export function BuildFromCodeConfirmDialog({
   const failureSentence = useFailureSentence();
   const location = build.location;
   const creating = build.stage === 'creating';
-  // The sentence is the reader's; the code stays on `data-failure-detail` for developers.
   const failure =
     build.errorText !== null ? failureSentence(build.errorText, t('buildFromCodeFailed')) : null;
 
@@ -41,16 +36,10 @@ export function BuildFromCodeConfirmDialog({
       >
         {build.reusesExisting ? t('buildFromCodeReuse') : t('buildFromCodeWillCreate')}
       </p>
-      {/*
-       * The title states the decision; what is safe about it belongs in the line below.
-       */}
       <p className="mt-1 text-label leading-label text-[color:var(--color-text-tertiary)]">
         {build.reusesExisting ? t('buildFromCodeSafetyReuse') : t('buildFromCodeSafety')}
       </p>
 
-      {/*
-       * Names the correction, or the screen would show a path the person did not choose.
-       */}
       {build.pickedMapFolder ? (
         <p
           data-testid="build-from-code-stepped-up"
@@ -60,10 +49,7 @@ export function BuildFromCodeConfirmDialog({
         </p>
       ) : null}
 
-      {/*
-       * `<wbr>` after each separator: the path wraps only there, because `break-all` split
-       * tokens and `dir="rtl"` hid its beginning.
-       */}
+      {/* `<wbr>` after each separator: the path wraps only there, because `break-all` split tokens and `dir="rtl"` hid its beginning. */}
       <code
         data-testid="build-from-code-path"
         className="mt-3 block rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 font-mono text-label leading-label text-[color:var(--color-text-secondary)]"
@@ -92,10 +78,6 @@ export function BuildFromCodeConfirmDialog({
           data-testid="build-from-code-cancel"
           disabled={creating}
           onClick={build.reset}
-          /*
-           * Height, padding and type come from the `size` axis; hand-written classes fight the
-           * compound variant.
-           */
           className={controlClass({
             shape: 'card',
             size: 'md',

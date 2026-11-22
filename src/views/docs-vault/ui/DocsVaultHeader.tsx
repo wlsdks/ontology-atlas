@@ -10,9 +10,9 @@ import { AppSettingsMenu } from '@/widgets/app-settings-menu';
 import { cn } from '@/shared/lib/cn';
 import { Chip, controlClass } from '@/shared/ui';
 import type { VaultManifest } from '@/entities/docs-vault';
-import { DocsHeaderTile } from './parts/DocsHeaderTile';
-import { DocsVaultVaultChip } from './parts/DocsVaultVaultChip';
-import { DocsVaultTabStrip } from './parts/DocsVaultTabStrip';
+import { DocsHeaderTile } from './header/DocsHeaderTile';
+import { DocsVaultVaultChip } from './header/DocsVaultVaultChip';
+import { DocsVaultTabStrip } from './header/DocsVaultTabStrip';
 import { resolveVaultChipIdentity } from '../lib/vault-source/vault-chip-identity';
 import type { DocsVaultSource as Source, DocsVaultView } from '../lib/persistence';
 
@@ -103,7 +103,6 @@ export function DocsVaultHeader({
     <div
       data-docs-header-zone="identity"
       className={cn(
-        // From md this uses content width; the pane alignment applies at lg only.
         "flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:w-auto md:flex-nowrap",
         treeToolsHostRef ? "md:gap-1.5" : "md:gap-3",
         legacyDocumentMode
@@ -152,7 +151,6 @@ export function DocsVaultHeader({
         onClick={toggleDocListCollapsed}
         className="hidden lg:inline-flex"
       />
-      {/* The chip states the chosen source (`lib/vault-source/vault-chip-identity`). */}
       <DocsVaultVaultChip
         label={
           vaultChipIdentity.kind === 'local'
@@ -217,11 +215,8 @@ export function DocsVaultHeader({
       ) : null}
     </div>
   );
-  // Fixed order at natural width; zone-c shrinks so nothing overlaps. From md `ml-auto`
-  // right-aligns; at lg zone-c owns the gap.
   const toolsZone = (
     <div className={cn("flex w-full flex-none flex-wrap items-center justify-end gap-2 md:ml-auto md:w-auto md:flex-nowrap", treeToolsHostRef && "lg:pl-2")}>
-      {/* Source display and switching live in the vault chip only. */}
       <DocsHeaderTile
         icon={<Search size={ICON_SIZE.lg} aria-hidden />}
         title={t('header.paletteTooltip')}
@@ -232,7 +227,6 @@ export function DocsVaultHeader({
           setPaletteQuery('');
         }}
       />
-      {/* At lg+ the nav rail gear owns settings; this tile appears only below lg. */}
       <div className="lg:hidden">
         <AppSettingsMenu
           mode={source === 'local' ? 'local' : 'static'}
@@ -252,7 +246,6 @@ export function DocsVaultHeader({
           {legacyDocumentMode ? t('compatibility.title') : t('header.title')}
         </h1>
       ) : null}
-      {/* Absolutely positioned so the active tab can cover it with its own 2px underline. */}
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-px bg-[color:var(--color-border-soft)]"

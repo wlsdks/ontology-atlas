@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 
-import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
-import { startGatewayPointer, type GatewayPointer } from '../lib/gateway-pointer';
+import { registerGatedFrameClient } from '../lib/page-motion/gateway-frame-loop';
+import { startGatewayPointer, type GatewayPointer } from '../lib/page-motion/gateway-pointer';
 import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pause';
 
 /**
@@ -18,7 +18,6 @@ import { isMotionPaused, subscribeMotionPause } from '@/shared/motion/motion-pau
 /** The shared `Dialog` portals onto `body` and marks its panel `aria-modal`, so that is the signal. */
 const MODAL = '[aria-modal="true"]';
 
-/** Calls `onChange` whenever a modal dialog opens or closes; returns the stop function. */
 function watchModal(onChange: (open: boolean) => void): () => void {
   let open = Boolean(document.querySelector(MODAL));
   onChange(open);
@@ -91,7 +90,6 @@ export function GatewayFx() {
     }
     size();
 
-    // Weights stay at most 1: they multiply the `--gateway-fx-blob-alpha` ceiling, the cap.
     const blobs = [
       { w: 1, r: 0.46, cx: 0.26, cy: 0.34, sp: 1.0, ph: 0, follow: false, ink: mapLight },
       { w: 0.64, r: 0.52, cx: 0.76, cy: 0.22, sp: 0.66, ph: 2.2, follow: false, ink: linkLight },
@@ -156,7 +154,6 @@ export function GatewayFx() {
       for (const b of blobs) {
         if (b.follow) {
           if (!handSeen) continue;
-          // Time-based, so it eases the same on 60Hz and 120Hz panels.
           const k = 1 - Math.exp(-(t - lastT) / 370);
           b.cx += (handX - b.cx) * k;
           b.cy += (handY - b.cy) * k;

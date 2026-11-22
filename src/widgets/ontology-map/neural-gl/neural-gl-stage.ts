@@ -2,7 +2,7 @@ import type { RefObject } from "react";
 
 import { webgl2Available, webglAccelerated } from "@/shared/lib/map-canvas/webgl-probe";
 
-import type { NeuralFrame, NeuralSurface } from "../ui/frame-draw/neural-frame";
+import type { NeuralFrame, NeuralSurface } from "../ui/frame-draw/neural/neural-frame";
 import type { NeuralGl } from "./neural-gl";
 import { installNeuralGlProbe, type NeuralGlPoint } from "./neural-gl-probe";
 

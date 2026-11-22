@@ -6,7 +6,7 @@ import { Button, buttonVariants } from '@/shared/ui/controls/button';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { cn } from '@/shared/lib/cn';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
-import { BrandPortrait } from '@/shared/ui/marks/brand-portrait';
+import { BrandPortrait } from '@/shared/ui/marks/moru/brand-portrait';
 import { TerminalState } from './TerminalState';
 import { StandaloneLocaleProvider, useStandaloneLocale } from './standalone-locale';
 
@@ -48,7 +48,6 @@ function RouteErrorBody({ digest, onRetry }: { digest?: string; onRetry: () => v
             <RefreshCw size={ICON_SIZE.md} aria-hidden />
             {t('retry')}
           </Button>
-          {/* A full navigation, the honest reset after a render failure. */}
           <a href={withBasePath(`/${locale}/`)} className={cn(buttonVariants({ variant: 'outline' }))}>
             {t('home')}
           </a>

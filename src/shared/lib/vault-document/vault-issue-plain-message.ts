@@ -7,13 +7,7 @@ import type { VaultIssueCode } from "./validate-vault-document";
  */
 export type VaultIssuePlainMessageDict = Partial<Record<VaultIssueCode, string>>;
 
-/**
- * Turns a machine code (`missing-expected-field` and friends) into plain words.
- *
- * An unknown code returns the code itself rather than nothing: a newly added code
- * whose dictionary entry was forgotten then leaves a visible trace on screen
- * instead of disappearing.
- */
+/** Turns a machine code (`missing-expected-field` and friends) into plain words. An unknown code returns itself, so a code whose dictionary entry was forgotten leaves a visible trace on screen. */
 export function mapVaultIssueCodeToPlainMessage(
   code: string,
   dict: VaultIssuePlainMessageDict,

@@ -43,7 +43,7 @@ describe("ProjectDetailPage", () => {
       expect(screen.getByTestId("project-detail-domain-stale")).toHaveTextContent(/^1$/);
       expect(row).toHaveAccessibleName(expect.stringMatching(/^MCP Server .*mcp\/src\/server\.mjs changed after this document was written\.$/));
       expect(row).toHaveAccessibleDescription("Opens it on the map.");
-      const option = screen.getAllByTestId("project-detail-domain-option").find((el) => el.getAttribute("aria-label")?.includes("with a source changed"));
+      const option = screen.getAllByTestId("project-detail-domain-option").find((element) => element.getAttribute("aria-label")?.includes("with a source changed"));
       expect(option).toHaveAccessibleName(expect.not.stringContaining("◐"));
     });
 

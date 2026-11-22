@@ -25,7 +25,6 @@ export interface BlockManifest {
   schemaVersion: number;
   blockName: string;
   sourceProject: string;
-  /** ISO 8601 — app code, so serializing from Date.now is allowed. */
   exportedAt: string;
   census: BlockCensus;
   nodes: BlockManifestNode[];
@@ -39,7 +38,6 @@ export interface BuildBlockManifestInput {
   nodes: { uid: string; slug: string; kind: string; title: string }[];
 }
 
-/** Pure and deterministic — sorted by slug with duplicate slugs removed (same discipline as the interop serializer). */
 export function buildBlockManifest(input: BuildBlockManifestInput): BlockManifest {
   const bySlug = new Map<string, BlockManifestNode>();
   const slugByUid = new Map<string, string>();

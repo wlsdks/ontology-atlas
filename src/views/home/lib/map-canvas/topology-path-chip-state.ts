@@ -5,9 +5,7 @@
  */
 export type TopologyPathChipState =
   | { kind: "awaiting-target"; sourceTitle: string }
-  /** `missing` holds the raw slug the address carried. */
   | { kind: "missing-endpoints"; missing: readonly string[] }
-  /** A true "no path". */
   | { kind: "no-path"; sourceTitle: string; targetTitle: string }
   | { kind: "resolved"; sourceTitle: string; targetTitle: string; hops: number };
 
@@ -49,7 +47,6 @@ export function resolveTopologyPathChipState({
   };
 }
 
-/** "No path" qualifies: it is true when both nodes exist. */
 export function canCopyTopologyPathPacket(
   state: TopologyPathChipState | null,
 ): boolean {

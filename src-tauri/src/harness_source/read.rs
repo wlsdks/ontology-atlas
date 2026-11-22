@@ -23,8 +23,8 @@ fn open_no_follow(root: &Path, relative: &Path) -> Result<fs::File, String> {
 
     let changed = || "harness-path-changed".to_string();
     let root_fd =
-        crate::agent_setup::open_absolute_directory_no_follow(root).map_err(|_| changed())?;
-    let parent = crate::agent_setup::open_relative_directory(
+        crate::confined_files::open_absolute_directory_no_follow(root).map_err(|_| changed())?;
+    let parent = crate::confined_files::open_relative_directory(
         &root_fd,
         relative.parent().unwrap_or(Path::new("")),
     )

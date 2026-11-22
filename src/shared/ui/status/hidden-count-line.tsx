@@ -9,7 +9,6 @@ export interface HiddenCountLineProps {
    * with `total - shown`.
    */
   label: (hidden: number) => string;
-  /** Where the withheld rows can be read; omitted when no screen lists them all. */
   route?: ReactNode;
   className?: string;
   'data-testid'?: string;

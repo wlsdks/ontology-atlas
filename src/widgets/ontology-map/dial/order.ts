@@ -1,4 +1,4 @@
-import type { DialModel } from "./types";
+import type { DialModel } from "./dial-shapes";
 
 const EXHAUSTIVE_MAX = 9;
 const HYSTERESIS = 1.1;

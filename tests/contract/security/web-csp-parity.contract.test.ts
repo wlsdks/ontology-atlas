@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/web-content-security-policy';
+import { WEB_CONTENT_SECURITY_POLICY } from '@/shared/config/site/web-content-security-policy';
 
 const FETCH_DIRECTIVES = new Set([
   'child-src', 'connect-src', 'font-src', 'frame-src', 'img-src', 'manifest-src', 'media-src',

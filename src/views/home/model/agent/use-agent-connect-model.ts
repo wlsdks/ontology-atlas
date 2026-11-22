@@ -2,11 +2,6 @@
 
 import { useMemo } from "react";
 
-/**
- * Whether an agent is attached right now, read from one heartbeat line.
- * Registration setup lives in the destination's `VaultAgentSetupPanel`.
- */
-
 interface AgentHeartbeatStatus {
   valid?: boolean;
   stale?: boolean;
@@ -17,7 +12,6 @@ interface AgentHeartbeatStatus {
   } | null;
 }
 
-/** Read by the rail tile and the "Updated with AI" branch. */
 type AgentConnectState =
   | { kind: "connected" }
   | { kind: "stale" }

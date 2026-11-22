@@ -4,7 +4,7 @@ import "../../atlas-map-probe";
 import { seedFirstRunSeen } from "../../first-run-seed";
 import { useDogfoodSample } from "../../sample-source";
 import { waitForMapSettled, waitForMapStill } from "../../settle";
-import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
+import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 
 const VIEWPORT = { width: 1920, height: 1080 };
 /** Frames stop one idle grace (1,200 ms, `IDLE_GRACE_MS`) after the last motion; the budget allows 300 ms past it. */

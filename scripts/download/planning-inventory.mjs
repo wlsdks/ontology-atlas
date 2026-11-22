@@ -34,14 +34,14 @@ const comparePaths = (left, right) => {
   return a.length - b.length;
 };
 
-export function readPlanningFile(dir, relativePath) {
-  const full = path.resolve(dir, String(relativePath));
-  if (!full.startsWith(`${dir}${path.sep}`)) throw new Error("outside-folder");
+export function readPlanningFile(directory, relativePath) {
+  const full = path.resolve(directory, String(relativePath));
+  if (!full.startsWith(`${directory}${path.sep}`)) throw new Error("outside-folder");
   return readFileSync(full);
 }
 
 let cache = null;
-export function walkPlanningFolder(dir, modifiedSeconds) {
+export function walkPlanningFolder(directory, modifiedSeconds) {
   if (cache) return cache;
   const result = {
     files: [],
@@ -62,7 +62,7 @@ export function walkPlanningFolder(dir, modifiedSeconds) {
     }
     let entries;
     try {
-      entries = readdirSync(path.join(dir, relative)).sort((x, y) => Buffer.compare(Buffer.from(x), Buffer.from(y)));
+      entries = readdirSync(path.join(directory, relative)).sort((x, y) => Buffer.compare(Buffer.from(x), Buffer.from(y)));
     } catch {
       result.partial = true;
       result.omitted.unreadable += 1;
@@ -86,7 +86,7 @@ export function walkPlanningFolder(dir, modifiedSeconds) {
         continue;
       }
       const child = relative ? `${relative}/${name}` : name;
-      const stat = lstatSync(path.join(dir, child));
+      const stat = lstatSync(path.join(directory, child));
       if (stat.isSymbolicLink()) {
         result.omitted.symlink += 1;
       } else if (stat.isDirectory()) {

@@ -1,12 +1,9 @@
-import type { LibraryModel, SourceCompileState } from './vault-library';
+import type { SourceCompileState } from './source-compile-state';
+import type { LibraryModel } from './vault-library';
 
 /**
- * How many sources have a wiki page, and since when. A source counts only when it is `compiled`;
- * `checking` and `unreadable` stay in the total and never count. Dates are the `compiled_at` each
- * citing page records, never Git, so the web and the app draw the same line; the library model
- * keeps one day number per source (`compiledDay`), and this reads it.
- *
- * Cost: O(S) for S sources, two passes and no per-source allocation, plus O(P) for P ≤ 120 points.
+ * A source counts only when `compiled`; `checking` and `unreadable` stay in the total. Dates are the `compiled_at` each citing
+ * page records, never Git, so the web and the app draw the same line. O(S) for S sources plus O(P) for P ≤ 120 points.
  */
 
 const DAY_MS = 86_400_000;
@@ -14,7 +11,6 @@ const DAY_MS = 86_400_000;
 const MAX_DAY_POINTS = 90;
 /** Week buckets while there are at most this many; months past it. */
 const MAX_WEEK_POINTS = 120;
-/** No series is longer than this; months group into larger steps past it. */
 export const SOURCE_PROGRESS_MAX_POINTS = 120;
 /** The earliest day a recorded date is believed: 2000-01-01. */
 const MIN_DAY = 10_957;
@@ -22,25 +18,20 @@ const MIN_DAY = 10_957;
 export type SourceProgressUnit = 'day' | 'week' | 'month';
 
 export interface SourceProgressPoint {
-  /** First local day of the bucket, `YYYY-MM-DD`. */
   start: string;
   /** Last local day of the bucket, clamped to today, `YYYY-MM-DD`. The count is as of this day. */
   end: string;
-  /** Sources with a wiki page whose earliest valid date falls on or before `end`. */
   count: number;
 }
 
 export interface SourceProgress {
-  /** Every source in the folder, `unreadable` and `checking` included. */
   total: number;
-  /** Sources in `compiled`; the only state that counts. */
   compiled: number;
   byState: Readonly<Record<SourceCompileState, number>>;
   /** `compiled / total` in percent, rounded down; 100 only when every source is compiled. */
   percent: number;
   /** True when 0 < compiled / total < 1%, where `percent` alone would read 0. */
   underOnePercent: boolean;
-  /** Compiled sources whose earliest valid date is today's local day. */
   today: number;
   /** Compiled sources with no valid date: missing, unparsable, after today, or before 2000. */
   undated: number;
@@ -52,12 +43,8 @@ export interface SourceProgress {
 }
 
 export interface SourceProgressClock {
-  /** Now, in epoch milliseconds. */
   now: number;
-  /**
-   * Minutes east of UTC at an instant, so local days are deterministic under test. Defaults to the
-   * runtime's zone.
-   */
+  /** Minutes east of UTC at an instant, so local days are deterministic under test; defaults to the runtime's zone. */
   offsetMinutes?: (epochMs: number) => number;
 }
 
@@ -74,7 +61,6 @@ function runtimeOffset(epochMs: number): number {
   return -new Date(epochMs).getTimezoneOffset();
 }
 
-/** Local day number (days since 1970-01-01) of an instant. */
 function localDay(epochMs: number, offsetMinutes: (epochMs: number) => number): number {
   return Math.floor((epochMs + offsetMinutes(epochMs) * 60_000) / DAY_MS);
 }
@@ -129,9 +115,7 @@ export function recordedInstantMs(
 }
 
 interface RecordedParts {
-  /** Day number of the calendar date as written. */
   date: number;
-  /** Milliseconds into that day, as written. */
   timeMs: number;
   /** Minutes east of UTC; null when the value names no zone. */
   zoneMinutes: number | null;
@@ -154,7 +138,6 @@ function recordedParts(value: string): RecordedParts | null {
   return { date, timeMs, zoneMinutes: zulu ? 0 : (sign === '-' ? -1 : 1) * (Number(zoneHour) * 60 + Number(zoneMinute)) };
 }
 
-/** Months since 1970-01 of a day number. */
 function monthIndex(day: number): number {
   const date = new Date(day * DAY_MS);
   return (date.getUTCFullYear() - 1970) * 12 + date.getUTCMonth();
@@ -173,9 +156,7 @@ interface Buckets {
   unit: SourceProgressUnit;
   step: number;
   count: number;
-  /** Bucket of a day number, 0-based from the first. */
   of: (day: number) => number;
-  /** First day number of a bucket. */
   startOf: (bucket: number) => number;
 }
 

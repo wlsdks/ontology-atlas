@@ -23,7 +23,6 @@ function capitalizeFirst(sentence: string): string {
   return upper === first ? sentence : upper + sentence.slice(1);
 }
 
-/** The first few files a step touched, by name — the row's reason when no concept matched. */
 export function stepFileNames(
   files: readonly { path: string }[] | undefined,
   more: (count: number) => string,
@@ -35,7 +34,6 @@ export function stepFileNames(
   return rest > 0 ? `${names.join(", ")} ${more(rest)}` : names.join(", ");
 }
 
-/** The first seven characters of a hash — what people read, paste and compare. */
 export function shortHash(hash: string): string {
   return hash.slice(0, 7);
 }

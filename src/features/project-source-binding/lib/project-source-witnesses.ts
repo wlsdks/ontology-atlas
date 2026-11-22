@@ -59,7 +59,6 @@ export function deriveProjectSourceWitnesses(input: {
   const add = (candidate: ProjectSourceWitnessInput) => {
     if (!looksLikeSourceWitnessPath(candidate.path)) return;
     const path = normalizedPath(candidate.path);
-    // One path may support several roles; dedupe only per node.
     const claim = `${candidate.nodeSlug}\0${path}`;
     // A repository-root `path:` such as README.md is allowed but still checked against the
     // inspected inventory.
@@ -110,7 +109,6 @@ export function deriveProjectSourceWitnesses(input: {
     }
   }
 
-  // Undocumented raw-path element refs are still explicit source-role claims.
   for (const node of relevantNodes) {
     if (node.kind !== "element" || !looksLikeCodePath(node.title)) continue;
     add({

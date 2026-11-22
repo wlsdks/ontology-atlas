@@ -580,15 +580,15 @@ it('compiles every message as ICU so angle-bracket tags are not misparsed into r
   const failures = [];
   for (const locale of ['ko', 'en']) {
     const messages = JSON.parse(await readFile(`messages/${locale}.json`, 'utf-8'));
-    const walk = (obj, path) => {
-      for (const [key, value] of Object.entries(obj)) {
+    const walk = (node, path) => {
+      for (const [key, value] of Object.entries(node)) {
         const p = path ? `${path}.${key}` : key;
         if (typeof value === 'string') {
           try {
             // Compile without ignoreTag — the same tag-parsing conditions as next-intl.
             new IntlMessageFormat(value, locale);
-          } catch (err) {
-            failures.push(`${locale}:${p} — ${err.message.split('\n')[0]}`);
+          } catch (error) {
+            failures.push(`${locale}:${p} — ${error.message.split('\n')[0]}`);
           }
         } else if (value && typeof value === 'object') walk(value, p);
       }

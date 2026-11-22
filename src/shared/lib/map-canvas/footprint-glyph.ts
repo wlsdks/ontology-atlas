@@ -6,9 +6,8 @@ import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
  * loudly it is stated. Prints sit beside relation lines, only for pairs that have a relation.
  */
 
-import { type FootprintPreference } from "../preferences/appearance-preferences";
+import { type FootprintPreference } from "../preferences/footprint-preferences";
 
-/** Footprint ink as an RGB triple — the caller reads it from a token and passes it in. */
 export type FootprintInk = readonly [number, number, number];
 
 export interface FootprintPaintContext {
@@ -21,12 +20,8 @@ export interface FootprintPaintContext {
    */
   scale?: number;
   /**
-   * Entrance progress [0,1] of a freshly stamped print. 1 means settled.
-   *
-   * **An arrival, not a loop.** A permanent animation is the decorative motion the
-   * charter forbids, and it also defeats ambient sleep. This rises 0→1 only at the
-   * moment a step is created — the screen answering what the user just did, not a
-   * background moving on its own.
+   * Entrance progress [0,1]; 1 is settled. An arrival, not a loop: it rises only when a step is
+   * created, so the map can still sleep.
    */
   appear?: number;
 }
@@ -56,30 +51,13 @@ export const FOOTPRINT_MIN_SIZE = 4;
 /** The one place the mark's extent is defined; `footprintPairRadius` is this times size. */
 const MARK_RADIUS_RATIO = 0.72;
 
-/** Mark size clamped to the node radius in screen space. Pure function (under test). */
 export function footprintSizeFor(baseSize: number, screenNodeRadius: number): number {
   if (!Number.isFinite(screenNodeRadius) || screenNodeRadius <= 0) return baseSize;
   const capped = (FOOTPRINT_NODE_RATIO * screenNodeRadius) / MARK_RADIUS_RATIO;
   return Math.max(FOOTPRINT_MIN_SIZE, Math.min(baseSize, capped));
 }
 
-
-
-
-/**
- * Draws a footprint at the current transform origin. With `singleFoot`, one foot (for
- * edges); without it, both (for nodes).
- */
-
-
-/**
- * Radius (px) the mark occupies.
- *
- * The arms reach `0.62 * size`, and the value keeps a little air beyond them so the step
- * numeral beside it never sits on a spike. It was the diagonal of an offset pair of shoe
- * prints; the star is centred, so the same number now buys clearance instead of covering
- * an excursion.
- */
+/** In px. The arms reach `0.62 * size`; the rest is air so the step numeral never sits on a spike. */
 export function footprintPairRadius(size: number): number {
   return size * MARK_RADIUS_RATIO;
 }
@@ -104,15 +82,8 @@ export function footprintAnchor(
 
 
 /**
- * Display string for visit-order numbers. A revisited node has several, and joining them
- * all buries the label — past 3 it collapses to **first · … · last + total**.
- *
- * The total is spelled out because `1·…·9` alone **erases** how many stops happened in
- * between, and "I keep coming back here" is the fact this notation exists to carry.
- * Abbreviating may reduce information; erasing it is loss, not abbreviation.
- *
- * Pure function (under test). First and last survive because "when did I first arrive
- * and when was I last here" is worth more than the middle visits.
+ * Past three visits collapses to first · … · last plus the total: the total carries "I keep coming
+ * back here", and the first and last visits outrank the middle ones.
  */
 export function formatStepNumbers(steps: readonly number[], totalLabel = "총 %d회"): string {
   if (steps.length === 0) return "";
@@ -121,7 +92,6 @@ export function formatStepNumbers(steps: readonly number[], totalLabel = "총 %d
   return `${steps[0]}·…·${steps[steps.length - 1]} (${total})`;
 }
 
-/** Step numbers beside a node — just above the prints. */
 export function drawFootprintSteps(
   paint: FootprintPaintContext,
   x: number,
