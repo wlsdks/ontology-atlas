@@ -115,5 +115,214 @@
   "detailEvent": "Event",
   "detailStatus": "Status",
   "detailDeclared": "Declared as",
-  "close": "Close"
+  "close": "Close",
+  "scopes": {
+    "open": "Where settings live",
+    "title": "Where {tool} settings live",
+    "toolAria": "Agent tool",
+    "kindsAria": "Kind of setting",
+    "kind": {
+      "hooks": "Hooks",
+      "permissions": "Permission rules",
+      "skills": "Skills",
+      "subagents": "Subagents",
+      "instructions": "Instruction files"
+    },
+    "what": {
+      "hooks": "A hook is a command the agent runs by itself at a set moment, such as just before it uses a tool or when it finishes a reply. The same hook reaches different people and projects depending on the file it is written in.",
+      "permissions": "Permission rules set what the agent may do without asking (allow), must ask about first (ask), and must not do (deny). They live in the same four files as hooks.",
+      "skills": "A skill is a procedure the agent reads when it needs it. Each folder holds one SKILL.md.",
+      "claudeSubagents": "A subagent is a separate agent definition that work is handed to. One file is one subagent.",
+      "codexSubagents": "A subagent is a separate agent definition that work is handed to. One toml file is one subagent.",
+      "claudeInstructions": "An instruction file is guidance the agent reads when a session starts. CLAUDE.md and the files in the rules folder are instruction files.",
+      "codexInstructions": "An instruction file is guidance the agent reads when a session starts. Codex reads AGENTS.md."
+    },
+    "order": "Listed from the widest reach to the narrowest. The order is not a priority.",
+    "label": {
+      "file": "File",
+      "affects": "Who it affects",
+      "git": "In Git",
+      "now": "In it now",
+      "differs": "How it differs",
+      "sameName": "When names match",
+      "notRead": "What Atlas does not read",
+      "web": "In this browser",
+      "where": "Where it lives",
+      "command": "Command",
+      "runs": "When it runs"
+    },
+    "grid": {
+      "me": "You",
+      "others": "Others",
+      "thisRepository": "This repository",
+      "otherProjects": "Other projects"
+    },
+    "repository": "repository",
+    "caption": {
+      "managed": "Everyone your organisation sends it to",
+      "system": "Every user of this computer",
+      "user": "Every project · only you",
+      "project": "This repository · shared with the team",
+      "projectCodex": "This repository · shared · trusted projects only",
+      "local": "This repository · only you"
+    },
+    "affects": {
+      "managed": "Everyone your organisation sends this setting to.",
+      "system": "Every user of this computer.",
+      "user": "You, in every project on this computer.",
+      "project": "Everyone who works in this repository.",
+      "projectCodex": "Everyone who works in this repository and has trusted this project in Codex.",
+      "local": "You, in this project only.",
+      "picked": "You, in sessions where {variable} points to this folder."
+    },
+    "git": {
+      "outside": "No. It is outside every repository.",
+      "user": "Not committed. It is a file outside every repository.",
+      "project": "Committed. A change reaches teammates when you commit and they pull.",
+      "local": "Not committed. Claude Code keeps this file out of Git when it creates it.",
+      "localTracked": "Git can commit it now. Add it to .gitignore to keep it on this computer.",
+      "localInstructions": "Not committed. It is a file you keep in .gitignore."
+    },
+    "differs": {
+      "fixed": "None of your files overrides or switches it off. Atlas shows it and cannot change it.",
+      "user": "Unlike Project, no teammate gets it. Unlike Local, it also applies in your other projects.",
+      "userCodex": "Unlike Project, no teammate gets it, and it also applies in your other projects.",
+      "project": "Unlike User and Local, a change here changes it for your whole team.",
+      "projectCodex": "Unlike User, a change here changes it for your whole team.",
+      "local": "Unlike Project, no teammate sees it. Unlike User, it stays in this project.",
+      "managedInstructions": "It is read together with your files. Your files cannot remove or override it.",
+      "picked": "Sessions that use this folder read this file as User in place of {file}. It leaves this list when the app closes."
+    },
+    "same": {
+      "claudeSkillsManaged": "With the same name, it is used before the User and Project skills.",
+      "claudeSkillsUser": "Your User skill is used even when Project has a skill of the same name, so your results can differ from your teammates'.",
+      "claudeSkillsProject": "When User has a skill of the same name, that one is used.",
+      "claudeSubagentsManaged": "With the same name, it is used before the Project and User subagents.",
+      "claudeSubagentsUser": "When Project has a subagent of the same name, that one is used. Skills go the other way.",
+      "claudeSubagentsProject": "This Project subagent is used even when your User has one of the same name.",
+      "codexSkills": "A skill with the same name in another folder also appears; both are listed."
+    },
+    "now": {
+      "hooks": "{count, plural, =0 {No hooks.} one {# hook.} other {# hooks.}}",
+      "permissions": "{counts}. Atlas reads only how many rules there are, not their text, because a rule can hold a pasted token.",
+      "noPermissions": "No permission rules.",
+      "missing": "This file does not exist on this computer.",
+      "missingProject": "This repository has no such file.",
+      "invalid": "{file} is not valid JSON, so Atlas read nothing from it. Fix it in an editor, then read the files again.",
+      "unreadable": "Atlas could not open {file}: {reason}. Nothing from it is listed.",
+      "notReadFolder": "Atlas does not read this folder.",
+      "notReadFile": "Atlas does not read this file.",
+      "homeUnread": "Atlas does not read the names inside your home folder.",
+      "listed": "{count} here. They are listed under {group} on this page."
+    },
+    "reason": {
+      "link": "it is a link to another file",
+      "notAFile": "it is not a file",
+      "notAFolder": "a folder on its path is not a folder",
+      "permissionDenied": "permission denied",
+      "tooLarge": "it is larger than 1 MiB",
+      "io": "the disk returned an error",
+      "missing": "it does not exist"
+    },
+    "note": {
+      "codexProject": "Codex reads this file only in a project you have trusted in Codex. Hooks in the [hooks] table of config.toml show their events only.",
+      "localWorktree": "In a linked worktree, Claude Code reads this file in the main checkout."
+    },
+    "another": {
+      "note": "If a session keeps its settings in another folder through {variable}, choose that folder's {fileName}. It is listed beside User until the app closes.",
+      "action": "Show another settings file"
+    },
+    "picked": "Picked file",
+    "pick": {
+      "name": "Atlas reads a picked file only when it is named settings.json or hooks.json.",
+      "link": "That file is a link to another file, so Atlas did not read it.",
+      "notAFile": "That is not a file, so Atlas did not read it.",
+      "inRepository": "{file} is inside the Git repository {repository} and is not one of that repository's own settings files, so Atlas did not read it.",
+      "tooMany": "Atlas holds up to 16 picked files until the app closes.",
+      "unreadable": "Atlas could not open that file.",
+      "alreadyListed": "{file} is already listed."
+    },
+    "finding": {
+      "outside": "{count, plural, one {# hook is set in a file outside this repository} other {# hooks are set in files outside this repository}}",
+      "outsideShow": "Show the first",
+      "toolGap": "{toolA} has hooks that can stop an action in this repository and {toolB} has none, so {toolB} is not stopped where {toolA} is.",
+      "allOff": "{file} sets disableAllHooks, so Claude Code skips the hooks in your User, Project and Local files here. Hooks your organisation manages still run. Removing that line from {file} turns them back on.",
+      "managedOnly": "Your organisation allows only its own hooks, so Claude Code skips the {count} hooks in your User, Project and Local files.",
+      "localTracked": "Git can commit {file}. Add .claude/settings.local.json to .gitignore to keep it on this computer.",
+      "worktreeLocal": "{folder} is a linked worktree. Claude Code reads {mainFile} in the main checkout and not {file}.",
+      "codexInline": "{file} also defines hooks for {events}. Atlas shows their events, not their commands."
+    },
+    "tag": {
+      "twoFilesClaude": "In two files",
+      "twoFilesClaudeHint": "{files} both define this hook. Claude Code runs it once.",
+      "twoFilesCodex": "Can run twice",
+      "twoFilesCodexHint": "{files} both register this command. Codex can run it twice for one event.",
+      "needsReview": "Needs review",
+      "workStatus": "Added by Work status",
+      "workStatusHint": "Work status added this hook to show what the agent is doing.",
+      "typeOnly": "This is a {type} hook. Atlas shows that it exists and not what it sends."
+    },
+    "reading": "Reading {file}",
+    "help": "About {scope}",
+    "runs": {
+      "claude": "It runs together with the hooks in every other file. The same hook in two files runs once.",
+      "codex": "It runs together with the hooks in every other file. The same command in two files can run twice."
+    },
+    "webNote": "This browser shows what each file is. The desktop app also shows what is in yours.",
+    "webStageNote": "What each settings file is and who it affects can be seen in the browser too.",
+    "notRead": {
+      "claude": "A policy your organisation sends without a file, whether you trusted this folder in Claude Code, and the skills, subagents and instruction files in your home folder. A settings folder moved with CLAUDE_CONFIG_DIR is read only after you choose its file with Show another settings file.",
+      "codex": "Codex's record of which hooks you reviewed, whether you trusted this project in Codex, and the skills, subagents and instruction files in your home folder. A settings folder moved with CODEX_HOME is read only after you choose its file with Show another settings file."
+    },
+    "count": {
+      "none": "No file",
+      "unread": "Not read",
+      "invalid": "Not valid JSON",
+      "unreadable": "Cannot open",
+      "total": "{count, plural, one {# hook} other {# hooks}}"
+    },
+    "org": {
+      "skills": "Skills folder your organisation deploys",
+      "subagents": "Subagents folder your organisation deploys",
+      "instructions": "CLAUDE.md your organisation deploys"
+    },
+    "combine": {
+      "claudeHooks": {
+        "lead": "Hooks from every file all run.",
+        "body": "None of Managed, User, Project and Local overrides or switches off another, and the same hook in two files runs once. Claude Code holds them all back until you trust the folder in Claude Code."
+      },
+      "codexHooks": {
+        "lead": "Hooks from every file all run.",
+        "body": "None overrides another, and the same command in two files can run twice. Codex skips a new or changed hook until you review it in /hooks. Codex has no Local file."
+      },
+      "claudePermissions": {
+        "lead": "The rules of every file join into one list.",
+        "body": "Claude Code checks deny, then ask, then allow, and the first rule that matches decides. Your own files cannot override a Managed rule."
+      },
+      "claudeSkills": {
+        "lead": "When two skills share a name, only one is used.",
+        "body": "Managed comes before User, and User before Project, so your User skill replaces a Project skill of the same name."
+      },
+      "codexSkills": {
+        "lead": "Codex lists the skills of every folder.",
+        "body": "Two skills with one name are not merged; both appear."
+      },
+      "claudeSubagents": {
+        "lead": "When two subagents share a name, only one is used.",
+        "body": "Managed comes first, then Project, then User, so a Project subagent replaces your User subagent of the same name. Skills go the other way."
+      },
+      "codexSubagents": {
+        "lead": "Codex's documentation does not say which one is used when two subagents share a name.",
+        "body": "Atlas does not guess."
+      },
+      "claudeInstructions": {
+        "lead": "All of them are read.",
+        "body": "Claude Code reads from the top folder down to the folder the session starts in, and none replaces another."
+      },
+      "codexInstructions": {
+        "lead": "Read from the top down, joined end to end.",
+        "body": "Codex reads ~/.codex/AGENTS.md, then each AGENTS.md from the repository root down, up to 32 KiB in all. In one folder, AGENTS.override.md replaces AGENTS.md."
+      }
+    }
+  }
 }

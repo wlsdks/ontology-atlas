@@ -13,3 +13,5 @@ export {
   type ScopeFindings,
   type ScopeHookTag,
 } from './model/scope-findings';
+export { SCOPE_NAMES, SCOPE_REACH, type ReachScope, type ScopeReach } from './model/scope-reach';
+export { ReachGrid, ReachMark } from './ui/ReachMark';

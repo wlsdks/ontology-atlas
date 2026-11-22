@@ -115,5 +115,214 @@
   "detailEvent": "イベント",
   "detailStatus": "状態",
   "detailDeclared": "宣言",
-  "close": "閉じる"
+  "close": "閉じる",
+  "scopes": {
+    "open": "設定の場所",
+    "title": "{tool}の設定の場所",
+    "toolAria": "エージェントツール",
+    "kindsAria": "設定の種類",
+    "kind": {
+      "hooks": "フック",
+      "permissions": "権限ルール",
+      "skills": "スキル",
+      "subagents": "サブエージェント",
+      "instructions": "指示ファイル"
+    },
+    "what": {
+      "hooks": "フックは、ツールを使う直前や返答を終えたときなど、決まった瞬間にエージェントが自分で実行するコマンドです。同じフックでも、どのファイルに書くかで適用される人とプロジェクトが変わります。",
+      "permissions": "権限ルールは、エージェントが確認せずにしてよいこと（allow）、先に確認すること（ask）、してはいけないこと（deny）を決めます。フックと同じ4つのファイルにあります。",
+      "skills": "スキルは、エージェントが必要なときに読む作業手順です。フォルダ1つにSKILL.mdが1つ入っています。",
+      "claudeSubagents": "サブエージェントは、作業を分けて任せる別のエージェント定義です。ファイル1つがサブエージェント1つです。",
+      "codexSubagents": "サブエージェントは、作業を分けて任せる別のエージェント定義です。tomlファイル1つがサブエージェント1つです。",
+      "claudeInstructions": "指示ファイルは、セッションの開始時にエージェントが読む案内文です。CLAUDE.mdとrulesフォルダのファイルがこれにあたります。",
+      "codexInstructions": "指示ファイルは、セッションの開始時にエージェントが読む案内文です。CodexはAGENTS.mdを読みます。"
+    },
+    "order": "適用範囲の広いものから狭い順に並んでいます。優先順位ではありません。",
+    "label": {
+      "file": "ファイル",
+      "affects": "適用範囲",
+      "git": "Gitでは",
+      "now": "いま入っているもの",
+      "differs": "ほかとの違い",
+      "sameName": "名前が同じとき",
+      "notRead": "Atlasが読まないもの",
+      "web": "このブラウザでは",
+      "where": "ある場所",
+      "command": "コマンド",
+      "runs": "実行条件"
+    },
+    "grid": {
+      "me": "自分",
+      "others": "ほかの人",
+      "thisRepository": "このリポジトリ",
+      "otherProjects": "ほかのプロジェクト"
+    },
+    "repository": "リポジトリ",
+    "caption": {
+      "managed": "組織が配布したすべての人",
+      "system": "このコンピューターのすべてのユーザー",
+      "user": "すべてのプロジェクト · 自分だけ",
+      "project": "このリポジトリ · チームと共有",
+      "projectCodex": "このリポジトリ · チームと共有 · 信頼したプロジェクトのみ",
+      "local": "このリポジトリ · 自分だけ"
+    },
+    "affects": {
+      "managed": "組織がこの設定を配布したすべての人に。",
+      "system": "このコンピューターを使うすべてのユーザーに。",
+      "user": "自分に、このコンピューターのすべてのプロジェクトで。",
+      "project": "このリポジトリで作業するすべての人に。",
+      "projectCodex": "このリポジトリで作業する人のうち、Codexでこのプロジェクトを信頼した人に。",
+      "local": "自分に、このプロジェクトだけで。",
+      "picked": "自分に、{variable}がこのフォルダを指すセッションで。"
+    },
+    "git": {
+      "outside": "いいえ。どのリポジトリにも入っていません。",
+      "user": "コミットされません。どのリポジトリにも入っていないファイルです。",
+      "project": "コミットされます。自分がコミットしてチームメイトがpullすると、チームメイトにも反映されます。",
+      "local": "コミットされません。Claude Codeはこのファイルを作るときにGitから外しておきます。",
+      "localTracked": "いまはGitがコミットできます。このコンピューターだけに置くには「.gitignore」に追加してください。",
+      "localInstructions": "コミットされません。.gitignoreに入れておくファイルです。"
+    },
+    "differs": {
+      "fixed": "自分のファイルでは上書きも停止もできません。Atlasは表示するだけで変更できません。",
+      "user": "Projectと違い、チームメイトには届きません。Localと違い、自分のほかのプロジェクトにも適用されます。",
+      "userCodex": "Projectと違い、チームメイトには届かず、自分のほかのプロジェクトにも適用されます。",
+      "project": "User、Localと違い、ここを変えるとチーム全体に反映されます。",
+      "projectCodex": "Userと違い、ここを変えるとチーム全体に反映されます。",
+      "local": "Projectと違い、チームメイトには見えません。Userと違い、このプロジェクトの中だけにとどまります。",
+      "managedInstructions": "自分のファイルと一緒に読まれます。自分のファイルで外したり上書きしたりできません。",
+      "picked": "このフォルダを使うセッションは、{file}の代わりにこのファイルをUserとして読みます。アプリを閉じるとこの一覧から外れます。"
+    },
+    "same": {
+      "claudeSkillsManaged": "同じ名前なら、UserとProjectのスキルより先に使われます。",
+      "claudeSkillsUser": "Projectに同じ名前のスキルがあっても、自分のUserスキルが使われます。チームメイトと結果が変わることがあります。",
+      "claudeSkillsProject": "Userに同じ名前のスキルがあれば、そちらが使われます。",
+      "claudeSubagentsManaged": "同じ名前なら、ProjectとUserのサブエージェントより先に使われます。",
+      "claudeSubagentsUser": "Projectに同じ名前のサブエージェントがあれば、そちらが使われます。スキルとは逆です。",
+      "claudeSubagentsProject": "自分のUserに同じ名前のサブエージェントがあっても、このProjectのものが使われます。",
+      "codexSkills": "同じ名前のスキルがほかのフォルダにあっても、両方表示されます。"
+    },
+    "now": {
+      "hooks": "{count, plural, =0 {フックなし。} other {フック#個。}}",
+      "permissions": "{counts}。Atlasは数だけを読み、ルールの文面は読みません。貼り付けたトークンが含まれていることがあるためです。",
+      "noPermissions": "権限ルールなし。",
+      "missing": "このコンピューターにはこのファイルがありません。",
+      "missingProject": "このリポジトリにはこのファイルがありません。",
+      "invalid": "{file}は正しいJSONではないため、Atlasは何も読みませんでした。エディタで直してから、ファイルを読み直してください。",
+      "unreadable": "Atlasは{file}を開けませんでした（{reason}）。このファイルからは何も表示していません。",
+      "notReadFolder": "Atlasはこのフォルダを読みません。",
+      "notReadFile": "Atlasはこのファイルを読みません。",
+      "homeUnread": "Atlasはホームフォルダ内の名前を読みません。",
+      "listed": "{count}個。この画面の{group}にあります。"
+    },
+    "reason": {
+      "link": "ほかのファイルへのリンクです",
+      "notAFile": "ファイルではありません",
+      "notAFolder": "途中のパスがフォルダではありません",
+      "permissionDenied": "権限がありません",
+      "tooLarge": "1 MiBより大きいです",
+      "io": "ディスクがエラーを返しました",
+      "missing": "ファイルがありません"
+    },
+    "note": {
+      "codexProject": "Codexは、Codexで信頼したプロジェクトでだけこのファイルを読みます。config.tomlの[hooks]表に書かれたフックはイベント名だけを表示します。",
+      "localWorktree": "linked worktreeでは、Claude Codeがmain checkoutにあるこのファイルを読みます。"
+    },
+    "another": {
+      "note": "セッションが{variable}でほかの設定フォルダを使っているなら、そのフォルダの{fileName}を選んでください。アプリを閉じるまでUserファイルと一緒に表示されます。",
+      "action": "ほかの設定ファイルを表示"
+    },
+    "picked": "自分で選んだファイル",
+    "pick": {
+      "name": "自分で選んだファイルは、名前がsettings.jsonかhooks.jsonのときだけ読みます。",
+      "link": "そのファイルはほかのファイルへのリンクなので、読みませんでした。",
+      "notAFile": "ファイルではないため、読みませんでした。",
+      "inRepository": "{file}はGitリポジトリ{repository}の中にあり、そのリポジトリ自身の設定ファイルではないため、読みませんでした。",
+      "tooMany": "自分で選んだファイルは、アプリを閉じるまで16個まで保持できます。",
+      "unreadable": "そのファイルを開けませんでした。",
+      "alreadyListed": "{file}はすでに一覧にあります。"
+    },
+    "finding": {
+      "outside": "{count, plural, other {このリポジトリの外のファイルにフックが#個あります}}",
+      "outsideShow": "最初のものを表示",
+      "toolGap": "{toolA}にはこのリポジトリで動作を止められるフックがあり、{toolB}にはありません。{toolB}はその場面で止まりません。",
+      "allOff": "{file}でdisableAllHooksが設定されているため、Claude CodeはここでUser、Project、Localファイルのフックを飛ばします。組織が管理するフックはそのまま実行されます。{file}からその行を消すと、また有効になります。",
+      "managedOnly": "組織が自分のフックだけを許可しているため、Claude CodeはUser、Project、Localファイルのフック{count}個を飛ばします。",
+      "localTracked": "Gitが{file}をコミットできます。このコンピューターだけに置くには、.claude/settings.local.jsonを「.gitignore」に追加してください。",
+      "worktreeLocal": "{folder}はlinked worktreeです。Claude Codeは{file}ではなく、main checkoutの{mainFile}を読みます。",
+      "codexInline": "{file}にも{events}のフックが定義されています。Atlasはコマンドではなくイベントだけを表示します。"
+    },
+    "tag": {
+      "twoFilesClaude": "2つのファイルにあり",
+      "twoFilesClaudeHint": "{files}の両方にこのフックがあります。Claude Codeは1回だけ実行します。",
+      "twoFilesCodex": "2回実行されることがあります",
+      "twoFilesCodexHint": "{files}の両方にこのコマンドがあります。Codexは1つのイベントで2回実行することがあります。",
+      "needsReview": "承認が必要",
+      "workStatus": "作業状況が追加",
+      "workStatusHint": "作業状況が、エージェントの作業を表示するために追加したフックです。",
+      "typeOnly": "{type}フックです。Atlasはこのフックがあることだけを表示し、何を送るかは表示しません。"
+    },
+    "reading": "{file}を読み込み中",
+    "help": "{scope}の説明を見る",
+    "runs": {
+      "claude": "ほかのすべてのファイルのフックと一緒に実行されます。同じフックが2つのファイルにあれば1回だけ実行されます。",
+      "codex": "ほかのすべてのファイルのフックと一緒に実行されます。同じコマンドが2つのファイルにあれば、Codexは2回実行することがあります。"
+    },
+    "webNote": "このブラウザでは各ファイルが何かだけを表示します。デスクトップアプリでは、自分のコンピューターのファイルに何が入っているかも表示します。",
+    "webStageNote": "各設定ファイルが何で、誰に適用されるかはブラウザでも見られます。",
+    "notRead": {
+      "claude": "ファイルなしで組織が配布するポリシー、Claude Codeでこのフォルダを信頼したかどうか、ホームフォルダのスキル・サブエージェント・指示ファイル。CLAUDE_CONFIG_DIRで移した設定フォルダは、ほかの設定ファイルを表示でファイルを選んだときだけ読みます。",
+      "codex": "Codexが記録したフックの確認状況、Codexでこのプロジェクトを信頼したかどうか、ホームフォルダのスキル・サブエージェント・指示ファイル。CODEX_HOMEで移した設定フォルダは、ほかの設定ファイルを表示でファイルを選んだときだけ読みます。"
+    },
+    "count": {
+      "none": "ファイルなし",
+      "unread": "読まない",
+      "invalid": "JSONエラー",
+      "unreadable": "開けない",
+      "total": "{count, plural, other {#個}}"
+    },
+    "org": {
+      "skills": "組織が配布したスキルフォルダ",
+      "subagents": "組織が配布したサブエージェントフォルダ",
+      "instructions": "組織が配布したCLAUDE.md"
+    },
+    "combine": {
+      "claudeHooks": {
+        "lead": "どのファイルのフックもすべて実行されます。",
+        "body": "Managed、User、Project、Localのどれも、ほかのファイルのフックを上書きしたり止めたりしません。同じフックが2つのファイルにあれば1回だけ実行されます。Claude Codeでこのフォルダを信頼するまで、Claude Codeはフックをすべて保留します。"
+      },
+      "codexHooks": {
+        "lead": "どのファイルのフックもすべて実行されます。",
+        "body": "互いに上書きせず、同じコマンドが2つのファイルにあれば2回実行されることがあります。新しいフックや変更されたフックは、/hooksで確認するまでCodexが飛ばします。CodexにはLocalがありません。"
+      },
+      "claudePermissions": {
+        "lead": "すべてのファイルのルールが1つにまとまります。",
+        "body": "Claude Codeはdeny、ask、allowの順に調べ、最初に一致したルールで決まります。Managedのルールは自分のファイルで上書きできません。"
+      },
+      "claudeSkills": {
+        "lead": "名前が同じなら1つだけが使われます。",
+        "body": "ManagedがUserより、UserがProjectより先です。そのため自分のUserスキルが同じ名前のProjectスキルの代わりに使われます。"
+      },
+      "codexSkills": {
+        "lead": "Codexはすべてのフォルダのスキルを並べます。",
+        "body": "同じ名前のスキルが2つあっても統合されず、両方表示されます。"
+      },
+      "claudeSubagents": {
+        "lead": "名前が同じなら1つだけが使われます。",
+        "body": "Managed、Project、Userの順です。そのためProjectのサブエージェントが同じ名前の自分のUserサブエージェントの代わりに使われます。スキルとは逆です。"
+      },
+      "codexSubagents": {
+        "lead": "名前が同じときにどちらが使われるかは、Codexの文書に書かれていません。",
+        "body": "Atlasも推測では答えません。"
+      },
+      "claudeInstructions": {
+        "lead": "すべて読まれます。",
+        "body": "Claude Codeは、いちばん上のフォルダからセッションを始めたフォルダまで下りながら読み、どれもほかの代わりにはなりません。"
+      },
+      "codexInstructions": {
+        "lead": "上から下へつなげて読みます。",
+        "body": "Codexは~/.codex/AGENTS.mdの次に、リポジトリのルートから各AGENTS.mdを読み、合計で32 KiBまでです。1つのフォルダの中ではAGENTS.override.mdがAGENTS.mdの代わりになります。"
+      }
+    }
+  }
 }
