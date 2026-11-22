@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"><title>floor</title><body style="margin:0;background:#0b0b0a"><canvas id="view" style="position:absolute;left:0;bottom:0"></canvas>
+<script>
+// What the browser itself charges for a 12 Hz picture: the same canvas the strip uses, with one kind of drawing at a time.
+const Q = new URLSearchParams(location.search), hz = +(Q.get('hz') ?? 12), op = Q.get('op') ?? 'fill', [W, H] = (Q.get('size') ?? '8x8').split('x').map(Number), view = document.getElementById('view');
+view.width = W; view.height = H; let wakes = 0, work;
+const noise = (w, h) => { const d = new ImageData(w, h), p = new Uint32Array(d.data.buffer); for (let i = 0; i < p.length; i++) p[i] = 0xff000000 | (Math.random() * 0xffffff); return d; };
+if (op.startsWith('gl')) {
+  const blit = Q.has('blit'), glc = blit ? Object.assign(document.createElement('canvas'), { width: W, height: H }) : view, out = blit ? view.getContext('2d', { alpha: false }) : null;
+  const gl = glc.getContext(Q.has('v2') ? 'webgl2' : 'webgl', { alpha: Q.has('alpha'), antialias: false, depth: false, stencil: false, preserveDrawingBuffer: Q.has('keep'), powerPreference: 'low-power' }), sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); return o; }, pr = gl.createProgram();
+  gl.attachShader(pr, sh(gl.VERTEX_SHADER, 'attribute vec4 a; varying vec2 v; void main() { gl_Position = vec4(a.xy, 0., 1.); v = a.zw; }')); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, 'precision mediump float; uniform sampler2D t; varying vec2 v; void main() { gl_FragColor = texture2D(t, v); }')); gl.linkProgram(pr); gl.useProgram(pr);
+  const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, noise(1040, 608)); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const buf = gl.createBuffer(), verts = new Float32Array(Math.max(20 * 24, +(Q.get('bytes') ?? 0) / 4)), patch = noise(100, 80); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 0, 0);
+  work = () => { if (op === 'gl') for (let i = 0; i < 13; i++) gl.texSubImage2D(gl.TEXTURE_2D, 0, (i % 5) * 208, ((i / 5) | 0) * 152, gl.RGBA, gl.UNSIGNED_BYTE, patch);
+    for (let i = 0; i < 20; i++) { const x = -1 + ((i * 90 + wakes * 2) % (W - 208)) / W * 2, w = 416 / W, u = (i % 5) / 5, v = ((i / 5) | 0) / 4; verts.set([x, -1, u, v + .25, x + w, -1, u + .2, v + .25, x, 0, u, v, x, 0, u, v, x + w, -1, u + .2, v + .25, x + w, 0, u + .2, v], i * 24); }
+    gl.bufferData(gl.ARRAY_BUFFER, verts, gl.DYNAMIC_DRAW); gl.clearColor(.04, .04, .04, 1); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 120); if (blit) out.drawImage(glc, 0, 0); };
+} else {
+  const g = view.getContext('2d', { alpha: false }), sprites = Array.from({ length: 20 }, () => { const c = document.createElement('canvas'); c.width = 208; c.height = 152; c.getContext('2d').putImageData(noise(208, 152), 0, 0); return c; }), patch = noise(100, 80), full = noise(208, 152);
+  work = { none: () => {}, fill: () => { g.fillStyle = wakes & 1 ? '#17192d' : '#50569c'; g.fillRect(0, 0, 8, 8); },
+    put: () => { for (let i = 0; i < 13; i++) g.putImageData(patch, (i * 140 + wakes * 2) % (W - 100), H - 90); },
+    draw: () => { for (let i = 0; i < 40; i++) g.drawImage(sprites[i % 20], (i * 47 + wakes * 2) % (W - 208), H - 152); },
+    drawput: () => { for (let i = 0; i < 13; i++) sprites[i].getContext('2d').putImageData(full, 0, 0); for (let i = 0; i < 40; i++) g.drawImage(sprites[i % 20], (i * 47 + wakes * 2) % (W - 208), H - 152); } }[op];
+}
+setInterval(() => { wakes++; work(); }, 1000 / hz);
+window.life = { counters: () => ({ wakes, painted: 0, redrawn: 0, sent: 0 }), memory: () => ({}) };</script>
