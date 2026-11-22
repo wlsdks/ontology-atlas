@@ -16,6 +16,7 @@ import {
   withoutSubsetsOfWholeFiles,
   decide,
   decodePlan,
+  encodeLanePlan,
   encodePlan,
   FULL_LANE_COMMANDS,
   NATIVE_TOOLCHAIN_COMMANDS,
@@ -414,6 +415,14 @@ test('a contract the import graph reaches runs before merge; one it does not rea
   assert.ok(unit.contractFiles.includes('tests/contract/vault-format/parse-frontmatter.contract.test.ts'));
   const ui = buildImpactPlan({ files: ['src/views/download/ui/DownloadPage.tsx'] }).lanes.unit;
   assert.ok(!ui.contractFiles.includes('tests/contract/ci-gates/workflow-budgets.contract.test.ts'));
+});
+
+test('an exhaustive plan for a 5,000-file branch reaches lanes under the 128 KiB environment cap', () => {
+  const files = ['package.json', ...Array.from({ length: 5_000 }, (_, index) => `src/features/area-${index % 40}/model/rule-number-${index}.ts`)];
+  const plan = buildImpactPlan({ files });
+  const encoded = encodeLanePlan(plan);
+  assert.ok(encoded.length < 128 * 1024, `lane plan is ${encoded.length} bytes`);
+  assert.deepEqual(decodePlan(encoded).lanes, plan.lanes);
 });
 
 test('the serialized workflow plan is versioned and round-trips exactly', () => {

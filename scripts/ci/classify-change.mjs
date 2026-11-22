@@ -796,6 +796,15 @@ export function validatePlan(plan) {
   return plan;
 }
 
+/**
+ * The plan handed to every lane through one environment variable. Lanes read only the lane
+ * verdicts, and Linux caps a single environment string at 128 KiB, so the changed-path list
+ * (99 % of a 3,469-file plan) stays with the planner's log.
+ */
+export function encodeLanePlan(plan) {
+  return encodePlan({ ...plan, paths: [] });
+}
+
 export function decodePlan(encoded) {
   if (!encoded) throw new Error('CI impact plan is missing');
   const plan = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
@@ -815,7 +824,7 @@ function emit(plan, base = null) {
   const output = process.env.GITHUB_OUTPUT;
   if (!output) return;
   const values = {
-    plan: encodePlan(plan),
+    plan: encodeLanePlan(plan),
     gates: gates.run,
     gates_needs_mcp: gates.needsMcp,
     unit: unit.mode,

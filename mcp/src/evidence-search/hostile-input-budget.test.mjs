@@ -53,9 +53,10 @@ function linesOf(line) {
 function fastestRunMs(run, budgetMs) {
   let fastest = Infinity;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const started = performance.now();
+    const started = process.cpuUsage();
     run();
-    fastest = Math.min(fastest, performance.now() - started);
+    const spent = process.cpuUsage(started);
+    fastest = Math.min(fastest, (spent.user + spent.system) / 1000);
     if (fastest < budgetMs || fastest > budgetMs * 10) break;
   }
   return fastest;
