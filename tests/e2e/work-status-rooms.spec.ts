@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForAnimationsDone } from "./settle";
 
 /**
  * Work status in the app, with the two native reads stubbed: the rooms a person sees for a
@@ -132,7 +133,7 @@ test.describe("work status rooms", () => {
     ]);
     await expect(room(page, "feat/library-stage")).toHaveCount(0, { timeout: 10_000 });
     await expect(room(page, "feat/harness-tab")).toHaveAttribute("data-room-size", "large");
-    await page.waitForTimeout(1_500);
+    await waitForAnimationsDone(page.getByTestId("work-building"));
 
     const frames = await page.evaluate(() => (window as unknown as { __paint: { cover: number; litGhost: boolean }[] }).__paint);
     expect(frames.length).toBeGreaterThan(60);
