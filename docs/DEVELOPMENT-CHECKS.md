@@ -169,6 +169,7 @@ What each contributor command answers, sorted by command.
 | `node scripts/ci/run-playwright-ci.mjs --help` | Browser shard options, including `--only` for a named set of spec files, without discovering or running tests; unknown options fail before execution |
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
 | `pnpm brand:cast` | Redraw the Work status rows for each Moru cast character (body palette and head piece) into `public/brand/mascot-<row>-row-128-<character>.png`; run after `pnpm brand:sprites` |
+| `pnpm brand:cast-preview` | Regenerate the whole Moru cast preview from `scripts/brand/moru-cast/` (every clip as strips and GIFs, measurements, contact sheets, the life prototype page and the farm page) into git-ignored `output/moru-cast/`; nothing it writes ships. Plan: `docs/specs/2026-11-22-moru-cast.md` |
 | `pnpm brand:sprites` | Rebuild Moru sprites, 85 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
 | `pnpm brand:work-clips` | Redraw the eleven code-drawn Work status clips from `scripts/brand/moru-work-clips.mjs` into `assets/brand/moru/source/motion-v10/` and their `moru-source.json` entries; run `pnpm brand:sprites` after it |
 | `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
