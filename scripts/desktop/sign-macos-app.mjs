@@ -3,11 +3,11 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { MCP_BINARY_NAME } from "../lib/packaging/mcp-binary.mjs";
-import { loadMacosReleaseNames } from "../lib/macos-release-names.mjs";
+import { readMacosReleaseNames } from "../lib/macos-release-names.mjs";
 import { verifyMcpExactCase } from "../packaging/verify-mcp-binary.mjs";
 
 const root = process.cwd();
-const names = loadMacosReleaseNames(root);
+const names = readMacosReleaseNames(root);
 const { appBundleName } = names;
 /**
  * `--dmg` signs **the DMG container itself**.

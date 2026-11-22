@@ -1,5 +1,5 @@
 import { readContainmentTree, type TreeInputEdge, type TreeInputNode } from "../containment-tree";
-import type { TreeFocus, TreeModel, TreeNodeKind } from "./types";
+import type { TreeFocus, TreeModel, TreeNodeKind } from "./tree-shapes";
 
 /** A concept parent keeps at most this many domain or capability children before it forks. */
 const DIRECT_CHILD_LIMIT = 3;

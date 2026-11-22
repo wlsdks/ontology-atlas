@@ -23,15 +23,20 @@ import {
 import { readDomainUsage } from "../model/domain-usage";
 import { buildDialModel } from "../dial/dial-model";
 import { circularDomainOrder } from "../dial/order";
-import type { DialLabels, DialModel } from "../dial/types";
+import type { DialLabels, DialModel } from "../dial/dial-shapes";
 import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
 import { layoutFlatGraph } from "./layout";
 import { arcPathInto, crowdShare, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto, zoomGrowth } from "./marks";
 import { capabilityLineTurns, openedElements } from "./open";
-import { admittedNames, chooseSide, domainTitleBlocks, leaderSegment, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
+import { admittedNames, nameBlockClear, nameBlockDraws, nameBlockEnd, selectedDiscRadius } from "./names";
+import { leaderSegment, linePolylines, segmentCrossesBox } from "./names/lit-lines";
+import { type PlacedName } from "./names/placed-name";
+import { chooseSide } from "./names/sides";
+import { domainTitleBlocks, reachText } from "./names/titles";
+import { stepScale, zoomStep } from "./names/zoom-step";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { resolveFlatGraphTokens } from "./tokens";
-import type { FlatGraphFrame, FlatGraphLayout } from "./types";
+import type { FlatGraphFrame, FlatGraphLayout } from "./flat-graph-shapes";
 
 const KINDS = new Set(["project", "domain", "capability", "element"]);
 type Node = { id: string; kind: string; title?: string };

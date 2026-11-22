@@ -2,7 +2,6 @@ import { ensureSidecarIgnore, isNotFoundError, VAULT_SIDECAR_DIR } from '@/share
 
 const REMOVED_DIR = 'removed';
 
-/** Where one reset keeps its copies, relative to the vault root. */
 export function removedFolderPath(stamp: string): string {
   return `${VAULT_SIDECAR_DIR}/${REMOVED_DIR}/${stamp}`;
 }
@@ -15,15 +14,12 @@ export function resetStamp(now: Date): string {
 
 export interface MoveOutcome {
   stamp: string;
-  /** Paths whose copy was written and whose original was removed, in order. */
   moved: string[];
-  /** Set when the run stopped early; every path after the failing one is untouched. */
   failure: unknown;
 }
 
 export interface RestoreOutcome {
   restored: string[];
-  /** Paths left in the reset's folder because a file is back at the original place. */
   skipped: string[];
   failure: unknown;
 }
@@ -105,7 +101,6 @@ export async function moveConceptDocuments(
   return { stamp, moved, failure: null };
 }
 
-/** Moves one reset's copies back; a path that holds a file again is skipped, never overwritten. */
 export async function restoreConceptDocuments(
   root: FileSystemDirectoryHandle,
   paths: readonly string[],

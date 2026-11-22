@@ -1,4 +1,4 @@
-import { ATLAS_CLI } from "@/shared/config/cli-invocation";
+import { ATLAS_CLI } from "@/shared/config/agent/cli-invocation";
 export const AGENT_ACTIVITY_RELATIVE_PATH = ".ontology-atlas/agent-activity.json";
 
 export const AGENT_ACTIVITY_STALE_AFTER_MS = 5 * 60 * 1000;

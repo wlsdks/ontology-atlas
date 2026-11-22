@@ -58,17 +58,17 @@ assert.ok(MCP_TOOL_METADATA, 'mcp/package.json description must include the curr
 
 function run(args, options = {}) {
   return new Promise((resolve, reject) => {
-    const proc = spawn('node', [CLI, ...args], {
+    const cliProcess = spawn('node', [CLI, ...args], {
       cwd: options.cwd,
       env: { ...process.env, ...options.env },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     let stdout = '';
     let stderr = '';
-    proc.stdout.on('data', (b) => (stdout += b.toString()));
-    proc.stderr.on('data', (b) => (stderr += b.toString()));
-    proc.on('close', (code) => resolve({ code, stdout, stderr }));
-    proc.on('error', reject);
+    cliProcess.stdout.on('data', (b) => (stdout += b.toString()));
+    cliProcess.stderr.on('data', (b) => (stderr += b.toString()));
+    cliProcess.on('close', (code) => resolve({ code, stdout, stderr }));
+    cliProcess.on('error', reject);
   });
 }
 
@@ -194,26 +194,26 @@ const TEST_NAME_PATTERN = TEST_FILTER.pattern;
 function resolveTestFilter() {
   try {
     return resolveTestNamePattern();
-  } catch (err) {
-    console.error(err.message ?? err);
+  } catch (error) {
+    console.error(error.message ?? error);
     process.exit(1);
   }
 }
 
-async function test(name, fn) {
+async function test(name, body) {
   if (TEST_NAME_PATTERN && !TEST_NAME_PATTERN.test(name)) {
     skipped += 1;
     return;
   }
   matched += 1;
   try {
-    await fn();
+    await body();
     passed += 1;
     console.log(`  ✓ ${name}`);
-  } catch (err) {
+  } catch (error) {
     failed += 1;
     console.error(`  ✗ ${name}`);
-    console.error(`    ${err.message ?? err}`);
+    console.error(`    ${error.message ?? error}`);
   }
 }
 
@@ -250,9 +250,10 @@ await test('command inventory — help and command modules stay aligned', async 
     assert.equal(typeof mod[runner.exportName], 'function', `${command} exports ${runner.exportName}`);
   }
 
+  // A command is `<group>/<command>.mjs`; a folder inside a group holds that command's own parts.
   const commandFiles = readdirSync(join(__dirname, 'commands'), { recursive: true })
     .map((name) => name.replaceAll('\\', '/'))
-    .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
+    .filter((name) => name.split('/').length <= 2 && name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
     .sort();
   assert.deepEqual(commandFiles, Object.values(CLI_COMMAND_MODULES).sort());
 });
@@ -398,7 +399,7 @@ await test('init — vault config resolves the repository through a canonical pa
  * The time limit given to `mcp-verify`. Generous on purpose: a limit is not a wait, and machine speed
  * must not be a test condition; `desktop:performance` owns too slow.
  */
-const MCP_VERIFY_TIMEOUT_MS = '30000';
+const MCP_VERIFY_TIMEOUT_MS = '120000';
 
 // init --quick-start.
 
@@ -503,14 +504,14 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
     }
 
     // Both vaults are schema-valid and hold the same number of nodes.
-    for (const dir of ['vault-ko', 'vault-en']) {
-      const v = await run(['validate', dir], { cwd: repo });
-      assert.equal(v.code, 0, `${dir} validate failed: ${v.stdout}${v.stderr}`);
+    for (const directory of ['vault-ko', 'vault-en']) {
+      const v = await run(['validate', directory], { cwd: repo });
+      assert.equal(v.code, 0, `${directory} validate failed: ${v.stdout}${v.stderr}`);
       /*
        * The vault scan skips dot folders (`cli/src/lib/vault-files/walk-vault.mjs`, `.claude/rules/local-first.md`), and skills
        * install at the repository root: assert where they went and that the document count holds, in Korean too.
        */
-      const vaultRoot = join(repo, dir);
+      const vaultRoot = join(repo, directory);
       const markdownEntries = readdirSync(vaultRoot, {
         recursive: true,
         withFileTypes: true,
@@ -524,12 +525,12 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
       assert.equal(
         skillFiles.length,
         0,
-        `${dir}: procedure skills belong at the repository root, not the vault; found in the vault: ${skillFiles.map((e) => e.name).join(', ') || 'none'}`,
+        `${directory}: procedure skills belong at the repository root, not the vault; found in the vault: ${skillFiles.map((e) => e.name).join(', ') || 'none'}`,
       );
       for (const skill of ['atlas-review', 'atlas-grow', 'atlas-absorb']) {
         assert.ok(
           existsSync(join(repo, '.claude', 'skills', skill, 'SKILL.md')),
-          `${dir}: ${skill} must sit at the repository root where the agent runs`,
+          `${directory}: ${skill} must sit at the repository root where the agent runs`,
         );
       }
       const markdownFileCount = markdownEntries.length - skillFiles.length;
@@ -4210,39 +4211,39 @@ await test('backlinks — capabilities/foo backlinks (bar relates + auth capabil
 
 await test('install-shim --json — stdout is one JSON document on install and uninstall', async () => {
   // The preview goes to stderr and rides in the JSON as `shim`, so `--json` stays parseable.
-  const dir = mkdtempSync(join(tmpdir(), 'cli-shim-json-'));
+  const directory = mkdtempSync(join(tmpdir(), 'cli-shim-json-'));
   try {
-    const installed = await run(['install-shim', '--dir', dir, '--json']);
+    const installed = await run(['install-shim', '--dir', directory, '--json']);
     assert.equal(installed.code, 0, installed.stderr);
     const data = JSON.parse(installed.stdout);
-    assert.equal(data.target, join(dir, 'atlas'));
+    assert.equal(data.target, join(directory, 'atlas'));
     assert.match(data.shim, /^#!\/bin\/sh/);
     assert.match(stripAnsi(installed.stderr), /will write/);
     assert.ok(existsSync(data.target));
 
-    const removed = await run(['install-shim', '--dir', dir, '--uninstall', '--json']);
+    const removed = await run(['install-shim', '--dir', directory, '--uninstall', '--json']);
     assert.equal(removed.code, 0, removed.stderr);
-    assert.deepEqual(JSON.parse(removed.stdout), { target: join(dir, 'atlas'), removed: join(dir, 'atlas'), state: 'ours' });
+    assert.deepEqual(JSON.parse(removed.stdout), { target: join(directory, 'atlas'), removed: join(directory, 'atlas'), state: 'ours' });
     assert.ok(!existsSync(data.target));
 
     // The safety refusal is a terminal path too: a foreign file at the address.
-    writeFileSync(join(dir, 'atlas'), '#!/bin/sh\necho mine\n');
-    const stopped = await run(['install-shim', '--dir', dir, '--json']);
+    writeFileSync(join(directory, 'atlas'), '#!/bin/sh\necho mine\n');
+    const stopped = await run(['install-shim', '--dir', directory, '--json']);
     assert.equal(stopped.code, 1);
     const refused = JSON.parse(stopped.stdout);
     assert.equal(refused.written, false);
     assert.equal(refused.state, 'foreign');
     assert.match(stripAnsi(stopped.stderr), /stopped/);
-    const leftAlone = await run(['install-shim', '--dir', dir, '--uninstall', '--json']);
+    const leftAlone = await run(['install-shim', '--dir', directory, '--uninstall', '--json']);
     assert.equal(leftAlone.code, 1);
-    assert.deepEqual(JSON.parse(leftAlone.stdout), { target: join(dir, 'atlas'), removed: null, state: 'foreign' });
-    rmSync(join(dir, 'atlas'));
+    assert.deepEqual(JSON.parse(leftAlone.stdout), { target: join(directory, 'atlas'), removed: null, state: 'foreign' });
+    rmSync(join(directory, 'atlas'));
 
-    const nothing = await run(['install-shim', '--dir', dir, '--uninstall', '--json']);
+    const nothing = await run(['install-shim', '--dir', directory, '--uninstall', '--json']);
     assert.equal(nothing.code, 0);
-    assert.deepEqual(JSON.parse(nothing.stdout), { target: join(dir, 'atlas'), removed: null, state: 'free' });
+    assert.deepEqual(JSON.parse(nothing.stdout), { target: join(directory, 'atlas'), removed: null, state: 'free' });
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 
@@ -5415,8 +5416,8 @@ await test('graph MCP calls — reject invalid explicit vault roots before spawn
   assert.match(stripAnsi(missing.stderr), /Vault root not found:/);
   assert.doesNotMatch(stripAnsi(missing.stderr), /mcp exited|vault root validation failed/);
 
-  const dir = mkdtempSync(join(tmpdir(), 'cli-vault-root-'));
-  const file = join(dir, 'not-a-vault.md');
+  const directory = mkdtempSync(join(tmpdir(), 'cli-vault-root-'));
+  const file = join(directory, 'not-a-vault.md');
   try {
     writeFileSync(file, 'not a directory\n');
     const notDirectory = await run(['overview', file]);
@@ -5424,7 +5425,7 @@ await test('graph MCP calls — reject invalid explicit vault roots before spawn
     assert.match(stripAnsi(notDirectory.stderr), /Vault root is not a directory:/);
     assert.doesNotMatch(stripAnsi(notDirectory.stderr), /mcp exited|vault root validation failed/);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 

@@ -18,7 +18,7 @@ import { buildDialModel } from "./dial-model";
 import { layoutDial, layoutPackedDial } from "./layout";
 import { circularDomainOrder } from "./order";
 import { ladderStep } from "./rings";
-import type { DialMemory, DialModel, DialScene } from "./types";
+import type { DialMemory, DialModel, DialScene } from "./dial-shapes";
 
 const tokens = {
   pitch: 34,

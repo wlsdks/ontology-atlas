@@ -1,22 +1,16 @@
 /**
- * The vault's sidecar folder — `<vault>/.ontology-atlas/`, where Atlas keeps the local runtime
- * state that is **not** part of the ontology: agent activity, the LLM transfer ledger, private
- * project roots, and the external MCP connectors a person has attached.
- *
- * Two callers needed the same two facts (the folder's name, and that it carries its own
- * `.gitignore`), and two copies of a rule like that is how one of them quietly stops applying it.
+ * The vault's sidecar folder `<vault>/.ontology-atlas/`, where Atlas keeps local runtime state that is
+ * not part of the ontology: agent activity, the LLM transfer ledger, private project roots and the
+ * attached MCP connectors.
  */
 
 /** The folder name. Also matched by this repository's root `.gitignore`. */
 export const VAULT_SIDECAR_DIR = '.ontology-atlas';
 
 /**
- * The sidecar's own `.gitignore`, written once when the folder is created.
- *
- * The repository root's ignore rule covers **this** checkout. Somebody's own vault is a different
- * folder, usually its own Git repository, and nothing there knows about us — so the folder carries
- * the rule with it. Without this, the first `git add .` in a personal vault commits an agent
- * activity log and, since the connectors file lives here too, the shape of somebody's tooling.
+ * The sidecar's own `.gitignore`, written once when the folder is created. A personal vault is usually
+ * its own repository, where this repository's root rule does not apply, so without it the first
+ * `git add .` commits the agent activity log and the connectors file.
  */
 const SIDECAR_IGNORE_FILE = '.gitignore';
 const SIDECAR_IGNORE_CONTENT = '# Ontology Atlas local runtime state — not for commit.\n*\n';

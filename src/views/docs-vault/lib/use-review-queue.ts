@@ -31,7 +31,6 @@ export function useReviewQueue({
   bundledContent,
 }: {
   docs: VaultDoc[];
-  /** Absent for the bundled source. */
   getDocContent: ((slug: string) => Promise<string>) | undefined;
   bundledContent: Record<string, string> | undefined;
 }): ReviewQueueRow[] {

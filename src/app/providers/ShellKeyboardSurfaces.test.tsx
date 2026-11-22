@@ -46,19 +46,19 @@ function ClaimingScreen({ keys }: { keys: ShellKey[] }) {
 afterEach(() => {
   mocks.blocking = false;
   mocks.realGuard = false;
-  document.querySelectorAll("[data-test-dialog]").forEach((el) => el.remove());
+  document.querySelectorAll("[data-test-dialog]").forEach((domElement) => domElement.remove());
 });
 
 /** Another screen's dialog, drawn and laid out; `leaving` marks it the way its exit frames do. */
 function otherDialog({ leaving }: { leaving: boolean }) {
-  const el = document.createElement("div");
-  el.setAttribute("role", "dialog");
-  el.setAttribute("aria-modal", "true");
-  el.setAttribute("data-test-dialog", "");
-  el.getClientRects = (() => [{}] as unknown as DOMRectList) as typeof el.getClientRects;
+  const divElement = document.createElement("div");
+  divElement.setAttribute("role", "dialog");
+  divElement.setAttribute("aria-modal", "true");
+  divElement.setAttribute("data-test-dialog", "");
+  divElement.getClientRects = (() => [{}] as unknown as DOMRectList) as typeof divElement.getClientRects;
   // `useExitLockout` pins this on the first frame of a framer exit (the `Dialog` primitive).
-  if (leaving) el.style.pointerEvents = "none";
-  document.body.append(el);
+  if (leaving) divElement.style.pointerEvents = "none";
+  document.body.append(divElement);
 }
 
 /** The sheet lists `?` and ⌘K on every screen, so the shell answers them wherever the rail stands. */

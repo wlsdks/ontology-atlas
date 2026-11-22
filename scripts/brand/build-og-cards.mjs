@@ -1,21 +1,11 @@
 #!/usr/bin/env node
 /**
- * Bakes the 1200x630 link-preview card for each locale into `public/og/<locale>.png`, and the
- * English card into `public/og-image.png` for the root layout and `x-default`.
- *
- * The picture is this repository's own ontology: the map `/download` films, laid out by the same
- * `buildFilmScene` from the same bundled vault, drawn flat (indigo marks, thin lines, the amber
- * project hub, the domain names). Moru sits at the map's left edge facing it. The headline and
- * the fact line are read from `messages/<locale>/download.json` on every run, so a copy or vault
- * change regenerates the same layout.
- *
- * Moru is the presentation master enlarged four times with nearest-neighbour sampling at
- * `MORU`: the same whole pixels `build-brand-raster.test.mjs` audits in the Open Graph image.
- * Moru's face and the centred headline stay inside the middle 630x630 square, which some apps
- * crop a link card to; only Japanese's longer first line runs past it.
- *
- * Japanese and Chinese draw kana and Han from the operating system face, as the site does
- * (`app/styles/lang-cjk.css`); run it on macOS, where Hiragino Sans and PingFang SC exist.
+ * Bakes the 1200x630 link-preview card per locale into `public/og/<locale>.png`, and the English
+ * card into `public/og-image.png`. The picture is this repository's ontology as the `/download`
+ * film lays it out (`buildFilmScene`), drawn flat; headline and fact line come from
+ * `messages/<locale>/download.json`. Moru's face and the centred headline stay inside the middle
+ * 630x630 square that some apps crop a link card to. Japanese and Chinese use the operating
+ * system's CJK faces (`app/styles/lang-cjk.css`), so run it on macOS.
  *
  * Usage: node scripts/brand/build-og-cards.mjs [--out <dir>]
  */
@@ -75,10 +65,10 @@ function messagesFor(locale) {
  * `pnpm docs-vault:build`), loaded through Vite so the TypeScript the page runs is the code that
  * lays this map out. Names per locale follow the page: `display_<locale>`, else the display title.
  */
-async function loadMapScene() {
+async function readMapScene() {
   const alias = SRC_ALIASES.map((entry) => {
-    const [name, dir = name] = entry.split(':');
-    return { find: `@/${name}`, replacement: join(ROOT, 'src', dir) };
+    const [name, directory = name] = entry.split(':');
+    return { find: `@/${name}`, replacement: join(ROOT, 'src', directory) };
   });
   alias.push({ find: /^@\//, replacement: `${ROOT}/` });
   const server = await createServer({
@@ -91,7 +81,7 @@ async function loadMapScene() {
   try {
     const { deriveOntologyFromVault } = await server.ssrLoadModule('/src/entities/docs-vault/lib/derive-ontology-from-vault.ts');
     const { buildStageGraph } = await server.ssrLoadModule('/src/views/download/lib/stage-graph.ts');
-    const { buildFilmScene, crossesClusters } = await server.ssrLoadModule('/src/views/download/lib/film-scene.ts');
+    const { buildFilmScene, crossesClusters } = await server.ssrLoadModule('/src/views/download/lib/film/film-scene.ts');
     const manifest = JSON.parse(readFileSync(join(ROOT, 'src/entities/docs-vault/data/manifest.json'), 'utf8'));
     const derived = deriveOntologyFromVault(manifest);
     const evidence = (stub) => (stub.sourceSlug ? [stub.sourceSlug] : []);
@@ -141,12 +131,12 @@ function edgePath(a, b, bowed) {
   if (!bowed) return `M${round(a.x)} ${round(a.y)}L${round(b.x)} ${round(b.y)}`;
   const mx = (a.x + b.x) / 2;
   const my = (a.y + b.y) / 2;
-  const len = Math.hypot(b.x - a.x, b.y - a.y);
+  const length = Math.hypot(b.x - a.x, b.y - a.y);
   let ox = mx - MAP.cx;
   let oy = my - MAP.cy;
   if (Math.hypot(ox, oy) < 1) [ox, oy] = [-(b.y - a.y), b.x - a.x];
   const n = Math.hypot(ox, oy) || 1;
-  return `M${round(a.x)} ${round(a.y)}Q${round(mx + (ox / n) * len * 0.18)} ${round(my + (oy / n) * len * 0.18)} ${round(b.x)} ${round(b.y)}`;
+  return `M${round(a.x)} ${round(a.y)}Q${round(mx + (ox / n) * length * 0.18)} ${round(my + (oy / n) * length * 0.18)} ${round(b.x)} ${round(b.y)}`;
 }
 
 /** Region names: the domains of the first ring, centred above their marks. */
@@ -250,7 +240,7 @@ async function main() {
   );
   const moru = await moruDataUrl();
   const compass = await compassDataUrl();
-  const scene = await loadMapScene();
+  const scene = await readMapScene();
 
   const browser = await chromium.launch();
   try {

@@ -1,8 +1,3 @@
-/**
- * The two questions the page's sections do not already answer, in reading order. What Atlas is,
- * which agents read it, its price and where it runs are said once each above: the hero, the loop,
- * the open-source section, the facts strip and the trust line.
- */
 export const FAQ_KEYS = ['privacy', 'difference'] as const;
 
 /**

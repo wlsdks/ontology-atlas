@@ -3,7 +3,7 @@ import { runInNewContext } from 'node:vm';
 
 import { describe, expect, it } from 'vitest';
 
-import type { VaultDoc, VaultSourceFile } from '../../model/types';
+import type { VaultDoc, VaultSourceFile } from '../../model/vault-manifest';
 import { deriveSourceProgress } from './source-progress';
 import { buildLibraryModel } from './vault-library';
 

@@ -17,7 +17,7 @@ import {
 import { VaultConflictError } from "@/entities/vault-session";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import {
-  getProjectRuntimeDetailHref,
+  buildProjectRuntimeDetailHref,
   projectDisplayName,
   type Project,
   type ProjectInput,
@@ -37,7 +37,6 @@ interface Props {
 
 const DEFAULT_RETURN_TO = "/projects/";
 
-/** The map's own address, with or without its query; the drawer's Edit link comes from there. */
 const MAP_RETURN = /^\/(?:topology\/?)?(?:[?#]|$)/;
 
 function normalizeReturnTo(returnTo?: string): string {
@@ -80,7 +79,7 @@ function EditorContent({
   );
   const safeReturnTo = normalizeReturnTo(returnTo);
   const safeReturnLabel = t(resolveReturnLabelKey(normalizeReturnTo(returnTo)));
-  const publicProjectHref = slug ? getProjectRuntimeDetailHref(slug) : null;
+  const publicProjectHref = slug ? buildProjectRuntimeDetailHref(slug) : null;
   const [project, setProject] = useState<Project | null>(null);
   const projectName = project ? projectDisplayName(project, locale) : undefined;
   const { projects: allProjects, loaded: projectsLoaded } = useProjects();
@@ -127,8 +126,8 @@ function EditorContent({
         await projectMutations.createProject(input);
         if (options.behavior === "stay") {
           toast.show(t("createdToast", { name: input.name }), "success");
-          const detailHref = getProjectRuntimeDetailHref(input.slug);
-          navigateWithViewTransition(() => router.replace(detailHref));
+          const detailHref = buildProjectRuntimeDetailHref(input.slug);
+          navigateWithViewTransition(detailHref, () => router.replace(detailHref));
           return;
         }
       } else {
@@ -140,18 +139,18 @@ function EditorContent({
       }
       toast.show(t(mode === "create" ? "createdToast" : "savedToast", { name: input.name }), "success", {
         label: t("openPublicLabel"),
-        onClick: () => router.push(getProjectRuntimeDetailHref(input.slug)),
+        onClick: () => router.push(buildProjectRuntimeDetailHref(input.slug)),
       });
       router.push(safeReturnTo);
-    } catch (err) {
-      if (err instanceof VaultConflictError) {
+    } catch (error) {
+      if (error instanceof VaultConflictError) {
         throw new Error(t("vaultConflict"));
       }
       // The writeDisabled gate normally blocks this; never show the raw English message.
-      if (err instanceof ProjectStaticModeError) {
+      if (error instanceof ProjectStaticModeError) {
         throw new Error(t("demoModeSaveFailed"));
       }
-      throw err;
+      throw error;
     }
   };
 
@@ -260,7 +259,6 @@ function EditorContent({
           {safeReturnLabel}
         </Link>
 
-        {/* The guidance is said once, in the subtitle; the form says the rest beside its fields. */}
         <header className={mode === "create" ? "mt-6" : "mt-8"}>
           {mode === "edit" && (
             <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
@@ -364,11 +362,9 @@ function EditorContent({
             onCancel={handleCancel}
             onDelete={mode === "edit" ? handleDelete : undefined}
             onDirtyChange={setIsDirty}
-            /* Both modes say before the press that nothing can be saved without a vault. */
             writeDisabled={
               mode === "create" ? !projectMutations.canCreate : !projectMutations.canEdit
             }
-            // Opens a folder in place; `/` is the gateway on the web.
             openVaultAction={<OpenVaultCta testId="project-write-disabled-open-folder" />}
           />
         </section>

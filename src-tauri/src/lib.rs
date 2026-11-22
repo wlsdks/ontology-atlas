@@ -2,47 +2,35 @@ use std::io::Write;
 use tauri::{Manager, RunEvent};
 
 mod acp;
-mod acp_doctor;
-mod acp_runtime;
-mod acp_session;
 mod agent_setup;
 mod analysis_archive;
 mod app_shell;
 mod audit_read;
 mod blocking;
-mod command_output;
-mod connector_secrets;
+mod child_process;
+mod coded_error;
+#[cfg(unix)]
+mod confined_files;
 mod connectors;
-mod deep_link;
-mod errors;
 mod git;
 mod gray_area;
-mod gray_area_rpc;
-mod gray_area_scope;
 mod harness_scopes;
 mod harness_source;
 mod jev;
 mod library;
 mod llm;
 mod llm_audit;
-mod local_construction;
 mod lower_hex;
-mod managed_node;
-mod map_entry_diagnostic;
 mod meaning_transition_archive;
-mod no_console;
 mod planning;
 mod project_source;
 mod secrets;
-mod source_access;
-mod temporary_names;
 mod vault;
-mod vault_grants;
 mod webview_verify;
 mod work_status;
 
-use acp_runtime::AcpInstallProgressState;
-use acp_session::{terminate_all_acp_sessions, AcpSessions};
+use acp::runtime::AcpInstallProgressState;
+use acp::session::{terminate_all_acp_sessions, AcpSessions};
 #[cfg(desktop)]
 use app_shell::answer_deep_link;
 use app_shell::app_log::{install_panic_logger, QuietStderr};
@@ -65,7 +53,8 @@ pub(crate) use vault::scope::{
 };
 use vault::watch::VaultWatcherState;
 use webview_verify::{
-    apply_verify_window_size, isolate_verify_webview_storage, WEBVIEW_VERIFY_ENV,
+    apply_verify_window_size, isolate_verify_webview_storage, map_entry_diagnostic,
+    WEBVIEW_VERIFY_ENV,
 };
 pub(crate) use webview_verify::{js_string_literal, write_verify_line};
 
@@ -82,7 +71,6 @@ const WINDOW_STATE_FLAGS: tauri_plugin_window_state::StateFlags =
 pub(crate) const APP_LOCALES: [&str; 4] = ["en", "ko", "ja", "zh"];
 const DEFAULT_APP_LOCALE: &str = "en";
 
-/// Whether this process was started as the built-in model's worker.
 pub fn embed_worker_requested(args: &[std::ffi::OsString]) -> bool {
     llm::embed::builtin::worker::requested(args)
 }
@@ -95,7 +83,10 @@ pub fn run_embed_worker() -> i32 {
 pub fn run() {
     install_panic_logger();
     if let Some(path) = std::env::var_os("PATH") {
-        std::env::set_var("PATH", acp::search_path::sanitized_process_path(&path));
+        std::env::set_var(
+            "PATH",
+            acp::detection::search_path::sanitized_process_path(&path),
+        );
     }
     let verify_webview = std::env::var_os(WEBVIEW_VERIFY_ENV).is_some();
     let mut context = tauri::generate_context!();
@@ -183,7 +174,7 @@ pub fn run() {
                 let container = std::env::var("HOME")
                     .ok()
                     .map(|home| default_vault_parent_dir(&home));
-                vault_grants::initialize(store.join("granted-vault-roots.json"), container);
+                vault::grants::initialize(store.join("granted-vault-roots.json"), container);
             }
 
             #[cfg(target_os = "macos")]
@@ -255,30 +246,30 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            acp_runtime::acp_detect_runtimes,
-            acp_runtime::acp_diagnose,
-            acp_runtime::acp_repair,
-            acp_runtime::acp_reset_connection,
+            acp::runtime::acp_detect_runtimes,
+            acp::runtime::acp_diagnose,
+            acp::runtime::acp_repair,
+            acp::runtime::acp_reset_connection,
             app_shell::open_external_url,
-            acp_runtime::acp_node_plan,
-            acp_runtime::acp_install_node,
-            acp_runtime::acp_install_plan,
-            acp_runtime::acp_install_cli,
-            acp_runtime::acp_install_progress,
-            acp_session::acp_start,
-            acp_session::acp_send,
-            acp_session::acp_stop,
-            acp_session::acp_permission_verdict,
+            acp::runtime::acp_node_plan,
+            acp::runtime::acp_install_node,
+            acp::runtime::acp_install_plan,
+            acp::runtime::acp_install_cli,
+            acp::runtime::acp_install_progress,
+            acp::session::acp_start,
+            acp::session::acp_send,
+            acp::session::acp_stop,
+            acp::session::acp_permission_verdict,
             vault::location::pick_vault_directory,
-            source_access::pick_source_directory,
+            project_source::access::pick_source_directory,
             planning::commands::planning_supported,
             planning::commands::planning_pick_folder,
             planning::commands::planning_scan,
             planning::commands::planning_read_file,
             planning::commands::planning_open_document,
             planning::commands::planning_revoke,
-            local_construction::preview_local_construction_source,
-            local_construction::read_local_construction_source,
+            project_source::local_construction::preview_local_construction_source,
+            project_source::local_construction::read_local_construction_source,
             harness_source::list_harness_source_directory,
             harness_source::read_harness_source_text,
             harness_source::harness_source_path_exists,
@@ -293,8 +284,8 @@ pub fn run() {
             vault::index::vault_index_search,
             vault::index::vault_index_clear,
             vault::index::vault_index_forget,
-            vault::index_rows::vault_index_rows_get,
-            vault::index_rows::vault_index_rows_put,
+            vault::index::rows::vault_index_rows_get,
+            vault::index::rows::vault_index_rows_put,
             vault::vectors::commands::vault_vectors_probe,
             vault::vectors::commands::vault_vectors_status,
             vault::vectors::commands::vault_vectors_prepare,
@@ -330,17 +321,17 @@ pub fn run() {
             vault::location::open_vault_in_finder,
             app_shell::app_log::reveal_app_log_dir,
             vault::location::ensure_default_vault_parent_dir,
-            library::hash_vault_files,
+            library::file_hashing::hash_vault_files,
             gray_area::read_gray_area_evidence,
             gray_area::preview_gray_area_scope,
             gray_area::check_gray_area_evidence,
-            library::pick_source_files,
-            library::import_source_files,
-            library::import_offered_sources,
-            library::stop_source_import,
-            library::discover_source_candidates,
-            library::reveal_vault_file,
-            library::reveal_sources_folder,
+            library::source_picker::pick_source_files,
+            library::source_import::import_source_files,
+            library::source_import::import_offered_sources,
+            library::running_imports::stop_source_import,
+            library::source_discovery::discover_source_candidates,
+            library::reveal::reveal_vault_file,
+            library::reveal::reveal_sources_folder,
             library::dropped::arm_source_drop,
             vault::watch::start_vault_watch,
             app_shell::app_log::log_webview_error,
@@ -388,10 +379,10 @@ pub fn run() {
             agent_setup::mcp_bundled_server,
             agent_setup::verify_mcp_server,
             connectors::discover_mcp_connectors,
-            connectors::resolve_connector_runtimes,
-            connector_secrets::connector_secret_set,
-            connector_secrets::connector_secret_status,
-            connector_secrets::connector_secret_delete,
+            connectors::runtimes::resolve_connector_runtimes,
+            connectors::secrets::connector_secret_set,
+            connectors::secrets::connector_secret_status,
+            connectors::secrets::connector_secret_delete,
             work_status::work_status_read,
             work_status::work_status_fingerprint,
         ])
@@ -411,7 +402,6 @@ pub fn run() {
         });
 }
 
-/// What an app event asks of the shutdown path.
 #[derive(Debug, PartialEq, Eq)]
 enum Shutdown {
     None,

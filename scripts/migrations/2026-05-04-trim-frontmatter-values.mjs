@@ -28,14 +28,11 @@ export function migrate(file) {
 
   const lines = block.split("\n");
   let changed = false;
-  const transformed = lines.map((line, idx) => {
-    if (idx === 0) return line; // leading ---
-    // dash list item — leave indentation as-is
+  const transformed = lines.map((line, index) => {
+    if (index === 0) return line; // leading ---
     if (/^\s+-\s/.test(line)) return line;
-    // `key: value` — trim trailing whitespace from the right side only
     const m = line.match(/^([^:]*:\s*)(.*?)(\s+)$/);
     if (!m) return line;
-    // m[3] is the trailing whitespace; rebuild without it
     const next = `${m[1]}${m[2]}`;
     if (next !== line) changed = true;
     return next;

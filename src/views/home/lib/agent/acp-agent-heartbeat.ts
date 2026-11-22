@@ -12,10 +12,6 @@ import type { AcpTurnActivity } from "@/features/acp-session";
 const AGENT_HEARTBEAT_VAULT_DIR = ".ontology-atlas";
 const AGENT_HEARTBEAT_VAULT_FILE = "agent-activity.json";
 
-/**
- * One turn's heartbeat: ACP tool kind and permission wait narrowed to
- * planning/editing/verifying/blocked. Plan and files stay empty because ACP does not disclose them.
- */
 export function buildAcpTurnHeartbeat({
   agent,
   at,

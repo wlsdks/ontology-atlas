@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 
-import { collectSourceUnits } from '../analyze/source-units.mjs';
+import { collectSourceUnits } from '../analyze/survey/source-units.mjs';
 import {
   buildDepthFindings,
   competencyDepthRefusals,

@@ -5,25 +5,19 @@ import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 export const TO_CHECK_REASONS = ["raised", "changed-since-review", "stale", "unverifiable", "definition-missing"] as const;
 export type ToCheckReason = (typeof TO_CHECK_REASONS)[number];
 
-/** Three rows read at a glance; the rest waits behind "View all". */
 export const TO_CHECK_SLOTS = 3;
-/** No reason takes more than this many slots while another reason has a row waiting. */
 const SLOTS_PER_REASON = 2;
 const MISSING_DEFINITION_CODE = "definition-missing";
 
 export interface ToCheckRow {
   reason: ToCheckReason;
   nodeId: string;
-  /** The vault document slug, the door for the review reasons. */
   docSlug: string | null;
   name: string;
   kind: string;
   domainName: string | null;
-  /** `raised`: the agent's note, verbatim. */
   note?: string;
-  /** `changed-since-review`: who confirmed it. */
   reviewedBy?: string;
-  /** `stale`: the cited file that moved or is gone. */
   path?: string;
   pathGone?: boolean;
   pathChangedAt?: string | null;
@@ -48,7 +42,6 @@ export interface ProjectToCheckInput {
 export interface ProjectToCheck {
   /** Every row, grouped by reason in rank order; a concept appears once per reason it has. */
   rows: ToCheckRow[];
-  /** How many distinct concepts the rows name. */
   conceptCount: number;
   /** At most `TO_CHECK_SLOTS`, one per concept under its highest-ranked reason, in `rows` order. */
   visible: ToCheckRow[];
@@ -116,7 +109,6 @@ export function buildProjectToCheck(input: ProjectToCheckInput): ProjectToCheck 
   return { rows, conceptCount: highestReasonRows.length, visible: selectVisibleRows(highestReasonRows) };
 }
 
-/** Every reason that has rows, in rank order: the dialog's groups. */
 export function groupRowsByReason(rows: readonly ToCheckRow[]): { reason: ToCheckReason; rows: ToCheckRow[] }[] {
   return TO_CHECK_REASONS.map((reason) => ({ reason, rows: rows.filter((row) => row.reason === reason) })).filter(
     (group) => group.rows.length > 0,

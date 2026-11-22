@@ -1,6 +1,6 @@
 import type { useTopologyPreferences } from "../use-topology-preferences";
 
-import { useLocalStorageBoolean } from "@/shared/lib/preferences/use-local-storage-boolean";
+import { useLocalStorageBoolean } from "@/shared/lib/preferences/preference-storage/use-local-storage-boolean";
 import { resolveIndexPanelState, resolveLeftSlotOwner, resolveRenderedIndexPanelState, type IndexPanelState } from "@/widgets/topology-index-panel";
 import { useCallback, useMemo, useState } from "react";
 import { enterRealmRouteState, exitRealmRouteState, limitExpandedParents, toggleExpandedParent } from "./url-state";
@@ -14,7 +14,7 @@ interface Options {
   indexState: import("@/widgets/topology-index-panel/lib/index-panel-state").IndexPanelState | null;
   analysisMode: import("@/views/home/model/route-state/url-state").TopologyAnalysisMode;
   selectedSlug: string | null;
-  renderProjects: import("@/entities/project/model/types").Project[];
+  renderProjects: import("@/entities/project/model/project").Project[];
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "expand">;
 }
 export function useTopologyRouteControls({
@@ -30,7 +30,6 @@ export function useTopologyRouteControls({
     () => new Set(expandedParentsKey ? expandedParentsKey.split(",") : []),
     [expandedParentsKey],
   );
-  // Only toggles expansion; selection and focus are untouched.
   const handleToggleCluster = useCallback(
     (parentId: string) => {
       if (expandAllActive) {
@@ -88,7 +87,6 @@ export function useTopologyRouteControls({
           next === "collapsed" ? "1" : "0",
         );
       } catch {
-        // Private mode: the URL param still carries the preference.
       }
       setRouteState((current) => ({ ...current, indexState: next }));
     },

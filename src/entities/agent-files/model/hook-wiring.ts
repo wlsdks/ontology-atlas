@@ -4,14 +4,12 @@
  */
 
 interface HookScriptRef {
-  /** Repo-relative script path, or `null` when unresolvable. */
   path: string | null;
   /** As written, so the screen shows what it tried. */
   command: string;
 }
 
 interface HookFact {
-  /** Events joined with ` · `, untranslated. */
   events: string;
   ref: HookScriptRef;
   /** `missing`: the guard is silently absent; `unresolved`: not a testable script path. */
@@ -19,7 +17,6 @@ interface HookFact {
 }
 
 export interface HookConfigFacts {
-  /** e.g. `.claude/settings.json`. */
   configPath: string;
   hooks: readonly HookFact[];
   /** The tool gates execution on an approval this app cannot read (Codex). */
@@ -48,7 +45,6 @@ export function hookEventStep(event: string): HookEventStep {
   return Object.hasOwn(HOOK_EVENT_STEPS, event) ? HOOK_EVENT_STEPS[event]! : 'other';
 }
 
-/** Programs that take a script as their first non-flag argument. */
 const SCRIPT_RUNNERS = new Set(['bash', 'sh', 'zsh', 'node', 'python', 'python3', 'bun', 'deno', 'tsx']);
 
 const SCRIPT_FILE = /\.(?:sh|mjs|cjs|js|py)$/;
@@ -99,7 +95,6 @@ export function parseHookConfig(text: string): Array<{ event: string; command: s
   return out;
 }
 
-/** Per-script facts; `scriptExists` is asked once per distinct script. */
 export async function collectHookFacts(
   configPath: string,
   configText: string,

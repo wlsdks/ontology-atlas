@@ -1,17 +1,11 @@
 /**
- * Contrast measurement — sweeps the rendered DOM and names **text that is not
- * legible**.
+ * Contrast measurement: sweeps the rendered DOM and names text that is not legible. Collection, not
+ * judgement: the computation lives in `scripts/lib/design/contrast.mjs`. Here the real background is
+ * resolved by walking up the ancestors and compositing translucent backgrounds, because skipping that
+ * reports better than reality.
  *
- * **What this file does — collection, not judgement.** The computation lives in
- * `scripts/lib/design/contrast.mjs` (pure functions with fixture probes in
- * `tests/contract/design-tokens/contrast.contract.test.ts`). What happens here is **resolving the
- * real background**: walking up the ancestors and compositing translucent
- * backgrounds in order. This app uses alpha tokens for text and borders, so skipping
- * that step reports **better** than reality, and the optimism is silent.
- *
- * **Usage**
- *
- *   node scripts/web/serve-static-export.mjs --port=4173 &   # run pnpm build first
+ * Usage (run `pnpm build` first):
+ *   node scripts/web/serve-static-export.mjs --port=4173 &
  *   node scripts/design/measure-contrast.mjs [baseUrl] [route...]
  */
 
@@ -63,15 +57,10 @@ export const DEFAULT_ROUTES = [
 const VIEWPORT = { width: 1512, height: 900 };
 const PROFILE = `/tmp/atlas-contrast-${process.pid}`;
 
-/**
- * Extracts, for every element that owns text, its **foreground colour, resolved
- * background colour, and font**. It does not judge.
- */
 function collectInPage() {
-  /** Walks up the ancestors compositing translucent backgrounds to an **opaque background**. */
-  const resolveBackground = (el) => {
+  const resolveBackground = (element) => {
     const stack = [];
-    for (let node = el; node; node = node.parentElement) {
+    for (let node = element; node; node = node.parentElement) {
       const bg = getComputedStyle(node).backgroundColor;
       const m = /rgba?\(([^)]+)\)/.exec(bg);
       if (!m) continue;
@@ -96,21 +85,21 @@ function collectInPage() {
 
   const out = [];
   const seen = new Set();
-  for (const el of document.querySelectorAll("*")) {
+  for (const element of document.querySelectorAll("*")) {
     // **Directly owned text only.** Counting ancestors measures the same glyphs several
     // times and still cannot name which element to fix.
-    const own = [...el.childNodes]
+    const own = [...element.childNodes]
       .filter((n) => n.nodeType === 3)
       .map((n) => n.textContent.trim())
       .join(" ")
       .trim();
     if (!own) continue;
-    const cs = getComputedStyle(el);
+    const cs = getComputedStyle(element);
     if (cs.visibility === "hidden" || cs.display === "none" || Number(cs.opacity) === 0) continue;
-    const rect = el.getBoundingClientRect();
+    const rect = element.getBoundingClientRect();
     if (rect.width < 1 || rect.height < 1) continue;
     if (rect.bottom < 0 || rect.top > innerHeight || rect.right < 0 || rect.left > innerWidth) continue;
-    const key = `${cs.color}|${cs.fontSize}|${cs.fontWeight}|${resolveBackground(el)}`;
+    const key = `${cs.color}|${cs.fontSize}|${cs.fontWeight}|${resolveBackground(element)}`;
     // Each (colour, size, background) combination once — printing 200 repeated cards as
     // 200 lines makes the report unreadable, and the prescription is per combination
     // anyway.
@@ -118,11 +107,11 @@ function collectInPage() {
     seen.add(key);
     out.push({
       fg: cs.color,
-      bg: resolveBackground(el),
+      bg: resolveBackground(element),
       fontSizePx: parseFloat(cs.fontSize),
       fontWeight: cs.fontWeight,
       sample: own.slice(0, 40),
-      selector: el.tagName.toLowerCase() + (el.className && typeof el.className === "string" ? `.${el.className.trim().split(/\s+/).slice(0, 3).join(".")}` : ""),
+      selector: element.tagName.toLowerCase() + (element.className && typeof element.className === "string" ? `.${element.className.trim().split(/\s+/).slice(0, 3).join(".")}` : ""),
     });
   }
   return out;
@@ -176,7 +165,6 @@ for (const r of report) {
 }
 console.log(`\n  ${totalFail} below the threshold in total\n`);
 
-// ── Adjacent data marks (WCAG 1.4.11 non-text, 3:1)
 const markTotal = report.reduce((n, r) => n + r.marks.length, 0);
 const markFail = report.reduce((n, r) => n + r.markFailures.length, 0);
 const sepTotal = report.reduce((n, r) => n + r.separated.length, 0);

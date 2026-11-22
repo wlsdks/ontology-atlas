@@ -4,7 +4,7 @@ import type { StaticVaultSource } from '@/entities/docs-vault';
 const chunk = vi.hoisted(() => ({ failures: 1 }));
 vi.mock('@/entities/docs-vault', async (original) => ({
   ...(await original<typeof import('@/entities/docs-vault')>()),
-  loadStaticVaultHeadings: async () => {
+  importStaticVaultHeadings: async () => {
     if (chunk.failures > 0) {
       chunk.failures -= 1;
       throw new Error('chunk load failed');

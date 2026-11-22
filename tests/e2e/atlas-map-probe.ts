@@ -3,8 +3,8 @@
  * Opens only with `?e2e=1`.
  */
 
-import type { DialProbe } from "../../src/widgets/ontology-map/dial/types";
-import type { TreePose } from "../../src/widgets/ontology-map/model/tree-view/types";
+import type { DialProbe } from "../../src/widgets/ontology-map/dial/dial-shapes";
+import type { TreePose } from "../../src/widgets/ontology-map/model/tree-view/tree-shapes";
 
 export interface AtlasMapCamera {
   x: number;

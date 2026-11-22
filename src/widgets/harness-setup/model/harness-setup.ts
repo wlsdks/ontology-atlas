@@ -38,34 +38,23 @@ export type SetupGroupId =
 type AgentFileRecord = HarnessReport['analysis']['records'][number];
 
 export interface SetupItem {
-  /** Unique across the page; also the detail panel's selection key. */
   key: string;
   label: string;
-  /** Repo-relative path, or `package.json#<script>` for a script. */
   path: string;
-  /** Whether the scan holds this file's text, so the detail can show it. */
   hasContent: boolean;
-  /** The agents that read it; empty when none of the listed agents does. */
   tools: readonly AgentTool[];
   /** A check every agent meets whichever one works (a script, a Git hook, CI): no filter hides it. */
   repositoryWide?: boolean;
   bytes: number | null;
-  /** The classifier rule, for the detail's cited "what reads it". */
   ruleId: string | null;
-  /** Hook event names as the config writes them. */
   events?: string;
   hookStatus?: 'wired' | 'missing' | 'unresolved';
-  /** The config that names a hook. */
   namedBy?: string;
   /** Codex runs a new or changed hook only after a person trusts it. */
   approvalGate?: boolean;
-  /** Rules only: loaded every session, or only for the paths it lists. */
   loading?: 'always' | 'path';
-  /** A settings file's permission rules, counted per list. */
   permissionCounts?: PermissionCounts;
-  /** The text that put the item here, quoted from its file. */
   declaration?: string;
-  /** A hook script on disk that no hook config names. */
   unwired?: boolean;
   /** Root AGENTS.md when CLAUDE.md imports it: Claude Code reads it through that import. */
   importedByClaudeMd?: boolean;
@@ -74,9 +63,7 @@ export interface SetupItem {
    * two trees are maintained independently (decision e47518a9), and a file with no twin has none.
    */
   differsFrom?: 'claude-code' | 'codex';
-  /** Claude's copy, then Codex's, when both exist and differ. */
   pairPaths?: readonly [string, string];
-  /** A skill directory's files, when it has more than one; each is selectable on its own. */
   files?: readonly SetupItem[];
 }
 
@@ -111,12 +98,10 @@ export interface CodexSessionSize {
   used: number;
   cap: number;
   over: boolean;
-  /** 0–100, for the bar; capped at 100. */
   percentValue: number;
 }
 
 export interface HarnessSetup {
-  /** Tools any scanned file names, in `AGENT_TOOL_LABELS` order. */
   tools: AgentTool[];
   sections: SetupSection[];
   problems: SetupProblem[];
@@ -129,7 +114,6 @@ export interface HarnessSetup {
   items: ReadonlyMap<string, SetupItem>;
 }
 
-/** `null` shows every tool. */
 export type ToolFilter = AgentTool | null;
 
 const SECTION_GROUPS: Readonly<Record<SetupSectionId, readonly SetupGroupId[]>> = Object.freeze({
@@ -392,7 +376,6 @@ function claudeSessionBytes(report: HarnessReport, rules: ReadonlyMap<string, Sc
   return read.reduce((sum, record) => sum + record.bytes, claudeMd.bytes);
 }
 
-/** Whether `key` is this item or one of its files. */
 export function itemHolds(item: SetupItem, key: string | null): boolean {
   return key !== null && (item.key === key || (item.files ?? []).some((file) => file.key === key));
 }
@@ -401,7 +384,6 @@ function visibleTo(item: Pick<SetupItem, 'tools' | 'repositoryWide'>, filter: To
   return filter === null || item.repositoryWide === true || item.tools.includes(filter);
 }
 
-/** One row per skill directory; its files stay reachable from the row. */
 function skillDirectories(files: readonly SetupItem[]): SetupItem[] {
   const byDirectory = new Map<string, SetupItem[]>();
   for (const file of files) {

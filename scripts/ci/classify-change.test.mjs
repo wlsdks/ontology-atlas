@@ -16,6 +16,7 @@ import {
   withoutSubsetsOfWholeFiles,
   decide,
   decodePlan,
+  encodeLanePlan,
   encodePlan,
   FULL_LANE_COMMANDS,
   NATIVE_TOOLCHAIN_COMMANDS,
@@ -416,6 +417,14 @@ test('a contract the import graph reaches runs before merge; one it does not rea
   assert.ok(!ui.contractFiles.includes('tests/contract/ci-gates/workflow-budgets.contract.test.ts'));
 });
 
+test('an exhaustive plan for a 5,000-file branch reaches lanes under the 128 KiB environment cap', () => {
+  const files = ['package.json', ...Array.from({ length: 5_000 }, (_, index) => `src/features/area-${index % 40}/model/rule-number-${index}.ts`)];
+  const plan = buildImpactPlan({ files });
+  const encoded = encodeLanePlan(plan);
+  assert.ok(encoded.length < 128 * 1024, `lane plan is ${encoded.length} bytes`);
+  assert.deepEqual(decodePlan(encoded).lanes, plan.lanes);
+});
+
 test('the serialized workflow plan is versioned and round-trips exactly', () => {
   const plan = buildImpactPlan({ files: ['README.md'] });
   assert.deepEqual(decodePlan(encodePlan(plan)), plan);
@@ -699,7 +708,7 @@ test('exhaustive architecture coverage is owned once across the three lanes', ()
 test('the perf lane starts only for code a measurement could import, and on every full plan', () => {
   const mode = (options) => buildImpactPlan(options).lanes.perf.mode;
   assert.equal(mode({ files: ['src/shared/lib/search-match/node-name-match.ts'] }), 'affected');
-  assert.equal(mode({ files: ['src/shared/lib/library/source-passage.perf.test.ts'] }), 'affected');
+  assert.equal(mode({ files: ['src/shared/lib/library/source-units.perf.test.ts'] }), 'affected');
   // The import graph decides, wherever the imported code lives.
   assert.equal(mode({ files: ['mcp/src/library/wiki-schema.mjs'] }), 'affected');
   assert.equal(mode({ files: ['app/[locale]/page.tsx'] }), 'skip');

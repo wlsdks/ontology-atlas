@@ -2,10 +2,6 @@
 
 import { type Dispatch, type SetStateAction, useCallback, useState } from 'react';
 
-/**
- * The ⌘K palette state for `DocsVaultPage`. Setters are `useCallback`-wrapped so ESLint can
- * track a destructured method's stability.
- */
 export function usePaletteState() {
   const [paletteQuery, setPaletteQueryInternal] = useState<string | null>(null);
   const paletteOpen = paletteQuery !== null;

@@ -140,11 +140,11 @@ describe('assertExpectedMtime', () => {
 
     try {
       assertExpectedMtime('doc', 1000, 2000);
-    } catch (err) {
-      expect(err).toBeInstanceOf(VaultConflictError);
-      expect((err as VaultConflictError).slug).toBe('doc');
-      expect((err as VaultConflictError).expectedMtime).toBe(1000);
-      expect((err as VaultConflictError).currentMtime).toBe(2000);
+    } catch (error) {
+      expect(error).toBeInstanceOf(VaultConflictError);
+      expect((error as VaultConflictError).slug).toBe('doc');
+      expect((error as VaultConflictError).expectedMtime).toBe(1000);
+      expect((error as VaultConflictError).currentMtime).toBe(2000);
     }
   });
 });

@@ -1,10 +1,10 @@
 /** `/project/{slug}/`, with the slug encoded so unsafe characters do not 404. */
-export function getProjectDetailHref(slug: string): string {
+export function buildProjectDetailHref(slug: string): string {
   return `/project/${encodeURIComponent(slug)}/`;
 }
 
-export function getProjectDetailUrl(origin: string, slug: string): string {
-  return new URL(getProjectDetailHref(slug), origin).toString();
+export function buildProjectDetailUrl(origin: string, slug: string): string {
+  return new URL(buildProjectDetailHref(slug), origin).toString();
 }
 
 const PROJECT_FALLBACK_HREF = "/project/fallback/";
@@ -21,7 +21,7 @@ interface ProjectEditHrefOptions {
   savedNotice?: boolean;
 }
 
-function getProjectFallbackHref(
+function buildProjectFallbackHref(
   slug: string,
   options: {
     mode?: ProjectFallbackRoute["mode"];
@@ -37,11 +37,11 @@ function getProjectFallbackHref(
 }
 
 /** In-app detail path that can open a local slug static export never saw. */
-export function getProjectRuntimeDetailHref(slug: string): string {
-  return getProjectFallbackHref(slug);
+export function buildProjectRuntimeDetailHref(slug: string): string {
+  return buildProjectFallbackHref(slug);
 }
 
-export function getProjectRuntimeDetailUrl(
+export function buildProjectRuntimeDetailUrl(
   origin: string,
   slug: string,
   options: { locale?: string; basePath?: string } = {},
@@ -53,16 +53,16 @@ export function getProjectRuntimeDetailUrl(
     ? `/${encodeURIComponent(options.locale.replace(/^\/+|\/+$/g, ""))}`
     : "";
   return new URL(
-    `${basePath}${locale}${getProjectRuntimeDetailHref(slug)}`,
+    `${basePath}${locale}${buildProjectRuntimeDetailHref(slug)}`,
     origin,
   ).toString();
 }
 
-export function getProjectEditHref(
+export function buildProjectEditHref(
   slug: string,
   options: ProjectEditHrefOptions = {},
 ): string {
-  return getProjectFallbackHref(slug, {
+  return buildProjectFallbackHref(slug, {
     mode: "edit",
     returnTo: options.returnTo,
     savedNotice: options.savedNotice,

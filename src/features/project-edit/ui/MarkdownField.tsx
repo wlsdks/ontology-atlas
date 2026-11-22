@@ -18,9 +18,6 @@ interface Props {
 
 type Mode = 'write' | 'preview';
 
-/**
- * A markdown input field, with a Write/Preview tab toggle for checking the rendering live.
- */
 export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Props) {
   const t = useTranslations('settings.markdown');
   const [mode, setMode] = useState<Mode>('write');
@@ -55,7 +52,6 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
         <div
           className={cn(
             'min-h-[160px] rounded-chip px-2 py-1.5 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]',
-            // Element styling lives in `shared/ui/tokens/markdown-prose`; this keeps only its container.
             MARKDOWN_PROSE_CLASS,
           )}
         >

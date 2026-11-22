@@ -18,5 +18,5 @@ test('200 percent text keeps full-detail pointer entry above the visible navigat
     return target===el||el.contains(target);
   })).toBe(true);
   await entry.click();
-  await expect(page.getByTestId('full-detail-a1')).toBeVisible();
+  await expect(page.getByTestId('full-detail')).toBeVisible();
 });

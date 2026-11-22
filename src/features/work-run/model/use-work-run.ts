@@ -15,13 +15,11 @@ export function useWorkRunSnapshot(): WorkRunSnapshot {
   return useSyncExternalStore(workRuns.subscribe, workRuns.read, workRuns.readServer);
 }
 
-/** The run that belongs to this folder, or null: another folder's run is never shown here. */
 export function useFolderWorkRun(folder: string): WorkRun | null {
   const { run } = useWorkRunSnapshot();
   return run && run.folder === folder ? run : null;
 }
 
-/** A run takes the card while its card is open and its own stage is not on screen. */
 function holdsSeat(entry: SeatRun, snapshot: WorkRunSnapshot): boolean {
   if (entry.kind === 'turn') return entry.run.card === 'open' && snapshot.turnStage !== entry.run.owner;
   const { run } = entry;

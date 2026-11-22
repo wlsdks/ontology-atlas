@@ -18,7 +18,6 @@ const MOTION_CLASS: Record<SurfaceMotion, { enter: string; exit: string }> = {
 };
 
 export interface SurfaceProps {
-  /** On `false` the surface stays through the exit window, then unmounts. */
   open: boolean;
   children: ReactNode;
   className?: string;
@@ -29,15 +28,12 @@ export interface SurfaceProps {
    */
   origin?: string;
   as?: 'div' | 'section' | 'aside';
-  /** Fires once after the exit finishes, for unmount-bound work such as focus restore. */
   onExited?: () => void;
   /** Role and name must sit on the root to reach assistive technology. */
   id?: string;
   role?: string;
   tabIndex?: number;
-  /** Runtime values such as coordinates, merged with `origin`. */
   style?: CSSProperties;
-  /** For input the surface itself must receive, such as a scrim click that closes a modal. */
   onClick?: MouseEventHandler<HTMLElement>;
   /** Stays alive through the exit window, because outside-click detection reads it. */
   ref?: Ref<HTMLElement>;

@@ -1,7 +1,7 @@
 /** First-parent, cycle-safe trees excluding documents/readmes. O(V + E) traversal plus sibling sorting. */
 
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
-import type { OntologyTreeBuildResult, OntologyTreeNode } from "./types";
+import type { OntologyTreeBuildResult, OntologyTreeNode } from "./ontology-tree-node";
 
 const KIND_SORT_ORDER: Record<string, number> = {
   project: 0,

@@ -7,14 +7,13 @@ import { cn } from '@/shared/lib/cn';
 import { RowButton } from '@/shared/ui';
 
 import type { CodexSessionSize, SetupGroupId, SetupItem, SetupSectionId } from '../model/harness-setup';
-import { ItemStatus, type TranslateFn } from './HarnessGuideDetail';
+import { ItemStatus, type TranslateFn } from './harness-setup-item';
 import { formatBytes, shortLabel } from './harness-setup-format';
 
 const COUNT = 'shrink-0 text-label tabular-nums text-[color:var(--color-text-tertiary)]';
 
 const WARNING_INK = 'text-[color:var(--color-amber-source-a90)]';
 
-/** One category of pane 1: its items under the tool filter, and how many of them hold a problem. */
 export interface SetupCategory {
   key: string;
   id: SetupGroupId;
@@ -34,7 +33,6 @@ export interface SetupArea {
   total: number;
   problems: number;
   categories: readonly SetupCategory[];
-  /** Verification's hooks on other events and unwired scripts: listed, never counted as checks. */
   aside: readonly SetupCategory[];
 }
 
@@ -163,7 +161,6 @@ function CategoryOption({
   );
 }
 
-/** One area of pane 1: its heading, what it means, and its categories as a listbox. */
 export function HarnessSetupSection({
   area,
   selectedKey,
@@ -175,7 +172,6 @@ export function HarnessSetupSection({
 }: {
   area: SetupArea;
   selectedKey: string | null;
-  /** The one option of pane 1 that Tab reaches. */
   focusKey: string | null;
   onSelect: (key: string) => void;
   claudeSessionBytes?: number | null;
@@ -249,7 +245,6 @@ function MiddleTruncated({ label, className }: { label: string; className: strin
 
 const MIDDLE_TAIL_MAX = 20;
 
-/** The end that always stays: from the last separator that leaves at most `MIDDLE_TAIL_MAX` characters. */
 function middleTail(label: string): string {
   const from = Math.max(0, label.length - MIDDLE_TAIL_MAX);
   const separator = label.slice(from).search(/[/\-_.]/);
@@ -258,11 +253,9 @@ function middleTail(label: string): string {
 
 export interface ItemOption {
   item: SetupItem;
-  /** The skill directory a file belongs to; its rows read from below it. */
   parent: SetupItem | null;
 }
 
-/** Pane 2: the selected category's items, a skill's files listed under it rather than folded. */
 export function HarnessItemList({
   labelledBy,
   options,

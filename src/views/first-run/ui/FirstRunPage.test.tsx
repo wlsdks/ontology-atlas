@@ -20,8 +20,8 @@ const mocks = vi.hoisted(() => ({
   vault: null as unknown as MockVault,
 }));
 
-vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
+vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-provider/LocalVaultProvider')>()),
   useLocalVault: () => mocks.vault,
 }));
 
@@ -38,7 +38,10 @@ const tauriFsMocks = vi.hoisted(() => ({
   getTauriVaultRootPath: vi.fn(() => null as string | null),
 }));
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => tauriFsMocks);
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-files', () => tauriFsMocks);
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-handle', () => tauriFsMocks);
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => tauriFsMocks);
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => tauriFsMocks);
 
 const agentMocks = vi.hoisted(() => ({
   isAcpBridgeAvailable: vi.fn(() => true),

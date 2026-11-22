@@ -10,13 +10,7 @@ import { readArrivalMemory, writeArrivalMemory } from "./route-arrival-memory-st
  * the vault; `null` means do not remember.
  */
 
-/**
- * A `useState` that survives the unmount a route change causes.
- *
- * @param key what the value describes — `null` means "do not remember", which is the right
- *   answer while the thing it would describe (a vault path, a folder) is not known yet.
- * @param fallback the value to use when nothing has been remembered under this key.
- */
+/** A `useState` that survives the unmount a route change causes. A `null` key means do not remember, right while the vault path is not known yet. */
 export function useArrivalMemory<T>(
   key: string | null,
   fallback: T,

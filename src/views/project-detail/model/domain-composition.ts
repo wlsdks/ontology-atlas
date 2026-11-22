@@ -2,21 +2,17 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
 import { computeDegreeCentrality, computeDomainCensusRows } from "@/entities/knowledge-graph";
 import { compactOntologyDescription } from "@/shared/lib/concept-display/ontology-description";
 
-/** One sentence; a domain summary longer than this is cut at a word with an ellipsis. */
 const DOMAIN_DEFINITION_MAX_CHARS = 240;
 
 interface DomainCapability {
   id: string;
   title: string;
-  /** Elements under this capability, by the same first-parent census as the domain's counts. */
   elementCount: number;
 }
 
 export interface DomainCompositionRow {
-  /** Node id such as `domain:views`, used verbatim in a map deep link. */
   id: string;
   title: string;
-  /** The first sentence of the domain's own summary; null when the document says nothing. */
   definition: string | null;
   capabilityCount: number;
   elementCount: number;

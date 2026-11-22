@@ -30,7 +30,7 @@ import {
   type ScopeHookGroup,
 } from '../model/scope-hook-groups';
 import { ScopeHookDetail, ScopeHookList, type ExplainScope } from './ScopeHooks';
-import { SetupItemDetail, type TranslateFn } from './HarnessGuideDetail';
+import { SetupItemDetail, type TranslateFn } from './harness-setup-item';
 import {
   categorySize,
   HarnessItemList,

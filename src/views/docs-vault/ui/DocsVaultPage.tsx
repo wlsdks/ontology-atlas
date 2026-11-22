@@ -15,7 +15,7 @@ import { buildOntologyDeeplinkForDoc } from '@/entities/docs-vault';
 import { useDocumentTitle } from '@/shared/lib/public-pages/use-document-title';
 import { firstHeading, parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { useClaimShellKey } from '@/shared/lib/keyboard/shell-key-claims';
 import { useLatestRef } from '@/shared/lib/use-latest-ref';
 import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
@@ -56,13 +56,13 @@ import { useSkillParity } from '../lib/agent-files/use-skill-parity';
 import { DocsVaultHeader } from './DocsVaultHeader';
 import { DocsVaultDocumentPane } from './DocsVaultDocumentPane';
 import { DocsVaultSidebar } from './DocsVaultSidebar';
-import { DocsSidebarBody } from './parts/DocsSidebarBody';
-import { DesktopVaultWelcome } from './parts/DesktopVaultWelcome';
-import { DocsVaultAuditModal } from './parts/DocsVaultAuditModal';
-import { DeleteDocDialog } from './parts/DeleteDocDialog';
-import { EmptyState } from './parts/EmptyState';
-import { NewDocKindDialog } from './parts/NewDocKindDialog';
-import { RenameDocDialog } from './parts/RenameDocDialog';
+import { DocsSidebarBody } from './sidebar/DocsSidebarBody';
+import { DesktopVaultWelcome } from './welcome/DesktopVaultWelcome';
+import { DocsVaultAuditModal } from './DocsVaultAuditModal';
+import { DeleteDocDialog } from './doc-actions/DeleteDocDialog';
+import { DocsVaultEmptyState } from './welcome/DocsVaultEmptyState';
+import { NewDocKindDialog } from './doc-actions/NewDocKindDialog';
+import { RenameDocDialog } from './doc-actions/RenameDocDialog';
 
 function DocsVaultContent({
   initialCollection,
@@ -88,13 +88,10 @@ function DocsVaultContent({
     libraryOntologyHref,
   } = address;
   const [selectedSlug, setSelectedSlug] = useState<string | null>(address.querySlug);
-  // A truthy `openWith` opens the palette; its value is the initial query (`>`, `#`, ``).
   const { paletteQuery, setPaletteQuery, paletteOpen } = usePaletteState();
-  // No visible menu remains; other surfaces still call `setAdvancedOpen(false)` to close popovers.
   const { setOpen: setAdvancedOpen } = useAdvancedMenu();
   const { open: vaultChipOpen, setOpen: setVaultChipOpen, ref: vaultChipMenuRef } =
     useAdvancedMenu();
-  // Set when the reader picks a real document; `shouldShowSampleWelcomeNote` combines it.
   const [sampleWelcomeDismissed, setSampleWelcomeDismissed] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [sourceTreeOpen, setSourceTreeOpen] = useState(false);
@@ -135,7 +132,6 @@ function DocsVaultContent({
     vaultChipIdentity,
   } = src;
 
-  // Always starts closed; a modal on every load violates modality.
   const [contractOpen, setContractOpen] = useState(false);
   const closePopovers = useCallback(() => {
     setAdvancedOpen(false);
@@ -143,7 +139,6 @@ function DocsVaultContent({
     setPaletteQuery(null);
   }, [setAdvancedOpen, setVaultChipOpen, setPaletteQuery]);
   const openContract = useCallback(() => {
-    // Single-transient rule: opening a modal closes the other popovers.
     closePopovers();
     setContractOpen(true);
   }, [closePopovers]);
@@ -178,7 +173,6 @@ function DocsVaultContent({
   const selectedDetail = useDocumentDetail(selectedDoc);
   const latestAdopt = useLatestRef(useAdoptDocumentText());
   const latestDocsBySlug = useLatestRef(docsBySlug);
-  // The open document's outline and word count derive from the body read, so they arrive together.
   const readOpenDocText = useMemo(
     () =>
       getDocContent &&
@@ -211,7 +205,6 @@ function DocsVaultContent({
     normalizedQuerySlug: normalizedQuerySlug ?? selectedSlug,
     dismissed: sampleWelcomeDismissed,
   });
-  // Every surface names a document the same way; the file path stays in the caption below.
   const selectedDocDisplayTitle = selectedDoc
     ? resolveLocaleDisplayName(selectedDoc.frontmatter, locale, selectedDoc.title)
     : "";
@@ -293,7 +286,6 @@ function DocsVaultContent({
     },
     [handleSelect],
   );
-  // ⌘K is this workspace's palette, so the shell search stands aside.
   useClaimShellKey('search');
   useTypingShortcuts([
     {
@@ -334,9 +326,7 @@ function DocsVaultContent({
     handleViewChange,
     legacyDocumentMode,
   });
-  // From the whole manifest, independent of the collection filter; read-only.
   const agentFiles = useAgentFilesModel(manifest, localVault.fileHandles);
-  // Skill-copy parity only with a real absolute path; the web falls back to the handle name.
   const skillParityRoot =
     isDesktopRuntime && localVault.handle
       ? getTauriVaultRootPath(localVault.handle) ?? null
@@ -440,7 +430,6 @@ function DocsVaultContent({
         t={t}
       />
 
-      {/* A local vault in error or needing permission says so instead of silently showing the sample. */}
       {source === 'local' &&
       (localVault.status === 'error' ||
         localVault.status === 'permission-needed') ? (
@@ -483,7 +472,6 @@ function DocsVaultContent({
         </div>
       ) : null}
 
-      {/* Say so when `?slug=` does not resolve in this vault; default selection draws another document. */}
       {missingQuerySlug ? (
         <div
           className="flex flex-none items-center gap-2 border-b border-[color:var(--color-amber-source-a34)] bg-[color:var(--color-amber-source-a08)] px-4 py-2 text-body text-[color:var(--color-status-warning)]"
@@ -520,7 +508,6 @@ function DocsVaultContent({
               : null
           }
           choosing={localVault.awaitingVaultChoice}
-          // Only the installed app can reopen the folder without a permission gesture.
           canResumeWithoutGesture={isDesktopRuntime}
           showDogfoodHint={showDogfoodHint}
           t={t}
@@ -553,7 +540,6 @@ function DocsVaultContent({
               onCollectionChange={handleCollectionChange}
               onTogglePin={handleTogglePin}
               onTagSelect={setActiveTag}
-              // In the read-only sample the `+` opens a folder, the path that makes creating possible.
               onCreateNewDoc={canEditCurrent ? handleOpenNewDocDialog : handleVaultPillSwap}
               canCreateNewDoc={canEditCurrent}
               sort={treeSort}
@@ -642,7 +628,7 @@ function DocsVaultContent({
               </div>
             </div>
           ) : (
-            <EmptyState
+            <DocsVaultEmptyState
               docCount={scopedDocs.length}
               onOpenAgentWorkflow={handleOpenAgentGraphWorkflowGuide}
               onOpenTree={() => setSourceTreeOpen(true)}
@@ -690,7 +676,6 @@ function DocsVaultContent({
         onConfirm={confirmDelete}
       />
 
-      {/* Bottom chip without scrim or autofocus, so the content stays usable. */}
       <AnimatePresence>
         {pendingSimilarDoc ? (
           <div
@@ -719,11 +704,8 @@ export function DocsVaultPage({
   documentScope = 'all',
   legacyEntry = false,
 }: {
-  /** The collection a no-slug entry opens. Explicit slugs and later choices still win. */
   initialCollection?: DocsVaultDocCollection;
-  /** Fix Library's Ontology tab to authored ontology nodes; generic Docs remains unscoped. */
   documentScope?: 'all' | 'ontology';
-  /** Resolve `/docs` only as an exact non-ontology document reader; otherwise return to Library. */
   legacyEntry?: boolean;
 } = {}) {
   // Local-first core (`.claude/rules/local-first.md` §1): no auth gate before the vault picker.

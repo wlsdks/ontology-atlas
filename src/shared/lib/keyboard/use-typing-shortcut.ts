@@ -3,11 +3,8 @@
 import { useEffect, useRef } from "react";
 
 interface Combo {
-  /** The lowercase key token (e.g. "k", "f", "?"). `?` is the actual key Shift+/ produces. */
   key: string;
-  /** Whether Cmd/Ctrl is required. Defaults to false. */
   meta?: boolean;
-  /** Whether Shift is required. Leave false for `?`, whose key is already the Shift result. */
   shift?: boolean;
   /** Whether Shift must be up, for a key whose Shift form means something else (⌘Z undo, ⌘⇧Z redo). */
   withoutShift?: boolean;
@@ -16,7 +13,6 @@ interface Combo {
 export interface TypingShortcut {
   combo: Combo;
   onFire: () => void;
-  /** Disable condition (another overlay is open, say). When true the callback never fires. */
   disabled?: boolean;
 }
 
@@ -40,11 +36,7 @@ function comboMatches(event: KeyboardEvent, combo: Combo): boolean {
   );
 }
 
-/**
- * Global key shortcuts that skip while focus is in an input, textarea or
- * contenteditable. Extracted so HomePage and ProjectDetailPage share one rule for
- * the `?` cheat sheet, `Cmd+K` search and `F` presentation mode.
- */
+/** Global key shortcuts that skip while focus is in an input, textarea or contenteditable. */
 export function useTypingShortcuts(shortcuts: TypingShortcut[]) {
   // Call sites pass a fresh array literal every render, so depending on it tore the
   // window listener down and rebuilt it on every frame of a canvas-heavy page. The

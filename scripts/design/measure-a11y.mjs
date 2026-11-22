@@ -38,9 +38,8 @@ for (const route of ROUTES.length > 0 ? ROUTES : DEFAULT_ROUTES) {
   await page.waitForTimeout(2500);
   await page.addScriptTag({ path: AXE_PATH });
   const result = await page.evaluate(async () => {
-    // WCAG 2.1/2.2 A and AA only. The `best-practice` tag is advice rather than spec, and
-    // mixing it into a pre-switch-on inventory **merges spec violations and taste into one
-    // number.**
+    // WCAG 2.1/2.2 A and AA only: the `best-practice` tag is advice, and mixing it into a pre-switch-on
+    // inventory merges spec violations and taste into one number.
     const run = await window.axe.run(document, {
       runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] },
       resultTypes: ["violations"],

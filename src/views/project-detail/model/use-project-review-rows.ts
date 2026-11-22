@@ -7,7 +7,6 @@ import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter"
 
 const NO_ROWS: ReviewQueueRow[] = [];
 
-/** Only marked documents enter the queue, so the key and the work follow what a person reviewed. */
 function reviewMarksKey(docs: readonly VaultDoc[]): string {
   const marks: string[] = [];
   for (const doc of docs) {

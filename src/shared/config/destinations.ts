@@ -10,7 +10,7 @@
 export const DESTINATION_IDS = [
   'map',
   'architecture',
-  // Ontology documents now live inside Library; /docs remains a link alias.
+  // Ontology documents live inside Library; /docs is a link alias.
   'library',
   'planning',
   // Automation management owns schedules; execution context remains Map or Library.
@@ -78,7 +78,6 @@ export const AGENTS_MODELS_HREF = '/agents/?tab=models';
 
 export const MCP_CONNECTORS_HREF = withQuery(DESTINATION_HREF.mcp, { mcp: 'connectors' });
 
-/** The leader key: press this, then one of the letters below, to navigate. */
 export const NAV_LEADER_KEY = 'g';
 
 /** The letter after the leader — the first letter, unless it collides, in which case another letter that still carries the meaning. */
@@ -101,15 +100,13 @@ export const DESTINATION_KEY: Record<DestinationId, string> = {
   workStatus: 'w',
 };
 
-/** How long, in ms, to wait for the second letter after the leader. */
 export const NAV_LEADER_WINDOW_MS = 1500;
 
-/** Letter → destination, the direction the handler needs. */
 export const DESTINATION_BY_KEY: Record<string, DestinationId> = {
   ...Object.fromEntries(DESTINATION_IDS.map((id) => [DESTINATION_KEY[id], id])),
   // Preserve the published shortcut and project-specific Docs href overrides.
   d: 'docs',
-  // `g c` still lands on the connectors, now the MCP tab of Agents.
+  // `g c` lands on the connectors, the MCP tab of Agents.
   c: 'mcp',
 };
 

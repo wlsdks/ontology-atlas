@@ -6,7 +6,7 @@ import koMessages from '../../../../messages/ko.json';
 import { DocsVaultUnifiedPalette } from './DocsVaultUnifiedPalette';
 import { buildBodyEntry, type DocsBodyIndex } from '../lib/body-index';
 import type { VaultDoc } from '@/entities/docs-vault';
-import type { VaultIndexStatus } from '@/shared/lib/vault-folder/tauri-vault-index';
+import type { VaultIndexStatus } from '@/shared/lib/vault-folder/vault-index/tauri-vault-index';
 
 const textSearch = vi.hoisted(() => ({
   bodyIndex: undefined as DocsBodyIndex | undefined,
@@ -176,10 +176,10 @@ describe('DocsVaultUnifiedPalette body search results', () => {
   });
 
   it('does not repeat a snippet on title-match rows', () => {
-    const idx: DocsBodyIndex = new Map([
+    const index: DocsBodyIndex = new Map([
       ['alpha', buildBodyEntry('alpha appears in body too', 'alpha@1')],
     ]);
-    renderPalette({ initialQuery: 'alpha', bodyIndex: idx });
+    renderPalette({ initialQuery: 'alpha', bodyIndex: index });
     expect(screen.queryByText(/appears in body too/)).not.toBeInTheDocument();
   });
 });

@@ -9,7 +9,7 @@
 
 import { readFileSync } from 'node:fs';
 
-import { collectSourceUnits } from '../analyze/source-units.mjs';
+import { collectSourceUnits } from '../analyze/survey/source-units.mjs';
 import { outlineSource } from './source-outline.mjs';
 import { blankLiterals, importLines } from './code-text.mjs';
 import { typeTiesOf } from './type-ties.mjs';

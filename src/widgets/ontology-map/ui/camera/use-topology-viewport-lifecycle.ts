@@ -110,16 +110,9 @@ export function useTopologyViewportLifecycle({
     if (!container || !canvas) return;
 
     /**
-     * Record the size only. **Do not change the canvas backing size here.**
-     *
-     * `canvas.width = n` clears the bitmap, and a ResizeObserver callback runs
-     * **after** rAF and **before** paint within a browser frame. Resizing here
-     * makes that frame's order `draw → clear → paint`, so **an empty canvas
-     * reaches the screen**. A docking panel's width transition fires the
-     * observer every frame, so for the whole transition (measured
-     * 183–200 ms) the map showed 0 nodes, 0 edges, 0 grid. Committing inside
-     * rAF makes the order `clear → draw → paint`, and the same resize never
-     * blanks a frame.
+     * Record the size only: `canvas.width = n` clears the bitmap and a ResizeObserver callback runs after rAF and before paint, so
+     * resizing here puts an empty canvas on screen (a docking transition showed 0 nodes for 183-200 ms). Committing inside rAF
+     * orders `clear → draw → paint`.
      */
     const measure = () => {
       const rect = container.getBoundingClientRect();
@@ -174,11 +167,8 @@ export function useTopologyViewportLifecycle({
     };
 
     /**
-     * The expensive half: rebuild the viewport-dependent layers and rescue the
-     * camera. Runs **once, after the size settles** (`VIEWPORT_SETTLE_FRAMES`).
-     * During a transition the previous point cloud keeps being drawn —
-     * momentarily misplaced star dust beats a blank screen, and refitting the
-     * camera every frame makes it jump twice at the end of the transition.
+     * The expensive half: rebuild the viewport-dependent layers and rescue the camera, once after the size settles
+     * (`VIEWPORT_SETTLE_FRAMES`). Meanwhile the old point cloud keeps drawing, since refitting every frame makes the camera jump twice.
      */
     const rebuildViewportLayers = () => {
       const { width, height } = viewportRef.current;

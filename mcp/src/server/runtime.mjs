@@ -12,8 +12,8 @@ import { createCompiledOntologyCache } from './compiled-cache.mjs';
 import { discoverGitRepositoryRoot } from '../git/git-tools.mjs';
 import { compileOntology } from '../ontology-compiler.mjs';
 import { shareArtifact } from '../ontology-engine.mjs';
-import { ensureVaultRoot } from '../vault/slug-paths.mjs';
-import { loadVaultDocs } from '../vault/documents.mjs';
+import { ensureVaultRoot } from '../vault/documents/slug-paths.mjs';
+import { loadVaultDocs } from '../vault/documents/document-cache.mjs';
 import {
   existsSync,
   realpathSync,
@@ -67,18 +67,15 @@ const COMPILED_ONTOLOGY_CACHE = createCompiledOntologyCache({
 // crash. A one-line message plus a non-zero exit surfaces it in the server log.
 try {
   ensureVaultRoot(VAULT_ROOT);
-} catch (err) {
-  const msg = err instanceof Error ? err.message : String(err);
-  process.stderr.write(`[ontology-atlas-mcp] vault root validation failed: ${msg}\n`);
+} catch (error) {
+  const reason = error instanceof Error ? error.message : String(error);
+  process.stderr.write(`[ontology-atlas-mcp] vault root validation failed: ${reason}\n`);
   process.stderr.write(
     `[ontology-atlas-mcp] Point the OATLAS_VAULT environment variable at a markdown vault directory. (currently: ${VAULT_ROOT})\n`,
   );
   process.exit(1);
 }
 
-// Thin wrapper over analyze_repo_structure. Zero side effects — it never touches
-// vault frontmatter. Only the exact writePlan returned after reviewPlan plus
-// independent qualification is a truth entry point for the batch writer.
 /**
  * Whether a scan root lies inside the vault or its repository, compared as real
  * paths so a symlink cannot escape. The scanning tools are read tools that

@@ -18,22 +18,22 @@ const USAGE =
   "usage: pnpm ui:look -- --route=<path> [--route=...] [--vault=fixture|sample|<dir>] [--widths=1440] [--height=900] [--url=<base>] [--out=<dir>] [--audit]";
 
 export function parseLookArgs(argv) {
-  const opts = { routes: [], vault: "fixture", widths: [1440], height: 900, audit: false };
+  const options = { routes: [], vault: "fixture", widths: [1440], height: 900, audit: false };
   for (const arg of argv) {
     if (arg === "--") continue;
     const [key, ...rest] = arg.replace(/^--/, "").split("=");
     const value = rest.join("=");
-    if (key === "route" && value) opts.routes.push(value);
-    else if (key === "vault" && value) opts.vault = value;
-    else if (key === "widths") opts.widths = parsePositiveList(value, "--widths");
-    else if (key === "height") opts.height = parsePositiveList(value, "--height")[0];
-    else if (key === "url" && value) opts.url = value.replace(/\/$/, "");
-    else if (key === "out" && value) opts.out = value;
-    else if (arg === "--audit") opts.audit = true;
+    if (key === "route" && value) options.routes.push(value);
+    else if (key === "vault" && value) options.vault = value;
+    else if (key === "widths") options.widths = parsePositiveList(value, "--widths");
+    else if (key === "height") options.height = parsePositiveList(value, "--height")[0];
+    else if (key === "url" && value) options.url = value.replace(/\/$/, "");
+    else if (key === "out" && value) options.out = value;
+    else if (arg === "--audit") options.audit = true;
     else throw new Error(`unknown argument: ${arg}\n${USAGE}`);
   }
-  if (opts.routes.length === 0) throw new Error(USAGE);
-  return opts;
+  if (options.routes.length === 0) throw new Error(USAGE);
+  return options;
 }
 
 function parsePositiveList(value, flag) {
@@ -47,12 +47,11 @@ export function resolveVaultSource(value, { cwd = process.cwd() } = {}) {
   if (value === "fixture") return { kind: "fixture" };
   if (value === "sample") return { kind: "dir", dir: SAMPLE_VAULT };
   if (value.startsWith("synthetic:")) throw new Error(`--vault=${value}: synthetic vaults are not yet supported; use fixture, sample or a directory`);
-  const dir = path.resolve(cwd, value);
-  if (!existsSync(dir) || !statSync(dir).isDirectory()) throw new Error(`--vault=${value}: ${dir} is not a directory`);
-  return { kind: "dir", dir };
+  const directory = path.resolve(cwd, value);
+  if (!existsSync(directory) || !statSync(directory).isDirectory()) throw new Error(`--vault=${value}: ${directory} is not a directory`);
+  return { kind: "dir", dir: directory };
 }
 
-/** The file name `ui:audit --shots` writes for one route and width. */
 export function shotName(route, width) {
   return `${route.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "root"}@${width}.png`;
 }
@@ -89,7 +88,6 @@ async function waitForServer(base) {
   throw new Error(`the static export server at ${base} did not answer within ${SERVER_READY_TIMEOUT_MS} ms`);
 }
 
-/** Serves `out/` on a free port until `stop` is called or this process exits. */
 async function serveStaticExport() {
   const port = await freePort();
   const server = spawn(process.execPath, ["scripts/web/serve-static-export.mjs", `--port=${port}`], {
@@ -113,15 +111,15 @@ async function serveStaticExport() {
 
 async function main() {
   const callerCwd = process.env.INIT_CWD ?? process.cwd();
-  const opts = parseLookArgs(process.argv.slice(2));
-  const vault = resolveVaultSource(opts.vault, { cwd: callerCwd });
-  const out = opts.out ? path.resolve(callerCwd, opts.out) : mkdtempSync(path.join(tmpdir(), "ui-look-"));
+  const options = parseLookArgs(process.argv.slice(2));
+  const vault = resolveVaultSource(options.vault, { cwd: callerCwd });
+  const out = options.out ? path.resolve(callerCwd, options.out) : mkdtempSync(path.join(tmpdir(), "ui-look-"));
   mkdirSync(out, { recursive: true });
-  const shots = opts.routes.flatMap((route) => opts.widths.map((width) => path.join(out, shotName(route, width))));
+  const shots = options.routes.flatMap((route) => options.widths.map((width) => path.join(out, shotName(route, width))));
   for (const shot of shots) rmSync(shot, { force: true });
 
   let server = null;
-  if (!opts.url) {
+  if (!options.url) {
     const built = await run("pnpm", ["build:static"]);
     if (built !== 0) return built;
     server = await serveStaticExport();
@@ -132,10 +130,10 @@ async function main() {
       [
         "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
         "scripts/design/ui-audit.mjs",
-        `--url=${opts.url ?? server.base}`,
-        ...opts.routes.map((route) => `--route=${route}`),
-        `--widths=${opts.widths.join(",")}`,
-        `--height=${opts.height}`,
+        `--url=${options.url ?? server.base}`,
+        ...options.routes.map((route) => `--route=${route}`),
+        `--widths=${options.widths.join(",")}`,
+        `--height=${options.height}`,
         `--setup=${SETUP}`,
         `--shots=${out}`,
       ],
@@ -145,7 +143,7 @@ async function main() {
     for (const shot of shots) if (!missing.includes(shot)) console.log(shot);
     for (const shot of missing) console.error(`[ui:look] no screenshot was written: ${shot}`);
     if (missing.length > 0) return 1;
-    return opts.audit ? auditStatus : 0;
+    return options.audit ? auditStatus : 0;
   } finally {
     server?.stop();
   }

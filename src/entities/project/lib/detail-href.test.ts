@@ -1,46 +1,46 @@
 import { describe, expect, it } from "vitest";
 import {
-  getProjectDetailHref,
-  getProjectDetailUrl,
-  getProjectEditHref,
-  getProjectRuntimeDetailHref,
-  getProjectRuntimeDetailUrl,
+  buildProjectDetailHref,
+  buildProjectDetailUrl,
+  buildProjectEditHref,
+  buildProjectRuntimeDetailHref,
+  buildProjectRuntimeDetailUrl,
   resolveProjectFallbackRoute,
 } from "./detail-href";
 
-describe("getProjectDetailHref", () => {
+describe("buildProjectDetailHref", () => {
   it("builds /project/<encoded-slug>/", () => {
-    expect(getProjectDetailHref("foo")).toBe("/project/foo/");
+    expect(buildProjectDetailHref("foo")).toBe("/project/foo/");
   });
 
   it("escapes URL-unsafe characters", () => {
-    expect(getProjectDetailHref("a/b")).toBe("/project/a%2Fb/");
-    expect(getProjectDetailHref("foo bar")).toBe("/project/foo%20bar/");
-    expect(getProjectDetailHref("한글")).toBe(
+    expect(buildProjectDetailHref("a/b")).toBe("/project/a%2Fb/");
+    expect(buildProjectDetailHref("foo bar")).toBe("/project/foo%20bar/");
+    expect(buildProjectDetailHref("한글")).toBe(
       `/project/${encodeURIComponent("한글")}/`,
     );
   });
 
   it("keeps an empty slug", () => {
-    expect(getProjectDetailHref("")).toBe("/project//");
+    expect(buildProjectDetailHref("")).toBe("/project//");
   });
 });
 
-describe("getProjectDetailUrl", () => {
+describe("buildProjectDetailUrl", () => {
   it("origin + canonical path", () => {
-    expect(getProjectDetailUrl("https://example.com", "foo")).toBe(
+    expect(buildProjectDetailUrl("https://example.com", "foo")).toBe(
       "https://example.com/project/foo/",
     );
   });
 
   it("normalizes a trailing slash on origin", () => {
-    expect(getProjectDetailUrl("https://example.com/", "foo")).toBe(
+    expect(buildProjectDetailUrl("https://example.com/", "foo")).toBe(
       "https://example.com/project/foo/",
     );
   });
 
   it("encodes the path segment", () => {
-    expect(getProjectDetailUrl("https://example.com", "한글")).toBe(
+    expect(buildProjectDetailUrl("https://example.com", "한글")).toBe(
       `https://example.com/project/${encodeURIComponent("한글")}/`,
     );
   });
@@ -48,13 +48,13 @@ describe("getProjectDetailUrl", () => {
 
 describe("static-export-safe project routes", () => {
   it("sends an arbitrary runtime slug through the static fallback query", () => {
-    expect(getProjectRuntimeDetailHref("foo")).toBe(
+    expect(buildProjectRuntimeDetailHref("foo")).toBe(
       "/project/fallback/?slug=foo",
     );
-    expect(getProjectRuntimeDetailHref("a/b")).toBe(
+    expect(buildProjectRuntimeDetailHref("a/b")).toBe(
       "/project/fallback/?slug=a%2Fb",
     );
-    expect(getProjectRuntimeDetailHref("한글 프로젝트")).toBe(
+    expect(buildProjectRuntimeDetailHref("한글 프로젝트")).toBe(
       `/project/fallback/?${new URLSearchParams({
         slug: "한글 프로젝트",
       }).toString()}`,
@@ -63,7 +63,7 @@ describe("static-export-safe project routes", () => {
 
   it("includes locale and basePath in the runtime detail URL", () => {
     expect(
-      getProjectRuntimeDetailUrl("https://example.com/", "foo", {
+      buildProjectRuntimeDetailUrl("https://example.com/", "foo", {
         locale: "ko",
         basePath: "/ontology-atlas/",
       }),
@@ -74,7 +74,7 @@ describe("static-export-safe project routes", () => {
 
   it("keeps slug, return path and save notice in the full-edit fallback", () => {
     expect(
-      getProjectEditHref("foo", {
+      buildProjectEditHref("foo", {
         returnTo: "/project/fallback/?slug=foo",
         savedNotice: true,
       }),

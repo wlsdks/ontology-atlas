@@ -3,7 +3,7 @@ import type { Locator, Page } from "@playwright/test";
 /**
  * **Wait for the condition, not the clock.**
  *
- * `.claude/rules/testing.md` (the timing rule, #1578) forbids a fixed sleep that
+ * `.claude/rules/testing.md` (the timing rule) forbids a fixed sleep that
  * gates an assertion: `waitForTimeout(2500)` asserts how fast this machine is, so
  * a slow machine reads a moving screen and a fast one throws the difference away.
  * Every wait here returns the moment the screen stops changing, which costs

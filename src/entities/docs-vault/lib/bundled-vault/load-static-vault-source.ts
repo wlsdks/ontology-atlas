@@ -3,13 +3,7 @@ import { bundledVaultManifest, type BundledVaultManifest } from './bundled-manif
 import { DOGFOOD_AGENT_SLUG_PREFIX } from './dogfood-slug-prefix';
 import type { StaticVaultSource } from './static-vault-source';
 
-/**
- * The browser's way to the bundled vault: each sample is fetched with `import()` the first time a
- * screen shows it, so no route ships its JSON up front and the installed app, which never renders a
- * sample (docs/DECISIONS.md, 2026-08-30), never fetches one. Build-time callers (sitemap, route
- * params, Open Graph cards) and `/download`, whose hero map draws the dogfood vault before paint,
- * keep the synchronous `resolveStaticVaultSource`.
- */
+/** Each sample is fetched with `import()` the first time a screen shows it, so no route ships its JSON up front and the installed app never fetches one. Build-time callers and `/download` keep the synchronous `resolveStaticVaultSource`. */
 
 const loaded = new Map<SampleSource, StaticVaultSource>();
 const inflight = new Map<SampleSource, Promise<StaticVaultSource | null>>();
@@ -64,7 +58,6 @@ const EMPTY: Record<SampleSource, StaticVaultSource> = {
   storefront: { source: 'storefront', manifest: EMPTY_MANIFEST, content: {} },
 };
 
-/** What a screen reads before a sample arrives, and for good where none is ever loaded. */
 export function emptyStaticVaultSource(source: SampleSource): StaticVaultSource {
   return EMPTY[source];
 }
@@ -138,13 +131,11 @@ export function loadStaticVaultSource(source: SampleSource): Promise<StaticVault
   return pending;
 }
 
-/** Forgets a recorded failure and imports again; the screen's "Try again". */
 export function retryStaticVaultSource(source: SampleSource): Promise<StaticVaultSource | null> {
   failed.delete(source);
   return loadStaticVaultSource(source);
 }
 
-/** The one handle a screen's hook takes: read empty, peek, subscribe, and start the download. */
 export const bundledSamples = {
   empty: emptyStaticVaultSource,
   peek: peekStaticVaultSource,

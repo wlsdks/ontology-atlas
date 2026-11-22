@@ -6,7 +6,7 @@ import {
 } from "react";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../../interaction/pointer-state-machine";
 import type { SelectionSource } from "../../model/camera/flat-selection-camera";
-import { type FocusLeashPx } from "../camera/topology-camera-math";
+import { type FocusLeashPx } from "../camera/target/pan-leash";
 
 interface Dependencies {
   focusedSlug: string | null;
@@ -55,11 +55,8 @@ export function useTopologyInteractionState({
   const selectedEdgeRef = useRef<{ sourceId: string; targetId: string; relationType?: string; } | null>(selectedEdge);
 
   /**
-   * The node this frame **actually treated as hovered** — a mirror kept solely
-   * for the `__atlasMap.hover()` instrument. The canvas has no DOM, so from
-   * outside, "is the map pointing at that node" could only be answered by
-   * comparing pixels, and pixels never say what changed or why. This copies the
-   * value the frame wrote, so it cannot disagree with the screen.
+   * The node this frame actually treated as hovered, a mirror kept for the `__atlasMap.hover()` instrument: the canvas has no DOM,
+   * so outside it the hovered node could only be read from pixels. It copies what the frame wrote, so it cannot disagree with the screen.
    */
   const drawnHoveredNodeIdRef = useRef<string | null>(null);
 

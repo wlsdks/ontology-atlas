@@ -21,7 +21,6 @@ const SQLITE_SIDE_SUFFIXES: [&str; 2] = ["-wal", "-shm"];
 /// Files the operating system drops into any folder a person browses; they never block a delete
 /// and are removed with the index.
 const OS_LITTER: [&str; 3] = [".DS_Store", "Thumbs.db", "desktop.ini"];
-/// Every name an index folder can hold.
 const INDEX_FILE_NAMES: [&str; 14] = [
     SEARCH_FILE,
     "search.sqlite-wal",
@@ -43,8 +42,7 @@ const SEARCH_SCHEMA: &str = include_str!("../sql/search.sql");
 const TABLES_VERSION: i32 = 1;
 pub(crate) const SCHEMA_VERSION: i32 = TABLES_VERSION * 1000 + SEGMENTATION_VERSION as i32;
 
-/// One SQLite file of a vault's index: its name, its tables, and the `user_version` that keeps
-/// it. Every file goes through the same create, check, set-aside and discard code below.
+/// One SQLite file of a vault's index: its name, its tables, and the `user_version` that keeps it.
 pub(crate) struct Store {
     pub(crate) file: &'static str,
     pub(crate) schema: &'static str,
@@ -161,7 +159,6 @@ pub(crate) fn holds_index(dir: &Path) -> bool {
             .any(|file| dir.join(file).is_file())
 }
 
-/// Every folder under `root` for which `holds_index` is true.
 pub(crate) fn key_folders(root: &Path) -> Vec<PathBuf> {
     fs::read_dir(root)
         .map(|entries| {
@@ -515,7 +512,6 @@ pub(crate) fn deletions(dir: &Path) -> i64 {
         .sum()
 }
 
-/// Counts a deletion of `dir`, or of every folder when `None`.
 pub(crate) fn count_deletion(dir: Option<&Path>) {
     let dir = dir.unwrap_or(Path::new(""));
     let mut deleted = DELETIONS
@@ -583,7 +579,6 @@ fn empty_rows_in_place(path: &Path) -> rusqlite::Result<()> {
     conn.execute_batch("BEGIN IMMEDIATE; DELETE FROM rows; COMMIT; VACUUM;")
 }
 
-/// What became of a retired file.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Retired {
     Removed,

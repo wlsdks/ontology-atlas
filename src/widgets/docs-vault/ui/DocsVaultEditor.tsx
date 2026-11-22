@@ -5,46 +5,44 @@ import { useLocale, useTranslations } from 'next-intl';
 
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import {
-  Bold,
-  Check,
-  CheckSquare,
-  Code as CodeIcon,
-  Eye,
-  EyeOff,
-  Heading1,
-  Heading2,
-  Heading3,
-  Italic,
-  Link as LinkIcon,
-  List,
-  ListOrdered,
-  Quote,
-  Save,
-  X,
-} from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { BrandMark } from '@/shared/ui/marks/brand-mark';
 import type { VaultDoc } from '@/entities/docs-vault';
-import { useOntologyKindLabel } from '@/entities/ontology-class';
 import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 import { useDelayedVisible, useHeldValue } from '@/shared/lib/render-timing/use-presence';
 import { caretPoint, clampMenuToBox } from '../lib/caret-position';
 import {
+  clearEditorDraft,
+  readEditorDraft,
+  resolveLoadedContent,
+  writeEditorDraft,
+  type EditorDraft,
+} from '../lib/editor/editor-draft';
+import {
+  insertLinkEdit,
+  prefixLineEdit,
+  stripFrontmatterBlock,
+  wrapSelectionEdit,
+  type TextEdit,
+} from '../lib/editor/editor-text-edit';
+import { cycleIndex, matchMentionCandidates } from '../lib/editor/mention-candidates';
+import { saveFailureMessageKey } from '../lib/editor/save-failure';
+import {
   detectMentionTrigger,
   insertMentionRelation,
   MENTION_RELATIONS,
-  RELATION_LABEL_KEY,
   type MentionRelationId,
 } from '../lib/mention-relation';
-import { Button, Chip, Dialog, IconButton, RowButton, Surface, OntologyMapKindGlyph } from '@/shared/ui';
+import { Button, Chip, Dialog } from '@/shared/ui';
+import { EditorPreview } from './editor/EditorPreview';
+import { EditorStatusBar } from './editor/EditorStatusBar';
+import { EditorToolbar } from './editor/EditorToolbar';
+import { MENTION_MENU_MAX_HEIGHT, MENTION_MENU_WIDTH } from './editor/mention-menu-box';
+import { MentionRelationMenu } from './editor/MentionRelationMenu';
+import { MentionTargetMenu } from './editor/MentionTargetMenu';
+
 
 interface Props {
   doc: VaultDoc;
-  /** Fetch the raw md — the same resolver as the viewer. A local vault reads through fileHandle. */
   getDocContent: (slug: string) => Promise<string>;
   /** Called on save. expectedMtime is the value at the time this editor read the source. Throws on failure. */
   onSave: (
@@ -52,9 +50,7 @@ interface Props {
     content: string,
     expectedMtime?: number,
   ) => Promise<void>;
-  /** End editing (after a successful save, or on cancel). */
   onClose: () => void;
-  /** Every document in the vault (for wikilink autocomplete). Without it, autocomplete is off. */
   allDocs?: VaultDoc[];
   /**
    * The vault this draft belongs to; with the slug alone, different folders share a key and
@@ -63,42 +59,6 @@ interface Props {
   vaultScope: string;
 }
 
-interface EditorDraft {
-  slug: string;
-  content: string;
-  diskContent: string;
-  diskMtime?: number;
-  updatedAt: number;
-}
-
-/** The mention menu's width and max height — position calculation and drawing use the same values. */
-const MENTION_MENU_WIDTH = 320;
-const MENTION_MENU_MAX_HEIGHT = 280;
-
-/** Same menu dialect as the vault chip and sort menu. */
-const MENTION_MENU_CLASS =
-  'pointer-events-auto absolute z-10 overflow-hidden rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]';
-
-function mentionMenuStyle(at: { top: number; left: number } | null) {
-  return { width: MENTION_MENU_WIDTH, top: at?.top ?? 0, left: at?.left ?? 0 };
-}
-
-/** A leading frontmatter block, left out of the preview. */
-const FRONTMATTER_BLOCK = /^---[\s\S]*?\n---\n?/;
-
-function dirtyIconInk(dirty: boolean): string {
-  return dirty
-    ? 'text-[color:var(--color-amber-docs-a95)]'
-    : 'text-[color:var(--color-text-quaternary)]';
-}
-
-function dirtyValueInk(dirty: boolean): string {
-  return dirty
-    ? 'font-[var(--font-weight-signature)] text-[color:var(--color-amber-docs-a95)]'
-    : 'text-[color:var(--color-text-tertiary)]';
-}
-
-/** Focus the textarea and select a range on the next frame, after React commits the new value. */
 function focusRange(ta: HTMLTextAreaElement, start: number, end: number) {
   requestAnimationFrame(() => {
     ta.focus();
@@ -106,60 +66,10 @@ function focusRange(ta: HTMLTextAreaElement, start: number, end: number) {
   });
 }
 
-const DRAFT_STORAGE_PREFIX = 'ontology-atlas:docs-vault-editor-draft:';
-
-/**
- * Draft key carries the vault, or same-named files in different folders share drafts and a save can
- * write one folder's draft over another's file. Old slug-only keys are never read back, because
- * their vault is unknown.
- */
-function draftStorageKey(vaultScope: string, slug: string) {
-  return `${DRAFT_STORAGE_PREFIX}${vaultScope}:${slug}`;
+function focusEdit(ta: HTMLTextAreaElement, edit: TextEdit) {
+  focusRange(ta, edit.selectionStart, edit.selectionEnd);
 }
 
-function readEditorDraft(vaultScope: string, slug: string): EditorDraft | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(draftStorageKey(vaultScope, slug));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<EditorDraft>;
-    if (
-      parsed.slug !== slug ||
-      typeof parsed.content !== 'string' ||
-      typeof parsed.diskContent !== 'string' ||
-      (parsed.diskMtime !== undefined &&
-        typeof parsed.diskMtime !== 'number') ||
-      typeof parsed.updatedAt !== 'number'
-    ) {
-      return null;
-    }
-    return parsed as EditorDraft;
-  } catch {
-    return null;
-  }
-}
-
-function writeEditorDraft(vaultScope: string, draft: EditorDraft) {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(draftStorageKey(vaultScope, draft.slug), JSON.stringify(draft));
-  } catch {
-    // localStorage may be unavailable in privacy modes. Disk save still works.
-  }
-}
-
-function clearEditorDraft(vaultScope: string, slug: string) {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.removeItem(draftStorageKey(vaultScope, slug));
-  } catch {
-    // no-op
-  }
-}
-
-/**
- * A textarea markdown editor that saves over the original file through the File System Access API.
- */
 export function DocsVaultEditor({
   doc,
   getDocContent,
@@ -171,10 +81,6 @@ export function DocsVaultEditor({
   const t = useTranslations('vaultWidgets.editor');
   const failureSentence = useFailureSentence();
   const locale = useLocale();
-  // The relation vocabulary is read from the same namespace by the map editor and the document editor.
-  const tRelations = useTranslations('ontologyRelations');
-  // Kind names use the same source the map and the new-document dialog use.
-  const kindLabel = useOntologyKindLabel();
   const [content, setContent] = useState<string | null>(null);
   const [savedContent, setSavedContent] = useState<string | null>(null);
   const [loadedSlug, setLoadedSlug] = useState<string | null>(null);
@@ -197,7 +103,6 @@ export function DocsVaultEditor({
   const savedFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingDraftRef = useRef<{ vaultScope: string; draft: EditorDraft } | null>(null);
 
-  // `@` mention menu state; the menu shows while this is not null.
   const [autocomplete, setAutocomplete] = useState<{
     query: string;
     start: number;
@@ -211,22 +116,10 @@ export function DocsVaultEditor({
 
   const acMatches = useMemo<VaultDoc[]>(() => {
     if (!autocomplete || !allDocs) return [];
-    const q = autocomplete.query.toLowerCase();
-    // The current document is not a candidate — a node cannot link to itself.
-    if (!q) return allDocs.filter((d) => d.slug !== doc.slug).slice(0, 8);
-    return allDocs
-      .filter(
-        (d) =>
-          d.slug !== doc.slug &&
-          (d.title.toLowerCase().includes(q) || d.slug.toLowerCase().includes(q)),
-      )
-      .slice(0, 8);
+    return matchMentionCandidates(allDocs, autocomplete.query, doc.slug);
   }, [autocomplete, allDocs, doc.slug]);
 
-  /**
-   * Separate the menu's openness from its content. `useHeldValue` gets a key because the model is a
-   * fresh object each render; without it React #301 loops.
-   */
+  /** `useHeldValue` takes a key because the model is a fresh object each render; without it React #301 loops. */
   /**
    * Opens once a query is typed, even with zero results, so a miss is visible; with only `@` it
    * shows the first 8.
@@ -260,32 +153,24 @@ export function DocsVaultEditor({
   }, [preview, content]);
 
   const previewBody = useMemo(
-    () => (debounced ?? content ?? '').replace(FRONTMATTER_BLOCK, ''),
+    () => stripFrontmatterBlock(debounced ?? content ?? ''),
     [debounced, content],
   );
 
-  // Wrap the selection and restore the caret; with no selection insert a selected placeholder.
   const wrapSelection = useCallback((wrapper: string, placeholder?: string) => {
     const ta = taRef.current;
     if (!ta || content === null) return;
     const ph = placeholder ?? t('placeholder');
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    const selected = content.slice(start, end) || ph;
-    const next =
-      content.slice(0, start) + wrapper + selected + wrapper + content.slice(end);
-    setContent(next);
-    const selStart = start + wrapper.length;
-    focusRange(ta, selStart, selStart + selected.length);
+    const edit = wrapSelectionEdit(content, ta.selectionStart, ta.selectionEnd, wrapper, ph);
+    setContent(edit.content);
+    focusEdit(ta, edit);
   }, [content, t]);
   const prefixLine = useCallback((prefix: string) => {
     const ta = taRef.current;
     if (!ta || content === null) return;
-    const caret = ta.selectionStart;
-    const lineStart = content.lastIndexOf('\n', caret - 1) + 1;
-    const next = content.slice(0, lineStart) + prefix + content.slice(lineStart);
-    setContent(next);
-    focusRange(ta, caret + prefix.length, caret + prefix.length);
+    const edit = prefixLineEdit(content, ta.selectionStart, prefix);
+    setContent(edit.content);
+    focusEdit(ta, edit);
   }, [content]);
   /**
    * The chosen concept before its relation is decided; stopping at the name would add nothing to
@@ -295,12 +180,10 @@ export function DocsVaultEditor({
     doc: VaultDoc;
     trigger: { query: string; start: number };
   } | null>(null);
-  /** The bearing currently selected in step 2 — the keyboard cursor. */
   const [pendingRelation, setPendingRelation] = useState<MentionRelationId>(
     MENTION_RELATIONS[0].id,
   );
 
-  /** Announce that the relation was written, since its result is only in frontmatter. */
   const [mentionNotice, setMentionNotice] = useState<'added' | 'exists' | null>(null);
   useEffect(() => {
     if (!mentionNotice) return;
@@ -308,7 +191,6 @@ export function DocsVaultEditor({
     return () => clearTimeout(timer);
   }, [mentionNotice]);
 
-  /** The menu stands where the typing was. */
   const [menuAt, setMenuAt] = useState<{ top: number; left: number } | null>(null);
   const placeMenuAtCaret = useCallback((caretIndex: number) => {
     const ta = taRef.current;
@@ -370,14 +252,9 @@ export function DocsVaultEditor({
   const insertLink = useCallback(() => {
     const ta = taRef.current;
     if (!ta || content === null) return;
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    const selected = content.slice(start, end);
-    const body = `[${selected || t('linkText')}](url)`;
-    const next = content.slice(0, start) + body + content.slice(end);
-    setContent(next);
-    const urlStart = start + body.indexOf('(url)') + 1;
-    focusRange(ta, urlStart, urlStart + 'url'.length);
+    const edit = insertLinkEdit(content, ta.selectionStart, ta.selectionEnd, t('linkText'));
+    setContent(edit.content);
+    focusEdit(ta, edit);
   }, [content, t]);
 
   const doSave = useCallback(async () => {
@@ -401,18 +278,14 @@ export function DocsVaultEditor({
       savedFlashTimerRef.current = setTimeout(() => {
         setSavedFlash(false);
       }, 1500);
-    } catch (err) {
+    } catch (caughtError) {
       // A rejected save (e.g. VaultConflictError) must not mark the buffer clean, so the poll guard
       // keeps the edits; show a localized message for conflicts.
-      const name = err instanceof Error ? err.name : '';
+      const messageKey = saveFailureMessageKey(caughtError);
       setError(
-        name === 'VaultConflictError'
-          ? { sentence: t('saveConflict'), detail: null }
-          : name === 'VaultIdentityUidError'
-            ? { sentence: t('saveIdentityUid'), detail: null }
-            : name === 'VaultIdentityHistoryError'
-              ? { sentence: t('saveIdentityHistory'), detail: null }
-              : failureSentence(err, t('saveFailed')),
+        messageKey
+          ? { sentence: t(messageKey), detail: null }
+          : failureSentence(caughtError, t('saveFailed')),
       );
     } finally {
       setSaving(false);
@@ -445,35 +318,26 @@ export function DocsVaultEditor({
       .then((text) => {
         // Re-check dirty: an in-flight clean re-fetch must not land over edits started meanwhile.
         if (cancelled || dirtyRef.current) return;
-        const draft = readEditorDraft(vaultScope, doc.slug);
-        const shouldRestoreDraft =
-          draft !== null && draft.content !== text;
-        const diskChangedSinceDraft =
-          shouldRestoreDraft && draft.diskContent !== text;
-        setContent(shouldRestoreDraft ? draft.content : text);
+        const opened = resolveLoadedContent(readEditorDraft(vaultScope, doc.slug), text, doc.mtime);
+        setContent(opened.content);
         setSavedContent(text);
         setLoadedSlug(doc.slug);
-        loadedMtimeRef.current =
-          diskChangedSinceDraft && typeof draft.diskMtime === 'number'
-            ? draft.diskMtime
-            : doc.mtime;
-        setDebounced(shouldRestoreDraft ? draft.content : text);
-        const cannotVerifyLegacyDraft =
-          diskChangedSinceDraft && typeof draft.diskMtime !== 'number';
-        setLegacyDraftConflict(cannotVerifyLegacyDraft);
-        setError(diskChangedSinceDraft ? { sentence: t('saveConflict'), detail: null } : null);
+        loadedMtimeRef.current = opened.loadedMtime;
+        setDebounced(opened.content);
+        setLegacyDraftConflict(opened.legacyDraftConflict);
+        setError(opened.diskChangedSinceDraft ? { sentence: t('saveConflict'), detail: null } : null);
         setSavedFlash(false);
-        setDraftSavedAt(shouldRestoreDraft ? draft.updatedAt : null);
+        setDraftSavedAt(opened.draftSavedAt);
         setAutocomplete(null);
       })
-      .catch((err) => {
+      .catch((caughtError) => {
         if (cancelled) return;
         setContent(null);
         setSavedContent(null);
         setLoadedSlug(doc.slug);
         setDraftSavedAt(null);
         setLegacyDraftConflict(false);
-        setError(failureSentence(err, t('loadFailed')));
+        setError(failureSentence(caughtError, t('loadFailed')));
       });
     return () => {
       cancelled = true;
@@ -541,7 +405,6 @@ export function DocsVaultEditor({
     return () => window.clearTimeout(handle);
   }, [content, dirty, doc.slug, draftSavedAt, loadedSlug, savedContent, vaultScope]);
 
-  // Cmd+S / Ctrl+S to save; Cmd+B/I/K formatting shortcuts.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (discardOpen) return;
@@ -571,18 +434,6 @@ export function DocsVaultEditor({
   const loading = loadedSlug !== doc.slug;
   /* Deferred like the viewer's skeleton so switching documents does not flash it for a frame. */
   const showSkeleton = useDelayedVisible(loading || content === null);
-  const saveState = saving
-    ? { label: t('saving'), body: t('savingDetail'), tone: 'saving' }
-    : dirty
-      ? {
-          label: draftSavedAt ? t('draftSaved') : t('dirty'),
-          body: draftSavedAt ? t('draftSavedDetail') : t('dirtyDetail'),
-          tone: 'dirty',
-        }
-      : savedFlash
-        ? { label: t('saved'), body: t('savedDetail'), tone: 'saved' }
-        : { label: t('clean'), body: t('cleanDetail'), tone: 'clean' };
-
   if (!loading && error && content === null) {
     return (
       <div
@@ -623,145 +474,17 @@ export function DocsVaultEditor({
           <Button variant="primary" onClick={discardChanges}>{t('discardAction')}</Button>
         </div>
       </Dialog>
-      <div className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-4 py-2 text-label">
-        <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-          {t.rich('editorEyebrow', {
-            slug: doc.slug,
-            value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
-          })}
-        </span>
-        {/*
-         * The status chips on this row share one type step.
-         */}
-        <span
-          className={
-            saveState.tone === 'dirty'
-              ? "inline-flex items-center gap-1.5 rounded-micro border border-[color:var(--color-amber-docs-a25)] bg-[color:var(--color-amber-docs-a08)] px-2 py-1 font-mono text-label uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-amber-docs-a95)]"
-              : saveState.tone === 'saved'
-                ? "inline-flex items-center gap-1.5 rounded-micro border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] px-2 py-1 font-mono text-label uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-indigo-line-a90)]"
-                : "inline-flex items-center gap-1.5 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-label uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-tertiary)]"
-          }
-          aria-live="polite"
-        >
-          {saveState.tone === 'saved' ? <Check size={ICON_SIZE.sm} aria-hidden /> : null}
-          <span>{saveState.label}</span>
-          <span className="hidden normal-case tracking-normal text-[color:var(--color-text-quaternary)] sm:inline">
-            {saveState.body}
-          </span>
-        </span>
-        <span
-          className="hidden min-w-0 items-center gap-1.5 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-label text-[color:var(--color-text-tertiary)] lg:inline-flex"
-          aria-label={t('saveContractAriaLabel')}
-        >
-          <Check size={ICON_SIZE.sm} className="text-[color:var(--color-text-quaternary)]" aria-hidden />
-          <span className="font-mono uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
-            {t('draftContract')}
-          </span>
-          <span className="truncate">
-            {draftSavedAt
-              ? t('draftContractActive')
-              : dirty
-                ? t('draftContractPending')
-                : t('draftContractIdle')}
-          </span>
-          <span className="text-[color:var(--color-text-quaternary)]" aria-hidden>
-            ·
-          </span>
-          <Save
-            size={ICON_SIZE.sm}
-            className={dirtyIconInk(dirty)}
-            aria-hidden
-          />
-          <span className="font-mono uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
-            {t('diskContract')}
-          </span>
-          <span
-            className={`truncate ${dirtyValueInk(dirty)}`}
-          >
-            {dirty ? t('diskContractNeedsSave') : t('diskContractClean')}
-          </span>
-        </span>
-        <span
-          className="hidden min-w-0 items-center gap-1.5 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-label text-[color:var(--color-text-tertiary)] 2xl:inline-flex"
-          aria-label={t('saveWorkflowAriaLabel')}
-        >
-          <CheckSquare
-            size={ICON_SIZE.sm}
-            className={dirtyIconInk(dirty)}
-            aria-hidden
-          />
-          <span className="font-mono uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
-            {t('validateContract')}
-          </span>
-          <span
-            className={`truncate ${dirtyValueInk(dirty)}`}
-          >
-            {dirty ? t('validateContractDirty') : t('validateContractClean')}
-          </span>
-          <span className="text-[color:var(--color-text-quaternary)]" aria-hidden>
-            ·
-          </span>
-          <X
-            size={ICON_SIZE.sm}
-            className={dirtyIconInk(dirty)}
-            aria-hidden
-          />
-          <span className="font-mono uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
-            {t('revertContract')}
-          </span>
-          <span className="truncate">
-            {dirty ? t('revertContractDirty') : t('revertContractClean')}
-          </span>
-        </span>
-        <div className="ml-auto flex items-center gap-1.5">
-          <Chip
-            active={preview}
-            onClick={() => setPreview((v) => !v)}
-            className="hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
-            aria-pressed={preview}
-            title={t('previewTooltip')}
-          >
-            {preview ? (
-              <EyeOff size={ICON_SIZE.sm} aria-hidden />
-            ) : (
-              <Eye size={ICON_SIZE.sm} aria-hidden />
-            )}
-            {t('preview')}
-          </Chip>
-          <Chip
-            active
-            tone="accent"
-            onClick={() => void doSave()}
-            disabled={saving || !dirty}
-            className="hover:border-[color:var(--color-indigo-line-a54)]"
-            title={t('saveTooltip')}
-          >
-            {saving ? (
-              <>
-                {/* Keep the 12px layout slot while the micro master stays native 16px. */}
-                <span className="relative inline-flex size-3 shrink-0" aria-hidden="true">
-                  <BrandMark detail="micro" alt="" className="atlas-inline-waiting-mark absolute left-1/2 top-1/2 size-4 max-w-none -translate-x-1/2 -translate-y-1/2" />
-                </span>
-                {t('saving')}
-              </>
-            ) : (
-              <>
-                <Save size={ICON_SIZE.sm} aria-hidden />
-                {t('save')}
-              </>
-            )}
-          </Chip>
-          <Chip
-            onClick={requestClose}
-            disabled={saving}
-            className="hover:border-[color:var(--color-overlay-3)] hover:text-[color:var(--color-text-primary)]"
-            title={dirty ? t('closeUnsavedTooltip') : t('closeTooltip')}
-          >
-            <X size={ICON_SIZE.sm} aria-hidden />
-            {dirty ? t('cancel') : t('closeAction')}
-          </Chip>
-        </div>
-      </div>
+      <EditorStatusBar
+        slug={doc.slug}
+        dirty={dirty}
+        saving={saving}
+        savedFlash={savedFlash}
+        draftSavedAt={draftSavedAt}
+        preview={preview}
+        onTogglePreview={() => setPreview((v) => !v)}
+        onSave={() => void doSave()}
+        onClose={requestClose}
+      />
       {error ? (
         <div
           className="break-keep border-b border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-4 py-1.5 text-label leading-label text-[color:var(--color-danger-text-strong)]"
@@ -771,66 +494,11 @@ export function DocsVaultEditor({
           {error.sentence}
         </div>
       ) : null}
-      <div className="flex flex-none items-center gap-0.5 border-b border-[color:var(--color-overlay-2)] bg-[color:var(--color-elevated)] px-3 py-1 text-[color:var(--color-text-tertiary)]">
-        <ToolbarButton
-          icon={<Bold size={ICON_SIZE.sm} />}
-          label={t('tbBold')}
-          onClick={() => wrapSelection('**')}
-        />
-        <ToolbarButton
-          icon={<Italic size={ICON_SIZE.sm} />}
-          label={t('tbItalic')}
-          onClick={() => wrapSelection('*')}
-        />
-        <ToolbarButton
-          icon={<CodeIcon size={ICON_SIZE.sm} />}
-          label={t('tbCode')}
-          onClick={() => wrapSelection('`')}
-        />
-        <span className="mx-1 h-4 w-px bg-[color:var(--color-divider)]" />
-        <ToolbarButton
-          icon={<Heading1 size={ICON_SIZE.sm} />}
-          label={t('tbH1')}
-          onClick={() => prefixLine('# ')}
-        />
-        <ToolbarButton
-          icon={<Heading2 size={ICON_SIZE.sm} />}
-          label={t('tbH2')}
-          onClick={() => prefixLine('## ')}
-        />
-        <ToolbarButton
-          icon={<Heading3 size={ICON_SIZE.sm} />}
-          label={t('tbH3')}
-          onClick={() => prefixLine('### ')}
-        />
-        <span className="mx-1 h-4 w-px bg-[color:var(--color-divider)]" />
-        <ToolbarButton
-          icon={<List size={ICON_SIZE.sm} />}
-          label={t('tbBullet')}
-          onClick={() => prefixLine('- ')}
-        />
-        <ToolbarButton
-          icon={<ListOrdered size={ICON_SIZE.sm} />}
-          label={t('tbNumbered')}
-          onClick={() => prefixLine('1. ')}
-        />
-        <ToolbarButton
-          icon={<CheckSquare size={ICON_SIZE.sm} />}
-          label={t('tbCheckbox')}
-          onClick={() => prefixLine('- [ ] ')}
-        />
-        <ToolbarButton
-          icon={<Quote size={ICON_SIZE.sm} />}
-          label={t('tbQuote')}
-          onClick={() => prefixLine('> ')}
-        />
-        <span className="mx-1 h-4 w-px bg-[color:var(--color-divider)]" />
-        <ToolbarButton
-          icon={<LinkIcon size={ICON_SIZE.sm} />}
-          label={t('tbLink')}
-          onClick={insertLink}
-        />
-      </div>
+      <EditorToolbar
+        onWrapSelection={wrapSelection}
+        onPrefixLine={prefixLine}
+        onInsertLink={insertLink}
+      />
       <div className="flex min-h-0 flex-1">
         <div
           className={`relative min-h-0 ${
@@ -868,8 +536,7 @@ export function DocsVaultEditor({
                 if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                   e.preventDefault();
                   const step = e.key === 'ArrowDown' ? 1 : -1;
-                  const next =
-                    (index + step + MENTION_RELATIONS.length) % MENTION_RELATIONS.length;
+                  const next = cycleIndex(index, step, MENTION_RELATIONS.length);
                   setPendingRelation(MENTION_RELATIONS[next].id);
                   return;
                 }
@@ -894,19 +561,14 @@ export function DocsVaultEditor({
                 e.preventDefault();
                 setAutocomplete((ac) =>
                   ac
-                    ? { ...ac, active: (ac.active + 1) % acMatches.length }
+                    ? { ...ac, active: cycleIndex(ac.active, 1, acMatches.length) }
                     : ac,
                 );
               } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 setAutocomplete((ac) =>
                   ac
-                    ? {
-                        ...ac,
-                        active:
-                          (ac.active - 1 + acMatches.length) %
-                          acMatches.length,
-                      }
+                    ? { ...ac, active: cycleIndex(ac.active, -1, acMatches.length) }
                     : ac,
                 );
               } else if (e.key === 'Enter' || e.key === 'Tab') {
@@ -921,7 +583,6 @@ export function DocsVaultEditor({
               }
             }}
             onKeyUp={(e) => {
-              // An arrow key alone updates the caret position → re-detect.
               if (!allDocs || !taRef.current) return;
               const caret = taRef.current.selectionStart;
               const src = (e.target as HTMLTextAreaElement).value;
@@ -938,67 +599,18 @@ export function DocsVaultEditor({
             className="absolute inset-0 resize-none bg-[color:var(--color-surface-deep-a40)] px-6 py-6 font-mono text-body leading-prose text-[color:var(--color-text-secondary)] outline-none md:px-10"
           />
           {heldAutocomplete ? (
-            <Surface
+            <MentionTargetMenu
+              held={heldAutocomplete}
               open={acOpen}
-              origin="bottom left"
-              className={MENTION_MENU_CLASS}
-              style={mentionMenuStyle(menuAt)}
-            >
-              <div className="border-b border-[color:var(--color-border-soft)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
-                {/* Hide the empty quotes for an empty query. */}
-                <span className="block truncate">
-                  {t('mentionLabel', {
-                    query: heldAutocomplete.query ? ` · “${heldAutocomplete.query}”` : '',
-                  })}
-                </span>
-                {/* States up front that choosing writes to frontmatter, not only a link. */}
-                <span className="block truncate text-label text-[color:var(--color-text-quaternary)]">
-                  {t('mentionHint')}
-                </span>
-              </div>
-              {heldAutocomplete.matches.length === 0 ? (
-                <p className="px-2 py-2 text-label text-[color:var(--color-text-tertiary)]">
-                  {t('mentionEmpty')}
-                </p>
-              ) : null}
-              <ul className="overflow-auto py-0.5" style={{ maxHeight: MENTION_MENU_MAX_HEIGHT - 64 }}>
-                {heldAutocomplete.matches.map((d, idx) => (
-                  <li key={d.slug}>
-                    <RowButton
-                      active={idx === heldAutocomplete.active}
-                      onMouseEnter={() =>
-                        setAutocomplete((ac) =>
-                          ac ? { ...ac, active: idx } : ac,
-                        )
-                      }
-                      onClick={() => pickMentionTarget(d)}
-                      className="hover:bg-[color:var(--color-overlay-1)]"
-                    >
-                      {/*
-                       * Kind marker, same glyphs as the map and studio, so the relation can be
-                       * chosen knowingly.
-                       */}
-                      <OntologyMapKindGlyph
-                        kind={String(d.frontmatter?.kind ?? 'unknown')}
-                        size={12}
-                      />
-                      <span className="truncate text-body text-[color:var(--color-text-primary)]">
-                        {resolveLocaleDisplayName(d.frontmatter, locale, d.title)}
-                      </span>
-                      <span className="ml-auto shrink-0 truncate text-label text-[color:var(--color-text-quaternary)]">
-                        {kindLabel(String(d.frontmatter?.kind ?? ''))}
-                      </span>
-                    </RowButton>
-                  </li>
-                ))}
-              </ul>
-              <div className="border-t border-[color:var(--color-border-soft)] px-2 py-1.5 text-label text-[color:var(--color-text-quaternary)]">
-                {t('mentionFooter')}
-              </div>
-            </Surface>
+              at={menuAt}
+              onHover={(index) =>
+                setAutocomplete((ac) =>
+                  ac ? { ...ac, active: index } : ac,
+                )
+              }
+              onPick={pickMentionTarget}
+            />
           ) : null}
-          {/* Step 2 chooses the relation, with the studio compass's vocabulary. */}
-          {/* Announces the frontmatter write, including to assistive technology. */}
           {mentionNotice ? (
             <p
               role="status"
@@ -1012,153 +624,17 @@ export function DocsVaultEditor({
             </p>
           ) : null}
           {pendingMention ? (
-            <Surface
-              open
-              origin="bottom left"
-              role="menu"
-              aria-label={t('mentionRelationLabel', {
-                title: resolveLocaleDisplayName(
-                  pendingMention.doc.frontmatter,
-                  locale,
-                  pendingMention.doc.title,
-                ),
-              })}
-              className={MENTION_MENU_CLASS}
-              style={mentionMenuStyle(menuAt)}
-            >
-              <div className="border-b border-[color:var(--color-border-soft)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
-                {t('mentionRelationLabel', {
-                  title: resolveLocaleDisplayName(
-                    pendingMention.doc.frontmatter,
-                    locale,
-                    pendingMention.doc.title,
-                  ),
-                })}
-              </div>
-              <ul className="py-0.5">
-                {MENTION_RELATIONS.map((relation) => (
-                  <li key={relation.id}>
-                    <RowButton
-                      role="menuitem"
-                      active={relation.id === pendingRelation}
-                      onMouseEnter={() => setPendingRelation(relation.id)}
-                      data-testid={`editor-mention-relation-${relation.id}`}
-                      onClick={() => applyMentionRelation(relation.id)}
-                      className="hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
-                    >
-                      <span className="truncate text-body">
-                        {tRelations(`relationShort.${RELATION_LABEL_KEY[relation.id]}`)}
-                      </span>
-                    </RowButton>
-                  </li>
-                ))}
-              </ul>
-              <div className="border-t border-[color:var(--color-border-soft)] px-2 py-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]">
-                {t('mentionRelationFooter')}
-              </div>
-            </Surface>
+            <MentionRelationMenu
+              target={pendingMention.doc}
+              selected={pendingRelation}
+              at={menuAt}
+              onHover={setPendingRelation}
+              onPick={applyMentionRelation}
+            />
           ) : null}
         </div>
-        {preview ? (
-          <div className="min-h-0 w-1/2 overflow-auto bg-[color:var(--color-surface-deep-a20)]">
-            <article className="mx-auto max-w-[var(--measure-doc-column)] px-6 py-6 md:px-8">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  h1: (props) => (
-                    <h1
-                      className="mt-0 mb-4 text-display font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
-                      {...props}
-                    />
-                  ),
-                  h2: (props) => (
-                    <h2
-                      className="mt-8 mb-2 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
-                      {...props}
-                    />
-                  ),
-                  h3: (props) => (
-                    <h3
-                      className="mt-6 mb-2 text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
-                      {...props}
-                    />
-                  ),
-                  p: (props) => (
-                    <p
-                      className="my-3 text-body leading-prose text-[color:var(--color-text-secondary)]"
-                      {...props}
-                    />
-                  ),
-                  ul: (props) => (
-                    <ul
-                      className="my-3 list-disc pl-6 text-body leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
-                      {...props}
-                    />
-                  ),
-                  ol: (props) => (
-                    <ol
-                      className="my-3 list-decimal pl-6 text-body leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
-                      {...props}
-                    />
-                  ),
-                  code: ({ className, children, ...rest }) => {
-                    const isBlock = /language-/.test(className ?? '');
-                    if (!isBlock) {
-                      return (
-                        <code
-                          className="rounded-micro bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-label text-[color:var(--color-indigo-pale-a95)]"
-                          {...rest}
-                        >
-                          {children}
-                        </code>
-                      );
-                    }
-                    return (
-                      <code className={className} {...rest}>
-                        {children}
-                      </code>
-                    );
-                  },
-                  pre: (props) => (
-                    <pre
-                      className="my-3 overflow-x-auto rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-surface-deep-a80)] p-3 font-mono text-body text-[color:var(--color-indigo-pale-a92)]"
-                      {...props}
-                    />
-                  ),
-                  blockquote: (props) => (
-                    <blockquote
-                      className="my-3 border-l-2 border-[color:var(--color-indigo-line-a35)] pl-3 italic text-[color:var(--color-text-tertiary)]"
-                      {...props}
-                    />
-                  ),
-                }}
-              >
-                {previewBody}
-              </ReactMarkdown>
-            </article>
-          </div>
-        ) : null}
+        {preview ? <EditorPreview body={previewBody} /> : null}
       </div>
     </div>
-  );
-}
-
-function ToolbarButton({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <IconButton
-      label={label}
-      onClick={onClick}
-      className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-    >
-      {icon}
-    </IconButton>
   );
 }

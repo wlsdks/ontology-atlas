@@ -9,13 +9,11 @@ import { useAppUpdate, type UpdateSessionState } from './use-app-update';
  * consumers get `null` and draw nothing.
  */
 export interface AppUpdateValue extends UpdateSessionState {
-  /** The user pressed it themselves — check now, ignoring the interval. */
   readonly checkNow: () => void;
   readonly install: () => void;
   readonly restart: () => void;
   readonly dismiss: () => void;
   readonly hide: () => void;
-  /** Brings a hidden download card back. */
   readonly showNotice: () => void;
 }
 
@@ -44,7 +42,6 @@ export function AppUpdateProvider({ children }: { children: ReactNode }) {
   return <AppUpdateContext.Provider value={value}>{children}</AppUpdateContext.Provider>;
 }
 
-/** `null` when absent. The consumer then draws nothing. */
 export function useAppUpdateContext(): AppUpdateValue | null {
   return useContext(AppUpdateContext);
 }

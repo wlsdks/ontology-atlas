@@ -1,6 +1,6 @@
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
-import type { SourceUnit } from '@/shared/lib/library/source-passage';
-import { MAX_VECTOR_PREFIX_BYTES, MAX_VECTOR_PREFIXES } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import type { SourceUnit } from '@/shared/lib/library/source-units';
+import { MAX_VECTOR_PREFIX_BYTES, MAX_VECTOR_PREFIXES } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import { recordedInstantMs, type VaultDoc } from '@/entities/docs-vault';
 import { isRetainedAnswerPath, retainedAnswerHeads, type RetainedAnswerHead } from './answer-revision';
 import { fuseRankedLists } from './lead-fusion';

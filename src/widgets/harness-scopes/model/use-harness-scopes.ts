@@ -10,7 +10,7 @@ import {
   type HarnessScopes,
   type PickOutcome,
 } from '@/shared/lib/harness-scopes/tauri-harness-scopes';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 /**
  * The agent settings of every scope for the connected repository, read through the app's bridge.

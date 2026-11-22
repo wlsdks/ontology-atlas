@@ -9,7 +9,6 @@ import { RouteLoadingFallback } from '@/shared/ui';
 
 const ANALYSIS_REVIEW_PREFIX = 'analysis:';
 
-/** The concept a saved Analysis address named, as the map's canonical `?p=` value, or null. */
 function namedConcept(search: URLSearchParams): string | null {
   const review = search.get('review');
   const raw = review?.startsWith(ANALYSIS_REVIEW_PREFIX)
@@ -19,7 +18,6 @@ function namedConcept(search: URLSearchParams): string | null {
   return canonical || null;
 }
 
-/** Where a retired Analysis address lands; the first matching rule wins. */
 export function buildInsightsRedirectHref(search: URLSearchParams): string {
   const tab = search.get('tab');
   if (tab === 'harness') {

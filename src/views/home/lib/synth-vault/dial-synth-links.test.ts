@@ -27,7 +27,7 @@ import { layoutDial } from "@/widgets/ontology-map/dial/layout";
 import { aggregateLinks, domainOfEnd, type DialLink } from "@/widgets/ontology-map/dial/links";
 import { circularDomainOrder } from "@/widgets/ontology-map/dial/order";
 import { resolveDialTokens } from "@/widgets/ontology-map/dial/tokens";
-import type { DialMemory, DialModel, DialScene, DialTokens } from "@/widgets/ontology-map/dial/types";
+import type { DialMemory, DialModel, DialScene, DialTokens } from "@/widgets/ontology-map/dial/dial-shapes";
 import type { OntologyMapTokens } from "@/widgets/ontology-map/tokens/read-map-tokens";
 
 import { synthesizeVaultGraph } from "./synth-vault";

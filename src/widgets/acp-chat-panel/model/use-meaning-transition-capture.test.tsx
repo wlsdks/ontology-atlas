@@ -23,10 +23,12 @@ vi.mock('@/entities/meaning-transition', async (original) => ({
 vi.mock('@/shared/lib/meaning-transition/tauri-meaning-transition-archive', () => ({
   canArchiveMeaningTransitions: () => native.enabled,
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
-  getTauriVaultRootPath: (handle: { root: string }) => handle.root,
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-project-source', () => ({
   inspectTauriProjectSource: native.inspect,
   inspectTauriProjectSourceContinuity: native.continuity,
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
+  getTauriVaultRootPath: (handle: { root: string }) => handle.root,
 }));
 
 const rawBefore = `---

@@ -6,7 +6,7 @@ export function slugify(input: string): string {
   return input
     .trim()
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, '') // letters, digits, spaces and hyphens only
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')
     .replace(/\s+/g, '-')              // spaces → hyphens
-    .replace(/-+/g, '-');              // collapse repeated hyphens
+    .replace(/-+/g, '-');
 }

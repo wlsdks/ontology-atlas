@@ -24,7 +24,6 @@ export interface BrandMarkProps
     ImgHTMLAttributes<HTMLImageElement>,
     'src' | 'width' | 'height' | 'children'
   > {
-  /** Square, in CSS pixels; prefer an integer multiple of the native tier. */
   size?: number;
   /** full=64px Moru · compact=32px face · micro=16px simplified face. */
   detail?: BrandMarkDetail;

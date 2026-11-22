@@ -157,7 +157,6 @@ export function enclosingClass(file, declaration) {
   return best;
 }
 
-/** The member `name` declared inside `owner` in `file`, or null. */
 function memberOf(file, owner, name) {
   const end = declarationEnd(file.lines, file.declarations, owner);
   return file.declarations.find((candidate) => isCode(candidate) && candidate.name === name

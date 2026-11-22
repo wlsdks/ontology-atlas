@@ -17,13 +17,11 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   </section>;
 }
 
-/** Everything a review leaves for audit, kept off the results list: plain sections, nothing folded. */
 export function ReviewRecordDialog({ open, onClose, run, compatibility, answer, problems, actions, decisions }: {
   open: boolean;
   onClose: () => void;
   run: AnalysisRun;
   compatibility: AnalysisCompatibility | null;
-  /** The agent's Markdown, rendered where the security registry lists the sink. */
   answer: ReactNode;
   problems: readonly string[];
   actions: ReactNode;

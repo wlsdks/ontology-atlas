@@ -22,12 +22,12 @@ import ko from '../../../messages/ko.json';
  * is a subset of `CHECK_IDS`.
  */
 
-const DOCTOR_RS = readFileSync(join(process.cwd(), 'src-tauri', 'src', 'acp_doctor.rs'), 'utf8');
+const DOCTOR_RS = readFileSync(join(process.cwd(), 'src-tauri', 'src', 'acp', 'doctor.rs'), 'utf8');
 
 /** Pulls just the strings out of `pub(crate) const <NAME>: &[&str] = &[ "a", "b" ];`. */
 function constList(name: string): string[] {
   const block = new RegExp(`const ${name}: &\\[&str\\] = &\\[([^\\]]*)\\]`).exec(DOCTOR_RS);
-  if (!block) throw new Error(`could not find ${name} in acp_doctor.rs`);
+  if (!block) throw new Error(`could not find ${name} in acp/doctor.rs`);
   return [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
 }
 

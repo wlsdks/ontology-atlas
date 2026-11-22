@@ -3,30 +3,21 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { MAKER_LINKEDIN_URL } from '@/shared/config/social-links';
+import { MAKER_LINKEDIN_URL } from '@/shared/config/site/social-links';
 import { cn } from '@/shared/lib/cn';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { useMotionPaused } from '@/shared/motion/motion-pause';
 import { MOTION } from '@/shared/motion/tokens';
 import { controlClass } from '@/shared/ui/control-class';
-import { WORK_ROW_FRAMES } from '@/shared/ui/marks/moru-rows';
+import { WORK_ROW_FRAMES } from '@/shared/ui/marks/moru/moru-rows';
 
-/** Moru's acted `write` row at its native 128px cell, the catalogue clip `pnpm brand:sprites` copies. */
 const CELL = 128;
 const FRAMES = WORK_ROW_FRAMES.write;
 const ROW_SRC = '/brand/mascot-write-row-128.png';
-/** The work rows' pace (`.atlas-waiting-mark[data-moru-pace='work']`): sixteen base beats per row. */
 const ROW_MS = MOTION.base.duration * 1000 * 16;
 const VISIBLE_SHARE = 0.2;
 
-/**
- * The maker's direct line, with Moru writing beside it. The row starts and ends on the neutral
- * pose, so one pass rests where it began: Moru writes once when the line comes into view and
- * again when the link is pointed at or focused, never cutting a pass short to start another.
- * Off screen or under the page's pause a pass holds where it is; under reduced motion Moru stands
- * still on the first cell. The way into Moru's game lives in the hero (`MoruPlayEntry`).
- */
 export function ClosingContact({ className }: { className?: string }) {
   const t = useTranslations('footer.contact');
   const reducedMotion = usePrefersReducedMotion();

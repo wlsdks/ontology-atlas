@@ -12,7 +12,8 @@ import {
   type AnalysisScope,
 } from '@/entities/analysis-record';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
-import { getTauriVaultRootPath, inspectTauriProjectSource } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { inspectTauriProjectSource } from '@/shared/lib/vault-folder/native-vault/tauri-project-source';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { resolveNodeAgentTarget, type KnowledgeProjectInsight } from '@/entities/knowledge-graph';
 
 import { parseAtlasToolCall } from '../tool-calls/atlas-tool-call';

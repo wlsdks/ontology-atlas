@@ -30,11 +30,7 @@ export function useVaultDocWrites(
   { setState, stateRef, load }: VaultSessionCore,
   openFolderHandle: FileSystemDirectoryHandle | null,
 ) {
-  /**
-   * Secures readwrite permission before any write. On refusal the state moves to
-   * 'permission-needed' so the reauth UI appears, and it still throws so the caller's
-   * try/catch keeps showing the inline error.
-   */
+  /** Secures readwrite permission before any write; on refusal the state moves to 'permission-needed' and it still throws, so the caller's inline error shows. */
   const requireWritePermission = useCallback(
     async (handle: FileSystemDirectoryHandle | FileSystemFileHandle) => {
       const result = await verifyHandlePermission(handle, 'readwrite', { ask: true });
@@ -46,7 +42,6 @@ export function useVaultDocWrites(
     [setState],
   );
 
-  /** Walks a slash path from the root handle and returns the parent directory handle plus the file name. */
   const getParentAndName = useCallback(
     async (
       root: FileSystemDirectoryHandle | null,
@@ -57,7 +52,6 @@ export function useVaultDocWrites(
       fileName: string;
     } | null> => {
       if (!root) return null;
-      // Readwrite permission, secured here because this runs only on write paths.
       await requireWritePermission(root);
       const parts = slug.split('/').filter(Boolean);
       if (parts.length === 0) throw new Error('Empty slug');
@@ -86,9 +80,8 @@ export function useVaultDocWrites(
     [stateRef, load],
   );
 
-  // Slugs the app itself just wrote, so the polling diff toaster does not report its own
-  // writes as "added/edited" (the four-toast burst during bootstrap). A one-shot ledger
-  // cleared on consumption: only outside changes (an agent, an IDE) become toasts.
+  // Slugs the app itself just wrote, so the polling diff toaster does not report its own writes; a one-shot ledger cleared
+  // on consumption, so only outside changes (an agent, an IDE) become toasts.
   const selfWrittenSlugsRef = useRef<Set<string>>(new Set());
   // slug → last self-write time in ms, the only source of "last edited · me". An mtime cannot
   // say who changed a file, so only writes through this API mark "me". Not cleared on consumption.
@@ -97,17 +90,17 @@ export function useVaultDocWrites(
   );
   const markSelfWrite = useCallback((slug: string) => {
     selfWrittenSlugsRef.current.add(slug);
-    setSelfEditTimestamps((prev) => {
-      const next = new Map(prev);
+    setSelfEditTimestamps((previous) => {
+      const next = new Map(previous);
       next.set(slug, Date.now());
       return next;
     });
   }, []);
   const unmarkSelfWrite = useCallback((slug: string) => {
     selfWrittenSlugsRef.current.delete(slug);
-    setSelfEditTimestamps((prev) => {
-      if (!prev.has(slug)) return prev;
-      const next = new Map(prev);
+    setSelfEditTimestamps((previous) => {
+      if (!previous.has(slug)) return previous;
+      const next = new Map(previous);
       next.delete(slug);
       return next;
     });
@@ -175,15 +168,13 @@ export function useVaultDocWrites(
       await writable.write(content);
       await writable.close();
       markSelfWrite(slug);
-      // Rescan the whole manifest after a successful save so backlinks and headings follow.
       await reloadIfOpen(live.handle);
     },
     [openState, reloadIfOpen, requireWritePermission, markSelfWrite, guardExpectedMtime],
   );
 
-  /** Creates a new `.md` at the slug path, erroring when one exists; the template seeds the body. */
   const createDoc = useCallback(
-    async (slug: string, content: string, opts: { skipRefresh?: boolean } = {}) => {
+    async (slug: string, content: string, options: { skipRefresh?: boolean } = {}) => {
       const live = openState();
       if (live.fileHandles.has(slug)) {
         throw new Error(`Document already exists: "${slug}"`);
@@ -211,7 +202,7 @@ export function useVaultDocWrites(
       markSelfWrite(slug);
       // `opts.skipRefresh` lets a caller that creates several documents in a row (bootstrap)
       // reload only on the last write — same contract as `updateFrontmatter`.
-      if (!opts.skipRefresh) await reloadIfOpen(live.handle);
+      if (!options.skipRefresh) await reloadIfOpen(live.handle);
     },
     [openState, getParentAndName, reloadIfOpen, markSelfWrite],
   );
@@ -246,20 +237,20 @@ export function useVaultDocWrites(
     async (
       slug: string,
       updates: Record<string, FrontmatterUpdateValue>,
-      opts: { skipRefresh?: boolean; expectedMtime?: number; rewriteBacklinks?: boolean } = {},
+      options: { skipRefresh?: boolean; expectedMtime?: number; rewriteBacklinks?: boolean } = {},
     ): Promise<ReferrerRewriteReport> => {
       const live = openState();
       const fh = live.fileHandles.get(slug);
       if (!fh) throw new Error(`Local vault: no file handle for "${slug}"`);
       await requireWritePermission(fh);
       const file = await fh.getFile();
-      guardExpectedMtime(slug, opts.expectedMtime, file.lastModified);
+      guardExpectedMtime(slug, options.expectedMtime, file.lastModified);
       const raw = await file.text();
       assertIdentityPatch(raw, updates);
       const next = applyFrontmatterUpdates(raw, updates);
       assertNodeIdentityContent(slug, next, live.manifest?.docs ?? []);
-      if (next === raw) return EMPTY_REFERRER_REPORT; // nothing changed
-      const newKind = opts.rewriteBacklinks ? kindChangeOf(raw, updates) : null;
+      if (next === raw) return EMPTY_REFERRER_REPORT;
+      const newKind = options.rewriteBacklinks ? kindChangeOf(raw, updates) : null;
       const writable = await fh.createWritable();
       await writable.write(next);
       await writable.close();
@@ -275,7 +266,7 @@ export function useVaultDocWrites(
               markSelfWrite,
             })
           : EMPTY_REFERRER_REPORT;
-      if (!opts.skipRefresh) await reloadIfOpen(live.handle);
+      if (!options.skipRefresh) await reloadIfOpen(live.handle);
       return report;
     },
     [openState, reloadIfOpen, requireWritePermission, markSelfWrite, guardExpectedMtime],
@@ -285,9 +276,9 @@ export function useVaultDocWrites(
     async (
       slug: string,
       updates: Record<string, FrontmatterUpdateValue>,
-      opts: { skipRefresh?: boolean; expectedMtime?: number } = {},
+      options: { skipRefresh?: boolean; expectedMtime?: number } = {},
     ): Promise<void> => {
-      await writeFrontmatterPatch(slug, updates, opts);
+      await writeFrontmatterPatch(slug, updates, options);
     },
     [writeFrontmatterPatch],
   );
@@ -301,9 +292,9 @@ export function useVaultDocWrites(
     (
       slug: string,
       updates: Record<string, FrontmatterUpdateValue>,
-      opts: { expectedMtime?: number } = {},
+      options: { expectedMtime?: number } = {},
     ): Promise<ReferrerRewriteReport> =>
-      writeFrontmatterPatch(slug, updates, { ...opts, rewriteBacklinks: true }),
+      writeFrontmatterPatch(slug, updates, { ...options, rewriteBacklinks: true }),
     [writeFrontmatterPatch],
   );
 
@@ -317,7 +308,7 @@ export function useVaultDocWrites(
     async (
       oldSlug: string,
       newSlug: string,
-      opts: {
+      options: {
         rewriteBacklinks?: boolean;
         expectedMtime?: number;
         frontmatterUpdates?: Record<string, FrontmatterUpdateValue>;
@@ -338,13 +329,13 @@ export function useVaultDocWrites(
       const oldFh = live.fileHandles.get(oldSlug);
       if (!oldFh) throw new Error(`Local vault: no file handle for "${oldSlug}"`);
       const file = await oldFh.getFile();
-      guardExpectedMtime(oldSlug, opts.expectedMtime, file.lastModified);
+      guardExpectedMtime(oldSlug, options.expectedMtime, file.lastModified);
       const raw = await file.text();
-      if (opts.frontmatterUpdates) assertIdentityPatch(raw, opts.frontmatterUpdates);
+      if (options.frontmatterUpdates) assertIdentityPatch(raw, options.frontmatterUpdates);
       const content = rewriteMovedDocSelf(raw, {
         oldSlug,
         newSlug,
-        updates: opts.frontmatterUpdates,
+        updates: options.frontmatterUpdates,
       });
       const newResolved = await getParentAndName(live.handle, newSlug, true);
       if (!newResolved) throw new Error('Vault is not open');
@@ -360,20 +351,19 @@ export function useVaultDocWrites(
         await oldResolved.parent.removeEntry(oldResolved.fileName);
       }
 
-      // --- optional cascading backlink rewrite
       /*
        * Frontmatter relations are the primary graph: `planReferrerRewrite` applies the MCP
        * `rename_concept` key family and tail rules to every doc, and a kind change moves each entry
        * into the list for the new kind.
        */
       const report =
-        opts.rewriteBacklinks && live.manifest
+        options.rewriteBacklinks && live.manifest
           ? await rewriteReferrerFiles({
               docs: live.manifest.docs,
               fileHandles: live.fileHandles,
               oldSlug,
               newSlug,
-              newKind: kindChangeOf(raw, opts.frontmatterUpdates) ?? undefined,
+              newKind: kindChangeOf(raw, options.frontmatterUpdates) ?? undefined,
               markSelfWrite,
             })
           : EMPTY_REFERRER_REPORT;

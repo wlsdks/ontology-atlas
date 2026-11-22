@@ -4,11 +4,8 @@ import { History } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 export interface SummaryFreshnessRowProps {
-  /** Resolved by the caller via i18n. */
   prefixLabel: string;
-  /** Resolved by the caller from `daysBehind` plus i18n (tabular-nums). */
   lagLabel: string;
-  /** Resolved by the caller via i18n. */
   actionLabel: string;
   className?: string;
 }

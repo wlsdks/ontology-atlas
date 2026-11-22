@@ -25,7 +25,6 @@ export const SYNTH_MIN = 100;
 export const SYNTH_MAX = 10000;
 
 const PROJECT_ID = "synth-project";
-// Fixed so derivations stay byte-identical.
 const FIXED_TS = new Date(0);
 const APPROVED_BY = "synth";
 
@@ -52,7 +51,6 @@ export function clampSynthSize(raw: number): number | null {
   return rounded;
 }
 
-/** Shared by the synthesizer and its tests. */
 export function computeSynthCounts(total: number): SynthVaultCounts {
   const s = Math.sqrt(total);
   const domain = Math.max(1, Math.round(s / 3));
@@ -69,13 +67,11 @@ export function computeSynthCounts(total: number): SynthVaultCounts {
   return { project: 1, domain, capability, element, directElements, orphanElements };
 }
 
-/** Power law toward the front: a deterministic [0,1) from `hash(e)` raised to `CAPABILITY_SKEW`. */
 function skewedCapabilityIndex(e: number, capabilityCount: number): number {
   if (capabilityCount <= 1) return 0;
-  // Knuth multiplicative hash keeps adjacent indices off adjacent capabilities.
   const u = ((e * 2654435761) >>> 0) / 4294967296;
-  const idx = Math.floor(capabilityCount * Math.pow(u, CAPABILITY_SKEW));
-  return Math.min(capabilityCount - 1, idx);
+  const index = Math.floor(capabilityCount * Math.pow(u, CAPABILITY_SKEW));
+  return Math.min(capabilityCount - 1, index);
 }
 
 function makeNode(
@@ -236,7 +232,6 @@ export function synthesizeEvidenceStates(ids: readonly string[], staleShare: num
   return states;
 }
 
-/** Same `total` and options, byte-identical node and edge order. */
 export function synthesizeVaultGraph(total: number, options: SynthVaultOptions = {}): SynthVaultGraph {
   const n = clampSynthSize(total) ?? SYNTH_MIN;
   const counts = computeSynthCounts(n);

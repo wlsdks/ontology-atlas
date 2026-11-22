@@ -35,9 +35,9 @@ describe('Surface', () => {
     expect(screen.getByText('내용')).toHaveClass('topology-chrome-in');
 
     act(() => rerender(<Surface open={false}>내용</Surface>));
-    const el = screen.getByText('내용');
-    expect(el).toHaveClass('topology-chrome-out');
-    expect(el, 'a leftover entrance class overlaps the two animations').not.toHaveClass(
+    const element = screen.getByText('내용');
+    expect(element).toHaveClass('topology-chrome-out');
+    expect(element, 'a leftover entrance class overlaps the two animations').not.toHaveClass(
       'topology-chrome-in',
     );
   });
@@ -136,9 +136,9 @@ describe('Surface', () => {
         내용
       </Surface>,
     );
-    const el = screen.getByText('내용');
-    expect(el).toHaveClass('w-[300px]');
-    expect(el).toHaveClass('topology-chrome-in');
+    const element = screen.getByText('내용');
+    expect(element).toHaveClass('w-[300px]');
+    expect(element).toHaveClass('topology-chrome-in');
   });
 
 });

@@ -33,7 +33,6 @@ export function membershipKey(children) {
   return JSON.stringify([...unique].sort());
 }
 
-/** Collects the containment members declared by a frontmatter object. */
 export function containedSlugs(frontmatter) {
   const slugs = [];
   if (!frontmatter || typeof frontmatter !== 'object') return slugs;

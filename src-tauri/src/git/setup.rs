@@ -4,7 +4,7 @@ use super::changes::get_porcelain_status;
 use super::classify::{classified_error_string, classify_git_error, git_error_text};
 use super::repo::{find_repo_root, get_current_branch, vault_pathspec};
 use super::runner::{hardened_base_command, run_git, validate_vault_dir};
-use crate::errors::coded;
+use crate::coded_error::coded;
 
 #[cfg(test)]
 mod tests;

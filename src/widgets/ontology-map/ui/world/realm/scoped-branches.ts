@@ -5,7 +5,7 @@ import { layoutDial } from '../../../dial/layout';
 import { circularDomainOrder } from '../../../dial/order';
 import { branchPreviewRows } from '../../../dial/branches/layout';
 import { dialOverviewPad } from '../../../dial/fit';
-import type { DialWorld, DialWorldInput, Point } from '../../../dial/types';
+import type { DialWorld, DialWorldInput, Point } from '../../../dial/dial-shapes';
 import type { TopologyWorld } from '../topology-world';
 
 export function scopedBranches(world: TopologyWorld, memberIds: ReadonlySet<string>, input: DialWorldInput): DialWorld | null {

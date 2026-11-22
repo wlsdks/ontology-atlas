@@ -3,9 +3,7 @@
  * `src-tauri/src/vault/watch.rs`): the paths that changed, never trusted for a write.
  */
 
-/** What the watcher found at one changed path, by `lstat` without following a link. */
 export interface VaultPathChange {
-  /** Relative to the vault root, `/`-separated. */
   path: string;
   /** `other`: a link, a special file, or anything under a linked folder; the walk skips all three. */
   kind: 'file' | 'directory' | 'missing' | 'other';

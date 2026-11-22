@@ -17,7 +17,7 @@ import {
   WebGLRenderer,
 } from "three";
 
-import type { NeuralFrame } from "../ui/frame-draw/neural-frame";
+import type { NeuralFrame } from "../ui/frame-draw/neural/neural-frame";
 import { readNeuralGlTokens, type NeuralGlTokens, type NeuralTokens } from "../tokens/read-neural-tokens";
 import {
   CELL_FLOATS,

@@ -1,14 +1,14 @@
 "use client";
 
-import type { MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import {
   useRef
 } from "react";
 import type { CameraTarget } from "../../engine/camera";
 import type { DomeModelBuild } from "../../model/dome-view/model-build";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
-import type { DomeViewKind } from "../../model/dome-view/types";
-import { type TierNameAnchor } from "../../model/dome-view/tier-names";
+import type { DomeViewKind } from "../../model/dome-view/dome-shapes";
+import { type TierNameAnchor } from "../../model/dome-view/strata/tier-names";
 interface Dependencies {
     view3d: boolean;
   mapArrangement: MapArrangement;
@@ -50,11 +50,8 @@ export function useTopologyDomeState({
   const domeWorldSourceRef = useRef<unknown>(null);
 
   /**
-   * The **in-progress, time-sliced** dome model build: each frame with 3D on advances
-   * only `DOME_BUILD_SLICE_MS`, it waits while 3D is off, and one that settles on screen
-   * is drawn meanwhile.
-   * `world`/`arrangement` are recorded alongside: a world swap or arrangement
-   * change mid-slice makes this build stale input, and it is restarted.
+   * The in-progress, time-sliced dome model build: each frame with 3D on advances `DOME_BUILD_SLICE_MS`, it waits while 3D is off.
+   * `world`/`arrangement` are recorded with it: a change mid-slice makes the build stale input and it restarts.
    */
   const domeModelBuildRef = useRef<{
     world: unknown;
@@ -64,11 +61,8 @@ export function useTopologyDomeState({
   } | null>(null);
 
   /**
-   * Pending 3D reframe on selection: written by the focus effect, consumed by
-   * the loop's dome step. At effect time the world may still be rebuilding (a
-   * selection also expands ancestor clusters), so computing it there fails
-   * silently. The loop always holds the live world, so the next dome frame
-   * handles it for certain.
+   * Pending 3D reframe on selection: written by the focus effect, consumed by the loop's dome step. At effect time the world may still be
+   * rebuilding (a selection also expands ancestor clusters), so computing it there fails silently; the loop holds the live world.
    */
   const domeFocusPendingRef = useRef<{ slug: string | null; } | null>(null);
 
@@ -96,7 +90,7 @@ export function useTopologyDomeState({
 
   /**
    * The tier names last handed out — the change filter's memory, and the boxes the
-   * next frame's concept names give way to (`model/dome-view/tier-names.ts`).
+   * next frame's concept names give way to (`model/dome-view/strata/tier-names.ts`).
    */
   const domeTierAnchorsSentRef = useRef<TierNameAnchor[] | null>(null);
 

@@ -20,7 +20,6 @@ type FirstDocumentDoor = {
   onAddFiles: (() => void) | null;
   adding: boolean;
   onImport: (() => void) | null;
-  /** What the last check read, shown when the folder holds entries that are not listed. */
   readScope: ReactNode;
 };
 
@@ -32,13 +31,8 @@ type PlanningDoor =
 
 const ALERT_CLASS = 'mt-4 text-body text-[color:var(--color-text-primary)]';
 
-/** Copy keyed by its door fades in on a door change while the stage and its artwork stay mounted. */
 const SWAP_IN = 'motion-swap-in';
 
-/**
- * When the copy under the artwork changes height, the centred column would jump. The host is set
- * back to where the column was drawn, then its transform eases to zero.
- */
 function useStageGlide(door: string) {
   const reduced = usePrefersReducedMotion();
   const host = useRef<HTMLDivElement>(null);

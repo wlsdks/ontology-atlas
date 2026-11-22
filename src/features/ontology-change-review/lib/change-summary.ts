@@ -5,19 +5,14 @@ import type { OntologyChangeSet } from '@/entities/knowledge-graph';
  * fact has a variant that omits it, because a card that invents a subject is worse.
  */
 
-/** One line of a sentence map: a target slug and the sentence written about it. */
 export interface OntologyChangeSentence {
-  /** The frontmatter key inside the map — a target slug for `relation_notes`. */
   target: string;
-  /** The sentence that will be written. */
   text: string;
   /** The sentence currently in the file, when the change set carried one. Never inferred. */
   before?: string;
-  /** Explicit map-entry delta when both map snapshots are known. */
   change?: 'added' | 'removed' | 'changed' | 'unchanged';
 }
 
-/** A map of sentences, or `null`; tested by shape, not key name. */
 export function sentenceMap(value: unknown): OntologyChangeSentence[] | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const entries = Object.entries(value as Record<string, unknown>);
@@ -50,13 +45,11 @@ export function sentenceMapChange(
   });
 }
 
-/** An array of plain strings reads as one line each, never as a JSON literal. */
 export function stringList(value: unknown): string[] | null {
   if (!Array.isArray(value) || value.length === 0) return null;
   return value.every((entry) => typeof entry === 'string') ? (value as string[]) : null;
 }
 
-/** `projects/ontology-atlas` → `ontology-atlas`; the full slug still appears below. */
 export function conceptName(target: string | null | undefined): string | null {
   if (typeof target !== 'string') return null;
   const segments = target.trim().split('/').filter(Boolean);
@@ -85,20 +78,16 @@ const PLAIN_FIELD_KEYS: ReadonlySet<string> = new Set([
   'display',
 ]);
 
-/** The `ontologyChangeReview` message key for a field's plain name, or `null` when there is none. */
 export function fieldNameKey(key: string): string | null {
   return PLAIN_FIELD_KEYS.has(key) ? `fieldName.${key}` : null;
 }
 
 export interface OntologyChangeHeadline {
-  /** A key under `ontologyChangeReview.headline`. */
   key: string;
   values: Record<string, string | number>;
-  /** Rendered as `{field}`: translated when `fieldNameKey` knows it, raw otherwise. */
   fieldKey?: string;
 }
 
-/** One sentence from typed facts only, branches in order of certainty. */
 export function ontologyChangeHeadline(changeSet: OntologyChangeSet): OntologyChangeHeadline {
   const name = conceptName(changeSet.target);
 

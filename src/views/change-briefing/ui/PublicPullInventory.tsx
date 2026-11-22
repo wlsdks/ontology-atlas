@@ -14,7 +14,7 @@ import { publicPullRepositories, readPublicPulls, type PublicPullVersion } from 
 import type { ChangeBriefing } from '@/shared/lib/git/tauri-change-briefing';
 import { readArrivalMemory, writeArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory-store';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
-import { OriginalSourceBody } from './OriginalSourceBody';
+import { OriginalSourceBody } from './sources/OriginalSourceBody';
 import { Input } from '@/shared/ui/fields/input';
 
 type Props = { data: ChangeBriefing; memory: string; onActivity?: (controller: AbortController | null) => void; onFiles?: () => void };

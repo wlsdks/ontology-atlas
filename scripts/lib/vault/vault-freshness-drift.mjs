@@ -77,9 +77,9 @@ export function matchChangedFilesToVaultNodes(docs, changedFiles) {
     }
 
     if (Array.isArray(fm.elements)) {
-      for (const el of fm.elements) {
-        if (typeof el !== "string") continue;
-        const entry = el.trim();
+      for (const element of fm.elements) {
+        if (typeof element !== "string") continue;
+        const entry = element.trim();
         if (!entry || !looksLikePath(entry) || isOntologySlug(entry)) continue;
         for (const cf of changed) {
           if (pathMatches(cf, entry)) matchedFiles.add(cf);
@@ -134,9 +134,7 @@ export function computeVaultFreshnessDrift({ docs, changedFiles, vaultDir }) {
   };
 }
 
-// Stable marker so the Action can find-and-update its own comment instead of
-// spamming a new one on every push (spec: update the existing comment, never
-// spam).
+// Stable marker so the Action finds and updates its own comment instead of posting a new one each push.
 export const FRESHNESS_COMMENT_MARKER = "<!-- ontology-atlas-vault-freshness -->";
 
 /**

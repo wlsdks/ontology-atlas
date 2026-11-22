@@ -7,8 +7,8 @@ import {
   evaluateMeaningProposal,
   proposalFromGolden,
   repositoryProposalFromGolden,
-  validateMeaningProposalAgainstAnalysis,
-} from './meaning-evaluation.mjs';
+} from './golden-corpus-scoring.mjs';
+import { validateMeaningProposalAgainstAnalysis } from './meaning-evaluation.mjs';
 import { analyzeRepoStructure } from '../analyze.mjs';
 import { buildMarkdown, parseFrontmatter } from '../parser.mjs';
 

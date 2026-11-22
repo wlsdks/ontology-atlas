@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { OFF_VECTOR_STATUS, searchVectors, type VectorFound, type VectorPhase, type VectorStatus } from '@/shared/lib/vault-folder/tauri-vault-vectors';
+import { OFF_VECTOR_STATUS, searchVectors, type VectorFound, type VectorPhase, type VectorStatus } from '@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors';
 import { askAndFollowFailure, searchableSource } from './use-vector-search';
 import { readStatusAgain } from './vector-store';
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-vectors', async (original) => ({
-  ...(await original<typeof import('@/shared/lib/vault-folder/tauri-vault-vectors')>()),
+vi.mock('@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors', async (original) => ({
+  ...(await original<typeof import('@/shared/lib/vault-folder/vault-vectors/tauri-vault-vectors')>()),
   searchVectors: vi.fn(),
 }));
 vi.mock('./vector-store', () => ({ readStatusAgain: vi.fn(async () => undefined), useVectorStatus: vi.fn() }));

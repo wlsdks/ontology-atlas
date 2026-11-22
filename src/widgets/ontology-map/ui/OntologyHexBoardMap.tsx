@@ -3,15 +3,17 @@
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
 import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-canvas/map-layout-morph-store";
-import { Chip } from "@/shared/ui/controls/controls";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import type { Rect } from "../interaction/free-area";
-import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import {
+  DEFAULT_MAP_NAVIGATION_SPEED,
+  type MapNavigationSpeed,
+} from "@/shared/lib/preferences/map-navigation-speed-preferences";
 import { listenForGesturePinch } from "../interaction/gesture-pinch";
 import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
 import { computeWheelZoomFactor, createPinchWheelStream, normalizeWheelDeltaY, readPinchWheel, shouldIgnoreWheelGlide } from "../interaction/wheel";
 import { easeZoomScale, VIEW_CAMERA_MS, VIEW_DIM_MS, zoomStepProgress } from "../model/motion-physics";
-import { hexFreeArea as freeAreaOf, hexMapChrome as mapChromeOf, hexMarks, hexRestCamera, readHexRoom, roomMovesRest, type HexCamera as Camera, type MapChrome } from "../morph/hex-marks";
+import { hexFreeArea as freeAreaOf, hexMapChrome as mapChromeOf, hexMarks, readHexRoom, roomMovesRest, type HexCamera as Camera, type MapChrome } from "../morph/hex-marks";
 import {
   computeHexBoard,
   hexBandFor,
@@ -25,47 +27,33 @@ import {
   HEX_MIN_RADIUS,
   type HexBand,
   type HexBoardLayout,
-  type HexMeasure,
   type HexPlacementRecord,
-  type HexTextRole,
   type HexTile,
   type HexWalkDirection,
   hexGutter,
 } from "../model/board/hex-board";
-import { SQRT3 } from "../model/board/hex-grid";
-import { buildHexLattice, closedNodes, HexFocusRoutes, type HexRoute, type HexRouteJob } from "../model/board/hex-router";
+import { clampHexCamera, focusShift, regionFitCamera, restCameraAboveFooter, routeFrameOf, type RouteFrame } from "../model/board/hex-camera";
+import { computeFocusPlan, planCanals, type FocusJob } from "../model/board/hex-focus-plan";
+import { pickFlatTile, placeHexTooltip } from "../model/board/hex-hover";
+import { useHexMeasure } from "../model/board/use-hex-measure";
+import { buildHexLattice, closedNodes, HexFocusRoutes, type HexRoute } from "../model/board/hex-router";
 import { buildBoardScene, isSlabBand, reliefLiftPx } from "../board/board-scene";
 import { drawBoard } from "../board/board-paint";
 import type { PaintedFace } from "../board/board-geometry";
 import { declaredDependents } from "../board/relief-metric";
 import { pickReliefTile } from "../board/relief-pick";
 import { draggedPitch, ReliefPose, restingPitch } from "../board/relief-pose";
-import { groundInverseY, reliefRiseAt, RELIEF_PITCH_REST, type ReliefView } from "../board/relief-projection";
+import { reliefRiseAt, RELIEF_PITCH_REST, type ReliefView } from "../board/relief-projection";
 import {
   hexArrivalDuration,
-  hexFonts,
   type HexDrawRoute,
   type HexEvidenceState,
   type HexTextBox,
 } from "../render/hex-board";
 import { readHexBoardTokensOrNull } from "../tokens/read-hex-board-tokens";
-import { productFontFamily } from "../render/labels";
-import { loadProductGlyphs, productGlyphsLoaded } from "../render/product-glyphs";
-
-export interface HexBoardLabels {
-  staleOnly: (count: number) => string;
-  regionsOnly: string;
-  /** Said once when the board had to widen (a region overflowed). */
-  widened: string;
-  tooltip: (facts: { name: string; stale: boolean; needs: number; users: number; elements: number; dependents: number | null }) => string;
-  domainMeta: (facts: { capabilities: number; elements: number }) => string;
-  domainStale: (count: number | null) => string | null;
-  projectMeta: string | null;
-  plateSub: (facts: { capabilities: number; stale: number | null }) => string;
-  relief: string;
-  dependents: (count: number) => string;
-  regionDependents: (count: number) => string;
-}
+import { HexBoardFooter } from "./hex-board/HexBoardFooter";
+import type { HexBoardLabels } from "./hex-board/hex-board-labels";
+import { HexTileList } from "./hex-board/HexTileList";
 
 export interface OntologyHexBoardMapProps {
   nodes: readonly OntologyMapNode[];
@@ -96,112 +84,15 @@ export interface OntologyHexBoardMapProps {
 }
 
 const SWEEP_MS = 420;
-const PAN_KEEP = 160;
 /** Chrome that moves with a selection (INDEX folding or opening, the inspector) has settled by then. */
 const CHROME_SETTLE_MS = 450;
 const MIRROR_REST_MS = 120;
-/** Domain-to-domain canals drawn at rest, at every band (spec §7). */
-const REST_CANALS = 14;
 const ROUTE_BUDGET_MS = 4;
 /** Canals avoid each other's lanes harder than focus routes do, as `layCanals` lays them. */
 const CANAL_OTHER_PENALTY = 1.8;
 
-type FocusJob = HexRouteJob<"need" | "use" | "need-inside">;
-type CanalJob = HexRouteJob<"canal">;
-interface CanalPlan {
-  jobs: CanalJob[];
-  /** `from>to` domain ids → the flow a laid route draws. */
-  flows: Map<string, { count: number; twoWay: boolean }>;
-}
-interface FocusPlan {
-  lit: Set<string> | null;
-  jobs: FocusJob[];
-  region: string | null;
-}
-const NO_FOCUS: FocusPlan = { lit: null, jobs: [], region: null };
-
 const arrivedKeys = new Set<string>();
 const risenKeys = new Set<string>();
-
-let measureContext: CanvasRenderingContext2D | null = null;
-function measureText(text: string, role: HexTextRole): number {
-  if (typeof document === "undefined") return text.length * 7;
-  measureContext ??= document.createElement("canvas").getContext("2d");
-  if (!measureContext) return text.length * 7;
-  measureContext.font = hexFonts()[role];
-  return measureContext.measureText(text).width;
-}
-
-/**
- * The board's text measure, as a new function once the product faces its text draws from have
- * loaded (see `hexFonts`, `product-glyphs.ts`). Until then the names are measured in the system
- * stack behind it; the new identity re-measures the names floor and repaints, so the band is
- * decided in the face drawn. A text with new characters loads their faces the same way.
- */
-function useHexMeasure(text: string): HexMeasure {
-  const [loaded, setLoaded] = useState(0);
-  useEffect(() => {
-    const family = productFontFamily();
-    if (family === null || typeof document === "undefined" || !document.fonts || productGlyphsLoaded(family, ` ${text}`)) return;
-    let live = true;
-    const done = () => {
-      if (live) setLoaded((count) => count + 1);
-    };
-    void loadProductGlyphs(family, ` ${text}`).then(done, done);
-    return () => {
-      live = false;
-    };
-  }, [text]);
-  return useMemo<HexMeasure>(() => (loaded > 0 ? (text, role) => measureText(text, role) : measureText), [loaded]);
-}
-
-/** A route keeps this far (CSS px) from the free map's edges and from every piece of chrome. */
-const ROUTE_CLEAR = 10;
-/** The resting board keeps this far (CSS px) above its own footer. */
-const FOOTER_CLEAR = 8;
-
-/**
- * The board rests in the room the glide predicted (`readHexRoom`). Only when its lowest tiles, at
- * the resting pitch, would reach a footer that wrapped past that reserve, and a shorter room lifts
- * them clear, does it rest in that shorter room; a board too large for either stays as predicted.
- */
-function restCameraAboveFooter(layout: HexBoardLayout, room: Rect, footerTop: number | null, pitch: number): Camera {
-  const pivot = room.y + room.height / 2;
-  const lowest = (c: Camera) => pivot + (c.oy + layout.bounds.maxY * c.R - pivot) * Math.cos(pitch);
-  const rest = hexRestCamera(layout, room);
-  if (footerTop == null || lowest(rest) <= footerTop - FOOTER_CLEAR) return rest;
-  const lifted = hexRestCamera(layout, { ...room, height: Math.max(80, Math.round(footerTop - FOOTER_CLEAR - room.y)) });
-  return lowest(lifted) <= footerTop - FOOTER_CLEAR ? lifted : rest;
-}
-
-/** Where routes may run, in the board's unit space, for one camera. */
-interface RouteFrame {
-  key: string;
-  x0: number;
-  y0: number;
-  x1: number;
-  y1: number;
-  blocks: { x0: number; y0: number; x1: number; y1: number }[];
-}
-
-function routeFrameOf(chrome: MapChrome | null, cam: Camera, view: ReliefView): RouteFrame | null {
-  if (!chrome) return null;
-  const ux = (px: number) => (px - cam.ox) / cam.R;
-  const uy = (py: number) => groundInverseY(py, view, cam);
-  const f = chrome.free;
-  const frame = {
-    x0: ux(f.x + ROUTE_CLEAR),
-    y0: uy(f.y + ROUTE_CLEAR),
-    x1: ux(f.x + f.width - ROUTE_CLEAR),
-    y1: uy(f.y + f.height - ROUTE_CLEAR),
-    blocks: chrome.blocks
-      .filter((b) => b.x < f.x + f.width && b.x + b.width > f.x && b.y < f.y + f.height && b.y + b.height > f.y)
-      .map((b) => ({ x0: ux(b.x - ROUTE_CLEAR), y0: uy(b.y - ROUTE_CLEAR), x1: ux(b.x + b.width + ROUTE_CLEAR), y1: uy(b.y + b.height + ROUTE_CLEAR) })),
-  };
-  const q = (v: number) => Math.round(v * 20);
-  const key = [frame.x0, frame.y0, frame.x1, frame.y1, ...frame.blocks.flatMap((b) => [b.x0, b.y0, b.x1, b.y1])].map(q).join(",");
-  return { key, ...frame };
-}
 
 export function OntologyHexBoardMap({
   nodes,
@@ -372,7 +263,7 @@ export function OntologyHexBoardMap({
     const chrome = mapChromeOf(canvasRef.current);
     if (chrome) chromeRef.current = chrome;
     const next = routeFrameOf(chrome, cam, { pitch: pose.target, pivotY: pivotRef.current });
-    if (next) setRouteFrame((prev) => (prev && prev.key === next.key ? prev : next));
+    if (next) setRouteFrame((previous) => (previous && previous.key === next.key ? previous : next));
   }, [pose]);
   const frameRoutesRef = useRef(frameRoutes);
   const blocked = useMemo(() => {
@@ -385,20 +276,7 @@ export function OntologyHexBoardMap({
   }, [lattice, routeFrame]);
 
   /** The resting canals as routing jobs, laid a few per frame inside the routing budget. */
-  const canalPlan = useMemo((): CanalPlan => {
-    const plan: CanalPlan = { jobs: [], flows: new Map() };
-    if (!layout) return plan;
-    const regionById = new Map(layout.regions.map((r) => [r.domainId, r] as const));
-    for (const flow of layout.canals.slice(0, REST_CANALS)) {
-      const a = regionById.get(flow.fromDomain);
-      const b = regionById.get(flow.toDomain);
-      if (!a || !b) continue;
-      const bundle = `${a.domainId}>${b.domainId}`;
-      plan.jobs.push({ from: [a.domainId, ...a.capabilityIds], to: [b.domainId, ...b.capabilityIds], bundle, role: "canal" });
-      plan.flows.set(bundle, { count: flow.count, twoWay: flow.twoWay });
-    }
-    return plan;
-  }, [layout]);
+  const canalPlan = useMemo(() => planCanals(layout), [layout]);
   const canalsRef = useRef(new HexFocusRoutes<"canal">());
   const canalOf = useCallback(
     (route: HexRoute): HexDrawRoute => {
@@ -410,56 +288,7 @@ export function OntologyHexBoardMap({
   );
 
   /** Who stays lit, and the focus routes, for the selection (or the hover when nothing is selected). */
-  const focus = useMemo((): FocusPlan => {
-    if (!layout) return NO_FOCUS;
-    const id = selectedId && layout.byId.has(selectedId) ? selectedId : null;
-    const subject = id ?? hoverId;
-    if (staleOnly && !id) {
-      const lit = new Set<string>();
-      for (const c of layout.capabilities)
-        if (evidence.get(c.id) === "stale") {
-          lit.add(c.id);
-          if (c.domainId) lit.add(c.domainId);
-        }
-      return { lit, jobs: [], region: null };
-    }
-    if (!subject) return NO_FOCUS;
-    const tile = layout.byId.get(subject);
-    if (!tile) return NO_FOCUS;
-    const jobs: FocusJob[] = [];
-    const lit = new Set<string>([subject]);
-    if (tile.kind === "capability") {
-      if (tile.domainId) lit.add(tile.domainId);
-      const needs = layout.dependencies.filter((d) => d.from === subject).sort((a, b) => ((layout.byId.get(a.to)?.domainId ?? "") < (layout.byId.get(b.to)?.domainId ?? "") ? -1 : 1));
-      for (const d of needs) {
-        lit.add(d.to);
-        jobs.push({ from: [subject], to: [d.to], bundle: `need:${layout.byId.get(d.to)?.domainId}`, role: "need" });
-      }
-      for (const d of layout.dependencies.filter((x) => x.to === subject)) {
-        lit.add(d.from);
-        jobs.push({ from: [d.from], to: [subject], bundle: "use", role: "use" });
-      }
-    } else if (tile.kind === "domain") {
-      const region = layout.regions.find((r) => r.domainId === subject);
-      const found: { from: string; to: string; inside: boolean }[] = [];
-      for (const capId of region?.capabilityIds ?? []) {
-        lit.add(capId);
-        for (const d of layout.dependencies.filter((x) => x.from === capId)) {
-          const inside = layout.byId.get(d.to)?.domainId === subject;
-          found.push({ from: capId, to: d.to, inside });
-          lit.add(d.to);
-        }
-      }
-      found.sort((a, b) => Number(a.inside) - Number(b.inside));
-      if (id)
-        for (const j of found)
-          jobs.push({ from: [j.from], to: [j.to], bundle: j.inside ? "inside" : `need:${layout.byId.get(j.to)?.domainId}`, role: j.inside ? "need-inside" : "need" });
-      return { lit: id ? lit : null, jobs, region: id ? subject : null };
-    } else {
-      return NO_FOCUS;
-    }
-    return { lit: id ? lit : null, jobs, region: null };
-  }, [layout, selectedId, hoverId, staleOnly, evidence]);
+  const focus = useMemo(() => computeFocusPlan(layout, selectedId, hoverId, staleOnly, evidence), [layout, selectedId, hoverId, staleOnly, evidence]);
   const focusRoutesRef = useRef(new HexFocusRoutes<FocusJob["role"]>());
 
   useLayoutEffect(() => {
@@ -473,16 +302,7 @@ export function OntologyHexBoardMap({
   );
 
   const clampCamera = useCallback(
-    (c: Camera): Camera => {
-      if (!size || !layout) return c;
-      const b = layout.bounds;
-      const R = Math.max(HEX_MIN_RADIUS, Math.min(HEX_MAX_RADIUS, c.R));
-      const minX = PAN_KEEP - b.maxX * R;
-      const maxX = size.w - PAN_KEEP - b.minX * R;
-      const minY = PAN_KEEP - b.maxY * R;
-      const maxY = size.h - PAN_KEEP - b.minY * R;
-      return { R, ox: Math.min(maxX, Math.max(minX, c.ox)), oy: Math.min(maxY, Math.max(minY, c.oy)) };
-    },
+    (c: Camera): Camera => (size && layout ? clampHexCamera(c, layout.bounds, size.w, size.h) : c),
     [size, layout],
   );
 
@@ -507,19 +327,19 @@ export function OntologyHexBoardMap({
         mirrorTimerRef.current = null;
         mirrorKeyRef.current = key;
         const byId = new Map<string, HTMLElement>();
-        for (const el of list.querySelectorAll<HTMLElement>("[data-hex-id]")) byId.set(el.dataset.hexId!, el);
+        for (const htmlElement of list.querySelectorAll<HTMLElement>("[data-hex-id]")) byId.set(htmlElement.dataset.hexId!, htmlElement);
         const boxes = new Map(textBoxes.map((b) => [b.id, b] as const));
         const plates = new Map(plateBoxes.map((b) => [b.id, b] as const));
         const RI = cam.R - hexGutter(cam.R);
         for (const t of layout.tiles) {
-          const el = byId.get(t.id);
-          if (!el) continue;
+          const htmlElement = byId.get(t.id);
+          if (!htmlElement) continue;
           const yt = view.pivotY + (cam.oy + t.y * cam.R - view.pivotY) * Math.cos(view.pitch) - liftPx(t, cam.R) * Math.sin(view.pitch);
-          el.dataset.mark = `${Math.round(cam.ox + t.x * cam.R)},${Math.round(yt)},${Math.round(RI)}`;
+          htmlElement.dataset.mark = `${Math.round(cam.ox + t.x * cam.R)},${Math.round(yt)},${Math.round(RI)}`;
           const b = boxes.get(t.id);
-          el.dataset.labelBox = b ? `${Math.round(b.x)},${Math.round(b.y)},${Math.round(b.w)},${Math.round(b.h)}` : "";
+          htmlElement.dataset.labelBox = b ? `${Math.round(b.x)},${Math.round(b.y)},${Math.round(b.w)},${Math.round(b.h)}` : "";
           const p = plates.get(t.id);
-          el.dataset.plateBox = p ? `${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.w)},${Math.round(p.h)}` : "";
+          htmlElement.dataset.plateBox = p ? `${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.w)},${Math.round(p.h)}` : "";
         }
         wrap.dataset.hexReady = "true";
       }, MIRROR_REST_MS);
@@ -732,13 +552,13 @@ export function OntologyHexBoardMap({
       const chrome = mapChromeOf(canvasRef.current);
       chromeRef.current = chrome;
       const r = wrap.getBoundingClientRect();
-      setSize((prev) => (prev && prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }));
+      setSize((previous) => (previous && previous.w === r.width && previous.h === r.height ? previous : { w: r.width, h: r.height }));
       readFooter();
       if (selectedRef.current && roomTakenRef.current !== "none") return;
       roomTakenRef.current = selectedRef.current ? "selection" : "rest";
       const next = readHexRoom(canvasRef.current, r.width, r.height, wrap);
-      setRoom((prev) => (roomMovesRest(prev, next) ? next : prev));
-      setAspect((prev) => prev ?? next.width / Math.max(1, next.height));
+      setRoom((previous) => (roomMovesRest(previous, next) ? next : previous));
+      setAspect((previous) => previous ?? next.width / Math.max(1, next.height));
     };
     read();
     const ro = new ResizeObserver(read);
@@ -837,39 +657,10 @@ export function OntologyHexBoardMap({
       const cam = camRef.current;
       const free = freeAreaOf(canvasRef.current);
       if (!cam || !free || !layout) return;
-      const ids = [selectedId, ...(focus.lit ?? [])];
-      const R = cam.R;
       const view = viewOf();
-      const c = Math.cos(view.pitch);
-      const s = Math.sin(view.pitch);
-      const sy = (u: number) => view.pivotY + (cam.oy + u * R - view.pivotY) * c;
-      const topOf = (t: { id: string; y: number; domainId: string | null }, reach: number) => sy(t.y) - liftPx(t, R) * s - reach * R * c;
-      let x0 = Infinity;
-      let x1 = -Infinity;
-      let y0 = Infinity;
-      let y1 = -Infinity;
-      const sel = layout.byId.get(selectedId);
-      for (const id of ids) {
-        const t = layout.byId.get(id);
-        if (!t) continue;
-        x0 = Math.min(x0, t.x - 1);
-        x1 = Math.max(x1, t.x + 1);
-        y0 = Math.min(y0, topOf(t, SQRT3 / 2));
-        y1 = Math.max(y1, sy(t.y) + (SQRT3 / 2) * R * c);
-      }
-      if (!Number.isFinite(x0) || !sel) return;
-      const margin = 16;
-      const shift = (lo: number, hi: number, freeLo: number, freeLen: number, must: [number, number]) => {
-        // Keep the whole focus in view when it fits; otherwise at least the selected tile.
-        const [a, b] = hi - lo <= freeLen - 2 * margin ? [lo, hi] : must;
-        if (a < freeLo + margin) return freeLo + margin - a;
-        if (b > freeLo + freeLen - margin) return freeLo + freeLen - margin - b;
-        return 0;
-      };
-      const sx = (u: number) => cam.ox + u * R;
-      const dx = shift(sx(x0), sx(x1), free.x, free.width, [sx(sel.x - 1), sx(sel.x + 1)]);
-      const dy = shift(y0, y1, free.y, free.height, [topOf(sel, 1), sy(sel.y) + R * c]);
-      if (dx !== 0 || dy !== 0) moveCamera(clampCamera({ R, ox: cam.ox + dx, oy: cam.oy + dy / c }));
+      const shift = focusShift(layout, cam, free, view, selectedId, focus.lit ?? [], liftPx);
+      if (!shift) return;
+      if (shift.dx !== 0 || shift.dy !== 0) moveCamera(clampCamera({ R: cam.R, ox: cam.ox + shift.dx, oy: cam.oy + shift.dy / Math.cos(view.pitch) }));
       // The chrome changed with the selection (inspector in, INDEX folded) even when the
       // camera did not move: lay the routes in the free map as it is now.
       else frameRoutes(animRef.current?.to ?? cam);
@@ -927,27 +718,7 @@ export function OntologyHexBoardMap({
         const max = slabs ? Math.max(...scene.regionShare.values(), scene.maxHeightShare) * Math.max(1, layout.reg) * cam.R : scene.maxHeightShare * cam.R;
         return pickReliefTile(px, py, scene, cam, viewOf(), (t) => liftPx(t, cam.R), max);
       }
-      const ux = (px - cam.ox) / cam.R;
-      const uy = (py - cam.oy) / cam.R;
-      const q = ux / 1.5;
-      const r = uy / SQRT3 - q / 2;
-      // Nearest occupied cell whose hexagon contains the point.
-      const rq = Math.round(q);
-      const rr = Math.round(r);
-      let best: string | null = null;
-      let bestD = Infinity;
-      for (let dq = -1; dq <= 1; dq += 1)
-        for (let dr = -1; dr <= 1; dr += 1) {
-          const id = layout.occupied.get(`${rq + dq},${rr + dr}`);
-          if (!id) continue;
-          const t = layout.byId.get(id)!;
-          const d = Math.hypot(t.x - ux, t.y - uy);
-          if (d < bestD) {
-            bestD = d;
-            best = id;
-          }
-        }
-      return bestD <= SQRT3 / 2 + 0.02 ? best : null;
+      return pickFlatTile(layout, cam, px, py);
     },
     [layout, scene, pose, viewOf, liftPx],
   );
@@ -979,32 +750,9 @@ export function OntologyHexBoardMap({
       const H = tip.offsetHeight;
       const x = cam.ox + t.x * cam.R;
       const y = view.pivotY + (cam.oy + t.y * cam.R - view.pivotY) * c - liftPx(t, cam.R) * Math.sin(view.pitch);
-      const R = cam.R;
-      const gap = 8;
       chromeRef.current ??= mapChromeOf(canvasRef.current);
       const free = chromeRef.current?.free ?? { x: 0, y: 0, width: size.w, height: size.h };
-      // Beside the tile first (right, left, below, above), then the same sides swept outward in
-      // 6 px steps; the nearest spot that covers no name wins.
-      const cands: { x: number; y: number; d: number }[] = [];
-      const apo = (R * SQRT3 * c) / 2;
-      for (let dy = -2 * R; dy <= 2 * R; dy += 6) {
-        cands.push({ x: x + R + gap, y: y - H / 2 + dy, d: Math.abs(dy) });
-        cands.push({ x: x - R - gap - W, y: y - H / 2 + dy, d: Math.abs(dy) + 1 });
-      }
-      for (let dx = -W; dx <= 0; dx += 12) {
-        for (let dy = 0; dy <= 2 * R; dy += 6) {
-          cands.push({ x: x + dx, y: y + apo + gap + dy, d: 2 + dy + Math.abs(dx + W / 2) * 0.25 });
-          cands.push({ x: x + dx, y: y - apo - gap - H - dy, d: 3 + dy + Math.abs(dx + W / 2) * 0.25 });
-        }
-      }
-      cands.sort((a, b) => a.d - b.d);
-      const boxes = textBoxesRef.current;
-      const inside = (c: { x: number; y: number }) =>
-        c.x >= free.x + 8 && c.y >= free.y + 8 && c.x + W <= free.x + free.width - 8 && c.y + H <= free.y + free.height - 8;
-      const clear = (c: { x: number; y: number }) => !boxes.some((b) => b.x < c.x + W && c.x < b.x + b.w && b.y < c.y + H && c.y < b.y + b.h);
-      // Never over the hovered tile itself either.
-      const offTile = (c: { x: number; y: number }) => !(c.x < x + R && x - R < c.x + W && c.y < y + apo && y - apo < c.y + H);
-      const pick = cands.find((c) => inside(c) && clear(c) && offTile(c)) ?? cands.find((c) => inside(c) && offTile(c)) ?? cands[0]!;
+      const pick = placeHexTooltip(x, y, cam.R, c, W, H, free, textBoxesRef.current);
       tip.style.transform = `translate(${Math.round(pick.x)}px, ${Math.round(pick.y)}px)`;
     },
     [layout, size, labels, evidence, viewOf, liftPx, metric],
@@ -1145,13 +893,8 @@ export function OntologyHexBoardMap({
     const region = t?.domainId ? layout?.regions.find((r) => r.domainId === t.domainId) : null;
     const free = freeAreaOf(canvasRef.current);
     if (!region || !free) return;
-    const xs = region.cells.map(([q]) => 1.5 * q);
-    const ys = region.cells.map(([q, r]) => SQRT3 * (r + q / 2));
-    const b = { minX: Math.min(...xs) - 1, maxX: Math.max(...xs) + 1, minY: Math.min(...ys) - SQRT3 / 2, maxY: Math.max(...ys) + SQRT3 / 2 };
-    const R = Math.min(HEX_MAX_RADIUS, Math.floor(Math.min((free.width - 64) / (b.maxX - b.minX), (free.height - 64) / (b.maxY - b.minY))));
     const view = viewOf();
-    const centreY = (free.y + free.height / 2 - view.pivotY) / Math.cos(view.pitch) + view.pivotY;
-    moveCamera(clampCamera({ R, ox: free.x + free.width / 2 - ((b.minX + b.maxX) / 2) * R, oy: centreY - ((b.minY + b.maxY) / 2) * R }));
+    moveCamera(clampCamera(regionFitCamera(region.cells, free, view.pivotY, view.pitch)));
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLCanvasElement>) => {
     if (!layout) return;
@@ -1192,8 +935,8 @@ export function OntologyHexBoardMap({
     if (!new URLSearchParams(window.location.search).has("e2e")) return;
     const w = window as unknown as { __atlasHexRelief?: unknown };
     w.__atlasHexRelief = {
-      setPitch: (pitch: number, opts?: { animate?: boolean }) => {
-        pose.begin(pitch, { now: performance.now(), animate: opts?.animate === true && !reducedMotion, rise: false });
+      setPitch: (pitch: number, options?: { animate?: boolean }) => {
+        pose.begin(pitch, { now: performance.now(), animate: options?.animate === true && !reducedMotion, rise: false });
         requestDraw();
       },
       state: () => ({ pitch: pose.pitch, target: pose.target, animating: pose.animating, frames: framesRef.current, pivotY: pivotRef.current }),
@@ -1226,33 +969,17 @@ export function OntologyHexBoardMap({
 
   const tileList = useMemo(
     () => (
-      <ul ref={listRef} className="sr-only" aria-label={listLabel} data-testid="hex-board-list">
-        {(layout?.tiles ?? []).map((t) => (
-          <li key={t.id}>
-            <button
-              type="button"
-              tabIndex={-1}
-              data-hex-id={t.id}
-              data-hex-kind={t.kind}
-              data-hex-domain={t.domainId ?? ""}
-              data-hex-cell={`${t.q},${t.r}`}
-              data-evidence={t.kind === "capability" ? (evidence.get(t.id) ?? "unknown") : undefined}
-              data-dependents={t.kind === "capability" ? (metric.capability.get(t.id) ?? 0) : t.kind === "domain" ? (metric.region.get(t.id) ?? 0) : undefined}
-              aria-label={
-                relief && t.kind === "capability"
-                  ? `${t.name} · ${labels.dependents(metric.capability.get(t.id) ?? 0)}`
-                  : relief && t.kind === "domain"
-                    ? `${t.name} · ${labels.regionDependents(metric.region.get(t.id) ?? 0)}`
-                    : undefined
-              }
-              aria-pressed={selectedId === t.id}
-              onClick={() => onSelect?.(t.id)}
-            >
-              {t.name}
-            </button>
-          </li>
-        ))}
-      </ul>
+      <HexTileList
+        ref={listRef}
+        layout={layout}
+        evidence={evidence}
+        selectedId={selectedId}
+        onSelect={onSelect}
+        listLabel={listLabel}
+        metric={metric}
+        relief={relief}
+        labels={labels}
+      />
     ),
     [layout, evidence, selectedId, onSelect, listLabel, metric, relief, labels],
   );
@@ -1310,50 +1037,19 @@ export function OntologyHexBoardMap({
           {labels.widened}
         </p>
       ) : null}
-      <div
+      <HexBoardFooter
         ref={footerRef}
-        data-testid="hex-board-footer"
-        className="absolute bottom-4 left-[calc(var(--map-safe-inset-left)*1px)] right-[calc(var(--map-safe-inset-right)*1px)] flex flex-col items-center gap-2"
-      >
-        <div className="pointer-events-auto flex gap-1 rounded-chip bg-[color:var(--chrome-surface)] p-1">
-          {evidenceMeasured ? (
-            <Chip
-              size="md"
-              tone={staleOnly ? "warning" : "secondary"}
-              active={staleOnly}
-              hoverSurface="lift"
-              data-testid="hex-board-stale-only"
-              aria-pressed={staleOnly}
-              onClick={toggleStale}
-            >
-              {labels.staleOnly(staleTotal)}
-            </Chip>
-          ) : null}
-          <Chip
-            size="md"
-            tone={regionsOnly ? "strong" : "secondary"}
-            active={regionsOnly}
-            hoverSurface="lift"
-            data-testid="hex-board-regions-only"
-            aria-pressed={regionsOnly}
-            onClick={() => setRegionsOnly((on) => !on)}
-          >
-            {labels.regionsOnly}
-          </Chip>
-          <Chip
-            size="md"
-            tone={relief ? "strong" : "secondary"}
-            active={relief}
-            hoverSurface="lift"
-            data-testid="hex-board-relief"
-            aria-pressed={relief}
-            onClick={() => onReliefChange?.(!relief)}
-          >
-            {labels.relief}
-          </Chip>
-        </div>
-        {legend?.({ focused: !!selectedId, canals: canalPlan.jobs.length > 0 && !staleOnly, relief, dependentsMax: metric.capabilityMax })}
-      </div>
+        labels={labels}
+        evidenceMeasured={evidenceMeasured}
+        staleOnly={staleOnly}
+        staleTotal={staleTotal}
+        regionsOnly={regionsOnly}
+        relief={relief}
+        onToggleStale={toggleStale}
+        onToggleRegions={() => setRegionsOnly((on) => !on)}
+        onToggleRelief={() => onReliefChange?.(!relief)}
+        legend={legend?.({ focused: !!selectedId, canals: canalPlan.jobs.length > 0 && !staleOnly, relief, dependentsMax: metric.capabilityMax })}
+      />
       {tileList}
     </div>
   );

@@ -6,10 +6,6 @@ function focusIfPossible(element: HTMLElement | null): boolean {
   return element.ownerDocument.activeElement === element;
 }
 
-/**
- * The selected row wins while INDEX still shows it; else focus falls to the search field, and to
- * the INDEX tab when a canvas selection collapsed INDEX.
- */
 export function restoreTopologyFocusAfterDatasheetClose(
   selectedNodeId: string | null,
   root: ParentNode = document,
@@ -39,7 +35,6 @@ export function restoreTopologyFocusAfterDatasheetClose(
   return null;
 }
 
-/** Where the browser drops focus when the focused element unmounts. */
 function focusWasDropped(doc: Document = document): boolean {
   const active = doc.activeElement;
   return active === null || active === doc.body;
@@ -54,13 +49,12 @@ export function returnFocusIfDropped(testId: string, doc: Document = document): 
   return focusIfPossible(doc.querySelector<HTMLElement>(`[data-testid="${testId}"]`));
 }
 
-/** Not inside an exiting (inert) frame. */
 function findReachable(testIds: readonly string[], doc: Document): HTMLElement | null {
   for (const testId of testIds) {
-    for (const el of doc.querySelectorAll<HTMLElement>(`[data-testid="${testId}"]`)) {
-      if (el.closest("[inert]") || el.closest('[aria-hidden="true"]')) continue;
-      if (el.getClientRects().length === 0) continue;
-      return el;
+    for (const htmlElement of doc.querySelectorAll<HTMLElement>(`[data-testid="${testId}"]`)) {
+      if (htmlElement.closest("[inert]") || htmlElement.closest('[aria-hidden="true"]')) continue;
+      if (htmlElement.getClientRects().length === 0) continue;
+      return htmlElement;
     }
   }
   return null;

@@ -38,7 +38,6 @@ interface ToastAction {
 }
 
 interface ToastMetadata {
-  /** A quieter second line for context such as the affected document title. */
   description?: string;
 }
 

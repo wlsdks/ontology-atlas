@@ -9,9 +9,9 @@ import { runJsonRpcProcess } from '../../scripts/lib/mcp-test-rpc.mjs';
 
 import { compileOntology } from './ontology-compiler.mjs';
 import { queryCompiledOntology, shareArtifact } from './ontology-engine.mjs';
-import { createArtifactContext } from './ontology-engine/artifact-context.mjs';
-import { createContextOperations } from './ontology-engine/context-operations.mjs';
-import { similarityScore } from './ontology-engine/engine-helpers.mjs';
+import { createArtifactContext } from './ontology-engine/graph-context/artifact-context.mjs';
+import { createContextOperations } from './ontology-engine/graph-context/context-operations.mjs';
+import { similarityScore } from './ontology-engine/traversal/graph-measures.mjs';
 import { defaultBody } from './schema.mjs';
 import { parseFrontmatter } from './parser.mjs';
 import { validateVaultDocument } from './validate.mjs';
@@ -2900,12 +2900,12 @@ describe('queryCompiledOntology', () => {
   it('node_profile — unresolved slug throws with a growthHint (typo near-match)', () => {
     assert.throws(
       () => queryCompiledOntology(artifact(), { operation: 'node_profile', slug: 'capabilities/logn' }),
-      (err) => {
-        assert.match(err.message, /does not resolve to a compiled ontology node/);
-        assert.ok(err.growthHint, 'expected err.growthHint to be set');
-        assert.match(err.growthHint.reason, /"capabilities\/logn" does not resolve/);
-        assert.ok(err.growthHint.suggestion.includes('capabilities/login'));
-        assert.deepEqual(err.growthHint.exampleCall, {
+      (error) => {
+        assert.match(error.message, /does not resolve to a compiled ontology node/);
+        assert.ok(error.growthHint, 'expected err.growthHint to be set');
+        assert.match(error.growthHint.reason, /"capabilities\/logn" does not resolve/);
+        assert.ok(error.growthHint.suggestion.includes('capabilities/login'));
+        assert.deepEqual(error.growthHint.exampleCall, {
           tool: 'get_concept',
           args: { slug: 'capabilities/login' },
         });
@@ -2917,9 +2917,9 @@ describe('queryCompiledOntology', () => {
   it('node_profile — unresolved slug with no near-match throws an add_concept growthHint', () => {
     assert.throws(
       () => queryCompiledOntology(artifact(), { operation: 'node_profile', slug: 'completely-unrelated-slug' }),
-      (err) => {
-        assert.ok(err.growthHint, 'expected err.growthHint to be set');
-        assert.deepEqual(err.growthHint.exampleCall, {
+      (error) => {
+        assert.ok(error.growthHint, 'expected err.growthHint to be set');
+        assert.deepEqual(error.growthHint.exampleCall, {
           tool: 'add_concept',
           args: { slug: 'completely-unrelated-slug', kind: 'element', title: 'Completely Unrelated Slug' },
         });
@@ -2931,9 +2931,9 @@ describe('queryCompiledOntology', () => {
   it('node_profile — ambiguous / blank slug errors do not get a growthHint', () => {
     assert.throws(
       () => queryCompiledOntology(artifact(), { operation: 'node_profile', slug: '   ' }),
-      (err) => {
-        assert.match(err.message, /string\) is required/);
-        assert.equal(err.growthHint, undefined);
+      (error) => {
+        assert.match(error.message, /string\) is required/);
+        assert.equal(error.growthHint, undefined);
         return true;
       },
     );

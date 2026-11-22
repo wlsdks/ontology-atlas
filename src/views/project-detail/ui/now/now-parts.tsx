@@ -5,18 +5,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { EXIT_TRANSITION, MOTION, STAGGER } from "@/shared/motion";
 import { cn } from "@/shared/lib/cn";
 
-/** One heading style for every section of the page: what to check, what changed, the composition. */
 export const SECTION_HEADING_CLASS =
   "text-title font-[var(--font-weight-strong)] tracking-title tabular-nums text-[color:var(--color-text-primary)]";
 
-/** The page's one stale mark and one recent-change mark: the map's two tokens, drawn as dots. */
 export const STALE_DOT_CLASS = "h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-status-warning)]";
 export const RECENT_DOT_CLASS = "h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--map-recent-change)]";
 
-/**
- * A short text that changes in place, such as a count or the evidence line: the old words fade
- * out while the new ones fade in, in one grid cell, so nothing beside them moves.
- */
 export function CrossFadeText({
   text,
   className,
@@ -60,7 +54,6 @@ export function CrossFadeText({
   );
 }
 
-/** The heading line of a section: the heading on the left, its one door on the right. */
 export function SectionHeadingLine({ heading, door }: { heading: ReactNode; door?: ReactNode }) {
   return (
     <div className="flex min-h-7 min-w-0 items-baseline justify-between gap-x-4">
@@ -84,7 +77,6 @@ export function useArrival(hasRows: boolean): boolean {
   return arrival;
 }
 
-/** How a row arrives: in reading order on the page's arrival, alone when the data changes. */
 export function rowMotion({ index, arrival, reducedMotion }: { index: number; arrival: boolean; reducedMotion: boolean }) {
   if (reducedMotion) {
     return {

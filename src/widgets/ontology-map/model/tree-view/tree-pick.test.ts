@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { pickTreeMark } from "./tree-pick";
-import type { TreeDrawList, TreeDrawMark } from "./types";
+import type { TreeDrawList, TreeDrawMark } from "./tree-shapes";
 
 function mark(node: number, x: number, y: number, radius: number, depth: number): TreeDrawMark {
   return { node, x, y, radius, scale: 1, depth, tone: 0, closed: false };

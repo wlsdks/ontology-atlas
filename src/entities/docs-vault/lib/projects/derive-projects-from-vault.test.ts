@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { VaultDoc, VaultManifest } from "../../model/types";
+import type { VaultDoc, VaultManifest } from "../../model/vault-manifest";
 import { deriveProjectsFromVault } from "./derive-projects-from-vault";
 
 function makeDoc(partial: Partial<VaultDoc>): VaultDoc {

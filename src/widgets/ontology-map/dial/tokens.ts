@@ -1,4 +1,4 @@
-import type { DialTokens } from "./types";
+import type { DialTokens } from "./dial-shapes";
 
 type InkKey = "fillDomain" | "fillCapability" | "strokeDomain" | "strokeCapability" | "strokeElement" | "ring";
 type NumericKey = Exclude<keyof DialTokens, "attendedNameInk" | InkKey>;

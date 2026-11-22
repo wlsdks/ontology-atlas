@@ -1,11 +1,6 @@
-//! A command without `async` runs on the main thread, so a slow disk sync or a Keychain
-//! prompt freezes the window. Commands await their blocking work here instead: it runs
-//! on the blocking pool, off both the main thread and the async workers, and a panic in
-//! it fails that one command rather than the app.
-//!
-//! Off the main thread, quitting no longer waits for that work, so the exit handler
-//! calls [`drain`]: new work is refused and work already running gets a bounded time to
-//! finish its rename before the process ends.
+//! Commands await their blocking work here, not on the main thread, which a slow disk sync or Keychain prompt
+//! would freeze: it runs on the blocking pool, and a panic fails that one command rather than the app.
+//! The exit handler calls [`drain`]: new work is refused and running work gets a bounded time to finish its rename.
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 #[cfg(not(test))]

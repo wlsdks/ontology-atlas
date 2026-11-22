@@ -9,14 +9,12 @@ import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-displa
 import { Chip } from '@/shared/ui';
 
 interface Props {
-  /** Slugs of the documents that link here, in the manifest's order. */
   sources: readonly string[];
   docsBySlug: Map<string, VaultDoc>;
   onNavigate: (slug: string) => void;
   hideHeading?: boolean;
 }
 
-/** The documents that link to this one, as navigating chips at the pane's bottom. */
 export function DocsVaultBacklinks({ sources, docsBySlug, onNavigate, hideHeading = false }: Props) {
   const t = useTranslations('vaultWidgets.backlinks');
   const locale = useLocale();
@@ -32,7 +30,7 @@ export function DocsVaultBacklinks({ sources, docsBySlug, onNavigate, hideHeadin
         const doc = docsBySlug.get(fromSlug);
         if (!doc) return null;
         const kind = doc.frontmatter?.kind;
-        const kindStr = typeof kind === 'string' ? kind : '';
+        const kindText = typeof kind === 'string' ? kind : '';
         return (
           <Chip
             key={fromSlug}
@@ -41,8 +39,8 @@ export function DocsVaultBacklinks({ sources, docsBySlug, onNavigate, hideHeadin
             onClick={() => onNavigate(doc.slug)}
             className="flex-none hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
           >
-            {kindStr && isOntologyMapRenderableKind(kindStr) ? (
-              <OntologyMapKindGlyph kind={kindStr} size={11} />
+            {kindText && isOntologyMapRenderableKind(kindText) ? (
+              <OntologyMapKindGlyph kind={kindText} size={11} />
             ) : (
               <FileText size={ICON_SIZE.sm} className="opacity-60" aria-hidden />
             )}

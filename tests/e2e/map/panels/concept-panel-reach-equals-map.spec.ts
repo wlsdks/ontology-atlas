@@ -4,7 +4,7 @@ import "../../atlas-map-probe";
 import { seedFirstRunSeen } from "../../first-run-seed";
 import { waitForMapStill } from "../../settle";
 import { stubDirectoryPicker } from "../../vault-picker-stub";
-import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
+import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/dial-shapes";
 
 const DOMAINS = ["orders", "payments", "catalog", "shipping"] as const;
 const CAPABILITIES_PER_DOMAIN = 4;
@@ -117,7 +117,7 @@ test("each capability's and domain's reach groups hold what the map's count line
     expect(await countLine(page, id), `${id}: the map's count line is the panel's`).toBe(expected);
     seen.push(`${id} ${needs.total}/${neededBy.total}`);
   }
-  // The capability a document describes and three others need: the panel used to count the document.
+  // The capability a document describes and three others need: the panel must not count the document.
   expect(seen).toContain("capability:orders-0 5/3");
   // A domain with only a broader concept needs nothing and is needed by nothing.
   expect(seen).toContain("domain:legacy 0/0");

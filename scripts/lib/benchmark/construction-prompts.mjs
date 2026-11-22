@@ -5,7 +5,7 @@ import ts from 'typescript';
 const PARTS = [
   ['src/i18n/locales.ts', ['LOCALE_META', 'htmlLangOf']],
   ['src/i18n/answer-language.ts', ['answerLanguageName', 'answerLanguageSentence']],
-  ['src/features/acp-session/model/use-acp-session.ts', [
+  ['src/features/acp-session/model/runtime-wiring/vault-handoff-prompt.ts', [
     'ANSWER_LANGUAGE_SLOT', 'VAULT_HANDOFF_BASE', 'VAULT_MCP_SENTENCE',
     'VAULT_CONSTRUCTION_SENTENCE', 'vaultHandoffPrompt',
   ]],

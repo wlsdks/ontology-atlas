@@ -4,15 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { usePrefersReducedMotion } from '../render-timing/use-prefers-reduced-motion';
 
-/**
- * How many frames a burst is given to catch up. The stride is recomputed every frame from what is
- * still hidden, so the reveal is **rate-adaptive**: a slow trickle comes out a character at a time,
- * and a large paste is finished in about this many frames rather than crawling.
- *
- * 12 frames is ~200ms at 60Hz — long enough to read as motion, short enough that nobody waits for
- * the machine. It is a count of frames rather than a duration on purpose: the reveal should track
- * the display's refresh, not a wall clock.
- */
+/** Frames a burst is given to catch up (about 200ms at 60Hz). The stride is recomputed every frame from what is still hidden, so a slow trickle comes out a character at a time and a large paste finishes in about this many frames. A count of frames, not a duration, so the reveal tracks the display's refresh. */
 const CATCH_UP_FRAMES = 12;
 
 /**

@@ -25,7 +25,6 @@ interface InfoHintProps {
   children: React.ReactNode;
   className?: string;
   panelClassName?: string;
-  /** Aim it inward when the button is near a screen edge. */
   align?: keyof typeof HINT_ALIGN;
 }
 

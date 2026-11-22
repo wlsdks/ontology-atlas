@@ -39,7 +39,6 @@ export function deriveDustySlugs(
   for (const [id, ts] of mtimeById) {
     if (ts < median && nowMs - ts > minAgeMs) candidates.push({ id, ts });
   }
-  // Oldest first; ties break by id so the result is deterministic.
   candidates.sort((a, b) => a.ts - b.ts || (a.id < b.id ? -1 : 1));
   // Floor of 1 so a genuinely old node still shows in a vault under four nodes.
   const cap = Math.max(1, Math.floor(mtimeById.size / 4));

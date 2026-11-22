@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import type { BundledVaultDoc } from '../lib/bundled-vault/bundled-manifest';
-import type { VaultHeading } from '../model/types';
+import type { VaultHeading } from '../model/vault-manifest';
 import dogfoodContent from '../data/content.json';
 import dogfoodHeadings from '../data/manifest.headings.json';
 import dogfoodManifest from '../data/manifest.json';

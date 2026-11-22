@@ -30,7 +30,6 @@ export interface ResolvedOntologyRelationPreview {
   phase: 'draft' | 'committing';
 }
 
-/** A ghost edge is drawn only when both endpoints exist on the current map. */
 export function resolveOntologyRelationPreview(
   preview: OntologyRelationPreviewInput | null,
   nodes: readonly KnowledgeGraphNode[] | null | undefined,

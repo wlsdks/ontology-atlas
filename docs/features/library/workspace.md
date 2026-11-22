@@ -566,7 +566,7 @@ sha256 it recorded and its own truncation record
 — and, when no page cites it, the Compile button in that row's place. `not checked` is its
 own word because hashing is lazy: reporting an unmeasured file as `behind` made this pane
 contradict its own state row, which reads `checking` in exactly that window. Both directions are derived in
-`buildLibraryPairing` (`src/entities/docs-vault/lib/library/vault-library.ts`) from the same
+`buildLibraryModel` (`src/entities/docs-vault/lib/library/vault-library.ts`, its pairing field) from the same
 `sources:` and `source_hash:` frontmatter the state machine already reads, so no second
 store can drift from it.
 
@@ -586,7 +586,7 @@ walk already granted (`read_vault_binary_file` in the app, the File System Acces
 a browser, one ability on both surfaces), the text is stored nowhere and dropped when the
 pane closes, and nothing leaves the computer; the pane therefore stops saying Atlas has
 never opened the file, and its sha256 row says it was measured on this read. The splitter
-is `src/shared/lib/library/source-passage.ts`, the MCP `read_source` reader's twin, pinned unit for
+is `src/shared/lib/library/source-units.ts` (the zip reader is `source-zip.ts`), the MCP `read_source` reader's twin, pinned unit for
 unit by `tests/contract/vault-format/source-passage-parity.contract.test.ts`; it carries its own
 raw-DEFLATE decoder (a Word or Excel file is a zip, and the app's macOS floor does not
 guarantee `DecompressionStream`) and verifies each zip entry's CRC-32, because what it

@@ -6,7 +6,7 @@ title: Relation reference normalizer
 display_en: Relation reference normalizer
 display_ko: 관계 참조 정규화기
 domain: domains/meaning-layer
-path: mcp/src/vault/relation-refs.mjs
+path: mcp/src/vault/graph/relation-refs.mjs
 created_by: "agent:sync"
 ---
 
@@ -23,4 +23,4 @@ Holds the one list of frontmatter keys that become graph edges, with the alias s
 - Resolving a reference to a node, an external path or nothing; the graph compiler does that.
 
 ## Uncertainty
-- Read from `mcp/src/vault/relation-refs.mjs` and the import lines of the files that import it, while the vault module was split. Which callers depend on an alias spelling rather than the canonical key was not traced.
+- Read from `mcp/src/vault/graph/relation-refs.mjs` and the import lines of the files that import it, while the vault module was split. Which callers depend on an alias spelling rather than the canonical key was not traced.

@@ -16,7 +16,6 @@ import type { ArchitectureRoleEdge } from '@/entities/architecture-record';
  */
 export type ImportCellKind = 'self' | 'violation' | 'observed' | 'allowed' | 'uncounted' | 'forbidden';
 
-/** One violating import as the record sampled it: the importing file and the imported one. */
 export interface ViolationEvidence {
   from: string;
   to: string;
@@ -27,21 +26,17 @@ export interface ImportCell {
   to: string;
   kind: ImportCellKind;
   allowed: boolean;
-  /** Imports observed from `from` into `to`; 0 without a record. */
   count: number;
-  /** Violation rows the record carries for this pair. */
   violations: number;
   evidence: ViolationEvidence[];
 }
 
 export interface ImportMatrix {
-  /** Role ids in profile order: both the rows and the columns. */
   order: string[];
   /** `cells[row][column]`: imports from the row's role into the column's. */
   cells: ImportCell[][];
   /** The busiest cross-role pair, which the fill ladder is scaled against. */
   maxCount: number;
-  /** Imports observed between two different roles. */
   crossRoleImports: number;
 }
 
@@ -155,7 +150,6 @@ export function arrivalRole(matrix: ImportMatrix, violations: readonly unknown[]
   return importing?.[0]?.from ?? matrix.order[0] ?? null;
 }
 
-/** A role's imports out of (`row`) or into (`column`) it, busiest first, with violations kept. */
 export function roleImports(matrix: ImportMatrix, roleId: string, direction: 'out' | 'in'): ImportCell[] {
   const index = matrix.order.indexOf(roleId);
   if (index === -1) return [];

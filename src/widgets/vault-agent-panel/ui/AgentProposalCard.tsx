@@ -9,27 +9,16 @@ import { planProposalFiles, proposalLineDiff, summarizeChangeVolume } from '@/fe
 import { Checkbox, controlClass } from '@/shared/ui';
 
 /**
- * The proposal card — a generalisation of #688's consent grammar.
- *
- * It reveals every file path that will change, asks once, and **cancelling changes
- * 0 files**.
- *
- * Three things stop a collapsed diff being rubber-stamped:
- * ① the header states the totals ("3 files · +42 −3 lines")
- * ② row summaries are specific down to the field level
- * ③ **the session's first apply starts with the diff expanded**
- *
- * And a proposal editing a file not read in this turn carries a warning row — it
- * narrows the path by which an instruction planted in vault prose gets laundered
- * into a "plausible proposal". (This is not complete protection. Injection is an
- * unsolved industry problem.)
+ * The proposal card: every path that will change, one ask, and cancelling changes 0 files. A
+ * collapsed diff is not rubber-stamped: header totals, field-level row summaries, the first apply
+ * of a session expanded, and a warning row for a file not read this turn (a partial defence
+ * against instructions planted in vault prose).
  */
 
 export interface AgentProposalLabels {
   title: (count: number) => string;
   volume: (args: { files: number; added: number; removed: number }) => string;
   apply: (count: number) => string;
-  /** The label while a write is running — the screen states "what is happening right now". */
   applying: string;
   cancel: string;
   copy: string;
@@ -109,13 +98,8 @@ export function AgentProposalCard({
   );
 
   /**
-   * The write is **in flight** — not finished. Putting this state in `settled` in the
-   * draft made it fall through to the terminal-copy branch's fallback, and the screen
-   * said **"cancelled"**. Saying it was cancelled mid-write is worse than not locking.
-   *
-   * So the two are separated: the action row stays (the position of what the user
-   * pressed is preserved) while both buttons lock together and only the label changes
-   * to "applying…" — the same grammar as the finishing dialog's `busy`.
+   * The write is in flight, not finished: both buttons lock and only the label changes, so a
+   * mid-write state is never worded as cancelled.
    */
   const busy = proposal.status === 'applying';
   const settled = proposal.status !== 'pending' && !busy;
@@ -284,17 +268,8 @@ function ChangeRow({
   return (
     <li className="rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-panel)]">
       <div className="flex items-center gap-2 px-2 py-1.5">
-        {/*
-         * This checkbox **had no label**, so there were two defects — with no
-         * accessible name (a screen reader reads only "checkbox") there is no telling
-         * what is being selected, and at a 14px target it fell short of WCAG 2.5.8 (AA,
-         * 24px). Wrapping the file name as the label **solves both at once** — the
-         * label becomes the accessible name, and the whole label becomes one target
-         * (the native behaviour where clicking a label toggles).
-         *
-         * The expand button stays **outside** the label — inside it, every press of
-         * "Details" would flip the selection.
-         */}
+        {/* The file name is the label: it is the checkbox's accessible name and makes the whole row one
+            24px target (WCAG 2.5.8). The expand button stays outside it, or "Details" would flip the selection. */}
         <Checkbox
           className="min-w-0 flex-1"
           data-testid={`agent-proposal-change-${change.id}`}
@@ -352,10 +327,7 @@ function ChangeRow({
   );
 }
 
-/**
- * Line-level diff. +/- is **data, not a signal tone** — no new colour system is
- * created; they are distinguished by the existing text hierarchy alone.
- */
+/** Line-level diff. +/- is data, not a signal tone: told apart by the text hierarchy alone. */
 function renderDiff(before: string | null, after: string) {
   const rows: React.ReactNode[] = [];
   let key = 0;

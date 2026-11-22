@@ -135,7 +135,12 @@ async function step2BootAndCall() {
   // The absorb_document dry-run request (id 69) reads this fixture, so it must exist
   // before the batch is sent; the finally below removes it.
   ensureAbsorbFixture();
-  const lines = buildFirstContactRequests().map((request) => JSON.stringify(request));
+  const requests = buildFirstContactRequests();
+  // Everything after the first list_concepts waits for its answer: an empty vault then
+  // exits before the repository scans start, instead of queueing behind them.
+  const firstBatchEnd = requests.findIndex((request) => request.id === 3) + 1;
+  const firstBatch = requests.slice(0, firstBatchEnd).map((request) => JSON.stringify(request));
+  const restBatch = requests.slice(firstBatchEnd).map((request) => JSON.stringify(request));
 
   try {
     return await new Promise((res) => {
@@ -149,6 +154,7 @@ async function step2BootAndCall() {
     const stderrDecoder = new StringDecoder('utf8');
     let timedOut = false;
     let completed = false;
+    let sentFirstContactRest = false;
     let sentGetConceptSmoke = false;
     let sentGetConceptsSmoke = false;
     let sentFindBacklinksSmoke = false;
@@ -198,6 +204,10 @@ async function step2BootAndCall() {
             if (timer) clearTimeout(timer);
             stopServer();
             return;
+          }
+          if (!sentFirstContactRest) {
+            sentFirstContactRest = true;
+            if (restBatch.length > 0) proc.stdin.write(restBatch.join('\n') + '\n');
           }
           if (projectResponse) {
             try {
@@ -425,7 +435,7 @@ async function step2BootAndCall() {
     });
     proc.stderr.on('data', (b) => (stderr += stderrDecoder.write(b)));
 
-    proc.stdin.write(lines.join('\n') + '\n');
+    proc.stdin.write(firstBatch.join('\n') + '\n');
     timer = setTimeout(() => {
       timedOut = true;
       stopServer();

@@ -8,7 +8,7 @@ import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { TEXT_SIZES, useTextSize, writeTextSize } from '@/shared/lib/preferences/text-size';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
-import { GlyphSetPicker } from '../AppearancePickers';
+import { GlyphSetPicker } from '../pane-settings/appearance-pickers';
 import {
   SegmentSwitch,
   SettingsGroup,

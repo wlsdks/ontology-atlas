@@ -114,7 +114,7 @@ export function buildFirstContactRequests() {
         arguments: {
           rootPath: REPO_ROOT,
           reviewMode: 'focus',
-          focusPath: 'src/entities/knowledge-graph/model/types.ts',
+          focusPath: 'src/entities/knowledge-graph/model/knowledge-graph.ts',
           focusDirection: 'both',
           focusLimit: 25,
         },

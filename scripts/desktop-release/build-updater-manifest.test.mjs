@@ -72,8 +72,8 @@ test("a missing architecture is refused rather than shipped half-complete", () =
 });
 
 test("an archive without its .sig is refused — that build had no signing key", () => {
-  const dir = mkdtempSync(join(tmpdir(), "oa-updater-"));
-  const archDir = join(dir, "aarch64");
+  const directory = mkdtempSync(join(tmpdir(), "oa-updater-"));
+  const archDir = join(directory, "aarch64");
   mkdirSync(archDir, { recursive: true });
   writeFileSync(join(archDir, "Ontology Atlas.app.tar.gz"), "archive");
 
@@ -91,15 +91,15 @@ test("an archive without its .sig is refused — that build had no signing key",
   } finally {
     process.exit = originalExit;
     console.error = originalError;
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
   // Shipping without a signature makes the app silently see "no update", so it stops here.
   assert.match(message, /sig/);
 });
 
 test("finds the archive and signature pair", () => {
-  const dir = mkdtempSync(join(tmpdir(), "oa-updater-ok-"));
-  const archDir = join(dir, "aarch64");
+  const directory = mkdtempSync(join(tmpdir(), "oa-updater-ok-"));
+  const archDir = join(directory, "aarch64");
   mkdirSync(archDir, { recursive: true });
   writeFileSync(join(archDir, "App.app.tar.gz"), "archive");
   writeFileSync(join(archDir, "App.app.tar.gz.sig"), "signature-line\n");
@@ -107,7 +107,7 @@ test("finds the archive and signature pair", () => {
     const found = findUpdaterArtifacts(archDir);
     assert.equal(found.archiveName, "App.app.tar.gz");
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 

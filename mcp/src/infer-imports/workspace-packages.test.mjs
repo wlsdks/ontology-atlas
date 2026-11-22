@@ -245,12 +245,12 @@ function declareWorkspace(root, patterns) {
 }
 
 function discoverIn(root, setup) {
-  const dir = withRepo((r) => {
+  const directory = withRepo((r) => {
     declareWorkspace(r, setup.patterns);
     setup.build(r);
   });
-  root.push(dir);
-  return discoverDeclaredWorkspacePackages(dir);
+  root.push(directory);
+  return discoverDeclaredWorkspacePackages(directory);
 }
 
 test('a workspace pattern of 24 segments is accepted and one of 25 is skipped', () => {
@@ -272,7 +272,7 @@ test('a workspace pattern of 24 segments is accepted and one of 25 is skipped', 
       assert.deepEqual(discovery.packages.map((row) => row.name), depth === 24 ? ['deep'] : []);
     }
   } finally {
-    for (const dir of made) rmSync(dir, { recursive: true, force: true });
+    for (const directory of made) rmSync(directory, { recursive: true, force: true });
   }
 });
 
@@ -294,7 +294,7 @@ test('a workspace pattern with 16 wildcards is accepted and one with 17 is skipp
       assert.deepEqual(discovery.packages.map((row) => row.name), stars === 16 ? ['core'] : []);
     }
   } finally {
-    for (const dir of made) rmSync(dir, { recursive: true, force: true });
+    for (const directory of made) rmSync(directory, { recursive: true, force: true });
   }
 });
 
@@ -318,7 +318,7 @@ test('workspace discovery stops after 10000 directory entries and reports it', (
       assert.equal(reported, entries === 10001, `${entries} entries: ${JSON.stringify(discovery.skipped)}`);
     }
   } finally {
-    for (const dir of made) rmSync(dir, { recursive: true, force: true });
+    for (const directory of made) rmSync(directory, { recursive: true, force: true });
   }
 });
 
@@ -348,6 +348,6 @@ test('workspace pattern matching stops at 250000 states and reports it', () => {
       assert.equal(reported, deepCount === 17, `${deepCount}: ${JSON.stringify(discovery.skipped.slice(0, 3))}`);
     }
   } finally {
-    for (const dir of made) rmSync(dir, { recursive: true, force: true });
+    for (const directory of made) rmSync(directory, { recursive: true, force: true });
   }
 });

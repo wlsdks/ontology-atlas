@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 const OWNED_READERS = [
   'src/widgets/docs-vault/lib/search.ts',
   'src/widgets/search-palette/ui/SearchPalette.tsx',
-  'src/views/library/ui/parts/index-column/LibrarySection.tsx',
+  'src/views/library/ui/index-column/LibrarySection.tsx',
   'src/entities/docs-vault/lib/library/vault-library.ts',
   'src/entities/docs-vault/lib/library/wiki-retrieval.ts',
   'src/entities/docs-vault/lib/doc-navigation/related-docs.ts',

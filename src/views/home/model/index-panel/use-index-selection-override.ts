@@ -17,10 +17,6 @@ export const INITIAL_INDEX_SELECTION_OVERRIDE: IndexSelectionOverrideState = {
   manualExpand: false,
 };
 
-/**
- * Expanding INDEX belongs to one selection, never a preference; session start and end both clear
- * it.
- */
 export function indexSelectionOverrideReducer(
   state: IndexSelectionOverrideState,
   action: IndexSelectionOverrideAction,

@@ -1,9 +1,7 @@
 "use client";
 
 interface Props {
-  /** Read out as soon as the value changes. */
   message: string;
-  /** "polite" waits for the current utterance; "assertive" interrupts. */
   politeness?: "polite" | "assertive";
 }
 

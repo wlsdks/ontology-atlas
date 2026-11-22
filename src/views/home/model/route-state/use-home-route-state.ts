@@ -10,7 +10,6 @@ import {
 } from './url-state';
 import { guardedHistoryWrite } from '@/shared/lib/navigation/history-write-guard';
 
-/** Dispatched right after history.pushState. */
 const HOME_URL_CHANGE_EVENT = 'app:urlchange';
 
 function readHomeSearch() {
@@ -19,10 +18,6 @@ function readHomeSearch() {
 }
 
 export interface HomeRouteStateUpdateOptions {
-  /**
-   * For normalising the arrival URL rather than navigation, so Back does not walk unvisited
-   * entries.
-   */
   replace?: boolean;
 }
 

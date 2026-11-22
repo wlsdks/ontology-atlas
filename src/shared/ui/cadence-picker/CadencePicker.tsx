@@ -28,29 +28,24 @@ interface CadencePickerLabels {
   unitMinutes: string;
   unitHours: string;
   unitDay: string;
-  /** The short number under a tick: "5" for five minutes, "2" for two hours. */
   detent: (minutes: number) => string;
-  /** What a screen reader hears: "every 5 minutes". */
   valueText: (minutes: number) => string;
   railAria: string;
   daily: string;
   weekdays: string;
   time: string;
   dayAria: string;
-  /** Shown under the time field when it is not `HH:MM`. */
   timeError: string;
 }
 
 interface CadencePickerProps {
   unit: CadenceUnit;
   onUnitChange: (unit: CadenceUnit) => void;
-  /** Ignored while the unit is `day`; `null` before one is chosen. */
   minutes: number | null;
   onMinutesChange: (minutes: number) => void;
   daily: string;
   weekdaysOnly: boolean;
   onDayChange: (next: { daily: string; weekdaysOnly: boolean }) => void;
-  /** `false` draws the time field's error line; the caller owns the rule. */
   timeValid?: boolean;
   labels: CadencePickerLabels;
   testId?: string;
@@ -76,7 +71,6 @@ export function CadencePicker({
 }: CadencePickerProps) {
   const legendId = useId();
   const trackRef = useRef<HTMLDivElement | null>(null);
-  /** The finger position (0..1) while down; the thumb follows it without snapping. */
   const [dragRatio, setDragRatio] = useState<number | null>(null);
 
   const detents = detentsForUnit(unit);
@@ -240,7 +234,6 @@ export function CadencePicker({
               onKeyDown={onKeyDown}
               data-testid={`${testId}-thumb`}
               data-cadence-dragging={dragRatio === null ? undefined : "true"}
-              /* A 44px touch floor over a 4px track is this control's own shape. */
               className={controlClass({
                 shape: "icon",
                 size: "lg",

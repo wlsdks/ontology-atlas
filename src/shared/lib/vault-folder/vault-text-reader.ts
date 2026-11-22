@@ -1,10 +1,6 @@
-import {
-  readTauriVaultTextFile,
-  readTauriVaultTextFiles,
-  type NativeVaultTextRead,
-} from './tauri-vault-fs';
+import { readTauriVaultTextFile, readTauriVaultTextFiles } from './native-vault/tauri-vault-files';
+import { type NativeVaultTextRead } from './vault-text-frames';
 
-/** A document the folder's walk listed: its slug and the vault-relative path it came from. */
 export interface VaultTextRef {
   slug: string;
   path: string;

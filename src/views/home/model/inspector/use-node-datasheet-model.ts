@@ -44,7 +44,6 @@ export interface UseNodeDatasheetModelArgs {
   mapGraph: OntologyMapGraph;
   /** Static samples are facts to inspect, never an MCP write target. */
   handoffSource: "loaded-vault" | "read-only-sample";
-  /** Overrides the derived value when present. */
   authoredSignificance: string | null;
   docFreshnessIndex: ReadonlyMap<string, string>;
   /**
@@ -62,7 +61,6 @@ export interface UseNodeDatasheetModelArgs {
   /** Keeps rendering pure. */
   updatedAgoNowMs: number;
   formatUpdatedLabel: (key: string, count: number) => string;
-  /** Always defined; with no heartbeat the agent candidate has no evidence. */
   agentActivityStatus: AgentActivityStatus;
   /** The `resolveAgentFocusNodeId` result, so the badge and this fact name the same node. */
   agentFocusNodeId: string | null;
@@ -82,9 +80,7 @@ export interface NodeDatasheetDerivation {
     nodeId: string;
     title: string;
     kind: string;
-    /** The concept directly above it: a capability's domain, an element's capability; else null. */
     owner: { id: string; title: string } | null;
-    /** The definition sentence as written; null when the concept has none. */
     definition: string | null;
     powered: boolean;
     /** `""` while Git is still dating documents; null with no date. */
@@ -99,7 +95,6 @@ export interface NodeDatasheetDerivation {
     };
     groups: ReturnType<typeof buildV2ConnectionGroups>;
     domainUsage: DomainUsage | null;
-    /** The reach the map's count line counts, read from the map's own graph. */
     reach: ConceptReach | null;
     evidence: { rows: ReturnType<typeof buildV2EvidenceRows>; total: number };
     /**
@@ -119,7 +114,6 @@ export interface NodeDatasheetDerivation {
      */
     mentionDocumentHref: string | null;
     meaningEditHref: string;
-    /** Full detail's last-edit fact; non-null only with real evidence. */
     lastEditSubject: { kind: LastEditSubjectKind; ageLabel: string } | null;
     mtimeConflict: boolean;
   } | null;
@@ -142,7 +136,6 @@ export function useNodeDatasheetModel({
   selfEditTimestamps,
   formatEditAgeLabel,
 }: UseNodeDatasheetModelArgs): NodeDatasheetDerivation {
-  // One drawer-model build feeds focus and significance, so their counts cannot drift.
   const nodeFocusData = useMemo(() => {
     if (!selectedOntologyNode || !insight) return null;
     const model = buildTopologyOntologyDrawerModel(selectedOntologyNode, insight.nodes, insight.edges);
@@ -222,7 +215,6 @@ export function useNodeDatasheetModel({
       contains: groups.contains.total,
       usedBy: groups.usedBy.total,
       dependsOn: groups.dependsOn.total,
-      // Includes the parent, or a node with only a parent hands off "0 connections".
       belongsTo: groups.belongsTo.total,
       related: groups.related.total,
       evidence: evidenceRows.length,
@@ -307,7 +299,6 @@ export function useNodeDatasheetModel({
             via: buildTopologyReturnMarker(selectedOntologyNode.id),
           })
         : null,
-      // The canonical `<kind>:<slug>` id, so every outgoing link shares one grammar.
       meaningEditHref: buildTopologyMeaningEditorNodeHref(selectedOntologyNode.id),
       lastEditSubject,
       mtimeConflict,

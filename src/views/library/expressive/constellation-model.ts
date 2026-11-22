@@ -10,10 +10,7 @@ export interface ConstellationMark {
   x: number;
   y: number;
   z: number;
-  /**
-   * 0–1. Drives size and brightness so the object has a foreground: a page that gathered
-   * several documents is a larger, brighter sphere than one written from a single file.
-   */
+  /** 0–1. Drives size and brightness: a page that gathered several documents is larger and brighter. */
   weight: number;
 }
 
@@ -33,15 +30,7 @@ export interface ConstellationInput {
   pageSourceCounts: readonly number[];
 }
 
-/**
- * The anonymous folder drawn when nobody has opened one.
- *
- * Sized by eye against the rendered object rather than picked as a round number: at 18
- * sources nearly every one was claimed by a page and pulled off the outer shell, so the
- * silhouette collapsed on one side and the object read as a scatter. Leaving about a
- * third of the documents unclaimed keeps the shell round *and* is the truer picture of a
- * young folder, where most of what you have gathered has not been written up yet.
- */
+/** About a third of the sources stay unclaimed, which keeps the outer shell round: a young folder has mostly unwritten sources. */
 const ANONYMOUS: ConstellationInput = {
   sourceCount: 26,
   pageSourceCounts: [3, 2, 2, 1, 1, 4, 2, 1],
@@ -52,47 +41,28 @@ export const CONSTELLATION_MARK_CAP = 96;
 
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
-/**
- * How far a cited document travels toward the page that cites it.
- *
- * Enough that the pair reads as belonging together, not so much that a claimed source
- * leaves the outer shell — at 0.34 the shell dented visibly wherever a page had gathered
- * several documents, and a dent reads as a fault in the drawing rather than as structure.
- */
+/** How far a cited document travels toward its page; more than this dents the outer shell. */
 const PAGE_PULL = 0.24;
 
-/**
- * The `i`-th of `count` points spread evenly over a sphere of radius `radius`.
- *
- * A Fibonacci spiral rather than random spherical coordinates: random picks clump, and a
- * clump in a backdrop reads as a defect in the data rather than as noise in the drawing.
- */
+/** The `i`-th of `count` points spread evenly over a sphere of radius `radius`; a Fibonacci spiral, since random picks clump. */
 function spherePoint(
   i: number,
   count: number,
   radius: number,
 ): { x: number; y: number; z: number } {
-  // `count + 1` keeps the very first point off the exact pole, where a mark reads as a
-  // mistake because every line to it converges.
+  // `count + 1` keeps the first point off the pole, where every line to it converges.
   const y = 1 - (2 * (i + 0.5)) / Math.max(1, count);
   const r = Math.sqrt(Math.max(0, 1 - y * y));
   const theta = GOLDEN_ANGLE * i;
   return { x: Math.cos(theta) * r * radius, y: y * radius, z: Math.sin(theta) * r * radius };
 }
 
-/**
- * Build the object.
- *
- * Pass no input for the anonymous folder. Pass a folder's real counts and the same
- * function returns that folder — one code path, so the picture a person meets before
- * choosing a folder and the picture they get after are the same drawing of two datasets.
- */
+/** Builds the object for a folder's counts, or the anonymous folder when given none. */
 export function buildConstellation(input?: ConstellationInput): ConstellationModel {
   const source = input ?? ANONYMOUS;
   const pageCounts = source.pageSourceCounts.filter((count) => Number.isFinite(count));
   const wantedSources = Math.max(0, Math.floor(source.sourceCount));
-  // The cap is spent on pages first: a page is the thing the Library is for, and a folder
-  // of 400 sources should still show what was written from them.
+  // The cap is spent on pages first, so a folder of 400 sources still shows what was written from them.
   const pageTotal = Math.min(pageCounts.length, CONSTELLATION_MARK_CAP);
   const sourceTotal = Math.min(wantedSources, CONSTELLATION_MARK_CAP - pageTotal);
 
@@ -112,13 +82,7 @@ export function buildConstellation(input?: ConstellationInput): ConstellationMod
     marks.push({ kind: "source", ...point, weight: 0 });
   }
 
-  /*
-   * Hand each page the next `n` sources in order and pull those sources a third of the way
-   * toward it. Sequential rather than nearest-first: nearest-first made every page claim
-   * the same dense band of the outer shell and left the far side bare, which drew a folder
-   * with a hole in it. In order, the claimed sources spiral with the pages themselves, and
-   * the object keeps its silhouette.
-   */
+  // Each page claims the next `n` sources in order; nearest-first would claim one dense band and leave the far side bare.
   let cursor = sourceStart;
   for (let page = 0; page < pageTotal; page += 1) {
     const wanted = Math.max(0, Math.floor(pageCounts[page] ?? 0));

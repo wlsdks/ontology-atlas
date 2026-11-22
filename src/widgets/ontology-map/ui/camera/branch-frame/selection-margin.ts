@@ -3,7 +3,7 @@ import { createMeasureText } from "../../../dial/fit";
 import { branchMemberCount } from "../../../dial/branches/member-disclosure";
 import { branchNameLines, branchTextStyle } from "../../../dial/branches/text";
 import { readDialTokens } from "../../../dial/tokens";
-import type { DialModel, DialWorld } from "../../../dial/types";
+import type { DialModel, DialWorld } from "../../../dial/dial-shapes";
 import {
   SELECTION_NUDGE_MARGIN_PX, selectionFrameTarget, selectionNudgeTarget, type FramedMark, type FreeMapRect,
 } from "../../../model/camera/flat-selection-camera";
@@ -11,13 +11,15 @@ import type { TopologyWorld } from "../../world/topology-world";
 import { cachedGraphAttention } from "../../../flat-graph/attention";
 import { lastOpenedDomainStar } from "../../../flat-graph/frame";
 import { graphDiscRadiusPx } from "../../../flat-graph/marks";
-import { domainTitleBlocks, memberNameReachPx, nameReachBox, selectedDiscRadius, type NameReachInput } from "../../../flat-graph/names";
+import { selectedDiscRadius } from "../../../flat-graph/names";
+import { memberNameReachPx, nameReachBox, type NameReachInput } from "../../../flat-graph/names/sides";
+import { domainTitleBlocks } from "../../../flat-graph/names/titles";
 import { domainStarIds, domainStarRooms, openRadiusPx, type StarRoom } from "../../../flat-graph/open-star";
 import { readFlatGraphTokens } from "../../../flat-graph/tokens";
-import type { FlatGraphPaintTokens } from "../../../flat-graph/types";
+import type { FlatGraphPaintTokens } from "../../../flat-graph/flat-graph-shapes";
 import { labelFontFamily } from "../../../render/labels";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
-import { computeEffectiveCameraScaleMax } from "../topology-camera-math";
+import { computeEffectiveCameraScaleMax } from "../target/zoom-range";
 import { domainSelectionZoom, elementSelectionZoom, graphSelectionZoom } from "./graph-selection-zoom";
 
 const staleBounds = new WeakMap<DialModel, ReadonlyMap<string, number>>();
@@ -30,12 +32,9 @@ function staleBound(model: DialModel): ReadonlyMap<string, number> {
 }
 
 /**
- * On the Flat graph a click frames the selection, its domain and the lit concepts inside that
- * domain with every side their names may take, preferring the whole lit reach when it already
- * fits. Radii are taken at the largest growth, so the frame holds at any zoom it lands on.
- * A domain frames its own star (disc, name block, member discs and their elements) instead, zooming
- * in until that star fills the free map or its members stand `domainApartMaxPx` apart; partner
- * domains may leave the view.
+ * On the Flat graph a click frames the selection, its domain and the lit concepts inside it with every side their names may
+ * take (the whole lit reach when it fits), radii at the largest growth so the frame holds at any zoom. A domain frames its own
+ * star instead, zooming until it fills the free map or its members stand `domainApartMaxPx` apart; partner domains may leave.
  */
 function graphSelectionFrame(
   world: TopologyWorld, dial: DialWorld, id: string, camera: CameraTarget, viewport: { width: number; height: number }, free: FreeMapRect,
@@ -138,13 +137,9 @@ interface FramedStarMember {
 const NAME_ROOM_SLACK_PX = 0.5;
 
 /**
- * A domain's star as the frame keeps it inside the free map at `scale`: the domain's block, then each
- * member's opened disc with room for its one-line name on the side facing away from the domain, so a
- * star framed against the free map's edge keeps a side there for the names of the members on its rim.
- * The names take only the width the star leaves of `spanPx`, each whole or not at all, the shortest
- * first (`byName`, the members with a name from shortest to longest): a name that no longer fits is
- * passed over for a shorter or nearer one, so a short width still seats whole names. Where the star
- * alone fits it still fits, and where it does not they take none. O(members).
+ * A domain's star as the frame keeps it inside the free map at `scale`: the domain's block, then each member's opened disc with
+ * room for its one-line name on the side facing away from the domain. Names take only the width left of `spanPx`, each whole or
+ * not at all, shortest first (`byName`): a name that no longer fits is passed over for a shorter one. O(members).
  */
 function domainStarMarks(
   block: readonly FramedMark[], members: readonly FramedStarMember[], byName: readonly number[], scale: number, domainPx: number, paint: FlatGraphPaintTokens,

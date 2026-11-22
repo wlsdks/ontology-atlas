@@ -27,7 +27,7 @@ function isOntologySlug(s) {
  * @param {object} args
  * @param {Array<{slug?:string, frontmatter?:object}>} [args.docs]  parsed vault docs (e.g. loadVaultDocs())
  * @param {string} [args.repoRoot]  root the paths resolve against (default cwd)
- * @param {(absPath:string)=>boolean} [args.fileExists]  default existsSync
+ * @param {(absPath:string)=>boolean} [args.fileExists]
  * @returns {{repoRoot:string, nodesScanned:number, pathsChecked:number, drifts:Array<{slug:string,kind:string,key:string,missingPath:string}>}}
  */
 export function detectVaultPathDrift({ docs = [], repoRoot = process.cwd(), fileExists = existsSync } = {}) {
@@ -50,12 +50,12 @@ export function detectVaultPathDrift({ docs = [], repoRoot = process.cwd(), file
     }
 
     if (Array.isArray(fm.elements)) {
-      for (const el of fm.elements) {
-        if (typeof el !== 'string') continue;
-        if (!looksLikePath(el) || isOntologySlug(el)) continue;
+      for (const element of fm.elements) {
+        if (typeof element !== 'string') continue;
+        if (!looksLikePath(element) || isOntologySlug(element)) continue;
         pathsChecked += 1;
-        if (!fileExists(resolve(repoRoot, el))) {
-          drifts.push({ slug, kind, key: 'elements[]', missingPath: el });
+        if (!fileExists(resolve(repoRoot, element))) {
+          drifts.push({ slug, kind, key: 'elements[]', missingPath: element });
         }
       }
     }
@@ -90,8 +90,8 @@ export function suggestPathReconciliations(drifts = [], repoFiles = []) {
   for (const f of repoFiles) {
     if (typeof f !== 'string' || !f) continue;
     const base = basename(f);
-    const arr = byBase.get(base);
-    if (arr) arr.push(f);
+    const pathsWithBase = byBase.get(base);
+    if (pathsWithBase) pathsWithBase.push(f);
     else byBase.set(base, [f]);
   }
 

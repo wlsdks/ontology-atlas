@@ -24,7 +24,7 @@ import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import type { SetupGroupId, SetupItem } from '../model/harness-setup';
 import { displayPath, hookTitle, reportItemFor, scopeOptionKey, type ScopeHookGroup } from '../model/scope-hook-groups';
-import { Fact, ItemStatus, NEUTRAL_BADGE, StatusHints, type TranslateFn } from './HarnessGuideDetail';
+import { Fact, ItemStatus, NEUTRAL_BADGE, StatusHints, type TranslateFn } from './harness-setup-item';
 
 /** Asks the page to open "Where settings live" on one tool's scope row. */
 export type ExplainScope = (tool: ScopeTool, row: string) => void;

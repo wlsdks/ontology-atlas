@@ -14,7 +14,6 @@ export const GUIDE_TRANSLATIONS_DIR = 'docs-i18n/guide';
 export const guideSourcePath = (page: GuidePage, locale: string) =>
   locale === 'en' ? `docs/${page.slug}.md` : `${GUIDE_TRANSLATIONS_DIR}/${locale}/${page.segment}.md`;
 
-/** A locale without its translation falls back to the English body, which the page then labels. */
 export function readGuideDocument(page: GuidePage, locale: string): GatewayDocument & { sourcePath: string } {
   const translated = join(process.cwd(), guideSourcePath(page, locale));
   if (locale === 'en' || !existsSync(translated)) {

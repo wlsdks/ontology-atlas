@@ -13,24 +13,26 @@ fn background_production_path() {
             let source = PathBuf::from(string("sourcePath"));
             let destination = PathBuf::from(string("destinationPath"));
             let _grants =
-                crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&destination));
-            crate::vault_grants::grant_source_root(&source);
+                crate::vault::grants::EnforcedScope::granting(std::slice::from_ref(&destination));
+            crate::vault::grants::grant_source_root(&source);
             if args["action"] == "preview" {
                 serde_json::to_value(
-                    crate::local_construction::preview_local_construction_source(
+                    crate::project_source::local_construction::preview_local_construction_source(
                         string("sourcePath"),
                         string("destinationPath"),
                     )?,
                 )
                 .map_err(|e| e.to_string())
             } else {
-                serde_json::to_value(crate::local_construction::read_local_construction_source(
-                    string("sourcePath"),
-                    string("destinationPath"),
-                    string("fingerprint"),
-                    string("path"),
-                    args["startLine"].as_u64().unwrap() as usize,
-                )?)
+                serde_json::to_value(
+                    crate::project_source::local_construction::read_local_construction_source(
+                        string("sourcePath"),
+                        string("destinationPath"),
+                        string("fingerprint"),
+                        string("path"),
+                        args["startLine"].as_u64().unwrap() as usize,
+                    )?,
+                )
                 .map_err(|e| e.to_string())
             }
         }

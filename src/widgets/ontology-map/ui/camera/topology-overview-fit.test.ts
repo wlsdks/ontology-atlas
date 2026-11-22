@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { overviewBoundsFor, overviewForPositionTargets } from "./topology-overview-fit";
-import { computeSpineBounds, type TopologyWorld, type WorldNode } from "../world/topology-world";
+import { computeSpineBounds } from "../world/framing/world-bounds";
+import { type TopologyWorld, type WorldNode } from "../world/topology-world";
 
 const tokens = {
   radiusProject: 20,
