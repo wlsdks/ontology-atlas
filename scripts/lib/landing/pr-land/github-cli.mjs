@@ -268,6 +268,17 @@ export function createGithub(slug, run = ghRun) {
     markReady: (number) => ok(['pr', 'ready', String(number)]),
     markDraft: (number) => ok(['pr', 'ready', String(number), '--undo']),
     rerunFailed: (runId) => ok(['run', 'rerun', String(runId), '--failed']),
+    /** Every workflow run for one head sha, or `null` when unreadable. */
+    listWorkflowRuns: (sha) => {
+      const runs = read(['api', `repos/${slug}/actions/runs?head_sha=${sha}&per_page=100`,
+        '--jq', '[.workflow_runs[] | {id, name, path, status, conclusion, url: .html_url}]']);
+      return Array.isArray(runs.value) ? runs.value : null;
+    },
+    /** How many jobs a workflow run has; `null` when unreadable. */
+    countRunJobs: (runId) => {
+      const count = read(['api', `repos/${slug}/actions/runs/${runId}/jobs?per_page=1`, '--jq', '.total_count']);
+      return Number.isInteger(count.value) ? count.value : null;
+    },
     /** Which attempt a workflow run is on: 1 until someone reran it. `null` when unreadable. */
     readRunAttempt: (runId) => {
       const run = read(['api', `repos/${slug}/actions/runs/${runId}`]);
