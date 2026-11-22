@@ -36,7 +36,7 @@
   position: absolute;
   inset: 0;
   transform-origin: 0 0;
-  background: var(--work-room-pit);
+  background: color-mix(in srgb, var(--ink) 6%, var(--work-room-wall));
 }
 
 .face {

@@ -10,18 +10,32 @@ const EXIT_EASE_CSS = `cubic-bezier(${EXIT_TRANSITION.ease.join(', ')})`;
 export const GLIDE_MS = ms(MOTION.slow.duration) * 2;
 const ENTER_MS = ms(MOTION.expressive.duration);
 const ENTER_RISE_PX = 16;
-/** A room's old face is gone before it has travelled a third of the way; its new face arrives in the last half. */
-export const FACE_OUT_MS = ms(MOTION.settle.duration);
-export const FACE_IN_DELAY_MS = ms(MOTION.slow.duration);
-export const FACE_IN_MS = ms(MOTION.slow.duration);
+/**
+ * A room that changes size crossfades its faces while it travels: the new face fades in over the old
+ * one from the start, and the old one stays fully drawn underneath until the new one covers it, so
+ * no frame shows an empty plate.
+ */
+const FACE_IN_MS = GLIDE_MS * 0.6;
+const FACE_HOLD = 0.7;
+/** A new room rises in after the rooms around it have begun to make space. */
+const ENTER_DELAY_MS = ms(MOTION.slow.duration);
+const NOTCH_PX = 4;
 /** Sub-pixel differences are layout rounding, not a move. */
 const MOVE_EPSILON_PX = 0.5;
 
 interface Glide {
   move: Animation;
-  plate: Animation | null;
+  /** The plate's scale and each face's clip, sharing the move's timing. */
+  sized: Animation[];
   from: Box;
   to: Box;
+}
+
+/** The room's notched outline at a size, in the same twelve points as the `.notched` class. */
+export function notchedOutline(w: number, h: number): string {
+  const n = NOTCH_PX;
+  const points = [[n, 0], [w - n, 0], [w - n, n], [w, n], [w, h - n], [w - n, h - n], [w - n, h], [n, h], [n, h - n], [0, h - n], [0, n], [n, n]];
+  return `polygon(${points.map(([x, y]) => `${x}px ${y}px`).join(', ')})`;
 }
 
 export const translate = (box: Box, rise = 0) => `translate(${box.x}px, ${box.y + rise}px)`;
@@ -78,7 +92,7 @@ export function useRoomMotion(
       const running = glides.current.get(key);
       removed.set(key, running ? drawnBox(running) : box);
       running?.move.cancel();
-      running?.plate?.cancel();
+      running?.sized.forEach(animation => animation.cancel());
       glides.current.delete(key);
     }
 
@@ -89,7 +103,7 @@ export function useRoomMotion(
       const running = glides.current.get(key);
       const before = running ? drawnBox(running) : placed.current.get(key);
       running?.move.cancel();
-      running?.plate?.cancel();
+      running?.sized.forEach(animation => animation.cancel());
       glides.current.delete(key);
 
       if (!before) {
@@ -97,19 +111,25 @@ export function useRoomMotion(
         if (reduced) element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms(MOTION.fast.duration), easing: 'linear' });
         else element.animate(
               [{ opacity: 0, transform: translate(to, ENTER_RISE_PX) }, { opacity: 1, transform: translate(to) }],
-              { duration: ENTER_MS, easing: EASE_CSS, delay: FACE_IN_DELAY_MS, fill: 'backwards' },
+              { duration: ENTER_MS, easing: EASE_CSS, delay: ENTER_DELAY_MS, fill: 'backwards' },
             );
         continue;
       }
-            if (instant || reduced || same(before, to)) continue;
-      const plateElement = element.querySelector<HTMLElement>('[data-room-plate]');
+      if (instant || reduced || same(before, to)) continue;
       const timing: KeyframeAnimationOptions = { duration: GLIDE_MS, easing: EASE_CSS };
       const move = element.animate([{ transform: translate(before) }, { transform: translate(to) }], timing);
       const resized = Math.abs(before.w - to.w) >= MOVE_EPSILON_PX || Math.abs(before.h - to.h) >= MOVE_EPSILON_PX;
-      const plate = plateElement && resized && to.w > 0 && to.h > 0
-        ? plateElement.animate([{ transform: `scale(${before.w / to.w}, ${before.h / to.h})` }, { transform: 'scale(1, 1)' }], timing)
-        : null;
-      const glide = { move, plate, from: before, to };
+      const sized: Animation[] = [];
+      if (resized && to.w > 0 && to.h > 0) {
+        // The plate scales from the old size and every face is clipped to the same outline, so a
+        // face larger than the plate never spills over the rooms beside it.
+        const plate = element.querySelector<HTMLElement>(':scope > [data-room-plate]');
+        if (plate) sized.push(plate.animate([{ transform: `scale(${before.w / to.w}, ${before.h / to.h})` }, { transform: 'scale(1, 1)' }], timing));
+        for (const face of element.querySelectorAll<HTMLElement>(':scope > [data-room-face]')) {
+          sized.push(face.animate([{ clipPath: notchedOutline(before.w, before.h) }, { clipPath: notchedOutline(to.w, to.h) }], timing));
+        }
+      }
+      const glide = { move, sized, from: before, to };
       glides.current.set(key, glide);
       move.addEventListener('finish', () => {
         if (glides.current.get(key) === glide) glides.current.delete(key);
@@ -120,20 +140,25 @@ export function useRoomMotion(
   }, [boardRef, boxes, reduced, sizeKey, onRemovedRef]);
 }
 
-/** A room that left the building: it fades and sinks a little, accelerating away. */
+/**
+ * A room that left the building fades where it stood, as long as a room gliding into its place
+ * takes to arrive, so its slot is never empty; it stays drawn as it was, lights and all.
+ */
 export function exitRoom(element: HTMLElement, from: Box, reduced: boolean, onDone: () => void) {
-  const duration = ms(EXIT_TRANSITION.duration) * (reduced ? 1 : 2);
   const keyframes = reduced
     ? [{ opacity: 1 }, { opacity: 0 }]
     : [{ opacity: 1, transform: translate(from) }, { opacity: 0, transform: `${translate(from, ENTER_RISE_PX / 2)} scale(0.97)` }];
-  element.animate(keyframes, { duration, easing: reduced ? 'linear' : EXIT_EASE_CSS, fill: 'forwards' }).addEventListener('finish', onDone);
+  const timing = reduced ? { duration: ms(MOTION.fast.duration), easing: 'linear' } : { duration: GLIDE_MS, easing: EXIT_EASE_CSS };
+  element.animate(keyframes, { ...timing, fill: 'forwards' }).addEventListener('finish', onDone);
 }
 
-/** One face of a room fading out while the room changes size; the room's new face fades in after it. */
+/** The new face of a room that changes size fades in over its old face, which stays drawn beneath it until covered. */
 export function fadeFace(element: HTMLElement, direction: 'in' | 'out', reduced: boolean): Animation {
-  const keyframes = direction === 'in' ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }];
-  if (reduced) return element.animate(keyframes, { duration: ms(MOTION.fast.duration), easing: 'linear', fill: 'both' });
+  if (reduced) {
+    const keyframes = direction === 'in' ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }];
+    return element.animate(keyframes, { duration: ms(MOTION.fast.duration), easing: 'linear', fill: 'both' });
+  }
   return direction === 'in'
-    ? element.animate(keyframes, { duration: FACE_IN_MS, delay: FACE_IN_DELAY_MS, easing: EASE_CSS, fill: 'backwards' })
-    : element.animate(keyframes, { duration: FACE_OUT_MS, easing: EASE_CSS, fill: 'forwards' });
+    ? element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FACE_IN_MS, easing: EASE_CSS, fill: 'backwards' })
+    : element.animate([{ opacity: 1 }, { opacity: 1, offset: FACE_HOLD }, { opacity: 0 }], { duration: GLIDE_MS, easing: 'linear', fill: 'forwards' });
 }

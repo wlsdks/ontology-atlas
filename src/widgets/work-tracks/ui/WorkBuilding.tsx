@@ -127,11 +127,11 @@ function Room({ room, box, copy, retiring, showOwner, reduced, ghost }: {
     >
       <div data-room-plate className={cn(styles.plate, styles.notched)} />
       {faces.leaving ? (
-        <div ref={leaveFace} aria-hidden inert className={cn(styles.face, styles.notched)} style={{ width: faces.leaving.w, height: faces.leaving.h }}>
+        <div ref={leaveFace} data-room-face aria-hidden inert className={cn(styles.face, styles.notched)} style={{ width: faces.leaving.w, height: faces.leaving.h }}>
           <RoomFace room={room} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} />
         </div>
       ) : null}
-      <div key={current.size} ref={enterFace} data-face-change={faces.leaving !== null} className={cn(styles.face, styles.notched, 'h-full w-full')}>
+      <div key={current.size} ref={enterFace} data-room-face data-face-change={faces.leaving !== null} className={cn(styles.face, styles.notched, 'h-full w-full')}>
         <RoomFace room={room} face={current} copy={copy} retiring={retiring} showOwner={showOwner} />
       </div>
     </div>
@@ -256,6 +256,8 @@ function useAmbientMotion(boardRef: React.RefObject<HTMLElement | null>, layoutK
 interface Ghost {
   room: RoomEntry;
   box: RoomBox;
+  /** A merged room leaves with its lights already out. */
+  retiring: boolean;
   from: Box;
 }
 
@@ -306,13 +308,13 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
     workingBelow: shown.workingBelow,
   }), [size, shown, hasShelf]);
 
-  const lastDrawn = useRef(new Map<string, { room: RoomEntry; box: RoomBox }>());
+  const lastDrawn = useRef(new Map<string, { room: RoomEntry; box: RoomBox; retiring: boolean }>());
   const [ghosts, setGhosts] = useState<Ghost[]>([]);
   const onRemoved = useCallback((removed: Map<string, Box>) => {
     const left: Ghost[] = [];
     for (const [key, from] of removed) {
       const drawn = lastDrawn.current.get(key);
-      if (drawn) left.push({ room: drawn.room, box: drawn.box, from });
+      if (drawn) left.push({ room: drawn.room, box: drawn.box, retiring: drawn.retiring, from });
     }
     if (left.length > 0) setGhosts(current => [...current.filter(ghost => !removed.has(ghost.room.key)), ...left]);
   }, []);
@@ -324,9 +326,9 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
   useLayoutEffect(() => {
     lastDrawn.current = new Map(entries.flatMap(room => {
       const box = layout.rooms.get(room.key);
-      return box ? [[room.key, { room, box }] as const] : [];
+      return box ? [[room.key, { room, box, retiring: retiring.has(room.key) }] as const] : [];
     }));
-  }, [entries, layout]);
+  }, [entries, layout, retiring]);
 
   const stageTop = Math.min(...shown.stage.map(room => layout.rooms.get(room.key)?.y ?? Number.POSITIVE_INFINITY), layout.height);
   const building: CSSProperties = { transform: `translateY(${Math.max(0, stageTop - 12)}px)`, height: layout.height };
@@ -371,15 +373,15 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
                 </span>
               </Placed>
             ) : null}
+            {ghosts.map(ghost => (
+              <Room key={`ghost:${ghost.room.key}`} room={ghost.room} box={ghost.box} copy={copy} retiring={ghost.retiring} showOwner={!layout.banded} reduced={reduced} ghost={{ from: ghost.from, onDone: forgetGhost }} />
+            ))}
             {entries.map(room => {
               const box = layout.rooms.get(room.key);
               return box ? (
                 <Room key={room.key} room={room} box={box} copy={copy} retiring={retiring.has(room.key)} showOwner={!layout.banded} reduced={reduced} />
               ) : null;
             })}
-            {ghosts.map(ghost => (
-              <Room key={`ghost:${ghost.room.key}`} room={ghost.room} box={ghost.box} copy={copy} retiring={false} showOwner={!layout.banded} reduced={reduced} ghost={{ from: ghost.from, onDone: forgetGhost }} />
-            ))}
             {layout.shelf ? (
               <Placed box={layout.shelf}>
                 <RoomShelf merged={shelfMerged} untouched={plan.shelf.untouched} baseBranch={baseBranch} nowMs={nowMs} inline={layout.shelf.inline} />
