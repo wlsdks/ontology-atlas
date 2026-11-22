@@ -94,6 +94,7 @@ interface StorageEntry {
 const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   // State about the app itself (vault-independent)
   { key: "app-update:dismissed-version", kind: "storage", scope: "global", note: "dismissed update version" },
+  { key: "app-update:dismissed-at", kind: "storage", scope: "global", note: "when that version was put off" },
   { key: "app-update:last-check", kind: "storage", scope: "global", note: "time of the last update check" },
   { key: "app-update:auto-check", kind: "storage", scope: "global", file: "src/features/app-update/model/update-state.ts", note: "Automatic update check on this computer: on (default) or off" },
   { key: "atlas.appearance.text-size", kind: "storage", scope: "global", file: "src/shared/lib/preferences/text-size.ts", note: "Text size: default, large or larger" },
