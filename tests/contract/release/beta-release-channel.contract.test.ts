@@ -114,7 +114,7 @@ describe("a beta release never writes the updater feed or /download", () => {
 describe("the browser gate can tell a whole run after its artifacts expire", () => {
   it("e2e.yml titles a scheduled run and a dispatch with no plan_from as whole, and nothing else", () => {
     const e2e = readFileSync(".github/workflows/e2e.yml", "utf8");
-    const runName = /^run-name: (.+)$/m.exec(e2e)?.[1] ?? "";
+    const runName = /^run-name: "(.+)"$/m.exec(e2e)?.[1] ?? "";
     expect(runName).toBe(
       `\${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.plan_from == '')) && '${WHOLE_RUN_TITLE}' || '' }}`,
     );
