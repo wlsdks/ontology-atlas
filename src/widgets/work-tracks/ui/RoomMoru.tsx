@@ -1,6 +1,6 @@
 'use client';
 
-import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { BrandWaitingMark } from '@/shared/ui/marks/moru/brand-waiting-mark';
 import { cn } from '@/shared/lib/cn';
 import type { RoomClip } from '../model/room-look';
 import styles from './rooms.module.css';
