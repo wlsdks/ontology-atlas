@@ -122,6 +122,25 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
     }
     return air;
   };
+  // Each disc filed at the step's lowest scale, the widest it stands in world units anywhere in the step.
+  const stepDiscs = new Occupancy<Box & { id: string; at: Point; r: number }>(CELL_PX / lowest);
+  for (const [id, r] of discs) {
+    const p = layout.positions.get(id)!;
+    const w = r / lowest;
+    stepDiscs.add({ id, at: p, r, minX: p.x - w, maxX: p.x + w, minY: p.y - w, maxY: p.y + w });
+  }
+  /**
+   * Whether the glyphs of a group's names at `at` keep clear of every disc not their own at both ends
+   * and the centre of the step: `discAirPx` at the step's scales never below zero, read only from the
+   * discs filed under the glyphs' swept box. O(discs near the group × scales).
+   */
+  const offDiscsInStep = (at: Point, group: readonly PlacedName[]) => !group.some((n) => {
+    const glyphs = grown(n.box, -tokens.namePadPx);
+    return stepDiscs.some(span(at, glyphs), (d) => d.id !== n.id && stepScales.some((s) => {
+      const b = worldBox(at, glyphs, s);
+      return Math.hypot(Math.max(b.minX - d.at.x, 0, d.at.x - b.maxX), Math.max(b.minY - d.at.y, 0, d.at.y - b.maxY)) * s < d.r;
+    }));
+  });
   // A caption ranks lowest and gives way to every disc anywhere in the step, at rest and in the overview.
   const captionOnDisc = (n: PlacedName) => discAirPx(layout.positions.get(n.id)!, [n], stepScales) < 0;
   const project = projectName(input);
@@ -215,10 +234,10 @@ export function admit(input: NameInput, step: number, seed: NameAdmission | null
     const keepsOffTitles = cand.id === selectedId || (cand.element && input.lit !== null);
     const offRing = (group: readonly PlacedName[]) => !(yields && cand.element) || !onRing(at, group);
     const leaderClear = (group: readonly PlacedName[]) => leaderClearAt(at, group);
-    // Names are tested against names at the step's ends and centre; a disc is tested at the step's own scale.
+    // Names are tested against names at the step's ends and centre; a disc's box at the step's own scale.
     const discs = fan?.offsets.has(cand.id) ? litMarks : marks;
-    // The frame hides a name over a disc not its own at whatever zoom of the step it rests, so a forced capability keeps off them all.
-    const offDiscs = (group: readonly PlacedName[]) => cand.element || !force || discAirPx(at, group, stepScales) >= 0;
+    // With no mark grown the frame draws a name as admitted, at whatever zoom of the step it rests, so a capability's name keeps off every disc not its own across the step.
+    const offDiscs = (group: readonly PlacedName[]) => cand.element || offDiscsInStep(at, group);
     const free = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => discs.hits(worldBox(at, n.box, scale))) && !hits(words, at, group) && (!keepsOffTitles || offTitles(at, group)) && offRing(group) && leaderClear(group) && offDiscs(group);
     const offStarDots = (group: readonly PlacedName[]) => free(group) && !group.some((n) => starDots.hits(worldBox(at, n.box, scale)));
     const litCrossed = (group: readonly PlacedName[]) => lit && crossed(at, group);
