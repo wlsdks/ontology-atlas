@@ -18,11 +18,8 @@ export interface DayTick {
   change: DigestChange;
   /** Local minute of the day, 0 to 1439. */
   minute: number;
-  /** The first minute of the slot the tick is drawn in. */
   slot: number;
-  /** Position from the baseline among ticks sharing the slot, oldest lowest. */
   stack: number;
-  /** Changes merged in the same minute, this one included. */
   sameMinute: number;
 }
 
@@ -54,10 +51,8 @@ export function dayTicks(changes: readonly DigestChange[], slotMinutes = 1): Day
 }
 
 export interface TimelineColumn {
-  /** First and last local dates the column covers, inside the period. */
   start: string;
   end: string;
-  /** Newest first. */
   changes: DigestChange[];
 }
 

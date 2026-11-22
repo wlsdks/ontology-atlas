@@ -21,13 +21,8 @@ function readSampleSourcePreference(): SampleSource {
   }
 }
 
-// ── Shared reactive store ─────────────────────────────────────────
-// Several components consume this preference at once: the first-run card's segmented
-// control (writes) and useOntologyInsight (reads → topology / INDEX / counts). With
-// independent useState in each, changing it on the card left the map unchanged until
-// a reload — a defect measured in 2026-07. One module-level store plus
-// useSyncExternalStore re-renders every consumer immediately, and cross-tab storage
-// events are picked up as well.
+// One module-level store: the first-run card writes this preference while the map reads it, and
+// per-component state would leave the map stale until a reload.
 const listeners = new Set<() => void>();
 let cachedSnapshot: SampleSource | null = null;
 

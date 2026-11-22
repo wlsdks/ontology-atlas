@@ -11,14 +11,9 @@ import {
 } from '@/shared/lib/connectors/connector-store';
 import { forgetApproval, readMachineApprovals, recordApproval, useMachineApprovals } from '@/shared/lib/connectors/machine-approvals';
 import { createConnectorSetup, type ConnectorSetup } from '@/shared/lib/connectors/connector-setup';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
-/**
- * The connectors beside the open vault as screen state. The file is the source of truth: each
- * change re-reads before writing (`connector-store.ts`) and the write result updates the
- * screen, because an optimistic copy could disagree with a folder edited elsewhere. The list
- * works on the web too; keychain tokens and agent spawning stay app-only, and the screen says so.
- */
+/** The file is the source of truth: each change re-reads before writing (`connector-store.ts`) and the write result updates the screen, since an optimistic copy could disagree with a folder edited elsewhere. Keychain tokens and agent spawning stay app-only. */
 export interface VaultConnectorsState {
   /**
    * `malformed` means the file exists and is not ours, which blocks writing, so the screen must
@@ -38,7 +33,6 @@ export interface VaultConnectorsState {
   allowHere: (id: string) => boolean;
   reload: () => Promise<void>;
   setEnabled: (id: string, enabled: boolean) => Promise<ConnectorWriteResult | null>;
-  /** An edit made here to an allowed connector stays allowed. */
   upsert: (
     connector: ConnectorRecord,
     options?: { allowHere?: boolean },
@@ -46,14 +40,11 @@ export interface VaultConnectorsState {
   remove: (id: string) => Promise<ConnectorWriteResult | null>;
 }
 
-/**
- * Stable, so a consumer memoising on `connectors` does not rebuild its session descriptor.
- */
+/** Stable, so a consumer memoising on `connectors` does not rebuild its session descriptor. */
 const NONE: ConnectorRecord[] = [];
 const NO_KEYS: string[] = [];
 const NO_IDS: ReadonlySet<string> = new Set();
 
-/** Keyed by the folder that answered, so a late answer from the previous vault is dropped. */
 interface Loaded {
   store: ConnectorStore;
   status: 'ready' | 'malformed' | 'unavailable';

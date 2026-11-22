@@ -1,8 +1,4 @@
-/**
- * Turns enabled connectors into `session/new` `mcpServers` entries; Atlas runs none, the
- * agent does. Only runtimes known to ask (`runtimeCarriesConnectors`) carry them;
- * `atlas-vault` is a refused name.
- */
+/** Turns enabled connectors into `session/new` `mcpServers` entries; Atlas runs none, the agent does. Only runtimes known to ask (`runtimeCarriesConnectors`) carry them; `atlas-vault` is a refused name. */
 import {
   connectorProblems,
   ownsSecretRef,
@@ -14,7 +10,6 @@ import { ACP_SECRET_REF_KEY } from '@/shared/lib/connectors/tauri-connector-secr
 import { runtimeCarriesConnectors } from './runtime-gate';
 import { VAULT_MCP_SERVER_NAME } from './vault-mcp-server';
 
-/** A value the agent is given directly, or the reference Rust resolves on the way out. */
 type AcpValueEntry =
   | { name: string; value: string }
   | { name: string; [ACP_SECRET_REF_KEY]: string };
@@ -47,29 +42,17 @@ function toAcpEntries(connectorId: string, entries: readonly ConnectorValueEntry
       }
       continue;
     }
-    // A `secretLiteral` entry carries no value by design — the file held a plaintext token and
-    // the value was dropped on read. It is not sent as an empty string, because a variable set
-    // to "" and a variable that is absent are different failures, and the absent one is honest.
+    // A `secretLiteral` entry carries no value by design (the plaintext token was dropped on read). Sent as "" it would be a
+    // different failure from an absent variable, and the absent one is honest.
     if (typeof entry.value === 'string') out.push({ name: entry.name, value: entry.value });
   }
   return out;
 }
 
-/**
- * The connectors that are ready to be attached, in the order the person stored them.
- *
- * A record with a problem is left out rather than sent: a connector with a bare command or an
- * empty URL produces a session whose tools are silently missing, which reads exactly like Atlas
- * failing. `connectorsWithProblems` returns the same records the other way round so the screen can
- * say which ones did not go and why.
- */
+/** In stored order. A record with a problem is left out: a bare command or empty URL makes a session whose tools are silently missing, which reads like Atlas failing. */
 export function connectorAcpServers(
   connectors: readonly ConnectorRecord[],
-  /**
-   * The runtime this session will run on. **Anything unmeasured gets none of them** - see
-   * `runtimeCarriesConnectors`. Omitting it is the same as naming an unmeasured runtime, so a
-   * call site that forgets to pass one attaches nothing rather than attaching blind.
-   */
+  /** Omitted or unmeasured attaches nothing rather than attaching blind (`runtimeCarriesConnectors`). */
   runtimeId: string | null | undefined,
   allowedHere: ConnectorAllowedHere,
 ): AcpConnectorServer[] {
@@ -91,7 +74,6 @@ export function connectorAcpServers(
   );
 }
 
-/** The enabled connectors that are actually sendable. */
 function attachable(
   connectors: readonly ConnectorRecord[],
   allowedHere: ConnectorAllowedHere,
@@ -101,10 +83,8 @@ function attachable(
   for (const connector of connectors) {
     if (!connector.enabled || !allowedHere(connector)) continue;
     const name = connector.name.trim();
-    // The vault server's name is already taken; a connector under it would replace the person's
-    // own map. Two connectors sharing a name are both refused instead, by `connectorProblems`'
-    // uniqueness check — picking one would be picking for the person, and the agent's tool list
-    // would hold the name once with nothing saying the other exists.
+    // The vault server's name is taken; a connector under it would replace the person's own map. Two connectors sharing a
+    // name are both refused by `connectorProblems`: picking one would be picking for the person.
     if (seen.has(name)) continue;
     if (connectorProblems(connector, connectors).length > 0) continue;
     seen.add(name);
@@ -113,13 +93,7 @@ function attachable(
   return out;
 }
 
-/**
- * The enabled connectors that were **not** attached, with the reason.
- *
- * A connector that is switched on and absent is the failure this feature has to avoid stating
- * badly: the person believes the agent can reach Notion, the agent has no such tool, and nothing
- * anywhere says why.
- */
+/** A switched-on connector that is absent is the failure to avoid: the person believes the agent can reach Notion and nothing says why. */
 export function connectorsWithProblems(
   connectors: readonly ConnectorRecord[],
   allowedHere: ConnectorAllowedHere,
@@ -137,13 +111,7 @@ export function connectorsWithProblems(
     }));
 }
 
-/**
- * Enabled connectors whose token is not in this machine's keychain yet.
- *
- * Checked before a session opens, because the alternative is a refusal at the moment somebody was
- * about to ask a question. The presence check itself lives in the bridge; this only says which
- * references to ask about.
- */
+/** Checked before a session opens: a refusal at the moment somebody asks a question is worse. The presence check lives in the bridge. */
 export function connectorSecretRefs(
   connectors: readonly ConnectorRecord[],
   allowedHere: ConnectorAllowedHere,

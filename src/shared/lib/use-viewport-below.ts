@@ -1,29 +1,9 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 
 /**
- * Exposes "is the viewport currently narrower than this width" as a React value.
- *
- * **Why CSS alone is not enough**: *hiding* a surface that does not fit is not the
- * same as *not building* it. A surface hidden with `display:none` is still
- * mounted, still running effects, focus and measurement — living on underneath
- * while the screen says "you cannot come here". Degradation is a substitute, not
- * concealment.
- *
- * **Why not `useState` + `useEffect`**: matchMedia is a store outside React, so
- * `useSyncExternalStore` is the correct subscription. Catching up to the initial
- * value with a setState inside an effect causes a cascading render
- * (`react-hooks/set-state-in-effect`) and always paints the first frame with the
- * wrong value. A separate server snapshot also keeps static export's prerender and
- * hydration from diverging: the server renders "wide" and hydration settles on the
- * real width in one step.
- *
- * `minWidthPx` takes the **same number** as the Tailwind breakpoint (`lg` = 1024).
- * The boundary matches CSS too — "below min-width" — by querying 1023.98px so it
- * cannot disagree with the `lg:` utilities at fractional pixel ratios.
- *
- * `serverBelow` is the prerender's answer. It stays "wide" unless the wide layout
- * is the rare one: a breakpoint most windows sit below should prerender narrow, or
- * nearly every first paint is the wrong layout and changes on hydration.
+ * A surface that does not fit is not built rather than hidden, so it runs no effects. `minWidthPx`
+ * is the Tailwind breakpoint, queried 0.02px below so it agrees with `lg:` at fractional ratios.
+ * `serverBelow` is the prerender's answer: narrow only where most windows sit below the breakpoint.
  */
 export function useViewportBelow(minWidthPx: number, serverBelow = false): boolean {
   const query = useMemo(() => {

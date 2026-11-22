@@ -290,7 +290,7 @@
        ~40%, hit threshold <0.5 so unclickable) and element band (2.3~2.85) becomes unreachable — worsens with larger viewports. Effective max is now
        `overviewEntryScale × this ratio` (relative to viewport), and the absolute value above
        is only a safety fallback when overviewEntryScale is 0/invalid
-       (`topology-camera-math.ts#computeEffectiveCameraScaleMax`). 3.2 is
+       (`ui/camera/target/zoom-range.ts#computeEffectiveCameraScaleMax`). 3.2 is
        comfortably larger than element fullRatio (2.85) so all tiers reach cursor+element
        tier in every viewport. */
     --map-camera-max-zoom-ratio: 3.2;
@@ -317,7 +317,7 @@
     --map-overview-entry-ratio: 0.95;
     /*
      * Top band 160: Neural names each cluster about 60 px above its topmost cell, and that name must
-     * clear the 104 px chrome band. Used by `computeDomeFitCameraTarget` in `topology-camera-math.ts`.
+     * clear the 104 px chrome band. Used by `computeDomeFitCameraTarget` in `ui/camera/target/fit-targets.ts`.
      */
     --map-dome-fit-fill: 0.98;
     --map-dome-fit-inset-top: 160;
@@ -325,7 +325,7 @@
     --map-focus-fit-max-scale: 1.9;
     /*
      * Multiplicative margin: larger clusters get proportionally larger padding. See
-     * `computeFocusCameraTarget` in `topology-camera-math.ts`.
+     * `computeFocusCameraTarget` in `ui/camera/target/focus-fit.ts`.
      */
     --map-focus-bbox-margin: 1.15;
     /*
@@ -418,7 +418,7 @@ bottom hint covering the canvas width. Label culling and camera fit read this va
 camera rejection). Equivalent v2 of the deleted TopologyMapCanvas px string version — here it is a unitless number (canvas 2D getComputedStyle).
 
 The 352px datasheet does not widen it: safeInsetRight is
-only read in `computeOverviewFitScale`/`computeOverviewCameraTarget` (fit when no node selected) — `computeFocusCameraTarget` (the only time the datasheet is actually visible, i.e., node selected) does not reference safeInset at all (`topology-camera-math.ts`). Thus even if the datasheet width increases, there is no reason for the "safe area when invisible" value to change, so it remains 120 — we did not mechanically expand left/right padding just because the panel widened. Verified no actual collision via live check on 1512/1920 (`.qa-scratch/datasheet-gear/`). */
+only read in `computeOverviewFitScale`/`computeOverviewCameraTarget` (fit when no node selected) — `computeFocusCameraTarget` (the only time the datasheet is actually visible, i.e., node selected) does not reference safeInset at all (`ui/camera/target/`). Thus even if the datasheet width increases, there is no reason for the "safe area when invisible" value to change, so it remains 120 — we did not mechanically expand left/right padding just because the panel widened. Verified no actual collision via live check on 1512/1920 (`.qa-scratch/datasheet-gear/`). */
     /*
      * Each side lane is the chrome on that side plus 52 of air (left 24+300+52, right 24+36+52), so the
      * fit centres the drawing between them.

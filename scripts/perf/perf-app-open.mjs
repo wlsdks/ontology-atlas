@@ -29,7 +29,7 @@ if (process.platform !== 'darwin') {
   console.error('perf:app-open measures the macOS app (footprint and vmmap are macOS tools)');
   process.exit(2);
 }
-const opts = parseOpenArgs(process.argv.slice(2), { walks: ['map', 'library'] });
+const options = parseOpenArgs(process.argv.slice(2), { walks: ['map', 'library'] });
 const HOME = join(PERF_WORK, 'app-home');
 const REPORTS = join(PERF_WORK, 'app-reports');
 const GRANTS = join(HOME, 'Library', 'Application Support', PERF_APP_IDENTIFIER, 'granted-vault-roots.json');
@@ -39,9 +39,9 @@ const SAMPLE_MS = 500;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 mkdirSync(RUNS, { recursive: true });
 
-if (opts.clean) cleanVaults();
+if (options.clean) cleanVaults();
 mkdirSync(REPORTS, { recursive: true });
-const app = ensurePerfApp({ reportDir: realpathSync(REPORTS), rebuild: Boolean(opts.extra.build) });
+const app = ensurePerfApp({ reportDir: realpathSync(REPORTS), rebuild: Boolean(options.extra.build) });
 if (screenLocked()) console.log('The screen is locked: WebKit hides the page, so the map, frames and walks cannot be measured; footprint and census times still are.');
 console.log(`app-open perf · ${cpus().length} cores · load ${loadavg().map((n) => n.toFixed(1)).join(' ')} · ${app.bundle}`);
 
@@ -71,7 +71,7 @@ process.on('SIGINT', async () => {
 
 let broken = 0;
 try {
-  for (const shape of opts.shapes) for (const files of opts.files) broken += await measure(shape, files);
+  for (const shape of options.shapes) for (const files of options.files) broken += await measure(shape, files);
 } finally {
   await quit();
   // Everything the perf app wrote lives under the scratch HOME, plus what macOS keeps per identifier.
@@ -84,7 +84,7 @@ try {
   }
   unregisterPerfApp();
 }
-if (opts.check && broken > 0) {
+if (options.check && broken > 0) {
   console.error(`${broken} budget row(s) over their limit`);
   process.exit(1);
 }
@@ -97,7 +97,7 @@ async function launch(vault, { walks, capMs, label, composition }) {
   // the app then shows its chooser instead of reopening the folder.
   mkdirSync(join(GRANTS, '..'), { recursive: true });
   writeFileSync(GRANTS, JSON.stringify([realpathSync(vault.dir), realpathSync(REPORTS)]));
-  const config = { walks, settleMs: opts.settleS * 1000, capMs, expectConcepts: vault.census, library: { capMs: 180000, settleMs: 10000 } };
+  const config = { walks, settleMs: options.settleS * 1000, capMs, expectConcepts: vault.census, library: { capMs: 180000, settleMs: 10000 } };
   writeFileSync(join(REPORTS, 'config.json'), JSON.stringify(config));
   const before = new Set(webkitHelpers().keys());
   mkdirSync(HOME, { recursive: true });
@@ -128,7 +128,7 @@ async function launch(vault, { walks, capMs, label, composition }) {
   const shots = [];
   let lastShot = 0;
   while (Date.now() - launchedAt < capMs && exitedAt === null) {
-    if (opts.extra.shots && Date.now() - lastShot >= 20000) {
+    if (options.extra.shots && Date.now() - lastShot >= 20000) {
       lastShot = Date.now();
       const window = parseOnscreenWindows(readOnscreenWindows(), [child.pid])[0];
       const shot = window ? captureWindow(window, { keepPath: join(RUNS, `${label}-${Math.round((lastShot - launchedAt) / 1000)}s.png`) }) : null;
@@ -145,7 +145,7 @@ async function launch(vault, { walks, capMs, label, composition }) {
     if (current?.marks.walksDone !== undefined) break;
     await sleep(SAMPLE_MS);
   }
-  const webContent = [...helpers].filter(([, info]) => info.kind === 'WebContent').map(([pid]) => pid);
+  const webContent = [...helpers].filter(([, helper]) => helper.kind === 'WebContent').map(([pid]) => pid);
   const liveWebContent = webContent.filter((pid) => samples.at(-1)?.byPid[pid]);
   const extra = {};
   if (composition && exitedAt === null) {
@@ -206,13 +206,13 @@ function peakMb(run, pids) {
 
 async function measure(shape, files) {
   const vault = prepareVault(files, shape);
-  const capMs = capSeconds(files, opts.walks, opts.capS) * 1000;
+  const capMs = capSeconds(files, options.walks, options.capS) * 1000;
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   console.log(`\n## ${shape} · ${files.toLocaleString('en-US')} files (${vault.nodes} concepts) · cap ${capMs / 1000} s`);
   rmSync(INDEX, { recursive: true, force: true });
-  const first = await launch(vault, { walks: opts.walks, capMs, label: `app-${shape}-${files}-${stamp}-first`, composition: Boolean(opts.extra.vmmap) || files <= 2000 });
+  const first = await launch(vault, { walks: options.walks, capMs, label: `app-${shape}-${files}-${stamp}-first`, composition: Boolean(options.extra.vmmap) || files <= 2000 });
   await sleep(2000);
-  const reopen = await launch(vault, { walks: [], capMs: capSeconds(files, [], opts.capS) * 1000, label: `app-${shape}-${files}-${stamp}-reopen`, composition: false });
+  const reopen = await launch(vault, { walks: [], capMs: capSeconds(files, [], options.capS) * 1000, label: `app-${shape}-${files}-${stamp}-reopen`, composition: false });
 
   const at = (run, mark) => (run.page?.marks[mark] !== undefined ? run.page.timeOrigin + run.page.marks[mark] : null);
   const seconds = (run, mark) => (run.page?.marks[mark] !== undefined ? run.page.marks[mark] / 1000 : null);
@@ -252,12 +252,12 @@ async function measure(shape, files) {
     },
     notes: {
       'app-webview-steady': crashed(first) ?? 'not loaded within the cap',
-      'app-webview-library-added': opts.walks.includes('library') ? (crashed(first) ?? (first.page?.log ?? []).slice(-1)[0] ?? 'the Library did not settle') : 'add --walk=library',
+      'app-webview-library-added': options.walks.includes('library') ? (crashed(first) ?? (first.page?.log ?? []).slice(-1)[0] ?? 'the Library did not settle') : 'add --walk=library',
       'first-concepts-app-reopen': crashed(reopen) ?? 'the reopen did not show concepts within the cap',
       'loaded-app-reopen': crashed(reopen) ?? 'the reopen did not load within the cap',
       'loaded-first-open': crashed(first) ?? 'not loaded within the cap',
-      'frame-p95': opts.walks.includes('map') ? 'the map walk did not finish' : 'add --walk=map',
-      'row-pick-first-frame': opts.walks.includes('library') ? (first.page?.log ?? []).slice(-1)[0] ?? 'no row picked' : 'add --walk=library',
+      'frame-p95': options.walks.includes('map') ? 'the map walk did not finish' : 'add --walk=map',
+      'row-pick-first-frame': options.walks.includes('library') ? (first.page?.log ?? []).slice(-1)[0] ?? 'no row picked' : 'add --walk=library',
     },
   });
 
@@ -276,14 +276,14 @@ async function measure(shape, files) {
   }
   if (firstPage?.rowPick) console.log(`- row pick ${firstPage.rowPick.label}: first frame ${fmt(firstPage.rowPick.firstFrameMs, 'ms')}, press handled in ${fmt(firstPage.rowPick.pressMs, 'ms')}`);
   if (libraryMb !== null) console.log(`- WebView with the Library open ${libraryMb.toFixed(0)} MB`);
-  console.log(`- processes: app ${mainPid} (peak ${fmt(mainPid ? peakMb(first, [mainPid]) : null, 'MB')}); WebKit ${Object.entries(first.helpers).map(([pid, info]) => `${info.kind} ${pid} (peak ${fmt(peakMb(first, [Number(pid)]), 'MB')})`).join(', ')}; children of the app: ${kids.length ? kids.map((pid) => `${first.childNames[pid] || '?'} ${pid} (peak ${fmt(peakMb(first, [pid]), 'MB')})`).join(', ') : 'none'}`);
-  for (const [pid, info] of Object.entries(first.extra)) {
-    console.log(`- composition of ${info.name} ${pid} at the end of the first open (footprint categories, dirty MB):`);
-    for (const row of info.categories) console.log(`  - ${String(row.dirtyMb).padStart(8)}  ${row.category} (${row.regions} regions)`);
+  console.log(`- processes: app ${mainPid} (peak ${fmt(mainPid ? peakMb(first, [mainPid]) : null, 'MB')}); WebKit ${Object.entries(first.helpers).map(([pid, helper]) => `${helper.kind} ${pid} (peak ${fmt(peakMb(first, [Number(pid)]), 'MB')})`).join(', ')}; children of the app: ${kids.length ? kids.map((pid) => `${first.childNames[pid] || '?'} ${pid} (peak ${fmt(peakMb(first, [pid]), 'MB')})`).join(', ') : 'none'}`);
+  for (const [pid, processDetails] of Object.entries(first.extra)) {
+    console.log(`- composition of ${processDetails.name} ${pid} at the end of the first open (footprint categories, dirty MB):`);
+    for (const row of processDetails.categories) console.log(`  - ${String(row.dirtyMb).padStart(8)}  ${row.category} (${row.regions} regions)`);
     console.log('  vmmap --summary regions (dirty + swapped MB):');
-    for (const row of info.regions) console.log(`  - ${String((row.dirtyMb + row.swappedMb).toFixed(1)).padStart(8)}  ${row.region}`);
-    for (const error of info.errors) console.log(`  - error: ${error}`);
-    console.log(`  raw: ${info.raw}`);
+    for (const row of processDetails.regions) console.log(`  - ${String((row.dirtyMb + row.swappedMb).toFixed(1)).padStart(8)}  ${row.region}`);
+    for (const error of processDetails.errors) console.log(`  - error: ${error}`);
+    console.log(`  raw: ${processDetails.raw}`);
   }
   for (const line of (firstPage?.log ?? []).slice(-5)) console.log(`- probe: ${line}`);
   if (!firstPage) console.log(`- the probe never reported; app stdout ${first.stdoutPath}`);

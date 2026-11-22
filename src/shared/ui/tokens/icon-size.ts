@@ -9,9 +9,7 @@
 export const ICON_SIZE = {
   /** `--icon-sm`, the default. */
   sm: 12,
-  /** `--icon-md`. */
   md: 14,
-  /** `--icon-lg`. */
   lg: 16,
 } as const;
 

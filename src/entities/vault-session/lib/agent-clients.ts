@@ -8,31 +8,14 @@ export type AgentClientId = 'claude-code' | 'codex' | 'cursor' | 'antigravity';
 
 export interface AgentClient {
   id: AgentClientId;
-  /** i18n key for that tool's button label (a sentence carrying the filename and the method). */
   labelKey: string;
-  /**
-   * The tool's **brand name**. Not an i18n key because proper nouns are not translated ("Claude
-   * Code" is "Claude Code" in every language). Putting it in the locale files would only create a
-   * place for two files to hold the same string and drift.
-   */
+  /** The brand name: proper nouns are not translated, and locale files would only give two files the same string to drift. */
   name: string;
-  /**
-   * The file **written** when this tool is connected, relative to the vault (or repo root).
-   *
-   * That there is exactly one is the contract — one button writes one file. It is an array because
-   * a future tool might require two, and even then **only that tool's files** are written.
-   */
+  /** The file written when this tool is connected, relative to the vault or repo root. One button writes one file; it is an array in case a tool needs two, and then only that tool's files are written. */
   files: readonly string[];
-  /**
-   * Where this tool documents that its config belongs — shown on screen as the basis. A user must
-   * be able to confirm "why is this file appearing" in **the tool's own words** rather than ours.
-   */
+  /** Where the tool documents that its config belongs, shown as the basis so a person can confirm "why is this file appearing" in the tool's own words. */
   docsUrl: string;
-  /**
-   * The bundled mark and its brand ink, as the runtime registry (`src-tauri/src/acp-registry.json`)
-   * records them for the same tools — one drawing per tool on both tabs of the Agents destination.
-   * The ink is data about a vendor, not a design token, which is why it is not a CSS variable.
-   */
+  /** The bundled mark as `src-tauri/src/acp-registry.json` records it, one drawing per tool on both Agents tabs; a vendor's ink is data, not a design token. */
   icon: `/acp-icons/${string}.svg`;
   brandInk: string | null;
 }

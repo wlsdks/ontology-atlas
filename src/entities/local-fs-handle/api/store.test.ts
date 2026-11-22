@@ -31,7 +31,7 @@ import {
   recordLocalFsHandleContents,
   touchLocalFsHandle,
 } from './store';
-import type { LocalFsHandleRecord } from '../model/types';
+import type { LocalFsHandleRecord } from '../model/local-fs-handle-record';
 import { idbGet, idbSet } from '@/shared/lib/vault-folder/idb-kv';
 
 function fakeHandle(name: string): FileSystemDirectoryHandle {

@@ -10,9 +10,7 @@ const NEXT_STEP_MARKER = 'NEXT:';
 export const NEXT_STEP_MAX_CHARS = 140;
 
 export interface NextStepSplit {
-  /** The body to be rendered. The `NEXT:` line is removed. */
   body: string;
-  /** The one sentence that becomes a chip. Null when absent. */
   nextStep: string | null;
 }
 

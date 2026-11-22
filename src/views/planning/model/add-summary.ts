@@ -11,7 +11,6 @@ function leftovers({ duplicates, unsupported }: PlanningAddOutcome): PlanningAdd
   return [];
 }
 
-/** The one toast an "Add files" shows, sentence by sentence; null when nothing was chosen. */
 export function planningAddSummary(outcome: PlanningAddOutcome): PlanningAddSummary | null {
   const { added, duplicates, unsupported, failed } = outcome;
   if (added.length > 0) {

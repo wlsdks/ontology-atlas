@@ -1,21 +1,13 @@
 #!/usr/bin/env node
 /**
- * Which CI checks ever catch anything?
- *
- * `run-ci-lane.mjs` appends one JSON line per command to `CI_LANE_REPORT`, and
- * `checks.yml` uploads that file as a `ci-lane-report-*` artifact kept 90 days. This
- * script downloads those artifacts into a durable cache and counts, per check, how many
- * distinct runs ran it and how many of those runs saw it fail.
- *
- * What it measures is CI only. A defect that `pre-push` or `pnpm checks:changed` caught
- * before the push never reaches this data, so a quiet row (`no CI failure`: 50+ runs,
- * no failed run, first seen 60+ days ago) is a check to examine, not one to delete.
- *
- * GitHub's run listing stops at 1,000 results (about eight days of this repository), so
- * runs are listed one `created` day at a time, and every run ever cached is aggregated,
- * not only the window listed now. The REST quota is shared with every lander: the script
- * refuses to start under 500 remaining calls, re-reads the quota every 50 calls, and
- * stops with a table labelled partial when it runs low.
+ * Which CI checks ever catch anything? `run-ci-lane.mjs` appends one JSON line per command to
+ * `CI_LANE_REPORT`, which `checks.yml` uploads as a `ci-lane-report-*` artifact kept 90 days; this
+ * downloads them into a durable cache and counts, per check, the distinct runs that ran and failed it.
+ * CI only: a defect `pre-push` or `pnpm checks:changed` caught never shows here, so a quiet row
+ * (`no CI failure`: 50+ runs, no failed run, first seen 60+ days ago) is a check to examine, not delete.
+ * GitHub lists at most 1,000 runs, so runs are listed one `created` day at a time, and every cached
+ * run is aggregated. The REST quota is shared with every lander: it refuses to start under 500
+ * remaining calls, re-reads the quota every 50, and stops with a table labelled partial when low.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -85,7 +77,6 @@ export function formatTable(rows) {
   return [line(header), ...body.map(line)].join('\n');
 }
 
-/** Parses a JSONL report, dropping lines that are not report records. */
 export function parseReport(text, { at, runId }) {
   return String(text).split('\n').filter(Boolean).flatMap((line) => {
     try {
@@ -101,14 +92,13 @@ export function cacheRoot(env = process.env) {
   return env.ATLAS_GATE_YIELD_CACHE || join(homedir(), '.cache', 'atlas-gate-yield');
 }
 
-/** Every record in every cached run, whichever window listed it. */
 export function readCache(root) {
   if (!existsSync(root)) return [];
   const records = [];
   for (const entry of readdirSync(root, { withFileTypes: true })) {
-    const dir = join(root, entry.name);
-    if (!entry.isDirectory() || !existsSync(join(dir, 'run.json'))) continue;
-    const meta = JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8'));
+    const directory = join(root, entry.name);
+    if (!entry.isDirectory() || !existsSync(join(directory, 'run.json'))) continue;
+    const meta = JSON.parse(readFileSync(join(directory, 'run.json'), 'utf8'));
     const walk = (folder) => {
       for (const item of readdirSync(folder, { withFileTypes: true })) {
         const path = join(folder, item.name);
@@ -116,7 +106,7 @@ export function readCache(root) {
         else if (item.name.endsWith('.jsonl')) records.push(...parseReport(readFileSync(path, 'utf8'), { at: meta.at, runId: String(meta.id) }));
       }
     };
-    walk(dir);
+    walk(directory);
   }
   return records;
 }
@@ -188,9 +178,9 @@ export function main({ argv = process.argv.slice(2), env = process.env, gh = rea
         const batch = listing.workflow_runs ?? [];
         for (const run of batch.slice(0, limit - listed)) {
           listed += 1;
-          const dir = join(root, String(run.id));
-          if (existsSync(join(dir, 'run.json'))) continue;
-          fetchRun({ run, dir, gh: counted });
+          const directory = join(root, String(run.id));
+          if (existsSync(join(directory, 'run.json'))) continue;
+          fetchRun({ run, dir: directory, gh: counted });
           fetched += 1;
         }
         if (batch.length < 100) break;

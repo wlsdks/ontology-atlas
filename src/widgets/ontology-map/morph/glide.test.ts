@@ -231,14 +231,14 @@ describe("planGlide", () => {
     );
     const c = run.index("capability:a1");
     const [ax, ay, bx, by] = [60, 0, 400, 90];
-    const len = Math.hypot(bx - ax, by - ay);
-    const offPath = Math.max(...run.frames.map((f) => Math.abs((f.x[c]! - ax) * (by - ay) - (f.y[c]! - ay) * (bx - ax)) / len));
+    const length = Math.hypot(bx - ax, by - ay);
+    const offPath = Math.max(...run.frames.map((f) => Math.abs((f.x[c]! - ax) * (by - ay) - (f.y[c]! - ay) * (bx - ax)) / length));
     expect(offPath).toBeLessThanOrEqual(Math.max(60, 90));
     let travelled = 0;
     for (let k = 1; k < run.frames.length; k += 1) {
       travelled += Math.hypot(run.frames[k]!.x[c]! - run.frames[k - 1]!.x[c]!, run.frames[k]!.y[c]! - run.frames[k - 1]!.y[c]!);
     }
-    expect(travelled / len).toBeLessThanOrEqual(1.6);
+    expect(travelled / length).toBeLessThanOrEqual(1.6);
   });
 
   it("guards against non-finite input", () => {

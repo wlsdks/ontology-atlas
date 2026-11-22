@@ -1,13 +1,10 @@
 /**
- * JS mirror of the `--motion-*` ramp in `app/globals.css`. framer-motion cannot read a
- * CSS `var()` in a numeric `transition`, so the values are copied, and the contract in
- * tests/contract (`motion-token-mirror.contract.test.ts`) fails when they drift or a name
- * leaves the ramp. Every JS duration goes through this file, because the Tailwind lint only
- * reads class strings.
- *
- * Names describe use (`docs/DESIGN-SYSTEM.md`, "Ramp and defaults"): `fast` acknowledges, `base`
- * moves a surface, `settle` confirms, `slow` travels far, `expressive` stages an entrance, and
- * `choreography` bounds a rare multi-part entrance.
+ * JS mirror of the `--motion-*` ramp in `app/globals.css`: framer-motion cannot read a CSS `var()` in a
+ * numeric `transition`, so the values are copied and `motion-token-mirror.contract.test.ts` fails on
+ * drift. Every JS duration goes through this file because the Tailwind lint reads only class strings.
+ * Names describe use (`docs/DESIGN-SYSTEM.md`, "Ramp and defaults"): `fast` acknowledges, `base` moves a
+ * surface, `settle` confirms, `slow` travels far, `expressive` stages an entrance, `choreography`
+ * bounds a rare multi-part entrance.
  */
 
 /** Value copy of `--motion-ease` (cubic-bezier(0.25, 0.1, 0.25, 1)) — the entry family. */
@@ -56,28 +53,21 @@ export const OVERLAY_SPRING_REDUCED = { duration: 0.12, ease: "linear" } as cons
  */
 export const SCRIM_FADE = MOTION.base;
 
-/** The reduced-motion equivalent — the same 120ms linear as the overlay rule. */
 export const SCRIM_FADE_REDUCED = OVERLAY_SPRING_REDUCED;
 
 /**
- * Where a surface starts, as a name, so entrance distances cannot drift between copies.
- *
- * Two grammars: the overlay grammar (`dialog.tsx`) is opacity plus an 8px rise; hand-built
- * modal sheets arrive from 12px with a hair of scale.
- * Each resting state is exported beside its start so `scale` returns to 1.
+ * Where a surface starts, as a name, so entrance distances cannot drift between copies. Two grammars:
+ * overlays (`dialog.tsx`) rise 8px with opacity; hand-built modal sheets arrive from 12px with a hair
+ * of scale. Each resting state is exported beside its start so `scale` returns to 1.
  */
 export const OVERLAY_RISE = { opacity: 0, y: 8 } as const;
 
-/** Keep the overlay fade without snapping its position when motion is reduced. */
 export const OVERLAY_RISE_REDUCED = { opacity: 0, y: 0 } as const;
 
-/** The rest state `OVERLAY_RISE` travels to. */
 export const OVERLAY_SETTLED = { opacity: 1, y: 0 } as const;
 
-/** A sheet arriving: further below, and a hair small on the way in. */
 export const SHEET_RISE = { opacity: 0, y: 12, scale: 0.985 } as const;
 
-/** The rest state `SHEET_RISE` travels to — `scale` included, or the sheet stays small. */
 export const SHEET_SETTLED = { opacity: 1, y: 0, scale: 1 } as const;
 
 /**
@@ -87,11 +77,10 @@ export const SHEET_SETTLED = { opacity: 1, y: 0, scale: 1 } as const;
 export const SHEET_RISE_REDUCED = { opacity: 0, y: 0, scale: 1 } as const;
 
 /**
- * Leaving is not arriving rewound: framer's `exit` otherwise reuses the entry `transition`
- * backwards. CSS exits run at `calc(var(--motion-base) * 0.67)` = 120ms, the ramp's fast
- * step. The curve accelerates away instead of slowing on screen, as the inspector's movement
- * exit (topologyChromeOut) does; CSS fades stay on --motion-ease. The input
- * lockout lives in `useExitLockout`, so this stays a numeric `{ duration, ease }`.
+ * Leaving is not arriving rewound: framer's `exit` otherwise reuses the entry `transition` backwards.
+ * CSS exits run at `calc(var(--motion-base) * 0.67)` = 120ms. The curve accelerates away, as the
+ * inspector's exit (topologyChromeOut) does. The input lockout lives in `useExitLockout`, so this
+ * stays a numeric `{ duration, ease }`.
  */
 export const EXIT_TRANSITION = {
   duration: MOTION.fast.duration,

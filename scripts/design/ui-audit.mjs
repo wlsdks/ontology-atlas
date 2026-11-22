@@ -12,64 +12,64 @@ const DEFAULT_WIDTHS = [600, 768, 834, 1024, 1440, 1920, 2560];
 const PER_CHECK = 5;
 
 function parseArgs(argv) {
-  const opts = { routes: [], widths: DEFAULT_WIDTHS, height: 900, json: false };
+  const options = { routes: [], widths: DEFAULT_WIDTHS, height: 900, json: false };
   for (const arg of argv) {
     const [key, ...rest] = arg.replace(/^--/, "").split("=");
     const value = rest.join("=");
-    if (key === "url") opts.url = value.replace(/\/$/, "");
-    else if (key === "route") opts.routes.push(value);
-    else if (key === "widths") opts.widths = value.split(",").map(Number).filter((n) => n > 0);
-    else if (key === "height") opts.height = Number(value);
-    else if (key === "wait") opts.wait = value;
+    if (key === "url") options.url = value.replace(/\/$/, "");
+    else if (key === "route") options.routes.push(value);
+    else if (key === "widths") options.widths = value.split(",").map(Number).filter((n) => n > 0);
+    else if (key === "height") options.height = Number(value);
+    else if (key === "wait") options.wait = value;
     else if (key === "scope") {
       if (!value.trim()) throw new Error("--scope needs a CSS selector");
-      opts.scope = value;
+      options.scope = value;
     }
-    else if (key === "json") opts.json = true;
+    else if (key === "json") options.json = true;
     else if (key === "setup") {
       if (!value.trim()) throw new Error("--setup needs a module path");
-      opts.setup = path.resolve(value);
+      options.setup = path.resolve(value);
     }
-    else if (key === "shots") opts.shots = path.resolve(value);
+    else if (key === "shots") options.shots = path.resolve(value);
     else if (arg !== "--") throw new Error(`unknown argument: ${arg}`);
   }
-  if (!opts.url || opts.routes.length === 0) {
+  if (!options.url || options.routes.length === 0) {
     throw new Error("usage: pnpm ui:audit -- --url=<base> --route=<path> [--route=...] [--widths=..] [--height=900] [--wait=<selector>] [--scope=<selector>] [--setup=<module.mjs>] [--json] [--shots=<dir>]");
   }
-  return opts;
+  return options;
 }
 
 function readRampNames() {
-  const dir = path.join(ROOT, "app/styles");
-  const css = readdirSync(dir)
+  const directory = path.join(ROOT, "app/styles");
+  const css = readdirSync(directory)
     .filter((f) => f.endsWith(".css"))
-    .map((f) => readFileSync(path.join(dir, f), "utf8"))
+    .map((f) => readFileSync(path.join(directory, f), "utf8"))
     .join("\n");
   return parseRampNames(css);
 }
 
-const opts = parseArgs(process.argv.slice(2));
+const options = parseArgs(process.argv.slice(2));
 const rampNames = readRampNames();
-const prepare = opts.setup ? (await import(pathToFileURL(opts.setup).href)).default : null;
-if (opts.setup && typeof prepare !== "function") throw new Error("--setup must export a default async function (page, { url, route, width, height })");
-if (opts.shots) mkdirSync(opts.shots, { recursive: true });
+const prepare = options.setup ? (await import(pathToFileURL(options.setup).href)).default : null;
+if (options.setup && typeof prepare !== "function") throw new Error("--setup must export a default async function (page, { url, route, width, height })");
+if (options.shots) mkdirSync(options.shots, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
 const results = [];
 try {
-  for (const route of opts.routes) {
-    for (const width of opts.widths) {
-      const context = await browser.newContext({ viewport: { width, height: opts.height }, reducedMotion: "reduce", isMobile: width <= 768, hasTouch: width <= 768 });
+  for (const route of options.routes) {
+    for (const width of options.widths) {
+      const context = await browser.newContext({ viewport: { width, height: options.height }, reducedMotion: "reduce", isMobile: width <= 768, hasTouch: width <= 768 });
       const page = await context.newPage();
-      if (prepare) await prepare(page, { url: opts.url, route, width, height: opts.height });
-      else await page.goto(`${opts.url}${route}`, { waitUntil: "networkidle" });
-      if (opts.wait) await page.waitForSelector(opts.wait);
+      if (prepare) await prepare(page, { url: options.url, route, width, height: options.height });
+      else await page.goto(`${options.url}${route}`, { waitUntil: "networkidle" });
+      if (options.wait) await page.waitForSelector(options.wait);
       await page.addStyleTag({ content: FREEZE_CSS });
       await page.waitForTimeout(100);
-      const { findings, unmeasured, measuredElements } = await auditPage(page, { width, rampNames, scope: opts.scope });
-      if (opts.shots) {
+      const { findings, unmeasured, measuredElements } = await auditPage(page, { width, rampNames, scope: options.scope });
+      if (options.shots) {
         const name = `${route.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "root"}@${width}.png`;
-        await page.screenshot({ path: path.join(opts.shots, name) });
+        await page.screenshot({ path: path.join(options.shots, name) });
       }
       results.push({ route, width, findings, unmeasured, measuredElements });
       await context.close();
@@ -79,7 +79,7 @@ try {
   await browser.close();
 }
 
-if (opts.json) {
+if (options.json) {
   console.log(JSON.stringify(results, null, 2));
 } else {
   for (const r of results) {

@@ -1,5 +1,5 @@
 import { createForceSimulation, type ForceSimulation } from "../../model/layout/force-layout";
-import { initHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
+import { createHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
 import type { TopologyWorld } from "../world/topology-world";
 
 type Point = { x: number; y: number };
@@ -21,7 +21,7 @@ export function dialReleaseHoming(
   for (const n of world.nodes) {
     const slot = slots.get(n.id);
     if (!slot || Math.hypot(n.x - slot.x, n.y - slot.y) <= 0.5) continue;
-    nextSprings.set(n.id, initHomeSpring(n.x, n.y));
+    nextSprings.set(n.id, createHomeSpring(n.x, n.y));
     nextOverride.set(n.id, slot);
   }
   const sim = createForceSimulation(

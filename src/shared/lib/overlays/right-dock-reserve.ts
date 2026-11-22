@@ -4,10 +4,8 @@
  * (by `HomePage`), since threading the React state through the map renderer is broad wiring.
  */
 
-/** Name of the variable holding the current right dock's width; absent means 0. */
 export const RIGHT_DOCK_WIDTH_VAR = '--app-right-dock-width';
 
-/** Width the dock occupies, in px. 0 on the server and where unsupported. */
 function rightDockWidth(): number {
   if (typeof window === 'undefined' || typeof document === 'undefined') return 0;
   const raw = window
@@ -18,11 +16,8 @@ function rightDockWidth(): number {
 }
 
 /**
- * The **right-hand wall** a floating surface must not cross.
- *
- * Viewport width minus the dock. It never goes below 0 even in the impossible
- * state where the dock reports wider than the viewport (a failed measurement) —
- * there, having no wall is better.
+ * The right-hand wall a floating surface must not cross: viewport width minus the dock, never below 0.
+ * A dock reported wider than the viewport is a failed measurement, and no wall beats a negative one.
  */
 export function floatingRightBound(viewportWidth: number, dockWidth: number): number {
   if (!Number.isFinite(viewportWidth) || viewportWidth <= 0) return 0;
@@ -30,7 +25,6 @@ export function floatingRightBound(viewportWidth: number, dockWidth: number): nu
   return Math.max(0, viewportWidth - dockWidth);
 }
 
-/** This viewport's right-hand wall — the two functions above, combined. */
 export function currentFloatingRightBound(): number {
   if (typeof window === 'undefined') return 1920;
   return floatingRightBound(window.innerWidth, rightDockWidth());

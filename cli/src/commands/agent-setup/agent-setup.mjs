@@ -123,8 +123,8 @@ export async function runAgentSetup(args) {
   let result;
   try {
     result = buildAgentSetup(parsed);
-  } catch (err) {
-    process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`);
+  } catch (error) {
+    process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`);
     return 2;
   }
 
@@ -152,10 +152,10 @@ function installPreCommitHook(codebaseRoot) {
       encoding: 'utf-8',
       env: gitEnv(),
     }).trim();
-  } catch (err) {
+  } catch (error) {
     return {
       status: 'not-a-git-repo',
-      message: `git rev-parse failed in ${codebaseRoot}: ${err instanceof Error ? err.message : String(err)}`,
+      message: `git rev-parse failed in ${codebaseRoot}: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
   const hookPath = resolve(codebaseRoot, hooksDir, 'pre-commit');
@@ -411,8 +411,8 @@ function inspectMcpJson(text, expectedVault, expectedRepoRoot) {
     const launch = inspectExecutableLaunch(server.command, server.args);
     if (!launch.ready) return launch;
     return { ...launch, message: 'ready for Claude Code / Cursor' };
-  } catch (err) {
-    return { ready: false, message: `invalid JSON: ${err instanceof Error ? err.message : String(err)}` };
+  } catch (error) {
+    return { ready: false, message: `invalid JSON: ${error instanceof Error ? error.message : String(error)}` };
   }
 }
 

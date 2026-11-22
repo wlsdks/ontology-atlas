@@ -8,13 +8,13 @@ import messages from '../../../../messages/ko.json';
 const bridge = vi.hoisted(() => ({ available: false }));
 const constructionBridge = vi.hoisted(() => ({ pick: vi.fn(), preview: vi.fn(), read: vi.fn() }));
 vi.mock('@/shared/lib/llm-connection/tauri-local-construction', () => ({ previewConstructionSource: constructionBridge.preview, readConstructionSource: constructionBridge.read }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', async (importOriginal) => ({ ...(await importOriginal<Record<string, unknown>>()), pickTauriSourceDirectory: constructionBridge.pick }));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-project-source', async (importOriginal) => ({ ...(await importOriginal<Record<string, unknown>>()), pickTauriSourceDirectory: constructionBridge.pick }));
 const secrets = vi.hoisted(() => ({ stored: true, listeners: new Set<() => void>() }));
 
 vi.mock('@/shared/lib/llm-connection/tauri-llm', () => ({
   isLlmChatBridgeAvailable: () => bridge.available,
   llmChat: vi.fn(async () => null),
-  llmChatErrorMessage: (err: unknown) => String(err),
+  llmChatErrorMessage: (error: unknown) => String(error),
 }));
 
 vi.mock('@/shared/lib/llm-connection/tauri-secrets', () => ({
@@ -63,8 +63,8 @@ vi.mock('@/shared/lib/git/tauri-git', () => ({
   gitHistory: vi.fn(async () => gitBridge.commits),
 }));
 
-vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
+vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-provider/LocalVaultProvider')>()),
   useLocalVault: () => ({
     fileHandles: new Map(),
     createDoc: vi.fn(),

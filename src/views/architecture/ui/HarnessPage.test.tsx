@@ -33,8 +33,8 @@ vi.mock('@/entities/vault-session', () => ({
   VaultSourceHydrationBoundary: ({ children }: { children: React.ReactNode }) => children,
 }));
 // The report sits behind its feature's public API, so this mock names the slice, not the file.
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/tauri-vault-fs')>()),
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime')>()),
   isTauriVaultRuntime: () => state.bridge,
 }));
 vi.mock('@/features/harness-report', async (importOriginal) => ({

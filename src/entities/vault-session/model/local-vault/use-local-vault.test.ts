@@ -58,11 +58,13 @@ vi.mock('@/entities/local-fs-handle', () => ({
   verifyHandlePermission: fsHandleMocks.verifyHandlePermission,
 }));
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-location', () => ({
+  pickTauriVaultDirectory: vi.fn(),
+}));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({
   // `isSupported()` falls back to the Tauri runtime check when showDirectoryPicker is absent.
   // Pinned true to produce a "supported" state without touching window globals.
   isTauriVaultRuntime: vi.fn(() => true),
-  pickTauriVaultDirectory: vi.fn(),
   getTauriVaultRootPath: vi.fn(() => null),
 }));
 

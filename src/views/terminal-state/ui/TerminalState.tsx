@@ -4,22 +4,14 @@ import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 
-/**
- * The one dead-end shape for the 404 and the render error: a centred stage with the gateway's
- * headline step and one primary beside its secondary exits, never a vertical menu of equals.
- */
 export interface TerminalStateProps {
-  /** Colours the icon tile and its light. */
   tone: 'neutral' | 'warning';
-  /** Drawn inside the toned tile. */
   icon?: ReactNode;
-  /** A character at its own size, in place of the tile. */
   figure?: ReactNode;
   eyebrow: string;
   title: string;
   body: string;
   detail?: ReactNode;
-  /** The first child is the single primary. */
   actions: ReactNode;
   chrome?: ReactNode;
   footer?: ReactNode;
@@ -41,7 +33,6 @@ const GLOW_TONE = {
     'bg-[radial-gradient(52%_62%_at_50%_46%,var(--color-amber-source-a08)_0%,var(--color-amber-source-a06)_40%,transparent_76%)]',
 } as const;
 
-/** Shown until `useClientAnswered`, so the stage's entrance is the first thing that moves. */
 export function TerminalStatePending({ testId }: { testId: string }) {
   return (
     <div

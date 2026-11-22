@@ -18,12 +18,12 @@ interface FakeFile {
   content: string;
 }
 
-function dirHandle(dir: FakeDir): BlockDirectoryHandleLike {
+function dirHandle(directory: FakeDir): BlockDirectoryHandleLike {
   return {
     kind: 'directory',
-    name: dir.name,
+    name: directory.name,
     async *values(): AsyncIterableIterator<BlockDirEntryLike> {
-      for (const child of dir.children.values()) {
+      for (const child of directory.children.values()) {
         if (child.kind === 'directory') yield dirHandle(child);
         else
           yield {
@@ -33,20 +33,20 @@ function dirHandle(dir: FakeDir): BlockDirectoryHandleLike {
           };
       }
     },
-    getDirectoryHandle: async (name: string, opts?: { create?: boolean }) => {
-      const existing = dir.children.get(name);
+    getDirectoryHandle: async (name: string, options?: { create?: boolean }) => {
+      const existing = directory.children.get(name);
       if (existing?.kind === 'directory') return dirHandle(existing);
-      if (!opts?.create) throw new Error(`no dir ${name}`);
+      if (!options?.create) throw new Error(`no dir ${name}`);
       const next: FakeDir = { kind: 'directory', name, children: new Map() };
-      dir.children.set(name, next);
+      directory.children.set(name, next);
       return dirHandle(next);
     },
-    getFileHandle: async (name: string, opts?: { create?: boolean }) => {
-      const existing = dir.children.get(name);
-      if (!existing && !opts?.create) throw new Error(`no file ${name}`);
+    getFileHandle: async (name: string, options?: { create?: boolean }) => {
+      const existing = directory.children.get(name);
+      if (!existing && !options?.create) throw new Error(`no file ${name}`);
       const file: FakeFile =
         existing?.kind === 'file' ? existing : { kind: 'file', name, content: '' };
-      dir.children.set(name, file);
+      directory.children.set(name, file);
       return {
         kind: 'file',
         name,

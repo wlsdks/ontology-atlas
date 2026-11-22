@@ -1,6 +1,6 @@
 /**
  * Picks a collision-free vault folder name under `~/Ontology Atlas/` for "just start" from the
- * existing names; filesystem access belongs to `@/shared/lib/vault-folder/tauri-vault-fs`.
+ * existing names; filesystem access belongs to `@/shared/lib/vault-folder/native-vault`.
  */
 
 export const DEFAULT_VAULT_BASE_NAME = 'my-ontology';
@@ -24,7 +24,6 @@ export function resolveUniqueVaultDirName(
   return `${baseName}-${suffix}`;
 }
 
-/** For the success toast. */
 export function buildDefaultVaultDisplayPath(dirName: string): string {
   return `${DEFAULT_VAULT_PARENT_LABEL}/${dirName}`;
 }

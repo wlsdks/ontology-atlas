@@ -27,7 +27,7 @@ vi.mock('@/entities/vault-session', () => ({
   useVaultSessionIdentityScope: () => mocks.scope,
 }));
 
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-fingerprint', () => ({
   nativeVaultFileHashes: vi.fn(),
 }));
 

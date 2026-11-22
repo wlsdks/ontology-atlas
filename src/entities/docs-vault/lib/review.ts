@@ -4,7 +4,7 @@
  * person was authenticated.
  */
 
-import type { VaultDoc } from '../model/types';
+import type { VaultDoc } from '../model/vault-manifest';
 
 const REVIEW_STATE_KEY = 'review_state';
 const REVIEW_NOTE_KEY = 'review_note';
@@ -70,13 +70,11 @@ export async function reviewCurrentness(
   return recorded === (await reviewDigest(frontmatter, body)) ? 'current' : 'changed-since-review';
 }
 
-/** One row of what a person still has to look at. */
 export interface ReviewQueueRow {
   slug: string;
   title: string;
   /** The two reasons are different work and never merged. */
   reason: 'raised' | 'changed-since-review' | 'unverifiable';
-  /** The agent's note on what needs deciding. */
   note?: string;
   reviewedBy?: string;
 }

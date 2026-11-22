@@ -15,15 +15,10 @@ import { fileURLToPath } from "node:url";
 import { parseFrontmatter } from "../lib/parse-frontmatter.mjs";
 import { inspectMergedUids, nodeUidIssue } from "../../cli/src/lib/mcp-bridge/schema.mjs";
 /*
- * The body half, imported from the canonical module rather than reimplemented.
- *
- * This script is the one lane that reads *this repository's own* vault on every
- * `pnpm vault:validate`, so it is where a rule first meets 100-odd real
- * documents. A second implementation would mean the number printed here and the
- * number `validate_vault` reports could disagree about the same folder, which is
- * exactly the confusion the three-way validator contract exists to prevent.
- * `meaning-findings.mjs` and `parser.mjs` import only sibling `mcp/src` modules
- * and `node:` builtins, so a plain `node` run resolves them with no install.
+ * The body half is imported from the canonical module, not reimplemented: this lane reads the
+ * repository's own vault, and a second implementation could report a different number than
+ * `validate_vault` for the same folder. `meaning-findings.mjs` and `parser.mjs` import only sibling
+ * `mcp/src` modules and `node:` builtins, so plain `node` resolves them with no install.
  */
 import { bodyMeaningFindings } from "../../mcp/src/meaning/meaning-findings.mjs";
 import { parseFrontmatter as parseMcpFrontmatter } from "../../mcp/src/parser.mjs";
@@ -110,27 +105,27 @@ export function parseValidateVaultArgs({
 
 async function validateVaultDir(vaultDir) {
   try {
-    const info = await stat(vaultDir);
-    if (!info.isDirectory()) {
+    const stats = await stat(vaultDir);
+    if (!stats.isDirectory()) {
       return `Vault path is not a directory: ${vaultDir}`;
     }
     return null;
-  } catch (err) {
-    if (err?.code === "ENOENT") {
+  } catch (error) {
+    if (error?.code === "ENOENT") {
       return `Vault path does not exist: ${vaultDir}`;
     }
-    throw err;
+    throw error;
   }
 }
 
-async function walk(dir, root = dir) {
+async function walk(directory, root = directory) {
   const out = [];
-  const entries = await readdir(dir, { withFileTypes: true });
+  const entries = await readdir(directory, { withFileTypes: true });
   for (const entry of entries) {
     if (entry.name.startsWith(".")) continue;
-    const full = path.join(dir, entry.name);
+    const full = path.join(directory, entry.name);
     if (entry.isDirectory()) {
-      if (dir === root && entry.name === VAULT_SOURCES_DIR) continue;
+      if (directory === root && entry.name === VAULT_SOURCES_DIR) continue;
       out.push(...(await walk(full, root)));
     } else if (entry.isFile() && entry.name.endsWith(".md")) {
       out.push(full);
@@ -584,8 +579,8 @@ function isPathLikeGraphRef(ref) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().then((code) => {
     process.exit(code);
-  }).catch((err) => {
-    console.error(err);
+  }).catch((error) => {
+    console.error(error);
     process.exit(2);
   });
 }

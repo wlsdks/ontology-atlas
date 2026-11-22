@@ -35,7 +35,6 @@ function getServerSnapshot(): boolean {
   return false;
 }
 
-/** The current plain-mode value plus its setter. Changing it on any screen updates every subscriber. */
 export function useAudiencePlain(): [boolean, (next: boolean) => void] {
   const value = useSyncExternalStore(subscribe, readAudiencePlain, getServerSnapshot);
   const set = useCallback((next: boolean) => writeAudiencePlain(next), []);

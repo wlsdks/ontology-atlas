@@ -157,7 +157,7 @@ describe('vault health — checks not run are kept by name', () => {
   it('checks the browser runs + checks declared not run = checks the command reports', () => {
     // The tool layer is the `tools/` modules, so both files are read; this gate cannot go green on a file
     // that no longer carries the ids.
-    const serverSource = ['maintenance.mjs', 'graph.mjs']
+    const serverSource = ['result-attachments.mjs', 'agent-brief/meaning-readiness.mjs']
       .map((file) => readFileSync(join(process.cwd(), 'mcp', 'src', 'tools', file), 'utf8'))
       .join('\n');
     // The two the tool layer attaches on top of the engine's six.

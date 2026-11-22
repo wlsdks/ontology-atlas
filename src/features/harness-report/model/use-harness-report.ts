@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { scanHarness, type HarnessReport, type HarnessScanProgress } from '@/entities/agent-files';
 import { failureCodeOf, failureDetailOf } from '@/shared/lib/failures/failure-code';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source/project-source-store';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 
 import { bridgePort } from './bridge-port';
 
@@ -34,7 +34,6 @@ interface SourceBinding {
   rootPath: string;
 }
 
-/** The one project source bound to this folder; several distinct roots return `null`, not a guess. */
 async function resolveSourceBinding(
   handle: FileSystemDirectoryHandle,
   projectSlugs: readonly string[],
@@ -57,7 +56,6 @@ export function useHarnessReport(
   handle: FileSystemDirectoryHandle | null,
   projectSlugs: readonly string[],
   enabled: boolean,
-  /** Bumped by the failed state's retry, so a transient bridge error is not a dead end. */
   reloadNonce = 0,
 ): HarnessReportState {
   const [snapshot, setSnapshot] = useState<HarnessReportSnapshot | null>(null);
@@ -90,7 +88,6 @@ export function useHarnessReport(
             : [];
         const report = await scanHarness(bridgePort({ vaultRoot, projectSlug: binding.projectSlug }), {
           excludedFolders,
-          /* Straight through to state; each report already lands on its own task. */
           onProgress: (progress) => {
             commit({ status: 'loading', sourceRoot, progress });
           },

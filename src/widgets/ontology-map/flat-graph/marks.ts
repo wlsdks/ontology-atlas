@@ -1,8 +1,8 @@
 import { mixOver } from "../dial/ink";
-import type { DialModel, Point } from "../dial/types";
+import type { DialModel, Point } from "../dial/dial-shapes";
 import { byId } from "./seed";
 import type { GraphLine } from "./attention";
-import type { FlatGraphLayout, FlatGraphPaintTokens } from "./types";
+import type { FlatGraphLayout, FlatGraphPaintTokens } from "./flat-graph-shapes";
 
 export type GraphKind = "project" | "domain" | "capability" | "element";
 
@@ -139,7 +139,7 @@ function domainStarReach(layout: FlatGraphLayout, domainId: string): number {
       };
       for (const it of c.items) {
         reachTo(it.id);
-        for (const el of it.elementIds) reachTo(el);
+        for (const elementId of it.elementIds) reachTo(elementId);
       }
       byDomain.set(c.domainId, reach);
     }

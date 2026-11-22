@@ -15,16 +15,16 @@ const mocks = vi.hoisted(() => ({
   diff: vi.fn(),
 }));
 
-vi.mock('@/entities/vault-session/model/use-data-source-mode', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/use-data-source-mode')>()),
+vi.mock('@/entities/vault-session/model/vault-source/use-data-source-mode', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-source/use-data-source-mode')>()),
   useDataSourceMode: () => 'local',
 }));
-vi.mock('@/entities/vault-session/model/use-sample-source', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/use-sample-source')>()),
+vi.mock('@/entities/vault-session/model/vault-source/use-sample-source', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-source/use-sample-source')>()),
   useSampleSource: () => ['dogfood'],
 }));
-vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
+vi.mock('@/entities/vault-session/model/vault-provider/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/vault-provider/LocalVaultProvider')>()),
   useLocalVault: () => mocks.vault,
 }));
 vi.mock('@/shared/lib/git/tauri-git', async (importOriginal) => ({
@@ -33,8 +33,8 @@ vi.mock('@/shared/lib/git/tauri-git', async (importOriginal) => ({
   gitPathsLastChange: (...args: unknown[]) => mocks.pathsLastChange(...args),
   gitDiff: (...args: unknown[]) => mocks.diff(...args),
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/tauri-vault-fs')>()),
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime')>()),
   getTauriVaultRootPath: (handle: { rootPath?: string }) => handle.rootPath,
 }));
 

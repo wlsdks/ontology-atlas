@@ -18,26 +18,17 @@ export interface FailureCopy {
 }
 
 /**
- * The `failures` catalogue, as the lookup a catch site takes.
- *
- * The sibling of `useNativeErrorLookup` for failures thrown inside the web app rather than
- * returned by a Tauri command, and it differs from that one in exactly one way: **an
- * unrecognised failure falls back to the caller's own translated sentence, never to the
- * English detail.** `nativeErrorMessage` may degrade to English because a Rust detail is a
- * machine fact appended to a Korean sentence; here the English *is* the sentence, and
- * showing it is the B2 defect (installed-app inspection before v1.2.2).
- *
- * `t.has` rather than a hard-coded list, so a code minted at a throw site and not yet
- * written into `messages/*.json` falls back to the caller's sentence instead of throwing
- * on a missing key.
+ * Unlike `useNativeErrorLookup`, an unrecognised failure falls back to the caller's translated
+ * sentence, never the English detail: here the English is the whole sentence. `t.has`, so a code
+ * not yet in `messages/*.json` falls back instead of throwing on a missing key.
  */
-export function useFailureSentence(): (err: unknown, fallback: string) => FailureCopy {
+export function useFailureSentence(): (error: unknown, fallback: string) => FailureCopy {
   const t = useTranslations('failures');
   return useCallback(
-    (err: unknown, fallback: string): FailureCopy => {
-      const code = failureCodeOf(err);
+    (error: unknown, fallback: string): FailureCopy => {
+      const code = failureCodeOf(error);
       const sentence = code && t.has(code) ? t(code) : fallback;
-      return { sentence, detail: failureDetailOf(err) };
+      return { sentence, detail: failureDetailOf(error) };
     },
     [t],
   );

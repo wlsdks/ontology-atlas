@@ -13,12 +13,10 @@ const INDEXES_FOLDER: &str = "vault-index";
 pub const INDEX_DIR_OVERRIDE_ENV: &str = "OATLAS_INDEX_DIR";
 pub(crate) const VAULT_KEY_HEX_CHARS: usize = 16;
 
-/// Whether this build reads `INDEX_DIR_OVERRIDE_ENV`.
 pub const fn index_dir_override_honoured() -> bool {
     cfg!(any(debug_assertions, feature = "index-dir-override"))
 }
 
-/// The folder holding every vault's index folder.
 pub fn indexes_root() -> io::Result<PathBuf> {
     if index_dir_override_honoured() {
         if let Some(dir) = std::env::var_os(INDEX_DIR_OVERRIDE_ENV).filter(|dir| !dir.is_empty()) {

@@ -12,10 +12,7 @@ export interface VaultCommand {
   keywords?: string;
   hint?: string;
   icon: React.ReactNode;
-  /** The shortcut to display — shown as a kbd at the row's right when present. */
   shortcut?: string;
-  /** Listed only when true; false hides it. */
   visible?: boolean;
-  /** The run callback. The palette closes automatically after calling onRun. */
   onRun: () => void | Promise<void>;
 }

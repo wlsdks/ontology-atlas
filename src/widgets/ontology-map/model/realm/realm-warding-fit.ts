@@ -18,7 +18,7 @@ export interface WardingFitState {
   startMs: number;
 }
 
-export function initWardingFit(radius: number): WardingFitState {
+export function createWardingFit(radius: number): WardingFitState {
   return { value: radius, from: radius, to: radius, startMs: -1 };
 }
 

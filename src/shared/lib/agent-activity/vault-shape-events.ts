@@ -5,14 +5,12 @@
  */
 import { resolveLocaleDisplayName } from "../locale-text/locale-display-name";
 
-/** Only the part of a manifest row this file reads. A subset of `VaultDoc`. */
 export interface VaultShapeDoc {
   slug: string;
   title?: string;
   frontmatter?: Record<string, unknown> | null;
 }
 
-/** One node row a screen can render as-is — slug for the link, name for the reader. */
 export interface VaultShapeNode {
   slug: string;
   /** `display_<locale>`, then `title`, then the slug's last segment. Never a folder path. */
@@ -22,7 +20,6 @@ export interface VaultShapeNode {
 
 export interface VaultShapeSnapshot {
   nodes: Map<string, VaultShapeNode>;
-  /** Slug → the node that contains it, or null. */
   parents: Map<string, string | null>;
 }
 
@@ -107,7 +104,7 @@ export interface VaultShapeDiff {
 const BRIDGE_MIN_CHILDREN = 2;
 
 export function diffVaultShape(
-  prev: VaultShapeSnapshot,
+  previous: VaultShapeSnapshot,
   next: VaultShapeSnapshot,
   { bridgeMinChildren = BRIDGE_MIN_CHILDREN }: { bridgeMinChildren?: number } = {},
 ): VaultShapeDiff {
@@ -116,19 +113,19 @@ export function diffVaultShape(
   const reparentedOnto = new Map<string, number>();
 
   for (const [slug, node] of next.nodes) {
-    if (!prev.nodes.has(slug)) {
+    if (!previous.nodes.has(slug)) {
       if (node.kind === "domain") domainsAdded.push(node);
       continue;
     }
     // Did a pre-existing node move its parent onto a **newly created** node.
-    const before = prev.parents.get(slug) ?? null;
+    const before = previous.parents.get(slug) ?? null;
     const after = next.parents.get(slug) ?? null;
-    if (after && after !== before && !prev.nodes.has(after)) {
+    if (after && after !== before && !previous.nodes.has(after)) {
       reparentedOnto.set(after, (reparentedOnto.get(after) ?? 0) + 1);
     }
   }
 
-  for (const [slug, node] of prev.nodes) {
+  for (const [slug, node] of previous.nodes) {
     if (!next.nodes.has(slug) && node.kind === "domain") domainsRemoved.push(node);
   }
 

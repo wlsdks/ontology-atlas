@@ -6,7 +6,6 @@ export interface ResetCandidateDoc {
   frontmatter?: Record<string, unknown> | null;
 }
 
-/** `document` is authorable narrative; it leaves with the concepts it describes. */
 const NARRATIVE_CONCEPT_KIND = 'document';
 
 const KEPT_TOP_FOLDERS: ReadonlySet<string> = new Set([WIKI_DIR, WIKI_SOURCES_DIR, 'planning']);
@@ -25,7 +24,6 @@ function isConceptKind(kind: unknown): boolean {
   return MAP_CONCEPT_KINDS.has(trimmed) || trimmed === NARRATIVE_CONCEPT_KIND;
 }
 
-/** The vault-relative paths a reset moves: authorable-kind Markdown outside the kept places. */
 export function conceptDocumentPaths(docs: ReadonlyArray<ResetCandidateDoc>): string[] {
   return docs
     .filter((doc) => doc.path.endsWith('.md') && !isKeptPath(doc.path) && isConceptKind(doc.frontmatter?.kind))

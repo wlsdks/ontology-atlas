@@ -31,7 +31,7 @@ import { pickDial, pickDialAction } from "../pick";
 import { emptyDialFrameMarks, type DialFrameMarks } from "./marks";
 import { circularDomainOrder } from "../order";
 import { resolveDialTokens } from "../tokens";
-import type { DialFrameInput, DialLabels, DialModel, DialOwnershipInput, Point } from "../types";
+import type { DialFrameInput, DialLabels, DialModel, DialOwnershipInput, Point } from "../dial-shapes";
 
 const css = readFileSync("app/styles/map-dial-tokens.css", "utf8");
 const TOKENS = resolveDialTokens((v) => (v === "--map-panel-text-primary" ? "#f4f4f8" : css.match(new RegExp(`${v}:\\s*([^;]+);`))?.[1] ?? ""));

@@ -27,10 +27,6 @@ const ITEM_CLASS = controlClass({
   className: "w-full gap-2.5 whitespace-nowrap px-2.5 text-left",
 });
 
-/**
- * The page's secondary actions behind one trigger. The menu opens under it with right edges
- * aligned; arrow keys move between items, Escape and an outside press close it and return focus.
- */
 export function ProjectMoreMenu({ label, items }: { label: string; items: readonly ProjectMenuItem[] }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);

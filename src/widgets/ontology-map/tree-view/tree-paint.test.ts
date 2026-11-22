@@ -11,7 +11,7 @@ import {
   type TreeModel,
   type TreeNodeKind,
   type TreeProjector,
-} from "../model/tree-view/types";
+} from "../model/tree-view/tree-shapes";
 import { readTreeTokens, type TreeTokens } from "../tokens/read-tree-tokens";
 import { treeScreenGrowth } from "../model/tree-view/tree-detail";
 import { paintTreeFrame } from "./tree-paint";

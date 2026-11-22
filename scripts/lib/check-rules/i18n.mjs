@@ -7,9 +7,9 @@ const MESSAGE_PART = /^messages\/[^/]+\/[^/]+\.json$/;
 /** A part, or the composite a pre-split branch still tracks. */
 const MESSAGE_CATALOGUE = /^messages\/(?:[^/]+\/)?[^/]+\.json$/;
 
-function messageLocales(dir = new URL('../../../messages', import.meta.url)) {
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir, { withFileTypes: true })
+function messageLocales(directory = new URL('../../../messages', import.meta.url)) {
+  if (!existsSync(directory)) return [];
+  return readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
     .map((entry) => entry.name)
     .sort();

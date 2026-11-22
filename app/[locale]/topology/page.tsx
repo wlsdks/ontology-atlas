@@ -5,15 +5,7 @@ import { HomePage, MapSampleHead } from "@/views/home";
 import { buildPageMetadata } from "@/shared/lib/public-pages/page-metadata";
 import { MapEntryFallback } from "@/shared/ui/fallbacks/map-entry-fallback";
 
-/**
- * `/topology` — the canvas-2D topology surface (`ontology-map`). An explicit entry alias
- * rendering the same component as `/` (HomePage), and the demo URL the README and launch assets
- * point at.
- *
- * Why the fallback is `MapEntryFallback` is explained in that file's comments — under static export
- * this route's HTML body is entirely the fallback, so a loading caption there would be all a link
- * preview or a crawler sees of the page.
- */
+/** Renders the same component as `/`; the demo URL the README points at. */
 export async function generateMetadata({
   params,
 }: {

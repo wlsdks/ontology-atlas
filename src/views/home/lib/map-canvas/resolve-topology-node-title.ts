@@ -16,7 +16,6 @@ export function resolveTopologyNodeTitle({
   slug: string | null;
   projectBySlug: ReadonlyMap<string, Project>;
   ontologyNodes: readonly KnowledgeGraphNode[] | null | undefined;
-  /** With it a project reads by its `display_<locale>`, like every node. */
   locale?: string;
 }): string | null {
   if (!slug) return null;
@@ -31,7 +30,6 @@ export function resolveTopologyNodeTitle({
   return compactTopologyPanelTitle(node.display ?? node.title);
 }
 
-/** Strips the parenthetical aside so chips and panels fit on one line. */
 export function compactTopologyPanelTitle(title: string | null): string | null {
   if (!title) return null;
   const stripped = title.replace(/\s*\(.*$/, "").trim();

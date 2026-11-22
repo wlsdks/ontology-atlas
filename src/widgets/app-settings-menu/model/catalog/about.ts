@@ -1,4 +1,4 @@
-import type { SettingsCatalogEntry } from './types';
+import type { SettingsCatalogEntry } from './settings-catalog-entry';
 
 export const ABOUT_CATALOG: readonly SettingsCatalogEntry[] = [
   { id: 'version', section: 'about', labelKey: 'settingsAbout.rows.version', keywordsKey: 'settingsAbout.keywords.version', surface: 'both' },

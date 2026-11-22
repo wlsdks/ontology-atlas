@@ -18,31 +18,13 @@ import {
 } from "../lib/verify-macos/payload-contract.mjs";
 
 /**
- * **Installed-app WebView payload contract — measures only what is left**
- * (2026-08-12).
+ * **Installed-app WebView payload contract: measures only what runs on every deploy.**
  *
- * ## Why this file shrank from 10,042 lines
- *
- * It used to carry **288 assertions**, **913 distinct marker names**, and **135**
- * mentions of `sigma`/`skeleton` — effectively a test suite for retired topology
- * probes. Those probes were retired in #1034 and #1036: they waited on Sigma-era
- * DOM that no longer exists, used a coordinate system anchored to the viewport
- * while the product anchors to the map, and pinned Korean copy verbatim. **Not one
- * of the eleven verification scripts could go green.**
- *
- * When that requirement disappeared, the two huge tests here that asserted "a
- * message must come back" received `null` and turned red — **the test outlived the
- * product.**
- *
- * So the tests were fitted to the product. What remains is **what actually runs on
- * every deploy today**: payload shape · route · fixture vault · reduced motion ·
- * WebView size. `pnpm desktop:deploy:app` passes those every session, and
- * `tests/contract/desktop/desktop-probe-markers.contract.test.ts` stops the retired
- * requirements coming back.
- *
- * ⚠️ **Do not read the shrinkage as a weaker check.** The 288 deleted assertions
- * **aimed at DOM that does not exist** — they were green because nobody ran them
- * (0 references in CI), not because the product was right.
+ * Payload shape, route, fixture vault, reduced motion and WebView size are what
+ * `pnpm desktop:deploy:app` passes every session, and
+ * `tests/contract/desktop/desktop-probe-markers.contract.test.ts` stops retired probe
+ * requirements coming back. A smaller file is not a weaker check: assertions aimed at DOM that
+ * does not exist were green only because nobody ran them.
  */
 
 /**
@@ -335,9 +317,9 @@ test("payload contract · rejects a malformed payload with a reason", () => {
     validateWebviewVerifyPayload(validPayload({ readyState: "loading" })),
     /readyState=loading/,
   );
-  // 2026-09-06: a deploy check ran against a locked display; the map mounts after one
-  // animation frame, WebKit fires none for a hidden document, and the run failed on
-  // "marker missing" for a screen nobody saw. The hidden state is named before any marker.
+  // On a locked display the map mounts after one animation frame, WebKit fires none for a hidden
+  // document, and the run would fail on "marker missing" for a screen nobody saw. The hidden state
+  // is named before any marker.
   assert.match(
     validateWebviewVerifyPayload(validPayload({ visibilityState: "hidden" })),
     /document is hidden.*display is locked/,
@@ -404,8 +386,7 @@ test("payload contract · a planted fixture the app did not grant is named as th
     });
 
   assert.equal(check([`[ontology-atlas-verify-vault] root=/private${vault} granted=true`]), null);
-  // The 2026-11-21 deploy failure: no grant, so the map route fell back to first run and the
-  // verdict blamed the route.
+  // No grant makes the map route fall back to first run; the verdict must name the grant, not the route.
   assert.match(check([]), /never reported granting the fixture vault/);
   assert.match(
     check([

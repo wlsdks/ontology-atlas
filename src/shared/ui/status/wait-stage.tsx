@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 
 import { cn } from '@/shared/lib/cn';
-import { WorkProgress } from '@/shared/motion/work-progress';
+import { WorkProgress } from '@/shared/motion/status-glyphs/WorkProgress';
 
-import { BrandWaitingMark } from '../marks/brand-waiting-mark';
+import { BrandWaitingMark } from '../marks/moru/brand-waiting-mark';
 import { MapWaitCluster } from '../marks/map-wait-cluster';
 
 export type WaitStepState = 'pending' | 'current' | 'done';

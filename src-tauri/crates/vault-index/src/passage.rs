@@ -1,8 +1,6 @@
-//! Passages: the pieces of a Markdown file that search by meaning embeds; the quality harness
-//! asks the bench binary for them, so this is the only splitter. One pass over the text's lines,
-//! normalised to NFC `NFC_WINDOW_CHARS` at a time, so no line is ever normalised whole: canonical
-//! reordering sorts runs of at most one window, so time is O(n log w) for windows of w characters,
-//! and memory beyond the borrowed text is the passages kept plus one passage and one window.
+//! The pieces of a Markdown file that search by meaning embeds; the only splitter, also used by the quality harness.
+//! One pass over the lines, normalised to NFC `NFC_WINDOW_CHARS` at a time: time O(n log w) for windows of w
+//! characters, memory the kept passages plus one passage and one window.
 
 use crate::stamps::Sha;
 use icu_normalizer::ComposingNormalizerBorrowed;
@@ -20,7 +18,6 @@ pub(crate) const MAX_PASSAGES_PER_FILE: usize = 500;
 /// Changing the split rule changes this; stored passage lists are then read again, while vectors
 /// of passages whose text did not change are kept.
 pub(crate) const PASSAGE_VERSION: u32 = 4;
-/// Text is normalised this many characters at a time.
 const NFC_WINDOW_CHARS: usize = MAX_PASSAGE_CHARS;
 /// How far past a window's end its cut may move to land before a character that composes and
 /// reorders with nothing before it; a run without one is cut at the window's end.
@@ -184,7 +181,6 @@ struct Section<'a> {
     heading: bool,
 }
 
-/// Calls `each` with every section after the frontmatter, in order, without collecting them.
 fn for_each_section<'a>(raw: &'a str, mut each: impl FnMut(Section<'a>)) {
     let first = frontmatter_end(raw);
     // The open section: its first line, its first byte, and whether a heading opened it.
@@ -244,7 +240,6 @@ struct Piece {
 }
 
 impl Piece {
-    /// Whether a piece of `chars` joined after this one stays within `MAX_PASSAGE_CHARS`.
     fn fits(&self, chars: usize) -> bool {
         self.chars + 2 + chars <= MAX_PASSAGE_CHARS
     }
@@ -338,7 +333,6 @@ impl Joiner {
     }
 }
 
-/// One section's lines gathered into pieces of at most `MAX_PASSAGE_CHARS`.
 struct Chunk<'j> {
     joiner: &'j mut Joiner,
     heading: Option<String>,
@@ -370,7 +364,6 @@ impl Chunk<'_> {
         }
     }
 
-    /// Characters a line can add before the chunk passes `MAX_PASSAGE_CHARS`.
     fn room(&self) -> usize {
         if self.lines == 0 {
             MAX_PASSAGE_CHARS
@@ -379,7 +372,6 @@ impl Chunk<'_> {
         }
     }
 
-    /// Feeds one line, normalised window by window, cutting it where it cannot fit.
     fn push_line(&mut self, raw: &str, number: usize) {
         let mut line = std::mem::take(&mut self.line);
         line.clear();
@@ -511,7 +503,6 @@ mod tests {
             .collect()
     }
 
-    /// A body long enough that its section stands alone.
     fn long(mark: char) -> String {
         mark.to_string().repeat(MIN_SECTION_CHARS)
     }

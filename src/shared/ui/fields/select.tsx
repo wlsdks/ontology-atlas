@@ -34,9 +34,7 @@ export interface SelectProps {
   value: string;
   onChange: (value: string) => void;
   options: SelectOption[];
-  /** Shown on the trigger while `value` is the empty string. */
   placeholder?: string;
-  /** Required wherever no visible form label is attached. */
   ariaLabel?: string;
   ariaLabelledby?: string;
   /**
@@ -75,11 +73,8 @@ const PREFERRED_SPACE = 264;
 type Anchor = {
   left: number;
   width: number;
-  /** Fixed top when opening down; `null` when flipped up. */
   top: number | null;
-  /** Fixed bottom when opening up; `null` when opening down. */
   bottom: number | null;
-  /** Room left in the viewport in this direction: the space cap's input. */
   availableHeight: number;
   placement: "below" | "above";
   /** Captured with the trigger: local coordinates follow a dialog's entry translation. */
@@ -292,8 +287,8 @@ export function Select({
 
   useEffect(() => {
     if (!open) return;
-    const el = listRef.current?.querySelector<HTMLElement>(`#${CSS.escape(optionDomId(activeIndex))}`);
-    el?.scrollIntoView?.({ block: "nearest" });
+    const element = listRef.current?.querySelector<HTMLElement>(`#${CSS.escape(optionDomId(activeIndex))}`);
+    element?.scrollIntoView?.({ block: "nearest" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, activeIndex]);
 
@@ -306,10 +301,10 @@ export function Select({
       const startFrom = query.length === 1 ? activeIndex + 1 : activeIndex;
       const n = options.length;
       for (let i = 0; i < n; i++) {
-        const idx = (startFrom + i) % n;
-        if (options[idx].label.toLowerCase().startsWith(query)) {
-          setActiveIndex(idx);
-          if (!open) commit(idx);
+        const index = (startFrom + i) % n;
+        if (options[index].label.toLowerCase().startsWith(query)) {
+          setActiveIndex(index);
+          if (!open) commit(index);
           break;
         }
       }

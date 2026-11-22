@@ -13,14 +13,14 @@ const SKIPPED_DIRECTORIES = new Set(["node_modules"]);
 export const VAULT_DIR_ENV = "UI_LOOK_VAULT_DIR";
 
 /** Every Markdown file under `dir`, keyed by its vault-relative path; dotfiles and dot-directories are skipped. */
-export function readVaultFiles(dir) {
+export function readVaultFiles(directory) {
   const files = {};
   const walk = (relative) => {
-    for (const entry of readdirSync(path.join(dir, relative), { withFileTypes: true })) {
+    for (const entry of readdirSync(path.join(directory, relative), { withFileTypes: true })) {
       if (entry.name.startsWith(".") || SKIPPED_DIRECTORIES.has(entry.name)) continue;
       const child = relative ? `${relative}/${entry.name}` : entry.name;
       if (entry.isDirectory()) walk(child);
-      else if (entry.isFile() && entry.name.endsWith(".md")) files[child] = readFileSync(path.join(dir, child), "utf8");
+      else if (entry.isFile() && entry.name.endsWith(".md")) files[child] = readFileSync(path.join(directory, child), "utf8");
     }
   };
   walk("");

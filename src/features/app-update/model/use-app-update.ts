@@ -36,13 +36,9 @@ function writeStored(key: string, value: string): void {
 
 export interface UpdateSessionState {
   readonly phase: UpdatePhase;
-  /** The download card was hidden; the phase is still `downloading`. */
   readonly noticeHidden: boolean;
-  /** A version a check found available or installed, until a check says current. */
   readonly pendingVersion: string | null;
-  /** Installed in this session and waiting for a restart; never offered for download again. */
   readonly readyVersion: string | null;
-  /** The last successful check, from storage at start and from memory after. */
   readonly lastCheckedAt: number | null;
   readonly dismissedVersion: string | null;
 }
@@ -130,7 +126,6 @@ async function requestCheck(manual: boolean): Promise<void> {
     });
   } catch (error) {
     consecutiveFailures += 1;
-    // An automatic failure is silent; the due rule decides when it is retried.
     const next = phaseAfterFailedCheck({
       manual,
       readyVersion: readSession().readyVersion,
@@ -233,7 +228,6 @@ async function restart(): Promise<void> {
   await relaunch();
 }
 
-/** "Not now" or "Close": a dismissal is remembered for an offered version only. */
 function dismiss(): void {
   const { phase } = readSession();
   if (phase.kind === 'downloading') {
@@ -248,7 +242,6 @@ function dismiss(): void {
   patchSession({ phase: { kind: 'idle' } });
 }
 
-/** Hides the download card without dismissing the version; the ready card comes back. */
 function hide(): void {
   patchSession({ noticeHidden: true });
 }
@@ -259,11 +252,7 @@ function showNotice(): void {
 
 const readServerState = () => SERVER_STATE;
 
-/**
- * The updater's runtime wiring; every judgement is in `update-state.ts`. The plugin is
- * dynamically imported so a desktop-only module stays out of the web bundle. Mount it once:
- * its timers are the automatic checks.
- */
+/** Every judgement is in `update-state.ts`. The plugin is dynamically imported so a desktop-only module stays out of the web bundle. Mount it once: its timers are the automatic checks. */
 export function useAppUpdate() {
   const state = useSyncExternalStore(subscribe, readSession, readServerState);
 
@@ -293,7 +282,6 @@ const readPendingVersion = () => readSession().pendingVersion;
 const readReadyVersion = () => readSession().readyVersion;
 const readNothing = () => null;
 
-/** Only the pending and ready versions, so a download's progress does not re-render the reader. */
 export function usePendingUpdate(): { pendingVersion: string | null; readyVersion: string | null } {
   return {
     pendingVersion: useSyncExternalStore(subscribe, readPendingVersion, readNothing),

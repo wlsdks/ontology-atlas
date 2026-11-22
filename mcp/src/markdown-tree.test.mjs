@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { authoredMarkdownLines } from './analyze/authored-markdown.mjs';
+import { authoredMarkdownLines } from './analyze/candidates/authored-markdown.mjs';
 import { readCapabilityClaim, readRecordedSection, readReviewedEvidence } from './agent-brief/reviewed-evidence.mjs';
 import { markdownTree } from './markdown-tree.mjs';
 

@@ -72,17 +72,17 @@ function builtBinary() {
 
 /** Reuses a vault generated with the same flow and size; the marker is a dotfile, which the walk skips. */
 function ensureVault(flow) {
-  const dir = join(baseDir, `${flow}-${files}`);
-  const marker = join(dir, '.atlas-scale.json');
-  if (existsSync(marker)) return dir;
-  rmSync(dir, { recursive: true, force: true });
-  mkdirSync(dir, { recursive: true });
+  const directory = join(baseDir, `${flow}-${files}`);
+  const marker = join(directory, '.atlas-scale.json');
+  if (existsSync(marker)) return directory;
+  rmSync(directory, { recursive: true, force: true });
+  mkdirSync(directory, { recursive: true });
   const started = performance.now();
   // The library shape writes as many pages as sources, so half the count keeps --files the file count.
-  const written = generateScaleVault(dir, SHAPES[flow] === 'library' ? Math.floor(files / 2) : files, SHAPES[flow]);
+  const written = generateScaleVault(directory, SHAPES[flow] === 'library' ? Math.floor(files / 2) : files, SHAPES[flow]);
   writeFileSync(marker, JSON.stringify(written));
   console.log(`# generated flow ${flow}: ${written.files} files, ${written.nodes} nodes, ${(written.bytes / 1048576).toFixed(0)} MB in ${((performance.now() - started) / 1000).toFixed(1)} s`);
-  return dir;
+  return directory;
 }
 
 function cpuMs(pid) {

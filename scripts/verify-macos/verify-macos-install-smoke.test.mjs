@@ -65,8 +65,8 @@ test("installed app verification targets the MCP sidecar inside the copied bundl
  */
 const darwin = process.platform === "darwin";
 
-function makeBundle(dir, { sign }) {
-  const app = join(dir, "Probe.app");
+function makeBundle(directory, { sign }) {
+  const app = join(directory, "Probe.app");
   mkdirSync(join(app, "Contents", "MacOS"), { recursive: true });
   writeFileSync(join(app, "Contents", "Info.plist"), `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -82,18 +82,18 @@ function makeBundle(dir, { sign }) {
 }
 
 test("bundle signature gate accepts an ad-hoc signed bundle", { skip: !darwin }, () => {
-  const dir = mkdtempSync(join(tmpdir(), "oa-sig-ok-"));
+  const directory = mkdtempSync(join(tmpdir(), "oa-sig-ok-"));
   try {
-    assert.doesNotThrow(() => verifyBundleSignature(makeBundle(dir, { sign: true }), { label: "Probe.app" }));
+    assert.doesNotThrow(() => verifyBundleSignature(makeBundle(directory, { sign: true }), { label: "Probe.app" }));
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 
 test("bundle signature gate rejects a bundle whose signature is structurally broken", { skip: !darwin }, () => {
-  const dir = mkdtempSync(join(tmpdir(), "oa-sig-bad-"));
+  const directory = mkdtempSync(join(tmpdir(), "oa-sig-bad-"));
   try {
-    const app = makeBundle(dir, { sign: true });
+    const app = makeBundle(directory, { sign: true });
     // Reproduces the real shape of a Tauri-emitted bundle: the binary is signed but
     // the bundle has no _CodeSignature.
     rmSync(join(app, "Contents", "_CodeSignature"), { recursive: true, force: true });
@@ -106,6 +106,6 @@ test("bundle signature gate rejects a bundle whose signature is structurally bro
       /codesign --verify rejected Probe\.app/,
     );
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
 });

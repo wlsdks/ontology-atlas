@@ -27,9 +27,7 @@ export type BuildKind = 'project' | 'domain' | 'capability';
 export interface BuildConcept {
   id: BuildConceptId;
   kind: BuildKind;
-  /** The concept it sits under on the map; the line between them is drawn with it. */
   parent: BuildConceptId | null;
-  /** The agent beat that writes it. */
   beat: number;
   files: number;
   at: { x: number; y: number };
@@ -39,11 +37,8 @@ export interface BuildConcept {
 export interface BuildRelation {
   from: BuildConceptId;
   to: BuildConceptId;
-  /** Message key under `download.build.relations`. */
   label: 'findsItems' | 'readsTotal' | 'needsLogin' | 'reversesPayment' | 'sendsUpdates';
-  /** Where along the line, from `from` to `to`, its label sits clear of both names. */
   labelAt: number;
-  /** The agent writes its relations while building; the person adds the ones it left out. */
   by: 'agent' | 'person';
 }
 
@@ -76,22 +71,15 @@ export const BUILD_RELATIONS: readonly BuildRelation[] = [
 
 export const PERSON_RELATIONS = BUILD_RELATIONS.filter((relation) => relation.by === 'person');
 
-/**
- * Concepts the agent names the way the code does; Atlas counts such a title as one to rename
- * ("Rename N concepts that read like code"), and the person gives each a word people use.
- */
 export const CODE_NAMED = [
   { concept: 'coupon', title: 'couponManager' },
   { concept: 'login', title: 'authService' },
 ] as const satisfies readonly { concept: BuildConceptId; title: string }[];
 export type CodeNamedId = (typeof CODE_NAMED)[number]['concept'];
 
-/** Concepts the agent writes with no line to the rest; Atlas counts them as standing alone. */
 export const LONE_CONCEPTS: readonly BuildConceptId[] = ['refund', 'alerts'];
-/** The end of a relation the person draws that stood alone. */
 export const loneEndOf = (relation: BuildRelation) => (LONE_CONCEPTS.includes(relation.from) ? relation.from : relation.to);
 
-/** The commit an agent makes after the map exists; its file belongs to one concept. */
 export const BUILD_CHANGE = { concept: 'payment', file: 'src/payment/charge-card.ts', sha: '4f2a91c' } as const satisfies {
   concept: BuildConceptId;
   file: string;
@@ -103,5 +91,4 @@ export const BUILD_FILE_COUNT = BUILD_CONCEPTS.reduce((sum, concept) => sum + co
 export const conceptOf = (id: BuildConceptId) => BUILD_CONCEPTS.find((concept) => concept.id === id)!;
 export const fileNameOf = (path: string) => path.slice(path.lastIndexOf('/') + 1);
 export const touchesChange = (relation: BuildRelation) => relation.from === BUILD_CHANGE.concept || relation.to === BUILD_CHANGE.concept;
-/** A relation whose source depends on the changed concept: a change reaches along it, as Atlas's impact does. */
 export const dependsOnChange = (relation: BuildRelation) => relation.to === BUILD_CHANGE.concept;

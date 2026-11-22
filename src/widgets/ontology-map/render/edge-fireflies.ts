@@ -6,14 +6,14 @@
 
 import { bezierPoint, type Point } from "./traces";
 
-/** Pulse lifetime, ms — the prototype's `PULSE_DUR`. */
+/** Pulse lifetime, ms. */
 export const PULSE_DURATION_MS = 420;
-/** Head/trail radii, px — from the prototype's drawPulses. */
+/** Head and trail radii, px. */
 const PULSE_HEAD_RADIUS_PX = 2.6;
 const PULSE_TRAIL_RADIUS_PX = 1.4;
-/** How far behind the head the trail sits, in phase — the prototype's 0.05. */
+/** How far behind the head the trail sits, in phase. */
 export const PULSE_TRAIL_LAG = 0.05;
-/** Floor on the shrink so the pulse never vanishes outright (prototype: max(0.35, …)). */
+/** Floor on the shrink so the pulse never vanishes outright. */
 const PULSE_MIN_SCALE = 0.35;
 
 /**
@@ -27,16 +27,12 @@ export function fireflySeed(sourceId: string, targetId: string): number {
   return (Math.abs(hash) % 1000) / 1000;
 }
 
-/**
- * Advance the phase one step, wrapping into [0,1). Deterministic: the same
- * (t, dt, speed) gives the same result, negative speeds included.
- */
+/** Advances the phase one step, wrapping into [0,1); negative speeds included. */
 export function advanceParticlePhase(t: number, dt: number, speed: number): number {
   const next = (t + dt * speed) % 1;
   return next < 0 ? next + 1 : next;
 }
 
-/** The minimum shape `updateParticles` advances — a subset of the world edge. */
 export interface ParticleEdge {
   kind: "contains" | "depends";
   /** Phase 0..1 — advanced in place. */
@@ -163,10 +159,7 @@ export function selectEgoContainsComets<E extends EdgePairRef & { kind: string }
   return comets;
 }
 
-/**
- * The prototype's `updateParticles`: advances every depends edge's phase in place, nothing under
- * reduced motion. `contains` edges stay still unless `isEgoContainsEligible` accepts them.
- */
+/** Advances every depends edge's phase in place, nothing under reduced motion; `contains` edges stay still unless `isEgoContainsEligible` accepts them. */
 export function updateParticles<E extends ParticleEdge>(
   edges: readonly E[],
   dt: number,
@@ -181,7 +174,6 @@ export function updateParticles<E extends ParticleEdge>(
   }
 }
 
-/** One one-shot signal pulse fired by a hover. */
 export interface Pulse {
   sourceId: string;
   targetId: string;
@@ -191,17 +183,12 @@ export interface Pulse {
   t0: number;
 }
 
-/** The minimum shape `spawnHoverPulses` reads when picking touching edges. */
 export interface PulseEdge {
   sourceId: string;
   targetId: string;
 }
 
-/**
- * The pulse half of the prototype's `startRipple` — one outward pulse per edge
- * touching the hovered node. Returns an empty array under reduced-motion. Pure:
- * the caller owns the storage.
- */
+/** One outward pulse per edge touching the hovered node; empty under reduced motion. Pure: the caller owns the storage. */
 export function spawnHoverPulses(
   hoveredId: string,
   touchingEdges: readonly PulseEdge[],
@@ -222,10 +209,7 @@ export function spawnHoverPulses(
   return out;
 }
 
-/**
- * The prototype's `updatePulses` — drops pulses past `durationMs`. Returns the
- * input untouched when nothing expired, avoiding an allocation.
- */
+/** Drops pulses past `durationMs`; returns the input untouched when nothing expired. */
 export function updatePulses(pulses: readonly Pulse[], now: number, durationMs = PULSE_DURATION_MS): Pulse[] {
   if (pulses.length === 0) return pulses as Pulse[];
   const alive = pulses.filter((p) => now - p.t0 < durationMs);
@@ -256,18 +240,11 @@ export function pulseHeadTrail(dir: 1 | -1, raw: number): { head: number; trail:
 export type PulseEdgeResolver = (pulse: Pulse) => { a: Point; control: Point; b: Point } | null;
 
 export interface PulseColors {
-  /** Head, bright. */
   head: string;
-  /** Trail, pale. */
   trail: string;
 }
 
-/**
- * Draws the active pulses as plain dots — no glow, ring, or neon. A 2.6px head
- * plus a 1.4px trail 0.05 behind it, both shrinking in radius toward the end.
- * Coordinates arrive from `resolve` already in screen space; the caller owns the
- * camera projection.
- */
+/** Draws active pulses as plain dots (2.6 px head, 1.4 px trail 0.05 behind), shrinking toward the end; coordinates arrive in screen space from `resolve`. */
 export function drawPulses(
   ctx: CanvasRenderingContext2D,
   pulses: readonly Pulse[],

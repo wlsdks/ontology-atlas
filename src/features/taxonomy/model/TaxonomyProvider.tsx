@@ -22,7 +22,6 @@ interface Props {
   children: ReactNode;
 }
 
-/** Defaults-only taxonomy provider. */
 export function TaxonomyProvider({ children }: Props) {
   // The only place a label is picked; `.label` itself is Korean.
   const locale = useLocale();
@@ -34,7 +33,6 @@ export function TaxonomyProvider({ children }: Props) {
       statuses: DEFAULT_STATUSES,
       getCategory: (id) => (id ? categoryMap.get(id) : undefined),
       getStatus: (id) => (id ? statusMap.get(id) : undefined),
-      // An id outside the defaults comes from the vault and shows verbatim.
       categoryLabel: (id) =>
         id ? (pickTaxonomyLabel(categoryMap.get(id), locale) ?? id) : '—',
       statusLabel: (id) =>

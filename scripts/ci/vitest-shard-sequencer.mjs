@@ -3,12 +3,9 @@ import { relative } from 'node:path';
 import { BaseSequencer } from 'vitest/node';
 
 /**
- * Splits a sharded Vitest sweep by measured seconds instead of file count.
- *
- * Vitest's own `--shard` sorts files by a path hash and cuts equal counts, so a shard's time is
- * whatever its files happen to weigh: the full sweep measured 271 s, 222 s and 186 s on its three
- * runners (four trains, 2026-11-17/18). Every shard sees the same file list and the same weights,
- * so each computes the same assignment and keeps only its own part.
+ * Splits a sharded Vitest sweep by measured seconds instead of file count: Vitest's own `--shard`
+ * cuts equal counts by path hash, so shard times differ widely. Every shard sees the same file list
+ * and weights, so each computes the same assignment and keeps only its own part.
  */
 export const DURATIONS = new URL('../data/vitest-file-durations.json', import.meta.url);
 

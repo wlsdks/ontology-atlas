@@ -13,7 +13,7 @@ vi.mock("@/i18n/locales", async (importActual) => {
 });
 
 import { buildAskBrief } from "./questions/ask-brief";
-import { buildCompileBrief } from "./wiki/compile-brief";
+import { buildCompileBrief } from "./wiki/compile/compile-brief";
 import { buildFixBrief } from "./wiki/fix-brief";
 import { buildLintBrief } from "./wiki/lint-brief";
 import { buildProposeNodeBrief } from "./wiki/propose-node-brief";

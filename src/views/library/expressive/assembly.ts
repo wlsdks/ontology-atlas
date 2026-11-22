@@ -26,12 +26,8 @@ export interface AssemblySchedule {
 }
 
 /**
- * The three groups, in the order the Library itself describes: documents are gathered,
- * write-ups are compiled from them, and the citations are what the compile leaves behind.
- *
- * The strides are deliberately short relative to `travelMs` so the groups **overlap** —
- * the last cubes are still landing while the first spheres set off. A strictly sequential
- * assembly of 34 marks at 60ms each would run 2s per group and read as a loading bar.
+ * Documents, then write-ups, then citations. Strides are short against `travelMs` so the groups
+ * overlap; a strictly sequential assembly would read as a loading bar.
  */
 export const SOURCE_ASSEMBLY: AssemblySchedule = { travelMs: 900, strideMs: 26, delayMs: 0 };
 export const PAGE_ASSEMBLY: AssemblySchedule = { travelMs: 820, strideMs: 46, delayMs: 420 };
@@ -42,18 +38,8 @@ export const LINK_ASSEMBLY: AssemblySchedule = { travelMs: 620, strideMs: 14, de
 const LAUNCH_RADIUS = 3.4;
 
 /**
- * How much of a mark's travel time follows the distance it has to cover.
- *
- * ⚠️ **A fixed duration makes the far marks travel faster** — IBM Carbon states the rule
- * plainly: *"the larger the change in distance or size, the longer the animation takes"*,
- * on a non-linear scale. This object launches every mark from `LAUNCH_RADIUS × its resting
- * radius`, so a document on the outer shell covers roughly twice the ground of a write-up
- * on the inner one; at one fixed `travelMs` the outer marks were simply moving quicker,
- * which is the opposite of what weight and distance should feel like.
- *
- * The exponent is what makes it non-linear: at 0.5 the time grows with the square root of
- * the distance, so a mark twice as far takes about 1.4× as long rather than 2× — far
- * enough to feel heavier, not so far that the outer shell lags behind the object.
+ * Travel time grows with the square root of the distance: an outer-shell mark twice as far takes
+ * about 1.4 times as long, so far marks do not move faster than near ones.
  */
 const DISTANCE_TIME_EXPONENT = 0.5;
 /** Turns a mark makes on the way in. */
@@ -66,22 +52,15 @@ function easeOutCubic(t: number): number {
 }
 
 /**
- * Where the `index`-th mark of a group is at `elapsedMs`.
- *
- * Before its stride begins the mark is at its launch distance and invisible; after its
- * travel ends it is exactly home, so a settled object is bit-identical to one that never
- * animated. That equality is what lets the reduced-motion still frame and the end of the
- * assembly be the same picture rather than two that merely look alike.
+ * Where the `index`-th mark of a group is at `elapsedMs`: at launch distance and invisible before
+ * its stride begins, exactly home after its travel ends, so the settled object equals the
+ * reduced-motion still frame.
  */
 export function assemblyStep(
   elapsedMs: number,
   index: number,
   schedule: AssemblySchedule,
-  /**
-   * The mark's resting radius, 0–1, if the caller knows it. Marks further out are given
-   * proportionally longer to arrive, so every mark travels at a comparable speed rather
-   * than the outer shell racing the inner one. Omitted, every mark takes `travelMs`.
-   */
+  /** The mark's resting radius, 0–1; marks further out are given longer to arrive. Omitted, every mark takes `travelMs`. */
   restingRadius = 1,
 ): AssemblyStep {
   const started = elapsedMs - schedule.delayMs - index * schedule.strideMs;
@@ -98,26 +77,18 @@ export function assemblyStep(
     progress: eased,
     distance: LAUNCH_RADIUS + (1 - LAUNCH_RADIUS) * eased,
     spin: LAUNCH_SPIN * (1 - eased),
-    // Presence runs ahead of travel: a mark is fully lit before it stops moving, so the
-    // object reads as filling in rather than as fading up.
+    // Presence runs ahead of travel: a mark is fully lit before it stops moving.
     presence: Math.min(1, eased * 1.6),
   };
 }
 
-/**
- * When every mark of an object is home, ms.
- *
- * The host uses this to stop stepping the assembly and hand the object back to the ambient
- * turn — and, more importantly, to know when it may sleep. An object still assembling is
- * not idle, whatever the input clock says.
- */
+/** When every mark of an object is home, ms; the host stops stepping the assembly and may sleep after it. */
 export function assemblyDurationMs(counts: {
   sources: number;
   pages: number;
   links: number;
 }): number {
-  // `travelMs` is the longest any mark can take (a mark at the full resting radius), so
-  // the unscaled value is still the correct upper bound for "everything has landed".
+  // `travelMs` is the longest any mark takes (full resting radius), so it bounds "everything has landed".
   const end = (schedule: AssemblySchedule, count: number) =>
     count <= 0 ? 0 : schedule.delayMs + (count - 1) * schedule.strideMs + schedule.travelMs;
   return Math.max(

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ROOT = process.cwd();
-const CLI_SOURCE = join(ROOT, "cli/src/index.mjs");
+const CLI_SOURCES = ["cli/src/index.mjs", "cli/src/lib/init/run-init.mjs", "cli/src/lib/help/top-level-help.mjs"];
 const TEMPLATE_SKILLS = join(ROOT, "cli/templates/vault/.claude/skills");
 
 /**
@@ -27,7 +27,7 @@ const TEMPLATE_SKILLS = join(ROOT, "cli/templates/vault/.claude/skills");
  * assertion behind.
  */
 describe("init installs skills for every client the CLI advertises", () => {
-  const cli = readFileSync(CLI_SOURCE, "utf8");
+  const cli = CLI_SOURCES.map((file) => readFileSync(join(ROOT, file), "utf8")).join("\n");
 
   it("the template really ships skills for this gate to be about", () => {
     const skills = readdirSync(TEMPLATE_SKILLS, { withFileTypes: true })

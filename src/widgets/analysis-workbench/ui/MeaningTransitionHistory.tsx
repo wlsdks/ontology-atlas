@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { readMeaningTransitionHistory } from '@/entities/meaning-transition';
 import type { MeaningTransitionCandidate } from '@/shared/lib/meaning-transition/meaning-transition';
 import type { MeaningTransitionV2 } from '@/shared/lib/meaning-transition/meaning-transition-v2';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { canArchiveMeaningTransitions, observeMeaningTransitionRoot, readTauriMeaningTransitionArtifact } from '@/shared/lib/meaning-transition/tauri-meaning-transition-archive';
 import { Chip, Disclosure, RowButton } from '@/shared/ui';
 
@@ -21,7 +21,6 @@ async function textDigest(text: string): Promise<string> {
 /** What the archive has to say. Everything but `records` and `error` is quiet: nothing to pick. */
 export type MeaningTransitionArchiveState = 'no-folder' | 'unavailable' | 'pending' | 'empty' | 'records' | 'error';
 
-/** Draws nothing while quiet; the caller's own empty state speaks for a quiet archive. */
 export function MeaningTransitionHistory({ handle, open, onStateChange }: {
   handle: FileSystemDirectoryHandle | null;
   open: boolean;

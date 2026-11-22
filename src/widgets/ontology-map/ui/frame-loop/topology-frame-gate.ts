@@ -1,4 +1,4 @@
-import type { MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
+import type { MapArrangement } from "@/shared/lib/preferences/map-view-preferences";
 import { MOTION } from "@/shared/motion";
 import {
   type RefObject
@@ -10,10 +10,10 @@ import { type PointerMachineState } from "../../interaction/pointer-state-machin
 import { ambientSleepFactor, isAmbientAsleep } from "../../model/ambient/ambient-sleep";
 import { easeInOutCubic } from "../../model/camera/camera-easing";
 import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
-import { clampDomePitch } from "../../model/dome-view/orbit";
+import { clampDomePitch } from "../../model/dome-view/camera/orbit";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import { stepGrowthReplay, type GrowthReplay } from "../../model/ambient/growth-replay";
-import type { StrataLodState } from "../../model/dome-view/strata-lod";
+import type { StrataLodState } from "../../model/dome-view/strata/strata-lod";
 import {
   extendsGrace,
   isCameraUnsettled,
@@ -30,7 +30,7 @@ import type { OntologyMapProps } from "../OntologyMap";
 import type { NodeDragState } from "../input/topology-pointer-types";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { type TopologyWorld } from "../world/topology-world";
-import { isNeuralSignalTravelling } from "../frame-draw/neural-spread";
+import { isNeuralSignalTravelling } from "../frame-draw/neural/neural-spread";
 
 export const IDLE_GRACE_MS = 1200;
 const VIEWPORT_SETTLE_FRAMES = 2;
@@ -59,7 +59,7 @@ interface Dependencies {
   navYieldUntilRef: RefObject<number>;
   cameraRef: RefObject<CameraAxes>;
   cameraTargetRef: RefObject<CameraTarget>;
-  prevCameraSampleRef: RefObject<{ x: number; y: number; s: number; } | null>;
+  previousCameraSampleRef: RefObject<{ x: number; y: number; s: number; } | null>;
   lastInputMsRef: RefObject<number>;
   ambientSleepDelayRef: RefObject<number | undefined>;
   domeRuntimeRef: RefObject<DomeRuntime | null>;
@@ -138,7 +138,7 @@ export function createFrameGate({
   navYieldUntilRef,
   cameraRef,
   cameraTargetRef,
-  prevCameraSampleRef,
+  previousCameraSampleRef,
   lastInputMsRef,
   ambientSleepDelayRef,
   domeRuntimeRef,
@@ -290,18 +290,18 @@ export function createFrameGate({
         {
             const cam = cameraRef.current;
             const target = cameraTargetRef.current;
-            const prev = prevCameraSampleRef.current;
+            const previous = previousCameraSampleRef.current;
             // Watching only the camera's value movement would ignore a wheel tick
             // during an idle skip forever, because a wheel changes the target
             // alone. An unsettled spring (target ≠ value) is activity too — the
             // idle-gate contract.
             const cameraUnsettled = isCameraUnsettled({ x: cam.x.value, y: cam.y.value, scale: cam.scale.value }, target);
-            const cameraMoving = prev === null ||
+            const cameraMoving = previous === null ||
                 cameraUnsettled ||
-                Math.abs(cam.x.value - prev.x) > 0.01 ||
-                Math.abs(cam.y.value - prev.y) > 0.01 ||
-                Math.abs(cam.scale.value - prev.s) > 0.0001;
-            prevCameraSampleRef.current = { x: cam.x.value, y: cam.y.value, s: cam.scale.value };
+                Math.abs(cam.x.value - previous.x) > 0.01 ||
+                Math.abs(cam.y.value - previous.y) > 0.01 ||
+                Math.abs(cam.scale.value - previous.s) > 0.0001;
+            previousCameraSampleRef.current = { x: cam.x.value, y: cam.y.value, s: cam.scale.value };
             // Comets and the fresh breathe sleep rather than switch off (`model/ambient/ambient-sleep.ts`).
             const ambientFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
             const ambientAsleep = isAmbientAsleep(ambientFactor);
@@ -386,13 +386,8 @@ export function createFrameGate({
                 // ambient-sleep guard for the idle gate to close.
                 breathing: !reducedMotionRef.current && !ambientAsleep && world.nodes.some((n) => n.fresh),
                 cameraMoving,
-                // Deselect fade: with no live focus but a retained colorFocus still
-                // present (the colour target for the selection ring and background
-                // dim), the loop must stay awake until the focus ramp decays to 0.
-                // That decay and the colorFocus clear happen only in the frame body
-                // below, so this is counted as activity explicitly rather than
-                // relying on incidental activity like comets or the camera —
-                // otherwise the deselected ring lingers.
+                // Deselect fade: with no live focus but a retained colorFocus, the loop must stay awake until the focus ramp decays to 0; the decay and
+                // the colorFocus clear happen only in the frame body, so count it as activity explicitly rather than rely on comets or the camera.
                 focusFadeSettling: colorFocusRef.current !== null && focusedSlugRef.current === null && selectedEdgeRef.current === null,
                 // A spotlight on/off transition whose ramp has not arrived is
                 // activity, on the same contract as focusFadeSettling: the ramp steps

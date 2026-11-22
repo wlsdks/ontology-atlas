@@ -59,9 +59,9 @@ try {
     'agent-loop', 'compile/compile-adapter', 'compile/compile-executor', 'compile/compile-system-prompt', 'compile/compile-tool-catalog', 'compile/compile-consent-card', 'proposals/proposal-applier',
   ].map(load));
   const { parseFrontmatter } = await server.ssrLoadModule('/src/shared/lib/vault-document/parse-frontmatter.ts');
-  const { buildWikiRetrievalIndex } = await server.ssrLoadModule('/src/entities/docs-vault/lib/library/wiki-retrieval.ts');
+  const { buildWikiRetrievalIndex, wikiRetrievalPage } = await server.ssrLoadModule('/src/entities/docs-vault/lib/library/wiki-retrieval.ts');
   const { buildLibraryModel } = await server.ssrLoadModule('/src/entities/docs-vault/lib/library/vault-library.ts');
-  const { buildCompileBrief } = await server.ssrLoadModule('/src/features/library/lib/wiki/compile-brief.ts');
+  const { buildCompileBrief } = await server.ssrLoadModule('/src/features/library/lib/wiki/compile/compile-brief.ts');
   const notices = { roundCap: 'round cap', noToolCall: () => 'no tool', aborted: 'aborted', networkFailed: 'network', timedOut: 'timeout', rateLimited: 'rate', rejected: 'rejected', auditBlocked: 'audit', providerRefused: 'refused', failed: 'failed' };
   const readWikiCompletely = async (execute, slug) => {
     let cursor;
@@ -95,7 +95,7 @@ try {
     const docs = pages.map(({ slug, title, raw }) => ({ slug, title, path: `${slug}.md`, frontmatter: parseFrontmatter(raw).frontmatter,
       tags: [], headings: [], excerpt: '', linksOut: [], updatedAt: '', wordCount: 0 }));
     const sourceEntries = Object.entries(fixture.sources).map(([sourcePath, text]) => ({ path: sourcePath, name: path.basename(sourcePath), format: 'md', bytes: Buffer.byteLength(text), mtime: 100 }));
-    const index = buildWikiRetrievalIndex(docs, texts);
+    const index = buildWikiRetrievalIndex(docs, new Map(pages.map(({ slug, raw }) => [slug, wikiRetrievalPage(raw)])));
     const retrieval = index.search(fixture.target, fixture.sources[fixture.target]);
     const negative = index.search(negativeRetrieval.path, negativeRetrieval.text);
     const files = new Map(texts);

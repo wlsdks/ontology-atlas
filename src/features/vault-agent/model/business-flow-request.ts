@@ -8,7 +8,6 @@
 const MAX_CHARS = 1200;
 
 export interface BusinessFlowRequestLabels {
-  /** Localized body. The app writes the sentence; the model does not. */
   readonly request: string;
 }
 

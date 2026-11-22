@@ -34,7 +34,7 @@ test("public journeys A1, A2 and A5 in one flow", async ({ page }) => {
     if (msg.type() === "error") consoleErrors.push(msg.text());
   });
 
-  // ── A1. Shared link → detail ────────────────────────────────────────────
+  // A1. Shared link → detail
   // The URL slug is `ontology-atlas`; the on-screen name is `Ontology Atlas`. What
   // matters here is whether that project rendered, not the notation.
   const EXPECTED_DETAIL_NAME = "Ontology Atlas";
@@ -77,7 +77,7 @@ test("public journeys A1, A2 and A5 in one flow", async ({ page }) => {
     findings.push(`A2 took ${landingTtfb}ms to the root map product mark (over 5s)`);
   }
 
-  // ── A5. Cmd+K on the detail page → the search palette, in place ─────────
+  // A5. Cmd+K on the detail page → the search palette, in place
   // Cmd+K on a detail page opens the SearchPalette inside that page rather than
   // bouncing to `/`. The URL stays put, Escape closes it, and Cmd+K toggles it
   // again.
@@ -97,7 +97,7 @@ test("public journeys A1, A2 and A5 in one flow", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(paletteInput).toHaveCount(0, { timeout: 3_000 });
 
-  // ── A5'. `?` on the detail page → toggles the ShortcutSheet in place ────
+  // A5'. `?` on the detail page → toggles the ShortcutSheet in place
   // `useTypingShortcuts` matches on `event.key === '?'`, so a KeyboardEvent is
   // dispatched directly to avoid depending on Playwright's keymap.
   await page.evaluate(() => {
@@ -109,7 +109,7 @@ test("public journeys A1, A2 and A5 in one flow", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(shortcutDialog).toHaveCount(0, { timeout: 3_000 });
 
-  // ── Report ─────────────────────────────────────────────────────────────
+  // Report
   console.log(`[JOURNEY-A] A1 detail heading ${detailTtfb}ms`);
   console.log(`[JOURNEY-A] A2 root map product mark ${landingTtfb}ms`);
   console.log(`[JOURNEY-A] findings=${findings.length} pageerror=${pageErrors.length} console.error=${consoleErrors.length}`);

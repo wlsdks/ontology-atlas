@@ -56,7 +56,6 @@ export function ArchitectureDraftHero({
       data-testid="architecture-draft-hero"
     >
       {notices}
-      {/* One centred column, as every empty destination: the preview of what a draft becomes, then the ask. */}
       <div className="@container/draft mx-auto my-auto flex w-full max-w-[var(--architecture-draft-stage-max)] flex-col items-center gap-8 py-6 text-center">
           <div className="hidden w-full min-w-0 text-left @min-[36rem]/draft:block">
             <ArchitectureDraftPreview source={draftSource} still={agentWorking} />

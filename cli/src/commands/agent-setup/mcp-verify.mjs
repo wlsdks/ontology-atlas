@@ -14,10 +14,8 @@ import { formatUnknownFlagError, parsePositiveIntegerFlag, parseVaultFlag, resol
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require_ = createRequire(import.meta.url);
 const ALLOWED_FLAGS = ['--vault', '--timeout-ms'];
-/*
- * About 2.5x the 12.6s a bare `mcp-verify docs/ontology` took on an Apple Silicon laptop: the timeout
- * catches a hung server, not a slow one, and a tighter budget blocked a release on the x64 runner.
- */
+// About 2.5x a bare `mcp-verify docs/ontology` run (12.6s, Apple Silicon): it catches a hung
+// server, not a slow one, and leaves room for the slower x64 runner.
 const DEFAULT_VERIFY_TIMEOUT_MS = 30_000;
 const DEFAULT_VERIFY_KILL_GRACE_MS = 1_000;
 
@@ -50,9 +48,9 @@ export async function runMcpVerify(args) {
   let verifyScript;
   try {
     verifyScript = resolveVerifyScript();
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }
@@ -105,7 +103,7 @@ function runVerifyScript(verifyScript, vaultRoot, timeoutMs, vaultArg) {
       if (killTimer) clearTimeout(killTimer);
       resolveP(code);
     };
-    const proc = spawn(process.execPath, [verifyScript], {
+    const verifyProcess = spawn(process.execPath, [verifyScript], {
       env: {
         ...process.env,
         OATLAS_VAULT: vaultRoot,
@@ -115,22 +113,22 @@ function runVerifyScript(verifyScript, vaultRoot, timeoutMs, vaultArg) {
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-    proc.stdout.on('data', (b) => process.stdout.write(b));
-    proc.stderr.on('data', (b) => process.stderr.write(b));
+    verifyProcess.stdout.on('data', (b) => process.stdout.write(b));
+    verifyProcess.stderr.on('data', (b) => process.stderr.write(b));
     timeoutTimer = setTimeout(() => {
       wrapperTimedOut = true;
       process.stderr.write(
         `${COLORS.red}error${COLORS.reset}  MCP verify wrapper timed out after ${wrapperTimeoutMs}ms. ` +
         'Check OATLAS_MCP_VERIFY_PATH or increase --timeout-ms / OATLAS_VERIFY_TIMEOUT_MS.\n',
       );
-      proc.kill('SIGTERM');
+      verifyProcess.kill('SIGTERM');
       killTimer = setTimeout(() => {
-        if (!exited) proc.kill('SIGKILL');
+        if (!exited) verifyProcess.kill('SIGKILL');
       }, killGraceMs);
       killTimer.unref?.();
     }, wrapperTimeoutMs);
     timeoutTimer.unref?.();
-    proc.on('close', (code, signal) => {
+    verifyProcess.on('close', (code, signal) => {
       exited = true;
       if (!wrapperTimedOut && signal) {
         process.stderr.write(
@@ -140,8 +138,8 @@ function runVerifyScript(verifyScript, vaultRoot, timeoutMs, vaultArg) {
       }
       finish(code ?? 1);
     });
-    proc.on('error', (err) => {
-      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${err.message}\n`);
+    verifyProcess.on('error', (error) => {
+      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${error.message}\n`);
       finish(2);
     });
   });

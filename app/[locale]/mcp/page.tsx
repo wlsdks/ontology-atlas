@@ -16,11 +16,9 @@ export async function generateMetadata({
 }
 
 /**
- * `/mcp` — redirects into `/agents/?tab=mcp`, carrying its section and every other parameter,
- * so older links and the installed app's `ontology-atlas://mcp?install=…` deep link still land.
- *
- * The `Suspense` boundary is required: the view reads the query through `useSearchParams`, and
- * with `output: 'export'` a prerendered page without one fails the build.
+ * Carries every parameter into `/agents/?tab=mcp`, so the installed app's
+ * `ontology-atlas://mcp?install=…` deep link still lands. The `Suspense` boundary is required:
+ * with `output: 'export'`, a prerendered page calling `useSearchParams` without one fails the build.
  */
 export default function Page() {
   return (

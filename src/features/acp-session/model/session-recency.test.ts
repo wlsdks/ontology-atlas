@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AcpSessionSummary } from './acp-client';
+import type { AcpSessionSummary } from './session-summaries';
 import { latestSession, orderSessionsByRecency } from './session-recency';
 
 function session(

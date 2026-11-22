@@ -5,11 +5,8 @@
  * catches off-ramp weights in canvas sources.
  */
 export const FONT_WEIGHT = {
-  /** `--font-weight-signature`: default emphasis over body text. */
   signature: 510,
-  /** `--font-weight-emphasis`: inline emphasis within a row. */
   emphasis: 560,
-  /** `--font-weight-strong`: headings, emphasised figures and canvas text. */
   strong: 650,
 } as const;
 

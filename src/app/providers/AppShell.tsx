@@ -33,7 +33,7 @@ import {
   workCardHoldsSeat,
   WorkRunSeat,
 } from "@/features/work-run";
-import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
+import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/native-vault/tauri-vault-runtime";
 import { describeVaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { destinationsForVaultShape, FOLDER_OPTIONAL_DESTINATIONS } from "@/shared/config/destinations";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
@@ -57,11 +57,6 @@ import { useHydrated } from "@/shared/lib/render-timing/use-hydrated";
 import { LibraryFolderMirror, LibraryRoundsProvider } from "@/views/library";
 import { clearPlanningReturn, getPlanningReturn, getPlanningReturnServer, subscribePlanningReturn } from "@/shared/lib/planning/navigation";
 
-/**
- * The persistent SPA shell, mounted once in `app/[locale]/layout.tsx` so the rail keeps its
- * React identity and only the content area swaps between routes. `ShellFrame` owns the viewport
- * column; the gateway pages draw the same frame through `GatewayShell`.
- */
 export function AppShell({ children }: { children: ReactNode }) {
   useShellSetup();
   return (
@@ -94,7 +89,7 @@ function ShellColumn({ children }: { children: ReactNode }) {
     pathname,
     crossfadeTo: (href, { replace, scroll, locale }) => {
       cancelMapNavigation();
-      navigateWithViewTransition(() => (replace ? router.replace(href, { scroll, locale }) : router.push(href, { scroll, locale })));
+      navigateWithViewTransition(href, () => (replace ? router.replace(href, { scroll, locale }) : router.push(href, { scroll, locale })));
     },
   }), [pathname, router]);
 
@@ -133,19 +128,15 @@ function PlanningReturnBar() {
   return <div className="border-b border-[color:var(--color-border-soft)] px-4 py-2"><Button variant="ghost" onClick={() => { clearPlanningReturn(); router.push("/planning/"); }}>{t("backPlanning")}</Button></div>;
 }
 
-/** Is this the locale root that owns the installed app's first-run/restore branch? */
 function isLocaleRoot(pathname: string): boolean {
   const localPath = stripLocalePrefix(pathname);
   return localPath === "/";
 }
 
 /**
- * Keeps one vault identity on screen while a folder loads.
- *
  * In the installed app a selected local vault always wins over the bundled sample: a folder
- * load or switch shows the opening pane until `load()` publishes the new manifest, or on the map
- * until an arriving part brings a concept, a same-vault refresh keeps its pixels through
- * `isReloadingSameVault`, and a workbench destination with no vault goes home.
+ * load or switch shows the opening pane until `load()` publishes the new manifest (on the map,
+ * until a concept arrives), and a same-vault refresh keeps its pixels.
  *
  * A route change is deliberately not a case: a neutral pane there replaces the departing screen
  * React would keep, and leaves blank frames. `local-vault-route-identity.spec.ts` proves the
@@ -203,7 +194,6 @@ function VaultRouteIdentityBoundary({
   return children;
 }
 
-/** Whether the folder being read held documents and no concept when it was last read, so no map is coming. */
 function lastReadFoundNoConcept(vault: ReturnType<typeof useLocalVault>): boolean {
   if (vault.status !== "loading" || !vault.handle) return false;
   const rootPath = getTauriVaultRootPath(vault.handle);
@@ -290,10 +280,6 @@ function AppNavRailSlot() {
   const toast = useToast();
   const tShortcutRows = useTranslations("searchWidgets.shortcuts.rows");
 
-  /**
-   * Destination shortcuts read the rail's `contextHrefs` and `gateway` state, so keys never reach a
-   * destination the rail does not draw.
-   */
   useDestinationShortcuts({
     navigate: (href, id) => {
       if (id === "map" && resolveActiveNavDestination(pathname) !== "map") {
@@ -302,11 +288,10 @@ function AppNavRailSlot() {
       }
       cancelMapNavigation();
       if (id === "map" || resolveActiveNavDestination(pathname) === id) router.push(href);
-      else navigateWithViewTransition(() => router.push(href));
+      else navigateWithViewTransition(href, () => router.push(href));
       /* The canvas needs focus before arrow keys walk it (`shared/lib/map-canvas/focus-map-canvas.ts`). */
       if (id === "map") focusMapCanvasWhenReady();
     },
-    /* Say so when a blocking overlay stops the move, or the shortcut silently does nothing. */
     onBlockedByOverlay: () => {
       toast.show(tShortcutRows("navBlockedByOverlay"), "info");
     },
@@ -328,10 +313,6 @@ function AppNavRailSlot() {
     <>
       <WorkRunRail
         meaningRunId={meaningRunId}
-        /*
-         * Registered by the shell so the folder name shows on every destination, including the
-         * ones a wiki-only vault has.
-         */
         vaultSlot={desktopWithoutVault ? <NoVaultRailEntry /> : <VaultSwitchRailTile />}
         settingsSlot={utilityTier}
         hidden={railHidden}
@@ -353,13 +334,7 @@ function AppNavRailSlot() {
   );
 }
 
-/**
- * The open folder's runs on their tiles, a ring while one runs and a badge until read: the wiki
- * check, writing turns and the meaning preparation on Library, scheduled checks on Automations. A
- * turn waiting for permission stills the ring, and its mark wins over the count, which the tile's
- * name keeps. It changes only when a run's phase or card does; the meaning run's fraction joins in
- * `WorkRunRail`.
- */
+/** Changes only when a run's phase or card does; the meaning run's fraction joins in `WorkRunRail`. */
 function useRailWorkRuns(): { rail: RailWorkRun[]; meaningRunId: number | null } {
   const snapshot = useWorkRunSnapshot();
   const folder = useVaultSessionIdentityScope();
@@ -434,7 +409,6 @@ function AppUpdateSurface() {
   );
 }
 
-/** A dismissed notice hands focus to the settings trigger, where the pending version stays. */
 function focusSettingsTrigger() {
   const triggers = document.querySelectorAll<HTMLElement>('[data-testid="app-settings-trigger"]');
   [...triggers].find((trigger) => trigger.getClientRects().length > 0)?.focus();

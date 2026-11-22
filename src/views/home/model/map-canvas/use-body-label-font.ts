@@ -2,20 +2,13 @@ import { useEffect, useState } from "react";
 
 import { adoptBodyLabelFont, bodyLabelFontAdopted, bodyLabelFontSettled, type DialLabels, type OntologyMapNode } from "@/widgets/ontology-map";
 
-/** A font fetch that stalls past this lets the map open in the fallback face rather than stay blank. */
 export const LABEL_FONT_WAIT_MS = 1_000;
 
 export interface BodyLabelFont {
-  /** The map may build: a layout measured now is the one it keeps. */
   ready: boolean;
-  /** Names are measured in the product family. */
   adopted: boolean;
 }
 
-/**
- * The text a map draws in its label face: every name, and the dial's counted phrases (each phrase
- * with sample counts, since only its characters matter). The font loads the faces these need.
- */
 export function mapLabelText(nodes: readonly Pick<OntologyMapNode, "label">[], dialLabels?: DialLabels | null): string {
   const phrases = Object.values(dialLabels ?? {}).map((phrase: unknown) => (typeof phrase === "function" ? String(phrase(1, 2)) : ""));
   return [...nodes.map((node) => node.label), ...phrases].join(" ");

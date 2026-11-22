@@ -12,7 +12,7 @@ import { applyBranchMemberAction } from "./member-disclosure";
 import { crossesBox, overlaps } from "../label-marks";
 import { pickDial, pickDialAction } from "../pick";
 import { dialOverviewBounds, dialOverviewPad } from "../fit";
-import { computeOverviewCameraTarget } from "../../ui/camera/topology-camera-math";
+import { computeOverviewCameraTarget } from "../../ui/camera/target/fit-targets";
 
 const css = readFileSync("app/styles/map-dial-tokens.css", "utf8");
 const tokens = resolveDialTokens((v) => v === "--map-panel-text-primary" ? "#f4f4f8" : css.match(new RegExp(`${v}:\\s*([^;]+);`))?.[1] ?? "");

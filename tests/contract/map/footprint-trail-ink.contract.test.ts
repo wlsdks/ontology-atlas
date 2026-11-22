@@ -3,9 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  FOOTPRINT_RANGES,
-} from "@/shared/lib/preferences/appearance-preferences";
+import { FOOTPRINT_RANGES } from "@/shared/lib/preferences/footprint-preferences";
 import { trailNodeInkStrength } from "@/widgets/ontology-map/model/visibility/focus-state";
 import { draw as traceDraw } from "@/widgets/ontology-map/render/traces";
 import { readGlobalCss } from '../../../scripts/lib/design/global-css.mjs';
@@ -148,7 +146,7 @@ describe("walked-path lens: trail ink on nodes and lines", () => {
    */
   it("with the lens on, an unwalked line stays dim", () => {
     const source = readFileSync(
-      join(repoRoot, "src/widgets/ontology-map/ui/frame-draw/paint-edges.ts"),
+      join(repoRoot, "src/widgets/ontology-map/ui/frame-draw/edges/paint-edges.ts"),
       "utf8",
     );
     expect(source).toContain("walkedEdgeKeys");

@@ -76,7 +76,7 @@ describe('readToolFallbackTarget — a tool with no vault node still names what 
   });
 
   it('accepts every path argument name our own tools use', () => {
-    // Measured in acp-client.ts: our MCP server writes `filePath`, the sweep tools `rootPath`.
+    // Measured in permission-request.ts: our MCP server writes `filePath`, the sweep tools `rootPath`.
     expect(readToolFallbackTarget({ filePath: '/a/b/notes.md' })).toEqual({
       kind: 'path',
       value: 'b/notes.md',

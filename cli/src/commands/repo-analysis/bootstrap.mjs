@@ -47,9 +47,9 @@ export async function runBootstrap(args) {
       { repoRoot: target },
     );
     assertAnalyzeRepoStructureResult(analyzeResult);
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  analyze: ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  analyze: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }
@@ -102,11 +102,11 @@ async function printApprovalRequiredPlan({
       );
       assertInferImportsResult(importsResult);
       applyImportThreshold(importsResult, parsed.threshold);
-    } catch (err) {
-      const omitted = omittedLargeImports(err, { target, vaultRoot });
+    } catch (error) {
+      const omitted = omittedLargeImports(error, { target, vaultRoot });
       if (!omitted) {
         process.stderr.write(
-          `${COLORS.red}error${COLORS.reset}  infer_imports: ${err instanceof Error ? err.message : String(err)}\n`,
+          `${COLORS.red}error${COLORS.reset}  infer_imports: ${error instanceof Error ? error.message : String(error)}\n`,
         );
         return 2;
       }
@@ -183,8 +183,8 @@ const LARGE_IMPORT_RESPONSE_RE = /exceeds the automatic 128 KiB delivery limit/u
  * Turns the MCP "response too large without a loadable vault" refusal into a review-only envelope: the
  * structure-stage totals stay valid, and the import stage reports itself omitted with both ways back.
  */
-export function omittedLargeImports(err, { target, vaultRoot } = {}) {
-  const message = err instanceof Error ? err.message : String(err ?? '');
+export function omittedLargeImports(error, { target, vaultRoot } = {}) {
+  const message = error instanceof Error ? error.message : String(error ?? '');
   if (!LARGE_IMPORT_RESPONSE_RE.test(message)) return null;
   return {
     status: 'omitted_large',

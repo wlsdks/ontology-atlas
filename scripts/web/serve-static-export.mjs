@@ -78,24 +78,24 @@ export async function resolveStaticExportFile(rootPath, urlPath) {
 
 export function startStaticExportServer({ root, port, host = "127.0.0.1" }) {
   const resolvedRoot = path.resolve(root);
-  const server = createServer(async (req, res) => {
-    const file = await resolveStaticExportFile(resolvedRoot, req.url ?? "/");
+  const server = createServer(async (request, response) => {
+    const file = await resolveStaticExportFile(resolvedRoot, request.url ?? "/");
     if (!file) {
       const notFound = await resolveStaticExportFile(resolvedRoot, "/404.html");
       if (notFound) {
-        res.writeHead(404, { "content-type": TYPES.get(".html") });
-        createReadStream(notFound).pipe(res);
+        response.writeHead(404, { "content-type": TYPES.get(".html") });
+        createReadStream(notFound).pipe(response);
         return;
       }
-      res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
-      res.end("404");
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      response.end("404");
       return;
     }
-    res.writeHead(200, {
+    response.writeHead(200, {
       "content-type": TYPES.get(path.extname(file)) ?? "application/octet-stream",
       "cache-control": "no-store",
     });
-    createReadStream(file).pipe(res);
+    createReadStream(file).pipe(response);
   });
   server.listen(port, host, () => {
     const address = server.address();

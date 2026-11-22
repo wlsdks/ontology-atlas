@@ -10,13 +10,10 @@ import {
 import { extractProjectBody, findProjectVaultDoc, fetchServerDocContent } from '@/entities/docs-vault';
 
 export interface UseProjectBodyState {
-  /** The real markdown body of project.md. Null when absent or not yet read. */
   body: string | null;
-  /** False until the body has been read (or found absent) for this slug, so an empty hint is not drawn too early. */
   settled: boolean;
 }
 
-/** Lazy body loader for `/project/[slug]`: bundled content for static, `getFile()` for local. */
 export function useProjectBody(slug: string | null): UseProjectBodyState {
   const mode = useDataSourceMode();
   const vault = useLocalVault();

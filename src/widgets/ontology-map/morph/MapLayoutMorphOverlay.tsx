@@ -14,7 +14,7 @@ import {
 import { cubicBezierAt } from "@/shared/motion/ease";
 import { EXIT_TRANSITION, MOTION, OVERLAY_SPRING_REDUCED } from "@/shared/motion/tokens";
 import { massForDegree } from "../expressive/mass-spring";
-import { getOntologyMapTokens } from "../tokens/read-map-tokens";
+import { readOntologyMapTokens } from "../tokens/read-map-tokens";
 import { createGlideFrame, glideVelocity, type GlideFrame } from "./glide";
 import { layoutMorphEffect, layoutMorphSize, planLayoutMorph, sampleLayoutMorph, sampleLayoutMorphFrame, type LayoutMorphPlan } from "./layout-morph";
 
@@ -118,11 +118,11 @@ function colorMixer(ctx: CanvasRenderingContext2D) {
     ctx.fillStyle = color;
     const normal = String(ctx.fillStyle);
     const hex = /^#([0-9a-f]{6})$/i.exec(normal);
-    const fn = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/i.exec(normal);
+    const rgbMatch = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/i.exec(normal);
     const value: [number, number, number] | null = hex
       ? [parseInt(hex[1]!.slice(0, 2), 16), parseInt(hex[1]!.slice(2, 4), 16), parseInt(hex[1]!.slice(4, 6), 16)]
-      : fn
-        ? [Number(fn[1]), Number(fn[2]), Number(fn[3])]
+      : rgbMatch
+        ? [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])]
         : null;
     parsed.set(color, value);
     return value;
@@ -220,7 +220,7 @@ function beginRun(canvas: HTMLCanvasElement, job: MapLayoutMorphJob, now: number
       run.mode = "ghost";
       run.phase = "travel";
       const degrees = job.degreeOf();
-      const heavyDegree = getOntologyMapTokens(canvas).massHeavyDegree;
+      const heavyDegree = readOntologyMapTokens(canvas).massHeavyDegree;
       run.plan = planLayoutMorph(snapshot.marks, target.marks, job.parentOf(), {
         anchorId: job.anchorId,
         massOf: (id) => massForDegree(degrees.get(id) ?? 0, heavyDegree),

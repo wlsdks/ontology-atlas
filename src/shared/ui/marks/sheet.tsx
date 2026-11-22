@@ -106,9 +106,7 @@ type SheetProps = { className?: string } & (
       variant: "source";
       /** The file name: it seeds the lines, 2 to 5, so one file always looks the same. */
       name: string;
-      /** The file's format, written on the paper (PDF, MD, CSV...). */
       format: string;
-      /** While the agent reads it, one line of page ink passes down the paper. */
       reading?: boolean;
     }
   | {
@@ -124,7 +122,6 @@ type SheetProps = { className?: string } & (
       count: number;
       /** The share with a wiki page, 0 to 1, filled up the stack's left edge. */
       share: number;
-      /** Every file has a page: the edge turns the complete ink. */
       done: boolean;
     }
 );

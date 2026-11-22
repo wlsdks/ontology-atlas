@@ -52,12 +52,12 @@ export async function runSnapshot(args) {
   let vaultRoot;
   try {
     vaultRoot = resolveVaultRoot(parsed.vault);
-  } catch (err) {
-    if (err instanceof VaultRootError) {
-      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${err.message}\n`);
+  } catch (error) {
+    if (error instanceof VaultRootError) {
+      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${error.message}\n`);
       return 2;
     }
-    throw err;
+    throw error;
   }
 
   const repoRoot = findGitRepoRoot(vaultRoot);
@@ -113,14 +113,11 @@ export async function runSnapshot(args) {
   }
 
   const untrackedPaths = rows.filter((r) => r.index === '?' && r.worktree === '?').map((r) => r.path);
-  // Turns a commit throw (a pre-commit hook refusing, a gpg signing failure, a
-  // merge or rebase in progress) into one line of cause plus the next action,
-  // rather than a raw stack trace.
   try {
     addPaths({ repoRoot, paths: untrackedPaths });
     commitPathspec({ repoRoot, pathspec, message: fullMessage });
-  } catch (err) {
-    return emitGitError(err, { operation: 'commit', json: parsed.json, vaultRoot });
+  } catch (error) {
+    return emitGitError(error, { operation: 'commit', json: parsed.json, vaultRoot });
   }
   const commitHash = getHeadHash({ repoRoot });
 
@@ -145,9 +142,9 @@ export async function runSnapshot(args) {
         const remoteName = upstream.split('/')[0];
         const remoteUrl = getRemoteUrl({ repoRoot, remoteName });
         push = { pushed: true, remoteUrl };
-      } catch (err) {
-        const info = classifyGitError(err, { operation: 'push' });
-        push = { pushed: false, reason: info.reason, message: info.message, note: info.note, guidance: info.guidance };
+      } catch (error) {
+        const gitFailure = classifyGitError(error, { operation: 'push' });
+        push = { pushed: false, reason: gitFailure.reason, message: gitFailure.message, note: gitFailure.note, guidance: gitFailure.guidance };
         exitCode = 1;
       }
     }
@@ -213,19 +210,19 @@ function emitNoChanges(json, vaultRoot) {
 // Turns a git failure (commit throw, push throw) into one line of cause plus the
 // next action instead of a raw stack trace. Written to stderr so the human-readable
 // stdout is never polluted.
-function emitGitError(err, { operation, json, vaultRoot }) {
-  const info = classifyGitError(err, { operation });
+function emitGitError(error, { operation, json, vaultRoot }) {
+  const gitFailure = classifyGitError(error, { operation });
   if (json) {
     process.stdout.write(
       JSON.stringify(
         {
           operation: 'snapshot',
           ok: false,
-          reason: info.reason,
+          reason: gitFailure.reason,
           vaultRoot,
           committed: false,
-          note: info.note ?? null,
-          guidance: info.guidance ?? null,
+          note: gitFailure.note ?? null,
+          guidance: gitFailure.guidance ?? null,
         },
         null,
         2,
@@ -233,9 +230,9 @@ function emitGitError(err, { operation, json, vaultRoot }) {
     );
     return 1;
   }
-  let out = `${COLORS.red}error${COLORS.reset}  ${info.message}\n`;
-  if (info.note) out += `${COLORS.dim}  ${info.note}${COLORS.reset}\n`;
-  if (info.guidance) out += `  ${COLORS.cyan}${info.guidance}${COLORS.reset}\n`;
+  let out = `${COLORS.red}error${COLORS.reset}  ${gitFailure.message}\n`;
+  if (gitFailure.note) out += `${COLORS.dim}  ${gitFailure.note}${COLORS.reset}\n`;
+  if (gitFailure.guidance) out += `  ${COLORS.cyan}${gitFailure.guidance}${COLORS.reset}\n`;
   process.stderr.write(out);
   return 1;
 }
@@ -275,7 +272,6 @@ function emitHistory({ json, vaultRoot, repoRoot, pathspec, limit }) {
   return 0;
 }
 
-// `snapshot --diff` — preview of uncommitted changes in the vault scope (file list + diff).
 function emitDiff({ json, vaultRoot, repoRoot, pathspec }) {
   const rows = getPorcelainStatus({ repoRoot, pathspec });
   if (rows === null) {
@@ -352,8 +348,8 @@ function runPull({ json, vaultRoot, repoRoot }) {
   let out;
   try {
     out = pullCurrentBranch({ repoRoot });
-  } catch (err) {
-    return emitGitError(err, { operation: 'pull', json, vaultRoot });
+  } catch (error) {
+    return emitGitError(error, { operation: 'pull', json, vaultRoot });
   }
 
   const summary = String(out ?? '').trim().split('\n').filter(Boolean).slice(-1)[0] || 'up to date';

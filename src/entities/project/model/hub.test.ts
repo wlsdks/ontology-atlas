@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computeHubSlugs, isSharedNode } from './hub';
-import type { Project } from './types';
+import type { Project } from './project';
 
 function project(slug: string, isHub = false): Project {
   const now = new Date('2026-04-12T00:00:00Z');

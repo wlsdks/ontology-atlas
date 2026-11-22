@@ -1,38 +1,22 @@
 /**
- * Builds v2's per-mount "world" — deterministic layout + adjacency + bow
- * control points + brightness ranking — from the adapter's node/edge props
- * (`docs/design/ontology-map.md` §4 P2/P3). Recomputed only when the graph
- * itself changes (mount, `relayoutToken`, or a new `nodes`/`edges` reference)
- * — never per animation frame, matching the prototype's "layout precomputed
- * once" invariant (`model/layout/layout.ts`'s own contract).
+ * Builds the per-mount "world" (deterministic layout, adjacency, bow control points, brightness
+ * ranking) from the adapter's node/edge props. Recomputed only when the graph itself changes (mount,
+ * `relayoutToken`, or a new `nodes`/`edges` reference), never per animation frame
+ * (`model/layout/layout.ts`'s own contract).
  */
-import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
-import type { ExpandStructure } from "@/shared/lib/preferences/appearance-preferences";
-import { computeDensityGate, type DensityGateParentGeometry } from "../../model/layout/density-gate";
-import {
-  readContainmentTree,
-  directRelations,
-  rollDirectedDomainFlows,
-  rollDomainDependencies,
-  rollRelatesCapabilityPairs,
-  rollRelatesDomainPairs,
-  type TreeInputEdge,
-  type TreeInputNode,
-} from "../../model/containment-tree";
-import { buildDialModel, resolveDialAttention } from "../../dial/dial-model";
-import { dialOverviewPad } from "../../dial/fit";
-import { layoutDial } from "../../dial/layout";
-import { circularDomainOrder, rememberDialOrder, rememberedDialOrder } from "../../dial/order";
-import type { DialModel, DialTokens, DialWorld, DialWorldInput } from "../../dial/types";
-import { domainTitleBlocks, hubBlockReachPx } from "../../flat-graph/names";
+import { DEFAULT_EXPAND } from "@/shared/lib/preferences/expand-preferences";
+import type { ExpandStructure } from "@/shared/lib/preferences/expand-preferences";
+import type { DialModel, DialWorld, DialWorldInput } from "../../dial/dial-shapes";
 import { drainSteps, type LayoutSteps } from "../../flat-graph/layout";
-import { buildFlatGraphSceneSteps, flatGraphPins } from "../../flat-graph/scene";
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../../model/layout/layout";
-import { computeBowControlPoint, computeDependsBowControlPoint } from "../../render/traces";
 import { fireflySeed } from "../../render/edge-fireflies";
-import { labelFontFamily } from "../../render/labels";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../OntologyMap";
+import { buildDialWorld } from "./assembly/build-dial-world";
+import { resolveContainsParents } from "./assembly/contains-parents";
+import { computeRelaxScope } from "./framing/density-fold";
+import { computeFullBounds, computeSpineBounds, extentBounds } from "./framing/world-bounds";
+import { computeEdgeControlPoint } from "./geometry/world-geometry";
 
 export type WorldNodeKind = "project" | "domain" | "capability" | "element";
 
@@ -45,7 +29,7 @@ export interface WorldNode {
   x: number;
   y: number;
   /**
-   * C1 B3 — the deterministic layout coordinate from THIS build pass, cached
+   * The deterministic layout coordinate from THIS build pass, cached
    * once and never mutated by drag/force-sim writes to `x`/`y`. Auto-arrange
    * springs every node back to its own `homeX`/`homeY` (`use-topology-loop.ts`'s
    * `relayoutToken` effect) — the "canonical layout" contract.
@@ -62,21 +46,13 @@ export interface WorldNode {
   /** Adapter contract (`OntologyMapNode`) has no staleness signal yet — always false until a follow-up adds one. */
   stale: boolean;
   /**
-   * Transitive descendant count — engraved as a numeral on project/domain chips
-   * in circuit range (0 = skip). The panel3-S6 number contract: this **node badge =
-   * total descendant count** (`OntologyMapNode.descendantCount` = the inventory
-   * total). It shares its source with the cluster chip hover tooltip's "Total N descendants"
-   * (N descendants in total), so the two surfaces' numbers agree without drift.
+   * Transitive descendant count, engraved as a numeral on project/domain chips in circuit range (0 = skip). This node badge equals the total descendant count
+   * (`OntologyMapNode.descendantCount`) and shares its source with the cluster chip hover tooltip's "Total N descendants", so the two numbers agree.
    */
   count: number;
   /**
-   * The magnitude factor (computed once at build). Only domain and capability
-   * differ from 1. The draw, the hit test and the de-pileup relaxation all multiply
-   * by this value, so the three can never diverge. Shneiderman overview-first: the
-   * mark answers the overview's first question, "where is it big?".
-   * S2 part 2 — the √ scale of the **direct child count** (never below base, capped
-   * at +40%). A different channel from the badge number (descendantCount): size is
-   * pre-attentive, the badge is for reading.
+   * The magnitude factor (computed once at build); only domain and capability differ from 1. The draw, the hit test and the de-pileup relaxation all multiply by it,
+   * so they cannot diverge. It is the √ scale of the direct child count (never below base, capped at +40%): size is pre-attentive ("where is it big?"), the badge is for reading.
    */
   magnitudeScale: number;
 
@@ -97,31 +73,21 @@ export interface WorldEdge {
   /** Ambient comet-tail progress 0..1, `depends` edges only — mutated per frame by the caller (`use-topology-loop.ts`). */
   t: number;
   /**
-   * P3a — containment depth (derived from the endpoint kinds): 0 = a skeleton edge
-   * with a project on it, 1 = intermediate structure with a domain on it, 2 = a
-   * capability/element twig. The renderer rides an ink-intensity ramp (weight ×
-   * lightness) off this value — hierarchy is ordinal, so lightness and size are the
-   * right channels rather than hue (`edge-hierarchy-ink.md`). A `depends` edge
-   * belongs to the type channel (dashed) and does not use this value.
+   * Containment depth from the endpoint kinds: 0 = a skeleton edge with a project, 1 = intermediate structure with a domain, 2 = a capability/element twig. The renderer rides an
+   * ink-intensity ramp (weight × lightness) off it, since hierarchy is ordinal (`edge-hierarchy-ink.md`); a `depends` edge belongs to the type channel (dashed) and ignores it.
    */
   level: 0 | 1 | 2;
-  /** P3b — the original relation type (its meaning before being flattened to contains/depends). */
+  /** The original relation type (its meaning before being flattened to contains/depends). */
   relationType: string;
-  /** P3b — the vault document slug that declared this relation (shown as the source in the edge popover). */
+  /** The vault document slug that declared this relation (shown as the source in the edge popover). */
   declaredBySlug: string | null;
   evidenceCount?: number;
 }
 
 /**
- * S2 part 2 — magnitude-proportional node size. The domain/capability radius is
- * interpolated by the √ scale of the **direct child count**:
- * `1 + k×(√childCount − 1)/√maxChildCount`, clamped at +40% (1.4). With
- * childCount ≤ 1 it is base (1.0) — never below base, unlike the old logarithmic
- * compression, which shrank below-median nodes under base. element and project are
- * unchanged (1). The √ compresses large gaps while keeping the rank cue (this is
- * not a bar chart — Shneiderman overview-first). A different channel from the badge
- * number (descendantCount): size is the pre-attentive "where is it big?", the badge
- * is for reading.
+ * Magnitude-proportional node size: the domain/capability radius is interpolated by the √ scale of the direct child count,
+ * `1 + k×(√childCount − 1)/√maxChildCount`, clamped at +40% (1.4), base (1.0) for childCount ≤ 1; element and project stay 1.
+ * The √ compresses large gaps while keeping the rank cue; size is a different channel from the badge number (`descendantCount`).
  */
 export function computeMagnitudeScale(
   kind: WorldNodeKind,
@@ -134,7 +100,7 @@ export function computeMagnitudeScale(
   return Math.min(1.4, Math.max(1, raw));
 }
 
-/** P3a — derive the containment ink level from the two endpoint kinds. */
+/** Derive the containment ink level from the two endpoint kinds. */
 export function containmentLevelFor(aKind: WorldNodeKind, bKind: WorldNodeKind): 0 | 1 | 2 {
   if (aKind === "project" || bKind === "project") return 0;
   if (aKind === "domain" || bKind === "domain") return 1;
@@ -149,11 +115,8 @@ export interface Bounds {
 }
 
 /**
- * Density gate slice (fable's design) — per-parent cluster chip placement metadata.
- * `angle` is the layout fan's direction (derived from the home coordinates,
- * static); `ring` is the child-ring radius the chip sits on. The chip's actual
- * world anchor is recomputed every frame from the parent's *live* position plus
- * this static direction (`topology-cluster-state.ts`).
+ * Per-parent cluster chip placement metadata: `angle` is the layout fan's direction (static, from the home coordinates), `ring` the child-ring radius the chip sits on.
+ * The chip's world anchor is recomputed every frame from the parent's live position plus this direction (`topology-cluster-state.ts`).
  */
 export interface ClusterParentMeta {
   angle: number;
@@ -170,11 +133,8 @@ export interface TopologyWorld {
   /** Density gate chip placement metadata (parents with children only, static). */
   clusterMetaByParent: ReadonlyMap<string, ClusterParentMeta>;
   /**
-   * node id → indices into `edges` of every edge touching that node (both
-   * directions). Static: `edges` is never structurally mutated after the build
-   * (only its per-frame geometry / comet phase fields are). Exists so a frame
-   * that moved ~30 nodes can refresh ~60 edges instead of all ~3000
-   * (`recomputeWorldGeometry`'s `movedIds` path).
+   * node id → indices into `edges` of every edge touching that node (both directions). Static: `edges` is never structurally mutated after the build.
+   * It lets a frame that moved ~30 nodes refresh ~60 edges instead of ~3000 (`recomputeWorldGeometry`'s `movedIds` path).
    */
   edgeIndexByNode: ReadonlyMap<string, readonly number[]>;
   /** Top `starCount` nodes by magnitude — get the far-field diffraction-spike overlay. */
@@ -182,319 +142,14 @@ export interface TopologyWorld {
   /** Bbox of ALL nodes — used for pan clamping and focus-mode context. */
   bounds: Bounds;
   /**
-   * Bbox of just the level-0 SPINE (project + domain + hub). The overview only
-   * DRAWS the spine (tier gating in `model/visibility/tier-visibility.ts`), so fitting the
-   * full `bounds` — which the de-pileup deliberately spreads wide across all 295
-   * nodes — zooms the ~8 visible spine nodes down to a dot (the fit regression).
-   * Recomputed with `bounds` whenever geometry changes.
-   *
-   * It holds the hub even when the density gate folds it, so it is the pan
-   * clamp's envelope, not a frame: the overview camera fits the part of it that
-   * is drawn (`computeDrawnSpineBounds`).
+   * Bbox of just the level-0 SPINE (project + domain + hub), recomputed with `bounds`. The overview draws only the spine (`tier-visibility.ts`), so fitting the full
+   * `bounds`, which the de-pileup spreads across all nodes, would zoom the ~8 visible spine nodes down to a dot. It holds the hub even when the density gate folds it,
+   * so it is the pan clamp's envelope, not a frame: the overview camera fits the part that is drawn (`computeDrawnSpineBounds`).
    */
   spineBounds: Bounds;
   dial?: DialWorld | null;
   dialScaleMax?: number | null;
 }
-
-type DialBearing = { dial?: DialWorld | null;
-};
-
-const DIAL_OVERVIEW_SCALE_FLOOR = 0.01;
-
-export function dialOverviewFit(world: DialBearing): { padPx: DialWorld["overviewPadPx"]; scaleFloor: number; labelBottomAllowance?: number;
-} | undefined {
-  return world.dial ? { padPx: world.dial.overviewPadPx, scaleFloor: DIAL_OVERVIEW_SCALE_FLOOR, ...(world.dial.scene.branches ? { labelBottomAllowance: 0 } : {}) } : undefined;
-}
-
-export interface DialFocusFrame {
-  ids: ReadonlySet<string>;
-  nameScale: number;
-}
-
-export function dialFocusFrame(world: DialBearing, focusId: string, tokens: Pick<DialTokens, "pitch" | "capName">): DialFocusFrame | undefined {
-  const model = world.dial?.model;
-  if (!model) return undefined;
-  if (!model.capabilityById.has(focusId)) {
-    if (focusId === model.projectId || model.domainById.has(focusId) || !model.domainOf.has(focusId) || !world.dial?.scene.positions.has(focusId)) return undefined;
-    return { ids: new Set([focusId]), nameScale: tokens.capName / tokens.pitch };
-  }
-  const a = resolveDialAttention(model, null, focusId);
-  return { ids: new Set([focusId, ...a.needsCaps, ...a.usedByCaps, ...a.relatesCaps]), nameScale: tokens.capName / tokens.pitch };
-}
-
-function extentBounds(dial: DialWorld): Bounds {
-  return { ...dial.scene.extent };
-}
-
-export function radiusForKind(kind: WorldNodeKind, tokens: OntologyMapTokens): number {
-  if (kind === "project") return tokens.radiusProject;
-  if (kind === "domain") return tokens.radiusDomain;
-  if (kind === "capability") return tokens.radiusCapability;
-  return tokens.radiusElement;
-}
-
-const FALLBACK_BOUNDS: Bounds = { minX: -100, minY: -100, maxX: 100, maxY: 100 };
-
-/**
- * A "spine" node is one shown at the overview entry (tier alpha = 1 at zoom
- * ratio 1): the project root, every domain, and any hub node. MUST mirror
- * `nodeTierAlpha`'s always-visible branch in `model/visibility/tier-visibility.ts` — if
- * that gate changes, this must too, or the fit and the visible set drift apart.
- * The density gate is the other one a hub passes through: it can still fold one
- * behind a crowded parent's chip, which `computeDrawnSpineBounds` accounts for.
- */
-export function isSpineNode(node: Pick<WorldNode, "kind" | "isHub">): boolean {
-  return node.isHub || node.kind === "project" || node.kind === "domain";
-}
-
-/**
- * Radius-padded bbox of the nodes matching `include` (all nodes when omitted).
- * Returns `null` when nothing matched so callers can pick their own fallback.
- */
-function accumulateBounds(
-  nodes: readonly WorldNode[],
-  tokens: OntologyMapTokens,
-  include?: (node: WorldNode) => boolean): Bounds | null {
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const node of nodes) {
-    if (include && !include(node)) continue;
-    const r = radiusForKind(node.kind, tokens);
-    minX = Math.min(minX, node.x - r);
-    maxX = Math.max(maxX, node.x + r);
-    minY = Math.min(minY, node.y - r);
-    maxY = Math.max(maxY, node.y + r);
-  }
-  if (!Number.isFinite(minX)) return null;
-  return { minX, minY, maxX, maxY };
-}
-
-/** Radius-padded bbox of all nodes, with a finite fallback for an empty graph. */
-function computeFullBounds(nodes: readonly WorldNode[], tokens: OntologyMapTokens): Bounds {
-  return accumulateBounds(nodes, tokens) ?? { ...FALLBACK_BOUNDS };
-}
-
-/**
- * Overview-fit bbox: just the spine (project + domain + hub). Falls back to the
- * full-graph bounds when no spine node exists (degenerate vault), then to a
- * finite default for an empty graph. Pure — the overview camera + its altitude/
- * zoom-ratio anchor both fit to THIS, not the full 295-node bounds.
- */
-export function computeSpineBounds(nodes: readonly WorldNode[], tokens: OntologyMapTokens): Bounds {
-  return accumulateBounds(nodes, tokens, isSpineNode) ?? computeFullBounds(nodes, tokens);
-}
-
-/**
- * **What the density gate folds behind a chip** at this expansion — the nodes the
- * map does not draw however far the camera zooms, read from the gate itself.
- *
- * Not from the frame's published `clusteredIds`: that set is empty until the first
- * frame runs, and the entry snap runs before it, so a fit reading it would frame one
- * set on arrival and another on the fit button.
- */
-export function computeFoldedIds(
-  world: Pick<TopologyWorld, "childrenByParent" | "nodeById"> & DialBearing,
-  expandedParents: ReadonlySet<string>): ReadonlySet<string> {
-  if (world.dial) return EMPTY_EXPANDED_PARENTS;
-  return computeDensityGate({
-    childrenByParent: world.childrenByParent,
-    expandedParents,
-    // Only the folded set is read; chip anchors need no geometry here.
-    parentGeometry: EMPTY_PARENT_GEOMETRY,
-    kindOf: (id) => world.nodeById.get(id)?.kind,
-  }).clusteredIds;
-}
-
-/**
- * `spineBounds` without the nodes the density gate folds: the hub is always shown by the tier gate
- * but can sit behind a crowded parent's chip, skewing the fit. Falls back to the whole spine.
- */
-export function computeDrawnSpineBounds(
-  world: Pick<TopologyWorld, "spineBounds" | "childrenByParent" | "nodeById"> & DialBearing,
-  tokens: OntologyMapTokens,
-  expandedParents: ReadonlySet<string>,
-  folded: ReadonlySet<string> = computeFoldedIds(world, expandedParents)): Bounds {
-  if (world.dial) return extentBounds(world.dial);
-  let bounds: Bounds | null = null;
-  for (const node of world.nodeById.values()) {
-    if (!isSpineNode(node) || folded.has(node.id)) continue;
-    if (bounds === null) {
-      const r = radiusForKind(node.kind, tokens);
-      bounds = { minX: node.x - r, minY: node.y - r, maxX: node.x + r, maxY: node.y + r };
-    } else {
-      growBounds(bounds, node, tokens);
-    }
-  }
-  return bounds ?? { ...world.spineBounds };
-}
-
-/**
- * The drawn spine plus the children a person has expanded, so every return to the overview keeps
- * them in frame. Folded and clustered children are not drawn and do not widen it.
- */
-export function computeRevealedBounds(
-  world: Pick<TopologyWorld, "spineBounds" | "childrenByParent" | "nodeById"> & DialBearing,
-  tokens: OntologyMapTokens,
-  expandedParents: ReadonlySet<string>,
-  clustered: ReadonlySet<string> | null): Bounds {
-  if (world.dial) return extentBounds(world.dial);
-  const folded = computeFoldedIds(world, expandedParents);
-  const bounds = computeDrawnSpineBounds(world, tokens, expandedParents, folded);
-  for (const parentId of expandedParents) {
-    for (const childId of world.childrenByParent.get(parentId) ?? []) {
-      if (folded.has(childId) || clustered?.has(childId)) continue;
-      const child = world.nodeById.get(childId);
-      if (child) growBounds(bounds, child, tokens);
-    }
-  }
-  return bounds;
-}
-
-/**
- * The frame a path's target is picked in: the overview bounds grown by the source and the neighbours
- * its focus draws, since selecting the source dives to its ego graph. Its folded children stay out.
- */
-export function computePathPickBounds(
-  world: Pick<TopologyWorld, "nodeById" | "neighborMap" | "childrenByParent"> & DialBearing,
-  tokens: OntologyMapTokens,
-  sourceId: string,
-  overview: Bounds,
-  expandedParents: ReadonlySet<string>): Bounds {
-  const bounds = { ...overview };
-  const source = world.nodeById.get(sourceId);
-  if (!source) return bounds;
-  growBounds(bounds, source, tokens);
-  const folded = computeFoldedIds(world, expandedParents);
-  for (const id of world.neighborMap.get(sourceId) ?? []) {
-    const node = world.nodeById.get(id);
-    if (!node) continue;
-    if (node.parentId === sourceId && folded.has(id)) continue;
-    growBounds(bounds, node, tokens);
-  }
-  return bounds;
-}
-
-/**
- * Radius-padded bbox of a focused node + its 1-hop neighbors (the ego cluster).
- * Returns `null` when `focusedSlug` doesn't resolve. Shared by the focus camera
- * fit (`topology-camera-math.ts#computeFocusCameraTarget`, which adds its own
- * fit margin) and the focus-aware pan clamp (`topology-physics-step.ts`, which
- * adds `--map-camera-focus-pan-margin`) so the "ego cluster" is defined
- * in exactly one place. Pure — derived from `nodeById` + `neighborMap`.
- */
-export function computeEgoBounds(
-  world: Pick<TopologyWorld, "nodeById" | "neighborMap">,
-  tokens: OntologyMapTokens,
-  focusedSlug: string,
-  /**
-   * Restricts the ego bbox to the realm's members: neighbours outside the warding circle sit at fling
-   * coordinates and would shrink the camera far out. Omitted means global.
-   */
-  restrictIds?: ReadonlySet<string> | null): Bounds | null {
-  const focusNode = world.nodeById.get(focusedSlug);
-  if (!focusNode) return null;
-  const egoIds = new Set<string>([focusedSlug]);
-  for (const id of world.neighborMap.get(focusedSlug) ?? []) {
-    if (restrictIds && !restrictIds.has(id)) continue;
-    egoIds.add(id);
-  }
-  return computeIdsBounds(world, tokens, egoIds);
-}
-
-export function computeIdsBounds(world: Pick<TopologyWorld, "nodeById">, tokens: OntologyMapTokens, ids: Iterable<string>): Bounds | null {
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const id of ids) {
-    const n = world.nodeById.get(id);
-    if (!n) continue;
-    const r = radiusForKind(n.kind, tokens);
-    minX = Math.min(minX, n.x - r);
-    maxX = Math.max(maxX, n.x + r);
-    minY = Math.min(minY, n.y - r);
-    maxY = Math.max(maxY, n.y + r);
-  }
-  if (!Number.isFinite(minX)) return null;
-  return { minX, minY, maxX, maxY };
-}
-
-/**
- * Radius-padded bbox of an expanded cluster disc (parent plus its direct children's fan); expanding
- * a chip dives the camera here. Like `computeEgoBounds` but over children. Null if none.
- */
-export function computeClusterDiscBounds(
-  world: Pick<TopologyWorld, "nodeById" | "childrenByParent">,
-  tokens: OntologyMapTokens,
-  parentId: string,
-  /**
-   * High-fanout batch reveal (2026-07) — given, only nodes in this set enter the
-   * bbox (the parent plus this batch's children). null or omitted means the parent
-   * plus every direct child (zero regression).
-   */
-  restrictIds?: ReadonlySet<string> | null): Bounds | null {
-  const parent = world.nodeById.get(parentId);
-  if (!parent) return null;
-  const ids = new Set<string>([parentId]);
-  for (const id of world.childrenByParent.get(parentId) ?? []) {
-    if (!restrictIds || restrictIds.has(id)) ids.add(id);
-  }
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const id of ids) {
-    const n = world.nodeById.get(id);
-    if (!n) continue;
-    const r = radiusForKind(n.kind, tokens) * n.magnitudeScale;
-    minX = Math.min(minX, n.x - r);
-    maxX = Math.max(maxX, n.x + r);
-    minY = Math.min(minY, n.y - r);
-    maxY = Math.max(maxY, n.y + r);
-  }
-  if (!Number.isFinite(minX)) return null;
-  return { minX, minY, maxX, maxY };
-}
-
-/**
- * The de-pileup relaxation's scope = **the nodes the density gate does not collapse**.
- *
- * `computeDensityGate`'s `clusteredIds` needs no geometry — it looks only at the
- * per-parent child count and the threshold. So it can be computed **before** layout,
- * and its result tells us in advance which nodes are never drawn in this vault. Only
- * the chip anchors require geometry, and those are built separately after layout by
- * `computeTopologyClusterState` (no cycle).
- *
- * `expandedParents` is treated as empty here — the world is only built when the
- * graph changes and knows nothing about expansion state. Children revealed by an
- * expansion carry seed coordinates, so no coordinate hole appears.
- */
-function computeRelaxScope(layoutInput: readonly LayoutGraphNode[]): ReadonlySet<string> {
-  const childrenByParent = new Map<string, string[]>();
-  for (const n of layoutInput) {
-    if (n.parentId === null) continue;
-    const siblings = childrenByParent.get(n.parentId);
-    if (siblings) siblings.push(n.id);
-    else childrenByParent.set(n.parentId, [n.id]);
-  }
-  const kindById = new Map(layoutInput.map((n) => [n.id, n.kind as string]));
-  const { clusteredIds } = computeDensityGate({
-    childrenByParent,
-    expandedParents: EMPTY_EXPANDED_PARENTS,
-    // Chip anchors are not used here — only `clusteredIds` is needed, and that is geometry-independent.
-    parentGeometry: EMPTY_PARENT_GEOMETRY,
-    kindOf: (id) => kindById.get(id),
-  });
-  const scope = new Set<string>();
-  for (const n of layoutInput) if (!clusteredIds.has(n.id)) scope.add(n.id);
-  return scope;
-}
-
-const EMPTY_EXPANDED_PARENTS: ReadonlySet<string> = new Set();
-const EMPTY_PARENT_GEOMETRY: ReadonlyMap<string, DensityGateParentGeometry> = new Map();
 
 export function buildTopologyWorld(...args: Parameters<typeof buildTopologyWorldSteps>): TopologyWorld {
   return drainSteps(buildTopologyWorldSteps(...args));
@@ -513,47 +168,13 @@ export function* buildTopologyWorldSteps(
   edges: readonly OntologyMapEdge[],
   tokens: OntologyMapTokens,
   /**
-   * How the children of an over-threshold parent are laid out (settings
-   * "Expand → Expand structure" — expand → expand structure). Omitted means `"disc"`, today's
-   * spiral disc, so the coordinates are byte-identical. Changing the value requires
-   * rebuilding the world, because the seed coordinates themselves differ (it is in
-   * the world-build effect's deps in `use-topology-loop`).
+   * How the children of an over-threshold parent are laid out (settings "Expand → Expand structure"); omitted means `"disc"`, the spiral disc.
+   * Changing it rebuilds the world, since the seed coordinates differ (it is in the world-build effect's deps in `use-topology-loop`).
    */
   expandStructure: ExpandStructure = DEFAULT_EXPAND.structure,
   dialInput: DialWorldInput | null = null,
   placeDial: ((model: DialModel) => DialModel) | null = null): LayoutSteps<TopologyWorld> {
-  /*
-   * A node is drawn under the last containment parent that keeps it in the domain the spine put it in.
-   * `buildOntologyTree` keeps the first parent; keeping the last preserves the fans, but across a
-   * domain boundary the map yields to the spine so the census count matches what a chip opens.
-   */
-  const firstContainsParentById = new Map<string, string>();
-  const lastContainsParentById = new Map<string, string>();
-  for (const edge of edges) {
-    if (edge.kind !== "contains") continue;
-    if (edge.target === edge.source) continue;
-    if (!firstContainsParentById.has(edge.target)) firstContainsParentById.set(edge.target, edge.source);
-    lastContainsParentById.set(edge.target, edge.source);
-  }
-  const kindById = new Map(nodes.map((n) => [n.id, n.kind] as const));
-  /** The domain the first-parent chain puts a node in, or null above/outside every domain. */
-  const spineDomainOf = (id: string): string | null => {
-    const seen = new Set<string>();
-    let current: string | undefined = id;
-    while (current !== undefined && !seen.has(current)) {
-      if (kindById.get(current) === "domain") return current;
-      seen.add(current);
-      current = firstContainsParentById.get(current);
-    }
-    return null;
-  };
-  const containsParentById = new Map<string, string>();
-  for (const [childId, firstParent] of firstContainsParentById) {
-    const lastParent = lastContainsParentById.get(childId) ?? firstParent;
-    containsParentById.set(
-      childId,
-      spineDomainOf(lastParent) === spineDomainOf(childId) ? lastParent : firstParent);
-  }
+  const containsParentById = resolveContainsParents(nodes, edges);
 
   const layoutInput: LayoutGraphNode[] = nodes.map((n) => ({
     id: n.id,
@@ -573,17 +194,9 @@ export function* buildTopologyWorldSteps(
   if (dial && nodes.every((n) => dial.scene.positions.has(n.id))) {
     for (const n of nodes) pointById.set(n.id, dial.scene.positions.get(n.id)!);
   } else {
-    // The relaxation scope = **the nodes that can be drawn in this vault**. A subtree
-    // the density gate collapses (under a parent with more than 12 children) hides
-    // behind a chip and is never drawn once, so no time is spent unpiling it. Seed
-    // coordinates are still computed for everything, so there is no coordinate hole
-    // when a tier opens or a chip expands.
-    //
-    // `expandedParents` is deliberately not passed — the world is rebuilt only when
-    // the graph changes (the `useEffect` in `use-topology-loop.ts`), and rebuilding on
-    // every expansion resets the entry ramps and springs, making the screen jump.
-    // Expanded children appear at their seed positions, and local re-relaxation is a
-    // later slice's job.
+    // The relaxation scope is the nodes that can be drawn in this vault: a subtree behind a density-gate chip is never drawn, so no time is spent unpiling it, while seed
+    // coordinates are computed for everything. `expandedParents` is deliberately not passed: the world is rebuilt only when the graph changes, and rebuilding on every
+    // expansion resets the entry ramps and springs and makes the screen jump; expanded children appear at their seed positions.
     const relaxScope = computeRelaxScope(layoutInput);
     // Feed the real §2.3 node radii into the deterministic de-pileup so its
     // collision min-distance matches what actually gets drawn.
@@ -665,7 +278,7 @@ export function* buildTopologyWorldSteps(
     clusterMetaByParent.set(parentId, { angle, ring });
   }
 
-  // S2 part 2 — the magnitude factor's second pass: a √ scale over the direct child
+  // The magnitude factor's second pass: a √ scale over the direct child
   // count (childrenByParent). maxChildCount looks only at the kinds that scale
   // (domain/capability) — a project's child count would distort the normalising
   // denominator, so it is excluded.
@@ -694,14 +307,7 @@ export function* buildTopologyWorldSteps(
     const b = nodeById.get(edge.target);
     if (!a || !b) continue;
     addNeighbor(a.id, b.id);
-    const control =
-      edge.kind === "depends"
-        ? computeDependsBowControlPoint({ x: a.x, y: a.y }, { x: b.x, y: b.y }, tokens.edgeBowDepends)
-        : computeBowControlPoint(
-            { x: a.x, y: a.y },
-            { x: b.x, y: b.y },
-            tokens.edgeBowContains,
-            tokens.edgeBlendContains);
+    const control = computeEdgeControlPoint(edge.kind, a, b, tokens);
     worldEdges.push({
       id: edge.id,
       sourceId: a.id,
@@ -713,7 +319,7 @@ export function* buildTopologyWorldSteps(
       by: b.y,
       controlX: control.x,
       controlY: control.y,
-      // R6 permanent comets — a deterministic seed staggers the phase to avoid
+      // Permanent comets: a deterministic seed staggers the phase to avoid
       // lockstep (every comet flowing at the same phase as one wave). Meaningless
       // for contains, which has no comets.
       t: fireflySeed(a.id, b.id),
@@ -724,9 +330,7 @@ export function* buildTopologyWorldSteps(
     });
   }
 
-  // magnitude = size + fullDegree*18, ported from the prototype's `count +
-  // degree*18` — the adapter has no separate "count" field, `size` is its
-  // closest analog (follow-up: confirm with the HomePage adapter contract).
+  // magnitude = size + fullDegree*18; the adapter has no separate "count" field, so `size` stands in.
   yield;
   const rawMagnitude = (n: { size: number; fullDegree: number;
     }) => n.size + n.fullDegree * 18;
@@ -766,166 +370,3 @@ export function* buildTopologyWorldSteps(
   };
 }
 
-const DIAL_KINDS: ReadonlySet<string> = new Set(["project", "domain", "capability", "element"]);
-
-function* buildDialWorld(
-  nodes: readonly OntologyMapNode[],
-  edges: readonly OntologyMapEdge[],
-  input: DialWorldInput,
-  placeDial: ((model: DialModel) => DialModel) | null): LayoutSteps<DialWorld | null> {
-  const treeNodes: TreeInputNode[] = [];
-  for (const n of nodes) if (DIAL_KINDS.has(n.kind)) treeNodes.push({ id: n.id, label: n.label, kind: n.kind });
-  if (!treeNodes.some((n) => n.kind === "domain")) return null;
-  const treeEdges: TreeInputEdge[] = edges.map((e) => ({ source: e.source, target: e.target, kind: e.kind, relationType: e.relationType }));
-  const tree = readContainmentTree(treeNodes, treeEdges);
-  yield;
-  const dependencies = rollDomainDependencies(tree, treeEdges);
-  const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges));
-  const elementIds = treeNodes.filter((n) => n.kind === "element").map((n) => n.id);
-  yield;
-  const built = buildDialModel({ tree, dependencies, flows, elementIds, relates: rollRelatesCapabilityPairs(tree, treeEdges), direct: directRelations(treeEdges) });
-  const model = placeDial ? placeDial(built) : built;
-  const remember = input.rememberOrder && model.domains.length > 0;
-  if (input.graph) {
-    yield;
-    const paint = input.graph.paint;
-    const face = labelFontFamily();
-    const title = { model, tokens: paint, labels: input.labels, measureText: input.measureText, fontFamily: face };
-    const titles = domainTitleBlocks(title);
-    yield;
-    const compactTitles = domainTitleBlocks(title, "name");
-    yield;
-    const scene = yield* buildFlatGraphSceneSteps(model, input.graph.layout, flatGraphPins(model, face), { areaPx: input.graphAreaPx ?? null, titles, compactTitles, capDiscPx: paint.capDiscMaxPx, hubPx: hubBlockReachPx({ model, tokens: paint }) });
-    if (remember) rememberDialOrder(scene.order);
-    const pad = paint.domainNamePx;
-    return { model, scene, overviewPadPx: { left: pad, right: pad, top: pad, bottom: pad }, labels: input.labels };
-  }
-  const { order } = circularDomainOrder(model, input.memory?.order ?? rememberedDialOrder());
-  if (remember) rememberDialOrder(order);
-  const scene = layoutDial(model, order, input.tokens, input.memory);
-  return { model, scene, overviewPadPx: dialOverviewPad(scene, model, input.labels, input.measureText, input.tokens) };
-}
-
-/**
- * Writes live force-simulation positions back into the (mutable) world nodes.
- * Positions the sim didn't produce (non-finite, guarded out in
- * `force-layout.ts#positions`) leave the node's last-good coordinate intact.
- */
-export function applyForcePositions(world: TopologyWorld, positions: ReadonlyMap<string, { x: number; y: number;
-}>): void {
-  // Iterate over the positions given, not all world nodes: a throttled tick moves a few dozen, and a
-  // node absent from the map keeps its coordinates.
-  for (const [id, p] of positions) {
-    const node = world.nodeById.get(id);
-    if (node) {
-      node.x = p.x;
-      node.y = p.y;
-    }
-  }
-}
-
-/**
- * Refreshes one edge's endpoints + bow control point from its (force-updated)
- * endpoint nodes.
- */
-function recomputeEdgeGeometry(world: TopologyWorld, tokens: OntologyMapTokens, edge: WorldEdge): void {
-  const a = world.nodeById.get(edge.sourceId);
-  const b = world.nodeById.get(edge.targetId);
-  if (!a || !b) return;
-  edge.ax = a.x;
-  edge.ay = a.y;
-  edge.bx = b.x;
-  edge.by = b.y;
-  const control =
-    edge.kind === "depends"
-      ? computeDependsBowControlPoint({ x: a.x, y: a.y }, { x: b.x, y: b.y }, tokens.edgeBowDepends)
-      : computeBowControlPoint(
-          { x: a.x, y: a.y },
-          { x: b.x, y: b.y },
-          tokens.edgeBowContains,
-          tokens.edgeBlendContains);
-  edge.controlX = control.x;
-  edge.controlY = control.y;
-}
-
-/** Merge one node's radius-padded box into an existing bbox (grow only — never shrink). */
-function growBounds(bounds: Bounds, node: WorldNode, tokens: OntologyMapTokens): void {
-  const r = radiusForKind(node.kind, tokens);
-  if (node.x - r < bounds.minX) bounds.minX = node.x - r;
-  if (node.x + r > bounds.maxX) bounds.maxX = node.x + r;
-  if (node.y - r < bounds.minY) bounds.minY = node.y - r;
-  if (node.y + r > bounds.maxY) bounds.maxY = node.y + r;
-}
-
-/**
- * The partial refresh when only the moved nodes were given.
- *
- * - **Edges**: only those attached to a moved node (`edgeIndexByNode`). An edge with
- *   both ends moved is computed twice, but the operation is idempotent so the result
- *   is the same — building a dedupe Set every frame costs more than that duplication.
- * - **bbox**: grow only. It is the pan clamp's input, so «slightly generous» is the
- *   safe direction (it never crops the user), and the exact shrink is restored by
- *   the full recompute on the frame the drag ends (the settle-end block in
- *   `use-topology-loop.ts`).
- */
-function recomputeMovedGeometry(world: TopologyWorld, tokens: OntologyMapTokens, movedIds: ReadonlySet<string>): void {
-  for (const id of movedIds) {
-    const indices = world.edgeIndexByNode.get(id);
-    if (indices) {
-      for (const index of indices) recomputeEdgeGeometry(world, tokens, world.edges[index]);
-    }
-    const node = world.nodeById.get(id);
-    if (!node) continue;
-    growBounds(world.bounds, node, tokens);
-    if (isSpineNode(node)) growBounds(world.spineBounds, node, tokens);
-  }
-}
-
-/**
- * Recomputes edge endpoints + bow control points and the world bounds from the
- * current (force-updated) node positions. Called each frame while the sim is
- * warm — the "layout precomputed once" invariant only held while positions were
- * static; a living graph refreshes derived geometry per frame.
- *
- * `movedIds` scopes the pass to the nodes that actually changed this frame.
- * Omit it (or pass null) for the exact full pass — that is what the homing /
- * relayout / `relaxNewlyVisible` paths want, since they move everything.
- *
- * ⚠️ **A missing id is an immediately visible defect**: the edge keeps last
- * frame's endpoint and visibly detaches from its node. The caller must derive
- * the set from the positions it actually wrote, not from the set it *intended*
- * to move — the drag frame moves nodes through three different writers (force
- * apply, neighbor tug, overlap relaxation) and the tug alone reaches nodes the
- * force tick deliberately excluded.
- */
-export function recomputeWorldGeometry(
-  world: TopologyWorld,
-  tokens: OntologyMapTokens,
-  movedIds?: ReadonlySet<string> | null): void {
-  if (movedIds) {
-    // Past half moved, routing through the index costs more than it saves (map
-    // lookups plus duplicate computation). Above that boundary the full path is
-    // cheaper, and it also gives the bbox a chance to «shrink» exactly.
-    if (movedIds.size * 2 < world.nodes.length) {
-      recomputeMovedGeometry(world, tokens, movedIds);
-      return;
-    }
-  }
-
-  for (const edge of world.edges) {
-    recomputeEdgeGeometry(world, tokens, edge);
-  }
-
-  const full = accumulateBounds(world.nodes, tokens);
-  if (full) {
-    world.bounds.minX = full.minX;
-    world.bounds.minY = full.minY;
-    world.bounds.maxX = full.maxX;
-    world.bounds.maxY = full.maxY;
-  }
-  const spine = world.dial ? extentBounds(world.dial) : computeSpineBounds(world.nodes, tokens);
-  world.spineBounds.minX = spine.minX;
-  world.spineBounds.minY = spine.minY;
-  world.spineBounds.maxX = spine.maxX;
-  world.spineBounds.maxY = spine.maxY;
-}

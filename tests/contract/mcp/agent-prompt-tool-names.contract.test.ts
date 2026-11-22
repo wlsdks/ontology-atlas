@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildAgentAnalyzePrompt,
   buildAgentSetupPrompt,
-} from "@/shared/config/agent-prompts";
+} from "@/shared/config/agent/agent-prompts";
 
 /**
  * **Instructions that fail the moment they are pasted are a trap, not help.**
@@ -135,7 +135,7 @@ describe("copied instructions name only what exists", () => {
     expect(namesWriteTools).toBe(true);
 
     // The survey declares no output schema, so the fields are read where the answer is built.
-    const source = readFileSync(join(process.cwd(), "mcp", "src", "analyze", "repo-structure.mjs"), "utf8");
+    const source = readFileSync(join(process.cwd(), "mcp", "src", "analyze", "candidates", "repo-structure.mjs"), "utf8");
     for (const field of ["canWrite", "writePlan", "nextStep"]) {
       expect(
         source.includes(`proposalValidation.${field} =`),

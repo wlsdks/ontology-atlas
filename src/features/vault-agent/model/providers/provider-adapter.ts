@@ -2,17 +2,13 @@
 
 import type { AgentJsonSchema, AgentToolDefinition } from '../agent-tools/tool-catalog';
 
-/** One tool result executed in a round trip. It is carried into the next round trip back to the model. */
 export interface ToolResultPayload {
-  /** The tool call id the vendor gave (or the executor synthesized). */
   id: string;
   name: string;
-  /** The serialized result, or an error sentence. */
   content: string;
   isError: boolean;
 }
 
-/** One assistant turn plus the tool results for it. */
 export interface WireExchange {
   /** The vendor's assistant turn verbatim; editing Anthropic's thinking blocks gets the next round trip rejected. */
   assistant: unknown;
@@ -25,9 +21,7 @@ export interface TurnAssembly {
   model: string;
   /** Layer-1 product discipline plus layer-2 project instructions when present. */
   system: string;
-  /** The user's own words. */
   userText: string;
-  /** The screen context block — carried alongside the first user message. */
   screenContextBlock: string;
   exchanges: WireExchange[];
   tools: readonly AgentToolDefinition[];
@@ -47,7 +41,6 @@ export interface NormalizedResponse {
   text: string;
   toolCalls: NormalizedToolCall[];
   stop: NormalizedStop;
-  /** The assistant turn verbatim, to be sent back in the next round trip. */
   raw: unknown;
   /** The one line the screen uses when `stop === 'error' | 'refusal'`. */
   errorMessage?: string;
@@ -59,7 +52,6 @@ type ProviderResponseReview =
 
 export interface ProviderAdapter {
   readonly provider: string;
-  /** This vendor's default model. */
   readonly defaultModel: string;
   buildBody(turn: TurnAssembly): string;
   parseResponse(body: string): NormalizedResponse;

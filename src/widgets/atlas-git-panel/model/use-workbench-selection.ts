@@ -4,10 +4,6 @@ import type { GitCommitInfo } from "@/shared/lib/git/tauri-git";
 import { HISTORY_PAGE } from "./git-workspace-read";
 import type { DocumentFollow } from "../lib/document-follow";
 
-/**
- * What the workbench is currently showing. `pending` = changes not yet
- * committed, `commit` = the commit at that hash.
- */
 export type WorkbenchSelection = { kind: "pending" } | { kind: "commit"; hash: string };
 
 export type FollowedStep = DocumentFollow & { hash: string };
@@ -31,7 +27,6 @@ export function useWorkbenchSelection({
   diffFiles: readonly AtlasGitDiffFile[];
   diffTooLarge: boolean;
 }) {
-  /** The concept being viewed inside an expanded step. Collapsing the step clears it. */
   const [focusedConceptId, setFocusedConceptId] = useState<string | null>(null);
   /*
    * The workbench selection, instead of tabs: the list's position already separates
@@ -39,7 +34,6 @@ export function useWorkbenchSelection({
    */
   const [selectionChoice, setSelectionChoice] = useState<WorkbenchSelection | null>(null);
 
-  /** Path of the document chosen in the list; `null` shows every changed concept (overview first). */
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   /**
    * The document a jump from its own history is following, and the step it jumped to. Only that
@@ -62,7 +56,6 @@ export function useWorkbenchSelection({
     },
     [history, historyHasMore, historyShort, historyLimit, setHistoryLimit, setJumpHash],
   );
-  /** A plain selection from the list ends any jump still reading on, and the follow with it. */
   const selectStep = useCallback((next: WorkbenchSelection) => {
     setSelectionChoice(next);
     setJumpHash(null);

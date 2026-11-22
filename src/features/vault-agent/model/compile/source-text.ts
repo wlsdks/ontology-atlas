@@ -18,7 +18,6 @@ export const READABLE_SOURCE_FORMATS: readonly string[] = [
   'htm',
 ];
 
-/** Formats Atlas names and refuses, because reading them needs a parser it does not ship. */
 export const PARSER_SOURCE_FORMATS: readonly string[] = [
   'pdf',
   'doc',
@@ -41,7 +40,6 @@ export const SOURCE_TEXT_CHAR_CAP = 8_000;
 
 export type SourceFormatVerdict = 'readable' | 'needs-a-parser' | 'unknown-format';
 
-/** Which of the three buckets a source falls in, from its extension alone. */
 export function classifySourceFormat(format: string): SourceFormatVerdict {
   const lowered = format.trim().toLowerCase().replace(/^\./, '');
   if (READABLE_SOURCE_FORMATS.includes(lowered)) return 'readable';
@@ -104,9 +102,7 @@ export function stripHtml(html: string): string {
 
 export interface DecodedSourceText {
   text: string;
-  /** Characters the file holds, before the cap. */
   totalChars: number;
-  /** True when `text` stops short of `totalChars`. */
   truncated: boolean;
 }
 
@@ -127,7 +123,6 @@ export function decodeSourceText(bytes: ArrayBuffer, format: string): DecodedSou
 export interface SourceMeasurement {
   paragraphs: number;
   lines: number;
-  /** Heading slugs found in the text, for an `h:<slug>` anchor. */
   headings: string[];
 }
 
@@ -140,7 +135,6 @@ function headingSlug(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-/** Blank-line separated blocks, in order, with empties dropped. */
 function splitParagraphs(text: string): string[] {
   return text
     .split(/\n\s*\n/)

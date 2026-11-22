@@ -5,7 +5,7 @@ import { meaningTransitionV2DecisionArtifact, prepareMeaningTransitionV2, serial
 const native = vi.hoisted(() => ({
   append: vi.fn(), observe: vi.fn(), readArtifact: vi.fn(), readRecord: vi.fn(), list: vi.fn(),
 }));
-vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({ getTauriVaultRootPath: (value: { root?: string }) => value.root ?? '/vault' }));
+vi.mock('@/shared/lib/vault-folder/native-vault/tauri-vault-runtime', () => ({ getTauriVaultRootPath: (value: { root?: string }) => value.root ?? '/vault' }));
 vi.mock('@/shared/lib/meaning-transition/tauri-meaning-transition-archive', () => ({
   canArchiveMeaningTransitions: () => true,
   observeMeaningTransitionRoot: native.observe,

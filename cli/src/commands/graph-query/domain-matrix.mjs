@@ -1,6 +1,3 @@
-// `ontology-atlas domain-matrix [vault]` — domain coupling matrix.
-// MCP `query_ontology({operation: 'domain_matrix'})` thin wrapper.
-
 import { COLORS } from '../../lib/colors.mjs';
 import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
 import { assertDomainMatrixShape } from '../../lib/query-result-contract/overview-queries.mjs';
@@ -36,9 +33,9 @@ export async function runDomainMatrix(args) {
   try {
     result = await callMcpTool(vaultRoot, 'query_ontology', parsed.query);
     assertDomainMatrixShape(result);
-  } catch (err) {
+  } catch (error) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return 2;
   }

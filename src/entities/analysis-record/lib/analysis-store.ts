@@ -1,5 +1,5 @@
 import { appendTauriAnalysisRecord, canAppendAnalysisRecords, readTauriAnalysisRecord } from '@/shared/lib/desktop-shell/tauri-analysis-records';
-import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
 import { createNamePage } from './name-page.mjs';
 
 import {

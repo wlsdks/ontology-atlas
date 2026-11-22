@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { loadStaticVaultSource, resetStaticVaultSourcesForTests } from '@/entities/docs-vault/lib/bundled-vault/load-static-vault-source';
 import { writeSampleSourcePreference } from '@/shared/lib/vault-folder/sample-source';
-import { useSampleSource } from '../model/use-sample-source';
+import { useSampleSource } from '../model/vault-source/use-sample-source';
 import { VaultSourceHydrationBoundary } from './VaultSourceHydrationBoundary';
 
 vi.mock('next-intl', () => ({

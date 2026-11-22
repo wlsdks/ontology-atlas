@@ -1,4 +1,4 @@
-import type { AcpSessionChoices } from '../acp-client';
+import type { AcpSessionChoices } from '../session-choices/acp-session-choices';
 import { partitionModes } from '../session-choices/mode-safety';
 import { GATED_SESSION_MODE, runtimeOwnsWriteGate } from '../runtime-wiring/runtime-gate';
 

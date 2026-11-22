@@ -68,9 +68,9 @@ function synthetic(capabilityCount: number, domainCount: number): { nodes: TreeI
     nodes.push({ id, label: `${words[c % words.length]} ${c}`, kind: "capability" });
     edges.push({ source: `domain:d${String(d).padStart(2, "0")}`, target: id, kind: "contains", relationType: "contains" });
     for (let e = 0; e < (c * 7) % 9; e++) {
-      const el = `element:e${c}-${e}`;
-      nodes.push({ id: el, label: `요소 ${c}-${e}`, kind: "element" });
-      edges.push({ source: id, target: el, kind: "contains", relationType: "contains" });
+      const elementId = `element:e${c}-${e}`;
+      nodes.push({ id: elementId, label: `요소 ${c}-${e}`, kind: "element" });
+      edges.push({ source: id, target: elementId, kind: "contains", relationType: "contains" });
     }
     if (c > 3) {
       const t = `capability:c${String((c * 13) % c).padStart(4, "0")}`;

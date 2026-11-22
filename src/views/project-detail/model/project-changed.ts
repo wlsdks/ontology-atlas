@@ -12,11 +12,8 @@ export interface ProjectChangedRow {
 }
 
 export interface ProjectChanged {
-  /** Newest first, at most `CHANGED_SLOTS`. */
   visible: ProjectChangedRow[];
-  /** This project's concepts changed in the window. */
   total: number;
-  /** This project's concepts changed in the window, for the row marks in the Composition. */
   changedIds: ReadonlySet<string>;
 }
 

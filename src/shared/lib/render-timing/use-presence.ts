@@ -3,18 +3,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 /**
- * Two presence gates that give a surface **a way out**.
- *
- * They live in one file because three surfaces (node datasheet, INDEX slot,
- * settings sheet) were each solving the same problem separately and two of them
- * were not solving it at all. Surfaces on the map must share **one exit window**
- * (`EXIT_WINDOW_MS`), and that fact has to be written in one place or the next
- * surface is born hard-cutting again.
- *
- * This window (140ms) is **an unmount timer, not a motion value** — CSS owns the
- * real exit duration (2/3 of the entry, ≈120ms). The extra 20ms keeps the last
- * frame from being clipped when the timer and the compositor disagree. It is not
- * a ramp token, so `--motion-*` is not read here.
+ * The one exit window surfaces on the map share. An unmount timer, not a `--motion-*` value: CSS
+ * owns the ≈120ms exit, and the extra 20ms keeps the timer from clipping the last frame.
  */
 export const EXIT_WINDOW_MS = 140;
 
@@ -61,7 +51,7 @@ export function usePanelPresence(
   const [mounted, setMounted] = useState(open);
   useEffect(() => {
     if (open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- a presence gate is by definition "sync React state with an external system, the timer". Deriving it during render removes the exit window and the surface goes back to vanishing in one frame (measured 2026-07-28: INDEX panel delta 13.25 @17ms).
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- a presence gate syncs React state with an external system, the timer; deriving it during render removes the exit window.
       setMounted(true);
       return;
     }
@@ -110,10 +100,8 @@ export function useSwapHeight<T>(token: T) {
   const fromHeightRef = useRef<number | null>(null);
 
   /**
-   * Called by **whoever causes the swap** — the previous height can only be
-   * measured before the DOM changes, and the only code that knows that moment is
-   * the handler changing the state. Measuring inside an effect already sees the
-   * new layout, so it would always transition from a value to itself.
+   * Called by whoever causes the swap: the previous height must be measured before the DOM
+   * changes, and an effect already sees the new layout.
    */
   const capture = useCallback(() => {
     const host = hostRef.current;
@@ -169,23 +157,8 @@ export function useSwapHeight<T>(token: T) {
 }
 
 /**
- * Holds **the previous value** for the exit window.
- *
- * Wrapping in `<Surface open={Boolean(model)}>` keeps the surface alive through
- * the exit window, but **the parent supplies the content** — the moment `model`
- * becomes `null` the child renders empty, so the surface fades out prettily
- * around an empty box. Adding enter/exit motion ends up worse than not having it.
- *
- * So the value has to be held too. That is what "the parent's render gate has to
- * hold the model through the exit window, so it isn't mechanical" means, and why
- * this is a hook — reinvented per surface, one of them will be wrong.
- *
- * **Why render-phase adjustment rather than an effect.** Holding it in
- * `useEffect` is **one frame late**, and during that frame the child receives
- * `null` and flickers. Setting state during render is the "adjust state when a
- * prop changes" pattern React documents, and it re-renders before painting, so
- * there is no flicker. It needs a condition to avoid an infinite loop — that is
- * the `identity !== state.key` check below.
+ * Holds the previous value through the exit window, or the surface fades out around an empty box.
+ * Adjusted during render: an effect is a frame late and flickers `null`.
  */
 export function useHeldValue<T>(value: T | null | undefined, key?: string | number | null): T | null {
   /*

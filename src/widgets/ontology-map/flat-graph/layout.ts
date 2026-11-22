@@ -5,10 +5,10 @@ import forceAtlas2Helpers from "graphology-layout-forceatlas2/helpers.js";
 // @ts-expect-error -- see above.
 import forceAtlas2Iterate from "graphology-layout-forceatlas2/iterate.js";
 
-import type { Box, DialCapabilityDependency, DialModel, Point } from "../dial/types";
+import type { Box, DialCapabilityDependency, DialModel, Point } from "../dial/dial-shapes";
 import { GOLDEN_ANGLE, byId, seedAngle, seedUnit } from "./seed";
 import { separate, type Body } from "./separate";
-import type { FlatGraphCluster, FlatGraphFrame, FlatGraphItem, FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphPins, FlatGraphTitle } from "./types";
+import type { FlatGraphCluster, FlatGraphFrame, FlatGraphItem, FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphPins, FlatGraphTitle } from "./flat-graph-shapes";
 
 const HUB_ID = "\u0000hub";
 const TITLE_LEFT = "\u0000title-left";
@@ -327,7 +327,6 @@ function scaleStarTo(members: readonly Body[], reach: ReadonlyMap<string, number
   }
 }
 
-/** How far a point is from a box; zero inside it. */
 function distanceToBox(x: number, y: number, box: Box): number {
   return Math.hypot(x - Math.min(box.maxX, Math.max(box.minX, x)), y - Math.min(box.maxY, Math.max(box.minY, y)));
 }

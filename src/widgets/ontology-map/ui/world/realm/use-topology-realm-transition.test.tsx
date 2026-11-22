@@ -4,14 +4,14 @@ import { INITIAL_REALM_TRANSITION_STATE } from "../../../model/realm/realm-trans
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
 import { createWorldMotionFrameStage, type WorldMotionFrameStageSources } from "../../frame-loop/topology-world-motion-frame-stage";
 import { createRealmFrameStage, type RealmFrameStageSources } from "../../frame-loop/topology-realm-frame-stage";
-import type { RealmRuntimeData } from "../topology-realm-runtime";
+import type { RealmRuntimeData } from "./topology-realm-runtime";
 import type { TopologyWorld, WorldNode } from "../topology-world";
-import { useTopologyRealmTransition } from "../use-topology-realm-transition";
-import { announceWorldSwap } from "../world-swap";
+import { useTopologyRealmTransition } from "./use-topology-realm-transition";
+import { announceWorldSwap } from "../lifecycle/world-swap";
 
 const mocks = vi.hoisted(() => ({ build: vi.fn(), now: 0 }));
-vi.mock("../topology-realm-runtime", async original => ({
-  ...await original<typeof import("../topology-realm-runtime")>(),
+vi.mock("./topology-realm-runtime", async original => ({
+  ...await original<typeof import("./topology-realm-runtime")>(),
   buildRealmRuntimeData: mocks.build,
   realmCameraTarget: () => ({ tx: 0, ty: 0, tscale: 1 }),
 }));
@@ -20,11 +20,11 @@ vi.mock("../../../dial/tokens", () => ({ readDialTokens: () => ({}) }));
 vi.mock("../../../dial/fit", async original => ({
   ...await original<typeof import("../../../dial/fit")>(), createMeasureText: () => (() => 1),
 }));
-vi.mock("../topology-world", async original => ({
-  ...await original<typeof import("../topology-world")>(), recomputeWorldGeometry: vi.fn(),
+vi.mock("../geometry/world-geometry", async original => ({
+  ...await original<typeof import("../geometry/world-geometry")>(), recomputeWorldGeometry: vi.fn(),
 }));
-vi.mock("../../camera/topology-camera-math", async original => ({
-  ...await original<typeof import("../../camera/topology-camera-math")>(),
+vi.mock("../../camera/target/fit-targets", async original => ({
+  ...await original<typeof import("../../camera/target/fit-targets")>(),
   computeOverviewFitScale: () => 1, computeOverviewCameraTarget: () => ({ tx: 0, ty: 0, tscale: 1 }),
 }));
 
@@ -49,7 +49,7 @@ function fixture(reducedMotion = false) {
     depthById: new Map([["root", 0]]), tierKindById: new Map([["root", "domain"]]),
   } satisfies RealmRuntimeData));
   const sources = {
-    realmRootId: "root" as string | null, prevRealmRootIdRef: ref<string | null>(null), lastActiveMsRef: ref(0),
+    realmRootId: "root" as string | null, previousRealmRootIdRef: ref<string | null>(null), lastActiveMsRef: ref(0),
     worldRef: ref(world), viewportRef: ref({ width: 1200, height: 800, dpr: 1 }), reducedMotionRef: ref(reducedMotion),
     nodeDragRef: ref(null), heatRef: ref(0), dragAffectedSetRef: ref(null), dragStartPosRef: ref(null), dragTugOffsetsRef: ref(new Map()),
     realmActiveHandedOffRef: ref(false), expandedParentsRef: ref(new Set<string>()), realmDataRef: ref<RealmRuntimeData | null>(null), wardingFitRef: ref(null),
@@ -57,9 +57,9 @@ function fixture(reducedMotion = false) {
     hasInitializedRef: ref(true), cameraRef: ref({ x: { value: 91 }, y: { value: 82 }, scale: { value: 0.9 } }),
     dampingRef: ref(0), cameraTargetRef: ref({ tx: 91, ty: 82, tscale: 0.9 }), userDrivenCameraRef: ref(false),
     cameraAngularFreqRef: ref(null), beginCameraTween: vi.fn(), simRef: ref(null), overviewFitRef: ref("full"), clusteredIdsRef: ref(new Set()), overviewScaleRef: ref(1),
-    dragVelRef: ref({ x: 0, y: 0 }), dragPrevPosRef: ref(null), dropSeededRef: ref(false),
-    geomPrevXRef: ref(null), geomPrevYRef: ref(null), sepDisplacedIdsRef: ref(new Set()), prevPinnedNodeIdRef: ref(null),
-    view3dRef: ref(false), domeRuntimeRef: ref(null), realmParallaxRef: ref(null), realmEnterButtonElRef: ref(null),
+    dragVelRef: ref({ x: 0, y: 0 }), dragPreviousPosRef: ref(null), dropSeededRef: ref(false),
+    geomPreviousXRef: ref(null), geomPreviousYRef: ref(null), sepDisplacedIdsRef: ref(new Set()), previousPinnedNodeIdRef: ref(null),
+    view3dRef: ref(false), domeRuntimeRef: ref(null), realmParallaxRef: ref(null), realmEnterButtonElementRef: ref(null),
     focusedSlugRef: ref(null), onEnterRealmRef: ref(undefined), realmEnterTargetRef: ref(null), getRealmCaption: () => null,
   };
   const step = createWorldMotionFrameStage(sources as unknown as WorldMotionFrameStageSources);

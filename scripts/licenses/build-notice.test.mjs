@@ -97,15 +97,15 @@ describe("license texts", () => {
   });
 
   it("passes on the NOTICE file an Apache-2.0 package publishes, after its license", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-notice-"));
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-notice-"));
     try {
-      fs.writeFileSync(path.join(dir, "LICENSE"), "Apache License text");
-      fs.writeFileSync(path.join(dir, "NOTICE"), "Example NOTICE text");
-      const { label, body } = packageLicenseText(pkg("example", "Apache-2.0", { dir }));
+      fs.writeFileSync(path.join(directory, "LICENSE"), "Apache License text");
+      fs.writeFileSync(path.join(directory, "NOTICE"), "Example NOTICE text");
+      const { label, body } = packageLicenseText(pkg("example", "Apache-2.0", { dir: directory }));
       assert.equal(label, "Apache-2.0");
       assert.ok(body.indexOf("Apache License text") < body.indexOf("Example NOTICE text"));
     } finally {
-      fs.rmSync(dir, { recursive: true, force: true });
+      fs.rmSync(directory, { recursive: true, force: true });
     }
   });
 });

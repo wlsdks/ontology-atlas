@@ -5,22 +5,22 @@
 
 use super::super::audit::{self, Download, RunEnd};
 use super::super::EmbedError;
+use super::disk::{hash_prefix, remove_if_present, remove_link, store_error, write_synced};
 use super::fetch::{Fetch, Head, Sink};
 use super::pins::{self, PinnedFile};
 use super::{Progress, Stage, DOWNLOAD_SOURCE};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs::{self, File, OpenOptions};
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::time::Instant;
 
 /// Hugging Face serves `resolve` from huggingface.co and redirects large files to
 /// its CDN and storage hosts under hf.co.
 pub(crate) const MODEL_DOWNLOAD_HOSTS: [&str; 2] = ["huggingface.co", "hf.co"];
 const MAX_HOPS: usize = 8;
-const HASH_CHUNK: usize = 1024 * 1024;
 /// Names the run whose start line is written and whose close line is not yet.
 pub(crate) const OPEN_RUN: &str = "open-run.json";
 
@@ -77,38 +77,8 @@ fn short_host(url: &url::Url) -> String {
         .collect()
 }
 
-fn io_error(error: std::io::Error) -> EmbedError {
-    EmbedError::Store(crate::errors::squeeze(&error.to_string()))
-}
-
 pub(crate) fn part_path(dir: &Path, file: &PinnedFile) -> PathBuf {
     dir.join(format!("{}.part", file.name))
-}
-
-/// Hashes a file's first `len` bytes, reporting each chunk.
-fn hash_prefix(
-    path: &Path,
-    len: u64,
-    cancel: &AtomicBool,
-    on_bytes: &mut dyn FnMut(u64),
-) -> Result<Sha256, EmbedError> {
-    let mut hasher = Sha256::new();
-    if len == 0 {
-        return Ok(hasher);
-    }
-    let mut reader = File::open(path).map_err(io_error)?.take(len);
-    let mut buffer = vec![0u8; HASH_CHUNK];
-    loop {
-        if cancel.load(Ordering::Relaxed) {
-            return Err(EmbedError::Cancelled);
-        }
-        let read = reader.read(&mut buffer).map_err(io_error)?;
-        let Some(chunk) = buffer.get(..read).filter(|chunk| !chunk.is_empty()) else {
-            return Ok(hasher);
-        };
-        hasher.update(chunk);
-        on_bytes(read as u64);
-    }
 }
 
 /// The file at `path`, not a link, has the pinned size and SHA-256.
@@ -140,8 +110,8 @@ struct Transfer<'a> {
 
 impl Transfer<'_> {
     fn restart(&mut self) -> Result<(), EmbedError> {
-        self.out.set_len(0).map_err(io_error)?;
-        self.out.seek(SeekFrom::Start(0)).map_err(io_error)?;
+        self.out.set_len(0).map_err(store_error)?;
+        self.out.seek(SeekFrom::Start(0)).map_err(store_error)?;
         self.hasher = Sha256::new();
         self.have = 0;
         (self.on_bytes)(0);
@@ -196,7 +166,7 @@ impl Sink for Transfer<'_> {
         if self.have + len > self.file.bytes {
             return Err(EmbedError::SizeMismatch(self.file.name.into()));
         }
-        self.out.write_all(chunk).map_err(io_error)?;
+        self.out.write_all(chunk).map_err(store_error)?;
         self.hasher.update(chunk);
         self.have += len;
         self.received += len;
@@ -225,7 +195,7 @@ impl Downloader<'_> {
     /// Leaves every pinned file verified under `dir`, fetching what is missing. The
     /// report is filled in even when the run fails.
     pub(crate) fn run(&mut self, report: &mut DownloadReport) -> Result<(), EmbedError> {
-        fs::create_dir_all(self.dir).map_err(io_error)?;
+        fs::create_dir_all(self.dir).map_err(store_error)?;
         self.close_unclosed_run()?;
         let total: u64 = self.files.iter().map(|file| file.bytes).sum();
         let mut opened: Option<Opened> = None;
@@ -408,7 +378,7 @@ impl Downloader<'_> {
             }
             return Err(error);
         }
-        out.sync_all().map_err(io_error)?;
+        out.sync_all().map_err(store_error)?;
         drop(out);
         // The hash covers every byte in `.part`: the resumed prefix re-read from disk,
         // the rest hashed as written, then synced. Conversion reads the file again and
@@ -417,7 +387,7 @@ impl Downloader<'_> {
             remove_if_present(&part)?;
             return Err(EmbedError::HashMismatch(file.name.into()));
         }
-        fs::rename(&part, &target).map_err(io_error)
+        fs::rename(&part, &target).map_err(store_error)
     }
 }
 
@@ -460,36 +430,7 @@ pub(super) fn open_part(path: &Path) -> Result<File, EmbedError> {
         use std::os::unix::fs::OpenOptionsExt;
         options.custom_flags(libc::O_NOFOLLOW);
     }
-    let mut file = options.open(path).map_err(io_error)?;
-    file.seek(SeekFrom::End(0)).map_err(io_error)?;
+    let mut file = options.open(path).map_err(store_error)?;
+    file.seek(SeekFrom::End(0)).map_err(store_error)?;
     Ok(file)
-}
-
-/// Removes `path` when it is a link, so the next open makes a plain file there.
-pub(crate) fn remove_link(path: &Path) -> Result<(), EmbedError> {
-    match fs::symlink_metadata(path) {
-        Ok(meta) if meta.file_type().is_symlink() => remove_if_present(path),
-        _ => Ok(()),
-    }
-}
-
-/// Writes a synced temporary sibling, then renames it over `path`.
-pub(crate) fn write_synced(path: &Path, bytes: &[u8]) -> Result<(), EmbedError> {
-    let mut name = path.file_name().unwrap_or_default().to_os_string();
-    name.push(".tmp");
-    let temporary = path.with_file_name(name);
-    remove_link(&temporary)?;
-    let mut file = File::create(&temporary).map_err(io_error)?;
-    file.write_all(bytes).map_err(io_error)?;
-    file.sync_all().map_err(io_error)?;
-    drop(file);
-    fs::rename(&temporary, path).map_err(io_error)
-}
-
-pub(crate) fn remove_if_present(path: &Path) -> Result<(), EmbedError> {
-    match fs::remove_file(path) {
-        Ok(()) => Ok(()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(error) => Err(io_error(error)),
-    }
 }

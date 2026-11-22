@@ -22,8 +22,7 @@ export async function generateMetadata({
   });
 }
 
-/** Library composes Sources, Wiki, and the existing ontology editor. The
- * Suspense boundary permits query-based tab selection in the static export. */
+/** The Suspense boundary permits query-based tab selection in the static export. */
 export default function Page() {
   return (
     <Suspense fallback={<RouteLoadingFallback />}>

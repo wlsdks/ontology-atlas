@@ -6,7 +6,7 @@ title: Project identity detection
 display_en: Project identity detection
 display_ko: 프로젝트 정체 판별
 domain: domains/code-evidence
-path: mcp/src/analyze/project-detection.mjs
+path: mcp/src/analyze/candidates/project-detection.mjs
 created_by: "agent:claude-code"
 ---
 

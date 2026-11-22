@@ -181,9 +181,9 @@ export function DomainStructureMap({ nodes, edges, selectedId, missingIds, onRea
               })}
             </div>
             {pageCount > 1 && <div className="flex items-center justify-between gap-3 text-label">
-              <Chip aria-label={t('previousPage')} disabled={page === 0} onClick={() => setPages(prev => ({ ...prev, [kind]: page - 1 }))}><ChevronLeft aria-hidden className="size-3" />{t('previousPage')}</Chip>
+              <Chip aria-label={t('previousPage')} disabled={page === 0} onClick={() => setPages(previous => ({ ...previous, [kind]: page - 1 }))}><ChevronLeft aria-hidden className="size-3" />{t('previousPage')}</Chip>
               <span>{t('page', { current: page + 1, total: pageCount })}</span>
-              <Chip aria-label={t('nextPage')} disabled={page + 1 >= pageCount} onClick={() => setPages(prev => ({ ...prev, [kind]: page + 1 }))}>{t('nextPage')}<ChevronRight aria-hidden className="size-3" /></Chip>
+              <Chip aria-label={t('nextPage')} disabled={page + 1 >= pageCount} onClick={() => setPages(previous => ({ ...previous, [kind]: page + 1 }))}>{t('nextPage')}<ChevronRight aria-hidden className="size-3" /></Chip>
             </div>}
           </section>;
         })}

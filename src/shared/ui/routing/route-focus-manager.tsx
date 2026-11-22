@@ -14,7 +14,6 @@ interface RouteFocusIntent {
   createdAt: number;
 }
 
-/** Only a different semantic pathname starts a new page-reading context. */
 function normalizeRouteSurfacePath(pathname: string): string {
   const withoutLocale = stripLocalePrefix(pathname);
   if (withoutLocale === '/') return withoutLocale;

@@ -11,7 +11,7 @@ import {
   treePoseFacing,
   zoomTreePoseAbout,
 } from "./tree-camera";
-import type { TreeLayout, TreeModel, TreePose, TreeRect, TreeScreenPoint } from "./types";
+import type { TreeLayout, TreeModel, TreePose, TreeRect, TreeScreenPoint } from "./tree-shapes";
 
 const CANVAS = { width: 1512, height: 982 };
 /** Off-centre and wide, so the fit must use the binding side and the area's own corner. */
