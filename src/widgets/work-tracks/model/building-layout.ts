@@ -86,15 +86,28 @@ export function stageCapacity(width: number): number {
   return wideColumns === 2 ? 4 : 6;
 }
 
-/** The widest two Moru stand side by side, lamp included, in drawn pixels, and the room's margins. */
-const PAIR_SPAN = 230;
+/** Two Moru overlapping by about 40%, the lamp past the first, in drawn pixels; and the room's margins. */
+const PAIR_SPAN = 221;
 const PAIR_MARGIN_PX = 24;
 
-/** The largest unit, up to the room's own, at which two Moru and the lamp fit across a room. */
-export function pairUnit(width: number, unit: RoomUnit): RoomUnit {
-  let fitting = unit;
-  while (fitting > 1 && PAIR_SPAN * fitting + PAIR_MARGIN_PX > width) fitting = (fitting - 1) as RoomUnit;
-  return fitting;
+export interface PairFit {
+  unit: RoomUnit;
+  /** In a wide room, the name tags clear the monitor's bottom, so the pair may stand beneath it. */
+  underMonitor: boolean;
+}
+
+/**
+ * The largest unit, up to the room's own, at which two Moru and the lamp fit across a room without
+ * running into its monitor. A narrow room hangs the monitor above them; a wide one hangs it at the
+ * right, which the pair passes beneath only when its name tags stay below the monitor's bottom.
+ */
+export function pairFit(width: number, sceneHeight: number, unit: RoomUnit): PairFit {
+  const wide = width >= WIDE_ROOM_W;
+  for (let fitting = unit; ; fitting = (fitting - 1) as RoomUnit) {
+    const underMonitor = !wide || sceneHeight >= 134 * fitting + 40;
+    const reach = underMonitor ? 0 : Math.min(0.46 * width, 124 * fitting) + 16;
+    if (fitting === 1 || PAIR_SPAN * fitting + PAIR_MARGIN_PX + reach <= width) return { unit: fitting, underMonitor };
+  }
 }
 
 export function layoutBuilding(input: LayoutInput): BuildingLayout {

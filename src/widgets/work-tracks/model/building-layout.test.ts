@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { layoutBuilding, pairUnit, stageCapacity, type Box, type LayoutInput } from './building-layout';
+import { layoutBuilding, pairFit, stageCapacity, type Box, type LayoutInput } from './building-layout';
 
 const keys = (prefix: string, count: number) => Array.from({ length: count }, (_, index) => `${prefix}${index}`);
 
@@ -74,14 +74,18 @@ describe('stageCapacity', () => {
   });
 });
 
-describe('pairUnit', () => {
-  it('draws two Moru only as large as both fit across the room, lamp included', () => {
-    expect(pairUnit(882, 3)).toBe(3);
-    expect(pairUnit(642, 3)).toBe(2);
-    expect(pairUnit(424, 2)).toBe(1);
-    expect(pairUnit(260, 1)).toBe(1);
-    for (const [width, unit] of [[260, 1], [286, 2], [424, 2], [584, 3], [642, 3], [882, 3]] as const) {
-      expect(230 * pairUnit(width, unit) + 24).toBeLessThanOrEqual(width);
+describe('pairFit', () => {
+  it('keeps two Moru at the room scale wherever both fit, and never into the monitor', () => {
+    expect(pairFit(882, 460, 3)).toEqual({ unit: 3, underMonitor: true });
+    expect(pairFit(882, 432, 3)).toEqual({ unit: 2, underMonitor: true });
+    expect(pairFit(642, 308, 2)).toEqual({ unit: 2, underMonitor: true });
+    expect(pairFit(642, 240, 2)).toEqual({ unit: 1, underMonitor: true });
+    expect(pairFit(560, 160, 2)).toEqual({ unit: 1, underMonitor: false });
+    expect(pairFit(286, 392, 2)).toEqual({ unit: 1, underMonitor: true });
+    for (const [width, height, unit] of [[260, 232, 1], [424, 308, 1], [584, 300, 2], [642, 240, 2], [882, 432, 3]] as const) {
+      const fit = pairFit(width, height, unit);
+      const reach = fit.underMonitor ? 0 : Math.min(0.46 * width, 124 * fit.unit) + 16;
+      expect(221 * fit.unit + 24 + reach).toBeLessThanOrEqual(width);
     }
   });
 });

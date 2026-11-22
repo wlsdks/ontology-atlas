@@ -58,12 +58,14 @@
   /* Where Moru stands: the middle of a narrow room, left of the monitor in a wide one. */
   --ax-room: 50%;
   --ax: var(--ax-room);
+  /* The light of the room: the session's ink, or warning amber when two tools share the folder. */
+  --room-ink: var(--ink);
   --s: calc(1px * var(--u));
   --p: calc(2px * var(--u));
   --floor: calc(20 * var(--s));
-  --wall: color-mix(in srgb, var(--ink) 4%, var(--work-room-wall));
-  --glow-1: color-mix(in srgb, var(--ink) 15%, var(--work-room-wall));
-  --glow-2: color-mix(in srgb, var(--ink) 23%, var(--work-room-wall));
+  --wall: color-mix(in srgb, var(--room-ink) 4%, var(--work-room-wall));
+  --glow-1: color-mix(in srgb, var(--room-ink) 15%, var(--work-room-wall));
+  --glow-2: color-mix(in srgb, var(--room-ink) 23%, var(--work-room-wall));
   --shade: var(--work-room-lamp-off);
   position: relative;
   flex: 1;
@@ -74,8 +76,37 @@
 }
 
 .scene[data-lit='true'] {
-  --wall: color-mix(in srgb, var(--ink) 10%, var(--work-room-wall-lit));
-  --shade: color-mix(in srgb, var(--ink) 30%, var(--color-text-primary));
+  --wall: color-mix(in srgb, var(--room-ink) 10%, var(--work-room-wall-lit));
+  --shade: color-mix(in srgb, var(--room-ink) 30%, var(--color-text-primary));
+}
+
+/* Two tools in one folder: the room's light, lamp and screen turn warning amber. */
+.scene[data-alarm='true'] {
+  --room-ink: var(--color-status-warning);
+}
+
+.scene[data-alarm='true'][data-lit='true'] {
+  --shade: var(--color-status-warning);
+}
+
+.scene[data-alarm='true'] .screen {
+  background: color-mix(in srgb, var(--color-status-warning) 20%, var(--work-room-screen));
+}
+
+.scene[data-alarm='true'] .screenFigure,
+.scene[data-alarm='true'] .screenRow [data-ink='true'] {
+  color: var(--color-status-warning);
+}
+
+.signAlert {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 18px;
+  margin-right: 8px;
+  background: var(--color-status-warning);
+  color: var(--work-room-pit);
 }
 
 /* Lights out: the dim layer fades over the whole scene. */
@@ -212,7 +243,7 @@
 }
 
 .lampFlicker {
-  --c: color-mix(in srgb, var(--ink) 30%, var(--color-text-primary));
+  --c: color-mix(in srgb, var(--room-ink) 30%, var(--color-text-primary));
   animation: roomLampFlicker calc(var(--motion-base) * 18) linear infinite;
   animation-play-state: paused;
 }
@@ -240,21 +271,22 @@
  * past the first. The pair's anchor is clamped so both, and the lamp, stay inside the room.
  */
 .scene[data-cast='two'] {
-  --ax: clamp(calc(120 * var(--s) + 12px), var(--ax-room), calc(100% - 110 * var(--s) - 12px));
+  --pair-right: calc(103 * var(--s) + 12px);
+  --ax: clamp(calc(118 * var(--s) + 12px), var(--ax-room), calc(100% - var(--pair-right)));
 }
 
 .scene[data-cast='two'] .lamp {
-  left: calc(var(--ax) - 120 * var(--s));
+  left: calc(var(--ax) - 118 * var(--s));
 }
 
 .actorBack {
-  --dx: calc(-40 * var(--s));
+  --dx: calc(-38 * var(--s));
   z-index: 1;
   bottom: calc(var(--floor) * 0.4 - 28 * var(--s) + 3 * var(--p));
 }
 
 .actorFront {
-  --dx: calc(44 * var(--s));
+  --dx: calc(39 * var(--s));
 }
 
 .tag {
@@ -289,8 +321,8 @@
 }
 
 .tagBack {
-  --dx: calc(-40 * var(--s));
-  max-width: calc(var(--ax) - 40 * var(--s) - 4px);
+  --dx: calc(-38 * var(--s));
+  max-width: calc(var(--ax) - 38 * var(--s) + 8px);
   transform: translateX(calc(-100% + 12px));
 }
 
@@ -299,8 +331,8 @@
 }
 
 .tagFront {
-  --dx: calc(44 * var(--s));
-  max-width: calc(100% - var(--ax) - 44 * var(--s) - 4px);
+  --dx: calc(39 * var(--s));
+  max-width: calc(100% - var(--ax) - 39 * var(--s) + 8px - var(--monitor-reach, 0px));
   transform: translateX(-12px);
 }
 
@@ -333,7 +365,8 @@
   left: 12px;
   right: 12px;
   top: 52px;
-  height: 112px;
+  /* Above Moru in a narrow room, it stops short of the name tag over his head. */
+  height: clamp(64px, calc(100% - 52px - 70 * var(--s) - 28px), 112px);
   z-index: 1;
 }
 
@@ -483,6 +516,16 @@
 @container (min-width: 520px) {
   .scene {
     --ax-room: 27%;
+    /* The monitor's span from the right edge, which a pair and its tags keep clear of. */
+    --monitor-reach: calc(min(46%, calc(124px * var(--u))) + 16px);
+  }
+
+  .scene[data-cast='two'][data-under-monitor='false'] {
+    --pair-right: calc(103 * var(--s) + 12px + var(--monitor-reach));
+  }
+
+  .scene[data-cast='two'][data-under-monitor='true'] {
+    --monitor-reach: 0px;
   }
 
   .monitor {

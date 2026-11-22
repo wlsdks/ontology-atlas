@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { KNOWN_UNTIL, STAGE_AT, UNREAD_STATIONS, roomLook } from '../model/room-look';
-import { pairUnit, type RoomUnit } from '../model/building-layout';
+import { BELT_H, pairFit, type RoomUnit } from '../model/building-layout';
 import { RoomMoru } from './RoomMoru';
 import { SwapText } from './SwapText';
 import type { useRoomCopy } from './use-room-copy';
@@ -105,11 +105,12 @@ function Belt({ room }: { room: RoomEntry }) {
  * Moru with the session's name tag beside a floor lamp lit only while something runs, and the belt
  * that carries the work's crate toward the `main` hatch.
  */
-export function LargeRoom({ room, unit, width, copy, tint, retiring }: {
+export function LargeRoom({ room, unit, width, height, copy, tint, retiring }: {
   room: RoomEntry;
   unit: RoomUnit;
-  /** The room's width in CSS pixels, to fit two Moru when two tools share the folder. */
+  /** The room's size in CSS pixels, to fit two Moru when two tools share the folder. */
   width: number;
+  height: number;
   copy: RoomCopy;
   tint: string | null;
   /** The worktree just merged: once the crate is in, the lights go out. */
@@ -120,14 +121,16 @@ export function LargeRoom({ room, unit, width, copy, tint, retiring }: {
   const tools = room.state.kind === 'working' ? room.state.tools : [];
   const second = tools[1];
   const pair = look.cast === 'two' && second !== undefined;
-  const sceneUnit = pair ? pairUnit(width, unit) : unit;
+  const fit = pair ? pairFit(width, height - BELT_H, unit) : { unit, underMonitor: true };
+  const sceneUnit = fit.unit;
   return (
     <div className={cn(styles.large, 'h-full w-full')}>
-      <div className={styles.scene} style={{ ['--u' as string]: sceneUnit }} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast}>
+      <div className={styles.scene} style={{ ['--u' as string]: sceneUnit }} data-lit={look.running} data-dark={retiring} data-cast={pair ? 'two' : look.cast} data-alarm={pair} data-under-monitor={fit.underMonitor}>
         <i className={styles.glow}><i className={styles.glowLight} /></i>
         <i className={styles.wainscot} />
         <i className={styles.floor} />
         <div className={cn(styles.sign, styles.notched, BODY, 'font-mono font-[var(--font-weight-strong)]')} title={room.track.branch ?? room.track.path}>
+          {pair ? <span aria-hidden className={styles.signAlert}>!</span> : null}
           {room.track.branch ?? room.track.title}
         </div>
         <Monitor room={room} copy={copy} />

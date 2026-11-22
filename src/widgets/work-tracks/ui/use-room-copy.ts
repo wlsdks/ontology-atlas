@@ -60,7 +60,7 @@ export function useRoomCopy(baseBranch: string, nowMs: number) {
     const { state, track } = room;
     switch (state.kind) {
       case 'working':
-        return { lead: t(state.tools.length > 1 ? 'room.twoTools' : 'room.working'), tone: 'ink', rest: commits(track) };
+        return { lead: t(state.tools.length > 1 ? 'room.twoTools' : 'room.working'), tone: state.tools.length > 1 ? 'warning' : 'ink', rest: commits(track) };
       case 'resting':
         return { lead: t('room.resting'), tone: 'plain', rest: commits(track) };
       case 'dozing':
@@ -88,7 +88,15 @@ export function useRoomCopy(baseBranch: string, nowMs: number) {
     switch (state.kind) {
       case 'working':
         return state.tools.length > 1
-          ? { ...quiet, label: t('monitor.twoTools'), labelInk: true, aside: commits(track), figure: null, note: t('monitor.twoToolsNote'), terminal: true }
+          ? {
+            ...quiet,
+            label: state.tools.map(toolName).join(' · '),
+            labelInk: true,
+            aside: commits(track),
+            figure: t('monitor.twoTools'),
+            note: t('monitor.twoToolsNote'),
+            terminal: false,
+          }
           : { ...quiet, label: t('monitor.running'), labelInk: true, aside: commits(track), figure: null, note: null, terminal: true };
       case 'resting':
         return { ...quiet, label: t('monitor.idle'), aside: lockedAt(track), figure: commits(track) ?? t('room.resting'), note: sinceBase(track) };

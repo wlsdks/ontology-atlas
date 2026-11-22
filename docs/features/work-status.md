@@ -81,8 +81,9 @@ text), the holding session's name tag over Moru, a floor lamp lit only while
 something runs, a monitor with one figure or the state in words, and a belt
 that carries the worktree's crate toward the `main` hatch. The belt knows only
 the commit and `main`; pre-push, push, PR and CI are drawn dim as **not read
-yet**, and no value is invented for them. Two tools in one folder stand as two
-Moru with both names. A held room with nothing seen running for five minutes
+yet**, and no value is invented for them. Two tools in one folder are the alarm:
+the room's light, lamp and monitor turn warning amber, the sign carries a `!`,
+and two Moru stand overlapped with both names. A held room with nothing seen running for five minutes
 dozes; a lock left behind shows a taped crate and a dark monitor; a missing
 folder shows a dashed crate and the `git worktree prune` command as text.
 
