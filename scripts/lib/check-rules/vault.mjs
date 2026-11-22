@@ -48,7 +48,7 @@ export const rules = [
      * unrelated pushes. `vault:validate` speaks only when frontmatter or references are broken.
      */
     command: 'pnpm vault:validate',
-    reason: 'dogfood ontology or MCP/CLI dogfood surface changed',
+    reason: 'dogfood ontology or MCP dogfood surface changed',
     matches: [/^docs\/ontology\//, /^mcp\//, /^cli\//, /^scripts\/dogfood\/dogfood/],
   },
   {

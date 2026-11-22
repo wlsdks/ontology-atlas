@@ -1,12 +1,13 @@
 /**
  * The repository's agent-file inventory, shared by the docs sidebar and the Harness tab. Exports only
- * what other slices consume (`pnpm knip`); the classifier mirrors `cli/src/lib/agent-setup/agent-files.mjs`.
+ * what other slices consume (`pnpm knip`).
  */
 export {
   analyzeAgentFiles,
   buildAgentFilesUiModel,
   manifestIncludesRepoRoot,
   selectAgentFileDocs,
+  AGENT_FILE_RULES,
   AGENT_TOOL_LABELS,
   WEB_SCAN_ANALYZE_OPTIONS,
   type AgentFileEntry,

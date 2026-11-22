@@ -283,7 +283,7 @@ function assembleCompileBrief({
       WIKI_PAGE_TEMPLATE.trimEnd(),
       "```",
       "",
-      "`wiki-validate` 를 통과하지 못하는 문서는 위키 목록에 첫 문제 코드와 함께 떠. 자료실의 쓰기 모드와 선택한 ACP 런타임의 권한에 따라 형식에 맞는 문서도 검토가 필요할 수 있어. 실행 중 권한 요청을 따라. 이 요청은 자동 쓰기를 무조건 약속하지 않아.",
+      "`validate_wiki` 를 통과하지 못하는 문서는 위키 목록에 첫 문제 코드와 함께 떠. 자료실의 쓰기 모드와 선택한 ACP 런타임의 권한에 따라 형식에 맞는 문서도 검토가 필요할 수 있어. 실행 중 권한 요청을 따라. 이 요청은 자동 쓰기를 무조건 약속하지 않아.",
     ].join("\n");
   }
 
@@ -305,7 +305,7 @@ function assembleCompileBrief({
     "Rules:",
     rules,
     "",
-    "The template — write only this shape; a page that fails `wiki-validate` is listed in the Wiki with its first problem code:",
+    "The template — write only this shape; a page that fails `validate_wiki` is listed in the Wiki with its first problem code:",
     "```markdown",
     WIKI_PAGE_TEMPLATE.trimEnd(),
     "```",

@@ -324,8 +324,6 @@ export const VALIDATE_WIKI_TOOL = {
     'fix those and validate again to see more. `summary` always counts the whole folder; ' +
     'each `byCode` entry names at most 20 `files` and says how many more in `filesOmitted`. ' +
     'With `paths`, every named page is listed with its `ok`, passing or not, unpaged. ' +
-    '`ontology-atlas wiki-validate --json` prints the same page and problem objects for every page in the folder, ' +
-    'because a person reading it locally has no reply budget. ' +
     'side effect 0. Use it after writing or editing a page, and before claiming a compile finished.',
   inputSchema: {
     type: 'object',

@@ -80,7 +80,7 @@ describe('planBlockImport — dry-run contract', () => {
     expect(plan.writes.map((w) => w.slug)).toEqual(['capabilities/session']);
   });
 
-  it('reports kindless files without planning a write (CLI import parity)', () => {
+  it('reports kindless files without planning a write', () => {
     const plan = planBlockImport(
       [file('notes/loose.md', '# Loose note\n')],
       new Set(),
@@ -282,7 +282,7 @@ describe('planBlockImport — prefix resolution', () => {
     expect(session?.content).toContain('slug: capabilities/auth-block-session');
   });
 
-  it('suffixes -2 when even the prefixed slug is taken (CLI --rename parity)', () => {
+  it('suffixes -2 when even the prefixed slug is taken', () => {
     const plan = planBlockImport(
       [CAP],
       new Set(['capabilities/login', 'capabilities/auth-block-login']),

@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { Check, Copy } from 'lucide-react';
 
 import { Chip } from '@/shared/ui';
-import { vaultPathForPacket } from '@/shared/config/agent/cli-invocation';
+import { vaultPathForPacket } from '@/shared/config/agent/vault-path-for-packet';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 

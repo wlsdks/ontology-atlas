@@ -22,7 +22,6 @@ function emptyStatus(): AgentActivityStatus {
       previousOntologySlug: null,
       previousFiles: [],
       previousAgeMs: null,
-      command: null,
       message: null,
     },
     errorMessage: null,

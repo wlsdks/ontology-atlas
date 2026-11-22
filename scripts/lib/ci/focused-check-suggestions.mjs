@@ -151,8 +151,8 @@ export function suggestFocusedChecks(paths = [], { deletedPaths = [], commentOnl
   );
   const commands = insertBeforeCommand(
     withMcpDirect,
-    directMappedTestSuggestions(behaviorPaths, 'cli', 'direct CLI lib unit test for changed helper'),
-    'pnpm test:cli:lib',
+    directMappedTestSuggestions(behaviorPaths, 'cli', 'direct init unit test for changed helper'),
+    'pnpm test:cli',
   );
   const withScriptDirect = insertBeforeCommand(
     commands,

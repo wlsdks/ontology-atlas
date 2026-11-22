@@ -27,8 +27,9 @@ export interface AgentReadinessToolCall {
   arguments: Record<string, unknown>;
 }
 
-export const AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND = "pnpm dogfood:graph-db";
-export const AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT = 14;
+/** The dogfood vault's MCP walk: one request per entry in `scripts/lib/dogfood-walk/rpc-client.mjs`. */
+export const DOGFOOD_MCP_WALK_COMMAND = "pnpm dogfood:walk";
+export const DOGFOOD_MCP_WALK_CHECK_COUNT = 86;
 
 const AGENT_READINESS_TOOLS = new Set([
   "analyze_repo_structure",

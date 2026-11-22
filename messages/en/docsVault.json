@@ -206,7 +206,7 @@
     "graphCta": "Browse",
     "agentLabel": "Agent check",
     "agentValue": "{count} graph checks",
-    "agentBody": "Claude Code, Codex, Cursor and terminal sessions run the same graph checks before writing.",
+    "agentBody": "Claude Code, Codex and Cursor run the same graph checks before writing.",
     "agentChip": "reads before writing",
     "agentCta": "Query",
     "agentCopyGate": "Copy graph check",

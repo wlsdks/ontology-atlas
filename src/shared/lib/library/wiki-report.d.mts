@@ -12,7 +12,7 @@ export interface WikiReportPageInput {
 }
 
 export interface WikiReportRow {
-  /** Vault-relative page path, `wiki/<slug>.md`, as `wiki-validate --json` prints it. */
+  /** Vault-relative page path, `wiki/<slug>.md`, as `validate_wiki` returns it. */
   page: string;
   /** The full code, instance part included (`missing-field:title`). */
   code: string;

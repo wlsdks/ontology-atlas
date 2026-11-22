@@ -5909,8 +5909,6 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference \+ focused filter parser\/wrapper summary contract/);
     assert.match(verifyUsage(), /pnpm test:mcp:registration\s+Narrow source-checkout .mcp.json\/.mcp.json.example\/.codex\/config.toml registration template contract/);
     assert.match(verifyUsage(), /pnpm dogfood:compile\s+Cheap root checkout compile_ontology summary snapshot/);
-    assert.match(verifyUsage(), /pnpm dogfood:compile-fix\s+Cheap root checkout compile --fix idempotence gate; changed vaults need pnpm docs-vault:build; success ends with \[dogfood:compile-fix\] docs\/ontology unchanged/);
-    assert.match(verifyUsage(), /pnpm test:dogfood:compile-fix\s+Narrow dogfood compile --fix idempotence runner contract/);
     assert.match(verifyUsage(), /pnpm dogfood:health\s+Cheap root checkout health gate/);
     assert.match(verifyUsage(), /pnpm dogfood:brief\s+Cheap root checkout workspace_brief snapshot/);
     assert.match(verifyUsage(), /pnpm dogfood:growth\s+Cheap root checkout growth_plan snapshot/);
@@ -10791,7 +10789,7 @@ Continue.`;
       handoffPrompt: [
         'Use the ontology-atlas MCP server as the shared codebase graph memory before editing.',
         'Run these first-contact MCP calls in order:',
-        'CLI fallback commands when the MCP connector is unavailable:',
+        "When the ontology-atlas MCP server is unavailable: read the vault's Markdown files directly, write nothing to the vault, and tell the person the Atlas connection is missing; the app's Connect a coding agent dialog restores it.",
         'Graph DB query pack:',
         'Kind classification contract before writing frontmatter:',
         '- Do not classify from the label alone. Treat kind as an evidence-backed role in the shared conceptualization.',
@@ -10813,19 +10811,6 @@ Continue.`;
         'For all_paths, report totalPathsExact.',
         'Run relation_check before add_relation.',
       ].join('\n'),
-      cliFallbackCommands: [
-        'node /abs/cli/src/index.mjs workspace-brief [vault]',
-        'node /abs/cli/src/index.mjs facets [vault] --limit 10',
-        'node /abs/cli/src/index.mjs schema [vault] --limit 20',
-        'node /abs/cli/src/index.mjs hubs [vault] --plan --limit 10 --types depends_on,relates',
-        'node /abs/cli/src/index.mjs domain-matrix [vault] --limit 10',
-        'node /abs/cli/src/index.mjs match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10',
-        'node /abs/cli/src/index.mjs match-edges [vault] --plan --types depends_on --limit 20',
-        'node /abs/cli/src/index.mjs all-paths capability:mcp-server domain:ai-agent-partner [vault] --plan --max-hops 3 --force',
-        'node /abs/cli/src/index.mjs pattern-walk project:app [vault] --pattern domains,capabilities',
-        'node /abs/cli/src/index.mjs project-map project:app [vault]',
-        'node /abs/cli/src/index.mjs explain capability:mcp-server domain:ai-agent-partner [vault] --direction undirected',
-      ],
       health: {
         checks: [{ id: 'compile_issues', status: 'pass', count: 0, message: 'ok' }],
       },
@@ -11164,68 +11149,15 @@ Continue.`;
       'agent_brief response missing copyable handoffPrompt',
     );
     assert.equal(
-      agentBriefFailure({ ...payload, cliFallbackCommands: [] }),
-      'agent_brief response missing cliFallbackCommands',
+      agentBriefFailure({ ...payload, cliFallbackCommands: ['health [vault]'] }),
+      'agent_brief response still prints command-line fallbacks',
     );
-    assert.equal(
-      agentBriefFailure({ ...payload, cliFallbackCommands: ['node health'] }),
-      'agent_brief response missing cliFallbackCommands',
-    );
-    assert.equal(
-      agentBriefFailure({ ...payload, cliFallbackCommands: ['ontology-atlas workspace-brief [vault]'] }),
-      'agent_brief response missing cliFallbackCommands',
-    );
-    assert.equal(
-      // A bare name is rejected: it cannot run.
-      agentBriefFailure({ ...payload, cliFallbackCommands: ['ontology-atlas health'] }),
-      'agent_brief response missing cliFallbackCommands',
-    );
-    assert.equal(
-      agentBriefFailure({ ...payload, cliFallbackCommands: ["node '/tmp/ontology atlas/cli/src/index.mjs' workspace-brief [vault]"] }),
-      'agent_brief cliFallbackCommands missing centrality plan fallback',
-    );
-    assert.equal(
+    assert.match(
       agentBriefFailure({
         ...payload,
-        cliFallbackCommands: payload.cliFallbackCommands.filter((command) => !/facets/.test(command)),
-      }),
-      'agent_brief cliFallbackCommands missing facets fallback',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        cliFallbackCommands: payload.cliFallbackCommands.filter((command) => !/schema/.test(command)),
-      }),
-      'agent_brief cliFallbackCommands missing schema fallback',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        cliFallbackCommands: payload.cliFallbackCommands.filter((command) => !/match-nodes/.test(command)),
-      }),
-      'agent_brief cliFallbackCommands missing match-nodes plan fallback',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        cliFallbackCommands: payload.cliFallbackCommands.filter((command) => !/pattern-walk/.test(command)),
-      }),
-      'agent_brief cliFallbackCommands missing pattern-walk fallback',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        cliFallbackCommands: payload.cliFallbackCommands.filter((command) => !/project-map/.test(command)),
-      }),
-      'agent_brief cliFallbackCommands missing project-map fallback',
-    );
-    assert.equal(
-      agentBriefFailure({
-        ...payload,
-        readiness: { ...payload.readiness, projects: 0 },
-        cliFallbackCommands: payload.cliFallbackCommands.filter((command) => !/pattern-walk|project-map/.test(command)),
-      }),
-      null,
+        readiness: { ...payload.readiness, healthChecks: (payload.health?.checks?.length ?? 0) + 1 },
+      }) ?? '',
+      /health-check counts disagree/,
     );
     assert.equal(
       agentBriefFailure({ ...payload, firstCalls: [{ tool: 'query_ontology', arguments: { operation: 'not_real' } }] }),

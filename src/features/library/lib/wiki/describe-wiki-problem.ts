@@ -3,7 +3,7 @@ import type { useTranslations } from "next-intl";
 /**
  * One finding retold for a person, in pieces a surface can place: its `sentence`,
  * its `action`, `where`, `targets`, `segments` (names pressable in place) and `code`.
- * The English message in `problem.message` stays the machine copy the CLI and MCP print.
+ * The English message in `problem.message` stays the machine copy MCP returns.
  */
 
 /** One finding as the validator hands it over. */
@@ -266,14 +266,14 @@ export function describeWikiProblem(
   };
 }
 
-/** Code, anchor and English message, deliberately not localised so it matches the CLI and MCP. */
+/** Code, anchor and English message, deliberately not localised so it matches MCP. */
 export function wikiProblemMachineLine(problem: WikiTemplateProblem): string {
   return `${problem.code}${problem.line ? `:${problem.line}` : ""} — ${problem.message}`;
 }
 
 /**
  * One row per thing a person fixes: identical findings merge and keep each place in the
- * sentence. The technical disclosure still lists every finding separately, as `wiki-validate`
+ * sentence. The technical disclosure still lists every finding separately, as `validate_wiki`
  * reports them.
  */
 export interface WikiProblemRow {

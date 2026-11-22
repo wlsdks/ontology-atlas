@@ -39,8 +39,8 @@ describe("pnpm script reference helpers", () => {
 
   it("extracts chained package-script commands and shell-prompt examples", () => {
     assert.deepEqual(
-      pnpmScriptsFromText("node scripts/check.mjs && pnpm test:cli:lib\n$ pnpm test:mcp:docs"),
-      ["test:cli:lib", "test:mcp:docs"],
+      pnpmScriptsFromText("node scripts/check.mjs && pnpm test:cli\n$ pnpm test:mcp:docs"),
+      ["test:cli", "test:mcp:docs"],
     );
   });
 
@@ -87,8 +87,8 @@ describe("pnpm script reference helpers", () => {
 
   it("extracts parenthesized and quoted script references", () => {
     assert.deepEqual(
-      pnpmScriptsFromText("(pnpm test:mcp:docs)\npnpm \"dogfood:status\"\npnpm run 'test:cli:args'"),
-      ["test:mcp:docs", "dogfood:status", "test:cli:args"],
+      pnpmScriptsFromText("(pnpm test:mcp:docs)\npnpm \"dogfood:status\"\npnpm run 'test:mcp:verify'"),
+      ["test:mcp:docs", "dogfood:status", "test:mcp:verify"],
     );
   });
 

@@ -206,7 +206,7 @@
     "graphCta": "둘러보기",
     "agentLabel": "쓰기 전 검사",
     "agentValue": "그래프 검사 {count}개",
-    "agentBody": "Claude Code, Codex, Cursor, 터미널 세션이 쓰기 전에 같은 그래프 검사를 실행해요.",
+    "agentBody": "Claude Code, Codex, Cursor가 쓰기 전에 같은 그래프 검사를 실행해요.",
     "agentChip": "쓰기 전에 읽음",
     "agentCta": "검증",
     "agentCopyGate": "그래프 검사 복사",

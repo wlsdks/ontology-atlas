@@ -106,9 +106,6 @@ export function importedSpecifiers(source) {
   )) {
     imports.push(match[1]);
   }
-  for (const match of source.matchAll(/\brunner\(\s*['"]([^'"]+\.(?:mjs|js|cjs))['"]/g)) {
-    imports.push(`../commands/${match[1]}`);
-  }
   return imports;
 }
 
@@ -203,12 +200,6 @@ export function checkReleasePackages(packages = DEFAULT_PACKAGES) {
 
   const mcpPkg = readJson(join(ROOT, 'mcp', 'package.json'));
   checkMcpLeanTarballFiles(mcpPkg.files ?? []);
-  const cliPkg = readJson(join(ROOT, 'cli', 'package.json'));
-  assert.equal(
-    cliPkg.dependencies?.['ontology-atlas-mcp'],
-    `^${mcpPkg.version}`,
-    'cli: ontology-atlas-mcp dependency must track the current local MCP package version',
-  );
 
   console.log('package contracts OK');
 }

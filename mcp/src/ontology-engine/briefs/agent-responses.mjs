@@ -1,10 +1,17 @@
 import { publicRelationType } from '../query-operation/query-primitives.mjs';
 
+/**
+ * What an agent does when the server cannot be reached. There is no write path around MCP: the
+ * Markdown is readable without it, and only the person can restore the connection.
+ */
+export const MCP_UNAVAILABLE_GUIDANCE =
+  "read the vault's Markdown files directly, write nothing to the vault, and tell the person the Atlas connection is missing; the app's Connect a coding agent dialog restores it.";
+
 export function agentToolCall(tool, args) {
   return { tool, arguments: args };
 }
 
-export function buildMatchNodesFollowUp(node, cliPrefix) {
+export function buildMatchNodesFollowUp(node) {
   if (!node?.slug) return null;
   const slug = node.slug;
   const calls = [
@@ -54,11 +61,10 @@ export function buildMatchNodesFollowUp(node, cliPrefix) {
     reason:
       'match_nodes is a scan; use these focused follow-up calls before treating a row as graph evidence.',
     calls,
-    cliFallbackCommands: uniqueCliCommands(calls, cliPrefix),
   };
 }
 
-export function buildMatchEdgesFollowUp(edge, cliPrefix) {
+export function buildMatchEdgesFollowUp(edge) {
   if (!edge?.from || !edge?.to || edge.resolved === false || edge.external === true) return null;
   const relation = edge.via === 'dependencies' ? 'depends_on' : edge.via;
   const calls = [
@@ -107,7 +113,6 @@ export function buildMatchEdgesFollowUp(edge, cliPrefix) {
     reason:
       'match_edges is a scan; explain and preflight the first edge before treating it as write or refactor evidence.',
     calls,
-    cliFallbackCommands: uniqueCliCommands(calls, cliPrefix),
   };
 }
 
@@ -115,242 +120,7 @@ function formatAgentToolCall(call) {
   return `${call.tool} ${JSON.stringify(call.arguments)}`;
 }
 
-function formatAgentToolCallCliCommand(call, cliPrefix) {
-  const args = call?.arguments || {};
-  if (call?.tool === 'find_backlinks') {
-    const slug = stringArg(args.slug, '<slug>');
-    return `${cliPrefix} backlinks ${shellQuote(slug)} [vault]`;
-  }
-  if (call?.tool === 'validate_vault') {
-    return `${cliPrefix} validate [vault]`;
-  }
-  if (call?.tool !== 'query_ontology') return null;
-
-  switch (args.operation) {
-    case 'workspace_brief':
-      return withCliFlags(`${cliPrefix} workspace-brief [vault]`, [
-        positiveFlag('--limit', args.limit),
-      ]);
-    case 'health':
-      return withCliFlags(`${cliPrefix} health [vault]`, [
-        positiveFlag('--limit', args.limit),
-      ]);
-    case 'agent_brief':
-      return withCliFlags(`${cliPrefix} agent-brief [vault]`, [
-        positiveFlag('--limit', args.limit),
-      ]);
-    case 'facets':
-      return withCliFlags(`${cliPrefix} facets [vault]`, [
-        positiveFlag('--limit', args.limit),
-      ]);
-    case 'schema':
-      return withCliFlags(`${cliPrefix} schema [vault]`, [
-        positiveFlag('--limit', args.limit),
-      ]);
-    case 'query_plan':
-      if (args.targetOperation === 'blast_radius') {
-        const slug = stringArg(args.slug, '<slug>');
-        return withCliFlags(`${cliPrefix} blast-radius ${shellQuote(slug)} [vault]`, [
-          '--plan',
-          nonNegativeFlag('--depth', args.depth),
-          stringFlag('--direction', args.direction),
-        ]);
-      }
-      if (args.targetOperation === 'centrality') {
-        return withCliFlags(`${cliPrefix} hubs [vault]`, [
-          '--plan',
-          positiveFlag('--limit', args.limit),
-          csvFlag('--types', args.types),
-        ]);
-      }
-      if (args.targetOperation === 'match_nodes') {
-        return formatMatchNodesCliCommand(args, cliPrefix, { plan: true });
-      }
-      if (args.targetOperation === 'match_edges') {
-        return formatMatchEdgesCliCommand(args, cliPrefix, { plan: true });
-      }
-      if (args.targetOperation === 'all_paths') {
-        const from = stringArg(args.from, '<from-slug>');
-        const to = stringArg(args.to, '<to-slug>');
-        return withCliFlags(`${cliPrefix} all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
-          '--plan',
-          '--force',
-          nonNegativeFlag('--max-hops', args.maxHops),
-          csvFlag('--types', args.types),
-          positiveFlag('--search-budget', args.searchBudget),
-          positiveFlag('--limit', args.limit),
-        ]);
-      }
-      return null;
-    case 'node_profile': {
-      const slug = stringArg(args.slug, '<slug>');
-      return withCliFlags(`${cliPrefix} node ${shellQuote(slug)} [vault]`, [
-        positiveFlag('--limit', args.limit),
-      ]);
-    }
-    case 'path': {
-      const from = stringArg(args.from, '<from-slug>');
-      const to = stringArg(args.to, '<to-slug>');
-      return withCliFlags(`${cliPrefix} path ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
-        nonNegativeFlag('--max-hops', args.maxHops),
-      ]);
-    }
-    case 'explain_relation': {
-      const from = stringArg(args.from, '<from-slug>');
-      const to = stringArg(args.to, '<to-slug>');
-      return withCliFlags(`${cliPrefix} explain ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
-        stringFlag('--direction', args.direction),
-        nonNegativeFlag('--max-hops', args.maxHops),
-        csvFlag('--types', args.types),
-        positiveFlag('--limit', args.limit),
-      ]);
-    }
-    case 'relation_check': {
-      const from = stringArg(args.from, '<from-slug>');
-      const to = stringArg(args.to, '<to-slug>');
-      const type = stringArg(args.type, 'depends_on');
-      return `${cliPrefix} relation-check ${shellQuote(from)} ${shellQuote(to)} ${shellQuote(type)} [vault]`;
-    }
-    case 'blast_radius': {
-      const slug = stringArg(args.slug, '<slug>');
-      return withCliFlags(`${cliPrefix} blast-radius ${shellQuote(slug)} [vault]`, [
-        nonNegativeFlag('--depth', args.depth),
-        stringFlag('--direction', args.direction),
-      ]);
-    }
-    case 'all_paths': {
-      const from = stringArg(args.from, '<from-slug>');
-      const to = stringArg(args.to, '<to-slug>');
-      return withCliFlags(`${cliPrefix} all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
-        '--plan',
-        '--force',
-        nonNegativeFlag('--max-hops', args.maxHops),
-        csvFlag('--types', args.types),
-        positiveFlag('--search-budget', args.searchBudget),
-        positiveFlag('--limit', args.limit),
-      ]);
-    }
-    case 'centrality':
-      return withCliFlags(`${cliPrefix} hubs [vault]`, [
-        positiveFlag('--limit', args.limit),
-        csvFlag('--types', args.types),
-      ]);
-    case 'match_nodes':
-      return formatMatchNodesCliCommand(args, cliPrefix);
-    case 'match_edges':
-      return formatMatchEdgesCliCommand(args, cliPrefix);
-    case 'domain_matrix':
-      return withCliFlags(`${cliPrefix} domain-matrix [vault]`, [
-        stringFlag('--project', args.project),
-        positiveFlag('--limit', args.limit),
-        csvFlag('--types', args.types),
-      ]);
-    case 'pattern_walk': {
-      const slug = stringArg(args.slug, '<slug>');
-      if (isPlaceholderArg(slug)) return null;
-      return withCliFlags(`${cliPrefix} pattern-walk ${shellQuote(slug)} [vault]`, [
-        csvFlag('--pattern', args.pattern),
-        stringFlag('--direction', args.direction),
-        positiveFlag('--limit', args.limit),
-      ]);
-    }
-    case 'project_map': {
-      const project = stringArg(args.project ?? args.slug, '<project-slug>');
-      if (isPlaceholderArg(project)) return null;
-      return withCliFlags(`${cliPrefix} project-map ${shellQuote(project)} [vault]`, [
-        positiveFlag('--limit', args.limit),
-        positiveFlag('--item-limit', args.itemLimit),
-      ]);
-    }
-    default:
-      return null;
-  }
-}
-
-function isPlaceholderArg(value) {
-  return typeof value === 'string' && /^<[^>]+>$/.test(value);
-}
-
-function formatMatchNodesCliCommand(args, cliPrefix, options = {}) {
-  return withCliFlags(`${cliPrefix} match-nodes [vault]`, [
-    options.plan ? '--plan' : null,
-    stringFlag('--kind', args.kind),
-    stringFlag('--domain', args.domain),
-    stringFlag('--slug-contains', args.slugContains),
-    nonNegativeFlag('--min-degree', args.minDegree),
-    nonNegativeFlag('--max-degree', args.maxDegree),
-    nonNegativeFlag('--min-in-degree', args.minInDegree),
-    nonNegativeFlag('--min-out-degree', args.minOutDegree),
-    booleanFlag('--has-incoming', args.hasIncoming),
-    booleanFlag('--has-outgoing', args.hasOutgoing),
-    stringFlag('--sort', args.sort),
-    positiveFlag('--limit', args.limit),
-  ]);
-}
-
-function formatMatchEdgesCliCommand(args, cliPrefix, options = {}) {
-  return withCliFlags(`${cliPrefix} match-edges [vault]`, [
-    options.plan ? '--plan' : null,
-    stringFlag('--from', args.from),
-    stringFlag('--to', args.to),
-    stringFlag('--from-kind', args.fromKind),
-    stringFlag('--to-kind', args.toKind),
-    stringFlag('--type', args.type),
-    csvFlag('--types', args.types),
-    booleanFlag('--include-external', args.includeExternal),
-    booleanFlag('--include-unresolved', args.includeUnresolved),
-    positiveFlag('--limit', args.limit),
-  ]);
-}
-
-function withCliFlags(command, flags) {
-  return [command, ...flags.filter(Boolean)].join(' ');
-}
-
-function stringArg(value, fallback) {
-  return typeof value === 'string' && value.trim() ? value : fallback;
-}
-
-function stringFlag(name, value) {
-  return typeof value === 'string' && value.trim() ? `${name} ${shellQuote(value)}` : null;
-}
-
-function positiveFlag(name, value) {
-  return Number.isInteger(value) && value > 0 ? `${name} ${value}` : null;
-}
-
-function nonNegativeFlag(name, value) {
-  return Number.isInteger(value) && value >= 0 ? `${name} ${value}` : null;
-}
-
-function booleanFlag(name, value) {
-  return value === true ? name : null;
-}
-
-function csvFlag(name, value) {
-  if (!Array.isArray(value) || value.length === 0) return null;
-  const values = value.filter((item) => typeof item === 'string' && item.trim().length > 0);
-  return values.length > 0 ? `${name} ${values.map(shellQuote).join(',')}` : null;
-}
-
-function shellQuote(value) {
-  if (/^[A-Za-z0-9_/:=.,@%+-]+$/.test(value)) return value;
-  return `'${value.replace(/'/g, "'\\''")}'`;
-}
-
-export function uniqueCliCommands(calls, cliPrefix) {
-  const seen = new Set();
-  const commands = [];
-  for (const call of calls) {
-    const command = formatAgentToolCallCliCommand(call, cliPrefix);
-    if (!command || seen.has(command)) continue;
-    seen.add(command);
-    commands.push(command);
-  }
-  return commands;
-}
-
-export function buildAgentBriefHandoffPrompt(brief, cliPrefix) {
+export function buildAgentBriefHandoffPrompt(brief) {
   const firstCalls = brief.firstCalls
     .map((call, index) => `${index + 1}. ${formatAgentToolCall(call)}`)
     .join('\n');
@@ -396,33 +166,13 @@ export function buildAgentBriefHandoffPrompt(brief, cliPrefix) {
   const decisionQuestions = Array.isArray(businessOntologyLens.decisionQuestions)
     ? businessOntologyLens.decisionQuestions
     : [];
-  const cliCommands = Array.isArray(brief.cliFallbackCommands)
-    ? brief.cliFallbackCommands
-    : uniqueCliCommands([
-        ...brief.firstCalls,
-        ...(Array.isArray(brief.graphDbQueryPack)
-          ? brief.graphDbQueryPack.flatMap((item) => item.calls)
-          : []),
-        ...brief.playbooks.flatMap((playbook) => playbook.calls),
-        ...(Array.isArray(brief.traversalStrategy)
-          ? brief.traversalStrategy.flatMap((strategy) => strategy.calls)
-          : []),
-        ...brief.writeGuardrails.flatMap((guardrail) => guardrail.calls),
-      ], cliPrefix);
-  const cliFallback = cliCommands.length > 0
-    ? [
-        '',
-        'CLI fallback commands when the MCP connector is unavailable:',
-        ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
-      ]
-    : [];
-
   return [
     'Use the ontology-atlas MCP server as the shared codebase graph memory before editing.',
     'Identity contract: uid is the permanent identity; slug is the current human-readable address. Keep graph relations, URLs, and graph-operation inputs slug-based.',
     `Current readiness: ${brief.readiness.status} ${brief.readiness.score}/100; graph ${brief.graph.nodes ?? 0} nodes, ${brief.graph.edges ?? 0} edges; status ${brief.status}.`,
     'Semantic readiness is a separate fail-closed contract. Before claiming the ontology is current or qualified, inspect projectSource.currentness/topGap, meaningAssessment.status and competency question witnesses, and meaningRepair. Structural readiness alone is not approval to write or finalize meaning.',
-    'Feature guide: docs/AGENT-GRAPH-WORKFLOW.md explains CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
+    'Feature guide: docs/AGENT-GRAPH-WORKFLOW.md explains MCP-connected use, graph DB differences, graph query packs, and verification checks.',
+    `When the ontology-atlas MCP server is unavailable: ${MCP_UNAVAILABLE_GUIDANCE}`,
     '',
     'Business-to-code ontology lens:',
     '- Read the business outcome first, then business/product domains, capabilities, and implementation evidence.',
@@ -438,7 +188,6 @@ export function buildAgentBriefHandoffPrompt(brief, cliPrefix) {
     '',
     'Suggested graph entrypoints:',
     entrypoints,
-    ...cliFallback,
     '',
     'Graph DB query pack for local markdown graph scans:',
     graphDbQueryPack,

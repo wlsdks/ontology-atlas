@@ -21,10 +21,10 @@ import { loadVaultDocs } from "../../../mcp/src/vault/documents/document-cache.m
 import {
   writeFileAtomically as mcpWriteFileAtomically,
 } from "../../../mcp/src/vault/writes/atomic-writes.mjs";
+import { patchFrontmatter } from "../../../mcp/src/vault/writes/doc-writes.mjs";
 import { compileOntology } from "../../../mcp/src/ontology-compiler.mjs";
-import { writeFileAtomically as cliWriteFileAtomically } from "../../../cli/src/lib/vault-files/atomic-write.mjs";
-import { slugToPath as cliSlugToPath, writeFrontmatterKey } from "../../../cli/src/lib/vault-files/write-vault.mjs";
-import { walkMd as cliWalkMd } from "../../../cli/src/lib/vault-files/walk-vault.mjs";
+// `init` writes agent configs through this copy; the app's Rust layer embeds it too.
+import { writeFileAtomically as initWriteFileAtomically } from "../../../cli/src/lib/vault-files/atomic-write.mjs";
 
 /**
  * Cases that look valid in one file and so escape a per-file check. The pure functions are called
@@ -66,7 +66,7 @@ afterEach(() => {
  *
  * The threat that function's own comment describes — *"so prompt injection cannot point at
  * a file outside the vault root"* — was open **on the filesystem side**, not the slug
- * side. The MCP and CLI copies both carry this contract.
+ * side. Every MCP write resolves its slug through this guard.
  */
 describe("writes outside the vault: symbolic links", () => {
   /** Places one link inside the vault root that points at a file outside it. */
@@ -80,28 +80,22 @@ describe("writes outside the vault: symbolic links", () => {
     return { root, outside };
   }
 
-  it.each([
-    ["mcp", mcpSlugToPath],
-    ["cli", cliSlugToPath],
-  ])("%s: refuses a linked slug", (_name, resolve) => {
+  it("refuses a linked slug", () => {
     const { root } = vaultWithEscapeLink();
-    expect(() => resolve(root, "escape")).toThrow(/symlink/);
+    expect(() => mcpSlugToPath(root, "escape")).toThrow(/symlink/);
   });
 
-  it.each([
-    ["mcp", mcpSlugToPath],
-    ["cli", cliSlugToPath],
-  ])("%s: a normal slug resolves as it is, so the guard did not kill the feature", (_name, resolve) => {
+  it("a normal slug resolves as it is, so the guard did not kill the feature", () => {
     const root = vault();
     writeFileSync(join(root, "a.md"), "---\nkind: domain\ntitle: A\n---\nx\n");
-    expect(resolve(root, "a")).toBe(join(root, "a.md"));
+    expect(mcpSlugToPath(root, "a")).toBe(join(root, "a.md"));
     // A file that does not exist yet (a place to create one) is also valid.
-    expect(resolve(root, "nested/new")).toBe(join(root, "nested/new.md"));
+    expect(mcpSlugToPath(root, "nested/new")).toBe(join(root, "nested/new.md"));
   });
 
   it("a write does not actually touch the link target", () => {
     const { root, outside } = vaultWithEscapeLink();
-    expect(() => writeFrontmatterKey(root, "escape", "relates", ["a"])).toThrow(/symlink/);
+    expect(() => patchFrontmatter(root, "escape", { relates: ["a"] })).toThrow(/symlink/);
     expect(readFileSync(outside, "utf8")).not.toContain("relates");
   });
 });
@@ -111,15 +105,11 @@ describe("writes outside the vault: symbolic links", () => {
  *
  * Single-slug writes went through the guard above, but full listing used a separate
  * walker. A Dirent symlink is not a directory, so anything named `.md` was collected
- * like an ordinary file and the MCP/CLI followed the link to read its target. The
+ * like an ordinary file and the MCP server followed the link to read its target. The
  * promise that the chosen vault is the read boundary must hold for full traversal
  * too.
  */
 describe("reads outside the vault: symbolic links", () => {
-  const walkers = [
-    ["mcp", mcpWalkMd],
-    ["cli", cliWalkMd],
-  ] as const;
 
   function vaultWithReadableEscape(): { root: string; safe: string } {
     const base = vault();
@@ -133,13 +123,9 @@ describe("reads outside the vault: symbolic links", () => {
     return { root, safe };
   }
 
-  it("probe: checks both the MCP and the CLI walker", () => {
-    expect(walkers).toHaveLength(2);
-  });
-
-  it.each(walkers)("%s: walks only real files and excludes .md links", (_name, walk) => {
+  it("walks only real files and excludes .md links", () => {
     const { root, safe } = vaultWithReadableEscape();
-    expect(walk(root)).toEqual([safe]);
+    expect(mcpWalkMd(root)).toEqual([safe]);
   });
 
   it("the MCP loader response carries neither the title nor the body of a link target", () => {
@@ -155,10 +141,10 @@ describe("reads outside the vault: symbolic links", () => {
 describe("vault file permissions: atomic update", () => {
   const writers = [
     ["mcp", mcpWriteFileAtomically],
-    ["cli", cliWriteFileAtomically],
+    ["init", initWriteFileAtomically],
   ] as const;
 
-  it("probe: checks both the MCP and the CLI writer", () => {
+  it("probe: checks both the MCP and the init writer", () => {
     expect(writers).toHaveLength(2);
   });
 

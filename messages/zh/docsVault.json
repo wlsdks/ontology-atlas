@@ -206,7 +206,7 @@
     "graphCta": "浏览",
     "agentLabel": "智能体检查",
     "agentValue": "{count} 项图检查",
-    "agentBody": "Claude Code、Codex、Cursor 和终端会话在写入前会运行同样的图检查。",
+    "agentBody": "Claude Code、Codex 和 Cursor 在写入前会运行同样的图检查。",
     "agentChip": "先读后写",
     "agentCta": "查询",
     "agentCopyGate": "复制图检查",

@@ -2,30 +2,6 @@
   "version": 1,
   "exceptions": [
     {
-      "key": "cli:runtime:dependencies:package.json:ontology-atlas-mcp",
-      "reason": "The CLI resolves the installed MCP package dynamically for source-checkout verification.",
-      "consumer": "cli/src/commands/agent-setup/mcp-verify.mjs",
-      "witness": "require_.resolve('ontology-atlas-mcp/scripts/verify.mjs')"
-    },
-    {
-      "key": "cli:runtime:exports:src/lib/export-format/interop-format.mjs:INTEROP_SCHEMA_VERSION",
-      "reason": "The interop schema version is pinned by the cross-surface contract test; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "tests/contract/vault-format/interop-format.contract.test.ts",
-      "witness": "INTEROP_SCHEMA_VERSION"
-    },
-    {
-      "key": "cli:runtime:exports:src/lib/relation-types.mjs:RELATION_TYPE_VALUES",
-      "reason": "The package contract test compares CLI relation types against the MCP schema; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "scripts/packaging/check-package-contracts.test.mjs",
-      "witness": "RELATION_TYPE_VALUES"
-    },
-    {
-      "key": "cli:runtime:exports:src/lib/mcp-bridge/schema.mjs:generateNodeUid",
-      "reason": "The UID migration (scripts/vault/migrate-node-uids.mjs inventory) mints node UIDs through the CLI's schema shim; the cli runtime lane cannot see that cross-scope consumer. Dropping the export broke pnpm test:vault:migrate on 2026-08-31.",
-      "consumer": "scripts/migrations/2026-08-02-add-node-uids.mjs",
-      "witness": "generateNodeUid"
-    },
-    {
       "key": "frontend:runtime:binaries:scripts/benchmark/benchmark-change-flow.mjs:codex",
       "reason": "Root package scripts expose the change-flow benchmark executable.",
       "consumer": "scripts/benchmark/benchmark-change-flow.mjs",
@@ -63,7 +39,7 @@
     },
     {
       "key": "frontend:runtime:dependencies:package.json:jsonc-parser",
-      "reason": "Root installation intentionally supplies this parser to source-checkout CLI scripts as well as the nested CLI manifest.",
+      "reason": "Root installation supplies this parser to the source-checkout init command as well as the nested cli manifest.",
       "consumer": "cli/src/lib/agent-setup/agent-config.mjs",
       "witness": "from 'jsonc-parser'"
     },
@@ -189,8 +165,8 @@
     },
     {
       "key": "mcp:runtime:exports:src/schema.mjs:CREATED_BY_AGENT_PREFIX",
-      "reason": "The CLI schema shim re-exports the provenance prefix; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "cli/src/lib/mcp-bridge/schema.mjs",
+      "reason": "The dogfood provenance contract reads the agent prefix from the MCP schema; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "tests/contract/vault-data/dogfood-slug-provenance.contract.test.ts",
       "witness": "CREATED_BY_AGENT_PREFIX"
     },
     {
@@ -201,9 +177,9 @@
     },
     {
       "key": "mcp:runtime:exports:src/schema.mjs:CREATED_BY_HUMAN",
-      "reason": "The CLI schema shim re-exports the human provenance value; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "cli/src/lib/mcp-bridge/schema.mjs",
-      "witness": "CREATED_BY_HUMAN"
+      "reason": "The provenance contract pins the app value to the MCP schema value; the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "tests/contract/vault-format/created-by-provenance.contract.test.ts",
+      "witness": "CREATED_BY_HUMAN as HUMAN_MCP"
     },
     {
       "key": "mcp:runtime:exports:src/validate.mjs:KNOWN_VAULT_KINDS",
@@ -243,13 +219,13 @@
     },
     {
       "key": "mcp:runtime:exports:src/library/wiki-folder.mjs:validateWikiFolder",
-      "reason": "wiki-validate and wiki-index judge the wiki folder through the CLI's MCP bridge, which loads the module at run time; the server judges from kept page facts instead, so the export's consumer is outside its Knip scope, where the lane cannot see it.",
-      "consumer": "cli/src/lib/mcp-bridge/wiki-schema.mjs",
-      "witness": "folder.validateWikiFolder"
+      "reason": "The wiki parity contracts judge one folder through both the app and the MCP module; the server judges from kept page facts instead, so the export is consumed outside its Knip scope, where the lane cannot see it.",
+      "consumer": "tests/contract/library/wiki-report.contract.test.ts",
+      "witness": "validateWikiFolder as validateFolderMcp"
     },
     {
       "key": "mcp:runtime:files:src/library/wiki-report.mjs:src/library/wiki-report.mjs",
-      "reason": "The wiki check's report grouping is one physical module on purpose: the Library reaches it through a cross-runtime bridge so the app, wiki-validate and validate_wiki cannot enumerate one folder two ways (docs/DECISIONS.md 2026-09-11 makes that difference a falsifier). Every consumer is outside the mcp scope, where Knip cannot see it.",
+      "reason": "The wiki check's report grouping is one physical module on purpose: the Library reaches it through a cross-runtime bridge so the app and validate_wiki cannot enumerate one folder two ways (docs/DECISIONS.md 2026-09-11 makes that difference a falsifier). Every consumer is outside the mcp scope, where Knip cannot see it.",
       "consumer": "src/shared/lib/library/wiki-report.mjs",
       "witness": "src/library/wiki-report.mjs"
     },

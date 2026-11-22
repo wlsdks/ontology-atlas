@@ -72,7 +72,7 @@ export const rules = [
     order: 490,
     command: 'pnpm integration:mcp:repo-analysis',
     reason: 'MCP code-to-vault analysis handler surface changed',
-    matches: [/^mcp\/src\/(?:analyze|infer-imports|architecture\/architecture-profile|meaning\/(?:meaning-(?:evaluation|authority|write-plan)|golden-corpus-scoring|proposal-review\/(?:competency-review|evidence-review|findings|shape))|construction\/(?:construction-(?:qualification|lifecycle)|qualification\/(?:acceptance-review|evidence-review|field-rules|input-schema|result-review|scenario-review|vocabulary)))\.mjs$/, /^mcp\/src\/infer-imports\/(?!.*\.test\.mjs$)(?:[^/]+\/)?[^/]+\.mjs$/, /^mcp\/src\/tools\/repo-analysis\/[^/]+(?<!\.test)\.mjs$/, /^tsconfig\.json$/],
+    matches: [/^mcp\/src\/analyze\/.+(?<!\.test)\.mjs$/, /^mcp\/src\/(?:analyze|infer-imports|architecture\/architecture-profile|meaning\/(?:meaning-(?:evaluation|authority|write-plan)|golden-corpus-scoring|proposal-review\/(?:competency-review|evidence-review|findings|shape))|construction\/(?:construction-(?:qualification|lifecycle)|qualification\/(?:acceptance-review|evidence-review|field-rules|input-schema|result-review|scenario-review|vocabulary)))\.mjs$/, /^mcp\/src\/infer-imports\/(?!.*\.test\.mjs$)(?:[^/]+\/)?[^/]+\.mjs$/, /^mcp\/src\/tools\/repo-analysis\/[^/]+(?<!\.test)\.mjs$/, /^tsconfig\.json$/],
   },
   {
     order: 500,
@@ -130,8 +130,8 @@ export const escalations = [
   {
     order: 20,
     command: 'pnpm dogfood:verify',
-    reason: 'shared MCP/CLI verification surface changed',
-    matches: [/^mcp\//, /^cli\/src\/commands\/agent-setup\/mcp-verify\.mjs$/, /^scripts\/packaging\/smoke-(?:packed-cli|vault-fixtures)\.mjs$/],
+    reason: 'MCP verification surface changed',
+    matches: [/^mcp\//],
   },
 ];
 

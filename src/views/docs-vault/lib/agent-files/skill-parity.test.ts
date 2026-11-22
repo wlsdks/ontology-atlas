@@ -50,7 +50,7 @@ describe('buildSkillParityModel', () => {
     expect(model.disagreeing).toBe(1);
   });
 
-  /** One tree present is setup, not drift, matching the CLI's `not-applicable`. */
+  /** One tree present is setup, not drift, matching the analyzer's `not-applicable`. */
   it('says nothing when only one tree exists — that is setup, not drift', () => {
     const model = buildSkillParityModel(
       analyze([

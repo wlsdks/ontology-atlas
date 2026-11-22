@@ -210,15 +210,15 @@ test('MCP is skipped when untouched and focused by handler family when touched',
 
 test('a focused MCP wrapper is dropped only when another planned script runs its whole file', () => {
   const scripts = {
-    'integration:cli': 'node --test cli/src/integration.test.mjs',
-    'integration:cli:mcp-verify': 'node scripts/ci/run-focused-node-test.mjs --test-name-pattern "mcp-verify" cli/src/integration.test.mjs',
+    'integration:mcp': 'node --test mcp/src/integration.test.mjs',
     'integration:mcp:write': 'node scripts/ci/run-focused-node-test.mjs --test-name-pattern "^(add_concepts|patch_concept)" mcp/src/integration.test.mjs',
+    'test:mcp:maintenance': 'node scripts/ci/run-focused-node-test.mjs --test-name-pattern "maintenance" mcp/src/maintenance.test.mjs',
   };
-  const planned = ['pnpm integration:cli:mcp-verify', 'pnpm integration:mcp:write', 'pnpm docs:surface:check'];
+  const planned = ['pnpm integration:mcp:write', 'pnpm test:mcp:maintenance', 'pnpm docs:surface:check'];
   assert.deepEqual(withoutSubsetsOfWholeFiles(planned, scripts), planned);
   assert.deepEqual(
-    withoutSubsetsOfWholeFiles(['pnpm integration:cli', ...planned], scripts),
-    ['pnpm integration:cli', 'pnpm integration:mcp:write', 'pnpm docs:surface:check'],
+    withoutSubsetsOfWholeFiles(['pnpm integration:mcp', ...planned], scripts),
+    ['pnpm integration:mcp', 'pnpm test:mcp:maintenance', 'pnpm docs:surface:check'],
   );
 });
 
@@ -496,10 +496,8 @@ test('token, toc, and package gates reach the PRs that touch their inputs', () =
   const toc = buildImpactPlan({ files: ['docs/DESIGN-SYSTEM.md'] });
   assert.ok(toc.lanes.gates.commands.includes('pnpm design:toc:check'));
 
-  const cli = buildImpactPlan({ files: ['cli/src/commands/graph-write/relate.mjs'] });
-  assert.ok(cli.lanes.gates.commands.includes('pnpm test:cli:commands'));
-  // The command tests spawn the source MCP server, so the lane must install mcp/node_modules first.
-  assert.equal(cli.lanes.gates.needsMcp, true);
+  const init = buildImpactPlan({ files: ['cli/src/lib/init/run-init.mjs'] });
+  assert.ok(init.lanes.gates.commands.includes('pnpm test:cli'));
 });
 
 test('per-file lint carries the warning ratchet', () => {
@@ -686,7 +684,7 @@ test('unit distribution keeps all full file sweeps and avoids setup for empty fo
 
 test('exhaustive architecture coverage is owned once across the three lanes', () => {
   assert.ok(!FULL_LANE_COMMANDS.gates.includes('pnpm test:architecture'));
-  for(const command of ['pnpm package:check','pnpm integration:cli:architecture']) assert.ok(FULL_LANE_COMMANDS.gates.includes(command));
+  for(const command of ['pnpm package:check']) assert.ok(FULL_LANE_COMMANDS.gates.includes(command));
   for(const command of ['pnpm test:mcp:unit','pnpm integration:mcp']) assert.ok(FULL_LANE_COMMANDS.mcp.includes(command));
   assert.ok(FULL_LANE_COMMANDS.unit.includes('pnpm test:run'));
 });

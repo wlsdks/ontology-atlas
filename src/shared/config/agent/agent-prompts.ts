@@ -1,5 +1,5 @@
 /**
- * Instructions a user copies into their own agent; a sibling of `cli-invocation.ts`.
+ * Instructions a user copies into their own agent; a sibling of `vault-path-for-packet.ts`.
  *
  * Builders, not constants: a baked-in `.` path points at whatever folder the agent runs in.
  * English only, not i18n: the reader is an agent, and translated tool names and imperatives

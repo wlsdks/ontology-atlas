@@ -30,7 +30,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm check:tokens',
     'pnpm test:check:tokens',
     'pnpm test:i18n:messages',
-    // `package:check` runs every test under `cli/src/lib/`, and the MCP lane's
+    // `package:check` runs every test under `cli/src/`, and the MCP lane's
     // `test:mcp:unit` every MCP unit test, so their single-file wrappers are not listed here.
     'pnpm package:check',
     'pnpm licenses:check',
@@ -63,15 +63,12 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm test:docs:checks',
     'pnpm test:benchmark',
     'pnpm test:ui:audit',
-    'pnpm integration:cli:architecture',
     'pnpm test:vault:validate',
     'pnpm test:vault:audit',
     'pnpm test:vault:freshness',
     'pnpm test:dogfood:args',
     'pnpm test:dogfood:status',
-    'pnpm test:dogfood:graph-db',
     'pnpm test:dogfood:script-refs',
-    'pnpm test:dogfood:compile-fix',
     'pnpm dogfood:test',
     'pnpm test:desktop:check',
     'pnpm docs-vault:check',
@@ -90,8 +87,6 @@ export const FULL_LANE_COMMANDS = Object.freeze({
   ]),
   unit: Object.freeze(['pnpm knip', 'pnpm test:run']),
   mcp: Object.freeze([
-    'pnpm integration:cli:setup',
-    'pnpm integration:cli:repo-analysis',
     'pnpm test:mcp:unit',
     'pnpm integration:mcp',
     'pnpm test:mcp:rpc',
@@ -256,7 +251,7 @@ function commandLane(command) {
     return 'unit';
   }
   if (
-    /^pnpm integration:(?:mcp|cli)(?::|$)/.test(command) ||
+    /^pnpm integration:mcp(?::|$)/.test(command) ||
     /^pnpm test:mcp:(?:unit|verify|dogfood|maintenance|suggestions)(?::|$)/.test(command) ||
     command === 'pnpm docs:surface:check' ||
     /^pnpm exec node --test mcp\/src\//.test(command)
@@ -530,7 +525,7 @@ function gatesPlan({ suggestions, full }) {
   const commandFiles = commands.flatMap((command) => command.split(/\s+/).filter((token) => /^(?:scripts|cli|tests)\/.+\.[cm]?js$/.test(token)));
   const needsMcp =
     commands.some((command) =>
-      /^pnpm (?:licenses:check|notice:check|test:(?:architecture|claude:hooks|cli:commands)|dogfood:(?:agent|brief|graph-db|health|maintenance|status|verify|walk)|smoke:(?:onboarding|memory-loop))\b/.test(
+      /^pnpm (?:licenses:check|notice:check|test:(?:architecture|claude:hooks)|dogfood:(?:agent|brief|compile|growth|health|maintenance|status|verify|walk)|smoke:(?:onboarding|memory-loop))\b/.test(
         command,
       ),
     ) || [...importClosure(commandFiles)].some((path) => path.startsWith('mcp/'));

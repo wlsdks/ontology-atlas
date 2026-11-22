@@ -18,7 +18,7 @@ disagree, the code wins; a feature file's history is its Git log
 
 The compass identifies Atlas in app/browser icons and gateway chrome. Moru, the gray-and-indigo pixel seal, accompanies existing welcome, pending and verified-work states; see [Brand](design/brand.md).
 
-Compact MCP/CLI task handoffs carry whole uncertainty statements, per-document
+Compact MCP task handoffs carry whole uncertainty statements, per-document
 omissions and project-inclusive full-body recovery; see [MCP server](features/mcp-server.md).
 Exact navigation, scope boundaries and runner manifests exclude literal
 Markdown examples, HTML blocks/comments and blockquotes from their authored evidence.
@@ -51,7 +51,7 @@ native 128px art. Work and completion poses still require their existing evidenc
 Agent setup names the connected vault in its post-change sync guidance, including
 when the vault and codebase are separate folders.
 
-MCP and CLI meaning checks distinguish a parseable project document changed since
+MCP meaning checks distinguish a parseable project document changed since
 finalization from malformed input. Source and inventory prerequisites remain in
 force; the recovery asks for review and explicit finalization without accepting
 incomplete answers. MCP bundles also retain nested modules declared as package

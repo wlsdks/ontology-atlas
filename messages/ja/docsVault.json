@@ -206,7 +206,7 @@
     "graphCta": "閲覧",
     "agentLabel": "エージェントのチェック",
     "agentValue": "グラフチェック{count}件",
-    "agentBody": "Claude Code、Codex、Cursor、ターミナルのセッションは、書き込む前に同じグラフチェックを実行します。",
+    "agentBody": "Claude Code、Codex、Cursorは、書き込む前に同じグラフチェックを実行します。",
     "agentChip": "書く前に読む",
     "agentCta": "照会",
     "agentCopyGate": "グラフチェックをコピー",

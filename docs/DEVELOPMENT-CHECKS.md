@@ -117,7 +117,7 @@ before relying on it.
 | Checks · Check impact plan | 25 s | 21 s avg | a missing plan is RED |
 | Checks · Types · Lint · Docs | 260 s | 150 s avg / 238 s max | type, lint and documentation gates |
 | Checks · Unit · Contract (x3) | 310 s | 2026-11-18, 22 trains: shards 79-340 s, 4-201 s, 4-285 s; full sweep 271 / 222 / 186 s by file count | affected unit tests and reached plus core contracts; the full sweep after merge |
-| Checks · MCP | 390 s | 146 s avg / 382 s max | the MCP and CLI boundary |
+| Checks · MCP | 390 s | 146 s avg / 382 s max | the MCP boundary |
 | E2E · Playwright static / web | 150 s · 160 s | 73 s · 125 s avg | static-export-only behaviour, the unattended gateway |
 | E2E · Playwright chromium (x8) | 600 s | full suite 6.0-7.9 min per shard, 9.4 min end to end (2026-11-18; five shards took 13.8) | rendered journeys; before merge only the mapped specs and the merge smoke set |
 | Vault freshness | 30 s | 24 s avg | frontmatter integrity and node drift (FYI, never fails the PR) |

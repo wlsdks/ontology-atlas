@@ -133,7 +133,7 @@ describe("buildTopologyHealthActionTarget", () => {
 });
 
 describe("formatTopologyOverviewBrief", () => {
-  it("formats a portable overview with graph, health, CLI, and MCP checks", () => {
+  it("formats a portable overview with graph, health, and MCP checks", () => {
     expect(
       formatTopologyOverviewBrief({
         summary: {
@@ -480,7 +480,7 @@ describe("computeTopologyShortestPath", () => {
 });
 
 describe("formatTopologyPathAgentPacket", () => {
-  it("formats a single agent-facing path packet — one MCP check, no CLI/proof-checklist ceremony", () => {
+  it("formats a single agent-facing path packet — one MCP check, no proof-checklist ceremony", () => {
     expect(
       formatTopologyPathAgentPacket({
         sourceSlug: "domains/views",

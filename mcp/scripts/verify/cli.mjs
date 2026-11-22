@@ -296,16 +296,12 @@ export function verifyUsage() {
     '  pnpm test:dogfood:script-refs   Narrow help/package-script reference + focused filter parser/wrapper summary contract.\n' +
     '  pnpm test:mcp:registration      Narrow source-checkout .mcp.json/.mcp.json.example/.codex/config.toml registration template contract.\n' +
     '  pnpm dogfood:compile            Cheap root checkout compile_ontology summary snapshot.\n' +
-    '  pnpm dogfood:compile-fix        Cheap root checkout compile --fix idempotence gate; changed vaults need pnpm docs-vault:build; success ends with [dogfood:compile-fix] docs/ontology unchanged.\n' +
-    '  pnpm test:dogfood:compile-fix   Narrow dogfood compile --fix idempotence runner contract.\n' +
     '  pnpm dogfood:health             Cheap root checkout health gate.\n' +
     '  pnpm dogfood:brief              Cheap root checkout workspace_brief snapshot.\n' +
     '  pnpm dogfood:growth             Cheap root checkout growth_plan snapshot.\n' +
     '  pnpm dogfood:maintenance        Cheap root checkout maintenance_plan snapshot.\n' +
-    '  pnpm dogfood:graph-db           Root checkout dogfood vault graph DB pack runtime gate.\n' +
     '  pnpm dogfood:status             Cheap root checkout health + workspace-brief + agent-brief + maintenance preflight with focused hints before full verify.\n' +
     '  pnpm test:dogfood:status        Narrow dogfood status shortcut runner contract.\n' +
-    '  pnpm test:dogfood:graph-db      Narrow dogfood graph DB pack runner contract.\n' +
     '  pnpm dogfood:verify             Root checkout dogfood vault installed-style verify gate.\n'
   );
 }

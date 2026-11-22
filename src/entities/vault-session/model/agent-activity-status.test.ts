@@ -176,27 +176,8 @@ describe("agent activity status", () => {
     expect(status.refreshRequest.previousFiles).toEqual([
       "src/features/agent-activity/ui/AgentActivityChip.tsx",
     ]);
-    expect(status.refreshRequest.command).toContain("node $ATLAS/cli/src/index.mjs agent-activity <vault>");
-    expect(status.refreshRequest.command).toContain("--state planning");
-    expect(status.refreshRequest.command).toContain(
-      "--ontology-slug capabilities/agent-live-activity-contract",
+    expect(status.refreshRequest.message).toBe(
+      "Do not treat the stale focus as current work until the refreshed heartbeat appears.",
     );
-    expect(status.refreshRequest.command).toContain(
-      "--file src/features/agent-activity/ui/AgentActivityChip.tsx",
-    );
-    expect(status.refreshRequest.command).toContain("--mcp 'query_ontology node_profile'");
-    expect(status.refreshRequest.command).toContain(
-      "--source 'rg AgentActivityChip'",
-    );
-    expect(status.refreshRequest.command).toContain(
-      "--verify 'pnpm exec vitest run AgentActivityChip.test.tsx'",
-    );
-    expect(status.refreshRequest.command).not.toContain("--verification");
-    expect(status.refreshRequest.message).toContain(
-      "Do not treat the stale focus as current work until the refreshed heartbeat appears",
-    );
-    expect(status.refreshRequest.message).not.toContain("${ATLAS_CLI}");
-    expect(status.refreshRequest.message).toContain("agent-activity <vault> --show --json");
-    expect(status.refreshRequest.message).toContain("node ");
   });
 });
