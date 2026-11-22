@@ -17,8 +17,8 @@ The first slice is a probe that can stop the build.
 
 ## Person and moment
 
-1. **The owner (observed, 2026-11-22, in Korean; the lead's paraphrase).** He asked whether the
-   command should be removed, because the most important part of Atlas is the view. He then decided:
+1. **The owner (observed, 2026-11-22, in Korean; the lead's paraphrase).** They asked whether the
+   command should be removed, because the most important part of Atlas is the view. They then decided:
    rebuild it from scratch, delete what is not needed, put it on npm at the very end and probably on
    Homebrew, and deliver Atlas as a plugin for Claude Code and Codex. The agreed framing: the command
    does not compete with the view or mirror MCP; it is the fastest door into the view.
@@ -484,10 +484,10 @@ A sealed probe in the manner of the 2026-09-13 one, on `brief` alone.
 
 ## Acceptance criteria
 
-1. **Given** the owner after a real agent change in his own repository, **when** he runs the
-   probe's brief script in his terminal, **then** a screen recording shows what he does next, and it is
+1. **Given** the owner after a real agent change in their own repository, **when** they run the
+   probe's brief script in their terminal, **then** a screen recording shows what they do next, and it is
    opening a listed document or naming a decision. Checked by the recording attached to the pull
-   request. If he does neither, this spec returns to Problem.
+   request. If they do neither, this spec returns to Problem.
 2. **Given** the ten changes and two arms, **when** the probe runs, **then** it meets the pass line.
    Checked by the decision record that states the four numbers. This is the recovery proof.
 3. **Given** a fixture repository whose change modifies one named file, moves another, edits one
