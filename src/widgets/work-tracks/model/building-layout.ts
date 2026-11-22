@@ -55,6 +55,11 @@ const MINI_H_BANDED = 76;
 const MINI_H_ROW = 92;
 const MINI_W_INLINE = 300;
 const MINI_MIN_W = 300;
+/**
+ * Mini rooms that do not fill a row share the width left beside them up to this, so a branch name
+ * uses the room there is and cuts only when it really is longer.
+ */
+const MINI_MAX_W = 600;
 const MINI_ROW_LIMIT = 6;
 /** Mini rooms stand five to a row at most, never narrower than `MINI_MIN_W`. */
 const MINI_COLUMNS = 5;
@@ -126,7 +131,12 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
   const inline = !banded && minis.length > 0 && minis.length <= INLINE_SHELF_ROOMS && input.hasShelf && width >= MINI_W_INLINE * minis.length + SHELF_INLINE_W;
   const fit = Math.max(1, Math.floor((width - labelW + MINI_GAP) / (MINI_MIN_W + MINI_GAP)));
   const perRow = Math.min(fit, MINI_COLUMNS);
-  const miniW = inline ? MINI_W_INLINE : Math.floor((width - labelW - (perRow - 1) * MINI_GAP) / perRow);
+  const shared = (across: number, count: number) => Math.floor((across - (count - 1) * MINI_GAP) / count);
+  const miniW = inline
+    ? Math.min(MINI_MAX_W, Math.max(MINI_W_INLINE, shared(width - SHELF_INLINE_W - MINI_GAP, minis.length)))
+    : !banded && minis.length < perRow
+      ? Math.min(MINI_MAX_W, Math.max(shared(width, perRow), shared(width, minis.length)))
+      : shared(width - labelW, perRow);
   // Banded, every floor keeps its row, even one whose rooms are all on the stage: its plate says so.
   const groups = banded ? input.floors : minis.length > 0 ? [{ key: '', rooms: minis }] : [];
   const groupHeight = (count: number) => {

@@ -98,6 +98,20 @@ describe('mini rooms', () => {
   });
 });
 
+describe('few mini rooms', () => {
+  it('share the width left beside them, up to 600px, so a branch name cuts only when it is really longer', () => {
+    const inline = layout({ stage: keys('s', 3), floors: [{ key: 'a', rooms: keys('a', 2) }] });
+    const minis = keys('a', 2).map(key => inline.rooms.get(key)!);
+    expect(inline.shelf?.inline).toBe(true);
+    expect(minis.map(room => room.w)).toEqual([600, 600]);
+    expectNoOverlap([...minis, inline.shelf!]);
+    const bare = layout({ stage: keys('s', 3), floors: [{ key: 'a', rooms: keys('a', 2) }], hasShelf: false });
+    expect(keys('a', 2).map(key => bare.rooms.get(key)!.w)).toEqual([600, 600]);
+    const full = layout({ stage: keys('s', 3), floors: [{ key: 'a', rooms: keys('a', 5) }], hasShelf: false });
+    expect(Math.max(...keys('a', 5).map(key => full.rooms.get(key)!.w))).toBeLessThan(400);
+  });
+});
+
 describe('floor rows', () => {
   it('spreads a wrapping floor evenly over its rows instead of leaving one room alone', () => {
     const keys = (n: number, prefix: string) => Array.from({ length: n }, (_, index) => `${prefix}${index}`);
