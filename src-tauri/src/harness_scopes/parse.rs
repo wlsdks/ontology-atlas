@@ -356,33 +356,34 @@ fn lines_outside_strings(text: &str) -> impl Iterator<Item = &str> {
 
 /// The multi-line string still open at the end of `line`, given the one open at its start.
 fn string_open_after(line: &[u8], mut open: Option<MultiLine>) -> Option<MultiLine> {
-    let mut at = 0;
-    while at < line.len() {
-        let rest = &line[at..];
-        match open {
-            Some(MultiLine::Basic) if rest[0] == b'\\' => at += 2,
+    let mut rest = line;
+    while let Some(&byte) = rest.first() {
+        let after = rest.get(1..).unwrap_or_default();
+        let step = match open {
+            Some(MultiLine::Basic) if byte == b'\\' => 2,
             Some(MultiLine::Basic) if rest.starts_with(b"\"\"\"") => {
                 open = None;
-                at += 3;
+                3
             }
             Some(MultiLine::Literal) if rest.starts_with(b"'''") => {
                 open = None;
-                at += 3;
+                3
             }
-            Some(_) => at += 1,
-            None if rest[0] == b'#' => return None,
+            Some(_) => 1,
+            None if byte == b'#' => return None,
             None if rest.starts_with(b"\"\"\"") => {
                 open = Some(MultiLine::Basic);
-                at += 3;
+                3
             }
             None if rest.starts_with(b"'''") => {
                 open = Some(MultiLine::Literal);
-                at += 3;
+                3
             }
-            None if rest[0] == b'"' => at += 1 + string_end(&rest[1..], b'"', true),
-            None if rest[0] == b'\'' => at += 1 + string_end(&rest[1..], b'\'', false),
-            None => at += 1,
-        }
+            None if byte == b'"' => 1 + string_end(after, b'"', true),
+            None if byte == b'\'' => 1 + string_end(after, b'\'', false),
+            None => 1,
+        };
+        rest = rest.get(step..).unwrap_or_default();
     }
     open
 }
@@ -390,10 +391,10 @@ fn string_open_after(line: &[u8], mut open: Option<MultiLine>) -> Option<MultiLi
 /// Bytes up to and including the quote that closes a one-line string.
 fn string_end(rest: &[u8], quote: u8, escapes: bool) -> usize {
     let mut at = 0;
-    while at < rest.len() {
-        if escapes && rest[at] == b'\\' {
+    while let Some(&byte) = rest.get(at) {
+        if escapes && byte == b'\\' {
             at += 2;
-        } else if rest[at] == quote {
+        } else if byte == quote {
             return at + 1;
         } else {
             at += 1;
