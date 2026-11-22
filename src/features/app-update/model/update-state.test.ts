@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canAutomaticResultReplace,
+  DISMISSAL_HOLD_MS,
   feedServesPlatform,
   formatMegabytes,
   isAutomaticCheckDue,
@@ -26,14 +27,14 @@ describe('shouldCheckForUpdate', () => {
     expect(shouldCheckForUpdate({ isDesktop: true, now: 1_000, lastCheckedAt: null, automatic: true })).toBe(true);
   });
 
-  it('is due four hours after the last successful check and not a moment before', () => {
+  it('is due an hour after the last successful check and not a moment before', () => {
     const hour = 60 * 60 * 1000;
     const lastCheckedAt = 1_000_000;
     expect(
-      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + 4 * hour - 1, lastCheckedAt, automatic: true }),
+      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + hour - 1, lastCheckedAt, automatic: true }),
     ).toBe(false);
     expect(
-      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + 4 * hour, lastCheckedAt, automatic: true }),
+      shouldCheckForUpdate({ isDesktop: true, now: lastCheckedAt + hour, lastCheckedAt, automatic: true }),
     ).toBe(true);
   });
 
@@ -68,20 +69,25 @@ describe('update auto-check preference', () => {
 });
 
 describe('shouldSurfaceVersion', () => {
-  it('does not re-ask about a version the user dismissed', () => {
-    expect(shouldSurfaceVersion('1.0.1', '1.0.1')).toBe(false);
+  const at = 1_000_000;
+
+  it('holds a version put off with Later for a day, then asks again', () => {
+    expect(shouldSurfaceVersion('1.0.1', '1.0.1', at, at + DISMISSAL_HOLD_MS - 1)).toBe(false);
+    expect(shouldSurfaceVersion('1.0.1', '1.0.1', at, at + DISMISSAL_HOLD_MS)).toBe(true);
   });
 
   it('asks again when a newer version arrives — dismissal is "not now", not "never"', () => {
-    expect(shouldSurfaceVersion('1.0.2', '1.0.1')).toBe(true);
+    expect(shouldSurfaceVersion('1.0.2', '1.0.1', at, at + 1)).toBe(true);
   });
 
-  it('asks when nothing was dismissed', () => {
-    expect(shouldSurfaceVersion('1.0.1', null)).toBe(true);
+  it('asks when nothing was dismissed, or a dismissal has no time or a later clock', () => {
+    expect(shouldSurfaceVersion('1.0.1', null, null, at)).toBe(true);
+    expect(shouldSurfaceVersion('1.0.1', '1.0.1', null, at)).toBe(true);
+    expect(shouldSurfaceVersion('1.0.1', '1.0.1', at, at - 1)).toBe(true);
   });
 
   it('never surfaces an empty version', () => {
-    expect(shouldSurfaceVersion('', null)).toBe(false);
+    expect(shouldSurfaceVersion('', null, null, at)).toBe(false);
   });
 });
 
@@ -125,7 +131,7 @@ describe('canAutomaticResultReplace', () => {
 
 describe('phaseAfterCheck', () => {
   const found = { version: '2.1.0', notes: null };
-  const base = { readyVersion: null, dismissedVersion: null } as const;
+  const base = { readyVersion: null, dismissedVersion: null, dismissedAt: null, now: 1_000_000 } as const;
 
   it('leaves a running download alone when an automatic check finds a version', () => {
     const phase: UpdatePhase = { kind: 'downloading', version: '2.1.0', received: 5, total: 10 };
@@ -141,7 +147,7 @@ describe('phaseAfterCheck', () => {
   });
 
   it('stays silent for a dismissed version unless the person asked', () => {
-    const input = { ...base, dismissedVersion: '2.1.0', found, phase: { kind: 'idle' } as UpdatePhase };
+    const input = { ...base, dismissedVersion: '2.1.0', dismissedAt: base.now - 1, found, phase: { kind: 'idle' } as UpdatePhase };
     expect(phaseAfterCheck({ ...input, manual: false })).toBeNull();
     expect(phaseAfterCheck({ ...input, manual: true })).toMatchObject({ kind: 'available' });
   });
@@ -185,16 +191,16 @@ describe('isAutomaticCheckDue', () => {
     expect(isAutomaticCheckDue({ now, lastSuccessAt: null, lastAttemptAt: now - 30 * MINUTE, consecutiveFailures: 1 })).toBe(true);
   });
 
-  it('falls back to the four-hour interval after two failures in a row', () => {
+  it('falls back to the hourly interval after two failures in a row', () => {
     const input = { now, lastSuccessAt: null, consecutiveFailures: 2 };
-    expect(isAutomaticCheckDue({ ...input, lastAttemptAt: now - 3 * HOUR })).toBe(false);
-    expect(isAutomaticCheckDue({ ...input, lastAttemptAt: now - 4 * HOUR })).toBe(true);
+    expect(isAutomaticCheckDue({ ...input, lastAttemptAt: now - 45 * MINUTE })).toBe(false);
+    expect(isAutomaticCheckDue({ ...input, lastAttemptAt: now - HOUR })).toBe(true);
   });
 
-  it('waits four hours after a success', () => {
-    const input = { now, lastAttemptAt: now - 3 * HOUR, consecutiveFailures: 0 };
-    expect(isAutomaticCheckDue({ ...input, lastSuccessAt: now - 3 * HOUR })).toBe(false);
-    expect(isAutomaticCheckDue({ ...input, lastSuccessAt: now - 4 * HOUR, lastAttemptAt: now - 4 * HOUR })).toBe(true);
+  it('waits an hour after a success', () => {
+    const input = { now, lastAttemptAt: now - 45 * MINUTE, consecutiveFailures: 0 };
+    expect(isAutomaticCheckDue({ ...input, lastSuccessAt: now - 45 * MINUTE })).toBe(false);
+    expect(isAutomaticCheckDue({ ...input, lastSuccessAt: now - HOUR, lastAttemptAt: now - HOUR })).toBe(true);
   });
 
   it('treats a clock that went backwards as due', () => {
@@ -217,7 +223,7 @@ describe('phaseAfterCheck against what is on screen', () => {
 
   it('lets not even a press replace a running download', () => {
     expect(
-      phaseAfterCheck({ found: { version: '2.1.0', notes: null }, manual: true, phase: downloading, readyVersion: null, dismissedVersion: null }),
+      phaseAfterCheck({ found: { version: '2.1.0', notes: null }, manual: true, phase: downloading, readyVersion: null, dismissedVersion: null, dismissedAt: null, now: 0 }),
     ).toBeNull();
   });
 
@@ -229,6 +235,8 @@ describe('phaseAfterCheck against what is on screen', () => {
         phase: { kind: 'available', version: '2.1.0', notes: null },
         readyVersion: null,
         dismissedVersion: null,
+        dismissedAt: null,
+        now: 0,
       }),
     ).toMatchObject({ kind: 'available', version: '2.2.0' });
   });

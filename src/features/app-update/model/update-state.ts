@@ -14,8 +14,8 @@ export type UpdatePhase =
   | { kind: 'ready'; version: string }
   | { kind: 'failed'; operation: 'check' | 'install'; message: string };
 
-/** An app left open for days still hears about a release within a working session. */
-export const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
+/** An app left open hears about a release within the hour it is published. */
+export const CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
 /** How often an open app asks itself whether a check is due; at most one automatic request per tick. */
 export const AUTO_CHECK_TICK_MS = 30 * 60 * 1000;
@@ -32,8 +32,10 @@ export const CHECK_TIMEOUT_MS = 30_000;
 /** After this many automatic failures in a row, a failing feed is asked only once per interval. */
 export const FAILURES_BEFORE_BACKOFF = 2;
 
-/** A dismissal is remembered for that version only — the next version must ask again. */
+/** "Later" holds that version back for a day; a newer version speaks at once. */
 export const DISMISSED_VERSION_KEY = 'app-update:dismissed-version';
+export const DISMISSED_AT_KEY = 'app-update:dismissed-at';
+export const DISMISSAL_HOLD_MS = 24 * 60 * 60 * 1000;
 export const LAST_CHECK_KEY = 'app-update:last-check';
 
 export type UpdateAutoCheck = 'on' | 'off';
@@ -112,10 +114,20 @@ export function shouldCheckForUpdate({
   return isAutomaticCheckDue({ now, lastSuccessAt: lastCheckedAt, lastAttemptAt, consecutiveFailures });
 }
 
-/** A dismissal means "not now" and expires when the version goes up. */
-export function shouldSurfaceVersion(version: string, dismissedVersion: string | null): boolean {
+/**
+ * A dismissal means "not now": it expires a day later or when the version goes up. One without a
+ * time (stored before the hold existed) or from a clock that went backwards has expired.
+ */
+export function shouldSurfaceVersion(
+  version: string,
+  dismissedVersion: string | null,
+  dismissedAt: number | null,
+  now: number,
+): boolean {
   if (!version) return false;
-  return version !== dismissedVersion;
+  if (version !== dismissedVersion || dismissedAt === null) return true;
+  const held = now - dismissedAt;
+  return held < 0 || held >= DISMISSAL_HOLD_MS;
 }
 
 /**
@@ -136,6 +148,8 @@ export interface CheckResultInput {
   readonly phase: UpdatePhase;
   readonly readyVersion: string | null;
   readonly dismissedVersion: string | null;
+  readonly dismissedAt: number | null;
+  readonly now: number;
 }
 
 /**
@@ -149,6 +163,8 @@ export function phaseAfterCheck({
   phase,
   readyVersion,
   dismissedVersion,
+  dismissedAt,
+  now,
 }: CheckResultInput): UpdatePhase | null {
   // A running download is the answer; not even a press replaces it.
   if (phase.kind === 'downloading') return null;
@@ -156,7 +172,7 @@ export function phaseAfterCheck({
   if (!manual && !canAutomaticResultReplace(phase) && !newerOnScreen) return null;
   if (!found) return manual ? { kind: 'current' } : null;
   if (found.version === readyVersion) return manual ? { kind: 'ready', version: found.version } : null;
-  if (!manual && !shouldSurfaceVersion(found.version, dismissedVersion)) return null;
+  if (!manual && !shouldSurfaceVersion(found.version, dismissedVersion, dismissedAt, now)) return null;
   return { kind: 'available', version: found.version, notes: found.notes };
 }
 

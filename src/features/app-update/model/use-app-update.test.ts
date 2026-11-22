@@ -145,13 +145,13 @@ describe('result of a manual update check', () => {
 });
 
 describe('automatic checks while the app stays open', () => {
-  it('checks again after four hours of ticks without a press, and not before', async () => {
+  it('checks again after an hour of ticks without a press, and not before', async () => {
     check.mockResolvedValue(null);
     mount();
     await advance(FIRST_CHECK_MS);
     expect(check).toHaveBeenCalledTimes(1);
-    await advance(4 * HOUR_MS - FIRST_CHECK_MS - 1);
-    expect(check, 'checked before four hours had passed').toHaveBeenCalledTimes(1);
+    await advance(HOUR_MS - FIRST_CHECK_MS - 1);
+    expect(check, 'checked before an hour had passed').toHaveBeenCalledTimes(1);
     await advance(HOUR_MS);
     expect(check, 'an app left open never checked again').toHaveBeenCalledTimes(2);
   });
@@ -167,12 +167,12 @@ describe('automatic checks while the app stays open', () => {
     expect(check).toHaveBeenCalledTimes(1);
   });
 
-  it('checks once when the window becomes visible after four hours, not while it stays hidden', async () => {
+  it('checks once when the window becomes visible after an hour, not while it stays hidden', async () => {
     check.mockResolvedValue(null);
     mount();
     await advance(FIRST_CHECK_MS);
     // The clock moves without timers firing, as when the machine sleeps.
-    vi.setSystemTime(Date.now() + 4 * HOUR_MS);
+    vi.setSystemTime(Date.now() + HOUR_MS);
     const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
     await fire(document, 'visibilitychange');
     expect(check, 'a window going hidden asked the feed').toHaveBeenCalledTimes(1);
@@ -181,11 +181,11 @@ describe('automatic checks while the app stays open', () => {
     expect(check).toHaveBeenCalledTimes(2);
   });
 
-  it('checks once when the window gains focus after four hours', async () => {
+  it('checks once when the window gains focus after an hour', async () => {
     check.mockResolvedValue(null);
     mount();
     await advance(FIRST_CHECK_MS);
-    vi.setSystemTime(Date.now() + 4 * HOUR_MS);
+    vi.setSystemTime(Date.now() + HOUR_MS);
     await fire(window, 'focus');
     expect(check).toHaveBeenCalledTimes(2);
   });
@@ -221,7 +221,7 @@ describe('automatic checks while the app stays open', () => {
     expect(check, 'the failing feed was not retried one tick later').toHaveBeenCalledTimes(2);
     await advance(TICK_MS);
     expect(check, 'two failures in a row still retried every tick').toHaveBeenCalledTimes(2);
-    await advance(4 * HOUR_MS - TICK_MS);
+    await advance(HOUR_MS - TICK_MS);
     expect(check).toHaveBeenCalledTimes(3);
   });
 
@@ -375,11 +375,23 @@ describe('automatic checks while the app stays open', () => {
     act(() => result.current.dismiss());
     expect(window.localStorage.getItem('app-update:dismissed-version')).toBe('2.1.0');
     expect(result.current.dismissedVersion).toBe('2.1.0');
-    await advance(4 * HOUR_MS + TICK_MS);
+    await advance(HOUR_MS + TICK_MS);
     expect(check).toHaveBeenCalledTimes(2);
     expect(result.current.phase.kind, 'the version put off spoke again').toBe('idle');
-    await advance(4 * HOUR_MS + TICK_MS);
+    await advance(HOUR_MS + TICK_MS);
     expect(result.current.phase).toMatchObject({ kind: 'available', version: '2.2.0' });
+  });
+
+  it('asks again about the same version a day after Later, and not before', async () => {
+    check.mockResolvedValue(found('2.1.0'));
+    const { result } = mount();
+    await advance(FIRST_CHECK_MS);
+    act(() => result.current.dismiss());
+    expect(window.localStorage.getItem('app-update:dismissed-at')).toBe(String(Date.now()));
+    await advance(23 * HOUR_MS);
+    expect(result.current.phase.kind, 'Later spoke again within the day').toBe('idle');
+    await advance(2 * HOUR_MS);
+    expect(result.current.phase).toMatchObject({ kind: 'available', version: '2.1.0' });
   });
 
   it('fails an automatic check silently and retries on the next tick', async () => {
