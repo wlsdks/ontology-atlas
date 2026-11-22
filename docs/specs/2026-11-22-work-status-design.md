@@ -88,17 +88,22 @@ crossing, help popovers. Retired: the bands and seam, rows on a ruler, the headl
 
 **Header.** Title, `repoLine`, Find, Choose repository folder. Nothing else leads the page.
 
-**A room** is one worktree and one button: pressing it opens the room panel. It has a wall sign
-with the branch and, from slice 5, the capability it changes; a floor lamp, lit in the session's
-ink while a session is live there and dark when none is, which pulses once in a second that had a
-beat and is never on a timer; Moru under a tag naming the tool and session number; and a wall
-monitor: a label line ending in the elapsed and usual time or the commit count, one large line, the
-activity line (Progress), a small picture of the check (lanes or jobs), and one line of Git facts. A
-large room also draws a conveyor under its floor: stations pre-push, push, PR, CI, a `main` hatch
-at its end, a parcel standing where the branch is, and a pill over the parcel with the time left.
-The parcel rides between two stations only while a timed check runs, stops short of the next when
-the check runs late, and enters the hatch only on the fact. Where Atlas cannot see (no remote, no
-host connected) the conveyor is dashed from there on and says why.
+**A room** is one worktree and one button: pressing it opens the room panel. It is one scene with
+one floor line and one light (direction A, "a screen on a console", 2026-11-22): Moru on the floor
+faces a screen on a console, and the screen is the room's only light and only words. Its head is
+the branch and, from slice 5, the capability it changes; under it the newest commits beyond the
+base branch, three at most, each one ellipsised line with its age, newest on top; at its foot what
+is not committed with the file changed last, and the commit count. A bezel under the screen names
+the tool and session number and the state with how long it has worked, beside a light that is
+green while something runs. The screen lights the wall and floor in the session's ink while a
+session is live there and is dim when none is; it pulses once in a second that had a beat and is
+never on a timer. A room narrower than `WIDE_ROOM_W` hangs its screen on the wall above Moru with
+the newest commit only. A large room also draws a track in its floor that leaves through a hatch
+in the side wall marked `main`: stations pre-push, push, PR, CI along it, a cart standing where the
+branch is, and a pill over the cart with the time left. The cart rides between two stations only
+while a timed check runs, stops short of the next when the check runs late, and enters the hatch
+only on the fact. Where Atlas cannot see (no remote, no host connected) the track is dashed from
+there on and says why.
 
 **Three tiers by attention.**
 
@@ -110,9 +115,12 @@ host connected) the conveyor is dashed from there on and says why.
    has held 5 s. Rooms beyond six lead their floors, and `stage.more` counts those that are moving.
 2. **Session floors:** one floor per session and one for worktrees no session holds. Its label
    gives the session, its start, its worktree count and at most three counts (`floor.sum.*`). Mini
-   rooms are equal in size: a small scene, the branch, one status line, and an edge filled as far
-   as the branch has come. With six or fewer, the floors merge into one row and each mini room
-   names its session.
+   rooms are equal in size: a corner where a small Moru holds still or a crate stands, the branch,
+   one status line, the newest commit subject with its age, and a track filled as far as the
+   branch has come. With six or fewer, the floors merge into one row under one heading, **Floors
+   below**, with how many are working; the heading is a plate beside one row, a line above more,
+   and carries what `stage.more` said. A mini room with a floor to itself spreads its newest
+   commits and what is not committed into columns.
 3. **Quiet shelf:** counts that open a list (merged into the base branch; unchanged for over 7 days
    with no session), then the latest merges with their times.
 
@@ -141,7 +149,7 @@ and a room with no running state is still. Only clips that exist are used, named
 `pondering`, `read` (`source-read`), `waiting` (`blink`), `await-permission` and `uncertain`.
 The last two are reserved to the permission card (`brand.md:209`); slice 2 changes that row and
 adds a Work status row to the table. Each room's loop starts at an offset taken from its worktree
-id, so six rooms never move in step. Session identity rests on the tag and the lamp, never on
+id, so six rooms never move in step. Session identity rests on the bezel and the screen's light, never on
 Moru's ink.
 
 **Sizes.** The stage shows as many large rooms as fit at their minimum width, at most six: six
@@ -429,3 +437,7 @@ None — the owner's answers are in the Work status spec.
 
 - 2026-11-22: split from `docs/specs/2026-11-21-work-status-destination.md` for length, content
   unchanged: States, Design direction with Cases and Motion, and Copy.
+- 2026-11-22: A room follows direction A, "a screen on a console": the wall sign, lamp, name tag
+  and wall monitor become one screen on a console with the newest three commits and a bezel; the
+  belt becomes a track through a hatch in the side wall; mini rooms show the newest subject; the
+  "more below" line moves into the floors' heading. Rooms are no longer drawn mirrored.

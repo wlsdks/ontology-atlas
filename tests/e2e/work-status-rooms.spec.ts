@@ -83,6 +83,7 @@ const ACTIVITY: Activity = {
     commits: [
       { hash: "a1b2c3d", subject: LONG_SUBJECT, at: NOW_S - 120 },
       { hash: "b2c3d4e", subject: "fix(library): 첫 화면 문구를 짧게 🚀", at: NOW_S - 900 },
+      { hash: "f6a7b8c", subject: "test(library): the first screen's copy", at: NOW_S - 3600 },
     ],
     uncommitted: 3,
     latestFile: "src/views/library/LibraryPage.tsx",
@@ -580,15 +581,17 @@ test.describe("work status rooms", () => {
     expect(frames.at(-1)!.shown).toBe(1);
   });
 
-  test("names what each worktree is doing on its monitor, inside the screen, and cross-fades a new commit in", async ({ page }) => {
+  test("names what each worktree is doing on its screen, inside the screen, and slides a new commit in", async ({ page }) => {
     await openWorkStatus(page, [...SIX, row("fix/rail-copy")], ACTIVITY);
     const stage = room(page, "feat/library-stage").getByTestId("work-room-monitor");
     await expect(stage).toContainText(LONG_SUBJECT.slice(0, 40));
-    // The quiet line: when the newest commit landed, then how long the session has worked.
-    await expect(stage).toContainText(/\d+ minutes? ago · working \d+ h/);
+    // Under the commits: what is not committed, with the file changed last; the bezel says how long the session has worked.
+    await expect(stage).toContainText("3 files changed, not committed");
+    await expect(stage).toContainText("LibraryPage.tsx");
+    await expect(room(page, "feat/library-stage")).toContainText(/working \d+ h/);
     await expect(room(page, "feat/map-light").getByTestId("work-room-monitor")).toContainText("빛 레이어를 부드럽게 ✨");
     const editing = room(page, "feat/work-status-rooms").getByTestId("work-room-monitor");
-    await expect(editing).toContainText("Editing 12 files");
+    await expect(editing).toContainText("12 files changed, not committed");
     await expect(editing).toContainText("LargeRoom.tsx");
     await expect(editing).not.toContainText("widgets");
     await expect(room(page, "fix/rail-copy")).toHaveAttribute("data-room-size", "mini");
@@ -600,24 +603,65 @@ test.describe("work status rooms", () => {
       const edge = screen.getBoundingClientRect();
       return [...screen.querySelectorAll<HTMLElement>("span, div")].filter((element) => element.childElementCount === 0 && element.textContent).flatMap((element) => {
         const box = element.getBoundingClientRect();
-        // A row that does not fit wraps into a column the screen clips whole.
         const outside = box.left >= edge.right - 1 || box.top >= edge.bottom - 1;
         const inside = box.left >= edge.left - 0.5 && box.right <= edge.right + 0.5 && box.top >= edge.top - 0.5 && box.bottom <= edge.bottom + 0.5;
         return outside || inside ? [] : [`${element.textContent}`];
       });
     }));
-    expect(spills, "text past a monitor's edge").toEqual([]);
+    expect(spills, "text past a screen's edge").toEqual([]);
 
+    // Every frame from here, each commit row's place and opacity as the page computes them.
+    await page.evaluate(() => {
+      const log = () => [...document.querySelectorAll("[data-testid=work-room]")].find((element) => element.textContent?.includes("feat/library-stage"))?.querySelector("[data-testid=work-room-log]");
+      const trace: { time: number; rows: Record<string, { y: number; opacity: number; leaving: boolean }> }[] = [];
+      Object.assign(window, { __commitTrace: trace });
+      let last = Number.NaN;
+      const sample = () => {
+        const time = Number(document.timeline.currentTime);
+        if (time !== last) {
+          last = time;
+          const rows: (typeof trace)[number]["rows"] = {};
+          for (const element of log()?.querySelectorAll<HTMLElement>("[data-commit]") ?? []) {
+            const style = getComputedStyle(element);
+            rows[element.dataset.commit!] = { y: new DOMMatrix(style.transform).m42, opacity: Number(style.opacity), leaving: element.dataset.leaving !== undefined };
+          }
+          trace.push({ time, rows });
+          // Keep a few frames from before the new commit lands, then ninety after it.
+          if (!trace.some((frame) => "e5f6071" in frame.rows) && trace.length > 4) trace.shift();
+        }
+        if (trace.filter((frame) => "e5f6071" in frame.rows).length < 90) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
     await page.evaluate((next) => (window as unknown as { __workStatusActivity: (next: unknown) => void }).__workStatusActivity(next), {
       ...ACTIVITY,
-      "feat-library-stage": { ...ACTIVITY["feat-library-stage"], commits: [{ hash: "e5f6071", subject: "fix: 새 커밋이 들어왔어요", at: NOW_S - 5 }, ...ACTIVITY["feat-library-stage"].commits!] },
+      "feat-library-stage": { ...ACTIVITY["feat-library-stage"], commits: [{ hash: "e5f6071", subject: "fix: 새 커밋이 들어왔어요", at: NOW_S - 5 }, ...ACTIVITY["feat-library-stage"].commits!.slice(0, 2)] },
     });
-    // The old subject fades out over the new one in the same cell: both are drawn for a moment.
-    await page.waitForFunction((old) => {
-      const screen = [...document.querySelectorAll("[data-testid=work-room]")].find((element) => element.textContent?.includes("feat/library-stage"))?.querySelector("[data-testid=work-room-monitor]");
-      const leaving = [...(screen?.querySelectorAll("[aria-hidden=true]") ?? [])].some((element) => element.textContent === old);
-      return leaving && screen?.textContent?.includes("새 커밋이 들어왔어요");
-    }, LONG_SUBJECT, { timeout: 15_000, polling: "raf" });
+    await expect(stage).toContainText("새 커밋이 들어왔어요", { timeout: 15_000 });
+    await page.waitForFunction(() => (window as unknown as { __commitTrace: { rows: object }[] }).__commitTrace.filter((frame) => "e5f6071" in frame.rows).length >= 90, null, { timeout: 15_000 });
+    const trace = await page.evaluate(() => (window as unknown as { __commitTrace: { time: number; rows: Record<string, { y: number; opacity: number; leaving: boolean }> }[] }).__commitTrace);
+    const rowH = await stage.locator("[data-commit]").first().evaluate((element) => element.getBoundingClientRect().height);
+    const series = (key: string) => trace.filter((frame) => key in frame.rows).map((frame) => ({ time: frame.time, ...frame.rows[key] }));
+    const steps = (values: { time: number; y: number; opacity: number }[], field: "y" | "opacity") =>
+      values.slice(1).map((value, index) => ({ change: value[field] - values[index][field], dt: value.time - values[index].time }));
+
+    // The new commit fades in at the top and stays there.
+    const fresh = series("e5f6071");
+    expect(fresh[0].opacity, "the new row starts unseen").toBeLessThan(0.5);
+    expect(fresh.at(-1)!.opacity).toBe(1);
+    expect(fresh.every((frame) => frame.y === 0), "the new row stays at the top").toBe(true);
+    expect(steps(fresh, "opacity").every(({ change }) => change >= -0.01), "the new row only brightens").toBe(true);
+    // Every older row moves down only, a little each frame, never a whole row at once.
+    for (const key of ["a1b2c3d", "b2c3d4e", "f6a7b8c"]) {
+      const moves = steps(series(key), "y");
+      expect(moves.every(({ change }) => change >= -0.5), `${key} only moves down`).toBe(true);
+      expect(moves.filter(({ dt }) => dt <= 40).every(({ change }) => change <= rowH * 0.6), `${key} never jumps a row`).toBe(true);
+    }
+    // The row pushed past the last place fades out where it goes, then leaves.
+    const gone = series("f6a7b8c").filter((frame) => frame.leaving);
+    expect(gone.length, "the oldest row is drawn while it leaves").toBeGreaterThan(3);
+    expect(steps(gone, "opacity").every(({ change }) => change <= 0.01), "the oldest row only fades").toBe(true);
+    expect(trace.at(-1)!.rows).not.toHaveProperty("f6a7b8c");
   });
 
   test("shows one room for the base branch when no worktree exists", async ({ page }) => {
