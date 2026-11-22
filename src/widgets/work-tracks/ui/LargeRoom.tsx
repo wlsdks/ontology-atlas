@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
-import { KNOWN_UNTIL, STAGE_AT, cartLoad, roomLook } from '../model/room-look';
+import { KNOWN_UNTIL, STAGE_AT, cartLoad, moruPhase, roomLook } from '../model/room-look';
 import { pairUnit, type RoomUnit } from '../model/building-layout';
 import { BranchName } from './BranchName';
 import { RoomMoru } from './RoomMoru';
@@ -136,12 +136,12 @@ export function LargeRoom({ room, unit, width, copy, tint, retiring }: {
         {pair && second ? (
           <>
             <i className={cn(styles.shadow, styles.actorBack)} />
-            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru clip="read" still={false} zoom={sceneUnit} tint={tint} /></span>
+            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru clip="read" still={false} zoom={sceneUnit} tint={tint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
             <span className={cn(styles.tag, styles.tagBack, LABEL, 'font-[var(--font-weight-emphasis)]')}>
               <span className="truncate">{session ?? copy.toolName(tools[0])}</span>
             </span>
             <i className={cn(styles.shadow, styles.actorFront)} />
-            <span className={cn(styles.actor, styles.actorFront)}><RoomMoru clip="code" still={false} zoom={sceneUnit} tint={null} /></span>
+            <span className={cn(styles.actor, styles.actorFront)}><RoomMoru clip="code" still={false} zoom={sceneUnit} tint={null} phase={moruPhase(room.key)} /></span>
             <span className={cn(styles.tag, styles.tagFront, LABEL, 'font-[var(--font-weight-emphasis)]')} style={{ ['--ink' as string]: 'var(--work-unheld)' }}>
               <span className="truncate">{copy.toolName(second)}</span>
             </span>
@@ -150,7 +150,7 @@ export function LargeRoom({ room, unit, width, copy, tint, retiring }: {
           <>
             <i className={styles.shadow} />
             <span className={styles.actor}>
-              <RoomMoru key={`${look.clip}:${look.still}`} clip={look.clip} still={look.still} zoom={unit} tint={tint} dozing={look.dozing} />
+              <RoomMoru key={`${look.clip}:${look.still}`} clip={look.clip} still={look.still} zoom={unit} tint={tint} phase={moruPhase(room.key)} dozing={look.dozing} />
             </span>
             {session ? <span className={cn(styles.tag, LABEL, 'font-[var(--font-weight-emphasis)]')}>{session}</span> : null}
           </>

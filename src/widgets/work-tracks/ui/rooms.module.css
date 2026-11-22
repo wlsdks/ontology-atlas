@@ -267,6 +267,11 @@
   animation-play-state: running;
 }
 
+/* Each Moru starts his loop at his own pose, a negative delay of whole poses. */
+.moru :global(.atlas-waiting-mark) {
+  animation-delay: calc(var(--moru-phase, 0) * var(--motion-base) * -16);
+}
+
 .actor {
   position: absolute;
   left: calc(var(--ax) - 64 * var(--s) + var(--dx, 0px));

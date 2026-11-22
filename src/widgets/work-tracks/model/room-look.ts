@@ -39,6 +39,16 @@ export function roomLook(state: RoomState): RoomLook {
   }
 }
 
+/** Moru's work loop has 24 poses; each room starts at its own, so rooms side by side never type in step. */
+const LOOP_POSES = 24;
+
+/** The fraction of the loop a room's Moru starts at: a whole pose picked from its worktree's key. */
+export function moruPhase(key: string): number {
+  let hash = 0;
+  for (const char of key) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return (hash % LOOP_POSES) / LOOP_POSES;
+}
+
 /** Where a stage puts the crate along the belt, as a fraction of its length. */
 export const STAGE_AT: Record<RoomStage, number> = { worktree: 0.04, commits: 0.2, main: 1 };
 

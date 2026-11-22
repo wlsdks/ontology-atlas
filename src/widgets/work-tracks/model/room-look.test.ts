@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { WorkStatusSnapshot, WorktreeRow } from '@/shared/lib/work-status/tauri-work-status';
 import { buildWorkTracks, planRooms, type RoomPlan } from '@/shared/lib/work-status/work-tracks';
-import { cartLoad, retireeOf, roomLook, withRetirees } from './room-look';
+import { cartLoad, moruPhase, retireeOf, roomLook, withRetirees } from './room-look';
 
 const NOW_MS = 1_795_260_000_000;
 
@@ -76,5 +76,14 @@ describe('cartLoad', () => {
     expect(cartLoad(9, false)).toEqual({ crates: 6, more: 3 });
     expect(cartLoad(0, false)).toEqual({ crates: 0, more: 0 });
     expect(cartLoad(0, true)).toEqual({ crates: 1, more: 0 });
+  });
+});
+
+describe('moruPhase', () => {
+  it('starts rooms at whole poses that differ between neighbours', () => {
+    const phases = ['feat/a', 'feat/b', 'fix/c', 'refactor/d', 'docs/e'].map(moruPhase);
+    for (const phase of phases) expect(Number.isInteger(phase * 24) && phase >= 0 && phase < 1).toBe(true);
+    expect(new Set(phases).size).toBeGreaterThan(3);
+    expect(moruPhase('feat/a')).toBe(phases[0]);
   });
 });
