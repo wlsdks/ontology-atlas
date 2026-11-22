@@ -1,12 +1,10 @@
 ---
 title: A rebuilt Atlas command for the terminal
 doc_type: spec
-status: accepted
+status: current
 area: cli
 date: 2026-11-22
-decisions:
-  - docs/records/decisions/2026-11-22-atlas-command-rebuilt-and-published-e64b4ebe-ea86-48bc-a629-6cc1b8a3dd30.md
-  - docs/records/decisions/2026-11-22-one-command-name-ontology-atlas-3f104892-dbc1-43c1-a8a5-5e8bfa734e8a.md
+decisions: [e64b4ebe-ea86-48bc-a629-6cc1b8a3dd30, 3f104892-dbc1-43c1-a8a5-5e8bfa734e8a]
 ---
 
 # A rebuilt Atlas command for the terminal
