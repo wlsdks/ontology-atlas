@@ -320,6 +320,7 @@ export function BlockImportModule({
               exit={{ ...SHEET_RISE, transition: EXIT_TRANSITION }}
               transition={MOTION.base}
               onClick={(event) => event.stopPropagation()}
+              // eslint-disable-next-line no-restricted-syntax -- a rising sheet; Dialog has no sheet variant yet
               role="dialog"
               aria-modal="true"
               aria-label={t("dialogAria")}

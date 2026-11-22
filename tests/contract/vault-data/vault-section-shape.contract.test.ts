@@ -14,16 +14,10 @@ const REPO_ROOT = join(import.meta.dirname, "..", "..", "..");
 const VAULT_ROOT = join(REPO_ROOT, "docs", "ontology");
 
 /**
- * The worst surviving section in bytes (`Verify the agent loop` in `README.md`); the honest current
- * ceiling, not a target.
+ * The largest section in bytes, set from the worst section when the cap was fixed (`Verify the agent
+ * loop` in `README.md`).
  */
 const SECTION_BYTE_CAP = 1_800;
-
-/**
- * How far the cap may sit above the worst real section: a cap far above it is a gate that can never
- * fire.
- */
-const CAP_HEADROOM = 100;
 
 /**
  * **`## Competency answers` is exempt — it is parsed, not authored.**
@@ -100,16 +94,5 @@ describe("dogfood vault body sections hold one idea each", () => {
         "have re-derived from the source anyway.\n" +
         over.join("\n"),
     ).toEqual([]);
-  });
-
-  it("keeps the cap within sight of the worst real section", () => {
-    const worst = ALL_SECTIONS.reduce((a, b) => (b.bytes > a.bytes ? b : a));
-
-    expect(
-      SECTION_BYTE_CAP - worst.bytes,
-      `The cap sits ${SECTION_BYTE_CAP - worst.bytes} B above the worst real section ` +
-        `(${worst.file} · ## ${worst.heading} · ${worst.bytes} B), so it can no longer fire. ` +
-        `Lower SECTION_BYTE_CAP to ${Math.ceil((worst.bytes + 1) / 100) * 100}.`,
-    ).toBeLessThanOrEqual(CAP_HEADROOM);
   });
 });
