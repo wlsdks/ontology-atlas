@@ -13,7 +13,7 @@ export const DOOR_W = 56;
 /** Where the fixtures stand on a floor `width` wide: the bench, crate and mat as places Moru go to, the plant to the side. */
 export function lobbyFixtures(width: number) {
   const at = (share: number) => Math.round((width * share) / 2) * 2;
-  return { bench: at(0.3), mat: at(0.52), crate: at(0.74), plant: width - DOOR_W - 40 };
+  return { bench: at(0.22), mat: at(0.5), crate: at(0.78), plant: width - DOOR_W - 40 };
 }
 
 /** The places a Moru walks to and what it does there. */
@@ -27,7 +27,7 @@ export function lobbySpots(width: number): Spot[] {
 }
 
 /** Draws the fixtures for a floor `width` wide whose back lane's feet stand at `backFeet` and front lane's at `frontFeet`. */
-export function drawFixtures(g: CanvasRenderingContext2D, width: number, backFeet: number, frontFeet: number) {
+export function drawFixtures(g: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, width: number, backFeet: number, frontFeet: number) {
   const P = (x: number, y: number, w: number, h: number, colour: string) => { g.fillStyle = colour; g.fillRect(x, y, w, h); };
   const { bench, mat, crate, plant } = lobbyFixtures(width);
   // Doorways: a dark opening in the wall at each edge, framed, with its threshold on the floor.

@@ -1,11 +1,13 @@
 /**
  * The lobby's host: one Canvas 2D canvas, one `setTimeout` clock at 8 Hz that slows while nothing changes, and a
  * capped store of composed poses. Ported from the life prototype's host (`scripts/brand/moru-cast/life/page.js`).
+ * The floor is drawn at a room's scale (`unit`, whole or half steps); its fixtures are drawn once a size into a
+ * picture the changed rectangles are restored from, so the page holds one canvas.
  *
  * A pose's body is composed once from the indexed sheet with the Moru's palette and the pieces worn on its skin,
  * and kept as an `ImageBitmap`; flippers and props are kept once for everybody. The store is capped
  * (`CACHE_BYTES`), least recently shown out first, never a picture on screen. Showing a pose again is a few
- * `drawImage` calls into the rectangles that changed, at whole pixels and a whole-number backing scale.
+ * `drawImage` calls into the rectangles that changed, at whole device pixels.
  */
 import { facingClip, type LifeAtlas, type LifeClip, type LifePose, type PiecePart } from './atlas';
 import { centre, createWorld, tick, type Moru, type World } from './behaviour';
@@ -19,10 +21,14 @@ export const LIFE_SHEETS = {
   over: '/brand/moru-life-over.png',
   wardrobe: '/brand/moru-life-wardrobe.png',
 };
-/** The clock's pace, and how many ticks' time it sleeps at most while nothing changes. */
-const HZ = 8;
-const TICK_MS = 1000 / HZ;
-const SLOWEST = 3;
+/** The clock's pace while somebody walks, and while nobody does (an on-the-spot clip keeps its own time). */
+const WALK_MS = 125;
+const IDLE_MS = 250;
+/** How many ticks' time it sleeps at most while nothing changes. */
+const SLOWEST = 2;
+/** The clock's next tick: 8 Hz while a Moru walks, rolls or tiptoes across the floor, 4 Hz otherwise. */
+export const lobbyTickMs = (world: Pick<World, 'morus' | 'atlas'>) =>
+  (world.morus.some(m => m.door || world.atlas.clips[m.clip]?.travel) ? WALK_MS : IDLE_MS);
 /** The composed-pose store's cap: under the spec's 24 MB, for a floor of five. */
 export const CACHE_BYTES = 8 * 1048576;
 /** Lanes are this far apart; the back lane's feet stand `BACK_FEET` px from the canvas top. */
@@ -76,7 +82,8 @@ export interface LobbyStats {
 }
 
 export interface Lobby {
-  resize(width: number): void;
+  /** A new width or scale; Moru the narrower floor left outside walk back in. */
+  resize(width: number, unit?: number): void;
   setCrew(resting: number): void;
   /** Runs the clock while allowed (on screen, in a visible window, motion allowed); a still lobby otherwise. */
   sync(allowed: boolean): void;
@@ -85,8 +92,8 @@ export interface Lobby {
 }
 
 /** Loads the sheets and returns a lobby drawing into `canvas`, or null when the page went away meanwhile. */
-export async function createLobby(canvas: HTMLCanvasElement, fixtures: HTMLCanvasElement, { width, resting, rand, basePath = '' }: {
-  width: number; resting: number; rand: () => number; basePath?: string;
+export async function createLobby(canvas: HTMLCanvasElement, { width, unit = 1, resting, rand, basePath = '' }: {
+  width: number; unit?: number; resting: number; rand: () => number; basePath?: string;
 }): Promise<Lobby | null> {
   const colours = [0];
   const colourIndex = new Map<number, number>([[0, 0]]);
@@ -165,25 +172,27 @@ export async function createLobby(canvas: HTMLCanvasElement, fixtures: HTMLCanva
     });
   }
 
-  let width_ = Math.max(320, Math.floor(width));
-  const scale = Math.max(1, Math.round(window.devicePixelRatio || 1));
+  let width_ = Math.max(320, Math.floor(width)), unit_ = unit;
+  const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
+  /** Device pixels per floor pixel, and the floor's width in Moru's own pixels. */
+  let k = dpr * unit_, floorW = Math.floor(width_ / unit_);
   const ctx = canvas.getContext('2d')!;
+  const fixtures = new OffscreenCanvas(1, 1), fixturesCtx = fixtures.getContext('2d')!;
   const fit = () => {
-    for (const el of [canvas, fixtures]) {
-      el.width = width_ * scale;
-      el.height = LOBBY_H * scale;
-      el.style.width = `${width_}px`;
-      el.style.height = `${LOBBY_H}px`;
-    }
+    k = dpr * unit_;
+    floorW = Math.floor(width_ / unit_);
+    // The backing store is the strip itself at the device's pixel ratio.
+    canvas.width = fixtures.width = Math.round(width_ * dpr);
+    canvas.height = fixtures.height = Math.round(LOBBY_H * unit_ * dpr);
+    canvas.style.width = `${width_}px`;
+    canvas.style.height = `${LOBBY_H * unit_}px`;
     ctx.imageSmoothingEnabled = false;
-    // The fixtures are drawn once a size, behind the Moru.
-    const g = fixtures.getContext('2d')!;
-    g.setTransform(scale, 0, 0, scale, 0, 0);
-    drawFixtures(g, width_, BACK_FEET, BACK_FEET + 2 * LANE_DY);
+    fixturesCtx.setTransform(k, 0, 0, k, 0, 0);
+    drawFixtures(fixturesCtx, floorW, BACK_FEET, BACK_FEET + 2 * LANE_DY);
   };
   fit();
 
-  const world: World = createWorld({ atlas, width: width_, lanes: 3, rand, busyMax: LOBBY_BUSY, sep: LOBBY_SEP, extra: 1, spots: lobbySpots(width_) });
+  const world: World = createWorld({ atlas, width: floorW, lanes: 3, rand, busyMax: LOBBY_BUSY, sep: LOBBY_SEP, extra: 1, spots: lobbySpots(floorW) });
   const presence: Presence = openLobby(world, crewSize(resting));
 
   // The kept pictures, least recently shown first. A picture on screen is never given up.
@@ -286,7 +295,7 @@ export async function createLobby(canvas: HTMLCanvasElement, fixtures: HTMLCanva
     s.layered = layered.map(placed => ({ ...placed, x: (f.flip ? 136 - (placed.x + placed.part.w - 1) : placed.x) + f.px }));
     Object.assign(s, { X, Y, left, f, reach, cx });
     const x = Math.max(0, left ? X + 137 - c1 : X + c0), y = Math.max(0, Y + r0);
-    const whole = { x, y, w: Math.min(width_, (left ? X + 137 - c0 : X + c1)) - x, h: Math.min(LOBBY_H, Y + 102) - y };
+    const whole = { x, y, w: Math.min(floorW, (left ? X + 137 - c0 : X + c1)) - x, h: Math.min(LOBBY_H, Y + 102) - y };
     if (s.rect) add(s.rect);
     add(whole);
     s.rect = whole;
@@ -294,7 +303,7 @@ export async function createLobby(canvas: HTMLCanvasElement, fixtures: HTMLCanva
   /** Draws one Moru, back to front, in its own cell's coordinates (mirrored for one that faces left). */
   const stamp = (s: Drawn) => {
     const f = s.f!, sheet = clothesOf(s.lut), plainClothes = clothesOf(plain);
-    ctx.setTransform(s.left ? -scale : scale, 0, 0, scale, (s.left ? s.X + 137 : s.X) * scale, s.Y * scale);
+    ctx.setTransform(s.left ? -k : k, 0, 0, k, (s.left ? s.X + 137 : s.X) * k, s.Y * k);
     // The contact shadow is Moru's own outline ink from the sheet, at the sprites' shadow strength.
     ctx.fillStyle = shadowInk;
     ctx.globalAlpha = 0.2745;
@@ -347,48 +356,53 @@ export async function createLobby(canvas: HTMLCanvasElement, fixtures: HTMLCanva
     // Back to front.
     const order = [...drawn.values()].sort((a, b) => a.m.depth - b.m.depth);
     for (const r of dirty) {
+      // The rectangle in whole device pixels, restored from the fixtures, then the Moru in it back to front.
+      const x0 = Math.floor(r.x * k), y0 = Math.floor(r.y * k), w = Math.ceil((r.x + r.w) * k) - x0, h = Math.ceil((r.y + r.h) * k) - y0;
       ctx.save();
       ctx.beginPath();
-      ctx.rect(r.x * scale, r.y * scale, r.w * scale, r.h * scale);
+      ctx.rect(x0, y0, w, h);
       ctx.clip();
-      ctx.clearRect(r.x * scale, r.y * scale, r.w * scale, r.h * scale);
+      ctx.clearRect(x0, y0, w, h);
+      ctx.drawImage(fixtures, x0, y0, w, h, x0, y0, w, h);
       for (const s of order) if (s.rect && hits(s.rect, r)) stamp(s);
       ctx.restore();
     }
   };
 
-  let timer = 0, slow = 0, running = false;
+  let timer = 0, slow = 0, running = false, next = WALK_MS;
   const loop = () => {
-    const dt = TICK_MS * (1 + slow);
-    tick(world, dt);
+    tick(world, next);
     tend(world, presence);
     paint();
     slow = moved ? 0 : Math.min(slow + 1, SLOWEST);
-    timer = window.setTimeout(loop, TICK_MS * (1 + slow));
+    next = lobbyTickMs(world) * (1 + slow);
+    timer = window.setTimeout(loop, next);
   };
   const redrawAll = () => {
     for (const s of drawn.values()) { s.rect = null; s.m.changed = true; }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(fixtures, 0, 0);
     paint();
   };
-  paint();
+  redrawAll();
 
   return {
-    resize(next) {
-      const w = Math.max(320, Math.floor(next));
-      if (w === width_) return;
+    resize(nextWidth, nextUnit = unit_) {
+      const w = Math.max(320, Math.floor(nextWidth));
+      if (w === width_ && nextUnit === unit_) return;
       width_ = w;
-      world.width = w;
-      world.spots = lobbySpots(w);
-      // A Moru the narrower floor left outside walks back in as a newcomer would; none is moved.
+      unit_ = nextUnit;
       fit();
+      world.width = floorW;
+      world.spots = lobbySpots(floorW);
+      // A Moru the narrower floor left outside walks back in as a newcomer would; none is moved.
       redrawAll();
     },
     setCrew(restingNow) { setCrew(presence, crewSize(restingNow)); },
     sync(allowed) {
       const wasStill = still;
       still = !allowed;
-      if (allowed && !running) { running = true; timer = window.setTimeout(loop, TICK_MS); }
+      if (allowed && !running) { running = true; next = WALK_MS; timer = window.setTimeout(loop, next); }
       if (!allowed && running) { running = false; window.clearTimeout(timer); timer = 0; }
       if (wasStill !== still) redrawAll();
       canvas.dataset.lobbyRunning = String(running);

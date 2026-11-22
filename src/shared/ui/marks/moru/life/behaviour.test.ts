@@ -69,7 +69,8 @@ describe('Moru life', () => {
 });
 
 describe('the lobby crew', () => {
-  for (const width of [1512 - 80, 1440 - 80, 1920 - 80]) {
+  // The floor at the 1,512, 1,440 and 1,920px windows, drawn at Moru's own scale.
+  for (const width of [1432, 1360, 1840]) {
     it(`keeps at most five on a ${width}px floor, far apart, and lets them come and go by walking`, () => {
       const world = createWorld({ atlas, width, rand: seeded(width), busyMax: 2, sep: 150, extra: 1 });
       const presence = openLobby(world, 12);

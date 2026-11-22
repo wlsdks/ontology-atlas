@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { LifeAtlas } from './atlas';
 import { createWorld, seeded, tick, type Moru } from './behaviour';
-import { BACK_FEET, LANE_DY, LOBBY_SEP } from './lobby-canvas';
+import { BACK_FEET, LANE_DY, LOBBY_SEP, lobbyTickMs } from './lobby-canvas';
 import { openLobby, tend } from './presence';
 
 const atlas = JSON.parse(readFileSync('public/brand/moru-life.json', 'utf8')) as LifeAtlas;
@@ -25,16 +25,17 @@ describe('lobby motion, frame by frame', () => {
       const last = new Map<Moru, ReturnType<typeof drawn>>();
       let worst = 0, boundaries = 0, doors = 0, walks = 0;
       const over: string[] = [];
-      for (let t = 0; t < 600_000; t += 125) {
-        tick(world, 125);
+      // On the lobby's own clock: 8 Hz while somebody walks, 4 Hz otherwise.
+      for (let t = 0, dt = 125; t < 600_000; t += dt, dt = lobbyTickMs(world)) {
+        tick(world, dt);
         tend(world, presence);
         for (const m of world.morus) {
           const now = drawn(m), was = last.get(m);
           last.set(m, now);
           if (!was || (was.clip === now.clip && was.frame === now.frame && was.facing === now.facing)) continue;
-          // The clip's own drawn move: the change of its pose's body middle, and what its steps carry the body; the rest is
-          // what drawing at whole pixels adds, and any jump.
-          const sameClip = was.clip === now.clip && now.frame === was.frame + 1 && was.facing === now.facing;
+          // The clip's own drawn move, over the poses a slower tick passed over: the change of its pose's body middle, and
+          // what its steps carry the body; the rest is what drawing at whole pixels adds, and any jump.
+          const sameClip = was.clip === now.clip && now.frame > was.frame && was.facing === now.facing;
           const authored = sameClip ? (() => {
             const id = (c: string) => (m.facing < 0 && atlas.clips[`${c}~left`] ? `${c}~left` : c);
             const a = atlas.clips[id(was.clip)].f[was.frame], b = atlas.clips[id(now.clip)].f[now.frame];

@@ -48,7 +48,7 @@ export interface BuildingLayout {
   heading: (Box & { kind: 'plate' | 'line' }) | null;
   shelf: Box | null;
   /** The ground floor: the lobby strip under the floors, above the shelf. */
-  lobby: Box | null;
+  lobby: (Box & { unit: RoomUnit }) | null;
   height: number;
 }
 
@@ -58,8 +58,21 @@ const EDGE_TOP = 24;
 const EDGE_BOTTOM = 20;
 const BAND_GAP = 16;
 const SHELF_H = 40;
-/** The lobby: its name plate over three lanes of Moru at their drawn scale. */
-export const LOBBY_BOX_H = LOBBY_H + 24;
+/** The lobby's name plate over its lanes. */
+export const LOBBY_PLAQUE_H = 24;
+/**
+ * The lobby draws Moru at most this large. A room's scale (1.5 at 1,512px) leaves a floor of about 950 of Moru's
+ * pixels, where the crew's spacing and comings and goings, tuned on 1,400, do not hold yet; until they are, 1.
+ */
+const LOBBY_MOST_UNIT = 1;
+
+/** The lobby's scale: a single stage room's Moru at this width, at most `LOBBY_MOST_UNIT`. */
+export function lobbyUnit(width: number): RoomUnit {
+  const cols = Math.min(2, Math.max(1, Math.floor((width + STAGE_GAP) / (LARGE_MIN_W + STAGE_GAP))));
+  return Math.min(LOBBY_MOST_UNIT, unitOf(Math.floor((width - (cols - 1) * STAGE_GAP) / cols / 2) * 2));
+}
+/** The lobby's height at a scale: its name plate over three lanes of Moru. */
+export const lobbyHeight = (unit: RoomUnit) => Math.ceil(LOBBY_H * unit) + LOBBY_PLAQUE_H;
 /** Every mini room, banded or not: Moru's corner, the branch, the status and the newest subject. */
 export const MINI_H = 96;
 const MINI_MIN_W = 300;
@@ -181,7 +194,8 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
   };
   const backH = headingH + groups.reduce((sum, group) => sum + groupHeight(group.rooms.length), 0) + Math.max(0, groups.length - 1) * MINI_GAP;
   const shelfH = input.hasShelf ? SHELF_H : 0;
-  const lobbyH = input.hasLobby ? LOBBY_BOX_H : 0;
+  const lobbyScale = lobbyUnit(width);
+  const lobbyH = input.hasLobby ? lobbyHeight(lobbyScale) : 0;
   const shelfTop = height - EDGE_BOTTOM - shelfH - (lobbyH ? lobbyH + (shelfH ? BAND_GAP : 0) : 0);
   const backTop = shelfTop - (shelfH ? BAND_GAP : 0) - backH;
   const available = backTop - (backH > 0 ? BAND_GAP : 0) - EDGE_TOP;
@@ -248,7 +262,7 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
   }
 
   const groundTop = groups.length > 0 ? floorTop - MINI_GAP + BAND_GAP : shelfTop + overflow;
-  const lobby = lobbyH ? { x: 0, y: groundTop, w: width, h: lobbyH } : null;
+  const lobby = lobbyH ? { x: 0, y: groundTop, w: width, h: lobbyH, unit: lobbyScale } : null;
   const shelf = input.hasShelf ? { x: 0, y: lobby ? lobby.y + lobby.h + BAND_GAP : groundTop, w: width, h: SHELF_H } : null;
   // The building ends under what it holds; it does not stretch to the window with bare floor.
   const bottom = (shelf ? shelf.y + shelf.h : lobby ? lobby.y + lobby.h : floorTop - MINI_GAP) + EDGE_BOTTOM;

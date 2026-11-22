@@ -580,7 +580,7 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
             })}
             {layout.lobby ? (
               <Placed box={layout.lobby} testId="work-lobby-floor">
-                <MoruLobby width={layout.lobby.w} resting={resting} reduced={reduced} />
+                <MoruLobby width={layout.lobby.w} unit={layout.lobby.unit} resting={resting} reduced={reduced} />
               </Placed>
             ) : null}
             {layout.shelf ? (
