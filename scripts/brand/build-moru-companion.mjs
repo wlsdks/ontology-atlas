@@ -14,6 +14,8 @@ export const NATIVE_ROWS = {
   'flipper-groove': 'flipper-groove', 'magic-fish': 'magic-fish', sing: 'sing', hearts: 'hearts',
   success: 'dance', clap: 'clap', hop: 'hop',
   'await-permission': 'await-permission', uncertain: 'uncertain', 'tail-wag': 'tail', stop: 'stop',
+  'monitor-read': 'monitor-read', 'desk-type': 'desk-type', 'nod-off': 'nod-off', 'heads-up': 'heads-up', sigh: 'sigh',
+  'crate-send': 'crate-send', 'lever-pull': 'lever-pull', 'merge-cheer': 'merge-cheer', galumph: 'galumph', 'galumph-left': 'galumph-left', 'settle-in': 'settle-in',
 };
 
 export async function buildMoruCompanion() {
