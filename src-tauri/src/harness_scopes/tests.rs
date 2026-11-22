@@ -694,9 +694,41 @@ fn a_flood_of_inline_headers_is_read_in_one_pass_and_only_counted() {
 }
 
 #[test]
-fn a_binding_failure_carries_no_file_content() {
-    let error = read_harness_scopes("/nonexistent-vault".into(), "project".into()).unwrap_err();
-    assert!(!error.contains(SECRET));
+fn a_binding_failure_carries_no_path_or_file_content() {
+    let scratch = Scratch::new();
+    let vault = scratch.folder(&format!("vault-{SECRET}-{IDENT}"));
+    let _grant = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&vault));
+    let sources = format!("vault-{SECRET}-{IDENT}/.ontology-atlas/project-sources.json");
+    let missing_root = format!("/nonexistent/{SECRET}/{IDENT}");
+    let bindings = [
+        None,
+        Some(format!("{{\"{IDENT}\": \"{SECRET}")),
+        Some(
+            json!({
+                "contractVersion": 1,
+                "bindings": [{
+                    "projectSlug": "project", "sourceId": IDENT, "kind": "git",
+                    "rootPath": missing_root, "boundAt": SECRET,
+                    "receipt": { "projectSlug": "project", "sourceId": IDENT, "sourceKind": "git" }
+                }]
+            })
+            .to_string(),
+        ),
+    ];
+    let vault_path = vault.to_string_lossy().to_string();
+    for binding in bindings {
+        if let Some(text) = &binding {
+            scratch.put(&sources, text);
+        }
+        for (vault_path, project) in [
+            (vault_path.as_str(), "project"),
+            (vault_path.as_str(), IDENT),
+            (missing_root.as_str(), "project"),
+        ] {
+            let error = read_harness_scopes(vault_path.into(), project.into()).unwrap_err();
+            assert!(!leaks(&error), "{error}");
+        }
+    }
 }
 
 #[cfg(windows)]
