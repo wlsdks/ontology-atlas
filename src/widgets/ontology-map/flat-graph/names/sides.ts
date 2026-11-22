@@ -130,6 +130,11 @@ function selectedNames(input: NameShape, id: string, role: "capability" | "eleme
     block("right", -side, -px / 2),
     block("center", 0, side),
     block("center", 0, -side - height),
+    // Below or above, the block may also end at its disc's right edge or start at its left edge, out of a neighbour's way.
+    block("right", r, side),
+    block("left", -r, side),
+    block("right", r, -side - height),
+    block("left", -r, -side - height),
   ];
 }
 
