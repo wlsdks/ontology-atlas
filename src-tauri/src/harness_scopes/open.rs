@@ -84,18 +84,30 @@ fn read_bounded(file: fs::File) -> Result<SettingsBytes, OpenFailure> {
     })
 }
 
+/// Opens a folder only to walk through it, so a folder that grants search but not read (`0311`)
+/// is still passed. Where no such flag exists the folder must also be readable.
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+const WALK_FOLDER: libc::c_int = libc::O_SEARCH;
+#[cfg(any(target_os = "linux", target_os = "android"))]
+const WALK_FOLDER: libc::c_int = libc::O_PATH | libc::O_DIRECTORY;
+#[cfg(all(
+    unix,
+    not(any(
+        target_os = "macos",
+        target_os = "ios",
+        target_os = "linux",
+        target_os = "android"
+    ))
+))]
+const WALK_FOLDER: libc::c_int = libc::O_DIRECTORY;
+
 #[cfg(unix)]
 fn open_below(base: &Path, relative: &[&str]) -> Result<fs::File, OpenFailure> {
     use std::ffi::CString;
     use std::os::fd::FromRawFd;
     use std::os::unix::ffi::OsStrExt;
 
-    let root = unsafe {
-        libc::open(
-            c"/".as_ptr(),
-            libc::O_RDONLY | libc::O_DIRECTORY | libc::O_CLOEXEC,
-        )
-    };
+    let root = unsafe { libc::open(c"/".as_ptr(), WALK_FOLDER | libc::O_CLOEXEC) };
     if root < 0 {
         return Err(OpenFailure::Io);
     }
@@ -114,7 +126,18 @@ fn open_below(base: &Path, relative: &[&str]) -> Result<fs::File, OpenFailure> {
     };
     for folder in folders {
         let name = CString::new(folder.as_slice()).map_err(|_| OpenFailure::Io)?;
-        current = open_at(&current, &name, libc::O_DIRECTORY)?;
+        current = open_at(&current, &name, WALK_FOLDER)?;
+        // `O_PATH | O_NOFOLLOW` can hold a link itself instead of failing on it.
+        let kind = current
+            .metadata()
+            .map_err(|error| io_failure(&error))?
+            .file_type();
+        if kind.is_symlink() {
+            return Err(OpenFailure::Link);
+        }
+        if !kind.is_dir() {
+            return Err(OpenFailure::NotAFolder);
+        }
     }
     let name = CString::new(file_name.as_slice()).map_err(|_| OpenFailure::Io)?;
     open_at(&current, &name, libc::O_NONBLOCK)

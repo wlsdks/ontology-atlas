@@ -475,6 +475,32 @@ fn a_link_anywhere_below_a_base_is_refused() {
     assert_eq!(file(&scopes, "claude-user")["failure"], "link");
 }
 
+#[cfg(unix)]
+#[test]
+fn a_folder_that_grants_search_but_not_read_is_walked_through() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let scratch = Scratch::new();
+    let host = scratch.host();
+    let repository = scratch.folder("repo");
+    scratch.put(
+        "repo/.claude/settings.json",
+        claude_settings_with_planted_values("search-only.sh"),
+    );
+    let walked = [repository.join(".claude"), repository.clone()];
+    for folder in &walked {
+        fs::set_permissions(folder, fs::Permissions::from_mode(0o311)).unwrap();
+    }
+    let scopes = read(&host, &repository, &[]);
+    for folder in walked.iter().rev() {
+        fs::set_permissions(folder, fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    let project = file(&scopes, "claude-project");
+    assert_eq!(project["status"], "read", "{project}");
+    assert_eq!(project["hooks"][0]["command"], "search-only.sh");
+    assert!(!leaks(&scopes.to_string()));
+}
+
 #[test]
 fn a_picked_file_is_held_only_by_its_name_outside_any_other_repository() {
     let scratch = Scratch::new();
