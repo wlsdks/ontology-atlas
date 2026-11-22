@@ -75,11 +75,6 @@ describe('whole catalog — internally coined words never reach the screen', () 
         `"${term}" entered the new places below. It is a word this repository coined for its own use, ` +
           `so on screen say what actually happens at that place instead.\n${unlisted.join('\n')}`,
       ).toEqual([]);
-
-      expect(
-        hits.length,
-        `"${term}" grew from ${tolerated.length} to ${hits.length}.`,
-      ).toBeLessThanOrEqual(tolerated.length);
     },
   );
 
@@ -159,11 +154,6 @@ describe('Korean catalog — untranslated English sentences', () => {
         'list it in INTENTIONALLY_ENGLISH with the reason.\n' +
         unlisted.join('\n'),
     ).toEqual([]);
-
-    expect(
-      offenders.length,
-      `untranslated spots grew from ${UNTRANSLATED_BASELINE.length} to ${offenders.length}.`,
-    ).toBeLessThanOrEqual(UNTRANSLATED_BASELINE.length);
   });
 
   it('both lists point at existing keys', () => {

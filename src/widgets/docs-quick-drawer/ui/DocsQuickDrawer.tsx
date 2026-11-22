@@ -60,6 +60,7 @@ export function DocsQuickDrawer({
         >
           <motion.aside
             ref={mergeRefs(panelRef, panelLockoutRef)}
+            // eslint-disable-next-line no-restricted-syntax -- an edge drawer; Dialog has no edge variant yet
             role="dialog"
             aria-modal="true"
             aria-label={t("ariaLabel")}

@@ -410,6 +410,7 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
             exit={surfaceMotion.exit}
             transition={surfaceMotion.transition}
             onClick={(event) => event.stopPropagation()}
+            // eslint-disable-next-line no-restricted-syntax -- a hand-built modal not yet moved to Dialog
             role="dialog"
             aria-label={t("dialogAriaLabel")}
             aria-modal="true"
@@ -441,6 +442,7 @@ export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
                 <button
                   key={key}
                   type="button"
+                  // eslint-disable-next-line no-restricted-syntax -- hand-built tabs not yet moved to TabBar
                   role="tab"
                   aria-selected={scope === key}
                   data-testid={`shortcut-sheet-scope-${key}`}

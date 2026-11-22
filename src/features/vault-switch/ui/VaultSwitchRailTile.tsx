@@ -270,6 +270,7 @@ export function VaultSwitchRailTile() {
       <Surface
         open={open}
         origin="top left"
+        // eslint-disable-next-line no-restricted-syntax -- a non-modal anchored popover (APG calls it a dialog); Dialog's scrim and focus trap would block the map beside it
         role="dialog"
         tabIndex={-1}
         aria-label={t('switcherAriaLabel')}
