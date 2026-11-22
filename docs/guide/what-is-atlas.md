@@ -65,8 +65,8 @@ and what checks its work), **Changes** and **Git**.
 - **Browser**: Chrome or Edge can open a folder from your disk and show the map.
   The browser cannot register an agent, has no agent chat and does not store API
   keys. Without a folder, it shows a sample map.
-- **Linux**: use the browser, or run the CLI and MCP server from a source
-  checkout ([The CLI](/guide/cli)).
+- **Linux**: use the browser, or run the MCP server from a source checkout
+  ([Connect a coding agent](/guide/connect-agent)).
 
 There is no account, no Atlas server and no telemetry. Your folder stays plain
 Markdown on your disk ([Data, privacy and safety](/guide/trust)).

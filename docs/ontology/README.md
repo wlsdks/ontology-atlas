@@ -36,11 +36,7 @@ the shared mental model between the humans building Atlas and you.
   source imports against.
 
 **No document writes the census number**: it rots the moment anyone adds a
-node. Ask the vault itself:
-
-```bash
-node cli/src/index.mjs overview        # from the repo root
-```
+node. Ask the vault itself: `query_ontology({ "operation": "overview" })`.
 
 ## How this vault is written
 
@@ -58,8 +54,8 @@ node cli/src/index.mjs overview        # from the repo root
   the product produces. `human` stays reserved for what a person judged rather
   than derived, which in this folder is the architecture profile.
 - Agents write through the MCP server (`add_concept`, `patch_concept`,
-  `rename_concept`, …) or the CLI (`node cli/src/index.mjs add …`); both stamp
-  provenance and run the same construction gates.
+  `rename_concept`, …), which stamps provenance and runs the construction
+  gates.
 
 ## What a section is for
 
@@ -96,35 +92,21 @@ the text.
 
 ## Verify the agent loop
 
-After connecting an agent (the installed app's connect button, or
-`agent-setup` from this checkout), ask it to prove the connection before it
-edits anything. `agent-setup --json` also labels each config's launch scope:
-source-checkout configs are **source-bound**, while only the installed app's
-bundled binary is portable across working directories. A relative
+After connecting an agent (the installed app's connect button), ask it to
+prove the connection before it edits anything. Source-checkout configs are
+**source-bound**, while only the installed app's bundled binary is portable
+across working directories. A relative
 `./mcp/src/index.js` example copied into an unrelated empty folder is a review
 template, not a live connection:
 
 > Use the ontology-atlas MCP server to run `validate_vault`, then
-> `query_ontology({ "operation""workspace_brief" })`, then
-> `query_ontology({ "operation""health" })`. Tell me whether this vault is
+> `query_ontology({ "operation": "workspace_brief" })`, then
+> `query_ontology({ "operation": "health" })`. Tell me whether this vault is
 > readable and graph-clean before proposing changes.
-
-The CLI equivalents, from the repo root:
-
-```bash
-node cli/src/index.mjs validate docs/ontology
-node cli/src/index.mjs health
-node cli/src/index.mjs maintenance docs/ontology
-node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000
-node cli/src/index.mjs constellations docs/ontology
-```
 
 In a multi-project vault, select one containment tree explicitly instead of
 combining project ontologies:
-
-```bash
-node cli/src/index.mjs agent-brief docs/ontology --project <project-slug> --json
-```
+`query_ontology({ "operation": "agent_brief", "project": "<project-slug>" })`.
 
 After accepted concept/relation writes and validation, MCP
 `finalize_project_meaning` binds the human-editable project Markdown competency

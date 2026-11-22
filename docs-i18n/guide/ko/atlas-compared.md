@@ -70,15 +70,11 @@ Atlas는 Notion과 동기화하지 않아요. 데스크톱 앱의 **자료실**�
 
 Atlas는 이 파일들과 세 가지 방식으로 함께 일해요. Atlas가 만든 온톨로지 폴더에는
 자체 `AGENTS.md`와 그것을 가져오는 `CLAUDE.md`가 들어 있어서, 에이전트에게 파일을
-훑기 전에 Atlas MCP 서버에 먼저 물어보라고 알려 줘요. CLI 명령 `absorb`는 기존
-파일의 섹션을 개념으로 바꿔요([내 코드로 첫 지도 만들기](/guide/from-your-repo)).
-그리고 앱의 **하네스** 탭은 아래 명령과 마찬가지로 이 파일들을 고치지 않고 읽기만
-하면서 문제를 짚어 줘요. 예를 들어 `AGENTS.md`를 가져오지 않는 `CLAUDE.md`나,
-Codex의 기본 한도인 32 KiB를 넘는 `AGENTS.md`예요.
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs agent-files --root .
-```
+훑기 전에 Atlas MCP 서버에 먼저 물어보라고 알려 줘요. 에이전트의 `absorb_document`
+도구는 기존 파일의 섹션을 개념으로 바꿔요([내 코드로 첫 지도 만들기](/guide/from-your-repo)).
+그리고 앱의 **하네스** 탭은 이 파일들을 고치지 않고 읽기만 하면서 문제를 짚어
+줘요. 예를 들어 `AGENTS.md`를 가져오지 않는 `CLAUDE.md`나, Codex의 기본 한도인
+32 KiB를 넘는 `AGENTS.md`예요.
 
 규칙은 지침 파일에, 의미는 온톨로지 폴더에 두세요.
 

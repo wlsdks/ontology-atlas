@@ -155,7 +155,7 @@ is omitted with explicit qualification reasons while retaining a supported
 raw answer. An answer exceeding the archive budget remains available for
 export. These are record/operation budgets, not project or ontology limits.
 
-## Agent and CLI access
+## Agent access
 
 ```json
 {"operation":"analysis_history","analysisMode":"architecture","limit":30}
@@ -168,12 +168,6 @@ History pages count scanned files, with a limit of 1–100; a filtered empty pag
 can still have a next cursor. Review records join only to their named run and
 finding. `analysis_record` returns one exact run or review. Neither operation
 is a `query_plan` target.
-
-```bash
-node cli/src/index.mjs analysis --vault=/path/to/vault --history --json
-node cli/src/index.mjs analysis --vault=/path/to/vault --history --mode=architecture --limit=30 --json
-node cli/src/index.mjs analysis --vault=/path/to/vault --record=<UUID> --json
-```
 
 Read failures never authorize rewriting the archive or the ontology. Use the
 original file or export to inspect unsupported data, and preserve diagnostic

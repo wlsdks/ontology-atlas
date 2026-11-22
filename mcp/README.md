@@ -127,7 +127,7 @@ publishing plan is retired (`docs/DECISIONS.md`, 2026-07-27), so there is no
 | Channel | Who it is for | What it needs |
 |---|---|---|
 | **App-bundled** (primary) | anyone on macOS or Windows | nothing — the download carries a compiled copy of this server |
-| **Source checkout** | Linux, contributors, anyone who wants the CLI too | Node 24 and pnpm ([setup](../cli/README.md#set-up-from-a-source-checkout)) |
+| **Source checkout** | Linux, contributors | Node 24 and pnpm; `pnpm --dir mcp install --frozen-lockfile` in a clone |
 | **MCPB bundle** | a host that installs `.mcpb` files in one click | the bundle from the [latest release](https://github.com/wlsdks/ontology-atlas/releases); it asks for your vault folder |
 | **Container image** | a client that would rather run a container | `docker run --rm -i --user "$(id -u):$(id -g)" -v /path/to/atlas:/vault ghcr.io/wlsdks/ontology-atlas-mcp` |
 
@@ -204,24 +204,12 @@ CI runner, or a clone you are developing in — point `node` at the checkout:
 }
 ```
 
-From a checkout, the local CLI writes both agent config files for you:
+Save it as `.mcp.json` for Claude Code / Cursor; Codex reads the same server
+from `.codex/config.toml` or from the global registration below.
 
-```bash
-node cli/src/index.mjs init ./ontology
-```
-
-That creates the starter markdown vault plus ready-to-use MCP config files:
-
-- `.mcp.json` for Claude Code / Cursor
-- `.codex/config.toml` for Codex
-
-Add `--quick-start` to scaffold and prepare a review from the current repository
-in the same run. The cold-start CLI never writes semantic ontology nodes: an
-exact `constructionQualification:v1` packet, human acceptance, and unchanged
-released `writePlan` are required through the MCP lifecycle. If bootstrap or
-MCP startup fails, the command keeps the scaffold and configs, returns nonzero,
-labels them unverified, and prints exact diagnose/retry commands; a successful
-quick start reports review-ready, not semantically complete.
+Semantic ontology nodes are never written at cold start: an exact
+`constructionQualification:v1` packet, human acceptance, and unchanged
+released `writePlan` are required through the MCP lifecycle.
 
 The lifecycle response also includes a shadow-only `admission` receipt. It
 classifies the current packet as `self_qualified`, `partial_visible_gap`,
@@ -252,29 +240,20 @@ With only one authority source, keep confidence below `0.8` and return `partial`
 with an explicit gap; that honest packet remains reviewable.
 
 Open either the codebase root or the vault folder in the agent and restart it.
-The generated root config points at `./ontology`; the vault-local config uses
-`OATLAS_VAULT=.` so the vault coordinates stay portable. The generated source
-checkout launcher is still **source-bound**: it invokes `node` with an absolute
-`mcp/src/index.js` path when `agent-setup` writes an active config, while the
-tracked `.mcp.json.example` / `.codex/config.toml` examples use a relative
+A vault-local config can use `OATLAS_VAULT=.` so the vault coordinates stay
+portable. A source checkout launcher is still **source-bound**: it invokes
+`node` with an absolute `mcp/src/index.js` path, while the tracked `.mcp.json.example` / `.codex/config.toml` examples use a relative
 `./mcp/src/index.js` only as a merge template for a real Atlas checkout. Copying
 those examples into an arbitrary empty cwd does not install or start MCP and
 must remain a review state. The only portable executable channel is the
 installed app's bundled absolute `ontology-atlas-mcp` binary.
 
-For an existing vault, run `node cli/src/index.mjs agent-setup ./ontology --write`
-from the codebase root. It checks or creates only `.mcp.json` and
-`.codex/config.toml`. With `--write`, parseable files atomically merge or rebind
-only the single `ontology-atlas` entry while preserving unrelated servers,
-sections, and comments. Invalid JSON, duplicate Atlas TOML sections, and
-incomplete section pairs remain untouched and receive merge templates for
-manual review.
-
-Settings and `agent-setup` count only those two active client configs. The
+Settings counts only the two active client configs, `.mcp.json` and
+`.codex/config.toml`. The
 `.mcp.json.example` file is a copy/merge template, not a third connection.
 Ready means the config has one supported executable launch shape and the
-expected vault coordinates; after restarting the client, run `mcp-verify` to
-prove the server actually boots and exposes the current tool inventory.
+expected vault coordinates; after restarting the client, run `npm run verify`
+in `mcp/` to prove the server actually boots and exposes the current tool inventory.
 
 Codex also stores MCP servers globally. Register the bundled binary:
 
@@ -292,7 +271,7 @@ If `OATLAS_VAULT` is not set, the current working directory is used as the vault
 
 ### Optional task context in Codex CLI
 
-Register Atlas for the repository using `agent-setup` above, then enable a
+Register Atlas for the repository as described above, then enable a
 repository-local task policy once in the host's instructions. Include the
 expected absolute source and vault roots. A suitable policy is:
 
@@ -338,8 +317,8 @@ support; this MCP-only path does not invent a generic review link.
 
 ### Other MCP clients (generic stdio registration)
 
-Claude Code, Cursor, and Codex are the only clients `init`/`agent-setup` write
-config for, but **any MCP client that speaks stdio JSON-RPC can register this
+Claude Code, Cursor, and Codex are the only clients the app writes config for,
+but **any MCP client that speaks stdio JSON-RPC can register this
 server** — opencode, a custom agent harness, or anything else. Only the
 config file's *name and location* differ; the `command` / `args` / `env`
 triple is the same shape shown in the snippets above, standalone:
@@ -464,8 +443,7 @@ Steps for a fourth client:
    against the wrong directory.
 3. Restart the client so it re-reads its config.
 4. Verify the registration independently of your client:
-   `node /absolute/path/to/ontology-atlas/cli/src/index.mjs mcp-verify /absolute/path/to/vault`
-   drives the server directly through the full initialize → tools/list → tools/call lifecycle
+   `npm run verify -- --vault /absolute/path/to/vault` in `mcp/` drives the server directly through the full initialize → tools/list → tools/call lifecycle
    and prints a pass/fail line per tool plus one verdict line — this
    confirms the server/vault side works no matter which client you're
    registering it with.
@@ -515,8 +493,6 @@ pnpm test:dogfood:status
 pnpm test:dogfood:graph-db
 pnpm dogfood:verify
 pnpm dogfood:test
-pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
-pnpm cli:mcp-verify -- --help
 ```
 
 `integration:mcp:surface` narrows the JSON-RPC `tools/list`, `initialize`, and
@@ -647,10 +623,7 @@ with exit 2 before starting the underlying checks, and close `--help` typos incl
 a `Did you mean --help?` hint. Use
 `pnpm dogfood:verify` for the full installed-style dogfood vault gate, or
 `pnpm dogfood:test` only when the dogfood helper itself needs the full
-regression suite beyond the focused `test:mcp:dogfood` gate. Use
-`pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` when you need
-the explicit CLI wrapper arguments without changing into `mcp/`; use
-`pnpm cli:mcp-verify -- --help` only for the help flag.
+regression suite beyond the focused `test:mcp:dogfood` gate.
 
 ### 2. Restart the agent
 
@@ -949,9 +922,8 @@ contract: `verified_current`, `review_required`, `needs_evidence`, or `invalid`,
 with separate structure, competency, and source dimensions. It fails closed
 when a receipt, witness, graph hash, or source-currentness check is missing or
 inconsistent; no numeric confidence is synthesized. Pass `project` to
-`query_ontology({ operation: "agent_brief", project: "..." })`, or use
-`ontology-atlas agent-brief <vault> --project SLUG`, to select one project in a
-multi-project vault.
+`query_ontology({ operation: "agent_brief", project: "..." })` to select one
+project in a multi-project vault.
 
 A parseable project document whose whole-body digest differs from its valid
 finalize receipt reports `review_required` / `competency_body_changed` with
@@ -1239,7 +1211,7 @@ five nodes name one `path:` and suggests more specific files. Each names the
 call that repairs it.
 
 `retire_starter_example` is the seventh meaning kind, and the only one that
-judges a file Atlas itself wrote. `init` scaffolds three examples —
+judges a file Atlas itself wrote. The starter vault scaffolds three examples —
 `domains/example-domain`, `capabilities/example-capability`,
 `elements/example-element` — whose bodies explain what a domain, a capability and
 an element *are*. Measured 2026-09-22 on two unfamiliar repositories: both
@@ -1616,62 +1588,6 @@ helper, auditors independently accept or reject sealed quantifier classification
 Accepted rows retain the exact rationale, source-reference order and values;
 rewriting the reasoning requires rejection and resealing.
 
-## Interop — export to a standard graph format
-
-The vault is markdown, but the graph it encodes is portable. `ontology-atlas
-export` compiles the vault (the same deterministic `compile_ontology` artifact
-an agent reads) and serializes it to a standard interchange format on **stdout**:
-
-```bash
-node $ATLAS/cli/src/index.mjs export [vault] --format jsonld    # RDF 1.1 JSON-LD (default)
-node $ATLAS/cli/src/index.mjs export [vault] --format graphml   # XML graph (Gephi / Cytoscape)
-node $ATLAS/cli/src/index.mjs export [vault] --format json      # raw compile artifact, unchanged
-```
-
-The payload goes to stdout and status to stderr, so it pipes cleanly into other
-tools. Node identity is the stable `urn:uuid:<uid>`, used as both the JSON-LD
-`@id` and the GraphML node id. The readable slug remains an explicit property,
-and resolved edge endpoints are mapped from slug to the target UID URN. Edge
-`via` keys become `oatlas:` predicates (JSON-LD) / a `via`
-attribute (GraphML). The CLI and MCP serializer stay byte-identical through
-`interop-format`, lock-stepped by
-`tests/contract/vault-format/interop-format.contract.test.ts`. The retired web ERD builder
-is not an export surface.
-
-### Loading recipes
-
-```bash
-# Gephi / Cytoscape — open the .graphml directly:
-node $ATLAS/cli/src/index.mjs export docs/ontology --format graphml > atlas.graphml
-
-# Neo4j — GraphML via APOC (apoc.import.graphml), from the browser or cypher-shell:
-node $ATLAS/cli/src/index.mjs export docs/ontology --format graphml > /import/atlas.graphml
-#   CALL apoc.import.graphml('atlas.graphml', {readLabels: true})
-
-# NetworkX (Python):
-#   import networkx as nx; G = nx.read_graphml('atlas.graphml')
-
-# rdflib / any triplestore / Protégé — JSON-LD is RDF 1.1:
-node $ATLAS/cli/src/index.mjs export docs/ontology --format jsonld > atlas.jsonld
-#   import rdflib; g = rdflib.Graph(); g.parse('atlas.jsonld', format='json-ld')
-```
-
-### The interop contract (read this before wiring a pipeline)
-
-- **An export is a snapshot, not a live link.** Re-run `export` to refresh.
-- **`graphHash` is the version.** The `--format json` artifact carries the
-  compiler's `graphHash`; identical hashes mean identical graphs. Key your
-  downstream cache/diff on it.
-- **Rename and reclassify preserve the URN.** They change the readable address
-  while preserving `uid`, so already-emitted identity remains stable. Merge
-  preserves the survivor URN and records absorbed UIDs in `merged_uids`.
-- **Invalid identity fails closed.** Missing, malformed, or duplicate primary
-  and merged UID claims abort compilation/export instead of emitting a partial
-  graph or quietly deriving identity from a slug.
-- **External / dangling refs are omitted.** An interop snapshot only emits
-  edges whose endpoints are both real vault nodes; it never mints phantom
-  nodes for unresolved element paths.
-
 ## Frontmatter shape per kind (R14)
 
 When `add_concept` writes a new `.md`, the frontmatter is normalized by
@@ -1844,11 +1760,11 @@ dictionary to the same required fields.
 
 ## Local verification (UX-3)
 
-### One-line verify CLI
+### One-line verify
 
 ```bash
 cd mcp && npm install
-# From the repo root, prefer the CLI wrapper for the dogfood vault:
+# From the repo root, the dogfood vault gates:
 pnpm dogfood:compile
 pnpm dogfood:compile-fix
 pnpm test:dogfood:script-refs
@@ -1865,7 +1781,6 @@ pnpm dogfood:maintenance
 pnpm dogfood:status
 pnpm test:dogfood:graph-db
 pnpm dogfood:verify
-pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
 # Inside mcp/, the package-local verifier has the same smoke scope:
 OATLAS_VAULT=../docs/ontology npm run verify
 npm run verify -- ../docs/ontology
@@ -2168,9 +2083,7 @@ retry shape, and invalid timeout values fail before the server starts and print
 the received value plus a concrete retry example, for example
 `npm run verify -- --timeout-ms 15000`. When the verifier is called with an
 explicit vault, timeout retry hints preserve that vault, for example
-`npm run verify -- --vault <path> --timeout-ms 15000`; the repo-root CLI wrapper
-uses the same pattern with `ontology-atlas mcp-verify --vault <path>
---timeout-ms 15000`. After timeout the verifier sends `SIGTERM` and then
+`npm run verify -- --vault <path> --timeout-ms 15000`. After timeout the verifier sends `SIGTERM` and then
 `SIGKILL`; set `OATLAS_VERIFY_KILL_GRACE_MS=N` only when that post-timeout cleanup
 window needs explicit tuning. Server startup failures before `initialize` keep stderr
 diagnostics and include the same vault-preserving retry example. If the server
