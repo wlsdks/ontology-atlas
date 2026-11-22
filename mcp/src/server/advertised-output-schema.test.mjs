@@ -11,6 +11,8 @@ const DEFINITIONS_DIR = join(dirname(fileURLToPath(import.meta.url)), 'tool-defi
 // Measured at 19,728 bytes for the 39 output schemas of the full profile; the
 // full contracts behind them measure 197,504.
 const ADVERTISED_OUTPUT_SCHEMA_BUDGET_BYTES = 21_000;
+// Dropping `oneOf` only loosens; `patternProperties` or similar beside a closed root would not.
+const CUT_SAFE_CONTRACT_ROOT_KEYWORDS = new Set(['type', 'properties', 'required', 'additionalProperties', 'oneOf', 'description', 'title']);
 
 async function definedOutputSchemas() {
   const byName = new Map();
@@ -39,9 +41,15 @@ test('an advertised output schema keeps every top-level name, type and required 
     assert.deepEqual(advertised.required, contract.required, `${name} required`);
     assert.equal(advertised.additionalProperties, contract.additionalProperties === false ? false : undefined, `${name} root openness`);
     assert.deepEqual(Object.keys(advertised).filter((key) => !['type', 'properties', 'required', 'additionalProperties'].includes(key)), [], `${name} root keywords`);
+    assert.deepEqual(
+      Object.keys(contract).filter((key) => !CUT_SAFE_CONTRACT_ROOT_KEYWORDS.has(key)),
+      [],
+      `${name} contract root uses only keywords the cut can drop without rejecting a valid answer`,
+    );
     assert.deepEqual(Object.keys(advertised.properties), Object.keys(contract.properties), `${name} property names`);
     for (const [field, schema] of Object.entries(advertised.properties)) {
-      assert.ok(schema.type, `${name}.${field} keeps a type`);
+      assert.ok(contract.properties[field].type, `${name}.${field} declares a type in its contract`);
+      assert.deepEqual(schema.type, contract.properties[field].type, `${name}.${field} advertises its contract's type`);
       assert.deepEqual(Object.keys(schema).filter((key) => key !== 'type' && key !== 'description'), [], `${name}.${field} is one level deep`);
     }
   }
