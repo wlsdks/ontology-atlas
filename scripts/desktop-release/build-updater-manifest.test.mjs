@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   PLATFORM_BY_ARCH,
   resolveArchDir,
@@ -228,6 +230,33 @@ test("does not infer a flattened archive's architecture from the requested targe
   try {
     writeFileSync(join(root, "ontology-atlas_1.6.0_x64.app.tar.gz"), "archive");
     assert.equal(resolveArchDir(root, "aarch64"), null);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("the stable cut writes the release commit into the manifest version, and refuses without it", () => {
+  const root = mkdtempSync(join(tmpdir(), "updater-manifest-cli-"));
+  try {
+    const dir = join(root, "aarch64");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "ontology-atlas_1.0.1_aarch64.app.tar.gz"), "archive");
+    writeFileSync(join(dir, "ontology-atlas_1.0.1_aarch64.app.tar.gz.sig"), "signature\n");
+    const out = join(root, "latest.json");
+    const script = fileURLToPath(new URL("./build-updater-manifest.mjs", import.meta.url));
+    const run = (...args) =>
+      spawnSync(process.execPath, [script, `--dir=${root}`, `--out=${out}`, "--repo=wlsdks/ontology-atlas", ...args], { encoding: "utf8" });
+
+    const written = run("--tag=v1.0.1", "--commit=0123456789abcdef0123456789abcdef01234567");
+    assert.equal(written.status, 0, written.stderr);
+    assert.equal(JSON.parse(readFileSync(out, "utf8")).version, "1.0.1+0123456789ab");
+
+    rmSync(out);
+    for (const args of [["--tag=v1.0.1"], ["--tag=v1.0.1", "--commit=0123456789ab"], ["--tag=v1.0.1-beta.1", "--commit=0123456789abcdef0123456789abcdef01234567"]]) {
+      const refused = run(...args);
+      assert.equal(refused.status, 1, args.join(" "));
+      assert.throws(() => readFileSync(out), /ENOENT/, args.join(" "));
+    }
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

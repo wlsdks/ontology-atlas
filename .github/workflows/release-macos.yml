@@ -346,10 +346,13 @@ jobs:
 
       # `admit-release` accepts only the head of main, and the required Checks gate ran
       # `pnpm typecheck` on that program when it merged (next.config.ts).
+      # The app embeds its commit, so the updater can offer the stable release promoted
+      # from another beta of the same version (src-tauri/src/update_offer.rs).
       - name: Build release app bundle
         run: pnpm desktop:release-artifact -- --phase=build
         env:
           ATLAS_BUILD_SKIP_TYPECHECK: "1"
+          ATLAS_BUILD_COMMIT: ${{ needs.admit-release.outputs.release_sha }}
 
       # tar keeps the bundle's modes and extended attributes, which the artifact's zip would
       # drop. Staging needs the symbols of this binary; Cargo leaves the dSYM as a symlink
@@ -636,6 +639,7 @@ jobs:
         run: pnpm desktop:build:windows
         env:
           ATLAS_BUILD_SKIP_TYPECHECK: "1"
+          ATLAS_BUILD_COMMIT: ${{ needs.admit-release.outputs.release_sha }}
 
       - name: Require the beta installer to be unsigned
         shell: pwsh
@@ -814,7 +818,7 @@ jobs:
         run: |
           node scripts/desktop-release/build-updater-manifest.mjs \
             --dir=release-assets --out=release-assets/latest.json \
-            --tag="${RELEASE_TAG}" --repo="${GITHUB_REPOSITORY}"
+            --tag="${RELEASE_TAG}" --commit="${RELEASE_SHA}" --repo="${GITHUB_REPOSITORY}"
 
       - name: Build the MCP ecosystem bundle
         # The MCPB artifact is what makes Atlas publishable to the official MCP
@@ -861,7 +865,7 @@ jobs:
 
       - name: Verify draft release assets
         if: ${{ needs.admit-release.outputs.release_channel == 'stable' }}
-        run: pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --allow-draft --require-updater
+        run: pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --allow-draft --require-updater --commit="${RELEASE_SHA}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -982,7 +986,7 @@ jobs:
 
       - name: Verify public download assets
         if: ${{ needs.admit-release.outputs.release_channel == 'stable' }}
-        run: pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --require-updater
+        run: pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --require-updater --commit="${RELEASE_SHA}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
 

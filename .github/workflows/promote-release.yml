@@ -153,7 +153,7 @@ jobs:
       - name: Verify draft release assets
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: pnpm desktop:verify-download -- --repo="$GITHUB_REPOSITORY" --tag="${RELEASE_TAG}" --allow-draft --require-updater
+        run: pnpm desktop:verify-download -- --repo="$GITHUB_REPOSITORY" --tag="${RELEASE_TAG}" --allow-draft --require-updater --commit="${RELEASE_SHA}"
 
   publish-promotion:
     name: Publish the promoted release
@@ -215,7 +215,7 @@ jobs:
       - name: Verify public download assets
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: pnpm desktop:verify-download -- --repo="$GITHUB_REPOSITORY" --tag="${RELEASE_TAG}" --require-updater
+        run: pnpm desktop:verify-download -- --repo="$GITHUB_REPOSITORY" --tag="${RELEASE_TAG}" --require-updater --commit="${RELEASE_SHA}"
 
       - name: Generate verified release facts
         env:

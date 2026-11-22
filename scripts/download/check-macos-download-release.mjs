@@ -4,7 +4,12 @@ import http from "node:http";
 import https from "node:https";
 
 import { LAST_INTEL_VERSION, isAfterLastIntel } from "../lib/last-intel-release.mjs";
-import { isReleaseTag, parseReleaseTag } from "../lib/release-tag.mjs";
+import {
+  UPDATER_COMMIT_LENGTH,
+  isReleaseTag,
+  parseReleaseTag,
+  splitUpdaterManifestVersion,
+} from "../lib/release-tag.mjs";
 import { updaterArchiveName } from "./stage-macos-release-assets.mjs";
 
 const DEFAULT_REPO = "wlsdks/ontology-atlas";
@@ -17,7 +22,7 @@ const REQUIRED_UPDATER_PLATFORMS = ["darwin-aarch64"];
 const MAX_DOWNLOAD_HASH_BYTES = 2 * 1024 * 1024 * 1024;
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-download [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--allow-draft] [--require-updater]
+  console.log(`Usage: pnpm desktop:verify-download [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--allow-draft] [--require-updater [--commit=SHA]]
        pnpm desktop:verify-download -- --tag=vX.Y.Z-beta.N --beta [--allow-draft]
 
 Verifies that a public GitHub Release exposes a reachable Apple Silicon
@@ -25,7 +30,8 @@ Verifies that a public GitHub Release exposes a reachable Apple Silicon
 one Windows x64 setup executable, all with matching .sha256 checksums. With
 --require-updater it also opens latest.json and
 checks that every platform URL points at an archive (and .sig) that actually
-exists in this release. Draft releases are never accepted because the
+exists in this release, and that its version is the release's X.Y.Z, with
+--commit also that it ends +<the commit's first ${UPDATER_COMMIT_LENGTH} hex digits>. Draft releases are never accepted because the
 hosted landing page cannot serve them as a real user download unless
 --allow-draft is explicitly passed for the pre-publish CI gate.
 A release GitHub marks as a pre-release is always refused.
@@ -44,6 +50,7 @@ function parseArgs(argv) {
     allowDraft: false,
     requireUpdater: false,
     beta: false,
+    commit: null,
   };
 
   for (const arg of argv) {
@@ -74,6 +81,10 @@ function parseArgs(argv) {
       options.tag = arg.slice("--tag=".length).trim();
       continue;
     }
+    if (arg.startsWith("--commit=")) {
+      options.commit = arg.slice("--commit=".length).trim();
+      continue;
+    }
     fail(`unknown argument: ${arg}`);
   }
 
@@ -82,6 +93,10 @@ function parseArgs(argv) {
   }
   if (options.tag !== null && options.tag.length === 0) {
     fail("--tag must not be empty.");
+  }
+  if (options.commit !== null) {
+    if (!options.requireUpdater) fail("--commit checks latest.json, so it needs --require-updater.");
+    if (!/^[0-9a-f]{40}$/.test(options.commit)) fail(`--commit must be a full lowercase 40-hex commit, got ${options.commit}.`);
   }
   if (options.beta) {
     if (options.requireUpdater) {
@@ -605,6 +620,24 @@ async function verifyUpdaterManifest() {
     manifest = JSON.parse(body.toString("utf8"));
   } catch (error) {
     fail(`latest.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  let manifestVersion;
+  try {
+    manifestVersion = splitUpdaterManifestVersion(manifest?.version);
+  } catch (error) {
+    fail(`latest.json ${error instanceof Error ? error.message : String(error)}`);
+  }
+  if (manifestVersion.version !== releaseVersion) {
+    fail(`latest.json says version ${manifest.version}, not ${release.tag_name}'s ${releaseVersion}.`);
+  }
+  if (options.commit !== null) {
+    const expected = `${releaseVersion}+${options.commit.slice(0, UPDATER_COMMIT_LENGTH)}`;
+    if (manifest.version !== expected) {
+      fail(
+        `latest.json says version ${manifest.version}, not ${expected}: without the release commit an app built from another commit of ${releaseVersion}, such as an earlier beta, is never offered this release.`,
+      );
+    }
   }
 
   const assetNames = new Set(assets.map((asset) => asset?.name).filter(Boolean));

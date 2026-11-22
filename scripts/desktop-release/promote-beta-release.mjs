@@ -12,7 +12,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { parseSha256Checksum } from "../lib/macos-artifact/macos-checksum.mjs";
-import { isReleaseTag, parseReleaseTag } from "../lib/release-tag.mjs";
+import { isReleaseTag, parseReleaseTag, updaterManifestVersion } from "../lib/release-tag.mjs";
 import { validateHostedUpdaterManifest } from "../download/stage-hosted-updater-manifest.mjs";
 import { buildManifest, findUpdaterArtifacts } from "./build-updater-manifest.mjs";
 import { resolveTagCommit } from "./tag-commit.mjs";
@@ -33,7 +33,8 @@ X.Y.Z is published; and no stable release is at X.Y.Z or above.
 
 stage downloads every asset of the beta release into PATH, which must be absent
 or empty, checks each against the SHA-256 GitHub recorded and against its .sha256
-sibling, builds latest.json pinned to vX.Y.Z, and creates the draft vX.Y.Z
+sibling, builds latest.json pinned to vX.Y.Z with version X.Y.Z+<the beta
+commit's first 12 hex digits>, and creates the draft vX.Y.Z
 release from exactly those files. It never builds, signs or creates a tag: push
 vX.Y.Z at the beta's commit first.
 
@@ -254,6 +255,7 @@ function newestStableTag(releases, exclude) {
 
 function stage(options) {
   const { stableTag, version } = parseReleaseTag(options.from);
+  const betaSha = resolveTagCommit({ repo: options.repo, tag: options.from, readJson: (args) => gh(args, { json: true }), fail });
   const assets = requirePromotableBeta(readPublishedRelease(options.repo, options.from), options.from);
 
   if (fs.existsSync(options.dir) && fs.readdirSync(options.dir).length > 0) {
@@ -272,7 +274,7 @@ function stage(options) {
   const updater = findUpdaterArtifacts(options.dir);
   if (!updater) fail(`${options.from} has no .app.tar.gz updater archive to point ${MANIFEST} at.`);
   const manifest = buildManifest({
-    version,
+    version: updaterManifestVersion(version, betaSha),
     pubDate: new Date().toISOString(),
     notes: "",
     repo: options.repo,

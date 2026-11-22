@@ -141,6 +141,13 @@ test('refuses an Intel entry after v1.5.0', () => {
   );
 });
 
+test('accepts the version that names the release commit, and refuses other build metadata', () => {
+  assert.equal(validateHostedUpdaterManifest({ ...manifest, version: '1.3.0+0123456789ab' }, tag).version, '1.3.0+0123456789ab');
+  for (const version of ['1.3.0+build.7', '1.3.0+0123456789AB', '1.3.0+0123456789a', '1.2.9+0123456789ab']) {
+    assert.throws(() => validateHostedUpdaterManifest({ ...manifest, version }, tag), /does not match/, version);
+  }
+});
+
 test('rejects a manifest whose version or asset URLs belong to another release', () => {
   assert.throws(
     () => validateHostedUpdaterManifest({ ...manifest, version: '1.2.5' }, tag),

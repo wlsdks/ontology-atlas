@@ -5,7 +5,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { isAfterLastIntel } from '../lib/last-intel-release.mjs';
-import { isReleaseTag, parseReleaseTag } from '../lib/release-tag.mjs';
+import { isReleaseTag, parseReleaseTag, splitUpdaterManifestVersion } from '../lib/release-tag.mjs';
 import { updaterArchiveName } from './stage-macos-release-assets.mjs';
 
 const DEFAULT_REPO = 'wlsdks/ontology-atlas';
@@ -57,10 +57,16 @@ export function validateHostedUpdaterManifest(value, releaseTag, repo = DEFAULT_
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     fail('latest.json must be an object');
   }
-  const version = value.version;
+  // `X.Y.Z+<commit>` since releases name their commit; a release cut before that says `X.Y.Z`.
+  let version;
+  try {
+    version = splitUpdaterManifestVersion(value.version).version;
+  } catch {
+    version = null;
+  }
   const expectedVersion = releaseTag.replace(/^v/, '');
-  if (typeof version !== 'string' || version !== expectedVersion) {
-    fail(`latest.json version ${String(version)} does not match ${releaseTag}`);
+  if (version !== expectedVersion) {
+    fail(`latest.json version ${String(value.version)} does not match ${releaseTag}`);
   }
   const platforms = value.platforms;
   if (!platforms || typeof platforms !== 'object' || Array.isArray(platforms)) {

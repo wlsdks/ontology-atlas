@@ -42,3 +42,35 @@ export function isReleaseTag(tag) {
     return false;
   }
 }
+
+/** The commit identity a stable `latest.json` carries: the first twelve hex digits of the release commit. */
+export const UPDATER_COMMIT_LENGTH = 12;
+const FULL_COMMIT = /^[0-9a-f]{40}$/;
+const UPDATER_VERSION = new RegExp(`^(${NUMBER}\\.${NUMBER}\\.${NUMBER})(?:\\+([0-9a-f]{${UPDATER_COMMIT_LENGTH}}))?$`);
+
+/**
+ * The `version` a stable `latest.json` carries: `X.Y.Z+<12 hex>`. A beta and the stable promoted from
+ * it share `X.Y.Z`; the build metadata lets an installed app built from another commit of that
+ * version be offered the stable (`src-tauri/src/update_offer.rs`). Precedence ignores it.
+ */
+export function updaterManifestVersion(version, commit) {
+  if (typeof commit !== 'string' || !FULL_COMMIT.test(commit)) {
+    throw new Error(`release commit ${String(commit)} is not a full lowercase 40-hex commit.`);
+  }
+  const parsed = splitUpdaterManifestVersion(version);
+  if (parsed.commit !== null) throw new Error(`version ${version} already carries build metadata.`);
+  return `${parsed.version}+${commit.slice(0, UPDATER_COMMIT_LENGTH)}`;
+}
+
+/**
+ * Reads a `latest.json` version: `X.Y.Z`, or `X.Y.Z+<12 hex>` since releases name their commit.
+ * Every other shape throws. `version` is what a person reads; `commit` is never shown.
+ * @returns {{ version: string, commit: string | null }}
+ */
+export function splitUpdaterManifestVersion(value) {
+  const match = typeof value === 'string' ? UPDATER_VERSION.exec(value) : null;
+  if (!match) {
+    throw new Error(`updater version ${String(value)} is neither X.Y.Z nor X.Y.Z+<${UPDATER_COMMIT_LENGTH} lowercase hex>.`);
+  }
+  return { version: match[1], commit: match[5] ?? null };
+}

@@ -181,7 +181,7 @@ test("stage creates the stable draft from the beta's own bytes plus a manifest p
     const files = betaFiles();
     for (const [name, body] of Object.entries(files)) assert.equal(release.files[name], body, `${name} changed`);
     const manifest = JSON.parse(release.files["latest.json"]);
-    assert.equal(manifest.version, "1.2.3");
+    assert.equal(manifest.version, "1.2.3+aaaaaaaaaaaa");
     assert.deepEqual(Object.keys(manifest.platforms), ["darwin-aarch64"]);
     assert.equal(
       manifest.platforms["darwin-aarch64"].url,

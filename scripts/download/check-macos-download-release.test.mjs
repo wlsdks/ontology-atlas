@@ -864,6 +864,49 @@ test("updater gate refuses a URL pinned to another tag", async () => {
   });
 });
 
+const RELEASE_COMMIT = "0123456789abcdef0123456789abcdef01234567";
+
+test("updater gate with --commit accepts the version that names the release commit", async () => {
+  const manifest = { ...updaterManifest(), version: "0.1.0+0123456789ab" };
+  await withServer(withUpdater({ manifest }), async (baseUrl) => {
+    const { stdout } = await runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater", `--commit=${RELEASE_COMMIT}`]);
+    assert.match(stdout, /Updater: latest\.json/);
+  });
+});
+
+test("updater gate with --commit refuses a version without the commit or with another one", async () => {
+  for (const version of ["0.1.0", "0.1.0+fedcba987654"]) {
+    const manifest = { ...updaterManifest(), version };
+    await withServer(withUpdater({ manifest }), async (baseUrl) => {
+      await assert.rejects(
+        runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater", `--commit=${RELEASE_COMMIT}`]),
+        (error) => /not 0\.1\.0\+0123456789ab: without the release commit/.test(error.stderr),
+        version,
+      );
+    });
+  }
+});
+
+test("updater gate refuses a manifest whose version is not the release's", async () => {
+  for (const version of ["0.1.1+0123456789ab", "0.1.0-beta.1", "0.1.0+build.7", undefined]) {
+    const manifest = { ...updaterManifest(), version };
+    await withServer(withUpdater({ manifest }), async (baseUrl) => {
+      await assert.rejects(
+        runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater"]),
+        (error) => /latest\.json (says version|updater version)/.test(error.stderr),
+        String(version),
+      );
+    });
+  }
+});
+
+test("--commit needs --require-updater and a full commit", async () => {
+  await withServer(withUpdater(), async (baseUrl) => {
+    await assert.rejects(runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", `--commit=${RELEASE_COMMIT}`]), (error) => /needs --require-updater/.test(error.stderr));
+    await assert.rejects(runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--require-updater", "--commit=0123456789ab"]), (error) => /full lowercase 40-hex/.test(error.stderr));
+  });
+});
+
 test("the DMG-only path still passes without the updater flag", async () => {
   // Existing callers (gateway verification and so on) do not require the manifest.
   await withServer(makeHandler(), async (baseUrl) => {

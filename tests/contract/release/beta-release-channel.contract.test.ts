@@ -120,3 +120,67 @@ describe("the browser gate can tell a whole run after its artifacts expire", () 
     );
   });
 });
+
+/**
+ * A beta and the stable promoted from it share `X.Y.Z`. The stable `latest.json` says `X.Y.Z+<12 hex>`
+ * of the release commit and the app embeds its own commit, so an app on another beta of that version
+ * is offered the stable. Both stable writers must stamp the commit, and both verifiers demand it.
+ */
+const PROMOTE_WORKFLOW = ".github/workflows/promote-release.yml";
+const PROMOTE_SCRIPT = "scripts/desktop-release/promote-beta-release.mjs";
+
+function assertCommitIdentity(files: Record<string, string>): void {
+  const release = files[RELEASE_WORKFLOW];
+  const stage = steps(jobBlock(release, "stage-macos"));
+  const manifest = stepMatching(stage, /build-updater-manifest\.mjs/, "manifest step");
+  requireCondition(manifest.step, STABLE, "the updater manifest");
+  if (!manifest.step.body.includes('--commit="${RELEASE_SHA}"')) {
+    throw new Error("the stable cut's manifest does not name the release commit");
+  }
+  const build = stepMatching(steps(jobBlock(release, "build-macos")), /desktop:release-artifact -- --phase=build/, "macOS build");
+  if (!build.step.body.includes("ATLAS_BUILD_COMMIT: ${{ needs.admit-release.outputs.release_sha }}")) {
+    throw new Error("the macOS build does not embed the release commit");
+  }
+  for (const [file, label] of [[RELEASE_WORKFLOW, "the cut"], [PROMOTE_WORKFLOW, "promotion"]] as const) {
+    const checks = files[file].match(/desktop:verify-download -- .*--require-updater.*$/gm) ?? [];
+    if (checks.length !== 2) throw new Error(`${label}: expected two updater checks, found ${checks.length}`);
+    for (const check of checks) {
+      if (!check.includes('--commit="${RELEASE_SHA}"')) throw new Error(`${label}: an updater check does not demand the release commit`);
+    }
+  }
+  if (!files[PROMOTE_SCRIPT].includes("version: updaterManifestVersion(version, betaSha),")) {
+    throw new Error("promotion's manifest does not name the beta commit");
+  }
+  const offer = files["src-tauri/src/update_offer.rs"];
+  if (!offer.includes('option_env!("ATLAS_BUILD_COMMIT")')) throw new Error("the app does not read the embedded commit");
+  if (!/\.default_version_comparator\(\|current, remote\| \{\s+update_offer::offers_update\(&current, &remote\.version\)/.test(files["src-tauri/src/lib.rs"])) {
+    throw new Error("the updater does not use update_offer's comparator");
+  }
+}
+
+describe("a stable release names its commit, so another beta of its version is offered it", () => {
+  const files = Object.fromEntries(
+    [RELEASE_WORKFLOW, PROMOTE_WORKFLOW, PROMOTE_SCRIPT, "src-tauri/src/update_offer.rs", "src-tauri/src/lib.rs"].map((file) => [
+      file,
+      readFileSync(file, "utf8"),
+    ]),
+  );
+
+  it("holds in the cut, promotion and the app", () => {
+    expect(() => assertCommitIdentity(files)).not.toThrow();
+  });
+
+  const probes: Array<[string, string, string, string]> = [
+    ["the cut's manifest drops the commit", RELEASE_WORKFLOW, ' --commit="${RELEASE_SHA}" --repo=', " --repo="],
+    ["the macOS build stops embedding the commit", RELEASE_WORKFLOW, "          ATLAS_BUILD_COMMIT: ${{ needs.admit-release.outputs.release_sha }}\n\n      # tar keeps", "\n      # tar keeps"],
+    ["promotion's draft check drops the commit", PROMOTE_WORKFLOW, '--allow-draft --require-updater --commit="${RELEASE_SHA}"', "--allow-draft --require-updater"],
+    ["promotion writes the plain version", PROMOTE_SCRIPT, "version: updaterManifestVersion(version, betaSha),", "version,"],
+    ["the app keeps the default comparator", "src-tauri/src/lib.rs", ".default_version_comparator(", ".no_comparator("],
+  ];
+  for (const [label, file, anchor, planted] of probes) {
+    it(`probe: turns red when ${label}`, () => {
+      expect(files[file].split(anchor).length - 1).toBe(1);
+      expect(() => assertCommitIdentity({ ...files, [file]: files[file].replace(anchor, planted) })).toThrow();
+    });
+  }
+});
