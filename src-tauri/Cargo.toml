@@ -52,6 +52,9 @@ notify-debouncer-full = "0.3"
 futures-util = "0.3"
 tokio = { version = "1.53.3", features = ["io-util", "process", "rt", "sync", "time"] }
 tauri-plugin-updater = { version = "2.10.1", default-features = false, features = ["rustls-tls"] }
+# The updater already depends on semver 1 and hands the comparator its `Version`; naming the crate
+# lets `update_offer.rs` read precedence and build metadata. No new crate enters the graph.
+semver = "1"
 tauri-plugin-process = "2.3.1"
 # A packaged `.app` has nowhere to print. Every `println!` in this crate is inside `#[cfg(test)]`,
 # so an installed build previously explained nothing after the fact — an owner reporting "the agent
