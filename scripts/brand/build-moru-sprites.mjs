@@ -504,7 +504,9 @@ async function cell(source, columns, rows, index, size, alphaCutoff = 240, accen
   const top = Math.round(Math.floor(index / columns) * meta.height / rows);
   const right = Math.round((index % columns + 1) * meta.width / columns);
   const bottom = Math.round((Math.floor(index / columns) + 1) * meta.height / rows);
-  const data = await sharp(file).extract({ left, top, width: right - left, height: bottom - top }).resize(size, size, { kernel: 'nearest' }).ensureAlpha().raw().toBuffer();
+  // A cell already on the work grid is read as it is, so no scaler touches it.
+  const cut = sharp(file).extract({ left, top, width: right - left, height: bottom - top }), onGrid = right - left === size && bottom - top === size;
+  const data = await (onGrid ? cut : cut.resize(size, size, { kernel: 'nearest' })).ensureAlpha().raw().toBuffer();
   for (let i = 0; i < data.length; i += 4) {
     if (data[i + 3] < alphaCutoff) { data.fill(0, i, i + 4); continue; }
     const color = moruColor(data[i], data[i + 1], data[i + 2], accents);
@@ -570,8 +572,36 @@ const cleanedFrame = (frame, size) => ivoryFringe(faintMarks(inkFringe(liftFreeI
 async function neutralPose(clip, size) {
   const first = await cell(clip.source, clip.columns, clip.rows, clip.offset, size, clip.alphaCutoff ?? CLIP_ALPHA_CUTOFF);
   const fit = size * 7 / 8, inset = (size - fit) / 2, anchor = Math.round(size * 0.78);
-  const padded = await raw(first, size).resize(fit, fit, { kernel: 'nearest' }).extend({ left: inset, right: inset, top: 0, bottom: size - fit, background: '#00000000' }).raw().toBuffer();
+  const small = scaledNearest(first, size, fit, NEUTRAL_TIES), padded = Buffer.alloc(size * size * 4);
+  for (let y = 0; y < fit; y++) small.copy(padded, (y * size + inset) * 4, y * fit * 4, (y + 1) * fit * 4);
   return translate(padded, size, 0, anchor - bounds(padded, size)[3]);
+}
+
+/**
+ * Where the neutral pose's scaling from 256 to 224 pixels puts a pixel centre exactly between two
+ * source pixels, whether it takes the upper one: across, then down, in order. An image library
+ * settles these by floating-point rounding, which differs between machines; these are the choices
+ * every committed export was built on, so the neutral pose is the same pixels everywhere.
+ */
+const NEUTRAL_TIES = { across: '11101111111000000000000000000000', down: '11111111110100000010000000010000' };
+
+/** A square frame scaled by nearest neighbour in whole numbers, with every tie decided by `ties`. */
+function scaledNearest(data, size, to, ties) {
+  const picks = decided => {
+    let tie = 0;
+    const out = Array.from({ length: to }, (_, i) => {
+      const upper = Math.floor((2 * i + 1) * size / (2 * to));
+      return (2 * i + 1) * size % (2 * to) ? upper : upper - (decided[tie++] === '1' ? 0 : 1);
+    });
+    if (tie !== decided.length) throw new Error(`scaling ${size} to ${to} meets ${tie} ties, and ${decided.length} are decided`);
+    return out;
+  };
+  const across = picks(ties.across), down = picks(ties.down), out = Buffer.alloc(to * to * 4);
+  for (let y = 0; y < to; y++) for (let x = 0; x < to; x++) {
+    const from = (down[y] * size + across[x]) * 4;
+    data.copy(out, (y * to + x) * 4, from, from + 4);
+  }
+  return out;
 }
 
 /**

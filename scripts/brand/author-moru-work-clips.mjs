@@ -276,11 +276,11 @@ function drawPose(rig, pose, shapes, props, art) {
   // How far up the posed body a row is: 0 on the floor, 1 at the crown.
   const up = y => Math.max(0, Math.min(1, (rig.floor - y) / (height * pose.tall)));
   // `lean` shears the whole body; `bend` carries the head further than the belly, so the weight stays where it sits.
-  const leanAt = y => snap(pose.lean * Math.min(1, (rig.floor - y) / height) + pose.bend * up(y) ** 2);
+  const leanAt = y => snap(pose.lean * Math.min(1, (rig.floor - y) / height) + pose.bend * up(y) * up(y));
   // `bulge` spreads the belly and draws the head in, as a squash does; below zero it lifts the chest.
   const wideAt = y => pose.wide * (1 + pose.bulge * (1 - 2 * up(y)));
   // `cant` tips the head: the side the body leans toward drops and the far side rises.
-  const cantAt = (x, y) => pose.cant ? snap(pose.cant * (x - rig.centre - leanAt(y) - slide) / (rig.bodyBox.w / 2) * up(y) ** 2) : 0;
+  const cantAt = (x, y) => pose.cant ? snap(pose.cant * (x - rig.centre - leanAt(y) - slide) / (rig.bodyBox.w / 2) * up(y) * up(y)) : 0;
   const body = new Uint8Array(size * size);
   const flipperOf = side => {
     const flipper = rig.flippers[side === 'left' ? 0 : 1], dx = snap(pose[`${side}X`]), dy = snap(pose[`${side}Y`]);
@@ -453,11 +453,14 @@ function touchesEdge(canvas, size) {
   return false;
 }
 
-async function sheet(frames, size, rows) {
-  const layers = await Promise.all(frames.map(async (frame, i) => ({
-    input: await sharp(frame, { raw: { width: size, height: size, channels: 4 } }).png().toBuffer(), left: i % COLUMNS * size, top: Math.floor(i / COLUMNS) * size,
-  })));
-  return sharp({ create: { width: COLUMNS * size, height: rows * size, channels: 4, background: '#00000000' } }).composite(layers).png({ compressionLevel: 9, palette: true }).toBuffer();
+/** The poses laid out as one sheet. The buffer is assembled here and only encoded by the image library, losslessly, so the sheet holds the same pixels on every machine. */
+function sheet(frames, size, rows) {
+  const width = COLUMNS * size, data = Buffer.alloc(width * rows * size * 4);
+  frames.forEach((frame, i) => {
+    const left = i % COLUMNS * size, top = Math.floor(i / COLUMNS) * size;
+    for (let y = 0; y < size; y++) Buffer.from(frame.buffer, frame.byteOffset + y * size * 4, size * 4).copy(data, ((top + y) * width + left) * 4);
+  });
+  return sharp(data, { raw: { width, height: rows * size, channels: 4 } }).png({ compressionLevel: 9 }).toBuffer();
 }
 
 /** Every work clip as its manifest entry, its poses and its source sheet, drawn in memory. */
