@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { AlertTriangle, FileText } from 'lucide-react';
 
 import { AGENT_TOOL_LABELS, type HarnessReport } from '@/entities/agent-files';
-import { ReachGrid, ReachMark } from '@/entities/agent-scopes';
+import { ReachGrid, ReachMark, ScopePath } from '@/entities/agent-scopes';
 import { cn } from '@/shared/lib/cn';
 import type { HarnessScopes, PickOutcome, ScopePlatform, ScopeTool } from '@/shared/lib/harness-scopes/tauri-harness-scopes';
 import { Button, CloseButton, Dialog, RowButton, TabBar } from '@/shared/ui';
@@ -296,7 +296,7 @@ function WhereSettingsBody({
         role="tabpanel"
         id={`where-settings-tabpanel-${shownKind}`}
         aria-labelledby={`where-settings-tab-${shownKind}`}
-        className="grid min-h-0 flex-1 grid-cols-1 gap-x-8 gap-y-6 overflow-y-auto overscroll-contain border-t border-[color:var(--color-border-soft)] px-6 pb-5 pt-[1.125rem] min-[1008px]:min-h-[26.5rem] min-[1008px]:grid-cols-[24.5rem_minmax(0,1fr)]"
+        className="grid min-h-0 flex-1 grid-cols-1 gap-x-8 gap-y-6 overflow-y-auto overscroll-contain border-t border-[color:var(--color-border-soft)] px-6 pb-5 pt-[1.125rem] min-[1008px]:grid-cols-[24.5rem_minmax(0,1fr)] min-[1008px]:content-start"
       >
         <div className="min-w-0">
           <p id={stackId} className="px-0.5 pb-2 text-label text-[color:var(--color-text-tertiary)]">{say({ key: 'scopes.order' })}</p>
@@ -338,9 +338,11 @@ function WhereSettingsBody({
                           </span>
                         ) : null}
                       </span>
-                      <span className={cn('min-w-0 truncate text-label text-[color:var(--color-text-tertiary)]', entry.picked && 'font-mono text-[color:var(--color-text-quaternary)]')} title={entry.picked ? entry.shortPath : undefined}>
-                        {entry.picked ? entry.shortPath : say(entry.caption)}
-                      </span>
+                      {entry.picked ? (
+                        <ScopePath path={entry.shortPath} className="text-label text-[color:var(--color-text-quaternary)]" />
+                      ) : (
+                        <span className="min-w-0 truncate text-label text-[color:var(--color-text-tertiary)]">{say(entry.caption)}</span>
+                      )}
                     </span>
                     <CountText count={entry.count} say={say} />
                   </RowButton>
@@ -399,7 +401,7 @@ export function WhereSettingsDialog({
   const [shown, setShown] = useState<{ request: WhereSettingsRequest; opening: number } | null>(null);
   if (request && request !== shown?.request) setShown({ request, opening: (shown?.opening ?? 0) + 1 });
   return (
-    <Dialog open={request !== null} onClose={onClose} size="lg" labelledBy={TITLE_ID} testId="where-settings" className="p-0">
+    <Dialog open={request !== null} onClose={onClose} size="lg" labelledBy={TITLE_ID} testId="where-settings" className="h-[min(46rem,calc(100dvh-var(--chrome-inset)*2))] p-0">
       {shown ? (
         <WhereSettingsBody
           key={shown.opening}

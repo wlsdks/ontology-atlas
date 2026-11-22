@@ -7,6 +7,7 @@ import { AGENT_TOOL_LABELS } from '@/entities/agent-files';
 import {
   ReachGrid,
   ReachMark,
+  ScopePath,
   SCOPE_NAMES,
   SCOPE_REACH,
   scopeHookKey,
@@ -22,7 +23,7 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import type { SetupGroupId, SetupItem } from '../model/harness-setup';
-import { displayPath, hookLabel, hookTitle, reportItemFor, scopeOptionKey, type ScopeHookGroup } from '../model/scope-hook-groups';
+import { displayPath, hookTitle, reportItemFor, scopeOptionKey, type ScopeHookGroup } from '../model/scope-hook-groups';
 import { Fact, ItemStatus, NEUTRAL_BADGE, StatusHints, type TranslateFn } from './HarnessGuideDetail';
 
 /** Asks the page to open "Where settings live" on one tool's scope row. */
@@ -173,7 +174,7 @@ function ScopeFileHeading({
         </span>
       </div>
       <div className="flex h-4 min-w-0 items-center gap-2 pl-5">
-        <span title={file.path} className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--color-text-tertiary)]">{path}</span>
+        <ScopePath path={path} className="flex-1 text-label text-[color:var(--color-text-tertiary)]" />
         {heading.hooks.length > 0 ? (
           <span className="shrink-0 text-label tabular-nums text-[color:var(--color-text-secondary)]">{say('sectionTotal', { count: heading.hooks.length })}</span>
         ) : null}
@@ -268,9 +269,10 @@ export function ScopeHookList({
                           className="h-13 w-full flex-col items-stretch justify-center gap-0.5 py-1.5"
                         >
                           <span className="flex min-w-0 items-baseline gap-2">
-                            <span className={cn('min-w-0 flex-1 truncate font-mono text-body', selected ? 'text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-secondary)]')}>
-                              {hookLabel(hook)}
-                            </span>
+                            <ScopePath
+                              path={displayPath(hookTitle(hook), scopes)}
+                              className={cn('flex-1 text-body', selected ? 'text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-secondary)]')}
+                            />
                             {/* A wired hook needs no mark; only a missing or unresolved script does. */}
                             {item && item.hookStatus !== 'wired' ? <ItemStatus item={{ ...item, approvalGate: undefined }} oneLine t={t} /> : null}
                             <HookTags file={heading.file} tags={tags} t={t} />

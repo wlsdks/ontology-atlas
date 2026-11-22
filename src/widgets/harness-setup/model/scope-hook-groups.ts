@@ -46,15 +46,6 @@ export function scopeHookGroups(scopes: HarnessScopes, filter: ToolFilter): Map<
   return out;
 }
 
-/** The program a command hook runs, as its row names it: a script's file name, else the command. */
-export function hookLabel(hook: ScopeHook): string {
-  if (hook.kind !== 'command' || !hook.command) return hook.kind;
-  const tokens = hook.command.trim().split(/\s+/);
-  const script = tokens.find((token) => /\.(?:sh|bash|zsh|py|js|mjs|cjs|ts|rb|ps1)$/i.test(token.replace(/["']/g, '')));
-  const chosen = (script ?? tokens[0] ?? hook.command).replace(/["']/g, '');
-  return chosen.split(/[\\/]/).pop() || hook.command;
-}
-
 /** The script path a command names, or the whole command, for the detail's title. */
 export function hookTitle(hook: ScopeHook): string {
   if (hook.kind !== 'command' || !hook.command) return hook.kind;

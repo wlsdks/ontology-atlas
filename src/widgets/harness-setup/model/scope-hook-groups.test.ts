@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { HarnessScopes, ScopeFile, ScopeHook } from '@/shared/lib/harness-scopes/tauri-harness-scopes';
 
-import { displayPath, hookLabel, scopeHookGroups } from './scope-hook-groups';
+import { displayPath, hookTitle, scopeHookGroups } from './scope-hook-groups';
 
 function hook(event: string, command: string): ScopeHook {
   return { event, group: 0, handler: 0, matcher: null, kind: 'command', command, timeoutSeconds: null, async: null };
@@ -43,8 +43,8 @@ describe('scopeHookGroups', () => {
 
 describe('row text', () => {
   it('names a command hook by the script it runs and a path from the repository or home folder', () => {
-    expect(hookLabel(hook('Stop', 'bash ~/.claude/hooks/a.sh pre'))).toBe('a.sh');
-    expect(hookLabel(hook('Stop', 'npx lint-staged'))).toBe('npx');
+    expect(hookTitle(hook('Stop', 'bash ~/.claude/hooks/a.sh pre'))).toBe('~/.claude/hooks/a.sh');
+    expect(hookTitle(hook('Stop', 'npx lint-staged'))).toBe('npx lint-staged');
     expect(displayPath('/repo/.claude/settings.json', scopes)).toBe('.claude/settings.json');
     expect(displayPath('/home/me/.codex/hooks.json', scopes)).toBe('~/.codex/hooks.json');
   });
