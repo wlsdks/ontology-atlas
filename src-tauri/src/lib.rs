@@ -25,6 +25,7 @@ mod meaning_transition_archive;
 mod planning;
 mod project_source;
 mod secrets;
+mod update_offer;
 mod vault;
 mod webview_verify;
 mod work_status;
@@ -154,7 +155,13 @@ pub fn run() {
         )
         // Updates install only with a valid minisign signature (public key in `tauri.conf.json`).
         // The process plugin exists for the one post-update restart.
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(
+            tauri_plugin_updater::Builder::new()
+                .default_version_comparator(|current, remote| {
+                    update_offer::offers_update(&current, &remote.version)
+                })
+                .build(),
+        )
         .plugin(tauri_plugin_process::init())
         .manage(VaultWatcherState::default())
         .manage(AcpInstallProgressState::default())

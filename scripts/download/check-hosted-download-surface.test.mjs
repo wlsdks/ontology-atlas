@@ -331,3 +331,22 @@ test("hosted download surface check rejects an /en/ that canonicalizes to itself
     await server.close();
   }
 });
+
+test("the hosted feed may name its release commit in the version, and nothing else", async () => {
+  const feed = (version) =>
+    JSON.stringify({ ...JSON.parse(hostedUpdaterManifest), version });
+  for (const [version, passes] of [["1.3.0+0123456789ab", true], ["1.3.0+build.7", false], ["1.3.0-beta.1", false]]) {
+    const server = await startServer({
+      "/ko/": { body: alignedLanding },
+      "/ko/download/": { body: alignedDownload },
+      "/update/latest.json": { body: feed(version), contentType: "application/json" },
+    });
+    try {
+      const run = evaluateHostedSurface({ baseUrl: server.baseUrl, timeoutMs: 5000 });
+      if (passes) await run;
+      else await assert.rejects(run, /neither X\.Y\.Z nor X\.Y\.Z\+<12 lowercase hex>/, version);
+    } finally {
+      await server.close();
+    }
+  }
+});
