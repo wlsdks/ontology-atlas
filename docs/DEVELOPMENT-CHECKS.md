@@ -178,6 +178,8 @@ What each contributor command answers, sorted by command.
 | `pnpm conflicts:scan` | Which open pull requests change the same files as this branch, and whether a trial merge conflicts |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision to cite or overturn, and whether this change owes one |
 | `pnpm design:tokens -- [--prefix=<name>]` | The current token ramps, resolved from app/styles |
+| `pnpm desktop:release-browser-gate -- --sha=<commit> [--tag=vX.Y.Z]` | Whether a stable release of that commit may publish: only when the newest finished `e2e.yml` run on it is a green whole run; a running, red, partial, expired or absent run refuses and prints the dispatch command for one |
+| `pnpm desktop:release-promote -- --from=vX.Y.Z-beta.N --mode=<admit, stage or verify>` | Promote a published beta to `vX.Y.Z` with the same bytes: admit checks the two tags, the beta release and the browser gate; stage copies the beta's assets after checking each against its `.sha256` and writes `latest.json`; verify checks the public result |
 | `pnpm dev:clean` | Delete the Turbopack dev cache in `.next/dev`; `pnpm dev` reuses it, so a warm start reaches the first route in about 3 s instead of 7 s |
 | `pnpm doc:new -- --type=<kind> --area=<area> --slug=<slug>` | A new living document from its template in `docs/.templates/` |
 | `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check`, `pnpm docs:meta` |
