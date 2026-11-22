@@ -246,6 +246,27 @@ describe('the conductor runs trains', () => {
     assert.match(silent.pulls.get(3826).comments.at(-1).body, /Playwright \(chromium 1\/3\) never reported, though every workflow run for this head finished/);
   });
 
+  it('rebuilds a train from the current heads when a component is pushed while it flies, without ejecting it', () => {
+    const fixed = 'f1xed'.padEnd(40, '0');
+    let world;
+    world = fakeWorld({
+      prs: [component(3824)],
+      queued: [3824],
+      ci: () => (world.pulls.get(3824).headRefOid === fixed ? green() : red(['MCP'], 3825)),
+    });
+    const readPr = world.deps.gh.readPr;
+    world.deps.gh.readPr = (number) => {
+      if (number === 2001) world.pulls.get(3824).headRefOid = fixed;
+      return readPr(number);
+    };
+    assert.deepEqual(runConductor(world).landed, [3824]);
+    assert.equal(called(world, 'openPr').length, 2, 'the train was rebuilt once');
+    assert.equal(called(world, 'mergeInto').at(-1)[2], fixed, 'the rebuilt train carries the pushed head');
+    assert.equal(called(world, 'rerunFailed').length, 0, 'the old head was not judged');
+    assert.ok(world.out.includes(`#3824 moved from ${component(3824).headRefOid.slice(0, 9)} to f1xed0000 while train #2001 was in flight; rebuilding the train from the current heads`));
+    assert.ok(!world.pulls.get(3824).comments.some((c) => c.body.startsWith(EJECTED_MARKER)));
+  });
+
   it('rebuilds a green train when main moved into its files while CI ran', () => {
     const world = fakeWorld({
       prs: [component(5)],

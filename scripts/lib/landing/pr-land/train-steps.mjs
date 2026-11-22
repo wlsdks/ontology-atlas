@@ -278,6 +278,30 @@ export function settleHead({ train, deps, requiredContexts, token }) {
   return { outcome: 'merged', train: number, landed: included.map((c) => c.number) };
 }
 
+/**
+ * The first train in flight carrying a pull request whose head moved since the train took it, with
+ * each move; `null` when none moved or the heads could not be fetched.
+ */
+export function firstMovedTrain({ flight, deps }) {
+  const refs = flight.flatMap((train) => train.included.map((c) => c.headRefName));
+  if (refs.length === 0 || !deps.git.fetch(refs)) return null;
+  for (let index = 0; index < flight.length; index += 1) {
+    const moves = flight[index].included
+      .map((c) => ({ number: c.number, from: c.headRefOid, to: deps.git.revParse(`origin/${c.headRefName}`) }))
+      .filter((move) => move.to && move.to !== move.from);
+    if (moves.length > 0) return { index, moves };
+  }
+  return null;
+}
+
+/** Close a train that carries a moved head: it tests code its author already replaced. Nothing is ejected. */
+export function closeMovedTrain({ train, moves, deps }) {
+  const described = moves.map((m) => `#${m.number} moved from ${m.from.slice(0, 9)} to ${m.to.slice(0, 9)}`);
+  for (const line of described) deps.log(`${line} while train #${train.pr} was in flight; rebuilding the train from the current heads`);
+  deps.gh.closePr(train.pr, `Closed: ${described.join(', ')} while CI ran. Rebuilt from the current heads; nothing is ejected.`);
+  deps.gh.deleteBranch(train.branch);
+}
+
 /** Close a speculative train whose parent did not land. It never merges; its components stay queued. */
 export function discardTrain({ train, deps, why }) {
   deps.gh.closePr(train.pr, `Discarded: it was cut on top of train #${train.onTopOf}, which ${why}. Its pull requests stay queued and ride a train cut from main.`);
