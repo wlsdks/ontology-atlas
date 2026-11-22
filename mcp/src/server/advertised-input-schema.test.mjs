@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { MEANING_COMPETENCY_QUESTIONS } from '../meaning/meaning-assessment.mjs';
+import { advertisedInputSchema } from './advertised-input-schema.mjs';
 import { TOOL_BY_NAME, TOOL_INPUT_CONTRACT_BY_NAME } from './registry.mjs';
 import { NON_BLANK_STRING_SCHEMA } from './tool-schemas/field-primitives.mjs';
 import { normalizeToolArguments } from './validate.mjs';
@@ -34,9 +36,9 @@ test('every stripped top-level pattern is still enforced before the handler', ()
       ['', `${field} must be a non-empty string.`],
       ['   ', `${field} must be a non-empty string.`],
       ['a\0b', `${field} must not contain a null byte.`],
-      ...['\n', '\r', '\u2028', '\u2029'].map((terminator) => [
+      ...[['\n', '000A'], ['\r', '000D'], ['\u2028', '2028'], ['\u2029', '2029']].map(([terminator, codePoint]) => [
         `first${terminator}second`,
-        `${field} must be a single line: no line feed, carriage return, U+2028 or U+2029.`,
+        `${field} must be a single line: it contains U+${codePoint}, a control or invisible formatting character that breaks a line.`,
       ]),
     ]) {
       assert.throws(() => normalizeToolArguments({ [field]: value }, tool), { message }, `${tool}.${field}`);
@@ -75,4 +77,33 @@ test('every advertised array says what its items are, as some hosts require', ()
   const missing = [];
   for (const [name, tool] of TOOL_BY_NAME) arraysWithoutItems(tool.inputSchema, name, missing);
   assert.deepEqual(missing, []);
+});
+
+test('a top-level oneOf or allOf branch keeps its pattern, since only anyOf is checked again', () => {
+  const advertised = advertisedInputSchema({
+    type: 'object',
+    properties: {
+      chosen: { oneOf: [NON_BLANK_STRING_SCHEMA, { type: 'null' }] },
+      combined: { allOf: [NON_BLANK_STRING_SCHEMA] },
+      either: { anyOf: [NON_BLANK_STRING_SCHEMA, { type: 'null' }] },
+    },
+  }).properties;
+  assert.equal(advertised.chosen.oneOf[0].pattern, NON_BLANK_STRING_SCHEMA.pattern);
+  assert.equal(advertised.combined.allOf[0].pattern, NON_BLANK_STRING_SCHEMA.pattern);
+  assert.equal(advertised.either.anyOf[0].pattern, undefined);
+});
+
+test('finalize_project_meaning lists every competency question and its witnesses where answers are written', () => {
+  const { description } = TOOL_BY_NAME.get('finalize_project_meaning').inputSchema.properties.answers;
+  for (const { id, question, requiredWitnesses } of MEANING_COMPETENCY_QUESTIONS) {
+    assert.ok(description.includes(`\`${id}\`: ${question} (answered needs ${requiredWitnesses.join(', ')})`), id);
+  }
+});
+
+test('an add_concepts row says what a body holds and that it is written in this call', () => {
+  const { body } = TOOL_BY_NAME.get('add_concepts').inputSchema.properties.concepts.items.properties;
+  for (const part of ['the deciding rule with the cite', '`## Includes`', '`## Excludes`', '`## Uncertainty`', 'written now']) {
+    assert.ok(body.description?.includes(part), part);
+  }
+  assert.equal(TOOL_BY_NAME.get('add_concept').inputSchema.properties.body.description.startsWith(body.description), true);
 });

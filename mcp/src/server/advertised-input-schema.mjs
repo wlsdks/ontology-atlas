@@ -12,8 +12,12 @@ import { NON_BLANK_STRING_SCHEMA } from './tool-schemas/field-primitives.mjs';
 
 const NON_BLANK_PATTERN = NON_BLANK_STRING_SCHEMA.pattern;
 const NON_BLANK_REGEXP = new RegExp(NON_BLANK_PATTERN, 'u');
+const LINE_TERMINATOR = /[\n\r\u2028\u2029]/u;
 const CHILD_MAPS = new Set(['properties', 'patternProperties']);
 const CHILD_LISTS = new Set(['anyOf', 'oneOf', 'allOf']);
+// Only anyOf is checked again by requireTopLevelNonBlankStrings, so only an
+// anyOf branch of a top-level field may lose its pattern.
+const TOP_LEVEL_LISTS = new Set(['anyOf']);
 const CHILD_VALUES = new Set(['items', 'additionalProperties']);
 
 function isObject(value) {
@@ -27,7 +31,8 @@ function compactNode(schema, topLevel) {
       out[key] = Object.fromEntries(Object.entries(value)
         .map(([name, child]) => [name, isObject(child) ? compactNode(child, false) : child]));
     } else if (CHILD_LISTS.has(key) && Array.isArray(value)) {
-      out[key] = value.map((child) => (isObject(child) ? compactNode(child, topLevel) : child));
+      const branchTopLevel = topLevel && TOP_LEVEL_LISTS.has(key);
+      out[key] = value.map((child) => (isObject(child) ? compactNode(child, branchTopLevel) : child));
     } else if (CHILD_VALUES.has(key) && isObject(value)) {
       out[key] = compactNode(value, false);
     } else {
@@ -80,6 +85,7 @@ function requireNonBlank(value, name) {
   }
   if (value.includes('\0')) throw new Error(`${name} must not contain a null byte.`);
   if (!NON_BLANK_REGEXP.test(value)) {
-    throw new Error(`${name} must be a single line: no line feed, carriage return, U+2028 or U+2029.`);
+    const codePoint = (LINE_TERMINATOR.exec(value)?.[0] ?? '\n').codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+    throw new Error(`${name} must be a single line: it contains U+${codePoint}, a control or invisible formatting character that breaks a line.`);
   }
 }
