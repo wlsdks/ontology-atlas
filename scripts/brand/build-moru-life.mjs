@@ -1,9 +1,9 @@
 /**
  * Draws what the Work status lobby plays: the life clips the cast's verdicts approved, as two sheet layers (the
- * body, and what goes over the wardrobe), the wardrobe sheet and the atlas of poses and anchors. The moves the
+ * body, and what goes over the wardrobe), the wardrobe sheet, the lobby's fixtures and the atlas of poses and anchors. The moves the
  * verdicts left out (bound, belly slide, run) and the fishing and climbing spots the lobby has no pond or ladder for are not drawn.
  *
- *   pnpm brand:life    writes public/brand/moru-life-{base,over,wardrobe}.png and public/brand/moru-life.json
+ *   pnpm brand:life    writes public/brand/moru-life-{base,over,wardrobe,props}.png and public/brand/moru-life.json
  */
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -17,7 +17,7 @@ export const LOBBY_CLIPS = [
   'rest', 'blink', 'look-ahead', 'look-back', 'sway', 'step', 'turn', 'wave', 'highfive', 'ask', 'reply-fish', 'reply-idea',
   'shrug', 'boo', 'startled', 'laugh', 'huff', 'yawn', 'nap', 'swap', 'roll', 'tiptoe',
 ];
-const NAMES = { base: 'moru-life-base.png', over: 'moru-life-over.png', wardrobe: 'moru-life-wardrobe.png', json: 'moru-life.json' };
+const NAMES = { base: 'moru-life-base.png', over: 'moru-life-over.png', wardrobe: 'moru-life-wardrobe.png', props: 'moru-life-props.png', json: 'moru-life.json' };
 /** Lines of poses this wide keep the sheet near square, so no long clip widens every row. */
 const WRAP = 1024;
 

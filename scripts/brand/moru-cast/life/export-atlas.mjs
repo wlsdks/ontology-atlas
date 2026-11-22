@@ -11,6 +11,7 @@ import { CLIPS } from '../clips.mjs';
 import { bodyCentre } from '../catalogue-pace.mjs';
 import { previewPath, sharp } from '../lib.mjs';
 import { WARDROBE } from './wardrobe.mjs';
+import { writeLobbyProps } from './lobby-props.mjs';
 
 const within = (f, a, z) => f >= a && f <= z, solo = beats => [{ name: 'm', ox: 0, beats }];
 const C = (id, frames, beats, extra = {}) => ({ id, frames, actors: solo(beats), ...extra });
@@ -58,7 +59,7 @@ export const LIFE = [
 for (const clip of LIFE.filter(c => c.bubbles)) LIFE.push({ ...clip, id: clip.id + '~left', bubbles: clip.bubbles.map(bub => ({ ...bub, mirrorIcon: true })) });
 
 /** The preview's file names; the app's generator (`scripts/brand/build-moru-life.mjs`) passes its own. */
-const PREVIEW_NAMES = { base: 'atlas-base.png', over: 'atlas-over.png', wardrobe: 'wardrobe.png', json: 'atlas.json' };
+const PREVIEW_NAMES = { base: 'atlas-base.png', over: 'atlas-over.png', wardrobe: 'wardrobe.png', props: 'props.png', json: 'atlas.json' };
 
 /**
  * Writes the two sheet layers, the wardrobe sheet and the atlas JSON into `dir`. `only` keeps the named clips (each
@@ -109,6 +110,8 @@ export async function exportLifeAtlas({ dir = previewPath('life'), only = null, 
   const placed = p => { const rgba = toRGBA(p.s.data); for (let y = 0; y < p.s.h; y++) rgba.copy(sheet, (y * SW + sx) * 4, y * p.s.w * 4, (y + 1) * p.s.w * 4); const out = { sx, w: p.s.w, h: p.s.h, x: p.x, y: p.y, anchor: p.anchor, layer: p.layer, tint: p.tint ? 1 : 0, soft: p.soft ?? 0 }; sx += p.s.w + 2; return out; };
   for (const piece of WARDROBE) meta.pieces[piece.id] = { slot: piece.slot, title: piece.title, parts: piece.parts.map(p => ({ ...placed(p), alts: p.alts ? Object.fromEntries(Object.entries(p.alts).map(([k, q]) => [k, placed({ ...p, ...q })])) : null })) };
   await sharp(sheet, { raw: { width: SW, height: SH, channels: 4 } }).png().toFile(join(dir, names.wardrobe));
+  // The lobby's fixtures on a sheet of their own.
+  meta.props = await writeLobbyProps(dir, names.props);
   meta.palettes = { original: [HEX[STONE], HEX[IVORY]], ...Object.fromEntries(Object.entries(PALETTES).map(([k, v]) => [k, v.hex])) };
   meta.atlas = { w: AW, h: AH, decodedMB: +(AW * AH * 4 * 2 / 1048576).toFixed(1) };
   await writeFile(join(dir, names.json), JSON.stringify(meta));
