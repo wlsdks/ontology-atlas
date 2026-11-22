@@ -47,5 +47,6 @@ export const WARDROBE = [
   { id: 'backpack', slot: 'accessory', title: 'Backpack', parts: [part(u2([' mmmm ', 'mmmmmm', 'mllllm', 'mmmmmm', 'mm..mm', ' mmmm ']), 44, 47, 'back')] },
 ];
 
-const SOFT = {"scarf": [1, 2], "cape": [1, 2], "neckerchief": [1], "bow": [2], "bell": [0, 2], "satchel": [2], "backpack": [1], "flower-crown": [0], "horns": [0, 0], "dragon-horns": [0, 0], "back-plates": [0, 0], "glasses": [0], "badge": [0], "vest": [0], "apron": [1]};
+// Only what is bone stays rigid (horns). Plates, the wing and glasses settle a pixel behind the body, so a landing or a stop reads on the outfit too.
+const SOFT = {"scarf": [1, 2], "cape": [1, 2], "neckerchief": [1], "bow": [2], "bell": [0, 2], "satchel": [2], "backpack": [1], "flower-crown": [0], "horns": [0, 0], "dragon-horns": [0, 0], "back-plates": [1, 1], "glasses": [1], "wing": [1], "badge": [0], "vest": [0], "apron": [1]};
 for (const piece of WARDROBE) if (SOFT[piece.id]) piece.parts.forEach((p, i) => { p.soft = SOFT[piece.id][i] ?? p.soft; });
