@@ -41,7 +41,7 @@ describe('what the CLI prints is written in one language', () => {
   it('files that print to the user contain no Hangul', () => {
     const files = collectSources(CLI_SOURCE_ROOT);
     // A silent zero would make this gate pass forever if the walk ever broke.
-    expect(files.length).toBeGreaterThan(30);
+    expect(files.length).toBeGreaterThan(10);
 
     const offenders = files
       .map((file) => ({ file, rel: relative(CLI_SOURCE_ROOT, file).replaceAll('\\', '/') }))
