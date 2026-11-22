@@ -1,6 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
 import type { OntologyTreeBuildResult } from "./ontology-tree-node";
-import { ATLAS_CLI } from "@/shared/config/agent/cli-invocation";
 
 type AgentReadinessStatus = "ready" | "needs-links" | "needs-shape";
 type AgentReadinessActionKey =
@@ -26,11 +25,6 @@ export interface AgentReadinessSummary {
 export interface AgentReadinessToolCall {
   tool: string;
   arguments: Record<string, unknown>;
-}
-
-export interface AgentReadinessCliCommand {
-  key: string;
-  command: string;
 }
 
 export const AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND = "pnpm dogfood:graph-db";
@@ -71,7 +65,7 @@ const ACTION_GUIDANCE: Record<AgentReadinessActionKey, string> = {
   inspectHubs:
     "Inspect suggested hubs with workspace_brief, node_profile, path, and blast_radius before editing.",
   syncAfterChanges:
-    "After code changes, run the dogfood graph DB gate plus health, cycles, growth_plan, maintenance_plan, and validate_vault so Claude Code and Codex share a clean graph memory.",
+    "After code changes, run health, cycles, growth_plan, maintenance_plan, and validate_vault so Claude Code and Codex share a clean graph memory.",
 };
 
 const ACTION_PAYLOADS: Record<AgentReadinessActionKey, AgentReadinessToolCall[]> = {
@@ -105,130 +99,15 @@ const ACTION_PAYLOADS: Record<AgentReadinessActionKey, AgentReadinessToolCall[]>
   ],
 };
 
-const BASELINE_CLI_COMMANDS: AgentReadinessCliCommand[] = [
-  { key: "agent_brief", command: `${ATLAS_CLI} agent-brief [vault]` },
-  { key: "graph_db_pack", command: `${ATLAS_CLI} agent-brief [vault] --graph-db-pack` },
-  {
-    key: "setup_gate",
-    command:
-      `${ATLAS_CLI} agent-brief [vault] --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
-  },
-  { key: "workspace_brief", command: `${ATLAS_CLI} workspace-brief [vault]` },
-  { key: "health", command: `${ATLAS_CLI} health [vault]` },
-  { key: "cycles", command: `${ATLAS_CLI} cycles [vault] --max-hops 8` },
-  { key: "growth", command: `${ATLAS_CLI} growth [vault] --limit 20` },
-  { key: "maintenance", command: `${ATLAS_CLI} maintenance [vault] --limit 20` },
-];
-
-const ACTION_CLI_COMMANDS: Record<AgentReadinessActionKey, AgentReadinessCliCommand[]> = {
-  resolveUnknown: [
-    {
-      key: "match_unknown_nodes",
-      command: `${ATLAS_CLI} match-nodes [vault] --kind unknown --limit 20`,
-    },
-    {
-      key: "find_unknown_evidence",
-      command: `${ATLAS_CLI} find <unknown-title-or-slug> [vault]`,
-    },
-  ],
-  addConcepts: [
-    {
-      key: "analyze_repo",
-      command: `${ATLAS_CLI} analyze [repo] --vault [vault]`,
-    },
-  ],
-  linkOrphans: [
-    {
-      key: "find_orphans",
-      command: `${ATLAS_CLI} orphans [vault] --exclude-kinds project,vault-readme`,
-    },
-  ],
-  addRelations: [
-    {
-      key: "infer_imports",
-      command: `${ATLAS_CLI} infer-imports [repo] --vault [vault] --max-files 5000`,
-    },
-    {
-      key: "relation_check",
-      command: `${ATLAS_CLI} relation-check <from-slug> <to-slug> depends_on [vault]`,
-    },
-  ],
-  inspectHubs: [
-    {
-      key: "node_profile",
-      command: `${ATLAS_CLI} node <hub-slug> [vault] --limit 12`,
-    },
-    {
-      key: "blast_radius",
-      command: `${ATLAS_CLI} blast-radius <hub-slug> [vault] --depth 2 --direction incoming`,
-    },
-  ],
-  syncAfterChanges: [
-    {
-      key: "graph_db_runtime_gate",
-      command: `${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND} # ${AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT} runtime graph DB checks`,
-    },
-    {
-      key: "validate_vault",
-      command: `${ATLAS_CLI} validate [vault]`,
-    },
-  ],
-};
-
-const POST_CHANGE_SYNC_CLI_KEYS = new Set([
-  "health",
-  "cycles",
-  "growth",
-  "maintenance",
-  "graph_db_runtime_gate",
-  "validate_vault",
-]);
-
-export function buildAgentReadinessCliCommands(
-  summary: Pick<AgentReadinessSummary, "actionKeys">,
-): AgentReadinessCliCommand[] {
-  const commands = [...BASELINE_CLI_COMMANDS];
-  const seen = new Set(commands.map((item) => item.command));
-
-  for (const key of summary.actionKeys) {
-    for (const item of ACTION_CLI_COMMANDS[key]) {
-      if (seen.has(item.command)) continue;
-      commands.push(item);
-      seen.add(item.command);
-    }
-  }
-
-  return commands;
-}
-
-export function formatAgentReadinessCliCommands(
-  summary: Pick<AgentReadinessSummary, "actionKeys">,
-): string {
-  return buildAgentReadinessCliCommands(summary)
-    .map((item, index) => `${index + 1}. ${item.command}`)
-    .join("\n");
-}
-
-export function buildAgentPostChangeSyncCliCommands(): AgentReadinessCliCommand[] {
-  const syncCommands = buildAgentReadinessCliCommands({ actionKeys: ["syncAfterChanges"] });
-  return syncCommands.filter((item) => POST_CHANGE_SYNC_CLI_KEYS.has(item.key));
-}
-
 export function formatAgentPostChangeSyncPacket(): string {
   const payloadLines = ACTION_PAYLOADS.syncAfterChanges
     .map((payload, index) => `${index + 1}. ${payload.tool}\n${formatPayload(payload)}`)
     .join("\n\n");
-  const cliLines = buildAgentPostChangeSyncCliCommands()
-    .map((item, index) => `${index + 1}. ${item.command}`)
-    .join("\n");
 
   return [
     "# Post-change ontology sync gate",
     "",
     "Run this after a non-trivial code change before handing work to Claude Code, Codex, or another collaborator.",
-    "",
-    "## Runtime graph DB gate",
-    `${AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT} checks · ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
     "",
     "## Run when",
     "- a domain, capability, element, or relation was introduced, renamed, split, merged, or made more explicit",
@@ -237,9 +116,6 @@ export function formatAgentPostChangeSyncPacket(): string {
     "",
     "## MCP",
     payloadLines,
-    "",
-    "## CLI fallback",
-    cliLines,
     "",
     "## Skip when",
     "- typo-only, comment-only, one-line style, lint config, or test fixture changes with no ontology shape change",
@@ -301,7 +177,6 @@ export function buildAgentReadinessPrompt(summary: AgentReadinessSummary): strin
   const payloadLines = payloads
     .map((payload, index) => `${index + 1}. ${payload.tool}\n${formatPayload(payload)}`)
     .join("\n\n");
-  const cliLines = formatAgentReadinessCliCommands(summary);
 
   return [
     "Use the ontology-atlas MCP server to improve this vault before or during code work.",
@@ -314,8 +189,7 @@ export function buildAgentReadinessPrompt(summary: AgentReadinessSummary): strin
     "Run these MCP calls first:",
     payloadLines,
     "",
-    "If the MCP connector is unavailable, run these terminal fallbacks:",
-    cliLines,
+    "If these MCP tools are not available, stop and ask the person to connect this agent in the Ontology Atlas app (Agents > MCP).",
     "",
     "Prefer read tools first (workspace_brief, health, get_concept, find_evidence, find_backlinks, node_profile).",
     "Only write after confirming the intended ontology change; use add_concept/add_relation/patch_concept/merge_concepts and keep docs/ontology synced.",

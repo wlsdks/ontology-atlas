@@ -12,13 +12,9 @@ export interface AgentSetupCopy {
 const IDLE_STATES: Record<AgentSetupCopyKey, CopyState> = {
   verifyPrompt: 'idle',
   setupPacket: 'idle',
-  verifyCli: 'idle',
-  jsonGate: 'idle',
   postChangeSync: 'idle',
   firstContactProof: 'idle',
   configTemplate: 'idle',
-  setupCheckCli: 'idle',
-  setupCli: 'idle',
   codexTemplate: 'idle',
   codexMcpAddCommand: 'idle',
 };
