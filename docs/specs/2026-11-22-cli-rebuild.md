@@ -4,7 +4,7 @@ doc_type: spec
 status: current
 area: cli
 date: 2026-11-22
-decisions: [e64b4ebe-ea86-48bc-a629-6cc1b8a3dd30, 3f104892-dbc1-43c1-a8a5-5e8bfa734e8a]
+decisions: [87de58d1-d9c5-41d3-a583-01ae0e4ca893]
 ---
 
 # A rebuilt Atlas command for the terminal
@@ -14,6 +14,29 @@ request into the app. It keeps four commands, `status`, `brief`, `check` and `op
 `init`. Everything else in `cli/` is deleted in an order that leaves nothing broken midway. The
 same package later reaches people through the app, npm, agent plugins and Homebrew, in that order.
 The first slice is a probe that can stop the build.
+
+## Outcome: the probe failed
+
+Step 0 ran on 2026-11-22 and missed its pass line, so steps 2, 3 and 6 to 8 are cancelled: no
+`status`, `brief`, `check` or `open`, no install row, no plugin built from this package, and no npm
+or Homebrew publication. Steps 1, 4 and 5 go ahead, and `cli/` keeps only `init`.
+
+| Arm | Missed impacts (of 124) | Wrong beliefs | Controls with an invented change |
+|---|---|---|---|
+| A: diffstat and description | 105 | 8 | 0 |
+| A': the same, run again | 99 | 7 | 0 |
+| B: A plus `brief` | 100 | 6 | 0 |
+| C: the full diff | 78 | 5 | 0 |
+
+B is 2% below the mean of A and A', inside their gap of 6. `brief` names a document whose file
+changed, and the reader already sees that file in the diffstat. In 4 of the 10 changes it had
+nothing to list, and in 5 of the others it listed one document. Ten changes, two Sonnet readers per
+arm with text only, keys written from the diff and source by agents that never saw the vault and
+hashed before any packet existed, and an Opus grader with arm labels stripped. Limits: the readers
+were agents, and the keys reached into source the packets did not hold, so even the full diff
+covered 37%. Record: `docs/records/decisions/2026-11-22-old-cli-deleted-no-terminal-brief-87de58d1-d9c5-41d3-a583-01ae0e4ca893.md`.
+
+The sections below are the plan as probed. Only the deletion steps still apply.
 
 ## Person and moment
 
@@ -747,26 +770,12 @@ name was checked and is free.
 
 ## Decision record
 
-Two records, listed in `decisions:`:
-
-- `docs/records/decisions/2026-11-22-atlas-command-rebuilt-and-published-e64b4ebe-ea86-48bc-a629-6cc1b8a3dd30.md`:
-  the rebuild, the `open` door, the deletion and the publishing. A record is capped at 2,000 bytes,
-  so the reasons it compresses are given in the table below. It decides no plugin detail; the
-  plugin slice writes its own record at step 6.
-- `docs/records/decisions/2026-11-22-one-command-name-ontology-atlas-3f104892-dbc1-43c1-a8a5-5e8bfa734e8a.md`:
-  the one name. Its falsifier is a probe participant calling the name too long to type; the name is
-  then revisited with a short one that the npm registry and Homebrew both show is free.
-
-| Prior decision | What happens to it | Reason |
-|---|---|---|
-| 2026-07-27 "The app embeds MCP … and the npm publish plan is dropped" (`docs/DECISIONS.md:4622`) | Its npm clause is overturned. The embedded server and Connect Agent stand | It dropped npm because an installed app could not connect an agent and the only guidance was a failing `npx` line. Connect Agent fixed that. What is published now is a terminal command for a person in review and for CI, which the app bundle cannot reach |
-| 2026-09-11 "… a release bundle; the image is prepared, not published" (`docs/DECISIONS.md:248`) | Its clause that the npm door stays shut until registry inflow is observed is overturned. The `.mcpb` bundle stands as one more door | Its own dissent, "npm is still the one-line install for a CLI agent", was conceded and deferred. The owner has now decided it |
-| 2026-08-20 (88) "The app installs the agent CLI for you" (`docs/DECISIONS.md:2210`) | Condition three (an app-only location) is overturned for Atlas's own command only. It stands for another vendor's CLI | A command that a terminal cannot find is not installed, so the file goes in a folder on the person's PATH. The other three conditions hold: a press, the exact file shown first, a version that is the app's own |
-| 2026-08-30 "The CLI executes the MCP modules instead of copying them" (`docs/DECISIONS.md:1472`) | Stands, extended to one package | No second copy of the logic |
-| 2026-09-04 "A CLI exit code says whether the input could be answered" (`docs/DECISIONS.md:977`) | Stands | The exit code table follows it |
-| 2026-09-07 "The installed app answers one address" (`docs/DECISIONS.md:599`) | Narrowed. One URL address, no node address in a URL and no URL that writes or runs all stand. "No second address vocabulary" gives way to one launch-argument door | A local process needs a way to name a document. It gets a fixed grammar, a press before any grant, and its own contract |
-| `tests/contract/release/npm-channel-retired.contract.test.ts` | Rewritten at step 3 through `/gate-probe`; admits the published form at step 7 | Screens show the command once it is installed and found, while every npm form stays banned until there is a package |
-| `.claude/rules/surfaces.md:151-164`, `AGENTS.md:16` | Amended at steps 3 and 7 | They state two channels, an app-owned install location and no npm package |
+One record, listed in `decisions:`:
+`docs/records/decisions/2026-11-22-old-cli-deleted-no-terminal-brief-87de58d1-d9c5-41d3-a583-01ae0e4ca893.md`.
+It records the probe's outcome. The prior decisions this plan would have overturned all stand: npm
+stays closed (2026-07-27, 2026-09-11), the app installs no command of its own (2026-08-20 (88)),
+and the app answers one address with no launch-argument door (2026-09-07). 2026-08-30 (the CLI
+runs the MCP modules) lapses with the commands it described.
 
 ## Revisions
 
@@ -787,3 +796,6 @@ Two records, listed in `decisions:`:
   login PATH; a document changed with its code is `updated`, never `current`; the probe has four
   arms, hashed keys and a noise floor; the importer inventory is regenerated by script (29 files,
   18 modules); no bare command line is public before step 7; the plugin gets its own record.
+- 2026-11-22: the probe failed (B 100 missed against A 105 and A' 99; full diff 78). Steps 2, 3
+  and 6 to 8 are cancelled and the two draft records are replaced by one record of the outcome. The
+  owner agreed: what does not help is not built.
