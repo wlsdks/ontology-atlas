@@ -1,13 +1,8 @@
 import { createContext } from 'react';
 
-import { resolveActiveNavDestination } from './nav-destination';
+import { keepsRoute, resolveActiveNavDestination } from './nav-destination';
 
 const PANE_SELECTOR = '[data-app-shell-pane]';
-
-function surfacePath(href: string): string {
-  const path = href.split(/[?#]/, 1)[0] ?? '';
-  return path.length > 1 ? path.replace(/\/+$/, '') : path;
-}
 
 export interface PaneLinkPress {
   defaultPrevented: boolean;
@@ -29,9 +24,8 @@ export function linkPressSwapsPane(press: PaneLinkPress, href: string, currentPa
   if (press.target !== '' && press.target !== '_self') return false;
   if (!press.insidePane) return false;
   if (!href.startsWith('/')) return false;
-  const destination = surfacePath(href);
-  if (destination === surfacePath(currentPathname)) return false;
-  return resolveActiveNavDestination(destination) !== 'map';
+  if (keepsRoute(href, currentPathname)) return false;
+  return resolveActiveNavDestination(href.split(/[?#]/, 1)[0] ?? href) !== 'map';
 }
 
 export function isInsidePane(element: Element): boolean {

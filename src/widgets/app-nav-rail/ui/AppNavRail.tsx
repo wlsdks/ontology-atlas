@@ -232,7 +232,7 @@ export function AppNavRail({
                       beginMapNavigation(() => router.push(target), pathname + window.location.search);
                     } else {
                       cancelMapNavigation();
-                      navigateWithViewTransition(() => router.push(target));
+                      navigateWithViewTransition(target, () => router.push(target));
                     }
                   }}
                   /*

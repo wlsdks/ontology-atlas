@@ -127,7 +127,7 @@ function EditorContent({
         if (options.behavior === "stay") {
           toast.show(t("createdToast", { name: input.name }), "success");
           const detailHref = buildProjectRuntimeDetailHref(input.slug);
-          navigateWithViewTransition(() => router.replace(detailHref));
+          navigateWithViewTransition(detailHref, () => router.replace(detailHref));
           return;
         }
       } else {

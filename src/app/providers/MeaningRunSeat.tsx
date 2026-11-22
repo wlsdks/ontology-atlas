@@ -75,7 +75,7 @@ export function MeaningRunSeat() {
 
   useEffect(() => {
     workRuns.setMeaningDoor((kind) => {
-      navigateWithViewTransition(() => router.push(WIKI_DESK_HREF));
+      navigateWithViewTransition(WIKI_DESK_HREF, () => router.push(WIKI_DESK_HREF));
       if (kind === "ask") focusDeskFieldWhenDrawn();
     });
     return () => workRuns.setMeaningDoor(null);
