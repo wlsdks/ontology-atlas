@@ -148,8 +148,10 @@ accepts one. The app checks the feed automatically
 
 A stable release publishes only over a whole green browser run on its own commit:
 `pnpm desktop:release-browser-gate -- --sha=<commit>` passes only when the newest
-finished `e2e.yml` run there ran the whole suite and passed, and refuses a
-running, red, partial or absent run with the dispatch command. A beta does not
+finished `e2e.yml` run there, among push, schedule and manual runs, ran the
+whole suite and passed, and refuses a running, red, partial, expired or absent
+run with the dispatch command. A whole run is titled `Browser suite: whole run`,
+which outlives the repository's one-day artifact retention. A beta does not
 wait for it, and promotion has no waiting period: it may follow the cut as soon
 as that run is green.
 
@@ -276,15 +278,17 @@ pnpm desktop:release-run -- --tag=vX.Y.Z --promote-from=vX.Y.Z-beta.N
 ```
 
 `admit-promotion` (no write token) requires both tags at one commit, a
-published, complete beta pre-release without `latest.json`, no release holding
-`vX.Y.Z`, the browser gate on that commit, and current download facts.
+published, complete beta pre-release without `latest.json` or assets uploaded
+after publication, no newer beta of that version, no stable release at or
+above it, no release holding `vX.Y.Z`, the browser gate on that commit, and current download facts.
 `stage-promotion` runs `pnpm desktop:release-promote -- --from=vX.Y.Z-beta.N
 --mode=stage`: it downloads every beta asset, checks each against the SHA-256
 GitHub recorded and its `.sha256` sibling, builds `latest.json` pinned to
 `vX.Y.Z`, creates the draft from exactly those files, and runs
 `desktop:verify-download -- --allow-draft --require-updater`. No job builds or
 signs. `publish-promotion` waits for the `release` approval, pins both tags
-again, publishes, and verifies. The watcher then starts the MCP Registry listing
+again, compares the draft's digests with the beta's (`--mode=verify`),
+publishes, pins both tags once more, and verifies. The watcher then starts the MCP Registry listing
 and opens the `/download` facts pull request, as in step 5.
 
 ## Signing and notarization

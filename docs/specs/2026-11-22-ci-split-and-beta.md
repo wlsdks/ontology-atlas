@@ -17,7 +17,7 @@ beta release, and **B**, a split of CI. Sections 1 to 3 are B, section 4 is A.
 | Person | Moment | What must be true |
 |---|---|---|
 | A coding-agent session with a finished branch (several run at once) | Runs `pnpm pr:land <n>` | The merge waits about five minutes for types, unit, contract and MCP, and never for a screen test |
-| The session that cuts a release | Tags and runs `pnpm desktop:release-run` | The owner can install the build by hand; no installed app is offered it; the stable release is the same bytes a day later |
+| The session that cuts a release | Tags and runs `pnpm desktop:release-run` | The owner can install the build by hand; no installed app is offered it; the stable release is the same bytes, with no waiting period |
 | The owner | Installs the beta, uses it for about a day, says "promote" | One command publishes the build they used; a red browser suite on that commit refuses it |
 
 ## Today (measured)
@@ -130,8 +130,13 @@ Repositories read through `gh api` on 2026-11-22, and public write-ups. Most pay
   main's last Linux run is quarantined with R1 as evidence, not rewritten here; more than ten such specs stops the
   slice and goes to the owner. `pnpm e2e:durations` is refreshed from R1 so shards balance on macOS seconds.
 - **Release gate.** `pnpm desktop:release-browser-gate -- --sha=<commit>` passes only when the newest finished
-  `e2e.yml` run on that commit is a whole run that concluded `success`; running, red, partial and absent each refuse
-  and print the dispatch command. It runs in `publish-macos` before a stable release is published and in promotion's
+  `e2e.yml` run on that commit is a whole run that concluded `success`; running, red, partial, expired and absent
+  each refuse and print the dispatch command. Only `push`, `schedule` and `workflow_dispatch` runs count: a fork's
+  pull request can carry the release commit as its head. A whole run is marked by its title, which `e2e.yml` sets
+  to `Browser suite: whole run` for a scheduled run and a dispatch with no `plan_from`, so the evidence outlives the
+  repository's one-day artifact retention and a promotion days later still passes; S2 keeps that `run-name`. A run
+  without the title counts only while its `playwright-timings-full-*` artifacts exist; once they expire it is
+  `expired`, not `partial`. It runs in `publish-macos` before a stable release is published and in promotion's
   admission. A beta cut does not wait: `desktop:release-run` dispatches `e2e.yml` on the tag and the suite runs while
   the owner uses the build.
 - **A red nightly** shows on every `pnpm pr:land` and in every train body, with its failing spec files. Whoever cuts
@@ -309,3 +314,7 @@ quarantine exists.
 - 2026-11-22: public write-ups weighed. The suite's environment is decided in section 2 (macOS for geometry, one
   fixed Linux image reserved for a first pixel baseline); quarantine exit needs 65 green repeats; staged rollout
   and risk labels are listed as later work.
+- 2026-11-22: S1 review folded in. The release gate reads a durable whole-run title instead of artifacts that expire
+  after a day, names an expired state, and counts only push, schedule and dispatch runs; promotion refuses a
+  superseded beta and late-uploaded assets, and compares digests again before publishing; the person table says no
+  waiting period.
