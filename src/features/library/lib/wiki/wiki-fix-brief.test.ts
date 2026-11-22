@@ -57,7 +57,7 @@ describe("buildWikiShapeFixBrief — one page, and the page it names", () => {
   it("quotes every finding with the code and line the terminal prints", () => {
     const brief = build("en", [UNCITED, { code: "missing-field:title", message: "`title:` is missing." }]);
     expect(brief).toContain("- uncited-fact:19 — Every bullet under `## Facts` ends in at least one citation.");
-    // No line anchor for a finding bound to no line — the same shape `wiki-validate` prints.
+    // No line anchor for a finding bound to no line — the same shape `validate_wiki` returns.
     expect(brief).toContain("- missing-field:title — `title:` is missing.");
   });
 

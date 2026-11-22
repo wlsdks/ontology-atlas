@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, matchesGlob, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 import { KNIP_VERSION, SCOPE_CONFIGS, scopesFor } from './scope-configs.mjs';
 
@@ -10,11 +10,6 @@ export function assertKnipVersion(root) {
   const manifest = JSON.parse(readFileSync(resolve(root, 'node_modules/knip/package.json'), 'utf8'));
   if (manifest.version !== KNIP_VERSION) throw new Error(`Knip version mismatch: expected ${KNIP_VERSION}, found ${manifest.version}`);
   return manifest.version;
-}
-
-export async function cliRuntimeEntries(root, modules) {
-  const registry = modules ?? (await import(pathToFileURL(resolve(root, 'cli/src/lib/cli-commands.mjs')).href)).CLI_COMMAND_MODULES;
-  return ['src/index.mjs', ...new Set(Object.values(registry).map(file => `src/commands/${file}`))].sort();
 }
 
 function manifestRuntimeEntries(root, cwd) {
@@ -30,11 +25,7 @@ export async function materializeConfig(root, scopeName, lane) {
   const scope = SCOPE_CONFIGS[scopeName];
   const config = structuredClone(scope[lane]);
   let entryPatterns = config.entry;
-  if (lane === 'runtime' && scopeName === 'cli') {
-    const entries = await cliRuntimeEntries(root);
-    config.entry = entries.filter(entry => entry !== 'src/index.mjs'); // bin is already a manifest entry
-    entryPatterns = entries;
-  } else if (lane === 'runtime' && config.entry.length === 0) entryPatterns = manifestRuntimeEntries(root, scope.cwd);
+  if (lane === 'runtime' && config.entry.length === 0) entryPatterns = manifestRuntimeEntries(root, scope.cwd);
   return { config: { ...config, treatConfigHintsAsErrors: true }, entryPatterns };
 }
 

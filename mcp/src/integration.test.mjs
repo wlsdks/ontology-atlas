@@ -34,6 +34,7 @@ import { analysisRecordFileName, serializeAnalysisRecord } from './analysis-hist
 import { buildProjectSourceGraphHash } from "./project-source/project-source-graph-hash.mjs";
 import { renderProjectCompetencyMarkdown } from "./project-meaning/project-meaning-receipt.mjs";
 import { defaultBody } from "./schema.mjs";
+import { inlineSharedSubschemas } from "./server/shared-subschemas.mjs";
 import { proposalCoverageRefs } from "./construction/construction-lifecycle.mjs";
 import {
   formatNoTestMatchMessage,
@@ -451,8 +452,8 @@ await test("tools/list — each single-item tool description cross-references it
     ]);
     const list = responses.find((r) => r.id === 99);
     assert.ok(list);
-    const tools = list.result?.tools;
-    assert.ok(Array.isArray(tools));
+    assert.ok(Array.isArray(list.result?.tools));
+    const tools = list.result.tools.map((tool) => (tool.outputSchema ? { ...tool, outputSchema: inlineSharedSubschemas(tool.outputSchema) } : tool));
     assert.ok(
       tools.every((tool) => tool.inputSchema?.additionalProperties === false),
       "tools/list schemas reject unknown top-level arguments",
@@ -1165,11 +1166,9 @@ await test("tools/list — each single-item tool description cross-references it
     );
     assert.ok(findN && /one-hop graph neighborhood/i.test(findN), "find_neighbors graph hint");
     assert.ok(compile && /deterministic graph artifact/i.test(compile), "compile_ontology compiler hint");
-    assert.ok(query && /graph-engine queries/i.test(query), "query_ontology engine hint");
-    assert.ok(query && /cursor\.found=true/.test(query), "query_ontology ready cursor found hint");
-    assert.ok(query && /cursor\.reason=null/.test(query), "query_ontology ready cursor reason hint");
-    assert.ok(query && /nextAfterActionId/.test(query), "query_ontology cursor nextAfterActionId hint");
-    assert.ok(query && /hasMore/.test(query), "query_ontology cursor hasMore hint");
+    assert.ok(query && /Read-only graph queries/i.test(query), "query_ontology engine hint");
+    const afterActionIdDescription = findTool("query_ontology")?.inputSchema?.properties?.afterActionId?.description ?? "";
+    assert.match(afterActionIdDescription, /cursor\.nextAfterActionId while cursor\.hasMore/, "query_ontology maintenance cursor hint");
     assert.ok(
       validate && /first-contact before writes/i.test(validate),
       "validate_vault first-contact before writes hint",
@@ -1625,18 +1624,18 @@ await test("tools/list — each single-item tool description cross-references it
     );
     assert.match(
       findTool("query_ontology")?.description ?? "",
-      /agent_brief[\s\S]*relationDecisionGuide[\s\S]*read-first write policy/,
-      "query_ontology description documents agent_brief relationDecisionGuide",
+      /impact and blast_radius follow declared `depends_on` only[\s\S]*`approvalGate` writes nothing until[\s\S]*the human explicitly approves/,
+      "query_ontology description keeps the depends_on impact rule and the relation approval gate",
     );
     assert.match(
       findTool("query_ontology")?.description ?? "",
-      /agent_brief[\s\S]*businessOntologyLens[\s\S]*business-first[\s\S]*domain[\s\S]*capability[\s\S]*element/,
-      "query_ontology description documents agent_brief business-first ontology lens",
-    );
-    assert.match(
-      findTool("query_ontology")?.description ?? "",
-      /agent_brief[\s\S]*detail:\"compact\"[\s\S]*12000 UTF-8 bytes together[\s\S]*taskNavigation[\s\S]*never searches the repository[\s\S]*never proves source behavior/,
+      /agent_brief with detail:\"compact\" and `task` right after connection_info[\s\S]*never searches the repository, never proves source behavior/,
       "query_ontology description documents the bounded task handoff and evidence limit",
+    );
+    assert.match(
+      findTool("query_ontology")?.inputSchema?.properties?.detail?.description ?? "",
+      /12000 UTF-8 bytes/,
+      "query_ontology detail states the compact handoff bound",
     );
     assert.deepEqual(
       {
@@ -1679,7 +1678,7 @@ await test("tools/list — each single-item tool description cross-references it
         depthMaximum: 20,
         maxHopsMaximum: 20,
         nodeLimitDescription:
-          "components/communities/health/workspace_brief/agent_brief only: positive integer max node summaries per component/community group. Defaults to 25 for components/communities and 10 for health, capped at 500.",
+          "Node summaries per group: components and communities (default 25), health/workspace_brief/agent_brief (default 10).",
       },
       "query_ontology exposes runtime numeric caps in schema",
     );
@@ -1748,16 +1747,12 @@ await test("tools/list — each single-item tool description cross-references it
         phasesEnum: MAINTENANCE_PHASE_VALUES,
         severitiesEnum: MAINTENANCE_SEVERITY_VALUES,
         maintenanceKindsEnum: MAINTENANCE_KIND_VALUES,
-        kindDescription:
-          "match_nodes: optional node kind filter (project, domain, capability, element, document, vault-readme). recommend_relations currently supports capability or element.",
-        fromKindDescription:
-          "match_edges only: optional source node kind filter (project, domain, capability, element, document, vault-readme). Source must be a real ontology node, not external/unresolved.",
-        toKindDescription:
-          "match_edges only: optional target kind filter (project, domain, capability, element, document, vault-readme, external, unresolved). Use external or unresolved for non-node refs.",
+        kindDescription: "match_nodes filter; recommend_relations takes capability or element.",
+        fromKindDescription: "match_edges only: source kind, always a real node.",
+        toKindDescription: "match_edges only: target kind; external and unresolved select refs that are not nodes.",
         afterActionIdDescription:
-          "maintenance_plan only: stable action id cursor; return actions after this id. Without afterActionId the ready page reports cursor.found=true and cursor.reason=null; cursor.nextAfterActionId matches the last returned action id (or null for an empty page), and cursor.hasMore matches whether more remaining actions exist after this page. nextExecutableAction/nextReviewAction point only at the first executable/review action in the current returned page and preserve that action id, executable flag, phase, kind, and severity. Bucket totals (byPhase, bySeverity, byKind) match remainingActions for the returned cursor. Unknown cursors return an empty page with cursor.found=false, cursor.reason, zero remaining actions, cursor.nextAfterActionId=null, cursor.hasMore=false, and no next actions.",
-        componentTypesDescription:
-          "health/workspace_brief/agent_brief only: relation types used for connected-component checks. Defaults to the full graph relation set.",
+          "maintenance_plan only: resume after this action id; pass cursor.nextAfterActionId while cursor.hasMore. An unknown id returns an empty page with cursor.found=false.",
+        componentTypesDescription: "health/workspace_brief/agent_brief: types for the component check. Default all.",
       },
       "query_ontology exposes health/workspace_brief/agent_brief tuning controls",
     );
@@ -3796,7 +3791,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.match(result.meaningGate.reviewQuestions[0], /business\/product/);
     assert.equal(result.validation.problemFiles, 0);
     assert.equal(result.next.applyTool, "add_concepts; add_relation only after semantic rationale + human approval");
-    assert.match(result.next.review, /CLI apply never promotes inferred imports to depends_on/);
+    assert.match(result.next.review, /Nothing promotes inferred imports to depends_on/);
     assert.deepEqual(result.next.reviewCalls, [
       {
         tool: "analyze_repo_structure",
@@ -4625,18 +4620,7 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       agentBrief.businessOntologyLens.guidance.join("\n"),
       /do not treat paths, APIs, routes, or commands as the ontology root/i,
     );
-    const hasCliFallback = (suffix) => agentBrief.cliFallbackCommands.some((command) => command.endsWith(suffix));
-    assert.ok(agentBrief.cliFallbackCommands.every((command) => !command.startsWith("ontology-atlas ")));
-    assert.ok(hasCliFallback(" facets [vault] --limit 10"));
-    assert.ok(hasCliFallback(" schema [vault] --limit 20"));
-    assert.ok(hasCliFallback(" hubs [vault] --plan --limit 10 --types depends_on,relates"));
-    assert.ok(hasCliFallback(" domain-matrix [vault] --limit 10"));
-    assert.ok(hasCliFallback(" match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10"));
-    assert.ok(hasCliFallback(" match-edges [vault] --plan --types depends_on --limit 20"));
-    assert.ok(hasCliFallback(" all-paths domains/auth capabilities/login [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10"));
-    assert.ok(agentBrief.cliFallbackCommands.some((command) => /(?:^|\s)pattern-walk(?:\s|$)/.test(command)));
-    assert.ok(agentBrief.cliFallbackCommands.some((command) => /(?:^|\s)project-map(?:\s|$)/.test(command)));
-    assert.ok(hasCliFallback(" explain domains/auth capabilities/login [vault] --direction undirected --max-hops 5 --types depends_on,relates --limit 10"));
+    assert.equal(Object.hasOwn(agentBrief, "cliFallbackCommands"), false);
     assert.deepEqual(agentBrief.graphDbQueryPack.map((item) => item.id), [
       "graph_facets",
       "node_scan",

@@ -249,9 +249,8 @@ describe("receipt minting parity", () => {
 });
 
 describe("diagnosis is executable", () => {
-  it("gives every next-action id a registered tool and a registered command", () => {
+  it("gives every next-action id a registered tool", () => {
     const toolNames = new Set(SURFACE.mcp.tools.map((tool) => tool.name));
-    const commands = new Set(SURFACE.cli.commands);
     expect(toolNames.size).toBeGreaterThan(30);
 
     for (const id of NEXT_ACTION_IDS) {
@@ -263,7 +262,6 @@ describe("diagnosis is executable", () => {
       }
       expect(remedy.tool?.name, id).toBeTruthy();
       expect(toolNames.has(remedy.tool!.name), `${id} → ${remedy.tool!.name}`).toBe(true);
-      expect(commands.has(remedy.cli!.command), `${id} → ${remedy.cli!.command}`).toBe(true);
     }
   });
 
@@ -271,8 +269,6 @@ describe("diagnosis is executable", () => {
     const toolNames = new Set(SURFACE.mcp.tools.map((tool) => tool.name));
     expect(toolNames.has("connect_project_source")).toBe(true);
     expect(toolNames.has("disconnect_project_source")).toBe(true);
-    expect(new Set(SURFACE.cli.commands).has("connect-source")).toBe(true);
-    expect(new Set(SURFACE.cli.commands).has("disconnect-source")).toBe(true);
   });
 });
 

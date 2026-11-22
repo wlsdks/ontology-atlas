@@ -35,10 +35,6 @@ import { bridgePort } from '@/features/harness-report';
 import { detectAcpRuntimes, isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
 import { useRememberedTool } from '@/widgets/acp-chat-panel';
 import {
-  listTauriVaultEntries,
-  readTauriVaultText,
-} from '@/shared/lib/vault-folder/native-vault/tauri-vault-files';
-import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
 } from '@/shared/lib/vault-folder/native-vault/tauri-vault-runtime';
@@ -77,36 +73,6 @@ function projectSlugForProfile(profile: ArchitectureProfile, docs: ReadonlyArray
     doc.frontmatter.kind === 'project' && doc.frontmatter.uid === profile.projectUid
   ));
   return typeof project?.frontmatter.slug === 'string' ? project.frontmatter.slug : null;
-}
-
-async function verifiedAtlasCliEntry(candidateRoots: readonly string[]): Promise<string | null> {
-  /*
-   * The target repository and the Atlas tool checkout differ; a vault often lives inside an Atlas
-   * checkout (`docs/ontology`), so inspect the known roots and a bounded set of vault ancestors. Every candidate must
-   * prove the Atlas package name and a real CLI entry.
-   */
-  const roots = new Set<string>();
-  for (const candidate of candidateRoots) {
-    if (!candidate.startsWith('/')) continue;
-    let at = candidate.replace(/\/+$/, '');
-    for (let depth = 0; depth < 5 && at.split('/').length > 2; depth += 1) {
-      roots.add(at);
-      at = at.slice(0, at.lastIndexOf('/'));
-    }
-  }
-  for (const root of roots) {
-    try {
-      const packageText = await readTauriVaultText(root, 'cli/package.json');
-      const packageJson = packageText ? JSON.parse(packageText) as { name?: unknown } : null;
-      if (packageJson?.name !== 'ontology-atlas') continue;
-      const entries = await listTauriVaultEntries(root, 'cli/src');
-      if (!entries.some((entry) => entry.kind === 'file' && entry.name === 'index.mjs')) continue;
-      return `${root}/cli/src/index.mjs`;
-    } catch {
-      // A candidate is only a hint. The next independently known root may be the Atlas checkout.
-    }
-  }
-  return null;
 }
 
 /** `embedded`: the Harness shell owns the eyebrow, `h1` and explainer, so the blueprint drops its own. */
@@ -312,12 +278,10 @@ export function ArchitecturePage({
       }
       const distinctSourceRoots = [...new Set(bindingsByProject.values())];
       const draftSourceRoot = distinctSourceRoots.length === 1 ? distinctSourceRoots[0]! : null;
-      const cliEntry = await verifiedAtlasCliEntry([...distinctSourceRoots, vaultRoot]);
       /* `sourceRoot: null` is the honest missing half when no project source is connected. */
       const draftContext: ArchitectureHandoffContext = {
         sourceRoot: draftSourceRoot,
         vaultRoot,
-        cliEntry,
       };
       for (const profile of profiles) {
         const projectSlug = projectSlugForProfile(profile, docs);
@@ -325,7 +289,6 @@ export function ArchitecturePage({
         next[profile.slug] = {
           sourceRoot,
           vaultRoot,
-          cliEntry,
         };
         if (!sourceRoot || !projectSlug) continue;
         const port = bridgePort({ vaultRoot, projectSlug });

@@ -1,6 +1,5 @@
 /** The ontology starter: 5 .md files, the agent guide and the agent skills scaffolded into an empty folder. Mirrors `cli/templates/vault/`; keep both in sync. */
 
-import { ATLAS_CLI } from '@/shared/config/agent/cli-invocation';
 
 interface StarterFile {
   relPath: string;
@@ -43,12 +42,8 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 ## Get started in 5 minutes
 
 1. Open \`project.md\` and write your project's name and description.
-2. Create new nodes through the map's editor, MCP \`add_concept\`, or the
-   source-checkout CLI. These writers mint the immutable UID; do not copy a
-   starter file and its identity. After setting \`$ATLAS\` as shown below:
-   \`\`\`bash
-   ${ATLAS_CLI} add domain auth --title="Authentication" --vault .
-   \`\`\`
+2. Create new nodes through the map's editor or MCP \`add_concept\`. These
+   writers mint the immutable UID; do not copy a starter file and its identity.
 3. Use the same writer path for capabilities and elements.
 4. Register an AI agent (Claude Code, Cursor, …) and it reads/writes the
    same vault, growing it alongside you.
@@ -64,27 +59,12 @@ press the connect button. The app writes the Claude Code / Cursor / Codex
 config for you: it already knows this folder's real path, and it carries the
 MCP server inside its own bundle. No terminal, no Node, no install step.
 
-**If you don't**, run the agent setup command once from an Ontology Atlas
-source checkout. Both angle-bracket parts are yours to fill in with real
-absolute paths — the checkout you cloned, and this vault folder:
-
-\`\`\`bash
-node <ontology-atlas checkout>/cli/src/index.mjs agent-setup <this vault folder> --root . --write
-\`\`\`
-
-It creates missing Claude Code / Cursor / Codex config files without adding
-starter markdown. In a parseable existing file it changes only the
-\`ontology-atlas\` entry and preserves unrelated servers and sections. Invalid
-or duplicate Atlas config stays untouched. To merge by hand instead, open
-\`.mcp.json.example\`, replace the \`OATLAS_VAULT\` placeholder with the absolute
-path to this vault, then copy that server entry into your agent config. The
-CLI writes \`.mcp.json\` and \`.codex/config.toml\` pointing at the checkout's
-\`mcp/src/index.js\`. Codex loads the project file only after you trust this
-folder. Approve its trust prompt, run \`codex mcp list\` here, and confirm
-\`ontology-atlas\` appears before any write. A parseable existing review
-template keeps its unrelated entries while Atlas is rebound; a malformed
-template is preserved and the current binding is written beside it as an
-\`.ontology-atlas-current.example\` sidecar.
+**If you don't**, merge the server entry by hand: open \`.mcp.json.example\`,
+replace the \`OATLAS_VAULT\` placeholder with the absolute path to this vault,
+then copy that server entry into your agent config. Codex loads a project
+\`.codex/config.toml\` only after you trust this folder. Approve its trust
+prompt, run \`codex mcp list\` here, and confirm \`ontology-atlas\` appears before
+any write.
 
 ## Verify the agent loop
 
@@ -101,33 +81,6 @@ anything:
 > whether this vault is readable, graph-clean enough, and the write tools are
 > available before proposing changes.
 
-From an Ontology Atlas source checkout, the same first-contact check runs
-through the CLI. Point \`$ATLAS\` at the checkout **folder** once — the same meaning every
-other Atlas surface uses — then:
-
-\`\`\`bash
-export ATLAS=<path to your ontology-atlas source checkout>
-
-${ATLAS_CLI} validate .
-${ATLAS_CLI} workspace-brief .
-${ATLAS_CLI} agent-brief . --prompt
-${ATLAS_CLI} agent-brief . --graph-db-pack
-${ATLAS_CLI} agent-brief . --verify-fallbacks
-${ATLAS_CLI} cycles . --max-hops 8
-${ATLAS_CLI} growth . --limit 20
-${ATLAS_CLI} maintenance . --limit 20
-${ATLAS_CLI} mcp-verify . --timeout-ms 15000
-\`\`\`
-
-For automation that wants a small JSON report instead of human terminal output:
-
-\`\`\`bash
-${ATLAS_CLI} agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
-\`\`\`
-
-For an agent opened at your codebase root instead of this vault folder, replace
-\`.\` with the vault path, for example \`./ontology\`.
-
 ## Kinds and relations
 
 Use the specification linked above rather than guessing from a folder name.
@@ -141,7 +94,7 @@ accept \`broader\` or \`is_a\`. The connected agent receives the exact guarded
 
 Once you register the \`ontology-atlas-mcp\` server, the running server gives the
 agent its current read/write inventory. Use \`tools/list\` for the exact names and
-\`mcp-verify\` to prove that the server can read this vault.
+\`validate_vault\` to prove that the server can read this vault.
 
 Start with \`connection_info\`, \`list_kinds\`, \`validate_vault\`, and
 \`query_ontology({ operation: "agent_brief" })\`. Write only after the read-first
@@ -190,8 +143,8 @@ The problem this project solves, or the value it creates, in a single sentence.
 
 1. Edit this file's \`title\` (and any other frontmatter besides \`kind: project\`)
    to match your project.
-2. Rename one starter in place, or create each additional domain through Studio,
-   MCP \`add_concept\`, or CLI \`add\`. Never copy a starter UID into a new node.
+2. Rename one starter in place, or create each additional domain through Studio
+   or MCP \`add_concept\`. Never copy a starter UID into a new node.
 3. Register an AI agent (Claude Code, Cursor, …) and ask it to "tidy up
    the ontology in this vault."
 `;
@@ -356,12 +309,8 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 ## 5분 만에 시작하기
 
 1. \`project.md\` 를 열어 프로젝트 이름과 설명을 씁니다.
-2. 새 노드는 공방, MCP \`add_concept\`, 또는 소스 체크아웃 CLI로 만듭니다.
-   이 작성 경로가 불변 UID를 발급하므로 스타터 파일과 정체성을 복사하지 마세요.
-   아래 안내대로 \`$ATLAS\`를 설정한 뒤:
-   \`\`\`bash
-   ${ATLAS_CLI} add domain auth --title="Authentication" --vault .
-   \`\`\`
+2. 새 노드는 공방이나 MCP \`add_concept\`로 만듭니다. 이 작성 경로가 불변 UID를
+   발급하므로 스타터 파일과 정체성을 복사하지 마세요.
 3. 역량과 요소도 같은 작성 경로로 만듭니다.
 4. AI 에이전트(Claude Code, Cursor, …)를 연결하면 같은 문서함을 읽고 쓰면서
    함께 키웁니다.
@@ -376,27 +325,12 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 이 폴더의 실제 경로를 이미 알고 있고, MCP 서버를 자기 번들 안에 싣고
 다닙니다. 터미널도, node 도, 설치 과정도 필요 없습니다.
 
-**앱이 없다면**, Ontology Atlas 소스 체크아웃에서 에이전트 설정 명령을 한 번
-실행합니다. 꺾쇠 두 자리는 내 컴퓨터의 실제 절대 경로로 바꿔 넣으세요 —
-클론한 체크아웃, 그리고 이 문서함 폴더입니다:
-
-\`\`\`bash
-node <ontology-atlas 체크아웃>/cli/src/index.mjs agent-setup <이 문서함 폴더> --root . --write
-\`\`\`
-
-없는 Claude Code / Cursor / Codex 설정 파일을 만들고, 스타터 마크다운은
-추가하지 않습니다. 해석 가능한 기존 파일에서는 \`ontology-atlas\` 항목만 새
-문서함으로 바꾸며 다른 서버와 섹션은 보존합니다. 잘못되거나 중복된 Atlas 설정은
-건드리지 않습니다. 직접 병합하려면 \`.mcp.json.example\`을 열어
-\`OATLAS_VAULT\` 자리표시자를 이 문서함의 절대 경로로 바꾼 뒤, 그 서버
-항목을 에이전트 설정에 복사하세요. CLI 는 체크아웃의 \`mcp/src/index.js\` 를
-가리키는 \`.mcp.json\` 과 \`.codex/config.toml\` 을 만듭니다.
-Codex 는 이 폴더를 trusted 로 승인한 뒤에만 프로젝트 설정을 읽습니다. 신뢰
-요청을 승인하고 이 폴더에서 \`codex mcp list\` 를 실행해 \`ontology-atlas\` 가
-보이는지 확인한 뒤 쓰기를 시작하세요.
-해석 가능한 기존 검토 템플릿은 다른 항목을 보존한 채 Atlas 항목만 새 문서함으로
-바꿉니다. 잘못된 템플릿은 보존하고, 현재 연결은 같은 위치의
-\`.ontology-atlas-current.example\` sidecar 로 따로 만듭니다.
+**앱이 없다면**, 서버 항목을 직접 병합합니다. \`.mcp.json.example\`을 열어
+\`OATLAS_VAULT\` 자리표시자를 이 문서함의 절대 경로로 바꾼 뒤, 그 서버 항목을
+에이전트 설정에 복사하세요. Codex 는 이 폴더를 trusted 로 승인한 뒤에만
+프로젝트의 \`.codex/config.toml\` 을 읽습니다. 신뢰 요청을 승인하고 이 폴더에서
+\`codex mcp list\` 를 실행해 \`ontology-atlas\` 가 보이는지 확인한 뒤 쓰기를
+시작하세요.
 
 ## 에이전트 연결 확인
 
@@ -412,33 +346,6 @@ Codex 는 이 폴더를 trusted 로 승인한 뒤에만 프로젝트 설정을 �
 > 실행해 줘. 이 문서함을 읽을 수 있는지, 그래프가 충분히 깨끗한지, 쓰기 도구가
 > 준비됐는지 변경을 제안하기 전에 알려 줘.
 
-Ontology Atlas 소스 체크아웃이 있다면 같은 첫 접속 점검을 CLI 로도 할 수
-있습니다. \`$ATLAS\` 를 체크아웃 **폴더**에 한 번 맞춰 두고 — Atlas 의 다른 화면이 쓰는
-뜻과 같습니다 — 이렇게 씁니다:
-
-\`\`\`bash
-export ATLAS=<ontology-atlas 소스 체크아웃 경로>
-
-${ATLAS_CLI} validate .
-${ATLAS_CLI} workspace-brief .
-${ATLAS_CLI} agent-brief . --prompt
-${ATLAS_CLI} agent-brief . --graph-db-pack
-${ATLAS_CLI} agent-brief . --verify-fallbacks
-${ATLAS_CLI} cycles . --max-hops 8
-${ATLAS_CLI} growth . --limit 20
-${ATLAS_CLI} maintenance . --limit 20
-${ATLAS_CLI} mcp-verify . --timeout-ms 15000
-\`\`\`
-
-사람이 읽는 터미널 출력 대신 작은 JSON 보고서가 필요한 자동화라면:
-
-\`\`\`bash
-${ATLAS_CLI} agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
-\`\`\`
-
-에이전트를 이 문서함이 아니라 코드베이스 루트에서 열었다면 \`.\` 대신 문서함
-경로를 씁니다(예: \`./ontology\`).
-
 ## kind와 관계
 
 폴더 이름으로 추측하지 말고 위 명세를 사용하세요. \`project\`, \`domain\`,
@@ -451,7 +358,7 @@ server instructions가 충돌을 막는 정확한 \`patch_concept\` fallback을 
 
 \`ontology-atlas-mcp\` 서버를 등록하면 실행 중인 서버가 현재 읽기·쓰기 도구
 목록을 에이전트에게 알려 줍니다. 정확한 이름은 \`tools/list\`로 보고,
-\`mcp-verify\`로 서버가 이 문서함을 실제로 읽는지 확인하세요.
+\`validate_vault\`로 서버가 이 문서함을 실제로 읽는지 확인하세요.
 
 처음에는 \`connection_info\`, \`list_kinds\`, \`validate_vault\`,
 \`query_ontology({ operation: "agent_brief" })\`를 사용합니다. 읽기 점검이 깨끗하고
@@ -499,9 +406,8 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 
 1. 이 파일의 \`title\`(그리고 \`kind: project\` 외 다른 frontmatter)을 내 프로젝트에
    맞게 고칩니다.
-2. 스타터 하나는 제자리에서 이름을 바꾸고, 도메인을 더 만들 때는 공방,
-   MCP \`add_concept\`, 또는 CLI \`add\`를 씁니다. 스타터 UID를 새 노드에
-   복사하지 않습니다.
+2. 스타터 하나는 제자리에서 이름을 바꾸고, 도메인을 더 만들 때는 공방이나
+   MCP \`add_concept\`를 씁니다. 스타터 UID를 새 노드에 복사하지 않습니다.
 3. AI 에이전트(Claude Code, Cursor, …)를 연결하고 "이 문서함의 온톨로지를
    정리해 줘" 라고 부탁합니다.
 `;
@@ -772,7 +678,7 @@ export function vaultAgentGuideForLocale(locale: string): StarterFile {
 
 /**
  * A one-line bridge file: Codex reads `AGENTS.md` directly, but Claude Code reaches it through `CLAUDE.md`'s `@AGENTS.md` import.
- * Without it the `claude-agents-bridge` check (`cli/src/lib/agent-setup/agent-files.mjs`) silently reports "not applicable".
+ * Without it the `claude-agents-bridge` check (`src/entities/agent-files/model/agent-files.ts`) silently reports "not applicable".
  */
 export const VAULT_CLAUDE_BRIDGE_PATH = "CLAUDE.md";
 

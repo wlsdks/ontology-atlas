@@ -9,7 +9,7 @@ import { NON_BLANK_STRING_SCHEMA } from './field-primitives.mjs';
 import { RELATION_ARRAY_PATCH_SCHEMA } from './vault-node-shapes.mjs';
 
 const POST_WRITE_MAINTENANCE_GUIDANCE =
-  'compact `postWriteMaintenance` (maintenance_plan) with count-safe `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page `nextExecutableAction` / `nextReviewAction` pointers';
+  'compact `postWriteMaintenance`: the remaining maintenance_plan queue in `byPhase` / `bySeverity` / `byKind` buckets, actions with `score` and executable `proposedAction`, and the page\'s `nextExecutableAction` / `nextReviewAction`';
 const COMPACT_MAINTENANCE_PROPOSED_ACTION_TOOLS = Object.freeze(['add_concept', 'add_relation', 'patch_concept']);
 const COMPACT_MAINTENANCE_PROPOSED_ACTION_ARGS_OUTPUT_SCHEMA = Object.freeze({
   oneOf: [

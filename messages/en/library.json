@@ -510,7 +510,7 @@
     "fixMyselfTooltip": "Selects this page's file in Finder. Edit it in any editor; the list updates.",
     "technical": "Technical detail · check codes and line numbers",
     "technicalOpen": "Show check codes",
-    "technicalNote": "The wiki-validate command and the validate_wiki tool report these same codes.",
+    "technicalNote": "The validate_wiki tool reports these same codes.",
     "technicalFile": "File: {path}",
     "goToPlace": "Go to {place}",
     "openPage": "Open {name}",

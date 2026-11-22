@@ -90,8 +90,8 @@ Atlas MCP 서버는 계속 떠 있는 서비스가 아니에요. 코딩 에이�
   게시자' 경고를 띄울 수 있고, 회사에서 관리하는 컴퓨터에서는 막힐 수도 있어요.
   릴리스 전에 빌드를 Microsoft Defender로 검사하고, 사일런트 설치와 실행까지
   시험해 봐요.
-- **Linux**: 아직 앱이 없어요. 브라우저 버전을 쓰거나, 소스에서 CLI와 MCP 서버를
-  실행하세요([CLI와 MCP의 관계](/guide/cli)).
+- **Linux**: 아직 앱이 없어요. 브라우저 버전을 쓰거나, 소스에서 MCP 서버를
+  실행하세요([코딩 에이전트 연결하기](/guide/connect-agent)).
 
 [릴리스 페이지](https://github.com/wlsdks/ontology-atlas/releases)의 설치 파일(`.dmg`, `.exe`)과
 MCP 번들(`.mcpb`) 옆에는 `.sha256` 파일이 있어요. 내려받은 파일의 체크섬과 비교해 보세요.
@@ -110,7 +110,7 @@ Get-FileHash <file> -Algorithm SHA256
 
 ## 오픈 소스
 
-앱, MCP 서버, CLI는 모두 MIT 라이선스로 공개된 저장소 하나에 들어 있어요.
+앱과 MCP 서버는 모두 MIT 라이선스로 공개된 저장소 하나에 들어 있어요.
 [github.com/wlsdks/ontology-atlas](https://github.com/wlsdks/ontology-atlas)에서
 볼 수 있어요. 위의 외부 전송 경로 목록은 소스 파일 하나
 ([outbound-paths.ts](https://github.com/wlsdks/ontology-atlas/blob/main/src/widgets/app-settings-menu/model/outbound-paths.ts))에서

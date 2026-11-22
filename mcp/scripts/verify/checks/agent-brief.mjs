@@ -48,16 +48,6 @@ export function agentBriefSummary(parsed) {
   )}`;
 }
 
-function isRunnableAgentCliFallback(command) {
-  if (typeof command !== 'string' || command.trim() === '' || /[\r\n]/.test(command)) return false;
-  const normalized = command.replaceAll('\\', '/');
-  const entryMarker = 'cli/src/index.mjs';
-  const entryIndex = normalized.indexOf(entryMarker);
-  if (!normalized.startsWith('node ') || entryIndex < 'node '.length) return false;
-  if (normalized.slice('node '.length, entryIndex).trim() === '') return false;
-  return /^(?:['"])?\s+\S/.test(normalized.slice(entryIndex + entryMarker.length));
-}
-
 export function agentBriefFailure(parsed) {
   if (parsed?.operation !== 'agent_brief') {
     return `agent_brief returned unexpected operation: ${parsed?.operation}`;
@@ -76,6 +66,14 @@ export function agentBriefFailure(parsed) {
   }
   if (!Number.isInteger(parsed.readiness.score) || parsed.readiness.score < 0 || parsed.readiness.score > 100) {
     return 'agent_brief response malformed readiness score';
+  }
+  // An agent trusts the headline count without counting, so the brief must carry what it states.
+  if (
+    typeof parsed.readiness.healthChecks === 'number'
+    && Array.isArray(parsed.health?.checks)
+    && parsed.readiness.healthChecks !== parsed.health.checks.length
+  ) {
+    return `agent_brief health-check counts disagree: readiness.healthChecks=${parsed.readiness.healthChecks} but health.checks holds ${parsed.health.checks.length}`;
   }
   if (!agentBriefPlainObject(parsed.projectSource)) {
     return 'agent_brief response missing categorical projectSource';
@@ -125,7 +123,7 @@ export function agentBriefFailure(parsed) {
     !hasNonEmptyString(parsed.handoffPrompt) ||
     !/ontology-atlas MCP server/.test(parsed.handoffPrompt) ||
     !/first-contact MCP calls/i.test(parsed.handoffPrompt) ||
-    !/CLI fallback commands/.test(parsed.handoffPrompt) ||
+    !/When the ontology-atlas MCP server is unavailable: read the vault's Markdown files directly, write nothing to the vault/.test(parsed.handoffPrompt) ||
     !/Graph DB query pack/.test(parsed.handoffPrompt) ||
     !/Kind classification contract before writing frontmatter/.test(parsed.handoffPrompt) ||
     !/Do not classify from the label alone/.test(parsed.handoffPrompt) ||
@@ -150,44 +148,8 @@ export function agentBriefFailure(parsed) {
   ) {
     return 'agent_brief response missing copyable handoffPrompt';
   }
-  if (
-    !Array.isArray(parsed.cliFallbackCommands) ||
-    parsed.cliFallbackCommands.length === 0 ||
-    parsed.cliFallbackCommands.some((command) => !isRunnableAgentCliFallback(command))
-  ) {
-    return 'agent_brief response missing cliFallbackCommands';
-  }
-  if (!parsed.cliFallbackCommands.some((command) => /hubs \[vault\] --plan/.test(command))) {
-    return 'agent_brief cliFallbackCommands missing centrality plan fallback';
-  }
-  if (!parsed.cliFallbackCommands.some((command) => /facets \[vault\]/.test(command))) {
-    return 'agent_brief cliFallbackCommands missing facets fallback';
-  }
-  if (!parsed.cliFallbackCommands.some((command) => /schema \[vault\]/.test(command))) {
-    return 'agent_brief cliFallbackCommands missing schema fallback';
-  }
-  if (!parsed.cliFallbackCommands.some((command) => /match-nodes \[vault\] --plan/.test(command))) {
-    return 'agent_brief cliFallbackCommands missing match-nodes plan fallback';
-  }
-  if (!parsed.cliFallbackCommands.some((command) => /match-edges \[vault\] --plan/.test(command))) {
-    return 'agent_brief cliFallbackCommands missing match-edges plan fallback';
-  }
-  if (!parsed.cliFallbackCommands.some((command) => /domain-matrix \[vault\]/.test(command))) {
-    return 'agent_brief cliFallbackCommands missing domain-matrix fallback';
-  }
-  if (!parsed.cliFallbackCommands.some((command) => /all-paths /.test(command) && / --plan /.test(command))) {
-    return 'agent_brief cliFallbackCommands missing all-paths plan fallback';
-  }
-  if (parsed.readiness.projects > 0) {
-    if (!parsed.cliFallbackCommands.some((command) => /pattern-walk /.test(command) && / --pattern /.test(command))) {
-      return 'agent_brief cliFallbackCommands missing pattern-walk fallback';
-    }
-    if (!parsed.cliFallbackCommands.some((command) => /project-map /.test(command))) {
-      return 'agent_brief cliFallbackCommands missing project-map fallback';
-    }
-  }
-  if (!parsed.cliFallbackCommands.some((command) => /explain /.test(command))) {
-    return 'agent_brief cliFallbackCommands missing explain fallback';
+  if (Object.hasOwn(parsed, 'cliFallbackCommands')) {
+    return 'agent_brief response still prints command-line fallbacks';
   }
   if (!parsed?.health || !Array.isArray(parsed.health.checks)) {
     return 'agent_brief response missing health checks';

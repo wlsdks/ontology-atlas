@@ -79,10 +79,9 @@ function writeOutputSchema(scratchRoot) {
 
 function validatePreparedVault(vaultRoot) {
   const validation = spawnSync(process.execPath, [
-    join(REPO_ROOT, 'cli/src/index.mjs'),
-    'validate',
+    join(REPO_ROOT, 'mcp/scripts/call-tool.mjs'),
     vaultRoot,
-    '--json',
+    'validate_vault',
   ], { encoding: 'utf8' });
   if (validation.status !== 0) throw new Error(`prepared vault validation failed: ${validation.stderr || validation.stdout}`);
   let result;
@@ -91,7 +90,7 @@ function validatePreparedVault(vaultRoot) {
   } catch (error) {
     throw new Error(`prepared vault validation returned invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
   }
-  if (result.problems?.length) throw new Error(`prepared vault has ${result.problems.length} validation problem(s): ${JSON.stringify(result.problems)}`);
+  if (result.summary?.errorFiles) throw new Error(`prepared vault has ${result.summary.errorFiles} file(s) with validation errors: ${JSON.stringify(result.problems)}`);
 }
 
 function runCell({ caseDefinition, mode, task, iteration, scratchRoot, outputRoot, schemaPath, runId }) {

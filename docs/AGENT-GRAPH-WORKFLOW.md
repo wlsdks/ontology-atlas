@@ -8,10 +8,9 @@ area: agents
 # Agent Graph Workflow
 
 This guide is for a person or an AI coding agent working against an Atlas vault
-from a terminal or an MCP client. It covers what `agent-setup`, `agent-brief` and
-MCP `agent_brief` point to: CLI-only use, MCP-connected use, the graph DB-style
-query pack, how Atlas differs from a graph database, and the verification
-checks.
+through an MCP client. It covers what MCP `agent_brief` points to: MCP-connected
+use, the graph DB-style query pack, how Atlas differs from a graph database,
+and the verification checks.
 
 `ontology-atlas` is not a hosted graph database. Markdown frontmatter is the
 graph, Git is the audit log, and agents read or write through MCP when they are
@@ -21,78 +20,28 @@ session you already use; the app's own agent conversations are described in
 [features/agents.md](features/agents.md).
 
 There is no npm package. The installed macOS app carries a compiled MCP server
-and connects it from the **Connect an AI agent** dialog. From a source checkout, register
-`node /absolute/path/to/ontology-atlas/mcp/src/index.js` and run the CLI as
-`node cli/src/index.mjs <command>`. A config that still holds `command: "npx"`
-cannot start.
-
-## Choose a mode
-
-The modes share the same vault files, so switching between them migrates
-nothing. `agent-setup --json` reports these ids as `docs.modeComparison`.
-
-| Mode id | Start here when | What you get |
-|---|---|---|
-| `cli_only` | You inspect a local vault from a terminal | Validation, workspace summaries, graph scans, path and explain queries, and graph DB packs without an MCP client |
-| `mcp_connected` | Claude Code, Codex, or Cursor has the MCP server registered | Direct read and write tools, structured repair fields, and guarded vault writes after validation |
-| `graph_db_pack` | You want graph-database-style exploration without a database server | Bounded query plans, node and edge scans, domain matrix, paths, relation explanations, and follow-up evidence commands |
-| `setup_gate` | Setup is unclear or the agent opened at another codebase root | Config repair commands, restart guidance, JSON readiness checks, and fallback timing before edits |
+and connects it from the **Connect an AI agent** dialog. From a source checkout,
+register `node /absolute/path/to/ontology-atlas/mcp/src/index.js`. A config that
+still holds `command: "npx"` cannot start.
 
 In the installed app, **Connect** on a tool's row writes that tool's config
 files into the folder and confirms completion. A browser has no absolute path to
 write, so it copies the config with instructions instead.
 
-Read the JSON setup gate in three states:
-
-- `ok: false`: setup or fallback execution is broken. Fix the config before
-  asking the agent to edit ontology files.
-- `ok: true` with `performanceOk: false`: the local graph path works, but
-  fallback latency is slow enough to inspect before relying on it.
-- `ok: true` with `performanceOk: true`: setup and the fallback graph path are
-  ready for read-first agent work.
-
-`agent-brief --verify-fallbacks` prints the same summary for people before the
-row list: `ok=true performanceOk=true wall=... slow=0/N failed=0`.
-
-## CLI-only use
-
-The CLI needs no MCP client. Its 62 commands run over the same local vault and
-graph engine and print answers in terminal form; `node cli/src/index.mjs --help`
-lists them and [cli/README.md](../cli/README.md) is the command reference.
-
-```bash
-node $ATLAS/cli/src/index.mjs validate docs/ontology
-node $ATLAS/cli/src/index.mjs workspace-brief docs/ontology
-node $ATLAS/cli/src/index.mjs match-nodes docs/ontology --kind capability --limit 10
-node $ATLAS/cli/src/index.mjs agent-brief docs/ontology --graph-db-pack
-```
-
-Use `agent-setup` when the vault exists and only agent config needs repair:
-
-```bash
-node $ATLAS/cli/src/index.mjs agent-setup /absolute/path/to/vault --root /absolute/path/to/codebase --write
-```
-
-It creates missing `.mcp.json` and `.codex/config.toml` files without adding
-starter Markdown. For a parseable existing file it atomically merges or rebinds
-only the `ontology-atlas` JSON entry and TOML section and preserves unrelated
-servers, sections and comments. Invalid or duplicate Atlas config is left
-untouched with a merge template and a nonzero review result.
-
 Codex ignores a project-scoped `.codex/config.toml` until it trusts the
-project, and Atlas cannot inspect that trust. `agent-setup --json` therefore
-reports `clientStatus.codex.projectTrust: "unknown"` and
-`registration: "unverified"` until a fresh Codex session passes the trust
-prompt, `codex mcp list`, and Atlas `connection_info`. If the project config is
-ignored, use the generated global `codex mcp add ...` fallback, restart Codex,
+project, and Atlas cannot inspect that trust. A Codex registration stays
+unverified until a fresh Codex session passes the trust prompt,
+`codex mcp list`, and Atlas `connection_info`. If the project config is
+ignored, register the server globally with `codex mcp add ...`, restart Codex,
 and repeat those checks.
 
 ## MCP-connected use
 
 Register the server as described in
 [mcp/README.md](../mcp/README.md#1-register-with-an-agent). With it registered,
-`tools/list` is the exact read and write inventory, and `mcp-verify` proves that
-the advertised set, the initialize guidance and the vault agree. MCP lets the
+`tools/list` is the exact read and write inventory, and the MCP verifier
+(`node mcp/scripts/verify.mjs`) proves that the advertised set, the initialize
+guidance and the vault agree. MCP lets the
 agent fetch precise context on demand, write back to the same vault after it has
 read, validated and preflighted a change, and recover from bad input through
 structured repair fields, result contracts and write guardrails.
@@ -154,33 +103,32 @@ answers, witness text, a private absolute source root, or remote coordinates.
 `ok: true` means the receipt was written, not that the project is verified; read
 `agent_brief.meaningAssessment` for the fail-closed state (`verified_current`,
 `review_required`, `needs_evidence`, or `invalid`). In a multi-project vault use
-`query_ontology({ operation: "agent_brief", project: "SLUG" })` or
-`node cli/src/index.mjs agent-brief <vault> --project SLUG`.
+`query_ontology({ operation: "agent_brief", project: "SLUG" })`.
 
 ## Graph DB-style query pack
 
-Start agent or terminal sessions with a plan-first scan instead of pulling the
-full graph:
+Start agent sessions with a plan-first scan instead of pulling the full graph.
+Each line is one `query_ontology` call:
 
-```bash
-node $ATLAS/cli/src/index.mjs facets docs/ontology --limit 10
-node $ATLAS/cli/src/index.mjs schema docs/ontology --limit 10
-node $ATLAS/cli/src/index.mjs match-nodes docs/ontology --kind capability --limit 10
-node $ATLAS/cli/src/index.mjs match-edges docs/ontology --type depends_on --limit 10
-node $ATLAS/cli/src/index.mjs domain-matrix docs/ontology --types depends_on,relates
-node $ATLAS/cli/src/index.mjs all-paths capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --plan --force --max-hops 3 --types depends_on,relates
-node $ATLAS/cli/src/index.mjs explain capabilities/cli-developer-entry capabilities/mcp-server docs/ontology --types depends_on,relates
+```json
+{ "operation": "facets", "limit": 10 }
+{ "operation": "schema", "limit": 10 }
+{ "operation": "match_nodes", "kind": "capability", "limit": 10 }
+{ "operation": "match_edges", "type": "depends_on", "limit": 10 }
+{ "operation": "domain_matrix", "types": ["depends_on", "relates"] }
+{ "operation": "query_plan", "targetOperation": "all_paths", "from": "capabilities/mcp-tool-server", "to": "domains/human-workbench", "maxHops": 3 }
+{ "operation": "explain_relation", "from": "capabilities/mcp-tool-server", "to": "domains/human-workbench" }
 ```
 
-Scan rows are candidates, not proof. `agent-brief --json` and MCP `agent_brief`
-return this scan-to-proof checklist as `docs.graphScanProofChecklist`:
+Scan rows are candidates, not proof. MCP `agent_brief` returns this
+scan-to-proof checklist as `docs.graphScanProofChecklist`:
 
 1. Report `totalMatches`, `limited`, and the returned row count from
-   `match-nodes` or `match-edges`.
-2. For a node row, run `node` / `node_profile` or `blast-radius` before using it
-   as onboarding or refactor evidence.
-3. For an edge row, run `explain`, `path`, and `relation-check` before using it
-   as coupling or write evidence.
+   `match_nodes` or `match_edges`.
+2. For a node row, run `node_profile` or `blast_radius` before using it as
+   onboarding or refactor evidence.
+3. For an edge row, run `explain_relation`, `path`, and `relation_check` before
+   using it as coupling or write evidence.
 4. For path evidence, report `evidence.pathsComplete`; if it is false, narrow
    the query before writing or making an architecture claim.
 
@@ -192,7 +140,7 @@ Atlas borrows graph database query habits for a different job.
 |---|---|---|
 | Storage | Server or database files | Plain Markdown files in your repository or a local folder |
 | Setup | Database service, schema, credentials | Pick or create a folder; no login or backend |
-| Query language | Cypher, Gremlin or SPARQL style | CLI commands and MCP `query_ontology` operations |
+| Query language | Cypher, Gremlin or SPARQL style | MCP `query_ontology` operations |
 | Source of truth | Database state | Git-tracked Markdown frontmatter |
 | Human readability | Usually requires a UI or export | Every node is an editable `.md` document |
 | Agent use | Agent needs DB tooling and schema context | Agent gets MCP tools, first-call guidance, result contracts and write guardrails |
@@ -208,34 +156,18 @@ directly available to AI coding agents.
 These checks state no counts, timings or hashes; run them and read the numbers
 from your own output.
 
-CLI-only checks:
-
 ```bash
-node cli/src/index.mjs agent-setup docs/ontology --json
-node cli/src/index.mjs match-nodes docs/ontology --kind capability --min-degree 2 --sort degree --limit 8 --json
-node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
 node scripts/perf/perf-graph.mjs --json --check --n=1000
+node mcp/scripts/verify.mjs --vault docs/ontology --timeout-ms 90000
 ```
 
-`agent-setup` reports `operation: "agent_setup"`, `sideEffect: false`, and the
-four mode ids. `match-nodes` reports `totalMatches`, `returned`, `limited`, and
-`followUp.focusSlug`. The fallback check reports `ok`, `performanceOk`, and
-`failed: 0`. `perf-graph` enforces its compile and query budgets and exits
-nonzero when one fails.
+`perf-graph` enforces its compile and query budgets and exits nonzero when one
+fails. The MCP verifier passes parser, server boot, every registered tool,
+strict argument and enum checks, destructive dry-runs, batch no-write checks,
+briefs, graph query smokes and structured content checks.
 
-Graph and MCP-connected checks:
-
-```bash
-node cli/src/index.mjs compile docs/ontology --summary --json   # size, hash, kind census
-node cli/src/index.mjs validate docs/ontology                   # problem files
-node cli/src/index.mjs health docs/ontology                     # compile issues, cycles, unresolved
-node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000
-```
-
-`validate` reports no problem files, `health` reports no structural compile,
-cycle or unresolved-edge errors, and `mcp-verify` passes parser, server boot,
-every registered tool, strict argument and enum checks, destructive dry-runs,
-batch no-write checks, briefs, graph query smokes and structured content checks.
+Over MCP, `validate_vault` reports problem files and `query_ontology` with
+`health` reports structural compile, cycle and unresolved-edge errors.
 A cold-start or unqualified vault may still report `needs_attention`:
 `workspace_brief` and `agent_brief` surface an invalid, unmeasured or stale
 `meaningAssessment` instead of relabelling it `healthy`, `ready` or `100`.
@@ -253,16 +185,7 @@ With the installed app:
 3. A session opened in the vault folder can use `.` as the vault path; a
    session opened at a separate codebase root passes the vault as an absolute
    path.
-4. If the agent opens at a separate codebase root, copy the `agent-setup`
-   command before copying manual templates.
-5. Restart Claude Code, Codex, or Cursor.
-6. Run the read-first verification prompt or the JSON setup gate.
-7. Only then ask the agent to answer architecture questions or write ontology
+4. Restart Claude Code, Codex, or Cursor.
+5. Run the read-first verification prompt.
+6. Only then ask the agent to answer architecture questions or write ontology
    updates.
-
-From a terminal:
-
-1. Run `node cli/src/index.mjs validate <vault>`.
-2. Run `node cli/src/index.mjs agent-brief <vault> --verify-fallbacks --json --exit-zero`.
-3. Run `node cli/src/index.mjs agent-brief <vault> --graph-db-pack`.
-4. Use follow-up commands before treating graph scans as evidence.

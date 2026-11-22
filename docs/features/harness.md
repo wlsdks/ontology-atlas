@@ -190,8 +190,8 @@ other file's name only (`.claude/rules/surfaces.md`). The binding they read is m
   `summary_views_ko`. The screen shows the locale line to a reader in that locale
   and the canonical `summary_<role>` to everyone else, so a profile translated one
   role at a time never leaves a blank where a sentence was. `summary_<role>` stays
-  the reviewed fact: it is the only sentence the agent handoff, `inspect_architecture`
-  and CLI `architecture` print, and a locale line without it is refused, as is a
+  the reviewed fact: it is the only sentence the agent handoff and
+  `inspect_architecture` print, and a locale line without it is refused, as is a
   locale line for a role the profile does not declare. A document whose profile this
   screen cannot read is now named in a notice above the table instead of replacing
   every profile in the folder with an error.
@@ -204,16 +204,15 @@ other file's name only (`.claude/rules/surfaces.md`). The binding they read is m
   roles, with literal paths, and asks the person what the rule should be; it
   proposes no rule, role name or pattern and writes nothing. A verified agent takes
   the chosen task as its opening turn; a browser copies the same sentence.
-- `inspect_architecture` and CLI `architecture` scan supported source imports and
+- `inspect_architecture` scans supported source imports and
   return `architectureBrief:v1` with `conforms`, `violated`, or `unknown`.
   Observed role edges retain value/type-only/unknown usage counts and exact
   receipts. Unsupported languages, unknown import usage, unmapped edges,
   unruled edges, and empty roles fail closed; absence of evidence is never a
   green result.
-- The short agent action sends a state-bound inspection or change request. In the installed
-  app, an exact CLI fallback is included only when the project source binding,
-  vault path, and Atlas CLI entry are all verified absolute paths; otherwise the
-  packet says the fallback is unavailable instead of inventing a command.
+- The short agent action sends a state-bound inspection or change request. Without
+  MCP the packet tells the agent to read the vault's Markdown, write nothing, and
+  say the Atlas connection is missing, instead of inventing a command.
 - At narrow widths the verdict and the table come first in document order; the role pane
   follows and scrolls into view without covering the persistent bottom tabs, whose reserve
   stays part of the workbench.

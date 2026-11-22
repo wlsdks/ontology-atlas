@@ -1,18 +1,10 @@
 import { IMPORT_EDGE_KIND_VALUES } from '../../infer-imports.mjs';
-import {
-  EDGE_TARGET_KIND_VALUES,
-  NODE_KIND_VALUES,
-} from '../../ontology-engine.mjs';
-import { VAULT_ISSUE_CODE_VALUES } from '../../validate.mjs';
+import { NODE_KIND_VALUES } from '../../ontology-engine.mjs';
 
-const VAULT_ISSUE_CODE_DESCRIPTION = VAULT_ISSUE_CODE_VALUES.map((code) => `\`${code}\``).join(', ');
 const IMPORT_EDGE_KIND_DESCRIPTION = IMPORT_EDGE_KIND_VALUES.join(', ');
 const NODE_KIND_DESCRIPTION = NODE_KIND_VALUES.join(', ');
-const EDGE_TARGET_KIND_DESCRIPTION = EDGE_TARGET_KIND_VALUES.join(', ');
 
 export {
-  VAULT_ISSUE_CODE_DESCRIPTION,
   IMPORT_EDGE_KIND_DESCRIPTION,
   NODE_KIND_DESCRIPTION,
-  EDGE_TARGET_KIND_DESCRIPTION,
 };

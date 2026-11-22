@@ -28,7 +28,7 @@ export const SCOPE_CONFIGS = Object.freeze({
   }),
   cli: Object.freeze({
     cwd: 'cli',
-    runtime: source([], ['src/**/*.mjs', '!src/**/*.test.mjs', '!src/integration.test.mjs']),
+    runtime: source([], ['src/**/*.mjs', '!src/**/*.test.mjs']),
     verification: source(['src/**/*.test.mjs'], ['src/**/*.test.mjs'], WITHOUT_MANIFEST),
   }),
   mcp: Object.freeze({

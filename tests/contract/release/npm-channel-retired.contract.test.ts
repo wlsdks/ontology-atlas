@@ -2,12 +2,10 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { CLI_COMMANDS as REGISTERED_CLI_COMMANDS } from "../../../cli/src/lib/cli-commands.mjs";
-
 /**
  * Guidance must not resurrect the retired npm channel (`docs/DECISIONS.md`). The gate is an allowlist,
  * so history is untouched. Tier A bans any `npx` outright, Tier B only inside code blocks, and Tier C
- * bare invocations in source; the live form comes from `src/shared/config/agent/cli-invocation.ts`.
+ * bare invocations in source. An agent reaches Atlas through MCP; `init` runs from a source checkout.
  */
 
 /**
@@ -16,15 +14,24 @@ import { CLI_COMMANDS as REGISTERED_CLI_COMMANDS } from "../../../cli/src/lib/cl
  * order") is not a command, so it is a violation **only when a real CLI command
  * name follows**.
  */
-// Derived from the CLI's own registry so the list cannot drift from the real commands.
-const CLI_COMMANDS: readonly string[] = [...REGISTERED_CLI_COMMANDS];
-if (CLI_COMMANDS.length === 0) throw new Error("the CLI command registry is empty");
+// Every command name the retired CLI ever answered to, plus `status` and `brief`, which were planned
+// and never built. None has a global binary, so a bare `ontology-atlas <name>` cannot run.
+const CLI_COMMANDS: readonly string[] = [
+  "init", "list", "validate", "wiki-validate", "wiki-index", "mcp-verify", "agent-setup",
+  "agent-files", "agent-activity", "add", "find", "import", "absorb", "moment", "backlinks",
+  "constellations", "constellation", "orphans", "path", "explain", "all-paths", "reachability",
+  "relation-check", "relate", "remove-relation", "install-shim", "overview", "hubs", "blast-radius",
+  "cycles", "components", "topological-order", "health", "analysis", "agent-brief",
+  "workspace-brief", "growth", "maintenance", "node", "similar", "match-nodes", "match-edges",
+  "domain-matrix", "facets", "schema", "pattern-walk", "project-map", "query", "compile", "export",
+  "rename", "merge", "delete", "index", "bootstrap", "analyze", "architecture", "infer-imports",
+  "preflight", "snapshot", "connect-source", "disconnect-source", "status", "brief",
+];
 
 /**
- * A name inside a **placeholder** such as `<ontology-atlas checkout>` is not a
- * command — it is part of the live form (`node <…>/cli/src/index.mjs`). So an
- * opening angle bracket and a path separator are excluded from the preceding
- * position.
+ * A name inside a **placeholder** such as `<ontology-atlas checkout>` or a path is
+ * not a command. So an opening angle bracket and a path separator are excluded
+ * from the preceding position.
  */
 const BARE_CLI_PATTERN = new RegExp(
   `(?<![\\w/<-])ontology-atlas (?:${CLI_COMMANDS.map((c) => c.replace(/-/g, "\\-")).join("|")})(?![\\w-])`,
@@ -92,7 +99,6 @@ const TIER_B_FILES = [
  * is the signal that the rule is leaking.
  */
 const TIER_C_ALLOWED = [
-  "src/shared/config/agent/cli-invocation.ts",
   "src/shared/config/mcp/mcp-server-launch.ts",
 ];
 
@@ -163,7 +169,7 @@ describe("the npm channel is retired: block dead npx instructions", () => {
       offences,
       offences.length
         ? `A bare CLI call that cannot run: no global binary has this name.\n` +
-            `Build it with \`ATLAS_CLI\` (src/shared/config/agent/cli-invocation.ts).\n${report(offences)}`
+            `Name the MCP tool the agent calls instead.\n${report(offences)}`
         : "",
     ).toEqual([]);
   });
@@ -180,11 +186,9 @@ describe("the npm channel is retired: block dead npx instructions", () => {
     // The product name in prose — not a command.
     expect(BARE_CLI_PATTERN.test("name: 'ontology-atlas contributors'")).toBe(false);
     expect(BARE_CLI_PATTERN.test("Use this ontology-atlas first-contact run order")).toBe(false);
-    // The live form — a name inside a path is not caught.
-    expect(BARE_CLI_PATTERN.test("`node $ATLAS/cli/src/index.mjs validate ${t}`")).toBe(false);
-    expect(BARE_CLI_PATTERN.test("node <ontology-atlas checkout>/cli/src/index.mjs agent-setup")).toBe(
-      false,
-    );
+    // A name inside a path or a placeholder is not caught.
+    expect(BARE_CLI_PATTERN.test("`node <checkout>/mcp/scripts/call-tool.mjs ${vault} validate_vault`")).toBe(false);
+    expect(BARE_CLI_PATTERN.test("cd <ontology-atlas checkout>/cli")).toBe(false);
   });
 
   it("Tier A: no dead command in issue templates, contributor guide or starters", async () => {
@@ -207,8 +211,7 @@ describe("the npm channel is retired: block dead npx instructions", () => {
       offences,
       offences.length
         ? `${offences.length} references to the dead npm channel (npm publishing retired, docs/DECISIONS.md 2026-07-27).\n` +
-            `Only two paths are alive: the installed app's Connect agent button, or a source checkout's\n` +
-            `\`node <checkout>/cli/src/index.mjs\`.\n${report(offences)}`
+            `The live path is the installed app's Connect a coding agent dialog.\n${report(offences)}`
         : "",
     ).toEqual([]);
   });
@@ -255,7 +258,7 @@ describe("the npm channel is retired: block dead npx instructions", () => {
     const allowed = [
       "node $ATLAS init ./ontology",
       '"command": "/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp"',
-      "node <checkout>/cli/src/index.mjs agent-setup <vault> --root . --write",
+      "node <checkout>/mcp/src/index.js",
       "npx create-next-app",
     ];
     for (const line of allowed) {

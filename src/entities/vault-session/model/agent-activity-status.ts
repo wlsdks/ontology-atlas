@@ -1,4 +1,3 @@
-import { ATLAS_CLI } from "@/shared/config/agent/cli-invocation";
 export const AGENT_ACTIVITY_RELATIVE_PATH = ".ontology-atlas/agent-activity.json";
 
 export const AGENT_ACTIVITY_STALE_AFTER_MS = 5 * 60 * 1000;
@@ -58,7 +57,6 @@ interface AgentActivityRefreshRequest {
   previousOntologySlug: string | null;
   previousFiles: string[];
   previousAgeMs: number | null;
-  command: string | null;
   message: string | null;
 }
 
@@ -277,7 +275,6 @@ function emptyRefreshRequest(previousAgeMs: number | null): AgentActivityRefresh
     previousOntologySlug: null,
     previousFiles: [],
     previousAgeMs,
-    command: null,
     message: null,
   };
 }
@@ -302,38 +299,7 @@ function deriveRefreshRequest({
     previousOntologySlug: heartbeat.focus.ontologySlug,
     previousFiles: heartbeat.focus.files,
     previousAgeMs: ageMs,
-    command: formatRefreshCommand(heartbeat),
     message:
-      `Do not treat the stale focus as current work until the refreshed heartbeat appears. Run the command, then \`${ATLAS_CLI} agent-activity <vault> --show --json\` and confirm stale: false.`,
+      "Do not treat the stale focus as current work until the refreshed heartbeat appears.",
   };
-}
-
-function formatRefreshCommand(heartbeat: AgentActivityHeartbeat): string {
-  const evidenceArgs = [
-    heartbeat.evidence.mcp[0] ? ["--mcp", heartbeat.evidence.mcp[0]] : null,
-    heartbeat.evidence.source[0] ? ["--source", heartbeat.evidence.source[0]] : null,
-    heartbeat.evidence.verification[0] ? ["--verify", heartbeat.evidence.verification[0]] : null,
-  ]
-    .filter((entry): entry is [string, string] => entry !== null)
-    .flatMap(([flag, value]) => [flag, shellArg(value)]);
-
-  return [
-    `${ATLAS_CLI} agent-activity <vault>`,
-    "--agent",
-    shellArg(heartbeat.agent),
-    "--state planning",
-    "--focus",
-    shellArg(heartbeat.focus.summary ?? "Refresh live ontology focus"),
-    ...(heartbeat.focus.ontologySlug
-      ? ["--ontology-slug", shellArg(heartbeat.focus.ontologySlug)]
-      : []),
-    ...heartbeat.focus.files.flatMap((file) => ["--file", shellArg(file)]),
-    ...evidenceArgs,
-    "--json",
-  ].join(" ");
-}
-
-function shellArg(value: string): string {
-  if (/^[A-Za-z0-9_./:@%+=,-]+$/.test(value)) return value;
-  return `'${value.replaceAll("'", "'\\''")}'`;
 }

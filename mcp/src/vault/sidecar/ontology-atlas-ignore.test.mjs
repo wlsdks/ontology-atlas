@@ -11,9 +11,9 @@ src/views/**
 
 !keep-this
 
-cli/src/commands/*.mjs
+tools/src/commands/*.mjs
     `);
-    assert.deepEqual(patterns, ['src/views/**', 'cli/src/commands/*.mjs']);
+    assert.deepEqual(patterns, ['src/views/**', 'tools/src/commands/*.mjs']);
   });
 
   it('strips a trailing /', () => {
@@ -59,7 +59,7 @@ describe('refMatchesOntologyAtlasIgnore', () => {
     const patterns = ['src/**', 'mcp/src/*.mjs'];
     assert.equal(refMatchesOntologyAtlasIgnore('src/views/foo.ts', patterns), true);
     assert.equal(refMatchesOntologyAtlasIgnore('mcp/src/parser.mjs', patterns), true);
-    assert.equal(refMatchesOntologyAtlasIgnore('cli/src/index.mjs', patterns), false);
+    assert.equal(refMatchesOntologyAtlasIgnore('tools/src/index.mjs', patterns), false);
   });
 
   it('empty patterns match nothing', () => {

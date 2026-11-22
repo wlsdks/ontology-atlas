@@ -1,4 +1,3 @@
-import { shellArg } from '@/shared/lib/shell-arg';
 
 const ARCHITECTURE_PROFILE_CONTRACT = 'architecture-profile/v1' as const;
 
@@ -19,8 +18,8 @@ interface ArchitectureRole {
   /** What this role is for, in a reviewer's sentence; a role id is a folder name and states no intent. */
   summary?: string;
   /**
-   * Translations of `summary` by locale, read only by the web workbench; agents, prompts and the
-   * CLI print only the canonical `summary`.
+   * Translations of `summary` by locale, read only by the web workbench; agents and prompts
+   * print only the canonical `summary`.
    */
   summaries: Record<string, string>;
 }
@@ -45,7 +44,6 @@ export interface ArchitectureProfile {
 export interface ArchitectureHandoffContext {
   sourceRoot: string | null;
   vaultRoot: string | null;
-  cliEntry: string | null;
 }
 
 interface ArchitectureAgentReceiptContext {
@@ -251,7 +249,7 @@ export interface ArchitectureProfileProblem {
 
 /**
  * An unreadable profile becomes a named problem beside the ones that loaded instead of failing
- * the route. MCP and CLI keep throwing so an agent never mistakes a partial scan for a whole one.
+ * the route. MCP keeps throwing so an agent never mistakes a partial scan for a whole one.
  */
 export function deriveArchitectureProfilesReport(
   docs: ReadonlyArray<{ slug: string; frontmatter: Record<string, unknown> }>,
@@ -311,13 +309,9 @@ export function buildArchitectureAgentPrompt(
 ): string {
   const sourceRoot = context?.sourceRoot ?? null;
   const vaultRoot = context?.vaultRoot ?? null;
-  const cliEntry = context?.cliEntry ?? null;
   const inspectArguments = sourceRoot
     ? { rootPath: sourceRoot, profileSlug: profile.slug }
     : { profileSlug: profile.slug };
-  const cliFallback = sourceRoot && vaultRoot && cliEntry
-    ? `CLI fallback: node ${shellArg(cliEntry)} architecture ${shellArg(sourceRoot)} --vault ${shellArg(vaultRoot)} --profile ${shellArg(profile.slug)} --json`
-    : 'CLI fallback unavailable from this surface: Atlas could not verify absolute source, vault, and Atlas CLI entry paths. Use the connected MCP tool or open the source checkout that carries cli/src/index.mjs.';
 
   /* The typed packet carries the visible workbench state so the agent need not rediscover it. */
   const packet = {
@@ -353,11 +347,11 @@ export function buildArchitectureAgentPrompt(
     : task.receipt
       ? [
         'This is a verification task. Do not edit implementation or architecture-profile files unless the person explicitly asks after seeing the result.',
-        'Compare the fresh inspection with the bound receipt, name every changed count or status, and state whether a new --record receipt should replace the local one.',
+        'Compare the fresh inspection with the bound receipt, name every changed count or status, and state whether the local receipt is out of date.',
       ]
       : [
           'This is a verification task. Do not edit implementation or architecture-profile files unless the person explicitly asks after seeing the result.',
-          'No persisted receipt is bound to this screen. Do not search the filesystem for one. Treat it as absent, report the fresh inspection, and state that `atlas architecture --record` would create the optional local receipt.',
+          'No persisted receipt is bound to this screen. Do not search the filesystem for one. Treat it as absent and report the fresh inspection.',
         ];
 
   /* The readable sentence goes first: `splitAppRequest` folds at the first marker line, and text
@@ -366,7 +360,7 @@ export function buildArchitectureAgentPrompt(
     `Start from the reviewed architecture profile ${profile.slug}.`,
     `Architecture task context: ${JSON.stringify(packet)}`,
     `Call inspect_architecture with ${JSON.stringify(inspectArguments)} before opening implementation files.`,
-    cliFallback,
+    'If the ontology-atlas MCP server is unavailable, read the vault\'s Markdown files directly, write nothing to the vault, and tell the person the Atlas connection is missing; the app\'s Connect a coding agent dialog restores it.',
     'The visible receipt may be stale. This inspection is the current observation receipt for this revision; the reviewed profile remains architecture intent.',
     'Report the selected scope, declared pattern axes, role mappings, observed dependency coverage, violations, and unknowns.',
     `Apply dependency rules only to the profile's declared import usages: ${profile.dependencyUsages.join(', ')}.`,

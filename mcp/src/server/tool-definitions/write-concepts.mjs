@@ -7,7 +7,7 @@ import {
 import { LOCALE_LABELS_SCHEMA } from '../tool-schemas/vault-node-shapes.mjs';
 
 export const WRITE_FINDINGS_GUIDANCE =
-  '`findings`: one plain line per kind of maintenance finding on the nodes this call wrote, with the call that settles it (absent when there is none; the whole queue is `query_ontology({operation:"maintenance_plan"})`)';
+  '`findings`: one line per kind of maintenance finding on the nodes written, with the call that settles it (absent when none; the whole queue is query_ontology maintenance_plan)';
 
 export const WRITE_FINDINGS_SCHEMA = {
   type: 'array',
@@ -40,7 +40,7 @@ export const ADD_CONCEPT_TOOL = {
         enum: ['project', 'domain', 'capability', 'element', 'document'],
         description: 'project / domain / capability / element / document. (vault-readme is reserved for the auto-generated README.md and should not be set by agents.)',
       },
-      title: nonBlankStringSchema('Display title for the node.'),
+      title: NON_BLANK_STRING_SCHEMA,
       domain: nonBlankStringSchema(
         'Parent domain slug. Strongly expected for kind=capability and kind=element — without it the node floats orphaned in the tree.',
       ),

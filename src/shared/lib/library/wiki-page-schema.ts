@@ -3,7 +3,7 @@ import { parseFrontmatter, WIKI_DIR } from '../vault-document/parse-frontmatter'
 /**
  * TypeScript twin of `mcp/src/library/wiki-schema.mjs` (`docs/ONTOLOGY-ATLAS-SPEC.md` §11);
  * `wiki-page-schema.contract.test.ts` runs one fixture table through both. Wording may differ,
- * problem codes may not: the sidebar, the CLI's exit code and agent retries branch on them.
+ * problem codes may not: the sidebar and agent retries branch on them.
  */
 
 /**

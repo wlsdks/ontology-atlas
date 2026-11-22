@@ -29,7 +29,7 @@ export type VaultIssueCode =
   | "parse-zero-keys"
   /*
    * `folder-only-evidence` is absent: it asks the filesystem whether a path is a directory, which a
-   * browser cannot do; `validate_vault` and the CLI report it.
+   * browser cannot do; `validate_vault` reports it.
    */
   | "definition-missing"
   | "boundary-missing"
@@ -38,8 +38,7 @@ export type VaultIssueCode =
   | "slug-outside-kind-folder";
 
 /**
- * Matches `requiredExtras` in `mcp/src/schema.mjs` and `cli/src/lib/mcp-bridge/schema.mjs` (a
- * contract test keeps them in sync). Advisory warnings only, so existing vaults stay valid.
+ * Matches `requiredExtras` in `mcp/src/schema.mjs` (a contract test keeps them in sync). Advisory warnings only, so existing vaults stay valid.
  */
 export const KIND_EXPECTED_EXTRAS: Readonly<Record<string, readonly string[]>> = {
   project: [],
@@ -411,7 +410,7 @@ export function validateVaultDocFrontmatter(
 
 /**
  * The only meaning finding without the body: the manifest's flattened excerpt would make the
- * others answer a different question under the same code, and the app would contradict the CLI.
+ * others answer a different question under the same code, and the app would contradict `validate_vault`.
  */
 function pushPositionIssue(
   frontmatter: Record<string, unknown>,

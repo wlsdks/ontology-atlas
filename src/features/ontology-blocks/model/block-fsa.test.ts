@@ -85,7 +85,7 @@ describe('readBlockDirectory', () => {
     expect(result.manifestRaw).toBe('{"blockName":"b"}');
   });
 
-  it('skips dotfiles and node_modules (CLI collectMarkdownFiles parity)', async () => {
+  it('skips dotfiles and node_modules', async () => {
     const { fake, handle } = makeDir('block');
     const hidden: FakeDir = { kind: 'directory', name: '.git', children: new Map() };
     hidden.children.set('a.md', { kind: 'file', name: 'a.md', content: 'A' });

@@ -1,5 +1,5 @@
 /**
- * The browser-safe authority for analysis Markdown. Node 24 MCP/CLI readers use
+ * The browser-safe authority for analysis Markdown. The Node 24 MCP reader uses
  * this same module through native type stripping. Keep it free of React, path
  * aliases and filesystem imports; an analysis is a diagnostic record, not a kind.
  */

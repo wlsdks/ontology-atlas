@@ -510,7 +510,7 @@
     "fixMyselfTooltip": "在访达中选中此页面的文件。用任何编辑器修改，列表都会同步更新。",
     "technical": "技术细节 · 检查代码与行号",
     "technicalOpen": "查看检查代码",
-    "technicalNote": "wiki-validate 命令和 validate_wiki 工具会报告同样的代码。",
+    "technicalNote": "validate_wiki 工具会报告同样的代码。",
     "technicalFile": "文件：{path}",
     "goToPlace": "前往 {place}",
     "openPage": "打开 {name}",

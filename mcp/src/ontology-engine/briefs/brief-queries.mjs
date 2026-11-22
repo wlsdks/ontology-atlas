@@ -2,12 +2,10 @@ import {
   agentToolCall,
   buildAgentBriefHandoffPrompt,
   buildAgentBusinessOntologyLens,
-  uniqueCliCommands,
 } from './agent-responses.mjs';
 import { normalizeLimit } from '../query-operation/query-primitives.mjs';
 
 export function createBriefQueries({
-  cliPrefix,
   agentWorkflowGuide,
   agentModeComparison,
   graphScanProofChecklist,
@@ -413,7 +411,6 @@ export function createBriefQueries({
           'nodes.length',
           'followUp.focusSlug',
           'followUp.calls',
-          'followUp.cliFallbackCommands',
         ],
         partialWhen: ['limited=true', 'nodes.length=0', 'followUp missing because no rows were returned'],
         policy: 'Treat match_nodes rows as scan candidates, not evidence; run the followUp node_profile, incoming/outgoing match_edges, and blast_radius calls before using a node row for onboarding or refactor decisions.',
@@ -426,7 +423,6 @@ export function createBriefQueries({
           'edges.length',
           'followUp.focusEdge',
           'followUp.calls',
-          'followUp.cliFallbackCommands',
         ],
         partialWhen: ['limited=true', 'edges.length=0', 'followUp missing because the first row is external/unresolved or no rows were returned'],
         policy: 'Treat match_edges rows as scan candidates, not proof; run the followUp explain_relation, path, and relation_check calls before using an edge row as write, refactor, or coupling evidence.',
@@ -657,14 +653,7 @@ export function createBriefQueries({
         graphScanProofChecklist: graphScanProofChecklist,
       },
     };
-    brief.cliFallbackCommands = uniqueCliCommands([
-      ...brief.firstCalls,
-      ...brief.graphDbQueryPack.flatMap((item) => item.calls),
-      ...brief.playbooks.flatMap((playbook) => playbook.calls),
-      ...brief.traversalStrategy.flatMap((strategy) => strategy.calls),
-      ...brief.writeGuardrails.flatMap((guardrail) => guardrail.calls),
-    ], cliPrefix);
-    brief.handoffPrompt = buildAgentBriefHandoffPrompt(brief, cliPrefix);
+    brief.handoffPrompt = buildAgentBriefHandoffPrompt(brief);
     return brief;
   }
 

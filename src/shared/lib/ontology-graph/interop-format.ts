@@ -1,8 +1,7 @@
 /**
- * Node identity is `urn:uuid:<uid>`, so renaming a slug mints no new identity. Mirror of
- * `cli/src/lib/export-format/interop-format.mjs`: `interop-format.contract.test.ts` requires
- * byte-identical output, so change both. Edges are sorted, and an edge whose ends were not both
- * emitted is dropped rather than inventing nodes.
+ * Node identity is `urn:uuid:<uid>`, so renaming a slug mints no new identity. Edges are sorted, and
+ * an edge whose ends were not both emitted is dropped rather than inventing nodes
+ * (`interop-format.contract.test.ts`).
  */
 
 const INTEROP_URN_BASE = 'urn:uuid';
@@ -110,8 +109,7 @@ function normalizeGraph(graph: InteropGraph): {
     const via = typeof e?.via === 'string' && e.via.trim() ? e.via.trim() : '';
     if (!from || !to || !via) continue;
     if (!nodeBySlug.has(from) || !nodeBySlug.has(to)) continue;
-    // No separator: this file and `cli/src/lib/export-format/interop-format.mjs` must produce the same output for the
-    // same input, and a space separator is ambiguous. `JSON.stringify` avoids both problems.
+    // A space separator is ambiguous when a slug or relation contains one; `JSON.stringify` is not.
     const key = JSON.stringify([from, via, to]);
     if (seenEdge.has(key)) continue;
     seenEdge.add(key);

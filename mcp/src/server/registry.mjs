@@ -8,6 +8,7 @@
  * watches it; a change here changes what every connected agent sees.
  */
 
+import { hoistSharedSubschemas } from './shared-subschemas.mjs';
 import { parseConsentEnv } from './write-consent.mjs';
 import { ABSORB_DOCUMENT_TOOL } from './tool-definitions/absorb-document.mjs';
 import { ANALYZE_REPO_STRUCTURE_TOOL } from './tool-definitions/analyze-repo-structure.mjs';
@@ -190,6 +191,7 @@ const TOOLS_FOR_LIST_ALL = TOOLS.map((tool) => ({
     ...tool.inputSchema,
     additionalProperties: false,
   },
+  ...(tool.outputSchema ? { outputSchema: hoistSharedSubschemas(tool.outputSchema) } : {}),
 }));
 const TOOLS_FOR_LIST = TOOLS_FOR_LIST_ALL.filter((tool) =>
   (!READ_ONLY_MODE || READ_TOOL_NAMES.has(tool.name)) &&
