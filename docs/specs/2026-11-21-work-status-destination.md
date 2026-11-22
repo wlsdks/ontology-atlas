@@ -1,5 +1,5 @@
 ---
-title: "Work status: who holds which worktree, what CI is doing, and what slows this Mac"
+title: "Work status: whether each agent is still working, what it is changing, and what needs you"
 doc_type: spec
 status: draft
 area: git
@@ -7,15 +7,77 @@ date: 2026-11-21
 decisions: [dac7de97-cd83-4c93-8b29-5fecd5db4389]
 ---
 
-# Work status: who holds which worktree, what CI is doing, and what slows this Mac
+# Work status: whether each agent is still working, what it is changing, and what needs you
 
-A tenth rail destination, **Work status** (`/work-status/`), in the installed app. It draws one room
-per worktree: who works there, what it is doing now, how far its branch is from `main`, and how long
-the running check has left. This spec settles placement, sources, trust boundaries, design and copy
-for slices 1 to 7. Processes and load, fixes, bottlenecks, coordination, automation and the local
-model (slices 8 to 13, with Record 2) are in `docs/specs/2026-11-22-work-status-coordination.md`.
-"Work status" is the one name everywhere: plain "work" already means Atlas's own long runs
-(`src/features/work-run/`, `messages/en/workCard.json`).
+**The concept.** You run 20 to 40 coding agents, each in its own Git worktree, and the hard part is
+no longer starting them: it is knowing which ones are still getting anywhere. Today you find out by
+cycling through terminal tabs and running `git status`, `git log` and `gh pr checks` in one folder
+after another. Work status (`/work-status/`, the tenth rail destination, installed app) draws one
+room per worktree and answers for each, without a terminal: is it still working, has it gone quiet,
+is it waiting for you, is it done, and which part of the product is it changing. From a room you
+act: read what changed, grouped by the capability it belongs to; open the folder in your editor or
+terminal in one press; let a waiting check go first. The work lands where the product's meaning
+already lives, so the ontology map, the wiki, the plans and Git are one press from the room.
+
+**The promise, which can fail.** To learn whether an agent is still working, what it changed, which
+part of the product that is, and whether its checks passed, you open no terminal, IDE, Git client
+or GitHub page. Typing to an agent stays in that agent's own terminal; Atlas opens the worktree's
+folder in your terminal or editor for you. Criterion 41 counts each time this fails.
+
+This spec holds slices 1 to 11: what each does, for whom and why. What the person sees (States,
+Design direction with Cases and Motion, Copy) is in `docs/specs/2026-11-22-work-status-design.md`;
+the acceptance criteria and the decision record texts are in
+`docs/specs/2026-11-22-work-status-criteria.md`. Slices 12 to 17 (processes and load, fixes,
+bottlenecks, the rest of coordination, automation and the local model, with Record 2) are in
+`docs/specs/2026-11-22-work-status-coordination.md`. "Work status" is the one name everywhere: plain
+"work" already means Atlas's own long runs (`src/features/work-run/`, `messages/en/workCard.json`).
+
+## Why Atlas
+
+What a person already has, from each product's public pages (read 2026-11-22; prices and anything
+those pages do not say were not read):
+
+| Alternative | What it does today | Not in the pages read |
+|---|---|---|
+| The agent tool's own views | Claude Code's agent view lists its background sessions as needs input, working or completed, with a one-line summary, the PR's status, and a reply without opening the session; its desktop app runs sessions in worktrees with a diff view and the PR's CI status. Codex's desktop app runs chats in worktrees with an integrated terminal and Open in IDE | another vendor's agents; what the change means for the product |
+| Terminal multiplexers | tmux marks a window that had output, or stayed silent for a set time (`monitor-activity`, `monitor-silence`) | Git, files, or why a pane is silent |
+| Git clients | GitKraken Desktop's Agents view: a card per worktree with uncommitted files, ahead and behind, an agent status reported by integrations it installs on request, a merged-PR mark, and allow or deny on the card for one agent; lazygit creates and switches worktrees | the machine's load; what the change means |
+| IDE worktree panels | VS Code lists each worktree as a repository in Source Control and creates worktrees for agent sessions | what the change means for the product |
+| Agent-orchestration apps | Vibe Kanban: issues on a board, agents run in workspaces, a diff review whose comments go back to the agent | the machine's load; what the change means |
+
+Status, diffs, PR state and approval on a card already exist, and for one vendor's sessions that
+vendor's view stays ahead: it can reply in place. Atlas does not win by repeating them. Two things
+here are Atlas's alone, and a third is a standing promise:
+
+1. **It knows what the code means.** The folder that shows the agents moving also holds the
+   ontology, the decisions, the wiki and the plans, so a room names the capability its branch is
+   changing, two rooms changing the same capability are marked before they collide, and a diff is
+   grouped by capability with a way to the map, Library and Planning. No page read offers this.
+2. **It reads the repository and the machine themselves.** So it shows every worktree and every
+   agent tool together, whatever started them, tells progress from files and CPU with no
+   integration installed, and can order heavy checks by the machine's load. No page read
+   describes progress taken from the folder, the machine's load, or an order of checks across
+   worktrees.
+3. **Local-first and free.** No account; nothing leaves the machine until the person turns on the
+   host connection (`.claude/rules/forbidden.md`, the six trust promises).
+
+Every slice in Slices carries a "Why Atlas" line naming 1 or 2, or says "parity": kept only because
+leaving Atlas for it breaks the promise, and built last.
+
+## Reasons to leave Atlas
+
+| The moment | Opens today | In Atlas | Slice |
+|---|---|---|---|
+| Is it still working? | the agent's terminal tab; `git status` in its folder | the room's activity line and words: changing now, quiet, no activity for 14 min | 3 |
+| Did my push fail because the Mac was busy? | the terminal, to read the failed check and push again | the check waits for a slot and starts when load allows | 4 |
+| What part of the product does it touch? | nothing: read the diff and work it out | the room names the capability; the panel links the map, Planning and Library | 5, 6 |
+| What is it doing now? | the terminal's scrollback | files changed, commits and commands on a timeline (6); thinking or waiting (7); each step within a second (9). The agent's own words stay in its terminal: Atlas reads no conversation | 6, 7, 9 |
+| What did it change? | `git diff`, an IDE, a Git client | files and line counts grouped by capability (6). Reading a patch line by line stays in the editor, one press away, until Later 2 | 6 |
+| It asked me something | the terminal, or a system notification | the room rises first and says so: Claude Code from its own session list (7), Codex from hook entries (9). Answering stays in the terminal until Later 3 | 7, 9 |
+| Did the tests or CI pass? | the terminal for pre-push; GitHub or `gh pr checks` for CI | pre-push lanes and time left (8); CI jobs and time left (11) | 8, 11 |
+| Jump into its terminal or editor | finding the right tab or window | Open in editor, Open in terminal: a new window in that folder. Landing in the agent's own running session is not replaced: Atlas does not know which tab holds it | 6 |
+| Clean up dead worktrees | `git worktree remove`, `git branch -d` | Remove merged worktrees, behind a confirm | 13 |
+| Open a PR or merge | `gh pr create`, GitHub, the repository's own script | not replaced: Atlas does not write to GitHub (Out of scope). The room says "Ready to merge" and names the PR | none |
 
 ## Person and moment
 
@@ -32,13 +94,22 @@ model (slices 8 to 13, with Record 2) are in `docs/specs/2026-11-22-work-status-
    drop the headline; Git state must update at once, so that he needs no separate Git client; show
    how long a PR and its CI will take, estimated from this Mac; "20 to 30 worktrees are normal
    now"; it must not look machine-made. He chose rooms from three rendered directions and approved
-   its third round, rooms in one building (the lead's relay).
+   its third round, rooms in one building (the lead's relay). Later that day, relayed by the lead
+   and translated: "when dozens of agents work in worktrees, telling whether each is progressing
+   isn't visualised well, and it's a headache. The tools' own views exist but they're dull, and in
+   the end you have to open a terminal anyway. The goal is to bring that user into Atlas. We have
+   Git, worktrees, agents, the ontology, the wiki, planning, so there's no need to go outside";
+   "why should someone use Atlas? If we only build features without that, the value fades"; two
+   `pre-push` checks failed that day on timing tests that ran several times slower under other
+   worktrees' load, "this happens a lot; can't Atlas coordinate it by itself?", and the queue
+   "must be visualised too". His bar: every independent design score 4 of 5 or higher; like a
+   game, never machine-made. No capture of the failed pushes was read for this spec.
 2. **A team lead with six people, each running agents (not observed).** The owner's words: "a team
    of six creates a huge number of PRs that get assembled and run CI; keeping track is very hard."
    No capture of a team lead exists; the first slice does not claim to serve one.
 3. **A non-developer PM asking "is it done, what's stuck" (not observed).** The owner's bar: "fun
    and good-looking enough that a non-developer understands it." Acceptance criterion 14 captures
-   three cold readers before slice 7 is called done.
+   three cold readers before slice 11 is called done.
 
 ## Today
 
@@ -129,15 +200,56 @@ model (slices 8 to 13, with Record 2) are in `docs/specs/2026-11-22-work-status-
   `ws-game-a3-ref/out/` in the session scratchpad, and the earlier round's 40-worktree and empty
   renders; working files for the pull request, never committed.
 
+- **The rooms (slice 2) are built on `feat/work-status-rooms`** (read 2026-11-22, 35 files against
+  `main`): large and mini rooms, floors and the shelf from slice 1's data. A room there takes no
+  press: `LargeRoom.tsx` and `MiniRoom.tsx` on that branch hold no button or click handler.
+- **What Atlas may read of a process** is parent, start time, working folder and, for a name that
+  looks like an agent, the executable path; "a new field, a signal or a send needs a new decision
+  record" (`.claude/rules/surfaces.md:92-105`). CPU time is not in that list nor in the recorded
+  fragments dac7de97 and 87d3ada9, although Record 1's text below names it.
+- **Atlas watches one folder today,** the open ontology folder, gathering changes for 500 ms
+  (`src-tauri/src/vault/watch.rs:181,208`). Nothing watches a worktree's files.
+- **Atlas reveals and never launches:** the reveal row of `.claude/rules/surfaces.md:54`, decision
+  2026-08-17 (33), the test `the_webview_gets_no_opener_permission`
+  (`src-tauri/src/app_shell/mod.rs:228`); `open_external_url` passes only `http` and `https`
+  (`app_shell/mod.rs:22,64`).
+- **Atlas already maps files to concepts:** a concept's evidence is its own `path:` and the
+  `path:` of each element it lists (`src/shared/lib/git/evidence-states.ts:116`), and Changes names
+  the concepts a commit's files touch by exact path
+  (`src/views/change-briefing/model/change-digest.ts:193-198`).
+- **Neither Changes nor Git shows an unmerged worktree's diff:** Changes reads first-parent history
+  of the current `HEAD` and excludes uncommitted work (`docs/features/change-briefing.md:96-97`);
+  Git is bounded to the open folder's documents (`docs/features/git.md:83`). Changes has a patch
+  reader for a granted repository (`git_source_briefing_patch`, `src-tauri/src/git/briefing.rs:639`).
+- **Claude Code documents a read of its own session state:** `claude agents --json` is "the
+  supported way to read session state from outside Claude Code", giving each session's `cwd`,
+  `pid`, a `status` of `busy`, `waiting` or `idle`, and `waitingFor` (`permission prompt`, `input
+  needed`) (code.claude.com/docs/en/agent-view, read 2026-11-22); the installed 2.1.330 lists the
+  flag for "interactive and background" sessions (`claude agents --help`, this Mac). The lead
+  measured one call on 2026-11-22: 0.24 s, 0.19 s of CPU, 160 MB at its peak. Not known: whether a
+  call sees a session of another settings folder, and whether it opens a network connection.
+- **The pushes that failed on 2026-11-22** are the owner's account through the lead; which timing
+  tests failed and the load at that moment were not read.
+
 ## Problem and alternatives
 
-**Ranked by value against cost.** (1) Which agent and subagent holds which worktree, and whether it
-is merged: highest value, local, needs only Git and the pids in locks. (2) Processes: sessions,
-hooks, load and disk: today's pain, one new read boundary. (3) Safe fixes. (4) Naming the
-bottleneck. (5) PR and CI live: this repository has 1 open PR, so it pays off at the integration
-PR and for teams. (6) Coordinating by hand, then (7) automatically: highest leverage, highest trust
-cost. (8) Team-wide view: unobserved. The first plan took this order; the direction of 2026-11-22
-put slices 2 to 7 ahead of (2) to (4), (6) and (7), which the coordination spec now holds.
+**Ranked by what each gives back against its cost, and by whether only Atlas can give it.**
+
+| Rank | Problem | Gives back | Cost | Only Atlas? | Slice |
+|---|---|---|---|---|---|
+| 1 | Whether each agent is still working cannot be seen | the terminal tabs stay closed | one watcher, one new field of a read Atlas already makes | yes: from files and CPU, with no integration, for any tool | 3 |
+| 2 | Pushes fail on timing tests when other worktrees load the Mac | a failed push and its re-run, "a lot" (owner) | the repository's scripts ask for a slot; Atlas reads load and grants | yes: it needs every worktree and the load | 4 |
+| 3 | Nothing says which part of the product a worktree changes, or that two change the same part | the reading of each diff to work that out | one Git read per changed worktree, on the map Changes already builds | yes: it needs the ontology | 5 |
+| 4 | Seeing what a worktree did means a terminal or an IDE | the `git diff`, `git log` and window hunt per worktree | a panel on reads made when it opens; one launch rule | the grouping by capability, yes; the rest is parity | 6 |
+| 5 | An agent waits for an answer unseen | idle agent time | the probe, then one read of Claude Code's own session list (7); hook entries for Codex and for each event (9, Record 3) | across tools with what it blocks, yes; the state itself is parity | 7, 9 |
+| 6 | No time left on a local check | watching a hook run | the hook-run record and a history | yes: this Mac's own history under its load | 8 |
+| 7 | PR and CI state mean a browser | the GitHub tab | the `gh` connection and its budget | parity | 10, 11 |
+| 8 | Leftover processes, build folders, bottlenecks, automation | load and disk | Record 2's authority over processes and folders | yes | 12 to 17 |
+
+Why 1 is first: every later answer is read from a room, and a room whose movement cannot be
+trusted makes the rest decoration. Why 2 is next: it is a measured daily cost with a cause Atlas
+can remove, and its repository half touches no file slice 3 or 5 does. Why 3 precedes 4: the room's
+capability line is the one fact no other tool shows, and the panel is where it is read in full.
 
 **Cause or symptom.** State is spread across `git worktree list`, lock reasons, `ps`, `du`, GitHub
 and `pnpm pr:queue`, and only an agent asked to diagnose joins them. Load is a symptom: several
@@ -153,13 +265,6 @@ heavy jobs start at once with nothing that makes them take turns.
 | A tab in Agents | agents live there | worktrees, CI and load are not agents | loses |
 | A tab in Automations | schedules and runs | it owns Atlas's own schedules | loses (rules too: the coordination spec, Automation) |
 | **A tenth rail destination, Work status** | the owner's literal ask | the last slot under e7d1f38a | **chosen** |
-
-**What the owner rejected on 2026-11-22, ranked by what each gives back against its cost.** (1) Rows
-he cannot tell apart: the rooms board, drawn from facts the first slice already reads. (2) Git
-state that lags: live refresh, one more local read. (3) No time left on a check: a hook's own run
-record gives pre-push an estimate with no network. (4) An agent waiting on him unseen: only the
-agent's hooks know it, and adding them is a one-way change (Record 3). (5) PR and CI time: it
-follows the host connection. Slices 2 to 7 take this order.
 
 **The board.** Status quo, rows on a ruler: every worktree is one line of equal weight, so 34 read
 as a list and the one that needs him looks like the rest; it lost on his own use. Columns stay
@@ -180,7 +285,7 @@ dialog would have to disclose and an organisation-held key policy would have to 
 
 | GitHub option | Non-developer | Enterprise | What leaves the machine | Now |
 |---|---|---|---|---|
-| **Reuse `gh`** | needs `gh` installed and signed in | inherits SSO and any GHES host | requests made by `gh`; Atlas never sees the token | **slice 6** |
+| **Reuse `gh`** | needs `gh` installed and signed in | inherits SSO and any GHES host | requests made by `gh`; Atlas never sees the token | **slice 10** |
 | Device flow, Atlas's App | a code and a browser page | github.com only; org must install | user token in the keychain; the App owner gains standing access | own decision |
 | Pasted token | token pages and expiry | works where both are blocked | same as device flow | Later |
 
@@ -233,171 +338,51 @@ steps, conditional fetch in a budget) is introduced when the second host is buil
    integration or PR branch. If the first-parent line cannot be read, the standing is unknown and
    the room says "Not measured against {branch}". The main checkout and the base branch are never
    merged rooms, and a room a live session holds stays on that session's floor even once merged.
-5. When an agent commits, switches branch, stages a file, pushes, or adds or removes a worktree, its
-   room changes within 2 s; an edit not yet staged shows within a minute where an agent works. When
-   a room's state changes class it glides to its new place, and nothing else moves.
-6. When a hook that writes its run record starts, the room shows each lane and the time left: with
-   no earlier run, the elapsed time and "No estimate yet"; past its usual longest time, "Slower
-   than usual". When a hook ends, its result is what changed: after `pre-push`, the remote-tracking
-   ref moved to the pushed head (passed) or not (stopped); after `pre-commit` or `commit-msg`,
-   `HEAD` moved or not.
-7. When the person presses **Add to Claude Code**, Atlas lists the settings files it would change,
-   each with its exact entries, and writes them only on confirm; from then a session that asks for
-   approval takes the first place on the stage within 1 s. When the file says a session is asking
-   but its process has ended, the room never reads as asking; when no event arrives, rooms keep
-   showing only whether a command runs.
-8. When the remote is GitHub or a GHES host and nothing is connected, the dashed part of a
-   conveyor offers **Show PRs and CI from {host}**; pressing it opens a dialog stating what is
-   sent and received; nothing is requested before the person confirms.
-9. When connected, rooms with a PR gain their PR and CI stations and the time CI has left, updated
-   while the screen is visible, within the budget; hiding it stops requests. When the bucket Atlas
-   spends runs low, Atlas slows, then pauses, says so beside the shelf, and CI countdowns stop.
+5. When a file changes in a worktree, a commit lands or a command there uses CPU, the room's lamp
+   pulses within 2 s and its activity line gains a mark. When nothing has for 2 minutes the room
+   reads Quiet; for 10 minutes, Stalled, and it rises on the stage; for 60 minutes, Idle. When the
+   evidence is missing (a volume Atlas cannot watch), the room says it is updated each minute and
+   never pulses.
+6. When a script asks for a slot while Atlas runs, a numbered ticket joins the line in the machine
+   room and its room says where it stands and why it waits, in numbers. When the rule allows, the
+   ticket moves into a bay, the bay's lamp turns on and the check starts. When the person presses a
+   ticket, it goes first, with Undo. When a holder's process ends without a word, its bay goes dark
+   within 2 s and the line moves up.
+7. When an agent commits, switches branch, stages a file, pushes, or adds or removes a worktree, its
+   room changes within 2 s, and an edit not yet staged within 15 s. The wall sign names the
+   capability the branch changes; when another room changes the same one, both say so. When the
+   open folder does not describe this repository, rooms show Git facts and no capability. When a
+   room's state changes class it glides to its new place, and nothing else moves.
+8. When the person presses a room, the panel opens beside the board with what the branch changes
+   by capability, its activity and its commits. When the person presses Open in editor or Open in
+   terminal, Atlas opens that application on the worktree's folder; when the folder is gone or no
+   longer a listed worktree, nothing opens and the panel says why.
+9. When a Claude Code session starts to wait for the person, its room takes the first place on the
+   stage within 12 s and says whether it wants an approval or an answer, with the capability it is
+   changing; nothing was added to any settings file. When the list cannot be read, or holds a
+   value Atlas does not know, rooms keep their words from beats and the popover says why.
+10. When a hook that writes its run record starts, the room shows each lane and the time left: with
+    no earlier run, the elapsed time and "No estimate yet"; past its usual longest time, "Slower
+    than usual". When a hook ends, its result is what changed: after `pre-push`, the remote-tracking
+    ref moved to the pushed head (passed) or not (stopped); after `pre-commit` or `commit-msg`,
+    `HEAD` moved or not.
+11. When the person presses **Add to Claude Code** or **Add to Codex**, Atlas lists the settings
+    files it would change, each with its exact entries, and writes them only on confirm; from then
+    a session's room follows each event within 1 s. When the file says a session is asking but its
+    process has ended, the room never reads as asking; when no event arrives, rooms keep what the
+    session list and beats show.
+12. When the remote is GitHub or a GHES host and nothing is connected, the dashed part of a
+    conveyor offers **Show PRs and CI from {host}**; pressing it opens a dialog stating what is
+    sent and received; nothing is requested before the person confirms.
+13. When connected, rooms with a PR gain their PR and CI stations and the time CI has left, updated
+    while the screen is visible, within the budget; hiding it stops requests. When the bucket Atlas
+    spends runs low, Atlas slows, then pauses, says so beside the shelf, and CI countdowns stop.
 
 Findings, fixes and automatic actions continue in the coordination spec's Flow.
 
 ## States
 
-| State | Web | macOS app |
-|---|---|---|
-| No repository chosen | `workStatus.web.title`, `.web.body`, Get the app | `workStatus.choose.title`, `.choose.action` opens the picker |
-| Loading: first read | as above | the board draws at once; rooms arrive as each worktree is read, `workStatus.reading`; input never waits |
-| Error: git missing or the folder unreadable | as above | git missing reuses `atlasGit.install.*`; unreadable says `workStatus.unreadable` with Choose repository folder |
-| Empty: only the main checkout | as above | `workStatus.empty.title`, `.empty.body` |
-| Worktree folder missing | as above | a dark room with `workStatus.chip.missing` and `workStatus.row.missing`, with `git worktree prune` as text |
-| No lock; stale lock; zero commits | as above | `workStatus.holder.noLock`; a stale lock is a dark room with `workStatus.chip.lockLeft` and `workStatus.row.lockLeft`; `workStatus.row.noCommits` |
-| On this Mac only (no host connected) | as above | each conveyor is dashed after push with `workStatus.conveyor.notConnected`; slice 6 adds `workStatus.connect.offer` as its button |
-| On the server only | as above | a mini room on the No session floor with `workStatus.side.notOnMac` |
-| A worktree with no PR | as above | `workStatus.git.unpushed`, or `workStatus.git.pushed` with `.side.noPr` |
-| Uncommitted files; operation in progress; no branch | as above | `workStatus.git.uncommitted`, `.git.operation`, `.git.detached` on the monitor's last line |
-| A live session with no command; more working rooms than the stage holds | as above | `workStatus.room.quiet`, after 5 minutes `.room.silent`, a held pose; `workStatus.stage.more` |
-| Find: no match | as above | `workStatus.find.none`; Escape clears the field and keeps focus in it |
-| A check running: time known, under 90 s, unknown, late | as above | `workStatus.eta.range`, `.eta.about`, `.eta.unknown`, `.eta.slow` |
-| Agent state: not added; confirm | as above | `workStatus.agentState.offer` with Add to Claude Code and Not now; `.confirmTitle`, `.confirmBody` and each listed file with its entries and Add another settings folder, where Cancel changes nothing |
-| Agent state: added; Codex not yet trusted | as above | `workStatus.agentState.status` with Remove; when sessions stay silent, `.silent` with Add another settings folder; `.codexTrust` |
-| Agent state: blocked, or the file refused | as above | `workStatus.agentState.managed` with no button; `.invalid`, `.changed`, `.linked`, `.unwritable`, `.pickRefused`, nothing written |
-| Waiting for approval; thinking; finished replying | as above | `workStatus.room.asking.*` first on the stage; `.room.thinking.*`; `.room.replied` |
-| The remote base was fetched over 3 min ago | as above | `workStatus.fetch.stale` with Fetch now and `.fetch.auto` (slice 6) |
-| pre-push passed; stopped; result unknown | as above | `workStatus.hook.passed`; `.stopped` with `.stoppedLanes`, in the stage's second class until the head moves or a new run starts; `.unknown` |
-| Ready to merge | as above | `workStatus.status.ready` with `.readyDetail`, the parcel standing at the hatch |
-| CI time left while reading is slowed, paused or offline | as above | the last read's range, not counting, with `workStatus.eta.frozen` |
-| `gh` not installed; signed out; no access (404) | as above | `workStatus.gh.missing`, `.signedOut`, `.noAccess`, each with Check again |
-| Connecting | as above | `workStatus.connect.body`; Cancel leaves the conveyors dashed |
-| Connected; stop reading | as above | `workStatus.connected.line`; `.stop`, `.stopNote` |
-| Throttled | as above | `workStatus.throttle.slowing`, `.paused`, `.secondary`; data keeps its read time |
-| Offline; no remote; host without a provider | as above | `workStatus.offline`, `.noRemote`, `.unsupportedHost` |
-| Largest measured: 34 worktrees (2026-11-21); fixtures of 40 and 60 | as above | six large rooms, every other worktree a mini room on its floor or a shelf count; floors scroll, the header, stage and shelf stay |
-| Windows app | Out of scope: same web card | "this computer" variants; rooms from locks and Git, no session by process; `workStatus.agentState.windows` in place of the Add button; PRs and CI as on macOS |
-
-The web card follows `.claude/rules/surfaces.md:116-119` and joins `DEGRADED_SURFACES`.
-
-## Design direction
-
-Rooms in one building, the owner's choice of 2026-11-22 (Today). This section fixes structure and
-behaviour; ink, light and pixel styling follow the approved renders. Sources are principles, not
-assets: GitHub Actions' run graph and merge queue, Linear's gliding states, the Git clients under
-Live Git state. Kept: one ink per session (`--work-session-1` to `-5`), the stations, push as the
-crossing, help popovers. Retired: the bands and seam, rows on a ruler, the headline and summary.
-
-**Header.** Title, `repoLine`, Find, Choose repository folder. Nothing else leads the page.
-
-**A room** is one worktree. It has a wall sign with the branch; a floor lamp, lit in the session's
-ink while a session is live there and dark when none is; Moru under a tag naming the tool and
-session number; and a wall monitor: a label line ending in the elapsed and usual time or the commit
-count, one large line, a small picture of the check (lanes or jobs), and one line of Git facts. A
-large room also draws a conveyor under its floor: stations pre-push, push, PR, CI, a `main` hatch
-at its end, a parcel standing where the branch is, and a pill over the parcel with the time left.
-The parcel rides between two stations only while a timed check runs, stops short of the next when
-the check runs late, and enters the hatch only on the fact. Where Atlas cannot see (no remote, no
-host connected) the conveyor is dashed from there on and says why.
-
-**Three tiers by attention.**
-
-1. **Front stage:** at most six large rooms, by class: waiting for approval; CI failed or pre-push
-   stopped; ready to merge; slower than usual; pre-push or CI running, and a merge for its moment;
-   working, thinking or two tools; lock left behind or folder missing. Equals keep the order they
-   arrived in, so a room moves only when its class changes: up at once, down after the lower state
-   has held 5 s. Rooms beyond six lead their floors, and `stage.more` counts those that are working.
-2. **Session floors:** one floor per session and one for worktrees no session holds. Its label
-   gives the session, its start, its worktree count and at most three counts (`floor.sum.*`). Mini
-   rooms are equal in size: a small scene, the branch, one status line, and an edge filled as far
-   as the branch has come. With six or fewer, the floors merge into one row and each mini room
-   names its session.
-3. **Quiet shelf:** counts that open a list (merged into the base branch; unchanged for over 7 days
-   with no session), then the latest merges with their times.
-
-**Moru is drawn only where a session is evidenced and loops only while a measured state runs,**
-which keeps `brand.md:31` and `:260`: state comes from the signals in Cases, never from the figure,
-and a room with no running state is still. Only clips that exist are used, named by their row
-`public/brand/mascot-<name>-row-128.png`: `code` (the brand guide's `laptop-code`), `think`,
-`pondering`, `read` (`source-read`), `waiting` (`blink`), `await-permission` and `uncertain`.
-The last two are reserved to the permission card (`brand.md:209`); slice 2 changes that row and
-adds a Work status row to the table. Each room's loop starts at an offset taken from its worktree
-id, so six rooms never move in step. Session identity rests on the tag and the lamp, never on
-Moru's ink.
-
-**Sizes.** The stage shows as many large rooms as fit at their minimum width, at most six: six
-across at 1920, three at 1040×720. Floors scroll; the header, the stage and the shelf stay. Room
-minimum sizes are new tokens in `app/styles/work-status-tokens.css` (new tokens needed). **Empty:**
-one lit room with Moru's `waiting` loop, `empty.title` and `empty.body`. **Web:** the degradation
-card, no rooms. **Reduced motion:** still states: figures hold a pose, a tier change cross-fades in
-place over `--motion-fast`, digits swap, lamps are steady, the parcel is placed at each read.
-
-### Cases
-
-"Large" is a state's class on the stage; such a state also has a mini form for the seventh room on.
-"Dark" is a room with its lamp off and no figure. Any room's last monitor line carries Git facts.
-
-| State | Large | Mini | Shelf | Scene (existing clips) | Signal | Slice |
-|---|---|---|---|---|---|---|
-| Waiting for approval | first | yes | no | `await-permission` loop; the lamp and monitor turn amber and breathe | agent-state file: PermissionRequest or `permission_prompt`, with a live session | 5 |
-| CI failed | second | yes | no | `uncertain` once, then held; the monitor takes danger ink | host: a failed job | 7 |
-| pre-push stopped | second | yes | no | `uncertain` once, then held; the monitor names the lanes that failed | a hook-run record that ended with a failed lane, or a `pre-push` that ended with the remote-tracking ref unmoved; until the head moves or a new run starts | 4 |
-| Ready to merge | third | yes | no | `waiting`, held; the parcel stands at the hatch | host: an open PR that is not a draft, with every check passed and no conflict | 7 |
-| Slower than usual | fourth | yes | no | `pondering` loop | elapsed past the usual longest time (Time left) | 4, 7 |
-| pre-push running | fifth | yes | no | `read` loop | hook-run record | 4 |
-| CI running | fifth | yes | no | `waiting` loop | host: a run in progress | 7 |
-| CI queued | no | yes | no | `waiting`, held | host: a run queued | 7 |
-| Merged just now | keeps its place 3 s | no | then counted | held pose; the parcel enters the hatch and the lights go out | the base ref moved (Flow 4), or the host says merged | 2, 7 |
-| Working | sixth | yes | no | `code` loop; lines scroll on the monitor | a command of the session runs in the folder (shipped), or PreToolUse | 2, 5 |
-| Thinking | sixth | yes | no | `think` loop; a cursor blinks on the monitor | agent-state file: UserPromptSubmit or PostToolUse | 5 |
-| Two tools in one worktree | sixth | yes | no | two figures, each under its tag | processes of two tools in one folder (shipped) | 2 |
-| Finished replying | no | yes | no | `waiting`, held | agent-state file: Stop or `idle_prompt` | 5 |
-| No command running; quiet over 5 min | no | yes | no | `waiting`, held | a live session with no command seen (shipped) | 2 |
-| Lock left behind; folder missing | seventh | yes | no | dark; a taped parcel, or its outline | a stale lock; a missing folder (shipped) | 2 |
-| No session, changed within 7 days | no | yes | no | dark; a parcel | last commit time (shipped) | 2 |
-| No session, unchanged over 7 days; merged | no | no | counted | none | last commit time; Flow 4 (shipped) | 2 |
-| No remote; host not connected | dashed conveyor and its reason | status line | no | by its other state | `origin`; the connection | 2 |
-| Pushed, no PR; commits not pushed | Git facts line | status line | no | by its other state | remote-tracking ref against the head; host | 3, 7 |
-| Uncommitted files; merge, rebase or cherry-pick in progress; no branch | Git facts line | status line | no | by its other state | `git status` and Git's operation files | 3 |
-
-### Motion
-
-Every motion starts from the drawn value, moves only `transform` and `opacity`, yields to the next
-read or input by retargeting from where it is, and never restarts mid-way. A loop runs only while
-its state does and pauses when the screen is hidden or its room is off screen; a board with no
-running state draws zero frames between reads. Returning to the screen places rooms without travel.
-
-| Change | What moves | Time and curve | Reduced |
-|---|---|---|---|
-| A room enters | it fades in rising; neighbours make room | `--motion-base` on `--motion-ease`; neighbours on `SPRING.surface`; the first open staggers once (`useStaggerOnce`, within `--motion-expressive`) | appears |
-| A room leaves | it fades where it stands; neighbours close | exit clock `calc(var(--motion-base) * 0.67)` on `--motion-ease-exit`; neighbours on `SPRING.surface` | disappears |
-| A tier or place changes | one element glides from its drawn box to the new one (FLIP); the large and mini faces cross-fade at their own size, so no text is stretched; rooms changed by one read start together | `SPRING.surface`, retargeted from position and speed; faces over `--motion-base`. If the recording reads abrupt across 1920, a slower `SPRING` entry (new token needed) | cross-fade in place over `--motion-fast` |
-| Time left changes | each digit rolls to its value; a change of shape ("3–5 min" to "About 50 s") cross-fades (`SwapText`) | `--motion-slow` on `--motion-ease`; a new primitive in `motion-work.css` on existing tokens | digits swap |
-| A check runs | the parcel rides one linear transform across the estimate's upper bound; a new estimate changes its speed from where it is and never moves it back; running lanes breathe (`.motion-run-pulse`) | linear, for the check's length | placed at each read |
-| Approval is asked | the room is promoted as above; lamp and monitor cross-fade to amber and breathe; the figure cross-fades | amber in over `--motion-base`; breath period `calc(var(--motion-base) * 9)`, a work-only loop listed in `infinite-motion` | steady amber |
-| A check runs late | the parcel eases to rest short of the next station; words and ink cross-fade | `--motion-settle`; ink over `--motion-fast` | placed |
-| CI fails | the monitor and job marks take danger ink and the figure changes; no shake | `--motion-fast` | same end state |
-| A PR merges | the monitor's words swap, the parcel runs into the hatch, the lamp and the room's light go out; after 3 s the dark room glides into the shelf's count, which rolls up by one | parcel `--motion-expressive`; light out over `--motion-slow`; fold on `SPRING.surface`, opacity on the exit clock | the count swaps, the room disappears |
-| A session ends and its lock stays | the figure fades and the lamp goes out, the parcel stays; then a demotion | figure on the exit clock; light over `--motion-slow` | same end state |
-
-**Checked per frame** (criterion 20), on the static build with the desktop bridge stubbed in the
-page and scripted snapshots of 6 and 40 rooms. Every moving box: `motionShares` with a first-frame
-share `ffs` of at most 0.15 and a largest frame share `mfs` of at most 0.27, the eased bar of
-`tests/e2e/motion-sampler.spec.ts:71-72`, and at least 8 frames between start and end, also when a
-second change lands mid-glide; `smoothnessViolations` empty, so no layout property animates; zero
-frames at rest. CI enforces those. `expectSmoothMotion` enforces the 50 ms frame interval only
-under `MAP_PERF_BARS=1` (`tests/e2e/motion-sampler.ts:388`), so that bar is run headed on this Mac
-with 40 rooms and its printed interval attached to the pull request.
+None here — the States table is in `docs/specs/2026-11-22-work-status-design.md`.
 
 ## Agents and hooks on this Mac
 
@@ -414,7 +399,7 @@ pid is that session's. An agent the system launched (parent pid 1, as the Codex 
 credited for its own folder, only through its commands. An agent's process that also holds locks
 joins the lock's session; a session seen only by processes reads "{tool} · session {n}", its rooms
 "{tool} is running in this folder" (`holder.process`), and it sorts after locking sessions. Only
-actions (slice 9, the coordination spec) require a lock or ACP pid; a name alone never makes a
+actions (slice 13, the coordination spec) require a lock or ACP pid; a name alone never makes a
 process eligible for one.
 
 | Signal | Gives | Tools | Status | Slice |
@@ -422,8 +407,12 @@ process eligible for one.
 | Lock reason pid and UTC time; `locked` file mtime | subagent id, session pid, lock time | Claude Code | verified | 1 |
 | ACP session pids and `cwd` | session, exactly | Claude Agent in Atlas | verified (`tauri-acp.ts:106`) | 1 |
 | Own working folder, parent chain, executable path | which agent works in which worktree, under which session | Claude Code, Codex (macOS, Linux) | built 2026-11-22 | 1 |
-| The hook-run record a hook writes (Time left) | a running hook, its lanes and their seconds | any hook that adopts it | contract in this spec | 4 |
-| The agent-state file Atlas's helper writes from the agent's hooks | thinking, waiting for approval, finished replying | Claude Code; Codex only after the probe | documentation verified by the lead; a real session unverified until criterion 27 | 5 |
+| File-change notices in each listed worktree; CPU time of the commands counted for it (Progress) | whether work is moving there | any tool, named or not | Record 4; thresholds unmeasured until criterion 33 | 3 |
+| A ticket and a grant in `slots/` (The check queue) | a check waiting for or holding a slot | any script that asks | contract in this spec, Record 5 | 4 |
+| Changed paths on the concept map (What a room changes) | the capability a worktree changes | any tool | the map is shipped in Changes | 5 |
+| The agent's own session list, `claude agents --json` | busy, waiting and what for, idle | Claude Code | documented, one call measured; coverage of other settings folders unverified until criterion 27 | 7 |
+| The agent-state file Atlas's helper writes from the agent's hooks | each event within a second: thinking, waiting for approval, finished replying | Claude Code; Codex only after the probe | documentation verified by the lead; a real session unverified until criterion 27 | 9 |
+| The hook-run record a hook writes (Time left) | a running hook, its lanes and their seconds | any hook that adopts it | contract in this spec | 8 |
 
 **No arguments or environment are read.** Executable names come from the kernel's process name,
 confirmed by the executable path (Claude Code's kernel name is its version, `2.1.330`);
@@ -433,32 +422,199 @@ results come only from the hook-run record a hook chooses to write (Time left).
 **On screen:** "Claude Agent in Atlas" for ACP sessions; Claude Code, Codex, Gemini CLI for programs
 the person installed.
 
-## Live Git state
+## Progress: is it still working
 
-The aim: a person watching Work status needs no Git client open beside it. A room's Git facts are
-its branch, commits beyond the base, uncommitted files, commits not pushed or "Pushed", an operation
-in progress with its conflicts, and the last commit's time. Principles from MIT-licensed clients
-(lazygit, VS Code, SourceGit, GitHub Desktop; the lead's research of 2026-11-22, not re-read here;
-no code copied, no GPL or source-available client read): snapshot refs cheaply, watch `.git` and
-gather changes, ignore lock files, take no lock a person's command needs, fetch on a slow clock.
+Compared on what each says about one worktree, what it misses, and what it costs:
+
+| Signal | Says | Misses | Cost and boundary | Verdict |
+|---|---|---|---|---|
+| A command of the session runs in the folder (shipped) | a tool call is running | an edit made with no command, as a subagent's edits are; a hung command looks like a busy one | none | kept as an input |
+| The newest file change in the worktree, from the OS's file-change notices | something writes source there, whichever tool, with nothing installed | a build or test that writes only ignored folders | one watcher; a new signal (Record 4) | **chosen: the main beat** |
+| Commits | work reached Git | everything between commits | none: slice 1's digest sees `HEAD` move | kept: a commit is a beat |
+| CPU time of the commands counted for the worktree | a build or test is using CPU; a hung command is not | thinking between commands | one more field of a read made each second; a new field (Record 4) | **chosen: the second beat** |
+| CPU time of the agent's own process | the model is answering | which worktree: one Claude Code process serves all its subagents' worktrees; what an idle terminal UI spends is unmeasured | the same read | not used (Later 9) |
+| Hook events | the exact state | nothing, where the entries are installed | Record 3's write to settings | slice 9 refines; never required |
+
+**A beat** is a counted file change in the worktree, a commit there, or its commands (attributed
+as 87d3ada9 does) using 0.5 s of CPU or more within 10 s. **A counted file change** is one whose
+path is neither under `.git` nor ignored by that worktree's ignore rules; a fixed list of
+dependency and build folder names is dropped before any rule is read, so a build cannot flood the
+watcher. Ignored paths do not count because a server left running rewrites its cache for ever and
+would keep a dead room alive; a real build shows through CPU.
+
+**What Atlas keeps,** in memory only: per worktree the time of the last beat and, for the last 60
+minutes in 10-second steps, how many file changes counted (at most 99) and whether commands used
+CPU. A file name from a notice is matched against the ignore rules in Rust and dropped: no name or
+path from the watcher reaches the page, a log or a file, and nothing is sent.
+
+| State of a room a live session holds | Rule | The room shows |
+|---|---|---|
+| Moving | the last beat is under 2 min old | the lamp pulses once in each second that had a beat; the activity line; the `code` loop; `progress.changed` |
+| Quiet | 2 to 10 min | a steady lamp, a held pose, `progress.quiet` |
+| Stalled | 10 to 60 min; the stage's fourth class | the lamp at half, the monitor in warning ink, `progress.stalled` with `.stalledWhy`, or `.stalledCommand` while a command still runs |
+| Idle | over 60 min | a mini room, `progress.idle` |
+
+A session's own room is never stalled while a worktree it locked is moving
+(`progress.subagents`); a room whose check waits for or holds a slot reads from the queue instead.
+A worktree with beats and no session Atlas recognises stays dark, with its activity line and
+`progress.noAgent`: that is how a tool Atlas cannot name still shows. Until slice 7 for Claude
+Code, and slice 9 for Codex, Stalled covers an agent that waits for the person, one that finished
+its reply and one that is stuck, and the room says only what was measured; from then the exact
+state replaces those words.
+
+**Thresholds.** 2 min is a guess at the pause between two tool calls. 10 min is the longest a
+Claude Code command may run before it times out (the coordination spec's vendor figure, not
+re-read), so a longer silence is not one command. 60 min bounds Stalled, or thirty sessions that finished
+this morning would fill the stage. No measurement of real gaps exists: criterion 33 measures them
+first, and the numbers change here before any code if it disagrees.
+
+**The activity line** is drawn from the kept steps and nothing else: in a large room, the last 10
+minutes as 60 marks under the monitor's large line, each mark absent, short (1 file), medium (2 to
+5) or tall (6 or more), and hollow when only CPU was used; in the panel, the last 60 minutes as 60
+marks of a minute each. A mini room has the lamp and the words.
+
+**Hidden and closed.** While the app is open on another screen with a repository chosen here, the
+watcher and the per-second process read go on, no Git process runs and no frame is drawn; the
+rail's Work status tile carries the number of stalled rooms. After the app was closed the line
+starts empty and the last change is the newer of the last commit and the modified time of the
+files `git status` lists. **Budget at 40 worktrees with six builds running, measured in slice 3:**
+under 2 % of one core over a minute, visible or hidden; under 40 MB of added resident memory,
+reported with its peak and what holds it. A volume that cannot be watched or loses events falls
+back to that one read each minute where a session is live, and the room says `progress.eachMinute`.
+
+## The check queue
+
+Heavy checks from many worktrees start at once, and timing tests then fail for no fault of the
+code (the owner, 2026-11-22). Ways to stop that:
+
+| Way | Gives | Costs | Verdict |
+|---|---|---|---|
+| Status quo: every push runs its checks at once | no waiting | failed pushes and re-runs, daily | loses |
+| A fixed count the scripts keep among themselves (the former slot limit) | works with Atlas closed | blind to load from anything that asks for no slot; no order to see, no reason, nothing to move forward | loses |
+| **Atlas grants each check its start by measured load** | an order, a reason in numbers, a line the person can see and reorder | scripts must ask; it works only while Atlas runs | **chosen** |
+| Atlas lowers the priority of builds or pauses them | no script changes | authority over processes (Record 2) | stays in slice 15 |
+
+**First step: the repository's own tooling.** `.githooks/pre-push` asks for a slot before its heavy
+part, through one helper script; the lead's item, before any Atlas code. Which other scripts are
+heavy enough to ask is not measured: `pre-push` first, others when criterion 15's run names them.
+
+**The slot folder, a versioned file contract** (moved from the coordination spec and revised;
+Record 5). `slots/` in Atlas's app data directory for `dev.jinan.ontology-atlas` (macOS
+`~/Library/Application Support/dev.jinan.ontology-atlas/slots/`, Windows
+`%APPDATA%\dev.jinan.ontology-atlas\slots\`), mode 0700. No folder, or a `VERSION` other than
+`1`: a script runs at once, as today.
+
+- `atlas`: Atlas's pid and the time, rewritten every 5 s while the app runs. A script takes Atlas
+  as running only while this file is under 15 s old and its pid is alive.
+- `tickets/<pid>.json`: written by the script with `O_CREAT|O_EXCL`: its pid, its worktree, a kind
+  from a closed list (`pre-push`, `e2e`, `unit`, `rust-build`) and the time it asked.
+- `grants/<pid>`: written by Atlas when that ticket may start. The script looks each second and
+  deletes its ticket and grant when it ends, passed or failed.
+- A script that holds a grant passes its name to its children in `ATLAS_SLOT_LEASE` (the script's
+  own variable; Atlas reads no environment), so a nested job asks for nothing.
+- A script waits only while Atlas runs and never over 10 minutes: past that, or within 15 s of
+  Atlas stopping, it runs and prints why.
+
+**Granting.** Atlas reads the 1-minute load average and the core count every 5 s (a new read,
+Record 5) and sees tickets by file-change notice. The line is in order of asking. Its first ticket
+starts when no check holds a slot, whatever the load, so one check always runs and other programs'
+load starves nothing; or when fewer checks hold a slot than the limit (the cores divided by 4, at
+least 1; the person may set 1 to half the cores), the load per core is under 0.75, and 20 s have
+passed since the last start, so that start's load has registered. These defaults stand until
+criterion 15 measures them. A holder whose pid has ended, whose start time changed or whose folder
+left its worktree is released within 2 s; a ticket whose pid has ended is removed. A ticket for a
+repository not open in Work status is granted at once and holds no slot, so no script waits for an
+app that is not watching its repository.
+
+**Moving one forward.** Pressing a ticket puts it first in the line; it starts at the next start
+the rule allows, and Undo puts it back. One ticket at a time can be moved, and the 10-minute
+ceiling bounds every wait, so no ticket starves behind others moved ahead of it.
+
+**Estimated start.** Atlas keeps how long each of the last 20 holders of a kind held its slot
+(Time left's history store). A ticket's earliest start is when enough holders are due to end, shown
+as Time left shows a range; under three runs of a kind, `queue.noEstimate`. When load, not slots,
+holds the line, the room says so with the numbers and gives no time.
+
+**Safety, kept from Record 2.** Atlas writes only `atlas` and `grants/` and removes only tickets
+and grants whose process has ended. It reads each file with `O_NOFOLLOW` and a 4 KiB cap, keeps
+content out of errors, shows a kind only from the closed list, and counts a ticket only while its
+pid's own working folder is inside the listed worktree it names. It signals, slows and stops no
+process in this slice: the queue only withholds a file, and the script decides. `git push
+--no-verify` skips the queue with every other check. **Windows,** which keeps no load average and
+where Atlas reads no process's folder: the limit alone decides, a ticket is counted by its pid and
+start time, and the gauge is absent; checked there by CI only.
+
+## What a room changes
+
+The line no page read under Why Atlas offers: which part of the product this worktree is changing.
+It comes from the same read that gives the room's Git facts, so the former Live Git slice carries it.
+
+**From files to capabilities.** For a worktree, the changed paths are the files that differ between
+its head and where it left the base branch, plus its uncommitted files. Each path is looked up in
+the map Changes already builds from the open folder: a concept's own `path:` and the `path:` of
+each element it lists (Today). The room's wall sign gains a second line naming the capability with
+the most changed files and how many others (`meaning.changes`); files no concept names are counted,
+never hidden (`meaning.unmapped`). When two rooms change files of one capability, both carry
+`meaning.shared`, and the panel names the other branch. It needs the open folder to describe this
+repository (it lies inside it, or one of its projects is bound to it); otherwise rooms show Git
+facts only and the panel says `meaning.noFolder` with Choose folder. A capability line is a fact
+about paths, not a judgement that the change is right.
+
+**Git facts.** A room's facts are its branch, commits beyond the base, uncommitted files, commits
+not pushed or "Pushed", an operation in progress with its conflicts, and the last commit's time.
+Principles from MIT-licensed clients (lazygit, VS Code, SourceGit, GitHub Desktop; the lead's
+research of 2026-11-22, not re-read here; no code copied, no GPL or source-available client read):
+snapshot refs cheaply, watch `.git` and gather changes, ignore lock files, take no lock a person's
+command needs, fetch on a slow clock.
 
 | Read | When, while visible | Cost and bound |
 |---|---|---|
 | File-change notice on the common Git folder: `HEAD`, `refs/`, `packed-refs`, and each worktree's own `HEAD`, `index`, `locked` and operation files; `*.lock` and `objects/` ignored | always; changes gathered for 250 ms, at most 1 s | no process; a commit, branch switch, stage, push or lock is on screen within 1 s |
 | The shipped stat digest, extended with each index and the remote-tracking refs | every 10 s, and at once when a notice reports lost events or the volume cannot be watched | stats only, no process; catches what a notice missed |
-| `git status --porcelain=v2 --branch` in one worktree | only after a notice for that worktree's `index` or `HEAD`, at most once per 2 s per worktree and one in flight at a time; and once a minute in a worktree where an agent process works, because an edit not yet staged moves no file under `.git` | 65 ms of CPU each (the reviewer's measurement, 2026-11-22); a worktree nobody works in costs nothing |
+| `git status --porcelain=v2 --branch` and the changed paths against the base, in one worktree | after a notice for that worktree's `index` or `HEAD`, and 5 s after a counted file change (slice 3's beats); at most once per 10 s per worktree and one in flight at a time | 65 ms of CPU for the status (the reviewer's measurement, 2026-11-22), the path list unmeasured; a worktree nobody works in costs nothing |
 | Agent processes | each second (shipped) | 1.6 ms a read |
-| `agent-state/` and `hook-runs/` | file-change notice, never a poll | within 1 s |
-| `git fetch origin` | never, unless the person turns it on (slice 6): every 3 min, never `--prune`; skipped while a `git` process has its working folder in one of the repository's worktrees or a ref lock file exists, because a fetch takes ref locks an agent's own command needs | one request per 3 min, listed in `outbound-paths.ts` and logged |
+| `agent-state/`, `hook-runs/` and `slots/` | file-change notice, never a poll | within 1 s |
+| `git fetch origin` | never, unless the person turns it on (slice 10): every 3 min, never `--prune`; skipped while a `git` process has its working folder in one of the repository's worktrees or a ref lock file exists, because a fetch takes ref locks an agent's own command needs | one request per 3 min, listed in `outbound-paths.ts` and logged |
 
 Every read goes through `runner.rs` with `GIT_OPTIONAL_LOCKS=0`, so Atlas never refreshes an index
-or holds `index.lock` against an agent's commit. Atlas does not watch working trees, which build
-output would flood: a staged or committed change is exact within 2 s, an edit not yet staged within
-a minute where an agent works. **Hidden:** notices stop, no process is sampled, no Git runs;
-returning reads everything once. **Budget at 40 worktrees with six agents working, measured in
-slice 3:** under 1 % of one core over a minute; no Git process in a minute with no notice and no
-agent process; no read over 250 ms on a thread that draws; under 30 MB of added resident memory,
-reported with its peak.
+or holds `index.lock` against an agent's commit. A staged or committed change is exact within 2 s,
+an edit not yet staged within 15 s. **Hidden:** no Git runs; returning reads everything once.
+**Budget at 40 worktrees with six agents working, measured in slice 5:** under 1 % of one core over
+a minute beyond slice 3's; no Git process in a minute with no notice and no beat; no read over
+250 ms on a thread that draws; under 30 MB of added resident memory, reported with its peak.
+
+## The room panel
+
+Pressing a room opens a panel at the right, 400 px wide (360 px at 1040×720). The board keeps the
+remaining width, reflows once and stays live, with the pressed room in view. It is never a
+full-screen sheet and nothing in it unfolds in place: three tabs, **Changes**, **Activity** and
+**Commits**, switch what is under them. Pressing another room swaps its content; Escape or Close
+returns focus to the room that opened it. Alternatives that lost: no detail (the status quo: the
+person opens a terminal for `git diff`); a link to Changes or Git, which cannot show an unmerged
+worktree (Today); a centred popup, which covers the rooms the person is comparing.
+
+| Part | Shows | From |
+|---|---|---|
+| Head | the branch as a title, the tool and session, the room's state in the same words, the 60-minute activity line | slices 2 and 3 |
+| Actions | **Open in editor**, **Open in terminal**, Copy folder path | below |
+| Changes (opens first) | one group per capability, most files first: its title as a link to the map, its files with lines added and removed; then `meaning.unmapped` by top folder; then `panel.documents`: the specs, plans and ontology documents this branch itself edits, each a link to Planning, Library or the map; and `meaning.shared` naming the other branches | `git diff --numstat` against the base and `git status`, read when the panel opens and after that worktree's beats; the map of What a room changes |
+| Activity | newest first, at most 50 lines since the app opened: a commit with its subject, "{count} files changed" per minute, a command that ran and for how long, a check that waited for and held a slot; hook events from slice 9 | the kept steps, slice 1's process read, the queue |
+| Commits | the commits beyond the base: subject, time, author; 30, then a count | `git log` |
+
+A command is a duration and nothing else: Atlas reads no arguments. File names here come from Git,
+never from the watcher. The panel reads one worktree and stops when it closes.
+
+**Open in editor, Open in terminal** (Record 6: the one place Atlas opens another application on a
+folder). On the
+first press Atlas lists the editors and terminals installed on this Mac that are on a closed list
+of application identifiers kept in Rust; the choice is remembered and can be changed from the
+panel. A press asks the OS to open that application, by its identifier, on that worktree's folder
+and nothing else: no shell, no lookup on `PATH`, no argument but the folder, nothing typed, pasted
+or run in the terminal. The page sends a worktree's id; Rust resolves the folder, checks again that
+it is a listed worktree and a real directory, never an application bundle or a link, and refuses
+otherwise. The WebView still gets no opener permission. It opens a new window in that folder, or
+the editor's existing window for it; it does not find the tab an agent already runs in. **Windows
+and Linux:** Copy folder path only, until the launch is walked there.
 
 ## Time left
 
@@ -498,19 +654,86 @@ end: its name, worktree, start, the 1-minute load and core count at its start, a
 a state from a closed list and its seconds.
 Atlas reads each with `O_NOFOLLOW` and a 4 KiB cap, shows a lane name as plain text of at most 40
 characters, folds an ended record into the history and deletes it. This repository's `pre-push`
-adopts it in slice 4; a hook that writes none gets a room state in slice 8 (the coordination spec).
+adopts it in slice 8; a hook that writes none gets a room state in slice 12 (the coordination spec).
 
 **History store.** One file per repository in the app's OS cache folder, outside every vault: at
 most 20 runs per lane or job, 256 KiB; durations, loads and lane or job names, nothing a person
-wrote. Deleting it only returns estimates to "No estimate yet"; it refills from the next runs.
+wrote. From slice 4 it also holds how long each kind of check held its slot. Deleting it only returns estimates to "No estimate yet"; it refills from the next runs.
 
-## Agent state from the agent's own hooks
+## Waiting for you: the agent's own state
 
-A process tells Atlas that a command runs; whether an agent is thinking, waiting for approval or
-has finished its reply is known only to its hooks. Ways to learn it: processes only (the status
-quo, which stays the base); session transcripts, which hold the conversation (refused in 87d3ada9);
-a snippet the person pastes, a hand edit of JSON where a slip goes unseen; or **Atlas adding its
-own entries on a press**, the owner's choice of 2026-11-22 and a one-way change (Record 3).
+A process tells Atlas that a command runs, and beats that work is moving; whether an agent waits
+for the person, is thinking or has finished its reply is known only to the agent. Ways to learn it:
+
+| Way | Gives | Costs | Verdict |
+|---|---|---|---|
+| Beats only (the status quo after slice 3) | moving, quiet, stalled | a waiting agent looks like a stuck one | stays the base |
+| Session transcripts | everything | they hold the conversation | refused in 87d3ada9 |
+| **Claude Code's own session list,** `claude agents --json` | busy, waiting and what for, idle, per session | Atlas runs the person's `claude` program; Claude Code only; up to 10 s late; the schema is not promised stable | **slice 7, first** (the owner, 2026-11-22; Record 7) |
+| **Atlas's hook entries, added on a press** | each event within a second; Codex, if the probe sees it fire | a write to the person's settings files | **slice 9, optional** (Record 3) |
+| A snippet the person pastes | the same | a hand edit of JSON where a slip goes unseen | loses |
+
+**Why this is not parity.** The state itself is shown by the agent's own view and by a Git
+client's cards (Why Atlas). What Atlas adds is the room around it: a waiting room of any tool,
+started anywhere, rises first with the capability it is changing and what stands behind it (its
+commits, its check in the line), so the person can choose which agent to answer first.
+
+### The session list (slice 7)
+
+**The read.** Vendor documentation and one measurement, both by the lead on 2026-11-22: each entry
+carries `pid`, `cwd`, `kind`, `startedAt`, `sessionId`, `name`, and while its process lives a
+`status` of `busy`, `waiting` or `idle`; `waitingFor` when it waits (`permission prompt`, `input
+needed`, `sandbox request`, `worker request`, `dialog open`); for a background session also `id`
+and a `state` of `working`, `blocked`, `done`, `failed` or `stopped`. The documentation calls it
+"the supported way to read session state from outside Claude Code" and promises no stable schema.
+One call took 0.24 s, 0.19 s of CPU and 160 MB at its peak.
+
+**The call is fixed,** as `gh`'s is: the executable is an absolute path from a fixed list
+(`~/.local/bin/claude`, `/opt/homebrew/bin/claude`, `/usr/local/bin/claude`), never a `PATH`
+lookup; the arguments are exactly `agents --json`; the working folder is in Atlas app data;
+standard input is closed; the environment is cleared except `HOME`, plus `CLAUDE_CONFIG_DIR` set
+to exactly one folder the person added. It is killed after 5 s and its output is read to 1 MiB.
+
+**When.** After the per-second process read shows an agent process appear, end or change folder;
+otherwise at most one call every 10 s in all while Work status is visible, taking the added
+folders in turn; never while it is hidden; one run at a time. With no Claude Code process seen, it
+does not run. At that pace the calls spend about 2 % of one core, and each is a short-lived
+process of about 160 MB (the measurement above); criterion 43 holds the budget.
+
+**What is kept.** The output is parsed into a struct that names only `pid`, `cwd`, `startedAt`,
+`kind`, `status`, `waitingFor` and `state`, each value from the closed lists above; an unknown
+value, a missing field or output that does not parse means unknown, and the room keeps its words
+from beats. `name`, `sessionId` and `id` are dropped at the parse: a name can hold the person's own
+title text, and a room needs none of them. An entry counts only when its `pid` and `startedAt`
+match a session Atlas already shows and its `cwd` lies in a listed worktree.
+
+| From the list | Room state |
+|---|---|
+| `waiting` with `permission prompt` or `sandbox request` | waiting for approval, first on the stage |
+| `waiting` with `input needed`, `dialog open` or `worker request`; `state` `blocked` | waiting for an answer, first on the stage |
+| `busy`, or `state` `working`, with no command seen | thinking; it counts as a beat, so the room is Moving |
+| `idle`, or `state` `done` | finished replying |
+| `state` `failed` | the session failed, in the stage's second class |
+| anything else | unknown: the room's words from beats |
+
+**Settings folders.** Each Claude Code settings folder is its own instance, and the owner runs
+several (Today). Atlas runs the call once for the default and once for each folder the person
+added with **Add another settings folder**, the same picker slice 9 uses; it searches for none.
+Whether a call sees another folder's sessions without that is unknown until criterion 27.
+
+**Limits.** A subagent waiting inside a session shows in that session's own room. Codex has no such
+list, so a Codex room reads from beats until slice 9. Nothing is written anywhere. Whether a call
+opens a network connection is unknown until criterion 27: if it does, the read is not built until
+this spec gains a confirm that names what is sent and an `outbound-paths.ts` row; if not, it is on,
+with `sessions.status` in the agent state popover and a switch that stops it. **Windows:** the same call; the join by pid and
+start time is the one slice 1 makes there.
+
+### The hook entries (slice 9, optional)
+
+They add what the list cannot give: each event within a second in place of up to 10 s, thinking
+told from running a command, events on the panel's Activity tab, Codex if criterion 27's probe
+sees its hooks fire, and the footing for answering from the room (Later 3). Where both report, the
+newer of the two wins.
 
 **The agent config writer** (`src-tauri/src/agent_config/`) is the only code that writes an agent's
 settings. Harness hook management will reuse it under the same rules (Later 1).
@@ -552,7 +775,7 @@ folders set through `CLAUDE_CONFIG_DIR`, each with its own `settings.json`; an e
 folder**, which opens the system file picker on that folder's `settings.json`. Atlas lists no
 folder and searches no disk for settings; it remembers a picked path as a preference and refuses a
 picked file inside a Git work tree unless it is that repository's own settings file. Each listed
-file has its own diff and can be left out. Before any of slice 5 is built, a probe by hand pastes
+file has its own diff and can be left out. Before any of slice 9 is built, a probe by hand pastes
 one `async` entry into one file and records where it fires (criterion 27). Until it has run,
 Codex is unverified and Add to Codex is not offered (criterion 28).
 
@@ -595,127 +818,13 @@ worktree by whole path components, and deletes a file whose process has ended.
 A subagent working by absolute paths from its session's folder reports that folder, so its state
 shows in the session's own room; processes have the same limit. **Windows:** the writer is built
 and tested there, but 87d3ada9 reads no processes on Windows, so the helper cannot tie an event to
-a session: slice 5 shows `agentState.windows` in place of the offer, and rooms draw from locks and
+a session: slice 9 shows `agentState.windows` in place of the offer, and rooms draw from locks and
 Git (Later 4).
 
 ## Copy
 
-ko is in the pull request body, written to the Wording rules of
-`docs/specs/2026-11-21-library-words-and-first-run.md`. Namespace `workStatus` unless noted. On
-Windows each string that says "this Mac" uses its `.pc` variant, which says "this computer". Under
-"Where it appears", Row now means a room's status or last monitor line, Station its conveyor, and
-Band header or Server band the line beside the shelf. Retired with the bands: `summary`,
-`headline.*`, `band.mac`, `band.server`, `ruler.checks`, `ruler.ready`, `group.*`, `session.counts`,
-`session.quiet`.
-
-| Key | Where it appears | English |
-|---|---|---|
-| `navRail.workStatus` | Rail | Work status |
-| `title` | Page heading | Work status |
-| `ruler.working` / `.prePush` / `.pr` / `.ci` / `.main` | Conveyor stations | Working / pre-push / PR / CI / main |
-| `repoLine` | Heading right | {repo} · {count, plural, one {# worktree} other {# worktrees}} on this Mac |
-| `band.seam` | A conveyor's push station | push |
-| `side.notOnMac` / `.notPushed` / `.noPr` | Mini room; Git facts line | Not on this Mac / Not pushed / Pushed, no PR |
-| `session.header` | Session header | {tool} · session {number} |
-| `session.started` / `.subagents` | Session header | started {time} / {count, plural, one {# subagent} other {# subagents}} |
-| `session.unlocked` | Session header | a {tool} process |
-| `tool.acp` | Session header | Claude Agent in Atlas |
-| `tool.claudeCode` / `.codex` / `.unknown` | Session header | Claude Code / Codex / An agent; slice 8 adds `.gemini` |
-| `holder.locked` | Row tooltip | {tool} subagent {id} · locked at {time} |
-| `holder.lockedUnnamed` | Row | Locked at {time} |
-| `holder.process` | Row | {tool} is running in this folder |
-| `holder.subagent` | Row | Subagent {id} |
-| `holder.lastCommit` | Row | {ago} by {author} |
-| `holder.noLockQuiet` | Row | No lock |
-| `holder.noLock` | Row tooltip | No lock · last commit {ago} by {author} |
-| `holder.staleLock` / `.ended` | Row tooltip / Row | Locked by a {tool} session that has ended / Session ended |
-| `chip.missing` / `.lockLeft` | A dark room's large line | Folder missing / Lock left behind |
-| `row.lockLeft` | A dark room's last line | The {tool} session that locked this worktree has ended. {count, plural, =0 {It has no commits beyond {branch}.} one {Its # commit beyond {branch} is not merged.} other {Its # commits beyond {branch} are not merged.}} |
-| `holder.twoTools` | Row | {first} and {second} both have processes in this worktree |
-| `row.noCommits` / `.commits` | Row | No commits beyond {branch} / {count, plural, one {# commit} other {# commits}} beyond {branch} |
-| `row.unknown` | Row | Not measured against {branch} |
-| `row.missing` | A dark room's last line | The folder {folder} is missing. git worktree prune removes its record. |
-| `hook.passed` / `.stopped` | Station | {hook} passed / {hook} stopped |
-| `hook.unknown` | Station | Push did not complete. The hook wrote no result, so Atlas cannot say which check stopped it. |
-| `station.mergedInto` | Station | Merged into {branch} |
-| `station.pr` / `.draftPr` | Station | PR #{number} / Draft PR #{number} |
-| `station.ci` | Station | CI {done}/{total} |
-| `status.ciRunning` | Row | CI running: {job} › {step} · {elapsed} |
-| `status.ciFailed` | Row | CI failed at {job} › {step} |
-| `status.ready` | Row | Ready to merge |
-| `status.draftNoRuns` | Row | Draft PR · no CI runs |
-| `integration.collects` | Git facts line of an integration branch's room | {branch} collects {count} branches |
-| `connect.notConnected` | Help on a conveyor's dashed part, before a host is connected | {host} is not connected. Connecting shows PRs and CI. |
-| `connect.offer` | A conveyor's dashed part, from slice 6 | Show PRs and CI from {host} |
-| `connect.body` | Dialog | While Work status is open, Atlas runs gh to read this repository's open PRs, their CI runs and steps, and merges to main from {host}, at most 1,000 requests an hour. gh sends your {host} sign-in and the repository name; nothing from your files is sent. Each request is listed in Settings › Privacy · data. |
-| `connect.confirm` | Dialog button | Read PRs and CI as {account} |
-| `gh.missing` | Server band | Atlas reads PRs and CI through the GitHub CLI (gh), which is not installed on this Mac. Install it, run gh auth login, then press Check again. |
-| `gh.signedOut` | Server band | gh is not signed in to {host}. Run gh auth login --hostname {host} in a terminal, then press Check again. |
-| `gh.noAccess` | Server band | {account} cannot read {repo} on {host}. Ask for access, or sign gh in as another account. |
-| `connected.line` | Server band | From {host} as {account} · read {ago} |
-| `connected.stop` / `.stopNote` | Popover | Stop reading from {host} / Atlas stops sending requests. Your gh sign-in is unchanged; gh auth logout ends it. |
-| `throttle.slowing` | Server band | {host} allows {remaining} more requests this hour, so Atlas now sends one request every 2 minutes and leaves the rest of the hour's allowance to gh and other programs signed in as {account}. |
-| `throttle.paused` | Server band | Paused until {time}: the hourly limit for {account} on {host} is nearly used. PRs and CI show what was read at {readAt}. |
-| `throttle.secondary` | Server band | {host} asked for fewer requests. Next request at {time}. |
-| `offline` | Server band | Offline. PRs and CI show what was read at {readAt}. Everything read on this Mac stays live. |
-| `noRemote` | Server band | No remote, so there are no PRs or CI to show. |
-| `unsupportedHost` | Server band | Atlas does not read PRs and CI from {host}. Everything read on this Mac stays live. |
-| `reading` | Band foot | Reading worktrees: {read} of {total} |
-| `unreadable` | Stage | {repo} could not be read. Choose the repository folder again to grant access. |
-| `notRepository` | Stage | {folder} is not a Git repository. Choose the folder that holds your project's .git. |
-| `searchWidgets.goTo_workStatus` | Command palette | Go to Work status |
-| `choose.title` / `.action` | Stage | Choose the Git repository your agents work in / Choose repository folder |
-| `empty.title` / `.body` | Stage | {repo} has only its main checkout / Each worktree gets a room here. When Claude Code or Codex starts working in one, you see it in that room. |
-| `web.title` / `.body` | Web card | Work status runs in the desktop app / A browser cannot run git or read this computer's processes. In this browser you can still open your folder's map and Library. |
-| `find.placeholder` / `.none` | Header field / board | Find a worktree or branch / No worktree or branch matches "{query}". |
-| `stage.more` | Under the front stage | {count, plural, one {# more is working on the floors below} other {# more are working on the floors below}} |
-| `floor.worktrees` / `.noSession` | Floor label | {count, plural, one {# worktree} other {# worktrees}} / No session |
-| `floor.sum.asking` / `.ciFailed` / `.cleanup` / `.working` / `.checking` / `.none` | Floor label, at most three | Approval {count} / CI failed {count} / Needs cleanup {count} / Working {count} / Checking {count} / No command running |
-| `shelf.merged` / `.old` | Shelf counts; pressing one opens its list | Merged into {branch} {count} / Unchanged for over 7 days {count} |
-| `room.working.label` / `.big` / `room.lastCommit` | Monitor / last line | A command is running / Working / last commit {ago} |
-| `room.quiet` / `.silent` / `.unheld` | Mini room | No command running · last one {ago} / Quiet for {duration} / Unchanged for {days, plural, one {# day} other {# days}} |
-| `room.ended.label` / `room.missing.label` / `room.twoTools` | Monitor / last line | The session ended / The folder cannot be found / Their changes can mix. |
-| `git.uncommitted` | Monitor, last line | {count, plural, one {# file changed, not committed} other {# files changed, not committed}} |
-| `git.unpushed` / `.pushed` | Monitor, last line | {count, plural, one {# commit not pushed} other {# commits not pushed}} / Pushed |
-| `git.operation` / `.detached` | Monitor, last line | {operation} in progress · {count, plural, =0 {no conflicts} one {# conflict} other {# conflicts}} / No branch: detached at {commit} |
-| `conveyor.noRemote` / `.notConnected` | Where a conveyor turns dashed | No remote / {host} not connected |
-| `room.prePush.label` | Monitor | pre-push checks |
-| `eta.range` / `.about` / `.under` | Monitor, large line | {low}–{high} min left / About {time} left / Under {upper} left |
-| `eta.usual` / `.slow` / `.slowDetail` | Monitor, last line / screen / last line | {elapsed} so far · usually {usual} / Slower than usual / {elapsed} so far · usually done in {usual} |
-| `eta.unknown` / `.unknownDetail` | Monitor / last line | No estimate yet / {elapsed} so far. Atlas estimates once 3 runs have passed on this Mac. |
-| `eta.pill.push` / `.ci` / `.main` / `.slow` | Pill over the parcel | push in {time} / CI done in {time} / main in {time} / Running late |
-| `room.ci.label` / `.jobs` / `.queued` | Monitor / last line / mini room | CI running · PR #{number} / {done} of {total} jobs done / CI queued for {elapsed} · PR #{number} |
-| `room.ciFailed.big` / `.pill` / `room.merged.detail` | Monitor / pill / last line | {count, plural, one {# job failed} other {# jobs failed}} / CI failed / {count} CI jobs passed · took {duration} |
-| `room.asking.label` / `.big` / `.detail` | Monitor | {session} asks / Waiting for your approval / {elapsed} so far. Answer in that session. |
-| `room.thinking.label` / `.big` / `room.replied` | Monitor / mini room | Between commands / Thinking / Finished replying {ago} |
-| `agentState.offer` | Notice under the header, until added or dismissed | Rooms show whether a command is running. With Atlas's hook entries, {tool} also reports when it is thinking, waiting for your approval, or has finished replying. |
-| `agentState.add` / `.addCodex` / `.another` / `.notNow` | Buttons | Add to Claude Code / Add to Codex / Add another settings folder / Not now |
-| `agentState.confirmTitle` / `.confirmAdd` | Dialog / its button | Add Atlas's hook entries to {count, plural, one {# settings file} other {# settings files}}? / Add the entries |
-| `agentState.confirmBody` | Dialog, above the entries | Atlas adds only the entries below to each file listed and changes nothing else in it. Each file's hooks are saved as a version first, so they can be restored. On each event {tool} runs Atlas's program without waiting for it. The program keeps the event's name, the session's id, its working folder and the time in Atlas's own data folder, and discards the rest: commands, file contents and the conversation. Nothing leaves this Mac. |
-| `agentState.added` / `.status` | Toast / Agent state popover | Added Atlas's entries to {count, plural, one {# settings file} other {# settings files}}. A session started from now on reports its state. / {reporting} of {live} {tool} sessions report their state. |
-| `agentState.silent` | Agent state popover | {count, plural, one {# running {tool} session has} other {# running {tool} sessions have}} sent no event. A session reports only once its folder is trusted in {tool}, only if it reads a settings file listed here, and only if your organisation's settings allow your own hooks. |
-| `agentState.remove` / `.removed` | Button / toast | Remove Atlas's entries / Removed Atlas's entries from {count, plural, one {# settings file} other {# settings files}}. Rooms again show only whether a command is running. |
-| `agentState.managed` | In place of the button | Your organisation's {tool} settings allow only its own hooks, so Atlas cannot add its entries. Rooms still show whether a command is running. |
-| `agentState.invalid` / `.changed` | Toast | {file} is not valid JSON, so Atlas changed nothing. Fix the file, then press Add again. / {file} changed after the entries were shown, so Atlas wrote nothing. Check the entries again. |
-| `agentState.linked` / `.unwritable` | Toast | {file} is a link to another file, so Atlas changed nothing. Press Add another settings folder and choose the file it points to. / {file} could not be written, so nothing changed: {reason} |
-| `agentState.codexTrust` | Toast and popover | Added {count} entries to {file}. Codex runs them only after you trust them: type /hooks in Codex. Atlas cannot do that for you. |
-| `agentState.pick` / `.pickRefused` | File picker title / toast | Choose the settings.json in the folder that session uses / {file} is not an agent settings file Atlas can add to, so nothing changed: {reason} |
-| `agentState.removedKept` | Toast, when the file holds hooks Atlas did not add | Removed Atlas's entries from {file}. Your own hooks in it were left as they are. |
-| `agentState.windows` | In place of the offer, on Windows | On Windows, Atlas cannot yet tell which session an event comes from, so it adds no hook entries. Rooms show which session locked each worktree. |
-| `hook.stoppedLanes` | Monitor, last line | Stopped at {lanes}. Nothing was pushed. |
-| `status.readyDetail` | Monitor, last line | {count} CI jobs passed. Merge PR #{number} on {host}. |
-| `eta.frozen` | Monitor, last line, while reading from the host is slowed, paused or offline | Read at {readAt}. The time left is not counting down because Atlas is not reading from {host} now. |
-| `eta.noOrder` | Monitor, last line | {file} could not be read, so jobs are counted as running together. |
-| `fetch.stale` / `.now` | Beside the shelf, from slice 6 | origin/{branch} was fetched {ago}. Merges made on {host} since then are not shown. / Fetch now |
-| `fetch.auto` / `.autoNote` | Toggle / under it | Fetch from origin every 3 minutes while Work status is open / git fetch asks {host} with your Git sign-in and updates origin's branches in this repository. Your branches and files are not changed. |
-| `term.worktree` | Help | Worktree: a separate copy of the project folder, so each agent changes files without touching the others. |
-| `term.subagent` | Help | Subagent: a task an agent session starts, often in its own worktree. |
-| `term.hook` | Help | Hook: a check Git runs on this Mac before a commit or a push. If it stops, nothing is committed or pushed. |
-| `term.pr` | Help | PR (pull request): a request to merge a branch into main, where CI and people check it. |
-| `term.ci` | Help | CI: checks the host runs on a PR, such as tests and lint. Many repositories require them to pass before a merge. |
-| `term.merge` / `.load` | Help | Merge: the branch's changes become part of main. / Load: how many tasks are ready to use a CPU core at once. Above the core count, tasks wait. |
-
-A GitLab provider swaps `PR` for `merge request` and `CI` for `pipeline` through per-host keys.
+None here — every string, with Design direction, Cases and Motion, is in
+`docs/specs/2026-11-22-work-status-design.md`.
 
 ## Edge cases
 
@@ -739,220 +848,177 @@ A GitLab provider swaps `PR` for `merge request` and `CI` for `pipeline` through
   sleeps during a check:** elapsed time includes the sleep, so it reads "Slower than usual".
 - **The repository folder is moved or renamed:** the `unreadable` stage; agent-state and hook-run
   files for the old path match no worktree and are deleted when their process ends.
-- **pid reuse:** a lock's pid, and an agent-state file's, is alive only if its start time matches.
+- **pid reuse:** a lock's pid, an agent-state file's and a ticket's is alive only if its start
+  time matches.
 - **A session that reads another settings folder:** silent until that folder's file is added
   through the picker; `agentState.status` counts it as not reporting. **The person adds a hook of
   their own after Atlas's:** Remove takes out only Atlas's entries.
 - **Offline:** everything read on this Mac is unchanged; PRs and CI keep their read time and CI
   countdowns stop.
+- **Beats, zero to many:** a worktree nobody touches draws no mark and no frame; one saved file is
+  one short mark; a checkout that rewrites 5,000 files is one tall mark, counted to 99. **Two
+  worktrees change at once:** each lamp pulses for its own beats only. **A person edits a file by
+  hand in an agent's worktree:** it is a beat; Atlas cannot tell whose hand it was and does not
+  say. **A Hangul or NFD file name:** it is matched against ignore rules and dropped like any other.
+- **The Mac sleeps:** the steps slept through are empty, and the state is judged from the last
+  beat's real age. **Atlas was closed:** the activity line starts empty (`panel.activity.since`).
+- **Atlas is not running:** scripts start their checks at once, as today. Nothing about that is
+  recorded or drawn afterwards: when Atlas opens, the machine room shows only checks that asked
+  while it was running, and a check started before it shows as a room whose commands use CPU.
+- **Atlas quits or is killed while checks wait:** each waiting script runs within 15 s and prints
+  why; checks that held a slot go on untouched. **Atlas starts while old tickets lie in the
+  folder:** a ticket whose pid has ended is removed, a live one keeps its place by its asking time.
+- **Tickets, zero, one, many:** no line and `queue.empty`; one ticket that starts at once when no
+  check runs; five drawn and `queue.more` for the rest (fixture: 12 waiting). **Two presses at
+  once:** the second ticket moved first wins, and the first returns to its place by asking time.
+  **A moved ticket's script gives up:** its ticket is removed and the line closes.
+- **A symlinked, oversized or unknown-kind ticket; an unknown `VERSION`:** ignored; the script
+  that wrote it reaches its ceiling and runs. **Load stays high from other programs:** one check
+  at a time still runs, and each room says so in numbers.
+- **A changed file no concept names; a concept whose `path:` no longer exists:** counted under
+  `meaning.unmapped`; ignored. **Every room changes one capability** (a rename across the tree):
+  each says so once, and the panel lists the branches. **The folder is opened, moved or renamed
+  while the panel is open:** the capability groups are read again, or `meaning.noFolder`.
+- **The panel's worktree is removed, or its folder becomes a link, between the list and a press of
+  Open:** nothing opens and `open.refused` says why. **The remembered application was
+  uninstalled:** `open.reason.appMissing`. **The largest read:** a branch that changes 2,000 files
+  lists its groups with counts and 200 file rows, then a count.
 
 ## Out of scope
 
 - Writing to GitHub; the device flow and Atlas's GitHub App (their own decision, Later 5).
-- A team view across machines; driving an agent's terminal; writing an agent's settings by any
-  path but the agent config writer; listing or searching the disk for settings folders.
+- A team view across machines; writing an agent's settings by any path but the agent config
+  writer; listing or searching the disk for settings folders.
+- Typing to an agent, answering it, or finding the terminal tab it runs in: Atlas opens a folder
+  in an application and types nothing (Later 3 and 10). Sending a message into a running session:
+  no hook of today's agents carries one (Later 13).
+- Starting an agent or creating a worktree: the tools that own a session do that, and Atlas
+  shows whatever they start.
+- Patch lines in the panel: it lists files and counts, and the editor shows the patch (Later 2).
+- Slowing, pausing or stopping any process for the queue: it only withholds a start (slice 15).
+- Reading a file's content or name through the watcher; watching ignored folders.
 - Harness hook management: its own spec, on the same writer (Later 1).
 - The tool or command an agent asks approval for: tool input can hold secrets and is text from an
   agent, so the approval room names only the session.
-- A room's changed-file list and diff; new Moru art; sound.
+- New Moru art; sound.
 - Process arguments and environment; transcript contents; every agent session file (the one file
-  slice 8 reads is in the coordination spec).
+  slice 12 reads is in the coordination spec).
 - The web: no git, no processes, no browser token (`surfaces.md:110-114`).
 
 ## Slices
 
-Slices 1 to 7 are here; slices 8 to 13 are in
-`docs/specs/2026-11-22-work-status-coordination.md`. File areas are disjoint between slices
-except the shared seams below. Slices 2 to 7 answer the owner's direction of 2026-11-22.
+Slices 1 to 11 are here; slices 12 to 17 are in
+`docs/specs/2026-11-22-work-status-coordination.md`. The order is what keeps a person inside Atlas
+first and what only Atlas can give first (Problem and alternatives); parity comes last. File areas
+are the planner's to settle; those named are disjoint between slices except the shared seams.
 
-1. **Worktrees, locks and agent programs** (shipped). `src-tauri/src/work_status/worktrees/`,
-   `src/shared/lib/work-status/`, `src/views/work-status/`, `src/widgets/work-tracks/`,
+1. **Worktrees, locks and agent programs** (shipped). *Why Atlas: it reads Git and the person's own
+   processes itself, so it shows every worktree and tool, whatever started them (2).*
+   `src-tauri/src/work_status/worktrees/`, `src/shared/lib/work-status/`, `src/views/work-status/`,
    `app/[locale]/work-status/`, rail entry, `messages/*/workStatus.json`.
-2. **Rooms UI** (started on `feat/work-status-rooms`), from today's data only: the header, tiers,
-   shelf, Find, every motion in Design direction, the empty room, and the faces of the states Cases
-   marks 2; retires the headline, bands and ruler. The room model is a closed list of every state
-   in Cases, so a later slice adds a face without editing it. `src/widgets/work-rooms/` (replacing
-   `src/widgets/work-tracks/`), `src/shared/lib/work-status/work-rooms.ts`,
-   `src/views/work-status/ui/`, `app/styles/work-status-tokens.css`, `app/styles/motion-work.css`,
-   `docs/design/brand.md`, `docs/DESIGN-SYSTEM.md`, `tests/e2e/work-status-bridge.ts`.
-3. **Live Git state:** notices, the extended digest, `git status` on notice, a room's Git facts.
-   `src-tauri/src/work_status/{watch,git_state}/`, `src/shared/lib/work-status/signals/git.ts`,
-   `src/views/work-status/model/`.
-4. **Hook runs and time left:** the hook-run record, this repository's `pre-push` writing it, the
-   history store, the estimate, the pre-push running, stopped and late faces.
-   `src-tauri/src/work_status/{hook_runs,estimate}/`, `scripts/lib/prepush/`,
-   `src/widgets/work-rooms/ui/faces/check/`, `src/shared/lib/work-status/signals/hook-runs.ts`.
-5. **Agent state** (Record 3), after criterion 27's probe: the agent config writer with its version
-   store, the helper, the agent-state file, the offer, confirm with its target list, and status,
-   and the approval, thinking and replied faces. `src-tauri/src/agent_config/` (shared with
-   Harness, which builds its history screen on the version store),
-   `src-tauri/src/work_status/agent_state/`, the helper's own binary target,
-   `src/features/work-agent-state/`, `src/widgets/work-rooms/ui/faces/agent/`,
-   `src/shared/lib/work-status/signals/agent-state.ts`.
-6. **GitHub connect and budget,** after criterion 31's probe, with the opt-in fetch:
-   `src-tauri/src/work_status/github/{gh,budget}.rs`, `src-tauri/src/work_status/fetch/`,
-   `src/features/work-host-connect/`, the outbound-paths rows.
-7. **CI live and CI time left,** with the failed, ready and queued faces:
-   `src-tauri/src/work_status/github/{poll,estimate}.rs`, `src/widgets/work-rooms/ui/faces/host/`,
-   `src/shared/lib/work-status/signals/host.ts`. Server findings moved to slice 10.
+2. **Rooms** (built on `feat/work-status-rooms`, in `src/widgets/work-tracks/`; being polished),
+   from slice 1's data only: the header, tiers, shelf, every motion in Design direction, the empty
+   room, and the faces of the states Cases marks 2. The room model is a closed list of every state
+   in Cases, so a later slice adds a face without editing it. *Why Atlas: none of its own; it is
+   the frame the next slices are read in.*
+3. **Progress,** after criterion 33's probe: the watcher, beats, the four states, the lamp's pulse
+   and the activity line, Stalled on the stage, the rail tile's count, the read that goes on while
+   another screen is open. *Why Atlas: progress read from the folder and the CPU, so it holds for
+   any tool with nothing installed, including one that hangs without a word (2).*
+   `src-tauri/src/work_status/progress/`, `src/shared/lib/work-status/signals/progress.ts`,
+   `src/widgets/app-nav-rail/`, a third-exception edit in `.claude/rules/surfaces.md` (Record 4).
+4. **The check queue.** First, the repository's own tooling: `.githooks/pre-push` asks for a slot
+   through one helper (the lead's item, mergeable alone: with no Atlas running it changes
+   nothing). Then the slot folder, the load read, granting, the machine room with its gauge, bays
+   and line, the ticket on the room's parcel, moving one first, and the estimated start. *Why
+   Atlas: only a tool that sees every worktree, every agent and the load can put their checks in
+   an order; one agent or a Git client cannot (2).* `scripts/lib/slots/`, `.githooks/pre-push`,
+   `src-tauri/src/work_status/{slots,load}/`, the machine room's widget (Record 5).
+5. **What a room changes** (the former Live Git state, reshaped): notices on `.git`, the extended
+   digest, the status read after beats, the room's Git facts, and from the same read the
+   capability on the wall sign and the mark on rooms that share one. *Why Atlas: the Git facts are
+   parity; the capability and the shared mark need the ontology (1).*
+   `src-tauri/src/work_status/{watch,git_state}/`, `src/shared/lib/work-status/signals/{git,meaning}.ts`.
+6. **The room panel:** a room becomes a button; Changes by capability with documents, Activity,
+   Commits; Open in editor and Open in terminal with the chooser; Copy folder path. *Why Atlas:
+   the diff is grouped by what it means and leads to the map, Planning and Library (1); opening an
+   editor is parity, kept because without it every look at a patch ends outside.*
+   `src/widgets/work-room-panel/`, `src-tauri/src/work_status/{detail,open_app}/` (Record 6).
+7. **Waiting for you,** after criterion 27's probe: the read of Claude Code's own session list
+   (Record 7), with no write to any settings file; the waiting, thinking, replied and failed
+   faces, each with the room's capability; the status line and its switch; one call per settings
+   folder the person added. *Why Atlas: the state is parity; one board for every session, started
+   anywhere, each waiting room with what it is changing and what stands behind it, is not (1, 2).*
+   `src-tauri/src/work_status/agent_sessions/`, `src/shared/lib/work-status/signals/sessions.ts`.
+8. **Hook runs and time left:** the hook-run record, this repository's `pre-push` writing it, the
+   history store the queue already fills, the estimate, the lanes, stopped and late faces. *Why
+   Atlas: only this Mac's own history, under its own load, can say how long this check takes here
+   (2).* `src-tauri/src/work_status/{hook_runs,estimate}/`, `scripts/lib/prepush/`.
+9. **Hook entries, optional** (the former Agent state; Record 3), after criterion 27's probe: the
+   agent config writer with its version store, the helper, the agent-state file, the offer, the
+   confirm with its target list, and status. *Why Atlas: it brings Codex's waiting rooms onto the
+   same board and each event within a second (2); for Claude Code alone it is parity, which is why
+   it is optional and after slice 7.* `src-tauri/src/agent_config/` (shared with Harness, which
+   may build the writer first), `src-tauri/src/work_status/agent_state/`, the helper's own binary
+   target, `src/features/work-agent-state/`.
+10. **GitHub connect and budget,** after criterion 31's probe, with the opt-in fetch. *Why Atlas:
+    parity; without it "did CI pass" is a browser tab.*
+    `src-tauri/src/work_status/github/{gh,budget}.rs`, `src-tauri/src/work_status/fetch/`,
+    `src/features/work-host-connect/`, the outbound-paths rows.
+11. **CI live and CI time left,** with the failed, ready and queued faces. *Why Atlas: the state is
+    parity; the time left from the run history is not shown by the host (2).*
+    `src-tauri/src/work_status/github/{poll,estimate}.rs`,
+    `src/shared/lib/work-status/signals/host.ts`. Server findings are slice 14.
+
+Slices 4 and 5 touch no file in common beyond the seams and may be built at the same time; they
+merge in this order.
 
 **Shared seams.** Every slice adds its own lines to `src-tauri/src/lib.rs:392` (command
 registration), `src-tauri/src/work_status/mod.rs` (the module list and the snapshot) and
-`messages/*/workStatus.json`. `.githooks/pre-push` is edited by slice 4 here and slice 11 there;
-`.claude/rules/surfaces.md` by slice 5 here (a fourth exception) and slice 8 there. A slice only
+`messages/*/workStatus.json`. `.githooks/pre-push` is edited by slices 4 and 8 here and slice 15
+there; `.claude/rules/surfaces.md` by slices 3, 4, 6, 7 and 9 here and slice 12 there. A slice only
 appends at a seam, and slices merge one at a time through the integration branch in slice order,
 so no two edit a seam at once.
 
 ## Acceptance criteria
 
-Criteria keep their numbers across both specs: 4 to 9 and 15 to 18 are in the coordination spec.
-
-1. **Slice 1, dogfood.** Given this repository, when the owner opens Work status in the installed
-   app, then within 2 s every worktree `git worktree list --porcelain` reports appears, each lock's
-   worktree sits under the session its pid names (bands until slice 2 retires them). Measured
-   2026-11-22: 11 worktrees in 0.21 s at load 15; 34 in 0.7 s at load 50. Checked:
-   `src-tauri/src/work_status/worktrees/tests.rs`, which prints the time and fails only above 10 s
-   (5x the budget, since parallel builds share the machine), and an installed-app capture.
-2. **Slice 1, merged and locks.** Given temp repositories with a zero-commit worktree, a merged
-   one, a branch created at a merged commit that never moved, the main checkout, a lock whose UTC
-   time matches a live pid, one whose pid was reused, and one unparseable, then only the merged
-   one is merged, the reused pid reads stale, and the unparseable lock reads live. The reason's
-   time is read as UTC whatever the local zone: a fixed reason parses to its UTC epoch, so the
-   result cannot depend on `TZ`. Checked: same file, on macOS, Linux and Windows CI.
-3. **Slice 1, live.** When a worktree is added and removed, the row arrives and leaves within 5 s,
-   no frame interval over 50 ms, zero frames at rest. Checked: the watch cadence and its stop on
-   hide and unmount by `src/views/work-status/model/use-work-status.test.ts`; the motion by a
-   per-frame recording of the static build with 20 worktrees, attached to the pull request, since
-   the screen needs the desktop bridge and the web build has none.
-10. **Slice 6, nothing before opt-in.** Given a fresh install and a github.com remote, when the
-    screen opens, then the spawned-process spy sees only `gh --version` and `gh config get`, no
-    request reaches any GitHub host until Confirm, and every later request has a log line and an
-    `outbound-paths.ts` row. Checked: `github/gh.rs` tests and the outbound-paths contract.
-11. **Slice 6, hostile `gh` inputs.** Given an `origin` carrying a token, an owner of `../../user`,
-    a host `evil.example` not in the gh config, and a `gh` planted in `node_modules/.bin`, then no
-    token is shown or logged, no request runs for the bad owner or host, and the planted `gh` never
-    runs. Checked: same tests.
-12. **Slice 6, budget.** Given a recorded 60-PR fixture visible for one simulated hour, counted
-    requests in the bucket spent stay at or under 1,000, stop within one interval of hiding, slow
-    under 1,500 remaining and pause under 500. Checked: `github/budget.rs` simulated-clock test.
-13. **Slice 7, dogfood CI.** Given this session's integration PR, when a job fails, its room shows
-    the failing job and step within one interval and takes the stage's second class. Checked:
-    installed-app capture.
-14. **Slice 7, five-second read.** Three readers who did not do the work each name, within 5 s, the
-    room that needs a person, why, and how long the running CI has left. Checked: a recorded walk.
-19. **Slice 2, dozens.** Given fixtures of 0, 1, 6, 34, 40 and 60 worktrees at 1920×1080 and
-    1040×720, the stage holds at most six large rooms in the order of Design direction, every other
-    worktree is exactly one mini room or one shelf count, and no room overlaps another or is cut by
-    the window. Checked: `src/shared/lib/work-status/work-rooms.test.ts`; `pnpm ui:look` captures.
-20. **Slice 2, motion per frame.** Given the desktop bridge stubbed in the page
-    (`tests/e2e/work-status-bridge.ts`, answering `work_status_read` and `work_status_fingerprint`
-    as `tests/e2e/library-work-harness.ts` does for the Library) and scripted snapshots of 6 and 40
-    rooms that add a room, remove one, promote a mini room, demote a large one, merge and fold one,
-    end a session, and land a second change mid-glide: every moving box meets the `motionShares`
-    bars of Motion (`ffs` ≤ 0.15, `mfs` ≤ 0.27, at least 8 frames between), `smoothnessViolations`
-    is empty, a board with no running state draws zero frames between reads, and under reduced
-    motion no box travels. The 50 ms frame interval is checked headed with `MAP_PERF_BARS=1` at 40
-    rooms on this Mac. Checked: `tests/e2e/work-status-rooms-motion.spec.ts` in CI; the headed
-    run's print and recording attached.
-21. **Slice 2, no invented activity.** A worktree with no live session is a dark room with no
-    figure; a live session with no command holds one pose; a loop runs only in a running state and
-    stops within one read of its end. Checked: `src/widgets/work-rooms/ui/room-scene.test.tsx`.
-22. **Slice 3, live Git.** Given a temp repository with 40 worktrees and a spy on spawned
-    processes: when one worktree commits, switches branch, stages a file, pushes to a local bare
-    remote, and stops a rebase on a conflict, each shows in the snapshot within 2 s; an edit not
-    yet staged shows within 60 s when an agent process is in that worktree, and otherwise at that
-    worktree's next notice; a minute with no notice and no agent process spawns no Git process; six
-    worktrees with agents and no notice spawn at most six `git status` a minute; 200 reads racing
-    an agent's `git commit` never fail it or change an index's modified time. Checked:
-    `src-tauri/src/work_status/{watch,git_state}/tests.rs`; the CPU and memory budget by a
-    measured print in the installed app.
-23. **Slice 4, time left.** Given histories of 0, 2 and 20 passed runs with their start loads, the
-    first two read "No estimate yet"; the third shows the median and 90th percentile of the
-    whole-run time, times the start-load factor, minus elapsed; a history whose serial phase takes
-    30 s gives an estimate at least 30 s above its longest lane; a finished lane never widens the
-    range; no shown number is below zero; a run that ends with a failed lane puts its room in the
-    second class with the lane named; a symlinked or 1 GB record is ignored. Checked:
-    `estimate/tests.rs`, `hook_runs/tests.rs`. Dogfood: over ten real pushes the finish falls
-    inside the range first shown at least seven times (a `pnpm` probe).
-24. **Slice 5, the writer, with recovery.** Given a settings file that is absent, holds other hooks
-    and an `env` value `ATLAS_PLANTED_7f3c`, is invalid JSON, changes after the confirm, or is a
-    link: Add writes exactly the shown entries and leaves every other key equal; a version of the
-    file's hooks exists before the write; the invalid, changed and linked files are untouched; the
-    planted value is in no page payload, log or error; a request carrying a command string instead
-    of a template id is refused; Remove after Add leaves the file byte-identical to the original.
-    Checked: `src-tauri/src/agent_config/tests.rs` on macOS, Linux and Windows CI.
-25. **Slice 5, a real session, hostile input and cost.** Given the entries added on this Mac and a
-    real Claude Code session that thinks, runs a command and asks for approval: its room shows
-    each within 1 s and is first while it asks; after Allow it leaves that state within 1 s of the
-    command starting; `kill -9` while it asks leaves no asking room after 2 s. Given the helper
-    fed `"session_id":"../../LaunchAgents/x"`, a 1 GB standard input, a state file replaced by a
-    symlink to another file, and a tool input holding `ATLAS_PLANTED_7f3c`: no file is created
-    outside `agent-state/`, the 1 GB event writes nothing and ends within 1 s, the link's target
-    is unchanged, and neither the planted value nor a transcript path is in `agent-state/`. Over
-    200 tool calls the helper's CPU time is at most 10 ms at the 95th percentile and a tool call
-    starts at most 5 ms later at the median, or the slice does not ship. Checked: a recorded
-    installed-app walk; `agent_state/tests.rs`; a `pnpm` probe printing both costs.
-26. **Slice 7, CI time left.** Given a recorded fixture of 20 runs and its workflow file, the
-    estimate follows the longest unfinished chain through that file's `needs` plus the queue wait
-    and narrows as jobs finish; with the file unreadable, jobs count as running together and
-    `eta.noOrder` shows; with reading paused, the countdown holds its last value and `eta.frozen`
-    gives the read time; a ready PR takes the third class. Checked: `github/estimate.rs` tests.
-27. **Slice 5, the probe, before any code.** By hand on this Mac, one `async` entry that appends
-    its event name to a scratch file is pasted into one `settings.json`. Recorded in the pull
-    request: whether it fires in a session already running, a new session, a subagent, a session
-    started with another `CLAUDE_CONFIG_DIR`, and, pasted into `~/.codex/hooks.json` and trusted
-    in `/hooks`, in Codex; which of the nine events arrive; the median delay on a tool call.
-    Slice 5 builds only what the probe saw fire, and this spec is corrected to match first.
-    Checked: the probe's recorded output.
-28. **Slice 5, Codex.** Given the probe saw Codex fire: after Add to Codex the page shows
-    `agentState.codexTrust`, no Codex room changes state before `/hooks` trust, and after it a
-    Codex session's working and approval states show within 1 s. Given it did not: no Add to
-    Codex is offered and Codex rooms show only whether a command runs. Checked: a recorded walk.
-29. **Slice 5, removal and versions.** Given Atlas's entries added to two listed files, then a hook
-    of the person's own and a change to another key in one of them: Remove takes out exactly
-    Atlas's entries in both, and the person's hook and the other key are byte-equal. The version
-    store holds the hooks from before each write; after 201 writes it holds 200; a version file
-    holds `hooks` only (the planted `env` value is absent) with mode 0600; a version folder
-    replaced by a link is not followed. A picked file inside another repository's work tree is
-    refused. Checked: `src-tauri/src/agent_config/tests.rs`.
-30. **Slice 5, Windows.** On Windows the page shows `agentState.windows` and no Add button, rooms
-    draw from locks and Git, and criterion 24 passes on Windows CI. No Windows machine is walked.
-    Checked: `src/features/work-agent-state/ui/agent-state-offer.test.tsx`; Windows CI.
-31. **Slice 6, first: what a conditional request costs.** Before polling is built, `gh api` with
-    `If-None-Match` against this repository shows that a 304 leaves `x-ratelimit-used` unchanged
-    in the REST bucket `pr:land` spends; if it does not, every interval in Polling doubles and
-    this spec is revised first. Then, on a simulated clock: the PR list is asked every 60 s, a
-    running run's jobs every 30 s, everything every 3 min with no run in progress; when
-    `remaining` falls by more than 20 a minute beyond Atlas's own requests for 2 min, intervals
-    double until it stops. Checked: a `pnpm` probe's printed headers; `github/budget.rs` tests.
-32. **Slice 6, fetch.** With the toggle off, no `git fetch` is ever spawned. Turned on, one runs
-    every 3 min while visible, through `runner.rs`, never with `--prune`, each with a log line and
-    an `outbound-paths.ts` row; while a sleeper named `git` has its working folder in one of the
-    repository's worktrees, or a ref lock file exists, none starts, and one runs at the next
-    interval after; hidden, none. Checked: `src-tauri/src/work_status/fetch/tests.rs`.
+None here — criteria 1 to 3, 10 to 15 and 19 to 44 are in
+`docs/specs/2026-11-22-work-status-criteria.md`; 4 to 9 and 16 to 18 in the coordination spec.
 
 ## Risks
 
-1. **Polling competes with `pr:land`** in the one REST bucket. Answer: criterion 31's probe before
-   any polling code, the intervals and the burn-rate back-off in Polling, criterion 12's budget.
-2. **The rooms move but say nothing.** Answer: a figure is drawn only from evidence (criterion 21),
-   the monitor's large line states the fact in words, and criterion 14's cold read can fail.
-3. **The time left is wrong often enough to be ignored.** Answer: a range from this Mac's own
-   whole-run history, "Slower than usual" in place of a number below zero, and criterion 23's
-   seven-in-ten dogfood before the estimate ships.
-4. **The hook entries reach few sessions or slow the agent** (other settings folders, untrusted
-   folders, managed settings, a session already running). Answer: criterion 27's probe before any
-   code, a target list with the file picker, `agentState.status` counting who reports, and
-   criterion 25's cost bar, which can stop the slice.
+Assume it shipped and failed. The three likeliest reasons:
+
+1. **A room says Stalled while its agent works, or Moving while it is stuck,** and the person
+   goes back to the terminal to be sure. Answer: criterion 33 measures real gaps before any code
+   and can change the thresholds; CPU counts a silent build as work; the room states only what
+   was measured; criterion 41 fails the slice on one note.
+2. **The queue makes pushes slower or stalls them,** and the person pushes with `--no-verify`.
+   Answer: one check always runs, the 10-minute ceiling, scripts that run when Atlas is gone
+   (criterion 36), and criterion 15, which can stop the slice.
+3. **Atlas is one more board of statuses the agent tools already draw better,** and nobody opens
+   it. Answer: the capability line and the shared mark come in slice 5, before any parity slice;
+   each slice names what only Atlas gives; the falsifier is a person who uses the panel and never
+   presses a capability.
+
+Standing risks of later slices: polling competes with `pr:land` in the one REST bucket (criteria
+31 and 12); the time left is wrong often enough to be ignored (criterion 23's seven in ten); the
+hook entries reach few sessions or slow the agent (criteria 27 and 25); the rooms move but say
+nothing (criteria 21 and 14).
 
 ## Later
 
+Numbers are stable names. Next in order: 3, 2, 12, 10, then the rest as their conditions arrive.
+
 1. Harness hook management (add, remove, turn on and off) on the agent config writer, as its own
    spec: the owner asked for it on 2026-11-22.
-2. A room's changed-file list and diff; next when the owner still opens a Git client to see which
-   files changed.
-3. The tool an agent asks approval for, from a closed list of tool kinds; next when the owner asks
-   what is being asked.
+2. A file's patch inside the panel, through Changes' patch reader (Today); next when Open in editor
+   is pressed mostly to read one file.
+3. Answering an approval from the room, as its own decision: Claude Code's PermissionRequest hook
+   can return allow or deny (the lead's check, 2026-11-22), so it is feasible, but it lets Atlas
+   approve what an agent does and needs the tool and command shown from a closed list of tool
+   kinds, which Out of scope withholds today. It rests on slice 9's entries. Next when slice 7
+   shows rooms waiting over 5 minutes.
 4. Agent state walked on a Windows machine; until then Windows has CI only.
 5. Device flow with Atlas's GitHub App, as its own decision: change the `forbidden.md` wording
    first; disclose the App owner's standing access in the dialog; register the App under an
@@ -962,97 +1028,52 @@ Criteria keep their numbers across both specs: 4 to 9 and 15 to 18 are in the co
 7. GitLab, with the provider interface; then Bitbucket Cloud, Azure DevOps, Bitbucket Data
    Center, Gitea, Forgejo.
 8. A pasted fine-grained token.
+9. The agent's own CPU as a beat for the room it runs in; next when criterion 33's probe shows an
+   idle and an answering session differ fivefold.
+10. Landing in the agent's own running session instead of a new window; next when a tool documents
+    a way that types nothing, and as its own decision.
+11. Start a waiting check now, whatever the load; next when a person moves a ticket first and still
+    pushes with the queue skipped.
+12. The decisions and wiki pages that cite a capability a room changes, in the panel; next when
+    the capability line is used to open the map from the panel.
+13. Messages from Atlas into a running session: not possible with today's hooks (the lead's check,
+    2026-11-22); reopened only when an agent documents a channel for it.
 
 ## Owner answers (2026-11-21)
 
 1. Register the read-only GitHub App under the owner's account: yes. Deferred after review: the
    in-app sign-in conflicts with `forbidden.md:37` as written, and the App's owner would hold
-   standing read access to every installing organisation's private PRs (Later 5). Slice 6 ships
+   standing read access to every installing organisation's private PRs (Later 5). Slice 10 ships
    `gh` reuse only.
 2. Rail label: "Work status" (ko: the owner's choice, in the PR body).
 3. Stopping leftover processes in merged worktrees: one press, the list already shown above it
-   (slice 9, the coordination spec).
+   (slice 13, the coordination spec).
 
 ## Owner answers (2026-11-22)
 
 Relayed by the lead in this session; Record 3 holds only once the lead records it. (1) Rooms in one
 building, the third render round; the headline goes. (2) Agent hooks by one press inside Work
 status, not a pasted snippet. (3) Harness will manage hooks on the same writer, in its own spec.
+(4) The feature must bring the person who runs dozens of agents into Atlas, and say why Atlas.
+(5) Atlas should order heavy checks by load by itself, and the line must be drawn, not only work.
+(6) Every independent design score 4 of 5 or higher; like a game, never machine-made.
 
-**Owner question:** None. Decided here, each reversible in one place: the first target is
-`~/.claude/settings.json`, with other settings folders added through the file picker; the approval
-room names no tool or command (Later 3); the pill says "CI done in" unless the host says the PR
-merges by itself (`eta.pill.*`).
+(7) Claude Code's own session list carries "waiting for you" first, with no settings write; the
+hook entries become the richer, optional layer (the answer to this spec's one question, relayed by
+the lead the same day).
 
-## Decision record text (the lead runs `pnpm record:new`)
+**Owner question:** None.
 
-**Record 1: the destination, its local reads and its host connection.**
+Decided here, each reversible in one place: the first target is `~/.claude/settings.json`, with
+other settings folders added through the file picker; the approval room names no tool or command
+(Later 3); the pill says "CI done in" unless the host says the PR merges by itself (`eta.pill.*`);
+a pressed ticket goes first in line and does not start at once (Later 11); the panel sits at the
+right and the board narrows; Stalled is 10 to 60 minutes until criterion 33 says otherwise.
 
-**Why**: The owner, 2026-11-21, asked for a rail item showing which agent holds which worktree,
-hooks, PR and CI live, and this Mac's load. Measured: 21 worktrees (17 nested), 1 open PR, 2 Claude
-Code sessions holding 6 subagent worktrees, load 104 earlier and 45.3 at 20:55 on 12 cores, 82.9 GB
-in six Rust build folders.
-**Prior**: Uses the tenth slot e7d1f38a permits. Adds a third read exception to
-`.claude/rules/surfaces.md`. Refines f741cf86: polling is a second request made without a press,
-listed, logged, bounded and stopped when hidden. Applies the principle of 2026-09-08 (follow the
-terminal's own login) to `gh`. Keeps 2026-08-16 (5) (Claude Agent) and `forbidden.md:37`: no
-sign-in surface is added.
-**Decision**: `/work-status/`, rail label Work status, `g w`, one room per worktree in three
-attention tiers. Local reads through `runner.rs`: worktrees (outside the chosen folder only when
-`.git` and `gitdir` point at each other), lock reasons and `locked` mtimes, first-parent ancestry.
-For same-user processes, filtered by uid first: pid, parent, start time, own working folder,
-executable path, CPU, memory, listening ports, controlling terminal, and open file paths only to
-match `<hooksPath>/<hook name>`. One Claude Code subagent meta file per lock, at a path built from
-the lock, read with `O_NOFOLLOW` and a 64 KiB cap into `finished` only. Never arguments
-(`KERN_PROCARGS2`), environment, transcripts or other session files; nothing sent. PRs and CI: `gh`
-only, after a confirm, through the fixed call; at most 1,000 requests an hour in the bucket spent.
-Web shows a degradation card.
-**Dissent**: A Changes tab would keep nine doors. Reading processes and open files tells Atlas what
-a person runs; the session-file format is undocumented. `gh` reuse leaves non-developers without a
-path until the App decision.
-**Falsifier**: A person looks for in-flight work in Changes or Git, or cannot reach Work status at
-1040×720; the planted string in any record or log; a `KERN_PROCARGS2` read in the source; a file
-read through a symlink; a process other than `gh --version` or `gh config get` before Confirm;
-Atlas's polling in a `pr:land` rate-limit failure.
+## Decision record text
 
-**Record 3: Atlas adds its own hook entries to an agent's settings on a press, through one agent
-config writer.**
-
-**Why**: The owner, 2026-11-22: rooms must show what each agent is doing; thinking, waiting for
-approval and a finished reply are known only to the agent's own hooks. He chose a one-press add in
-Work status over a pasted snippet and asked that Harness later manage hooks the same way. That
-day: 17 worktrees, four Claude Code and two Codex processes, four alternative Claude Code
-configuration folders. A hook delays every tool call unless it is `async` (vendor documentation).
-**Prior**: Overturns, for this one path, "edits no agent's configuration" in Record 2 of
-`docs/specs/2026-11-22-work-status-coordination.md`. Extends the connect button's write of agent
-configuration (`.claude/rules/surfaces.md`, "Two distribution channels only") to the person's own
-settings files, as a fourth written exception there. Keeps 87d3ada9: Atlas reads no arguments,
-environment or transcripts. Keeps `forbidden.md`, "Plugins and extension": the helper is Atlas's own
-code.
-**Decision**: One Rust module, the agent config writer, is the only writer of an agent's settings:
-only on the person's press, after a confirm listing each target file with its exact diff; only the
-entries asked for; no write to a file that is invalid, changed since the confirm, a link or not the
-person's; an atomic write; no button when managed settings forbid a person's own hooks; a hook
-command only from a built-in template or text the person typed in Atlas; never accepting trust for
-the person. Before every write it records the file's `hooks` value, and nothing else from the file,
-as a version in the app's local data (the newest 200 per file, 10 MiB a folder, mode 0600); undo
-and Harness's history ride on that store, and there is no other backup. Targets are
-`~/.claude/settings.json` and files the person picks in the system file picker; Atlas lists no
-settings folder. Work status adds `async` entries for nine Claude Code events that run Atlas's
-helper; Codex only if the probe sees its hooks fire. The helper reads at most 64 KiB, keeps the
-event name, session id, working folder, notification type, time and the agent's pid and start time
-in `agent-state/` in app data, in a file named by a hash of pid, start time and folder, only for a
-repository chosen in Work status; drops tool data and the transcript path; prints and sends
-nothing. Atlas reads that folder by file-change notice. Without the entries every room still shows
-whether a command runs. Harness hook management may reuse the writer under these rules.
-**Dissent**: A pasted snippet keeps Atlas out of the person's settings entirely. A user-wide entry
-runs Atlas's program on every agent event in every project, chosen or not. A session that reads
-another configuration folder needs one more press. Hook formats can change unannounced.
-**Falsifier**: A key or entry other than Atlas's differs after Add or Remove; a write with no
-press, or of a command that is neither a template nor the person's typing; tool input, a command
-or a transcript path in `agent-state/`; the helper over 10 ms of CPU at the 95th percentile or
-5 ms of added wait at the median; a person who cannot remove the entries from Work status; fewer
-than half of this Mac's live sessions reporting a week after the add.
+None here — Records 1 and 3 to 7 are in `docs/specs/2026-11-22-work-status-criteria.md`; Record 2
+in the coordination spec.
 
 ## Revisions
 
@@ -1115,3 +1136,25 @@ than half of this Mac's live sessions reporting a week after the add.
   the 304 probe first (31). Cases gain pre-push stopped and ready to merge, on clips named by their
   real rows. The hook-run record carries the load at its start. Criteria 20, 22, 23, 25 and 26
   restated; 27 to 32 added; risks and Later renumbered.
+- 2026-11-22: the owner's direction on the concept, "why Atlas", failed pushes under load and the
+  drawn queue. The title and opening state the concept and a promise that can fail; new sections
+  Why Atlas (from the other tools' public pages) and Reasons to leave Atlas. Slices reordered by
+  what keeps a person in Atlas and by what only Atlas gives, each with a "Why Atlas" line: 3
+  Progress (new), 4 The check queue (the slot folder and limit moved from the coordination spec's
+  former slice 11 and changed to grants by load), 5 What a room changes (the former 3, Live Git
+  state, now carrying the capability line), 6 The room panel (new), 7 Waiting for you (new: the
+  session list), 8 Hook runs and time left (the former 4), 9 Hook entries (the former 5, Agent
+  state), 10 and 11 the former 6 and 7, 12 to 17 the former 8 to 13. Earlier lines of this log
+  keep the numbers of their day. New: Records 4 to 6, criteria 33
+  to 44 with 15 moved here and restated, the machine room, its Cases, Motion and copy, the progress
+  states in place of "quiet over 5 min", and the Risks rewritten around the three likeliest
+  failures. Later 2 and 3 redefined (a file's patch in the panel; answering from the room, as its
+  own decision), 9 to 13 added. A room's changed files left Out of scope.
+- 2026-11-22: the owner's answer on agent state. Claude Code's own session list carries "waiting
+  for you" first, by one fixed, read-only call (slice 7, Record 7, criteria 43 and 44, with the
+  settings-folder coverage in criterion 27's probe); the hook entries are optional and move to
+  slice 9, and Record 3 says so. New room states: waiting for an answer, the session failed.
+- 2026-11-22: split for length, content unchanged: States, Design direction, Cases, Motion and Copy
+  moved to `docs/specs/2026-11-22-work-status-design.md`; the acceptance criteria and the decision
+  record texts to `docs/specs/2026-11-22-work-status-criteria.md`. Names used here ("Cases",
+  "criterion 27", "Record 4") mean those files.

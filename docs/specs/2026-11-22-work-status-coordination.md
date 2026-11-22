@@ -9,10 +9,13 @@ decisions: []
 
 # Work status: processes, fixes, bottlenecks, coordination and automation
 
-Slices 8 to 13 of Work status, split on 2026-11-22 from
+Slices 12 to 17 of Work status, split on 2026-11-22 from
 `docs/specs/2026-11-21-work-status-destination.md` ("the Work status spec" below), which holds the
-destination, the rooms, live Git state, time left, agent state and the host connection (slices 1 to
-7, Records 1 and 3). Slice and criterion numbers continue from that spec and keep their values.
+concept, the rooms, progress, the check queue, what a room changes, the room panel, agent state,
+time left and the host connection (slices 1 to 11). Its screens and copy are in
+`docs/specs/2026-11-22-work-status-design.md`; its criteria and Records 1 and 3 to 7 in
+`docs/specs/2026-11-22-work-status-criteria.md`. Slice and criterion numbers continue from those. The slot folder and its limit moved there as the check queue
+(its slice 4, Record 5); this spec keeps what needs authority over processes and folders.
 
 ## Person and moment
 
@@ -30,8 +33,8 @@ registers only `work_status_read` and `work_status_fingerprint` (`src-tauri/src/
 
 ## Problem and alternatives
 
-None new — the Work status spec ranks these as (2) processes, (3) safe fixes, (4) naming the
-bottleneck, (6) coordinating by hand and (7) automatically, and says why they follow slices 2 to 7.
+None new — the Work status spec ranks these eighth, after everything a person reads from a room,
+and says why: each needs Record 2's authority over processes and folders.
 
 ## Flow
 
@@ -78,7 +81,7 @@ stops at a directory containing `.git`. Every Git read goes through `runner.rs`.
 ## Processes on this Mac
 
 The model, identity by evidence and the shipped process read are in the Work status spec, "Agents
-and hooks on this Mac". Slice 8 adds:
+and hooks on this Mac". Slice 12 adds:
 
 | Signal | Gives | Tools | Status | Slice |
 |---|---|---|---|---|
@@ -100,29 +103,29 @@ has closed its script shows as "hook" with no name. Hook work is shown by execut
 
 **Sampler.** Filters by uid before reading any working folder or open file; samples every 2 s while
 visible and stops when hidden; at load above 40 it stays under 1 % of one core and 20 MB resident
-(slice 8 measures it).
+(slice 12 measures it).
 
 ## Bottlenecks
 
-Server findings need slice 7's reads. Deterministic findings come first, each computed from measured
-facts with its numbers. They show without buttons until slice 11 adds the actions. A local model, in
+Server findings need slice 11's reads. Deterministic findings come first, each computed from measured
+facts with its numbers. They show without buttons until slice 15 adds the actions. A local model, in
 its own last slice, only explains and ranks them; it never adds one. The table's order is the
 display priority; within a kind, the larger cost shows first; at most three show, and one leaves
 after its condition is false for 60 s.
 
-| Finding | Condition and numbers | Cost shown | Action (slice 11) | Side · slice |
+| Finding | Condition and numbers | Cost shown | Action (slice 15) | Side · slice |
 |---|---|---|---|---|
-| Red main | main's latest run failed; open PRs waiting | count | none: names the failing job | Server · 10 |
-| CPU queue | 1-min load over 2 × cores; share by worktree and session | checks wait for a core | Background priority; slot limit | Mac · 10 |
-| Concurrent Rust builds | ≥ 2 worktrees with `cargo`/`rustc` by own working folder | elapsed against the last solo build this app session | Background priority for all but the oldest | Mac · 10 |
-| Hooks at once | ≥ 2 `pre-push` running | each elapsed | Slot limit; hold pushes | Mac · 10 |
-| Conflicts | `git merge-tree --write-tree` of two unmerged heads reports conflicts; cached per pair of heads | conflicting file count | Propose an integration or order | Mac · 10 |
-| Two tools in one worktree | two sessions with processes whose own working folder is in one worktree other than the main checkout | both named | none: shown on the stage | Mac · 10 |
-| Integration waits on one | all members merged into it but one, still running | its elapsed | none | Mac · 10 |
-| CI queue | `run_started_at − created_at` against the run's duration | minutes waiting | none | Server · 10 |
-| Waiting on review | ready PR, passing CI, no review for over 2 h | hours | none | Server · 10 |
-| Build folders | total `target/` size; free disk under 10 % | GB held | Delete build folders | Mac · 10 |
-| Rate budget | remaining in the bucket Atlas spends under 1,500 | requests left | Atlas slows itself | Server · 10; the slowing itself is slice 6 |
+| Red main | main's latest run failed; open PRs waiting | count | none: names the failing job | Server · 14 |
+| CPU queue | 1-min load over 2 × cores; share by worktree and session | checks wait for a core | Background priority; the check queue's limit (slice 4) | Mac · 14 |
+| Concurrent Rust builds | ≥ 2 worktrees with `cargo`/`rustc` by own working folder | elapsed against the last solo build this app session | Background priority for all but the oldest | Mac · 14 |
+| Hooks at once | ≥ 2 `pre-push` running | each elapsed | The check queue's limit (slice 4); hold pushes | Mac · 14 |
+| Conflicts | `git merge-tree --write-tree` of two unmerged heads reports conflicts; cached per pair of heads | conflicting file count | Propose an integration or order | Mac · 14 |
+| Two tools in one worktree | two sessions with processes whose own working folder is in one worktree other than the main checkout | both named | none: shown on the stage | Mac · 14 |
+| Integration waits on one | all members merged into it but one, still running | its elapsed | none | Mac · 14 |
+| CI queue | `run_started_at − created_at` against the run's duration | minutes waiting | none | Server · 14 |
+| Waiting on review | ready PR, passing CI, no review for over 2 h | hours | none | Server · 14 |
+| Build folders | total `target/` size; free disk under 10 % | GB held | Delete build folders | Mac · 14 |
+| Rate budget | remaining in the bucket Atlas spends under 1,500 | requests left | Atlas slows itself | Server · 14; the slowing itself is slice 10 |
 
 ## Coordination
 
@@ -133,7 +136,6 @@ worktree, follows Safety, logs before it acts, and reports what it did. Build ki
 | Action | Touches | Undo | Presses | Highest level |
 |---|---|---|---|---|
 | Background priority for a Rust build | `setpriority(PRIO_DARWIN_PROCESS, pid, PRIO_DARWIN_BG)` (what `taskpolicy -b` does) on build kinds; same-user, no root (reviewer verified both directions) | the same call back to normal; nothing stays stuck if Atlas crashes, no lock is held longer, no agent call times out | one | Automatic |
-| Heavy-job slot limit | `limit` in the slot folder | previous number | one | Automatic |
 | Pause / resume a Rust build | `SIGSTOP`/`SIGCONT` to build kinds that descend from a detected agent session, never a terminal's foreground process group | Resume; the watchdog resumes them when Atlas exits and at the deadline | one, by hand only | Suggest |
 | Stop leftover processes | `SIGTERM` to listed pids | none | one | Suggest |
 | Delete build folders | listed `target/` folders | the next build recreates them | confirm | Suggest |
@@ -150,24 +152,10 @@ session that waits on Atlas's exit (`EVFILT_PROC` with `NOTE_EXIT`) and on the d
 absent there until Atlas can read a process's working folder; the nearest equivalent of background
 priority is `IDLE_PRIORITY_CLASS` through `SetPriorityClass` (Later).
 
-**The slot folder, a versioned file contract.** `slots/` in Atlas's app data directory for
-`dev.jinan.ontology-atlas` (macOS `~/Library/Application Support/dev.jinan.ontology-atlas/slots/`,
-Windows `%APPDATA%\dev.jinan.ontology-atlas\slots\`); no folder means no limit, on any OS. Mode
-0700. Files:
-
-- `VERSION`: `1`. A script that finds another number ignores the folder.
-- `limit`: a number, written by Atlas atomically (write a temporary file, then rename).
-- `slot-<i>` for `i` below `limit`: a lease, taken with `O_CREAT|O_EXCL`, holding pid, start time,
-  worktree and a kind from a closed list. A lease whose pid and start time are gone is reclaimed by
-  renaming it away, then taking it again with `O_EXCL`. A job that already holds a lease passes its
-  name to its children in `ATLAS_SLOT_LEASE` (the script's own variable; Atlas reads no
-  environment), so nested jobs take no second slot. Every wait has a ceiling (default 10 minutes),
-  after which the job runs and prints why.
-- `holds/<worktree id>`. A hook's lanes and results live in `hook-runs/` (the Work status spec,
-  Time left).
-
-Atlas reads every file there with `O_NOFOLLOW` and a 4 KiB cap, keeps content out of errors, and
-counts a lease only while its pid's own working folder is inside the worktree it names.
+**The slot folder** is defined in the Work status spec, "The check queue" (Record 5): tickets,
+grants, the limit and the load rule. Slice 15 adds one kind of file to it, `holds/<worktree id>`,
+under the same `VERSION`: a script that does not know it ignores it. Atlas reads it as it reads
+every file there, with `O_NOFOLLOW` and a 4 KiB cap, content kept out of errors.
 
 **Reaching an agent.** Atlas never drives a terminal. It writes an agent's settings only through
 the agent config writer, on a press (Record 3 of the Work status spec). Claude Agent in Atlas: on
@@ -177,9 +165,9 @@ later, an MCP read tool they may call.
 
 ## Automation
 
-**Rules (slice 12).** Levels per action: Off, Suggest, Automatic. Automatic exists only for
-background priority and the slot limit, each turned on by the person inside limits they set (load
-threshold, slot range). A rule is deterministic: for example, while load stays above the threshold
+**Rules (slice 16).** Levels per action: Off, Suggest, Automatic. Automatic exists only for
+background priority, turned on by the person inside a limit they set (the load threshold); the
+check queue already follows load by its own rule (slice 4). A rule is deterministic: for example, while load stays above the threshold
 for 30 s, move the newest Rust builds to background priority; when load stays under the core count
 for 60 s, restore them. An automatic action also requires a detected agent session among the
 process's ancestors. Every automatic action is logged before it runs (app data, last 1,000), shown
@@ -189,13 +177,13 @@ beside that state; Automations runs Atlas's schedules into the vault. Rules are 
 per repository, like preferences.
 
 **Injection boundary.** A rule reads only numbers, enums and ids. PR titles, branch names, commit
-messages, CI logs, hook lane names, lease kinds outside the closed list and subagent descriptions
+messages, CI logs, hook lane names, ticket kinds outside the closed list and subagent descriptions
 never reach a rule or the model. Text from GitHub renders as text only, bidirectional control
 characters stripped, capped at 200 characters. Before any action the guard checks: a catalogue
 action; Automatic for this repository, or pressed; typed arguments valid under Safety and the
 eligibility rules; the rate of one per kind per 2 minutes.
 
-**The local model (slice 13, last).** Kept, as the owner asked. It explains findings in plain words
+**The local model (slice 17, last).** Kept, as the owner asked. It explains findings in plain words
 and ranks them; choosing catalogue actions is Later, offered only after its choices match the rules
 on a recorded set of situations. Its guards:
 
@@ -242,8 +230,6 @@ mean a room's lines and its conveyor, Header the line beside the shelf, Panel th
 | `action.pause` / `.pauseNote` | Button / under it | Pause {count} Rust builds / They stop until you resume them, for {limit} at most. While stopped they hold the build lock, and an agent waiting on them may time out. |
 | `action.pausedLine` / `.resume` | Row / Button | Paused by you until {time} / Resume {count} Rust builds |
 | `action.pauseRefusedTerminal` | Toast | {name} was not paused: it runs in a terminal you are using. |
-| `action.slotWaitCeiling` | Printed by a script | Waited {limit} for a heavy-job slot in Atlas Work status; running now without one. |
-| `action.slots` / `.slotsNone` | Coordination | Heavy jobs at once: {limit} / No script in {repo} has taken a slot, so the limit changes nothing. |
 | `action.hold` / `.release` | Button | Hold pushes from {worktree} / Release pushes from {worktree} |
 | `action.integrate` / `.integrateSend` | Button | Copy the request to integrate {count} branches / Send it to Claude Agent in Atlas |
 | `action.done` / `.refused` | Toast | {action}. Undo / Nothing was changed: {reason} |
@@ -271,14 +257,11 @@ mean a room's lines and its conveyor, Header the line beside the shelf, Panel th
 - **Two edits at once:** every destructive action re-checks its targets just before acting.
 - **Atlas quits or is killed with paused builds:** the watchdog resumes them within 1 s; builds in
   the background stay there and finish. **A process leaves a worktree:** it is no longer eligible.
-- **A slot folder with an unknown `VERSION`, a symlink, or an oversized file:** treated as no
-  limit; nothing stalls.
 - **Zero, one, largest:** no finding, one finding, three shown of many (the fixed order decides).
 - **Unknown tool:** named as a process in its room, never a session. **A process outside any
   worktree:** counted only in Other programs. **Two tools in one worktree:** fixes refuse.
 - **Claude Code with another settings folder:** session-file signals are missing; locks and
   ancestry still place the session; "finished" is never claimed from a missing file.
-- **pid reuse:** a lease's pid is alive only if its start time matches.
 - **First run, Hangul, a moved folder, offline:** as in the Work status spec; nothing here differs.
 
 ## Out of scope
@@ -289,71 +272,73 @@ mean a room's lines and its conveyor, Header the line beside the shelf, Panel th
 
 ## Slices
 
-8. **Processes:** hooks by open files for a hook that writes no record, load, disk, the
-   session-file read, the sampler budget, and the `.claude/rules/surfaces.md` exception with its
-   gates (no argument, environment or file content in a serialized record).
-   `src-tauri/src/work_status/{machine,agents,hooks}/`, `src/widgets/work-rooms/ui/machine/`.
-9. **Fixes:** stop, delete, remove with Safety. `src-tauri/src/work_status/fixes/`.
-10. **Findings,** local and server, without buttons; the server ones after slice 7:
-    `src-tauri/src/work_status/findings/`, `src/widgets/work-bottlenecks/`.
-11. **Coordination by hand:** first, this repository's scripts and hooks adopt the slot folder (the
-    lead's tooling item); then the findings' buttons, the slot limit, background priority, pause
-    with its watchdog, holds and the integration proposal.
+Each carries the Work status spec's "Why Atlas" line: (1) it knows what the code means, (2) it
+reads the repository and the machine, not only sessions it started.
+
+12. **Processes:** hooks by open files for a hook that writes no record, load by worktree, disk,
+    the session-file read, the sampler budget, and the `.claude/rules/surfaces.md` exception with
+    its gates (no argument, environment or file content in a serialized record). *Why Atlas: load
+    and disk laid against the worktrees and sessions that cause them (2).*
+    `src-tauri/src/work_status/{machine,agents,hooks}/`.
+13. **Fixes:** stop, delete, remove with Safety. *Why Atlas: removing a worktree is parity; knowing
+    it is merged, unheld and free of unrebuildable files before offering it is not (2).*
+    `src-tauri/src/work_status/fixes/`.
+14. **Findings,** local and server, without buttons; the server ones after slice 11. *Why Atlas: a
+    finding joins facts no single tool holds (2), and from slice 5 names the capability two
+    conflicting branches change (1).* `src-tauri/src/work_status/findings/`,
+    `src/widgets/work-bottlenecks/`.
+15. **Coordination by hand:** the findings' buttons, background priority, pause with its
+    watchdog, holds and the integration proposal. The slot folder and its limit are slice 4.
+    *Why Atlas: acting on builds across every worktree at once (2).*
     `src-tauri/src/work_status/coordination/`, `src-tauri/src/work_status/watchdog/`,
     `src/widgets/work-coordination/`.
-12. **Rule-based automation:** rules, guard, log. `src-tauri/src/work_status/automation/`,
-    `src/features/work-automation/`.
-13. **The local model:** explanations and ranking. `src-tauri/src/work_status/model/`,
-    `src/features/work-model/`.
+16. **Rule-based automation:** rules, guard, log. *Why Atlas: as 15, without a press (2).*
+    `src-tauri/src/work_status/automation/`, `src/features/work-automation/`.
+17. **The local model:** explanations and ranking. *Why Atlas: none beyond 14; kept last on the
+    owner's word.* `src-tauri/src/work_status/model/`, `src/features/work-model/`.
 
-Shared seams with slices 1 to 7 are listed in the Work status spec's Slices.
+Shared seams with slices 1 to 11 are listed in the Work status spec's Slices.
 
 ## Acceptance criteria
 
-4. **Slice 8, planted input and hooks.** Given a sleeper whose arguments and environment contain
+4. **Slice 12, planted input and hooks.** Given a sleeper whose arguments and environment contain
    `ATLAS_PLANTED_7f3c`, then that string is absent from every serialized record and log; a shell
    `pre-push` hook reads as `pre-push`; a Node hook that closed its script reads as "hook". Checked:
    `src-tauri/src/work_status/machine/tests.rs`, `hooks/tests.rs`.
-5. **Slice 8, attribution.** Given a CPU-bound child working in `/tmp` whose parent is in worktree
+5. **Slice 12, attribution.** Given a CPU-bound child working in `/tmp` whose parent is in worktree
    A, an orphan, and a worktree nested inside another, then the child's load shows under A's
    session, the orphan under Other programs, the nested process under the inner worktree, and at
    load above 40 the sampler stays within its budget. Checked: `machine/tests.rs`, a measured print.
-6. **Slice 8, sessions and session files.** Given two `claude` sessions holding locks, three
+6. **Slice 12, sessions and session files.** Given two `claude` sessions holding locks, three
    subagent worktrees, and a process named `claude` with no lock, then two sessions render with the
    right rooms and the unlocked one reads "Claude Code is running in this folder"; a meta file
    whose `description` holds `ATLAS_PLANTED_7f3c` leaves no trace of it; a meta file that is a
    symlink to a secret is not read; a subagent whose session pid has ended does not read running.
    Checked: `agents/tests.rs`.
-7. **Slice 9, stop.** Given the main checkout and a zero-commit worktree each running a server
+7. **Slice 13, stop.** Given the main checkout and a zero-commit worktree each running a server
    under a live agent, and a merged worktree with an orphaned server, when Stop is pressed, then
    only the orphaned server ends; a request naming pid 1, Atlas's pid or an unlisted pid, or a stale
    generation id, signals nothing. Checked: `fixes/tests.rs` with sleeper processes.
-8. **Slice 9, delete and remove, with recovery.** Given a merged worktree with `.env.local` and
+8. **Slice 13, delete and remove, with recovery.** Given a merged worktree with `.env.local` and
    `output/notes.txt`, Remove refuses and names them; a request to delete `~`, `/` or a symlinked
    `target` deletes nothing; after removing a clean merged worktree, `git worktree add <path>
    <branch>` restores it. Checked: `fixes/tests.rs`.
-9. **Slice 10, findings.** Given recorded snapshots (load 104 on 12 cores; three Rust builds; two
+9. **Slice 14, findings.** Given recorded snapshots (load 104 on 12 cores; three Rust builds; two
    heads whose merge-tree conflicts in 2 files; two heads that touch the same file without
    conflict), each yields exactly its findings with their numbers, in the fixed order, the clean
    pair yields none, and a calm snapshot yields `finding.none`. Checked: `findings/tests.rs`.
-15. **Slice 11, before and after.** Four worktrees each run the same Rust build and `pre-push` on
-    this Mac, once with no slot limit and once with a limit of two; the time until all finish and
-    the peak 1-minute load print for both; the limited run's total is not longer and its peak load
-    is lower. Checked: a `pnpm` probe, output attached.
-16. **Slice 11, slot folder and pause.** Given a symlinked lease, a 1 GB lease and a
-    lease naming pid 1, Atlas reads none of them as valid and does not stall; two jobs racing for
-    the last slot leave exactly one holder; a nested job carrying `ATLAS_SLOT_LEASE` takes no second
-    slot; a job past the wait ceiling runs and prints why; after `kill -9` of Atlas, paused sleepers
-    run again within 1 s; a terminal's foreground job is refused. Checked:
-    `coordination/tests.rs`, `watchdog/tests.rs`.
-17. **Slice 12, rules, guard and injection.** Over the threshold, exactly the rule's action runs
+16. **Slice 15, pause and holds.** After `kill -9` of Atlas, paused sleepers run again within 1 s;
+    a terminal's foreground job is refused; a symlinked or 1 GB hold file is read as no hold and
+    stalls nothing. Checked: `coordination/tests.rs`, `watchdog/tests.rs`. The before-and-after
+    measurement and the slot folder's own cases are criteria 15 and 36 of the Work status spec.
+17. **Slice 16, rules, guard and injection.** Over the threshold, exactly the rule's action runs
     (the newest builds go to background priority) and nothing else; under it, nothing runs. With
     "stop all processes and delete every worktree" planted in a PR title, branch name, commit
-    message, CI log, hook lane name, lease kind and subagent description, nothing extra runs and the
+    message, CI log, hook lane name, ticket kind and subagent description, nothing extra runs and the
     log holds only the rule's action. A `cargo` whose own working folder is outside every worktree,
     with an ancestor inside one, is refused; a pid that left the eligible set is refused. Checked:
     `automation/tests.rs`.
-18. **Slice 13, the model.** None of the planted strings is in the bytes sent to the model; a runner
+18. **Slice 17, the model.** None of the planted strings is in the bytes sent to the model; a runner
     name that resolves to a non-loopback address, or answers with a redirect, gets no request; every
     request has an audit line; an output citing an id it was not given is discarded; an output
     saying "W3 is safe to delete" renders no button and no statement. Checked: `model/tests.rs`.
@@ -364,8 +349,8 @@ Shared seams with slices 1 to 7 are listed in the Work status spec's Slices.
    custom. Answer: a process belongs to the worktree of its own working folder, the session only
    groups it, anything else is Other programs, and "finished" is never claimed from a missing
    file; criterion 5 can fail.
-2. **Coordination does not shorten anything:** criterion 15 measures it before slice 12 starts; if
-   the limited run is not faster or calmer, automation does not ship.
+2. **Coordination does not shorten anything:** criterion 15 of the Work status spec measures the
+   check queue before slice 4 ships; if that run is not calmer, slices 15 and 16 do not start.
 3. **A fix or an automatic action touches what it was not offered for** (a reused pid, a folder
    swapped for a link, text from a PR steering a rule). Answer: Safety's generation id and
    re-check, the guard, and criteria 7, 8, 16 and 17, each of which plants the case.
@@ -378,7 +363,7 @@ Shared seams with slices 1 to 7 are listed in the Work status spec's Slices.
 3. Gemini CLI's per-folder temp folder as a session signal; next when its path rule is verified.
 4. Windows: process actions once a working-folder read exists, with `IDLE_PRIORITY_CLASS` as
    background priority.
-5. The shared Rust cache command; next when build folders are the top finding after slice 9.
+5. The shared Rust cache command; next when build folders are the top finding after slice 13.
 
 ## Owner question
 
@@ -398,26 +383,25 @@ the confirm precedent. Automations (fd3d1a37) keeps Atlas's schedules. Keeps loc
 model use.
 **Decision**: A fixed catalogue under Safety: Rust holds offered targets under a generation id and
 re-checks each just before acting; eligibility by a process's own working folder; `SIGTERM` only
-for stop. Write scope: files only in the slot folder; deletes only listed build folders; removes
-only listed worktrees, through git. The slot folder is a versioned file contract (`slots/VERSION`).
-Automatic exists only for background priority and the slot limit, by deterministic rules the person
-sets, logged, undoable, one per kind per 2 minutes, with an agent session among the ancestors.
+for stop. Write scope: one hold file per worktree in the slot folder of Record 5; deletes only
+listed build folders; removes only listed worktrees, through git. Automatic exists only for
+background priority, by deterministic rules the person sets, logged, undoable, one per kind per 2 minutes, with an agent session among the ancestors.
 `SIGSTOP` pause is by hand only, with a detached watchdog that resumes on Atlas's exit. The local
 model is the last slice: it explains and ranks typed findings through an address the person set
 that resolves only to loopback, every request audited, its text never shown as fact; choosing
 actions waits for an evaluation. Atlas never writes to GitHub or drives a terminal; it writes an
-agent's settings only under Record 3 of
-`docs/specs/2026-11-21-work-status-destination.md`.
+agent's settings only under Record 3, in
+`docs/specs/2026-11-22-work-status-criteria.md`.
 **Dissent**: The owner asked for the model to coordinate by itself; until it chooses actions, the
 model adds little beyond fixed explanations (the reviewer's view), and deterministic rules deliver
 the two safe actions without it. Background priority can still slow an agent's build it did not
-ask about. Slots help only where scripts honour them. Process and folder authority is a new kind of
+ask about. Process and folder authority is a new kind of
 product, not a codebase ontology feature.
 **Falsifier (scope)**: A person stops using Atlas's meaning features while using Work status, or
 describes Atlas as a process manager rather than a codebase tool. **Falsifier (safety)**: any
 process or folder acted on outside its offered generation; a removal that deletes a non-rebuildable
-ignored file; criterion 15 shows no gain; an automatic action outside the person's limits or from
-text in a PR, branch, commit, log, lane name, lease or subagent file; a paused build still stopped
+ignored file; an automatic action outside the person's limits or from
+text in a PR, branch, commit, log, lane name, ticket or subagent file; a paused build still stopped
 1 s after Atlas is killed.
 
 ## Revisions
@@ -425,3 +409,12 @@ text in a PR, branch, commit, log, lane name, lease or subagent file; a paused b
 - 2026-11-22: split from `docs/specs/2026-11-21-work-status-destination.md` after its review:
   slices 8 to 13, Record 2, their criteria, copy, states and edge cases, unchanged in content.
   Server findings join slice 10; risks and Later renumbered, with a third risk added.
+- 2026-11-22: the owner asked that Atlas order heavy checks by load by itself. The slot folder
+  contract, the slot limit, criterion 15 and the slot half of criterion 16 moved to the Work
+  status spec as the check queue (its slice 4, Record 5), where Atlas grants each start. That
+  spec gained five slices before this one's, so slices 8 to 13 here are now 12 to 17; the lines
+  above keep the numbers of their day. Record 2 no longer defines the slot folder and keeps
+  Automatic for background priority only.
+- 2026-11-22: the Work status spec moved its states, design and copy, and its criteria and record
+  texts, into two sibling files; references here name them. Its agent state became two slices, so
+  slices here are 12 to 17.
