@@ -399,7 +399,7 @@ await test('init — vault config resolves the repository through a canonical pa
  * The time limit given to `mcp-verify`. Generous on purpose: a limit is not a wait, and machine speed
  * must not be a test condition; `desktop:performance` owns too slow.
  */
-const MCP_VERIFY_TIMEOUT_MS = '30000';
+const MCP_VERIFY_TIMEOUT_MS = '120000';
 
 // init --quick-start.
 
