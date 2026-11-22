@@ -44,6 +44,7 @@ export function MiniRoom({ room, copy, tint, showOwner }: { room: RoomEntry; cop
           <span className={cn(styles.ownerText, 'text-label leading-label')}>{copy.owner(room)}</span>
         ) : null}
       </div>
+      {room.stage !== 'main' ? <i aria-hidden className={styles.miniBar} /> : null}
       {room.stage === 'main' ? (
         <div className={styles.miniFloor} data-arrived>
           <i className={styles.miniRail}><i style={{ transform: 'scaleX(1)' }} /></i>

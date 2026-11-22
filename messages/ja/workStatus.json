@@ -20,9 +20,9 @@
     "ended": "セッション終了",
     "started": "{time}開始",
     "worktrees": "ワークツリー{count}個",
-    "working": "作業中{count}",
     "cleanup": "要整理{count}",
-    "quiet": "すべて休止中"
+    "onStage": "ステージ{count}",
+    "below": "下に{count}"
   },
   "stage": {
     "label": "作業中のワークツリー",

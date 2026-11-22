@@ -20,9 +20,9 @@
     "ended": "会话已结束",
     "started": "{time} 开始",
     "worktrees": "{count} 个工作树",
-    "working": "{count} 个工作中",
     "cleanup": "{count} 个待清理",
-    "quiet": "全部空闲"
+    "onStage": "台上 {count}",
+    "below": "下方 {count}"
   },
   "stage": {
     "label": "工作中的工作树",

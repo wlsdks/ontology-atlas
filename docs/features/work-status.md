@@ -90,7 +90,8 @@ folder shows a dashed crate and the `git worktree prune` command as text.
 
 Rooms that do not fit the stage go to the **session floors** under it, one band
 per session in the order the sessions started, plus **No session**, each with
-its start time, worktree count and how many are working or need clean-up. Every
+its start time and worktree count, how many need clean-up, and how many of
+its rooms stand on the stage and on the floor (**2 on stage · 3 below**). Every
 mini room is the same size: half-size Moru, the branch and one status line;
 only a merged one shows its crate in `main`.
 With six mini rooms or fewer they sit in one row without bands. When working
@@ -100,8 +101,8 @@ The **shelf** at the bottom counts worktrees merged into the base branch and
 worktrees no one has touched for seven days or more. A count opens a centred
 list of those branches with the time of their last commit.
 
-Each session takes one ink for its floor marker, its name tag and the accents
-of its Moru. Until a host is connected nothing comes from GitHub and no request
+Each session takes one ink for the top edge of its stage rooms and floor, the
+bar under its mini rooms, its name tag and the accents of its Moru. Until a host is connected nothing comes from GitHub and no request
 leaves the machine.
 
 ## Live updates

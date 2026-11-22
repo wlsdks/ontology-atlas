@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { planRooms, type RoomEntry, type RoomPlan, type TrackSession, type WorkTracks } from '@/shared/lib/work-status/work-tracks';
+import { NO_SESSION_FLOOR, planRooms, type RoomEntry, type RoomPlan, type TrackSession, type WorkTracks } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION } from '@/shared/motion';
@@ -150,11 +150,13 @@ function Placed({ box, children, className, testId }: { box: Box; children: Reac
   );
 }
 
-function FloorPlate({ session, total, working, attention, copy, nowMs }: {
+function FloorPlate({ session, total, attention, onStage, below, copy, nowMs }: {
   session: TrackSession | null;
   total: number;
-  working: number;
   attention: number;
+  /** This session's rooms on the front stage, and on this floor. */
+  onStage: number;
+  below: number;
   copy: RoomCopy;
   nowMs: number;
 }) {
@@ -166,7 +168,8 @@ function FloorPlate({ session, total, working, attention, copy, nowMs }: {
   ].filter(Boolean).join(' · ');
   const summary = [
     attention > 0 ? <span key="a" className="text-[color:var(--color-status-warning)]">{t('session.cleanup', { count: attention })}</span> : null,
-    working > 0 ? <span key="w" className="text-[color:var(--color-text-primary)]">{t('session.working', { count: working })}</span> : null,
+    onStage > 0 ? <span key="s" className="text-[color:var(--color-text-primary)]">{t('session.onStage', { count: onStage })}</span> : null,
+    below > 0 ? <span key="b">{t('session.below', { count: below })}</span> : null,
   ].filter(Boolean);
   return (
     <div className={cn(styles.floorPlate, 'h-full w-full')} style={{ ['--ink' as string]: inkOf(session) }}>
@@ -176,7 +179,7 @@ function FloorPlate({ session, total, working, attention, copy, nowMs }: {
       </div>
       <div className="truncate text-label leading-label text-[color:var(--color-text-quaternary)]">{facts}</div>
       <div className="mt-0.5 truncate text-label leading-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]">
-        {summary.length > 0 ? summary.flatMap((part, index) => (index === 0 ? [part] : [' · ', part])) : t('session.quiet')}
+        {summary.flatMap((part, index) => (index === 0 ? [part] : [' · ', part]))}
       </div>
     </div>
   );
@@ -346,7 +349,15 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
               const plate = layout.floors.get(floor.key);
               return plate ? (
                 <Placed key={`floor:${floor.key}`} box={plate} testId="work-floor">
-                  <FloorPlate session={floor.session} total={floor.total} working={floor.working} attention={floor.attention} copy={copy} nowMs={nowMs} />
+                  <FloorPlate
+                    session={floor.session}
+                    total={floor.total}
+                    attention={floor.attention}
+                    onStage={shown.stage.filter(room => (room.session?.key ?? NO_SESSION_FLOOR) === floor.key).length}
+                    below={floor.rooms.length}
+                    copy={copy}
+                    nowMs={nowMs}
+                  />
                 </Placed>
               ) : null;
             })}

@@ -50,8 +50,20 @@
 /* ---------- large room: the scene, then the belt to main */
 
 .large {
+  position: relative;
   display: flex;
   flex-direction: column;
+}
+
+/* A stage room's top edge in its session's hue, the same bar its floor and mini rooms stand on. */
+.large::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 4;
+  height: 3px;
+  background: var(--ink);
 }
 
 .scene {
@@ -943,6 +955,15 @@
   left: 0;
   top: 0;
   padding: 11px 0 0 16px;
+  border-top: 3px solid var(--ink);
+}
+
+.miniBar {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--ink);
 }
 
 .floorMark {

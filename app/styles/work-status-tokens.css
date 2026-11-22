@@ -8,10 +8,11 @@
     --work-ground-server: #0f1420;
     --work-seam: rgba(143, 176, 234, 0.34);
 
+    /* In start order, so the first sessions are the furthest apart: blue, pink, teal, lavender, sand. */
     --work-session-1: #79b6ff;
-    --work-session-2: #b9a4ff;
-    --work-session-3: #f095c9;
-    --work-session-4: #62d2da;
+    --work-session-2: #f095c9;
+    --work-session-3: #62d2da;
+    --work-session-4: #b9a4ff;
     --work-session-5: #d9c69c;
     --work-unheld: #8d8b84;
 

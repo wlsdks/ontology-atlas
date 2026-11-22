@@ -20,9 +20,9 @@
     "ended": "Session ended",
     "started": "started {time}",
     "worktrees": "{count, plural, one {# worktree} other {# worktrees}}",
-    "working": "{count} working",
     "cleanup": "{count} to clean up",
-    "quiet": "All quiet"
+    "onStage": "{count} on stage",
+    "below": "{count} below"
   },
   "stage": {
     "label": "Worktrees at work",
