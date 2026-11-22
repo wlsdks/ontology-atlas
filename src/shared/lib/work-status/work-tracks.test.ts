@@ -174,6 +174,14 @@ describe('planRooms', () => {
     expect(rooms.workingBelow).toBe(3);
   });
 
+  it('counts a two-tool room as its session turn, so another session comes next', () => {
+    const pair = row('pair', { lock: live(100, 1_000, 1), agentProcesses: [{ pid: 100, tool: 'claudeCode', startedAt: 1_000 }, { pid: 300, tool: 'codex', startedAt: 3_000 }] });
+    const same = row('same', { lock: live(100, 1_000, 2), ...working(100) });
+    const other = row('other', { lock: live(200, 2_000, 1), ...working(200) });
+    const rooms = planRooms(buildWorkTracks(snapshot([pair, same, other])), NOW_MS, new Map(), 2);
+    expect(keys(rooms.stage)).toEqual(['pair', 'other']);
+  });
+
   it('keeps at most six rooms on the stage and counts the working rooms left on the floors', () => {
     const rows = Array.from({ length: 9 }, (_, index) => row(`w${index}`, { lock: live(100, 1_000, index + 1), ...working(100) }));
     const rooms = plan([...rows, row('idle', { lock: live(100, 1_000, 99) })]);

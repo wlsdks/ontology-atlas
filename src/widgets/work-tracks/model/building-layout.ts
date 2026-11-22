@@ -71,12 +71,12 @@ const TWO_ROW_MIN_H = 300;
 export const BELT_H = 68;
 
 /**
- * A wide room hangs its monitor beside Moru; a narrow one hangs it above him, so Moru takes twice
- * his size there only when the scene is tall enough to keep his head and name tag under it.
+ * A wide room hangs its monitor beside Moru; a narrow one hangs it above him and shortens it to stay
+ * clear of his name tag, so Moru takes twice his size there once the scene is 300px tall.
  */
 function unitOf(width: number, sceneHeight: number): RoomUnit {
   if (width >= WIDE_ROOM_W) return width >= 760 && sceneHeight >= 300 ? 3 : 2;
-  return width >= 270 && sceneHeight >= 390 ? 2 : 1;
+  return width >= 270 && sceneHeight >= 300 ? 2 : 1;
 }
 
 /** What a board keeps under two rows of rooms: the edges, one row of mini rooms and the shelf. */

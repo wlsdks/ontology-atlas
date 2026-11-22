@@ -485,17 +485,18 @@
   color: var(--color-text-tertiary);
 }
 
+/* Three lines of a terminal under the commit count: enough to say something runs. */
 .terminal {
   position: relative;
-  flex: 1;
-  min-height: 0;
+  flex: none;
+  height: calc(5 * var(--p));
   overflow: hidden;
   margin-top: var(--p);
 }
 
 @keyframes roomScreenScroll {
   to {
-    transform: translateY(calc(-16 * var(--p)));
+    transform: translateY(calc(-12 * var(--p)));
   }
 }
 

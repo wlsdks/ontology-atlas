@@ -367,6 +367,11 @@ function admitToStage(candidates: RoomEntry[], limit: number, sourceOrder: (room
   const bySource = (a: RoomEntry, b: RoomEntry) => sourceOrder(a) - sourceOrder(b);
   const running = candidates.filter(room => room.tier === 'working').sort(bySource);
   const turn = new Map<string, number>();
+  // A folder two tools share already gives its session a room on the stage.
+  for (const room of running.filter(twoTools)) {
+    const session = room.session?.key ?? NO_SESSION_FLOOR;
+    turn.set(session, (turn.get(session) ?? 0) + 1);
+  }
   const ranked = running.filter(room => !twoTools(room)).map(room => {
     const session = room.session?.key ?? NO_SESSION_FLOOR;
     const nth = turn.get(session) ?? 0;
