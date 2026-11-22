@@ -21,7 +21,6 @@ use picked::{held_files, hold_picked, picked_id, PickOutcome, PickedFile};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum FileStatus {
