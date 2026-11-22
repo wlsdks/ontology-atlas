@@ -1,7 +1,4 @@
-import {
-  NON_BLANK_STRING_SCHEMA,
-  nonBlankStringSchema,
-} from '../tool-schemas/field-primitives.mjs';
+import { NON_BLANK_STRING_SCHEMA } from '../tool-schemas/field-primitives.mjs';
 import {
   DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
   DESTRUCTIVE_PREVIEW_REQUIRED,
@@ -25,12 +22,9 @@ export const ADD_RELATION_TOOL = {
   inputSchema: {
     type: 'object',
     properties: {
-      from: nonBlankStringSchema('Source slug.'),
-      to: nonBlankStringSchema('Target slug.'),
-      type: {
-        ...ADD_RELATION_TYPE_SCHEMA,
-        description: 'Relation type.',
-      },
+      from: NON_BLANK_STRING_SCHEMA,
+      to: NON_BLANK_STRING_SCHEMA,
+      type: ADD_RELATION_TYPE_SCHEMA,
       // strict-args allowlists arguments from this schema; without it `why` is unknown_argument.
       why: {
         type: 'string',
@@ -166,8 +160,8 @@ export const REMOVE_RELATION_TOOL = {
   inputSchema: {
     type: 'object',
     properties: {
-      from: nonBlankStringSchema('Source slug.'),
-      to: nonBlankStringSchema('Target slug.'),
+      from: NON_BLANK_STRING_SCHEMA,
+      to: NON_BLANK_STRING_SCHEMA,
       type: ADD_RELATION_TYPE_SCHEMA,
       confirm: { type: 'boolean', description: 'Actually remove when true; default is dry-run.' },
       expected_mtime: { type: 'number', minimum: 0 },
@@ -195,8 +189,8 @@ export const REPLACE_RELATION_TOOL = {
   inputSchema: {
     type: 'object',
     properties: {
-      from: nonBlankStringSchema('Source slug.'), oldTo: nonBlankStringSchema('Current target slug.'),
-      oldType: ADD_RELATION_TYPE_SCHEMA, newTo: nonBlankStringSchema('Replacement target slug.'),
+      from: NON_BLANK_STRING_SCHEMA, oldTo: NON_BLANK_STRING_SCHEMA,
+      oldType: ADD_RELATION_TYPE_SCHEMA, newTo: NON_BLANK_STRING_SCHEMA,
       newType: ADD_RELATION_TYPE_SCHEMA, why: { type: 'string', maxLength: 300 },
       confirm: { type: 'boolean' }, expected_mtime: { type: 'number', minimum: 0 },
     },
