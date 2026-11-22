@@ -36,7 +36,7 @@ test('selects the newest published plain release, skipping drafts and pre-releas
 test('refuses a requested tag that GitHub marks as a pre-release', () => {
   assert.throws(
     () => pickPublishedRelease([{ tag_name: 'v1.4.0', draft: false, prerelease: true }], 'v1.4.0'),
-    /no published plain release matches v1\.4\.0/,
+    /no published stable release matches v1\.4\.0/,
   );
 });
 
@@ -175,4 +175,80 @@ test('fails closed when the selected release has no updater manifest', async () 
     }),
     /has no latest\.json asset/,
   );
+});
+
+const betaTag = 'v1.4.0-beta.1';
+const betaManifest = {
+  ...manifest,
+  version: '1.4.0',
+  platforms: {
+    'darwin-aarch64': {
+      signature: 'signed',
+      url: `https://github.com/wlsdks/ontology-atlas/releases/download/${betaTag}/ontology-atlas_1.4.0_aarch64.app.tar.gz`,
+    },
+  },
+};
+
+function feedWith(releases) {
+  const manifests = {
+    'https://assets.test/beta/latest.json': betaManifest,
+    'https://assets.test/stable/latest.json': manifest,
+  };
+  return async (url) => {
+    if (String(url).includes('/releases?')) return new Response(JSON.stringify(releases), { status: 200 });
+    const body = manifests[String(url)];
+    return body ? new Response(JSON.stringify(body), { status: 200 }) : new Response('missing', { status: 404 });
+  };
+}
+
+const newestBeta = (overrides = {}) => ({
+  tag_name: betaTag,
+  draft: false,
+  prerelease: true,
+  published_at: '2026-08-23T00:00:00Z',
+  assets: [{ name: 'latest.json', browser_download_url: 'https://assets.test/beta/latest.json' }],
+  ...overrides,
+});
+const olderStable = {
+  tag_name: tag,
+  draft: false,
+  prerelease: false,
+  published_at: '2026-08-22T00:00:00Z',
+  assets: [{ name: 'latest.json', browser_download_url: 'https://assets.test/stable/latest.json' }],
+};
+
+async function stageInScratch(releases) {
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'atlas-hosted-updater-beta-'));
+  const out = path.join(scratch, 'update', 'latest.json');
+  try {
+    const report = await stageHostedUpdaterManifest({ out, apiBase: 'https://api.test', fetchImpl: feedWith(releases) });
+    return { report, staged: JSON.parse(fs.readFileSync(out, 'utf8')) };
+  } finally {
+    fs.rmSync(scratch, { recursive: true, force: true });
+  }
+}
+
+test('never stages a beta that is the newest release and carries latest.json', async () => {
+  const { report, staged } = await stageInScratch([newestBeta(), olderStable]);
+  assert.equal(report.tag, tag);
+  assert.equal(staged.version, '1.3.0');
+});
+
+test('never stages a beta tag whose pre-release flag was cleared by hand', async () => {
+  const { report } = await stageInScratch([newestBeta({ prerelease: false }), olderStable]);
+  assert.equal(report.tag, tag);
+});
+
+test('stages nothing when the only release with a manifest is a beta', async () => {
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'atlas-hosted-updater-beta-only-'));
+  const out = path.join(scratch, 'update', 'latest.json');
+  try {
+    await assert.rejects(
+      stageHostedUpdaterManifest({ out, apiBase: 'https://api.test', fetchImpl: feedWith([newestBeta()]) }),
+      /no published stable release is available/,
+    );
+    assert.equal(fs.existsSync(out), false);
+  } finally {
+    fs.rmSync(scratch, { recursive: true, force: true });
+  }
 });

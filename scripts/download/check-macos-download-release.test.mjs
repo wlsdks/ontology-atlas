@@ -871,3 +871,84 @@ test("the DMG-only path still passes without the updater flag", async () => {
     assert.doesNotMatch(stdout, /Updater:/);
   });
 });
+
+/**
+ * A beta release is a GitHub pre-release whose assets carry the plain version and no `latest.json`.
+ * `--beta` is the one way to accept it, and it refuses the two states that would let an installed
+ * app or `/download` reach it.
+ */
+const betaTag = "v0.1.0-beta.1";
+
+function betaHandler({ prerelease = true, extraAssets = [] } = {}) {
+  const options = {
+    tagName: betaTag,
+    includeWindows: false,
+    extraAssets: [...defaultWindowsAssets("v0.1.0"), ...extraAssets],
+  };
+  const inner = makeHandler(options);
+  return (request, response) => {
+    if (request.url === `/repos/wlsdks/ontology-atlas/releases/tags/${betaTag}`) {
+      const [release] = releasePayload(
+        `http://${request.headers.host}`,
+        validChecksum,
+        dmgNames,
+        betaTag,
+        options.extraAssets,
+        false,
+      );
+      response.writeHead(200, { "Content-Type": "application/json" });
+      response.end(JSON.stringify({ ...release, prerelease }));
+      return;
+    }
+    inner(request, response);
+  };
+}
+
+test("beta gate accepts a pre-release whose assets carry the plain version and no manifest", async () => {
+  await withServer(betaHandler(), async (baseUrl) => {
+    const { stdout } = await runVerifierWithArgs(baseUrl, [`--tag=${betaTag}`, "--beta"]);
+    assert.match(stdout, /v0\.1\.0-beta\.1 exposes reachable public beta macOS download assets/);
+    assert.match(stdout, /Beta: GitHub pre-release with no latest\.json/);
+  });
+});
+
+test("beta gate refuses a beta release that carries latest.json", async () => {
+  const manifest = { name: "latest.json", body: JSON.stringify(updaterManifest()) };
+  await withServer(betaHandler({ extraAssets: [manifest] }), async (baseUrl) => {
+    await assert.rejects(runVerifierWithArgs(baseUrl, [`--tag=${betaTag}`, "--beta"]), (error) => {
+      assert.match(error.stderr, /carries latest\.json\. A beta release never carries the updater manifest/);
+      return true;
+    });
+  });
+});
+
+test("beta gate refuses a beta release that is not marked as a pre-release", async () => {
+  await withServer(betaHandler({ prerelease: false }), async (baseUrl) => {
+    await assert.rejects(runVerifierWithArgs(baseUrl, [`--tag=${betaTag}`, "--beta"]), (error) => {
+      assert.match(error.stderr, /is not marked as a pre-release on GitHub\. A beta release must be one/);
+      return true;
+    });
+  });
+});
+
+test("beta gate cannot be asked for an updater manifest or a stable tag", async () => {
+  await withServer(betaHandler(), async (baseUrl) => {
+    await assert.rejects(
+      runVerifierWithArgs(baseUrl, [`--tag=${betaTag}`, "--beta", "--require-updater"]),
+      (error) => /--beta and --require-updater ask for opposite things/.test(error.stderr),
+    );
+    await assert.rejects(
+      runVerifierWithArgs(baseUrl, ["--tag=v0.1.0", "--beta"]),
+      (error) => /--beta needs --tag=vX\.Y\.Z-beta\.N, got v0\.1\.0/.test(error.stderr),
+    );
+  });
+});
+
+test("the stable path refuses a beta tag even when its pre-release flag was cleared", async () => {
+  await withServer(betaHandler({ prerelease: false }), async (baseUrl) => {
+    await assert.rejects(runVerifierWithArgs(baseUrl, [`--tag=${betaTag}`]), (error) => {
+      assert.match(error.stderr, /is a beta release; verify it with --beta/);
+      return true;
+    });
+  });
+});
