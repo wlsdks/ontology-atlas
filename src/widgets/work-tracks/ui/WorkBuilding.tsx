@@ -61,6 +61,8 @@ interface FaceSize {
   unit: RoomUnit;
   w: number;
   h: number;
+  /** Which drawn face this is: a face keeps its element, and what it is playing, while it changes role. */
+  id: number;
 }
 
 function RoomFace({ room, face, copy, retiring, showOwner }: { room: RoomEntry; face: FaceSize; copy: RoomCopy; retiring: boolean; showOwner: boolean }) {
@@ -92,16 +94,26 @@ function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost 
 }) {
   const ghostFrom = ghost?.from;
   const onGhostDone = ghost?.onDone;
-  const [faces, setFaces] = useState<{ current: FaceSize; leaving: FaceSize | null; windowKey: string }>({
-    current: { size: box.size, unit: box.unit, w: box.w, h: box.h },
+  const [faces, setFaces] = useState<{ current: FaceSize; leaving: FaceSize | null; windowKey: string; next: number }>({
+    current: { size: box.size, unit: box.unit, w: box.w, h: box.h, id: 0 },
     leaving: null,
     windowKey,
+    next: 1,
   });
   const { current } = faces;
   if (current.size !== box.size || current.unit !== box.unit || Math.abs(current.w - box.w) > 1 || Math.abs(current.h - box.h) > 1) {
     const moved = faces.windowKey === windowKey;
-    // The face showing now is what fades out; one already leaving faded during the last sequence's fade step.
-    setFaces({ current: { size: box.size, unit: box.unit, w: box.w, h: box.h }, leaving: moved ? current : null, windowKey });
+    const sized = { size: box.size, unit: box.unit, w: box.w, h: box.h };
+    // The face showing now is what fades out, keeping its element and how far it has faded; one already
+    // leaving faded during the last sequence's fade step. A room that stays the same kind keeps drawing
+    // its face, so Moru plays on, and leaves a copy of it to fade.
+    const same = current.size === box.size;
+    setFaces({
+      current: { ...sized, id: same ? current.id : faces.next },
+      leaving: moved ? { ...current, id: same ? faces.next : current.id } : null,
+      windowKey,
+      next: faces.next + 1,
+    });
   } else if (faces.windowKey !== windowKey) {
     setFaces({ ...faces, leaving: null, windowKey });
   }
@@ -156,7 +168,7 @@ function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost 
       </div>
       {faces.leaving ? (
         <div
-          key="leaving"
+          key={`face-${faces.leaving.id}`}
           ref={oldFace}
           data-room-face
           data-face-leaving="true"
@@ -168,7 +180,7 @@ function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost 
           <RoomFace room={room} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} />
         </div>
       ) : null}
-      <div key={current.size} data-room-face className={cn(styles.face, styles.notched, 'h-full w-full')}>
+      <div key={`face-${current.id}`} data-room-face className={cn(styles.face, styles.notched, 'h-full w-full')}>
         <RoomFace room={room} face={current} copy={copy} retiring={retiring} showOwner={showOwner} />
       </div>
     </div>

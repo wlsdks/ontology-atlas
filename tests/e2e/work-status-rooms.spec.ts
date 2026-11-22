@@ -336,8 +336,8 @@ test.describe("work status rooms", () => {
     await expectCleanPaint(page, { slots: 1 });
   });
 
-  // Known failing at commit time: retargeting during a face swap cuts a room's half-shown content to 0 in
-  // one frame and jumps a room 48 px. The guard stays so the fix is measured, not assumed.
+  // Known failing: an update landing mid-sequence cuts half-shown faces (about 0.4 to 0 in one frame)
+  // and jumps rooms 70 to 140 px. The guard stays so the fix is measured, not assumed.
   test.fixme("retargets mid-sequence when the next update lands before the last one finished", async ({ page }) => {
     await openWorkStatus(page, SWAP);
     await expect(room(page, "feat/library-stage")).toHaveAttribute("data-room-size", "large");
