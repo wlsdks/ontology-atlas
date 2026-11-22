@@ -129,6 +129,16 @@ command = "sk-planted-7f3a"
 trusted_hash = "sk-planted-7f3a"
 [hooks."sk-planted-7f3a"]
 [ hooks . 'SessionStart' ] # sk-planted-7f3a
+notes = """
+[hooks.Notification]
+[hooks.AKIAskplanted7f3aZ9]
+\"""
+[hooks.UserPromptSubmit]
+"""
+literal = '''
+[hooks.SubagentStop]
+'''
+quoted = "[hooks.PostToolUse]" # [hooks.PreCompact]
 "#;
 
 fn plant_every_scope(scratch: &Scratch) -> (Host, PathBuf, Vec<PickedFile>) {
@@ -629,6 +639,39 @@ fn the_parser_keeps_positions_and_skips_values_of_the_wrong_type() {
     assert!(parse::parse_claude_settings(b"\xEF\xBB\xBF{}").is_some());
     assert!(parse::parse_claude_settings(b"[]").is_none());
     assert!(parse::parse_codex_hooks(b"{\"hooks\":{}} trailing").is_none());
+}
+
+/// CPU time, so a loaded machine running other suites does not fail a timing bound.
+#[cfg(unix)]
+fn thread_cpu_seconds() -> f64 {
+    let mut now = libc::timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
+    unsafe { libc::clock_gettime(libc::CLOCK_THREAD_CPUTIME_ID, &mut now) };
+    now.tv_sec as f64 + now.tv_nsec as f64 / 1e9
+}
+
+#[cfg(not(unix))]
+fn thread_cpu_seconds() -> f64 {
+    0.0
+}
+
+#[test]
+fn a_flood_of_inline_headers_is_read_in_one_capped_pass() {
+    let mut text = String::new();
+    let mut count = 0;
+    while text.len() < open::SETTINGS_MAX_BYTES as usize - 32 {
+        text.push_str(&format!("[hooks.A{count:x}]\n"));
+        count += 1;
+    }
+    let started = thread_cpu_seconds();
+    let events = parse::inline_hook_events(&text);
+    // One pass takes milliseconds; the earlier scan, quadratic in names, took seconds.
+    assert!(thread_cpu_seconds() - started < 1.0);
+    assert_eq!(events.len(), 64);
+    assert_eq!(events[0], "A0");
+    assert!(count > 70_000);
 }
 
 #[test]

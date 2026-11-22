@@ -256,19 +256,90 @@ fn flatten_hooks(events: Option<HookEvents>) -> (Vec<ScopeHook>, usize) {
 
 const EVENT_NAME_MAX_CHARS: usize = 64;
 
-/// Event names from `[hooks.<Event>]` and `[[hooks.<Event>...]]` headers. Only a plain
-/// identifier is kept, so a quoted `[hooks.state."<path>:..."]` key never is.
+/// Distinct event names one `config.toml` can return.
+const INLINE_EVENTS_MAX: usize = 64;
+
+/// Event names from `[hooks.<Event>]` and `[[hooks.<Event>...]]` headers, in one pass over the
+/// text. Only a plain identifier is kept, so a quoted `[hooks.state."<path>:..."]` key never is,
+/// and a header written inside a multi-line string is not a header.
 pub(super) fn inline_hook_events(text: &str) -> Vec<String> {
     let mut events: Vec<String> = Vec::new();
-    for line in text.lines() {
+    for line in lines_outside_strings(text) {
         let Some(event) = inline_hook_event(line) else {
             continue;
         };
+        if events.len() == INLINE_EVENTS_MAX {
+            break;
+        }
         if !events.contains(&event) {
             events.push(event);
         }
     }
     events
+}
+
+#[derive(Clone, Copy)]
+enum MultiLine {
+    Basic,
+    Literal,
+}
+
+/// Lines that begin outside a `"""` or `'''` string. Each byte is looked at once.
+fn lines_outside_strings(text: &str) -> impl Iterator<Item = &str> {
+    let mut open: Option<MultiLine> = None;
+    text.lines().filter(move |line| {
+        let outside = open.is_none();
+        open = string_open_after(line.as_bytes(), open);
+        outside
+    })
+}
+
+/// The multi-line string still open at the end of `line`, given the one open at its start.
+fn string_open_after(line: &[u8], mut open: Option<MultiLine>) -> Option<MultiLine> {
+    let mut at = 0;
+    while at < line.len() {
+        let rest = &line[at..];
+        match open {
+            Some(MultiLine::Basic) if rest[0] == b'\\' => at += 2,
+            Some(MultiLine::Basic) if rest.starts_with(b"\"\"\"") => {
+                open = None;
+                at += 3;
+            }
+            Some(MultiLine::Literal) if rest.starts_with(b"'''") => {
+                open = None;
+                at += 3;
+            }
+            Some(_) => at += 1,
+            None if rest[0] == b'#' => return None,
+            None if rest.starts_with(b"\"\"\"") => {
+                open = Some(MultiLine::Basic);
+                at += 3;
+            }
+            None if rest.starts_with(b"'''") => {
+                open = Some(MultiLine::Literal);
+                at += 3;
+            }
+            None if rest[0] == b'"' => at += 1 + string_end(&rest[1..], b'"', true),
+            None if rest[0] == b'\'' => at += 1 + string_end(&rest[1..], b'\'', false),
+            None => at += 1,
+        }
+    }
+    open
+}
+
+/// Bytes up to and including the quote that closes a one-line string.
+fn string_end(rest: &[u8], quote: u8, escapes: bool) -> usize {
+    let mut at = 0;
+    while at < rest.len() {
+        if escapes && rest[at] == b'\\' {
+            at += 2;
+        } else if rest[at] == quote {
+            return at + 1;
+        } else {
+            at += 1;
+        }
+    }
+    rest.len()
 }
 
 fn inline_hook_event(line: &str) -> Option<String> {
