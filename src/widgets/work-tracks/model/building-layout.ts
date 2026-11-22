@@ -61,30 +61,51 @@ const MINI_ROW_LIMIT = 6;
 const MINI_COLUMNS = 5;
 const FLOOR_LABEL_W = 196;
 const LARGE_MIN_W = 260;
-/** From this width a room hangs its monitor beside Moru. */
-/** From this width a stage room hangs its monitor at the right; narrower, above Moru. */
-export const WIDE_ROOM_W = 520;
 const LARGE_MIN_H = 300;
-/**
- * One row of stage rooms grows with the room's width up to this height and no taller than this share
- * of its width: a room is one scene on one floor line, so a taller one is only empty wall.
- */
-const ONE_ROW_CAP_H = 640;
-const ONE_ROW_MAX_ASPECT = 0.72;
-/** A narrow room hangs its screen above Moru, so it stands taller: room for a head piece under the screen. */
-const NARROW_MAX_ASPECT = 0.95;
-const TWO_ROW_CAP_H = 416;
 const TWO_ROW_MIN_H = 300;
+/**
+ * A stage room's screen, in pixels whatever Moru's scale: the branch, three commit rows, the foot
+ * and the bezel (`--screen-h` in `rooms.module.css`). Its text never shrinks; the scenery does.
+ */
+export const SCREEN_H = 160;
+/** The least width a screen on a console keeps: a 55-character subject and its age on one line. */
+const SCREEN_MIN_W = 400;
+/** Where Moru's cell starts from a wide room's left edge. */
+const MORU_LEFT = 20;
+/** What a console room spends beside its screen per unit: Moru's cell to the screen, 134, and the side wall, 18. */
+const CONSOLE_PER_UNIT = 152;
+/** From this width a stage room stands its screen on a console beside Moru; narrower, it hangs it above him. */
+export const WIDE_ROOM_W = MORU_LEFT + CONSOLE_PER_UNIT + SCREEN_MIN_W;
 /** A large room's belt is a track in its floor: the scene is the whole room. */
 export const BELT_H = 0;
 
+/** Moru as large as the screen beside him leaves room for: the screen keeps its width, Moru gives way. */
+function unitOf(width: number): RoomUnit {
+  if (width < WIDE_ROOM_W) return width >= 400 ? 2 : 1;
+  return Math.min(3, Math.max(1, Math.floor((width - MORU_LEFT - SCREEN_MIN_W) / CONSOLE_PER_UNIT))) as RoomUnit;
+}
+
+/** What a pair of Moru spends beside a console screen per unit: two cells side by side, 254, and the side wall, 18. */
+const PAIR_PER_UNIT = 272;
+
 /**
- * A wide room stands its screen on a console beside Moru; a narrow one mounts it above him, so Moru
- * takes twice his size there once the room is 300px tall.
+ * The scale two Moru share in one room, in half steps so each drawn pixel stays whole: beside a
+ * console as large as leaves the screen its width, at least 1; under a hanging screen half the
+ * room's unit, so both stand apart.
  */
-function unitOf(width: number, sceneHeight: number): RoomUnit {
-  if (width >= WIDE_ROOM_W) return width >= 760 && sceneHeight >= 300 ? 3 : 2;
-  return width >= 270 && sceneHeight >= 300 ? 2 : 1;
+export function pairUnit(width: number, unit: RoomUnit): number {
+  if (width < WIDE_ROOM_W) return unit / 2;
+  return Math.max(1, Math.min(unit, Math.floor((2 * (width - MORU_LEFT - SCREEN_MIN_W)) / PAIR_PER_UNIT) / 2));
+}
+
+/**
+ * A stage room as tall as what it holds. Beside a console: the screen over the console and the floor,
+ * or Moru with a head piece, whichever is taller. Narrow: the screen and its shelf on the wall, then
+ * Moru under them with room for a head piece.
+ */
+function roomHeight(width: number, unit: RoomUnit): number {
+  if (width >= WIDE_ROOM_W) return Math.max(24 + SCREEN_H + 45 * unit, 110 * unit + 16);
+  return 12 + SCREEN_H + 8 + 116 * unit;
 }
 
 /** What a board keeps under two rows of rooms: the edges, one row of mini rooms and the shelf. */
@@ -151,15 +172,13 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
     while (Math.ceil(count / rows) > maxCols) rows += 1;
     const cols = rows === 1 ? Math.max(count, Math.min(2, maxCols)) : Math.ceil(count / rows);
     const roomW = Math.floor((width - (cols - 1) * STAGE_GAP) / cols / 2) * 2;
-    const oneRowCap = Math.min(ONE_ROW_CAP_H, Math.max(LARGE_MIN_H, Math.floor(roomW * (roomW < WIDE_ROOM_W ? NARROW_MAX_ASPECT : ONE_ROW_MAX_ASPECT))));
-    const fitted = rows === 1 ? Math.min(available, oneRowCap) : Math.min((available - (rows - 1) * STAGE_GAP) / rows, TWO_ROW_CAP_H);
-    const roomH = Math.max(Math.floor(fitted), LARGE_MIN_H);
+    const unit = unitOf(roomW);
+    const roomH = roomHeight(roomW, unit);
     const stageH = rows * roomH + (rows - 1) * STAGE_GAP;
     // The floors follow right under the stage; what the window has left stays under the shelf.
     overflow = stageH - available;
     const top = EDGE_TOP;
     const left = count < cols ? Math.round((width - roomW) / 2) : 0;
-    const unit = unitOf(roomW, roomH - BELT_H);
     stage.forEach((key, index) => {
       rooms.set(key, {
         x: left + (index % cols) * (roomW + STAGE_GAP),

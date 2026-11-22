@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { WIDE_ROOM_W, layoutBuilding, stageCapacity, type Box, type LayoutInput } from './building-layout';
+import { SCREEN_H, WIDE_ROOM_W, layoutBuilding, pairUnit, stageCapacity, type Box, type LayoutInput } from './building-layout';
 
 const keys = (prefix: string, count: number) => Array.from({ length: count }, (_, index) => `${prefix}${index}`);
 
@@ -23,28 +23,30 @@ describe('layoutBuilding', () => {
     const stage = keys('s', 6).map(key => result.rooms.get(key)!);
     expect(new Set(stage.map(room => room.y)).size).toBe(2);
     expect(new Set(stage.map(room => room.h)).size).toBe(1);
-    expect(stage.every(room => room.size === 'large' && room.unit >= 2)).toBe(true);
+    // Moru gives way so each screen keeps 400px beside him.
+    expect(stage.every(room => room.size === 'large' && room.w - 20 - 152 * room.unit >= 400)).toBe(true);
     expect(result.banded).toBe(false);
     expect(result.heading?.kind).toBe('plate');
     expectNoOverlap([...result.rooms.values(), result.shelf!, result.heading!]);
   });
 
-  it('keeps a one-row stage of wide rooms no taller than 0.72 of their width, with the floors right under it', () => {
+  it('fits a one-row stage to what its rooms hold, with the floors right under it', () => {
     const result = layout({ height: 1020, stage: keys('s', 3), floors: [{ key: 'a', rooms: ['m0'] }], hasShelf: false });
     const stage = keys('s', 3).map(key => result.rooms.get(key)!);
     const mini = result.rooms.get('m0')!;
     expect(stage[0].y).toBe(24);
-    expect(stage[0].h).toBeLessThanOrEqual(stage[0].w * 0.72);
+    // The screen over its console and the floor, nothing more.
+    expect(stage[0].h).toBe(24 + SCREEN_H + 45 * stage[0].unit);
     expect(mini.y - (stage[0].y + stage[0].h)).toBe(16);
     expectNoOverlap([...result.rooms.values()]);
   });
 
-  it('stands narrow rooms taller than wide ones, so a head piece clears the screen above Moru', () => {
+  it('hangs a narrow room\'s screen above Moru, with room for a head piece under it', () => {
     const result = layout({ width: 1296, height: 1020, stage: keys('s', 3), hasShelf: false });
     const room = result.rooms.get('s0')!;
     expect(room.w).toBeLessThan(WIDE_ROOM_W);
-    expect(room.h).toBeGreaterThan(room.w * 0.72);
-    expect(room.h).toBeLessThanOrEqual(room.w * 0.95);
+    expect(room.unit).toBe(2);
+    expect(room.h).toBe(12 + SCREEN_H + 8 + 116 * 2);
   });
 
   it('bands forty worktrees by session under one row of six, all inside the window', () => {
@@ -71,7 +73,7 @@ describe('layoutBuilding', () => {
     const result = layout({ width: 896, height: 620, stage: keys('s', 6), floors: [{ key: 'a', rooms: keys('a', 8) }] });
     const stage = keys('s', 6).map(key => result.rooms.get(key)!);
     expect(Math.min(...stage.map(room => room.w))).toBeGreaterThanOrEqual(260);
-    expect(Math.min(...stage.map(room => room.h))).toBeGreaterThanOrEqual(300);
+    expect(Math.min(...stage.map(room => room.h))).toBeGreaterThanOrEqual(12 + SCREEN_H + 8 + 116);
     expect(result.height).toBeGreaterThan(620);
     expectNoOverlap([...result.rooms.values(), ...result.floors.values(), result.shelf!]);
   });
@@ -136,5 +138,12 @@ describe('floor rows', () => {
     expect(rows('a', 4)).toEqual([2, 2]);
     expect(rows('b', 7)).toEqual([3, 2, 2]);
     expect(rows('c', 3)).toEqual([3]);
+  });
+
+  it('gives two Moru a scale in half steps that leaves a console screen 400px, and halves it under a hanging screen', () => {
+    expect(pairUnit(882, 3)).toBe(1.5);
+    expect(882 - 20 - 272 * pairUnit(882, 3)).toBeGreaterThanOrEqual(400);
+    expect(pairUnit(1200, 3)).toBe(2.5);
+    expect(pairUnit(428, 2)).toBe(1);
   });
 });

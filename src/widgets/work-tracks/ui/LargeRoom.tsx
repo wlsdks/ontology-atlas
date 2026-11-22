@@ -18,6 +18,8 @@ import styles from './rooms.module.css';
 type RoomCopy = ReturnType<typeof useRoomCopy>;
 
 const LABEL = 'text-label leading-label';
+/** Commit rows on every screen: its height in pixels holds three whatever the room's size. */
+const SCREEN_ROWS = 3;
 
 /** How long a screen that says something else takes to hand over: the old text fades as the new comes up. */
 const SCREEN_SWAP_MS = MOTION.slow.duration * 1000;
@@ -88,12 +90,11 @@ function ScreenText({ screen, rows }: { screen: MonitorCopy; rows: number }) {
 }
 
 /** The screen standing on its console: the room's light and the only place in it with words. */
-function Monitor({ room, copy, unit, wide }: { room: RoomEntry; copy: RoomCopy; unit: RoomUnit; wide: boolean }) {
+function Monitor({ room, copy }: { room: RoomEntry; copy: RoomCopy }) {
   const look = roomLook(room.state);
   const screen = copy.monitor(room);
   const { leaving, serial } = useScreenSwap(room.state.kind, screen);
-  // A narrow room's screen hangs on the wall above Moru: room for the newest commit only.
-  const rows = unit === 1 || !wide ? 1 : 3;
+  const rows = SCREEN_ROWS;
   return (
     <div className={styles.monitor} data-off={look.monitorOff}>
       <i className={styles.neck} />
@@ -170,13 +171,13 @@ function Cart({ room, landing }: { room: RoomEntry; landing: number }) {
  * hatch in the side wall, and the belt is a track in the floor that leaves through it. Two tools in
  * one folder: the second Moru stands behind the first on his tail side, both facing the screen.
  */
-export function LargeRoom({ room, unit, wide, copy, tint, guestTint, retiring, entered, faceId, character }: {
+export function LargeRoom({ room, unit, pairScale, copy, tint, guestTint, retiring, entered, faceId, character }: {
   room: RoomEntry;
   /** The room's Moru, cast across the building. */
   character: MoruCharacter;
   unit: RoomUnit;
-  /** At least `WIDE_ROOM_W`: the screen stands on a console beside Moru, not on the wall above him. */
-  wide: boolean;
+  /** The share of `unit` two Moru take when two tools share the folder (`pairUnit`). */
+  pairScale: number;
   /** The room is new to the building, or newly on the stage: Moru settles in once. */
   entered: boolean;
   /** Which drawn face this is, so each new entry settles in once. */
@@ -196,12 +197,14 @@ export function LargeRoom({ room, unit, wide, copy, tint, guestTint, retiring, e
   const pair = look.cast === 'two';
   const identity = roomIdentity(room.track.branch ?? room.key);
   const tone = pair || room.state.kind === 'lockLeft' ? 'warning' : undefined;
+  // Two Moru share a smaller scale, as a share of the room's unit so it eases with the room.
+  const zoom = pair ? 'calc(var(--u) * var(--pair))' : 'var(--u)';
   return (
     <div className={cn(styles.large, 'h-full w-full')}>
       <div
         data-scene
         className={styles.scene}
-        style={{ '--u': unit, '--lights-out': `${MERGE_LIGHTS_OUT_MS}ms` } as CSSProperties}
+        style={{ '--u': unit, '--pair': pairScale, '--lights-out': `${MERGE_LIGHTS_OUT_MS}ms` } as CSSProperties}
         data-lit={look.running}
         data-tone={tone}
         data-dark={retiring}
@@ -223,18 +226,18 @@ export function LargeRoom({ room, unit, wide, copy, tint, guestTint, retiring, e
         {pair ? (
           <>
             <i className={cn(styles.contact, styles.actorBack)} />
-            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru live slot="back" character={character} clip={look.backClip} still={look.still} zoom="var(--u)" tint={guestTint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
+            <span className={cn(styles.actor, styles.actorBack)}><RoomMoru live slot="back" character={character} clip={look.backClip} still={look.still} zoom={zoom} tint={guestTint} phase={(moruPhase(room.key) + 0.5) % 1} /></span>
           </>
         ) : null}
         {look.cast !== 'none' ? (
           <>
             <i className={styles.contact} />
             <span className={styles.actor}>
-              <RoomMoru live character={character} clip={look.clip} still={look.still} zoom="var(--u)" tint={tint} phase={moruPhase(room.key)} once={request} />
+              <RoomMoru live character={character} clip={look.clip} still={look.still} zoom={zoom} tint={tint} phase={moruPhase(room.key)} once={request} />
             </span>
           </>
         ) : null}
-        <Monitor room={room} copy={copy} unit={unit} wide={wide} />
+        <Monitor room={room} copy={copy} />
         <i className={styles.dim} />
       </div>
     </div>
