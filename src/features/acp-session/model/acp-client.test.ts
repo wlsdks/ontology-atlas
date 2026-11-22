@@ -358,6 +358,23 @@ describe('ACP client: permission policy', () => {
     expect(askUser).not.toHaveBeenCalled();
   });
 
+  it('answers cancelled when the turn is cancelled while the path verdict is still pending', async () => {
+    const t = fakeTransport();
+    let cancelled = false;
+    let resolveVerdict: (verdict: 'allow-inside-vault') => void = () => undefined;
+    const verdict = vi.fn(() => new Promise<'allow-inside-vault'>((resolve) => { resolveVerdict = resolve; }));
+    const onAutoAllowed = vi.fn();
+    createAcpClient(t.transport, { vaultMcpServerName: 'atlas-vault', verdict, askUser: async () => 'allow', onAutoAllowed, cancelRequested: () => cancelled });
+    t.emit(permissionRequest('/vault/notes.md', 24, 'read'));
+    await vi.waitFor(() => expect(verdict).toHaveBeenCalled());
+
+    cancelled = true;
+    resolveVerdict('allow-inside-vault');
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 24)).toBeTruthy());
+    expect(outcomeOf(t.sent, 24)).toEqual({ outcome: 'cancelled' });
+    expect(onAutoAllowed).not.toHaveBeenCalled();
+  });
+
   it('rejects when the user does not answer; an unasked request is not counted as allowed', async () => {
     const t = fakeTransport();
     createAcpClient(t.transport, { verdict: alwaysAsk, askUser: async () => null });

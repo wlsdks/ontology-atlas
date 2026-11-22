@@ -173,6 +173,10 @@ export function createAcpClient(
     } catch (error) {
       handlers.onProtocolNotice?.(`verdict-failed: ${String(error)}`);
     }
+    if (handlers.cancelRequested?.()) {
+      write({ jsonrpc: '2.0', id, result: cancelledOutcome() });
+      return;
+    }
     const autoAllow = autoAllowOption(request, atlasMode, verdict);
     if (autoAllow) {
       handlers.onAutoAllowed?.(request);
