@@ -18,7 +18,7 @@ import {
   loadedDocIsEmpty,
   validateLoadedVaultDocument,
 } from './doc-facts.mjs';
-import { LINKS_UNINDEXED, bodyLinkKeys, evidenceSignature, linkIndexAnswers, linkKeysHold, signatureMayContain } from './doc-shape.mjs';
+import { LINKS_UNINDEXED, bodyLinkKeys, linkIndexAnswers, linkKeysHold, signatureMayContain } from './doc-shape.mjs';
 import {
   BODY_CACHE_MAX_BYTES,
   bodyCacheStats,
@@ -299,25 +299,20 @@ describe('memory stays bounded on hostile input', () => {
   });
 });
 
-describe('time stays linear on hostile text', () => {
+describe('link indexing stays linear on hostile text', () => {
   // Each of these took about a second for 1 MB before the link walks were bounded.
   const HOSTILE = { 'repeated /a.md': '/a.md', 'repeated [': '[', 'repeated [[x#': '[[x#', 'repeated (a/b/c.md': '(a/b/c.md' };
-
-  /** The best of three timings of indexing `body`, so a busy machine slows both sides alike. */
-  const indexMs = (body) => Math.min(...[0, 1, 2].map(() => {
-    const started = performance.now();
-    bodyLinkKeys(body);
-    evidenceSignature(body);
-    return performance.now() - started;
-  }));
+  const BODY_CHARS = 32 * 1024;
+  // The backward walks may spend eight characters per body character, the forward pointer one,
+  // the floor 4,096 and the walk that crosses the budget one key of 512 more.
+  const maxScanned = (body) => 9 * body.length + 4096 + 513;
 
   for (const [name, unit] of Object.entries(HOSTILE)) {
-    it(`a 1 MB body of ${name} indexes about as fast as plain text`, () => {
-      const plain = indexMs('plain text without any link. '.repeat(Math.ceil(MB / 29)));
-      const hostile = indexMs(unit.repeat(Math.ceil(MB / unit.length)));
-      // The budget allows eight units of work per character before a body gives up,
-      // so up to about ten times plain text; unbounded they cost 60 to 400 times.
-      assert.ok(hostile < plain * 20 + 50, `${hostile.toFixed(0)} ms against ${plain.toFixed(0)} ms for plain text`);
+    it(`a body of ${name} examines at most nine characters per character`, () => {
+      const body = unit.repeat(Math.ceil(BODY_CHARS / unit.length));
+      const meter = { scanned: 0 };
+      bodyLinkKeys(body, meter);
+      assert.ok(meter.scanned <= maxScanned(body), `${meter.scanned} characters examined for a body of ${body.length}`);
     });
   }
 

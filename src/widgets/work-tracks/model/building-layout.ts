@@ -15,7 +15,8 @@ export interface Box {
 export type RoomSize = 'large' | 'mini';
 
 /** The pixel unit a large room draws its art at: Moru is 128 × unit pixels, never resampled. */
-export type RoomUnit = 1 | 2 | 3;
+/** Moru's scale in a room, in half steps so each of his drawn pixels stays whole on screen. */
+export type RoomUnit = number;
 
 export interface RoomBox extends Box {
   size: RoomSize;
@@ -29,7 +30,6 @@ export interface LayoutInput {
   stage: readonly string[];
   floors: readonly { key: string; rooms: readonly string[] }[];
   hasShelf: boolean;
-  workingBelow: number;
 }
 
 export interface BuildingLayout {
@@ -37,9 +37,12 @@ export interface BuildingLayout {
   /** Floor name plates, one per session band; none when every mini room fits one row. */
   floors: Map<string, Box>;
   banded: boolean;
-  /** The line that counts working rooms below the stage. */
-  moreTop: number | null;
-  shelf: (Box & { inline: boolean }) | null;
+  /**
+   * The lower floor's heading, which counts its working rooms: a plate at the left of a single row
+   * whose rooms each keep 300px beside it, otherwise a line above the rooms.
+   */
+  heading: (Box & { kind: 'plate' | 'line' }) | null;
+  shelf: Box | null;
   height: number;
 }
 
@@ -48,51 +51,80 @@ const MINI_GAP = 8;
 const EDGE_TOP = 24;
 const EDGE_BOTTOM = 20;
 const BAND_GAP = 16;
-const MORE_LINE_H = 28;
 const SHELF_H = 40;
-const SHELF_INLINE_W = 560;
-const MINI_H_BANDED = 76;
-const MINI_H_ROW = 92;
-const MINI_W_INLINE = 300;
+/** Every mini room, banded or not: Moru's corner, the branch, the status and the newest subject. */
+export const MINI_H = 96;
 const MINI_MIN_W = 300;
-/**
- * Mini rooms that do not fill a row share the width left beside them up to this, so a branch name
- * uses the room there is and cuts only when it really is longer.
- */
-const MINI_MAX_W = 600;
+/** Beside the floors' plate a mini room keeps this much, so its branch is not cut; narrower, the heading goes above. */
+const PLATED_MINI_MIN_W = 340;
+/** The lower floor's heading as a line above its rooms, under its rule. */
+const HEADING_LINE_H = 30;
 const MINI_ROW_LIMIT = 6;
 /** Mini rooms stand five to a row at most, never narrower than `MINI_MIN_W`. */
 const MINI_COLUMNS = 5;
-const INLINE_SHELF_ROOMS = 4;
 const FLOOR_LABEL_W = 196;
 const LARGE_MIN_W = 260;
-/** From this width a room hangs its monitor beside Moru. */
-/** From this width a stage room hangs its monitor at the right; narrower, above Moru. */
-export const WIDE_ROOM_W = 520;
 const LARGE_MIN_H = 300;
-/**
- * One row of stage rooms grows with the room's width up to this height, so a stage of few rooms fills
- * its band instead of standing short in the middle of it, and no room is drawn much taller than wide.
- */
-const ONE_ROW_CAP_H = 640;
-const ONE_ROW_MAX_ASPECT = 1.1;
-const ONE_ROW_MIN_CAP_H = 500;
-const TWO_ROW_CAP_H = 416;
 const TWO_ROW_MIN_H = 300;
-/** The belt under a large room's scene, with its top edge. */
-export const BELT_H = 68;
+/**
+ * A stage room's screen, in pixels whatever Moru's scale: the branch, three commit rows, the foot
+ * and the bezel (`--screen-h` in `rooms.module.css`). Its text never shrinks; the scenery does.
+ */
+export const SCREEN_H = 160;
+/** The least width a screen on a console keeps: a 55-character subject and its age on one line. */
+const SCREEN_MIN_W = 400;
+/** Where Moru's cell starts from a wide room's left edge. */
+const MORU_LEFT = 20;
+/** What a console room spends beside its screen per unit: Moru's cell to the screen, 134, and the side wall, 18. */
+const CONSOLE_PER_UNIT = 152;
+/** From this width a stage room stands its screen on a console beside Moru; narrower, it hangs it above him. */
+export const WIDE_ROOM_W = MORU_LEFT + CONSOLE_PER_UNIT + SCREEN_MIN_W;
+/** A large room's belt is a track in its floor: the scene is the whole room. */
+export const BELT_H = 0;
+
+/** Moru as large as the screen beside him leaves room for, in half steps: the screen keeps its width, Moru gives way. */
+function unitOf(width: number): RoomUnit {
+  if (width < WIDE_ROOM_W) return width >= 400 ? 2 : 1;
+  return Math.min(3, Math.max(1, Math.floor((2 * (width - MORU_LEFT - SCREEN_MIN_W)) / CONSOLE_PER_UNIT) / 2));
+}
+
+/** One commit row on a screen; a room with height to spare shows up to `MAX_SCREEN_ROWS`. */
+export const SCREEN_ROW_H = 24;
+const BASE_SCREEN_ROWS = 3;
+export const MAX_SCREEN_ROWS = 5;
+
+/** How many commit rows a stage room's screen shows: three, and one more for each row of height it has to spare. */
+export function screenRows(box: Pick<RoomBox, 'w' | 'h' | 'unit'>): number {
+  if (box.w < WIDE_ROOM_W) return BASE_SCREEN_ROWS;
+  const spare = box.h - roomHeight(box.w, box.unit);
+  return Math.min(MAX_SCREEN_ROWS, BASE_SCREEN_ROWS + Math.max(0, Math.floor(spare / SCREEN_ROW_H)));
+}
+
+/** What a pair of Moru spends beside a console screen per unit: two cells side by side, 254, and the side wall, 18. */
+const PAIR_PER_UNIT = 272;
 
 /**
- * A wide room hangs its monitor beside Moru; a narrow one hangs it above him and shortens it to stay
- * clear of his name tag, so Moru takes twice his size there once the scene is 300px tall.
+ * The scale two Moru share in one room, in half steps so each drawn pixel stays whole: beside a
+ * console as large as leaves the screen its width, at least 1; under a hanging screen half the
+ * room's unit, so both stand apart.
  */
-function unitOf(width: number, sceneHeight: number): RoomUnit {
-  if (width >= WIDE_ROOM_W) return width >= 760 && sceneHeight >= 300 ? 3 : 2;
-  return width >= 270 && sceneHeight >= 300 ? 2 : 1;
+export function pairUnit(width: number, unit: RoomUnit): number {
+  if (width < WIDE_ROOM_W) return Math.max(0.5, Math.floor(unit) / 2);
+  return Math.max(1, Math.min(unit, Math.floor((2 * (width - MORU_LEFT - SCREEN_MIN_W)) / PAIR_PER_UNIT) / 2));
+}
+
+/**
+ * A stage room as tall as what it holds. Beside a console: the screen over the console and the floor,
+ * or Moru with a head piece, whichever is taller. Narrow: the screen and its shelf on the wall, then
+ * Moru under them with room for a head piece.
+ */
+function roomHeight(width: number, unit: RoomUnit): number {
+  if (width >= WIDE_ROOM_W) return Math.ceil(Math.max(24 + SCREEN_H + 45 * unit, 110 * unit + 16));
+  return Math.ceil(12 + SCREEN_H + 8 + 116 * unit);
 }
 
 /** What a board keeps under two rows of rooms: the edges, one row of mini rooms and the shelf. */
-const UNDER_STAGE_H = EDGE_TOP + BAND_GAP + MINI_H_ROW + BAND_GAP + SHELF_H + EDGE_BOTTOM;
+const UNDER_STAGE_H = EDGE_TOP + BAND_GAP + MINI_H + BAND_GAP + SHELF_H + EDGE_BOTTOM;
 
 /**
  * How many large rooms the stage takes on a board this size: four when exactly two wide rooms fit
@@ -126,29 +158,26 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
   const floorPlates = new Map<string, Box>();
   const minis = input.floors.flatMap(floor => floor.rooms);
   const banded = minis.length > MINI_ROW_LIMIT;
-  const miniH = banded ? MINI_H_BANDED : MINI_H_ROW;
-  const labelW = banded ? FLOOR_LABEL_W : 0;
-  const inline = !banded && minis.length > 0 && minis.length <= INLINE_SHELF_ROOMS && input.hasShelf && width >= MINI_W_INLINE * minis.length + SHELF_INLINE_W;
-  const fit = Math.max(1, Math.floor((width - labelW + MINI_GAP) / (MINI_MIN_W + MINI_GAP)));
-  const perRow = Math.min(fit, MINI_COLUMNS);
+  const fit = (labelW: number, least = MINI_MIN_W) => Math.max(1, Math.floor((width - labelW + MINI_GAP) / (least + MINI_GAP)));
+  // A single row whose rooms each keep 300px beside a plate takes the plate; otherwise a line above.
+  const plated = !banded && minis.length > 0 && minis.length <= Math.min(fit(FLOOR_LABEL_W, PLATED_MINI_MIN_W), MINI_COLUMNS);
+  const labelW = banded || plated ? FLOOR_LABEL_W : 0;
+  const perRow = Math.min(fit(labelW), MINI_COLUMNS);
   const shared = (across: number, count: number) => Math.floor((across - (count - 1) * MINI_GAP) / count);
-  const miniW = inline
-    ? Math.min(MINI_MAX_W, Math.max(MINI_W_INLINE, shared(width - SHELF_INLINE_W - MINI_GAP, minis.length)))
-    : !banded && minis.length < perRow
-      ? Math.min(MINI_MAX_W, Math.max(shared(width, perRow), shared(width, minis.length)))
-      : shared(width - labelW, perRow);
+  const miniW = shared(width - labelW, Math.max(1, Math.min(perRow, banded ? perRow : minis.length)));
+  const headingH = minis.length > 0 && !plated ? HEADING_LINE_H : 0;
   // Banded, every floor keeps its row, even one whose rooms are all on the stage: its plate says so.
-  const groups = banded ? input.floors : minis.length > 0 ? [{ key: '', rooms: minis }] : [];
+  // A session whose rooms are all on the stage has no band below: its bezels already name it.
+  const groups = banded ? input.floors.filter(floor => floor.rooms.length > 0) : minis.length > 0 ? [{ key: '', rooms: minis }] : [];
   const groupHeight = (count: number) => {
     const rows = Math.max(1, Math.ceil(count / perRow));
-    return rows * miniH + (rows - 1) * MINI_GAP;
+    return rows * MINI_H + (rows - 1) * MINI_GAP;
   };
-  const backH = groups.reduce((sum, group) => sum + groupHeight(group.rooms.length), 0) + Math.max(0, groups.length - 1) * MINI_GAP;
-  const shelfH = input.hasShelf && !inline ? SHELF_H : 0;
+  const backH = headingH + groups.reduce((sum, group) => sum + groupHeight(group.rooms.length), 0) + Math.max(0, groups.length - 1) * MINI_GAP;
+  const shelfH = input.hasShelf ? SHELF_H : 0;
   const shelfTop = height - EDGE_BOTTOM - shelfH;
-  const backTop = inline ? height - EDGE_TOP - miniH : shelfTop - (shelfH ? BAND_GAP : 0) - backH;
-  const moreH = input.workingBelow > 0 ? MORE_LINE_H : 0;
-  const available = backTop - (backH > 0 ? BAND_GAP : 0) - moreH - EDGE_TOP;
+  const backTop = shelfTop - (shelfH ? BAND_GAP : 0) - backH;
+  const available = backTop - (backH > 0 ? BAND_GAP : 0) - EDGE_TOP;
 
   let overflow = 0;
   const count = stage.length;
@@ -158,14 +187,17 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
     while (Math.ceil(count / rows) > maxCols) rows += 1;
     const cols = rows === 1 ? Math.max(count, Math.min(2, maxCols)) : Math.ceil(count / rows);
     const roomW = Math.floor((width - (cols - 1) * STAGE_GAP) / cols / 2) * 2;
-    const oneRowCap = Math.min(ONE_ROW_CAP_H, Math.max(ONE_ROW_MIN_CAP_H, Math.floor(roomW * ONE_ROW_MAX_ASPECT)));
-    const fitted = rows === 1 ? Math.min(available, oneRowCap) : Math.min((available - (rows - 1) * STAGE_GAP) / rows, TWO_ROW_CAP_H);
-    const roomH = Math.max(Math.floor(fitted), LARGE_MIN_H);
+    const unit = unitOf(roomW);
+    // Height the window has to spare goes to more commit rows on a one-row stage's screens. Two
+    // rows keep their fitted height, so a room moving between rows never changes height on the way.
+    const fitted = roomHeight(roomW, unit);
+    const spare = rows === 1 && roomW >= WIDE_ROOM_W ? Math.floor((available - (rows - 1) * STAGE_GAP) / rows) - fitted : 0;
+    const roomH = fitted + Math.min(MAX_SCREEN_ROWS - BASE_SCREEN_ROWS, Math.max(0, Math.floor(spare / SCREEN_ROW_H))) * SCREEN_ROW_H;
     const stageH = rows * roomH + (rows - 1) * STAGE_GAP;
-    overflow = Math.max(0, stageH - available);
-    const top = EDGE_TOP + Math.max(0, Math.round((available - stageH) / 2));
+    // The floors follow right under the stage; what the window has left stays under the shelf.
+    overflow = stageH - available;
+    const top = EDGE_TOP;
     const left = count < cols ? Math.round((width - roomW) / 2) : 0;
-    const unit = unitOf(roomW, roomH - BELT_H);
     stage.forEach((key, index) => {
       rooms.set(key, {
         x: left + (index % cols) * (roomW + STAGE_GAP),
@@ -181,17 +213,26 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
     overflow = EDGE_TOP - backTop;
   }
 
-  let floorTop = backTop + overflow;
+  const heading = minis.length === 0
+    ? null
+    : plated
+      ? { x: 0, y: backTop + overflow, w: FLOOR_LABEL_W - MINI_GAP, h: MINI_H, kind: 'plate' as const }
+      : { x: 0, y: backTop + overflow, w: width, h: HEADING_LINE_H, kind: 'line' as const };
+  let floorTop = backTop + overflow + headingH;
   for (const group of groups) {
     const groupH = groupHeight(group.rooms.length);
     if (banded) floorPlates.set(group.key, { x: 0, y: floorTop, w: labelW - MINI_GAP, h: groupH });
+    const places = group.rooms.map((_, index) => spreadOver(group.rooms.length, perRow, index));
     group.rooms.forEach((key, index) => {
-      const { row, column } = spreadOver(group.rooms.length, perRow, index);
+      const { row, column } = places[index];
+      // A wrapped floor's rooms fill each row's width, so no row ends in a hole.
+      const inRow = places.filter(place => place.row === row).length;
+      const w = places.length > perRow ? shared(width - labelW, inRow) : miniW;
       rooms.set(key, {
-        x: labelW + column * (miniW + MINI_GAP),
-        y: floorTop + row * (miniH + MINI_GAP),
-        w: miniW,
-        h: miniH,
+        x: labelW + column * (w + MINI_GAP),
+        y: floorTop + row * (MINI_H + MINI_GAP),
+        w,
+        h: MINI_H,
         size: 'mini',
         unit: 1,
       });
@@ -199,17 +240,14 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
     floorTop += groupH + MINI_GAP;
   }
 
-  const shelf = !input.hasShelf
-    ? null
-    : inline
-      ? { x: width - SHELF_INLINE_W, y: backTop + overflow + (miniH - SHELF_H) / 2, w: SHELF_INLINE_W, h: SHELF_H, inline: true }
-      : { x: 0, y: Math.max(shelfTop + overflow, floorTop - MINI_GAP + BAND_GAP), w: width, h: SHELF_H, inline: false };
-  const bottom = Math.max(height, (shelf ? shelf.y + shelf.h : floorTop) + EDGE_BOTTOM);
+  const shelf = input.hasShelf ? { x: 0, y: groups.length > 0 ? floorTop - MINI_GAP + BAND_GAP : shelfTop + overflow, w: width, h: SHELF_H } : null;
+  // The building ends under what it holds; it does not stretch to the window with bare floor.
+  const bottom = (shelf ? shelf.y + shelf.h : floorTop - MINI_GAP) + EDGE_BOTTOM;
   return {
     rooms,
     floors: floorPlates,
     banded,
-    moreTop: moreH > 0 ? backTop + overflow - BAND_GAP - moreH : null,
+    heading,
     shelf,
     height: bottom,
   };

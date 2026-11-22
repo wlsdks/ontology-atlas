@@ -90,7 +90,7 @@ fn modified(path: &Path) -> Option<SystemTime> {
 
 /// `.git` is the common directory in the main checkout; in a linked worktree it is a file naming
 /// that worktree's record, whose `commondir` leads back.
-fn common_dir(root: &Path) -> Option<PathBuf> {
+pub(super) fn common_dir(root: &Path) -> Option<PathBuf> {
     let dot_git = root.join(".git");
     let meta = std::fs::symlink_metadata(&dot_git).ok()?;
     if meta.is_dir() {

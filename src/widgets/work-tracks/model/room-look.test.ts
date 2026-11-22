@@ -92,13 +92,10 @@ describe('moruPhase', () => {
 });
 
 describe('roomIdentity', () => {
-  it('keeps a branch its own mirroring and prop, and spreads both across branches', () => {
+  it('keeps a branch its own prop, and spreads the props across branches', () => {
     const branches = Array.from({ length: 60 }, (_, index) => `feat/branch-${index}`);
     const identities = branches.map(roomIdentity);
     expect(roomIdentity('feat/branch-7')).toEqual(identities[7]);
-    const mirrored = identities.filter(identity => identity.mirrored).length;
-    expect(mirrored).toBeGreaterThan(18);
-    expect(mirrored).toBeLessThan(42);
     expect(new Set(identities.map(identity => identity.prop)).size).toBe(ROOM_PROPS);
   });
 });

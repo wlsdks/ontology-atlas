@@ -2,11 +2,13 @@
 //! from the pids that worktree locks name, and from the working folders of agent programs. Nothing
 //! here writes, signals or leaves the machine.
 
+mod activity;
 mod agent_processes;
 mod fingerprint;
 mod git_read;
 mod worktrees;
 
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use serde::Serialize;
@@ -95,4 +97,23 @@ pub fn work_status_fingerprint(
         .map(|(pid, _)| *pid)
         .collect();
     fingerprint::admin_fingerprint(&root, &agent_processes::agent_processes(&acp_pids))
+}
+
+/// One stamp per worktree from stats of its `HEAD`, `index` and reflog; the page reads a
+/// worktree's activity again only when its stamp moves or on its beat. Spawns no process.
+#[tauri::command(async)]
+pub fn work_status_activity_stamps(repository_path: String) -> Option<BTreeMap<String, String>> {
+    activity::activity_stamps(&granted_root(&repository_path).ok()?)
+}
+
+/// What one worktree is doing: its newest commit subjects beyond the base branch and its
+/// uncommitted files. Two `git` processes, one read at a time.
+#[tauri::command(async)]
+pub fn work_status_activity(
+    repository_path: String,
+    worktree_id: String,
+    base_branch: Option<String>,
+) -> Option<activity::WorktreeActivity> {
+    let root = granted_root(&repository_path).ok()?;
+    activity::read_activity(&root, &worktree_id, base_branch.as_deref())
 }

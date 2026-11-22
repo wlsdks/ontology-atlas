@@ -12,6 +12,18 @@ function named(outline, name) {
   return outline.declarations.find((row) => row.name === name);
 }
 
+/**
+ * The work's own time is at most both the wall clock (inflated by other processes) and this
+ * process's CPU time (inflated by collector threads), so take the smaller.
+ */
+function spentMs(run) {
+  const wallStarted = performance.now();
+  const cpuStarted = process.cpuUsage();
+  run();
+  const cpu = process.cpuUsage(cpuStarted);
+  return Math.min(performance.now() - wallStarted, (cpu.user + cpu.system) / 1000);
+}
+
 test('lists JavaScript and TypeScript declarations at their exact lines', () => {
   const text = [
     '// a leading comment',                 // 1
@@ -156,9 +168,8 @@ test('a class of wrapped heads with many parentheses outlines in linear time', (
   const head = `  run(${'('.repeat(400)}`;
   const tail = `  ${')'.repeat(OUTLINE_LINE_CHARS - 10)} {`;
   const text = ['class Busy {', ...Array.from({ length: 2000 }, (_, index) => (index % 2 ? tail : head)), '}'].join('\n');
-  const started = performance.now();
-  outlineSource(text, 'busy.ts');
-  assert.ok(performance.now() - started < 500, 'the outline stays linear over wrapped heads');
+  const ms = spentMs(() => outlineSource(text, 'busy.ts'));
+  assert.ok(ms < 500, `the outline stays linear over wrapped heads: ${ms.toFixed(0)} ms`);
 });
 
 test('separates Python module functions from methods by indent', () => {
