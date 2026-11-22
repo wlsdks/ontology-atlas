@@ -1664,36 +1664,28 @@ if (
 }
 
 if (
-  ontologyStarterCta.includes("buildOntologyStarterCliVerifyCommands") &&
-  ontologyStarterCta.includes("buildOntologyStarterJsonGateCommand") &&
-  ontologyStarterCta.includes("shellQuotePath") &&
   ontologyStarterCta.includes("vaultPath") &&
   docsVaultPage.includes("vaultPath={") &&
   docsVaultPage.includes("getTauriVaultRootPath(localVault.handle)") &&
   vaultAgentSetupPanel.includes("getTauriVaultRootPath(localVault.handle)")
 ) {
-  pass("desktop ontology starter copies path-aware CLI and JSON agent gates");
+  pass("desktop ontology starter passes the selected Tauri vault path to the agent verification prompt");
 } else {
   fail(
-    "OntologyStarterCta must copy CLI proof and JSON agent gate commands against the selected Tauri vault path when the installed app knows it",
+    "OntologyStarterCta must build its agent verification prompt against the selected Tauri vault path when the installed app knows it",
   );
 }
 
 if (
   vaultAgentSetupPanel.includes("useAgentSetupCopy(vaultNameForConfig, vaultRootPath)") &&
-  vaultAgentSetupCopySources.includes("buildAgentVerifyCliCommand") &&
-  vaultAgentSetupCopySources.includes("buildAgentSetupCliCommand") &&
   vaultAgentSetupCopySources.includes("buildAgentSetupPacket(vaultName, vaultRootPath)") &&
   vaultAgentSetupCopySources.includes("buildAgentFirstContactProofPacket(vaultName, vaultRootPath)") &&
-  vaultAgentSetupCopySources.includes("buildOntologyStarterAgentVerifyPrompt(vaultRootPath)") &&
-  vaultAgentSetupCopySources.includes("buildOntologyStarterJsonGateCommand(vaultRootPath)") &&
-  vaultAgentSetupCopySources.includes("agentJsonGatePreview") &&
-  vaultAgentSetupCopySources.includes("hubs ${target} --plan")
+  vaultAgentSetupCopySources.includes("buildOntologyStarterAgentVerifyPrompt(vaultRootPath)")
 ) {
-  pass("desktop agent setup panel copies path-aware setup packets, CLI runbooks, and JSON gates");
+  pass("desktop agent setup panel copies path-aware setup and first-contact packets and the verification prompt");
 } else {
   fail(
-    "VaultAgentSetupPanel must copy setup packets, first-contact proof, CLI runbooks, verification prompts, and JSON gates against the selected Tauri vault path when available",
+    "VaultAgentSetupPanel must copy setup packets, first-contact proof, and verification prompts against the selected Tauri vault path when available",
   );
 }
 

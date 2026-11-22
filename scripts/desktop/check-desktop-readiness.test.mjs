@@ -302,11 +302,11 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop ontology starter copies path-aware CLI and JSON agent gates/,
+    /✓ desktop ontology starter passes the selected Tauri vault path to the agent verification prompt/,
   );
   assert.match(
     result.stdout,
-    /✓ desktop agent setup panel copies path-aware setup packets, CLI runbooks, and JSON gates/,
+    /✓ desktop agent setup panel copies path-aware setup and first-contact packets and the verification prompt/,
   );
   assert.match(
     result.stdout,

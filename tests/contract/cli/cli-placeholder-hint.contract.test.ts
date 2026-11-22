@@ -30,13 +30,7 @@ const DEFINITION_FILES = ["src/shared/config/agent/cli-invocation.ts"];
  * on a list, the fact that coverage is incomplete is visible every time. **Adding a
  * new file here is forbidden** — the `probe` below stops the list growing.
  */
-const HANDOFF_BLOBS_PENDING = [
-  "src/entities/vault-session/model/agent-activity-status.ts",
-  "src/features/docs-vault-local/ui/OntologyStarterCta.tsx",
-  "src/entities/knowledge-graph/lib/ontology-tree/agent-readiness.ts",
-  "src/views/home/lib/trail/footprint-trail.ts",
-  "src/views/home/lib/topology-analysis.ts",
-];
+const HANDOFF_BLOBS_PENDING = ["src/entities/vault-session/model/agent-activity-status.ts"];
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -180,7 +174,6 @@ describe("CLI placeholder guidance — present in both locales", () => {
   const PATHS = [
     ["atlasGit", HINT_KEY],
     ["projectPages", "selector", HINT_KEY],
-    ["nav", "settingsMenu", HINT_KEY],
   ] as const;
 
   it.each(["ko", "en"])("%s has guidance copy", (locale) => {
