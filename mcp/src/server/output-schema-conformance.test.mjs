@@ -5,10 +5,13 @@ import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { AjvJsonSchemaValidator } from '@modelcontextprotocol/server/validators/ajv';
+
 import { runJsonRpcProcess } from '../../../scripts/lib/mcp-test-rpc.mjs';
 import { schemaErrors } from '../../../scripts/lib/output-schema-errors.mjs';
 import { CONSTRUCTION_GUIDE_TOPICS } from '../construction/construction-card.mjs';
 
+const HOST_VALIDATOR = new AjvJsonSchemaValidator();
 const SERVER_ENTRY = join(dirname(fileURLToPath(import.meta.url)), '..', 'index.js');
 
 function writeVaultFile(root, slug, text) {
@@ -36,6 +39,9 @@ async function answersAgainstDeclaredSchemas(vault, calls) {
     assert.ok(result?.structuredContent, `${name} ${JSON.stringify(args)} answered without structuredContent`);
     assert.ok(schemas.get(name), `${name} declares no outputSchema`);
     const errors = schemaErrors(schemas.get(name), result.structuredContent);
+    // The validator an MCP SDK client runs on structuredContent, `$ref`s and all.
+    const host = HOST_VALIDATOR.getValidator(schemas.get(name))(result.structuredContent);
+    if (!host.valid) errors.push(`host validator: ${host.errorMessage}`);
     return { name, args, answer: result.structuredContent, schemaError: errors.length === 0 ? null : errors.slice(0, 5).join('; ') };
   });
 }
@@ -83,6 +89,30 @@ test('connection_info matches its outputSchema with the construction card and wi
     ]);
 
     assert.deepEqual(answers.filter((answer) => answer.schemaError).map(({ args, schemaError }) => ({ args, schemaError })), []);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+  }
+});
+
+test('confirmed writes answer with a post-write maintenance summary that matches their outputSchema', async () => {
+  const vault = mkdtempSync(join(tmpdir(), 'atlas-write-schema-'));
+  try {
+    writeVaultFile(vault, 'domains/core', '---\nuid: 00000000-0000-4000-8000-000000000001\nkind: domain\ntitle: Core\n---\nThe core.\n');
+    writeVaultFile(vault, 'capabilities/target', '---\nuid: 00000000-0000-4000-8000-000000000002\nkind: capability\ntitle: Target\n---\nThe target.\n');
+    writeVaultFile(vault, 'capabilities/caller', '---\nuid: 00000000-0000-4000-8000-000000000003\nkind: capability\ntitle: Caller\ndomain: domains/core\ndepends_on: [capabilities/target]\nrelates: [capabilities/target]\n---\nThe caller.\n');
+    writeVaultFile(vault, 'capabilities/spare', '---\nuid: 00000000-0000-4000-8000-000000000004\nkind: capability\ntitle: Spare\n---\nThe spare.\n');
+
+    const answers = await answersAgainstDeclaredSchemas(vault, [
+      ['remove_relation', { from: 'capabilities/caller', to: 'capabilities/target', type: 'relates', confirm: true }],
+      ['rename_concept', { oldSlug: 'capabilities/spare', newSlug: 'capabilities/extra', confirm: true }],
+    ]);
+
+    assert.deepEqual(answers.filter((answer) => answer.schemaError).map(({ name, schemaError }) => ({ name, schemaError })), []);
+    for (const { name, answer } of answers) {
+      assert.equal(answer.changed, true, `${name} wrote`);
+      assert.equal(answer.postWriteMaintenance?.operation, 'maintenance_plan', `${name} answers with the maintenance summary`);
+      assert.ok(answer.postWriteMaintenance.actions.length > 0, `${name} maintenance summary lists actions`);
+    }
   } finally {
     rmSync(vault, { recursive: true, force: true });
   }
