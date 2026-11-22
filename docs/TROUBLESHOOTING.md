@@ -18,9 +18,8 @@ There are two ways to run Ontology Atlas, and only two:
 1. **The installed macOS app.** It carries the MCP server inside its own bundle.
    Open a vault folder and press the connect button — the app writes your agent's
    config with the bundled binary's absolute path. Nothing to install, no terminal.
-2. **A source checkout.** Clone the repo and invoke it directly:
-   `node <checkout>/cli/src/index.mjs …` for the CLI,
-   `node <checkout>/mcp/src/index.js` for the MCP server.
+2. **A source checkout.** Clone the repo and register
+   `node <checkout>/mcp/src/index.js` as the MCP server.
 
 npm publishing is retired (`docs/DECISIONS.md`, 2026-07-27). `npx ontology-atlas`
 and `npx -y ontology-atlas-mcp` do not resolve and never will — if a guide
@@ -28,14 +27,7 @@ anywhere tells you to run one, that guide is stale.
 
 ---
 
-## Vault scaffold (CLI `init`, desktop app `/docs` button)
-
-### "no new files written — target already has matching files"
-
-The target folder already has `README.md` / `project.md` / etc. — the CLI never overwrites existing files. Either:
-
-- Delete the conflicting files, or
-- Use a fresh folder: `node <checkout>/cli/src/index.mjs init another-folder`
+## Vault scaffold (desktop app `/docs` button)
 
 ### Desktop app scaffold button stays grayed out
 
@@ -56,26 +48,20 @@ The desktop app requires:
 
 ---
 
-## CLI commands (R12 — list / validate / add / find)
+## Vault validation (MCP `validate_vault`)
 
-### `ontology-atlas validate` exits 1 with `unclosed-frontmatter`
+### `validate_vault` reports `unclosed-frontmatter`
 
 Your `.md` file has the opening `---` but no closing `---`. The frontmatter parser is lenient by-design — it returns an empty frontmatter for malformed blocks, so the doc silently disappears from the graph. The validator surfaces this.
 
-Fix: open the offending file (`ontology-atlas validate <vault>` prints the path) and add the closing `---` line.
+Fix: open the offending file (`validate_vault` names its slug) and add the closing `---` line.
 
-### `ontology-atlas validate` warns `missing-kind` / `unknown-kind`
+### `validate_vault` warns `missing-kind` / `unknown-kind`
 
 - `missing-kind` (warning, not error) — the frontmatter has ontology signal keys (`domain`, `capabilities`, `elements`, `relates`, `dependencies`) but no `kind:`. Add `kind: capability` (or domain/element/document/project).
 - `unknown-kind` (warning) — `kind:` value is not one of `project / domain / capability / element / document / vault-readme`. Either fix the typo or add to `KNOWN_VAULT_KINDS` if you genuinely need a new kind.
 
-### `ontology-atlas add` throws `Doc already exists`
-
-Intentional — `add` never overwrites. If you want to update the doc:
-
-- Edit the file directly, or
-- Use the MCP `patch_concept` tool (AI agent), or
-- Delete the file (`rm`) then re-`add`.
+## Maintainer scripts
 
 ### `pnpm vault:migrate <id> --write` refuses with "uncommitted .md changes"
 
@@ -97,7 +83,7 @@ The walk runs against `docs/ontology/` by default. If you renamed/moved that fol
 2. Check the agent's MCP config — the app writes `command: "/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp", args: []`; a source checkout uses `command: "node", args: ["/absolute/path/to/mcp/src/index.js"]`. A config still holding `command: "npx"` predates the app-bundled server and cannot start; press the app's connect button again to rewrite it.
 3. Set `env.OATLAS_VAULT` to the **absolute path** of the vault folder for global agent configs. Project `.mcp.json` can use a path relative to the project root.
 4. Claude Code / Cursor: restart the agent so it picks up the project `.mcp.json`.
-5. Codex: restart Codex so it picks up the generated `.codex/config.toml`; if you prefer global config, run the `codex mcp add ...` fallback printed by `node <checkout>/cli/src/index.mjs init`.
+5. Codex: restart Codex so it picks up the generated `.codex/config.toml`; if you prefer global config, register the server with `codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/vault -- node /absolute/path/to/mcp/src/index.js` (source checkout) instead.
 
 Clean-room verification for maintainers:
 

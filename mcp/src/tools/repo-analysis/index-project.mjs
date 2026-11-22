@@ -145,7 +145,7 @@ export function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skip
         'analyze_repo_structure',
         imports ? 'infer_imports' : 'infer_imports skipped',
         'validate_vault',
-        'CLI index --apply may write analyzer concepts/containment; inferred imports remain rationale-review-required',
+        'add_concepts after review; inferred imports remain rationale-review-required',
       ],
     },
     validation: {
@@ -192,8 +192,7 @@ export function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skip
     configurationEvidence: analyze.configurationEvidence,
     next: {
       applyTool: 'add_concepts; add_relation only after semantic rationale + human approval',
-      cliApply: 'ontology-atlas index [rootPath] --apply --vault [vault]',
-      review: 'plan.concepts counts raw candidates, not accepted ontology claims; inspect extractionContract and proposedBusinessOntology, manually resolve ambiguous aliases, answer the competency questions, then run reviewCalls. CLI apply never promotes inferred imports to depends_on.',
+      review: 'plan.concepts counts raw candidates, not accepted ontology claims; inspect extractionContract and proposedBusinessOntology, manually resolve ambiguous aliases, answer the competency questions, then run reviewCalls. Nothing promotes inferred imports to depends_on.',
       reviewCalls,
     },
   };

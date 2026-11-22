@@ -12,21 +12,14 @@ import {
   vaultSkillFilesForLocale,
   vaultSkillPath,
 } from "@/entities/vault-session/lib/ontology-starter";
-import { runCliJson } from "../../helpers/run-cli-json";
+import { runHealthCheck } from "../../helpers/run-health-check";
 
 /**
- * CLI template ↔ web starter **byte-identical** contract (#73).
+ * `init` template ↔ app starter **byte-identical** contract (#73).
  *
- * The `ontology-starter.ts` header always required "Mirrors cli/templates/vault/.
- * Keep both in sync so the CLI and the web workbench produce the same starter
- * files.", but no test enforced it, so it **rested on human memory**. Adding
- * locale-aware starters raised the files to keep in sync from 5 to 10, so it is
- * pinned as a contract (the same pattern as the 3-way and 2-way parser/validator
- * contracts).
- *
- * Why it matters: if the vault produced by `node $ATLAS/cli/src/index.mjs init`
- * differs from the one produced by the app starter, users reaching the same product
- * by two routes read different documents.
+ * `cli/templates/vault/` (what `init` copies) and `ontology-starter.ts` (what the app
+ * writes) must produce the same starter files, or users reaching the same product by
+ * two routes read different documents.
  */
 
 const CLI_TEMPLATE_ROOTS = {
@@ -34,7 +27,7 @@ const CLI_TEMPLATE_ROOTS = {
   ko: join(process.cwd(), "cli", "templates", "vault-ko"),
 } as const;
 
-describe("starter templates — CLI ↔ web parity (#73)", () => {
+describe("starter templates — init ↔ app parity (#73)", () => {
   for (const locale of ["en", "ko"] as const) {
     describe(`locale: ${locale}`, () => {
       const files = starterFilesForLocale(locale);
@@ -102,10 +95,7 @@ describe("starter templates: the product's own quality bar", () => {
           mkdirSync(dirname(target), { recursive: true });
           writeFileSync(target, file.content, "utf8");
         }
-        const payload = runCliJson<{
-          checks?: Array<{ id?: string; status?: string; count?: number }>;
-        }>([join(process.cwd(), "cli", "src", "index.mjs"), "health", dir, "--json"]);
-        const byId = new Map((payload.checks ?? []).map((c) => [c.id, c]));
+        const byId = new Map(runHealthCheck(dir).map((c) => [c.id, c]));
 
         // Not idling — did it actually read the vault?
         expect(byId.get("vault_present")?.count).toBe(5);

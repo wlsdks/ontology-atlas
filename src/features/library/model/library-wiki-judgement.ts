@@ -31,7 +31,7 @@ function pageProblems(facts: WikiPageFacts, context: JudgeContext): WikiProblemL
 }
 
 /**
- * The read pages judged as `wiki-validate` judges them, the folder half among the read pages only.
+ * The read pages judged as `validate_wiki` judges them, the folder half among the read pages only.
  * O(P + Σ links + Σ sources); a page's own half is reused while its facts and the context hold.
  */
 export function judgeLibraryWiki(

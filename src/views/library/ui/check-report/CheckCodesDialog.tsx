@@ -21,7 +21,7 @@ export function CheckCodesButton({
   codeTestId,
   t,
 }: {
-  /** One validator line per finding, as `wiki-validate` prints it. */
+  /** One validator line per finding, as `validate_wiki` returns it. */
   lines: readonly string[];
   /** The file the findings are about, when the lines themselves do not name it. */
   file?: string;

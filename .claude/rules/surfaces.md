@@ -41,6 +41,7 @@ never a parallel router or surface fork.
 | Gray-area evidence | `src/shared/lib/project-source/tauri-gray-area.ts`, `src-tauri/src/gray_area.rs` | degradation card; local folder confirmation and secure bounded reads are macOS-only |
 | Source-folder read grant | `pickTauriSourceDirectory` in `src/shared/lib/vault-folder/native-vault/tauri-project-source.ts`, `src-tauri/src/project_source/access.rs` | unavailable; native picker grants read-only source access, not vault write access |
 | Harness source read | `src/shared/lib/project-source/tauri-harness-source.ts`, `src-tauri/src/harness_source/` | unavailable; a browser cannot see dot directories, so Harness names what it cannot reach |
+| Agent settings scopes | `src/shared/lib/harness-scopes/tauri-harness-scopes.ts`, `src-tauri/src/harness_scopes/` | unavailable; a browser cannot open a home or dot folder, so the popup explains each scope without reading it |
 | Jev evidence check (experimental) | `src/shared/lib/llm-connection/tauri-jev.ts`, `src-tauri/src/jev.rs` | covered by the models tab's degradation card |
 | LLM call | `src/shared/lib/llm-connection/tauri-llm.ts` | action not rendered |
 | Agent setup | `src/shared/lib/desktop-shell/tauri-bundled-mcp-server.ts` | degradation card; no absolute path to write a config |
@@ -104,6 +105,23 @@ The third written exception, for Work status only:
 
 A new field, a signal or a send needs a new decision record.
 
+### Reading agent settings from every scope
+
+The fourth written exception, for Harness only:
+
+| | |
+|---|---|
+| Files | the constant table in `src-tauri/src/harness_scopes/paths.rs`: `~/.claude/settings.json`, Claude Code's Local settings file where Claude Code reads it, Claude Code's managed file, `~/.codex/hooks.json`, Codex's System `hooks.json`, the connected repository's `.claude/settings.json` and `.codex/hooks.json`, and `[hooks.<Event>]` headers in `~/.codex/config.toml` and the repository's; plus a `settings.json` or `hooks.json` the person picked, held by Rust until the app closes |
+| Returned | per hook, at most 500 per file: an event name from the tool's documented list, matcher, type, and for a `command` hook its command, timeout and `async`; per file: status, size, modified time, `disableAllHooks`, `allowManagedHooksOnly`, permission-rule counts, how many hooks past 500 and how many undocumented event keys; for `config.toml` documented event names only; whether Git tracks or ignores the Local file |
+| Never returned | `env`, `apiKeyHelper` or any other key; an `http` hook's address or headers; a `prompt` or `agent` hook's text; permission-rule text; an undocumented event key or any `[hooks.state]` header; a parse error; `~/.claude/.credentials.json`, `~/.codex/auth.json` or any other file |
+| How | fixed names, never a folder listing or a path the page sends; every component below the home, repository or system folder opened without following a link, folders opened only to search them (`O_SEARCH`, `O_PATH`); a regular file of at most 1 MiB parsed into allow-listed structs; a picked file inside a Git work tree refused unless it is that repository's own settings file |
+| Direction | read only |
+| Gate | `no_planted_value_leaves_any_reader_result` and the `harness_scopes` tests over `tests/fixtures/harness-scope-files.json` |
+
+The Local settings file stays in `DENIED_NAMES` for the second exception's
+text reads; only this reader opens it. A new path, or any value, needs a new
+decision record.
+
 ### Folder watch is latency, not degradation
 
 The app applies the changed paths the OS watcher's `vault-changed` event
@@ -130,7 +148,7 @@ exposed to any injected script) and writing agent config from the web (no
 absolute path; `WebManualConnectPanel.tsx` renders the config locally instead).
 
 A degradation card states why the ability is unavailable, where it works
-(usually `/download/` or one CLI command), and what remains possible here, as
+(usually `/download/`), and what remains possible here, as
 in `atlas-git-web-get-app` and `ai-connection-web-degraded`. "Coming soon" is
 not a reason, and calling an available path unavailable is equally false.
 
@@ -151,7 +169,8 @@ app separately".
 ## Two distribution channels only
 
 The app bundle, whose connect button writes absolute paths, or a source checkout
-run as `node <checkout>/cli/src/index.mjs`. Neither `ontology-atlas` nor
+whose MCP server runs as `node <checkout>/mcp/src/index.js` and whose only
+command, `node <checkout>/cli init`, scaffolds a vault. Neither `ontology-atlas` nor
 `ontology-atlas-mcp` exists on npm; `npx ontology-atlas init` is a 404. Code
 authority: `src/shared/config/mcp/mcp-server-launch.ts`. Gate:
 `tests/contract/release/npm-channel-retired.contract.test.ts`.

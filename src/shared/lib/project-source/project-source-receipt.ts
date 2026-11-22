@@ -184,7 +184,7 @@ function view(
   };
 }
 
-/** Mint a receipt. The implementation (`mcp/src/project-source/project-source-mint.mjs`) is shared verbatim with the CLI and every MCP agent: a receipt that means different things depending on who wrote it is worse than none. */
+/** Mint a receipt. The implementation (`mcp/src/project-source/project-source-mint.mjs`) is shared verbatim with every MCP agent: a receipt that means different things depending on who wrote it is worse than none. */
 export function buildProjectSourceReceipt(input: {
   projectSlug: string;
   graphHash: string;
@@ -308,7 +308,7 @@ function portableLocation(value: unknown): value is string {
     && value.split("/").every((part) => part !== "" && part !== "." && part !== "..");
 }
 
-/** Copy-safe receipt summary. Field order matches CLI and the inspector. */
+/** Copy-safe receipt summary. Field order matches the inspector. */
 export function formatProjectSourceHandoff(view: ProjectSourceView): string {
   const repair = projectSourceRepairWitness(view);
   return [

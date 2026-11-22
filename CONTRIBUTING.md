@@ -29,10 +29,10 @@ pnpm build                        # static export
 
 The most valuable contributions today:
 
-1. **Scaffold a vault and tell us what's confusing** — from a source
-   checkout, `node cli/src/index.mjs init ./ontology` inside your own
-   repository (setup steps: [cli/README.md](cli/README.md#set-up-from-a-source-checkout)).
-   File an issue with what you tried and where you got stuck.
+1. **Build a first map and tell us what's confusing** — in the installed
+   app, press **Build ontology from code** on the start card and pick your
+   own repository. File an issue with what you tried and where you got
+   stuck.
 2. **Bring your own vault** — point the workbench `/docs` picker at a
    real codebase ontology you maintain. Tell us what missing tools or
    visualizations would change your day.

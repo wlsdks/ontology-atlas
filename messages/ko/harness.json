@@ -115,5 +115,230 @@
   "detailEvent": "이벤트",
   "detailStatus": "상태",
   "detailDeclared": "선언",
-  "close": "닫기"
+  "close": "닫기",
+  "scopes": {
+    "open": "설정이 있는 곳",
+    "title": "{tool} 설정이 있는 곳",
+    "toolAria": "에이전트 도구",
+    "kindsAria": "설정 종류",
+    "kind": {
+      "hooks": "훅",
+      "permissions": "권한 규칙",
+      "skills": "스킬",
+      "subagents": "서브에이전트",
+      "instructions": "지침 파일"
+    },
+    "what": {
+      "hooks": "훅은 에이전트가 정해진 순간에 스스로 실행하는 명령이에요. 도구를 쓰기 직전이나 답변을 마쳤을 때처럼요. 같은 훅도 어느 파일에 적느냐에 따라 적용되는 사람과 저장소가 달라져요.",
+      "permissions": "권한 규칙은 에이전트가 묻지 않고 해도 되는 일(allow), 물어보고 해야 하는 일(ask), 해서는 안 되는 일(deny)을 정해요. 훅과 같은 네 파일에 들어 있어요.",
+      "skills": "스킬은 에이전트가 필요할 때 꺼내 읽는 작업 절차예요. 폴더 하나에 SKILL.md 하나가 들어 있어요.",
+      "claudeSubagents": "서브에이전트는 일을 나눠 맡기는 별도의 에이전트 정의예요. 파일 하나가 서브에이전트 하나예요.",
+      "codexSubagents": "서브에이전트는 일을 나눠 맡기는 별도의 에이전트 정의예요. toml 파일 하나가 서브에이전트 하나예요.",
+      "claudeInstructions": "지침 파일은 에이전트가 세션을 시작할 때 읽는 안내문이에요. CLAUDE.md와 rules 폴더의 파일이 여기에 들어가요.",
+      "codexInstructions": "지침 파일은 에이전트가 세션을 시작할 때 읽는 안내문이에요. Codex는 AGENTS.md를 읽어요."
+    },
+    "order": "적용 범위가 넓은 것부터 좁은 순서예요. 우선순위가 아니에요.",
+    "label": {
+      "file": "파일",
+      "affects": "적용 범위",
+      "git": "Git",
+      "now": "지금 들어 있는 것",
+      "differs": "이웃과 다른 점",
+      "sameName": "같은 이름일 때",
+      "notRead": "Atlas가 읽지 않는 것",
+      "web": "이 브라우저에서는",
+      "where": "있는 곳",
+      "command": "명령",
+      "runs": "실행 조건"
+    },
+    "grid": {
+      "me": "나",
+      "others": "다른 사람",
+      "thisRepository": "이 저장소",
+      "otherProjects": "다른 저장소"
+    },
+    "repository": "저장소",
+    "caption": {
+      "managed": "조직이 보낸 모든 사람",
+      "system": "이 컴퓨터의 모든 사용자",
+      "user": "모든 저장소 · 나만",
+      "project": "이 저장소 · 팀과 공유",
+      "projectCodex": "이 저장소 · 팀과 공유 · 신뢰한 폴더만",
+      "local": "이 저장소 · 나만"
+    },
+    "affects": {
+      "managed": "조직이 이 설정을 보낸 모든 사람에게.",
+      "system": "이 컴퓨터를 쓰는 모든 사용자에게.",
+      "user": "나에게, 이 컴퓨터의 모든 저장소에서.",
+      "project": "이 저장소에서 일하는 모든 사람에게.",
+      "projectCodex": "이 저장소에서 일하는 사람 가운데, Codex에서 이 폴더를 신뢰한 사람에게.",
+      "local": "나에게, 이 저장소에서만.",
+      "picked": "나에게, {variable}이 이 폴더를 가리키는 세션에서."
+    },
+    "git": {
+      "outside": "아니요. 어느 저장소에도 들어 있지 않아요.",
+      "user": "커밋되지 않아요. 어느 저장소에도 들어 있지 않은 파일이에요.",
+      "project": "커밋돼요. 내가 커밋하고 팀원이 pull하면 팀원에게도 바뀌어요.",
+      "local": "커밋되지 않아요. Claude Code가 이 파일을 만들 때 Git에서 빼 둬요.",
+      "localTracked": "지금은 Git이 커밋할 수 있어요. 이 컴퓨터에만 두려면 .gitignore에 넣어 주세요.",
+      "localInstructions": "커밋되지 않아요. .gitignore에 넣어 두는 파일이에요."
+    },
+    "differs": {
+      "fixed": "내 파일로는 덮어쓰거나 끌 수 없어요. Atlas는 보여 주기만 하고 바꾸지 못해요.",
+      "user": "Project와 달리 팀원에게는 가지 않아요. Local과 달리 내 다른 저장소에도 적용돼요.",
+      "userCodex": "Project와 달리 팀원에게는 가지 않고, 내 다른 저장소에도 적용돼요.",
+      "project": "User, Local과 달리 여기를 바꾸면 팀 전체에 바뀌어요.",
+      "projectCodex": "User와 달리 여기를 바꾸면 팀 전체에 바뀌어요.",
+      "local": "Project와 달리 팀원은 보지 못해요. User와 달리 이 저장소 안에만 머물러요.",
+      "managedInstructions": "내 파일과 함께 읽혀요. 내 파일로 빼거나 덮어쓸 수 없어요.",
+      "picked": "이 폴더를 쓰는 세션은 {file} 대신 이 파일을 User로 읽어요. 앱을 닫으면 이 목록에서 빠져요."
+    },
+    "same": {
+      "claudeSkillsManaged": "같은 이름이면 User와 Project의 스킬보다 먼저 쓰여요.",
+      "claudeSkillsUser": "Project에 같은 이름의 스킬이 있어도 내 User 스킬이 쓰여요. 팀원과 다른 결과가 나올 수 있어요.",
+      "claudeSkillsProject": "User에 같은 이름의 스킬이 있으면 그쪽이 쓰여요.",
+      "claudeSubagentsManaged": "같은 이름이면 Project와 User의 서브에이전트보다 먼저 쓰여요.",
+      "claudeSubagentsUser": "Project에 같은 이름의 서브에이전트가 있으면 그쪽이 쓰여요. 스킬과는 반대예요.",
+      "claudeSubagentsProject": "내 User에 같은 이름의 서브에이전트가 있어도 이 Project 것이 쓰여요.",
+      "codexSkills": "이름이 같은 스킬이 다른 폴더에 있어도 둘 다 보여요."
+    },
+    "now": {
+      "hooks": "{count, plural, =0 {훅 없음.} other {훅 #개.}}",
+      "permissions": "{counts}. Atlas는 개수만 읽고 규칙 글은 읽지 않아요. 붙여 넣은 토큰이 들어 있을 수 있어서예요.",
+      "noPermissions": "권한 규칙 없음.",
+      "missing": "이 컴퓨터에는 이 파일이 없어요.",
+      "missingProject": "이 저장소에는 이 파일이 없어요.",
+      "invalid": "{file} 파일이 올바른 JSON이 아니라서 Atlas가 아무것도 읽지 않았어요. 편집기에서 고친 다음 파일을 다시 읽어 주세요.",
+      "unreadable": "Atlas가 {file} 파일을 열지 못했어요: {reason}. 이 파일에서는 아무것도 보여 주지 않아요.",
+      "truncated": "이 파일의 훅 {total, number}개 중 처음 {shown}개만 보여 줘요.",
+      "unknownEvents": "도구 문서에 없는 이벤트 {count}개와 그 훅은 보여 주지 않아요.",
+      "notReadFolder": "Atlas는 이 폴더를 읽지 않아요.",
+      "notReadFile": "Atlas는 이 파일을 읽지 않아요.",
+      "homeUnread": "Atlas는 홈 폴더 안의 이름을 읽지 않아요.",
+      "listed": "{count}개. 이 화면의 {group} 분류에 있어요."
+    },
+    "heading": {
+      "codexTrust": "Codex는 신뢰한 폴더에서만 이 파일을 읽어요.",
+      "codexReview": "새로 생기거나 바뀐 훅은 Codex의 /hooks에서 승인해야 실행돼요."
+    },
+    "place": {
+      "outside": "이 저장소 밖에 있는 파일이에요. 저장소를 받은 팀원에게는 이 훅이 없어요.",
+      "project": "이 저장소에 있는 파일이에요. 저장소를 받은 팀원에게도 이 훅이 있어요.",
+      "local": "이 컴퓨터의 이 저장소에만 있는 파일이에요. 팀원에게는 이 훅이 없어요.",
+      "managed": "조직이 이 컴퓨터에 둔 파일이에요. 어느 저장소를 열든 적용돼요."
+    },
+    "readNote": "저장소 밖 파일은 훅 항목과 권한 규칙 개수만 읽고, 컴퓨터 밖으로 보내지 않아요.",
+    "excerpt": {
+      "note": "Atlas가 읽는 이벤트, matcher, type, command, timeout만으로 다시 적었어요. 이 항목의 다른 값은 읽지 않아요."
+    },
+    "reason": {
+      "link": "다른 파일로 가는 링크예요",
+      "notAFile": "파일이 아니에요",
+      "notAFolder": "경로 중간이 폴더가 아니에요",
+      "permissionDenied": "권한이 없어요",
+      "tooLarge": "1 MiB보다 커요",
+      "io": "디스크가 오류를 돌려줬어요",
+      "missing": "파일이 없어요"
+    },
+    "note": {
+      "codexProject": "Codex는 신뢰한 폴더에서만 이 파일을 읽어요. config.toml의 [hooks] 표에 적힌 훅은 이벤트 이름만 보여 줘요.",
+      "localWorktree": "linked worktree에서는 Claude Code가 main checkout에 있는 이 파일을 읽어요."
+    },
+    "another": {
+      "note": "세션이 {variable}로 다른 설정 폴더를 쓰고 있다면 그 폴더의 {fileName}을 골라 주세요. 앱을 닫을 때까지 User 파일과 함께 보여요.",
+      "action": "다른 설정 파일 보기"
+    },
+    "picked": "직접 고른 파일",
+    "pick": {
+      "name": "직접 고른 파일은 이름이 settings.json이나 hooks.json일 때만 읽어요.",
+      "link": "그 파일은 다른 파일로 가는 링크라서 읽지 않았어요.",
+      "notAFile": "파일이 아니라서 읽지 않았어요.",
+      "inRepository": "{file} 파일은 Git 저장소 {repository} 안에 있고 그 저장소의 설정 파일이 아니라서 읽지 않았어요.",
+      "tooMany": "직접 고른 파일은 앱을 닫을 때까지 16개까지 둘 수 있어요.",
+      "unreadable": "그 파일을 열지 못했어요.",
+      "alreadyListed": "{file} 파일은 이미 목록에 있어요."
+    },
+    "finding": {
+      "outside": "{count, plural, other {이 저장소 밖 파일에 훅 #개가 있어요}}",
+      "outsideShow": "첫 번째 보기",
+      "toolGap": "{toolA}에는 이 저장소에서 동작을 멈출 수 있는 훅이 있고 {toolB}에는 없어요. {toolB}는 그 순간에 멈추지 않아요.",
+      "allOff": "{file}에 disableAllHooks가 켜져 있어서 Claude Code가 여기서 User, Project, Local 파일의 훅을 건너뛰어요. 조직이 관리하는 훅은 그대로 실행돼요. {file}에서 그 줄을 지우면 다시 켜져요.",
+      "managedOnly": "조직이 자기 훅만 허용해서 Claude Code가 User, Project, Local 파일의 훅 {count}개를 건너뛰어요.",
+      "localTracked": "Git이 {file} 파일을 커밋할 수 있어요. 이 컴퓨터에만 두려면 .claude/settings.local.json을 .gitignore에 넣어 주세요.",
+      "worktreeLocal": "{folder} 폴더는 linked worktree예요. Claude Code는 {file} 대신 main checkout의 {mainFile} 파일을 읽어요.",
+      "codexInline": "{file} 파일에도 {events} 이벤트의 훅이 있어요. Atlas는 명령은 보여 주지 않고 이벤트만 보여 줘요."
+    },
+    "tag": {
+      "twoFilesClaude": "두 파일에 있음",
+      "twoFilesClaudeHint": "{files} 모두에 이 훅이 있어요. Claude Code는 한 번만 실행해요.",
+      "twoFilesCodex": "두 번 실행될 수 있음",
+      "twoFilesCodexHint": "{files} 모두에 이 명령이 있어요. Codex는 한 이벤트에 두 번 실행할 수 있어요.",
+      "needsReview": "승인 필요",
+      "workStatus": "작업 현황이 추가함",
+      "workStatusHint": "작업 현황이 에이전트가 하는 일을 보여 주려고 추가한 훅이에요.",
+      "typeOnly": "{type} 훅이에요. Atlas는 이 훅이 있다는 것만 보여 주고 무엇을 보내는지는 보여 주지 않아요."
+    },
+    "reading": "{file} 읽는 중",
+    "help": "{scope} 설명 보기",
+    "runs": {
+      "claude": "다른 모든 파일의 훅과 함께 전부 실행돼요. 같은 훅이 두 파일에 있으면 한 번만 실행돼요.",
+      "codex": "다른 모든 파일의 훅과 함께 전부 실행돼요. 같은 명령이 두 파일에 있으면 Codex는 두 번 실행할 수 있어요."
+    },
+    "webNote": "각 파일이 무엇인지만 보여 줘요. 데스크톱 앱은 내 컴퓨터의 파일에 무엇이 들어 있는지도 보여 줘요.",
+    "webStageNote": "각 설정 파일이 무엇이고 누구에게 적용되는지는 브라우저에서도 볼 수 있어요.",
+    "notRead": {
+      "claude": "파일 없이 조직이 보내는 정책, Claude Code에서 이 폴더를 신뢰했는지, 홈 폴더의 스킬·서브에이전트·지침 파일. CLAUDE_CONFIG_DIR로 옮긴 설정 폴더는 다른 설정 파일 보기로 파일을 골라야 읽어요.",
+      "codex": "Codex가 기록해 둔 훅 검토 여부, Codex에서 이 폴더를 신뢰했는지, 홈 폴더의 스킬·서브에이전트·지침 파일. CODEX_HOME으로 옮긴 설정 폴더는 다른 설정 파일 보기로 파일을 골라야 읽어요."
+    },
+    "count": {
+      "none": "파일 없음",
+      "unread": "읽지 않음",
+      "invalid": "JSON 오류",
+      "unreadable": "열 수 없음",
+      "total": "{count, plural, other {#개}}"
+    },
+    "org": {
+      "skills": "조직이 배포한 스킬 폴더",
+      "subagents": "조직이 배포한 서브에이전트 폴더",
+      "instructions": "조직이 배포한 CLAUDE.md"
+    },
+    "combine": {
+      "claudeHooks": {
+        "lead": "어느 파일에 있든 훅은 전부 실행돼요.",
+        "body": "Managed, User, Project, Local 가운데 어느 것도 다른 파일의 훅을 덮어쓰거나 끄지 못해요. 같은 훅이 두 파일에 있으면 한 번만 실행돼요. Claude Code는 이 폴더를 신뢰한다고 답하기 전까지 훅을 모두 보류해요."
+      },
+      "codexHooks": {
+        "lead": "어느 파일에 있든 훅은 전부 실행돼요.",
+        "body": "서로 덮어쓰지 않고, 같은 명령이 두 파일에 있으면 두 번 실행될 수 있어요. Codex는 새로 생기거나 바뀐 훅을 /hooks에서 검토하기 전까지 건너뛰어요. Codex에는 Local이 없어요."
+      },
+      "claudePermissions": {
+        "lead": "모든 파일의 규칙이 하나로 합쳐져요.",
+        "body": "Claude Code는 금지(deny), 확인(ask), 허용(allow) 순서로 살피고 처음 맞는 규칙이 결정해요. Managed 규칙은 내 파일로 덮어쓸 수 없어요."
+      },
+      "claudeSkills": {
+        "lead": "이름이 같으면 하나만 쓰여요.",
+        "body": "Managed가 User보다, User가 Project보다 먼저예요. 그래서 내 User 스킬이 같은 이름의 Project 스킬을 대신해요."
+      },
+      "codexSkills": {
+        "lead": "Codex는 모든 폴더의 스킬을 나열해요.",
+        "body": "이름이 같은 스킬 둘은 합쳐지지 않고 둘 다 보여요."
+      },
+      "claudeSubagents": {
+        "lead": "이름이 같으면 하나만 쓰여요.",
+        "body": "Managed, Project, User 순서예요. 그래서 Project 서브에이전트가 같은 이름의 내 User 서브에이전트를 대신해요. 스킬과는 반대예요."
+      },
+      "codexSubagents": {
+        "lead": "이름이 같을 때 어느 쪽이 쓰이는지는 Codex 문서에 적혀 있지 않아요.",
+        "body": "Atlas도 짐작해서 말하지 않아요."
+      },
+      "claudeInstructions": {
+        "lead": "전부 읽어요.",
+        "body": "Claude Code는 맨 위 폴더부터 세션을 시작한 폴더까지 내려오면서 읽고, 어느 것도 다른 것을 대신하지 않아요."
+      },
+      "codexInstructions": {
+        "lead": "위에서 아래로 이어 붙여 읽어요.",
+        "body": "Codex는 ~/.codex/AGENTS.md 다음에 저장소 루트부터 각 AGENTS.md를 읽고, 합쳐서 32 KiB까지예요. 한 폴더 안에서는 AGENTS.override.md가 AGENTS.md를 대신해요."
+      }
+    }
+  }
 }

@@ -167,18 +167,10 @@ describe('VaultAgentSetupPanel', () => {
     fireEvent.click(screen.getByText(setupCopy.nextStepsSummary));
 
     expect(deeper).toHaveAttribute('open');
-    // The first three (config files · restart · verify connection) were **promoted
-    // into the three steps**, so only the three that follow remain here. This is the
-    // cleanup of a screen that had four separate numbering systems.
-    expect(
-      screen.getByText(setupCopy.stepGate),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(setupCopy.stepMcpVerify),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(setupCopy.stepGraphProof),
-    ).toBeInTheDocument();
+    // Config files, restart and connection check were promoted into the three steps, so only the
+    // two agent-side reads remain here.
+    expect(screen.getByText(setupCopy.stepMcpVerify)).toBeInTheDocument();
+    expect(screen.getByText(setupCopy.stepGraphProof)).toBeInTheDocument();
     // The tool rows stand on the page; restart and check stand in the dialog (open above).
     expect(screen.getByTestId('agent-setup-steps')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-step-2')).toBeInTheDocument();
@@ -194,55 +186,18 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByText('다른 코드 폴더에서 열기 전에 연결 설정을 복사하세요'),
     ).toBeInTheDocument();
-    expect(screen.getByText('확인 명령')).toBeInTheDocument();
-    expect(screen.getByText('자체 점검')).toBeInTheDocument();
-    expect(screen.getByText('고치기 전에 아래 명령을 복사해 실행하세요')).toBeInTheDocument();
     expect(screen.getByLabelText('첫 연결 확인 항목')).toBeInTheDocument();
     // 「Connection file status」 appears in two places — the fold's group title and the first
     // connection evidence's item name. Both point at the same thing, so only
     // existence is checked.
     expect(screen.getAllByText('연결 파일 상태').length).toBeGreaterThan(0);
-    expect(
-      screen.getByText(
-        'agent-setup --json이 고치기 전에 도구별 연결 파일이 준비됐는지 알려줘요.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(setupCopy.proofContractConfigStateDesc)).toBeInTheDocument();
     expect(screen.getByText('서버 연결')).toBeInTheDocument();
-    expect(
-      screen.getByText('mcp-verify가 로컬 서버를 띄우고 현재 도구 목록을 확인한 뒤, 이 폴더를 실제로 읽어 봐요.'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('확인 명령')).toBeInTheDocument();
-    expect(
-      screen.getByText('agent-brief --verify-fallbacks --json --exit-zero이 수정하기 전에 「동작하는지」와 「빠른지」를 알려줘요.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText(setupCopy.proofContractMcpVerifyDesc)).toBeInTheDocument();
     expect(screen.getByText('폴더 요약')).toBeInTheDocument();
-    expect(
-      screen.getByText('workspace-brief와 agent-brief --graph-db-pack이 같은 폴더를 각각 설명해요.'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByLabelText('쓰는 방식'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('터미널만')).toBeInTheDocument();
-    expect(screen.getByText('도구에 연결')).toBeInTheDocument();
-    expect(screen.getByText('그래프 팩')).toBeInTheDocument();
-    expect(screen.getByText('먼저 확인')).toBeInTheDocument();
-    expect(
-      screen.getByText('Claude Code·Codex·Cursor가 서버의 현재 도구를 직접 부르고, 고칠 때 안전장치를 받아요.'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByLabelText('서버 연결 확인 명령 미리보기'),
-    ).toHaveTextContent('node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000');
-    expect(
-      screen.getByText('설정이 애매하거나 다른 코드 폴더에서 열었을 때, 수정하기 전에 「동작하는지」와 「빠른지」를 먼저 봐요.'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByLabelText('확인 명령 결과 읽는 법'),
-    ).toBeInTheDocument();
-    // Scoped to the gate-rules list: the ready word is also a tool row's button label.
-    const gateRules = screen.getByLabelText('확인 명령 결과 읽는 법');
-    expect(within(gateRules).getByText('안 됨')).toBeInTheDocument();
-    expect(within(gateRules).getByText('느림')).toBeInTheDocument();
-    expect(within(gateRules).getByText('준비됨')).toBeInTheDocument();
+    expect(screen.getByText(setupCopy.proofContractGraphBriefsDesc)).toBeInTheDocument();
+    // The drawer names MCP calls and app controls; no line needs a source checkout.
+    expect(screen.getByTestId('agent-setup-advanced')).not.toHaveTextContent(/\$ATLAS|cli\/src\/index\.mjs/);
     expect(screen.getByText('코드를 고친 뒤')).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -252,17 +207,14 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByRole('button', { name: '동기화 절차 복사' }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: '상태 확인 명령 복사' }),
-    ).toBeInTheDocument();
     expect(screen.getByLabelText('여는 폴더')).toBeInTheDocument();
     expect(screen.getByText('이 폴더에서')).toBeInTheDocument();
     expect(
-      screen.getByText('이 폴더 자체를 열면 확인·요약 명령이 현재 폴더(.)를 그대로 써요.'),
+      screen.getByText(setupCopy.rootVaultDesc),
     ).toBeInTheDocument();
     expect(screen.getByText('다른 코드 폴더에서')).toBeInTheDocument();
     expect(
-      screen.getByText('제품 코드 폴더에서 열면 상태 확인·고치기·서버 확인 명령 모두 이 폴더의 절대경로를 적어야 해요.'),
+      screen.getByText(setupCopy.rootCodebaseDesc),
     ).toBeInTheDocument();
     expect(within(screen.getByTestId('agent-setup-inspection')).getByText('.mcp.json')).toBeInTheDocument();
     expect(within(screen.getByTestId('agent-setup-inspection')).getByText('.codex/config.toml')).toBeInTheDocument();
@@ -273,21 +225,6 @@ describe('VaultAgentSetupPanel', () => {
     );
 
     await waitFor(() => expect(localVault.ensureAgentConfigs).toHaveBeenCalledTimes(1));
-  });
-
-  it('puts the absolute desktop vault path in the mcp-verify preview', () => {
-    renderPanel({
-      handle: {
-        name: 'ontology',
-        rootPath: '/Users/dana/side-project/ontology-atlas/docs/ontology',
-      } as unknown as FileSystemDirectoryHandle,
-    });
-
-    expect(
-      screen.getByLabelText('서버 연결 확인 명령 미리보기'),
-    ).toHaveTextContent(
-      "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/dana/side-project/ontology-atlas/docs/ontology' --timeout-ms 15000",
-    );
   });
 
   it('shows ready when both real connection configs are valid, without the example file', () => {
@@ -472,24 +409,13 @@ describe('VaultAgentSetupPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: '확인 프롬프트 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('validate_vault'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('workspace_brief'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('agent_brief'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('performanceOk=false'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('After any non-trivial code change, sync docs/ontology before finishing'),
-    );
+    const prompt = copyTextMock.mock.calls[0]?.[0] ?? '';
+    expect(prompt).toContain('validate_vault');
+    expect(prompt).toContain('workspace_brief');
+    expect(prompt).toContain('agent_brief');
+    expect(prompt).toContain('Agents > MCP');
+    expect(prompt).toContain('After any non-trivial code change, sync docs/ontology before finishing');
+    expect(prompt).not.toMatch(/\$ATLAS|cli\/src\/index\.mjs|--verify-fallbacks/);
     expect(
       await screen.findByRole('button', { name: '확인 프롬프트 복사됨' }),
     ).toBeInTheDocument();
@@ -535,170 +461,29 @@ describe('VaultAgentSetupPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: '연결 설정 한 번에 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ontology-atlas agent setup packet'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Root check:'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Agent root: <absolute path to your codebase root>'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Ontology vault: <absolute path to your team-vault folder>'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Run the setup gate from the agent root'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Mode chooser:'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('CLI-only: use validate, workspace-brief'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('call connection_info for the current toolCount'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Graph DB pack: use bounded query plans'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('JSON gate result rules:'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('First-contact proof contract:'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Config state: agent-setup --json reports root-specific'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('list the tools including finalize_project_meaning'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json --exit-zero returns ok/performanceOk'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Graph briefs: workspace-brief and agent-brief --graph-db-pack describe the same local vault'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP-connected proof:'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('query_ontology({"operation":"workspace_brief","limit":5})'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('query_ontology({"operation":"agent_brief","limit":5})'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('query_ontology({"operation":"health","limit":5})'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('query_ontology({"operation":"match_nodes","kind":"capability","minDegree":2,"sort":"degree","limit":10})'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ok=false: setup or fallback command execution is broken'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ok=true and performanceOk=false'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Post-change ontology sync:'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('sync docs/ontology before finishing'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Skip sync for typos, comments, one-line style'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Read-first run order from a codebase root:'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "1. Check config state: node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "2. Repair only if state reports missing configs: node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('3. Restart Claude Code / Cursor / Codex from the agent root.'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "4. Verify MCP tools: node $ATLAS/cli/src/index.mjs mcp-verify '<absolute path to your team-vault folder>' --timeout-ms 15000",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "5. Gate fallback performance: node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "6. Read the graph: node $ATLAS/cli/src/index.mjs workspace-brief '<absolute path to your team-vault folder>' && node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --prompt",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-setup'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('--root'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('--write'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('docs/AGENT-GRAPH-WORKFLOW.md'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('mcp/src/index.js'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('[mcp_servers.ontology-atlas]'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('codex mcp add ontology-atlas'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('validate_vault'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Machine-readable setup gate for automation from the codebase root:',
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Machine-readable setup gate when the vault folder is the current directory:',
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Machine-readable config state check before repair:'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('<absolute path to your team-vault folder>'),
-    );
+    const packet = copyTextMock.mock.calls[0]?.[0] ?? '';
+    for (const line of [
+      'ontology-atlas agent setup packet',
+      'Agent root: <absolute path to your codebase root>',
+      'Ontology vault: <absolute path to your team-vault folder>',
+      'First-contact proof contract:',
+      'connection_info reports the current toolCount',
+      'tools/list includes finalize_project_meaning and query_ontology',
+      'MCP-connected proof:',
+      'query_ontology({"operation":"workspace_brief","limit":5})',
+      'query_ontology({"operation":"match_nodes","kind":"capability","minDegree":2,"sort":"degree","limit":10})',
+      'Post-change ontology sync:',
+      'Read-first run order from a codebase root:',
+      'open Agents > MCP and press the connect button for your agent',
+      '2. Restart Claude Code / Cursor / Codex from the agent root.',
+      'docs/AGENT-GRAPH-WORKFLOW.md',
+      'mcp/src/index.js',
+      '[mcp_servers.ontology-atlas]',
+      'codex mcp add ontology-atlas',
+    ]) {
+      expect(packet).toContain(line);
+    }
+    expect(packet).not.toMatch(/\$ATLAS|cli\/src\/index\.mjs|--verify-fallbacks/);
     expect(
       await screen.findByRole('button', { name: '연결 설정을 복사했어요' }),
     ).toBeInTheDocument();
@@ -721,223 +506,10 @@ describe('VaultAgentSetupPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: '연결 설정 한 번에 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'The ontology vault path below came from the installed desktop app',
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Ontology vault: /Users/dana/Team Vault/docs/ontology'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-setup '/Users/dana/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-setup '/Users/dana/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/dana/Team Vault/docs/ontology' --timeout-ms 15000",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.not.stringContaining('<absolute path to your team-vault folder>'),
-    );
-  });
-
-  it('copies the codebase-root agent-setup command', async () => {
-    copyTextMock.mockResolvedValue(true);
-    renderPanel({
-      handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
-      agentConfigStatus: {
-        mcpJson: true,
-        codexConfig: true,
-        mcpExample: true,
-      },
-    });
-
-    fireEvent.click(
-      screen.getByRole('button', { name: '설정 만들기 명령 복사' }),
-    );
-
-    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(
-      "node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
-    );
-    expect(
-      await screen.findByRole('button', {
-        name: '설정 만들기 명령 복사됨',
-      }),
-    ).toBeInTheDocument();
-  });
-
-  it('puts the selected desktop vault path in the agent-setup command', async () => {
-    copyTextMock.mockResolvedValue(true);
-    renderPanel({
-      handle: {
-        name: 'team-vault',
-        rootPath: '/Users/dana/Team Vault/docs/ontology',
-      } as unknown as FileSystemDirectoryHandle,
-      agentConfigStatus: {
-        mcpJson: true,
-        codexConfig: true,
-        mcpExample: true,
-      },
-    });
-
-    fireEvent.click(
-      screen.getByRole('button', { name: '설정 만들기 명령 복사' }),
-    );
-
-    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(
-      "node $ATLAS/cli/src/index.mjs agent-setup '/Users/dana/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
-    );
-  });
-
-  it('copies the codebase-root setup state check command first', async () => {
-    copyTextMock.mockResolvedValue(true);
-    renderPanel({
-      handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
-      agentConfigStatus: {
-        mcpJson: true,
-        codexConfig: true,
-        mcpExample: true,
-      },
-    });
-
-    fireEvent.click(
-      screen.getByRole('button', { name: '상태 확인 명령 복사' }),
-    );
-
-    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(
-      "node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
-    );
-    expect(
-      await screen.findByRole('button', {
-        name: '상태 확인 명령 복사됨',
-      }),
-    ).toBeInTheDocument();
-  });
-
-  it('puts the selected desktop vault path in the setup state check command', async () => {
-    copyTextMock.mockResolvedValue(true);
-    renderPanel({
-      handle: {
-        name: 'team-vault',
-        rootPath: '/Users/dana/Team Vault/docs/ontology',
-      } as unknown as FileSystemDirectoryHandle,
-      agentConfigStatus: {
-        mcpJson: true,
-        codexConfig: true,
-        mcpExample: true,
-      },
-    });
-
-    fireEvent.click(
-      screen.getByRole('button', { name: '상태 확인 명령 복사' }),
-    );
-
-    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(
-      "node $ATLAS/cli/src/index.mjs agent-setup '/Users/dana/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
-    );
-  });
-
-  it('copies the CLI graph runbook', async () => {
-    copyTextMock.mockResolvedValue(true);
-    renderPanel({
-      agentConfigStatus: {
-        mcpJson: true,
-        codexConfig: true,
-        mcpExample: true,
-      },
-    });
-
-    fireEvent.click(
-      screen.getByRole('button', { name: '터미널 명령 모음 복사' }),
-    );
-
-    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs validate .'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs workspace-brief .'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --prompt'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --graph-db-pack'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs hubs . --plan --limit 10 --types depends_on,relates'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs hubs . --limit 10 --types depends_on,relates'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000'),
-    );
-    expect(
-      screen.getByRole('list', { name: '복사되는 터미널 명령 미리보기' }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('node $ATLAS/cli/src/index.mjs agent-brief . --graph-db-pack')).toBeInTheDocument();
-    expect(screen.getByText('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks')).toBeInTheDocument();
-    expect(screen.getByText('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero')).toBeInTheDocument();
-    expect(
-      await screen.findByRole('button', { name: '터미널 명령 모음 복사됨' }),
-    ).toBeInTheDocument();
-  });
-
-  it('copies the CLI graph runbook with the absolute desktop vault path', async () => {
-    copyTextMock.mockResolvedValue(true);
-    renderPanel({
-      handle: {
-        name: 'team-vault',
-        rootPath: '/Users/dana/Team Vault/docs/ontology',
-      } as unknown as FileSystemDirectoryHandle,
-      agentConfigStatus: {
-        mcpJson: true,
-        codexConfig: true,
-        mcpExample: true,
-      },
-    });
-
-    fireEvent.click(
-      screen.getByRole('button', { name: '터미널 명령 모음 복사' }),
-    );
-
-    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs validate '/Users/dana/Team Vault/docs/ontology'",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs hubs '/Users/dana/Team Vault/docs/ontology' --plan --limit 10 --types depends_on,relates",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/dana/Team Vault/docs/ontology' --timeout-ms 15000",
-      ),
-    );
+    const packet = copyTextMock.mock.calls[0]?.[0] ?? '';
+    expect(packet).toContain('The ontology vault path below came from the installed desktop app');
+    expect(packet).toContain('Ontology vault: /Users/dana/Team Vault/docs/ontology');
+    expect(packet).not.toContain('<absolute path to your team-vault folder>');
   });
 
   it('copies the first-connection evidence packet', async () => {
@@ -956,91 +528,24 @@ describe('VaultAgentSetupPanel', () => {
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('ontology-atlas first-contact agent proof'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Setup gate:'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "If setup state reports missing configs: node $ATLAS/cli/src/index.mjs agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Restart Claude Code / Cursor / Codex from the codebase root after repair.',
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs mcp-verify '<absolute path to your team-vault folder>' --timeout-ms 15000",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Read-first graph proof:'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP-connected proof:'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('query_ontology({"operation":"workspace_brief","limit":5})'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('query_ontology({"operation":"agent_brief","limit":5})'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Use these MCP calls only after mcp-verify succeeds'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('CLI fallback proof:'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs workspace-brief '<absolute path to your team-vault folder>'",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --prompt",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --graph-db-pack",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('JSON gate result rules:'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('First-contact proof contract:'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Config state: agent-setup --json reports root-specific'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('list the tools including finalize_project_meaning'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json --exit-zero returns ok/performanceOk'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Graph briefs: workspace-brief and agent-brief --graph-db-pack describe the same local vault'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Post-change ontology sync:'),
-    );
+    const packet = copyTextMock.mock.calls[0]?.[0] ?? '';
+    for (const line of [
+      'ontology-atlas first-contact agent proof',
+      'Ontology vault: <absolute path to your team-vault folder>',
+      'Setup:',
+      'open Agents > MCP and press the connect button for your agent',
+      '2. Restart Claude Code / Cursor / Codex from the codebase root.',
+      '3. connection_info({}) -> read toolCount',
+      '4. validate_vault({})',
+      'Read-first graph proof:',
+      'query_ontology({"operation":"agent_brief","limit":5})',
+      'If these tools are missing, the agent is not connected yet',
+      'First-contact proof contract:',
+      'Post-change ontology sync:',
+    ]) {
+      expect(packet).toContain(line);
+    }
+    expect(packet).not.toMatch(/\$ATLAS|cli\/src\/index\.mjs|--verify-fallbacks/);
     expect(
       await screen.findByRole('button', { name: '첫 연결 확인 절차 복사됨' }),
     ).toBeInTheDocument();
@@ -1065,61 +570,9 @@ describe('VaultAgentSetupPanel', () => {
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-setup '/Users/dana/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "If setup state reports missing configs: node $ATLAS/cli/src/index.mjs agent-setup '/Users/dana/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/dana/Team Vault/docs/ontology' --timeout-ms 15000",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Team Vault/docs/ontology' --graph-db-pack",
-      ),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.not.stringContaining('<absolute path to your team-vault folder>'),
-    );
-  });
-
-  it('copies the automation JSON gate command', async () => {
-    copyTextMock.mockResolvedValue(true);
-    renderPanel({
-      handle: {
-        name: 'team-vault',
-        rootPath: '/Users/dana/Team Vault/docs/ontology',
-      } as unknown as FileSystemDirectoryHandle,
-      agentConfigStatus: {
-        mcpJson: true,
-        codexConfig: true,
-        mcpExample: true,
-      },
-    });
-
-    // The verification dialog portals to `document.body`, outside the panel's region.
-    fireEvent.click(screen.getByRole('button', { name: '확인 명령 복사' }));
-
-    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(
-      "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Team Vault/docs/ontology' --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
-    );
-    expect(screen.getByText('상태 확인')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Team Vault/docs/ontology' --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      await screen.findByRole('button', { name: '확인 명령 복사됨' }),
-    ).toBeInTheDocument();
+    const packet = copyTextMock.mock.calls[0]?.[0] ?? '';
+    expect(packet).toContain('Ontology vault: /Users/dana/Team Vault/docs/ontology');
+    expect(packet).not.toContain('<absolute path to your team-vault folder>');
   });
 
   it('copies the post-change ontology sync gate on its own', async () => {
@@ -1135,27 +588,13 @@ describe('VaultAgentSetupPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: '동기화 절차 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('# Post-change ontology sync gate'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('## MCP'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('"operation": "health"'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('"operation": "maintenance_plan"'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('"tool": "validate_vault"'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('## CLI fallback'),
-    );
-    expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs validate [vault]'),
-    );
+    const packet = copyTextMock.mock.calls[0]?.[0] ?? '';
+    expect(packet).toContain('# Post-change ontology sync gate');
+    expect(packet).toContain('## MCP');
+    expect(packet).toContain('"operation": "health"');
+    expect(packet).toContain('"operation": "maintenance_plan"');
+    expect(packet).toContain('"tool": "validate_vault"');
+    expect(packet).not.toMatch(/\$ATLAS|cli\/src\/index\.mjs|dogfood/);
     expect(
       await screen.findByRole('button', { name: '동기화 절차 복사됨' }),
     ).toBeInTheDocument();

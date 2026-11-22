@@ -9,14 +9,6 @@ import {
   VAULT_KINDS as MCP_VAULT_KINDS,
   defaultBody as mcpDefaultBody,
 } from "../../../mcp/src/schema.mjs";
-/*
- * Only the names the CLI re-exports; `cli/src/lib/mcp-bridge/schema.mjs` executes `mcp/src/schema.mjs`, so
- * this proves the CLI reaches the canon.
- */
-import {
-  VAULT_KINDS as CLI_VAULT_KINDS,
-  defaultBody as cliDefaultBody,
-} from "../../../cli/src/lib/mcp-bridge/schema.mjs";
 import {
   META_MODEL_RULES_EN as APP_META_MODEL_RULES_EN,
 } from "../../../src/features/vault-agent/model/system-prompt";
@@ -33,13 +25,11 @@ const LOCAL_SPEC_POINTER = `${SPEC_PATH}${SPEC_ANCHOR}`;
 describe("Atlas meta-model — one public canon reaches every authoring channel", () => {
   it("schema mirrors expose one public reference and five authorable kinds", () => {
     expect(MCP_META_MODEL_REFERENCE).toContain(LOCAL_SPEC_POINTER);
-    // `vault-schema.contract.test.ts` owns the kind list; this checks only that CLI and MCP agree.
-    expect(CLI_VAULT_KINDS).toEqual(MCP_VAULT_KINDS);
+    expect(MCP_VAULT_KINDS).toHaveLength(5);
   });
 
   it.each(MCP_VAULT_KINDS)("%s starter points to the semantic contract", (kind) => {
     expect(mcpDefaultBody(kind, "Example")).toContain(MCP_META_MODEL_REFERENCE);
-    expect(cliDefaultBody(kind, "Example")).toBe(mcpDefaultBody(kind, "Example"));
   });
 
   it("source MCP and in-app agent receive the exact same compact boundary", () => {

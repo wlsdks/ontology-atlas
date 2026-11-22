@@ -11,11 +11,11 @@ import {
   vaultClaudeBridgeForLocale,
 } from "@/entities/vault-session/lib/ontology-starter";
 import { MCP_SERVER_NAME } from "@/shared/config/mcp/mcp-server-launch";
-import { analyzeAgentFiles } from "../../../cli/src/lib/agent-setup/agent-files.mjs";
-import { runCliJson } from "../../helpers/run-cli-json";
+import { analyzeAgentFiles } from "@/entities/agent-files";
+import { runHealthCheck } from "../../helpers/run-health-check";
 
 /**
- * Contract for the agent guide placed in the vault: the CLI and the app produce the same file, and
+ * Contract for the agent guide placed in the vault: `init` and the app produce the same file, and
  * every `snake_case` name in backticks is a registered MCP tool, read from
  * `docs/.generated/mcp-surface.json` rather than a hand-kept list.
  */
@@ -53,15 +53,7 @@ const starterFrontmatterKeys = new Set(
  * create a copy that eventually diverges. So health is run once against the dogfood
  * vault to obtain it — 0.2 s.
  */
-const healthCheckIds = (() => {
-  const payload = runCliJson<{ checks?: Array<{ id?: string }> }>([
-    join(process.cwd(), "cli", "src", "index.mjs"),
-    "health",
-    "docs/ontology",
-    "--json",
-  ]);
-  return new Set((payload.checks ?? []).map((check) => check.id ?? ""));
-})();
+const healthCheckIds = new Set(runHealthCheck("docs/ontology").map((check) => check.id ?? ""));
 
 const knownNames = new Set([
   ...registeredTools,
@@ -101,7 +93,7 @@ describe("vault agent guide", () => {
 
       const bridge = vaultClaudeBridgeForLocale(locale);
 
-      it("is byte-identical to the CLI template", () => {
+      it("is byte-identical to the init template", () => {
         expect(guide.content).toBe(
           readFileSync(templatePath(locale, VAULT_AGENT_GUIDE_PATH), "utf8"),
         );

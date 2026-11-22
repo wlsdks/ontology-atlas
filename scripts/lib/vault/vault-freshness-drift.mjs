@@ -1,6 +1,6 @@
 // Pure drift computation for the PR vault freshness check: nodes whose `path:`/`elements:`
-// reference a changed file but whose own `.md` was not touched. Mirrors `mcp/src/drift/detect-drift.mjs`
-// and `cli/src/lib/git/preflight-match.mjs`; check both if matching changes.
+// reference a changed file but whose own `.md` was not touched. Mirrors `mcp/src/drift/detect-drift.mjs`;
+// check both if matching changes.
 
 const ONTOLOGY_SLUG_PREFIXES = ["capabilities/", "domains/", "elements/", "documents/"];
 

@@ -92,6 +92,34 @@ knows it: Claude Code's
 file is then listed under the Claude Code filter, tagged `harness.importedByClaudeMd`); and Codex's
 root plus largest nested `AGENTS.md` against its default 32 KiB limit as a bar.
 
+**In the app, hook categories list every settings file, not only the repository's** (2026-11-22).
+The bridge (`read_harness_scopes`, `.claude/rules/surfaces.md`, "Reading agent settings from every
+scope") reads the User, Project, Local and Managed files of Claude Code and the User, Project and
+System files of Codex, plus any file picked with `harness.scopes.another.action`. Pane 2 then groups
+a category's hooks under one heading per file: the reach mark (a 2x2 of you and others against this
+repository and other projects), the scope name, the tool, a help mark that opens the popup on that
+scope, the reach in words and the path. The repository's files come first, then User, then
+Managed and System. A row names the script the command runs, with its event and matcher; Codex rows
+carry `harness.scopes.tag.needsReview`, and a hook two files define carries
+`harness.scopes.tag.twoFilesClaude` or `harness.scopes.tag.twoFilesCodex`. A file that is not valid
+JSON or cannot be opened keeps its heading with the reason. Under the explainer, one line counts the
+hooks set outside the repository (`harness.scopes.finding.outside`) with a chip that selects the
+first. Pane 3 for such a hook says where it lives, who it reaches (with the same grid as the popup),
+whether Git commits its file, its event, its command, and that every file's hooks run together.
+Until the first read answers, the repository's rows stay and pane 2 ends in `harness.scopes.reading`.
+
+**Where settings live** (`harness.scopes.open`) is a header action, and a second action on the
+browser's stage. It opens one centred dialog: a Claude Code / Codex switch; tabs for hooks,
+permission rules (Claude Code only), skills, subagents and instruction files; the tool's scopes as
+one stack from the widest reach to the narrowest (`harness.scopes.order`); and the selected scope's
+file, who it affects, whether Git commits it, what it holds now and how it differs from its
+neighbours. Under the stack, hooks add up per scope, and one sentence says how the scopes combine
+for that kind. The app counts what each file holds; permission rules are counted, never shown. The
+web names the file patterns with no counts and its foot says so (`harness.scopes.webNote`). From
+User, **Show another settings file** opens the native picker for a settings folder moved with
+`CLAUDE_CONFIG_DIR` or `CODEX_HOME`; a file inside another Git repository is refused with
+`harness.scopes.pick.inRepository`. Escape closes the dialog.
+
 **The panes fill the workbench width** separated by hairlines: pane 1 is 17.5rem, pane 2 22.5rem and
 pane 3 the rest, while the content is at least 64rem wide (a window 1168px wide or wider, with the rail). Narrower,
 pane 3 opens as the shared centred dialog when an item is pressed, and Escape or Close returns focus
@@ -190,8 +218,8 @@ other file's name only (`.claude/rules/surfaces.md`). The binding they read is m
   `summary_views_ko`. The screen shows the locale line to a reader in that locale
   and the canonical `summary_<role>` to everyone else, so a profile translated one
   role at a time never leaves a blank where a sentence was. `summary_<role>` stays
-  the reviewed fact: it is the only sentence the agent handoff, `inspect_architecture`
-  and CLI `architecture` print, and a locale line without it is refused, as is a
+  the reviewed fact: it is the only sentence the agent handoff and
+  `inspect_architecture` print, and a locale line without it is refused, as is a
   locale line for a role the profile does not declare. A document whose profile this
   screen cannot read is now named in a notice above the table instead of replacing
   every profile in the folder with an error.
@@ -204,16 +232,15 @@ other file's name only (`.claude/rules/surfaces.md`). The binding they read is m
   roles, with literal paths, and asks the person what the rule should be; it
   proposes no rule, role name or pattern and writes nothing. A verified agent takes
   the chosen task as its opening turn; a browser copies the same sentence.
-- `inspect_architecture` and CLI `architecture` scan supported source imports and
+- `inspect_architecture` scans supported source imports and
   return `architectureBrief:v1` with `conforms`, `violated`, or `unknown`.
   Observed role edges retain value/type-only/unknown usage counts and exact
   receipts. Unsupported languages, unknown import usage, unmapped edges,
   unruled edges, and empty roles fail closed; absence of evidence is never a
   green result.
-- The short agent action sends a state-bound inspection or change request. In the installed
-  app, an exact CLI fallback is included only when the project source binding,
-  vault path, and Atlas CLI entry are all verified absolute paths; otherwise the
-  packet says the fallback is unavailable instead of inventing a command.
+- The short agent action sends a state-bound inspection or change request. Without
+  MCP the packet tells the agent to read the vault's Markdown, write nothing, and
+  say the Atlas connection is missing, instead of inventing a command.
 - At narrow widths the verdict and the table come first in document order; the role pane
   follows and scrolls into view without covering the persistent bottom tabs, whose reserve
   stays part of the workbench.

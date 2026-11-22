@@ -18,20 +18,6 @@ Atlas 本身不会把代码变成含义。智能体读取代码，带着依据�
 
 **用本地模型从代码构建。** 在 macOS 应用中，地图旁的智能体面板里有 **从代码创建**。它需要在 **智能体**、**模型** 中设置一个本地模型，例如 Ollama、LM Studio 或 llama.cpp。选择一个代码文件夹后，预览会列出代码文件夹、审查后的改动将保存到哪里、所用的模型、模型地址，以及有多少文件符合条件。**运行** 只会把代码片段发送到那个本地地址。结果是一份文档改动的提议清单，勾选你想要的再应用即可。
 
-## 从终端开始
-
-先准备好 Atlas 源码的本地克隆（见 [CLI](/guide/cli)），然后在你自己的仓库中运行：
-
-```bash
-cd /path/to/your/repo
-node ~/tools/ontology-atlas/cli/src/index.mjs init ./atlas
-node ~/tools/ontology-atlas/cli/src/index.mjs bootstrap . --vault ./atlas
-```
-
-`init` 会创建 `atlas` 文件夹，其中包含五个起步文件、智能体配置 `.mcp.json` 和 `.codex/config.toml`，以及三个供 Claude Code 和 Codex 使用的起步技能：`atlas-review`、`atlas-grow` 和 `atlas-absorb`。起步文件只是格式示例，并不是对你产品的分析。
-
-`bootstrap` 会扫描仓库并打印一份审查计划。它不写入任何内容，并以退出码 3 结束，表示仍需批准。在该仓库中重启你的智能体，然后在智能体里继续。
-
 ## 向智能体提什么要求
 
 第一张地图要小。挑一个你想弄明白的行为，只就这一个行为提出要求。例如：
@@ -60,7 +46,7 @@ node ~/tools/ontology-atlas/cli/src/index.mjs bootstrap . --vault ./atlas
 好的提议能让你针对某一条具体的说法提出异议。逐一检查每个概念和每条关系：
 
 - **名称说明它做什么。** 光有一个文件夹名或库名，同事从中得不到多少信息。
-- **正文各部分齐全。** 一句定义、`## Includes`、`## Excludes` 和 `## Uncertainty`。缺少其中任何一项时，`validate` 会发出警告。
+- **正文各部分齐全。** 一句定义、`## Includes`、`## Excludes` 和 `## Uncertainty`。缺少其中任何一项时，`validate_vault` 会发出警告。
 - **依据指向一个文件。** 能力或元素带有指向代码的 `path`。路径存在并不能证明解释正确，所以要去读一读。
 - **关系成立。** 问问自己：把目标移除之后，这项能力是否仍然能工作。仅凭一条 import 并不能证明存在依赖。
 
@@ -68,15 +54,7 @@ node ~/tools/ontology-atlas/cli/src/index.mjs bootstrap . --vault ./atlas
 
 ## 复用 CLAUDE.md 和 AGENTS.md
 
-你的智能体指令文件往往已经描述了这个代码库。`absorb` 会把它们转成概念：
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs absorb CLAUDE.md AGENTS.md --vault ./atlas
-```
-
-默认情况下它只打印计划。加上 `--write` 后，它会把策略和规则部分保存为 `document` 概念，把原文件备份为 `.pre-absorb.bak`，并把原文件改写成一个简短的指引，保留它没有吸收的部分。架构部分只作为提议，从不自动写入。智能体也可以通过 MCP 工具 `absorb_document` 做同样的事。
-
-`init` 还会打印一小段文字，供你粘贴到自己的 `CLAUDE.md` 或 `AGENTS.md` 中。它告诉以后的智能体会话：本体已经存在，以及什么时候该去读它。Atlas 不会替你编辑这些文件。
+你的智能体指令文件往往已经描述了这个代码库。请智能体对其中一个文件运行 MCP 工具 `absorb_document`。默认情况下它只返回计划。加上 `confirm: true` 后，它会把策略和规则部分保存为 `document` 概念，把原文件备份为 `.pre-absorb.bak`，并把原文件改写成一个简短的指引，保留它没有吸收的部分。架构部分只作为提议，从不自动写入。
 
 如果文件夹里已经有不在地图上的 Markdown 文档，**开始使用** 卡片会增加一个步骤：**用我的文档生成地图**。
 

@@ -342,14 +342,18 @@ function writeNode(vaultRoot, entry) {
 }
 
 function validatePreparedVault(vaultRoot) {
-  const result = runCliJson(['validate', vaultRoot, '--json']);
+  const result = runToolJson(vaultRoot, 'validate_vault');
   if (result.status !== 0) throw new Error(`prepared vault validation failed: ${result.stderr || result.stdout}`);
-  const payload = result.payload;
-  if (payload.problems?.length) throw new Error(`prepared vault has validation problems: ${JSON.stringify(payload.problems)}`);
+  if (result.payload?.summary?.errorFiles) throw new Error(`prepared vault has validation errors: ${JSON.stringify(result.payload.problems)}`);
 }
 
-function runCliJson(args) {
-  const result = spawnSync(process.execPath, [join(REPO_ROOT, 'cli/src/index.mjs'), ...args], { encoding: 'utf8' });
+/** One MCP tool call through the checkout's server, parsed as JSON. */
+function runToolJson(vaultRoot, tool, args = {}) {
+  const result = spawnSync(
+    process.execPath,
+    [join(REPO_ROOT, 'mcp/scripts/call-tool.mjs'), vaultRoot, tool, JSON.stringify(args)],
+    { encoding: 'utf8' },
+  );
   let payload = null;
   let parseError = null;
   try {
@@ -380,9 +384,9 @@ function checkPostChangeVault({ caseDefinition, mode, prepared, transcript }) {
   const filePresent = existsSync(ontologyPath);
   const body = filePresent ? readFileSync(ontologyPath, 'utf8') : '';
   const markerPresent = body.includes(caseDefinition.ontologyMarker);
-  const validate = runCliJson(['validate', prepared.vaultRoot, '--json']);
-  const compile = runCliJson(['compile', prepared.vaultRoot, '--summary', '--json']);
-  const validatePassed = validate.status === 0 && !validate.payload?.problems?.length;
+  const validate = runToolJson(prepared.vaultRoot, 'validate_vault');
+  const compile = runToolJson(prepared.vaultRoot, 'compile_ontology', { summary: true });
+  const validatePassed = validate.status === 0 && validate.payload?.summary?.errorFiles === 0;
   const compilePassed = compile.status === 0 && Boolean(compile.payload);
   const patchCalls = completedMcpCalls(transcript, 'patch_concept');
   const validateCalls = completedMcpCalls(transcript, 'validate_vault');
@@ -397,7 +401,7 @@ function checkPostChangeVault({ caseDefinition, mode, prepared, transcript }) {
     patchCalls,
     validateCalls,
     compileCalls,
-    validateProblems: validate.payload?.problems?.length ?? null,
+    validateProblems: validate.payload?.summary?.errorFiles ?? null,
     compileStatus: compile.status,
   };
 }

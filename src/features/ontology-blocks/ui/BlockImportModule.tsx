@@ -78,7 +78,7 @@ function importUiReducer(state: ImportUiState, action: ImportUiAction): ImportUi
   }
 }
 
-/** Zero writes before approval; conflicts skip or take a block prefix like the CLI's `import --rename` (`merge-plan.ts`). */
+/** Zero writes before approval; conflicts skip or take a block prefix (`merge-plan.ts`). */
 export function BlockImportModule({
   renderTrigger,
 }: {

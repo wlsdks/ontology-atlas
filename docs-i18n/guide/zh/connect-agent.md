@@ -43,15 +43,7 @@ cd ~/tools/ontology-atlas && pnpm install
 pnpm --dir mcp install --frozen-lockfile
 ```
 
-然后在你自己仓库的根目录下，为一个已有的本体文件夹写入配置：
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs agent-setup ./atlas --write
-```
-
-`agent-setup` 会为 Claude Code 创建或修复 `.mcp.json`，为 Codex 创建或修复 `.codex/config.toml`。它只修改 `ontology-atlas` 这一项，保留你的其他 MCP 服务器。无法解析的文件会保持原样，命令会打印一份模板，供你手动合并。
-
-其他任何通过 stdio 使用 MCP 的客户端，都可以用同样的三个字段注册该服务器：
+然后把服务器注册到你的智能体。Claude Code 从你仓库根目录下的 `.mcp.json` 读取它；其他任何通过 stdio 使用 MCP 的客户端，也都可以用同样的三个字段注册该服务器：
 
 ```json
 {
@@ -83,13 +75,7 @@ Codex 只有在你信任某个项目文件夹之后，才会读取该项目的 `
 
 `connection_info` 会返回服务器解析出的文件夹路径和仓库路径，以及它提供的工具。如果文件夹不是你预期的那个，请先修正配置，再让智能体写入。
 
-在应用中，标题旁的 **确认连接** 会显示重启步骤以及每个工具配置文件的状态。在终端里，`mcp-verify` 会启动服务器、列出它的工具，并对文件夹执行真实的查询：
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs mcp-verify ./atlas
-```
-
-它能证明服务器和文件夹工作正常，但不能证明你的智能体已经加载了配置。
+在应用中，标题旁的 **确认连接** 会显示重启步骤以及每个工具配置文件的状态。
 
 ## 智能体能读写什么
 

@@ -1,6 +1,6 @@
 /**
  * How a person reads the vault git record; `atlas-git-changes.ts` owns what gets recorded, a
- * contract shared with the CLI and Rust, so screen copy stays free to change here. Concepts fold
+ * contract shared with Rust, so screen copy stays free to change here. Concepts fold
  * apart from other files, paths split into name and place, git plumbing is stripped, and our own
  * commit subjects are read back into plain language.
  */

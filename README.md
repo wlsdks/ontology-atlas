@@ -46,7 +46,7 @@ How is this different from a code graph, a wiki, Obsidian or `CLAUDE.md`? See
 2. **Open a folder.** Atlas reads its Markdown in place, or starts an `atlas/` folder in your repository, and shows the path before it writes anything.
 3. **Connect your agent.** In **Agents › MCP**, press **Connect** for your tool, restart the agent, and ask about your next task.
 
-macOS (Apple Silicon) is signed and notarized and carries the MCP server inside the app. Windows x64 is an unsigned beta. On Linux, use the browser version or run the [CLI and MCP server from a source checkout](cli/README.md#set-up-from-a-source-checkout). [Releases](https://github.com/wlsdks/ontology-atlas/releases) list each version's files and checksums. Releases marked **Pre-release** on GitHub are betas: installed apps update only to stable releases, so a beta reaches only someone who installs it by hand.
+macOS (Apple Silicon) is signed and notarized and carries the MCP server inside the app. Windows x64 is an unsigned beta. On Linux, use the browser version or run the [MCP server from a source checkout](mcp/README.md#1-register-with-an-agent). [Releases](https://github.com/wlsdks/ontology-atlas/releases) list each version's files and checksums. Releases marked **Pre-release** on GitHub are betas: installed apps update only to stable releases, so a beta reaches only someone who installs it by hand.
 
 ## See it
 
@@ -160,7 +160,7 @@ Construction trials, their failures and limits are in
 
 ## Documentation
 
-[What is Atlas?](docs/guide/what-is-atlas.md) · [Atlas compared](docs/guide/atlas-compared.md) · [First five minutes](docs/guide/first-five-minutes.md) · [Build the first map from your code](docs/guide/from-your-repo.md) · [What becomes a node?](docs/guide/what-becomes-a-node.md) · [Relations](docs/guide/relations.md) · [Specification](docs/ONTOLOGY-ATLAS-SPEC.md) · [Features](docs/FEATURES.md) · [CLI](cli/README.md) · [Architecture](docs/ARCHITECTURE.md)
+[What is Atlas?](docs/guide/what-is-atlas.md) · [Atlas compared](docs/guide/atlas-compared.md) · [First five minutes](docs/guide/first-five-minutes.md) · [Build the first map from your code](docs/guide/from-your-repo.md) · [What becomes a node?](docs/guide/what-becomes-a-node.md) · [Relations](docs/guide/relations.md) · [Specification](docs/ONTOLOGY-ATLAS-SPEC.md) · [Features](docs/FEATURES.md) · [Architecture](docs/ARCHITECTURE.md)
 
 ## Contributing
 

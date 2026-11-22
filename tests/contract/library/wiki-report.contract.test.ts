@@ -1,8 +1,6 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import {
   WIKI_REPORT_EXPECTED,
@@ -20,30 +18,10 @@ import { validateWikiPage as validatePageMcp } from '../../../mcp/src/library/wi
 import { aggregateWikiFindings as aggregateMcp } from '../../../mcp/src/library/wiki-report.mjs';
 
 /**
- * One folder, three surfaces, one enumeration: the `wiki-validate --json` command, the
- * `validate_wiki` validators and the app TypeScript twin must agree on codes, page lists, group
+ * One folder, two surfaces, one enumeration: the `validate_wiki` validators and the app
+ * TypeScript twin must agree on codes, page lists, group
  * order and advisory split. The expected set is stated whole so the check fails closed.
  */
-
-let vaultRoot: string;
-
-beforeAll(() => {
-  vaultRoot = mkdtempSync(join(tmpdir(), 'atlas-wiki-report-'));
-  for (const page of WIKI_REPORT_FOLDER) {
-    const absolute = join(vaultRoot, page.path);
-    mkdirSync(dirname(absolute), { recursive: true });
-    writeFileSync(absolute, page.raw, 'utf8');
-  }
-  for (const source of WIKI_REPORT_SOURCES) {
-    const absolute = join(vaultRoot, source);
-    mkdirSync(dirname(absolute), { recursive: true });
-    writeFileSync(absolute, 'source bytes\n', 'utf8');
-  }
-});
-
-afterAll(() => {
-  if (vaultRoot) rmSync(vaultRoot, { recursive: true, force: true });
-});
 
 /** `<code>\t<page>` for every finding, sorted — the shape the expectation is written in. */
 function rows(pages: ReadonlyArray<{ page: string; problems: ReadonlyArray<{ code: string }> }>): string[] {
@@ -75,32 +53,7 @@ function judge(
   }));
 }
 
-describe('the structural check — the CLI, the MCP validators and the app enumerate one folder', () => {
-  it('the CLI command prints exactly the expected findings', async () => {
-    const { runWikiValidate } = await import('../../../cli/src/commands/library/wiki-validate.mjs');
-    const written: string[] = [];
-    const write = process.stdout.write.bind(process.stdout);
-    process.stdout.write = ((chunk: string) => {
-      written.push(String(chunk));
-      return true;
-    }) as typeof process.stdout.write;
-    let code: number;
-    try {
-      code = await runWikiValidate(['--vault', vaultRoot, '--json']);
-    } finally {
-      process.stdout.write = write;
-    }
-    // Exit 1: at least one page does not fit. Zero pages would also be an answer, and a
-    // green run here would mean the fixture never reached the validator.
-    expect(code).toBe(1);
-    const payload = JSON.parse(written.join('')) as {
-      pageCount: number;
-      pages: Array<{ page: string; problems: Array<{ code: string }> }>;
-    };
-    expect(payload.pageCount).toBe(WIKI_REPORT_FOLDER.length);
-    expect(rows(payload.pages)).toEqual([...WIKI_REPORT_EXPECTED]);
-  });
-
+describe('the structural check — the MCP validators and the app enumerate one folder', () => {
   it("the MCP validators — what `validate_wiki` calls — agree", () => {
     expect(rows(judge(validatePageMcp, validateFolderMcp))).toEqual([...WIKI_REPORT_EXPECTED]);
   });
@@ -124,7 +77,7 @@ describe('the structural check — the CLI, the MCP validators and the app enume
     }))).toEqual([...WIKI_REPORT_EXPECTED_GROUPS]);
     expect(report.findingCount).toBe(WIKI_REPORT_EXPECTED.length);
     expect(report.pageCount).toBe(WIKI_REPORT_FOLDER.length);
-    // `wiki-validate` calls every page with any finding off-template, but a page whose only findings are
+    // `validate_wiki` calls every page with any finding off-template, but a page whose only findings are
     // advisory fits; only one of the two may be called off-template on a screen.
     expect(report.blockingPageCount).toBe(WIKI_REPORT_EXPECTED_BLOCKING_PAGES);
     expect(report.fitPageCount).toBe(WIKI_REPORT_EXPECTED_FIT_PAGES);

@@ -48,7 +48,7 @@ import { createVaultDocCache } from '../../../mcp/src/vault/documents/document-c
 
 /**
  * One format however many things write a page: the TS and MCP validators must share the same codes
- * (messages may differ), since the Docs sidebar, `wiki-validate` exit code and agent retries branch
+ * (messages may differ), since the Docs sidebar and agent retries branch
  * on the code. The template is compared character for character because it is prompt material.
  */
 

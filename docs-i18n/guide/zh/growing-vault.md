@@ -11,48 +11,25 @@
 
 智能体先用 `get_concept` 读取受影响的概念，再用 `patch_concept`、`add_concepts` 或 `add_relations` 修改它们，然后运行 `validate_vault`。代码重命名不一定要重命名概念。先判断是含义变了，还是只有文件变了；如果只是文件挪了位置，更新概念的 `path` 即可。
 
-`init` 会为 Claude Code 和 Codex 安装三个起步技能。`atlas-review` 报告哪些地方失效或断开了，`atlas-grow` 提议下一步该添加什么，`atlas-absorb` 从笔记或规格说明中提取概念。在你选定要保留的内容之前，它们都不会写入任何东西。
+由 Atlas 创建的本体文件夹自带三个供 Claude Code 和 Codex 使用的起步技能。`atlas-review` 报告哪些地方失效或断开了，`atlas-grow` 提议下一步该添加什么，`atlas-absorb` 从笔记或规格说明中提取概念。在你选定要保留的内容之前，它们都不会写入任何东西。
 
 ## 查看哪些内容过时了
 
 在桌面应用中，地图会标出依据可能已经过时的概念。如果概念引用的某个文件，在概念自身的文档最后一次修改之后又有了新的提交，这个概念就是 **过时** 的。每种地图视图都会用琥珀色或金色标出过时的概念，并在图例中注明这个标记。这需要文件夹的 Git 历史，所以浏览器版和没有 Git 的文件夹不会显示过时标记。
 
-在终端里，`health` 会运行全套检查，包括概念所引用的源码路径是否仍然存在：
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs health ./atlas
-```
-
-`validate` 只检查 Markdown 及其引用，不检查代码。如果一次重构删掉了被引用的文件，`validate` 可能照样通过，`health` 却会失败。
+智能体的 `validate_vault` 会检查 Markdown 及其引用，并在 `pathDrift` 列表中列出概念引用了、但已经不存在的源码路径。逐一用 `patch_concept` 修正即可。
 
 应用中的 **变更** 界面会读取你所选代码仓库的 Git 历史。它汇总一段时间内合并的内容，并为每项改动列出 **受影响的概念**，也就是代码路径被这项改动碰到的概念。忙完一周之后，适合来这里看看。
 
-提交之前，`preflight --staged` 会把你暂存的文件与引用它们的概念对应起来，并打印它们会影响什么。它从不阻止提交；没有匹配的概念时，它什么也不打印。
-
 ## 避免重复
 
-地图退化最常见的方式，是同一个概念用两个名字写了两遍。添加之前先检查：
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs similar "order acceptance" ./atlas
-```
-
-如果得分很高，就去更新已有的概念。智能体也有同样的保护：如果已经存在标题相似的概念，`add_concept` 会返回警告。如果同一个概念已经存在两份，就把它们合并。合并会把所有引用都转到保留下来的那个概念上：
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs merge capabilities/checkout capabilities/order-acceptance --vault ./atlas
-```
+地图退化最常见的方式，是同一个概念用两个名字写了两遍。智能体在添加概念之前，可以用 `query_ontology` 的 `similar_nodes` 查一查有没有与拟定标题重叠的概念。如果有，就去更新已有的概念，而不是新建一个。如果已经存在标题相似的概念，`add_concept` 也会返回警告。如果同一个概念已经存在两份，就用 `merge_concepts` 把它们合并。合并会把所有引用都转到保留下来的那个概念上。
 
 ## 重命名而不破坏引用
 
-手动重命名概念容易漏掉引用。`rename` 会移动文件，并改写所有指向它的概念，包括 `relation_notes` 里的理由：
+手动重命名概念容易漏掉引用。智能体先用 `find_backlinks` 查看引用，再用 `rename_concept` 移动文件，并改写所有指向它的概念，包括 `relation_notes` 里的理由。
 
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs backlinks capabilities/checkout --vault ./atlas
-node ~/tools/ontology-atlas/cli/src/index.mjs rename capabilities/checkout capabilities/order-acceptance --vault ./atlas
-```
-
-slug 会改变，但概念的 `uid` 保持不变，所以智能体和导出结果仍然能认出它。`rename`、`merge` 和 `delete` 默认只做预览，加上 `--confirm` 才会执行。只要还有其他概念指向要删除的概念，`delete` 就会拒绝执行。智能体使用对应的 MCP 工具 `rename_concept`、`merge_concepts` 和 `delete_concept`，它们同样会先预览。
+slug 会改变，但概念的 `uid` 保持不变，所以智能体和导出结果仍然能认出它。`rename_concept`、`merge_concepts` 和 `delete_concept` 都会先预览，得到确认后才执行。只要还有其他概念指向要删除的概念，`delete_concept` 就会拒绝执行。
 
 ## 在地图上查看审阅结果
 
@@ -67,10 +44,6 @@ slug 会改变，但概念的 `uid` 保持不变，所以智能体和导出结�
 
 ## 提交改动
 
-本体文件夹在 Git 里就是普通文件，所以你可以在同一个 pull request 中，把概念的改动和代码一起审查。在应用中，**Git** 界面按文档列出尚未提交的改动并标出改动的行，显示改动数量的 **提交** 按钮会把它们记录下来。你也可以在那里把某个文档恢复到更早的版本。在终端里，`snapshot` 只提交本体文件夹，并附上一份改动摘要：
+本体文件夹在 Git 里就是普通文件，所以你可以在同一个 pull request 中，把概念的改动和代码一起审查。在应用中，**Git** 界面按文档列出尚未提交的改动并标出改动的行，显示改动数量的 **提交** 按钮会把它们记录下来。你也可以在那里把某个文档恢复到更早的版本。智能体的 `git_snapshot` 只提交本体文件夹，默认只预览将要提交的内容。
 
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs snapshot ./atlas --dry-run
-```
-
-这里用到的所有命令都列在 [CLI 一章](/guide/cli) 中。概念和关系的具体形式，请看 [概念之间的关系](/guide/relations)。
+概念和关系的具体形式，请看 [概念之间的关系](/guide/relations)。

@@ -529,10 +529,10 @@ describe("evaluateDogfoodGate", () => {
     );
     const drifted = makeDogfoodToolsList();
     drifted.tools.find((tool) => tool.name === "query_ontology").inputSchema.properties.afterActionId.description =
-      "nextExecutableAction/nextReviewAction point only at the first executable/review action in the current returned page.";
+      "Resume after this action id.";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: drifted }),
-      ["tools/list: query_ontology afterActionId description missing current-page next pointer detail fields"],
+      ["tools/list: query_ontology afterActionId description missing cursor pagination guidance"],
     );
   });
 

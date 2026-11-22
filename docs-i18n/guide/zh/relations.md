@@ -70,16 +70,7 @@ MCP 服务器根据同一批 frontmatter 回答关于图的问题，所以你的
 
 写入时，`add_relation` 接收 `from`、`to`、一个 `type`（`depends_on`、`relates`、`contains`、`describes`、`domains`、`capabilities`、`elements` 或 `domain`）以及一个 `why`。`remove_relation` 和 `replace_relation` 默认只做预览，只有带上 `confirm: true` 时才会写入。`broader` 目前还不是 `add_relation` 支持的类型：智能体需要用 `patch_concept` 修改它，传入完整的新列表和文件的 `mtime`，然后运行 `validate_vault`。
 
-[CLI](/guide/cli) 在终端里提供同样的读取功能。在 Atlas 源码的本地克隆中运行时，下面这些命令读取的是 Atlas 仓库自己的本体：
-
-```bash
-node cli/src/index.mjs backlinks capabilities/mcp-tool-server --vault docs/ontology
-node cli/src/index.mjs path capabilities/cli-commands domains/human-workbench --vault docs/ontology
-node cli/src/index.mjs blast-radius capabilities/mcp-tool-server --direction incoming --vault docs/ontology
-node cli/src/index.mjs domain-matrix docs/ontology --types depends_on
-```
-
-`relate` 和 `remove-relation` 用于写入或移除一条关系，执行的检查与 MCP 工具相同。在地图上，**编辑关系** 也能做同样的事，每次处理一条关系；见 [编辑概念和关系](/guide/studio)。
+在地图上，**编辑关系** 每次写入一条关系，执行的检查与 MCP 工具相同；见 [编辑概念和关系](/guide/studio)。
 
 ## 文件始终是事实
 

@@ -41,7 +41,7 @@
 2. **打开文件夹**：Atlas 会原地读取其中的 Markdown，或在你的仓库中新建 `atlas/` 文件夹，并且在写入任何内容之前先显示路径。
 3. **连接智能体**：在 **智能体 › MCP** 中，为你使用的工具点击 **连接**，重启智能体，然后问问它你的下一个任务。
 
-macOS（Apple Silicon）版已签名并通过公证，应用内置 MCP 服务器。Windows x64 是未签名的测试版。在 Linux 上，请使用浏览器版，或在[源码检出](cli/README.md#set-up-from-a-source-checkout)中运行 CLI 和 MCP 服务器。[Releases](https://github.com/wlsdks/ontology-atlas/releases) 列出了每个版本的文件和校验和。 在 GitHub 上标为 **Pre-release** 的版本是测试版：已安装的应用只会更新到正式版本，所以只有手动安装的人才会用到测试版。
+macOS（Apple Silicon）版已签名并通过公证，应用内置 MCP 服务器。Windows x64 是未签名的测试版。在 Linux 上，请使用浏览器版，或在[源码检出](mcp/README.md#1-register-with-an-agent)中运行 MCP 服务器。[Releases](https://github.com/wlsdks/ontology-atlas/releases) 列出了每个版本的文件和校验和。在 GitHub 上标为 **Pre-release** 的版本是测试版：已安装的应用只会更新到正式版本，所以只有手动安装的人才会用到测试版。
 
 ## 界面一览
 
@@ -145,7 +145,7 @@ Atlas 还处在早期。我们的基准测试尚未显示使用 Atlas 能得到�
 
 ## 文档
 
-[认识 Atlas](docs/guide/what-is-atlas.md) · [Atlas 对比](docs/guide/atlas-compared.md) · [最初五分钟](docs/guide/first-five-minutes.md) · [从代码构建第一张地图](docs/guide/from-your-repo.md) · [什么会成为概念](docs/guide/what-becomes-a-node.md) · [关系](docs/guide/relations.md) · [规范](docs/ONTOLOGY-ATLAS-SPEC.md) · [功能](docs/FEATURES.md) · [CLI](cli/README.md) · [架构](docs/ARCHITECTURE.md)
+[认识 Atlas](docs/guide/what-is-atlas.md) · [Atlas 对比](docs/guide/atlas-compared.md) · [最初五分钟](docs/guide/first-five-minutes.md) · [从代码构建第一张地图](docs/guide/from-your-repo.md) · [什么会成为概念](docs/guide/what-becomes-a-node.md) · [关系](docs/guide/relations.md) · [规范](docs/ONTOLOGY-ATLAS-SPEC.md) · [功能](docs/FEATURES.md) · [架构](docs/ARCHITECTURE.md)
 
 ## 参与贡献
 

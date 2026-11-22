@@ -78,7 +78,7 @@ describe('vault walk rules: TS and Rust must agree', () => {
     expect(rustSource).toMatch(/const VAULT_SOURCES_DIR: &str = "sources";/);
   });
 
-  it('MCP, which the CLI and scripts load, names and anchors the sources folder like the app', () => {
+  it('MCP, which scripts load, names and anchors the sources folder like the app', () => {
     expect(MCP_VAULT_SOURCES_DIR).toBe(VAULT_SOURCES_DIR);
     for (const path of ['sources/a.pdf', 'sources/notes/a.md', 'notes/sources/a.md', 'sources.md']) {
       expect(isMcpVaultSourcePath(path), path).toBe(isVaultSourcePath(path));

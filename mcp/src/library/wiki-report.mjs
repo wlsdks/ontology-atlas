@@ -1,6 +1,6 @@
 /**
  * Groups per-page wiki verdicts into the per-kind report every surface shows
- * (`wiki-validate`, `validate_wiki`, the Library), so their numbers cannot
+ * (`validate_wiki`, the Library), so their numbers cannot
  * disagree (`docs/DECISIONS.md`, "The Library keeps its spine, and computes the
  * structural check itself"). The app imports it
  * through `src/shared/lib/library/wiki-report.mjs`, a re-export rather than a twin: this module
@@ -54,7 +54,7 @@ function comparePages(left, right) {
  * @param {{
  *   pages?: ReadonlyArray<{ page?: string, path?: string, problems?: ReadonlyArray<{ code: string, message?: string, line?: number, detail?: unknown }> }>,
  *   unmeasured?: ReadonlyArray<string>,
- * }} input `pages` were judged (vault-relative, the `wiki-validate --json` shape);
+ * }} input `pages` were judged (vault-relative, the `validate_wiki` page shape);
  *   pages in `unmeasured` exist but were not judged yet (the app reads lazily),
  *   and must never be drawn as "nothing found".
  * @returns {{

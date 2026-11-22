@@ -462,18 +462,10 @@ describe('i18n message catalog', () => {
       ko.featuresMisc.starterCta.proofAgentBody,
       ko.featuresMisc.starterCta.verifyAriaLabel,
       ko.featuresMisc.starterCta.verifyStepMcp,
-      ko.featuresMisc.starterCta.verifyStepCli,
       ko.featuresMisc.starterCta.copyPromptLabel,
-      ko.featuresMisc.starterCta.copyCliLabel,
-      ko.featuresMisc.starterCta.copyCliCopied,
-      ko.featuresMisc.starterCta.copyCliFailed,
-      ko.featuresMisc.starterCta.copyJsonGateLabel,
-      ko.featuresMisc.starterCta.copyJsonGateCopied,
-      ko.featuresMisc.starterCta.copyJsonGateFailed,
       ko.featuresMisc.starterCta.emptyCta,
       ko.featuresMisc.starterCta.secondaryTitle,
       ko.featuresMisc.starterCta.secondaryCopyTitle,
-      ko.featuresMisc.starterCta.secondaryCliTitle,
       ko.featuresMisc.starterCta.secondaryLabel,
     ].join('\n');
 
@@ -481,8 +473,6 @@ describe('i18n message catalog', () => {
     assert.equal(ko.featuresMisc.starterCta.proofLocalLabel, '로컬 파일');
     assert.equal(ko.featuresMisc.starterCta.proofGraphLabel, '연결 검사');
     assert.equal(ko.featuresMisc.starterCta.proofAgentLabel, '먼저 읽기');
-    assert.equal(ko.featuresMisc.starterCta.copyCliLabel, 'CLI 점검 복사');
-    assert.equal(ko.featuresMisc.starterCta.copyJsonGateLabel, 'JSON 점검 복사');
     assert.doesNotMatch(
       startCopy,
       /ontology\s*가|다음 \d+ 단계|첫 트리|ontology starter|starter|frontmatter|codebase ontology|typed relation|graph proof|agent loop|AI agent|agent 검증|CLI proof|JSON gate|fallback self-check|read-first/,

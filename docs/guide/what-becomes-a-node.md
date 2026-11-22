@@ -70,7 +70,7 @@ If any of these fails, create nothing.
 
 ## Give every capability evidence
 
-When you create a capability, give it something to open in the same step: one implementation entry point in `path:`, or at least one element in `elements:`. A capability with neither is a claim nobody can check. It is still written, but it stays in the cleanup queue as `capability_without_evidence` until it points at something. You can see that queue with `query_ontology` and `maintenance_plan`, or with `node cli/src/index.mjs maintenance`.
+When you create a capability, give it something to open in the same step: one implementation entry point in `path:`, or at least one element in `elements:`. A capability with neither is a claim nobody can check. It is still written, but it stays in the cleanup queue as `capability_without_evidence` until it points at something. You can see that queue with `query_ontology` and `maintenance_plan`.
 
 ```markdown
 ---

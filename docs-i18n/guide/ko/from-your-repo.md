@@ -42,26 +42,6 @@ Atlas가 혼자서 코드의 의미를 알아내 주지는 않아요. 에이전�
 코드 일부를 그 로컬 주소로만 보내요. 결과로 문서 변경안 목록이 나오면, 원하는
 것만 골라서 적용하세요.
 
-## 터미널에서 시작하기
-
-Atlas 소스 체크아웃이 있다면([CLI와 MCP의 관계](/guide/cli) 참고), 내 저장소에서
-이렇게 실행하세요.
-
-```bash
-cd /path/to/your/repo
-node ~/tools/ontology-atlas/cli/src/index.mjs init ./atlas
-node ~/tools/ontology-atlas/cli/src/index.mjs bootstrap . --vault ./atlas
-```
-
-`init`은 세 가지를 만들어요. 시작 파일 5개가 든 `atlas` 폴더, 에이전트 설정
-`.mcp.json`과 `.codex/config.toml`, 그리고 Claude Code와 Codex용 시작 스킬 세 개
-(`atlas-review`, `atlas-grow`, `atlas-absorb`)예요. 시작 파일은 개념의 형식을 보여
-주는 예시일 뿐, 내 제품을 분석한 결과가 아니에요.
-
-`bootstrap`은 저장소를 스캔하고 검토 계획을 출력해요. 아무것도 쓰지 않고, 아직
-승인이 필요하다는 뜻으로 종료 코드 3을 내요. 이제 저장소에서 에이전트를 다시
-시작하고, 거기서 이어 가세요.
-
 ## 에이전트에게 무엇을 요청할까요
 
 첫 지도는 작게 시작하세요. 이해하고 싶은 동작 하나를 골라 그것만 요청하면
@@ -93,7 +73,7 @@ node ~/tools/ontology-atlas/cli/src/index.mjs bootstrap . --vault ./atlas
 - **이름이 하는 일을 말해요.** 폴더나 라이브러리 이름만으로는 동료에게 전하는
   정보가 너무 적어요.
 - **본문에 필요한 부분이 다 있어요.** 정의 문장, `## Includes`, `## Excludes`,
-  `## Uncertainty`요. 하나라도 빠지면 `validate`가 경고해요.
+  `## Uncertainty`요. 하나라도 빠지면 `validate_vault`가 경고해요.
 - **근거가 파일을 가리켜요.** 역량이나 요소에는 코드를 가리키는 `path`가 있어요.
   경로가 있다고 설명까지 맞는 건 아니니, 직접 읽어 보세요.
 - **관계가 성립해요.** 관계의 대상을 없애도 그 역량이 여전히 동작할지 따져
@@ -107,21 +87,11 @@ node ~/tools/ontology-atlas/cli/src/index.mjs bootstrap . --vault ./atlas
 ## CLAUDE.md와 AGENTS.md 활용하기
 
 에이전트 지침 파일에는 코드베이스 설명이 이미 들어 있는 경우가 많아요.
-`absorb`는 그 내용을 개념으로 옮겨요.
-
-```bash
-node ~/tools/ontology-atlas/cli/src/index.mjs absorb CLAUDE.md AGENTS.md --vault ./atlas
-```
-
-기본으로는 계획만 출력해요. `--write`를 붙이면 정책과 규칙 섹션을 `document`
-개념으로 저장하고, 원본 파일을 `.pre-absorb.bak`으로 백업한 다음, 원본을 다른 곳을
-가리키는 짧은 파일로 다시 써요. 개념으로 옮기지 않은 섹션은 이 파일에 그대로
-남아요. 아키텍처 섹션은 제안만 하고 자동으로 쓰지 않아요. 에이전트는 MCP 도구
-`absorb_document`로 같은 일을 할 수 있어요.
-
-`init`은 내 `CLAUDE.md`나 `AGENTS.md`에 붙여 넣을 짧은 문단도 출력해요. 이
-문단은 이후 에이전트 세션에 온톨로지가 있다는 것과 언제 읽어야 하는지를 알려
-줘요. Atlas가 이 파일들을 대신 고치지는 않아요.
+에이전트에게 그중 한 파일에 MCP 도구 `absorb_document`를 실행해 달라고 하세요.
+기본으로는 계획만 돌려줘요. `confirm: true`를 주면 정책과 규칙 섹션을 `document`
+개념으로 저장하고, 원본 파일을 `.pre-absorb.bak`으로 백업한 다음, 원본을 다른
+곳을 가리키는 짧은 파일로 다시 써요. 개념으로 옮기지 않은 섹션은 이 파일에 그대로
+남아요. 아키텍처 섹션은 제안만 하고 자동으로 쓰지 않아요.
 
 폴더에 아직 지도에 오르지 않은 마크다운 문서가 있다면, **시작하기** 카드에 **내
 문서로 지도 만들기** 단계가 추가돼요.
