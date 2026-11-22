@@ -67,38 +67,48 @@ function RoomFace({ room, face, copy, retiring, showOwner }: { room: RoomEntry; 
     : <MiniRoom room={room} copy={copy} tint={tintOf(room.session)} showOwner={showOwner} />;
 }
 
+const area = (face: FaceSize) => face.w * face.h;
+
 /**
- * One room's frame. Its element sits at its box by transform; when the room changes size, its old
- * face stays at the old size and fades while the plate grows or shrinks, and the new face fades in
- * once the room has nearly arrived.
+ * One room's frame. Its element sits at its box by transform. When the building moves it to a new
+ * size, the old face stays at the old size while the plate grows or shrinks: the larger of the two
+ * faces lies underneath, fully drawn, and the smaller crossfades over it, so the plate never shows.
+ * When the window itself resizes, the face takes the new size at once.
  */
-function Room({ room, box, copy, retiring, showOwner, reduced, ghost }: {
+function Room({ room, box, copy, retiring, showOwner, reduced, windowKey, ghost }: {
   room: RoomEntry;
   box: RoomBox;
   copy: RoomCopy;
   retiring: boolean;
   showOwner: boolean;
   reduced: boolean;
+  /** The building's measured size: a change of it is a window resize, not a move. */
+  windowKey: string;
   /** A room that left: drawn once more from where it was, fading away. */
   ghost?: { from: Box; onDone: (key: string) => void };
 }) {
   const ghostFrom = ghost?.from;
   const onGhostDone = ghost?.onDone;
-  const [faces, setFaces] = useState<{ current: FaceSize; leaving: FaceSize | null }>({
+  const [faces, setFaces] = useState<{ current: FaceSize; leaving: FaceSize | null; windowKey: string }>({
     current: { size: box.size, unit: box.unit, w: box.w, h: box.h },
     leaving: null,
+    windowKey,
   });
   const { current } = faces;
-  if (current.size !== box.size || current.unit !== box.unit || current.w !== box.w || current.h !== box.h) {
-    const resized = current.size !== box.size;
-    setFaces({ current: { size: box.size, unit: box.unit, w: box.w, h: box.h }, leaving: resized ? current : faces.leaving });
+  if (current.size !== box.size || current.unit !== box.unit || Math.abs(current.w - box.w) > 1 || Math.abs(current.h - box.h) > 1) {
+    const moved = faces.windowKey === windowKey;
+    setFaces({ current: { size: box.size, unit: box.unit, w: box.w, h: box.h }, leaving: moved ? current : null, windowKey });
+  } else if (faces.windowKey !== windowKey) {
+    setFaces({ ...faces, windowKey });
   }
+  // The smaller face crossfades over the larger: the new one fading in, or the old one fading out.
+  const leavingOnTop = faces.leaving !== null && area(faces.leaving) < area(current);
   const enterFace = useCallback((element: HTMLDivElement | null) => {
     if (element?.dataset.faceChange === 'true') fadeFace(element, 'in', reduced);
   }, [reduced]);
   const leaveFace = useCallback((element: HTMLDivElement | null) => {
     if (!element) return;
-    fadeFace(element, 'out', reduced).addEventListener('finish', () => setFaces(state => ({ ...state, leaving: null })));
+    fadeFace(element, element.dataset.faceOnTop === 'true' ? 'away' : 'out', reduced).addEventListener('finish', () => setFaces(state => ({ ...state, leaving: null })));
   }, [reduced]);
   const ghostRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -128,11 +138,20 @@ function Room({ room, box, copy, retiring, showOwner, reduced, ghost }: {
     >
       <div data-room-plate className={cn(styles.plate, styles.notched)} />
       {faces.leaving ? (
-        <div ref={leaveFace} data-room-face aria-hidden inert className={cn(styles.face, styles.notched)} style={{ width: faces.leaving.w, height: faces.leaving.h }}>
+        <div
+          key="leaving"
+          ref={leaveFace}
+          data-room-face
+          data-face-on-top={leavingOnTop}
+          aria-hidden
+          inert
+          className={cn(styles.face, styles.notched)}
+          style={{ width: faces.leaving.w, height: faces.leaving.h, zIndex: leavingOnTop ? 1 : undefined }}
+        >
           <RoomFace room={room} face={faces.leaving} copy={copy} retiring={retiring} showOwner={showOwner} />
         </div>
       ) : null}
-      <div key={current.size} ref={enterFace} data-room-face data-face-change={faces.leaving !== null} className={cn(styles.face, styles.notched, 'h-full w-full')}>
+      <div key={current.size} ref={enterFace} data-room-face data-face-change={faces.leaving !== null && !leavingOnTop} className={cn(styles.face, styles.notched, 'h-full w-full')}>
         <RoomFace room={room} face={current} copy={copy} retiring={retiring} showOwner={showOwner} />
       </div>
     </div>
@@ -320,7 +339,8 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
     if (left.length > 0) setGhosts(current => [...current.filter(ghost => !removed.has(ghost.room.key)), ...left]);
   }, []);
   const forgetGhost = useCallback((key: string) => setGhosts(current => current.filter(ghost => ghost.room.key !== key)), []);
-  useRoomMotion(boardRef, layout.rooms, { reduced, sizeKey: size ? `${size.width}x${size.height}` : '', onRemoved });
+  const windowKey = size ? `${size.width}x${size.height}` : '';
+  useRoomMotion(boardRef, layout.rooms, { reduced, sizeKey: windowKey, onRemoved });
   useAmbientMotion(boardRef, layout.rooms, reduced);
 
   const entries = useMemo(() => allRooms(shown).map(({ room }) => room), [shown]);
@@ -375,12 +395,12 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
               </Placed>
             ) : null}
             {ghosts.map(ghost => (
-              <Room key={`ghost:${ghost.room.key}`} room={ghost.room} box={ghost.box} copy={copy} retiring={ghost.retiring} showOwner={!layout.banded} reduced={reduced} ghost={{ from: ghost.from, onDone: forgetGhost }} />
+              <Room key={`ghost:${ghost.room.key}`} room={ghost.room} box={ghost.box} copy={copy} retiring={ghost.retiring} showOwner={!layout.banded} reduced={reduced} windowKey={windowKey} ghost={{ from: ghost.from, onDone: forgetGhost }} />
             ))}
             {entries.map(room => {
               const box = layout.rooms.get(room.key);
               return box ? (
-                <Room key={room.key} room={room} box={box} copy={copy} retiring={retiring.has(room.key)} showOwner={!layout.banded} reduced={reduced} />
+                <Room key={room.key} room={room} box={box} copy={copy} retiring={retiring.has(room.key)} showOwner={!layout.banded} reduced={reduced} windowKey={windowKey} />
               ) : null;
             })}
             {layout.shelf ? (

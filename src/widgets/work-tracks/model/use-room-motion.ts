@@ -152,13 +152,17 @@ export function exitRoom(element: HTMLElement, from: Box, reduced: boolean, onDo
   element.animate(keyframes, { ...timing, fill: 'forwards' }).addEventListener('finish', onDone);
 }
 
-/** The new face of a room that changes size fades in over its old face, which stays drawn beneath it until covered. */
-export function fadeFace(element: HTMLElement, direction: 'in' | 'out', reduced: boolean): Animation {
+/**
+ * The faces of a room that changes size: the new one fades in over the old (`in`), which stays drawn
+ * beneath it until covered (`out`); or, when the old face is the smaller, it fades away over the new
+ * one (`away`), which is drawn from the start.
+ */
+export function fadeFace(element: HTMLElement, direction: 'in' | 'out' | 'away', reduced: boolean): Animation {
   if (reduced) {
     const keyframes = direction === 'in' ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }];
     return element.animate(keyframes, { duration: ms(MOTION.fast.duration), easing: 'linear', fill: 'both' });
   }
-  return direction === 'in'
-    ? element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FACE_IN_MS, easing: EASE_CSS, fill: 'backwards' })
-    : element.animate([{ opacity: 1 }, { opacity: 1, offset: FACE_HOLD }, { opacity: 0 }], { duration: GLIDE_MS, easing: 'linear', fill: 'forwards' });
+  if (direction === 'in') return element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FACE_IN_MS, easing: EASE_CSS, fill: 'backwards' });
+  if (direction === 'away') return element.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FACE_IN_MS, easing: EASE_CSS, fill: 'forwards' });
+  return element.animate([{ opacity: 1 }, { opacity: 1, offset: FACE_HOLD }, { opacity: 0 }], { duration: GLIDE_MS, easing: 'linear', fill: 'forwards' });
 }
