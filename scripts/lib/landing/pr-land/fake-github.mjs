@@ -35,8 +35,9 @@ export function component(number, extra = {}) {
  * - `behindMain(sha)` says that head lacks today's `main`; any `mainMoves()` implies it for every head.
  * - `onOwnCiRead(pr, reads)` may change a pull request while its own CI is awaited.
  * - `readOnly` makes every write throw, for `--plan`.
+ * - `runs(numbers)` is the workflow runs listed for a train's head; `jobs(runId)` counts a run's jobs.
  */
-export function fakeWorld({ prs = [], queued = [], ci = () => green(), ownCi = () => green(), onOwnCiRead = () => {}, conflicts = new Set(), mainDrift = () => [], mainMoves = () => [], behindMain = () => false, lock = null, readOnly = false, history = [] } = {}) {
+export function fakeWorld({ prs = [], queued = [], ci = () => green(), ownCi = () => green(), onOwnCiRead = () => {}, conflicts = new Set(), mainDrift = () => [], mainMoves = () => [], behindMain = () => false, lock = null, readOnly = false, history = [], runs = () => [], jobs = () => 0 } = {}) {
   const calls = [];
   const events = [];
   let clock = Date.parse('2026-09-26T10:00:00Z');
@@ -162,6 +163,12 @@ export function fakeWorld({ prs = [], queued = [], ci = () => green(), ownCi = (
       return true;
     }),
     markDraft: write('markDraft', () => true),
+    listWorkflowRuns: (sha) => {
+      calls.push(['listWorkflowRuns', sha]);
+      const train = trains.get(Number(String(sha).slice('train-head-'.length)));
+      return train ? runs(train.components) : [];
+    },
+    countRunJobs: (runId) => jobs(runId),
     readRunAttempt: (runId) => {
       const has = (rollup) => (rollup ?? []).some((r) => String(r.detailsUrl ?? '').includes(`/runs/${runId}/`));
       for (const train of trains.values()) if (has(train.rollup)) return 1 + train.reruns;

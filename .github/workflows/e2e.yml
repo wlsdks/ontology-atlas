@@ -1,56 +1,45 @@
-# Browser CI uses the same impact plan as unit/MCP CI. Before merge a train runs
-# the specs its change maps plus the merge smoke set (scripts/ci/merge-smoke-specs.mjs),
-# balanced over every shard; an unmapped rendered dependency runs the smoke set alone.
-# Only a planner, browser-executor or root dependency change runs the full suite before
-# merge. Every push to main runs it in full after merge, even over a reused reviewed tree,
-# measurements and both surfaces included, and `pnpm pr:land` names that run's failing
-# specs while it is red (owner, 2026-11-18: merges took too long). Manual runs are full unless they name a base to plan from.
+# The browser suite runs after merge, never on a pull request: nightly on `main`, on a release tag
+# when `pnpm desktop:release-run` dispatches it, and on any branch an author dispatches by hand.
+# Merging waits only for `Required checks` in checks.yml (owner, 2026-11-22).
 #
-# A pull request is opened as a **draft** and runs nothing. `pnpm pr:land` puts
-# it on a landing train built from today's main, and the train's pull request
-# fires this workflow **once**, on exactly the tree that is about to land. Owner's shape, 2026-09-12: most
-# changes overlap, so CI on a branch that is not yet the thing being merged is a
-# round paid twice. An identical main tree reuses that successful review;
-# unproven main pushes and scheduled/manual runs still execute their evidence.
+# - A whole run (schedule, or a dispatch with an empty `plan_from`) runs every spec, both
+#   surfaces, the quarantined specs and the quarantine expiry. Its title says so, and
+#   `pnpm desktop:release-browser-gate` admits a stable release only over a green whole run on
+#   that commit.
+# - A dispatch naming `plan_from=<main sha>` plans like a pull request against that commit: the
+#   mapped specs plus the merge smoke set (`scripts/ci/merge-smoke-specs.mjs`). That is the opt-in
+#   for a change whose screens should be measured before it merges.
+# - `pnpm pr:land` and every train body name the newest scheduled run's failing specs while it is
+#   red (`scripts/lib/landing/pr-land/main-health.mjs`).
 #
-# `merge_group` is wired for the day this repository belongs to an organization
-# and GitHub's own merge queue becomes available. Until then no merge group is
-# ever created, so the trigger is inert rather than wrong.
-name: E2E smoke
-# A whole run says so in its title, because the title outlives the repository's one-day artifact
-# retention: `pnpm desktop:release-browser-gate` reads it to admit a stable release days later.
-# Every other run keeps GitHub's default title.
+# The specs run on `macos-15`, the system the app ships on and authors run specs on, so a red night
+# reproduces locally. The static export is built once on Linux and downloaded. A free account runs
+# five macOS jobs at once: three shards, the surfaces and the quarantined specs.
+name: Browser suite
+# Quoted: an unquoted YAML value may not hold ': ', and the title holds one.
 run-name: "${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.plan_from == '')) && 'Browser suite: whole run' || '' }}"
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-  merge_group:
   schedule:
     - cron: "17 19 * * *"
   workflow_dispatch:
     inputs:
       plan_from:
-        description: "Plan as a pull request against this commit SHA (rehearses a train); empty runs the full suite"
+        description: "Plan as a pull request against this commit SHA; empty runs the whole suite"
         required: false
         default: ""
-  push:
-    branches:
-      - main
 
 permissions:
   contents: read
 
-# Every push to main gets a group of its own, so each merge's full run runs and is never cancelled:
-# GitHub keeps one waiting run per group, and a shared group let a third merge replace the second's
-# pending run. Pull requests and trains keep one group per ref and cancel the superseded run.
+# One group per ref and plan, never cancelled: a release gate reads the run on its exact commit, so
+# a dispatch on a tag must finish even when another starts beside it.
 concurrency:
-  group: e2e-${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && format('full{0}', inputs.plan_from) || github.event_name == 'push' && format('push-{0}', github.run_id) || 'change' }}
-  cancel-in-progress: ${{ github.event_name != 'push' }}
+  group: e2e-${{ github.workflow }}-${{ github.ref }}-${{ inputs.plan_from || 'whole' }}
+  cancel-in-progress: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  PUSH_BEFORE: ${{ github.event.before }}
 
 jobs:
   changes:
@@ -59,7 +48,6 @@ jobs:
       contents: read
       checks: read
       pull-requests: read
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     # budget: 35s
     timeout-minutes: 2
@@ -68,6 +56,7 @@ jobs:
       playwright: ${{ steps.impact.outputs.playwright }}
       static: ${{ steps.impact.outputs.static }}
       web: ${{ steps.impact.outputs.web }}
+      quarantined: ${{ steps.quarantine.outputs.browser }}
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -78,12 +67,7 @@ jobs:
         id: impact
         env:
           GH_TOKEN: ${{ github.token }}
-          BASE_REF: ${{ github.base_ref }}
           EVENT_NAME: ${{ github.event_name }}
-          PUSH_BEFORE: ${{ github.event.before }}
-          # A merge group has no base branch ref, and its two SHAs are minted by
-          # GitHub, so they are data rather than a string anyone can choose.
-          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
           PLAN_FROM: ${{ inputs.plan_from }}
         run: |
           if [ "$EVENT_NAME" = workflow_dispatch ] && [ -n "$PLAN_FROM" ]; then
@@ -91,16 +75,19 @@ jobs:
               echo "::error::plan_from must be a full commit SHA"
               exit 1
             fi
-            EVENT_NAME=pull_request
-            BASE_REF=
-            MERGE_GROUP_BASE_SHA=$PLAN_FROM
+            node scripts/ci/classify-change.mjs --event=pull_request --base="$PLAN_FROM"
+          else
+            node scripts/ci/classify-change.mjs --event="$EVENT_NAME"
           fi
-          node scripts/ci/classify-change.mjs --event="$EVENT_NAME" --base="${MERGE_GROUP_BASE_SHA:-origin/$BASE_REF}" --full-browser-after-merge
+
+      - name: Count quarantined specs
+        id: quarantine
+        run: node --input-type=module -e "import { quarantinedBrowserSpecs, readQuarantine } from './scripts/lib/ci/quarantine.mjs'; console.log('browser=' + quarantinedBrowserSpecs(readQuarantine()).length)" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build browser artifact
     needs: changes
-    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && (needs.changes.outputs.playwright != 'skip' || needs.changes.outputs.static == 'true' || needs.changes.outputs.web == 'true') }}
+    if: ${{ needs.changes.outputs.playwright != 'skip' || needs.changes.outputs.static == 'true' || needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-latest
     # budget: 120s
     timeout-minutes: 3
@@ -131,16 +118,20 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  static-export:
-    name: Playwright (static export)
+  # The two surfaces that name their own spec file, one after the other on one runner: each is a
+  # single spec, and a runner of its own each would take a sixth macOS slot.
+  surfaces:
+    name: Browser surfaces (macOS)
     needs: [changes, build]
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
-    runs-on: ubuntu-latest
-    # budget: 150s (cache-hit p95; the cold path adds the bounded browser
-    # install, whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
+    if: ${{ !cancelled() }}
+    runs-on: macos-15
+    # budget: 180s (159 s in run 45020130503, 2026-11-22; the cold path adds the bounded
+    # browser install, whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
     timeout-minutes: 30
     env:
-      ACTIVE: ${{ needs.changes.outputs.static }}
+      ACTIVE: ${{ needs.changes.outputs.static == 'true' || needs.changes.outputs.web == 'true' }}
+      STATIC: ${{ needs.changes.outputs.static }}
+      WEB: ${{ needs.changes.outputs.web }}
       CI_IMPACT_PLAN: ${{ needs.changes.outputs.plan }}
       PLAYWRIGHT_PREBUILT: "1"
     steps:
@@ -174,106 +165,47 @@ jobs:
         uses: ./.github/actions/setup-playwright
 
       - name: Run static-export evidence
-        if: env.ACTIVE == 'true'
+        if: env.STATIC == 'true'
         run: node scripts/ci/run-ci-lane.mjs --lane=static
         env:
           CI: true
 
-      - name: Skip unaffected Playwright setup
-        if: env.ACTIVE != 'true' && needs.changes.result == 'success'
-        run: echo "Static-export-only behavior is untouched"
-
-      - name: Upload failure evidence or retry traces
-        if: always() && env.ACTIVE == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: playwright-report-static-export
-          path: ${{ job.status == 'failure' && 'output/playwright' || 'output/playwright/**/trace.zip' }}
-          if-no-files-found: ignore
-          retention-days: 7
-
-  web-smoke:
-    name: Playwright (web surface)
-    needs: [changes, build]
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
-    runs-on: ubuntu-latest
-    # budget: 160s (cache-hit p95; the cold path adds the bounded browser
-    # install, whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
-    timeout-minutes: 30
-    env:
-      ACTIVE: ${{ needs.changes.outputs.web }}
-      CI_IMPACT_PLAN: ${{ needs.changes.outputs.plan }}
-      PLAYWRIGHT_PREBUILT: "1"
-    steps:
-      - name: Require impact plan
-        if: needs.changes.result != 'success'
-        run: |
-          echo "::error::E2E impact planning failed; refusing to turn a missing verdict into green"
-          exit 1
-
-      - name: Require browser artifact
-        if: env.ACTIVE == 'true' && needs.build.result != 'success'
-        run: exit 1
-
-      - name: Checkout
-        if: env.ACTIVE == 'true'
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-      - name: Download static export
-        if: env.ACTIVE == 'true'
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
-        with:
-          name: playwright-export-${{ github.sha }}
-          path: ${{ runner.temp }}
-
-      - name: Unpack static export
-        if: env.ACTIVE == 'true'
-        run: tar -xzf "$RUNNER_TEMP/playwright-export.tgz"
-
-      - name: Setup Playwright
-        if: env.ACTIVE == 'true'
-        uses: ./.github/actions/setup-playwright
-
       - name: Run web-surface evidence
-        if: env.ACTIVE == 'true'
+        if: ${{ !cancelled() && env.WEB == 'true' }}
         run: node scripts/ci/run-ci-lane.mjs --lane=web
         env:
           CI: true
 
       - name: Skip unaffected Playwright setup
         if: env.ACTIVE != 'true' && needs.changes.result == 'success'
-        run: echo "The unattended web gateway is untouched"
+        run: echo "Neither the static export nor the web gateway is in this plan"
 
       - name: Upload failure evidence or retry traces
         if: always() && env.ACTIVE == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: playwright-report-web-smoke
+          name: playwright-report-surfaces
           path: ${{ job.status == 'failure' && 'output/playwright' || 'output/playwright/**/trace.zip' }}
           if-no-files-found: ignore
           retention-days: 7
 
-  # Eight runners, not more workers. A runner here has four vCPUs, but the suite is
-  # CPU-bound: on the same four cores (2026-09-27) four workers ran a 129-test sample
-  # in 219 s against two workers' 242 s, because each test took 44% longer. Machines
-  # scale; workers on one machine do not, and a public repository's standard runners
-  # are free. A full run (2026-11-18, about 4,600 test-seconds) took 13.8 minutes from
-  # start to the last shard on five shards (7.6 to 12.3 minutes per shard) and 9.4 on
-  # eight (6.0 to 7.9). One train peaks near 17 jobs at once (8 shards, web surface, six
-  # Checks jobs, Windows), inside the account's 20; a second train in flight or main's
-  # full run beside it queues instead.
+  # Three shards of two workers each: a macos-15 runner has three cores, and the free account runs
+  # five macOS jobs at once, which the shards, the surfaces and the quarantined specs fill. The first
+  # whole run (45020130503, 2026-11-22) took 16.3, 21.3 and 23.3 minutes per shard and 25 minutes
+  # end to end, with no queue; 6,605 test-seconds against 4,071 on Linux. Its timings now weight
+  # the shards (`pnpm e2e:durations`).
   suite:
-    name: Playwright (chromium ${{ matrix.shard }}/8)
+    name: Browser suite (macOS ${{ matrix.shard }}/3)
     needs: [changes, build]
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
-    runs-on: ubuntu-latest
-    # budget: 600s (cache-hit p95; the cold path adds the bounded browser
-    # install, whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
-    timeout-minutes: 30
+    if: ${{ !cancelled() }}
+    runs-on: macos-15
+    # budget: 1400s (the widest shard of run 45020130503 before rebalancing; the cold path adds
+    # the bounded browser install, whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+        shard: [1, 2, 3]
     env:
       ACTIVE: ${{ needs.changes.outputs.playwright != 'skip' }}
       CI_IMPACT_PLAN: ${{ needs.changes.outputs.plan }}
@@ -308,9 +240,9 @@ jobs:
         if: env.ACTIVE == 'true'
         uses: ./.github/actions/setup-playwright
 
-      - name: Run browser evidence (shard ${{ matrix.shard }}/8)
+      - name: Run browser evidence (shard ${{ matrix.shard }}/3)
         if: env.ACTIVE == 'true'
-        run: node scripts/ci/run-ci-lane.mjs --lane=e2e --shard=${{ matrix.shard }}/8
+        run: node scripts/ci/run-ci-lane.mjs --lane=e2e --shard=${{ matrix.shard }}/3
         env:
           CI: true
 
@@ -332,41 +264,74 @@ jobs:
         if: always() && env.ACTIVE == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          # The plan's mode is in the name: `pnpm pr:land` reads main's latest full run by it.
+          # The plan's mode is in the name: `pnpm pr:land` and the release gate read a whole run by it.
           name: playwright-timings-${{ needs.changes.outputs.playwright }}-${{ matrix.shard }}
           path: |
             output/playwright/assignment-*.json
             output/playwright/results-*.json
           retention-days: 7
 
-  # `Playwright (chromium 1/3)`, `2/3` and `3/3` are required status contexts on `main`,
-  # and a required context that never reports again blocks every merge. As with
-  # `Unit · Contract` in checks.yml, the names stay and this job carries them: each leg
-  # passes only if every browser shard did. Once branch protection names one context
-  # for the suite, this collapses to a single leg.
-  suite-required:
-    name: Playwright (chromium ${{ matrix.shard }}/3)
-    needs: [changes, suite]
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
-    runs-on: ubuntu-latest
-    # budget: 10s
-    timeout-minutes: 2
-    strategy:
-      matrix:
-        shard: [1, 2, 3]
+  # The files in tests/quarantine.json, which every other job leaves out. They run every whole night
+  # and print passed or failed per file; the job never turns the run red.
+  quarantined:
+    name: Quarantined specs
+    needs: [changes, build]
+    if: ${{ !cancelled() && needs.changes.outputs.playwright == 'full' && needs.changes.outputs.quarantined != '0' && needs.build.result == 'success' }}
+    runs-on: macos-15
+    continue-on-error: true
+    # budget: 600s (not yet measured: the registry was empty in the first run; the cold path adds
+    # the bounded browser install, whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
+    timeout-minutes: 30
+    env:
+      PLAYWRIGHT_PREBUILT: "1"
+      PLAYWRIGHT_STATIC: "1"
     steps:
-      - name: Require every browser shard
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Download static export
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: playwright-export-${{ github.sha }}
+          path: ${{ runner.temp }}
+
+      - name: Unpack static export
+        run: tar -xzf "$RUNNER_TEMP/playwright-export.tgz"
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      - name: Run the quarantined specs
+        run: node scripts/ci/quarantine.mjs run-browser
         env:
-          PLAN: ${{ needs.changes.result }}
-          SHARDS: ${{ needs.suite.result }}
-        run: |
-          if [ "$PLAN" != "success" ]; then
-            echo "::error::E2E impact planning failed; refusing to turn a missing verdict into green"
-            exit 1
-          fi
-          # A matrix `needs` result is `success` only when every leg succeeded.
-          if [ "$SHARDS" != "success" ]; then
-            echo "::error::a Playwright (chromium) shard reported $SHARDS"
-            exit 1
-          fi
-          echo "all eight Playwright (chromium) shards passed"
+          CI: true
+
+      - name: Upload quarantine results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: quarantine-browser-results
+          path: output/quarantine/browser-results.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # An entry past its `expires` day turns the whole run red and names the entry, so the release gate
+  # refuses and `pnpm pr:land` prints it. No landing lane reads the date.
+  quarantine-expiry:
+    name: Quarantine expiry
+    needs: changes
+    if: ${{ needs.changes.outputs.playwright == 'full' }}
+    runs-on: ubuntu-latest
+    # budget: 20s
+    timeout-minutes: 2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Check every quarantine entry is inside its 14 days
+        run: node scripts/ci/quarantine.mjs check-expiry

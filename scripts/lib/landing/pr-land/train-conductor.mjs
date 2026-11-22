@@ -14,7 +14,7 @@ import {
 } from '../landing-train.mjs';
 import { CONFLICT_INSTRUCTION, refuseLanding } from './landing-refusals.mjs';
 import { LEASE_MINUTES, LOCK_REF, lockTrains } from './landing-lock.mjs';
-import { cutTrain, discardTrain, eject, pollTrain, settleHead } from './train-steps.mjs';
+import { closeMovedTrain, cutTrain, discardTrain, eject, firstMovedTrain, pollTrain, settleHead } from './train-steps.mjs';
 
 const POLL_SECONDS = 30;
 
@@ -193,6 +193,22 @@ export function conduct({ deps, args, requiredContexts, token, force = false, de
 
       holder.hold(POLL_SECONDS);
       for (const train of flight) pollTrain({ train, deps, requiredContexts, args });
+
+      // A pushed head makes its train test replaced code: rebuild it, and drop what rode on it.
+      const moved = firstMovedTrain({ flight, deps });
+      if (moved) {
+        const [train, ...above] = flight.splice(moved.index);
+        closeMovedTrain({ train, moves: moved.moves, deps });
+        holder.drop(train.key);
+        for (const riding of above) {
+          discardTrain({ train: riding, deps, why: 'was rebuilt because a pull request it carried moved' });
+          holder.drop(riding.key);
+        }
+        splits = requeueAfterDiscard({ splits, headSplits: [train.numbers], discarded: above });
+        blockedOn = null;
+        quietUntil = Number.NEGATIVE_INFINITY;
+        continue;
+      }
 
       while (flight.length > 0 && flight[0].verdict) {
         const head = flight[0];

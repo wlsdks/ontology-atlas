@@ -1,5 +1,5 @@
 /**
- * Run `origin/main`'s copy of a script when this checkout's copy is older: every landing goes
+ * Prepare `origin/main`'s copy of a script to run when this checkout's copy is older: every landing goes
  * through one conductor, so its code must be main's. The script and its local imports are compared
  * by content; any difference runs main's files from a temporary directory.
  */
@@ -39,10 +39,10 @@ function git(args, cwd) {
 }
 
 /**
- * Returns null when this checkout's copy is current (the caller runs it), or the
- * exit status of main's copy after running it.
+ * `null` when this checkout's copy is current (the caller runs it), or main's copy written to a
+ * temporary directory: the script to run in its place, and `cleanup` to remove it afterwards.
  */
-export function runMainCopyIfStale({ entry, argv, cwd = process.cwd(), env = process.env, log = console.error }) {
+export function mainCopyIfStale({ entry, cwd = process.cwd(), env = process.env, log = console.error }) {
   if (env.ATLAS_PR_LAND_LOCAL === '1' || env.ATLAS_MAIN_COPY_RUNNING === '1') return null;
   const root = git(['rev-parse', '--show-toplevel'], cwd)?.trim();
   if (!root) return null;
@@ -64,18 +64,14 @@ export function runMainCopyIfStale({ entry, argv, cwd = process.cwd(), env = pro
   // Real path: on macOS the temp dir is a symlink, and an entry guard comparing
   // import.meta.url with argv[1] would otherwise never fire.
   const directory = realpathSync(mkdtempSync(join(tmpdir(), 'atlas-main-copy-')));
-  try {
-    for (const file of files) {
-      mkdirSync(dirname(join(directory, file)), { recursive: true });
-      writeFileSync(join(directory, file), readMain(file));
-    }
-    const result = spawnSync(process.execPath, [join(directory, entry), ...argv], {
-      cwd: root,
-      stdio: 'inherit',
-      env: { ...env, ATLAS_MAIN_COPY_RUNNING: '1' },
-    });
-    return result.status ?? 1;
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
+  for (const file of files) {
+    mkdirSync(dirname(join(directory, file)), { recursive: true });
+    writeFileSync(join(directory, file), readMain(file));
   }
+  return {
+    script: join(directory, entry),
+    cwd: root,
+    env: { ATLAS_MAIN_COPY_RUNNING: '1' },
+    cleanup: () => rmSync(directory, { recursive: true, force: true }),
+  };
 }

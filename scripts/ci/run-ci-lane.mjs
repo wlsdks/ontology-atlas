@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { decodePlan, FULL_LANE_COMMANDS, isRelatedSweep, unitUsesAllShards } from './classify-change.mjs';
 import { collapseCoveredContractCommands } from './suggest-focused-checks.mjs';
 import { MERGE_SMOKE_SPECS } from './merge-smoke-specs.mjs';
+import { quarantinedVitestFiles, readQuarantine, vitestExcludeGlob } from '../lib/ci/quarantine.mjs';
 
 /*
  * Measurement files never ride a shard: a ratio's result depends on which files land beside it.
@@ -34,6 +35,19 @@ function planFromEnvironment(env = process.env) {
  */
 export const MACOS_ONLY_GATE_COMMANDS = Object.freeze(['pnpm test:desktop:bridge']);
 
+/** The lanes whose Vitest sweeps leave the quarantined files out. */
+const QUARANTINE_LANES = Object.freeze(['unit', 'perf']);
+
+/**
+ * A Vitest sweep with every quarantined file excluded, so none of them blocks a merge; the
+ * nightly runs them through `node scripts/ci/quarantine.mjs run-unit`. Package scripts that
+ * name their own files are left as written.
+ */
+function withoutQuarantined(command, quarantinedVitest) {
+  if (quarantinedVitest.length === 0 || !/^pnpm (?:exec vitest (?:run|related)|test:perf)\b/.test(command)) return command;
+  return `${command}${quarantinedVitest.map((file) => ` --exclude=${shellArgument(vitestExcludeGlob(file))}`).join('')}`;
+}
+
 /** `"2/3"` -> `[2, 3]`, refusing anything that is not a shard. */
 export function shardParts(shard) {
   if (!/^[1-9]\d*\/[1-9]\d*$/.test(String(shard))) {
@@ -52,6 +66,7 @@ export function commandsForLane({
   eventName = 'pull_request',
   platform = process.platform,
   prebuilt = false,
+  quarantinedVitest = [],
 }) {
   if (!plan?.lanes?.[lane] && !['static', 'web', 'e2e'].includes(lane)) {
     throw new Error(`unknown CI lane: ${lane}`);
@@ -88,7 +103,7 @@ export function commandsForLane({
     if (unit.mode === 'full') {
       return FULL_LANE_COMMANDS.unit.flatMap((command) => {
         if (command === 'pnpm test:run') {
-          return [sharded(`pnpm exec vitest run ${MEASURED_LANES_EXCLUDED}`)];
+          return [withoutQuarantined(sharded(`pnpm exec vitest run ${MEASURED_LANES_EXCLUDED}`), quarantinedVitest)];
         }
         return wholeGraphOnly ? [command] : [];
       });
@@ -116,7 +131,7 @@ export function commandsForLane({
       if (isRelatedSweep(command)) commands.push(sharded(`${command} ${MEASURED_LANES_EXCLUDED}`));
       else if (wholeGraphOnly) commands.push(command);
     }
-    return unique(commands);
+    return unique(commands).map((command) => withoutQuarantined(command, quarantinedVitest));
   }
 
   /*
@@ -125,10 +140,10 @@ export function commandsForLane({
    */
   if (lane === 'perf') {
     const { mode } = plan.lanes.perf;
-    if (mode === 'full') return ['pnpm test:perf'];
+    if (mode === 'full') return [withoutQuarantined('pnpm test:perf', quarantinedVitest)];
     if (mode === 'affected') {
       if (!base) throw new Error('affected perf lane requires a comparison base');
-      return [`pnpm test:perf --changed=${shellArgument(base)} --passWithNoTests`];
+      return [withoutQuarantined(`pnpm test:perf --changed=${shellArgument(base)} --passWithNoTests`, quarantinedVitest)];
     }
     return [];
   }
@@ -301,6 +316,7 @@ export async function runCiLane({ argv = process.argv.slice(2), env = process.en
       shard,
       eventName: env.GITHUB_EVENT_NAME || 'pull_request',
       prebuilt: env.PLAYWRIGHT_PREBUILT === '1',
+      quarantinedVitest: QUARANTINE_LANES.includes(lane) ? quarantinedVitestFiles(readQuarantine()) : [],
     });
     if (lane === 'gates' && process.platform !== 'darwin') {
       const planned = commandsForLane({

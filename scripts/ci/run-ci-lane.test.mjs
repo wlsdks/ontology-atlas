@@ -419,3 +419,28 @@ test('a reused main push still runs every browser lane in full, and nothing else
   assert.equal(commandsForLane({ lane: 'web', plan, prebuilt: true }).length, 1);
   for (const lane of ['gates', 'unit', 'perf', 'mcp']) assert.deepEqual(commandsForLane({ lane, plan, eventName: 'push' }), [], lane);
 });
+
+test('every Vitest sweep of the unit and perf lanes leaves the quarantined files out, and nothing else changes', () => {
+  const quarantinedVitest = ['app/[locale]/project/fallback/ProjectFallbackClient.test.tsx', 'src/shared/lib/cn.test.ts'];
+  const exclusions = " --exclude='app/\\[locale\\]/project/fallback/ProjectFallbackClient.test.tsx' --exclude='src/shared/lib/cn.test.ts'";
+  const plans = {
+    full: buildImpactPlan({ files: [], forceFull: true }),
+    affected: buildImpactPlan({ files: ['src/widgets/docs-vault/ui/DocsVaultEditor.tsx'] }),
+    related: buildImpactPlan({ files: ['messages/en/library.json'] }),
+    perf: buildImpactPlan({ files: ['src/shared/lib/search-match/node-name-match.ts'] }),
+  };
+  let sweeps = 0;
+  for (const [name, plan] of Object.entries(plans)) {
+    for (const lane of ['unit', 'perf', 'gates', 'mcp']) {
+      const before = commandsForLane({ lane, plan, base: 'abc123', shard: '1/3' });
+      const after = commandsForLane({ lane, plan, base: 'abc123', shard: '1/3', quarantinedVitest });
+      assert.equal(after.length, before.length, `${name} ${lane}`);
+      after.forEach((command, index) => {
+        const sweep = ['unit', 'perf'].includes(lane) && /^pnpm (exec vitest (run|related)|test:perf)\b/.test(before[index]);
+        if (sweep) sweeps++;
+        assert.equal(command, sweep ? `${before[index]}${exclusions}` : before[index], `${name} ${lane}: ${command}`);
+      });
+    }
+  }
+  assert.ok(sweeps >= 5, `the plans reached ${sweeps} Vitest sweeps`);
+});
