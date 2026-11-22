@@ -214,6 +214,7 @@ function closestAllowedObjectField(key, allowedKeys) {
 }
 
 export {
+  closestAllowedObjectField,
   normalizeToolArguments,
   requireOptionalNonNegativeNumber,
   requireOptionalNonNegativeInteger,
