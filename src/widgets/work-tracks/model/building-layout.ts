@@ -53,9 +53,11 @@ const SHELF_H = 40;
 const SHELF_INLINE_W = 560;
 const MINI_H_BANDED = 76;
 const MINI_H_ROW = 92;
-const MINI_W_INLINE = 280;
-const MINI_MIN_W = 240;
+const MINI_W_INLINE = 300;
+const MINI_MIN_W = 300;
 const MINI_ROW_LIMIT = 6;
+/** Mini rooms stand five to a row at most, never narrower than `MINI_MIN_W`. */
+const MINI_COLUMNS = 5;
 const INLINE_SHELF_ROOMS = 4;
 const FLOOR_LABEL_W = 196;
 const LARGE_MIN_W = 260;
@@ -77,13 +79,19 @@ function unitOf(width: number, sceneHeight: number): RoomUnit {
   return width >= 270 && sceneHeight >= 390 ? 2 : 1;
 }
 
+/** What a board keeps under two rows of rooms: the edges, one row of mini rooms and the shelf. */
+const UNDER_STAGE_H = EDGE_TOP + BAND_GAP + MINI_H_ROW + BAND_GAP + SHELF_H + EDGE_BOTTOM;
+
 /**
- * How many large rooms the stage takes at this board width: four when exactly two wide rooms fit
- * side by side, so each keeps its monitor beside Moru, otherwise six.
+ * How many large rooms the stage takes on a board this size: four when exactly two wide rooms fit
+ * side by side, so each keeps its monitor beside Moru, otherwise six; and only one row's worth
+ * when two rows would push the floors and the shelf out of the window.
  */
-export function stageCapacity(width: number): number {
+export function stageCapacity(width: number, height: number): number {
   const wideColumns = Math.floor((width + STAGE_GAP) / (WIDE_ROOM_W + STAGE_GAP));
-  return wideColumns === 2 ? 4 : 6;
+  const capacity = wideColumns === 2 ? 4 : 6;
+  if (height >= 2 * LARGE_MIN_H + STAGE_GAP + UNDER_STAGE_H) return capacity;
+  return Math.max(1, Math.min(capacity, Math.floor((width + STAGE_GAP) / (LARGE_MIN_W + STAGE_GAP))));
 }
 
 /** Two Moru overlapping by about 40%, the lamp past the first, in drawn pixels; and the room's margins. */
@@ -120,8 +128,7 @@ export function layoutBuilding(input: LayoutInput): BuildingLayout {
   const labelW = banded ? FLOOR_LABEL_W : 0;
   const inline = !banded && minis.length > 0 && minis.length <= INLINE_SHELF_ROOMS && input.hasShelf && width >= MINI_W_INLINE * minis.length + SHELF_INLINE_W;
   const fit = Math.max(1, Math.floor((width - labelW + MINI_GAP) / (MINI_MIN_W + MINI_GAP)));
-  const longest = Math.max(0, ...input.floors.map(floor => floor.rooms.length));
-  const perRow = banded ? Math.min(fit, Math.max(Math.min(4, fit), Math.min(MINI_ROW_LIMIT, longest))) : Math.min(fit, MINI_ROW_LIMIT);
+  const perRow = Math.min(fit, MINI_COLUMNS);
   const miniW = inline ? MINI_W_INLINE : Math.floor((width - labelW - (perRow - 1) * MINI_GAP) / perRow);
   const groups = banded ? input.floors.filter(floor => floor.rooms.length > 0) : minis.length > 0 ? [{ key: '', rooms: minis }] : [];
   const groupHeight = (count: number) => {

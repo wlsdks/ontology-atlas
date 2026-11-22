@@ -37,6 +37,12 @@ export function WorkStatusPage() {
   const tracks = useSessionIdentity(read);
   const seenRunningAt = useRunningMemory(tracks, readAtMs);
   const plan = useMemo(() => (tracks ? planRooms(tracks, nowMs, seenRunningAt) : null), [tracks, nowMs, seenRunningAt]);
+  const sameFolder = tracks ? [...tracks.sessions.flatMap(session => session.tracks), ...tracks.unheld].filter(track => track.running && track.tools.length > 1).length : 0;
+  const cleanup = tracks?.stuck.length ?? 0;
+  const alerts = [
+    sameFolder > 0 ? t('header.sameFolder', { count: sameFolder }) : null,
+    cleanup > 0 ? t('header.cleanup', { count: cleanup }) : null,
+  ].filter((alert): alert is string => alert !== null);
 
   async function chooseRepository() {
     const picked = await pickTauriSourceDirectory(t('choose.title'));
@@ -77,9 +83,15 @@ export function WorkStatusPage() {
       <PageHeaderBar
         frame="page"
         title={t('title')}
+        className="md:[&>[data-page-header-row]]:px-10"
         meta={snapshot ? (
           <span className="truncate text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t('repoLine', { repo: snapshot.repository, count: snapshot.worktrees.length })}
+            {alerts.length > 0 ? (
+              <span className="font-[var(--font-weight-emphasis)] text-[color:var(--color-status-warning)]">
+                {' · '}{alerts.join(' · ')}
+              </span>
+            ) : null}
           </span>
         ) : null}
         actions={chooseButton('sm')}

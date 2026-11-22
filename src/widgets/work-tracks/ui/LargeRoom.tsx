@@ -5,6 +5,7 @@ import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { KNOWN_UNTIL, STAGE_AT, cartLoad, roomLook } from '../model/room-look';
 import { BELT_H, pairFit, type RoomUnit } from '../model/building-layout';
+import { BranchName } from './BranchName';
 import { RoomMoru } from './RoomMoru';
 import { SwapText } from './SwapText';
 import type { useRoomCopy } from './use-room-copy';
@@ -125,9 +126,9 @@ export function LargeRoom({ room, unit, width, height, copy, tint, retiring }: {
         <i className={styles.glow}><i className={styles.glowLight} /></i>
         <i className={styles.wainscot} />
         <i className={styles.floor} />
-        <div className={cn(styles.sign, styles.notched, BODY, 'font-mono font-[var(--font-weight-strong)]')} title={room.track.branch ?? room.track.path}>
+        <div className={cn(styles.sign, styles.notched, BODY, 'font-mono font-[var(--font-weight-strong)]')} >
           {pair ? <span aria-hidden className={styles.signAlert}>!</span> : null}
-          {room.track.branch ?? room.track.title}
+          <BranchName branch={room.track.branch ?? room.track.title} />
         </div>
         <Monitor room={room} copy={copy} />
         <i className={styles.lamp}>

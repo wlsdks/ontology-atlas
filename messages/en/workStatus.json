@@ -87,5 +87,9 @@
     "title": "Work status runs in the desktop app",
     "body": "A browser cannot run git or read this computer's processes. In this browser you can still open your folder's map and Library."
   },
-  "notRepository": "{folder} is not a Git repository. Choose the folder that holds your project's .git."
+  "notRepository": "{folder} is not a Git repository. Choose the folder that holds your project's .git.",
+  "header": {
+    "sameFolder": "{count} in one folder",
+    "cleanup": "{count} to clean up"
+  }
 }

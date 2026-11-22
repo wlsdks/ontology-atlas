@@ -68,7 +68,12 @@ Every read goes through the hardened Git runner in `src-tauri/src/git/runner.rs`
 ## The building
 
 The page is a building of rooms, one per worktree, under the page title and
-**Choose repository folder**. There is no headline.
+**Choose repository folder**. There is no headline: beside the worktree count,
+warning amber counts only what needs a person (**1 in one folder · 3 to clean
+up**), and only the parts above zero. Mini rooms stand five to a row at most,
+never narrower than 300px; a branch name mutes its `feat/` or `fix/` and, when
+it does not fit, cuts in the middle so its ending survives. A window too short
+for two rows of large rooms keeps one row on the stage.
 
 The **front stage** holds at most six large rooms. A folder two tools work in
 goes first, then rooms where an agent or a command is running, one per session
@@ -102,8 +107,8 @@ worktrees no one has touched for seven days or more. A count opens a centred
 list of those branches with the time of their last commit.
 
 Each session takes one ink for the top edge of its stage rooms and floor, the
-bar under its mini rooms, its name tag and the accents of its Moru. Until a host is connected nothing comes from GitHub and no request
-leaves the machine.
+bar under its mini rooms, its name tag and the accents of its Moru. Until a
+host is connected nothing comes from GitHub and no request leaves the machine.
 
 ## Live updates
 

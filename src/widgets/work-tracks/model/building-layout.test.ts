@@ -67,10 +67,23 @@ describe('layoutBuilding', () => {
 });
 
 describe('stageCapacity', () => {
-  it('keeps four wide rooms where two fit side by side, and six elsewhere', () => {
-    expect(stageCapacity(1296)).toBe(4);
-    expect(stageCapacity(1776)).toBe(6);
-    expect(stageCapacity(896)).toBe(6);
+  it('keeps four wide rooms where two fit side by side, six elsewhere, and one row in a short window', () => {
+    expect(stageCapacity(1296, 840)).toBe(4);
+    expect(stageCapacity(1776, 1020)).toBe(6);
+    expect(stageCapacity(896, 900)).toBe(6);
+    expect(stageCapacity(896, 660)).toBe(3);
+  });
+});
+
+describe('mini rooms', () => {
+  it('stand five to a row, never narrower than 300px', () => {
+    const wide = layout({ stage: keys('s', 6), floors: [{ key: 'a', rooms: keys('a', 9) }, { key: 'b', rooms: keys('b', 2) }] });
+    const row = keys('a', 5).map(key => wide.rooms.get(key)!);
+    expect(new Set(row.map(room => room.y)).size).toBe(1);
+    expect(wide.rooms.get('a5')!.y).toBeGreaterThan(row[0].y);
+    expect(Math.min(...row.map(room => room.w))).toBeGreaterThanOrEqual(300);
+    const narrow = layout({ width: 1296, stage: keys('s', 4), floors: [{ key: 'a', rooms: keys('a', 9) }] });
+    expect(Math.min(...keys('a', 9).map(key => narrow.rooms.get(key)!.w))).toBeGreaterThanOrEqual(300);
   });
 });
 

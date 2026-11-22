@@ -290,7 +290,7 @@ export function WorkBuilding({ tracks, seenRunningAt, baseBranch, nowMs }: {
     return () => observer.disconnect();
   }, []);
 
-  const stageLimit = stageCapacity(size?.width ?? 0);
+  const stageLimit = stageCapacity(size?.width ?? 0, size?.height ?? 0);
   const plan = useMemo(() => planRooms(tracks, nowMs, seenRunningAt, stageLimit), [tracks, nowMs, seenRunningAt, stageLimit]);
   const retirees = useRetirees(plan, stageLimit, reduced);
   const retiring = useMemo(() => new Set(retirees.map(retiree => retiree.entry.key)), [retirees]);

@@ -87,5 +87,9 @@
     "title": "工作状态在桌面应用中运行",
     "body": "浏览器无法运行 git，也无法读取这台计算机的进程。在这个浏览器中，你仍然可以打开文件夹的地图和资料库。"
   },
-  "notRepository": "文件夹 {folder} 不是 Git 仓库。请选择包含项目 .git 的文件夹。"
+  "notRepository": "文件夹 {folder} 不是 Git 仓库。请选择包含项目 .git 的文件夹。",
+  "header": {
+    "sameFolder": "同一文件夹 {count}",
+    "cleanup": "待清理 {count}"
+  }
 }

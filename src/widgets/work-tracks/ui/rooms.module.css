@@ -361,12 +361,13 @@
   max-width: calc(100% - 24px);
   height: 28px;
   padding-inline: 10px;
+  display: flex;
+  align-items: center;
   background: var(--work-room-sign);
   border-bottom: 4px solid var(--work-room-sign-edge);
   color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ---------- the monitor on the wall */

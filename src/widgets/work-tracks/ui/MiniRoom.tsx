@@ -3,6 +3,7 @@
 import type { RoomEntry } from '@/shared/lib/work-status/work-tracks';
 import { cn } from '@/shared/lib/cn';
 import { roomLook } from '../model/room-look';
+import { BranchName } from './BranchName';
 import { RoomMoru } from './RoomMoru';
 import { SwapText } from './SwapText';
 import type { StatusTone, useRoomCopy } from './use-room-copy';
@@ -33,9 +34,7 @@ export function MiniRoom({ room, copy, tint, showOwner }: { room: RoomEntry; cop
       )}
       {look.dozing ? <span aria-hidden className={cn(styles.miniZ, 'text-label font-mono font-[var(--font-weight-strong)]')}>z<br />&nbsp;z</span> : null}
       <div className={styles.miniText}>
-        <span className="text-body leading-body font-mono font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]" title={room.track.branch ?? room.track.path}>
-          {room.track.branch ?? room.track.title}
-        </span>
+        <BranchName branch={room.track.branch ?? room.track.title} className="text-body leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]" />
         <span className="text-body leading-body text-[color:var(--color-text-tertiary)]">
           <SwapText value={status.lead} ink={cn('font-[var(--font-weight-emphasis)]', TONE[status.tone])} />
           {status.rest ? <> · {status.rest}</> : null}
