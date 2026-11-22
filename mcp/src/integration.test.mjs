@@ -177,23 +177,25 @@ function gitCalls(tracePath, command) {
     .filter((line) => new RegExp(`(?:^| )${command}(?: |$)`).test(line));
 }
 
+/** Only a hang reaches this: stdin closes as soon as every id has answered, so a green run never waits on it. */
+const HANG_TIMEOUT_MS = 30_000;
+
 /**
  * Spawns the server on a tmp vault, sends the requests, and collects every
- * response; then stdin closes and the server must exit cleanly. The timeout only
- * detects a hang.
+ * response; then stdin closes and the server must exit cleanly.
  */
-function rpc(vaultRoot, requests, timeoutMs = 1500, extraEnv = {}) {
+function rpc(vaultRoot, requests, extraEnv = {}) {
   return runJsonRpcProcess({
     command: process.execPath,
     args: [SERVER_ENTRY],
     env: { ...process.env, OATLAS_VAULT: vaultRoot, ...extraEnv },
     requests,
-    timeoutMs,
+    timeoutMs: HANG_TIMEOUT_MS,
   });
 }
 
-function rpcForRepo(vaultRoot, repoRoot, requests, timeoutMs = 1500, extraEnv = {}) {
-  return rpc(vaultRoot, requests, timeoutMs, {
+function rpcForRepo(vaultRoot, repoRoot, requests, extraEnv = {}) {
+  return rpc(vaultRoot, requests, {
     OATLAS_REPO_ROOT: repoRoot,
     ...extraEnv,
   });
@@ -2477,7 +2479,7 @@ await test("analyze_repo_structure — reads answer source-only and never repeat
       callTool(3, 'analyze_repo_structure', { sourceOnly: true, sourceReads: reads }),
       callTool(4, 'analyze_repo_structure', { sourceOnly: false, sourceReads: reads }),
       callTool(6, 'analyze_repo_structure', {}),
-    ], 1500, { OATLAS_READ_ONLY: '1' });
+    ], { OATLAS_READ_ONLY: '1' });
     const compact = getCallTextAlone(responses, 3);
     const map = getCallTextAlone(responses, 6);
     assert.match(compact, /^Source reads in .*: 1 read, 0 outlined, 0 not returned\. .*nothing was written/);
@@ -2530,7 +2532,7 @@ await test("analyze_repo_structure — source-only retains refusal and continuat
       callTool(2, 'analyze_repo_structure', { sourceOnly: true, sourceReads: reads }),
       callTool(3, 'analyze_repo_structure', { sourceOnly: true,
         sourceReads: [{ path: 'index.ts', mode: 'outline' }] }),
-    ], 1500, { OATLAS_READ_ONLY: '1' });
+    ], { OATLAS_READ_ONLY: '1' });
     const packet = getCallTextAlone(responses, 2);
     assert.match(packet, /: 0 read, 0 outlined, 4 not returned\. /);
     for (const read of reads) assert.match(packet, new RegExp(`^== refused ${read.path.replace(/\./g, '\\.')}: [a-z_]+$`, 'm'), read.path);
@@ -3345,7 +3347,7 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
         focusDirection: "both",
         focusLimit: 25,
       }),
-    ], 10_000);
+    ]);
 
     const automatic = getCallParsed(responses, 2);
     const explicitNext = getCallParsed(responses, 3);
@@ -4825,7 +4827,7 @@ await test("query_ontology health/workspace_brief/agent_brief — summary histor
       callTool(2, "query_ontology", { operation: "health" }),
       callTool(3, "query_ontology", { operation: "workspace_brief" }),
       callTool(4, "query_ontology", { operation: "agent_brief", project: "project" }),
-    ], 1_500, tracedEnv);
+    ], tracedEnv);
     const health = getCallParsed(firstAnswer.responses, 2);
     const brief = getCallParsed(firstAnswer.responses, 3);
     const agentBrief = getCallParsed(firstAnswer.responses, 4);
@@ -4863,7 +4865,7 @@ await test("query_ontology health/workspace_brief/agent_brief — summary histor
     const fullValidation = await rpcForRepo(root, root, [
       ...INIT_REQUESTS,
       callTool(2, "validate_vault"),
-    ], 1_500, tracedEnv);
+    ], tracedEnv);
     const validation = getCallParsed(fullValidation.responses, 2);
     assert.equal(validation.summaryFreshness.checked, true);
     assert.ok(
@@ -7127,7 +7129,6 @@ await test("absorb_document — absorbed nodes are also stamped as agent-authore
         callTool(3, "query_concepts", { filter: 'created_by="agent:codex"' }),
         callTool(4, "query_concepts", { filter: "created_by=human" }),
       ],
-      3000,
       { OATLAS_REPO_ROOT: repoRoot },
     );
     const applied = getCallParsed(responses, 2);
@@ -8978,7 +8979,7 @@ await test("add_relation approved fixture — why, validate, compile, and impact
         slug: "capabilities/b",
         depth: 1,
       }),
-    ], 3000);
+    ]);
 
     const write = getCallParsed(responses, 2);
     const validation = getCallParsed(responses, 3);
@@ -9245,7 +9246,7 @@ await test("connection_info — active vault/repo roots and resolution sources a
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "connection_info"),
-    ], 1500, { OATLAS_REPO_ROOT: repoRoot });
+    ], { OATLAS_REPO_ROOT: repoRoot });
     const connectionInfo = getCallParsed(responses, 2);
     assert.equal(connectionInfo.vaultRoot, root);
     assert.equal(connectionInfo.repoRoot, repoRoot);
@@ -9298,7 +9299,7 @@ await test("initialize — read-only inventory matches the actually advertised t
       ...INIT_REQUESTS,
       { jsonrpc: "2.0", id: 2, method: "tools/list", params: {} },
       callTool(3, "connection_info"),
-    ], 1500, { OATLAS_READ_ONLY: "1" });
+    ], { OATLAS_READ_ONLY: "1" });
     const listed = responses.find((row) => row.id === 2)?.result?.tools ?? [];
     assertInstructionToolInventoryMatches(
       responses.find((response) => response.id === 1),
@@ -9327,7 +9328,7 @@ await test("construction profile — advertised inventories agree and retain col
       const { responses } = await rpc(root, [...INIT_REQUESTS,
         { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }, callTool(3, 'connection_info'),
         callTool(4, 'add_concept', { slug: 'domains/example', kind: 'domain', title: 'Example' }),
-      ], 1500, { OATLAS_TOOL_PROFILE: 'construction', OATLAS_READ_ONLY: readOnly });
+      ], { OATLAS_TOOL_PROFILE: 'construction', OATLAS_READ_ONLY: readOnly });
       const listed = responses.find((row) => row.id === 2).result.tools;
       const names = expected.filter((name) => readOnly === '0' || EXPECTED_READ_TOOLS.includes(name));
       assert.deepEqual(listed.map((tool) => tool.name).sort(), names.sort());
@@ -9350,11 +9351,11 @@ await test("construction profile — invalid selection refuses startup and full 
   const root = makeVault();
   try {
     for (const profile of ['unexpected', ' ']) {
-      await assert.rejects(() => rpc(root, INIT_REQUESTS, 1500, { OATLAS_TOOL_PROFILE: profile }), /OATLAS_TOOL_PROFILE/);
+      await assert.rejects(() => rpc(root, INIT_REQUESTS, { OATLAS_TOOL_PROFILE: profile }), /OATLAS_TOOL_PROFILE/);
     }
     const { responses } = await rpc(root, [...INIT_REQUESTS,
       { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} },
-    ], 1500, { OATLAS_TOOL_PROFILE: 'full', OATLAS_READ_ONLY: '0' });
+    ], { OATLAS_TOOL_PROFILE: 'full', OATLAS_READ_ONLY: '0' });
     assert.deepEqual(responses.find((row) => row.id === 2).result.tools.map((t) => t.name).sort(), [...EXPECTED_TOOLS].sort());
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
@@ -9364,7 +9365,7 @@ await test("construction profile — discovery does not bypass consent for an om
   try {
     const { responses } = await rpc(root, [...INIT_REQUESTS,
       callTool(2, 'add_concept', { slug: 'domains/example', kind: 'domain', title: 'Example' }),
-    ], 1500, { OATLAS_TOOL_PROFILE: 'construction', OATLAS_READ_ONLY: '0', OATLAS_WRITE_CONSENT: '1' });
+    ], { OATLAS_TOOL_PROFILE: 'construction', OATLAS_READ_ONLY: '0', OATLAS_WRITE_CONSENT: '1' });
     const result = responses.find((row) => row.id === 2).result;
     assert.equal(result.isError, true);
     assert.equal(result.structuredContent.errorCode, 'tool_error');
@@ -9475,7 +9476,7 @@ await test("absorb_document — repo boundary, symlink escape, explicit opt-in, 
       callTool(3, "absorb_document", { filePath: outsidePath }),
       callTool(4, "absorb_document", { filePath: outsidePath, confirm: true }),
       callTool(5, "absorb_document", { filePath: symlinkPath }),
-    ], 2500, { OATLAS_REPO_ROOT: repoRoot });
+    ], { OATLAS_REPO_ROOT: repoRoot });
     const insidePreview = getCallParsed(first.responses, 2);
     const outsidePreview = getCallParsed(first.responses, 3);
     const symlinkPreview = getCallParsed(first.responses, 5);
@@ -9509,7 +9510,7 @@ await test("absorb_document — repo boundary, symlink escape, explicit opt-in, 
         allowOutsideRepo: true,
         confirm: true,
       }),
-    ], 3000, { OATLAS_REPO_ROOT: repoRoot });
+    ], { OATLAS_REPO_ROOT: repoRoot });
     const optedInPreview = getCallParsed(second.responses, 2);
     const applied = getCallParsed(second.responses, 3);
     assertDestructivePreview(optedInPreview, {
@@ -9530,7 +9531,7 @@ await test("absorb_document — repo boundary, symlink escape, explicit opt-in, 
     const third = await rpc(vault, [
       ...INIT_REQUESTS,
       callTool(2, "absorb_document", { filePath: outsidePath, allowOutsideRepo: true }),
-    ], 2000, { OATLAS_REPO_ROOT: repoRoot });
+    ], { OATLAS_REPO_ROOT: repoRoot });
     const backupBlocked = getCallParsed(third.responses, 2);
     assertDestructivePreview(backupBlocked, {
       canConfirm: false,
@@ -9571,7 +9572,7 @@ await test("absorb_document — a failed confirm changes neither the vault nor t
     const { responses } = await rpc(vault, [
       ...INIT_REQUESTS,
       callTool(2, "absorb_document", { filePath: sourcePath, confirm: true }),
-    ], 2500, { OATLAS_REPO_ROOT: repoRoot });
+    ], { OATLAS_REPO_ROOT: repoRoot });
     assert.equal(isErrorResponse(responses, 2), true, "confirm on a read-only vault must fail");
     const text = responses.find((row) => row.id === 2).result.content[0].text;
     assert.match(text, /rolled back|unchanged/i, `the failure does not say it restored the state: ${text}`);
@@ -9615,7 +9616,7 @@ await test("git_status/git_snapshot — validated dry-run and vault-only local c
         message: "docs(ontology): snapshot integration vault",
       }),
       callTool(6, "git_status"),
-    ], 3000, { OATLAS_REPO_ROOT: root });
+    ], { OATLAS_REPO_ROOT: root });
     const status = getCallParsed(responses, 2);
     const history = getCallParsed(responses, 3);
     const preview = getCallParsed(responses, 4);
@@ -9665,7 +9666,7 @@ await test("git_snapshot — validation errors remain previewable but block conf
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "git_snapshot"),
-    ], 2500, { OATLAS_REPO_ROOT: root });
+    ], { OATLAS_REPO_ROOT: root });
     const preview = getCallParsed(responses, 2);
     assert.equal(preview.previewReady, true);
     assert.equal(preview.wouldChange, true);
@@ -10174,7 +10175,7 @@ await test("query_ontology agent_brief — selected project and compact task han
         project: "project-a",
         detail: "full",
       }),
-    ], 3000);
+    ]);
 
     const full = getCallParsed(responses, 2);
     assert.deepEqual(getCallParsed(responses, 9), full, "omitted detail and explicit full remain byte-shape compatible");
@@ -10224,7 +10225,7 @@ await test("query_ontology agent_brief — selected project and compact task han
     assert.deepEqual(recovery.arguments.slugs, ['project-a', 'capabilities/write-values', 'elements/writer']);
     const recovered = await rpc(root, [
       ...INIT_REQUESTS, callTool(2, recovery.tool, recovery.arguments),
-    ], 3000, { OATLAS_READ_ONLY: '1' });
+    ], { OATLAS_READ_ONLY: '1' });
     const bodies = getCallParsed(recovered.responses, 2).concepts;
     assert.deepEqual(bodies.map((row) => row.slug), recovery.arguments.slugs);
     assert.ok(bodies.every((row) => row.ok && row.bodyInfo.mode === 'full' && !row.bodyInfo.truncated));
@@ -10271,13 +10272,13 @@ await test("query_ontology agent_brief — selected project and compact task han
     const refusedResponse = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, 'query_ontology', { operation: 'agent_brief', project: 'project-a', detail: 'compact', task: 'Coordinate orbital trajectories.' }),
-    ], 3000, { OATLAS_READ_ONLY: '1' });
+    ], { OATLAS_READ_ONLY: '1' });
     const refused = getCallParsed(refusedResponse.responses, 2);
     assert.equal(refused.focus.capability, null);
     assert.equal(refused.focus.refusal.reason, 'no_match');
     const refusedRead = await rpc(root, [
       ...INIT_REQUESTS, callTool(2, refused.nextReads[0].tool, refused.nextReads[0].arguments),
-    ], 3000, { OATLAS_READ_ONLY: '1' });
+    ], { OATLAS_READ_ONLY: '1' });
     assert.deepEqual(getCallParsed(refusedRead.responses, 2).concepts.map((row) => ({ slug: row.slug, ok: row.ok })), [{ slug: 'project-a', ok: true }]);
     const lateLimit = 'Cross-process replacement recovery has not been tested.';
     const projectPath = join(root, 'project-a.md');
@@ -10286,7 +10287,7 @@ await test("query_ontology agent_brief — selected project and compact task han
     const cappedResponse = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, 'query_ontology', { operation: 'agent_brief', project: 'project-a', detail: 'compact', task }),
-    ], 3000, { OATLAS_READ_ONLY: '1' });
+    ], { OATLAS_READ_ONLY: '1' });
     const capped = getCallParsed(cappedResponse.responses, 2);
     const projectCoverage = capped.focus.uncertainty.sources.find((row) => row.slug === 'project-a');
     assert.equal(projectCoverage.totalUnits, 1);
@@ -10294,7 +10295,7 @@ await test("query_ontology agent_brief — selected project and compact task han
     rmSync(join(root, 'elements/writer.md'));
     const partialRead = await rpc(root, [
       ...INIT_REQUESTS, callTool(2, capped.nextReads[0].tool, capped.nextReads[0].arguments),
-    ], 3000, { OATLAS_READ_ONLY: '1' });
+    ], { OATLAS_READ_ONLY: '1' });
     const partialBodies = getCallParsed(partialRead.responses, 2).concepts;
     const projectBody = partialBodies.find((row) => row.slug === 'project-a');
     assert.equal(projectBody.ok, true);
@@ -10389,7 +10390,7 @@ await test("query_ontology agent_brief: persisted claim boundaries outrank task 
         detail: "compact",
         task,
       })),
-    ], 3000);
+    ]);
 
     assert.equal(taskCases.length, 4, "the MCP boundary-routing gate must exercise real subjects");
     for (const [index, [task, expectedSlug]] of taskCases.entries()) {
@@ -10514,7 +10515,7 @@ DER parsing and unrelated encodings.
         detail: "compact",
         task: "Write an optional DER SET value.",
       }),
-    ], 3000);
+    ]);
     const compact = getCallParsed(responses, 2);
     const compactText = getCallText(responses, 2);
     const recovery = compact.nextReads[0];
@@ -10564,7 +10565,7 @@ await test("query_ontology agent_brief — read-only known-task wire path stays 
         rootPath: repo,
         confirm: true,
       }),
-    ], 10_000);
+    ]);
     assert.equal(getCallParsed(connected.responses, 2).projectSource.status, "verified_current");
 
     const { responses } = await rpcForRepo(vault, repo, [
@@ -10581,7 +10582,7 @@ await test("query_ontology agent_brief — read-only known-task wire path stays 
         project: "ontology-atlas",
         detail: "full",
       }),
-    ], 20_000, { OATLAS_READ_ONLY: "1" });
+    ], { OATLAS_READ_ONLY: "1" });
     const connectionResponse = responses.find((row) => row.id === 2);
     const compactResponse = responses.find((row) => row.id === 3);
     assert.ok(connectionResponse?.result, "connection_info must return one wire result");
@@ -10649,7 +10650,7 @@ await test("query_ontology agent_brief — a valid 501-node project keeps full a
         detail: "compact",
         task: "Inspect an unrelated lunar camera behavior.",
       }),
-    ], 10_000);
+    ]);
     const publicScope = getCallParsed(responses, 2);
     assert.equal(publicScope.nodes.total, 501);
     assert.equal(publicScope.nodes.limited, true);
