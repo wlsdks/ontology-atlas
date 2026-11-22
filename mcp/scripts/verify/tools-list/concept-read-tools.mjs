@@ -66,7 +66,7 @@ export function conceptReadToolsSchemaFailure(tools) {
   const listKindSchema = propertyAt(listConceptsTool, ['properties', 'kind']);
   if (
     listKindSchema?.type !== 'string' ||
-    listKindSchema.minLength !== 1 ||
+    (listKindSchema.minLength ?? 1) !== 1 ||
     !sameArray(listKindSchema.enum, NODE_KIND_VALUES) ||
     !/canonical ontology kind/i.test(listKindSchema?.description ?? '') ||
     !/Invalid kind typos fail closed/i.test(listKindSchema?.description ?? '')
@@ -106,8 +106,7 @@ export function conceptReadToolsSchemaFailure(tools) {
     listLimitSchema?.type !== 'integer' ||
     listLimitSchema.minimum !== 1 ||
     listLimitSchema.maximum !== 500 ||
-    !/Defaults to 100/i.test(listLimitSchema?.description ?? '') ||
-    !/max 500/i.test(listLimitSchema?.description ?? '')
+    !/defaults? (to )?100/i.test(listLimitSchema?.description ?? '')
   ) {
     return 'list_concepts inputSchema limit default description drift';
   }

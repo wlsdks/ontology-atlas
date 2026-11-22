@@ -220,70 +220,23 @@ describe("rpc response completion helpers", () => {
 
     const missingConcepts = makeDogfoodToolsList().tools;
     missingConcepts.find((tool) => tool.name === "add_concepts").description =
-      "Batch rows isolate non-object row shape and unknown row fields as ok:false rows.";
-    assert.equal(writeRowLabelGuidanceSummary(missingConcepts), "missing add_concepts concepts[n], add_concepts single-field repair, add_concepts multi-field Received fields, add_concepts duplicate first-seen, add_concepts duplicate structured row repair");
+      "Batch rows are written independently.";
+    assert.equal(writeRowLabelGuidanceSummary(missingConcepts), "missing add_concepts concepts[n], add_concepts repair fields, add_concepts duplicate input slug");
 
-    const missingConceptsReceivedFields = makeDogfoodToolsList().tools;
-    missingConceptsReceivedFields.find((tool) => tool.name === "add_concepts").description =
-      "Batch rows isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels.";
-    assert.equal(writeRowLabelGuidanceSummary(missingConceptsReceivedFields), "missing add_concepts single-field repair, add_concepts multi-field Received fields, add_concepts duplicate first-seen, add_concepts duplicate structured row repair");
-
-    const missingConceptsSingleFieldRepair = makeDogfoodToolsList().tools;
-    missingConceptsSingleFieldRepair.find((tool) => tool.name === "add_concepts").description =
-      "Batch rows isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, multi unknown-field rows report every unknown field with nearest hints and Received fields, and duplicate input slugs report the later concepts[n] row plus first-seen `concepts[m]` with structured `rowName` / `firstSeenAt`.";
-    assert.equal(writeRowLabelGuidanceSummary(missingConceptsSingleFieldRepair), "missing add_concepts single-field repair");
-
-    const missingConceptsEveryUnknownField = makeDogfoodToolsList().tools;
-    missingConceptsEveryUnknownField.find((tool) => tool.name === "add_concepts").description =
-      "Batch rows isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include `receivedField` plus one-row `unknownFields`, unknown-field rows include Received fields, and duplicate input slugs report the later concepts[n] row plus first-seen `concepts[m]` with structured `rowName` / `firstSeenAt`.";
-    assert.equal(writeRowLabelGuidanceSummary(missingConceptsEveryUnknownField), "missing add_concepts multi-field Received fields");
-
-    const missingConceptsDuplicate = makeDogfoodToolsList().tools;
-    missingConceptsDuplicate.find((tool) => tool.name === "add_concepts").description =
-      "Batch rows isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include `receivedField` plus one-row `unknownFields`, and multi unknown-field rows report every unknown field with nearest hints and Received fields.";
-    assert.equal(writeRowLabelGuidanceSummary(missingConceptsDuplicate), "missing add_concepts duplicate first-seen, add_concepts duplicate structured row repair");
-
-    const missingConceptsDuplicateStructured = makeDogfoodToolsList().tools;
-    missingConceptsDuplicateStructured.find((tool) => tool.name === "add_concepts").description =
-      "Batch rows isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every unknown field with nearest hints and Received fields, and duplicate input slugs report the later concepts[n] row plus first-seen `concepts[m]`.";
-    assert.equal(writeRowLabelGuidanceSummary(missingConceptsDuplicateStructured), "missing add_concepts duplicate structured row repair");
+    const missingConceptsRepair = makeDogfoodToolsList().tools;
+    missingConceptsRepair.find((tool) => tool.name === "add_concepts").description =
+      "A row with a duplicate input slug returns ok:false labelled concepts[n].";
+    assert.equal(writeRowLabelGuidanceSummary(missingConceptsRepair), "missing add_concepts repair fields");
 
     const missingRelations = makeDogfoodToolsList().tools;
     missingRelations.find((tool) => tool.name === "add_relations").description =
-      "Batch rows isolate non-object row shape and unknown row fields as ok:false rows.";
-    assert.equal(writeRowLabelGuidanceSummary(missingRelations), "missing add_relations relations[n], add_relations structured rowName, add_relations single-field repair, add_relations multi-field Received fields, add_relations structured field lists, add_relations closest-value type hint, add_relations structured value repair");
-
-    const missingRelationsReceivedFields = makeDogfoodToolsList().tools;
-    missingRelationsReceivedFields.find((tool) => tool.name === "add_relations").description =
-      "Batch rows isolate non-object row shape and unknown row fields as ok:false rows with relations[n] labels.";
-    assert.equal(writeRowLabelGuidanceSummary(missingRelationsReceivedFields), "missing add_relations structured rowName, add_relations single-field repair, add_relations multi-field Received fields, add_relations structured field lists, add_relations closest-value type hint, add_relations structured value repair");
-
-    const missingRelationsSingleFieldRepair = makeDogfoodToolsList().tools;
-    missingRelationsSingleFieldRepair.find((tool) => tool.name === "add_relations").description =
-      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and Received fields.";
-    assert.equal(writeRowLabelGuidanceSummary(missingRelationsSingleFieldRepair), "missing add_relations single-field repair");
-
-    const missingRelationsEveryUnknownField = makeDogfoodToolsList().tools;
-    missingRelationsEveryUnknownField.find((tool) => tool.name === "add_relations").description =
-      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; unknown-field rows include Received fields.";
-    assert.equal(writeRowLabelGuidanceSummary(missingRelationsEveryUnknownField), "missing add_relations multi-field Received fields, add_relations structured field lists");
-
-    const missingRelationsStructuredFieldLists = makeDogfoodToolsList().tools;
-    missingRelationsStructuredFieldLists.find((tool) => tool.name === "add_relations").description =
-      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints and Received fields.";
-    assert.equal(writeRowLabelGuidanceSummary(missingRelationsStructuredFieldLists), "missing add_relations structured field lists");
+      "Batch rows are written independently.";
+    assert.equal(writeRowLabelGuidanceSummary(missingRelations), "missing add_relations relations[n], add_relations repair fields, add_relations closest-value type hint");
 
     const missingRelationsClosestValue = makeDogfoodToolsList().tools;
     missingRelationsClosestValue.find((tool) => tool.name === "add_relations").description =
-      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and Received fields.";
-    assert.equal(writeRowLabelGuidanceSummary(missingRelationsClosestValue), "missing add_relations closest-value type hint, add_relations structured value repair");
-
-    const missingRelationsStructuredValueRepair = makeDogfoodToolsList().tools;
-    missingRelationsStructuredValueRepair.find((tool) => tool.name === "add_relations").description =
-      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and Received fields.";
-    assert.equal(writeRowLabelGuidanceSummary(missingRelationsStructuredValueRepair), "missing add_relations structured value repair");
-
-    assert.equal(writeRowLabelGuidanceSummary(null), "missing tools/list");
+      "A row with an unknown type returns ok:false labelled relations[n] with repair fields.";
+    assert.equal(writeRowLabelGuidanceSummary(missingRelationsClosestValue), "missing add_relations closest-value type hint");
   });
 
   it("summarizes tools/list annotation coverage for dogfood output", () => {

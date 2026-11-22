@@ -38,6 +38,7 @@ import { inlineSharedSubschemas } from "./server/shared-subschemas.mjs";
 import { proposalCoverageRefs } from "./construction/construction-lifecycle.mjs";
 import { CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA } from "./construction/construction-qualification.mjs";
 import { MEANING_PROPOSAL_INPUT_SCHEMA } from "./server/tool-schemas/meaning-construction.mjs";
+import { TOOL_INPUT_CONTRACT_BY_NAME } from "./server/registry.mjs";
 import {
   formatNoTestMatchMessage,
   formatTestFilterSuffix,
@@ -733,7 +734,7 @@ await test("tools/list — each single-item tool description cross-references it
     assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.required, ["project", "domains", "capabilities", "elements", "relations", "competencyAnswers"]);
     assert.equal(analyzeRepo?.inputSchema?.properties?.proposal?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.properties?.elements?.type, "array");
-    assert.match(analyzeRepo?.inputSchema?.properties?.proposal?.description ?? "", /refused with its path and expected shape/);
+    assert.match(analyzeRepo?.inputSchema?.properties?.proposal?.description ?? "", /refused with its path, expected shape and an example/);
     assert.equal(analyzeRepo?.inputSchema?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.inputSchema?.properties?.qualification?.properties?.contract?.enum, ["constructionQualification:v1"]);
     assert.deepEqual(MEANING_PROPOSAL_INPUT_SCHEMA.properties.elements.items.required, ["slug", "title", "definition", "evidence", "confidence", "domain", "path"]);
@@ -906,18 +907,15 @@ await test("tools/list — each single-item tool description cross-references it
     assert.deepEqual(inferImports?.outputSchema?.properties?.nextReview?.properties?.cursor?.required, ["afterReviewId", "total", "remaining", "hasMore", "nextAfterReviewId"]);
     assert.match(
       inferImports?.description ?? "",
-      /walk TS\/JS files in a code repo and infer file-level \+ module-level import edges[\s\S]*bounded root Python packages[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*source-backed review candidates[\s\S]*focusPath[\s\S]*incoming[\s\S]*outgoing[\s\S]*omit `reviewMode`[\s\S]*128 KiB[\s\S]*larger reconciled scans return exactly one compact, non-writing `nextRelationReview:v1` packet[\s\S]*delivery receipt[\s\S]*reviewMode:"next"[\s\S]*reviewMode:"full"[\s\S]*allowLargeResponse:true[\s\S]*actionable error[\s\S]*bounded exact file-edge `evidence` receipt[\s\S]*rationale_review_required[\s\S]*ask the user[\s\S]*add_relation[\s\S]*`why`/i,
+      /walk TS\/JS files in a code repo and infer file-level \+ module-level import edges[\s\S]*root Python packages[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*source-backed review candidates[\s\S]*bounded exact file-edge `evidence` receipt[\s\S]*focusPath[\s\S]*incoming\/outgoing[\s\S]*omit `reviewMode`[\s\S]*128 KiB[\s\S]*exactly one compact, non-writing `nextRelationReview:v1` packet[\s\S]*delivery receipt[\s\S]*rationale_review_required[\s\S]*ask the user[\s\S]*add_relation[\s\S]*`why`/i,
       "infer_imports description documents dependency-ingest safety workflow",
     );
     assert.match(
       inferImports?.inputSchema?.properties?.maxFiles?.description ?? "",
-      /default 5000[\s\S]*max 50000[\s\S]*avoid pathological monorepos/i,
+      /default 5000[\s\S]*avoid pathological monorepos/i,
       "infer_imports maxFiles schema documents hard stop",
     );
-    assert.match(inferImports?.description ?? "", /tsconfig\.json compilerOptions\.paths aliases first/);
-    assert.match(inferImports?.description ?? "", /fallback common @\/\* aliases/);
-    assert.match(inferImports?.description ?? "", /resolved to internal files/);
-    assert.match(inferImports?.description ?? "", /alias-not-found/);
+    assert.equal(inferImports?.inputSchema?.properties?.maxFiles?.maximum, 50000);
     assert.doesNotMatch(inferImports?.description ?? "", /aliases \(@\/\) → external \(not resolved\)/);
     const inspectArchitecture = findTool("inspect_architecture");
     const architectureProfileSchema = inspectArchitecture?.outputSchema?.properties?.profile;
@@ -945,7 +943,7 @@ await test("tools/list — each single-item tool description cross-references it
     );
     assert.match(
       inspectArchitecture?.description ?? "",
-      /which known import usages those rules govern[\s\S]*usage-qualified receipts[\s\S]*unclassified import usage/i,
+      /conforms, violated and unknown[\s\S]*unclassified import usage[\s\S]*never count as compliance/i,
     );
     const listKinds = findTool("list_kinds");
     assert.match(
@@ -968,7 +966,7 @@ await test("tools/list — each single-item tool description cross-references it
     const validateVault = findTool("validate_vault");
     assert.match(
       validateVault?.description ?? "",
-      /validate every doc in the vault[\s\S]*per-doc \+ per-code aggregate[\s\S]*side effect 0[\s\S]*first-contact before writes[\s\S]*before \/ after a batch write/i,
+      /validate every doc in the vault[\s\S]*per-doc \+ per-code aggregate[\s\S]*first-contact before writes[\s\S]*before \/ after a batch write[\s\S]*side effect 0/i,
       "validate_vault description documents first-contact health workflow",
     );
     assert.equal(validateVault?.outputSchema?.type, "object");
@@ -1166,12 +1164,12 @@ await test("tools/list — each single-item tool description cross-references it
     const addRs = findDesc("add_relations");
     assert.ok(getC && /get_concepts/.test(getC), "get_concept → get_concepts hint");
     assert.ok(
-      getCs && /Missing or invalid slug rows return/.test(getCs) && /later valid slugs still resolve/.test(getCs),
+      getCs && /a bad row returns `\{ok:false, error\}`/.test(getCs) && /later valid slugs still resolve/.test(getCs),
       "get_concepts partial-row recovery hint",
     );
     assert.ok(findN && /one-hop graph neighborhood/i.test(findN), "find_neighbors graph hint");
     assert.ok(compile && /deterministic graph artifact/i.test(compile), "compile_ontology compiler hint");
-    assert.ok(query && /Read-only graph queries/i.test(query), "query_ontology engine hint");
+    assert.ok(query && /Read-only; side effect 0/i.test(query), "query_ontology engine hint");
     const afterActionIdDescription = findTool("query_ontology")?.inputSchema?.properties?.afterActionId?.description ?? "";
     assert.match(afterActionIdDescription, /cursor\.nextAfterActionId while cursor\.hasMore/, "query_ontology maintenance cursor hint");
     assert.ok(
@@ -1187,7 +1185,7 @@ await test("tools/list — each single-item tool description cross-references it
     assert.ok(addR && /add_relations/.test(addR), "add_relation → add_relations hint");
     assert.match(
       addR ?? "",
-      /Invalid relation `type`[\s\S]*no `changed`, `alreadyExists`, or `findings` write metadata/,
+      /invalid `type` is rejected[\s\S]*no `changed`, `alreadyExists`, or `findings` write metadata/,
       "add_relation invalid-type preflight is visibly non-writing",
     );
     assert.match(
@@ -1499,7 +1497,7 @@ await test("tools/list — each single-item tool description cross-references it
     );
     assert.match(
       findTool("list_concepts")?.inputSchema?.properties?.limit?.description ?? "",
-      /Defaults to 100, max 500/,
+      /Default 100/,
       "list_concepts limit schema documents default and cap",
     );
     assert.deepEqual(
@@ -1533,7 +1531,7 @@ await test("tools/list — each single-item tool description cross-references it
     );
     assert.match(
       findTool("find_neighbors")?.inputSchema?.properties?.limit?.description ?? "",
-      /Defaults to 100, max 500/,
+      /defaults to 100/i,
       "find_neighbors limit schema documents default and cap",
     );
     assert.deepEqual(
@@ -1558,7 +1556,7 @@ await test("tools/list — each single-item tool description cross-references it
     );
     assert.match(
       findTool("find_path")?.inputSchema?.properties?.maxHops?.description ?? "",
-      /default 5, max 20/i,
+      /default 5/i,
       "find_path maxHops schema documents default and cap",
     );
     assert.deepEqual(
@@ -1595,12 +1593,12 @@ await test("tools/list — each single-item tool description cross-references it
     );
     assert.match(
       findTool("compile_ontology")?.inputSchema?.properties?.summary?.description ?? "",
-      /omit `nodes` \/ `edges` \/ `aliases`[\s\S]*Cheap polling for cache invalidation/i,
+      /Counts, graphHash and maxMtime only[\s\S]*cheap polling for cache invalidation/i,
       "compile_ontology summary schema documents cheap polling behavior",
     );
     assert.match(
       findTool("compile_ontology")?.inputSchema?.properties?.nodesLimit?.description ?? "",
-      /Pair with `nodesOffset` to paginate[\s\S]*max 500/i,
+      /`nodesOffset`/,
       "compile_ontology nodesLimit schema documents pagination cap",
     );
     assert.deepEqual(
@@ -1624,7 +1622,7 @@ await test("tools/list — each single-item tool description cross-references it
     );
     assert.match(
       findTool("query_concepts")?.inputSchema?.properties?.limit?.description ?? "",
-      /Defaults to 100, max 500/,
+      /Default 100/,
       "query_concepts limit schema documents default and cap",
     );
     assert.match(
@@ -1646,13 +1644,11 @@ await test("tools/list — each single-item tool description cross-references it
       {
         detailEnum: findTool("query_ontology")?.inputSchema?.properties?.detail?.enum,
         taskType: findTool("query_ontology")?.inputSchema?.properties?.task?.type,
-        taskMinLength: findTool("query_ontology")?.inputSchema?.properties?.task?.minLength,
         taskMaxLength: findTool("query_ontology")?.inputSchema?.properties?.task?.maxLength,
       },
       {
         detailEnum: ["compact", "full"],
         taskType: "string",
-        taskMinLength: 1,
         taskMaxLength: 2000,
       },
       "query_ontology exposes the compact/full and request-local task signature",
@@ -1683,7 +1679,7 @@ await test("tools/list — each single-item tool description cross-references it
         depthMaximum: 20,
         maxHopsMaximum: 20,
         nodeLimitDescription:
-          "Node summaries per group: components and communities (default 25), health/workspace_brief/agent_brief (default 10).",
+          "Node summaries per group; default 25 for components/communities, 10 for health/workspace_brief/agent_brief.",
       },
       "query_ontology exposes runtime numeric caps in schema",
     );
@@ -1756,8 +1752,8 @@ await test("tools/list — each single-item tool description cross-references it
         fromKindDescription: "match_edges only: source kind, always a real node.",
         toKindDescription: "match_edges only: target kind; external and unresolved select refs that are not nodes.",
         afterActionIdDescription:
-          "maintenance_plan only: resume after this action id; pass cursor.nextAfterActionId while cursor.hasMore. An unknown id returns an empty page with cursor.found=false.",
-        componentTypesDescription: "health/workspace_brief/agent_brief: types for the component check. Default all.",
+          "maintenance_plan: resume after this id; pass cursor.nextAfterActionId while cursor.hasMore. An unknown id returns an empty page with cursor.found=false.",
+        componentTypesDescription: "health/workspace_brief/agent_brief: component types, default all.",
       },
       "query_ontology exposes health/workspace_brief/agent_brief tuning controls",
     );
@@ -1928,13 +1924,13 @@ await test("tools/list — each single-item tool description cross-references it
       ["analyze_repo_structure", "rootPath"],
       ["infer_imports", "rootPath"],
     ]) {
-      const property = findTool(toolName)?.inputSchema?.properties?.[propertyName];
-      assert.equal(property?.type, "string", `${toolName}.${propertyName} exposes string schema`);
-      assert.equal(property?.minLength, 1, `${toolName}.${propertyName} exposes minLength`);
+      assert.equal(findTool(toolName)?.inputSchema?.properties?.[propertyName]?.type, "string", `${toolName}.${propertyName} exposes string schema`);
+      const contract = TOOL_INPUT_CONTRACT_BY_NAME.get(toolName)?.properties?.[propertyName];
+      assert.equal(contract?.minLength, 1, `${toolName}.${propertyName} server contract keeps minLength`);
       assert.match(
-        property?.pattern ?? "",
+        contract?.pattern ?? "",
         /\\s/,
-        `${toolName}.${propertyName} exposes whitespace guard pattern`,
+        `${toolName}.${propertyName} server contract keeps the whitespace guard pattern`,
       );
     }
     assert.deepEqual(
@@ -1942,7 +1938,7 @@ await test("tools/list — each single-item tool description cross-references it
         type: findTool("get_concepts")?.inputSchema?.properties?.slugs?.type,
         maxItems: findTool("get_concepts")?.inputSchema?.properties?.slugs?.maxItems,
         itemType: findTool("get_concepts")?.inputSchema?.properties?.slugs?.items?.type,
-        itemMinLength: findTool("get_concepts")?.inputSchema?.properties?.slugs?.items?.minLength,
+        itemMinLength: TOOL_INPUT_CONTRACT_BY_NAME.get("get_concepts")?.properties?.slugs?.items?.minLength,
       },
       { type: "array", maxItems: 50, itemType: "string", itemMinLength: 1 },
       "get_concepts exposes batch maxItems schema",
@@ -1962,7 +1958,7 @@ await test("tools/list — each single-item tool description cross-references it
         slugMinLength:
           findTool("add_concepts")?.inputSchema?.properties?.concepts?.items?.properties?.slug?.minLength,
         kindMinLength:
-          findTool("add_concepts")?.inputSchema?.properties?.concepts?.items?.properties?.kind?.minLength,
+          TOOL_INPUT_CONTRACT_BY_NAME.get("add_concepts")?.properties?.concepts?.items?.properties?.kind?.minLength,
         titleMinLength:
           findTool("add_concepts")?.inputSchema?.properties?.concepts?.items?.properties?.title?.minLength,
         capabilityItemMinLength:
@@ -1972,17 +1968,17 @@ await test("tools/list — each single-item tool description cross-references it
         relationToMinLength:
           findTool("add_relations")?.inputSchema?.properties?.relations?.items?.properties?.to?.minLength,
         relationTypeMinLength:
-          findTool("add_relations")?.inputSchema?.properties?.relations?.items?.properties?.type?.minLength,
+          TOOL_INPUT_CONTRACT_BY_NAME.get("add_relations")?.properties?.relations?.items?.properties?.type?.minLength,
         relationTypeEnum:
           findTool("add_relations")?.inputSchema?.properties?.relations?.items?.properties?.type?.enum,
         addRelationTypeEnum:
           findTool("add_relation")?.inputSchema?.properties?.type?.enum,
         analyzeIgnoreItemMinLength:
-          findTool("analyze_repo_structure")?.inputSchema?.properties?.ignore?.items?.minLength,
+          TOOL_INPUT_CONTRACT_BY_NAME.get("analyze_repo_structure")?.properties?.ignore?.items?.minLength,
         inferSourceItemMinLength:
-          findTool("infer_imports")?.inputSchema?.properties?.sourceFolders?.items?.minLength,
+          TOOL_INPUT_CONTRACT_BY_NAME.get("infer_imports")?.properties?.sourceFolders?.items?.minLength,
         inferIgnoreItemMinLength:
-          findTool("infer_imports")?.inputSchema?.properties?.ignore?.items?.minLength,
+          TOOL_INPUT_CONTRACT_BY_NAME.get("infer_imports")?.properties?.ignore?.items?.minLength,
       },
       {
         slugMinLength: 1,

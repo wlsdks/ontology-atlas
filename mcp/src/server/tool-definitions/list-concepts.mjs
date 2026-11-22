@@ -1,6 +1,5 @@
 import { NODE_KIND_VALUES } from '../../ontology-engine.mjs';
 import { NODE_UID_PATTERN } from '../../schema.mjs';
-import { NODE_KIND_DESCRIPTION } from '../tool-schemas/enum-descriptions.mjs';
 import {
   NON_BLANK_STRING_SCHEMA,
   nonBlankStringSchema,
@@ -9,42 +8,39 @@ import {
 export const LIST_CONCEPTS_TOOL = {
   name: 'list_concepts',
   description:
-    'List every ontology node in the vault (each .md file with a frontmatter `kind:`). ' +
-    'Filter by `kind`, `domain`, and/or `since` (mtime-based incremental sync). ' +
-    'Large vaults are resumable with `offset` + `limit`; always follow `pagination.nextOffset` while `hasMore` is true. ' +
-    "AI agents call this first to grasp the codebase's mental model.",
+    'List every ontology node in the vault (each .md file with a frontmatter `kind:`); AI agents call this first to grasp the codebase\'s mental model. Filter by `kind`, `domain` and `since`; page with `offset` + `limit`, following `pagination.nextOffset` while `hasMore` is true.',
   inputSchema: {
     type: 'object',
     properties: {
       kind: nonBlankStringSchema(
-        `Filter to one canonical ontology kind (${NODE_KIND_DESCRIPTION}). Omit to return all. Invalid kind typos fail closed with nearest-value hints instead of returning an empty list.`,
+        'Filter to one canonical ontology kind. Invalid kind typos fail closed with nearest-value hints.',
         { enum: NODE_KIND_VALUES },
       ),
       domain: nonBlankStringSchema(
-        'Filter to nodes whose frontmatter `domain:` matches this slug (e.g. "auth"). Combine with `kind` for "all capabilities under auth" in one call. Use the domain *slug*, not the title.',
+        'Domain slug (not title) in the node\'s `domain:`, e.g. "auth".',
       ),
       since: {
         type: 'number',
         minimum: 0,
         description:
-          'Non-negative mtime threshold. Filter to nodes with `mtime > since` (ms). Pair with the `mtime` returned in earlier `list_concepts` / `get_concept` responses for incremental sync — "what changed since I last looked". Strict greater-than (mtime === since is excluded) so re-passing the max from a previous response does not double-fetch.',
+          'Return nodes with `mtime > since` (ms) for incremental sync from an earlier `mtime`; strict, so re-passing the max does not double-fetch.',
       },
       offset: {
         type: 'integer',
         minimum: 0,
         description:
-          'Zero-based page offset applied after kind/domain/since filters. Resume at pagination.nextOffset until hasMore is false; ordering is deterministic by canonical slug.',
+          'Offset after filters, in deterministic slug order; resume at pagination.nextOffset.',
       },
       summary: {
         type: 'boolean',
         description:
-          'When true, each node row includes a `summary` (max 200 chars, prose-only — heading / table / code block / image / divider / list / quote are skipped and only the first paragraph is kept, same `extractSummaryExcerpt` helper as `get_concept` / `find_evidence`). Useful for "scan + overview" without N follow-up `get_concept` calls. Default false to keep payload small.',
+          'Add a prose `summary` (max 200 chars, first paragraph) to each row, without N follow-up `get_concept` calls. Default false.',
       },
       limit: {
         type: 'integer',
         minimum: 1,
         maximum: 500,
-        description: 'Positive integer max rows to return. Defaults to 100, max 500.',
+        description: 'Default 100.',
       },
     },
   },

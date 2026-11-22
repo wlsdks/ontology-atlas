@@ -14,40 +14,28 @@ import {
   PROJECT_SOURCE_VIEW_SCHEMA,
 } from '../tool-schemas/project-source-shapes.mjs';
 
-const COMPETENCY_QUESTION_LIST = MEANING_COMPETENCY_QUESTIONS
-  .map(({ id, question, requiredWitnesses }) => `\`${id}\`: ${question} (answered needs ${requiredWitnesses.join(', ')})`)
-  .join(' ');
-
 export const FINALIZE_PROJECT_MEANING_TOOL = {
   name: 'finalize_project_meaning',
   description:
-    'Finalize the project\'s competency answers after concept/relation writes, `validate_vault` and `connect_project_source`. ' +
-    'Pass `answers` and the server writes the project body\'s `## Competency answers` section from them (replacing one that exists), then finalizes, in one call; without `answers` it finalizes the section already in the body. ' +
-    'Each evidence file or path an answer names inside the folder this project is connected to is measured in the same call; a project with no connected folder is refused. ' +
-    'A refusal names each row, the reason and the argument to change, and writes nothing. ' +
-    'The server derives the body digest, project graph hash, source fingerprint and witness inventory itself, and writes a small provenance receipt to `.ontology-atlas/project-meaning.json` that holds no answer text, absolute source root or remote coordinate. ' +
-    '`ok: true` means the receipt was written, not that source currentness is verified; read `meaningAssessment` for the fail-closed categorical result.',
+    'Finalize the project\'s competency answers, the last construction step after concept/relation writes, `validate_vault` and `connect_project_source`. With `answers` the server writes the body\'s `## Competency answers` section and finalizes in one call; without, it finalizes the section already there. Evidence an answer names inside the connected folder is measured; a project with no connected folder is refused, and a refusal names each row and the argument to change and writes nothing. Writes a provenance receipt to `.ontology-atlas/project-meaning.json` with no answer text or absolute root. `ok: true` means the receipt was written, not that source currentness is verified; read `meaningAssessment`.',
   inputSchema: {
     type: 'object',
     properties: {
       projectSlug: nonBlankStringSchema(
-        'Exact project node slug (or an unambiguous vault alias) to finalize.',
+        'Project slug or unambiguous alias.',
       ),
       expected_mtime: {
         type: 'number',
         minimum: 0,
         description:
-          'The project node mtime from its last write or get_concept. Without `answers` it is a conflict guard: any edit since blocks finalization. ' +
-          'With `answers` the server replaces only that section in the body as it is now, so an older value is accepted.',
+          'Project mtime from its last read or write. Without `answers` any edit since blocks; with `answers` an older value is accepted.',
       },
       answers: {
         type: 'array',
         minItems: MEANING_COMPETENCY_QUESTIONS.length,
         maxItems: MEANING_COMPETENCY_QUESTIONS.length,
         description:
-          `One row per fixed question: ${COMPETENCY_QUESTION_LIST} ` +
-          'An `answered` row carries every witness list its question names, non-empty, or it is refused; `partial` or `visible-gap` needs `gap`, one line naming what is missing. ' +
-          'More: connection_info({guide:"competency"}).',
+          'One row per question id: scope, domains, abilities, evidence, impact. An `answered` row carries every witness list its question names, non-empty, or it is refused; `partial` or `visible-gap` needs `gap`. Questions, witness lists and an example: connection_info({guide:"competency"}).',
         items: {
           type: 'object',
           properties: {
@@ -64,16 +52,16 @@ export const FINALIZE_PROJECT_MEANING_TOOL = {
                 required: ['from', 'to', 'type'],
                 additionalProperties: false,
               },
-              description: 'Declared relations by their stored key: `domains`, `capabilities`, `elements`, `depends_on`.',
+              description: 'Declared relations by stored key (domains, capabilities, elements, depends_on).',
             },
             evidence: {
               type: 'array',
               maxItems: COMPETENCY_ROW_WITNESSES_MAX,
               items: NON_BLANK_STRING_SCHEMA,
-              description: 'Repository-relative files or folders, such as `README.md`, or a pinned `source:<path>#L<a>-L<b>@sha256:<64 hex>`.',
+              description: 'Repository-relative files or folders, or `source:<path>#L<a>-L<b>@sha256:<hex>`.',
             },
             paths: { type: 'array', maxItems: COMPETENCY_ROW_WITNESSES_MAX, items: NON_BLANK_STRING_SCHEMA, description: 'Repository-relative files or folders.' },
-            gap: nonBlankStringSchema('What is missing, in one line; required unless status is answered.'),
+            gap: nonBlankStringSchema('What is missing, one line; required unless answered.'),
           },
           required: ['id', 'status', 'answer'],
           additionalProperties: false,
@@ -113,29 +101,24 @@ export const FINALIZE_PROJECT_MEANING_TOOL = {
 export const CONNECT_PROJECT_SOURCE_TOOL = {
   name: 'connect_project_source',
   description:
-    'Bind a project node to the local code folder it describes, measure it, and write the source receipt. '
-    + 'This is what `nextAction: connect_source` (and `repair_source_binding` / `measure_source` / `remeasure_source`) asks for. '
-    + 'Omit `rootPath` and the server infers it: the git repository enclosing the vault wins, otherwise the nearest ancestor folder carrying a project manifest. '
-    + 'Without `confirm: true` nothing is written — you get the proposed folder, how many declared `path:` claims actually land in it, and the exact confirming call. '
-    + 'Re-running with a different `rootPath` replaces the binding; `disconnect_project_source` removes it. '
-    + 'The absolute root stays in the local gitignored sidecar `.ontology-atlas/project-sources.json` and never enters the receipt, the graph markdown, or any handoff.',
+    'Bind a project node to the local code folder it describes, measure it and write the source receipt; this answers `nextAction: connect_source` and its repair and re-measure actions. Omit `rootPath` to infer it. Without `confirm: true` nothing is written: you get the proposed folder, how many `path:` claims land in it, and the confirming call. The absolute root stays in a gitignored sidecar.',
   inputSchema: {
     type: 'object',
     properties: {
       projectSlug: nonBlankStringSchema(
-        'Exact project node slug (or an unambiguous vault alias) to bind.',
+        'Project slug or unambiguous alias.',
       ),
       rootPath: nonBlankStringSchema(
-        'Absolute local folder holding the code. Omit to auto-infer, or to re-measure an existing binding.',
+        'Absolute code folder. Omit to infer, or to re-measure the binding.',
       ),
       confirm: {
         type: 'boolean',
-        description: 'Required to write. Default false returns the proposal and changes nothing.',
+        description: 'Required to write.',
       },
       repair: {
         type: 'boolean',
         description:
-          'Discard a malformed .ontology-atlas/project-sources.json instead of refusing to write over it.',
+          'Replace a malformed project-sources.json instead of refusing.',
       },
     },
     required: ['projectSlug'],
@@ -166,15 +149,14 @@ export const CONNECT_PROJECT_SOURCE_TOOL = {
 export const DISCONNECT_PROJECT_SOURCE_TOOL = {
   name: 'disconnect_project_source',
   description:
-    'Remove a project node\'s local source binding and its receipt. The reversal of connect_project_source — use it when the wrong folder was bound, or to stop measuring. '
-    + 'Without `confirm: true` it only reports what would be removed. Other projects\' bindings are never touched, and no ontology markdown changes.',
+    'Remove a project node\'s local source binding and its receipt, when the wrong folder was bound or to stop measuring; the reversal of connect_project_source. Without `confirm: true` it only reports what would be removed. No other binding or markdown changes.',
   inputSchema: {
     type: 'object',
     properties: {
-      projectSlug: nonBlankStringSchema('Project node slug whose source binding should be removed.'),
+      projectSlug: nonBlankStringSchema('Project slug.'),
       confirm: {
         type: 'boolean',
-        description: 'Required to write. Default false lists the binding that would be removed.',
+        description: 'Required to write.',
       },
     },
     required: ['projectSlug'],
