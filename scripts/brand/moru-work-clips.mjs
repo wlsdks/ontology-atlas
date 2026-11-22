@@ -137,9 +137,9 @@ const RING = 5;
 
 function art({ pixelMap, stamp, snap, rig, INK, MUTED, INDIGO, STONE, IVORY }) {
   const maps = (drawings, key, unit, ring) => Object.fromEntries(Object.entries(drawings).map(([name, rows]) => [name, pixelMap(rows, key, unit, ring)]));
-  /** A stubby floor lever on a square sheet: a plate, a bare pole two squares thick whose top leans `tilt` squares, and a knob on it, all below Moru's eyes. */
+  /** A floor lever on a square sheet: a plate, a bare pole two squares thick whose top leans `tilt` squares, and a knob on it, beside Moru's eyes and clear of them. */
   const lever = tilt => {
-    const side = 64, pole = 5, mid = side / 2 - UNIT, data = new Uint8Array(side * side);
+    const side = 64, pole = 7, mid = side / 2 - UNIT, data = new Uint8Array(side * side);
     const plate = pixelMap(PLATE, { s: STONE }, UNIT, RING), knob = pixelMap(KNOB, { i: INDIGO }, UNIT, RING), piece = pixelMap(['ii'], { i: INDIGO }, UNIT);
     const poleTop = side - plate.h - pole * UNIT, at = row => mid + UNIT * Math.round(tilt * (pole - row) / pole);
     for (let row = 0; row < pole; row++) stamp(data, side, piece, at(row), poleTop + row * UNIT);
@@ -273,7 +273,7 @@ const HEADS_UP = {
 };
 
 /** Both flippers stay at the belly's corners while they flap, flung out and let fall, each drawn whole. */
-const FLAP_UP = { leftX: -8, leftY: -8, rightX: 8, rightY: -8 };
+const FLAP_UP = { leftX: -4, leftY: -4, rightX: 4, rightY: -4 };
 const FLAP_DOWN = { leftX: -2, leftY: 0, rightX: 2, rightY: 0 };
 const FLAPPING = { ...GLAD, mouth: 'open', left: 'rest', right: 'rest' };
 /** Paws brought together along the floor line, as the catalogue claps. */
@@ -518,8 +518,8 @@ const CRATE_SEND = {
 const TILT = { back: -2, thrown: 2 };
 /** Looking down at the lever, the near flipper drawn back off its plate. */
 const AT_LEVER = { faceX: 6, faceY: 2, gazeX: 3, slot: 1, rise: 1, rightX: -14 };
-/** The right flipper against the knob at a tilt, from its place on the floor. */
-const onKnob = tilt => ({ rightX: 2 + UNIT * tilt, rightY: -24 });
+/** The right flipper gripping the pole under the knob at a tilt, from its place on the floor, so the knob shows above it. */
+const onKnob = tilt => ({ rightX: 2 + UNIT * tilt, rightY: -18 });
 const THROWN = { ...AT_LEVER, tilt: TILT.thrown };
 /** The weight thrown after the lever: the head goes with it and tips, and the belly stays on the floor. */
 const PULLED = { ...THROWN, bend: 10, cant: 4, bulge: 0.08, tall: 0.97, wide: 1.02 };
@@ -567,10 +567,11 @@ const LEVER_PULL = {
 /** The laptop's left edge: it stands in front of Moru's near flank, as the catalogue's laptop scene has it. */
 const LAPTOP_LEFT = 180;
 const AT_DESK = { lap: 1, faceX: 6, faceY: 2, gazeX: 3 };
-/** The far flipper over the keys, lifted and struck; the head dips a pixel with each strike. */
-const TAP = { ...AT_DESK, leftX: 46, leftY: -12, tail: 4 };
-const STRIKE = { ...AT_DESK, leftX: 46, leftY: -6, faceY: 4, tall: 0.98, wide: 1.01, tail: 0 };
-const READ = { ...AT_DESK, leftX: 46, leftY: -10, gazeX: 5, faceY: 0, tall: 1.01 };
+/** The far flipper over the keys, lifted and struck down onto the floor line; the head dips a pixel with each strike. */
+const STRUCK = { left: 'raised' };
+const TAP = { ...AT_DESK, leftX: 52, leftY: -12, tail: 4 };
+const STRIKE = { ...AT_DESK, leftX: 52, leftY: 0, faceY: 4, tall: 0.98, wide: 1.01, tail: 0 };
+const READ = { ...AT_DESK, leftX: 52, leftY: -10, gazeX: 5, faceY: 0, tall: 1.01 };
 const DESK_TYPE = {
   id: 'desk-type',
   label: 'Desk type',
@@ -583,27 +584,27 @@ const DESK_TYPE = {
     { at: 2, pose: { ...AT_DESK, lap: 0.5, tail: 6 } },
     { at: 3, pose: { ...AT_DESK, lap: 0.75, tall: 1.01, tail: 10 } },
     { at: 4, pose: { ...AT_DESK, leftX: 12, leftY: -4, tail: 4 }, shapes: BLINK },
-    { at: 5, pose: { ...AT_DESK, leftX: 28, leftY: -8, tail: 2 } },
+    { at: 5, pose: { ...AT_DESK, leftX: 32, leftY: -8, tail: 2 } },
     { at: 6, pose: TAP },
-    { at: 7, pose: STRIKE },
+    { at: 7, pose: STRIKE, shapes: STRUCK },
     { at: 8, pose: TAP },
-    { at: 9, pose: STRIKE, shapes: BLINK },
+    { at: 9, pose: STRIKE, shapes: { ...BLINK, ...STRUCK } },
     { at: 10, pose: TAP },
-    { at: 11, pose: STRIKE },
+    { at: 11, pose: STRIKE, shapes: STRUCK },
     { at: 12, pose: { ...TAP, tail: 8 } },
     { at: 13, pose: READ },
     { at: 14, pose: { ...READ, tail: 8 } },
     { at: 15, pose: READ, shapes: BLINK },
     { at: 16, pose: { ...READ, gazeX: 4, faceY: 1, tall: 1 } },
-    { at: 17, pose: STRIKE },
+    { at: 17, pose: STRIKE, shapes: STRUCK },
     { at: 18, pose: TAP },
-    { at: 19, pose: STRIKE },
+    { at: 19, pose: STRIKE, shapes: STRUCK },
     { at: 20, pose: { ...TAP, tail: 8 } },
-    { at: 21, pose: STRIKE },
+    { at: 21, pose: STRIKE, shapes: STRUCK },
     { at: 22, pose: TAP, shapes: BLINK },
-    { at: 23, pose: { ...STRIKE, tail: -4 }, shapes: GLAD },
+    { at: 23, pose: { ...STRIKE, tail: -4 }, shapes: { ...GLAD, ...STRUCK } },
     { at: 24, pose: { ...TAP, tail: 6 }, shapes: GLAD },
-    { at: 25, pose: { ...AT_DESK, leftX: 28, leftY: -8, tail: 2 }, shapes: GLAD },
+    { at: 25, pose: { ...AT_DESK, leftX: 32, leftY: -8, tail: 2 }, shapes: GLAD },
     { at: 26, pose: { ...AT_DESK, leftX: 12, leftY: -4 }, shapes: GLAD },
     { at: 27, pose: { faceX: 5, faceY: 1, gazeX: 3, lap: 0.75, tall: 1.01, tail: 8 } },
     { at: 28, pose: { faceX: 4, gazeX: 2, lap: 0.5, tail: 4 } },

@@ -294,8 +294,9 @@ function drawPose(rig, pose, shapes, props, art) {
   const placedFlippers = [flipperOf('left'), flipperOf('right')];
   const drawFlipper = ({ flipper, shape, x, y, paw, left, top }) => {
     if (shape === 'hidden') return;
-    // A paw resting on the belly's lower edge keeps the arc above it, as the catalogue draws it there; anywhere else it keeps its whole outline.
-    if (paw) return stamp(canvas, size, paw, left, top, (xx, yy) => !(body[yy * size + xx] && yy >= top + paw.h - paw.pad - DRAWN && paw.data[(yy - top) * paw.w + xx - left] === INK && !body[Math.min(size - 1, yy + 2 * DRAWN) * size + xx]));
+    // A paw standing on the belly's lower edge keeps the arc above it, as the catalogue draws it there; anywhere else it keeps its whole outline.
+    const standing = paw && top + paw.h >= rig.floor - lift;
+    if (paw) return stamp(canvas, size, paw, left, top, (xx, yy) => !(standing && body[yy * size + xx] && yy >= top + paw.h - paw.pad - DRAWN && paw.data[(yy - top) * paw.w + xx - left] === INK));
     // In its own place the flipper is the neutral pose's pixels; moved, it carries a whole outline.
     if (x === flipper.box.x0 && y === flipper.box.y0) stamp(canvas, size, flipper.rest, flipper.rest.x0, flipper.rest.y0);
     else stamp(canvas, size, flipper.loose, x - DRAWN, y - DRAWN);
@@ -352,8 +353,40 @@ function drawPose(rig, pose, shapes, props, art) {
 
   for (const placed of placedFlippers) if (!placed.behind) drawFlipper(placed);
   for (const prop of props) if (!prop.behind) prop.draw(canvas, size);
+  absorbCrumbs(canvas, size, rig.tailEdge + Math.min(0, slide));
   seal(canvas, size);
   return shapes.mirror ? mirrored(canvas, size) : canvas;
+}
+
+/** Exported 128px pixels under which a piece of body fill cut off by a paw or a prop is a crumb: four pixels at 64px. */
+const CRUMB = 16;
+/**
+ * A crumb of one body fill right of the tail takes the other fill where that surrounds it, and the
+ * outline's ink otherwise. Pieces are found as the 128px export will hold them, two work pixels to one.
+ */
+function absorbCrumbs(canvas, size, from) {
+  const half = size / 2, cells = fill => {
+    const out = new Uint8Array(half * half);
+    for (let y = 0; y < half; y++) for (let x = 0; x < half; x++) {
+      const p = 2 * y * size + 2 * x;
+      out[y * half + x] = [p, p + 1, p + size, p + size + 1].filter(q => canvas[q] === fill).length >= 2 ? 1 : 0;
+    }
+    return out;
+  };
+  const held = { [STONE]: cells(STONE), [IVORY]: cells(IVORY) };
+  for (const fill of [STONE, IVORY]) for (const piece of pieces(held[fill], half, cell => cell === 1)) {
+    if (piece.length >= CRUMB || piece.some(cell => 2 * (cell % half) < from)) continue;
+    const other = fill === STONE ? IVORY : STONE;
+    let beside = 0, rest = 0;
+    for (const cell of piece) for (const n of [cell - 1, cell + 1, cell - half, cell + half]) {
+      if (held[fill][n]) continue;
+      if (held[other][n]) beside++; else rest++;
+    }
+    for (const cell of piece) {
+      const p = 2 * Math.floor(cell / half) * size + 2 * (cell % half);
+      for (const q of [p, p + 1, p + size, p + size + 1]) if (canvas[q] === fill) canvas[q] = beside >= rest ? other : INK;
+    }
+  }
 }
 
 /** Gives any body fill left open to the canvas its outline, layer by layer to the outline's thickness. */

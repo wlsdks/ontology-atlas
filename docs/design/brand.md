@@ -221,8 +221,10 @@ catalogue's own steps: 5.3 exported pixels off the floor or bounding, and 1.4
 on it, which the script holds a grounded body to. The body never shuffles
 aside for a prop: a laptop, a crate or a lever stands in front of the near
 flank, as the catalogue's laptop does, and rises from the floor line or a
-slot. Every pose ends with any body fill left open to the canvas given its
-outline, so no fill touches the background. `galumph-left` squeezes the body,
+slot. A piece of body fill a paw or a prop cuts off, smaller than four pixels
+at 64px, takes the fill round it or the outline's ink. Every pose ends with any
+body fill left open to the canvas given its outline, so no fill touches the
+background. `galumph-left` squeezes the body,
 passes through a pose facing the viewer with the tail behind, mirrors it about
 a column left of its centre so the tail stays in the cell, and turns back in
 its last poses; poses 5 to 18 are the travel and loop without the turns.
