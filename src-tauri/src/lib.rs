@@ -14,6 +14,7 @@ mod confined_files;
 mod connectors;
 mod git;
 mod gray_area;
+mod harness_scopes;
 mod harness_source;
 mod jev;
 mod library;
@@ -272,6 +273,8 @@ pub fn run() {
             harness_source::list_harness_source_directory,
             harness_source::read_harness_source_text,
             harness_source::harness_source_path_exists,
+            harness_scopes::read_harness_scopes,
+            harness_scopes::pick_harness_scope_file,
             project_source::inspect_project_source,
             project_source::inspect_project_source_continuity,
             vault::walk::list_vault_directory,
