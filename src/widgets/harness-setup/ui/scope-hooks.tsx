@@ -178,7 +178,7 @@ function ScopeFileHeading({
   return (
     <div
       data-scope-heading={file.id}
-      className="sticky -top-4 z-[1] flex flex-col gap-px border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-2.5 pb-1.5 pt-[7px] shadow-[inset_0_-1px_0_var(--color-overlay-1)] before:pointer-events-none before:absolute before:inset-x-0 before:bottom-full before:h-4 before:bg-[color:var(--color-canvas)]"
+      className="sticky -top-4 z-[1] flex flex-col gap-px border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-2.5 pb-1.5 pt-[7px] shadow-[inset_0_-1px_0_var(--color-overlay-1)] before:pointer-events-none before:absolute before:inset-x-0 before:bottom-full before:h-2 before:bg-[color:var(--color-canvas)]"
     >
       <div className="flex min-h-5 min-w-0 items-center gap-2">
         <ReachMark reach={SCOPE_REACH[file.scope]} />
@@ -271,7 +271,7 @@ export function ScopeHookList({
             className={cn(
               'relative inline-flex items-baseline gap-1.5 py-1 hover:text-[color:var(--color-text-primary)] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
               name === activeName &&
-                'text-[color:var(--color-text-primary)] after:absolute after:inset-x-0 after:-bottom-px after:h-[length:var(--tabbar-underline)] after:bg-[color:var(--color-indigo-accent)]',
+                'text-[color:var(--color-text-primary)] after:absolute after:inset-x-0 after:bottom-0 after:h-[length:var(--tabbar-underline)] after:bg-[color:var(--color-indigo-accent)]',
             )}
           >
             {name}
