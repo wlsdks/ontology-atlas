@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BuiltVaultEntry } from './md-entry';
-import { vaultSourceFormat, vaultSourceRow } from './vault-source-row';
+import { vaultSourceFormat, vaultSourceFile } from './vault-source-file';
 
 describe('vaultSourceFormat', () => {
   it('is the lower-cased extension', () => {
@@ -17,7 +17,7 @@ describe('vaultSourceFormat', () => {
   });
 });
 
-describe('vaultSourceRow', () => {
+describe('vaultSourceFile', () => {
   const handle = {} as FileSystemFileHandle;
 
   it('carries the path, file name, format, size and modified time of the entry', () => {
@@ -28,7 +28,7 @@ describe('vaultSourceRow', () => {
       handle,
       kind: 'source',
     };
-    expect(vaultSourceRow(entry)).toEqual({
+    expect(vaultSourceFile(entry)).toEqual({
       path: 'sources/deep/Plan.PDF',
       name: 'Plan.PDF',
       format: 'pdf',
@@ -39,6 +39,6 @@ describe('vaultSourceRow', () => {
 
   it('counts a source whose size was never stamped as zero bytes', () => {
     const entry: BuiltVaultEntry = { relativePath: 'sources/a.txt', lastModified: 5, handle, kind: 'source' };
-    expect(vaultSourceRow(entry).bytes).toBe(0);
+    expect(vaultSourceFile(entry).bytes).toBe(0);
   });
 });

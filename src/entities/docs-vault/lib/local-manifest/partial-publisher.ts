@@ -1,4 +1,4 @@
-/** Orders reads by folder tier (node folders first) and publishes a partial manifest as each tier completes. */
+/** Publishes a partial manifest as each folder tier of reads completes, node folders first. */
 
 import type { BuiltVaultEntry } from './md-entry';
 import { NATIVE_READ_BATCH } from './read-vault-files';

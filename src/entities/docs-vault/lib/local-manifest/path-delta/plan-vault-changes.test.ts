@@ -3,7 +3,7 @@ import type { StampedVaultEntry } from '@/shared/lib/vault-folder/native-vault/t
 import type { VaultPathChange } from '@/shared/lib/vault-folder/vault-change-batch';
 import type { VaultDoc, VaultManifest } from '../../../model/vault-manifest';
 import type { BuiltVaultEntry } from '../md-entry';
-import { deltaCeiling, planChanges, sameStamp, type ListDir } from './plan-vault-changes';
+import { deltaCeiling, planVaultChanges, sameStamp, type ListDir } from './plan-vault-changes';
 import { takeState } from './vault-delta-state';
 
 const handle = {} as FileSystemFileHandle;
@@ -27,7 +27,7 @@ function plan(
   changes: VaultPathChange[],
   options: { manifest?: Partial<VaultManifest>; list?: ListDir; pending?: Set<string> } = {},
 ) {
-  return planChanges(
+  return planVaultChanges(
     { ...emptyManifest, ...options.manifest } as VaultManifest,
     takeState(entries),
     changes,
@@ -60,7 +60,7 @@ describe('deltaCeiling', () => {
   });
 });
 
-describe('planChanges: which reported paths are acted on', () => {
+describe('planVaultChanges: which reported paths are acted on', () => {
   it('gives up on a path that is not confined to the vault', async () => {
     expect(await plan([], [file('../outside.md')])).toBeNull();
     expect(await plan([], [file('notes\\a.md')])).toBeNull();
@@ -92,7 +92,7 @@ describe('planChanges: which reported paths are acted on', () => {
   });
 });
 
-describe('planChanges: reads and removals', () => {
+describe('planVaultChanges: reads and removals', () => {
   it('reads a Markdown file whose stamp moved and not one whose stamp is the known one', async () => {
     const entries = [note('a.md', 1), note('b.md', 1)];
     const result = await plan(entries, [file('a.md', 2, 7), file('b.md', 1, 7), file('c.md', 3, 9)]);
@@ -125,7 +125,7 @@ describe('planChanges: reads and removals', () => {
   });
 });
 
-describe('planChanges: a reported folder is listed again whole', () => {
+describe('planVaultChanges: a reported folder is listed again whole', () => {
   const entries = [note('a/keep.md', 1), note('a/gone.md', 1), note('b/other.md', 1)];
   const listing = (children: StampedVaultEntry[]): ListDir => async (dir) => {
     expect(dir).toBe('a');
@@ -146,6 +146,44 @@ describe('planChanges: a reported folder is listed again whole', () => {
   it('removes every known file under a folder that is reported missing', async () => {
     const result = await plan(entries, [{ path: 'a', kind: 'missing' }]);
     expect([...result!.removals].sort()).toEqual(['a/gone.md', 'a/keep.md']);
+  });
+
+  it('gives up when a folder with counted source-code files is reported missing, since they were never listed', async () => {
+    const result = await plan(entries, [{ path: 'a', kind: 'missing' }], { manifest: { sourceFileCount: 1 } });
+    expect(result).toBeNull();
+  });
+
+  it('does not make documents of hidden entries inside a moved-in folder', async () => {
+    const listed: string[] = [];
+    const result = await plan(entries, [{ path: 'a', kind: 'directory' }], {
+      list: async (dir) => {
+        listed.push(dir);
+        return [
+          { name: 'fresh.md', kind: 'file', lastModified: 9, size: 4 },
+          { name: '.hidden.md', kind: 'file', lastModified: 9, size: 4 },
+          { name: '.git', kind: 'directory' },
+          ...(dir === 'a/.git' ? [{ name: 'x.md', kind: 'file' as const, lastModified: 9, size: 4 }] : []),
+        ];
+      },
+    });
+    expect(listed).toEqual(['a']);
+    expect([...result!.upserts.keys()]).toEqual(['a/fresh.md']);
+  });
+
+  it('does not make documents of a node_modules folder inside a moved-in folder, and expects it to stay pruned', async () => {
+    const listed: string[] = [];
+    const list: ListDir = async (dir) => {
+      listed.push(dir);
+      return [
+        { name: 'fresh.md', kind: 'file', lastModified: 9, size: 4 },
+        { name: 'node_modules', kind: 'directory' },
+        ...(dir === 'a/node_modules' ? [{ name: 'dep.md', kind: 'file' as const, lastModified: 9, size: 4 }] : []),
+      ];
+    };
+    const result = await plan(entries, [{ path: 'a', kind: 'directory' }], { list, manifest: { prunedDirs: ['a/node_modules'] } });
+    expect(listed).toEqual(['a']);
+    expect([...result!.upserts.keys()]).toEqual(['a/fresh.md']);
+    expect(await plan(entries, [{ path: 'a', kind: 'directory' }], { list })).toBeNull();
   });
 
   it('gives up when the listing prunes a folder the last walk did not', async () => {

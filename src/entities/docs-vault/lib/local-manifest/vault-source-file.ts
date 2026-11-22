@@ -8,8 +8,8 @@ export function vaultSourceFormat(name: string): string {
   return at > 0 ? name.slice(at + 1).toLowerCase() : '';
 }
 
-/** The manifest row of a raw source: stamps only, never its bytes read. */
-export function vaultSourceRow(entry: BuiltVaultEntry): VaultSourceFile {
+/** The manifest record of a raw source: stamps only, never its bytes read. */
+export function vaultSourceFile(entry: BuiltVaultEntry): VaultSourceFile {
   return {
     path: entry.relativePath,
     name: nameOf(entry.relativePath),

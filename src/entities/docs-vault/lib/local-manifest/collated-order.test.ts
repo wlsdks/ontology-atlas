@@ -6,6 +6,10 @@ describe('compareCollated', () => {
     expect(['나', '가', '다'].sort(compareCollated)).toEqual(['가', '나', '다']);
   });
 
+  it('puts Hangul before Latin, and lower case before upper case within a letter', () => {
+    expect(['b', 'a', 'B', '가'].sort(compareCollated)).toEqual(['가', 'a', 'b', 'B']);
+  });
+
   it('breaks a collator tie by code units, so canonically equal names never compare as equal', () => {
     const precomposed = 'é';
     const decomposed = 'é';

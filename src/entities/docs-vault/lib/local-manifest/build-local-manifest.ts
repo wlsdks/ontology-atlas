@@ -30,7 +30,7 @@ import {
   fingerprintText,
   type FingerprintSum,
 } from './vault-fingerprint';
-import { vaultSourceRow } from './vault-source-row';
+import { vaultSourceFile } from './vault-source-file';
 import { insertIntoTree, sortTree } from './vault-tree';
 import {
   nativeVaultFingerprint,
@@ -147,7 +147,7 @@ function aggregateBuild(
     if (entry.kind === 'source') {
       // A raw source never joins `docs`; its handle only lets a person open the file.
       sourceHandles.set(entry.relativePath, entry.handle);
-      sources.push(vaultSourceRow(entry));
+      sources.push(vaultSourceFile(entry));
       continue;
     }
     const doc = entry.doc;

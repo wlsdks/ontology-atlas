@@ -80,7 +80,7 @@ export interface ChangePlan {
  * again whole, as the walk would list it, so a folder moved in, replaced or emptied converges.
  * O(paths + listed entries), plus one O(known files · depth) pass when a folder was reported.
  */
-export async function planChanges(
+export async function planVaultChanges(
   manifest: VaultManifest,
   state: DeltaState,
   changes: readonly VaultPathChange[],

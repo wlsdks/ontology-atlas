@@ -54,6 +54,15 @@ describe('patchSorted', () => {
     }
   });
 
+  it('keeps the survivors after the last insertion point when more than 32 items are added before them', () => {
+    const list = names(100);
+    const add = Array.from({ length: 40 }, (_, i) => `n0050x${String(i).padStart(2, '0')}`);
+    const patched = patch(list, [], add);
+    expect(patched).toEqual(rebuilt(list, [], add));
+    expect(patched.at(-1)).toBe('n0099');
+    expect(patched).toHaveLength(140);
+  });
+
   it('ignores a removal that is not in the list', () => {
     expect(patch(['a', 'b'], ['zzz'], [])).toEqual(['a', 'b']);
   });

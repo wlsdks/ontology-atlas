@@ -20,7 +20,7 @@ import {
 import { patchSorted } from './path-delta/patch-sorted';
 import {
   NeedsRescan,
-  planChanges,
+  planVaultChanges,
   type ChangePlan,
   type ListDir,
   type Upsert,
@@ -42,7 +42,7 @@ import {
   NATIVE_READ_BATCH,
 } from './read-vault-files';
 import { addStamp, fingerprintText, parseFingerprint } from './vault-fingerprint';
-import { vaultSourceRow } from './vault-source-row';
+import { vaultSourceFile } from './vault-source-file';
 import type { VaultDoc, VaultManifest, VaultSourceFile } from '../../model/vault-manifest';
 
 export interface LocalVaultSnapshot {
@@ -173,7 +173,7 @@ export async function applyVaultChanges(
   let plan: ChangePlan | null;
   let read: BuiltVaultEntry[];
   try {
-    plan = await planChanges(prior, state, changes, directoryLister(root, lookup), () => pendingSourceCopyPaths(root));
+    plan = await planVaultChanges(prior, state, changes, directoryLister(root, lookup), () => pendingSourceCopyPaths(root));
     if (!plan) return RESCAN;
     read = await readUpserts(root, state, plan.upserts.values(), lookup);
   } catch {
@@ -290,7 +290,7 @@ export async function applyVaultChanges(
     sources = patchSorted(
       sources,
       new Set(oldSources.map((entry) => entry.relativePath)),
-      newSources.map(vaultSourceRow),
+      newSources.map(vaultSourceFile),
       (row) => row.path,
       (path) => ({ path }) as VaultSourceFile,
       compareSources,
